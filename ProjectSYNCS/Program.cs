@@ -1,8 +1,8 @@
 ﻿using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using LazyRain.Data;
-using LazyRain.Services;
+using ProjectSYNCS.Data;
+using ProjectSYNCS.Services;
 using Microsoft.EntityFrameworkCore;
 
 var host = Host.CreateDefaultBuilder(args)
@@ -34,10 +34,10 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton(interactionConfig);
         services.AddSingleton<InteractionService>();
 
-        //var dbPath = config["Database:Path"] ?? "ProjectSYNCS.db";
-        //services.AddDbContext<AppDbContext>(options =>
-        //    options.UseSqlite($"Data Source={dbPath}"),
-        //    ServiceLifetime.Transient);
+        var dbPath = config["Database:Path"] ?? "ProjectSYNCS.db";
+        services.AddDbContext<AppDbContext>(options =>
+            options.UseSqlite($"Data Source={dbPath}"),
+            ServiceLifetime.Transient);
 
         //services.AddTransient<EventService>();
 
@@ -45,3 +45,11 @@ var host = Host.CreateDefaultBuilder(args)
         //services.AddHostedService<ReminderService>();
     })
     .Build();
+
+    using (var scope = host.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Database.MigrateAsync();
+    }
+
+    await host.RunAsync();
