@@ -2,8 +2,10 @@
 using Discord.Interactions;
 using Discord.WebSocket;
 using ProjectSYNCS.Data;
-using ProjectSYNCS.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((ctx, config) =>
@@ -32,7 +34,8 @@ var host = Host.CreateDefaultBuilder(args)
             LogLevel = LogSeverity.Info
         };
         services.AddSingleton(interactionConfig);
-        services.AddSingleton<InteractionService>();
+        services.AddSingleton<InteractionService>(sp =>
+            new InteractionService(sp.GetRequiredService<DiscordSocketClient>(), interactionConfig));
 
         var dbPath = config["Database:Path"] ?? "ProjectSYNCS.db";
         services.AddDbContext<AppDbContext>(options =>
