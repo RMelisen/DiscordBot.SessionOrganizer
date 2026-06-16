@@ -1,0 +1,51 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build output
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+
+# NuGet
+*.nupkg
+*.snupkg
+project.lock.json
+packages/
+!packages/repositories.config
+.nuget/
+
+# Publish output
+publish/
+PublishProfiles/
+
+# Test results
+TestResults/
+*.trx
+*.coveragexml
+coverage*/
+
+# Rider
+.idea/
+*.sln.iml
+
+# User-specific settings
+*.rsuser
+
+# Secrets & config overrides
+appsettings.Development.json
+appsettings.Local.json
+secrets.json
+.env
+.env.*
+!.env.example
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
