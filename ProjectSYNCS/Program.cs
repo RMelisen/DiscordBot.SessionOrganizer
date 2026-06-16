@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using ProjectSYNCS.Services;
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((ctx, config) =>
@@ -42,10 +43,10 @@ var host = Host.CreateDefaultBuilder(args)
             options.UseSqlite($"Data Source={dbPath}"),
             ServiceLifetime.Transient);
 
-        //services.AddTransient<EventService>();
+        services.AddTransient<EventService>();
 
-        //services.AddHostedService<BotService>();
-        //services.AddHostedService<ReminderService>();
+        services.AddHostedService<BotService>();
+        services.AddHostedService<ReminderService>();
     })
     .Build();
 
