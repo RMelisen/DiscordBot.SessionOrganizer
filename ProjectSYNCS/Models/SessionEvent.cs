@@ -1,5 +1,13 @@
 namespace ProjectSYNCS.Models;
 
+public enum SessionCategory
+{
+    Game,
+    Activity,
+    Movie,
+    Other
+}
+
 public class SessionEvent
 {
     public int Id { get; set; }
@@ -9,7 +17,8 @@ public class SessionEvent
     public ulong MessageId { get; set; }
     public ulong OrganizerId { get; set; }
 
-    public string GameName { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public SessionCategory Category { get; set; } = SessionCategory.Game;
     public DateTimeOffset ScheduledAt { get; set; }
     public int MaxPlayers { get; set; }
 

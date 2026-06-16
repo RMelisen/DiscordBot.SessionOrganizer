@@ -15,14 +15,15 @@ public class EventService
 
     public async Task<SessionEvent> CreateEventAsync(
         ulong guildId, ulong channelId, ulong organizerId,
-        string gameName, DateTimeOffset scheduledAt, int maxPlayers)
+        string title, SessionCategory category, DateTimeOffset scheduledAt, int maxPlayers)
     {
         var evt = new SessionEvent
         {
             GuildId = guildId,
             ChannelId = channelId,
             OrganizerId = organizerId,
-            GameName = gameName,
+            Title = title,
+            Category = category,
             ScheduledAt = scheduledAt,
             MaxPlayers = maxPlayers
         };
