@@ -3,7 +3,7 @@ namespace ProjectSYNCS.Models;
 public enum ParticipantStatus
 {
     Joined,
-    Substitute,
+    Maybe,
     Declined
 }
 
