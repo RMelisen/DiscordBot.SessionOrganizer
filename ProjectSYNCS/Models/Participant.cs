@@ -16,5 +16,5 @@ public class Participant
     public ParticipantStatus Status { get; set; }
     public DateTimeOffset JoinedAt { get; set; } = DateTimeOffset.UtcNow;
 
-    public GameEvent GameEvent { get; set; } = null!;
+    public SessionEvent SessionEvent { get; set; } = null!;
 }
