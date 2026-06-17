@@ -40,6 +40,26 @@ public class EventService
         await _db_context.SaveChangesAsync();
     }
 
+    // Used when a card is reposted, possibly into a different channel.
+    public async Task SetMessageLocationAsync(int eventId, ulong channelId, ulong messageId)
+    {
+        var evt = await _db_context.SessionEvents.FindAsync(eventId);
+        if (evt is null) return;
+        evt.ChannelId = channelId;
+        evt.MessageId = messageId;
+        await _db_context.SaveChangesAsync();
+    }
+
+    public async Task<List<SessionEvent>> GetActiveEventsAsync(ulong guildId)
+    {
+        var now = DateTimeOffset.UtcNow;
+        return await _db_context.SessionEvents
+            .Include(e => e.Participants)
+            .Where(e => e.GuildId == guildId && !e.IsCancelled && e.ScheduledAt > now)
+            .OrderBy(e => e.ScheduledAt)
+            .ToListAsync();
+    }
+
     public async Task<SessionEvent?> GetEventWithParticipantsAsync(int eventId)
     {
         return await _db_context.SessionEvents
