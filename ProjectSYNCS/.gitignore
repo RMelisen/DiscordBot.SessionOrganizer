@@ -1,7 +1,6 @@
-bin/
-obj/
-*.db
-*.db-shm
-*.db-wal
-appsettings.Development.json
-deploy/homeassistant/addons/projectsyncs/app/
+projectsyncs/bin/
+projectsyncs/obj/
+projectsyncs/*.db
+projectsyncs/*.db-shm
+projectsyncs/*.db-wal
+projectsyncs/appsettings.Development.json
