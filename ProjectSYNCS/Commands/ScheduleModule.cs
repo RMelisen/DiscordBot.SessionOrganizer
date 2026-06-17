@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Interactions.Modals;
 using ProjectSYNCS.Models;
 using ProjectSYNCS.Services;
@@ -114,10 +115,9 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
 
     // ---- Final step: open the modal for the free-text details -------------
 
-    [ComponentInteraction("schedule:min:*:*:*", ignoreGroupNames: true)]
-    public async Task OnMinuteSelectedAsync(string category, string date, string hour, string[] values)
+    [ComponentInteraction("schedule:min:*:*:*:*", ignoreGroupNames: true)]
+    public async Task OnMinuteSelectedAsync(string category, string date, string hour, string minute)
     {
-        var minute = values[0];
         // Carry category + chosen datetime through the modal's custom id.
         await RespondWithModalAsync<ScheduleEventModal>($"schedule:finalize:{category}:{date}T{hour}:{minute}");
     }
@@ -139,11 +139,14 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             .WithButton("Retour", $"schedule:back:day:{category}", ButtonStyle.Secondary, row: 1)
             .Build();
 
-    private static MessageComponent BuildMinuteStep(string category, string date, string hour) =>
-        new ComponentBuilder()
-            .WithSelectMenu(BuildMinuteSelect(category, date, hour), row: 0)
-            .WithButton("Retour", $"schedule:back:hour:{category}:{date}", ButtonStyle.Secondary, row: 1)
-            .Build();
+    private static MessageComponent BuildMinuteStep(string category, string date, string hour)
+    {
+        var builder = new ComponentBuilder();
+        foreach (var m in new[] { "00", "15", "30", "45" })
+            builder.WithButton($"{hour}:{m}", $"schedule:min:{category}:{date}:{hour}:{m}", ButtonStyle.Primary, row: 0);
+        builder.WithButton("Retour", $"schedule:back:hour:{category}:{date}", ButtonStyle.Secondary, row: 1);
+        return builder.Build();
+    }
 
     private static SelectMenuBuilder BuildCategorySelect() =>
         new SelectMenuBuilder()
@@ -188,18 +191,6 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         return menu;
     }
 
-    private static SelectMenuBuilder BuildMinuteSelect(string category, string date, string hour)
-    {
-        var menu = new SelectMenuBuilder()
-            .WithCustomId($"schedule:min:{category}:{date}:{hour}")
-            .WithPlaceholder("Choisis les minutes");
-
-        for (int m = 0; m < 60; m += 5)
-            menu.AddOption($"{hour}:{m:D2}", $"{m:D2}");
-
-        return menu;
-    }
-
     [SlashCommand("cancel", "Annuler une session que tu as organisée")]
     public async Task ScheduleCancelAsync([Summary("event-id", "L'ID affiché dans le pied de page de la session")] int eventId)
     {
@@ -212,13 +203,9 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        var guildUser = Context.User as SocketGuildUser;
-        bool isAdmin = guildUser is not null &&
-            (guildUser.GuildPermissions.Administrator || guildUser.GuildPermissions.ManageGuild);
-
-        if (gameEvent.OrganizerId != Context.User.Id && !isAdmin)
+        if (!SessionPermissions.CanManage(Context.User, gameEvent))
         {
-            await FollowupAsync("Seul l'organisateur peut annuler cette session.", ephemeral: true);
+            await FollowupAsync("Seul l'organisateur ou un administrateur peut annuler cette session.", ephemeral: true);
             return;
         }
 
@@ -249,6 +236,116 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         await FollowupAsync("La session a été annulée.", ephemeral: true);
+    }
+
+    [SlashCommand("edit", "Modifier une session que tu as organisée")]
+    public async Task ScheduleEditAsync([Summary("event-id", "L'ID affiché dans le pied de page de la session")] int eventId)
+    {
+        var gameEvent = await _eventService.GetEventWithParticipantsAsync(eventId);
+        if (gameEvent is null || gameEvent.GuildId != Context.Guild.Id)
+        {
+            await RespondAsync("Session introuvable.", ephemeral: true);
+            return;
+        }
+
+        if (gameEvent.IsCancelled)
+        {
+            await RespondAsync("Cette session est annulée et ne peut plus être modifiée.", ephemeral: true);
+            return;
+        }
+
+        if (!SessionPermissions.CanManage(Context.User, gameEvent))
+        {
+            await RespondAsync("Seul l'organisateur ou un administrateur peut modifier cette session.", ephemeral: true);
+            return;
+        }
+
+        await RespondWithModalAsync(BuildEditModal(gameEvent));
+    }
+
+    [ModalInteraction("event:editmodal:*", ignoreGroupNames: true)]
+    public async Task OnEditModalSubmittedAsync(string eventIdStr, EditSessionModal modal)
+    {
+        await DeferAsync(ephemeral: true);
+
+        if (!int.TryParse(eventIdStr, out int eventId))
+        {
+            await FollowupAsync("ID de session invalide.", ephemeral: true);
+            return;
+        }
+
+        var gameEvent = await _eventService.GetEventWithParticipantsAsync(eventId);
+        if (gameEvent is null || gameEvent.GuildId != Context.Guild.Id)
+        {
+            await FollowupAsync("Session introuvable.", ephemeral: true);
+            return;
+        }
+
+        if (!SessionPermissions.CanManage(Context.User, gameEvent))
+        {
+            await FollowupAsync("Seul l'organisateur ou un administrateur peut modifier cette session.", ephemeral: true);
+            return;
+        }
+
+        int maxPlayers = 0;
+        var maxPlayersInput = modal.MaxPlayers.Trim();
+        if (maxPlayersInput.Length > 0 &&
+            (!int.TryParse(maxPlayersInput, out maxPlayers) || (maxPlayers != 0 && (maxPlayers < 2 || maxPlayers > 67))))
+        {
+            await FollowupAsync("Le nombre de participants doit être 0 (illimité) ou un nombre entre 2 et 67.", ephemeral: true);
+            return;
+        }
+
+        if (!DateTimeOffset.TryParseExact(
+                $"{modal.Date.Trim()}T{modal.Time.Trim()}",
+                "yyyy-MM-ddTHH:mm",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeLocal,
+                out var scheduledAt))
+        {
+            await FollowupAsync("Date ou heure invalide. Utilise les formats `AAAA-MM-JJ` et `HH:mm`.", ephemeral: true);
+            return;
+        }
+
+        if (scheduledAt <= DateTimeOffset.Now)
+        {
+            await FollowupAsync("La session doit être planifiée dans le futur.", ephemeral: true);
+            return;
+        }
+
+        await _eventService.UpdateEventAsync(eventId, modal.SessionTitle.Trim(), scheduledAt, maxPlayers);
+        var updated = await _eventService.GetEventWithParticipantsAsync(eventId);
+
+        if (updated!.MessageId != 0)
+        {
+            var channel = Context.Guild.GetTextChannel(updated.ChannelId);
+            if (channel is not null &&
+                await channel.GetMessageAsync(updated.MessageId) is IUserMessage message)
+            {
+                await message.ModifyAsync(props =>
+                {
+                    props.Embed = BuildEventEmbed(updated, Context.Guild);
+                    props.Components = BuildEventComponents(updated.Id);
+                });
+            }
+        }
+
+        await FollowupAsync("Session mise à jour ✅", ephemeral: true);
+    }
+
+    public static Modal BuildEditModal(SessionEvent gameEvent)
+    {
+        return new ModalBuilder()
+            .WithTitle("Modifier la session")
+            .WithCustomId($"event:editmodal:{gameEvent.Id}")
+            .AddTextInput("Nom de la session", "title", value: gameEvent.Title, required: true)
+            .AddTextInput("Date (AAAA-MM-JJ)", "date",
+                value: gameEvent.ScheduledAt.ToString("yyyy-MM-dd"), placeholder: "ex. 2026-06-20", required: true)
+            .AddTextInput("Heure (HH:mm)", "time",
+                value: gameEvent.ScheduledAt.ToString("HH:mm"), placeholder: "ex. 20:30", required: true)
+            .AddTextInput("Participants max (0 = illimité)", "max_players",
+                value: gameEvent.MaxPlayers.ToString(), required: false)
+            .Build();
     }
 
     [ModalInteraction("schedule:finalize:*:*", ignoreGroupNames: true)]
@@ -383,9 +480,11 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
     public static MessageComponent BuildEventComponents(int eventId)
     {
         return new ComponentBuilder()
-            .WithButton("Rejoindre", $"event:join:{eventId}",    ButtonStyle.Success, new Emoji("✅"))
-            .WithButton("Peut-être", $"event:sub:{eventId}",     ButtonStyle.Primary, new Emoji("🔄"))
-            .WithButton("Refuser",   $"event:decline:{eventId}", ButtonStyle.Danger,  new Emoji("✖️"))
+            .WithButton("Rejoindre", $"event:join:{eventId}",    ButtonStyle.Success, new Emoji("✅"), row: 0)
+            .WithButton("Peut-être", $"event:sub:{eventId}",     ButtonStyle.Primary, new Emoji("🔄"), row: 0)
+            .WithButton("Refuser",   $"event:decline:{eventId}", ButtonStyle.Danger,  new Emoji("✖️"), row: 0)
+            .WithButton("Modifier",  $"event:edit:{eventId}",    ButtonStyle.Secondary, new Emoji("✏️"), row: 1)
+            .WithButton("Annuler",   $"event:cancel:{eventId}",  ButtonStyle.Secondary, new Emoji("🗑️"), row: 1)
             .Build();
     }
 }

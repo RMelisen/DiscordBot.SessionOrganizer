@@ -2,6 +2,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using ProjectSYNCS.Commands;
+using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Models;
 using ProjectSYNCS.Services;
 
@@ -27,6 +28,76 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
     [ComponentInteraction("event:decline:*")]
     public Task OnDeclineAsync(string eventIdStr) =>
         HandleButtonAsync(eventIdStr, ParticipantStatus.Declined);
+
+    [ComponentInteraction("event:cancel:*")]
+    public async Task OnCancelAsync(string eventIdStr)
+    {
+        if (!int.TryParse(eventIdStr, out int eventId))
+        {
+            await RespondAsync("ID de session invalide.", ephemeral: true);
+            return;
+        }
+
+        var gameEvent = await _eventService.GetEventWithParticipantsAsync(eventId);
+        if (gameEvent is null || gameEvent.GuildId != Context.Guild.Id)
+        {
+            await RespondAsync("Session introuvable.", ephemeral: true);
+            return;
+        }
+
+        if (!SessionPermissions.CanManage(Context.User, gameEvent))
+        {
+            await RespondAsync("Seul l'organisateur ou un administrateur peut annuler cette session.", ephemeral: true);
+            return;
+        }
+
+        if (gameEvent.IsCancelled)
+        {
+            await RespondAsync("Cette session est déjà annulée.", ephemeral: true);
+            return;
+        }
+
+        await _eventService.CancelEventAsync(eventId);
+        gameEvent.IsCancelled = true;
+
+        var component = (SocketMessageComponent)Context.Interaction;
+        await component.UpdateAsync(props =>
+        {
+            props.Embed = ScheduleModule.BuildEventEmbed(gameEvent, Context.Guild);
+            props.Components = new ComponentBuilder().Build();
+        });
+    }
+
+    [ComponentInteraction("event:edit:*")]
+    public async Task OnEditAsync(string eventIdStr)
+    {
+        if (!int.TryParse(eventIdStr, out int eventId))
+        {
+            await RespondAsync("ID de session invalide.", ephemeral: true);
+            return;
+        }
+
+        var gameEvent = await _eventService.GetEventWithParticipantsAsync(eventId);
+        if (gameEvent is null || gameEvent.GuildId != Context.Guild.Id)
+        {
+            await RespondAsync("Session introuvable.", ephemeral: true);
+            return;
+        }
+
+        if (gameEvent.IsCancelled)
+        {
+            await RespondAsync("Cette session est annulée et ne peut plus être modifiée.", ephemeral: true);
+            return;
+        }
+
+        if (!SessionPermissions.CanManage(Context.User, gameEvent))
+        {
+            await RespondAsync("Seul l'organisateur ou un administrateur peut modifier cette session.", ephemeral: true);
+            return;
+        }
+
+        await RespondWithModalAsync(ScheduleModule.BuildEditModal(gameEvent));
+    }
 
     private async Task HandleButtonAsync(string eventIdStr, ParticipantStatus newStatus)
     {

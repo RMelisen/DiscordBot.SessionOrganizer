@@ -69,6 +69,22 @@ public class EventService
         await _db_context.SaveChangesAsync();
     }
 
+    public async Task UpdateEventAsync(
+        int eventId, string title, DateTimeOffset scheduledAt, int maxPlayers)
+    {
+        var evt = await _db_context.SessionEvents.FindAsync(eventId);
+        if (evt is null) return;
+
+        // If the time moved, allow the reminder to fire again for the new slot.
+        if (evt.ScheduledAt != scheduledAt)
+            evt.ReminderSent = false;
+
+        evt.Title = title;
+        evt.ScheduledAt = scheduledAt;
+        evt.MaxPlayers = maxPlayers;
+        await _db_context.SaveChangesAsync();
+    }
+
     public async Task CancelEventAsync(int eventId)
     {
         var evt = await _db_context.SessionEvents.FindAsync(eventId);
