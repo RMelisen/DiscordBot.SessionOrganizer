@@ -10,8 +10,8 @@ public class ScheduleEventModal : IModal
     [ModalTextInput("title", placeholder: "ex. Among Us, Gartic, Anime ?")]
     public string SessionTitle { get; set; } = string.Empty;
 
-    [InputLabel("Nombre de joueurs max")]
-    [ModalTextInput("max_players", placeholder: "ex. 5")]
+    [InputLabel("Nombre de participants max - Optionnel")]
+    [ModalTextInput("max_players")]
     [RequiredInput(false)]
     public string MaxPlayers { get; set; } = string.Empty;
 }

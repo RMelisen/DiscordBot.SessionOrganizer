@@ -1,5 +1,6 @@
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using ProjectSYNCS.Commands;
 using ProjectSYNCS.Models;
 using ProjectSYNCS.Services;
@@ -29,24 +30,22 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
 
     private async Task HandleButtonAsync(string eventIdStr, ParticipantStatus newStatus)
     {
-        await DeferAsync(ephemeral: true);
-
         if (!int.TryParse(eventIdStr, out int eventId))
         {
-            await FollowupAsync("ID de session invalide.", ephemeral: true);
+            await RespondAsync("ID de session invalide.", ephemeral: true);
             return;
         }
 
         var gameEvent = await _eventService.GetEventWithParticipantsAsync(eventId);
         if (gameEvent is null || gameEvent.GuildId != Context.Guild.Id)
         {
-            await FollowupAsync("Session introuvable.", ephemeral: true);
+            await RespondAsync("Session introuvable.", ephemeral: true);
             return;
         }
 
         if (gameEvent.IsCancelled)
         {
-            await FollowupAsync("Cette session a été annulée.", ephemeral: true);
+            await RespondAsync("Cette session a été annulée.", ephemeral: true);
             return;
         }
 
@@ -58,7 +57,7 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
             bool unlimited = gameEvent.MaxPlayers == 0;
             if (!unlimited && !alreadyJoined && joinedCount >= gameEvent.MaxPlayers)
             {
-                await FollowupAsync(
+                await RespondAsync(
                     $"Cette session est complète ({gameEvent.MaxPlayers}/{gameEvent.MaxPlayers}). " +
                     "Utilise **Peut-être** pour rejoindre la liste d'attente.",
                     ephemeral: true);
@@ -74,27 +73,13 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
 
         var updatedEvent = await _eventService.GetEventWithParticipantsAsync(eventId);
 
-        var channel = Context.Guild.GetTextChannel(gameEvent.ChannelId);
-        if (channel is not null && gameEvent.MessageId != 0)
+        // The button lives on the session message, so update it in place. This
+        // acknowledges the interaction without sending a confirmation message.
+        var component = (SocketMessageComponent)Context.Interaction;
+        await component.UpdateAsync(props =>
         {
-            var message = await channel.GetMessageAsync(gameEvent.MessageId) as IUserMessage;
-            if (message is not null)
-            {
-                await message.ModifyAsync(props =>
-                {
-                    props.Embed = ScheduleModule.BuildEventEmbed(updatedEvent!, Context.Guild);
-                    props.Components = ScheduleModule.BuildEventComponents(eventId);
-                });
-            }
-        }
-
-        string feedback = newStatus switch
-        {
-            ParticipantStatus.Joined   => "Tu as rejoint la session ! À bientôt.",
-            ParticipantStatus.Maybe    => "Tu es sur la liste d'attente (peut-être).",
-            ParticipantStatus.Declined => "Tu as décliné la session.",
-            _                          => "Statut mis à jour."
-        };
-        await FollowupAsync(feedback, ephemeral: true);
+            props.Embed = ScheduleModule.BuildEventEmbed(updatedEvent!, Context.Guild);
+            props.Components = ScheduleModule.BuildEventComponents(eventId);
+        });
     }
 }

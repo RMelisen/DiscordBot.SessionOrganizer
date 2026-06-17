@@ -33,12 +33,12 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
 
         var components = new ComponentBuilder().WithSelectMenu(menu).Build();
 
-        await RespondAsync("**1/5** — Quel type de session ?", components: components, ephemeral: true);
+        await RespondAsync("**1/4** — Quel type de session ?", components: components, ephemeral: true);
     }
 
     // ---- Wizard step 2: pick a day ---------------------------------------
 
-    [ComponentInteraction("schedule:cat")]
+    [ComponentInteraction("schedule:cat", ignoreGroupNames: true)]
     public async Task OnCategorySelectedAsync(string[] values)
     {
         var category = values[0];
@@ -46,14 +46,14 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
 
         await component.UpdateAsync(msg =>
         {
-            msg.Content = "**2/5** — Quel jour ?";
+            msg.Content = "**2/4** — Quel jour ?";
             msg.Components = new ComponentBuilder().WithSelectMenu(BuildDaySelect(category)).Build();
         });
     }
 
     // ---- Wizard step 3: pick an hour -------------------------------------
 
-    [ComponentInteraction("schedule:day:*")]
+    [ComponentInteraction("schedule:day:*", ignoreGroupNames: true)]
     public async Task OnDaySelectedAsync(string category, string[] values)
     {
         var date = values[0];
@@ -61,14 +61,14 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
 
         await component.UpdateAsync(msg =>
         {
-            msg.Content = "**3/5** — À quelle heure ?";
+            msg.Content = "**3/4** — À quelle heure ?";
             msg.Components = new ComponentBuilder().WithSelectMenu(BuildHourSelect(category, date)).Build();
         });
     }
 
     // ---- Wizard step 4: pick minutes (optional, defaults to :00) ----------
 
-    [ComponentInteraction("schedule:hour:*:*")]
+    [ComponentInteraction("schedule:hour:*:*", ignoreGroupNames: true)]
     public async Task OnHourSelectedAsync(string category, string date, string[] values)
     {
         var hour = values[0];
@@ -76,35 +76,23 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
 
         var components = new ComponentBuilder()
             .WithSelectMenu(BuildMinuteSelect(category, date, hour))
-            .WithButton("Continuer avec :00", $"schedule:skipmin:{category}:{date}:{hour}", ButtonStyle.Secondary)
             .Build();
 
         await component.UpdateAsync(msg =>
         {
-            msg.Content = $"**4/5** — Minutes ? (ou continue directement à {hour}:00)";
+            msg.Content = "**4/4** — Quelles minutes ?";
             msg.Components = components;
         });
     }
 
-    // ---- Wizard step 5: open the modal for the free-text details ----------
+    // ---- Final step: open the modal for the free-text details -------------
 
-    [ComponentInteraction("schedule:min:*:*:*")]
+    [ComponentInteraction("schedule:min:*:*:*", ignoreGroupNames: true)]
     public async Task OnMinuteSelectedAsync(string category, string date, string hour, string[] values)
     {
         var minute = values[0];
-        await OpenDetailsModalAsync(category, date, hour, minute);
-    }
-
-    [ComponentInteraction("schedule:skipmin:*:*:*")]
-    public async Task OnSkipMinutesAsync(string category, string date, string hour)
-    {
-        await OpenDetailsModalAsync(category, date, hour, "00");
-    }
-
-    private Task OpenDetailsModalAsync(string category, string date, string hour, string minute)
-    {
         // Carry category + chosen datetime through the modal's custom id.
-        return RespondWithModalAsync<ScheduleEventModal>($"schedule:finalize:{category}:{date}T{hour}:{minute}");
+        await RespondWithModalAsync<ScheduleEventModal>($"schedule:finalize:{category}:{date}T{hour}:{minute}");
     }
 
     private static SelectMenuBuilder BuildDaySelect(string category)
@@ -200,17 +188,17 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         await FollowupAsync("La session a été annulée.", ephemeral: true);
     }
 
-    [ModalInteraction("schedule:finalize:*:*")]
+    [ModalInteraction("schedule:finalize:*:*", ignoreGroupNames: true)]
     public async Task OnScheduleModalSubmittedAsync(string categoryStr, string dateTimeStr, ScheduleEventModal modal)
     {
-        await DeferAsync(ephemeral: true);
+        var modalInteraction = (SocketModal)Context.Interaction;
 
         int maxPlayers = 0;
         var maxPlayersInput = modal.MaxPlayers.Trim();
         if (maxPlayersInput.Length > 0 &&
             (!int.TryParse(maxPlayersInput, out maxPlayers) || maxPlayers < 2 || maxPlayers > 67))
         {
-            await FollowupAsync("Le nombre de joueurs doit être un nombre entre 2 et 67.", ephemeral: true);
+            await RespondAsync("Le nombre de participants doit être un nombre entre 2 et 67.", ephemeral: true);
             return;
         }
 
@@ -224,13 +212,13 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
                 DateTimeStyles.AssumeLocal,
                 out var scheduledAt))
         {
-            await FollowupAsync("Date invalide, réessaie.", ephemeral: true);
+            await RespondAsync("Date invalide, réessaie.", ephemeral: true);
             return;
         }
 
         if (scheduledAt <= DateTimeOffset.Now)
         {
-            await FollowupAsync("La session doit être planifiée dans le futur.", ephemeral: true);
+            await RespondAsync("La session doit être planifiée dans le futur.", ephemeral: true);
             return;
         }
 
@@ -250,7 +238,13 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
 
         await _eventService.SetMessageIdAsync(gameEvent.Id, message.Id);
 
-        await FollowupAsync("Ta session a été planifiée !", ephemeral: true);
+        // Dismiss the ephemeral wizard message now that the session exists.
+        await modalInteraction.UpdateAsync(msg =>
+        {
+            msg.Content = "Session créée.";
+            msg.Components = new ComponentBuilder().Build();
+        });
+        await modalInteraction.DeleteOriginalResponseAsync();
     }
 
     public static Embed BuildEventEmbed(SessionEvent gameEvent, IGuild? guild)
@@ -274,8 +268,8 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             .WithTitle(gameEvent.IsCancelled ? $"~~{gameEvent.Title}~~ — ANNULÉ" : $"{categoryLabel} : {gameEvent.Title}")
             .WithColor(gameEvent.IsCancelled ? Color.DarkRed : hasFreeSlot ? Color.Green : Color.Orange)
             .AddField("Quand", $"<t:{ts}:F>", inline: true)
-            .AddField("Places", unlimited ? $"{joined.Count} / ∞" : $"{joined.Count} / {gameEvent.MaxPlayers}", inline: true)
-            .WithFooter($"ID de la session : {gameEvent.Id}  •  Heure affichée dans ton fuseau horaire");
+            .AddField("Participants", unlimited ? $"{joined.Count}" : $"{joined.Count} / {gameEvent.MaxPlayers}", inline: true)
+            .WithFooter($"ID de la session : {gameEvent.Id}");
 
         if (joined.Count > 0)
             eb.AddField($"Participants ({joined.Count})", string.Join("\n", joined.Select(p => $"<@{p.UserId}>")));
