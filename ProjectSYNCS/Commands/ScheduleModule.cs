@@ -73,7 +73,7 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
 
         await component.UpdateAsync(msg =>
         {
-            msg.Content = "**4/4** — Quelles minutes ?";
+            msg.Content = "**4/4** — À quelle heure ?";
             msg.Components = BuildMinuteStep(category, date, hour);
         });
     }
