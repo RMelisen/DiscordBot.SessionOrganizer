@@ -10,7 +10,7 @@ RUN dotnet publish ProjectSYNCS.csproj \
 FROM debian:bookworm-slim AS final
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-       bash jq ca-certificates libssl3 zlib1g \
+       bash jq ca-certificates libssl3 zlib1g libicu72 \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app .

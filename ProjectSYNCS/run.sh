@@ -8,6 +8,5 @@ export Discord__Token="$DISCORD_TOKEN"
 export Discord__RegisterCommandsGlobally="$REGISTER_GLOBALLY"
 export Database__Path="/data/ProjectSYNCS.db"
 export DOTNET_ENVIRONMENT="Production"
-export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 
 exec /app/ProjectSYNCS
