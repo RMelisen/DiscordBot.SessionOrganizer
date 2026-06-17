@@ -53,11 +53,17 @@ public class EventService
     public async Task<List<SessionEvent>> GetActiveEventsAsync(ulong guildId)
     {
         var now = DateTimeOffset.UtcNow;
-        return await _db_context.SessionEvents
+        // SQLite can't translate DateTimeOffset comparisons, so filter the rest
+        // in SQL and compare/sort the dates in memory.
+        var events = await _db_context.SessionEvents
             .Include(e => e.Participants)
-            .Where(e => e.GuildId == guildId && !e.IsCancelled && e.ScheduledAt > now)
-            .OrderBy(e => e.ScheduledAt)
+            .Where(e => e.GuildId == guildId && !e.IsCancelled)
             .ToListAsync();
+
+        return events
+            .Where(e => e.ScheduledAt > now)
+            .OrderBy(e => e.ScheduledAt)
+            .ToList();
     }
 
     public async Task<SessionEvent?> GetEventWithParticipantsAsync(int eventId)
@@ -118,14 +124,16 @@ public class EventService
         var windowStart = DateTimeOffset.UtcNow.AddMinutes(25);
         var windowEnd = DateTimeOffset.UtcNow.AddMinutes(35);
 
-        return await _db_context.SessionEvents
+        // SQLite can't translate DateTimeOffset comparisons; filter flags in SQL
+        // and apply the time window in memory.
+        var candidates = await _db_context.SessionEvents
             .Include(e => e.Participants)
-            .Where(e =>
-                !e.ReminderSent &&
-                !e.IsCancelled &&
-                e.ScheduledAt >= windowStart &&
-                e.ScheduledAt <= windowEnd)
+            .Where(e => !e.ReminderSent && !e.IsCancelled)
             .ToListAsync();
+
+        return candidates
+            .Where(e => e.ScheduledAt >= windowStart && e.ScheduledAt <= windowEnd)
+            .ToList();
     }
 
     public async Task MarkReminderSentAsync(int eventId)

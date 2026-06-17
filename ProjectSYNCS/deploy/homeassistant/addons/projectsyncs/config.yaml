@@ -1,0 +1,17 @@
+name: "ProjectSYNCS"
+description: "Discord session organizer bot"
+version: "1.0.0"
+slug: "projectsyncs"
+init: false
+arch:
+  - aarch64
+startup: services
+boot: auto
+options:
+  discord_token: "PASTE_YOUR_TOKEN_HERE"
+  register_globally: true
+schema:
+  discord_token: str
+  register_globally: bool
+map:
+  - data:rw
