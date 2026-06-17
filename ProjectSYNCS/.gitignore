@@ -1,6 +1,1 @@
-projectsyncs/bin/
-projectsyncs/obj/
-projectsyncs/*.db
-projectsyncs/*.db-shm
-projectsyncs/*.db-wal
-projectsyncs/appsettings.Development.json
+# Handled by root .gitignore

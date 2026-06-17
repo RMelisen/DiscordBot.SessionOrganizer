@@ -37,6 +37,11 @@ coverage*/
 # User-specific settings
 *.rsuser
 
+# SQLite databases
+*.db
+*.db-shm
+*.db-wal
+
 # Secrets & config overrides
 appsettings.Development.json
 appsettings.Local.json
