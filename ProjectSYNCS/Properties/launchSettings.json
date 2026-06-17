@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ProjectSYNCS": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
