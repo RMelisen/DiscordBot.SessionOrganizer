@@ -4,6 +4,7 @@ using Discord.WebSocket;
 using ProjectSYNCS.Interactions.Modals;
 using ProjectSYNCS.Models;
 using ProjectSYNCS.Services;
+using System.Collections.Concurrent;
 using System.Globalization;
 
 namespace ProjectSYNCS.Commands;
@@ -12,6 +13,10 @@ namespace ProjectSYNCS.Commands;
 public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly EventService _eventService;
+
+    // Holds the title a user typed when their modal failed validation, so the
+    // "Corriger" button can reopen the modal pre-filled instead of losing it.
+    private static readonly ConcurrentDictionary<ulong, string> _draftTitles = new();
 
     public ScheduleModule(EventService eventService)
     {
@@ -23,17 +28,8 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
     [SlashCommand("create", "Planifier une nouvelle session")]
     public async Task ScheduleCreateAsync()
     {
-        var menu = new SelectMenuBuilder()
-            .WithCustomId("schedule:cat")
-            .WithPlaceholder("Choisis une catégorie")
-            .AddOption("Jeu", nameof(SessionCategory.Game), emote: new Emoji("🎮"))
-            .AddOption("Activité", nameof(SessionCategory.Activity), emote: new Emoji("🧑‍🤝‍🧑"))
-            .AddOption("Film", nameof(SessionCategory.Movie), emote: new Emoji("🎬"))
-            .AddOption("Autre", nameof(SessionCategory.Other), emote: new Emoji("✨"));
-
-        var components = new ComponentBuilder().WithSelectMenu(menu).Build();
-
-        await RespondAsync("**1/4** — Quel type de session ?", components: components, ephemeral: true);
+        await RespondAsync("**1/4** — Quel type de session ?",
+            components: BuildCategoryStep(), ephemeral: true);
     }
 
     // ---- Wizard step 2: pick a day ---------------------------------------
@@ -47,7 +43,7 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         await component.UpdateAsync(msg =>
         {
             msg.Content = "**2/4** — Quel jour ?";
-            msg.Components = new ComponentBuilder().WithSelectMenu(BuildDaySelect(category)).Build();
+            msg.Components = BuildDayStep(category);
         });
     }
 
@@ -62,7 +58,7 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         await component.UpdateAsync(msg =>
         {
             msg.Content = "**3/4** — À quelle heure ?";
-            msg.Components = new ComponentBuilder().WithSelectMenu(BuildHourSelect(category, date)).Build();
+            msg.Components = BuildHourStep(category, date);
         });
     }
 
@@ -74,14 +70,45 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         var hour = values[0];
         var component = (SocketMessageComponent)Context.Interaction;
 
-        var components = new ComponentBuilder()
-            .WithSelectMenu(BuildMinuteSelect(category, date, hour))
-            .Build();
-
         await component.UpdateAsync(msg =>
         {
             msg.Content = "**4/4** — Quelles minutes ?";
-            msg.Components = components;
+            msg.Components = BuildMinuteStep(category, date, hour);
+        });
+    }
+
+    // ---- "Retour" navigation: rebuild the previous step ------------------
+
+    [ComponentInteraction("schedule:back:cat", ignoreGroupNames: true)]
+    public async Task OnBackToCategoryAsync()
+    {
+        var component = (SocketMessageComponent)Context.Interaction;
+        await component.UpdateAsync(msg =>
+        {
+            msg.Content = "**1/4** — Quel type de session ?";
+            msg.Components = BuildCategoryStep();
+        });
+    }
+
+    [ComponentInteraction("schedule:back:day:*", ignoreGroupNames: true)]
+    public async Task OnBackToDayAsync(string category)
+    {
+        var component = (SocketMessageComponent)Context.Interaction;
+        await component.UpdateAsync(msg =>
+        {
+            msg.Content = "**2/4** — Quel jour ?";
+            msg.Components = BuildDayStep(category);
+        });
+    }
+
+    [ComponentInteraction("schedule:back:hour:*:*", ignoreGroupNames: true)]
+    public async Task OnBackToHourAsync(string category, string date)
+    {
+        var component = (SocketMessageComponent)Context.Interaction;
+        await component.UpdateAsync(msg =>
+        {
+            msg.Content = "**3/4** — À quelle heure ?";
+            msg.Components = BuildHourStep(category, date);
         });
     }
 
@@ -94,6 +121,38 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         // Carry category + chosen datetime through the modal's custom id.
         await RespondWithModalAsync<ScheduleEventModal>($"schedule:finalize:{category}:{date}T{hour}:{minute}");
     }
+
+    // ---- Step component builders (shared by forward + "Retour" paths) -----
+
+    private static MessageComponent BuildCategoryStep() =>
+        new ComponentBuilder().WithSelectMenu(BuildCategorySelect()).Build();
+
+    private static MessageComponent BuildDayStep(string category) =>
+        new ComponentBuilder()
+            .WithSelectMenu(BuildDaySelect(category), row: 0)
+            .WithButton("Retour", "schedule:back:cat", ButtonStyle.Secondary, row: 1)
+            .Build();
+
+    private static MessageComponent BuildHourStep(string category, string date) =>
+        new ComponentBuilder()
+            .WithSelectMenu(BuildHourSelect(category, date), row: 0)
+            .WithButton("Retour", $"schedule:back:day:{category}", ButtonStyle.Secondary, row: 1)
+            .Build();
+
+    private static MessageComponent BuildMinuteStep(string category, string date, string hour) =>
+        new ComponentBuilder()
+            .WithSelectMenu(BuildMinuteSelect(category, date, hour), row: 0)
+            .WithButton("Retour", $"schedule:back:hour:{category}:{date}", ButtonStyle.Secondary, row: 1)
+            .Build();
+
+    private static SelectMenuBuilder BuildCategorySelect() =>
+        new SelectMenuBuilder()
+            .WithCustomId("schedule:cat")
+            .WithPlaceholder("Choisis une catégorie")
+            .AddOption("Jeu", nameof(SessionCategory.Game), emote: new Emoji("🎮"))
+            .AddOption("Activité", nameof(SessionCategory.Activity), emote: new Emoji("🧑‍🤝‍🧑"))
+            .AddOption("Film", nameof(SessionCategory.Movie), emote: new Emoji("🎬"))
+            .AddOption("Autre", nameof(SessionCategory.Other), emote: new Emoji("✨"));
 
     private static SelectMenuBuilder BuildDaySelect(string category)
     {
@@ -153,7 +212,11 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        if (gameEvent.OrganizerId != Context.User.Id)
+        var guildUser = Context.User as SocketGuildUser;
+        bool isAdmin = guildUser is not null &&
+            (guildUser.GuildPermissions.Administrator || guildUser.GuildPermissions.ManageGuild);
+
+        if (gameEvent.OrganizerId != Context.User.Id && !isAdmin)
         {
             await FollowupAsync("Seul l'organisateur peut annuler cette session.", ephemeral: true);
             return;
@@ -198,7 +261,14 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         if (maxPlayersInput.Length > 0 &&
             (!int.TryParse(maxPlayersInput, out maxPlayers) || maxPlayers < 2 || maxPlayers > 67))
         {
-            await RespondAsync("Le nombre de participants doit être un nombre entre 2 et 67.", ephemeral: true);
+            _draftTitles[Context.User.Id] = modal.SessionTitle;
+            await modalInteraction.UpdateAsync(msg =>
+            {
+                msg.Content = "⚠️ Le nombre de participants doit être un nombre entre **2** et **67**.";
+                msg.Components = new ComponentBuilder()
+                    .WithButton("Corriger", $"schedule:retry:{categoryStr}:{dateTimeStr}", ButtonStyle.Primary)
+                    .Build();
+            });
             return;
         }
 
@@ -212,13 +282,21 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
                 DateTimeStyles.AssumeLocal,
                 out var scheduledAt))
         {
-            await RespondAsync("Date invalide, réessaie.", ephemeral: true);
+            await modalInteraction.UpdateAsync(msg =>
+            {
+                msg.Content = "⚠️ Date invalide. Relance `/schedule create`.";
+                msg.Components = new ComponentBuilder().Build();
+            });
             return;
         }
 
         if (scheduledAt <= DateTimeOffset.Now)
         {
-            await RespondAsync("La session doit être planifiée dans le futur.", ephemeral: true);
+            await modalInteraction.UpdateAsync(msg =>
+            {
+                msg.Content = "⚠️ La session doit être planifiée dans le futur. Relance `/schedule create`.";
+                msg.Components = new ComponentBuilder().Build();
+            });
             return;
         }
 
@@ -239,12 +317,31 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         await _eventService.SetMessageIdAsync(gameEvent.Id, message.Id);
 
         // Dismiss the ephemeral wizard message now that the session exists.
+        _draftTitles.TryRemove(Context.User.Id, out _);
         await modalInteraction.UpdateAsync(msg =>
         {
             msg.Content = "Session créée.";
             msg.Components = new ComponentBuilder().Build();
         });
         await modalInteraction.DeleteOriginalResponseAsync();
+    }
+
+    // Reopens the details modal (pre-filled) after a validation error, without
+    // posting anything to the channel.
+    [ComponentInteraction("schedule:retry:*:*", ignoreGroupNames: true)]
+    public async Task OnRetryAsync(string category, string dateTime)
+    {
+        _draftTitles.TryGetValue(Context.User.Id, out var title);
+
+        var modal = new ModalBuilder()
+            .WithTitle("Planifier une session")
+            .WithCustomId($"schedule:finalize:{category}:{dateTime}")
+            .AddTextInput("Nom de la session", "title",
+                placeholder: "ex. Among Us, Gartic, Anime ?", value: title, required: true)
+            .AddTextInput("Nombre de participants max - Optionnel", "max_players", required: false)
+            .Build();
+
+        await RespondWithModalAsync(modal);
     }
 
     public static Embed BuildEventEmbed(SessionEvent gameEvent, IGuild? guild)
@@ -288,7 +385,7 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         return new ComponentBuilder()
             .WithButton("Rejoindre", $"event:join:{eventId}",    ButtonStyle.Success, new Emoji("✅"))
             .WithButton("Peut-être", $"event:sub:{eventId}",     ButtonStyle.Primary, new Emoji("🔄"))
-            .WithButton("Refuser",   $"event:decline:{eventId}", ButtonStyle.Danger,  new Emoji("❌"))
+            .WithButton("Refuser",   $"event:decline:{eventId}", ButtonStyle.Danger,  new Emoji("✖️"))
             .Build();
     }
 }
