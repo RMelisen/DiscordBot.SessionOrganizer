@@ -165,7 +165,8 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             .WithPlaceholder("Choisis le jour");
 
         var today = DateTimeOffset.Now.Date;
-        for (int i = 0; i < 15; i++)
+        // 25 is the hard cap on options in a Discord select menu.
+        for (int i = 0; i < 25; i++)
         {
             var date = today.AddDays(i);
             string label = i switch
