@@ -2,4 +2,3 @@ bin/
 obj/
 *.db
 config.yaml
-run.sh
