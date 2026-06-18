@@ -7,6 +7,9 @@
     <Nullable>enable</Nullable>
     <UserSecretsId>a6081e6e-f145-4869-9f95-9f4f95fc93de</UserSecretsId>
     <InvariantGlobalization>false</InvariantGlobalization>
+    <!-- Single source of truth: pull the version from the HA addon manifest. -->
+    <Version>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)/config.yaml')), 'version:\s*"([^"]+)"').Groups[1].Value)</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>

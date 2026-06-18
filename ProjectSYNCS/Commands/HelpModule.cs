@@ -1,5 +1,6 @@
 using Discord;
 using Discord.Interactions;
+using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Commands;
 
@@ -57,7 +58,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "de la session.")
             .AddField("Bon à savoir",
                 $"• L'**ID** d'une session est affiché en pied de carte, à utiliser avec `/edit` et `/cancel`.\n")
-            .WithFooter("Project S.Y.N.C.S.")
+            .WithFooter($"Project S.Y.N.C.S. v{AppInfo.Version}")
             .Build();
 
         await RespondAsync(embed: embed, ephemeral: true);
