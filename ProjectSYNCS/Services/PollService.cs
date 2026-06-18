@@ -48,6 +48,28 @@ public class PollService
             .FirstOrDefaultAsync(p => p.Id == pollId);
     }
 
+    public async Task<List<Poll>> GetActivePollsAsync(ulong guildId)
+    {
+        var polls = await _db_context.Polls
+            .Include(p => p.Options)
+            .ThenInclude(o => o.Votes)
+            .Where(p => p.GuildId == guildId && !p.IsClosed)
+            .ToListAsync();
+
+        // SQLite can't translate DateTimeOffset ordering; sort in memory.
+        return polls.OrderByDescending(p => p.CreatedAt).ToList();
+    }
+
+    // Used when a poll card is reposted, possibly into a different channel.
+    public async Task SetMessageLocationAsync(int pollId, ulong channelId, ulong messageId)
+    {
+        var poll = await _db_context.Polls.FindAsync(pollId);
+        if (poll is null) return;
+        poll.ChannelId = channelId;
+        poll.MessageId = messageId;
+        await _db_context.SaveChangesAsync();
+    }
+
     // Adds the user's vote for the slot, or removes it if it was already cast
     // (multi-select: a user may vote for any number of slots).
     public async Task<Poll?> ToggleVoteAsync(int pollId, int optionId, ulong userId, string username)

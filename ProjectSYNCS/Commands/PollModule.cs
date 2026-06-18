@@ -156,6 +156,95 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         await component.DeleteOriginalResponseAsync();
     }
 
+    // ---- Listing + republishing active polls -----------------------------
+
+    [SlashCommand("list", "Lister les sondages actifs du serveur")]
+    public async Task PollListAsync()
+    {
+        await DeferAsync(ephemeral: true);
+
+        var polls = await _pollService.GetActivePollsAsync(Context.Guild.Id);
+        if (polls.Count == 0)
+        {
+            await FollowupAsync("Aucun sondage actif pour le moment.", ephemeral: true);
+            return;
+        }
+
+        var sb = new StringBuilder();
+        foreach (var p in polls)
+        {
+            int voters = p.Options.SelectMany(o => o.Votes).Select(v => v.UserId).Distinct().Count();
+            sb.AppendLine($"**#{p.Id}** 📊 {p.Title} — {p.Options.Count} créneaux — 🗳️ {voters} votant(s)");
+        }
+
+        var embed = new EmbedBuilder()
+            .WithTitle($"Sondages actifs ({polls.Count})")
+            .WithDescription(sb.ToString())
+            .WithColor(Color.Purple)
+            .Build();
+
+        // Up to 25 options in a select menu; the list embed still shows all.
+        var menu = new SelectMenuBuilder()
+            .WithCustomId("poll:republish")
+            .WithPlaceholder("Republier un sondage dans ce salon");
+        foreach (var p in polls.Take(25))
+        {
+            string label = $"#{p.Id} — {p.Title}";
+            if (label.Length > 100) label = label[..100];
+            menu.AddOption(label, p.Id.ToString());
+        }
+
+        var components = new ComponentBuilder().WithSelectMenu(menu).Build();
+        await FollowupAsync(embed: embed, components: components, ephemeral: true);
+    }
+
+    [ComponentInteraction("poll:republish", ignoreGroupNames: true)]
+    public async Task OnRepublishAsync(string[] values)
+    {
+        await DeferAsync(ephemeral: true);
+
+        if (!int.TryParse(values[0], out int pollId))
+        {
+            await FollowupAsync("ID de sondage invalide.", ephemeral: true);
+            return;
+        }
+
+        var poll = await _pollService.GetPollWithVotesAsync(pollId);
+        if (poll is null || poll.GuildId != Context.Guild.Id)
+        {
+            await FollowupAsync("Sondage introuvable.", ephemeral: true);
+            return;
+        }
+
+        if (poll.IsClosed)
+        {
+            await FollowupAsync("Ce sondage est clôturé.", ephemeral: true);
+            return;
+        }
+
+        // Remove the previous card if it still exists, to avoid duplicates.
+        if (poll.MessageId != 0)
+        {
+            var oldChannel = Context.Guild.GetTextChannel(poll.ChannelId);
+            if (oldChannel is not null)
+            {
+                try
+                {
+                    var old = await oldChannel.GetMessageAsync(poll.MessageId);
+                    if (old is not null) await old.DeleteAsync();
+                }
+                catch { /* already gone — ignore */ }
+            }
+        }
+
+        var message = await Context.Channel.SendMessageAsync(
+            embed: BuildPollEmbed(poll),
+            components: BuildPollComponents(poll));
+        await _pollService.SetMessageLocationAsync(poll.Id, Context.Channel.Id, message.Id);
+
+        await FollowupAsync($"Sondage **#{pollId}** republié ici.", ephemeral: true);
+    }
+
     // ---- Wizard step builders --------------------------------------------
 
     private static MessageComponent BuildDayStep() =>
