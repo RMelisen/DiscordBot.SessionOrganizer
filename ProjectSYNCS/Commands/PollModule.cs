@@ -212,7 +212,15 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
             .WithCustomId($"poll:hour:{date}")
             .WithPlaceholder("Choisis l'heure");
 
-        for (int h = 0; h < 24; h++)
+        // For today, hide hours already elapsed (past minutes are still guarded
+        // when the slot is finalized).
+        var now = AppTime.Now;
+        int startHour = 0;
+        if (DateTime.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out var parsed) && parsed.Date == now.Date)
+            startHour = now.Hour;
+
+        for (int h = startHour; h < 24; h++)
             menu.AddOption($"{h:D2}h", $"{h:D2}");
 
         return menu;
@@ -242,7 +250,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         {
             int n = o.Votes.Count;
             var ts = o.ScheduledAt.ToUnixTimeSeconds();
-            sb.Append($"{(n == 0 ? "🟥" : "🟩")} <t:{ts}:F> — **{n}** ✅");
+            sb.Append($"{(n == 0 ? "🔴" : "🟢")} <t:{ts}:F> — **{n}** ");
             if (n > 0)
                 sb.Append("  " + string.Join(" ", o.Votes.Select(v => $"<@{v.UserId}>")));
             sb.AppendLine();
@@ -258,10 +266,16 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
 
         if (poll.IsClosed)
         {
-            var winner = ordered.OrderByDescending(o => o.Votes.Count).FirstOrDefault();
-            if (winner is not null && winner.Votes.Count > 0)
-                eb.AddField("Créneau retenu",
-                    $"<t:{winner.ScheduledAt.ToUnixTimeSeconds()}:F> ({winner.Votes.Count} ✅)");
+            int max = ordered.Count == 0 ? 0 : ordered.Max(o => o.Votes.Count);
+            if (max > 0)
+            {
+                var winners = ordered.Where(o => o.Votes.Count == max).ToList();
+                var lines = string.Join("\n",
+                    winners.Select(w => $"<t:{w.ScheduledAt.ToUnixTimeSeconds()}:F>"));
+                eb.AddField(
+                    winners.Count > 1 ? $"Créneaux retenus — égalité ({max} ✅)" : $"Créneau retenu ({max} ✅)",
+                    lines);
+            }
         }
 
         return eb.Build();

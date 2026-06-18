@@ -187,7 +187,15 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             .WithCustomId($"schedule:hour:{category}:{date}")
             .WithPlaceholder("Choisis l'heure");
 
-        for (int h = 0; h < 24; h++)
+        // For today, hide hours already elapsed (past minutes are still guarded
+        // when the session is finalized).
+        var now = AppTime.Now;
+        int startHour = 0;
+        if (DateTime.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out var parsed) && parsed.Date == now.Date)
+            startHour = now.Hour;
+
+        for (int h = startHour; h < 24; h++)
             menu.AddOption($"{h:D2}h", $"{h:D2}");
 
         return menu;
