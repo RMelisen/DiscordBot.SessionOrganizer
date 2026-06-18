@@ -44,6 +44,7 @@ var host = Host.CreateDefaultBuilder(args)
             ServiceLifetime.Transient);
 
         services.AddTransient<EventService>();
+        services.AddTransient<PollService>();
 
         services.AddHostedService<BotService>();
         services.AddHostedService<ReminderService>();

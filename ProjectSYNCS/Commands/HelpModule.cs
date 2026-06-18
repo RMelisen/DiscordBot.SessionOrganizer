@@ -19,6 +19,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/schedule list`** — Affiche les sessions actives du serveur. Tu peux republier une carte dans le salon courant.\n" +
                 "**`/schedule edit <id>`** — Modifie une session que tu as organisée (titre, date, heure, participants max).\n" +
                 "**`/schedule cancel <id>`** — Annule une session que tu as organisée.\n" +
+                "**`/poll create`** — Propose plusieurs créneaux et laisse chacun voter pour ses disponibilités.\n" +
                 "**`/help`** — Affiche ce message.")
             .AddField("Créer une session — pas à pas",
                 "Lance **`/schedule create`**. Un assistant privé te guide :\n" +
@@ -44,6 +45,13 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "• l'**heure** (format `HH:mm`, ex. `20:30`) — c'est ici que tu fixes une heure précise ;\n" +
                 "• le **nombre de participants max** (0 = illimité).\n" +
                 "La carte se met à jour automatiquement après validation.")
+            .AddField("Trouver un créneau — sondage",
+                "Lance **`/poll create`**, donne un titre, puis ajoute des créneaux un par un " +
+                "(jour, heure, minutes) avec le bouton **➕ Ajouter un créneau** (jusqu'à 10), " +
+                "et termine avec **✅ Terminer**.\n" +
+                "Chacun clique ensuite **tous** les créneaux qui lui conviennent (plusieurs choix possibles). " +
+                "L'organisateur clôture avec **🔒 Clôturer** : le créneau le plus voté est mis en avant, " +
+                "à planifier ensuite avec `/schedule create`.")
             .AddField("Rappels",
                 "Les participants inscrits reçoivent un rappel en message privé avant le début " +
                 "de la session.")
