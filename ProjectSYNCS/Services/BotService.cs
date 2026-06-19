@@ -118,7 +118,7 @@ public class BotService : IHostedService
         "{0}, tu es aussi pertinent qu'un message d'erreur 404. Mais au moins, le 404, lui, il a une utilité (ᵕ • ᴗ •)",
         "{0}, j'ai cherché ton intérêt dans la base de données. 0 résultat.",
         "Si {0} était une commande, ce serait /help. Et personne la lit.",
-        "{0}, tes réponses ont le même impact qu'un sondage sans votant.",
+        "Quokka 3.0 sortira avant que tu ne deviennes marrant toi.",
         "Patience {0}, un jour tu diras un truc intéressant. Statistiquement.",
         "Bip boop {0}, mon analyse est terminée : tu es pas intéressant UwU"
     };
