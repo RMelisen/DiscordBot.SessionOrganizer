@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Net;
 using Discord.WebSocket;
+using ProjectSYNCS.Commands;
 using ProjectSYNCS.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -35,6 +36,58 @@ public class ReminderService : BackgroundService
         {
             await Task.Delay(CheckInterval, stoppingToken);
             await ProcessRemindersAsync();
+            await ProcessLifecycleAsync();
+        }
+    }
+
+    // Advances session cards through their lifecycle (En cours -> Terminée) and
+    // disables their buttons once they start.
+    private async Task ProcessLifecycleAsync()
+    {
+        await using var scope = _services.CreateAsyncScope();
+        var eventService = scope.ServiceProvider.GetRequiredService<EventService>();
+
+        List<SessionEvent> events;
+        try
+        {
+            events = await eventService.GetEventsNeedingLifecycleUpdateAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to query events for lifecycle updates.");
+            return;
+        }
+
+        foreach (var sessionEvent in events)
+        {
+            var phase = sessionEvent.PhaseAt(DateTimeOffset.UtcNow);
+            await UpdateCardAsync(sessionEvent);
+            await eventService.SetRenderedPhaseAsync(sessionEvent.Id, phase);
+        }
+    }
+
+    private async Task UpdateCardAsync(SessionEvent sessionEvent)
+    {
+        if (sessionEvent.MessageId == 0) return;
+
+        try
+        {
+            var guild = _client.GetGuild(sessionEvent.GuildId);
+            var channel = guild?.GetTextChannel(sessionEvent.ChannelId);
+            if (channel is null) return;
+
+            if (await channel.GetMessageAsync(sessionEvent.MessageId) is not IUserMessage message)
+                return;
+
+            await message.ModifyAsync(props =>
+            {
+                props.Embed = ScheduleModule.BuildEventEmbed(sessionEvent, guild);
+                props.Components = ScheduleModule.BuildEventComponents(sessionEvent);
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to update lifecycle card for event {EventId}.", sessionEvent.Id);
         }
     }
 
@@ -92,7 +145,8 @@ public class ReminderService : BackgroundService
                 };
 
                 await dm.SendMessageAsync(
-                    $"Kilou kilou {user.Mention}! Rappel: **{sessionEvent.Title}** va commencer dans " +
+                    $"Kilou kilou {user.Mention}! (˶>⩊<˶)\n" +
+                    $"Rappel: **{sessionEvent.Title}** va commencer dans " +
                     $"<t:{ts}:R> (<t:{ts}:t>). Tiens toi prêt ! UwU");
             }
             catch (HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)

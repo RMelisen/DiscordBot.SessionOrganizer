@@ -58,6 +58,11 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .AddField("Rappels",
                 "Les participants inscrits reçoivent un rappel en message privé avant le début " +
                 "de la session.")
+            .AddField("Cycle de vie d'une session",
+                "À l'heure prévue, la carte passe en **🔴 EN COURS** (les boutons sont désactivés), " +
+                "puis en **✅ TERMINÉE** environ 2 h plus tard.\n" +
+                "Si une session est **annulée**, les participants inscrits (Rejoindre / Peut-être) " +
+                "reçoivent un message privé.")
             .AddField("Bon à savoir",
                 $"• L'**ID** d'une session est affiché en pied de carte, à utiliser avec `/edit` et `/cancel`.\n")
             .WithFooter($"Project S.Y.N.C.S. v{AppInfo.Version}")

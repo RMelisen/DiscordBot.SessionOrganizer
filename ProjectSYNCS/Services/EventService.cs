@@ -143,4 +143,29 @@ public class EventService
         evt.ReminderSent = true;
         await _db_context.SaveChangesAsync();
     }
+
+    // Events whose lifecycle phase (Scheduled -> InProgress -> Finished) has moved
+    // past what was last rendered on their card. Already-finished and cancelled
+    // events are skipped. SQLite can't translate DateTimeOffset comparisons, so the
+    // phase is computed in memory.
+    public async Task<List<SessionEvent>> GetEventsNeedingLifecycleUpdateAsync()
+    {
+        var candidates = await _db_context.SessionEvents
+            .Include(e => e.Participants)
+            .Where(e => !e.IsCancelled && e.RenderedPhase != SessionPhase.Finished)
+            .ToListAsync();
+
+        var now = DateTimeOffset.UtcNow;
+        return candidates
+            .Where(e => e.PhaseAt(now) != e.RenderedPhase)
+            .ToList();
+    }
+
+    public async Task SetRenderedPhaseAsync(int eventId, SessionPhase phase)
+    {
+        var evt = await _db_context.SessionEvents.FindAsync(eventId);
+        if (evt is null) return;
+        evt.RenderedPhase = phase;
+        await _db_context.SaveChangesAsync();
+    }
 }

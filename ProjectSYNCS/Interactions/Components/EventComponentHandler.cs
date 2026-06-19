@@ -66,6 +66,8 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
             props.Embed = ScheduleModule.BuildEventEmbed(gameEvent, Context.Guild);
             props.Components = new ComponentBuilder().Build();
         });
+
+        await SessionNotifier.NotifyCancelledAsync(Context.Client, gameEvent);
     }
 
     [ComponentInteraction("event:edit:*")]
@@ -150,7 +152,7 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
         await component.UpdateAsync(props =>
         {
             props.Embed = ScheduleModule.BuildEventEmbed(updatedEvent!, Context.Guild);
-            props.Components = ScheduleModule.BuildEventComponents(eventId);
+            props.Components = ScheduleModule.BuildEventComponents(updatedEvent!);
         });
     }
 }

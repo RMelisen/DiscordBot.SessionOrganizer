@@ -282,7 +282,7 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         var embed = BuildEventEmbed(gameEvent, Context.Guild);
-        var components = BuildEventComponents(gameEvent.Id);
+        var components = BuildEventComponents(gameEvent);
         var message = await Context.Channel.SendMessageAsync(embed: embed, components: components);
         await _eventService.SetMessageLocationAsync(gameEvent.Id, Context.Channel.Id, message.Id);
 
@@ -322,6 +322,7 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         await _eventService.CancelEventAsync(eventId);
+        gameEvent.IsCancelled = true;
 
         if (gameEvent.MessageId != 0)
         {
@@ -331,7 +332,6 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
                 var message = await channel.GetMessageAsync(gameEvent.MessageId) as IUserMessage;
                 if (message is not null)
                 {
-                    gameEvent.IsCancelled = true;
                     await message.ModifyAsync(props =>
                     {
                         props.Embed = BuildEventEmbed(gameEvent, Context.Guild);
@@ -341,7 +341,9 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             }
         }
 
-        await FollowupAsync("La session a été annulée.", ephemeral: true);
+        await SessionNotifier.NotifyCancelledAsync(Context.Client, gameEvent);
+
+        await FollowupAsync("La session a été annulée. Les participants ont été prévenus.", ephemeral: true);
     }
 
     [SlashCommand("edit", "Modifier une session que tu as organisée")]
@@ -426,7 +428,7 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
                 await message.ModifyAsync(props =>
                 {
                     props.Embed = BuildEventEmbed(updated, Context.Guild);
-                    props.Components = BuildEventComponents(updated.Id);
+                    props.Components = BuildEventComponents(updated);
                 });
             }
         }
@@ -504,7 +506,7 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             maxPlayers: maxPlayers);
 
         var embed = BuildEventEmbed(gameEvent, Context.Guild);
-        var components = BuildEventComponents(gameEvent.Id);
+        var components = BuildEventComponents(gameEvent);
 
         var message = await Context.Channel.SendMessageAsync(embed: embed, components: components);
 
@@ -555,9 +557,33 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             _                        => "✨ Autre"
         };
 
+        string title;
+        Color color;
+        if (gameEvent.IsCancelled)
+        {
+            title = $"~~{gameEvent.Title}~~ — ANNULÉ";
+            color = Color.DarkRed;
+        }
+        else
+        {
+            var phase = gameEvent.PhaseAt(DateTimeOffset.UtcNow);
+            title = phase switch
+            {
+                SessionPhase.InProgress => $"🔴 EN COURS — {categoryLabel} : {gameEvent.Title}",
+                SessionPhase.Finished   => $"✅ TERMINÉE — {categoryLabel} : {gameEvent.Title}",
+                _                       => $"{categoryLabel} : {gameEvent.Title}"
+            };
+            color = phase switch
+            {
+                SessionPhase.InProgress => Color.Gold,
+                SessionPhase.Finished   => Color.DarkGrey,
+                _                       => hasFreeSlot ? Color.Green : Color.Orange
+            };
+        }
+
         var eb = new EmbedBuilder()
-            .WithTitle(gameEvent.IsCancelled ? $"~~{gameEvent.Title}~~ — ANNULÉ" : $"{categoryLabel} : {gameEvent.Title}")
-            .WithColor(gameEvent.IsCancelled ? Color.DarkRed : hasFreeSlot ? Color.Green : Color.Orange)
+            .WithTitle(title)
+            .WithColor(color)
             .AddField("Quand", $"<t:{ts}:F>", inline: true)
             .AddField("Participants", unlimited ? $"{joined.Count}" : $"{joined.Count} / {gameEvent.MaxPlayers}", inline: true)
             .WithFooter($"ID de la session : {gameEvent.Id}");
@@ -574,8 +600,13 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         return eb.Build();
     }
 
-    public static MessageComponent BuildEventComponents(int eventId)
+    public static MessageComponent BuildEventComponents(SessionEvent gameEvent)
     {
+        // No actions once the session is cancelled or has already started.
+        if (gameEvent.IsCancelled || gameEvent.PhaseAt(DateTimeOffset.UtcNow) != SessionPhase.Scheduled)
+            return new ComponentBuilder().Build();
+
+        int eventId = gameEvent.Id;
         return new ComponentBuilder()
             .WithButton("Rejoindre", $"event:join:{eventId}",    ButtonStyle.Success, new Emoji("✅"), row: 0)
             .WithButton("Peut-être", $"event:sub:{eventId}",     ButtonStyle.Primary, new Emoji("🔄"), row: 0)
