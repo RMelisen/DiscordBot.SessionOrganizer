@@ -32,10 +32,25 @@ public class VoteModule : InteractionModuleBase<SocketInteractionContext>
         _pollService = pollService;
     }
 
-    // ---- Entry: ask for a title, then add options one by one --------------
+    // ---- Entry: the slash command owns the wizard message ----------------
+    // The wizard message is created here (by the slash command) and only ever
+    // *updated* afterwards. Creating it from a modal response instead caused the
+    // first option-add update to be dropped.
 
     [SlashCommand("create", "Proposer plusieurs options (texte) et laisser voter")]
     public async Task VoteCreateAsync()
+    {
+        _drafts.TryRemove(Context.User.Id, out _);
+        await RespondAsync(
+            "**Nouveau vote**\nClique sur **Définir le titre** pour commencer.",
+            components: new ComponentBuilder()
+                .WithButton("Définir le titre", "vote:begin", ButtonStyle.Primary, new Emoji("📝"))
+                .Build(),
+            ephemeral: true);
+    }
+
+    [ComponentInteraction("vote:begin", ignoreGroupNames: true)]
+    public async Task OnBeginAsync()
     {
         await RespondWithModalAsync<VoteStartModal>("vote:start");
     }
@@ -45,8 +60,13 @@ public class VoteModule : InteractionModuleBase<SocketInteractionContext>
     {
         var draft = new VoteDraft { Title = modal.PollTitle.Trim() };
         _drafts[Context.User.Id] = draft;
-        await RespondAsync(BuildDraftSummary(draft),
-            components: BuildReviewStep(draft), ephemeral: true);
+
+        var component = (SocketModal)Context.Interaction;
+        await component.UpdateAsync(msg =>
+        {
+            msg.Content = BuildDraftSummary(draft);
+            msg.Components = BuildReviewStep(draft);
+        });
     }
 
     [ComponentInteraction("vote:add", ignoreGroupNames: true)]
