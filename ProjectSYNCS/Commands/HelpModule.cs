@@ -52,8 +52,9 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "(jour, heure, minutes) avec le bouton **➕ Ajouter un créneau** (jusqu'à 10), " +
                 "et termine avec **✅ Terminer**.\n" +
                 "Chacun clique ensuite **tous** les créneaux qui lui conviennent (plusieurs choix possibles). " +
-                "L'organisateur clôture avec **🔒 Clôturer** : le créneau le plus voté est mis en avant, " +
-                "à planifier ensuite avec `/schedule create`.")
+                "L'organisateur clôture avec **🔒 Clôturer** : le créneau le plus voté est mis en avant. " +
+                "Une fois clôturé, le bouton **🗓️ Créer une session** transforme directement le créneau " +
+                "retenu en session (en cas d'égalité, tu choisis lequel).")
             .AddField("Rappels",
                 "Les participants inscrits reçoivent un rappel en message privé avant le début " +
                 "de la session.")

@@ -24,6 +24,11 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
     // being carried through component custom ids.
     private static readonly ConcurrentDictionary<ulong, PollDraft> _drafts = new();
 
+    // When converting a closed poll into a session, holds the poll title so the
+    // schedule modal can be pre-filled with it (the title is too free-form to
+    // carry safely through a component custom id).
+    private static readonly ConcurrentDictionary<ulong, string> _toSessionTitles = new();
+
     private sealed class PollDraft
     {
         public string Title { get; init; } = string.Empty;
@@ -245,6 +250,125 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         await FollowupAsync($"Sondage **#{pollId}** republié ici.", ephemeral: true);
     }
 
+    // ---- Poll -> Session: turn the chosen slot into a real session -------
+
+    [ComponentInteraction("poll:tosession:*", ignoreGroupNames: true)]
+    public async Task OnToSessionAsync(string pollIdStr)
+    {
+        if (!int.TryParse(pollIdStr, out int pollId))
+        {
+            await RespondAsync("Sondage invalide.", ephemeral: true);
+            return;
+        }
+
+        var poll = await _pollService.GetPollWithVotesAsync(pollId);
+        if (poll is null || poll.GuildId != Context.Guild.Id)
+        {
+            await RespondAsync("Sondage introuvable.", ephemeral: true);
+            return;
+        }
+
+        if (!SessionPermissions.CanManage(Context.User, poll))
+        {
+            await RespondAsync(
+                "Seul l'organisateur ou un administrateur peut créer une session depuis ce sondage.",
+                ephemeral: true);
+            return;
+        }
+
+        var now = DateTimeOffset.Now;
+        var futureSlots = poll.Options.Where(o => o.ScheduledAt > now).ToList();
+        if (futureSlots.Count == 0)
+        {
+            await RespondAsync("Tous les créneaux de ce sondage sont déjà passés.", ephemeral: true);
+            return;
+        }
+
+        // Pre-fill the future modal's title with the poll's title.
+        _toSessionTitles[Context.User.Id] = poll.Title;
+
+        int max = futureSlots.Max(o => o.Votes.Count);
+        var winners = max > 0
+            ? futureSlots.Where(o => o.Votes.Count == max).OrderBy(o => o.ScheduledAt).ToList()
+            : futureSlots.OrderBy(o => o.ScheduledAt).ToList();
+
+        // A single clear winner skips straight to category selection.
+        if (max > 0 && winners.Count == 1)
+        {
+            var datetime = AppTime.ToZoned(winners[0].ScheduledAt).ToString("yyyy-MM-ddTHH:mm");
+            await RespondAsync(
+                $"Créneau retenu : <t:{winners[0].ScheduledAt.ToUnixTimeSeconds()}:F>\n**Quel type de session ?**",
+                components: BuildSessionCategoryStep(datetime), ephemeral: true);
+            return;
+        }
+
+        // Tie (or no votes at all): let the organizer pick which slot to schedule.
+        await RespondAsync(
+            max > 0
+                ? "Égalité entre plusieurs créneaux — **choisis celui à planifier** :"
+                : "Aucun vote — **choisis le créneau à planifier** :",
+            components: BuildSlotPickStep(winners), ephemeral: true);
+    }
+
+    [ComponentInteraction("poll:slotpick", ignoreGroupNames: true)]
+    public async Task OnSlotPickAsync(string[] values)
+    {
+        var datetime = values[0];
+        var component = (SocketMessageComponent)Context.Interaction;
+        await component.UpdateAsync(msg =>
+        {
+            msg.Content = "**Quel type de session ?**";
+            msg.Components = BuildSessionCategoryStep(datetime);
+        });
+    }
+
+    [ComponentInteraction("poll:catpick:*", ignoreGroupNames: true)]
+    public async Task OnCategoryPickedAsync(string datetime, string[] values)
+    {
+        var category = values[0];
+        _toSessionTitles.TryRemove(Context.User.Id, out var title);
+
+        // Reuses the existing "schedule:finalize:*:*" modal handler, which creates
+        // the session and publishes the card in this channel.
+        var modal = new ModalBuilder()
+            .WithTitle("Planifier une session")
+            .WithCustomId($"schedule:finalize:{category}:{datetime}")
+            .AddTextInput("Nom de la session", "title",
+                placeholder: "ex. Among Us, Gartic, Anime ?", value: title, required: true)
+            .AddTextInput("Nombre de participants max - Optionnel", "max_players", required: false)
+            .Build();
+
+        await RespondWithModalAsync(modal);
+    }
+
+    private static MessageComponent BuildSlotPickStep(List<PollOption> slots)
+    {
+        var menu = new SelectMenuBuilder()
+            .WithCustomId("poll:slotpick")
+            .WithPlaceholder("Choisis le créneau");
+        // 25 is the hard cap on options in a Discord select menu.
+        foreach (var o in slots.Take(25))
+        {
+            var datetime = AppTime.ToZoned(o.ScheduledAt).ToString("yyyy-MM-ddTHH:mm");
+            string label = ShortLabel(o.ScheduledAt);
+            if (o.Votes.Count > 0) label += $" — {o.Votes.Count} vote(s)";
+            menu.AddOption(label, datetime);
+        }
+        return new ComponentBuilder().WithSelectMenu(menu).Build();
+    }
+
+    private static MessageComponent BuildSessionCategoryStep(string datetime)
+    {
+        var menu = new SelectMenuBuilder()
+            .WithCustomId($"poll:catpick:{datetime}")
+            .WithPlaceholder("Choisis une catégorie")
+            .AddOption("Jeu", nameof(SessionCategory.Game), emote: new Emoji("🎮"))
+            .AddOption("Activité", nameof(SessionCategory.Activity), emote: new Emoji("🧑‍🤝‍🧑"))
+            .AddOption("Film", nameof(SessionCategory.Movie), emote: new Emoji("🎬"))
+            .AddOption("Autre", nameof(SessionCategory.Other), emote: new Emoji("✨"));
+        return new ComponentBuilder().WithSelectMenu(menu).Build();
+    }
+
     // ---- Wizard step builders --------------------------------------------
 
     private static MessageComponent BuildDayStep() =>
@@ -374,7 +498,14 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
     {
         var builder = new ComponentBuilder();
         if (poll.IsClosed)
+        {
+            // Offer to turn the chosen slot into a real session, as long as at
+            // least one proposed slot is still in the future.
+            if (poll.Options.Any(o => o.ScheduledAt > DateTimeOffset.Now))
+                builder.WithButton("Créer une session", $"poll:tosession:{poll.Id}",
+                    ButtonStyle.Success, new Emoji("🗓️"));
             return builder.Build();
+        }
 
         var ordered = poll.Options.OrderBy(o => o.ScheduledAt).ToList();
 
