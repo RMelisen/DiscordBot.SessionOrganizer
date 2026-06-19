@@ -30,7 +30,7 @@ public static class SessionNotifier
 
                 var dm = await user.CreateDMChannelAsync();
                 await dm.SendMessageAsync(
-                    $"La session **{sessionEvent.Title}** prévue à <t:{ts}:F> (<t:{ts}:R>) a été annulée.\n" +
+                    $"La session **{sessionEvent.Title}** prévue <t:{ts}:F> (<t:{ts}:R>) a été annulée.\n" +
                     $"Mais, c'est pas grave ! (ง ͠ಥ_ಥ)ง");
             }
             catch (HttpException ex) when (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
