@@ -32,6 +32,27 @@ public class PollService
         return poll;
     }
 
+    public async Task<Poll> CreateTextPollAsync(
+        ulong guildId, ulong channelId, ulong organizerId,
+        string title, IEnumerable<string> labels)
+    {
+        var poll = new Poll
+        {
+            GuildId = guildId,
+            ChannelId = channelId,
+            OrganizerId = organizerId,
+            Title = title,
+            Kind = PollKind.Text
+        };
+        // Preserve the order in which the options were entered.
+        foreach (var label in labels)
+            poll.Options.Add(new PollOption { Label = label });
+
+        _db_context.Polls.Add(poll);
+        await _db_context.SaveChangesAsync();
+        return poll;
+    }
+
     public async Task SetMessageIdAsync(int pollId, ulong messageId)
     {
         var poll = await _db_context.Polls.FindAsync(pollId);
@@ -48,12 +69,12 @@ public class PollService
             .FirstOrDefaultAsync(p => p.Id == pollId);
     }
 
-    public async Task<List<Poll>> GetActivePollsAsync(ulong guildId)
+    public async Task<List<Poll>> GetActivePollsAsync(ulong guildId, PollKind kind)
     {
         var polls = await _db_context.Polls
             .Include(p => p.Options)
             .ThenInclude(o => o.Votes)
-            .Where(p => p.GuildId == guildId && !p.IsClosed)
+            .Where(p => p.GuildId == guildId && p.Kind == kind && !p.IsClosed)
             .ToListAsync();
 
         // SQLite can't translate DateTimeOffset ordering; sort in memory.

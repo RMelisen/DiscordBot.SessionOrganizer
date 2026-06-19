@@ -1,5 +1,13 @@
 namespace ProjectSYNCS.Models;
 
+public enum PollKind
+{
+    // Options are date/time slots, rendered as <t:...> timestamps (/poll).
+    DateSlots,
+    // Options are free-text labels, e.g. game or movie names (/vote).
+    Text
+}
+
 public class Poll
 {
     public int Id { get; set; }
@@ -10,6 +18,7 @@ public class Poll
     public ulong OrganizerId { get; set; }
 
     public string Title { get; set; } = string.Empty;
+    public PollKind Kind { get; set; } = PollKind.DateSlots;
     public bool IsClosed { get; set; } = false;
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
@@ -22,7 +31,10 @@ public class PollOption
     public int Id { get; set; }
     public int PollId { get; set; }
 
+    // Used by DateSlots polls.
     public DateTimeOffset ScheduledAt { get; set; }
+    // Used by Text polls.
+    public string Label { get; set; } = string.Empty;
 
     public Poll Poll { get; set; } = null!;
     public List<PollVote> Votes { get; set; } = new();

@@ -22,6 +22,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/schedule cancel <id>`** — Annule une session que tu as organisée.\n" +
                 "**`/poll create`** — Propose plusieurs créneaux et laisse chacun voter pour ses disponibilités.\n" +
                 "**`/poll list`** — Affiche les sondages actifs du serveur. Tu peux en republier un dans le salon courant.\n" +
+                "**`/vote create`** — Propose plusieurs options en texte (jeux, films…) et laisse chacun voter.\n" +
+                "**`/vote list`** — Affiche les votes actifs du serveur. Tu peux en republier un dans le salon courant.\n" +
                 "**`/help`** — Affiche ce message.")
             .AddField("Créer une session — pas à pas",
                 "Lance **`/schedule create`**. Un assistant privé te guide :\n" +
@@ -55,6 +57,12 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "L'organisateur clôture avec **🔒 Clôturer** : le créneau le plus voté est mis en avant. " +
                 "Une fois clôturé, le bouton **🗓️ Créer une session** transforme directement le créneau " +
                 "retenu en session (en cas d'égalité, tu choisis lequel).")
+            .AddField("Choisir une option — vote",
+                "Lance **`/vote create`**, donne un titre, puis ajoute des options en texte une par une " +
+                "(jeux, films, activités…) avec le bouton **➕ Ajouter une option** (jusqu'à 10), " +
+                "et termine avec **✅ Terminer**.\n" +
+                "Chacun clique ensuite **toutes** les options qui lui conviennent (plusieurs choix possibles). " +
+                "L'organisateur clôture avec **🔒 Clôturer** : l'option la plus votée est mise en avant.")
             .AddField("Rappels",
                 "Les participants inscrits reçoivent un rappel en message privé avant le début " +
                 "de la session.")

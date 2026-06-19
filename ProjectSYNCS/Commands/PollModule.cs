@@ -168,7 +168,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
     {
         await DeferAsync(ephemeral: true);
 
-        var polls = await _pollService.GetActivePollsAsync(Context.Guild.Id);
+        var polls = await _pollService.GetActivePollsAsync(Context.Guild.Id, PollKind.DateSlots);
         if (polls.Count == 0)
         {
             await FollowupAsync("Aucun sondage actif pour le moment.", ephemeral: true);
@@ -456,14 +456,20 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
 
     public static Embed BuildPollEmbed(Poll poll)
     {
-        var ordered = poll.Options.OrderBy(o => o.ScheduledAt).ToList();
+        bool isText = poll.Kind == PollKind.Text;
+        var ordered = isText
+            ? poll.Options.OrderBy(o => o.Id).ToList()
+            : poll.Options.OrderBy(o => o.ScheduledAt).ToList();
+
+        // How a single option is rendered in the body / winner field.
+        string OptionText(PollOption o) =>
+            isText ? $"**{o.Label}**" : $"<t:{o.ScheduledAt.ToUnixTimeSeconds()}:F>";
 
         var sb = new StringBuilder();
         foreach (var o in ordered)
         {
             int n = o.Votes.Count;
-            var ts = o.ScheduledAt.ToUnixTimeSeconds();
-            sb.Append($"{(n == 0 ? "🔴" : "🟢")} <t:{ts}:F> — **{n}** ");
+            sb.Append($"{(n == 0 ? "🔴" : "🟢")} {OptionText(o)} — **{n}** ");
             if (n > 0)
                 sb.Append("  " + string.Join(" ", o.Votes.Select(v => $"<@{v.UserId}>")));
             sb.AppendLine();
@@ -475,7 +481,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
             .WithColor(poll.IsClosed ? Color.DarkGrey : Color.Purple)
             .WithFooter(poll.IsClosed
                 ? $"Sondage clôturé · ID {poll.Id}"
-                : $"Clique tous les créneaux qui te conviennent · ID {poll.Id}");
+                : $"Clique toutes les options qui te conviennent · ID {poll.Id}");
 
         if (poll.IsClosed)
         {
@@ -483,10 +489,9 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
             if (max > 0)
             {
                 var winners = ordered.Where(o => o.Votes.Count == max).ToList();
-                var lines = string.Join("\n",
-                    winners.Select(w => $"<t:{w.ScheduledAt.ToUnixTimeSeconds()}:F>"));
+                var lines = string.Join("\n", winners.Select(OptionText));
                 eb.AddField(
-                    winners.Count > 1 ? $"Créneaux retenus — égalité ({max} ✅)" : $"Créneau retenu ({max} ✅)",
+                    winners.Count > 1 ? $"Options retenues — égalité ({max} ✅)" : $"Option retenue ({max} ✅)",
                     lines);
             }
         }
@@ -496,24 +501,30 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
 
     public static MessageComponent BuildPollComponents(Poll poll)
     {
+        bool isText = poll.Kind == PollKind.Text;
         var builder = new ComponentBuilder();
         if (poll.IsClosed)
         {
-            // Offer to turn the chosen slot into a real session, as long as at
-            // least one proposed slot is still in the future.
-            if (poll.Options.Any(o => o.ScheduledAt > DateTimeOffset.Now))
+            // Date polls can be turned into a real session, as long as at least one
+            // proposed slot is still in the future. Text polls have no such action.
+            if (!isText && poll.Options.Any(o => o.ScheduledAt > DateTimeOffset.Now))
                 builder.WithButton("Créer une session", $"poll:tosession:{poll.Id}",
                     ButtonStyle.Success, new Emoji("🗓️"));
             return builder.Build();
         }
 
-        var ordered = poll.Options.OrderBy(o => o.ScheduledAt).ToList();
+        var ordered = isText
+            ? poll.Options.OrderBy(o => o.Id).ToList()
+            : poll.Options.OrderBy(o => o.ScheduledAt).ToList();
 
         // Up to 5 vote buttons per row; MaxOptions (10) fits in rows 0-1.
         int row = 0, inRow = 0;
         foreach (var o in ordered)
         {
-            builder.WithButton(ShortLabel(o.ScheduledAt), $"poll:vote:{poll.Id}:{o.Id}", ButtonStyle.Secondary, row: row);
+            // Discord caps button labels at 80 characters.
+            string label = isText ? o.Label : ShortLabel(o.ScheduledAt);
+            if (label.Length > 80) label = label[..77] + "…";
+            builder.WithButton(label, $"poll:vote:{poll.Id}:{o.Id}", ButtonStyle.Secondary, row: row);
             if (++inRow == 5) { inRow = 0; row++; }
         }
 
