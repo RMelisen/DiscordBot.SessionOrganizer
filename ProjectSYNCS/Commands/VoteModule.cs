@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Interactions.Modals;
 using ProjectSYNCS.Models;
 using ProjectSYNCS.Services;
@@ -183,6 +184,43 @@ public class VoteModule : InteractionModuleBase<SocketInteractionContext>
 
         var components = new ComponentBuilder().WithSelectMenu(menu).Build();
         await FollowupAsync(embed: embed, components: components, ephemeral: true);
+    }
+
+    [SlashCommand("delete", "Supprimer un vote que tu as créé")]
+    public async Task VoteDeleteAsync([Summary("vote-id", "L'ID affiché dans le pied du vote")] int voteId)
+    {
+        await DeferAsync(ephemeral: true);
+
+        var poll = await _pollService.GetPollWithVotesAsync(voteId);
+        if (poll is null || poll.GuildId != Context.Guild.Id || poll.Kind != PollKind.Text)
+        {
+            await FollowupAsync("Vote introuvable.", ephemeral: true);
+            return;
+        }
+
+        if (!SessionPermissions.CanManage(Context.User, poll))
+        {
+            await FollowupAsync("Seul l'organisateur ou un administrateur peut supprimer ce vote.", ephemeral: true);
+            return;
+        }
+
+        // Remove the card if it still exists.
+        if (poll.MessageId != 0)
+        {
+            var channel = Context.Guild.GetTextChannel(poll.ChannelId);
+            if (channel is not null)
+            {
+                try
+                {
+                    var msg = await channel.GetMessageAsync(poll.MessageId);
+                    if (msg is not null) await msg.DeleteAsync();
+                }
+                catch { /* already gone — ignore */ }
+            }
+        }
+
+        await _pollService.DeletePollAsync(voteId);
+        await FollowupAsync($"Vote **#{voteId}** supprimé.", ephemeral: true);
     }
 
     // ---- Wizard helpers --------------------------------------------------

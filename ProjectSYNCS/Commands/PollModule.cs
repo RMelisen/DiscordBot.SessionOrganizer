@@ -250,6 +250,43 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         await FollowupAsync($"Sondage **#{pollId}** republié ici.", ephemeral: true);
     }
 
+    [SlashCommand("delete", "Supprimer un sondage que tu as créé")]
+    public async Task PollDeleteAsync([Summary("poll-id", "L'ID affiché dans le pied du sondage")] int pollId)
+    {
+        await DeferAsync(ephemeral: true);
+
+        var poll = await _pollService.GetPollWithVotesAsync(pollId);
+        if (poll is null || poll.GuildId != Context.Guild.Id || poll.Kind != PollKind.DateSlots)
+        {
+            await FollowupAsync("Sondage introuvable.", ephemeral: true);
+            return;
+        }
+
+        if (!SessionPermissions.CanManage(Context.User, poll))
+        {
+            await FollowupAsync("Seul l'organisateur ou un administrateur peut supprimer ce sondage.", ephemeral: true);
+            return;
+        }
+
+        // Remove the card if it still exists.
+        if (poll.MessageId != 0)
+        {
+            var channel = Context.Guild.GetTextChannel(poll.ChannelId);
+            if (channel is not null)
+            {
+                try
+                {
+                    var msg = await channel.GetMessageAsync(poll.MessageId);
+                    if (msg is not null) await msg.DeleteAsync();
+                }
+                catch { /* already gone — ignore */ }
+            }
+        }
+
+        await _pollService.DeletePollAsync(pollId);
+        await FollowupAsync($"Sondage **#{pollId}** supprimé.", ephemeral: true);
+    }
+
     // ---- Poll -> Session: turn the chosen slot into a real session -------
 
     [ComponentInteraction("poll:tosession:*", ignoreGroupNames: true)]

@@ -22,8 +22,10 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/schedule cancel <id>`** — Annule une session que tu as organisée.\n" +
                 "**`/poll create`** — Propose plusieurs créneaux et laisse chacun voter pour ses disponibilités.\n" +
                 "**`/poll list`** — Affiche les sondages actifs du serveur. Tu peux en republier un dans le salon courant.\n" +
+                "**`/poll delete <id>`** — Supprime un sondage que tu as créé.\n" +
                 "**`/vote create`** — Propose plusieurs options en texte (jeux, films…) et laisse chacun voter.\n" +
                 "**`/vote list`** — Affiche les votes actifs du serveur. Tu peux en republier un dans le salon courant.\n" +
+                "**`/vote delete <id>`** — Supprime un vote que tu as créé.\n" +
                 "**`/help`** — Affiche ce message.")
             .AddField("Créer une session — pas à pas",
                 "Lance **`/schedule create`**. Un assistant privé te guide :\n" +

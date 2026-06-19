@@ -127,4 +127,13 @@ public class PollService
         poll.IsClosed = true;
         await _db_context.SaveChangesAsync();
     }
+
+    // Removes the poll and (by cascade) its options and votes.
+    public async Task DeletePollAsync(int pollId)
+    {
+        var poll = await _db_context.Polls.FindAsync(pollId);
+        if (poll is null) return;
+        _db_context.Polls.Remove(poll);
+        await _db_context.SaveChangesAsync();
+    }
 }
