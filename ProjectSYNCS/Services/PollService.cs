@@ -128,6 +128,21 @@ public class PollService
         await _db_context.SaveChangesAsync();
     }
 
+    // Open polls/votes that have lived past their lifetime and should auto-close.
+    // SQLite can't translate DateTimeOffset comparisons, so the age cutoff is
+    // applied in memory.
+    public async Task<List<Poll>> GetPollsToAutoCloseAsync(TimeSpan lifetime)
+    {
+        var open = await _db_context.Polls
+            .Include(p => p.Options)
+            .ThenInclude(o => o.Votes)
+            .Where(p => !p.IsClosed)
+            .ToListAsync();
+
+        var cutoff = DateTimeOffset.UtcNow - lifetime;
+        return open.Where(p => p.CreatedAt <= cutoff).ToList();
+    }
+
     // Removes the poll and (by cascade) its options and votes.
     public async Task DeletePollAsync(int pollId)
     {

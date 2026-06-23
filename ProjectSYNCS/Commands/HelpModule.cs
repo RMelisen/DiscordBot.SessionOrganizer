@@ -65,6 +65,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "et termine avec **✅ Terminer**.\n" +
                 "Chacun clique ensuite **toutes** les options qui lui conviennent (plusieurs choix possibles). " +
                 "L'organisateur clôture avec **🔒 Clôturer** : l'option la plus votée est mise en avant.")
+            .AddField("Clôture automatique",
+                "Les sondages et votes restés ouverts se **clôturent automatiquement au bout de 2 jours**.")
             .AddField("Rappels",
                 "Les participants inscrits reçoivent un rappel en message privé avant le début " +
                 "de la session.")

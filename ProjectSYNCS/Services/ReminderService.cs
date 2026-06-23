@@ -6,6 +6,7 @@ using ProjectSYNCS.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
+using Poll = ProjectSYNCS.Models.Poll;
 
 namespace ProjectSYNCS.Services;
 
@@ -37,6 +38,59 @@ public class ReminderService : BackgroundService
             await Task.Delay(CheckInterval, stoppingToken);
             await ProcessRemindersAsync();
             await ProcessLifecycleAsync();
+            await ProcessPollAutoCloseAsync();
+        }
+    }
+
+    // Polls and votes auto-close after this long, even without manual closure.
+    private static readonly TimeSpan PollLifetime = TimeSpan.FromDays(2);
+
+    private async Task ProcessPollAutoCloseAsync()
+    {
+        await using var scope = _services.CreateAsyncScope();
+        var pollService = scope.ServiceProvider.GetRequiredService<PollService>();
+
+        List<Poll> polls;
+        try
+        {
+            polls = await pollService.GetPollsToAutoCloseAsync(PollLifetime);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to query polls for auto-close.");
+            return;
+        }
+
+        foreach (var poll in polls)
+        {
+            await pollService.ClosePollAsync(poll.Id);
+            poll.IsClosed = true;
+            await UpdatePollCardAsync(poll);
+        }
+    }
+
+    private async Task UpdatePollCardAsync(Poll poll)
+    {
+        if (poll.MessageId == 0) return;
+
+        try
+        {
+            var guild = _client.GetGuild(poll.GuildId);
+            var channel = guild?.GetTextChannel(poll.ChannelId);
+            if (channel is null) return;
+
+            if (await channel.GetMessageAsync(poll.MessageId) is not IUserMessage message)
+                return;
+
+            await message.ModifyAsync(props =>
+            {
+                props.Embed = PollModule.BuildPollEmbed(poll);
+                props.Components = PollModule.BuildPollComponents(poll);
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to update auto-closed poll card for poll {PollId}.", poll.Id);
         }
     }
 
