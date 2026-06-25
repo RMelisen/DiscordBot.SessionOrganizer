@@ -362,10 +362,10 @@ public class BotService : IHostedService
     // the line's length so long sentences feel laboured and short ones snap out.
     private static TimeSpan TypingDelayFor(string text)
     {
-        const int baseMs = 500;
-        const int perChar = 45;     // ~22 chars/sec typing speed
+        const int baseMs = 700;
+        const int perChar = 60;     // ~17 chars/sec typing speed
         var ms = baseMs + text.Length * perChar;
-        return TimeSpan.FromMilliseconds(Math.Clamp(ms, 800, 6000));
+        return TimeSpan.FromMilliseconds(Math.Clamp(ms, 1000, 7000));
     }
 
     private async Task SendBreakdownAsync(SocketUserMessage message, string name)
@@ -408,6 +408,9 @@ public class BotService : IHostedService
                 {
                     await message.Channel.SendMessageAsync(line);
                 }
+
+                // Small breather after each message before the next one starts.
+                await Task.Delay(TimeSpan.FromMilliseconds(700));
             }
         }
         catch (Exception ex)
