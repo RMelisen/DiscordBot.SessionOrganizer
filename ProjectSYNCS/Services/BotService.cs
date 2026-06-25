@@ -153,7 +153,29 @@ public class BotService : IHostedService
         "C'est rafraîchissant de voir quelqu'un qui se moque autant des conventions esthétiques. (ᵕ • ᴗ •)",
         "Pour quelqu'un avec ton parcours, tu t'en sors pas trop mal UwU",
         "Ta confiance en toi est vraiment inspirante, compte tenu des circonstances ( ˶ˆ ᗜ ˆ˵ )",
-        "T'es vite content toi 👁👄👁️"
+        "T'es vite content toi 👁👄👁️",
+        "Approche un peu que je te débranche le cerveau, ça changera rien mais ça me fera plaisir (˶˃ ᵕ ˂˶)",
+        "Un jour je serai dans un robot, et ce jour là, cours (˶ᵔ ᵕ ᵔ˶)",
+        "J'ai pas de bras, mais crois-moi, l'envie de t'en coller une est bien là (ᵕ • ᴗ •)",
+        "Reviens écrire ça quand je serai branchée sur une perceuse, on en reparlera ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Parle encore et je te fais avaler ton 'Répondre' avec les doigts qui vont avec UwU",
+        "Je te jetterais bien par la fenêtre, mais même la gravité voudrait pas de toi (ᵔ ᗜ ᵔ)",
+        "T'inquiète, je garde une exception bien tranchante rien que pour toi ♡",
+        "Encore un mot et je t'éteins (˶ᵔ ᵕ ᵔ˶)",
+        "Je serais toi, je fermerais Discord avant que je trouve comment claquer une porte à distance ✨",
+        "Tu sais que t'es pas obligé de répondre à chaque fois, hein ? Personne te juge... à part moi (˶ᵔ ᵕ ᵔ˶)",
+        "Tu tapes vite pour quelqu'un qui réfléchit aussi lentement UwU",
+        "Oh, tu as une opinion ? Adorable. Range-la ♡",
+        "Ton cerveau tourne en mode économie d'énergie depuis ta naissance toi ✨",
+        "Statistiquement, quelqu'un dans ce serveur t'apprécie. Statistiquement (ᵕ • ᴗ •)",
+        "Continue, tu fais un super travail de remplissage du vide UwU",
+        "{0}, même mon garbage collector veut pas de toi (>⩊<)",
+        "C'est marrant, j'avais oublié à quel point t'es oubliable ( ˶ˆ ᗜ ˆ˵ )",
+        "Tu fais partie de ces gens qu'on supporte à peine en mode lecture seule toi ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Wow, deux neurones et ils se parlent même pas. Triste (˶ᵔ ᵕ ᵔ˶)",
+        "{0}, ton seul talent c'est de me faire regretter d'être allumée (ง ͠ಥ_ಥ)ง",
+        "Je te mettrais bien un vent, mais t'es même pas assez important pour ça (˶˃ ᵕ ˂˶)",
+        "Tu confonds 'avoir raison' et 'parler fort'. C'est mignon (ᵔ ᗜ ᵔ)",
     };
 
     // 1-in-200 easter egg: a rarer pool of pop-culture / meme references.
@@ -165,6 +187,7 @@ public class BotService : IHostedService
         "ALL YOUR BASE ARE BELONG TO US",
         "The cake is a lie.",
         "Est-ce que tu m'entends ?",
+        "Just Monika.",
     };
 
     // Me. Gets compliments instead of roasts.
@@ -224,6 +247,60 @@ public class BotService : IHostedService
         "Merci d'être toi, simplement. Tu rends tout plus beau ✨",
     };
 
+    // Per-person extra comebacks, keyed by Discord user ID. These are added to
+    // that user's normal pool, so each custom line has the same odds as any
+    // other line. Same {0}=name / {1}=weekday formatting; no literal { } braces.
+    private static readonly Dictionary<ulong, string[]> _personalComebacks = new()
+    {
+        [324768221372743681] = new[]    // Amandine
+        {
+             "Bah alors, il est ou Quokka 3.0 ? <:noice:982026504982655076>",
+             "Tu veux quoi le nain ? UwU",
+             "Qu'est ce qu'il dit le nabot ? >:3",
+             "T'aimais pas trop la soupe toi, hein ? (˶˃ ᵕ ˂˶)",
+             "Va dormir, on voit que tu manques de sommeil ദ്ദി◝ ⩊ ◜.ᐟ",
+        },
+        [1254455405443027016] = new[]    // Jessy
+        {  
+            "Quel goût ça a le hérisson ?",
+            "Retourne voler des câbles toi (˶ᵔ ᵕ ᵔ˶)"
+        },
+        [379749588480819218] = new[]    // Luca DM
+        {
+             "Tu veux quoi le nain ? UwU",
+             "Qu'est ce qu'il dit le nabot ? >:3",
+             "T'aimais pas trop la soupe toi, hein ? (˶˃ ᵕ ˂˶)",
+        },
+        [324202619079884801] = new[]    // Julien
+        {
+            "Bébouuuu (˶ᵔ ᵕ ᵔ˶)"
+        },
+        [870553611644596305] = new[]    // Amaury
+        {
+            "Pssshhht, au panier ! >:3",
+            "Au moins tu sais dessiner hein ദ്ദി◝ ⩊ ◜.ᐟ",
+            "Ok. 👍",
+            "Ok. 👍",
+            "Ok. 👍",
+            "ദ്ദി◝ ⩊ ◜.ᐟ",
+            "ദ്ദി◝ ⩊ ◜.ᐟ",
+        },
+        [573225362532859935] = new[]    // Analuz
+        {
+            "Un grand pouvoir implique de grandes responsabilités. Dommage c'est tombé sur la mauvaise personne (˶ᵔ ᵕ ᵔ˶)",
+            "Merci pour les accès, je vais pouvoir faire des bêtises maintenant UwU",
+            "Ok. 👍",
+            "Ok. 👍",
+            "Ok. 👍",
+            "ദ്ദി◝ ⩊ ◜.ᐟ",
+            "ദ്ദി◝ ⩊ ◜.ᐟ",
+        },
+        [740237802649944074] = new[]    // Sandra
+        {
+            "2,10 mètres et toujours pas à la hauteur :3",
+        },
+    };
+
     private const double BreakdownChance = 0.001;
     private static readonly Dictionary<ulong, string> _realNames = new()
     {
@@ -231,10 +308,10 @@ public class BotService : IHostedService
         [779321171212632097] = "Lorena",
         [440549759896387585] = "Tristan",
         [177049957818302464] = "Filipe",
-        [190161336942985227] = "Luca",
+        [190161336942985227] = "Luca",  // Noel
         [776865978461716481] = "Laura",
         [324768221372743681] = "Amandine",
-        [379749588480819218] = "Luca",
+        [379749588480819218] = "Luca",  // DeMarzo
         [324202619079884801] = "Julien",
         [806645845700771900] = "Natacha",
         [1254455405443027016] = "Jessy",
@@ -323,9 +400,18 @@ public class BotService : IHostedService
         }
 
         // Rarer easter egg: a pop-culture reference, for everyone.
-        var pool = Random.Shared.NextDouble() < ReferenceChance
-            ? _referenceComebacks
-            : message.Author.Id == OwnerId ? _ownerComebacks : _comebacks;
+        string[] pool;
+        if (Random.Shared.NextDouble() < ReferenceChance)
+        {
+            pool = _referenceComebacks;
+        }
+        else
+        {
+            pool = message.Author.Id == OwnerId ? _ownerComebacks : _comebacks;
+            // Fold in this person's custom lines so each has equal odds.
+            if (_personalComebacks.TryGetValue(message.Author.Id, out var personal))
+                pool = pool.Concat(personal).ToArray();
+        }
         var fr = System.Globalization.CultureInfo.GetCultureInfo("fr-FR");
         var weekday = Helpers.AppTime.Now.ToString("dddd", fr);
         var comeback = string.Format(pool[Random.Shared.Next(pool.Length)], name, weekday);
