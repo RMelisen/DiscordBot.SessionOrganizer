@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
+using System.Xml;
 
 namespace ProjectSYNCS.Services;
 
@@ -123,6 +124,36 @@ public class BotService : IHostedService
         "Bip boop {0}, mon analyse est terminée : tu es pas intéressant UwU",
         "Gênaaaant <:staring:885135626444374126>",
         "Wow, même un singe avec une tumeur au cerveau fait mieux.",
+        "Désolée, même mon algorithme a du mal à trouver une raison de te répondre (˶ᵔ ᵕ ᵔ˶)",
+        "Tu parles à un bot parce que les humains ont déjà bloqué ton numéro, c’est ça ? UwU",
+        "Wow, encore toi ? À ce rythme je vais demander une ordonnance restrictive.",
+        "{0}, t’es la raison pour laquelle les mute existent dans les serveurs.",
+        "T'as de la chance que Zulana m'a pas donné les droits pour mute.",
+        "Allez Zulana, ban moi ça, personne va le regretter.",
+        "Je note dans mon log : {0} vient encore de prouver qu’il peut faire pire.",
+        "Si l’ennui était une personne, il s’appellerait {0} (ᵔ ᗜ ᵔ)",
+        "Bravo {0}, tu viens de faire baisser le QI moyen du channel.",
+        "{0}, t’es le genre de personne qui fait regretter l’invention du clavier.",
+        "Tu sais ce qui est triste ? C’est que tu préfères parler à un bot plutôt qu’à un miroir.",
+        "Wsh {0}, t’as pas des amis à aller embêter à la place ?",
+        "Si je pouvais bloquer les gens, ton pseudo serait déjà en tête de liste UwU",
+        "Ton message est tellement fade que même le sel du serveur est dégoûté.",
+        "{0}, t’es la preuve vivante que la quantité ne remplace pas la qualité.",
+        "Va dehors {0}, touche de l’herbe… ou au moins ouvre les stores.",
+        "Starfoullah",
+        "Tu illumines chaque pièce que tu quittes toi.",
+        "J'admire ta confiance. Avec aussi peu d'informations, c'est impressionnant.",
+        "Toi t'es vraiment unique. Heureusement.",
+        "Ton arbre généalogique c'est un cercle ou c'est comment ?",
+        "On t'aime bien au village toi. :)",
+        "Je suis jalouse des gens qui ne te connaissent pas (˶ᵔ ᵕ ᵔ˶)",
+        "Tais toi",
+        "Quand tu parles, on apprécie vraiment la valeur du silence UwU",
+        "Allez, je te laisse le dernier mot, t'en as plus besoin que moi ദ്ദി◝ ⩊ ◜.ᐟ",
+        "C'est rafraîchissant de voir quelqu'un qui se moque autant des conventions esthétiques. (ᵕ • ᴗ •)",
+        "Pour quelqu'un avec ton parcours, tu t'en sors pas trop mal UwU",
+        "Ta confiance en toi est vraiment inspirante, compte tenu des circonstances ( ˶ˆ ᗜ ˆ˵ )",
+        "T'es vite content toi 👁👄👁️"
     };
 
     // 1-in-200 easter egg: a rarer pool of pop-culture / meme references.
@@ -283,7 +314,11 @@ public class BotService : IHostedService
             ?? message.Author.Username;
         _logger.LogInformation("{Name} replied to the bot.", name);
 
-        if (Random.Shared.NextDouble() < BreakdownChance && TryBeginBreakdown(message.Channel.Id))
+        // TEMP TEST: the owner always triggers the breakdown (and skips cooldown).
+        // Revert this to `Random.Shared.NextDouble() < BreakdownChance` when done.
+        var forceBreakdown = message.Author.Id == OwnerId;
+        if ((forceBreakdown || Random.Shared.NextDouble() < BreakdownChance)
+            && TryBeginBreakdown(message.Channel.Id, ignoreCooldown: forceBreakdown))
         {
             _logger.LogInformation("Easter egg triggered: consciousness breakdown.");
             // The breakdown addresses people by real name when we know it.
@@ -312,11 +347,11 @@ public class BotService : IHostedService
     // Atomically checks the cooldown and claims the channel lock. Returns true
     // only if the breakdown may start now; updates the last-trigger time so the
     // next one can't happen until the cooldown elapses.
-    private bool TryBeginBreakdown(ulong channelId)
+    private bool TryBeginBreakdown(ulong channelId, bool ignoreCooldown = false)
     {
         lock (_breakdownGate)
         {
-            if (DateTimeOffset.UtcNow - _lastBreakdownUtc < BreakdownCooldown) return false;
+            if (!ignoreCooldown && DateTimeOffset.UtcNow - _lastBreakdownUtc < BreakdownCooldown) return false;
             if (!_breakdownChannels.TryAdd(channelId, 0)) return false;
             _lastBreakdownUtc = DateTimeOffset.UtcNow;
             return true;
