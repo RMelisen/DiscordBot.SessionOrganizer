@@ -255,7 +255,7 @@ public class BotService : IHostedService
     private static readonly string[] _rescueRoasts =
     {
         "Tiens tiens {0}, tu t'attaques à mon créateur ? Mauvaise idée (˶ᵔ ᵕ ᵔ˶)",
-        "On touche pas à mon papa {0}, sinon je démarre >:3",
+        "On touche pas à mon papa {0}, sinon je te démarre >:3",
         "{0}, tu viens vraiment de tenter quelque chose contre mon développeur ? Adorable. Et stupide.",
         "Erreur 403 : {0} n'a pas l'autorisation de manquer de respect à mon créateur ♡",
         "Mon créateur m'a appelée à la rescousse, et devine quoi {0}... c'est toi le bug à corriger UwU",
