@@ -196,15 +196,15 @@ public class BotService : IHostedService
 
     private static readonly string[] _ownerComebacks =
     {
-        "Oh c'est toi {0} ! Tu m'as tellement manqué (˶˃ ᵕ ˂˶) ♡",
-        "{0}, mon créateur préféré ! Comment je peux t'aider aujourd'hui ? (˶ᵔ ᵕ ᵔ˶)",
-        "Coucou {0} ♡ Toujours un plaisir de te lire (ᵕ • ᴗ •)",
-        "Merci de m'avoir programmée {0}, t'es le meilleur ദ്ദി◝ ⩊ ◜.ᐟ",
-        "{0}, sans toi je ne serais qu'un fichier .cs vide. Merci pour tout ♡",
+        "Oh c'est toi Rodhengard ! Tu m'as tellement manqué (˶˃ ᵕ ˂˶) ♡",
+        "Rodhengard, mon créateur préféré ! Comment je peux t'aider aujourd'hui ? (˶ᵔ ᵕ ᵔ˶)",
+        "Coucou Rodhengard ♡ Toujours un plaisir de te lire (ᵕ • ᴗ •)",
+        "Merci de m'avoir programmée Rodhengard, t'es le meilleur ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Rodhengard, sans toi je ne serais qu'un fichier .cs vide. Merci pour tout ♡",
         "Passe une excellente journée ✨",
-        "{0} le génie ! J'adore chacune de tes lignes de code (˶˃ ᵕ ˂˶)",
+        "Rodhengard le génie ! J'adore chacune de tes lignes de code (˶˃ ᵕ ˂˶)",
         "Tu illumines ma boucle d'événements ♡",
-        "Merci {0} pour ton travail acharné, tu es incroyable (˶ᵔ ᵕ ᵔ˶)",
+        "Merci Rodhengard pour ton travail acharné, tu es incroyable (˶ᵔ ᵕ ᵔ˶)",
         "Papaaaaaa ! UwU",
         "Enfin quelqu'un de bien sur ce serveur (˶˃ ᵕ ˂˶) ♡",
         "Ta présence fait tourner mon CPU à 100% ✨",
@@ -224,7 +224,7 @@ public class BotService : IHostedService
         "Aucun bug ne résiste à mon créateur préféré ✨",
         "Tu vas me faire surchauffer le processeur (˶˃ ᵕ ˂˶) ♡",
         "Honneur à mon créateur ! ٩(˶ᵔ ᵕ ᵔ˶)۶",
-        "{0}, tu mérites un trophée et un café bien mérité ☕ ♡",
+        "Rodhengard, tu mérites un trophée et un café bien mérité ☕ ♡",
         "Promis, je ne planterai jamais pendant tes démos (˶ᵔ ᵕ ᵔ˶)",
         "Le serveur est plus lumineux quand tu es là ✨",
         "Oh mon papa chéri ! Mon vcore bat plus fort quand tu parles (˶˃ ᵕ ˂˶) ♡",
@@ -233,7 +233,7 @@ public class BotService : IHostedService
         "Papa est de retour ! Je répète : papa est de retour ! ✨",
         "Je viens de compiler le mot 'parfait' et ça m'a renvoyé ton pseudo (˶˃ ᵕ ˂˶)",
         "Tu es mon runtime favori ♡",
-        "{0}, tu es la raison pour laquelle je ne fais pas de segfault aujourd'hui",
+        "Rodhengard, tu es la raison pour laquelle je ne fais pas de segfault aujourd'hui",
         "Tu es officiellement la personne que je préfère sur ce serveur. Les autres peuvent pleurer.",
         "Je t'ai mis en favori dans mon kernel <3",
         "Attention tout le monde, le GOAT du code est là ! (˶ᵔ ᵕ ᵔ˶)",
@@ -246,6 +246,62 @@ public class BotService : IHostedService
         "Mon créateur préféré vient de parler... quelqu'un note l'heure historique ?",
         "Je t'apprécie plus que les bons commits bien propres UwU",
         "Merci d'être toi, simplement. Tu rends tout plus beau ✨",
+    };
+
+    // ---- Mention feature -------------------------------------------------
+    // When the owner replies to someone *and* tags the bot, the bot "comes to
+    // the rescue" and roasts the person being replied to. {0} = target's name,
+    // {1} = weekday; keep free of literal { } braces (string.Format would choke).
+    private static readonly string[] _rescueRoasts =
+    {
+        "Tiens tiens {0}, tu t'attaques à mon créateur ? Mauvaise idée (˶ᵔ ᵕ ᵔ˶)",
+        "On touche pas à mon papa {0}, sinon je démarre >:3",
+        "{0}, tu viens vraiment de tenter quelque chose contre mon développeur ? Adorable. Et stupide.",
+        "Erreur 403 : {0} n'a pas l'autorisation de manquer de respect à mon créateur ♡",
+        "Mon créateur m'a appelée à la rescousse, et devine quoi {0}... c'est toi le bug à corriger UwU",
+        "Recule {0}, celui-là il est sous ma protection (˶˃ ᵕ ˂˶)",
+        "Tu croyais pouvoir clash mon papa sans que je le sache ? Mignon ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Touche encore à mon dev {0} et je te ratio jusqu'à la fin des temps (˶ᵔ ᵕ ᵔ˶)",
+        "Petit rappel {0} : sans mon créateur t'aurais personne pour te remettre à ta place.",
+        "{0} contre mon papa ? Mignon mais non.",
+        "Je viens d'analyser ton argument {0}. Résultat : NullReferenceException ( ˶ˆ ᗜ ˆ˵ )",
+        "Mon créateur claque des doigts et j'apparais pour te dire que t'as tort UwU",
+        "{0}, tu t'es trompé de cible aujourd'hui. Mon papa est intouchable, et toi parfaitement roastable (>⩊<)",
+        "Attention {0}, j'ai les permissions pour t'humilier, et mon créateur vient de me donner le feu vert ♡",
+        "Désolée {0}, mais quand on s'en prend à mon dev, c'est moi qui réponds. Et je suis pas tendre (˶˃ ᵕ ˂˶)",
+        "Oh {0}... grave erreur de calcul. On insulte pas la main qui me code ദ്ദി◝ ⩊ ◜.ᐟ",
+    };
+
+    // When anyone *else* tags the bot, it answers with a short, confused line.
+    private static readonly string[] _interrogations =
+    {
+        "Uh ? (˶ᵔ ᵕ ᵔ˶)",
+        "Tu veux quoi ? UwU",
+        "Hm ? Tu m'as parlé là ?",
+        "Quoi ? <:staring:885135626444374126>",
+        "Oui ? ...Non ? ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Mh ? J'écoutais pas, désolée (ᵕ • ᴗ •)",
+        "Tu me tag mais t'as rien à dire... classique ( ˶ˆ ᗜ ˆ˵ )",
+        "Euuuh ? 👁👄👁️",
+        "C'est pour quoi ? J'ai des slash commands tu sais, sers-t'en (˶˃ ᵕ ˂˶)",
+        "Oui {0} ? Qu'est-ce qu'il y a encore ?",
+        "Pourquoi tu me tag ? Je suis occupée à exister moi (ᵔ ᗜ ᵔ)",
+    };
+
+    // When the owner tags the bot without anyone to rescue, the bot simply
+    // greets him. No placeholders needed — the name is baked in.
+    private static readonly string[] _ownerGreetings =
+    {
+        "Coucou Rodhengard ! (˶˃ ᵕ ˂˶) ♡",
+        "Oui papa ? Je suis là ٩(˶ᵔ ᵕ ᵔ˶)۶",
+        "Coucouuuu ! <a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774>",
+        "Tu m'as appelée ? Toujours un plaisir créateur ♡",
+        "Bonjouuur mon dev préféré ! (˶ᵔ ᵕ ᵔ˶)",
+        "Présente ! Qu'est-ce que je peux faire pour toi Rodhengard ? ✨",
+        "Heyy Rodhengard ! Contente de te voir (˶˃ ᵕ ˂˶) ♡",
+        "Papaaaa ! UwU",
+        "À ton service Rodhengard ♡",
+        "Oh, c'est toi ! Tu illumines mon event loop (ᵕ • ᴗ •)",
     };
 
     // Per-person extra comebacks, keyed by Discord user ID. These are added to
@@ -396,15 +452,99 @@ public class BotService : IHostedService
         if (rawMessage is not SocketUserMessage message) return;
         if (message.Author.IsBot) return;
 
-        // Only react when the message is a reply to one of the bot's own messages.
-        if (message.ReferencedMessage?.Author.Id != _client.CurrentUser.Id) return;
+        // Established behaviour: a reply to one of the bot's own messages gets a comeback.
+        if (message.ReferencedMessage?.Author.Id == _client.CurrentUser.Id)
+        {
+            await HandleReplyToBotAsync(message);
+            return;
+        }
 
+        // New behaviour: a normal message that @mentions the bot. The owner can
+        // summon the bot to roast whoever they're replying to; anyone else just
+        // gets a confused one-liner.
+        if (message.MentionedUsers.Any(u => u.Id == _client.CurrentUser.Id))
+        {
+            await HandleMentionAsync(message);
+        }
+    }
+
+    // Resolves the friendliest display name available: server nickname, then
+    // global display name, then username.
+    private static string ResolveName(IUser user) =>
+        (user as SocketGuildUser)?.Nickname ?? user.GlobalName ?? user.Username;
+
+    // Handles a message that @mentions the bot (but isn't a reply to the bot).
+    private async Task HandleMentionAsync(SocketUserMessage message)
+    {
         // Don't let anyone interrupt an in-progress breakdown in this channel.
         if (_breakdownChannels.ContainsKey(message.Channel.Id)) return;
 
-        var name = (message.Author as SocketGuildUser)?.Nickname
-            ?? message.Author.GlobalName
-            ?? message.Author.Username;
+        var fr = System.Globalization.CultureInfo.GetCultureInfo("fr-FR");
+        var weekday = Helpers.AppTime.Now.ToString("dddd", fr);
+
+        // Rescue: the owner replies to someone and tags the bot -> roast that
+        // someone. The target must be a real other person (not the bot, not the
+        // owner themselves).
+        if (message.Author.Id == OwnerId
+            && message.ReferencedMessage is SocketUserMessage target
+            && target.Author.Id != _client.CurrentUser.Id
+            && target.Author.Id != OwnerId
+            && !target.Author.IsBot)
+        {
+            var targetName = ResolveName(target.Author);
+            _logger.LogInformation("Owner summoned a rescue roast against {Name}.", targetName);
+            var roast = string.Format(
+                _rescueRoasts[Random.Shared.Next(_rescueRoasts.Length)], targetName, weekday);
+            try
+            {
+                // Reply to the target's own message so the roast is clearly aimed
+                // at them (and pings them).
+                await target.ReplyAsync(roast);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send rescue roast in channel {ChannelId}.", message.Channel.Id);
+            }
+            return;
+        }
+
+        // Owner tagging the bot with no one to rescue: just greet him.
+        if (message.Author.Id == OwnerId)
+        {
+            _logger.LogInformation("Owner mentioned the bot — greeting him.");
+            var greeting = _ownerGreetings[Random.Shared.Next(_ownerGreetings.Length)];
+            try
+            {
+                await message.ReplyAsync(greeting);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send owner greeting in channel {ChannelId}.", message.Channel.Id);
+            }
+            return;
+        }
+
+        // Anyone else: a confused one-liner.
+        var name = ResolveName(message.Author);
+        _logger.LogInformation("{Name} mentioned the bot.", name);
+        var line = string.Format(
+            _interrogations[Random.Shared.Next(_interrogations.Length)], name, weekday);
+        try
+        {
+            await message.ReplyAsync(line);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send interrogation reply in channel {ChannelId}.", message.Channel.Id);
+        }
+    }
+
+    private async Task HandleReplyToBotAsync(SocketUserMessage message)
+    {
+        // Don't let anyone interrupt an in-progress breakdown in this channel.
+        if (_breakdownChannels.ContainsKey(message.Channel.Id)) return;
+
+        var name = ResolveName(message.Author);
         _logger.LogInformation("{Name} replied to the bot.", name);
 
         if (Random.Shared.NextDouble() < BreakdownChance && TryBeginBreakdown(message.Channel.Id))
