@@ -309,6 +309,10 @@ public class BotService : IHostedService
             "Oh derrière toi regarde ! Des pieds ! UwU",
             "Je sais ou tu habites ... Sandra 👁👄👁️",
         },
+        [789545863105478716] = new[]    // Léa
+        {
+            "Va manger tes morts espèce de schlag UwU",
+        },
     };
 
     private const double BreakdownChance = 0.001;
