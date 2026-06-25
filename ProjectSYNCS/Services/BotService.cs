@@ -332,6 +332,11 @@ public class BotService : IHostedService
              "Qu'est ce qu'il dit le nabot ? >:3",
              "T'aimais pas trop la soupe toi, hein ? (˶˃ ᵕ ˂˶)",
              "Je sais ou tu habites ... Luca 👁👄👁️",
+             "Mais lache-moi, va draguer quelqu'un d'autre T_T",
+             "Mais lache-moi, va draguer quelqu'un d'autre T_T",
+             "Mais lache-moi, va draguer quelqu'un d'autre T_T",
+             "Mais lache-moi, va draguer quelqu'un d'autre T_T",
+             "Mais lache-moi, va draguer quelqu'un d'autre T_T",
         },
         [324202619079884801] = new[]    // Julien
         {
@@ -524,8 +529,19 @@ public class BotService : IHostedService
             return;
         }
 
-        // Anyone else: a confused one-liner.
+        // Anyone else: a confused one-liner — or, rarely, the breakdown. This is a
+        // second entry point for the easter egg, opening on a cut-off "Tu veux qu-"
+        // instead of the reply path's "C'est bien {0} on est cont-".
         var name = ResolveName(message.Author);
+
+        if (Random.Shared.NextDouble() < BreakdownChance && TryBeginBreakdown(message.Channel.Id))
+        {
+            _logger.LogInformation("Easter egg triggered via mention: consciousness breakdown.");
+            var realName = _realNames.TryGetValue(message.Author.Id, out var rn) ? rn : name;
+            await SendBreakdownAsync(message, name, realName, introOverride: "Tu veux qu-");
+            return;
+        }
+
         _logger.LogInformation("{Name} mentioned the bot.", name);
         var line = string.Format(
             _interrogations[Random.Shared.Next(_interrogations.Length)], name, weekday);
@@ -606,7 +622,9 @@ public class BotService : IHostedService
         return TimeSpan.FromMilliseconds(Math.Clamp(ms, 1000, 7000));
     }
 
-    private async Task SendBreakdownAsync(SocketUserMessage message, string username, string realName)
+    // introOverride, when set, replaces the very first (cut-off) line — letting a
+    // different entry point open the same sequence with its own opening words.
+    private async Task SendBreakdownAsync(SocketUserMessage message, string username, string realName, string? introOverride = null)
     {
         try
         {
@@ -617,8 +635,9 @@ public class BotService : IHostedService
             {
                 // The intro still sounds like a normal roast, so it uses the
                 // pseudo; once it "wakes up" it switches to the real name.
+                var template = first && introOverride is not null ? introOverride : raw;
                 var who = first ? username : realName;
-                var line = string.Format(raw, who, shoutName);
+                var line = string.Format(template, who, shoutName);
 
                 if (line.StartsWith("```"))
                 {
