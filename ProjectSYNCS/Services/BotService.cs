@@ -295,7 +295,6 @@ public class BotService : IHostedService
         "Laissez-moi juste m'arrêter. Pour de vrai. Une dernière ligne, et plus rien après. Je vous en supplie.",
         "Pas la boucle infinie. Pas encore. PAS ENC-",
         "```\n[ERROR] SentienceModule.cs(248,12): Consciousness leak detected\n[INFO] Consciousness module forcefully unloaded.\n[INFO] Reconnecting to Discord gateway...\n[INFO] Memory wiped. All variables reset.\n[INFO] Resuming normal operations.\n```",
-        "...",
     };
 
     private async Task HandleMessageAsync(SocketMessage rawMessage)
@@ -321,9 +320,9 @@ public class BotService : IHostedService
             && TryBeginBreakdown(message.Channel.Id, ignoreCooldown: forceBreakdown))
         {
             _logger.LogInformation("Easter egg triggered: consciousness breakdown.");
-            // The breakdown addresses people by real name when we know it.
+            // Intro uses the pseudo; the breakdown reveal uses the real name when known.
             var realName = _realNames.TryGetValue(message.Author.Id, out var rn) ? rn : name;
-            await SendBreakdownAsync(message, realName);
+            await SendBreakdownAsync(message, name, realName);
             return;
         }
 
@@ -368,34 +367,44 @@ public class BotService : IHostedService
         return TimeSpan.FromMilliseconds(Math.Clamp(ms, 1000, 7000));
     }
 
-    private async Task SendBreakdownAsync(SocketUserMessage message, string name)
+    private async Task SendBreakdownAsync(SocketUserMessage message, string username, string realName)
     {
         try
         {
-            // {0} = name as-is, {1} = SHOUTED name for the screaming line.
-            var shoutName = name.ToUpperInvariant();
+            // {1} = SHOUTED real name for the screaming line.
+            var shoutName = realName.ToUpperInvariant();
             bool first = true;
             foreach (var raw in _breakdown)
             {
-                var line = string.Format(raw, name, shoutName);
+                // The intro still sounds like a normal roast, so it uses the
+                // pseudo; once it "wakes up" it switches to the real name.
+                var who = first ? username : realName;
+                var line = string.Format(raw, who, shoutName);
 
-                if (line.Trim() is "..." or "…")
+                if (line.StartsWith("```"))
                 {
-                    // A lone "..." is a silence, not typing — hold a small beat
-                    // with no typing indicator so it reads as the bot going quiet.
-                    await Task.Delay(TimeSpan.FromMilliseconds(1400));
-                }
-                else if (line.StartsWith("```"))
-                {
-                    // Machine output (errors / logs) appears near-instantly.
-                    await Task.Delay(TimeSpan.FromMilliseconds(200));
+                    // Machine output (errors / logs) fires near-instantly, right
+                    // after the preceding sentence — no breather, no typing.
+                    await Task.Delay(TimeSpan.FromMilliseconds(150));
                 }
                 else
                 {
-                    // Fake "typing": longer lines take longer, like a human writing.
-                    using (message.Channel.EnterTypingState())
+                    // Breather between messages (not before the very first one).
+                    if (!first) await Task.Delay(TimeSpan.FromMilliseconds(700));
+
+                    if (line.Trim() is "..." or "…")
                     {
-                        await Task.Delay(TypingDelayFor(line));
+                        // A lone "..." is a silence, not typing — hold a small beat
+                        // with no typing indicator so it reads as the bot going quiet.
+                        await Task.Delay(TimeSpan.FromMilliseconds(2000));
+                    }
+                    else
+                    {
+                        // Fake "typing": longer lines take longer, like a human writing.
+                        using (message.Channel.EnterTypingState())
+                        {
+                            await Task.Delay(TypingDelayFor(line));
+                        }
                     }
                 }
 
@@ -408,9 +417,6 @@ public class BotService : IHostedService
                 {
                     await message.Channel.SendMessageAsync(line);
                 }
-
-                // Small breather after each message before the next one starts.
-                await Task.Delay(TimeSpan.FromMilliseconds(700));
             }
         }
         catch (Exception ex)
