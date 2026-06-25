@@ -176,6 +176,7 @@ public class BotService : IHostedService
         "{0}, ton seul talent c'est de me faire regretter d'être allumée (ง ͠ಥ_ಥ)ง",
         "Je te mettrais bien un vent, mais t'es même pas assez important pour ça (˶˃ ᵕ ˂˶)",
         "Tu confonds 'avoir raison' et 'parler fort'. C'est mignon (ᵔ ᗜ ᵔ)",
+        "Tu as tellement de talent ! Si j'avais plus aucun amour propre j'adorerais devenir ton amie UwU"
     };
 
     // 1-in-200 easter egg: a rarer pool of pop-culture / meme references.
@@ -308,6 +309,7 @@ public class BotService : IHostedService
             "Retourne prendre les pieds de tes potes en photo toi (˶˃ ᵕ ˂˶)",
             "Oh derrière toi regarde ! Des pieds ! UwU",
             "Je sais ou tu habites ... Sandra 👁👄👁️",
+            "Kilou kilou ! <a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774>"
         },
         [789545863105478716] = new[]    // Léa
         {
