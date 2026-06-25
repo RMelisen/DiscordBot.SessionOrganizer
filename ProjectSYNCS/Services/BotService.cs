@@ -309,6 +309,7 @@ public class BotService : IHostedService
             "Retourne prendre les pieds de tes potes en photo toi (˶˃ ᵕ ˂˶)",
             "Oh derrière toi regarde ! Des pieds ! UwU",
             "Je sais ou tu habites ... Sandra 👁👄👁️",
+            "Je vais te goumer (˶ᵔ ᵕ ᵔ˶)",
             "Kilou kilou ! <a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774>"
         },
         [789545863105478716] = new[]    // Léa
