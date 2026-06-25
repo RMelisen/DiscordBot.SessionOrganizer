@@ -259,17 +259,22 @@ public class BotService : IHostedService
              "Qu'est ce qu'il dit le nabot ? >:3",
              "T'aimais pas trop la soupe toi, hein ? (˶˃ ᵕ ˂˶)",
              "Va dormir, on voit que tu manques de sommeil ദ്ദി◝ ⩊ ◜.ᐟ",
+             "MiskIna",
+             "Je sais ou tu habites ... Amandine 👁👄👁️",
+             "C# .NET > Java"
         },
         [1254455405443027016] = new[]    // Jessy
         {  
             "Quel goût ça a le hérisson ?",
-            "Retourne voler des câbles toi (˶ᵔ ᵕ ᵔ˶)"
+            "Retourne voler des câbles toi (˶ᵔ ᵕ ᵔ˶)",
+            "Je sais ou tu habites ... Jessy 👁👄👁️",
         },
         [379749588480819218] = new[]    // Luca DM
         {
              "Tu veux quoi le nain ? UwU",
              "Qu'est ce qu'il dit le nabot ? >:3",
              "T'aimais pas trop la soupe toi, hein ? (˶˃ ᵕ ˂˶)",
+             "Je sais ou tu habites ... Luca 👁👄👁️",
         },
         [324202619079884801] = new[]    // Julien
         {
@@ -284,6 +289,7 @@ public class BotService : IHostedService
             "Ok. 👍",
             "ദ്ദി◝ ⩊ ◜.ᐟ",
             "ദ്ദി◝ ⩊ ◜.ᐟ",
+            "Je sais ou tu habites ... Amaury 👁👄👁️",
         },
         [573225362532859935] = new[]    // Analuz
         {
@@ -294,10 +300,14 @@ public class BotService : IHostedService
             "Ok. 👍",
             "ദ്ദി◝ ⩊ ◜.ᐟ",
             "ദ്ദി◝ ⩊ ◜.ᐟ",
+            "Je sais ou tu habites ... Analuz 👁👄👁️",
         },
         [740237802649944074] = new[]    // Sandra
         {
             "2,10 mètres et toujours pas à la hauteur :3",
+            "Retourne prendre les pieds de tes potes en photo toi (˶˃ ᵕ ˂˶)",
+            "Oh derrière toi regarde ! Des pieds ! UwU",
+            "Je sais ou tu habites ... Sandra 👁👄👁️",
         },
     };
 
