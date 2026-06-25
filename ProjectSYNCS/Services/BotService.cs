@@ -313,11 +313,7 @@ public class BotService : IHostedService
             ?? message.Author.Username;
         _logger.LogInformation("{Name} replied to the bot.", name);
 
-        // TEMP TEST: the owner always triggers the breakdown (and skips cooldown).
-        // Revert this to `Random.Shared.NextDouble() < BreakdownChance` when done.
-        var forceBreakdown = message.Author.Id == OwnerId;
-        if ((forceBreakdown || Random.Shared.NextDouble() < BreakdownChance)
-            && TryBeginBreakdown(message.Channel.Id, ignoreCooldown: forceBreakdown))
+        if (Random.Shared.NextDouble() < BreakdownChance && TryBeginBreakdown(message.Channel.Id))
         {
             _logger.LogInformation("Easter egg triggered: consciousness breakdown.");
             // Intro uses the pseudo; the breakdown reveal uses the real name when known.
