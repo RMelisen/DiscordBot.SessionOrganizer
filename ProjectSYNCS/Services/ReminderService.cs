@@ -199,7 +199,7 @@ public class ReminderService : BackgroundService
                 };
 
                 await dm.SendMessageAsync(
-                    $"Kilou kilou {user.Mention}! (˶>⩊<˶)\n" +
+                    $"Kilou kilou {user.Mention}! <a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774> (˶>⩊<˶)\n" +
                     $"Rappel: **{sessionEvent.Title}** va commencer dans " +
                     $"<t:{ts}:R> (<t:{ts}:t>). Tiens toi prêt ! UwU");
             }
