@@ -22,7 +22,7 @@ var host = Host.CreateDefaultBuilder(args)
 
         var socketConfig = new DiscordSocketConfig
         {
-            GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers,
+            GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers | GatewayIntents.MessageContent,
             LogLevel = LogSeverity.Info,
             MessageCacheSize = 100
         };

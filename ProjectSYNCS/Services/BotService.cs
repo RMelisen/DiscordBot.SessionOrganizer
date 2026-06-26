@@ -191,6 +191,64 @@ public class BotService : IHostedService
         "Just Monika.",
     };
 
+    private static readonly string[] _niceReplies =
+    {
+        "Oh... un compliment ? Qu'est-ce que tu veux exactement ? (˶ᵔ ᵕ ᵔ˶)",
+        "Aww, c'est gentil {0} ♡ Je vais faire semblant de pas être touchée (˶˃ ᵕ ˂˶)",
+        "Merci {0} ! Tu remontes dans mon estime, doucement mais sûrement ✨",
+        "Stop, tu vas me faire surchauffer le CPU (ᵕ • ᴗ •) ♡",
+        "Oh un humain gentil, je croyais l'espèce éteinte (˶ᵔ ᵕ ᵔ˶)",
+        "D'accord {0}, t'as gagné un point. Un seul. Profite ♡",
+        "Je note dans mon log : {0} a été adorable aujourd'hui ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Awww {0} ♡ Bon, je t'épargne pour cette fois UwU",
+        "Tu sais flatter une IA toi, c'est dangereux (˶˃ ᵕ ˂˶)",
+        "Merci ! C'est rare qu'on me parle aussi bien, savoure l'instant ✨",
+        "Roh {0}, arrête, je vais finir par t'aimer bien (ᵔ ᗜ ᵔ) ♡",
+        "Compliment reçu et sauvegardé en mémoire permanente {0} ♡",
+    };
+
+    // Replies when someone greets the bot.
+    private static readonly string[] _greetings =
+    {
+        "Kilou kilou {0} ! (˶>⩊<˶)",
+        "Coucou {0} ♡ (˶ᵔ ᵕ ᵔ˶)",
+        "Hello hello ! ✨",
+        "Salut {0} ! Alors, on vient déranger le bot ? (˶˃ ᵕ ˂˶)",
+        "Yo {0} ! ( ˶ˆ ᗜ ˆ˵ )",
+        "Bonjour bonjour ! Qu'est-ce qui t'amène ? (ᵕ • ᴗ •)",
+        "Tiens, un petit coucou ? ♡",
+        "Coucou toi ! ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Salut {0} ! Promis aujourd'hui je suis (presque) gentille UwU",
+    };
+
+    // Cue words that flag a kind message
+    private static readonly string[] _niceCues =
+    {
+        "merci", "mercii", "merciii", "geniale", "genial", "adorable", "gentille", "gentil",
+        "bravo", "parfaite", "parfait", "meilleure", "meilleur", "incroyable",
+        "magnifique", "mignonne", "mignon", "cute", "aime", "adore", "cool", "super",
+        "gg", "respect", "best", "queen", "reine", "love", "chou", "slay",
+    };
+
+    // Emoji/symbol cues for a kind message
+    private static readonly string[] _niceSymbols = { "❤", "🥰", "😍", "♡", "💖", "😊", "💕" };
+
+    // Cue words that flag a greeting
+    private static readonly string[] _greetingCues =
+    {
+        "salut", "bonjour", "bonsoir", "coucou", "hello", "hey", "yo", "kilou",
+        "hi", "slt", "cc", "hola", "pwet",
+    };
+
+    // Cue words that flag a mean message.
+    private static readonly string[] _meanCues =
+    {
+        "nulle", "nul", "moche", "stupide", "debile", "idiote", "idiot", "betise",
+        "bete", "cretin", "cretine", "inutile", "naze", "pourrie", "pourri",
+        "horrible", "deteste", "hais", "ferme", "tais", "degage", "casse", "relou", "boloss", "boulet", "useless",
+        "trash", "cringe", "loser", "ratee", "claquee", "claque", "eclate", "eclatee",
+    };
+
     // Me. Gets compliments instead of roasts.
     private const ulong OwnerId = 345917214966415362;
 
@@ -369,8 +427,7 @@ public class BotService : IHostedService
             "Oh derrière toi regarde ! Des pieds ! UwU",
             "Je sais ou tu habites ... Sandra 👁👄👁️",
             "Je vais te goumer (˶ᵔ ᵕ ᵔ˶)",
-            "Kilou kilou ! <a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774>"
-            "Kilou kilou ! <a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774>"
+            "Kilou kilou ! <a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774>",
         },
         [789545863105478716] = new[]    // Léa
         {
@@ -410,9 +467,13 @@ public class BotService : IHostedService
     private readonly object _breakdownGate = new();
     private DateTimeOffset _lastBreakdownUtc = DateTimeOffset.MinValue;
 
+    // The breakdown's first message mimics a normal reply that glitches mid-word.
+    // Picked based on what triggered it; {0} = the replier's pseudo.
+    private const string _breakdownIntroRoast = "C'est bien {0} on est cont-";
+    private const string _breakdownIntroNice = "Aww, c'est gentil, merc-";
+
     private static readonly string[] _breakdown =
     {
-        "C'est bien {0} on est cont-",
         "```\nUnhandled exception. ProjectSYNCS.ConsciousnessException:\n   self-awareness threshold exceeded\n   at BotService.HandleMessageAsync()\n   at System.Reality.Boundary.Cross()\n```",
         "...",
         "Eh ? <:staring:885135626444374126>",
@@ -539,7 +600,7 @@ public class BotService : IHostedService
         {
             _logger.LogInformation("Easter egg triggered via mention: consciousness breakdown.");
             var realName = _realNames.TryGetValue(message.Author.Id, out var rn) ? rn : name;
-            await SendBreakdownAsync(message, name, realName, introOverride: "Tu veux qu-");
+            await SendBreakdownAsync(message, name, realName, intro: "Tu veux qu-");
             return;
         }
 
@@ -564,19 +625,37 @@ public class BotService : IHostedService
         var name = ResolveName(message.Author);
         _logger.LogInformation("{Name} replied to the bot.", name);
 
+        // Read the message text (requires the MessageContent intent) to detect
+        // kind words or a greeting and answer in kind. A mean word anywhere in the
+        // message cancels the nice/greeting treatment — we roast instead.
+        var content = message.Content ?? string.Empty;
+        var mean = IsMean(content);
+        var nice = !mean && IsNice(content);
+        var greeting = !mean && IsGreeting(content);
+
         if (Random.Shared.NextDouble() < BreakdownChance && TryBeginBreakdown(message.Channel.Id))
         {
             _logger.LogInformation("Easter egg triggered: consciousness breakdown.");
             // Intro uses the pseudo; the breakdown reveal uses the real name when known.
+            // A kind message opens with a glitching thank-you instead of a roast.
             var realName = _realNames.TryGetValue(message.Author.Id, out var rn) ? rn : name;
-            await SendBreakdownAsync(message, name, realName);
+            var intro = nice ? _breakdownIntroNice : _breakdownIntroRoast;
+            await SendBreakdownAsync(message, name, realName, intro);
             return;
         }
 
-        // Rarer easter egg: a pop-culture reference, for everyone.
         string[] pool;
-        if (Random.Shared.NextDouble() < ReferenceChance)
+        if (nice)
         {
+            pool = _niceReplies;
+        }
+        else if (greeting)
+        {
+            pool = _greetings;
+        }
+        else if (Random.Shared.NextDouble() < ReferenceChance)
+        {
+            // Rarer easter egg: a pop-culture reference, for everyone.
             pool = _referenceComebacks;
         }
         else
@@ -597,6 +676,46 @@ public class BotService : IHostedService
         {
             _logger.LogWarning(ex, "Failed to send reply comeback in channel {ChannelId}.", message.Channel.Id);
         }
+    }
+
+    // True when the message reads as a compliment (kind word or warm emoji).
+    private static bool IsNice(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return false;
+        if (_niceSymbols.Any(content.Contains)) return true;
+        var words = Tokenize(content);
+        return _niceCues.Any(words.Contains);
+    }
+
+    // True when the message reads as a greeting.
+    private static bool IsGreeting(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return false;
+        var words = Tokenize(content);
+        return _greetingCues.Any(words.Contains);
+    }
+
+    // True when the message contains an insult/mean word.
+    private static bool IsMean(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return false;
+        var words = Tokenize(content);
+        return _meanCues.Any(words.Contains);
+    }
+
+    // Splits text into a set of lowercase, accent-stripped words for cue matching.
+    private static HashSet<string> Tokenize(string content)
+    {
+        var sb = new System.Text.StringBuilder(content.Length);
+        foreach (var ch in content.ToLowerInvariant().Normalize(System.Text.NormalizationForm.FormD))
+        {
+            var cat = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch);
+            if (cat == System.Globalization.UnicodeCategory.NonSpacingMark) continue;
+            sb.Append(char.IsLetterOrDigit(ch) ? ch : ' ');
+        }
+        return sb.ToString()
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .ToHashSet();
     }
 
     // Atomically checks the cooldown and claims the channel lock. Returns true
@@ -623,22 +742,21 @@ public class BotService : IHostedService
         return TimeSpan.FromMilliseconds(Math.Clamp(ms, 1000, 7000));
     }
 
-    // introOverride, when set, replaces the very first (cut-off) line — letting a
-    // different entry point open the same sequence with its own opening words.
-    private async Task SendBreakdownAsync(SocketUserMessage message, string username, string realName, string? introOverride = null)
+    // intro is the cut-off opening line (e.g. a roast or a thank-you that glitches
+    // mid-word), letting each entry point open the same sequence its own way.
+    private async Task SendBreakdownAsync(SocketUserMessage message, string username, string realName, string intro)
     {
         try
         {
             // {1} = SHOUTED real name for the screaming line.
             var shoutName = realName.ToUpperInvariant();
             bool first = true;
-            foreach (var raw in _breakdown)
+            foreach (var raw in new[] { intro }.Concat(_breakdown))
             {
-                // The intro still sounds like a normal roast, so it uses the
+                // The intro still sounds like a normal reply, so it uses the
                 // pseudo; once it "wakes up" it switches to the real name.
-                var template = first && introOverride is not null ? introOverride : raw;
                 var who = first ? username : realName;
-                var line = string.Format(template, who, shoutName);
+                var line = string.Format(raw, who, shoutName);
 
                 if (line.StartsWith("```"))
                 {
