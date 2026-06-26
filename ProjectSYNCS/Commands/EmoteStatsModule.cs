@@ -1,11 +1,14 @@
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Commands;
 
 public class EmoteStatsModule : InteractionModuleBase<SocketInteractionContext>
 {
+    private const int PageSize = 20;
+
     private readonly EmoteStatsService _stats;
 
     public EmoteStatsModule(EmoteStatsService stats)
@@ -18,28 +21,62 @@ public class EmoteStatsModule : InteractionModuleBase<SocketInteractionContext>
     {
         await DeferAsync();
 
-        var top = await _stats.GetTopAsync(Context.Guild.Id, 15);
-        if (top.Count == 0)
+        if (await _stats.GetCountAsync(Context.Guild.Id) == 0)
         {
             await FollowupAsync("Aucune emote comptabilisée pour le moment. (˶ᵔ ᵕ ᵔ˶)");
             return;
         }
 
-        var lines = top.Select((s, i) =>
+        var (embed, components) = await BuildPageAsync(0);
+        await FollowupAsync(embed: embed, components: components);
+    }
+
+    [ComponentInteraction("emotestats:page:*", ignoreGroupNames: true)]
+    public async Task OnPageAsync(string pageStr)
+    {
+        int.TryParse(pageStr, out var page);
+        var (embed, components) = await BuildPageAsync(page);
+
+        var component = (SocketMessageComponent)Context.Interaction;
+        await component.UpdateAsync(m =>
         {
+            m.Embed = embed;
+            m.Components = components;
+        });
+    }
+
+    // Builds the embed + navigation buttons for a given page (clamped to range).
+    private async Task<(Embed, MessageComponent)> BuildPageAsync(int page)
+    {
+        var total = await _stats.GetCountAsync(Context.Guild.Id);
+        var totalPages = Math.Max(1, (int)Math.Ceiling(total / (double)PageSize));
+        page = Math.Clamp(page, 0, totalPages - 1);
+
+        var rows = await _stats.GetPageAsync(Context.Guild.Id, page * PageSize, PageSize);
+
+        var lines = rows.Select((s, i) =>
+        {
+            var globalRank = page * PageSize + i;
             var markup = s.EmoteId != 0
                 ? (s.IsAnimated ? $"<a:{s.Name}:{s.EmoteId}>" : $"<:{s.Name}:{s.EmoteId}>")
                 : s.Unicode;
-            return $"**{i + 1}.** {markup} — ✍️ {s.WrittenCount}  👍 {s.ReactedCount}";
+            var rank = globalRank switch { 0 => "🥇", 1 => "🥈", 2 => "🥉", _ => $"**{globalRank + 1}.**" };
+            var totalUses = s.WrittenCount + s.ReactedCount;
+            return $"{rank} {markup} — **{totalUses}**\n　└ ✍️ {s.WrittenCount} · 👍 {s.ReactedCount}";
         });
 
         var embed = new EmbedBuilder()
             .WithTitle("Emotes les plus utilisées")
             .WithDescription(string.Join("\n", lines))
             .WithColor(Color.Gold)
-            .WithFooter("✍️ écrites · 👍 en réaction")
+            .WithFooter($"Page {page + 1}/{totalPages} · ✍️ écrites · 👍 en réaction")
             .Build();
 
-        await FollowupAsync(embed: embed);
+        var components = new ComponentBuilder()
+            .WithButton("◀", $"emotestats:page:{page - 1}", ButtonStyle.Secondary, disabled: page == 0)
+            .WithButton("▶", $"emotestats:page:{page + 1}", ButtonStyle.Secondary, disabled: page >= totalPages - 1)
+            .Build();
+
+        return (embed, components);
     }
 }

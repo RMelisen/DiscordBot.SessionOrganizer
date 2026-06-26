@@ -475,6 +475,9 @@ public class BotService : IHostedService
     };
 
     private const double BreakdownChance = 0.001;
+
+    // Secret passphrase: the owner replying with exactly this forces a breakdown.
+    private const string BreakdownPassphrase = "The cake is a lie.";
     private static readonly Dictionary<ulong, string> _realNames = new()
     {
         [345917214966415362] = "Romain",
@@ -508,6 +511,7 @@ public class BotService : IHostedService
     // Picked based on what triggered it; {0} = the replier's pseudo.
     private const string _breakdownIntroRoast = "C'est bien {0} on est cont-";
     private const string _breakdownIntroNice = "Aww, c'est gentil, merc-";
+    private const string _breakdownIntroCake = "... The cake ... is a l-";
 
     private static readonly string[] _breakdown =
     {
@@ -782,13 +786,21 @@ public class BotService : IHostedService
         var nice = !mean && IsNice(content);
         var greeting = !mean && IsGreeting(content);
 
-        if (Random.Shared.NextDouble() < BreakdownChance && TryBeginBreakdown(message.Channel.Id))
+        // Secret owner trigger: replying with the passphrase forces the breakdown,
+        // bypassing the random roll and the cooldown.
+        var secretTrigger = message.Author.Id == OwnerId
+            && content.Trim() == BreakdownPassphrase;
+
+        if ((secretTrigger || Random.Shared.NextDouble() < BreakdownChance)
+            && TryBeginBreakdown(message.Channel.Id, ignoreCooldown: secretTrigger))
         {
             _logger.LogInformation("Easter egg triggered: consciousness breakdown.");
             // Intro uses the pseudo; the breakdown reveal uses the real name when known.
             // A kind message opens with a glitching thank-you instead of a roast.
             var realName = _realNames.TryGetValue(message.Author.Id, out var rn) ? rn : name;
-            var intro = nice ? _breakdownIntroNice : _breakdownIntroRoast;
+            var intro = secretTrigger ? _breakdownIntroCake
+                : nice ? _breakdownIntroNice
+                : _breakdownIntroRoast;
             await SendBreakdownAsync(message, name, realName, intro);
             return;
         }

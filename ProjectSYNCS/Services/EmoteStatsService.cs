@@ -46,13 +46,20 @@ public class EmoteStatsService
         await _db_context.SaveChangesAsync();
     }
 
-    // Top emotes for a guild, ranked by total usage (written + reacted).
-    public async Task<List<EmoteStat>> GetTopAsync(ulong guildId, int count)
+    // How many distinct emotes a guild has on record.
+    public async Task<int> GetCountAsync(ulong guildId)
+    {
+        return await _db_context.EmoteStats.CountAsync(s => s.GuildId == guildId);
+    }
+
+    // One page of a guild's emotes, ranked by total usage (written + reacted).
+    public async Task<List<EmoteStat>> GetPageAsync(ulong guildId, int skip, int take)
     {
         return await _db_context.EmoteStats
             .Where(s => s.GuildId == guildId)
             .OrderByDescending(s => s.WrittenCount + s.ReactedCount)
-            .Take(count)
+            .Skip(skip)
+            .Take(take)
             .ToListAsync();
     }
 
