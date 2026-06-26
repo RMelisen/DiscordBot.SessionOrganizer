@@ -348,7 +348,6 @@ public class BotService : IHostedService
             "Au moins tu sais dessiner hein ദ്ദി◝ ⩊ ◜.ᐟ",
             "Ok. 👍",
             "Ok. 👍",
-            "Ok. 👍",
             "ദ്ദി◝ ⩊ ◜.ᐟ",
             "ദ്ദി◝ ⩊ ◜.ᐟ",
             "Je sais ou tu habites ... Amaury 👁👄👁️",
@@ -357,7 +356,6 @@ public class BotService : IHostedService
         {
             "Un grand pouvoir implique de grandes responsabilités. Dommage c'est tombé sur la mauvaise personne (˶ᵔ ᵕ ᵔ˶)",
             "Merci pour les accès, je vais pouvoir faire des bêtises maintenant UwU",
-            "Ok. 👍",
             "Ok. 👍",
             "Ok. 👍",
             "ദ്ദി◝ ⩊ ◜.ᐟ",
@@ -372,9 +370,12 @@ public class BotService : IHostedService
             "Je sais ou tu habites ... Sandra 👁👄👁️",
             "Je vais te goumer (˶ᵔ ᵕ ᵔ˶)",
             "Kilou kilou ! <a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774>"
+            "Kilou kilou ! <a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774>"
         },
         [789545863105478716] = new[]    // Léa
         {
+            "Va manger tes morts espèce de schlag UwU",
+            "Va manger tes morts espèce de schlag UwU",
             "Va manger tes morts espèce de schlag UwU",
         },
     };
@@ -581,9 +582,9 @@ public class BotService : IHostedService
         else
         {
             pool = message.Author.Id == OwnerId ? _ownerComebacks : _comebacks;
-            // Fold in this person's custom lines so each has equal odds.
+            // Fold in this person's custom lines twice, so each has double weight.
             if (_personalComebacks.TryGetValue(message.Author.Id, out var personal))
-                pool = pool.Concat(personal).ToArray();
+                pool = pool.Concat(personal).Concat(personal).ToArray();
         }
         var fr = System.Globalization.CultureInfo.GetCultureInfo("fr-FR");
         var weekday = Helpers.AppTime.Now.ToString("dddd", fr);
