@@ -56,20 +56,19 @@ public class EmoteStatsModule : InteractionModuleBase<SocketInteractionContext>
 
         var lines = rows.Select((s, i) =>
         {
-            var globalRank = page * PageSize + i;
+            var rank = page * PageSize + i + 1;
             var markup = s.EmoteId != 0
                 ? (s.IsAnimated ? $"<a:{s.Name}:{s.EmoteId}>" : $"<:{s.Name}:{s.EmoteId}>")
                 : s.Unicode;
-            var rank = globalRank switch { 0 => "🥇", 1 => "🥈", 2 => "🥉", _ => $"**{globalRank + 1}.**" };
             var totalUses = s.WrittenCount + s.ReactedCount;
-            return $"{rank} {markup} — **{totalUses}**\n　└ ✍️ {s.WrittenCount} · 👍 {s.ReactedCount}";
+            return $"**{rank}.** {markup} — **{totalUses}** ({s.WrittenCount} écrites, {s.ReactedCount} réactions)";
         });
 
         var embed = new EmbedBuilder()
             .WithTitle("Emotes les plus utilisées")
             .WithDescription(string.Join("\n", lines))
             .WithColor(Color.Gold)
-            .WithFooter($"Page {page + 1}/{totalPages} · ✍️ écrites · 👍 en réaction")
+            .WithFooter($"Page {page + 1}/{totalPages}")
             .Build();
 
         var components = new ComponentBuilder()
