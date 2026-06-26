@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<Poll> Polls => Set<Poll>();
     public DbSet<PollOption> PollOptions => Set<PollOption>();
     public DbSet<PollVote> PollVotes => Set<PollVote>();
+    public DbSet<EmoteStat> EmoteStats => Set<EmoteStat>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -48,6 +49,15 @@ public class AppDbContext : DbContext
             e.Property(x => x.UserId).HasConversion<long>();
             // One vote row per (slot, user); toggling adds or removes it.
             e.HasIndex(x => new { x.PollOptionId, x.UserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<EmoteStat>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.EmoteId).HasConversion<long>();
+            // One row per (guild, emote); custom emotes key on EmoteId, unicode
+            // emojis on the Unicode string. Counts are scoped to the guild.
+            e.HasIndex(x => new { x.GuildId, x.EmoteId, x.Unicode }).IsUnique();
         });
     }
 }

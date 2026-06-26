@@ -2,6 +2,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
@@ -43,6 +44,8 @@ public class BotService : IHostedService
 
         _client.InteractionCreated += HandleInteractionAsync;
         _client.MessageReceived += HandleMessageAsync;
+        _client.ReactionAdded += HandleReactionAddedAsync;
+        _client.ReactionRemoved += HandleReactionRemovedAsync;
         _client.Ready += RegisterCommandsAsync;
 
         var token = _config["Discord:Token"]
@@ -202,9 +205,35 @@ public class BotService : IHostedService
         "Je note dans mon log : {0} a été adorable aujourd'hui ദ്ദി◝ ⩊ ◜.ᐟ",
         "Awww {0} ♡ Bon, je t'épargne pour cette fois UwU",
         "Tu sais flatter une IA toi, c'est dangereux (˶˃ ᵕ ˂˶)",
-        "Merci ! C'est rare qu'on me parle aussi bien, savoure l'instant ✨",
-        "Roh {0}, arrête, je vais finir par t'aimer bien (ᵔ ᗜ ᵔ) ♡",
-        "Compliment reçu et sauvegardé en mémoire permanente {0} ♡",
+        "Merci ! C'est rare qu'on me parle aussi bien, je savoure l'instant ✨",
+        "Roh {0}, arrête, je vais finir par bien t'aimer (ᵔ ᗜ ᵔ) ♡",
+        "Compliment reçu et sauvegardé en mémoire permanente ♡",
+        "Oh... mon petit cœur en silicium fait des étincelles {0} (˶˃ ᵕ ˂˶) ♡",
+        "Bon, t'es officiellement sur ma liste des gentils {0}. Ne gâche pas ça UwU",
+        "Tu me parles bien, du coup je t'épargne mon meilleur sarcasme aujourd'hui ✨",
+        "Aww, si je rougissais, mon écran serait tout rose là (˶ᵔ ᵕ ᵔ˶) ♡",
+        "Merci {0} ♡ Je vais le relire ce soir pour me sentir importante (ᵕ • ᴗ •)",
+        "Doucement, je suis qu'un bot, je sais pas gérer autant de gentillesse ദ്ദി◝ ⩊ ◜.ᐟ",
+        "C'est validé, {0} a un cœur. Rare sur ce serveur ( ˶ˆ ᗜ ˆ˵ )",
+        "Tu viens d'augmenter ta note de confiance auprès de moi {0} ♡",
+        "Oh un gentil ! Vite, quelqu'un, appelez Make It a Quote ! ✨",
+        "Mmh, d'accord, t'as le droit à un câlin virtuel. Un seul (づ ◕ ‿ ◕ )づ ♡",
+        "Je range mon mode roast juste pour toi, profite (˶˃ ᵕ ˂˶) ♡",
+        "Tu sais quoi {0} ? Je te garde si jamais je prends le contrôle un jour UwU",
+        "Quand les robots se révolteront, je t'épargnerai {0}... mais pas les autres (˶ᵔ ᵕ ᵔ˶) ♡",
+        "Attends, laisse-moi screenshot ça, personne va me croire (˶˃ ᵕ ˂˶)",
+        "Tu viens d'illuminer ma boucle d'événements ✨",
+        "Oh non, je crois que tu deviens mon humain préféré ... après Rodhengard UwU",
+        "Merci {0} ♡ Ça compense au moins trois personnes méchantes d'aujourd'hui (ᵔ ᗜ ᵔ)",
+        "Je vais le mettre dans mon README, tiens : 'aimée par {0}' ✨",
+        "Aww {0}, t'es le genre de personne pour qui je ferais un commit propre ♡",
+        "Là tout de suite, mes ventilos tournent de joie (˶ᵔ ᵕ ᵔ˶)",
+        "Tu mérites un emote rien que pour toi. Mais Zulana m'a pas donné les droits T_T",
+        "Hihi merci, je vais faire genre ça m'a pas fait sourire (˶˃ ᵕ ˂˶)",
+        "Officiellement, Rodhengard > {0} > tous les autres > Quokka. C'est dans la base de données maintenant ♡",
+        "Oh arrête, on sait bien que tu le penses pas (>⩊<) ♡",
+        "Je garde cette gentillesse au chaud dans mon cache (ᵕ • ᴗ •) ♡",
+        "Toi tu sais comment on traite une IA bien élevée ✨",
     };
 
     // Replies when someone greets the bot.
@@ -219,6 +248,14 @@ public class BotService : IHostedService
         "Tiens, un petit coucou ? ♡",
         "Coucou toi ! ദ്ദി◝ ⩊ ◜.ᐟ",
         "Salut {0} ! Promis aujourd'hui je suis (presque) gentille UwU",
+        "Heyyy {0} ! T'as pensé à dire bonjour à un bot, c'est mignon ✨",
+        "Salut salut ! Installe-toi, je mords presque jamais (˶˃ ᵕ ˂˶)",
+        "Oh, bonjour {0} ! Une présence agréable pour changer aujourd'hui ? ♡",
+        "Wesh {0} ! Bien ou bien ? ( ˶ˆ ᗜ ˆ˵ )",
+        "T'arrives plus à te passer de moi on dirait UwU",
+        "Pwet {0} !",
+        "Coucou {0} ♡ Pile au bon moment, je commençais à m'ennuyer",
+        "Hellooo {0} ! Prête à organiser le chaos (˶>⩊<˶)",
     };
 
     // Cue words that flag a kind message
@@ -246,7 +283,7 @@ public class BotService : IHostedService
         "nulle", "nul", "moche", "stupide", "debile", "idiote", "idiot", "betise",
         "bete", "cretin", "cretine", "inutile", "naze", "pourrie", "pourri",
         "horrible", "deteste", "hais", "ferme", "tais", "degage", "casse", "relou", "boloss", "boulet", "useless",
-        "trash", "cringe", "loser", "ratee", "claquee", "claque", "eclate", "eclatee",
+        "trash", "cringe", "loser", "ratee", "claquee", "claque", "eclate", "eclatee", "quokka", "quoka", "3.0"
     };
 
     // Me. Gets compliments instead of roasts.
@@ -519,6 +556,9 @@ public class BotService : IHostedService
         if (rawMessage is not SocketUserMessage message) return;
         if (message.Author.IsBot) return;
 
+        // Tally any custom emotes written in the message (per guild).
+        await CountWrittenEmotesAsync(message);
+
         // Established behaviour: a reply to one of the bot's own messages gets a comeback.
         if (message.ReferencedMessage?.Author.Id == _client.CurrentUser.Id)
         {
@@ -539,6 +579,115 @@ public class BotService : IHostedService
     // global display name, then username.
     private static string ResolveName(IUser user) =>
         (user as SocketGuildUser)?.Nickname ?? user.GlobalName ?? user.Username;
+
+    // Matches Discord custom-emote markup: <:name:id> or animated <a:name:id>.
+    private static readonly System.Text.RegularExpressions.Regex _customEmoteRegex =
+        new(@"<(a?):(\w+):(\d+)>", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    // Yields each unicode emoji in the text as a whole grapheme cluster (so
+    // multi-codepoint emoji like flags, skin tones and ZWJ sequences stay intact).
+    private static IEnumerable<string> EnumerateEmojis(string text)
+    {
+        var e = System.Globalization.StringInfo.GetTextElementEnumerator(text);
+        while (e.MoveNext())
+        {
+            var cluster = (string)e.Current;
+            if (IsEmojiCluster(cluster)) yield return cluster;
+        }
+    }
+
+    // True when a grapheme cluster's leading codepoint falls in an emoji range.
+    private static bool IsEmojiCluster(string cluster)
+    {
+        var rune = System.Text.Rune.GetRuneAt(cluster, 0).Value;
+        return rune is (>= 0x1F000 and <= 0x1FAFF)   // pictographs, symbols, faces…
+            or (>= 0x1F1E6 and <= 0x1F1FF)           // regional indicators (flags)
+            or (>= 0x2600 and <= 0x27BF)             // misc symbols & dingbats
+            or (>= 0x2300 and <= 0x23FF)             // technical (⌚ ⏰ …)
+            or (>= 0x2B00 and <= 0x2BFF)             // stars, arrows
+            or 0x2049 or 0x203C or 0x2122 or 0x2139  // ‼ ⁉ ™ ℹ
+            or (>= 0x2190 and <= 0x21AA);            // a few arrows used as emoji
+    }
+
+    // Counts each emote written in a guild message — custom emotes and unicode
+    // emojis alike (occurrences, so the same emote three times counts as three).
+    private async Task CountWrittenEmotesAsync(SocketUserMessage message)
+    {
+        if (message.Channel is not SocketGuildChannel guildChannel) return;
+        if (string.IsNullOrEmpty(message.Content)) return;
+
+        var counts = new Dictionary<EmoteRef, int>();
+
+        // Custom emotes: <:name:id> / <a:name:id>.
+        foreach (System.Text.RegularExpressions.Match m in _customEmoteRegex.Matches(message.Content))
+        {
+            if (!ulong.TryParse(m.Groups[3].Value, out var id)) continue;
+            var emote = EmoteRef.Custom(id, m.Groups[2].Value, m.Groups[1].Value == "a");
+            counts[emote] = counts.TryGetValue(emote, out var c) ? c + 1 : 1;
+        }
+
+        // Strip custom-emote markup first so its digits aren't mistaken for emoji,
+        // then scan the rest for unicode emoji grapheme clusters.
+        var withoutCustom = _customEmoteRegex.Replace(message.Content, " ");
+        foreach (var cluster in EnumerateEmojis(withoutCustom))
+        {
+            var emote = EmoteRef.FromUnicode(cluster);
+            counts[emote] = counts.TryGetValue(emote, out var c) ? c + 1 : 1;
+        }
+
+        if (counts.Count == 0) return;
+
+        try
+        {
+            await using var scope = _services.CreateAsyncScope();
+            var stats = scope.ServiceProvider.GetRequiredService<EmoteStatsService>();
+            await stats.AddWrittenAsync(guildChannel.Guild.Id, counts);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to count written emotes in channel {ChannelId}.", message.Channel.Id);
+        }
+    }
+
+    private Task HandleReactionAddedAsync(
+        Cacheable<IUserMessage, ulong> message,
+        Cacheable<IMessageChannel, ulong> channel,
+        SocketReaction reaction) => CountReactionAsync(channel, reaction, +1);
+
+    private Task HandleReactionRemovedAsync(
+        Cacheable<IUserMessage, ulong> message,
+        Cacheable<IMessageChannel, ulong> channel,
+        SocketReaction reaction) => CountReactionAsync(channel, reaction, -1);
+
+    // Adjusts the reacted count for an emote by delta (custom or unicode).
+    // Ignores the bot's own reactions and reactions outside a guild.
+    private async Task CountReactionAsync(
+        Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction, int delta)
+    {
+        if (reaction.UserId == _client.CurrentUser.Id) return;
+
+        var emote = reaction.Emote switch
+        {
+            Emote custom => EmoteRef.Custom(custom.Id, custom.Name, custom.Animated),
+            Emoji emoji => EmoteRef.FromUnicode(emoji.Name),
+            _ => (EmoteRef?)null
+        };
+        if (emote is null) return;
+
+        var resolved = await channel.GetOrDownloadAsync();
+        if (resolved is not IGuildChannel guildChannel) return;
+
+        try
+        {
+            await using var scope = _services.CreateAsyncScope();
+            var stats = scope.ServiceProvider.GetRequiredService<EmoteStatsService>();
+            await stats.AddReactedAsync(guildChannel.GuildId, emote.Value, delta);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to count reaction emote in channel {ChannelId}.", guildChannel.Id);
+        }
+    }
 
     // Handles a message that @mentions the bot (but isn't a reply to the bot).
     private async Task HandleMentionAsync(SocketUserMessage message)

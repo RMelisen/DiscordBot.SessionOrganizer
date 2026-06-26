@@ -45,6 +45,7 @@ var host = Host.CreateDefaultBuilder(args)
 
         services.AddTransient<EventService>();
         services.AddTransient<PollService>();
+        services.AddTransient<EmoteStatsService>();
 
         services.AddHostedService<BotService>();
         services.AddHostedService<ReminderService>();
