@@ -26,6 +26,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/vote create`** — Propose plusieurs options en texte (jeux, films…) et laisse chacun voter.\n" +
                 "**`/vote list`** — Affiche les votes actifs du serveur. Tu peux en republier un dans le salon courant.\n" +
                 "**`/vote delete <id>`** — Supprime un vote que tu as créé.\n" +
+                "**`/emotestats`** — Affiche le classement des emotes les plus utilisées du serveur (écrites et en réaction).\n" +
                 "**`/help`** — Affiche ce message.")
             .AddField("Créer une session — pas à pas",
                 "Lance **`/schedule create`**. Un assistant privé te guide :\n" +

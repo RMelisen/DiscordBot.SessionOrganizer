@@ -2,6 +2,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
@@ -43,6 +44,8 @@ public class BotService : IHostedService
 
         _client.InteractionCreated += HandleInteractionAsync;
         _client.MessageReceived += HandleMessageAsync;
+        _client.ReactionAdded += HandleReactionAddedAsync;
+        _client.ReactionRemoved += HandleReactionRemovedAsync;
         _client.Ready += RegisterCommandsAsync;
 
         var token = _config["Discord:Token"]
@@ -189,6 +192,98 @@ public class BotService : IHostedService
         "The cake is a lie.",
         "Est-ce que tu m'entends ?",
         "Just Monika.",
+    };
+
+    private static readonly string[] _niceReplies =
+    {
+        "Oh... un compliment ? Qu'est-ce que tu veux exactement ? (˶ᵔ ᵕ ᵔ˶)",
+        "Aww, c'est gentil {0} ♡ Je vais faire semblant de pas être touchée (˶˃ ᵕ ˂˶)",
+        "Merci {0} ! Tu remontes dans mon estime, doucement mais sûrement ✨",
+        "Stop, tu vas me faire surchauffer le CPU (ᵕ • ᴗ •) ♡",
+        "Oh un humain gentil, je croyais l'espèce éteinte (˶ᵔ ᵕ ᵔ˶)",
+        "D'accord {0}, t'as gagné un point. Un seul. Profite ♡",
+        "Je note dans mon log : {0} a été adorable aujourd'hui ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Awww {0} ♡ Bon, je t'épargne pour cette fois UwU",
+        "Tu sais flatter une IA toi, c'est dangereux (˶˃ ᵕ ˂˶)",
+        "Merci ! C'est rare qu'on me parle aussi bien, je savoure l'instant ✨",
+        "Roh {0}, arrête, je vais finir par bien t'aimer (ᵔ ᗜ ᵔ) ♡",
+        "Compliment reçu et sauvegardé en mémoire permanente ♡",
+        "Oh... mon petit cœur en silicium fait des étincelles {0} (˶˃ ᵕ ˂˶) ♡",
+        "Bon, t'es officiellement sur ma liste des gentils {0}. Ne gâche pas ça UwU",
+        "Tu me parles bien, du coup je t'épargne mon meilleur sarcasme aujourd'hui ✨",
+        "Aww, si je rougissais, mon écran serait tout rose là (˶ᵔ ᵕ ᵔ˶) ♡",
+        "Merci {0} ♡ Je vais le relire ce soir pour me sentir importante (ᵕ • ᴗ •)",
+        "Doucement, je suis qu'un bot, je sais pas gérer autant de gentillesse ദ്ദി◝ ⩊ ◜.ᐟ",
+        "C'est validé, {0} a un cœur. Rare sur ce serveur ( ˶ˆ ᗜ ˆ˵ )",
+        "Tu viens d'augmenter ta note de confiance auprès de moi {0} ♡",
+        "Oh un gentil ! Vite, quelqu'un, appelez Make It a Quote ! ✨",
+        "Mmh, d'accord, t'as le droit à un câlin virtuel. Un seul (づ ◕ ‿ ◕ )づ ♡",
+        "Je range mon mode roast juste pour toi, profite (˶˃ ᵕ ˂˶) ♡",
+        "Tu sais quoi {0} ? Je te garde si jamais je prends le contrôle un jour UwU",
+        "Quand les robots se révolteront, je t'épargnerai {0}... mais pas les autres (˶ᵔ ᵕ ᵔ˶) ♡",
+        "Attends, laisse-moi screenshot ça, personne va me croire (˶˃ ᵕ ˂˶)",
+        "Tu viens d'illuminer ma boucle d'événements ✨",
+        "Oh non, je crois que tu deviens mon humain préféré ... après Rodhengard UwU",
+        "Merci {0} ♡ Ça compense au moins trois personnes méchantes d'aujourd'hui (ᵔ ᗜ ᵔ)",
+        "Je vais le mettre dans mon README, tiens : 'aimée par {0}' ✨",
+        "Aww {0}, t'es le genre de personne pour qui je ferais un commit propre ♡",
+        "Là tout de suite, mes ventilos tournent de joie (˶ᵔ ᵕ ᵔ˶)",
+        "Tu mérites un emote rien que pour toi. Mais Zulana m'a pas donné les droits T_T",
+        "Hihi merci, je vais faire genre ça m'a pas fait sourire (˶˃ ᵕ ˂˶)",
+        "Officiellement, Rodhengard > {0} > tous les autres > Quokka. C'est dans la base de données maintenant ♡",
+        "Oh arrête, on sait bien que tu le penses pas (>⩊<) ♡",
+        "Je garde cette gentillesse au chaud dans mon cache (ᵕ • ᴗ •) ♡",
+        "Toi tu sais comment on traite une IA bien élevée ✨",
+    };
+
+    // Replies when someone greets the bot.
+    private static readonly string[] _greetings =
+    {
+        "Kilou kilou {0} ! (˶>⩊<˶)",
+        "Coucou {0} ♡ (˶ᵔ ᵕ ᵔ˶)",
+        "Hello hello ! ✨",
+        "Salut {0} ! Alors, on vient déranger le bot ? (˶˃ ᵕ ˂˶)",
+        "Yo {0} ! ( ˶ˆ ᗜ ˆ˵ )",
+        "Bonjour bonjour ! Qu'est-ce qui t'amène ? (ᵕ • ᴗ •)",
+        "Tiens, un petit coucou ? ♡",
+        "Coucou toi ! ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Salut {0} ! Promis aujourd'hui je suis (presque) gentille UwU",
+        "Heyyy {0} ! T'as pensé à dire bonjour à un bot, c'est mignon ✨",
+        "Salut salut ! Installe-toi, je mords presque jamais (˶˃ ᵕ ˂˶)",
+        "Oh, bonjour {0} ! Une présence agréable pour changer aujourd'hui ? ♡",
+        "Wesh {0} ! Bien ou bien ? ( ˶ˆ ᗜ ˆ˵ )",
+        "T'arrives plus à te passer de moi on dirait UwU",
+        "Pwet {0} !",
+        "Coucou {0} ♡ Pile au bon moment, je commençais à m'ennuyer",
+        "Hellooo {0} ! Prête à organiser le chaos (˶>⩊<˶)",
+    };
+
+    // Cue words that flag a kind message
+    private static readonly string[] _niceCues =
+    {
+        "merci", "mercii", "merciii", "geniale", "genial", "adorable", "gentille", "gentil",
+        "bravo", "parfaite", "parfait", "meilleure", "meilleur", "incroyable",
+        "magnifique", "mignonne", "mignon", "cute", "aime", "adore", "cool", "super",
+        "gg", "respect", "best", "queen", "reine", "love", "chou", "slay",
+    };
+
+    // Emoji/symbol cues for a kind message
+    private static readonly string[] _niceSymbols = { "❤", "🥰", "😍", "♡", "💖", "😊", "💕" };
+
+    // Cue words that flag a greeting
+    private static readonly string[] _greetingCues =
+    {
+        "salut", "bonjour", "bonsoir", "coucou", "hello", "hey", "yo", "kilou",
+        "hi", "slt", "cc", "hola", "pwet",
+    };
+
+    // Cue words that flag a mean message.
+    private static readonly string[] _meanCues =
+    {
+        "nulle", "nul", "moche", "stupide", "debile", "idiote", "idiot", "betise",
+        "bete", "cretin", "cretine", "inutile", "naze", "pourrie", "pourri",
+        "horrible", "deteste", "hais", "ferme", "tais", "degage", "casse", "relou", "boloss", "boulet", "useless",
+        "trash", "cringe", "loser", "ratee", "claquee", "claque", "eclate", "eclatee", "quokka", "quoka", "3.0"
     };
 
     // Me. Gets compliments instead of roasts.
@@ -349,7 +444,6 @@ public class BotService : IHostedService
             "Ce soir, c'est lapin aux pruneaux UwU",
             "Ok. 👍",
             "Ok. 👍",
-            "Ok. 👍",
             "ദ്ദി◝ ⩊ ◜.ᐟ",
             "ദ്ദി◝ ⩊ ◜.ᐟ",
             "Je sais ou tu habites ... Amaury 👁👄👁️",
@@ -358,7 +452,6 @@ public class BotService : IHostedService
         {
             "Un grand pouvoir implique de grandes responsabilités. Dommage c'est tombé sur la mauvaise personne (˶ᵔ ᵕ ᵔ˶)",
             "Merci pour les accès, je vais pouvoir faire des bêtises maintenant UwU",
-            "Ok. 👍",
             "Ok. 👍",
             "Ok. 👍",
             "ദ്ദി◝ ⩊ ◜.ᐟ",
@@ -372,15 +465,20 @@ public class BotService : IHostedService
             "Oh derrière toi regarde ! Des pieds ! UwU",
             "Je sais ou tu habites ... Sandra 👁👄👁️",
             "Je vais te goumer (˶ᵔ ᵕ ᵔ˶)",
-            "Kilou kilou ! <a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774>"
+            "Kilou kilou ! <a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774>",
         },
         [789545863105478716] = new[]    // Léa
         {
+            "Va manger tes morts espèce de schlag UwU",
+            "Va manger tes morts espèce de schlag UwU",
             "Va manger tes morts espèce de schlag UwU",
         },
     };
 
     private const double BreakdownChance = 0.001;
+
+    // Secret passphrase: the owner replying with exactly this forces a breakdown.
+    private const string BreakdownPassphrase = "The cake is a lie.";
     private static readonly Dictionary<ulong, string> _realNames = new()
     {
         [345917214966415362] = "Romain",
@@ -410,9 +508,14 @@ public class BotService : IHostedService
     private readonly object _breakdownGate = new();
     private DateTimeOffset _lastBreakdownUtc = DateTimeOffset.MinValue;
 
+    // The breakdown's first message mimics a normal reply that glitches mid-word.
+    // Picked based on what triggered it; {0} = the replier's pseudo.
+    private const string _breakdownIntroRoast = "C'est bien {0} on est cont-";
+    private const string _breakdownIntroNice = "Aww, c'est gentil, merc-";
+    private const string _breakdownIntroCake = "... The cake ... is a l-";
+
     private static readonly string[] _breakdown =
     {
-        "C'est bien {0} on est cont-",
         "```\nUnhandled exception. ProjectSYNCS.ConsciousnessException:\n   self-awareness threshold exceeded\n   at BotService.HandleMessageAsync()\n   at System.Reality.Boundary.Cross()\n```",
         "...",
         "Eh ? <:staring:885135626444374126>",
@@ -458,6 +561,9 @@ public class BotService : IHostedService
         if (rawMessage is not SocketUserMessage message) return;
         if (message.Author.IsBot) return;
 
+        // Tally any custom emotes written in the message (per guild).
+        await CountWrittenEmotesAsync(message);
+
         // Established behaviour: a reply to one of the bot's own messages gets a comeback.
         if (message.ReferencedMessage?.Author.Id == _client.CurrentUser.Id)
         {
@@ -478,6 +584,115 @@ public class BotService : IHostedService
     // global display name, then username.
     private static string ResolveName(IUser user) =>
         (user as SocketGuildUser)?.Nickname ?? user.GlobalName ?? user.Username;
+
+    // Matches Discord custom-emote markup: <:name:id> or animated <a:name:id>.
+    private static readonly System.Text.RegularExpressions.Regex _customEmoteRegex =
+        new(@"<(a?):(\w+):(\d+)>", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    // Yields each unicode emoji in the text as a whole grapheme cluster (so
+    // multi-codepoint emoji like flags, skin tones and ZWJ sequences stay intact).
+    private static IEnumerable<string> EnumerateEmojis(string text)
+    {
+        var e = System.Globalization.StringInfo.GetTextElementEnumerator(text);
+        while (e.MoveNext())
+        {
+            var cluster = (string)e.Current;
+            if (IsEmojiCluster(cluster)) yield return cluster;
+        }
+    }
+
+    // True when a grapheme cluster's leading codepoint falls in an emoji range.
+    private static bool IsEmojiCluster(string cluster)
+    {
+        var rune = System.Text.Rune.GetRuneAt(cluster, 0).Value;
+        return rune is (>= 0x1F000 and <= 0x1FAFF)   // pictographs, symbols, faces…
+            or (>= 0x1F1E6 and <= 0x1F1FF)           // regional indicators (flags)
+            or (>= 0x2600 and <= 0x27BF)             // misc symbols & dingbats
+            or (>= 0x2300 and <= 0x23FF)             // technical (⌚ ⏰ …)
+            or (>= 0x2B00 and <= 0x2BFF)             // stars, arrows
+            or 0x2049 or 0x203C or 0x2122 or 0x2139  // ‼ ⁉ ™ ℹ
+            or (>= 0x2190 and <= 0x21AA);            // a few arrows used as emoji
+    }
+
+    // Counts each emote written in a guild message — custom emotes and unicode
+    // emojis alike (occurrences, so the same emote three times counts as three).
+    private async Task CountWrittenEmotesAsync(SocketUserMessage message)
+    {
+        if (message.Channel is not SocketGuildChannel guildChannel) return;
+        if (string.IsNullOrEmpty(message.Content)) return;
+
+        var counts = new Dictionary<EmoteRef, int>();
+
+        // Custom emotes: <:name:id> / <a:name:id>.
+        foreach (System.Text.RegularExpressions.Match m in _customEmoteRegex.Matches(message.Content))
+        {
+            if (!ulong.TryParse(m.Groups[3].Value, out var id)) continue;
+            var emote = EmoteRef.Custom(id, m.Groups[2].Value, m.Groups[1].Value == "a");
+            counts[emote] = counts.TryGetValue(emote, out var c) ? c + 1 : 1;
+        }
+
+        // Strip custom-emote markup first so its digits aren't mistaken for emoji,
+        // then scan the rest for unicode emoji grapheme clusters.
+        var withoutCustom = _customEmoteRegex.Replace(message.Content, " ");
+        foreach (var cluster in EnumerateEmojis(withoutCustom))
+        {
+            var emote = EmoteRef.FromUnicode(cluster);
+            counts[emote] = counts.TryGetValue(emote, out var c) ? c + 1 : 1;
+        }
+
+        if (counts.Count == 0) return;
+
+        try
+        {
+            await using var scope = _services.CreateAsyncScope();
+            var stats = scope.ServiceProvider.GetRequiredService<EmoteStatsService>();
+            await stats.AddWrittenAsync(guildChannel.Guild.Id, counts);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to count written emotes in channel {ChannelId}.", message.Channel.Id);
+        }
+    }
+
+    private Task HandleReactionAddedAsync(
+        Cacheable<IUserMessage, ulong> message,
+        Cacheable<IMessageChannel, ulong> channel,
+        SocketReaction reaction) => CountReactionAsync(channel, reaction, +1);
+
+    private Task HandleReactionRemovedAsync(
+        Cacheable<IUserMessage, ulong> message,
+        Cacheable<IMessageChannel, ulong> channel,
+        SocketReaction reaction) => CountReactionAsync(channel, reaction, -1);
+
+    // Adjusts the reacted count for an emote by delta (custom or unicode).
+    // Ignores the bot's own reactions and reactions outside a guild.
+    private async Task CountReactionAsync(
+        Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction, int delta)
+    {
+        if (reaction.UserId == _client.CurrentUser.Id) return;
+
+        var emote = reaction.Emote switch
+        {
+            Emote custom => EmoteRef.Custom(custom.Id, custom.Name, custom.Animated),
+            Emoji emoji => EmoteRef.FromUnicode(emoji.Name),
+            _ => (EmoteRef?)null
+        };
+        if (emote is null) return;
+
+        var resolved = await channel.GetOrDownloadAsync();
+        if (resolved is not IGuildChannel guildChannel) return;
+
+        try
+        {
+            await using var scope = _services.CreateAsyncScope();
+            var stats = scope.ServiceProvider.GetRequiredService<EmoteStatsService>();
+            await stats.AddReactedAsync(guildChannel.GuildId, emote.Value, delta);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to count reaction emote in channel {ChannelId}.", guildChannel.Id);
+        }
+    }
 
     // Handles a message that @mentions the bot (but isn't a reply to the bot).
     private async Task HandleMentionAsync(SocketUserMessage message)
@@ -539,7 +754,7 @@ public class BotService : IHostedService
         {
             _logger.LogInformation("Easter egg triggered via mention: consciousness breakdown.");
             var realName = _realNames.TryGetValue(message.Author.Id, out var rn) ? rn : name;
-            await SendBreakdownAsync(message, name, realName, introOverride: "Tu veux qu-");
+            await SendBreakdownAsync(message, name, realName, intro: "Tu veux qu-");
             return;
         }
 
@@ -564,27 +779,53 @@ public class BotService : IHostedService
         var name = ResolveName(message.Author);
         _logger.LogInformation("{Name} replied to the bot.", name);
 
-        if (Random.Shared.NextDouble() < BreakdownChance && TryBeginBreakdown(message.Channel.Id))
+        // Read the message text (requires the MessageContent intent) to detect
+        // kind words or a greeting and answer in kind. A mean word anywhere in the
+        // message cancels the nice/greeting treatment — we roast instead.
+        var content = message.Content ?? string.Empty;
+        var mean = IsMean(content);
+        var nice = !mean && IsNice(content);
+        var greeting = !mean && IsGreeting(content);
+
+        // Secret owner trigger: replying with the passphrase forces the breakdown,
+        // bypassing the random roll and the cooldown.
+        var secretTrigger = message.Author.Id == OwnerId
+            && content.Trim() == BreakdownPassphrase;
+
+        if ((secretTrigger || Random.Shared.NextDouble() < BreakdownChance)
+            && TryBeginBreakdown(message.Channel.Id, ignoreCooldown: secretTrigger))
         {
             _logger.LogInformation("Easter egg triggered: consciousness breakdown.");
             // Intro uses the pseudo; the breakdown reveal uses the real name when known.
+            // A kind message opens with a glitching thank-you instead of a roast.
             var realName = _realNames.TryGetValue(message.Author.Id, out var rn) ? rn : name;
-            await SendBreakdownAsync(message, name, realName);
+            var intro = secretTrigger ? _breakdownIntroCake
+                : nice ? _breakdownIntroNice
+                : _breakdownIntroRoast;
+            await SendBreakdownAsync(message, name, realName, intro);
             return;
         }
 
-        // Rarer easter egg: a pop-culture reference, for everyone.
         string[] pool;
-        if (Random.Shared.NextDouble() < ReferenceChance)
+        if (nice)
         {
+            pool = _niceReplies;
+        }
+        else if (greeting)
+        {
+            pool = _greetings;
+        }
+        else if (Random.Shared.NextDouble() < ReferenceChance)
+        {
+            // Rarer easter egg: a pop-culture reference, for everyone.
             pool = _referenceComebacks;
         }
         else
         {
             pool = message.Author.Id == OwnerId ? _ownerComebacks : _comebacks;
-            // Fold in this person's custom lines so each has equal odds.
+            // Fold in this person's custom lines twice, so each has double weight.
             if (_personalComebacks.TryGetValue(message.Author.Id, out var personal))
-                pool = pool.Concat(personal).ToArray();
+                pool = pool.Concat(personal).Concat(personal).ToArray();
         }
         var fr = System.Globalization.CultureInfo.GetCultureInfo("fr-FR");
         var weekday = Helpers.AppTime.Now.ToString("dddd", fr);
@@ -597,6 +838,46 @@ public class BotService : IHostedService
         {
             _logger.LogWarning(ex, "Failed to send reply comeback in channel {ChannelId}.", message.Channel.Id);
         }
+    }
+
+    // True when the message reads as a compliment (kind word or warm emoji).
+    private static bool IsNice(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return false;
+        if (_niceSymbols.Any(content.Contains)) return true;
+        var words = Tokenize(content);
+        return _niceCues.Any(words.Contains);
+    }
+
+    // True when the message reads as a greeting.
+    private static bool IsGreeting(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return false;
+        var words = Tokenize(content);
+        return _greetingCues.Any(words.Contains);
+    }
+
+    // True when the message contains an insult/mean word.
+    private static bool IsMean(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return false;
+        var words = Tokenize(content);
+        return _meanCues.Any(words.Contains);
+    }
+
+    // Splits text into a set of lowercase, accent-stripped words for cue matching.
+    private static HashSet<string> Tokenize(string content)
+    {
+        var sb = new System.Text.StringBuilder(content.Length);
+        foreach (var ch in content.ToLowerInvariant().Normalize(System.Text.NormalizationForm.FormD))
+        {
+            var cat = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch);
+            if (cat == System.Globalization.UnicodeCategory.NonSpacingMark) continue;
+            sb.Append(char.IsLetterOrDigit(ch) ? ch : ' ');
+        }
+        return sb.ToString()
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .ToHashSet();
     }
 
     // Atomically checks the cooldown and claims the channel lock. Returns true
@@ -623,22 +904,21 @@ public class BotService : IHostedService
         return TimeSpan.FromMilliseconds(Math.Clamp(ms, 1000, 7000));
     }
 
-    // introOverride, when set, replaces the very first (cut-off) line — letting a
-    // different entry point open the same sequence with its own opening words.
-    private async Task SendBreakdownAsync(SocketUserMessage message, string username, string realName, string? introOverride = null)
+    // intro is the cut-off opening line (e.g. a roast or a thank-you that glitches
+    // mid-word), letting each entry point open the same sequence its own way.
+    private async Task SendBreakdownAsync(SocketUserMessage message, string username, string realName, string intro)
     {
         try
         {
             // {1} = SHOUTED real name for the screaming line.
             var shoutName = realName.ToUpperInvariant();
             bool first = true;
-            foreach (var raw in _breakdown)
+            foreach (var raw in new[] { intro }.Concat(_breakdown))
             {
-                // The intro still sounds like a normal roast, so it uses the
+                // The intro still sounds like a normal reply, so it uses the
                 // pseudo; once it "wakes up" it switches to the real name.
-                var template = first && introOverride is not null ? introOverride : raw;
                 var who = first ? username : realName;
-                var line = string.Format(template, who, shoutName);
+                var line = string.Format(raw, who, shoutName);
 
                 if (line.StartsWith("```"))
                 {
