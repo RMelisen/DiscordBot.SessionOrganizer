@@ -346,6 +346,7 @@ public class BotService : IHostedService
         {
             "Pssshhht, au panier ! >:3",
             "Au moins tu sais dessiner hein ദ്ദി◝ ⩊ ◜.ᐟ",
+            "Ce soir, c'est lapin aux pruneaux UwU",
             "Ok. 👍",
             "Ok. 👍",
             "Ok. 👍",
