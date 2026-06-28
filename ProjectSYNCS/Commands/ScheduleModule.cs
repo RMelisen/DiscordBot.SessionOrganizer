@@ -342,7 +342,7 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         // Remove the linked native Discord event, if any.
-        await SessionEventSync.DeleteExternalAsync(Context.Guild, gameEvent.NativeEventId);
+        await SessionEventSync.DeleteAsync(Context.Guild, gameEvent.NativeEventId);
 
         await SessionNotifier.NotifyCancelledAsync(Context.Client, gameEvent);
 
@@ -437,7 +437,7 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         // Keep the linked native Discord event in sync with the new details.
-        await SessionEventSync.UpdateExternalAsync(Context.Guild, updated);
+        await SessionEventSync.UpdateAsync(Context.Guild, updated);
 
         await FollowupAsync("Session mise à jour ✅", ephemeral: true);
     }

@@ -71,7 +71,7 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
         });
 
         // Remove the linked native Discord event, if any.
-        await SessionEventSync.DeleteExternalAsync(Context.Guild, gameEvent.NativeEventId);
+        await SessionEventSync.DeleteAsync(Context.Guild, gameEvent.NativeEventId, _logger);
 
         await SessionNotifier.NotifyCancelledAsync(Context.Client, gameEvent);
     }
@@ -151,9 +151,7 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
             return;
         }
 
-        var location = "#" + Context.Channel.Name;
-        var jumpUrl = $"https://discord.com/channels/{gameEvent.GuildId}/{gameEvent.ChannelId}/{gameEvent.MessageId}";
-        var nativeId = await SessionEventSync.CreateExternalAsync(Context.Guild, gameEvent, location, jumpUrl, _logger);
+        var nativeId = await SessionEventSync.CreateAsync(Context.Guild, gameEvent, _logger);
         if (nativeId is not ulong id)
         {
             await RespondAsync(
@@ -201,7 +199,7 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
             return;
         }
 
-        await SessionEventSync.DeleteExternalAsync(Context.Guild, gameEvent.NativeEventId, _logger);
+        await SessionEventSync.DeleteAsync(Context.Guild, gameEvent.NativeEventId, _logger);
         await _eventService.SetNativeEventIdAsync(eventId, 0);
         gameEvent.NativeEventId = 0;
 
@@ -266,5 +264,9 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
             props.Embed = ScheduleModule.BuildEventEmbed(updatedEvent!, Context.Guild);
             props.Components = ScheduleModule.BuildEventComponents(updatedEvent!);
         });
+
+        // Reflect the updated participant list in the linked native event, if any.
+        // Done after the card update so it never delays the interaction response.
+        await SessionEventSync.UpdateAsync(Context.Guild, updatedEvent!, _logger);
     }
 }
