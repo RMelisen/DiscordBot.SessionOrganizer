@@ -1,4 +1,5 @@
 using Discord;
+using Discord.Net;
 using ProjectSYNCS.Models;
 using Microsoft.Extensions.Logging;
 
@@ -42,6 +43,13 @@ public static class SessionEventSync
                 endTime: EndOf(session),
                 location: location);
             return ev.Id;
+        }
+        catch (HttpException ex)
+        {
+            logger?.LogWarning(ex,
+                "Failed to create native event for session {EventId}: {Code} {Reason}",
+                session.Id, ex.DiscordCode, ex.Reason);
+            return null;
         }
         catch (Exception ex)
         {

@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Commands;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Models;
@@ -11,10 +12,12 @@ namespace ProjectSYNCS.Interactions.Components;
 public class EventComponentHandler : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly EventService _eventService;
+    private readonly ILogger<EventComponentHandler> _logger;
 
-    public EventComponentHandler(EventService eventService)
+    public EventComponentHandler(EventService eventService, ILogger<EventComponentHandler> logger)
     {
         _eventService = eventService;
+        _logger = logger;
     }
 
     [ComponentInteraction("event:join:*")]
@@ -138,13 +141,23 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
             return;
         }
 
+        // Precise feedback: most failures here are the bot missing this permission.
+        if (!Context.Guild.CurrentUser.GuildPermissions.ManageEvents)
+        {
+            await RespondAsync(
+                "Je n'ai pas la permission « Gérer les événements » sur ce serveur. " +
+                "Demande à un admin de me l'accorder, puis réessaie.",
+                ephemeral: true);
+            return;
+        }
+
         var location = "#" + Context.Channel.Name;
         var jumpUrl = $"https://discord.com/channels/{gameEvent.GuildId}/{gameEvent.ChannelId}/{gameEvent.MessageId}";
-        var nativeId = await SessionEventSync.CreateExternalAsync(Context.Guild, gameEvent, location, jumpUrl);
+        var nativeId = await SessionEventSync.CreateExternalAsync(Context.Guild, gameEvent, location, jumpUrl, _logger);
         if (nativeId is not ulong id)
         {
             await RespondAsync(
-                "Impossible de créer l'événement Discord — il me manque peut-être la permission « Gérer les événements ».",
+                "Impossible de créer l'événement Discord. Réessaie plus tard — le détail de l'erreur est dans mes logs.",
                 ephemeral: true);
             return;
         }
@@ -188,7 +201,7 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
             return;
         }
 
-        await SessionEventSync.DeleteExternalAsync(Context.Guild, gameEvent.NativeEventId);
+        await SessionEventSync.DeleteExternalAsync(Context.Guild, gameEvent.NativeEventId, _logger);
         await _eventService.SetNativeEventIdAsync(eventId, 0);
         gameEvent.NativeEventId = 0;
 
