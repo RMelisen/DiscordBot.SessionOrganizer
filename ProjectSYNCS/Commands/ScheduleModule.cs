@@ -341,6 +341,9 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             }
         }
 
+        // Remove the linked native Discord event, if any.
+        await SessionEventSync.DeleteExternalAsync(Context.Guild, gameEvent.NativeEventId);
+
         await SessionNotifier.NotifyCancelledAsync(Context.Client, gameEvent);
 
         await FollowupAsync("La session a été annulée. Les participants ont été prévenus.", ephemeral: true);
@@ -432,6 +435,9 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
                 });
             }
         }
+
+        // Keep the linked native Discord event in sync with the new details.
+        await SessionEventSync.UpdateExternalAsync(Context.Guild, updated);
 
         await FollowupAsync("Session mise à jour ✅", ephemeral: true);
     }
@@ -588,6 +594,10 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             .AddField("Participants", unlimited ? $"{joined.Count}" : $"{joined.Count} / {gameEvent.MaxPlayers}", inline: true)
             .WithFooter($"ID de la session : {gameEvent.Id}");
 
+        if (gameEvent.NativeEventId != 0)
+            eb.AddField("📅 Événement Discord",
+                $"https://discord.com/events/{gameEvent.GuildId}/{gameEvent.NativeEventId}");
+
         if (joined.Count > 0)
             eb.AddField($"Participants ({joined.Count})", string.Join("\n", joined.Select(p => $"<@{p.UserId}>")));
 
@@ -607,12 +617,22 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             return new ComponentBuilder().Build();
 
         int eventId = gameEvent.Id;
-        return new ComponentBuilder()
+        var builder = new ComponentBuilder()
             .WithButton("Rejoindre", $"event:join:{eventId}",    ButtonStyle.Success, new Emoji("✅"), row: 0)
             .WithButton("Peut-être", $"event:sub:{eventId}",     ButtonStyle.Primary, new Emoji("🔄"), row: 0)
             .WithButton("Refuser",   $"event:decline:{eventId}", ButtonStyle.Danger,  new Emoji("✖️"), row: 0)
             .WithButton("Modifier",  $"event:edit:{eventId}",    ButtonStyle.Secondary, new Emoji("✏️"), row: 1)
-            .WithButton("Annuler",   $"event:cancel:{eventId}",  ButtonStyle.Secondary, new Emoji("🗑️"), row: 1)
-            .Build();
+            .WithButton("Annuler",   $"event:cancel:{eventId}",  ButtonStyle.Secondary, new Emoji("🗑️"), row: 1);
+
+        // Organizer-only toggle for the native Discord event (handlers re-check
+        // permission). Label reflects whether one is currently linked.
+        if (gameEvent.NativeEventId == 0)
+            builder.WithButton("Créer l'événement Discord", $"event:createnative:{eventId}",
+                ButtonStyle.Secondary, new Emoji("📅"), row: 2);
+        else
+            builder.WithButton("Retirer l'événement Discord", $"event:removenative:{eventId}",
+                ButtonStyle.Secondary, new Emoji("🗑️"), row: 2);
+
+        return builder.Build();
     }
 }

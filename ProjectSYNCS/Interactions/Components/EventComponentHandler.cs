@@ -67,6 +67,9 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
             props.Components = new ComponentBuilder().Build();
         });
 
+        // Remove the linked native Discord event, if any.
+        await SessionEventSync.DeleteExternalAsync(Context.Guild, gameEvent.NativeEventId);
+
         await SessionNotifier.NotifyCancelledAsync(Context.Client, gameEvent);
     }
 
@@ -99,6 +102,102 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
         }
 
         await RespondWithModalAsync(ScheduleModule.BuildEditModal(gameEvent));
+    }
+
+    [ComponentInteraction("event:createnative:*")]
+    public async Task OnCreateNativeAsync(string eventIdStr)
+    {
+        if (!int.TryParse(eventIdStr, out int eventId))
+        {
+            await RespondAsync("ID de session invalide.", ephemeral: true);
+            return;
+        }
+
+        var gameEvent = await _eventService.GetEventWithParticipantsAsync(eventId);
+        if (gameEvent is null || gameEvent.GuildId != Context.Guild.Id)
+        {
+            await RespondAsync("Session introuvable.", ephemeral: true);
+            return;
+        }
+
+        if (gameEvent.IsCancelled)
+        {
+            await RespondAsync("Cette session est annulée.", ephemeral: true);
+            return;
+        }
+
+        if (!SessionPermissions.CanManage(Context.User, gameEvent))
+        {
+            await RespondAsync("Seul l'organisateur ou un administrateur peut gérer l'événement Discord.", ephemeral: true);
+            return;
+        }
+
+        if (gameEvent.NativeEventId != 0)
+        {
+            await RespondAsync("Un événement Discord est déjà lié à cette session.", ephemeral: true);
+            return;
+        }
+
+        var location = "#" + Context.Channel.Name;
+        var jumpUrl = $"https://discord.com/channels/{gameEvent.GuildId}/{gameEvent.ChannelId}/{gameEvent.MessageId}";
+        var nativeId = await SessionEventSync.CreateExternalAsync(Context.Guild, gameEvent, location, jumpUrl);
+        if (nativeId is not ulong id)
+        {
+            await RespondAsync(
+                "Impossible de créer l'événement Discord — il me manque peut-être la permission « Gérer les événements ».",
+                ephemeral: true);
+            return;
+        }
+
+        await _eventService.SetNativeEventIdAsync(eventId, id);
+        gameEvent.NativeEventId = id;
+
+        var component = (SocketMessageComponent)Context.Interaction;
+        await component.UpdateAsync(props =>
+        {
+            props.Embed = ScheduleModule.BuildEventEmbed(gameEvent, Context.Guild);
+            props.Components = ScheduleModule.BuildEventComponents(gameEvent);
+        });
+    }
+
+    [ComponentInteraction("event:removenative:*")]
+    public async Task OnRemoveNativeAsync(string eventIdStr)
+    {
+        if (!int.TryParse(eventIdStr, out int eventId))
+        {
+            await RespondAsync("ID de session invalide.", ephemeral: true);
+            return;
+        }
+
+        var gameEvent = await _eventService.GetEventWithParticipantsAsync(eventId);
+        if (gameEvent is null || gameEvent.GuildId != Context.Guild.Id)
+        {
+            await RespondAsync("Session introuvable.", ephemeral: true);
+            return;
+        }
+
+        if (!SessionPermissions.CanManage(Context.User, gameEvent))
+        {
+            await RespondAsync("Seul l'organisateur ou un administrateur peut gérer l'événement Discord.", ephemeral: true);
+            return;
+        }
+
+        if (gameEvent.NativeEventId == 0)
+        {
+            await RespondAsync("Aucun événement Discord n'est lié à cette session.", ephemeral: true);
+            return;
+        }
+
+        await SessionEventSync.DeleteExternalAsync(Context.Guild, gameEvent.NativeEventId);
+        await _eventService.SetNativeEventIdAsync(eventId, 0);
+        gameEvent.NativeEventId = 0;
+
+        var component = (SocketMessageComponent)Context.Interaction;
+        await component.UpdateAsync(props =>
+        {
+            props.Embed = ScheduleModule.BuildEventEmbed(gameEvent, Context.Guild);
+            props.Components = ScheduleModule.BuildEventComponents(gameEvent);
+        });
     }
 
     private async Task HandleButtonAsync(string eventIdStr, ParticipantStatus newStatus)

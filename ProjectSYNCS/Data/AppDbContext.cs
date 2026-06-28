@@ -23,6 +23,7 @@ public class AppDbContext : DbContext
             e.Property(x => x.ChannelId).HasConversion<long>();
             e.Property(x => x.MessageId).HasConversion<long>();
             e.Property(x => x.OrganizerId).HasConversion<long>();
+            e.Property(x => x.NativeEventId).HasConversion<long>();
 
             e.HasIndex(x => x.GuildId);
             e.HasIndex(x => new { x.ScheduledAt, x.ReminderSent });

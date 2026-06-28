@@ -40,6 +40,15 @@ public class EventService
         await _db_context.SaveChangesAsync();
     }
 
+    // Links (or unlinks, with 0) a native Discord scheduled event to a session.
+    public async Task SetNativeEventIdAsync(int eventId, ulong nativeEventId)
+    {
+        var evt = await _db_context.SessionEvents.FindAsync(eventId);
+        if (evt is null) return;
+        evt.NativeEventId = nativeEventId;
+        await _db_context.SaveChangesAsync();
+    }
+
     // Used when a card is reposted, possibly into a different channel.
     public async Task SetMessageLocationAsync(int eventId, ulong channelId, ulong messageId)
     {

@@ -24,6 +24,10 @@ public class SessionEvent
     public ulong MessageId { get; set; }
     public ulong OrganizerId { get; set; }
 
+    // The linked native Discord scheduled event, when the organizer opted in.
+    // 0 means no native event is attached to this session.
+    public ulong NativeEventId { get; set; }
+
     public string Title { get; set; } = string.Empty;
     public SessionCategory Category { get; set; } = SessionCategory.Game;
     public DateTimeOffset ScheduledAt { get; set; }
