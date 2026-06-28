@@ -286,6 +286,11 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         var message = await Context.Channel.SendMessageAsync(embed: embed, components: components);
         await _eventService.SetMessageLocationAsync(gameEvent.Id, Context.Channel.Id, message.Id);
 
+        // The card moved, so the native event's "détails" link must point at it.
+        gameEvent.ChannelId = Context.Channel.Id;
+        gameEvent.MessageId = message.Id;
+        await SessionEventSync.UpdateAsync(Context.Guild, gameEvent);
+
         await FollowupAsync($"Session **#{eventId}** republiée ici.", ephemeral: true);
     }
 
