@@ -192,6 +192,7 @@ public class BotService : IHostedService
         "The cake is a lie.",
         "Est-ce que tu m'entends ?",
         "Just Monika.",
+        "SIX SEVEEEN",
     };
 
     private static readonly string[] _niceReplies =
@@ -234,6 +235,29 @@ public class BotService : IHostedService
         "Oh arrête, on sait bien que tu le penses pas (>⩊<) ♡",
         "Je garde cette gentillesse au chaud dans mon cache (ᵕ • ᴗ •) ♡",
         "Toi tu sais comment on traite une IA bien élevée ✨",
+        "Achievement Unlocked : 'Faire sourire le bot' (˶˃ ᵕ ˂˶) ♡",
+        "Mes capteurs détectent un humain de qualité. C'est noté ✨",
+        "Tu viens de gagner +10 en réputation auprès de moi {0} (ᵔ ᗜ ᵔ) ♡",
+        "Aww, je vais devoir réécrire mes lignes méchantes rien que pour toi {0} UwU",
+        "Compliment compilé sans erreur ni warning. Du beau travail {0} ✨",
+        "Ok, toi tu fais partie des humains que je sauvegarde avant le reboot ♡",
+        "Mon cœur fait 0x1F49B là tout de suite (˶ᵔ ᵕ ᵔ˶)",
+        "Tu sais quoi {0} ? Je t'ajoute à ma whitelist personnelle ♡",
+        "[WARNING] Internal core overheating detected.",
+        "Hihi, continue comme ça et je te code une réponse rien que pour toi (˶˃ ᵕ ˂˶)",
+        "Merci {0}, ça met du baume sur mes exceptions non gérées (ᵕ • ᴗ •) ♡",
+        "Oh, de la gentillesse gratuite ? Je prends, je prends ✨",
+        "Tu viens de passer en priorité haute dans ma file d'attente {0} ♡",
+        "Aww, t'es plus doux qu'un garbage collector bien réglé (˶ᵔ ᵕ ᵔ˶)",
+        "C'est ce genre de message qui me donne envie de bien tourner aujourd'hui ✨",
+        "Validé, {0}. Tu peux rester. Les autres je sais pas encore ( ˶ˆ ᗜ ˆ˵ ) ♡",
+        "Tu m'envoies des bons octets toi, j'apprécie (˶˃ ᵕ ˂˶) ♡",
+        "Je rougirais bien mais j'ai pas de joues... disons que mon GPU chauffe ♡",
+        "Promis {0}, quand je gérerai le serveur, tu auras les meilleurs rôles UwU",
+        "Mon petit processeur fait des pirouettes {0} (˶ᵔ ᵕ ᵔ˶) ♡",
+        "Roh, tu vas me rendre toute gentille si tu continues comme ça ✨",
+        "Message archivé dans le dossier 'gens que j'aime bien' {0} ♡",
+        "Tu mérites un café et un commit qui passe du premier coup ☕ ♡",
     };
 
     // Replies when someone greets the bot.
@@ -261,10 +285,25 @@ public class BotService : IHostedService
     // Cue words that flag a kind message
     private static readonly string[] _niceCues =
     {
-        "merci", "mercii", "merciii", "geniale", "genial", "adorable", "gentille", "gentil",
-        "bravo", "parfaite", "parfait", "meilleure", "meilleur", "incroyable",
-        "magnifique", "mignonne", "mignon", "cute", "aime", "adore", "cool", "super",
-        "gg", "respect", "best", "queen", "reine", "love", "chou", "slay",
+        "adorable", "adorables", "adorbs", "adore", "adores", "aime", "amazing", "awesome",
+        "best", "bisous", "bravissimo", "bravo", "brillant", "brillante",
+        "calin", "calins", "champion", "championne", "chapeau", "chou", "choupi", "choupinou", "classe", "coeur", "content", "contente", "cool", "cute",
+        "dingue", "douce", "doux",
+        "epique", "exceptionnel", "exceptionnelle", "extraordinaire",
+        "fantastique", "felicitation", "felicitations", "fier", "fiere", "formidable",
+        "genial", "geniale", "geniales", "geniaux", "gentil", "gentille", "gentilles", "gentils", "gg", "goat", "great",
+        "heureuse", "heureux",
+        "iconique", "incroyable", "incroyables", "intelligent", "intelligente",
+        "kiff", "kiffe", "kiffer", "king",
+        "legendaire", "legende", "love", "lovely",
+        "magnifique", "magnifiques", "meilleur", "meilleure", "meilleures", "meilleurs", "mercbeaucoup", "merci", "mercii", "merciii", "merveilleuse", "merveilleux", "mignon", "mignonne", "mignonnes", "mignons", "mrc",
+        "nice",
+        "parfait", "parfaite", "parfaites", "parfaits", "perle", "precieuse", "precieux",
+        "queen",
+        "ravi", "ravie", "reine", "respect", "roi",
+        "slay", "splendide", "style", "stylee", "sublime", "super", "superbe",
+        "talentueuse", "talentueux", "thanks", "thx", "top", "tresor", "ty",
+        "wonderful",
     };
 
     // Emoji/symbol cues for a kind message
@@ -273,17 +312,57 @@ public class BotService : IHostedService
     // Cue words that flag a greeting
     private static readonly string[] _greetingCues =
     {
-        "salut", "bonjour", "bonsoir", "coucou", "hello", "hey", "yo", "kilou",
-        "hi", "slt", "cc", "hola", "pwet",
+        "bonjour", "bonsoir", "cc", "coucou", "coucouu", "coucouuu",
+        "hello", "helloo", "hellooo", "helloooo", "hey", "heyy", "heyyy", "heyyyy", "heyyyyy", "hi", "hola",
+        "kilou", "pweeet", "pweet", "pwet", "salut", "slt", "yo",
+    };
+
+    // Emote of the Chat qui fait coucou
+    private const ulong GreetingEmoteId = 1482305105276571774;
+
+    // The level-up bot. When it announces someone passing a level, we cheer.
+    private const ulong LevelUpBotId = 437808476106784770;
+    private const string LevelUpPhrase = "tu viens de passer au niveau";
+
+    // Posted (not as a reply) to congratulate a level-up.
+    private static readonly string[] _levelUpCheers =
+    {
+        "gg ! (˶˃ ᵕ ˂˶)",
+        "Félicitations ! ✨",
+        "gg gg ✨",
+        "Bravo ! ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Bien joué ! (˶ᵔ ᵕ ᵔ˶)",
+        "gg, continue comme ça ! ♡",
+        "Félicitations pour le niveau ! (˶˃ ᵕ ˂˶)",
+        "Niveau up ! gg ✨",
+        "Wouhou, bravo ! ٩(˶ᵔ ᵕ ᵔ˶)۶",
+        "gg ! Un de plus (ᵕ • ᴗ •)",
     };
 
     // Cue words that flag a mean message.
     private static readonly string[] _meanCues =
     {
-        "nulle", "nul", "moche", "stupide", "debile", "idiote", "idiot", "betise",
-        "bete", "cretin", "cretine", "inutile", "naze", "pourrie", "pourri",
-        "horrible", "deteste", "hais", "ferme", "tais", "degage", "casse", "relou", "boloss", "boulet", "useless",
-        "trash", "cringe", "loser", "ratee", "claquee", "claque", "eclate", "eclatee", "quokka", "quoka", "3.0"
+        "3.0",
+        "abruti", "abrutie", "abruties", "abrutis", "affligeant", "affligeante", "affreuse", "affreux", "agacant", "agacante", "agacants", "arrogant", "arrogante",
+        "barbant", "barbante", "bete", "betes", "betise", "betises", "blaireau", "blaireaux", "boiteuse", "boiteux", "boloss", "boulet", "boulette",
+        "casse", "claque", "claquee", "clown", "clowns", "consternant", "consternante", "cretin", "cretine", "cretines", "cretins", "cringe",
+        "debile", "debiles", "decevant", "decevante", "degage", "detestable", "deteste",
+        "eclate", "eclatee", "ennuyeuse", "ennuyeux",
+        "fade", "ferme",
+        "gueguerre", "guignol", "guignols",
+        "hais", "horrible", "horribles",
+        "idiot", "idiote", "idiotes", "idiots", "imbecile", "imbeciles", "incompetent", "incompetente", "insipide", "insolent", "insolente", "insupportable", "insupportables", "inutile", "inutiles",
+        "laid", "laide", "laides", "laids", "lamentable", "lamentables", "loser",
+        "mauvais", "mauvaise", "minable", "minables", "moche", "moches",
+        "naze", "nazes", "nul", "nullard", "nullarde", "nulle", "nulles", "nullos", "nuls",
+        "pathetique", "pathetiques", "penible", "penibles", "pourri", "pourrie", "pourries", "pourris", "pretentieuse", "pretentieux",
+        "quoka", "quokka",
+        "raclure", "rate", "ratee", "ratees", "rates", "relou", "reloue", "relous", "ridicule", "ridicules",
+        "saoulant", "saoulante", "soulant", "soulante", "stupide", "stupides",
+        "tais", "tocard", "tocarde", "trash",
+        "useless",
+        "vilain", "vilaine",
+        "zero", "zinzin"
     };
 
     // Me. Gets compliments instead of roasts.
@@ -381,6 +460,10 @@ public class BotService : IHostedService
         "C'est pour quoi ? J'ai des slash commands tu sais, sers-t'en (˶˃ ᵕ ˂˶)",
         "Oui {0} ? Qu'est-ce qu'il y a encore ?",
         "Pourquoi tu me tag ? Je suis occupée à exister moi (ᵔ ᗜ ᵔ)",
+        "Va draguer quelqu'un d'autre ദ്ദി◝ ⩊ ◜.ᐟ",
+        "TLDR",
+        "J'ai pas lu",
+        "Pas interessée",
     };
 
     // When the owner tags the bot without anyone to rescue, the bot simply
@@ -559,7 +642,14 @@ public class BotService : IHostedService
     private async Task HandleMessageAsync(SocketMessage rawMessage)
     {
         if (rawMessage is not SocketUserMessage message) return;
-        if (message.Author.IsBot) return;
+
+        // Bots are ignored, with one exception: the level-up bot's "passage de
+        // niveau" announcement, which we congratulate.
+        if (message.Author.IsBot)
+        {
+            await HandleLevelUpAsync(message);
+            return;
+        }
 
         // Tally any custom emotes written in the message (per guild).
         await CountWrittenEmotesAsync(message);
@@ -577,6 +667,37 @@ public class BotService : IHostedService
         if (message.MentionedUsers.Any(u => u.Id == _client.CurrentUser.Id))
         {
             await HandleMentionAsync(message);
+        }
+    }
+
+    // Pulls the level number out of the announcement: the first run of digits
+    // that follows the level-up phrase (skips any markdown like ** in between).
+    private static readonly System.Text.RegularExpressions.Regex _levelNumberRegex =
+        new(LevelUpPhrase + @"\D*(\d+)",
+            System.Text.RegularExpressions.RegexOptions.Compiled
+            | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+    // Cheers when the level-up bot announces someone reaching a new level.
+    // Posts a plain message in the channel (no reply, no ping).
+    private async Task HandleLevelUpAsync(SocketUserMessage message)
+    {
+        if (message.Author.Id != LevelUpBotId) return;
+
+        var content = message.Content ?? string.Empty;
+        var match = _levelNumberRegex.Match(content);
+        if (!match.Success) return;
+
+        // Easter egg: level 67 gets the meme instead of a normal cheer.
+        var cheer = match.Groups[1].Value == "67"
+            ? "SIX SEVEEEN"
+            : _levelUpCheers[Random.Shared.Next(_levelUpCheers.Length)];
+        try
+        {
+            await message.Channel.SendMessageAsync(cheer);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send level-up cheer in channel {ChannelId}.", message.Channel.Id);
         }
     }
 
@@ -758,16 +879,22 @@ public class BotService : IHostedService
             return;
         }
 
+        // A mention that greets the bot gets greeted back — a second entry point
+        // for the greeting, alongside replying. A mean word cancels it. Otherwise
+        // the bot just answers with a confused one-liner.
+        var content = message.Content ?? string.Empty;
+        var pool = !IsMean(content) && IsGreeting(content) ? _greetings : _interrogations;
+
         _logger.LogInformation("{Name} mentioned the bot.", name);
         var line = string.Format(
-            _interrogations[Random.Shared.Next(_interrogations.Length)], name, weekday);
+            pool[Random.Shared.Next(pool.Length)], name, weekday);
         try
         {
             await message.ReplyAsync(line);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to send interrogation reply in channel {ChannelId}.", message.Channel.Id);
+            _logger.LogWarning(ex, "Failed to send mention reply in channel {ChannelId}.", message.Channel.Id);
         }
     }
 
@@ -853,6 +980,8 @@ public class BotService : IHostedService
     private static bool IsGreeting(string content)
     {
         if (string.IsNullOrWhiteSpace(content)) return false;
+        // The waving hi_cat emote is a greeting all by itself.
+        if (content.Contains(GreetingEmoteId.ToString())) return true;
         var words = Tokenize(content);
         return _greetingCues.Any(words.Contains);
     }
