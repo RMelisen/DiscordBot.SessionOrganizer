@@ -215,7 +215,7 @@ internal static class BotResponses
         "Bien joué ! (˶ᵔ ᵕ ᵔ˶)",
         "Gg, continue comme ça ! ♡",
         "Félicitations pour le niveau ! (˶˃ ᵕ ˂˶)",
-        "Niveau up ! gg ✨",
+        "Level up ! Gg ✨",
         "Wouhou, bravo ! ٩(˶ᵔ ᵕ ᵔ˶)۶",
         "Gg ! Un de plus (ᵕ • ᴗ •)",
     };
