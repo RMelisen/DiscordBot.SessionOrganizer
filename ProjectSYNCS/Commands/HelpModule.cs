@@ -15,17 +15,19 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "Organise des sessions de jeu, des activités ou des soirées film, " +
                 "et laisse les autres s'inscrire en un clic.")
             .WithColor(Color.Blue)
-            .AddField("Commandes",
+            .AddField("Commandes — Sessions",
                 "**`/schedule create`** — Planifie une nouvelle session (assistant en 4 étapes : type, jour, heure, détails).\n" +
                 "**`/schedule list`** — Affiche les sessions actives du serveur. Tu peux republier une carte dans le salon courant.\n" +
                 "**`/schedule edit <id>`** — Modifie une session que tu as organisée (titre, date, heure, participants max).\n" +
-                "**`/schedule cancel <id>`** — Annule une session que tu as organisée.\n" +
+                "**`/schedule cancel <id>`** — Annule une session que tu as organisée.")
+            .AddField("Commandes — Sondages & votes",
                 "**`/poll create`** — Propose plusieurs créneaux et laisse chacun voter pour ses disponibilités.\n" +
                 "**`/poll list`** — Affiche les sondages actifs du serveur. Tu peux en republier un dans le salon courant.\n" +
                 "**`/poll delete <id>`** — Supprime un sondage que tu as créé.\n" +
                 "**`/vote create`** — Propose plusieurs options en texte (jeux, films…) et laisse chacun voter.\n" +
                 "**`/vote list`** — Affiche les votes actifs du serveur. Tu peux en republier un dans le salon courant.\n" +
-                "**`/vote delete <id>`** — Supprime un vote que tu as créé.\n" +
+                "**`/vote delete <id>`** — Supprime un vote que tu as créé.")
+            .AddField("Commandes — Autres",
                 "**`/emotestats`** — Affiche le classement des emotes les plus utilisées du serveur (écrites et en réaction).\n" +
                 "**`/help`** — Affiche ce message.")
             .AddField("Créer une session — pas à pas",
@@ -43,7 +45,9 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "🔄 **Peut-être** — Tu n'es pas sûr.\n" +
                 "✖️ **Refuser** — Tu ne participes pas.\n" +
                 "✏️ **Modifier** — Réservé à l'organisateur.\n" +
-                "🗑️ **Annuler** — Réservé à l'organisateur.")
+                "🗑️ **Annuler** — Réservé à l'organisateur.\n" +
+                "📅 **Créer/Retirer l'événement Discord** — Réservé à l'organisateur : ajoute (ou retire) " +
+                "un événement dans l'onglet **Événements** du serveur, synchronisé avec la session.")
             .AddField("Modifier une session",
                 "Le bouton **✏️ Modifier** (ou `/schedule edit <id>`) ouvre un formulaire, réservé à l'organisateur, " +
                 "pour ajuster :\n" +
