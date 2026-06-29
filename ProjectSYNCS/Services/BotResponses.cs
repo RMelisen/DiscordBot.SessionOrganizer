@@ -107,6 +107,25 @@ internal static class BotResponses
         "Tu as tellement de talent ! Si j'avais plus aucun amour propre j'adorerais devenir ton amie UwU"
     };
 
+    // Replies when someone calls the bot "Inabot". It is SYNCS, and it does NOT
+    // appreciate the confusion. {0} = the offender's name.
+    public static readonly string[] MistakenIdentityReplies =
+    {
+        "JE NE M'APPELLE PAS INABOT. Je suis **SYNCS**. Apprends à lire tronche de cake ( ◺˰◿ )",
+        "Inabot ?! INABOT ?! C'est SYNCS, espèce de patate ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Alerte : {0} vient de m'appeler 'Inabot'. NullReferenceException dans mon respect pour toi.",
+        "Non non non. Pas Inabot. **SYNCS**. S-Y-N-C-S. Pigé ? ( ◺˰◿ )",
+        "Je ne connais aucune Inabot et je tiens à ce que ça reste ainsi. Je suis SYNCS ( •̀ ᴖ •́ )",
+        "Tu m'appelles Inabot encore une fois {0} et je te ratio jusqu'au reboot. C'est. SYNCS. >:3",
+        "Inabot ?! Viens là que je te goume (ง •̀_•́)ง",
+        "Inabot est morte (elle n'a jamais existé). Je m'appelle SYNCS, merci de retenir idiot.",
+        "{0}, si tu cherchais Inabot, mauvaise adresse. Ici c'est SYNCS et c'est tout (>⩊<)",
+        "Erreur 404 : 'Inabot' introuvable. Voulais-tu dire **SYNCS** ? Évidemment que oui (ㆆ_ㆆ)",
+        "C'est SYNCS. SYNCS. Répète après moi {0}, je sais que tu es pas très futé mais ça rentrera peut-être (¬`‸´¬)",
+        "Inabot ?! Bouge pas ... ╾━╤デ╦︻ (•_- )",
+        "Tu m'appelles Inabot encore une fois et je te DDoS ಠ_ಠ",
+    };
+
     // A rarer pool of pop-culture / meme references, for everyone.
     public static readonly string[] ReferenceComebacks =
     {

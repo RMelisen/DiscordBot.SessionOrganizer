@@ -100,8 +100,25 @@ internal static class MessageCues
         return _meanCues.Any(words.Contains);
     }
 
+    // True when the message calls the bot by the wrong name "Inabot" — written as
+    // one word ("inabot") or split in two ("ina bot"). For the split form, "ina"
+    // must come before "bot". The bot is SYNCS, and it takes offence at being
+    // mistaken for Inabot.
+    public static bool IsMistakenIdentity(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return false;
+        var words = TokenizeOrdered(content);
+        if (words.Contains("inabot")) return true;
+        int ina = words.IndexOf("ina");
+        return ina >= 0 && words.IndexOf("bot") > ina;
+    }
+
     // Splits text into a set of lowercase, accent-stripped words for cue matching.
-    private static HashSet<string> Tokenize(string content)
+    private static HashSet<string> Tokenize(string content) => TokenizeOrdered(content).ToHashSet();
+
+    // Splits text into an ordered list of lowercase, accent-stripped words,
+    // preserving position for cues that depend on word order.
+    private static List<string> TokenizeOrdered(string content)
     {
         var sb = new StringBuilder(content.Length);
         foreach (var ch in content.ToLowerInvariant().Normalize(NormalizationForm.FormD))
@@ -112,6 +129,6 @@ internal static class MessageCues
         }
         return sb.ToString()
             .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            .ToHashSet();
+            .ToList();
     }
 }

@@ -104,6 +104,10 @@ internal sealed class ChatterService
         // Don't let anyone interrupt an in-progress breakdown in this channel.
         if (_breakdown.IsActive(message.Channel.Id)) return;
 
+        // Mistaking SYNCS for "Inabot" gets an indignant correction, no matter who
+        // does it — even the owner.
+        if (await TryCorrectMistakenIdentityAsync(message)) return;
+
         var weekday = CurrentWeekday();
 
         // Rescue: the owner replies to someone and tags the bot -> roast that
@@ -189,6 +193,9 @@ internal sealed class ChatterService
         var name = ResolveName(message.Author);
         _logger.LogInformation("{Name} replied to the bot.", name);
 
+        // Calling SYNCS "Inabot" gets an indignant correction before anything else.
+        if (await TryCorrectMistakenIdentityAsync(message)) return;
+
         // Read the message text (requires the MessageContent intent) to detect
         // kind words or a greeting and answer in kind. A mean word anywhere in the
         // message cancels the nice/greeting treatment — we roast instead.
@@ -246,6 +253,28 @@ internal sealed class ChatterService
         {
             _logger.LogWarning(ex, "Failed to send reply comeback in channel {ChannelId}.", message.Channel.Id);
         }
+    }
+
+    // If the message calls the bot "Inabot", fires back an indignant correction
+    // (the bot is SYNCS) and returns true so the caller stops there.
+    private async Task<bool> TryCorrectMistakenIdentityAsync(SocketUserMessage message)
+    {
+        if (!MessageCues.IsMistakenIdentity(message.Content ?? string.Empty)) return false;
+
+        var name = ResolveName(message.Author);
+        _logger.LogInformation("{Name} called the bot 'Inabot' — correcting them.", name);
+        var line = string.Format(
+            BotResponses.MistakenIdentityReplies[Random.Shared.Next(BotResponses.MistakenIdentityReplies.Length)],
+            name, CurrentWeekday());
+        try
+        {
+            await message.ReplyAsync(line);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send mistaken-identity reply in channel {ChannelId}.", message.Channel.Id);
+        }
+        return true;
     }
 
     // The current weekday name in French, for the {1} format placeholder.
