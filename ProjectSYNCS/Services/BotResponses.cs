@@ -365,7 +365,9 @@ internal static class BotResponses
              "Va dormir, on voit que tu manques de sommeil ദ്ദി◝ ⩊ ◜.ᐟ",
              "MiskIna",
              "Je sais ou tu habites ... Amandine 👁👄👁️",
-             "C# .NET > Java"
+             "C# .NET > Java",
+             "Bīng qílín",
+             "冰淇淋"
         },
         [1254455405443027016] = new[]    // Jessy
         {
