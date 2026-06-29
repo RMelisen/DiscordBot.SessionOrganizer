@@ -367,7 +367,8 @@ internal static class BotResponses
              "Je sais ou tu habites ... Amandine 👁👄👁️",
              "C# .NET > Java",
              "Bīng qílín",
-             "冰淇淋"
+             "冰淇淋",
+             "-20 Social Credits"
         },
         [1254455405443027016] = new[]    // Jessy
         {
