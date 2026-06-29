@@ -50,6 +50,7 @@ var host = Host.CreateDefaultBuilder(args)
         // Personality / chat behaviour collaborators (singletons: they hold
         // in-memory state like the breakdown cooldown).
         services.AddSingleton<BreakdownService>();
+        services.AddSingleton<AvailabilityService>();
         services.AddSingleton<ChatterService>();
         services.AddSingleton<EmoteTracker>();
 

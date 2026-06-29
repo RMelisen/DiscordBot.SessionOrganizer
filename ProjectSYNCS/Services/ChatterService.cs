@@ -15,10 +15,11 @@ internal sealed class ChatterService
 {
     private readonly DiscordSocketClient _client;
     private readonly BreakdownService _breakdown;
+    private readonly AvailabilityService _availability;
     private readonly ILogger<ChatterService> _logger;
 
     // Rodhengard, the owner: gets compliments instead of roasts.
-    private const ulong OwnerId = 345917214966415362;
+    private const ulong OwnerId = AvailabilityService.OwnerId;
 
     // The level-up bot. When it announces someone passing a level, we cheer.
     private const ulong LevelUpBotId = 437808476106784770;
@@ -39,10 +40,12 @@ internal sealed class ChatterService
     public ChatterService(
         DiscordSocketClient client,
         BreakdownService breakdown,
+        AvailabilityService availability,
         ILogger<ChatterService> logger)
     {
         _client = client;
         _breakdown = breakdown;
+        _availability = availability;
         _logger = logger;
     }
 
@@ -57,6 +60,10 @@ internal sealed class ChatterService
             await HandleLevelUpAsync(message);
             return;
         }
+
+        // While the owner is flagged absent, a ping aimed at him gets a formal
+        // "unavailable" notice — this takes priority over the usual chatter.
+        if (await TryHandleOwnerAbsenceAsync(message)) return;
 
         // Established behaviour: a reply to one of the bot's own messages gets a comeback.
         if (message.ReferencedMessage?.Author.Id == _client.CurrentUser.Id)
@@ -253,6 +260,31 @@ internal sealed class ChatterService
         {
             _logger.LogWarning(ex, "Failed to send reply comeback in channel {ChannelId}.", message.Channel.Id);
         }
+    }
+
+    // When the owner is flagged absent and someone (other than the owner) pings
+    // him, replies with a formal "unavailable" notice and returns true so the
+    // caller stops there. A ping that doesn't target the owner is left alone.
+    private async Task<bool> TryHandleOwnerAbsenceAsync(SocketUserMessage message)
+    {
+        if (!_availability.IsOwnerAbsent) return false;
+        if (message.Author.Id == OwnerId) return false;
+        if (!message.MentionedUsers.Any(u => u.Id == OwnerId)) return false;
+
+        var name = ResolveName(message.Author);
+        _logger.LogInformation("{Name} pinged the absent owner — sending unavailability notice.", name);
+        var notice = string.Format(
+            BotResponses.OwnerAbsentNotices[Random.Shared.Next(BotResponses.OwnerAbsentNotices.Length)],
+            name, CurrentWeekday());
+        try
+        {
+            await message.ReplyAsync(notice);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send owner-absence notice in channel {ChannelId}.", message.Channel.Id);
+        }
+        return true;
     }
 
     // If the message calls the bot "Inabot", fires back an indignant correction
