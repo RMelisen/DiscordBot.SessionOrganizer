@@ -29,7 +29,7 @@ internal sealed class ChatterService
     private const double BreakdownChance = 0.001;
     private const double ReferenceChance = 0.008;
 
-    // Secret passphrase: the owner replying with exactly this forces a breakdown.
+    // Secret passphrase: anyone replying with exactly this forces a breakdown.
     private const string BreakdownPassphrase = "The cake is a lie.";
 
     // Pulls the level number out of the announcement: the first run of digits
@@ -211,10 +211,9 @@ internal sealed class ChatterService
         var nice = !mean && MessageCues.IsNice(content);
         var greeting = !mean && MessageCues.IsGreeting(content);
 
-        // Secret owner trigger: replying with the passphrase forces the breakdown,
-        // bypassing the random roll and the cooldown.
-        var secretTrigger = message.Author.Id == OwnerId
-            && content.Trim() == BreakdownPassphrase;
+        // Secret trigger: replying with the passphrase forces the breakdown,
+        // bypassing the random roll and the cooldown. Open to anyone.
+        var secretTrigger = content.Trim() == BreakdownPassphrase;
 
         if ((secretTrigger || Random.Shared.NextDouble() < BreakdownChance)
             && _breakdown.TryBegin(message.Channel.Id, ignoreCooldown: secretTrigger))
