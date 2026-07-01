@@ -445,6 +445,7 @@ internal static class BotResponses
             "Va manger tes morts espèce de schlag UwU",
             "Va manger tes morts espèce de schlag UwU",
             "Va manger tes morts espèce de schlag UwU",
+            "Je sais ou tu habites ... Léa 👁👄👁️",
         },
     };
 
