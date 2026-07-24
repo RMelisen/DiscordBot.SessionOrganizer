@@ -359,13 +359,7 @@ internal sealed class ChatterService
     }
 
     // Truncates to the excerpt cap and renders every line as a blockquote.
-    private static string Quote(string text)
-    {
-        if (text.Length > MaxQuotedLength)
-            text = text[..MaxQuotedLength] + " […]";
-
-        return string.Join('\n', text.Split('\n').Select(line => $"> {line}"));
-    }
+    private static string Quote(string text) => MessageFormat.Quote(text, MaxQuotedLength);
 
     // The owner replying, in DM, to a forwarded absence notice: the text is posted
     // back into the original channel as a reply to whoever pinged him. Returns
