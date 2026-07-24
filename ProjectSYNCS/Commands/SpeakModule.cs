@@ -30,7 +30,7 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
         string message,
         [Summary("salon", "Salon de destination (par défaut : le salon actuel)")]
         ITextChannel? salon = null,
-        [Summary("annoncer", "Indiquer que le message vient de toi (par défaut : anonyme)")]
+        [Summary("annoncer", "Faire une annonce")]
         bool annoncer = false)
     {
         if (Context.User.Id != AvailabilityService.OwnerId)
