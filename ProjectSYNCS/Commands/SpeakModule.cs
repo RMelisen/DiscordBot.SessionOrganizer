@@ -9,8 +9,8 @@ namespace ProjectSYNCS.Commands;
 
 // Lets the owner speak through the bot on his own initiative — as opposed to
 // ChatterService's relay, which answers a mention he received while absent.
-// The message is either heralded (the channel sees it comes from him) or posted
-// anonymously as the bot's own words.
+// By default the message goes out as the bot's own words, with nothing pointing
+// back to him; "annoncer" opts into a herald line naming him instead.
 public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly ILogger<SpeakModule> _logger;
@@ -30,8 +30,8 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
         string message,
         [Summary("salon", "Salon de destination (par défaut : le salon actuel)")]
         ITextChannel? salon = null,
-        [Summary("anonyme", "Ne pas indiquer que le message vient de toi")]
-        bool anonyme = false)
+        [Summary("annoncer", "Indiquer que le message vient de toi (par défaut : anonyme)")]
+        bool annoncer = false)
     {
         if (Context.User.Id != AvailabilityService.OwnerId)
         {
@@ -65,12 +65,7 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         string content;
-        if (anonyme)
-        {
-            // Pure ventriloquism: the bot's own voice, nothing pointing back to him.
-            content = text;
-        }
-        else
+        if (annoncer)
         {
             var ownerName = (Context.User as SocketGuildUser)?.Nickname
                 ?? Context.User.GlobalName
@@ -81,6 +76,12 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
                 ownerName);
             content = $"{herald}\n{MessageFormat.Quote(text, MaxMessageLength)}";
         }
+        else
+        {
+            // Default: pure ventriloquism — the bot's own voice, nothing pointing
+            // back to him.
+            content = text;
+        }
 
         try
         {
@@ -90,8 +91,8 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
                 // role — the bot must not become a way to mass-ping.
                 allowedMentions: new AllowedMentions(AllowedMentionTypes.Users));
 
-            _logger.LogInformation("Owner spoke through the bot in channel {ChannelId} (anonymous: {Anonymous}).",
-                target.Id, anonyme);
+            _logger.LogInformation("Owner spoke through the bot in channel {ChannelId} (heralded: {Heralded}).",
+                target.Id, annoncer);
 
             await RespondAsync($"Envoyé dans {target.Mention}. ✅", ephemeral: true);
         }
