@@ -23,7 +23,7 @@ public class AbsenceModule : InteractionModuleBase<SocketInteractionContext>
 
     [SlashCommand("absent", "Activer ou désactiver ton mode absent (réservé à l'organisateur)")]
     public async Task SetAbsenceAsync(
-        [Summary("etat", "Activer ou désactiver le mode absent")] AbsenceState state)
+        [Summary("state", "Activer ou désactiver le mode absent")] AbsenceState state)
     {
         if (Context.User.Id != AvailabilityService.OwnerId)
         {
