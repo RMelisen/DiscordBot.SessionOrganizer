@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Discord;
 using Discord.Interactions;
+using Discord.Net;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Helpers;
@@ -10,9 +11,9 @@ namespace ProjectSYNCS.Commands;
 
 // Lets the owner speak through the bot on his own initiative — as opposed to
 // ChatterService's relay, which answers a mention he received while absent.
-// By default the message goes out as the bot's own words, with nothing pointing
-// back to him; "announce" opts into a herald line naming him instead.
-// Given a message link, the bot posts its message as a reply to that message.
+// /tell posts into a channel (optionally as a reply to a linked message), /dm
+// sends someone a private message. In both, the text goes out as the bot's own
+// words by default; "announce" opts into a herald line naming the owner.
 public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly ILogger<SpeakModule> _logger;
@@ -52,21 +53,10 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
         // interaction can't time out. Every answer below is a followup.
         await DeferAsync(ephemeral: true);
 
-        // Slash-command input is single-line, so let a literal \n stand for a
-        // line break — the only way to write a multi-line announcement.
-        var text = message.Replace("\\n", "\n").Trim();
-
-        if (text.Length == 0)
+        var (text, textError) = PrepareText(message);
+        if (text is null)
         {
-            await FollowupAsync("Ton message est vide, je n'ai rien à dire. ✍️", ephemeral: true);
-            return;
-        }
-
-        if (text.Length > MaxMessageLength)
-        {
-            await FollowupAsync(
-                $"Ton message fait {text.Length} caractères, le maximum est {MaxMessageLength}. ✂️",
-                ephemeral: true);
+            await FollowupAsync(textError, ephemeral: true);
             return;
         }
 
@@ -96,24 +86,7 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        string content;
-        if (announce)
-        {
-            var ownerName = (Context.User as SocketGuildUser)?.Nickname
-                ?? Context.User.GlobalName
-                ?? Context.User.Username;
-            var herald = string.Format(
-                BotResponses.OwnerAnnouncementHeralds[
-                    Random.Shared.Next(BotResponses.OwnerAnnouncementHeralds.Length)],
-                ownerName);
-            content = $"{herald}\n{MessageFormat.Quote(text, MaxMessageLength)}";
-        }
-        else
-        {
-            // Default: pure ventriloquism — the bot's own voice, nothing pointing
-            // back to him.
-            content = text;
-        }
+        var content = BuildContent(text, announce);
 
         try
         {
@@ -150,6 +123,93 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
                 $"Impossible d'écrire dans {target.Mention} — je n'ai peut-être pas la permission. ❌",
                 ephemeral: true);
         }
+    }
+
+    [SlashCommand("dm", "Faire envoyer un message privé par le bot")]
+    public async Task DirectMessageAsync(
+        [Summary("user", "La personne à qui envoyer le message")]
+        IUser user,
+        [Summary("message", "Le message à faire envoyer au bot")]
+        string message,
+        [Summary("announce", "Faire une annonce")]
+        bool announce = false)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+
+        await DeferAsync(ephemeral: true);
+
+        var (text, textError) = PrepareText(message);
+        if (text is null)
+        {
+            await FollowupAsync(textError, ephemeral: true);
+            return;
+        }
+
+        if (user.IsBot)
+        {
+            await FollowupAsync("Je ne peux pas envoyer de message privé à un bot. 🤖", ephemeral: true);
+            return;
+        }
+
+        try
+        {
+            var dm = await user.CreateDMChannelAsync();
+            await dm.SendMessageAsync(
+                BuildContent(text, announce),
+                // Same policy as everywhere else: no @everyone/@here, no roles.
+                allowedMentions: new AllowedMentions(AllowedMentionTypes.Users));
+
+            _logger.LogInformation("Owner sent a DM through the bot to {UserId} (heralded: {Heralded}).",
+                user.Id, announce);
+
+            await FollowupAsync($"Envoyé en privé à **{user.Username}**. ✅", ephemeral: true);
+        }
+        catch (HttpException ex) when (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
+        {
+            await FollowupAsync(
+                $"**{user.Username}** n'accepte pas les messages privés du serveur. ❌", ephemeral: true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send a DM through the bot to {UserId}.", user.Id);
+            await FollowupAsync($"Impossible d'envoyer le message à **{user.Username}**. ❌", ephemeral: true);
+        }
+    }
+
+    // Normalises the owner's raw input, or explains why it can't be sent.
+    // Slash-command input is single-line, so a literal \n stands for a break.
+    private static (string? Text, string? Error) PrepareText(string message)
+    {
+        var text = message.Replace("\\n", "\n").Trim();
+
+        if (text.Length == 0)
+            return (null, "Ton message est vide, je n'ai rien à dire. ✍️");
+
+        if (text.Length > MaxMessageLength)
+            return (null, $"Ton message fait {text.Length} caractères, le maximum est {MaxMessageLength}. ✂️");
+
+        return (text, null);
+    }
+
+    // Either a herald line naming the owner, or — by default — pure
+    // ventriloquism: the bot's own voice, nothing pointing back to him.
+    private string BuildContent(string text, bool announce)
+    {
+        if (!announce) return text;
+
+        var ownerName = (Context.User as SocketGuildUser)?.Nickname
+            ?? Context.User.GlobalName
+            ?? Context.User.Username;
+        var herald = string.Format(
+            BotResponses.OwnerAnnouncementHeralds[
+                Random.Shared.Next(BotResponses.OwnerAnnouncementHeralds.Length)],
+            ownerName);
+
+        return $"{herald}\n{MessageFormat.Quote(text, MaxMessageLength)}";
     }
 
     // Turns a pasted message link into the channel and message it points at.
