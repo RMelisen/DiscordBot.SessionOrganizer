@@ -62,6 +62,11 @@ internal sealed class ChatterService
             return;
         }
 
+        // The owner answering, in DM, one of the absence notices the bot forwarded
+        // him. Must come before the reply-to-bot branch below, which would
+        // otherwise treat it as a reply to the bot and fire a comeback.
+        if (await TryRelayOwnerReplyAsync(message)) return;
+
         // While the owner is flagged absent, a ping aimed at him gets a formal
         // "unavailable" notice — this takes priority over the usual chatter.
         if (await TryHandleOwnerAbsenceAsync(message)) return;
@@ -311,12 +316,24 @@ internal sealed class ChatterService
                 : "en message privé";
 
             var dm = await owner.CreateDMChannelAsync();
-            await dm.SendMessageAsync(
+            var notice = await dm.SendMessageAsync(
                 $"📬 **{authorName}** t'a mentionné {where} <t:{ts}:R> :\n" +
                 $"{QuoteContent(message)}\n" +
-                $"[Aller au message]({message.GetJumpUrl()})",
+                $"[Aller au message]({message.GetJumpUrl()})\n" +
+                $"-# Réponds à ce message pour lui répondre directement dans le salon.",
                 // The excerpt can contain pings; forwarding it must not re-ping anyone.
                 allowedMentions: AllowedMentions.None);
+
+            // Remember where this notice came from, so a reply to it can be routed
+            // back to the original message. Only meaningful in a guild.
+            if (message.Channel is IGuildChannel)
+            {
+                _availability.RememberMention(notice.Id, new PendingMention(
+                    GuildId: ((IGuildChannel)message.Channel).GuildId,
+                    ChannelId: message.Channel.Id,
+                    MessageId: message.Id,
+                    AuthorName: authorName));
+            }
         }
         catch (HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
         {
@@ -333,17 +350,86 @@ internal sealed class ChatterService
     private static string QuoteContent(SocketUserMessage message)
     {
         var content = (message.Content ?? string.Empty).Trim();
-        if (content.Length > MaxQuotedLength)
-            content = content[..MaxQuotedLength] + " […]";
-
-        var quoted = content.Length == 0
-            ? "*(aucun texte)*"
-            : string.Join('\n', content.Split('\n').Select(line => $"> {line}"));
+        var quoted = content.Length == 0 ? "*(aucun texte)*" : Quote(content);
 
         if (message.Attachments.Count > 0)
             quoted += $"\n> *({message.Attachments.Count} pièce(s) jointe(s))*";
 
         return quoted;
+    }
+
+    // Truncates to the excerpt cap and renders every line as a blockquote.
+    private static string Quote(string text)
+    {
+        if (text.Length > MaxQuotedLength)
+            text = text[..MaxQuotedLength] + " […]";
+
+        return string.Join('\n', text.Split('\n').Select(line => $"> {line}"));
+    }
+
+    // The owner replying, in DM, to a forwarded absence notice: the text is posted
+    // back into the original channel as a reply to whoever pinged him. Returns
+    // true when the message was one of those replies, handled or not.
+    private async Task<bool> TryRelayOwnerReplyAsync(SocketUserMessage message)
+    {
+        if (message.Author.Id != OwnerId) return false;
+        if (message.Channel is not IDMChannel) return false;
+        if (message.ReferencedMessage is not { } notice) return false;
+        if (notice.Author.Id != _client.CurrentUser.Id) return false;
+        if (!_availability.TryGetMention(notice.Id, out var pending)) return false;
+
+        var reply = (message.Content ?? string.Empty).Trim();
+        if (reply.Length == 0)
+        {
+            // Nothing to relay — an image-only reply would post an empty message.
+            await ReplyInDmAsync(message, "Je n'ai rien à transmettre : ton message est vide. ✍️");
+            return true;
+        }
+
+        try
+        {
+            var guild = _client.GetGuild(pending.GuildId);
+            var channel = guild?.GetTextChannel(pending.ChannelId);
+            if (channel is null || await channel.GetMessageAsync(pending.MessageId) is not IUserMessage original)
+            {
+                await ReplyInDmAsync(message,
+                    "Impossible de retrouver le message d'origine — il a peut-être été supprimé. ❌");
+                return true;
+            }
+
+            var ownerName = guild!.GetUser(OwnerId)?.Nickname ?? "Rodhengard";
+
+            await original.ReplyAsync(
+                $"💬 Réponse de **{ownerName}** :\n{Quote(reply)}",
+                // Ping the person being answered, and honour any user the owner
+                // mentioned — but never @everyone/@here or a role.
+                allowedMentions: new AllowedMentions(AllowedMentionTypes.Users) { MentionRepliedUser = true });
+
+            _logger.LogInformation("Relayed an owner reply to {Name} in channel {ChannelId}.",
+                pending.AuthorName, pending.ChannelId);
+
+            await ReplyInDmAsync(message, $"Transmis à **{pending.AuthorName}**. ✅");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to relay an owner reply to channel {ChannelId}.", pending.ChannelId);
+            await ReplyInDmAsync(message, "Je n'ai pas réussi à transmettre ta réponse. ❌");
+        }
+
+        return true;
+    }
+
+    // Small acknowledgement back in the DM thread; never worth failing over.
+    private async Task ReplyInDmAsync(SocketUserMessage message, string text)
+    {
+        try
+        {
+            await message.ReplyAsync(text, allowedMentions: AllowedMentions.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to acknowledge the owner's DM reply.");
+        }
     }
 
     // If the message calls the bot "Inabot", fires back an indignant correction
