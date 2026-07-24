@@ -398,9 +398,12 @@ internal sealed class ChatterService
             }
 
             var ownerName = guild!.GetUser(OwnerId)?.Nickname ?? "Rodhengard";
+            var herald = string.Format(
+                BotResponses.OwnerReplyHeralds[Random.Shared.Next(BotResponses.OwnerReplyHeralds.Length)],
+                ownerName);
 
             await original.ReplyAsync(
-                $"💬 Réponse de **{ownerName}** :\n{Quote(reply)}",
+                $"{herald}\n{Quote(reply)}",
                 // Ping the person being answered, and honour any user the owner
                 // mentioned — but never @everyone/@here or a role.
                 allowedMentions: new AllowedMentions(AllowedMentionTypes.Users) { MentionRepliedUser = true });

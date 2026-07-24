@@ -144,6 +144,34 @@ internal static class BotResponses
         "Assistant S.Y.N.C.S., module de permanence. {0}, je vous informe que mon opérateur n'est pas disponible. Je consigne votre demande et veille à sa bonne transmission. Cordialement, unité SYNCS.",
     };
 
+    // Short ceremonial headers announcing that the owner has answered a mention
+    // from afar, relayed by the bot. The bot plays the devoted herald of its
+    // absent master — grandiloquent, and a little much on purpose. Kept to a
+    // single line: the owner's actual words follow underneath.
+    // {0} = the owner's name.
+    public static readonly string[] OwnerReplyHeralds =
+    {
+        "Mon Maître **{0}** a daigné vous répondre :",
+        "Par la voix de S.Y.N.C.S., mon Maître **{0}** fait répondre :",
+        "Oyez ! Mon Maître **{0}** s'adresse à vous :",
+        "Dicté par mon Maître **{0}**, transcrit fidèlement par mes soins :",
+        "Un message de mon Maître **{0}** vous parvient :",
+        "Mon Maître **{0}** a fait parvenir ces mots :",
+        "Liaison établie avec mon Maître **{0}**. Son message, ci-dessous :",
+        "Sur ordre de mon Maître **{0}**, je transmets :",
+        "Communiqué de mon Maître **{0}** :",
+        "Depuis son absence, mon Maître **{0}** vous adresse ceci :",
+        "Mon Maître **{0}**, bien qu'indisponible, a tenu à répondre :",
+        "La réponse de mon Maître **{0}**, acheminée par mes soins :",
+        "Mon Maître **{0}** a parlé. J'en suis le humble messager :",
+        "Transmission d'une réponse de l'opérateur **{0}** :",        
+        "Sa Seigneurie **{0}** daigne répondre :",
+        "Réponse de **{0}**, acheminée par le service de permanence :",
+        "Un message de **{0}** vous parvient :",
+        "Accusé de traitement : **{0}** a répondu à votre sollicitation.",
+        "🗿 **{0}**, bien qu'indisponible, a tenu à répondre :",
+    };
+
     // A rarer pool of pop-culture / meme references, for everyone.
     public static readonly string[] ReferenceComebacks =
     {
