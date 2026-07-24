@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Discord;
+using Discord.Net;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Helpers;
@@ -283,7 +284,66 @@ internal sealed class ChatterService
         {
             _logger.LogWarning(ex, "Failed to send owner-absence notice in channel {ChannelId}.", message.Channel.Id);
         }
+
+        await NotifyOwnerOfMentionAsync(message, name);
         return true;
+    }
+
+    // Discord caps a message at 2000 characters
+    private const int MaxQuotedLength = 1200;
+
+    // DMs the owner a transcript of a mention received while he was away: who,
+    // where, what they said, and a jump link back to the message.
+    private async Task NotifyOwnerOfMentionAsync(SocketUserMessage message, string authorName)
+    {
+        try
+        {
+            var owner = await _client.GetUserAsync(OwnerId);
+            if (owner is null)
+            {
+                _logger.LogWarning("Could not resolve the owner to forward an absence mention.");
+                return;
+            }
+
+            var ts = message.Timestamp.ToUnixTimeSeconds();
+            var where = message.Channel is IGuildChannel guildChannel
+                ? $"dans <#{message.Channel.Id}> ({guildChannel.Guild.Name})"
+                : "en message privé";
+
+            var dm = await owner.CreateDMChannelAsync();
+            await dm.SendMessageAsync(
+                $"📬 **{authorName}** t'a mentionné {where} <t:{ts}:R> :\n" +
+                $"{QuoteContent(message)}\n" +
+                $"[Aller au message]({message.GetJumpUrl()})",
+                // The excerpt can contain pings; forwarding it must not re-ping anyone.
+                allowedMentions: AllowedMentions.None);
+        }
+        catch (HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
+        {
+            _logger.LogWarning("Owner has DMs disabled; could not forward the absence mention.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to forward an absence mention to the owner.");
+        }
+    }
+
+    // Renders the message text as a Markdown blockquote, noting attachments and
+    // handling the text-less case (a lone image, a sticker).
+    private static string QuoteContent(SocketUserMessage message)
+    {
+        var content = (message.Content ?? string.Empty).Trim();
+        if (content.Length > MaxQuotedLength)
+            content = content[..MaxQuotedLength] + " […]";
+
+        var quoted = content.Length == 0
+            ? "*(aucun texte)*"
+            : string.Join('\n', content.Split('\n').Select(line => $"> {line}"));
+
+        if (message.Attachments.Count > 0)
+            quoted += $"\n> *({message.Attachments.Count} pièce(s) jointe(s))*";
+
+        return quoted;
     }
 
     // If the message calls the bot "Inabot", fires back an indignant correction
