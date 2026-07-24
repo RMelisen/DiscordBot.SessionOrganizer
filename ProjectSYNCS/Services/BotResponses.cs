@@ -178,18 +178,18 @@ internal static class BotResponses
     // {0} = the owner's name.
     public static readonly string[] OwnerAnnouncementHeralds =
     {
-        "📯 Mon Maître **{0}** s'adresse à vous :",
-        "📜 Mon Maître **{0}** m'a chargée de vous transmettre ceci :",
-        "🔔 Annonce de mon Maître **{0}** :",
-        "⚜️ Mon Maître **{0}** a une déclaration à faire :",
-        "🙇 Sur ordre de mon Maître **{0}**, je proclame :",
-        "🗞️ Communiqué de mon Maître **{0}** :",
-        "📢 Écoutez tous ! Mon Maître **{0}** parle :",
-        "✨ Mon Maître **{0}** daigne s'exprimer. Prêtez l'oreille :",
-        "📡 Message de mon Maître **{0}**, retransmis en direct :",
-        "🏛️ Par décret de mon Maître **{0}** :",
-        "🕊️ Un mot de mon Maître **{0}** :",
-        "🖋️ Dicté par mon Maître **{0}**, proclamé par mes soins :",
+        "Mon Maître **{0}** s'adresse à vous :",
+        "Mon Maître **{0}** m'a chargée de vous transmettre ceci :",
+        "Annonce de mon Maître **{0}** :",
+        "Mon Maître **{0}** a une déclaration à faire :",
+        "Sur ordre de mon Maître **{0}**, je proclame :",
+        "Communiqué de mon Maître **{0}** :",
+        "Écoutez tous ! Mon Maître **{0}** parle :",
+        "Mon Maître **{0}** daigne s'exprimer. Prêtez l'oreille :",
+        "Message de mon Maître **{0}**, retransmis en direct :",
+        "Par décret de mon Maître **{0}** :",
+        "Un mot de mon Maître **{0}** :",
+        "Dicté par mon Maître **{0}**, proclamé par mes soins :",
     };
 
     // A rarer pool of pop-culture / meme references, for everyone.
