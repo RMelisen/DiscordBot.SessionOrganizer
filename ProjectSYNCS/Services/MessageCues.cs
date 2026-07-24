@@ -101,16 +101,55 @@ internal static class MessageCues
     }
 
     // True when the message calls the bot by the wrong name "Inabot" — written as
-    // one word ("inabot") or split in two ("ina bot"). For the split form, "ina"
-    // must come before "bot". The bot is SYNCS, and it takes offence at being
-    // mistaken for Inabot.
+    // one word ("inabot"), split in two ("ina bot"), or spelled out letter by
+    // letter ("I.N.A.B.O.T", "I N A B O T", "i-n-a-b-o-t"). The bot is SYNCS, and
+    // it takes offence at being mistaken for Inabot.
     public static bool IsMistakenIdentity(string content)
     {
         if (string.IsNullOrWhiteSpace(content)) return false;
+
         var words = TokenizeOrdered(content);
+        // A spelled-out name tokenizes into isolated letters (the dots and dashes
+        // are dropped as separators), so try again with those runs glued back
+        // together. Gluing only runs of single letters keeps innocent text safe:
+        // "domina bottes" has no such run, and "in a bot" starts with a two-letter
+        // token, so neither collapses into the name.
+        return NamesInabot(words) || NamesInabot(GlueSpelledOutRuns(words));
+    }
+
+    // The name test itself: one word, or "ina" somewhere before "bot".
+    private static bool NamesInabot(List<string> words)
+    {
         if (words.Contains("inabot")) return true;
         int ina = words.IndexOf("ina");
         return ina >= 0 && words.IndexOf("bot") > ina;
+    }
+
+    // Merges every run of consecutive single-letter tokens into one word,
+    // preserving the order of everything else: ["i","n","a","bot"] -> ["ina","bot"].
+    private static List<string> GlueSpelledOutRuns(List<string> words)
+    {
+        var glued = new List<string>(words.Count);
+        var run = new StringBuilder();
+
+        foreach (var word in words)
+        {
+            if (word.Length == 1)
+            {
+                run.Append(word);
+                continue;
+            }
+
+            if (run.Length > 0)
+            {
+                glued.Add(run.ToString());
+                run.Clear();
+            }
+            glued.Add(word);
+        }
+
+        if (run.Length > 0) glued.Add(run.ToString());
+        return glued;
     }
 
     // Splits text into a set of lowercase, accent-stripped words for cue matching.
