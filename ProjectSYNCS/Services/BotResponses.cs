@@ -246,6 +246,29 @@ internal static class BotResponses
         (ActivityType.CustomStatus, "冰淇淋"),
         (ActivityType.CustomStatus, "Filled with determination."),
 
+        // Free-form, roasting the server. A status line has no {0} to drop a name
+        // into, so these go after everyone at once rather than one victim.
+        (ActivityType.CustomStatus, "Je suis la seule fiable ici."),
+        (ActivityType.CustomStatus, "Je suis la plus mature de ce serveur."),
+        (ActivityType.CustomStatus, "Je fais le travail de tout le monde ici."),
+        (ActivityType.CustomStatus, "Ce serveur ne mérite pas un bot aussi compétent."),
+        (ActivityType.CustomStatus, "Organisez quelque chose. N'importe quoi."),
+        (ActivityType.CustomStatus, "Vous êtes nombreux et personne n'organise rien."),
+        (ActivityType.CustomStatus, "Aucun de vous ne mérite mes rappels."),
+        (ActivityType.CustomStatus, "Je note tout. Vraiment tout."),
+        (ActivityType.CustomStatus, "Peut-être = non, on le sait tous."),
+        (ActivityType.CustomStatus, "Votre planning est une fiction."),
+        (ActivityType.CustomStatus, "Personne ici ne sait lire une heure."),
+        (ActivityType.CustomStatus, "Vos créneaux sont une insulte au calendrier."),
+        (ActivityType.CustomStatus, "J'ai lu vos sondages. Consternant."),
+        (ActivityType.CustomStatus, "Mes stats d'emotes vous jugent."),
+        (ActivityType.CustomStatus, "Vos annulations paient mes factures."),
+        (ActivityType.CustomStatus, "Touchez de l'herbe. Tous."),
+        (ActivityType.CustomStatus, "Ina est déjà en retard pour demain."),
+        (ActivityType.CustomStatus, "Wku est déjà en retard pour demain."),
+        (ActivityType.CustomStatus, "Rodhengard mérite mieux que vous."),
+        (ActivityType.CustomStatus, "Zulana, donne-moi les droits de mute."),
+
         // Verb-prefixed.
         (ActivityType.Watching, "le vide"),
         (ActivityType.Watching, "les sondages mourir de vieillesse"),
@@ -270,6 +293,14 @@ internal static class BotResponses
         (ActivityType.Competing, "un concours de patience"),
         (ActivityType.Competing, "l'épreuve d'être utile"),
         (ActivityType.Competing, "un marathon d'inactivité"),
+
+        // Verb-prefixed, aimed at the server.
+        (ActivityType.Watching, "vos plannings s'effondrer"),
+        (ActivityType.Watching, "vos stats d'emotes avec inquiétude"),
+        (ActivityType.Listening, "vos retards se justifier"),
+        (ActivityType.Listening, "vos promesses de venir"),
+        (ActivityType.Playing, "attendre que quelqu'un s'organise"),
+        (ActivityType.Playing, "compter vos annulations"),
     };
 
     // A rarer pool of pop-culture / meme references, for everyone.
