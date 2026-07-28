@@ -58,17 +58,16 @@ internal sealed class PresenceService : BackgroundService
 
     private async Task RotateAsync()
     {
-        var (type, text) = _picker.Pick(PresenceBucket, BotResponses.PresenceFillers);
+        var line = _picker.Pick(PresenceBucket, BotResponses.PresenceFillers);
 
         try
         {
-            // A custom status is a different shape on the wire: its text travels in
-            // State, not Name, so it needs the dedicated call. SetGameAsync would
-            // send the line in the wrong field and render as an empty status.
-            if (type == ActivityType.CustomStatus)
-                await _client.SetCustomStatusAsync(text);
-            else
-                await _client.SetGameAsync(text, type: type);
+            // Custom status rather than SetGameAsync: it renders the line verbatim,
+            // with no verb prepended, and Discord doesn't localise it per viewer. Note
+            // the text travels in the wire model's State field rather than Name, which
+            // is exactly why this needs the dedicated call — SetGameAsync with
+            // ActivityType.CustomStatus would fill the wrong field and render nothing.
+            await _client.SetCustomStatusAsync(line);
         }
         catch (Exception ex)
         {

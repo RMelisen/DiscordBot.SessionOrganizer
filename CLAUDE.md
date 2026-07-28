@@ -47,10 +47,13 @@ services.
   reminder DMs, session lifecycle card re-renders, and poll auto-close.
 - **`PresenceService`** — rotates the cosmetic status line every 5 minutes. Its
   interval is deliberately *not* shared with `ReminderService`, whose 5 minutes are
-  load-bearing. A `PresenceFillers` entry tagged `ActivityType.CustomStatus` is a
-  free-form line and **must** go through `SetCustomStatusAsync`: a custom status
-  carries its text in the wire model's `State` field, so `SetGameAsync` would put it
-  in `Name` and render an empty status. Every other `ActivityType` is the opposite.
+  load-bearing. Lines go out via `SetCustomStatusAsync`, **not** `SetGameAsync`: a
+  custom status renders verbatim, whereas the `ActivityType` verbs are prepended and
+  localised to whoever is *looking*, so a French line read "Watching le vide" on an
+  English client. Any line needing a verb spells it out itself. Note a custom status
+  carries its text in the wire model's `State` field rather than `Name` — which is
+  why it needs the dedicated call; `SetGameAsync` with `ActivityType.CustomStatus`
+  compiles fine and renders nothing.
 
 `BotService` owns the gateway subscriptions, with one exception: `PresenceService`
 hooks `Ready` itself, because Discord drops the bot's presence on every reconnect and
@@ -157,10 +160,8 @@ that bucket — back-to-back repeats are what make a 95-line pool feel like a 5-
 one. The exclusion window is `min(10, pool.Length / 2)` precisely so a small pool
 (`ReferenceComebacks` has 5 lines) can never have every candidate excluded. Pick the
 raw template *before* `string.Format`, so the history dedupes on the template rather
-than on one user's rendered name. `Pick` is generic, so a pool can be richer than
-`string[]` — `PresenceFillers` is `(ActivityType, string)[]` — and the bucket is
-normally a channel id but only needs to be stable (`PresenceService` uses `0`, which
-is never a real snowflake).
+than on one user's rendered name. The bucket is normally a channel id but only needs
+to be stable — `PresenceService` uses `0`, which is never a real snowflake.
 
 **Personality lines pause behind the typing indicator.** `ChatterService`'s
 `ReplyWithTypingAsync` / `PostWithTypingAsync` are the only send paths for the bot's
