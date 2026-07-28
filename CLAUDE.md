@@ -42,7 +42,8 @@ services.
 
 - **`BotService`** — gateway login, slash-command registration, interaction
   dispatch. Fans `MessageReceived` out to `EmoteTracker`, `ReactionService` and
-  `ChatterService`, and `ReactionAdded`/`ReactionRemoved` to `EmoteTracker`.
+  `ChatterService`, `ReactionAdded` to `EmoteTracker` then `ReactionService`, and
+  `ReactionRemoved` to `EmoteTracker`.
 - **`ReminderService`** — a single 5-minute loop that does three independent jobs:
   reminder DMs, session lifecycle card re-renders, and poll auto-close.
 - **`PresenceService`** — rotates the cosmetic status line every 5 minutes. Its
@@ -102,6 +103,11 @@ the same message. Reactions exist for the conversations *nobody* addressed to it
 message qualifies on a `MessageCues` hit, or on being the owner's (he qualifies on
 anything — that's the favouritism), and is then gated by a probability roll and a
 per-channel cooldown.
+
+**`ReactionService`'s two paths are gated differently, on purpose.** Reacting to a
+*message* is rationed by `Cooldown` because it is the bot volunteering an opinion;
+copying someone else's *reaction* (`HandleReactionAddedAsync`) is odds-only with no
+cooldown, because piling on is meant to read as reflexive. Don't "unify" them.
 
 ## Conventions that will bite you
 
@@ -165,11 +171,12 @@ and `AvailabilityService`'s absent flag and its bounded (200-entry) map of forwa
 mentions.
 
 **The bot can only react with an emote it shares a guild with.** Unicode emoji in the
-`*Reactions` pools are always safe; a **custom** emote (`hi_cat`) only works because
-it is the server's own, and Discord rejects the reaction otherwise. Reactions are
-deliberately drawn from those curated pools only — never from the `EmoteStats`
-leaderboard, which records emotes from anywhere and would need filtering against
-`_client.Guilds` to be usable at all.
+`*Reactions` pools are always safe; a **custom** emote only works because it is the
+server's own, and Discord rejects the reaction otherwise. This is why copying someone
+else's reaction runs through `ReactionService.CanUse` first — people paste emotes from
+their other servers constantly, and those are not copyable. It is also why reactions
+are drawn from curated pools only, never from the `EmoteStats` leaderboard, which
+records emotes from anywhere.
 
 **Never pick a response line with a bare `Random`.** Every pool goes through
 `ResponsePicker.Pick(bucketId, pool)`, which avoids the entries most recently used in
@@ -259,7 +266,8 @@ and `config.yaml` a `PASTE_YOUR_TOKEN_HERE` one; real tokens go in user secrets
 ## Hardcoded ids
 
 `AvailabilityService.OwnerId` (the owner, who gets special treatment throughout
-`ChatterService`), the level-up bot id in `ChatterService`, the `hi_cat` emote id in
+`ChatterService` and again in `ReactionService`, both for what he says and for what
+he reacts to), the level-up bot id in `ChatterService`, the `hi_cat` emote id in
 `MessageCues` and `ReminderService`, and the per-user `PersonalComebacks` /
 `RealNames` maps in `BotResponses` are literal snowflakes tied to one specific
 server.

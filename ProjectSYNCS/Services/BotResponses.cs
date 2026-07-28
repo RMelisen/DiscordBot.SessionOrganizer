@@ -316,7 +316,7 @@ internal static class BotResponses
         "💀",
         "<:1_zulana_terreur_nocturne:1482006937863323783>",
         "<:okpaimon:885213667052900352>",
-        "<a:<:veryangry:885135712578588703>",
+        "<a:veryangry:885135712578588703>",
         "<:nightmareothereye:1011287167449972746>",
         "<:gooseknife:885214057756500019>",
         "<:staring:885135626444374126>"

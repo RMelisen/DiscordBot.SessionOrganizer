@@ -52,7 +52,7 @@ internal sealed class BotService : IHostedService
 
         _client.InteractionCreated += HandleInteractionAsync;
         _client.MessageReceived += HandleMessageAsync;
-        _client.ReactionAdded += _emotes.HandleReactionAddedAsync;
+        _client.ReactionAdded += HandleReactionAddedAsync;
         _client.ReactionRemoved += _emotes.HandleReactionRemovedAsync;
         _client.Ready += RegisterCommandsAsync;
 
@@ -92,6 +92,17 @@ internal sealed class BotService : IHostedService
         await _emotes.HandleMessageAsync(rawMessage);
         await _reactions.HandleMessageAsync(rawMessage);
         await _chatter.HandleMessageAsync(rawMessage);
+    }
+
+    // Counting the reaction comes first, so the tally reflects the human who added it
+    // before the bot decides whether to pile on with the same emote.
+    private async Task HandleReactionAddedAsync(
+        Cacheable<IUserMessage, ulong> message,
+        Cacheable<IMessageChannel, ulong> channel,
+        SocketReaction reaction)
+    {
+        await _emotes.HandleReactionAddedAsync(message, channel, reaction);
+        await _reactions.HandleReactionAddedAsync(message, channel, reaction);
     }
 
     private async Task HandleInteractionAsync(SocketInteraction interaction)
