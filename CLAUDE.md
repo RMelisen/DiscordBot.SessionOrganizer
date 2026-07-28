@@ -37,7 +37,7 @@ error messages — are **in French**. Code, comments and logs are in English.
 
 ## Architecture
 
-`Program.cs` is the composition root: DI wiring, `MigrateAsync()`, then two hosted
+`Program.cs` is the composition root: DI wiring, `MigrateAsync()`, then three hosted
 services.
 
 - **`BotService`** — gateway login, slash-command registration, interaction
@@ -45,6 +45,17 @@ services.
   `ReactionAdded`/`ReactionRemoved` to `EmoteTracker`.
 - **`ReminderService`** — a single 5-minute loop that does three independent jobs:
   reminder DMs, session lifecycle card re-renders, and poll auto-close.
+- **`PresenceService`** — rotates the cosmetic status line every 5 minutes. Its
+  interval is deliberately *not* shared with `ReminderService`, whose 5 minutes are
+  load-bearing. A `PresenceFillers` entry tagged `ActivityType.CustomStatus` is a
+  free-form line and **must** go through `SetCustomStatusAsync`: a custom status
+  carries its text in the wire model's `State` field, so `SetGameAsync` would put it
+  in `Name` and render an empty status. Every other `ActivityType` is the opposite.
+
+`BotService` owns the gateway subscriptions, with one exception: `PresenceService`
+hooks `Ready` itself, because Discord drops the bot's presence on every reconnect and
+that re-apply belongs next to the rotation logic. Don't go looking for it in
+`BotService`.
 
 Layers: `Commands/` (slash modules + the embed/component builders), `Interactions/`
 (component handlers and modal DTOs), `Services/` (EF repositories + behaviour),
@@ -141,12 +152,15 @@ and `AvailabilityService`'s absent flag and its bounded (200-entry) map of forwa
 mentions.
 
 **Never pick a response line with a bare `Random`.** Every pool goes through
-`ResponsePicker.Pick(channelId, pool)`, which avoids the lines most recently used in
-that channel — back-to-back repeats are what make a 95-line pool feel like a 5-line
+`ResponsePicker.Pick(bucketId, pool)`, which avoids the entries most recently used in
+that bucket — back-to-back repeats are what make a 95-line pool feel like a 5-line
 one. The exclusion window is `min(10, pool.Length / 2)` precisely so a small pool
 (`ReferenceComebacks` has 5 lines) can never have every candidate excluded. Pick the
 raw template *before* `string.Format`, so the history dedupes on the template rather
-than on one user's rendered name.
+than on one user's rendered name. `Pick` is generic, so a pool can be richer than
+`string[]` — `PresenceFillers` is `(ActivityType, string)[]` — and the bucket is
+normally a channel id but only needs to be stable (`PresenceService` uses `0`, which
+is never a real snowflake).
 
 **Personality lines pause behind the typing indicator.** `ChatterService`'s
 `ReplyWithTypingAsync` / `PostWithTypingAsync` are the only send paths for the bot's

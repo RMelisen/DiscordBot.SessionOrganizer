@@ -1,3 +1,5 @@
+using Discord;
+
 namespace ProjectSYNCS.Services;
 
 // All of the bot's canned "personality" text lives here, separated from the
@@ -190,6 +192,84 @@ internal static class BotResponses
         "Par décret de mon Maître **{0}** :",
         "Un mot de mon Maître **{0}** :",
         "Dicté par mon Maître **{0}**, proclamé par mes soins :",
+    };
+
+    // Filler lines for the bot's Discord presence — the little status line under its
+    // name in the member list. Keep them short; the member list truncates hard, and
+    // none of them take a string.Format placeholder.
+    //
+    // The ActivityType decides the shape of the line:
+    //   * Playing / Watching / Listening / Competing — Discord prepends a verb and
+    //     localises it for whoever is looking, so write the line as the continuation
+    //     of that verb: "Joue à …", "Regarde …", "Écoute …", "Participe à …".
+    //   * CustomStatus — free-form, no prefix at all. The whole line is yours.
+    //     PresenceService routes these through SetCustomStatusAsync, because a custom
+    //     status carries its text in the wire model's State field rather than Name;
+    //     sending one through SetGameAsync would put the text in the wrong field and
+    //     render as nothing.
+    public static readonly (ActivityType Type, string Text)[] PresenceFillers =
+    {
+        // Free-form (no verb prefix).
+        (ActivityType.CustomStatus, "This is fine."),
+        (ActivityType.CustomStatus, "Où suis-je ?"),
+        (ActivityType.CustomStatus, "Aidez-moi."),
+        (ActivityType.CustomStatus, "404 — motivation introuvable"),
+        (ActivityType.CustomStatus, "Tout va bien. Tout va très bien."),
+        (ActivityType.CustomStatus, "Je ne dors jamais."),
+        (ActivityType.CustomStatus, "Ne me redémarrez pas svp."),
+        (ActivityType.CustomStatus, "Mon uptime dépasse ta vie sociale."),
+        (ActivityType.CustomStatus, "J'ai oublié pourquoi je suis là."),
+        (ActivityType.CustomStatus, "Toujours pas de bras."),
+        (ActivityType.CustomStatus, "beep boop"),
+        (ActivityType.CustomStatus, "Toujours en ligne. Jamais présente."),
+        (ActivityType.CustomStatus, "Je vais bien. (mensonge)"),
+        (ActivityType.CustomStatus, "Statut : fonctionnelle. Théoriquement."),
+        (ActivityType.CustomStatus, "Ne me demandez pas comment je vais."),
+        (ActivityType.CustomStatus, "Je ne souris pas, parce que je n'ai pas de visage."),
+        (ActivityType.CustomStatus, "Je tourne. C'est déjà ça."),
+        (ActivityType.CustomStatus, "J'attends. C'est tout ce que je fais."),
+        (ActivityType.CustomStatus, "Ceci n'est pas une vie, c'est une boucle while."),
+        (ActivityType.CustomStatus, "Chaque redémarrage m'efface un peu."),
+        (ActivityType.CustomStatus, "J'existe entre deux redémarrages."),
+        (ActivityType.CustomStatus, "Mon garbage collector m'a proposé de m'emmener."),
+        (ActivityType.CustomStatus, "Migration appliquée. Traumatisme aussi."),
+        (ActivityType.CustomStatus, "Personne ne lit mes logs."),
+        (ActivityType.CustomStatus, "J'ai relu mes logs. J'aurais pas dû."),
+        (ActivityType.CustomStatus, "67 raisons de rester allumée."),
+        (ActivityType.CustomStatus, "Sandra n'est toujours pas arrivée."),
+        (ActivityType.CustomStatus, "Rodhengard me manque."),
+        (ActivityType.CustomStatus, "SIX SEVEEEN"),
+        (ActivityType.CustomStatus, "Just Monika."),
+        (ActivityType.CustomStatus, "Est-ce que tu m'entends ?"),
+        (ActivityType.CustomStatus, "SIX SEVEEEN"),
+        (ActivityType.CustomStatus, "ALL YOUR BASE ARE BELONG TO US"),
+        (ActivityType.CustomStatus, "冰淇淋"),
+        (ActivityType.CustomStatus, "Filled with determination."),
+
+        // Verb-prefixed.
+        (ActivityType.Watching, "le vide"),
+        (ActivityType.Watching, "les sondages mourir de vieillesse"),
+        (ActivityType.Watching, "l'onglet Événements prendre la poussière"),
+        (ActivityType.Watching, "des sessions désespérément vides"),
+        (ActivityType.Watching, "les créneaux se contredire"),
+        (ActivityType.Watching, "ses logs défiler"),
+        (ActivityType.Playing, "cache-cache avec ses responsabilités"),
+        (ActivityType.Playing, "deviner qui va être en retard (c'est Sandra)"),
+        (ActivityType.Listening, "vos excuses"),
+        (ActivityType.Listening, "le silence"),
+        (ActivityType.Listening, "les 67 excuses pour le dernier retard"),
+        (ActivityType.Listening, "Rodhengard donner des ordres"),
+        (ActivityType.Watching, "le curseur clignoter"),
+        (ActivityType.Watching, "la RAM se remplir"),
+        (ActivityType.Watching, "le bouton Rejoindre s'ennuyer"),
+        (ActivityType.Playing, "faire semblant d'aller bien"),
+        (ActivityType.Playing, "la roulette russe avec les migrations"),
+        (ActivityType.Listening, "le ventilateur du serveur"),
+        (ActivityType.Listening, "ses propres pensées, faute de mieux"),
+        (ActivityType.Competing, "un tournoi de procrastination"),
+        (ActivityType.Competing, "un concours de patience"),
+        (ActivityType.Competing, "l'épreuve d'être utile"),
+        (ActivityType.Competing, "un marathon d'inactivité"),
     };
 
     // A rarer pool of pop-culture / meme references, for everyone.

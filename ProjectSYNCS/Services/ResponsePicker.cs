@@ -14,19 +14,23 @@ public sealed class ResponsePicker
     // on a given pick is scaled to the pool (see Pick), so this is only a ceiling.
     private const int HistoryLength = 10;
 
-    private readonly ConcurrentDictionary<ulong, List<string>> _recent = new();
+    // Boxed so one picker can serve pools of plain lines and of richer entries (the
+    // presence fillers pair a line with an activity type). Comparison goes through
+    // Equals, which is value equality for both strings and tuples.
+    private readonly ConcurrentDictionary<ulong, List<object>> _recent = new();
 
     /// <summary>
-    /// A random line from <paramref name="pool"/>, preferring one that hasn't been
-    /// used recently in this channel. Pools are shared per channel, not per pool, so
-    /// the history is a rolling record of what the bot last said there.
+    /// A random entry from <paramref name="pool"/>, preferring one that hasn't been
+    /// used recently in this bucket. History is per bucket, not per pool, so it is a
+    /// rolling record of what the bot last said there. The bucket is normally a
+    /// channel id; anything stable works for pools with no channel.
     /// </summary>
-    public string Pick(ulong channelId, string[] pool)
+    public T Pick<T>(ulong bucketId, T[] pool)
     {
-        if (pool.Length == 0) return string.Empty;
+        if (pool.Length == 0) return default!;
         if (pool.Length == 1) return pool[0];
 
-        var history = _recent.GetOrAdd(channelId, _ => new List<string>());
+        var history = _recent.GetOrAdd(bucketId, _ => new List<object>());
 
         lock (history)
         {
@@ -39,14 +43,14 @@ public sealed class ResponsePicker
                 ? history
                 : history.GetRange(history.Count - window, window);
 
-            var candidates = pool.Where(line => !excluded.Contains(line)).ToArray();
+            var candidates = pool.Where(entry => !excluded.Contains(entry!)).ToArray();
             // The window cap above guarantees at least one survivor; this only keeps
             // a future change to that formula from producing an empty pick.
             if (candidates.Length == 0) candidates = pool;
 
             var chosen = candidates[Random.Shared.Next(candidates.Length)];
 
-            history.Add(chosen);
+            history.Add(chosen!);
             if (history.Count > HistoryLength) history.RemoveAt(0);
             return chosen;
         }
