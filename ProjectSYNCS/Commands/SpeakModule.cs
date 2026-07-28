@@ -17,6 +17,7 @@ namespace ProjectSYNCS.Commands;
 public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly ILogger<SpeakModule> _logger;
+    private readonly ResponsePicker _picker;
 
     // Discord caps a message at 2000 characters; leave room for the herald line
     // and the blockquote markers.
@@ -27,9 +28,10 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
     private static readonly Regex _messageLinkRegex =
         new(@"channels/(\d+)/(\d+)/(\d+)", RegexOptions.Compiled);
 
-    public SpeakModule(ILogger<SpeakModule> logger)
+    public SpeakModule(ILogger<SpeakModule> logger, ResponsePicker picker)
     {
         _logger = logger;
+        _picker = picker;
     }
 
     [SlashCommand("tell", "Faire dire un message au bot")]
@@ -86,7 +88,7 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        var content = BuildContent(text, announce);
+        var content = BuildContent(text, announce, target.Id);
 
         try
         {
@@ -159,7 +161,7 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
         {
             var dm = await user.CreateDMChannelAsync();
             await dm.SendMessageAsync(
-                BuildContent(text, announce),
+                BuildContent(text, announce, user.Id),
                 // Same policy as everywhere else: no @everyone/@here, no roles.
                 allowedMentions: new AllowedMentions(AllowedMentionTypes.Users));
 
@@ -197,7 +199,9 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
 
     // Either a herald line naming the owner, or — by default — pure
     // ventriloquism: the bot's own voice, nothing pointing back to him.
-    private string BuildContent(string text, bool announce)
+    // bucketId only groups the herald history (destination channel, or recipient
+    // for a DM), so the same one doesn't come up twice in a row.
+    private string BuildContent(string text, bool announce, ulong bucketId)
     {
         if (!announce) return text;
 
@@ -205,8 +209,7 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
             ?? Context.User.GlobalName
             ?? Context.User.Username;
         var herald = string.Format(
-            BotResponses.OwnerAnnouncementHeralds[
-                Random.Shared.Next(BotResponses.OwnerAnnouncementHeralds.Length)],
+            _picker.Pick(bucketId, BotResponses.OwnerAnnouncementHeralds),
             ownerName);
 
         return $"{herald}\n{MessageFormat.Quote(text, MaxMessageLength)}";

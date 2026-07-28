@@ -17,6 +17,7 @@ internal sealed class ChatterService
     private readonly DiscordSocketClient _client;
     private readonly BreakdownService _breakdown;
     private readonly AvailabilityService _availability;
+    private readonly ResponsePicker _picker;
     private readonly ILogger<ChatterService> _logger;
 
     // Rodhengard, the owner: gets compliments instead of roasts.
@@ -42,11 +43,13 @@ internal sealed class ChatterService
         DiscordSocketClient client,
         BreakdownService breakdown,
         AvailabilityService availability,
+        ResponsePicker picker,
         ILogger<ChatterService> logger)
     {
         _client = client;
         _breakdown = breakdown;
         _availability = availability;
+        _picker = picker;
         _logger = logger;
     }
 
@@ -100,15 +103,9 @@ internal sealed class ChatterService
         // Easter egg: level 67 gets the meme instead of a normal cheer.
         var cheer = match.Groups[1].Value == "67"
             ? "SIX SEVEEEN"
-            : BotResponses.LevelUpCheers[Random.Shared.Next(BotResponses.LevelUpCheers.Length)];
-        try
-        {
-            await message.Channel.SendMessageAsync(cheer);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to send level-up cheer in channel {ChannelId}.", message.Channel.Id);
-        }
+            : _picker.Pick(message.Channel.Id, BotResponses.LevelUpCheers);
+
+        await PostWithTypingAsync(message.Channel, cheer, "level-up cheer");
     }
 
     // Handles a message that @mentions the bot (but isn't a reply to the bot).
@@ -135,17 +132,10 @@ internal sealed class ChatterService
             var targetName = ResolveName(target.Author);
             _logger.LogInformation("Owner summoned a rescue roast against {Name}.", targetName);
             var roast = string.Format(
-                BotResponses.RescueRoasts[Random.Shared.Next(BotResponses.RescueRoasts.Length)], targetName, weekday);
-            try
-            {
-                // Reply to the target's own message so the roast is clearly aimed
-                // at them (and pings them).
-                await target.ReplyAsync(roast);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to send rescue roast in channel {ChannelId}.", message.Channel.Id);
-            }
+                _picker.Pick(message.Channel.Id, BotResponses.RescueRoasts), targetName, weekday);
+            // Reply to the target's own message so the roast is clearly aimed at
+            // them (and pings them).
+            await ReplyWithTypingAsync(target, roast, "rescue roast");
             return;
         }
 
@@ -153,15 +143,8 @@ internal sealed class ChatterService
         if (message.Author.Id == OwnerId)
         {
             _logger.LogInformation("Owner mentioned the bot — greeting him.");
-            var greeting = BotResponses.OwnerGreetings[Random.Shared.Next(BotResponses.OwnerGreetings.Length)];
-            try
-            {
-                await message.ReplyAsync(greeting);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to send owner greeting in channel {ChannelId}.", message.Channel.Id);
-            }
+            var greeting = _picker.Pick(message.Channel.Id, BotResponses.OwnerGreetings);
+            await ReplyWithTypingAsync(message, greeting, "owner greeting");
             return;
         }
 
@@ -187,15 +170,8 @@ internal sealed class ChatterService
             : BotResponses.Interrogations;
 
         _logger.LogInformation("{Name} mentioned the bot.", name);
-        var line = string.Format(pool[Random.Shared.Next(pool.Length)], name, weekday);
-        try
-        {
-            await message.ReplyAsync(line);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to send mention reply in channel {ChannelId}.", message.Channel.Id);
-        }
+        var line = string.Format(_picker.Pick(message.Channel.Id, pool), name, weekday);
+        await ReplyWithTypingAsync(message, line, "mention reply");
     }
 
     private async Task HandleReplyToBotAsync(SocketUserMessage message)
@@ -256,15 +232,8 @@ internal sealed class ChatterService
             if (BotResponses.PersonalComebacks.TryGetValue(message.Author.Id, out var personal))
                 pool = pool.Concat(personal).Concat(personal).ToArray();
         }
-        var comeback = string.Format(pool[Random.Shared.Next(pool.Length)], name, CurrentWeekday());
-        try
-        {
-            await message.ReplyAsync(comeback);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to send reply comeback in channel {ChannelId}.", message.Channel.Id);
-        }
+        var comeback = string.Format(_picker.Pick(message.Channel.Id, pool), name, CurrentWeekday());
+        await ReplyWithTypingAsync(message, comeback, "reply comeback");
     }
 
     // When the owner is flagged absent and someone (other than the owner) pings
@@ -279,16 +248,9 @@ internal sealed class ChatterService
         var name = ResolveName(message.Author);
         _logger.LogInformation("{Name} pinged the absent owner — sending unavailability notice.", name);
         var notice = string.Format(
-            BotResponses.OwnerAbsentNotices[Random.Shared.Next(BotResponses.OwnerAbsentNotices.Length)],
+            _picker.Pick(message.Channel.Id, BotResponses.OwnerAbsentNotices),
             name, CurrentWeekday());
-        try
-        {
-            await message.ReplyAsync(notice);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to send owner-absence notice in channel {ChannelId}.", message.Channel.Id);
-        }
+        await ReplyWithTypingAsync(message, notice, "owner-absence notice");
 
         await NotifyOwnerOfMentionAsync(message, name);
         return true;
@@ -393,7 +355,7 @@ internal sealed class ChatterService
 
             var ownerName = guild!.GetUser(OwnerId)?.Nickname ?? "Rodhengard";
             var herald = string.Format(
-                BotResponses.OwnerReplyHeralds[Random.Shared.Next(BotResponses.OwnerReplyHeralds.Length)],
+                _picker.Pick(pending.ChannelId, BotResponses.OwnerReplyHeralds),
                 ownerName);
 
             await original.ReplyAsync(
@@ -438,17 +400,61 @@ internal sealed class ChatterService
         var name = ResolveName(message.Author);
         _logger.LogInformation("{Name} called the bot 'Inabot' — correcting them.", name);
         var line = string.Format(
-            BotResponses.MistakenIdentityReplies[Random.Shared.Next(BotResponses.MistakenIdentityReplies.Length)],
+            _picker.Pick(message.Channel.Id, BotResponses.MistakenIdentityReplies),
             name, CurrentWeekday());
+        await ReplyWithTypingAsync(message, line, "mistaken-identity reply");
+        return true;
+    }
+
+    // ---- Sending a personality line ---------------------------------------
+    // Both helpers pause behind the typing indicator before sending, so the bot
+    // reads as composing an answer instead of firing back instantly. Only the
+    // bot's *own* lines go through here: the owner-reply relay and the DM
+    // acknowledgements send directly, because delaying someone else's words (or a
+    // "✅ transmis" receipt) buys nothing. `what` only labels the log line.
+
+    private async Task ReplyWithTypingAsync(SocketUserMessage replyTo, string line, string what)
+    {
         try
         {
-            await message.ReplyAsync(line);
+            using (replyTo.Channel.EnterTypingState())
+            {
+                await Task.Delay(TypingDelayFor(line));
+            }
+            await replyTo.ReplyAsync(line);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to send mistaken-identity reply in channel {ChannelId}.", message.Channel.Id);
+            _logger.LogWarning(ex, "Failed to send {What} in channel {ChannelId}.", what, replyTo.Channel.Id);
         }
-        return true;
+    }
+
+    private async Task PostWithTypingAsync(ISocketMessageChannel channel, string line, string what)
+    {
+        try
+        {
+            using (channel.EnterTypingState())
+            {
+                await Task.Delay(TypingDelayFor(line));
+            }
+            await channel.SendMessageAsync(line);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send {What} in channel {ChannelId}.", what, channel.Id);
+        }
+    }
+
+    // How long to "type" a chat line before sending it. Much snappier than
+    // BreakdownService's laboured pacing, which is dramatising a collapse: this
+    // fires on every single reply, and the whole pause has to stay comfortably
+    // inside Discord.Net's 3 s handler timeout.
+    private static TimeSpan TypingDelayFor(string text)
+    {
+        const int baseMs = 350;
+        const int perChar = 30;     // ~33 chars/sec — a brisk typist
+        var ms = baseMs + text.Length * perChar;
+        return TimeSpan.FromMilliseconds(Math.Clamp(ms, 500, 2000));
     }
 
     // The current weekday name in French, for the {1} format placeholder.

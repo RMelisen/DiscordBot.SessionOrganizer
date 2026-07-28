@@ -63,8 +63,10 @@ Two stateless helpers wrap the outward Discord side effects of a session:
 **DI lifetimes are not arbitrary.** `AppDbContext` and the services that wrap it
 (`EventService`, `PollService`, `EmoteStatsService`) are **transient**; the
 personality collaborators that hold in-memory state (`ChatterService`,
-`BreakdownService`, `AvailabilityService`, `EmoteTracker`) are **singletons**.
-Registering a stateful service as transient silently drops its state.
+`BreakdownService`, `AvailabilityService`, `ResponsePicker`, `EmoteTracker`) are
+**singletons**. Registering a stateful service as transient silently drops its
+state — `ResponsePicker` as transient would forget every line the instant it
+returned one.
 
 **Singletons never inject a DB service.** `ReminderService` and `EmoteTracker` take
 `IServiceProvider` and open `_services.CreateAsyncScope()` around each unit of work,
@@ -74,8 +76,8 @@ lifetime. Match that pattern in any new background or gateway-driven work.
 
 The "personality" subsystem is separate from the scheduling one: `ChatterService`
 decides *how* to react to a message, `BotResponses` holds the canned lines,
-`MessageCues` does the nice/mean/greeting intent detection, `BreakdownService`
-plays the easter egg.
+`ResponsePicker` chooses which one, `MessageCues` does the nice/mean/greeting intent
+detection, `BreakdownService` plays the easter egg.
 
 ## Conventions that will bite you
 
@@ -134,8 +136,26 @@ keep the whole draft in a `static ConcurrentDictionary` keyed by user id, remove
 on finish or cancel.
 
 All in-memory state resets on restart **by design** — the draft dictionaries above,
-`BreakdownService`'s channel cooldown, and `AvailabilityService`'s absent flag and
-its bounded (200-entry) map of forwarded mentions.
+`BreakdownService`'s channel cooldown, `ResponsePicker`'s per-channel line history,
+and `AvailabilityService`'s absent flag and its bounded (200-entry) map of forwarded
+mentions.
+
+**Never pick a response line with a bare `Random`.** Every pool goes through
+`ResponsePicker.Pick(channelId, pool)`, which avoids the lines most recently used in
+that channel — back-to-back repeats are what make a 95-line pool feel like a 5-line
+one. The exclusion window is `min(10, pool.Length / 2)` precisely so a small pool
+(`ReferenceComebacks` has 5 lines) can never have every candidate excluded. Pick the
+raw template *before* `string.Format`, so the history dedupes on the template rather
+than on one user's rendered name.
+
+**Personality lines pause behind the typing indicator.** `ChatterService`'s
+`ReplyWithTypingAsync` / `PostWithTypingAsync` are the only send paths for the bot's
+own chatter, and they also carry the swallow-and-log. Two paths deliberately skip
+them and send directly — the owner-reply relay and the DM acknowledgements — because
+delaying a human's words or a "✅ transmis" receipt only adds latency. The pause is
+capped at 2 s to stay inside Discord.Net's 3 s `HandlerTimeout`; `BreakdownService`
+keeps its own much slower pacing, which knowingly exceeds it for ~a minute once a
+month.
 
 **`/vote create` must create its own wizard message.** The slash command posts the
 "Définir le titre" message and every later step only *updates* it. Creating the

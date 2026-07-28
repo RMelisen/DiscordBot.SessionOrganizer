@@ -51,6 +51,7 @@ var host = Host.CreateDefaultBuilder(args)
         // in-memory state like the breakdown cooldown).
         services.AddSingleton<BreakdownService>();
         services.AddSingleton<AvailabilityService>();
+        services.AddSingleton<ResponsePicker>();
         services.AddSingleton<ChatterService>();
         services.AddSingleton<EmoteTracker>();
 
