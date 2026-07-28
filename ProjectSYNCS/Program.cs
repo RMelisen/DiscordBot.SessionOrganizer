@@ -54,6 +54,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<ResponsePicker>();
         services.AddSingleton<ChatterService>();
         services.AddSingleton<EmoteTracker>();
+        services.AddSingleton<ReactionService>();
 
         services.AddHostedService<BotService>();
         services.AddHostedService<ReminderService>();

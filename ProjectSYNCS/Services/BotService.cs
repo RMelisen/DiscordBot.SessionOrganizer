@@ -21,6 +21,7 @@ internal sealed class BotService : IHostedService
     private readonly ILogger<BotService> _logger;
     private readonly ChatterService _chatter;
     private readonly EmoteTracker _emotes;
+    private readonly ReactionService _reactions;
 
     public BotService(
         DiscordSocketClient client,
@@ -29,7 +30,8 @@ internal sealed class BotService : IHostedService
         IConfiguration config,
         ILogger<BotService> logger,
         ChatterService chatter,
-        EmoteTracker emotes)
+        EmoteTracker emotes,
+        ReactionService reactions)
     {
         _client = client;
         _interactions = interactions;
@@ -38,6 +40,7 @@ internal sealed class BotService : IHostedService
         _logger = logger;
         _chatter = chatter;
         _emotes = emotes;
+        _reactions = reactions;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -87,6 +90,7 @@ internal sealed class BotService : IHostedService
     private async Task HandleMessageAsync(SocketMessage rawMessage)
     {
         await _emotes.HandleMessageAsync(rawMessage);
+        await _reactions.HandleMessageAsync(rawMessage);
         await _chatter.HandleMessageAsync(rawMessage);
     }
 

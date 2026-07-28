@@ -41,8 +41,8 @@ error messages — are **in French**. Code, comments and logs are in English.
 services.
 
 - **`BotService`** — gateway login, slash-command registration, interaction
-  dispatch. Fans `MessageReceived` out to `EmoteTracker` and `ChatterService`, and
-  `ReactionAdded`/`ReactionRemoved` to `EmoteTracker`.
+  dispatch. Fans `MessageReceived` out to `EmoteTracker`, `ReactionService` and
+  `ChatterService`, and `ReactionAdded`/`ReactionRemoved` to `EmoteTracker`.
 - **`ReminderService`** — a single 5-minute loop that does three independent jobs:
   reminder DMs, session lifecycle card re-renders, and poll auto-close.
 - **`PresenceService`** — rotates the cosmetic status line every 5 minutes. Its
@@ -77,10 +77,11 @@ Two stateless helpers wrap the outward Discord side effects of a session:
 **DI lifetimes are not arbitrary.** `AppDbContext` and the services that wrap it
 (`EventService`, `PollService`, `EmoteStatsService`) are **transient**; the
 personality collaborators that hold in-memory state (`ChatterService`,
-`BreakdownService`, `AvailabilityService`, `ResponsePicker`, `EmoteTracker`) are
-**singletons**. Registering a stateful service as transient silently drops its
-state — `ResponsePicker` as transient would forget every line the instant it
-returned one.
+`BreakdownService`, `AvailabilityService`, `ResponsePicker`, `EmoteTracker`,
+`ReactionService`) are **singletons**. Registering a stateful service as transient
+silently drops its state — `ResponsePicker` as transient would forget every line the
+instant it returned one, and `ReactionService` would lose its cooldown and react to
+every single message.
 
 **Singletons never inject a DB service.** `ReminderService` and `EmoteTracker` take
 `IServiceProvider` and open `_services.CreateAsyncScope()` around each unit of work,
@@ -91,7 +92,16 @@ lifetime. Match that pattern in any new background or gateway-driven work.
 The "personality" subsystem is separate from the scheduling one: `ChatterService`
 decides *how* to react to a message, `BotResponses` holds the canned lines,
 `ResponsePicker` chooses which one, `MessageCues` does the nice/mean/greeting intent
-detection, `BreakdownService` plays the easter egg.
+detection, `BreakdownService` plays the easter egg, `ReactionService` answers with an
+emote instead of words.
+
+**`ChatterService` and `ReactionService` split the room.** Anything aimed at the bot
+— an @mention, or a reply to one of its messages — belongs to `ChatterService`, and
+`ReactionService` explicitly skips those so the bot never both roasts and decorates
+the same message. Reactions exist for the conversations *nobody* addressed to it. A
+message qualifies on a `MessageCues` hit, or on being the owner's (he qualifies on
+anything — that's the favouritism), and is then gated by a probability roll and a
+per-channel cooldown.
 
 ## Conventions that will bite you
 
@@ -153,6 +163,13 @@ All in-memory state resets on restart **by design** — the draft dictionaries a
 `BreakdownService`'s channel cooldown, `ResponsePicker`'s per-channel line history,
 and `AvailabilityService`'s absent flag and its bounded (200-entry) map of forwarded
 mentions.
+
+**The bot can only react with an emote it shares a guild with.** Unicode emoji in the
+`*Reactions` pools are always safe; a **custom** emote (`hi_cat`) only works because
+it is the server's own, and Discord rejects the reaction otherwise. Reactions are
+deliberately drawn from those curated pools only — never from the `EmoteStats`
+leaderboard, which records emotes from anywhere and would need filtering against
+`_client.Guilds` to be usable at all.
 
 **Never pick a response line with a bare `Random`.** Every pool goes through
 `ResponsePicker.Pick(bucketId, pool)`, which avoids the entries most recently used in

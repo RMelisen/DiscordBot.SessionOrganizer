@@ -57,11 +57,8 @@ public class EmoteStatsModule : InteractionModuleBase<SocketInteractionContext>
         var lines = rows.Select((s, i) =>
         {
             var rank = page * PageSize + i + 1;
-            var markup = s.EmoteId != 0
-                ? (s.IsAnimated ? $"<a:{s.Name}:{s.EmoteId}>" : $"<:{s.Name}:{s.EmoteId}>")
-                : s.Unicode;
             var totalUses = s.WrittenCount + s.ReactedCount;
-            return $"**{rank}.** {markup} — **{totalUses}** ({s.WrittenCount} écrites, {s.ReactedCount} réactions)";
+            return $"**{rank}.** {s.Markup} — **{totalUses}** ({s.WrittenCount} écrites, {s.ReactedCount} réactions)";
         });
 
         var embed = new EmbedBuilder()

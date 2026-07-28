@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace ProjectSYNCS.Models;
 
 // Per-guild usage counter for a single emote. Both custom emotes (from any
@@ -22,4 +24,15 @@ public class EmoteStat
     // Times the emote was written in a message, vs used as a reaction.
     public long WrittenCount { get; set; }
     public long ReactedCount { get; set; }
+
+    /// <summary>
+    /// How the emote is written out — Discord's markup for a custom emote, the raw
+    /// character for a unicode emoji. Suitable both for display and for parsing back
+    /// into an IEmote to react with. [NotMapped] because it is derived, so it needs
+    /// no column and no migration.
+    /// </summary>
+    [NotMapped]
+    public string Markup => EmoteId != 0
+        ? (IsAnimated ? $"<a:{Name}:{EmoteId}>" : $"<:{Name}:{EmoteId}>")
+        : Unicode;
 }

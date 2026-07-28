@@ -295,6 +295,49 @@ internal static class BotResponses
         "Joue à compter vos annulations",
     };
 
+    // Emotes ReactionService adds to a message, picked by what the message reads
+    // like. Written as markup so they can be parsed straight into an IEmote.
+    //
+    // Unicode emoji always work. A **custom** emote here only works if the bot
+    // shares a guild with it — otherwise Discord rejects the reaction and the
+    // service just logs it. hi_cat is the server's own, like everywhere else.
+    public static readonly string[] NiceReactions = 
+    { 
+        "<:10sur10:885134866046419016>", 
+        "<:PepeHappy:904759477599883284>", 
+        "<:uwu:885135876735246346>", 
+        "<:cathearte_:982024469956669501>", 
+        "<:heart:>", 
+        "<:adorablefrog:885135007822282762>", 
+        "<a:dancingblob:885209918892810330>" 
+    };
+    public static readonly string[] MeanReactions = 
+    { 
+        "💀",
+        "<:1_zulana_terreur_nocturne:1482006937863323783>",
+        "<:okpaimon:885213667052900352>",
+        "<a:<:veryangry:885135712578588703>",
+        "<:nightmareothereye:1011287167449972746>",
+        "<:gooseknife:885214057756500019>",
+        "<:staring:885135626444374126>"
+    };
+    public static readonly string[] GreetingReactions =
+    { 
+        "<a:hi_cat:1482305105276571774>"
+    };
+    // The owner gets devotion rather than a verdict.
+    public static readonly string[] OwnerReactions =
+    {
+        "<:10sur10:885134866046419016>",
+        "<:uwu:885135876735246346>",
+        "<:cathearte_:982024469956669501>",
+        "<:heart:>",
+        "<:adorablefrog:885135007822282762>",
+        "<:biting_lip:>",
+        "<:mushroomcute:1525060374351839302>",
+        "<:fuminodepression:1531341412514267146>"
+    };
+
     // A rarer pool of pop-culture / meme references, for everyone.
     public static readonly string[] ReferenceComebacks =
     {
