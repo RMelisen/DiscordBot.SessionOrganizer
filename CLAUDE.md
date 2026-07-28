@@ -19,7 +19,13 @@ dotnet user-secrets set "Discord:DevelopmentGuildId" "<id>" # instant registrati
 ```
 
 Leave `Discord:RegisterCommandsGlobally` at `false` in dev: guild-scoped commands
-register instantly, global ones take up to an hour to propagate.
+register instantly, global ones take up to an hour to propagate. Guild registration
+runs with `deleteMissing: true`, so the dev guild's command list is replaced by
+whatever the assembly declares on every start.
+
+The bot needs the two privileged intents (`GuildMembers`, `MessageContent`) enabled
+in the Discord developer portal. Without `MessageContent` the whole personality
+subsystem silently reads empty strings and stops reacting.
 
 There is no test project and no CI. Verify changes by building and, when it
 matters, running the bot against the dev guild.
@@ -35,7 +41,8 @@ error messages — are **in French**. Code, comments and logs are in English.
 services.
 
 - **`BotService`** — gateway login, slash-command registration, interaction
-  dispatch. Fans `MessageReceived` out to `EmoteTracker` and `ChatterService`.
+  dispatch. Fans `MessageReceived` out to `EmoteTracker` and `ChatterService`, and
+  `ReactionAdded`/`ReactionRemoved` to `EmoteTracker`.
 - **`ReminderService`** — a single 5-minute loop that does three independent jobs:
   reminder DMs, session lifecycle card re-renders, and poll auto-close.
 
@@ -43,11 +50,27 @@ Layers: `Commands/` (slash modules + the embed/component builders), `Interaction
 (component handlers and modal DTOs), `Services/` (EF repositories + behaviour),
 `Models/`, `Data/AppDbContext.cs`, `Helpers/`.
 
+Slash modules: `ScheduleModule`, `PollModule`, `VoteModule` (group modules),
+plus the flat `EmoteStatsModule`, `HelpModule`, `SpeakModule` (`/tell`, `/dm`) and
+`AbsenceModule` (`/absent`). Component handlers for the published cards live apart
+from the wizards, in `Interactions/Components/` (`EventComponentHandler`,
+`PollComponentHandler`).
+
+Two stateless helpers wrap the outward Discord side effects of a session:
+`SessionEventSync` (create/update/delete the native Guild Scheduled Event) and
+`SessionNotifier` (cancellation DMs).
+
 **DI lifetimes are not arbitrary.** `AppDbContext` and the services that wrap it
 (`EventService`, `PollService`, `EmoteStatsService`) are **transient**; the
 personality collaborators that hold in-memory state (`ChatterService`,
 `BreakdownService`, `AvailabilityService`, `EmoteTracker`) are **singletons**.
 Registering a stateful service as transient silently drops its state.
+
+**Singletons never inject a DB service.** `ReminderService` and `EmoteTracker` take
+`IServiceProvider` and open `_services.CreateAsyncScope()` around each unit of work,
+resolving `EventService` / `PollService` / `EmoteStatsService` inside. Injecting the
+transient service into the singleton would pin one `AppDbContext` for the process
+lifetime. Match that pattern in any new background or gateway-driven work.
 
 The "personality" subsystem is separate from the scheduling one: `ChatterService`
 decides *how* to react to a message, `BotResponses` holds the canned lines,
@@ -71,16 +94,35 @@ through `Helpers/AppTime` (pinned to `Europe/Paris`, DST-aware via
 `TryParseWallClock`). Store instants as UTC `DateTimeOffset`, render them to users
 as Discord `<t:unix:...>` timestamps so the client localises them.
 
+**Globalization must stay on.** `InvariantGlobalization` is explicitly `false` and
+the Dockerfile installs `libicu72`, because `AppTime` resolves `Europe/Paris` and
+the day/slot labels are formatted with `fr-FR`. Dropping either turns dates into
+invariant-culture output or falls back to `TimeZoneInfo.Local`.
+
 **`[ComponentInteraction]` and `[ModalInteraction]` inside a `[Group]` module need
 `ignoreGroupNames: true`.** `ScheduleModule`, `PollModule` and `VoteModule` are all
 group modules, so without that flag Discord.Net prefixes the group name onto the
 custom-id and the handler simply never fires — no error, no log. Every such
 attribute in those files already passes it; match that when adding one.
 
+**Custom-ids are a contract across files.** `PollModule.OnCategoryPickedAsync`
+hand-builds a modal with custom-id `schedule:finalize:{category}:{datetime}` to
+reuse `ScheduleModule`'s handler, and `VoteModule.VoteListAsync` reuses
+`poll:republish` from `PollModule`. Renaming a custom-id means grepping the whole
+project, not just the declaring module.
+
+**Modal DTOs and hand-built `ModalBuilder`s must stay in sync.** `Interactions/Modals`
+holds the `IModal` DTOs, but three paths build the same modals by hand to pre-fill
+them — `ScheduleModule.BuildEditModal` (binds to `EditSessionModal`),
+`ScheduleModule.OnRetryAsync` and `PollModule.OnCategoryPickedAsync` (both bind to
+`ScheduleEventModal`). Adding or renaming a field means touching the DTO *and* every
+hand-built builder, or the value silently fails to bind.
+
 **Embed and component builders are shared.** `ScheduleModule.BuildEventEmbed` /
 `BuildEventComponents` and the `PollModule` equivalents are `static` and are called
 from the component handlers and from `ReminderService`. Change a card's rendering
-in one place and every re-render path follows.
+in one place and every re-render path follows. `PollModule`'s pair renders both poll
+kinds, branching on `Poll.Kind`, so `/vote` cards go through it too.
 
 **The two wizards keep state differently.** `ScheduleModule` threads its state
 through component custom-ids — e.g. `schedule:min:{category}:{date}:{hour}:{minute}`
@@ -95,14 +137,39 @@ All in-memory state resets on restart **by design** — the draft dictionaries a
 `BreakdownService`'s channel cooldown, and `AvailabilityService`'s absent flag and
 its bounded (200-entry) map of forwarded mentions.
 
+**`/vote create` must create its own wizard message.** The slash command posts the
+"Définir le titre" message and every later step only *updates* it. Creating the
+wizard message from the modal response instead drops the first option-add update —
+that's why the extra `vote:begin` button exists rather than opening the modal
+straight from the command.
+
+**`ChatterService.HandleMessageAsync`'s branch order is load-bearing.** The
+owner's DM reply relay is checked before the reply-to-bot branch, which would
+otherwise swallow it as a reply to the bot and fire a comeback instead of relaying.
+Add new branches with that precedence in mind.
+
 **Session lifecycle is idempotent.** `SessionEvent.RenderedPhase` records what was
 last drawn on the card, so the background loop only re-renders on an actual
 Scheduled → InProgress → Finished transition.
+
+**The timing constants are coupled to the 5-minute loop.** The reminder window in
+`EventService.GetEventsNeedingReminderAsync` is 25–35 minutes before start — wider
+than the loop interval so no session is missed and none is reminded twice
+(`ReminderSent`, reset when the time is edited). `SessionEvent.Duration` (2 h) sets
+both the InProgress → Finished transition and the native event's end time.
+`ReminderService.PollLifetime` (2 days) drives auto-close, `BreakdownService.Cooldown`
+(30 days) gates the easter egg.
 
 **Discord side effects must never break the flow.** `SessionEventSync` (native
 Discord events) swallows and logs every exception; a missing Manage Events
 permission degrades silently rather than failing the session. Keep that property.
 Reminder DMs likewise catch `CannotSendMessageToUser` specifically.
+
+**Respect Discord's hard caps when building components.** 25 options per select
+menu (the day picker and every `list` republish menu `.Take(25)`), 5 buttons per
+row, 80-char button labels, 100-char select labels, 1000-char scheduled-event
+description, 2000-char message (relays truncate to 1200–1500 to leave room for the
+herald line and blockquote markers). Exceeding one throws at send time, not at build.
 
 **There are two separate authorization models.** Session and poll management uses
 `Helpers/SessionPermissions.CanManage` — the organizer, or any guild
@@ -114,17 +181,24 @@ inline in the module and reply ephemerally. Don't conflate them.
 on someone's behalf (`SpeakModule`, `ChatterService`'s DM relay) passes
 `new AllowedMentions(AllowedMentionTypes.Users)` — users only, never `@everyone`,
 `@here` or roles — and renders quoted text through `MessageFormat.Quote` so relayed
-words are visibly not the bot's own. Preserve both when adding a relay.
+words are visibly not the bot's own. Preserve both when adding a relay. The absence
+notice forwarded to the owner goes further and uses `AllowedMentions.None`, since it
+quotes someone else's text verbatim.
+
+**`/help` is hand-maintained.** `HelpModule` duplicates the feature list in prose,
+as does `README.md`; neither is generated. A new user-facing command means updating
+both — except the owner-only ones, which are deliberately absent from `/help`.
 
 ## Version and deployment
 
 `ProjectSYNCS/config.yaml` is the **single source of truth for the version** — the
-csproj regex-parses it into `<Version>`, and `AppInfo.Version` surfaces it. Bump it
-there and nowhere else.
+csproj regex-parses it into `<Version>`, and `AppInfo.Version` surfaces it (in the
+`/help` footer). Bump it there and nowhere else.
 
 The bot ships as a Home Assistant add-on: `Dockerfile` publishes a self-contained
 `linux-arm64` build, and `run.sh` maps the add-on options to `Discord__Token`,
 `Discord__RegisterCommandsGlobally` and `Database__Path=/data/ProjectSYNCS.db`.
+Only `/data` is persisted, so the SQLite file must stay under it.
 
 The GitHub remote is **public**. `appsettings.json` ships a `BOT_TOKEN` placeholder
 and `config.yaml` a `PASTE_YOUR_TOKEN_HERE` one; real tokens go in user secrets
@@ -133,5 +207,7 @@ and `config.yaml` a `PASTE_YOUR_TOKEN_HERE` one; real tokens go in user secrets
 ## Hardcoded ids
 
 `AvailabilityService.OwnerId` (the owner, who gets special treatment throughout
-`ChatterService`), the level-up bot id and the `hi_cat` emote id in `MessageCues`
-and `ReminderService` are literal snowflakes tied to one specific server.
+`ChatterService`), the level-up bot id in `ChatterService`, the `hi_cat` emote id in
+`MessageCues` and `ReminderService`, and the per-user `PersonalComebacks` /
+`RealNames` maps in `BotResponses` are literal snowflakes tied to one specific
+server.
