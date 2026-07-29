@@ -29,6 +29,11 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.9" />
+    <!-- EF Core 10.0.x (up to 10.0.10) still pins SQLitePCLRaw 2.1.11, which carries a
+         vulnerable bundled SQLite (GHSA-2m69-gcr7-jv3q, NU1903). Referencing the bundle
+         directly lifts lib/provider/core to 2.1.12; drop this once EF ships a patch that
+         does it for us. 2.1.12 keeps the linux-arm64 native asset the Dockerfile needs. -->
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
