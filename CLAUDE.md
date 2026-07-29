@@ -119,7 +119,9 @@ database throws at runtime.
 
 **Discord snowflakes are `ulong`; SQLite integers are signed 64-bit.** Every
 snowflake property needs `.HasConversion<long>()` in `AppDbContext.OnModelCreating`.
-Easy to forget when adding a model.
+Easy to forget when adding a model. A *derived* property on a model needs
+`[NotMapped]` instead (see `EmoteStat.Markup`), or EF tries to map it and demands a
+migration for a column that should not exist.
 
 **Never use `DateTime.Now`.** Production runs in UTC; all wall-clock handling goes
 through `Helpers/AppTime` (pinned to `Europe/Paris`, DST-aware via
@@ -167,8 +169,8 @@ on finish or cancel.
 
 All in-memory state resets on restart **by design** — the draft dictionaries above,
 `BreakdownService`'s channel cooldown, `ResponsePicker`'s per-channel line history,
-and `AvailabilityService`'s absent flag and its bounded (200-entry) map of forwarded
-mentions.
+`ReactionService`'s per-channel cooldown, and `AvailabilityService`'s absent flag and
+its bounded (200-entry) map of forwarded mentions.
 
 **The bot can only react with an emote it shares a guild with.** Unicode emoji in the
 `*Reactions` pools are always safe; a **custom** emote only works because it is the
@@ -177,6 +179,12 @@ else's reaction runs through `ReactionService.CanUse` first — people paste emo
 their other servers constantly, and those are not copyable. It is also why reactions
 are drawn from curated pools only, never from the `EmoteStats` leaderboard, which
 records emotes from anywhere.
+
+**`BotResponses.MeanReactions` does double duty.** It is both the pool the bot reacts
+*with* when a message reads hostile, and the definition of "hostile" used to decide
+what it refuses to pile on to on the owner's messages. Adding an emote there changes
+both behaviours. Membership is tested on the parsed `IEmote`, not the markup string,
+so a custom emote still matches after someone renames it on the server.
 
 **Never pick a response line with a bare `Random`.** Every pool goes through
 `ResponsePicker.Pick(bucketId, pool)`, which avoids the entries most recently used in

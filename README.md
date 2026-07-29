@@ -35,10 +35,35 @@ in one click. The bot's user-facing language is French.
 
 ### Other
 - **`/emotestats`** — leaderboard of the server's most-used emotes (both in
-  messages and as reactions).
+  messages and as reactions), paginated.
 - **`/help`** — in-Discord usage guide.
-- **Personality** — the bot also reacts to chat with its own responses and cues
-  (`ChatterService`, `BotResponses`, `MessageCues`, `BreakdownService`).
+- **Owner-only commands** — the configured owner can speak through the bot
+  (`/tell` into a channel, `/dm` to a person) and flag themselves unavailable
+  (`/absent`), after which the bot answers anyone who pings them and forwards the
+  mention by DM — which the owner can reply to, and the bot relays the answer back
+  into the original channel. These are deliberately left out of `/help`.
+
+### Personality
+
+The bot is more than a scheduler: it answers when spoken to and reacts to the room.
+
+- **Replies** — an @mention, or a reply to one of its messages, gets an answer drawn
+  from large pools of canned French lines. Compliments, insults and greetings are
+  detected from the message text and answered in kind.
+- **No repeats** — every line goes through a picker that avoids whatever was said
+  recently in that channel, so a pool feels as large as it actually is.
+- **Typing pause** — replies wait behind the typing indicator for a moment scaled to
+  the length of the line, so the bot reads as composing an answer rather than firing
+  back instantly.
+- **Reactions** — it adds an emote to messages nobody addressed to it (when they
+  read as kind, hostile or a greeting), and sometimes joins in on a reaction someone
+  else just added. Both are rationed by probability, and message reactions also by a
+  per-channel cooldown, so it stays occasional rather than constant.
+- **Rotating status** — the status line under the bot's name cycles through a large
+  pool of one-liners.
+- **An easter egg** — rare, and better discovered than documented.
+
+All personality state is in memory by design and resets when the bot restarts.
 
 ## Tech stack
 
@@ -51,21 +76,26 @@ in one click. The bot's user-facing language is French.
 ```
 ProjectSYNCS/
 ├─ Program.cs              # Host setup, DI wiring, runs EF migrations
-├─ Commands/               # Slash-command modules (Schedule, Poll, Vote, EmoteStats, Help)
+├─ Commands/               # Slash-command modules (Schedule, Poll, Vote,
+│                          # EmoteStats, Help, Speak, Absence)
 ├─ Interactions/           # Button/select handlers (Components) and Modals
-├─ Services/               # BotService (gateway), ReminderService, EventService,
-│                          # PollService, EmoteStatsService, SessionEventSync, …
+├─ Services/               # Hosted:      BotService, ReminderService, PresenceService
+│                          # Data:        EventService, PollService, EmoteStatsService
+│                          # Personality: ChatterService, ReactionService, BotResponses,
+│                          #              MessageCues, ResponsePicker, BreakdownService
+│                          # Discord:     SessionEventSync, SessionNotifier, EmoteTracker
 ├─ Models/                 # SessionEvent, Participant, Poll, EmoteStat
 ├─ Data/AppDbContext.cs    # EF Core context
 ├─ Migrations/             # EF Core migrations
-├─ Helpers/                # AppTime, AppInfo, SessionPermissions
+├─ Helpers/                # AppTime, AppInfo, MessageFormat, SessionPermissions
 ├─ config.yaml             # Home Assistant add-on manifest (source of truth for version)
 └─ Dockerfile / run.sh     # Container build (HA add-on)
 ```
 
-Two hosted services run in the background: `BotService` (Discord connection,
-command registration, interaction dispatch) and `ReminderService` (lifecycle
-transitions and reminder DMs).
+Three hosted services run in the background: `BotService` (Discord connection,
+command registration, interaction dispatch), `ReminderService` (reminder DMs,
+session lifecycle transitions, poll auto-close) and `PresenceService` (the rotating
+status line).
 
 ## Configuration
 
@@ -78,6 +108,14 @@ then environment variables, then user secrets:
 | `Discord:DevelopmentGuildId` | Guild used for fast command registration in dev. |
 | `Discord:RegisterCommandsGlobally` | `true` registers commands globally; `false` registers them to the dev guild. |
 | `Database:Path` | SQLite file path (default `ProjectSYNCS.db`). |
+
+The bot needs both privileged intents — **Server Members** and **Message Content** —
+enabled in the Discord developer portal. Without *Message Content* the whole
+personality side reads empty strings and silently stops responding.
+
+It also needs the usual channel permissions where you want it active: send messages,
+embed links, add reactions, and *Manage Events* if you want sessions mirrored into
+the server's Events tab (that one degrades gracefully if missing).
 
 ## Running locally
 
@@ -98,3 +136,8 @@ The project ships as a **Home Assistant add-on** (`config.yaml`, `Dockerfile`,
 The add-on version in `config.yaml` is the single source of truth — the
 `<Version>` in `ProjectSYNCS.csproj` is parsed from it at build time and surfaced
 via `AppInfo.Version`.
+
+Only `/data` is persisted by the add-on, so the SQLite file lives there in
+production. Never commit a real token: `appsettings.json` and `config.yaml` ship
+placeholders, and real credentials belong in user secrets (dev) or the add-on
+options (prod).
