@@ -306,9 +306,10 @@ internal static class BotResponses
         "<:10sur10:885134866046419016>", 
         "<:PepeHappy:904759477599883284>", 
         "<:uwu:885135876735246346>", 
-        "<:cathearte_:982024469956669501>", 
-        "<:heart:>", 
-        "<:adorablefrog:885135007822282762>", 
+        "<:cathearte_:982024469956669501>",
+        "<:mcheart:982024259918499870>",
+        "❤️",
+        "<:adorablefrog:885135007822282762>",
         "<a:dancingblob:885209918892810330>" 
     };
     public static readonly string[] MeanReactions = 
@@ -331,9 +332,9 @@ internal static class BotResponses
         "<:10sur10:885134866046419016>",
         "<:uwu:885135876735246346>",
         "<:cathearte_:982024469956669501>",
-        "<:heart:>",
+        "❤️",
         "<:adorablefrog:885135007822282762>",
-        "<:biting_lip:>",
+        "🫦",
         "<:mushroomcute:1525060374351839302>",
         "<:fuminodepression:1531341412514267146>"
     };

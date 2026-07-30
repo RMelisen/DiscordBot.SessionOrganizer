@@ -162,21 +162,22 @@ internal sealed class ReactionService
             .Select(ParseEmote)
             .Any(mean => mean is not null && mean.Equals(emote));
 
-    // Which curated pool fits the message, or null to leave it alone. Mean is tested
-    // before nice for the same reason ChatterService does it: one nasty word cancels
-    // the kind reading.
+    // Which curated pool fits the message, or null to leave it alone. The emotion
+    // takes precedence over the greeting for the same reason ChatterService does it:
+    // a hostile "salut" is not a greeting worth waving back at.
     private static string[]? ChooseReactionPool(SocketUserMessage message)
     {
         if (message.Author.Id == AvailabilityService.OwnerId)
             return BotResponses.OwnerReactions;
 
-        var content = message.Content ?? string.Empty;
+        var mood = MessageCues.Analyze(message.Content ?? string.Empty);
 
-        if (MessageCues.IsMean(content)) return BotResponses.MeanReactions;
-        if (MessageCues.IsNice(content)) return BotResponses.NiceReactions;
-        if (MessageCues.IsGreeting(content)) return BotResponses.GreetingReactions;
-
-        return null;
+        return mood.Emotion switch
+        {
+            EmotionKind.Mean => BotResponses.MeanReactions,
+            EmotionKind.Nice => BotResponses.NiceReactions,
+            _ => mood.IsGreeting ? BotResponses.GreetingReactions : null,
+        };
     }
 
     // Custom emotes arrive as markup; everything else is a literal unicode emoji.

@@ -162,10 +162,10 @@ internal sealed class ChatterService
         }
 
         // A mention that greets the bot gets greeted back — a second entry point
-        // for the greeting, alongside replying. A mean word cancels it. Otherwise
+        // for the greeting, alongside replying. A mean reading cancels it. Otherwise
         // the bot just answers with a confused one-liner.
-        var content = message.Content ?? string.Empty;
-        var pool = !MessageCues.IsMean(content) && MessageCues.IsGreeting(content)
+        var mood = MessageCues.Analyze(message.Content ?? string.Empty);
+        var pool = mood.IsGreeting && mood.Emotion != EmotionKind.Mean
             ? BotResponses.Greetings
             : BotResponses.Interrogations;
 
@@ -186,12 +186,12 @@ internal sealed class ChatterService
         if (await TryCorrectMistakenIdentityAsync(message)) return;
 
         // Read the message text (requires the MessageContent intent) to detect
-        // kind words or a greeting and answer in kind. A mean word anywhere in the
-        // message cancels the nice/greeting treatment — we roast instead.
+        // kind words or a greeting and answer in kind. A mean reading outweighs the
+        // nice/greeting treatment — we roast instead.
         var content = message.Content ?? string.Empty;
-        var mean = MessageCues.IsMean(content);
-        var nice = !mean && MessageCues.IsNice(content);
-        var greeting = !mean && MessageCues.IsGreeting(content);
+        var mood = MessageCues.Analyze(content);
+        var nice = mood.Emotion == EmotionKind.Nice;
+        var greeting = mood.Emotion != EmotionKind.Mean && mood.IsGreeting;
 
         // Secret trigger: replying with the passphrase forces the breakdown,
         // bypassing the random roll and the cooldown. Open to anyone.

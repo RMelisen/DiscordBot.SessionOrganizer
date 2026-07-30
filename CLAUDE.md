@@ -180,11 +180,52 @@ their other servers constantly, and those are not copyable. It is also why react
 are drawn from curated pools only, never from the `EmoteStats` leaderboard, which
 records emotes from anywhere.
 
+**A custom emote in a `*Reactions` pool must carry its snowflake id** —
+`<:name:1234…>`, never `<:name:>`. `ReactionService.ParseEmote` falls back to
+`new Emoji(markup)` when `Emote.TryParse` fails, so id-less markup yields an "emoji"
+whose name is the literal `<:name:>` string. It is non-null, so the guard below it
+passes, Discord rejects the reaction with a 400, and the exception is swallowed and
+logged. The reaction silently never appears **and** the wasted attempt has already
+burned that channel's 10-minute `Cooldown`, since `TryClaimChannel` runs before the
+parse. There is no compile-time or startup check for this; the only symptom is a
+warning in the logs.
+
 **`BotResponses.MeanReactions` does double duty.** It is both the pool the bot reacts
 *with* when a message reads hostile, and the definition of "hostile" used to decide
 what it refuses to pile on to on the owner's messages. Adding an emote there changes
 both behaviours. Membership is tested on the parsed `IEmote`, not the markup string,
 so a custom emote still matches after someone renames it on the server.
+
+**`MessageCues` cues are weighted, not boolean.** `Analyze` returns a `MessageMood`
+(`Emotion` + `IsGreeting`) and scores the whole message rather than short-circuiting
+on the first hit. Four things follow. **One:** a cue listed in `_weakCues` scores 0.4
+instead of 1.0 and cannot fire alone — that is where the words with an innocent
+reading go (`cool`, `ferme`, `rate`, `zero`, `merde`, and `claque`, since "ça claque"
+is a *compliment*). Two weak cues together reach the 0.8 threshold, so adding an
+ambiguous word to `_niceCues` or `_meanCues` without also listing it in `_weakCues`
+is how you get misfires. **Two:** negation reaches *backwards* three tokens for
+everything, and also *forwards* two — but only for the cues in `_verbCues`, because
+chat French drops the `ne` and leaves the `pas` after the verb (`j'aime pas`). A
+forward window for every cue would let "merci, pas de souci" cancel its own thanks.
+**Three:** mean no longer cancels nice absolutely, it wins on margin, so `super nul`
+reads mean while `merci, t'es pas nulle` reads nice. Greeting is a separate axis and
+survives alongside either; callers that want the old "a mean word cancels the
+greeting" rule check `Emotion` themselves, as both do today. **Four:** every cue must
+survive `TokenizeOrdered` unchanged or it is unreachable — that is why `"3.0"` was
+removed (it tokenizes to `["3","0"]`), and why cues are stored lowercase and
+accent-stripped. Custom emotes that carry a mood are matched by **id**
+(`_niceEmoteIds`, `GreetingEmoteId`), never by name, so a rename on the server can't
+break them. `IsMistakenIdentity` is untouched by all of this — it is an identity
+check, not a mood, and stays a plain `bool`.
+
+**Cue vocabulary is scoped to a *gaming* server, and that constrains it.** Words that
+compliment a person in general French name game content here, so `boss` and `monstre`
+are deliberately **absent** from `_niceCues` entirely ("il est fort ce boss" read as
+praise), and `heros`, `roi`, `reine`, `royal`, `divin`, `toxique` and `manchot` are
+held at weak weight for the same reason ("dégâts toxiques", "arme divine", "la garde
+royale"). `sale` is absent too: "c'est sale" is a *compliment* in gaming slang, and
+the squashed-token fallback would also map the innocent "salle" onto it. Check a new
+cue against session/loot/combat vocabulary before adding it at full strength.
 
 **Never pick a response line with a bare `Random`.** Every pool goes through
 `ResponsePicker.Pick(bucketId, pool)`, which avoids the entries most recently used in
