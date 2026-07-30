@@ -162,7 +162,6 @@ internal static class MessageCues
         "plop", "pouet", "pweeet", "pweet", "pwet",
         "re", "rebonjour", "rebonsoir",
         "salut", "salutations", "slt", "sup",
-        "wesh", "wsh",
         "yo", "yoo", "yooo", "yop", "yosh",
     };
 
