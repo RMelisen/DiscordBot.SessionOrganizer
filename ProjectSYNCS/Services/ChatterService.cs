@@ -74,6 +74,14 @@ internal sealed class ChatterService
         // "unavailable" notice — this takes priority over the usual chatter.
         if (await TryHandleOwnerAbsenceAsync(message)) return;
 
+        // A verdict on the bot herself ("good bot" / "bad bot") belongs to
+        // BotFeedbackTracker, which answers it and keeps the tally. Without this the
+        // reply-to-bot branch below would swallow it and fire a comeback instead —
+        // praising her would get you insulted. Checked after the DM relay above so
+        // the owner answering a forwarded mention still relays normally.
+        if (message.Channel is SocketGuildChannel
+            && MessageCues.ReadFeedback(message.Content ?? string.Empty) != FeedbackKind.None) return;
+
         // Established behaviour: a reply to one of the bot's own messages gets a comeback.
         if (message.ReferencedMessage?.Author.Id == _client.CurrentUser.Id)
         {
@@ -407,55 +415,17 @@ internal sealed class ChatterService
     }
 
     // ---- Sending a personality line ---------------------------------------
-    // Both helpers pause behind the typing indicator before sending, so the bot
-    // reads as composing an answer instead of firing back instantly. Only the
-    // bot's *own* lines go through here: the owner-reply relay and the DM
-    // acknowledgements send directly, because delaying someone else's words (or a
-    // "✅ transmis" receipt) buys nothing. `what` only labels the log line.
+    // Thin wrappers over Helpers/BotChat, which owns the typing pause, the delay
+    // formula and the swallow-and-log. It lives there rather than here because
+    // BotFeedbackTracker sends chatter too, and a second copy of the delay clamp —
+    // which has to stay inside Discord.Net's 3 s HandlerTimeout — is exactly the
+    // kind of constant that drifts apart. `what` only labels the log line.
 
-    private async Task ReplyWithTypingAsync(SocketUserMessage replyTo, string line, string what)
-    {
-        try
-        {
-            using (replyTo.Channel.EnterTypingState())
-            {
-                await Task.Delay(TypingDelayFor(line));
-            }
-            await replyTo.ReplyAsync(line);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to send {What} in channel {ChannelId}.", what, replyTo.Channel.Id);
-        }
-    }
+    private Task ReplyWithTypingAsync(SocketUserMessage replyTo, string line, string what) =>
+        BotChat.ReplyWithTypingAsync(replyTo, line, _logger, what);
 
-    private async Task PostWithTypingAsync(ISocketMessageChannel channel, string line, string what)
-    {
-        try
-        {
-            using (channel.EnterTypingState())
-            {
-                await Task.Delay(TypingDelayFor(line));
-            }
-            await channel.SendMessageAsync(line);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to send {What} in channel {ChannelId}.", what, channel.Id);
-        }
-    }
-
-    // How long to "type" a chat line before sending it. Much snappier than
-    // BreakdownService's laboured pacing, which is dramatising a collapse: this
-    // fires on every single reply, and the whole pause has to stay comfortably
-    // inside Discord.Net's 3 s handler timeout.
-    private static TimeSpan TypingDelayFor(string text)
-    {
-        const int baseMs = 350;
-        const int perChar = 30;     // ~33 chars/sec — a brisk typist
-        var ms = baseMs + text.Length * perChar;
-        return TimeSpan.FromMilliseconds(Math.Clamp(ms, 500, 2000));
-    }
+    private Task PostWithTypingAsync(ISocketMessageChannel channel, string line, string what) =>
+        BotChat.PostWithTypingAsync(channel, line, _logger, what);
 
     // The current weekday name in French, for the {1} format placeholder.
     private static string CurrentWeekday() =>

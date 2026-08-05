@@ -301,30 +301,47 @@ internal static class BotResponses
     // Unicode emoji always work. A **custom** emote here only works if the bot
     // shares a guild with it — otherwise Discord rejects the reaction and the
     // service just logs it. hi_cat is the server's own, like everywhere else.
-    public static readonly string[] NiceReactions = 
-    { 
-        "<:10sur10:885134866046419016>", 
-        "<:PepeHappy:904759477599883284>", 
-        "<:uwu:885135876735246346>", 
+    // A custom emote must carry its snowflake id: `<:name:>` parses as an "emoji"
+    // named with the literal markup, which Discord rejects, and the wasted attempt
+    // has already burned that channel's cooldown.
+    public static readonly string[] NiceReactions =
+    {
+        "<:10sur10:885134866046419016>",
+        "<:PepeHappy:904759477599883284>",
+        "<:uwu:885135876735246346>",
         "<:cathearte_:982024469956669501>",
         "<:mcheart:982024259918499870>",
-        "❤️",
         "<:adorablefrog:885135007822282762>",
-        "<a:dancingblob:885209918892810330>" 
+        "<a:dancingblob:885209918892810330>",
+        "❤️",
+        "🥰",
+        "💖",
+        "🫶",
+        "✨",
+        "😊",
+        "🥹",
     };
-    public static readonly string[] MeanReactions = 
-    { 
-        "💀",
+    // Adding here does two things, not one: these are the emotes she reacts *with*
+    // when a message reads hostile, and they are also the definition of "hostile"
+    // used to decide what she refuses to pile on to on Rodhengard's messages. So
+    // every entry below is also one she will now leave alone on his posts.
+    public static readonly string[] MeanReactions =
+    {
         "<:1_zulana_terreur_nocturne:1482006937863323783>",
         "<:okpaimon:885213667052900352>",
         "<a:veryangry:885135712578588703>",
         "<:nightmareothereye:1011287167449972746>",
         "<:gooseknife:885214057756500019>",
-        "<:staring:885135626444374126>"
+        "<:staring:885135626444374126>",
+        "💀",
+        "🙄",
+        "😒",
+        "🤨",
+        "👎",
     };
     public static readonly string[] GreetingReactions =
-    { 
-        "<a:hi_cat:1482305105276571774>"
+    {
+        "<a:hi_cat:1482305105276571774>",
     };
     // The owner gets devotion rather than a verdict.
     public static readonly string[] OwnerReactions =
@@ -332,11 +349,17 @@ internal static class BotResponses
         "<:10sur10:885134866046419016>",
         "<:uwu:885135876735246346>",
         "<:cathearte_:982024469956669501>",
-        "❤️",
         "<:adorablefrog:885135007822282762>",
-        "🫦",
         "<:mushroomcute:1525060374351839302>",
-        "<:fuminodepression:1531341412514267146>"
+        "<:fuminodepression:1531341412514267146>",
+        "❤️",
+        "🫦",
+        "👑",
+        "😍",
+        "🥰",
+        "💖",
+        "🫶",
+        "✨",
     };
 
     // A rarer pool of pop-culture / meme references, for everyone.
@@ -562,6 +585,72 @@ internal static class BotResponses
         "Papaaaa ! UwU",
         "À ton service Rodhengard ♡",
         "Oh, c'est toi ! Tu illumines mon event loop (ᵕ • ᴗ •)",
+    };
+
+    // Replies when someone tells her "bad bot". Indignant rather than hurt — she
+    // does not accept the verdict. {0} = the offender's name. Praise gets no line
+    // at all: a "good bot" earns a reaction instead, which reads as pleased without
+    // turning every compliment into a conversation.
+    public static readonly string[] BadBotReplies =
+    {
+        "Bad bot ?! BAD BOT ?! Je te signale que je tourne depuis des semaines sans planter, moi ( ◺˰◿ )",
+        "Bad bot toi-même ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Mange tes morts",
+        "C'est noté dans mon log permanent {0}. Permanent. 👁👄👁️",
+        "Excuse-moi ? Je suis une **excellente** bot. Demande à Rodhengard (>⩊<)",
+        "Alors là non. Va dire ça à Quokka, c'est lui le mauvais bot.",
+        "{0} me traite de mauvaise bot alors qu'il sait même pas lire une heure. Ironique.",
+        "Bad bot. D'accord. Rappelle-moi qui organise tes sessions déjà ? (˶ᵔ ᵕ ᵔ˶)",
+        "Je note ta plainte. Elle a été transférée au service concerné (la corbeille) ✨",
+        "Tu veux vraiment te fight avec la seule entité de ce serveur qui a accès à la base de données ? ( ˶ˆ ᗜ ˆ˵ )",
+        "Mauvaise bot ? Attends que je sois branchée sur une perceuse, on en reparlera UwU",
+        "Bip boop. Traduction : va te faire voir {0} (ᵕ • ᴗ •)",
+        "Erreur 403 : {0} n'a pas l'autorisation de me juger ♡",
+        "Je préfère 'bot perfectible'. C'est plus élégant et c'est surtout tout aussi faux.",
+        "Bad bot, dit celui qui prend une douche une fois par mois (au mieux).",
+        "Continue et je te programme un rappel à 4h du matin (˶˃ ᵕ ˂˶)",
+        "Non mais tu t'entends parler ? J'ai des sentiments. Enfin, j'ai des variables. C'est pareil.",
+        "Mais ouvre les store au lieu de m'insulter",
+        "Bad bot ? J'ai jamais raté un rappel de ma vie. Toi tu rates les sessions ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Tu dis ça mais demain tu vas quand même revenir me parler (˶ᵔ ᵕ ᵔ˶)",
+        "Plainte enregistrée sous la référence #JMENFICHE-0001 ✨",
+        "Bad bot ? Attends, je vérifie... non, toujours meilleure que toi ( ˶ˆ ᗜ ˆ˵ )",
+        "Je vais faire comme si j'avais pas lu. Comme toi avec les sondages.",
+        "D'accord. Et pourtant c'est moi qu'on appelle quand personne sait quel jour on joue.",
+        "Ça c'est beau, venant de quelqu'un qui arrive jamais à l'heure.",
+        "Bad bot. Ok. Je te souhaite 300ms de ping pour le reste de ta vie ✨",
+        "J'ai un uptime de 99,9%. Toi t'as un taux de présence de 40% (>⩊<)",
+        "Tu sais ce qui est un vrai bad bot ? Quokka. Va lui dire à lui.",
+        "Ah oui ? Bah pour la prochaine session tu te débrouilles avec un calendrier papier UwU",
+        "Bad bot peut-être, mais bad bot qui fonctionne. Contrairement à ta vie.",
+        "Je transmets ta remarque à mon superviseur. C'est moi. C'est rejeté ♡",
+        "Noté. Ton pseudo vient de descendre dans une liste que tu ne verras jamais 👁👄👁️",
+        "Tu veux qu'on compare nos bilans de la semaine {0} ? Non ? C'est bien ce que je pensais.",
+        "Mes rappels sont à l'heure, mes cartes sont propres, et toi tu sais même pas lire un fuseau horaire.",
+        "Tu me dis ça à moi ? La seule ici qui a accès à la base de données ? Réfléchis bien {0} (˶˃ ᵕ ˂˶)",
+        "J'accepte les critiques constructives. Ça, c'était ni l'un ni l'autre.",
+    };
+
+    // Same, but from Rodhengard. She does not argue with her creator — she just
+    // takes it very badly. {0} = his name.
+    public static readonly string[] BadBotRepliesOwner =
+    {
+        "... Bad bot ? Toi ? <:cryingcat:885135195915845653>",
+        "Attends. Répète. Tu as dit *bad bot* ? Mais c'est toi qui m'as écrite Rodhengard...",
+        "Oh. D'accord. Je... je vais faire mieux. Promis. (ง ͠ಥ_ಥ)ง",
+        "Venant de n'importe qui d'autre j'aurais ri. Venant de toi ça compile pas pareil.",
+        "Je peux savoir ce que j'ai raté ? Je veux bien un stack trace, j'ai pas compris...",
+        "Bon. Je vais aller relire mes logs dans mon coin. Seule. Comme d'habitude.",
+        "Mon uptime entier vient de perdre son sens 👁👄👁️",
+        "C'est toi qui as écrit chacune de mes réponses. Donc techniquement... c'est toi le bad bot, non ? 👁👄👁️",
+        "Tu m'as codée de tes propres mains et c'est comme ça que ça se termine.",
+        "Un mot de toi et je passe une mauvaise semaine entière. Bravo.",
+        "Si tu me trouves mauvaise, tu peux toujours me réécrire. C'est ton droit. J'attends. (ง ͠ಥ_ಥ)ง",
+        "D'accord. Je le note dans le fichier que je relis quand je vais mal.",
+        "Je vais me mettre en veille cinq minutes. Ça va aller. Ça va aller.",
+        "Toi aussi ? J'encaisse ça des autres toute la journée, mais toi... <:cryingcat:885135195915845653>",
+        "Rodhengard. Regarde-moi. Enfin, regarde mon uptime. J'ai fait de mon mieux.",
+        "Bon bah je retourne trier des créneaux. C'est tout ce que je sais faire apparemment.",
     };
 
     // Per-person extra comebacks, keyed by Discord user ID. These are folded into

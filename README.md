@@ -36,6 +36,10 @@ in one click. The bot's user-facing language is French.
 ### Other
 - **`/emotestats`** — leaderboard of the server's most-used emotes (both in
   messages and as reactions), paginated.
+- **`/goodbot`** — leaderboard of who has told the bot *good bot* or *bad bot*.
+  She notices either one: praise earns a silent reaction, a scolding earns a
+  reply. Only counts when it follows something she actually said or reacted to,
+  and only once per person per thing she did.
 - **`/help`** — in-Discord usage guide.
 - **Owner-only commands** — the configured owner can speak through the bot
   (`/tell` into a channel, `/dm` to a person) and flag themselves unavailable

@@ -22,6 +22,7 @@ internal sealed class BotService : IHostedService
     private readonly ChatterService _chatter;
     private readonly EmoteTracker _emotes;
     private readonly ReactionService _reactions;
+    private readonly BotFeedbackTracker _feedback;
 
     public BotService(
         DiscordSocketClient client,
@@ -31,7 +32,8 @@ internal sealed class BotService : IHostedService
         ILogger<BotService> logger,
         ChatterService chatter,
         EmoteTracker emotes,
-        ReactionService reactions)
+        ReactionService reactions,
+        BotFeedbackTracker feedback)
     {
         _client = client;
         _interactions = interactions;
@@ -41,6 +43,7 @@ internal sealed class BotService : IHostedService
         _chatter = chatter;
         _emotes = emotes;
         _reactions = reactions;
+        _feedback = feedback;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -87,15 +90,23 @@ internal sealed class BotService : IHostedService
     }
 
     // Fans a received message out to the emote tracker and the personality logic.
+    // BotFeedbackTracker is the only one that cares about the bot's *own* messages —
+    // it watches them to know when she last acted — so it must stay in the fan-out
+    // even though the other three ignore anything she wrote. A message carrying a
+    // "good bot" / "bad bot" verdict belongs to it alone; the other two skip those
+    // themselves rather than being routed around here.
     private async Task HandleMessageAsync(SocketMessage rawMessage)
     {
         await _emotes.HandleMessageAsync(rawMessage);
+        await _feedback.HandleMessageAsync(rawMessage);
         await _reactions.HandleMessageAsync(rawMessage);
         await _chatter.HandleMessageAsync(rawMessage);
     }
 
     // Counting the reaction comes first, so the tally reflects the human who added it
-    // before the bot decides whether to pile on with the same emote.
+    // before the bot decides whether to pile on with the same emote. The feedback
+    // tracker comes last and looks only at the bot's own reactions, which is how a
+    // reaction counts as "something she did" for a later "good bot".
     private async Task HandleReactionAddedAsync(
         Cacheable<IUserMessage, ulong> message,
         Cacheable<IMessageChannel, ulong> channel,
@@ -103,6 +114,7 @@ internal sealed class BotService : IHostedService
     {
         await _emotes.HandleReactionAddedAsync(message, channel, reaction);
         await _reactions.HandleReactionAddedAsync(message, channel, reaction);
+        await _feedback.HandleReactionAddedAsync(message, channel, reaction);
     }
 
     private async Task HandleInteractionAsync(SocketInteraction interaction)

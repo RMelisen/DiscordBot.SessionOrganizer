@@ -1,6 +1,7 @@
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
+using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
 
@@ -72,6 +73,11 @@ internal sealed class ReactionService
 
         // Never decorate a breakdown in progress.
         if (_breakdown.IsActive(message.Channel.Id)) return;
+
+        // A verdict on the bot belongs to BotFeedbackTracker, which reacts to it
+        // itself. Matters because some verdicts also read as a mood — "gentil bot"
+        // scores Nice — and both services would otherwise reach for NiceReactions.
+        if (MessageCues.ReadFeedback(message.Content ?? string.Empty) != FeedbackKind.None) return;
 
         var pool = ChooseReactionPool(message);
         if (pool is null) return;
@@ -180,12 +186,8 @@ internal sealed class ReactionService
         };
     }
 
-    // Custom emotes arrive as markup; everything else is a literal unicode emoji.
-    private static IEmote? ParseEmote(string markup)
-    {
-        if (markup.Length == 0) return null;
-        return Emote.TryParse(markup, out var custom) ? custom : new Emoji(markup);
-    }
+    // Shared with BotFeedbackTracker, which reacts from the same pools.
+    private static IEmote? ParseEmote(string markup) => EmoteMarkup.Parse(markup);
 
     // Atomically checks the per-channel cooldown and claims it.
     private bool TryClaimChannel(ulong channelId)

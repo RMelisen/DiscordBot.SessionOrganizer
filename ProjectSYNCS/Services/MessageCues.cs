@@ -23,6 +23,19 @@ internal readonly record struct MessageMood(EmotionKind Emotion, bool IsGreeting
     public static readonly MessageMood Neutral = new(EmotionKind.None, false);
 }
 
+// Someone passing verdict on the bot itself — "good bot" / "bad bot". Detected
+// separately from the mood axes rather than as another cue, because it is a
+// verdict on *her*, not a mood, and because folding it into the scoring would
+// make "good bot" read as a compliment too and fire two responses at once.
+// Public (like ResponsePicker and AvailabilityService) because the public
+// BotFeedbackService takes it, which the public /goodbot module injects.
+public enum FeedbackKind
+{
+    None,
+    Good,
+    Bad,
+}
+
 // Lightweight intent detection over message text: is this a compliment, a
 // greeting, or an insult? Matching is done on tokenized, lowercased,
 // accent-stripped words so "Félicitations !" matches the cue "felicitations".
@@ -264,6 +277,25 @@ internal static class MessageCues
         "tiens bon", "trop bien", "trop fort", "tu gere", "tu geres",
     };
 
+    // Verdicts on the bot herself. The "good bot" meme is English even in French
+    // servers, so both languages are listed. Matched anywhere in the message, so
+    // "good bot 👍" and "ah bah good bot alors" both land.
+    private static readonly string[] _goodBotPhrases =
+    {
+        "bon bot", "bonne bot", "brave bot", "gentil bot", "gentille bot", "good bot",
+    };
+
+    private static readonly string[] _badBotPhrases =
+    {
+        "bad bot", "mauvais bot", "mauvaise bot", "mechant bot", "mechante bot",
+        "vilain bot", "vilaine bot",
+    };
+
+    // The same verdicts written as one word, which the phrase matcher cannot see
+    // because it only compares whole-token runs.
+    private static readonly HashSet<string> _goodBotWords = new() { "goodbot" };
+    private static readonly HashSet<string> _badBotWords = new() { "badbot" };
+
     // Built once; the arrays above stay arrays so they read as curated lists.
     private static readonly HashSet<string> _niceCueSet = new(_niceCues);
     private static readonly HashSet<string> _meanCueSet = new(_meanCues);
@@ -442,6 +474,40 @@ internal static class MessageCues
         }
 
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Whether the message passes verdict on the bot — "good bot" / "bad bot" and
+    /// their French equivalents. Callers treat this as short-circuiting: a message
+    /// that carries a verdict is answered as feedback, not as a mood, so the two
+    /// never both fire on the same message.
+    /// </summary>
+    public static FeedbackKind ReadFeedback(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return FeedbackKind.None;
+
+        var tokens = TokenizeOrdered(content).Select(Shorten).ToList();
+        if (tokens.Count == 0) return FeedbackKind.None;
+
+        var joined = " " + string.Join(' ', tokens) + " ";
+        var squashed = " " + string.Join(' ', tokens.Select(Squash)) + " ";
+
+        // Bad wins a tie, the same way Mean does: someone who says both has
+        // landed on a complaint.
+        if (SaysVerdict(tokens, joined, squashed, _badBotPhrases, _badBotWords)) return FeedbackKind.Bad;
+        if (SaysVerdict(tokens, joined, squashed, _goodBotPhrases, _goodBotWords)) return FeedbackKind.Good;
+
+        return FeedbackKind.None;
+    }
+
+    private static bool SaysVerdict(
+        List<string> tokens, string joined, string squashed, string[] phrases, HashSet<string> words)
+    {
+        if (tokens.Any(t => words.Contains(t) || words.Contains(Squash(t)))) return true;
+
+        // Squashed on both sides so a stretched "gooood bot" still lands.
+        return phrases.Any(p => joined.Contains(" " + p + " ")
+                                || squashed.Contains(" " + Squash(p) + " "));
     }
 
     // True when the message calls the bot by the wrong name "Inabot" — written as

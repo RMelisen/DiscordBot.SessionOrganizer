@@ -218,6 +218,36 @@ accent-stripped. Custom emotes that carry a mood are matched by **id**
 break them. `IsMistakenIdentity` is untouched by all of this — it is an identity
 check, not a mood, and stays a plain `bool`.
 
+**A "good bot" / "bad bot" verdict short-circuits three services.**
+`MessageCues.ReadFeedback` is checked *separately* from `Analyze` — it is a verdict
+on her, not a mood — and `BotFeedbackTracker` owns the response. Both
+`ChatterService` and `ReactionService` bail out early on a non-`None` verdict, and
+they have to: without the `ChatterService` guard a "good bot" replying to one of her
+messages falls into the reply-to-bot branch and fires a *comeback*, so praising her
+gets you insulted; without the `ReactionService` guard, "gentil bot" also scores
+`Nice` and both services reach for `NiceReactions` on the same message. The
+`ChatterService` guard sits **after** the owner-DM-relay branch so a relayed reply
+still works, and is guild-only.
+
+**`BotFeedbackTracker` learns what the bot did by watching the bot.** `MessageReceived`
+and `ReactionAdded` both fire for the bot's own traffic, so it records "I acted here
+at T" without `ChatterService` or `ReactionService` telling it anything — which is
+why it is a separate service rather than a branch in either. It is therefore the one
+handler in `BotService`'s fan-out that must *not* skip the bot's own messages.
+Attribution is a reply to one of her messages (always counts), or a plain message
+within a 5-minute window of her last action in that channel — the window exists
+because the server has other bots, and a bare "good bot" after Quokka does something
+would otherwise land in her column. Counting is one verdict per person per action,
+which also gates the response, so holding down Enter after one joke earns one ❤️.
+State is in-memory and resets on restart like the rest of the personality.
+
+**`Helpers/BotChat` is the single send path for the bot's own chatter**, and
+`Helpers/EmoteMarkup.Parse` the single reaction parser. Both were private members of
+`ChatterService` / `ReactionService` until `BotFeedbackTracker` needed them too. The
+typing-delay clamp in `BotChat` has to stay inside Discord.Net's 3 s `HandlerTimeout`,
+and the parser carries the id-less-markup trap above — neither is a constant worth
+having two copies of. `BreakdownService` still keeps its own much slower pacing.
+
 **Cue vocabulary is scoped to a *gaming* server, and that constrains it.** Words that
 compliment a person in general French name game content here, so `boss` and `monstre`
 are deliberately **absent** from `_niceCues` entirely ("il est fort ce boss" read as

@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<PollOption> PollOptions => Set<PollOption>();
     public DbSet<PollVote> PollVotes => Set<PollVote>();
     public DbSet<EmoteStat> EmoteStats => Set<EmoteStat>();
+    public DbSet<BotFeedback> BotFeedbacks => Set<BotFeedback>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -59,6 +60,15 @@ public class AppDbContext : DbContext
             // One row per (guild, emote); custom emotes key on EmoteId, unicode
             // emojis on the Unicode string. Counts are scoped to the guild.
             e.HasIndex(x => new { x.GuildId, x.EmoteId, x.Unicode }).IsUnique();
+        });
+
+        modelBuilder.Entity<BotFeedback>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            // One row per (guild, user); the tally is scoped to the guild it was
+            // earned in, like the emote counts.
+            e.HasIndex(x => new { x.GuildId, x.UserId }).IsUnique();
         });
     }
 }
