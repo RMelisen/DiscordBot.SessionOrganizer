@@ -39,10 +39,12 @@ in one click. The bot's user-facing language is French.
   default), **7 days**, and **all time**. The rolling windows only cover data
   recorded since daily buckets were added; all-time still includes everything
   counted before that.
-- **`/goodbot`** — leaderboard of who has told the bot *good bot* or *bad bot*.
-  She notices either one: praise earns a silent reaction, a scolding earns a
-  reply. Only counts when it follows something she actually said or reacted to,
-  and only once per person per thing she did.
+- **`/goodbot`** — leaderboard of who has told the bot *good bot* or *bad bot*,
+  with the same three filters as `/emotestats` — here **all time** is the default,
+  since verdicts are rare enough that a rolling window is often empty. She notices
+  either one: praise earns a silent reaction, a scolding earns a reply. Only counts
+  when it follows something she actually said or reacted to, and only once per
+  person per thing she did.
 - **`/help`** — in-Discord usage guide.
 - **Owner-only commands** — the configured owner can speak through the bot
   (`/tell` into a channel, `/dm` to a person) and flag themselves unavailable

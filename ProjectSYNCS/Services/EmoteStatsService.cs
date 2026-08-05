@@ -15,17 +15,6 @@ public readonly record struct EmoteRef(ulong Id, string Name, bool IsAnimated, s
     public static EmoteRef FromUnicode(string emoji) => new(0, emoji, false, emoji);
 }
 
-/// <summary>Which window a leaderboard covers.</summary>
-public enum StatsPeriod
-{
-    /// <summary>The last 30 days, today included.</summary>
-    Month,
-    /// <summary>The last 7 days, today included.</summary>
-    Week,
-    /// <summary>Everything ever counted, including before daily buckets existed.</summary>
-    AllTime,
-}
-
 /// <summary>One emote's standing in a ranking, already resolved for display.</summary>
 public readonly record struct EmoteTally(string Markup, long Written, long Reacted)
 {

@@ -30,7 +30,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .AddField("Commandes — Autres",
                 "**`/emotestats`** — Affiche le classement des emotes les plus utilisées du serveur (écrites et en réaction). " +
                 "Trois filtres : **30 jours** (par défaut), **7 jours** et **depuis toujours**.\n" +
-                "**`/goodbot`** — Affiche qui m'a dit *good bot* (ou *bad bot*, mais on ne parle pas de ceux-là).\n" +
+                "**`/goodbot`** — Affiche qui m'a dit *good bot* (ou *bad bot*, mais on ne parle pas de ceux-là). " +
+                "Mêmes filtres : **depuis toujours** (par défaut), **30 jours** et **7 jours**.\n" +
                 "**`/help`** — Affiche ce message.")
             .AddField("Créer une session — pas à pas",
                 "Lance **`/schedule create`**. Un assistant privé te guide :\n" +

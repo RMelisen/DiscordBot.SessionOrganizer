@@ -1,8 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using ProjectSYNCS.Data;
+using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Models;
 
 namespace ProjectSYNCS.Services;
+
+/// <summary>One person's standing in the good-bot leaderboard over some window.</summary>
+public readonly record struct FeedbackTally(ulong UserId, long Good, long Bad)
+{
+    public long Total => Good + Bad;
+}
 
 // Persists the "good bot" / "bad bot" tallies. Deliberately dumb: it records what
 // it is told and reads it back. Deciding *whether* a verdict counts — attribution
@@ -19,8 +26,10 @@ public class BotFeedbackService
         _db_context = db_context;
     }
 
-    // Records one verdict from one person. FeedbackKind.None is ignored so callers
-    // don't have to branch before calling.
+    // Records one verdict from one person, in the all-time total and in today's
+    // bucket. Both are written here so every bucketed user necessarily has a
+    // BotFeedback row. FeedbackKind.None is ignored so callers don't have to branch
+    // before calling.
     public async Task AddAsync(ulong guildId, ulong userId, FeedbackKind kind)
     {
         if (kind == FeedbackKind.None) return;
@@ -34,36 +43,78 @@ public class BotFeedbackService
             _db_context.BotFeedbacks.Add(row);
         }
 
-        if (kind == FeedbackKind.Good) row.GoodCount++;
-        else row.BadCount++;
+        var bucket = await GetOrCreateDailyAsync(guildId, userId, AppTime.TodayKey);
+
+        if (kind == FeedbackKind.Good)
+        {
+            row.GoodCount++;
+            bucket.GoodCount++;
+        }
+        else
+        {
+            row.BadCount++;
+            bucket.BadCount++;
+        }
 
         await _db_context.SaveChangesAsync();
     }
 
-    // How many people have passed verdict at least once in this guild.
-    public Task<int> GetCountAsync(ulong guildId) =>
-        _db_context.BotFeedbacks.CountAsync(f => f.GuildId == guildId);
+    // Whether anyone in this guild has ever passed verdict. Asked before the
+    // leaderboard is opened, to tell "nobody ever has" apart from "nobody did this
+    // week" — the two deserve different answers.
+    public Task<bool> HasAnyAsync(ulong guildId) =>
+        _db_context.BotFeedbacks.AnyAsync(f => f.GuildId == guildId);
 
-    // One page of the leaderboard, ranked by praise. Ordered by GoodCount rather
-    // than by a net score: one "bad bot" should not erase a good one, and the two
-    // numbers are shown side by side anyway.
-    public Task<List<BotFeedback>> GetPageAsync(ulong guildId, int skip, int take) =>
-        _db_context.BotFeedbacks
-            .Where(f => f.GuildId == guildId)
-            .OrderByDescending(f => f.GoodCount)
-            .ThenBy(f => f.BadCount)
-            .Skip(skip)
-            .Take(take)
-            .ToListAsync();
-
-    // Guild-wide totals, for the leaderboard footer.
-    public async Task<(long Good, long Bad)> GetTotalsAsync(ulong guildId)
+    /// <summary>
+    /// The guild's judges ranked over <paramref name="period"/>, most praise first.
+    /// Returns the whole ranking; callers page it themselves.
+    /// </summary>
+    /// <remarks>
+    /// Ordered by good verdicts rather than by a net score: one "bad bot" should not
+    /// erase a good one, and the two numbers are shown side by side anyway.
+    /// </remarks>
+    public async Task<List<FeedbackTally>> GetRankingAsync(ulong guildId, StatsPeriod period)
     {
-        var rows = await _db_context.BotFeedbacks
-            .Where(f => f.GuildId == guildId)
-            .Select(f => new { f.GoodCount, f.BadCount })
+        if (period == StatsPeriod.AllTime)
+        {
+            var all = await _db_context.BotFeedbacks
+                .Where(f => f.GuildId == guildId)
+                .ToListAsync();
+
+            return Rank(all.Select(f => new FeedbackTally(f.UserId, f.GoodCount, f.BadCount)));
+        }
+
+        // Inclusive lower bound: 6 days ago plus today is a week. Day is an int, so
+        // unlike every DateTimeOffset window in this project this really is filtered
+        // by the database rather than in memory.
+        var since = AppTime.KeyDaysAgo(period == StatsPeriod.Week ? 6 : 29);
+
+        var buckets = await _db_context.BotFeedbackDailyStats
+            .Where(b => b.GuildId == guildId && b.Day >= since)
             .ToListAsync();
 
-        return (rows.Sum(r => r.GoodCount), rows.Sum(r => r.BadCount));
+        return Rank(buckets
+            .GroupBy(b => b.UserId)
+            .Select(g => new FeedbackTally(g.Key, g.Sum(b => b.GoodCount), g.Sum(b => b.BadCount))));
+    }
+
+    private static List<FeedbackTally> Rank(IEnumerable<FeedbackTally> tallies) =>
+        tallies
+            .Where(t => t.Total > 0)
+            .OrderByDescending(t => t.Good)
+            .ThenBy(t => t.Bad)
+            .ToList();
+
+    private async Task<BotFeedbackDailyStat> GetOrCreateDailyAsync(ulong guildId, ulong userId, int day)
+    {
+        var row = await _db_context.BotFeedbackDailyStats.FirstOrDefaultAsync(b =>
+            b.GuildId == guildId && b.UserId == userId && b.Day == day);
+
+        if (row is null)
+        {
+            row = new BotFeedbackDailyStat { GuildId = guildId, UserId = userId, Day = day };
+            _db_context.BotFeedbackDailyStats.Add(row);
+        }
+        return row;
     }
 }

@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Commands;
@@ -31,8 +32,7 @@ public class EmoteStatsModule : InteractionModuleBase<SocketInteractionContext>
 
     // Both the page arrows and the period buttons come back here: the custom-id
     // carries the whole view state, since a component handler gets no memory of what
-    // was on screen. Changing period always resets to page 0 — the ranking is a
-    // different list, so page 4 of the old one means nothing.
+    // was on screen.
     [ComponentInteraction("emotestats:view:*:*", ignoreGroupNames: true)]
     public async Task OnViewAsync(string periodStr, string pageStr)
     {
@@ -67,28 +67,16 @@ public class EmoteStatsModule : InteractionModuleBase<SocketInteractionContext>
             }));
 
         var embed = new EmbedBuilder()
-            .WithTitle($"Emotes les plus utilisées — {Label(period)}")
+            .WithTitle($"Emotes les plus utilisées — {StatsPeriodUi.Label(period)}")
             .WithDescription(description)
             .WithColor(Color.Gold)
             .WithFooter($"Page {page + 1}/{totalPages} — {ranking.Count} emote(s)")
             .Build();
 
-        var builder = new ComponentBuilder();
-
-        // Row 0: the filters. The active one is highlighted and disabled, so it reads
-        // as the current view rather than an available action.
-        foreach (var p in new[] { StatsPeriod.Month, StatsPeriod.Week, StatsPeriod.AllTime })
-        {
-            builder.WithButton(
-                Label(p),
-                $"emotestats:view:{p}:0",
-                p == period ? ButtonStyle.Primary : ButtonStyle.Secondary,
-                disabled: p == period,
-                row: 0);
-        }
-
-        // Row 1: paging within the current filter, which the id has to carry too.
-        builder
+        // Row 0: the filters. Row 1: paging within the current filter, which the id
+        // has to carry too.
+        var builder = new ComponentBuilder()
+            .AddFilterRow("emotestats:view", period)
             .WithButton("◀", $"emotestats:view:{period}:{page - 1}", ButtonStyle.Secondary,
                 disabled: page == 0, row: 1)
             .WithButton("▶", $"emotestats:view:{period}:{page + 1}", ButtonStyle.Secondary,
@@ -96,13 +84,6 @@ public class EmoteStatsModule : InteractionModuleBase<SocketInteractionContext>
 
         return (embed, builder.Build());
     }
-
-    private static string Label(StatsPeriod period) => period switch
-    {
-        StatsPeriod.Month => "30 jours",
-        StatsPeriod.Week => "7 jours",
-        _ => "Depuis toujours",
-    };
 
     // The month and week views only see data recorded since daily buckets existed,
     // so an empty board is normal at first rather than a sign nothing was counted.

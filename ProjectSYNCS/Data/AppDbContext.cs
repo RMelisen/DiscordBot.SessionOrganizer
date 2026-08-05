@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<EmoteStat> EmoteStats => Set<EmoteStat>();
     public DbSet<EmoteDailyStat> EmoteDailyStats => Set<EmoteDailyStat>();
     public DbSet<BotFeedback> BotFeedbacks => Set<BotFeedback>();
+    public DbSet<BotFeedbackDailyStat> BotFeedbackDailyStats => Set<BotFeedbackDailyStat>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -81,6 +82,17 @@ public class AppDbContext : DbContext
             // One row per (guild, user); the tally is scoped to the guild it was
             // earned in, like the emote counts.
             e.HasIndex(x => new { x.GuildId, x.UserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<BotFeedbackDailyStat>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            // One row per (guild, user, day) — the upsert key.
+            e.HasIndex(x => new { x.GuildId, x.UserId, x.Day }).IsUnique();
+            // Serves the rolling-window read: "this guild, since day N". Day is an
+            // int precisely so this range can be evaluated in SQL.
+            e.HasIndex(x => new { x.GuildId, x.Day });
         });
     }
 }

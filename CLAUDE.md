@@ -131,6 +131,21 @@ in-memory-filtering pattern below. A reaction *removal* always decrements today'
 bucket even if the reaction was added weeks ago; tracking the original day would
 mean a row per reaction.
 
+**`BotFeedback` / `BotFeedbackDailyStat` is the same pair for the same reason.**
+All-time totals in one table, per-day buckets in the other, both written by
+`BotFeedbackService.AddAsync` so every bucketed user has a totals row; the buckets
+likewise do not sum to the totals. Any future dated leaderboard should follow that
+shape rather than inventing a third one.
+
+**Ranking commands share their window vocabulary.** `StatsPeriod` lives in its own
+file (`Services/StatsPeriod.cs`) and `Helpers/StatsPeriodUi` owns the French labels
+and the three-button filter row, so `/emotestats` and `/goodbot` cannot drift into
+labelling the same window differently. Each passes its own custom-id prefix and gets
+`{prefix}:{period}:0` ids — changing the window resets to page 0, since the ranking
+is a different list. Their *defaults* deliberately differ: `/emotestats` opens on 30
+days because recent activity is the point, `/goodbot` on all-time because verdicts
+are rare enough that a rolling window is usually empty.
+
 **Discord snowflakes are `ulong`; SQLite integers are signed 64-bit.** Every
 snowflake property needs `.HasConversion<long>()` in `AppDbContext.OnModelCreating`.
 Easy to forget when adding a model. A *derived* property on a model needs
