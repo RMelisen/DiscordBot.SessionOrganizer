@@ -16,11 +16,15 @@ namespace ProjectSYNCS.Services;
 // ChatterService nor ReactionService has to tell it anything. That is the whole
 // reason this is a separate service rather than a branch inside either of them.
 //
-// Attribution has two routes. A **reply** to one of her messages is unambiguous and
-// always counts. A **plain** message counts only if she acted in that channel within
-// Window — otherwise "good bot" aimed at one of the server's other bots would land
-// in her column. Either way it is one verdict per person per thing she did, so
-// holding down Enter after a single joke counts once.
+// A verdict arrives one of three ways. A **reply** to one of her messages and a
+// **👍 / 👎 on** one of her messages are both unambiguous and always count — the
+// second one physically attached to the very thing being judged. A **plain** message
+// counts only if she acted in that channel within Window, otherwise "good bot" aimed
+// at one of the server's other bots would land in her column.
+//
+// All three share one claim, so it is one verdict per person per thing she did:
+// holding down Enter after a single joke counts once, and so does thumbing up twenty
+// of her old messages in a row.
 //
 // Singleton: it holds the per-channel attribution state. Like every other bit of
 // personality state that state is in memory and resets on restart, which costs at
@@ -39,6 +43,12 @@ internal sealed class BotFeedbackTracker
     // process doesn't accumulate an entry per channel it has ever spoken in.
     private static readonly TimeSpan Forget = TimeSpan.FromHours(1);
 
+    // The reactions that read as a verdict. Custom emotes are deliberately excluded:
+    // she reacts with the server's own emotes herself, and people paste them for all
+    // sorts of reasons, whereas nobody adds a thumbs-down to be friendly.
+    private const string ThumbsUp = "👍";
+    private const string ThumbsDown = "👎";
+
     // The last thing she did in a channel, and who has already judged it.
     private sealed class LastAction
     {
@@ -48,6 +58,16 @@ internal sealed class BotFeedbackTracker
 
     private readonly object _gate = new();
     private readonly Dictionary<ulong, LastAction> _lastActions = new();
+
+    // Messages she has just reacted to in acknowledgement of a verdict. Her own
+    // reaction comes back on the gateway indistinguishable from any other, and
+    // recording it as a fresh action would clear Judged and hand everyone a free
+    // second verdict — praise her, get thanked, praise her again, forever. So the
+    // acknowledgement is remembered here and skipped when it echoes back. Bounded
+    // FIFO, like every other bit of personality state.
+    private const int AcknowledgedCap = 200;
+    private readonly HashSet<ulong> _acknowledged = new();
+    private readonly Queue<ulong> _acknowledgedOrder = new();
 
     public BotFeedbackTracker(
         DiscordSocketClient client,
@@ -80,21 +100,76 @@ internal sealed class BotFeedbackTracker
         if (verdict == FeedbackKind.None) return;
 
         bool isReplyToBot = message.ReferencedMessage?.Author.Id == _client.CurrentUser.Id;
-        if (!TryClaim(message.Channel.Id, message.Author.Id, isReplyToBot)) return;
+        if (!TryClaim(message.Channel.Id, message.Author.Id, unambiguous: isReplyToBot)) return;
 
         await RecordAsync(guildChannel.Guild.Id, message.Author.Id, verdict);
         await RespondAsync(message, verdict);
     }
 
-    // Her own reaction is an action too — it is the other half of "talked or
-    // reacted". Everyone else's reactions are none of this service's business.
-    public Task HandleReactionAddedAsync(
+    // Two things happen here. Her own reaction is an action people can judge — the
+    // other half of "talked or reacted". Everyone else's is a verdict if it is a
+    // thumb on one of her messages, and nothing otherwise.
+    //
+    // Nothing is ever sent back on this path, unlike the typed verdicts. A reaction is
+    // a quiet vote, and a 👎 on something she said an hour ago would otherwise fire an
+    // indignant comeback into a conversation that had long since moved on.
+    public async Task HandleReactionAddedAsync(
         Cacheable<IUserMessage, ulong> message,
         Cacheable<IMessageChannel, ulong> channel,
         SocketReaction reaction)
     {
-        if (reaction.UserId == _client.CurrentUser.Id) RecordAction(channel.Id);
-        return Task.CompletedTask;
+        if (reaction.UserId == _client.CurrentUser.Id)
+        {
+            if (!WasAcknowledgement(message.Id)) RecordAction(channel.Id);
+            return;
+        }
+
+        // Cheapest test first: the emote is on hand, while everything below may cost
+        // a fetch, and the overwhelming majority of reactions are not thumbs.
+        var verdict = ReadReaction(reaction.Emote);
+        if (verdict == FeedbackKind.None) return;
+
+        // Best-effort, like ReactionService: the user is not always populated, and
+        // resolving one just to check the flag is not worth a call.
+        if (reaction.User.IsSpecified && reaction.User.Value.IsBot) return;
+
+        try
+        {
+            // The tally is guild-scoped, so a reaction in a DM has nowhere to go.
+            if (await channel.GetOrDownloadAsync() is not IGuildChannel guildChannel) return;
+
+            var resolved = await message.GetOrDownloadAsync();
+            if (resolved is null || resolved.Author.Id != _client.CurrentUser.Id) return;
+
+            // Only the things she *says*. A card is command output, and a 👍 on a
+            // session or poll card reads as "I'm in", not as praise. Buttons are what
+            // tells the two apart — every card carries them and no line of chatter
+            // does. Embeds would be the wrong test: Discord attaches one to any
+            // message containing a link, so a chatty message could grow one by itself.
+            if (resolved.Components.Count > 0) return;
+
+            // Attached to the message it judges, so it needs no attribution window —
+            // unambiguous in exactly the way a reply is. It still goes through the
+            // claim, which is what stops someone thumbing their way down her backlog.
+            if (!TryClaim(channel.Id, reaction.UserId, unambiguous: true)) return;
+
+            await RecordAsync(guildChannel.GuildId, reaction.UserId, verdict);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to read a thumb verdict in channel {ChannelId}.", channel.Id);
+        }
+    }
+
+    // Which verdict a reaction carries, if any. Skin-tone variants append a modifier
+    // to the base code point, so 👍🏽 has to match by prefix rather than by equality.
+    private static FeedbackKind ReadReaction(IEmote emote)
+    {
+        if (emote is not Emoji emoji) return FeedbackKind.None;
+
+        if (emoji.Name.StartsWith(ThumbsUp, StringComparison.Ordinal)) return FeedbackKind.Good;
+        if (emoji.Name.StartsWith(ThumbsDown, StringComparison.Ordinal)) return FeedbackKind.Bad;
+        return FeedbackKind.None;
     }
 
     private void RecordAction(ulong channelId)
@@ -109,7 +184,11 @@ internal sealed class BotFeedbackTracker
 
     // Checks attribution and claims this person's one verdict on the current action,
     // atomically so two messages arriving together can't both count.
-    private bool TryClaim(ulong channelId, ulong userId, bool isReplyToBot)
+    //
+    // unambiguous: the verdict is attached to one of her messages — a reply to it, or
+    // a thumb on it — rather than being a bare line of chat that has to be attributed
+    // by timing.
+    private bool TryClaim(ulong channelId, ulong userId, bool unambiguous)
     {
         lock (_gate)
         {
@@ -118,20 +197,39 @@ internal sealed class BotFeedbackTracker
             if (!_lastActions.TryGetValue(channelId, out var action))
             {
                 // Nothing on record — she hasn't acted here, or the process restarted.
-                // A reply to one of her messages is still unambiguous, so seed an
-                // action for it; a bare "good bot" gets nothing to attach to.
-                if (!isReplyToBot) return false;
+                // Something attached to one of her messages is still unambiguous, so
+                // seed an action for it; a bare "good bot" gets nothing to attach to.
+                if (!unambiguous) return false;
 
                 action = new LastAction { At = now };
                 _lastActions[channelId] = action;
             }
-            else if (!isReplyToBot && now - action.At > Window)
+            else if (!unambiguous && now - action.At > Window)
             {
                 return false;
             }
 
             return action.Judged.Add(userId);
         }
+    }
+
+    // Notes that her next reaction on this message is an acknowledgement rather than
+    // an action. Claimed before the reaction is sent, since the gateway echo races it.
+    private void MarkAcknowledged(ulong messageId)
+    {
+        lock (_gate)
+        {
+            if (!_acknowledged.Add(messageId)) return;
+
+            _acknowledgedOrder.Enqueue(messageId);
+            if (_acknowledgedOrder.Count > AcknowledgedCap)
+                _acknowledged.Remove(_acknowledgedOrder.Dequeue());
+        }
+    }
+
+    private bool WasAcknowledgement(ulong messageId)
+    {
+        lock (_gate) return _acknowledged.Contains(messageId);
     }
 
     // Caller holds _gate.
@@ -173,6 +271,10 @@ internal sealed class BotFeedbackTracker
             var pool = byOwner ? BotResponses.OwnerReactions : BotResponses.NiceReactions;
             var emote = EmoteMarkup.Parse(_picker.Pick(message.Channel.Id, pool));
             if (emote is null) return;
+
+            // Before sending, not after: the gateway echoes the reaction back and the
+            // two race. A mark left behind by a failed reaction costs nothing.
+            MarkAcknowledged(message.Id);
 
             try
             {

@@ -42,9 +42,11 @@ in one click. The bot's user-facing language is French.
 - **`/goodbot`** — leaderboard of who has told the bot *good bot* or *bad bot*,
   with the same three filters as `/emotestats` — here **all time** is the default,
   since verdicts are rare enough that a rolling window is often empty. She notices
-  either one: praise earns a silent reaction, a scolding earns a reply. Only counts
-  when it follows something she actually said or reacted to, and only once per
-  person per thing she did.
+  either one: praise earns a silent reaction, a scolding earns a reply. A **👍 or 👎
+  on one of her messages** counts as the same verdict without her answering back —
+  on what she says, not on session cards or leaderboards, where a thumb means
+  something else. Only counts when it follows something she actually said or reacted
+  to, and only once per person per thing she did, whichever way they say it.
 - **`/help`** — in-Discord usage guide.
 - **Owner-only commands** — the configured owner can speak through the bot
   (`/tell` into a channel, `/dm` to a person) and flag themselves unavailable

@@ -263,12 +263,31 @@ and `ReactionAdded` both fire for the bot's own traffic, so it records "I acted 
 at T" without `ChatterService` or `ReactionService` telling it anything — which is
 why it is a separate service rather than a branch in either. It is therefore the one
 handler in `BotService`'s fan-out that must *not* skip the bot's own messages.
-Attribution is a reply to one of her messages (always counts), or a plain message
-within a 5-minute window of her last action in that channel — the window exists
-because the server has other bots, and a bare "good bot" after Quokka does something
-would otherwise land in her column. Counting is one verdict per person per action,
-which also gates the response, so holding down Enter after one joke earns one ❤️.
-State is in-memory and resets on restart like the rest of the personality.
+Attribution is anything attached to one of her messages — a reply, or a 👍/👎 on it
+(both always count) — or a plain message within a 5-minute window of her last action
+in that channel. The window exists because the server has other bots, and a bare
+"good bot" after Quokka does something would otherwise land in her column. Counting
+is one verdict per person per action *shared across all three routes*, which also
+gates the response, so holding down Enter after one joke earns one ❤️ and so does
+thumbing down her whole backlog. State is in-memory and resets on restart like the
+rest of the personality.
+
+**Her own acknowledgement must not count as a new action.** She answers "good bot"
+with a reaction, and that reaction comes back on `ReactionAdded` looking exactly like
+anyone else's. Recorded naively it becomes a fresh action, clears `Judged`, and hands
+the same person another free verdict — praise, get thanked, praise again, forever.
+`MarkAcknowledged` is therefore called *before* the reaction is sent (the gateway echo
+races it) and `HandleReactionAddedAsync` skips those message ids. Her bad-bot *reply*
+is deliberately left counting as an action: unlike a wordless ❤️ it is new content,
+and judging it is fair.
+
+**The thumb path counts on her chatter only** — `resolved.Components.Count > 0` skips
+session cards, poll cards and leaderboards, where a 👍 means "I'm in" rather than
+praise. Buttons are the test rather than embeds because Discord attaches an embed to
+any message carrying a link, so a plain chatty line could grow one on its own. The
+path is also silent by design: a 👎 on an hour-old message would otherwise fire a
+comeback into a dead conversation. Removing a reaction does **not** decrement — the
+counters only ever go up, and the claim already prevents a re-count.
 
 **`Helpers/BotChat` is the single send path for the bot's own chatter**, and
 `Helpers/EmoteMarkup.Parse` the single reaction parser. Both were private members of
