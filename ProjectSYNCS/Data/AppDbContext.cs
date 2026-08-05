@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<PollOption> PollOptions => Set<PollOption>();
     public DbSet<PollVote> PollVotes => Set<PollVote>();
     public DbSet<EmoteStat> EmoteStats => Set<EmoteStat>();
+    public DbSet<EmoteDailyStat> EmoteDailyStats => Set<EmoteDailyStat>();
     public DbSet<BotFeedback> BotFeedbacks => Set<BotFeedback>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -60,6 +61,17 @@ public class AppDbContext : DbContext
             // One row per (guild, emote); custom emotes key on EmoteId, unicode
             // emojis on the Unicode string. Counts are scoped to the guild.
             e.HasIndex(x => new { x.GuildId, x.EmoteId, x.Unicode }).IsUnique();
+        });
+
+        modelBuilder.Entity<EmoteDailyStat>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.EmoteId).HasConversion<long>();
+            // One row per (guild, emote, day) — the upsert key.
+            e.HasIndex(x => new { x.GuildId, x.EmoteId, x.Unicode, x.Day }).IsUnique();
+            // Serves the rolling-window read: "this guild, since day N". Day is an
+            // int precisely so this range can be evaluated in SQL.
+            e.HasIndex(x => new { x.GuildId, x.Day });
         });
 
         modelBuilder.Entity<BotFeedback>(e =>

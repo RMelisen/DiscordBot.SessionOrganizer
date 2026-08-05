@@ -35,7 +35,10 @@ in one click. The bot's user-facing language is French.
 
 ### Other
 - **`/emotestats`** — leaderboard of the server's most-used emotes (both in
-  messages and as reactions), paginated.
+  messages and as reactions), paginated, with three filters: **30 days** (the
+  default), **7 days**, and **all time**. The rolling windows only cover data
+  recorded since daily buckets were added; all-time still includes everything
+  counted before that.
 - **`/goodbot`** — leaderboard of who has told the bot *good bot* or *bad bot*.
   She notices either one: praise earns a silent reaction, a scolding earns a
   reply. Only counts when it follows something she actually said or reacted to,

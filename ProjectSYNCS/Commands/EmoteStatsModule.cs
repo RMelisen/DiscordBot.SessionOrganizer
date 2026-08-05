@@ -9,6 +9,10 @@ public class EmoteStatsModule : InteractionModuleBase<SocketInteractionContext>
 {
     private const int PageSize = 20;
 
+    // The view the command opens on. Recent activity is what people actually want
+    // to see; all-time barely moves once a server has been running a while.
+    private const StatsPeriod DefaultPeriod = StatsPeriod.Month;
+
     private readonly EmoteStatsService _stats;
 
     public EmoteStatsModule(EmoteStatsService stats)
@@ -21,21 +25,21 @@ public class EmoteStatsModule : InteractionModuleBase<SocketInteractionContext>
     {
         await DeferAsync();
 
-        if (await _stats.GetCountAsync(Context.Guild.Id) == 0)
-        {
-            await FollowupAsync("Aucune emote comptabilisée pour le moment. (˶ᵔ ᵕ ᵔ˶)");
-            return;
-        }
-
-        var (embed, components) = await BuildPageAsync(0);
+        var (embed, components) = await BuildPageAsync(DefaultPeriod, 0);
         await FollowupAsync(embed: embed, components: components);
     }
 
-    [ComponentInteraction("emotestats:page:*", ignoreGroupNames: true)]
-    public async Task OnPageAsync(string pageStr)
+    // Both the page arrows and the period buttons come back here: the custom-id
+    // carries the whole view state, since a component handler gets no memory of what
+    // was on screen. Changing period always resets to page 0 — the ranking is a
+    // different list, so page 4 of the old one means nothing.
+    [ComponentInteraction("emotestats:view:*:*", ignoreGroupNames: true)]
+    public async Task OnViewAsync(string periodStr, string pageStr)
     {
+        if (!Enum.TryParse<StatsPeriod>(periodStr, out var period)) period = DefaultPeriod;
         int.TryParse(pageStr, out var page);
-        var (embed, components) = await BuildPageAsync(page);
+
+        var (embed, components) = await BuildPageAsync(period, page);
 
         var component = (SocketMessageComponent)Context.Interaction;
         await component.UpdateAsync(m =>
@@ -45,34 +49,64 @@ public class EmoteStatsModule : InteractionModuleBase<SocketInteractionContext>
         });
     }
 
-    // Builds the embed + navigation buttons for a given page (clamped to range).
-    private async Task<(Embed, MessageComponent)> BuildPageAsync(int page)
+    private async Task<(Embed, MessageComponent)> BuildPageAsync(StatsPeriod period, int page)
     {
-        var total = await _stats.GetCountAsync(Context.Guild.Id);
-        var totalPages = Math.Max(1, (int)Math.Ceiling(total / (double)PageSize));
+        var ranking = await _stats.GetRankingAsync(Context.Guild.Id, period);
+
+        var totalPages = Math.Max(1, (int)Math.Ceiling(ranking.Count / (double)PageSize));
         page = Math.Clamp(page, 0, totalPages - 1);
 
-        var rows = await _stats.GetPageAsync(Context.Guild.Id, page * PageSize, PageSize);
+        var rows = ranking.Skip(page * PageSize).Take(PageSize).ToList();
 
-        var lines = rows.Select((s, i) =>
-        {
-            var rank = page * PageSize + i + 1;
-            var totalUses = s.WrittenCount + s.ReactedCount;
-            return $"**{rank}.** {s.Markup} — **{totalUses}** ({s.WrittenCount} écrites, {s.ReactedCount} réactions)";
-        });
+        var description = rows.Count == 0
+            ? EmptyLine(period)
+            : string.Join("\n", rows.Select((t, i) =>
+            {
+                var rank = page * PageSize + i + 1;
+                return $"**{rank}.** {t.Markup} — **{t.Total}** ({t.Written} écrites, {t.Reacted} réactions)";
+            }));
 
         var embed = new EmbedBuilder()
-            .WithTitle("Emotes les plus utilisées")
-            .WithDescription(string.Join("\n", lines))
+            .WithTitle($"Emotes les plus utilisées — {Label(period)}")
+            .WithDescription(description)
             .WithColor(Color.Gold)
-            .WithFooter($"Page {page + 1}/{totalPages}")
+            .WithFooter($"Page {page + 1}/{totalPages} — {ranking.Count} emote(s)")
             .Build();
 
-        var components = new ComponentBuilder()
-            .WithButton("◀", $"emotestats:page:{page - 1}", ButtonStyle.Secondary, disabled: page == 0)
-            .WithButton("▶", $"emotestats:page:{page + 1}", ButtonStyle.Secondary, disabled: page >= totalPages - 1)
-            .Build();
+        var builder = new ComponentBuilder();
 
-        return (embed, components);
+        // Row 0: the filters. The active one is highlighted and disabled, so it reads
+        // as the current view rather than an available action.
+        foreach (var p in new[] { StatsPeriod.Month, StatsPeriod.Week, StatsPeriod.AllTime })
+        {
+            builder.WithButton(
+                Label(p),
+                $"emotestats:view:{p}:0",
+                p == period ? ButtonStyle.Primary : ButtonStyle.Secondary,
+                disabled: p == period,
+                row: 0);
+        }
+
+        // Row 1: paging within the current filter, which the id has to carry too.
+        builder
+            .WithButton("◀", $"emotestats:view:{period}:{page - 1}", ButtonStyle.Secondary,
+                disabled: page == 0, row: 1)
+            .WithButton("▶", $"emotestats:view:{period}:{page + 1}", ButtonStyle.Secondary,
+                disabled: page >= totalPages - 1, row: 1);
+
+        return (embed, builder.Build());
     }
+
+    private static string Label(StatsPeriod period) => period switch
+    {
+        StatsPeriod.Month => "30 jours",
+        StatsPeriod.Week => "7 jours",
+        _ => "Depuis toujours",
+    };
+
+    // The month and week views only see data recorded since daily buckets existed,
+    // so an empty board is normal at first rather than a sign nothing was counted.
+    private static string EmptyLine(StatsPeriod period) => period == StatsPeriod.AllTime
+        ? "Aucune emote comptabilisée pour le moment. (˶ᵔ ᵕ ᵔ˶)"
+        : "Rien sur cette période. Utilisez des emotes, bande de fainéants ദ്ദി◝ ⩊ ◜.ᐟ";
 }

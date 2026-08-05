@@ -1,4 +1,5 @@
 using ProjectSYNCS.Data;
+using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,6 +13,23 @@ public readonly record struct EmoteRef(ulong Id, string Name, bool IsAnimated, s
     public static EmoteRef Custom(ulong id, string name, bool animated) => new(id, name, animated);
     // Standard unicode emoji (no id).
     public static EmoteRef FromUnicode(string emoji) => new(0, emoji, false, emoji);
+}
+
+/// <summary>Which window a leaderboard covers.</summary>
+public enum StatsPeriod
+{
+    /// <summary>The last 30 days, today included.</summary>
+    Month,
+    /// <summary>The last 7 days, today included.</summary>
+    Week,
+    /// <summary>Everything ever counted, including before daily buckets existed.</summary>
+    AllTime,
+}
+
+/// <summary>One emote's standing in a ranking, already resolved for display.</summary>
+public readonly record struct EmoteTally(string Markup, long Written, long Reacted)
+{
+    public long Total => Written + Reacted;
 }
 
 public class EmoteStatsService
@@ -29,38 +47,82 @@ public class EmoteStatsService
     public async Task AddWrittenAsync(ulong guildId, IReadOnlyDictionary<EmoteRef, int> counts)
     {
         if (counts.Count == 0) return;
+
+        var today = AppTime.TodayKey;
         foreach (var (emote, n) in counts)
         {
             var row = await GetOrCreateAsync(guildId, emote);
             row.WrittenCount += n;
+
+            var bucket = await GetOrCreateDailyAsync(guildId, emote, today);
+            bucket.WrittenCount += n;
         }
         await _db_context.SaveChangesAsync();
     }
 
     // Adjusts the reacted count for one emote by delta (+1 on add, -1 on remove).
     // The stored count never drops below zero.
+    //
+    // A removal always lands on *today's* bucket, even when the reaction being
+    // removed was added weeks ago. Tracking the original day would mean storing a
+    // row per reaction; for a leaderboard the drift is not worth that, and the
+    // clamp keeps it from going negative.
     public async Task AddReactedAsync(ulong guildId, EmoteRef emote, int delta)
     {
         var row = await GetOrCreateAsync(guildId, emote);
         row.ReactedCount = Math.Max(0, row.ReactedCount + delta);
+
+        var bucket = await GetOrCreateDailyAsync(guildId, emote, AppTime.TodayKey);
+        bucket.ReactedCount = Math.Max(0, bucket.ReactedCount + delta);
+
         await _db_context.SaveChangesAsync();
     }
 
-    // How many distinct emotes a guild has on record.
-    public async Task<int> GetCountAsync(ulong guildId)
+    /// <summary>
+    /// The guild's emotes ranked by total usage over <paramref name="period"/>,
+    /// highest first. Returns the whole ranking; callers page it themselves.
+    /// </summary>
+    public async Task<List<EmoteTally>> GetRankingAsync(ulong guildId, StatsPeriod period)
     {
-        return await _db_context.EmoteStats.CountAsync(s => s.GuildId == guildId);
-    }
+        if (period == StatsPeriod.AllTime)
+        {
+            var all = await _db_context.EmoteStats
+                .Where(s => s.GuildId == guildId)
+                .ToListAsync();
 
-    // One page of a guild's emotes, ranked by total usage (written + reacted).
-    public async Task<List<EmoteStat>> GetPageAsync(ulong guildId, int skip, int take)
-    {
-        return await _db_context.EmoteStats
-            .Where(s => s.GuildId == guildId)
-            .OrderByDescending(s => s.WrittenCount + s.ReactedCount)
-            .Skip(skip)
-            .Take(take)
+            return all
+                .Select(s => new EmoteTally(s.Markup, s.WrittenCount, s.ReactedCount))
+                .Where(t => t.Total > 0)
+                .OrderByDescending(t => t.Total)
+                .ToList();
+        }
+
+        // Inclusive lower bound: 6 days ago plus today is a week. Day is an int, so
+        // unlike every DateTimeOffset window in this project this really is filtered
+        // by the database rather than in memory.
+        var since = AppTime.KeyDaysAgo(period == StatsPeriod.Week ? 6 : 29);
+
+        var buckets = await _db_context.EmoteDailyStats
+            .Where(b => b.GuildId == guildId && b.Day >= since)
             .ToListAsync();
+
+        if (buckets.Count == 0) return new List<EmoteTally>();
+
+        // Markup lives on EmoteStat so a rename is recorded in one place. Every
+        // bucketed emote has a row there — they are written in the same call.
+        var names = await _db_context.EmoteStats
+            .Where(s => s.GuildId == guildId)
+            .ToDictionaryAsync(s => (s.EmoteId, s.Unicode), s => s.Markup);
+
+        return buckets
+            .GroupBy(b => (b.EmoteId, b.Unicode))
+            .Select(g => new EmoteTally(
+                names.TryGetValue(g.Key, out var markup) ? markup : g.Key.Unicode,
+                g.Sum(b => b.WrittenCount),
+                g.Sum(b => b.ReactedCount)))
+            .Where(t => t.Total > 0 && t.Markup.Length > 0)
+            .OrderByDescending(t => t.Total)
+            .ToList();
     }
 
     private async Task<EmoteStat> GetOrCreateAsync(ulong guildId, EmoteRef emote)
@@ -85,6 +147,25 @@ public class EmoteStatsService
             // Keep the latest name/animated flag in case the emote was renamed.
             row.Name = emote.Name;
             row.IsAnimated = emote.IsAnimated;
+        }
+        return row;
+    }
+
+    private async Task<EmoteDailyStat> GetOrCreateDailyAsync(ulong guildId, EmoteRef emote, int day)
+    {
+        var row = await _db_context.EmoteDailyStats.FirstOrDefaultAsync(b =>
+            b.GuildId == guildId && b.EmoteId == emote.Id && b.Unicode == emote.Unicode && b.Day == day);
+
+        if (row is null)
+        {
+            row = new EmoteDailyStat
+            {
+                GuildId = guildId,
+                EmoteId = emote.Id,
+                Unicode = emote.Unicode,
+                Day = day
+            };
+            _db_context.EmoteDailyStats.Add(row);
         }
         return row;
     }

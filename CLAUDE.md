@@ -117,6 +117,20 @@ ordering **in memory**. See `EventService.GetActiveEventsAsync` and
 `GetEventsNeedingReminderAsync`. A `.Where(e => e.ScheduledAt > now)` sent to the
 database throws at runtime.
 
+**`EmoteStat` and `EmoteDailyStat` are two different questions, not one denormalised.**
+`EmoteStat` is the running all-time total and predates any notion of *when* — its
+history has no dates to recover, which is exactly why `/emotestats`' rolling windows
+needed a second table rather than a column. `EmoteDailyStat` buckets the same
+counters per day and is written in the same call, so every bucketed emote has an
+`EmoteStat` row and display markup is resolved from there (a rename stays in one
+place). **Summing every bucket does not reproduce `EmoteStat`, and must not be made
+to** — everything counted before the buckets existed lives only in the totals.
+`EmoteDailyStat.Day` is an `int` `yyyymmdd` from `AppTime.DayKey`, not a date,
+precisely so the rolling-window filter runs in SQL instead of joining the
+in-memory-filtering pattern below. A reaction *removal* always decrements today's
+bucket even if the reaction was added weeks ago; tracking the original day would
+mean a row per reaction.
+
 **Discord snowflakes are `ulong`; SQLite integers are signed 64-bit.** Every
 snowflake property needs `.HasConversion<long>()` in `AppDbContext.OnModelCreating`.
 Easy to forget when adding a model. A *derived* property on a model needs

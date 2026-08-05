@@ -30,6 +30,32 @@ public static class AppTime
     public static DateTimeOffset ToZoned(DateTimeOffset instant) => TimeZoneInfo.ConvertTime(instant, Zone);
 
     /// <summary>
+    /// A calendar day in the app's zone, encoded as the integer yyyymmdd
+    /// (2026-08-05 -> 20260805).
+    /// </summary>
+    /// <remarks>
+    /// An int rather than a date because SQLite cannot translate
+    /// <see cref="DateTimeOffset"/> comparisons — every other dated query in this
+    /// project has to pull rows into memory before filtering them. Encoded this way
+    /// the ordering is identical to chronological order, so a range filter is a plain
+    /// integer comparison the database can do itself.
+    /// </remarks>
+    public static int DayKey(DateTimeOffset instant)
+    {
+        var zoned = ToZoned(instant);
+        return zoned.Year * 10000 + zoned.Month * 100 + zoned.Day;
+    }
+
+    /// <summary>Today's day key, in the app's zone.</summary>
+    public static int TodayKey => DayKey(DateTimeOffset.UtcNow);
+
+    /// <summary>
+    /// The day key <paramref name="days"/> days before today — the inclusive lower
+    /// bound of a rolling window. `KeyDaysAgo(6)` with today included spans a week.
+    /// </summary>
+    public static int KeyDaysAgo(int days) => DayKey(DateTimeOffset.UtcNow.AddDays(-days));
+
+    /// <summary>
     /// Parses a wall-clock string (e.g. "2026-06-20T20:30") as a time in the app's
     /// zone, attaching the correct UTC offset for that date (incl. DST).
     /// </summary>

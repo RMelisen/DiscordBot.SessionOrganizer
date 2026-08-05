@@ -28,7 +28,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/vote list`** — Affiche les votes actifs du serveur. Tu peux en republier un dans le salon courant.\n" +
                 "**`/vote delete <id>`** — Supprime un vote que tu as créé.")
             .AddField("Commandes — Autres",
-                "**`/emotestats`** — Affiche le classement des emotes les plus utilisées du serveur (écrites et en réaction).\n" +
+                "**`/emotestats`** — Affiche le classement des emotes les plus utilisées du serveur (écrites et en réaction). " +
+                "Trois filtres : **30 jours** (par défaut), **7 jours** et **depuis toujours**.\n" +
                 "**`/goodbot`** — Affiche qui m'a dit *good bot* (ou *bad bot*, mais on ne parle pas de ceux-là).\n" +
                 "**`/help`** — Affiche ce message.")
             .AddField("Créer une session — pas à pas",
