@@ -209,6 +209,18 @@ their other servers constantly, and those are not copyable. It is also why react
 are drawn from curated pools only, never from the `EmoteStats` leaderboard, which
 records emotes from anywhere.
 
+**Custom emote markup lives in `Helpers/Emotes` and nowhere else.** Each one is a
+pair of `const string` — `XId` holding the snowflake, `X` holding the markup built
+from it by compile-time interpolation — so `$"Gênaaaant {Emotes.Staring}"` is still a
+constant and the pools stay `static readonly` arrays of constants. The ids are
+strings rather than `ulong` deliberately: `MessageCues` only ever searches message
+text for them, and a `ulong` hole would stop the markup being a constant expression.
+Before this, `hi_cat` was written out thirteen times across three files in two
+different shapes (markup in `BotResponses` and `ReminderService`, a bare `ulong` in
+`MessageCues`), so a re-upload meant finding all of them. Never paste raw
+`<:name:id>` into a response pool — emotes inside chat lines are otherwise reachable
+by no test at all, and a typo there just renders as literal text in Discord.
+
 **A custom emote in a `*Reactions` pool must carry its snowflake id** —
 `<:name:1234…>`, never `<:name:>`. `ReactionService.ParseEmote` falls back to
 `new Emoji(markup)` when `Emote.TryParse` fails, so id-less markup yields an "emoji"

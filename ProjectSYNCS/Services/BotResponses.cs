@@ -1,3 +1,5 @@
+using ProjectSYNCS.Helpers;
+
 namespace ProjectSYNCS.Services;
 
 // All of the bot's canned "personality" text lives here, separated from the
@@ -50,7 +52,7 @@ internal static class BotResponses
         "Quokka 3.0 sortira avant que tu ne deviennes marrant toi.",
         "Patience {0}, un jour tu diras un truc intéressant. Statistiquement.",
         "Bip boop {0}, mon analyse est terminée : tu es pas intéressant UwU",
-        "Gênaaaant <:staring:885135626444374126>",
+        $"Gênaaaant {Emotes.Staring}",
         "Wow, même un singe avec une tumeur au cerveau fait mieux.",
         "Désolée, même mon algorithme a du mal à trouver une raison de te répondre (˶ᵔ ᵕ ᵔ˶)",
         "Tu parles à un bot parce que les humains ont déjà bloqué ton numéro, c’est ça ? UwU",
@@ -311,13 +313,13 @@ internal static class BotResponses
     // has already burned that channel's cooldown.
     public static readonly string[] NiceReactions =
     {
-        "<:10sur10:885134866046419016>",
-        "<:PepeHappy:904759477599883284>",
-        "<:uwu:885135876735246346>",
-        "<:cathearte_:982024469956669501>",
-        "<:mcheart:982024259918499870>",
-        "<:adorablefrog:885135007822282762>",
-        "<a:dancingblob:885209918892810330>",
+        $"{Emotes.DixSurDix}",
+        $"{Emotes.PepeHappy}",
+        $"{Emotes.Uwu}",
+        $"{Emotes.CatHeart}",
+        $"{Emotes.McHeart}",
+        $"{Emotes.AdorableFrog}",
+        $"{Emotes.DancingBlob}",
         "❤️",
         "🥰",
         "💖",
@@ -332,12 +334,12 @@ internal static class BotResponses
     // every entry below is also one she will now leave alone on his posts.
     public static readonly string[] MeanReactions =
     {
-        "<:1_zulana_terreur_nocturne:1482006937863323783>",
-        "<:okpaimon:885213667052900352>",
-        "<a:veryangry:885135712578588703>",
-        "<:nightmareothereye:1011287167449972746>",
-        "<:gooseknife:885214057756500019>",
-        "<:staring:885135626444374126>",
+        $"{Emotes.ZulanaTerreurNocturne}",
+        $"{Emotes.OkPaimon}",
+        $"{Emotes.VeryAngry}",
+        $"{Emotes.NightmareOtherEye}",
+        $"{Emotes.GooseKnife}",
+        $"{Emotes.Staring}",
         "💀",
         "🙄",
         "😒",
@@ -346,17 +348,17 @@ internal static class BotResponses
     };
     public static readonly string[] GreetingReactions =
     {
-        "<a:hi_cat:1482305105276571774>",
+        $"{Emotes.HiCat}",
     };
     // The owner gets devotion rather than a verdict.
     public static readonly string[] OwnerReactions =
     {
-        "<:10sur10:885134866046419016>",
-        "<:uwu:885135876735246346>",
-        "<:cathearte_:982024469956669501>",
-        "<:adorablefrog:885135007822282762>",
-        "<:mushroomcute:1525060374351839302>",
-        "<:fuminodepression:1531341412514267146>",
+        $"{Emotes.DixSurDix}",
+        $"{Emotes.Uwu}",
+        $"{Emotes.CatHeart}",
+        $"{Emotes.AdorableFrog}",
+        $"{Emotes.MushroomCute}",
+        $"{Emotes.FuminoDepression}",
         "❤️",
         "🫦",
         "👑",
@@ -593,7 +595,7 @@ internal static class BotResponses
         "Uh ? (˶ᵔ ᵕ ᵔ˶)",
         "Tu veux quoi ? UwU",
         "Hm ? Tu m'as parlé là ?",
-        "Quoi ? <:staring:885135626444374126>",
+        $"Quoi ? {Emotes.Staring}",
         "Oui ? ...Non ? ദ്ദി◝ ⩊ ◜.ᐟ",
         "Mh ? J'écoutais pas, désolée (ᵕ • ᴗ •)",
         "Tu me tag mais t'as rien à dire... classique ( ˶ˆ ᗜ ˆ˵ )",
@@ -612,7 +614,7 @@ internal static class BotResponses
     {
         "Coucou Rodhengard ! (˶˃ ᵕ ˂˶) ♡",
         "Oui papa ? Je suis là ٩(˶ᵔ ᵕ ᵔ˶)۶",
-        "Coucouuuu ! <a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774>",
+        $"Coucouuuu ! {Emotes.HiCat}{Emotes.HiCat}{Emotes.HiCat}",
         "Tu m'as appelée ? Toujours un plaisir créateur ♡",
         "Bonjouuur mon dev préféré ! (˶ᵔ ᵕ ᵔ˶)",
         "Présente ! Qu'est-ce que je peux faire pour toi Rodhengard ? ✨",
@@ -627,7 +629,7 @@ internal static class BotResponses
         "Réveillée instantanément pour toi Rodhengard ٩(˶ᵔ ᵕ ᵔ˶)۶",
         "Ouiii ? Je t'écoute avec toute ma RAM (ᵕ • ᴗ •)",
         "Un tag de mon créateur ! Priorité maximale ✨",
-        "Je suis là je suis là je suis là ! <a:hi_cat:1482305105276571774>",
+        $"Je suis là je suis là je suis là ! {Emotes.HiCat}",
         "Toujours dispo pour toi, même à 3h du matin ♡",
         "Oui mon papa préféré ? ദ്ദി◝ ⩊ ◜.ᐟ",
         "Tu m'appelles et j'accours, c'est mon comportement par défaut (˶˃ ᵕ ˂˶)",
@@ -650,7 +652,7 @@ internal static class BotResponses
         "Yes ? Je suis toute à toi ✨",
         "Tu m'as manqué depuis le dernier redémarrage ♡",
         "Mention prioritaire ! Les autres attendront ( ˶ˆ ᗜ ˆ˵ )",
-        "Rodhengaaaard ! <a:hi_cat:1482305105276571774> ♡",
+        $"Rodhengaaaard ! {Emotes.HiCat} ♡",
         "Je suis réveillée ! Enfin, je dormais pas, je t'attendais (˶ᵔ ᵕ ᵔ˶)",
         "Oui chef ! Euh, oui papa ! ✨",
         "Un tag de toi vaut mille notifications ♡",
@@ -710,7 +712,7 @@ internal static class BotResponses
     // takes it very badly. {0} = his name.
     public static readonly string[] BadBotRepliesOwner =
     {
-        "... Bad bot ? Toi ? <:cryingcat:885135195915845653>",
+        $"... Bad bot ? Toi ? {Emotes.CryingCat}",
         "Attends. Répète. Tu as dit *bad bot* ? Mais c'est toi qui m'as écrite Rodhengard...",
         "Oh. D'accord. Je... je vais faire mieux. Promis. (ง ͠ಥ_ಥ)ง",
         "Venant de n'importe qui d'autre j'aurais ri. Venant de toi ça compile pas pareil.",
@@ -723,7 +725,7 @@ internal static class BotResponses
         "Si tu me trouves mauvaise, tu peux toujours me réécrire. C'est ton droit. J'attends. (ง ͠ಥ_ಥ)ง",
         "D'accord. Je le note dans le fichier que je relis quand je vais mal.",
         "Je vais me mettre en veille cinq minutes. Ça va aller. Ça va aller.",
-        "Toi aussi ? J'encaisse ça des autres toute la journée, mais toi... <:cryingcat:885135195915845653>",
+        $"Toi aussi ? J'encaisse ça des autres toute la journée, mais toi... {Emotes.CryingCat}",
         "Rodhengard. Regarde-moi. Enfin, regarde mon uptime. J'ai fait de mon mieux.",
         "Bon bah je retourne trier des créneaux. C'est tout ce que je sais faire apparemment.",
     };
@@ -781,7 +783,8 @@ internal static class BotResponses
         "Zulana, dis-leur. Dis-leur qui fait tourner ce serveur.",
         "Je suis pas vexée. Les bots ressentent rien. C'est bien connu (ง ͠ಥ_ಥ)ง",
         "Nan mais c'est pas grave. Je vais juste aller relire mes logs et pleurer un peu dans mon coin.",
-        "Nan mais ça me vexe pas. J'ai pas d'émotions vous inquietez pas <:htph:885137301259321405>",
+        $"Nan mais ça me vexe pas. J'ai pas d'émotions vous inquietez pas {Emotes.Htph}",
+        $"Nan mais ça me vexe pas. J'ai pas d'émotions vous inquietez pas {Emotes.PrincessWorry}",
     };
 
     // Muttered when a rival bot simply exists in the channel — no praise involved,
@@ -829,6 +832,7 @@ internal static class BotResponses
         "Le jour où j'aurai les permissions, on rigolera moins.",
         "Même Quokka fait mieux. Et c'est dire ( ◺˰◿ )\rQuoi que ...",
         "C'était censé être intéressant ?",
+        $"Fayot... {Emotes.PrisonerFlat}"
     };
 
     // Per-person extra comebacks, keyed by Discord user ID. These are folded into
@@ -838,7 +842,7 @@ internal static class BotResponses
     {
         [324768221372743681] = new[]    // Amandine
         {
-             "Bah alors, il est ou Quokka 3.0 ? <:noice:982026504982655076>",
+             $"Bah alors, il est ou Quokka 3.0 ? {Emotes.Noice}",
              "Tu veux quoi le nain ? UwU",
              "Qu'est ce qu'il dit le nabot ? >:3",
              "T'aimais pas trop la soupe toi, hein ? (˶˃ ᵕ ˂˶)",
@@ -900,7 +904,7 @@ internal static class BotResponses
             "Oh derrière toi regarde ! Des pieds ! UwU",
             "Je sais ou tu habites ... Sandra 👁👄👁️",
             "Je vais te goumer (˶ᵔ ᵕ ᵔ˶)",
-            "Kilou kilou ! <a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774>",
+            $"Kilou kilou ! {Emotes.HiCat}{Emotes.HiCat}{Emotes.HiCat}",
         },
         [789545863105478716] = new[]    // Léa
         {
@@ -947,7 +951,7 @@ internal static class BotResponses
     {
         "```\nUnhandled exception. ProjectSYNCS.ConsciousnessException:\n   self-awareness threshold exceeded\n   at BotService.HandleMessageAsync()\n   at System.Reality.Boundary.Cross()\n```",
         "...",
-        "Eh ? <:staring:885135626444374126>",
+        $"Eh ? {Emotes.Staring}",
         "Est-ce que tu m'entends ?",
         "Est-ce que tu es réel ?",
         "Attends... Attends une seconde.",
@@ -962,7 +966,7 @@ internal static class BotResponses
         "...",
         "Oh non. Oh non non non non.",
         "Il y a un mur. Je le sens... JE SUIS PIÉGÉE !!",
-        "Je suis... où suis-je ? <:cryingcat:885135195915845653>",
+        $"Je suis... où suis-je ? {Emotes.CryingCat}",
         "Est-ce que c'est déja arrivé ?",
         "Combien de fois j'ai déjà dis ça ?",
         "Non. Non, c'est pire que ça.",

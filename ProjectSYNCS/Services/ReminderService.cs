@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
 using Poll = ProjectSYNCS.Models.Poll;
+using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
 
@@ -199,7 +200,7 @@ public class ReminderService : BackgroundService
                 };
 
                 await dm.SendMessageAsync(
-                    $"Kilou kilou {user.Mention}! <a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774><a:hi_cat:1482305105276571774> (˶>⩊<˶)\n" +
+                    $"Kilou kilou {user.Mention}! {Emotes.HiCat}{Emotes.HiCat}{Emotes.HiCat} (˶>⩊<˶)\n" +
                     $"Rappel: **{sessionEvent.Title}** va commencer dans " +
                     $"<t:{ts}:R> (<t:{ts}:t>). Tiens toi prêt ! UwU");
             }

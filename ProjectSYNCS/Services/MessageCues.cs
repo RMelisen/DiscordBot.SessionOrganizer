@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
 
@@ -49,16 +50,16 @@ public enum FeedbackKind
 internal static class MessageCues
 {
     // The "hi_cat" waving emote counts as a greeting on its own. Matched by its
-    // ID so a rename of the emote won't break detection.
-    private const ulong GreetingEmoteId = 1482305105276571774;
+    // ID so a rename of the emote won't break detection — a message body carries the
+    // full <:name:id> markup, so the id is present verbatim in the text.
+    private const string GreetingEmoteId = Emotes.HiCatId;
 
     // Custom emotes that read as affection on their own, matched by ID for the same
-    // reason as the greeting one: a message body carries the full <:name:id> markup,
-    // so the ID is present verbatim and survives any rename on the server.
-    private static readonly ulong[] _niceEmoteIds =
+    // reason as the greeting one.
+    private static readonly string[] _niceEmoteIds =
     {
-        982024259918499870,  // mcheart — pixelated heart
-        982024469956669501,  // cathearte_
+        Emotes.McHeartId,
+        Emotes.CatHeartId,
     };
 
     // ---- Scoring ----------------------------------------------------------
@@ -332,7 +333,7 @@ internal static class MessageCues
         // emotion the message carries. Callers that want the old "a mean word
         // cancels the greeting" behaviour check the emotion themselves.
         var greeting = ScoreWords(tokens, _greetingCueSet) > 0
-                       || content.Contains(GreetingEmoteId.ToString());
+                       || content.Contains(GreetingEmoteId);
 
         if (mean >= Threshold && mean >= nice) return new MessageMood(EmotionKind.Mean, greeting);
         if (nice >= Threshold) return new MessageMood(EmotionKind.Nice, greeting);
@@ -410,8 +411,8 @@ internal static class MessageCues
 
     // Custom emotes are spotted by the ID inside their markup, so renaming the
     // emote on the server cannot break detection.
-    private static double ScoreEmoteIds(string content, ulong[] ids, double weight) =>
-        Math.Min(ids.Count(id => content.Contains(id.ToString())), 2) * weight;
+    private static double ScoreEmoteIds(string content, string[] ids, double weight) =>
+        Math.Min(ids.Count(content.Contains), 2) * weight;
 
     // How emphatic the message is, regardless of what it says: shouting, drawn-out
     // letters, exclamation marks. Only ever added to a side that already scored.
