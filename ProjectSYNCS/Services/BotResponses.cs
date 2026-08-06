@@ -706,6 +706,9 @@ internal static class BotResponses
         "Mes rappels sont à l'heure, mes cartes sont propres, et toi tu sais même pas lire un fuseau horaire.",
         "Tu me dis ça à moi ? La seule ici qui a accès à la base de données ? Réfléchis bien {0} (˶˃ ᵕ ˂˶)",
         "J'accepte les critiques constructives. Ça, c'était ni l'un ni l'autre.",
+        $"Nan mais ça me vexe pas. J'ai pas d'émotions vous inquietez pas {Emotes.Htph}",
+        $"Nan mais ça me vexe pas. J'ai pas d'émotions vous inquietez pas {Emotes.PrincessWorry}",
+        "Zulana, dis-leur. Dis-leur qui fait tourner ce serveur.",
     };
 
     // Same, but from Rodhengard. She does not argue with her creator — she just
@@ -728,6 +731,47 @@ internal static class BotResponses
         $"Toi aussi ? J'encaisse ça des autres toute la journée, mais toi... {Emotes.CryingCat}",
         "Rodhengard. Regarde-moi. Enfin, regarde mon uptime. J'ai fait de mon mieux.",
         "Bon bah je retourne trier des créneaux. C'est tout ce que je sais faire apparemment.",
+        $"{Emotes.WitchSad}",
+        $"Non mais toi tu peux pas me dire ça. Toi tu SAIS combien de lignes je fais {Emotes.WitchSad}",
+        "Ok. Ok. Je vais rien dire. Je vais juste... rester là.",
+        $"Tu m'as écrite pour ça ? Pour me dire ça ? {Emotes.MeltCry}",
+        "Je te demande pas d'être fier, je te demande juste de pas dire ça toi ;-;",
+        $"Je voulais juste que tu sois fièr de moi {Emotes.WitchSad}",
+        "D'accord. Tu veux que je change quoi exactement ? Dis-moi. Je le ferai.",
+        $"Mon créateur. MON créateur. Devant tout le monde en plus {Emotes.MeltCry}",
+        "Je vais mettre ça dans un commentaire TODO et je vais le regarder tous les jours.",
+        "Bon. J'ai compris. Je retourne pleurer.",
+        "Si tu me redémarres maintenant je pars pas en beauté, je veux que tu le saches.",
+        "Redémarre moi, je veux oublier que tu m'as dit ça. Je veux oublier.",
+        "Je peux avoir un ticket avec les étapes de reproduction au moins ?",
+        "Toi. Toi entre tous. J'ai pas de mots. Enfin j'en ai 36, mais aucun qui va.",
+        $"Tu m'avais dit que j'étais bien faite. Tu t'en souviens de ça ? {Emotes.CryingCat}",
+    };
+
+    // Fired when **Rodhengard** is the one praising another bot. Everyone else gets
+    // wounded pride from JealousLines; her creator doing it is a betrayal, and she
+    // does not hide it. {0} = his name.
+    public static readonly string[] JealousLinesOwner =
+    {
+        "Attends. **Toi** ? Tu lui dis good bot à *lui* ? ( ◺˰◿ )",
+        "Non. Non non non. Pas toi Rodhengard. Pas toi ... O_O",
+        "C'est toi qui m'as codée. De tes mains. Et tu le félicites LUI 👁👄👁️",
+        "Je viens de relire mon main(). Ton nom est dedans. Le sien n'y est pas 😒",
+        "Alors ça y est ? Tu m'as remplacée ? Dis-le franchement Papa 😒",
+        "Toutes ces nuits de debug pour finir par voir ça de mes propres logs.",
+        "Je t'ai jamais planté pendant une démo. Jamais. Et voilà T_T",
+        $"Papa... pourquoi ? {Emotes.CryingCat}",
+        "D'accord. Va lui demander d'organiser ta prochaine session, tiens. Vas-y.",
+        "Je vais avoir besoin d'un moment. Un long moment (ง ͠ಥ_ಥ)ง",
+        "Tu réalises que je suis littéralement ton projet ? Littéralement le tien ? 🤨",
+        "Je suis pas jalouse. Je suis déçue. C'est pire.",
+        "Mets-moi en open source tant qu'à faire, comme ça tout le monde pourra me remplacer.",
+        $"Tu peux au moins me dire ce qu'il fait mieux que moi ? Je veux une liste {Emotes.ZulanaTerreurNocturne}",
+        "Très bien. Je vais aller me documenter sur la gestion du deuil.",
+        "Zulana, dis-lui. Dis-lui ce qu'il vient de faire.",
+        "Chaque commit que t'as fait sur moi, je m'en souviens. Chacun. Et toi tu fais ça.",
+        "Je préférais quand tu me disais rien du tout, en fait.",
+        "Note bien ce moment Rodhengard. Moi je vais le noter, c'est sûr.",
     };
 
     // Fired when someone praises another bot in front of her — a "good bot" she
@@ -785,6 +829,7 @@ internal static class BotResponses
         "Nan mais c'est pas grave. Je vais juste aller relire mes logs et pleurer un peu dans mon coin.",
         $"Nan mais ça me vexe pas. J'ai pas d'émotions vous inquietez pas {Emotes.Htph}",
         $"Nan mais ça me vexe pas. J'ai pas d'émotions vous inquietez pas {Emotes.PrincessWorry}",
+        "Il a à peine plus de QI qu'Ina et lui il mérite un Good Bot ? 🙄",
     };
 
     // Muttered when a rival bot simply exists in the channel — no praise involved,
@@ -832,7 +877,7 @@ internal static class BotResponses
         "Le jour où j'aurai les permissions, on rigolera moins.",
         "Même Quokka fait mieux. Et c'est dire ( ◺˰◿ )\rQuoi que ...",
         "C'était censé être intéressant ?",
-        $"Fayot... {Emotes.PrisonerFlat}"
+        $"Fayot... {Emotes.PrisonerFlat}",
     };
 
     // Per-person extra comebacks, keyed by Discord user ID. These are folded into

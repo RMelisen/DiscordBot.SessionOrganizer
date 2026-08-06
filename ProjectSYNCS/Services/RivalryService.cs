@@ -98,11 +98,16 @@ internal sealed class RivalryService
         var name = (praise.Author as SocketGuildUser)?.Nickname
                    ?? praise.Author.GlobalName ?? praise.Author.Username;
 
-        _logger.LogInformation("Praise from {Name} went to a rival in channel {ChannelId}.",
-            name, praise.Channel.Id);
+        bool byOwner = praise.Author.Id == AvailabilityService.OwnerId;
 
-        // No cooldown and no roll: this is the moment the whole thing exists for.
-        var line = string.Format(_picker.Pick(praise.Channel.Id, BotResponses.JealousLines), name);
+        _logger.LogInformation("Praise from {Name}{Owner} went to a rival in channel {ChannelId}.",
+            name, byOwner ? " (the owner)" : "", praise.Channel.Id);
+
+        // No cooldown and no roll: this is the moment the whole thing exists for. Her
+        // creator doing it is a different injury from anyone else doing it — everyone
+        // else gets wounded pride, he gets betrayal.
+        var pool = byOwner ? BotResponses.JealousLinesOwner : BotResponses.JealousLines;
+        var line = string.Format(_picker.Pick(praise.Channel.Id, pool), name);
         await BotChat.ReplyWithTypingAsync(praise, line, _logger, "jealous reply");
 
         var target = rivalMessageId ?? LastAction(praise.Channel.Id)?.MessageId;

@@ -54,6 +54,12 @@ internal sealed class BotFeedbackTracker
     private sealed class LastAction
     {
         public DateTimeOffset At { get; init; }
+
+        // Which of her messages created this action, when one did — 0 for a reaction.
+        // Kept so an action can be withdrawn once its message turns out to be one
+        // nobody is allowed to judge.
+        public ulong MessageId { get; init; }
+
         public HashSet<ulong> Judged { get; } = new();
     }
 
@@ -69,6 +75,18 @@ internal sealed class BotFeedbackTracker
     private const int AcknowledgedCap = 200;
     private readonly HashSet<ulong> _acknowledged = new();
     private readonly Queue<ulong> _acknowledgedOrder = new();
+
+    // Her own messages that nobody may pass verdict on — currently the bad-bot
+    // replies. Without this they are ordinary new content: someone says "bad bot",
+    // she snaps back, and her comeback is itself a fresh action they can call a bad
+    // bot, which she answers again, forever. Suppressing the reply breaks the loop
+    // at the one point where it starts.
+    //
+    // A reply's id is only known *after* it is sent, and the gateway echo can beat
+    // that, so both orderings are covered: RecordAction refuses ids already in here,
+    // and SuppressJudgement withdraws an action that was recorded a moment earlier.
+    private readonly HashSet<ulong> _notJudgeable = new();
+    private readonly Queue<ulong> _notJudgeableOrder = new();
 
     public BotFeedbackTracker(
         DiscordSocketClient client,
@@ -93,7 +111,7 @@ internal sealed class BotFeedbackTracker
         // the author check below returns, which is the point of watching herself.
         if (message.Author.Id == _client.CurrentUser.Id)
         {
-            RecordAction(message.Channel.Id);
+            RecordAction(message.Channel.Id, message.Id);
             return;
         }
 
@@ -104,6 +122,11 @@ internal sealed class BotFeedbackTracker
 
         var repliedTo = message.ReferencedMessage;
         bool toHer = repliedTo?.Author.Id == _client.CurrentUser.Id;
+
+        // Answering back at one of her own comebacks. Left alone entirely: counting
+        // it would let "bad bot" → snap → "bad bot" → snap run forever, and a reply
+        // to her is otherwise unambiguous and would always count.
+        if (toHer && IsNotJudgeable(repliedTo!.Id)) return;
         bool toRival = repliedTo is not null
                        && repliedTo.Author.IsBot
                        && repliedTo.Author.Id != _client.CurrentUser.Id;
@@ -167,6 +190,9 @@ internal sealed class BotFeedbackTracker
             var resolved = await message.GetOrDownloadAsync();
             if (resolved is null || resolved.Author.Id != _client.CurrentUser.Id) return;
 
+            // Same exclusion as the typed path: her comebacks are not up for a vote.
+            if (IsNotJudgeable(resolved.Id)) return;
+
             // Only the things she *says*. A card is command output, and a 👍 on a
             // session or poll card reads as "I'm in", not as praise. Buttons are what
             // tells the two apart — every card carries them and no line of chatter
@@ -198,14 +224,45 @@ internal sealed class BotFeedbackTracker
         return FeedbackKind.None;
     }
 
-    private void RecordAction(ulong channelId)
+    // selfMessageId is the id of her message when the action *is* a message; 0 when
+    // it is a reaction, which has no message of her own to suppress.
+    private void RecordAction(ulong channelId, ulong selfMessageId = 0)
     {
         lock (_gate)
         {
+            if (selfMessageId != 0 && _notJudgeable.Contains(selfMessageId)) return;
+
             // A fresh action, so everyone gets to judge this one too.
-            _lastActions[channelId] = new LastAction { At = DateTimeOffset.UtcNow };
+            _lastActions[channelId] = new LastAction
+            {
+                At = DateTimeOffset.UtcNow,
+                MessageId = selfMessageId,
+            };
             Forget_Stale();
         }
+    }
+
+    // Marks one of her own messages as beyond judgement, and withdraws the action it
+    // created if the gateway echo already registered one.
+    private void SuppressJudgement(ulong channelId, ulong messageId)
+    {
+        lock (_gate)
+        {
+            if (_notJudgeable.Add(messageId))
+            {
+                _notJudgeableOrder.Enqueue(messageId);
+                if (_notJudgeableOrder.Count > AcknowledgedCap)
+                    _notJudgeable.Remove(_notJudgeableOrder.Dequeue());
+            }
+
+            if (_lastActions.TryGetValue(channelId, out var action) && action.MessageId == messageId)
+                _lastActions.Remove(channelId);
+        }
+    }
+
+    private bool IsNotJudgeable(ulong messageId)
+    {
+        lock (_gate) return _notJudgeable.Contains(messageId);
     }
 
     // Checks attribution and claims this person's one verdict on the current action,
@@ -339,6 +396,10 @@ internal sealed class BotFeedbackTracker
                    ?? message.Author.GlobalName ?? message.Author.Username;
 
         var line = string.Format(_picker.Pick(message.Channel.Id, lines), name);
-        await BotChat.ReplyWithTypingAsync(message, line, _logger, "bad-bot reply");
+        var sent = await BotChat.ReplyWithTypingAsync(message, line, _logger, "bad-bot reply");
+
+        // Her comeback is not itself up for judgement — otherwise answering it with
+        // another "bad bot" is a fresh action and the pair loops indefinitely.
+        if (sent is not null) SuppressJudgement(message.Channel.Id, sent.Id);
     }
 }

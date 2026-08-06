@@ -289,9 +289,18 @@ with a reaction, and that reaction comes back on `ReactionAdded` looking exactly
 anyone else's. Recorded naively it becomes a fresh action, clears `Judged`, and hands
 the same person another free verdict — praise, get thanked, praise again, forever.
 `MarkAcknowledged` is therefore called *before* the reaction is sent (the gateway echo
-races it) and `HandleReactionAddedAsync` skips those message ids. Her bad-bot *reply*
-is deliberately left counting as an action: unlike a wordless ❤️ it is new content,
-and judging it is fair.
+races it) and `HandleReactionAddedAsync` skips those message ids.
+
+**Her bad-bot reply is not judgeable either, and for a sharper reason.** Left as
+ordinary content it is a fresh action, so "bad bot" → she snaps back → "bad bot" at
+the comeback → she snaps back runs forever, counting every round. `_notJudgeable`
+holds those ids and is consulted in three places: `RecordAction` refuses to open an
+action for one, the reply path drops a verdict aimed at one (a reply to her is
+otherwise `unambiguous` and would *always* count), and the thumb path skips them too.
+Unlike the acknowledgement above, a reply's id only exists **after** it is sent, so
+the echo can beat it — which is why `SuppressJudgement` both records the id and
+withdraws an action already opened for it, and why `LastAction` carries `MessageId`
+at all. Cover both orderings or the loop comes back intermittently.
 
 **The thumb path counts on her chatter only** — `resolved.Components.Count > 0` skips
 session cards, poll cards and leaderboards, where a 👍 means "I'm in" rather than
@@ -300,6 +309,12 @@ any message carrying a link, so a plain chatty line could grow one on its own. T
 path is also silent by design: a 👎 on an hour-old message would otherwise fire a
 comeback into a dead conversation. Removing a reaction does **not** decrement — the
 counters only ever go up, and the claim already prevents a re-count.
+
+**Rodhengard praising a rival gets its own pool.** `OnPraiseStolenAsync` branches on
+`AvailabilityService.OwnerId`: everyone else draws from `JealousLines` (wounded
+pride), he draws from `JealousLinesOwner` (betrayal — he wrote her). Same split as
+`BadBotReplies` / `BadBotRepliesOwner`, and for the same reason: the injury is not
+the same injury.
 
 **`RivalryService` is the only handler that looks at other bots.** Every other one
 bails on `IsBot`. It does two jobs with that traffic. **One:** it records when and on

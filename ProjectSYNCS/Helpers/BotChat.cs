@@ -13,7 +13,13 @@ namespace ProjectSYNCS.Helpers;
 // adds latency.
 public static class BotChat
 {
-    public static async Task ReplyWithTypingAsync(
+    /// <summary>
+    /// Replies behind the typing indicator. Returns the sent message, or null if the
+    /// send failed — callers that need to remember what they just said (see
+    /// BotFeedbackTracker suppressing verdicts on its own bad-bot replies) need its
+    /// id, and there is no other way to learn it.
+    /// </summary>
+    public static async Task<IUserMessage?> ReplyWithTypingAsync(
         IUserMessage replyTo, string line, ILogger logger, string what)
     {
         try
@@ -22,11 +28,12 @@ public static class BotChat
             {
                 await Task.Delay(TypingDelayFor(line));
             }
-            await replyTo.ReplyAsync(line);
+            return await replyTo.ReplyAsync(line);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to send {What} in channel {ChannelId}.", what, replyTo.Channel.Id);
+            return null;
         }
     }
 
