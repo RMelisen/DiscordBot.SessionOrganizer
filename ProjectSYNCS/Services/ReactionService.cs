@@ -136,6 +136,13 @@ internal sealed class ReactionService
             // author, which costs a fetch.
             if (resolved.Author.Id == _client.CurrentUser.Id) return;
 
+            // A reaction on *another* bot's message is the room appreciating a rival.
+            // Joining in would be applauding the competition — and RivalryService may
+            // well be sulking at that very message at the same time. Webhooks are
+            // included: they are not rivals, but they are not people either, and
+            // piling on to one buys nothing.
+            if (resolved.Author.IsBot) return;
+
             // Don't help anyone dunk on Rodhengard. A hostile emote on one of his
             // messages is left alone no matter how many people pile on — the same
             // favouritism that gets him compliments instead of roasts.

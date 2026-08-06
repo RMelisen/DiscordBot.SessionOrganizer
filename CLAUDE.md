@@ -109,6 +109,13 @@ per-channel cooldown.
 copying someone else's *reaction* (`HandleReactionAddedAsync`) is odds-only with no
 cooldown, because piling on is meant to read as reflexive. Don't "unify" them.
 
+**The pile-on path skips bots twice, for two different reasons.** A reaction *added
+by* a bot is ignored (other bots' bookkeeping marks), and a reaction sitting *on* a
+bot's message is ignored too — that one is the room appreciating a rival, and joining
+in would have her applauding the competition while `RivalryService` is sulking at the
+same message. The second check needs the message's author, so it costs a fetch and
+lives inside the `try` alongside the owner and self checks rather than up front.
+
 ## Conventions that will bite you
 
 **SQLite cannot translate `DateTimeOffset` comparisons.** Every query filters
