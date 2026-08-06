@@ -136,12 +136,23 @@ internal sealed class ChatterService
             return;
         }
 
-        // Owner tagging the bot with no one to rescue: just greet him.
+        // Owner tagging the bot with no one to rescue: greet him — unless he is being
+        // unkind, in which case it lands rather than bouncing. Reached only after the
+        // rescue branch above, so a mean @mention aimed at *someone else* is already
+        // handled and never mistaken for an insult to her.
         if (message.Author.Id == OwnerId)
         {
-            _logger.LogInformation("Owner mentioned the bot — greeting him.");
-            var greeting = _picker.Pick(message.Channel.Id, BotResponses.OwnerGreetings);
-            await ReplyWithTypingAsync(message, greeting, "owner greeting");
+            var ownerMood = MessageCues.Analyze(message.Content ?? string.Empty);
+            bool unkind = ownerMood.Emotion == EmotionKind.Mean;
+
+            _logger.LogInformation("Owner mentioned the bot — {What}.",
+                unkind ? "and was mean about it" : "greeting him");
+
+            var ownerPool = unkind ? BotResponses.OwnerMeanReplies : BotResponses.OwnerGreetings;
+            var ownerLine = string.Format(
+                _picker.Pick(message.Channel.Id, ownerPool), ResolveName(message.Author), weekday);
+
+            await ReplyWithTypingAsync(message, ownerLine, "owner greeting");
             return;
         }
 
@@ -209,7 +220,15 @@ internal sealed class ChatterService
         }
 
         string[] pool;
-        if (nice)
+        if (mood.Emotion == EmotionKind.Mean && message.Author.Id == OwnerId)
+        {
+            // Everyone else gets roasted back. Her creator is the one person she will
+            // not fight with, so an insult from him lands instead of bouncing.
+            // Checked before the reference roll: a pop-culture one-liner in answer to
+            // him being cruel would read as her not having noticed.
+            pool = BotResponses.OwnerMeanReplies;
+        }
+        else if (nice)
         {
             pool = BotResponses.NiceReplies;
         }

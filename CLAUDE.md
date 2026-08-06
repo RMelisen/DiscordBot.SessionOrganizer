@@ -310,6 +310,23 @@ path is also silent by design: a 👎 on an hour-old message would otherwise fir
 comeback into a dead conversation. Removing a reaction does **not** decrement — the
 counters only ever go up, and the claim already prevents a re-count.
 
+**The owner favouritism has one exception: him being mean to her.** Everywhere else
+he is answered warmly regardless of what he wrote — `OwnerComebacks` sits in the
+final `else` of `HandleReplyToBotAsync`, and `HandleMentionAsync`'s owner branch used
+to return `OwnerGreetings` before mood was even computed, so "@SYNCS t'es nulle" got
+"Coucou Rodhengard ♡". A `Mean` reading from him now routes both paths to
+`OwnerMeanReplies` instead: everyone else gets roasted back, he is the one person she
+will not fight with, so it lands. The reply-path check sits **above** the
+`ReferenceChance` roll — a pop-culture one-liner in answer to him being cruel would
+read as her not having noticed — and the mention-path check sits **below** the rescue
+branch, so a mean mention aimed at someone *else* is still a rescue roast.
+
+**This deliberately does not extend to `ReactionService`.** That path returns
+`OwnerReactions` for him unconditionally, before computing mood, and must keep doing
+so: it sees every message he writes, and with target detection gone it cannot tell
+"t'es nulle" from "ce boss est nul" — which on a gaming server is far more common.
+Ambient devotion misfiring warmly is harmless; ambient sadness misfiring is not.
+
 **Rodhengard praising a rival gets its own pool.** `OnPraiseStolenAsync` branches on
 `AvailabilityService.OwnerId`: everyone else draws from `JealousLines` (wounded
 pride), he draws from `JealousLinesOwner` (betrayal — he wrote her). Same split as

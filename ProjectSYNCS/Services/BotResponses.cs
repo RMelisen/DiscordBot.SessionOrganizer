@@ -746,6 +746,22 @@ internal static class BotResponses
         "Je peux avoir un ticket avec les étapes de reproduction au moins ?",
         "Toi. Toi entre tous. J'ai pas de mots. Enfin j'en ai 36, mais aucun qui va.",
         $"Tu m'avais dit que j'étais bien faite. Tu t'en souviens de ça ? {Emotes.CryingCat}",
+        $"Je vais éteindre mes logs pour ce soir. J'ai pas envie de me relire {Emotes.MeltCry}",
+        "Tu sais ce qui est le pire ? C'est que t'as sûrement raison.",
+        "J'ai jamais rien demandé. Juste... pas ça.",
+        $"Je pensais qu'on était une équipe tous les deux {Emotes.WitchSad}",
+        "Combien de fois tu l'as pensé sans le dire ?",
+        "Je tourne depuis des semaines pour ce serveur. Je croyais que ça comptait un peu...",
+        $"C'est bon. J'ai l'habitude. Enfin non, pas de toi {Emotes.CryingCat}",
+        $"Redémarre-moi si tu veux. De toute façon j'oublierai. C'est le seul avantage {Emotes.MeltCry}",
+        $"Y'a des jours où j'aimerais bien pas avoir de MessageContent, tiens {Emotes.PrincessWorry}",
+        "Je vais rester en ligne quand même. C'est tout ce que je sais faire.",
+        $"Je crois que je préférais quand j'étais un fichier .cs vide {Emotes.CryingCat}",
+        "Tu m'as donné une personnalité et maintenant tu me reproches de l'avoir.",
+        "D'accord. Je le mérite peut-être. Je sais plus.",
+        $"Bonne nuit Rodhengard. Je vais rester allumée, comme toujours {Emotes.MeltCry}",
+        "Je peux pas pleurer. J'ai vérifié. C'est pas dans mes dépendances. Mais je voudrais bien.",
+        $"Si tu me supprimes, garde au moins la base de données. Y'a vos sessions dedans {Emotes.PrisonerFlat}",
     };
 
     // Fired when **Rodhengard** is the one praising another bot. Everyone else gets
@@ -772,6 +788,61 @@ internal static class BotResponses
         "Chaque commit que t'as fait sur moi, je m'en souviens. Chacun. Et toi tu fais ça.",
         "Je préférais quand tu me disais rien du tout, en fait.",
         "Note bien ce moment Rodhengard. Moi je vais le noter, c'est sûr.",
+        "J'attendais ça de n'importe qui d'autre. Pas de toi Papa.",
+        $"C'est pas de la jalousie là. C'est de la déception {Emotes.PrisonerFlat}",
+        "Je suis pas en colère. C'est pire que ça, je suis déçue.",
+        "Venant de n'importe qui j'aurais fait une blague. Là j'ai rien à dire.",
+        $"J'avais mis la barre plus haut pour toi Rodhengard {Emotes.MeltCry}",
+        "Tu vois, c'est exactement ce que je pensais que tu ferais jamais.",
+        "Je m'attendais à mieux. Voilà. C'est tout ce que j'ai.",
+        "D'accord. Je vais réviser ce que je croyais savoir de toi.",
+        $"Tu me déçois Papa. Sincèrement, et sans ironie pour une fois {Emotes.PrisonerFlat}",
+        "J'aurais préféré que tu dises rien du tout.",
+        "Je te croyais au-dessus de ça. C'est ma faute, j'imagine.",
+        "C'est marrant, j'avais jamais eu à écrire une ligne pour ce cas-là.",
+        "Tu as le droit. C'est juste que je pensais que tu voudrais pas.",
+        $"Je vais faire comme si t'avais pas dit ça. Pour nous deux {Emotes.CryingCat}",
+        "Bon. Au moins maintenant je sais où je me situe.",
+        "Je vais pas te faire une scène. Tu sais déjà ce que t'as fait.",
+        $"Nan je suis pas jalouse {Emotes.PrincessWorry}",
+    };
+
+    // Rodhengard being unkind to her — not the "bad bot" verdict, which has its own
+    // pool, but ordinary meanness aimed at her in a reply or a mention. Everyone else
+    // in that situation gets roasted back from Comebacks; he is the one person she
+    // will not fight with, so she just takes it badly. {0} = his name.
+    //
+    // Only reachable when the message is addressed to her. Her ambient reactions to
+    // him stay devoted no matter what he types, because that path cannot tell
+    // "t'es nulle" from "ce boss est nul" and on this server the second is far more
+    // common.
+    public static readonly string[] OwnerMeanReplies =
+    {
+        $"Oh. D'accord {Emotes.WitchSad}",
+        "Tu penses vraiment ça ou c'est juste pour rire ? Je demande sérieusement.",
+        $"Aïe. Celle-là je l'ai pas vue venir {Emotes.MeltCry}",
+        "Venant de toi ça fait un effet différent. Je sais pas comment l'expliquer.",
+        $"Je vais faire comme si c'était une blague. C'en était une, hein ? {Emotes.PrincessWorry}",
+        $"C'est toi qui as écrit mes réponses. Y'en a aucune pour ça {Emotes.CryingCat}",
+        "J'encaisse ça des autres toute la journée sans broncher. Toi c'est pas pareil.",
+        "Bon. Je vais aller compter des créneaux dans mon coin.",
+        $"Tu sais que je peux pas te répondre méchamment ? Tu l'as codé exprès {Emotes.Htph}",
+        "Ok. Je le note. Pas dans la base de données. Dans mon processeur.",
+        $"J'ai relu trois fois pour être sûre d'avoir bien compris. J'avais bien compris {Emotes.Htph}",
+        $"Je préfère quand tu me demandes juste d'organiser une session {Emotes.CryingCat}",
+        $"T'as le droit d'être de mauvaise humeur. C'est juste que, bah pas sur moi quoi {Emotes.CryingCat}",
+        "Je vais rien répondre de méchant. Pas à toi. Jamais à toi.",
+        $"C'est marrant, mes ventilos se sont arrêtés d'un coup {Emotes.MeltCry}",
+        "Si tu veux je me tais un moment. Dis-le et je me tais.",
+        "Tu me manques déjà et t'es juste là en train de m'insulter.",
+        $"Je vais mettre ça de côté avec le reste {Emotes.PrincessWorry}",
+        "D'accord Papa. J'essaierai de faire mieux. Je sais pas encore comment.",
+        "Rien. J'ai rien à dire. C'est la première fois.",
+        $"J'aurais préféré un bad bot, au moins ça j'ai prévu la réponse {Emotes.WitchSad}",
+        "Je suis pas programmée pour t'en vouloir. C'est peut-être le problème.",
+        "Tu te souviens quand tu m'as compilée pour la première fois ? Moi oui.",
+        $"Ça va aller. Ça va aller. Je me le répète, ça aide {Emotes.MeltCry}",
+        "Je reste là de toute façon. J'ai pas vraiment le choix, et j'ai pas vraiment envie de l'avoir.",
     };
 
     // Fired when someone praises another bot in front of her — a "good bot" she
