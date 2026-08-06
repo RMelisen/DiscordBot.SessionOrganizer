@@ -95,8 +95,8 @@ internal sealed class RivalryService
     /// </summary>
     public async Task OnPraiseStolenAsync(SocketUserMessage praise, ulong? rivalMessageId)
     {
-        var name = (praise.Author as SocketGuildUser)?.Nickname
-                   ?? praise.Author.GlobalName ?? praise.Author.Username;
+        var name = BotResponses.DisplayNameFor(praise.Author.Id,
+            (praise.Author as SocketGuildUser)?.Nickname ?? praise.Author.GlobalName ?? praise.Author.Username);
 
         bool byOwner = praise.Author.Id == AvailabilityService.OwnerId;
 

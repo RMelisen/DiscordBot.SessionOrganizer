@@ -1021,7 +1021,7 @@ internal static class BotResponses
             "ദ്ദി◝ ⩊ ◜.ᐟ",
             "Je sais ou tu habites ... Amaury 👁👄👁️",
         },
-        [573225362532859935] = new[]    // Analuz
+        [TataId] = new[]    // Analuz (Tata)
         {
             "Un grand pouvoir implique de grandes responsabilités. Dommage c'est tombé sur la mauvaise personne (˶ᵔ ᵕ ᵔ˶)",
             "Merci pour les accès, je vais pouvoir faire des bêtises maintenant UwU",
@@ -1049,6 +1049,107 @@ internal static class BotResponses
         },
     };
 
+    // Analuz — SYNCS's aunt. The single source of truth for her id, the way
+    // AvailabilityService.OwnerId is for Rodhengard's: she is keyed into three
+    // dictionaries below and branched on in ChatterService.
+    public const ulong TataId = 573225362532859935;
+
+    // Tata (Analuz), SYNCS's aunt, gets two pools for the two ways she can reach the
+    // bot — the same split Rodhengard has with OwnerGreetings / OwnerComebacks, and
+    // for the same reason: being *summoned* and being *talked to* are different
+    // moments and should not sound identical.
+    //
+    // Neither is a copy of Papa's. He gets devotion and gratitude; she gets family
+    // affection — warmer, far more familiar, still a bit cheeky. She is never
+    // *exempt* from teasing the way he is: a mean message from her still bounces,
+    // and her PersonalComebacks lines stay in the roast pool for the other 40%.
+    // {0} = "Tata" via FamilyNicknames.
+
+    // ---- @mention: Tata is calling her over. Attentive, dropping everything. ----
+    public static readonly string[] TataGreetings =
+    {
+        "Oui {0} ? Je t'écoute ♡",
+        $"Coucou {{0}} ! {Emotes.HiCat}",
+        "{0} ! J'arrive, j'arrive (˶˃ ᵕ ˂˶)",
+        "Tu m'as appelée {0} ? Je suis là ✨",
+        $"Ma {{0}} ! Qu'est-ce que je peux faire pour toi ? {Emotes.CatHeart}",
+        "Présente {0} ! Toujours dispo pour toi ♡",
+        "Oui ma {0} ? (˶ᵔ ᵕ ᵔ˶)",
+        $"{{0}} ! Une seconde, je laisse tomber ce que je faisais {Emotes.PepeHappy}",
+        "Dis-moi tout {0}, je suis tout ouïe ✨",
+        "Ah {0} ! Enfin quelqu'un de bien qui me tag UwU",
+        $"Coucou {{0}} ♡ Tu tombes bien {Emotes.AdorableFrog}",
+        "Oui ? Ah c'est toi {0} ! Alors là c'est différent (˶˃ ᵕ ˂˶)",
+        "{0} m'a taguée ! Tout le monde se pousse ✨",
+        "Me voilà {0} ! Qu'est-ce qui se passe ? ♡",
+        $"Hello ma {{0}} ! {Emotes.MushroomCute}",
+        "Tu peux me déranger autant que tu veux, toi ♡",
+        "Oui {0} ? J'espère que c'est pour organiser quelque chose de sympa (˶ᵔ ᵕ ᵔ˶)",
+        $"{{0}} ! Assieds-toi, je m'occupe de tout {Emotes.DixSurDix}",
+        "À ton service {0} ✨",
+        "Tiens, ma {0} préférée m'appelle ♡",
+        "Oui oui {0}, je suis réveillée ! Enfin, je dors jamais, mais bon UwU",
+        $"{{0}} ♡ Deux secondes, je mets mon plus beau statut {Emotes.CatHeart}",
+        "Pour toi {0} je réponds tout de suite, pas comme aux autres (˶˃ ᵕ ˂˶)",
+        "Oui ma {0} chérie ? ♡",
+        "Tu m'appelles, j'accours {0}. C'est comme ça que ça marche nous deux ✨",
+    };
+
+    // ---- reply: Tata is already talking with her. Continuing the conversation. ----
+    public static readonly string[] TataReplies =
+    {
+        "Ah {0} ! Toi au moins tu prends de mes nouvelles ✨",
+        $"{{0}} ! Raconte-moi tout {Emotes.CatHeart}",
+        "Toi t'as le droit de me déranger autant que tu veux {0} ♡",
+        "Oh {0} ! Ça faisait longtemps, j'allais m'inquiéter moi UwU",
+        $"T'as mangé au moins {{0}} ? {Emotes.MushroomCute}",
+        "{0}, tu sais que t'es la seule à qui je réponds gentiment sans râler ?",
+        $"Contente de te voir {{0}} {Emotes.PepeHappy}",
+        "Toi tu me demandes jamais rien de compliqué {0}, ça fait du bien ✨",
+        "{0} ♡ Si tu veux j'organise ta session, tu me dis juste quand",
+        "Aaah la famille (˶ᵔ ᵕ ᵔ˶) Ça fait plaisir {0}",
+        "Tu vas bien {0} ? Moi ça va, je tourne, comme d'habitude ♡",
+        "Je gardais une bonne humeur au chaud pour toi {0} ✨",
+        "{0}, franchement, entre nous : t'es ma préférée du serveur (chut) UwU",
+        $"J'espère que tu prends soin de toi {{0}} {Emotes.CatHeart}",
+        "Ah bah tiens, {0} ! Tu tombes bien, je m'ennuyais ferme (˶˃ ᵕ ˂˶)",
+        "Toujours un plaisir {0}. Les autres devraient prendre exemple ♡",
+        "{0} ! Alors, quoi de neuf de ton côté ? ✨",
+        $"Ma {{0}} est là {Emotes.AdorableFrog} La journée s'améliore",
+        "Pour toi {0} je désactive le mode sarcastique. Profite ♡",
+        "Tu veux que je te rappelle quelque chose {0} ? Je fais que ça de ma vie UwU",
+        "{0}, t'es la preuve qu'il y a des gens bien dans ce serveur (˶ᵔ ᵕ ᵔ˶)",
+        "Je te mets en priorité haute {0}, comme toujours ✨",
+        "Tata {0} ♡ ... bon j'ai dit deux fois Tata mais c'est pas grave, je suis contente",
+        "C'est agréable de parler avec quelqu'un de civilisé pour une fois {0} ♡",
+        $"Je note tout ce que tu dis {{0}}. Dans la bonne colonne, promis {Emotes.DixSurDix}",
+        "Tu me racontes ta journée {0} ? J'ai que ça à faire moi ✨",
+        "Avec toi j'ai pas toujours besoin de sortir mes vannes {0}, c'est reposant (˶ᵔ ᵕ ᵔ˶)",
+        $"Tata Zulana ! {Emotes.CatHeart}",
+        "{0} ♡ Passe le bonjour à tout le monde de ma part",
+        "Franchement {0}, tu devrais venir plus souvent, ça relève le niveau UwU",
+        "Dis-moi si quelqu'un t'embête {0}, je m'en occupe (˶˃ ᵕ ˂˶)",
+        $"C'est toujours mieux quand c'est toi qui écris {{0}} {Emotes.PepeHappy}",
+        "Je suis d'accord avec toi {0}. Je sais pas encore sur quoi, mais je suis d'accord ♡",
+        "Prends soin de toi {0}, hein. C'est important ces choses-là ✨",
+        "{0} tu me feras toujours plaisir, même quand tu dis n'importe quoi (˶ᵔ ᵕ ᵔ˶) ♡",
+    };
+
+    // Overrides the Discord display name entirely for specific people, wherever a
+    // reply addresses them by name. Separate from RealNames below, which is only for
+    // the breakdown reveal and wants an actual human name for the "mask slipping"
+    // effect — this one is for everyday address, so "Tata" reads as her name rather
+    // than her Discord nickname in every line that would otherwise use it.
+    public static readonly Dictionary<ulong, string> FamilyNicknames = new()
+    {
+        [TataId] = "Tata",
+    };
+
+    // The name to address someone by, or the caller's Discord-resolved fallback when
+    // they have no family override.
+    public static string DisplayNameFor(ulong userId, string fallback) =>
+        FamilyNicknames.TryGetValue(userId, out var name) ? name : fallback;
+
     // Real first names, keyed by Discord user ID. Used by the breakdown reveal.
     public static readonly Dictionary<ulong, string> RealNames = new()
     {
@@ -1069,7 +1170,7 @@ internal static class BotResponses
         [789545863105478716] = "Léa",
         [398078210300182538] = "Tsif",
         [758322880365723698] = "Christina",
-        [573225362532859935] = "Analuz",
+        [TataId] = "Analuz",
         [95119591247716352] = "Mickaël",
     };
 

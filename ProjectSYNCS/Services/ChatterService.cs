@@ -26,6 +26,11 @@ internal sealed class ChatterService
     private const double BreakdownChance = 0.001;
     private const double ReferenceChance = 0.008;
 
+    // How often Tata gets warmth instead of the usual roast or brush-off. Deliberately
+    // short of Papa's unconditional treatment: he is never teased, she mostly isn't,
+    // everyone else always is. Three legible tiers rather than two arbitrary favourites.
+    private const double TataWarmthChance = 0.6;
+
     // Secret passphrase: anyone replying with exactly this forces a breakdown.
     private const string BreakdownPassphrase = "The cake is a lie.";
 
@@ -173,9 +178,17 @@ internal sealed class ChatterService
         // for the greeting, alongside replying. A mean reading cancels it. Otherwise
         // the bot just answers with a confused one-liner.
         var mood = MessageCues.Analyze(message.Content ?? string.Empty);
-        var pool = mood.IsGreeting && mood.Emotion != EmotionKind.Mean
-            ? BotResponses.Greetings
-            : BotResponses.Interrogations;
+
+        string[] pool;
+        if (mood.IsGreeting && mood.Emotion != EmotionKind.Mean)
+            pool = BotResponses.Greetings;
+        else if (RollTataWarmth(message.Author.Id, mood))
+            // Family doesn't get "TLDR" for tagging her. TataGreetings, not
+            // TataReplies: a mention is Tata *calling her over*, so she answers as
+            // summoned rather than as mid-conversation — the same split Papa has.
+            pool = BotResponses.TataGreetings;
+        else
+            pool = BotResponses.Interrogations;
 
         _logger.LogInformation("{Name} mentioned the bot.", name);
         var line = string.Format(_picker.Pick(message.Channel.Id, pool), name, weekday);
@@ -240,6 +253,10 @@ internal sealed class ChatterService
         {
             // Rarer easter egg: a pop-culture reference, for everyone.
             pool = BotResponses.ReferenceComebacks;
+        }
+        else if (RollTataWarmth(message.Author.Id, mood))
+        {
+            pool = BotResponses.TataReplies;
         }
         else
         {
@@ -439,8 +456,21 @@ internal sealed class ChatterService
     private static string CurrentWeekday() =>
         AppTime.Now.ToString("dddd", CultureInfo.GetCultureInfo("fr-FR"));
 
-    // Resolves the friendliest display name available: server nickname, then
-    // global display name, then username.
-    private static string ResolveName(IUser user) =>
-        (user as SocketGuildUser)?.Nickname ?? user.GlobalName ?? user.Username;
+    // Whether this message should get Tata's warm pool instead of the usual roast or
+    // brush-off. **Rolls the dice**, so call it exactly once per message.
+    //
+    // A mean message never qualifies: she is warm to her aunt, not a doormat, so an
+    // insult from Tata bounces back like anyone else's — and her PersonalComebacks
+    // lines are still folded into that roast pool. Unlike Papa, who is exempt from
+    // teasing outright, Tata is merely favoured.
+    private static bool RollTataWarmth(ulong authorId, MessageMood mood) =>
+        authorId == BotResponses.TataId
+        && mood.Emotion != EmotionKind.Mean
+        && Random.Shared.NextDouble() < TataWarmthChance;
+
+    // Resolves the friendliest display name available: a family override (see
+    // BotResponses.FamilyNicknames) first, then server nickname, then global display
+    // name, then username.
+    private static string ResolveName(IUser user) => BotResponses.DisplayNameFor(
+        user.Id, (user as SocketGuildUser)?.Nickname ?? user.GlobalName ?? user.Username);
 }

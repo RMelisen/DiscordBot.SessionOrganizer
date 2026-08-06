@@ -392,8 +392,8 @@ internal sealed class BotFeedbackTracker
         // Being told off *is* worth answering. Everyone gets indignation; the one
         // person whose opinion she actually cares about gets to hurt her.
         var lines = byOwner ? BotResponses.BadBotRepliesOwner : BotResponses.BadBotReplies;
-        var name = (message.Author as SocketGuildUser)?.Nickname
-                   ?? message.Author.GlobalName ?? message.Author.Username;
+        var name = BotResponses.DisplayNameFor(message.Author.Id,
+            (message.Author as SocketGuildUser)?.Nickname ?? message.Author.GlobalName ?? message.Author.Username);
 
         var line = string.Format(_picker.Pick(message.Channel.Id, lines), name);
         var sent = await BotChat.ReplyWithTypingAsync(message, line, _logger, "bad-bot reply");

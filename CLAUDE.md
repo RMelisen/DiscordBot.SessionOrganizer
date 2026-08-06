@@ -327,6 +327,30 @@ so: it sees every message he writes, and with target detection gone it cannot te
 "t'es nulle" from "ce boss est nul" — which on a gaming server is far more common.
 Ambient devotion misfiring warmly is harmless; ambient sadness misfiring is not.
 
+**Favouritism has three tiers, not two.** Rodhengard is exempt from teasing outright
+(`OwnerComebacks` replaces the roast pool unconditionally). **Tata** — Analuz,
+`BotResponses.TataId`, SYNCS's aunt — is merely *favoured*: `RollTataWarmth` gives her
+a warm pool `TataWarmthChance` (60%) of the time, and she keeps her
+`PersonalComebacks` roast lines for the rest.
+
+**Both favourites get two pools, one per path.** A mention is being *summoned*; a
+reply is being *talked to*, and they should not sound identical. Papa has
+`OwnerGreetings` / `OwnerComebacks`; Tata has `TataGreetings` / `TataReplies`. Wiring
+a new favourite to the same pool on both paths is the easy mistake — it reads as the
+bot not noticing how it was addressed. Everyone else
+is always roasted. Two rules make that gradient hold: a **mean** message from Tata
+never qualifies (an aunt who stays sweet while being insulted is a doormat, not a
+person), and `RollTataWarmth` **rolls the dice**, so it must be called exactly once
+per message — it sits in an `else if` on both paths for that reason.
+
+**Her name is overridden, not just decorated.** `BotResponses.FamilyNicknames` maps
+her id to "Tata" and `DisplayNameFor` applies it wherever a reply fills `{0}`. That
+fallback chain (`Nickname ?? GlobalName ?? Username`) exists in **three** independent
+copies — `ChatterService.ResolveName`, `BotFeedbackTracker`, `RivalryService` — so all
+three route through `DisplayNameFor`; fixing only one makes her "Tata" in some replies
+and "Analuz" in others. `RealNames` is deliberately *not* overridden: the breakdown
+reveal wants a real human name for the mask-slipping effect.
+
 **Rodhengard praising a rival gets its own pool.** `OnPraiseStolenAsync` branches on
 `AvailabilityService.OwnerId`: everyone else draws from `JealousLines` (wounded
 pride), he draws from `JealousLinesOwner` (betrayal — he wrote her). Same split as
