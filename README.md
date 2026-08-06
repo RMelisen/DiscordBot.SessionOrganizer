@@ -70,6 +70,13 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
   read as kind, hostile or a greeting), and sometimes joins in on a reaction someone
   else just added. Both are rationed by probability, and message reactions also by a
   per-channel cooldown, so it stays occasional rather than constant.
+- **Jealousy** — she does not enjoy sharing a server. Another bot posting earns an
+  occasional reaction and, more rarely, a muttered remark. Praising another bot in
+  front of her earns a full sulk — and that praise no longer lands in her own
+  `/goodbot` tally, since a bare "good bot" now goes to whichever bot acted most
+  recently. Replying directly to her still always counts as hers; replying directly
+  to another bot never does. Level-up announcements are exempt: the congratulation
+  is for the person who levelled, not the bot that said so.
 - **Rotating status** — the status line under the bot's name cycles through a large
   pool of one-liners.
 - **An easter egg** — rare, and better discovered than documented.

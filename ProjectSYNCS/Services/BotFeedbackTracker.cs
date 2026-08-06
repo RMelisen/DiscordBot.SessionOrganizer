@@ -34,6 +34,7 @@ internal sealed class BotFeedbackTracker
     private readonly DiscordSocketClient _client;
     private readonly IServiceProvider _services;
     private readonly ResponsePicker _picker;
+    private readonly RivalryService _rivalry;
     private readonly ILogger<BotFeedbackTracker> _logger;
 
     // How long after she acts a bare "good bot" still reads as being about her.
@@ -73,11 +74,13 @@ internal sealed class BotFeedbackTracker
         DiscordSocketClient client,
         IServiceProvider services,
         ResponsePicker picker,
+        RivalryService rivalry,
         ILogger<BotFeedbackTracker> logger)
     {
         _client = client;
         _services = services;
         _picker = picker;
+        _rivalry = rivalry;
         _logger = logger;
     }
 
@@ -99,8 +102,31 @@ internal sealed class BotFeedbackTracker
         var verdict = MessageCues.ReadFeedback(message.Content ?? string.Empty);
         if (verdict == FeedbackKind.None) return;
 
-        bool isReplyToBot = message.ReferencedMessage?.Author.Id == _client.CurrentUser.Id;
-        if (!TryClaim(message.Channel.Id, message.Author.Id, unambiguous: isReplyToBot)) return;
+        var repliedTo = message.ReferencedMessage;
+        bool toHer = repliedTo?.Author.Id == _client.CurrentUser.Id;
+        bool toRival = repliedTo is not null
+                       && repliedTo.Author.IsBot
+                       && repliedTo.Author.Id != _client.CurrentUser.Id;
+
+        // Aimed straight at another bot. Unambiguously not hers, whoever acted last —
+        // the mirror of a reply to her always being hers.
+        if (toRival)
+        {
+            if (verdict == FeedbackKind.Good) await _rivalry.OnPraiseStolenAsync(message, repliedTo!.Id);
+            return;
+        }
+
+        var claim = TryClaim(message.Channel.Id, message.Author.Id, unambiguous: toHer);
+
+        // A bare verdict that a rival earned instead. Only praise stings: someone
+        // calling a rival a bad bot is not a loss she needs consoling over.
+        if (claim == Claim.RivalOwns)
+        {
+            if (verdict == FeedbackKind.Good) await _rivalry.OnPraiseStolenAsync(message, rivalMessageId: null);
+            return;
+        }
+
+        if (claim != Claim.Granted) return;
 
         await RecordAsync(guildChannel.Guild.Id, message.Author.Id, verdict);
         await RespondAsync(message, verdict);
@@ -151,7 +177,7 @@ internal sealed class BotFeedbackTracker
             // Attached to the message it judges, so it needs no attribution window —
             // unambiguous in exactly the way a reply is. It still goes through the
             // claim, which is what stops someone thumbing their way down her backlog.
-            if (!TryClaim(channel.Id, reaction.UserId, unambiguous: true)) return;
+            if (TryClaim(channel.Id, reaction.UserId, unambiguous: true) != Claim.Granted) return;
 
             await RecordAsync(guildChannel.GuildId, reaction.UserId, verdict);
         }
@@ -188,8 +214,22 @@ internal sealed class BotFeedbackTracker
     // unambiguous: the verdict is attached to one of her messages — a reply to it, or
     // a thumb on it — rather than being a bare line of chat that has to be attributed
     // by timing.
-    private bool TryClaim(ulong channelId, ulong userId, bool unambiguous)
+    // Why a verdict did or didn't land on her. RivalOwns is reported separately
+    // because it is not merely a miss — it is the moment she gets jealous.
+    private enum Claim
     {
+        Granted,
+        NoAction,      // she hasn't acted here recently enough
+        RivalOwns,     // another bot acted more recently; the praise is theirs
+        AlreadyJudged, // this person already passed verdict on this action
+    }
+
+    private Claim TryClaim(ulong channelId, ulong userId, bool unambiguous)
+    {
+        // Read outside the lock: RivalryService has its own, and nesting the two
+        // in opposite orders elsewhere would be a deadlock waiting to happen.
+        var rival = unambiguous ? null : _rivalry.LastAction(channelId);
+
         lock (_gate)
         {
             var now = DateTimeOffset.UtcNow;
@@ -198,18 +238,23 @@ internal sealed class BotFeedbackTracker
             {
                 // Nothing on record — she hasn't acted here, or the process restarted.
                 // Something attached to one of her messages is still unambiguous, so
-                // seed an action for it; a bare "good bot" gets nothing to attach to.
-                if (!unambiguous) return false;
+                // seed an action for it; a bare "good bot" gets nothing to attach to,
+                // unless a rival is standing right there having just done something.
+                if (!unambiguous) return rival is null ? Claim.NoAction : Claim.RivalOwns;
 
                 action = new LastAction { At = now };
                 _lastActions[channelId] = action;
             }
-            else if (!unambiguous && now - action.At > Window)
+            else if (!unambiguous)
             {
-                return false;
+                if (now - action.At > Window) return rival is null ? Claim.NoAction : Claim.RivalOwns;
+
+                // Both acted recently: the most recent one earned it. Only reached for
+                // a bare verdict — anything aimed at a specific bot never gets here.
+                if (rival is { } r && r.At > action.At) return Claim.RivalOwns;
             }
 
-            return action.Judged.Add(userId);
+            return action.Judged.Add(userId) ? Claim.Granted : Claim.AlreadyJudged;
         }
     }
 

@@ -289,6 +289,35 @@ path is also silent by design: a 👎 on an hour-old message would otherwise fir
 comeback into a dead conversation. Removing a reaction does **not** decrement — the
 counters only ever go up, and the claim already prevents a re-count.
 
+**`RivalryService` is the only handler that looks at other bots.** Every other one
+bails on `IsBot`. It does two jobs with that traffic. **One:** it records when and on
+which message a rival last acted, which `BotFeedbackTracker.TryClaim` reads so a bare
+"good bot" goes to whoever acted *most recently* rather than always to her — before
+this, praise a rival earned landed in her column whenever she happened to have spoken
+in the last five minutes. **Two:** it sulks — 15% odds of a reaction on a rival's
+message, 5% of a muttered line, sharing one per-channel cooldown of its own. That
+cooldown is deliberately **not** `ReactionService`'s: a third trigger population
+deserves its own gate rather than competing with her reactions to humans.
+
+**Two exclusions in `RivalryService.IsRival` are load-bearing.** Webhooks are not
+rivals (they post relentlessly and belong to no one). And a **level-up announcement**
+is skipped while the rest of that bot's traffic stays fair game, because
+`ChatterService` congratulates those and the congratulation is aimed at the person who
+levelled — cheering and sulking at one message would be incoherent. The two services
+therefore have to agree on what an announcement *is*, which is why the bot id, phrase
+and regex live in `Helpers/LevelUpAnnouncement` instead of privately in
+`ChatterService`.
+
+**`TryClaim` reports *why* a verdict missed, not just that it did.** `Claim.RivalOwns`
+is the jealousy trigger, and it is separate from `NoAction` precisely because "nobody
+earned this" and "someone else earned this" call for different behaviour. Three rules
+compose there: anything `unambiguous` (a reply to her, a thumb on her chatter) is hers
+regardless of timing; a reply aimed at *another bot* is never hers regardless of
+timing, the exact mirror; everything else goes to the most recent actor. Only a
+**Good** verdict fires jealousy — someone calling a rival a bad bot is not a loss.
+`_rivalry.LastAction` is read *outside* `_gate`, since `RivalryService` holds a lock of
+its own and nesting the two in opposite orders would deadlock.
+
 **`Helpers/BotChat` is the single send path for the bot's own chatter**, and
 `Helpers/EmoteMarkup.Parse` the single reaction parser. Both were private members of
 `ChatterService` / `ReactionService` until `BotFeedbackTracker` needed them too. The

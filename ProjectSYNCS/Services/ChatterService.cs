@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.RegularExpressions;
 using Discord;
 using Discord.Net;
 using Discord.WebSocket;
@@ -23,21 +22,12 @@ internal sealed class ChatterService
     // Rodhengard, the owner: gets compliments instead of roasts.
     private const ulong OwnerId = AvailabilityService.OwnerId;
 
-    // The level-up bot. When it announces someone passing a level, we cheer.
-    private const ulong LevelUpBotId = 437808476106784770;
-    private const string LevelUpPhrase = "tu viens de passer au niveau";
-
     // 1-in-1000 chance of the breakdown; 1-in-200 of a pop-culture reference.
     private const double BreakdownChance = 0.001;
     private const double ReferenceChance = 0.008;
 
     // Secret passphrase: anyone replying with exactly this forces a breakdown.
     private const string BreakdownPassphrase = "The cake is a lie.";
-
-    // Pulls the level number out of the announcement: the first run of digits
-    // that follows the level-up phrase (skips any markdown like ** in between).
-    private static readonly Regex _levelNumberRegex =
-        new(LevelUpPhrase + @"\D*(\d+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public ChatterService(
         DiscordSocketClient client,
@@ -102,14 +92,13 @@ internal sealed class ChatterService
     // Posts a plain message in the channel (no reply, no ping).
     private async Task HandleLevelUpAsync(SocketUserMessage message)
     {
-        if (message.Author.Id != LevelUpBotId) return;
-
-        var content = message.Content ?? string.Empty;
-        var match = _levelNumberRegex.Match(content);
-        if (!match.Success) return;
+        // Shared with RivalryService, which has to skip exactly the messages cheered
+        // here. See Helpers/LevelUpAnnouncement.
+        if (!LevelUpAnnouncement.Matches(message.Author, message.Content)) return;
+        LevelUpAnnouncement.TryReadLevel(message.Content, out var level);
 
         // Easter egg: level 67 gets the meme instead of a normal cheer.
-        var cheer = match.Groups[1].Value == "67"
+        var cheer = level == "67"
             ? "SIX SEVEEEN"
             : _picker.Pick(message.Channel.Id, BotResponses.LevelUpCheers);
 

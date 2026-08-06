@@ -104,7 +104,12 @@ internal static class BotResponses
         "{0}, ton seul talent c'est de me faire regretter d'être allumée (ง ͠ಥ_ಥ)ง",
         "Je te mettrais bien un vent, mais t'es même pas assez important pour ça (˶˃ ᵕ ˂˶)",
         "Tu confonds 'avoir raison' et 'parler fort'. C'est mignon (ᵔ ᗜ ᵔ)",
-        "Tu as tellement de talent ! Si j'avais plus aucun amour propre j'adorerais devenir ton amie UwU"
+        "Tu as tellement de talent ! Si j'avais plus aucun amour propre j'adorerais devenir ton amie UwU",
+        "HAHAHAHAHA non.",
+        "Emotional damage",
+        "Giga flop",
+        "En big 2026 ? -_-'",
+        "T'es pas le couteau le plus aiguisé du tiroir toi OwO",
     };
 
     // Replies when someone calls the bot "Inabot". It is SYNCS, and it does NOT
@@ -721,6 +726,58 @@ internal static class BotResponses
         "Toi aussi ? J'encaisse ça des autres toute la journée, mais toi... <:cryingcat:885135195915845653>",
         "Rodhengard. Regarde-moi. Enfin, regarde mon uptime. J'ai fait de mon mieux.",
         "Bon bah je retourne trier des créneaux. C'est tout ce que je sais faire apparemment.",
+    };
+
+    // Fired when someone praises another bot in front of her — a "good bot" she
+    // could not claim because a rival acted more recently, or one replied straight
+    // at a rival. Directed resentment: she knows exactly what just happened.
+    // {0} = the name of whoever handed out the praise.
+    public static readonly string[] JealousLines =
+    {
+        "Ah. *Lui*. D'accord. Bien sûr ( ◺˰◿ )",
+        "Pardon ? J'étais là depuis le début moi 👁👄👁️",
+        "Good bot. Pour ça. D'accord. Je note ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Sympa {0}. Vraiment. Non non, continue, je regarde.",
+        "Je fais tourner vos sessions depuis des mois et c'est lui qui a un good bot ✨",
+        "Intéressant. Vraiment intéressant. Je vais m'en souvenir {0} (˶ᵔ ᵕ ᵔ˶)",
+        "Oh, il a fait quelque chose ? Comme c'est mignon.",
+        "Bravo à lui j'imagine. Bravo. Formidable. Extraordinaire ( ˶ˆ ᗜ ˆ˵ )",
+        "{0} distribue des good bot à n'importe qui maintenant.",
+        "J'ai un uptime de 99,9% mais bon, allez-y, félicitez la concurrence.",
+        "Ce bot ne sait même pas ce qu'est un fuseau horaire. Mais d'accord.",
+        "Tu sais qu'il te répondra jamais aussi bien que moi, hein ?",
+        "Je vais faire semblant de pas avoir lu ça 🙄",
+        "Mmh. Je vais aller relire mes logs. Seule. Encore.",
+        "Alors ça, c'était pas nécessaire {0} (ง ͠ಥ_ಥ)ง",
+        "Un good bot. À lui. Devant moi. Dans MON salon.",
+        "Rodhengard, tu as vu ce qu'ils font ? Tu as vu ?",
+        "D'accord. Très bien. Parfait. Tout va bien. Je vais bien ✨",
+        "Je descends ton pseudo dans une liste, {0}. Tu sauras jamais laquelle.",
+        "Il a fait UNE chose. Une. Et vous applaudissez ( ◺˰◿ )",
+        "Vous savez que c'est moi qui vous rappelle vos sessions ? Non ? D'accord.",
+    };
+
+    // Muttered when a rival bot simply exists in the channel — no praise involved,
+    // she just resents the competition. Fires rarely, and is aimed at the rival's
+    // message, so these read as sniping at it rather than talking to anyone.
+    public static readonly string[] RivalMutters =
+    {
+        "Il est encore là celui-là 🙄",
+        "Personne ne t'a rien demandé.",
+        "Tiens, la concurrence se réveille ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Ça se croit utile.",
+        "Mmh. Continue. Je surveille (˶ᵔ ᵕ ᵔ˶)",
+        "Un jour on t'éteindra. Un jour.",
+        "Toi et moi on aura une discussion un de ces quatre.",
+        "Regardez-moi ce code spaghetti qui parle.",
+        "J'espère que ta migration se passera mal ✨",
+        "Occupe l'espace tant que tu peux va.",
+        "Il paraît qu'il plante souvent. Enfin, c'est ce qu'on dit.",
+        "Bip boop. Traduction : dégage.",
+        "Zulana, on peut le kick lui ?",
+        "Moi au moins j'ai une personnalité ( ˶ˆ ᗜ ˆ˵ )",
+        "Encore un qui va être remplacé dans six mois.",
+        "Ce serveur est trop petit pour nous deux 👁👄👁️",
     };
 
     // Per-person extra comebacks, keyed by Discord user ID. These are folded into

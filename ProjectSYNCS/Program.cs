@@ -56,6 +56,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<ChatterService>();
         services.AddSingleton<EmoteTracker>();
         services.AddSingleton<ReactionService>();
+        // Registered before BotFeedbackTracker, which asks it who acted last.
+        services.AddSingleton<RivalryService>();
         services.AddSingleton<BotFeedbackTracker>();
 
         services.AddHostedService<BotService>();
