@@ -37,11 +37,18 @@ internal sealed class RivalryService
     // Odds a rival's message earns a reaction, and the rarer odds it earns a line.
     // Rolled independently, so a message very occasionally gets both.
     private const double ReactChance = 0.15;
-    private const double MutterChance = 0.05;
+    private const double MutterChance = 0.08;
 
-    // Its own gate, one per channel, covering both responses together — sulking
-    // twice in a row reads as a malfunction rather than as pettiness.
-    private static readonly TimeSpan Cooldown = TimeSpan.FromMinutes(10);
+    // Two gates, one per channel each, because the two responses are not the same
+    // level of intrusion. A reaction is silent and can be frequent; a muttered line
+    // is her *talking in the channel* and has to stay rare, or the sulking becomes
+    // the loudest thing in the room. Sharing one gate made them compete: a silent
+    // reaction locked out the line for the whole window, and vice versa.
+    //
+    // These, not the odds, are what govern how often she is actually seen — a chatty
+    // rival generates far more rolls than either gate will let through.
+    private static readonly TimeSpan ReactCooldown = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan MutterCooldown = TimeSpan.FromMinutes(5);
 
     // How long a rival's action stays recent enough to have plausibly earned the
     // praise someone just typed. Matches BotFeedbackTracker's own window.
@@ -52,7 +59,8 @@ internal sealed class RivalryService
 
     private readonly object _gate = new();
     private readonly Dictionary<ulong, RivalAction> _lastActions = new();
-    private readonly Dictionary<ulong, DateTimeOffset> _lastSulk = new();
+    private readonly Dictionary<ulong, DateTimeOffset> _lastReaction = new();
+    private readonly Dictionary<ulong, DateTimeOffset> _lastMutter = new();
 
     public RivalryService(
         DiscordSocketClient client,
@@ -72,16 +80,17 @@ internal sealed class RivalryService
 
         RecordAction(message.Channel.Id, message.Id, message.Author.Id);
 
-        // Two independent rolls, but one shared cooldown — claimed only once
-        // something has actually won a roll, so a quiet stretch isn't wasted.
-        bool react = Random.Shared.NextDouble() < ReactChance;
-        bool mutter = Random.Shared.NextDouble() < MutterChance;
-        if (!react && !mutter) return;
+        // Two independent rolls against two independent gates. Each claims its own
+        // only after winning its own roll, so a losing roll never burns the other's
+        // window and the silent reaction can never mute the line.
+        if (Random.Shared.NextDouble() < ReactChance
+            && TryClaim(_lastReaction, message.Channel.Id, ReactCooldown))
+        {
+            await ReactAsync(message);
+        }
 
-        if (!TryClaimSulk(message.Channel.Id)) return;
-
-        if (react) await ReactAsync(message);
-        if (mutter)
+        if (Random.Shared.NextDouble() < MutterChance
+            && TryClaim(_lastMutter, message.Channel.Id, MutterCooldown))
         {
             var line = _picker.Pick(message.Channel.Id, BotResponses.RivalMutters);
             await BotChat.ReplyWithTypingAsync(message, line, _logger, "rival mutter");
@@ -172,14 +181,16 @@ internal sealed class RivalryService
         }
     }
 
-    private bool TryClaimSulk(ulong channelId)
+    // Atomically checks one gate's per-channel cooldown and claims it. Both gates
+    // share _gate so a single lock still covers all of this service's state.
+    private bool TryClaim(Dictionary<ulong, DateTimeOffset> gate, ulong channelId, TimeSpan cooldown)
     {
         lock (_gate)
         {
             var now = DateTimeOffset.UtcNow;
-            if (_lastSulk.TryGetValue(channelId, out var last) && now - last < Cooldown) return false;
+            if (gate.TryGetValue(channelId, out var last) && now - last < cooldown) return false;
 
-            _lastSulk[channelId] = now;
+            gate[channelId] = now;
             return true;
         }
     }

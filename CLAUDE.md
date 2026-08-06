@@ -370,9 +370,13 @@ which message a rival last acted, which `BotFeedbackTracker.TryClaim` reads so a
 "good bot" goes to whoever acted *most recently* rather than always to her — before
 this, praise a rival earned landed in her column whenever she happened to have spoken
 in the last five minutes. **Two:** it sulks — 15% odds of a reaction on a rival's
-message, 5% of a muttered line, sharing one per-channel cooldown of its own. That
-cooldown is deliberately **not** `ReactionService`'s: a third trigger population
-deserves its own gate rather than competing with her reactions to humans.
+message, 8% of a muttered line. Those two have **separate** per-channel cooldowns —
+`ReactCooldown` (2 min) and `MutterCooldown` (5 min) — because a silent reaction and
+her talking in the channel are not the same level of intrusion; sharing one gate made
+them compete, so a wordless 🙄 muted the line for the whole window. Each claims its
+own gate only after winning its own roll, so a losing roll never burns the other's.
+Both are deliberately **not** `ReactionService`'s cooldown: a third trigger population
+deserves its own gates rather than competing with her reactions to humans.
 
 **Two exclusions in `RivalryService.IsRival` are load-bearing.** Webhooks are not
 rivals (they post relentlessly and belong to no one). And a **level-up announcement**
