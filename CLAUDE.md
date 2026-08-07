@@ -595,20 +595,43 @@ no podium — and the only thing a shared renderer would save is the page arithm
 
 **`PageSize` is 5 because of a hard cap, not taste.** Discord allows **40 components per
 message counting the whole tree**, and a row with an avatar costs three (Section +
-TextDisplay + Thumbnail). A page of 5 with both button rows uses 27 of 40; at the old
-`PageSize` of 10 it came to 42 and threw in `ComponentBuilderV2.Build()` — Discord.Net
-enforces the cap itself, so this fails at build-time-of-the-message rather than as an API
-rejection. The view switcher is what forced the reduction, not readability alone. Adding
-anything to a row, or another element to the container, means re-doing that sum.
+TextDisplay + Thumbnail). A page of 5 with all three button rows uses 31 of 40; at the
+old `PageSize` of 10 it came to 46 and would throw in `ComponentBuilderV2.Build()` —
+Discord.Net enforces the cap itself, so this fails at build-time-of-the-message rather
+than as an API rejection. The switchers are what forced the reduction, not readability
+alone. Adding anything to a row, or another button row, means re-doing that sum: at 5
+rows there is headroom for one more row of five buttons and no more.
 
 **`/leaderboard` is three views over one row, not three leaderboards.** `MemberXp`
 carries `TotalXp`, `ReactionsUsed` and `VoiceMinutes`, so `LeaderboardView` only changes
-the ordering and the second line of each row; the custom-id is
-`level:view:{view}:{page}` and switching view resets to page 0. The three numbers are
-deliberately different in kind: `TotalXp` is a *reward*, rationed by `XpTracker`'s
-cooldowns, while the other two are *facts* — every reaction counts even when it earns no
-XP, so ranking by XP and by reactions genuinely differ. Neither counter can be
-backfilled; both started at zero the day they shipped.
+the ordering and the second line of each row. The three numbers are deliberately
+different in kind: `TotalXp` is a *reward*, rationed by `XpTracker`'s cooldowns, while
+the other two are *facts* — every reaction counts even when it earns no XP, so ranking
+by XP and by reactions genuinely differ. Nothing here can be backfilled; each counter
+started at zero the day it shipped.
+
+**`MemberXp` / `MemberDailyStat` is the third instance of the totals+buckets pair**, and
+exists for the reason the other two do: a date cannot be recovered from a running total.
+All three counters are bucketed, all are written by the same `XpService` calls that
+update the totals, and **the buckets do not sum to the totals**. All-time reads
+`MemberXp` and stays exact; the windows only cover data recorded since the buckets
+shipped. A reaction removal decrements *today's* bucket whatever day the reaction was
+added, exactly as in `EmoteDailyStat`.
+
+**A level belongs only to the all-time view.** `LevelCurve` maps a *lifetime* total to a
+level, so there is no such thing as "the level you were in the last 7 days".
+`LevelCardUi.RowValue` therefore prints `Niveau N · X XP` for all-time and `X XP gagnés`
+for a window, and the footer's standing line switches the same way. Reaction and voice
+rows read identically in every period, since a count is a count. `/level`'s card carries
+no filters at all — it is a profile, not a ranking.
+
+**`/leaderboard`'s custom-id orders view before period on purpose.**
+`level:view:{view}:{period}:{page}` lets the period row be built by `StatsPeriodUi` with
+`level:view:{view}` as its prefix, giving it the same `{prefix}:{period}:0` shape
+`/emotestats` and `/goodbot` use — which is why that helper grew an `ActionRowBuilder`
+overload rather than the labels being duplicated for Components V2. Changing either
+filter resets to page 0 and leaves the other alone. Its default period is **all-time**
+(a standing, not recent activity), unlike `/emotestats`' 30 days.
 
 **Both new counters are written from `XpTracker`, never from `EmoteTracker` or
 `VoiceXpService` directly.** That is what keeps `ExcludedChannels` in one class — the

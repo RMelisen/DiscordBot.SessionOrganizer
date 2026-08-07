@@ -58,9 +58,12 @@ in one click. The bot's user-facing language is French.
   person's real avatar — both are built with Discord's *Components V2* rather than
   embeds, so nothing is rendered or uploaded; Discord loads the faces itself. Three
   buttons switch what it ranks: **Niveaux** (XP), **Réactions** (reactions added) and
-  **Vocal** (eligible time in voice). The last two only started counting when they
-  shipped and cannot be backfilled, so they are thin at first. No time filters, since
-  leveling doesn't reset weekly. Time spent present in a voice channel
+  **Vocal** (eligible time in voice), and three more switch the window — **all time**
+  (the default), **30 days** and **7 days**. In a window the XP view ranks by XP earned
+  in that window and drops the level, which is a lifetime figure and can't be
+  recomputed for a week. As with `/emotestats`, the windows only cover data recorded
+  since daily buckets were added; all-time still includes everything counted before
+  that. `/level` itself carries no filters — it's a profile, not a ranking. Time spent present in a voice channel
   also earns XP, once a minute, as long as someone else is there too and you're not
   both self-muted and self-deafened. Some channels are excluded from earning entirely.
 - **`/help`** — in-Discord usage guide.

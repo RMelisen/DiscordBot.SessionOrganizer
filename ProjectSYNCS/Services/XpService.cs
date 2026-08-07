@@ -63,6 +63,7 @@ public class XpService
         var oldLevel = LevelCurve.LevelForXp(row.TotalXp);
 
         row.TotalXp += amount;
+        (await GetOrCreateDailyAsync(guildId, userId)).XpEarned += amount;
         await _db_context.SaveChangesAsync();
 
         return (oldLevel, LevelCurve.LevelForXp(row.TotalXp));
@@ -84,6 +85,10 @@ public class XpService
 
         var row = await GetOrCreateAsync(guildId, userId);
         row.ReactionsUsed = Math.Max(0, row.ReactionsUsed + delta);
+
+        var bucket = await GetOrCreateDailyAsync(guildId, userId);
+        bucket.ReactionsUsed = Math.Max(0, bucket.ReactionsUsed + delta);
+
         await _db_context.SaveChangesAsync();
     }
 
@@ -92,6 +97,8 @@ public class XpService
     {
         var row = await GetOrCreateAsync(guildId, userId);
         row.VoiceMinutes += minutes;
+
+        (await GetOrCreateDailyAsync(guildId, userId)).VoiceMinutes += minutes;
         await _db_context.SaveChangesAsync();
     }
 
@@ -105,21 +112,54 @@ public class XpService
     /// where that matters, and the same shape EmoteStatsService already uses. Rows
     /// scoring zero on the chosen metric are dropped: everyone in this table has XP by
     /// definition, but most of them have never touched a voice channel.
+    ///
+    /// All-time reads the totals; a window sums the daily buckets. The two are not
+    /// interchangeable — see MemberDailyStat — and a windowed tally deliberately
+    /// carries no meaningful level, since a level is a property of the lifetime total.
     /// </remarks>
-    public async Task<List<MemberTally>> GetRankingAsync(ulong guildId, LeaderboardView view)
+    public async Task<List<MemberTally>> GetRankingAsync(
+        ulong guildId, LeaderboardView view, StatsPeriod period)
     {
-        var rows = await _db_context.MemberXps
-            .Where(x => x.GuildId == guildId)
-            .ToListAsync();
+        var tallies = period == StatsPeriod.AllTime
+            ? await AllTimeTalliesAsync(guildId)
+            : await WindowTalliesAsync(guildId, period);
 
-        return rows
-            .Select(x => new MemberTally(x.UserId, x.TotalXp, x.ReactionsUsed, x.VoiceMinutes))
+        return tallies
             .Where(t => t.ValueFor(view) > 0)
             // Ties break on ascending user id, the same rule GetRankAsync counts by, so
             // a rank shown in one place never disagrees with the row it points at.
             .OrderByDescending(t => t.ValueFor(view))
             .ThenBy(t => t.UserId)
             .ToList();
+    }
+
+    private async Task<IEnumerable<MemberTally>> AllTimeTalliesAsync(ulong guildId)
+    {
+        var rows = await _db_context.MemberXps
+            .Where(x => x.GuildId == guildId)
+            .ToListAsync();
+
+        return rows.Select(x => new MemberTally(x.UserId, x.TotalXp, x.ReactionsUsed, x.VoiceMinutes));
+    }
+
+    private async Task<IEnumerable<MemberTally>> WindowTalliesAsync(ulong guildId, StatsPeriod period)
+    {
+        // Inclusive lower bound: 6 days ago plus today is a week. Day is an int, so
+        // unlike every DateTimeOffset window in this project this really is filtered
+        // by the database rather than in memory.
+        var since = AppTime.KeyDaysAgo(period == StatsPeriod.Week ? 6 : 29);
+
+        var buckets = await _db_context.MemberDailyStats
+            .Where(b => b.GuildId == guildId && b.Day >= since)
+            .ToListAsync();
+
+        return buckets
+            .GroupBy(b => b.UserId)
+            .Select(g => new MemberTally(
+                g.Key,
+                g.Sum(b => b.XpEarned),
+                g.Sum(b => b.ReactionsUsed),
+                g.Sum(b => b.VoiceMinutes)));
     }
 
     private async Task<MemberXp> GetOrCreateAsync(ulong guildId, ulong userId)
@@ -131,6 +171,23 @@ public class XpService
         {
             row = new MemberXp { GuildId = guildId, UserId = userId };
             _db_context.MemberXps.Add(row);
+        }
+        return row;
+    }
+
+    // Today's bucket for this member. Always written in the same call as the totals
+    // above, so every bucketed member necessarily has a MemberXp row.
+    private async Task<MemberDailyStat> GetOrCreateDailyAsync(ulong guildId, ulong userId)
+    {
+        var day = AppTime.TodayKey;
+
+        var row = await _db_context.MemberDailyStats
+            .FirstOrDefaultAsync(b => b.GuildId == guildId && b.UserId == userId && b.Day == day);
+
+        if (row is null)
+        {
+            row = new MemberDailyStat { GuildId = guildId, UserId = userId, Day = day };
+            _db_context.MemberDailyStats.Add(row);
         }
         return row;
     }

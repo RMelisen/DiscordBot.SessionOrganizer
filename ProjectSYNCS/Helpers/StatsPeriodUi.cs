@@ -45,4 +45,24 @@ public static class StatsPeriodUi
         }
         return builder;
     }
+
+    /// <summary>
+    /// The same row for a Components V2 message, which builds its rows explicitly
+    /// rather than by index. Same ids, same labels — <c>/leaderboard</c> passes
+    /// <c>level:view:{view}</c> as the prefix, which is why its custom-id orders the
+    /// view segment before the period one.
+    /// </summary>
+    public static ActionRowBuilder AddFilterRow(
+        this ActionRowBuilder builder, string idPrefix, StatsPeriod active)
+    {
+        foreach (var period in All)
+        {
+            builder.WithButton(
+                Label(period),
+                $"{idPrefix}:{period}:0",
+                period == active ? ButtonStyle.Primary : ButtonStyle.Secondary,
+                disabled: period == active);
+        }
+        return builder;
+    }
 }

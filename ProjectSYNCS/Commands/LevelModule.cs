@@ -41,6 +41,10 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
     // has history behind it; the other two only started counting when they shipped.
     private const LeaderboardView DefaultView = LeaderboardView.Xp;
 
+    // All-time by default, unlike /emotestats' 30 days: only the totals carry the full
+    // history here, and a leveling board is a standing rather than recent activity.
+    private const StatsPeriod DefaultPeriod = StatsPeriod.AllTime;
+
     // Bots never earn XP (XpTracker skips them outright), so a bot's card would always
     // be an empty one. One fixed line, deliberately not a ResponsePicker pool: the pools
     // exist so repeated *chatter* doesn't repeat, and this is a command refusal.
@@ -81,26 +85,32 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
         await DeferAsync();
 
         await FollowupAsync(
-            components: await BuildPageAsync(DefaultView, 0),
+            components: await BuildPageAsync(DefaultView, DefaultPeriod, 0),
             flags: MessageFlags.ComponentsV2,
             allowedMentions: AllowedMentions.None);
     }
 
-    // The page arrows, the view buttons and the card's "Voir le classement" button all
+    // The page arrows, both filter rows and the card's "Voir le classement" button all
     // come back here: the custom-id carries the whole view state, since a component
-    // handler gets no memory of what was on screen. Switching view always resets to
-    // page 0 — it is a different ranking, so page 3 of the old one means nothing.
+    // handler gets no memory of what was on screen. Changing either filter resets to
+    // page 0 and leaves the other alone — it is a different ranking, so page 3 of the
+    // old one means nothing.
     //
-    // The card's button is just "Xp, page 0" and reuses this id rather than inventing
-    // a second one. That does mean it replaces the card in place; re-running /level is
-    // the way back.
-    [ComponentInteraction("level:view:*:*", ignoreGroupNames: true)]
-    public async Task OnViewAsync(string viewStr, string pageStr)
+    // The view segment comes before the period one so that the period row can be built
+    // by StatsPeriodUi with `level:view:{view}` as its prefix, exactly like
+    // /emotestats and /goodbot do with theirs.
+    //
+    // The card's button is just "Xp, all-time, page 0" and reuses this id rather than
+    // inventing a second one. That does mean it replaces the card in place; re-running
+    // /level is the way back.
+    [ComponentInteraction("level:view:*:*:*", ignoreGroupNames: true)]
+    public async Task OnViewAsync(string viewStr, string periodStr, string pageStr)
     {
         if (!Enum.TryParse<LeaderboardView>(viewStr, out var view)) view = DefaultView;
+        if (!Enum.TryParse<StatsPeriod>(periodStr, out var period)) period = DefaultPeriod;
         int.TryParse(pageStr, out var page);
 
-        var components = await BuildPageAsync(view, page);
+        var components = await BuildPageAsync(view, period, page);
         var component = (SocketMessageComponent)Context.Interaction;
 
         await component.UpdateAsync(m =>
@@ -138,15 +148,16 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
         return new ComponentBuilderV2()
             .AddComponent(container)
             .AddComponent(new ActionRowBuilder()
-                .WithButton("Voir le classement", $"level:view:{LeaderboardView.Xp}:0", ButtonStyle.Secondary))
+                .WithButton("Voir le classement",
+                    $"level:view:{LeaderboardView.Xp}:{StatsPeriod.AllTime}:0", ButtonStyle.Secondary))
             .Build();
     }
 
     // ---- /leaderboard -------------------------------------------------------
 
-    private async Task<MessageComponent> BuildPageAsync(LeaderboardView view, int page)
+    private async Task<MessageComponent> BuildPageAsync(LeaderboardView view, StatsPeriod period, int page)
     {
-        var ranking = await _xp.GetRankingAsync(Context.Guild.Id, view);
+        var ranking = await _xp.GetRankingAsync(Context.Guild.Id, view, period);
 
         var totalPages = Math.Max(1, (int)Math.Ceiling(ranking.Count / (double)PageSize));
         page = Math.Clamp(page, 0, totalPages - 1);
@@ -158,7 +169,7 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
 
         if (ranking.Count == 0)
         {
-            container.AddComponent(new TextDisplayBuilder(LevelCardUi.EmptyLine(view)));
+            container.AddComponent(new TextDisplayBuilder(LevelCardUi.EmptyLine(view, period)));
         }
         else
         {
@@ -169,30 +180,36 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
                 container.AddComponent(new SectionBuilder()
                     .WithAccessory(Avatar(Context.Guild.GetUser(tally.UserId)))
                     .AddComponent(new TextDisplayBuilder(
-                        LevelCardUi.Row(rank, tally.UserId, view, tally))));
+                        LevelCardUi.Row(rank, tally.UserId, view, period, tally))));
             }
         }
 
         container
             .AddComponent(new SeparatorBuilder())
-            .AddComponent(new TextDisplayBuilder(Footer(ranking, view, page, totalPages)));
+            .AddComponent(new TextDisplayBuilder(Footer(ranking, view, period, page, totalPages)));
 
-        var buttons = new ActionRowBuilder();
+        // Row 0: what is being ranked. Changing it keeps the period.
+        var views = new ActionRowBuilder();
         foreach (var candidate in Enum.GetValues<LeaderboardView>())
         {
-            buttons.WithButton(
+            views.WithButton(
                 LevelCardUi.ViewLabel(candidate),
-                $"level:view:{candidate}:0",
+                $"level:view:{candidate}:{period}:0",
                 candidate == view ? ButtonStyle.Primary : ButtonStyle.Secondary,
                 disabled: candidate == view);
         }
 
         return new ComponentBuilderV2()
             .AddComponent(container)
-            .AddComponent(buttons)
+            .AddComponent(views)
+            // Row 1: the window, from the same helper /emotestats and /goodbot use, so
+            // the three commands cannot drift into labelling it differently.
+            .AddComponent(new ActionRowBuilder().AddFilterRow($"level:view:{view}", period))
             .AddComponent(new ActionRowBuilder()
-                .WithButton("◀", $"level:view:{view}:{page - 1}", ButtonStyle.Secondary, disabled: page == 0)
-                .WithButton("▶", $"level:view:{view}:{page + 1}", ButtonStyle.Secondary, disabled: page >= totalPages - 1))
+                .WithButton("◀", $"level:view:{view}:{period}:{page - 1}", ButtonStyle.Secondary,
+                    disabled: page == 0)
+                .WithButton("▶", $"level:view:{view}:{period}:{page + 1}", ButtonStyle.Secondary,
+                    disabled: page >= totalPages - 1))
             .Build();
     }
 
@@ -204,7 +221,8 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
     // list this page was cut from, so the rank shown cannot disagree with the rows
     // above it, and it follows whichever view is on screen for free. Someone absent
     // from the current ranking (no reactions, no voice) simply gets no standing line.
-    private string Footer(List<MemberTally> ranking, LeaderboardView view, int page, int totalPages)
+    private string Footer(
+        List<MemberTally> ranking, LeaderboardView view, StatsPeriod period, int page, int totalPages)
     {
         var index = ranking.FindIndex(t => t.UserId == Context.User.Id);
         if (index < 0) return $"-# Page {page + 1}/{totalPages}";
@@ -214,6 +232,8 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
         {
             LeaderboardView.Reactions => $"{LevelCardUi.Xp(mine.ReactionsUsed)} réaction(s)",
             LeaderboardView.Voice => LevelCardUi.Duration(mine.VoiceMinutes),
+            // Same reason the rows drop the level in a window: it is a lifetime figure.
+            _ when period != StatsPeriod.AllTime => $"{LevelCardUi.Xp(mine.TotalXp)} XP gagnés",
             _ => $"niveau {mine.Level} ({LevelCardUi.Xp(mine.TotalXp)} XP)",
         };
 

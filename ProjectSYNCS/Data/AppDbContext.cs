@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<BotFeedback> BotFeedbacks => Set<BotFeedback>();
     public DbSet<BotFeedbackDailyStat> BotFeedbackDailyStats => Set<BotFeedbackDailyStat>();
     public DbSet<MemberXp> MemberXps => Set<MemberXp>();
+    public DbSet<MemberDailyStat> MemberDailyStats => Set<MemberDailyStat>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -100,8 +101,20 @@ public class AppDbContext : DbContext
         {
             e.Property(x => x.GuildId).HasConversion<long>();
             e.Property(x => x.UserId).HasConversion<long>();
-            // One row per (guild, user); no daily-bucket sibling — see MemberXp.cs.
+            // One row per (guild, user); the all-time totals. The dated sibling is
+            // MemberDailyStat below — see MemberXp.cs for why they are two tables.
             e.HasIndex(x => new { x.GuildId, x.UserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<MemberDailyStat>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            // One row per (guild, user, day) — the upsert key.
+            e.HasIndex(x => new { x.GuildId, x.UserId, x.Day }).IsUnique();
+            // Serves the rolling-window read: "this guild, since day N". Day is an
+            // int precisely so this range can be evaluated in SQL.
+            e.HasIndex(x => new { x.GuildId, x.Day });
         });
     }
 }

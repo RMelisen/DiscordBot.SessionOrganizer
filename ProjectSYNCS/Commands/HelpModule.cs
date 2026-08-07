@@ -38,8 +38,9 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "Rester en vocal fait aussi gagner de " +
                 "l'XP, tant que t'es pas seul et pas muet en même temps.\n" +
                 "**`/leaderboard`** — Le classement du serveur, 5 par page. Trois vues au choix : " +
-                "**Niveaux**, **Réactions** (celles que tu as mises) et **Vocal** (temps passé en vocal). " +
-                "Les deux dernières ne comptent que depuis peu.\n" +
+                "**Niveaux**, **Réactions** (celles que tu as mises) et **Vocal** (temps passé en vocal), " +
+                "et trois filtres : **depuis toujours** (par défaut), **30 jours** et **7 jours**. " +
+                "Les compteurs sont récents, soyez indulgents.\n" +
                 "**`/help`** — Affiche ce message.")
             .AddField("Créer une session — pas à pas",
                 "Lance **`/schedule create`**. Un assistant privé te guide :\n" +

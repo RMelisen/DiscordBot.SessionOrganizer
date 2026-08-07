@@ -97,13 +97,18 @@ public static class LevelCardUi
     /// two of them wouldn't explain it. The XP view keeps the level alongside, because
     /// there the level *is* the headline and the XP is how it was reached.
     /// </remarks>
-    public static string Row(int rank, ulong userId, LeaderboardView view, MemberTally tally) =>
-        $"{RankMarker(rank)} **<@{userId}>**\n{RowValue(view, tally)}";
+    public static string Row(int rank, ulong userId, LeaderboardView view, StatsPeriod period, MemberTally tally) =>
+        $"{RankMarker(rank)} **<@{userId}>**\n{RowValue(view, period, tally)}";
 
-    private static string RowValue(LeaderboardView view, MemberTally tally) => view switch
+    // The XP line is the only one that changes with the period, and it has to: a level
+    // is a property of the *lifetime* total, so it cannot be recomputed for a window,
+    // and printing it beside a 7-day XP figure would make the ordering look wrong.
+    // A count is a count, so the other two views read the same either way.
+    private static string RowValue(LeaderboardView view, StatsPeriod period, MemberTally tally) => view switch
     {
         LeaderboardView.Reactions => $"{Xp(tally.ReactionsUsed)} réaction(s)",
         LeaderboardView.Voice => Duration(tally.VoiceMinutes),
+        _ when period != StatsPeriod.AllTime => $"{Xp(tally.TotalXp)} XP gagnés",
         _ => $"Niveau {tally.Level} · {Xp(tally.TotalXp)} XP",
     };
 
@@ -124,18 +129,24 @@ public static class LevelCardUi
     };
 
     /// <summary>
-    /// What an empty board says. The two newer views started counting the day they
-    /// shipped, so empty means "not yet", not "nobody ever" — and saying so keeps
-    /// someone from reporting it as broken.
+    /// What an empty board says. A window being empty is ordinary — nobody did this
+    /// *lately* — while an empty all-time board really does mean nobody ever, so the
+    /// two read differently and neither gets reported as broken.
     /// </summary>
-    public static string EmptyLine(LeaderboardView view) => view switch
+    public static string EmptyLine(LeaderboardView view, StatsPeriod period)
     {
-        LeaderboardView.Reactions =>
-            "Personne n'a encore réagi à quoi que ce soit. Je compte depuis peu, laissez-moi le temps (ᵕ • ᴗ •)",
-        LeaderboardView.Voice =>
-            "Personne n'a encore passé de temps en vocal. Je compte depuis peu, laissez-moi le temps (ᵕ • ᴗ •)",
-        _ => "Personne n'a encore gagné d'XP. Parlez, réagissez, faites du bruit ദ്ദി◝ ⩊ ◜.ᐟ",
-    };
+        if (period != StatsPeriod.AllTime)
+            return "Rien sur cette période. Vous étiez tous où ? (ᵕ • ᴗ •)";
+
+        return view switch
+        {
+            LeaderboardView.Reactions =>
+                "Personne n'a encore réagi à quoi que ce soit. Je compte depuis peu, laissez-moi le temps (ᵕ • ᴗ •)",
+            LeaderboardView.Voice =>
+                "Personne n'a encore passé de temps en vocal. Je compte depuis peu, laissez-moi le temps (ᵕ • ᴗ •)",
+            _ => "Personne n'a encore gagné d'XP. Parlez, réagissez, faites du bruit ദ്ദി◝ ⩊ ◜.ᐟ",
+        };
+    }
 
     /// <summary>
     /// The headline of /level's card: who, what level, and where they place. Rank is

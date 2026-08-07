@@ -12,12 +12,14 @@ namespace ProjectSYNCS.Models;
 // whole point of offering both.
 //
 // Still no cached Level column: the level is always derivable instantly from TotalXp
-// (see Helpers/LevelCurve), unlike EmoteDailyStat/BotFeedbackDailyStat's day, which
-// cannot be reconstructed from a running total. And still no daily-bucket sibling —
-// none of these three has a rolling-window view to serve.
+// (see Helpers/LevelCurve), unlike a *date*, which cannot be reconstructed from a
+// running total — which is exactly why /leaderboard's rolling windows needed
+// MemberDailyStat beside this table rather than a column on it. This row stays the
+// all-time figure; the buckets serve week and month, and do not sum to it.
 //
-// Both counters started at zero when this shipped: neither was recorded before, and
-// neither can be backfilled. The boards are thin at first by necessity.
+// ReactionsUsed and VoiceMinutes started at zero when they shipped, and the XP buckets
+// started at zero when *they* shipped: all-time is complete, the windows are not, and
+// neither gap can be backfilled.
 public class MemberXp
 {
     public int Id { get; set; }
