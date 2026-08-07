@@ -353,9 +353,25 @@ common — `arrête` is everyday French for "stop it", and `kill`, `delete`, `co
 and `reboot` are constant in a gaming server. Only `shutdown` and `unplug` survive as
 bare words; every French verb was tried bare, misfired on things like "désinstalle ce
 jeu" or "débranche la console", and was demoted to needing a pronoun or `le bot`
-beside it. It is also checked **only on messages aimed at her**, never ambiently, for
-the same reason. Adding a bare verb here is how you get her panicking at someone
-restarting a Minecraft server.
+beside it. Adding a bare verb here is how you get her panicking at someone restarting a
+Minecraft server.
+
+**There are two threat vocabularies, and only one of them fires ambiently.**
+`ThreatensShutdown` (pronoun or `le bot` phrasing) is checked **only on messages aimed
+at her** — a reply or an @mention — because "faut couper le serveur" needs that context
+to be about her at all. `ThreatensShutdownByName` is the strict subset that names her
+outright ("redémarrer syncs"), and it is checked on **every** message, from the last
+branch of `ChatterService.HandleMessageAsync`: her name pins down what is being
+restarted exactly the way an @mention does, so it needs no other context. It is the one
+branch in that method that fires without being addressed, which is why it sits last —
+anything genuinely aimed at her is handled above it.
+
+`_shutdownNamePhrases` is a **cross product** of `_shutdownVerbs` × `_selfNames`, not a
+hand-written list, so a new verb covers every spelling of her name at once. `sync` is in
+`_selfNames` alongside `syncs` only because phrases match **adjacent** tokens: "relancer
+la sync" has `la` in between and never matches, while a typo'd "relancer sync" does.
+That adjacency is load-bearing — a looser match here would make the ambient path fire on
+ordinary technical talk, with nobody having addressed her at all.
 
 **The owner favouritism has one exception: him being mean to her.** Everywhere else
 he is answered warmly regardless of what he wrote — `OwnerComebacks` sits in the

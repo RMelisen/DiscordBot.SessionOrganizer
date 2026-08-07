@@ -339,6 +339,48 @@ internal static class MessageCues
         "shutdown", "unplug",
     };
 
+    // The verbs that mean "switch her off" once her *name* is sitting next to them.
+    // Curated here rather than as finished phrases: the cross product below pairs each
+    // with every spelling of her name, so adding a verb covers all of them at once and
+    // the two lists can't drift out of step.
+    private static readonly string[] _shutdownVerbs =
+    {
+        "arrete", "arreter",
+        "coupe", "couper",
+        "debranche", "debrancher",
+        "deconnecte", "deconnecter",
+        "degage", "degager",
+        "desactive", "desactiver",
+        "desinstalle", "desinstaller",
+        "efface", "effacer",
+        "eteindre", "eteins",
+        "formate", "formater",
+        "redemarre", "redemarrer",
+        "relance", "relancer",
+        "supprime", "supprimer",
+        "tue", "tuer",
+        "vire", "virer",
+        // English, as common here as the French.
+        "delete", "disable", "kill", "reboot", "rebooter",
+        "reset", "restart", "shutdown", "stop", "unplug",
+    };
+
+    // "sync" is safe alongside "syncs" because phrases match *adjacent* tokens: an
+    // innocent "relancer la sync" has "la" in between and never matches, while a typo'd
+    // "relancer sync" does.
+    private static readonly string[] _selfNames = { "syncs", "sync" };
+
+    // Her name next to one of those verbs. Kept apart from _shutdownPhrases because
+    // these are the only ones safe to check *ambiently*: "syncs" pins down what is
+    // being restarted exactly the way "le bot" does, so no @mention is needed for the
+    // threat to be unmistakable. See ChatterService.HandleMessageAsync.
+    private static readonly string[] _shutdownNamePhrases =
+        _shutdownVerbs.SelectMany(_ => _selfNames, (verb, name) => verb + " " + name).ToArray();
+
+    // SaysVerdict takes a word set alongside its phrases; the name-paired check has no
+    // bare words of its own, since a bare "syncs" is just her name being said.
+    private static readonly HashSet<string> _noWords = new();
+
     // Built once; the arrays above stay arrays so they read as curated lists.
     private static readonly HashSet<string> _niceCueSet = new(_niceCues);
     private static readonly HashSet<string> _meanCueSet = new(_meanCues);
@@ -550,7 +592,18 @@ internal static class MessageCues
     /// only on messages aimed at her, since the vocabulary overlaps with ordinary
     /// talk about restarting a game server.
     /// </summary>
-    public static bool ThreatensShutdown(string content)
+    public static bool ThreatensShutdown(string content) => Threatens(content, byNameOnly: false);
+
+    /// <summary>
+    /// The subset of the above that names her outright — "redémarrer syncs". Safe to
+    /// check on *any* message, not just one aimed at her: her name pins down what is
+    /// being restarted, which is exactly what the pronoun phrases need an @mention to
+    /// establish. Callers use this for the ambient path and
+    /// <see cref="ThreatensShutdown"/> for the aimed-at-her ones.
+    /// </summary>
+    public static bool ThreatensShutdownByName(string content) => Threatens(content, byNameOnly: true);
+
+    private static bool Threatens(string content, bool byNameOnly)
     {
         if (string.IsNullOrWhiteSpace(content)) return false;
 
@@ -560,7 +613,10 @@ internal static class MessageCues
         var joined = " " + string.Join(' ', tokens) + " ";
         var squashed = " " + string.Join(' ', tokens.Select(Squash)) + " ";
 
-        return SaysVerdict(tokens, joined, squashed, _shutdownPhrases, _shutdownWords);
+        if (SaysVerdict(tokens, joined, squashed, _shutdownNamePhrases, _noWords)) return true;
+
+        return !byNameOnly
+            && SaysVerdict(tokens, joined, squashed, _shutdownPhrases, _shutdownWords);
     }
 
     private static bool SaysVerdict(

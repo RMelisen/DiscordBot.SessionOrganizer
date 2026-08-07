@@ -90,6 +90,17 @@ internal sealed class ChatterService
         if (message.MentionedUsers.Any(u => u.Id == _client.CurrentUser.Id))
         {
             await HandleMentionAsync(message);
+            return;
+        }
+
+        // The one branch that fires without being addressed at all: a shutdown verb
+        // sitting next to her *name*. Saying "redémarrer syncs" is addressing her —
+        // the name does the same disambiguating work an @mention does for the pronoun
+        // phrases, so this is the only threat wording safe to catch ambiently. Last,
+        // so anything aimed at her above still wins.
+        if (MessageCues.ThreatensShutdownByName(message.Content ?? string.Empty))
+        {
+            await TryHandleShutdownThreatAsync(message);
         }
     }
 

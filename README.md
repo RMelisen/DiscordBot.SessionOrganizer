@@ -90,8 +90,10 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
 - **Self-preservation** — threatening to unplug, delete or reboot her gets a
   reaction, and it is the one behaviour where the owner comes off worse than anyone
   else: from him the threat is real and she is frightened, from anyone else it is a
-  bluff and she says so. Only counts when said *to* her, so ordinary talk about
-  restarting a game server is safe.
+  bluff and she says so. Vague phrasing ("je vais te débrancher") only counts when
+  said *to* her, so ordinary talk about restarting a game server is safe — but
+  naming her outright ("redémarrer syncs") reaches her from anywhere, mention or
+  not, since the name leaves no doubt what is being restarted.
 - **Rotating status** — the status line under the bot's name cycles through a large
   pool of one-liners.
 - **An easter egg** — rare, and better discovered than documented.
