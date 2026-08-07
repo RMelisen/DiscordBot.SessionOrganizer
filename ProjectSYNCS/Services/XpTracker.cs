@@ -190,8 +190,6 @@ internal sealed class XpTracker
     private static string BuildLevelUpTitle(int oldLevel, int newLevel) =>
         $"Niveau {oldLevel} → {newLevel} !";
 
-    // The meme easter egg. A literal level check — nothing to do with MessageCues, and
-    // not a vocabulary cue: 17 and 70 must not match.
     private static bool IsSixSeven(int level) => level is 7 or 67;
 
     // Where the caller already has an IUser (the message path), skip the lookup.
