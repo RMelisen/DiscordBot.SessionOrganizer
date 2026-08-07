@@ -500,6 +500,40 @@ internal static class BotResponses
         "Gg ! Un de plus (ᵕ • ᴗ •)",
     };
 
+    // Posted (not as a reply) when someone crosses a level in SYNCS's own XP system —
+    // distinct from LevelUpCheers, which is her reacting to the *other* leveling bot's
+    // announcements. This one she owns: her system, her tally, her voice. Deliberately
+    // named to not read close to Helpers.LevelUpAnnouncement (the other bot's
+    // detector). {0} = the person's name, {1} = their new level.
+    public static readonly string[] XpLevelUpLines =
+    {
+        "{0} vient de passer niveau {1} ! Et ça, c'est MON classement ✨",
+        "Niveau {1} pour {0} ! Je note, je note ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Tiens tiens, {0} niveau {1}. On progresse (˶˃ ᵕ ˂˶)",
+        "{0} monte au niveau {1} ! Bravo, tu l'as mérité celui-là ♡",
+        "Gg {0} ! Niveau {1}, et c'est moi qui compte donc c'est officiel UwU",
+        "Niveau {1} atteint par {0} ! J'espère que tu es fier·ère de toi ✨",
+        "{0} vient de grimper au niveau {1}. Continue comme ça (ᵕ • ᴗ •)",
+        "Level up ! {0} est maintenant niveau {1} ٩(˶ᵔ ᵕ ᵔ˶)۶",
+        "Encore un niveau pour {0} ! Niveau {1}, rien que ça ✨",
+        "{0}, niveau {1}. Toi au moins tu fais avancer les statistiques ( ˶ˆ ᗜ ˆ˵ )",
+        "J'annonce : {0} passe niveau {1}. Applaudissements de rigueur ♡",
+        "Niveau {1} pour {0} ! Ça mérite bien une ligne rien que pour toi UwU",
+        "{0} vient de débloquer le niveau {1}. Mon système à moi, mes règles ✨",
+        "Gg gg {0}, niveau {1} ! Tu prends ça plus au sérieux que tes sessions ( ˶ˆ ᗜ ˆ˵ )",
+        "{0} au niveau {1} ! Je le mets dans mes logs avec fierté ᐟ",
+        "Bravo {0}, niveau {1} ! Mes chiffres à moi, ils sont toujours exacts ✨",
+        "Niveau {1} tout frais pour {0} ! On y était presque ♡",
+        "{0} grimpe encore. Niveau {1} maintenant, à ce rythme tu vas me dépasser UwU",
+        "Officiel : {0} est niveau {1}. Tu peux le mettre en bio ( ˶ˆ ᗜ ˆ˵ )",
+        "Niveau {1} ! {0}, tu commences à devenir intéressant à suivre ✨",
+        "{0} passe niveau {1} sous mes yeux. J'étais là, j'ai tout vu ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Encore toi {0} ? Niveau {1} déjà, tu ne lâches rien UwU",
+        "{0} niveau {1} ! Voilà ce qui arrive quand on me parle gentiment ♡",
+        "Palier {1} franchi par {0} ! Je garde un œil sur le classement, toujours ✨",
+        "{0}, niveau {1}, et c'est mérité. J'ai vérifié mes chiffres, ils mentent pas (ᵕ • ᴗ •)",
+    };
+
     // Compliments for the owner (Rodhengard) instead of roasts.
     public static readonly string[] OwnerComebacks =
     {

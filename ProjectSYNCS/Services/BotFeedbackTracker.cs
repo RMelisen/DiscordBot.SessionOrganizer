@@ -35,6 +35,7 @@ internal sealed class BotFeedbackTracker
     private readonly IServiceProvider _services;
     private readonly ResponsePicker _picker;
     private readonly RivalryService _rivalry;
+    private readonly XpTracker _xp;
     private readonly ILogger<BotFeedbackTracker> _logger;
 
     // How long after she acts a bare "good bot" still reads as being about her.
@@ -93,12 +94,14 @@ internal sealed class BotFeedbackTracker
         IServiceProvider services,
         ResponsePicker picker,
         RivalryService rivalry,
+        XpTracker xp,
         ILogger<BotFeedbackTracker> logger)
     {
         _client = client;
         _services = services;
         _picker = picker;
         _rivalry = rivalry;
+        _xp = xp;
         _logger = logger;
     }
 
@@ -153,6 +156,11 @@ internal sealed class BotFeedbackTracker
 
         await RecordAsync(guildChannel.Guild.Id, message.Author.Id, verdict);
         await RespondAsync(message, verdict);
+
+        // Deliberately last: her comeback must read as immediate, and a level-up line
+        // (if any) is a separate follow-up that should never delay her acknowledgement
+        // of the verdict itself.
+        await _xp.GrantVerdictBonusAsync(guildChannel.Guild.Id, message.Channel.Id, message.Author.Id, verdict);
     }
 
     // Two things happen here. Her own reaction is an action people can judge — the
@@ -206,6 +214,7 @@ internal sealed class BotFeedbackTracker
             if (TryClaim(channel.Id, reaction.UserId, unambiguous: true) != Claim.Granted) return;
 
             await RecordAsync(guildChannel.GuildId, reaction.UserId, verdict);
+            await _xp.GrantVerdictBonusAsync(guildChannel.GuildId, channel.Id, reaction.UserId, verdict);
         }
         catch (Exception ex)
         {

@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<EmoteDailyStat> EmoteDailyStats => Set<EmoteDailyStat>();
     public DbSet<BotFeedback> BotFeedbacks => Set<BotFeedback>();
     public DbSet<BotFeedbackDailyStat> BotFeedbackDailyStats => Set<BotFeedbackDailyStat>();
+    public DbSet<MemberXp> MemberXps => Set<MemberXp>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -93,6 +94,14 @@ public class AppDbContext : DbContext
             // Serves the rolling-window read: "this guild, since day N". Day is an
             // int precisely so this range can be evaluated in SQL.
             e.HasIndex(x => new { x.GuildId, x.Day });
+        });
+
+        modelBuilder.Entity<MemberXp>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            // One row per (guild, user); no daily-bucket sibling — see MemberXp.cs.
+            e.HasIndex(x => new { x.GuildId, x.UserId }).IsUnique();
         });
     }
 }

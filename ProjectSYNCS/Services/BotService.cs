@@ -24,6 +24,7 @@ internal sealed class BotService : IHostedService
     private readonly ReactionService _reactions;
     private readonly BotFeedbackTracker _feedback;
     private readonly RivalryService _rivalry;
+    private readonly XpTracker _xp;
 
     public BotService(
         DiscordSocketClient client,
@@ -35,7 +36,8 @@ internal sealed class BotService : IHostedService
         EmoteTracker emotes,
         ReactionService reactions,
         BotFeedbackTracker feedback,
-        RivalryService rivalry)
+        RivalryService rivalry,
+        XpTracker xp)
     {
         _client = client;
         _interactions = interactions;
@@ -47,6 +49,7 @@ internal sealed class BotService : IHostedService
         _reactions = reactions;
         _feedback = feedback;
         _rivalry = rivalry;
+        _xp = xp;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -101,6 +104,10 @@ internal sealed class BotService : IHostedService
     private async Task HandleMessageAsync(SocketMessage rawMessage)
     {
         await _emotes.HandleMessageAsync(rawMessage);
+        // Independent of every other tracker here — reads only the raw message and
+        // its own per-user cooldown gates — so its position relative to the others
+        // is not load-bearing.
+        await _xp.HandleMessageAsync(rawMessage);
         // Before the feedback tracker: a rival's message has to be on record as the
         // most recent action before any verdict arrives that it might have earned.
         await _rivalry.HandleMessageAsync(rawMessage);
@@ -119,6 +126,7 @@ internal sealed class BotService : IHostedService
         SocketReaction reaction)
     {
         await _emotes.HandleReactionAddedAsync(message, channel, reaction);
+        await _xp.HandleReactionAddedAsync(message, channel, reaction);
         await _reactions.HandleReactionAddedAsync(message, channel, reaction);
         await _feedback.HandleReactionAddedAsync(message, channel, reaction);
     }

@@ -47,6 +47,12 @@ in one click. The bot's user-facing language is French.
   on what she says, not on session cards or leaderboards, where a thumb means
   something else. Only counts when it follows something she actually said or reacted
   to, and only once per person per thing she did, whichever way they say it.
+- **`/level [user]`** — her own XP/leveling system, entirely independent of the
+  server's other leveling bot (same vocabulary, no shared state, no cross-reference).
+  XP for talking (one grant per ~60s) and reacting (its own ~60s cooldown), plus a
+  bonus for replying to or mentioning her, and for a genuinely-recorded good/bad-bot
+  verdict. Crossing a level gets an unprompted announcement in her own voice. A single
+  paged leaderboard, no time filters — leveling doesn't reset weekly.
 - **`/help`** — in-Discord usage guide.
 - **Owner-only commands** — the configured owner can speak through the bot
   (`/tell` into a channel, `/dm` to a person) and flag themselves unavailable

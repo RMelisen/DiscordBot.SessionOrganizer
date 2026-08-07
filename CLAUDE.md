@@ -479,6 +479,34 @@ words are visibly not the bot's own. Preserve both when adding a relay. The abse
 notice forwarded to the owner goes further and uses `AllowedMentions.None`, since it
 quotes someone else's text verbatim.
 
+**`/level` is SYNCS's own XP system, deliberately parallel to the server's other
+leveling bot.** `Helpers/LevelUpAnnouncement` detects *that* bot's announcements so
+`ChatterService` can cheer them; `/level` shares no code, no state, and no vocabulary
+decision with it beyond "niveau" meaning the same everyday thing in both. Neither may
+reference the other — not in a response line, not in a comment implying one is
+better. `XpTracker` is the singleton every signal funnels through (message, reaction,
+the bot-interaction bonus, the verdict bonus, and Phase 2's voice sweep), the same
+`IServiceProvider` + `CreateAsyncScope` shape as every other gateway-facing tracker.
+
+**`MemberXp.TotalXp` is the only number stored — `Level` is never cached.**
+`Helpers/LevelCurve.ThresholdForLevel` is closed-form and `LevelForXp` is a binary
+search over it (`O(log level)`, not a loop), which is cheaper than keeping a
+denormalized column in sync through EF. This is the opposite call from
+`EmoteDailyStat`/`BotFeedbackDailyStat`, which exist because a *date* genuinely
+cannot be reconstructed from a running total — a level always can be, instantly, so a
+second column here would just be a copy that drifts.
+
+**The good/bad-bot XP bonus is granted by `BotFeedbackTracker`, not detected
+independently by `XpTracker`.** `XpTracker.GrantVerdictBonusAsync` is called only
+after `BotFeedbackTracker`'s own `TryClaim`/attribution logic has already let a real
+verdict through — never from a second `MessageCues.ReadFeedback` call watching every
+message. An independent re-detection would make the bonus farmable by repeating
+"good bot" with nothing for her to have actually done; routing it through the
+attribution that already exists closes that off for free. The call sits *after*
+`RespondAsync` in the typed-verdict path, not before — her comeback must read as
+immediate, and a level-up announcement, if any, is a slightly-delayed follow-up that
+must never push the acknowledgement itself later.
+
 **`/help` is hand-maintained.** `HelpModule` duplicates the feature list in prose,
 as does `README.md`; neither is generated. A new user-facing command means updating
 both — except the owner-only ones, which are deliberately absent from `/help`.

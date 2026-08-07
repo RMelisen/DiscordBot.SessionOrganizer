@@ -47,6 +47,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<PollService>();
         services.AddTransient<EmoteStatsService>();
         services.AddTransient<BotFeedbackService>();
+        services.AddTransient<XpService>();
 
         // Personality / chat behaviour collaborators (singletons: they hold
         // in-memory state like the breakdown cooldown).
@@ -58,6 +59,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<ReactionService>();
         // Registered before BotFeedbackTracker, which asks it who acted last.
         services.AddSingleton<RivalryService>();
+        // Before BotFeedbackTracker, which calls into it after recording a verdict.
+        services.AddSingleton<XpTracker>();
         services.AddSingleton<BotFeedbackTracker>();
 
         services.AddHostedService<BotService>();
