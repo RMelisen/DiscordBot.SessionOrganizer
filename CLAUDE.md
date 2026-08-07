@@ -507,6 +507,24 @@ attribution that already exists closes that off for free. The call sits *after*
 immediate, and a level-up announcement, if any, is a slightly-delayed follow-up that
 must never push the acknowledgement itself later.
 
+**`VoiceXpService` sweeps instead of tracking join/leave/mute events.** Voice XP is
+Phase 2 of the system above, and the only signal with no event to react to — there is
+no "voice message received," only "how long were they present." A `BackgroundService`
+ticking every minute (mirroring `ReminderService`/`PresenceService`'s shape, with its
+own interval — explicitly not either of theirs) samples who is currently eligible and
+grants a flat per-tick amount, rather than checkpointing exact elapsed time on every
+join/leave/mute-toggle. This is deliberate: the payout is already "per minute," so a
+1-minute sample is exactly as coarse as what it rewards — a checkpoint's precision
+would buy correctness at a grain finer than the reward ever uses, at the cost of new
+per-channel state this codebase has no other precedent for. One consequence worth
+knowing: `SocketVoiceChannel.ConnectedUsers` and each member's `VoiceState` are
+already kept live by Discord.Net's own gateway cache, the same way `PresenceService`'s
+tick reads live state without subscribing to anything — so `VoiceXpService` needs no
+`UserVoiceStateUpdated` subscription and touches nothing in `BotService`'s fan-out.
+Only **self**-mute/deafen together is excluded (the AFK-farm case); moderator-applied
+server mute/deafen is deliberately not checked, so a mod silencing someone for an
+unrelated reason doesn't also cost them XP.
+
 **`/help` is hand-maintained.** `HelpModule` duplicates the feature list in prose,
 as does `README.md`; neither is generated. A new user-facing command means updating
 both — except the owner-only ones, which are deliberately absent from `/help`.

@@ -66,6 +66,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddHostedService<BotService>();
         services.AddHostedService<ReminderService>();
         services.AddHostedService<PresenceService>();
+        services.AddHostedService<VoiceXpService>();
     })
     .Build();
 

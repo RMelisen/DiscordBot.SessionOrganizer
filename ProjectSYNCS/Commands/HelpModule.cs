@@ -33,9 +33,11 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/goodbot`** — Affiche qui m'a dit *good bot* (ou *bad bot*, mais on ne parle pas de ceux-là). " +
                 "Mêmes filtres : **depuis toujours** (par défaut), **30 jours** et **7 jours**. " +
                 "Un 👍 ou un 👎 sur un de mes messages compte pareil, sans que j'aie besoin de répondre.\n" +
-                "**`/level [user]`** — Ton niveau, ton XP et le classement du serveur. Tu gagnes de l'XP en " +
-                "parlant, en réagissant, et encore plus en t'adressant à moi. Système à moi, indépendant de " +
-                "l'autre bot de niveaux du serveur.\n" +
+                "**`/level [user]`** — Ton niveau, ton XP et le classement du serveur (ouvre sur ta page). " +
+                "Tu gagnes de l'XP en parlant, en réagissant, et encore plus en t'adressant à moi. Système à " +
+                "moi, indépendant de l'autre bot de niveaux du serveur. Rester en vocal fait aussi gagner de " +
+                "l'XP, tant que t'es pas seul·e et pas muet·te + sourd·e en même temps.\n" +
+                "**`/leaderboard`** — Le même classement, mais ouvre directement sur le top.\n" +
                 "**`/help`** — Affiche ce message.")
             .AddField("Créer une session — pas à pas",
                 "Lance **`/schedule create`**. Un assistant privé te guide :\n" +

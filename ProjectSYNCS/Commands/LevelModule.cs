@@ -9,10 +9,14 @@ namespace ProjectSYNCS.Commands;
 // minus the period filter row — leveling is a single ever-growing ranking, not
 // something with a meaningful "this week" view the way an emote count has.
 //
-// One command rather than a split /rank + /leaderboard: every other ranking feature
-// here is one paged list, and a separate "profile card" render would be a whole new
-// embed shape for three numbers the list already shows. The optional `user` param
-// only decides which page the list opens on.
+// No separate "profile card" render — every ranking feature here is one paged list,
+// and a card would be a whole new embed shape for three numbers the list already
+// shows. `/level`'s optional `user` param only decides which page the list opens on.
+//
+// `/leaderboard` is a thin second entry point onto the exact same view: it always
+// opens at page 0 (the actual top), where `/level` jumps to whichever page the
+// caller (or the queried user) ranks on. Same embed, same ◀/▶ custom-id — paging
+// doesn't know or care which command opened the message.
 public class LevelModule : InteractionModuleBase<SocketInteractionContext>
 {
     private const int PageSize = 20;
@@ -35,6 +39,15 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
         var page = targetRank is null ? 0 : (targetRank.Value.Rank - 1) / PageSize;
 
         var (embed, components) = await BuildPageAsync(page, highlight: target.Id);
+        await FollowupAsync(embed: embed, components: components);
+    }
+
+    [SlashCommand("leaderboard", "Le top du classement des niveaux")]
+    public async Task LeaderboardAsync()
+    {
+        await DeferAsync();
+
+        var (embed, components) = await BuildPageAsync(0, highlight: null);
         await FollowupAsync(embed: embed, components: components);
     }
 
