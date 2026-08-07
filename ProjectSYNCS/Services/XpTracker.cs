@@ -146,7 +146,7 @@ internal sealed class XpTracker
             var (oldLevel, newLevel) = await xp.AddXpAsync(guildId, userId, amount);
 
             if (newLevel > oldLevel && channel is not null)
-                await AnnounceAsync(channel, userId, newLevel, knownUser);
+                await AnnounceAsync(channel, userId, oldLevel, newLevel, knownUser);
         }
         catch (Exception ex)
         {
@@ -154,31 +154,51 @@ internal sealed class XpTracker
         }
     }
 
-    private async Task AnnounceAsync(IMessageChannel channel, ulong userId, int level, IUser? knownUser)
+    // The celebration itself: a card rather than a plain line, so a level-up stands
+    // out from her ordinary chatter in a busy channel.
+    private async Task AnnounceAsync(IMessageChannel channel, ulong userId, int oldLevel, int newLevel, IUser? knownUser)
     {
-        var name = ResolveName(channel, userId, knownUser);
+        var user = ResolveUser(channel, userId, knownUser);
         // Couldn't resolve the member (rare cache miss) — the level is still
         // recorded, only the celebration is skipped, matching "Discord side effects
         // must never break the flow."
-        if (name is null) return;
+        if (user is null) return;
 
-        var line = string.Format(_picker.Pick(channel.Id, BotResponses.XpLevelUpLines), name, level);
-        await BotChat.PostWithTypingAsync(channel, line, _logger, "level-up announcement");
+        var name = BotResponses.DisplayNameFor(userId,
+            (user as SocketGuildUser)?.Nickname ?? user.GlobalName ?? user.Username);
+
+        // 7 and 67 are a fixed line, not a pool pick — ResponsePicker is skipped
+        // entirely, so the egg never burns one of that channel's exclusion slots on a
+        // line that isn't actually a pool entry.
+        var description = IsSixSeven(newLevel)
+            ? "SIX SEVEEEEN"
+            : string.Format(_picker.Pick(channel.Id, BotResponses.XpLevelUpLines), name, newLevel);
+
+        var embed = new EmbedBuilder()
+            .WithTitle(BuildLevelUpTitle(oldLevel, newLevel))
+            .WithDescription(description)
+            .WithThumbnailUrl(user.GetAvatarUrl() ?? user.GetDefaultAvatarUrl())
+            .WithColor(Color.Purple)
+            .Build();
+
+        await BotChat.PostEmbedWithTypingAsync(channel, embed, description, _logger, "level-up announcement");
     }
+
+    // Shows the span crossed, not just the number landed on: one grant can cross more
+    // than one threshold, and "Niveau 5 → 8 !" is the only rendering that stays honest
+    // when it does.
+    private static string BuildLevelUpTitle(int oldLevel, int newLevel) =>
+        $"Niveau {oldLevel} → {newLevel} !";
+
+    // The meme easter egg. A literal level check — nothing to do with MessageCues, and
+    // not a vocabulary cue: 17 and 70 must not match.
+    private static bool IsSixSeven(int level) => level is 7 or 67;
 
     // Where the caller already has an IUser (the message path), skip the lookup.
-    // Otherwise resolve through the guild the channel belongs to.
-    private static string? ResolveName(IMessageChannel channel, ulong userId, IUser? knownUser)
-    {
-        if (knownUser is not null)
-            return BotResponses.DisplayNameFor(userId,
-                (knownUser as SocketGuildUser)?.Nickname ?? knownUser.GlobalName ?? knownUser.Username);
-
-        var guildUser = (channel as SocketGuildChannel)?.Guild.GetUser(userId);
-        return guildUser is null
-            ? null
-            : BotResponses.DisplayNameFor(userId, guildUser.Nickname ?? guildUser.GlobalName ?? guildUser.Username);
-    }
+    // Otherwise resolve through the guild the channel belongs to. Returns the user
+    // rather than just a name, since the card needs an avatar off the same object.
+    private static IUser? ResolveUser(IMessageChannel channel, ulong userId, IUser? knownUser) =>
+        knownUser ?? (channel as SocketGuildChannel)?.Guild.GetUser(userId);
 
     // Atomically checks one gate's per-(guild,user) cooldown and claims it.
     private bool TryClaim(Dictionary<(ulong, ulong), DateTimeOffset> gate, (ulong, ulong) key, TimeSpan cooldown)

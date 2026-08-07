@@ -11,6 +11,10 @@ namespace ProjectSYNCS.Helpers;
 // Two paths deliberately skip this and send directly: the owner-reply relay and the
 // DM acknowledgements. Delaying a human's words, or a "✅ transmis" receipt, only
 // adds latency.
+//
+// Three send methods share that one pause: ReplyWithTypingAsync / PostWithTypingAsync
+// for plain text, PostEmbedWithTypingAsync for an embed (the level-up card, so far
+// its only caller).
 public static class BotChat
 {
     /// <summary>
@@ -47,6 +51,28 @@ public static class BotChat
                 await Task.Delay(TypingDelayFor(line));
             }
             await channel.SendMessageAsync(line);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to send {What} in channel {ChannelId}.", what, channel.Id);
+        }
+    }
+
+    /// <summary>
+    /// Posts an embed behind the same typing pause. <paramref name="delayText"/> is
+    /// only used to size that pause — the embed carries the actual content, and
+    /// nothing here is sent as message text.
+    /// </summary>
+    public static async Task PostEmbedWithTypingAsync(
+        IMessageChannel channel, Embed embed, string delayText, ILogger logger, string what)
+    {
+        try
+        {
+            using (channel.EnterTypingState())
+            {
+                await Task.Delay(TypingDelayFor(delayText));
+            }
+            await channel.SendMessageAsync(embed: embed);
         }
         catch (Exception ex)
         {
