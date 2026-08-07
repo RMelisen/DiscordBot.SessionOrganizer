@@ -502,7 +502,13 @@ after `BotFeedbackTracker`'s own `TryClaim`/attribution logic has already let a 
 verdict through — never from a second `MessageCues.ReadFeedback` call watching every
 message. An independent re-detection would make the bonus farmable by repeating
 "good bot" with nothing for her to have actually done; routing it through the
-attribution that already exists closes that off for free. The call sits *after*
+attribution that already exists closes that off for free. That attribution rations
+*which* verdicts count, not *how often* — a burst of unambiguous ones (several
+thumbs, back-to-back replies) could still each grant the bonus in quick succession,
+which is why `GrantVerdictBonusAsync` also keeps its own 30 s `VerdictCooldown` on
+top, independent of the message/reaction cooldowns. Bad still grants XP (15, versus
+Good's 25) — passing verdict on her at all is engagement, just worth less than
+praise. The call sits *after*
 `RespondAsync` in the typed-verdict path, not before — her comeback must read as
 immediate, and a level-up announcement, if any, is a slightly-delayed follow-up that
 must never push the acknowledgement itself later.

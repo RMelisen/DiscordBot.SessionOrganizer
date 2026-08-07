@@ -7,9 +7,7 @@ using ProjectSYNCS.Helpers;
 namespace ProjectSYNCS.Services;
 
 // Grants XP for talking, reacting, and interacting with the bot directly, and
-// announces it when someone crosses a level. Runs entirely independently of the
-// server's other leveling bot (see Helpers/LevelUpAnnouncement) — same vocabulary
-// ("niveau"), no shared state, no cross-reference between the two.
+// announces it when someone crosses a level. 
 //
 // Singleton, like every other gateway-facing tracker: takes IServiceProvider and
 // opens _services.CreateAsyncScope() per grant rather than injecting XpService
@@ -29,19 +27,26 @@ internal sealed class XpTracker
     private const long BotInteractionBonus = 15;
     private const long GoodVerdictBonus = 25;
 
-    // Rewarding "bad bot" with XP would read as paying someone for negativity — Good
-    // is the only verdict that grants anything here.
-    private const long BadVerdictBonus = 0;
+    // Bad still grants something — passing verdict on her at all is engagement — just
+    // noticeably less than Good, so praise stays worth more than a complaint.
+    private const long BadVerdictBonus = 15;
 
     private static readonly TimeSpan MessageCooldown = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan ReactionCooldown = TimeSpan.FromSeconds(60);
 
+    // Own cooldown on top of BotFeedbackTracker's one-per-person-per-action claim:
+    // that claim rations *attribution* (does this verdict count at all), not time, so
+    // without this a burst of unambiguous verdicts (replies to her, thumbs on several
+    // of her messages) in quick succession could each grant the bonus back-to-back.
+    private static readonly TimeSpan VerdictCooldown = TimeSpan.FromSeconds(30);
+
     // Keyed by (guild, user), not by channel — posting in two channels back-to-back
-    // must not double a grant. Two independent gates, deliberately: reacting must
-    // never block a message from counting, or vice versa.
+    // must not double a grant. Three independent gates, deliberately: reacting,
+    // messaging, and a verdict must never block one another.
     private readonly object _gate = new();
     private readonly Dictionary<(ulong GuildId, ulong UserId), DateTimeOffset> _lastMessageXp = new();
     private readonly Dictionary<(ulong GuildId, ulong UserId), DateTimeOffset> _lastReactionXp = new();
+    private readonly Dictionary<(ulong GuildId, ulong UserId), DateTimeOffset> _lastVerdictXp = new();
 
     public XpTracker(
         DiscordSocketClient client,
@@ -97,12 +102,16 @@ internal sealed class XpTracker
     /// Called by BotFeedbackTracker immediately after a Good/Bad verdict is genuinely
     /// recorded — never independently re-detected here, or the bonus would be
     /// farmable by repeating "good bot" with nothing for her to have actually done.
-    /// No cooldown of its own: BotFeedbackTracker's own claim already rations this.
+    /// Still gated by its own VerdictCooldown on top of that: BotFeedbackTracker's
+    /// claim rations *attribution*, not time, so a burst of unambiguous verdicts in
+    /// quick succession (several thumbs, a reply then another) could otherwise each
+    /// grant the bonus back-to-back.
     /// </summary>
     public async Task GrantVerdictBonusAsync(ulong guildId, ulong channelId, ulong userId, FeedbackKind verdict)
     {
         var amount = verdict == FeedbackKind.Good ? GoodVerdictBonus : BadVerdictBonus;
         if (amount <= 0) return;
+        if (!TryClaim(_lastVerdictXp, (guildId, userId), VerdictCooldown)) return;
 
         var channel = _client.GetChannel(channelId) as IMessageChannel;
         await GrantAsync(guildId, userId, amount, channel);
