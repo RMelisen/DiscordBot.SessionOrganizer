@@ -599,6 +599,10 @@ internal static class BotResponses
     // announcements. This one she owns: her system, her tally, her voice. Deliberately
     // named to not read close to Helpers.LevelUpAnnouncement (the other bot's
     // detector). {0} = the person's name, {1} = their new level.
+    //
+    // Rendered as an embed's description, not a plain message — see
+    // XpTracker.AnnounceAsync. At level 7 or 67 this pool is not consulted at all:
+    // the description is the fixed string "SIX SEVEEEEN" instead.
     public static readonly string[] XpLevelUpLines =
     {
         "**{0}** vient de passer niveau **{1}** ! Et ça, c'est MON classement ✨",

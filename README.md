@@ -51,7 +51,8 @@ in one click. The bot's user-facing language is French.
   server's other leveling bot (same vocabulary, no shared state, no cross-reference).
   XP for talking (one grant per ~60s) and reacting (its own ~60s cooldown), plus a
   bonus for replying to or mentioning her, and for a genuinely-recorded good/bad-bot
-  verdict. Crossing a level gets an unprompted announcement in her own voice. A single
+  verdict. Crossing a level gets an unprompted card in her own voice — your avatar,
+  the levels you went from and to, and a line she picks herself. A single
   paged leaderboard, no time filters — leveling doesn't reset weekly. `/leaderboard`
   opens the same ranking straight on the top page, rather than jumping to your own.
   Time spent present in a voice channel also earns XP, once a minute, as long as

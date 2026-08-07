@@ -159,6 +159,15 @@ Easy to forget when adding a model. A *derived* property on a model needs
 `[NotMapped]` instead (see `EmoteStat.Markup`), or EF tries to map it and demands a
 migration for a column that should not exist.
 
+**One migration carries data, not schema.** `ResetMemberXp` is a bare
+`migrationBuilder.Sql("DELETE FROM MemberXps;")` with an empty `Down` — a one-time XP
+wipe that shipped with the level-up card rework, riding the automatic
+apply-on-startup so it lands in prod without anyone touching the add-on's SQLite file.
+Every other migration here is schema-only, and it should stay that way: this was a
+deliberate one-off, not a precedent for scripting data fixes, and certainly not a
+substitute for a real "reset" feature if one is ever wanted. A data migration is also
+the one kind whose `Down` genuinely cannot restore anything.
+
 **Never use `DateTime.Now`.** Production runs in UTC; all wall-clock handling goes
 through `Helpers/AppTime` (pinned to `Europe/Paris`, DST-aware via
 `TryParseWallClock`). Store instants as UTC `DateTimeOffset`, render them to users
@@ -434,6 +443,10 @@ its own and nesting the two in opposite orders would deadlock.
 typing-delay clamp in `BotChat` has to stay inside Discord.Net's 3 s `HandlerTimeout`,
 and the parser carries the id-less-markup trap above — neither is a constant worth
 having two copies of. `BreakdownService` still keeps its own much slower pacing.
+Three send methods share that one pause: `ReplyWithTypingAsync` / `PostWithTypingAsync`
+for plain text, `PostEmbedWithTypingAsync` for an embed (the level-up card is its only
+caller so far). The embed one still takes the text, purely to size the pause — a card
+that appeared instantly would read as a different kind of message than her chatter.
 
 **Cue vocabulary is scoped to a *gaming* server, and that constrains it.** Words that
 compliment a person in general French name game content here, so `boss` and `monstre`
@@ -543,6 +556,19 @@ praise. The call sits *after*
 `RespondAsync` in the typed-verdict path, not before — her comeback must read as
 immediate, and a level-up announcement, if any, is a slightly-delayed follow-up that
 must never push the acknowledgement itself later.
+
+**The level-up announcement is a card, not a line.** `XpTracker.AnnounceAsync` posts an
+embed — avatar thumbnail, `Color.Purple` to match `/level`'s leaderboard, and a title
+showing the **span crossed** (`Niveau {old} → {new} !`), not just the level landed on:
+one grant can cross more than one threshold, and it still announces exactly once. That
+is why `GrantAsync` forwards both levels rather than only the new one. At level **7 or
+67** the description is the fixed string `"SIX SEVEEEEN"` in place of an
+`XpLevelUpLines` pick — an easter egg, not a pool entry, so `ResponsePicker` is
+deliberately never consulted for it and it never burns one of that channel's exclusion
+slots on a line the pool doesn't contain. It is a literal level check (`is 7 or 67`),
+not a digit search: 17, 70 and 167 must stay quiet. `AnnounceAsync` resolves the whole
+`IUser` rather than just a name, since the card needs an avatar off the same object;
+the "member didn't resolve → skip the celebration, keep the XP" rule is unchanged.
 
 **`VoiceXpService` sweeps instead of tracking join/leave/mute events.** Voice XP is
 Phase 2 of the system above, and the only signal with no event to react to — there is
