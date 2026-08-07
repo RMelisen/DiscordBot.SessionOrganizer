@@ -585,6 +585,45 @@ a thread inside a spam channel would quietly be a way back in. The decision itse
 split into a pure `(channelId, parentId?)` overload precisely so it can be exercised
 without a gateway connection.
 
+**`/level` and `/leaderboard` are Components V2, and that is all-or-nothing.** A message
+carrying `MessageFlags.ComponentsV2` may have **no `content` and no `embeds`** — the flag
+turns the whole message into components, so this replaced the embed rather than adding to
+it, and `OnViewAsync` has to re-assert the flag on every `UpdateAsync` or the edit is
+rejected. They are the only surfaces built this way: `/emotestats` and `/goodbot` stay
+paged embeds, since they rank emotes and verdicts — things with no avatar, no level and
+no podium — and the only thing a shared renderer would save is the page arithmetic.
+
+**`PageSize` is 10 because of a hard cap, not taste.** Discord allows **40 components per
+message counting the whole tree**, and a row with an avatar costs three (Section +
+TextDisplay + Thumbnail). A full page uses 38 of 40; an eleventh row throws in
+`ComponentBuilderV2.Build()` — Discord.Net enforces the cap itself, so this fails at
+build-time-of-the-message rather than as an API rejection. Adding anything to a row, or
+another element to the container, means taking a row out.
+
+**A `TextDisplay` is real message content — `<@id>` in one actually pings.** This is the
+trap embeds do not have: a naive port pings all ten people on the page *every time anyone
+clicks ◀*. Every send here passes `AllowedMentions.None`, which keeps the blue clickable
+pill while silencing it. Same reasoning as the relay convention below, different failure.
+
+**`/level` is a card, not the leaderboard opened at your row.** It used to jump to
+whatever page you ranked on, with a `→` marker that paging then lost. Now it renders one
+person — avatar, level, rank, and a progress bar drawn from `LevelCurve.XpIntoLevel` over
+`XpForLevel`, the same pair printed beneath it so the bar can never disagree with its own
+caption. Its "Voir le classement" button reuses the existing `level:view:0` custom-id
+rather than inventing one, since that already means "leaderboard, page 0" — which does
+mean the button replaces the card in place. Someone with no XP still gets a card (niveau
+0, `non classé`); a **bot** gets a flat refusal instead, since `XpTracker` skips bots so
+its card would always be empty. That refusal is one fixed `const`, deliberately not a
+`ResponsePicker` pool — the pools exist so repeated *chatter* doesn't repeat, and a
+command refusal is not chatter.
+
+**`Helpers/LevelCardUi` holds the string work, and only the string work.** The medal
+markers, the fr-FR XP grouping, the block-glyph progress bar and the row/card text live
+there rather than in `LevelModule`, because the module assembles Discord components and
+cannot be exercised without a gateway, whereas everything in the helper is a function of
+numbers. The bar clamps at both ends and treats a zero span as full: it is decoration,
+and must never be the thing that throws.
+
 **The level-up announcement is a card, not a line.** `XpTracker.AnnounceAsync` posts an
 embed — avatar thumbnail, `Color.Purple` to match `/level`'s leaderboard, and a title
 showing the **span crossed** (`Niveau {old} → {new} !`), not just the level landed on:

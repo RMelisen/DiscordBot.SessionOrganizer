@@ -52,11 +52,14 @@ in one click. The bot's user-facing language is French.
   XP for talking (one grant per ~60s) and reacting (its own ~60s cooldown), plus a
   bonus for replying to or mentioning her, and for a genuinely-recorded good/bad-bot
   verdict. Crossing a level gets an unprompted card in her own voice — your avatar,
-  the levels you went from and to, and a line she picks herself. A single
-  paged leaderboard, no time filters — leveling doesn't reset weekly. `/leaderboard`
-  opens the same ranking straight on the top page, rather than jumping to your own.
-  Time spent present in a voice channel also earns XP, once a minute, as long as
-  someone else is there too and you're not both self-muted and self-deafened.
+  the levels you went from and to, and a line she picks herself. `/level` shows your
+  own card: avatar, level, rank and a progress bar toward the next one.
+  **`/leaderboard`** is the ranked list, ten per page, every row carrying that
+  person's real avatar — both are built with Discord's *Components V2* rather than
+  embeds, so nothing is rendered or uploaded; Discord loads the faces itself. No time
+  filters, since leveling doesn't reset weekly. Time spent present in a voice channel
+  also earns XP, once a minute, as long as someone else is there too and you're not
+  both self-muted and self-deafened. Some channels are excluded from earning entirely.
 - **`/help`** — in-Discord usage guide.
 - **Owner-only commands** — the configured owner can speak through the bot
   (`/tell` into a channel, `/dm` to a person) and flag themselves unavailable
