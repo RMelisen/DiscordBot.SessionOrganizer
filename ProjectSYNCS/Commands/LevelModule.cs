@@ -17,6 +17,10 @@ namespace ProjectSYNCS.Commands;
 // opens at page 0 (the actual top), where `/level` jumps to whichever page the
 // caller (or the queried user) ranks on. Same embed, same ◀/▶ custom-id — paging
 // doesn't know or care which command opened the message.
+// Guild-only: every query here is scoped to Context.Guild.Id, which is null in a DM.
+// config.yaml ships register_globally: true, and a global command is DM-enabled by
+// default, so without this the command is reachable somewhere it can only throw.
+[CommandContextType(InteractionContextType.Guild)]
 public class LevelModule : InteractionModuleBase<SocketInteractionContext>
 {
     private const int PageSize = 20;

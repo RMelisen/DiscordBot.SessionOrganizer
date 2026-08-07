@@ -40,6 +40,12 @@ internal sealed class XpTracker
     // of her messages) in quick succession could each grant the bonus back-to-back.
     private static readonly TimeSpan VerdictCooldown = TimeSpan.FromSeconds(30);
 
+    // Entries older than this are dropped — well past every cooldown above, so
+    // forgetting one can never hand anyone an early grant. Without it these grow one
+    // entry per person per guild forever, which the other trackers already guard
+    // against (RivalryService and BotFeedbackTracker both prune the same way).
+    private static readonly TimeSpan Forget = TimeSpan.FromHours(1);
+
     // Keyed by (guild, user), not by channel — posting in two channels back-to-back
     // must not double a grant. Three independent gates, deliberately: reacting,
     // messaging, and a verdict must never block one another.
@@ -183,7 +189,19 @@ internal sealed class XpTracker
             if (gate.TryGetValue(key, out var last) && now - last < cooldown) return false;
 
             gate[key] = now;
+            ForgetStale(gate, now);
             return true;
         }
+    }
+
+    // Caller holds _gate. Only sweeps once a gate has grown past a size no real
+    // server reaches in an hour, so the common path stays a single dictionary write.
+    private static void ForgetStale(Dictionary<(ulong, ulong), DateTimeOffset> gate, DateTimeOffset now)
+    {
+        if (gate.Count < 256) return;
+
+        var cutoff = now - Forget;
+        foreach (var key in gate.Where(kv => kv.Value < cutoff).Select(kv => kv.Key).ToList())
+            gate.Remove(key);
     }
 }

@@ -12,6 +12,10 @@ using System.Text;
 namespace ProjectSYNCS.Commands;
 
 [Group("schedule", "Commandes de planification de sessions")]
+// Guild-only: this module reads Context.Guild, which is null in a DM, and
+// config.yaml ships register_globally: true (a global command is DM-enabled by
+// default). Without this it is reachable somewhere it can only throw.
+[CommandContextType(InteractionContextType.Guild)]
 public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly EventService _eventService;

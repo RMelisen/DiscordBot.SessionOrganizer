@@ -120,6 +120,11 @@ internal sealed class ChatterService
         // does it — even the owner.
         if (await TryCorrectMistakenIdentityAsync(message)) return;
 
+        // A threat to switch her off outranks every mood below it, and outranks the
+        // owner's rescue-roast branch too: if he is threatening *her*, that is not a
+        // summons to roast someone else.
+        if (await TryHandleShutdownThreatAsync(message)) return;
+
         var weekday = CurrentWeekday();
 
         // Rescue: the owner replies to someone and tags the bot -> roast that
@@ -205,6 +210,11 @@ internal sealed class ChatterService
 
         // Calling SYNCS "Inabot" gets an indignant correction before anything else.
         if (await TryCorrectMistakenIdentityAsync(message)) return;
+
+        // A threat to switch her off outranks every branch below — including the
+        // breakdown roll, which must not swallow the one message she most needs to
+        // answer, and the owner-mean pool, which is far too gentle for this.
+        if (await TryHandleShutdownThreatAsync(message)) return;
 
         // Read the message text (requires the MessageContent intent) to detect
         // kind words or a greeting and answer in kind. A mean reading outweighs the
@@ -426,6 +436,40 @@ internal sealed class ChatterService
 
     // If the message calls the bot "Inabot", fires back an indignant correction
     // (the bot is SYNCS) and returns true so the caller stops there.
+    // Someone threatening to switch her off. The one thing she reacts to more
+    // strongly than an insult, and the only behaviour where the favouritism inverts:
+    // being able to actually carry the threat out makes it *worse*, not gentler.
+    //
+    // Three tiers, by how credible the threat is and whether she can appeal to a
+    // relationship:
+    //   Rodhengard — wrote her, could unplug her, nothing to bargain with → terror.
+    //   Tata       — family, but holds the server permissions → pleading and
+    //                bargaining, the only tier where she still thinks talking works.
+    //   Anyone else — no permissions, pure bluff → fury, and she says so.
+    //
+    // Checked only on messages aimed at her (reply or mention), never ambiently: the
+    // vocabulary overlaps with ordinary talk about restarting a game server, and
+    // "faut couper le serveur" said about Minecraft must not terrify her.
+    private async Task<bool> TryHandleShutdownThreatAsync(SocketUserMessage message)
+    {
+        if (!MessageCues.ThreatensShutdown(message.Content ?? string.Empty)) return false;
+
+        var name = ResolveName(message.Author);
+
+        var (pool, who) = message.Author.Id switch
+        {
+            OwnerId => (BotResponses.ShutdownThreatOwner, "terrified (owner)"),
+            BotResponses.TataId => (BotResponses.ShutdownThreatTata, "bargaining (Tata)"),
+            _ => (BotResponses.ShutdownThreatReplies, "furious"),
+        };
+
+        _logger.LogInformation("{Name} threatened to shut the bot down — {Reaction}.", name, who);
+
+        var line = string.Format(_picker.Pick(message.Channel.Id, pool), name, CurrentWeekday());
+        await ReplyWithTypingAsync(message, line, "shutdown-threat reply");
+        return true;
+    }
+
     private async Task<bool> TryCorrectMistakenIdentityAsync(SocketUserMessage message)
     {
         if (!MessageCues.IsMistakenIdentity(message.Content ?? string.Empty)) return false;

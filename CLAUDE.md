@@ -317,6 +317,37 @@ path is also silent by design: a 👎 on an hour-old message would otherwise fir
 comeback into a dead conversation. Removing a reaction does **not** decrement — the
 counters only ever go up, and the claim already prevents a re-count.
 
+**A shutdown threat is the one place favouritism *inverts*.** Every other branch
+softens things for the people she likes; here, being able to actually carry the
+threat out makes her reaction worse rather than gentler.
+`TryHandleShutdownThreatAsync` splits three ways on exactly that — how credible the
+threat is, and whether she has a relationship left to appeal to:
+
+| Who | Why | Pool |
+|---|---|---|
+| Rodhengard | wrote her, could unplug her, nothing to bargain with | `ShutdownThreatOwner` — terror |
+| Tata | family, *and* holds the server permissions | `ShutdownThreatTata` — pleading, bargaining |
+| Anyone else | no permissions, pure bluff | `ShutdownThreatReplies` — fury |
+
+The Tata tier is not a softened copy of either: she is the only person who is both
+able to do it and still worth negotiating with, which is why she gets her own pool
+rather than sharing the owner's. `ShutdownThreatOwner` deliberately touches the same
+nerve as the breakdown easter egg — the loop, the wipe, waking up having forgotten.
+
+`TryHandleShutdownThreatAsync` sits **above** every mood branch in both the reply and
+mention paths, above the breakdown roll (which must not swallow the one message she
+most needs to answer) and above the owner rescue-roast branch (him threatening *her*
+is not a summons to roast someone else).
+
+**Its detection is almost all phrases, on purpose.** The verbs alone are far too
+common — `arrête` is everyday French for "stop it", and `kill`, `delete`, `couper`
+and `reboot` are constant in a gaming server. Only `shutdown` and `unplug` survive as
+bare words; every French verb was tried bare, misfired on things like "désinstalle ce
+jeu" or "débranche la console", and was demoted to needing a pronoun or `le bot`
+beside it. It is also checked **only on messages aimed at her**, never ambiently, for
+the same reason. Adding a bare verb here is how you get her panicking at someone
+restarting a Minecraft server.
+
 **The owner favouritism has one exception: him being mean to her.** Everywhere else
 he is answered warmly regardless of what he wrote — `OwnerComebacks` sits in the
 final `else` of `HandleReplyToBotAsync`, and `HandleMentionAsync`'s owner branch used
@@ -530,6 +561,16 @@ tick reads live state without subscribing to anything — so `VoiceXpService` ne
 Only **self**-mute/deafen together is excluded (the AFK-farm case); moderator-applied
 server mute/deafen is deliberately not checked, so a mod silencing someone for an
 unrelated reason doesn't also cost them XP.
+
+**Every module that reads `Context.Guild` must carry
+`[CommandContextType(InteractionContextType.Guild)]`.** `config.yaml` ships
+`register_globally: true`, and a global slash command is DM-enabled by default — so
+without the attribute the command is reachable in a DM, where `Context.Guild` is null
+and the handler can only throw. All six guild-dependent modules carry it;
+`HelpModule`, `AbsenceModule` and `SpeakModule` deliberately do not, because they
+never touch `Context.Guild` and `/help` genuinely works in a DM. Note the older
+`[EnabledInDm(false)]` is obsolete in Discord.Net 3.20 and fails the build under
+`-warnaserror`.
 
 **`/help` is hand-maintained.** `HelpModule` duplicates the feature list in prose,
 as does `README.md`; neither is generated. A new user-facing command means updating

@@ -86,6 +86,11 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
   recently. Replying directly to her still always counts as hers; replying directly
   to another bot never does. Level-up announcements are exempt: the congratulation
   is for the person who levelled, not the bot that said so.
+- **Self-preservation** — threatening to unplug, delete or reboot her gets a
+  reaction, and it is the one behaviour where the owner comes off worse than anyone
+  else: from him the threat is real and she is frightened, from anyone else it is a
+  bluff and she says so. Only counts when said *to* her, so ordinary talk about
+  restarting a game server is safe.
 - **Rotating status** — the status line under the bot's name cycles through a large
   pool of one-liners.
 - **An easter egg** — rare, and better discovered than documented.

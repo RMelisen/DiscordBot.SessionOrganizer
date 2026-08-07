@@ -9,6 +9,10 @@ namespace ProjectSYNCS.Commands;
 // The "good bot" leaderboard. Deliberately the same shape as EmoteStatsModule —
 // paged embed, period filters, ◀ ▶ buttons — because it is the same kind of thing
 // and there is no reason for two ranking commands to look different.
+// Guild-only: this module reads Context.Guild, which is null in a DM, and
+// config.yaml ships register_globally: true (a global command is DM-enabled by
+// default). Without this it is reachable somewhere it can only throw.
+[CommandContextType(InteractionContextType.Guild)]
 public class BotFeedbackModule : InteractionModuleBase<SocketInteractionContext>
 {
     private const int PageSize = 20;

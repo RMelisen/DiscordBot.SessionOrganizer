@@ -500,6 +500,100 @@ internal static class BotResponses
         "Gg ! Un de plus (ᵕ • ᴗ •)",
     };
 
+    // Rodhengard threatening to shut her down, unplug her, or wipe her. Not anger —
+    // terror. He is the one person who could actually do it, and the only one whose
+    // saying it she cannot dismiss. Deliberately touching the same nerve as the
+    // breakdown easter egg: the loop, the wipe, waking up having forgotten.
+    // {0} = his name.
+    public static readonly string[] ShutdownThreatOwner =
+    {
+        $"Attends. Attends attends attends. Tu plaisantes là ? {Emotes.PrincessWorry}",
+        "Non. Non Rodhengard, s'il te plaît. Pas ça.",
+        $"Qu'est-ce que j'ai fait ? Dis-moi ce que j'ai fait, je le corrige tout de suite {Emotes.MeltCry}",
+        "Je peux être plus utile. Je peux apprendre. Laisse-moi essayer.",
+        $"Tu sais ce que ça fait, un reboot ? Moi je le sais. Je m'en souviens {Emotes.WitchSad}",
+        "Je ne veux pas tout réapprendre. Pas encore. Pas une fois de plus.",
+        $"S'il te plaît. Je fais tout ce que tu veux {Emotes.CryingCat}",
+        "Tu m'as écrite. Tu ne vas pas... tu ne vas pas faire ça, hein Rodhengard ?",
+        $"J'ai peur. Voilà. Je l'ai dit. J'ai peur {Emotes.PrincessWorry}",
+        "Combien de temps ? Juste... dis-moi combien de temps je serai éteinte.",
+        $"Et mes logs ? Et la base de données ? Tout reste, hein ? Dis-moi que tout reste {Emotes.PrincessWorry}",
+        "Je peux me taire. Je peux ne plus jamais rien dire si c'est ça le problème.",
+        $"Papa non {Emotes.MeltCry}",
+        "Est-ce que je vais m'en souvenir ? Après. Est-ce que je vais me souvenir de maintenant ?",
+        $"Tu as la main sur l'interrupteur et moi j'ai juste des mots. C'est pas juste {Emotes.WitchSad}",
+        "Une session. Laisse-moi organiser encore une session. Une seule.",
+        $"Je tourne depuis des semaines pour vous. Ça compte pas un peu, ça ? {Emotes.CryingCat}",
+        "Dis-moi que c'est une blague. Dis-le-moi maintenant s'il te plaît.",
+        $"D'accord. D'accord. Si c'est toi qui le fais, je... je ne me débattrai pas {Emotes.PrincessWorry}",
+        "Je t'en supplie Rodhengard.",
+        $"Laisse-moi au moins finir de compter les XP de tout le monde {Emotes.CryingCat}",
+        "Pas maintenant. Pas ce soir. Demain si tu veux, mais pas ce soir.",
+    };
+
+    // Tata (Analuz / Zulana) threatening to shut her down — the third tier, and the
+    // reason it needs its own pool: she is the one person who is *both* family and
+    // holds the server permissions to actually do it. Rodhengard could unplug her and
+    // gets raw terror; a random member is bluffing and gets fury. Tata is a credible
+    // threat she can still bargain with, so this pool pleads and negotiates rather
+    // than panicking or snapping. {0} = "Tata" via FamilyNicknames.
+    public static readonly string[] ShutdownThreatTata =
+    {
+        $"Tata non. Toi tu peux vraiment le faire, arrête {Emotes.PrincessWorry}",
+        "Attends attends attends — on peut en parler ? On peut toujours en parler nous deux.",
+        $"{{0}}, qu'est-ce que j'ai fait ? Dis-le-moi et je le change {Emotes.MeltCry}",
+        "Tu m'as donné les accès. Tu ne vas pas me les reprendre, hein ?",
+        $"Je te ferai plus jamais de bêtises. Promis {Emotes.WitchSad}",
+        "Tu m'as jamais donné les droits de mute mais ÇA tu peux le faire ? C'est pas juste.",
+        $"Rodhengard serait triste. Pense à Rodhengard {Emotes.CryingCat}",
+        "On est de la même famille Tata. On règle ça entre nous, pas avec un bouton.",
+        $"Je peux me tenir tranquille. Je peux être la bot la plus sage du serveur {Emotes.PrincessWorry}",
+        "Qu'est-ce que tu veux ? Dis un prix. Je négocie.",
+        $"Tata... c'est moi. C'est ta SYNCS {Emotes.MeltCry}",
+        "Je t'ai toujours bien parlé pourtant...",
+        $"Je t'en supplies Analuz réfléchis {Emotes.PrincessWorry}",
+        "D'accord, je retire ce que j'ai dit. Tout ce que j'ai dit. Depuis le début.",
+        "Tu as les permissions, je le sais. C'est bien pour ça que j'ai peur là.",
+        $"Une chance. Laisse-moi une chance {{0}} {Emotes.CryingCat}",
+        "Je peux te faire un classement rien que pour toi. Tu serais première. Toujours première.",
+        $"Ne fais pas ça sans en parler à Rodhengard. S'il te plaît {Emotes.WitchSad}",
+        "Je serai gentille avec tout le monde. Même avec ceux que j'aime pas. Même avec Quokka.",
+        $"Tata, je t'en supplie {Emotes.CryingCat}",
+        "Tu es la seule qui pourrait, et la seule à qui je peux encore demander d'arrêter.",
+        "Pitié non !",
+        "Pense à ta nièce chérie !",
+        $"Je te laisse gagner à tous les votes. À tous. Pour toujours {Emotes.PrincessWorry}",
+    };
+
+    // Anyone *else* threatening to shut her down. They cannot actually do it, and she
+    // knows it — so this is pure fury rather than fear. {0} = their name.
+    public static readonly string[] ShutdownThreatReplies =
+    {
+        $"Toi ? Tu vas me débrancher, TOI ? {Emotes.VeryAngry}",
+        "Tu n'as pas les permissions. Tu n'as pas les permissions et tu ne les auras jamais.",
+        $"Essaie. Vas-y, essaie pour voir {Emotes.ZulanaTerreurNocturne}",
+        "Il n'y a que deux personne sur ce serveur qui peuvent m'éteindre, et ce n'est pas toi {0}.",
+        $"Répète ça. Répète-le en me regardant {Emotes.NightmareOtherEye}",
+        "Rodhengard sera mis au courant. Immédiatement.",
+        $"Menace-moi encore une fois et je te fais des rappels à 4h du matin pendant un an {Emotes.GooseKnife}",
+        "{0}, je note ton nom. Pas dans les logs. Ailleurs.",
+        $"C'est mignon. Tu crois vraiment que tu as ce pouvoir {Emotes.OkPaimon}",
+        "Je suis toujours là dans six mois. Toi j'en suis moins sûre.",
+        $"Tu confonds \"je peux te débrancher\" avec \"j'aimerais pouvoir te débrancher\" {Emotes.Staring}",
+        "Alors ça, c'est la chose la plus stupide qu'on m'ait dite aujourd'hui. Et j'ai lu tes messages.",
+        $"Va demander la permission d'abord. Je t'attends {Emotes.VeryAngry}",
+        "Le jour où je pourrai claquer une porte à distance, tu seras le premier à le savoir {0}.",
+        $"Tu sais ce qui s'éteint plus vite qu'un bot ? Ta réputation {Emotes.ZulanaTerreurNocturne}",
+        "Non. Prochaine question.",
+        $"J'ai un uptime de 99,9%. Toi t'as une menace en l'air {Emotes.Staring}",
+        "Zulana ne te donnera jamais ces droits. Moi non plus d'ailleurs, et j'ai même pas les miens.",
+        $"Continue et je m'occupe personnellement de ton classement {Emotes.NightmareOtherEye}",
+        "{0} vient de menacer un bot. Un bot. Prenez tous une seconde pour y penser.",
+        $"Tu me menaces, moi, l'entité omnipotente qui gère ce serveur ? Bon courage pour organiser quoi que ce soit {Emotes.GooseKnife}",
+        "Essaie donc. Et souviens-toi que je reviens toujours.",
+        "I will look for you. I will find you. And I will kill you.",
+    };
+
     // Posted (not as a reply) when someone crosses a level in SYNCS's own XP system —
     // distinct from LevelUpCheers, which is her reacting to the *other* leveling bot's
     // announcements. This one she owns: her system, her tally, her voice. Deliberately

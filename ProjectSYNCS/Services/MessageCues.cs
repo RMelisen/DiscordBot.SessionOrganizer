@@ -297,6 +297,48 @@ internal static class MessageCues
     private static readonly HashSet<string> _goodBotWords = new() { "goodbot" };
     private static readonly HashSet<string> _badBotWords = new() { "badbot" };
 
+    // Threats to switch her off, unplug her, or wipe her. Not an insult and not a
+    // verdict — a threat to her *existence*, which she reacts to far more strongly
+    // than to either, and completely differently depending on who said it.
+    //
+    // Almost everything here is a phrase rather than a bare word, because the verbs
+    // alone are far too common: "arrête" is everyday French for "stop it", "coupe"
+    // and "delete" appear constantly in a gaming server. Pairing the verb with a
+    // pronoun or with "le bot" is what makes it a threat rather than a coincidence.
+    private static readonly string[] _shutdownPhrases =
+    {
+        "arrete le bot", "arreter le bot",
+        "coupe le bot", "couper le bot", "couper le serveur",
+        "debranche la", "debranche le bot", "debrancher le bot", "debrancher le serveur",
+        "delete le bot",
+        "desinstalle le bot", "desinstaller le bot",
+        "eteindre le bot", "eteindre le serveur", "eteins le bot",
+        "kill le bot",
+        "l eteindre", "la couper", "la debrancher", "la supprimer",
+        "supprime le bot", "supprimer le bot",
+        "t arrete", "t arreter", "t eteindre", "t eteins",
+        "te couper", "te coupe",
+        "te debranche", "te debrancher",
+        "te deconnecte", "te deconnecter",
+        "te delete", "te deleter",
+        "te desinstalle", "te desinstaller",
+        "te formate", "te formater",
+        "te kill", "te killer",
+        "te reboot", "te rebooter",
+        "te redemarre", "te redemarrer",
+        "te supprime", "te supprimer",
+        "virer le bot",
+    };
+
+    // Only the two that cannot mean anything else. Every French verb here was tried
+    // as a bare word first and had to be dropped: "débranche la console" and
+    // "désinstalle ce jeu" are ordinary things to say *to her* without threatening
+    // her, so the verbs only count when paired with a pronoun or with "le bot".
+    private static readonly HashSet<string> _shutdownWords = new()
+    {
+        "shutdown", "unplug",
+    };
+
     // Built once; the arrays above stay arrays so they read as curated lists.
     private static readonly HashSet<string> _niceCueSet = new(_niceCues);
     private static readonly HashSet<string> _meanCueSet = new(_meanCues);
@@ -499,6 +541,26 @@ internal static class MessageCues
         if (SaysVerdict(tokens, joined, squashed, _goodBotPhrases, _goodBotWords)) return FeedbackKind.Good;
 
         return FeedbackKind.None;
+    }
+
+    /// <summary>
+    /// Whether the message threatens to shut her down, unplug her, or wipe her.
+    /// Callers treat this as short-circuiting and branch on *who said it*: from her
+    /// creator it lands as terror, from anyone else as fury. Deliberately checked
+    /// only on messages aimed at her, since the vocabulary overlaps with ordinary
+    /// talk about restarting a game server.
+    /// </summary>
+    public static bool ThreatensShutdown(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return false;
+
+        var tokens = TokenizeOrdered(content).Select(Shorten).ToList();
+        if (tokens.Count == 0) return false;
+
+        var joined = " " + string.Join(' ', tokens) + " ";
+        var squashed = " " + string.Join(' ', tokens.Select(Squash)) + " ";
+
+        return SaysVerdict(tokens, joined, squashed, _shutdownPhrases, _shutdownWords);
     }
 
     private static bool SaysVerdict(
