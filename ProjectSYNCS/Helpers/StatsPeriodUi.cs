@@ -31,6 +31,18 @@ public static class StatsPeriodUi
     /// The active filter is highlighted and disabled, so it reads as the current view
     /// rather than an available action.
     /// </summary>
+    /// <remarks>
+    /// <para><b><paramref name="idPrefix"/> must not be the prefix the caller's paging
+    /// buttons use.</b> Discord rejects a message whose components share a custom-id —
+    /// with <c>COMPONENT_CUSTOM_ID_DUPLICATED</c>, and regardless of either being
+    /// disabled — and the active filter's id here is exactly
+    /// <c>{prefix}:{currentPeriod}:0</c>, which is also what a "◀" pointing at page 0
+    /// would produce from the same prefix. Every caller therefore gives its filter row
+    /// its own verb (<c>…:win:</c>) and keeps paging on another (<c>…:view:</c> /
+    /// <c>…:page:</c>), with a handler for each.</para>
+    /// <para>This is not hypothetical: it shipped, and it takes 2+ pages and one click
+    /// on "▶" to hit.</para>
+    /// </remarks>
     public static ComponentBuilder AddFilterRow(
         this ComponentBuilder builder, string idPrefix, StatsPeriod active, int row = 0)
     {

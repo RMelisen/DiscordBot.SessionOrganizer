@@ -37,8 +37,18 @@ public class EmoteStatsModule : InteractionModuleBase<SocketInteractionContext>
     // Both the page arrows and the period buttons come back here: the custom-id
     // carries the whole view state, since a component handler gets no memory of what
     // was on screen.
+    //
+    // Two verbs, one behaviour. They cannot share one: the active period's filter
+    // button is `{prefix}:{period}:0`, and so is a "◀" pointing at page 0, so from
+    // page 2 onwards the message would carry the same custom-id twice and Discord
+    // rejects the whole thing with COMPONENT_CUSTOM_ID_DUPLICATED — disabled or not.
     [ComponentInteraction("emotestats:view:*:*", ignoreGroupNames: true)]
-    public async Task OnViewAsync(string periodStr, string pageStr)
+    public Task OnPageAsync(string periodStr, string pageStr) => ShowAsync(periodStr, pageStr);
+
+    [ComponentInteraction("emotestats:win:*:*", ignoreGroupNames: true)]
+    public Task OnPeriodAsync(string periodStr, string pageStr) => ShowAsync(periodStr, pageStr);
+
+    private async Task ShowAsync(string periodStr, string pageStr)
     {
         if (!Enum.TryParse<StatsPeriod>(periodStr, out var period)) period = DefaultPeriod;
         int.TryParse(pageStr, out var page);
@@ -80,7 +90,7 @@ public class EmoteStatsModule : InteractionModuleBase<SocketInteractionContext>
         // Row 0: the filters. Row 1: paging within the current filter, which the id
         // has to carry too.
         var builder = new ComponentBuilder()
-            .AddFilterRow("emotestats:view", period)
+            .AddFilterRow("emotestats:win", period)
             .WithButton("◀", $"emotestats:view:{period}:{page - 1}", ButtonStyle.Secondary,
                 disabled: page == 0, row: 1)
             .WithButton("▶", $"emotestats:view:{period}:{page + 1}", ButtonStyle.Secondary,

@@ -90,21 +90,40 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
             allowedMentions: AllowedMentions.None);
     }
 
-    // The page arrows, both filter rows and the card's "Voir le classement" button all
-    // come back here: the custom-id carries the whole view state, since a component
-    // handler gets no memory of what was on screen. Changing either filter resets to
-    // page 0 and leaves the other alone — it is a different ranking, so page 3 of the
-    // old one means nothing.
+    // Every button on the board comes back to the same place: the custom-id carries the
+    // whole view state, since a component handler gets no memory of what was on screen.
+    // Changing either filter resets to page 0 and leaves the other alone — it is a
+    // different ranking, so page 3 of the old one means nothing.
     //
-    // The view segment comes before the period one so that the period row can be built
-    // by StatsPeriodUi with `level:view:{view}` as its prefix, exactly like
-    // /emotestats and /goodbot do with theirs.
+    // **One verb per row, and they must stay distinct.** All three rows encode the same
+    // triple (view, period, page), so sharing a verb makes ids collide outright: the
+    // active view's button and the active period's button are both
+    // "current view, current period, page 0", and a "◀" from page 1 is that same string
+    // again. Discord rejects any message carrying a duplicated custom-id with
+    // COMPONENT_CUSTOM_ID_DUPLICATED, disabled buttons included — this crashed
+    // /leaderboard on every single render until the verbs were split.
     //
-    // The card's button is just "Xp, all-time, page 0" and reuses this id rather than
-    // inventing a second one. That does mean it replaces the card in place; re-running
+    // Within a row there is no such risk: each button varies the one segment its row
+    // owns. The view segment comes before the period one so the period row can be built
+    // by StatsPeriodUi with `level:win:{view}` as its prefix, the same
+    // `{prefix}:{period}:0` shape /emotestats and /goodbot use.
+    //
+    // The card's "Voir le classement" is just "Xp, all-time, page 0" on the paging verb
+    // rather than a fourth id. That does mean it replaces the card in place; re-running
     // /level is the way back.
+    [ComponentInteraction("level:page:*:*:*", ignoreGroupNames: true)]
+    public Task OnPageAsync(string viewStr, string periodStr, string pageStr) =>
+        ShowAsync(viewStr, periodStr, pageStr);
+
     [ComponentInteraction("level:view:*:*:*", ignoreGroupNames: true)]
-    public async Task OnViewAsync(string viewStr, string periodStr, string pageStr)
+    public Task OnViewAsync(string viewStr, string periodStr, string pageStr) =>
+        ShowAsync(viewStr, periodStr, pageStr);
+
+    [ComponentInteraction("level:win:*:*:*", ignoreGroupNames: true)]
+    public Task OnPeriodAsync(string viewStr, string periodStr, string pageStr) =>
+        ShowAsync(viewStr, periodStr, pageStr);
+
+    private async Task ShowAsync(string viewStr, string periodStr, string pageStr)
     {
         if (!Enum.TryParse<LeaderboardView>(viewStr, out var view)) view = DefaultView;
         if (!Enum.TryParse<StatsPeriod>(periodStr, out var period)) period = DefaultPeriod;
@@ -149,7 +168,7 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
             .AddComponent(container)
             .AddComponent(new ActionRowBuilder()
                 .WithButton("Voir le classement",
-                    $"level:view:{LeaderboardView.Xp}:{StatsPeriod.AllTime}:0", ButtonStyle.Secondary))
+                    $"level:page:{LeaderboardView.Xp}:{StatsPeriod.AllTime}:0", ButtonStyle.Secondary))
             .Build();
     }
 
@@ -203,12 +222,13 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
             .AddComponent(container)
             .AddComponent(views)
             // Row 1: the window, from the same helper /emotestats and /goodbot use, so
-            // the three commands cannot drift into labelling it differently.
-            .AddComponent(new ActionRowBuilder().AddFilterRow($"level:view:{view}", period))
+            // the three commands cannot drift into labelling it differently. Its own
+            // verb, never the paging one — see the handlers above.
+            .AddComponent(new ActionRowBuilder().AddFilterRow($"level:win:{view}", period))
             .AddComponent(new ActionRowBuilder()
-                .WithButton("◀", $"level:view:{view}:{period}:{page - 1}", ButtonStyle.Secondary,
+                .WithButton("◀", $"level:page:{view}:{period}:{page - 1}", ButtonStyle.Secondary,
                     disabled: page == 0)
-                .WithButton("▶", $"level:view:{view}:{period}:{page + 1}", ButtonStyle.Secondary,
+                .WithButton("▶", $"level:page:{view}:{period}:{page + 1}", ButtonStyle.Secondary,
                     disabled: page >= totalPages - 1))
             .Build();
     }

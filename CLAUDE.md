@@ -625,9 +625,22 @@ for a window, and the footer's standing line switches the same way. Reaction and
 rows read identically in every period, since a count is a count. `/level`'s card carries
 no filters at all — it is a profile, not a ranking.
 
+**Every button row needs its own custom-id verb. This is not style — it crashed prod.**
+Discord rejects a message carrying the same custom-id twice with
+`COMPONENT_CUSTOM_ID_DUPLICATED`, **disabled buttons included**, and every row on these
+boards encodes the same state, so sharing a verb makes ids collide by construction. The
+active filter button is `{prefix}:{current}:0`, which is character-for-character what a
+`◀` pointing at page 0 produces from the same prefix — and on `/leaderboard`, where two
+filter rows exist, the active view button and the active period button are both
+"current view, current period, page 0", so it duplicated on *every* render rather than
+only from page 2. The verbs are therefore `…:win:` for the window row, `…:view:` for
+`/leaderboard`'s metric row, and `…:view:` / `…:page:` for paging, each with its own
+handler delegating to one shared `ShowAsync`. `StatsPeriodUi`'s doc comment carries the
+same warning, since it is the piece that hands out `{prefix}:{period}:0`.
+
 **`/leaderboard`'s custom-id orders view before period on purpose.**
-`level:view:{view}:{period}:{page}` lets the period row be built by `StatsPeriodUi` with
-`level:view:{view}` as its prefix, giving it the same `{prefix}:{period}:0` shape
+`level:{verb}:{view}:{period}:{page}` lets the period row be built by `StatsPeriodUi`
+with `level:win:{view}` as its prefix, giving it the same `{prefix}:{period}:0` shape
 `/emotestats` and `/goodbot` use — which is why that helper grew an `ActionRowBuilder`
 overload rather than the labels being duplicated for Components V2. Changing either
 filter resets to page 0 and leaves the other alone. Its default period is **all-time**
