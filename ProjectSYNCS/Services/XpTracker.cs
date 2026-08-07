@@ -31,13 +31,17 @@ internal sealed class XpTracker
     // noticeably less than Good, so praise stays worth more than a complaint.
     private const long BadVerdictBonus = 15;
 
-    // Channels that earn nothing, whatever happens in them — the server's spam
-    // channels, where activity says nothing about engagement. Every signal checks this
-    // (message, reaction, verdict, voice), so there is no path back in.
+    // Channels that earn nothing, whatever happens in them — spam and the other places
+    // where activity says nothing about engagement. Every signal checks this (message,
+    // reaction, verdict, voice), so there is no path back in.
     private static readonly HashSet<ulong> ExcludedChannels = new()
     {
         901172450719584356,
         916655216080875551,
+        1526335594165440542,
+        885475859992035348,
+        995433580597624923,
+        1010902795207053312,
     };
 
     private static readonly TimeSpan MessageCooldown = TimeSpan.FromSeconds(60);
