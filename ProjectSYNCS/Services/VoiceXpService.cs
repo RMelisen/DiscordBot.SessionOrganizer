@@ -71,7 +71,10 @@ internal sealed class VoiceXpService : BackgroundService
                     // unrelated reason shouldn't also lose XP for it.
                     if (member.VoiceState is { IsSelfMuted: true, IsSelfDeafened: true }) continue;
 
-                    await _xp.GrantVoiceXpAsync(guild.Id, member.Id, VoiceXpPerMinute);
+                    // The channel id goes along so XpTracker can apply the same
+                    // excluded-channel rule it applies to every other signal — the
+                    // list lives there, not here.
+                    await _xp.GrantVoiceXpAsync(guild.Id, channel.Id, member.Id, VoiceXpPerMinute);
                 }
             }
         }

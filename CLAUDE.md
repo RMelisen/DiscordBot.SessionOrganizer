@@ -557,6 +557,18 @@ praise. The call sits *after*
 immediate, and a level-up announcement, if any, is a slightly-delayed follow-up that
 must never push the acknowledgement itself later.
 
+**`XpTracker.ExcludedChannels` is checked before `TryClaim`, never after.** The spam
+channels earn nothing, and the order matters: claiming first would let a message there
+burn that person's 60 s message cooldown, so spamming in the excluded channel would
+*actively block* them from earning in a real one a minute later — the opposite of the
+intent. All four signals check it (message, reaction, verdict, voice), which is why
+`GrantVoiceXpAsync` takes the voice channel id it would otherwise have no use for: the
+list lives in `XpTracker` alone, so `VoiceXpService` passes the id rather than keeping
+a second copy of the rule. The check also treats a **thread** as its parent, or opening
+a thread inside a spam channel would quietly be a way back in. The decision itself is
+split into a pure `(channelId, parentId?)` overload precisely so it can be exercised
+without a gateway connection.
+
 **The level-up announcement is a card, not a line.** `XpTracker.AnnounceAsync` posts an
 embed — avatar thumbnail, `Color.Purple` to match `/level`'s leaderboard, and a title
 showing the **span crossed** (`Niveau {old} → {new} !`), not just the level landed on:
@@ -622,6 +634,6 @@ and `config.yaml` a `PASTE_YOUR_TOKEN_HERE` one; real tokens go in user secrets
 `AvailabilityService.OwnerId` (the owner, who gets special treatment throughout
 `ChatterService` and again in `ReactionService`, both for what he says and for what
 he reacts to), the level-up bot id in `ChatterService`, the `hi_cat` emote id in
-`MessageCues` and `ReminderService`, and the per-user `PersonalComebacks` /
-`RealNames` maps in `BotResponses` are literal snowflakes tied to one specific
-server.
+`MessageCues` and `ReminderService`, `XpTracker.ExcludedChannels` (the spam channels
+that earn no XP), and the per-user `PersonalComebacks` / `RealNames` maps in
+`BotResponses` are literal snowflakes tied to one specific server.

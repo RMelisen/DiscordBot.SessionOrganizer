@@ -31,6 +31,15 @@ internal sealed class XpTracker
     // noticeably less than Good, so praise stays worth more than a complaint.
     private const long BadVerdictBonus = 15;
 
+    // Channels that earn nothing, whatever happens in them — the server's spam
+    // channels, where activity says nothing about engagement. Every signal checks this
+    // (message, reaction, verdict, voice), so there is no path back in.
+    private static readonly HashSet<ulong> ExcludedChannels = new()
+    {
+        901172450719584356,
+        916655216080875551,
+    };
+
     private static readonly TimeSpan MessageCooldown = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan ReactionCooldown = TimeSpan.FromSeconds(60);
 
@@ -73,6 +82,7 @@ internal sealed class XpTracker
         if (rawMessage is not SocketUserMessage message) return;
         if (message.Author.IsBot) return;
         if (message.Channel is not SocketGuildChannel guildChannel) return;
+        if (IsExcluded(guildChannel)) return;
 
         var key = (guildChannel.Guild.Id, message.Author.Id);
         if (!TryClaim(_lastMessageXp, key, MessageCooldown)) return;
@@ -97,6 +107,7 @@ internal sealed class XpTracker
 
         var resolved = await channel.GetOrDownloadAsync();
         if (resolved is not IGuildChannel guildChannel) return;
+        if (IsExcluded(guildChannel)) return;
 
         var key = (guildChannel.GuildId, reaction.UserId);
         if (!TryClaim(_lastReactionXp, key, ReactionCooldown)) return;
@@ -117,18 +128,25 @@ internal sealed class XpTracker
     {
         var amount = verdict == FeedbackKind.Good ? GoodVerdictBonus : BadVerdictBonus;
         if (amount <= 0) return;
+
+        var channel = _client.GetChannel(channelId);
+        if (IsExcluded(channelId, channel)) return;
         if (!TryClaim(_lastVerdictXp, (guildId, userId), VerdictCooldown)) return;
 
-        var channel = _client.GetChannel(channelId) as IMessageChannel;
-        await GrantAsync(guildId, userId, amount, channel);
+        await GrantAsync(guildId, userId, amount, channel as IMessageChannel);
     }
 
     /// <summary>
     /// Phase 2 entry point — the periodic voice sweep grants through here too, so
     /// announcing and level-up detection stay in one place regardless of signal.
+    /// <paramref name="voiceChannelId"/> is where the XP was *earned*; the
+    /// announcement still goes to the guild's system channel, since a voice channel
+    /// has no conversation to post it into.
     /// </summary>
-    public Task GrantVoiceXpAsync(ulong guildId, ulong userId, long amount)
+    public Task GrantVoiceXpAsync(ulong guildId, ulong voiceChannelId, ulong userId, long amount)
     {
+        if (IsExcluded(voiceChannelId, _client.GetChannel(voiceChannelId))) return Task.CompletedTask;
+
         var channel = _client.GetGuild(guildId)?.SystemChannel;
         return GrantAsync(guildId, userId, amount, channel);
     }
@@ -197,6 +215,22 @@ internal sealed class XpTracker
     // rather than just a name, since the card needs an avatar off the same object.
     private static IUser? ResolveUser(IMessageChannel channel, ulong userId, IUser? knownUser) =>
         knownUser ?? (channel as SocketGuildChannel)?.Guild.GetUser(userId);
+
+    // Every entry point calls one of these *before* TryClaim, never after: a message in
+    // an excluded channel must not burn the person's cooldown, or spamming there would
+    // actively block them from earning in a real channel a minute later.
+    private static bool IsExcluded(IChannel channel) =>
+        IsExcluded(channel.Id, channel);
+
+    private static bool IsExcluded(ulong channelId, IChannel? resolved) =>
+        IsExcluded(channelId, (resolved as SocketThreadChannel)?.ParentChannel?.Id);
+
+    // The actual decision, pure and free of gateway types so it can be checked without
+    // a connection. A thread inherits its parent's exclusion — otherwise opening a
+    // thread inside a spam channel would quietly be a way back in.
+    private static bool IsExcluded(ulong channelId, ulong? parentId) =>
+        ExcludedChannels.Contains(channelId)
+        || (parentId is { } parent && ExcludedChannels.Contains(parent));
 
     // Atomically checks one gate's per-(guild,user) cooldown and claims it.
     private bool TryClaim(Dictionary<(ulong, ulong), DateTimeOffset> gate, (ulong, ulong) key, TimeSpan cooldown)
