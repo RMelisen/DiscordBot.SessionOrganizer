@@ -16,6 +16,9 @@ public static class SessionPermissions
     public static bool CanManage(IUser user, Poll poll) =>
         CanManage(user, poll.OrganizerId);
 
+    public static bool CanManage(IUser user, Giveaway giveaway) =>
+        CanManage(user, giveaway.OrganizerId);
+
     private static bool CanManage(IUser user, ulong organizerId)
     {
         if (organizerId == user.Id)

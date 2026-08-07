@@ -33,6 +33,19 @@ in one click. The bot's user-facing language is French.
 - **`/poll delete <id>` · `/vote delete <id>`** — delete one you created.
 - Polls and votes left open **auto-close after 2 days**.
 
+### Giveaways
+- **`/giveaway create`** — post a prize draw: a prize, a duration picked from a fixed
+  list (10 minutes to 7 days), and optionally a description and a winner count (1 by
+  default, 10 max). People enter by clicking a button on the card, and clicking again
+  withdraws.
+- **`/giveaway list` · `/giveaway delete <id>`** — list and republish running draws,
+  or delete one you started.
+- When the time is up a **1-minute sweep** draws the winners at random, closes the
+  card and announces the result in the bot's own voice, pinging the winners (users
+  only — never roles or `@everyone`). The end time is stored as an absolute instant,
+  so a restart loses nothing and anything that came due while the bot was down is
+  drawn on the next pass.
+
 ### Other
 - **`/emotestats`** — leaderboard of the server's most-used emotes (both in
   messages and as reactions), paginated, with three filters: **30 days** (the

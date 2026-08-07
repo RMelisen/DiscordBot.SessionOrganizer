@@ -41,8 +41,15 @@ public static class BotChat
         }
     }
 
+    /// <summary>
+    /// Posts behind the typing indicator. <paramref name="allowedMentions"/> is for the
+    /// rare line that is *meant* to ping — the giveaway draw announcing its winners —
+    /// and should be as narrow as the line needs (users only, never roles or everyone).
+    /// Left null, Discord's default applies, which is what ordinary chatter wants.
+    /// </summary>
     public static async Task PostWithTypingAsync(
-        IMessageChannel channel, string line, ILogger logger, string what)
+        IMessageChannel channel, string line, ILogger logger, string what,
+        AllowedMentions? allowedMentions = null)
     {
         try
         {
@@ -50,7 +57,7 @@ public static class BotChat
             {
                 await Task.Delay(TypingDelayFor(line));
             }
-            await channel.SendMessageAsync(line);
+            await channel.SendMessageAsync(line, allowedMentions: allowedMentions);
         }
         catch (Exception ex)
         {

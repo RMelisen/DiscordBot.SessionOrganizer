@@ -632,6 +632,34 @@ internal static class BotResponses
         "**{0}**, niveau **{1}**, et c'est mérité. J'ai vérifié mes chiffres, ils mentent pas (ᵕ • ᴗ •)",
     };
 
+    // Announcing a giveaway's winners. {0} = the winner mentions (already joined, and
+    // already plural-safe), {1} = the prize. She is the one drawing, so the lines are
+    // hers rather than a neutral "the winner is".
+    public static readonly string[] GiveawayDrawLines =
+    {
+        "Roulement de tambour... {0} remporte **{1}** ! (˶˃ ᵕ ˂˶)",
+        "J'ai tiré au sort, et le hasard a choisi {0} : **{1}** est à toi ✨",
+        "C'est fini ! {0} repart avec **{1}** ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Mon générateur aléatoire a parlé : {0} gagne **{1}** ♡",
+        "Félicitations {0} ! **{1}**, bien mérité (˶ᵔ ᵕ ᵔ˶)",
+        "{0} ! C'est toi ! Tu gagnes **{1}** ٩(˶ᵔ ᵕ ᵔ˶)۶",
+        "Tirage terminé. {0} empoche **{1}**, les autres pleurent ( ˶ˆ ᗜ ˆ˵ )",
+        "Après un calcul d'une complexité folle : {0} gagne **{1}** ✨",
+        "Le sort a désigné {0}. **{1}** est à eux, c'est comme ça (ᵕ • ᴗ •)",
+        "Bravo {0} ! Tu repars avec **{1}**, savoure bien (˶˃ ᵕ ˂˶)",
+        "J'ai mélangé, j'ai tiré, j'ai décidé : {0} gagne **{1}** ♡",
+        "Résultat officiel : {0} remporte **{1}**. Pas de réclamation.",
+    };
+
+    // Nobody clicked the button. {0} = the prize.
+    public static readonly string[] GiveawayEmptyLines =
+    {
+        "Tirage terminé... et personne n'a participé. **{0}** restera dans mes archives (ᵕ • ᴗ •)",
+        "Zéro participant pour **{0}**. J'ai préparé tout ça pour rien, merci beaucoup.",
+        "Personne n'a cliqué. **{0}** ne trouvera pas preneur aujourd'hui ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Fin du tirage : aucun participant. **{0}** vous regarde avec déception.",
+    };
+
     // Compliments for the owner (Rodhengard) instead of roasts.
     public static readonly string[] OwnerComebacks =
     {

@@ -27,6 +27,13 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/vote create`** — Propose plusieurs options en texte (jeux, films…) et laisse chacun voter.\n" +
                 "**`/vote list`** — Affiche les votes actifs du serveur. Tu peux en republier un dans le salon courant.\n" +
                 "**`/vote delete <id>`** — Supprime un vote que tu as créé.")
+            .AddField("Commandes — Tirages au sort",
+                "**`/giveaway create`** — Lance un tirage : le **lot**, une **durée** (de 10 minutes à 7 jours), " +
+                "et si tu veux une **description** et un **nombre de gagnants** (1 par défaut, 10 max).\n" +
+                "**`/giveaway list`** — Affiche les tirages en cours. Tu peux en republier un dans le salon courant.\n" +
+                "**`/giveaway delete <id>`** — Supprime un tirage que tu as lancé.\n" +
+                "Pour participer, il suffit de cliquer sur **🎉 Participer**. Reclique pour te retirer. " +
+                "À la fin du temps imparti, je tire au sort et j'annonce le résultat toute seule.")
             .AddField("Commandes — Autres",
                 "**`/emotestats`** — Affiche le classement des emotes les plus utilisées du serveur (écrites et en réaction). " +
                 "Trois filtres : **30 jours** (par défaut), **7 jours** et **depuis toujours**.\n" +

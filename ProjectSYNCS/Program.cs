@@ -48,6 +48,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<EmoteStatsService>();
         services.AddTransient<BotFeedbackService>();
         services.AddTransient<XpService>();
+        services.AddTransient<GiveawayService>();
 
         // Personality / chat behaviour collaborators (singletons: they hold
         // in-memory state like the breakdown cooldown).
@@ -67,6 +68,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddHostedService<ReminderService>();
         services.AddHostedService<PresenceService>();
         services.AddHostedService<VoiceXpService>();
+        services.AddHostedService<GiveawayDrawService>();
     })
     .Build();
 

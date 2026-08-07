@@ -18,6 +18,8 @@ public class AppDbContext : DbContext
     public DbSet<BotFeedbackDailyStat> BotFeedbackDailyStats => Set<BotFeedbackDailyStat>();
     public DbSet<MemberXp> MemberXps => Set<MemberXp>();
     public DbSet<MemberDailyStat> MemberDailyStats => Set<MemberDailyStat>();
+    public DbSet<Giveaway> Giveaways => Set<Giveaway>();
+    public DbSet<GiveawayEntry> GiveawayEntries => Set<GiveawayEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -115,6 +117,27 @@ public class AppDbContext : DbContext
             // Serves the rolling-window read: "this guild, since day N". Day is an
             // int precisely so this range can be evaluated in SQL.
             e.HasIndex(x => new { x.GuildId, x.Day });
+        });
+
+        modelBuilder.Entity<Giveaway>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.ChannelId).HasConversion<long>();
+            e.Property(x => x.MessageId).HasConversion<long>();
+            e.Property(x => x.OrganizerId).HasConversion<long>();
+
+            e.HasIndex(x => x.GuildId);
+            // The sweep's read: the open ones. EndsAt is deliberately not indexed —
+            // SQLite cannot compare a DateTimeOffset in a query anyway, so the cutoff
+            // is applied in memory and an index on it would never be used.
+            e.HasIndex(x => x.IsClosed);
+        });
+
+        modelBuilder.Entity<GiveawayEntry>(e =>
+        {
+            e.Property(x => x.UserId).HasConversion<long>();
+            // One entry row per (giveaway, person); the button toggles it.
+            e.HasIndex(x => new { x.GiveawayId, x.UserId }).IsUnique();
         });
     }
 }

@@ -37,8 +37,10 @@ error messages — are **in French**. Code, comments and logs are in English.
 
 ## Architecture
 
-`Program.cs` is the composition root: DI wiring, `MigrateAsync()`, then three hosted
-services.
+`Program.cs` is the composition root: DI wiring, `MigrateAsync()`, then the hosted
+services — `BotService`, `ReminderService`, `PresenceService`, `VoiceXpService` and
+`GiveawayDrawService`. The last three each run their own interval on purpose; see the
+notes below before sharing one.
 
 - **`BotService`** — gateway login, slash-command registration, interaction
   dispatch. Fans `MessageReceived` out to `EmoteTracker`, `ReactionService` and
@@ -65,11 +67,18 @@ Layers: `Commands/` (slash modules + the embed/component builders), `Interaction
 (component handlers and modal DTOs), `Services/` (EF repositories + behaviour),
 `Models/`, `Data/AppDbContext.cs`, `Helpers/`.
 
-Slash modules: `ScheduleModule`, `PollModule`, `VoteModule` (group modules),
-plus the flat `EmoteStatsModule`, `HelpModule`, `SpeakModule` (`/tell`, `/dm`) and
-`AbsenceModule` (`/absent`). Component handlers for the published cards live apart
-from the wizards, in `Interactions/Components/` (`EventComponentHandler`,
-`PollComponentHandler`).
+Slash modules: `ScheduleModule`, `PollModule`, `VoteModule`, `GiveawayModule` (group
+modules), plus the flat `EmoteStatsModule`, `BotFeedbackModule` (`/goodbot`),
+`LevelModule` (`/level`, `/leaderboard`), `HelpModule`, `SpeakModule` (`/tell`, `/dm`)
+and `AbsenceModule` (`/absent`). Component handlers for the published cards live apart
+from the commands, in `Interactions/Components/` (`EventComponentHandler`,
+`PollComponentHandler`, `GiveawayComponentHandler`) — the module keeps the commands and
+the `static` card builders those handlers render through.
+
+`GiveawayModule` is a group module but **not** a wizard: a giveaway is one slash command
+with a fixed set of options, so unlike `PollModule`/`VoteModule` it keeps no draft state
+anywhere. The duration is a `[Choice]` list rather than parsed text — nothing to reject,
+and no error path to word in French.
 
 Two stateless helpers wrap the outward Discord side effects of a session:
 `SessionEventSync` (create/update/delete the native Guild Scheduled Event) and
@@ -501,6 +510,34 @@ straight from the command.
 owner's DM reply relay is checked before the reply-to-bot branch, which would
 otherwise swallow it as a reply to the bot and fire a comeback instead of relaying.
 Add new branches with that precedence in mind.
+
+**The giveaway draw is one call, and that is what makes it crash-safe.**
+`GiveawayService.TryDrawAsync` picks the winners, marks them and sets `IsClosed` in a
+single `SaveChanges`, and returns `null` if the giveaway was already drawn. So the sweep
+can die between drawing and announcing, or restart mid-pass, and the worst case is an
+announcement that never goes out — never a second draw, and never a set of winners
+different from what the card shows. Anything that adds an early "tirer maintenant"
+button must go through that same call rather than drawing separately.
+
+A winner is recorded as `GiveawayEntry.IsWinner`, not in a second table: a winner is by
+definition an entrant, so this costs no join and the drawn set survives every later
+re-render. The pick is a partial Fisher-Yates over a copy, deliberately not
+`OrderBy(_ => Random)` — that comparer is called an unspecified number of times with a
+fresh key each call.
+
+**`GiveawayDrawService` has its own 1-minute tick, and it is the third such interval.**
+Not `ReminderService`'s 5 minutes, whose width is load-bearing for the reminder window,
+and not `PresenceService`'s. A giveaway drawn up to five minutes after its stated end
+reads as broken — on a 10-minute giveaway that is half again as long. `EndsAt` is an
+absolute instant, so nothing is held in memory and a restart simply resumes. Note the
+two names: `GiveawayService` is the transient DB wrapper, `GiveawayDrawService` the
+hosted sweep, per the transient/singleton split above.
+
+**The giveaway announcement is the one line that is *meant* to ping.** Every other relay
+narrows mentions to avoid notifying anyone; this one passes
+`AllowedMentions(AllowedMentionTypes.Users)` because winners should be told — users
+only, still never roles or `@everyone`. It is why `BotChat.PostWithTypingAsync` takes an
+optional `AllowedMentions`; left null it behaves exactly as before for ordinary chatter.
 
 **Session lifecycle is idempotent.** `SessionEvent.RenderedPhase` records what was
 last drawn on the card, so the background loop only re-renders on an actual
