@@ -36,8 +36,10 @@ in one click. The bot's user-facing language is French.
 ### Giveaways
 - **`/giveaway create`** — post a prize draw: a prize, a duration picked from a fixed
   list (10 minutes to 7 days), and optionally a description and a winner count (1 by
-  default, 10 max). People enter by clicking a button on the card, and clicking again
-  withdraws.
+  default, 10 max). The card carries **Participer / Ne plus participer** buttons and
+  lists the entrants, the way a session card lists its players — capped at 20 names
+  with the rest summarised, since an embed field holds 1024 characters and a giveaway
+  draws a bigger crowd than a session.
 - **`/giveaway list` · `/giveaway delete <id>`** — list and republish running draws,
   or delete one you started.
 - When the time is up a **1-minute sweep** draws the winners at random, closes the

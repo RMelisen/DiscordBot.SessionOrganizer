@@ -533,6 +533,20 @@ absolute instant, so nothing is held in memory and a restart simply resumes. Not
 two names: `GiveawayService` is the transient DB wrapper, `GiveawayDrawService` the
 hosted sweep, per the transient/singleton split above.
 
+**The giveaway card lists its entrants, and unlike the session card it caps the list.**
+An embed field holds 1024 characters and a mention costs 24 with its newline, so an
+unbounded roster throws at send time — `ScheduleModule.BuildEventEmbed` gets away with
+one because a session is a handful of people, while a giveaway is the thing that draws a
+crowd. 20 names then "… et N autre(s)", worst case 499 characters. Mentions inside an
+embed render as names without pinging, so no `AllowedMentions` is involved.
+
+**Entering is add/remove, never a toggle.** The card has an explicit "Ne plus
+participer" beside "Participer", so a "Participer" that also withdrew you would be the
+exact ambiguity that second button exists to remove — hence `AddEntryAsync` /
+`RemoveEntryAsync` rather than one toggle, each returning whether anything changed so a
+no-op click can say so instead of looking broken. A drawn card drops its buttons
+entirely rather than disabling them, the same way a cancelled session card does.
+
 **The giveaway announcement is the one line that is *meant* to ping.** Every other relay
 narrows mentions to avoid notifying anyone; this one passes
 `AllowedMentions(AllowedMentionTypes.Users)` because winners should be told — users

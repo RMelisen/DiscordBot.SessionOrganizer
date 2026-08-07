@@ -32,7 +32,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "et si tu veux une **description** et un **nombre de gagnants** (1 par défaut, 10 max).\n" +
                 "**`/giveaway list`** — Affiche les tirages en cours. Tu peux en republier un dans le salon courant.\n" +
                 "**`/giveaway delete <id>`** — Supprime un tirage que tu as lancé.\n" +
-                "Pour participer, il suffit de cliquer sur **🎉 Participer**. Reclique pour te retirer. " +
+                "Pour participer, clique sur **🎉 Participer** ; **✖️ Ne plus participer** te retire. " +
+                "La carte affiche la liste des participants, comme pour les sessions. " +
                 "À la fin du temps imparti, je tire au sort et j'annonce le résultat toute seule.")
             .AddField("Commandes — Autres",
                 "**`/emotestats`** — Affiche le classement des emotes les plus utilisées du serveur (écrites et en réaction). " +

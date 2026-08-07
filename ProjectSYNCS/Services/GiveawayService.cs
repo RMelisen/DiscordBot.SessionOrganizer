@@ -72,28 +72,42 @@ public class GiveawayService
     }
 
     /// <summary>
-    /// Adds this person's entry, or withdraws it if they had already entered.
-    /// Returns true when they are now entered.
+    /// Enters this person. Returns false if they had already entered, so the caller can
+    /// say so rather than silently doing nothing.
     /// </summary>
-    public async Task<bool> ToggleEntryAsync(int giveawayId, ulong userId)
+    /// <remarks>
+    /// Add and remove are two methods rather than one toggle because the card now has
+    /// two buttons. A toggle behind an explicit "Participer" would mean clicking it
+    /// twice withdraws you — which is exactly the confusion the second button exists to
+    /// remove.
+    /// </remarks>
+    public async Task<bool> AddEntryAsync(int giveawayId, ulong userId)
+    {
+        bool already = await _db_context.GiveawayEntries
+            .AnyAsync(e => e.GiveawayId == giveawayId && e.UserId == userId);
+        if (already) return false;
+
+        _db_context.GiveawayEntries.Add(new GiveawayEntry
+        {
+            GiveawayId = giveawayId,
+            UserId = userId
+        });
+        await _db_context.SaveChangesAsync();
+        return true;
+    }
+
+    /// <summary>
+    /// Withdraws this person. Returns false if they were not entered in the first place.
+    /// </summary>
+    public async Task<bool> RemoveEntryAsync(int giveawayId, ulong userId)
     {
         var existing = await _db_context.GiveawayEntries
             .FirstOrDefaultAsync(e => e.GiveawayId == giveawayId && e.UserId == userId);
-
-        if (existing is null)
-        {
-            _db_context.GiveawayEntries.Add(new GiveawayEntry
-            {
-                GiveawayId = giveawayId,
-                UserId = userId
-            });
-            await _db_context.SaveChangesAsync();
-            return true;
-        }
+        if (existing is null) return false;
 
         _db_context.GiveawayEntries.Remove(existing);
         await _db_context.SaveChangesAsync();
-        return false;
+        return true;
     }
 
     /// <summary>

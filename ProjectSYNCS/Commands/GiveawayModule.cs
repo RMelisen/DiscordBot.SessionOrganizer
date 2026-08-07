@@ -16,6 +16,10 @@ public class GiveawayModule : InteractionModuleBase<SocketInteractionContext>
 {
     private const int MaxWinners = 10;
 
+    // How many entrants the card lists before summarising the rest. Bounded by the
+    // 1024-character embed field limit, and by not wanting the card to be a wall.
+    private const int MaxEntrantsShown = 20;
+
     private readonly GiveawayService _giveaways;
 
     public GiveawayModule(GiveawayService giveaways)
@@ -207,14 +211,14 @@ public class GiveawayModule : InteractionModuleBase<SocketInteractionContext>
             // Both forms of the same instant: the client renders each in the reader's
             // own locale and timezone, so nothing here is formatted server-side.
             embed.AddField("Fin", $"{Relative(giveaway.EndsAt)} ({Absolute(giveaway.EndsAt)})");
-            embed.AddField("Participants", giveaway.Entries.Count.ToString(), inline: true);
+            AddEntrantsField(embed, giveaway);
             return embed.Build();
         }
 
         var winners = giveaway.Entries.Where(e => e.IsWinner).ToList();
 
         embed.AddField("Terminé", Absolute(giveaway.EndsAt));
-        embed.AddField("Participants", giveaway.Entries.Count.ToString(), inline: true);
+        AddEntrantsField(embed, giveaway);
         embed.AddField(
             winners.Count > 1 ? "Gagnants" : "Gagnant",
             winners.Count == 0
@@ -224,14 +228,46 @@ public class GiveawayModule : InteractionModuleBase<SocketInteractionContext>
         return embed.Build();
     }
 
-    public static MessageComponent BuildComponents(Giveaway giveaway) =>
-        new ComponentBuilder()
-            .WithButton(
-                giveaway.IsClosed ? "Tirage terminé" : "🎉 Participer",
-                $"giveaway:enter:{giveaway.Id}",
-                ButtonStyle.Primary,
-                disabled: giveaway.IsClosed)
+    // The entrant roster, like a session card's. Mentions render as names and do *not*
+    // ping from inside an embed, which is why no AllowedMentions is needed here.
+    //
+    // Capped, unlike the session card: an embed field holds 1024 characters and a
+    // mention costs ~23 with its newline, so an unbounded list throws at send time once
+    // a giveaway gets popular — and a giveaway is exactly the thing that attracts a
+    // crowd, where a session is a handful of people.
+    private static void AddEntrantsField(EmbedBuilder embed, Giveaway giveaway)
+    {
+        var entrants = giveaway.Entries.OrderBy(e => e.EnteredAt).ToList();
+
+        if (entrants.Count == 0)
+        {
+            embed.AddField("Participants", "Personne pour l'instant. Soyez le premier ✨");
+            return;
+        }
+
+        var shown = entrants.Take(MaxEntrantsShown).Select(e => $"<@{e.UserId}>").ToList();
+        var text = string.Join("\n", shown);
+
+        var hidden = entrants.Count - shown.Count;
+        if (hidden > 0) text += $"\n… et {hidden} autre(s)";
+
+        embed.AddField($"Participants ({entrants.Count})", text);
+    }
+
+    public static MessageComponent BuildComponents(Giveaway giveaway)
+    {
+        // Nothing to click once it is drawn — the card carries the result. Same choice
+        // the session card makes when a session is cancelled or already started, rather
+        // than leaving a disabled button behind.
+        if (giveaway.IsClosed) return new ComponentBuilder().Build();
+
+        return new ComponentBuilder()
+            .WithButton("Participer", $"giveaway:enter:{giveaway.Id}",
+                ButtonStyle.Success, new Emoji("🎉"))
+            .WithButton("Ne plus participer", $"giveaway:leave:{giveaway.Id}",
+                ButtonStyle.Danger, new Emoji("✖️"))
             .Build();
+    }
 
     private static string WinnerCountLabel(int count) =>
         count > 1 ? $"{count} gagnants" : "1 gagnant";

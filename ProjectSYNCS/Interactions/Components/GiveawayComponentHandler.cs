@@ -16,8 +16,16 @@ public class GiveawayComponentHandler : InteractionModuleBase<SocketInteractionC
         _giveaways = giveaways;
     }
 
+    // Two buttons, two handlers, neither a toggle: with an explicit "Ne plus
+    // participer" beside it, a "Participer" that also withdrew you would be the very
+    // ambiguity the second button was added to remove.
     [ComponentInteraction("giveaway:enter:*")]
-    public async Task OnEnterAsync(string giveawayIdStr)
+    public Task OnEnterAsync(string giveawayIdStr) => HandleAsync(giveawayIdStr, entering: true);
+
+    [ComponentInteraction("giveaway:leave:*")]
+    public Task OnLeaveAsync(string giveawayIdStr) => HandleAsync(giveawayIdStr, entering: false);
+
+    private async Task HandleAsync(string giveawayIdStr, bool entering)
     {
         if (!int.TryParse(giveawayIdStr, out var giveawayId))
         {
@@ -39,9 +47,11 @@ public class GiveawayComponentHandler : InteractionModuleBase<SocketInteractionC
             return;
         }
 
-        var entered = await _giveaways.ToggleEntryAsync(giveawayId, Context.User.Id);
+        var changed = entering
+            ? await _giveaways.AddEntryAsync(giveawayId, Context.User.Id)
+            : await _giveaways.RemoveEntryAsync(giveawayId, Context.User.Id);
 
-        // Re-read so the count on the card matches what was just written.
+        // Re-read so the roster on the card matches what was just written.
         var updated = await _giveaways.GetAsync(giveawayId);
         if (updated is null) return;
 
@@ -52,11 +62,16 @@ public class GiveawayComponentHandler : InteractionModuleBase<SocketInteractionC
             props.Components = GiveawayModule.BuildComponents(updated);
         });
 
-        // The card only shows a count, so it never says whether *you* are in it.
-        await FollowupAsync(
-            entered
-                ? "C'est noté, tu participes ! Bonne chance (˶˃ ᵕ ˂˶)"
-                : "Tu ne participes plus à ce tirage. Tant pis pour toi.",
-            ephemeral: true);
+        // The card lists everyone, but scanning it for your own name is work — and a
+        // click that changed nothing has to say so, or it reads as broken.
+        await FollowupAsync(Acknowledgement(entering, changed), ephemeral: true);
     }
+
+    private static string Acknowledgement(bool entering, bool changed) => (entering, changed) switch
+    {
+        (true, true) => "C'est noté, tu participes ! Bonne chance (˶˃ ᵕ ˂˶)",
+        (true, false) => "Tu participes déjà à ce tirage. Une fois suffit ( ˶ˆ ᗜ ˆ˵ )",
+        (false, true) => "Tu ne participes plus à ce tirage. Tant pis pour toi.",
+        (false, false) => "Tu ne participais pas à ce tirage de toute façon (ᵕ • ᴗ •)",
+    };
 }
