@@ -593,12 +593,38 @@ rejected. They are the only surfaces built this way: `/emotestats` and `/goodbot
 paged embeds, since they rank emotes and verdicts — things with no avatar, no level and
 no podium — and the only thing a shared renderer would save is the page arithmetic.
 
-**`PageSize` is 10 because of a hard cap, not taste.** Discord allows **40 components per
+**`PageSize` is 5 because of a hard cap, not taste.** Discord allows **40 components per
 message counting the whole tree**, and a row with an avatar costs three (Section +
-TextDisplay + Thumbnail). A full page uses 38 of 40; an eleventh row throws in
-`ComponentBuilderV2.Build()` — Discord.Net enforces the cap itself, so this fails at
-build-time-of-the-message rather than as an API rejection. Adding anything to a row, or
-another element to the container, means taking a row out.
+TextDisplay + Thumbnail). A page of 5 with both button rows uses 27 of 40; at the old
+`PageSize` of 10 it came to 42 and threw in `ComponentBuilderV2.Build()` — Discord.Net
+enforces the cap itself, so this fails at build-time-of-the-message rather than as an API
+rejection. The view switcher is what forced the reduction, not readability alone. Adding
+anything to a row, or another element to the container, means re-doing that sum.
+
+**`/leaderboard` is three views over one row, not three leaderboards.** `MemberXp`
+carries `TotalXp`, `ReactionsUsed` and `VoiceMinutes`, so `LeaderboardView` only changes
+the ordering and the second line of each row; the custom-id is
+`level:view:{view}:{page}` and switching view resets to page 0. The three numbers are
+deliberately different in kind: `TotalXp` is a *reward*, rationed by `XpTracker`'s
+cooldowns, while the other two are *facts* — every reaction counts even when it earns no
+XP, so ranking by XP and by reactions genuinely differ. Neither counter can be
+backfilled; both started at zero the day they shipped.
+
+**Both new counters are written from `XpTracker`, never from `EmoteTracker` or
+`VoiceXpService` directly.** That is what keeps `ExcludedChannels` in one class — the
+same reason `VoiceXpService` passes a channel id rather than holding its own copy of the
+rule. The reaction count is taken *after* the exclusion check but *before* the 60 s
+cooldown claim, since every reaction counts and only one a minute pays; the voice minute
+rides the same call that grants voice XP, so the two can never disagree about which
+minutes were eligible. Removal decrements (clamped at zero, and never creating a row),
+which is why `XpTracker` is now on `BotService`'s `ReactionRemoved` fan-out alongside
+`EmoteTracker` — otherwise add/remove in a loop would inflate the ranking without limit.
+No XP is ever withdrawn; only the count moves.
+
+**The leaderboard footer reads the ranking it already loaded, rather than querying.**
+`XpService.GetRankAsync` still serves `/level`'s card, but the board takes the viewer's
+position by index from the list the page was cut from — so it follows whichever view is
+on screen for free and cannot disagree with the rows above it.
 
 **A `TextDisplay` is real message content — `<@id>` in one actually pings.** This is the
 trap embeds do not have: a naive port pings all ten people on the page *every time anyone

@@ -101,10 +101,25 @@ internal sealed class XpTracker
 
     // Reaction XP: any message, any emote, its own cooldown. Mirrors EmoteTracker's
     // guard order — cheapest checks first.
+    //
+    // The /leaderboard reaction count is kept here too, rather than in EmoteTracker,
+    // so that ExcludedChannels stays in this class alone — the same reason
+    // VoiceXpService passes a channel id instead of keeping its own copy of the rule.
     public async Task HandleReactionAddedAsync(
         Cacheable<IUserMessage, ulong> message,
         Cacheable<IMessageChannel, ulong> channel,
-        SocketReaction reaction)
+        SocketReaction reaction) => await CountAndGrantAsync(channel, reaction, +1);
+
+    // Removing a reaction takes the count back down, so add/remove in a loop nets to
+    // zero rather than inflating the ranking. No XP is involved either way: a grant
+    // already made is not withdrawn, and the cooldown is deliberately untouched.
+    public async Task HandleReactionRemovedAsync(
+        Cacheable<IUserMessage, ulong> message,
+        Cacheable<IMessageChannel, ulong> channel,
+        SocketReaction reaction) => await CountAndGrantAsync(channel, reaction, -1);
+
+    private async Task CountAndGrantAsync(
+        Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction, int delta)
     {
         if (reaction.UserId == _client.CurrentUser.Id) return;
         if (reaction.User.IsSpecified && reaction.User.Value.IsBot) return;
@@ -113,10 +128,31 @@ internal sealed class XpTracker
         if (resolved is not IGuildChannel guildChannel) return;
         if (IsExcluded(guildChannel)) return;
 
+        // Counted before the cooldown claim, and regardless of it: every reaction is a
+        // reaction used, even the ones too soon after the last to be worth any XP.
+        await CountReactionAsync(guildChannel.GuildId, reaction.UserId, delta);
+
+        if (delta <= 0) return;
+
         var key = (guildChannel.GuildId, reaction.UserId);
         if (!TryClaim(_lastReactionXp, key, ReactionCooldown)) return;
 
         await GrantAsync(guildChannel.GuildId, reaction.UserId, ReactionXp, resolved);
+    }
+
+    private async Task CountReactionAsync(ulong guildId, ulong userId, int delta)
+    {
+        try
+        {
+            await using var scope = _services.CreateAsyncScope();
+            var xp = scope.ServiceProvider.GetRequiredService<XpService>();
+            await xp.AddReactionUsedAsync(guildId, userId, delta);
+        }
+        catch (Exception ex)
+        {
+            // A leaderboard counter is a nicety; never let it stop the XP grant below.
+            _logger.LogWarning(ex, "Failed to count a reaction for user {UserId}.", userId);
+        }
     }
 
     /// <summary>
@@ -147,12 +183,31 @@ internal sealed class XpTracker
     /// announcement still goes to the guild's system channel, since a voice channel
     /// has no conversation to post it into.
     /// </summary>
-    public Task GrantVoiceXpAsync(ulong guildId, ulong voiceChannelId, ulong userId, long amount)
+    public async Task GrantVoiceXpAsync(
+        ulong guildId, ulong voiceChannelId, ulong userId, long amount, long minutes)
     {
-        if (IsExcluded(voiceChannelId, _client.GetChannel(voiceChannelId))) return Task.CompletedTask;
+        if (IsExcluded(voiceChannelId, _client.GetChannel(voiceChannelId))) return;
+
+        // Recorded on the same call that pays the XP, so the /leaderboard voice total
+        // can never disagree with which minutes were considered eligible.
+        await CountVoiceAsync(guildId, userId, minutes);
 
         var channel = _client.GetGuild(guildId)?.SystemChannel;
-        return GrantAsync(guildId, userId, amount, channel);
+        await GrantAsync(guildId, userId, amount, channel);
+    }
+
+    private async Task CountVoiceAsync(ulong guildId, ulong userId, long minutes)
+    {
+        try
+        {
+            await using var scope = _services.CreateAsyncScope();
+            var xp = scope.ServiceProvider.GetRequiredService<XpService>();
+            await xp.AddVoiceMinutesAsync(guildId, userId, minutes);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to count voice minutes for user {UserId}.", userId);
+        }
     }
 
     // The shared core every signal funnels through: writes the XP, and if it crossed

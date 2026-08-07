@@ -1,4 +1,5 @@
 using System.Globalization;
+using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Helpers;
 
@@ -65,14 +66,76 @@ public static class LevelCardUi
     }
 
     /// <summary>
+    /// A duration in whole minutes, read as a human would say it: "3 h 05" past an
+    /// hour, "45 min" below one, and days once it passes 24 h — a voice total climbs
+    /// into the hundreds of hours over a year, where raw minutes stop meaning anything.
+    /// </summary>
+    public static string Duration(long minutes)
+    {
+        if (minutes <= 0) return "0 min";
+        if (minutes < 60) return $"{minutes} min";
+
+        var hours = minutes / 60;
+        var restMinutes = minutes % 60;
+
+        if (hours < 24) return $"{hours} h {restMinutes:00}";
+
+        var days = hours / 24;
+        return $"{days} j {hours % 24} h";
+    }
+
+    /// <summary>
     /// One leaderboard row. Two lines on purpose: a Section gives real vertical room
     /// beside its avatar, and a single line next to one looks stranded. Rendered as a
     /// mention so the name stays current and stays clickable — callers must send with
     /// AllowedMentions.None, since a TextDisplay is real message content and would
     /// otherwise ping everyone on the page on every re-render.
     /// </summary>
-    public static string Row(int rank, ulong userId, int level, long totalXp) =>
-        $"{RankMarker(rank)} **<@{userId}>**\nNiveau {level} · {Xp(totalXp)} XP";
+    /// <remarks>
+    /// The second line is whatever the current view ranks by, and only that: showing
+    /// all three numbers on every row would make the ordering look arbitrary, since
+    /// two of them wouldn't explain it. The XP view keeps the level alongside, because
+    /// there the level *is* the headline and the XP is how it was reached.
+    /// </remarks>
+    public static string Row(int rank, ulong userId, LeaderboardView view, MemberTally tally) =>
+        $"{RankMarker(rank)} **<@{userId}>**\n{RowValue(view, tally)}";
+
+    private static string RowValue(LeaderboardView view, MemberTally tally) => view switch
+    {
+        LeaderboardView.Reactions => $"{Xp(tally.ReactionsUsed)} réaction(s)",
+        LeaderboardView.Voice => Duration(tally.VoiceMinutes),
+        _ => $"Niveau {tally.Level} · {Xp(tally.TotalXp)} XP",
+    };
+
+    /// <summary>The heading above the ranking, naming what is being ranked.</summary>
+    public static string Title(LeaderboardView view) => view switch
+    {
+        LeaderboardView.Reactions => "## Classement des réactions",
+        LeaderboardView.Voice => "## Classement du vocal",
+        _ => "## Classement",
+    };
+
+    /// <summary>The button label for a view.</summary>
+    public static string ViewLabel(LeaderboardView view) => view switch
+    {
+        LeaderboardView.Reactions => "Réactions",
+        LeaderboardView.Voice => "Vocal",
+        _ => "Niveaux",
+    };
+
+    /// <summary>
+    /// What an empty board says. The two newer views started counting the day they
+    /// shipped, so empty means "not yet", not "nobody ever" — and saying so keeps
+    /// someone from reporting it as broken.
+    /// </summary>
+    public static string EmptyLine(LeaderboardView view) => view switch
+    {
+        LeaderboardView.Reactions =>
+            "Personne n'a encore réagi à quoi que ce soit. Je compte depuis peu, laissez-moi le temps (ᵕ • ᴗ •)",
+        LeaderboardView.Voice =>
+            "Personne n'a encore passé de temps en vocal. Je compte depuis peu, laissez-moi le temps (ᵕ • ᴗ •)",
+        _ => "Personne n'a encore gagné d'XP. Parlez, réagissez, faites du bruit ദ്ദി◝ ⩊ ◜.ᐟ",
+    };
 
     /// <summary>
     /// The headline of /level's card: who, what level, and where they place. Rank is

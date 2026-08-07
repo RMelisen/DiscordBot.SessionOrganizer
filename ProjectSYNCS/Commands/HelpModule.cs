@@ -37,7 +37,9 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "Tu gagnes de l'XP en parlant, et en réagissant. " +
                 "Rester en vocal fait aussi gagner de " +
                 "l'XP, tant que t'es pas seul et pas muet en même temps.\n" +
-                "**`/leaderboard`** — Le classement du serveur, 10 par page.\n" +
+                "**`/leaderboard`** — Le classement du serveur, 5 par page. Trois vues au choix : " +
+                "**Niveaux**, **Réactions** (celles que tu as mises) et **Vocal** (temps passé en vocal). " +
+                "Les deux dernières ne comptent que depuis peu.\n" +
                 "**`/help`** — Affiche ce message.")
             .AddField("Créer une session — pas à pas",
                 "Lance **`/schedule create`**. Un assistant privé te guide :\n" +

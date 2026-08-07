@@ -54,10 +54,13 @@ in one click. The bot's user-facing language is French.
   verdict. Crossing a level gets an unprompted card in her own voice — your avatar,
   the levels you went from and to, and a line she picks herself. `/level` shows your
   own card: avatar, level, rank and a progress bar toward the next one.
-  **`/leaderboard`** is the ranked list, ten per page, every row carrying that
+  **`/leaderboard`** is the ranked list, five per page, every row carrying that
   person's real avatar — both are built with Discord's *Components V2* rather than
-  embeds, so nothing is rendered or uploaded; Discord loads the faces itself. No time
-  filters, since leveling doesn't reset weekly. Time spent present in a voice channel
+  embeds, so nothing is rendered or uploaded; Discord loads the faces itself. Three
+  buttons switch what it ranks: **Niveaux** (XP), **Réactions** (reactions added) and
+  **Vocal** (eligible time in voice). The last two only started counting when they
+  shipped and cannot be backfilled, so they are thin at first. No time filters, since
+  leveling doesn't reset weekly. Time spent present in a voice channel
   also earns XP, once a minute, as long as someone else is there too and you're not
   both self-muted and self-deafened. Some channels are excluded from earning entirely.
 - **`/help`** — in-Discord usage guide.

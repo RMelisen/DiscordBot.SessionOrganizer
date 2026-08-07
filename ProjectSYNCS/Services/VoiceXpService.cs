@@ -27,6 +27,11 @@ internal sealed class VoiceXpService : BackgroundService
     // rotation). Matches the per-minute payout exactly.
     private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(1);
 
+    // What one tick is worth on /leaderboard's voice view. Derived from CheckInterval
+    // rather than written as 1, so retuning the interval can't silently make the
+    // displayed hours disagree with the time actually spent.
+    private static readonly long MinutesPerTick = (long)CheckInterval.TotalMinutes;
+
     private readonly DiscordSocketClient _client;
     private readonly XpTracker _xp;
     private readonly ILogger<VoiceXpService> _logger;
@@ -73,8 +78,11 @@ internal sealed class VoiceXpService : BackgroundService
 
                     // The channel id goes along so XpTracker can apply the same
                     // excluded-channel rule it applies to every other signal — the
-                    // list lives there, not here.
-                    await _xp.GrantVoiceXpAsync(guild.Id, channel.Id, member.Id, VoiceXpPerMinute);
+                    // list lives there, not here. One tick is one minute by
+                    // construction (CheckInterval), which is what makes the minute
+                    // count and the XP payout two views of the same event.
+                    await _xp.GrantVoiceXpAsync(
+                        guild.Id, channel.Id, member.Id, VoiceXpPerMinute, MinutesPerTick);
                 }
             }
         }

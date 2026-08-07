@@ -29,10 +29,17 @@ namespace ProjectSYNCS.Commands;
 [CommandContextType(InteractionContextType.Guild)]
 public class LevelModule : InteractionModuleBase<SocketInteractionContext>
 {
-    // Ten, not twenty. A row with an avatar costs three components (Section +
-    // TextDisplay + Thumbnail) against Discord's 40-per-message ceiling, and the
-    // container, heading, separators and button row take the rest.
-    private const int PageSize = 10;
+    // Five. Ten was readable but long, and the view switcher makes it impossible
+    // anyway: a row with an avatar costs three components (Section + TextDisplay +
+    // Thumbnail) against Discord's 40-per-message ceiling, so ten rows plus a second
+    // action row of view buttons comes to 42 and throws inside
+    // ComponentBuilderV2.Build(). Five lands at 27. Adding anything to a row, or
+    // another element to the container, means checking that sum again.
+    private const int PageSize = 5;
+
+    // The view the leaderboard opens on. XP is the original ranking and the one that
+    // has history behind it; the other two only started counting when they shipped.
+    private const LeaderboardView DefaultView = LeaderboardView.Xp;
 
     // Bots never earn XP (XpTracker skips them outright), so a bot's card would always
     // be an empty one. One fixed line, deliberately not a ResponsePicker pool: the pools
@@ -74,21 +81,26 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
         await DeferAsync();
 
         await FollowupAsync(
-            components: await BuildPageAsync(0),
+            components: await BuildPageAsync(DefaultView, 0),
             flags: MessageFlags.ComponentsV2,
             allowedMentions: AllowedMentions.None);
     }
 
-    // Both page arrows come back here, and so does the card's "Voir le classement"
-    // button — it is just page 0, so it reuses this custom-id rather than inventing a
-    // second one. That does mean the button replaces the card in place; re-running
-    // /level is the way back.
-    [ComponentInteraction("level:view:*", ignoreGroupNames: true)]
-    public async Task OnViewAsync(string pageStr)
+    // The page arrows, the view buttons and the card's "Voir le classement" button all
+    // come back here: the custom-id carries the whole view state, since a component
+    // handler gets no memory of what was on screen. Switching view always resets to
+    // page 0 — it is a different ranking, so page 3 of the old one means nothing.
+    //
+    // The card's button is just "Xp, page 0" and reuses this id rather than inventing
+    // a second one. That does mean it replaces the card in place; re-running /level is
+    // the way back.
+    [ComponentInteraction("level:view:*:*", ignoreGroupNames: true)]
+    public async Task OnViewAsync(string viewStr, string pageStr)
     {
+        if (!Enum.TryParse<LeaderboardView>(viewStr, out var view)) view = DefaultView;
         int.TryParse(pageStr, out var page);
 
-        var components = await BuildPageAsync(page);
+        var components = await BuildPageAsync(view, page);
         var component = (SocketMessageComponent)Context.Interaction;
 
         await component.UpdateAsync(m =>
@@ -126,28 +138,27 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
         return new ComponentBuilderV2()
             .AddComponent(container)
             .AddComponent(new ActionRowBuilder()
-                .WithButton("Voir le classement", "level:view:0", ButtonStyle.Secondary))
+                .WithButton("Voir le classement", $"level:view:{LeaderboardView.Xp}:0", ButtonStyle.Secondary))
             .Build();
     }
 
     // ---- /leaderboard -------------------------------------------------------
 
-    private async Task<MessageComponent> BuildPageAsync(int page)
+    private async Task<MessageComponent> BuildPageAsync(LeaderboardView view, int page)
     {
-        var ranking = await _xp.GetRankingAsync(Context.Guild.Id);
+        var ranking = await _xp.GetRankingAsync(Context.Guild.Id, view);
 
         var totalPages = Math.Max(1, (int)Math.Ceiling(ranking.Count / (double)PageSize));
         page = Math.Clamp(page, 0, totalPages - 1);
 
         var container = new ContainerBuilder()
             .WithAccentColor(Color.Purple)
-            .AddComponent(new TextDisplayBuilder("## Classement des niveaux"))
+            .AddComponent(new TextDisplayBuilder(LevelCardUi.Title(view)))
             .AddComponent(new SeparatorBuilder());
 
         if (ranking.Count == 0)
         {
-            container.AddComponent(new TextDisplayBuilder(
-                "Personne n'a encore gagné d'XP. Parlez, réagissez, faites du bruit ദ്ദി◝ ⩊ ◜.ᐟ"));
+            container.AddComponent(new TextDisplayBuilder(LevelCardUi.EmptyLine(view)));
         }
         else
         {
@@ -158,26 +169,55 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
                 container.AddComponent(new SectionBuilder()
                     .WithAccessory(Avatar(Context.Guild.GetUser(tally.UserId)))
                     .AddComponent(new TextDisplayBuilder(
-                        LevelCardUi.Row(rank, tally.UserId, tally.Level, tally.TotalXp))));
+                        LevelCardUi.Row(rank, tally.UserId, view, tally))));
             }
         }
 
-        // The *viewer's* rank, not the original caller's: on a component interaction
-        // Context.User is whoever clicked, so this stays correct for everyone reading
-        // the same public message, with nothing threaded through the custom-id.
-        var viewerRank = await _xp.GetRankAsync(Context.Guild.Id, Context.User.Id);
         container
             .AddComponent(new SeparatorBuilder())
-            .AddComponent(new TextDisplayBuilder(viewerRank is { } r
-                ? $"-# Page {page + 1}/{totalPages} · toi : niveau {r.Level}, rang #{r.Rank} ({LevelCardUi.Xp(r.TotalXp)} XP)"
-                : $"-# Page {page + 1}/{totalPages}"));
+            .AddComponent(new TextDisplayBuilder(Footer(ranking, view, page, totalPages)));
+
+        var buttons = new ActionRowBuilder();
+        foreach (var candidate in Enum.GetValues<LeaderboardView>())
+        {
+            buttons.WithButton(
+                LevelCardUi.ViewLabel(candidate),
+                $"level:view:{candidate}:0",
+                candidate == view ? ButtonStyle.Primary : ButtonStyle.Secondary,
+                disabled: candidate == view);
+        }
 
         return new ComponentBuilderV2()
             .AddComponent(container)
+            .AddComponent(buttons)
             .AddComponent(new ActionRowBuilder()
-                .WithButton("◀", $"level:view:{page - 1}", ButtonStyle.Secondary, disabled: page == 0)
-                .WithButton("▶", $"level:view:{page + 1}", ButtonStyle.Secondary, disabled: page >= totalPages - 1))
+                .WithButton("◀", $"level:view:{view}:{page - 1}", ButtonStyle.Secondary, disabled: page == 0)
+                .WithButton("▶", $"level:view:{view}:{page + 1}", ButtonStyle.Secondary, disabled: page >= totalPages - 1))
             .Build();
+    }
+
+    // The *viewer's* standing, not the original caller's: on a component interaction
+    // Context.User is whoever clicked, so this stays correct for everyone reading the
+    // same public message, with nothing threaded through the custom-id.
+    //
+    // Read off the ranking already in hand rather than queried separately — it is the
+    // list this page was cut from, so the rank shown cannot disagree with the rows
+    // above it, and it follows whichever view is on screen for free. Someone absent
+    // from the current ranking (no reactions, no voice) simply gets no standing line.
+    private string Footer(List<MemberTally> ranking, LeaderboardView view, int page, int totalPages)
+    {
+        var index = ranking.FindIndex(t => t.UserId == Context.User.Id);
+        if (index < 0) return $"-# Page {page + 1}/{totalPages}";
+
+        var mine = ranking[index];
+        var standing = view switch
+        {
+            LeaderboardView.Reactions => $"{LevelCardUi.Xp(mine.ReactionsUsed)} réaction(s)",
+            LeaderboardView.Voice => LevelCardUi.Duration(mine.VoiceMinutes),
+            _ => $"niveau {mine.Level} ({LevelCardUi.Xp(mine.TotalXp)} XP)",
+        };
+
+        return $"-# Page {page + 1}/{totalPages} · toi : rang #{index + 1}, {standing}";
     }
 
     // A member who has since left the guild resolves to null, so fall back to Discord's

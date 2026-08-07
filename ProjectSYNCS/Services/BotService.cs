@@ -62,7 +62,7 @@ internal sealed class BotService : IHostedService
         _client.InteractionCreated += HandleInteractionAsync;
         _client.MessageReceived += HandleMessageAsync;
         _client.ReactionAdded += HandleReactionAddedAsync;
-        _client.ReactionRemoved += _emotes.HandleReactionRemovedAsync;
+        _client.ReactionRemoved += HandleReactionRemovedAsync;
         _client.Ready += RegisterCommandsAsync;
 
         var token = _config["Discord:Token"]
@@ -114,6 +114,18 @@ internal sealed class BotService : IHostedService
         await _feedback.HandleMessageAsync(rawMessage);
         await _reactions.HandleMessageAsync(rawMessage);
         await _chatter.HandleMessageAsync(rawMessage);
+    }
+
+    // Taking a reaction back decrements both tallies that counted it: EmoteTracker's
+    // per-emote total, and XpTracker's per-person count behind /leaderboard's reaction
+    // view. No XP is withdrawn — only the counts move.
+    private async Task HandleReactionRemovedAsync(
+        Cacheable<IUserMessage, ulong> message,
+        Cacheable<IMessageChannel, ulong> channel,
+        SocketReaction reaction)
+    {
+        await _emotes.HandleReactionRemovedAsync(message, channel, reaction);
+        await _xp.HandleReactionRemovedAsync(message, channel, reaction);
     }
 
     // Counting the reaction comes first, so the tally reflects the human who added it
