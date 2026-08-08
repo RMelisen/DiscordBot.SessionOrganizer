@@ -768,6 +768,17 @@ Only **self**-mute/deafen together is excluded (the AFK-farm case); moderator-ap
 server mute/deafen is deliberately not checked, so a mod silencing someone for an
 unrelated reason doesn't also cost them XP.
 
+**A voice level-up is announced in the voice channel's own text chat**, not in the
+guild's system channel. `SocketVoiceChannel` is an `IMessageChannel` (text-in-voice),
+so `GrantVoiceXpAsync` casts the channel it already resolved for the exclusion check
+and posts there — the card lands where the people who earned it are sitting rather than
+interrupting `#général`. The system channel is kept only as the fallback for a channel
+that does not resolve from the gateway cache; if it resolves but the bot cannot post in
+it, the send is swallowed and logged like every other Discord side effect and the XP is
+recorded regardless. `AnnounceAsync` resolves the member through
+`channel as SocketGuildChannel`, which a voice channel also satisfies — so the avatar
+on the card still works.
+
 **Every module that reads `Context.Guild` must carry
 `[CommandContextType(InteractionContextType.Guild)]`.** `config.yaml` ships
 `register_globally: true`, and a global slash command is DM-enabled by default — so

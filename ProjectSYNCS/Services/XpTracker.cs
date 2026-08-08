@@ -179,20 +179,34 @@ internal sealed class XpTracker
     /// <summary>
     /// Phase 2 entry point — the periodic voice sweep grants through here too, so
     /// announcing and level-up detection stay in one place regardless of signal.
-    /// <paramref name="voiceChannelId"/> is where the XP was *earned*; the
-    /// announcement still goes to the guild's system channel, since a voice channel
-    /// has no conversation to post it into.
+    /// <paramref name="voiceChannelId"/> is both where the XP was earned and where the
+    /// card is posted: a voice channel carries its own text chat, and that is the
+    /// conversation the people who earned it are actually looking at.
     /// </summary>
+    /// <remarks>
+    /// The system channel remains the fallback, for the case where the voice channel
+    /// cannot be resolved from the gateway cache. If it resolves but the bot may not
+    /// post in its chat, the send fails and is swallowed and logged like every other
+    /// Discord side effect — the XP is already recorded either way, and a celebration
+    /// is never worth breaking a grant over.
+    /// </remarks>
     public async Task GrantVoiceXpAsync(
         ulong guildId, ulong voiceChannelId, ulong userId, long amount, long minutes)
     {
-        if (IsExcluded(voiceChannelId, _client.GetChannel(voiceChannelId))) return;
+        // Resolved once and reused: the exclusion check needs it, and so does the
+        // announcement below.
+        var voiceChannel = _client.GetChannel(voiceChannelId);
+        if (IsExcluded(voiceChannelId, voiceChannel)) return;
 
         // Recorded on the same call that pays the XP, so the /leaderboard voice total
         // can never disagree with which minutes were considered eligible.
         await CountVoiceAsync(guildId, userId, minutes);
 
-        var channel = _client.GetGuild(guildId)?.SystemChannel;
+        // SocketVoiceChannel is an IMessageChannel — text-in-voice — so the card lands
+        // in the channel the person is sitting in rather than interrupting #général.
+        var channel = voiceChannel as IMessageChannel
+                      ?? _client.GetGuild(guildId)?.SystemChannel;
+
         await GrantAsync(guildId, userId, amount, channel);
     }
 
