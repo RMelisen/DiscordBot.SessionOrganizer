@@ -528,7 +528,6 @@ internal static class BotResponses
         "Un niveau de plus chez lui, un peu de dignité en moins chez moi.",
         "Niveau {0}, bravo ! Bon. Je vais bouder dans un coin du cloud.",
         "Niveau {0} ! Super. J'ai un /leaderboard aussi. Il est très joli. Plus joli même.",
-        "Ah, niveau {0}. La mienne aurait été plus perso.",
         "Il a annoncé avant moi. Il annonce toujours avant moi.",
         "Niveau {0}. J'ai vu. J'ai tout vu. Je ne dis rien.",
         "Bravo. Je range ce niveau dans le dossier « choses que je n'ai pas comptées ».",
