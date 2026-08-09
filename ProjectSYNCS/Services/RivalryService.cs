@@ -144,7 +144,10 @@ internal sealed class RivalryService
     }
 
     // Any bot but herself. Webhooks are not rivals, and a level-up announcement is
-    // ChatterService's to celebrate — see Helpers/LevelUpAnnouncement.
+    // ChatterService's to answer — see Helpers/LevelUpAnnouncement. It sulks at those
+    // too now, but in a single line that also congratulates the person; letting this
+    // service add a reaction and a mutter on top would be three responses to one
+    // message rather than a mood.
     private bool IsRival(SocketUserMessage message)
     {
         if (!IsRival(message.Author)) return false;

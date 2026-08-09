@@ -6,11 +6,12 @@ namespace ProjectSYNCS.Helpers;
 // The level-up bot's "passage de niveau" announcement, recognised in one place
 // because two services now disagree about that bot on purpose.
 //
-// `ChatterService` cheers these — the congratulation is aimed at the *person* who
-// levelled, not at the bot that said so. `RivalryService` therefore has to skip
-// exactly these messages and nothing else: the same bot's other traffic is fair
-// game for jealousy, and congratulating someone while sulking at the announcement
-// in the same breath would be incoherent.
+// `ChatterService` answers these with a grudging congratulation — the "bravo" is aimed
+// at the *person* who levelled, while the sulking is about the level having been earned
+// on a rival's system rather than hers. `RivalryService` therefore has to skip exactly
+// these messages and nothing else: the same bot's other traffic is fair game, but here
+// she has already had her say, and adding a reaction and a muttered line on top would
+// be three responses to one announcement.
 public static class LevelUpAnnouncement
 {
     public const ulong BotId = 437808476106784770;

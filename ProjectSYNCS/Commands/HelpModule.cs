@@ -58,8 +58,9 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "à parler aux *autres* bots. Je vois qui répond à qui, et je vois qui utilise " +
                 "leurs commandes. Mêmes filtres : **30 jours** (par défaut), " +
                 "**7 jours** et **depuis toujours**.\n" +
-                "**`/shame user:@quelqu'un`** — Dénonce quelqu'un pour le mur. **Un seul vote par jour**, " +
-                "alors choisis bien. Les bots ne comptent pas, et moi encore moins.\n" +
+                "**`/shame user:@quelqu'un`** — Dénonce quelqu'un pour le mur. **Réservé au staff**, " +
+                "et **2 votes maximum par personne et par jour** — on ne s'acharne pas. " +
+                "Les bots ne comptent pas, et moi encore moins.\n" +
                 "**`/help`** — Affiche ce message.\n" +
                 "**`/addxp`** · **`/removexp`** — Ajuster l'XP de quelqu'un. " +
                 "Réservé aux administrateurs et modérateurs ; les autres ne les voient même pas.")

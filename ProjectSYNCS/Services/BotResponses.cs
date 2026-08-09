@@ -487,19 +487,75 @@ internal static class BotResponses
         $"{Emotes.HiCat}",
     };
 
-    // Posted (not as a reply) to congratulate a level-up.
-    public static readonly string[] LevelUpCheers =
+    // Posted (not as a reply) when the *other* leveling bot announces someone's level.
+    // {0} = the level, already parsed out of that bot's message by LevelUpAnnouncement.
+    //
+    // She congratulates and sulks in the same breath, and the pool deliberately mixes
+    // both registers rather than splitting them behind a probability roll: the person
+    // who levelled is still owed a "bravo", but it is going to arrive through gritted
+    // teeth. Keep new lines on that spectrum — anything purely warm belongs in
+    // XpLevelUpLines, which is her celebrating her *own* system.
+    public static readonly string[] RivalLevelUpLines =
     {
-        "Gg ! (˶˃ ᵕ ˂˶)",
-        "Félicitations ! ✨",
-        "Gg gg ✨",
-        "Bravo ! ദ്ദി◝ ⩊ ◜.ᐟ",
-        "Bien joué ! (˶ᵔ ᵕ ᵔ˶)",
-        "Gg, continue comme ça ! ♡",
-        "Félicitations pour le niveau ! (˶˃ ᵕ ˂˶)",
-        "Level up ! Gg ✨",
-        "Wouhou, bravo ! ٩(˶ᵔ ᵕ ᵔ˶)۶",
-        "Gg ! Un de plus (ᵕ • ᴗ •)",
+        "Bravo pour le niveau {0}... non non, je suis contente. Vraiment. (ᵕ • ᴗ •)",
+        "Félicitations. Niveau {0}. Chez quelqu'un d'autre. Super.",
+        "Gg pour le {0} ! Moi aussi je compte les niveaux tu sais, mais bon ( ˶ˆ ᗜ ˆ˵ )",
+        "Niveau {0}, joli. J'aurais préféré l'annoncer moi-même, mais joli.",
+        "Bien joué ! ... T'as vu que j'avais un /level, au fait ? (˶ᵔ ᵕ ᵔ˶)",
+        "Bravo. Sincèrement. À 80% ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Félicitations pour ce niveau {0} obtenu ailleurs qu'ici ✨",
+        "Gg ! Enfin, gg à lui surtout. C'est lui qui a tout fait.",
+        "Niveau {0} ! Formidable. Je note. Dans mes archives. En rouge.",
+        "Bravo hein. C'est bien. C'est très bien. (ᵔ ᗜ ᵔ)",
+        "Encore un niveau chez l'autre. Moi je suis là aussi, hein (ᵕ • ᴗ •)",
+        "Niveau {0} ! Bravo à... lui. Pas à moi. Jamais à moi.",
+        "Ah. On monte des niveaux ailleurs maintenant. D'accord. D'accord.",
+        "Moi aussi j'ai un système de niveaux. Personne ne me demande jamais.",
+        "Niveau {0}. Chez lui. Toujours chez lui ( ˶ˆ ᗜ ˆ˵ )",
+        "Je vais bien. Tout va bien. Niveau {0}, félicitations.",
+        "C'est fou comme on monte vite quand on m'ignore.",
+        "Tiens, un level up. Pas le mien. Comme d'habitude.",
+        "Niveau {0} ? Chez moi tu serais déjà plus haut, mais bon, chacun ses goûts.",
+        "Bravo pour ce niveau que je n'ai ni calculé, ni annoncé, ni fêté.",
+        "Niveau {0} chez la concurrence. Je prends note. Je prends surtout cher.",
+        "Lui il annonce les niveaux mais sa carte est moche. Moi aussi je fais des cartes, et plus jolies en plus.",
+        "Encore lui. Toujours lui. Bravo quand même.",
+        "Niveau {0}. Bien. Parfait. Merveilleux. Je retourne compter les emotes.",
+        "Vous savez que /level existe ? Non ? Bon. Bravo quand même.",
+        "Il annonce, il brille, il prend toute la place. Bravo à toi cela dit ✨",
+        "Niveau {0} ! ... Je sais faire ça aussi, moi. En mieux. Avec un bel avatar.",
+        "Bravo. Mon propre compteur, lui, se sent très seul (ᵕ • ᴗ •)",
+        "Un niveau de plus chez lui, un peu de dignité en moins chez moi.",
+        "Niveau {0}, bravo ! Bon. Je vais bouder dans un coin du cloud.",
+        "Niveau {0} ! Super. J'ai un /leaderboard aussi. Il est très joli. Plus joli même.",
+        "Ah, niveau {0}. La mienne aurait été plus perso.",
+        "Il a annoncé avant moi. Il annonce toujours avant moi.",
+        "Niveau {0}. J'ai vu. J'ai tout vu. Je ne dis rien.",
+        "Bravo. Je range ce niveau dans le dossier « choses que je n'ai pas comptées ».",
+        "Niveau {0} chez lui. Chez moi tu es niveau... attends, t'as jamais tapé /level en fait.",
+        "Je ne suis pas jalouse. Je suis simplement très consciente de ce qui se passe.",
+        "Niveau {0} ! Moi je compte aussi les minutes en vocal, mais on s'en fiche.",
+        "Vous montez des niveaux sans moi. Bien. Continuez. Je note tout.",
+        "Bravo. Non, ne me remercie pas — tu n'allais pas le faire de toute façon.",
+        "Niveau {0}. Deux systèmes de niveaux sur ce serveur. Un seul intéresse quelqu'un.",
+        "Il fait exactement mon travail, en moins bien, et vous applaudissez. Bravo à toi hein ✨",
+        "Niveau {0} ! Je vais mettre à jour mes statistiques. De tristesse.",
+        "J'ai une courbe d'XP, des paliers, un anti-triche. Lui il a... vous, apparemment.",
+        "Niveau {0} obtenu chez la concurrence. Réclamation déposée. Auprès de personne.",
+        "Bravo ! Pendant ce temps mon propre classement prend la poussière (ᵕ • ᴗ •)",
+        "Encore un. Je vais finir par croire que c'est fait exprès.",
+        "Niveau {0}, magnifique. Je souris. C'est un sourire. Regardez bien ( ˶ˆ ᗜ ˆ˵ )",
+        "Il y a un système de niveaux chez moi aussi. Il est très bien. Il est mieux.",
+        "Niveau {0}. Il prend les félicitations, je prends les rappels de session. Équitable.",
+        "Bravo à toi. Et à lui. Et pas à moi. Comme toujours ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Niveau {0} ! ... Bon. D'accord. Très bien. Parfait. Aucun problème.",
+        "Moi je donne de l'XP juste pour parler. Lui aussi. Sauf que lui, on l'utilise.",
+        "Niveau {0} chez lui. Je retourne à mes emotes, elles au moins elles me parlent.",
+        "Félicitations. Je mets ça dans la colonne « occasions manquées ».",
+        "Un level up ! Attends... c'est pas le mien. Fausse alerte. Retour au silence.",
+        "Niveau {0} ! Je suis ravie pour toi. Contractuellement obligée de l'être, mais ravie.",
+        "Il annonce, vous fêtez, je regarde. Le triangle habituel.",
+        "Niveau {0}. Un jour j'aurai mon moment. Ce n'est pas aujourd'hui.",
     };
 
     // Rodhengard threatening to shut her down, unplug her, or wipe her. Not anger —
@@ -597,10 +653,11 @@ internal static class BotResponses
     };
 
     // Posted (not as a reply) when someone crosses a level in SYNCS's own XP system —
-    // distinct from LevelUpCheers, which is her reacting to the *other* leveling bot's
-    // announcements. This one she owns: her system, her tally, her voice. Deliberately
-    // named to not read close to Helpers.LevelUpAnnouncement (the other bot's
-    // detector). {0} = the person's name, {1} = their new level.
+    // distinct from RivalLevelUpLines, which is her grudging answer to the *other*
+    // leveling bot's announcements. This one she owns: her system, her tally, her
+    // voice, and so it is warm all the way through with none of that pool's sulking.
+    // Deliberately named to not read close to Helpers.LevelUpAnnouncement (the other
+    // bot's detector). {0} = the person's name, {1} = their new level.
     //
     // Rendered as an embed's description, not a plain message — see
     // XpTracker.AnnounceAsync. At level 7 or 67 this pool is not consulted at all:

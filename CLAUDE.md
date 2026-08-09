@@ -460,12 +460,22 @@ deserves its own gates rather than competing with her reactions to humans.
 
 **Two exclusions in `RivalryService.IsRival` are load-bearing.** Webhooks are not
 rivals (they post relentlessly and belong to no one). And a **level-up announcement**
-is skipped while the rest of that bot's traffic stays fair game, because
-`ChatterService` congratulates those and the congratulation is aimed at the person who
-levelled — cheering and sulking at one message would be incoherent. The two services
+is skipped while the rest of that bot's traffic stays fair game — not because those
+messages are spared, but because `ChatterService` has already answered them. She does
+sulk at a rival's level-up now; letting this service add a reaction and a muttered line
+on top would be three responses to one announcement rather than a mood. The two services
 therefore have to agree on what an announcement *is*, which is why the bot id, phrase
 and regex live in `Helpers/LevelUpAnnouncement` instead of privately in
 `ChatterService`.
+
+**A level-up on the rival's system gets a grudging congratulation, not a cheer.**
+`BotResponses.RivalLevelUpLines` deliberately mixes both registers in **one** pool
+rather than rolling between a warm pool and a jealous one: the person who levelled is
+still owed a "bravo", it just arrives through gritted teeth. `{0}` is the level, already
+parsed by `LevelUpAnnouncement.TryReadLevel`, so the line can name it — which means the
+pool now goes through `string.Format` and a stray brace in it throws at send time. Her
+*own* system's celebration is `XpLevelUpLines` and stays entirely warm; keep the two
+apart. The level-67 easter egg sits above the pick and is unaffected by the mood.
 
 **`TryClaim` reports *why* a verdict missed, not just that it did.** `Claim.RivalOwns`
 is the jealousy trigger, and it is separate from `NoAction` precisely because "nobody
@@ -571,13 +581,25 @@ optional `AllowedMentions`; left null it behaves exactly as before for ordinary 
 **`/shame`'s three titles are three different mechanisms sharing one row.**
 `ShameRecord` / `ShameDailyStat` is the **fourth** totals+buckets pair, for the reason
 the other three exist. `MeanHits` and `PerfidyHits` are things you *did*, `BanVotes`
-something done *to* you, and `LastVoteDay` belongs to you as a *voter* rather than as a
-target — one row per (guild, user) because nobody ever reads one without the others. `LastVoteDay` is in the
-DB rather than in `ShameTracker`'s memory **on purpose**: every other piece of in-memory
-personality state resets harmlessly on restart, but a one-vote-per-day limit that
-vanishes on restart is an exploit. `ShameService.TryVoteAsync` checks the limit and
-writes both counters in a single `SaveChanges`, and a self-vote deliberately reuses the
-*same* tracked entity for voter and target rather than loading it twice.
+something done *to* you — one row per (guild, user) because nobody ever reads one
+without the others. `ShameService.TryVoteAsync` checks the limit and writes both
+counters in a single `SaveChanges`.
+
+**Voting is staff-only, and the daily cap is on the target, not the voter.** Anyone may
+open the wall; only `SessionPermissions.IsStaff` (Administrator / ManageGuild, plus the
+owner) or a name in `ShameModule.ExtraVoters` may put someone on it — that list exists
+because being trusted with the vote is not the same as being trusted with ManageGuild,
+which would hand over the whole server. Restricting *who* votes is what makes the title
+a deterrent rather than a game, and it is also why there is no per-voter quota: the
+thing worth preventing is a dogpile on one person, not a moderator using the tool twice.
+
+**The cap needs no state of its own** — `ShameService.MaxVotesPerTargetPerDay` is
+checked against `ShameDailyStat.BanVotes`, the bucket that already counts exactly "votes
+this person took today". So the rule cannot drift from the number the wall displays, and
+it survives a restart for free. An earlier design rationed the voter instead and needed
+a `LastVoteDay` column on `ShameRecord`; that column is gone (`DropShameLastVoteDay`).
+Don't reintroduce per-voter rationing without a reason that survives "they are all staff
+anyway".
 
 **`Le Malfaisant` is uncapped, and that was a deliberate call.** One hit per distinct
 human a mean message targets — an explicit `@`, or the author of the message it replies

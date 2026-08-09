@@ -104,21 +104,30 @@ internal sealed class ChatterService
         }
     }
 
-    // Cheers when the level-up bot announces someone reaching a new level.
-    // Posts a plain message in the channel (no reply, no ping).
+    // Answers the *other* leveling bot's announcements — congratulating the person and
+    // sulking about where the level came from, in the same line. Posts a plain message
+    // in the channel (no reply, no ping).
+    //
+    // She is jealous here rather than cheerful because the level was earned on a rival's
+    // system instead of hers. The person who levelled is still owed a "bravo", which is
+    // why this stays a single grudging line rather than a pure sulk, and why
+    // RivalryService still skips exactly these messages: one response per announcement,
+    // not a reaction and a mutter on top.
     private async Task HandleLevelUpAsync(SocketUserMessage message)
     {
-        // Shared with RivalryService, which has to skip exactly the messages cheered
+        // Shared with RivalryService, which has to skip exactly the messages answered
         // here. See Helpers/LevelUpAnnouncement.
         if (!LevelUpAnnouncement.Matches(message.Author, message.Content)) return;
         LevelUpAnnouncement.TryReadLevel(message.Content, out var level);
 
-        // Easter egg: level 67 gets the meme instead of a normal cheer.
-        var cheer = level == "67"
+        // Easter egg: level 67 gets the meme whatever her mood. A fixed string, so it
+        // never goes through ResponsePicker and never burns one of that channel's
+        // exclusion slots on a line the pool doesn't contain.
+        var line = level == "67"
             ? "SIX SEVEEEN"
-            : _picker.Pick(message.Channel.Id, BotResponses.LevelUpCheers);
+            : string.Format(_picker.Pick(message.Channel.Id, BotResponses.RivalLevelUpLines), level);
 
-        await PostWithTypingAsync(message.Channel, cheer, "level-up cheer");
+        await PostWithTypingAsync(message.Channel, line, "rival level-up reaction");
     }
 
     // Handles a message that @mentions the bot (but isn't a reply to the bot).

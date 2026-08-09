@@ -8,13 +8,13 @@ namespace ProjectSYNCS.Services;
 /// <summary>One person's standing in one of the wall's two rankings.</summary>
 public readonly record struct ShameTally(ulong UserId, long Count);
 
-/// <summary>What came of someone spending (or trying to spend) their daily vote.</summary>
+/// <summary>What came of a vote against someone.</summary>
 public enum ShameVoteResult
 {
     /// <summary>Counted. The vote is on the record and the announcement should go out.</summary>
     Recorded,
-    /// <summary>They already voted today. Nothing was written.</summary>
-    AlreadyVotedToday,
+    /// <summary>This target has already taken today's allowance. Nothing was written.</summary>
+    TargetLimitReached,
 }
 
 /// <summary>Every title on the wall over one window, already ranked and trimmed.</summary>
@@ -75,35 +75,39 @@ public class ShameService
         await _db_context.SaveChangesAsync();
     }
 
+    /// <summary>How many votes one person can take in a single day, from everyone.</summary>
+    /// <remarks>
+    /// The cap is on the <em>target</em>, not the voter: the point is that nobody gets
+    /// piled on, not that any one voter is rationed. With the command restricted to
+    /// staff, a voter hitting several different people in a day is moderation doing its
+    /// job; the same person taking eight votes in an evening is a dogpile.
+    /// </remarks>
+    public const long MaxVotesPerTargetPerDay = 2;
+
     /// <summary>
-    /// Spends <paramref name="voterId"/>'s vote for the day on
-    /// <paramref name="targetId"/>, if they still have it.
+    /// Records a vote against <paramref name="targetId"/>, unless they have already
+    /// taken <see cref="MaxVotesPerTargetPerDay"/> today.
     /// </summary>
     /// <remarks>
-    /// The limit check and both writes go out in a single <c>SaveChangesAsync</c>, so a
-    /// crash between "marked as voted" and "counted the vote" is not a state this can
-    /// end up in. Refusing costs one read and writes nothing.
-    /// <para>Self-voting is allowed and deliberately not special-cased here: the voter
-    /// and the target resolve to the same row, which takes the day flag and the vote
-    /// together. Refusing to shame the bot (or any bot) is the module's job, since it
-    /// is the piece holding the <c>IUser</c>.</para>
+    /// The limit is read straight off today's bucket, which already counts exactly
+    /// "votes this person took on this day" — so the rule needs no state of its own, and
+    /// it cannot drift from the number the wall displays. The check and both writes go
+    /// out in a single <c>SaveChangesAsync</c>. Refusing writes nothing.
+    /// <para>Who may vote at all is the module's business, not this method's: it is the
+    /// piece holding the <c>IUser</c> and its guild permissions. The voter's identity
+    /// does not reach here at all any more — with the cap on the target, nothing about
+    /// the vote depends on who cast it, and taking an id this method cannot use would
+    /// suggest otherwise.</para>
     /// </remarks>
-    public async Task<ShameVoteResult> TryVoteAsync(ulong guildId, ulong voterId, ulong targetId)
+    public async Task<ShameVoteResult> TryVoteAsync(ulong guildId, ulong targetId)
     {
         var today = AppTime.TodayKey;
 
-        var voter = await GetOrCreateRecordAsync(guildId, voterId);
-        if (voter.LastVoteDay == today) return ShameVoteResult.AlreadyVotedToday;
-
-        // Resolved through the same tracked context, so a self-vote gets the *same*
-        // instance rather than a second one that would overwrite the first's changes.
-        var target = voterId == targetId
-            ? voter
-            : await GetOrCreateRecordAsync(guildId, targetId);
-
         var bucket = await GetOrCreateDailyAsync(guildId, targetId, today);
+        if (bucket.BanVotes >= MaxVotesPerTargetPerDay) return ShameVoteResult.TargetLimitReached;
 
-        voter.LastVoteDay = today;
+        var target = await GetOrCreateRecordAsync(guildId, targetId);
+
         target.BanVotes++;
         bucket.BanVotes++;
 

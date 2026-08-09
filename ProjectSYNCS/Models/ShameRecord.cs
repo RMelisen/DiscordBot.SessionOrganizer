@@ -9,10 +9,12 @@ namespace ProjectSYNCS.Models;
 // tables would mean three lookups and three upserts to answer one command, for no gain
 // — nobody ever reads one without the others.
 //
-// LastVoteDay is a third kind again: it belongs to this person as a *voter*, not as a
-// target. It is what enforces one vote per person per day, and it lives in the database
-// rather than in ShameTracker's memory on purpose — the personality state resets on
-// restart harmlessly, but a limit that vanishes on restart is an exploit, not a quirk.
+// There is deliberately nothing here about *voting*. The daily limit is on the target,
+// not the voter — two votes per person per day, from everyone combined — and it is read
+// straight off ShameDailyStat.BanVotes, which already counts exactly that. So the rule
+// carries no state of its own and cannot drift from the number the wall shows. An
+// earlier version rationed the voter instead and needed a LastVoteDay column here;
+// restricting the command to staff made rationing them pointless.
 //
 // Totals here, per-day buckets in ShameDailyStat — the fourth instance of the pattern
 // EmoteStat, BotFeedback and MemberXp already established, for the same reason: a date
@@ -30,8 +32,10 @@ public class ShameRecord
     // Uncapped by design — see ShameTracker.
     public long MeanHits { get; set; }
 
-    // Votes received through `/shame user:@…`. Only ever goes up; there is no unvote,
-    // and a vote is never withdrawn when the voter changes their mind.
+    // Votes received through `/shame user:@…`, which only staff may cast. Only ever
+    // goes up; there is no unvote, and a vote is never withdrawn when the voter changes
+    // their mind. Capped at ShameService.MaxVotesPerTargetPerDay a day, enforced
+    // against today's bucket rather than against anything stored here.
     public long BanVotes { get; set; }
 
     // How often this person has turned to *another* bot — replying to one, mentioning
@@ -39,9 +43,4 @@ public class ShameRecord
     // MeanHits: talking to a music bot is mundane and bursty, and uncapped it would
     // just rank whoever queues the most songs.
     public long PerfidyHits { get; set; }
-
-    // The day (AppTime.DayKey, yyyymmdd) this person last *cast* a vote. Zero means
-    // never. Compared against today rather than being reset by anything, so no sweep
-    // has to run at midnight.
-    public int LastVoteDay { get; set; }
 }

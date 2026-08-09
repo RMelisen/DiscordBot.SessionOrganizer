@@ -8,7 +8,13 @@ namespace ProjectSYNCS.Commands;
 
 // The wall of shame. Three titles on one page: "Le Malfaisant" (hostility) and
 // "Le Perfide" (consorting with rival bots), both earned and counted by ShameTracker,
-// plus "Le Banni", voted by people one vote a day through this same command.
+// plus "Le Banni", voted through this same command.
+//
+// **Voting is staff-only, and that is what makes it a deterrent rather than a game.**
+// Anyone may open the wall; only Administrator / ManageGuild holders, the owner, and a
+// short hand-kept list may put someone on it. The cap is on the *target* — two votes a
+// day, from everyone combined — so a person cannot be dogpiled even when every voter
+// agrees. There is no per-voter quota: rationing moderators is not the point.
 //
 // One flat command with an optional `user` option rather than a group with
 // subcommands, because Discord will not let a parent with subcommands be invoked bare
@@ -42,8 +48,29 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
     private const string RefusalBotTarget =
         "Les autres bots n'ont pas d'honneur à perdre. Garde ton vote pour un vrai coupable ✨";
 
-    private const string RefusalAlreadyVoted =
-        "Tu as déjà voté aujourd'hui. Un par jour, c'est ce qui fait qu'il compte (ᵕ • ᴗ •)";
+    private const string RefusalTargetLimit =
+        "Cette personne a déjà pris son quota du jour. Laisse-la respirer jusqu'à demain (ᵕ • ᴗ •)";
+
+    private const string RefusalNotAllowed =
+        "Le vote est réservé au staff. Toi tu peux regarder le mur, c'est déjà beaucoup ( ˶ˆ ᗜ ˆ˵ )";
+
+    // Who may cast a vote, on top of anyone with Administrator / ManageGuild (and the
+    // owner) — see SessionPermissions.IsStaff. Literal snowflakes tied to this one
+    // server, like AvailabilityService.OwnerId and XpTracker.ExcludedChannels.
+    //
+    // The list exists because "moderator" here is a matter of trust rather than of
+    // Discord permissions: these people are trusted with the vote without being given
+    // ManageGuild, which would hand them the whole server.
+    private static readonly HashSet<ulong> ExtraVoters = new()
+    {
+        177049957818302464,
+        324768221372743681,
+        345917214966415362,
+        573225362532859935,
+    };
+
+    private static bool CanVote(IUser user) =>
+        SessionPermissions.IsStaff(user) || ExtraVoters.Contains(user.Id);
 
     private readonly ShameService _shame;
     private readonly ResponsePicker _picker;
@@ -100,6 +127,15 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
         // Refusals are ephemeral: only the person who tried needs to know, and a public
         // "you can't do that" would be a second message about a vote that never
         // happened.
+        //
+        // Checked before anything else, so someone who may not vote learns that rather
+        // than which of the other rules they also broke.
+        if (!CanVote(Context.User))
+        {
+            await RespondAsync(RefusalNotAllowed, ephemeral: true);
+            return;
+        }
+
         if (target.Id == Context.Client.CurrentUser.Id)
         {
             await RespondAsync(RefusalSelfTarget, ephemeral: true);
@@ -114,18 +150,18 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
 
         await DeferAsync();
 
-        var result = await _shame.TryVoteAsync(Context.Guild.Id, Context.User.Id, target.Id);
-        if (result == ShameVoteResult.AlreadyVotedToday)
+        var result = await _shame.TryVoteAsync(Context.Guild.Id, target.Id);
+        if (result == ShameVoteResult.TargetLimitReached)
         {
-            await FollowupAsync(RefusalAlreadyVoted, ephemeral: true);
+            await FollowupAsync(RefusalTargetLimit, ephemeral: true);
             return;
         }
 
         var voterName = NameOf(Context.User);
         var targetName = NameOf(target);
 
-        // Self-shaming is allowed and gets its own pool: the joke is that it cost them
-        // the only vote they had, which a line about two different people cannot make.
+        // Self-shaming is allowed and gets its own pool: a line about two different
+        // people cannot land when both of them are the same person.
         var line = Context.User.Id == target.Id
             ? string.Format(_picker.Pick(Context.Channel.Id, BotResponses.ShameSelfVoteLines), voterName)
             : string.Format(_picker.Pick(Context.Channel.Id, BotResponses.ShameVoteLines), voterName, targetName);

@@ -97,9 +97,12 @@ in one click. The bot's user-facing language is French.
   was hostile to, counting an explicit `@` or the person it replies to — roles and
   `@everyone` never count, other bots never count, and being mean to *her* does.
   It is uncapped, so a mean message aimed at four people is worth four. **Le Banni** is
-  voted: **`/shame user:@someone`** spends your one vote for the day, announced publicly
-  in her voice. You can vote for yourself; you cannot vote for a bot, and least of all
-  for her. **Le Perfide** is for consorting with the competition: replying to another
+  voted: **`/shame user:@someone`**, announced publicly in her voice. Voting is
+  **staff-only** — Administrator or Manage Server, the owner, plus a short hand-kept
+  list — which is what makes the title a deterrent rather than a game. A target can
+  take at most **2 votes a day from everyone combined**, so nobody gets dogpiled; there
+  is no per-voter quota. You can vote for yourself; you cannot vote for a bot, and least
+  of all for her. **Le Perfide** is for consorting with the competition: replying to another
   bot, mentioning one, or running one of their slash commands — she can't see the
   command itself, but the rival's reply names whoever invoked it. Rationed to one hit
   per person per channel per minute, so it ranks how often you turn to another bot
@@ -139,8 +142,11 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
   front of her earns a full sulk — and that praise no longer lands in her own
   `/goodbot` tally, since a bare "good bot" now goes to whichever bot acted most
   recently. Replying directly to her still always counts as hers; replying directly
-  to another bot never does. Level-up announcements are exempt: the congratulation
-  is for the person who levelled, not the bot that said so.
+  to another bot never does. A level-up announced by the *other* leveling bot gets its
+  own treatment: she congratulates the person and sulks about where the level came
+  from, in the same line — she has her own XP system and nobody used it. That counts
+  as her answer to the message, so the ordinary jealousy is skipped there rather than
+  piling a reaction and a mutter on top.
 - **Self-preservation** — threatening to unplug, delete or reboot her gets a
   reaction, and it is the one behaviour where the owner comes off worse than anyone
   else: from him the threat is real and she is frightened, from anyone else it is a
