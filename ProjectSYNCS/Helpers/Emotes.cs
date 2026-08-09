@@ -66,7 +66,7 @@ public static class Emotes
     public const string MushroomCute = $"<:mushroomcute:{MushroomCuteId}>";
 
     /// <summary>`:nightmareothereye:`</summary>
-    public const string NightmareOtherEyeId = "1011287167449972746";
+    public const string NightmareOtherEyeId = "1536042805128994856";
     public const string NightmareOtherEye = $"<:nightmareothereye:{NightmareOtherEyeId}>";
 
     /// <summary>`:noice:`</summary>
