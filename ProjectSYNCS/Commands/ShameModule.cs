@@ -6,19 +6,21 @@ using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Commands;
 
-// The wall of shame. Two titles on one page: "Le Malfaisant", earned by being hostile
-// and counted by ShameTracker, and "Le Banni", voted by people one vote a day through
-// this same command.
+// The wall of shame. Three titles on one page: "Le Malfaisant" (hostility) and
+// "Le Perfide" (consorting with rival bots), both earned and counted by ShameTracker,
+// plus "Le Banni", voted by people one vote a day through this same command.
 //
 // One flat command with an optional `user` option rather than a group with
 // subcommands, because Discord will not let a parent with subcommands be invoked bare
 // — `/shame voir` and `/shame vote` would mean plain `/shame` no longer exists, and the
 // board is the thing people open ten times for every vote cast.
 //
-// An embed rather than Components V2, unlike /level and /leaderboard: the wall ranks
-// six names with no avatars, no levels and no podium art, so the flag would buy nothing
-// and cost the 40-component budget. Same reasoning /emotestats and /goodbot stayed
-// embeds.
+// Components V2, like /level and /leaderboard, because each title shows its holder's
+// avatar and an embed has one thumbnail slot for the whole message. That flag is
+// all-or-nothing: a ComponentsV2 message carries NO content and NO embeds, so this
+// replaced the embed rather than decorating it, and OnPeriodAsync has to re-assert the
+// flag on every UpdateAsync or the edit is rejected. /emotestats and /goodbot stay
+// paged embeds — they rank emotes and verdicts, which have no face to show.
 //
 // Guild-only: this module reads Context.Guild, which is null in a DM, and config.yaml
 // ships register_globally: true (a global command is DM-enabled by default).
@@ -64,7 +66,10 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         await DeferAsync();
-        await FollowupAsync(embed: await BuildWallAsync(DefaultPeriod), components: BuildComponents(DefaultPeriod));
+        await FollowupAsync(
+            components: await BuildWallAsync(DefaultPeriod),
+            flags: MessageFlags.ComponentsV2,
+            allowedMentions: AllowedMentions.None);
     }
 
     // Only one button row exists on this message, so nothing can collide with it — but
@@ -77,14 +82,16 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
     {
         if (!Enum.TryParse<StatsPeriod>(periodStr, out var period)) period = DefaultPeriod;
 
-        var embed = await BuildWallAsync(period);
-        var components = BuildComponents(period);
+        var components = await BuildWallAsync(period);
 
         var component = (SocketMessageComponent)Context.Interaction;
         await component.UpdateAsync(m =>
         {
-            m.Embed = embed;
             m.Components = components;
+            // Re-asserted on every edit: the flag is a property of the message, and an
+            // update that omitted it would be rejected against a ComponentsV2 message.
+            m.Flags = MessageFlags.ComponentsV2;
+            m.AllowedMentions = AllowedMentions.None;
         });
     }
 
@@ -128,41 +135,86 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
         await FollowupAsync(line, allowedMentions: AllowedMentions.None);
     }
 
-    private async Task<Embed> BuildWallAsync(StatsPeriod period)
+    // Components V2. The whole wall is 21 components of the 40 Discord allows per
+    // message, counting the tree: the container, four per title with a holder (Section
+    // + its TextDisplay + the avatar Thumbnail, plus one TextDisplay for the runners-up),
+    // three separators, the footer, and the filter row with its three buttons. Only the
+    // *holder* wears an avatar — giving all nine rows one costs three components each
+    // and lands at 39 of 40, which would leave this command permanently unextendable for
+    // the sake of putting a face on people who did not win the title. Re-do that sum
+    // before adding anything here.
+    private async Task<MessageComponent> BuildWallAsync(StatsPeriod period)
     {
         var wall = await _shame.GetWallAsync(Context.Guild.Id, period);
 
-        return new EmbedBuilder()
-            .WithTitle($"Le mur de la honte — {StatsPeriodUi.Label(period)}")
-            .WithColor(Color.DarkRed)
-            .AddField(
-                $"{Emotes.GooseKnife} Le Malfaisant",
-                Section(wall.Malfaisants, BotResponses.ShameEmptyMalfaisant, "méchanceté", "méchancetés"))
-            .AddField(
-                $"{Emotes.PrisonerFlat} Le Banni",
-                Section(wall.Bannis, BotResponses.ShameEmptyBanni, "vote", "votes"))
-            .WithFooter("Un vote par personne et par jour — `/shame user`")
+        var container = new ContainerBuilder()
+            .WithAccentColor(Color.DarkRed)
+            .AddComponent(new TextDisplayBuilder(
+                $"# Le mur de la honte\n-# {StatsPeriodUi.Label(period)}"));
+
+        AddTitle(container, $"{Emotes.GooseKnife} Le Malfaisant",
+            wall.Malfaisants, BotResponses.ShameEmptyMalfaisant, "méchanceté", "méchancetés");
+        AddTitle(container, $"{Emotes.PrisonerFlat} Le Banni",
+            wall.Bannis, BotResponses.ShameEmptyBanni, "vote", "votes");
+        AddTitle(container, $"{Emotes.NightmareOtherEye} Le Perfide",
+            wall.Perfides, BotResponses.ShameEmptyPerfide, "trahison", "trahisons");
+
+        container
+            .AddComponent(new SeparatorBuilder())
+            .AddComponent(new TextDisplayBuilder(
+                "-# Un vote par personne et par jour — `/shame user`"));
+
+        return new ComponentBuilderV2()
+            .AddComponent(container)
+            .AddComponent(new ActionRowBuilder().AddFilterRow("shame:win", period))
             .Build();
     }
 
-    private MessageComponent BuildComponents(StatsPeriod period) =>
-        new ComponentBuilder().AddFilterRow("shame:win", period).Build();
+    // One title: its holder as a Section wearing their avatar, then the runners-up as a
+    // plain line beneath.
+    //
+    // A title with nobody in it still renders, with a line in her voice and no avatar —
+    // there is no face to show, and hiding the title outright would make the wall change
+    // shape between filters, which reads as broken. There is no minimum count either: a
+    // window holding one vote must show that vote, or the vote looks like it vanished.
+    private void AddTitle(
+        ContainerBuilder container,
+        string heading,
+        IReadOnlyList<ShameTally> rows,
+        string[] emptyPool,
+        string unit,
+        string units)
+    {
+        container.AddComponent(new SeparatorBuilder());
 
-    // A title with nobody in it still renders, with a line in her voice instead of the
-    // ranking. Hiding it would make the wall change shape between filters, and there is
-    // no minimum count: a window holding one vote must show that vote, or the vote
-    // looks like it vanished.
-    private string Section(
-        IReadOnlyList<ShameTally> rows, string[] emptyPool, string unit, string units) =>
-        rows.Count == 0
-            ? $"*{_picker.Pick(Context.Channel.Id, emptyPool)}*"
-            : string.Join("\n", rows.Select((t, i) =>
-            {
-                // Mentions render as a name without pinging: the embed carries no
-                // AllowedMentions of its own, so the wall never notifies the people on it.
-                var count = $"**{t.Count}** {(t.Count == 1 ? unit : units)}";
-                return $"{LevelCardUi.RankMarker(i + 1)} <@{t.UserId}> — {count}";
-            }));
+        if (rows.Count == 0)
+        {
+            container.AddComponent(new TextDisplayBuilder(
+                $"### {heading}\n*{_picker.Pick(Context.Channel.Id, emptyPool)}*"));
+            return;
+        }
+
+        var holder = rows[0];
+
+        container.AddComponent(new SectionBuilder()
+            .WithAccessory(AvatarUi.Thumbnail(Context.Guild.GetUser(holder.UserId)))
+            .AddComponent(new TextDisplayBuilder(
+                $"### {heading}\n{Row(holder, 1, unit, units)}")));
+
+        if (rows.Count > 1)
+        {
+            container.AddComponent(new TextDisplayBuilder(string.Join("\n",
+                rows.Skip(1).Select((t, i) => Row(t, i + 2, unit, units)))));
+        }
+    }
+
+    // A TextDisplay is real message content, so <@id> here genuinely pings — unlike the
+    // embed this replaced, where mentions rendered inert for free. Every send and every
+    // filter click passes AllowedMentions.None, which keeps the blue clickable pill and
+    // silences it; without that the wall would notify everyone on it on every re-render.
+    private static string Row(ShameTally tally, int rank, string unit, string units) =>
+        $"{LevelCardUi.RankMarker(rank)} <@{tally.UserId}> — "
+        + $"**{tally.Count}** {(tally.Count == 1 ? unit : units)}";
 
     private static string NameOf(IUser user) => BotResponses.DisplayNameFor(
         user.Id, (user as SocketGuildUser)?.Nickname ?? user.GlobalName ?? user.Username);

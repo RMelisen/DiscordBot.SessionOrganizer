@@ -17,10 +17,11 @@ public enum ShameVoteResult
     AlreadyVotedToday,
 }
 
-/// <summary>Both halves of the wall over one window, already ranked and trimmed.</summary>
+/// <summary>Every title on the wall over one window, already ranked and trimmed.</summary>
 public readonly record struct ShameWall(
     IReadOnlyList<ShameTally> Malfaisants,
-    IReadOnlyList<ShameTally> Bannis);
+    IReadOnlyList<ShameTally> Bannis,
+    IReadOnlyList<ShameTally> Perfides);
 
 // Persists the wall of shame. Deliberately dumb in the same way BotFeedbackService is:
 // it records what it is told and reads it back. Deciding *whether* a message was mean
@@ -54,6 +55,22 @@ public class ShameService
 
         row.MeanHits += hits;
         bucket.MeanHits += hits;
+
+        await _db_context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Records one interaction with a rival bot. Always one hit: unlike hostility,
+    /// which scales with how many people it was aimed at, turning to another bot is
+    /// one act however many bots were in the message.
+    /// </summary>
+    public async Task AddPerfidyHitAsync(ulong guildId, ulong userId)
+    {
+        var row = await GetOrCreateRecordAsync(guildId, userId);
+        var bucket = await GetOrCreateDailyAsync(guildId, userId, AppTime.TodayKey);
+
+        row.PerfidyHits++;
+        bucket.PerfidyHits++;
 
         await _db_context.SaveChangesAsync();
     }
@@ -109,7 +126,8 @@ public class ShameService
 
             return new ShameWall(
                 Rank(all.Select(r => (r.Id, r.UserId, r.MeanHits))),
-                Rank(all.Select(r => (r.Id, r.UserId, r.BanVotes))));
+                Rank(all.Select(r => (r.Id, r.UserId, r.BanVotes))),
+                Rank(all.Select(r => (r.Id, r.UserId, r.PerfidyHits))));
         }
 
         // Inclusive lower bound: 6 days ago plus today is a week. Day is an int, so
@@ -125,7 +143,8 @@ public class ShameService
 
         return new ShameWall(
             Rank(byUser.Select(g => (g.Min(b => b.Id), g.Key, g.Sum(b => b.MeanHits)))),
-            Rank(byUser.Select(g => (g.Min(b => b.Id), g.Key, g.Sum(b => b.BanVotes)))));
+            Rank(byUser.Select(g => (g.Min(b => b.Id), g.Key, g.Sum(b => b.BanVotes)))),
+            Rank(byUser.Select(g => (g.Min(b => b.Id), g.Key, g.Sum(b => b.PerfidyHits)))));
     }
 
     // Ranked highest first, ties broken by the row that appeared first — the earliest

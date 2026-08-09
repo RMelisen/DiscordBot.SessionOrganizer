@@ -687,6 +687,17 @@ internal static class BotResponses
         $"Pas un seul nom. Décevant {Emotes.Staring}",
     };
 
+    // The same, for the title she gives to whoever keeps talking to the *other* bots.
+    // Note this one is the only empty state she is actually pleased about.
+    public static readonly string[] ShameEmptyPerfide =
+    {
+        "Personne n'est allé voir ailleurs. C'est tout ce que je demandais ♡",
+        $"Aucun traître sur cette période. Bien. Très bien {Emotes.CatHeart}",
+        "Vous m'avez été fidèles. Je m'en souviendrai (dans le bon sens) ✨",
+        $"Rien à signaler ici. Continuez comme ça {Emotes.PepeHappy}",
+        "Personne. Vous avez enfin compris qui compte sur ce serveur ദ്ദി◝ ⩊ ◜.ᐟ",
+    };
+
     // Announcing a giveaway's winners. {0} = the winner mentions (already joined, and
     // already plural-safe), {1} = the prize. She is the one drawing, so the lines are
     // hers rather than a neutral "the winner is".

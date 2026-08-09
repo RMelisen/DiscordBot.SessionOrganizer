@@ -260,13 +260,7 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
         return $"-# Page {page + 1}/{totalPages} · toi : rang #{index + 1}, {standing}";
     }
 
-    // A member who has since left the guild resolves to null, so fall back to Discord's
-    // own default avatar rather than dropping the thumbnail — a Section whose accessory
-    // is missing would render lopsided against its neighbours. Their <@id> still renders
-    // as a name, since the client resolves that itself.
-    private static ThumbnailBuilder Avatar(IUser? user) =>
-        new ThumbnailBuilder()
-            .WithMedia(new UnfurledMediaItemProperties(
-                user?.GetDisplayAvatarUrl(size: 128) ?? CDN.GetDefaultUserAvatarUrl(0)))
-            .WithDescription("Avatar");
+    // Moved to Helpers/AvatarUi once ShameModule needed the same accessory; kept as a
+    // local alias so the call sites above read the same as they always did.
+    private static ThumbnailBuilder Avatar(IUser? user) => AvatarUi.Thumbnail(user);
 }

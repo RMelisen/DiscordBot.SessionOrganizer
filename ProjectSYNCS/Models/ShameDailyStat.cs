@@ -1,6 +1,6 @@
 namespace ProjectSYNCS.Models;
 
-// One day's shame for one person in one guild — the same two counters as ShameRecord,
+// One day's shame for one person in one guild — the same three counters as ShameRecord,
 // bucketed by date so `/shame` can be scoped to a rolling window.
 //
 // LastVoteDay has no bucket here: it is not a counter, it is a "when did you last do
@@ -21,4 +21,5 @@ public class ShameDailyStat
 
     public long MeanHits { get; set; }
     public long BanVotes { get; set; }
+    public long PerfidyHits { get; set; }
 }

@@ -89,15 +89,23 @@ in one click. The bot's user-facing language is French.
   stays honest about time actually spent. A level gained that way is announced in the voice channel's own text chat
   rather than in the server's main one. Some channels are excluded from earning
   entirely.
-- **`/shame`** — the wall of shame, two titles on one page with the same three
+- **`/shame`** — the wall of shame, three titles on one page with the same three
   filters as the other rankings (**30 days** by default, **7 days**, **all time**).
+  Built with *Components V2* like `/level`, so each title shows its current holder's
+  real avatar beside their name; the runners-up are listed as plain text beneath.
   **Le Malfaisant** is earned: she scores every message and files one hit per human it
   was hostile to, counting an explicit `@` or the person it replies to — roles and
   `@everyone` never count, other bots never count, and being mean to *her* does.
   It is uncapped, so a mean message aimed at four people is worth four. **Le Banni** is
   voted: **`/shame user:@someone`** spends your one vote for the day, announced publicly
   in her voice. You can vote for yourself; you cannot vote for a bot, and least of all
-  for her. Both counters start at zero the day they ship and nothing can be backfilled.
+  for her. **Le Perfide** is for consorting with the competition: replying to another
+  bot, mentioning one, or running one of their slash commands — she can't see the
+  command itself, but the rival's reply names whoever invoked it. Rationed to one hit
+  per person per channel per minute, so it ranks how often you turn to another bot
+  rather than how chatty that bot is. Ephemeral replies and old-style prefix commands
+  (`!play`) leave no trace and go uncounted. All three counters start at zero the day
+  they ship and nothing can be backfilled.
 - **`/addxp <member> <amount>` · `/removexp <member> <amount>`** — staff-only manual XP
   adjustment (Administrator or Manage Server, plus the bot's owner). Ephemeral, clamped
   at zero, and deliberately silent: crossing a level this way fires no level-up card,

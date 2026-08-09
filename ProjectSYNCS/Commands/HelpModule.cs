@@ -52,9 +52,11 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**Niveaux**, **Réactions** (celles que tu as mises) et **Vocal** (temps passé en vocal), " +
                 "et trois filtres : **depuis toujours** (par défaut), **30 jours** et **7 jours**. " +
                 "Les compteurs sont récents, soyez indulgents.\n" +
-                "**`/shame`** — Le mur de la honte. Deux titres : **Le Malfaisant**, que je décerne " +
+                "**`/shame`** — Le mur de la honte. Trois titres : **Le Malfaisant**, que je décerne " +
                 "toute seule à qui est méchant (avec moi ou avec vous — un point par personne visée), " +
-                "et **Le Banni**, que vous votez. Mêmes filtres : **30 jours** (par défaut), " +
+                "**Le Banni**, que vous votez, et **Le Perfide**, pour ceux qui passent leur temps " +
+                "à parler aux *autres* bots. Je vois qui répond à qui, et je vois qui utilise " +
+                "leurs commandes. Mêmes filtres : **30 jours** (par défaut), " +
                 "**7 jours** et **depuis toujours**.\n" +
                 "**`/shame user:@quelqu'un`** — Dénonce quelqu'un pour le mur. **Un seul vote par jour**, " +
                 "alors choisis bien. Les bots ne comptent pas, et moi encore moins.\n" +

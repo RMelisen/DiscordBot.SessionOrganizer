@@ -147,13 +147,29 @@ internal sealed class RivalryService
     // ChatterService's to celebrate — see Helpers/LevelUpAnnouncement.
     private bool IsRival(SocketUserMessage message)
     {
-        if (!message.Author.IsBot) return false;
-        if (message.Author.Id == _client.CurrentUser.Id) return false;
-        if (message.Author.IsWebhook) return false;
+        if (!IsRival(message.Author)) return false;
         if (LevelUpAnnouncement.Matches(message.Author, message.Content)) return false;
 
         return true;
     }
+
+    /// <summary>
+    /// Whether <paramref name="user"/> is a rival bot — any bot but herself, webhooks
+    /// excluded (they are relentless and they are nobody's rival).
+    /// </summary>
+    /// <remarks>
+    /// The identity half of the check above, without the message-content carve-out for
+    /// level-up announcements. Public so <see cref="ShameTracker"/> can ask rather than
+    /// writing a second definition of "rival" that would drift from this one.
+    /// <para><b>The carve-out is deliberately not part of this.</b> Sulking at a
+    /// level-up announcement would contradict <c>ChatterService</c> congratulating it in
+    /// the same breath, which is why the message-level check drops those. Counting
+    /// someone who *replies* to one is a different question — she is jealous of the
+    /// attention either way — so "Le Perfide" uses this overload and gets no
+    /// exception.</para>
+    /// </remarks>
+    public bool IsRival(IUser user) =>
+        user.IsBot && user.Id != _client.CurrentUser.Id && !user.IsWebhook;
 
     private Task ReactAsync(SocketUserMessage message) => MarkAsync(message);
 

@@ -2,11 +2,12 @@ namespace ProjectSYNCS.Models;
 
 // One person's standing on the wall of shame, in one guild. One row per (guild, user).
 //
-// The row holds both sides of the wall, which is why the two counters read oddly next
-// to each other: MeanHits is something you *did* (messages of yours that read hostile),
-// BanVotes is something that was *done to you* (other people spending their daily vote
-// on you). Splitting them into two tables would mean two lookups and two upserts to
-// answer one command, for no gain — nobody ever reads one without the other.
+// The row holds every side of the wall, which is why the counters read oddly next to
+// each other: MeanHits and PerfidyHits are things you *did* (messages of yours that
+// read hostile; times you turned to a rival bot), BanVotes is something that was *done
+// to you* (other people spending their daily vote on you). Splitting them into separate
+// tables would mean three lookups and three upserts to answer one command, for no gain
+// — nobody ever reads one without the others.
 //
 // LastVoteDay is a third kind again: it belongs to this person as a *voter*, not as a
 // target. It is what enforces one vote per person per day, and it lives in the database
@@ -32,6 +33,12 @@ public class ShameRecord
     // Votes received through `/shame user:@…`. Only ever goes up; there is no unvote,
     // and a vote is never withdrawn when the voter changes their mind.
     public long BanVotes { get; set; }
+
+    // How often this person has turned to *another* bot — replying to one, mentioning
+    // one, or running one's slash command. Rationed by a per-channel cooldown, unlike
+    // MeanHits: talking to a music bot is mundane and bursty, and uncapped it would
+    // just rank whoever queues the most songs.
+    public long PerfidyHits { get; set; }
 
     // The day (AppTime.DayKey, yyyymmdd) this person last *cast* a vote. Zero means
     // never. Compared against today rather than being reset by anything, so no sweep

@@ -436,8 +436,8 @@ pride), he draws from `JealousLinesOwner` (betrayal — he wrote her). Same spli
 `BadBotReplies` / `BadBotRepliesOwner`, and for the same reason: the injury is not
 the same injury.
 
-**`RivalryService` is the only handler that looks at other bots.** Every other one
-bails on `IsBot`. It does two jobs with that traffic. **One:** it records when and on
+**`RivalryService` is the primary handler that looks at other bots** (`ShameTracker` is
+the only other one — see `Le Perfide` above). Every other one bails on `IsBot`. It does two jobs with that traffic. **One:** it records when and on
 which message a rival last acted, which `BotFeedbackTracker.TryClaim` reads so a bare
 "good bot" goes to whoever acted *most recently* rather than always to her — before
 this, praise a rival earned landed in her column whenever she happened to have spoken
@@ -560,11 +560,11 @@ narrows mentions to avoid notifying anyone; this one passes
 only, still never roles or `@everyone`. It is why `BotChat.PostWithTypingAsync` takes an
 optional `AllowedMentions`; left null it behaves exactly as before for ordinary chatter.
 
-**`/shame`'s two titles are two different mechanisms sharing one row.** `ShameRecord` /
-`ShameDailyStat` is the **fourth** totals+buckets pair, for the reason the other three
-exist. `MeanHits` is something you *did*, `BanVotes` something done *to* you, and
-`LastVoteDay` belongs to you as a *voter* rather than as a target — one row per
-(guild, user) because nobody ever reads one without the others. `LastVoteDay` is in the
+**`/shame`'s three titles are three different mechanisms sharing one row.**
+`ShameRecord` / `ShameDailyStat` is the **fourth** totals+buckets pair, for the reason
+the other three exist. `MeanHits` and `PerfidyHits` are things you *did*, `BanVotes`
+something done *to* you, and `LastVoteDay` belongs to you as a *voter* rather than as a
+target — one row per (guild, user) because nobody ever reads one without the others. `LastVoteDay` is in the
 DB rather than in `ShameTracker`'s memory **on purpose**: every other piece of in-memory
 personality state resets harmlessly on restart, but a one-vote-per-day limit that
 vanishes on restart is an exploit. `ShameService.TryVoteAsync` checks the limit and
@@ -582,6 +582,30 @@ the one place where a single message can add an unbounded amount; if that ever n
 rationing, cap the hits per message rather than adding a cooldown — the exploit is one
 message, not many.
 
+**`Le Perfide` is rationed where `Le Malfaisant` is not, and the asymmetry is the
+point.** Hostility is rare, so it scales; turning to another bot is mundane and bursty —
+an evening of queueing songs is forty replies to a music bot — so it is one hit per
+person **per channel per 60 s**, and one hit per message however many rivals are in it.
+Uncapped, the title would permanently belong to whoever uses the music bot and stop
+moving on day two. Don't "harmonise" the two counters' rationing; they measure different
+kinds of thing.
+
+**`ShameTracker` is the second handler that looks at other bots' traffic**, after
+`RivalryService` — every other one bails on `IsBot`. It has to be, because a slash
+command run against another bot is **never broadcast on the gateway**: the only trace is
+that bot's *reply*, which carries the invoker in `SocketUserMessage.InteractionMetadata`
+(`Type == InteractionType.ApplicationCommand`). Two blind spots follow and are
+unavoidable — an **ephemeral** response produces no visible message, and an old-style
+prefix command (`!play`) leaves nothing tying the reply back to a person.
+
+**"Rival" has two definitions and `ShameTracker` deliberately uses the looser one.**
+`RivalryService.IsRival(SocketUserMessage)` excludes level-up announcements, because
+`ChatterService` congratulates those and sulking at one would contradict the cheer.
+`IsRival(IUser)` is the identity half — any bot but her, webhooks excluded — and is what
+`ShameTracker` asks, so *replying* to a level-up announcement still counts as perfidy.
+That is intentional: she is jealous of the attention either way. The test lives in
+`RivalryService` rather than being rewritten, so the two can never drift.
+
 **`ShameTracker` is a separate service for `BotFeedbackTracker`'s reason.** It draws a
 conclusion nobody tells it and has to see *every* message to do it, so it cannot be a
 branch in `ChatterService`, which returns early on a dozen branches — the misses would
@@ -594,15 +618,24 @@ verdict is not a mood, and "bad bot" already belongs to `BotFeedbackTracker`.
 `VoiceXpService` passing a channel id instead of keeping its own copy. Only the question
 is shared; `ExcludedChannels` itself must stay private to `XpTracker`.
 
-**`/shame` is an embed, not Components V2**, unlike `/level` and `/leaderboard`: it ranks
-six names with no avatars and no podium art, so the flag would buy nothing and spend the
-40-component budget. It has exactly one button row, so nothing can collide — but the ids
-still carry the `shame:win` verb, because the day a second row is added the
+**`/shame` is Components V2, and only the title *holder* wears an avatar.** It became V2
+when the avatars did — an embed has one thumbnail slot for the whole message, and the
+wall needs one per title. The count is **21 of 40**: the container, four per title with a
+holder (Section + its TextDisplay + the avatar Thumbnail, plus one TextDisplay for the
+runners-up), three separators, the footer, and the filter row with its three buttons.
+**Giving all nine rows an avatar comes to 39** — it fits, and it would leave the command
+permanently unextendable to put a face on people who did not win the title, so the
+runners-up are deliberately plain text. Re-do that sum before adding anything. All the V2
+rules apply: no content and no embeds on the message, the flag re-asserted on every
+`UpdateAsync`, and `AllowedMentions.None` on every send, since a `TextDisplay` is real
+content and `<@id>` in one genuinely pings — the embed this replaced got inert mentions
+for free. It has exactly one button row, so nothing can collide — but the ids still carry
+the `shame:win` verb, because the day a second row is added the
 `COMPONENT_CUSTOM_ID_DUPLICATED` rejection is silent and instant. Its default window is
 **30 days**, unlike `/goodbot`'s all-time: both counters start at zero on ship day, and
 an all-time default would read as a hall of fame nobody can move. A title with nobody in
-it renders a line from `ShameEmptyMalfaisant` / `ShameEmptyBanni` rather than
-disappearing — a wall that changes shape between filters reads as broken — and there is
+it renders a line from `ShameEmptyMalfaisant` / `ShameEmptyBanni` /
+`ShameEmptyPerfide` rather than disappearing — a wall that changes shape between filters reads as broken — and there is
 no minimum count, so a window holding one vote shows it. Ties break on the earliest row
 id, which matters only in that it is *stable*: two people level on count would otherwise
 swap places on every re-render.
@@ -710,9 +743,13 @@ without a gateway connection.
 carrying `MessageFlags.ComponentsV2` may have **no `content` and no `embeds`** — the flag
 turns the whole message into components, so this replaced the embed rather than adding to
 it, and `OnViewAsync` has to re-assert the flag on every `UpdateAsync` or the edit is
-rejected. They are the only surfaces built this way: `/emotestats` and `/goodbot` stay
-paged embeds, since they rank emotes and verdicts — things with no avatar, no level and
-no podium — and the only thing a shared renderer would save is the page arithmetic.
+rejected. `/shame` joined them when it grew avatars (see its own note below).
+`/emotestats` and `/goodbot` stay paged embeds, since they rank emotes and verdicts —
+things with no avatar, no level and no podium — and the only thing a shared renderer
+would save is the page arithmetic. The avatar accessory itself lives in
+`Helpers/AvatarUi`, extracted from `LevelModule` once `ShameModule` needed it — the same
+move `BotChat` and `EmoteMarkup` made, and deliberately *not* in `LevelCardUi`, which is
+string work only.
 
 **`PageSize` is 5 because of a hard cap, not taste.** Discord allows **40 components per
 message counting the whole tree**, and a row with an avatar costs three (Section +
