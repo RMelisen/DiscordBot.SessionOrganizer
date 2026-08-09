@@ -831,11 +831,18 @@ out for free.
 
 **Voice XP tapers with the day's total, and that is the answer to the farm no mute rule
 can catch.** Two accounts idling *unmuted* look exactly like two people in a call: the
-sweep sees presence, never participation. So `Helpers/VoiceXpCurve` pays 10 XP/min for
-the first hour of the day, 3 for the second, 1 after that — a normal session is worth
-exactly what it was before the taper existed (the old rate was a flat 10), while eight
-hours pays 1140 instead of 4800. Deliberately a taper and not a hard
-cap: a cliff teaches people the exact number of minutes to park for.
+sweep sees presence, never participation. So `Helpers/VoiceXpCurve` holds the first hour
+at 10 XP/min — exactly the flat rate that preceded the taper, so a normal session lost
+nothing — then steps the rate down every half hour (8, 6, 5, 4, 3, 2) until it settles
+at 1. Eight hours pays 1680 instead of 4800. Deliberately a taper and not a hard cap: a
+cap teaches people the exact number of minutes to park for.
+
+**The tier table is the tuning surface, and its shape is the point.** An earlier
+two-tier version went 10 → 3 at minute 60, a 70% drop at a single minute, which made
+hour two read as a punishment rather than a diminishing return; the half-hour steps keep
+the sharpest early drop at 20%. Keep it sorted by minute with non-increasing rates, and
+keep the trickle rate **non-zero** — at zero it stops being a taper and becomes the cap
+this design exists to avoid.
 
 Three things hold it together. **One:** the rate is a pure function of minutes already
 banked today, so it needs no new state — `XpService.AddVoiceMinutesAsync` returns
@@ -843,10 +850,13 @@ today's bucket total *before* the increment, from the same round trip that recor
 and there is no second read to disagree with. **Two:** the taper rations the XP only.
 The minutes are still recorded in full, because `MemberXp`'s comment is right that they
 are a *fact* while XP is a *reward* — so `/leaderboard`'s Vocal view stays honest about
-who actually sat in voice. **Three:** granting goes through `XpForSpan`, a difference of
-two closed-form totals, so a span crossing a tier boundary is split correctly and a tick
-covering several minutes pays exactly what those minutes would have paid one at a time.
-`RateAt` exists only for display and is asserted to agree with it.
+who actually sat in voice. **Three:** `TotalForMinutes` is the single source of truth —
+`XpForSpan` is a difference of two of its values and `RateAt` is a one-minute span — so a
+span crossing a tier boundary is split correctly, a tick covering several minutes pays
+exactly what those minutes pay one at a time, and the rate *shown* cannot drift from the
+rate *granted*. Define any new rate function that way round, never the reverse: a rate
+defined independently and a total defined independently will disagree at a boundary
+eventually, and the integer arithmetic stays exact only in this direction.
 
 If counting the minutes fails, the payout is skipped rather than guessed — this is the
 anti-abuse path, so it fails closed.

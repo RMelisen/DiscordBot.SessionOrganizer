@@ -82,9 +82,10 @@ in one click. The bot's user-facing language is French.
   also earns XP, once a minute, as long as someone else is there too and you're not
   self-muted or self-deafened — and muted people don't count as company either, so
   being the only unmuted person in a channel earns nothing. The AFK channel never
-  earns. The rate also **tapers over the day**: 10 XP/min for the first hour, 3 for the
-  second, 1 after that, resetting at local midnight — so a normal session is worth what
-  it always was, and idling all day isn't. Minutes are still counted in full, so the Vocal leaderboard
+  earns. The rate also **tapers over the day**: the first hour pays the full 10 XP/min,
+  then the rate steps down every half hour (8, 6, 5, 4, 3, 2) until it settles at 1,
+  resetting at local midnight — so a normal session is worth what it always was, an
+  evening-long one still pays, and idling all day doesn't. Minutes are still counted in full, so the Vocal leaderboard
   stays honest about time actually spent. A level gained that way is announced in the voice channel's own text chat
   rather than in the server's main one. Some channels are excluded from earning
   entirely.

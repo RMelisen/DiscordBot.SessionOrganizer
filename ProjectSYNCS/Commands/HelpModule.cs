@@ -46,7 +46,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "Rester en vocal fait aussi gagner de l'XP, tant que t'es pas seul, " +
                 "pas en sourdine et pas micro coupé — et quelqu'un de muet ne compte pas comme " +
                 "de la compagnie. Le salon AFK ne rapporte rien. Le gain diminue au fil de la " +
-                "journée : plein tarif la première heure, réduit la deuxième, symbolique ensuite.\n" +
+                "journée : plein tarif la première heure, puis un peu moins toutes les demi-heures, " +
+                "jusqu'à un minimum symbolique. Remise à zéro chaque nuit.\n" +
                 "**`/leaderboard`** — Le classement du serveur, 5 par page. Trois vues au choix : " +
                 "**Niveaux**, **Réactions** (celles que tu as mises) et **Vocal** (temps passé en vocal), " +
                 "et trois filtres : **depuis toujours** (par défaut), **30 jours** et **7 jours**. " +
