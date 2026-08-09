@@ -92,14 +92,27 @@ public class XpService
         await _db_context.SaveChangesAsync();
     }
 
-    /// <summary>Adds eligible voice minutes to a person's total.</summary>
-    public async Task AddVoiceMinutesAsync(ulong guildId, ulong userId, long minutes)
+    /// <summary>
+    /// Adds eligible voice minutes to a person's all-time total and to today's bucket,
+    /// and returns how many minutes today's bucket held <em>before</em> this call.
+    /// </summary>
+    /// <remarks>
+    /// That return value is what <see cref="Helpers.VoiceXpCurve"/> tapers on, so the
+    /// caller gets it from the same round trip that records the minutes — no second
+    /// read, and no way for the figure the rate was computed from to differ from the
+    /// one that was stored.
+    /// </remarks>
+    public async Task<long> AddVoiceMinutesAsync(ulong guildId, ulong userId, long minutes)
     {
         var row = await GetOrCreateAsync(guildId, userId);
         row.VoiceMinutes += minutes;
 
-        (await GetOrCreateDailyAsync(guildId, userId)).VoiceMinutes += minutes;
+        var bucket = await GetOrCreateDailyAsync(guildId, userId);
+        var before = bucket.VoiceMinutes;
+        bucket.VoiceMinutes += minutes;
+
         await _db_context.SaveChangesAsync();
+        return before;
     }
 
     /// <summary>

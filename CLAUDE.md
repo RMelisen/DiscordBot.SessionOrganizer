@@ -764,9 +764,44 @@ knowing: `SocketVoiceChannel.ConnectedUsers` and each member's `VoiceState` are
 already kept live by Discord.Net's own gateway cache, the same way `PresenceService`'s
 tick reads live state without subscribing to anything — so `VoiceXpService` needs no
 `UserVoiceStateUpdated` subscription and touches nothing in `BotService`'s fan-out.
-Only **self**-mute/deafen together is excluded (the AFK-farm case); moderator-applied
-server mute/deafen is deliberately not checked, so a mod silencing someone for an
-unrelated reason doesn't also cost them XP.
+**Eligibility is one predicate, `IsActive`, used for two things — and that is the
+anti-abuse design.** It gates both who *earns* and who counts toward the "someone else
+is here" threshold. Splitting them is the exploit: if muting stopped you earning but
+still let you unlock XP for the person beside you, parking muted alts in a channel would
+farm indefinitely. So being the only unmuted person in a room full of muted ones is
+being alone, and earns what being alone earns.
+
+Self-muted **or** self-deafened is enough to be out — either one means you are not in
+the conversation, and the original "both together" rule let someone mute their mic and
+idle all day. A missing `VoiceState` also counts as out, rather than taking the generous
+reading. Moderator-applied server mute/deafen is still deliberately *not* checked:
+someone silenced by a mod for an unrelated reason shouldn't lose XP for it, and unlike
+self-muting it is not something they can do to themselves to farm.
+
+**The AFK channel is skipped entirely.** It is where Discord *puts* people for being
+idle, so two accounts parked there would earn forever — the one farm the server hands
+out for free.
+
+**Voice XP tapers with the day's total, and that is the answer to the farm no mute rule
+can catch.** Two accounts idling *unmuted* look exactly like two people in a call: the
+sweep sees presence, never participation. So `Helpers/VoiceXpCurve` pays 5 XP/min for
+the first hour of the day, 3 for the second, 1 after that — a real session pays well,
+eight hours pays 840 instead of the old flat 4800. Deliberately a taper and not a hard
+cap: a cliff teaches people the exact number of minutes to park for.
+
+Three things hold it together. **One:** the rate is a pure function of minutes already
+banked today, so it needs no new state — `XpService.AddVoiceMinutesAsync` returns
+today's bucket total *before* the increment, from the same round trip that records it,
+and there is no second read to disagree with. **Two:** the taper rations the XP only.
+The minutes are still recorded in full, because `MemberXp`'s comment is right that they
+are a *fact* while XP is a *reward* — so `/leaderboard`'s Vocal view stays honest about
+who actually sat in voice. **Three:** granting goes through `XpForSpan`, a difference of
+two closed-form totals, so a span crossing a tier boundary is split correctly and a tick
+covering several minutes pays exactly what those minutes would have paid one at a time.
+`RateAt` exists only for display and is asserted to agree with it.
+
+If counting the minutes fails, the payout is skipped rather than guessed — this is the
+anti-abuse path, so it fails closed.
 
 **A voice level-up is announced in the voice channel's own text chat**, not in the
 guild's system channel. `SocketVoiceChannel` is an `IMessageChannel` (text-in-voice),

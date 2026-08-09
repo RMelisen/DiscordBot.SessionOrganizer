@@ -80,9 +80,14 @@ in one click. The bot's user-facing language is French.
   since daily buckets were added; all-time still includes everything counted before
   that. `/level` itself carries no filters — it's a profile, not a ranking. Time spent present in a voice channel
   also earns XP, once a minute, as long as someone else is there too and you're not
-  both self-muted and self-deafened; a level gained that way is announced in the voice
-  channel's own text chat rather than in the server's main one. Some channels are
-  excluded from earning entirely.
+  self-muted or self-deafened — and muted people don't count as company either, so
+  being the only unmuted person in a channel earns nothing. The AFK channel never
+  earns. The rate also **tapers over the day**: 5 XP/min for the first hour, 3 for the
+  second, 1 after that, resetting at local midnight — so a real session pays well and
+  idling all day doesn't. Minutes are still counted in full, so the Vocal leaderboard
+  stays honest about time actually spent. A level gained that way is announced in the voice channel's own text chat
+  rather than in the server's main one. Some channels are excluded from earning
+  entirely.
 - **`/help`** — in-Discord usage guide.
 - **Owner-only commands** — the configured owner can speak through the bot
   (`/tell` into a channel, `/dm` to a person) and flag themselves unavailable

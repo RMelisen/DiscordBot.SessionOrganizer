@@ -43,8 +43,10 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "Un 👍 ou un 👎 sur un de mes messages compte pareil, sans que j'aie besoin de répondre.\n" +
                 "**`/level [user]`** — Ta carte : ton niveau, ta progression vers le suivant et ton rang. " +
                 "Tu gagnes de l'XP en parlant, et en réagissant. " +
-                "Rester en vocal fait aussi gagner de " +
-                "l'XP, tant que t'es pas seul et pas muet en même temps.\n" +
+                "Rester en vocal fait aussi gagner de l'XP, tant que t'es pas seul, " +
+                "pas en sourdine et pas micro coupé — et quelqu'un de muet ne compte pas comme " +
+                "de la compagnie. Le salon AFK ne rapporte rien. Le gain diminue au fil de la " +
+                "journée : plein tarif la première heure, réduit la deuxième, symbolique ensuite.\n" +
                 "**`/leaderboard`** — Le classement du serveur, 5 par page. Trois vues au choix : " +
                 "**Niveaux**, **Réactions** (celles que tu as mises) et **Vocal** (temps passé en vocal), " +
                 "et trois filtres : **depuis toujours** (par défaut), **30 jours** et **7 jours**. " +

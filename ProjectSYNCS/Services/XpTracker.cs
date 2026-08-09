@@ -191,7 +191,7 @@ internal sealed class XpTracker
     /// is never worth breaking a grant over.
     /// </remarks>
     public async Task GrantVoiceXpAsync(
-        ulong guildId, ulong voiceChannelId, ulong userId, long amount, long minutes)
+        ulong guildId, ulong voiceChannelId, ulong userId, long minutes)
     {
         // Resolved once and reused: the exclusion check needs it, and so does the
         // announcement below.
@@ -199,8 +199,20 @@ internal sealed class XpTracker
         if (IsExcluded(voiceChannelId, voiceChannel)) return;
 
         // Recorded on the same call that pays the XP, so the /leaderboard voice total
-        // can never disagree with which minutes were considered eligible.
-        await CountVoiceAsync(guildId, userId, minutes);
+        // can never disagree with which minutes were considered eligible — and the same
+        // round trip reports how much today's bucket already held, which is what the
+        // taper is computed from.
+        var earnedToday = await CountVoiceAsync(guildId, userId, minutes);
+
+        // Counting failed, so there is no honest figure to taper on. Skip the payout
+        // rather than guessing: this is the anti-abuse path, and the failure is logged.
+        if (earnedToday is not { } before) return;
+
+        // Falls from 5/min to 3 to 1 as the day's total grows — see VoiceXpCurve. The
+        // minutes above are recorded either way: time spent is a fact, the XP is the
+        // reward, and only the reward is rationed.
+        var amount = VoiceXpCurve.XpForSpan(before, minutes);
+        if (amount <= 0) return;
 
         // SocketVoiceChannel is an IMessageChannel — text-in-voice — so the card lands
         // in the channel the person is sitting in rather than interrupting #général.
@@ -210,17 +222,20 @@ internal sealed class XpTracker
         await GrantAsync(guildId, userId, amount, channel);
     }
 
-    private async Task CountVoiceAsync(ulong guildId, ulong userId, long minutes)
+    // Returns the minutes already banked today before this tick, or null if the write
+    // failed.
+    private async Task<long?> CountVoiceAsync(ulong guildId, ulong userId, long minutes)
     {
         try
         {
             await using var scope = _services.CreateAsyncScope();
             var xp = scope.ServiceProvider.GetRequiredService<XpService>();
-            await xp.AddVoiceMinutesAsync(guildId, userId, minutes);
+            return await xp.AddVoiceMinutesAsync(guildId, userId, minutes);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to count voice minutes for user {UserId}.", userId);
+            return null;
         }
     }
 

@@ -19,8 +19,9 @@ namespace ProjectSYNCS.Services;
 // needs no new BotService.cs subscription and touches nothing else in the fan-out.
 internal sealed class VoiceXpService : BackgroundService
 {
-    // How much XP one eligible minute of presence is worth.
-    private const long VoiceXpPerMinute = 10;
+    // What a minute is worth is no longer a constant here: it tapers with the day's
+    // total, and that policy lives in Helpers/VoiceXpCurve, applied by XpTracker. This
+    // service's job is only who was present and for how long.
 
     // Its own interval — explicitly not ReminderService's 5 minutes (load-bearing
     // there for the reminder window) or PresenceService's 5 minutes (an unrelated
@@ -60,31 +61,58 @@ internal sealed class VoiceXpService : BackgroundService
     {
         foreach (var guild in _client.Guilds)
         {
+            var afkChannelId = guild.AFKChannel?.Id;
+
             foreach (var channel in guild.VoiceChannels)
             {
-                var present = channel.ConnectedUsers;
+                // The AFK channel is where Discord *puts* people for being idle. Two
+                // people parked there would otherwise earn indefinitely, which is the
+                // one farm the server hands out for free.
+                if (channel.Id == afkChannelId) continue;
 
-                // Alone (or with only bots) — nobody here earns this tick. Guards the
-                // classic solo-AFK-farm case.
-                if (present.Count(u => !u.IsBot) < 2) continue;
+                // Only people who could actually be taking part count. Someone muted
+                // is not company, so being the only unmuted person in a room full of
+                // muted ones is being alone — and earns exactly what being alone
+                // earns, which is nothing. That is what stops idle or alt accounts
+                // being parked in a channel to unlock someone else's XP.
+                var active = channel.ConnectedUsers.Where(IsActive).ToList();
+                if (active.Count < 2) continue;
 
-                foreach (var member in present.Where(u => !u.IsBot))
+                foreach (var member in active)
                 {
-                    // Only self-mute+deafen together — the other classic farm case —
-                    // is excluded. Server (moderator-applied) mute/deafen is
-                    // deliberately not checked: someone silenced by a mod for an
-                    // unrelated reason shouldn't also lose XP for it.
-                    if (member.VoiceState is { IsSelfMuted: true, IsSelfDeafened: true }) continue;
-
                     // The channel id goes along so XpTracker can apply the same
                     // excluded-channel rule it applies to every other signal — the
                     // list lives there, not here. One tick is one minute by
                     // construction (CheckInterval), which is what makes the minute
                     // count and the XP payout two views of the same event.
                     await _xp.GrantVoiceXpAsync(
-                        guild.Id, channel.Id, member.Id, VoiceXpPerMinute, MinutesPerTick);
+                        guild.Id, channel.Id, member.Id, MinutesPerTick);
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Whether this member counts — both toward the "someone else is here" threshold
+    /// and as someone earning. One predicate rather than two rules, deliberately: if
+    /// muting stopped you earning but still let you unlock XP for the person beside
+    /// you, parking muted accounts in a channel would be the whole exploit.
+    /// </summary>
+    /// <remarks>
+    /// Self-muted <b>or</b> self-deafened is enough to be out — either one means you
+    /// are not in the conversation, and requiring both let someone mute their mic and
+    /// idle all day. Server (moderator-applied) mute/deafen is still deliberately not
+    /// checked: someone silenced by a mod for an unrelated reason shouldn't also lose
+    /// XP for it, and unlike self-muting it isn't something they can use to farm.
+    /// </remarks>
+    private static bool IsActive(SocketGuildUser member)
+    {
+        if (member.IsBot) return false;
+
+        // No voice state means the gateway cache hasn't caught up; treat that as not
+        // eligible rather than assuming the generous reading.
+        if (member.VoiceState is not { } state) return false;
+
+        return !state.IsSelfMuted && !state.IsSelfDeafened;
     }
 }
