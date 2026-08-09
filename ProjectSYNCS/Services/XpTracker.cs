@@ -304,6 +304,20 @@ internal sealed class XpTracker
     private static IUser? ResolveUser(IMessageChannel channel, ulong userId, IUser? knownUser) =>
         knownUser ?? (channel as SocketGuildChannel)?.Guild.GetUser(userId);
 
+    /// <summary>
+    /// Whether nothing counts in <paramref name="channel"/> — the spam channels, and
+    /// any thread inside one.
+    /// </summary>
+    /// <remarks>
+    /// Public so <see cref="ShameTracker"/> can ask rather than keeping a second copy
+    /// of the list, the same reason <c>VoiceXpService</c> passes a channel id instead
+    /// of holding its own. The list stays in this class alone; only the question is
+    /// shared. Note the name is about the channel, not about XP — the wall of shame
+    /// honours the same exclusions for the same reason (the spam channels say nothing
+    /// about anyone).
+    /// </remarks>
+    public static bool IsChannelExcluded(IChannel channel) => IsExcluded(channel);
+
     // Every entry point calls one of these *before* TryClaim, never after: a message in
     // an excluded channel must not burn the person's cooldown, or spamming there would
     // actively block them from earning in a real channel a minute later.

@@ -22,7 +22,7 @@ public static class VoiceXpCurve
     /// <summary>Minutes (cumulative) after which only the trickle rate applies.</summary>
     public const long ReducedRateMinutes = 120;
 
-    public const long FullRate = 5;
+    public const long FullRate = 10;
     public const long ReducedRate = 3;
     public const long TrickleRate = 1;
 

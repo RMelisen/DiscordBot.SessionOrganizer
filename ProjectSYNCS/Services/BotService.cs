@@ -25,6 +25,7 @@ internal sealed class BotService : IHostedService
     private readonly BotFeedbackTracker _feedback;
     private readonly RivalryService _rivalry;
     private readonly XpTracker _xp;
+    private readonly ShameTracker _shame;
 
     public BotService(
         DiscordSocketClient client,
@@ -37,7 +38,8 @@ internal sealed class BotService : IHostedService
         ReactionService reactions,
         BotFeedbackTracker feedback,
         RivalryService rivalry,
-        XpTracker xp)
+        XpTracker xp,
+        ShameTracker shame)
     {
         _client = client;
         _interactions = interactions;
@@ -50,6 +52,7 @@ internal sealed class BotService : IHostedService
         _feedback = feedback;
         _rivalry = rivalry;
         _xp = xp;
+        _shame = shame;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -108,6 +111,10 @@ internal sealed class BotService : IHostedService
         // its own per-user cooldown gates — so its position relative to the others
         // is not load-bearing.
         await _xp.HandleMessageAsync(rawMessage);
+        // Also independent — it reads the raw message and writes its own counters,
+        // telling nobody. It has to see every message, which is exactly why it is not
+        // a branch inside ChatterService.
+        await _shame.HandleMessageAsync(rawMessage);
         // Before the feedback tracker: a rival's message has to be on record as the
         // most recent action before any verdict arrives that it might have earned.
         await _rivalry.HandleMessageAsync(rawMessage);

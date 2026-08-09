@@ -49,6 +49,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<BotFeedbackService>();
         services.AddTransient<XpService>();
         services.AddTransient<GiveawayService>();
+        services.AddTransient<ShameService>();
 
         // Personality / chat behaviour collaborators (singletons: they hold
         // in-memory state like the breakdown cooldown).
@@ -63,6 +64,9 @@ var host = Host.CreateDefaultBuilder(args)
         // Before BotFeedbackTracker, which calls into it after recording a verdict.
         services.AddSingleton<XpTracker>();
         services.AddSingleton<BotFeedbackTracker>();
+        // Independent of the trackers above: reads only the raw message and writes its
+        // own counters, so its registration order is not load-bearing.
+        services.AddSingleton<ShameTracker>();
 
         services.AddHostedService<BotService>();
         services.AddHostedService<ReminderService>();

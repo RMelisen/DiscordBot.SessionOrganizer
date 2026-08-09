@@ -20,6 +20,8 @@ public class AppDbContext : DbContext
     public DbSet<MemberDailyStat> MemberDailyStats => Set<MemberDailyStat>();
     public DbSet<Giveaway> Giveaways => Set<Giveaway>();
     public DbSet<GiveawayEntry> GiveawayEntries => Set<GiveawayEntry>();
+    public DbSet<ShameRecord> ShameRecords => Set<ShameRecord>();
+    public DbSet<ShameDailyStat> ShameDailyStats => Set<ShameDailyStat>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -138,6 +140,26 @@ public class AppDbContext : DbContext
             e.Property(x => x.UserId).HasConversion<long>();
             // One entry row per (giveaway, person); the button toggles it.
             e.HasIndex(x => new { x.GiveawayId, x.UserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<ShameRecord>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            // One row per (guild, user); the all-time totals plus the voter's daily
+            // flag. The dated sibling is ShameDailyStat below.
+            e.HasIndex(x => new { x.GuildId, x.UserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<ShameDailyStat>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            // One row per (guild, user, day) — the upsert key.
+            e.HasIndex(x => new { x.GuildId, x.UserId, x.Day }).IsUnique();
+            // Serves the rolling-window read: "this guild, since day N". Day is an
+            // int precisely so this range can be evaluated in SQL.
+            e.HasIndex(x => new { x.GuildId, x.Day });
         });
     }
 }

@@ -632,6 +632,61 @@ internal static class BotResponses
         "**{0}**, niveau **{1}**, et c'est mérité. J'ai vérifié mes chiffres, ils mentent pas (ᵕ • ᴗ •)",
     };
 
+    // Announced publicly when someone spends their one daily vote on someone else
+    // through `/shame user:@…`. Public on purpose — a silent vote is just a downvote,
+    // and the announcement is the whole point of the command. {0} = the voter's name,
+    // {1} = the target's name.
+    public static readonly string[] ShameVoteLines =
+    {
+        $"**{{0}}** a désigné **{{1}}** pour le mur de la honte. C'est noté, et c'est définitif {Emotes.PrisonerFlat}",
+        "**{1}** vient de se faire dénoncer par **{0}**. Je ne juge pas. J'enregistre ( ˶ˆ ᗜ ˆ˵ )",
+        $"Un vote de **{{0}}** contre **{{1}}**. Le mur s'allonge {Emotes.Staring}",
+        "**{0}** utilise son vote du jour sur **{1}**. Un seul par jour, il a bien réfléchi j'espère ✨",
+        "Dénonciation reçue : **{1}**, par **{0}**. Le dossier s'épaissit ദ്ദി◝ ⩊ ◜.ᐟ",
+        $"**{{1}}** ? Ah oui, quand même. Merci **{{0}}** {Emotes.GooseKnife}",
+        "J'inscris **{1}** au registre, sur recommandation de **{0}**. Bienvenue au mur ♡",
+        "**{0}** a parlé. **{1}** descend d'un cran dans mon estime (ᵕ • ᴗ •)",
+        $"Vote enregistré. **{{1}}**, ce n'est pas moi qui le dis, c'est **{{0}}** {Emotes.Htph}",
+        "**{1}** rejoint la liste. **{0}** en est responsable, je le note aussi ✨",
+        "Ah, **{0}** en veut à **{1}**. Je prends, je classe, je n'oublie rien ദ്ദി◝ ⩊ ◜.ᐟ",
+        $"C'est noté contre **{{1}}**. **{{0}}** avait un vote et il l'a dépensé pour ça {Emotes.Staring}",
+    };
+
+    // Same, for someone spending their daily vote on *themselves*. Allowed, and funny
+    // precisely because it costs them the only one they had. {0} = their name.
+    public static readonly string[] ShameSelfVoteLines =
+    {
+        "**{0}** s'est dénoncé tout seul. Je respecte, mais je note quand même ( ˶ˆ ᗜ ˆ˵ )",
+        $"**{{0}}** a utilisé son vote du jour... sur lui-même. Bon {Emotes.Staring}",
+        "Auto-dénonciation de **{0}**. C'est la première étape de la guérison paraît-il ✨",
+        $"**{{0}}** se met au mur tout seul. Ça m'économise du travail {Emotes.OkPaimon}",
+        "**{0}** contre **{0}**. Match nul, mais le vote compte ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Tu avais un vote **{0}**, un seul, et tu l'as mis sur toi. Je n'ai pas de mots ♡",
+        $"Lucide, **{{0}}**. Vraiment lucide {Emotes.Htph}",
+    };
+
+    // Shown in place of a ranking when nobody has earned "Le Malfaisant" over the
+    // selected window. Never hidden: a title that disappears makes the wall change
+    // shape between filters, which reads as a bug rather than as good news.
+    public static readonly string[] ShameEmptyMalfaisant =
+    {
+        "Personne n'a été méchant. Sur cette période. Pour l'instant ✨",
+        $"Rien à signaler. C'est suspect {Emotes.Staring}",
+        "Le calme plat. Profitez-en, ça ne dure jamais (ᵕ • ᴗ •)",
+        "Aucun nom ici. Vous êtes tous adorables, c'est troublant ♡",
+        $"Vide. Soit vous êtes gentils, soit vous êtes discrets {Emotes.Htph}",
+    };
+
+    // The same, for the voted half of the wall.
+    public static readonly string[] ShameEmptyBanni =
+    {
+        "Personne n'a été dénoncé. La paix règne, temporairement ✨",
+        $"Aucun vote sur cette période. Vous vous entendez trop bien {Emotes.OkPaimon}",
+        "Le registre est vide. `/shame user` existe pourtant, je dis ça ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Rien ici. Un vote par jour et personne ne l'utilise, quel gâchis (ᵕ • ᴗ •)",
+        $"Pas un seul nom. Décevant {Emotes.Staring}",
+    };
+
     // Announcing a giveaway's winners. {0} = the winner mentions (already joined, and
     // already plural-safe), {1} = the prize. She is the one drawing, so the lines are
     // hers rather than a neutral "the winner is".

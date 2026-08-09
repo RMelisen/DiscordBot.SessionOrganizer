@@ -69,8 +69,8 @@ Layers: `Commands/` (slash modules + the embed/component builders), `Interaction
 
 Slash modules: `ScheduleModule`, `PollModule`, `VoteModule`, `GiveawayModule` (group
 modules), plus the flat `EmoteStatsModule`, `BotFeedbackModule` (`/goodbot`),
-`LevelModule` (`/level`, `/leaderboard`), `HelpModule`, `SpeakModule` (`/tell`, `/dm`)
-and `AbsenceModule` (`/absent`). Component handlers for the published cards live apart
+`LevelModule` (`/level`, `/leaderboard`), `ShameModule` (`/shame`), `HelpModule`,
+`SpeakModule` (`/tell`, `/dm`) and `AbsenceModule` (`/absent`). Component handlers for the published cards live apart
 from the commands, in `Interactions/Components/` (`EventComponentHandler`,
 `PollComponentHandler`, `GiveawayComponentHandler`) — the module keeps the commands and
 the `static` card builders those handlers render through.
@@ -553,6 +553,53 @@ narrows mentions to avoid notifying anyone; this one passes
 only, still never roles or `@everyone`. It is why `BotChat.PostWithTypingAsync` takes an
 optional `AllowedMentions`; left null it behaves exactly as before for ordinary chatter.
 
+**`/shame`'s two titles are two different mechanisms sharing one row.** `ShameRecord` /
+`ShameDailyStat` is the **fourth** totals+buckets pair, for the reason the other three
+exist. `MeanHits` is something you *did*, `BanVotes` something done *to* you, and
+`LastVoteDay` belongs to you as a *voter* rather than as a target — one row per
+(guild, user) because nobody ever reads one without the others. `LastVoteDay` is in the
+DB rather than in `ShameTracker`'s memory **on purpose**: every other piece of in-memory
+personality state resets harmlessly on restart, but a one-vote-per-day limit that
+vanishes on restart is an exploit. `ShameService.TryVoteAsync` checks the limit and
+writes both counters in a single `SaveChanges`, and a self-vote deliberately reuses the
+*same* tracked entity for voter and target rather than loading it twice.
+
+**`Le Malfaisant` is uncapped, and that was a deliberate call.** One hit per distinct
+human a mean message targets — an explicit `@`, or the author of the message it replies
+to (Discord includes the replied-to user in the mention list only when the reply ping is
+on, so both have to be read and the set deduplicated). Roles and `@everyone` are never
+targets: with per-person scoring one mean `@everyone` would end the ranking permanently.
+Bots are never targets **except SYNCS herself**, which is the rule the title was built
+on. Unlike every other counter here it has no cooldown and no per-message cap, so it is
+the one place where a single message can add an unbounded amount; if that ever needs
+rationing, cap the hits per message rather than adding a cooldown — the exploit is one
+message, not many.
+
+**`ShameTracker` is a separate service for `BotFeedbackTracker`'s reason.** It draws a
+conclusion nobody tells it and has to see *every* message to do it, so it cannot be a
+branch in `ChatterService`, which returns early on a dozen branches — the misses would
+silently track unrelated personality tuning. It short-circuits on
+`MessageCues.ReadFeedback`, the same way `ChatterService` and `ReactionService` do: a
+verdict is not a mood, and "bad bot" already belongs to `BotFeedbackTracker`.
+
+**The spam-channel exclusion is now shared, and the list still lives in one class.**
+`XpTracker.IsChannelExcluded` is public so `ShameTracker` can ask — the same shape as
+`VoiceXpService` passing a channel id instead of keeping its own copy. Only the question
+is shared; `ExcludedChannels` itself must stay private to `XpTracker`.
+
+**`/shame` is an embed, not Components V2**, unlike `/level` and `/leaderboard`: it ranks
+six names with no avatars and no podium art, so the flag would buy nothing and spend the
+40-component budget. It has exactly one button row, so nothing can collide — but the ids
+still carry the `shame:win` verb, because the day a second row is added the
+`COMPONENT_CUSTOM_ID_DUPLICATED` rejection is silent and instant. Its default window is
+**30 days**, unlike `/goodbot`'s all-time: both counters start at zero on ship day, and
+an all-time default would read as a hall of fame nobody can move. A title with nobody in
+it renders a line from `ShameEmptyMalfaisant` / `ShameEmptyBanni` rather than
+disappearing — a wall that changes shape between filters reads as broken — and there is
+no minimum count, so a window holding one vote shows it. Ties break on the earliest row
+id, which matters only in that it is *stable*: two people level on count would otherwise
+swap places on every re-render.
+
 **Session lifecycle is idempotent.** `SessionEvent.RenderedPhase` records what was
 last drawn on the card, so the background loop only re-renders on an actual
 Scheduled → InProgress → Finished transition.
@@ -784,9 +831,10 @@ out for free.
 
 **Voice XP tapers with the day's total, and that is the answer to the farm no mute rule
 can catch.** Two accounts idling *unmuted* look exactly like two people in a call: the
-sweep sees presence, never participation. So `Helpers/VoiceXpCurve` pays 5 XP/min for
-the first hour of the day, 3 for the second, 1 after that — a real session pays well,
-eight hours pays 840 instead of the old flat 4800. Deliberately a taper and not a hard
+sweep sees presence, never participation. So `Helpers/VoiceXpCurve` pays 10 XP/min for
+the first hour of the day, 3 for the second, 1 after that — a normal session is worth
+exactly what it was before the taper existed (the old rate was a flat 10), while eight
+hours pays 1140 instead of 4800. Deliberately a taper and not a hard
 cap: a cliff teaches people the exact number of minutes to park for.
 
 Three things hold it together. **One:** the rate is a pure function of minutes already

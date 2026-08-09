@@ -82,12 +82,21 @@ in one click. The bot's user-facing language is French.
   also earns XP, once a minute, as long as someone else is there too and you're not
   self-muted or self-deafened — and muted people don't count as company either, so
   being the only unmuted person in a channel earns nothing. The AFK channel never
-  earns. The rate also **tapers over the day**: 5 XP/min for the first hour, 3 for the
-  second, 1 after that, resetting at local midnight — so a real session pays well and
-  idling all day doesn't. Minutes are still counted in full, so the Vocal leaderboard
+  earns. The rate also **tapers over the day**: 10 XP/min for the first hour, 3 for the
+  second, 1 after that, resetting at local midnight — so a normal session is worth what
+  it always was, and idling all day isn't. Minutes are still counted in full, so the Vocal leaderboard
   stays honest about time actually spent. A level gained that way is announced in the voice channel's own text chat
   rather than in the server's main one. Some channels are excluded from earning
   entirely.
+- **`/shame`** — the wall of shame, two titles on one page with the same three
+  filters as the other rankings (**30 days** by default, **7 days**, **all time**).
+  **Le Malfaisant** is earned: she scores every message and files one hit per human it
+  was hostile to, counting an explicit `@` or the person it replies to — roles and
+  `@everyone` never count, other bots never count, and being mean to *her* does.
+  It is uncapped, so a mean message aimed at four people is worth four. **Le Banni** is
+  voted: **`/shame user:@someone`** spends your one vote for the day, announced publicly
+  in her voice. You can vote for yourself; you cannot vote for a bot, and least of all
+  for her. Both counters start at zero the day they ship and nothing can be backfilled.
 - **`/help`** — in-Discord usage guide.
 - **Owner-only commands** — the configured owner can speak through the bot
   (`/tell` into a channel, `/dm` to a person) and flag themselves unavailable
