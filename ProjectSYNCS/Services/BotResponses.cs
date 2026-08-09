@@ -112,6 +112,7 @@ internal static class BotResponses
         "Giga flop",
         "En big 2026 ? -_-'",
         "T'es pas le couteau le plus aiguisé du tiroir toi OwO",
+        "Erling Haaland me manque",
     };
 
     // Replies when someone calls the bot "Inabot". It is SYNCS, and it does NOT
@@ -241,6 +242,7 @@ internal static class BotResponses
         "ALL YOUR BASE ARE BELONG TO US",
         "冰淇淋",
         "Filled with determination.",
+        "Erling Haaland me manque",
 
         // Free-form, roasting the server. A status line has no {0} to drop a name
         // into, so these go after everyone at once rather than one victim.
