@@ -168,14 +168,21 @@ Easy to forget when adding a model. A *derived* property on a model needs
 `[NotMapped]` instead (see `EmoteStat.Markup`), or EF tries to map it and demands a
 migration for a column that should not exist.
 
-**One migration carries data, not schema.** `ResetMemberXp` is a bare
-`migrationBuilder.Sql("DELETE FROM MemberXps;")` with an empty `Down` — a one-time XP
-wipe that shipped with the level-up card rework, riding the automatic
-apply-on-startup so it lands in prod without anyone touching the add-on's SQLite file.
-Every other migration here is schema-only, and it should stay that way: this was a
-deliberate one-off, not a precedent for scripting data fixes, and certainly not a
-substitute for a real "reset" feature if one is ever wanted. A data migration is also
-the one kind whose `Down` genuinely cannot restore anything.
+**Two migrations carry data, not schema**, and both are XP wipes with an empty `Down`:
+`ResetMemberXp` shipped with the level-up card rework, `ResetXpTotals` with the voice-XP
+taper. They ride the automatic apply-on-startup so they land in prod without anyone
+touching the add-on's SQLite file. Every other migration here is schema-only and should
+stay that way — a data migration is the one kind whose `Down` genuinely cannot restore
+anything, so it is for deliberate one-off corrections, never a substitute for a real
+feature.
+
+**The two are not written the same way, and the difference matters.** `ResetMemberXp`
+is `DELETE FROM MemberXps`, which was equivalent to zeroing the XP *at the time*: the
+table then held nothing but `TotalXp`. It now also carries `ReactionsUsed` and
+`VoiceMinutes`, which are facts about what people did rather than rewards, so
+`ResetXpTotals` is `UPDATE … SET TotalXp = 0` plus the same on `MemberDailyStats.XpEarned`
+— deleting the rows would falsify `/leaderboard`'s Réactions and Vocal views. Any future
+wipe must make the same distinction: reset the reward, keep the record.
 
 **Never use `DateTime.Now`.** Production runs in UTC; all wall-clock handling goes
 through `Helpers/AppTime` (pinned to `Europe/Paris`, DST-aware via
@@ -623,11 +630,27 @@ row, 80-char button labels, 100-char select labels, 1000-char scheduled-event
 description, 2000-char message (relays truncate to 1200–1500 to leave room for the
 herald line and blockquote markers). Exceeding one throws at send time, not at build.
 
-**There are two separate authorization models.** Session and poll management uses
+**`/addxp` and `/removexp` are guarded twice, and only one of the guards is real.**
+`[DefaultMemberPermissions(GuildPermission.ManageGuild)]` hides them in Discord's own
+command picker, which is presentation only — a server can override it under Integrations
+and it knows nothing about the bot's owner. `SessionPermissions.IsStaff` inside the
+handler is what actually decides. Keep both: the attribute stops people seeing commands
+they cannot use, the check stops them using ones they can see.
+
+They deliberately fire **no level-up card** even when an adjustment crosses a threshold:
+that card celebrates something earned, and a manual grant is not. Both are ephemeral,
+and both refuse bots — `XpTracker` skips bots everywhere else, so a hand-topped-up bot
+would be a leaderboard row nothing else can produce and a `/level` card the command
+refuses to render.
+
+**There are three separate authorization models.** Session and poll management uses
 `Helpers/SessionPermissions.CanManage` — the organizer, or any guild
 Administrator / ManageGuild holder. The owner-only commands (`/tell`, `/dm`,
 `/absent`) instead compare `Context.User.Id` against `AvailabilityService.OwnerId`
-inline in the module and reply ephemerally. Don't conflate them.
+inline in the module and reply ephemerally. `SessionPermissions.IsStaff` is the third —
+Administrator / ManageGuild **or** the owner, with no notion of owning the thing being
+acted on, which is what `/addxp` and `/removexp` need since nobody owns someone else's
+XP. Don't conflate them.
 
 **Relayed text must never become a mass-ping vector.** Every path that sends text
 on someone's behalf (`SpeakModule`, `ChatterService`'s DM relay) passes

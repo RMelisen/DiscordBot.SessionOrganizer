@@ -98,6 +98,11 @@ in one click. The bot's user-facing language is French.
   voted: **`/shame user:@someone`** spends your one vote for the day, announced publicly
   in her voice. You can vote for yourself; you cannot vote for a bot, and least of all
   for her. Both counters start at zero the day they ship and nothing can be backfilled.
+- **`/addxp <member> <amount>` · `/removexp <member> <amount>`** — staff-only manual XP
+  adjustment (Administrator or Manage Server, plus the bot's owner). Ephemeral, clamped
+  at zero, and deliberately silent: crossing a level this way fires no level-up card,
+  since that card celebrates something earned. Hidden from Discord's command picker for
+  anyone without the permission.
 - **`/help`** — in-Discord usage guide.
 - **Owner-only commands** — the configured owner can speak through the bot
   (`/tell` into a channel, `/dm` to a person) and flag themselves unavailable

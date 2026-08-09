@@ -59,14 +59,41 @@ public class XpService
     /// </summary>
     public async Task<(int OldLevel, int NewLevel)> AddXpAsync(ulong guildId, ulong userId, long amount)
     {
+        var result = await AdjustXpAsync(guildId, userId, amount);
+        return (result.OldLevel, result.NewLevel);
+    }
+
+    /// <summary>
+    /// Moves a person's XP by <paramref name="delta"/>, which may be negative, and
+    /// reports where they ended up. Both the all-time total and today's bucket are
+    /// clamped at zero.
+    /// </summary>
+    /// <remarks>
+    /// The earning paths go through <see cref="AddXpAsync"/>, which is this method with
+    /// its return value narrowed — one implementation, so a manual adjustment and an
+    /// earned grant can never write the two tables differently. The clamp is inert for
+    /// the positive amounts every earning path passes.
+    ///
+    /// Today's bucket moves too, so a manual adjustment shows up in
+    /// <c>/leaderboard</c>'s rolling windows rather than only in all-time. Clamping it
+    /// separately means removing more than was earned today leaves the window at zero
+    /// instead of going negative — the totals and the buckets already do not sum to
+    /// each other by design, so this costs nothing that was ever guaranteed.
+    /// </remarks>
+    public async Task<(int OldLevel, int NewLevel, long NewTotal)> AdjustXpAsync(
+        ulong guildId, ulong userId, long delta)
+    {
         var row = await GetOrCreateAsync(guildId, userId);
         var oldLevel = LevelCurve.LevelForXp(row.TotalXp);
 
-        row.TotalXp += amount;
-        (await GetOrCreateDailyAsync(guildId, userId)).XpEarned += amount;
+        row.TotalXp = Math.Max(0, row.TotalXp + delta);
+
+        var bucket = await GetOrCreateDailyAsync(guildId, userId);
+        bucket.XpEarned = Math.Max(0, bucket.XpEarned + delta);
+
         await _db_context.SaveChangesAsync();
 
-        return (oldLevel, LevelCurve.LevelForXp(row.TotalXp));
+        return (oldLevel, LevelCurve.LevelForXp(row.TotalXp), row.TotalXp);
     }
 
     /// <summary>

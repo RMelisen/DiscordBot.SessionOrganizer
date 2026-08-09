@@ -58,7 +58,9 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**7 jours** et **depuis toujours**.\n" +
                 "**`/shame user:@quelqu'un`** — Dénonce quelqu'un pour le mur. **Un seul vote par jour**, " +
                 "alors choisis bien. Les bots ne comptent pas, et moi encore moins.\n" +
-                "**`/help`** — Affiche ce message.")
+                "**`/help`** — Affiche ce message.\n" +
+                "**`/addxp`** · **`/removexp`** — Ajuster l'XP de quelqu'un. " +
+                "Réservé aux administrateurs et modérateurs ; les autres ne les voient même pas.")
             .AddField("Créer une session — pas à pas",
                 "Lance **`/schedule create`**. Un assistant privé te guide :\n" +
                 "**1.** *Type* — choisis la catégorie : 🎮 Jeu, 🧑‍🤝‍🧑 Activité, 🎬 Film ou ✨ Autre.\n" +
