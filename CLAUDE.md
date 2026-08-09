@@ -27,6 +27,14 @@ The bot needs the two privileged intents (`GuildMembers`, `MessageContent`) enab
 in the Discord developer portal. Without `MessageContent` the whole personality
 subsystem silently reads empty strings and stops reacting.
 
+**`GuildMembers` is necessary but not sufficient — `AlwaysDownloadUsers` must stay on.**
+The intent only permits the member download; the flag is what performs it. Without it
+Discord.Net caches only the people seen in events since the last restart, so
+`Guild.GetUser` returns null for everyone else and every avatar on `/level`,
+`/leaderboard` and `/shame` falls back to Discord's generic blue logo — worst on
+all-time rankings, which are mostly people who have not spoken today. It is the first
+thing to check if those placeholders reappear.
+
 There is no test project and no CI. Verify changes by building and, when it
 matters, running the bot against the dev guild.
 

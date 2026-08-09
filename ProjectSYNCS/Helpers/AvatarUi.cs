@@ -18,10 +18,22 @@ public static class AvatarUi
     /// resolved.
     /// </summary>
     /// <remarks>
-    /// A member who has since left the guild resolves to null, so fall back rather than
-    /// dropping the thumbnail — a Section whose accessory is missing renders lopsided
-    /// against its neighbours. Their <c>&lt;@id&gt;</c> still renders as a name, since
-    /// the client resolves that itself.
+    /// <para>Falls back rather than dropping the thumbnail — a Section whose accessory
+    /// is missing renders lopsided against its neighbours. The person's
+    /// <c>&lt;@id&gt;</c> still renders as a name either way, since the client resolves
+    /// that itself.</para>
+    /// <para><b>Reaching the fallback should now mean the member genuinely left the
+    /// guild.</b> It used to also catch anyone simply missing from the gateway's member
+    /// cache, which put Discord's generic blue logo on most of an all-time ranking:
+    /// <c>Guild.GetUser</c> reads that cache, and it only held people seen in events
+    /// since the last restart. <c>DiscordSocketConfig.AlwaysDownloadUsers</c> is now on
+    /// for that reason — if these placeholders come back, check that flag before
+    /// anything here.</para>
+    /// <para>Note this is deliberately <b>not</b> <c>GetDefaultAvatarUrl()</c>: a user
+    /// who merely has no custom picture never reaches this method, because
+    /// <c>GetDisplayAvatarUrl</c> already returns their own correctly-coloured default.
+    /// The literal <c>0</c> below is a placeholder for somebody we cannot resolve at
+    /// all, which is why it is always the same blue.</para>
     /// </remarks>
     public static ThumbnailBuilder Thumbnail(IUser? user) =>
         new ThumbnailBuilder()

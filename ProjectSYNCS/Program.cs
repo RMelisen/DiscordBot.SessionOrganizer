@@ -24,7 +24,19 @@ var host = Host.CreateDefaultBuilder(args)
         {
             GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers | GatewayIntents.MessageContent,
             LogLevel = LogSeverity.Info,
-            MessageCacheSize = 100
+            MessageCacheSize = 100,
+            // Downloads the full member list on Ready instead of caching only the people
+            // seen in events since startup. The GuildMembers intent above is the
+            // prerequisite; without this flag it buys nothing on its own.
+            //
+            // Load-bearing for the avatars on /level, /leaderboard and /shame.
+            // Guild.GetUser reads this cache and returns null for anyone not in it, and
+            // Helpers/AvatarUi then falls back to Discord's generic blue logo — so every
+            // ranking of *historic* totals was showing that placeholder for exactly the
+            // people who had not spoken since the last restart, which on an all-time
+            // board is most of them. Cheap here (one small private guild); it would be a
+            // real startup and memory cost on a large one.
+            AlwaysDownloadUsers = true
         };
         services.AddSingleton(socketConfig);
         services.AddSingleton<DiscordSocketClient>();
