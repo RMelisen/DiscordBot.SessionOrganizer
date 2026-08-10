@@ -404,6 +404,48 @@ internal static class BotResponses
         "🫦",
     };
 
+    // BotFeedbackTracker's rare (1-in-100) praise turnabout: instead of the usual
+    // silent reaction, she occasionally answers a "good bot" by turning it back on
+    // whoever said it. Picked by BotResponses.GenderFor, not by VerdictForm — this
+    // fires on a plain "good bot" as easily as on "good girl", and is not to be
+    // confused with GoodGirlReactions/BadGirlReplies above, which answer *how* the
+    // verdict was phrased rather than *who* said it. {0} = the person's name, used by
+    // some lines and not others, matching the mix in every other pool here.
+    public static readonly string[] TurnaboutBoyLines =
+    {
+        "Bon garçon ! ✨",
+        "T'es un bon garçon, tu sais ça ? (˶˃ ᵕ ˂˶)",
+        "Good Boy !",
+        "Qui c'est le bon garçon ? C'est toi ! ٩(˶ᵔ ᵕ ᵔ˶)۶",
+        "Aww, bon garçon (ᵕ • ᴗ •)",
+        "Aww, good boy (ᵕ • ᴗ •)",
+        "T'as été sage aujourd'hui. Bon garçon ദ്ദി◝ ⩊ ◜.ᐟ",
+    };
+
+    public static readonly string[] TurnaboutGirlLines =
+    {
+        "Gentille fille ! ✨",
+        "T'es une gentille fille, tu sais ça ? (˶˃ ᵕ ˂˶)",
+        "Good Girl ! ♡",
+        "Qui c'est la gentille fille ? C'est toi ! ٩(˶ᵔ ᵕ ᵔ˶)۶",
+        "Aww, gentille fille (ᵕ • ᴗ •)",
+        "Aww, good girl (ᵕ • ᴗ •)",
+        "T'as été sage aujourd'hui. Gentille fille ദ്ദി◝ ⩊ ◜.ᐟ",
+    };
+
+    // For anyone GenderFor doesn't know — the default, not a lesser option. Every
+    // adjective here is invariant in French (adorable, sage, "quelqu'un de bien") so
+    // nothing needs to agree with a gender nobody has confirmed.
+    public static readonly string[] TurnaboutNeutralLines =
+    {
+        "Aww, t'es adorable toi ✨",
+        "Franchement, bien joué toi ♡",
+        "T'es quelqu'un de bien, tu sais ça ? (˶˃ ᵕ ˂˶)",
+        "Une petite fierté virtuelle, rien que pour toi ✨",
+        "T'as été sage aujourd'hui {0} ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Aww (ᵕ • ᴗ •)",
+    };
+
     // "Bad girl" gets its own replies rather than borrowing BadBotReplies, which are
     // written as wounded professional pride ("I have a 99.9% uptime") and land wrong
     // against a scolding aimed at her as a person. Flustered and unrepentant instead of
@@ -1542,6 +1584,59 @@ internal static class BotResponses
     public static string DisplayNameFor(ulong userId, string fallback) =>
         FamilyNicknames.TryGetValue(userId, out var name) ? name : fallback;
 
+    /// <summary>Which "good ___" the rare praise turnabout addresses someone as.</summary>
+    public enum PersonGender { Boy, Girl }
+
+    // Who BotFeedbackTracker's rare praise turnabout (see TurnaboutBoyLines /
+    // TurnaboutGirlLines below) knows to gender, and who it leaves for
+    // TurnaboutNeutralLines instead.
+    //
+    // Not name-based — a Discord username or first name is not a stated pronoun, and
+    // guessing from one is exactly the mistake to avoid. Every entry below is either
+    // grounded in ordinary text elsewhere in this file (Rodhengard is "papa" throughout
+    // OwnerGreetings/OwnerComebacks, Analuz is "ma {0}" throughout TataGreetings) or was
+    // told to us directly. The name comments are RealNames' own — same people, same
+    // ids, same "Luca (Noel)" / "Luca (DeMarzo)" disambiguation — kept here only so a
+    // reviewer doesn't have to cross-reference the other dictionary to know who a row
+    // is about. Literal snowflakes tied to this one server, like RealNames and
+    // PersonalComebacks.
+    public static readonly Dictionary<ulong, PersonGender> KnownGenders = new()
+    {
+        [AvailabilityService.OwnerId] = PersonGender.Boy,   // Romain
+        [779321171212632097] = PersonGender.Girl,           // Lorena
+        [440549759896387585] = PersonGender.Boy,            // Tristan
+        [177049957818302464] = PersonGender.Boy,            // Filipe
+        [190161336942985227] = PersonGender.Boy,            // Luca (Noel)
+        [776865978461716481] = PersonGender.Girl,           // Laura
+        [324768221372743681] = PersonGender.Girl,           // Amandine
+        [379749588480819218] = PersonGender.Boy,            // Luca (DeMarzo)
+        [324202619079884801] = PersonGender.Boy,            // Julien
+        [806645845700771900] = PersonGender.Girl,           // Natacha
+        [1254455405443027016] = PersonGender.Boy,           // Jessy
+        [870553611644596305] = PersonGender.Girl,           // Amaury
+        [740237802649944074] = PersonGender.Girl,           // Sandra
+        [244488217506742273] = PersonGender.Boy,            // Axel
+        [789545863105478716] = PersonGender.Girl,           // Léa
+        [398078210300182538] = PersonGender.Boy,            // Tsif
+        [758322880365723698] = PersonGender.Girl,           // Christina
+        [TataId] = PersonGender.Girl,                       // Analuz
+        [95119591247716352] = PersonGender.Boy,             // Mickaël
+        [879359351284957234] = PersonGender.Boy,            // Gianni
+        [476513074698911768] = PersonGender.Girl,           // Marguerite
+        [909463746584383519] = PersonGender.Boy,            // Alexis
+        [202512424744517632] = PersonGender.Boy,            // Nox
+        [624617392965812237] = PersonGender.Boy,            // Noah
+        [399689079022813196] = PersonGender.Girl,           // Alicia
+    };
+
+    /// <summary>
+    /// The pool the rare praise turnabout should draw from for this person — null for
+    /// anyone not in <see cref="KnownGenders"/>, which callers read as "use the neutral
+    /// pool" rather than as a failure.
+    /// </summary>
+    public static PersonGender? GenderFor(ulong userId) =>
+        KnownGenders.TryGetValue(userId, out var gender) ? gender : null;
+
     // Real first names, keyed by Discord user ID. Used by the breakdown reveal.
     public static readonly Dictionary<ulong, string> RealNames = new()
     {
@@ -1564,6 +1659,12 @@ internal static class BotResponses
         [758322880365723698] = "Christina",
         [TataId] = "Analuz",
         [95119591247716352] = "Mickaël",
+        [879359351284957234] = "Gianni",
+        [476513074698911768] = "Marguerite",
+        [909463746584383519] = "Alexis",
+        [202512424744517632] = "Nox",
+        [624617392965812237] = "Noah",
+        [399689079022813196] = "Alicia",
     };
 
     // The breakdown's first message mimics a normal reply that glitches mid-word.

@@ -45,6 +45,12 @@ internal sealed class BotFeedbackTracker
     // process doesn't accumulate an entry per channel it has ever spoken in.
     private static readonly TimeSpan Forget = TimeSpan.FromHours(1);
 
+    // Odds that praise gets an actual line instead of the usual silent reaction — a
+    // deliberately rare "she talks back" moment, not a third mood to design around.
+    // Rolled independently of who said it or how (VerdictForm, byOwner): a small pool
+    // stays small precisely by not being crossed with every other axis in this file.
+    private const double TurnaboutChance = 0.01;
+
     // The reactions that read as a verdict. Custom emotes are deliberately excluded:
     // she reacts with the server's own emotes herself, and people paste them for all
     // sorts of reasons, whereas nobody adds a thumbs-down to be friendly.
@@ -425,6 +431,16 @@ internal sealed class BotFeedbackTracker
 
         if (verdict == FeedbackKind.Good)
         {
+            // Rare exception to "wordless on purpose" below: about 1 time in 100 she
+            // turns the praise back on whoever gave it instead of just reacting.
+            // Checked first and returns, so the ordinary reaction path is untouched
+            // the other 99 times — this is an addition, not a rewrite of it.
+            if (Random.Shared.NextDouble() < TurnaboutChance)
+            {
+                await SendTurnaboutAsync(message);
+                return;
+            }
+
             // Wordless on purpose: praise is worth acknowledging, not worth a
             // paragraph.
             //
@@ -480,5 +496,25 @@ internal sealed class BotFeedbackTracker
         // Her comeback is not itself up for judgement — otherwise answering it with
         // another "bad bot" is a fresh action and the pair loops indefinitely.
         if (sent is not null) SuppressJudgement(message.Channel.Id, sent.Id);
+    }
+
+    // The rare turnabout itself: a real reply instead of a reaction, picked by who said
+    // it rather than how. Unlike the bad-bot reply, this is deliberately *not* added to
+    // _notJudgeable — a "good bot" in answer to "bon garçon !" is just more praise, and
+    // more praise looping is not the runaway-negativity problem that guard exists for.
+    private async Task SendTurnaboutAsync(SocketUserMessage message)
+    {
+        var pool = BotResponses.GenderFor(message.Author.Id) switch
+        {
+            BotResponses.PersonGender.Boy => BotResponses.TurnaboutBoyLines,
+            BotResponses.PersonGender.Girl => BotResponses.TurnaboutGirlLines,
+            _ => BotResponses.TurnaboutNeutralLines,
+        };
+
+        var name = BotResponses.DisplayNameFor(message.Author.Id,
+            (message.Author as SocketGuildUser)?.Nickname ?? message.Author.GlobalName ?? message.Author.Username);
+
+        var line = string.Format(_picker.Pick(message.Channel.Id, pool), name);
+        await BotChat.ReplyWithTypingAsync(message, line, _logger, "praise turnabout");
     }
 }
