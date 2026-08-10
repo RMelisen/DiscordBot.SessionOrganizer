@@ -1,4 +1,5 @@
 using Discord;
+using Discord.Net;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Helpers;
@@ -85,16 +86,39 @@ internal sealed class ReactionService
         if (Random.Shared.NextDouble() >= ReactChance) return;
 
         // Claimed before sending, so two messages arriving at once can't both react.
-        // A wasted claim (missing permission, unusable emote) costs one cooldown,
-        // which also stops us hammering a channel we can't react in.
+        // A wasted claim over something wrong with the *channel* (missing permission)
+        // deliberately keeps the cooldown burned, so we stop hammering a channel we
+        // can't react in. A wasted claim over something wrong with the *emote picked*
+        // is released below instead — see the catch clause.
         if (!TryClaimChannel(message.Channel.Id)) return;
 
-        var emote = ParseEmote(_picker.Pick(message.Channel.Id, pool));
-        if (emote is null) return;
+        var line = _picker.Pick(message.Channel.Id, pool);
+        var emote = ParseEmote(line);
+        if (emote is null)
+        {
+            // Malformed markup in the pool (e.g. a custom emote missing its snowflake
+            // id) — a build-time-preventable mistake, not a channel problem, so it
+            // should not cost this channel its next ten minutes of reactions too.
+            ReleaseChannelClaim(message.Channel.Id);
+            _logger.LogWarning("Reaction pool entry failed to parse as an emote: {Markup}", line);
+            return;
+        }
 
         try
         {
             await message.AddReactionAsync(emote);
+        }
+        catch (HttpException ex) when (ex.DiscordCode is DiscordErrorCode.UnknownEmoji
+            or DiscordErrorCode.TheSpecifiedEmojiIsInvalid)
+        {
+            // The emote itself is the problem — deleted or renamed on the server since
+            // the pool was written — not the channel. Releasing the claim means a stale
+            // id in one pool doesn't also silence Nice/Greeting/Owner reactions here for
+            // ten minutes; without this, every pool shares one cooldown per channel, so
+            // one bad id quietly throttles all four categories, not just its own.
+            ReleaseChannelClaim(message.Channel.Id);
+            _logger.LogWarning(ex, "Unknown or invalid emote in channel {ChannelId}: {Markup}",
+                message.Channel.Id, line);
         }
         catch (Exception ex)
         {
@@ -207,6 +231,16 @@ internal sealed class ReactionService
 
             _lastReaction[channelId] = now;
             return true;
+        }
+    }
+
+    // Undoes a claim that turned out to be wasted on a data problem (a stale or
+    // malformed emote) rather than a channel problem — see the two call sites above.
+    private void ReleaseChannelClaim(ulong channelId)
+    {
+        lock (_gate)
+        {
+            _lastReaction.Remove(channelId);
         }
     }
 }
