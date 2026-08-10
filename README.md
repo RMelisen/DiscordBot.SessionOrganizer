@@ -96,7 +96,11 @@ in one click. The bot's user-facing language is French.
   **Le Malfaisant** is earned: she scores every message and files one hit per human it
   was hostile to, counting an explicit `@` or the person it replies to — roles and
   `@everyone` never count, other bots never count, and being mean to *her* does.
-  It is uncapped, so a mean message aimed at four people is worth four. **Le Banni** is
+  That half is uncapped, so a mean message aimed at four people is worth four. A mean
+  message aimed at **nobody** counts too, as a single point, rationed to one per person
+  per channel per minute so a rant can't run away with the title. Be aware that half is
+  noisier: complaining about a *game* ("ce boss est nul") reads as hostility too, since
+  nobody was named for her to tell the difference by. **Le Banni** is
   voted: **`/shame user:@someone`**, announced publicly in her voice. Voting is
   **staff-only** — Administrator or Manage Server, the owner, plus a short hand-kept
   list — which is what makes the title a deterrent rather than a game. A target can

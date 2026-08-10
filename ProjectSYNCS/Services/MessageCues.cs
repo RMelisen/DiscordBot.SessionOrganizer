@@ -117,29 +117,30 @@ internal static class MessageCues
     // Cue words that flag a kind message.
     private static readonly string[] _niceCues =
     {
-        "adorable", "adorables", "adorbs", "adore", "adores", "aime", "amazing", "awesome",
         // No "boss" and no "monstre", despite both being compliments in French chat
         // ("t'es un monstre"). This server organises *gaming* sessions, where they
         // overwhelmingly mean the enemy — "il est fort ce boss" was reading as praise.
+        "adorable", "adorables", "adorbs", "adore", "adores", "aime", "amazing", "attentionne", "attentionnee", "awesome",
         "banger", "beau", "bebou", "belle", "best", "bg", "bienveillant", "bienveillante", "bisous", "bravissimo", "bravo", "brillant", "brillante",
-        "calin", "calins", "carre", "chaleureuse", "chaleureux", "champion", "championne", "chapeau", "chou", "choupi", "choupinou", "classe", "coeur", "content", "contente", "cool", "courage", "cracke", "crackee", "craquant", "craquante", "cute",
-        "dingue", "divin", "divine", "douce", "doue", "douee", "douees", "doues", "doux",
-        "epique", "excellent", "excellente", "exceptionnel", "exceptionnelle", "extraordinaire",
+        "calin", "calins", "carre", "chaleureuse", "chaleureux", "champion", "championne", "chapeau", "chou", "choupi", "choupinou", "classe", "clean", "coeur", "content", "contente", "cool", "courage", "cracke", "crackee", "craquant", "craquante", "cute",
+        "dingue", "divin", "divine", "douce", "doue", "douee", "douees", "doues", "doux", "drole", "droles",
+        "efficace", "epique", "excellent", "excellente", "exceptionnel", "exceptionnelle", "extraordinaire",
         "fantastique", "felicitation", "felicitations", "fier", "fiere", "formidable", "fort", "forte",
-        "genial", "geniale", "geniales", "geniaux", "genie", "gentil", "gentille", "gentilles", "gentils", "gg", "gj", "goat", "goated", "great",
+        "genereuse", "genereux", "genial", "geniale", "geniales", "geniaux", "genie", "gentil", "gentille", "gentilles", "gentils", "gg", "gj", "goat", "goated", "great",
         "heroine", "heros", "heureuse", "heureux",
         "iconique", "impec", "impeccable", "incroyable", "incroyables", "insane", "intelligent", "intelligente",
         "joli", "jolie",
         "kiff", "kiffe", "kiffer", "king",
         "legendaire", "legende", "love", "lovely",
-        "magnifique", "magnifiques", "meilleur", "meilleure", "meilleures", "meilleurs", "merci", "mercii", "merciii", "merveilleuse", "merveilleux", "mignon", "mignonne", "mignonnes", "mignons", "mrc", "mvp",
+        "magnifique", "magnifiques", "maligne", "malin", "marrant", "marrante", "marrants", "meilleur", "meilleure", "meilleures", "meilleurs", "merci", "mercii", "merciii", "merveilleuse", "merveilleux", "mignon", "mignonne", "mignonnes", "mignons", "mrc", "mvp",
         "nice", "nickel",
         "ouah", "ouf",
-        "parfait", "parfaite", "parfaites", "parfaits", "perle", "precieuse", "precieux", "pro", "propre",
+        "parfait", "parfaite", "parfaites", "parfaits", "pepite", "perle", "precieuse", "precieux", "pro", "propre",
         "queen",
-        "ravi", "ravie", "reine", "respect", "roi", "royal", "royale",
-        "sauveur", "sauveuse", "slay", "solide", "splendide", "style", "stylee", "sublime", "super", "superbe", "sympa",
+        "ravi", "ravie", "reine", "respect", "rigolo", "rigolote", "roi", "royal", "royale",
+        "sauveur", "sauveuse", "slay", "solide", "splendide", "style", "stylee", "sublime", "super", "superbe", "sympa", "sympas",
         "talentueuse", "talentueux", "thanks", "thx", "top", "tresor", "trognon", "tuerie", "ty",
+        "utile",
         "waw", "wonderful", "wow", "wp",
     };
 
@@ -184,23 +185,24 @@ internal static class MessageCues
     {
         "abruti", "abrutie", "abruties", "abrutis", "affligeant", "affligeante", "affreuse", "affreux", "agacant", "agacante", "agacants", "arrogant", "arrogante", "atroce", "atroces",
         "barbant", "barbante", "batard", "batarde", "batards", "beauf", "bete", "betes", "betise", "betises", "bidon", "blaireau", "blaireaux", "blase", "boiteuse", "boiteux", "boloss", "bouffon", "bouffonne", "bouffons", "boulet", "boulette",
-        "casse", "cassos", "cheh", "chelou", "chiant", "chiante", "chiantes", "chiants", "claque", "claquee", "clown", "clowns", "consternant", "consternante", "cretin", "cretine", "cretines", "cretins", "cringe",
+        "casse", "cassos", "cheh", "chelou", "chiant", "chiante", "chiantes", "chiants", "claque", "claquee", "clown", "clowns", "consternant", "consternante", "cretin", "cretine", "cretines", "cretins", "crevard", "crevards", "cringe",
         "debile", "debiles", "decevant", "decevante", "degage", "degueu", "degueulasse", "deplorable", "deplorables", "detestable", "deteste",
-        "eclate", "eclatee", "ennuyeuse", "ennuyeux", "execrable",
+        "eclate", "eclatee", "enfoire", "enfoiree", "enfoires", "ennuyeuse", "ennuyeux", "execrable",
         "fade", "ferme", "foireuse", "foireux",
         "gogol", "gonflant", "gonflante", "grotesque", "grotesques", "gueguerre", "guignol", "guignols",
-        "hais", "horrible", "horribles",
+        "hais", "horrible", "horribles", "hypocrite", "hypocrites",
         "idiot", "idiote", "idiotes", "idiots", "imbecile", "imbeciles", "immonde", "immondes", "incompetent", "incompetente", "insipide", "insolent", "insolente", "insupportable", "insupportables", "inutile", "inutiles",
-        "laid", "laide", "laides", "laids", "lamentable", "lamentables", "loser", "loupe", "loupee",
-        "manchot", "manchote", "mauvais", "mauvaise", "mediocre", "mediocres", "merde", "merdique", "merdiques", "minable", "minables", "moche", "moches",
+        "laid", "laide", "laides", "laids", "lamentable", "lamentables", "loser", "loupe", "loupee", "lourd", "lourde",
+        "manchot", "manchote", "mauvais", "mauvaise", "mediocre", "mediocres", "menteur", "menteurs", "menteuse", "menteuses", "merde", "merdique", "merdiques", "minable", "minables", "moche", "moches",
         "navrant", "navrante", "nawak", "naze", "nazes", "noob", "noobs", "nul", "nullard", "nullarde", "nulle", "nulles", "nullissime", "nullos", "nuls",
-        "pathetique", "pathetiques", "penible", "penibles", "pitoyable", "pitoyables", "pouilleuse", "pouilleux", "pourri", "pourrie", "pourries", "pourris", "pretentieuse", "pretentieux",
+        "ordure", "ordures",
+        "pathetique", "pathetiques", "penible", "penibles", "pitoyable", "pitoyables", "pouilleuse", "pouilleux", "pourri", "pourrie", "pourries", "pourris", "pourriture", "pourritures", "pretentieuse", "pretentieux",
         "quoka", "quokka",
         "raclure", "rate", "ratee", "ratees", "rates", "relou", "reloue", "relous", "ridicule", "ridicules", "risible", "risibles",
         "salaud", "saoulant", "saoulante", "saoule", "saoules", "soulant", "soulante", "soule", "soulent", "soules", "stupide", "stupides",
         "tais", "teube", "tocard", "tocarde", "toxique", "toxiques", "trash",
         "useless",
-        "vilain", "vilaine",
+        "vantard", "vantarde", "vilain", "vilaine",
         "zero", "zinzin",
     };
 
@@ -246,6 +248,11 @@ internal static class MessageCues
         "solide", "style", "stylee", "super",
         "top",
         "waw", "wow",
+
+        // Added with the vocabulary expansion. "c'est con" is a shrug rather than an
+        // insult and "c'est lourd" is a weight; "clean", "efficace", "malin" and
+        // "utile" describe a build or a route as often as they compliment a person.
+        "con", "conne", "connes", "cons", "lourd", "lourde", "clean", "efficace", "malin", "maligne", "utile",
     };
 
     // Multi-word cues, written as normalised tokens joined by single spaces —
@@ -264,18 +271,25 @@ internal static class MessageCues
         "casse toi", "claque au sol",
         "n importe quoi",
         "on s en fout",
+        "pauvre type",
         "rien a foutre",
-        "sers a rien",
+        "sale type", "sers a rien",
+        "tu fais pitie", "tu me gonfles", "tu me soules",
         "va chier", "va crever", "va t faire", "va te faire",
     };
 
     private static readonly string[] _nicePhrases =
     {
-        "bien joue", "bien ouej", "bien vise", "bien vu",
+        "avec plaisir",
+        "beau travail", "bien dit", "bien joue", "bien ouej", "bien vise", "bien vu", "bon courage", "bonne idee",
         "courage a toi",
+        "de rien",
         "force a toi",
+        "je valide",
         "lache pas",
-        "tiens bon", "trop bien", "trop fort", "tu gere", "tu geres",
+        "pas de souci",
+        "sans souci",
+        "tant mieux", "tiens bon", "trop bien", "trop cool", "trop fort", "tu gere", "tu geres",
     };
 
     // Verdicts on the bot herself. The "good bot" meme is English even in French

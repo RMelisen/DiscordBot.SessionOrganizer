@@ -44,6 +44,10 @@ internal sealed class ShameTracker
     // a shout mute a perfidy hit for the whole window.
     private static readonly TimeSpan ShoutCooldown = TimeSpan.FromSeconds(60);
 
+    // Applies only to hostility aimed at *nobody* — see TrackMeanAsync for why the
+    // targeted case stays uncapped while this one cannot be.
+    private static readonly TimeSpan MeanCooldown = TimeSpan.FromSeconds(60);
+
     // Entries older than this are dropped, so the gate cannot grow one key per person
     // per channel forever. Well past the cooldown, so forgetting one is never an early
     // grant. Same shape as XpTracker's and RivalryService's.
@@ -60,6 +64,7 @@ internal sealed class ShameTracker
     private readonly object _gate = new();
     private readonly Dictionary<(ulong ChannelId, ulong UserId), DateTimeOffset> _lastPerfidy = new();
     private readonly Dictionary<(ulong ChannelId, ulong UserId), DateTimeOffset> _lastShout = new();
+    private readonly Dictionary<(ulong ChannelId, ulong UserId), DateTimeOffset> _lastMean = new();
 
     public ShameTracker(
         DiscordSocketClient client,
@@ -204,7 +209,21 @@ internal sealed class ShameTracker
         if (MessageCues.Analyze(message.Content).Emotion != EmotionKind.Mean) return;
 
         var hits = CountTargets(message);
-        if (hits == 0) return;
+
+        // Nobody named: being generally foul still counts, as a single point.
+        //
+        // **Rationed, unlike the targeted case, and the asymmetry is deliberate.**
+        // Targeted hostility scales because one message aimed at four people really is
+        // four times as unpleasant, and it cannot be farmed — the exploit there is one
+        // message, not many. Untargeted hostility is the opposite shape: a rant is
+        // twenty foul messages in two minutes, and uncapped that would drown out
+        // everything the title is meant to rank. So it is one hit per person per channel
+        // per 60 s, the same shape as "Le Perfide" and "L'Hystérique".
+        if (hits == 0)
+        {
+            if (!TryClaim(_lastMean, message.Channel.Id, message.Author.Id, MeanCooldown)) return;
+            hits = 1;
+        }
 
         try
         {
@@ -235,6 +254,10 @@ internal sealed class ShameTracker
     /// half of it she can vouch for first-hand. Rival bots are skipped — people are
     /// rude to bots constantly, and being rude to one is already Le Perfide's business
     /// rather than Le Malfaisant's.</para>
+    /// <para><b>Zero targets does not mean zero hits.</b> The caller turns an empty
+    /// result into a single rationed point — being generally foul still counts, it just
+    /// counts once. This method answers only "how many people", which is why it can
+    /// return 0 without that meaning "ignore this message".</para>
     /// <para>The author is never their own target, and the set is deduplicated, so
     /// replying to Bob while also tagging Bob is one hit rather than two — Discord puts
     /// the replied-to user in the mention list when the reply ping is on, and leaves

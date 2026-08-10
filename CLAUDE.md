@@ -540,6 +540,34 @@ for plain text, `PostEmbedWithTypingAsync` for an embed (the level-up card is it
 caller so far). The embed one still takes the text, purely to size the pause — a card
 that appeared instantly would read as a different kind of message than her chatter.
 
+**Crude insults are in the pools now, reversing an earlier deliberate removal.**
+`connard`, `salope`, `enfoiré`, `ordure`, `pute`, `menteur` and the phrases `ta gueule`,
+`vos gueules`, `pauvre type`, `nique ta mere` were once stripped out by hand and pinned
+with a test asserting they stay silent, on the grounds that the recall cost was worth
+it. That trade was revisited once untargeted hostility started scoring on the wall of
+shame: they are the most common French insults, and missing them was the larger error.
+The harness now pins the *opposite* — they must fire — so this cannot drift back
+silently either way. Note this also finally makes true the comment above `_meanPhrases`
+claiming "`ta gueule` already catches the insult" that `ferme la` / `la ferme` were
+meant to cover: it said so while `ta gueule` was in no list at all.
+
+**Expand the mean side with *phrases* rather than bare words.** A phrase scores 1.2 and
+is nearly always person-directed; a bare word is what misfires on game content, and
+since a mean message aimed at nobody now scores a point, every bare cue added is also a
+false positive added. `con`, `cons`, `conne`, `lourd` and `lourde` are therefore **weak**
+— "c'est con" is a shrug and "c'est lourd" is a weight — and `putain` is in no pool at
+all, being punctuation rather than an insult. The same restraint applies to the nice
+side: `clean`, `efficace`, `malin` and `utile` are weak, since they describe a build or
+a route as often as they compliment anyone.
+
+**Short warm replies are nice; short agreements are not.** `avec plaisir`, `de rien`,
+`pas de souci`, `tant mieux`, `trop cool`, `bien dit`, `bonne idee`, `beau travail`,
+`bon courage` and `je valide` are `_nicePhrases`, because two or three words with no
+strong cue between them used to score nothing at all. `ça marche`, `ça roule`, `ça me
+va`, `tout à fait` and `c'est clair` are deliberately **not**: they answer "on se
+retrouve à 21h", and the harness has a standing rule that ordinary coordination stays
+silent. Both halves are pinned, so the line between warmth and agreement cannot drift.
+
 **Cue vocabulary is scoped to a *gaming* server, and that constrains it.** Words that
 compliment a person in general French name game content here, so `boss` and `monstre`
 are deliberately **absent** from `_niceCues` entirely ("il est fort ce boss" read as
@@ -643,7 +671,24 @@ a `LastVoteDay` column on `ShameRecord`; that column is gone (`DropShameLastVote
 Don't reintroduce per-voter rationing without a reason that survives "they are all staff
 anyway".
 
-**`Le Malfaisant` is uncapped, and that was a deliberate call.** One hit per distinct
+**`Le Malfaisant` counts untargeted hostility too, and that half *is* rationed.** A mean
+message naming nobody scores a single point, gated at one per person per channel per
+60 s — the same shape as `Le Perfide` and `L'Hystérique`, and for the same reason: a rant
+is twenty foul messages in two minutes, and uncapped it would drown out everything the
+title ranks. The targeted half below stays uncapped, because there the exploit is one
+message rather than many. `CountTargets` returning 0 therefore means "nobody was named",
+**not** "ignore this message".
+
+**Know what this costs in precision.** Requiring a target was doing double duty: it also
+filtered out hostility aimed at *game content*, which on this server is most of it.
+Without it, "ce boss est nul", "la hitbox est nulle", "cette map est pourrie", "le lag est
+atroce" and "l'IA est stupide" all score a point — measured, not guessed. That is the
+accepted trade for catching "vous êtes tous nuls", and there is no cheap fix: the false
+positives come from *strong* cues (`nul`, `pourri`, `stupide`) applied to things rather
+than people, so raising the mood threshold would not separate them. The only real
+discriminator is whether a person was named, which is exactly what this drops.
+
+**`Le Malfaisant` is uncapped for targeted hostility, and that was a deliberate call.** One hit per distinct
 human a mean message targets — an explicit `@`, or the author of the message it replies
 to (Discord includes the replied-to user in the mention list only when the reply ping is
 on, so both have to be read and the set deduplicated). Roles and `@everyone` are never
