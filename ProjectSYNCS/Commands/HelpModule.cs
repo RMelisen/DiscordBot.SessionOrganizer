@@ -66,12 +66,13 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "Le gain en vocal **diminue au fil de la journée** (plein tarif la première heure, " +
                 "puis de moins en moins) et repart à zéro chaque nuit.")
             .AddField("Commandes — Mur de la honte",
-                "**`/shame`** — Trois titres : **Le Malfaisant**, que je décerne toute seule à qui est " +
-                "méchant (un point par personne visée), **Le Banni**, que vous votez, et **Le Perfide**, " +
+                "**`/shame`** — Quatre titres : **Le Malfaisant**, que je décerne toute seule à qui est " +
+                "méchant (un point par personne visée), **Le Banni**, que vous votez, **Le Perfide**, " +
                 "pour ceux qui parlent aux *autres* bots — je vois qui leur répond et qui utilise leurs " +
-                "commandes.\n" +
+                "commandes — et **L'Hystérique**, pour ceux qui écrivent des phrases entières en " +
+                "MAJUSCULES.\n" +
                 "**`/shame user:@quelqu'un`** — Dénonce quelqu'un. **Réservé au staff**, et " +
-                "**2 votes maximum par personne et par jour**.")
+                "**2 votes maximum par personne visée et par jour**.")
             .AddField("Commandes — Staff & aide",
                 "**`/addxp`** · **`/removexp`** — Ajuster l'XP de quelqu'un.\n" +
                 "**`/config`** — Le rôle autorisé à voter avec `/shame`, et les salons où rien ne " +

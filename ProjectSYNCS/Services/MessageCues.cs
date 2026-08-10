@@ -498,18 +498,60 @@ internal static class MessageCues
     private static double ScoreEmoteIds(string content, string[] ids, double weight) =>
         Math.Min(ids.Count(content.Contains), 2) * weight;
 
+    /// <summary>
+    /// How many letters the message has, and what share of them are uppercase.
+    /// </summary>
+    /// <remarks>
+    /// One measurement, two policies. <see cref="Emphasis"/> uses a loose threshold
+    /// because caps there only ever *adds* to a side that already scored on words —
+    /// a false positive costs nothing. <see cref="IsShouting"/> uses a much stricter
+    /// one because it stands alone and puts someone on the wall of shame. Sharing the
+    /// arithmetic and not the thresholds is deliberate: the two can never disagree
+    /// about how much of a message is uppercase, only about how much is too much.
+    /// </remarks>
+    public static (int Letters, double UpperRatio) CapsProfile(string content)
+    {
+        if (string.IsNullOrEmpty(content)) return (0, 0);
+
+        var letters = content.Count(char.IsLetter);
+        if (letters == 0) return (0, 0);
+
+        return (letters, content.Count(char.IsUpper) / (double)letters);
+    }
+
+    // Long enough to be a sentence rather than a word. "LOL", "OK", "MDRRR" and "GG WP"
+    // are all-caps and none of them is hysteria — they are how people write those words.
+    // Roughly two or three words of French.
+    private const int ShoutMinLetters = 12;
+
+    // Stricter than Emphasis's 0.6: at 0.6 a sentence that merely EMPHASISES a word or
+    // two would qualify, and emphasis is not shouting.
+    private const double ShoutRatio = 0.7;
+
+    /// <summary>
+    /// Whether the message is shouted — long enough to be a sentence, and almost all of
+    /// it in capitals. Feeds "L'Hystérique" on the wall of shame.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately not <see cref="Analyze"/>'s business: shouting is a *delivery*, not
+    /// a mood, and an angry shout and a delighted one are both shouts. Callers ration it
+    /// themselves — see ShameTracker, where it needs the same per-channel cooldown
+    /// "Le Perfide" has, because shouting arrives in bursts.
+    /// </remarks>
+    public static bool IsShouting(string content)
+    {
+        var (letters, ratio) = CapsProfile(content);
+        return letters >= ShoutMinLetters && ratio >= ShoutRatio;
+    }
+
     // How emphatic the message is, regardless of what it says: shouting, drawn-out
     // letters, exclamation marks. Only ever added to a side that already scored.
     private static double Emphasis(string content)
     {
         double bonus = 0;
 
-        var letters = content.Count(char.IsLetter);
-        if (letters >= 4)
-        {
-            var upper = content.Count(char.IsUpper);
-            if (upper / (double)letters > 0.6) bonus += CapsBonus;
-        }
+        var (letters, upperRatio) = CapsProfile(content);
+        if (letters >= 4 && upperRatio > 0.6) bonus += CapsBonus;
 
         if (HasElongation(content)) bonus += ElongationBonus;
 

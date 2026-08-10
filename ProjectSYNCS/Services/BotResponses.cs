@@ -776,6 +776,17 @@ internal static class BotResponses
         "Personne. Vous avez enfin compris qui compte sur ce serveur ദ്ദി◝ ⩊ ◜.ᐟ",
     };
 
+    // The same, for "L'Hystérique" — nobody shouted over the selected window.
+    public static readonly string[] ShameEmptyHysterique =
+    {
+        "Personne n'a hurlé. Mes oreilles vous remercient (il paraît que j'en ai pas, mais quand même) ♡",
+        $"Aucun cri sur cette période. Le calme, enfin {Emotes.PepeHappy}",
+        "Tout le monde a parlé normalement. Je suis presque déçue ✨",
+        $"Pas une seule majuscule de trop. Vous progressez {Emotes.CatHeart}",
+        "Volume sonore : acceptable. Ça change ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Personne n'a crié. Soit vous êtes posés, soit vous complotez (ᵕ • ᴗ •)",
+    };
+
     // Announcing a giveaway's winners. {0} = the winner mentions (already joined, and
     // already plural-safe), {1} = the prize. She is the one drawing, so the lines are
     // hers rather than a neutral "the winner is".

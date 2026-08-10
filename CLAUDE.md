@@ -631,6 +631,22 @@ the one place where a single message can add an unbounded amount; if that ever n
 rationing, cap the hits per message rather than adding a cooldown — the exploit is one
 message, not many.
 
+**`L'Hystérique` counts shouting, and its thresholds are stricter than the mood
+detector's on purpose.** `MessageCues.CapsProfile` measures how many letters a message
+has and what share are uppercase; `Emphasis` and `IsShouting` then apply *different*
+thresholds to that one measurement. Emphasis is loose (4 letters, >60%) because caps
+there only ever *adds* to a side that already scored on words, so a false positive costs
+nothing. `IsShouting` needs **12 letters and 70%** because it stands alone and puts
+someone on the wall: at 4 letters `LOL`, `OK`, `MDR` and `GG WP` all qualify, and at 60%
+a sentence merely emphasising a word or two does. Sharing the arithmetic but not the
+thresholds is the point — the two can never disagree about how much of a message is
+uppercase, only about how much is too much. Rationed like `Le Perfide` (one hit per
+person per channel per 60 s) for the same reason: an argument is ten shouted messages in
+two minutes. Deliberately **not** short-circuited by `ReadFeedback` the way hostility is:
+a verdict belongs to `BotFeedbackTracker` because that service answers it and keeps the
+tally, whereas nothing else records how a message was *delivered* — and a shout can be
+mean as well, which is two different things to be ashamed of.
+
 **`Le Perfide` is rationed where `Le Malfaisant` is not, and the asymmetry is the
 point.** Hostility is rare, so it scales; turning to another bot is mundane and bursty —
 an evening of queueing songs is forty replies to a music bot — so it is one hit per
@@ -670,12 +686,15 @@ is shared; `ExcludedChannels` itself must stay private to `XpTracker`.
 
 **`/shame` is Components V2, and only the title *holder* wears an avatar.** It became V2
 when the avatars did — an embed has one thumbnail slot for the whole message, and the
-wall needs one per title. The count is **21 of 40**: the container, four per title with a
-holder (Section + its TextDisplay + the avatar Thumbnail, plus one TextDisplay for the
-runners-up), three separators, the footer, and the filter row with its three buttons.
-**Giving all nine rows an avatar comes to 39** — it fits, and it would leave the command
-permanently unextendable to put a face on people who did not win the title, so the
-runners-up are deliberately plain text. Re-do that sum before adding anything. All the V2
+wall needs one per title. The count is **26 of 40**: container 1 + heading 1, four titles
+at 5 each (separator, Section, its TextDisplay, the avatar Thumbnail, and one TextDisplay
+for the runners-up), and the filter row with its three buttons. **That leaves room for
+exactly two more titles** — a seventh throws inside `ComponentBuilderV2.Build()`, which
+is a send-time exception rather than a compile error, so **re-do the sum before adding
+anything** and let the scratch harness confirm it rather than counting by hand: the
+comment here said 21 when the real figure was 23, and the `/leaderboard` equivalent once
+shipped at 42. Giving the runners-up avatars too would cost three components each and
+blow the budget immediately, which is why they are plain text. All the V2
 rules apply: no content and no embeds on the message, the flag re-asserted on every
 `UpdateAsync`, and `AllowedMentions.None` on every send, since a `TextDisplay` is real
 content and `<@id>` in one genuinely pings — the embed this replaced got inert mentions
@@ -684,11 +703,21 @@ the `shame:win` verb, because the day a second row is added the
 `COMPONENT_CUSTOM_ID_DUPLICATED` rejection is silent and instant. Its default window is
 **30 days**, unlike `/goodbot`'s all-time: both counters start at zero on ship day, and
 an all-time default would read as a hall of fame nobody can move. A title with nobody in
-it renders a line from `ShameEmptyMalfaisant` / `ShameEmptyBanni` /
-`ShameEmptyPerfide` rather than disappearing — a wall that changes shape between filters reads as broken — and there is
-no minimum count, so a window holding one vote shows it. Ties break on the earliest row
+it renders a line from `ShameEmptyMalfaisant` / `ShameEmptyBanni` / `ShameEmptyPerfide` /
+`ShameEmptyHysterique` rather than disappearing — a wall that changes shape between
+filters reads as broken — and there is
+no minimum count, so a window holding one vote shows it. Those pools are interpolated
+straight into the heading and never `string.Format`-ed, so a `{0}` in one would render
+literally. Ties break on the earliest row
 id, which matters only in that it is *stable*: two people level on count would otherwise
 swap places on every re-render.
+
+**The wall has no footer line, deliberately.** It used to carry
+`"Un vote par personne et par jour"`, which described a rationing rule that never
+shipped — the cap is **2 per target per day**, with no per-voter quota at all. It was
+removed rather than corrected: `/shame`'s own command description already says who may
+vote, and a footer restating a rule is one more place for it to go stale, which is
+exactly what happened.
 
 **Session lifecycle is idempotent.** `SessionEvent.RenderedPhase` records what was
 last drawn on the card, so the background loop only re-renders on an actual

@@ -37,6 +37,13 @@ internal sealed class ShameTracker
     // often someone *turns to* another bot rather than how chatty that bot's UX is.
     private static readonly TimeSpan PerfidyCooldown = TimeSpan.FromSeconds(60);
 
+    // Shouting is rationed for the same reason and on the same terms: it arrives in
+    // bursts — an argument is ten shouted messages in two minutes — and uncapped the
+    // title would belong permanently to whoever had one bad evening and stop moving.
+    // Its own gate, not Perfidy's: they are different acts, and sharing one would let
+    // a shout mute a perfidy hit for the whole window.
+    private static readonly TimeSpan ShoutCooldown = TimeSpan.FromSeconds(60);
+
     // Entries older than this are dropped, so the gate cannot grow one key per person
     // per channel forever. Well past the cooldown, so forgetting one is never an early
     // grant. Same shape as XpTracker's and RivalryService's.
@@ -52,6 +59,7 @@ internal sealed class ShameTracker
 
     private readonly object _gate = new();
     private readonly Dictionary<(ulong ChannelId, ulong UserId), DateTimeOffset> _lastPerfidy = new();
+    private readonly Dictionary<(ulong ChannelId, ulong UserId), DateTimeOffset> _lastShout = new();
 
     public ShameTracker(
         DiscordSocketClient client,
@@ -91,6 +99,32 @@ internal sealed class ShameTracker
 
         await TrackPerfidyAsync(message, guildId);
         await TrackMeanAsync(message, guildId);
+        await TrackShoutingAsync(message, guildId);
+    }
+
+    // Shouting: a message long enough to be a sentence, written almost entirely in
+    // capitals. Independent of the two above — a shout can also be mean, and both
+    // should count, because they are two different things to be ashamed of. It is
+    // deliberately *not* short-circuited by MessageCues.ReadFeedback the way hostility
+    // is: a verdict belongs to BotFeedbackTracker because that service answers it and
+    // keeps the tally, whereas nothing else records how a message was delivered.
+    private async Task TrackShoutingAsync(SocketUserMessage message, ulong guildId)
+    {
+        if (!MessageCues.IsShouting(message.Content ?? string.Empty)) return;
+        if (!TryClaim(_lastShout, message.Channel.Id, message.Author.Id, ShoutCooldown)) return;
+
+        try
+        {
+            await using var scope = _services.CreateAsyncScope();
+            var shame = scope.ServiceProvider.GetRequiredService<ShameService>();
+            await shame.AddShoutHitAsync(guildId, message.Author.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "Failed to record shouting for user {UserId} in guild {GuildId}.",
+                message.Author.Id, guildId);
+        }
     }
 
     /// <summary>
@@ -144,7 +178,7 @@ internal sealed class ShameTracker
 
     private async Task ClaimAndRecordAsync(ulong guildId, ulong channelId, ulong userId)
     {
-        if (!TryClaimPerfidy(channelId, userId)) return;
+        if (!TryClaim(_lastPerfidy, channelId, userId, PerfidyCooldown)) return;
 
         try
         {
@@ -225,31 +259,35 @@ internal sealed class ShameTracker
         user.Id != authorId
         && (!user.IsBot || user.Id == _client.CurrentUser.Id);
 
-    // Atomically checks the per-(channel, user) cooldown and claims it.
-    private bool TryClaimPerfidy(ulong channelId, ulong userId)
+    // Atomically checks one gate's per-(channel, user) cooldown and claims it. Takes the
+    // dictionary rather than owning one, so each rationed behaviour keeps its own window
+    // — the same shape XpTracker's TryClaim has, and for the same reason.
+    private bool TryClaim(
+        Dictionary<(ulong ChannelId, ulong UserId), DateTimeOffset> gate,
+        ulong channelId, ulong userId, TimeSpan cooldown)
     {
         lock (_gate)
         {
             var now = DateTimeOffset.UtcNow;
             var key = (channelId, userId);
 
-            if (_lastPerfidy.TryGetValue(key, out var last) && now - last < PerfidyCooldown)
-                return false;
+            if (gate.TryGetValue(key, out var last) && now - last < cooldown) return false;
 
-            _lastPerfidy[key] = now;
-            ForgetStale(now);
+            gate[key] = now;
+            ForgetStale(gate, now);
             return true;
         }
     }
 
     // Caller holds _gate. Only sweeps once the gate has grown past a size no real
     // server reaches in an hour, so the common path stays a single dictionary write.
-    private void ForgetStale(DateTimeOffset now)
+    private static void ForgetStale(
+        Dictionary<(ulong ChannelId, ulong UserId), DateTimeOffset> gate, DateTimeOffset now)
     {
-        if (_lastPerfidy.Count < 256) return;
+        if (gate.Count < 256) return;
 
         var cutoff = now - Forget;
-        foreach (var key in _lastPerfidy.Where(kv => kv.Value < cutoff).Select(kv => kv.Key).ToList())
-            _lastPerfidy.Remove(key);
+        foreach (var key in gate.Where(kv => kv.Value < cutoff).Select(kv => kv.Key).ToList())
+            gate.Remove(key);
     }
 }

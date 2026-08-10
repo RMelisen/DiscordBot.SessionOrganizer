@@ -189,14 +189,19 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
         await FollowupAsync(line, allowedMentions: AllowedMentions.None);
     }
 
-    // Components V2. The whole wall is 21 components of the 40 Discord allows per
-    // message, counting the tree: the container, four per title with a holder (Section
-    // + its TextDisplay + the avatar Thumbnail, plus one TextDisplay for the runners-up),
-    // three separators, the footer, and the filter row with its three buttons. Only the
-    // *holder* wears an avatar — giving all nine rows one costs three components each
-    // and lands at 39 of 40, which would leave this command permanently unextendable for
-    // the sake of putting a face on people who did not win the title. Re-do that sum
-    // before adding anything here.
+    // Components V2, and the budget is the thing to watch. Discord allows 40 per message
+    // counting the whole tree; this uses **26**:
+    //
+    //   container 1 + heading 1
+    //   + 4 titles x 5 (separator, Section, its TextDisplay, the avatar Thumbnail,
+    //     and one TextDisplay for the runners-up)  = 20
+    //   + action row 1 + its three filter buttons 3
+    //
+    // So there is room for two more titles and no more. Only the *holder* wears an
+    // avatar — giving every ranked row one costs three components each and would blow
+    // the budget immediately, for the sake of putting a face on people who did not win
+    // the title. **Re-do this sum before adding anything here**, because the failure is
+    // an exception inside ComponentBuilderV2.Build() at send time, not a compile error.
     private async Task<MessageComponent> BuildWallAsync(StatsPeriod period)
     {
         var wall = await _shame.GetWallAsync(Context.Guild.Id, period);
@@ -212,11 +217,8 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
             wall.Bannis, BotResponses.ShameEmptyBanni, "vote", "votes");
         AddTitle(container, $"{Emotes.NightmareOtherEye} Le Perfide",
             wall.Perfides, BotResponses.ShameEmptyPerfide, "trahison", "trahisons");
-
-        container
-            .AddComponent(new SeparatorBuilder())
-            .AddComponent(new TextDisplayBuilder(
-                "-# Un vote par personne et par jour — `/shame user`"));
+        AddTitle(container, $"{Emotes.VeryAngry} L'Hystérique",
+            wall.Hysteriques, BotResponses.ShameEmptyHysterique, "cri", "cris");
 
         return new ComponentBuilderV2()
             .AddComponent(container)
