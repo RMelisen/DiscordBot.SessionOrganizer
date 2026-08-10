@@ -53,6 +53,7 @@ internal sealed class XpTracker
         885475859992035348,
         995433580597624923,
         1010902795207053312,
+        1536136071992315904,
     };
 
     private static readonly TimeSpan MessageCooldown = TimeSpan.FromSeconds(60);
