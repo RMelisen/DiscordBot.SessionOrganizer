@@ -100,7 +100,11 @@ internal sealed class ShameTracker
     /// </remarks>
     private async Task TrackCommandUseAsync(SocketUserMessage message, ulong guildId)
     {
-        if (!_rivalry.IsRival(message.Author)) return;
+        // The message-aware overload, not IsRival(IUser): a slash-command reply is a
+        // webhook call under the hood, so a rival that defers before replying would
+        // otherwise never pass the identity check at all — see RivalryService.IsRival's
+        // remarks.
+        if (!_rivalry.IsRival(message)) return;
 
         if (message.InteractionMetadata is not { } metadata) return;
         if (metadata.Type != InteractionType.ApplicationCommand) return;
@@ -116,8 +120,14 @@ internal sealed class ShameTracker
     // single act, unlike hostility, which scales with how many people it was aimed at.
     private async Task TrackPerfidyAsync(SocketUserMessage message, ulong guildId)
     {
+        // The referenced message goes through the message-aware overload too, for the
+        // same reason as above: replying to a rival's deferred slash-command answer must
+        // still count, even though that reply is webhook-authored. A plain @mention has
+        // no such message to consult — Discord resolves MentionedUsers off the guild's
+        // member cache, never off webhook-wrapping — so IsRival(IUser) is the right and
+        // only choice there.
         bool consorting =
-            (message.ReferencedMessage?.Author is { } repliedTo && _rivalry.IsRival(repliedTo))
+            (message.ReferencedMessage is { } repliedTo && _rivalry.IsRival(repliedTo))
             || message.MentionedUsers.Any(_rivalry.IsRival);
 
         if (!consorting) return;

@@ -458,6 +458,25 @@ own gate only after winning its own roll, so a losing roll never burns the other
 Both are deliberately **not** `ReactionService`'s cooldown: a third trigger population
 deserves its own gates rather than competing with her reactions to humans.
 
+**`RivalryService.IsRival` has two overloads, and the message-aware one is not
+optional.** Responding to an interaction is a webhook call under the hood, so Discord
+builds the author of *any* interaction reply — even a rival's own, and especially a
+deferred one, which always goes out through the followup webhook — as a webhook user.
+`IsRival(IUser)` cannot tell that apart from a genuine third-party webhook (GitHub,
+IFTTT, …), which carries the same `IsBot` flag Discord shows the same "BOT" tag for, so
+it stays conservative and excludes both. `IsRival(IUserMessage)` is the one that
+actually can: `IUserMessage.InteractionMetadata` is present only on a message created
+in response to an interaction, never on a real incoming webhook post. Before this
+existed, every rival that defers before replying was invisible to the whole
+service — no reaction, no mutter, and no "Le Perfide" credit for using its command —
+which is silent in exactly the way that reads as "the feature doesn't work" rather than
+as a bug, since nothing throws. Both overloads funnel through one pure, Discord-free
+`IsRivalAuthor(bool, bool, bool, bool)`, so the two definitions cannot drift apart and
+the decision is checkable without a gateway. Reach for the message-aware overload
+whenever a message is on hand; `IsRival(IUser)` is only for the mentioned-users case in
+`ShameTracker`, where no message exists to consult (a plain `@mention` resolves off the
+guild's member cache, never through webhook-wrapping, so it is not at risk).
+
 **Two exclusions in `RivalryService.IsRival` are load-bearing.** Webhooks are not
 rivals (they post relentlessly and belong to no one). And a **level-up announcement**
 is skipped while the rest of that bot's traffic stays fair game — not because those
@@ -629,12 +648,13 @@ unavoidable — an **ephemeral** response produces no visible message, and an ol
 prefix command (`!play`) leaves nothing tying the reply back to a person.
 
 **"Rival" has two definitions and `ShameTracker` deliberately uses the looser one.**
-`RivalryService.IsRival(SocketUserMessage)` excludes level-up announcements, because
-`ChatterService` congratulates those and sulking at one would contradict the cheer.
-`IsRival(IUser)` is the identity half — any bot but her, webhooks excluded — and is what
-`ShameTracker` asks, so *replying* to a level-up announcement still counts as perfidy.
-That is intentional: she is jealous of the attention either way. The test lives in
-`RivalryService` rather than being rewritten, so the two can never drift.
+The private `RivalryService.IsRival(SocketUserMessage)` excludes level-up
+announcements, because `ChatterService` congratulates those and sulking at one would
+contradict the cheer. The public `IsRival(IUser)`/`IsRival(IUserMessage)` overloads —
+see above for why there are two — are the identity half with no such carve-out, and
+are what `ShameTracker` asks, so *replying* to a level-up announcement still counts as
+perfidy. That is intentional: she is jealous of the attention either way. The test
+lives in `RivalryService` rather than being rewritten, so the two can never drift.
 
 **`ShameTracker` is a separate service for `BotFeedbackTracker`'s reason.** It draws a
 conclusion nobody tells it and has to see *every* message to do it, so it cannot be a
