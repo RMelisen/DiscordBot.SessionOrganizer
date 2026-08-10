@@ -879,7 +879,7 @@ embed — avatar thumbnail, `Color.Purple` to match `/level`'s leaderboard, and 
 showing the **span crossed** (`Niveau {old} → {new} !`), not just the level landed on:
 one grant can cross more than one threshold, and it still announces exactly once. That
 is why `GrantAsync` forwards both levels rather than only the new one. At level **7 or
-67** the description is the fixed string `"SIX SEVEEEEN"` in place of an
+67** the description is the fixed string `"SIX SEVEEEN"` in place of an
 `XpLevelUpLines` pick — an easter egg, not a pool entry, so `ResponsePicker` is
 deliberately never consulted for it and it never burns one of that channel's exclusion
 slots on a line the pool doesn't contain. It is a literal level check (`is 7 or 67`),

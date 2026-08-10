@@ -277,7 +277,7 @@ internal sealed class XpTracker
         // entirely, so the egg never burns one of that channel's exclusion slots on a
         // line that isn't actually a pool entry.
         var description = IsSixSeven(newLevel)
-            ? "SIX SEVEEEEN"
+            ? "SIX SEVEEEN"
             : string.Format(_picker.Pick(channel.Id, BotResponses.XpLevelUpLines), name, newLevel);
 
         var embed = new EmbedBuilder()

@@ -661,7 +661,7 @@ internal static class BotResponses
     //
     // Rendered as an embed's description, not a plain message — see
     // XpTracker.AnnounceAsync. At level 7 or 67 this pool is not consulted at all:
-    // the description is the fixed string "SIX SEVEEEEN" instead.
+    // the description is the fixed string "SIX SEVEEEN" instead.
     public static readonly string[] XpLevelUpLines =
     {
         "**{0}** vient de passer niveau **{1}** ! Et ça, c'est MON classement ✨",
