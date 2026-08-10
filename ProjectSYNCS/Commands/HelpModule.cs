@@ -63,7 +63,10 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "Les bots ne comptent pas, et moi encore moins.\n" +
                 "**`/help`** — Affiche ce message.\n" +
                 "**`/addxp`** · **`/removexp`** — Ajuster l'XP de quelqu'un. " +
-                "Réservé aux administrateurs et modérateurs ; les autres ne les voient même pas.")
+                "Réservé aux administrateurs et modérateurs ; les autres ne les voient même pas.\n" +
+                "**`/config`** — Configurer le bot pour ce serveur : le rôle autorisé à voter avec " +
+                "`/shame`, et les salons où rien ne compte (ni XP, ni mur). `/config show` affiche " +
+                "la configuration actuelle. Réservé aux administrateurs et modérateurs.")
             .AddField("Créer une session — pas à pas",
                 "Lance **`/schedule create`**. Un assistant privé te guide :\n" +
                 "**1.** *Type* — choisis la catégorie : 🎮 Jeu, 🧑‍🤝‍🧑 Activité, 🎬 Film ou ✨ Autre.\n" +

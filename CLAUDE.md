@@ -726,6 +726,15 @@ and both refuse bots — `XpTracker` skips bots everywhere else, so a hand-toppe
 would be a leaderboard row nothing else can produce and a `/level` card the command
 refuses to render.
 
+**`/config` is a group module, and its two settings are subgroups.** `/config channels
+add|remove` and `/config moderator-role set|clear`, plus a flat `/config show` — three
+levels, which is Discord's maximum nesting. Deliberately not flat like `/shame`: that
+one is flat *only* because it had to stay invokable bare (a parent with subcommands
+cannot be), and nothing here needs that, since "show me the config" is naturally its own
+subcommand. Every handler is ephemeral and re-checks `SessionPermissions.IsStaff`; the
+`[DefaultMemberPermissions]` on the group is presentation only, exactly as on
+`XpAdminModule`.
+
 **There are three separate authorization models.** Session and poll management uses
 `Helpers/SessionPermissions.CanManage` — the organizer, or any guild
 Administrator / ManageGuild holder. The owner-only commands (`/tell`, `/dm`,
@@ -777,6 +786,29 @@ praise. The call sits *after*
 immediate, and a level-up announcement, if any, is a slightly-delayed follow-up that
 must never push the acknowledgement itself later.
 
+**Runtime configuration is additive to the code, never a replacement for it.**
+`GuildSettings` / `GuildExcludedChannel` hold what `/config` writes, and both hardcoded
+lists — `XpTracker.ExcludedChannels` and `ShameModule.ExtraVoters` — stay in force
+regardless. So an unconfigured guild behaves exactly as it did before the tables
+existed, and no config change can *remove* an exclusion or revoke a voting right; it
+can only add. `/config channels remove` therefore refuses a hardcoded channel outright
+rather than appearing to work, and `add` refuses one too instead of storing a second,
+redundant row that could later drift from the code. The moderator role likewise only
+widens who may vote — `ShameModule.CanVoteAsync` checks staff and `ExtraVoters` first,
+and only asks the database when both have already said no.
+
+**`GuildConfigService` is a singleton that reads the database, which every other such
+service here is not**, and the cache is why. It takes `IServiceProvider` and scopes per
+unit of work like the trackers, rather than injecting `AppDbContext` — same rule as
+always. The cache is load-bearing, not premature: `XpTracker`'s exclusion check runs on
+*every* message and must run before `TryClaim` (below), whereas today most messages
+never reach the database at all because the 60 s claim stops them first. An uncached
+read there would put an EF scope and a query on every message on a Raspberry Pi. It is
+cheap to keep correct because this service is the only writer in the only process: any
+write drops that guild's entry and the next read rebuilds it. A failed read degrades to
+`GuildConfig.Empty` and is *not* cached, so a transient fault cannot pin a guild as
+unconfigured for the process lifetime.
+
 **`XpTracker.ExcludedChannels` is checked before `TryClaim`, never after.** The spam
 channels earn nothing, and the order matters: claiming first would let a message there
 burn that person's 60 s message cooldown, so spamming in the excluded channel would
@@ -787,7 +819,10 @@ list lives in `XpTracker` alone, so `VoiceXpService` passes the id rather than k
 a second copy of the rule. The check also treats a **thread** as its parent, or opening
 a thread inside a spam channel would quietly be a way back in. The decision itself is
 split into a pure `(channelId, parentId?)` overload precisely so it can be exercised
-without a gateway connection.
+without a gateway connection. That pure core survived `/config`: it now takes the
+configured set as a third argument and the two-argument overload passes an empty one, so
+the hardcoded decision is still checkable with no I/O — and the hardcoded check still
+runs *first*, meaning an excluded spam channel never reaches the database at all.
 
 **`/level` and `/leaderboard` are Components V2, and that is all-or-nothing.** A message
 carrying `MessageFlags.ComponentsV2` may have **no `content` and no `embeds`** — the flag
@@ -1017,5 +1052,12 @@ and `config.yaml` a `PASTE_YOUR_TOKEN_HERE` one; real tokens go in user secrets
 `ChatterService` and again in `ReactionService`, both for what he says and for what
 he reacts to), the level-up bot id in `ChatterService`, the `hi_cat` emote id in
 `MessageCues` and `ReminderService`, `XpTracker.ExcludedChannels` (the spam channels
-that earn no XP), and the per-user `PersonalComebacks` / `RealNames` maps in
-`BotResponses` are literal snowflakes tied to one specific server.
+that earn no XP), `ShameModule.ExtraVoters`, and the per-user `PersonalComebacks` /
+`RealNames` maps in `BotResponses` are literal snowflakes tied to one specific server.
+
+Two of those are now *floors* rather than the whole story: `/config` can add excluded
+channels and grant `/shame` voting to a role, but neither command can edit these lists —
+see the runtime-configuration note above. The rest have no configuration surface at all.
+`AvailabilityService.OwnerId` was deliberately left out of `/config`: it gates `/tell`,
+`/dm`, `/absent` and the DM relay, so making it editable by any ManageGuild holder would
+let them hand themselves those powers, including impersonating the relay.

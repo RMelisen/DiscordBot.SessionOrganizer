@@ -114,6 +114,13 @@ in one click. The bot's user-facing language is French.
   at zero, and deliberately silent: crossing a level this way fires no level-up card,
   since that card celebrates something earned. Hidden from Discord's command picker for
   anyone without the permission.
+- **`/config`** — per-server configuration for staff, applied without a redeploy:
+  a **moderator role** allowed to vote with `/shame`, and extra **channels where
+  nothing counts** (no XP, and ignored by the wall of shame). Everything here is
+  *additive* — the defaults built into the code stay in force, so configuring
+  something can never revoke an existing right or un-exclude a channel, and a server
+  that never touches `/config` behaves exactly as before. `/config show` prints the
+  current state, separating the built-in defaults from what was added.
 - **`/help`** — in-Discord usage guide.
 - **Owner-only commands** — the configured owner can speak through the bot
   (`/tell` into a channel, `/dm` to a person) and flag themselves unavailable

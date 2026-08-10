@@ -17,6 +17,8 @@ public class AppDbContext : DbContext
     public DbSet<BotFeedback> BotFeedbacks => Set<BotFeedback>();
     public DbSet<BotFeedbackDailyStat> BotFeedbackDailyStats => Set<BotFeedbackDailyStat>();
     public DbSet<MemberXp> MemberXps => Set<MemberXp>();
+    public DbSet<GuildSettings> GuildSettings => Set<GuildSettings>();
+    public DbSet<GuildExcludedChannel> GuildExcludedChannels => Set<GuildExcludedChannel>();
     public DbSet<MemberDailyStat> MemberDailyStats => Set<MemberDailyStat>();
     public DbSet<Giveaway> Giveaways => Set<Giveaway>();
     public DbSet<GiveawayEntry> GiveawayEntries => Set<GiveawayEntry>();
@@ -160,6 +162,25 @@ public class AppDbContext : DbContext
             // Serves the rolling-window read: "this guild, since day N". Day is an
             // int precisely so this range can be evaluated in SQL.
             e.HasIndex(x => new { x.GuildId, x.Day });
+        });
+
+        modelBuilder.Entity<GuildSettings>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.ModeratorRoleId).HasConversion<long>();
+            // At most one settings row per guild.
+            e.HasIndex(x => x.GuildId).IsUnique();
+        });
+
+        modelBuilder.Entity<GuildExcludedChannel>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.ChannelId).HasConversion<long>();
+            // Adding the same channel twice is a no-op, not a second row.
+            e.HasIndex(x => new { x.GuildId, x.ChannelId }).IsUnique();
+            // Serves the only read there is: every excluded channel for one guild,
+            // loaded once and then cached (see GuildConfigService).
+            e.HasIndex(x => x.GuildId);
         });
     }
 }

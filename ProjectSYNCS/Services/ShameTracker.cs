@@ -44,6 +44,9 @@ internal sealed class ShameTracker
 
     private readonly DiscordSocketClient _client;
     private readonly RivalryService _rivalry;
+    // Asked rather than copied, so the excluded-channel list — hardcoded and
+    // configured alike — stays defined in exactly one class.
+    private readonly XpTracker _xp;
     private readonly IServiceProvider _services;
     private readonly ILogger<ShameTracker> _logger;
 
@@ -53,11 +56,13 @@ internal sealed class ShameTracker
     public ShameTracker(
         DiscordSocketClient client,
         RivalryService rivalry,
+        XpTracker xp,
         IServiceProvider services,
         ILogger<ShameTracker> logger)
     {
         _client = client;
         _rivalry = rivalry;
+        _xp = xp;
         _services = services;
         _logger = logger;
     }
@@ -67,12 +72,14 @@ internal sealed class ShameTracker
         if (rawMessage is not SocketUserMessage message) return;
         if (message.Channel is not SocketGuildChannel guildChannel) return;
 
+        var guildId = guildChannel.Guild.Id;
+
         // The spam channels count for nothing here either. People are hostile there as
         // a bit and try every bot going, and a wall that ranks the joke channel is a
-        // wall of noise. Asked of XpTracker so the list of ids stays in one class.
-        if (XpTracker.IsChannelExcluded(guildChannel)) return;
-
-        var guildId = guildChannel.Guild.Id;
+        // wall of noise. Asked of XpTracker so the list of ids stays in one class —
+        // which now means the channels an admin configured are honoured here too,
+        // without this service knowing they exist.
+        if (await _xp.IsChannelExcludedAsync(guildId, guildChannel)) return;
 
         // A rival's own message is only interesting for one thing: whether a human
         // summoned it with a slash command. Nothing else about it is anyone's shame.
