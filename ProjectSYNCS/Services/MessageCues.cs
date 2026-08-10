@@ -335,8 +335,8 @@ internal static class MessageCues
     // The same two verdicts in a different register. Counted identically on the
     // /goodbot tally — praise is praise — but answered differently, which is why the
     // *form* comes back alongside the kind. See VerdictForm.
-    private static readonly string[] _goodGirlPhrases = { "good girl", "bonne fille" };
-    private static readonly string[] _badGirlPhrases = { "bad girl", "mauvaise fille" };
+    private static readonly string[] _goodGirlPhrases = { "good girl", "bonne fille", "gentille fille" };
+    private static readonly string[] _badGirlPhrases = { "bad girl", "mauvaise fille", "vilaine fille" };
 
     private static readonly HashSet<string> _goodGirlWords = new() { "goodgirl" };
     private static readonly HashSet<string> _badGirlWords = new() { "badgirl" };
