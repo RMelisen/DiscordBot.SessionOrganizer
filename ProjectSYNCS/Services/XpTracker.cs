@@ -18,6 +18,9 @@ internal sealed class XpTracker
     private readonly DiscordSocketClient _client;
     private readonly IServiceProvider _services;
     private readonly ResponsePicker _picker;
+    // Singleton into singleton, the same shape BotFeedbackTracker uses for
+    // RivalryService — safe to hold directly, unlike a transient DB service.
+    private readonly GuildConfigService _config;
     private readonly ILogger<XpTracker> _logger;
 
     // Tuning knobs, not load-bearing — easy to retune without touching the logic
@@ -31,6 +34,14 @@ internal sealed class XpTracker
     // noticeably less than Good, so praise stays worth more than a complaint.
     private const long BadVerdictBonus = 15;
 
+    /// <summary>
+    /// The channels excluded in code, which an admin can neither add to nor remove from
+    /// — <c>/config</c> only ever adds *more*. Exposed so ConfigModule can tell someone
+    /// that a channel is already excluded by default, rather than storing a second,
+    /// redundant row for it.
+    /// </summary>
+    public static IReadOnlySet<ulong> HardcodedExcludedChannels => ExcludedChannels;
+
     // Channels that earn nothing, whatever happens in them — spam and the other places
     // where activity says nothing about engagement. Every signal checks this (message,
     // reaction, verdict, voice), so there is no path back in.
@@ -42,6 +53,7 @@ internal sealed class XpTracker
         885475859992035348,
         995433580597624923,
         1010902795207053312,
+        1536136071992315904,
     };
 
     private static readonly TimeSpan MessageCooldown = TimeSpan.FromSeconds(60);
@@ -71,11 +83,13 @@ internal sealed class XpTracker
         DiscordSocketClient client,
         IServiceProvider services,
         ResponsePicker picker,
+        GuildConfigService config,
         ILogger<XpTracker> logger)
     {
         _client = client;
         _services = services;
         _picker = picker;
+        _config = config;
         _logger = logger;
     }
 
@@ -86,7 +100,7 @@ internal sealed class XpTracker
         if (rawMessage is not SocketUserMessage message) return;
         if (message.Author.IsBot) return;
         if (message.Channel is not SocketGuildChannel guildChannel) return;
-        if (IsExcluded(guildChannel)) return;
+        if (await IsExcludedAsync(guildChannel.Guild.Id, guildChannel.Id, guildChannel)) return;
 
         var key = (guildChannel.Guild.Id, message.Author.Id);
         if (!TryClaim(_lastMessageXp, key, MessageCooldown)) return;
@@ -126,7 +140,7 @@ internal sealed class XpTracker
 
         var resolved = await channel.GetOrDownloadAsync();
         if (resolved is not IGuildChannel guildChannel) return;
-        if (IsExcluded(guildChannel)) return;
+        if (await IsExcludedAsync(guildChannel.GuildId, guildChannel.Id, guildChannel)) return;
 
         // Counted before the cooldown claim, and regardless of it: every reaction is a
         // reaction used, even the ones too soon after the last to be worth any XP.
@@ -170,7 +184,7 @@ internal sealed class XpTracker
         if (amount <= 0) return;
 
         var channel = _client.GetChannel(channelId);
-        if (IsExcluded(channelId, channel)) return;
+        if (await IsExcludedAsync(guildId, channelId, channel)) return;
         if (!TryClaim(_lastVerdictXp, (guildId, userId), VerdictCooldown)) return;
 
         await GrantAsync(guildId, userId, amount, channel as IMessageChannel);
@@ -196,7 +210,7 @@ internal sealed class XpTracker
         // Resolved once and reused: the exclusion check needs it, and so does the
         // announcement below.
         var voiceChannel = _client.GetChannel(voiceChannelId);
-        if (IsExcluded(voiceChannelId, voiceChannel)) return;
+        if (await IsExcludedAsync(guildId, voiceChannelId, voiceChannel)) return;
 
         // Recorded on the same call that pays the XP, so the /leaderboard voice total
         // can never disagree with which minutes were considered eligible — and the same
@@ -277,7 +291,7 @@ internal sealed class XpTracker
         // entirely, so the egg never burns one of that channel's exclusion slots on a
         // line that isn't actually a pool entry.
         var description = IsSixSeven(newLevel)
-            ? "SIX SEVEEEEN"
+            ? "SIX SEVEEEN"
             : string.Format(_picker.Pick(channel.Id, BotResponses.XpLevelUpLines), name, newLevel);
 
         var embed = new EmbedBuilder()
@@ -305,8 +319,9 @@ internal sealed class XpTracker
         knownUser ?? (channel as SocketGuildChannel)?.Guild.GetUser(userId);
 
     /// <summary>
-    /// Whether nothing counts in <paramref name="channel"/> — the spam channels, and
-    /// any thread inside one.
+    /// Whether nothing counts in <paramref name="channel"/> — the hardcoded spam
+    /// channels, anything an admin added through <c>/config</c>, and any thread inside
+    /// either.
     /// </summary>
     /// <remarks>
     /// Public so <see cref="ShameTracker"/> can ask rather than keeping a second copy
@@ -314,25 +329,46 @@ internal sealed class XpTracker
     /// of holding its own. The list stays in this class alone; only the question is
     /// shared. Note the name is about the channel, not about XP — the wall of shame
     /// honours the same exclusions for the same reason (the spam channels say nothing
-    /// about anyone).
+    /// about anyone), and that now includes the configured ones for free.
     /// </remarks>
-    public static bool IsChannelExcluded(IChannel channel) => IsExcluded(channel);
+    public Task<bool> IsChannelExcludedAsync(ulong guildId, IChannel channel) =>
+        IsExcludedAsync(guildId, channel.Id, channel);
 
-    // Every entry point calls one of these *before* TryClaim, never after: a message in
-    // an excluded channel must not burn the person's cooldown, or spamming there would
+    // Every entry point calls this *before* TryClaim, never after: a message in an
+    // excluded channel must not burn the person's cooldown, or spamming there would
     // actively block them from earning in a real channel a minute later.
-    private static bool IsExcluded(IChannel channel) =>
-        IsExcluded(channel.Id, channel);
+    //
+    // The hardcoded check runs first and needs no I/O, so an excluded spam channel
+    // costs nothing. Only a channel that is *not* hardcoded reaches the config, which
+    // is itself cached — see GuildConfigService for why that cache is load-bearing
+    // rather than premature.
+    private async Task<bool> IsExcludedAsync(ulong guildId, ulong channelId, IChannel? resolved)
+    {
+        var parentId = (resolved as SocketThreadChannel)?.ParentChannel?.Id;
+        if (IsExcluded(channelId, parentId)) return true;
 
-    private static bool IsExcluded(ulong channelId, IChannel? resolved) =>
-        IsExcluded(channelId, (resolved as SocketThreadChannel)?.ParentChannel?.Id);
+        var config = await _config.GetAsync(guildId);
+        return IsExcluded(channelId, parentId, config.ExcludedChannels);
+    }
 
     // The actual decision, pure and free of gateway types so it can be checked without
     // a connection. A thread inherits its parent's exclusion — otherwise opening a
     // thread inside a spam channel would quietly be a way back in.
+    //
+    // Two overloads over one rule: the hardcoded set alone (the fast path above, and
+    // the only thing an unconfigured guild ever needs), and the hardcoded set plus
+    // whatever an admin configured.
     private static bool IsExcluded(ulong channelId, ulong? parentId) =>
-        ExcludedChannels.Contains(channelId)
-        || (parentId is { } parent && ExcludedChannels.Contains(parent));
+        IsExcluded(channelId, parentId, EmptyConfigured);
+
+    private static bool IsExcluded(ulong channelId, ulong? parentId, IReadOnlySet<ulong> configured) =>
+        IsListed(channelId, configured)
+        || (parentId is { } parent && IsListed(parent, configured));
+
+    private static bool IsListed(ulong channelId, IReadOnlySet<ulong> configured) =>
+        ExcludedChannels.Contains(channelId) || configured.Contains(channelId);
+
+    private static readonly IReadOnlySet<ulong> EmptyConfigured = new HashSet<ulong>();
 
     // Atomically checks one gate's per-(guild,user) cooldown and claims it.
     private bool TryClaim(Dictionary<(ulong, ulong), DateTimeOffset> gate, (ulong, ulong) key, TimeSpan cooldown)

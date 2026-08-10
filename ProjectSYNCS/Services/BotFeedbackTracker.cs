@@ -120,25 +120,41 @@ internal sealed class BotFeedbackTracker
 
         if (message.Author.IsBot) return;
 
-        var verdict = MessageCues.ReadFeedback(message.Content ?? string.Empty);
+        var verdict = MessageCues.ReadFeedback(message.Content ?? string.Empty, out var form);
         if (verdict == FeedbackKind.None) return;
 
         var repliedTo = message.ReferencedMessage;
-        bool toHer = repliedTo?.Author.Id == _client.CurrentUser.Id;
+
+        // Who the verdict names, by either route. A reply and an @mention are both ways
+        // of aiming at a specific bot, and reading only the reply is what let
+        // "good bot @AutreBot" land in her column whenever she happened to have acted
+        // most recently — she was never addressed at all.
+        var (toHer, toRival) = ReadTarget(
+            repliedToIsHer: repliedTo?.Author.Id == _client.CurrentUser.Id,
+            repliedToIsRival: repliedTo is not null
+                              && repliedTo.Author.IsBot
+                              && repliedTo.Author.Id != _client.CurrentUser.Id,
+            mentionsHer: message.MentionedUsers.Any(u => u.Id == _client.CurrentUser.Id),
+            mentionsRival: message.MentionedUsers.Any(_rivalry.IsRival));
 
         // Answering back at one of her own comebacks. Left alone entirely: counting
-        // it would let "bad bot" → snap → "bad bot" → snap run forever, and a reply
-        // to her is otherwise unambiguous and would always count.
-        if (toHer && IsNotJudgeable(repliedTo!.Id)) return;
-        bool toRival = repliedTo is not null
-                       && repliedTo.Author.IsBot
-                       && repliedTo.Author.Id != _client.CurrentUser.Id;
+        // it would let "bad bot" → snap → "bad bot" → snap run forever.
+        //
+        // Gated on the verdict actually being *hers*, not merely on what was replied to:
+        // now that a mention outranks the reply, "good bot @AutreBot" in answer to one of
+        // her comebacks belongs to the rival, and there is no loop to break — bailing
+        // there would silently swallow the rival's praise instead. `_notJudgeable` only
+        // ever holds ids of her own messages, so this can never match a rival's.
+        if (toHer && repliedTo is not null && IsNotJudgeable(repliedTo.Id)) return;
 
         // Aimed straight at another bot. Unambiguously not hers, whoever acted last —
-        // the mirror of a reply to her always being hers.
+        // the mirror of naming her always being hers. The replied-to message is the
+        // best guess at *which* rival message earned it; a bare mention names no
+        // message, so the jealousy path falls back to that rival's last action.
         if (toRival)
         {
-            if (verdict == FeedbackKind.Good) await _rivalry.OnPraiseStolenAsync(message, repliedTo!.Id);
+            if (verdict == FeedbackKind.Good)
+                await _rivalry.OnPraiseStolenAsync(message, repliedTo?.Id);
             return;
         }
 
@@ -155,7 +171,7 @@ internal sealed class BotFeedbackTracker
         if (claim != Claim.Granted) return;
 
         await RecordAsync(guildChannel.Guild.Id, message.Author.Id, verdict);
-        await RespondAsync(message, verdict);
+        await RespondAsync(message, verdict, form);
 
         // Deliberately last: her comeback must read as immediate, and a level-up line
         // (if any) is a separate follow-up that should never delay her acknowledgement
@@ -290,6 +306,38 @@ internal sealed class BotFeedbackTracker
         AlreadyJudged, // this person already passed verdict on this action
     }
 
+    /// <summary>
+    /// Who a verdict is aimed at, from the two ways a message can name a bot: replying
+    /// to one, or @mentioning one.
+    /// </summary>
+    /// <remarks>
+    /// <para>Pure and free of gateway types so the precedence can be checked without a
+    /// connection, the same split <c>RivalryService.IsRivalAuthor</c> and
+    /// <c>XpTracker.IsExcluded</c> use.</para>
+    /// <para><b>The most specific signal wins: mentions decide, and only if nobody was
+    /// mentioned does the reply target.</b> An @mention typed next to the verdict is a
+    /// deliberate "this one", whereas a reply is routinely used just to quote for
+    /// context — so replying to her while writing "good bot @AutreBot" is praise for the
+    /// rival, not for her. Within each tier naming her still wins, because once she has
+    /// been named explicitly there is no more specific signal left to break the tie:
+    /// "good bot @SYNCS @AutreBot" is hers.</para>
+    /// <para>Note Discord puts the replied-to user in the mention list when the reply
+    /// ping is on and leaves them out when it isn't. That is exactly why the tiers are
+    /// ordered this way rather than merged: with the ping on, replying to her already
+    /// mentions her, so the mention tier decides the same thing the reply would have —
+    /// and with it off, the reply tier still catches it. Same trap
+    /// <c>ShameTracker.CountTargets</c> documents.</para>
+    /// </remarks>
+    internal static (bool ToHer, bool ToRival) ReadTarget(
+        bool repliedToIsHer, bool repliedToIsRival, bool mentionsHer, bool mentionsRival)
+    {
+        // Tier one: somebody was mentioned outright.
+        if (mentionsHer || mentionsRival) return (mentionsHer, !mentionsHer && mentionsRival);
+
+        // Tier two: nobody was mentioned, so the reply is the only thing pointing at a bot.
+        return (repliedToIsHer, !repliedToIsHer && repliedToIsRival);
+    }
+
     private Claim TryClaim(ulong channelId, ulong userId, bool unambiguous)
     {
         // Read outside the lock: RivalryService has its own, and nesting the two
@@ -371,15 +419,26 @@ internal sealed class BotFeedbackTracker
         }
     }
 
-    private async Task RespondAsync(SocketUserMessage message, FeedbackKind verdict)
+    private async Task RespondAsync(SocketUserMessage message, FeedbackKind verdict, VerdictForm form)
     {
         bool byOwner = message.Author.Id == AvailabilityService.OwnerId;
 
         if (verdict == FeedbackKind.Good)
         {
             // Wordless on purpose: praise is worth acknowledging, not worth a
-            // paragraph. Her creator gets devotion rather than a generic heart.
-            var pool = byOwner ? BotResponses.OwnerReactions : BotResponses.NiceReactions;
+            // paragraph.
+            //
+            // **Who said it and how they said it are crossed, not ranked.** Testing
+            // byOwner first and returning meant the owner never reached the girl pools
+            // at all — and he is the person most likely to try that wording, so the
+            // feature looked dead to the one person testing it.
+            var pool = (byOwner, form) switch
+            {
+                (true, VerdictForm.Girl) => BotResponses.GoodGirlReactionsOwner,
+                (true, _) => BotResponses.OwnerReactions,
+                (false, VerdictForm.Girl) => BotResponses.GoodGirlReactions,
+                _ => BotResponses.NiceReactions,
+            };
             var emote = EmoteMarkup.Parse(_picker.Pick(message.Channel.Id, pool));
             if (emote is null) return;
 
@@ -400,7 +459,18 @@ internal sealed class BotFeedbackTracker
 
         // Being told off *is* worth answering. Everyone gets indignation; the one
         // person whose opinion she actually cares about gets to hurt her.
-        var lines = byOwner ? BotResponses.BadBotRepliesOwner : BotResponses.BadBotReplies;
+        //
+        // Crossed the same way as the praise pools above, and for the same reason.
+        // "Bad girl" never borrows BadBotReplies: those are wounded *professional*
+        // pride ("j'ai un uptime de 99,9%"), which lands wrong against a scolding aimed
+        // at her as a person rather than at her work.
+        var lines = (byOwner, form) switch
+        {
+            (true, VerdictForm.Girl) => BotResponses.BadGirlRepliesOwner,
+            (true, _) => BotResponses.BadBotRepliesOwner,
+            (false, VerdictForm.Girl) => BotResponses.BadGirlReplies,
+            _ => BotResponses.BadBotReplies,
+        };
         var name = BotResponses.DisplayNameFor(message.Author.Id,
             (message.Author as SocketGuildUser)?.Nickname ?? message.Author.GlobalName ?? message.Author.Username);
 

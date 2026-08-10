@@ -63,6 +63,12 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<GiveawayService>();
         services.AddTransient<ShameService>();
 
+        // Singleton despite reading the database, unlike every other service here that
+        // does: it caches per-guild config, which a transient would drop on every
+        // resolve. Takes IServiceProvider and scopes per unit of work, like the
+        // trackers. Registered before XpTracker, which holds it.
+        services.AddSingleton<GuildConfigService>();
+
         // Personality / chat behaviour collaborators (singletons: they hold
         // in-memory state like the breakdown cooldown).
         services.AddSingleton<BreakdownService>();
@@ -76,8 +82,7 @@ var host = Host.CreateDefaultBuilder(args)
         // Before BotFeedbackTracker, which calls into it after recording a verdict.
         services.AddSingleton<XpTracker>();
         services.AddSingleton<BotFeedbackTracker>();
-        // Independent of the trackers above: reads only the raw message and writes its
-        // own counters, so its registration order is not load-bearing.
+        // After XpTracker, which it asks whether a channel is excluded.
         services.AddSingleton<ShameTracker>();
 
         services.AddHostedService<BotService>();

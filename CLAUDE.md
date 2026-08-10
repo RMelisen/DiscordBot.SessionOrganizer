@@ -299,6 +299,60 @@ accent-stripped. Custom emotes that carry a mood are matched by **id**
 break them. `IsMistakenIdentity` is untouched by all of this — it is an identity
 check, not a mood, and stays a plain `bool`.
 
+**A verdict is cancelled by what sits just before it, or people game the tally.**
+`"bad good bot"` and `"not good bot"` both used to register as **praise**: the matcher
+tested whether the joined message *contained* the phrase, which throws away everything
+preceding it. `SaysVerdict` now scans by token index so it can see the two tokens
+before a match, and skips any occurrence preceded by a negator or by the opposite
+verdict's adjective. Three details are load-bearing:
+
+- **The window is two, not three.** Two covers the longest form worth catching
+  ("pas un bon bot"); three reaches far enough that in "good bot… non en fait bad bot"
+  the `non` of the *correction* cancelled the complaint and handed the message to the
+  earlier praise.
+- **A cancelled occurrence is skipped, not fatal** — the scan continues, so
+  "not good bot… ok fine, good bot" still lands on the second one. Rejecting the whole
+  message would be an easier trick than the one being closed.
+- **Cancelling yields `None`, never the opposite verdict.** "not good bot" plainly means
+  the complaint, but "pas un mauvais bot" plainly means the compliment, and inferring
+  either would have her snapping back at praise on a misread.
+
+`_goodBotAdjectives` / `_badBotAdjectives` are **derived** from the phrase lists rather
+than written out, so adding "excellent bot" teaches the canceller about `excellent` in
+the same edit — otherwise "bad excellent bot" would be a way straight back in.
+`_verdictNegators` is `_negators` plus the English ones, kept separate so the mood
+scoring — calibrated against thousands of assertions — is untouched.
+
+**A framed verdict is not a verdict.** `IsFramed` refuses the whole message when it
+carries reported speech ("il a dit good bot"), an explicit hypothetical ("imagine que…",
+"supposons", "théoriquement") or a self-reference ("cette phrase", "ce message", "this
+sentence") — which is what "cette phrase est fausse → t'es un bon bot" relies on. Note
+what this is **not**: it catches framings that say so out loud, and no list will ever
+catch a construction that never names itself. What actually bounds the damage is the
+attribution layer — one verdict per person per thing she did, whatever wording gets
+through. Whole-message here, unlike `SaysVerdict`'s adjacent-token canceller, because a
+framing clause colours everything after it.
+
+**"Good girl" is the same verdict with a different answer.** `ReadFeedback` has an
+overload reporting a `VerdictForm` alongside the `FeedbackKind`: the tally treats
+"good bot" and "good girl" identically — praise is praise — while `RespondAsync`
+branches on the form, so praise in that register draws `GoodGirlReactions` (uwu,
+witch_eheh, hearts, 🫦) instead of the generic `NiceReactions`. `VerdictForm` is a
+separate enum rather than two more `FeedbackKind` values precisely because the two axes
+are independent; folding them together would mean four states where two and two are
+meant. **"Bad girl" gets `BadGirlReplies`, not `BadBotReplies`** — the latter are
+wounded *professional* pride ("j'ai un uptime de 99,9%"), which lands wrong against a
+scolding aimed at her as a person.
+
+**Who said it and how they said it are crossed, not ranked — there are four pools per
+verdict, not two.** `RespondAsync` switches on `(byOwner, form)`, giving
+`GoodGirlReactionsOwner` / `OwnerReactions` / `GoodGirlReactions` / `NiceReactions` and
+the same shape for the bad side. It originally tested `byOwner` first and returned,
+which meant **the owner never reached the girl pools at all** — and he is both the
+person most likely to try that wording and the only one testing, so the feature looked
+completely dead while being perfectly wired underneath. The harness now asserts all four
+are distinct object references, because sharing one would undo the split silently.
+
 **A "good bot" / "bad bot" verdict short-circuits three services.**
 `MessageCues.ReadFeedback` is checked *separately* from `Analyze` — it is a verdict
 on her, not a mood — and `BotFeedbackTracker` owns the response. Both
@@ -458,6 +512,25 @@ own gate only after winning its own roll, so a losing roll never burns the other
 Both are deliberately **not** `ReactionService`'s cooldown: a third trigger population
 deserves its own gates rather than competing with her reactions to humans.
 
+**`RivalryService.IsRival` has two overloads, and the message-aware one is not
+optional.** Responding to an interaction is a webhook call under the hood, so Discord
+builds the author of *any* interaction reply — even a rival's own, and especially a
+deferred one, which always goes out through the followup webhook — as a webhook user.
+`IsRival(IUser)` cannot tell that apart from a genuine third-party webhook (GitHub,
+IFTTT, …), which carries the same `IsBot` flag Discord shows the same "BOT" tag for, so
+it stays conservative and excludes both. `IsRival(IUserMessage)` is the one that
+actually can: `IUserMessage.InteractionMetadata` is present only on a message created
+in response to an interaction, never on a real incoming webhook post. Before this
+existed, every rival that defers before replying was invisible to the whole
+service — no reaction, no mutter, and no "Le Perfide" credit for using its command —
+which is silent in exactly the way that reads as "the feature doesn't work" rather than
+as a bug, since nothing throws. Both overloads funnel through one pure, Discord-free
+`IsRivalAuthor(bool, bool, bool, bool)`, so the two definitions cannot drift apart and
+the decision is checkable without a gateway. Reach for the message-aware overload
+whenever a message is on hand; `IsRival(IUser)` is only for the mentioned-users case in
+`ShameTracker`, where no message exists to consult (a plain `@mention` resolves off the
+guild's member cache, never through webhook-wrapping, so it is not at risk).
+
 **Two exclusions in `RivalryService.IsRival` are load-bearing.** Webhooks are not
 rivals (they post relentlessly and belong to no one). And a **level-up announcement**
 is skipped while the rest of that bot's traffic stays fair game — not because those
@@ -480,12 +553,35 @@ apart. The level-67 easter egg sits above the pick and is unaffected by the mood
 **`TryClaim` reports *why* a verdict missed, not just that it did.** `Claim.RivalOwns`
 is the jealousy trigger, and it is separate from `NoAction` precisely because "nobody
 earned this" and "someone else earned this" call for different behaviour. Three rules
-compose there: anything `unambiguous` (a reply to her, a thumb on her chatter) is hers
-regardless of timing; a reply aimed at *another bot* is never hers regardless of
-timing, the exact mirror; everything else goes to the most recent actor. Only a
-**Good** verdict fires jealousy — someone calling a rival a bad bot is not a loss.
+compose there: anything `unambiguous` (a verdict naming her, or a thumb on her chatter)
+is hers regardless of timing; one naming *another bot* and not her is never hers
+regardless of timing, the exact mirror; everything else goes to the most recent actor.
+Only a **Good** verdict fires jealousy — someone calling a rival a bad bot is not a loss.
 `_rivalry.LastAction` is read *outside* `_gate`, since `RivalryService` holds a lock of
 its own and nesting the two in opposite orders would deadlock.
+
+**"Naming a bot" means a reply *or* an @mention, and reading only one of them is a
+bug that already shipped.** `BotFeedbackTracker.ReadTarget` decides who a verdict is
+aimed at from both routes. Reading only the reply meant "good bot @AutreBot" counted as
+a *bare* verdict, so it fell through to timing and landed in her column whenever she
+happened to have acted most recently — she was never addressed at all.
+
+**The two routes are tiers, not equals: mentions decide, and the reply only gets a say
+when nobody was mentioned.** An @mention typed beside the verdict is a deliberate
+"this one", whereas a reply is routinely just quoting for context — so replying to her
+while writing "good bot @AutreBot" is the rival's, not hers. Within a tier, naming her
+wins, because once she is named explicitly there is no more specific signal left to
+break the tie ("good bot @SYNCS @AutreBot" is hers). Discord puts the replied-to user in
+`MentionedUsers` only when the reply ping is on, which is precisely why the tiers are
+ordered rather than merged: with the ping on the mention tier reaches the same verdict
+the reply would have, and with it off the reply tier still catches it. Same trap
+`ShameTracker.CountTargets` documents.
+
+The `_notJudgeable` bail is gated on the verdict being **hers**, not on what was replied
+to: a verdict aimed at a rival cannot start the comeback loop that guard exists to
+break, and bailing there would swallow the rival's praise instead. `ReadTarget` is pure
+and gateway-free so the whole precedence is checkable without a connection, the same
+split as `RivalryService.IsRivalAuthor`.
 
 **`Helpers/BotChat` is the single send path for the bot's own chatter**, and
 `Helpers/EmoteMarkup.Parse` the single reaction parser. Both were private members of
@@ -497,6 +593,34 @@ Three send methods share that one pause: `ReplyWithTypingAsync` / `PostWithTypin
 for plain text, `PostEmbedWithTypingAsync` for an embed (the level-up card is its only
 caller so far). The embed one still takes the text, purely to size the pause — a card
 that appeared instantly would read as a different kind of message than her chatter.
+
+**Crude insults are in the pools now, reversing an earlier deliberate removal.**
+`connard`, `salope`, `enfoiré`, `ordure`, `pute`, `menteur` and the phrases `ta gueule`,
+`vos gueules`, `pauvre type`, `nique ta mere` were once stripped out by hand and pinned
+with a test asserting they stay silent, on the grounds that the recall cost was worth
+it. That trade was revisited once untargeted hostility started scoring on the wall of
+shame: they are the most common French insults, and missing them was the larger error.
+The harness now pins the *opposite* — they must fire — so this cannot drift back
+silently either way. Note this also finally makes true the comment above `_meanPhrases`
+claiming "`ta gueule` already catches the insult" that `ferme la` / `la ferme` were
+meant to cover: it said so while `ta gueule` was in no list at all.
+
+**Expand the mean side with *phrases* rather than bare words.** A phrase scores 1.2 and
+is nearly always person-directed; a bare word is what misfires on game content, and
+since a mean message aimed at nobody now scores a point, every bare cue added is also a
+false positive added. `con`, `cons`, `conne`, `lourd` and `lourde` are therefore **weak**
+— "c'est con" is a shrug and "c'est lourd" is a weight — and `putain` is in no pool at
+all, being punctuation rather than an insult. The same restraint applies to the nice
+side: `clean`, `efficace`, `malin` and `utile` are weak, since they describe a build or
+a route as often as they compliment anyone.
+
+**Short warm replies are nice; short agreements are not.** `avec plaisir`, `de rien`,
+`pas de souci`, `tant mieux`, `trop cool`, `bien dit`, `bonne idee`, `beau travail`,
+`bon courage` and `je valide` are `_nicePhrases`, because two or three words with no
+strong cue between them used to score nothing at all. `ça marche`, `ça roule`, `ça me
+va`, `tout à fait` and `c'est clair` are deliberately **not**: they answer "on se
+retrouve à 21h", and the harness has a standing rule that ordinary coordination stays
+silent. Both halves are pinned, so the line between warmth and agreement cannot drift.
 
 **Cue vocabulary is scoped to a *gaming* server, and that constrains it.** Words that
 compliment a person in general French name game content here, so `boss` and `monstre`
@@ -601,7 +725,24 @@ a `LastVoteDay` column on `ShameRecord`; that column is gone (`DropShameLastVote
 Don't reintroduce per-voter rationing without a reason that survives "they are all staff
 anyway".
 
-**`Le Malfaisant` is uncapped, and that was a deliberate call.** One hit per distinct
+**`Le Malfaisant` counts untargeted hostility too, and that half *is* rationed.** A mean
+message naming nobody scores a single point, gated at one per person per channel per
+60 s — the same shape as `Le Perfide` and `L'Hystérique`, and for the same reason: a rant
+is twenty foul messages in two minutes, and uncapped it would drown out everything the
+title ranks. The targeted half below stays uncapped, because there the exploit is one
+message rather than many. `CountTargets` returning 0 therefore means "nobody was named",
+**not** "ignore this message".
+
+**Know what this costs in precision.** Requiring a target was doing double duty: it also
+filtered out hostility aimed at *game content*, which on this server is most of it.
+Without it, "ce boss est nul", "la hitbox est nulle", "cette map est pourrie", "le lag est
+atroce" and "l'IA est stupide" all score a point — measured, not guessed. That is the
+accepted trade for catching "vous êtes tous nuls", and there is no cheap fix: the false
+positives come from *strong* cues (`nul`, `pourri`, `stupide`) applied to things rather
+than people, so raising the mood threshold would not separate them. The only real
+discriminator is whether a person was named, which is exactly what this drops.
+
+**`Le Malfaisant` is uncapped for targeted hostility, and that was a deliberate call.** One hit per distinct
 human a mean message targets — an explicit `@`, or the author of the message it replies
 to (Discord includes the replied-to user in the mention list only when the reply ping is
 on, so both have to be read and the set deduplicated). Roles and `@everyone` are never
@@ -611,6 +752,22 @@ on. Unlike every other counter here it has no cooldown and no per-message cap, s
 the one place where a single message can add an unbounded amount; if that ever needs
 rationing, cap the hits per message rather than adding a cooldown — the exploit is one
 message, not many.
+
+**`L'Hystérique` counts shouting, and its thresholds are stricter than the mood
+detector's on purpose.** `MessageCues.CapsProfile` measures how many letters a message
+has and what share are uppercase; `Emphasis` and `IsShouting` then apply *different*
+thresholds to that one measurement. Emphasis is loose (4 letters, >60%) because caps
+there only ever *adds* to a side that already scored on words, so a false positive costs
+nothing. `IsShouting` needs **12 letters and 70%** because it stands alone and puts
+someone on the wall: at 4 letters `LOL`, `OK`, `MDR` and `GG WP` all qualify, and at 60%
+a sentence merely emphasising a word or two does. Sharing the arithmetic but not the
+thresholds is the point — the two can never disagree about how much of a message is
+uppercase, only about how much is too much. Rationed like `Le Perfide` (one hit per
+person per channel per 60 s) for the same reason: an argument is ten shouted messages in
+two minutes. Deliberately **not** short-circuited by `ReadFeedback` the way hostility is:
+a verdict belongs to `BotFeedbackTracker` because that service answers it and keeps the
+tally, whereas nothing else records how a message was *delivered* — and a shout can be
+mean as well, which is two different things to be ashamed of.
 
 **`Le Perfide` is rationed where `Le Malfaisant` is not, and the asymmetry is the
 point.** Hostility is rare, so it scales; turning to another bot is mundane and bursty —
@@ -629,12 +786,13 @@ unavoidable — an **ephemeral** response produces no visible message, and an ol
 prefix command (`!play`) leaves nothing tying the reply back to a person.
 
 **"Rival" has two definitions and `ShameTracker` deliberately uses the looser one.**
-`RivalryService.IsRival(SocketUserMessage)` excludes level-up announcements, because
-`ChatterService` congratulates those and sulking at one would contradict the cheer.
-`IsRival(IUser)` is the identity half — any bot but her, webhooks excluded — and is what
-`ShameTracker` asks, so *replying* to a level-up announcement still counts as perfidy.
-That is intentional: she is jealous of the attention either way. The test lives in
-`RivalryService` rather than being rewritten, so the two can never drift.
+The private `RivalryService.IsRival(SocketUserMessage)` excludes level-up
+announcements, because `ChatterService` congratulates those and sulking at one would
+contradict the cheer. The public `IsRival(IUser)`/`IsRival(IUserMessage)` overloads —
+see above for why there are two — are the identity half with no such carve-out, and
+are what `ShameTracker` asks, so *replying* to a level-up announcement still counts as
+perfidy. That is intentional: she is jealous of the attention either way. The test
+lives in `RivalryService` rather than being rewritten, so the two can never drift.
 
 **`ShameTracker` is a separate service for `BotFeedbackTracker`'s reason.** It draws a
 conclusion nobody tells it and has to see *every* message to do it, so it cannot be a
@@ -650,12 +808,15 @@ is shared; `ExcludedChannels` itself must stay private to `XpTracker`.
 
 **`/shame` is Components V2, and only the title *holder* wears an avatar.** It became V2
 when the avatars did — an embed has one thumbnail slot for the whole message, and the
-wall needs one per title. The count is **21 of 40**: the container, four per title with a
-holder (Section + its TextDisplay + the avatar Thumbnail, plus one TextDisplay for the
-runners-up), three separators, the footer, and the filter row with its three buttons.
-**Giving all nine rows an avatar comes to 39** — it fits, and it would leave the command
-permanently unextendable to put a face on people who did not win the title, so the
-runners-up are deliberately plain text. Re-do that sum before adding anything. All the V2
+wall needs one per title. The count is **26 of 40**: container 1 + heading 1, four titles
+at 5 each (separator, Section, its TextDisplay, the avatar Thumbnail, and one TextDisplay
+for the runners-up), and the filter row with its three buttons. **That leaves room for
+exactly two more titles** — a seventh throws inside `ComponentBuilderV2.Build()`, which
+is a send-time exception rather than a compile error, so **re-do the sum before adding
+anything** and let the scratch harness confirm it rather than counting by hand: the
+comment here said 21 when the real figure was 23, and the `/leaderboard` equivalent once
+shipped at 42. Giving the runners-up avatars too would cost three components each and
+blow the budget immediately, which is why they are plain text. All the V2
 rules apply: no content and no embeds on the message, the flag re-asserted on every
 `UpdateAsync`, and `AllowedMentions.None` on every send, since a `TextDisplay` is real
 content and `<@id>` in one genuinely pings — the embed this replaced got inert mentions
@@ -664,11 +825,21 @@ the `shame:win` verb, because the day a second row is added the
 `COMPONENT_CUSTOM_ID_DUPLICATED` rejection is silent and instant. Its default window is
 **30 days**, unlike `/goodbot`'s all-time: both counters start at zero on ship day, and
 an all-time default would read as a hall of fame nobody can move. A title with nobody in
-it renders a line from `ShameEmptyMalfaisant` / `ShameEmptyBanni` /
-`ShameEmptyPerfide` rather than disappearing — a wall that changes shape between filters reads as broken — and there is
-no minimum count, so a window holding one vote shows it. Ties break on the earliest row
+it renders a line from `ShameEmptyMalfaisant` / `ShameEmptyBanni` / `ShameEmptyPerfide` /
+`ShameEmptyHysterique` rather than disappearing — a wall that changes shape between
+filters reads as broken — and there is
+no minimum count, so a window holding one vote shows it. Those pools are interpolated
+straight into the heading and never `string.Format`-ed, so a `{0}` in one would render
+literally. Ties break on the earliest row
 id, which matters only in that it is *stable*: two people level on count would otherwise
 swap places on every re-render.
+
+**The wall has no footer line, deliberately.** It used to carry
+`"Un vote par personne et par jour"`, which described a rationing rule that never
+shipped — the cap is **2 per target per day**, with no per-voter quota at all. It was
+removed rather than corrected: `/shame`'s own command description already says who may
+vote, and a footer restating a rule is one more place for it to go stale, which is
+exactly what happened.
 
 **Session lifecycle is idempotent.** `SessionEvent.RenderedPhase` records what was
 last drawn on the card, so the background loop only re-renders on an actual
@@ -705,6 +876,15 @@ that card celebrates something earned, and a manual grant is not. Both are ephem
 and both refuse bots — `XpTracker` skips bots everywhere else, so a hand-topped-up bot
 would be a leaderboard row nothing else can produce and a `/level` card the command
 refuses to render.
+
+**`/config` is a group module, and its two settings are subgroups.** `/config channels
+add|remove` and `/config moderator-role set|clear`, plus a flat `/config show` — three
+levels, which is Discord's maximum nesting. Deliberately not flat like `/shame`: that
+one is flat *only* because it had to stay invokable bare (a parent with subcommands
+cannot be), and nothing here needs that, since "show me the config" is naturally its own
+subcommand. Every handler is ephemeral and re-checks `SessionPermissions.IsStaff`; the
+`[DefaultMemberPermissions]` on the group is presentation only, exactly as on
+`XpAdminModule`.
 
 **There are three separate authorization models.** Session and poll management uses
 `Helpers/SessionPermissions.CanManage` — the organizer, or any guild
@@ -757,6 +937,29 @@ praise. The call sits *after*
 immediate, and a level-up announcement, if any, is a slightly-delayed follow-up that
 must never push the acknowledgement itself later.
 
+**Runtime configuration is additive to the code, never a replacement for it.**
+`GuildSettings` / `GuildExcludedChannel` hold what `/config` writes, and both hardcoded
+lists — `XpTracker.ExcludedChannels` and `ShameModule.ExtraVoters` — stay in force
+regardless. So an unconfigured guild behaves exactly as it did before the tables
+existed, and no config change can *remove* an exclusion or revoke a voting right; it
+can only add. `/config channels remove` therefore refuses a hardcoded channel outright
+rather than appearing to work, and `add` refuses one too instead of storing a second,
+redundant row that could later drift from the code. The moderator role likewise only
+widens who may vote — `ShameModule.CanVoteAsync` checks staff and `ExtraVoters` first,
+and only asks the database when both have already said no.
+
+**`GuildConfigService` is a singleton that reads the database, which every other such
+service here is not**, and the cache is why. It takes `IServiceProvider` and scopes per
+unit of work like the trackers, rather than injecting `AppDbContext` — same rule as
+always. The cache is load-bearing, not premature: `XpTracker`'s exclusion check runs on
+*every* message and must run before `TryClaim` (below), whereas today most messages
+never reach the database at all because the 60 s claim stops them first. An uncached
+read there would put an EF scope and a query on every message on a Raspberry Pi. It is
+cheap to keep correct because this service is the only writer in the only process: any
+write drops that guild's entry and the next read rebuilds it. A failed read degrades to
+`GuildConfig.Empty` and is *not* cached, so a transient fault cannot pin a guild as
+unconfigured for the process lifetime.
+
 **`XpTracker.ExcludedChannels` is checked before `TryClaim`, never after.** The spam
 channels earn nothing, and the order matters: claiming first would let a message there
 burn that person's 60 s message cooldown, so spamming in the excluded channel would
@@ -767,7 +970,10 @@ list lives in `XpTracker` alone, so `VoiceXpService` passes the id rather than k
 a second copy of the rule. The check also treats a **thread** as its parent, or opening
 a thread inside a spam channel would quietly be a way back in. The decision itself is
 split into a pure `(channelId, parentId?)` overload precisely so it can be exercised
-without a gateway connection.
+without a gateway connection. That pure core survived `/config`: it now takes the
+configured set as a third argument and the two-argument overload passes an empty one, so
+the hardcoded decision is still checkable with no I/O — and the hardcoded check still
+runs *first*, meaning an excluded spam channel never reaches the database at all.
 
 **`/level` and `/leaderboard` are Components V2, and that is all-or-nothing.** A message
 carrying `MessageFlags.ComponentsV2` may have **no `content` and no `embeds`** — the flag
@@ -879,7 +1085,7 @@ embed — avatar thumbnail, `Color.Purple` to match `/level`'s leaderboard, and 
 showing the **span crossed** (`Niveau {old} → {new} !`), not just the level landed on:
 one grant can cross more than one threshold, and it still announces exactly once. That
 is why `GrantAsync` forwards both levels rather than only the new one. At level **7 or
-67** the description is the fixed string `"SIX SEVEEEEN"` in place of an
+67** the description is the fixed string `"SIX SEVEEEN"` in place of an
 `XpLevelUpLines` pick — an easter egg, not a pool entry, so `ResponsePicker` is
 deliberately never consulted for it and it never burns one of that channel's exclusion
 slots on a line the pool doesn't contain. It is a literal level check (`is 7 or 67`),
@@ -972,6 +1178,19 @@ never touch `Context.Guild` and `/help` genuinely works in a DM. Note the older
 `[EnabledInDm(false)]` is obsolete in Discord.Net 3.20 and fails the build under
 `-warnaserror`.
 
+**`/help`'s embed has hard caps, and it silently died once from ignoring them.** A
+field value may be **1024** characters and the whole embed **6000** — counting title,
+description, every field *name and value*, and the footer. `EmbedBuilder.Build()`
+throws on either, at **send** time, with nothing in the logs naming the length: the
+command just stops responding. The "Commandes — Autres" field grew past 1024 and the
+embed past 6000 as commands were added, and `/help` was dead for six-plus commits
+before anyone noticed. This is why `HelpModule.BuildEmbed()` is a `static`, Context-free
+builder — it can be constructed and measured without a gateway, which is the only
+reason the caps are checkable at all. **Keep sections short and split one rather than
+letting it grow**; 11 of the 25 allowed fields are used, so there is room. Note
+`Embed.Length` is Discord.Net's own implementation of Discord's total, so measuring
+against it cannot drift from what the API enforces.
+
 **`/help` is hand-maintained.** `HelpModule` duplicates the feature list in prose,
 as does `README.md`; neither is generated. A new user-facing command means updating
 both — except the owner-only ones, which are deliberately absent from `/help`.
@@ -997,5 +1216,12 @@ and `config.yaml` a `PASTE_YOUR_TOKEN_HERE` one; real tokens go in user secrets
 `ChatterService` and again in `ReactionService`, both for what he says and for what
 he reacts to), the level-up bot id in `ChatterService`, the `hi_cat` emote id in
 `MessageCues` and `ReminderService`, `XpTracker.ExcludedChannels` (the spam channels
-that earn no XP), and the per-user `PersonalComebacks` / `RealNames` maps in
-`BotResponses` are literal snowflakes tied to one specific server.
+that earn no XP), `ShameModule.ExtraVoters`, and the per-user `PersonalComebacks` /
+`RealNames` maps in `BotResponses` are literal snowflakes tied to one specific server.
+
+Two of those are now *floors* rather than the whole story: `/config` can add excluded
+channels and grant `/shame` voting to a role, but neither command can edit these lists —
+see the runtime-configuration note above. The rest have no configuration surface at all.
+`AvailabilityService.OwnerId` was deliberately left out of `/config`: it gates `/tell`,
+`/dm`, `/absent` and the DM relay, so making it editable by any ManageGuild holder would
+let them hand themselves those powers, including impersonating the relay.

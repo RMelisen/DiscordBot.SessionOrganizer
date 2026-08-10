@@ -43,4 +43,9 @@ public class ShameRecord
     // MeanHits: talking to a music bot is mundane and bursty, and uncapped it would
     // just rank whoever queues the most songs.
     public long PerfidyHits { get; set; }
+
+    // Messages shouted in capitals. Rationed per channel like PerfidyHits, not
+    // uncapped like MeanHits: shouting arrives in bursts, and one bad evening would
+    // otherwise own the title permanently.
+    public long ShoutHits { get; set; }
 }

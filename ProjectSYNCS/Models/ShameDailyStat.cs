@@ -25,4 +25,7 @@ public class ShameDailyStat
     public long MeanHits { get; set; }
     public long BanVotes { get; set; }
     public long PerfidyHits { get; set; }
+
+    // Same counter as ShameRecord.ShoutHits, bucketed by day.
+    public long ShoutHits { get; set; }
 }

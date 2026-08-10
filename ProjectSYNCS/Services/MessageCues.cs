@@ -37,6 +37,21 @@ public enum FeedbackKind
     Bad,
 }
 
+/// <summary>Which wording carried a verdict.</summary>
+/// <remarks>
+/// Separate from <see cref="FeedbackKind"/> because the two are independent: the tally
+/// only cares that praise is praise, while the *answer* differs — "good bot" earns a
+/// generic nice reaction, "good girl" earns a decidedly different register. Keeping it
+/// out of FeedbackKind avoids four states where two and two are meant.
+/// </remarks>
+public enum VerdictForm
+{
+    /// <summary>"good bot" / "bad bot" and their French equivalents.</summary>
+    Bot,
+    /// <summary>"good girl" / "bad girl".</summary>
+    Girl,
+}
+
 // Lightweight intent detection over message text: is this a compliment, a
 // greeting, or an insult? Matching is done on tokenized, lowercased,
 // accent-stripped words so "Félicitations !" matches the cue "felicitations".
@@ -117,29 +132,30 @@ internal static class MessageCues
     // Cue words that flag a kind message.
     private static readonly string[] _niceCues =
     {
-        "adorable", "adorables", "adorbs", "adore", "adores", "aime", "amazing", "awesome",
         // No "boss" and no "monstre", despite both being compliments in French chat
         // ("t'es un monstre"). This server organises *gaming* sessions, where they
         // overwhelmingly mean the enemy — "il est fort ce boss" was reading as praise.
+        "adorable", "adorables", "adorbs", "adore", "adores", "aime", "amazing", "attentionne", "attentionnee", "awesome",
         "banger", "beau", "bebou", "belle", "best", "bg", "bienveillant", "bienveillante", "bisous", "bravissimo", "bravo", "brillant", "brillante",
-        "calin", "calins", "carre", "chaleureuse", "chaleureux", "champion", "championne", "chapeau", "chou", "choupi", "choupinou", "classe", "coeur", "content", "contente", "cool", "courage", "cracke", "crackee", "craquant", "craquante", "cute",
-        "dingue", "divin", "divine", "douce", "doue", "douee", "douees", "doues", "doux",
-        "epique", "excellent", "excellente", "exceptionnel", "exceptionnelle", "extraordinaire",
+        "calin", "calins", "carre", "chaleureuse", "chaleureux", "champion", "championne", "chapeau", "chou", "choupi", "choupinou", "classe", "clean", "coeur", "content", "contente", "cool", "courage", "cracke", "crackee", "craquant", "craquante", "cute",
+        "dingue", "divin", "divine", "douce", "doue", "douee", "douees", "doues", "doux", "drole", "droles",
+        "efficace", "epique", "excellent", "excellente", "exceptionnel", "exceptionnelle", "extraordinaire",
         "fantastique", "felicitation", "felicitations", "fier", "fiere", "formidable", "fort", "forte",
-        "genial", "geniale", "geniales", "geniaux", "genie", "gentil", "gentille", "gentilles", "gentils", "gg", "gj", "goat", "goated", "great",
+        "genereuse", "genereux", "genial", "geniale", "geniales", "geniaux", "genie", "gentil", "gentille", "gentilles", "gentils", "gg", "gj", "goat", "goated", "great",
         "heroine", "heros", "heureuse", "heureux",
         "iconique", "impec", "impeccable", "incroyable", "incroyables", "insane", "intelligent", "intelligente",
         "joli", "jolie",
         "kiff", "kiffe", "kiffer", "king",
         "legendaire", "legende", "love", "lovely",
-        "magnifique", "magnifiques", "meilleur", "meilleure", "meilleures", "meilleurs", "merci", "mercii", "merciii", "merveilleuse", "merveilleux", "mignon", "mignonne", "mignonnes", "mignons", "mrc", "mvp",
+        "magnifique", "magnifiques", "maligne", "malin", "marrant", "marrante", "marrants", "meilleur", "meilleure", "meilleures", "meilleurs", "merci", "mercii", "merciii", "merveilleuse", "merveilleux", "mignon", "mignonne", "mignonnes", "mignons", "mrc", "mvp",
         "nice", "nickel",
         "ouah", "ouf",
-        "parfait", "parfaite", "parfaites", "parfaits", "perle", "precieuse", "precieux", "pro", "propre",
+        "parfait", "parfaite", "parfaites", "parfaits", "pepite", "perle", "precieuse", "precieux", "pro", "propre",
         "queen",
-        "ravi", "ravie", "reine", "respect", "roi", "royal", "royale",
-        "sauveur", "sauveuse", "slay", "solide", "splendide", "style", "stylee", "sublime", "super", "superbe", "sympa",
+        "ravi", "ravie", "reine", "respect", "rigolo", "rigolote", "roi", "royal", "royale",
+        "sauveur", "sauveuse", "slay", "solide", "splendide", "style", "stylee", "sublime", "super", "superbe", "sympa", "sympas",
         "talentueuse", "talentueux", "thanks", "thx", "top", "tresor", "trognon", "tuerie", "ty",
+        "utile",
         "waw", "wonderful", "wow", "wp",
     };
 
@@ -184,23 +200,24 @@ internal static class MessageCues
     {
         "abruti", "abrutie", "abruties", "abrutis", "affligeant", "affligeante", "affreuse", "affreux", "agacant", "agacante", "agacants", "arrogant", "arrogante", "atroce", "atroces",
         "barbant", "barbante", "batard", "batarde", "batards", "beauf", "bete", "betes", "betise", "betises", "bidon", "blaireau", "blaireaux", "blase", "boiteuse", "boiteux", "boloss", "bouffon", "bouffonne", "bouffons", "boulet", "boulette",
-        "casse", "cassos", "cheh", "chelou", "chiant", "chiante", "chiantes", "chiants", "claque", "claquee", "clown", "clowns", "consternant", "consternante", "cretin", "cretine", "cretines", "cretins", "cringe",
+        "casse", "cassos", "cheh", "chelou", "chiant", "chiante", "chiantes", "chiants", "claque", "claquee", "clown", "clowns", "consternant", "consternante", "cretin", "cretine", "cretines", "cretins", "crevard", "crevards", "cringe",
         "debile", "debiles", "decevant", "decevante", "degage", "degueu", "degueulasse", "deplorable", "deplorables", "detestable", "deteste",
-        "eclate", "eclatee", "ennuyeuse", "ennuyeux", "execrable",
+        "eclate", "eclatee", "enfoire", "enfoiree", "enfoires", "ennuyeuse", "ennuyeux", "execrable",
         "fade", "ferme", "foireuse", "foireux",
         "gogol", "gonflant", "gonflante", "grotesque", "grotesques", "gueguerre", "guignol", "guignols",
-        "hais", "horrible", "horribles",
+        "hais", "horrible", "horribles", "hypocrite", "hypocrites",
         "idiot", "idiote", "idiotes", "idiots", "imbecile", "imbeciles", "immonde", "immondes", "incompetent", "incompetente", "insipide", "insolent", "insolente", "insupportable", "insupportables", "inutile", "inutiles",
-        "laid", "laide", "laides", "laids", "lamentable", "lamentables", "loser", "loupe", "loupee",
-        "manchot", "manchote", "mauvais", "mauvaise", "mediocre", "mediocres", "merde", "merdique", "merdiques", "minable", "minables", "moche", "moches",
+        "laid", "laide", "laides", "laids", "lamentable", "lamentables", "loser", "loupe", "loupee", "lourd", "lourde",
+        "manchot", "manchote", "mauvais", "mauvaise", "mediocre", "mediocres", "menteur", "menteurs", "menteuse", "menteuses", "merde", "merdique", "merdiques", "minable", "minables", "moche", "moches",
         "navrant", "navrante", "nawak", "naze", "nazes", "noob", "noobs", "nul", "nullard", "nullarde", "nulle", "nulles", "nullissime", "nullos", "nuls",
-        "pathetique", "pathetiques", "penible", "penibles", "pitoyable", "pitoyables", "pouilleuse", "pouilleux", "pourri", "pourrie", "pourries", "pourris", "pretentieuse", "pretentieux",
+        "ordure", "ordures",
+        "pathetique", "pathetiques", "penible", "penibles", "pitoyable", "pitoyables", "pouilleuse", "pouilleux", "pourri", "pourrie", "pourries", "pourris", "pourriture", "pourritures", "pretentieuse", "pretentieux",
         "quoka", "quokka",
         "raclure", "rate", "ratee", "ratees", "rates", "relou", "reloue", "relous", "ridicule", "ridicules", "risible", "risibles",
         "salaud", "saoulant", "saoulante", "saoule", "saoules", "soulant", "soulante", "soule", "soulent", "soules", "stupide", "stupides",
         "tais", "teube", "tocard", "tocarde", "toxique", "toxiques", "trash",
         "useless",
-        "vilain", "vilaine",
+        "vantard", "vantarde", "vilain", "vilaine",
         "zero", "zinzin",
     };
 
@@ -246,6 +263,17 @@ internal static class MessageCues
         "solide", "style", "stylee", "super",
         "top",
         "waw", "wow",
+
+        // Added with the vocabulary expansion. "c'est lourd" is a weight, and "clean",
+        // "efficace", "malin" and "utile" describe a build or a route as often as they
+        // compliment a person.
+        //
+        // The "con" family is deliberately absent from both this set and _meanCues:
+        // listing it here alone weakened nothing, since a weak cue only lowers the
+        // weight of a cue that exists. Re-adding it means adding it to _meanCues in the
+        // same edit — the harness fails otherwise, which is how the dead entries were
+        // found.
+        "lourd", "lourde", "clean", "efficace", "malin", "maligne", "utile",
     };
 
     // Multi-word cues, written as normalised tokens joined by single spaces —
@@ -264,18 +292,25 @@ internal static class MessageCues
         "casse toi", "claque au sol",
         "n importe quoi",
         "on s en fout",
+        "pauvre type",
         "rien a foutre",
-        "sers a rien",
+        "sale type", "sers a rien",
+        "tu fais pitie", "tu me gonfles", "tu me soules",
         "va chier", "va crever", "va t faire", "va te faire",
     };
 
     private static readonly string[] _nicePhrases =
     {
-        "bien joue", "bien ouej", "bien vise", "bien vu",
+        "avec plaisir",
+        "beau travail", "bien dit", "bien joue", "bien ouej", "bien vise", "bien vu", "bon courage", "bonne idee",
         "courage a toi",
+        "de rien",
         "force a toi",
+        "je valide",
         "lache pas",
-        "tiens bon", "trop bien", "trop fort", "tu gere", "tu geres",
+        "pas de souci",
+        "sans souci",
+        "tant mieux", "tiens bon", "trop bien", "trop cool", "trop fort", "tu gere", "tu geres",
     };
 
     // Verdicts on the bot herself. The "good bot" meme is English even in French
@@ -296,6 +331,67 @@ internal static class MessageCues
     // because it only compares whole-token runs.
     private static readonly HashSet<string> _goodBotWords = new() { "goodbot" };
     private static readonly HashSet<string> _badBotWords = new() { "badbot" };
+
+    // The same two verdicts in a different register. Counted identically on the
+    // /goodbot tally — praise is praise — but answered differently, which is why the
+    // *form* comes back alongside the kind. See VerdictForm.
+    private static readonly string[] _goodGirlPhrases = { "good girl", "bonne fille", "gentille fille" };
+    private static readonly string[] _badGirlPhrases = { "bad girl", "mauvaise fille", "vilaine fille" };
+
+    private static readonly HashSet<string> _goodGirlWords = new() { "goodgirl" };
+    private static readonly HashSet<string> _badGirlWords = new() { "badgirl" };
+
+    // Markers that a verdict is being *talked about* rather than handed out: reported
+    // speech, an explicit hypothetical, or a sentence referring to itself.
+    //
+    // **This catches stated framings, not reasoning.** "cette phrase est fausse ->
+    // t'es un bon bot" is caught because it says so out loud; a genuinely clever
+    // construction that never names itself is not detectable here and never will be.
+    // What bounds the damage is the attribution layer, not this list: one verdict per
+    // person per thing she did, whatever wording gets through.
+    private static readonly string[] _verdictFramingPhrases =
+    {
+        "a dit", "as dit", "aurait dit", "avez dit", "ont dit",
+        "c est faux", "ce message", "cette affirmation", "cette phrase",
+        "est fausse", "est faux", "la phrase", "this sentence",
+    };
+
+    private static readonly HashSet<string> _verdictFramingWords = new()
+    {
+        "admettons", "hypothese", "hypothetiquement", "imagine", "imaginons",
+        "paradoxe", "suppose", "supposons", "theoriquement",
+    };
+
+    // The adjective each verdict is built on, derived from the phrase lists above
+    // rather than written out again — adding "excellent bot" to the phrases has to
+    // teach the canceller about "excellent" at the same moment, or "bad excellent bot"
+    // becomes a way back in. Every phrase here is "<adjective> bot", which is what
+    // makes taking the first token safe.
+    //
+    // Declared *after* the phrase arrays on purpose: static initialisers run in
+    // declaration order, and reading them earlier would see empty arrays.
+    private static readonly HashSet<string> _goodBotAdjectives =
+        _goodBotPhrases.Concat(_goodGirlPhrases).Select(p => p.Split(' ')[0]).ToHashSet();
+
+    private static readonly HashSet<string> _badBotAdjectives =
+        _badBotPhrases.Concat(_badGirlPhrases).Select(p => p.Split(' ')[0]).ToHashSet();
+
+    // Negators for the *verdict* path only. `_negators` is French because that is the
+    // language the mood cues are written in; a verdict is half English already ("good
+    // bot" is the meme), so "not good bot" has to cancel exactly as "pas" does. Kept
+    // separate rather than added to `_negators` so the mood scoring — which is
+    // calibrated against thousands of assertions — is left completely alone.
+    private static readonly HashSet<string> _verdictNegators =
+        _negators.Concat(new[] { "not", "no", "never", "aint", "isnt", "arent", "dont", "doesnt", "nope" })
+                 .ToHashSet();
+
+    // How far back a canceller reaches. **Two, not three.** Two is enough for the
+    // longest form worth catching — "pas un bon bot", where the negator sits two before
+    // the phrase — while three reaches far enough to swallow a genuine verdict: in
+    // "good bot... non en fait bad bot" the "non" belongs to the correction, not to the
+    // complaint that follows it, and a three-token window cancelled the bad verdict and
+    // handed the message to the earlier praise.
+    private const int VerdictCancelWindow = 2;
 
     // Threats to switch her off, unplug her, or wipe her. Not an insult and not a
     // verdict — a threat to her *existence*, which she reacts to far more strongly
@@ -498,18 +594,60 @@ internal static class MessageCues
     private static double ScoreEmoteIds(string content, string[] ids, double weight) =>
         Math.Min(ids.Count(content.Contains), 2) * weight;
 
+    /// <summary>
+    /// How many letters the message has, and what share of them are uppercase.
+    /// </summary>
+    /// <remarks>
+    /// One measurement, two policies. <see cref="Emphasis"/> uses a loose threshold
+    /// because caps there only ever *adds* to a side that already scored on words —
+    /// a false positive costs nothing. <see cref="IsShouting"/> uses a much stricter
+    /// one because it stands alone and puts someone on the wall of shame. Sharing the
+    /// arithmetic and not the thresholds is deliberate: the two can never disagree
+    /// about how much of a message is uppercase, only about how much is too much.
+    /// </remarks>
+    public static (int Letters, double UpperRatio) CapsProfile(string content)
+    {
+        if (string.IsNullOrEmpty(content)) return (0, 0);
+
+        var letters = content.Count(char.IsLetter);
+        if (letters == 0) return (0, 0);
+
+        return (letters, content.Count(char.IsUpper) / (double)letters);
+    }
+
+    // Long enough to be a sentence rather than a word. "LOL", "OK", "MDRRR" and "GG WP"
+    // are all-caps and none of them is hysteria — they are how people write those words.
+    // Roughly two or three words of French.
+    private const int ShoutMinLetters = 12;
+
+    // Stricter than Emphasis's 0.6: at 0.6 a sentence that merely EMPHASISES a word or
+    // two would qualify, and emphasis is not shouting.
+    private const double ShoutRatio = 0.7;
+
+    /// <summary>
+    /// Whether the message is shouted — long enough to be a sentence, and almost all of
+    /// it in capitals. Feeds "L'Hystérique" on the wall of shame.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately not <see cref="Analyze"/>'s business: shouting is a *delivery*, not
+    /// a mood, and an angry shout and a delighted one are both shouts. Callers ration it
+    /// themselves — see ShameTracker, where it needs the same per-channel cooldown
+    /// "Le Perfide" has, because shouting arrives in bursts.
+    /// </remarks>
+    public static bool IsShouting(string content)
+    {
+        var (letters, ratio) = CapsProfile(content);
+        return letters >= ShoutMinLetters && ratio >= ShoutRatio;
+    }
+
     // How emphatic the message is, regardless of what it says: shouting, drawn-out
     // letters, exclamation marks. Only ever added to a side that already scored.
     private static double Emphasis(string content)
     {
         double bonus = 0;
 
-        var letters = content.Count(char.IsLetter);
-        if (letters >= 4)
-        {
-            var upper = content.Count(char.IsUpper);
-            if (upper / (double)letters > 0.6) bonus += CapsBonus;
-        }
+        var (letters, upperRatio) = CapsProfile(content);
+        if (letters >= 4 && upperRatio > 0.6) bonus += CapsBonus;
 
         if (HasElongation(content)) bonus += ElongationBonus;
 
@@ -567,22 +705,119 @@ internal static class MessageCues
     /// that carries a verdict is answered as feedback, not as a mood, so the two
     /// never both fire on the same message.
     /// </summary>
-    public static FeedbackKind ReadFeedback(string content)
+    public static FeedbackKind ReadFeedback(string content) => ReadFeedback(content, out _);
+
+    /// <summary>
+    /// The same verdict, also reporting which wording carried it — "good bot" and
+    /// "good girl" count identically on the tally but are answered differently.
+    /// </summary>
+    public static FeedbackKind ReadFeedback(string content, out VerdictForm form)
     {
+        form = VerdictForm.Bot;
         if (string.IsNullOrWhiteSpace(content)) return FeedbackKind.None;
 
         var tokens = TokenizeOrdered(content).Select(Shorten).ToList();
         if (tokens.Count == 0) return FeedbackKind.None;
 
-        var joined = " " + string.Join(' ', tokens) + " ";
-        var squashed = " " + string.Join(' ', tokens.Select(Squash)) + " ";
+        // A verdict being quoted, supposed or referred to is not a verdict being given.
+        // Whole-message, unlike the adjacent-token canceller in SaysVerdict: a framing
+        // clause colours everything after it, which is the entire trick in
+        // "cette phrase est fausse -> t'es un bon bot".
+        if (IsFramed(tokens)) return FeedbackKind.None;
 
         // Bad wins a tie, the same way Mean does: someone who says both has
-        // landed on a complaint.
-        if (SaysVerdict(tokens, joined, squashed, _badBotPhrases, _badBotWords)) return FeedbackKind.Bad;
-        if (SaysVerdict(tokens, joined, squashed, _goodBotPhrases, _goodBotWords)) return FeedbackKind.Good;
+        // landed on a complaint. Within each kind the girl form is checked first, so
+        // the more specific wording decides how she answers.
+        if (SaysVerdict(tokens, _badGirlPhrases, _badGirlWords, _goodBotAdjectives))
+        {
+            form = VerdictForm.Girl;
+            return FeedbackKind.Bad;
+        }
+        if (SaysVerdict(tokens, _badBotPhrases, _badBotWords, _goodBotAdjectives)) return FeedbackKind.Bad;
+
+        if (SaysVerdict(tokens, _goodGirlPhrases, _goodGirlWords, _badBotAdjectives))
+        {
+            form = VerdictForm.Girl;
+            return FeedbackKind.Good;
+        }
+        if (SaysVerdict(tokens, _goodBotPhrases, _goodBotWords, _badBotAdjectives)) return FeedbackKind.Good;
 
         return FeedbackKind.None;
+    }
+
+    // Whether the message frames a verdict rather than delivering one.
+    private static bool IsFramed(List<string> tokens)
+    {
+        if (tokens.Any(t => _verdictFramingWords.Contains(t) || _verdictFramingWords.Contains(Squash(t))))
+            return true;
+
+        for (var i = 0; i < tokens.Count; i++)
+            if (_verdictFramingPhrases.Any(p => PhraseStartsAt(tokens, i, p)))
+                return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// Whether the message passes this verdict, ignoring any occurrence that is negated
+    /// or contradicted by what sits just before it.
+    /// </summary>
+    /// <remarks>
+    /// <para>Scans by token index rather than by substring, because the whole point is
+    /// to see the words *preceding* the match — which a "does the joined string contain
+    /// this phrase" test throws away. That is how "bad good bot" and "not good bot" both
+    /// used to register as praise.</para>
+    /// <para>A cancelled occurrence is skipped, not fatal: the scan keeps going, so
+    /// "not good bot... ok fine, good bot" still lands on the second one. Refusing the
+    /// whole message would hand people an easier trick than the one being closed.</para>
+    /// <para>Cancelling yields <see cref="FeedbackKind.None"/> rather than flipping to
+    /// the opposite verdict. "not good bot" plainly means the complaint, but "pas un
+    /// mauvais bot" plainly means the compliment, and inferring either would have her
+    /// snapping back at praise on a misread. Not counting an ambiguous verdict matches
+    /// how the rest of this system treats ambiguity.</para>
+    /// </remarks>
+    private static bool SaysVerdict(
+        List<string> tokens, string[] phrases, HashSet<string> words, HashSet<string> opposite)
+    {
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            var hit = words.Contains(tokens[i]) || words.Contains(Squash(tokens[i]))
+                      || phrases.Any(p => PhraseStartsAt(tokens, i, p));
+
+            if (hit && !IsCancelled(tokens, i, opposite)) return true;
+        }
+
+        return false;
+    }
+
+    // Whether <paramref name="phrase"/>'s tokens run consecutively from index i.
+    // Compared squashed as well as written, so "gooood bot" still lands on "good bot"
+    // exactly as the substring matcher did.
+    private static bool PhraseStartsAt(List<string> tokens, int i, string phrase)
+    {
+        var parts = phrase.Split(' ');
+        if (i + parts.Length > tokens.Count) return false;
+
+        for (var k = 0; k < parts.Length; k++)
+            if (tokens[i + k] != parts[k] && Squash(tokens[i + k]) != Squash(parts[k]))
+                return false;
+
+        return true;
+    }
+
+    // A negator, or the opposite verdict's adjective, within the few tokens before the
+    // match: "pas un bon bot", "bad good bot". Both mean the verdict as written is not
+    // the verdict intended.
+    private static bool IsCancelled(List<string> tokens, int start, HashSet<string> opposite)
+    {
+        for (var i = Math.Max(0, start - VerdictCancelWindow); i < start; i++)
+        {
+            var token = tokens[i];
+            if (_verdictNegators.Contains(token) || _verdictNegators.Contains(Squash(token))) return true;
+            if (opposite.Contains(token) || opposite.Contains(Squash(token))) return true;
+        }
+
+        return false;
     }
 
     /// <summary>

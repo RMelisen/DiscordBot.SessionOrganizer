@@ -108,4 +108,10 @@ public static class Emotes
 
     public const string MeltCryId = "1508937311310839928";
     public const string MeltCry = $"<:melt_cry:{MeltCryId}>";
+
+    public const string WitchEhehId = "1534820938112176282";
+    public const string WitchEheh = $"<:witch_eheh:{WitchEhehId}>";
+
+
+    
 }

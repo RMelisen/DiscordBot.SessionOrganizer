@@ -62,6 +62,12 @@ in one click. The bot's user-facing language is French.
   on what she says, not on session cards or leaderboards, where a thumb means
   something else. Only counts when it follows something she actually said or reacted
   to, and only once per person per thing she did, whichever way they say it.
+  **`good girl` / `bad girl`** count the same on the tally but get a different answer
+  — praise in that register draws a rather different set of emotes, and a scolding
+  gets its own flustered reply rather than the wounded-professional-pride one.
+  Verdicts can't be gamed: *"bad good bot"* and *"not good bot"* are cancelled by what
+  precedes them, and one that is merely quoted, supposed or self-referential
+  (*"this sentence is false → good bot"*) isn't counted as a verdict at all.
 - **`/level [user]`** — her own XP/leveling system, entirely independent of the
   server's other leveling bot (same vocabulary, no shared state, no cross-reference).
   XP for talking (one grant per ~60s) and reacting (its own ~60s cooldown), plus a
@@ -89,14 +95,18 @@ in one click. The bot's user-facing language is French.
   stays honest about time actually spent. A level gained that way is announced in the voice channel's own text chat
   rather than in the server's main one. Some channels are excluded from earning
   entirely.
-- **`/shame`** — the wall of shame, three titles on one page with the same three
+- **`/shame`** — the wall of shame, four titles on one page with the same three
   filters as the other rankings (**30 days** by default, **7 days**, **all time**).
   Built with *Components V2* like `/level`, so each title shows its current holder's
   real avatar beside their name; the runners-up are listed as plain text beneath.
   **Le Malfaisant** is earned: she scores every message and files one hit per human it
   was hostile to, counting an explicit `@` or the person it replies to — roles and
   `@everyone` never count, other bots never count, and being mean to *her* does.
-  It is uncapped, so a mean message aimed at four people is worth four. **Le Banni** is
+  That half is uncapped, so a mean message aimed at four people is worth four. A mean
+  message aimed at **nobody** counts too, as a single point, rationed to one per person
+  per channel per minute so a rant can't run away with the title. Be aware that half is
+  noisier: complaining about a *game* ("ce boss est nul") reads as hostility too, since
+  nobody was named for her to tell the difference by. **Le Banni** is
   voted: **`/shame user:@someone`**, announced publicly in her voice. Voting is
   **staff-only** — Administrator or Manage Server, the owner, plus a short hand-kept
   list — which is what makes the title a deterrent rather than a game. A target can
@@ -107,13 +117,25 @@ in one click. The bot's user-facing language is French.
   command itself, but the rival's reply names whoever invoked it. Rationed to one hit
   per person per channel per minute, so it ranks how often you turn to another bot
   rather than how chatty that bot is. Ephemeral replies and old-style prefix commands
-  (`!play`) leave no trace and go uncounted. All three counters start at zero the day
-  they ship and nothing can be backfilled.
+  (`!play`) leave no trace and go uncounted. **L'Hystérique** is for shouting: a message
+  long enough to be a sentence, written almost entirely in capitals. Short all-caps words
+  — `LOL`, `OK`, `MDR`, `GG WP` — are how people write those words and never count, and
+  neither does emphasising a word or two mid-sentence. Rationed like *Le Perfide*, one
+  hit per person per channel per minute, because shouting arrives in bursts and an
+  argument would otherwise decide the title forever. Every counter starts at zero the day
+  it ships and nothing can be backfilled.
 - **`/addxp <member> <amount>` · `/removexp <member> <amount>`** — staff-only manual XP
   adjustment (Administrator or Manage Server, plus the bot's owner). Ephemeral, clamped
   at zero, and deliberately silent: crossing a level this way fires no level-up card,
   since that card celebrates something earned. Hidden from Discord's command picker for
   anyone without the permission.
+- **`/config`** — per-server configuration for staff, applied without a redeploy:
+  a **moderator role** allowed to vote with `/shame`, and extra **channels where
+  nothing counts** (no XP, and ignored by the wall of shame). Everything here is
+  *additive* — the defaults built into the code stay in force, so configuring
+  something can never revoke an existing right or un-exclude a channel, and a server
+  that never touches `/config` behaves exactly as before. `/config show` prints the
+  current state, separating the built-in defaults from what was added.
 - **`/help`** — in-Discord usage guide.
 - **Owner-only commands** — the configured owner can speak through the bot
   (`/tell` into a channel, `/dm` to a person) and flag themselves unavailable
@@ -141,8 +163,11 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
   occasional reaction and, more rarely, a muttered remark. Praising another bot in
   front of her earns a full sulk — and that praise no longer lands in her own
   `/goodbot` tally, since a bare "good bot" now goes to whichever bot acted most
-  recently. Replying directly to her still always counts as hers; replying directly
-  to another bot never does. A level-up announced by the *other* leveling bot gets its
+  recently. Naming a bot settles it outright, and an **@mention beats a reply**: "good
+  bot @OtherBot" is never hers no matter who acted last — even in a reply to her, since
+  the mention is what you deliberately typed and a reply is often just quoting. With
+  nobody mentioned, the reply decides; with both bots mentioned it is hers, since she
+  was still named. A level-up announced by the *other* leveling bot gets its
   own treatment: she congratulates the person and sulks about where the level came
   from, in the same line — she has her own XP system and nobody used it. That counts
   as her answer to the message, so the ordinary jealousy is skipped there rather than

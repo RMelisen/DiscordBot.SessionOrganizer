@@ -37,6 +37,17 @@ internal sealed class ShameTracker
     // often someone *turns to* another bot rather than how chatty that bot's UX is.
     private static readonly TimeSpan PerfidyCooldown = TimeSpan.FromSeconds(60);
 
+    // Shouting is rationed for the same reason and on the same terms: it arrives in
+    // bursts — an argument is ten shouted messages in two minutes — and uncapped the
+    // title would belong permanently to whoever had one bad evening and stop moving.
+    // Its own gate, not Perfidy's: they are different acts, and sharing one would let
+    // a shout mute a perfidy hit for the whole window.
+    private static readonly TimeSpan ShoutCooldown = TimeSpan.FromSeconds(60);
+
+    // Applies only to hostility aimed at *nobody* — see TrackMeanAsync for why the
+    // targeted case stays uncapped while this one cannot be.
+    private static readonly TimeSpan MeanCooldown = TimeSpan.FromSeconds(60);
+
     // Entries older than this are dropped, so the gate cannot grow one key per person
     // per channel forever. Well past the cooldown, so forgetting one is never an early
     // grant. Same shape as XpTracker's and RivalryService's.
@@ -44,20 +55,27 @@ internal sealed class ShameTracker
 
     private readonly DiscordSocketClient _client;
     private readonly RivalryService _rivalry;
+    // Asked rather than copied, so the excluded-channel list — hardcoded and
+    // configured alike — stays defined in exactly one class.
+    private readonly XpTracker _xp;
     private readonly IServiceProvider _services;
     private readonly ILogger<ShameTracker> _logger;
 
     private readonly object _gate = new();
     private readonly Dictionary<(ulong ChannelId, ulong UserId), DateTimeOffset> _lastPerfidy = new();
+    private readonly Dictionary<(ulong ChannelId, ulong UserId), DateTimeOffset> _lastShout = new();
+    private readonly Dictionary<(ulong ChannelId, ulong UserId), DateTimeOffset> _lastMean = new();
 
     public ShameTracker(
         DiscordSocketClient client,
         RivalryService rivalry,
+        XpTracker xp,
         IServiceProvider services,
         ILogger<ShameTracker> logger)
     {
         _client = client;
         _rivalry = rivalry;
+        _xp = xp;
         _services = services;
         _logger = logger;
     }
@@ -67,12 +85,14 @@ internal sealed class ShameTracker
         if (rawMessage is not SocketUserMessage message) return;
         if (message.Channel is not SocketGuildChannel guildChannel) return;
 
+        var guildId = guildChannel.Guild.Id;
+
         // The spam channels count for nothing here either. People are hostile there as
         // a bit and try every bot going, and a wall that ranks the joke channel is a
-        // wall of noise. Asked of XpTracker so the list of ids stays in one class.
-        if (XpTracker.IsChannelExcluded(guildChannel)) return;
-
-        var guildId = guildChannel.Guild.Id;
+        // wall of noise. Asked of XpTracker so the list of ids stays in one class —
+        // which now means the channels an admin configured are honoured here too,
+        // without this service knowing they exist.
+        if (await _xp.IsChannelExcludedAsync(guildId, guildChannel)) return;
 
         // A rival's own message is only interesting for one thing: whether a human
         // summoned it with a slash command. Nothing else about it is anyone's shame.
@@ -84,6 +104,32 @@ internal sealed class ShameTracker
 
         await TrackPerfidyAsync(message, guildId);
         await TrackMeanAsync(message, guildId);
+        await TrackShoutingAsync(message, guildId);
+    }
+
+    // Shouting: a message long enough to be a sentence, written almost entirely in
+    // capitals. Independent of the two above — a shout can also be mean, and both
+    // should count, because they are two different things to be ashamed of. It is
+    // deliberately *not* short-circuited by MessageCues.ReadFeedback the way hostility
+    // is: a verdict belongs to BotFeedbackTracker because that service answers it and
+    // keeps the tally, whereas nothing else records how a message was delivered.
+    private async Task TrackShoutingAsync(SocketUserMessage message, ulong guildId)
+    {
+        if (!MessageCues.IsShouting(message.Content ?? string.Empty)) return;
+        if (!TryClaim(_lastShout, message.Channel.Id, message.Author.Id, ShoutCooldown)) return;
+
+        try
+        {
+            await using var scope = _services.CreateAsyncScope();
+            var shame = scope.ServiceProvider.GetRequiredService<ShameService>();
+            await shame.AddShoutHitAsync(guildId, message.Author.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "Failed to record shouting for user {UserId} in guild {GuildId}.",
+                message.Author.Id, guildId);
+        }
     }
 
     /// <summary>
@@ -100,7 +146,11 @@ internal sealed class ShameTracker
     /// </remarks>
     private async Task TrackCommandUseAsync(SocketUserMessage message, ulong guildId)
     {
-        if (!_rivalry.IsRival(message.Author)) return;
+        // The message-aware overload, not IsRival(IUser): a slash-command reply is a
+        // webhook call under the hood, so a rival that defers before replying would
+        // otherwise never pass the identity check at all — see RivalryService.IsRival's
+        // remarks.
+        if (!_rivalry.IsRival(message)) return;
 
         if (message.InteractionMetadata is not { } metadata) return;
         if (metadata.Type != InteractionType.ApplicationCommand) return;
@@ -116,8 +166,14 @@ internal sealed class ShameTracker
     // single act, unlike hostility, which scales with how many people it was aimed at.
     private async Task TrackPerfidyAsync(SocketUserMessage message, ulong guildId)
     {
+        // The referenced message goes through the message-aware overload too, for the
+        // same reason as above: replying to a rival's deferred slash-command answer must
+        // still count, even though that reply is webhook-authored. A plain @mention has
+        // no such message to consult — Discord resolves MentionedUsers off the guild's
+        // member cache, never off webhook-wrapping — so IsRival(IUser) is the right and
+        // only choice there.
         bool consorting =
-            (message.ReferencedMessage?.Author is { } repliedTo && _rivalry.IsRival(repliedTo))
+            (message.ReferencedMessage is { } repliedTo && _rivalry.IsRival(repliedTo))
             || message.MentionedUsers.Any(_rivalry.IsRival);
 
         if (!consorting) return;
@@ -127,7 +183,7 @@ internal sealed class ShameTracker
 
     private async Task ClaimAndRecordAsync(ulong guildId, ulong channelId, ulong userId)
     {
-        if (!TryClaimPerfidy(channelId, userId)) return;
+        if (!TryClaim(_lastPerfidy, channelId, userId, PerfidyCooldown)) return;
 
         try
         {
@@ -153,7 +209,21 @@ internal sealed class ShameTracker
         if (MessageCues.Analyze(message.Content).Emotion != EmotionKind.Mean) return;
 
         var hits = CountTargets(message);
-        if (hits == 0) return;
+
+        // Nobody named: being generally foul still counts, as a single point.
+        //
+        // **Rationed, unlike the targeted case, and the asymmetry is deliberate.**
+        // Targeted hostility scales because one message aimed at four people really is
+        // four times as unpleasant, and it cannot be farmed — the exploit there is one
+        // message, not many. Untargeted hostility is the opposite shape: a rant is
+        // twenty foul messages in two minutes, and uncapped that would drown out
+        // everything the title is meant to rank. So it is one hit per person per channel
+        // per 60 s, the same shape as "Le Perfide" and "L'Hystérique".
+        if (hits == 0)
+        {
+            if (!TryClaim(_lastMean, message.Channel.Id, message.Author.Id, MeanCooldown)) return;
+            hits = 1;
+        }
 
         try
         {
@@ -184,6 +254,10 @@ internal sealed class ShameTracker
     /// half of it she can vouch for first-hand. Rival bots are skipped — people are
     /// rude to bots constantly, and being rude to one is already Le Perfide's business
     /// rather than Le Malfaisant's.</para>
+    /// <para><b>Zero targets does not mean zero hits.</b> The caller turns an empty
+    /// result into a single rationed point — being generally foul still counts, it just
+    /// counts once. This method answers only "how many people", which is why it can
+    /// return 0 without that meaning "ignore this message".</para>
     /// <para>The author is never their own target, and the set is deduplicated, so
     /// replying to Bob while also tagging Bob is one hit rather than two — Discord puts
     /// the replied-to user in the mention list when the reply ping is on, and leaves
@@ -208,31 +282,35 @@ internal sealed class ShameTracker
         user.Id != authorId
         && (!user.IsBot || user.Id == _client.CurrentUser.Id);
 
-    // Atomically checks the per-(channel, user) cooldown and claims it.
-    private bool TryClaimPerfidy(ulong channelId, ulong userId)
+    // Atomically checks one gate's per-(channel, user) cooldown and claims it. Takes the
+    // dictionary rather than owning one, so each rationed behaviour keeps its own window
+    // — the same shape XpTracker's TryClaim has, and for the same reason.
+    private bool TryClaim(
+        Dictionary<(ulong ChannelId, ulong UserId), DateTimeOffset> gate,
+        ulong channelId, ulong userId, TimeSpan cooldown)
     {
         lock (_gate)
         {
             var now = DateTimeOffset.UtcNow;
             var key = (channelId, userId);
 
-            if (_lastPerfidy.TryGetValue(key, out var last) && now - last < PerfidyCooldown)
-                return false;
+            if (gate.TryGetValue(key, out var last) && now - last < cooldown) return false;
 
-            _lastPerfidy[key] = now;
-            ForgetStale(now);
+            gate[key] = now;
+            ForgetStale(gate, now);
             return true;
         }
     }
 
     // Caller holds _gate. Only sweeps once the gate has grown past a size no real
     // server reaches in an hour, so the common path stays a single dictionary write.
-    private void ForgetStale(DateTimeOffset now)
+    private static void ForgetStale(
+        Dictionary<(ulong ChannelId, ulong UserId), DateTimeOffset> gate, DateTimeOffset now)
     {
-        if (_lastPerfidy.Count < 256) return;
+        if (gate.Count < 256) return;
 
         var cutoff = now - Forget;
-        foreach (var key in _lastPerfidy.Where(kv => kv.Value < cutoff).Select(kv => kv.Key).ToList())
-            _lastPerfidy.Remove(key);
+        foreach (var key in gate.Where(kv => kv.Value < cutoff).Select(kv => kv.Key).ToList())
+            gate.Remove(key);
     }
 }

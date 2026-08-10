@@ -61,6 +61,11 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
     // The list exists because "moderator" here is a matter of trust rather than of
     // Discord permissions: these people are trusted with the vote without being given
     // ManageGuild, which would hand them the whole server.
+    //
+    // **Kept in force even once a moderator role is configured**, deliberately: the
+    // configured role *adds* voters, it never removes them. Configuring a role that
+    // happens to omit one of these people must not silently revoke access they already
+    // had — a config change should not be able to take something away by accident.
     private static readonly HashSet<ulong> ExtraVoters = new()
     {
         177049957818302464,
@@ -69,16 +74,29 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
         573225362532859935,
     };
 
-    private static bool CanVote(IUser user) =>
-        SessionPermissions.IsStaff(user) || ExtraVoters.Contains(user.Id);
-
     private readonly ShameService _shame;
     private readonly ResponsePicker _picker;
+    private readonly GuildConfigService _config;
 
-    public ShameModule(ShameService shame, ResponsePicker picker)
+    public ShameModule(ShameService shame, ResponsePicker picker, GuildConfigService config)
     {
         _shame = shame;
         _picker = picker;
+        _config = config;
+    }
+
+    // Staff, one of the hardcoded names above, or a holder of the guild's configured
+    // moderator role — whichever comes first. The role is the only part that touches
+    // the database, and only when the two free checks have already said no.
+    private async Task<bool> CanVoteAsync(IUser user)
+    {
+        if (SessionPermissions.IsStaff(user) || ExtraVoters.Contains(user.Id)) return true;
+
+        var config = await _config.GetAsync(Context.Guild.Id);
+        if (config.ModeratorRoleId == 0) return false;
+
+        return user is SocketGuildUser member
+            && member.Roles.Any(r => r.Id == config.ModeratorRoleId);
     }
 
     [SlashCommand("shame", "Le mur de la honte — ou dénonce quelqu'un pour l'y mettre")]
@@ -130,7 +148,7 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
         //
         // Checked before anything else, so someone who may not vote learns that rather
         // than which of the other rules they also broke.
-        if (!CanVote(Context.User))
+        if (!await CanVoteAsync(Context.User))
         {
             await RespondAsync(RefusalNotAllowed, ephemeral: true);
             return;
@@ -171,14 +189,19 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
         await FollowupAsync(line, allowedMentions: AllowedMentions.None);
     }
 
-    // Components V2. The whole wall is 21 components of the 40 Discord allows per
-    // message, counting the tree: the container, four per title with a holder (Section
-    // + its TextDisplay + the avatar Thumbnail, plus one TextDisplay for the runners-up),
-    // three separators, the footer, and the filter row with its three buttons. Only the
-    // *holder* wears an avatar — giving all nine rows one costs three components each
-    // and lands at 39 of 40, which would leave this command permanently unextendable for
-    // the sake of putting a face on people who did not win the title. Re-do that sum
-    // before adding anything here.
+    // Components V2, and the budget is the thing to watch. Discord allows 40 per message
+    // counting the whole tree; this uses **26**:
+    //
+    //   container 1 + heading 1
+    //   + 4 titles x 5 (separator, Section, its TextDisplay, the avatar Thumbnail,
+    //     and one TextDisplay for the runners-up)  = 20
+    //   + action row 1 + its three filter buttons 3
+    //
+    // So there is room for two more titles and no more. Only the *holder* wears an
+    // avatar — giving every ranked row one costs three components each and would blow
+    // the budget immediately, for the sake of putting a face on people who did not win
+    // the title. **Re-do this sum before adding anything here**, because the failure is
+    // an exception inside ComponentBuilderV2.Build() at send time, not a compile error.
     private async Task<MessageComponent> BuildWallAsync(StatsPeriod period)
     {
         var wall = await _shame.GetWallAsync(Context.Guild.Id, period);
@@ -194,11 +217,8 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
             wall.Bannis, BotResponses.ShameEmptyBanni, "vote", "votes");
         AddTitle(container, $"{Emotes.NightmareOtherEye} Le Perfide",
             wall.Perfides, BotResponses.ShameEmptyPerfide, "trahison", "trahisons");
-
-        container
-            .AddComponent(new SeparatorBuilder())
-            .AddComponent(new TextDisplayBuilder(
-                "-# Un vote par personne et par jour — `/shame user`"));
+        AddTitle(container, $"{Emotes.VeryAngry} L'Hystérique",
+            wall.Hysteriques, BotResponses.ShameEmptyHysterique, "cri", "cris");
 
         return new ComponentBuilderV2()
             .AddComponent(container)

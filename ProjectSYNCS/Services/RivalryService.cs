@@ -150,7 +150,7 @@ internal sealed class RivalryService
     // message rather than a mood.
     private bool IsRival(SocketUserMessage message)
     {
-        if (!IsRival(message.Author)) return false;
+        if (!IsRival((IUserMessage)message)) return false;
         if (LevelUpAnnouncement.Matches(message.Author, message.Content)) return false;
 
         return true;
@@ -170,9 +170,48 @@ internal sealed class RivalryService
     /// someone who *replies* to one is a different question — she is jealous of the
     /// attention either way — so "Le Perfide" uses this overload and gets no
     /// exception.</para>
+    /// <para><b>Blind to interaction responses, and conservatively so.</b> Responding to
+    /// an interaction is itself a webhook call under the hood, so Discord builds the
+    /// author of an interaction reply — even the bot's own, and especially a deferred
+    /// one, which always goes out through the followup webhook — as a webhook user. This
+    /// overload cannot tell that apart from a genuine third-party webhook (GitHub,
+    /// IFTTT, …), and genuine webhooks carry <c>IsBot</c> too — Discord shows them the
+    /// same "BOT" tag — so neither flag alone distinguishes the two. Prefer
+    /// <see cref="IsRival(IUserMessage)"/> whenever a message is available; it is the
+    /// one that can actually tell.</para>
     /// </remarks>
     public bool IsRival(IUser user) =>
-        user.IsBot && user.Id != _client.CurrentUser.Id && !user.IsWebhook;
+        IsRivalAuthor(user.IsBot, user.Id == _client.CurrentUser.Id, user.IsWebhook, hasInteractionMetadata: false);
+
+    /// <summary>
+    /// Whether <paramref name="message"/> was authored by a rival bot. The message-aware
+    /// counterpart to <see cref="IsRival(IUser)"/>, and the one to reach for whenever a
+    /// message is on hand.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="IUserMessage.InteractionMetadata"/> is the actual signal a plain
+    /// <see cref="IUser"/> cannot see: it is present only on a message that was created
+    /// in response to an interaction, never on a genuine incoming webhook post. So a
+    /// rival's own slash-command reply — webhook-authored though it is — still counts
+    /// here, while an unrelated GitHub/IFTTT-style webhook still does not. This is what
+    /// was silently excluding every rival that defers before replying: her reaction,
+    /// her mutter, and "Le Perfide"'s command-use credit all went missing for exactly
+    /// the bots that take long enough to need <c>DeferAsync</c>.
+    /// </remarks>
+    public bool IsRival(IUserMessage message) =>
+        IsRivalAuthor(message.Author.IsBot, message.Author.Id == _client.CurrentUser.Id,
+            message.Author.IsWebhook, message.InteractionMetadata is not null);
+
+    /// <summary>
+    /// The actual decision, pure and Discord-free so it can be checked without a
+    /// gateway. A webhook-flagged author only counts as a rival when interaction
+    /// metadata says the "webhook" is really an application answering a slash command;
+    /// otherwise it is treated as a genuine third-party webhook (GitHub, IFTTT, …),
+    /// which carries the same <c>IsBot</c> flag and would otherwise be indistinguishable
+    /// from a real rival.
+    /// </summary>
+    private static bool IsRivalAuthor(bool isBot, bool isSelf, bool isWebhook, bool hasInteractionMetadata) =>
+        isBot && !isSelf && (hasInteractionMetadata || !isWebhook);
 
     private Task ReactAsync(SocketUserMessage message) => MarkAsync(message);
 
