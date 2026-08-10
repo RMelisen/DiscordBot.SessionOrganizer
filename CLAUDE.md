@@ -499,12 +499,35 @@ apart. The level-67 easter egg sits above the pick and is unaffected by the mood
 **`TryClaim` reports *why* a verdict missed, not just that it did.** `Claim.RivalOwns`
 is the jealousy trigger, and it is separate from `NoAction` precisely because "nobody
 earned this" and "someone else earned this" call for different behaviour. Three rules
-compose there: anything `unambiguous` (a reply to her, a thumb on her chatter) is hers
-regardless of timing; a reply aimed at *another bot* is never hers regardless of
-timing, the exact mirror; everything else goes to the most recent actor. Only a
-**Good** verdict fires jealousy — someone calling a rival a bad bot is not a loss.
+compose there: anything `unambiguous` (a verdict naming her, or a thumb on her chatter)
+is hers regardless of timing; one naming *another bot* and not her is never hers
+regardless of timing, the exact mirror; everything else goes to the most recent actor.
+Only a **Good** verdict fires jealousy — someone calling a rival a bad bot is not a loss.
 `_rivalry.LastAction` is read *outside* `_gate`, since `RivalryService` holds a lock of
 its own and nesting the two in opposite orders would deadlock.
+
+**"Naming a bot" means a reply *or* an @mention, and reading only one of them is a
+bug that already shipped.** `BotFeedbackTracker.ReadTarget` decides who a verdict is
+aimed at from both routes. Reading only the reply meant "good bot @AutreBot" counted as
+a *bare* verdict, so it fell through to timing and landed in her column whenever she
+happened to have acted most recently — she was never addressed at all.
+
+**The two routes are tiers, not equals: mentions decide, and the reply only gets a say
+when nobody was mentioned.** An @mention typed beside the verdict is a deliberate
+"this one", whereas a reply is routinely just quoting for context — so replying to her
+while writing "good bot @AutreBot" is the rival's, not hers. Within a tier, naming her
+wins, because once she is named explicitly there is no more specific signal left to
+break the tie ("good bot @SYNCS @AutreBot" is hers). Discord puts the replied-to user in
+`MentionedUsers` only when the reply ping is on, which is precisely why the tiers are
+ordered rather than merged: with the ping on the mention tier reaches the same verdict
+the reply would have, and with it off the reply tier still catches it. Same trap
+`ShameTracker.CountTargets` documents.
+
+The `_notJudgeable` bail is gated on the verdict being **hers**, not on what was replied
+to: a verdict aimed at a rival cannot start the comeback loop that guard exists to
+break, and bailing there would swallow the rival's praise instead. `ReadTarget` is pure
+and gateway-free so the whole precedence is checkable without a connection, the same
+split as `RivalryService.IsRivalAuthor`.
 
 **`Helpers/BotChat` is the single send path for the bot's own chatter**, and
 `Helpers/EmoteMarkup.Parse` the single reaction parser. Both were private members of

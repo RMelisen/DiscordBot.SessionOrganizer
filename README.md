@@ -153,8 +153,11 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
   occasional reaction and, more rarely, a muttered remark. Praising another bot in
   front of her earns a full sulk — and that praise no longer lands in her own
   `/goodbot` tally, since a bare "good bot" now goes to whichever bot acted most
-  recently. Replying directly to her still always counts as hers; replying directly
-  to another bot never does. A level-up announced by the *other* leveling bot gets its
+  recently. Naming a bot settles it outright, and an **@mention beats a reply**: "good
+  bot @OtherBot" is never hers no matter who acted last — even in a reply to her, since
+  the mention is what you deliberately typed and a reply is often just quoting. With
+  nobody mentioned, the reply decides; with both bots mentioned it is hers, since she
+  was still named. A level-up announced by the *other* leveling bot gets its
   own treatment: she congratulates the person and sulks about where the level came
   from, in the same line — she has her own XP system and nobody used it. That counts
   as her answer to the message, so the ordinary jealousy is skipped there rather than
