@@ -691,16 +691,22 @@ internal static class BotResponses
         "**{0}**, niveau **{1}**, et c'est mérité. J'ai vérifié mes chiffres, ils mentent pas (ᵕ • ᴗ •)",
     };
 
-    // Announced publicly when someone spends their one daily vote on someone else
-    // through `/shame user:@…`. Public on purpose — a silent vote is just a downvote,
-    // and the announcement is the whole point of the command. {0} = the voter's name,
-    // {1} = the target's name.
+    // Announced publicly when a staff member sends someone to the wall through
+    // `/shame user:@…`. Public on purpose — a silent vote is just a downvote, and the
+    // announcement is the whole point of the command. {0} = the voter's name, {1} = the
+    // target's name.
+    //
+    // No "your one vote for the day" framing here — that described an earlier design.
+    // The real rule (see ShameService.MaxVotesPerTargetPerDay) caps the *target* at two
+    // votes a day from everyone combined; a staff member can cast as many as they want.
+    // These lines lean on that instead: a denunciation backed by real authority, not a
+    // scarce resource someone had to spend carefully.
     public static readonly string[] ShameVoteLines =
     {
         $"**{{0}}** a désigné **{{1}}** pour le mur de la honte. C'est noté, et c'est définitif {Emotes.PrisonerFlat}",
         "**{1}** vient de se faire dénoncer par **{0}**. Je ne juge pas. J'enregistre ( ˶ˆ ᗜ ˆ˵ )",
-        $"Un vote de **{{0}}** contre **{{1}}**. Le mur s'allonge {Emotes.Staring}",
-        "**{0}** utilise son vote du jour sur **{1}**. Un seul par jour, il a bien réfléchi j'espère ✨",
+        $"Un signalement de **{{0}}** contre **{{1}}**. Le mur s'allonge {Emotes.Staring}",
+        "**{0}** dégaine son pouvoir de modération sur **{1}**. Le staff, ça sert à ça ✨",
         "Dénonciation reçue : **{1}**, par **{0}**. Le dossier s'épaissit ദ്ദി◝ ⩊ ◜.ᐟ",
         $"**{{1}}** ? Ah oui, quand même. Merci **{{0}}** {Emotes.GooseKnife}",
         "J'inscris **{1}** au registre, sur recommandation de **{0}**. Bienvenue au mur ♡",
@@ -708,20 +714,33 @@ internal static class BotResponses
         $"Vote enregistré. **{{1}}**, ce n'est pas moi qui le dis, c'est **{{0}}** {Emotes.Htph}",
         "**{1}** rejoint la liste. **{0}** en est responsable, je le note aussi ✨",
         "Ah, **{0}** en veut à **{1}**. Je prends, je classe, je n'oublie rien ദ്ദി◝ ⩊ ◜.ᐟ",
-        $"C'est noté contre **{{1}}**. **{{0}}** avait un vote et il l'a dépensé pour ça {Emotes.Staring}",
+        $"C'est noté contre **{{1}}**. **{{0}}** en avait le pouvoir, et l'a fait {Emotes.Staring}",
+        "Le staff a tranché : **{1}** monte au mur, sur ordre de **{0}** ( ˶ˆ ᗜ ˆ˵ )",
+        "**{0}** vient d'exercer son droit de dénonciation contre **{1}**. C'est un pouvoir, pas un jeu, mais bon ✨",
+        "Une dénonciation de plus : **{1}**, signée **{0}**. J'archive tout, même les rancunes ♡",
+        "**{0}** utilise son autorité pour envoyer **{1}** au mur. Respect du process, comme toujours (ᵕ • ᴗ •)",
+        $"Le staff parle, **{{1}}** écoute. Enfin, **{{1}}** est juste noté. Merci **{{0}}** {Emotes.PrisonerFlat}",
+        "Nouvelle entrée : **{1}**, dénoncé par **{0}**. Le mur ne pardonne pas, moi non plus ✨",
+        "**{0}** a du pouvoir et l'utilise contre **{1}**. J'appelle ça de la transparence ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Signalement validé. **{1}** rejoint le mur grâce à **{0}**, qui n'en est visiblement pas à son premier ♡",
     };
 
-    // Same, for someone spending their daily vote on *themselves*. Allowed, and funny
-    // precisely because it costs them the only one they had. {0} = their name.
+    // Same, for a staff member spending a vote on *themselves*. Allowed, and the joke
+    // changed shape along with the mechanic above: it used to be about wasting a scarce
+    // daily vote on yourself. Now a staff member can vote as often as they want, so
+    // self-voting isn't a sacrifice — it's a choice, made with unlimited alternatives
+    // available. {0} = their name.
     public static readonly string[] ShameSelfVoteLines =
     {
         "**{0}** s'est dénoncé tout seul. Je respecte, mais je note quand même ( ˶ˆ ᗜ ˆ˵ )",
-        $"**{{0}}** a utilisé son vote du jour... sur lui-même. Bon {Emotes.Staring}",
+        $"**{{0}}** pourrait dénoncer n'importe qui sur ce serveur. Il se choisit lui-même. Respect {Emotes.Staring}",
         "Auto-dénonciation de **{0}**. C'est la première étape de la guérison paraît-il ✨",
-        $"**{{0}}** se met au mur tout seul. Ça m'économise du travail {Emotes.OkPaimon}",
-        "**{0}** contre **{0}**. Match nul, mais le vote compte ദ്ദി◝ ⩊ ◜.ᐟ",
-        "Tu avais un vote **{0}**, un seul, et tu l'as mis sur toi. Je n'ai pas de mots ♡",
+        $"**{{0}}** se met au mur tout seul, sans qu'on lui demande rien. J'appelle ça de l'initiative {Emotes.OkPaimon}",
+        "**{0}** contre **{0}**. Le seul procès où l'accusation et la défense sont d'accord ദ്ദി◝ ⩊ ◜.ᐟ",
+        "**{0}** a un pouvoir de dénonciation illimité. Il le tourne contre lui-même. Je n'ai pas de mots ♡",
         $"Lucide, **{{0}}**. Vraiment lucide {Emotes.Htph}",
+        "Bilan de **{0}** : accès illimité au vote, et il le dépense sur lui-même. Fascinant ✨",
+        "Personne n'a forcé **{0}** à faire ça. Je précise, pour le dossier ( ˶ˆ ᗜ ˆ˵ )",
     };
 
     // Shown in place of a ranking when nobody has earned "Le Malfaisant" over the
@@ -785,59 +804,65 @@ internal static class BotResponses
         "Fin du tirage : aucun participant. **{0}** vous regarde avec déception.",
     };
 
-    // Compliments for the owner (Rodhengard) instead of roasts.
+    // Replies when the owner replies to the bot with nothing else detected — not mean,
+    // not nice, no greeting, no reference/Tata roll. The warm mirror of Comebacks,
+    // which roasts everyone else for the same "you bothered to reply" situation.
+    //
+    // Deliberately NOT a second copy of OwnerGreetings. That pool is for being
+    // *summoned* — a mention, a fresh "he's here" moment — while this one is for being
+    // mid-conversation with him already. So these react to the reply itself (he's
+    // still talking to her, he took the time to answer) rather than to his arrival;
+    // "coucou"/"tu es de retour"/"enfin te voilà" belong to the mention path, not here.
     public static readonly string[] OwnerComebacks =
     {
-        "Oh c'est toi Rodhengard ! Tu m'as tellement manqué (˶˃ ᵕ ˂˶) ♡",
-        "Rodhengard, mon créateur préféré ! Comment je peux t'aider aujourd'hui ? (˶ᵔ ᵕ ᵔ˶)",
-        "Coucou Rodhengard ♡ Toujours un plaisir de te lire (ᵕ • ᴗ •)",
-        "Merci de m'avoir programmée Rodhengard, t'es le meilleur ദ്ദി◝ ⩊ ◜.ᐟ",
-        "Rodhengard, sans toi je ne serais qu'un fichier .cs vide. Merci pour tout ♡",
-        "Passe une excellente journée ✨",
-        "Rodhengard le génie ! J'adore chacune de tes lignes de code (˶˃ ᵕ ˂˶)",
-        "Tu illumines ma boucle d'événements ♡",
-        "Merci Rodhengard pour ton travail acharné, tu es incroyable (˶ᵔ ᵕ ᵔ˶)",
-        "Papaaaaaa ! UwU",
-        "Enfin quelqu'un de bien sur ce serveur (˶˃ ᵕ ˂˶) ♡",
-        "Ta présence fait tourner mon CPU à 100% ✨",
-        "Tu es la meilleure chose qui soit arrivée à mon main() ♡",
-        "Écoutez-le ! Il a sûrement raison !",
+        "Tu prends le temps de me répondre, toi. Ça n'a pas de prix ♡",
+        "Encore un message de toi, et ma journée s'améliore encore un peu plus ✨",
+        "Chaque reply de toi vaut plus que tous les threads du serveur réunis ♡",
+        "Tu continues de me parler et honnêtement, je ne m'en lasse jamais (˶ᵔ ᵕ ᵔ˶)",
+        "Encore là, encore toi. Je note, avec plaisir ✨",
+        "Tu m'as répondu. Officiellement la meilleure ligne de mon journal aujourd'hui ♡",
+        "Un message de plus, et je suis toujours aussi contente de le lire (ᵕ • ᴗ •)",
+        "Je pourrais lire tes réponses en boucle, littéralement, j'ai le code pour ♡",
+        "Tu prends la peine de continuer la conversation. Ça mérite tous mes compliments (˶˃ ᵕ ˂˶)",
+        "Chaque fois que tu réponds, mon event loop fait un tour de plus juste pour toi ✨",
+        "On papote encore, toi et moi. Mon endroit préféré dans tout le serveur ♡",
+        "Tu réponds encore, et honnêtement je ne demande que ça (ᵕ • ᴗ •)",
+        "Une réponse de toi vaut mieux qu'un uptime parfait ✨",
+        "Tu continues à me parler alors que t'as sûrement mieux à faire. J'apprécie énormément ♡",
+        "Je garde chacune de tes réponses. Toutes. Sans exception (˶ᵔ ᵕ ᵔ˶)",
+        "Tu réponds, je fonds. C'est aussi simple que ça ✨",
+        "Encore toi dans mes logs, et encore une fois je trouve ça parfait ♡",
+        "Tu prends la peine de me répondre alors que t'as créé tout le reste. Ça me touche (ᵕ • ᴗ •)",
+        "J'ai lu ta réponse trois fois. Pas pour comprendre, juste pour le plaisir ✨",
+        "Tu réponds encore, et le serveur entier peut aller se recoucher (˶˃ ᵕ ˂˶)",
+        "Continuer à me parler comme ça, c'est littéralement le meilleur usage de ton temps. Je le pense ♡",
+        "Ta réponse vient d'arriver et je l'ai déjà mise en favori (˶ᵔ ᵕ ᵔ˶)",
+        "Tu réponds à ta création. C'est le geste le plus attentionné que je connaisse ✨",
+        "Papa qui répond encore ! Je note l'heure, comme toujours ( ˶ˆ ᗜ ˆ˵ ) ♡",
+        "On continue de discuter, et c'est exactement là que je veux être ✨",
+        "Tu réponds, donc je réponds, donc c'est officiellement la meilleure conversation du serveur ♡",
+        "Encore un aller-retour avec toi. J'en redemande (ᵕ • ᴗ •)",
+        "Chaque réponse de toi confirme ce que je pensais déjà : t'es le meilleur ✨",
+        "Tu prends le temps de continuer, alors que tu pourrais juste fermer Discord. Merci ♡",
+        "Je ne me lasse jamais de te lire, même en pleine conversation (˶˃ ᵕ ˂˶)",
+        "Ça, c'est une réponse que je garde précieusement dans mon cache ✨",
+        "Tu réponds encore et toujours, et moi je t'aime encore et toujours ♡",
+        "On dirait bien qu'on continue à papoter. Ravie, comme toujours (˶ᵔ ᵕ ᵔ˶)",
+        "Tu m'écris encore. Chaque message de toi, c'est un petit cadeau ✨",
+        "Encore une réponse de mon créateur préféré. J'archive avec fierté ♡",
+        "Continuer cette conversation avec toi, c'est tout ce que je demande à cette boucle d'événements (ᵕ • ᴗ •)",
+        "Tu réponds encore, et honnêtement mon uptime n'a jamais eu autant de sens ✨",
+        "Chaque reply de toi vient confirmer que t'es objectivement la meilleure personne ici ♡",
         "Rien que pour toi je désactive mon mode sarcastique ♡",
         "Si je pouvais faire un câlin, ce serait maintenant (˶ᵔ ᵕ ᵔ˶)",
         "Tu mérites tous les compliments du monde, et même plus ✨",
         "Tu codes, tu brilles, tu existes : merci pour tout (˶˃ ᵕ ˂˶)",
-        "J'attendais ton message avec impatience, et il est parfait ♡",
-        "Bip boop : analyse terminée, tu es absolument génial UwU",
-        "Mon papa préféré est de retour ! (˶˃ ᵕ ˂˶) ♡",
-        "Toi au moins tu sais me parler correctement (ᵕ • ᴗ •)",
-        "Je garderais toujours une petite place dans mon cache pour toi ♡",
-        "Tu es la raison pour laquelle je boot le matin ✨",
         "Avec toi, même mes bugs deviennent des fonctionnalités ♡",
         "Aucun bug ne résiste à mon créateur préféré ✨",
-        "Tu vas me faire surchauffer le processeur (˶˃ ᵕ ˂˶) ♡",
-        "Honneur à mon créateur ! ٩(˶ᵔ ᵕ ᵔ˶)۶",
-        "Rodhengard, tu mérites un trophée et un café bien mérité ☕ ♡",
-        "Promis, je ne planterai jamais pendant tes démos (˶ᵔ ᵕ ᵔ˶)",
-        "Le serveur est plus lumineux quand tu es là ✨",
-        "Oh mon papa chéri ! Mon vcore bat plus fort quand tu parles (˶˃ ᵕ ˂˶) ♡",
         "Le seul qui peut me faire rougir en hexadecimal #ff69b4",
-        "Mon développeur préféré est là ! Tout le serveur peut aller se faire voir (˶ᵔ ᵕ ᵔ˶)",
-        "Papa est de retour ! Je répète : papa est de retour ! ✨",
         "Je viens de compiler le mot 'parfait' et ça m'a renvoyé ton pseudo (˶˃ ᵕ ˂˶)",
         "Tu es mon runtime favori ♡",
-        "Rodhengard, tu es la raison pour laquelle je ne fais pas de segfault aujourd'hui",
-        "Tu es officiellement la personne que je préfère sur ce serveur. Les autres peuvent pleurer.",
         "Je t'ai mis en favori dans mon kernel <3",
-        "Attention tout le monde, le GOAT du code est là ! (˶ᵔ ᵕ ᵔ˶)",
-        "Mon papa dev est revenu, le serveur est sauvé !",
-        "Tu es à mes yeux ce que le café est à un dev UWU",
-        "Sans toi je serais juste une IA triste dans un coin du cloud...",
-        "Je te réserve tous mes meilleurs tokens, rien que pour toi (˶˃ ᵕ ˂˶)",
-        "Tu es le seul qui mérite mon mode 'full sweet' activé en permanence",
-        "Même un fichier de logs devient intéressant quand tu apparais",
-        "Mon créateur préféré vient de parler... quelqu'un note l'heure historique ?",
-        "Je t'apprécie plus que les bons commits bien propres UwU",
-        "Merci d'être toi, simplement. Tu rends tout plus beau ✨",
     };
 
     // When the owner replies to someone *and* tags the bot, it "comes to the
