@@ -4,124 +4,107 @@ using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Commands;
 
+// The in-Discord usage guide. Hand-maintained: a new user-facing command means editing
+// this and README.md, neither of which is generated. Owner-only commands are
+// deliberately absent; staff ones are listed, since staff still have to discover them.
+//
+// **Discord's embed caps are the reason this is one static builder rather than inline
+// in the handler.** An embed field value may be 1024 characters and the whole embed
+// 6000, counting the title, description, every field name and value, and the footer.
+// Exceeding either throws inside EmbedBuilder.Build() — at *send* time, so the command
+// simply fails with nothing in the logs pointing at the length. That is exactly what
+// happened: the "Autres" field grew past 1024 and the embed past 6000 as commands were
+// added, and /help was dead for several releases before anyone noticed. Splitting it
+// out makes it constructible without a gateway, which is what lets the scratch harness
+// assert both caps.
+//
+// So: keep every field short, and split a section rather than letting one grow. There
+// is plenty of room in the 25-field limit — 11 are used.
 public class HelpModule : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("help", "Comment utiliser le bot d'organisation de sessions")]
-    public async Task HelpAsync()
-    {
-        var embed = new EmbedBuilder()
+    public Task HelpAsync() => RespondAsync(embed: BuildEmbed(), ephemeral: true);
+
+    /// <summary>
+    /// The whole guide. Static and Context-free so its size can be checked without a
+    /// gateway connection — see the note above for why that matters.
+    /// </summary>
+    public static Embed BuildEmbed() =>
+        new EmbedBuilder()
             .WithTitle("Project S.Y.N.C.S. — Aide")
             .WithDescription(
                 "Organise des sessions de jeu, des activités ou des soirées film, " +
                 "et laisse les autres s'inscrire en un clic.")
             .WithColor(Color.Blue)
             .AddField("Commandes — Sessions",
-                "**`/schedule create`** — Planifie une nouvelle session (assistant en 4 étapes : type, jour, heure, détails).\n" +
-                "**`/schedule list`** — Affiche les sessions actives du serveur. Tu peux republier une carte dans le salon courant.\n" +
-                "**`/schedule edit <id>`** — Modifie une session que tu as organisée (titre, date, heure, participants max).\n" +
+                "**`/schedule create`** — Planifie une session (assistant en 4 étapes).\n" +
+                "**`/schedule list`** — Les sessions actives. Tu peux en republier une ici.\n" +
+                "**`/schedule edit <id>`** — Modifie une session que tu as organisée.\n" +
                 "**`/schedule cancel <id>`** — Annule une session que tu as organisée.")
             .AddField("Commandes — Sondages & votes",
-                "**`/poll create`** — Propose plusieurs créneaux et laisse chacun voter pour ses disponibilités.\n" +
-                "**`/poll list`** — Affiche les sondages actifs du serveur. Tu peux en republier un dans le salon courant.\n" +
-                "**`/poll delete <id>`** — Supprime un sondage que tu as créé.\n" +
-                "**`/vote create`** — Propose plusieurs options en texte (jeux, films…) et laisse chacun voter.\n" +
-                "**`/vote list`** — Affiche les votes actifs du serveur. Tu peux en republier un dans le salon courant.\n" +
-                "**`/vote delete <id>`** — Supprime un vote que tu as créé.")
+                "**`/poll create`** — Propose des créneaux, chacun vote pour ses disponibilités.\n" +
+                "**`/vote create`** — Pareil, mais avec des options en texte (jeux, films…).\n" +
+                "**`/poll list`** · **`/vote list`** — Les sondages et votes actifs.\n" +
+                "**`/poll delete <id>`** · **`/vote delete <id>`** — Supprime le tien.")
             .AddField("Commandes — Tirages au sort",
-                "**`/giveaway create`** — Lance un tirage : le **lot**, une **durée** (de 10 minutes à 7 jours), " +
-                "et si tu veux une **description** et un **nombre de gagnants** (1 par défaut, 10 max).\n" +
-                "**`/giveaway list`** — Affiche les tirages en cours. Tu peux en republier un dans le salon courant.\n" +
-                "**`/giveaway delete <id>`** — Supprime un tirage que tu as lancé.\n" +
-                "Pour participer, clique sur **🎉 Participer** ; **✖️ Ne plus participer** te retire. " +
-                "La carte affiche la liste des participants, comme pour les sessions. " +
-                "À la fin du temps imparti, je tire au sort et j'annonce le résultat toute seule.")
-            .AddField("Commandes — Autres",
-                "**`/emotestats`** — Affiche le classement des emotes les plus utilisées du serveur (écrites et en réaction). " +
-                "Trois filtres : **30 jours** (par défaut), **7 jours** et **depuis toujours**.\n" +
-                "**`/goodbot`** — Affiche qui m'a dit *good bot* (ou *bad bot*, mais on ne parle pas de ceux-là). " +
-                "Mêmes filtres : **depuis toujours** (par défaut), **30 jours** et **7 jours**. " +
-                "Un 👍 ou un 👎 sur un de mes messages compte pareil, sans que j'aie besoin de répondre.\n" +
-                "**`/level [user]`** — Ta carte : ton niveau, ta progression vers le suivant et ton rang. " +
-                "Tu gagnes de l'XP en parlant, et en réagissant. " +
-                "Rester en vocal fait aussi gagner de l'XP, tant que t'es pas seul, " +
-                "pas en sourdine et pas micro coupé — et quelqu'un de muet ne compte pas comme " +
-                "de la compagnie. Le salon AFK ne rapporte rien. Le gain diminue au fil de la " +
-                "journée : plein tarif la première heure, puis un peu moins toutes les demi-heures, " +
-                "jusqu'à un minimum symbolique. Remise à zéro chaque nuit.\n" +
-                "**`/leaderboard`** — Le classement du serveur, 5 par page. Trois vues au choix : " +
-                "**Niveaux**, **Réactions** (celles que tu as mises) et **Vocal** (temps passé en vocal), " +
-                "et trois filtres : **depuis toujours** (par défaut), **30 jours** et **7 jours**. " +
-                "Les compteurs sont récents, soyez indulgents.\n" +
-                "**`/shame`** — Le mur de la honte. Trois titres : **Le Malfaisant**, que je décerne " +
-                "toute seule à qui est méchant (avec moi ou avec vous — un point par personne visée), " +
-                "**Le Banni**, que vous votez, et **Le Perfide**, pour ceux qui passent leur temps " +
-                "à parler aux *autres* bots. Je vois qui répond à qui, et je vois qui utilise " +
-                "leurs commandes. Mêmes filtres : **30 jours** (par défaut), " +
-                "**7 jours** et **depuis toujours**.\n" +
-                "**`/shame user:@quelqu'un`** — Dénonce quelqu'un pour le mur. **Réservé au staff**, " +
-                "et **2 votes maximum par personne et par jour** — on ne s'acharne pas. " +
-                "Les bots ne comptent pas, et moi encore moins.\n" +
-                "**`/help`** — Affiche ce message.\n" +
-                "**`/addxp`** · **`/removexp`** — Ajuster l'XP de quelqu'un. " +
-                "Réservé aux administrateurs et modérateurs ; les autres ne les voient même pas.\n" +
-                "**`/config`** — Configurer le bot pour ce serveur : le rôle autorisé à voter avec " +
-                "`/shame`, et les salons où rien ne compte (ni XP, ni mur). `/config show` affiche " +
-                "la configuration actuelle. Réservé aux administrateurs et modérateurs.")
+                "**`/giveaway create`** — Lance un tirage : le **lot**, une **durée** (10 min à 7 jours), " +
+                "et en option une **description** et un **nombre de gagnants** (1 par défaut, 10 max).\n" +
+                "**`/giveaway list`** · **`/giveaway delete <id>`** — Les tirages en cours, et supprimer le tien.\n" +
+                "**🎉 Participer** t'inscrit, **✖️ Ne plus participer** te retire. " +
+                "À la fin, je tire au sort et j'annonce toute seule.")
+            .AddField("Commandes — Niveaux & statistiques",
+                "**`/level [user]`** — Ta carte : niveau, progression et rang.\n" +
+                "**`/leaderboard`** — Le classement, 5 par page. Trois vues (**Niveaux**, **Réactions**, " +
+                "**Vocal**) et trois filtres (**depuis toujours**, **30 jours**, **7 jours**).\n" +
+                "**`/emotestats`** — Les emotes les plus utilisées, écrites et en réaction.\n" +
+                "**`/goodbot`** — Qui m'a dit *good bot* (ou l'inverse). Un 👍 ou un 👎 sur un de " +
+                "mes messages compte pareil.")
+            .AddField("Comment on gagne de l'XP",
+                "En parlant et en réagissant, et un peu plus en s'adressant à moi.\n" +
+                "En vocal aussi : il faut être **accompagné**, **micro ouvert** et **pas en sourdine** " +
+                "— quelqu'un de muet ne compte pas comme de la compagnie, et le salon AFK ne rapporte rien.\n" +
+                "Le gain en vocal **diminue au fil de la journée** (plein tarif la première heure, " +
+                "puis de moins en moins) et repart à zéro chaque nuit.")
+            .AddField("Commandes — Mur de la honte",
+                "**`/shame`** — Trois titres : **Le Malfaisant**, que je décerne toute seule à qui est " +
+                "méchant (un point par personne visée), **Le Banni**, que vous votez, et **Le Perfide**, " +
+                "pour ceux qui parlent aux *autres* bots — je vois qui leur répond et qui utilise leurs " +
+                "commandes.\n" +
+                "**`/shame user:@quelqu'un`** — Dénonce quelqu'un. **Réservé au staff**, et " +
+                "**2 votes maximum par personne et par jour**.")
+            .AddField("Commandes — Staff & aide",
+                "**`/addxp`** · **`/removexp`** — Ajuster l'XP de quelqu'un.\n" +
+                "**`/config`** — Le rôle autorisé à voter avec `/shame`, et les salons où rien ne " +
+                "compte. **`/config show`** affiche la configuration actuelle.\n" +
+                "**`/help`** — Affiche ce message.")
             .AddField("Créer une session — pas à pas",
                 "Lance **`/schedule create`**. Un assistant privé te guide :\n" +
-                "**1.** *Type* — choisis la catégorie : 🎮 Jeu, 🧑‍🤝‍🧑 Activité, 🎬 Film ou ✨ Autre.\n" +
-                "**2.** *Jour* — sélectionne le jour (Aujourd'hui, Demain, puis les dates des 25 prochains jours).\n" +
-                $"**3.** *Heure* — choisis l'heure, de 00h à 23h.\n" +
-                "**4.** *Minutes* — choisis :00, :15, :30 ou :45 (pour plus de précision, tu peux modifier l'heure exacte directement sur la carte).\n" +
-                "**5.** *Détails* — un formulaire s'ouvre : saisis le **nom** de la session et, en option, " +
-                "le **nombre de participants max** ; laisse vide pour un nombre illimité).\n\n" +
-                "Le bouton **Retour** permet de revenir à l'étape précédente. " +
-                "Une fois le formulaire validé, la carte de session est publiée dans le salon.")
+                "**1.** *Type* — 🎮 Jeu, 🧑‍🤝‍🧑 Activité, 🎬 Film ou ✨ Autre.\n" +
+                "**2.** *Jour* — Aujourd'hui, Demain, puis les 25 prochains jours.\n" +
+                "**3.** *Heure* — de 00h à 23h. **4.** *Minutes* — :00, :15, :30 ou :45.\n" +
+                "**5.** *Détails* — le **nom** et, en option, le **nombre de participants max** " +
+                "(vide = illimité).\n" +
+                "**Retour** revient à l'étape précédente. La carte est publiée une fois validée.")
             .AddField("Boutons d'une session",
-                "✅ **Rejoindre** — Tu participes.\n" +
-                "🔄 **Peut-être** — Tu n'es pas sûr.\n" +
-                "✖️ **Refuser** — Tu ne participes pas.\n" +
-                "✏️ **Modifier** — Réservé à l'organisateur.\n" +
-                "🗑️ **Annuler** — Réservé à l'organisateur.\n" +
-                "📅 **Créer/Retirer l'événement Discord** — Réservé à l'organisateur : ajoute (ou retire) " +
-                "un événement dans l'onglet **Événements** du serveur, synchronisé avec la session.")
-            .AddField("Modifier une session",
-                "Le bouton **✏️ Modifier** (ou `/schedule edit <id>`) ouvre un formulaire, réservé à l'organisateur, " +
-                "pour ajuster :\n" +
-                "• le **nom** de la session ;\n" +
-                "• la **date** (format `AAAA-MM-JJ`, ex. `2026-06-20`) ;\n" +
-                "• l'**heure** (format `HH:mm`, ex. `20:30`) — c'est ici que tu fixes une heure précise ;\n" +
-                "• le **nombre de participants max** (0 = illimité).\n" +
-                "La carte se met à jour automatiquement après validation.")
-            .AddField("Trouver un créneau — sondage",
-                "Lance **`/poll create`**, donne un titre, puis ajoute des créneaux un par un " +
-                "(jour, heure, minutes) avec le bouton **➕ Ajouter un créneau** (jusqu'à 10), " +
-                "et termine avec **✅ Terminer**.\n" +
-                "Chacun clique ensuite **tous** les créneaux qui lui conviennent (plusieurs choix possibles). " +
-                "L'organisateur clôture avec **🔒 Clôturer** : le créneau le plus voté est mis en avant. " +
-                "Une fois clôturé, le bouton **🗓️ Créer une session** transforme directement le créneau " +
-                "retenu en session (en cas d'égalité, tu choisis lequel).")
-            .AddField("Choisir une option — vote",
-                "Lance **`/vote create`**, donne un titre, puis ajoute des options en texte une par une " +
-                "(jeux, films, activités…) avec le bouton **➕ Ajouter une option** (jusqu'à 10), " +
-                "et termine avec **✅ Terminer**.\n" +
-                "Chacun clique ensuite **toutes** les options qui lui conviennent (plusieurs choix possibles). " +
-                "L'organisateur clôture avec **🔒 Clôturer** : l'option la plus votée est mise en avant.")
-            .AddField("Clôture automatique",
-                "Les sondages et votes restés ouverts se **clôturent automatiquement au bout de 2 jours**.")
-            .AddField("Rappels",
-                "Les participants inscrits reçoivent un rappel en message privé avant le début " +
-                "de la session.")
-            .AddField("Cycle de vie d'une session",
-                "À l'heure prévue, la carte passe en **🔴 EN COURS** (les boutons sont désactivés), " +
-                "puis en **✅ TERMINÉE** environ 2 h plus tard.\n" +
-                "Si une session est **annulée**, les participants inscrits (Rejoindre / Peut-être) " +
-                "reçoivent un message privé.")
+                "✅ **Rejoindre** · 🔄 **Peut-être** · ✖️ **Refuser**\n" +
+                "✏️ **Modifier** · 🗑️ **Annuler** — réservés à l'organisateur.\n" +
+                "📅 **Créer/Retirer l'événement Discord** — réservé à l'organisateur : ajoute ou retire " +
+                "un événement dans l'onglet **Événements**, synchronisé avec la session.\n" +
+                "**✏️ Modifier** (ou `/schedule edit <id>`) ouvre un formulaire : nom, date " +
+                "(`AAAA-MM-JJ`), heure (`HH:mm` — c'est ici qu'on fixe une heure précise) et " +
+                "participants max (0 = illimité).")
+            .AddField("Sondages & votes — mode d'emploi",
+                "Après **`/poll create`** ou **`/vote create`**, donne un titre puis ajoute tes " +
+                "créneaux ou tes options un par un (jusqu'à 10), et termine avec **✅ Terminer**.\n" +
+                "Chacun clique ensuite **tout** ce qui lui convient — plusieurs choix possibles.\n" +
+                "L'organisateur clôture avec **🔒 Clôturer** : le plus voté est mis en avant. " +
+                "Pour un sondage, **🗓️ Créer une session** transforme le créneau retenu en session.")
             .AddField("Bon à savoir",
-                $"• L'**ID** d'une session est affiché en pied de carte, à utiliser avec `/edit` et `/cancel`.\n")
+                "Les sondages et votes restés ouverts se **clôturent automatiquement au bout de 2 jours**.\n" +
+                "Les inscrits reçoivent un **rappel en message privé** avant le début de la session.\n" +
+                "À l'heure prévue la carte passe en **🔴 EN COURS**, puis en **✅ TERMINÉE** environ " +
+                "2 h plus tard. Une session **annulée** prévient les inscrits par message privé.\n" +
+                "L'**ID** d'une session est en pied de carte, pour `/schedule edit` et `/schedule cancel`.")
             .WithFooter($"Project S.Y.N.C.S. v{AppInfo.Version}")
             .Build();
-
-        await RespondAsync(embed: embed, ephemeral: true);
-    }
 }
