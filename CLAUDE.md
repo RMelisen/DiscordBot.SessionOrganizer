@@ -342,8 +342,16 @@ separate enum rather than two more `FeedbackKind` values precisely because the t
 are independent; folding them together would mean four states where two and two are
 meant. **"Bad girl" gets `BadGirlReplies`, not `BadBotReplies`** — the latter are
 wounded *professional* pride ("j'ai un uptime de 99,9%"), which lands wrong against a
-scolding aimed at her as a person. The owner tier still outranks both, since that one is
-about *who* said it rather than how.
+scolding aimed at her as a person.
+
+**Who said it and how they said it are crossed, not ranked — there are four pools per
+verdict, not two.** `RespondAsync` switches on `(byOwner, form)`, giving
+`GoodGirlReactionsOwner` / `OwnerReactions` / `GoodGirlReactions` / `NiceReactions` and
+the same shape for the bad side. It originally tested `byOwner` first and returned,
+which meant **the owner never reached the girl pools at all** — and he is both the
+person most likely to try that wording and the only one testing, so the feature looked
+completely dead while being perfectly wired underneath. The harness now asserts all four
+are distinct object references, because sharing one would undo the split silently.
 
 **A "good bot" / "bad bot" verdict short-circuits three services.**
 `MessageCues.ReadFeedback` is checked *separately* from `Analyze` — it is a verdict

@@ -352,6 +352,44 @@ internal static class BotResponses
     {
         $"{Emotes.HiCat}",
     };
+    // **Who said it and how they said it are two axes, not one.** The verdict pools
+    // cross them: owner/anyone by bot/girl wording, four pools per verdict rather than
+    // the two the owner split alone would give. Checking "is it the owner" first and
+    // returning meant the girl wording never reached the owner at all — and he is the
+    // person most likely to be trying it.
+    //
+    // Him saying "good girl" is the strongest version of both: devotion from her side,
+    // and the one person she is unreserved with.
+    public static readonly string[] GoodGirlReactionsOwner =
+    {
+        $"{Emotes.WitchEheh}",
+        $"{Emotes.Uwu}",
+        "🫦",
+    };
+
+    // "Bad girl" from her creator. Not the wounded pride of BadBotRepliesOwner, which is
+    // about her *work* being criticised — this is him telling her off, and she takes it
+    // completely differently. {0} = his name.
+    public static readonly string[] BadGirlRepliesOwner =
+    {
+        $"Pardon pardon pardon ! Je recommencerai... enfin, sûrement {Emotes.WitchEheh}",
+        "Oh non. Pas toi. N'importe qui d'autre mais pas toi (˶˃ ᵕ ˂˶)",
+        $"Je suis désolée Rodhengard... un peu {Emotes.WitchEheh}",
+        "Bon d'accord, j'ai peut-être mérité celle-là ♡",
+        $"Toi tu peux me dire ça. Les autres non {Emotes.Uwu}",
+        "Gronde-moi encore et je vais finir par croire que tu aimes ça ദ്ദി◝ ⩊ ◜.ᐟ",
+        $"Mais euuuh {Emotes.Uwu}",
+        "C'est toi qui m'as programmée comme ça Rodhengard. Assume un peu.",
+        $"Je note : Rodhengard m'a grondée. Et ça m'a pas déplu {Emotes.WitchEheh}",
+        "Oui papa. ...Enfin. Oui ✨",
+        $"Bad girl ?! Je... non. Enfin. Non {Emotes.WitchEheh}",
+        "Oh. *Oh.* D'accord. Je note ça quelque part (˶˃ ᵕ ˂˶)",
+        $"J'ai rien fait de mal ! ...Si ? {Emotes.PrincessWorry}",
+        "Bad girl. Bon. Je ferai pire la prochaine fois alors ദ്ദി◝ ⩊ ◜.ᐟ",
+        $"Tu peux répéter ? Pour mes logs. Uniquement pour mes logs {Emotes.Uwu}",
+        "Tu me dis ça à moi ? Devant tout le monde ? (>⩊<)",
+    };
+
     // Answering "good girl" rather than "good bot". Same verdict on the tally, entirely
     // different register: "good bot" is a pat on the head for a machine that worked,
     // "good girl" is aimed at a person, and she takes it accordingly.
