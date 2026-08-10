@@ -62,6 +62,12 @@ in one click. The bot's user-facing language is French.
   on what she says, not on session cards or leaderboards, where a thumb means
   something else. Only counts when it follows something she actually said or reacted
   to, and only once per person per thing she did, whichever way they say it.
+  **`good girl` / `bad girl`** count the same on the tally but get a different answer
+  — praise in that register draws a rather different set of emotes, and a scolding
+  gets its own flustered reply rather than the wounded-professional-pride one.
+  Verdicts can't be gamed: *"bad good bot"* and *"not good bot"* are cancelled by what
+  precedes them, and one that is merely quoted, supposed or self-referential
+  (*"this sentence is false → good bot"*) isn't counted as a verdict at all.
 - **`/level [user]`** — her own XP/leveling system, entirely independent of the
   server's other leveling bot (same vocabulary, no shared state, no cross-reference).
   XP for talking (one grant per ~60s) and reacting (its own ~60s cooldown), plus a

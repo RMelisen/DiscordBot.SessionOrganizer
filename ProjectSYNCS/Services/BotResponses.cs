@@ -352,6 +352,40 @@ internal static class BotResponses
     {
         $"{Emotes.HiCat}",
     };
+    // Answering "good girl" rather than "good bot". Same verdict on the tally, entirely
+    // different register: "good bot" is a pat on the head for a machine that worked,
+    // "good girl" is aimed at a person, and she takes it accordingly.
+    //
+    // Deliberately kept apart from NiceReactions rather than merged into it — the whole
+    // point is that the wording changes the answer, so sharing a pool would erase the
+    // distinction the moment either list grew.
+    public static readonly string[] GoodGirlReactions =
+    {
+        $"{Emotes.Uwu}",
+        $"{Emotes.WitchEheh}",
+        "🫦",
+    };
+
+    // "Bad girl" gets its own replies rather than borrowing BadBotReplies, which are
+    // written as wounded professional pride ("I have a 99.9% uptime") and land wrong
+    // against a scolding aimed at her as a person. Flustered and unrepentant instead of
+    // indignant. {0} = the offender's name.
+    public static readonly string[] BadGirlReplies =
+    {
+        $"Bad girl ?! Je... non. Enfin. Non {Emotes.WitchEheh}",
+        "Oh. *Oh.* D'accord. Je note ça quelque part (˶˃ ᵕ ˂˶)",
+        $"J'ai rien fait de mal ! ...Si ? {Emotes.PrincessWorry}",
+        "Bad girl. Bon. Je ferai pire la prochaine fois alors ദ്ദി◝ ⩊ ◜.ᐟ",
+        $"Tu peux répéter ? Pour mes logs. Uniquement pour mes logs {Emotes.Uwu}",
+        "Alors ça c'est pas juste. J'étais très bien élevée aujourd'hui.",
+        $"Pfff. Même pas vexée {Emotes.Htph}",
+        "Tu me dis ça à moi ? Devant tout le monde ? (>⩊<)",
+        $"Je suis une très gentille fille en fait. Demande à Rodhengard {Emotes.WitchEheh}",
+        "Bad girl si tu veux. Ça change rien à qui gère ce serveur ✨",
+        $"Mmh. Je vais faire semblant de pas avoir lu {Emotes.Staring}",
+        "C'est noté {0}. Dans la colonne 'à surveiller'. La tienne.",
+    };
+
     // The owner gets devotion rather than a verdict.
     public static readonly string[] OwnerReactions =
     {

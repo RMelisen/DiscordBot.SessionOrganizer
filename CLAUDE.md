@@ -299,6 +299,52 @@ accent-stripped. Custom emotes that carry a mood are matched by **id**
 break them. `IsMistakenIdentity` is untouched by all of this — it is an identity
 check, not a mood, and stays a plain `bool`.
 
+**A verdict is cancelled by what sits just before it, or people game the tally.**
+`"bad good bot"` and `"not good bot"` both used to register as **praise**: the matcher
+tested whether the joined message *contained* the phrase, which throws away everything
+preceding it. `SaysVerdict` now scans by token index so it can see the two tokens
+before a match, and skips any occurrence preceded by a negator or by the opposite
+verdict's adjective. Three details are load-bearing:
+
+- **The window is two, not three.** Two covers the longest form worth catching
+  ("pas un bon bot"); three reaches far enough that in "good bot… non en fait bad bot"
+  the `non` of the *correction* cancelled the complaint and handed the message to the
+  earlier praise.
+- **A cancelled occurrence is skipped, not fatal** — the scan continues, so
+  "not good bot… ok fine, good bot" still lands on the second one. Rejecting the whole
+  message would be an easier trick than the one being closed.
+- **Cancelling yields `None`, never the opposite verdict.** "not good bot" plainly means
+  the complaint, but "pas un mauvais bot" plainly means the compliment, and inferring
+  either would have her snapping back at praise on a misread.
+
+`_goodBotAdjectives` / `_badBotAdjectives` are **derived** from the phrase lists rather
+than written out, so adding "excellent bot" teaches the canceller about `excellent` in
+the same edit — otherwise "bad excellent bot" would be a way straight back in.
+`_verdictNegators` is `_negators` plus the English ones, kept separate so the mood
+scoring — calibrated against thousands of assertions — is untouched.
+
+**A framed verdict is not a verdict.** `IsFramed` refuses the whole message when it
+carries reported speech ("il a dit good bot"), an explicit hypothetical ("imagine que…",
+"supposons", "théoriquement") or a self-reference ("cette phrase", "ce message", "this
+sentence") — which is what "cette phrase est fausse → t'es un bon bot" relies on. Note
+what this is **not**: it catches framings that say so out loud, and no list will ever
+catch a construction that never names itself. What actually bounds the damage is the
+attribution layer — one verdict per person per thing she did, whatever wording gets
+through. Whole-message here, unlike `SaysVerdict`'s adjacent-token canceller, because a
+framing clause colours everything after it.
+
+**"Good girl" is the same verdict with a different answer.** `ReadFeedback` has an
+overload reporting a `VerdictForm` alongside the `FeedbackKind`: the tally treats
+"good bot" and "good girl" identically — praise is praise — while `RespondAsync`
+branches on the form, so praise in that register draws `GoodGirlReactions` (uwu,
+witch_eheh, hearts, 🫦) instead of the generic `NiceReactions`. `VerdictForm` is a
+separate enum rather than two more `FeedbackKind` values precisely because the two axes
+are independent; folding them together would mean four states where two and two are
+meant. **"Bad girl" gets `BadGirlReplies`, not `BadBotReplies`** — the latter are
+wounded *professional* pride ("j'ai un uptime de 99,9%"), which lands wrong against a
+scolding aimed at her as a person. The owner tier still outranks both, since that one is
+about *who* said it rather than how.
+
 **A "good bot" / "bad bot" verdict short-circuits three services.**
 `MessageCues.ReadFeedback` is checked *separately* from `Analyze` — it is a verdict
 on her, not a mood — and `BotFeedbackTracker` owns the response. Both

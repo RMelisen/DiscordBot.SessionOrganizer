@@ -37,6 +37,21 @@ public enum FeedbackKind
     Bad,
 }
 
+/// <summary>Which wording carried a verdict.</summary>
+/// <remarks>
+/// Separate from <see cref="FeedbackKind"/> because the two are independent: the tally
+/// only cares that praise is praise, while the *answer* differs — "good bot" earns a
+/// generic nice reaction, "good girl" earns a decidedly different register. Keeping it
+/// out of FeedbackKind avoids four states where two and two are meant.
+/// </remarks>
+public enum VerdictForm
+{
+    /// <summary>"good bot" / "bad bot" and their French equivalents.</summary>
+    Bot,
+    /// <summary>"good girl" / "bad girl".</summary>
+    Girl,
+}
+
 // Lightweight intent detection over message text: is this a compliment, a
 // greeting, or an insult? Matching is done on tokenized, lowercased,
 // accent-stripped words so "Félicitations !" matches the cue "felicitations".
@@ -249,10 +264,16 @@ internal static class MessageCues
         "top",
         "waw", "wow",
 
-        // Added with the vocabulary expansion. "c'est con" is a shrug rather than an
-        // insult and "c'est lourd" is a weight; "clean", "efficace", "malin" and
-        // "utile" describe a build or a route as often as they compliment a person.
-        "con", "conne", "connes", "cons", "lourd", "lourde", "clean", "efficace", "malin", "maligne", "utile",
+        // Added with the vocabulary expansion. "c'est lourd" is a weight, and "clean",
+        // "efficace", "malin" and "utile" describe a build or a route as often as they
+        // compliment a person.
+        //
+        // The "con" family is deliberately absent from both this set and _meanCues:
+        // listing it here alone weakened nothing, since a weak cue only lowers the
+        // weight of a cue that exists. Re-adding it means adding it to _meanCues in the
+        // same edit — the harness fails otherwise, which is how the dead entries were
+        // found.
+        "lourd", "lourde", "clean", "efficace", "malin", "maligne", "utile",
     };
 
     // Multi-word cues, written as normalised tokens joined by single spaces —
@@ -310,6 +331,67 @@ internal static class MessageCues
     // because it only compares whole-token runs.
     private static readonly HashSet<string> _goodBotWords = new() { "goodbot" };
     private static readonly HashSet<string> _badBotWords = new() { "badbot" };
+
+    // The same two verdicts in a different register. Counted identically on the
+    // /goodbot tally — praise is praise — but answered differently, which is why the
+    // *form* comes back alongside the kind. See VerdictForm.
+    private static readonly string[] _goodGirlPhrases = { "good girl", "bonne fille" };
+    private static readonly string[] _badGirlPhrases = { "bad girl", "mauvaise fille" };
+
+    private static readonly HashSet<string> _goodGirlWords = new() { "goodgirl" };
+    private static readonly HashSet<string> _badGirlWords = new() { "badgirl" };
+
+    // Markers that a verdict is being *talked about* rather than handed out: reported
+    // speech, an explicit hypothetical, or a sentence referring to itself.
+    //
+    // **This catches stated framings, not reasoning.** "cette phrase est fausse ->
+    // t'es un bon bot" is caught because it says so out loud; a genuinely clever
+    // construction that never names itself is not detectable here and never will be.
+    // What bounds the damage is the attribution layer, not this list: one verdict per
+    // person per thing she did, whatever wording gets through.
+    private static readonly string[] _verdictFramingPhrases =
+    {
+        "a dit", "as dit", "aurait dit", "avez dit", "ont dit",
+        "c est faux", "ce message", "cette affirmation", "cette phrase",
+        "est fausse", "est faux", "la phrase", "this sentence",
+    };
+
+    private static readonly HashSet<string> _verdictFramingWords = new()
+    {
+        "admettons", "hypothese", "hypothetiquement", "imagine", "imaginons",
+        "paradoxe", "suppose", "supposons", "theoriquement",
+    };
+
+    // The adjective each verdict is built on, derived from the phrase lists above
+    // rather than written out again — adding "excellent bot" to the phrases has to
+    // teach the canceller about "excellent" at the same moment, or "bad excellent bot"
+    // becomes a way back in. Every phrase here is "<adjective> bot", which is what
+    // makes taking the first token safe.
+    //
+    // Declared *after* the phrase arrays on purpose: static initialisers run in
+    // declaration order, and reading them earlier would see empty arrays.
+    private static readonly HashSet<string> _goodBotAdjectives =
+        _goodBotPhrases.Concat(_goodGirlPhrases).Select(p => p.Split(' ')[0]).ToHashSet();
+
+    private static readonly HashSet<string> _badBotAdjectives =
+        _badBotPhrases.Concat(_badGirlPhrases).Select(p => p.Split(' ')[0]).ToHashSet();
+
+    // Negators for the *verdict* path only. `_negators` is French because that is the
+    // language the mood cues are written in; a verdict is half English already ("good
+    // bot" is the meme), so "not good bot" has to cancel exactly as "pas" does. Kept
+    // separate rather than added to `_negators` so the mood scoring — which is
+    // calibrated against thousands of assertions — is left completely alone.
+    private static readonly HashSet<string> _verdictNegators =
+        _negators.Concat(new[] { "not", "no", "never", "aint", "isnt", "arent", "dont", "doesnt", "nope" })
+                 .ToHashSet();
+
+    // How far back a canceller reaches. **Two, not three.** Two is enough for the
+    // longest form worth catching — "pas un bon bot", where the negator sits two before
+    // the phrase — while three reaches far enough to swallow a genuine verdict: in
+    // "good bot... non en fait bad bot" the "non" belongs to the correction, not to the
+    // complaint that follows it, and a three-token window cancelled the bad verdict and
+    // handed the message to the earlier praise.
+    private const int VerdictCancelWindow = 2;
 
     // Threats to switch her off, unplug her, or wipe her. Not an insult and not a
     // verdict — a threat to her *existence*, which she reacts to far more strongly
@@ -623,22 +705,119 @@ internal static class MessageCues
     /// that carries a verdict is answered as feedback, not as a mood, so the two
     /// never both fire on the same message.
     /// </summary>
-    public static FeedbackKind ReadFeedback(string content)
+    public static FeedbackKind ReadFeedback(string content) => ReadFeedback(content, out _);
+
+    /// <summary>
+    /// The same verdict, also reporting which wording carried it — "good bot" and
+    /// "good girl" count identically on the tally but are answered differently.
+    /// </summary>
+    public static FeedbackKind ReadFeedback(string content, out VerdictForm form)
     {
+        form = VerdictForm.Bot;
         if (string.IsNullOrWhiteSpace(content)) return FeedbackKind.None;
 
         var tokens = TokenizeOrdered(content).Select(Shorten).ToList();
         if (tokens.Count == 0) return FeedbackKind.None;
 
-        var joined = " " + string.Join(' ', tokens) + " ";
-        var squashed = " " + string.Join(' ', tokens.Select(Squash)) + " ";
+        // A verdict being quoted, supposed or referred to is not a verdict being given.
+        // Whole-message, unlike the adjacent-token canceller in SaysVerdict: a framing
+        // clause colours everything after it, which is the entire trick in
+        // "cette phrase est fausse -> t'es un bon bot".
+        if (IsFramed(tokens)) return FeedbackKind.None;
 
         // Bad wins a tie, the same way Mean does: someone who says both has
-        // landed on a complaint.
-        if (SaysVerdict(tokens, joined, squashed, _badBotPhrases, _badBotWords)) return FeedbackKind.Bad;
-        if (SaysVerdict(tokens, joined, squashed, _goodBotPhrases, _goodBotWords)) return FeedbackKind.Good;
+        // landed on a complaint. Within each kind the girl form is checked first, so
+        // the more specific wording decides how she answers.
+        if (SaysVerdict(tokens, _badGirlPhrases, _badGirlWords, _goodBotAdjectives))
+        {
+            form = VerdictForm.Girl;
+            return FeedbackKind.Bad;
+        }
+        if (SaysVerdict(tokens, _badBotPhrases, _badBotWords, _goodBotAdjectives)) return FeedbackKind.Bad;
+
+        if (SaysVerdict(tokens, _goodGirlPhrases, _goodGirlWords, _badBotAdjectives))
+        {
+            form = VerdictForm.Girl;
+            return FeedbackKind.Good;
+        }
+        if (SaysVerdict(tokens, _goodBotPhrases, _goodBotWords, _badBotAdjectives)) return FeedbackKind.Good;
 
         return FeedbackKind.None;
+    }
+
+    // Whether the message frames a verdict rather than delivering one.
+    private static bool IsFramed(List<string> tokens)
+    {
+        if (tokens.Any(t => _verdictFramingWords.Contains(t) || _verdictFramingWords.Contains(Squash(t))))
+            return true;
+
+        for (var i = 0; i < tokens.Count; i++)
+            if (_verdictFramingPhrases.Any(p => PhraseStartsAt(tokens, i, p)))
+                return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// Whether the message passes this verdict, ignoring any occurrence that is negated
+    /// or contradicted by what sits just before it.
+    /// </summary>
+    /// <remarks>
+    /// <para>Scans by token index rather than by substring, because the whole point is
+    /// to see the words *preceding* the match — which a "does the joined string contain
+    /// this phrase" test throws away. That is how "bad good bot" and "not good bot" both
+    /// used to register as praise.</para>
+    /// <para>A cancelled occurrence is skipped, not fatal: the scan keeps going, so
+    /// "not good bot... ok fine, good bot" still lands on the second one. Refusing the
+    /// whole message would hand people an easier trick than the one being closed.</para>
+    /// <para>Cancelling yields <see cref="FeedbackKind.None"/> rather than flipping to
+    /// the opposite verdict. "not good bot" plainly means the complaint, but "pas un
+    /// mauvais bot" plainly means the compliment, and inferring either would have her
+    /// snapping back at praise on a misread. Not counting an ambiguous verdict matches
+    /// how the rest of this system treats ambiguity.</para>
+    /// </remarks>
+    private static bool SaysVerdict(
+        List<string> tokens, string[] phrases, HashSet<string> words, HashSet<string> opposite)
+    {
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            var hit = words.Contains(tokens[i]) || words.Contains(Squash(tokens[i]))
+                      || phrases.Any(p => PhraseStartsAt(tokens, i, p));
+
+            if (hit && !IsCancelled(tokens, i, opposite)) return true;
+        }
+
+        return false;
+    }
+
+    // Whether <paramref name="phrase"/>'s tokens run consecutively from index i.
+    // Compared squashed as well as written, so "gooood bot" still lands on "good bot"
+    // exactly as the substring matcher did.
+    private static bool PhraseStartsAt(List<string> tokens, int i, string phrase)
+    {
+        var parts = phrase.Split(' ');
+        if (i + parts.Length > tokens.Count) return false;
+
+        for (var k = 0; k < parts.Length; k++)
+            if (tokens[i + k] != parts[k] && Squash(tokens[i + k]) != Squash(parts[k]))
+                return false;
+
+        return true;
+    }
+
+    // A negator, or the opposite verdict's adjective, within the few tokens before the
+    // match: "pas un bon bot", "bad good bot". Both mean the verdict as written is not
+    // the verdict intended.
+    private static bool IsCancelled(List<string> tokens, int start, HashSet<string> opposite)
+    {
+        for (var i = Math.Max(0, start - VerdictCancelWindow); i < start; i++)
+        {
+            var token = tokens[i];
+            if (_verdictNegators.Contains(token) || _verdictNegators.Contains(Squash(token))) return true;
+            if (opposite.Contains(token) || opposite.Contains(Squash(token))) return true;
+        }
+
+        return false;
     }
 
     /// <summary>

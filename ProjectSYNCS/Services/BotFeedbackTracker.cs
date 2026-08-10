@@ -120,7 +120,7 @@ internal sealed class BotFeedbackTracker
 
         if (message.Author.IsBot) return;
 
-        var verdict = MessageCues.ReadFeedback(message.Content ?? string.Empty);
+        var verdict = MessageCues.ReadFeedback(message.Content ?? string.Empty, out var form);
         if (verdict == FeedbackKind.None) return;
 
         var repliedTo = message.ReferencedMessage;
@@ -171,7 +171,7 @@ internal sealed class BotFeedbackTracker
         if (claim != Claim.Granted) return;
 
         await RecordAsync(guildChannel.Guild.Id, message.Author.Id, verdict);
-        await RespondAsync(message, verdict);
+        await RespondAsync(message, verdict, form);
 
         // Deliberately last: her comeback must read as immediate, and a level-up line
         // (if any) is a separate follow-up that should never delay her acknowledgement
@@ -419,15 +419,19 @@ internal sealed class BotFeedbackTracker
         }
     }
 
-    private async Task RespondAsync(SocketUserMessage message, FeedbackKind verdict)
+    private async Task RespondAsync(SocketUserMessage message, FeedbackKind verdict, VerdictForm form)
     {
         bool byOwner = message.Author.Id == AvailabilityService.OwnerId;
 
         if (verdict == FeedbackKind.Good)
         {
             // Wordless on purpose: praise is worth acknowledging, not worth a
-            // paragraph. Her creator gets devotion rather than a generic heart.
-            var pool = byOwner ? BotResponses.OwnerReactions : BotResponses.NiceReactions;
+            // paragraph. Her creator gets devotion rather than a generic heart, and
+            // "good girl" gets its own register — the wording is the whole point, so
+            // answering it with the generic nice pool would flatten it.
+            var pool = byOwner ? BotResponses.OwnerReactions
+                     : form == VerdictForm.Girl ? BotResponses.GoodGirlReactions
+                     : BotResponses.NiceReactions;
             var emote = EmoteMarkup.Parse(_picker.Pick(message.Channel.Id, pool));
             if (emote is null) return;
 
@@ -447,8 +451,13 @@ internal sealed class BotFeedbackTracker
         }
 
         // Being told off *is* worth answering. Everyone gets indignation; the one
-        // person whose opinion she actually cares about gets to hurt her.
-        var lines = byOwner ? BotResponses.BadBotRepliesOwner : BotResponses.BadBotReplies;
+        // person whose opinion she actually cares about gets to hurt her. "Bad girl"
+        // gets its own pool either way: BadBotReplies are wounded *professional* pride
+        // ("I have a 99.9% uptime"), which lands wrong against a scolding aimed at her
+        // as a person. The owner tier still wins — that one is about who said it.
+        var lines = byOwner ? BotResponses.BadBotRepliesOwner
+                  : form == VerdictForm.Girl ? BotResponses.BadGirlReplies
+                  : BotResponses.BadBotReplies;
         var name = BotResponses.DisplayNameFor(message.Author.Id,
             (message.Author as SocketGuildUser)?.Nickname ?? message.Author.GlobalName ?? message.Author.Username);
 
