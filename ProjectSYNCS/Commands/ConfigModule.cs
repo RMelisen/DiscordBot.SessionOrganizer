@@ -23,11 +23,11 @@ namespace ProjectSYNCS.Commands;
 // and config.yaml ships register_globally: true (a global command is DM-enabled by
 // default). Without this the command is reachable somewhere it can only throw.
 [CommandContextType(InteractionContextType.Guild)]
-// Hides the group in Discord's own picker for anyone without ManageGuild. Presentation
-// only — a server can override it under Integrations, and it knows nothing about the
-// bot's owner — so the IsStaff check in every handler is what actually decides. Same
-// belt-and-braces as XpAdminModule.
-[DefaultMemberPermissions(GuildPermission.ManageGuild)]
+// Deliberately NOT [DefaultMemberPermissions(GuildPermission.ManageGuild)] — see
+// XpAdminModule for why. A permission bit cannot single out
+// AvailabilityService.OwnerId, so on a server where the owner holds no ManageGuild
+// role Discord would block him from a gate meant to admit him. IsStaff in every
+// handler below is the only real check.
 [Group("config", "Configurer le bot pour ce serveur (admins/modérateurs)")]
 public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
 {

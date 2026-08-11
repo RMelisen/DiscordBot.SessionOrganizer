@@ -13,11 +13,13 @@ namespace ProjectSYNCS.Commands;
 // and config.yaml ships register_globally: true (a global command is DM-enabled by
 // default). Without this the command is reachable somewhere it can only throw.
 [CommandContextType(InteractionContextType.Guild)]
-// Hides the commands in Discord's own picker for anyone without ManageGuild, so people
-// who cannot use them never see them. This is presentation, not security: a server can
-// override it under Integrations, and it says nothing about the bot's owner, so the
-// IsStaff check below still decides. Belt and braces on purpose.
-[DefaultMemberPermissions(GuildPermission.ManageGuild)]
+// Deliberately NOT [DefaultMemberPermissions(GuildPermission.ManageGuild)]. That gate
+// is a Discord permission *bit*, which cannot express "ManageGuild holders, plus this
+// one specific person" — it has no notion of AvailabilityService.OwnerId at all. On a
+// server where the owner's roles carry no ManageGuild, Discord would hide (and refuse
+// to invoke) the command for him even though IsStaff below says he may use it. So
+// everyone sees these in the picker; IsStaff is the only real gate, same as it always
+// was — see CLAUDE.md's authorization-models note.
 public class XpAdminModule : InteractionModuleBase<SocketInteractionContext>
 {
     // Generous but finite. The cap is not about balance — staff can simply run the

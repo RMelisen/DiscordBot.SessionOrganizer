@@ -896,12 +896,15 @@ row, 80-char button labels, 100-char select labels, 1000-char scheduled-event
 description, 2000-char message (relays truncate to 1200–1500 to leave room for the
 herald line and blockquote markers). Exceeding one throws at send time, not at build.
 
-**`/addxp` and `/removexp` are guarded twice, and only one of the guards is real.**
-`[DefaultMemberPermissions(GuildPermission.ManageGuild)]` hides them in Discord's own
-command picker, which is presentation only — a server can override it under Integrations
-and it knows nothing about the bot's owner. `SessionPermissions.IsStaff` inside the
-handler is what actually decides. Keep both: the attribute stops people seeing commands
-they cannot use, the check stops them using ones they can see.
+**`/addxp` and `/removexp` are guarded once, and only in code — deliberately no
+`[DefaultMemberPermissions]`.** That attribute is a Discord permission *bit*, which
+cannot express "ManageGuild holders, plus this one specific person" — it has no notion
+of `AvailabilityService.OwnerId` at all. A first version carried it anyway, on a server
+where the owner's roles happened to include ManageGuild, so it went unnoticed that on a
+server where they don't, Discord hides *and refuses to invoke* the command for him even
+though `SessionPermissions.IsStaff` says he may use it. So both commands are visible to
+everyone in the picker now; `IsStaff` inside the handler is the only real gate, and
+always was meant to be.
 
 They deliberately fire **no level-up card** even when an adjustment crosses a threshold:
 that card celebrates something earned, and a manual grant is not. Both are ephemeral,
@@ -914,8 +917,8 @@ add|remove` and `/config moderator-role set|clear`, plus a flat `/config show` �
 levels, which is Discord's maximum nesting. Deliberately not flat like `/shame`: that
 one is flat *only* because it had to stay invokable bare (a parent with subcommands
 cannot be), and nothing here needs that, since "show me the config" is naturally its own
-subcommand. Every handler is ephemeral and re-checks `SessionPermissions.IsStaff`; the
-`[DefaultMemberPermissions]` on the group is presentation only, exactly as on
+subcommand. Every handler is ephemeral and re-checks `SessionPermissions.IsStaff`, the
+only gate — no `[DefaultMemberPermissions]` on the group, for the same reason as
 `XpAdminModule`.
 
 **There are three separate authorization models.** Session and poll management uses
