@@ -378,6 +378,38 @@ gates the response, so holding down Enter after one joke earns one ❤️ and so
 thumbing down her whole backlog. State is in-memory and resets on restart like the
 rest of the personality.
 
+**About 1 in 100 "good bot"s gets a line instead of the usual silent reaction —
+the praise turnabout.** `BotFeedbackTracker.RespondAsync` rolls `TurnaboutChance`
+first, and on a hit calls `SendTurnaboutAsync` and returns before reaching the
+reaction pools below, so the ordinary path is untouched the other 99 times. Which
+pool she draws from is decided by `BotResponses.GenderFor`, not by `VerdictForm` —
+"good bot" and "good girl" get exactly the same treatment here, because this is
+about *who* said it, not *how*. **Deliberately not crossed** with `VerdictForm` or
+`byOwner` the way the reaction/reply pools below are: a "small pool" stays small by
+not multiplying itself against every other axis in this file, so the owner and Tata
+draw from the same `TurnaboutBoyLines` / `TurnaboutGirlLines` as anyone else known
+to `GenderFor` — no owner-flavoured turnabout pool exists.
+
+**`GenderFor` is seeded from confirmation, never from a name.** Two entries in
+`BotResponses.KnownGenders` are grounded in this file's own existing text — the
+owner (`Boy`, "papa" throughout `OwnerGreetings`/`OwnerComebacks`) and Tata (`Girl`,
+"ma {0}" throughout `TataGreetings`) — and the rest were stated directly, the same
+25 people `RealNames` already knows by their real first name. Nobody should be added
+to either map on the strength of a Discord username or first name looking gendered —
+that is exactly the inference this project's pronoun policy rules out. The `//
+Name` comments beside each entry are `RealNames`' own, repeated here only so a
+reviewer isn't forced to cross-reference the other dictionary; the two "Luca"s keep
+`RealNames`' `(Noel)` / `(DeMarzo)` disambiguation for the same reason. Everyone not
+in `KnownGenders` gets `TurnaboutNeutralLines`, which is why every line in that pool
+uses an adjective that is invariant in French (*adorable*, *sage*, "quelqu'un de
+bien") — nothing there needs to agree with a gender nobody has confirmed.
+
+**The turnabout reply is deliberately not added to `_notJudgeable`.** A "good bot"
+in answer to "bon garçon !" is just more praise arriving through the reply path,
+and more praise looping is not the runaway-negativity problem `_notJudgeable`
+exists to stop — see the bad-bot reply note above for the loop that *is* worth
+breaking. Nothing here breaks it because nothing needs to.
+
 **Her own acknowledgement must not count as a new action.** She answers "good bot"
 with a reaction, and that reaction comes back on `ReactionAdded` looking exactly like
 anyone else's. Recorded naively it becomes a fresh action, clears `Judged`, and hands
