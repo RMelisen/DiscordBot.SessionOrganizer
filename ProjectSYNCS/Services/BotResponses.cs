@@ -112,7 +112,6 @@ internal static class BotResponses
         "Giga flop",
         "En big 2026 ? -_-'",
         "T'es pas le couteau le plus aiguisé du tiroir toi OwO",
-        "Erling Haaland me manque",
     };
 
     // Replies when someone calls the bot "Inabot". It is SYNCS, and it does NOT
@@ -235,7 +234,6 @@ internal static class BotResponses
         "67 raisons de rester allumée.",
         "Sandra n'est toujours pas arrivée.",
         "Rodhengard me manque.",
-        "SIX SEVEEEN",
         "Just Monika.",
         "Est-ce que tu m'entends ?",
         "SIX SEVEEEN",
@@ -451,6 +449,7 @@ internal static class BotResponses
         "Est-ce que tu m'entends ?",
         "Just Monika.",
         "SIX SEVEEEN",
+        "Erling Haaland me manque",
     };
 
     // Replies when a message reads as a compliment.
