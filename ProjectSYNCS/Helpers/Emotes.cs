@@ -103,7 +103,7 @@ public static class Emotes
     public const string PrisonerFlatId = "1534820935872548884";
     public const string PrisonerFlat = $"<:prisoner_flat:{PrisonerFlatId}>";
 
-    public const string WitchSadId = "1181617926864912454";
+    public const string WitchSadId = "1536665672938160211";
     public const string WitchSad = $"<:witch_sad:{WitchSadId}>";
 
     public const string MeltCryId = "1508937311310839928";
