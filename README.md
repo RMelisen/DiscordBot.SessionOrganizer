@@ -138,7 +138,8 @@ in one click. The bot's user-facing language is French.
   current state, separating the built-in defaults from what was added.
 - **`/help`** — in-Discord usage guide.
 - **Owner-only commands** — the configured owner can speak through the bot
-  (`/tell` into a channel, `/dm` to a person) and flag themselves unavailable
+  (`/tell` into a channel — usable from a DM with the bot too, picking the destination
+  from an autocompleted list of channels it can post in; `/dm` to a person) and flag themselves unavailable
   (`/absent`), after which the bot answers anyone who pings them and forwards the
   mention by DM — which the owner can reply to, and the bot relays the answer back
   into the original channel. These are deliberately left out of `/help`.

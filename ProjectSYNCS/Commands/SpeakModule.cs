@@ -5,6 +5,7 @@ using Discord.Net;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Helpers;
+using ProjectSYNCS.Interactions.Autocomplete;
 using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Commands;
@@ -38,8 +39,13 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
     public async Task SpeakAsync(
         [Summary("message", "Le message à faire dire au bot")]
         string message,
+        // A string with autocomplete rather than a native channel option, so the
+        // command works from a DM: Discord's channel picker resolves against the guild
+        // the command was invoked in, and a DM has none — the option would render with
+        // nothing to choose. See ChannelAutocompleteHandler.
         [Summary("channel", "Salon de destination (par défaut : le salon actuel)")]
-        ITextChannel? channel = null,
+        [Autocomplete(typeof(ChannelAutocompleteHandler))]
+        string? channel = null,
         [Summary("announce", "Faire une annonce")]
         bool announce = false,
         [Summary("respond_to", "Lien du message auquel répondre (clic droit → Copier le lien du message)")]
@@ -62,13 +68,22 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
+        // The option arrives as text — normally the id the autocomplete supplied, but
+        // it can be typed by hand, so a mention or a name is accepted too.
+        var (requested, channelError) = ResolveChannel(channel);
+        if (channelError is not null)
+        {
+            await FollowupAsync(channelError, ephemeral: true);
+            return;
+        }
+
         // A link decides the destination by itself: it carries the channel.
         ITextChannel? target;
         IMessage? repliedTo = null;
 
         if (!string.IsNullOrWhiteSpace(respond_to))
         {
-            var resolved = await ResolveLinkedMessageAsync(respond_to, channel);
+            var resolved = await ResolveLinkedMessageAsync(respond_to, requested);
             if (resolved.Error is not null)
             {
                 await FollowupAsync(resolved.Error, ephemeral: true);
@@ -79,12 +94,20 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
         }
         else
         {
-            target = channel ?? Context.Channel as ITextChannel;
+            // In a DM there is no current channel to fall back to, so the option stops
+            // being optional — said plainly rather than as "only works in a text
+            // channel", which would read as the command being unavailable here.
+            target = requested ?? Context.Channel as ITextChannel;
         }
 
         if (target is null)
         {
-            await FollowupAsync("Cette commande ne fonctionne que dans un salon textuel.", ephemeral: true);
+            await FollowupAsync(
+                Context.Channel is IDMChannel
+                    ? "Depuis nos messages privés je ne sais pas où envoyer ça — choisis un salon "
+                      + "avec l'option **channel**. ✍️"
+                    : "Cette commande ne fonctionne que dans un salon textuel.",
+                ephemeral: true);
             return;
         }
 
@@ -213,6 +236,74 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
             ownerName);
 
         return $"{herald}\n{MessageFormat.Quote(text, MaxMessageLength)}";
+    }
+
+    /// <summary>
+    /// What the <c>channel</c> option's text refers to: a channel id, or a name.
+    /// </summary>
+    /// <remarks>
+    /// Pure and free of gateway types so the parsing can be checked without a
+    /// connection — the same split <c>RivalryService.IsRivalAuthor</c> and
+    /// <c>BotFeedbackTracker.ReadTarget</c> use. Worth isolating because getting it
+    /// wrong sends the owner's message to the wrong place, silently.
+    /// <para>Exactly one of the two is ever set. An empty or whitespace input yields
+    /// neither, which the caller reads as "no channel was asked for".</para>
+    /// </remarks>
+    internal static (ulong? Id, string? Name) ParseChannelRef(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return (null, null);
+
+        var text = input.Trim();
+
+        // A pasted mention, <#123…>. Stripped before the digit test so it lands on the
+        // id path rather than being looked up as a name that cannot exist.
+        if (text.StartsWith("<#") && text.EndsWith('>'))
+            text = text[2..^1];
+
+        if (ulong.TryParse(text, out var id)) return (id, null);
+
+        // "#général" and "général" are the same request; the hash is decoration.
+        var name = text.TrimStart('#').Trim();
+        return name.Length == 0 ? (null, null) : (null, name);
+    }
+
+    /// <summary>
+    /// Turns the <c>channel</c> option's text into a channel, or explains why it can't.
+    /// </summary>
+    /// <remarks>
+    /// Autocomplete supplies the raw id, which is the normal path and the exact one.
+    /// The other two forms exist because the option is a plain string and can be typed
+    /// or pasted: a channel mention (<c>&lt;#id&gt;</c>) and a bare name. A name is only
+    /// accepted when it matches exactly one channel — silently picking the first of
+    /// several "général"s across guilds would send the message somewhere unintended,
+    /// which is the one mistake this command must not make quietly.
+    /// </remarks>
+    private (ITextChannel? Channel, string? Error) ResolveChannel(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return (null, null);
+
+        var client = Context.Client;
+        var (id, name) = ParseChannelRef(input);
+
+        if (id is { } channelId)
+        {
+            if (client.GetChannel(channelId) is ITextChannel byId) return (byId, null);
+            return (null, "Je ne vois pas ce salon — je n'y suis peut-être pas. ❌");
+        }
+
+        var matches = client.Guilds
+            .SelectMany(g => g.TextChannels)
+            .Where(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        return matches.Count switch
+        {
+            1 => (matches[0], null),
+            0 => (null, $"Je ne trouve aucun salon nommé **{name}**. "
+                        + "Choisis-le dans la liste plutôt que de le taper. ❌"),
+            _ => (null, $"Plusieurs salons s'appellent **{name}**. "
+                        + "Choisis-le dans la liste pour que je sache lequel. ❌"),
+        };
     }
 
     // Turns a pasted message link into the channel and message it points at.

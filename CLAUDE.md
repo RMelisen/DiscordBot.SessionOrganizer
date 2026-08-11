@@ -1200,6 +1200,20 @@ recorded regardless. `AnnounceAsync` resolves the member through
 `channel as SocketGuildChannel`, which a voice channel also satisfies — so the avatar
 on the card still works.
 
+**`/tell`'s destination is an autocompleted *string*, not a channel option, and that is
+what makes it work from a DM.** Discord's native channel picker resolves against the
+guild the command was invoked in; a DM has none, so the option renders with nothing to
+choose. Autocomplete is driven by the bot rather than by the client's context, which is
+the only way to pick a guild channel from a private message. It replaced the native
+picker rather than sitting beside it — two overlapping options that each work half the
+time would need conflict handling between them, which `respond_to` already demonstrates
+is worth avoiding. `ChannelAutocompleteHandler` offers only channels the bot can
+actually **send** in, and suggests nothing at all to anyone but the owner, since the
+command is registered globally and therefore visible to everyone. The text is turned
+back into a channel by `SpeakModule.ParseChannelRef`, kept pure and gateway-free because
+misreading it sends the owner's message to the wrong place silently; a *name* is
+accepted only when exactly one channel matches, for the same reason.
+
 **Every module that reads `Context.Guild` must carry
 `[CommandContextType(InteractionContextType.Guild)]`.** `config.yaml` ships
 `register_globally: true`, and a global slash command is DM-enabled by default — so
