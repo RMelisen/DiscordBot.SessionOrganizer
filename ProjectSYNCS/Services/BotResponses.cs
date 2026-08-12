@@ -199,6 +199,56 @@ internal static class BotResponses
         "Dicté par mon Maître **{0}**, proclamé par mes soins :",
     };
 
+    // /yesno's two verdicts. The coin flip is even; these are only how she *delivers*
+    // the result, so nothing here should hedge — a line that reads as "maybe" makes the
+    // command useless. {0} = the asker's name, used by some lines and not others,
+    // matching the mix in every other pool here.
+    //
+    // Kept as two flat pools rather than one with a yes/no flag: the answer is picked
+    // first and the pool second, so a "yes" line can never be drawn for a "no".
+    public static readonly string[] YesLines =
+    {
+        "Oui. ✨",
+        "Oui, évidemment (˶˃ ᵕ ˂˶)",
+        "C'est oui. Et je le pense vraiment ♡",
+        $"Oui {Emotes.DixSurDix}",
+        "Oui. J'ai vérifié mes calculs, deux fois même.",
+        "Oui, et je vois pas pourquoi tu hésites encore (ᵕ • ᴗ •)",
+        $"Absolument oui {Emotes.PepeHappy}",
+        "Oui. Tu voulais que je dise oui de toute façon, avoue.",
+        "Oui ! Enfin une bonne idée aujourd'hui ✨",
+        $"Oui, clairement {Emotes.CatHeart}",
+        "Mon verdict : oui. C'est officiel, c'est moi qui décide ici ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Oui, pour une fois je suis d'accord avec toi UwU",
+        "Oui. Sans hésitation. Suivant ?",
+        $"Ouiii {Emotes.AdorableFrog}",
+        "Oui, et si ça tourne mal c'est pas ma faute (˶ᵔ ᵕ ᵔ˶)",
+        "Bien sûr que oui ♡",
+        "Oui UwU",
+    };
+
+    public static readonly string[] NoLines =
+    {
+        "Non. ✨",
+        "Non, et n'insiste pas ( ˶ˆ ᗜ ˆ˵ )",
+        "C'est non. Désolée pas désolée.",
+        $"Non {Emotes.Staring}",
+        "Nooon. Franchement (ᵕ • ᴗ •)",
+        "Non. J'ai vérifié mes calculs, deux fois même.",
+        $"Non, surtout pas {Emotes.OkPaimon}",
+        "Non. Et tu le savais déjà avant de me demander.",
+        "Non ! Qu'est-ce qui t'a pris de penser à ça ദ്ദി◝ ⩊ ◜.ᐟ",
+        $"Non, non et non {Emotes.VeryAngry}",
+        "Mon verdict : non. C'est officiel, c'est moi qui décide ici.",
+        "Non. Repose la question demain, la réponse sera non aussi.",
+        "Non. Voilà, c'était rapide.",
+        $"Nan {Emotes.Htph}",
+        "Non, mais courage quand même ✨",
+        "Non. Je te dis ça pour ton bien, sincèrement ♡",
+        "Alors non. Vraiment non ( ˶ˆ ᗜ ˆ˵ )",
+        "Non. Et je t'épargne les détails de toute façon tu es trop bête pour comprendre ✨",
+    };
+
     // Filler lines for the bot's Discord presence — the little status line under its
     // name in the member list. Every one is free-form: PresenceService sends them as
     // a custom status, so the line renders exactly as written, with no verb Discord

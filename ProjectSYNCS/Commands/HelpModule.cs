@@ -57,6 +57,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/leaderboard`** — Le classement, 5 par page. Trois vues (**Niveaux**, **Réactions**, " +
                 "**Vocal**) et trois filtres (**depuis toujours**, **30 jours**, **7 jours**).\n" +
                 "**`/emotestats`** — Les emotes les plus utilisées, écrites et en réaction.\n" +
+                "**`/yesno [question]`** — Tu hésites ? Je tranche. Pile ou face, mais avec du caractère.\n" +
                 "**`/goodbot`** — Qui m'a dit *good bot* (ou l'inverse). Un 👍 ou un 👎 sur un de " +
                 "mes messages compte pareil.")
             .AddField("Comment on gagne de l'XP",

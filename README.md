@@ -23,6 +23,7 @@ a wall of shame. The bot's user-facing language is French.
 | `/leaderboard` | Server ranking — three views, three windows | everyone |
 | `/emotestats` | Most-used emotes | everyone |
 | `/goodbot` | Who praised or scolded the bot | everyone |
+| `/yesno [question]` | A coin flip, delivered with conviction | everyone |
 | `/shame` | The wall of shame | everyone |
 | `/shame user:@someone` | Put someone on it | staff |
 | `/config` | Per-server settings, no redeploy | staff |
@@ -141,6 +142,11 @@ precedes them, and one that is merely quoted, supposed or self-referential
 
 > The rolling windows on both commands only cover data recorded since daily buckets
 > were added; all-time still includes everything counted before that.
+
+- **`/yesno [question]`** — an even coin flip, delivered as a verdict in her own voice
+  rather than as a bare "oui"/"non". The optional question is echoed above the answer so
+  the ruling stands on its own in the channel; without one it's just the verdict. She
+  never hedges — the whole point is that she decides.
 
 ### Wall of shame
 
