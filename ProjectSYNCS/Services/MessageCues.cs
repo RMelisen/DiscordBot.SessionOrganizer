@@ -640,6 +640,47 @@ internal static class MessageCues
         return letters >= ShoutMinLetters && ratio >= ShoutRatio;
     }
 
+    // Every spelling of "quoi" worth catching. The reply is *derived* from whichever
+    // one was used rather than looked up, so adding a spelling here is the whole edit
+    // — "kwa" gives "Kwacoubeh" for free.
+    //
+    // Deliberately no "coi": "rester coi" is real French, and the joke is not worth
+    // firing on it. Same reasoning as the weak cues elsewhere in this file.
+    private static readonly HashSet<string> _quoiBait = new()
+    {
+        "koi", "koua", "kwa", "kwoi", "qoi", "quoa", "quoi",
+    };
+
+    /// <summary>
+    /// The "quoicoubeh" answer to a message that ends on some spelling of "quoi", or
+    /// null when it doesn't end on one.
+    /// </summary>
+    /// <remarks>
+    /// <para><b>The last word, and only the last word.</b> The joke is an interruption
+    /// of someone finishing on "quoi ?" — "quoi tu fais" is not bait, and catching it
+    /// mid-sentence would fire on ordinary questions constantly.</para>
+    /// <para>Punctuation costs nothing to handle: the tokenizer drops it, so "quoi ?",
+    /// "quoi ??" and "quoi ? 😅" all end on the same token. Elongation is squashed as
+    /// well, so "quoiiii" still lands — and still answers "Quoicoubeh" rather than
+    /// repeating the stretch back.</para>
+    /// <para>Note "c'est n'importe quoi" *does* qualify. That is the joke working, not
+    /// a false positive: the bait is any sentence ending on the word.</para>
+    /// </remarks>
+    public static string? ReadQuoiBait(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return null;
+
+        var tokens = TokenizeOrdered(content);
+        if (tokens.Count == 0) return null;
+
+        var last = tokens[^1];
+        var word = _quoiBait.Contains(last) ? last
+                 : _quoiBait.Contains(Squash(last)) ? Squash(last)
+                 : null;
+
+        return word is null ? null : char.ToUpperInvariant(word[0]) + word[1..] + "coubeh ✨";
+    }
+
     // How emphatic the message is, regardless of what it says: shouting, drawn-out
     // letters, exclamation marks. Only ever added to a side that already scored.
     private static double Emphasis(string content)

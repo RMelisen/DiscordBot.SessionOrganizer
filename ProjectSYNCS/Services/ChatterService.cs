@@ -26,6 +26,10 @@ internal sealed class ChatterService
     private const double BreakdownChance = 0.001;
     private const double ReferenceChance = 0.008;
 
+    // How often a sentence ending on "quoi ?" gets answered. Rare enough to stay a
+    // surprise, common enough that the setup and the punchline still connect.
+    private const double QuoicoubehChance = 0.02;
+
     // How often Tata gets warmth instead of the usual roast or brush-off. Deliberately
     // short of Papa's unconditional treatment: he is never teased, she mostly isn't,
     // everyone else always is. Three legible tiers rather than two arbitrary favourites.
@@ -101,7 +105,33 @@ internal sealed class ChatterService
         if (MessageCues.ThreatensShutdownByName(message.Content ?? string.Empty))
         {
             await TryHandleShutdownThreatAsync(message);
+            return;
         }
+
+        await TryQuoicoubehAsync(message);
+    }
+
+    // Someone finished a sentence on "quoi ?" and got caught. Ambient like the
+    // shutdown-by-name branch above and below it in priority: anything actually aimed
+    // at her is handled earlier and returns, so this only ever fires on the
+    // conversations she was not part of — which is exactly where the joke belongs.
+    //
+    // The roll is the only rationing, deliberately. There is no per-channel cooldown
+    // the way ReactionService and RivalryService have: at 1-in-50 the bait itself is
+    // already rare, and a cooldown on top would make it fire so seldom that nobody
+    // would connect the answer to the setup. Same call ReferenceChance makes.
+    private async Task TryQuoicoubehAsync(SocketUserMessage message)
+    {
+        if (Random.Shared.NextDouble() >= QuoicoubehChance) return;
+
+        // Rolled before the match, which costs nothing in odds — both orders give
+        // P(bait) x 2% — but saves tokenizing 98% of every message in the server for a
+        // path that almost never fires.
+        var answer = MessageCues.ReadQuoiBait(message.Content ?? string.Empty);
+        if (answer is null) return;
+
+        _logger.LogInformation("Quoicoubeh fired on a message ending in bait.");
+        await ReplyWithTypingAsync(message, answer, "quoicoubeh");
     }
 
     // Answers the *other* leveling bot's announcements — congratulating the person and
