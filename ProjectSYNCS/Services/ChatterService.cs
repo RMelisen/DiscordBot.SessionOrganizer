@@ -28,7 +28,7 @@ internal sealed class ChatterService
 
     // How often a sentence ending on "quoi ?" gets answered. Rare enough to stay a
     // surprise, common enough that the setup and the punchline still connect.
-    private const double QuoicoubehChance = 0.02;
+    private const double QuoicoubehChance = 0.2;
 
     // How often Tata gets warmth instead of the usual roast or brush-off. Deliberately
     // short of Papa's unconditional treatment: he is never teased, she mostly isn't,
