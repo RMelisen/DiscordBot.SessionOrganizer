@@ -112,6 +112,6 @@ public static class Emotes
     public const string WitchEhehId = "1534820938112176282";
     public const string WitchEheh = $"<:witch_eheh:{WitchEhehId}>";
 
-
-    
+    public const string SparkleId = "1542157590606250120";
+    public const string Sparkle = $"<a:sparkle:{SparkleId}>";   
 }

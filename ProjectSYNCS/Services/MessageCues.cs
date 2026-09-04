@@ -678,7 +678,7 @@ internal static class MessageCues
                  : _quoiBait.Contains(Squash(last)) ? Squash(last)
                  : null;
 
-        return word is null ? null : char.ToUpperInvariant(word[0]) + word[1..] + "coubeh ✨";
+        return word is null ? null : char.ToUpperInvariant(word[0]) + word[1..] + "coubeh " + Emotes.Sparkle;
     }
 
     // How emphatic the message is, regardless of what it says: shouting, drawn-out
