@@ -114,4 +114,7 @@ public static class Emotes
 
     public const string SparkleId = "1542157590606250120";
     public const string Sparkle = $"<a:sparkle:{SparkleId}>";   
+
+    public const string GigaLaughId = "1482304998871138346";
+    public const string GigaLaugh = $"<:giga_laugh:{GigaLaughId}>";
 }
