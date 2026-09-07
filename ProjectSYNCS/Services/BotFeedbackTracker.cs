@@ -51,11 +51,62 @@ internal sealed class BotFeedbackTracker
     // stays small precisely by not being crossed with every other axis in this file.
     private const double TurnaboutChance = 0.01;
 
-    // The reactions that read as a verdict. Custom emotes are deliberately excluded:
-    // she reacts with the server's own emotes herself, and people paste them for all
-    // sorts of reasons, whereas nobody adds a thumbs-down to be friendly.
-    private const string ThumbsUp = "👍";
-    private const string ThumbsDown = "👎";
+    // The reactions that read as a verdict.
+    //
+    // **Custom emotes used to be deliberately excluded here**, on the grounds that
+    // people paste the server's own emotes for all sorts of reasons while nobody adds
+    // a thumbs-down to be friendly. That was too cautious: on this server the custom
+    // emotes are precisely how people react, and a 👍 is the *least* likely
+    // way to tell her she did well. The recall was worth more than the precision, so
+    // both halves are curated lists now rather than one hardcoded pair.
+    //
+    // Kept separate from BotResponses' NiceReactions / MeanReactions on purpose: those
+    // are what *she* reacts with, this is what she *reads*. The two overlap heavily but
+    // are not the same question — she would never react with 🔪, and a person doing
+    // it to her plainly means something. Sharing one list would force one of the two to
+    // be wrong.
+    //
+    // Matched by **id** for custom emotes, so a rename on the server changes nothing,
+    // and by code-point **prefix** for Unicode, so skin-tone modifiers and the
+    // variation selector (❤ vs ❤️) both land on the same entry.
+    private static readonly HashSet<ulong> _goodEmoteIds = Ids(
+        Emotes.AdorableFrogId, Emotes.DixSurDixId, Emotes.DancingBlobId, Emotes.HiCatId,
+        Emotes.GigaLaughId, Emotes.CatHeartId, Emotes.McHeartId, Emotes.PepeHappyId,
+        Emotes.NoiceId, Emotes.UwuId, Emotes.MushroomCuteId,
+        Emotes.SparkleId);
+
+    private static readonly HashSet<ulong> _badEmoteIds = Ids(
+        Emotes.GooseKnifeId, Emotes.VeryAngryId,
+        Emotes.ZulanaTerreurNocturneId, Emotes.OkPaimonId);
+
+    // Stored without the variation selector so the prefix test catches both spellings.
+    private static readonly string[] _goodUnicode =
+    {
+        "👍",                                             
+        "😂", "🤣",                               
+        "❤", "🧡", "💛", "💚", "💙", "💜", "🤍", "🤎", "🖤",
+        "💖", "💕", "💗", "💓", "💞", "💘",
+        "🥰", "😍", "😘", "🤩",
+        "🔥", "💯", "👏", "🙌", "🫶",
+        "⭐", "🌟", "✨",
+        "🏆", "🥇", "🐐",
+        "😄", "😁", "😊",
+    };
+
+    private static readonly string[] _badUnicode =
+    {
+        "👎",                                             
+        "🔪",                                            
+        "😠", "😡", "🤬",
+        "💔", "😬",
+        "🤮", "🤢",
+        "🙄", "😒", "🤨", "🥱",
+        "💀", "👿", "🤡",
+        "❌", "🚫", "🗑",
+    };
+
+    private static HashSet<ulong> Ids(params string[] ids) =>
+        ids.Select(ulong.Parse).ToHashSet();
 
     // The last thing she did in a channel, and who has already judged it.
     private sealed class LastAction
@@ -94,6 +145,25 @@ internal sealed class BotFeedbackTracker
     // and SuppressJudgement withdraws an action that was recorded a moment earlier.
     private readonly HashSet<ulong> _notJudgeable = new();
     private readonly Queue<ulong> _notJudgeableOrder = new();
+
+    // Who has already had a reaction counted on which message. **Only the first
+    // verdict reaction a person puts on a given message counts** — every later one is
+    // ignored, whatever it says.
+    //
+    // Two things make this necessary now that the vocabulary is wide. One: stacking
+    // 👍, :adorablefrog: and :10sur10: on one message is a single opinion expressed
+    // three times, not three verdicts. Two: it settles a contradiction rather than
+    // letting the last word win — 👍 followed by 🔪 counts as praise, because that is
+    // the order it was given in, and reversing your mind by piling on is not a vote.
+    //
+    // LastAction.Judged does not cover this: it is keyed per *action*, so once she has
+    // spoken again the old message becomes fair game for a second reaction. This is
+    // keyed to the message itself and so holds however long the message lives in the
+    // window. Bounded FIFO like everything else here; falling off the end just means a
+    // very old message could be judged again, which no one is farming.
+    private const int ReactionJudgedCap = 500;
+    private readonly HashSet<(ulong Message, ulong User)> _reactionJudged = new();
+    private readonly Queue<(ulong Message, ulong User)> _reactionJudgedOrder = new();
 
     public BotFeedbackTracker(
         DiscordSocketClient client,
@@ -230,6 +300,13 @@ internal sealed class BotFeedbackTracker
             // message containing a link, so a chatty message could grow one by itself.
             if (resolved.Components.Count > 0) return;
 
+            // First reaction on this message wins, and there is no second. Checked
+            // *before* the claim deliberately: the rule is "one reaction per message",
+            // so a reaction that the claim then refuses for its own reasons has still
+            // been this person's one shot at this message. Marking only on success
+            // would let them keep adding emotes until one landed.
+            if (!TryClaimFirstReaction(resolved.Id, reaction.UserId)) return;
+
             // Attached to the message it judges, so it needs no attribution window —
             // unambiguous in exactly the way a reply is. It still goes through the
             // claim, which is what stops someone thumbing their way down her backlog.
@@ -244,15 +321,55 @@ internal sealed class BotFeedbackTracker
         }
     }
 
-    // Which verdict a reaction carries, if any. Skin-tone variants append a modifier
-    // to the base code point, so 👍🏽 has to match by prefix rather than by equality.
-    private static FeedbackKind ReadReaction(IEmote emote)
+    /// <summary>
+    /// Which verdict a reaction carries, if any.
+    /// </summary>
+    /// <remarks>
+    /// Internal rather than private so the scratch harness can exercise it without a
+    /// gateway — it is a pure function of the emote, and the lists it consults are the
+    /// kind of data that goes stale silently. Custom emotes are matched by **id**, so a
+    /// rename on the server cannot break them; Unicode by **prefix**, since skin-tone
+    /// modifiers and the variation selector both append to the base code point
+    /// (👍🏽 and ❤️ must land on 👍 and ❤).
+    /// </remarks>
+    internal static FeedbackKind ReadReaction(IEmote emote)
     {
-        if (emote is not Emoji emoji) return FeedbackKind.None;
+        switch (emote)
+        {
+            case Emote custom:
+                if (_goodEmoteIds.Contains(custom.Id)) return FeedbackKind.Good;
+                if (_badEmoteIds.Contains(custom.Id)) return FeedbackKind.Bad;
+                return FeedbackKind.None;
 
-        if (emoji.Name.StartsWith(ThumbsUp, StringComparison.Ordinal)) return FeedbackKind.Good;
-        if (emoji.Name.StartsWith(ThumbsDown, StringComparison.Ordinal)) return FeedbackKind.Bad;
-        return FeedbackKind.None;
+            case Emoji emoji:
+                if (Matches(emoji.Name, _goodUnicode)) return FeedbackKind.Good;
+                if (Matches(emoji.Name, _badUnicode)) return FeedbackKind.Bad;
+                return FeedbackKind.None;
+
+            default:
+                return FeedbackKind.None;
+        }
+
+        static bool Matches(string name, string[] pool) =>
+            pool.Any(e => name.StartsWith(e, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// True the first time <paramref name="userId"/> reacts to <paramref name="messageId"/>
+    /// with anything that reads as a verdict, false for every reaction after it.
+    /// </summary>
+    private bool TryClaimFirstReaction(ulong messageId, ulong userId)
+    {
+        lock (_gate)
+        {
+            if (!_reactionJudged.Add((messageId, userId))) return false;
+
+            _reactionJudgedOrder.Enqueue((messageId, userId));
+            if (_reactionJudgedOrder.Count > ReactionJudgedCap)
+                _reactionJudged.Remove(_reactionJudgedOrder.Dequeue());
+
+            return true;
+        }
     }
 
     // selfMessageId is the id of her message when the action *is* a message; 0 when

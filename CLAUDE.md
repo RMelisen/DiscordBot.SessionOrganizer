@@ -369,8 +369,8 @@ and `ReactionAdded` both fire for the bot's own traffic, so it records "I acted 
 at T" without `ChatterService` or `ReactionService` telling it anything — which is
 why it is a separate service rather than a branch in either. It is therefore the one
 handler in `BotService`'s fan-out that must *not* skip the bot's own messages.
-Attribution is anything attached to one of her messages — a reply, or a 👍/👎 on it
-(both always count) — or a plain message within a 5-minute window of her last action
+Attribution is anything attached to one of her messages — a reply, or a verdict
+reaction on it (both always count) — or a plain message within a 5-minute window of her last action
 in that channel. The window exists because the server has other bots, and a bare
 "good bot" after Quokka does something would otherwise land in her column. Counting
 is one verdict per person per action *shared across all three routes*, which also
@@ -428,13 +428,36 @@ the echo can beat it — which is why `SuppressJudgement` both records the id an
 withdraws an action already opened for it, and why `LastAction` carries `MessageId`
 at all. Cover both orderings or the loop comes back intermittently.
 
-**The thumb path counts on her chatter only** — `resolved.Components.Count > 0` skips
-session cards, poll cards and leaderboards, where a 👍 means "I'm in" rather than
+**The reaction path counts on her chatter only** — `resolved.Components.Count > 0`
+skips session cards, poll cards and leaderboards, where a 👍 means "I'm in" rather than
 praise. Buttons are the test rather than embeds because Discord attaches an embed to
 any message carrying a link, so a plain chatty line could grow one on its own. The
 path is also silent by design: a 👎 on an hour-old message would otherwise fire a
 comeback into a dead conversation. Removing a reaction does **not** decrement — the
 counters only ever go up, and the claim already prevents a re-count.
+
+**It is no longer thumbs-only, reversing an earlier deliberate exclusion.** The
+original note here said custom emotes were kept out because people paste the server's
+own emotes for all sorts of reasons while nobody adds a thumbs-down to be friendly.
+That was too cautious for *this* server, where the custom emotes are how people react
+and a bare 👍 is among the least likely ways to say she did well. `_goodEmoteIds` /
+`_badEmoteIds` and `_goodUnicode` / `_badUnicode` in `BotFeedbackTracker` are the four
+curated lists, matched by **id** for custom emotes (so a rename on the server changes
+nothing) and by code-point **prefix** for Unicode (so `👍🏽` and `❤️` land on
+`👍` and `❤`). Deliberately **not** shared with `BotResponses.NiceReactions` /
+`MeanReactions`: those are what *she* reacts with, these are what she *reads*. She
+would never react with 🔪, and a person doing it to her plainly means something —
+one list would force one of the two to be wrong.
+
+**Only the first verdict reaction per person per message counts**, whatever it says.
+`TryClaimFirstReaction` is keyed on `(messageId, userId)` and is checked **before**
+`TryClaim`, so a reaction the claim then refuses has still spent that person's one shot
+at that message — marking only on success would let someone keep adding emotes until
+one landed. This does not duplicate `LastAction.Judged`, which is keyed per *action*:
+once she has spoken again the old message would otherwise be fair game for a second
+reaction. It also settles a contradiction by order rather than by last word — 👍 then
+🔪 counts as praise, because reversing your mind by piling on is not a vote. Bounded
+FIFO at 500 like the other in-memory sets here.
 
 **A shutdown threat is the one place favouritism *inverts*.** Every other branch
 softens things for the people she likes; here, being able to actually carry the

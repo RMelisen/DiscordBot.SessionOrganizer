@@ -58,8 +58,9 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**Vocal**) et trois filtres (**depuis toujours**, **30 jours**, **7 jours**).\n" +
                 "**`/emotestats`** — Les emotes les plus utilisées, écrites et en réaction.\n" +
                 "**`/yesno [question]`** — Tu hésites ? Je tranche. Pile ou face, mais avec du caractère.\n" +
-                "**`/goodbot`** — Qui m'a dit *good bot* (ou l'inverse). Un 👍 ou un 👎 sur un de " +
-                "mes messages compte pareil.")
+                "**`/goodbot`** — Qui m'a dit *good bot* (ou l'inverse). Réagir à un de mes " +
+                "messages compte pareil — 👍, un cœur, un fou rire… ou 👎, un couteau, une " +
+                "tête qui pleure. Seule ta **première** réaction par message compte.")
             .AddField("Comment on gagne de l'XP",
                 "En parlant et en réagissant, et un peu plus en s'adressant à moi.\n" +
                 "En vocal aussi : il faut être **accompagné**, **micro ouvert** et **pas en sourdine** " +

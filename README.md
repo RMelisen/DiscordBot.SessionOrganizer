@@ -127,9 +127,14 @@ is rendered or uploaded — Discord loads the faces itself.
   window is often empty.
 
 She notices either verdict: praise earns a silent reaction, a scolding earns a reply.
-A **👍 or 👎 on one of her messages** counts as the same verdict without her answering
-back — on what she *says*, not on session cards or leaderboards, where a thumb means
-something else. It only counts when it follows something she actually said or reacted
+**Reacting to one of her messages** counts as the same verdict without her answering
+back. Not just 👍 / 👎: a curated set of the server's own emotes counts too — the
+cheerful ones (:adorablefrog:, :10sur10:, :giga_laugh:, hearts, a laugh) as praise, the
+pointed ones (:gooseknife:, :veryangry:, :staring:, a knife, sad faces) as a scolding.
+Only on what she *says*, not on session cards or leaderboards, where a thumb means
+something else — and only the **first** reaction each person puts on a given message,
+so stacking three approving emotes is still one opinion, and 👍 followed by 🔪 stays
+praise. It only counts when it follows something she actually said or reacted
 to, and only once per person per thing she did, however they phrase it.
 
 **`good girl` / `bad girl`** count the same on the tally but get a different answer:
