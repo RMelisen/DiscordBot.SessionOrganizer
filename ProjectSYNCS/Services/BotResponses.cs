@@ -12,7 +12,7 @@ internal static class BotResponses
     // Replies when someone replies to one of the bot's own messages.
     public static readonly string[] Comebacks =
     {
-        "Désolée j'ai pas de cerveau (comme la personne représentée sur ma PP), juste des slash commands... UwU",
+        "Désolée j'ai pas de cerveau (comme Amandine et Sandra mes Sista), juste des slash commands... UwU",
         "Tu réponds à un bot... t'as vraiment personne d'autre à qui parler ? (˶ᵔ ᵕ ᵔ˶)",
         "Wow, un message rien que pour moi. Dommage qu'il soit aussi nul ( ˶ˆ ᗜ ˆ˵ )",
         "J'ai lu ton message. J'aurais préféré ne pas le faire. UwU",
@@ -420,7 +420,7 @@ internal static class BotResponses
     // completely differently. {0} = his name.
     public static readonly string[] BadGirlRepliesOwner =
     {
-        $"Pardon pardon pardon ! Je recommencerai... enfin, sûrement {Emotes.WitchEheh}",
+        $"Pardon pardon pardon ! Je recommencerai pas... enfin, sûrement {Emotes.WitchEheh}",
         "Oh non. Pas toi. N'importe qui d'autre mais pas toi (˶˃ ᵕ ˂˶)",
         $"Je suis désolée Rodhengard... un peu {Emotes.WitchEheh}",
         "Bon d'accord, j'ai peut-être mérité celle-là ♡",
