@@ -51,6 +51,15 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
     private const string BotRefusal =
         "Les bots ne gagnent pas d'XP. Surtout pas ceux-là. Bien essayé (˶˃ ᵕ ˂˶)";
 
+    // What anyone but the owner sees from /leaderboard or any of its buttons. The board
+    // is owner-only, and this deliberately does not say so: it reads as an ordinary
+    // failure, in her voice, with no hint that the command works for someone else.
+    // A fixed line rather than a pool for the same reason as BotRefusal — and here it
+    // matters more, since a real error is the same every time and a varied one would
+    // read as scripted.
+    private const string LeaderboardUnavailable =
+        "Oups… quelque chose s'est mal passé de mon côté. Réessaie plus tard ? (ᵕ • ᴗ •)";
+
     private readonly XpService _xp;
 
     public LevelModule(XpService xp)
@@ -74,7 +83,7 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
         var rank = await _xp.GetRankAsync(Context.Guild.Id, target.Id);
 
         await FollowupAsync(
-            components: BuildCard(target, rank),
+            components: BuildCard(target, rank, CanSeeLeaderboard(Context.User)),
             flags: MessageFlags.ComponentsV2,
             allowedMentions: AllowedMentions.None);
     }
@@ -82,6 +91,14 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
     [SlashCommand("leaderboard", "Le classement des niveaux du serveur")]
     public async Task LeaderboardAsync()
     {
+        // Checked before deferring, so the refusal can be ephemeral: a public "thinking…"
+        // cannot be turned into a private reply afterwards.
+        if (!CanSeeLeaderboard(Context.User))
+        {
+            await RespondAsync(LeaderboardUnavailable, ephemeral: true);
+            return;
+        }
+
         await DeferAsync();
 
         await FollowupAsync(
@@ -125,6 +142,15 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
 
     private async Task ShowAsync(string viewStr, string periodStr, string pageStr)
     {
+        // Every board button lands here, so this is the gate that actually holds: the
+        // slash command alone would leave the owner's own board clickable by anyone in
+        // the channel. Ephemeral, and the owner's message is left untouched.
+        if (!CanSeeLeaderboard(Context.User))
+        {
+            await RespondAsync(LeaderboardUnavailable, ephemeral: true);
+            return;
+        }
+
         if (!Enum.TryParse<LeaderboardView>(viewStr, out var view)) view = DefaultView;
         if (!Enum.TryParse<StatsPeriod>(periodStr, out var period)) period = DefaultPeriod;
         int.TryParse(pageStr, out var page);
@@ -144,7 +170,15 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
 
     // ---- /level -------------------------------------------------------------
 
-    private MessageComponent BuildCard(IUser target, XpRank? rank)
+    // TEMPORARY — to be re-opened to everyone later; see CLAUDE.md for the undo steps.
+    // /leaderboard is owner-only. Inline OwnerId comparison, the same model as /tell,
+    // /dm and /absent — not IsStaff, which would open it to every ManageGuild holder.
+    private static bool CanSeeLeaderboard(IUser user) => user.Id == AvailabilityService.OwnerId;
+
+    // showLeaderboardButton is whether the *viewer* could follow "Voir le classement".
+    // For anyone else the button would only lead to the refusal above, so it is left
+    // off rather than offered as a dead end.
+    private MessageComponent BuildCard(IUser target, XpRank? rank, bool showLeaderboardButton)
     {
         var totalXp = rank?.TotalXp ?? 0;
         var level = rank?.Level ?? 0;
@@ -164,12 +198,14 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
             .AddComponent(new TextDisplayBuilder(
                 LevelCardUi.CardProgress(into, span, level + 1, totalXp)));
 
-        return new ComponentBuilderV2()
-            .AddComponent(container)
-            .AddComponent(new ActionRowBuilder()
+        var builder = new ComponentBuilderV2().AddComponent(container);
+
+        if (showLeaderboardButton)
+            builder.AddComponent(new ActionRowBuilder()
                 .WithButton("Voir le classement",
-                    $"level:page:{LeaderboardView.Xp}:{StatsPeriod.AllTime}:0", ButtonStyle.Secondary))
-            .Build();
+                    $"level:page:{LeaderboardView.Xp}:{StatsPeriod.AllTime}:0", ButtonStyle.Secondary));
+
+        return builder.Build();
     }
 
     // ---- /leaderboard -------------------------------------------------------

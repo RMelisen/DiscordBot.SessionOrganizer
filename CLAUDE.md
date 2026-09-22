@@ -947,7 +947,7 @@ only gate — no `[DefaultMemberPermissions]` on the group, for the same reason 
 **There are three separate authorization models.** Session and poll management uses
 `Helpers/SessionPermissions.CanManage` — the organizer, or any guild
 Administrator / ManageGuild holder. The owner-only commands (`/tell`, `/dm`,
-`/absent`) instead compare `Context.User.Id` against `AvailabilityService.OwnerId`
+`/absent`, `/leaderboard`) instead compare `Context.User.Id` against `AvailabilityService.OwnerId`
 inline in the module and reply ephemerally. `SessionPermissions.IsStaff` is the third —
 Administrator / ManageGuild **or** the owner, with no notion of owning the thing being
 acted on, which is what `/addxp` and `/removexp` need since nobody owns someone else's
@@ -1053,6 +1053,27 @@ Discord.Net enforces the cap itself, so this fails at build-time-of-the-message 
 than as an API rejection. The switchers are what forced the reduction, not readability
 alone. Adding anything to a row, or another button row, means re-doing that sum: at 5
 rows there is headroom for one more row of five buttons and no more.
+
+**`/leaderboard` is owner-only, and it hides that.** Anyone else gets
+`LevelModule.LeaderboardUnavailable` — a fixed, ephemeral "quelque chose s'est mal
+passé" in her voice, with no mention of permissions, so it reads as an ordinary failure.
+Fixed rather than a pool on purpose: a real error is identical every time, and a varied
+one would read as scripted. The gate is inline `AvailabilityService.OwnerId`, the
+`/tell` model — not `IsStaff`. **It lives in `ShowAsync` as well as the slash command**,
+because every board button routes there and the board is a public message: gating only
+the command would leave the owner's board clickable by anyone in the channel. The
+refusal to a button is ephemeral and leaves the owner's message untouched. `/level`'s
+"Voir le classement" button is only added when the *viewer* is the owner, rather than
+offered as a door to the fake error. It is absent from `/help`, like the other
+owner-only commands, but still visible in Discord's picker — there is no permission bit
+for "this one user", the same limitation `XpAdminModule` documents.
+
+**This lock is temporary** — the owner intends to re-open `/leaderboard` to everyone
+later. It is not a design to defend. To undo it: make `CanSeeLeaderboard` return `true`
+(or delete it and its three call sites, passing `true` to `BuildCard`), drop
+`LeaderboardUnavailable`, put the `/leaderboard` line back in `HelpModule`'s "Niveaux &
+statistiques" field (re-check the 1024/6000 caps), set its README row back to
+*everyone*, and delete this note.
 
 **`/leaderboard` is three views over one row, not three leaderboards.** `MemberXp`
 carries `TotalXp`, `ReactionsUsed` and `VoiceMinutes`, so `LeaderboardView` only changes
