@@ -72,13 +72,15 @@ that re-apply belongs next to the rotation logic. Don't go looking for it in
 `BotService`.
 
 Layers: `Commands/` (slash modules + the embed/component builders), `Interactions/`
-(component handlers and modal DTOs), `Services/` (EF repositories + behaviour),
-`Models/`, `Data/AppDbContext.cs`, `Helpers/`.
+(`Components/` handlers, `Modals/` DTOs and `Autocomplete/` handlers), `Services/`
+(EF repositories + behaviour), `Models/`, `Data/AppDbContext.cs`, `Helpers/`.
 
 Slash modules: `ScheduleModule`, `PollModule`, `VoteModule`, `GiveawayModule` (group
 modules), plus the flat `EmoteStatsModule`, `BotFeedbackModule` (`/goodbot`),
 `LevelModule` (`/level`, `/leaderboard`), `ShameModule` (`/shame`), `HelpModule`,
-`SpeakModule` (`/tell`, `/dm`) and `AbsenceModule` (`/absent`). Component handlers for the published cards live apart
+`YesNoModule` (`/yesno`), `XpAdminModule` (`/addxp`, `/removexp`), `ConfigModule`
+(`/config`, itself a group module), `SpeakModule` (`/tell`, `/dm`) and `AbsenceModule`
+(`/absent`). Component handlers for the published cards live apart
 from the commands, in `Interactions/Components/` (`EventComponentHandler`,
 `PollComponentHandler`, `GiveawayComponentHandler`) — the module keeps the commands and
 the `static` card builders those handlers render through.
@@ -94,9 +96,13 @@ Two stateless helpers wrap the outward Discord side effects of a session:
 
 **DI lifetimes are not arbitrary.** `AppDbContext` and the services that wrap it
 (`EventService`, `PollService`, `EmoteStatsService`) are **transient**; the
-personality collaborators that hold in-memory state (`ChatterService`,
+collaborators that hold in-memory state are **singletons** — `ChatterService`,
 `BreakdownService`, `AvailabilityService`, `ResponsePicker`, `EmoteTracker`,
-`ReactionService`) are **singletons**. Registering a stateful service as transient
+`ReactionService`, and the four gateway-facing trackers `RivalryService`, `XpTracker`,
+`BotFeedbackTracker` and `ShameTracker`, whose cooldown gates and bounded sets are
+exactly the state that must survive between messages. `GuildConfigService` is a
+singleton too, for its cache — the one that reads the database, justified in its own
+note below. Registering a stateful service as transient
 silently drops its state — `ResponsePicker` as transient would forget every line the
 instant it returned one, and `ReactionService` would lose its cooldown and react to
 every single message.
@@ -422,7 +428,8 @@ ordinary content it is a fresh action, so "bad bot" → she snaps back → "bad 
 the comeback → she snaps back runs forever, counting every round. `_notJudgeable`
 holds those ids and is consulted in three places: `RecordAction` refuses to open an
 action for one, the reply path drops a verdict aimed at one (a reply to her is
-otherwise `unambiguous` and would *always* count), and the thumb path skips them too.
+otherwise `unambiguous` and would *always* count), and the reaction path skips them
+too.
 Unlike the acknowledgement above, a reply's id only exists **after** it is sent, so
 the echo can beat it — which is why `SuppressJudgement` both records the id and
 withdraws an action already opened for it, and why `LastAction` carries `MessageId`
@@ -495,9 +502,27 @@ at her** — a reply or an @mention — because "faut couper le serveur" needs t
 to be about her at all. `ThreatensShutdownByName` is the strict subset that names her
 outright ("redémarrer syncs"), and it is checked on **every** message, from the last
 branch of `ChatterService.HandleMessageAsync`: her name pins down what is being
-restarted exactly the way an @mention does, so it needs no other context. It is the one
-branch in that method that fires without being addressed, which is why it sits last —
-anything genuinely aimed at her is handled above it.
+restarted exactly the way an @mention does, so it needs no other context. It fires
+without being addressed, which is why it sits near the end — anything genuinely aimed at
+her is handled above it.
+
+**There are two ambient branches now, and the quoicoubeh one is last of all.** This note
+used to say the shutdown-by-name check was "the one branch that fires without being
+addressed"; that stopped being true when the joke below it shipped. Order still matters
+for the same reason — every branch aimed at her returns before either is reached.
+
+**The quoicoubeh easter egg.** A sentence ending on some spelling of "quoi" gets answered
+with the matching "Quoicoubeh", at `ChatterService.QuoicoubehChance`. Three things are
+load-bearing. **One:** `MessageCues.ReadQuoiBait` matches only the **last** token — the
+joke is an interruption of someone finishing on "quoi ?", and matching mid-sentence
+would fire on ordinary questions all day. **Two:** the answer is *derived* from the
+spelling used rather than looked up, so `_quoiBait` is the whole edit surface and "kwa"
+gives "Kwacoubeh" for free; `coi` is deliberately absent, since "rester coi" is real
+French. **Three:** the roll happens **before** the match. It costs nothing in odds —
+both orders give P(bait) x chance — but it skips tokenizing four messages in five on the
+hottest path in the bot. Note "c'est n'importe quoi" does qualify; that is the joke
+working, not a false positive. Like the breakdown, it is deliberately absent from
+`README.md` and `/help`.
 
 `_shutdownNamePhrases` is a **cross product** of `_shutdownVerbs` × `_selfNames`, not a
 hand-written list, so a new verb covers every spelling of her name at once. `sync` is in
@@ -540,11 +565,14 @@ person), and `RollTataWarmth` **rolls the dice**, so it must be called exactly o
 per message — it sits in an `else if` on both paths for that reason.
 
 **Her name is overridden, not just decorated.** `BotResponses.FamilyNicknames` maps
-her id to "Tata" and `DisplayNameFor` applies it wherever a reply fills `{0}`. That
-fallback chain (`Nickname ?? GlobalName ?? Username`) exists in **three** independent
-copies — `ChatterService.ResolveName`, `BotFeedbackTracker`, `RivalryService` — so all
-three route through `DisplayNameFor`; fixing only one makes her "Tata" in some replies
-and "Analuz" in others. `RealNames` is deliberately *not* overridden: the breakdown
+her id to "Tata" and `DisplayNameFor` applies it wherever a reply fills `{0}`. The
+fallback chain (`Nickname ?? GlobalName ?? Username`) now lives **only** in the
+`DisplayNameFor(IUser)` overload. It used to be written out at each call site — this
+note said three, and by the time anyone counted it was **six**
+(`ChatterService.ResolveName`, `BotFeedbackTracker` twice, `RivalryService`,
+`XpTracker`, `ShameModule.NameOf`), which is exactly the drift it warned about: fixing
+only some of them makes her "Tata" in one reply and "Analuz" in the next. Call the
+overload; never re-inline the chain. `RealNames` is deliberately *not* overridden: the breakdown
 reveal wants a real human name for the mask-slipping effect.
 
 **Rodhengard praising a rival gets its own pool.** `OnPraiseStolenAsync` branches on
@@ -637,6 +665,27 @@ to: a verdict aimed at a rival cannot start the comeback loop that guard exists 
 break, and bailing there would swallow the rival's praise instead. `ReadTarget` is pure
 and gateway-free so the whole precedence is checkable without a connection, the same
 split as `RivalryService.IsRivalAuthor`.
+
+**`Helpers/CooldownGate<TKey>` is the single "has this been claimed recently?"**, and
+`Helpers/BoundedSet<T>` the single "have I seen this before?". Both replaced copies that
+had already drifted: four `TryClaim` implementations (`ReactionService`,
+`RivalryService`, `ShameTracker`, `XpTracker`) differing only in key type, two
+byte-identical `ForgetStale`s, and three HashSet+Queue+cap trios inside
+`BotFeedbackTracker`.
+
+**They share the mechanism, never the policy** — every service still owns its instances
+and its own durations, which is what keeps the deliberate asymmetries in this file
+intact (`ReactionService`'s two paths gated differently, `RivalryService`'s separate
+react/mutter cooldowns, the shame counters rationed where `Le Malfaisant`'s targeted
+half is not). Never share one `CooldownGate` between two trigger populations to tidy up.
+
+**Their locking differs, and that is deliberate.** `CooldownGate` owns its lock, because
+a claim is a complete operation by itself and a narrower lock removes the cross-service
+nesting `BotFeedbackTracker` has to be careful about. `BoundedSet` owns **no** lock,
+because its callers need the add to be atomic with other state — `SuppressJudgement`
+adds to `_notJudgeable` and withdraws from `_lastActions` under one `_gate`, and giving
+the set its own lock would look safer while quietly breaking that. `RivalryService._gate`
+now guards `_lastActions` and nothing else.
 
 **`Helpers/BotChat` is the single send path for the bot's own chatter**, and
 `Helpers/EmoteMarkup.Parse` the single reaction parser. Both were private members of
@@ -757,11 +806,12 @@ narrows mentions to avoid notifying anyone; this one passes
 only, still never roles or `@everyone`. It is why `BotChat.PostWithTypingAsync` takes an
 optional `AllowedMentions`; left null it behaves exactly as before for ordinary chatter.
 
-**`/shame`'s three titles are three different mechanisms sharing one row.**
+**`/shame`'s four titles are four different mechanisms sharing one row.**
 `ShameRecord` / `ShameDailyStat` is the **fourth** totals+buckets pair, for the reason
-the other three exist. `MeanHits` and `PerfidyHits` are things you *did*, `BanVotes`
-something done *to* you — one row per (guild, user) because nobody ever reads one
-without the others. `ShameService.TryVoteAsync` checks the limit and writes both
+the other three exist. `MeanHits`, `PerfidyHits` and `ShoutHits` are things you *did*,
+`BanVotes` something done *to* you — one row per (guild, user) because nobody ever reads
+one without the others. (This said "three" until *L'Hystérique* shipped; the component
+sum further down had already been corrected to four, so the two disagreed.) `ShameService.TryVoteAsync` checks the limit and writes both
 counters in a single `SaveChanges`.
 
 **Voting is staff-only, and the daily cap is on the target, not the voter.** Anyone may
@@ -857,9 +907,10 @@ silently track unrelated personality tuning. It short-circuits on
 verdict is not a mood, and "bad bot" already belongs to `BotFeedbackTracker`.
 
 **The spam-channel exclusion is now shared, and the list still lives in one class.**
-`XpTracker.IsChannelExcluded` is public so `ShameTracker` can ask — the same shape as
-`VoiceXpService` passing a channel id instead of keeping its own copy. Only the question
-is shared; `ExcludedChannels` itself must stay private to `XpTracker`.
+`XpTracker.IsChannelExcludedAsync` is public so `ShameTracker` can ask — the same shape
+as `VoiceXpService` passing a channel id instead of keeping its own copy. Only the
+question is shared; the `ExcludedChannels` set itself stays private, exposed only as the
+read-only `HardcodedExcludedChannels` for `/config show` to list.
 
 **`/shame` is Components V2, and only the title *holder* wears an avatar.** It became V2
 when the avatars did — an embed has one thumbnail slot for the whole message, and the
@@ -1283,6 +1334,17 @@ reason the caps are checkable at all. **Keep sections short and split one rather
 letting it grow**; 11 of the 25 allowed fields are used, so there is room. Note
 `Embed.Length` is Discord.Net's own implementation of Discord's total, so measuring
 against it cannot drift from what the API enforces.
+
+**`/yesno` flips the coin first and picks the wording second.** `Random.Shared.Next(2)`
+chooses the verdict, and only then is a line drawn from `YesLines` or `NoLines` — two
+flat pools rather than one list with a flag, so a "yes" phrasing can never come out of a
+"no" roll. Neither pool may hedge: the command's whole job is to decide, and the scratch
+harness pins that every `YesLines` entry says yes and never no, and the reverse, matched
+on whole words so "Nooon" and "Nan" count while emote markup cannot produce a false hit.
+The optional question is echoed above the answer in a blockquote and sent with
+`AllowedMentions(AllowedMentionTypes.Users)`, since it is relayed text like any other.
+It carries no `[CommandContextType]` — nothing reads `Context.Guild`, so it works in a
+DM, same as `/help`.
 
 **`/help` is hand-maintained.** `HelpModule` duplicates the feature list in prose,
 as does `README.md`; neither is generated. A new user-facing command means updating

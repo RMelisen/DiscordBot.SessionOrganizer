@@ -2,6 +2,7 @@ using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
 
@@ -61,10 +62,9 @@ internal sealed class ShameTracker
     private readonly IServiceProvider _services;
     private readonly ILogger<ShameTracker> _logger;
 
-    private readonly object _gate = new();
-    private readonly Dictionary<(ulong ChannelId, ulong UserId), DateTimeOffset> _lastPerfidy = new();
-    private readonly Dictionary<(ulong ChannelId, ulong UserId), DateTimeOffset> _lastShout = new();
-    private readonly Dictionary<(ulong ChannelId, ulong UserId), DateTimeOffset> _lastMean = new();
+    private readonly CooldownGate<(ulong ChannelId, ulong UserId)> _perfidyGate = new(PerfidyCooldown, Forget);
+    private readonly CooldownGate<(ulong ChannelId, ulong UserId)> _shoutGate = new(ShoutCooldown, Forget);
+    private readonly CooldownGate<(ulong ChannelId, ulong UserId)> _meanGate = new(MeanCooldown, Forget);
 
     public ShameTracker(
         DiscordSocketClient client,
@@ -116,7 +116,7 @@ internal sealed class ShameTracker
     private async Task TrackShoutingAsync(SocketUserMessage message, ulong guildId)
     {
         if (!MessageCues.IsShouting(message.Content ?? string.Empty)) return;
-        if (!TryClaim(_lastShout, message.Channel.Id, message.Author.Id, ShoutCooldown)) return;
+        if (!_shoutGate.TryClaim((message.Channel.Id, message.Author.Id))) return;
 
         try
         {
@@ -183,7 +183,7 @@ internal sealed class ShameTracker
 
     private async Task ClaimAndRecordAsync(ulong guildId, ulong channelId, ulong userId)
     {
-        if (!TryClaim(_lastPerfidy, channelId, userId, PerfidyCooldown)) return;
+        if (!_perfidyGate.TryClaim((channelId, userId))) return;
 
         try
         {
@@ -221,7 +221,7 @@ internal sealed class ShameTracker
         // per 60 s, the same shape as "Le Perfide" and "L'Hystérique".
         if (hits == 0)
         {
-            if (!TryClaim(_lastMean, message.Channel.Id, message.Author.Id, MeanCooldown)) return;
+            if (!_meanGate.TryClaim((message.Channel.Id, message.Author.Id))) return;
             hits = 1;
         }
 
@@ -281,36 +281,4 @@ internal sealed class ShameTracker
     private bool IsTarget(IUser user, ulong authorId) =>
         user.Id != authorId
         && (!user.IsBot || user.Id == _client.CurrentUser.Id);
-
-    // Atomically checks one gate's per-(channel, user) cooldown and claims it. Takes the
-    // dictionary rather than owning one, so each rationed behaviour keeps its own window
-    // — the same shape XpTracker's TryClaim has, and for the same reason.
-    private bool TryClaim(
-        Dictionary<(ulong ChannelId, ulong UserId), DateTimeOffset> gate,
-        ulong channelId, ulong userId, TimeSpan cooldown)
-    {
-        lock (_gate)
-        {
-            var now = DateTimeOffset.UtcNow;
-            var key = (channelId, userId);
-
-            if (gate.TryGetValue(key, out var last) && now - last < cooldown) return false;
-
-            gate[key] = now;
-            ForgetStale(gate, now);
-            return true;
-        }
-    }
-
-    // Caller holds _gate. Only sweeps once the gate has grown past a size no real
-    // server reaches in an hour, so the common path stays a single dictionary write.
-    private static void ForgetStale(
-        Dictionary<(ulong ChannelId, ulong UserId), DateTimeOffset> gate, DateTimeOffset now)
-    {
-        if (gate.Count < 256) return;
-
-        var cutoff = now - Forget;
-        foreach (var key in gate.Where(kv => kv.Value < cutoff).Select(kv => kv.Key).ToList())
-            gate.Remove(key);
-    }
 }

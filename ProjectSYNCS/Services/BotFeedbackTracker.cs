@@ -131,8 +131,7 @@ internal sealed class BotFeedbackTracker
     // acknowledgement is remembered here and skipped when it echoes back. Bounded
     // FIFO, like every other bit of personality state.
     private const int AcknowledgedCap = 200;
-    private readonly HashSet<ulong> _acknowledged = new();
-    private readonly Queue<ulong> _acknowledgedOrder = new();
+    private readonly BoundedSet<ulong> _acknowledged = new(AcknowledgedCap);
 
     // Her own messages that nobody may pass verdict on — currently the bad-bot
     // replies. Without this they are ordinary new content: someone says "bad bot",
@@ -143,8 +142,7 @@ internal sealed class BotFeedbackTracker
     // A reply's id is only known *after* it is sent, and the gateway echo can beat
     // that, so both orderings are covered: RecordAction refuses ids already in here,
     // and SuppressJudgement withdraws an action that was recorded a moment earlier.
-    private readonly HashSet<ulong> _notJudgeable = new();
-    private readonly Queue<ulong> _notJudgeableOrder = new();
+    private readonly BoundedSet<ulong> _notJudgeable = new(AcknowledgedCap);
 
     // Who has already had a reaction counted on which message. **Only the first
     // verdict reaction a person puts on a given message counts** — every later one is
@@ -162,8 +160,7 @@ internal sealed class BotFeedbackTracker
     // window. Bounded FIFO like everything else here; falling off the end just means a
     // very old message could be judged again, which no one is farming.
     private const int ReactionJudgedCap = 500;
-    private readonly HashSet<(ulong Message, ulong User)> _reactionJudged = new();
-    private readonly Queue<(ulong Message, ulong User)> _reactionJudgedOrder = new();
+    private readonly BoundedSet<(ulong Message, ulong User)> _reactionJudged = new(ReactionJudgedCap);
 
     public BotFeedbackTracker(
         DiscordSocketClient client,
@@ -362,13 +359,7 @@ internal sealed class BotFeedbackTracker
     {
         lock (_gate)
         {
-            if (!_reactionJudged.Add((messageId, userId))) return false;
-
-            _reactionJudgedOrder.Enqueue((messageId, userId));
-            if (_reactionJudgedOrder.Count > ReactionJudgedCap)
-                _reactionJudged.Remove(_reactionJudgedOrder.Dequeue());
-
-            return true;
+            return _reactionJudged.Add((messageId, userId));
         }
     }
 
@@ -396,12 +387,7 @@ internal sealed class BotFeedbackTracker
     {
         lock (_gate)
         {
-            if (_notJudgeable.Add(messageId))
-            {
-                _notJudgeableOrder.Enqueue(messageId);
-                if (_notJudgeableOrder.Count > AcknowledgedCap)
-                    _notJudgeable.Remove(_notJudgeableOrder.Dequeue());
-            }
+            _notJudgeable.Add(messageId);
 
             if (_lastActions.TryGetValue(channelId, out var action) && action.MessageId == messageId)
                 _lastActions.Remove(channelId);
@@ -501,11 +487,7 @@ internal sealed class BotFeedbackTracker
     {
         lock (_gate)
         {
-            if (!_acknowledged.Add(messageId)) return;
-
-            _acknowledgedOrder.Enqueue(messageId);
-            if (_acknowledgedOrder.Count > AcknowledgedCap)
-                _acknowledged.Remove(_acknowledgedOrder.Dequeue());
+            _acknowledged.Add(messageId);
         }
     }
 
@@ -604,8 +586,7 @@ internal sealed class BotFeedbackTracker
             (false, VerdictForm.Girl) => BotResponses.BadGirlReplies,
             _ => BotResponses.BadBotReplies,
         };
-        var name = BotResponses.DisplayNameFor(message.Author.Id,
-            (message.Author as SocketGuildUser)?.Nickname ?? message.Author.GlobalName ?? message.Author.Username);
+        var name = BotResponses.DisplayNameFor(message.Author);
 
         var line = string.Format(_picker.Pick(message.Channel.Id, lines), name);
         var sent = await BotChat.ReplyWithTypingAsync(message, line, _logger, "bad-bot reply");
@@ -628,8 +609,7 @@ internal sealed class BotFeedbackTracker
             _ => BotResponses.TurnaboutNeutralLines,
         };
 
-        var name = BotResponses.DisplayNameFor(message.Author.Id,
-            (message.Author as SocketGuildUser)?.Nickname ?? message.Author.GlobalName ?? message.Author.Username);
+        var name = BotResponses.DisplayNameFor(message.Author);
 
         var line = string.Format(_picker.Pick(message.Channel.Id, pool), name);
         await BotChat.ReplyWithTypingAsync(message, line, _logger, "praise turnabout");

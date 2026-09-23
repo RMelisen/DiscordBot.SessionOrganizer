@@ -77,42 +77,55 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        // A link decides the destination by itself: it carries the channel.
-        ITextChannel? target;
-        IMessage? repliedTo = null;
-
-        if (!string.IsNullOrWhiteSpace(respond_to))
-        {
-            var resolved = await ResolveLinkedMessageAsync(respond_to, requested);
-            if (resolved.Error is not null)
-            {
-                await FollowupAsync(resolved.Error, ephemeral: true);
-                return;
-            }
-            target = resolved.Channel;
-            repliedTo = resolved.Message;
-        }
-        else
-        {
-            // In a DM there is no current channel to fall back to, so the option stops
-            // being optional — said plainly rather than as "only works in a text
-            // channel", which would read as the command being unavailable here.
-            target = requested ?? Context.Channel as ITextChannel;
-        }
-
+        var (target, repliedTo, destinationError) = await ResolveDestinationAsync(respond_to, requested);
         if (target is null)
         {
-            await FollowupAsync(
-                Context.Channel is IDMChannel
-                    ? "Depuis nos messages privés je ne sais pas où envoyer ça — choisis un salon "
-                      + "avec l'option **channel**. ✍️"
-                    : "Cette commande ne fonctionne que dans un salon textuel.",
-                ephemeral: true);
+            await FollowupAsync(destinationError, ephemeral: true);
             return;
         }
 
-        var content = BuildContent(text, announce, target.Id);
+        var receipt = await SendAsync(target, BuildContent(text, announce, target.Id), repliedTo, announce);
+        await FollowupAsync(receipt, ephemeral: true);
+    }
 
+    /// <summary>
+    /// Where the message goes, and what (if anything) it replies to.
+    /// </summary>
+    /// <remarks>
+    /// A pasted link decides the destination by itself, since it carries the channel —
+    /// so <paramref name="requested"/> is only consulted when there is no link, and
+    /// <see cref="ResolveLinkedMessageAsync"/> owns the "the link says one channel but
+    /// you picked another" conflict.
+    /// </remarks>
+    private async Task<(ITextChannel? Channel, IMessage? RepliedTo, string? Error)> ResolveDestinationAsync(
+        string? respondTo, ITextChannel? requested)
+    {
+        if (!string.IsNullOrWhiteSpace(respondTo))
+        {
+            var resolved = await ResolveLinkedMessageAsync(respondTo, requested);
+            return resolved.Error is not null
+                ? (null, null, resolved.Error)
+                : (resolved.Channel, resolved.Message, null);
+        }
+
+        if ((requested ?? Context.Channel as ITextChannel) is { } target) return (target, null, null);
+
+        // In a DM there is no current channel to fall back to, so the option stops
+        // being optional — said plainly rather than as "only works in a text channel",
+        // which would read as the command being unavailable here.
+        return (null, null, Context.Channel is IDMChannel
+            ? "Depuis nos messages privés je ne sais pas où envoyer ça — choisis un salon "
+              + "avec l'option **channel**. ✍️"
+            : "Cette commande ne fonctionne que dans un salon textuel.");
+    }
+
+    /// <summary>
+    /// Posts the line and returns the ephemeral receipt the owner gets back, whether it
+    /// worked or not — a failure here is a missing permission, not a bug to surface.
+    /// </summary>
+    private async Task<string> SendAsync(
+        ITextChannel target, string content, IMessage? repliedTo, bool announce)
+    {
         try
         {
             await target.SendMessageAsync(
@@ -135,18 +148,14 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
                 "Owner spoke through the bot in channel {ChannelId} (heralded: {Heralded}, replying: {Replying}).",
                 target.Id, announce, repliedTo is not null);
 
-            await FollowupAsync(
-                repliedTo is null
-                    ? $"Envoyé dans {target.Mention}. ✅"
-                    : $"Réponse envoyée à **{repliedTo.Author.Username}** dans {target.Mention}. ✅",
-                ephemeral: true);
+            return repliedTo is null
+                ? $"Envoyé dans {target.Mention}. ✅"
+                : $"Réponse envoyée à **{repliedTo.Author.Username}** dans {target.Mention}. ✅";
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to speak through the bot in channel {ChannelId}.", target.Id);
-            await FollowupAsync(
-                $"Impossible d'écrire dans {target.Mention} — je n'ai peut-être pas la permission. ❌",
-                ephemeral: true);
+            return $"Impossible d'écrire dans {target.Mention} — je n'ai peut-être pas la permission. ❌";
         }
     }
 

@@ -26,8 +26,9 @@ internal sealed class ChatterService
     private const double BreakdownChance = 0.001;
     private const double ReferenceChance = 0.008;
 
-    // How often a sentence ending on "quoi ?" gets answered. Rare enough to stay a
-    // surprise, common enough that the setup and the punchline still connect.
+    // How often a sentence ending on "quoi ?" gets answered. Raised from the original
+    // 1-in-50: the bait is rarer in practice than it looks, and at 2% the joke fired so
+    // seldom that nobody connected the answer to the setup.
     private const double QuoicoubehChance = 0.2;
 
     // How often Tata gets warmth instead of the usual roast or brush-off. Deliberately
@@ -117,16 +118,16 @@ internal sealed class ChatterService
     // conversations she was not part of — which is exactly where the joke belongs.
     //
     // The roll is the only rationing, deliberately. There is no per-channel cooldown
-    // the way ReactionService and RivalryService have: at 1-in-50 the bait itself is
-    // already rare, and a cooldown on top would make it fire so seldom that nobody
-    // would connect the answer to the setup. Same call ReferenceChance makes.
+    // the way ReactionService and RivalryService have: ending a sentence on "quoi" is
+    // itself uncommon, so the bait rations the joke far more than the odds do, and a
+    // cooldown on top would bury it. Same call ReferenceChance makes.
     private async Task TryQuoicoubehAsync(SocketUserMessage message)
     {
         if (Random.Shared.NextDouble() >= QuoicoubehChance) return;
 
         // Rolled before the match, which costs nothing in odds — both orders give
-        // P(bait) x 2% — but saves tokenizing 98% of every message in the server for a
-        // path that almost never fires.
+        // P(bait) x QuoicoubehChance — but skips tokenizing four messages in five, on
+        // the hottest path in the bot.
         var answer = MessageCues.ReadQuoiBait(message.Content ?? string.Empty);
         if (answer is null) return;
 
@@ -565,6 +566,5 @@ internal sealed class ChatterService
     // Resolves the friendliest display name available: a family override (see
     // BotResponses.FamilyNicknames) first, then server nickname, then global display
     // name, then username.
-    private static string ResolveName(IUser user) => BotResponses.DisplayNameFor(
-        user.Id, (user as SocketGuildUser)?.Nickname ?? user.GlobalName ?? user.Username);
+    private static string ResolveName(IUser user) => BotResponses.DisplayNameFor(user);
 }

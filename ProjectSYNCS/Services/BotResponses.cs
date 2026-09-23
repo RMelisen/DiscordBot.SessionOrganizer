@@ -1,3 +1,5 @@
+using Discord;
+using Discord.WebSocket;
 using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
@@ -7,6 +9,71 @@ namespace ProjectSYNCS.Services;
 // {0} = the target's name and {1} = the weekday; lines without placeholders are
 // returned unchanged. Keep every formatted line free of literal { } braces
 // (string.Format would choke on them).
+// ---------------------------------------------------------------------------
+// WHAT IS IN HERE
+//
+// Grouped by what the pool is for, not by where it sits in the file — the file
+// order is historical and pools that belong together are often hundreds of lines
+// apart (JealousLines and JealousLinesOwner are 80 lines apart in opposite
+// directions). Names only, no line numbers: those go stale on the first edit.
+// Grep the name to jump to it.
+//
+// ADDING A POOL? Add it to this list too, or the list stops being trustworthy and
+// the next person writes a second pool for something that already exists.
+//
+//   Answering a human
+//     Comebacks ................ reply to one of her messages
+//     NiceReplies .............. the message read as kind
+//     Greetings ................ the message read as a greeting
+//     Interrogations ........... @mentioned with nothing else to go on
+//     RescueRoasts ............. the owner sics her on whoever he replied to
+//     MistakenIdentityReplies .. mistaken for another bot
+//     ReferenceComebacks ....... rare pop-culture one-liner
+//
+//   Reacting with an emote instead of words
+//     NiceReactions · MeanReactions · GreetingReactions
+//     OwnerReactions ........... him, whatever he wrote
+//     GoodGirlReactions · GoodGirlReactionsOwner
+//
+//   Verdicts on her ("good bot" / "bad bot" / "good girl" / "bad girl")
+//     BadBotReplies · BadBotRepliesOwner
+//     BadGirlReplies · BadGirlRepliesOwner
+//     TurnaboutBoyLines · TurnaboutGirlLines · TurnaboutNeutralLines
+//                              ... the ~1-in-100 spoken answer to praise
+//
+//   Rodhengard (the owner)
+//     OwnerGreetings ........... mentioned  |  OwnerComebacks ..... replied to
+//     OwnerMeanReplies ......... him being mean to her
+//     OwnerAbsentNotices ....... someone pinged him while away
+//     OwnerReplyHeralds · OwnerAnnouncementHeralds ... /tell and /dm heralds
+//
+//   Tata (Analuz) — TataId, TataGreetings (mentioned), TataReplies (replied to)
+//
+//   Other bots
+//     JealousLines · JealousLinesOwner ... praise went to a rival
+//     RivalMutters ............. a rival posted
+//     RivalLevelUpLines ........ a level-up on the rival's XP system
+//
+//   Self-preservation — ShutdownThreatOwner · ShutdownThreatTata · ShutdownThreatReplies
+//
+//   Commands
+//     XpLevelUpLines ........... /level  |  YesLines · NoLines ..... /yesno
+//     ShameVoteLines · ShameSelfVoteLines ............ /shame
+//     ShameEmptyMalfaisant · ShameEmptyBanni · ShameEmptyPerfide · ShameEmptyHysterique
+//     GiveawayDrawLines · GiveawayEmptyLines ......... /giveaway
+//
+//   Elsewhere
+//     PresenceFillers .......... the rotating status line
+//     Breakdown ................ the easter egg
+//     BreakdownIntroRoast · BreakdownIntroNice · BreakdownIntroCake
+//                              ... the line it cuts off mid-word
+//
+//   Per-person data and lookups (not pools)
+//     PersonalComebacks ........ per-user roast lines
+//     FamilyNicknames + DisplayNameFor(ulong, string) / DisplayNameFor(IUser)
+//     RealNames + RealNameFor .. real first names, used by the breakdown reveal
+//     KnownGenders + GenderFor . seeded from confirmation, never inferred from a name
+// ---------------------------------------------------------------------------
 internal static class BotResponses
 {
     // Replies when someone replies to one of the bot's own messages.
@@ -1632,6 +1699,22 @@ internal static class BotResponses
     // they have no family override.
     public static string DisplayNameFor(ulong userId, string fallback) =>
         FamilyNicknames.TryGetValue(userId, out var name) ? name : fallback;
+
+    /// <summary>
+    /// The name to address someone by: a family nickname if they have one, else their
+    /// server nickname, else their global display name, else their username.
+    /// </summary>
+    /// <remarks>
+    /// This overload exists because that fallback chain was written out at six separate
+    /// call sites — in ChatterService, BotFeedbackTracker (twice), RivalryService,
+    /// XpTracker and ShameModule. Every one of them fed the result straight into the
+    /// lookup above, so the chain was duplicated for no reason other than that it had
+    /// nowhere to live. Fixing only some of them is how she ends up called "Tata" in
+    /// one reply and "Analuz" in the next.
+    /// </remarks>
+    public static string DisplayNameFor(IUser user) =>
+        DisplayNameFor(user.Id,
+            (user as SocketGuildUser)?.Nickname ?? user.GlobalName ?? user.Username);
 
     /// <summary>Which "good ___" the rare praise turnabout addresses someone as.</summary>
     public enum PersonGender { Boy, Girl }

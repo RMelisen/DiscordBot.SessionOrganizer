@@ -45,8 +45,7 @@ internal sealed class ReactionService
     private const double CopyChance = 0.10;
     private const double OwnerCopyChance = 0.20;
 
-    private readonly object _gate = new();
-    private readonly Dictionary<ulong, DateTimeOffset> _lastReaction = new();
+    private readonly CooldownGate<ulong> _messageGate = new(Cooldown);
 
     public ReactionService(
         DiscordSocketClient client,
@@ -90,7 +89,7 @@ internal sealed class ReactionService
         // deliberately keeps the cooldown burned, so we stop hammering a channel we
         // can't react in. A wasted claim over something wrong with the *emote picked*
         // is released below instead — see the catch clause.
-        if (!TryClaimChannel(message.Channel.Id)) return;
+        if (!_messageGate.TryClaim(message.Channel.Id)) return;
 
         var line = _picker.Pick(message.Channel.Id, pool);
         var emote = ParseEmote(line);
@@ -221,26 +220,8 @@ internal sealed class ReactionService
     private static IEmote? ParseEmote(string markup) => EmoteMarkup.Parse(markup);
 
     // Atomically checks the per-channel cooldown and claims it.
-    private bool TryClaimChannel(ulong channelId)
-    {
-        lock (_gate)
-        {
-            var now = DateTimeOffset.UtcNow;
-            if (_lastReaction.TryGetValue(channelId, out var last) && now - last < Cooldown)
-                return false;
-
-            _lastReaction[channelId] = now;
-            return true;
-        }
-    }
 
     // Undoes a claim that turned out to be wasted on a data problem (a stale or
     // malformed emote) rather than a channel problem — see the two call sites above.
-    private void ReleaseChannelClaim(ulong channelId)
-    {
-        lock (_gate)
-        {
-            _lastReaction.Remove(channelId);
-        }
-    }
+    private void ReleaseChannelClaim(ulong channelId) => _messageGate.Release(channelId);
 }

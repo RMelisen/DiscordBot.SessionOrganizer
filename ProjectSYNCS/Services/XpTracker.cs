@@ -74,10 +74,9 @@ internal sealed class XpTracker
     // Keyed by (guild, user), not by channel — posting in two channels back-to-back
     // must not double a grant. Three independent gates, deliberately: reacting,
     // messaging, and a verdict must never block one another.
-    private readonly object _gate = new();
-    private readonly Dictionary<(ulong GuildId, ulong UserId), DateTimeOffset> _lastMessageXp = new();
-    private readonly Dictionary<(ulong GuildId, ulong UserId), DateTimeOffset> _lastReactionXp = new();
-    private readonly Dictionary<(ulong GuildId, ulong UserId), DateTimeOffset> _lastVerdictXp = new();
+    private readonly CooldownGate<(ulong GuildId, ulong UserId)> _messageXp = new(MessageCooldown, Forget);
+    private readonly CooldownGate<(ulong GuildId, ulong UserId)> _reactionXp = new(ReactionCooldown, Forget);
+    private readonly CooldownGate<(ulong GuildId, ulong UserId)> _verdictXp = new(VerdictCooldown, Forget);
 
     public XpTracker(
         DiscordSocketClient client,
@@ -103,7 +102,7 @@ internal sealed class XpTracker
         if (await IsExcludedAsync(guildChannel.Guild.Id, guildChannel.Id, guildChannel)) return;
 
         var key = (guildChannel.Guild.Id, message.Author.Id);
-        if (!TryClaim(_lastMessageXp, key, MessageCooldown)) return;
+        if (!_messageXp.TryClaim(key)) return;
 
         var amount = MessageXp;
         bool toHer = message.ReferencedMessage?.Author.Id == _client.CurrentUser.Id
@@ -149,7 +148,7 @@ internal sealed class XpTracker
         if (delta <= 0) return;
 
         var key = (guildChannel.GuildId, reaction.UserId);
-        if (!TryClaim(_lastReactionXp, key, ReactionCooldown)) return;
+        if (!_reactionXp.TryClaim(key)) return;
 
         await GrantAsync(guildChannel.GuildId, reaction.UserId, ReactionXp, resolved);
     }
@@ -185,7 +184,7 @@ internal sealed class XpTracker
 
         var channel = _client.GetChannel(channelId);
         if (await IsExcludedAsync(guildId, channelId, channel)) return;
-        if (!TryClaim(_lastVerdictXp, (guildId, userId), VerdictCooldown)) return;
+        if (!_verdictXp.TryClaim((guildId, userId))) return;
 
         await GrantAsync(guildId, userId, amount, channel as IMessageChannel);
     }
@@ -284,8 +283,7 @@ internal sealed class XpTracker
         // must never break the flow."
         if (user is null) return;
 
-        var name = BotResponses.DisplayNameFor(userId,
-            (user as SocketGuildUser)?.Nickname ?? user.GlobalName ?? user.Username);
+        var name = BotResponses.DisplayNameFor(user);
 
         // 7 and 67 are a fixed line, not a pool pick — ResponsePicker is skipped
         // entirely, so the egg never burns one of that channel's exclusion slots on a
@@ -370,28 +368,4 @@ internal sealed class XpTracker
 
     private static readonly IReadOnlySet<ulong> EmptyConfigured = new HashSet<ulong>();
 
-    // Atomically checks one gate's per-(guild,user) cooldown and claims it.
-    private bool TryClaim(Dictionary<(ulong, ulong), DateTimeOffset> gate, (ulong, ulong) key, TimeSpan cooldown)
-    {
-        lock (_gate)
-        {
-            var now = DateTimeOffset.UtcNow;
-            if (gate.TryGetValue(key, out var last) && now - last < cooldown) return false;
-
-            gate[key] = now;
-            ForgetStale(gate, now);
-            return true;
-        }
-    }
-
-    // Caller holds _gate. Only sweeps once a gate has grown past a size no real
-    // server reaches in an hour, so the common path stays a single dictionary write.
-    private static void ForgetStale(Dictionary<(ulong, ulong), DateTimeOffset> gate, DateTimeOffset now)
-    {
-        if (gate.Count < 256) return;
-
-        var cutoff = now - Forget;
-        foreach (var key in gate.Where(kv => kv.Value < cutoff).Select(kv => kv.Key).ToList())
-            gate.Remove(key);
-    }
 }

@@ -272,6 +272,5 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
         $"{LevelCardUi.RankMarker(rank)} <@{tally.UserId}> — "
         + $"**{tally.Count}** {(tally.Count == 1 ? unit : units)}";
 
-    private static string NameOf(IUser user) => BotResponses.DisplayNameFor(
-        user.Id, (user as SocketGuildUser)?.Nickname ?? user.GlobalName ?? user.Username);
+    private static string NameOf(IUser user) => BotResponses.DisplayNameFor(user);
 }

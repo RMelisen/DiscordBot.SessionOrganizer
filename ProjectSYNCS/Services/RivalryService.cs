@@ -59,8 +59,8 @@ internal sealed class RivalryService
 
     private readonly object _gate = new();
     private readonly Dictionary<ulong, RivalAction> _lastActions = new();
-    private readonly Dictionary<ulong, DateTimeOffset> _lastReaction = new();
-    private readonly Dictionary<ulong, DateTimeOffset> _lastMutter = new();
+    private readonly CooldownGate<ulong> _reactGate = new(ReactCooldown);
+    private readonly CooldownGate<ulong> _mutterGate = new(MutterCooldown);
 
     public RivalryService(
         DiscordSocketClient client,
@@ -84,13 +84,13 @@ internal sealed class RivalryService
         // only after winning its own roll, so a losing roll never burns the other's
         // window and the silent reaction can never mute the line.
         if (Random.Shared.NextDouble() < ReactChance
-            && TryClaim(_lastReaction, message.Channel.Id, ReactCooldown))
+            && _reactGate.TryClaim(message.Channel.Id))
         {
             await ReactAsync(message);
         }
 
         if (Random.Shared.NextDouble() < MutterChance
-            && TryClaim(_lastMutter, message.Channel.Id, MutterCooldown))
+            && _mutterGate.TryClaim(message.Channel.Id))
         {
             var line = _picker.Pick(message.Channel.Id, BotResponses.RivalMutters);
             await BotChat.ReplyWithTypingAsync(message, line, _logger, "rival mutter");
@@ -104,8 +104,7 @@ internal sealed class RivalryService
     /// </summary>
     public async Task OnPraiseStolenAsync(SocketUserMessage praise, ulong? rivalMessageId)
     {
-        var name = BotResponses.DisplayNameFor(praise.Author.Id,
-            (praise.Author as SocketGuildUser)?.Nickname ?? praise.Author.GlobalName ?? praise.Author.Username);
+        var name = BotResponses.DisplayNameFor(praise.Author);
 
         bool byOwner = praise.Author.Id == AvailabilityService.OwnerId;
 
@@ -239,21 +238,9 @@ internal sealed class RivalryService
         }
     }
 
-    // Atomically checks one gate's per-channel cooldown and claims it. Both gates
-    // share _gate so a single lock still covers all of this service's state.
-    private bool TryClaim(Dictionary<ulong, DateTimeOffset> gate, ulong channelId, TimeSpan cooldown)
-    {
-        lock (_gate)
-        {
-            var now = DateTimeOffset.UtcNow;
-            if (gate.TryGetValue(channelId, out var last) && now - last < cooldown) return false;
-
-            gate[channelId] = now;
-            return true;
-        }
-    }
-
-    // Caller holds _gate.
+    // Caller holds _gate. Note this sweeps _lastActions only — the two cooldown gates
+    // above own their own state and their own locks (see Helpers/CooldownGate), so
+    // _gate now covers the rival-action map and nothing else.
     private void ForgetStale()
     {
         if (_lastActions.Count < 64) return;
