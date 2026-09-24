@@ -34,11 +34,11 @@ public class PlynlingCareService
         if (outcome != CareOutcome.Done || plynling is null)
         {
             _cooldowns.Pet.Release(key);
-            return new CareReply(null, Refusal(outcome));
+            return new CareReply(null, Refusal(outcome, plynling?.Gender ?? PlynlingGender.Male));
         }
 
-        var line = string.Format(_picker.Pick(channelId, BotResponses.PlynlingPetLines), PlynlingCardUi.SafeName(plynling.Name));
-        return new CareReply(PlynlingModule.BuildCard(plynling, now, $"{line} — caressé par <@{actorId}>"), null);
+        var line = string.Format(_picker.Pick(channelId, BotResponses.PlynlingPetLines.For(plynling.Gender)), PlynlingCardUi.SafeName(plynling.Name));
+        return new CareReply(PlynlingModule.BuildCard(plynling, now, $"{line} — {PlynlingText.PettedBy(plynling.Gender, actorId)}"), null);
     }
 
     public async Task<CareReply> FeedAsync(int plynlingId, ulong actorId, PlynlingFood food, ulong channelId, DateTimeOffset now)
@@ -48,24 +48,26 @@ public class PlynlingCareService
         {
             return new CareReply(null, result.Outcome == CareOutcome.TooPoor
                 ? PlynlingText.TooPoor(result.Price, result.Balance)
-                : Refusal(result.Outcome));
+                : Refusal(result.Outcome, result.Plynling?.Gender ?? PlynlingGender.Male));
         }
 
         var info = PlynlingCatalog.Info(food);
-        var line = string.Format(_picker.Pick(channelId, BotResponses.PlynlingFeedLines),
+        var line = string.Format(_picker.Pick(channelId, BotResponses.PlynlingFeedLines.For(result.Plynling.Gender)),
             PlynlingCardUi.SafeName(result.Plynling.Name), info.WithArticle);
         return new CareReply(PlynlingModule.BuildCard(result.Plynling, now,
             $"{line}\n-# −{PebbleEconomy.Cailloux(info.Price)} · il te reste {PebbleEconomy.Cailloux(result.Balance)}",
             PlynlingArt.Food(food)), null);
     }
 
-    public static string Refusal(CareOutcome outcome) => outcome switch
+    // Every refusal but NoPlynling comes back with the Plynling loaded; NoPlynling's line
+    // names no Plynling, so the fallback gender never shows.
+    public static string Refusal(CareOutcome outcome, PlynlingGender gender) => outcome switch
     {
         CareOutcome.NoPlynling => PlynlingText.NoPlynling,
-        CareOutcome.NotOwner => PlynlingText.NotYours,
-        CareOutcome.Dead => PlynlingText.Dead,
-        CareOutcome.Frozen => PlynlingText.Frozen,
-        CareOutcome.Wasted => PlynlingText.Wasted,
+        CareOutcome.NotOwner => PlynlingText.NotYours(gender),
+        CareOutcome.Dead => PlynlingText.Dead(gender),
+        CareOutcome.Frozen => PlynlingText.Frozen(gender),
+        CareOutcome.Wasted => PlynlingText.Wasted(gender),
         _ => PlynlingText.Unknown,
     };
 }

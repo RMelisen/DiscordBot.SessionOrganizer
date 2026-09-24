@@ -69,7 +69,7 @@ namespace ProjectSYNCS.Services;
 //     BreakdownIntroRoast · BreakdownIntroNice · BreakdownIntroCake
 //                              ... the line it cuts off mid-word
 //
-//   Plynlings
+//   Plynlings — every pool is a GenderedLines (M/F halves), picked with .For(p.Gender)
 //     PlynlingAdoptLines · PlynlingAdoptRareLines ... a new Plynling
 //     PlynlingFeedLines · PlynlingPetLines .......... shown on the card
 //     PlynlingDeathLines · PlynlingResurrectLines ... public, game channel
@@ -290,94 +290,173 @@ internal static class BotResponses
         "Tu as poli des cailloux. On t'a payé en cailloux. La boucle est bouclée. {0}",
     };
 
+    // ---- Plynlings ----------------------------------------------------------------------
+    // Every pool here is a GenderedLines: M for a boy, F for a girl, picked with
+    // .For(p.Gender). A girl is "une Plynling" — the noun follows the creature. Lines are
+    // family-neutral: nothing a mushroom has and a sunflower lacks (no cap, no petals).
+
     // A new Plynling, announced on the card. {0} = its name (sanitised), {1} = species.
-    // Plynling is the grammatical subject throughout, so every line agrees in the
-    // masculine whatever the species name's own gender.
-    public static readonly string[] PlynlingAdoptLines =
-    {
-        "Un nouveau Plynling pointe le bout de son chapeau : **{0}**, espèce {1}. Nourris-le bien (˶ᵔ ᵕ ᵔ˶)",
-        "**{0}** vient de sortir de terre ! Un Plynling {1}, tout frais tout mignon ✨",
-        "Félicitations, c'est un Plynling ! **{0}** ({1}) te regarde déjà avec des yeux affamés.",
-        "Un Plynling de plus dans le monde : **{0}**, {1}. Promets-moi de ne pas l'oublier.",
-    };
+    // Every line says whether it is a boy or a girl.
+    public static readonly GenderedLines PlynlingAdoptLines = new(
+        M: new[]
+        {
+            "Un nouveau Plynling pointe le bout de son nez : **{0}**, espèce {1}. C'est un garçon ! Nourris-le bien (˶ᵔ ᵕ ᵔ˶)",
+            "**{0}** vient de sortir de terre ! Un Plynling {1}, tout frais tout mignon — et c'est un garçon ✨",
+            "Félicitations, c'est un garçon ! **{0}** ({1}) te regarde déjà avec des yeux affamés.",
+            "Un Plynling de plus dans le monde : **{0}**, {1}. C'est un petit garçon. Promets-moi de ne pas l'oublier.",
+        },
+        F: new[]
+        {
+            "Une nouvelle Plynling pointe le bout de son nez : **{0}**, espèce {1}. C'est une fille ! Nourris-la bien (˶ᵔ ᵕ ᵔ˶)",
+            "**{0}** vient de sortir de terre ! Une Plynling {1}, toute fraîche toute mignonne — et c'est une fille ✨",
+            "Félicitations, c'est une fille ! **{0}** ({1}) te regarde déjà avec des yeux affamés.",
+            "Une Plynling de plus dans le monde : **{0}**, {1}. C'est une petite fille. Promets-moi de ne pas l'oublier.",
+        });
 
     // The same moment for a rare or legendary pull, which is worth making a fuss about.
-    // {0} = name, {1} = species, {2} = rarity label.
-    public static readonly string[] PlynlingAdoptRareLines =
-    {
-        "QUOI ?! Un Plynling **{2}** ! **{0}** est un {1}… tu as une chance insolente ✨✨",
-        "Je n'en crois pas mes capteurs : **{0}**, un {1}. C'est **{2}**, ça. Garde-le en vie, par pitié.",
-        "Alerte rareté : **{0}** ({1}, *{2}*) vient de naître. Tout le serveur va être jaloux ദ്ദി◝ ⩊ ◜.ᐟ",
-    };
+    // {0} = name, {1} = species, {2} = rarity label ("rare" / "légendaire": both invariant).
+    public static readonly GenderedLines PlynlingAdoptRareLines = new(
+        M: new[]
+        {
+            "QUOI ?! Un Plynling **{2}** ! **{0}**, espèce {1}, et c'est un garçon… tu as une chance insolente ✨✨",
+            "Je n'en crois pas mes capteurs : **{0}**, un garçon, espèce {1}. C'est **{2}**, ça. Garde-le en vie, par pitié.",
+            "Alerte rareté : **{0}** ({1}, *{2}*) vient de naître. C'est un garçon, et tout le serveur va être jaloux ദ്ദി◝ ⩊ ◜.ᐟ",
+        },
+        F: new[]
+        {
+            "QUOI ?! Une Plynling **{2}** ! **{0}**, espèce {1}, et c'est une fille… tu as une chance insolente ✨✨",
+            "Je n'en crois pas mes capteurs : **{0}**, une fille, espèce {1}. C'est **{2}**, ça. Garde-la en vie, par pitié.",
+            "Alerte rareté : **{0}** ({1}, *{2}*) vient de naître. C'est une fille, et tout le serveur va être jaloux ദ്ദി◝ ⩊ ◜.ᐟ",
+        });
 
     // Shown on the card after a meal. {0} = name, {1} = the food with its article.
-    public static readonly string[] PlynlingFeedLines =
-    {
-        "Tu donnes {1} à **{0}**. Il n'en fait qu'une bouchée (˶˃ ᵕ ˂˶)",
-        "**{0}** a dévoré {1}. Il te regarde comme si tu étais la meilleure personne du monde.",
-        "Miam ! {1} pour **{0}**, qui fait une petite danse de joie ✨",
-        "**{0}** grignote {1} avec une concentration impressionnante.",
-    };
+    public static readonly GenderedLines PlynlingFeedLines = new(
+        M: new[]
+        {
+            "Tu donnes {1} à **{0}**. Il n'en fait qu'une bouchée (˶˃ ᵕ ˂˶)",
+            "**{0}** a dévoré {1}. Il te regarde comme si tu étais la meilleure personne du monde.",
+            "Miam ! {1} pour **{0}**, qui fait une petite danse de joie ✨",
+            "**{0}** grignote {1} avec une concentration impressionnante.",
+        },
+        F: new[]
+        {
+            "Tu donnes {1} à **{0}**. Elle n'en fait qu'une bouchée (˶˃ ᵕ ˂˶)",
+            "**{0}** a dévoré {1}. Elle te regarde comme si tu étais la meilleure personne du monde.",
+            "Miam ! {1} pour **{0}**, qui fait une petite danse de joie ✨",
+            "**{0}** grignote {1} avec une concentration impressionnante.",
+        });
 
     // Shown on the card after a pet. {0} = name.
-    public static readonly string[] PlynlingPetLines =
-    {
-        "**{0}** ronronne. Oui, les Plynlings ronronnent, ne pose pas de questions.",
-        "**{0}** ferme les yeux et savoure la caresse (˶ᵔ ᵕ ᵔ˶)",
-        "Le chapeau de **{0}** frétille de bonheur ✨",
-        "**{0}** se blottit contre ta main. C'est officiel, vous êtes amis.",
-        "**{0}** fait un petit bruit satisfait. Encore, encore !",
-    };
+    public static readonly GenderedLines PlynlingPetLines = new(
+        M: new[]
+        {
+            "**{0}** ronronne. Oui, les Plynlings ronronnent, ne pose pas de questions.",
+            "**{0}** ferme les yeux et savoure la caresse (˶ᵔ ᵕ ᵔ˶)",
+            "**{0}** frétille de bonheur ✨",
+            "**{0}** se blottit contre ta main. C'est officiel, c'est ton meilleur ami.",
+            "**{0}** fait un petit bruit satisfait. Encore, encore !",
+        },
+        F: new[]
+        {
+            "**{0}** ronronne. Oui, les Plynlings ronronnent, ne pose pas de questions.",
+            "**{0}** ferme les yeux et savoure la caresse (˶ᵔ ᵕ ᵔ˶)",
+            "**{0}** frétille de bonheur ✨",
+            "**{0}** se blottit contre ta main. C'est officiel, c'est ta meilleure amie.",
+            "**{0}** fait un petit bruit satisfait. Encore, encore !",
+        });
 
     // Posted publicly in the game channel, with the memorial as the picture.
     // {0} = name, {1} = owner mention (sent with pings off), {2} = time lived, {3} = memorial.
-    public static readonly string[] PlynlingDeathLines =
-    {
-        "🪦 **{0}**, le Plynling de {1}, s'est éteint après {2} de vie. Il repose désormais sous {3}.",
-        "🪦 Un chapeau de moins sur cette terre… **{0}** ({1}) nous a quittés après {2}. On lui a dressé {3}.",
-        "🪦 Minute de silence pour **{0}**, compagnon de {1} pendant {2}. Il dort sous {3}.",
-        "🪦 **{0}** n'a pas survécu à la faim. {2} de vie, et maintenant {3}. {1}, il t'attendait…",
-    };
+    public static readonly GenderedLines PlynlingDeathLines = new(
+        M: new[]
+        {
+            "🪦 **{0}**, le Plynling de {1}, s'est éteint après {2} de vie. Il repose désormais sous {3}.",
+            "🪦 Un Plynling de moins sur cette terre… **{0}** ({1}) nous a quittés après {2}. On lui a dressé {3}.",
+            "🪦 Minute de silence pour **{0}**, compagnon de {1} pendant {2}. Il dort sous {3}.",
+            "🪦 **{0}** n'a pas survécu à la faim. {2} de vie, et maintenant {3}. {1}, il t'attendait…",
+        },
+        F: new[]
+        {
+            "🪦 **{0}**, la Plynling de {1}, s'est éteinte après {2} de vie. Elle repose désormais sous {3}.",
+            "🪦 Une Plynling de moins sur cette terre… **{0}** ({1}) nous a quittés après {2}. On lui a dressé {3}.",
+            "🪦 Minute de silence pour **{0}**, compagne de {1} pendant {2}. Elle dort sous {3}.",
+            "🪦 **{0}** n'a pas survécu à la faim. {2} de vie, et maintenant {3}. {1}, elle t'attendait…",
+        });
 
     // Posted publicly when staff bring one back. {0} = name, {1} = owner mention.
-    public static readonly string[] PlynlingResurrectLines =
-    {
-        "✨ **{0}** est revenu d'entre les morts ! {1}, c'est ta deuxième chance. Ne la gâche pas.",
-        "✨ La terre tremble… **{0}** ressort du cimetière, un peu poussiéreux mais bien vivant. Bon retour, {1} !",
-        "✨ Miracle ! **{0}** respire à nouveau. {1}, nourris-le vite, il a une faim de mort-vivant.",
-    };
+    public static readonly GenderedLines PlynlingResurrectLines = new(
+        M: new[]
+        {
+            "✨ **{0}** est revenu d'entre les morts ! {1}, c'est ta deuxième chance. Ne la gâche pas.",
+            "✨ La terre tremble… **{0}** ressort du cimetière, un peu poussiéreux mais bien vivant. Bon retour, {1} !",
+            "✨ Miracle ! **{0}** respire à nouveau. {1}, nourris-le vite, il a une faim de mort-vivant.",
+        },
+        F: new[]
+        {
+            "✨ **{0}** est revenue d'entre les morts ! {1}, c'est ta deuxième chance. Ne la gâche pas.",
+            "✨ La terre tremble… **{0}** ressort du cimetière, un peu poussiéreuse mais bien vivante. Bon retour, {1} !",
+            "✨ Miracle ! **{0}** respire à nouveau. {1}, nourris-la vite, elle a une faim de morte-vivante.",
+        });
 
     // The single DM about six hours before death. {0} = name, {1} = a relative Discord
     // timestamp ("dans 6 heures") — so every line must read with "dans …" in that slot.
-    public static readonly string[] PlynlingWarningLines =
-    {
-        "⚠️ **{0}** a terriblement faim… il mourra {1} si personne ne le nourrit. `/plynling feed`, vite !",
-        "⚠️ Ton Plynling **{0}** va mourir de faim {1}. Il compte sur toi.",
-        "⚠️ Psst… **{0}** est au bord de l'évanouissement. Il s'effondrera {1}. Ne l'abandonne pas (╥﹏╥)",
-    };
+    public static readonly GenderedLines PlynlingWarningLines = new(
+        M: new[]
+        {
+            "⚠️ **{0}** a terriblement faim… il mourra {1} si personne ne le nourrit. `/plynling feed`, vite !",
+            "⚠️ Ton Plynling **{0}** va mourir de faim {1}. Il compte sur toi.",
+            "⚠️ Psst… **{0}** est au bord de l'évanouissement. Il s'effondrera {1}. Ne l'abandonne pas (╥﹏╥)",
+        },
+        F: new[]
+        {
+            "⚠️ **{0}** a terriblement faim… elle mourra {1} si personne ne la nourrit. `/plynling feed`, vite !",
+            "⚠️ Ta Plynling **{0}** va mourir de faim {1}. Elle compte sur toi.",
+            "⚠️ Psst… **{0}** est au bord de l'évanouissement. Elle s'effondrera {1}. Ne l'abandonne pas (╥﹏╥)",
+        });
 
     // DMs to an owner when staff act on their Plynling, so it never looks like a bug.
-    public static readonly string[] PlynlingStaffFreezeDms =
-    {
-        "❄️ Le staff a gelé ton Plynling **{0}**. Rien ne bouge tant qu'il n'est pas dégelé — il ne risque rien.",
-        "❄️ **{0}** a été mis au frais par le staff. Il t'attendra, bien au froid.",
-        "❄️ Pause forcée pour **{0}** : le staff l'a gelé. Pas de faim, pas de soucis, juste une longue sieste.",
-    };
+    public static readonly GenderedLines PlynlingStaffFreezeDms = new(
+        M: new[]
+        {
+            "❄️ Le staff a gelé ton Plynling **{0}**. Rien ne bouge tant qu'il n'est pas dégelé — il ne risque rien.",
+            "❄️ **{0}** a été mis au frais par le staff. Il t'attendra, bien au froid.",
+            "❄️ Pause forcée pour **{0}** : le staff l'a gelé. Pas de faim, pas de soucis, juste une longue sieste.",
+        },
+        F: new[]
+        {
+            "❄️ Le staff a gelé ta Plynling **{0}**. Rien ne bouge tant qu'elle n'est pas dégelée — elle ne risque rien.",
+            "❄️ **{0}** a été mise au frais par le staff. Elle t'attendra, bien au froid.",
+            "❄️ Pause forcée pour **{0}** : le staff l'a gelée. Pas de faim, pas de soucis, juste une longue sieste.",
+        });
 
-    public static readonly string[] PlynlingStaffThawDms =
-    {
-        "🌱 Le staff a dégelé **{0}**. La faim reprend son cours : pense à le nourrir !",
-        "🌱 **{0}** se réveille, dégelé par le staff. Il a déjà un petit creux.",
-        "🌱 Fin de la sieste pour **{0}** : le staff l'a dégelé. Son estomac s'en souvient déjà.",
-    };
+    public static readonly GenderedLines PlynlingStaffThawDms = new(
+        M: new[]
+        {
+            "🌱 Le staff a dégelé **{0}**. La faim reprend son cours : pense à le nourrir !",
+            "🌱 **{0}** se réveille, dégelé par le staff. Il a déjà un petit creux.",
+            "🌱 Fin de la sieste pour **{0}** : le staff l'a dégelé. Son estomac s'en souvient déjà.",
+        },
+        F: new[]
+        {
+            "🌱 Le staff a dégelé **{0}**. La faim reprend son cours : pense à la nourrir !",
+            "🌱 **{0}** se réveille, dégelée par le staff. Elle a déjà un petit creux.",
+            "🌱 Fin de la sieste pour **{0}** : le staff l'a dégelée. Son estomac s'en souvient déjà.",
+        });
 
     // {0} = old name, {1} = new name.
-    public static readonly string[] PlynlingStaffRenameDms =
-    {
-        "✏️ Le staff a renommé ton Plynling **{0}** en **{1}**.",
-        "✏️ Petit changement d'identité : **{0}** s'appelle désormais **{1}** (décision du staff).",
-        "✏️ Ton Plynling répond maintenant au nom de **{1}** — le staff a jugé que **{0}** ne lui allait plus.",
-    };
+    public static readonly GenderedLines PlynlingStaffRenameDms = new(
+        M: new[]
+        {
+            "✏️ Le staff a renommé ton Plynling **{0}** en **{1}**.",
+            "✏️ Petit changement d'identité : **{0}** s'appelle désormais **{1}** (décision du staff).",
+            "✏️ Ton Plynling répond maintenant au nom de **{1}** — le staff a jugé que **{0}** ne lui allait plus.",
+        },
+        F: new[]
+        {
+            "✏️ Le staff a renommé ta Plynling **{0}** en **{1}**.",
+            "✏️ Petit changement d'identité : **{0}** s'appelle désormais **{1}** (décision du staff).",
+            "✏️ Ta Plynling répond maintenant au nom de **{1}** — le staff a jugé que **{0}** ne lui allait plus.",
+        });
 
     // /yesno's two verdicts. The coin flip is even; these are only how she *delivers*
     // the result, so nothing here should hedge — a line that reads as "maybe" makes the

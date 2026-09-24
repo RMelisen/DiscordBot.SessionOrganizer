@@ -31,7 +31,7 @@ public sealed class PlynlingAnnouncer
     {
         var lived = PlynlingLife.Age(plynling, now);
         var tier = PlynlingCatalog.MemorialTier(lived);
-        var line = string.Format(_picker.Pick(GameChannelId, BotResponses.PlynlingDeathLines),
+        var line = string.Format(_picker.Pick(GameChannelId, BotResponses.PlynlingDeathLines.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name), $"<@{plynling.OwnerId}>",
             LevelCardUi.Duration((long)lived.TotalMinutes), PlynlingCatalog.MemorialName(tier));
         return PostAsync(plynling.GuildId, line, PlynlingArt.Memorial(plynling.Species, tier), "death");
@@ -39,7 +39,7 @@ public sealed class PlynlingAnnouncer
 
     public Task AnnounceResurrectionAsync(Plynling plynling, DateTimeOffset now)
     {
-        var line = string.Format(_picker.Pick(GameChannelId, BotResponses.PlynlingResurrectLines),
+        var line = string.Format(_picker.Pick(GameChannelId, BotResponses.PlynlingResurrectLines.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name), $"<@{plynling.OwnerId}>");
         return PostAsync(plynling.GuildId, line, PlynlingArt.Sprite(plynling.Species, PlynlingLife.Mood(plynling, now)), "resurrection");
     }
@@ -48,7 +48,7 @@ public sealed class PlynlingAnnouncer
     {
         var death = PlynlingLife.DeathAt(plynling);
         if (death is null) return Task.CompletedTask;
-        var line = string.Format(_picker.Pick(plynling.OwnerId, BotResponses.PlynlingWarningLines),
+        var line = string.Format(_picker.Pick(plynling.OwnerId, BotResponses.PlynlingWarningLines.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name), $"<t:{death.Value.ToUnixTimeSeconds()}:R>");
         return DmOwnerAsync(plynling.OwnerId, line);
     }

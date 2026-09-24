@@ -52,7 +52,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         var info = PlynlingCatalog.Info(species);
-        var pool = info.Rarity >= PlynlingRarity.Rare ? BotResponses.PlynlingAdoptRareLines : BotResponses.PlynlingAdoptLines;
+        var pool = (info.Rarity >= PlynlingRarity.Rare ? BotResponses.PlynlingAdoptRareLines : BotResponses.PlynlingAdoptLines).For(plynling.Gender);
         var line = string.Format(_picker.Pick(Context.Channel.Id, pool),
             PlynlingCardUi.SafeName(plynling.Name), info.Name, PlynlingCatalog.RarityLabel(info.Rarity));
         await RespondCardAsync(plynling, now, line);
@@ -122,24 +122,26 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         var (outcome, plynling) = await _plynlings.FreezeAsync(Context.Guild.Id, target.Id, byStaff, now);
         if (outcome != FreezeOutcome.Frozen || plynling is null)
         {
+            // Every refusal but NoPlynling carries the Plynling, so its gender is known.
+            var g = plynling?.Gender ?? PlynlingGender.Male;
             await RespondAsync(outcome switch
             {
                 FreezeOutcome.NoPlynling => byStaff ? PlynlingText.NoneFor(target.Id) : PlynlingText.NoPlynling,
-                FreezeOutcome.Dead => PlynlingText.Dead,
-                FreezeOutcome.AlreadyFrozen => PlynlingText.AlreadyFrozen,
-                FreezeOutcome.TooHungry => PlynlingText.TooHungryToFreeze,
-                FreezeOutcome.Cooldown => PlynlingText.FreezeCooldown(plynling!.LastSelfThawAt!.Value + PlynlingLife.SelfFreezeCooldown),
+                FreezeOutcome.Dead => PlynlingText.Dead(g),
+                FreezeOutcome.AlreadyFrozen => PlynlingText.AlreadyFrozen(g),
+                FreezeOutcome.TooHungry => PlynlingText.TooHungryToFreeze(g),
+                FreezeOutcome.Cooldown => PlynlingText.FreezeCooldown(g, plynling!.LastSelfThawAt!.Value + PlynlingLife.SelfFreezeCooldown),
                 _ => PlynlingText.Unknown,
             }, ephemeral: true, allowedMentions: AllowedMentions.None);
             return;
         }
 
-        await RespondCardAsync(plynling, now, PlynlingText.FrozenNotice(PlynlingCardUi.SafeName(plynling.Name), plynling.FreezeUntil));
+        await RespondCardAsync(plynling, now, PlynlingText.FrozenNotice(plynling.Gender, PlynlingCardUi.SafeName(plynling.Name), plynling.FreezeUntil));
         // After the reply, never before: nothing here defers, and a DM is two or three
         // REST calls against Discord's 3 s deadline for answering the interaction.
         if (byStaff)
             await _announcer.DmOwnerAsync(plynling.OwnerId, string.Format(
-                _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffFreezeDms), PlynlingCardUi.SafeName(plynling.Name)));
+                _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffFreezeDms.For(plynling.Gender)), PlynlingCardUi.SafeName(plynling.Name)));
     }
 
     [SlashCommand("thaw", "Dégeler un Plynling")]
@@ -159,21 +161,22 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         var (outcome, plynling) = await _plynlings.ThawAsync(Context.Guild.Id, target.Id, asStaff, now);
         if (outcome != ThawOutcome.Thawed || plynling is null)
         {
+            var g = plynling?.Gender ?? PlynlingGender.Male;
             await RespondAsync(outcome switch
             {
                 ThawOutcome.NoPlynling => target.Id == Context.User.Id ? PlynlingText.NoPlynling : PlynlingText.NoneFor(target.Id),
-                ThawOutcome.Dead => PlynlingText.Dead,
-                ThawOutcome.NotFrozen => PlynlingText.NotFrozen,
-                ThawOutcome.StaffOnly => PlynlingText.ThawStaffOnly,
+                ThawOutcome.Dead => PlynlingText.Dead(g),
+                ThawOutcome.NotFrozen => PlynlingText.NotFrozen(g),
+                ThawOutcome.StaffOnly => PlynlingText.ThawStaffOnly(g),
                 _ => PlynlingText.Unknown,
             }, ephemeral: true, allowedMentions: AllowedMentions.None);
             return;
         }
 
-        await RespondCardAsync(plynling, now, PlynlingText.ThawedNotice(PlynlingCardUi.SafeName(plynling.Name)));
+        await RespondCardAsync(plynling, now, PlynlingText.ThawedNotice(plynling.Gender, PlynlingCardUi.SafeName(plynling.Name)));
         if (target.Id != Context.User.Id)   // after the reply — see FreezeAsync
             await _announcer.DmOwnerAsync(plynling.OwnerId, string.Format(
-                _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffThawDms), PlynlingCardUi.SafeName(plynling.Name)));
+                _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffThawDms.For(plynling.Gender)), PlynlingCardUi.SafeName(plynling.Name)));
     }
 
     // Staff only: the name is shown publicly (card, announcements, graveyard), so fixing
@@ -206,7 +209,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             ephemeral: true, allowedMentions: AllowedMentions.None);
         if (user.Id != Context.User.Id)   // after the reply — see FreezeAsync
             await _announcer.DmOwnerAsync(plynling.OwnerId, string.Format(
-                _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffRenameDms),
+                _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffRenameDms.For(plynling.Gender)),
                 PlynlingCardUi.SafeName(oldName), PlynlingCardUi.SafeName(plynling.Name)));
     }
 

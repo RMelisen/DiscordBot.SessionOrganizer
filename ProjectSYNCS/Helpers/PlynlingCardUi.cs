@@ -19,9 +19,9 @@ public static class PlynlingCardUi
     {
         var info = PlynlingCatalog.Info(p.Species);
         var age = LevelCardUi.Duration((long)PlynlingLife.Age(p, now).TotalMinutes);
-        return $"## {SafeName(p.Name)}\n" +
+        return $"## {SafeName(p.Name)} {p.Gender.Symbol()}\n" +
                $"{info.Name} · *{PlynlingCatalog.RarityLabel(info.Rarity)}*\n" +
-               $"à <@{p.OwnerId}> · âgé de {age}";
+               $"à <@{p.OwnerId}> · {p.Gender.Agree("âgé", "âgée")} de {age}";
     }
 
     public static string Status(Plynling p, DateTimeOffset now)
@@ -30,8 +30,8 @@ public static class PlynlingCardUi
         {
             var lived = PlynlingLife.Age(p, now);
             var memorial = PlynlingCatalog.MemorialName(PlynlingCatalog.MemorialTier(lived));
-            return $"🪦 Mort <t:{died.ToUnixTimeSeconds()}:R>, après {LevelCardUi.Duration((long)lived.TotalMinutes)} de vie. " +
-                   $"Il repose sous {memorial}.";
+            return $"🪦 {p.Gender.Agree("Mort", "Morte")} <t:{died.ToUnixTimeSeconds()}:R>, après {LevelCardUi.Duration((long)lived.TotalMinutes)} de vie. " +
+                   $"{p.Gender.Agree("Il", "Elle")} repose sous {memorial}.";
         }
 
         var hunger = PlynlingLife.HungerAt(p, now);
@@ -41,25 +41,25 @@ public static class PlynlingCardUi
         // absolute :f form is the one that takes "jusqu'au".
         var clock = p.FrozenAt is not null
             ? p.FreezeUntil is { } until
-                ? $"❄️ Gelé jusqu'au <t:{until.ToUnixTimeSeconds()}:f>"
-                : "❄️ Gelé par le staff"
+                ? $"❄️ {p.Gender.Agree("Gelé", "Gelée")} jusqu'au <t:{until.ToUnixTimeSeconds()}:f>"
+                : $"❄️ {p.Gender.Agree("Gelé", "Gelée")} par le staff"
             : $"mourra de faim <t:{PlynlingLife.DeathAt(p)!.Value.ToUnixTimeSeconds()}:R>";
 
         // The mood gets its own line: it covers hunger as well as happiness, so beside the
         // happiness bar a starving Plynling would read "Bonheur 20 % · affamé".
         return $"**Faim** `{Bar(hunger)}` {Percent(hunger)} · {clock}\n" +
                $"**Bonheur** `{Bar(happiness)}` {Percent(happiness)}\n" +
-               $"**Humeur** · *{MoodLabel(PlynlingLife.Mood(p, now))}*";
+               $"**Humeur** · *{MoodLabel(PlynlingLife.Mood(p, now), p.Gender)}*";
     }
 
-    public static string MoodLabel(PlynlingMood mood) => mood switch
+    public static string MoodLabel(PlynlingMood mood, PlynlingGender gender) => mood switch
     {
-        PlynlingMood.Happy => "heureux",
+        PlynlingMood.Happy => gender.Agree("heureux", "heureuse"),
         PlynlingMood.Sad => "triste",
-        PlynlingMood.Hungry => "affamé",
-        PlynlingMood.Starving => "mourant de faim",
-        PlynlingMood.Frozen => "gelé",
-        _ => "content",
+        PlynlingMood.Hungry => gender.Agree("affamé", "affamée"),
+        PlynlingMood.Starving => gender.Agree("mourant de faim", "mourante de faim"),
+        PlynlingMood.Frozen => gender.Agree("gelé", "gelée"),
+        _ => gender.Agree("content", "contente"),
     };
 
     public static string FoodEffect(FoodInfo food)
@@ -82,8 +82,8 @@ public static class PlynlingCardUi
     {
         var info = PlynlingCatalog.Info(p.Species);
         var lived = LevelCardUi.Duration((long)PlynlingLife.Age(p, now).TotalMinutes);
-        return $"**{SafeName(p.Name)}** · {info.Name} — à <@{p.OwnerId}>\n" +
-               $"*a vécu {lived}* · mort <t:{p.DiedAt!.Value.ToUnixTimeSeconds()}:R>";
+        return $"**{SafeName(p.Name)}** {p.Gender.Symbol()} · {info.Name} — à <@{p.OwnerId}>\n" +
+               $"*a vécu {lived}* · {p.Gender.Agree("mort", "morte")} <t:{p.DiedAt!.Value.ToUnixTimeSeconds()}:R>";
     }
 }
 
