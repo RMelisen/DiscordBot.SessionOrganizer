@@ -10,7 +10,7 @@ namespace ProjectSYNCS.Helpers;
 // tools/plynling-art/export.py), never an overwrite.
 public static class PlynlingArt
 {
-    public const int Version = 1;
+    public const int Version = 2;
 
     public const string BaseUrl =
         "https://raw.githubusercontent.com/RMelisen/DiscordBot.SessionOrganizer/main/assets/plynlings/";

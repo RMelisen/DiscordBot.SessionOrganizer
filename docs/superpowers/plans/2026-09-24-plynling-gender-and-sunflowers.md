@@ -25,6 +25,14 @@ Families will come later. So:
   kept intact below, already tested on a scratch copy, for when families ship.
 - **Task 6** is gender-only: no mention of sunflowers anywhere a user can see.
 
+**Since then, the mushrooms were reshaped (art v2)** — each species has its own silhouette in
+`tools/plynling-art/species.py`, and `sprites.build` dispatches through `species.DRAW`. Before
+resuming Tasks 4–5: `sprites.face` **already** takes `ox, oy, skin, skin_out` (Task 4 Step 3 is
+done — its anchors no longer exist); the sunflower `build` should join as entries in
+`species.DRAW` rather than a branch in `export.py`; `PlynlingArt.Version` is **2**, so the
+byte-identical guard covers the 70 `_v2` files, and the export writes sunflower files as `_v2`
+too; and `memorials.py` is unchanged, so its Task 4 edits still apply.
+
 ## Global Constraints
 
 - Command and option names are **English**; every other user-facing string is **French**.

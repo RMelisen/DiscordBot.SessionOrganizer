@@ -12,7 +12,7 @@ from common import SPECIES
 from memorials import memorial
 from sprites import build
 
-ART_VERSION = 1
+ART_VERSION = 2
 SIZE = 256
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, "..", "..", "assets", "plynlings"))

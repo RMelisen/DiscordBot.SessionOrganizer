@@ -22,9 +22,11 @@ SPECIES = {
     "russule":  dict(tier="peu commun", cap=[(206, 240, 176), (152, 210, 122), (98, 170, 88), (60, 120, 64), (34, 74, 44)],
                      spot=((182, 228, 152), (122, 188, 106)), spots=SCALES[:3], gill=(244, 238, 222), sparkle=None),
     "mystique": dict(tier="rare", cap=[(214, 186, 255), (170, 130, 242), (126, 82, 204), (84, 52, 152), (50, 30, 100)],
-                     spot=((176, 252, 255), (92, 200, 232)), spots=SPOTS, gill=(206, 196, 240), sparkle=(176, 252, 255)),
+                     spot=((176, 252, 255), (92, 200, 232)), spots=SPOTS, gill=(206, 196, 240), sparkle=(176, 252, 255),
+                     stem_tint=((196, 176, 226), 0.3)),     # a Mycena's stem: lavender, near see-through
     "dore":     dict(tier="légendaire", cap=[(255, 248, 186), (252, 216, 96), (224, 170, 42), (162, 112, 26), (100, 66, 18)],
-                     spot=((255, 255, 240), (236, 206, 140)), spots=SPOTS, gill=(250, 232, 176), sparkle=(255, 250, 205)),
+                     spot=((255, 255, 240), (236, 206, 140)), spots=SPOTS, gill=(250, 232, 176), sparkle=(255, 250, 205),
+                     stem_tint=((252, 216, 96), 0.55)),     # a chanterelle is gold from cap to foot
 }
 STEM = [(255, 252, 242), (250, 240, 220), (238, 222, 196), (212, 190, 162), (178, 154, 126)]
 STEM_OUT, INK = (128, 102, 84), (44, 28, 40)

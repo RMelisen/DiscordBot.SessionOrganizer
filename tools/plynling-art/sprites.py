@@ -1,7 +1,6 @@
-"""Plynlings v5: expressive faces, and the new "starving" state."""
-import math
-from PIL import Image
-from common import N, Grid, lerp, tone, SPECIES, SPOTS, STEM, STEM_OUT, INK, up, sheet
+"""The face and mood extras every Plynling shares, and build(), which hands each species to
+its own drawing in species.py."""
+from common import N, SPECIES, STEM, STEM_OUT, INK, sheet
 
 WHITE = (255, 255, 255)
 IRIS = (104, 80, 118)                      # the soft reflection low in each eye
@@ -13,92 +12,23 @@ PALE = (206, 204, 204)
 
 
 def build(state, sp, frame=0, shadow=True):
-    p = SPECIES[sp]
-    cap = p["cap"]
-    dy = 1 if frame == 1 else 0
-    sag = 1 if state == "starving" else 0       # a starving Plynling's cap sags onto it
-    g = Grid()
-
-    for y, (a, b) in ((15 + dy + sag, (3, 28)), (16 + dy + sag, (6, 25))):     # gills
-        for x in range(a, b + 1):
-            c = p["gill"]
-            if (x - 16) % 2 == 0:
-                c = lerp(c, cap[4], 0.25)
-            if abs(x + 0.5 - 16) < 7:
-                c = lerp(c, cap[4], 0.3)
-            g.put(x, y, c, "cap")
-
-    spans = {16: (12, 19), 17: (11, 20), 26: (11, 20), 27: (12, 19)}             # body
-    for y in range(16 + dy, 28):
-        x0, x1 = spans[y - dy] if y - dy in (16, 17) else (spans[y] if y in (26, 27) else (10, 21))
-        for x in range(x0, x1 + 1):
-            t = (x + 0.5 - x0) / (x1 + 1 - x0)
-            nx = 2 * t - 1
-            nz = math.sqrt(max(0.0, 1 - nx * nx))
-            i = tone(nx * -0.6 + nz * 0.8, (0.86, 0.58, 0.2, -0.2), x, y)
-            if y <= 17 + dy + sag or y >= 26:
-                i = min(4, i + 1)
-            g.put(x, y, STEM[i], "stem")
-    for y in (21 + dy, 22 + dy):
-        g.put(9, y, STEM[2], "stem")
-        g.put(22, y, STEM[3], "stem")
-    for x in (12, 13, 18, 19):
-        g.put(x, 28, STEM[3], "stem")
-
-    cx, cy, rx, ry = 15.5, 14.0 + dy + sag, 14.6, 11.4                           # cap
-    for y in range(N):
-        for x in range(N):
-            if y > 14 + dy + sag:
-                continue
-            rr = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
-            if rr > 1:
-                continue
-            d = ((x - 10) / 8.5) ** 2 + ((y - (6.5 + dy + sag)) / 5.2) ** 2
-            i = 0 if d < 0.16 else (1 if d < 0.55 else 2)
-            far = x > cx or y > cy - 3
-            if rr > 0.78 and far:
-                i = max(i, 3)
-            elif 0.6 < rr <= 0.78 and far and (x + y) % 2 == 0:
-                i = max(i, 3)
-            if y >= 13 + dy + sag:
-                i = max(i, 3)
-            g.put(x, y, cap[i], "cap")
-    for sx, sy, r in p["spots"]:
-        for y in range(N):
-            for x in range(N):
-                oy = sy + dy + sag
-                if (x - sx) ** 2 + (y - oy) ** 2 <= r * r and g.r[y][x] == "cap" and y < 13 + dy + sag:
-                    g.put(x, y, p["spot"][1] if (x - sx) + (y - oy) > r * 0.55 else p["spot"][0])
-
-    g.outline(lambda reg, ny: INK if ny >= 27 else (cap[4] if reg == "cap" else STEM_OUT))
-    face(g, state, dy)
-
-    im = Image.new("RGBA", (N, N), (0, 0, 0, 0))
-    if shadow:
-        for x in range(8, 24):
-            im.putpixel((x, 29), (0, 0, 0, 58))
-        for x in range(10, 22):
-            im.putpixel((x, 30), (0, 0, 0, 38))
-    for y in range(N):
-        for x in range(N):
-            c = g.c[y][x]
-            if c is None:
-                continue
-            if state == "frozen":
-                c = lerp(c, (176, 226, 255), 0.45)
-            elif state == "starving":
-                c = lerp(c, PALE, 0.28)          # drained of colour
-            im.putpixel((x, y), c + (255,))
-    extras(im, state, p, frame)
-    return im
+    """The living Plynling of species `sp` in one of the six moods. Each species draws its own
+    silhouette in species.py, and every one of them wears the face below."""
+    from species import DRAW          # imported here: species.py imports this module
+    return DRAW[sp](state, frame, shadow)
 
 
 # ---- the face -------------------------------------------------------------------------
-# Eyes sit at columns 12-13 and 18-19, rows 19-21; the mouth at rows 23-25.
+# Eyes sit at columns 12-13 and 18-19, rows 19-21; the mouth at rows 23-25 — before the
+# (ox, oy) offset. Every species wears this face; skin / skin_out replace the stem tones
+# used for the eye bags and the brows, so a tinted stem keeps a matching face.
 
-def face(g, state, f):
+def face(g, state, f, ox=0, oy=0, skin=None, skin_out=None):
+    skin = STEM if skin is None else skin
+    skin_out = STEM_OUT if skin_out is None else skin_out
+
     def P(x, y, c):
-        g.put(x, y + f, c)
+        g.put(x + ox, y + f + oy, c)
 
     def glossy_eye(x0, shine2=False, watery=False):
         for x in (x0, x0 + 1):
@@ -120,8 +50,8 @@ def face(g, state, f):
             P(x, 20, LID)
         P(x0, 21, INK)
         P(x0 + 1, 21, INK)
-        P(x0, 22, STEM[4])                             # bags under the eyes
-        P(x0 + 1, 22, STEM[4])
+        P(x0, 22, skin[4])                             # bags under the eyes
+        P(x0 + 1, 22, skin[4])
 
     def closed_eye(x0):
         for x in (x0 - 1, x0, x0 + 1, x0 + 2):
@@ -134,11 +64,11 @@ def face(g, state, f):
     def brows(inner_raise=True, flat=False):
         if flat:
             for x in (11, 12, 13, 18, 19, 20):
-                P(x, 17, STEM_OUT)
+                P(x, 17, skin_out)
             return
         for x, y in ((11, 18), (12, 17), (19, 17), (20, 18)) if not inner_raise else \
                     ((11, 17), (12, 17), (13, 16), (18, 16), (19, 17), (20, 17)):
-            P(x, y, INK if inner_raise else STEM_OUT)
+            P(x, y, INK if inner_raise else skin_out)
 
     if state == "happy":
         happy_eye(12)

@@ -1,0 +1,472 @@
+"""One drawing function per mushroom species: each has its own silhouette, and all of them
+wear the shared face and extras from sprites.py. sprites.build(state, sp) dispatches here
+through DRAW.
+
+The Cèpe is the original sprite, unchanged. The other five were reshaped after real species:
+the fly agaric's skirt, the field mushroom's button cap, the green russula's flat cap, a
+Mycena's bell, a chanterelle's funnel. Their face is clipped to the body so a narrow stem
+never has blush floating beside it, and their sweat drops and frost are measured from the
+model itself rather than from the Cèpe's coordinates.
+"""
+import math
+
+from PIL import Image
+
+from common import N, Grid, lerp, tone, SPECIES, SPOTS, STEM, STEM_OUT, INK
+from sprites import face, extras, PALE, TEAR, TEAR_HI
+
+ICE, SNOW, FROST_TINT = (206, 242, 255), (255, 255, 255), (176, 226, 255)
+CX = 16.0                    # the face's own axis: eyes at 12-13 and 18-19, feet likewise
+
+
+def stem_palette(p):
+    """STEM, leaned toward the species' own colour when it has one (a gold chanterelle)."""
+    tint = p.get("stem_tint")
+    return STEM if tint is None else [lerp(c, tint[0], tint[1]) for c in STEM]
+
+
+# ---- the Cèpe: the original sprite, unchanged ------------------------------------------
+
+def cepe(state, frame=0, shadow=True):
+    """The original Plynling: a broad cap, gills, a chubby body."""
+    p = SPECIES["cepe"]
+    cap = p["cap"]
+    dy = 1 if frame == 1 else 0
+    sag = 1 if state == "starving" else 0       # a starving Plynling's cap sags onto it
+    g = Grid()
+
+    for y, (a, b) in ((15 + dy + sag, (3, 28)), (16 + dy + sag, (6, 25))):     # gills
+        for x in range(a, b + 1):
+            c = p["gill"]
+            if (x - 16) % 2 == 0:
+                c = lerp(c, cap[4], 0.25)
+            if abs(x + 0.5 - 16) < 7:
+                c = lerp(c, cap[4], 0.3)
+            g.put(x, y, c, "cap")
+
+    spans = {16: (12, 19), 17: (11, 20), 26: (11, 20), 27: (12, 19)}             # body
+    for y in range(16 + dy, 28):
+        x0, x1 = spans[y - dy] if y - dy in (16, 17) else (spans[y] if y in (26, 27) else (10, 21))
+        for x in range(x0, x1 + 1):
+            t = (x + 0.5 - x0) / (x1 + 1 - x0)
+            nx = 2 * t - 1
+            nz = math.sqrt(max(0.0, 1 - nx * nx))
+            i = tone(nx * -0.6 + nz * 0.8, (0.86, 0.58, 0.2, -0.2), x, y)
+            if y <= 17 + dy + sag or y >= 26:
+                i = min(4, i + 1)
+            g.put(x, y, STEM[i], "stem")
+    for y in (21 + dy, 22 + dy):
+        g.put(9, y, STEM[2], "stem")
+        g.put(22, y, STEM[3], "stem")
+    for x in (12, 13, 18, 19):
+        g.put(x, 28, STEM[3], "stem")
+
+    cx, cy, rx, ry = 15.5, 14.0 + dy + sag, 14.6, 11.4                           # cap
+    for y in range(N):
+        for x in range(N):
+            if y > 14 + dy + sag:
+                continue
+            rr = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
+            if rr > 1:
+                continue
+            d = ((x - 10) / 8.5) ** 2 + ((y - (6.5 + dy + sag)) / 5.2) ** 2
+            i = 0 if d < 0.16 else (1 if d < 0.55 else 2)
+            far = x > cx or y > cy - 3
+            if rr > 0.78 and far:
+                i = max(i, 3)
+            elif 0.6 < rr <= 0.78 and far and (x + y) % 2 == 0:
+                i = max(i, 3)
+            if y >= 13 + dy + sag:
+                i = max(i, 3)
+            g.put(x, y, cap[i], "cap")
+    for sx, sy, r in p["spots"]:
+        for y in range(N):
+            for x in range(N):
+                oy = sy + dy + sag
+                if (x - sx) ** 2 + (y - oy) ** 2 <= r * r and g.r[y][x] == "cap" and y < 13 + dy + sag:
+                    g.put(x, y, p["spot"][1] if (x - sx) + (y - oy) > r * 0.55 else p["spot"][0])
+
+    g.outline(lambda reg, ny: INK if ny >= 27 else (cap[4] if reg == "cap" else STEM_OUT))
+    face(g, state, dy)
+
+    im = Image.new("RGBA", (N, N), (0, 0, 0, 0))
+    if shadow:
+        for x in range(8, 24):
+            im.putpixel((x, 29), (0, 0, 0, 58))
+        for x in range(10, 22):
+            im.putpixel((x, 30), (0, 0, 0, 38))
+    for y in range(N):
+        for x in range(N):
+            c = g.c[y][x]
+            if c is None:
+                continue
+            if state == "frozen":
+                c = lerp(c, (176, 226, 255), 0.45)
+            elif state == "starving":
+                c = lerp(c, PALE, 0.28)          # drained of colour
+            im.putpixel((x, y), c + (255,))
+    extras(im, state, p, frame)
+    return im
+
+# ---- shared pieces for the reshaped species -------------------------------------------
+
+def stem(g, S, x0, x1, y0, y1, region="stem"):
+    """A lit cylinder from row y0 to y1, its corners rounded top and bottom."""
+    for y in range(y0, y1 + 1):
+        a, b = (x0 + 1, x1 - 1) if y in (y0, y1) else (x0, x1)
+        for x in range(a, b + 1):
+            t = (x + 0.5 - a) / (b + 1 - a)
+            nx = 2 * t - 1
+            i = tone(nx * -0.6 + math.sqrt(max(0.0, 1 - nx * nx)) * 0.8, (0.86, 0.58, 0.2, -0.2), x, y)
+            if y <= y0 + 1 or y >= y1:
+                i = min(4, i + 1)
+            g.put(x, y, S[i], region)
+
+
+def shade_row(g, S, y, a, b, region, extra=0):
+    for x in range(a, b + 1):
+        t = (x + 0.5 - a) / (b + 1 - a)
+        nx = 2 * t - 1
+        i = tone(nx * -0.6 + math.sqrt(max(0.0, 1 - nx * nx)) * 0.8, (0.86, 0.58, 0.2, -0.2), x, y)
+        g.put(x, y, S[min(4, i + extra)], region)
+
+
+def feet(g, S, xs=(12, 13, 18, 19), y=28):
+    for x in xs:
+        g.put(x, y, S[3], "stem")
+
+
+def shade_cap(x, y, cap, cx, cy, rx, ry, lit_x, lit_y, lit_rx, lit_ry, under_y):
+    """A cap's shading: a soft sheen top-left, dithered into shadow on the far side."""
+    rr = ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2
+    d = ((x - lit_x) / lit_rx) ** 2 + ((y - lit_y) / lit_ry) ** 2
+    i = 0 if d < 0.16 else (1 if d < 0.55 else 2)
+    far = x + 0.5 > cx or y > cy - 3
+    if rr > 0.78 and far:
+        i = max(i, 3)
+    elif 0.6 < rr <= 0.78 and far and (x + y) % 2 == 0:
+        i = max(i, 3)
+    if y >= under_y:
+        i = max(i, 3)
+    return cap[i]
+
+
+def gills(g, p, y, a, b):
+    cap = p["cap"]
+    for x in range(a, b + 1):
+        c = p["gill"]
+        if (x - 16) % 2 == 0:
+            c = lerp(c, cap[4], 0.25)
+        if abs(x + 0.5 - 16) < 6:
+            c = lerp(c, cap[4], 0.3)
+        g.put(x, y, c, "cap")
+
+
+def outline(g, cap, extra=None):
+    out = {"cap": cap[4], "ring": STEM_OUT}
+    if extra:
+        out.update(extra)
+    g.outline(lambda reg, ny: INK if ny >= 29 else out.get(reg, STEM_OUT))
+
+
+def cap_profile(g):
+    """Per column: the top and the bottom row of the cap, where there is one."""
+    tops, bottoms = {}, {}
+    for x in range(N):
+        ys = [y for y in range(N) if g.r[y][x] == "cap"]
+        if ys:
+            tops[x], bottoms[x] = min(ys), max(ys)
+    return tops, bottoms
+
+
+def frost(im, tops, bottoms):
+    """Snow sitting on this cap's real top, icicles hanging from its real rim."""
+    def px(x, y, c):
+        if 0 <= x < N and 0 <= y < N:
+            im.putpixel((x, y), c + (255,))
+    xs = sorted(tops)
+    left, right = xs[0], xs[-1]
+    for f in (0.28, 0.45, 0.62, 0.78):
+        x = left + int(round((right - left) * f))
+        if x in tops:
+            px(x, tops[x] - 1, SNOW)
+            if f in (0.45, 0.62):
+                px(x + 1, tops.get(x + 1, tops[x]) - 1, SNOW)
+    for x in (left + 1, left + 3, right - 1, right - 3):
+        if x in bottoms:
+            px(x, bottoms[x] + 2, ICE)
+            if x in (left + 1, right - 1):
+                px(x, bottoms[x] + 3, ICE)
+    for x, y in ((28, 2), (27, 3), (28, 3), (29, 3), (28, 4)):
+        px(x, y, (220, 246, 255))
+
+
+def face_on(g, state, S, ox=0, oy=0):
+    """The shared face, moved onto this body and clipped to it — never onto its outline."""
+    class Clip:
+        def put(self, x, y, c, region=None):
+            if 0 <= x < N and 0 <= y < N and g.r[y][x] is not None:
+                g.put(x, y, c, region)
+    face(Clip(), state, 0, ox=ox, oy=oy, skin=S)
+
+
+def body_edges(g, y):
+    xs = [x for x in range(N) if g.r[y][x] == "stem"]
+    return (min(xs), max(xs)) if xs else (10, 21)
+
+
+def sweat(im, state, g, oy):
+    """The sweat drops, measured from this model: four pixels outside the body at eye level,
+    which is exactly where they have always sat on the Cèpe."""
+    def px(x, y, c):
+        if 0 <= x < N and 0 <= y < N:
+            im.putpixel((x, y), c + (255,))
+    eye = 19 + oy
+    left, right = body_edges(g, eye + 1)
+    if state == "hungry":
+        xr = right + 4
+        for x, y in ((xr, eye - 2), (xr, eye - 1), (xr - 1, eye - 1), (xr, eye)):
+            px(x, y, TEAR)
+        px(xr, eye - 2, TEAR_HI)
+    if state == "starving":
+        xr, xl = right + 4, left - 4
+        for x, y in ((xr, eye - 1), (xr, eye), (xr - 1, eye), (xr, eye + 1),
+                     (xl, eye), (xl, eye + 1), (xl + 1, eye + 1), (xl, eye + 2)):
+            px(x, y, TEAR)
+
+
+def finish(g, p, state, S, face_oy=0, face_ox=0, shadow=True):
+    """Face, ground shadow, the frozen/starving tint, and extras placed for this model."""
+    tops, bottoms = cap_profile(g)
+    face_on(g, state, S, face_ox, face_oy)
+    im = Image.new("RGBA", (N, N), (0, 0, 0, 0))
+    if shadow:
+        for x in range(8, 24):
+            im.putpixel((x, 29), (0, 0, 0, 58))
+        for x in range(10, 22):
+            im.putpixel((x, 30), (0, 0, 0, 38))
+    for y in range(N):
+        for x in range(N):
+            c = g.c[y][x]
+            if c is None:
+                continue
+            if state == "frozen":
+                c = lerp(c, FROST_TINT, 0.45)
+            elif state == "starving":
+                c = lerp(c, PALE, 0.28)
+            im.putpixel((x, y), c + (255,))
+    if state == "frozen":
+        frost(im, tops, bottoms)
+    elif state in ("hungry", "starving"):
+        sweat(im, state, g, face_oy)
+        if p["sparkle"] and state == "hungry":
+            extras(im, "content", p, 0)                  # a rare species keeps its sparkle
+    else:
+        extras(im, state, p, 0)
+    return im
+
+
+# ---- Amanite: a fly agaric ----------------------------------------------------------------
+
+def amanite(state, frame=0, shadow=True):
+    """A wide red dome with white spots, a flared skirt under it, a longer and slimmer stem."""
+    p = SPECIES["amanite"]
+    cap, S = p["cap"], stem_palette(p)
+    sag = 1 if state == "starving" else 0
+    g = Grid()
+    stem(g, S, 11, 20, 10 + sag, 27)
+    feet(g, S)
+    for y, a, b, c in ((11 + sag, 10, 21, S[0]), (12 + sag, 9, 22, S[1]), (13 + sag, 8, 23, S[2])):   # the skirt
+        for x in range(a, b + 1):
+            g.put(x, y, S[3] if x > 18 else c, "ring")
+    for x in range(8, 24, 2):
+        g.put(x, 14 + sag, S[3], "ring")                              # its ragged hem
+    gills(g, p, 10 + sag, 4, 27)
+    cx, cy, rx, ry = 15.5, 10.0 + sag, 12.4, 9.6
+    for y in range(N):
+        for x in range(N):
+            if y > 9 + sag or ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 > 1:
+                continue
+            g.put(x, y, shade_cap(x, y, cap, cx, cy, rx, ry, 11, 3.5 + sag, 7, 3.6, 9 + sag), "cap")
+    for sx, sy, r in ((9, 5.5, 1.4), (16, 2.5, 1.7), (22, 5, 1.4), (12.5, 8, 0.9), (19, 8, 1.0), (5, 8.2, 0.8), (26, 8, 0.8)):
+        for y in range(N):
+            for x in range(N):
+                if (x - sx) ** 2 + (y - sy - sag) ** 2 <= r * r and g.r[y][x] == "cap" and y < 9 + sag:
+                    g.put(x, y, p["spot"][0] if (x - sx) + (y - sy - sag) <= r * 0.55 else p["spot"][1])
+    outline(g, cap)
+    return finish(g, p, state, S, shadow=shadow)
+
+
+# ---- Rosé des prés: a field mushroom ----------------------------------------------------------
+
+def rose(state, frame=0, shadow=True):
+    """A round button cap with its rim tucked under, pink gills showing, a short thick stem."""
+    p = SPECIES["rose"]
+    cap, S = p["cap"], stem_palette(p)
+    sag = 1 if state == "starving" else 0
+    g = Grid()
+    stem(g, S, 10, 21, 15 + sag, 27)
+    feet(g, S)
+    for x in range(10, 22):
+        g.put(x, 18 + sag, S[1] if x < 16 else S[3], "stem")          # a thin ring
+    gills(g, p, 15 + sag, 7, 24)
+    gills(g, p, 16 + sag, 9, 22)
+    cx, cy, rx, ry = 15.5, 10.5 + sag, 13.0, 9.6
+    for y in range(N):
+        for x in range(N):
+            if y > 15 + sag or ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 > 1:
+                continue
+            if y >= 14 + sag and abs(x + 0.5 - cx) < 7:
+                continue                                              # the opening under the curled rim
+            g.put(x, y, shade_cap(x, y, cap, cx, cy, rx, ry, 10, 5 + sag, 8, 4.4, 14 + sag), "cap")
+    outline(g, cap)
+    return finish(g, p, state, S, face_oy=1, shadow=shadow)
+
+
+# ---- Russule verte: a green russula ------------------------------------------------------------
+
+def russule(state, frame=0, shadow=True):
+    """A broad flat cap dipping in the middle, on a body shaped like the Cèpe's."""
+    p = SPECIES["russule"]
+    cap, S = p["cap"], stem_palette(p)
+    sag = 1 if state == "starving" else 0
+    g = Grid()
+    spans = {12: (12, 19), 13: (11, 20), 26: (11, 20), 27: (12, 19)}
+    for y in range(12 + sag, 28):
+        x0, x1 = spans.get(y - sag if y - sag in (12, 13) else y, (10, 21))
+        for x in range(x0, x1 + 1):
+            t = (x + 0.5 - x0) / (x1 + 1 - x0)
+            nx = 2 * t - 1
+            i = tone(nx * -0.6 + math.sqrt(max(0.0, 1 - nx * nx)) * 0.8, (0.86, 0.58, 0.2, -0.2), x, y)
+            if y <= 13 + sag or y >= 26:
+                i = min(4, i + 1)
+            g.put(x, y, S[i], "stem")
+    feet(g, S)
+    gills(g, p, 12 + sag, 4, 27)
+    for x in range(2, 30):
+        nx = (x + 0.5 - 15.5) / 14.0
+        if abs(nx) > 1:
+            continue
+        top = 7.2 + sag + 2.0 * math.exp(-(nx / 0.38) ** 2) + 2.4 * nx ** 4
+        bottom = 11.4 + sag - 0.6 * nx ** 2
+        for y in range(int(top), int(bottom) + 1):
+            if y + 0.5 < top:
+                continue
+            c = shade_cap(x, y, cap, 15.5, 9.5 + sag, 14.0, 3.5, 9, 8 + sag, 7, 1.6, 11 + sag)
+            if abs(nx) < 0.3 and y + 0.5 - top < 1.2:
+                c = cap[3]                                            # the dip, in shadow
+            g.put(x, y, c, "cap")
+    outline(g, cap)
+    return finish(g, p, state, S, shadow=shadow)
+
+
+# ---- Mystique: a Mycena ----------------------------------------------------------------------
+
+def mystique(state, frame=0, shadow=True):
+    """A bell with a small darker bump on top and a striped, glowing margin, on a spindle
+    stem — slim under the cap and at the foot, full width only where the face is."""
+    p = SPECIES["mystique"]
+    cap, glow, S = p["cap"], p["spot"], stem_palette(p)
+    sag = 1 if state == "starving" else 0
+    y0 = 12 + sag
+    g = Grid()
+    for y in range(y0, 28):                                            # the spindle stem
+        k = y - y0
+        a, b = (12, 19) if (k <= 3 or y >= 24) else (11, 20)
+        shade_row(g, S, y, a, b, "stem", 1 if (k <= 1 or y == 27) else 0)
+        for x in (13, 17):                                             # faint fibres
+            if k > 2 and (y + x) % 3 != 0 and g.r[y][x] == "stem":
+                g.put(x, y, lerp(g.c[y][x], S[0], 0.35))
+    feet(g, S)
+    gills(g, p, y0, 8, 23)
+    apex, rim = 1.0 + sag, 11.5 + sag
+    for y in range(N):                                                 # the bell
+        t = (y + 0.5 - apex) / (rim - apex)
+        if not 0 <= t <= 1:
+            continue
+        half = 9.0 * math.sin(min(1.0, t * 1.05) * math.pi / 2) ** 0.7
+        if t < 0.14:
+            half = min(half, 2.2)                                      # the bump (umbo)
+        for x in range(N):
+            dx = x + 0.5 - CX
+            if abs(dx) > half:
+                continue
+            u = dx / max(half, 0.1)
+            c = cap[1] if u < -0.3 else (cap[2] if u < 0.5 else cap[3])
+            if t < 0.2:
+                c = cap[3] if u > -0.3 else cap[2]                     # the bump is darker
+            if t > 0.35 and abs(u * 4 - round(u * 4)) < 0.15:
+                c = cap[min(4, cap.index(c) + 1)]                      # striations
+            g.put(x, y, c, "cap")
+    for x in range(N):                                                 # the glowing rim
+        if g.r[int(rim)][x] == "cap":
+            g.put(x, int(rim), glow[0] if (x % 3) else glow[1])
+    outline(g, cap)
+    im = finish(g, p, state, S, shadow=shadow)
+    if state not in ("frozen", "starving"):                            # a soft halo under the rim
+        for x in range(8, 25, 3):
+            if im.getpixel((x, int(rim) + 1))[3] == 0:
+                im.putpixel((x, int(rim) + 1), glow[0] + (110,))
+    return im
+
+
+# ---- Doré: a chanterelle (girolle) ------------------------------------------------------------
+
+def dore(state, frame=0, shadow=True):
+    """A golden funnel — wavy rim curling down at the edges, forked ridges — narrowing into a
+    10 px gold stem, all centred on the face's axis, with a rounded foot."""
+    p = SPECIES["dore"]
+    cap, S = p["cap"], stem_palette(p)
+    sag = 1 if state == "starving" else 0
+    g = Grid()
+
+    def rim_top(x):
+        nx = (x + 0.5 - CX) / 13.5
+        return 4.2 + sag + 0.7 * math.sin(x * 0.7 + 0.6) + 0.25 * math.sin(x * 1.6) + 3.4 * abs(nx) ** 3
+
+    def span(y):
+        s = (y - (5 + sag)) / 9.0
+        if s <= 0:
+            return 13.8
+        if y >= 27:
+            return 3.5                                                 # rounded foot: x 12..19
+        if s >= 1:
+            return 4.5                                                 # the stem: x 11..20
+        return 4.5 + 9.3 * (1 - s) ** 1.7
+
+    blend0, blend1 = 10 + sag, 15 + sag                                # cap gold fades into stem gold
+    for y in range(28):
+        for x in range(N):
+            dx = x + 0.5 - CX
+            h = span(y)
+            if abs(dx) > h + (1.2 if y < 8 + sag else 0) or y < rim_top(x):
+                continue
+            u = max(-1.0, min(1.0, dx / h))
+            depth = y - rim_top(x)
+            if depth < 1.2:
+                c = cap[0] if dx < 2 else cap[1]                       # the lit rim
+            elif depth < 2.4 and abs(dx) < 8:
+                c = cap[2]                                             # the shallow dip on top
+            else:
+                c = cap[1] if u < -0.3 else (cap[2] if u < 0.45 else cap[3])
+            if y >= blend0:
+                t = min(1.0, (y - blend0) / (blend1 - blend0))
+                i = tone(-0.6 * u + math.sqrt(max(0.0, 1 - u * u)) * 0.8, (0.86, 0.58, 0.2, -0.2), x, y)
+                if y >= 26:
+                    i = min(4, i + 1)
+                c = lerp(c, S[i], t)
+            g.put(x, y, c, "cap" if y < blend0 else "stem")
+    for k in range(-5, 6):                                             # forked ridges, fading onto the stem
+        x_top, x_bot = CX + k * 2.4, CX + k * 0.7
+        for y in range(8 + sag, blend1 + 1):
+            f = (y - (8 + sag)) / (blend1 - (8 + sag))
+            x = int(math.floor(x_top + (x_bot - x_top) * f))
+            if g.c[y][x] is not None and y - rim_top(x) > 2.5:
+                dark = cap[3] if k < 0 else cap[4]
+                g.put(x, y, lerp(dark, g.c[y][x], max(0.0, f - 0.55) * 1.6))
+    feet(g, S)
+    outline(g, cap, {"stem": lerp(STEM_OUT, cap[4], 0.6)})
+    return finish(g, p, state, S, shadow=shadow)
+
+
+DRAW = {"cepe": cepe, "amanite": amanite, "rose": rose, "russule": russule, "mystique": mystique, "dore": dore}
