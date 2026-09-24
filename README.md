@@ -7,7 +7,7 @@ a wall of shame. The bot's user-facing language is French.
 
 - [Commands](#commands)
 - [Sessions](#sessions) · [Polls & votes](#polls--votes) · [Giveaways](#giveaways)
-- [Levels & XP](#levels--xp) · [Leaderboards & stats](#leaderboards--stats) · [Wall of shame](#wall-of-shame)
+- [Levels & XP](#levels--xp) · [Leaderboards & stats](#leaderboards--stats) · [Wall of shame](#wall-of-shame) · [Plynlings](#plynlings)
 - [Staff & owner](#staff--owner) · [Personality](#personality)
 - [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Configuration](#configuration) · [Running locally](#running-locally) · [Deployment](#deployment)
 
@@ -24,9 +24,13 @@ a wall of shame. The bot's user-facing language is French.
 | `/goodbot` | Who praised or scolded the bot | everyone |
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
 | `/shame` | The wall of shame | everyone |
+| `/plynling adopt · view · feed · pet · freeze · thaw · help` | Adopt and look after a Plynling | everyone |
+| `/work · /balance` | Earn cailloux; see your balance | everyone |
+| `/graveyard [user]` | Every Plynling that died | everyone |
 | `/shame user:@someone` | Put someone on it | staff |
 | `/config` | Per-server settings, no redeploy | staff |
 | `/addxp · /removexp` | Manual XP adjustment | staff |
+| `/plynling rename · resurrect`, `freeze/thaw user:` | Manage someone's Plynling | staff |
 | `/leaderboard` | Server ranking — three views, three windows | owner |
 | `/tell · /dm · /absent` | Speak through the bot; flag yourself away | owner |
 | `/help` | In-Discord usage guide | everyone |
@@ -194,6 +198,26 @@ two mid-sentence. Rationed like *Le Perfide*, because shouting arrives in bursts
 one argument would otherwise decide the title forever.
 
 Every counter starts at zero the day it ships and nothing can be backfilled.
+
+### Plynlings
+
+A **Plynling** is a small mushroom creature each member can adopt — one at a time, free.
+Its species is rolled: three common, one uncommon, a rare Mystique and a legendary Doré.
+
+- **Hunger** empties in 4 days and **happiness** in 2. At 0% hunger it **dies** — really.
+  `/plynling feed` (Champignon, Shiitake, Morille, Truffe) costs **cailloux**; `/plynling pet`
+  is free, every 4 hours, and anyone can pet anyone's.
+- **The card** (`/plynling view`) shows it in its current mood, a live countdown to starvation,
+  and **Caresser** / **Nourrir** buttons.
+- **Holidays:** `/plynling freeze` stops everything for up to 14 days, as long as it isn't
+  already hungry; then a week before it can be frozen again.
+- **Death** is announced to the whole server, after a private warning about 6 hours
+  before. `/graveyard` lists every grave, newest or longest-lived first — and the longer a
+  Plynling lived, the grander its memorial, from a simple cairn to a statue in its likeness.
+- **Cailloux** come from `/work` (every 4 hours) and, as a small bonus, from chatting,
+  reacting and voice (45 a day at most). `/balance` is private.
+
+`/plynling help` explains it all in Discord.
 
 ### Staff & owner
 

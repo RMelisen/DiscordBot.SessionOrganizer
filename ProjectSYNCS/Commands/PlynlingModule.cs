@@ -233,6 +233,48 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         await _announcer.AnnounceResurrectionAsync(plynling, now);   // after the reply — see FreezeAsync
     }
 
+    [SlashCommand("help", "Comment fonctionnent les Plynlings")]
+    public Task HelpAsync() => RespondAsync(embed: BuildHelpEmbed(), ephemeral: true);
+
+    /// <summary>
+    /// The Plynling guide. Static and Context-free for the same reason as
+    /// <see cref="HelpModule.BuildEmbed"/>: embed caps throw at *send* time, so the only way
+    /// to know it fits is to build and measure it without a gateway.
+    /// </summary>
+    public static Embed BuildHelpEmbed() =>
+        new EmbedBuilder()
+            .WithTitle("🍄 Plynlings — mode d'emploi")
+            .WithDescription("Un Plynling est un petit champignon qui vit avec toi. Nourris-le, caresse-le, " +
+                             "et surtout… ne l'oublie pas.")
+            .WithColor(new Color(0xCE323A))
+            .AddField("Adopter & regarder",
+                "**`/plynling adopt name:`** — Gratuit, un seul à la fois. L'espèce est tirée au sort : " +
+                "commune, peu commune, rare… ou légendaire.\n" +
+                "**`/plynling view [user]`** — Sa carte, avec les boutons **Caresser** et **Nourrir**.")
+            .AddField("S'en occuper",
+                "La **faim** se vide en **4 jours** : à 0 %, il meurt. Le **bonheur** se vide en **2 jours** " +
+                "(il est juste triste).\n" +
+                "**`/plynling feed food:`** — Champignon (15), Shiitake (30), Morille (40, que du bonheur), Truffe (80, faim et bonheur).\n" +
+                "**`/plynling pet [user]`** — +25 % de bonheur, toutes les 4 h, sur n'importe quel Plynling.")
+            .AddField("Gagner des cailloux",
+                "**`/work`** — 40 à 60 cailloux, toutes les 4 h.\n" +
+                "Parler, réagir et le vocal rapportent aussi quelques cailloux (45 au plus par jour).\n" +
+                "**`/balance`** — Ton solde, visible par toi seul.")
+            .AddField("Partir en vacances",
+                "**`/plynling freeze`** — Gèle ton Plynling (14 jours au plus) : plus rien ne bouge. " +
+                "Seulement s'il a encore au moins 50 % de faim.\n" +
+                "**`/plynling thaw`** — Le dégèle. Ensuite, 7 jours avant de pouvoir le regeler.")
+            .AddField("La mort",
+                "Tu reçois un **message privé** environ 6 h avant qu'il meure de faim. S'il meurt, tout le " +
+                "serveur l'apprend et il rejoint le cimetière.\n" +
+                "**`/graveyard [user]`** — Les tombes, triées par date ou par longueur de vie. Plus il a vécu, " +
+                "plus sa tombe est belle.")
+            .AddField("Staff",
+                "**`/plynling freeze user:`** · **`/plynling thaw user:`** — Sur n'importe quel Plynling.\n" +
+                "**`/plynling rename user: name:`** · **`/plynling resurrect user:`**")
+            .WithFooter($"Project S.Y.N.C.S. v{AppInfo.Version}")
+            .Build();
+
     // ---- rendering --------------------------------------------------------------
 
     private Task RespondCardAsync(Plynling plynling, DateTimeOffset now, string? line) =>

@@ -19,7 +19,7 @@ namespace ProjectSYNCS.Commands;
 // assert both caps.
 //
 // So: keep every field short, and split a section rather than letting one grow. There
-// is plenty of room in the 25-field limit — 11 are used.
+// is plenty of room in the 25-field limit — 12 are used.
 public class HelpModule : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("help", "Comment utiliser le bot d'organisation de sessions")]
@@ -73,6 +73,9 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "MAJUSCULES.\n" +
                 "**`/shame user:@quelqu'un`** — Dénonce quelqu'un. **Réservé au staff**, et " +
                 "**2 votes maximum par personne visée et par jour**.")
+            .AddField("Commandes — Plynlings",
+                "**`/plynling help`** — Adopte un petit champignon, nourris-le, garde-le en vie. " +
+                "Tout est expliqué là-dedans.")
             .AddField("Commandes — Staff & aide",
                 "**`/addxp`** · **`/removexp`** — Ajuster l'XP de quelqu'un.\n" +
                 "**`/config`** — Le rôle autorisé à voter avec `/shame`, et les salons où rien ne " +

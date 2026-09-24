@@ -3169,7 +3169,7 @@ if (fail > 0) Environment.Exit(1);
             .AddField("S'en occuper",
                 "La **faim** se vide en **4 jours** : à 0 %, il meurt. Le **bonheur** se vide en **2 jours** " +
                 "(il est juste triste).\n" +
-                "**`/plynling feed food:`** — Champignon (15), Shiitake (30), Morille (40, bonheur), Truffe (80).\n" +
+                "**`/plynling feed food:`** — Champignon (15), Shiitake (30), Morille (40, que du bonheur), Truffe (80, faim et bonheur).\n" +
                 "**`/plynling pet [user]`** — +25 % de bonheur, toutes les 4 h, sur n'importe quel Plynling.")
             .AddField("Gagner des cailloux",
                 "**`/work`** — 40 à 60 cailloux, toutes les 4 h.\n" +
@@ -3205,7 +3205,7 @@ and change the class comment's "11 are used" to "12 are used".
 
 - [ ] **Step 5: README.md**
 
-In the table of contents, replace "· [Wall of shame](#wall-of-shame)" with "· [Wall of shame](#wall-of-shame) · [Plynlings](#plynlings)". Add these rows to the `## Commands` table, just above the `/help` row:
+In the table of contents, replace "· [Wall of shame](#wall-of-shame)" with "· [Wall of shame](#wall-of-shame) · [Plynlings](#plynlings)". Add these rows to the `## Commands` table, which is grouped by audience — the first three after the `/shame` row (the last *everyone* row), the staff one after `/addxp · /removexp`:
 
 ```markdown
 | `/plynling adopt · view · feed · pet · freeze · thaw · help` | Adopt and look after a Plynling | everyone |
@@ -3231,7 +3231,7 @@ Its species is rolled: three common, one uncommon, a rare Mystique and a legenda
   already hungry; then a week before it can be frozen again.
 - **Death** is announced to the whole server, after a private warning about 6 hours
   before. `/graveyard` lists every grave, newest or longest-lived first — and the longer a
-  Plynling lived, the grander its memorial, from a cairn to a marble statue.
+  Plynling lived, the grander its memorial, from a simple cairn to a statue in its likeness.
 - **Cailloux** come from `/work` (every 4 hours) and, as a small bonus, from chatting,
   reacting and voice (45 a day at most). `/balance` is private.
 
@@ -3267,7 +3267,7 @@ These need a live gateway, so the user runs them. Before starting: **push `asset
 4. **Nourrir → Truffe** → card updates, money deducted; again → private "garde tes cailloux"; from a second account → private "ce n'est pas ton Plynling".
 5. `/plynling freeze` → frozen card, no controls; `/plynling thaw` → back; `/plynling freeze` → private 7-day cooldown.
 6. As staff: `/plynling freeze user:@alt` → owner receives a DM; `/plynling thaw user:@alt`; `/plynling rename user:@alt name:X` → DM.
-7. Force a death (in a dev DB: set `NeedsAsOf` back 5 days on a row) → within the hour, a public announcement in the game channel with a cairn; `/graveyard` lists it; **Plus longue vie** re-sorts; ◀ ▶ page.
-8. `/plynling resurrect user:@alt` → public comeback, 50% / 50%.
+7. Force a death (in a dev DB: set `NeedsAsOf` back 5 days on a row) → within the hour, a public announcement in the game channel with a cairn (prod guild only — in any other guild, the dev guild included, it is logged and skipped); `/graveyard` lists it; **Plus longue vie** re-sorts; ◀ ▶ page.
+8. `/plynling resurrect user:@alt` → public comeback (same guild caveat), 50% / 50%.
 9. `/help` shows a single Plynling line; `/plynling help` renders.
 10. A name like `@everyone **x**` renders harmlessly and pings nobody.

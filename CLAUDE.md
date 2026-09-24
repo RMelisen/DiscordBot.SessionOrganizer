@@ -82,10 +82,10 @@ Slash modules: `ScheduleModule`, `PollModule`, `VoteModule`, `GiveawayModule` (g
 modules), plus the flat `EmoteStatsModule`, `BotFeedbackModule` (`/goodbot`),
 `LevelModule` (`/level`, `/leaderboard`), `ShameModule` (`/shame`), `HelpModule`,
 `YesNoModule` (`/yesno`), `XpAdminModule` (`/addxp`, `/removexp`), `ConfigModule`
-(`/config`, itself a group module), `SpeakModule` (`/tell`, `/dm`) and `AbsenceModule`
+(`/config`, itself a group module), `PlynlingModule` (`/plynling`, a group module), `EconomyModule` (`/work`, `/balance`), `GraveyardModule` (`/graveyard`), `SpeakModule` (`/tell`, `/dm`) and `AbsenceModule`
 (`/absent`). Component handlers for the published cards live apart
 from the commands, in `Interactions/Components/` (`EventComponentHandler`,
-`PollComponentHandler`, `GiveawayComponentHandler`) — the module keeps the commands and
+`PollComponentHandler`, `GiveawayComponentHandler`, `PlynlingComponentHandler`) — the module keeps the commands and
 the `static` card builders those handlers render through.
 
 `GiveawayModule` is a group module but **not** a wizard: a giveaway is one slash command
@@ -1452,7 +1452,7 @@ embed past 6000 as commands were added, and `/help` was dead for six-plus commit
 before anyone noticed. This is why `HelpModule.BuildEmbed()` is a `static`, Context-free
 builder — it can be constructed and measured without a gateway, which is the only
 reason the caps are checkable at all. **Keep sections short and split one rather than
-letting it grow**; 11 of the 25 allowed fields are used, so there is room. Note
+letting it grow**; 12 of the 25 allowed fields are used, so there is room. Note
 `Embed.Length` is Discord.Net's own implementation of Discord's total, so measuring
 against it cannot drift from what the API enforces.
 
@@ -1470,6 +1470,11 @@ DM, same as `/help`.
 **`/help` is hand-maintained.** `HelpModule` duplicates the feature list in prose,
 as does `README.md`; neither is generated. A new user-facing command means updating
 both — except the owner-only ones, which are deliberately absent from `/help`.
+
+**`/plynling help` is the Plynlings' own guide, and the main `/help` points to it in one
+line only** — the whole feature is one command away, and listing its dozen subcommands in
+`/help` would push that embed toward its caps. Both are static `BuildEmbed` methods so
+both are measurable without a gateway.
 
 ## Version and deployment
 
