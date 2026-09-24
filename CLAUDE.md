@@ -1119,6 +1119,29 @@ write drops that guild's entry and the next read rebuilds it. A failed read degr
 `GuildConfig.Empty` and is *not* cached, so a transient fault cannot pin a guild as
 unconfigured for the process lifetime.
 
+**Plynlings compute their state; nothing ticks.** `Plynling` stores hunger and happiness
+*as they were at* `NeedsAsOf`, and `Helpers/PlynlingLife` derives the current values from
+elapsed time — the voice taper's approach. Every transition rebases (computes, stores,
+restarts the clock). `PlynlingLife.Settle` brings a row up to now — an expired self-freeze
+thaws *at the moment it was due*, then a starved one dies *at the moment it starved* — and
+**every read in `PlynlingService` goes through it**, so a death found by a command and one
+found by the hourly sweep are identical: same instant, same age, same memorial. Age is
+`AgeBankedSeconds` plus the live stretch since `LiveSince`; frozen and dead time is never
+banked, which is what the memorial tier is measured on.
+
+**One living Plynling per person is enforced by the database**, with a partial unique index
+(`HasFilter("\"DiedAt\" IS NULL")`) — so racing adoptions, or a resurrection racing an
+adoption, cannot both land, while the graveyard holds any number of dead rows. The services
+still check first; the index is what makes the check safe.
+
+**Feeding pays and feeds in one save.** `AppDbContext` is transient, so charging through
+`PebbleService` would be a second context and a second `SaveChanges`; `PlynlingService.FeedAsync`
+loads the wallet through `PebbleService.GetOrCreateWalletAsync(its own context, …)` instead.
+
+**The passive-income cap lives on the wallet row** (`PassiveDay` + `PassiveToday`), not in a
+daily-bucket table: nothing ranks cailloux by date, so the leaderboards' totals+buckets pair
+would be a table with no reader.
+
 **`XpTracker.ExcludedChannels` is checked before `TryClaim`, never after.** The spam
 channels earn nothing, and the order matters: claiming first would let a message there
 burn that person's 60 s message cooldown, so spamming in the excluded channel would

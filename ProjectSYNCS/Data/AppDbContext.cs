@@ -24,6 +24,8 @@ public class AppDbContext : DbContext
     public DbSet<GiveawayEntry> GiveawayEntries => Set<GiveawayEntry>();
     public DbSet<ShameRecord> ShameRecords => Set<ShameRecord>();
     public DbSet<ShameDailyStat> ShameDailyStats => Set<ShameDailyStat>();
+    public DbSet<Plynling> Plynlings => Set<Plynling>();
+    public DbSet<PebbleWallet> PebbleWallets => Set<PebbleWallet>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -181,6 +183,25 @@ public class AppDbContext : DbContext
             // Serves the only read there is: every excluded channel for one guild,
             // loaded once and then cached (see GuildConfigService).
             e.HasIndex(x => x.GuildId);
+        });
+
+        modelBuilder.Entity<Plynling>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.OwnerId).HasConversion<long>();
+            // One *living* Plynling per person per guild, enforced by the database rather
+            // than only by the code: a partial unique index over rows that have not died,
+            // so two racing adoptions (or a resurrection racing an adoption) cannot both
+            // land. Dead rows are excluded, which is what lets the graveyard hold any number.
+            e.HasIndex(x => new { x.GuildId, x.OwnerId }).IsUnique().HasFilter("\"DiedAt\" IS NULL");
+            e.HasIndex(x => x.GuildId);
+        });
+
+        modelBuilder.Entity<PebbleWallet>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.UserId }).IsUnique();
         });
     }
 }
