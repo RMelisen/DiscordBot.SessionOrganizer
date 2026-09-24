@@ -69,4 +69,23 @@ public static class PlynlingCardUi
         if (food.Happiness > 0) parts.Add($"+{(int)Math.Round(food.Happiness * 100)} % de bonheur");
         return string.Join(", ", parts);
     }
+
+    public static string GraveyardTitle(ulong owner, GraveSortLabel sort) =>
+        (owner == 0 ? "## 🪦 Cimetière des Plynlings" : $"## 🪦 Les tombes de <@{owner}>") +
+        $"\n-# Tri : {sort.Text}";
+
+    public static string EmptyGraveyard(ulong owner) => owner == 0
+        ? "Le cimetière est vide. Pour l'instant."
+        : $"<@{owner}> n'a encore perdu aucun Plynling. Bravo… pour l'instant.";
+
+    public static string GraveLine(Plynling p, DateTimeOffset now)
+    {
+        var info = PlynlingCatalog.Info(p.Species);
+        var lived = LevelCardUi.Duration((long)PlynlingLife.Age(p, now).TotalMinutes);
+        return $"**{SafeName(p.Name)}** · {info.Name} — à <@{p.OwnerId}>\n" +
+               $"*a vécu {lived}* · mort <t:{p.DiedAt!.Value.ToUnixTimeSeconds()}:R>";
+    }
 }
+
+// A graveyard sort's French wording: the title's "Tri : …" text and the button label.
+public readonly record struct GraveSortLabel(string Text, string Button);

@@ -1183,6 +1183,13 @@ lifted by staff only; the owner is told by DM whenever staff freeze, thaw or ren
 `LastSelfThawAt` is written only when a *self*-freeze ends, so a staff thaw never starts
 the owner's cooldown.
 
+**`/graveyard` is Components V2 with two button rows and two verbs** — `grave:sort:` for the
+newest/longest-life toggle and `grave:page:` for paging. The budget is 24 of 40 (container,
+heading, five picture rows at three components each, footer, two rows of two). Changing the
+sort resets to page 0. The graveyard settles every living Plynling in the guild before
+listing, so a death that happened since the last sweep is already in the ground. Ties
+break on id so the order is stable across re-renders.
+
 **`XpTracker.ExcludedChannels` is checked before `TryClaim`, never after.** The spam
 channels earn nothing, and the order matters: claiming first would let a message there
 burn that person's 60 s message cooldown, so spamming in the excluded channel would
