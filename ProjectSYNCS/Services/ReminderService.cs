@@ -64,9 +64,19 @@ public class ReminderService : BackgroundService
 
         foreach (var poll in polls)
         {
-            await pollService.ClosePollAsync(poll.Id);
-            poll.IsClosed = true;
-            await UpdatePollCardAsync(poll);
+            // Guarded per item for the reason above. The close is written before the card
+            // is re-rendered, so a failure here leaves the poll open and it is simply
+            // retried on the next pass — which is why this may swallow and continue.
+            try
+            {
+                await pollService.ClosePollAsync(poll.Id);
+                poll.IsClosed = true;
+                await UpdatePollCardAsync(poll);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to auto-close poll {PollId}.", poll.Id);
+            }
         }
     }
 
@@ -115,9 +125,20 @@ public class ReminderService : BackgroundService
 
         foreach (var sessionEvent in events)
         {
-            var phase = sessionEvent.PhaseAt(DateTimeOffset.UtcNow);
-            await UpdateCardAsync(sessionEvent);
-            await eventService.SetRenderedPhaseAsync(sessionEvent.Id, phase);
+            // Guarded per item for the reason above. SetRenderedPhaseAsync is the write
+            // that matters here: UpdateCardAsync swallows its own Discord failures, so a
+            // throw reaching this far is a database problem, and losing the host over one
+            // card is worse than re-rendering it on the next pass.
+            try
+            {
+                var phase = sessionEvent.PhaseAt(DateTimeOffset.UtcNow);
+                await UpdateCardAsync(sessionEvent);
+                await eventService.SetRenderedPhaseAsync(sessionEvent.Id, phase);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to advance lifecycle for event {EventId}.", sessionEvent.Id);
+            }
         }
     }
 
@@ -164,7 +185,18 @@ public class ReminderService : BackgroundService
 
         foreach (var sessionEvent in events)
         {
-            await SendRemindersForEventAsync(sessionEvent, eventService);
+            // Per item, not one try around the pass: an exception escaping ExecuteAsync
+            // stops the whole host (BackgroundServiceExceptionBehavior defaults to
+            // StopHost), and one unreachable session must not cost the others their
+            // reminder. Same shape as GiveawayDrawService.SweepAsync.
+            try
+            {
+                await SendRemindersForEventAsync(sessionEvent, eventService);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to process reminders for event {EventId}.", sessionEvent.Id);
+            }
         }
     }
 

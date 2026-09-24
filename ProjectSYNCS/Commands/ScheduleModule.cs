@@ -457,7 +457,8 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         return new ModalBuilder()
             .WithTitle("Modifier la session")
             .WithCustomId($"event:editmodal:{gameEvent.Id}")
-            .AddTextInput("Nom de la session", "title", value: gameEvent.Title, required: true)
+            .AddTextInput("Nom de la session", "title", maxLength: InputCaps.Title,
+                value: gameEvent.Title, required: true)
             .AddTextInput("Date (AAAA-MM-JJ)", "date",
                 value: zoned.ToString("yyyy-MM-dd"), placeholder: "ex. 2026-06-20", required: true)
             .AddTextInput("Heure (HH:mm)", "time",
@@ -547,7 +548,7 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         var modal = new ModalBuilder()
             .WithTitle("Planifier une session")
             .WithCustomId($"schedule:finalize:{category}:{dateTime}")
-            .AddTextInput("Nom de la session", "title",
+            .AddTextInput("Nom de la session", "title", maxLength: InputCaps.Title,
                 placeholder: "ex. Among Us, Gartic, Anime ?", value: title, required: true)
             .AddTextInput("Nombre de participants max - Optionnel", "max_players", required: false)
             .Build();

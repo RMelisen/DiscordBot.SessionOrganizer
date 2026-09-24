@@ -374,7 +374,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         var modal = new ModalBuilder()
             .WithTitle("Planifier une session")
             .WithCustomId($"schedule:finalize:{category}:{datetime}")
-            .AddTextInput("Nom de la session", "title",
+            .AddTextInput("Nom de la session", "title", maxLength: InputCaps.Title,
                 placeholder: "ex. Among Us, Gartic, Anime ?", value: title, required: true)
             .AddTextInput("Nombre de participants max - Optionnel", "max_players", required: false)
             .Build();

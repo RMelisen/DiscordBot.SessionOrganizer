@@ -1,4 +1,5 @@
 using Discord.Interactions;
+using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Interactions.Modals;
 
@@ -9,7 +10,7 @@ public class EditSessionModal : IModal
     public string Title => "Modifier la session";
 
     [InputLabel("Nom de la session")]
-    [ModalTextInput("title")]
+    [ModalTextInput("title", maxLength: InputCaps.Title)]
     public string SessionTitle { get; set; } = string.Empty;
 
     [InputLabel("Date (AAAA-MM-JJ)")]

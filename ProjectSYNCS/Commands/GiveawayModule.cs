@@ -37,7 +37,7 @@ public class GiveawayModule : InteractionModuleBase<SocketInteractionContext>
     // there is room to add more.
     [SlashCommand("create", "Lancer un tirage au sort")]
     public async Task CreateAsync(
-        [Summary("lot", "Ce qu'il y a à gagner")] string prize,
+        [Summary("lot", "Ce qu'il y a à gagner")] [MaxLength(InputCaps.Prize)] string prize,
         [Summary("duree", "Combien de temps le tirage reste ouvert")]
         [Choice("10 minutes", 10)]
         [Choice("30 minutes", 30)]
@@ -48,7 +48,8 @@ public class GiveawayModule : InteractionModuleBase<SocketInteractionContext>
         [Choice("48 heures", 2880)]
         [Choice("7 jours", 10080)]
         int durationMinutes,
-        [Summary("description", "Détails, conditions, ce que tu veux")] string? description = null,
+        [Summary("description", "Détails, conditions, ce que tu veux")]
+        [MaxLength(InputCaps.Description)] string? description = null,
         [Summary("gagnants", "Combien de gagnants tirer (1 par défaut)")]
         [MinValue(1)] [MaxValue(MaxWinners)] int winners = 1)
     {

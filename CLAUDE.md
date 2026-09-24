@@ -964,11 +964,58 @@ Discord events) swallows and logs every exception; a missing Manage Events
 permission degrades silently rather than failing the session. Keep that property.
 Reminder DMs likewise catch `CannotSendMessageToUser` specifically.
 
+**An exception escaping a hosted loop stops the whole bot, so every sweep guards per
+item.** None of the five `BackgroundService`s wraps its `while` body in a try, and
+`BackgroundServiceExceptionBehavior` is not configured — so the .NET default, `StopHost`,
+applies: one throw out of `ExecuteAsync` and the process exits. Discord side effects are
+individually guarded already, so the real exposure is the **database** writes.
+
+All five now catch around **each item** rather than around the pass: `ReminderService`'s
+three passes (reminders, lifecycle, poll auto-close), `VoiceXpService`'s per-member grant,
+`GiveawayDrawService`'s per-giveaway draw — whose comment, "one broken giveaway must not
+stop the others", is the rule — and `PresenceService`, which is a single call. Before
+this, the three `ReminderService` passes each called an unguarded write inside an
+unguarded loop (`MarkReminderSentAsync`, `SetRenderedPhaseAsync`, `ClosePollAsync`, none
+of which catches internally), so on a Raspberry Pi with `/data` on an SD card a transient
+`SQLITE_BUSY` took the whole bot down rather than skipping one session.
+
+**Per item, not per pass** — that is what keeps the rest of the batch working, and it is
+also why `BackgroundServiceExceptionBehavior.Ignore` is *not* the fix: it would keep the
+host alive but leave that loop dead until the next restart, trading a loud failure for a
+silent one. Anything new added to a sweep goes inside the same `try`.
+
 **Respect Discord's hard caps when building components.** 25 options per select
 menu (the day picker and every `list` republish menu `.Take(25)`), 5 buttons per
 row, 80-char button labels, 100-char select labels, 1000-char scheduled-event
 description, 2000-char message (relays truncate to 1200–1500 to leave room for the
 herald line and blockquote markers). Exceeding one throws at send time, not at build.
+
+**Cap user-supplied text at the *option*, not at the point of use.** A slash-command
+string option accepts up to **6000** characters unless `[MaxLength(n)]` says otherwise
+(`Discord.Interactions.MaxLengthAttribute`, present in 3.20), and a `[ModalTextInput]`
+defaults to **4000** unless it passes `maxLength:`. Both are far larger than where the
+text lands: an embed **title** holds 256, a field value 1024, a whole message 2000.
+Capping at the *option* is what makes Discord refuse the input in the client, so the bot
+never has to word a refusal and nothing over-long ever reaches the database — where it
+would otherwise break **every** later re-render of the card, not just the first send.
+Truncating at the point of use is not the same thing and is not a substitute.
+
+`Helpers/InputCaps` holds the numbers, chosen from where the text ends up:
+`Title` (150, session/poll/vote titles behind a phase prefix), `Prize` (200),
+`Description` (1000) and `Question` (400). **`Title` is needed at five sites that must
+agree** — `ScheduleEventModal`, `EditSessionModal`, `PollModal`, `VoteStartModal`, and
+the three hand-built `ModalBuilder`s that pre-fill those same modals — which is the
+existing modal-DTO sync trap, so it is a constant rather than a literal.
+
+This was once four uncapped paths (`/yesno`'s question, `/giveaway`'s `lot`, the session
+title and the poll/vote title), each of which threw inside `Build()` at send time with
+nothing in the logs naming the length — the same failure mode that killed `/help` for six
+commits. `/tell` predates `InputCaps` and keeps its own `MaxMessageLength` (1500) with an
+explicit refusal, because it truncates a *body* rather than rejecting a title.
+
+Deliberately **no** `HasMaxLength` in `AppDbContext`: SQLite does not enforce a column
+width, so it would document the cap without applying it, and the option-level cap is what
+actually holds.
 
 **`/addxp` and `/removexp` are guarded once, and only in code — deliberately no
 `[DefaultMemberPermissions]`.** That attribute is a Discord permission *bit*, which

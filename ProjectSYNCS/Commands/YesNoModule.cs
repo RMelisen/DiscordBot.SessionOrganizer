@@ -2,6 +2,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using ProjectSYNCS.Services;
+using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Commands;
 
@@ -22,6 +23,7 @@ public class YesNoModule : InteractionModuleBase<SocketInteractionContext>
     [SlashCommand("yesno", "Pose-moi une question fermée, je tranche")]
     public Task YesNoAsync(
         [Summary("question", "La question à trancher (facultatif)")]
+        [MaxLength(InputCaps.Question)]
         string? question = null)
     {
         // The flip first, the wording second. Picking a pool and then a line means a

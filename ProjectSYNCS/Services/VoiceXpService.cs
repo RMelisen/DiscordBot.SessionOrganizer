@@ -80,13 +80,29 @@ internal sealed class VoiceXpService : BackgroundService
 
                 foreach (var member in active)
                 {
-                    // The channel id goes along so XpTracker can apply the same
-                    // excluded-channel rule it applies to every other signal — the
-                    // list lives there, not here. One tick is one minute by
-                    // construction (CheckInterval), which is what makes the minute
-                    // count and the XP payout two views of the same event.
-                    await _xp.GrantVoiceXpAsync(
-                        guild.Id, channel.Id, member.Id, MinutesPerTick);
+                    // Guarded per member, like GiveawayDrawService and the three
+                    // ReminderService passes. Everything GrantVoiceXpAsync awaits already
+                    // swallows its own failures, so nothing is expected to arrive here —
+                    // but an exception escaping ExecuteAsync stops the whole host
+                    // (BackgroundServiceExceptionBehavior defaults to StopHost), and this
+                    // sweep runs every minute against every member in voice. One net for
+                    // the whole class beats relying on every callee staying guarded.
+                    try
+                    {
+                        // The channel id goes along so XpTracker can apply the same
+                        // excluded-channel rule it applies to every other signal — the
+                        // list lives there, not here. One tick is one minute by
+                        // construction (CheckInterval), which is what makes the minute
+                        // count and the XP payout two views of the same event.
+                        await _xp.GrantVoiceXpAsync(
+                            guild.Id, channel.Id, member.Id, MinutesPerTick);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex,
+                            "Failed to grant voice XP to {UserId} in channel {ChannelId}.",
+                            member.Id, channel.Id);
+                    }
                 }
             }
         }

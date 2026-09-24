@@ -1,4 +1,5 @@
 using Discord.Interactions;
+using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Interactions.Modals;
 
@@ -7,7 +8,7 @@ public class ScheduleEventModal : IModal
     public string Title => "Planifier une session";
 
     [InputLabel("Nom de la session")]
-    [ModalTextInput("title", placeholder: "ex. Among Us, Gartic, Anime ?")]
+    [ModalTextInput("title", placeholder: "ex. Among Us, Gartic, Anime ?", maxLength: InputCaps.Title)]
     public string SessionTitle { get; set; } = string.Empty;
 
     [InputLabel("Nombre de participants max - Optionnel")]
