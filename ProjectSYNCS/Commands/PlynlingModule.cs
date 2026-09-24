@@ -254,7 +254,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             .WithColor(new Color(0xCE323A))
             .AddField("Adopter & regarder",
                 "**`/plynling adopt name:`** — Gratuit, un seul à la fois. L'espèce est tirée au sort : " +
-                "commune, peu commune, rare… ou légendaire.\n" +
+                "commune, peu commune, rare… ou légendaire. Garçon ou fille ? Surprise.\n" +
                 "**`/plynling view [user]`** — Sa carte, avec les boutons **Caresser** et **Nourrir**.")
             .AddField("S'en occuper",
                 "La **faim** se vide en **4 jours** : à 0 %, il meurt. Le **bonheur** se vide en **2 jours** " +

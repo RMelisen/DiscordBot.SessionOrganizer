@@ -1190,6 +1190,31 @@ sort resets to page 0. The graveyard settles every living Plynling in the guild 
 listing, so a death that happened since the last sweep is already in the ground. Ties
 break on id so the order is stable across re-renders.
 
+**Every Plynling line exists in both genders, and the type makes that unskippable.** Each
+Plynling pool in `BotResponses` is a `GenderedLines(M, F)`, so a call site cannot pick a line
+without `.For(p.Gender)` — two flat arrays would have compiled fine with a forgotten switch
+and shipped a boy's line to a girl. A girl is *une Plynling*: the noun follows the creature.
+Text not about one specific Plynling — `/plynling help`, `/help`, the README, command
+descriptions, person-level refusals like `NoPlynling` — stays in the generic masculine. Short
+fixed words go through `PlynlingGrammar.Agree` ("âgé/âgée", "Gelé/Gelée"). The `plynlingui`
+harness walks every `GenderedLines` field by reflection and bans `il`, `-le`, `mort` in `F`
+and `elle`, `-la`, `morte` in `M` (whole words, with an allow-list for *la mort*) — crude, but
+it catches the likeliest mistake, a line pasted into the wrong half. `PetCooldown` is the one
+Plynling line with no gender: it is refused before the Plynling is loaded, so it is worded to
+need none.
+
+**Plynling families exist in the code and are dormant.** `PlynlingFamily`, the six sunflower
+species and their catalog rows are in place, and `PlynlingCatalog` rolls only within a family
+— but `/plynling adopt` always rolls a mushroom, and no sunflower art exists, so nothing can
+ever show one. The rest (the `family:` option, the art, the docs) is Tasks 3–5 of
+`docs/superpowers/plans/2026-09-24-plynling-gender-and-sunflowers.md`, deferred on purpose and
+already tested on a scratch copy. **`PlynlingSpecies` is append-only**: it is stored as an int,
+so a species inserted in the middle would silently turn every later row into its neighbour.
+The family is `SpeciesInfo.Family`, not a column. `PlynlingArt.Key` is exhaustive and
+**throws**: it used to end in `_ => "dore"`, which would have dressed any unkeyed species in a
+Doré's pictures without a word. Every line is written family-neutral — never name a cap,
+petals or spores in a Plynling line — which is why the three "chapeau" lines were rewritten.
+
 **`XpTracker.ExcludedChannels` is checked before `TryClaim`, never after.** The spam
 channels earn nothing, and the order matters: claiming first would let a message there
 burn that person's 60 s message cooldown, so spamming in the excluded channel would
