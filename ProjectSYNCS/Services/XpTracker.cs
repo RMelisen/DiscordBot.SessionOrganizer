@@ -263,6 +263,7 @@ internal sealed class XpTracker
             await using var scope = _services.CreateAsyncScope();
             var xp = scope.ServiceProvider.GetRequiredService<XpService>();
             var (oldLevel, newLevel) = await xp.AddXpAsync(guildId, userId, amount);
+            await GrantPassivePebblesAsync(scope, guildId, userId);
 
             if (newLevel > oldLevel && channel is not null)
                 await AnnounceAsync(channel, userId, oldLevel, newLevel, knownUser);
@@ -270,6 +271,24 @@ internal sealed class XpTracker
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to grant XP to user {UserId} in guild {GuildId}.", userId, guildId);
+        }
+    }
+
+    // Passive cailloux ride on every XP grant: the XP cooldowns, excluded channels and
+    // voice rules have already decided this grant was earned, so the bonus needs no
+    // defences of its own. PebbleService caps it at a share of a day's /work, which is
+    // what keeps it a bonus. Its own try: a failure here must not cost the level-up
+    // announcement that follows.
+    private async Task GrantPassivePebblesAsync(AsyncServiceScope scope, ulong guildId, ulong userId)
+    {
+        try
+        {
+            var pebbles = scope.ServiceProvider.GetRequiredService<PebbleService>();
+            await pebbles.AddPassiveAsync(guildId, userId, PebbleEconomy.PassivePerGrant);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to grant passive cailloux to user {UserId} in guild {GuildId}.", userId, guildId);
         }
     }
 

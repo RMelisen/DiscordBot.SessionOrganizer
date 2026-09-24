@@ -1142,6 +1142,14 @@ loads the wallet through `PebbleService.GetOrCreateWalletAsync(its own context, 
 daily-bucket table: nothing ranks cailloux by date, so the leaderboards' totals+buckets pair
 would be a table with no reader.
 
+**Passive cailloux are granted from `XpTracker.GrantAsync`, never detected separately.** Every
+XP grant (message, reaction, voice, verdict and bot-interaction bonuses) pays
+`PebbleEconomy.PassivePerGrant`, capped per day at 30% of three average `/work` shifts. So
+the cap inherits every XP defence for free — cooldowns, excluded channels, voice
+eligibility — and can never pay for something XP refused. It runs in its own `try` so a
+failure cannot swallow the level-up card. Plynling actions themselves grant **no XP**: the
+link runs one way only, or money and levels would feed each other.
+
 **`XpTracker.ExcludedChannels` is checked before `TryClaim`, never after.** The spam
 channels earn nothing, and the order matters: claiming first would let a message there
 burn that person's 60 s message cooldown, so spamming in the excluded channel would

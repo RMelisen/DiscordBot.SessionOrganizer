@@ -61,6 +61,7 @@ namespace ProjectSYNCS.Services;
 //     ShameVoteLines · ShameSelfVoteLines ............ /shame
 //     ShameEmptyMalfaisant · ShameEmptyBanni · ShameEmptyPerfide · ShameEmptyHysterique
 //     GiveawayDrawLines · GiveawayEmptyLines ......... /giveaway
+//     WorkLines ................ /work
 //
 //   Elsewhere
 //     PresenceFillers .......... the rotating status line
@@ -264,6 +265,22 @@ internal static class BotResponses
         "Par décret de mon Maître **{0}** :",
         "Un mot de mon Maître **{0}** :",
         "Dicté par mon Maître **{0}**, proclamé par mes soins :",
+    };
+
+    // /work results. {0} = what was earned, already formatted ("+47 cailloux"). The jobs
+    // are absurd on purpose: the money is real, the employment is not.
+    public static readonly string[] WorkLines =
+    {
+        "Tu as trié des spores toute la matinée. Passionnant. {0}",
+        "Tu as ramassé des cailloux au bord de la rivière. Littéralement. {0}",
+        "Tu as aidé un escargot à traverser la route. Il t'a payé, bizarrement. {0}",
+        "Tu as nettoyé les chapeaux de trois Plynlings capricieux. {0}",
+        "Tu as tenu la caisse du marché aux champignons. {0}",
+        "Tu as creusé un tunnel pour une taupe syndiquée. {0}",
+        "Service de nuit à la cueillette des morilles. Les mains sales, mais {0}",
+        "Tu as livré du terreau dans tout le village. Ton dos s'en souviendra. {0}",
+        "Tu as servi de guide à des touristes perdus dans la forêt. {0}",
+        "Tu as poli des cailloux. On t'a payé en cailloux. La boucle est bouclée. {0}",
     };
 
     // /yesno's two verdicts. The coin flip is even; these are only how she *delivers*
