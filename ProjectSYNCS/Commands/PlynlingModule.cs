@@ -41,7 +41,9 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         var now = DateTimeOffset.UtcNow;
-        var species = PlynlingCatalog.RollSpecies();
+        // Only mushrooms are adoptable for now: the sunflower species exist in the catalog but
+        // stay dormant until families ship (the plan's deferred Task 3 adds the family: option).
+        var species = PlynlingCatalog.RollSpecies(PlynlingFamily.Mushroom);
         var (outcome, plynling) = await _plynlings.AdoptAsync(Context.Guild.Id, Context.User.Id, name, species, now);
         if (outcome != AdoptOutcome.Adopted || plynling is null)
         {

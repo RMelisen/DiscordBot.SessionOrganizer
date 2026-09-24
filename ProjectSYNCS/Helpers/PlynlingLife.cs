@@ -35,12 +35,13 @@ public static class PlynlingLife
     public static bool IsDead(Plynling p) => p.DiedAt is not null;
     public static bool IsFrozen(Plynling p) => p.FrozenAt is not null;
 
-    public static Plynling Create(ulong guildId, ulong ownerId, string name, PlynlingSpecies species, DateTimeOffset now) => new()
+    public static Plynling Create(ulong guildId, ulong ownerId, string name, PlynlingSpecies species, PlynlingGender gender, DateTimeOffset now) => new()
     {
         GuildId = guildId,
         OwnerId = ownerId,
         Name = name,
         Species = species,
+        Gender = gender,
         AdoptedAt = now,
         Hunger = StartNeeds,
         Happiness = StartNeeds,

@@ -24,7 +24,9 @@ public static class PlynlingArt
     public static string Food(PlynlingFood food) =>
         $"{BaseUrl}food_{food.ToString().ToLowerInvariant()}_v{Version}.png";
 
-    // Must match the SPECIES keys in tools/plynling-art/common.py.
+    // Must match the SPECIES / SUNFLOWERS keys in tools/plynling-art/common.py. Exhaustive
+    // on purpose: it used to end in `_ => "dore"`, so a species added without a key would
+    // silently have worn a Doré's pictures. Now it throws, and artcheck catches it.
     public static string Key(PlynlingSpecies species) => species switch
     {
         PlynlingSpecies.Amanite => "amanite",
@@ -32,6 +34,13 @@ public static class PlynlingArt
         PlynlingSpecies.Rose => "rose",
         PlynlingSpecies.Russule => "russule",
         PlynlingSpecies.Mystique => "mystique",
-        _ => "dore",
+        PlynlingSpecies.Dore => "dore",
+        PlynlingSpecies.Tournesol => "tournesol",
+        PlynlingSpecies.Citron => "tournesol_citron",
+        PlynlingSpecies.Roux => "tournesol_roux",
+        PlynlingSpecies.Ivoire => "tournesol_ivoire",
+        PlynlingSpecies.Nocturne => "tournesol_nocturne",
+        PlynlingSpecies.Solaire => "tournesol_solaire",
+        _ => throw new ArgumentOutOfRangeException(nameof(species), species, "No art key for this species."),
     };
 }

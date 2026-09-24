@@ -1,6 +1,17 @@
 namespace ProjectSYNCS.Models;
 
-public enum PlynlingSpecies { Amanite, Cepe, Rose, Russule, Mystique, Dore }
+// Stored as an int, so this is **append-only**: a new species goes at the end, never in
+// between, or every existing row silently changes species. Which family a species belongs
+// to is PlynlingCatalog's business, not a column.
+public enum PlynlingSpecies
+{
+    Amanite, Cepe, Rose, Russule, Mystique, Dore,                   // mushrooms
+    Tournesol, Citron, Roux, Ivoire, Nocturne, Solaire,             // sunflowers
+}
+
+// Rolled 50/50 at adoption and never changed. Male is 0 so the column's default is a real
+// value for the rows that predate it.
+public enum PlynlingGender { Male, Female }
 
 // One Plynling, alive or dead. A death does not create a second row: DiedAt is set and
 // the row is what the graveyard lists; a resurrection clears DiedAt on the same row.
@@ -20,6 +31,8 @@ public class Plynling
 
     public string Name { get; set; } = string.Empty;
     public PlynlingSpecies Species { get; set; }
+    // Decides the French: a female one is "une Plynling", "gelée", "morte".
+    public PlynlingGender Gender { get; set; }
     public DateTimeOffset AdoptedAt { get; set; }
 
     // 0..1, as of NeedsAsOf. While frozen or dead they are simply the stored values.

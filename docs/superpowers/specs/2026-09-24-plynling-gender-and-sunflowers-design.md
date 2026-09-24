@@ -14,6 +14,14 @@ This adds two things:
 
 Plynlings have only ever existed in the dev guild, so no live data needs migrating.
 
+## Scope amendment
+
+**The gender ships now; the Sunflower family is deferred** (decided after planning). The family
+*data layer* — `PlynlingFamily`, the six sunflower species, the per-family roll, the exhaustive
+art key — lands dormant: only mushrooms are adoptable and no sunflower art is exported. The
+`family:` option, the art and the sunflower docs are the plan's deferred Tasks 3–5. Everything
+below about sunflowers describes that later step.
+
 ## Decisions (from the design session)
 
 | # | Question | Decision |
@@ -23,7 +31,7 @@ Plynlings have only ever existed in the dev guild, so no live data needs migrati
 | 3 | What is a Sunflower Plynling? | A **second family, chosen at adoption**; species rolled within it |
 | 4 | Variants | Six, same ladder as mushrooms (3 common / 1 uncommon / 1 rare / 1 legendary) |
 | 5 | Food | **Everyone eats the mushroom foods** — feeding is unchanged |
-| 6 | Sunflower anatomy | **Face on the flower's disc**, petals around it, stem body, two leaf arms |
+| 6 | Sunflower anatomy | **Face on the flower's disc**, in a **terracotta pot** (amended: the first draft's stem body was rejected; *potted* was picked from three drawn concepts) |
 | 7 | Sunflower memorials | **Same five tombs, re-tinted**; tier-5 statue in the sunflower's shape |
 | 8 | Is the noun gendered? | **Yes**: *une Plynling*, *ta Plynling* for a female one |
 | 9 | Where gender shows | **♂ / ♀ by the name** (card, graveyard) + the adoption line; no art difference |
@@ -96,12 +104,14 @@ cette terre" → "Un Plynling de moins sur cette terre" (*Une Plynling* in the `
 
 **Fixed text becomes gender-aware.** In `PlynlingText`, every line that describes the
 Plynling becomes a function of its gender: `NotYours`, `Dead`, `Frozen`, `Wasted`,
-`PetCooldown` ("Tu l'as caressé/caressée"), `AlreadyFrozen`, `NotFrozen`,
-`TooHungryToFreeze`, `ThawStaffOnly`, `FrozenNotice`, `ThawedNotice`. The paths that return
-these already have the Plynling loaded.
+`AlreadyFrozen`, `NotFrozen`, `TooHungryToFreeze`, `ThawStaffOnly`, `FreezeCooldown`,
+`FrozenNotice`, `ThawedNotice`, and the card's "caressé(e) par …". The paths that return these
+already have the Plynling loaded. **`PetCooldown` is the exception** (amended while planning):
+it is refused *before* the Plynling is loaded, so it is reworded to need no gender ("Une caresse
+toutes les 4 heures, pas plus…") rather than reordering the claim-then-release cooldown.
 
 **The card and the graveyard.** `PlynlingCardUi.MoodLabel(mood, gender)` (content/contente,
-heureux/heureuse, affamé/affamée, gelé/gelée; "triste" and "mourant de faim" are invariant); the
+heureux/heureuse, affamé/affamée, gelé/gelée, mourant/mourante de faim; "triste" is invariant); the
 frozen clock reads "Gelé jusqu'au" / "Gelée jusqu'au"; the heading carries ♂ / ♀ beside
 the name. `GraveLine` gets the symbol and "mort" / "morte".
 
@@ -114,8 +124,10 @@ the same face on its disc — including the closed-mouth frozen face chosen for 
 **All 70 existing PNGs must export byte-identical after the refactor** (hashed before and
 after).
 
-**The sunflower Plynling.** Face on the brown disc, a ring of petals, a short green stem
-body, two leaf arms. Moods mostly move the petals:
+**The sunflower Plynling — potted.** Face on the disc, ten fat round petals around it, a short
+stem with two leaves, growing out of a little terracotta pot (the same pot for every variant).
+The first draft (a green stem body, thin petals) was rejected; *potted* was chosen over
+*rounded* and *crowned* concepts. Moods move the petals and the leaves:
 
 | Mood | Petals |
 |---|---|
@@ -123,14 +135,14 @@ body, two leaf arms. Moods mostly move the petals:
 | happy | perked up, a sparkle |
 | sad | slightly drooping |
 | hungry | wilting, leaves limp |
-| starving | heavy droop, browned edges, a fallen petal or two |
+| starving | heavy droop, browned edges, two petals gone, leaves hanging |
 | frozen | curled in, frosted |
 
 6 variants × 6 moods = **36 sprites**, 256 px, nearest-neighbour, like the mushrooms.
 
 **Memorials.** Tiers 1–4 are the existing stones tinted with the variant's accent; on
 sunflower graves the tier-3/4 flowers become tiny sunflowers. Tier 5 is a statue in the
-sunflower Plynling's shape. 6 × 5 = **30 memorials**. `MemorialName` is unchanged.
+potted sunflower Plynling's shape. 6 × 5 = **30 memorials**. `MemorialName` is unchanged.
 
 `assets/plynlings/` goes from 70 to **136** files (roughly +300 KB).
 
@@ -184,8 +196,10 @@ read the graveyard.
 Each task stops for review and a manual commit.
 
 1. Gender and families in the model and catalog; migration; exhaustive `Key`.
-2. `GenderedLines`; every pool and fixed line written in both genders.
-3. `family:` on adopt; gender wired through every call site.
+2. `GenderedLines`; every pool and fixed line written in both genders, and gender wired
+   through every call site in the same task — changing the pools' type breaks them all, so
+   the build only stays green if they move together.
+3. `family:` on adopt.
 4. Face refactor + sunflower draft (classic Tournesol, six moods, tier-5 statue) —
    **stop for art review**.
 5. Full sunflower set and memorials.

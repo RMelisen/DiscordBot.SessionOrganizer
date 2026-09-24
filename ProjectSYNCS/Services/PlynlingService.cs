@@ -55,12 +55,15 @@ public class PlynlingService
     }
 
     public async Task<(AdoptOutcome Outcome, Plynling? Plynling)> AdoptAsync(
-        ulong guildId, ulong ownerId, string name, PlynlingSpecies species, DateTimeOffset now)
+        ulong guildId, ulong ownerId, string name, PlynlingSpecies species, DateTimeOffset now,
+        PlynlingGender? gender = null)
     {
         var current = await GetCurrentAsync(guildId, ownerId, now);
         if (current is { DiedAt: null }) return (AdoptOutcome.AlreadyHasOne, current);
 
-        var plynling = PlynlingLife.Create(guildId, ownerId, name, species, now);
+        // Rolled here unless given, so PlynlingLife.Create stays pure and the harnesses
+        // can pin a gender.
+        var plynling = PlynlingLife.Create(guildId, ownerId, name, species, gender ?? PlynlingCatalog.RollGender(), now);
         _db_context.Plynlings.Add(plynling);
         try
         {
