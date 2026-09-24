@@ -22,4 +22,22 @@ public static class PlynlingText
 
     public static string TooPoor(long price, long balance) =>
         $"Il te faut {PebbleEconomy.Cailloux(price)}, tu n'en as que {balance}. `/work` pour en gagner.";
+
+    public const string StaffOnly = "Cette action est réservée au staff.";
+    public const string AlreadyFrozen = "Il est déjà gelé.";
+    public const string NotFrozen = "Il n'est pas gelé.";
+    public const string TooHungryToFreeze = "Trop tard pour le geler : il a déjà trop faim (moins de 50 %). Nourris-le d'abord.";
+    public const string ThawStaffOnly = "C'est le staff qui l'a gelé : seul le staff peut le dégeler.";
+    public const string NoGrave = "Personne à ressusciter : cette personne n'a aucun Plynling au cimetière.";
+    public const string ResurrectBlocked = "Cette personne a déjà un Plynling vivant — un seul à la fois.";
+
+    public static string FreezeCooldown(DateTimeOffset next) =>
+        $"Tu l'as dégelé il y a moins de 7 jours. Prochain gel possible <t:{next.ToUnixTimeSeconds()}:R>.";
+
+    // "…Notice", not "Frozen"/"Thawed": those names are already refusal constants.
+    public static string FrozenNotice(string name, DateTimeOffset? until) => until is { } u
+        ? $"❄️ **{name}** est gelé jusqu'au <t:{u.ToUnixTimeSeconds()}:f>. Rien ne bouge d'ici là."
+        : $"❄️ **{name}** est gelé jusqu'à nouvel ordre du staff.";
+
+    public static string ThawedNotice(string name) => $"🌱 **{name}** est dégelé. La faim reprend son cours !";
 }

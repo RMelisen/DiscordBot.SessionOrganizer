@@ -2357,12 +2357,14 @@ Check("warning lines read with a relative timestamp",
     {
         "❄️ Le staff a gelé ton Plynling **{0}**. Rien ne bouge tant qu'il n'est pas dégelé — il ne risque rien.",
         "❄️ **{0}** a été mis au frais par le staff. Il t'attendra, bien au froid.",
+        "❄️ Pause forcée pour **{0}** : le staff l'a gelé. Pas de faim, pas de soucis, juste une longue sieste.",
     };
 
     public static readonly string[] PlynlingStaffThawDms =
     {
         "🌱 Le staff a dégelé **{0}**. La faim reprend son cours : pense à le nourrir !",
         "🌱 **{0}** se réveille, dégelé par le staff. Il a déjà un petit creux.",
+        "🌱 Fin de la sieste pour **{0}** : le staff l'a dégelé. Son estomac s'en souvient déjà.",
     };
 
     // {0} = old name, {1} = new name.
@@ -2370,6 +2372,7 @@ Check("warning lines read with a relative timestamp",
     {
         "✏️ Le staff a renommé ton Plynling **{0}** en **{1}**.",
         "✏️ Petit changement d'identité : **{0}** s'appelle désormais **{1}** (décision du staff).",
+        "✏️ Ton Plynling répond maintenant au nom de **{1}** — le staff a jugé que **{0}** ne lui allait plus.",
     };
 ```
 
@@ -2544,10 +2547,12 @@ Add a `PlynlingAnnouncer _announcer` field, take it in the constructor (`Plynlin
             return;
         }
 
+        await RespondCardAsync(plynling, now, PlynlingText.FrozenNotice(PlynlingCardUi.SafeName(plynling.Name), plynling.FreezeUntil));
+        // After the reply, never before: nothing here defers, and a DM is two or three
+        // REST calls against Discord's 3 s deadline for answering the interaction.
         if (byStaff)
             await _announcer.DmOwnerAsync(plynling.OwnerId, string.Format(
                 _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffFreezeDms), PlynlingCardUi.SafeName(plynling.Name)));
-        await RespondCardAsync(plynling, now, PlynlingText.FrozenNotice(PlynlingCardUi.SafeName(plynling.Name), plynling.FreezeUntil));
     }
 
     [SlashCommand("thaw", "Dégeler un Plynling")]
@@ -2578,10 +2583,10 @@ Add a `PlynlingAnnouncer _announcer` field, take it in the constructor (`Plynlin
             return;
         }
 
-        if (target.Id != Context.User.Id)
+        await RespondCardAsync(plynling, now, PlynlingText.ThawedNotice(PlynlingCardUi.SafeName(plynling.Name)));
+        if (target.Id != Context.User.Id)   // after the reply — see FreezeAsync
             await _announcer.DmOwnerAsync(plynling.OwnerId, string.Format(
                 _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffThawDms), PlynlingCardUi.SafeName(plynling.Name)));
-        await RespondCardAsync(plynling, now, PlynlingText.ThawedNotice(PlynlingCardUi.SafeName(plynling.Name)));
     }
 
     // Staff only: the name is shown publicly (card, announcements, graveyard), so fixing
@@ -2610,11 +2615,12 @@ Add a `PlynlingAnnouncer _announcer` field, take it in the constructor (`Plynlin
             return;
         }
 
-        await _announcer.DmOwnerAsync(plynling.OwnerId, string.Format(
-            _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffRenameDms),
-            PlynlingCardUi.SafeName(oldName), PlynlingCardUi.SafeName(plynling.Name)));
         await RespondAsync($"✏️ **{PlynlingCardUi.SafeName(oldName)}** s'appelle désormais **{PlynlingCardUi.SafeName(plynling.Name)}**.",
-            ephemeral: true);
+            ephemeral: true, allowedMentions: AllowedMentions.None);
+        if (user.Id != Context.User.Id)   // after the reply — see FreezeAsync
+            await _announcer.DmOwnerAsync(plynling.OwnerId, string.Format(
+                _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffRenameDms),
+                PlynlingCardUi.SafeName(oldName), PlynlingCardUi.SafeName(plynling.Name)));
     }
 
     // Staff only in v1 (a rare self-service item comes later, through the same
@@ -2637,9 +2643,9 @@ Add a `PlynlingAnnouncer _announcer` field, take it in the constructor (`Plynlin
             return;
         }
 
-        await _announcer.AnnounceResurrectionAsync(plynling, now);
         await RespondAsync($"✨ **{PlynlingCardUi.SafeName(plynling.Name)}** est de retour (annoncé dans <#{PlynlingAnnouncer.GameChannelId}>).",
-            ephemeral: true);
+            ephemeral: true, allowedMentions: AllowedMentions.None);
+        await _announcer.AnnounceResurrectionAsync(plynling, now);   // after the reply — see FreezeAsync
     }
 ```
 

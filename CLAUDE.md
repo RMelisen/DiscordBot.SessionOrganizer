@@ -1052,7 +1052,8 @@ Administrator / ManageGuild holder. The owner-only commands (`/tell`, `/dm`,
 inline in the module and reply ephemerally. `SessionPermissions.IsStaff` is the third —
 Administrator / ManageGuild **or** the owner, with no notion of owning the thing being
 acted on, which is what `/addxp` and `/removexp` need since nobody owns someone else's
-XP. Don't conflate them.
+XP, and what `/plynling freeze|thaw user:`, `/plynling rename` and `/plynling resurrect`
+check. Don't conflate them.
 
 **Relayed text must never become a mass-ping vector.** Every path that sends text
 on someone's behalf (`SpeakModule`, `ChatterService`'s DM relay) passes
@@ -1166,6 +1167,13 @@ since petting cannot keep a Plynling alive.
 (`Format.Sanitize` — markdown and mention syntax neutralised) *and* every message carrying
 one is sent with `AllowedMentions.None`. The death announcement is public, so a Plynling
 named `@everyone` would otherwise ping the server on its way out.
+
+**Freezing has two owners.** A self-freeze (`FrozenByStaff = false`) follows the rules —
+hunger ≥ 50%, 14 days at most, thawable early, 7-day cooldown after it ends — and those
+rules exist only to stop people escaping death. A staff freeze has none of them and is
+lifted by staff only; the owner is told by DM whenever staff freeze, thaw or rename theirs.
+`LastSelfThawAt` is written only when a *self*-freeze ends, so a staff thaw never starts
+the owner's cooldown.
 
 **`XpTracker.ExcludedChannels` is checked before `TryClaim`, never after.** The spam
 channels earn nothing, and the order matters: claiming first would let a message there
@@ -1471,6 +1479,9 @@ he reacts to), the level-up bot id in `ChatterService`, the `hi_cat` emote id in
 `MessageCues` and `ReminderService`, `XpTracker.ExcludedChannels` (the spam channels
 that earn no XP), `ShameModule.ExtraVoters`, and the per-user `PersonalComebacks` /
 `RealNames` maps in `BotResponses` are literal snowflakes tied to one specific server.
+
+`PlynlingAnnouncer.GameChannelId` (`878305034432045080`) is where Plynling deaths and
+resurrections are announced. Commands themselves work in any channel.
 
 Two of those are now *floors* rather than the whole story: `/config` can add excluded
 channels and grant `/shame` voting to a role, but neither command can edit these lists —

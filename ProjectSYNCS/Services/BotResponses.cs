@@ -72,6 +72,9 @@ namespace ProjectSYNCS.Services;
 //   Plynlings
 //     PlynlingAdoptLines · PlynlingAdoptRareLines ... a new Plynling
 //     PlynlingFeedLines · PlynlingPetLines .......... shown on the card
+//     PlynlingDeathLines · PlynlingResurrectLines ... public, game channel
+//     PlynlingWarningLines ..... the ~6h DM before death
+//     PlynlingStaffFreezeDms · PlynlingStaffThawDms · PlynlingStaffRenameDms
 //
 //   Per-person data and lookups (not pools)
 //     PersonalComebacks ........ per-user roast lines
@@ -324,6 +327,56 @@ internal static class BotResponses
         "Le chapeau de **{0}** frétille de bonheur ✨",
         "**{0}** se blottit contre ta main. C'est officiel, vous êtes amis.",
         "**{0}** fait un petit bruit satisfait. Encore, encore !",
+    };
+
+    // Posted publicly in the game channel, with the memorial as the picture.
+    // {0} = name, {1} = owner mention (sent with pings off), {2} = time lived, {3} = memorial.
+    public static readonly string[] PlynlingDeathLines =
+    {
+        "🪦 **{0}**, le Plynling de {1}, s'est éteint après {2} de vie. Il repose désormais sous {3}.",
+        "🪦 Un chapeau de moins sur cette terre… **{0}** ({1}) nous a quittés après {2}. On lui a dressé {3}.",
+        "🪦 Minute de silence pour **{0}**, compagnon de {1} pendant {2}. Il dort sous {3}.",
+        "🪦 **{0}** n'a pas survécu à la faim. {2} de vie, et maintenant {3}. {1}, il t'attendait…",
+    };
+
+    // Posted publicly when staff bring one back. {0} = name, {1} = owner mention.
+    public static readonly string[] PlynlingResurrectLines =
+    {
+        "✨ **{0}** est revenu d'entre les morts ! {1}, c'est ta deuxième chance. Ne la gâche pas.",
+        "✨ La terre tremble… **{0}** ressort du cimetière, un peu poussiéreux mais bien vivant. Bon retour, {1} !",
+        "✨ Miracle ! **{0}** respire à nouveau. {1}, nourris-le vite, il a une faim de mort-vivant.",
+    };
+
+    // The single DM about six hours before death. {0} = name, {1} = a relative Discord
+    // timestamp ("dans 6 heures") — so every line must read with "dans …" in that slot.
+    public static readonly string[] PlynlingWarningLines =
+    {
+        "⚠️ **{0}** a terriblement faim… il mourra {1} si personne ne le nourrit. `/plynling feed`, vite !",
+        "⚠️ Ton Plynling **{0}** va mourir de faim {1}. Il compte sur toi.",
+        "⚠️ Psst… **{0}** est au bord de l'évanouissement. Il s'effondrera {1}. Ne l'abandonne pas (╥﹏╥)",
+    };
+
+    // DMs to an owner when staff act on their Plynling, so it never looks like a bug.
+    public static readonly string[] PlynlingStaffFreezeDms =
+    {
+        "❄️ Le staff a gelé ton Plynling **{0}**. Rien ne bouge tant qu'il n'est pas dégelé — il ne risque rien.",
+        "❄️ **{0}** a été mis au frais par le staff. Il t'attendra, bien au froid.",
+        "❄️ Pause forcée pour **{0}** : le staff l'a gelé. Pas de faim, pas de soucis, juste une longue sieste.",
+    };
+
+    public static readonly string[] PlynlingStaffThawDms =
+    {
+        "🌱 Le staff a dégelé **{0}**. La faim reprend son cours : pense à le nourrir !",
+        "🌱 **{0}** se réveille, dégelé par le staff. Il a déjà un petit creux.",
+        "🌱 Fin de la sieste pour **{0}** : le staff l'a dégelé. Son estomac s'en souvient déjà.",
+    };
+
+    // {0} = old name, {1} = new name.
+    public static readonly string[] PlynlingStaffRenameDms =
+    {
+        "✏️ Le staff a renommé ton Plynling **{0}** en **{1}**.",
+        "✏️ Petit changement d'identité : **{0}** s'appelle désormais **{1}** (décision du staff).",
+        "✏️ Ton Plynling répond maintenant au nom de **{1}** — le staff a jugé que **{0}** ne lui allait plus.",
     };
 
     // /yesno's two verdicts. The coin flip is even; these are only how she *delivers*

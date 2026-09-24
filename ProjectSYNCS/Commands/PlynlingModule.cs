@@ -19,12 +19,14 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
     private readonly PlynlingService _plynlings;
     private readonly PlynlingCareService _care;
     private readonly ResponsePicker _picker;
+    private readonly PlynlingAnnouncer _announcer;
 
-    public PlynlingModule(PlynlingService plynlings, PlynlingCareService care, ResponsePicker picker)
+    public PlynlingModule(PlynlingService plynlings, PlynlingCareService care, ResponsePicker picker, PlynlingAnnouncer announcer)
     {
         _plynlings = plynlings;
         _care = care;
         _picker = picker;
+        _announcer = announcer;
     }
 
     [SlashCommand("adopt", "Adopter un Plynling — gratuit, mais il faudra s'en occuper")]
@@ -97,6 +99,138 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
         await SendAsync(await _care.PetAsync(plynling.Id, Context.User.Id, Context.Channel.Id, now));
+    }
+
+    // Without `user`, the owner freezes their own under the self-freeze rules. With a
+    // different `user`, it is a staff freeze: no rules, lifted by staff only, and the
+    // owner is told by DM so it never looks like a bug.
+    [SlashCommand("freeze", "Geler un Plynling : plus rien ne bouge (vacances)")]
+    public async Task FreezeAsync(
+        [Summary("user", "Staff : le Plynling de quelqu'un d'autre")] IUser? user = null)
+    {
+        var target = user ?? Context.User;
+        var byStaff = target.Id != Context.User.Id;
+        if (byStaff && !SessionPermissions.IsStaff(Context.User))
+        {
+            await RespondAsync(PlynlingText.StaffOnly, ephemeral: true);
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var (outcome, plynling) = await _plynlings.FreezeAsync(Context.Guild.Id, target.Id, byStaff, now);
+        if (outcome != FreezeOutcome.Frozen || plynling is null)
+        {
+            await RespondAsync(outcome switch
+            {
+                FreezeOutcome.NoPlynling => byStaff ? PlynlingText.NoneFor(target.Id) : PlynlingText.NoPlynling,
+                FreezeOutcome.Dead => PlynlingText.Dead,
+                FreezeOutcome.AlreadyFrozen => PlynlingText.AlreadyFrozen,
+                FreezeOutcome.TooHungry => PlynlingText.TooHungryToFreeze,
+                FreezeOutcome.Cooldown => PlynlingText.FreezeCooldown(plynling!.LastSelfThawAt!.Value + PlynlingLife.SelfFreezeCooldown),
+                _ => PlynlingText.Unknown,
+            }, ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+
+        await RespondCardAsync(plynling, now, PlynlingText.FrozenNotice(PlynlingCardUi.SafeName(plynling.Name), plynling.FreezeUntil));
+        // After the reply, never before: nothing here defers, and a DM is two or three
+        // REST calls against Discord's 3 s deadline for answering the interaction.
+        if (byStaff)
+            await _announcer.DmOwnerAsync(plynling.OwnerId, string.Format(
+                _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffFreezeDms), PlynlingCardUi.SafeName(plynling.Name)));
+    }
+
+    [SlashCommand("thaw", "Dégeler un Plynling")]
+    public async Task ThawAsync(
+        [Summary("user", "Staff : le Plynling de quelqu'un d'autre")] IUser? user = null)
+    {
+        var target = user ?? Context.User;
+        var asStaff = SessionPermissions.IsStaff(Context.User);
+        if (target.Id != Context.User.Id && !asStaff)
+        {
+            await RespondAsync(PlynlingText.StaffOnly, ephemeral: true);
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        // Staff may lift any freeze, including a staff freeze on their own Plynling.
+        var (outcome, plynling) = await _plynlings.ThawAsync(Context.Guild.Id, target.Id, asStaff, now);
+        if (outcome != ThawOutcome.Thawed || plynling is null)
+        {
+            await RespondAsync(outcome switch
+            {
+                ThawOutcome.NoPlynling => target.Id == Context.User.Id ? PlynlingText.NoPlynling : PlynlingText.NoneFor(target.Id),
+                ThawOutcome.Dead => PlynlingText.Dead,
+                ThawOutcome.NotFrozen => PlynlingText.NotFrozen,
+                ThawOutcome.StaffOnly => PlynlingText.ThawStaffOnly,
+                _ => PlynlingText.Unknown,
+            }, ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+
+        await RespondCardAsync(plynling, now, PlynlingText.ThawedNotice(PlynlingCardUi.SafeName(plynling.Name)));
+        if (target.Id != Context.User.Id)   // after the reply — see FreezeAsync
+            await _announcer.DmOwnerAsync(plynling.OwnerId, string.Format(
+                _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffThawDms), PlynlingCardUi.SafeName(plynling.Name)));
+    }
+
+    // Staff only: the name is shown publicly (card, announcements, graveyard), so fixing
+    // an offensive one is moderation. Reaches their latest grave too.
+    [SlashCommand("rename", "Staff : renommer le Plynling de quelqu'un")]
+    public async Task RenameAsync(
+        [Summary("user", "À qui est le Plynling")] IUser user,
+        [Summary("name", "Son nouveau nom")] [MaxLength(InputCaps.PlynlingName)] string name)
+    {
+        if (!SessionPermissions.IsStaff(Context.User))
+        {
+            await RespondAsync(PlynlingText.StaffOnly, ephemeral: true);
+            return;
+        }
+        name = name.Trim();
+        if (name.Length == 0)
+        {
+            await RespondAsync(PlynlingText.EmptyName, ephemeral: true);
+            return;
+        }
+
+        var (plynling, oldName) = await _plynlings.RenameAsync(Context.Guild.Id, user.Id, name, DateTimeOffset.UtcNow);
+        if (plynling is null)
+        {
+            await RespondAsync(PlynlingText.NoneFor(user.Id), ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+
+        await RespondAsync($"✏️ **{PlynlingCardUi.SafeName(oldName)}** s'appelle désormais **{PlynlingCardUi.SafeName(plynling.Name)}**.",
+            ephemeral: true, allowedMentions: AllowedMentions.None);
+        if (user.Id != Context.User.Id)   // after the reply — see FreezeAsync
+            await _announcer.DmOwnerAsync(plynling.OwnerId, string.Format(
+                _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffRenameDms),
+                PlynlingCardUi.SafeName(oldName), PlynlingCardUi.SafeName(plynling.Name)));
+    }
+
+    // Staff only in v1 (a rare self-service item comes later, through the same
+    // PlynlingService.ResurrectAsync). The comeback is announced publicly, like the death.
+    [SlashCommand("resurrect", "Staff : ressusciter le dernier Plynling de quelqu'un")]
+    public async Task ResurrectAsync([Summary("user", "À qui est le Plynling")] IUser user)
+    {
+        if (!SessionPermissions.IsStaff(Context.User))
+        {
+            await RespondAsync(PlynlingText.StaffOnly, ephemeral: true);
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var (outcome, plynling) = await _plynlings.ResurrectAsync(Context.Guild.Id, user.Id, now);
+        if (outcome != ResurrectOutcome.Resurrected || plynling is null)
+        {
+            await RespondAsync(outcome == ResurrectOutcome.NoGrave ? PlynlingText.NoGrave : PlynlingText.ResurrectBlocked,
+                ephemeral: true);
+            return;
+        }
+
+        await RespondAsync($"✨ **{PlynlingCardUi.SafeName(plynling.Name)}** est de retour (annoncé dans <#{PlynlingAnnouncer.GameChannelId}>).",
+            ephemeral: true, allowedMentions: AllowedMentions.None);
+        await _announcer.AnnounceResurrectionAsync(plynling, now);   // after the reply — see FreezeAsync
     }
 
     // ---- rendering --------------------------------------------------------------
