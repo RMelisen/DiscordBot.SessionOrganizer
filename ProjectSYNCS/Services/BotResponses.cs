@@ -69,6 +69,10 @@ namespace ProjectSYNCS.Services;
 //     BreakdownIntroRoast · BreakdownIntroNice · BreakdownIntroCake
 //                              ... the line it cuts off mid-word
 //
+//   Plynlings
+//     PlynlingAdoptLines · PlynlingAdoptRareLines ... a new Plynling
+//     PlynlingFeedLines · PlynlingPetLines .......... shown on the card
+//
 //   Per-person data and lookups (not pools)
 //     PersonalComebacks ........ per-user roast lines
 //     FamilyNicknames + DisplayNameFor(ulong, string) / DisplayNameFor(IUser)
@@ -281,6 +285,45 @@ internal static class BotResponses
         "Tu as livré du terreau dans tout le village. Ton dos s'en souviendra. {0}",
         "Tu as servi de guide à des touristes perdus dans la forêt. {0}",
         "Tu as poli des cailloux. On t'a payé en cailloux. La boucle est bouclée. {0}",
+    };
+
+    // A new Plynling, announced on the card. {0} = its name (sanitised), {1} = species.
+    // Plynling is the grammatical subject throughout, so every line agrees in the
+    // masculine whatever the species name's own gender.
+    public static readonly string[] PlynlingAdoptLines =
+    {
+        "Un nouveau Plynling pointe le bout de son chapeau : **{0}**, espèce {1}. Nourris-le bien (˶ᵔ ᵕ ᵔ˶)",
+        "**{0}** vient de sortir de terre ! Un Plynling {1}, tout frais tout mignon ✨",
+        "Félicitations, c'est un Plynling ! **{0}** ({1}) te regarde déjà avec des yeux affamés.",
+        "Un Plynling de plus dans le monde : **{0}**, {1}. Promets-moi de ne pas l'oublier.",
+    };
+
+    // The same moment for a rare or legendary pull, which is worth making a fuss about.
+    // {0} = name, {1} = species, {2} = rarity label.
+    public static readonly string[] PlynlingAdoptRareLines =
+    {
+        "QUOI ?! Un Plynling **{2}** ! **{0}** est un {1}… tu as une chance insolente ✨✨",
+        "Je n'en crois pas mes capteurs : **{0}**, un {1}. C'est **{2}**, ça. Garde-le en vie, par pitié.",
+        "Alerte rareté : **{0}** ({1}, *{2}*) vient de naître. Tout le serveur va être jaloux ദ്ദി◝ ⩊ ◜.ᐟ",
+    };
+
+    // Shown on the card after a meal. {0} = name, {1} = the food with its article.
+    public static readonly string[] PlynlingFeedLines =
+    {
+        "Tu donnes {1} à **{0}**. Il n'en fait qu'une bouchée (˶˃ ᵕ ˂˶)",
+        "**{0}** a dévoré {1}. Il te regarde comme si tu étais la meilleure personne du monde.",
+        "Miam ! {1} pour **{0}**, qui fait une petite danse de joie ✨",
+        "**{0}** grignote {1} avec une concentration impressionnante.",
+    };
+
+    // Shown on the card after a pet. {0} = name.
+    public static readonly string[] PlynlingPetLines =
+    {
+        "**{0}** ronronne. Oui, les Plynlings ronronnent, ne pose pas de questions.",
+        "**{0}** ferme les yeux et savoure la caresse (˶ᵔ ᵕ ᵔ˶)",
+        "Le chapeau de **{0}** frétille de bonheur ✨",
+        "**{0}** se blottit contre ta main. C'est officiel, vous êtes amis.",
+        "**{0}** fait un petit bruit satisfait. Encore, encore !",
     };
 
     // /yesno's two verdicts. The coin flip is even; these are only how she *delivers*

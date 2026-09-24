@@ -1150,6 +1150,23 @@ eligibility — and can never pay for something XP refused. It runs in its own `
 failure cannot swallow the level-up card. Plynling actions themselves grant **no XP**: the
 link runs one way only, or money and levels would feed each other.
 
+**The Plynling card is Components V2 and follows every rule `/level` does** — no content or
+embeds, the flag re-asserted on each `UpdateAsync`, `AllowedMentions.None` on every send.
+Its two controls use two verbs (`plyn:pet:{id}`, `plyn:feed:{id}`), and they are offered
+only while the Plynling is alive and not frozen. "Nourrir" is a select *on the card*
+rather than a button opening a second message: one fewer round trip, and the handler
+refuses it for anyone but the owner — the real check is in code. A button press rewrites
+the card in place with her line on it, instead of posting a second message under it.
+`PlynlingCareService` is shared by the slash commands and the buttons, so the two can
+never behave differently. The pet cooldown is an in-memory `CooldownGate` keyed on
+(petter, Plynling), released when the pet is refused; a restart resetting it costs nothing,
+since petting cannot keep a Plynling alive.
+
+**Plynling names are hostile input.** They are rendered through `PlynlingCardUi.SafeName`
+(`Format.Sanitize` — markdown and mention syntax neutralised) *and* every message carrying
+one is sent with `AllowedMentions.None`. The death announcement is public, so a Plynling
+named `@everyone` would otherwise ping the server on its way out.
+
 **`XpTracker.ExcludedChannels` is checked before `TryClaim`, never after.** The spam
 channels earn nothing, and the order matters: claiming first would let a message there
 burn that person's 60 s message cooldown, so spamming in the excluded channel would

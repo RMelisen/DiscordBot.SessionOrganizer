@@ -1729,6 +1729,9 @@ Check("dead card has no buttons", Inspect(PlynlingModule.BuildCard(dead, t0 + Ti
 // --- text ---
 Check("status has a live countdown", PlynlingCardUi.Status(alive, t0).Contains("<t:"));
 Check("frozen status says frozen", PlynlingCardUi.Status(frozen, t0).Contains("Gelé"));
+Check("a relative timestamp is never read as 'jusqu'à …'",
+    !System.Text.RegularExpressions.Regex.IsMatch(PlynlingCardUi.Status(alive, t0), @"jusqu'à <t:\d+:R>"));
+Check("the mood has its own line", PlynlingCardUi.Status(alive, t0).Contains("**Humeur**"));
 Check("dead status names the memorial", PlynlingCardUi.Status(dead, t0 + TimeSpan.FromDays(10)).Contains("cairn"));
 var hostile = PlynlingCardUi.SafeName("@everyone **x** <@123>");
 Check("names are sanitised", !hostile.Contains("**") && !hostile.Contains("<@123>"));
@@ -1746,8 +1749,8 @@ foreach (var (name, arity) in new[] { ("PlynlingAdoptLines", 2), ("PlynlingAdopt
     Check($"{name} is in the table of contents", toc.Contains(name));
     foreach (var line in pool)
     {
-        var args = Enumerable.Range(0, arity).Select(i => (object)$"ARG{i}").ToArray();
-        try { string.Format(line, args); Check("format-safe", true); } catch (FormatException) { Check($"format-safe: {line}", false); }
+        var fmtArgs = Enumerable.Range(0, arity).Select(i => (object)$"ARG{i}").ToArray();   // not "args": top-level programs already have one
+        try { string.Format(line, fmtArgs); Check("format-safe", true); } catch (FormatException) { Check($"format-safe: {line}", false); }
         Check($"{name}: no placeholder beyond {{{arity - 1}}}", !line.Contains($"{{{arity}}}"));
     }
 }
@@ -1809,14 +1812,20 @@ public static class PlynlingCardUi
 
         var hunger = PlynlingLife.HungerAt(p, now);
         var happiness = PlynlingLife.HappinessAt(p, now);
+        // A relative timestamp renders as "dans 2 jours", so the words before it must read
+        // with that: "mourra de faim dans 2 jours", never "jusqu'à dans 2 jours". The
+        // absolute :f form is the one that takes "jusqu'au".
         var clock = p.FrozenAt is not null
             ? p.FreezeUntil is { } until
                 ? $"❄️ Gelé jusqu'au <t:{until.ToUnixTimeSeconds()}:f>"
                 : "❄️ Gelé par le staff"
-            : $"tiendra jusqu'à <t:{PlynlingLife.DeathAt(p)!.Value.ToUnixTimeSeconds()}:R>";
+            : $"mourra de faim <t:{PlynlingLife.DeathAt(p)!.Value.ToUnixTimeSeconds()}:R>";
 
+        // The mood gets its own line: it covers hunger as well as happiness, so beside the
+        // happiness bar a starving Plynling would read "Bonheur 20 % · affamé".
         return $"**Faim** `{Bar(hunger)}` {Percent(hunger)} · {clock}\n" +
-               $"**Bonheur** `{Bar(happiness)}` {Percent(happiness)} · *{MoodLabel(PlynlingLife.Mood(p, now))}*";
+               $"**Bonheur** `{Bar(happiness)}` {Percent(happiness)}\n" +
+               $"**Humeur** · *{MoodLabel(PlynlingLife.Mood(p, now))}*";
     }
 
     public static string MoodLabel(PlynlingMood mood) => mood switch

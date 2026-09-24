@@ -64,6 +64,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<ShameService>();
         services.AddTransient<PebbleService>();
         services.AddTransient<PlynlingService>();
+        services.AddTransient<PlynlingCareService>();
+        services.AddSingleton<PlynlingCooldowns>();
 
         // Singleton despite reading the database, unlike every other service here that
         // does: it caches per-guild config, which a transient would drop on every

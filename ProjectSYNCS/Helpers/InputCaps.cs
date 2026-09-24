@@ -41,4 +41,10 @@ public static class InputCaps
     /// A <c>/yesno</c> question, echoed back above the verdict in a 2000-char message.
     /// </summary>
     public const int Question = 400;
+
+    /// <summary>
+    /// A Plynling's name — Discord's own nickname limit. Shown on the card heading, in her
+    /// lines and in public announcements, so it is capped at the option like every title.
+    /// </summary>
+    public const int PlynlingName = 32;
 }
