@@ -2423,14 +2423,14 @@ public sealed class PlynlingAnnouncer
         var line = string.Format(_picker.Pick(GameChannelId, BotResponses.PlynlingDeathLines),
             PlynlingCardUi.SafeName(plynling.Name), $"<@{plynling.OwnerId}>",
             LevelCardUi.Duration((long)lived.TotalMinutes), PlynlingCatalog.MemorialName(tier));
-        return PostAsync(line, PlynlingArt.Memorial(plynling.Species, tier), "death");
+        return PostAsync(plynling.GuildId, line, PlynlingArt.Memorial(plynling.Species, tier), "death");
     }
 
     public Task AnnounceResurrectionAsync(Plynling plynling, DateTimeOffset now)
     {
         var line = string.Format(_picker.Pick(GameChannelId, BotResponses.PlynlingResurrectLines),
             PlynlingCardUi.SafeName(plynling.Name), $"<@{plynling.OwnerId}>");
-        return PostAsync(line, PlynlingArt.Sprite(plynling.Species, PlynlingLife.Mood(plynling, now)), "resurrection");
+        return PostAsync(plynling.GuildId, line, PlynlingArt.Sprite(plynling.Species, PlynlingLife.Mood(plynling, now)), "resurrection");
     }
 
     public Task WarnOwnerAsync(Plynling plynling)
@@ -2462,13 +2462,22 @@ public sealed class PlynlingAnnouncer
         }
     }
 
-    private async Task PostAsync(string line, string imageUrl, string what)
+    private async Task PostAsync(ulong guildId, string line, string imageUrl, string what)
     {
         try
         {
             if (_client.GetChannel(GameChannelId) is not IMessageChannel channel)
             {
                 _logger.LogWarning("Game channel {ChannelId} not found; Plynling {What} not announced.", GameChannelId, what);
+                return;
+            }
+
+            // The channel is one fixed id, so without this a Plynling from any other guild
+            // the bot sits in — the dev guild, typically — would be announced here.
+            if (channel is not IGuildChannel home || home.GuildId != guildId)
+            {
+                _logger.LogInformation("Plynling {What} in guild {GuildId} not announced: the game channel is in another guild.",
+                    what, guildId);
                 return;
             }
 
@@ -2665,7 +2674,9 @@ Run the Task 2, 4 and 5 harnesses → still `0 failed`.
 
 ```markdown
 `PlynlingAnnouncer.GameChannelId` (`878305034432045080`) is where Plynling deaths and
-resurrections are announced. Commands themselves work in any channel.
+resurrections are announced. Commands themselves work in any channel. Only Plynlings of the
+guild that owns that channel are announced; any other guild's are logged and skipped, never
+cross-posted.
 ```
 
 And add:
@@ -2816,7 +2827,7 @@ Run: `cd ProjectSYNCS && dotnet build -warnaserror` → clean.
 Review: every `await` inside the `foreach` is inside the `try` (grep the file: the only `await` outside it is `GetSweepBatchAsync`, itself in its own `try`, and `Task.Delay`).
 Run all harnesses → still `0 failed`.
 
-- [ ] **Step 4: CLAUDE.md** — in `## Architecture`, replace "`VoiceXpService` and `GiveawayDrawService`. The last three each run" with "`VoiceXpService`, `GiveawayDrawService` and `PlynlingSweepService`. The last four each run". In the "**An exception escaping a hosted loop stops the whole bot**" note, replace "None of the five `BackgroundService`s" with "None of the six `BackgroundService`s" and "`GiveawayDrawService`'s per-giveaway draw" with "`GiveawayDrawService`'s per-giveaway draw, `PlynlingSweepService`'s per-Plynling pass". Then add:
+- [ ] **Step 4: CLAUDE.md** — in `## Architecture`, replace "`VoiceXpService` and `GiveawayDrawService`. The last three each run" with "`VoiceXpService`, `GiveawayDrawService` and `PlynlingSweepService`. The last four each run". In the "**An exception escaping a hosted loop stops the whole bot**" note, replace "None of the five `BackgroundService`s" with "None of the six `BackgroundService`s" and "All five now catch" with "All six now catch", and insert "`PlynlingSweepService`'s per-Plynling pass, " just before "`GiveawayDrawService`'s per-giveaway draw" (after it, the giveaway comment that follows would read as the Plynling pass's). Then add:
 
 ```markdown
 **`PlynlingSweepService` is the sixth hosted loop, hourly, and a safety net.** Every read in

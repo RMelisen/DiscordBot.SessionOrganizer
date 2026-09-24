@@ -34,14 +34,14 @@ public sealed class PlynlingAnnouncer
         var line = string.Format(_picker.Pick(GameChannelId, BotResponses.PlynlingDeathLines),
             PlynlingCardUi.SafeName(plynling.Name), $"<@{plynling.OwnerId}>",
             LevelCardUi.Duration((long)lived.TotalMinutes), PlynlingCatalog.MemorialName(tier));
-        return PostAsync(line, PlynlingArt.Memorial(plynling.Species, tier), "death");
+        return PostAsync(plynling.GuildId, line, PlynlingArt.Memorial(plynling.Species, tier), "death");
     }
 
     public Task AnnounceResurrectionAsync(Plynling plynling, DateTimeOffset now)
     {
         var line = string.Format(_picker.Pick(GameChannelId, BotResponses.PlynlingResurrectLines),
             PlynlingCardUi.SafeName(plynling.Name), $"<@{plynling.OwnerId}>");
-        return PostAsync(line, PlynlingArt.Sprite(plynling.Species, PlynlingLife.Mood(plynling, now)), "resurrection");
+        return PostAsync(plynling.GuildId, line, PlynlingArt.Sprite(plynling.Species, PlynlingLife.Mood(plynling, now)), "resurrection");
     }
 
     public Task WarnOwnerAsync(Plynling plynling)
@@ -73,13 +73,22 @@ public sealed class PlynlingAnnouncer
         }
     }
 
-    private async Task PostAsync(string line, string imageUrl, string what)
+    private async Task PostAsync(ulong guildId, string line, string imageUrl, string what)
     {
         try
         {
             if (_client.GetChannel(GameChannelId) is not IMessageChannel channel)
             {
                 _logger.LogWarning("Game channel {ChannelId} not found; Plynling {What} not announced.", GameChannelId, what);
+                return;
+            }
+
+            // The channel is one fixed id, so without this a Plynling from any other guild
+            // the bot sits in — the dev guild, typically — would be announced here.
+            if (channel is not IGuildChannel home || home.GuildId != guildId)
+            {
+                _logger.LogInformation("Plynling {What} in guild {GuildId} not announced: the game channel is in another guild.",
+                    what, guildId);
                 return;
             }
 

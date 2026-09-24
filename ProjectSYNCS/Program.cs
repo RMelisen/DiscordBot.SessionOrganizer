@@ -95,6 +95,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddHostedService<PresenceService>();
         services.AddHostedService<VoiceXpService>();
         services.AddHostedService<GiveawayDrawService>();
+        services.AddHostedService<PlynlingSweepService>();
     })
     .Build();
 

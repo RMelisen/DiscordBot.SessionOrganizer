@@ -49,8 +49,8 @@ changes what people type, so do not rename one casually.
 ## Architecture
 
 `Program.cs` is the composition root: DI wiring, `MigrateAsync()`, then the hosted
-services — `BotService`, `ReminderService`, `PresenceService`, `VoiceXpService` and
-`GiveawayDrawService`. The last three each run their own interval on purpose; see the
+services — `BotService`, `ReminderService`, `PresenceService`, `VoiceXpService`,
+`GiveawayDrawService` and `PlynlingSweepService`. The last four each run their own interval on purpose; see the
 notes below before sharing one.
 
 - **`BotService`** — gateway login, slash-command registration, interaction
@@ -968,15 +968,16 @@ permission degrades silently rather than failing the session. Keep that property
 Reminder DMs likewise catch `CannotSendMessageToUser` specifically.
 
 **An exception escaping a hosted loop stops the whole bot, so every sweep guards per
-item.** None of the five `BackgroundService`s wraps its `while` body in a try, and
+item.** None of the six `BackgroundService`s wraps its `while` body in a try, and
 `BackgroundServiceExceptionBehavior` is not configured — so the .NET default, `StopHost`,
 applies: one throw out of `ExecuteAsync` and the process exits. Discord side effects are
 individually guarded already, so the real exposure is the **database** writes.
 
-All five now catch around **each item** rather than around the pass: `ReminderService`'s
+All six now catch around **each item** rather than around the pass: `ReminderService`'s
 three passes (reminders, lifecycle, poll auto-close), `VoiceXpService`'s per-member grant,
-`GiveawayDrawService`'s per-giveaway draw — whose comment, "one broken giveaway must not
-stop the others", is the rule — and `PresenceService`, which is a single call. Before
+`PlynlingSweepService`'s per-Plynling pass, `GiveawayDrawService`'s per-giveaway draw —
+whose comment, "one broken giveaway must not stop the others", is the rule — and
+`PresenceService`, which is a single call. Before
 this, the three `ReminderService` passes each called an unguarded write inside an
 unguarded loop (`MarkReminderSentAsync`, `SetRenderedPhaseAsync`, `ClosePollAsync`, none
 of which catches internally), so on a Raspberry Pi with `/data` on an SD card a transient
@@ -986,6 +987,13 @@ of which catches internally), so on a Raspberry Pi with `/data` on an SD card a 
 also why `BackgroundServiceExceptionBehavior.Ignore` is *not* the fix: it would keep the
 host alive but leave that loop dead until the next restart, trading a loud failure for a
 silent one. Anything new added to a sweep goes inside the same `try`.
+
+**`PlynlingSweepService` is the sixth hosted loop, hourly, and a safety net.** Every read in
+`PlynlingService` already settles, so a command can discover a death before the sweep does;
+the sweep's jobs are the things nobody else triggers — announcing deaths
+(`DeathAnnounced`), the single warning DM (`WarningSent`, re-armed by feeding), and
+thawing expired self-freezes on schedule. It saves the flag **before** the side effect, so
+a failed announcement is logged once rather than retried into the game channel every hour.
 
 **Respect Discord's hard caps when building components.** 25 options per select
 menu (the day picker and every `list` republish menu `.Take(25)`), 5 buttons per
@@ -1481,7 +1489,9 @@ that earn no XP), `ShameModule.ExtraVoters`, and the per-user `PersonalComebacks
 `RealNames` maps in `BotResponses` are literal snowflakes tied to one specific server.
 
 `PlynlingAnnouncer.GameChannelId` (`878305034432045080`) is where Plynling deaths and
-resurrections are announced. Commands themselves work in any channel.
+resurrections are announced. Commands themselves work in any channel. Only Plynlings of the
+guild that owns that channel are announced; any other guild's are logged and skipped, never
+cross-posted.
 
 Two of those are now *floors* rather than the whole story: `/config` can add excluded
 channels and grant `/shame` voting to a role, but neither command can edit these lists —
