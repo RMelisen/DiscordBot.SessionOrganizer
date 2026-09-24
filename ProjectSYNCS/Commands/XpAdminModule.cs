@@ -39,14 +39,14 @@ public class XpAdminModule : InteractionModuleBase<SocketInteractionContext>
 
     [SlashCommand("addxp", "Ajouter de l'XP à quelqu'un (admins/modérateurs)")]
     public Task AddXpAsync(
-        [Summary("membre", "À qui donner de l'XP")] IUser user,
-        [Summary("montant", "Combien d'XP ajouter")]
+        [Summary("member", "À qui donner de l'XP")] IUser user,
+        [Summary("amount", "Combien d'XP ajouter")]
         [MinValue(1)] [MaxValue(MaxAdjustment)] int amount) => AdjustAsync(user, amount);
 
     [SlashCommand("removexp", "Retirer de l'XP à quelqu'un (admins/modérateurs)")]
     public Task RemoveXpAsync(
-        [Summary("membre", "À qui retirer de l'XP")] IUser user,
-        [Summary("montant", "Combien d'XP retirer")]
+        [Summary("member", "À qui retirer de l'XP")] IUser user,
+        [Summary("amount", "Combien d'XP retirer")]
         [MinValue(1)] [MaxValue(MaxAdjustment)] int amount) => AdjustAsync(user, -amount);
 
     private async Task AdjustAsync(IUser target, long delta)

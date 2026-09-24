@@ -92,7 +92,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
 
         [SlashCommand("add", "Exclure un salon : plus d'XP, et il ne compte plus pour le mur")]
         public async Task AddAsync(
-            [Summary("salon", "Le salon à exclure")] IGuildChannel channel)
+            [Summary("channel", "Le salon à exclure")] IGuildChannel channel)
         {
             if (!SessionPermissions.IsStaff(Context.User))
             {
@@ -124,7 +124,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
 
         [SlashCommand("remove", "Réinclure un salon ajouté ici")]
         public async Task RemoveAsync(
-            [Summary("salon", "Le salon à réinclure")] IGuildChannel channel)
+            [Summary("channel", "Le salon à réinclure")] IGuildChannel channel)
         {
             if (!SessionPermissions.IsStaff(Context.User))
             {

@@ -40,8 +40,11 @@ matters, running the bot against the dev guild.
 
 ## Language
 
-All user-facing strings — command names, descriptions, embeds, button labels,
-error messages — are **in French**. Code, comments and logs are in English.
+**Command and option names are English; every other user-facing string — descriptions,
+replies, embeds, button labels, choice display names, error messages — is French.** Code,
+comments and logs are in English. Six options (`lot`, `duree`, `gagnants`, `membre`,
+`montant`, `salon`) used to be French and were renamed for consistency; renaming an option
+changes what people type, so do not rename one casually.
 
 ## Architecture
 
