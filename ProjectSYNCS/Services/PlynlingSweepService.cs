@@ -74,12 +74,14 @@ public sealed class PlynlingSweepService : BackgroundService
             try
             {
                 PlynlingLife.Settle(plynling, now);
+                await plynlings.ProgressAsync(plynling, now);      // time's badges and stage moments
 
                 if (plynling.DiedAt is not null && !plynling.DeathAnnounced)
                 {
                     // Marked and saved *before* posting: at most one attempt. A failed post
                     // is logged, never retried every hour into the game channel.
                     plynling.DeathAnnounced = true;
+                    await plynlings.JournalDeathAsync(plynling);
                     await plynlings.SaveAsync();
                     await _announcer.AnnounceDeathAsync(plynling, now);
                 }

@@ -284,6 +284,34 @@ public class PlynlingService
 
     public Task SaveAsync() => _db_context.SaveChangesAsync();
 
+    // What only time earns, for the hourly sweep: the « est devenu… » moments — dated when the
+    // stage was reached, so a Plynling that already existed when the journal shipped gets its
+    // past written in — and any badge it now qualifies for (the age ones, and on ship day the
+    // counts). Not saved: the sweep's own save carries it.
+    public async Task ProgressAsync(Plynling p, DateTimeOffset now)
+    {
+        if (p.DiedAt is not null) return;
+        var written = (await _db_context.PlynlingJournalEntries
+                .Where(e => e.PlynlingId == p.Id && e.Kind == JournalKind.GrewUp)
+                .Select(e => e.Detail)
+                .ToListAsync())
+            .ToHashSet();
+        var age = PlynlingLife.Age(p, now);
+        foreach (var stage in new[] { PlynlingStage.Teen, PlynlingStage.Adult, PlynlingStage.Elder })
+        {
+            var start = PlynlingLife.StageStart(stage);
+            if (age < start || written.Contains(stage.ToString())) continue;
+            // As long ago as it has lived past the threshold — never before it was adopted.
+            var at = now - (age - start);
+            await AddMomentAsync(p, JournalKind.GrewUp, stage.ToString(), at < p.AdoptedAt ? p.AdoptedAt : at);
+        }
+        await AwardAsync(p, now);
+    }
+
+    // The sweep, announcing a death: the journal's last moment, dated when it died. Not saved.
+    public Task JournalDeathAsync(Plynling p) =>
+        p.DiedAt is { } died ? AddMomentAsync(p, JournalKind.Died, null, died) : Task.CompletedTask;
+
     // ---- badges and the journal. Neither helper saves: what they add rides the caller's save,
     // so an action, its moments, its badges and their cailloux land together or not at all.
 

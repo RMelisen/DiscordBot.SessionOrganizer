@@ -116,12 +116,23 @@ public static class PlynlingLife
     // Cosmetic only: the card's label and, for staged species, the picture. Measured on
     // time actually lived, so a frozen Plynling does not grow up. 6 months = 180 days,
     // a month taken as 30 days like the memorial tiers.
-    public static PlynlingStage Stage(Plynling p, DateTimeOffset now) => Age(p, now).TotalDays switch
+    public static PlynlingStage Stage(Plynling p, DateTimeOffset now)
     {
-        < 2 => PlynlingStage.Baby,
-        < 14 => PlynlingStage.Teen,
-        < 180 => PlynlingStage.Adult,
-        _ => PlynlingStage.Elder,
+        var age = Age(p, now);
+        return age >= StageStart(PlynlingStage.Elder) ? PlynlingStage.Elder
+            : age >= StageStart(PlynlingStage.Adult) ? PlynlingStage.Adult
+            : age >= StageStart(PlynlingStage.Teen) ? PlynlingStage.Teen
+            : PlynlingStage.Baby;
+    }
+
+    // The age each stage begins at — the one table Stage and the journal's « est devenu… »
+    // moments both read, so the two cannot disagree about when it grew up.
+    public static TimeSpan StageStart(PlynlingStage stage) => stage switch
+    {
+        PlynlingStage.Teen => TimeSpan.FromDays(2),
+        PlynlingStage.Adult => TimeSpan.FromDays(14),
+        PlynlingStage.Elder => TimeSpan.FromDays(180),
+        _ => TimeSpan.Zero,
     };
 
     public static PlynlingMood Mood(Plynling p, DateTimeOffset now)
