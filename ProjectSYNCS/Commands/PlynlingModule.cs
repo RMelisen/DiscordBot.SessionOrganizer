@@ -545,7 +545,9 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 .WithPlaceholder("🍄 Nourrir…");
             foreach (var food in PlynlingCatalog.Foods)
                 menu.AddOption($"{food.Name} — {PebbleEconomy.Cailloux(food.Price)}", food.Food.ToString(),
-                    PlynlingCardUi.FoodOptionDescription(food));
+                    PlynlingCardUi.FoodOptionDescription(food),
+                    // Its picture once the bot's emojis are up; no icon rather than 🍄 ×4 before that.
+                    Emote.TryParse(ItemCatalog.ByKey(ItemCatalog.FoodKey(food.Food))!.Emoji, out var foodPicture) ? foodPicture : null);
             builder.AddComponent(new ActionRowBuilder().WithSelectMenu(menu));
         }
         return builder.Build();

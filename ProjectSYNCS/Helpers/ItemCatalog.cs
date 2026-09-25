@@ -13,7 +13,7 @@ public enum Season { None, Spring, Summer, Autumn, Winter }
 public sealed record ItemInfo(
     string Key, ItemKind Kind, string DefaultEmoji, string Name, string? Set, ItemRarity Rarity, Season Season, PlynlingFood? Food)
 {
-    public string Emoji => ItemEmojis.For(Key) ?? DefaultEmoji;
+    public string Emoji => ItemEmojis.For(ItemCatalog.PictureKey(Key)) ?? DefaultEmoji;
 }
 
 public sealed record CollectionSet(string Key, string Emoji, string Name, long Reward);
@@ -59,6 +59,19 @@ public static class ItemCatalog
     public static IEnumerable<ItemInfo> Collectibles => All.Where(i => i.Kind == ItemKind.Collectible);
 
     public static ItemInfo? ByKey(string key) => ByKeyMap.GetValueOrDefault(key);
+
+    // The four foods wear their collectible twin's picture: one sprite, one uploaded emoji, two
+    // items. The names stay different (« Shiitake » the food, « Lentin du chêne » the find).
+    public static readonly IReadOnlyDictionary<string, string> SharedPictures = new Dictionary<string, string>
+    {
+        ["food.mushroom"] = "col.champignon_paris",
+        ["food.shiitake"] = "col.lentin_chene",
+        ["food.morel"] = "col.morille_conique",
+        ["food.truffle"] = "col.truffe_noire",
+    };
+
+    // Whose emoji an item shows: its twin's for a food, its own otherwise.
+    public static string PictureKey(string key) => SharedPictures.GetValueOrDefault(key, key);
 
     public static string FoodKey(PlynlingFood food) => $"food.{food.ToString().ToLowerInvariant()}";
 
