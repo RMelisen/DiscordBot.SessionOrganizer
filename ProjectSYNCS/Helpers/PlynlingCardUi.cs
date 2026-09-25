@@ -19,8 +19,10 @@ public static class PlynlingCardUi
     {
         var info = PlynlingCatalog.Info(p.Species);
         var age = LevelCardUi.Duration((long)PlynlingLife.Age(p, now).TotalMinutes);
-        return $"## {SafeName(p.Name)} {p.Gender.Symbol()}\n" +
-               $"{info.Name} · *{PlynlingCatalog.RarityLabel(info.Rarity)}*\n" +
+        // The gender sign sits on the species line, not in the heading: a "## " line renders
+        // ♂/♀ at heading size, far too big beside the name.
+        return $"## {SafeName(p.Name)}\n" +
+               $"{p.Gender.Symbol()} {info.Name} · *{PlynlingCatalog.RarityLabel(info.Rarity)}*\n" +
                $"à <@{p.OwnerId}> · {p.Gender.Agree("âgé", "âgée")} de {age}";
     }
 
