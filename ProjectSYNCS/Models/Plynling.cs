@@ -64,6 +64,12 @@ public class Plynling
     public long PlaysWon { get; set; }
     public long Visits { get; set; }
 
+    // Care received, for the badges: meals (whoever paid), pets (from anyone), and meals paid
+    // by someone other than the owner. Recorded from the day they shipped, like the above.
+    public long Meals { get; set; }
+    public long Pets { get; set; }
+    public long FedByOthers { get; set; }
+
     public DateTimeOffset? DiedAt { get; set; }
     // Set by the sweep once the death has been announced (or attempted), so it is never
     // announced twice. A death found lazily by a command is announced by the next sweep.

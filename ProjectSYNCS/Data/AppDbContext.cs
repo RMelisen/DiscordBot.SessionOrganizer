@@ -26,6 +26,8 @@ public class AppDbContext : DbContext
     public DbSet<ShameDailyStat> ShameDailyStats => Set<ShameDailyStat>();
     public DbSet<Plynling> Plynlings => Set<Plynling>();
     public DbSet<PebbleWallet> PebbleWallets => Set<PebbleWallet>();
+    public DbSet<PlynlingBadge> PlynlingBadges => Set<PlynlingBadge>();
+    public DbSet<PlynlingJournalEntry> PlynlingJournalEntries => Set<PlynlingJournalEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -195,6 +197,20 @@ public class AppDbContext : DbContext
             // land. Dead rows are excluded, which is what lets the graveyard hold any number.
             e.HasIndex(x => new { x.GuildId, x.OwnerId }).IsUnique().HasFilter("\"DiedAt\" IS NULL");
             e.HasIndex(x => x.GuildId);
+        });
+
+        // A Plynling's badges and journal belong to it: deleted with it (abandoned), kept when it
+        // dies. One row per badge per Plynling is what makes each reward paid exactly once.
+        modelBuilder.Entity<PlynlingBadge>(e =>
+        {
+            e.HasOne<Plynling>().WithMany().HasForeignKey(x => x.PlynlingId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.PlynlingId, x.Key }).IsUnique();
+        });
+
+        modelBuilder.Entity<PlynlingJournalEntry>(e =>
+        {
+            e.HasOne<Plynling>().WithMany().HasForeignKey(x => x.PlynlingId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.PlynlingId);
         });
 
         modelBuilder.Entity<PebbleWallet>(e =>
