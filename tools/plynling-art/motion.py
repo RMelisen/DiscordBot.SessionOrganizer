@@ -72,6 +72,8 @@ class Pose:
         self.halo = int(round(110 + 50 * math.sin(2 * math.pi * f / FRAMES))) if sp == "mystique" else 110
         # the chanterelle's wavy rim ripples in place: the waves deepen and flatten, never travel
         self.ripple = 1 + 0.45 * math.sin(2 * math.pi * f / FRAMES) if (sp == "dore" and self.touch) else 1.0
+        # the Coprin's ink drop: forms at the rim, falls straight down, splashes (see coprin())
+        self.drip = f if (sp == "coprin" and self.touch) else None
 
     @property
     def body(self):

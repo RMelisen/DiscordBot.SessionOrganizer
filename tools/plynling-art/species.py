@@ -762,4 +762,168 @@ def dore_baby(state, frame, shadow):
     return finish(g, p, state, S, face_oy=BABY_FACE_OY, shadow=shadow, pose=pose)
 
 
-DRAW = {"cepe": cepe, "amanite": amanite, "rose": rose, "russule": russule, "mystique": mystique, "dore": dore}
+# ---- Coprin: a shaggy ink cap ---------------------------------------------------------------
+
+# How much of the cap has turned to ink, by mood: the hungrier, the more it melts. A baby is
+# too young to melt until hunger makes it.
+COPRIN_INK = {"happy": 2, "content": 2, "sad": 2, "hungry": 3, "starving": 4, "frozen": "frozen"}
+COPRIN_BABY_INK = {"happy": 0, "content": 0, "sad": 0, "hungry": 1, "starving": 3, "frozen": "frozen"}
+DROP, DROP_SHINE = (112, 102, 140), (214, 206, 238)    # glossy and lighter than the ink, to read on a dark theme
+# Beads and drips hanging from the rim at each ink level: (column, length).
+COPRIN_DRIPS = {1: [(12, 1), (19, 1)], 2: [(11, 2), (15, 1), (20, 2)],
+                3: [(10, 2), (12, 1), (15, 2), (18, 1), (20, 3)],
+                4: [(9, 3), (11, 2), (13, 3), (14, 1), (17, 2), (19, 3), (21, 4), (22, 2)],
+                "frozen": [(10, 3), (15, 1), (21, 2)]}
+COPRIN_BABY_DRIPS = {0: [], 1: [(12, 1), (19, 1)], 3: [(11, 2), (14, 1), (18, 2), (20, 3)],
+                     "frozen": [(12, 2), (19, 2)]}
+
+
+def coprin_cap(g, p, apex, rim, half, egg=False):
+    """A bell of a cap: a full rounded dome, widest halfway, then the lower cap flaring out
+    towards the rim as a Coprin starts to open. Shaded as a volume — lit from the top left, a
+    core shadow down the right, darker under the flare — with a smooth ochre skullcap and a
+    judge's-wig shag of hanging scales, each lit on top and casting a little shadow. An egg (the
+    baby) is still closed: it rounds in at the bottom and keeps its scales small."""
+    cap, tip = p["cap"], p["spot"]
+    height = rim + 1 - apex
+    widest = 0.55 if egg else 0.5
+    edges = {}
+    for y in range(apex, rim + 1):
+        t = (y + 0.5 - apex) / height                                  # 0 at the top, 1 at the rim
+        if t < widest:
+            h = half * (1 - ((widest - t) / widest) ** 2.2) ** (1 / 2.2)
+        elif egg:
+            h = half * math.sqrt(max(0.0, 1 - ((t - widest) / (1 - widest + 0.1)) ** 2))
+        else:
+            h = half + 1.4 * ((t - widest) / (1 - widest)) ** 2          # the flare of the bell
+        xs = []
+        for x in range(N):
+            dx = x + 0.5 - CX
+            if abs(dx) > h:
+                continue
+            nx = dx / max(h, 0.1)
+            light = -0.55 * nx + 0.75 * math.sqrt(max(0.0, 1 - nx * nx)) - 0.45 * t + (0.15 if t < 0.3 else 0)
+            i = tone(light, (0.62, 0.38, 0.12, -0.12), x, y)
+            if not egg and y >= rim - 1:
+                i = min(4, i + 1)                                      # the flare's underside, in shadow
+            c = cap[min(i, 4)]
+            if t < 0.17:                                               # the skullcap, smooth ochre
+                c = lerp(tip[0], (255, 240, 214), 0.5) if light > 0.55 else tip[0] if light > 0.2 else tip[1]
+            g.put(x, y, c, "cap")
+            xs.append(x)
+        if xs:
+            edges[y] = (xs[0], xs[-1])
+
+    first = apex + max(3, int(height * 0.2))
+    for i, y in enumerate(range(first, rim - 1, 3)):                   # the wig: rows of hanging scales
+        a, b = edges[y]
+        t = (y - apex) / height
+        brown = max(0.0, 0.8 - t * 1.3)
+        point = lerp(cap[3], tip[1], 0.35 + brown * 0.5)
+        width = 5 if egg else 4                                        # an egg's scales are fewer, fainter
+        for x0 in range(a + (i % 2) * (width // 2), b - 1, width):
+            mid = x0 + width // 2
+            if g.r[y][x0] == "cap":
+                g.put(x0, y, lerp(g.c[y][x0], cap[0], 0.6))           # the scale's lit top
+            for x in range(x0 + 1, min(b, x0 + width)):
+                if g.r[y][x] == "cap":
+                    g.put(x, y, lerp(g.c[y][x], cap[3], 0.35))
+            if g.r[y][mid] == "cap":
+                g.put(mid, y, point)
+            if not egg and y + 1 < rim - 1 and g.r[y + 1][mid] == "cap":
+                g.put(mid, y + 1, point)                               # its hanging point
+                if g.r[y + 1][mid + 1] == "cap":
+                    g.put(mid + 1, y + 1, lerp(g.c[y + 1][mid + 1], cap[4], 0.35))   # and its shadow
+        if not egg:                                                    # the curls scallop the outline
+            g.put(a - 1, y + 1, cap[2], "cap")
+            g.put(b + 1, y + 1, cap[3], "cap")
+
+
+INK_PINK, INK_GREY, INK_GLOSS = (222, 188, 188), (112, 96, 106), (104, 98, 132)
+
+
+def ink_rim(g, p, rim, level, drips):
+    """The melting edge, the way a real Coprin blackens: unevenly, the ink creeping higher up
+    some columns than others, with a pink blush and then grey above it and glossy black below,
+    the very edge darkest, and drips hanging from the rim."""
+    if level == 0:
+        return
+    ink = p["gill"]
+    deep = lerp(ink, (0, 0, 0), 0.4)
+    rows = 2 if level == "frozen" else level
+    for x in range(N):
+        creep = (x * 5 + 3) % 4
+        tall = rows + (1 if creep == 0 else 0) + (1 if rows >= 2 and creep == 2 else 0)
+        for y in range(rim - tall + 1, rim + 1):
+            if g.r[y][x] == "cap":
+                g.put(x, y, deep if y == rim else INK_GLOSS if (y == rim - tall + 1 and x % 3 == 1) else ink)
+        for y, c, k in ((rim - tall, INK_GREY, 0.75), (rim - tall - 1, INK_PINK, 0.5)):
+            if g.r[y][x] == "cap":
+                g.put(x, y, lerp(g.c[y][x], c, k))
+    for x, length in drips:
+        for k in range(1, length + 1):
+            g.put(x, rim + k, INK_GLOSS if k == 1 and length > 1 else deep if k == length else ink, "cap")
+
+
+def ink_drop(im, pose, rim, x):
+    """The idle drop: a bead at the rim, stretching, falling straight down, a splash."""
+    f = pose.drip
+    if f is None:
+        return
+
+    def px(xx, yy, c):
+        if 0 <= xx < N and 0 <= yy < N:
+            im.putpixel((xx, yy), c + (255,))
+    top = rim + 1 + pose.body[1]                                       # hangs from the (breathing) rim
+    if f <= 5:
+        px(x, top, DROP_SHINE)                                         # a bead catching the light
+    elif f <= 7:
+        px(x, top, DROP_SHINE)
+        px(x, top + 1, DROP)
+    elif f <= 13:
+        y = min(29, rim + 3 + (f - 8) * 2)                             # falling, free of the breath
+        px(x, y, DROP_SHINE)
+        px(x, y + 1, DROP)
+    elif f == 14:
+        for dx in (-1, 0, 1):
+            px(x + dx, 29, DROP)                                       # the splash
+
+
+def coprin(state, frame=0, shadow=True, stage="adult"):
+    """A shaggy ink cap: a tall white cap with a brown skullcap on a slim stem. Its rim is ink,
+    and the hungrier it gets the more it melts."""
+    if stage == "baby":
+        return coprin_baby(state, frame, shadow)
+    p = SPECIES["coprin"]
+    pose = pose_for("coprin", state, frame)
+    sag = 1 if state == "starving" else 0
+    g = Grid()
+    stem(g, STEM, 11, 20, 14 + sag, 27)
+    feet(g, STEM)
+    apex, rim = 2 + sag, 16 + sag
+    coprin_cap(g, p, apex, rim, 6.8)
+    ink_rim(g, p, rim, COPRIN_INK[state], COPRIN_DRIPS[COPRIN_INK[state]])
+    outline(g, p["cap"])
+    im = finish(g, p, state, STEM, face_oy=1, shadow=shadow, pose=pose)
+    ink_drop(im, pose, rim, 9)
+    return im
+
+
+def coprin_baby(state, frame, shadow):
+    """The young Coprin: a small closed white egg with a brown tip — no ink until it is hungry,
+    and no idle drip."""
+    p = SPECIES["coprin"]
+    pose = pose_for("coprin", state, frame)
+    sag = 1 if state == "starving" else 0
+    g = Grid()
+    baby_body(g, STEM)
+    apex, rim = 7 + sag, 18 + sag
+    coprin_cap(g, p, apex, rim, 6.2, egg=True)
+    level = COPRIN_BABY_INK[state]
+    ink_rim(g, p, rim, level, COPRIN_BABY_DRIPS[level])
+    outline(g, p["cap"])
+    return finish(g, p, state, STEM, face_oy=BABY_FACE_OY, shadow=shadow, pose=pose)
+
+
+DRAW = {"cepe": cepe, "amanite": amanite, "rose": rose, "russule": russule, "mystique": mystique, "dore": dore,
+        "coprin": coprin}

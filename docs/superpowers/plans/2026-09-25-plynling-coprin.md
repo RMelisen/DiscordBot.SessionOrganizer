@@ -10,6 +10,12 @@
 
 Spec: `docs/superpowers/specs/2026-09-25-plynling-coprin-design.md`.
 
+> **Amended after the Task 1 review:** the drawing went through four owner review rounds. The code in
+> Task 1 Step 3 is the *starting* draft; the approved version in `species.py` differs: a shaded,
+> flaring bell (not a cylinder) with a judge's-wig shag in relief, a warmer palette in `common.py`,
+> ink that creeps up unevenly through pink and grey to glossy black, and every adult ink level one
+> step higher than the table below (content/happy/sad 2, hungry 3, starving 4; frozen shows 2).
+
 ## Global Constraints
 
 - Rarity: **Mystique 27 → 14, Coprin 13**; the mushroom family still totals **300**.

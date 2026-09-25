@@ -16,7 +16,7 @@ LAWN_CY, LAWN_RX, LAWN_RY = 25.6, 14.2, 3.1
 # make it a Rosé, so that is what its memorials carry.
 def accent(sp):
     p = SPECIES[sp]
-    return {"rose": p["gill"], "cepe": p["cap"][3], "mystique": p["spot"][0], "dore": p["cap"][1]}.get(sp, p["cap"][2])
+    return {"rose": p["gill"], "cepe": p["cap"][3], "mystique": p["spot"][0], "dore": p["cap"][1], "coprin": p["gill"]}.get(sp, p["cap"][2])
 
 
 def gem(g, x, y, c):
