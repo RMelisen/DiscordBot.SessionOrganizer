@@ -24,6 +24,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, "..", "..", "assets", "plynlings"))
 STATES = ["happy", "content", "sad", "hungry", "starving", "frozen"]
 FOODS = ["mushroom", "shiitake", "morel", "truffle"]
+# Species whose bébé has its own art. Must match PlynlingArt.StagedSpecies in the bot
+# (artcheck compares them). The adult keeps its stage-less filename, and ado and ancien wear
+# it too; the baby inserts "_baby".
+STAGED = {"cepe"}
 
 
 def big(im):
@@ -52,6 +56,9 @@ def main():
         for state in STATES:
             save_loop([build(state, sp, f) for f in range(FRAMES)], f"plynling_{sp}_{state}")
             count += 1
+            if sp in STAGED:
+                save_loop([build(state, sp, f, stage="baby") for f in range(FRAMES)], f"plynling_{sp}_baby_{state}")
+                count += 1
         for tier in range(1, 6):
             save(memorial(tier, sp), f"memorial_{sp}_{tier}")
             count += 1

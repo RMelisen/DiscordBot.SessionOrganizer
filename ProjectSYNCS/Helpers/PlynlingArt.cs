@@ -19,8 +19,19 @@ public static class PlynlingArt
     public const string BaseUrl =
         "https://raw.githubusercontent.com/RMelisen/DiscordBot.SessionOrganizer/main/assets/plynlings/";
 
-    public static string Sprite(PlynlingSpecies species, PlynlingMood mood) =>
-        $"{BaseUrl}plynling_{Key(species)}_{mood.ToString().ToLowerInvariant()}_v{Version}.webp";
+    // Species whose bébé has its own art. Must match STAGED in tools/plynling-art/export.py —
+    // artcheck compares the two. Every other species, and every other stage (ado and ancien
+    // were tried and dropped), shows the adult picture.
+    public static readonly IReadOnlySet<PlynlingSpecies> StagedSpecies =
+        new HashSet<PlynlingSpecies> { PlynlingSpecies.Cepe };
+
+    // The adult filename deliberately carries no stage segment: it is the file every species
+    // already had, so adding the baby invalidated nothing Discord had cached.
+    public static string Sprite(PlynlingSpecies species, PlynlingStage stage, PlynlingMood mood) =>
+        $"{BaseUrl}plynling_{Key(species)}{StageSegment(species, stage)}_{mood.ToString().ToLowerInvariant()}_v{Version}.webp";
+
+    private static string StageSegment(PlynlingSpecies species, PlynlingStage stage) =>
+        stage == PlynlingStage.Baby && StagedSpecies.Contains(species) ? "_baby" : "";
 
     public static string Memorial(PlynlingSpecies species, int tier) =>
         $"{BaseUrl}memorial_{Key(species)}_{tier}_v{Version}.png";

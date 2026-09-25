@@ -41,7 +41,7 @@ public sealed class PlynlingAnnouncer
     {
         var line = string.Format(_picker.Pick(GameChannelId, BotResponses.PlynlingResurrectLines.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name), $"<@{plynling.OwnerId}>");
-        return PostAsync(plynling.GuildId, line, PlynlingArt.Sprite(plynling.Species, PlynlingLife.Mood(plynling, now)), "resurrection");
+        return PostAsync(plynling.GuildId, line, PlynlingArt.Sprite(plynling.Species, PlynlingLife.Stage(plynling, now), PlynlingLife.Mood(plynling, now)), "resurrection");
     }
 
     // Called only once PlynlingLife.ShouldWarn has seen death coming; the DM says so without
