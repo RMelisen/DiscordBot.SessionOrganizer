@@ -392,7 +392,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 "triste, 25 % de moins. À 0 %, il **boude** et refuse de manger tant qu'on n'a pas joué avec lui ou qu'on " +
                 "ne l'a pas caressé — sauf s'il meurt de faim.")
             .AddField("Jouer & rendre visite",
-                "**`/plynling play`** — Un mini-jeu au hasard avec ton Plynling : cache-cache, pierre-feuille-ciseaux " +
+                "**`/plynling play`** — Un mini-jeu au hasard avec ton Plynling : cache-cache, pierre-papier-ciseaux " +
                 "ou plus ou moins. Une fois par heure : +15 % de bonheur, +25 % et quelques cailloux si tu gagnes.\n" +
                 "**`/plynling visit user:`** — Ton Plynling toque chez quelqu'un. S'il l'accueille dans l'heure, les deux " +
                 "gagnent du bonheur. Une visite par jour entre deux personnes.\n" +

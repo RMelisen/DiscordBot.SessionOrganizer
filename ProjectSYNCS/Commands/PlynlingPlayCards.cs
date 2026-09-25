@@ -41,7 +41,7 @@ public static class PlynlingPlayCards
                     break;
                 case PlynlingGame.RockPaperScissors:
                     row.WithButton("✊ Pierre", $"plyn:rps:{session.Id}:{(int)RpsThrow.Rock}", ButtonStyle.Secondary)
-                       .WithButton("✋ Feuille", $"plyn:rps:{session.Id}:{(int)RpsThrow.Paper}", ButtonStyle.Secondary)
+                       .WithButton("✋ Papier", $"plyn:rps:{session.Id}:{(int)RpsThrow.Paper}", ButtonStyle.Secondary)
                        .WithButton("✌️ Ciseaux", $"plyn:rps:{session.Id}:{(int)RpsThrow.Scissors}", ButtonStyle.Secondary);
                     break;
                 default:

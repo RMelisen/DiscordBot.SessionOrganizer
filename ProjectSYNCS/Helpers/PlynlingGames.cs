@@ -35,7 +35,7 @@ public sealed class PlynlingGameState
     public int HiddenBehind { get; private set; }
     public int? LastPick { get; private set; }
 
-    // Pierre-feuille-ciseaux.
+    // Pierre-papier-ciseaux.
     public int PlayerScore { get; private set; }
     public int PlynlingScore { get; private set; }
     public RpsThrow? LastPlayerThrow { get; private set; }

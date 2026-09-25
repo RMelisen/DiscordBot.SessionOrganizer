@@ -218,7 +218,7 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   5–15 cailloux for them. A sad one (below 30 %) gets 25 % less. At 0 % it sulks and refuses to
   eat until someone plays with it or pets it — unless it is starving, when hunger wins.
 - **Play:** `/plynling play` starts one of three mini-games at random with your own Plynling —
-  cache-cache (find it behind one of three rocks, two tries), pierre-feuille-ciseaux (first to
+  cache-cache (find it behind one of three rocks, two tries), pierre-papier-ciseaux (first to
   two) or plus ou moins (a number from 1 to 100 in six guesses). Once an hour; it always
   cheers it up (+15 % happiness), and a win adds +10 % and a few cailloux.
 - **Visits:** `/plynling visit user:` sends your Plynling knocking at someone's door. If they

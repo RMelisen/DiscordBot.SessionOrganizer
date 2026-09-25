@@ -31,7 +31,7 @@ public static class PlynlingGameUi
 
     private static string RpsText(PlynlingGameState s, string name)
     {
-        var text = "## ✊ Pierre-feuille-ciseaux\n" +
+        var text = "## ✊ Pierre-papier-ciseaux\n" +
                    $"Premier à {PlynlingGameState.RpsToWin} manches · toi **{s.PlayerScore}** – **{s.PlynlingScore}** {name}";
         if (s.LastPlayerThrow is { } mine && s.LastPlynlingThrow is { } its && s.LastResult is { } result)
         {
