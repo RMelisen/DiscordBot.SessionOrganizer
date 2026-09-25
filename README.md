@@ -236,8 +236,8 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   are very close may confess their love and become a couple (or suffer a heartbreak), and a
   couple that keeps arguing breaks up. The closer they are, the happier a visit makes them;
   between enemies it makes them sadder. A best friend or partner grieves when the other dies
-  or is abandoned. `/plynling relations [user]` lists them, and the journal names the partner
-  and the best friends.
+  or is abandoned. `/plynling relations [user]` lists them, the card shows its partner
+  (« 💞 En couple avec … »), and the journal names the partner and the best friends.
 - **Sleep:** every Plynling sleeps from 1 am to 5 am (Paris time), with its own sleeping
   picture. It can be fed but not petted, and it never dies in its sleep — a death due at
   night happens at 5 am instead.

@@ -41,7 +41,8 @@ public class PlynlingCareService
         var text = $"{line} — {PlynlingText.PettedBy(plynling.Gender, actorId)}";
         if (badges.Count > 0) text += "\n" + PlynlingBadges.NewBadgeLines(badges, plynling.Gender);
         text += await GiftLineAsync(plynling, actorId, now);
-        return new CareReply(PlynlingModule.BuildCard(plynling, now, text), null);
+        var partner = await _plynlings.GetPartnerAsync(plynling);
+        return new CareReply(PlynlingModule.BuildCard(plynling, now, text, partnerName: partner?.Name), null);
     }
 
     public async Task<CareReply> FeedAsync(int plynlingId, ulong actorId, PlynlingFood food, ulong channelId, DateTimeOffset now)
@@ -67,7 +68,8 @@ public class PlynlingCareService
         text += $"\n-# {paid} · il te reste {PebbleEconomy.Cailloux(result.Balance)}";
         if (result.Badges is { Count: > 0 } badges) text += "\n" + PlynlingBadges.NewBadgeLines(badges, g);
         text += await GiftLineAsync(result.Plynling, actorId, now);
-        return new CareReply(PlynlingModule.BuildCard(result.Plynling, now, text, PlynlingArt.Food(food)), null);
+        var partner = await _plynlings.GetPartnerAsync(result.Plynling);
+        return new CareReply(PlynlingModule.BuildCard(result.Plynling, now, text, PlynlingArt.Food(food), partner?.Name), null);
     }
 
     // The owner caring for their own may find today's happy gift, as one more line under hers.

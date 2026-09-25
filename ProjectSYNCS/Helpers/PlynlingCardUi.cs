@@ -23,7 +23,8 @@ public static class PlynlingCardUi
 
     public static string Bar(double value) => LevelCardUi.ProgressBar((long)Math.Round(value * 1000), 1000);
 
-    public static string Heading(Plynling p, DateTimeOffset now)
+    // partnerName: its living partner, if it has one (one at most), already known by the caller.
+    public static string Heading(Plynling p, DateTimeOffset now, string? partnerName = null)
     {
         var info = PlynlingCatalog.Info(p.Species);
         var age = LevelCardUi.Duration((long)PlynlingLife.Age(p, now).TotalMinutes);
@@ -31,7 +32,8 @@ public static class PlynlingCardUi
         // ♂/♀ at heading size, far too big beside the name.
         return $"## {SafeName(p.Name)}\n" +
                $"{p.Gender.Symbol()} {info.Name} · *{PlynlingCatalog.RarityLabel(info.Rarity)}*\n" +
-               $"à <@{p.OwnerId}> · {StageLabel(PlynlingLife.Stage(p, now), p.Gender)} · {p.Gender.Agree("âgé", "âgée")} de {age}";
+               $"à <@{p.OwnerId}> · {StageLabel(PlynlingLife.Stage(p, now), p.Gender)} · {p.Gender.Agree("âgé", "âgée")} de {age}" +
+               (partnerName is null ? "" : $"\n💞 En couple avec **{SafeName(partnerName)}**");
     }
 
     public static string Status(Plynling p, DateTimeOffset now)

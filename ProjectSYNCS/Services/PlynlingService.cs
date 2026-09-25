@@ -311,6 +311,19 @@ public class PlynlingService
         }
     }
 
+    // The card's « en couple avec » line: its living partner, or null — none for a dead Plynling,
+    // and a partner who died is no longer shown (one partner at most, so the first living one).
+    public async Task<Plynling?> GetPartnerAsync(Plynling p)
+    {
+        if (p.DiedAt is not null) return null;
+        var ids = await _db_context.PlynlingRelations
+            .Where(r => r.Bond == PlynlingBond.Lovers && (r.PlynlingAId == p.Id || r.PlynlingBId == p.Id))
+            .Select(r => r.PlynlingAId == p.Id ? r.PlynlingBId : r.PlynlingAId)
+            .ToListAsync();
+        return ids.Count == 0 ? null
+            : await _db_context.Plynlings.FirstOrDefaultAsync(x => ids.Contains(x.Id) && x.DiedAt == null);
+    }
+
     // /plynling relations and the journal: everyone it has met, with the other Plynling.
     public async Task<List<(PlynlingRelation Relation, Plynling Other)>> GetRelationsAsync(int plynlingId)
     {

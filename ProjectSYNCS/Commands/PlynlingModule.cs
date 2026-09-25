@@ -486,9 +486,12 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
 
     // ---- rendering --------------------------------------------------------------
 
-    private Task RespondCardAsync(Plynling plynling, DateTimeOffset now, string? line) =>
-        RespondAsync(components: BuildCard(plynling, now, line), flags: MessageFlags.ComponentsV2,
-            allowedMentions: AllowedMentions.None);
+    private async Task RespondCardAsync(Plynling plynling, DateTimeOffset now, string? line)
+    {
+        var partner = await _plynlings.GetPartnerAsync(plynling);
+        await RespondAsync(components: BuildCard(plynling, now, line, partnerName: partner?.Name),
+            flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+    }
 
     private Task SendAsync(CareReply reply) =>
         reply.Card is not null
@@ -558,7 +561,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
     /// owner — the real check is in code, as with every gate here.
     /// </remarks>
     public static MessageComponent BuildCard(
-        Plynling plynling, DateTimeOffset now, string? lastAction, string? lastActionImage = null)
+        Plynling plynling, DateTimeOffset now, string? lastAction, string? lastActionImage = null, string? partnerName = null)
     {
         var info = PlynlingCatalog.Info(plynling.Species);
         var alive = plynling.DiedAt is null;
@@ -572,7 +575,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 .WithAccessory(new ThumbnailBuilder()
                     .WithMedia(new UnfurledMediaItemProperties(picture))
                     .WithDescription(info.Name))
-                .AddComponent(new TextDisplayBuilder(PlynlingCardUi.Heading(plynling, now))))
+                .AddComponent(new TextDisplayBuilder(PlynlingCardUi.Heading(plynling, now, partnerName))))
             .AddComponent(new SeparatorBuilder())
             .AddComponent(new TextDisplayBuilder(PlynlingCardUi.Status(plynling, now)));
         if (!string.IsNullOrWhiteSpace(lastAction))

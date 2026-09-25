@@ -1249,7 +1249,10 @@ the owner's explicit choice, keep it — and one living partner at a time: `InCo
 only partners still alive, or a widow could never love again. `VisitAsync` takes a `Random` so
 every scene, confession and break-up is checkable. Grief (best friends and partner fall to 20 %)
 runs on death, from the sweep, and on abandonment, **before** the row is deleted and takes its
-relations with it.
+relations with it. The card's « 💞 En couple avec … » line comes from
+`PlynlingService.GetPartnerAsync` — the living partner only, and none on a dead Plynling's card —
+passed to `BuildCard` by every call site (`RespondCardAsync`, and the care service's pet and
+feed), since the builder itself is static and cannot query.
 
 **Plynling names are hostile input.** They are rendered through `PlynlingCardUi.SafeName`
 (`Format.Sanitize` — markdown and mention syntax neutralised) *and* every message carrying
