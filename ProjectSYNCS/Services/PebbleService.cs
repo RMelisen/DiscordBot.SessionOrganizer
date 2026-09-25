@@ -63,7 +63,11 @@ public class PebbleService
     // context — paying and feeding must save together, and AppDbContext is transient.
     public static async Task<PebbleWallet> GetOrCreateWalletAsync(AppDbContext db, ulong guildId, ulong userId)
     {
-        var wallet = await db.PebbleWallets.FirstOrDefaultAsync(x => x.GuildId == guildId && x.UserId == userId);
+        // Local first: a wallet created earlier in this same unit of work is not in the
+        // database yet, and a second one for the same person would break the unique index
+        // (a first-time feeder whose meal also earns their Plynling a badge).
+        var wallet = db.PebbleWallets.Local.FirstOrDefault(x => x.GuildId == guildId && x.UserId == userId)
+                     ?? await db.PebbleWallets.FirstOrDefaultAsync(x => x.GuildId == guildId && x.UserId == userId);
         if (wallet is null)
         {
             wallet = new PebbleWallet { GuildId = guildId, UserId = userId };

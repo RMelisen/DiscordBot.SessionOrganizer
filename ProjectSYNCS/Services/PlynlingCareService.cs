@@ -30,7 +30,7 @@ public class PlynlingCareService
         var key = (actorId, plynlingId);
         if (!_cooldowns.Pet.TryClaim(key)) return new CareReply(null, PlynlingText.PetCooldown);
 
-        var (outcome, plynling) = await _plynlings.PetAsync(plynlingId, now);
+        var (outcome, plynling, badges) = await _plynlings.PetAsync(plynlingId, now);
         if (outcome != CareOutcome.Done || plynling is null)
         {
             _cooldowns.Pet.Release(key);
@@ -38,7 +38,9 @@ public class PlynlingCareService
         }
 
         var line = string.Format(_picker.Pick(channelId, BotResponses.PlynlingPetLines.For(plynling.Gender)), PlynlingCardUi.SafeName(plynling.Name));
-        return new CareReply(PlynlingModule.BuildCard(plynling, now, $"{line} — {PlynlingText.PettedBy(plynling.Gender, actorId)}"), null);
+        var text = $"{line} — {PlynlingText.PettedBy(plynling.Gender, actorId)}";
+        if (badges.Count > 0) text += "\n" + PlynlingBadges.NewBadgeLines(badges, plynling.Gender);
+        return new CareReply(PlynlingModule.BuildCard(plynling, now, text), null);
     }
 
     public async Task<CareReply> FeedAsync(int plynlingId, ulong actorId, PlynlingFood food, ulong channelId, DateTimeOffset now)
@@ -59,9 +61,9 @@ public class PlynlingCareService
         var paid = result.Plynling.OwnerId == actorId
             ? $"−{PebbleEconomy.Cailloux(result.Price)}"
             : $"offert par <@{actorId}> · −{PebbleEconomy.Cailloux(result.Price)} (le double : ce n'est pas {g.Agree("le sien", "la sienne")})";
-        return new CareReply(PlynlingModule.BuildCard(result.Plynling, now,
-            $"{line}\n-# {paid} · il te reste {PebbleEconomy.Cailloux(result.Balance)}",
-            PlynlingArt.Food(food)), null);
+        var text = $"{line}\n-# {paid} · il te reste {PebbleEconomy.Cailloux(result.Balance)}";
+        if (result.Badges is { Count: > 0 } badges) text += "\n" + PlynlingBadges.NewBadgeLines(badges, g);
+        return new CareReply(PlynlingModule.BuildCard(result.Plynling, now, text, PlynlingArt.Food(food)), null);
     }
 
     // Every refusal but NoPlynling comes back with the Plynling loaded; NoPlynling's line

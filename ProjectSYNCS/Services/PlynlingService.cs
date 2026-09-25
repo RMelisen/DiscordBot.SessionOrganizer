@@ -13,7 +13,8 @@ public enum ThawOutcome { Thawed, NoPlynling, Dead, NotFrozen, StaffOnly }
 
 public enum ResurrectOutcome { Resurrected, NoGrave, AlreadyHasOne }
 
-public sealed record FeedResult(CareOutcome Outcome, Plynling? Plynling, long Price, long Balance);
+public sealed record FeedResult(CareOutcome Outcome, Plynling? Plynling, long Price, long Balance,
+    IReadOnlyList<BadgeInfo>? Badges = null);
 
 // EF access for Plynlings — transient. Every read goes through PlynlingLife.Settle
 // before returning, so a caller always sees a Plynling as it is *now*: dead if it starved
@@ -74,6 +75,8 @@ public class PlynlingService
             // Two adoptions raced; the partial unique index let exactly one through.
             return (AdoptOutcome.AlreadyHasOne, null);
         }
+        await AddMomentAsync(plynling, JournalKind.Adopted, null, now);  // needs its id: after the first save
+        await _db_context.SaveChangesAsync();
         return (AdoptOutcome.Adopted, plynling);
     }
 
@@ -94,23 +97,31 @@ public class PlynlingService
             : null;
         if (refusal is { } r) return new FeedResult(r, plynling, price, wallet.Balance);
 
+        var wasStarving = PlynlingLife.HungerAt(plynling, now) < PlynlingLife.StarvingBelow;
         wallet.Balance -= price;
         PlynlingLife.Feed(plynling, info, now);
-        await _db_context.SaveChangesAsync();          // the money and the meal land together
-        return new FeedResult(CareOutcome.Done, plynling, price, wallet.Balance);
+        plynling.Meals++;
+        if (plynling.Meals == 1) await AddMomentAsync(plynling, JournalKind.FirstMeal, null, now);
+        if (plynling.OwnerId != actorId && ++plynling.FedByOthers == 1)
+            await AddMomentAsync(plynling, JournalKind.FedByFriend, actorId.ToString(), now);
+        var badges = await AwardAsync(plynling, now, wasStarving ? BadgeEvent.SavedFromStarving : BadgeEvent.None);
+        await _db_context.SaveChangesAsync();          // the money, the meal and any badge land together
+        return new FeedResult(CareOutcome.Done, plynling, price, wallet.Balance, badges);
     }
 
-    public async Task<(CareOutcome Outcome, Plynling? Plynling)> PetAsync(int plynlingId, DateTimeOffset now)
+    public async Task<(CareOutcome Outcome, Plynling? Plynling, IReadOnlyList<BadgeInfo> Badges)> PetAsync(int plynlingId, DateTimeOffset now)
     {
         var plynling = await GetByIdAsync(plynlingId, now);
-        if (plynling is null) return (CareOutcome.NoPlynling, null);
-        if (plynling.DiedAt is not null) return (CareOutcome.Dead, plynling);
-        if (plynling.FrozenAt is not null) return (CareOutcome.Frozen, plynling);
-        if (PlynlingLife.IsAsleep(now)) return (CareOutcome.Asleep, plynling);   // feeding still works
+        if (plynling is null) return (CareOutcome.NoPlynling, null, NoBadges);
+        if (plynling.DiedAt is not null) return (CareOutcome.Dead, plynling, NoBadges);
+        if (plynling.FrozenAt is not null) return (CareOutcome.Frozen, plynling, NoBadges);
+        if (PlynlingLife.IsAsleep(now)) return (CareOutcome.Asleep, plynling, NoBadges);   // feeding still works
 
         PlynlingLife.Pet(plynling, now);
+        plynling.Pets++;
+        var badges = await AwardAsync(plynling, now);
         await _db_context.SaveChangesAsync();
-        return (CareOutcome.Done, plynling);
+        return (CareOutcome.Done, plynling, badges);
     }
 
     public async Task<(FreezeOutcome Outcome, Plynling? Plynling)> FreezeAsync(
@@ -128,6 +139,7 @@ public class PlynlingService
         if (blocker is { } b) return (b, plynling);
 
         PlynlingLife.Freeze(plynling, now, byStaff);
+        await AddMomentAsync(plynling, JournalKind.Frozen, null, now);
         await _db_context.SaveChangesAsync();
         return (FreezeOutcome.Frozen, plynling);
     }
@@ -143,6 +155,7 @@ public class PlynlingService
         if (plynling.FrozenByStaff && !byStaff) return (ThawOutcome.StaffOnly, plynling);
 
         PlynlingLife.Thaw(plynling, now);
+        await AddMomentAsync(plynling, JournalKind.Thawed, null, now);
         await _db_context.SaveChangesAsync();
         return (ThawOutcome.Thawed, plynling);
     }
@@ -152,28 +165,26 @@ public class PlynlingService
     // The end of a /plynling play game: the happiness, the counts and — on a win — the
     // player's cailloux land in one save. Null when the Plynling can no longer be played
     // with (it died, was frozen or abandoned mid-game): then nothing is paid.
-    public async Task<(Plynling? Plynling, long Balance)> FinishPlayAsync(
+    public async Task<(Plynling? Plynling, long Balance, IReadOnlyList<BadgeInfo> Badges)> FinishPlayAsync(
         int plynlingId, ulong ownerId, bool won, long pebbles, DateTimeOffset now)
     {
         var plynling = await GetByIdAsync(plynlingId, now);
         if (plynling is null || plynling.OwnerId != ownerId || plynling.DiedAt is not null || plynling.FrozenAt is not null)
-            return (null, 0);
+            return (null, 0, NoBadges);
 
         PlynlingLife.Play(plynling, now, won);
-        long balance = 0;
-        if (won && pebbles > 0)
-        {
-            var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, plynling.GuildId, ownerId);
-            wallet.Balance += pebbles;
-            balance = wallet.Balance;
-        }
+        if (won && plynling.PlaysWon == 1) await AddMomentAsync(plynling, JournalKind.FirstWin, null, now);
+        var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, plynling.GuildId, ownerId);
+        if (won && pebbles > 0) wallet.Balance += pebbles;
+        var badges = await AwardAsync(plynling, now);                   // pays into the same wallet
         await _db_context.SaveChangesAsync();
-        return (plynling, balance);
+        return (plynling, wallet.Balance, badges);
     }
 
     // A /plynling visit accepted: both Plynlings cheered and counted, in one save. Null when
     // either can no longer take part.
-    public async Task<(Plynling Visitor, Plynling Host)?> VisitAsync(int visitorId, int hostId, DateTimeOffset now)
+    public async Task<(Plynling Visitor, Plynling Host, IReadOnlyList<BadgeInfo> VisitorBadges, IReadOnlyList<BadgeInfo> HostBadges)?> VisitAsync(
+        int visitorId, int hostId, DateTimeOffset now)
     {
         var visitor = await GetByIdAsync(visitorId, now);
         var host = await GetByIdAsync(hostId, now);
@@ -183,8 +194,12 @@ public class PlynlingService
 
         PlynlingLife.Visit(visitor, now);
         PlynlingLife.Visit(host, now);
+        await AddMomentAsync(visitor, JournalKind.Visited, host.Name, now);
+        await AddMomentAsync(host, JournalKind.Hosted, visitor.Name, now);
+        var visitorBadges = await AwardAsync(visitor, now);
+        var hostBadges = await AwardAsync(host, now);
         await _db_context.SaveChangesAsync();
-        return (visitor, host);
+        return (visitor, host, visitorBadges, hostBadges);
     }
 
     // /plynling abandon: the owner's living Plynling leaves for good — the row is deleted,
@@ -223,6 +238,8 @@ public class PlynlingService
         if (grave is null) return (ResurrectOutcome.NoGrave, null);
 
         PlynlingLife.Resurrect(grave, now);
+        await AddMomentAsync(grave, JournalKind.Resurrected, null, now);
+        await AwardAsync(grave, now, BadgeEvent.Resurrected);
         try
         {
             await _db_context.SaveChangesAsync();
@@ -266,6 +283,50 @@ public class PlynlingService
         await _db_context.Plynlings.Where(x => x.DiedAt == null || !x.DeathAnnounced).ToListAsync();
 
     public Task SaveAsync() => _db_context.SaveChangesAsync();
+
+    // ---- badges and the journal. Neither helper saves: what they add rides the caller's save,
+    // so an action, its moments, its badges and their cailloux land together or not at all.
+
+    public const int JournalCap = 100;
+    private static readonly IReadOnlyList<BadgeInfo> NoBadges = Array.Empty<BadgeInfo>();
+
+    // Adds a moment, then trims this Plynling's journal to JournalCap, oldest first — counting
+    // moments added earlier in this same unit of work, so several in one save cannot overshoot.
+    private async Task AddMomentAsync(Plynling p, JournalKind kind, string? detail, DateTimeOffset at)
+    {
+        _db_context.PlynlingJournalEntries.Add(new PlynlingJournalEntry { PlynlingId = p.Id, At = at, Kind = kind, Detail = detail });
+
+        var stored = await _db_context.PlynlingJournalEntries.Where(e => e.PlynlingId == p.Id).ToListAsync();
+        var kept = stored.Where(e => _db_context.Entry(e).State != EntityState.Deleted).ToList();
+        var pending = _db_context.ChangeTracker.Entries<PlynlingJournalEntry>()
+            .Count(e => e.State == EntityState.Added && e.Entity.PlynlingId == p.Id);
+        var over = kept.Count + pending - JournalCap;
+        if (over > 0) _db_context.PlynlingJournalEntries.RemoveRange(kept.OrderBy(e => e.At).ThenBy(e => e.Id).Take(over));
+    }
+
+    // Awards every badge this Plynling now qualifies for and has not earned — each written once
+    // (the unique index backs it), journaled, and paid to the owner. Returns what it awarded.
+    private async Task<IReadOnlyList<BadgeInfo>> AwardAsync(Plynling p, DateTimeOffset now, BadgeEvent evt = BadgeEvent.None)
+    {
+        var earned = (await _db_context.PlynlingBadges.Where(b => b.PlynlingId == p.Id).Select(b => b.Key).ToListAsync())
+            .Concat(_db_context.PlynlingBadges.Local.Where(b => b.PlynlingId == p.Id).Select(b => b.Key))
+            .ToHashSet();
+        var fresh = PlynlingBadges.Newly(p, earned, now, evt);
+        if (fresh.Count == 0) return NoBadges;
+
+        foreach (var badge in fresh)
+        {
+            _db_context.PlynlingBadges.Add(new PlynlingBadge { PlynlingId = p.Id, Key = badge.Key, EarnedAt = now });
+            await AddMomentAsync(p, JournalKind.Badge, badge.Key, now);
+        }
+        var reward = fresh.Sum(b => b.Reward);
+        if (reward > 0)
+        {
+            var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, p.GuildId, p.OwnerId);
+            wallet.Balance += reward;
+        }
+        return fresh;
+    }
 
     private async Task<Plynling?> SettledAsync(Plynling? plynling, DateTimeOffset now)
     {

@@ -88,6 +88,9 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
 
         var line = string.Format(_picker.Pick(Context.Channel.Id, BotResponses.PlynlingVisitMeetLines.For(pair.Visitor.Gender)),
             PlynlingCardUi.SafeName(pair.Visitor.Name), PlynlingCardUi.SafeName(pair.Host.Name));
+        foreach (var (who, badges) in new[] { (pair.Visitor, pair.VisitorBadges), (pair.Host, pair.HostBadges) })
+            if (badges.Count > 0)
+                line += "\n**" + PlynlingCardUi.SafeName(who.Name) + "** · " + PlynlingBadges.NewBadgeLines(badges, who.Gender);
         await component.UpdateAsync(m =>
         {
             m.Components = PlynlingPlayCards.BuildMeeting(pair.Visitor, pair.Host, line, now);
@@ -173,13 +176,14 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         {
             var won = session.State.Status == GameStatus.Won;
             var pebbles = won ? PlynlingLife.RollPlayPebbles(Random.Shared) : 0;
-            var (after, balance) = await _plynlings.FinishPlayAsync(plynling.Id, session.OwnerId, won, pebbles, now);
+            var (after, balance, badges) = await _plynlings.FinishPlayAsync(plynling.Id, session.OwnerId, won, pebbles, now);
             if (after is not null)
             {
                 plynling = after;
                 var pool = (won ? BotResponses.PlynlingPlayPlayerWonLines : BotResponses.PlynlingPlayPlayerLostLines).For(plynling.Gender);
                 endLine = string.Format(_picker.Pick(Context.Channel.Id, pool), PlynlingCardUi.SafeName(plynling.Name)) +
                           "\n" + PlynlingGameUi.Reward(won, pebbles, balance);
+                if (badges.Count > 0) endLine += "\n" + PlynlingBadges.NewBadgeLines(badges, plynling.Gender);
             }
         }
 
