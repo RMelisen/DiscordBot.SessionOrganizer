@@ -99,7 +99,7 @@ death announcement shows a memorial and is untouched.
   unstaged species resolve every stage to the adult file; no orphan files; `StagedSpecies`
   matches `STAGED` in `export.py`. Mutation-tested.
 - **animcheck** — the 18 new loops run 16 slots of 125 ms, each slot exactly what the code draws;
-  all 54 pre-existing files stay byte-identical to v3.
+  all 70 pre-existing files stay byte-identical to v3.
 - **stage check (C#)** — the boundaries (just under / at 2, 14, 180 days), that frozen time does not
   advance the stage, and that `StageLabel` agrees in gender.
 - Build with `-warnaserror`.
