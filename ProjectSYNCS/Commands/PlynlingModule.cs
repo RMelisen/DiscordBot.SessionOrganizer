@@ -335,13 +335,16 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/plynling adopt name:`** — Gratuit, un seul à la fois. L'espèce est tirée au sort : " +
                 "commune, peu commune, rare… ou légendaire. Garçon ou fille ? Surprise.\n" +
                 "**`/plynling view [user]`** — Sa carte, avec les boutons **Caresser** et **Nourrir**.\n" +
+                "**`/plynling list`** — Tous les Plynlings vivants du serveur, du plus vieux au plus jeune.\n" +
                 "Il grandit : **bébé** ses 2 premiers jours, **ado** jusqu'à 14 jours, **adulte**, " +
                 "puis **ancien** après 6 mois. Le temps passé gelé ne compte pas.")
             .AddField("S'en occuper",
                 "La **faim** se vide en **2 jours** : à 0 %, il meurt. Le **bonheur** se vide en **36 heures** " +
                 "(il est juste triste).\n" +
-                "**`/plynling feed food:`** — Champignon (15), Shiitake (30), Morille (40, que du bonheur), Truffe (80, faim et bonheur).\n" +
-                "**`/plynling pet [user]`** — +25 % de bonheur, toutes les 4 h, sur n'importe quel Plynling.")
+                "**`/plynling feed food: [user]`** — Champignon (15), Shiitake (30), Morille (40, que du bonheur), Truffe (80, faim et bonheur). " +
+                "Nourrir celui d'un autre coûte le double.\n" +
+                "**`/plynling pet [user]`** — +25 % de bonheur, toutes les 4 h, sur n'importe quel Plynling.\n" +
+                "Il **dort de 1 h à 5 h** : on peut le nourrir, pas le caresser, et il ne meurt jamais dans son sommeil.")
             .AddField("Gagner des cailloux",
                 "**`/work`** — 40 à 60 cailloux, toutes les 4 h.\n" +
                 "Parler, réagir et le vocal rapportent aussi quelques cailloux (45 au plus par jour).\n" +
@@ -351,10 +354,14 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 "Seulement s'il a encore au moins 50 % de faim.\n" +
                 "**`/plynling thaw`** — Le dégèle. Ensuite, 7 jours avant de pouvoir le regeler.")
             .AddField("La mort",
-                "Tu reçois un **message privé** environ 3 h avant qu'il meure de faim. S'il meurt, tout le " +
-                "serveur l'apprend et il rejoint le cimetière.\n" +
+                "Tu reçois un **message privé** environ 3 h avant qu'il meure de faim (à 23 h la veille si ça tombe la nuit). " +
+                "S'il meurt, tout le serveur l'apprend et il rejoint le cimetière.\n" +
                 "**`/graveyard [user]`** — Les tombes, triées par date ou par longueur de vie. Plus il a vécu, " +
                 "plus sa tombe est belle.")
+            .AddField("L'abandonner",
+                "**`/plynling abandon`** — Il part pour toujours : pas de tombe, pas de retour. Tu devras taper son nom " +
+                "pour confirmer. Tout le serveur l'apprendra, ça se verra sur `/shame`, et tu devras attendre 30 min " +
+                "avant d'en adopter un autre.")
             .AddField("Staff",
                 "**`/plynling freeze user:`** · **`/plynling thaw user:`** — Sur n'importe quel Plynling.\n" +
                 "**`/plynling rename user: name:`** · **`/plynling resurrect user:`**")

@@ -24,7 +24,7 @@ a wall of shame. The bot's user-facing language is French.
 | `/goodbot` | Who praised or scolded the bot | everyone |
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
 | `/shame` | The wall of shame | everyone |
-| `/plynling adopt · view · feed · pet · freeze · thaw · help` | Adopt and look after a Plynling | everyone |
+| `/plynling adopt · view · list · feed · pet · freeze · thaw · abandon · help` | Adopt and look after a Plynling | everyone |
 | `/work · /balance` | Earn cailloux; see your balance | everyone |
 | `/graveyard [user]` | Every Plynling that died | everyone |
 | `/shame user:@someone` | Put someone on it | staff |
@@ -162,7 +162,7 @@ precedes them, and one that is merely quoted, supposed or self-referential
 
 ### Wall of shame
 
-**`/shame`** — four titles on one page, with the same three filters as the other
+**`/shame`** — five titles on one page, with the same three filters as the other
 rankings (**30 days** by default, **7 days**, **all time**). Built with *Components V2*
 like `/level`, so each title shows its current holder's real avatar beside their name;
 the runners-up are plain text beneath.
@@ -197,6 +197,9 @@ how people write those words and never count, and neither does emphasising a wor
 two mid-sentence. Rationed like *Le Perfide*, because shouting arrives in bursts and
 one argument would otherwise decide the title forever.
 
+**L'Indigne** — abandoning a Plynling with `/plynling abandon`. One point each, never
+rationed: it's rare, and deliberate — you have to type its name to do it.
+
 Every counter starts at zero the day it ships and nothing can be backfilled.
 
 ### Plynlings
@@ -207,8 +210,12 @@ legendary Doré.
 Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Plynling*.
 
 - **Hunger** empties in 2 days and **happiness** in 36 hours. At 0% hunger it **dies** — really.
-  `/plynling feed` (Champignon, Shiitake, Morille, Truffe) costs **cailloux**; `/plynling pet`
-  is free, every 4 hours, and anyone can pet anyone's.
+  `/plynling feed` (Champignon, Shiitake, Morille, Truffe) costs **cailloux** — anyone can
+  feed anyone's, but someone else's costs double; `/plynling pet` is free, every 4 hours, and
+  anyone can pet anyone's.
+- **Sleep:** every Plynling sleeps from 1 am to 5 am (Paris time), with its own sleeping
+  picture. It can be fed but not petted, and it never dies in its sleep — a death due at
+  night happens at 5 am instead.
 - **The card** (`/plynling view`) shows it in its current mood — gently animated, each species
   fidgeting in its own way — with its hunger and happiness bars and **Caresser** /
   **Nourrir** buttons.
@@ -218,8 +225,12 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
 - **Holidays:** `/plynling freeze` stops everything for up to 14 days, as long as it isn't
   already hungry; then a week before it can be frozen again.
 - **Death** is announced to the whole server, after a private warning about 3 hours
-  before. `/graveyard` lists every grave, newest or longest-lived first — and the longer a
+  before (at 11 pm the evening before, if that would fall at night). `/graveyard` lists every grave, newest or longest-lived first — and the longer a
   Plynling lived, the grander its memorial, from a simple cairn to a statue in its likeness.
+- **Abandoning** (`/plynling abandon`) — you type its name to confirm, and it leaves for
+  good: no grave, no coming back. The whole server hears about it, it counts towards
+  *L'Indigne* on `/shame`, and you wait 30 minutes before adopting again.
+- **`/plynling list`** shows every living Plynling on the server, oldest first.
 - **Cailloux** come from `/work` (every 4 hours) and, as a small bonus, from chatting,
   reacting and voice (45 a day at most). `/balance` is private.
 

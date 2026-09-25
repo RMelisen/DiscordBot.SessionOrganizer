@@ -809,9 +809,9 @@ narrows mentions to avoid notifying anyone; this one passes
 only, still never roles or `@everyone`. It is why `BotChat.PostWithTypingAsync` takes an
 optional `AllowedMentions`; left null it behaves exactly as before for ordinary chatter.
 
-**`/shame`'s four titles are four different mechanisms sharing one row.**
+**`/shame`'s five titles are five different mechanisms sharing one row.**
 `ShameRecord` / `ShameDailyStat` is the **fourth** totals+buckets pair, for the reason
-the other three exist. `MeanHits`, `PerfidyHits` and `ShoutHits` are things you *did*,
+the other three exist. `MeanHits`, `PerfidyHits`, `ShoutHits` and `AbandonHits` are things you *did*,
 `BanVotes` something done *to* you — one row per (guild, user) because nobody ever reads
 one without the others. (This said "three" until *L'Hystérique* shipped; the component
 sum further down had already been corrected to four, so the two disagreed.) `ShameService.TryVoteAsync` checks the limit and writes both
@@ -917,10 +917,10 @@ read-only `HardcodedExcludedChannels` for `/config show` to list.
 
 **`/shame` is Components V2, and only the title *holder* wears an avatar.** It became V2
 when the avatars did — an embed has one thumbnail slot for the whole message, and the
-wall needs one per title. The count is **26 of 40**: container 1 + heading 1, four titles
+wall needs one per title. The count is **31 of 40**: container 1 + heading 1, five titles
 at 5 each (separator, Section, its TextDisplay, the avatar Thumbnail, and one TextDisplay
 for the runners-up), and the filter row with its three buttons. **That leaves room for
-exactly two more titles** — a seventh throws inside `ComponentBuilderV2.Build()`, which
+exactly one more title** — a seventh throws inside `ComponentBuilderV2.Build()`, which
 is a send-time exception rather than a compile error, so **re-do the sum before adding
 anything** and let the scratch harness confirm it rather than counting by hand: the
 comment here said 21 when the real figure was 23, and the `/leaderboard` equivalent once
@@ -935,7 +935,7 @@ the `shame:win` verb, because the day a second row is added the
 **30 days**, unlike `/goodbot`'s all-time: both counters start at zero on ship day, and
 an all-time default would read as a hall of fame nobody can move. A title with nobody in
 it renders a line from `ShameEmptyMalfaisant` / `ShameEmptyBanni` / `ShameEmptyPerfide` /
-`ShameEmptyHysterique` rather than disappearing — a wall that changes shape between
+`ShameEmptyHysterique` / `ShameEmptyIndigne` rather than disappearing — a wall that changes shape between
 filters reads as broken — and there is
 no minimum count, so a window holding one vote shows it. Those pools are interpolated
 straight into the heading and never `string.Format`-ed, so a `{0}` in one would render
@@ -1163,13 +1163,34 @@ link runs one way only, or money and levels would feed each other.
 embeds, the flag re-asserted on each `UpdateAsync`, `AllowedMentions.None` on every send.
 Its two controls use two verbs (`plyn:pet:{id}`, `plyn:feed:{id}`), and they are offered
 only while the Plynling is alive and not frozen. "Nourrir" is a select *on the card*
-rather than a button opening a second message: one fewer round trip, and the handler
-refuses it for anyone but the owner — the real check is in code. A button press rewrites
+rather than a button opening a second message: one fewer round trip. Anyone may feed
+anyone's, but a non-owner pays double (`PlynlingLife.FeedPrice`), from their own wallet in
+the same single save; each option's description says what others pay. « Caresser » is
+hidden while the Plynling sleeps, and the pet itself is refused then too. A button press rewrites
 the card in place with her line on it, instead of posting a second message under it.
 `PlynlingCareService` is shared by the slash commands and the buttons, so the two can
 never behave differently. The pet cooldown is an in-memory `CooldownGate` keyed on
 (petter, Plynling), released when the pet is refused; a restart resetting it costs nothing,
 since petting cannot keep a Plynling alive.
+
+**Plynlings sleep from 01:00 to 05:00 Paris time, and that is time of day, not a need.**
+`PlynlingLife.IsAsleep` reads the wall clock through `AppTime`, and `Mood` returns
+`Sleeping` then (frozen still wins); nothing is stored. Hunger keeps dropping at night —
+only **death** moves: `EffectiveDeathAt` puts a death due in the window at 05:00, and
+`Settle`, `ShouldWarn` and the feed re-arm all read that effective instant, never the raw
+`DeathAt`. The warning DM (`WarnAt`) is 3 h before the effective death, pulled back to
+23:00 the evening before when it would land between 23:00 and 05:00. `WakeAfter` and `WarnAt`
+build their instants from the Paris wall clock, because both clock changes fall inside the
+sleep window; the scratch harness pins both nights (2026-03-29, 2026-10-25).
+
+**`/plynling abandon` deletes the row.** An abandoned Plynling never reaches the graveyard
+and cannot be resurrected — which is why it is a slash command confirmed by typing the name
+(`PlynlingCardUi.NamesMatch`: case, outer spaces and runs of spaces ignored, but not a missing
+space), never a card button. The cost is shame, on purpose: a public announcement
+(`PlynlingAbandonLines`), `AbandonHits` on the wall (*L'Indigne*), and a 30-minute adoption
+cooldown held **in memory** in `PlynlingCooldowns` — a restart clears it, which is fine at
+30 minutes. The shame point is recorded in its own `try` after the deletion: a failed write
+must not undo the abandonment.
 
 **Plynling names are hostile input.** They are rendered through `PlynlingCardUi.SafeName`
 (`Format.Sanitize` — markdown and mention syntax neutralised) *and* every message carrying
