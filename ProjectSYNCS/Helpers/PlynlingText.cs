@@ -75,6 +75,35 @@ public static class PlynlingText
     public static string Gave(ulong fromId, ulong toId, int quantity, string emoji, string name) =>
         $"🎁 <@{fromId}> offre **{quantity} × {emoji} {name}** à <@{toId}> !";
 
+    public static string Sold(int quantity, ItemInfo item, long earned, long balance) =>
+        $"💰 Tu as vendu **{quantity} × {item.Emoji} {item.Name}** pour {PebbleEconomy.Cailloux(earned)}. Il te reste {PebbleEconomy.Cailloux(balance)}.";
+
+    // Trades. The two sides are « N × emoji nom ».
+    public static string TradeSide(ItemInfo item, int quantity) => $"**{quantity} × {item.Emoji} {item.Name}**";
+
+    public static string TradeOffered(ulong fromId, ulong toId, string give, string want, DateTimeOffset expires) =>
+        $"🔁 <@{fromId}> propose un échange à <@{toId}> : {give} contre {want}.\n-# Expire <t:{expires.ToUnixTimeSeconds()}:R>.";
+
+    public static string TradeDone(ulong fromId, ulong toId, string give, string want) =>
+        $"🤝 Échange conclu ! <@{fromId}> a donné {give} à <@{toId}> contre {want}.";
+
+    public static string TradeDeclined(ulong fromId, ulong toId, string give, string want) =>
+        $"❌ <@{toId}> a refusé l'échange de <@{fromId}> ({give} contre {want}).";
+
+    public static string TradeCancelled(ulong fromId, string give, string want) =>
+        $"🚫 <@{fromId}> a retiré son offre ({give} contre {want}).";
+
+    public static string TradeFailed(ulong fromId, string give, string want) =>
+        $"⚠️ Échange impossible : <@{fromId}> n'a plus {give}. L'offre est retirée. (Il fallait {want} en retour.)";
+
+    public const string TradeSelf = "Tu ne peux pas échanger avec toi-même !";
+    public const string TradeSameItem = "Échanger un objet contre le même, ça ne change rien !";
+    public const string TradeGone = "Cette offre n'existe plus (expirée, remplacée ou déjà traitée).";
+    public const string TradeNotYours = "Cette offre ne t'est pas adressée.";
+    public const string TradeYouLack = "Tu n'as pas ce qu'on te demande en échange. L'offre reste ouverte jusqu'à son expiration.";
+
+    public static string TradeTheyLack(ulong toId) => $"<@{toId}> n'en a pas assez pour cet échange.";
+
     public static string SetCompleted(ulong userId, CollectionSet set) =>
         $"🏆 <@{userId}> a complété la collection **{set.Emoji} {set.Name}** ! +{PebbleEconomy.Cailloux(set.Reward)}";
 

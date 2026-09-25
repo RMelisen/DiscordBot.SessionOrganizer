@@ -59,6 +59,59 @@ public partial class PlynlingModule
         await RespondAsync(text, allowedMentions: new AllowedMentions(AllowedMentionTypes.Users));
     }
 
+    [SlashCommand("trade", "Proposer un échange d'objets à quelqu'un (l'offre dure 1 h)")]
+    public async Task TradeAsync(
+        [Summary("user", "Avec qui échanger")] IUser user,
+        [Summary("give", "Ce que tu donnes")] [Autocomplete(typeof(InventoryItemAutocompleteHandler))] string give,
+        [Summary("want", "Ce que tu veux en échange")] [Autocomplete(typeof(TradeWantAutocompleteHandler))] string want,
+        [Summary("give_quantity", "Combien tu en donnes")] [MinValue(1)] [MaxValue(99)] int giveQuantity = 1,
+        [Summary("want_quantity", "Combien tu en veux")] [MinValue(1)] [MaxValue(99)] int wantQuantity = 1)
+    {
+        string? refusal =
+            user.Id == Context.User.Id ? PlynlingText.TradeSelf
+            : user.IsBot ? PlynlingText.GiveBot
+            : ItemCatalog.ByKey(give) is null || ItemCatalog.ByKey(want) is null ? PlynlingText.UnknownItem
+            : give == want ? PlynlingText.TradeSameItem
+            : await _inventory.CountAsync(Context.Guild.Id, Context.User.Id, give) < giveQuantity ? PlynlingText.NotEnoughItems
+            : await _inventory.CountAsync(Context.Guild.Id, user.Id, want) < wantQuantity ? PlynlingText.TradeTheyLack(user.Id)
+            : null;
+        if (refusal is not null)
+        {
+            await RespondAsync(refusal, ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+
+        var offer = _trades.Open(Context.Guild.Id, Context.User.Id, user.Id, give, giveQuantity, want, wantQuantity,
+            DateTimeOffset.UtcNow, Random.Shared);
+        var (giveText, wantText) = TradeSides(offer);
+        var buttons = new ComponentBuilder()
+            .WithButton("Accepter", $"plyn:tacc:{offer.Id}", ButtonStyle.Success, new Emoji("🤝"))
+            .WithButton("Refuser", $"plyn:tdec:{offer.Id}", ButtonStyle.Danger)
+            .Build();
+        // Public, pinging only the person being asked.
+        await RespondAsync(PlynlingText.TradeOffered(offer.FromId, offer.ToId, giveText, wantText, offer.ExpiresAt),
+            components: buttons, allowedMentions: new AllowedMentions { UserIds = new List<ulong> { user.Id } });
+    }
+
+    // Both sides of an offer as « N × emoji nom », for every line that names them.
+    public static (string Give, string Want) TradeSides(TradeOffer offer) =>
+        (PlynlingText.TradeSide(ItemCatalog.ByKey(offer.GiveKey)!, offer.GiveQty),
+         PlynlingText.TradeSide(ItemCatalog.ByKey(offer.WantKey)!, offer.WantQty));
+
+    [SlashCommand("sell", "Vendre des objets contre des cailloux")]
+    public async Task SellAsync(
+        [Summary("item", "Quel objet")] [Autocomplete(typeof(InventoryItemAutocompleteHandler))] string item,
+        [Summary("quantity", "Combien")] [MinValue(1)] [MaxValue(99)] int quantity = 1)
+    {
+        var (outcome, earned, balance) = await _inventory.SellAsync(Context.Guild.Id, Context.User.Id, item, quantity);
+        await RespondAsync(outcome switch
+        {
+            InventoryService.GiveOutcome.Given => PlynlingText.Sold(quantity, ItemCatalog.ByKey(item)!, earned, balance),
+            InventoryService.GiveOutcome.UnknownItem => PlynlingText.UnknownItem,
+            _ => PlynlingText.NotEnoughItems,
+        }, ephemeral: true);
+    }
+
     [SlashCommand("inventory", "Ton inventaire : garde-manger, objets trouvés, cailloux")]
     public async Task InventoryAsync()
     {

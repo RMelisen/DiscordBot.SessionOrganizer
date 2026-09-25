@@ -18,16 +18,99 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
     private readonly PlynlingPlayService _play;
     private readonly ResponsePicker _picker;
     private readonly PlynlingCooldowns _cooldowns;
+    private readonly TradeOffers _trades;
+    private readonly InventoryService _inventory;
 
     public PlynlingComponentHandler(PlynlingCareService care, PlynlingService plynlings, PlynlingPlayService play,
-        ResponsePicker picker, PlynlingCooldowns cooldowns)
+        ResponsePicker picker, PlynlingCooldowns cooldowns, TradeOffers trades, InventoryService inventory)
     {
+        _trades = trades;
+        _inventory = inventory;
         _cooldowns = cooldowns;
         _care = care;
         _plynlings = plynlings;
         _play = play;
         _picker = picker;
     }
+
+    // ---- /plynling trade: « Accepter » for the recipient only; « Refuser » for the recipient
+    // (declining) or the proposer (withdrawing). The card is rewritten with the result and loses
+    // its buttons; a refusal to anyone else is private and leaves it alone.
+    [ComponentInteraction("plyn:tacc:*", ignoreGroupNames: true)]
+    public async Task OnTradeAcceptAsync(string id)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var open = _trades.Get(id, now);
+        if (open is null)
+        {
+            await CloseTradeCardAsync(PlynlingText.TradeGone);
+            return;
+        }
+        if (Context.User.Id != open.ToId)
+        {
+            await RespondAsync(PlynlingText.TradeNotYours, ephemeral: true);
+            return;
+        }
+        var offer = _trades.Take(id, now);
+        if (offer is null)
+        {
+            await RespondAsync(PlynlingText.TradeGone, ephemeral: true);           // a double click
+            return;
+        }
+
+        var (give, want) = PlynlingModule.TradeSides(offer);
+        var (outcome, fromSets, toSets) = await _inventory.TradeAsync(offer, now);
+        switch (outcome)
+        {
+            case InventoryService.TradeOutcome.TargetLacks:
+                _trades.Restore(offer);
+                await RespondAsync(PlynlingText.TradeYouLack, ephemeral: true);
+                return;
+            case InventoryService.TradeOutcome.OfferorLacks:
+                await CloseTradeCardAsync(PlynlingText.TradeFailed(offer.FromId, give, want));
+                return;
+        }
+        var text = PlynlingText.TradeDone(offer.FromId, offer.ToId, give, want);
+        foreach (var set in toSets) text += "\n" + PlynlingText.SetCompleted(offer.ToId, set);
+        foreach (var set in fromSets) text += "\n" + PlynlingText.SetCompleted(offer.FromId, set);
+        await CloseTradeCardAsync(text);
+    }
+
+    [ComponentInteraction("plyn:tdec:*", ignoreGroupNames: true)]
+    public async Task OnTradeDeclineAsync(string id)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var open = _trades.Get(id, now);
+        if (open is null)
+        {
+            await CloseTradeCardAsync(PlynlingText.TradeGone);
+            return;
+        }
+        if (Context.User.Id != open.ToId && Context.User.Id != open.FromId)
+        {
+            await RespondAsync(PlynlingText.TradeNotYours, ephemeral: true);
+            return;
+        }
+        if (_trades.Take(id, now) is not { } offer)
+        {
+            await RespondAsync(PlynlingText.TradeGone, ephemeral: true);
+            return;
+        }
+        var (give, want) = PlynlingModule.TradeSides(offer);
+        await CloseTradeCardAsync(Context.User.Id == offer.FromId
+            ? PlynlingText.TradeCancelled(offer.FromId, give, want)
+            : PlynlingText.TradeDeclined(offer.FromId, offer.ToId, give, want));
+    }
+
+    // Rewrites the offer card without its buttons. Mentions stay inert: everyone concerned was
+    // pinged when the offer was made.
+    private Task CloseTradeCardAsync(string text) =>
+        ((SocketMessageComponent)Context.Interaction).UpdateAsync(m =>
+        {
+            m.Content = text;
+            m.Components = new ComponentBuilder().Build();
+            m.AllowedMentions = AllowedMentions.None;
+        });
 
     // ---- /plynling journal's pages: two verbs, one redraw, re-read on every click.
     [ComponentInteraction("plyn:jprev:*:*", ignoreGroupNames: true)]

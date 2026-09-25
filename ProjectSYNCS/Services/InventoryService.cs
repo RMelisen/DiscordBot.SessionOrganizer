@@ -21,6 +21,9 @@ public class InventoryService
         _db_context = db_context;
     }
 
+    // How many of an item someone holds, in this service's own context.
+    public Task<int> CountAsync(ulong guildId, ulong userId, string key) => CountAsync(_db_context, guildId, userId, key);
+
     public static async Task<InventoryItem?> FindAsync(AppDbContext db, ulong guildId, ulong userId, string key) =>
         db.InventoryItems.Local.FirstOrDefault(i => i.GuildId == guildId && i.UserId == userId && i.Key == key)
         ?? await db.InventoryItems.FirstOrDefaultAsync(i => i.GuildId == guildId && i.UserId == userId && i.Key == key);
@@ -100,6 +103,37 @@ public class InventoryService
         var completed = await AddAsync(_db_context, guildId, toId, key, quantity, now);
         await _db_context.SaveChangesAsync();
         return (GiveOutcome.Given, completed);
+    }
+
+    public enum TradeOutcome { Done, OfferorLacks, TargetLacks }
+
+    /// <summary>
+    /// An accepted offer: both sides are re-checked, then both items move in one save — or
+    /// nothing does. Returns the sets each side completed.
+    /// </summary>
+    public async Task<(TradeOutcome Outcome, List<CollectionSet> FromSets, List<CollectionSet> ToSets)> TradeAsync(TradeOffer offer, DateTimeOffset now)
+    {
+        var g = offer.GuildId;
+        if (await CountAsync(_db_context, g, offer.FromId, offer.GiveKey) < offer.GiveQty) return (TradeOutcome.OfferorLacks, new(), new());
+        if (await CountAsync(_db_context, g, offer.ToId, offer.WantKey) < offer.WantQty) return (TradeOutcome.TargetLacks, new(), new());
+        await TakeAsync(_db_context, g, offer.FromId, offer.GiveKey, offer.GiveQty);
+        await TakeAsync(_db_context, g, offer.ToId, offer.WantKey, offer.WantQty);
+        var toSets = await AddAsync(_db_context, g, offer.ToId, offer.GiveKey, offer.GiveQty, now);
+        var fromSets = await AddAsync(_db_context, g, offer.FromId, offer.WantKey, offer.WantQty, now);
+        await _db_context.SaveChangesAsync();
+        return (TradeOutcome.Done, fromSets, toSets);
+    }
+
+    /// <summary>/plynling sell: items for cailloux at ItemCatalog.SellPrice, in one save. The row stays (discovered).</summary>
+    public async Task<(GiveOutcome Outcome, long Earned, long Balance)> SellAsync(ulong guildId, ulong userId, string key, int quantity)
+    {
+        if (ItemCatalog.ByKey(key) is not { } item) return (GiveOutcome.UnknownItem, 0, 0);
+        if (!await TakeAsync(_db_context, guildId, userId, key, quantity)) return (GiveOutcome.NotEnough, 0, 0);
+        var earned = ItemCatalog.SellPrice(item.Rarity) * quantity;
+        var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, guildId, userId);
+        wallet.Balance += earned;
+        await _db_context.SaveChangesAsync();
+        return (GiveOutcome.Given, earned, wallet.Balance);
     }
 
     public Task<long> BalanceAsync(ulong guildId, ulong userId) =>

@@ -26,14 +26,16 @@ public partial class PlynlingModule : InteractionModuleBase<SocketInteractionCon
     private readonly ShameService _shame;
     private readonly PlynlingPlayService _play;
     private readonly InventoryService _inventory;
+    private readonly TradeOffers _trades;
     private readonly ILogger<PlynlingModule> _logger;
 
     public PlynlingModule(PlynlingService plynlings, PlynlingCareService care, ResponsePicker picker,
         PlynlingAnnouncer announcer, PlynlingCooldowns cooldowns, ShameService shame, PlynlingPlayService play,
-        InventoryService inventory, ILogger<PlynlingModule> logger)
+        InventoryService inventory, TradeOffers trades, ILogger<PlynlingModule> logger)
     {
         _play = play;
         _inventory = inventory;
+        _trades = trades;
         _plynlings = plynlings;
         _care = care;
         _picker = picker;
