@@ -1181,7 +1181,10 @@ the card in place with her line on it, instead of posting a second message under
 `PlynlingCareService` is shared by the slash commands and the buttons, so the two can
 never behave differently. The pet cooldown is an in-memory `CooldownGate` keyed on
 (petter, Plynling), released when the pet is refused; a restart resetting it costs nothing,
-since petting cannot keep a Plynling alive.
+since petting cannot keep a Plynling alive. « Caresser » is deliberately **never greyed out for a
+cooldown**: the card is one message everyone sees and the cooldown is per petter, so disabling
+it would lock out people who may still pet. The refusal says when instead — `CooldownGate.TryClaim`
+has an overload reporting the ready instant, rendered as a live `<t:…:R>`.
 
 **Plynlings sleep from 01:00 to 05:00 Paris time, and that is time of day, not a need.**
 `PlynlingLife.IsAsleep` reads the wall clock through `AppTime`, and `Mood` returns

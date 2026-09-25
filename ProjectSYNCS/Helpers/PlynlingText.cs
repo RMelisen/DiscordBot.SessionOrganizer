@@ -25,7 +25,10 @@ public static class PlynlingText
     public const string ResurrectBlocked = "Cette personne a déjà un Plynling vivant — un seul à la fois.";
     // Refused before the Plynling is even loaded, so it cannot know the gender: worded to
     // need none.
-    public const string PetCooldown = "Une caresse toutes les 4 heures, pas plus. Reviens un peu plus tard.";
+    // Refused before the Plynling is loaded, so worded to need no gender. The timestamp is
+    // Discord's own relative one (« dans 2 heures »), so it counts down in the client.
+    public static string PetCooldown(DateTimeOffset readyAt) =>
+        $"Une caresse toutes les 4 heures, pas plus. Prochaine caresse <t:{readyAt.ToUnixTimeSeconds()}:R>.";
 
     public static string NoneFor(ulong userId) => $"<@{userId}> n'a pas de Plynling.";
 

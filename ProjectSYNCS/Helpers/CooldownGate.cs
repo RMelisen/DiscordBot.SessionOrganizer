@@ -50,14 +50,26 @@ public sealed class CooldownGate<TKey> where TKey : notnull
     /// Claims <paramref name="key"/> if its cooldown has elapsed, and returns whether it
     /// did. A refused call changes nothing — it does not extend the existing cooldown.
     /// </summary>
-    public bool TryClaim(TKey key)
+    public bool TryClaim(TKey key) => TryClaim(key, out _);
+
+    /// <summary>
+    /// The same claim, also reporting when <paramref name="key"/> can next be claimed — now
+    /// plus the cooldown on success, the end of the running cooldown on a refusal — so a
+    /// refusal can say exactly when to come back. One lock, so the answer matches the claim.
+    /// </summary>
+    public bool TryClaim(TKey key, out DateTimeOffset readyAt)
     {
         lock (_lock)
         {
             var now = DateTimeOffset.UtcNow;
-            if (_last.TryGetValue(key, out var last) && now - last < _cooldown) return false;
+            if (_last.TryGetValue(key, out var last) && now - last < _cooldown)
+            {
+                readyAt = last + _cooldown;
+                return false;
+            }
 
             _last[key] = now;
+            readyAt = now + _cooldown;
             ForgetStale(now);
             return true;
         }

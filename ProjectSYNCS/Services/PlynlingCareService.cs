@@ -28,7 +28,7 @@ public class PlynlingCareService
     public async Task<CareReply> PetAsync(int plynlingId, ulong actorId, ulong channelId, DateTimeOffset now)
     {
         var key = (actorId, plynlingId);
-        if (!_cooldowns.Pet.TryClaim(key)) return new CareReply(null, PlynlingText.PetCooldown);
+        if (!_cooldowns.Pet.TryClaim(key, out var readyAt)) return new CareReply(null, PlynlingText.PetCooldown(readyAt));
 
         var (outcome, plynling, badges) = await _plynlings.PetAsync(plynlingId, now);
         if (outcome != CareOutcome.Done || plynling is null)
