@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using ProjectSYNCS.Commands;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Services;
 
@@ -12,10 +13,34 @@ namespace ProjectSYNCS.Interactions.Components;
 public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly PlynlingCareService _care;
+    private readonly PlynlingService _plynlings;
 
-    public PlynlingComponentHandler(PlynlingCareService care)
+    public PlynlingComponentHandler(PlynlingCareService care, PlynlingService plynlings)
     {
         _care = care;
+        _plynlings = plynlings;
+    }
+
+    // /plynling list's pages. Two verbs for the two arrows; both land here and redraw the
+    // list in place, re-read so a page always shows who is alive now.
+    [ComponentInteraction("plyn:lprev:*", ignoreGroupNames: true)]
+    public Task OnListPrevAsync(string pageStr) => ShowListAsync(pageStr);
+
+    [ComponentInteraction("plyn:lnext:*", ignoreGroupNames: true)]
+    public Task OnListNextAsync(string pageStr) => ShowListAsync(pageStr);
+
+    private async Task ShowListAsync(string pageStr)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var living = await _plynlings.GetLivingAsync(Context.Guild.Id, now);
+        var pages = PlynlingModule.ListPages(living.Count);
+        var page = Math.Clamp(int.TryParse(pageStr, out var p) ? p : 0, 0, pages - 1);
+        await ((SocketMessageComponent)Context.Interaction).UpdateAsync(m =>
+        {
+            m.Embed = PlynlingModule.BuildListEmbed(living, page, now);
+            m.Components = PlynlingModule.BuildListButtons(page, pages);
+            m.AllowedMentions = AllowedMentions.None;
+        });
     }
 
     [ComponentInteraction("plyn:pet:*", ignoreGroupNames: true)]

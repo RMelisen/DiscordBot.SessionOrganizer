@@ -210,6 +210,18 @@ public class PlynlingService
         return await query.ToListAsync();
     }
 
+    // /plynling list: every living Plynling in the guild, settled first, so one that starved
+    // since the last sweep is not listed as alive.
+    public async Task<List<Plynling>> GetLivingAsync(ulong guildId, DateTimeOffset now)
+    {
+        var living = await _db_context.Plynlings.Where(x => x.GuildId == guildId && x.DiedAt == null).ToListAsync();
+        var changed = false;
+        foreach (var plynling in living)
+            changed |= PlynlingLife.Settle(plynling, now);
+        if (changed) await _db_context.SaveChangesAsync();
+        return living.Where(x => x.DiedAt is null).ToList();
+    }
+
     // Every Plynling the hourly sweep has to look at: the living, and deaths not yet announced.
     public async Task<List<Plynling>> GetSweepBatchAsync() =>
         await _db_context.Plynlings.Where(x => x.DiedAt == null || !x.DeathAnnounced).ToListAsync();

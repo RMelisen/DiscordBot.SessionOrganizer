@@ -124,6 +124,15 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         await _announcer.AnnounceAbandonAsync(gone, now);
     }
 
+    [SlashCommand("list", "Tous les Plynlings vivants du serveur, du plus vieux au plus jeune")]
+    public async Task ListAsync()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var living = await _plynlings.GetLivingAsync(Context.Guild.Id, now);
+        await RespondAsync(embed: BuildListEmbed(living, 0, now),
+            components: BuildListButtons(0, ListPages(living.Count)), allowedMentions: AllowedMentions.None);
+    }
+
     [SlashCommand("view", "Voir un Plynling (le tien par défaut)")]
     public async Task ViewAsync(
         [Summary("user", "À qui est le Plynling (par défaut : toi)")] IUser? user = null)
@@ -365,6 +374,56 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
     /// "Caresser" button and a "Nourrir…" select.
     /// </summary>
     /// <remarks>
+    public const int ListPageSize = 10;
+
+    public static int ListPages(int count) => Math.Max(1, (count + ListPageSize - 1) / ListPageSize);
+
+    /// <summary>
+    /// One page of /plynling list: the living, oldest first (ties on id, so the order is
+    /// stable across clicks). An embed rather than Components V2 — mentions in an embed never
+    /// ping, and a list of names wants no avatars. Static and Context-free, like the card,
+    /// so it is checkable without a gateway. A page past the end shows the last one.
+    /// </summary>
+    public static Embed BuildListEmbed(IReadOnlyList<Plynling> living, int page, DateTimeOffset now)
+    {
+        var pages = ListPages(living.Count);
+        page = Math.Clamp(page, 0, pages - 1);
+        var ordered = living
+            .OrderByDescending(p => PlynlingLife.Age(p, now))
+            .ThenBy(p => p.Id)
+            .Skip(page * ListPageSize)
+            .Take(ListPageSize)
+            .Select(p =>
+            {
+                var info = PlynlingCatalog.Info(p.Species);
+                var status = PlynlingLife.IsFrozen(p) ? " ❄️" : PlynlingLife.IsAsleep(now) ? " 💤" : "";
+                var age = LevelCardUi.Duration((long)PlynlingLife.Age(p, now).TotalMinutes);
+                return $"**{PlynlingCardUi.SafeName(p.Name)}** {p.Gender.Symbol()} · {info.Name} " +
+                       $"({PlynlingCardUi.StageLabel(PlynlingLife.Stage(p, now), p.Gender)}) — <@{p.OwnerId}> · {age}{status}";
+            })
+            .ToList();
+
+        return new EmbedBuilder()
+            .WithTitle("🌱 Les Plynlings du serveur")
+            .WithColor(new Color(0x62AA58))
+            .WithDescription(ordered.Count == 0
+                ? "Aucun Plynling vivant pour l'instant. `/plynling adopt` pour commencer !"
+                : string.Join("\n", ordered))
+            .WithFooter($"Page {page + 1}/{pages} · {living.Count} Plynling{(living.Count > 1 ? "s" : "")}")
+            .Build();
+    }
+
+    // ◀ ▶ carry *different* verbs (lprev / lnext): with one shared verb, a disabled ◀ on the
+    // first page and the ▶ of another page could produce the same id, which Discord rejects.
+    public static MessageComponent BuildListButtons(int page, int pages)
+    {
+        page = Math.Clamp(page, 0, pages - 1);
+        return new ComponentBuilder()
+            .WithButton("◀", $"plyn:lprev:{Math.Max(0, page - 1)}", ButtonStyle.Secondary, disabled: page == 0)
+            .WithButton("▶", $"plyn:lnext:{Math.Min(pages - 1, page + 1)}", ButtonStyle.Secondary, disabled: page >= pages - 1)
+            .Build();
+    }
+
     /// Static and Context-free so its component budget is checkable without a gateway.
     /// The two rows use different verbs (<c>plyn:pet</c>, <c>plyn:feed</c>): duplicated
     /// custom ids are rejected outright by Discord, disabled components included.
