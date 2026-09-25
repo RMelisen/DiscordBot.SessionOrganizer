@@ -112,14 +112,26 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             return;
         }
 
-        var line = string.Format(_picker.Pick(Context.Channel.Id, BotResponses.PlynlingVisitMeetLines.For(pair.Visitor.Gender)),
-            PlynlingCardUi.SafeName(pair.Visitor.Name), PlynlingCardUi.SafeName(pair.Host.Name));
+        var a = PlynlingCardUi.SafeName(pair.Visitor.Name);
+        var b = PlynlingCardUi.SafeName(pair.Host.Name);
+        var line = pair.GoodScene
+            ? string.Format(_picker.Pick(Context.Channel.Id, BotResponses.PlynlingVisitMeetLines.For(pair.Visitor.Gender)), a, b)
+            : string.Format(_picker.Pick(Context.Channel.Id, BotResponses.PlynlingVisitSquabbleLines), a, b);
+        if (pair.Confession == Confession.Accepted) line += "\n" + PlynlingText.ConfessionAccepted(a, b);
+        else if (pair.Confession == Confession.Refused) line += "\n" + PlynlingText.ConfessionRefused(a, b);
+        if (pair.After != pair.Before && pair.Confession != Confession.Accepted
+            && !(pair.Before == PlynlingBond.BestFriends && pair.After == PlynlingBond.Friends))   // a quiet drift
+        {
+            line += "\n" + (pair.Before == PlynlingBond.Lovers
+                ? PlynlingText.BrokeUp(a, b)
+                : PlynlingBonds.ChangeLine(pair.After, a, pair.Visitor.Gender, b, pair.Host.Gender));
+        }
         foreach (var (who, badges) in new[] { (pair.Visitor, pair.VisitorBadges), (pair.Host, pair.HostBadges) })
             if (badges.Count > 0)
                 line += "\n**" + PlynlingCardUi.SafeName(who.Name) + "** · " + PlynlingBadges.NewBadgeLines(badges, who.Gender);
         await component.UpdateAsync(m =>
         {
-            m.Components = PlynlingPlayCards.BuildMeeting(pair.Visitor, pair.Host, line, now);
+            m.Components = PlynlingPlayCards.BuildMeeting(pair.Visitor, pair.Host, line, now, pair.Happiness);
             m.Flags = MessageFlags.ComponentsV2;
             m.AllowedMentions = AllowedMentions.None;
         });

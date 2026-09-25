@@ -447,6 +447,16 @@ internal static class BotResponses
             "**{0}** est repartie le cœur léger après son goûter chez **{1}**.",
         });
 
+    // A visit gone wrong — a squabble. {0} = the visitor, {1} = the host. Names only, so no
+    // agreement: one flat pool.
+    public static readonly string[] PlynlingVisitSquabbleLines =
+    {
+        "💢 **{0}** et **{1}** se disputent pour un caillou.",
+        "😤 **{1}** trouve que **{0}** parle beaucoup trop fort.",
+        "💢 **{0}** et **{1}** ne sont pas d'accord sur le meilleur repas.",
+        "🙄 **{0}** a marché sur les pieds de **{1}**. Ambiance.",
+    };
+
     // Posted publicly when an owner abandons theirs (/plynling abandon), with its sad
     // picture. {0} = name, {1} = owner mention (sent with pings off). Meant to sting a little:
     // the announcement is the shame, alongside L'Indigne on the wall.

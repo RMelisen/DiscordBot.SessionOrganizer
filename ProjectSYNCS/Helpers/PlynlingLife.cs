@@ -259,11 +259,29 @@ public static class PlynlingLife
         if (won) p.PlaysWon++;
     }
 
-    public static void Visit(Plynling p, DateTimeOffset now)
+    public static void Visit(Plynling p, DateTimeOffset now) => Visit(p, now, VisitAmount);
+
+    // A visit's happiness depends on the bond it ends on (PlynlingBonds.VisitHappiness) —
+    // negative between enemies.
+    public static void Visit(Plynling p, DateTimeOffset now, double happiness)
     {
         Rebase(p, now);
-        p.Happiness = Clamp(p.Happiness + VisitAmount);
+        p.Happiness = Clamp(p.Happiness + happiness);
         p.Visits++;
+    }
+
+    // A refused confession's sting.
+    public static void Sadden(Plynling p, DateTimeOffset now, double amount)
+    {
+        Rebase(p, now);
+        p.Happiness = Clamp(p.Happiness - amount);
+    }
+
+    // Losing a best friend or a partner: its happiness falls to the grief ceiling at most.
+    public static void Grieve(Plynling p, DateTimeOffset now)
+    {
+        Rebase(p, now);
+        p.Happiness = Math.Min(p.Happiness, PlynlingBonds.GriefCeiling);
     }
 
     public static void Pet(Plynling p, DateTimeOffset now)

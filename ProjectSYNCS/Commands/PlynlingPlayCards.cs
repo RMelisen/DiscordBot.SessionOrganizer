@@ -80,10 +80,11 @@ public static class PlynlingPlayCards
         new ComponentBuilderV2().AddComponent(new ContainerBuilder().AddComponent(new TextDisplayBuilder(text))).Build();
 
     /// <summary>The visit: both Plynlings side by side, her line, and what it gave them.</summary>
-    public static MessageComponent BuildMeeting(Plynling visitor, Plynling host, string line, DateTimeOffset now)
+    public static MessageComponent BuildMeeting(Plynling visitor, Plynling host, string line, DateTimeOffset now, double happinessShare)
     {
         string Sprite(Plynling p) => PlynlingArt.Sprite(p.Species, PlynlingLife.Stage(p, now), PlynlingLife.Mood(p, now));
-        var happiness = (int)Math.Round(PlynlingLife.VisitAmount * 100);
+        var happiness = (int)Math.Round(Math.Abs(happinessShare) * 100);
+        var sign = happinessShare < 0 ? "−" : "+";
         return new ComponentBuilderV2()
             .AddComponent(new ContainerBuilder()
                 .WithAccentColor(new Color(PlynlingCatalog.Info(host.Species).Accent))
@@ -92,7 +93,7 @@ public static class PlynlingPlayCards
                     .AddItem(Sprite(visitor), PlynlingCardUi.SafeName(visitor.Name), false)
                     .AddItem(Sprite(host), PlynlingCardUi.SafeName(host.Name), false))
                 .AddComponent(new TextDisplayBuilder(
-                    $"-# +{happiness} % de bonheur pour **{PlynlingCardUi.SafeName(visitor.Name)}** et **{PlynlingCardUi.SafeName(host.Name)}**")))
+                    $"-# {sign}{happiness} % de bonheur pour **{PlynlingCardUi.SafeName(visitor.Name)}** et **{PlynlingCardUi.SafeName(host.Name)}**")))
             .Build();
     }
 }

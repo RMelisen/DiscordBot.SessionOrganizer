@@ -53,6 +53,11 @@ public static class PlynlingText
         $"{g.Agree("Il", "Elle")} a déjà joué il y a moins d'une heure. Laisse-{g.Agree("le", "la")} souffler un peu !";
 
     public const string GameOver = "Cette partie est terminée.";
+
+    // A visit's confession, the visitor declaring itself. Names are already sanitised.
+    public static string ConfessionAccepted(string a, string b) => $"💞 **{a}** a déclaré sa flamme à **{b}**… et c'est oui !";
+    public static string ConfessionRefused(string a, string b) => $"💔 **{a}** a déclaré sa flamme à **{b}**… mais c'est non.";
+    public static string BrokeUp(string a, string b) => $"💔 **{a}** et **{b}** se sont séparés.";
     public const string VisitSelf = "Ton Plynling ne peut pas se rendre visite à lui-même !";
     public const string NotYourInvite = "Cette invitation ne t'est pas adressée.";
     public const string VisitorGone = "Le visiteur n'est plus là…";

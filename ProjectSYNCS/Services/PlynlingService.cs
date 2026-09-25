@@ -13,6 +13,13 @@ public enum ThawOutcome { Thawed, NoPlynling, Dead, NotFrozen, StaffOnly }
 
 public enum ResurrectOutcome { Resurrected, NoGrave, AlreadyHasOne }
 
+// What an accepted visit did: the scene, the bond before and after, any confession, and the
+// happiness both Plynlings got (negative between enemies). Badges per Plynling.
+public sealed record VisitOutcome(
+    Plynling Visitor, Plynling Host,
+    IReadOnlyList<BadgeInfo> VisitorBadges, IReadOnlyList<BadgeInfo> HostBadges,
+    bool GoodScene, PlynlingBond Before, PlynlingBond After, Confession Confession, double Happiness);
+
 public sealed record FeedResult(CareOutcome Outcome, Plynling? Plynling, long Price, long Balance,
     IReadOnlyList<BadgeInfo>? Badges = null, double MealFactor = 1.0);
 
@@ -183,25 +190,139 @@ public class PlynlingService
         return (plynling, wallet.Balance, badges);
     }
 
-    // A /plynling visit accepted: both Plynlings cheered and counted, in one save. Null when
-    // either can no longer take part.
-    public async Task<(Plynling Visitor, Plynling Host, IReadOnlyList<BadgeInfo> VisitorBadges, IReadOnlyList<BadgeInfo> HostBadges)?> VisitAsync(
-        int visitorId, int hostId, DateTimeOffset now)
+    // A /plynling visit accepted: the scene plays out on their relationship — affinity, bond, a
+    // confession perhaps — and both are cheered (or not) by what they are to each other, all in
+    // one save. Null when either can no longer take part.
+    public async Task<VisitOutcome?> VisitAsync(int visitorId, int hostId, DateTimeOffset now, Random? rng = null)
     {
+        rng ??= Random.Shared;
         var visitor = await GetByIdAsync(visitorId, now);
         var host = await GetByIdAsync(hostId, now);
         if (visitor is null || host is null || visitor.Id == host.Id) return null;
         if (visitor.DiedAt is not null || host.DiedAt is not null) return null;
         if (visitor.FrozenAt is not null || host.FrozenAt is not null) return null;
 
-        PlynlingLife.Visit(visitor, now);
-        PlynlingLife.Visit(host, now);
+        var (lo, hi) = visitor.Id < host.Id ? (visitor.Id, host.Id) : (host.Id, visitor.Id);
+        var relation = await _db_context.PlynlingRelations.FirstOrDefaultAsync(r => r.PlynlingAId == lo && r.PlynlingBId == hi);
+        if (relation is null)
+        {
+            relation = new PlynlingRelation { PlynlingAId = lo, PlynlingBId = hi, Bond = PlynlingBond.Acquaintances, Since = now };
+            _db_context.PlynlingRelations.Add(relation);
+        }
+
+        var before = relation.Bond;
+        var compatibility = PlynlingBonds.Compatibility(lo, hi);
+        var (good, delta) = PlynlingBonds.RollScene(compatibility, before, rng);
+        relation.Affinity = Math.Clamp(relation.Affinity + delta, -100, 100);
+        relation.Meetings++;
+
+        var confession = Confession.None;
+        if (good && PlynlingBonds.CanConfess(PlynlingBonds.BondFor(relation.Affinity, before), relation.Affinity, visitor, host,
+                await InCoupleAsync(visitor.Id, host.Id) || await InCoupleAsync(host.Id, visitor.Id)))
+            confession = PlynlingBonds.RollConfession(compatibility, rng);
+        if (confession == Confession.Refused)
+            relation.Affinity = Math.Clamp(relation.Affinity - PlynlingBonds.HeartbreakLoss, -100, 100);
+
+        var after = confession == Confession.Accepted ? PlynlingBond.Lovers : PlynlingBonds.BondFor(relation.Affinity, before);
+        if (after != before)
+        {
+            relation.Bond = after;
+            relation.Since = now;
+        }
+
+        var happiness = PlynlingBonds.VisitHappiness(after);
+        PlynlingLife.Visit(visitor, now, happiness);
+        PlynlingLife.Visit(host, now, happiness);
         await AddMomentAsync(visitor, JournalKind.Visited, host.Name, now);
         await AddMomentAsync(host, JournalKind.Hosted, visitor.Name, now);
-        var visitorBadges = await AwardAsync(visitor, now);
-        var hostBadges = await AwardAsync(host, now);
+        if (confession == Confession.Refused)
+        {
+            foreach (var (p, other) in new[] { (visitor, host), (host, visitor) })
+            {
+                PlynlingLife.Sadden(p, now, PlynlingBonds.HeartbreakSadness);
+                await AddMomentAsync(p, JournalKind.Heartbroken, other.Name, now);
+            }
+        }
+
+        var evt = BadgeEvent.None;
+        if (after != before && BondMoment(before, after) is { } kind)
+        {
+            await AddMomentAsync(visitor, kind, host.Name, now);
+            await AddMomentAsync(host, kind, visitor.Name, now);
+            evt = after switch
+            {
+                PlynlingBond.Friends => BadgeEvent.BecameFriends,
+                PlynlingBond.BestFriends => BadgeEvent.BecameBestFriends,
+                PlynlingBond.Lovers => BadgeEvent.BecameLovers,
+                _ => BadgeEvent.None,
+            };
+            if (Closeness(after) > Closeness(before)) evt = BadgeEvent.None;     // drifting apart earns nothing
+        }
+        var visitorBadges = await AwardAsync(visitor, now, evt);
+        var hostBadges = await AwardAsync(host, now, evt);
         await _db_context.SaveChangesAsync();
-        return (visitor, host, visitorBadges, hostBadges);
+        return new VisitOutcome(visitor, host, visitorBadges, hostBadges, good, before, after, confession, happiness);
+    }
+
+    private static int Closeness(PlynlingBond bond) => PlynlingBonds.Closeness(bond);
+
+    // The journal moment a change of bond writes — getting closer, falling out, breaking up —
+    // or none for a quiet drift (best friends back to friends, friends back to acquaintances).
+    private static JournalKind? BondMoment(PlynlingBond before, PlynlingBond after) =>
+        before == PlynlingBond.Lovers ? JournalKind.BrokeUp
+        : after switch
+        {
+            PlynlingBond.Lovers => JournalKind.BecameLovers,
+            PlynlingBond.BestFriends when Closeness(after) < Closeness(before) => JournalKind.BecameBestFriends,
+            PlynlingBond.Friends when Closeness(after) < Closeness(before) => JournalKind.BecameFriends,
+            PlynlingBond.Rivals when before != PlynlingBond.Enemies => JournalKind.BecameRivals,
+            PlynlingBond.Enemies => JournalKind.BecameEnemies,
+            _ => null,
+        };
+
+    // Whether this Plynling has a living partner other than `except`. A partner who died no longer
+    // counts, or the survivor could never love again.
+    private async Task<bool> InCoupleAsync(int plynlingId, int except)
+    {
+        var partners = await _db_context.PlynlingRelations
+            .Where(r => r.Bond == PlynlingBond.Lovers && (r.PlynlingAId == plynlingId || r.PlynlingBId == plynlingId))
+            .Select(r => r.PlynlingAId == plynlingId ? r.PlynlingBId : r.PlynlingAId)
+            .ToListAsync();
+        partners.Remove(except);
+        return partners.Count > 0
+               && await _db_context.Plynlings.AnyAsync(p => partners.Contains(p.Id) && p.DiedAt == null);
+    }
+
+    // Its best friends and partner, living, grieve it: happiness down to the grief ceiling, and a
+    // moment in their journal. Not saved — the caller's save carries it.
+    private async Task GrieveForAsync(Plynling gone, DateTimeOffset now)
+    {
+        var close = await _db_context.PlynlingRelations
+            .Where(r => (r.PlynlingAId == gone.Id || r.PlynlingBId == gone.Id)
+                        && (r.Bond == PlynlingBond.BestFriends || r.Bond == PlynlingBond.Lovers))
+            .Select(r => r.PlynlingAId == gone.Id ? r.PlynlingBId : r.PlynlingAId)
+            .ToListAsync();
+        foreach (var id in close)
+        {
+            var mourner = await GetByIdAsync(id, now);
+            if (mourner is null || mourner.DiedAt is not null) continue;
+            PlynlingLife.Grieve(mourner, now);
+            await AddMomentAsync(mourner, JournalKind.Grieving, gone.Name, now);
+        }
+    }
+
+    // /plynling relations and the journal: everyone it has met, with the other Plynling.
+    public async Task<List<(PlynlingRelation Relation, Plynling Other)>> GetRelationsAsync(int plynlingId)
+    {
+        var rows = await _db_context.PlynlingRelations
+            .Where(r => r.PlynlingAId == plynlingId || r.PlynlingBId == plynlingId)
+            .ToListAsync();
+        var ids = rows.Select(r => r.PlynlingAId == plynlingId ? r.PlynlingBId : r.PlynlingAId).ToList();
+        var others = await _db_context.Plynlings.Where(p => ids.Contains(p.Id)).ToDictionaryAsync(p => p.Id);
+        return rows
+            .Where(r => others.ContainsKey(r.PlynlingAId == plynlingId ? r.PlynlingBId : r.PlynlingAId))
+            .Select(r => (r, others[r.PlynlingAId == plynlingId ? r.PlynlingBId : r.PlynlingAId]))
+            .ToList();
     }
 
     // /plynling abandon: the owner's living Plynling leaves for good — the row is deleted,
@@ -212,6 +333,7 @@ public class PlynlingService
         var plynling = await GetByIdAsync(plynlingId, now);
         if (plynling is null || plynling.OwnerId != ownerId || plynling.DiedAt is not null) return null;
 
+        await GrieveForAsync(plynling, now);          // before the relations go with it
         _db_context.Plynlings.Remove(plynling);
         await _db_context.SaveChangesAsync();
         return plynling;
@@ -337,8 +459,13 @@ public class PlynlingService
     }
 
     // The sweep, announcing a death: the journal's last moment, dated when it died. Not saved.
-    public Task JournalDeathAsync(Plynling p) =>
-        p.DiedAt is { } died ? AddMomentAsync(p, JournalKind.Died, null, died) : Task.CompletedTask;
+    // Its best friends and partner grieve it too.
+    public async Task JournalDeathAsync(Plynling p)
+    {
+        if (p.DiedAt is not { } died) return;
+        await AddMomentAsync(p, JournalKind.Died, null, died);
+        await GrieveForAsync(p, died);
+    }
 
     // ---- badges and the journal. Neither helper saves: what they add rides the caller's save,
     // so an action, its moments, its badges and their cailloux land together or not at all.
