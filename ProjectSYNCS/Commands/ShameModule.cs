@@ -190,14 +190,14 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     // Components V2, and the budget is the thing to watch. Discord allows 40 per message
-    // counting the whole tree; this uses **26**:
+    // counting the whole tree; this uses **31**:
     //
     //   container 1 + heading 1
-    //   + 4 titles x 5 (separator, Section, its TextDisplay, the avatar Thumbnail,
-    //     and one TextDisplay for the runners-up)  = 20
+    //   + 5 titles x 5 (separator, Section, its TextDisplay, the avatar Thumbnail,
+    //     and one TextDisplay for the runners-up)  = 25
     //   + action row 1 + its three filter buttons 3
     //
-    // So there is room for two more titles and no more. Only the *holder* wears an
+    // So there is room for one more title and no more. Only the *holder* wears an
     // avatar — giving every ranked row one costs three components each and would blow
     // the budget immediately, for the sake of putting a face on people who did not win
     // the title. **Re-do this sum before adding anything here**, because the failure is
@@ -219,6 +219,8 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
             wall.Perfides, BotResponses.ShameEmptyPerfide, "trahison", "trahisons");
         AddTitle(container, $"{Emotes.VeryAngry} L'Hystérique",
             wall.Hysteriques, BotResponses.ShameEmptyHysterique, "cri", "cris");
+        AddTitle(container, "💔 L'Indigne",
+            wall.Indignes, BotResponses.ShameEmptyIndigne, "abandon", "abandons");
 
         return new ComponentBuilderV2()
             .AddComponent(container)

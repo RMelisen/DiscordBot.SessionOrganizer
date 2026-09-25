@@ -48,4 +48,8 @@ public class ShameRecord
     // uncapped like MeanHits: shouting arrives in bursts, and one bad evening would
     // otherwise own the title permanently.
     public long ShoutHits { get; set; }
+
+    // Plynlings this person abandoned through /plynling abandon. One per abandonment and
+    // uncapped: it is rare and deliberate — the owner has to type the name to do it.
+    public long AbandonHits { get; set; }
 }

@@ -11,6 +11,14 @@ public static class PlynlingCardUi
     // neutralised here, and every send is AllowedMentions.None on top.
     public static string SafeName(string name) => Format.Sanitize(name);
 
+    // The abandon confirmation: the typed name must be the Plynling's, ignoring case, the
+    // spaces around it and how many spaces sit between its words — but not a missing space.
+    public static bool NamesMatch(string typed, string name) =>
+        string.Equals(Normalize(typed), Normalize(name), StringComparison.OrdinalIgnoreCase);
+
+    private static string Normalize(string s) =>
+        string.Join(' ', s.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
     public static string Percent(double value) => $"{(int)Math.Round(value * 100)} %";
 
     public static string Bar(double value) => LevelCardUi.ProgressBar((long)Math.Round(value * 1000), 1000);

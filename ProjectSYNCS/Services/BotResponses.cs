@@ -60,6 +60,7 @@ namespace ProjectSYNCS.Services;
 //     XpLevelUpLines ........... /level  |  YesLines · NoLines ..... /yesno
 //     ShameVoteLines · ShameSelfVoteLines ............ /shame
 //     ShameEmptyMalfaisant · ShameEmptyBanni · ShameEmptyPerfide · ShameEmptyHysterique
+//     ShameEmptyIndigne
 //     GiveawayDrawLines · GiveawayEmptyLines ......... /giveaway
 //     WorkLines ................ /work
 //
@@ -72,7 +73,7 @@ namespace ProjectSYNCS.Services;
 //   Plynlings — every pool is a GenderedLines (M/F halves), picked with .For(p.Gender)
 //     PlynlingAdoptLines · PlynlingAdoptRareLines ... a new Plynling
 //     PlynlingFeedLines · PlynlingPetLines .......... shown on the card
-//     PlynlingDeathLines · PlynlingResurrectLines ... public, game channel
+//     PlynlingDeathLines · PlynlingResurrectLines · PlynlingAbandonLines ... public, game channel
 //     PlynlingWarningLines ..... the ~3h DM before death
 //     PlynlingStaffFreezeDms · PlynlingStaffThawDms · PlynlingStaffRenameDms
 //
@@ -381,6 +382,23 @@ internal static class BotResponses
             "🪦 Une Plynling de moins sur cette terre… **{0}** ({1}) nous a quittés après {2}. On lui a dressé {3}.",
             "🪦 Minute de silence pour **{0}**, compagne de {1} pendant {2}. Elle dort sous {3}.",
             "🪦 **{0}** n'a pas survécu à la faim. {2} de vie, et maintenant {3}. {1}, elle t'attendait…",
+        });
+
+    // Posted publicly when an owner abandons theirs (/plynling abandon), with its sad
+    // picture. {0} = name, {1} = owner mention (sent with pings off). Meant to sting a little:
+    // the announcement is the shame, alongside L'Indigne on the wall.
+    public static readonly GenderedLines PlynlingAbandonLines = new(
+        M: new[]
+        {
+            "💔 {1} a abandonné **{0}**. Il est parti seul dans la forêt, sans se retourner…",
+            "💔 **{0}** a été abandonné par {1}. Quelque part, un petit Plynling attend un retour qui ne viendra pas.",
+            "💔 {1} a laissé **{0}** au bord du chemin. Honte. Honte. Honte. 🔔",
+        },
+        F: new[]
+        {
+            "💔 {1} a abandonné **{0}**. Elle est partie seule dans la forêt, sans se retourner…",
+            "💔 **{0}** a été abandonnée par {1}. Quelque part, une petite Plynling attend un retour qui ne viendra pas.",
+            "💔 {1} a laissé **{0}** au bord du chemin. Honte. Honte. Honte. 🔔",
         });
 
     // Posted publicly when staff bring one back. {0} = name, {1} = owner mention.
@@ -1207,6 +1225,15 @@ internal static class BotResponses
         $"Pas une seule majuscule de trop. Vous progressez {Emotes.CatHeart}",
         "Volume sonore : acceptable. Ça change ദ്ദി◝ ⩊ ◜.ᐟ",
         "Personne n'a crié. Soit vous êtes posés, soit vous complotez (ᵕ • ᴗ •)",
+    };
+
+    // The same, for "L'Indigne" — nobody abandoned a Plynling over the selected window.
+    public static readonly string[] ShameEmptyIndigne =
+    {
+        "Personne n'a abandonné son Plynling. Vous êtes de bonnes personnes ♡",
+        "Aucun abandon. Tous les Plynlings dorment tranquilles ✨",
+        "Pas un seul cœur de pierre sur cette période (ᵕ • ᴗ •)",
+        "Personne n'a laissé tomber le sien. Je suis fière de vous ദ്ദി◝ ⩊ ◜.ᐟ",
     };
 
     // Announcing a giveaway's winners. {0} = the winner mentions (already joined, and

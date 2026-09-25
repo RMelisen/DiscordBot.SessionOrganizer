@@ -147,6 +147,19 @@ public class PlynlingService
 
     // Reaches the shown Plynling — living, or else the latest grave — because a grave
     // shows its name publicly too, and an offensive one needs fixing there as well.
+    // /plynling abandon: the owner's living Plynling leaves for good — the row is deleted,
+    // so it never reaches the graveyard and cannot be resurrected. Returns what was removed
+    // (for the announcement), or null when there was nothing of theirs to abandon.
+    public async Task<Plynling?> AbandonAsync(int plynlingId, ulong ownerId, DateTimeOffset now)
+    {
+        var plynling = await GetByIdAsync(plynlingId, now);
+        if (plynling is null || plynling.OwnerId != ownerId || plynling.DiedAt is not null) return null;
+
+        _db_context.Plynlings.Remove(plynling);
+        await _db_context.SaveChangesAsync();
+        return plynling;
+    }
+
     public async Task<(Plynling? Plynling, string OldName)> RenameAsync(
         ulong guildId, ulong ownerId, string name, DateTimeOffset now)
     {

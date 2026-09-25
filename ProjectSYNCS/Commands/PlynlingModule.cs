@@ -1,6 +1,8 @@
 using Discord;
 using Discord.Interactions;
+using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Helpers;
+using ProjectSYNCS.Interactions.Modals;
 using ProjectSYNCS.Models;
 using ProjectSYNCS.Services;
 
@@ -20,13 +22,20 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
     private readonly PlynlingCareService _care;
     private readonly ResponsePicker _picker;
     private readonly PlynlingAnnouncer _announcer;
+    private readonly PlynlingCooldowns _cooldowns;
+    private readonly ShameService _shame;
+    private readonly ILogger<PlynlingModule> _logger;
 
-    public PlynlingModule(PlynlingService plynlings, PlynlingCareService care, ResponsePicker picker, PlynlingAnnouncer announcer)
+    public PlynlingModule(PlynlingService plynlings, PlynlingCareService care, ResponsePicker picker,
+        PlynlingAnnouncer announcer, PlynlingCooldowns cooldowns, ShameService shame, ILogger<PlynlingModule> logger)
     {
         _plynlings = plynlings;
         _care = care;
         _picker = picker;
         _announcer = announcer;
+        _cooldowns = cooldowns;
+        _shame = shame;
+        _logger = logger;
     }
 
     [SlashCommand("adopt", "Adopter un Plynling — gratuit, mais il faudra s'en occuper")]
@@ -41,6 +50,11 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         var now = DateTimeOffset.UtcNow;
+        if (_cooldowns.AdoptBlockedUntil(Context.Guild.Id, Context.User.Id, now) is { } ready)
+        {
+            await RespondAsync(PlynlingText.AdoptCooldown(ready), ephemeral: true);
+            return;
+        }
         // Only mushrooms are adoptable for now: the sunflower species exist in the catalog but
         // stay dormant until families ship (the plan's deferred Task 3 adds the family: option).
         var species = PlynlingCatalog.RollSpecies(PlynlingFamily.Mushroom);
@@ -56,6 +70,58 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         var line = string.Format(_picker.Pick(Context.Channel.Id, pool),
             PlynlingCardUi.SafeName(plynling.Name), info.Name, PlynlingCatalog.RarityLabel(info.Rarity));
         await RespondCardAsync(plynling, now, line);
+    }
+
+    // A command rather than a card button, and confirmed by typing the name: nobody should
+    // lose a Plynling to a misclick. It is meant to cost a little pride — a public
+    // announcement, L'Indigne on /shame, and 30 minutes before adopting again.
+    [SlashCommand("abandon", "Abandonner ton Plynling — pour toujours, et tout le monde le saura")]
+    public async Task AbandonAsync()
+    {
+        var plynling = await _plynlings.GetCurrentAsync(Context.Guild.Id, Context.User.Id, DateTimeOffset.UtcNow);
+        if (plynling is null || plynling.DiedAt is not null)
+        {
+            await RespondAsync(PlynlingText.NoPlynling, ephemeral: true);
+            return;
+        }
+        await RespondWithModalAsync<AbandonModal>($"plyn:abandon:{plynling.Id}");
+    }
+
+    [ModalInteraction("plyn:abandon:*", ignoreGroupNames: true)]
+    public async Task OnAbandonConfirmedAsync(string idStr, AbandonModal modal)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var plynling = int.TryParse(idStr, out var id) ? await _plynlings.GetByIdAsync(id, now) : null;
+        if (plynling is null || plynling.OwnerId != Context.User.Id || plynling.DiedAt is not null)
+        {
+            await RespondAsync(PlynlingText.NoPlynling, ephemeral: true);
+            return;
+        }
+        if (!PlynlingCardUi.NamesMatch(modal.Name, plynling.Name))
+        {
+            await RespondAsync(PlynlingText.AbandonMismatch(plynling.Gender), ephemeral: true);
+            return;
+        }
+
+        var gone = await _plynlings.AbandonAsync(plynling.Id, Context.User.Id, now);
+        if (gone is null)
+        {
+            await RespondAsync(PlynlingText.NoPlynling, ephemeral: true);
+            return;
+        }
+        _cooldowns.MarkAbandoned(Context.Guild.Id, Context.User.Id, now);
+        await RespondAsync(PlynlingText.AbandonDone(gone.Gender, PlynlingCardUi.SafeName(gone.Name)), ephemeral: true);
+
+        try
+        {
+            await _shame.AddAbandonHitAsync(Context.Guild.Id, Context.User.Id);
+        }
+        catch (Exception ex)
+        {
+            // The abandonment already happened; a missed shame point must not undo it.
+            _logger.LogWarning(ex, "Failed to record the abandon shame for {UserId}.", Context.User.Id);
+        }
+        await _announcer.AnnounceAbandonAsync(gone, now);
     }
 
     [SlashCommand("view", "Voir un Plynling (le tien par défaut)")]

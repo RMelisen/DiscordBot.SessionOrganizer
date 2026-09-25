@@ -27,6 +27,16 @@ public static class PlynlingText
 
     public static string NoneFor(ulong userId) => $"<@{userId}> n'a pas de Plynling.";
 
+    // About the person, not a Plynling (the abandoned one is gone): generic masculine.
+    public static string AdoptCooldown(DateTimeOffset ready) =>
+        $"Tu viens d'abandonner un Plynling. Tu pourras en adopter un autre <t:{ready.ToUnixTimeSeconds()}:R>.";
+
+    public static string AbandonMismatch(PlynlingGender g) =>
+        $"Ce n'est pas son nom. Rien n'a été fait : {g.Agree("ton Plynling est toujours là", "ta Plynling est toujours là")}.";
+
+    public static string AbandonDone(PlynlingGender g, string name) =>
+        $"Tu as abandonné **{name}**. {g.Agree("Il", "Elle")} ne reviendra pas.";
+
     public static string TooPoor(long price, long balance) =>
         $"Il te faut {PebbleEconomy.Cailloux(price)}, tu n'en as que {balance}. `/work` pour en gagner.";
 

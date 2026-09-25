@@ -21,6 +21,7 @@ public static class PlynlingLife
     public static readonly TimeSpan SelfFreezeCooldown = TimeSpan.FromDays(7);
     public static readonly TimeSpan WarningLead = TimeSpan.FromHours(3);
     public static readonly TimeSpan PetCooldown = TimeSpan.FromHours(4);
+    public static readonly TimeSpan AbandonCooldown = TimeSpan.FromMinutes(30);
 
     public const double StartNeeds = 0.70;
     public const double ResurrectNeeds = 0.50;

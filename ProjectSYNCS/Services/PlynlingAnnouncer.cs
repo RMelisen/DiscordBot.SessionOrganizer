@@ -44,6 +44,16 @@ public sealed class PlynlingAnnouncer
         return PostAsync(plynling.GuildId, line, PlynlingArt.Sprite(plynling.Species, PlynlingLife.Stage(plynling, now), PlynlingLife.Mood(plynling, now)), "resurrection");
     }
 
+    // The shame of /plynling abandon, with its sad picture. The row is already gone; the
+    // object still carries everything the line and the picture need.
+    public Task AnnounceAbandonAsync(Plynling plynling, DateTimeOffset now)
+    {
+        var line = string.Format(_picker.Pick(GameChannelId, BotResponses.PlynlingAbandonLines.For(plynling.Gender)),
+            PlynlingCardUi.SafeName(plynling.Name), $"<@{plynling.OwnerId}>");
+        return PostAsync(plynling.GuildId, line,
+            PlynlingArt.Sprite(plynling.Species, PlynlingLife.Stage(plynling, now), PlynlingMood.Sad), "abandon");
+    }
+
     // Called only once PlynlingLife.ShouldWarn has seen death coming; the DM says so without
     // naming when.
     public Task WarnOwnerAsync(Plynling plynling)

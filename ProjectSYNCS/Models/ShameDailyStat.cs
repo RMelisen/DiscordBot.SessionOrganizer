@@ -28,4 +28,7 @@ public class ShameDailyStat
 
     // Same counter as ShameRecord.ShoutHits, bucketed by day.
     public long ShoutHits { get; set; }
+
+    // Same counter as ShameRecord.AbandonHits, bucketed by day.
+    public long AbandonHits { get; set; }
 }
