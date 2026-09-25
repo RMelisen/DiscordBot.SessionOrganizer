@@ -27,7 +27,7 @@ FOODS = ["mushroom", "shiitake", "morel", "truffle"]
 # Species whose bébé has its own art. Must match PlynlingArt.StagedSpecies in the bot
 # (artcheck compares them). The adult keeps its stage-less filename, and ado and ancien wear
 # it too; the baby inserts "_baby".
-STAGED = {"cepe"}
+STAGED = {"amanite", "cepe", "rose", "russule", "mystique", "dore"}
 
 
 def big(im):

@@ -213,7 +213,7 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   **Nourrir** buttons.
 - **Growing up:** *bébé* for its first 2 days, *ado* until 14 days, *adulte*, then *ancien*
   after 6 months — counted in time actually lived, so a freeze pauses it. The card names the
-  stage; a baby Cèpe also looks the part, and every other stage wears the adult picture.
+  stage, every species has its own baby picture, and ado and ancien wear the adult one.
 - **Holidays:** `/plynling freeze` stops everything for up to 14 days, as long as it isn't
   already hungry; then a week before it can be frozen again.
 - **Death** is announced to the whole server, after a private warning about 3 hours

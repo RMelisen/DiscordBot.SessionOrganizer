@@ -23,7 +23,11 @@ public static class PlynlingArt
     // artcheck compares the two. Every other species, and every other stage (ado and ancien
     // were tried and dropped), shows the adult picture.
     public static readonly IReadOnlySet<PlynlingSpecies> StagedSpecies =
-        new HashSet<PlynlingSpecies> { PlynlingSpecies.Cepe };
+        new HashSet<PlynlingSpecies>
+        {
+            PlynlingSpecies.Amanite, PlynlingSpecies.Cepe, PlynlingSpecies.Rose,
+            PlynlingSpecies.Russule, PlynlingSpecies.Mystique, PlynlingSpecies.Dore,
+        };
 
     // The adult filename deliberately carries no stage segment: it is the file every species
     // already had, so adding the baby invalidated nothing Discord had cached.

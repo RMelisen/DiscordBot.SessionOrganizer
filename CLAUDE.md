@@ -1230,7 +1230,10 @@ They are cosmetic only: nothing about hunger, happiness or death reads them. Eve
 the label; only a **bébé** of a species in `PlynlingArt.StagedSpecies` gets its own picture — ado
 and ancien art was prototyped and dropped by the owner, so they wear the adult. `StagedSpecies`
 must match `STAGED` in `tools/plynling-art/export.py` (artcheck compares them), and the adult
-filename has no stage segment on purpose — it is the file every species already had.
+filename has no stage segment on purpose — it is the file every species already had. All six
+mushrooms have a baby, each hand-drawn (`<species>_baby` in `species.py`) rather than shrunk from
+its adult: a derived shrink was tried and kept the adult's full-size cap, so it read too little
+like a baby.
 
 **`XpTracker.ExcludedChannels` is checked before `TryClaim`, never after.** The spam
 channels earn nothing, and the order matters: claiming first would let a message there

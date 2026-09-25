@@ -100,7 +100,7 @@ def cepe(state, frame=0, shadow=True, stage="adult"):
 # species (clipped face, measured sweat and frost), since the original's fixed extras were
 # placed for the adult's silhouette. The other life stages wear the adult sprite.
 BABY_TOP, BABY_BOTTOM, BABY_SPAN, BABY_ARMS = 20, 28, (11, 20), (24, 25)
-BABY_CAP, BABY_CUT, BABY_FACE_OY = (18.5, 11.6, 11.0), 18, 3      # cap: centre row, x and y radii
+BABY_CAP, BABY_CUT = (18.5, 11.6, 11.0), 18                        # cap: centre row, x and y radii
 
 
 def cepe_baby(state, frame, shadow):
@@ -196,6 +196,21 @@ def outline(g, cap, extra=None):
     if extra:
         out.update(extra)
     g.outline(lambda reg, ny: INK if ny >= 29 else out.get(reg, STEM_OUT))
+
+
+# Every baby shares one frame, the Cèpe's (cepe_baby): a stubby body from row 20 down to a round
+# stub at 28 (no feet), the cap ending at row 18 with its underside at 19, the face 3 rows low.
+# Each species then draws its own smaller cap into it, so a baby still reads as its species.
+BABY_FACE_OY = 3
+
+
+def baby_body(g, S, top=20):
+    stem(g, S, 11, 20, top, 28)
+
+
+def scaled(spots, c0, c1, kx, ky):
+    """Spots placed on an adult cap centred at c0, moved onto a baby cap centred at c1."""
+    return [(c1[0] + (sx - c0[0]) * kx, c1[1] + (sy - c0[1]) * ky, r * min(kx, ky)) for sx, sy, r in spots]
 
 
 def cap_profile(g):
@@ -335,8 +350,13 @@ def skirt(g, S, y0, mode):
         g.put(x, y0 + len(spans), S[3], "ring")                       # its ragged hem
 
 
-def amanite(state, frame=0, shadow=True):
+AMANITE_SPOTS = ((9, 5.5, 1.4), (16, 2.5, 1.7), (22, 5, 1.4), (12.5, 8, 0.9), (19, 8, 1.0), (5, 8.2, 0.8), (26, 8, 0.8))
+
+
+def amanite(state, frame=0, shadow=True, stage="adult"):
     """A wide red dome with white spots, a flared skirt under it, a longer and slimmer stem."""
+    if stage == "baby":
+        return amanite_baby(state, frame, shadow)
     p = SPECIES["amanite"]
     cap, S = p["cap"], stem_palette(p)
     pose = pose_for("amanite", state, frame)
@@ -352,7 +372,7 @@ def amanite(state, frame=0, shadow=True):
             if y > 9 + sag or ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 > 1:
                 continue
             g.put(x, y, shade_cap(x, y, cap, cx, cy, rx, ry, 11, 3.5 + sag, 7, 3.6, 9 + sag), "cap")
-    for sx, sy, r in ((9, 5.5, 1.4), (16, 2.5, 1.7), (22, 5, 1.4), (12.5, 8, 0.9), (19, 8, 1.0), (5, 8.2, 0.8), (26, 8, 0.8)):
+    for sx, sy, r in AMANITE_SPOTS:
         for y in range(N):
             for x in range(N):
                 if (x - sx) ** 2 + (y - sy - sag) ** 2 <= r * r and g.r[y][x] == "cap" and y < 9 + sag:
@@ -361,10 +381,48 @@ def amanite(state, frame=0, shadow=True):
     return finish(g, p, state, S, shadow=shadow, pose=pose)
 
 
+def amanite_baby(state, frame, shadow):
+    """A smaller red dome, its spots scaled down with it, over a two-row skirt that still
+    billows and drapes."""
+    p = SPECIES["amanite"]
+    cap, S = p["cap"], stem_palette(p)
+    pose = pose_for("amanite", state, frame)
+    sag = 1 if state == "starving" else 0
+    g = Grid()
+    baby_body(g, S, top=18)
+    y0 = 18 + sag                                                     # the skirt, small
+    rows = {0: [(10, 21), (9, 22)], 1: [(10, 21), (8, 23)], 0.5: [(10, 21), (9, 22)],
+            -1: [(10, 21), (9, 22), (9, 22)], -0.5: [(10, 21), (9, 22), (9, 22)]}[pose.skirt]
+    teeth = range(10, 22, 2) if pose.skirt in (0, -1) else ()
+    for k, (a, b) in enumerate(rows):
+        for x in range(a, b + 1):
+            shade = S[3] if x > 18 else S[min(k, 2)]
+            if pose.skirt == 1 and k == 1 and x % 2 == 0:
+                shade = S[3]                                          # the lifted hem's scallops
+            g.put(x, y0 + k, shade, "ring")
+    for x in teeth:
+        g.put(x, y0 + len(rows), S[3], "ring")
+    gills(g, p, 17 + sag, 7, 24)
+    cx, cy, rx, ry = 15.5, 17.0 + sag, 10.2, 8.4
+    for y in range(17 + sag):
+        for x in range(N):
+            if ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1:
+                g.put(x, y, shade_cap(x, y, cap, cx, cy, rx, ry, 12, 11.5 + sag, 6, 3.2, 16 + sag), "cap")
+    for sx, sy, r in scaled(AMANITE_SPOTS, (15.5, 10.0), (15.5, 17.0 + sag), 10.2 / 12.4, 8.4 / 9.6):
+        for y in range(N):
+            for x in range(N):
+                if (x - sx) ** 2 + (y - sy) ** 2 <= r * r and g.r[y][x] == "cap" and y < 16 + sag:
+                    g.put(x, y, p["spot"][0] if (x - sx) + (y - sy) <= r * 0.55 else p["spot"][1])
+    outline(g, cap)
+    return finish(g, p, state, S, face_oy=BABY_FACE_OY, shadow=shadow, pose=pose)
+
+
 # ---- Rosé des prés: a field mushroom ----------------------------------------------------------
 
-def rose(state, frame=0, shadow=True):
+def rose(state, frame=0, shadow=True, stage="adult"):
     """A round button cap with its rim tucked under, pink gills showing, a short thick stem."""
+    if stage == "baby":
+        return rose_baby(state, frame, shadow)
     p = SPECIES["rose"]
     cap, S = p["cap"], stem_palette(p)
     pose = pose_for("rose", state, frame)
@@ -388,10 +446,35 @@ def rose(state, frame=0, shadow=True):
     return finish(g, p, state, S, face_oy=1, shadow=shadow, pose=pose)
 
 
+def rose_baby(state, frame, shadow):
+    """A smaller round button, rim tucked under with a peek of pink gills — and no ring yet:
+    a field mushroom's ring only forms once its cap opens."""
+    p = SPECIES["rose"]
+    cap, S = p["cap"], stem_palette(p)
+    pose = pose_for("rose", state, frame)
+    sag = 1 if state == "starving" else 0
+    g = Grid()
+    baby_body(g, S)
+    gills(g, p, 18 + sag, 9, 22)
+    gills(g, p, 19 + sag, 11, 20)
+    cx, cy, rx, ry = 15.5, 14.5 + sag, 10.8, 8.2 + 1.0 * pose.puff
+    for y in range(19 + sag):
+        for x in range(N):
+            if ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 > 1:
+                continue
+            if y >= 18 + sag and abs(x + 0.5 - cx) < 6:
+                continue                                              # the opening under the curled rim
+            g.put(x, y, shade_cap(x, y, cap, cx, cy, rx, ry, 11, 10 + sag, 6.5, 3.8, 18 + sag), "cap")
+    outline(g, cap)
+    return finish(g, p, state, S, face_oy=BABY_FACE_OY, shadow=shadow, pose=pose)
+
+
 # ---- Russule verte: a green russula ------------------------------------------------------------
 
-def russule(state, frame=0, shadow=True):
+def russule(state, frame=0, shadow=True, stage="adult"):
     """A broad flat cap dipping in the middle, on a body shaped like the Cèpe's."""
+    if stage == "baby":
+        return russule_baby(state, frame, shadow)
     p = SPECIES["russule"]
     cap, S = p["cap"], stem_palette(p)
     pose = pose_for("russule", state, frame)
@@ -429,11 +512,44 @@ def russule(state, frame=0, shadow=True):
     return finish(g, p, state, S, shadow=shadow, pose=pose)
 
 
+def russule_baby(state, frame, shadow):
+    """A smaller flat green plate with its dip, tipping like the adult's, gills and all."""
+    p = SPECIES["russule"]
+    cap, S = p["cap"], stem_palette(p)
+    pose = pose_for("russule", state, frame)
+    sag = 1 if state == "starving" else 0
+    g = Grid()
+    baby_body(g, S)
+    half = 10.5
+
+    def tip(x):
+        return int(round(1.2 * pose.tilt * (x + 0.5 - 15.5) / half))
+    gills(g, p, 19 + sag, 7, 24, tip)
+    for x in range(N):
+        nx = (x + 0.5 - 15.5) / half
+        if abs(nx) > 1:
+            continue
+        lean = 1.2 * pose.tilt * nx
+        top = 13.6 + sag + 1.6 * math.exp(-(nx / 0.38) ** 2) + 2.4 * nx ** 4 + lean
+        bottom = 18.4 + sag - 0.6 * nx ** 2 + lean
+        for y in range(int(top), int(bottom) + 1):
+            if y + 0.5 < top:
+                continue
+            c = shade_cap(x, y, cap, 15.5, 16.8 + sag, half, 3.0, 10, 15.5 + sag, 5.5, 1.4, 18 + sag)
+            if abs(nx) < 0.3 and y + 0.5 - top < 1.2:
+                c = cap[3]                                            # the dip, in shadow
+            g.put(x, y, c, "cap")
+    outline(g, cap)
+    return finish(g, p, state, S, face_oy=BABY_FACE_OY, shadow=shadow, pose=pose)
+
+
 # ---- Mystique: a Mycena ----------------------------------------------------------------------
 
-def mystique(state, frame=0, shadow=True):
+def mystique(state, frame=0, shadow=True, stage="adult"):
     """A bell with a small darker bump on top and a striped, glowing margin, on a spindle
     stem — slim under the cap and at the foot, full width only where the face is."""
+    if stage == "baby":
+        return mystique_baby(state, frame, shadow)
     p = SPECIES["mystique"]
     cap, glow, S = p["cap"], p["spot"], stem_palette(p)
     pose = pose_for("mystique", state, frame)
@@ -482,11 +598,58 @@ def mystique(state, frame=0, shadow=True):
     return im
 
 
+def mystique_baby(state, frame, shadow):
+    """A smaller bell, a little more closed as a young Mycena's is, its rim still glowing and
+    its halo still breathing, on a short spindle."""
+    p = SPECIES["mystique"]
+    cap, glow, S = p["cap"], p["spot"], stem_palette(p)
+    pose = pose_for("mystique", state, frame)
+    sag = 1 if state == "starving" else 0
+    g = Grid()
+    for y in range(19 + sag, 29):                                       # a short spindle, round at the foot
+        a, b = (12, 19) if (y <= 20 + sag or y >= 27) else (11, 20)
+        shade_row(g, S, y, a, b, "stem", 1 if (y <= 20 + sag or y == 28) else 0)
+    gills(g, p, 18 + sag, 10, 21)
+    apex, rim = 7.0 + sag, 17.5 + sag
+    for y in range(N):
+        t = (y + 0.5 - apex) / (rim - apex)
+        if not 0 <= t <= 1:
+            continue
+        half = 7.2 * math.sin(min(1.0, t * 1.05) * math.pi / 2) ** 0.8
+        if t < 0.14:
+            half = min(half, 1.8)                                      # the bump (umbo)
+        for x in range(N):
+            dx = x + 0.5 - CX
+            if abs(dx) > half:
+                continue
+            u = dx / max(half, 0.1)
+            c = cap[1] if u < -0.3 else (cap[2] if u < 0.5 else cap[3])
+            if t < 0.2:
+                c = cap[3] if u > -0.3 else cap[2]
+            if t > 0.35 and abs(u * 3 - round(u * 3)) < 0.15:
+                c = cap[min(4, cap.index(c) + 1)]                      # striations
+            g.put(x, y, c, "cap")
+    for x in range(N):
+        if g.r[int(rim)][x] == "cap":
+            g.put(x, int(rim), glow[0] if (x % 3 or pose.glow) else glow[1])
+    outline(g, cap)
+    im = finish(g, p, state, S, face_oy=BABY_FACE_OY, shadow=shadow, pose=pose)
+    if state not in ("frozen", "starving"):                            # a soft halo under the rim
+        by = pose.body[1]
+        for x in range(9, 24, 3):
+            hy = int(rim) + 1 + by
+            if im.getpixel((x, hy))[3] == 0:
+                im.putpixel((x, hy), glow[0] + (pose.halo,))
+    return im
+
+
 # ---- Doré: a chanterelle (girolle) ------------------------------------------------------------
 
-def dore(state, frame=0, shadow=True):
+def dore(state, frame=0, shadow=True, stage="adult"):
     """A golden funnel — wavy rim curling down at the edges, forked ridges — narrowing into a
     10 px gold stem, all centred on the face's axis, with a rounded foot."""
+    if stage == "baby":
+        return dore_baby(state, frame, shadow)
     p = SPECIES["dore"]
     cap, S = p["cap"], stem_palette(p)
     pose = pose_for("dore", state, frame)
@@ -541,6 +704,62 @@ def dore(state, frame=0, shadow=True):
     feet(g, S)
     outline(g, cap, {"stem": lerp(STEM_OUT, cap[4], 0.6)})
     return finish(g, p, state, S, shadow=shadow, pose=pose)
+
+
+def dore_baby(state, frame, shadow):
+    """A smaller golden funnel, its wavy rim still rippling, narrowing straight into the stub."""
+    p = SPECIES["dore"]
+    cap, S = p["cap"], stem_palette(p)
+    pose = pose_for("dore", state, frame)
+    sag = 1 if state == "starving" else 0
+    g = Grid()
+
+    def rim_top(x):
+        nx = (x + 0.5 - CX) / 10.5
+        return (9.6 + sag + 0.45 * pose.ripple * math.sin(x * 0.7 + 0.6) + 3.2 * abs(nx) ** 3)
+
+    def span(y):
+        s = (y - (10 + sag)) / 9.0
+        if s <= 0:
+            return 10.6
+        if y >= 28:
+            return 3.5                                                 # the round stub
+        if s >= 1:
+            return 4.5
+        return 4.5 + 6.1 * (1 - s) ** 1.7
+
+    blend0, blend1 = 15 + sag, 20 + sag                                # cap gold fades into stem gold
+    for y in range(29):
+        for x in range(N):
+            dx = x + 0.5 - CX
+            h = span(y)
+            if abs(dx) > h + (1.0 if y < 12 + sag else 0) or y < rim_top(x):
+                continue
+            u = max(-1.0, min(1.0, dx / h))
+            depth = y - rim_top(x)
+            if depth < 1.2:
+                c = cap[0] if dx < 2 else cap[1]                       # the lit rim
+            elif depth < 2.2 and abs(dx) < 6:
+                c = cap[2]                                             # the shallow dip on top
+            else:
+                c = cap[1] if u < -0.3 else (cap[2] if u < 0.45 else cap[3])
+            if y >= blend0:
+                t = min(1.0, (y - blend0) / (blend1 - blend0))
+                i = tone(-0.6 * u + math.sqrt(max(0.0, 1 - u * u)) * 0.8, (0.86, 0.58, 0.2, -0.2), x, y)
+                if y >= 27:
+                    i = min(4, i + 1)
+                c = lerp(c, S[i], t)
+            g.put(x, y, c, "cap" if y < blend0 else "stem")
+    for k in (-3, -1, 1, 3):                                           # a few soft ridges
+        x_top, x_bot = CX + k * 2.6, CX + k * 0.9
+        for y in range(12 + sag, blend1 + 1):
+            f = (y - (12 + sag)) / (blend1 - (12 + sag))
+            x = int(math.floor(x_top + (x_bot - x_top) * f))
+            if g.c[y][x] is not None and y - rim_top(x) > 2.2:
+                dark = cap[2] if k < 0 else cap[3]
+                g.put(x, y, lerp(dark, g.c[y][x], max(0.0, f - 0.45) * 1.8))
+    outline(g, cap, {"stem": lerp(STEM_OUT, cap[4], 0.6)})
+    return finish(g, p, state, S, face_oy=BABY_FACE_OY, shadow=shadow, pose=pose)
 
 
 DRAW = {"cepe": cepe, "amanite": amanite, "rose": rose, "russule": russule, "mystique": mystique, "dore": dore}
