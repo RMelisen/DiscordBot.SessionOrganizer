@@ -1223,6 +1223,15 @@ lives in `motion.py`, and **nothing in it moves side to side** — the owner rej
 left-right motion (sways, wobbles, a sideways shiver, even a travelling shimmer), so keep new
 motion vertical or in place.
 
+**Life stages are derived from `Age` and never stored.** `PlynlingLife.Stage` maps time actually
+lived to bébé (< 2 d), ado (< 14 d), adulte (< 180 d) and ancien — so a frozen Plynling does not
+grow up, a resurrected one resumes where its age puts it, and there is no column to migrate.
+They are cosmetic only: nothing about hunger, happiness or death reads them. Every species shows
+the label; only a **bébé** of a species in `PlynlingArt.StagedSpecies` gets its own picture — ado
+and ancien art was prototyped and dropped by the owner, so they wear the adult. `StagedSpecies`
+must match `STAGED` in `tools/plynling-art/export.py` (artcheck compares them), and the adult
+filename has no stage segment on purpose — it is the file every species already had.
+
 **`XpTracker.ExcludedChannels` is checked before `TryClaim`, never after.** The spam
 channels earn nothing, and the order matters: claiming first would let a message there
 burn that person's 60 s message cooldown, so spamming in the excluded channel would

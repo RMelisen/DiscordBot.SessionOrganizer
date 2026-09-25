@@ -255,7 +255,9 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             .AddField("Adopter & regarder",
                 "**`/plynling adopt name:`** — Gratuit, un seul à la fois. L'espèce est tirée au sort : " +
                 "commune, peu commune, rare… ou légendaire. Garçon ou fille ? Surprise.\n" +
-                "**`/plynling view [user]`** — Sa carte, avec les boutons **Caresser** et **Nourrir**.")
+                "**`/plynling view [user]`** — Sa carte, avec les boutons **Caresser** et **Nourrir**.\n" +
+                "Il grandit : **bébé** ses 2 premiers jours, **ado** jusqu'à 14 jours, **adulte**, " +
+                "puis **ancien** après 6 mois. Le temps passé gelé ne compte pas.")
             .AddField("S'en occuper",
                 "La **faim** se vide en **2 jours** : à 0 %, il meurt. Le **bonheur** se vide en **36 heures** " +
                 "(il est juste triste).\n" +

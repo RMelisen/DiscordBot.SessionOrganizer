@@ -16,9 +16,16 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   billows and drapes, the Rosé's cap puffs, the Russule's plate tips, the Mycena's glow pulses,
   the Doré's rim ripples). **Nothing moves side to side** — every motion is up and down, or in
   place; the side-to-side versions were tried and rejected. Frame 0 is always the rest pose.
+- **Life stages:** `sprites.build(..., stage=)` takes `"baby"`, `"teen"`, `"adult"` or `"elder"`,
+  but only the baby has its own art (ado and ancien were prototyped and dropped: they wear the
+  adult). Only species in `STAGED` (`export.py`) draw a baby — today the Cèpe, through
+  `cepe_baby` in `species.py`. `STAGED` must match `PlynlingArt.StagedSpecies`. The adult file
+  keeps its stage-less name (`plynling_cepe_happy_v3.webp`); the baby inserts the stage
+  (`plynling_cepe_baby_happy_v3.webp`). Adding a species' baby adds files and changes none, so
+  it needs no `ART_VERSION` bump.
 - `memorials.py` — the five memorial tiers (cairn → statue), each carrying the species' accent colour.
 - `source/` — the four food sprites (16×16, hand-drawn), exported as-is.
-- `export.py` — renders all 70 files at 256×256 into `assets/plynlings/`: the 36 living sprites as
+- `export.py` — renders all 76 files at 256×256 into `assets/plynlings/`: the 42 living sprites as
   looping, lossless animated WebP (so the soft shadow and the Mycena's halo keep their partial
   transparency), the memorials and foods as PNG. Pillow merges identical consecutive frames into
   one longer frame, so a file holds fewer than 16 frames while still lasting 2 s.
