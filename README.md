@@ -209,8 +209,8 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   `/plynling feed` (Champignon, Shiitake, Morille, Truffe) costs **cailloux**; `/plynling pet`
   is free, every 4 hours, and anyone can pet anyone's.
 - **The card** (`/plynling view`) shows it in its current mood — gently animated, each species
-  fidgeting in its own way — a live countdown to starvation,
-  and **Caresser** / **Nourrir** buttons.
+  fidgeting in its own way — with its hunger and happiness bars and **Caresser** /
+  **Nourrir** buttons.
 - **Holidays:** `/plynling freeze` stops everything for up to 14 days, as long as it isn't
   already hungry; then a week before it can be frozen again.
 - **Death** is announced to the whole server, after a private warning about 6 hours

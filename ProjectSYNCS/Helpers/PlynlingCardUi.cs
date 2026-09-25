@@ -36,18 +36,18 @@ public static class PlynlingCardUi
 
         var hunger = PlynlingLife.HungerAt(p, now);
         var happiness = PlynlingLife.HappinessAt(p, now);
-        // A relative timestamp renders as "dans 2 jours", so the words before it must read
-        // with that: "mourra de faim dans 2 jours", never "jusqu'à dans 2 jours". The
-        // absolute :f form is the one that takes "jusqu'au".
-        var clock = p.FrozenAt is not null
-            ? p.FreezeUntil is { } until
-                ? $"❄️ {p.Gender.Agree("Gelé", "Gelée")} jusqu'au <t:{until.ToUnixTimeSeconds()}:f>"
-                : $"❄️ {p.Gender.Agree("Gelé", "Gelée")} par le staff"
-            : $"mourra de faim <t:{PlynlingLife.DeathAt(p)!.Value.ToUnixTimeSeconds()}:R>";
+        // Only a freeze is shown beside the hunger bar. A living Plynling's card deliberately
+        // carries no "mourra de faim dans …" countdown — the owner removed it; the bar and the
+        // mood already say how hungry it is. The absolute :f form is the one that takes "jusqu'au".
+        var clock = p.FrozenAt is null
+            ? ""
+            : p.FreezeUntil is { } until
+                ? $" · ❄️ {p.Gender.Agree("Gelé", "Gelée")} jusqu'au <t:{until.ToUnixTimeSeconds()}:f>"
+                : $" · ❄️ {p.Gender.Agree("Gelé", "Gelée")} par le staff";
 
         // The mood gets its own line: it covers hunger as well as happiness, so beside the
         // happiness bar a starving Plynling would read "Bonheur 20 % · affamé".
-        return $"**Faim** `{Bar(hunger)}` {Percent(hunger)} · {clock}\n" +
+        return $"**Faim** `{Bar(hunger)}` {Percent(hunger)}{clock}\n" +
                $"**Bonheur** `{Bar(happiness)}` {Percent(happiness)}\n" +
                $"**Humeur** · *{MoodLabel(PlynlingLife.Mood(p, now), p.Gender)}*";
     }
