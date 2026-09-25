@@ -30,6 +30,7 @@ public static class PlynlingLife
     public const double PlayAmount = 0.15;
     public const double PlayWinBonus = 0.10;
     public const double VisitAmount = 0.20;
+    public static readonly TimeSpan VisitInviteLife = TimeSpan.FromHours(1);
     public const int PlayWinPebblesMin = 5;
     public const int PlayWinPebblesMax = 10;
 

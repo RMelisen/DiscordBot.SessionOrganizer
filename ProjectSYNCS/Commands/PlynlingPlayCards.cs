@@ -52,4 +52,47 @@ public static class PlynlingPlayCards
         }
         return builder.Build();
     }
+
+    // The « Accueillir » button's id carries the visitor's Plynling, the invited owner and the
+    // expiry — everything the accept needs, and nothing secret.
+    public static string VisitId(int visitorId, ulong hostOwnerId, DateTimeOffset expires) =>
+        $"plyn:visit:{visitorId}:{hostOwnerId}:{expires.ToUnixTimeSeconds()}";
+
+    /// <summary>The knock: the visitor at the door, and « Accueillir » for the invited owner.</summary>
+    public static MessageComponent BuildKnock(Plynling visitor, ulong hostOwnerId, DateTimeOffset expires, string line, DateTimeOffset now)
+    {
+        var info = PlynlingCatalog.Info(visitor.Species);
+        var sprite = PlynlingArt.Sprite(visitor.Species, PlynlingLife.Stage(visitor, now), PlynlingLife.Mood(visitor, now));
+        return new ComponentBuilderV2()
+            .AddComponent(new ContainerBuilder()
+                .WithAccentColor(new Color(info.Accent))
+                .AddComponent(new SectionBuilder()
+                    .WithAccessory(new ThumbnailBuilder().WithMedia(new UnfurledMediaItemProperties(sprite)).WithDescription(info.Name))
+                    .AddComponent(new TextDisplayBuilder(
+                        $"{line}\n-# Réservé à <@{hostOwnerId}> · l'invitation expire <t:{expires.ToUnixTimeSeconds()}:R>."))))
+            .AddComponent(new ActionRowBuilder()
+                .WithButton("🏠 Accueillir", VisitId(visitor.Id, hostOwnerId, expires), ButtonStyle.Success))
+            .Build();
+    }
+
+    // A knock nobody will answer any more (expired), without its button.
+    public static MessageComponent BuildKnockClosed(string text) =>
+        new ComponentBuilderV2().AddComponent(new ContainerBuilder().AddComponent(new TextDisplayBuilder(text))).Build();
+
+    /// <summary>The visit: both Plynlings side by side, her line, and what it gave them.</summary>
+    public static MessageComponent BuildMeeting(Plynling visitor, Plynling host, string line, DateTimeOffset now)
+    {
+        string Sprite(Plynling p) => PlynlingArt.Sprite(p.Species, PlynlingLife.Stage(p, now), PlynlingLife.Mood(p, now));
+        var happiness = (int)Math.Round(PlynlingLife.VisitAmount * 100);
+        return new ComponentBuilderV2()
+            .AddComponent(new ContainerBuilder()
+                .WithAccentColor(new Color(PlynlingCatalog.Info(host.Species).Accent))
+                .AddComponent(new TextDisplayBuilder($"## 🏡 Visite\n{line}"))
+                .AddComponent(new MediaGalleryBuilder()
+                    .AddItem(Sprite(visitor), PlynlingCardUi.SafeName(visitor.Name), false)
+                    .AddItem(Sprite(host), PlynlingCardUi.SafeName(host.Name), false))
+                .AddComponent(new TextDisplayBuilder(
+                    $"-# +{happiness} % de bonheur pour **{PlynlingCardUi.SafeName(visitor.Name)}** et **{PlynlingCardUi.SafeName(host.Name)}**")))
+            .Build();
+    }
 }

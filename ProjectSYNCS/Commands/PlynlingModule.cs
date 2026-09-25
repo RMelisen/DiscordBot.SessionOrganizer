@@ -152,6 +152,42 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
     }
 
+    // An invitation, not a visit: it only happens if the other owner presses « Accueillir »
+    // (PlynlingComponentHandler), within the hour. This message is the one line that pings —
+    // the invited owner only, since it is addressed to them.
+    [SlashCommand("visit", "Emmener ton Plynling rendre visite à celui de quelqu'un")]
+    public async Task VisitAsync([Summary("user", "Chez qui aller")] IUser user)
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (user.Id == Context.User.Id)
+        {
+            await RespondAsync(PlynlingText.VisitSelf, ephemeral: true);
+            return;
+        }
+
+        var mine = await _plynlings.GetCurrentAsync(Context.Guild.Id, Context.User.Id, now);
+        var theirs = user.IsBot ? null : await _plynlings.GetCurrentAsync(Context.Guild.Id, user.Id, now);
+        string? refusal =
+            mine is null ? PlynlingText.NoPlynling
+            : mine.DiedAt is not null ? PlynlingText.Dead(mine.Gender)
+            : theirs is null || theirs.DiedAt is not null ? PlynlingText.NoneFor(user.Id)
+            : mine.FrozenAt is not null || theirs.FrozenAt is not null ? PlynlingText.VisitFrozen
+            : PlynlingLife.IsAsleep(now) ? PlynlingText.Asleep(mine.Gender)
+            : _cooldowns.VisitedToday(Context.User.Id, user.Id, AppTime.DayKey(now)) ? PlynlingText.VisitedToday(user.Id)
+            : null;
+        if (refusal is not null || mine is null)
+        {
+            await RespondAsync(refusal, ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+
+        var expires = now + PlynlingLife.VisitInviteLife;
+        var line = string.Format(_picker.Pick(Context.Channel.Id, BotResponses.PlynlingVisitKnockLines.For(mine.Gender)),
+            PlynlingCardUi.SafeName(mine.Name), $"<@{user.Id}>");
+        await RespondAsync(components: PlynlingPlayCards.BuildKnock(mine, user.Id, expires, line, now),
+            flags: MessageFlags.ComponentsV2, allowedMentions: new AllowedMentions { UserIds = new List<ulong> { user.Id } });
+    }
+
     [SlashCommand("list", "Tous les Plynlings vivants du serveur, du plus vieux au plus jeune")]
     public async Task ListAsync()
     {

@@ -17,14 +17,83 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
     private readonly PlynlingService _plynlings;
     private readonly PlynlingPlayService _play;
     private readonly ResponsePicker _picker;
+    private readonly PlynlingCooldowns _cooldowns;
 
     public PlynlingComponentHandler(PlynlingCareService care, PlynlingService plynlings, PlynlingPlayService play,
-        ResponsePicker picker)
+        ResponsePicker picker, PlynlingCooldowns cooldowns)
     {
+        _cooldowns = cooldowns;
         _care = care;
         _plynlings = plynlings;
         _play = play;
         _picker = picker;
+    }
+
+    // ---- /plynling visit: « Accueillir », pressed by the invited owner within the hour.
+    [ComponentInteraction("plyn:visit:*:*:*", ignoreGroupNames: true)]
+    public async Task OnVisitAcceptedAsync(string visitorStr, string hostStr, string expiresStr)
+    {
+        if (!int.TryParse(visitorStr, out var visitorId) || !ulong.TryParse(hostStr, out var hostOwnerId)
+            || !long.TryParse(expiresStr, out var expiresUnix))
+        {
+            await RespondAsync(PlynlingText.Unknown, ephemeral: true);
+            return;
+        }
+        if (Context.User.Id != hostOwnerId)
+        {
+            await RespondAsync(PlynlingText.NotYourInvite, ephemeral: true);
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var component = (SocketMessageComponent)Context.Interaction;
+        if (now > DateTimeOffset.FromUnixTimeSeconds(expiresUnix))
+        {
+            await component.UpdateAsync(m =>
+            {
+                m.Components = PlynlingPlayCards.BuildKnockClosed(PlynlingText.InviteExpired);
+                m.Flags = MessageFlags.ComponentsV2;
+                m.AllowedMentions = AllowedMentions.None;
+            });
+            return;
+        }
+
+        var visitor = await _plynlings.GetByIdAsync(visitorId, now);
+        var host = await _plynlings.GetCurrentAsync(Context.Guild.Id, hostOwnerId, now);
+        string? refusal =
+            host is null || host.DiedAt is not null ? PlynlingText.NoPlynling
+            : visitor is null || visitor.DiedAt is not null ? PlynlingText.VisitorGone
+            : visitor.FrozenAt is not null || host.FrozenAt is not null ? PlynlingText.VisitFrozen
+            : PlynlingLife.IsAsleep(now) ? PlynlingText.Asleep(host.Gender)
+            : null;
+        if (refusal is not null || visitor is null || host is null)
+        {
+            await RespondAsync(refusal, ephemeral: true);
+            return;
+        }
+
+        var day = AppTime.DayKey(now);
+        if (!_cooldowns.TryClaimVisit(visitor.OwnerId, hostOwnerId, day))
+        {
+            await RespondAsync(PlynlingText.VisitedToday(visitor.OwnerId), ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+        var met = await _plynlings.VisitAsync(visitor.Id, host.Id, now);
+        if (met is not { } pair)
+        {
+            _cooldowns.ReleaseVisit(visitor.OwnerId, hostOwnerId, day);
+            await RespondAsync(PlynlingText.Unknown, ephemeral: true);
+            return;
+        }
+
+        var line = string.Format(_picker.Pick(Context.Channel.Id, BotResponses.PlynlingVisitMeetLines.For(pair.Visitor.Gender)),
+            PlynlingCardUi.SafeName(pair.Visitor.Name), PlynlingCardUi.SafeName(pair.Host.Name));
+        await component.UpdateAsync(m =>
+        {
+            m.Components = PlynlingPlayCards.BuildMeeting(pair.Visitor, pair.Host, line, now);
+            m.Flags = MessageFlags.ComponentsV2;
+            m.AllowedMentions = AllowedMentions.None;
+        });
     }
 
     // ---- /plynling play: one handler per game's buttons, all through PlayMoveAsync.

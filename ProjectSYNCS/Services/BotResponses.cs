@@ -74,6 +74,7 @@ namespace ProjectSYNCS.Services;
 //     PlynlingAdoptLines · PlynlingAdoptRareLines ... a new Plynling
 //     PlynlingFeedLines · PlynlingPetLines .......... shown on the card
 //     PlynlingPlayPlayerWonLines · PlynlingPlayPlayerLostLines ... end of a /plynling play game
+//     PlynlingVisitKnockLines · PlynlingVisitMeetLines ............ /plynling visit
 //     PlynlingDeathLines · PlynlingResurrectLines · PlynlingAbandonLines ... public, game channel
 //     PlynlingWarningLines ..... the ~3h DM before death
 //     PlynlingStaffFreezeDms · PlynlingStaffThawDms · PlynlingStaffRenameDms
@@ -413,6 +414,37 @@ internal static class BotResponses
             "**{0}** a gagné, et elle ne va pas te laisser l'oublier.",
             "« Trop facile ! » se vante **{0}**.",
             "**{0}** fait une petite danse de la victoire. Elle est contente quand même de t'avoir eu.",
+        });
+
+    // /plynling visit, the knock: {0} = the visitor's name, {1} = the invited owner's mention
+    // (this one pings them — it is an invitation).
+    public static readonly GenderedLines PlynlingVisitKnockLines = new(
+        M: new[]
+        {
+            "🚪 Toc toc ! **{0}** vient rendre visite au Plynling de {1}.",
+            "🚪 **{0}** a mis son plus beau sourire pour aller voir le Plynling de {1}. Il frappe à la porte…",
+            "🚪 **{0}** toque chez {1}. Il a apporté un petit caillou en cadeau.",
+        },
+        F: new[]
+        {
+            "🚪 Toc toc ! **{0}** vient rendre visite au Plynling de {1}.",
+            "🚪 **{0}** a mis son plus beau sourire pour aller voir le Plynling de {1}. Elle frappe à la porte…",
+            "🚪 **{0}** toque chez {1}. Elle a apporté un petit caillou en cadeau.",
+        });
+
+    // The visit accepted: {0} = the visitor's name, {1} = the host's. Gendered by the visitor.
+    public static readonly GenderedLines PlynlingVisitMeetLines = new(
+        M: new[]
+        {
+            "**{0}** et **{1}** jouent à cache-cache dans l'herbe.",
+            "**{0}** et **{1}** se racontent leur semaine. Que de rires !",
+            "**{0}** est reparti le cœur léger après son goûter chez **{1}**.",
+        },
+        F: new[]
+        {
+            "**{0}** et **{1}** jouent à cache-cache dans l'herbe.",
+            "**{0}** et **{1}** se racontent leur semaine. Que de rires !",
+            "**{0}** est repartie le cœur léger après son goûter chez **{1}**.",
         });
 
     // Posted publicly when an owner abandons theirs (/plynling abandon), with its sad

@@ -53,6 +53,14 @@ public static class PlynlingText
         $"{g.Agree("Il", "Elle")} a déjà joué il y a moins d'une heure. Laisse-{g.Agree("le", "la")} souffler un peu !";
 
     public const string GameOver = "Cette partie est terminée.";
+    public const string VisitSelf = "Ton Plynling ne peut pas se rendre visite à lui-même !";
+    public const string NotYourInvite = "Cette invitation ne t'est pas adressée.";
+    public const string VisitorGone = "Le visiteur n'est plus là…";
+    public const string VisitFrozen = "L'un des deux Plynlings est gelé : pas de visite pour l'instant.";
+    public const string InviteExpired = "🚪 Personne n'a ouvert : l'invitation a expiré.";
+
+    public static string VisitedToday(ulong otherId) =>
+        $"Vos Plynlings se sont déjà vus aujourd'hui, avec <@{otherId}>. Revenez demain !";
     public const string NotYourGame = "Ce n'est pas ta partie — lance la tienne avec `/plynling play`.";
     public const string GuessRange = "Un nombre entier entre 1 et 100, s'il te plaît.";
 
