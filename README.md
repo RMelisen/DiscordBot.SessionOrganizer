@@ -25,6 +25,7 @@ a wall of shame. The bot's user-facing language is French.
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
 | `/shame` | The wall of shame | everyone |
 | `/plynling adopt · view · list · journal · relations · feed · pet · play · visit · freeze · thaw · abandon · help` | Adopt and look after a Plynling | everyone |
+| `/plynling forage · collection · inventory · shop · give · trade · sell` | Find, collect and swap items | everyone |
 | `/work · /balance` | Earn cailloux; see your balance | everyone |
 | `/graveyard [user]` | Every Plynling that died | everyone |
 | `/shame user:@someone` | Put someone on it | staff |
@@ -256,6 +257,21 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   good: no grave, no coming back. The whole server hears about it, it counts towards
   *L'Indigne* on `/shame`, and you wait 30 minutes before adopting again.
 - **`/plynling list`** shows every living Plynling on the server, oldest first.
+- **Items and collections:** every member has an inventory, kept whatever happens to their
+  Plynling. `/plynling forage` sends it out once every 4 hours to bring back a collectible —
+  or, one time in five, a food for the pantry. Items also turn up in half of the happy gifts,
+  in one won game in five and, for each owner, in 15 % of the good visits. The 32
+  collectibles form four sets of eight (Cailloux, Nature, Trésors, Saisons — the last found
+  only in its season), each rarer than the last is common; `/plynling collection [user]`
+  shows the book, with anything not yet found as « ??? », and completing a set pays 100 to
+  300 cailloux once. Anything ever held stays discovered, so trading an item away never
+  undoes a set.
+- **The pantry:** `/plynling shop` buys food ahead (10 % off from five). Feeding serves from
+  the feeder's pantry first — one of that food for their own Plynling, two for someone
+  else's — and only charges cailloux when there isn't enough.
+- **Swapping:** `/plynling give` hands items to someone, `/plynling trade` posts an offer the
+  other person can accept for an hour (both sides are checked again at the moment of the
+  swap), and `/plynling sell` turns items into cailloux (2, 5, 15 or 50 by rarity).
 - **Cailloux** come from `/work` (every 4 hours) and, as a small bonus, from chatting,
   reacting and voice (45 a day at most). `/balance` is private.
 

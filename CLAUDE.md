@@ -1266,6 +1266,39 @@ lifted by staff only; the owner is told by DM whenever staff freeze, thaw or ren
 `LastSelfThawAt` is written only when a *self*-freeze ends, so a staff thaw never starts
 the owner's cooldown.
 
+**The inventory belongs to the person, not the Plynling.** `InventoryItem` rows are keyed on
+(guild, user, `ItemCatalog` key) and survive every death and abandonment. **Item keys are stored,
+so they are append-only like `PlynlingSpecies`** — renaming one orphans every copy held. A row
+that falls to quantity 0 is **kept**: it is what makes an item discovered for good, which is
+why a set completes on *discovery*, not on holding all eight at once, and why trading or
+selling an item never undoes a set. `CollectionCompletion` is the once-only guard on a set's
+reward, enforced by a unique index. The inventory commands live in
+`Commands/PlynlingModule.Inventory.cs`, a `partial` of the same `/plynling` group. **That group
+now holds 22 subcommands of Discord's 25** — the partials share one budget, and the 26th throws
+at registration on startup; a further batch of commands needs its own group.
+
+`InventoryService`'s static `AddAsync` / `TakeAsync` / `GrantAsync` take a context and **never
+save**, like `PebbleService.GetOrCreateWalletAsync`: every source — feeding from the pantry, the
+gift, a game, a visit, a forage — moves its items in its **own** unit of work, so the action and
+the items land in one `SaveChanges`. `AddAsync` pays a completed set into the wallet in that same
+save. Both it and the wallet helper check `Local` first, so two adds in one save never create
+the same row twice.
+
+**Feeding serves from the pantry first**, one of that food for your own Plynling and two for
+someone else's — the pantry's version of the double price — and only charges cailloux when
+there isn't enough. `TooPoor` is therefore only reachable with an empty pantry.
+
+**A visit's item finds use their own `Random`** (`findRng`), apart from the scene's. The scene's
+draws are scripted in the checks, and a shared generator would make every find shift the
+scene; keeping them apart keeps both testable. The gift's item share uses the *upper* half of
+its roll (`>= GiftCaillouxShare`) for the same reason: the existing cailloux checks roll low.
+
+**Trade offers are in memory** (`TradeOffers`, a singleton), like visit invitations: a restart
+drops them and their buttons then say so. One open offer per proposer — a new one replaces the
+old. `Take` removes atomically, so two clicks on « Accepter » cannot both swap, and the swap
+re-checks both sides inside one save. When the *recipient* lacks the items the offer is
+restored, since they may still get them; when the *proposer* does, it is withdrawn.
+
 **`/graveyard` is Components V2 with two button rows and two verbs** — `grave:sort:` for the
 newest/longest-life toggle and `grave:page:` for paging. The budget is 24 of 40 (container,
 heading, five picture rows at three components each, footer, two rows of two). Changing the

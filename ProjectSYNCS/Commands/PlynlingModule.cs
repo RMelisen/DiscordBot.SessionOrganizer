@@ -449,10 +449,11 @@ public partial class PlynlingModule : InteractionModuleBase<SocketInteractionCon
                 "La **faim** se vide en **2 jours** : à 0 %, il meurt. Le **bonheur** se vide en **36 heures** " +
                 "(il est juste triste).\n" +
                 "**`/plynling feed food: [user]`** — Champignon (15), Shiitake (30), Morille (40, que du bonheur), Truffe (80, faim et bonheur). " +
-                "Nourrir celui d'un autre coûte le double.\n" +
+                "Nourrir celui d'un autre coûte le double. Si tu as ce plat dans ton **garde-manger**, il est servi de là " +
+                "(2 pour celui d'un autre) au lieu de tes cailloux.\n" +
                 "**`/plynling pet [user]`** — +25 % de bonheur, toutes les 4 h, sur n'importe quel Plynling.\n" +
                 "Il **dort de 1 h à 5 h** : on peut le nourrir, pas le caresser, et il ne meurt jamais dans son sommeil.\n" +
-                "Son **humeur** compte : heureux, un repas le nourrit 15 % de plus et il te rapporte parfois un caillou ; " +
+                "Son **humeur** compte : heureux, un repas le nourrit 15 % de plus et il te rapporte parfois un caillou ou un objet ; " +
                 "triste, 25 % de moins. À 0 %, il **boude** et refuse de manger tant qu'on n'a pas joué avec lui ou qu'on " +
                 "ne l'a pas caressé — sauf s'il meurt de faim.")
             .AddField("Jouer & rendre visite",
@@ -468,6 +469,14 @@ public partial class PlynlingModule : InteractionModuleBase<SocketInteractionCon
                 "**`/work`** — 40 à 60 cailloux, toutes les 4 h.\n" +
                 "Parler, réagir et le vocal rapportent aussi quelques cailloux (45 au plus par jour).\n" +
                 "**`/balance`** — Ton solde, visible par toi seul.")
+            .AddField("Inventaire & collection",
+                "**`/plynling forage`** — Il part fouiller les environs (toutes les 4 h) et revient avec un objet… ou de quoi manger.\n" +
+                "On trouve aussi des objets dans son cadeau du jour, en gagnant un jeu et pendant les bonnes visites. " +
+                "Certains ne se trouvent qu'en une saison.\n" +
+                "**`/plynling collection [user]`** — Le carnet : 4 collections de 8 objets, chacune complétée rapporte des cailloux.\n" +
+                "**`/plynling inventory`** — Ton garde-manger et tes objets. **`/plynling shop food: quantity:`** remplit " +
+                "le garde-manger (−10 % dès 5).\n" +
+                "**`/plynling give`** · **`/plynling trade`** · **`/plynling sell`** — Offrir, échanger (l'offre dure 1 h) ou vendre.")
             .AddField("Partir en vacances",
                 "**`/plynling freeze`** — Gèle ton Plynling (14 jours au plus) : plus rien ne bouge. " +
                 "Seulement s'il a encore au moins 50 % de faim.\n" +
