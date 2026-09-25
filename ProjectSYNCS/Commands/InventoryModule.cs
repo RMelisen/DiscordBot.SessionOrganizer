@@ -211,8 +211,8 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
             .WithColor(Color.Purple)
             .WithDescription($"<@{userId}> · **{found}/{ItemCatalog.Collectibles.Count()}** objets trouvés · " +
                              $"{done.Count}/{ItemCatalog.Sets.Count} collections complètes\n\n" + string.Join("\n", lines))
-            .WithFooter("Choisis une collection dans le menu. On les trouve avec /plynling forage, le cadeau du jour, " +
-                        "les jeux et les visites — ou en échangeant.")
+            .WithFooter("Trouve des objets de collection avec /plynling forage, les jeux, les visites " +
+                        "ou en les échangeant avec des amis.")
             .Build();
     }
 
