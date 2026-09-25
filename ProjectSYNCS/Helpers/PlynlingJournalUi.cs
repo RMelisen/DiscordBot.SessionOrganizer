@@ -7,6 +7,8 @@ namespace ProjectSYNCS.Helpers;
 public enum JournalKind
 {
     Adopted, FirstMeal, GrewUp, FirstWin, Visited, Hosted, Frozen, Thawed, FedByFriend, Badge, Resurrected, Died,
+    // relationships (detail: the other Plynling's name)
+    BecameFriends, BecameBestFriends, BecameLovers, BecameRivals, BecameEnemies, Heartbroken, BrokeUp, Grieving,
 }
 
 // The wording of each moment — pure string work, gendered at display (the entry stores the
@@ -34,6 +36,16 @@ public static class PlynlingJournalUi
             : "Badge obtenu.",
         JournalKind.Resurrected => $"{g.Agree("Revenu", "Revenue")} d'entre les morts !",
         JournalKind.Died => $"{g.Agree("Mort", "Morte")} de faim.",
+        JournalKind.BecameFriends => $"🤝 Une nouvelle amitié avec **{Other(detail)}**.",
+        JournalKind.BecameBestFriends => $"💛 Meilleurs amis avec **{Other(detail)}**.",
+        JournalKind.BecameLovers => $"💞 {g.Agree("Amoureux", "Amoureuse")} de **{Other(detail)}**.",
+        JournalKind.BecameRivals => $"⚡ Rivalité avec **{Other(detail)}**.",
+        JournalKind.BecameEnemies => $"😠 Brouille avec **{Other(detail)}**.",
+        JournalKind.Heartbroken => $"💔 Un chagrin d'amour avec **{Other(detail)}**.",
+        JournalKind.BrokeUp => $"💔 Rupture avec **{Other(detail)}**.",
+        JournalKind.Grieving => $"🕯️ Pleure **{Other(detail)}**.",
         _ => "…",
     };
+
+    private static string Other(string? detail) => PlynlingCardUi.SafeName(detail ?? "?");
 }

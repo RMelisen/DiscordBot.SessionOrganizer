@@ -3,7 +3,7 @@ using ProjectSYNCS.Models;
 namespace ProjectSYNCS.Helpers;
 
 // What happened alongside an action that a badge can hinge on, beyond the counts.
-public enum BadgeEvent { None, SavedFromStarving, Resurrected }
+public enum BadgeEvent { None, SavedFromStarving, Resurrected, BecameFriends, BecameBestFriends, BecameLovers }
 
 /// <summary>
 /// One badge. The key is stored on each PlynlingBadge row, so it is **stable**: renaming one
@@ -59,6 +59,12 @@ public static class PlynlingBadges
         new BadgeInfo("saved", "😮‍💨", "Sauvé de justesse", "Sauvée de justesse", 20, (_, _, e) => e == BadgeEvent.SavedFromStarving),
         // Pays nothing: only staff can resurrect, so it cannot be something anyone earns on purpose.
         new BadgeInfo("resurrected", "✨", "Revenu d'entre les morts", "Revenue d'entre les morts", 0, (_, _, e) => e == BadgeEvent.Resurrected),
+        // Relationships: a first friend (reaching any closer bond counts too), a best friend, a couple.
+        new BadgeInfo("first_friend", "🤝", "Premier ami", "Première amie", 10,
+            (_, _, e) => e is BadgeEvent.BecameFriends or BadgeEvent.BecameBestFriends or BadgeEvent.BecameLovers),
+        new BadgeInfo("best_friend", "💛", "Meilleur ami", "Meilleure amie", 20,
+            (_, _, e) => e is BadgeEvent.BecameBestFriends or BadgeEvent.BecameLovers),
+        new BadgeInfo("couple", "💞", "En couple", "En couple", 30, (_, _, e) => e == BadgeEvent.BecameLovers),
     };
 
     private static readonly Dictionary<string, BadgeInfo> ByKeyMap = All.ToDictionary(b => b.Key);

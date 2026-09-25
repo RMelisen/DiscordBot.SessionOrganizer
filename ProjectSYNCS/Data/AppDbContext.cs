@@ -28,6 +28,7 @@ public class AppDbContext : DbContext
     public DbSet<PebbleWallet> PebbleWallets => Set<PebbleWallet>();
     public DbSet<PlynlingBadge> PlynlingBadges => Set<PlynlingBadge>();
     public DbSet<PlynlingJournalEntry> PlynlingJournalEntries => Set<PlynlingJournalEntry>();
+    public DbSet<PlynlingRelation> PlynlingRelations => Set<PlynlingRelation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -211,6 +212,15 @@ public class AppDbContext : DbContext
         {
             e.HasOne<Plynling>().WithMany().HasForeignKey(x => x.PlynlingId).OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => x.PlynlingId);
+        });
+
+        // One row per pair, lower id first; gone with either Plynling (abandoned), kept when one dies.
+        modelBuilder.Entity<PlynlingRelation>(e =>
+        {
+            e.HasOne<Plynling>().WithMany().HasForeignKey(x => x.PlynlingAId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Plynling>().WithMany().HasForeignKey(x => x.PlynlingBId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.PlynlingAId, x.PlynlingBId }).IsUnique();
+            e.HasIndex(x => x.PlynlingBId);
         });
 
         modelBuilder.Entity<PebbleWallet>(e =>
