@@ -40,10 +40,6 @@ public static class PlynlingText
     public static string TooPoor(long price, long balance) =>
         $"Il te faut {PebbleEconomy.Cailloux(price)}, tu n'en as que {balance}. `/work` pour en gagner.";
 
-    // "seul son propriétaire": the owner's gender is not known, so that part stays generic.
-    public static string NotYours(PlynlingGender g) =>
-        $"Ce n'est pas {g.Agree("ton", "ta")} Plynling — seul son propriétaire peut {g.Agree("le", "la")} nourrir.";
-
     public static string Dead(PlynlingGender g) => $"{g.Agree("Ce", "Cette")} Plynling n'est plus de ce monde… 🪦";
 
     public static string Frozen(PlynlingGender g) => g.Agree(

@@ -7,7 +7,7 @@ namespace ProjectSYNCS.Services;
 
 public enum AdoptOutcome { Adopted, AlreadyHasOne }
 
-public enum CareOutcome { Done, NoPlynling, NotOwner, Dead, Frozen, Wasted, TooPoor, Asleep }
+public enum CareOutcome { Done, NoPlynling, Dead, Frozen, Wasted, TooPoor, Asleep }
 
 public enum ThawOutcome { Thawed, NoPlynling, Dead, NotFrozen, StaffOnly }
 
@@ -83,20 +83,21 @@ public class PlynlingService
         var plynling = await GetByIdAsync(plynlingId, now);
         if (plynling is null) return new FeedResult(CareOutcome.NoPlynling, null, info.Price, 0);
 
+        // The feeder pays, from their own wallet — double when it is not their Plynling.
+        var price = PlynlingLife.FeedPrice(info, isOwner: plynling.OwnerId == actorId);
         var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, plynling.GuildId, actorId);
         CareOutcome? refusal =
-            plynling.OwnerId != actorId ? CareOutcome.NotOwner
-            : plynling.DiedAt is not null ? CareOutcome.Dead
+            plynling.DiedAt is not null ? CareOutcome.Dead
             : plynling.FrozenAt is not null ? CareOutcome.Frozen
             : PlynlingLife.WouldWaste(plynling, info, now) ? CareOutcome.Wasted
-            : wallet.Balance < info.Price ? CareOutcome.TooPoor
+            : wallet.Balance < price ? CareOutcome.TooPoor
             : null;
-        if (refusal is { } r) return new FeedResult(r, plynling, info.Price, wallet.Balance);
+        if (refusal is { } r) return new FeedResult(r, plynling, price, wallet.Balance);
 
-        wallet.Balance -= info.Price;
+        wallet.Balance -= price;
         PlynlingLife.Feed(plynling, info, now);
         await _db_context.SaveChangesAsync();          // the money and the meal land together
-        return new FeedResult(CareOutcome.Done, plynling, info.Price, wallet.Balance);
+        return new FeedResult(CareOutcome.Done, plynling, price, wallet.Balance);
     }
 
     public async Task<(CareOutcome Outcome, Plynling? Plynling)> PetAsync(int plynlingId, DateTimeOffset now)

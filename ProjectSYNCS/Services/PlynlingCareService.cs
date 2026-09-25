@@ -52,10 +52,15 @@ public class PlynlingCareService
         }
 
         var info = PlynlingCatalog.Info(food);
-        var line = string.Format(_picker.Pick(channelId, BotResponses.PlynlingFeedLines.For(result.Plynling.Gender)),
+        var g = result.Plynling.Gender;
+        var line = string.Format(_picker.Pick(channelId, BotResponses.PlynlingFeedLines.For(g)),
             PlynlingCardUi.SafeName(result.Plynling.Name), info.WithArticle);
+        // Someone else's: say who paid, and that it cost them double.
+        var paid = result.Plynling.OwnerId == actorId
+            ? $"−{PebbleEconomy.Cailloux(result.Price)}"
+            : $"offert par <@{actorId}> · −{PebbleEconomy.Cailloux(result.Price)} (le double : ce n'est pas {g.Agree("le sien", "la sienne")})";
         return new CareReply(PlynlingModule.BuildCard(result.Plynling, now,
-            $"{line}\n-# −{PebbleEconomy.Cailloux(info.Price)} · il te reste {PebbleEconomy.Cailloux(result.Balance)}",
+            $"{line}\n-# {paid} · il te reste {PebbleEconomy.Cailloux(result.Balance)}",
             PlynlingArt.Food(food)), null);
     }
 
@@ -64,7 +69,6 @@ public class PlynlingCareService
     public static string Refusal(CareOutcome outcome, PlynlingGender gender) => outcome switch
     {
         CareOutcome.NoPlynling => PlynlingText.NoPlynling,
-        CareOutcome.NotOwner => PlynlingText.NotYours(gender),
         CareOutcome.Dead => PlynlingText.Dead(gender),
         CareOutcome.Frozen => PlynlingText.Frozen(gender),
         CareOutcome.Wasted => PlynlingText.Wasted(gender),

@@ -89,6 +89,11 @@ public static class PlynlingCardUi
         return string.Join(", ", parts);
     }
 
+    // A « Nourrir » option's second line: what it does, and what it costs someone who is not
+    // the owner (the label already shows the owner's price). Discord caps it at 100.
+    public static string FoodOptionDescription(FoodInfo food) =>
+        $"{FoodEffect(food)} · {PebbleEconomy.Cailloux(PlynlingLife.FeedPrice(food, isOwner: false))} pour un autre";
+
     public static string GraveyardTitle(ulong owner, GraveSortLabel sort) =>
         (owner == 0 ? "## 🪦 Cimetière des Plynlings" : $"## 🪦 Les tombes de <@{owner}>") +
         $"\n-# Tri : {sort.Text}";

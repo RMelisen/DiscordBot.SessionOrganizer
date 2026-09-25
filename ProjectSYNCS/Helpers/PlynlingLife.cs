@@ -179,6 +179,10 @@ public static class PlynlingLife
 
     public static void Thaw(Plynling p, DateTimeOffset now) => EndFreeze(p, now);
 
+    // Anyone may feed anyone's Plynling, but only the owner pays the menu price: everyone
+    // else pays double — generosity has a cost, and it keeps feeding a friend's a gesture.
+    public static long FeedPrice(FoodInfo food, bool isOwner) => isOwner ? food.Price : food.Price * 2;
+
     public static bool WouldWaste(Plynling p, FoodInfo food, DateTimeOffset now) =>
         (food.Hunger <= 0 || HungerAt(p, now) >= Full) && (food.Happiness <= 0 || HappinessAt(p, now) >= Full);
 

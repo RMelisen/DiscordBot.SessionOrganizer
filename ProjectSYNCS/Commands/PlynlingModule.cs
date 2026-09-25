@@ -149,14 +149,18 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         await RespondCardAsync(plynling, now, null);
     }
 
-    [SlashCommand("feed", "Nourrir ton Plynling")]
-    public async Task FeedAsync([Summary("food", "Quoi lui donner")] PlynlingFood food)
+    [SlashCommand("feed", "Nourrir un Plynling (le tien par défaut — celui d'un autre coûte le double)")]
+    public async Task FeedAsync(
+        [Summary("food", "Quoi lui donner")] PlynlingFood food,
+        [Summary("user", "À qui est le Plynling (par défaut : toi)")] IUser? user = null)
     {
+        var target = user ?? Context.User;
         var now = DateTimeOffset.UtcNow;
-        var plynling = await _plynlings.GetCurrentAsync(Context.Guild.Id, Context.User.Id, now);
+        var plynling = await _plynlings.GetCurrentAsync(Context.Guild.Id, target.Id, now);
         if (plynling is null)
         {
-            await RespondAsync(PlynlingText.NoPlynling, ephemeral: true);
+            await RespondAsync(target.Id == Context.User.Id ? PlynlingText.NoPlynling : PlynlingText.NoneFor(target.Id),
+                ephemeral: true, allowedMentions: AllowedMentions.None);
             return;
         }
         await SendAsync(await _care.FeedAsync(plynling.Id, Context.User.Id, food, Context.Channel.Id, now));
@@ -472,7 +476,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 .WithPlaceholder("🍄 Nourrir…");
             foreach (var food in PlynlingCatalog.Foods)
                 menu.AddOption($"{food.Name} — {PebbleEconomy.Cailloux(food.Price)}", food.Food.ToString(),
-                    PlynlingCardUi.FoodEffect(food));
+                    PlynlingCardUi.FoodOptionDescription(food));
             builder.AddComponent(new ActionRowBuilder().WithSelectMenu(menu));
         }
         return builder.Build();
