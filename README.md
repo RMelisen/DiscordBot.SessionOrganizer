@@ -205,8 +205,8 @@ Every counter starts at zero the day it ships and nothing can be backfilled.
 ### Plynlings
 
 A **Plynling** is a small mushroom creature each member can adopt — one at a time, free.
-Its species is rolled: three common, one uncommon, two rares — the Mystique and the Coprin — and a
-legendary Doré.
+Its species is rolled: three common, one uncommon, two rares — the Mycène and the Coprin — and a
+legendary Girolle.
 Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Plynling*.
 
 - **Hunger** empties in 2 days and **happiness** in 36 hours. At 0% hunger it **dies** — really.

@@ -5,6 +5,8 @@ namespace ProjectSYNCS.Models;
 // to is PlynlingCatalog's business, not a column.
 public enum PlynlingSpecies
 {
+    // Mystique and Dore now show as « Mycène » and « Girolle » (PlynlingCatalog): only the
+    // display names changed — the values are stored and the art files are keyed on them.
     Amanite, Cepe, Rose, Russule, Mystique, Dore,                   // mushrooms
     Tournesol, Citron, Roux, Ivoire, Nocturne, Solaire,             // sunflowers
     Coprin,                                                         // a mushroom, appended later
