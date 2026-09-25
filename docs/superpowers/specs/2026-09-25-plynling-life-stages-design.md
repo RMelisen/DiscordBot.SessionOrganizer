@@ -1,12 +1,12 @@
 # Plynling life stages — design
 
-**Date:** 2026-09-25 · **Status:** approved, art pending review
+**Date:** 2026-09-25 · **Status:** approved; art approved (bébé only — see §3)
 
 ## Goal
 
 A Plynling grows up: **bébé → ado → adulte → ancien**. The stage is cosmetic — a label on the
-card and, for species that have the art, a different picture. The Cèpe gets its stage art
-first; the other five species follow later, one at a time.
+card and, for a **bébé** of a species that has the art, a different picture. Ado and ancien wear
+the adult picture. The Cèpe gets its baby art first; the other five species may follow.
 
 ## Decisions
 
@@ -14,7 +14,7 @@ first; the other five species follow later, one at a time.
 |---|---|
 | What a stage changes | **Looks only.** Hunger, happiness, food, freezing and death are untouched. |
 | Thresholds (time actually lived) | bébé **< 2 days**, ado **< 14 days**, adulte **< 180 days**, ancien **≥ 180 days** (6 months, a month taken as 30 days like the memorials — the same point the memorial becomes a statue). |
-| Art direction | **Body shape only** — proportions, posture, colour. No props. |
+| Art direction | **Body shape only** — proportions, posture, colour. No props. **Only the bébé gets its own picture**: ado and ancien were prototyped and dropped for simplicity; they show the adult sprite. |
 | Species without stage art | **Labelled anyway.** Every Plynling shows its stage from day one; a species with no stage art shows its adult picture at every stage until its art lands. |
 | Announcing a new stage | **None.** The card simply shows it the next time someone looks. |
 
@@ -54,26 +54,21 @@ its memorial, not a stage.
 
 ## 3. The art — `tools/plynling-art`
 
-`cepe(state, frame, shadow, stage="adult")`. Only the body changes; every stage wears the shared
-face, the six moods and the idle loop from `motion.py`, under the same rules (nothing moves side
-to side; frame 0 is the still sprite).
+`cepe(state, frame, shadow, stage="adult")`; `stage="baby"` draws `cepe_baby`, anything else the
+adult. The baby wears the shared face, the six moods and the idle loop from `motion.py`, under
+the same rules (nothing moves side to side; frame 0 is the still sprite).
 
-- **Bébé** — a short, round body under an oversized, rounder cap, the face set low: a button
-  mushroom.
-- **Ado** — taller and slimmer than the adult, a smaller cap tipped slightly: lanky.
-- **Adulte** — today's Cèpe, **byte-identical** to the v3 files.
-- **Ancien** — the cap drooping and flatter, the tones slightly faded, the gills hanging below
-  the rim like a white moustache.
+- **Bébé** — a small, squat button: a big round cap sitting low over a stubby body with no feet,
+  the face set lower.
+- **Ado, adulte, ancien** — today's Cèpe, **byte-identical** to the v3 files.
 
-`export.py` writes the three new stages for every species listed in a `STAGED` set (only
-`"cepe"` for now), 6 moods each: **18 new animated WebPs**. Filenames insert the stage for
-non-adult stages only:
+`export.py` writes the baby for every species listed in a `STAGED` set (only `"cepe"` for now),
+6 moods each: **6 new animated WebPs**. The baby's filename inserts the stage; the adult's does
+not change:
 
 ```
-plynling_cepe_happy_v3.webp          # adult — unchanged filename, unchanged file
+plynling_cepe_happy_v3.webp          # adult (and ado, ancien) — unchanged filename, unchanged file
 plynling_cepe_baby_happy_v3.webp
-plynling_cepe_teen_happy_v3.webp
-plynling_cepe_elder_happy_v3.webp
 ```
 
 **No art version bump.** No existing file changes, and new files are new URLs, so nothing Discord
@@ -82,23 +77,24 @@ has cached is invalidated. `ART_VERSION` and `PlynlingArt.Version` stay at 3.
 ## 4. The bot — `Helpers/PlynlingArt`
 
 ```csharp
-// Species whose life stages have their own art. Must match STAGED in export.py (artcheck).
+// Species whose bébé has its own art. Must match STAGED in export.py (artcheck).
 public static readonly IReadOnlySet<PlynlingSpecies> StagedSpecies = new HashSet<PlynlingSpecies> { PlynlingSpecies.Cepe };
 
 public static string Sprite(PlynlingSpecies species, PlynlingStage stage, PlynlingMood mood)
 ```
 
-An adult, or any stage of a species not in `StagedSpecies`, resolves to today's adult filename.
+Only a bébé of a species in `StagedSpecies` gets the `_baby` segment; every other combination
+resolves to today's adult filename.
 Both callers that show a living Plynling pass the stage alongside the mood:
 `PlynlingModule` (the card thumbnail) and `PlynlingAnnouncer.AnnounceResurrectionAsync`. The
 death announcement shows a memorial and is untouched.
 
 ## 5. Checks (scratch harnesses, as before)
 
-- **artcheck** — for staged species, all 4 stages × 6 moods resolve to existing animated WebPs;
-  unstaged species resolve every stage to the adult file; no orphan files; `StagedSpecies`
+- **artcheck** — every stage × mood of every species resolves to an existing animated WebP; only a
+  staged species' bébé differs from its adult file; no orphan files; `StagedSpecies`
   matches `STAGED` in `export.py`. Mutation-tested.
-- **animcheck** — the 18 new loops run 16 slots of 125 ms, each slot exactly what the code draws;
+- **animcheck** — the 6 new loops run 16 slots of 125 ms, each slot exactly what the code draws;
   all 70 pre-existing files stay byte-identical to v3.
 - **stage check (C#)** — the boundaries (just under / at 2, 14, 180 days), that frozen time does not
   advance the stage, and that `StageLabel` agrees in gender.
@@ -106,8 +102,8 @@ death announcement shows a memorial and is untouched.
 
 ## 6. Review flow
 
-The three Cèpe stages are prototyped in all six moods and sent as previews before anything is
-exported, then iterated on until approved — the same loop as the idle animation.
+The Cèpe stages were prototyped in all six moods and reviewed; the owner kept the bébé and
+dropped ado and ancien art (both wear the adult).
 
 ## Docs
 

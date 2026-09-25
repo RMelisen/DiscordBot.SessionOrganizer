@@ -28,8 +28,11 @@ def stem_palette(p):
 
 # ---- the Cèpe: the original sprite, unchanged ------------------------------------------
 
-def cepe(state, frame=0, shadow=True):
-    """The original Plynling: a broad cap, gills, a chubby body."""
+def cepe(state, frame=0, shadow=True, stage="adult"):
+    """The original Plynling: a broad cap, gills, a chubby body. The adult is the original
+    sprite, untouched; a baby is drawn by cepe_baby, and every other stage wears the adult."""
+    if stage == "baby":
+        return cepe_baby(state, frame, shadow)
     p = SPECIES["cepe"]
     cap = p["cap"]
     pose = pose_for("cepe", state, frame)
@@ -91,6 +94,47 @@ def cepe(state, frame=0, shadow=True):
     g.outline(lambda reg, ny: INK if ny >= 27 else (cap[4] if reg == "cap" else STEM_OUT))
     # the Cèpe keeps its original face (unclipped) and its original, fixed extras
     return finish(g, p, state, STEM, shadow=shadow, pose=pose, original=True)
+
+# The baby Cèpe, body shape only: a small, squat button — a big round cap sitting low over a
+# stubby body with no feet, the face set lower. It goes through finish() like the reshaped
+# species (clipped face, measured sweat and frost), since the original's fixed extras were
+# placed for the adult's silhouette. The other life stages wear the adult sprite.
+BABY_TOP, BABY_BOTTOM, BABY_SPAN, BABY_ARMS = 20, 28, (11, 20), (24, 25)
+BABY_CAP, BABY_CUT, BABY_FACE_OY = (18.5, 11.6, 11.0), 18, 3      # cap: centre row, x and y radii
+
+
+def cepe_baby(state, frame, shadow):
+    p = SPECIES["cepe"]
+    cap = p["cap"]
+    pose = pose_for("cepe", state, frame)
+    sag = 1 if state == "starving" else 0
+    x0, x1 = BABY_SPAN
+    g = Grid()
+
+    stem(g, STEM, x0, x1, BABY_TOP, BABY_BOTTOM)
+    for y in BABY_ARMS:
+        g.put(x0 - 1, y, STEM[2], "stem")
+        g.put(x1 + 1, y, STEM[3], "stem")
+
+    cy, rx, ry = BABY_CAP
+    cy += sag
+    rx += 0.9 * pose.widen                                           # wider on the out-breath
+    cut = BABY_CUT + sag
+    gills(g, p, cut + 1, x0 - 4, x1 + 4)
+    for y in range(cut + 1):
+        for x in range(N):
+            if ((x + 0.5 - 15.5) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1:
+                g.put(x, y, shade_cap(x, y, cap, 15.5, cy, rx, ry, 10, cy - 7.5, 8.5, 5.2, cut - 1), "cap")
+    for sx, sy, r in p["spots"]:                                      # the scales, moved with the cap
+        oy = sy + (cy - 14.0)
+        for y in range(N):
+            for x in range(N):
+                if (x - sx) ** 2 + (y - oy) ** 2 <= r * r and g.r[y][x] == "cap" and y < cut - 1:
+                    g.put(x, y, p["spot"][1] if (x - sx) + (y - oy) > r * 0.55 else p["spot"][0])
+
+    g.outline(lambda reg, ny: INK if ny >= 27 else (cap[4] if reg == "cap" else STEM_OUT))
+    return finish(g, p, state, STEM, face_oy=BABY_FACE_OY, shadow=shadow, pose=pose)
+
 
 # ---- shared pieces for the reshaped species -------------------------------------------
 

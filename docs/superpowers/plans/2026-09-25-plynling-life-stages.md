@@ -10,6 +10,12 @@
 
 Spec: `docs/superpowers/specs/2026-09-25-plynling-life-stages-design.md`.
 
+> **Amended after the Task 2 review:** the owner kept only the **bébé** art — ado and ancien show
+> the adult sprite. So `species.py` has `cepe_baby` (not `CEPE_STAGES`/`cepe_stage`), Task 3
+> exports **6** files (not 18), artcheck expects **42** sprite URLs (not 54), and
+> `PlynlingArt.StageSegment` adds `_baby` only for a bébé of a staged species. Where a task
+> below disagrees, this note wins.
+
 ## Global Constraints
 
 - Thresholds, in time actually lived: bébé **< 2 days**, ado **< 14 days**, adulte **< 180 days**, ancien **≥ 180 days**.

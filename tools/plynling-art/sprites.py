@@ -11,11 +11,14 @@ LID = (150, 122, 104)
 PALE = (206, 204, 204)
 
 
-def build(state, sp, frame=0, shadow=True):
-    """The living Plynling of species `sp` in one of the six moods. Each species draws its own
-    silhouette in species.py, and every one of them wears the face below."""
+def build(state, sp, frame=0, shadow=True, stage="adult"):
+    """The living Plynling of species `sp` in one of the six moods, at a life stage. Each species
+    draws its own silhouette in species.py, and every one of them wears the face below. Only
+    species with baby art (export.STAGED) accept a stage other than "adult"."""
     from species import DRAW          # imported here: species.py imports this module
-    return DRAW[sp](state, frame, shadow)
+    if stage == "adult":
+        return DRAW[sp](state, frame, shadow)
+    return DRAW[sp](state, frame, shadow, stage=stage)
 
 
 # ---- the face -------------------------------------------------------------------------
