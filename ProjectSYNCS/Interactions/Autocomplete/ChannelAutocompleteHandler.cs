@@ -6,7 +6,7 @@ using ProjectSYNCS.Services;
 namespace ProjectSYNCS.Interactions.Autocomplete;
 
 /// <summary>
-/// Suggests the text channels <c>/tell</c> can post into, for a plain string option.
+/// Suggests the text channels <c>/debug tell</c> can post into, for a plain string option.
 /// </summary>
 /// <remarks>
 /// <para><b>This exists because a native channel option cannot work in a DM.</b>

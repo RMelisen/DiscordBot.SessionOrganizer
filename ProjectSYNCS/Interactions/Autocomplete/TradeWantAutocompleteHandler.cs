@@ -7,7 +7,7 @@ using ProjectSYNCS.Services;
 namespace ProjectSYNCS.Interactions.Autocomplete;
 
 /// <summary>
-/// <c>/plynling trade</c>'s <c>want</c>: what the chosen person holds, once the <c>user</c>
+/// <c>/inventory trade</c>'s <c>want</c>: what the chosen person holds, once the <c>user</c>
 /// option is filled in — asking for something they do not have would only be refused. Before
 /// that, the whole catalog.
 /// </summary>

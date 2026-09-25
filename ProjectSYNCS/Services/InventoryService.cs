@@ -82,7 +82,7 @@ public class InventoryService
 
     public enum GiveOutcome { Given, NotEnough, UnknownItem }
 
-    /// <summary>/plynling shop: the money and the food land together, or neither.</summary>
+    /// <summary>/inventory shop: the money and the food land together, or neither.</summary>
     public async Task<(bool Bought, long Price, long Balance)> BuyAsync(ulong guildId, ulong userId, PlynlingFood food, int quantity, DateTimeOffset now)
     {
         var price = ItemCatalog.ShopPrice(PlynlingCatalog.Info(food), quantity);
@@ -94,7 +94,7 @@ public class InventoryService
         return (true, price, wallet.Balance);
     }
 
-    /// <summary>/plynling give: from one person's inventory to another's, in one save.</summary>
+    /// <summary>/inventory give: from one person's inventory to another's, in one save.</summary>
     public async Task<(GiveOutcome Outcome, List<CollectionSet> Completed)> GiveAsync(
         ulong guildId, ulong fromId, ulong toId, string key, int quantity, DateTimeOffset now)
     {
@@ -124,7 +124,7 @@ public class InventoryService
         return (TradeOutcome.Done, fromSets, toSets);
     }
 
-    /// <summary>/plynling sell: items for cailloux at ItemCatalog.SellPrice, in one save. The row stays (discovered).</summary>
+    /// <summary>/inventory sell: items for cailloux at ItemCatalog.SellPrice, in one save. The row stays (discovered).</summary>
     public async Task<(GiveOutcome Outcome, long Earned, long Balance)> SellAsync(ulong guildId, ulong userId, string key, int quantity)
     {
         if (ItemCatalog.ByKey(key) is not { } item) return (GiveOutcome.UnknownItem, 0, 0);

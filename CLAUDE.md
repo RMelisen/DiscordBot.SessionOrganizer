@@ -81,9 +81,19 @@ Layers: `Commands/` (slash modules + the embed/component builders), `Interaction
 Slash modules: `ScheduleModule`, `PollModule`, `VoteModule`, `GiveawayModule` (group
 modules), plus the flat `EmoteStatsModule`, `BotFeedbackModule` (`/goodbot`),
 `LevelModule` (`/level`, `/leaderboard`), `ShameModule` (`/shame`), `HelpModule`,
-`YesNoModule` (`/yesno`), `XpAdminModule` (`/addxp`, `/removexp`), `ConfigModule`
-(`/config`, itself a group module), `PlynlingModule` (`/plynling`, a group module), `EconomyModule` (`/work`, `/balance`), `GraveyardModule` (`/graveyard`), `SpeakModule` (`/tell`, `/dm`) and `AbsenceModule`
-(`/absent`). Component handlers for the published cards live apart
+`YesNoModule` (`/yesno`), `ConfigModule` (`/config`, itself a group module),
+`PlynlingModule` (`/plynling`, a group module), `InventoryModule` (`/inventory`),
+`EconomyModule` (`/work`, `/balance`), `AdminModule` (`/admin xp add|remove`,
+`/admin plynling rename|resurrect`) and `DebugModule` (`/debug tell|dm|absent`).
+
+**Commands are grouped by whose thing it is.** `/plynling` is the creature, `/inventory` the
+person's belongings (which outlive the creature), `/admin` every moderation *action* and
+`/config` the settings, `/debug` the owner's own tools — grouped so everyone else sees one
+entry in the picker instead of three, since no Discord permission can hide a command from
+all but one user. Discord allows **25 subcommands per top-level command**; `/plynling` holds
+15. A new batch of commands goes into the group that owns the thing, or into a new group —
+never onto a top-level command that is near the cap, since the 26th throws at registration
+on startup. Renaming a command changes what people type, so moves are done once, in a batch. Component handlers for the published cards live apart
 from the commands, in `Interactions/Components/` (`EventComponentHandler`,
 `PollComponentHandler`, `GiveawayComponentHandler`, `PlynlingComponentHandler`) — the module keeps the commands and
 the `static` card builders those handlers render through.
@@ -1021,14 +1031,14 @@ existing modal-DTO sync trap, so it is a constant rather than a literal.
 This was once four uncapped paths (`/yesno`'s question, `/giveaway`'s `lot`, the session
 title and the poll/vote title), each of which threw inside `Build()` at send time with
 nothing in the logs naming the length — the same failure mode that killed `/help` for six
-commits. `/tell` predates `InputCaps` and keeps its own `MaxMessageLength` (1500) with an
+commits. `/debug tell` predates `InputCaps` and keeps its own `MaxMessageLength` (1500) with an
 explicit refusal, because it truncates a *body* rather than rejecting a title.
 
 Deliberately **no** `HasMaxLength` in `AppDbContext`: SQLite does not enforce a column
 width, so it would document the cap without applying it, and the option-level cap is what
 actually holds.
 
-**`/addxp` and `/removexp` are guarded once, and only in code — deliberately no
+**`/admin` is guarded once per handler, and only in code — deliberately no
 `[DefaultMemberPermissions]`.** That attribute is a Discord permission *bit*, which
 cannot express "ManageGuild holders, plus this one specific person" — it has no notion
 of `AvailabilityService.OwnerId` at all. A first version carried it anyway, on a server
@@ -1051,20 +1061,20 @@ one is flat *only* because it had to stay invokable bare (a parent with subcomma
 cannot be), and nothing here needs that, since "show me the config" is naturally its own
 subcommand. Every handler is ephemeral and re-checks `SessionPermissions.IsStaff`, the
 only gate — no `[DefaultMemberPermissions]` on the group, for the same reason as
-`XpAdminModule`.
+`AdminModule`.
 
 **There are three separate authorization models.** Session and poll management uses
 `Helpers/SessionPermissions.CanManage` — the organizer, or any guild
-Administrator / ManageGuild holder. The owner-only commands (`/tell`, `/dm`,
-`/absent`, `/leaderboard`) instead compare `Context.User.Id` against `AvailabilityService.OwnerId`
+Administrator / ManageGuild holder. The owner-only commands (`/debug tell`, `dm`,
+`absent`, `/leaderboard`) instead compare `Context.User.Id` against `AvailabilityService.OwnerId`
 inline in the module and reply ephemerally. `SessionPermissions.IsStaff` is the third —
 Administrator / ManageGuild **or** the owner, with no notion of owning the thing being
-acted on, which is what `/addxp` and `/removexp` need since nobody owns someone else's
-XP, and what `/plynling freeze|thaw user:`, `/plynling rename` and `/plynling resurrect`
+acted on, which is what `/admin xp add|remove` need since nobody owns someone else's
+XP, and what `/plynling freeze|thaw user:`, `/admin plynling rename` and `resurrect`
 check. Don't conflate them.
 
 **Relayed text must never become a mass-ping vector.** Every path that sends text
-on someone's behalf (`SpeakModule`, `ChatterService`'s DM relay) passes
+on someone's behalf (`DebugModule`, `ChatterService`'s DM relay) passes
 `new AllowedMentions(AllowedMentionTypes.Users)` — users only, never `@everyone`,
 `@here` or roles — and renders quoted text through `MessageFormat.Quote` so relayed
 words are visibly not the bot's own. Preserve both when adding a relay. The absence
@@ -1272,10 +1282,10 @@ so they are append-only like `PlynlingSpecies`** — renaming one orphans every 
 that falls to quantity 0 is **kept**: it is what makes an item discovered for good, which is
 why a set completes on *discovery*, not on holding all eight at once, and why trading or
 selling an item never undoes a set. `CollectionCompletion` is the once-only guard on a set's
-reward, enforced by a unique index. The inventory commands live in
-`Commands/PlynlingModule.Inventory.cs`, a `partial` of the same `/plynling` group. **That group
-now holds 22 subcommands of Discord's 25** — the partials share one budget, and the 26th throws
-at registration on startup; a further batch of commands needs its own group.
+reward, enforced by a unique index. The inventory commands are their own
+`/inventory` group (`InventoryModule`), not part of `/plynling` — see the grouping note above.
+`/plynling forage` is the exception: it is something the Plynling *does*, so it stays there and
+only its find lands in the inventory.
 
 `InventoryService`'s static `AddAsync` / `TakeAsync` / `GrantAsync` take a context and **never
 save**, like `PebbleService.GetOrCreateWalletAsync`: every source — feeding from the pantry, the
@@ -1299,7 +1309,7 @@ old. `Take` removes atomically, so two clicks on « Accepter » cannot both swap
 re-checks both sides inside one save. When the *recipient* lacks the items the offer is
 restored, since they may still get them; when the *proposer* does, it is withdrawn.
 
-**`/graveyard` is Components V2 with two button rows and two verbs** — `grave:sort:` for the
+**`/plynling graveyard` is Components V2 with two button rows and two verbs** — `grave:sort:` for the
 newest/longest-life toggle and `grave:page:` for paging. The budget is 24 of 40 (container,
 heading, five picture rows at three components each, footer, two rows of two). Changing the
 sort resets to page 0. The graveyard settles every living Plynling in the guild before
@@ -1392,14 +1402,14 @@ rows there is headroom for one more row of five buttons and no more.
 passé" in her voice, with no mention of permissions, so it reads as an ordinary failure.
 Fixed rather than a pool on purpose: a real error is identical every time, and a varied
 one would read as scripted. The gate is inline `AvailabilityService.OwnerId`, the
-`/tell` model — not `IsStaff`. **It lives in `ShowAsync` as well as the slash command**,
+`/debug tell` model — not `IsStaff`. **It lives in `ShowAsync` as well as the slash command**,
 because every board button routes there and the board is a public message: gating only
 the command would leave the owner's board clickable by anyone in the channel. The
 refusal to a button is ephemeral and leaves the owner's message untouched. `/level`'s
 "Voir le classement" button is only added when the *viewer* is the owner, rather than
 offered as a door to the fake error. It is absent from `/help`, like the other
 owner-only commands, but still visible in Discord's picker — there is no permission bit
-for "this one user", the same limitation `XpAdminModule` documents.
+for "this one user", the same limitation `AdminModule` documents.
 
 **This lock is temporary** — the owner intends to re-open `/leaderboard` to everyone
 later. It is not a design to defend. To undo it: make `CanSeeLeaderboard` return `true`
@@ -1580,7 +1590,7 @@ recorded regardless. `AnnounceAsync` resolves the member through
 `channel as SocketGuildChannel`, which a voice channel also satisfies — so the avatar
 on the card still works.
 
-**`/tell`'s destination is an autocompleted *string*, not a channel option, and that is
+**`/debug tell`'s destination is an autocompleted *string*, not a channel option, and that is
 what makes it work from a DM.** Discord's native channel picker resolves against the
 guild the command was invoked in; a DM has none, so the option renders with nothing to
 choose. Autocomplete is driven by the bot rather than by the client's context, which is
@@ -1590,7 +1600,7 @@ time would need conflict handling between them, which `respond_to` already demon
 is worth avoiding. `ChannelAutocompleteHandler` offers only channels the bot can
 actually **send** in, and suggests nothing at all to anyone but the owner, since the
 command is registered globally and therefore visible to everyone. The text is turned
-back into a channel by `SpeakModule.ParseChannelRef`, kept pure and gateway-free because
+back into a channel by `DebugModule.ParseChannelRef`, kept pure and gateway-free because
 misreading it sends the owner's message to the wrong place silently; a *name* is
 accepted only when exactly one channel matches, for the same reason.
 
@@ -1599,7 +1609,7 @@ accepted only when exactly one channel matches, for the same reason.
 `register_globally: true`, and a global slash command is DM-enabled by default — so
 without the attribute the command is reachable in a DM, where `Context.Guild` is null
 and the handler can only throw. All six guild-dependent modules carry it;
-`HelpModule`, `AbsenceModule` and `SpeakModule` deliberately do not, because they
+`HelpModule` and `DebugModule` deliberately do not, because they
 never touch `Context.Guild` and `/help` genuinely works in a DM. Note the older
 `[EnabledInDm(false)]` is obsolete in Discord.Net 3.20 and fails the build under
 `-warnaserror`.
@@ -1669,6 +1679,6 @@ cross-posted.
 Two of those are now *floors* rather than the whole story: `/config` can add excluded
 channels and grant `/shame` voting to a role, but neither command can edit these lists —
 see the runtime-configuration note above. The rest have no configuration surface at all.
-`AvailabilityService.OwnerId` was deliberately left out of `/config`: it gates `/tell`,
-`/dm`, `/absent` and the DM relay, so making it editable by any ManageGuild holder would
+`AvailabilityService.OwnerId` was deliberately left out of `/config`: it gates `/debug tell`,
+`dm`, `absent` and the DM relay, so making it editable by any ManageGuild holder would
 let them hand themselves those powers, including impersonating the relay.

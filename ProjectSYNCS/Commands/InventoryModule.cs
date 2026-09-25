@@ -7,10 +7,25 @@ using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Commands;
 
-// The inventory half of /plynling: buying food ahead, giving items away, and looking at what
-// you hold. Items belong to the person, not to a Plynling — they survive its death.
-public partial class PlynlingModule
+// /inventory — what a person holds: the pantry, the collectibles and the book, and the ways
+// items change hands. Its own group rather than part of /plynling because items belong to the
+// person, not to a Plynling — they survive its death and abandonment — and because /plynling
+// was running out of Discord's 25 subcommands.
+//
+// Guild-only: every query is scoped to Context.Guild.Id.
+[CommandContextType(InteractionContextType.Guild)]
+[Group("inventory", "Tes objets : garde-manger, collection, échanges")]
+public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
 {
+    private readonly InventoryService _inventory;
+    private readonly TradeOffers _trades;
+
+    public InventoryModule(InventoryService inventory, TradeOffers trades)
+    {
+        _inventory = inventory;
+        _trades = trades;
+    }
+
     // How many of one food the shop sells at once.
     private const int MaxShopQuantity = 20;
 
@@ -112,34 +127,13 @@ public partial class PlynlingModule
         }, ephemeral: true);
     }
 
-    [SlashCommand("inventory", "Ton inventaire : garde-manger, objets trouvés, cailloux")]
+    [SlashCommand("view", "Ton inventaire : garde-manger, objets trouvés, cailloux")]
     public async Task InventoryAsync()
     {
         var held = await _inventory.GetAllAsync(Context.Guild.Id, Context.User.Id);
         var completions = await _inventory.GetCompletionsAsync(Context.Guild.Id, Context.User.Id);
         var balance = await _inventory.BalanceAsync(Context.Guild.Id, Context.User.Id);
         await RespondAsync(embed: BuildInventoryEmbed(held, completions.Count, balance), ephemeral: true);
-    }
-
-    [SlashCommand("forage", "Envoyer ton Plynling fouiller les environs — un objet ou de quoi manger, toutes les 4 h")]
-    public async Task ForageAsync()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var result = await _plynlings.ForageAsync(Context.Guild.Id, Context.User.Id, now, Random.Shared);
-        var gender = result.Plynling?.Gender ?? PlynlingGender.Male;
-        if (result.Outcome == CareOutcome.TooSoon)
-        {
-            await RespondAsync(PlynlingText.ForageTooSoon(gender, result.ReadyAt!.Value), ephemeral: true);
-            return;
-        }
-        if (result.Outcome != CareOutcome.Done || result.Find is null || result.Plynling is null)
-        {
-            await RespondAsync(PlynlingCareService.Refusal(result.Outcome, gender), ephemeral: true);
-            return;
-        }
-        var line = PlynlingText.FindLines(
-            PlynlingText.Foraged(PlynlingCardUi.SafeName(result.Plynling.Name), gender, result.Find.Item), result.Find, Context.User.Id);
-        await RespondCardAsync(result.Plynling, now, line);
     }
 
     [SlashCommand("collection", "Le carnet de collection de quelqu'un (le tien par défaut)")]

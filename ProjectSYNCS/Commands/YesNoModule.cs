@@ -7,7 +7,7 @@ using ProjectSYNCS.Helpers;
 namespace ProjectSYNCS.Commands;
 
 // A coin flip she delivers in her own voice. One command, its own module, the same
-// shape as AbsenceModule and HelpModule.
+// shape as DebugModule and HelpModule.
 //
 // Deliberately no [CommandContextType]: nothing here reads Context.Guild, so it works
 // in a DM as happily as in a channel — the same reason HelpModule carries no guard.

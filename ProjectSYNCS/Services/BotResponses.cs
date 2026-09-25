@@ -45,7 +45,7 @@ namespace ProjectSYNCS.Services;
 //     OwnerGreetings ........... mentioned  |  OwnerComebacks ..... replied to
 //     OwnerMeanReplies ......... him being mean to her
 //     OwnerAbsentNotices ....... someone pinged him while away
-//     OwnerReplyHeralds · OwnerAnnouncementHeralds ... /tell and /dm heralds
+//     OwnerReplyHeralds · OwnerAnnouncementHeralds ... /debug tell and dm heralds
 //
 //   Tata (Analuz) — TataId, TataGreetings (mentioned), TataReplies (replied to)
 //
@@ -257,7 +257,7 @@ internal static class BotResponses
         "🗿 **{0}**, bien qu'indisponible, a tenu à répondre :",
     };
 
-    // Short ceremonial headers for /tell: the owner speaking through the bot of
+    // Short ceremonial headers for /debug tell: the owner speaking through the bot of
     // his own accord, rather than answering someone. Same herald register as
     // OwnerReplyHeralds, but announcing instead of replying.
     // {0} = the owner's name.

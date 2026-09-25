@@ -171,8 +171,8 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
     // ---- /level -------------------------------------------------------------
 
     // TEMPORARY — to be re-opened to everyone later; see CLAUDE.md for the undo steps.
-    // /leaderboard is owner-only. Inline OwnerId comparison, the same model as /tell,
-    // /dm and /absent — not IsStaff, which would open it to every ManageGuild holder.
+    // /leaderboard is owner-only. Inline OwnerId comparison, the same model as /debug
+    // tell, dm and absent — not IsStaff, which would open it to every ManageGuild holder.
     private static bool CanSeeLeaderboard(IUser user) => user.Id == AvailabilityService.OwnerId;
 
     // showLeaderboardButton is whether the *viewer* could follow "Voir le classement".

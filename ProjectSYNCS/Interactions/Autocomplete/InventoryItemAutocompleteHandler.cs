@@ -7,7 +7,7 @@ using ProjectSYNCS.Services;
 namespace ProjectSYNCS.Interactions.Autocomplete;
 
 /// <summary>
-/// Suggests the items the person typing actually holds — for <c>/plynling give</c>, and later
+/// Suggests the items the person typing actually holds — for <c>/inventory give</c>, and later
 /// trade and sell. The value sent back is the item's stable catalog key, the display its emoji,
 /// name and count, so nothing ever has to parse a name back into an item.
 /// </summary>

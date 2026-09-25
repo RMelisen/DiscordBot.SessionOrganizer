@@ -24,16 +24,15 @@ a wall of shame. The bot's user-facing language is French.
 | `/goodbot` | Who praised or scolded the bot | everyone |
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
 | `/shame` | The wall of shame | everyone |
-| `/plynling adopt · view · list · journal · relations · feed · pet · play · visit · freeze · thaw · abandon · help` | Adopt and look after a Plynling | everyone |
-| `/plynling forage · collection · inventory · shop · give · trade · sell` | Find, collect and swap items | everyone |
+| `/plynling adopt · view · list · journal · relations · feed · pet · play · visit · forage · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling | everyone |
+| `/inventory view · collection · shop · give · trade · sell` | Your items: pantry, collection, swaps | everyone |
 | `/work · /balance` | Earn cailloux; see your balance | everyone |
-| `/graveyard [user]` | Every Plynling that died | everyone |
 | `/shame user:@someone` | Put someone on it | staff |
 | `/config` | Per-server settings, no redeploy | staff |
-| `/addxp · /removexp` | Manual XP adjustment | staff |
-| `/plynling rename · resurrect`, `freeze/thaw user:` | Manage someone's Plynling | staff |
+| `/admin xp add · remove` | Manual XP adjustment | staff |
+| `/admin plynling rename · resurrect`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
 | `/leaderboard` | Server ranking — three views, three windows | owner |
-| `/tell · /dm · /absent` | Speak through the bot; flag yourself away | owner |
+| `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
 | `/help` | In-Discord usage guide | everyone |
 
 "Staff" means Administrator or Manage Server, the bot's owner, or a configured
@@ -251,7 +250,7 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
 - **Holidays:** `/plynling freeze` stops everything for up to 14 days, as long as it isn't
   already hungry; then a week before it can be frozen again.
 - **Death** is announced to the whole server, after a private warning about 3 hours
-  before (at 11 pm the evening before, if that would fall at night). `/graveyard` lists every grave, newest or longest-lived first — and the longer a
+  before (at 11 pm the evening before, if that would fall at night). `/plynling graveyard` lists every grave, newest or longest-lived first — and the longer a
   Plynling lived, the grander its memorial, from a simple cairn to a statue in its likeness.
 - **Abandoning** (`/plynling abandon`) — you type its name to confirm, and it leaves for
   good: no grave, no coming back. The whole server hears about it, it counts towards
@@ -262,16 +261,16 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   or, one time in five, a food for the pantry. Items also turn up in half of the happy gifts,
   in one won game in five and, for each owner, in 15 % of the good visits. The 32
   collectibles form four sets of eight (Cailloux, Nature, Trésors, Saisons — the last found
-  only in its season), each rarer than the last is common; `/plynling collection [user]`
+  only in its season), each rarer than the last is common; `/inventory collection [user]`
   shows the book, with anything not yet found as « ??? », and completing a set pays 100 to
   300 cailloux once. Anything ever held stays discovered, so trading an item away never
   undoes a set.
-- **The pantry:** `/plynling shop` buys food ahead (10 % off from five). Feeding serves from
+- **The pantry:** `/inventory shop` buys food ahead (10 % off from five). Feeding serves from
   the feeder's pantry first — one of that food for their own Plynling, two for someone
   else's — and only charges cailloux when there isn't enough.
-- **Swapping:** `/plynling give` hands items to someone, `/plynling trade` posts an offer the
+- **Swapping:** `/inventory give` hands items to someone, `/inventory trade` posts an offer the
   other person can accept for an hour (both sides are checked again at the moment of the
-  swap), and `/plynling sell` turns items into cailloux (2, 5, 15 or 50 by rarity).
+  swap), and `/inventory sell` turns items into cailloux (2, 5, 15 or 50 by rarity).
 - **Cailloux** come from `/work` (every 4 hours) and, as a small bonus, from chatting,
   reacting and voice (45 a day at most). `/balance` is private.
 
@@ -286,12 +285,12 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   existing right or un-exclude a channel, and a server that never touches `/config`
   behaves exactly as before. **`/config show`** prints the current state, separating the
   built-in defaults from what was added.
-- **`/addxp <member> <amount>` · `/removexp <member> <amount>`** — manual XP
+- **`/admin xp add <member> <amount>` · `/admin xp remove <member> <amount>`** — manual XP
   adjustment. Ephemeral, clamped at zero, and deliberately silent: crossing a level this
   way fires no level-up card, since that card celebrates something earned.
-- **Owner-only** — the configured owner can speak through the bot: **`/tell`** into a
+- **Owner-only** — the configured owner can speak through the bot: **`/debug tell`** into a
   channel (usable from a DM with the bot too, picking the destination from an
-  autocompleted list of channels it can post in) and **`/dm`** to a person. **`/absent`**
+  autocompleted list of channels it can post in) and **`/debug dm`** to a person. **`/debug absent`**
   flags him unavailable, after which the bot answers anyone who pings him and forwards
   the mention by DM — which he can reply to, and the bot relays the answer back into the
   original channel. These are deliberately left out of `/help`.
@@ -357,7 +356,7 @@ ProjectSYNCS/
 ├─ Interactions/
 │  ├─ Components/          # Button and select handlers for published cards
 │  ├─ Modals/              # Modal DTOs
-│  └─ Autocomplete/        # Channel suggestions for /tell
+│  └─ Autocomplete/        # Channel and item suggestions
 ├─ Services/               # Hosted:      BotService, ReminderService, PresenceService,
 │                          #              VoiceXpService, GiveawayDrawService
 │                          # Data (EF):   Event, Poll, EmoteStats, BotFeedback, Xp,
@@ -425,7 +424,7 @@ for instant command registration while developing — global commands take up to
 to propagate. The SQLite database is created and migrated automatically on first run.
 
 Note that guild-scoped commands aren't reachable in DMs, so anything meant to work
-there (like `/tell`) needs global registration to test.
+there (like `/debug tell`) needs global registration to test.
 
 There is no test project and no CI: verify changes by building and running against a
 development guild.

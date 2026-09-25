@@ -24,7 +24,7 @@ namespace ProjectSYNCS.Commands;
 // default). Without this the command is reachable somewhere it can only throw.
 [CommandContextType(InteractionContextType.Guild)]
 // Deliberately NOT [DefaultMemberPermissions(GuildPermission.ManageGuild)] — see
-// XpAdminModule for why. A permission bit cannot single out
+// AdminModule for why. A permission bit cannot single out
 // AvailabilityService.OwnerId, so on a server where the owner holds no ManageGuild
 // role Discord would block him from a gate meant to admit him. IsStaff in every
 // handler below is the only real check.

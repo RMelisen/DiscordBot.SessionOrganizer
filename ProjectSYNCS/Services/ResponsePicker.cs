@@ -7,7 +7,7 @@ namespace ProjectSYNCS.Services;
 // 5-line one, because back-to-back repeats are what people notice. Kept as a
 // singleton so the history is shared across every entry point; like the rest of the
 // personality state it lives in memory and resets on restart.
-// Public (like AvailabilityService) because the public SpeakModule injects it.
+// Public (like AvailabilityService) because the public DebugModule injects it.
 public sealed class ResponsePicker
 {
     // Upper bound on the lines remembered per channel. The number actually excluded

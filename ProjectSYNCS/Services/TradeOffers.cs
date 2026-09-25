@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 
 namespace ProjectSYNCS.Services;
 
-// One /plynling trade offer: `FromId` gives GiveQty × GiveKey to `ToId` for WantQty × WantKey.
+// One /inventory trade offer: `FromId` gives GiveQty × GiveKey to `ToId` for WantQty × WantKey.
 public sealed record TradeOffer(
     string Id, ulong GuildId, ulong FromId, ulong ToId,
     string GiveKey, int GiveQty, string WantKey, int WantQty, DateTimeOffset ExpiresAt);

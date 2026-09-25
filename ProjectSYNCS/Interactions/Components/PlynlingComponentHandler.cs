@@ -33,7 +33,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         _picker = picker;
     }
 
-    // ---- /plynling trade: « Accepter » for the recipient only; « Refuser » for the recipient
+    // ---- /inventory trade: « Accepter » for the recipient only; « Refuser » for the recipient
     // (declining) or the proposer (withdrawing). The card is rewritten with the result and loses
     // its buttons; a refusal to anyone else is private and leaves it alone.
     [ComponentInteraction("plyn:tacc:*", ignoreGroupNames: true)]
@@ -58,7 +58,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             return;
         }
 
-        var (give, want) = PlynlingModule.TradeSides(offer);
+        var (give, want) = InventoryModule.TradeSides(offer);
         var (outcome, fromSets, toSets) = await _inventory.TradeAsync(offer, now);
         switch (outcome)
         {
@@ -96,7 +96,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             await RespondAsync(PlynlingText.TradeGone, ephemeral: true);
             return;
         }
-        var (give, want) = PlynlingModule.TradeSides(offer);
+        var (give, want) = InventoryModule.TradeSides(offer);
         await CloseTradeCardAsync(Context.User.Id == offer.FromId
             ? PlynlingText.TradeCancelled(offer.FromId, give, want)
             : PlynlingText.TradeDeclined(offer.FromId, offer.ToId, give, want));
@@ -111,6 +111,31 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             m.Components = new ComponentBuilder().Build();
             m.AllowedMentions = AllowedMentions.None;
         });
+
+    // ---- /plynling graveyard: the sort toggle and the pages, two verbs, one redraw.
+    [ComponentInteraction("grave:page:*:*:*", ignoreGroupNames: true)]
+    public Task OnGravePageAsync(string sort, string owner, string page) => ShowGraveyardAsync(sort, owner, page);
+
+    [ComponentInteraction("grave:sort:*:*:*", ignoreGroupNames: true)]
+    public Task OnGraveSortAsync(string sort, string owner, string page) => ShowGraveyardAsync(sort, owner, page);
+
+    private async Task ShowGraveyardAsync(string sortStr, string ownerStr, string pageStr)
+    {
+        if (!Enum.TryParse<GraveSort>(sortStr, out var sort)) sort = GraveSort.Recent;
+        ulong.TryParse(ownerStr, out var owner);
+        int.TryParse(pageStr, out var page);
+
+        var now = DateTimeOffset.UtcNow;
+        var graves = await _plynlings.GetGraveyardAsync(Context.Guild.Id, owner == 0 ? null : owner, now);
+        var components = PlynlingGraveyardCards.BuildPage(graves, sort, owner, page, now);
+
+        await ((SocketMessageComponent)Context.Interaction).UpdateAsync(m =>
+        {
+            m.Components = components;
+            m.Flags = MessageFlags.ComponentsV2;
+            m.AllowedMentions = AllowedMentions.None;
+        });
+    }
 
     // ---- /plynling journal's pages: two verbs, one redraw, re-read on every click.
     [ComponentInteraction("plyn:jprev:*:*", ignoreGroupNames: true)]

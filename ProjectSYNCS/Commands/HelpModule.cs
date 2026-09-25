@@ -75,9 +75,11 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**2 votes maximum par personne visée et par jour**.")
             .AddField("Commandes — Plynlings",
                 "**`/plynling help`** — Adopte un petit champignon, nourris-le, garde-le en vie. " +
-                "Tout est expliqué là-dedans.")
+                "Tout est expliqué là-dedans.\n" +
+                "**`/inventory view`** — Tes objets, ton garde-manger et ta collection.")
             .AddField("Commandes — Staff & aide",
-                "**`/addxp`** · **`/removexp`** — Ajuster l'XP de quelqu'un.\n" +
+                "**`/admin xp add`** · **`/admin xp remove`** — Ajuster l'XP de quelqu'un.\n" +
+                "**`/admin plynling rename`** · **`/admin plynling resurrect`** — Gérer le Plynling de quelqu'un.\n" +
                 "**`/config`** — Le rôle autorisé à voter avec `/shame`, et les salons où rien ne " +
                 "compte. **`/config show`** affiche la configuration actuelle.\n" +
                 "**`/help`** — Affiche ce message.")

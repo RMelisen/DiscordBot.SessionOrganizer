@@ -16,7 +16,7 @@ namespace ProjectSYNCS.Commands;
 // refusal stays *private* — a public "thinking…" cannot become an ephemeral reply.
 [CommandContextType(InteractionContextType.Guild)]
 [Group("plynling", "Ton Plynling : l'adopter, t'en occuper, le regarder vivre")]
-public partial class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
+public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly PlynlingService _plynlings;
     private readonly PlynlingCareService _care;
@@ -25,17 +25,13 @@ public partial class PlynlingModule : InteractionModuleBase<SocketInteractionCon
     private readonly PlynlingCooldowns _cooldowns;
     private readonly ShameService _shame;
     private readonly PlynlingPlayService _play;
-    private readonly InventoryService _inventory;
-    private readonly TradeOffers _trades;
     private readonly ILogger<PlynlingModule> _logger;
 
     public PlynlingModule(PlynlingService plynlings, PlynlingCareService care, ResponsePicker picker,
         PlynlingAnnouncer announcer, PlynlingCooldowns cooldowns, ShameService shame, PlynlingPlayService play,
-        InventoryService inventory, TradeOffers trades, ILogger<PlynlingModule> logger)
+        ILogger<PlynlingModule> logger)
     {
         _play = play;
-        _inventory = inventory;
-        _trades = trades;
         _plynlings = plynlings;
         _care = care;
         _picker = picker;
@@ -363,63 +359,35 @@ public partial class PlynlingModule : InteractionModuleBase<SocketInteractionCon
                 _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffThawDms.For(plynling.Gender)), PlynlingCardUi.SafeName(plynling.Name)));
     }
 
-    // Staff only: the name is shown publicly (card, announcements, graveyard), so fixing
-    // an offensive one is moderation. Reaches their latest grave too.
-    [SlashCommand("rename", "Staff : renommer le Plynling de quelqu'un")]
-    public async Task RenameAsync(
-        [Summary("user", "À qui est le Plynling")] IUser user,
-        [Summary("name", "Son nouveau nom")] [MaxLength(InputCaps.PlynlingName)] string name)
+    [SlashCommand("forage", "Envoyer ton Plynling fouiller les environs — un objet ou de quoi manger, toutes les 4 h")]
+    public async Task ForageAsync()
     {
-        if (!SessionPermissions.IsStaff(Context.User))
+        var now = DateTimeOffset.UtcNow;
+        var result = await _plynlings.ForageAsync(Context.Guild.Id, Context.User.Id, now, Random.Shared);
+        var gender = result.Plynling?.Gender ?? PlynlingGender.Male;
+        if (result.Outcome == CareOutcome.TooSoon)
         {
-            await RespondAsync(PlynlingText.StaffOnly, ephemeral: true);
+            await RespondAsync(PlynlingText.ForageTooSoon(gender, result.ReadyAt!.Value), ephemeral: true);
             return;
         }
-        name = name.Trim();
-        if (name.Length == 0)
+        if (result.Outcome != CareOutcome.Done || result.Find is null || result.Plynling is null)
         {
-            await RespondAsync(PlynlingText.EmptyName, ephemeral: true);
+            await RespondAsync(PlynlingCareService.Refusal(result.Outcome, gender), ephemeral: true);
             return;
         }
-
-        var (plynling, oldName) = await _plynlings.RenameAsync(Context.Guild.Id, user.Id, name, DateTimeOffset.UtcNow);
-        if (plynling is null)
-        {
-            await RespondAsync(PlynlingText.NoneFor(user.Id), ephemeral: true, allowedMentions: AllowedMentions.None);
-            return;
-        }
-
-        await RespondAsync($"✏️ **{PlynlingCardUi.SafeName(oldName)}** s'appelle désormais **{PlynlingCardUi.SafeName(plynling.Name)}**.",
-            ephemeral: true, allowedMentions: AllowedMentions.None);
-        if (user.Id != Context.User.Id)   // after the reply — see FreezeAsync
-            await _announcer.DmOwnerAsync(plynling.OwnerId, string.Format(
-                _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffRenameDms.For(plynling.Gender)),
-                PlynlingCardUi.SafeName(oldName), PlynlingCardUi.SafeName(plynling.Name)));
+        var line = PlynlingText.FindLines(
+            PlynlingText.Foraged(PlynlingCardUi.SafeName(result.Plynling.Name), gender, result.Find.Item), result.Find, Context.User.Id);
+        await RespondCardAsync(result.Plynling, now, line);
     }
 
-    // Staff only in v1 (a rare self-service item comes later, through the same
-    // PlynlingService.ResurrectAsync). The comeback is announced publicly, like the death.
-    [SlashCommand("resurrect", "Staff : ressusciter le dernier Plynling de quelqu'un")]
-    public async Task ResurrectAsync([Summary("user", "À qui est le Plynling")] IUser user)
+    [SlashCommand("graveyard", "Le cimetière des Plynlings (ou seulement ceux de quelqu'un)")]
+    public async Task GraveyardAsync(
+        [Summary("user", "Seulement les tombes de cette personne")] IUser? user = null)
     {
-        if (!SessionPermissions.IsStaff(Context.User))
-        {
-            await RespondAsync(PlynlingText.StaffOnly, ephemeral: true);
-            return;
-        }
-
         var now = DateTimeOffset.UtcNow;
-        var (outcome, plynling) = await _plynlings.ResurrectAsync(Context.Guild.Id, user.Id, now);
-        if (outcome != ResurrectOutcome.Resurrected || plynling is null)
-        {
-            await RespondAsync(outcome == ResurrectOutcome.NoGrave ? PlynlingText.NoGrave : PlynlingText.ResurrectBlocked,
-                ephemeral: true);
-            return;
-        }
-
-        await RespondAsync($"✨ **{PlynlingCardUi.SafeName(plynling.Name)}** est de retour (annoncé dans <#{PlynlingAnnouncer.GameChannelId}>).",
-            ephemeral: true, allowedMentions: AllowedMentions.None);
-        await _announcer.AnnounceResurrectionAsync(plynling, now);   // after the reply — see FreezeAsync
+        var graves = await _plynlings.GetGraveyardAsync(Context.Guild.Id, user?.Id, now);
+        await RespondAsync(components: PlynlingGraveyardCards.BuildPage(graves, GraveSort.Recent, user?.Id ?? 0, 0, now),
+            flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
     }
 
     [SlashCommand("help", "Comment fonctionnent les Plynlings")]
@@ -473,10 +441,10 @@ public partial class PlynlingModule : InteractionModuleBase<SocketInteractionCon
                 "**`/plynling forage`** — Il part fouiller les environs (toutes les 4 h) et revient avec un objet… ou de quoi manger.\n" +
                 "On trouve aussi des objets dans son cadeau du jour, en gagnant un jeu et pendant les bonnes visites. " +
                 "Certains ne se trouvent qu'en une saison.\n" +
-                "**`/plynling collection [user]`** — Le carnet : 4 collections de 8 objets, chacune complétée rapporte des cailloux.\n" +
-                "**`/plynling inventory`** — Ton garde-manger et tes objets. **`/plynling shop food: quantity:`** remplit " +
+                "**`/inventory collection [user]`** — Le carnet : 4 collections de 8 objets, chacune complétée rapporte des cailloux.\n" +
+                "**`/inventory view`** — Ton garde-manger et tes objets. **`/inventory shop food: quantity:`** remplit " +
                 "le garde-manger (−10 % dès 5).\n" +
-                "**`/plynling give`** · **`/plynling trade`** · **`/plynling sell`** — Offrir, échanger (l'offre dure 1 h) ou vendre.")
+                "**`/inventory give`** · **`/inventory trade`** · **`/inventory sell`** — Offrir, échanger (l'offre dure 1 h) ou vendre.")
             .AddField("Partir en vacances",
                 "**`/plynling freeze`** — Gèle ton Plynling (14 jours au plus) : plus rien ne bouge. " +
                 "Seulement s'il a encore au moins 50 % de faim.\n" +
@@ -484,7 +452,7 @@ public partial class PlynlingModule : InteractionModuleBase<SocketInteractionCon
             .AddField("La mort",
                 "Tu reçois un **message privé** environ 3 h avant qu'il meure de faim (à 23 h la veille si ça tombe la nuit). " +
                 "S'il meurt, tout le serveur l'apprend et il rejoint le cimetière.\n" +
-                "**`/graveyard [user]`** — Les tombes, triées par date ou par longueur de vie. Plus il a vécu, " +
+                "**`/plynling graveyard [user]`** — Les tombes, triées par date ou par longueur de vie. Plus il a vécu, " +
                 "plus sa tombe est belle.")
             .AddField("L'abandonner",
                 "**`/plynling abandon`** — Il part pour toujours : pas de tombe, pas de retour. Tu devras taper son nom " +
@@ -492,7 +460,7 @@ public partial class PlynlingModule : InteractionModuleBase<SocketInteractionCon
                 "avant d'en adopter un autre.")
             .AddField("Staff",
                 "**`/plynling freeze user:`** · **`/plynling thaw user:`** — Sur n'importe quel Plynling.\n" +
-                "**`/plynling rename user: name:`** · **`/plynling resurrect user:`**")
+                "**`/admin plynling rename user: name:`** · **`/admin plynling resurrect user:`**")
             .WithFooter($"Project S.Y.N.C.S. v{AppInfo.Version}")
             .Build();
 

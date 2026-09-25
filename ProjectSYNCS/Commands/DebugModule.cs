@@ -10,14 +10,30 @@ using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Commands;
 
-// Lets the owner speak through the bot on his own initiative — as opposed to
-// ChatterService's relay, which answers a mention he received while absent.
-// /tell posts into a channel (optionally as a reply to a linked message), /dm
-// sends someone a private message. In both, the text goes out as the bot's own
-// words by default; "announce" opts into a herald line naming the owner.
-public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
+// /debug — the owner's own tools, grouped so everyone else sees one entry in the command picker
+// instead of three (there is no Discord permission for "this one user", so they stay visible).
+// Every handler compares Context.User.Id with AvailabilityService.OwnerId itself.
+//
+// /debug tell and /debug dm let the owner speak through the bot on his own initiative — as
+// opposed to ChatterService's relay, which answers a mention he received while absent. tell
+// posts into a channel (optionally as a reply to a linked message), dm sends someone a private
+// message. In both, the text goes out as the bot's own words by default; "announce" opts into
+// a herald line naming the owner. /debug absent flags him as absent: while absent, the bot
+// intercepts mentions of him and replies, formally, that he is unavailable (in memory only — a
+// restart clears the flag).
+//
+// No [CommandContextType]: nothing here reads Context.Guild, and all three work from a DM.
+[Group("debug", "Outils du propriétaire du bot")]
+public class DebugModule : InteractionModuleBase<SocketInteractionContext>
 {
-    private readonly ILogger<SpeakModule> _logger;
+    public enum AbsenceState
+    {
+        [ChoiceDisplay("Activer")] On,
+        [ChoiceDisplay("Désactiver")] Off,
+    }
+
+    private readonly ILogger<DebugModule> _logger;
+    private readonly AvailabilityService _availability;
     private readonly ResponsePicker _picker;
 
     // Discord caps a message at 2000 characters; leave room for the herald line
@@ -29,8 +45,9 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
     private static readonly Regex _messageLinkRegex =
         new(@"channels/(\d+)/(\d+)/(\d+)", RegexOptions.Compiled);
 
-    public SpeakModule(ILogger<SpeakModule> logger, ResponsePicker picker)
+    public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability)
     {
+        _availability = availability;
         _logger = logger;
         _picker = picker;
     }
@@ -355,5 +372,25 @@ public class SpeakModule : InteractionModuleBase<SocketInteractionContext>
             return (null, null, "Je ne retrouve pas ce message — il a peut-être été supprimé. ❌");
 
         return (channel, original, null);
+    }
+
+    [SlashCommand("absent", "Activer ou désactiver ton mode absent")]
+    public async Task SetAbsenceAsync(
+        [Summary("state", "Activer ou désactiver le mode absent")] AbsenceState state)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+
+        bool absent = state == AbsenceState.On;
+        _availability.SetOwnerAbsent(absent);
+
+        await RespondAsync(
+            absent
+                ? "Mode absent **activé**. Je préviendrai poliment quiconque te mentionne. ✨"
+                : "Mode absent **désactivé**. Tu es de nouveau disponible (˶˃ ᵕ ˂˶)",
+            ephemeral: true);
     }
 }

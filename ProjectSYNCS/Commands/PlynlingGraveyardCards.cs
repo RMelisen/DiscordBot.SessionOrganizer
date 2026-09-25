@@ -9,57 +9,16 @@ namespace ProjectSYNCS.Commands;
 
 public enum GraveSort { Recent, Longest }
 
-// /graveyard — every dead Plynling in the server (or one person's), five per page, each
-// with its memorial as the picture. Components V2, like /leaderboard, and for the same
+// /plynling graveyard — every dead Plynling in the server (or one person's), five per page,
+// each with its memorial as the picture. Components V2, like /leaderboard, and for the same
 // budget: a row with a picture costs three components; 5 rows + two button rows = 24/40.
 //
 // Two button rows, two verbs: `grave:sort:` and `grave:page:`. Both encode the same state,
-// so sharing a verb would collide by construction (COMPONENT_CUSTOM_ID_DUPLICATED).
-[CommandContextType(InteractionContextType.Guild)]
-public class GraveyardModule : InteractionModuleBase<SocketInteractionContext>
+// so sharing a verb would collide by construction (COMPONENT_CUSTOM_ID_DUPLICATED). The
+// buttons are handled in PlynlingComponentHandler; this class only draws.
+public static class PlynlingGraveyardCards
 {
     public const int PageSize = 5;
-
-    private readonly PlynlingService _plynlings;
-
-    public GraveyardModule(PlynlingService plynlings)
-    {
-        _plynlings = plynlings;
-    }
-
-    [SlashCommand("graveyard", "Le cimetière des Plynlings")]
-    public async Task GraveyardAsync(
-        [Summary("user", "Seulement les tombes de cette personne")] IUser? user = null)
-    {
-        var now = DateTimeOffset.UtcNow;
-        var graves = await _plynlings.GetGraveyardAsync(Context.Guild.Id, user?.Id, now);
-        await RespondAsync(components: BuildPage(graves, GraveSort.Recent, user?.Id ?? 0, 0, now),
-            flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
-    }
-
-    [ComponentInteraction("grave:page:*:*:*", ignoreGroupNames: true)]
-    public Task OnPageAsync(string sort, string owner, string page) => ShowAsync(sort, owner, page);
-
-    [ComponentInteraction("grave:sort:*:*:*", ignoreGroupNames: true)]
-    public Task OnSortAsync(string sort, string owner, string page) => ShowAsync(sort, owner, page);
-
-    private async Task ShowAsync(string sortStr, string ownerStr, string pageStr)
-    {
-        if (!Enum.TryParse<GraveSort>(sortStr, out var sort)) sort = GraveSort.Recent;
-        ulong.TryParse(ownerStr, out var owner);
-        int.TryParse(pageStr, out var page);
-
-        var now = DateTimeOffset.UtcNow;
-        var graves = await _plynlings.GetGraveyardAsync(Context.Guild.Id, owner == 0 ? null : owner, now);
-        var components = BuildPage(graves, sort, owner, page, now);
-
-        await ((SocketMessageComponent)Context.Interaction).UpdateAsync(m =>
-        {
-            m.Components = components;
-            m.Flags = MessageFlags.ComponentsV2;
-            m.AllowedMentions = AllowedMentions.None;
-        });
-    }
 
     // Ties break on id so the order is stable across re-renders.
     public static List<Plynling> Order(IEnumerable<Plynling> graves, GraveSort sort, DateTimeOffset now) =>
