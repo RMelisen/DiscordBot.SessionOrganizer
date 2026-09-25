@@ -213,7 +213,7 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   **Nourrir** buttons.
 - **Holidays:** `/plynling freeze` stops everything for up to 14 days, as long as it isn't
   already hungry; then a week before it can be frozen again.
-- **Death** is announced to the whole server, after a private warning about 6 hours
+- **Death** is announced to the whole server, after a private warning about 3 hours
   before. `/graveyard` lists every grave, newest or longest-lived first — and the longer a
   Plynling lived, the grander its memorial, from a simple cairn to a statue in its likeness.
 - **Cailloux** come from `/work` (every 4 hours) and, as a small bonus, from chatting,

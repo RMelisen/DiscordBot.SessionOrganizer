@@ -10,7 +10,7 @@ namespace ProjectSYNCS.Services;
 
 // Once an hour: settles every living Plynling (deaths land at the instant they happened,
 // self-freezes thaw on schedule), announces deaths nobody has announced yet, and sends
-// the single warning DM about six hours before a death.
+// the single warning DM about three hours before a death.
 //
 // Its own interval, like every sweep here — an hour is precise enough for a 4-day clock,
 // and the other loops' intervals are load-bearing for other things. It is a safety net,

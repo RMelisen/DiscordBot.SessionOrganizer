@@ -270,7 +270,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 "Seulement s'il a encore au moins 50 % de faim.\n" +
                 "**`/plynling thaw`** — Le dégèle. Ensuite, 7 jours avant de pouvoir le regeler.")
             .AddField("La mort",
-                "Tu reçois un **message privé** environ 6 h avant qu'il meure de faim. S'il meurt, tout le " +
+                "Tu reçois un **message privé** environ 3 h avant qu'il meure de faim. S'il meurt, tout le " +
                 "serveur l'apprend et il rejoint le cimetière.\n" +
                 "**`/graveyard [user]`** — Les tombes, triées par date ou par longueur de vie. Plus il a vécu, " +
                 "plus sa tombe est belle.")

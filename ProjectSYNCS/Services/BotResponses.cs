@@ -73,7 +73,7 @@ namespace ProjectSYNCS.Services;
 //     PlynlingAdoptLines · PlynlingAdoptRareLines ... a new Plynling
 //     PlynlingFeedLines · PlynlingPetLines .......... shown on the card
 //     PlynlingDeathLines · PlynlingResurrectLines ... public, game channel
-//     PlynlingWarningLines ..... the ~6h DM before death
+//     PlynlingWarningLines ..... the ~3h DM before death
 //     PlynlingStaffFreezeDms · PlynlingStaffThawDms · PlynlingStaffRenameDms
 //
 //   Per-person data and lookups (not pools)
@@ -398,7 +398,7 @@ internal static class BotResponses
             "✨ Miracle ! **{0}** respire à nouveau. {1}, nourris-la vite, elle a une faim de morte-vivante.",
         });
 
-    // The single DM about six hours before death. {0} = name. Deliberately no countdown —
+    // The single DM about three hours before death. {0} = name. Deliberately no countdown —
     // the owner removed the "mourra dans …" timestamp from here and from the card alike, so
     // the lines say "soon" and never name a time.
     public static readonly GenderedLines PlynlingWarningLines = new(
