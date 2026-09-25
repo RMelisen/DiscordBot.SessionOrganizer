@@ -8,9 +8,13 @@ public enum Season { None, Spring, Summer, Autumn, Winter }
 
 // One thing a person can hold. The key is stored on InventoryItem rows, so it is **stable**:
 // renaming one orphans every copy already held. Set is the collection it belongs to (null for
-// foods); Season restricts when it can be found (None: all year).
+// foods); Season restricts when it can be found (None: all year). Emoji is the bot's own
+// application emoji when it has one for this item (ItemEmojis), else DefaultEmoji.
 public sealed record ItemInfo(
-    string Key, ItemKind Kind, string Emoji, string Name, string? Set, ItemRarity Rarity, Season Season, PlynlingFood? Food);
+    string Key, ItemKind Kind, string DefaultEmoji, string Name, string? Set, ItemRarity Rarity, Season Season, PlynlingFood? Food)
+{
+    public string Emoji => ItemEmojis.For(Key) ?? DefaultEmoji;
+}
 
 public sealed record CollectionSet(string Key, string Emoji, string Name, long Reward);
 
@@ -199,39 +203,39 @@ public static class ItemCatalog
         Add("saisons", "flocon", "❄️", "Flocon", ItemRarity.Common, Season.Winter);
         Add("saisons", "cristal_givre", "💎", "Cristal de givre", ItemRarity.Rare, Season.Winter);
 
-        // Champignons — 30, pictured by the bot's own emojis (Helpers/Emotes.Mushrooms.cs, made by
-        // tools/mushroom-emojis/upload.py). Names deliberately differ from the four foods
-        // (« Lentin du chêne », not « Shiitake »), since autocomplete lists both kinds together.
-        Add("champignons", "champignon_paris", Emotes.ShroomChampignonParis, "Champignon de Paris", ItemRarity.Common);
-        Add("champignons", "champignon_paille", Emotes.ShroomChampignonPaille, "Champignon de paille", ItemRarity.Common);
-        Add("champignons", "enoki", Emotes.ShroomEnoki, "Énoki", ItemRarity.Common);
-        Add("champignons", "shimeji", Emotes.ShroomShimeji, "Shimeji", ItemRarity.Common);
-        Add("champignons", "lentin_chene", Emotes.ShroomLentinChene, "Lentin du chêne", ItemRarity.Common);
-        Add("champignons", "coulemelle", Emotes.ShroomCoulemelle, "Coulemelle", ItemRarity.Common);
-        Add("champignons", "nonnette_voilee", Emotes.ShroomNonnetteVoilee, "Nonnette voilée", ItemRarity.Common);
-        Add("champignons", "clitocybe", Emotes.ShroomClitocybe, "Clitocybe en entonnoir", ItemRarity.Common);
-        Add("champignons", "armillaire", Emotes.ShroomArmillaire, "Armillaire couleur de miel", ItemRarity.Common);
-        Add("champignons", "russule_comestible", Emotes.ShroomRussuleComestible, "Russule comestible", ItemRarity.Common);
-        Add("champignons", "petit_gris", Emotes.ShroomPetitGris, "Petit-gris", ItemRarity.Common);
-        Add("champignons", "coprin_chevelu", Emotes.ShroomCoprinChevelu, "Coprin chevelu", ItemRarity.Common);
-        Add("champignons", "lactaire_delicieux", Emotes.ShroomLactaireDelicieux, "Lactaire délicieux", ItemRarity.Uncommon);
-        Add("champignons", "bolet_trembles", Emotes.ShroomBoletTrembles, "Bolet des trembles", ItemRarity.Uncommon);
-        Add("champignons", "girolle", Emotes.ShroomGirolle, "Girolle", ItemRarity.Uncommon);
-        Add("champignons", "russule_doree", Emotes.ShroomRussuleDoree, "Russule dorée", ItemRarity.Uncommon);
-        Add("champignons", "polypore_soufre", Emotes.ShroomPolyporeSoufre, "Polypore soufré", ItemRarity.Uncommon);
-        Add("champignons", "coprin_encre", Emotes.ShroomCoprinEncre, "Coprin noir d'encre", ItemRarity.Uncommon);
-        Add("champignons", "agaric_bohus", Emotes.ShroomAgaricBohus, "Agaric de Bohus", ItemRarity.Uncommon);
-        Add("champignons", "pholiote_doree", Emotes.ShroomPholioteDoree, "Pholiote dorée", ItemRarity.Uncommon);
-        Add("champignons", "gomphide", Emotes.ShroomGomphide, "Gomphide glutineux", ItemRarity.Uncommon);
-        Add("champignons", "cepe_bordeaux", Emotes.ShroomCepeBordeaux, "Cèpe de Bordeaux", ItemRarity.Rare);
-        Add("champignons", "trompette_mort", Emotes.ShroomTrompetteMort, "Trompette de la mort", ItemRarity.Rare);
-        Add("champignons", "morille_conique", Emotes.ShroomMorilleConique, "Morille conique", ItemRarity.Rare, Season.Spring);
-        Add("champignons", "lactaire_indigo", Emotes.ShroomLactaireIndigo, "Lactaire indigo", ItemRarity.Rare);
-        Add("champignons", "champignon_homard", Emotes.ShroomChampignonHomard, "Champignon homard", ItemRarity.Rare);
-        Add("champignons", "maitake", Emotes.ShroomMaitake, "Maitake", ItemRarity.Rare);
-        Add("champignons", "truffe_noire", Emotes.ShroomTruffeNoire, "Truffe noire", ItemRarity.Legendary, Season.Winter);
-        Add("champignons", "oronge", Emotes.ShroomOronge, "Oronge", ItemRarity.Legendary);
-        Add("champignons", "matsutake", Emotes.ShroomMatsutake, "Matsutaké", ItemRarity.Legendary);
+        // Champignons — 30, pictured by the bot's own emojis once ApplicationEmojiService has
+        // uploaded Assets/Mushrooms/<key>.png (🍄 until then). Names deliberately differ from the
+        // four foods (« Lentin du chêne », not « Shiitake »), since autocomplete lists both kinds.
+        Add("champignons", "champignon_paris", "🍄", "Champignon de Paris", ItemRarity.Common);
+        Add("champignons", "champignon_paille", "🍄", "Champignon de paille", ItemRarity.Common);
+        Add("champignons", "enoki", "🍄", "Énoki", ItemRarity.Common);
+        Add("champignons", "shimeji", "🍄", "Shimeji", ItemRarity.Common);
+        Add("champignons", "lentin_chene", "🍄", "Lentin du chêne", ItemRarity.Common);
+        Add("champignons", "coulemelle", "🍄", "Coulemelle", ItemRarity.Common);
+        Add("champignons", "nonnette_voilee", "🍄", "Nonnette voilée", ItemRarity.Common);
+        Add("champignons", "clitocybe", "🍄", "Clitocybe en entonnoir", ItemRarity.Common);
+        Add("champignons", "armillaire", "🍄", "Armillaire couleur de miel", ItemRarity.Common);
+        Add("champignons", "russule_comestible", "🍄", "Russule comestible", ItemRarity.Common);
+        Add("champignons", "petit_gris", "🍄", "Petit-gris", ItemRarity.Common);
+        Add("champignons", "coprin_chevelu", "🍄", "Coprin chevelu", ItemRarity.Common);
+        Add("champignons", "lactaire_delicieux", "🍄", "Lactaire délicieux", ItemRarity.Uncommon);
+        Add("champignons", "bolet_trembles", "🍄", "Bolet des trembles", ItemRarity.Uncommon);
+        Add("champignons", "girolle", "🍄", "Girolle", ItemRarity.Uncommon);
+        Add("champignons", "russule_doree", "🍄", "Russule dorée", ItemRarity.Uncommon);
+        Add("champignons", "polypore_soufre", "🍄", "Polypore soufré", ItemRarity.Uncommon);
+        Add("champignons", "coprin_encre", "🍄", "Coprin noir d'encre", ItemRarity.Uncommon);
+        Add("champignons", "agaric_bohus", "🍄", "Agaric de Bohus", ItemRarity.Uncommon);
+        Add("champignons", "pholiote_doree", "🍄", "Pholiote dorée", ItemRarity.Uncommon);
+        Add("champignons", "gomphide", "🍄", "Gomphide glutineux", ItemRarity.Uncommon);
+        Add("champignons", "cepe_bordeaux", "🍄", "Cèpe de Bordeaux", ItemRarity.Rare);
+        Add("champignons", "trompette_mort", "🍄", "Trompette de la mort", ItemRarity.Rare);
+        Add("champignons", "morille_conique", "🍄", "Morille conique", ItemRarity.Rare, Season.Spring);
+        Add("champignons", "lactaire_indigo", "🍄", "Lactaire indigo", ItemRarity.Rare);
+        Add("champignons", "champignon_homard", "🍄", "Champignon homard", ItemRarity.Rare);
+        Add("champignons", "maitake", "🍄", "Maitake", ItemRarity.Rare);
+        Add("champignons", "truffe_noire", "🍄", "Truffe noire", ItemRarity.Legendary, Season.Winter);
+        Add("champignons", "oronge", "🍄", "Oronge", ItemRarity.Legendary);
+        Add("champignons", "matsutake", "🍄", "Matsutaké", ItemRarity.Legendary);
         return items;
     }
 }

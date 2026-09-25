@@ -50,8 +50,9 @@ changes what people type, so do not rename one casually.
 
 `Program.cs` is the composition root: DI wiring, `MigrateAsync()`, then the hosted
 services — `BotService`, `ReminderService`, `PresenceService`, `VoiceXpService`,
-`GiveawayDrawService` and `PlynlingSweepService`. The last four each run their own interval on purpose; see the
-notes below before sharing one.
+`GiveawayDrawService`, `PlynlingSweepService` and `ApplicationEmojiService`. `PresenceService` to
+`PlynlingSweepService` each run their own interval on purpose; see the notes below before sharing
+one. `ApplicationEmojiService` is not a loop — it runs once, on the first Ready.
 
 - **`BotService`** — gateway login, slash-command registration, interaction
   dispatch. Fans `MessageReceived` out to `EmoteTracker`, `ReactionService` and
@@ -1304,15 +1305,20 @@ time and every other source 10 % (`ForageMushroomShare` / `MushroomShareElsewher
 would crowd out the other 32 in every find. Past 10 items a set is laid out one embed field per
 rarity (`ItemCatalog.Sections`), since 30 lines of emoji markup overflow a field's 1024. The
 pictures are **application emojis** — owned by the bot's application, not by a server, so
-unlike the reaction emotes above they work in any server it is in. `tools/mushroom-emojis/upload.py`
-uploads the sprites (16 px, scaled ×8 without smoothing) and **generates**
-`Helpers/Emotes.Mushrooms.cs`, a `partial` of `Emotes`; never edit that file by hand. Until the
-script has run, every mushroom falls back to 🍄 and `Emotes.MushroomsUploaded` is false, so the
-build never depends on it. Application emojis belong to **one** application: run it with the
-production bot's token, and a dev bot that is a different application shows them as text. They
-appear in embeds and messages only — autocomplete is plain text, so it goes through
-`ItemCatalog.TextEmoji`, which drops custom markup rather than show « <:name:id> ». The
-sprites' file names are the item keys (`col.<file name>`), which the harness checks both ways.
+unlike the reaction emotes above they work in any server it is in — and **the bot uploads them
+itself**. The sprites ship with it (`ProjectSYNCS/Assets/Mushrooms/<slug>.png`, 128 px, scaled ×8
+from the pack's 16 px without smoothing, copied to the output and the publish folder by the
+csproj). On the first Ready, `ApplicationEmojiService` lists the application's emojis, uploads
+any sprite whose `shroom_<slug>` emoji is missing, and records the markup in `ItemEmojis`, a
+static map by item key. `ItemInfo.Emoji` is therefore **computed** — that map, else the
+catalog's `DefaultEmoji` (🍄) — so nothing breaks before the upload, after a failed one, or on
+a bot that cannot upload; and each application (dev and prod alike) gets its own copy with no
+manual step. An existing emoji is reused by name, never replaced: to change a picture, delete
+that emoji in the developer portal and restart. The emojis appear in embeds and messages only —
+autocomplete is plain text, so it goes through `ItemCatalog.TextEmoji`, which drops custom
+markup rather than show « <:name:id> ». The sprites' file names are the item keys
+(`col.<file name>`), which the harness checks both ways; `Assets/Mushrooms/CREDITS.txt` is the
+pack's own list, with the Latin names.
 
 **`/inventory collection` is a book, not one embed.** An overview page, then one page per set
 picked from a **select menu** — not buttons, because the overview plus five sets is already six

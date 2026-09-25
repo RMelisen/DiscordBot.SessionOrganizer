@@ -361,7 +361,8 @@ ProjectSYNCS/
 │  ├─ Modals/              # Modal DTOs
 │  └─ Autocomplete/        # Channel and item suggestions
 ├─ Services/               # Hosted:      BotService, ReminderService, PresenceService,
-│                          #              VoiceXpService, GiveawayDrawService
+│                          #              VoiceXpService, GiveawayDrawService,
+│                          #              PlynlingSweepService, ApplicationEmojiService
 │                          # Data (EF):   Event, Poll, EmoteStats, BotFeedback, Xp,
 │                          #              Giveaway, Shame, GuildConfig
 │                          # Gateway:     XpTracker, ShameTracker, BotFeedbackTracker,

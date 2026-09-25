@@ -99,6 +99,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddHostedService<VoiceXpService>();
         services.AddHostedService<GiveawayDrawService>();
         services.AddHostedService<PlynlingSweepService>();
+        services.AddHostedService<ApplicationEmojiService>();
     })
     .Build();
 
