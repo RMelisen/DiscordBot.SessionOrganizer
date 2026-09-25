@@ -70,6 +70,10 @@ public class Plynling
     public long Pets { get; set; }
     public long FedByOthers { get; set; }
 
+    // The Paris day (AppTime.DayKey) of its last happy-gift draw, win or lose — one a day,
+    // stored so a restart cannot grant a second. 0 = never.
+    public int LastGiftDay { get; set; }
+
     public DateTimeOffset? DiedAt { get; set; }
     // Set by the sweep once the death has been announced (or attempted), so it is never
     // announced twice. A death found lazily by a command is announced by the next sweep.

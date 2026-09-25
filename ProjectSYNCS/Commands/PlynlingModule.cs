@@ -228,7 +228,10 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 ephemeral: true, allowedMentions: AllowedMentions.None);
             return;
         }
-        await RespondCardAsync(plynling, now, null);
+        // The owner's first look of the day at a happy Plynling may turn up a gift.
+        var found = await _plynlings.TryGiftAsync(plynling, Context.User.Id, now, Random.Shared);
+        await RespondCardAsync(plynling, now,
+            found > 0 ? PlynlingText.GiftFound(PlynlingCardUi.SafeName(plynling.Name), found) : null);
     }
 
     [SlashCommand("feed", "Nourrir un Plynling (le tien par défaut — celui d'un autre coûte le double)")]

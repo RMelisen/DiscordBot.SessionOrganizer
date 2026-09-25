@@ -286,6 +286,22 @@ public class PlynlingService
 
     public Task SaveAsync() => _db_context.SaveChangesAsync();
 
+    // The happy gift, when its owner looks: the day's single draw, spent win or lose and saved
+    // with the cailloux it found. Returns what it found (0: nothing, or no draw at all).
+    public async Task<long> TryGiftAsync(Plynling p, ulong viewerId, DateTimeOffset now, Random rng)
+    {
+        if (viewerId != p.OwnerId || !PlynlingLife.CanDrawGift(p, now)) return 0;
+        p.LastGiftDay = AppTime.DayKey(now);
+        var found = PlynlingLife.GiftDraw(rng);
+        if (found > 0)
+        {
+            var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, p.GuildId, p.OwnerId);
+            wallet.Balance += found;
+        }
+        await _db_context.SaveChangesAsync();
+        return found;
+    }
+
     // /plynling journal: its badges and its moments, newest first (ordered in memory — SQLite
     // cannot order by a DateTimeOffset).
     public async Task<(List<PlynlingBadge> Badges, List<PlynlingJournalEntry> Moments)> GetJournalAsync(int plynlingId)

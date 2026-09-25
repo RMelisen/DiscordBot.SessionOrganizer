@@ -64,6 +64,10 @@ public static class PlynlingText
     public const string NotYourGame = "Ce n'est pas ta partie — lance la tienne avec `/plynling play`.";
     public const string GuessRange = "Un nombre entier entre 1 et 100, s'il te plaît.";
 
+    // The name is already sanitised by the caller.
+    public static string GiftFound(string name, long amount) =>
+        $"🪨 **{name}** a trouvé un joli caillou pour toi ! +{PebbleEconomy.Cailloux(amount)}";
+
     public static string Sulking(PlynlingGender g) =>
         $"{g.Agree("Il", "Elle")} boude : {g.Agree("il", "elle")} veut qu'on joue avec {g.Agree("lui", "elle")} ou qu'on {g.Agree("le", "la")} caresse.";
 

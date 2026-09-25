@@ -40,6 +40,7 @@ public class PlynlingCareService
         var line = string.Format(_picker.Pick(channelId, BotResponses.PlynlingPetLines.For(plynling.Gender)), PlynlingCardUi.SafeName(plynling.Name));
         var text = $"{line} — {PlynlingText.PettedBy(plynling.Gender, actorId)}";
         if (badges.Count > 0) text += "\n" + PlynlingBadges.NewBadgeLines(badges, plynling.Gender);
+        text += await GiftLineAsync(plynling, actorId, now);
         return new CareReply(PlynlingModule.BuildCard(plynling, now, text), null);
     }
 
@@ -65,7 +66,15 @@ public class PlynlingCareService
         if (PlynlingText.MealMood(g, result.MealFactor) is { } mood) text += $"\n*{mood}*";
         text += $"\n-# {paid} · il te reste {PebbleEconomy.Cailloux(result.Balance)}";
         if (result.Badges is { Count: > 0 } badges) text += "\n" + PlynlingBadges.NewBadgeLines(badges, g);
+        text += await GiftLineAsync(result.Plynling, actorId, now);
         return new CareReply(PlynlingModule.BuildCard(result.Plynling, now, text, PlynlingArt.Food(food)), null);
+    }
+
+    // The owner caring for their own may find today's happy gift, as one more line under hers.
+    private async Task<string> GiftLineAsync(Plynling plynling, ulong actorId, DateTimeOffset now)
+    {
+        var found = await _plynlings.TryGiftAsync(plynling, actorId, now, Random.Shared);
+        return found > 0 ? "\n" + PlynlingText.GiftFound(PlynlingCardUi.SafeName(plynling.Name), found) : "";
     }
 
     // Every refusal but NoPlynling comes back with the Plynling loaded; NoPlynling's line

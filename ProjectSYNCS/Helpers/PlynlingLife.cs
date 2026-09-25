@@ -57,6 +57,11 @@ public static class PlynlingLife
     public const double SadMealPenalty = 0.25;
     public const double SulkBelow = 0.005;              // what the card rounds to « 0 % »
 
+    // The happy gift: once a Paris day, the owner's first look while it is happy draws once.
+    public const double GiftChance = 0.5;
+    public const int GiftMin = 5;
+    public const int GiftMax = 15;
+
     // What the card shows as 100% counts as full, so feeding is never refused at a value
     // the owner can see is not full, nor allowed at one they can see is.
     private const double Full = 0.995;
@@ -222,6 +227,15 @@ public static class PlynlingLife
             : happiness < SadBelow ? 1 - SadMealPenalty
             : 1.0;
     }
+
+    // A draw's result: the cailloux it found, or 0.
+    public static long GiftDraw(Random rng) => rng.NextDouble() < GiftChance ? rng.Next(GiftMin, GiftMax + 1) : 0;
+
+    // Whether looking at it now draws today's gift: alive, awake, not frozen, happy, and no draw
+    // yet today. An unhappy look does not spend the day.
+    public static bool CanDrawGift(Plynling p, DateTimeOffset now) =>
+        !IsDead(p) && !IsFrozen(p) && !IsAsleep(now) && HappinessAt(p, now) > HappyAbove
+        && p.LastGiftDay != AppTime.DayKey(now);
 
     public static bool IsSulking(Plynling p, DateTimeOffset now) =>
         HappinessAt(p, now) < SulkBelow && HungerAt(p, now) >= StarvingBelow;
