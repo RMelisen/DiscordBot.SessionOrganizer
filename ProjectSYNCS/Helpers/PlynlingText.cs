@@ -1,5 +1,7 @@
 using ProjectSYNCS.Models;
 
+using ProjectSYNCS.Services;
+
 namespace ProjectSYNCS.Helpers;
 
 // Fixed French lines for refusals and plain notices. Deliberately not ResponsePicker
@@ -94,6 +96,30 @@ public static class PlynlingText
     // The name is already sanitised by the caller.
     public static string GiftFound(string name, long amount) =>
         $"🪨 **{name}** a trouvé un joli caillou pour toi ! +{PebbleEconomy.Cailloux(amount)}";
+
+    // The item finds. Names are sanitised by the caller. A find is followed by any set it completed.
+    public static string ItemLabel(ItemInfo item) =>
+        item.Kind == ItemKind.Food ? $"{item.Emoji} **{item.Name}**" : $"{item.Emoji} **{item.Name}** ({ItemCatalog.RarityLabel(item.Rarity)})";
+
+    public static string GiftItem(string name, ItemInfo item) =>
+        $"🎁 **{name}** a trouvé quelque chose pour toi : {ItemLabel(item)} !";
+
+    public static string PlayFind(string name, ItemInfo item) =>
+        $"✨ En jouant, **{name}** a déniché {ItemLabel(item)} !";
+
+    public static string VisitFind(string name, ulong ownerId, ItemInfo item) =>
+        $"✨ **{name}** rapporte {ItemLabel(item)} pour <@{ownerId}> !";
+
+    public static string Foraged(string name, PlynlingGender g, ItemInfo item) => item.Kind == ItemKind.Food
+        ? $"🧺 **{name}** est {g.Agree("revenu", "revenue")} de sa balade avec de quoi manger : {ItemLabel(item)}, rangé dans ton garde-manger !"
+        : $"🧺 **{name}** est {g.Agree("revenu", "revenue")} de sa balade avec {ItemLabel(item)} !";
+
+    public static string ForageTooSoon(PlynlingGender g, DateTimeOffset ready) =>
+        $"{g.Agree("Il", "Elle")} se remet de sa dernière balade. Prochaine sortie <t:{ready.ToUnixTimeSeconds()}:R>.";
+
+    // The find's line, then one line per collection it completed.
+    public static string FindLines(string line, ItemFind find, ulong ownerId) =>
+        line + string.Concat(find.Completed.Select(set => "\n" + SetCompleted(ownerId, set)));
 
     public static string Sulking(PlynlingGender g) =>
         $"{g.Agree("Il", "Elle")} boude : {g.Agree("il", "elle")} veut qu'on joue avec {g.Agree("lui", "elle")} ou qu'on {g.Agree("le", "la")} caresse.";

@@ -23,6 +23,15 @@ public static class ItemCatalog
 {
     public const double ForageFoodChance = 0.20;
 
+    // The other sources. Half a happy gift's wins stay cailloux, the other half bring an item;
+    // a won game finds one 1 time in 5; a good visit, 15 % for each owner.
+    public const double GiftCaillouxShare = 0.5;
+    public const double PlayFindChance = 0.20;
+    public const double VisitFindChance = 0.15;
+
+    // How often a person may send their Plynling foraging (kept on their wallet row).
+    public static readonly TimeSpan ForageCooldown = TimeSpan.FromHours(4);
+
     public static readonly IReadOnlyList<CollectionSet> Sets = new[]
     {
         new CollectionSet("cailloux", "🪨", "Cailloux", 100),
@@ -57,6 +66,15 @@ public static class ItemCatalog
         ItemRarity.Uncommon => "peu commun",
         ItemRarity.Rare => "rare",
         _ => "légendaire",
+    };
+
+    public static string SeasonLabel(Season season) => season switch
+    {
+        Season.Spring => "🌸 printemps",
+        Season.Summer => "☀️ été",
+        Season.Autumn => "🍁 automne",
+        Season.Winter => "❄️ hiver",
+        _ => "toute l'année",
     };
 
     // The shop's price for `quantity` of a food: the menu price each, 10 % off from 5.

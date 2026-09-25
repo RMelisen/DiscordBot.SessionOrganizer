@@ -77,8 +77,17 @@ public class PlynlingCareService
     // The owner caring for their own may find today's happy gift, as one more line under hers.
     private async Task<string> GiftLineAsync(Plynling plynling, ulong actorId, DateTimeOffset now)
     {
-        var found = await _plynlings.TryGiftAsync(plynling, actorId, now, Random.Shared);
-        return found > 0 ? "\n" + PlynlingText.GiftFound(PlynlingCardUi.SafeName(plynling.Name), found) : "";
+        var gift = await _plynlings.TryGiftAsync(plynling, actorId, now, Random.Shared);
+        return gift.Any ? "\n" + GiftLine(plynling, gift) : "";
+    }
+
+    // The gift's line: cailloux, or the item and any collection it completed.
+    public static string GiftLine(Plynling plynling, GiftResult gift)
+    {
+        var name = PlynlingCardUi.SafeName(plynling.Name);
+        return gift.Find is { } find
+            ? PlynlingText.FindLines(PlynlingText.GiftItem(name, find.Item), find, plynling.OwnerId)
+            : PlynlingText.GiftFound(name, gift.Cailloux);
     }
 
     // Every refusal but NoPlynling comes back with the Plynling loaded; NoPlynling's line

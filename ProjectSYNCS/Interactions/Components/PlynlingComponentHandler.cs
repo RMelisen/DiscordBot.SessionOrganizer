@@ -130,6 +130,9 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         foreach (var (who, badges) in new[] { (pair.Visitor, pair.VisitorBadges), (pair.Host, pair.HostBadges) })
             if (badges.Count > 0)
                 line += "\n**" + PlynlingCardUi.SafeName(who.Name) + "** · " + PlynlingBadges.NewBadgeLines(badges, who.Gender);
+        foreach (var (who, find) in new[] { (pair.Visitor, pair.VisitorFind), (pair.Host, pair.HostFind) })
+            if (find is not null)
+                line += "\n" + PlynlingText.FindLines(PlynlingText.VisitFind(PlynlingCardUi.SafeName(who.Name), who.OwnerId, find.Item), find, who.OwnerId);
         await component.UpdateAsync(m =>
         {
             m.Components = PlynlingPlayCards.BuildMeeting(pair.Visitor, pair.Host, line, now, pair.Happiness);
@@ -215,7 +218,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         {
             var won = session.State.Status == GameStatus.Won;
             var pebbles = won ? PlynlingLife.RollPlayPebbles(Random.Shared) : 0;
-            var (after, balance, badges) = await _plynlings.FinishPlayAsync(plynling.Id, session.OwnerId, won, pebbles, now);
+            var (after, balance, badges, find) = await _plynlings.FinishPlayAsync(plynling.Id, session.OwnerId, won, pebbles, now);
             if (after is not null)
             {
                 plynling = after;
@@ -223,6 +226,8 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
                 endLine = string.Format(_picker.Pick(Context.Channel.Id, pool), PlynlingCardUi.SafeName(plynling.Name)) +
                           "\n" + PlynlingGameUi.Reward(won, pebbles, balance);
                 if (badges.Count > 0) endLine += "\n" + PlynlingBadges.NewBadgeLines(badges, plynling.Gender);
+                if (find is not null)
+                    endLine += "\n" + PlynlingText.FindLines(PlynlingText.PlayFind(PlynlingCardUi.SafeName(plynling.Name), find.Item), find, plynling.OwnerId);
             }
         }
 

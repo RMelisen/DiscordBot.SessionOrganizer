@@ -68,6 +68,69 @@ public partial class PlynlingModule
         await RespondAsync(embed: BuildInventoryEmbed(held, completions.Count, balance), ephemeral: true);
     }
 
+    [SlashCommand("forage", "Envoyer ton Plynling fouiller les environs — un objet ou de quoi manger, toutes les 4 h")]
+    public async Task ForageAsync()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var result = await _plynlings.ForageAsync(Context.Guild.Id, Context.User.Id, now, Random.Shared);
+        var gender = result.Plynling?.Gender ?? PlynlingGender.Male;
+        if (result.Outcome == CareOutcome.TooSoon)
+        {
+            await RespondAsync(PlynlingText.ForageTooSoon(gender, result.ReadyAt!.Value), ephemeral: true);
+            return;
+        }
+        if (result.Outcome != CareOutcome.Done || result.Find is null || result.Plynling is null)
+        {
+            await RespondAsync(PlynlingCareService.Refusal(result.Outcome, gender), ephemeral: true);
+            return;
+        }
+        var line = PlynlingText.FindLines(
+            PlynlingText.Foraged(PlynlingCardUi.SafeName(result.Plynling.Name), gender, result.Find.Item), result.Find, Context.User.Id);
+        await RespondCardAsync(result.Plynling, now, line);
+    }
+
+    [SlashCommand("collection", "Le carnet de collection de quelqu'un (le tien par défaut)")]
+    public async Task CollectionAsync([Summary("user", "De qui (par défaut : toi)")] IUser? user = null)
+    {
+        var target = user ?? Context.User;
+        var held = await _inventory.GetAllAsync(Context.Guild.Id, target.Id);
+        var completions = await _inventory.GetCompletionsAsync(Context.Guild.Id, target.Id);
+        await RespondAsync(embed: BuildCollectionEmbed(target.Id, held, completions),
+            allowedMentions: AllowedMentions.None);
+    }
+
+    // The book: one field per set. An item ever held is shown for good (even at quantity 0); the
+    // rest are « ??? » with only their rarity — and season, since that is when to look.
+    public static Embed BuildCollectionEmbed(ulong userId, IReadOnlyCollection<InventoryItem> held,
+        IReadOnlyCollection<CollectionCompletion> completions)
+    {
+        var discovered = held.Select(i => i.Key).ToHashSet();
+        var done = completions.Select(c => c.SetKey).ToHashSet();
+        var total = ItemCatalog.Collectibles.Count();
+        var found = ItemCatalog.Collectibles.Count(i => discovered.Contains(i.Key));
+
+        var embed = new EmbedBuilder()
+            .WithTitle("📖 Carnet de collection")
+            .WithColor(Color.Purple)
+            .WithDescription($"<@{userId}> · **{found}/{total}** objets découverts · {done.Count}/{ItemCatalog.Sets.Count} collections complètes");
+        foreach (var set in ItemCatalog.Sets)
+        {
+            var items = ItemCatalog.InSet(set.Key).ToList();
+            var have = items.Count(i => discovered.Contains(i.Key));
+            var lines = items.Select(i =>
+            {
+                var season = i.Season == Season.None ? "" : $" · {ItemCatalog.SeasonLabel(i.Season)}";
+                return discovered.Contains(i.Key)
+                    ? $"{i.Emoji} {i.Name}{season}"
+                    : $"❔ ??? · {ItemCatalog.RarityLabel(i.Rarity)}{season}";
+            });
+            var status = done.Contains(set.Key) ? "✅ complète" : $"{have}/{items.Count} · complète : +{PebbleEconomy.Cailloux(set.Reward)}";
+            embed.AddField($"{set.Emoji} {set.Name} — {status}", string.Join("\n", lines), inline: true);
+        }
+        embed.WithFooter("Trouve-les avec /plynling forage, le cadeau du jour, les jeux et les visites — ou échange-les.");
+        return embed.Build();
+    }
+
     // Static and Context-free, like every other builder here, so its size is checkable.
     public static Embed BuildInventoryEmbed(IReadOnlyCollection<InventoryItem> held, int setsCompleted, long balance)
     {

@@ -248,9 +248,8 @@ public partial class PlynlingModule : InteractionModuleBase<SocketInteractionCon
             return;
         }
         // The owner's first look of the day at a happy Plynling may turn up a gift.
-        var found = await _plynlings.TryGiftAsync(plynling, Context.User.Id, now, Random.Shared);
-        await RespondCardAsync(plynling, now,
-            found > 0 ? PlynlingText.GiftFound(PlynlingCardUi.SafeName(plynling.Name), found) : null);
+        var gift = await _plynlings.TryGiftAsync(plynling, Context.User.Id, now, Random.Shared);
+        await RespondCardAsync(plynling, now, gift.Any ? PlynlingCareService.GiftLine(plynling, gift) : null);
     }
 
     [SlashCommand("feed", "Nourrir un Plynling (le tien par défaut — celui d'un autre coûte le double)")]

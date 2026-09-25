@@ -7,7 +7,17 @@ namespace ProjectSYNCS.Services;
 
 public enum AdoptOutcome { Adopted, AlreadyHasOne }
 
-public enum CareOutcome { Done, NoPlynling, Dead, Frozen, Wasted, TooPoor, Asleep, Sulking }
+public enum CareOutcome { Done, NoPlynling, Dead, Frozen, Wasted, TooPoor, Asleep, Sulking, TooSoon }
+
+// The happy gift: cailloux, or an item instead — never both. Nothing when both are empty.
+public sealed record GiftResult(long Cailloux, ItemFind? Find)
+{
+    public static readonly GiftResult None = new(0, null);
+    public bool Any => Cailloux > 0 || Find is not null;
+}
+
+// /plynling forage: what it brought back, or why it could not go (ReadyAt with TooSoon).
+public sealed record ForageResult(CareOutcome Outcome, Plynling? Plynling, ItemFind? Find = null, DateTimeOffset? ReadyAt = null);
 
 public enum ThawOutcome { Thawed, NoPlynling, Dead, NotFrozen, StaffOnly }
 
@@ -18,7 +28,8 @@ public enum ResurrectOutcome { Resurrected, NoGrave, AlreadyHasOne }
 public sealed record VisitOutcome(
     Plynling Visitor, Plynling Host,
     IReadOnlyList<BadgeInfo> VisitorBadges, IReadOnlyList<BadgeInfo> HostBadges,
-    bool GoodScene, PlynlingBond Before, PlynlingBond After, Confession Confession, double Happiness);
+    bool GoodScene, PlynlingBond Before, PlynlingBond After, Confession Confession, double Happiness,
+    ItemFind? VisitorFind = null, ItemFind? HostFind = null);
 
 // PantryUsed: how many of that food came out of the feeder's pantry instead of cailloux (0 when
 // they paid), and PantryLeft what remains of it.
@@ -184,28 +195,35 @@ public class PlynlingService
     // The end of a /plynling play game: the happiness, the counts and — on a win — the
     // player's cailloux land in one save. Null when the Plynling can no longer be played
     // with (it died, was frozen or abandoned mid-game): then nothing is paid.
-    public async Task<(Plynling? Plynling, long Balance, IReadOnlyList<BadgeInfo> Badges)> FinishPlayAsync(
-        int plynlingId, ulong ownerId, bool won, long pebbles, DateTimeOffset now)
+    // A win may also find an item (ItemCatalog.PlayFindChance), in the same save.
+    public async Task<(Plynling? Plynling, long Balance, IReadOnlyList<BadgeInfo> Badges, ItemFind? Find)> FinishPlayAsync(
+        int plynlingId, ulong ownerId, bool won, long pebbles, DateTimeOffset now, Random? rng = null)
     {
+        rng ??= Random.Shared;
         var plynling = await GetByIdAsync(plynlingId, now);
         if (plynling is null || plynling.OwnerId != ownerId || plynling.DiedAt is not null || plynling.FrozenAt is not null)
-            return (null, 0, NoBadges);
+            return (null, 0, NoBadges, null);
 
         PlynlingLife.Play(plynling, now, won);
         if (won && plynling.PlaysWon == 1) await AddMomentAsync(plynling, JournalKind.FirstWin, null, now);
         var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, plynling.GuildId, ownerId);
         if (won && pebbles > 0) wallet.Balance += pebbles;
+        var find = won && rng.NextDouble() < ItemCatalog.PlayFindChance
+            ? await InventoryService.GrantAsync(_db_context, plynling.GuildId, ownerId, ItemCatalog.DrawCollectible(rng, now), now)
+            : null;
         var badges = await AwardAsync(plynling, now);                   // pays into the same wallet
         await _db_context.SaveChangesAsync();
-        return (plynling, wallet.Balance, badges);
+        return (plynling, wallet.Balance, badges, find);
     }
 
     // A /plynling visit accepted: the scene plays out on their relationship — affinity, bond, a
     // confession perhaps — and both are cheered (or not) by what they are to each other, all in
-    // one save. Null when either can no longer take part.
-    public async Task<VisitOutcome?> VisitAsync(int visitorId, int hostId, DateTimeOffset now, Random? rng = null)
+    // one save. Null when either can no longer take part. A good scene may also turn up an item
+    // for each owner, drawn from `findRng` — kept apart from the scene's own draws.
+    public async Task<VisitOutcome?> VisitAsync(int visitorId, int hostId, DateTimeOffset now, Random? rng = null, Random? findRng = null)
     {
         rng ??= Random.Shared;
+        findRng ??= Random.Shared;
         var visitor = await GetByIdAsync(visitorId, now);
         var host = await GetByIdAsync(hostId, now);
         if (visitor is null || host is null || visitor.Id == host.Id) return null;
@@ -268,10 +286,16 @@ public class PlynlingService
             };
             if (Closeness(after) > Closeness(before)) evt = BadgeEvent.None;     // drifting apart earns nothing
         }
+        async Task<ItemFind?> FindFor(Plynling p) => good && findRng.NextDouble() < ItemCatalog.VisitFindChance
+            ? await InventoryService.GrantAsync(_db_context, p.GuildId, p.OwnerId, ItemCatalog.DrawCollectible(findRng, now), now)
+            : null;
+        var visitorFind = await FindFor(visitor);
+        var hostFind = await FindFor(host);
         var visitorBadges = await AwardAsync(visitor, now, evt);
         var hostBadges = await AwardAsync(host, now, evt);
         await _db_context.SaveChangesAsync();
-        return new VisitOutcome(visitor, host, visitorBadges, hostBadges, good, before, after, confession, happiness);
+        return new VisitOutcome(visitor, host, visitorBadges, hostBadges, good, before, after, confession, happiness,
+            visitorFind, hostFind);
     }
 
     private static int Closeness(PlynlingBond bond) => PlynlingBonds.Closeness(bond);
@@ -432,19 +456,46 @@ public class PlynlingService
     public Task SaveAsync() => _db_context.SaveChangesAsync();
 
     // The happy gift, when its owner looks: the day's single draw, spent win or lose and saved
-    // with the cailloux it found. Returns what it found (0: nothing, or no draw at all).
-    public async Task<long> TryGiftAsync(Plynling p, ulong viewerId, DateTimeOffset now, Random rng)
+    // with what it found — cailloux, or on half the wins an item instead.
+    public async Task<GiftResult> TryGiftAsync(Plynling p, ulong viewerId, DateTimeOffset now, Random rng)
     {
-        if (viewerId != p.OwnerId || !PlynlingLife.CanDrawGift(p, now)) return 0;
+        if (viewerId != p.OwnerId || !PlynlingLife.CanDrawGift(p, now)) return GiftResult.None;
         p.LastGiftDay = AppTime.DayKey(now);
         var found = PlynlingLife.GiftDraw(rng);
-        if (found > 0)
+        var result = GiftResult.None;
+        if (found > 0 && rng.NextDouble() >= ItemCatalog.GiftCaillouxShare)
+        {
+            result = new GiftResult(0, await InventoryService.GrantAsync(_db_context, p.GuildId, p.OwnerId, ItemCatalog.DrawCollectible(rng, now), now));
+        }
+        else if (found > 0)
         {
             var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, p.GuildId, p.OwnerId);
             wallet.Balance += found;
+            result = new GiftResult(found, null);
         }
         await _db_context.SaveChangesAsync();
-        return found;
+        return result;
+    }
+
+    // /plynling forage: the owner's living Plynling goes out and always brings something back —
+    // a collectible, or a food for the pantry. Once every ItemCatalog.ForageCooldown per person
+    // (on the wallet row, so a new Plynling does not reset it); never asleep, frozen or sulking.
+    public async Task<ForageResult> ForageAsync(ulong guildId, ulong ownerId, DateTimeOffset now, Random rng)
+    {
+        var p = await GetCurrentAsync(guildId, ownerId, now);
+        if (p is null) return new ForageResult(CareOutcome.NoPlynling, null);
+        CareOutcome? refusal = p.DiedAt is not null ? CareOutcome.Dead : p.FrozenAt is not null ? CareOutcome.Frozen
+            : PlynlingLife.IsAsleep(now) ? CareOutcome.Asleep : PlynlingLife.IsSulking(p, now) ? CareOutcome.Sulking : null;
+        if (refusal is { } r) return new ForageResult(r, p);
+
+        var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, guildId, ownerId);
+        if (wallet.LastForageAt is { } last && last + ItemCatalog.ForageCooldown > now)
+            return new ForageResult(CareOutcome.TooSoon, p, ReadyAt: last + ItemCatalog.ForageCooldown);
+
+        wallet.LastForageAt = now;
+        var find = await InventoryService.GrantAsync(_db_context, guildId, ownerId, ItemCatalog.DrawForage(rng, now), now);
+        await _db_context.SaveChangesAsync();
+        return new ForageResult(CareOutcome.Done, p, find);
     }
 
     // /plynling journal: its badges and its moments, newest first (ordered in memory — SQLite

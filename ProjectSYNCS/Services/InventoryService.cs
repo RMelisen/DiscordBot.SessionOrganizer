@@ -5,6 +5,9 @@ using ProjectSYNCS.Models;
 
 namespace ProjectSYNCS.Services;
 
+// One item found — by foraging, a gift, a game or a visit — and any collection it completed.
+public sealed record ItemFind(ItemInfo Item, IReadOnlyList<CollectionSet> Completed);
+
 // The inventory — transient, it wraps AppDbContext. The static helpers take a context so other
 // services (feeding, the gift, games, visits) add and take items in **their own** unit of work:
 // an action and the items it moves land in one save, the same reason PebbleService's wallet
@@ -69,6 +72,10 @@ public class InventoryService
         completed.Add(set);
         return completed;
     }
+
+    /// <summary>One found item into someone's inventory (not saved, like <see cref="AddAsync"/>).</summary>
+    public static async Task<ItemFind> GrantAsync(AppDbContext db, ulong guildId, ulong userId, ItemInfo item, DateTimeOffset now) =>
+        new(item, await AddAsync(db, guildId, userId, item.Key, 1, now));
 
     public enum GiveOutcome { Given, NotEnough, UnknownItem }
 
