@@ -202,8 +202,25 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
         var (badges, moments) = await _plynlings.GetJournalAsync(plynling.Id);
-        await RespondAsync(components: PlynlingJournalCards.BuildJournal(plynling, badges, moments, 0, now),
+        var relations = await _plynlings.GetRelationsAsync(plynling.Id);
+        await RespondAsync(components: PlynlingJournalCards.BuildJournal(plynling, badges, moments, 0, now, relations),
             flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+    }
+
+    // Everyone it has met and what they are to it — the living one, or else the latest grave.
+    [SlashCommand("relations", "Les amis, amours et ennemis d'un Plynling (le tien par défaut)")]
+    public async Task RelationsAsync([Summary("user", "À qui est le Plynling (par défaut : toi)")] IUser? user = null)
+    {
+        var target = user ?? Context.User;
+        var plynling = await _plynlings.GetShownAsync(Context.Guild.Id, target.Id, DateTimeOffset.UtcNow);
+        if (plynling is null)
+        {
+            await RespondAsync(target.Id == Context.User.Id ? PlynlingText.NoPlynling : PlynlingText.NoneFor(target.Id),
+                ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+        var relations = await _plynlings.GetRelationsAsync(plynling.Id);
+        await RespondAsync(embed: PlynlingJournalCards.BuildRelationsEmbed(plynling, relations), allowedMentions: AllowedMentions.None);
     }
 
     [SlashCommand("list", "Tous les Plynlings vivants du serveur, du plus vieux au plus jeune")]

@@ -46,10 +46,11 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             return;
         }
         var (badges, moments) = await _plynlings.GetJournalAsync(plynling.Id);
+        var relations = await _plynlings.GetRelationsAsync(plynling.Id);
         var page = int.TryParse(pageStr, out var p) ? p : 0;
         await ((SocketMessageComponent)Context.Interaction).UpdateAsync(m =>
         {
-            m.Components = PlynlingJournalCards.BuildJournal(plynling, badges, moments, page, now);
+            m.Components = PlynlingJournalCards.BuildJournal(plynling, badges, moments, page, now, relations);
             m.Flags = MessageFlags.ComponentsV2;
             m.AllowedMentions = AllowedMentions.None;
         });
