@@ -7,6 +7,10 @@ public enum PlynlingRarity { Common, Uncommon, Rare, Legendary }
 
 public enum PlynlingMood { Content, Happy, Sad, Hungry, Starving, Frozen }
 
+// Derived from age by PlynlingLife.Stage and never stored, so — unlike PlynlingSpecies —
+// this is free to be reordered. The lowercase name is the art filename segment.
+public enum PlynlingStage { Baby, Teen, Adult, Elder }
+
 // The value is English (what /plynling feed sends and what the select option carries);
 // ChoiceDisplay is what Discord shows, in French.
 public enum PlynlingFood

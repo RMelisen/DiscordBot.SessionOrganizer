@@ -23,7 +23,7 @@ public static class PlynlingCardUi
         // ♂/♀ at heading size, far too big beside the name.
         return $"## {SafeName(p.Name)}\n" +
                $"{p.Gender.Symbol()} {info.Name} · *{PlynlingCatalog.RarityLabel(info.Rarity)}*\n" +
-               $"à <@{p.OwnerId}> · {p.Gender.Agree("âgé", "âgée")} de {age}";
+               $"à <@{p.OwnerId}> · {StageLabel(PlynlingLife.Stage(p, now), p.Gender)} · {p.Gender.Agree("âgé", "âgée")} de {age}";
     }
 
     public static string Status(Plynling p, DateTimeOffset now)
@@ -62,6 +62,14 @@ public static class PlynlingCardUi
         PlynlingMood.Starving => gender.Agree("mourant de faim", "mourante de faim"),
         PlynlingMood.Frozen => gender.Agree("gelé", "gelée"),
         _ => gender.Agree("content", "contente"),
+    };
+
+    public static string StageLabel(PlynlingStage stage, PlynlingGender gender) => stage switch
+    {
+        PlynlingStage.Baby => "bébé",
+        PlynlingStage.Teen => "ado",
+        PlynlingStage.Elder => gender.Agree("ancien", "ancienne"),
+        _ => "adulte",
     };
 
     public static string FoodEffect(FoodInfo food)

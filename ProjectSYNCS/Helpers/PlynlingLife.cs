@@ -65,6 +65,17 @@ public static class PlynlingLife
     public static TimeSpan Age(Plynling p, DateTimeOffset now) =>
         TimeSpan.FromSeconds(p.AgeBankedSeconds) + (IsFrozen(p) || IsDead(p) ? TimeSpan.Zero : now - p.LiveSince);
 
+    // Cosmetic only: the card's label and, for staged species, the picture. Measured on
+    // time actually lived, so a frozen Plynling does not grow up. 6 months = 180 days,
+    // a month taken as 30 days like the memorial tiers.
+    public static PlynlingStage Stage(Plynling p, DateTimeOffset now) => Age(p, now).TotalDays switch
+    {
+        < 2 => PlynlingStage.Baby,
+        < 14 => PlynlingStage.Teen,
+        < 180 => PlynlingStage.Adult,
+        _ => PlynlingStage.Elder,
+    };
+
     public static PlynlingMood Mood(Plynling p, DateTimeOffset now)
     {
         if (IsFrozen(p)) return PlynlingMood.Frozen;
