@@ -766,8 +766,9 @@ def dore_baby(state, frame, shadow):
 
 # How much of the cap has turned to ink, by mood: the hungrier, the more it melts. A baby is
 # too young to melt until hunger makes it.
-COPRIN_INK = {"happy": 2, "content": 2, "sad": 2, "hungry": 3, "starving": 4, "frozen": "frozen"}
-COPRIN_BABY_INK = {"happy": 0, "content": 0, "sad": 0, "hungry": 1, "starving": 3, "frozen": "frozen"}
+COPRIN_INK = {"happy": 2, "content": 2, "sad": 2, "sleeping": 2, "hungry": 3, "starving": 4, "frozen": "frozen"}
+COPRIN_BABY_INK = {"happy": 0, "content": 0, "sad": 0, "sleeping": 0, "hungry": 1, "starving": 3,
+                   "frozen": "frozen"}
 DROP, DROP_SHINE = (112, 102, 140), (214, 206, 238)    # glossy and lighter than the ink, to read on a dark theme
 # Beads and drips hanging from the rim at each ink level: (column, length).
 COPRIN_DRIPS = {1: [(12, 1), (19, 1)], 2: [(11, 2), (15, 1), (20, 2)],

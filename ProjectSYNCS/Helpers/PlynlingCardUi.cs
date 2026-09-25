@@ -50,7 +50,7 @@ public static class PlynlingCardUi
         // carries no "mourra de faim dans …" countdown — the owner removed it; the bar and the
         // mood already say how hungry it is. The absolute :f form is the one that takes "jusqu'au".
         var clock = p.FrozenAt is null
-            ? ""
+            ? PlynlingLife.IsAsleep(now) ? $" · 💤 {p.Gender.Agree("Endormi", "Endormie")} jusqu'à 5 h" : ""
             : p.FreezeUntil is { } until
                 ? $" · ❄️ {p.Gender.Agree("Gelé", "Gelée")} jusqu'au <t:{until.ToUnixTimeSeconds()}:f>"
                 : $" · ❄️ {p.Gender.Agree("Gelé", "Gelée")} par le staff";
@@ -69,6 +69,7 @@ public static class PlynlingCardUi
         PlynlingMood.Hungry => gender.Agree("affamé", "affamée"),
         PlynlingMood.Starving => gender.Agree("mourant de faim", "mourante de faim"),
         PlynlingMood.Frozen => gender.Agree("gelé", "gelée"),
+        PlynlingMood.Sleeping => gender.Agree("endormi", "endormie"),
         _ => gender.Agree("content", "contente"),
     };
 

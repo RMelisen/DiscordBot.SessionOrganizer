@@ -53,6 +53,8 @@ public static class PlynlingText
     public static string Wasted(PlynlingGender g) =>
         $"{g.Agree("Il", "Elle")} n'a besoin de rien de tout ça pour l'instant — garde tes cailloux.";
 
+    public static string Asleep(PlynlingGender g) => $"Chut… {g.Agree("il", "elle")} dort. Reviens après 5 h.";
+
     public static string AlreadyFrozen(PlynlingGender g) => g.Agree("Il est déjà gelé.", "Elle est déjà gelée.");
 
     public static string NotFrozen(PlynlingGender g) => g.Agree("Il n'est pas gelé.", "Elle n'est pas gelée.");

@@ -23,8 +23,8 @@ class Pose:
     def __init__(self, sp, state, f):
         self.f = f
         self.state = state
-        # species touches play in every mood but these two: too weak, and frozen solid
-        self.touch = state not in ("starving", "frozen")
+        # species touches play in every mood but these three: too weak, frozen solid, asleep
+        self.touch = state not in ("starving", "frozen", "sleeping")
         still = state == "frozen"
 
         # Nothing moves side to side: every motion here is up and down, or in place.

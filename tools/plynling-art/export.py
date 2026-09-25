@@ -22,7 +22,7 @@ ART_VERSION = 3
 SIZE = 256
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, "..", "..", "assets", "plynlings"))
-STATES = ["happy", "content", "sad", "hungry", "starving", "frozen"]
+STATES = ["happy", "content", "sad", "hungry", "starving", "frozen", "sleeping"]
 FOODS = ["mushroom", "shiitake", "morel", "truffle"]
 # Species whose bébé has its own art. Must match PlynlingArt.StagedSpecies in the bot
 # (artcheck compares them). The adult keeps its stage-less filename, and ado and ancien wear

@@ -68,6 +68,7 @@ public class PlynlingCareService
         CareOutcome.Dead => PlynlingText.Dead(gender),
         CareOutcome.Frozen => PlynlingText.Frozen(gender),
         CareOutcome.Wasted => PlynlingText.Wasted(gender),
+        CareOutcome.Asleep => PlynlingText.Asleep(gender),
         _ => PlynlingText.Unknown,
     };
 }

@@ -5,7 +5,8 @@ namespace ProjectSYNCS.Helpers;
 
 public enum PlynlingRarity { Common, Uncommon, Rare, Legendary }
 
-public enum PlynlingMood { Content, Happy, Sad, Hungry, Starving, Frozen }
+// Computed, never stored. Sleeping is the time of day (PlynlingLife.IsAsleep), not a need.
+public enum PlynlingMood { Content, Happy, Sad, Hungry, Starving, Frozen, Sleeping }
 
 // Derived from age by PlynlingLife.Stage and never stored, so — unlike PlynlingSpecies —
 // this is free to be reordered. The lowercase name is the art filename segment.

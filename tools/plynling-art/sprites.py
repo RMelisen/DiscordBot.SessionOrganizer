@@ -135,11 +135,37 @@ def face(g, state, f, ox=0, oy=0, skin=None, skin_out=None, blink=False, tear=0,
         closed_eye(18)
         for x in range(14, 18):                                         # a closed, flat mouth
             P(x, 24, INK)
+    elif state == "sleeping":
+        for x0 in (12, 18):                                             # eyes shut, lids curved down
+            P(x0 - 1, 20, INK)
+            P(x0, 21, INK)
+            P(x0 + 1, 21, INK)
+            P(x0 + 2, 20, INK)
+        P(15, 24, INK)                                                  # a small, open mouth
+        P(16, 24, INK)
+        P(15, 25, MOUTH)
+        P(16, 25, MOUTH)
+        blush(PINK_SOFT)
 
 
 SPARKLES = [(2, 6), (29, 9), (27, 1), (3, 1)]
 SPARKLES_ALT = [(1, 9), (30, 5), (26, 3), (5, 2)]
 STAR = (220, 246, 255)
+ZZZ = (226, 228, 255)
+
+
+def zzz(px, pose):
+    """A sleeping Plynling's « z »s: two little letters rising straight up in the clear space
+    above its top right corner and fading out, half a loop apart. Four pixels wide, because a
+    three-pixel z has no diagonal and reads as an I."""
+    f = pose.f if pose else 0
+    glyph = ((0, 0), (1, 0), (2, 0), (3, 0), (2, 1), (1, 2), (0, 3), (1, 3), (2, 3), (3, 3))
+    for phase, x in ((0, 24), (8, 27)):
+        k = (f + phase) % 16                                            # 0..15 along its climb
+        y = 8 - k // 2                                                  # a row every two frames
+        a = 255 if k < 10 else max(50, 255 - (k - 9) * 34)              # fading near the top
+        for dx, dy in glyph:
+            px(x + dx, y + dy, ZZZ, a)
 
 
 def star(px, pose):
@@ -192,6 +218,8 @@ def extras(im, state, p, pose=None, body=(0, 0)):
     if state == "starving" and k is not None:                            # a cold sweat, both sides
         for x, y in ((25, 18), (25, 19), (24, 19), (25, 20), (6, 19), (6, 20), (7, 20), (6, 21)):
             px(x + bx, y + by + k, TEAR)
+    if state == "sleeping":
+        zzz(px, pose)
     if state == "frozen":
         for x, y in ((4, 16), (4, 17), (7, 16), (24, 16), (27, 16), (27, 17), (26, 16)):
             px(x, y, (206, 242, 255))

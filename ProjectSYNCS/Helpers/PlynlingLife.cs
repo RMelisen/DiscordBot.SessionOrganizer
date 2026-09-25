@@ -23,6 +23,13 @@ public static class PlynlingLife
     public static readonly TimeSpan PetCooldown = TimeSpan.FromHours(4);
     public static readonly TimeSpan AbandonCooldown = TimeSpan.FromMinutes(30);
 
+    // Every Plynling sleeps from 01:00 to 05:00, Paris time. Hunger keeps dropping, but none
+    // dies in its sleep: a death due at night happens at 05:00. And the warning DM never goes
+    // out at night — from 23:00 on it would find the owner asleep too — so it moves to 23:00.
+    public static readonly TimeSpan NightStart = TimeSpan.FromHours(1);
+    public static readonly TimeSpan NightEnd = TimeSpan.FromHours(5);
+    public static readonly TimeSpan QuietStart = TimeSpan.FromHours(23);
+
     public const double StartNeeds = 0.70;
     public const double ResurrectNeeds = 0.50;
     public const double SelfFreezeMinHunger = 0.50;
@@ -60,8 +67,37 @@ public static class PlynlingLife
         IsFrozen(p) || IsDead(p) ? p.Happiness : Clamp(p.Happiness - (t - p.NeedsAsOf) / HappinessLife);
 
     // When it will starve if nothing changes. Null when it cannot: frozen, or already dead.
+    // The raw instant its hunger reaches zero — EffectiveDeathAt is when it actually dies.
     public static DateTimeOffset? DeathAt(Plynling p) =>
         IsFrozen(p) || IsDead(p) ? null : p.NeedsAsOf + p.Hunger * HungerLife;
+
+    public static bool IsAsleep(DateTimeOffset t)
+    {
+        var time = AppTime.ToZoned(t).TimeOfDay;
+        return time >= NightStart && time < NightEnd;
+    }
+
+    // 05:00 Paris on the morning of t. Built from the wall clock, so the nights the clocks
+    // change (both inside the sleep window) still wake at 05:00 local.
+    public static DateTimeOffset WakeAfter(DateTimeOffset t) => AtWallClock(AppTime.ToZoned(t).Date + NightEnd);
+
+    // When it dies: its starvation instant, or 05:00 when that falls while it sleeps.
+    public static DateTimeOffset? EffectiveDeathAt(Plynling p) =>
+        DeathAt(p) is { } death ? (IsAsleep(death) ? WakeAfter(death) : death) : null;
+
+    // When the warning DM goes out: WarningLead before the effective death, pulled back to
+    // 23:00 when that would land between 23:00 and 05:00, so it reaches the owner before bed.
+    public static DateTimeOffset? WarnAt(Plynling p)
+    {
+        if (EffectiveDeathAt(p) is not { } death) return null;
+        var warn = death - WarningLead;
+        var zoned = AppTime.ToZoned(warn);
+        if (zoned.TimeOfDay >= QuietStart) return AtWallClock(zoned.Date + QuietStart);
+        if (zoned.TimeOfDay < NightEnd) return AtWallClock(zoned.Date.AddDays(-1) + QuietStart);
+        return warn;
+    }
+
+    private static DateTimeOffset AtWallClock(DateTime wall) => new(wall, AppTime.Zone.GetUtcOffset(wall));
 
     public static TimeSpan Age(Plynling p, DateTimeOffset now) =>
         TimeSpan.FromSeconds(p.AgeBankedSeconds) + (IsFrozen(p) || IsDead(p) ? TimeSpan.Zero : now - p.LiveSince);
@@ -80,6 +116,7 @@ public static class PlynlingLife
     public static PlynlingMood Mood(Plynling p, DateTimeOffset now)
     {
         if (IsFrozen(p)) return PlynlingMood.Frozen;
+        if (IsAsleep(now)) return PlynlingMood.Sleeping;
         var hunger = HungerAt(p, now);
         if (hunger < StarvingBelow) return PlynlingMood.Starving;
         if (hunger < HungryBelow) return PlynlingMood.Hungry;
@@ -111,7 +148,7 @@ public static class PlynlingLife
             changed = true;
         }
 
-        if (DeathAt(p) is { } death && death <= now)
+        if (EffectiveDeathAt(p) is { } death && death <= now)
         {
             Rebase(p, death);
             p.AgeBankedSeconds += (long)(death - p.LiveSince).TotalSeconds;
@@ -150,7 +187,7 @@ public static class PlynlingLife
         Rebase(p, now);
         p.Hunger = Clamp(p.Hunger + food.Hunger);
         p.Happiness = Clamp(p.Happiness + food.Happiness);
-        if (DeathAt(p) is { } death && death - now > WarningLead) p.WarningSent = false;
+        if (WarnAt(p) is { } warn && now < warn) p.WarningSent = false;
     }
 
     public static void Pet(Plynling p, DateTimeOffset now)
@@ -160,7 +197,7 @@ public static class PlynlingLife
     }
 
     public static bool ShouldWarn(Plynling p, DateTimeOffset now) =>
-        !p.WarningSent && DeathAt(p) is { } death && death > now && death - now <= WarningLead;
+        !p.WarningSent && EffectiveDeathAt(p) is { } death && death > now && WarnAt(p) is { } warn && now >= warn;
 
     // The same row comes back: same name, same species, age carrying on. Time spent dead
     // was never added to AgeBankedSeconds, so it does not count.

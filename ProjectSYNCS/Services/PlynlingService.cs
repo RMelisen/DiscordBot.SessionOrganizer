@@ -7,7 +7,7 @@ namespace ProjectSYNCS.Services;
 
 public enum AdoptOutcome { Adopted, AlreadyHasOne }
 
-public enum CareOutcome { Done, NoPlynling, NotOwner, Dead, Frozen, Wasted, TooPoor }
+public enum CareOutcome { Done, NoPlynling, NotOwner, Dead, Frozen, Wasted, TooPoor, Asleep }
 
 public enum ThawOutcome { Thawed, NoPlynling, Dead, NotFrozen, StaffOnly }
 
@@ -105,6 +105,7 @@ public class PlynlingService
         if (plynling is null) return (CareOutcome.NoPlynling, null);
         if (plynling.DiedAt is not null) return (CareOutcome.Dead, plynling);
         if (plynling.FrozenAt is not null) return (CareOutcome.Frozen, plynling);
+        if (PlynlingLife.IsAsleep(now)) return (CareOutcome.Asleep, plynling);   // feeding still works
 
         PlynlingLife.Pet(plynling, now);
         await _db_context.SaveChangesAsync();

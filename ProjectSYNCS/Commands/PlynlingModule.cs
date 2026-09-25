@@ -403,8 +403,10 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         var builder = new ComponentBuilderV2().AddComponent(container);
         if (alive && plynling.FrozenAt is null)
         {
-            builder.AddComponent(new ActionRowBuilder()
-                .WithButton("🤲 Caresser", $"plyn:pet:{plynling.Id}", ButtonStyle.Primary));
+            // No petting a sleeping Plynling — the button goes, feeding stays.
+            if (!PlynlingLife.IsAsleep(now))
+                builder.AddComponent(new ActionRowBuilder()
+                    .WithButton("🤲 Caresser", $"plyn:pet:{plynling.Id}", ButtonStyle.Primary));
 
             var menu = new SelectMenuBuilder()
                 .WithCustomId($"plyn:feed:{plynling.Id}")
