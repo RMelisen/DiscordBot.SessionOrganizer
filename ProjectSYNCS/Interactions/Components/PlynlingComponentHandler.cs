@@ -29,6 +29,32 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         _picker = picker;
     }
 
+    // ---- /plynling journal's pages: two verbs, one redraw, re-read on every click.
+    [ComponentInteraction("plyn:jprev:*:*", ignoreGroupNames: true)]
+    public Task OnJournalPrevAsync(string id, string page) => ShowJournalAsync(id, page);
+
+    [ComponentInteraction("plyn:jnext:*:*", ignoreGroupNames: true)]
+    public Task OnJournalNextAsync(string id, string page) => ShowJournalAsync(id, page);
+
+    private async Task ShowJournalAsync(string idStr, string pageStr)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var plynling = int.TryParse(idStr, out var id) ? await _plynlings.GetByIdAsync(id, now) : null;
+        if (plynling is null)
+        {
+            await RespondAsync(PlynlingText.Unknown, ephemeral: true);   // abandoned since
+            return;
+        }
+        var (badges, moments) = await _plynlings.GetJournalAsync(plynling.Id);
+        var page = int.TryParse(pageStr, out var p) ? p : 0;
+        await ((SocketMessageComponent)Context.Interaction).UpdateAsync(m =>
+        {
+            m.Components = PlynlingJournalCards.BuildJournal(plynling, badges, moments, page, now);
+            m.Flags = MessageFlags.ComponentsV2;
+            m.AllowedMentions = AllowedMentions.None;
+        });
+    }
+
     // ---- /plynling visit: « Accueillir », pressed by the invited owner within the hour.
     [ComponentInteraction("plyn:visit:*:*:*", ignoreGroupNames: true)]
     public async Task OnVisitAcceptedAsync(string visitorStr, string hostStr, string expiresStr)

@@ -284,6 +284,16 @@ public class PlynlingService
 
     public Task SaveAsync() => _db_context.SaveChangesAsync();
 
+    // /plynling journal: its badges and its moments, newest first (ordered in memory — SQLite
+    // cannot order by a DateTimeOffset).
+    public async Task<(List<PlynlingBadge> Badges, List<PlynlingJournalEntry> Moments)> GetJournalAsync(int plynlingId)
+    {
+        var badges = await _db_context.PlynlingBadges.Where(b => b.PlynlingId == plynlingId).ToListAsync();
+        var moments = (await _db_context.PlynlingJournalEntries.Where(e => e.PlynlingId == plynlingId).ToListAsync())
+            .OrderByDescending(e => e.At).ThenByDescending(e => e.Id).ToList();
+        return (badges, moments);
+    }
+
     // What only time earns, for the hourly sweep: the « est devenu… » moments — dated when the
     // stage was reached, so a Plynling that already existed when the journal shipped gets its
     // past written in — and any badge it now qualifies for (the age ones, and on ship day the

@@ -188,6 +188,24 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             flags: MessageFlags.ComponentsV2, allowedMentions: new AllowedMentions { UserIds = new List<ulong> { user.Id } });
     }
 
+    // Its stats, badges and moments — the living one, or else the latest grave, like view.
+    [SlashCommand("journal", "Le journal d'un Plynling : ses badges et ses souvenirs (le tien par défaut)")]
+    public async Task JournalAsync([Summary("user", "À qui est le Plynling (par défaut : toi)")] IUser? user = null)
+    {
+        var target = user ?? Context.User;
+        var now = DateTimeOffset.UtcNow;
+        var plynling = await _plynlings.GetShownAsync(Context.Guild.Id, target.Id, now);
+        if (plynling is null)
+        {
+            await RespondAsync(target.Id == Context.User.Id ? PlynlingText.NoPlynling : PlynlingText.NoneFor(target.Id),
+                ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+        var (badges, moments) = await _plynlings.GetJournalAsync(plynling.Id);
+        await RespondAsync(components: PlynlingJournalCards.BuildJournal(plynling, badges, moments, 0, now),
+            flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+    }
+
     [SlashCommand("list", "Tous les Plynlings vivants du serveur, du plus vieux au plus jeune")]
     public async Task ListAsync()
     {
