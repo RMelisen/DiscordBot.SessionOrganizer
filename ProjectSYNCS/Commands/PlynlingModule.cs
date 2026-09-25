@@ -431,7 +431,10 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/plynling feed food: [user]`** — Champignon (15), Shiitake (30), Morille (40, que du bonheur), Truffe (80, faim et bonheur). " +
                 "Nourrir celui d'un autre coûte le double.\n" +
                 "**`/plynling pet [user]`** — +25 % de bonheur, toutes les 4 h, sur n'importe quel Plynling.\n" +
-                "Il **dort de 1 h à 5 h** : on peut le nourrir, pas le caresser, et il ne meurt jamais dans son sommeil.")
+                "Il **dort de 1 h à 5 h** : on peut le nourrir, pas le caresser, et il ne meurt jamais dans son sommeil.\n" +
+                "Son **humeur** compte : heureux, un repas le nourrit 15 % de plus et il te rapporte parfois un caillou ; " +
+                "triste, 25 % de moins. À 0 %, il **boude** et refuse de manger tant qu'on n'a pas joué avec lui ou qu'on " +
+                "ne l'a pas caressé — sauf s'il meurt de faim.")
             .AddField("Jouer & rendre visite",
                 "**`/plynling play`** — Un mini-jeu au hasard avec ton Plynling : cache-cache, pierre-feuille-ciseaux " +
                 "ou plus ou moins. Une fois par heure : +15 % de bonheur, +25 % et quelques cailloux si tu gagnes.\n" +

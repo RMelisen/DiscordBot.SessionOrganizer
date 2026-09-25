@@ -213,6 +213,10 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   `/plynling feed` (Champignon, Shiitake, Morille, Truffe) costs **cailloux** — anyone can
   feed anyone's, but someone else's costs double; `/plynling pet` is free, every 4 hours, and
   anyone can pet anyone's.
+- **Mood matters:** a happy Plynling (above 80 % happiness) gets 15 % more out of every meal,
+  and the first time its owner looks at it each day it has a one-in-two chance of having found
+  5–15 cailloux for them. A sad one (below 30 %) gets 25 % less. At 0 % it sulks and refuses to
+  eat until someone plays with it or pets it — unless it is starving, when hunger wins.
 - **Play:** `/plynling play` starts one of three mini-games at random with your own Plynling —
   cache-cache (find it behind one of three rocks, two tries), pierre-feuille-ciseaux (first to
   two) or plus ou moins (a number from 1 to 100 in six guesses). Once an hour; it always

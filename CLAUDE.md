@@ -1230,6 +1230,15 @@ the same unit of work is not in the database yet, and creating a second one for 
 breaks the unique index at save time — which a first-time feeder whose meal also earns the
 Plynling a badge used to hit.
 
+**Happiness changes a meal's worth, and a Plynling at 0 % sulks.** `PlynlingLife.MealFactor` scales
+a meal's *hunger* only — ×1.15 above 80 % happiness, ×0.75 below 30 %, measured before the meal
+cheers it — never its price or its own happiness. `IsSulking` (happiness below 0.5 %, what the
+card shows as 0 %) refuses every meal, free of charge — **except while starving**: the sulk must
+never be what kills it, and at night nothing could end it, since petting is refused. The happy
+gift is one draw per Paris day (`Plynling.LastGiftDay`, stored so a restart cannot grant a
+second), made on the owner's first look while it is happy — `/plynling view` or a pet or meal
+from the card; a look while it is not happy leaves the day's draw unspent.
+
 **Plynling names are hostile input.** They are rendered through `PlynlingCardUi.SafeName`
 (`Format.Sanitize` — markdown and mention syntax neutralised) *and* every message carrying
 one is sent with `AllowedMentions.None`. The death announcement is public, so a Plynling
