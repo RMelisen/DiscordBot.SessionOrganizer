@@ -1,6 +1,6 @@
 ﻿name: "ProjectSYNCS"
 description: "Discord session organizer bot"
-version: "5.4.22"
+version: "5.4.23"
 slug: "projectsyncs"
 init: false
 arch:
