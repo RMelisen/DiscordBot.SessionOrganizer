@@ -277,7 +277,7 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
         }));
 
         var embed = new EmbedBuilder()
-            .WithTitle("🎒 Ton inventaire")
+            .WithTitle("Ton inventaire")
             .WithColor(Color.Purple)
             .AddField("🧺 Garde-manger", pantry + "\n-# Nourrir puise ici d'abord : 1 pour ton Plynling, 2 pour celui d'un autre.");
 
@@ -287,7 +287,7 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
             {
                 var lines = section.Where(i => Count(i.Key) > 0).Select(i => $"{i.Emoji} {i.Name} ×{Count(i.Key)}").ToList();
                 if (lines.Count > 0)
-                    embed.AddField($"{set.Emoji} {set.Name}{(label.Length > 0 ? $" ({label})" : "")}", string.Join("\n", lines), inline: true);
+                    embed.AddField($"{set.Name}{(label.Length > 0 ? $" ({label})" : "")}", string.Join("\n", lines), inline: true);
             }
 
         var discovered = ItemCatalog.Collectibles.Count(i => byKey.ContainsKey(i.Key));
