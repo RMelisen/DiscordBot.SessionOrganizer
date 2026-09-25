@@ -164,15 +164,24 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
         {
             var items = ItemCatalog.InSet(set.Key).ToList();
             var have = items.Count(i => discovered.Contains(i.Key));
-            var lines = items.Select(i =>
-            {
-                var season = i.Season == Season.None ? "" : $" · {ItemCatalog.SeasonLabel(i.Season)}";
-                return discovered.Contains(i.Key)
-                    ? $"{i.Emoji} {i.Name}{season}"
-                    : $"❔ ??? · {ItemCatalog.RarityLabel(i.Rarity)}{season}";
-            });
             var status = done.Contains(set.Key) ? "✅ complète" : $"{have}/{items.Count} · complète : +{PebbleEconomy.Cailloux(set.Reward)}";
-            embed.AddField($"{set.Emoji} {set.Name} — {status}", string.Join("\n", lines), inline: true);
+            // A big set is split by rarity (ItemCatalog.Sections); its status rides the first block.
+            var first = true;
+            foreach (var (label, section) in ItemCatalog.Sections(set.Key))
+            {
+                var lines = section.Select(i =>
+                {
+                    var season = i.Season == Season.None ? "" : $" · {ItemCatalog.SeasonLabel(i.Season)}";
+                    return discovered.Contains(i.Key)
+                        ? $"{i.Emoji} {i.Name}{season}"
+                        : $"❔ ??? · {ItemCatalog.RarityLabel(i.Rarity)}{season}";
+                });
+                var name = first
+                    ? $"{set.Emoji} {set.Name}{(label.Length > 0 ? $" ({label})" : "")} — {status}"
+                    : $"{set.Emoji} {set.Name} ({label})";
+                embed.AddField(name, string.Join("\n", lines), inline: true);
+                first = false;
+            }
         }
         embed.WithFooter("Trouve-les avec /plynling forage, le cadeau du jour, les jeux et les visites — ou échange-les.");
         return embed.Build();
@@ -195,13 +204,14 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
             .WithColor(Color.Purple)
             .AddField("🧺 Garde-manger", pantry + "\n-# Nourrir puise ici d'abord : 1 pour ton Plynling, 2 pour celui d'un autre.");
 
-        // One field per set, holding only what is in hand — a set of 8 is at most ~8 short lines.
+        // One field per set (per rarity for a big one), holding only what is in hand.
         foreach (var set in ItemCatalog.Sets)
-        {
-            var lines = ItemCatalog.InSet(set.Key).Where(i => Count(i.Key) > 0)
-                .Select(i => $"{i.Emoji} {i.Name} ×{Count(i.Key)}").ToList();
-            if (lines.Count > 0) embed.AddField($"{set.Emoji} {set.Name}", string.Join("\n", lines), inline: true);
-        }
+            foreach (var (label, section) in ItemCatalog.Sections(set.Key))
+            {
+                var lines = section.Where(i => Count(i.Key) > 0).Select(i => $"{i.Emoji} {i.Name} ×{Count(i.Key)}").ToList();
+                if (lines.Count > 0)
+                    embed.AddField($"{set.Emoji} {set.Name}{(label.Length > 0 ? $" ({label})" : "")}", string.Join("\n", lines), inline: true);
+            }
 
         var discovered = ItemCatalog.Collectibles.Count(i => byKey.ContainsKey(i.Key));
         embed.AddField("📖 Collection",

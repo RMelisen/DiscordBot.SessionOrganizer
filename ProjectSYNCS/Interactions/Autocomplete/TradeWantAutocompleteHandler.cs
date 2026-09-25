@@ -33,7 +33,7 @@ public sealed class TradeWantAutocompleteHandler : AutocompleteHandler
             return AutocompletionResult.FromSuccess(ItemCatalog.All.Where(Matches)
                 .OrderBy(i => i.Kind).ThenBy(i => i.Name, french)
                 .Take(MaxSuggestions)
-                .Select(i => new AutocompleteResult($"{i.Emoji} {i.Name}", i.Key)));
+                .Select(i => new AutocompleteResult($"{ItemCatalog.TextEmoji(i)}{i.Name}", i.Key)));
         }
 
         await using var scope = services.CreateAsyncScope();
@@ -44,6 +44,6 @@ public sealed class TradeWantAutocompleteHandler : AutocompleteHandler
             .Where(x => x.Info is not null && Matches(x.Info))
             .OrderBy(x => x.Info!.Kind).ThenBy(x => x.Info!.Name, french)
             .Take(MaxSuggestions)
-            .Select(x => new AutocompleteResult($"{x.Info!.Emoji} {x.Info.Name} ×{x.Row.Quantity}", x.Info.Key)));
+            .Select(x => new AutocompleteResult($"{ItemCatalog.TextEmoji(x.Info!)}{x.Info!.Name} ×{x.Row.Quantity}", x.Info!.Key)));
     }
 }

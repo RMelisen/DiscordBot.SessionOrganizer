@@ -40,7 +40,7 @@ public sealed class InventoryItemAutocompleteHandler : AutocompleteHandler
             .Where(x => typed.Length == 0 || x.Info!.Name.Contains(typed, StringComparison.OrdinalIgnoreCase))
             .OrderBy(x => x.Info!.Kind).ThenBy(x => x.Info!.Name, StringComparer.Create(System.Globalization.CultureInfo.GetCultureInfo("fr-FR"), true))
             .Take(MaxSuggestions)
-            .Select(x => new AutocompleteResult($"{x.Info!.Emoji} {x.Info.Name} ×{x.Row.Quantity}", x.Info.Key));
+            .Select(x => new AutocompleteResult($"{ItemCatalog.TextEmoji(x.Info!)}{x.Info!.Name} ×{x.Row.Quantity}", x.Info!.Key));
         return AutocompletionResult.FromSuccess(results);
     }
 }

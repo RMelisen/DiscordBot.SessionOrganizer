@@ -1294,6 +1294,22 @@ the items land in one `SaveChanges`. `AddAsync` pays a completed set into the wa
 save. Both it and the wallet helper check `Local` first, so two adds in one save never create
 the same row twice.
 
+**The Champignons set is the one big set, and its pictures are the bot's own emojis.** 30
+items against the others' 8, found mostly by foraging: `DrawForage` picks from it 60 % of the
+time and every other source 10 % (`ForageMushroomShare` / `MushroomShareElsewhere`), or its 30
+would crowd out the other 32 in every find. Past 10 items a set is laid out one embed field per
+rarity (`ItemCatalog.Sections`), since 30 lines of emoji markup overflow a field's 1024. The
+pictures are **application emojis** — owned by the bot's application, not by a server, so
+unlike the reaction emotes above they work in any server it is in. `tools/mushroom-emojis/upload.py`
+uploads the sprites (16 px, scaled ×8 without smoothing) and **generates**
+`Helpers/Emotes.Mushrooms.cs`, a `partial` of `Emotes`; never edit that file by hand. Until the
+script has run, every mushroom falls back to 🍄 and `Emotes.MushroomsUploaded` is false, so the
+build never depends on it. Application emojis belong to **one** application: run it with the
+production bot's token, and a dev bot that is a different application shows them as text. They
+appear in embeds and messages only — autocomplete is plain text, so it goes through
+`ItemCatalog.TextEmoji`, which drops custom markup rather than show « <:name:id> ». The
+sprites' file names are the item keys (`col.<file name>`), which the harness checks both ways.
+
 **Feeding serves from the pantry first**, one of that food for your own Plynling and two for
 someone else's — the pantry's version of the double price — and only charges cailloux when
 there isn't enough. `TooPoor` is therefore only reachable with an empty pantry.

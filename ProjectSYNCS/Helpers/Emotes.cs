@@ -19,7 +19,7 @@ namespace ProjectSYNCS.Helpers;
 // These are this specific server's emotes, like the ids in AvailabilityService and
 // BotResponses.PersonalComebacks. The bot can only react with an emote from a guild
 // it shares.
-public static class Emotes
+public static partial class Emotes
 {
     /// <summary>`:adorablefrog:`</summary>
     public const string AdorableFrogId = "885135007822282762";
