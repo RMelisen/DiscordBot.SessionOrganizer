@@ -204,10 +204,10 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
             var items = ItemCatalog.InSet(s.Key).ToList();
             var have = items.Count(i => quantities.ContainsKey(i.Key));
             var status = done.Contains(s.Key) ? "✅" : $"{have}/{items.Count} · +{PebbleEconomy.Cailloux(s.Reward)}";
-            return $"{s.Emoji} **{s.Name}**\n`{LevelCardUi.ProgressBar(have, items.Count)}` {status}";
+            return $"**{s.Name}**\n`{LevelCardUi.ProgressBar(have, items.Count)}` {status}";
         });
         return new EmbedBuilder()
-            .WithTitle("📖 Carnet de collection")
+            .WithTitle("Carnet de collection")
             .WithColor(Color.Purple)
             .WithDescription($"<@{userId}> · **{found}/{ItemCatalog.Collectibles.Count()}** objets trouvés · " +
                              $"{done.Count}/{ItemCatalog.Sets.Count} collections complètes\n\n" + string.Join("\n", lines))
@@ -223,7 +223,7 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
         var have = items.Count(i => quantities.ContainsKey(i.Key));
         var status = complete ? "✅ complète" : $"complète : +{PebbleEconomy.Cailloux(set.Reward)}";
         var embed = new EmbedBuilder()
-            .WithTitle($"📖 {set.Emoji} {set.Name}")
+            .WithTitle(set.Name)
             .WithColor(Color.Purple)
             .WithDescription($"<@{userId}> · **{have}/{items.Count}** trouvés · {status}\n" +
                              $"`{LevelCardUi.ProgressBar(have, items.Count)}`");
@@ -279,7 +279,7 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
         var embed = new EmbedBuilder()
             .WithTitle("Ton inventaire")
             .WithColor(Color.Purple)
-            .AddField("🧺 Garde-manger", pantry + "\n-# Nourrir puise ici d'abord : 1 pour ton Plynling, 2 pour celui d'un autre.");
+            .AddField("Garde-manger",pantry + "\n-# Nourrir puise ici d'abord : 1 pour ton Plynling, 2 pour celui d'un autre.");
 
         // One field per set (per rarity for a big one), holding only what is in hand.
         foreach (var set in ItemCatalog.Sets)
@@ -291,7 +291,7 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
             }
 
         var discovered = ItemCatalog.Collectibles.Count(i => byKey.ContainsKey(i.Key));
-        embed.AddField("📖 Collection",
+        embed.AddField("Collection",
             $"{discovered}/{ItemCatalog.Collectibles.Count()} objets découverts · {setsCompleted}/{ItemCatalog.Sets.Count} collections complètes");
         embed.WithFooter($"🪨 {PebbleEconomy.Cailloux(balance)}");
         return embed.Build();
