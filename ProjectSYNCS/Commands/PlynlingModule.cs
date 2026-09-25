@@ -409,6 +409,11 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 "Nourrir celui d'un autre coûte le double.\n" +
                 "**`/plynling pet [user]`** — +25 % de bonheur, toutes les 4 h, sur n'importe quel Plynling.\n" +
                 "Il **dort de 1 h à 5 h** : on peut le nourrir, pas le caresser, et il ne meurt jamais dans son sommeil.")
+            .AddField("Jouer & rendre visite",
+                "**`/plynling play`** — Un mini-jeu au hasard avec ton Plynling : cache-cache, pierre-feuille-ciseaux " +
+                "ou plus ou moins. Une fois par heure : +15 % de bonheur, +25 % et quelques cailloux si tu gagnes.\n" +
+                "**`/plynling visit user:`** — Ton Plynling toque chez quelqu'un. S'il l'accueille dans l'heure, les deux " +
+                "gagnent +20 % de bonheur. Une visite par jour entre deux personnes.")
             .AddField("Gagner des cailloux",
                 "**`/work`** — 40 à 60 cailloux, toutes les 4 h.\n" +
                 "Parler, réagir et le vocal rapportent aussi quelques cailloux (45 au plus par jour).\n" +

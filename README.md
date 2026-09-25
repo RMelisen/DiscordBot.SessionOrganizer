@@ -24,7 +24,7 @@ a wall of shame. The bot's user-facing language is French.
 | `/goodbot` | Who praised or scolded the bot | everyone |
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
 | `/shame` | The wall of shame | everyone |
-| `/plynling adopt · view · list · feed · pet · freeze · thaw · abandon · help` | Adopt and look after a Plynling | everyone |
+| `/plynling adopt · view · list · feed · pet · play · visit · freeze · thaw · abandon · help` | Adopt and look after a Plynling | everyone |
 | `/work · /balance` | Earn cailloux; see your balance | everyone |
 | `/graveyard [user]` | Every Plynling that died | everyone |
 | `/shame user:@someone` | Put someone on it | staff |
@@ -213,6 +213,13 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   `/plynling feed` (Champignon, Shiitake, Morille, Truffe) costs **cailloux** — anyone can
   feed anyone's, but someone else's costs double; `/plynling pet` is free, every 4 hours, and
   anyone can pet anyone's.
+- **Play:** `/plynling play` starts one of three mini-games at random with your own Plynling —
+  cache-cache (find it behind one of three rocks, two tries), pierre-feuille-ciseaux (first to
+  two) or plus ou moins (a number from 1 to 100 in six guesses). Once an hour; it always
+  cheers it up (+15 % happiness), and a win adds +10 % and a few cailloux.
+- **Visits:** `/plynling visit user:` sends your Plynling knocking at someone's door. If they
+  press *Accueillir* within the hour, the two meet on one card and both get +20 % happiness.
+  Once a day per pair, and no cailloux.
 - **Sleep:** every Plynling sleeps from 1 am to 5 am (Paris time), with its own sleeping
   picture. It can be fed but not petted, and it never dies in its sleep — a death due at
   night happens at 5 am instead.

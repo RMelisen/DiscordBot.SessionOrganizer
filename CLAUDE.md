@@ -1192,6 +1192,26 @@ cooldown held **in memory** in `PlynlingCooldowns` — a restart clears it, whic
 30 minutes. The shame point is recorded in its own `try` after the deletion: a failed write
 must not undo the abandonment.
 
+**`/plynling play`'s secrets never leave the process.** The rock it hides behind, its throw
+and the number it thinks of live in `PlynlingPlayService` (a singleton, sessions by a short id,
+10-minute expiry), never in a custom-id — anyone can read a custom-id out of the client. The
+rules are pure in `Helpers/PlynlingGames` with the `Random` passed in, so every round is
+checkable; the text is pure in `Helpers/PlynlingGameUi`; the card is `PlynlingPlayCards.BuildGame`.
+Each move runs under the session's `Gate`, so a double click plays once and exactly one move
+finishes the game — that move alone ends the session and pays, through
+`PlynlingService.FinishPlayAsync` (happiness, counts and cailloux in one save). The hourly
+limit is claimed when the game **starts**, so abandoning a game never rolls a new one. A restart
+ends games in progress, which costs nothing.
+
+**`/plynling visit` is an invitation, and its knock is a second message meant to ping.** Like the
+giveaway draw, it narrows mentions rather than silencing them: `AllowedMentions` with the
+invited owner's id only. « Accueillir » carries the visitor's Plynling, the host and the expiry
+in its custom-id (nothing secret there); only the host may press it, within the hour. Once a
+day per pair of owners, either direction, held in memory in `PlynlingCooldowns` and released
+if the visit then fails. A visit pays no cailloux on purpose — two accounts could farm it.
+`Plays`, `PlaysWon` and `Visits` on `Plynling` are recorded for the achievements; they started at
+zero the day they shipped.
+
 **Plynling names are hostile input.** They are rendered through `PlynlingCardUi.SafeName`
 (`Format.Sanitize` — markdown and mention syntax neutralised) *and* every message carrying
 one is sent with `AllowedMentions.None`. The death announcement is public, so a Plynling
