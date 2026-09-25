@@ -24,7 +24,7 @@ a wall of shame. The bot's user-facing language is French.
 | `/goodbot` | Who praised or scolded the bot | everyone |
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
 | `/shame` | The wall of shame | everyone |
-| `/plynling adopt · view · list · journal · feed · pet · play · visit · freeze · thaw · abandon · help` | Adopt and look after a Plynling | everyone |
+| `/plynling adopt · view · list · journal · relations · feed · pet · play · visit · freeze · thaw · abandon · help` | Adopt and look after a Plynling | everyone |
 | `/work · /balance` | Earn cailloux; see your balance | everyone |
 | `/graveyard [user]` | Every Plynling that died | everyone |
 | `/shame user:@someone` | Put someone on it | staff |
@@ -230,6 +230,14 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   dead. Each pays its owner a few cailloux, once. `/plynling journal [user]` shows its stats,
   its badges and its dated moments (adopted, grew up, first win, visits, badges…), for the
   living and the dead alike.
+- **Relationships:** every accepted visit plays a little scene — usually a good moment,
+  sometimes a squabble — and each pair has a hidden compatibility, so some click and some never
+  will. They become *amis*, *meilleurs amis*, or *rivaux* and *ennemis*; a boy and a girl who
+  are very close may confess their love and become a couple (or suffer a heartbreak), and a
+  couple that keeps arguing breaks up. The closer they are, the happier a visit makes them;
+  between enemies it makes them sadder. A best friend or partner grieves when the other dies
+  or is abandoned. `/plynling relations [user]` lists them, and the journal names the partner
+  and the best friends.
 - **Sleep:** every Plynling sleeps from 1 am to 5 am (Paris time), with its own sleeping
   picture. It can be fed but not petted, and it never dies in its sleep — a death due at
   night happens at 5 am instead.

@@ -456,7 +456,11 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/plynling play`** — Un mini-jeu au hasard avec ton Plynling : cache-cache, pierre-feuille-ciseaux " +
                 "ou plus ou moins. Une fois par heure : +15 % de bonheur, +25 % et quelques cailloux si tu gagnes.\n" +
                 "**`/plynling visit user:`** — Ton Plynling toque chez quelqu'un. S'il l'accueille dans l'heure, les deux " +
-                "gagnent +20 % de bonheur. Une visite par jour entre deux personnes.")
+                "gagnent du bonheur. Une visite par jour entre deux personnes.\n" +
+                "À force de se voir, ils deviennent **amis**, **meilleurs amis**… ou **rivaux** et **ennemis**. " +
+                "Un garçon et une fille très proches peuvent tomber **amoureux**. Plus ils s'aiment, plus leurs visites " +
+                "les rendent heureux ; entre ennemis, elles les attristent.\n" +
+                "**`/plynling relations [user]`** — Ses amis, ses amours et ses ennemis.")
             .AddField("Gagner des cailloux",
                 "**`/work`** — 40 à 60 cailloux, toutes les 4 h.\n" +
                 "Parler, réagir et le vocal rapportent aussi quelques cailloux (45 au plus par jour).\n" +

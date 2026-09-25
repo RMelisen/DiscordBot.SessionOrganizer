@@ -1239,6 +1239,18 @@ gift is one draw per Paris day (`Plynling.LastGiftDay`, stored so a restart cann
 second), made on the owner's first look while it is happy — `/plynling view` or a pet or meal
 from the card; a look while it is not happy leaves the day's draw unspent.
 
+**Plynling relationships grow out of visits, and every rule lives in `Helpers/PlynlingBonds`.**
+One `PlynlingRelation` row per pair, **lower id first** (unique index), so a pair has one row
+whichever of the two visited; it cascades with either Plynling and survives a death. The hidden
+compatibility is derived from the two ids, never stored. `PlynlingBond` is stored as an int —
+**append-only**. The bond follows the affinity (`BondFor`), except a couple, which only a
+confession makes and only a slide below +40 undoes. Confessions are **a boy and a girl only** —
+the owner's explicit choice, keep it — and one living partner at a time: `InCoupleAsync` counts
+only partners still alive, or a widow could never love again. `VisitAsync` takes a `Random` so
+every scene, confession and break-up is checkable. Grief (best friends and partner fall to 20 %)
+runs on death, from the sweep, and on abandonment, **before** the row is deleted and takes its
+relations with it.
+
 **Plynling names are hostile input.** They are rendered through `PlynlingCardUi.SafeName`
 (`Format.Sanitize` — markdown and mention syntax neutralised) *and* every message carrying
 one is sent with `AllowedMentions.None`. The death announcement is public, so a Plynling
