@@ -7,6 +7,7 @@ public enum PlynlingSpecies
 {
     Amanite, Cepe, Rose, Russule, Mystique, Dore,                   // mushrooms
     Tournesol, Citron, Roux, Ivoire, Nocturne, Solaire,             // sunflowers
+    Coprin,                                                         // a mushroom, appended later
 }
 
 // Rolled 50/50 at adoption and never changed. Male is 0 so the column's default is a real

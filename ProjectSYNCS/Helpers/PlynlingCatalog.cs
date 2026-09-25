@@ -42,14 +42,16 @@ public sealed record FoodInfo(PlynlingFood Food, string Name, string WithArticle
 public static class PlynlingCatalog
 {
     // Weights out of 300 *per family*: each common exactly 70/300, so the three commons are
-    // 70% together; 18% peu commun, 9% rare, 3% légendaire. Every family uses this ladder.
+    // 70% together; 18% peu commun, 9% rare, 3% légendaire. Every family uses this ladder; a
+    // tier may be shared (the mushrooms' 27 rare points are the Mystique's 14 and the Coprin's 13).
     public static readonly IReadOnlyList<SpeciesInfo> Species = new[]
     {
         new SpeciesInfo(PlynlingSpecies.Amanite,   PlynlingFamily.Mushroom,  "Amanite",            PlynlingRarity.Common,    70, 0xCE323A),
         new SpeciesInfo(PlynlingSpecies.Cepe,      PlynlingFamily.Mushroom,  "Cèpe",               PlynlingRarity.Common,    70, 0x98623A),
         new SpeciesInfo(PlynlingSpecies.Rose,      PlynlingFamily.Mushroom,  "Rosé des prés",      PlynlingRarity.Common,    70, 0xEC929E),
         new SpeciesInfo(PlynlingSpecies.Russule,   PlynlingFamily.Mushroom,  "Russule verte",      PlynlingRarity.Uncommon,  54, 0x62AA58),
-        new SpeciesInfo(PlynlingSpecies.Mystique,  PlynlingFamily.Mushroom,  "Mystique",           PlynlingRarity.Rare,      27, 0x7E52CC),
+        new SpeciesInfo(PlynlingSpecies.Mystique,  PlynlingFamily.Mushroom,  "Mystique",           PlynlingRarity.Rare,      14, 0x7E52CC),
+        new SpeciesInfo(PlynlingSpecies.Coprin,    PlynlingFamily.Mushroom,  "Coprin",             PlynlingRarity.Rare,      13, 0x5A5A70),
         new SpeciesInfo(PlynlingSpecies.Dore,      PlynlingFamily.Mushroom,  "Doré",               PlynlingRarity.Legendary,  9, 0xE0AA2A),
         new SpeciesInfo(PlynlingSpecies.Tournesol, PlynlingFamily.Sunflower, "Tournesol",          PlynlingRarity.Common,    70, 0xECB018),
         new SpeciesInfo(PlynlingSpecies.Citron,    PlynlingFamily.Sunflower, "Tournesol citron",   PlynlingRarity.Common,    70, 0xE8DA64),

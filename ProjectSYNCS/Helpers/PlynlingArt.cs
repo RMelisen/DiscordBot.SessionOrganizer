@@ -27,6 +27,7 @@ public static class PlynlingArt
         {
             PlynlingSpecies.Amanite, PlynlingSpecies.Cepe, PlynlingSpecies.Rose,
             PlynlingSpecies.Russule, PlynlingSpecies.Mystique, PlynlingSpecies.Dore,
+            PlynlingSpecies.Coprin,
         };
 
     // The adult filename deliberately carries no stage segment: it is the file every species
@@ -54,6 +55,7 @@ public static class PlynlingArt
         PlynlingSpecies.Russule => "russule",
         PlynlingSpecies.Mystique => "mystique",
         PlynlingSpecies.Dore => "dore",
+        PlynlingSpecies.Coprin => "coprin",
         PlynlingSpecies.Tournesol => "tournesol",
         PlynlingSpecies.Citron => "tournesol_citron",
         PlynlingSpecies.Roux => "tournesol_roux",
