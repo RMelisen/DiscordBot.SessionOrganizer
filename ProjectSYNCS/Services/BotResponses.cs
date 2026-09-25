@@ -73,6 +73,7 @@ namespace ProjectSYNCS.Services;
 //   Plynlings — every pool is a GenderedLines (M/F halves), picked with .For(p.Gender)
 //     PlynlingAdoptLines · PlynlingAdoptRareLines ... a new Plynling
 //     PlynlingFeedLines · PlynlingPetLines .......... shown on the card
+//     PlynlingPlayPlayerWonLines · PlynlingPlayPlayerLostLines ... end of a /plynling play game
 //     PlynlingDeathLines · PlynlingResurrectLines · PlynlingAbandonLines ... public, game channel
 //     PlynlingWarningLines ..... the ~3h DM before death
 //     PlynlingStaffFreezeDms · PlynlingStaffThawDms · PlynlingStaffRenameDms
@@ -382,6 +383,36 @@ internal static class BotResponses
             "🪦 Une Plynling de moins sur cette terre… **{0}** ({1}) nous a quittés après {2}. On lui a dressé {3}.",
             "🪦 Minute de silence pour **{0}**, compagne de {1} pendant {2}. Elle dort sous {3}.",
             "🪦 **{0}** n'a pas survécu à la faim. {2} de vie, et maintenant {3}. {1}, elle t'attendait…",
+        });
+
+    // The end of a /plynling play game, under the result. {0} = name. "Won" and "lost" are the
+    // *player's*: when the player wins, the Plynling is delighted anyway; when it wins, it gloats.
+    public static readonly GenderedLines PlynlingPlayPlayerWonLines = new(
+        M: new[]
+        {
+            "**{0}** sautille partout : il adore quand tu gagnes !",
+            "« Encore ! » réclame **{0}**, ravi.",
+            "**{0}** fait semblant d'être vexé, mais il sourit jusqu'aux oreilles.",
+        },
+        F: new[]
+        {
+            "**{0}** sautille partout : elle adore quand tu gagnes !",
+            "« Encore ! » réclame **{0}**, ravie.",
+            "**{0}** fait semblant d'être vexée, mais elle sourit jusqu'aux oreilles.",
+        });
+
+    public static readonly GenderedLines PlynlingPlayPlayerLostLines = new(
+        M: new[]
+        {
+            "**{0}** a gagné, et il ne va pas te laisser l'oublier.",
+            "« Trop facile ! » se vante **{0}**.",
+            "**{0}** fait une petite danse de la victoire. Il est content quand même de t'avoir eu.",
+        },
+        F: new[]
+        {
+            "**{0}** a gagné, et elle ne va pas te laisser l'oublier.",
+            "« Trop facile ! » se vante **{0}**.",
+            "**{0}** fait une petite danse de la victoire. Elle est contente quand même de t'avoir eu.",
         });
 
     // Posted publicly when an owner abandons theirs (/plynling abandon), with its sad

@@ -3,6 +3,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using ProjectSYNCS.Commands;
 using ProjectSYNCS.Helpers;
+using ProjectSYNCS.Interactions.Modals;
 using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Interactions.Components;
@@ -14,11 +15,114 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
 {
     private readonly PlynlingCareService _care;
     private readonly PlynlingService _plynlings;
+    private readonly PlynlingPlayService _play;
+    private readonly ResponsePicker _picker;
 
-    public PlynlingComponentHandler(PlynlingCareService care, PlynlingService plynlings)
+    public PlynlingComponentHandler(PlynlingCareService care, PlynlingService plynlings, PlynlingPlayService play,
+        ResponsePicker picker)
     {
         _care = care;
         _plynlings = plynlings;
+        _play = play;
+        _picker = picker;
+    }
+
+    // ---- /plynling play: one handler per game's buttons, all through PlayMoveAsync.
+
+    [ComponentInteraction("plyn:hide:*:*", ignoreGroupNames: true)]
+    public Task OnHideAsync(string id, string rockStr) =>
+        int.TryParse(rockStr, out var rock) && rock is >= 0 and < PlynlingGameState.Rocks
+            ? PlayMoveAsync(id, s => s.Hide(rock, Random.Shared))
+            : RespondAsync(PlynlingText.Unknown, ephemeral: true);
+
+    [ComponentInteraction("plyn:rps:*:*", ignoreGroupNames: true)]
+    public Task OnRpsAsync(string id, string throwStr) =>
+        int.TryParse(throwStr, out var t) && Enum.IsDefined(typeof(RpsThrow), t)
+            ? PlayMoveAsync(id, s => s.Throw((RpsThrow)t, Random.Shared))
+            : RespondAsync(PlynlingText.Unknown, ephemeral: true);
+
+    // « Deviner » opens the modal; the guess itself arrives in OnGuessAsync.
+    [ComponentInteraction("plyn:guess:*", ignoreGroupNames: true)]
+    public async Task OnGuessButtonAsync(string id)
+    {
+        var session = _play.Get(id, DateTimeOffset.UtcNow);
+        if (session is null) await RespondAsync(PlynlingText.GameOver, ephemeral: true);
+        else if (session.OwnerId != Context.User.Id) await RespondAsync(PlynlingText.NotYourGame, ephemeral: true);
+        else await RespondWithModalAsync<GuessModal>($"plyn:guessm:{id}");
+    }
+
+    [ModalInteraction("plyn:guessm:*", ignoreGroupNames: true)]
+    public Task OnGuessAsync(string id, GuessModal modal) =>
+        int.TryParse(modal.Guess.Trim(), out var n) && n is >= PlynlingGameState.GuessMin and <= PlynlingGameState.GuessMax
+            ? PlayMoveAsync(id, s => s.Guess(n))
+            : RespondAsync(PlynlingText.GuessRange, ephemeral: true);
+
+    // One move: checked (the game still running, the owner pressing), applied under the game's
+    // lock — so a double click plays once, and exactly one move finishes it — then, if that move
+    // ended the game, the reward is paid and her reaction added. The message is redrawn in place.
+    private async Task PlayMoveAsync(string id, Action<PlynlingGameState> move)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var session = _play.Get(id, now);
+        if (session is null)
+        {
+            await RespondAsync(PlynlingText.GameOver, ephemeral: true);
+            return;
+        }
+        if (session.OwnerId != Context.User.Id)
+        {
+            await RespondAsync(PlynlingText.NotYourGame, ephemeral: true);
+            return;
+        }
+
+        bool over, finished = false;
+        lock (session.Gate)
+        {
+            over = session.State.Status != GameStatus.Playing;
+            if (!over)
+            {
+                move(session.State);
+                finished = session.State.Status != GameStatus.Playing;
+                if (finished) _play.End(id);
+            }
+        }
+        if (over)
+        {
+            await RespondAsync(PlynlingText.GameOver, ephemeral: true);
+            return;
+        }
+
+        var plynling = await _plynlings.GetByIdAsync(session.PlynlingId, now);
+        if (plynling is null)
+        {
+            await RespondAsync(PlynlingText.NoPlynling, ephemeral: true);   // abandoned mid-game
+            return;
+        }
+
+        string? endLine = null;
+        if (finished)
+        {
+            var won = session.State.Status == GameStatus.Won;
+            var pebbles = won ? PlynlingLife.RollPlayPebbles(Random.Shared) : 0;
+            var (after, balance) = await _plynlings.FinishPlayAsync(plynling.Id, session.OwnerId, won, pebbles, now);
+            if (after is not null)
+            {
+                plynling = after;
+                var pool = (won ? BotResponses.PlynlingPlayPlayerWonLines : BotResponses.PlynlingPlayPlayerLostLines).For(plynling.Gender);
+                endLine = string.Format(_picker.Pick(Context.Channel.Id, pool), PlynlingCardUi.SafeName(plynling.Name)) +
+                          "\n" + PlynlingGameUi.Reward(won, pebbles, balance);
+            }
+        }
+
+        var card = PlynlingPlayCards.BuildGame(session, plynling, now, endLine);
+        void Redraw(MessageProperties m)
+        {
+            m.Components = card;
+            m.Flags = MessageFlags.ComponentsV2;      // re-asserted on every edit of a V2 message
+            m.AllowedMentions = AllowedMentions.None;
+        }
+        if (Context.Interaction is SocketModal modal) await modal.UpdateAsync(Redraw);
+        else await ((SocketMessageComponent)Context.Interaction).UpdateAsync(Redraw);
     }
 
     // /plynling list's pages. Two verbs for the two arrows; both land here and redraw the

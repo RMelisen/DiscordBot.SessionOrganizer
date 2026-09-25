@@ -66,6 +66,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<PlynlingService>();
         services.AddTransient<PlynlingCareService>();
         services.AddSingleton<PlynlingCooldowns>();
+        services.AddSingleton<PlynlingPlayService>();
         services.AddSingleton<PlynlingAnnouncer>();
 
         // Singleton despite reading the database, unlike every other service here that

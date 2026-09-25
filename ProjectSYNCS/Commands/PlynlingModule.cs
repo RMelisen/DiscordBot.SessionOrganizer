@@ -24,11 +24,14 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
     private readonly PlynlingAnnouncer _announcer;
     private readonly PlynlingCooldowns _cooldowns;
     private readonly ShameService _shame;
+    private readonly PlynlingPlayService _play;
     private readonly ILogger<PlynlingModule> _logger;
 
     public PlynlingModule(PlynlingService plynlings, PlynlingCareService care, ResponsePicker picker,
-        PlynlingAnnouncer announcer, PlynlingCooldowns cooldowns, ShameService shame, ILogger<PlynlingModule> logger)
+        PlynlingAnnouncer announcer, PlynlingCooldowns cooldowns, ShameService shame, PlynlingPlayService play,
+        ILogger<PlynlingModule> logger)
     {
+        _play = play;
         _plynlings = plynlings;
         _care = care;
         _picker = picker;
@@ -122,6 +125,31 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             _logger.LogWarning(ex, "Failed to record the abandon shame for {UserId}.", Context.User.Id);
         }
         await _announcer.AnnounceAbandonAsync(gone, now);
+    }
+
+    // Your own Plynling only, one game an hour — claimed here, at the start, so abandoning a
+    // game never rolls a new one. The game itself runs in PlynlingComponentHandler.
+    [SlashCommand("play", "Jouer avec ton Plynling — un mini-jeu au hasard, une fois par heure")]
+    public async Task PlayAsync()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var plynling = await _plynlings.GetCurrentAsync(Context.Guild.Id, Context.User.Id, now);
+        string? refusal =
+            plynling is null ? PlynlingText.NoPlynling
+            : plynling.DiedAt is not null ? PlynlingText.Dead(plynling.Gender)
+            : plynling.FrozenAt is not null ? PlynlingText.Frozen(plynling.Gender)
+            : PlynlingLife.IsAsleep(now) ? PlynlingText.Asleep(plynling.Gender)
+            : !_cooldowns.Play.TryClaim(plynling.Id) ? PlynlingText.PlayCooldown(plynling.Gender)
+            : null;
+        if (refusal is not null || plynling is null)
+        {
+            await RespondAsync(refusal, ephemeral: true);
+            return;
+        }
+
+        var session = _play.Start(Context.Guild.Id, Context.User.Id, plynling.Id, now, Random.Shared);
+        await RespondAsync(components: PlynlingPlayCards.BuildGame(session, plynling, now, null),
+            flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
     }
 
     [SlashCommand("list", "Tous les Plynlings vivants du serveur, du plus vieux au plus jeune")]

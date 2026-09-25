@@ -49,6 +49,13 @@ public static class PlynlingText
     public static string Wasted(PlynlingGender g) =>
         $"{g.Agree("Il", "Elle")} n'a besoin de rien de tout ça pour l'instant — garde tes cailloux.";
 
+    public static string PlayCooldown(PlynlingGender g) =>
+        $"{g.Agree("Il", "Elle")} a déjà joué il y a moins d'une heure. Laisse-{g.Agree("le", "la")} souffler un peu !";
+
+    public const string GameOver = "Cette partie est terminée.";
+    public const string NotYourGame = "Ce n'est pas ta partie — lance la tienne avec `/plynling play`.";
+    public const string GuessRange = "Un nombre entier entre 1 et 100, s'il te plaît.";
+
     public static string Asleep(PlynlingGender g) => $"Chut… {g.Agree("il", "elle")} dort. Reviens après 5 h.";
 
     public static string AlreadyFrozen(PlynlingGender g) => g.Agree("Il est déjà gelé.", "Elle est déjà gelée.");
