@@ -54,6 +54,28 @@ public static class PlynlingText
 
     public const string GameOver = "Cette partie est terminée.";
 
+    // Under a meal served from the feeder's pantry. giverId: the friend who served it, if it
+    // was not the owner.
+    public static string FromPantry(string food, int used, int left, ulong? giverId) =>
+        (giverId is { } g ? $"offert par <@{g}> · " : "") +
+        $"depuis le garde-manger : −{used} {food} (il en reste {left})";
+
+    public const string ShopTooPoor = "Pas assez de cailloux pour ça. `/work` pour en gagner.";
+    public const string GiveSelf = "Tu ne peux pas te faire un cadeau à toi-même !";
+    public const string GiveBot = "Les bots n'ont pas d'inventaire.";
+    public const string NotEnoughItems = "Tu n'en as pas assez.";
+    public const string UnknownItem = "Cet objet n'existe pas. Choisis-le dans la liste.";
+
+    public static string Bought(int quantity, string food, long price, long balance, bool discounted) =>
+        $"🛒 Tu as acheté **{quantity} × {food}** pour {PebbleEconomy.Cailloux(price)}" +
+        (discounted ? " (−10 %)" : "") + $". Il te reste {PebbleEconomy.Cailloux(balance)}.";
+
+    public static string Gave(ulong fromId, ulong toId, int quantity, string emoji, string name) =>
+        $"🎁 <@{fromId}> offre **{quantity} × {emoji} {name}** à <@{toId}> !";
+
+    public static string SetCompleted(ulong userId, CollectionSet set) =>
+        $"🏆 <@{userId}> a complété la collection **{set.Emoji} {set.Name}** ! +{PebbleEconomy.Cailloux(set.Reward)}";
+
     // A visit's confession, the visitor declaring itself. Names are already sanitised.
     public static string ConfessionAccepted(string a, string b) => $"💞 **{a}** a déclaré sa flamme à **{b}**… et c'est oui !";
     public static string ConfessionRefused(string a, string b) => $"💔 **{a}** a déclaré sa flamme à **{b}**… mais c'est non.";

@@ -65,7 +65,9 @@ public class PlynlingCareService
             : $"offert par <@{actorId}> · −{PebbleEconomy.Cailloux(result.Price)} (le double : ce n'est pas {g.Agree("le sien", "la sienne")})";
         var text = line;
         if (PlynlingText.MealMood(g, result.MealFactor) is { } mood) text += $"\n*{mood}*";
-        text += $"\n-# {paid} · il te reste {PebbleEconomy.Cailloux(result.Balance)}";
+        text += result.PantryUsed > 0
+            ? $"\n-# {PlynlingText.FromPantry(info.Name, result.PantryUsed, result.PantryLeft, result.Plynling.OwnerId != actorId ? actorId : null)}"
+            : $"\n-# {paid} · il te reste {PebbleEconomy.Cailloux(result.Balance)}";
         if (result.Badges is { Count: > 0 } badges) text += "\n" + PlynlingBadges.NewBadgeLines(badges, g);
         text += await GiftLineAsync(result.Plynling, actorId, now);
         var partner = await _plynlings.GetPartnerAsync(result.Plynling);

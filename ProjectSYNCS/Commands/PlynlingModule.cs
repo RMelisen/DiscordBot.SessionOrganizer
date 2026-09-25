@@ -16,7 +16,7 @@ namespace ProjectSYNCS.Commands;
 // refusal stays *private* — a public "thinking…" cannot become an ephemeral reply.
 [CommandContextType(InteractionContextType.Guild)]
 [Group("plynling", "Ton Plynling : l'adopter, t'en occuper, le regarder vivre")]
-public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
+public partial class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly PlynlingService _plynlings;
     private readonly PlynlingCareService _care;
@@ -25,13 +25,15 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
     private readonly PlynlingCooldowns _cooldowns;
     private readonly ShameService _shame;
     private readonly PlynlingPlayService _play;
+    private readonly InventoryService _inventory;
     private readonly ILogger<PlynlingModule> _logger;
 
     public PlynlingModule(PlynlingService plynlings, PlynlingCareService care, ResponsePicker picker,
         PlynlingAnnouncer announcer, PlynlingCooldowns cooldowns, ShameService shame, PlynlingPlayService play,
-        ILogger<PlynlingModule> logger)
+        InventoryService inventory, ILogger<PlynlingModule> logger)
     {
         _play = play;
+        _inventory = inventory;
         _plynlings = plynlings;
         _care = care;
         _picker = picker;

@@ -70,6 +70,34 @@ public class InventoryService
         return completed;
     }
 
+    public enum GiveOutcome { Given, NotEnough, UnknownItem }
+
+    /// <summary>/plynling shop: the money and the food land together, or neither.</summary>
+    public async Task<(bool Bought, long Price, long Balance)> BuyAsync(ulong guildId, ulong userId, PlynlingFood food, int quantity, DateTimeOffset now)
+    {
+        var price = ItemCatalog.ShopPrice(PlynlingCatalog.Info(food), quantity);
+        var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, guildId, userId);
+        if (wallet.Balance < price) return (false, price, wallet.Balance);
+        wallet.Balance -= price;
+        await AddAsync(_db_context, guildId, userId, ItemCatalog.FoodKey(food), quantity, now);
+        await _db_context.SaveChangesAsync();
+        return (true, price, wallet.Balance);
+    }
+
+    /// <summary>/plynling give: from one person's inventory to another's, in one save.</summary>
+    public async Task<(GiveOutcome Outcome, List<CollectionSet> Completed)> GiveAsync(
+        ulong guildId, ulong fromId, ulong toId, string key, int quantity, DateTimeOffset now)
+    {
+        if (ItemCatalog.ByKey(key) is null) return (GiveOutcome.UnknownItem, new());
+        if (!await TakeAsync(_db_context, guildId, fromId, key, quantity)) return (GiveOutcome.NotEnough, new());
+        var completed = await AddAsync(_db_context, guildId, toId, key, quantity, now);
+        await _db_context.SaveChangesAsync();
+        return (GiveOutcome.Given, completed);
+    }
+
+    public Task<long> BalanceAsync(ulong guildId, ulong userId) =>
+        _db_context.PebbleWallets.Where(w => w.GuildId == guildId && w.UserId == userId).Select(w => w.Balance).FirstOrDefaultAsync();
+
     // Everything someone has ever held here (quantity 0 included: discovered).
     public Task<List<InventoryItem>> GetAllAsync(ulong guildId, ulong userId) =>
         _db_context.InventoryItems.Where(i => i.GuildId == guildId && i.UserId == userId).ToListAsync();

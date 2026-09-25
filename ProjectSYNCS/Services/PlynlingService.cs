@@ -20,8 +20,10 @@ public sealed record VisitOutcome(
     IReadOnlyList<BadgeInfo> VisitorBadges, IReadOnlyList<BadgeInfo> HostBadges,
     bool GoodScene, PlynlingBond Before, PlynlingBond After, Confession Confession, double Happiness);
 
+// PantryUsed: how many of that food came out of the feeder's pantry instead of cailloux (0 when
+// they paid), and PantryLeft what remains of it.
 public sealed record FeedResult(CareOutcome Outcome, Plynling? Plynling, long Price, long Balance,
-    IReadOnlyList<BadgeInfo>? Badges = null, double MealFactor = 1.0);
+    IReadOnlyList<BadgeInfo>? Badges = null, double MealFactor = 1.0, int PantryUsed = 0, int PantryLeft = 0);
 
 // EF access for Plynlings — transient. Every read goes through PlynlingLife.Settle
 // before returning, so a caller always sees a Plynling as it is *now*: dead if it starved
@@ -93,21 +95,27 @@ public class PlynlingService
         var plynling = await GetByIdAsync(plynlingId, now);
         if (plynling is null) return new FeedResult(CareOutcome.NoPlynling, null, info.Price, 0);
 
-        // The feeder pays, from their own wallet — double when it is not their Plynling.
-        var price = PlynlingLife.FeedPrice(info, isOwner: plynling.OwnerId == actorId);
+        // The feeder's pantry first — one of that food for their own Plynling, two for someone
+        // else's (the same « double » rule) — or else cailloux from their own wallet.
+        var isOwner = plynling.OwnerId == actorId;
+        var price = PlynlingLife.FeedPrice(info, isOwner);
+        var pantryNeeded = isOwner ? 1 : 2;
+        var foodKey = ItemCatalog.FoodKey(food);
+        var fromPantry = await InventoryService.CountAsync(_db_context, plynling.GuildId, actorId, foodKey) >= pantryNeeded;
         var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, plynling.GuildId, actorId);
         CareOutcome? refusal =
             plynling.DiedAt is not null ? CareOutcome.Dead
             : plynling.FrozenAt is not null ? CareOutcome.Frozen
             : PlynlingLife.IsSulking(plynling, now) ? CareOutcome.Sulking
             : PlynlingLife.WouldWaste(plynling, info, now) ? CareOutcome.Wasted
-            : wallet.Balance < price ? CareOutcome.TooPoor
+            : !fromPantry && wallet.Balance < price ? CareOutcome.TooPoor
             : null;
         if (refusal is { } r) return new FeedResult(r, plynling, price, wallet.Balance);
 
         var wasStarving = PlynlingLife.HungerAt(plynling, now) < PlynlingLife.StarvingBelow;
         var factor = PlynlingLife.MealFactor(plynling, now);
-        wallet.Balance -= price;
+        if (fromPantry) await InventoryService.TakeAsync(_db_context, plynling.GuildId, actorId, foodKey, pantryNeeded);
+        else wallet.Balance -= price;
         PlynlingLife.Feed(plynling, info, now);
         plynling.Meals++;
         if (plynling.Meals == 1) await AddMomentAsync(plynling, JournalKind.FirstMeal, null, now);
@@ -115,7 +123,9 @@ public class PlynlingService
             await AddMomentAsync(plynling, JournalKind.FedByFriend, actorId.ToString(), now);
         var badges = await AwardAsync(plynling, now, wasStarving ? BadgeEvent.SavedFromStarving : BadgeEvent.None);
         await _db_context.SaveChangesAsync();          // the money, the meal and any badge land together
-        return new FeedResult(CareOutcome.Done, plynling, price, wallet.Balance, badges, factor);
+        var left = fromPantry ? await InventoryService.CountAsync(_db_context, plynling.GuildId, actorId, foodKey) : 0;
+        return new FeedResult(CareOutcome.Done, plynling, fromPantry ? 0 : price, wallet.Balance, badges, factor,
+            fromPantry ? pantryNeeded : 0, left);
     }
 
     public async Task<(CareOutcome Outcome, Plynling? Plynling, IReadOnlyList<BadgeInfo> Badges)> PetAsync(int plynlingId, DateTimeOffset now)
