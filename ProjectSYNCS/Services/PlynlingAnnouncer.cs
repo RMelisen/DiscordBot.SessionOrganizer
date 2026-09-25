@@ -44,12 +44,12 @@ public sealed class PlynlingAnnouncer
         return PostAsync(plynling.GuildId, line, PlynlingArt.Sprite(plynling.Species, PlynlingLife.Mood(plynling, now)), "resurrection");
     }
 
+    // Called only once PlynlingLife.ShouldWarn has seen death coming; the DM says so without
+    // naming when.
     public Task WarnOwnerAsync(Plynling plynling)
     {
-        var death = PlynlingLife.DeathAt(plynling);
-        if (death is null) return Task.CompletedTask;
         var line = string.Format(_picker.Pick(plynling.OwnerId, BotResponses.PlynlingWarningLines.For(plynling.Gender)),
-            PlynlingCardUi.SafeName(plynling.Name), $"<t:{death.Value.ToUnixTimeSeconds()}:R>");
+            PlynlingCardUi.SafeName(plynling.Name));
         return DmOwnerAsync(plynling.OwnerId, line);
     }
 

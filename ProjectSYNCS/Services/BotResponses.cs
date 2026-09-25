@@ -398,20 +398,21 @@ internal static class BotResponses
             "✨ Miracle ! **{0}** respire à nouveau. {1}, nourris-la vite, elle a une faim de morte-vivante.",
         });
 
-    // The single DM about six hours before death. {0} = name, {1} = a relative Discord
-    // timestamp ("dans 6 heures") — so every line must read with "dans …" in that slot.
+    // The single DM about six hours before death. {0} = name. Deliberately no countdown —
+    // the owner removed the "mourra dans …" timestamp from here and from the card alike, so
+    // the lines say "soon" and never name a time.
     public static readonly GenderedLines PlynlingWarningLines = new(
         M: new[]
         {
-            "⚠️ **{0}** a terriblement faim… il mourra {1} si personne ne le nourrit. `/plynling feed`, vite !",
-            "⚠️ Ton Plynling **{0}** va mourir de faim {1}. Il compte sur toi.",
-            "⚠️ Psst… **{0}** est au bord de l'évanouissement. Il s'effondrera {1}. Ne l'abandonne pas (╥﹏╥)",
+            "⚠️ **{0}** a terriblement faim… il ne tiendra plus longtemps si personne ne le nourrit. `/plynling feed`, vite !",
+            "⚠️ Ton Plynling **{0}** va bientôt mourir de faim. Il compte sur toi.",
+            "⚠️ Psst… **{0}** est au bord de l'évanouissement. Il ne va pas tarder à s'effondrer. Ne l'abandonne pas (╥﹏╥)",
         },
         F: new[]
         {
-            "⚠️ **{0}** a terriblement faim… elle mourra {1} si personne ne la nourrit. `/plynling feed`, vite !",
-            "⚠️ Ta Plynling **{0}** va mourir de faim {1}. Elle compte sur toi.",
-            "⚠️ Psst… **{0}** est au bord de l'évanouissement. Elle s'effondrera {1}. Ne l'abandonne pas (╥﹏╥)",
+            "⚠️ **{0}** a terriblement faim… elle ne tiendra plus longtemps si personne ne la nourrit. `/plynling feed`, vite !",
+            "⚠️ Ta Plynling **{0}** va bientôt mourir de faim. Elle compte sur toi.",
+            "⚠️ Psst… **{0}** est au bord de l'évanouissement. Elle ne va pas tarder à s'effondrer. Ne l'abandonne pas (╥﹏╥)",
         });
 
     // DMs to an owner when staff act on their Plynling, so it never looks like a bug.
