@@ -12,6 +12,26 @@ public sealed class PlynlingCooldowns
     public CooldownGate<(ulong Petter, int PlynlingId)> Pet { get; } =
         new(PlynlingLife.PetCooldown, forget: TimeSpan.FromHours(8));
 
+    // One game an hour per Plynling, claimed when the game *starts*, so abandoning a game
+    // never rolls a new one.
+    public CooldownGate<int> Play { get; } = new(PlynlingLife.PlayCooldown, forget: TimeSpan.FromHours(2));
+
+    // One visit a (Paris) day per pair of owners, whichever of the two knocked.
+    private readonly ConcurrentDictionary<(ulong Low, ulong High, int Day), byte> _visits = new();
+
+    public bool TryClaimVisit(ulong a, ulong b, int day)
+    {
+        foreach (var key in _visits.Keys)
+            if (key.Day < day) _visits.TryRemove(key, out _);            // yesterday's are done with
+        return _visits.TryAdd(Pair(a, b, day), 0);
+    }
+
+    public void ReleaseVisit(ulong a, ulong b, int day) => _visits.TryRemove(Pair(a, b, day), out _);
+
+    public bool VisitedToday(ulong a, ulong b, int day) => _visits.ContainsKey(Pair(a, b, day));
+
+    private static (ulong, ulong, int) Pair(ulong a, ulong b, int day) => (Math.Min(a, b), Math.Max(a, b), day);
+
     // After /plynling abandon, no adoption for PlynlingLife.AbandonCooldown. In memory like
     // the pet gate: a restart clears it, which costs nothing at 30 minutes.
     private readonly ConcurrentDictionary<(ulong Guild, ulong User), DateTimeOffset> _abandoned = new();

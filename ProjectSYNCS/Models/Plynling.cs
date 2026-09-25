@@ -57,6 +57,13 @@ public class Plynling
     // The single ~3h warning DM. Re-armed when feeding pushes death back past the lead.
     public bool WarningSent { get; set; }
 
+    // What it has done, kept for the achievements and the journal: games played with its
+    // owner (/plynling play), how many of them were won, and visits made or received
+    // (/plynling visit, which counts for both). Recorded from the day they shipped.
+    public long Plays { get; set; }
+    public long PlaysWon { get; set; }
+    public long Visits { get; set; }
+
     public DateTimeOffset? DiedAt { get; set; }
     // Set by the sweep once the death has been announced (or attempted), so it is never
     // announced twice. A death found lazily by a command is announced by the next sweep.

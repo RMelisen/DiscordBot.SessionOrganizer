@@ -149,6 +149,44 @@ public class PlynlingService
 
     // Reaches the shown Plynling — living, or else the latest grave — because a grave
     // shows its name publicly too, and an offensive one needs fixing there as well.
+    // The end of a /plynling play game: the happiness, the counts and — on a win — the
+    // player's cailloux land in one save. Null when the Plynling can no longer be played
+    // with (it died, was frozen or abandoned mid-game): then nothing is paid.
+    public async Task<(Plynling? Plynling, long Balance)> FinishPlayAsync(
+        int plynlingId, ulong ownerId, bool won, long pebbles, DateTimeOffset now)
+    {
+        var plynling = await GetByIdAsync(plynlingId, now);
+        if (plynling is null || plynling.OwnerId != ownerId || plynling.DiedAt is not null || plynling.FrozenAt is not null)
+            return (null, 0);
+
+        PlynlingLife.Play(plynling, now, won);
+        long balance = 0;
+        if (won && pebbles > 0)
+        {
+            var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, plynling.GuildId, ownerId);
+            wallet.Balance += pebbles;
+            balance = wallet.Balance;
+        }
+        await _db_context.SaveChangesAsync();
+        return (plynling, balance);
+    }
+
+    // A /plynling visit accepted: both Plynlings cheered and counted, in one save. Null when
+    // either can no longer take part.
+    public async Task<(Plynling Visitor, Plynling Host)?> VisitAsync(int visitorId, int hostId, DateTimeOffset now)
+    {
+        var visitor = await GetByIdAsync(visitorId, now);
+        var host = await GetByIdAsync(hostId, now);
+        if (visitor is null || host is null || visitor.Id == host.Id) return null;
+        if (visitor.DiedAt is not null || host.DiedAt is not null) return null;
+        if (visitor.FrozenAt is not null || host.FrozenAt is not null) return null;
+
+        PlynlingLife.Visit(visitor, now);
+        PlynlingLife.Visit(host, now);
+        await _db_context.SaveChangesAsync();
+        return (visitor, host);
+    }
+
     // /plynling abandon: the owner's living Plynling leaves for good — the row is deleted,
     // so it never reaches the graveyard and cannot be resurrected. Returns what was removed
     // (for the announcement), or null when there was nothing of theirs to abandon.

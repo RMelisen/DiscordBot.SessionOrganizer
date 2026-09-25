@@ -23,6 +23,16 @@ public static class PlynlingLife
     public static readonly TimeSpan PetCooldown = TimeSpan.FromHours(4);
     public static readonly TimeSpan AbandonCooldown = TimeSpan.FromMinutes(30);
 
+    // /plynling play and /plynling visit. Playing always cheers it up, winning more so; a win
+    // also pays the player a few cailloux. A visit cheers both Plynlings and pays nothing, so
+    // two accounts cannot farm it.
+    public static readonly TimeSpan PlayCooldown = TimeSpan.FromHours(1);
+    public const double PlayAmount = 0.15;
+    public const double PlayWinBonus = 0.10;
+    public const double VisitAmount = 0.20;
+    public const int PlayWinPebblesMin = 5;
+    public const int PlayWinPebblesMax = 10;
+
     // Every Plynling sleeps from 01:00 to 05:00, Paris time. Hunger keeps dropping, but none
     // dies in its sleep: a death due at night happens at 05:00. And the warning DM never goes
     // out at night — from 23:00 on it would find the owner asleep too — so it moves to 23:00.
@@ -192,6 +202,23 @@ public static class PlynlingLife
         p.Hunger = Clamp(p.Hunger + food.Hunger);
         p.Happiness = Clamp(p.Happiness + food.Happiness);
         if (WarnAt(p) is { } warn && now < warn) p.WarningSent = false;
+    }
+
+    public static long RollPlayPebbles(Random rng) => rng.Next(PlayWinPebblesMin, PlayWinPebblesMax + 1);
+
+    public static void Play(Plynling p, DateTimeOffset now, bool won)
+    {
+        Rebase(p, now);
+        p.Happiness = Clamp(p.Happiness + PlayAmount + (won ? PlayWinBonus : 0));
+        p.Plays++;
+        if (won) p.PlaysWon++;
+    }
+
+    public static void Visit(Plynling p, DateTimeOffset now)
+    {
+        Rebase(p, now);
+        p.Happiness = Clamp(p.Happiness + VisitAmount);
+        p.Visits++;
     }
 
     public static void Pet(Plynling p, DateTimeOffset now)
