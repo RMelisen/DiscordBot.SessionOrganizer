@@ -210,9 +210,9 @@ legendary Doré.
 Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Plynling*.
 
 - **Hunger** empties in 2 days and **happiness** in 36 hours. At 0% hunger it **dies** — really.
-  `/plynling feed` (Champignon, Shiitake, Morille, Truffe) costs **cailloux** — anyone can
-  feed anyone's, but someone else's costs double; `/plynling pet` is free, every 4 hours, and
-  anyone can pet anyone's.
+  Both are looked after from its card (`/plynling view [user]`): **Nourrir** (Champignon,
+  Shiitake, Morille, Truffe) costs **cailloux** — anyone can feed anyone's, but someone else's
+  costs double; **Caresser** is free, every 4 hours, and anyone can pet anyone's.
 - **Mood matters:** a happy Plynling (above 80 % happiness) gets 15 % more out of every meal,
   and the first time its owner looks at it each day it has a one-in-two chance of having found
   5–15 cailloux for them. A sad one (below 30 %) gets 25 % less. At 0 % it sulks and refuses to

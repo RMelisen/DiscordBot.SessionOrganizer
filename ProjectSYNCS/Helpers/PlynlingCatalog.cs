@@ -12,7 +12,7 @@ public enum PlynlingMood { Content, Happy, Sad, Hungry, Starving, Frozen, Sleepi
 // this is free to be reordered. The lowercase name is the art filename segment.
 public enum PlynlingStage { Baby, Teen, Adult, Elder }
 
-// The value is English (what /plynling feed sends and what the select option carries);
+// The value is English (what /inventory shop sends and what the card's select option carries);
 // ChoiceDisplay is what Discord shows, in French.
 public enum PlynlingFood
 {

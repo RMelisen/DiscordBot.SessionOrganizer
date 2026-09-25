@@ -495,13 +495,13 @@ internal static class BotResponses
     public static readonly GenderedLines PlynlingWarningLines = new(
         M: new[]
         {
-            "⚠️ **{0}** a terriblement faim… il ne tiendra plus longtemps si personne ne le nourrit. `/plynling feed`, vite !",
+            "⚠️ **{0}** a terriblement faim… il ne tiendra plus longtemps si personne ne le nourrit. `/plynling view`, vite !",
             "⚠️ Ton Plynling **{0}** va bientôt mourir de faim. Il compte sur toi.",
             "⚠️ Psst… **{0}** est au bord de l'évanouissement. Il ne va pas tarder à s'effondrer. Ne l'abandonne pas (╥﹏╥)",
         },
         F: new[]
         {
-            "⚠️ **{0}** a terriblement faim… elle ne tiendra plus longtemps si personne ne la nourrit. `/plynling feed`, vite !",
+            "⚠️ **{0}** a terriblement faim… elle ne tiendra plus longtemps si personne ne la nourrit. `/plynling view`, vite !",
             "⚠️ Ta Plynling **{0}** va bientôt mourir de faim. Elle compte sur toi.",
             "⚠️ Psst… **{0}** est au bord de l'évanouissement. Elle ne va pas tarder à s'effondrer. Ne l'abandonne pas (╥﹏╥)",
         });

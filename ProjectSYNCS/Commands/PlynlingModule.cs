@@ -19,7 +19,6 @@ namespace ProjectSYNCS.Commands;
 public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly PlynlingService _plynlings;
-    private readonly PlynlingCareService _care;
     private readonly ResponsePicker _picker;
     private readonly PlynlingAnnouncer _announcer;
     private readonly PlynlingCooldowns _cooldowns;
@@ -27,13 +26,12 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
     private readonly PlynlingPlayService _play;
     private readonly ILogger<PlynlingModule> _logger;
 
-    public PlynlingModule(PlynlingService plynlings, PlynlingCareService care, ResponsePicker picker,
+    public PlynlingModule(PlynlingService plynlings, ResponsePicker picker,
         PlynlingAnnouncer announcer, PlynlingCooldowns cooldowns, ShameService shame, PlynlingPlayService play,
         ILogger<PlynlingModule> logger)
     {
         _play = play;
         _plynlings = plynlings;
-        _care = care;
         _picker = picker;
         _announcer = announcer;
         _cooldowns = cooldowns;
@@ -250,39 +248,6 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         await RespondCardAsync(plynling, now, gift.Any ? PlynlingCareService.GiftLine(plynling, gift) : null);
     }
 
-    [SlashCommand("feed", "Nourrir un Plynling (le tien par défaut — celui d'un autre coûte le double)")]
-    public async Task FeedAsync(
-        [Summary("food", "Quoi lui donner")] PlynlingFood food,
-        [Summary("user", "À qui est le Plynling (par défaut : toi)")] IUser? user = null)
-    {
-        var target = user ?? Context.User;
-        var now = DateTimeOffset.UtcNow;
-        var plynling = await _plynlings.GetCurrentAsync(Context.Guild.Id, target.Id, now);
-        if (plynling is null)
-        {
-            await RespondAsync(target.Id == Context.User.Id ? PlynlingText.NoPlynling : PlynlingText.NoneFor(target.Id),
-                ephemeral: true, allowedMentions: AllowedMentions.None);
-            return;
-        }
-        await SendAsync(await _care.FeedAsync(plynling.Id, Context.User.Id, food, Context.Channel.Id, now));
-    }
-
-    [SlashCommand("pet", "Caresser un Plynling (le tien par défaut)")]
-    public async Task PetAsync(
-        [Summary("user", "À qui est le Plynling (par défaut : toi)")] IUser? user = null)
-    {
-        var target = user ?? Context.User;
-        var now = DateTimeOffset.UtcNow;
-        var plynling = await _plynlings.GetCurrentAsync(Context.Guild.Id, target.Id, now);
-        if (plynling is null)
-        {
-            await RespondAsync(target.Id == Context.User.Id ? PlynlingText.NoPlynling : PlynlingText.NoneFor(target.Id),
-                ephemeral: true, allowedMentions: AllowedMentions.None);
-            return;
-        }
-        await SendAsync(await _care.PetAsync(plynling.Id, Context.User.Id, Context.Channel.Id, now));
-    }
-
     // Without `user`, the owner freezes their own under the self-freeze rules. With a
     // different `user`, it is a staff freeze: no rules, lifted by staff only, and the
     // owner is told by DM so it never looks like a bug.
@@ -375,9 +340,10 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             await RespondAsync(PlynlingCareService.Refusal(result.Outcome, gender), ephemeral: true);
             return;
         }
+        // A plain message, not a card: the find is the news, and the Plynling's state has not changed.
         var line = PlynlingText.FindLines(
             PlynlingText.Foraged(PlynlingCardUi.SafeName(result.Plynling.Name), gender, result.Find.Item), result.Find, Context.User.Id);
-        await RespondCardAsync(result.Plynling, now, line);
+        await RespondAsync(line, allowedMentions: AllowedMentions.None);
     }
 
     [SlashCommand("graveyard", "Le cimetière des Plynlings (ou seulement ceux de quelqu'un)")]
@@ -416,10 +382,11 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             .AddField("S'en occuper",
                 "La **faim** se vide en **2 jours** : à 0 %, il meurt. Le **bonheur** se vide en **36 heures** " +
                 "(il est juste triste).\n" +
-                "**`/plynling feed food: [user]`** — Champignon (15), Shiitake (30), Morille (40, que du bonheur), Truffe (80, faim et bonheur). " +
+                "**Nourrir** (menu de sa carte) — Champignon (15), Shiitake (30), Morille (40, que du bonheur), Truffe (80, faim et bonheur). " +
                 "Nourrir celui d'un autre coûte le double. Si tu as ce plat dans ton **garde-manger**, il est servi de là " +
                 "(2 pour celui d'un autre) au lieu de tes cailloux.\n" +
-                "**`/plynling pet [user]`** — +25 % de bonheur, toutes les 4 h, sur n'importe quel Plynling.\n" +
+                "**Caresser** (bouton de sa carte) — +25 % de bonheur, toutes les 4 h, sur n'importe quel Plynling.\n" +
+                "Pour s'occuper de celui de quelqu'un : `/plynling view user:`, puis sa carte.\n" +
                 "Il **dort de 1 h à 5 h** : on peut le nourrir, pas le caresser, et il ne meurt jamais dans son sommeil.\n" +
                 "Son **humeur** compte : heureux, un repas le nourrit 15 % de plus et il te rapporte parfois un caillou ou un objet ; " +
                 "triste, 25 % de moins. À 0 %, il **boude** et refuse de manger tant qu'on n'a pas joué avec lui ou qu'on " +
@@ -473,10 +440,6 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
     }
 
-    private Task SendAsync(CareReply reply) =>
-        reply.Card is not null
-            ? RespondAsync(components: reply.Card, flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None)
-            : RespondAsync(reply.Refusal, ephemeral: true, allowedMentions: AllowedMentions.None);
 
     /// <summary>
     /// The card: picture (the sprite for its mood, or its memorial once dead), heading,

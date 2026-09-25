@@ -91,7 +91,7 @@ person's belongings (which outlive the creature), `/admin` every moderation *act
 `/config` the settings, `/debug` the owner's own tools — grouped so everyone else sees one
 entry in the picker instead of three, since no Discord permission can hide a command from
 all but one user. Discord allows **25 subcommands per top-level command**; `/plynling` holds
-15. A new batch of commands goes into the group that owns the thing, or into a new group —
+13. A new batch of commands goes into the group that owns the thing, or into a new group —
 never onto a top-level command that is near the cap, since the 26th throws at registration
 on startup. Renaming a command changes what people type, so moves are done once, in a batch. Component handlers for the published cards live apart
 from the commands, in `Interactions/Components/` (`EventComponentHandler`,
@@ -1178,8 +1178,9 @@ anyone's, but a non-owner pays double (`PlynlingLife.FeedPrice`), from their own
 the same single save; each option's description says what others pay. « Caresser » is
 hidden while the Plynling sleeps, and the pet itself is refused then too. A button press rewrites
 the card in place with her line on it, instead of posting a second message under it.
-`PlynlingCareService` is shared by the slash commands and the buttons, so the two can
-never behave differently. The pet cooldown is an in-memory `CooldownGate` keyed on
+Feeding and petting happen **only on the card** — `/plynling feed` and `/plynling pet` were
+removed, since the card is where the Plynling is; someone else's is reached with `/plynling view
+user:`. `PlynlingCareService` is what the buttons call. The pet cooldown is an in-memory `CooldownGate` keyed on
 (petter, Plynling), released when the pet is refused; a restart resetting it costs nothing,
 since petting cannot keep a Plynling alive. « Caresser » is deliberately **never greyed out for a
 cooldown**: the card is one message everyone sees and the cooldown is per petter, so disabling
