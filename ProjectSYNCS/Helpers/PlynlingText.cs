@@ -64,6 +64,17 @@ public static class PlynlingText
     public const string NotYourGame = "Ce n'est pas ta partie — lance la tienne avec `/plynling play`.";
     public const string GuessRange = "Un nombre entier entre 1 et 100, s'il te plaît.";
 
+    public static string Sulking(PlynlingGender g) =>
+        $"{g.Agree("Il", "Elle")} boude : {g.Agree("il", "elle")} veut qu'on joue avec {g.Agree("lui", "elle")} ou qu'on {g.Agree("le", "la")} caresse.";
+
+    // Under a meal eaten happy or sad; null for an ordinary one.
+    public static string? MealMood(PlynlingGender g, double factor) =>
+        factor > 1 ? $"{g.Agree("Heureux", "Heureuse")}, {g.Agree("il", "elle")} mange de bon appétit (+{Pct(factor - 1)} %)"
+        : factor < 1 ? $"Triste, {g.Agree("il", "elle")} chipote (−{Pct(1 - factor)} %)"
+        : null;
+
+    private static int Pct(double share) => (int)Math.Round(share * 100);
+
     public static string Asleep(PlynlingGender g) => $"Chut… {g.Agree("il", "elle")} dort. Reviens après 5 h.";
 
     public static string AlreadyFrozen(PlynlingGender g) => g.Agree("Il est déjà gelé.", "Elle est déjà gelée.");

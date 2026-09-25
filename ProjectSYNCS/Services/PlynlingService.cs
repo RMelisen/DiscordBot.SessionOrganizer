@@ -7,14 +7,14 @@ namespace ProjectSYNCS.Services;
 
 public enum AdoptOutcome { Adopted, AlreadyHasOne }
 
-public enum CareOutcome { Done, NoPlynling, Dead, Frozen, Wasted, TooPoor, Asleep }
+public enum CareOutcome { Done, NoPlynling, Dead, Frozen, Wasted, TooPoor, Asleep, Sulking }
 
 public enum ThawOutcome { Thawed, NoPlynling, Dead, NotFrozen, StaffOnly }
 
 public enum ResurrectOutcome { Resurrected, NoGrave, AlreadyHasOne }
 
 public sealed record FeedResult(CareOutcome Outcome, Plynling? Plynling, long Price, long Balance,
-    IReadOnlyList<BadgeInfo>? Badges = null);
+    IReadOnlyList<BadgeInfo>? Badges = null, double MealFactor = 1.0);
 
 // EF access for Plynlings — transient. Every read goes through PlynlingLife.Settle
 // before returning, so a caller always sees a Plynling as it is *now*: dead if it starved
@@ -92,12 +92,14 @@ public class PlynlingService
         CareOutcome? refusal =
             plynling.DiedAt is not null ? CareOutcome.Dead
             : plynling.FrozenAt is not null ? CareOutcome.Frozen
+            : PlynlingLife.IsSulking(plynling, now) ? CareOutcome.Sulking
             : PlynlingLife.WouldWaste(plynling, info, now) ? CareOutcome.Wasted
             : wallet.Balance < price ? CareOutcome.TooPoor
             : null;
         if (refusal is { } r) return new FeedResult(r, plynling, price, wallet.Balance);
 
         var wasStarving = PlynlingLife.HungerAt(plynling, now) < PlynlingLife.StarvingBelow;
+        var factor = PlynlingLife.MealFactor(plynling, now);
         wallet.Balance -= price;
         PlynlingLife.Feed(plynling, info, now);
         plynling.Meals++;
@@ -106,7 +108,7 @@ public class PlynlingService
             await AddMomentAsync(plynling, JournalKind.FedByFriend, actorId.ToString(), now);
         var badges = await AwardAsync(plynling, now, wasStarving ? BadgeEvent.SavedFromStarving : BadgeEvent.None);
         await _db_context.SaveChangesAsync();          // the money, the meal and any badge land together
-        return new FeedResult(CareOutcome.Done, plynling, price, wallet.Balance, badges);
+        return new FeedResult(CareOutcome.Done, plynling, price, wallet.Balance, badges, factor);
     }
 
     public async Task<(CareOutcome Outcome, Plynling? Plynling, IReadOnlyList<BadgeInfo> Badges)> PetAsync(int plynlingId, DateTimeOffset now)

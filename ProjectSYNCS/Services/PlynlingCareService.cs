@@ -61,7 +61,9 @@ public class PlynlingCareService
         var paid = result.Plynling.OwnerId == actorId
             ? $"−{PebbleEconomy.Cailloux(result.Price)}"
             : $"offert par <@{actorId}> · −{PebbleEconomy.Cailloux(result.Price)} (le double : ce n'est pas {g.Agree("le sien", "la sienne")})";
-        var text = $"{line}\n-# {paid} · il te reste {PebbleEconomy.Cailloux(result.Balance)}";
+        var text = line;
+        if (PlynlingText.MealMood(g, result.MealFactor) is { } mood) text += $"\n*{mood}*";
+        text += $"\n-# {paid} · il te reste {PebbleEconomy.Cailloux(result.Balance)}";
         if (result.Badges is { Count: > 0 } badges) text += "\n" + PlynlingBadges.NewBadgeLines(badges, g);
         return new CareReply(PlynlingModule.BuildCard(result.Plynling, now, text, PlynlingArt.Food(food)), null);
     }
@@ -75,6 +77,7 @@ public class PlynlingCareService
         CareOutcome.Frozen => PlynlingText.Frozen(gender),
         CareOutcome.Wasted => PlynlingText.Wasted(gender),
         CareOutcome.Asleep => PlynlingText.Asleep(gender),
+        CareOutcome.Sulking => PlynlingText.Sulking(gender),
         _ => PlynlingText.Unknown,
     };
 }

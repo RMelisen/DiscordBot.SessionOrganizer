@@ -50,6 +50,13 @@ public static class PlynlingLife
     public const double SadBelow = 0.30;
     public const double HappyAbove = 0.80;
 
+    // Mood changes what a meal is worth — its hunger only, never its price or its happiness —
+    // and at 0 % it sulks and refuses to eat at all, unless it is starving: the sulk must never
+    // be what kills it (at night nothing could lift it, since petting is refused).
+    public const double HappyMealBonus = 0.15;
+    public const double SadMealPenalty = 0.25;
+    public const double SulkBelow = 0.005;              // what the card rounds to « 0 % »
+
     // What the card shows as 100% counts as full, so feeding is never refused at a value
     // the owner can see is not full, nor allowed at one they can see is.
     private const double Full = 0.995;
@@ -208,10 +215,22 @@ public static class PlynlingLife
     public static bool WouldWaste(Plynling p, FoodInfo food, DateTimeOffset now) =>
         (food.Hunger <= 0 || HungerAt(p, now) >= Full) && (food.Happiness <= 0 || HappinessAt(p, now) >= Full);
 
+    public static double MealFactor(Plynling p, DateTimeOffset now)
+    {
+        var happiness = HappinessAt(p, now);
+        return happiness > HappyAbove ? 1 + HappyMealBonus
+            : happiness < SadBelow ? 1 - SadMealPenalty
+            : 1.0;
+    }
+
+    public static bool IsSulking(Plynling p, DateTimeOffset now) =>
+        HappinessAt(p, now) < SulkBelow && HungerAt(p, now) >= StarvingBelow;
+
     public static void Feed(Plynling p, FoodInfo food, DateTimeOffset now)
     {
+        var factor = MealFactor(p, now);                 // its mood *before* this meal cheers it
         Rebase(p, now);
-        p.Hunger = Clamp(p.Hunger + food.Hunger);
+        p.Hunger = Clamp(p.Hunger + food.Hunger * factor);
         p.Happiness = Clamp(p.Happiness + food.Happiness);
         if (WarnAt(p) is { } warn && now < warn) p.WarningSent = false;
     }
