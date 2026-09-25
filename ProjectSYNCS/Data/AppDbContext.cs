@@ -29,6 +29,8 @@ public class AppDbContext : DbContext
     public DbSet<PlynlingBadge> PlynlingBadges => Set<PlynlingBadge>();
     public DbSet<PlynlingJournalEntry> PlynlingJournalEntries => Set<PlynlingJournalEntry>();
     public DbSet<PlynlingRelation> PlynlingRelations => Set<PlynlingRelation>();
+    public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
+    public DbSet<CollectionCompletion> CollectionCompletions => Set<CollectionCompletion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -221,6 +223,20 @@ public class AppDbContext : DbContext
             e.HasOne<Plynling>().WithMany().HasForeignKey(x => x.PlynlingBId).OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => new { x.PlynlingAId, x.PlynlingBId }).IsUnique();
             e.HasIndex(x => x.PlynlingBId);
+        });
+
+        modelBuilder.Entity<InventoryItem>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.UserId, x.Key }).IsUnique();
+        });
+
+        modelBuilder.Entity<CollectionCompletion>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.UserId, x.SetKey }).IsUnique();
         });
 
         modelBuilder.Entity<PebbleWallet>(e =>

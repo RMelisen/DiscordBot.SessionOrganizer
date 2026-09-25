@@ -20,4 +20,8 @@ public class PebbleWallet
 
     public int PassiveDay { get; set; }
     public long PassiveToday { get; set; }
+
+    // When their Plynling last went foraging (/plynling forage, every 4 h per person). Stored, so
+    // a restart cannot hand out an extra find.
+    public DateTimeOffset? LastForageAt { get; set; }
 }

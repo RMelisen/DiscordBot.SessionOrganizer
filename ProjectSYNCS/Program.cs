@@ -64,6 +64,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<ShameService>();
         services.AddTransient<PebbleService>();
         services.AddTransient<PlynlingService>();
+        services.AddTransient<InventoryService>();
         services.AddTransient<PlynlingCareService>();
         services.AddSingleton<PlynlingCooldowns>();
         services.AddSingleton<PlynlingPlayService>();
