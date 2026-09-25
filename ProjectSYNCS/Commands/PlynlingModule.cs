@@ -418,6 +418,8 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 "commune, peu commune, rare… ou légendaire. Garçon ou fille ? Surprise.\n" +
                 "**`/plynling view [user]`** — Sa carte, avec les boutons **Caresser** et **Nourrir**.\n" +
                 "**`/plynling list`** — Tous les Plynlings vivants du serveur, du plus vieux au plus jeune.\n" +
+                "**`/plynling journal [user]`** — Son journal : ses badges et ses souvenirs. Il gagne des **badges** " +
+                "en vieillissant, en jouant, en rendant visite et en étant choyé — chacun rapporte quelques cailloux.\n" +
                 "Il grandit : **bébé** ses 2 premiers jours, **ado** jusqu'à 14 jours, **adulte**, " +
                 "puis **ancien** après 6 mois. Le temps passé gelé ne compte pas.")
             .AddField("S'en occuper",

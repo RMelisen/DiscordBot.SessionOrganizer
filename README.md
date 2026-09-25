@@ -24,7 +24,7 @@ a wall of shame. The bot's user-facing language is French.
 | `/goodbot` | Who praised or scolded the bot | everyone |
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
 | `/shame` | The wall of shame | everyone |
-| `/plynling adopt · view · list · feed · pet · play · visit · freeze · thaw · abandon · help` | Adopt and look after a Plynling | everyone |
+| `/plynling adopt · view · list · journal · feed · pet · play · visit · freeze · thaw · abandon · help` | Adopt and look after a Plynling | everyone |
 | `/work · /balance` | Earn cailloux; see your balance | everyone |
 | `/graveyard [user]` | Every Plynling that died | everyone |
 | `/shame user:@someone` | Put someone on it | staff |
@@ -220,6 +220,12 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
 - **Visits:** `/plynling visit user:` sends your Plynling knocking at someone's door. If they
   press *Accueillir* within the hour, the two meet on one card and both get +20 % happiness.
   Once a day per pair, and no cailloux.
+- **Badges and the journal:** each Plynling earns its own badges — 16 of them, for living a
+  week, a month, six months and a year, for games played and won, visits, meals and pets, for
+  being fed by a friend or saved from starving at the last moment, and for coming back from the
+  dead. Each pays its owner a few cailloux, once. `/plynling journal [user]` shows its stats,
+  its badges and its dated moments (adopted, grew up, first win, visits, badges…), for the
+  living and the dead alike.
 - **Sleep:** every Plynling sleeps from 1 am to 5 am (Paris time), with its own sleeping
   picture. It can be fed but not petted, and it never dies in its sleep — a death due at
   night happens at 5 am instead.

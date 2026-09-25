@@ -1212,6 +1212,24 @@ if the visit then fails. A visit pays no cailloux on purpose — two accounts co
 `Plays`, `PlaysWon` and `Visits` on `Plynling` are recorded for the achievements; they started at
 zero the day they shipped.
 
+**Plynling badges are stored, and paid in the action's own save.** `Helpers/PlynlingBadges` is the
+catalog (16, each with a **stable key** — a rename orphans every copy already earned);
+`PlynlingBadge` rows record them, with a unique index on (Plynling, key) that is what really
+makes each reward paid once. `PlynlingService.AwardAsync` and `AddMomentAsync` never save: what
+they add rides the caller's `SaveChanges`, so an action, its moments, its badges and their
+cailloux land together or not at all. What *time* earns (age badges, the « est devenu… »
+moments, dated when the stage was reached via `PlynlingLife.StageStart`) and the death moment
+are written by the hourly sweep. `JournalKind` is stored as an int, so **append-only**; moments
+store a kind and a detail and are worded at display (`PlynlingJournalUi`), so they follow the
+Plynling's gender. At most `JournalCap` (100) per Plynling, oldest dropped — counting moments
+added earlier in the same save. Both tables cascade with the Plynling: an abandoned one takes
+its journal with it; a dead one keeps it.
+
+**`PebbleService.GetOrCreateWalletAsync` looks in `Local` first.** A wallet created earlier in
+the same unit of work is not in the database yet, and creating a second one for the same person
+breaks the unique index at save time — which a first-time feeder whose meal also earns the
+Plynling a badge used to hit.
+
 **Plynling names are hostile input.** They are rendered through `PlynlingCardUi.SafeName`
 (`Format.Sanitize` — markdown and mention syntax neutralised) *and* every message carrying
 one is sent with `AllowedMentions.None`. The death announcement is public, so a Plynling
