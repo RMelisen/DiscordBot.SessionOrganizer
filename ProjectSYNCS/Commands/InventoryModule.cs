@@ -7,6 +7,9 @@ using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Commands;
 
+// What a collection page lists: everything, what was found (held or not), or what never was.
+public enum CollectionFilter { All, Found, Missing }
+
 // /inventory — what a person holds: the pantry, the collectibles and the book, and the ways
 // items change hands. Its own group rather than part of /plynling because items belong to the
 // person, not to a Plynling — they survive its death and abandonment — and because /plynling
@@ -136,55 +139,129 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
         await RespondAsync(embed: BuildInventoryEmbed(held, completions.Count, balance), ephemeral: true);
     }
 
-    [SlashCommand("collection", "Le carnet de collection de quelqu'un (le tien par défaut)")]
+    [SlashCommand("collection", "Le carnet de collection : ce que tu as trouvé et ce qui manque (le tien par défaut)")]
     public async Task CollectionAsync([Summary("user", "De qui (par défaut : toi)")] IUser? user = null)
     {
         var target = user ?? Context.User;
         var held = await _inventory.GetAllAsync(Context.Guild.Id, target.Id);
         var completions = await _inventory.GetCompletionsAsync(Context.Guild.Id, target.Id);
-        await RespondAsync(embed: BuildCollectionEmbed(target.Id, held, completions),
-            allowedMentions: AllowedMentions.None);
+        var (embed, components) = BuildCollectionPage(target.Id, held, completions, OverviewPage, CollectionFilter.All);
+        await RespondAsync(embed: embed, components: components, allowedMentions: AllowedMentions.None);
     }
 
-    // The book: one field per set. An item ever held is shown for good (even at quantity 0); the
-    // rest are « ??? » with only their rarity — and season, since that is when to look.
-    public static Embed BuildCollectionEmbed(ulong userId, IReadOnlyCollection<InventoryItem> held,
-        IReadOnlyCollection<CollectionCompletion> completions)
-    {
-        var discovered = held.Select(i => i.Key).ToHashSet();
-        var done = completions.Select(c => c.SetKey).ToHashSet();
-        var total = ItemCatalog.Collectibles.Count();
-        var found = ItemCatalog.Collectibles.Count(i => discovered.Contains(i.Key));
+    // ---- the collection book ---------------------------------------------------------------
+    //
+    // An overview page (every set's progress) and one page per set, picked from a menu — a menu
+    // rather than a row of buttons because Discord allows 5 buttons a row, and the overview plus
+    // five sets is already six. A set's page carries a Tout / Trouvés / Manquants filter. The
+    // state lives in the custom-ids (nothing secret: it is someone's public book), and every click
+    // re-reads the inventory, so the page is never stale. Two verbs for the two controls —
+    // `col:set:` and `col:fil:` — so their ids can never collide.
 
-        var embed = new EmbedBuilder()
+    public const string OverviewPage = "all";
+
+    public static (Embed Embed, MessageComponent Components) BuildCollectionPage(ulong userId,
+        IReadOnlyCollection<InventoryItem> held, IReadOnlyCollection<CollectionCompletion> completions,
+        string page, CollectionFilter filter)
+    {
+        var quantities = held.ToDictionary(i => i.Key, i => i.Quantity);
+        var done = completions.Select(c => c.SetKey).ToHashSet();
+        var set = ItemCatalog.Sets.FirstOrDefault(s => s.Key == page);
+        var embed = set is null
+            ? BuildOverview(userId, quantities, done)
+            : BuildSetPage(userId, set, quantities, done.Contains(set.Key), filter);
+
+        var menu = new SelectMenuBuilder()
+            .WithCustomId($"col:set:{userId}:{filter}")
+            .AddOption("Aperçu", OverviewPage, "Toutes les collections", new Emoji("📖"), isDefault: set is null);
+        foreach (var s in ItemCatalog.Sets)
+        {
+            var items = ItemCatalog.InSet(s.Key).ToList();
+            var have = items.Count(i => quantities.ContainsKey(i.Key));
+            menu.AddOption(s.Name, s.Key, done.Contains(s.Key) ? "Complète ✅" : $"{have}/{items.Count} trouvés",
+                new Emoji(s.Emoji), isDefault: s.Key == set?.Key);
+        }
+        var components = new ComponentBuilder().WithSelectMenu(menu, row: 0);
+        if (set is not null)
+            foreach (var f in Enum.GetValues<CollectionFilter>())
+                components.WithButton(FilterLabel(f), $"col:fil:{userId}:{set.Key}:{f}",
+                    f == filter ? ButtonStyle.Primary : ButtonStyle.Secondary, disabled: f == filter, row: 1);
+        return (embed, components.Build());
+    }
+
+    public static string FilterLabel(CollectionFilter filter) => filter switch
+    {
+        CollectionFilter.Found => "Trouvés",
+        CollectionFilter.Missing => "Manquants",
+        _ => "Tout",
+    };
+
+    private static Embed BuildOverview(ulong userId, IReadOnlyDictionary<string, int> quantities, IReadOnlySet<string> done)
+    {
+        var found = ItemCatalog.Collectibles.Count(i => quantities.ContainsKey(i.Key));
+        var lines = ItemCatalog.Sets.Select(s =>
+        {
+            var items = ItemCatalog.InSet(s.Key).ToList();
+            var have = items.Count(i => quantities.ContainsKey(i.Key));
+            var status = done.Contains(s.Key) ? "✅" : $"{have}/{items.Count} · +{PebbleEconomy.Cailloux(s.Reward)}";
+            return $"{s.Emoji} **{s.Name}**\n`{LevelCardUi.ProgressBar(have, items.Count)}` {status}";
+        });
+        return new EmbedBuilder()
             .WithTitle("📖 Carnet de collection")
             .WithColor(Color.Purple)
-            .WithDescription($"<@{userId}> · **{found}/{total}** objets découverts · {done.Count}/{ItemCatalog.Sets.Count} collections complètes");
-        foreach (var set in ItemCatalog.Sets)
+            .WithDescription($"<@{userId}> · **{found}/{ItemCatalog.Collectibles.Count()}** objets trouvés · " +
+                             $"{done.Count}/{ItemCatalog.Sets.Count} collections complètes\n\n" + string.Join("\n", lines))
+            .WithFooter("Choisis une collection dans le menu. On les trouve avec /plynling forage, le cadeau du jour, " +
+                        "les jeux et les visites — ou en échangeant.")
+            .Build();
+    }
+
+    private static Embed BuildSetPage(ulong userId, CollectionSet set, IReadOnlyDictionary<string, int> quantities,
+        bool complete, CollectionFilter filter)
+    {
+        var items = ItemCatalog.InSet(set.Key).ToList();
+        var have = items.Count(i => quantities.ContainsKey(i.Key));
+        var status = complete ? "✅ complète" : $"complète : +{PebbleEconomy.Cailloux(set.Reward)}";
+        var embed = new EmbedBuilder()
+            .WithTitle($"📖 {set.Emoji} {set.Name}")
+            .WithColor(Color.Purple)
+            .WithDescription($"<@{userId}> · **{have}/{items.Count}** trouvés · {status}\n" +
+                             $"`{LevelCardUi.ProgressBar(have, items.Count)}`");
+
+        bool Shown(ItemInfo i) => filter switch
         {
-            var items = ItemCatalog.InSet(set.Key).ToList();
-            var have = items.Count(i => discovered.Contains(i.Key));
-            var status = done.Contains(set.Key) ? "✅ complète" : $"{have}/{items.Count} · complète : +{PebbleEconomy.Cailloux(set.Reward)}";
-            // A big set is split by rarity (ItemCatalog.Sections); its status rides the first block.
-            var first = true;
-            foreach (var (label, section) in ItemCatalog.Sections(set.Key))
-            {
-                var lines = section.Select(i =>
-                {
-                    var season = i.Season == Season.None ? "" : $" · {ItemCatalog.SeasonLabel(i.Season)}";
-                    return discovered.Contains(i.Key)
-                        ? $"{i.Emoji} {i.Name}{season}"
-                        : $"❔ ??? · {ItemCatalog.RarityLabel(i.Rarity)}{season}";
-                });
-                var name = first
-                    ? $"{set.Emoji} {set.Name}{(label.Length > 0 ? $" ({label})" : "")} — {status}"
-                    : $"{set.Emoji} {set.Name} ({label})";
-                embed.AddField(name, string.Join("\n", lines), inline: true);
-                first = false;
-            }
+            CollectionFilter.Found => quantities.ContainsKey(i.Key),
+            CollectionFilter.Missing => !quantities.ContainsKey(i.Key),
+            _ => true,
+        };
+        var any = false;
+        foreach (var (label, section) in ItemCatalog.Sections(set.Key))
+        {
+            var lines = section.Where(Shown).Select(i => BookLine(i, quantities, withRarity: label.Length == 0)).ToList();
+            if (lines.Count == 0) continue;
+            any = true;
+            var sectionHave = section.Count(i => quantities.ContainsKey(i.Key));
+            var name = label.Length > 0 ? $"{char.ToUpper(label[0])}{label[1..]} — {sectionHave}/{section.Count}" : "Objets";
+            embed.AddField(name, string.Join("\n", lines), inline: label.Length > 0);
         }
-        embed.WithFooter("Trouve-les avec /plynling forage, le cadeau du jour, les jeux et les visites — ou échange-les.");
+        if (!any)
+            embed.AddField(FilterLabel(filter), filter == CollectionFilter.Missing ? "Rien ne manque ici ✨" : "Rien de trouvé ici pour l'instant.");
         return embed.Build();
+    }
+
+    // One item in the book. Found and held: its quantity; found once but traded or sold since:
+    // « plus en stock », since it still counts for the set. Never found: « ??? » with only its
+    // rarity and season, since that is when to look. A page split by rarity leaves the rarity out
+    // of each line — the field says it, and the line is kept short enough to fit 12 in 1024.
+    public static string BookLine(ItemInfo item, IReadOnlyDictionary<string, int> quantities, bool withRarity)
+    {
+        var rarity = withRarity ? $" · {ItemCatalog.RarityLabel(item.Rarity)}" : "";
+        var season = item.Season == Season.None ? "" : $" · {ItemCatalog.SeasonLabel(item.Season)}";
+        if (!quantities.TryGetValue(item.Key, out var count))
+            return $"❔ ???{rarity}{season}";
+        return count > 0
+            ? $"{item.Emoji} {item.Name} ×{count}{rarity}"
+            : $"{item.Emoji} {item.Name} · plus en stock{rarity}";
     }
 
     // Static and Context-free, like every other builder here, so its size is checkable.

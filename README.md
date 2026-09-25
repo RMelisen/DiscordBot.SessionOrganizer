@@ -263,8 +263,10 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   collectibles form four sets of eight (Cailloux, Nature, Trésors, Saisons — the last found
   only in its season) and one big set of 30 **Champignons**, pictured in pixel art and found
   mostly by foraging (morille in spring, truffe noire in winter). Within each set the rarer
-  items are the harder finds; `/inventory collection [user]` shows the book, with anything
-  not yet found as « ??? », and completing a set pays 100 to 1000 cailloux once. Anything ever held stays discovered, so trading an item away never
+  items are the harder finds; `/inventory collection [user]` opens the book — an overview of
+  every set's progress, then a page per set picked from a menu, filtered to everything, what
+  was found or what is still missing (« ??? » with its rarity and season) — and completing a
+  set pays 100 to 1000 cailloux once. Anything ever held stays discovered, so trading an item away never
   undoes a set.
 - **The pantry:** `/inventory shop` buys food ahead (10 % off from five). Feeding serves from
   the feeder's pantry first — one of that food for their own Plynling, two for someone

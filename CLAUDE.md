@@ -1310,6 +1310,15 @@ appear in embeds and messages only — autocomplete is plain text, so it goes th
 `ItemCatalog.TextEmoji`, which drops custom markup rather than show « <:name:id> ». The
 sprites' file names are the item keys (`col.<file name>`), which the harness checks both ways.
 
+**`/inventory collection` is a book, not one embed.** An overview page, then one page per set
+picked from a **select menu** — not buttons, because the overview plus five sets is already six
+and a row holds five — with a Tout / Trouvés / Manquants filter row on set pages. State lives in
+the custom-ids under two verbs, `col:set:{user}:{filter}` (the menu) and
+`col:fil:{user}:{set}:{filter}` (the buttons), handled by `InventoryComponentHandler`; every
+click re-reads the inventory. « Trouvés » means *discovered* — an item traded away shows as
+« plus en stock » and still counts, the same rule as set completion. A page split by rarity
+leaves the rarity out of each line so twelve lines of emoji markup fit a field's 1024.
+
 **Feeding serves from the pantry first**, one of that food for your own Plynling and two for
 someone else's — the pantry's version of the double price — and only charges cailloux when
 there isn't enough. `TooPoor` is therefore only reachable with an empty pantry.

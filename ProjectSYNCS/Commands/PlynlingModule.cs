@@ -441,7 +441,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/plynling forage`** — Il part fouiller les environs (toutes les 4 h) et revient avec un objet — souvent un champignon — ou de quoi manger.\n" +
                 "On trouve aussi des objets dans son cadeau du jour, en gagnant un jeu et pendant les bonnes visites. " +
                 "Certains ne se trouvent qu'en une saison.\n" +
-                "**`/inventory collection [user]`** — Le carnet : 4 collections de 8 objets et une grande de 30 champignons, chacune complétée rapporte des cailloux.\n" +
+                "**`/inventory collection [user]`** — Le carnet, collection par collection : ce que tu as trouvé et ce qui manque. 4 collections de 8 objets et une grande de 30 champignons ; chacune complétée rapporte des cailloux.\n" +
                 "**`/inventory view`** — Ton garde-manger et tes objets. **`/inventory shop food: quantity:`** remplit " +
                 "le garde-manger (−10 % dès 5).\n" +
                 "**`/inventory give`** · **`/inventory trade`** · **`/inventory sell`** — Offrir, échanger (l'offre dure 1 h) ou vendre.")
