@@ -79,10 +79,10 @@ public static class PlynlingText
         $"🎁 <@{fromId}> offre **{quantity} × {emoji} {name}** à <@{toId}> !";
 
     public static string Sold(int quantity, ItemInfo item, long earned, long balance) =>
-        $"💰 Tu as vendu **{quantity} × {item.Emoji} {item.Name}** pour {PebbleEconomy.Cailloux(earned)}. Il te reste {PebbleEconomy.Cailloux(balance)}.";
+        $"💰 Tu as vendu **{quantity} × {item.Emoji} {ItemCatalog.ClearName(item)}** pour {PebbleEconomy.Cailloux(earned)}. Il te reste {PebbleEconomy.Cailloux(balance)}.";
 
     // Trades. The two sides are « N × emoji nom ».
-    public static string TradeSide(ItemInfo item, int quantity) => $"**{quantity} × {item.Emoji} {item.Name}**";
+    public static string TradeSide(ItemInfo item, int quantity) => $"**{quantity} × {item.Emoji} {ItemCatalog.ClearName(item)}**";
 
     public static string TradeOffered(ulong fromId, ulong toId, string give, string want, DateTimeOffset expires) =>
         $"🔁 <@{fromId}> propose un échange à <@{toId}> : {give} contre {want}.\n-# Expire <t:{expires.ToUnixTimeSeconds()}:R>.";

@@ -61,7 +61,7 @@ public static class ItemCatalog
     public static ItemInfo? ByKey(string key) => ByKeyMap.GetValueOrDefault(key);
 
     // The four foods wear their collectible twin's picture: one sprite, one uploaded emoji, two
-    // items. The names stay different (« Shiitake » the food, « Lentin du chêne » the find).
+    // items. Shiitake is the one name shared by a food and a collectible — see ClearName.
     public static readonly IReadOnlyDictionary<string, string> SharedPictures = new Dictionary<string, string>
     {
         ["food.mushroom"] = "col.champignon_paris",
@@ -72,6 +72,15 @@ public static class ItemCatalog
 
     // Whose emoji an item shows: its twin's for a food, its own otherwise.
     public static string PictureKey(string key) => SharedPictures.GetValueOrDefault(key, key);
+
+    // The name to print where a food and a collectible could be confused — autocomplete, gifts,
+    // trades, sales: the same name with the same picture would be two identical lines. Only a name
+    // that two items share gets a suffix (today: Shiitake); every other item reads as it is. The
+    // pantry and the book need none, since their headings already say which kind they list.
+    public static string ClearName(ItemInfo item) =>
+        SharedNames.Contains(item.Name) ? $"{item.Name} ({(item.Kind == ItemKind.Food ? "nourriture" : "collection")})" : item.Name;
+
+    private static readonly HashSet<string> SharedNames = All.GroupBy(i => i.Name).Where(g => g.Count() > 1).Select(g => g.Key).ToHashSet();
 
     public static string FoodKey(PlynlingFood food) => $"food.{food.ToString().ToLowerInvariant()}";
 
@@ -218,12 +227,12 @@ public static class ItemCatalog
 
         // Champignons — 30, pictured by the bot's own emojis once ApplicationEmojiService has
         // uploaded Assets/Mushrooms/<key>.png (🍄 until then). Names deliberately differ from the
-        // four foods (« Lentin du chêne », not « Shiitake »), since autocomplete lists both kinds.
+        // four foods, except Shiitake — see ClearName for how the two are told apart.
         Add("champignons", "champignon_paris", "🍄", "Champignon de Paris", ItemRarity.Common);
         Add("champignons", "champignon_paille", "🍄", "Champignon de paille", ItemRarity.Common);
         Add("champignons", "enoki", "🍄", "Énoki", ItemRarity.Common);
         Add("champignons", "shimeji", "🍄", "Shimeji", ItemRarity.Common);
-        Add("champignons", "lentin_chene", "🍄", "Lentin du chêne", ItemRarity.Common);
+        Add("champignons", "lentin_chene", "🍄", "Shiitake", ItemRarity.Common);   // key kept: it is stored
         Add("champignons", "coulemelle", "🍄", "Coulemelle", ItemRarity.Common);
         Add("champignons", "nonnette_voilee", "🍄", "Nonnette voilée", ItemRarity.Common);
         Add("champignons", "clitocybe", "🍄", "Clitocybe en entonnoir", ItemRarity.Common);

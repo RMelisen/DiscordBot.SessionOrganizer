@@ -71,7 +71,7 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         var info = ItemCatalog.ByKey(item)!;
-        var text = PlynlingText.Gave(Context.User.Id, user.Id, quantity, info.Emoji, info.Name);
+        var text = PlynlingText.Gave(Context.User.Id, user.Id, quantity, info.Emoji, ItemCatalog.ClearName(info));
         foreach (var set in completed) text += "\n" + PlynlingText.SetCompleted(user.Id, set);
         // Public, and it pings the recipient — users only, as every relay here.
         await RespondAsync(text, allowedMentions: new AllowedMentions(AllowedMentionTypes.Users));

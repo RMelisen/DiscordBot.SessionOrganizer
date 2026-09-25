@@ -1319,11 +1319,14 @@ autocomplete is plain text, so it goes through `ItemCatalog.TextEmoji`, which dr
 markup rather than show « <:name:id> ». The sprites' file names are the item keys
 (`col.<file name>`), which the harness checks both ways; `Assets/Mushrooms/CREDITS.txt` is the
 pack's own list, with the Latin names. The four **foods share their collectible twin's picture**
-(`ItemCatalog.SharedPictures`: Champignon → Champignon de Paris, Shiitake → Lentin du chêne,
-Morille → Morille conique, Truffe → Truffe noire) — one sprite, one emoji, two items with
-different names — so `ItemInfo.Emoji` looks up `PictureKey(Key)`, not `Key`. The card's Nourrir
+(`ItemCatalog.SharedPictures`: Champignon → Champignon de Paris, Shiitake → Shiitake,
+Morille → Morille conique, Truffe → Truffe noire) — one sprite, one emoji, two items — so `ItemInfo.Emoji` looks up `PictureKey(Key)`, not `Key`. The card's Nourrir
 menu shows them too, but only once uploaded: before that it shows no icon rather than 🍄 four
-times, since a select option takes the `IEmote` parsed from the markup.
+times, since a select option takes the `IEmote` parsed from the markup. **Shiitake is the one name a
+food and a collectible share** (the collectible's key is still `col.lentin_chene` — keys are
+stored, names are not). Wherever the two could meet with the same picture — autocomplete, gifts,
+trades, sales — print `ItemCatalog.ClearName`, which suffixes « (nourriture) » / « (collection) »
+to a shared name only.
 
 **`/inventory collection` is a book, not one embed.** An overview page, then one page per set
 picked from a **select menu** — not buttons, because the overview plus five sets is already six
