@@ -257,7 +257,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 "commune, peu commune, rare… ou légendaire. Garçon ou fille ? Surprise.\n" +
                 "**`/plynling view [user]`** — Sa carte, avec les boutons **Caresser** et **Nourrir**.")
             .AddField("S'en occuper",
-                "La **faim** se vide en **4 jours** : à 0 %, il meurt. Le **bonheur** se vide en **2 jours** " +
+                "La **faim** se vide en **2 jours** : à 0 %, il meurt. Le **bonheur** se vide en **36 heures** " +
                 "(il est juste triste).\n" +
                 "**`/plynling feed food:`** — Champignon (15), Shiitake (30), Morille (40, que du bonheur), Truffe (80, faim et bonheur).\n" +
                 "**`/plynling pet [user]`** — +25 % de bonheur, toutes les 4 h, sur n'importe quel Plynling.")

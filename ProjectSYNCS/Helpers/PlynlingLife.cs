@@ -12,8 +12,11 @@ public enum FreezeOutcome { Frozen, NoPlynling, Dead, AlreadyFrozen, TooHungry, 
 // longer self-freeze" are exact complements: both begin just below 50%.
 public static class PlynlingLife
 {
-    public static readonly TimeSpan HungerLife = TimeSpan.FromDays(4);
-    public static readonly TimeSpan HappinessLife = TimeSpan.FromDays(2);
+    // Needs are computed from elapsed time since NeedsAsOf, so changing either of these
+    // applies retroactively to every living Plynling's current stretch — shortening
+    // HungerLife moves deaths earlier, and one already past fires on the next settle.
+    public static readonly TimeSpan HungerLife = TimeSpan.FromDays(2);
+    public static readonly TimeSpan HappinessLife = TimeSpan.FromHours(36);
     public static readonly TimeSpan SelfFreezeMax = TimeSpan.FromDays(14);
     public static readonly TimeSpan SelfFreezeCooldown = TimeSpan.FromDays(7);
     public static readonly TimeSpan WarningLead = TimeSpan.FromHours(6);

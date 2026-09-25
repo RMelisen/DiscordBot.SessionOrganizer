@@ -205,7 +205,7 @@ A **Plynling** is a small mushroom creature each member can adopt — one at a t
 Its species is rolled: three common, one uncommon, a rare Mystique and a legendary Doré.
 Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Plynling*.
 
-- **Hunger** empties in 4 days and **happiness** in 2. At 0% hunger it **dies** — really.
+- **Hunger** empties in 2 days and **happiness** in 36 hours. At 0% hunger it **dies** — really.
   `/plynling feed` (Champignon, Shiitake, Morille, Truffe) costs **cailloux**; `/plynling pet`
   is free, every 4 hours, and anyone can pet anyone's.
 - **The card** (`/plynling view`) shows it in its current mood — gently animated, each species
