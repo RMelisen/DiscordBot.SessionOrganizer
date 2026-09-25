@@ -7,7 +7,9 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   species to its own drawing.
 - `species.py` — one silhouette per species, each in six moods (happy, content, sad, hungry,
   starving, frozen): the Cèpe as it always was, a fly-agaric Amanite with its skirt, a button-capped
-  Rosé, a flat-capped Russule, a Mycena bell on a spindle stem, a chanterelle funnel. The face is
+  Rosé, a flat-capped Russule, a Mycena bell on a spindle stem, a chanterelle funnel, and a Coprin
+  (shaggy ink cap): a shaded, flaring bell whose rim melts into ink through pink and grey — the
+  hungrier it is, the more (`COPRIN_INK`) — with a falling ink drop as its idle touch. The face is
   clipped to each body; sweat drops and frost are measured from the model, not from fixed spots.
   `stem_tint` in `common.SPECIES` colours a stem (the Mycena's lavender, the chanterelle's gold).
 - `motion.py` — the idle loop every Plynling shares: 16 frames of 125 ms (2 s). `pose(sp, state, f)`
@@ -18,7 +20,7 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   place; the side-to-side versions were tried and rejected. Frame 0 is always the rest pose.
 - **Life stages:** `sprites.build(..., stage=)` takes `"baby"`, `"teen"`, `"adult"` or `"elder"`,
   but only the baby has its own art (ado and ancien were prototyped and dropped: they wear the
-  adult). Only species in `STAGED` (`export.py`) draw a baby — today all six mushrooms, each
+  adult). Only species in `STAGED` (`export.py`) draw a baby — today all seven mushrooms, each
   through its own hand-drawn `<species>_baby` in `species.py`: a smaller cap of its own shape
   over the shared baby frame (body rows 20–28 with no feet, cap ending at row 18, face 3 rows
   low). Shrinking the adult drawing instead was tried and read too little like a baby. A new
@@ -29,7 +31,7 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   it needs no `ART_VERSION` bump.
 - `memorials.py` — the five memorial tiers (cairn → statue), each carrying the species' accent colour.
 - `source/` — the four food sprites (16×16, hand-drawn), exported as-is.
-- `export.py` — renders all 106 files at 256×256 into `assets/plynlings/`: the 72 living sprites as
+- `export.py` — renders all 123 files at 256×256 into `assets/plynlings/`: the 84 living sprites as
   looping, lossless animated WebP (so the soft shadow and the Mycena's halo keep their partial
   transparency), the memorials and foods as PNG. Pillow merges identical consecutive frames into
   one longer frame, so a file holds fewer than 16 frames while still lasting 2 s.
