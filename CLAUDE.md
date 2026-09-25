@@ -1215,6 +1215,14 @@ The family is `SpeciesInfo.Family`, not a column. `PlynlingArt.Key` is exhaustiv
 Doré's pictures without a word. Every line is written family-neutral — never name a cap,
 petals or spores in a Plynling line — which is why the three "chapeau" lines were rewritten.
 
+**A living Plynling is an animated WebP; memorials and foods are PNG.** `PlynlingArt.Sprite`
+ends in `.webp` and the other two in `.png` — they share `Version` (3) but not the extension, so
+don't "tidy" them into one. Components V2 thumbnails play animated WebP; a client that cannot
+shows frame 0, which `tools/plynling-art` keeps pixel-identical to the v2 still. The idle loop
+lives in `motion.py`, and **nothing in it moves side to side** — the owner rejected every
+left-right motion (sways, wobbles, a sideways shiver, even a travelling shimmer), so keep new
+motion vertical or in place.
+
 **`XpTracker.ExcludedChannels` is checked before `TryClaim`, never after.** The spam
 channels earn nothing, and the order matters: claiming first would let a message there
 burn that person's 60 s message cooldown, so spamming in the excluded channel would

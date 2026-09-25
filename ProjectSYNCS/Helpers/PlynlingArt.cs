@@ -8,15 +8,19 @@ namespace ProjectSYNCS.Helpers;
 // The images are GitHub raw files on main: they resolve only once assets/plynlings/ has
 // been pushed. Discord caches by URL, so new art is a new Version (and new filenames from
 // tools/plynling-art/export.py), never an overwrite.
+//
+// A living Plynling is an animated WebP (its idle loop), which a Components V2 thumbnail
+// plays; a client that cannot animate shows frame 0, the still sprite. Memorials and foods
+// do not move and stay PNG.
 public static class PlynlingArt
 {
-    public const int Version = 2;
+    public const int Version = 3;
 
     public const string BaseUrl =
         "https://raw.githubusercontent.com/RMelisen/DiscordBot.SessionOrganizer/main/assets/plynlings/";
 
     public static string Sprite(PlynlingSpecies species, PlynlingMood mood) =>
-        $"{BaseUrl}plynling_{Key(species)}_{mood.ToString().ToLowerInvariant()}_v{Version}.png";
+        $"{BaseUrl}plynling_{Key(species)}_{mood.ToString().ToLowerInvariant()}_v{Version}.webp";
 
     public static string Memorial(PlynlingSpecies species, int tier) =>
         $"{BaseUrl}memorial_{Key(species)}_{tier}_v{Version}.png";

@@ -13,7 +13,8 @@ import math
 from PIL import Image
 
 from common import N, Grid, lerp, tone, SPECIES, SPOTS, STEM, STEM_OUT, INK
-from sprites import face, extras, PALE, TEAR, TEAR_HI
+from motion import moved, pose as pose_for
+from sprites import face, extras, star, sweat_drops, PALE, TEAR, TEAR_HI
 
 ICE, SNOW, FROST_TINT = (206, 242, 255), (255, 255, 255), (176, 226, 255)
 CX = 16.0                    # the face's own axis: eyes at 12-13 and 18-19, feet likewise
@@ -31,7 +32,8 @@ def cepe(state, frame=0, shadow=True):
     """The original Plynling: a broad cap, gills, a chubby body."""
     p = SPECIES["cepe"]
     cap = p["cap"]
-    dy = 1 if frame == 1 else 0
+    pose = pose_for("cepe", state, frame)
+    dy = 0                                      # the breath is applied by motion.moved
     sag = 1 if state == "starving" else 0       # a starving Plynling's cap sags onto it
     g = Grid()
 
@@ -61,7 +63,7 @@ def cepe(state, frame=0, shadow=True):
     for x in (12, 13, 18, 19):
         g.put(x, 28, STEM[3], "stem")
 
-    cx, cy, rx, ry = 15.5, 14.0 + dy + sag, 14.6, 11.4                           # cap
+    cx, cy, rx, ry = 15.5, 14.0 + dy + sag, 14.6 + 0.9 * pose.widen, 11.4       # cap, wider on the out-breath
     for y in range(N):
         for x in range(N):
             if y > 14 + dy + sag:
@@ -87,26 +89,8 @@ def cepe(state, frame=0, shadow=True):
                     g.put(x, y, p["spot"][1] if (x - sx) + (y - oy) > r * 0.55 else p["spot"][0])
 
     g.outline(lambda reg, ny: INK if ny >= 27 else (cap[4] if reg == "cap" else STEM_OUT))
-    face(g, state, dy)
-
-    im = Image.new("RGBA", (N, N), (0, 0, 0, 0))
-    if shadow:
-        for x in range(8, 24):
-            im.putpixel((x, 29), (0, 0, 0, 58))
-        for x in range(10, 22):
-            im.putpixel((x, 30), (0, 0, 0, 38))
-    for y in range(N):
-        for x in range(N):
-            c = g.c[y][x]
-            if c is None:
-                continue
-            if state == "frozen":
-                c = lerp(c, (176, 226, 255), 0.45)
-            elif state == "starving":
-                c = lerp(c, PALE, 0.28)          # drained of colour
-            im.putpixel((x, y), c + (255,))
-    extras(im, state, p, frame)
-    return im
+    # the Cèpe keeps its original face (unclipped) and its original, fixed extras
+    return finish(g, p, state, STEM, shadow=shadow, pose=pose, original=True)
 
 # ---- shared pieces for the reshaped species -------------------------------------------
 
@@ -151,7 +135,8 @@ def shade_cap(x, y, cap, cx, cy, rx, ry, lit_x, lit_y, lit_rx, lit_ry, under_y):
     return cap[i]
 
 
-def gills(g, p, y, a, b):
+def gills(g, p, y, a, b, lift=None):
+    """One row of gills; `lift(x)` moves a column up or down to follow a tipped cap."""
     cap = p["cap"]
     for x in range(a, b + 1):
         c = p["gill"]
@@ -159,7 +144,7 @@ def gills(g, p, y, a, b):
             c = lerp(c, cap[4], 0.25)
         if abs(x + 0.5 - 16) < 6:
             c = lerp(c, cap[4], 0.3)
-        g.put(x, y, c, "cap")
+        g.put(x, y + (lift(x) if lift else 0), c, "cap")
 
 
 def outline(g, cap, extra=None):
@@ -179,7 +164,7 @@ def cap_profile(g):
     return tops, bottoms
 
 
-def frost(im, tops, bottoms):
+def frost(im, tops, bottoms, pose=None):
     """Snow sitting on this cap's real top, icicles hanging from its real rim."""
     def px(x, y, c):
         if 0 <= x < N and 0 <= y < N:
@@ -197,17 +182,16 @@ def frost(im, tops, bottoms):
             px(x, bottoms[x] + 2, ICE)
             if x in (left + 1, right - 1):
                 px(x, bottoms[x] + 3, ICE)
-    for x, y in ((28, 2), (27, 3), (28, 3), (29, 3), (28, 4)):
-        px(x, y, (220, 246, 255))
+    star(lambda x, y, c, a=255: 0 <= x < N and 0 <= y < N and im.putpixel((x, y), c + (a,)), pose)
 
 
-def face_on(g, state, S, ox=0, oy=0):
+def face_on(g, state, S, ox=0, oy=0, **kw):
     """The shared face, moved onto this body and clipped to it — never onto its outline."""
     class Clip:
         def put(self, x, y, c, region=None):
             if 0 <= x < N and 0 <= y < N and g.r[y][x] is not None:
                 g.put(x, y, c, region)
-    face(Clip(), state, 0, ox=ox, oy=oy, skin=S)
+    face(Clip(), state, 0, ox=ox, oy=oy, skin=S, **kw)
 
 
 def body_edges(g, y):
@@ -215,14 +199,18 @@ def body_edges(g, y):
     return (min(xs), max(xs)) if xs else (10, 21)
 
 
-def sweat(im, state, g, oy):
+def sweat(im, state, g, oy, k=0):
     """The sweat drops, measured from this model: four pixels outside the body at eye level,
-    which is exactly where they have always sat on the Cèpe."""
+    which is exactly where they have always sat on the Cèpe. `k` slides them down the face;
+    None means they have run off this frame."""
+    if k is None:
+        return
     def px(x, y, c):
         if 0 <= x < N and 0 <= y < N:
             im.putpixel((x, y), c + (255,))
     eye = 19 + oy
     left, right = body_edges(g, eye + 1)
+    eye += k
     if state == "hungry":
         xr = right + 4
         for x, y in ((xr, eye - 2), (xr, eye - 1), (xr - 1, eye - 1), (xr, eye)):
@@ -235,15 +223,24 @@ def sweat(im, state, g, oy):
             px(x, y, TEAR)
 
 
-def finish(g, p, state, S, face_oy=0, face_ox=0, shadow=True):
-    """Face, ground shadow, the frozen/starving tint, and extras placed for this model."""
+def finish(g, p, state, S, face_oy=0, face_ox=0, shadow=True, pose=None, original=False):
+    """Face, this frame's motion, ground shadow, the frozen/starving tint, and extras placed for
+    this model. `original` is the Cèpe: its face is not clipped, and its sweat and frost sit
+    where they always have rather than being measured."""
+    pose = pose or pose_for(None, state, 0)
     tops, bottoms = cap_profile(g)
-    face_on(g, state, S, face_ox, face_oy)
+    kw = dict(blink=pose.blink, tear=pose.tear, drool=pose.drool)
+    if original:
+        face(g, state, 0, **kw)
+    else:
+        face_on(g, state, S, face_ox, face_oy, **kw)
+    g = moved(g, pose)
     im = Image.new("RGBA", (N, N), (0, 0, 0, 0))
     if shadow:
-        for x in range(8, 24):
+        lift = 2 if pose.hop == 2 else 0       # a smaller shadow under the top of the hop
+        for x in range(8 + lift, 24 - lift):
             im.putpixel((x, 29), (0, 0, 0, 58))
-        for x in range(10, 22):
+        for x in range(10 + lift, 22 - lift):
             im.putpixel((x, 30), (0, 0, 0, 38))
     for y in range(N):
         for x in range(N):
@@ -255,32 +252,55 @@ def finish(g, p, state, S, face_oy=0, face_ox=0, shadow=True):
             elif state == "starving":
                 c = lerp(c, PALE, 0.28)
             im.putpixel((x, y), c + (255,))
-    if state == "frozen":
-        frost(im, tops, bottoms)
+    if original:
+        extras(im, state, p, pose, pose.body)
+    elif state == "frozen":
+        frost(im, tops, bottoms, pose)
     elif state in ("hungry", "starving"):
-        sweat(im, state, g, face_oy)
+        sweat(im, state, g, face_oy + pose.body[1], sweat_drops(pose))
         if p["sparkle"] and state == "hungry":
-            extras(im, "content", p, 0)                  # a rare species keeps its sparkle
+            extras(im, "content", p, pose)               # a rare species keeps its sparkle
     else:
-        extras(im, state, p, 0)
+        extras(im, state, p, pose)
     return im
 
 
 # ---- Amanite: a fly agaric ----------------------------------------------------------------
 
+def skirt(g, S, y0, mode):
+    """The fly agaric's ring, hanging from row y0. At rest (0) it is three widening rows over a
+    toothed hem. It moves like fabric: billowed (1) it is a pixel wider each side with its hem
+    lifted, the scallops showing as shading; draped (-1) it hangs a row longer and straighter.
+    The halves (0.5, -0.5) are the way back to rest."""
+    rows = {                      # (first, last) column of each row, top down, and the teeth
+        0:    ([(10, 21), (9, 22), (8, 23)], range(8, 24, 2)),
+        1:    ([(10, 21), (8, 23), (7, 24)], ()),
+        0.5:  ([(10, 21), (9, 22), (8, 23)], ()),
+        -1:   ([(10, 21), (9, 22), (9, 22), (9, 22)], range(10, 22, 2)),
+        -0.5: ([(10, 21), (9, 22), (8, 23), (9, 22)], ()),
+    }[mode]
+    spans, teeth = rows
+    for k, (a, b) in enumerate(spans):
+        c = S[min(k, 2)]
+        for x in range(a, b + 1):
+            shade = S[3] if x > 18 else c
+            if mode == 1 and k == 2 and x % 2 == 0:
+                shade = S[3]                                          # the lifted hem's scallops
+            g.put(x, y0 + k, shade, "ring")
+    for x in teeth:
+        g.put(x, y0 + len(spans), S[3], "ring")                       # its ragged hem
+
+
 def amanite(state, frame=0, shadow=True):
     """A wide red dome with white spots, a flared skirt under it, a longer and slimmer stem."""
     p = SPECIES["amanite"]
     cap, S = p["cap"], stem_palette(p)
+    pose = pose_for("amanite", state, frame)
     sag = 1 if state == "starving" else 0
     g = Grid()
     stem(g, S, 11, 20, 10 + sag, 27)
     feet(g, S)
-    for y, a, b, c in ((11 + sag, 10, 21, S[0]), (12 + sag, 9, 22, S[1]), (13 + sag, 8, 23, S[2])):   # the skirt
-        for x in range(a, b + 1):
-            g.put(x, y, S[3] if x > 18 else c, "ring")
-    for x in range(8, 24, 2):
-        g.put(x, 14 + sag, S[3], "ring")                              # its ragged hem
+    skirt(g, S, 11 + sag, pose.skirt)
     gills(g, p, 10 + sag, 4, 27)
     cx, cy, rx, ry = 15.5, 10.0 + sag, 12.4, 9.6
     for y in range(N):
@@ -294,7 +314,7 @@ def amanite(state, frame=0, shadow=True):
                 if (x - sx) ** 2 + (y - sy - sag) ** 2 <= r * r and g.r[y][x] == "cap" and y < 9 + sag:
                     g.put(x, y, p["spot"][0] if (x - sx) + (y - sy - sag) <= r * 0.55 else p["spot"][1])
     outline(g, cap)
-    return finish(g, p, state, S, shadow=shadow)
+    return finish(g, p, state, S, shadow=shadow, pose=pose)
 
 
 # ---- Rosé des prés: a field mushroom ----------------------------------------------------------
@@ -303,6 +323,7 @@ def rose(state, frame=0, shadow=True):
     """A round button cap with its rim tucked under, pink gills showing, a short thick stem."""
     p = SPECIES["rose"]
     cap, S = p["cap"], stem_palette(p)
+    pose = pose_for("rose", state, frame)
     sag = 1 if state == "starving" else 0
     g = Grid()
     stem(g, S, 10, 21, 15 + sag, 27)
@@ -311,7 +332,7 @@ def rose(state, frame=0, shadow=True):
         g.put(x, 18 + sag, S[1] if x < 16 else S[3], "stem")          # a thin ring
     gills(g, p, 15 + sag, 7, 24)
     gills(g, p, 16 + sag, 9, 22)
-    cx, cy, rx, ry = 15.5, 10.5 + sag, 13.0, 9.6
+    cx, cy, rx, ry = 15.5, 10.5 + sag, 13.0, 9.6 + 1.0 * pose.puff       # puffed: its crown rises a row
     for y in range(N):
         for x in range(N):
             if y > 15 + sag or ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 > 1:
@@ -320,7 +341,7 @@ def rose(state, frame=0, shadow=True):
                 continue                                              # the opening under the curled rim
             g.put(x, y, shade_cap(x, y, cap, cx, cy, rx, ry, 10, 5 + sag, 8, 4.4, 14 + sag), "cap")
     outline(g, cap)
-    return finish(g, p, state, S, face_oy=1, shadow=shadow)
+    return finish(g, p, state, S, face_oy=1, shadow=shadow, pose=pose)
 
 
 # ---- Russule verte: a green russula ------------------------------------------------------------
@@ -329,6 +350,7 @@ def russule(state, frame=0, shadow=True):
     """A broad flat cap dipping in the middle, on a body shaped like the Cèpe's."""
     p = SPECIES["russule"]
     cap, S = p["cap"], stem_palette(p)
+    pose = pose_for("russule", state, frame)
     sag = 1 if state == "starving" else 0
     g = Grid()
     spans = {12: (12, 19), 13: (11, 20), 26: (11, 20), 27: (12, 19)}
@@ -342,13 +364,16 @@ def russule(state, frame=0, shadow=True):
                 i = min(4, i + 1)
             g.put(x, y, S[i], "stem")
     feet(g, S)
-    gills(g, p, 12 + sag, 4, 27)
+    def tip(x):                                                       # the same tilt as the cap's
+        return int(round(1.2 * pose.tilt * (x + 0.5 - 15.5) / 14.0))
+    gills(g, p, 12 + sag, 4, 27, tip)
     for x in range(2, 30):
         nx = (x + 0.5 - 15.5) / 14.0
         if abs(nx) > 1:
             continue
-        top = 7.2 + sag + 2.0 * math.exp(-(nx / 0.38) ** 2) + 2.4 * nx ** 4
-        bottom = 11.4 + sag - 0.6 * nx ** 2
+        lean = 1.2 * pose.tilt * nx                                   # one edge up, the other down
+        top = 7.2 + sag + 2.0 * math.exp(-(nx / 0.38) ** 2) + 2.4 * nx ** 4 + lean
+        bottom = 11.4 + sag - 0.6 * nx ** 2 + lean
         for y in range(int(top), int(bottom) + 1):
             if y + 0.5 < top:
                 continue
@@ -357,7 +382,7 @@ def russule(state, frame=0, shadow=True):
                 c = cap[3]                                            # the dip, in shadow
             g.put(x, y, c, "cap")
     outline(g, cap)
-    return finish(g, p, state, S, shadow=shadow)
+    return finish(g, p, state, S, shadow=shadow, pose=pose)
 
 
 # ---- Mystique: a Mycena ----------------------------------------------------------------------
@@ -367,6 +392,7 @@ def mystique(state, frame=0, shadow=True):
     stem — slim under the cap and at the foot, full width only where the face is."""
     p = SPECIES["mystique"]
     cap, glow, S = p["cap"], p["spot"], stem_palette(p)
+    pose = pose_for("mystique", state, frame)
     sag = 1 if state == "starving" else 0
     y0 = 12 + sag
     g = Grid()
@@ -400,13 +426,15 @@ def mystique(state, frame=0, shadow=True):
             g.put(x, y, c, "cap")
     for x in range(N):                                                 # the glowing rim
         if g.r[int(rim)][x] == "cap":
-            g.put(x, int(rim), glow[0] if (x % 3) else glow[1])
+            g.put(x, int(rim), glow[0] if (x % 3 or pose.glow) else glow[1])
     outline(g, cap)
-    im = finish(g, p, state, S, shadow=shadow)
+    im = finish(g, p, state, S, shadow=shadow, pose=pose)
     if state not in ("frozen", "starving"):                            # a soft halo under the rim
+        by = pose.body[1]
         for x in range(8, 25, 3):
-            if im.getpixel((x, int(rim) + 1))[3] == 0:
-                im.putpixel((x, int(rim) + 1), glow[0] + (110,))
+            hx, hy = x, int(rim) + 1 + by
+            if 0 <= hx < N and im.getpixel((hx, hy))[3] == 0:
+                im.putpixel((hx, hy), glow[0] + (pose.halo,))
     return im
 
 
@@ -417,12 +445,14 @@ def dore(state, frame=0, shadow=True):
     10 px gold stem, all centred on the face's axis, with a rounded foot."""
     p = SPECIES["dore"]
     cap, S = p["cap"], stem_palette(p)
+    pose = pose_for("dore", state, frame)
     sag = 1 if state == "starving" else 0
     g = Grid()
 
     def rim_top(x):
         nx = (x + 0.5 - CX) / 13.5
-        return 4.2 + sag + 0.7 * math.sin(x * 0.7 + 0.6) + 0.25 * math.sin(x * 1.6) + 3.4 * abs(nx) ** 3
+        return (4.2 + sag + 0.7 * pose.ripple * math.sin(x * 0.7 + 0.6) + 0.25 * math.sin(x * 1.6)
+                + 3.4 * abs(nx) ** 3)
 
     def span(y):
         s = (y - (5 + sag)) / 9.0
@@ -466,7 +496,7 @@ def dore(state, frame=0, shadow=True):
                 g.put(x, y, lerp(dark, g.c[y][x], max(0.0, f - 0.55) * 1.6))
     feet(g, S)
     outline(g, cap, {"stem": lerp(STEM_OUT, cap[4], 0.6)})
-    return finish(g, p, state, S, shadow=shadow)
+    return finish(g, p, state, S, shadow=shadow, pose=pose)
 
 
 DRAW = {"cepe": cepe, "amanite": amanite, "rose": rose, "russule": russule, "mystique": mystique, "dore": dore}

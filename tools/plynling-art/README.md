@@ -10,13 +10,25 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   Rosé, a flat-capped Russule, a Mycena bell on a spindle stem, a chanterelle funnel. The face is
   clipped to each body; sweat drops and frost are measured from the model, not from fixed spots.
   `stem_tint` in `common.SPECIES` colours a stem (the Mycena's lavender, the chanterelle's gold).
+- `motion.py` — the idle loop every Plynling shares: 16 frames of 125 ms (2 s). `pose(sp, state, f)`
+  says where everything sits on frame f: the breath, the blink, each mood's touch (hop, tear,
+  sweat, shudder, frost star) and each species' own (the Cèpe's cap widens, the Amanite's skirt
+  billows and drapes, the Rosé's cap puffs, the Russule's plate tips, the Mycena's glow pulses,
+  the Doré's rim ripples). **Nothing moves side to side** — every motion is up and down, or in
+  place; the side-to-side versions were tried and rejected. Frame 0 is always the rest pose.
 - `memorials.py` — the five memorial tiers (cairn → statue), each carrying the species' accent colour.
 - `source/` — the four food sprites (16×16, hand-drawn), exported as-is.
-- `export.py` — renders all 70 files at 256×256 into `assets/plynlings/`.
+- `export.py` — renders all 70 files at 256×256 into `assets/plynlings/`: the 36 living sprites as
+  looping, lossless animated WebP (so the soft shadow and the Mycena's halo keep their partial
+  transparency), the memorials and foods as PNG. Pillow merges identical consecutive frames into
+  one longer frame, so a file holds fewer than 16 frames while still lasting 2 s.
 
 Requires Python 3 and Pillow. Run from this folder: `python export.py`.
 
 **Changing the art:** bump `ART_VERSION` in `export.py` **and** `PlynlingArt.Version` in the
 bot, re-export, commit, push. The bot links to GitHub raw URLs on `main`, and Discord caches
-images by URL — a new version must be a new filename, never an overwrite. The art is at **v2**
-(the per-species shapes); the Cèpe, the memorials and the foods came out byte-identical to v1.
+images by URL — a new version must be a new filename, never an overwrite. The art is at **v3**
+(the idle animation). Frame 0 of every loop is pixel-identical to the v2 still, so a client that
+cannot animate WebP shows exactly the old picture, and the memorials and foods are byte-identical
+to v2. A new species' drawing function must take `frame` and route through `finish` with its
+pose, or it will not move.

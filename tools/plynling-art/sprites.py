@@ -23,7 +23,9 @@ def build(state, sp, frame=0, shadow=True):
 # (ox, oy) offset. Every species wears this face; skin / skin_out replace the stem tones
 # used for the eye bags and the brows, so a tinted stem keeps a matching face.
 
-def face(g, state, f, ox=0, oy=0, skin=None, skin_out=None):
+def face(g, state, f, ox=0, oy=0, skin=None, skin_out=None, blink=False, tear=0, drool=0):
+    """blink closes open eyes for a frame; tear (0 at rest, 1-3 further down, -1 only just
+    welling) rolls the sad tear; drool (0 or 1) lets the hungry drool drip a pixel longer."""
     skin = STEM if skin is None else skin
     skin_out = STEM_OUT if skin_out is None else skin_out
 
@@ -31,6 +33,9 @@ def face(g, state, f, ox=0, oy=0, skin=None, skin_out=None):
         g.put(x + ox, y + f + oy, c)
 
     def glossy_eye(x0, shine2=False, watery=False):
+        if blink:
+            closed_eye(x0)
+            return
         for x in (x0, x0 + 1):
             for y in (19, 20, 21):
                 P(x, y, INK)
@@ -94,9 +99,12 @@ def face(g, state, f, ox=0, oy=0, skin=None, skin_out=None):
         brows(inner_raise=True)
         for x, y in ((14, 24), (15, 23), (16, 23), (17, 24)):
             P(x, y, INK)
-        P(12, 22, TEAR_HI)                                              # a tear rolling down
-        P(12, 23, TEAR)
-        P(11, 24, TEAR)
+        if tear == -1:
+            P(12, 22, TEAR_HI)                                          # a new one welling up
+        elif tear is not None:
+            P(12, 22 + tear, TEAR_HI)                                   # a tear rolling down
+            P(12, 23 + tear, TEAR)
+            P(11, 24 + tear, TEAR)
     elif state == "hungry":
         glossy_eye(12, shine2=True)
         glossy_eye(18, shine2=True)
@@ -109,7 +117,9 @@ def face(g, state, f, ox=0, oy=0, skin=None, skin_out=None):
         P(15, 25, INK)
         P(16, 25, INK)
         P(17, 25, TEAR)                                                 # drooling
-        P(17, 26, TEAR_HI)
+        P(17, 26, TEAR if drool else TEAR_HI)
+        if drool:
+            P(17, 27, TEAR_HI)
         blush(PINK_SOFT)
     elif state == "starving":
         tired_eye(12)
@@ -124,34 +134,69 @@ def face(g, state, f, ox=0, oy=0, skin=None, skin_out=None):
             P(x, 24, INK)
 
 
-def extras(im, state, p, frame):
+SPARKLES = [(2, 6), (29, 9), (27, 1), (3, 1)]
+SPARKLES_ALT = [(1, 9), (30, 5), (26, 3), (5, 2)]
+STAR = (220, 246, 255)
+
+
+def star(px, pose):
+    """The frost star at the top right: a small cross that shrinks to a point, then flares."""
+    phase = pose.star if pose else 0
+    px(28, 3, STAR)
+    if phase >= 0:
+        for x, y in ((28, 2), (27, 3), (29, 3), (28, 4)):
+            px(x, y, STAR)
+    if phase == 1:
+        for x, y in ((28, 1), (26, 3), (30, 3), (28, 5)):
+            px(x, y, STAR, 150)
+
+
+def sparkles(px, s, pose):
+    """A rare species' sparkles: each one blinks out in turn and glints beside where it was."""
+    f = pose.f if pose else 0
+    for i, ((x, y), (ax, ay)) in enumerate(zip(SPARKLES, SPARKLES_ALT)):
+        if f in (4 * i + 2, 4 * i + 3):
+            px(ax, ay, s)
+        else:
+            px(x, y, s)
+
+
+def sweat_drops(f):
+    """Where the sliding sweat drops are on this frame: None when they have run off."""
+    k = f.sweat if f else 0
+    return None if k == -1 else (k or 0)
+
+
+def extras(im, state, p, pose=None, body=(0, 0)):
+    """The mood extras. `body` is how far the head has moved this frame, so anything stuck to
+    the face (the sweat) moves with it; the heart, the frost and the sparkles float free."""
     def px(x, y, c, a=255):
         if 0 <= x < N and 0 <= y < N:
             im.putpixel((x, y), c + (a,))
 
+    bx, by = body
+    k = sweat_drops(pose)
     if state == "happy":                                                 # a little heart
+        h = pose.heart if pose else 0
         for x, y in ((25, 17), (27, 17), (24, 18), (25, 18), (26, 18), (27, 18), (28, 18),
                      (25, 19), (26, 19), (27, 19), (26, 20)):
-            px(x, y, (246, 116, 140))
-        px(25, 18, (255, 196, 206))
-    if state == "hungry":                                                # sweat drop
+            px(x, y + h, (246, 116, 140))
+        px(25, 18 + h, (255, 196, 206))
+    if state == "hungry" and k is not None:                              # sweat drop
         for x, y in ((25, 17), (25, 18), (24, 18), (25, 19)):
-            px(x, y, TEAR)
-        px(25, 17, TEAR_HI)
-    if state == "starving":                                              # a cold sweat, both sides
+            px(x + bx, y + by + k, TEAR)
+        px(25 + bx, 17 + by + k, TEAR_HI)
+    if state == "starving" and k is not None:                            # a cold sweat, both sides
         for x, y in ((25, 18), (25, 19), (24, 19), (25, 20), (6, 19), (6, 20), (7, 20), (6, 21)):
-            px(x, y, TEAR)
+            px(x + bx, y + by + k, TEAR)
     if state == "frozen":
         for x, y in ((4, 16), (4, 17), (7, 16), (24, 16), (27, 16), (27, 17), (26, 16)):
             px(x, y, (206, 242, 255))
         for x, y in ((9, 5), (10, 4), (15, 3), (20, 4)):
             px(x, y, WHITE)
-        for x, y in ((28, 2), (27, 3), (28, 3), (29, 3), (28, 4)):
-            px(x, y, (220, 246, 255))
+        star(px, pose)
     if p["sparkle"] and state not in ("frozen", "starving"):
-        s = p["sparkle"]
-        for x, y in ([(2, 6), (29, 9), (27, 1), (3, 1)] if frame == 0 else [(1, 9), (30, 5), (26, 3), (5, 2)]):
-            px(x, y, s)
+        sparkles(px, p["sparkle"], pose)
 
 
 if __name__ == "__main__":
