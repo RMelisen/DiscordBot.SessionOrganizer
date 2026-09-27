@@ -29,6 +29,30 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
         _trades = trades;
     }
 
+    [SlashCommand("cosmetics", "La boutique de cosmétiques pour ton Plynling (nouvelle sélection chaque lundi)")]
+    public async Task CosmeticsAsync()
+    {
+        var (held, balance) = await HeldAsync();
+        var (embed, components) = CosmeticCards.BuildShop(DateTimeOffset.UtcNow, Owned(held), balance, null);
+        await RespondAsync(embed: embed, components: components, ephemeral: true);
+    }
+
+    [SlashCommand("craft", "Fabriquer des cosmétiques avec tes objets de collection")]
+    public async Task CraftAsync()
+    {
+        var (held, balance) = await HeldAsync();
+        var (embed, components) = CosmeticCards.BuildCraft(held, Owned(held), balance, null);
+        await RespondAsync(embed: embed, components: components, ephemeral: true);
+    }
+
+    private async Task<(Dictionary<string, int> Held, long Balance)> HeldAsync() =>
+        ((await _inventory.GetAllAsync(Context.Guild.Id, Context.User.Id)).ToDictionary(i => i.Key, i => i.Quantity),
+         await _inventory.BalanceAsync(Context.Guild.Id, Context.User.Id));
+
+    // The cosmetics held — at least one; a row at 0 is only « discovered ».
+    public static HashSet<string> Owned(IReadOnlyDictionary<string, int> held) =>
+        held.Where(kv => kv.Value > 0 && CosmeticCatalog.ByKey(kv.Key) is not null).Select(kv => kv.Key).ToHashSet();
+
     // How many of one food the shop sells at once.
     private const int MaxShopQuantity = 20;
 

@@ -24,13 +24,15 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
     private readonly PlynlingCooldowns _cooldowns;
     private readonly ShameService _shame;
     private readonly PlynlingPlayService _play;
+    private readonly CosmeticService _cosmetics;
     private readonly ILogger<PlynlingModule> _logger;
 
     public PlynlingModule(PlynlingService plynlings, ResponsePicker picker,
         PlynlingAnnouncer announcer, PlynlingCooldowns cooldowns, ShameService shame, PlynlingPlayService play,
-        ILogger<PlynlingModule> logger)
+        CosmeticService cosmetics, ILogger<PlynlingModule> logger)
     {
         _play = play;
+        _cosmetics = cosmetics;
         _plynlings = plynlings;
         _picker = picker;
         _announcer = announcer;
@@ -354,6 +356,20 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         var graves = await _plynlings.GetGraveyardAsync(Context.Guild.Id, user?.Id, now);
         await RespondAsync(components: PlynlingGraveyardCards.BuildPage(graves, GraveSort.Recent, user?.Id ?? 0, 0, now),
             flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+    }
+
+    [SlashCommand("wardrobe", "Habiller ton Plynling avec tes cosmétiques")]
+    public async Task WardrobeAsync()
+    {
+        var plynling = await _plynlings.GetCurrentAsync(Context.Guild.Id, Context.User.Id, DateTimeOffset.UtcNow);
+        if (plynling is null || plynling.DiedAt is not null)
+        {
+            await RespondAsync(PlynlingText.NoPlynling, ephemeral: true);
+            return;
+        }
+        var owned = await _cosmetics.OwnedAsync(Context.Guild.Id, Context.User.Id);
+        var (embed, components) = CosmeticCards.BuildWardrobe(plynling, owned, null);
+        await RespondAsync(embed: embed, components: components, ephemeral: true, allowedMentions: AllowedMentions.None);
     }
 
     [SlashCommand("help", "Comment fonctionnent les Plynlings")]

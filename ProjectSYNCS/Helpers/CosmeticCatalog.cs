@@ -114,6 +114,15 @@ public static class CosmeticCatalog
         return ISOWeek.GetYear(local) * 100 + ISOWeek.GetWeekOfYear(local);
     }
 
+    /// <summary>When the shop next changes: the coming Monday 00:00 Paris.</summary>
+    public static DateTimeOffset NextRotation(DateTimeOffset now)
+    {
+        var today = AppTime.ToZoned(now).Date;
+        var days = ((int)DayOfWeek.Monday - (int)today.DayOfWeek + 7) % 7;
+        var monday = today.AddDays(days == 0 ? 7 : days);
+        return new DateTimeOffset(monday, AppTime.Zone.GetUtcOffset(monday));
+    }
+
     /// <summary>
     /// What is on sale at <paramref name="now"/>: the basics, then <see cref="RotatingPerSlot"/>
     /// rotating items per slot drawn from a generator seeded with the week and the slot — the
