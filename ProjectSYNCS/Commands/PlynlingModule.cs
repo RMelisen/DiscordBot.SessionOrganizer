@@ -512,8 +512,14 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             ? PlynlingArt.Sprite(plynling.Species, PlynlingLife.Stage(plynling, now), PlynlingLife.Mood(plynling, now))
             : PlynlingArt.Memorial(plynling.Species, PlynlingCatalog.MemorialTier(PlynlingLife.Age(plynling, now)));
 
+        // A worn thème recolours the card and opens it with its banner — the one cosmetic that
+        // costs a component; the title and the accessory ride in the heading's text.
+        var theme = CosmeticSlots.Worn(plynling, CosmeticSlot.Theme);
         var container = new ContainerBuilder()
-            .WithAccentColor(new Color(info.Accent))
+            .WithAccentColor(new Color(theme?.Accent ?? info.Accent));
+        if (theme?.Banner is { } banner)
+            container.AddComponent(new TextDisplayBuilder(banner));
+        container
             .AddComponent(new SectionBuilder()
                 .WithAccessory(new ThumbnailBuilder()
                     .WithMedia(new UnfurledMediaItemProperties(picture))

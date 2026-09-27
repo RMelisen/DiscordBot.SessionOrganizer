@@ -30,9 +30,12 @@ public static class PlynlingCardUi
         var age = LevelCardUi.Duration((long)PlynlingLife.Age(p, now).TotalMinutes);
         // The gender sign sits on the species line, not in the heading: a "## " line renders
         // ♂/♀ at heading size, far too big beside the name.
-        return $"## {SafeName(p.Name)}\n" +
+        var title = CosmeticSlots.Worn(p, CosmeticSlot.Title) is { } t ? $"*« {CosmeticCatalog.TitleFor(t, p.Gender)} »*\n" : "";
+        var accessory = CosmeticSlots.Worn(p, CosmeticSlot.Accessory) is { } a ? $"\nporte {a.Emoji} {a.Name}" : "";
+        return $"## {SafeName(p.Name)}\n" + title +
                $"{p.Gender.Symbol()} {info.Name} · *{PlynlingCatalog.RarityLabel(info.Rarity)}*\n" +
                $"à <@{p.OwnerId}> · {StageLabel(PlynlingLife.Stage(p, now), p.Gender)} · {p.Gender.Agree("âgé", "âgée")} de {age}" +
+               accessory +
                (partnerName is null ? "" : $"\n💞 En couple avec **{SafeName(partnerName)}**");
     }
 
@@ -108,7 +111,10 @@ public static class PlynlingCardUi
     {
         var info = PlynlingCatalog.Info(p.Species);
         var lived = LevelCardUi.Duration((long)PlynlingLife.Age(p, now).TotalMinutes);
-        return $"**{SafeName(p.Name)}** {p.Gender.Symbol()} · {info.Name} — à <@{p.OwnerId}>\n" +
+        // A worn cadre wraps the grave's first line.
+        var frame = CosmeticSlots.Worn(p, CosmeticSlot.Grave);
+        var (left, right) = frame is null ? ("", "") : ($"{frame.GraveLeft} ", $" {frame.GraveRight}");
+        return $"{left}**{SafeName(p.Name)}** {p.Gender.Symbol()} · {info.Name} — à <@{p.OwnerId}>{right}\n" +
                $"*a vécu {lived}* · {p.Gender.Agree("mort", "morte")} <t:{p.DiedAt!.Value.ToUnixTimeSeconds()}:R>";
     }
 }

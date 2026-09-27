@@ -84,6 +84,18 @@ public static class CosmeticCatalog
         _ => $"Cadre {c.Name}",
     };
 
+    // The short name for a list — the Garde-robe: the thème or cadre name, the masculine title
+    // (text about a person, not a Plynling, stays in the generic masculine), the accessory bare.
+    public static string ShortName(CosmeticInfo c) => c.Slot == CosmeticSlot.Accessory ? Capitalize(WithoutArticle(c.Name)) : c.Name;
+
+    public static string SlotPlural(CosmeticSlot slot) => slot switch
+    {
+        CosmeticSlot.Theme => "thèmes",
+        CosmeticSlot.Title => "titres",
+        CosmeticSlot.Accessory => "accessoires",
+        _ => "cadres",
+    };
+
     private static string WithoutArticle(string name)
     {
         foreach (var article in new[] { "un ", "une ", "des " })

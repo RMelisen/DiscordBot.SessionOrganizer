@@ -291,6 +291,13 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
                     embed.AddField($"{set.Name}{(label.Length > 0 ? $" ({label})" : "")}", string.Join("\n", lines), inline: true);
             }
 
+        // The Garde-robe: what is held, one compact field per slot (60 lines would not fit one).
+        foreach (var slot in Enum.GetValues<CosmeticSlot>())
+        {
+            var owned = CosmeticCatalog.InSlot(slot).Where(c => Count(c.Key) > 0).Select(c => $"{c.Emoji} {CosmeticCatalog.ShortName(c)}").ToList();
+            if (owned.Count > 0) embed.AddField($"Garde-robe — {CosmeticCatalog.SlotPlural(slot)}", string.Join(" · ", owned));
+        }
+
         var discovered = ItemCatalog.Collectibles.Count(i => byKey.ContainsKey(i.Key));
         embed.AddField("Collection",
             $"{discovered}/{ItemCatalog.Collectibles.Count()} objets découverts · {setsCompleted}/{ItemCatalog.Sets.Count} collections complètes");
