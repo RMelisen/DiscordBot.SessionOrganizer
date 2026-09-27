@@ -30,6 +30,8 @@ a wall of shame. The bot's user-facing language is French.
 | `/shame user:@someone` | Put someone on it | staff |
 | `/config` | Per-server settings, no redeploy | staff |
 | `/admin xp add · remove` | Manual XP adjustment | staff |
+| `/admin pebble add · remove` | Manual cailloux adjustment | staff |
+| `/admin stats` | The server's economy at a glance | staff |
 | `/admin plynling rename · resurrect`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
 | `/leaderboard` | Server ranking — three views, three windows | owner |
 | `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
@@ -296,6 +298,11 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   existing right or un-exclude a channel, and a server that never touches `/config`
   behaves exactly as before. **`/config show`** prints the current state, separating the
   built-in defaults from what was added.
+- **`/admin pebble add|remove <member> <amount>`** — manual cailloux correction, private,
+  never below 0; the person is not notified.
+- **`/admin stats`** — a private snapshot of the economy: cailloux in circulation and the five
+  richest, Plynlings alive / frozen / buried by species, set completions, discoveries, and the
+  cosmetics held, worn and most popular. Only stored state — flows over time are not recorded.
 - **`/admin xp add <member> <amount>` · `/admin xp remove <member> <amount>`** — manual XP
   adjustment. Ephemeral, clamped at zero, and deliberately silent: crossing a level this
   way fires no level-up card, since that card celebrates something earned.

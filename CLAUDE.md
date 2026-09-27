@@ -1039,6 +1039,12 @@ Deliberately **no** `HasMaxLength` in `AppDbContext`: SQLite does not enforce a 
 width, so it would document the cap without applying it, and the option-level cap is what
 actually holds.
 
+**`/admin` holds `xp`, `plynling`, `pebble` and `stats`.** `/admin pebble` mirrors `/admin xp`
+(ephemeral, bots refused, capped, no notification) through `PebbleService.AdjustAsync`, which
+clamps at 0. `/admin stats` is `AdminStatsService` — reads only: Plynlings are loaded
+`AsNoTracking` and settled in memory, so an unnoticed death counts as a grave without the stats
+ever writing it — rendered by the static `AdminCards.BuildStats`.
+
 **`/admin` is guarded once per handler, and only in code — deliberately no
 `[DefaultMemberPermissions]`.** That attribute is a Discord permission *bit*, which
 cannot express "ManageGuild holders, plus this one specific person" — it has no notion
