@@ -1,6 +1,6 @@
 namespace ProjectSYNCS.Helpers;
 
-public enum ItemKind { Food, Collectible }
+public enum ItemKind { Food, Collectible, Cosmetic }
 
 public enum ItemRarity { Common, Uncommon, Rare, Legendary }
 
@@ -19,7 +19,7 @@ public sealed record ItemInfo(
 public sealed record CollectionSet(string Key, string Emoji, string Name, long Reward);
 
 /// <summary>
-/// Every item there is — foods and collectibles; cosmetics would be a third kind — and the
+/// Every item there is — foods, collectibles and cosmetics (CosmeticCatalog) — and the
 /// draws that find them. Pure: every draw takes the <see cref="Random"/> it should use and the
 /// instant it happens (seasons are read on the Paris calendar).
 /// </summary>
@@ -258,6 +258,10 @@ public static class ItemCatalog
         Add("champignons", "truffe_noire", "🍄", "Truffe noire", ItemRarity.Legendary, Season.Winter);
         Add("champignons", "oronge", "🍄", "Oronge", ItemRarity.Legendary);
         Add("champignons", "matsutake", "🍄", "Matsutaké", ItemRarity.Legendary);
+        // Cosmetics are items too, so gifts, trades and the inventory see them; their slot data
+        // lives in CosmeticCatalog. No set: they are not part of the collection book.
+        foreach (var c in CosmeticCatalog.All)
+            items.Add(new ItemInfo(c.Key, ItemKind.Cosmetic, c.Emoji, CosmeticCatalog.Label(c), null, c.Rarity, c.Season, null));
         return items;
     }
 }
