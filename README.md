@@ -24,8 +24,8 @@ a wall of shame. The bot's user-facing language is French.
 | `/goodbot` | Who praised or scolded the bot | everyone |
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
 | `/shame` | The wall of shame | everyone |
-| `/plynling adopt · view · list · journal · relations · feed · pet · play · visit · forage · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling | everyone |
-| `/inventory view · collection · shop · give · trade · sell` | Your items: pantry, collection, swaps | everyone |
+| `/plynling adopt · view · list · journal · relations · play · visit · forage · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card) | everyone |
+| `/inventory view · collection · shop · cosmetics · craft · give · trade · sell` | Your items: pantry, collection, cosmetics, swaps | everyone |
 | `/work · /balance` | Earn cailloux; see your balance | everyone |
 | `/shame user:@someone` | Put someone on it | staff |
 | `/config` | Per-server settings, no redeploy | staff |
@@ -274,6 +274,14 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
 - **Swapping:** `/inventory give` hands items to someone, `/inventory trade` posts an offer the
   other person can accept for an hour (both sides are checked again at the moment of the
   swap), and `/inventory sell` turns items into cailloux (2, 5, 15 or 50 by rarity).
+- **Cosmetics:** 60 things a Plynling can wear, one per slot — a **thème** that recolours its
+  card and adds a banner, a **titre** under its name (in its gender), an **accessoire**
+  (« porte 🧣 une écharpe ») and a **cadre** for its grave. `/inventory cosmetics` is the shop:
+  a few basics always on sale, two items per slot that change every Monday, and seasonal ones
+  (300 to 5 000 cailloux). `/inventory craft` makes eight special ones from collectibles.
+  `/plynling wardrobe` dresses your Plynling. Cosmetics belong to you, not the Plynling: they
+  stay yours when it dies (its grave keeps what it wore) and dress the next one; they can be
+  given and traded, but not sold.
 - **Cailloux** come from `/work` (every 4 hours) and, as a small bonus, from chatting,
   reacting and voice (45 a day at most). `/balance` is private.
 

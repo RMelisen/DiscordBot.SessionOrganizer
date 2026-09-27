@@ -92,7 +92,7 @@ person's belongings (which outlive the creature), `/admin` every moderation *act
 `/config` the settings, `/debug` the owner's own tools — grouped so everyone else sees one
 entry in the picker instead of three, since no Discord permission can hide a command from
 all but one user. Discord allows **25 subcommands per top-level command**; `/plynling` holds
-13. A new batch of commands goes into the group that owns the thing, or into a new group —
+14 and `/inventory` 8. A new batch of commands goes into the group that owns the thing, or into a new group —
 never onto a top-level command that is near the cap, since the 26th throws at registration
 on startup. Renaming a command changes what people type, so moves are done once, in a batch. Component handlers for the published cards live apart
 from the commands, in `Interactions/Components/` (`EventComponentHandler`,
@@ -1351,6 +1351,29 @@ drops them and their buttons then say so. One open offer per proposer — a new 
 old. `Take` removes atomically, so two clicks on « Accepter » cannot both swap, and the swap
 re-checks both sides inside one save. When the *recipient* lacks the items the offer is
 restored, since they may still get them; when the *proposer* does, it is withdrawn.
+
+**Cosmetics are items, and what a Plynling wears is four keys on it.** `CosmeticCatalog` holds
+the 60 (`cos.<slot>.<name>`, stored, append-only) with their slot data — a thème's accent and
+banner, a titre's two genders, an accessoire's article, a cadre's two sides — and each is also an
+`ItemInfo` of `ItemKind.Cosmetic`, so give, trade, autocomplete and the inventory handle them
+unchanged; they belong to no set, so the book never counts them. `Plynling.ThemeKey`,
+`TitleKey`, `AccessoryKey` and `GraveKey` are what it wears, read and written only through
+`CosmeticSlots`. Wearing uses nothing up; a dead row keeps its keys, which is how its grave shows
+its cadre. **Losing the last one takes it off**: `InventoryService.TakeAsync` clears the key from
+the owner's *living* Plynling in the same unit of work, so a card never shows something its owner
+no longer has. Cosmetics **cannot be sold** (`GiveOutcome.NotSellable`) — a buy-back price would
+invite loops.
+
+**The cosmetics shop is a function of the week, not state.** `CosmeticCatalog.Shop(now)` is the
+basics, then `RotatingPerSlot` (2) per slot drawn with `new Random(week * 10 + slot)` — seeded, so
+identical for everyone and across restarts — then the season's items. The week is the Paris ISO
+week (`WeekKey`, `yyyyww`), turning at Monday 00:00 Paris. The buy select carries the week it
+was drawn from (`cos:buy:{week}`), and `BuyAsync` refuses a pick from any other week, so a shop
+message left open over the weekend cannot buy what has rotated out. The three screens are
+`CosmeticCards` (static, measurable) and are ephemeral: `CosmeticComponentHandler` redraws them in
+place with a one-line notice. The wardrobe has one select per slot, `cos:wear:{slot}`, each led
+by « Aucun ». The card's thème costs one component (its banner); the titre and accessoire ride in
+the heading's text.
 
 **`/plynling graveyard` is Components V2 with two button rows and two verbs** — `grave:sort:` for the
 newest/longest-life toggle and `grave:page:` for paging. The budget is 24 of 40 (container,

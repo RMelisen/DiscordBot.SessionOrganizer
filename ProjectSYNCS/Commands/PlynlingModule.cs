@@ -428,6 +428,13 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/inventory view`** — Ton garde-manger et tes objets. **`/inventory shop food: quantity:`** remplit " +
                 "le garde-manger (−10 % dès 5).\n" +
                 "**`/inventory give`** · **`/inventory trade`** · **`/inventory sell`** — Offrir, échanger (l'offre dure 1 h) ou vendre.")
+            .AddField("Cosmétiques",
+                "**`/plynling wardrobe`** — Habille ton Plynling : un thème pour sa carte, un titre, un accessoire, " +
+                "et un cadre pour sa tombe.\n" +
+                "**`/inventory cosmetics`** — La boutique : des basiques toujours là, une sélection qui change chaque lundi, " +
+                "et des articles de saison.\n" +
+                "**`/inventory craft`** — Fabrique des cosmétiques rares avec tes objets de collection.\n" +
+                "Tes cosmétiques restent à toi et servent à tous tes Plynlings. On peut les offrir ou les échanger, pas les vendre.")
             .AddField("Partir en vacances",
                 "**`/plynling freeze`** — Gèle ton Plynling (14 jours au plus) : plus rien ne bouge. " +
                 "Seulement s'il a encore au moins 50 % de faim.\n" +
