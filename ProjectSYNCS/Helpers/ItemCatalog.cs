@@ -49,6 +49,7 @@ public static class ItemCatalog
         new CollectionSet("nature", "🍂", "Nature", 150),
         new CollectionSet("tresors", "💎", "Trésors", 200),
         new CollectionSet("saisons", "❄️", "Saisons", 300),
+        new CollectionSet("insectes", "🐞", "Insectes", 250),
         new CollectionSet(MushroomSet, "🍄", "Champignons", 1000),
     };
 
@@ -224,6 +225,16 @@ public static class ItemCatalog
         Add("saisons", "citrouille", "🎃", "Citrouille", ItemRarity.Rare, Season.Autumn);
         Add("saisons", "flocon", "❄️", "Flocon", ItemRarity.Common, Season.Winter);
         Add("saisons", "cristal_givre", "💎", "Cristal de givre", ItemRarity.Rare, Season.Winter);
+
+        // Insectes — Unicode emoji, found all year like Cailloux and Nature.
+        Add("insectes", "fourmi", "🐜", "Fourmi", ItemRarity.Common);
+        Add("insectes", "mouche", "🪰", "Mouche", ItemRarity.Common);
+        Add("insectes", "moustique", "🦟", "Moustique", ItemRarity.Common);
+        Add("insectes", "chenille", "🐛", "Chenille", ItemRarity.Uncommon);
+        Add("insectes", "coccinelle", "🐞", "Coccinelle", ItemRarity.Uncommon);
+        Add("insectes", "grillon", "🦗", "Grillon", ItemRarity.Rare);
+        Add("insectes", "abeille", "🐝", "Abeille", ItemRarity.Rare);
+        Add("insectes", "morpho_bleu", "🦋", "Morpho bleu", ItemRarity.Legendary);
 
         // Champignons — 30, pictured by the bot's own emojis once ApplicationEmojiService has
         // uploaded Assets/Mushrooms/<key>.png (🍄 until then). Names deliberately differ from the
