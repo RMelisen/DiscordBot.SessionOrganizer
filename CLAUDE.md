@@ -1302,7 +1302,7 @@ the same row twice.
 **The Champignons set is the one big set, and its pictures are the bot's own emojis.** 30
 items against the others' 8, found mostly by foraging: `DrawForage` picks from it 60 % of the
 time and every other source 10 % (`ForageMushroomShare` / `MushroomShareElsewhere`), or its 30
-would crowd out the other 32 in every find. Past 10 items a set is laid out one embed field per
+would crowd out the other 40 (five sets of 8, Insectes the latest) in every find. Past 10 items a set is laid out one embed field per
 rarity (`ItemCatalog.Sections`), since 30 lines of emoji markup overflow a field's 1024. The
 pictures are **application emojis** — owned by the bot's application, not by a server, so
 unlike the reaction emotes above they work in any server it is in — and **the bot uploads them
@@ -1329,7 +1329,7 @@ trades, sales — print `ItemCatalog.ClearName`, which suffixes « (nourriture) 
 to a shared name only.
 
 **`/inventory collection` is a book, not one embed.** An overview page, then one page per set
-picked from a **select menu** — not buttons, because the overview plus five sets is already six
+picked from a **select menu** — not buttons, because the overview plus six sets is already seven
 and a row holds five — with a Tout / Trouvés / Manquants filter row on set pages. State lives in
 the custom-ids under two verbs, `col:set:{user}:{filter}` (the menu) and
 `col:fil:{user}:{set}:{filter}` (the buttons), handled by `InventoryComponentHandler`; every

@@ -259,9 +259,9 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
 - **Items and collections:** every member has an inventory, kept whatever happens to their
   Plynling. `/plynling forage` sends it out once every 4 hours to bring back a collectible —
   or, one time in five, a food for the pantry. Items also turn up in half of the happy gifts,
-  in one won game in five and, for each owner, in 15 % of the good visits. The 62
-  collectibles form four sets of eight (Cailloux, Nature, Trésors, Saisons — the last found
-  only in its season) and one big set of 30 **Champignons**, pictured in pixel art and found
+  in one won game in five and, for each owner, in 15 % of the good visits. The 70
+  collectibles form five sets of eight (Cailloux, Nature, Trésors, Saisons — found only in its
+  season — and Insectes) and one big set of 30 **Champignons**, pictured in pixel art and found
   mostly by foraging (morille in spring, truffe noire in winter). Within each set the rarer
   items are the harder finds; `/inventory collection [user]` opens the book — an overview of
   every set's progress, then a page per set picked from a menu, filtered to everything, what

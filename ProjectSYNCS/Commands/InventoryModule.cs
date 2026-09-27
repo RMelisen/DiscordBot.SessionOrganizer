@@ -178,7 +178,7 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
     //
     // An overview page (every set's progress) and one page per set, picked from a menu — a menu
     // rather than a row of buttons because Discord allows 5 buttons a row, and the overview plus
-    // five sets is already six. A set's page carries a Tout / Trouvés / Manquants filter. The
+    // six sets is already seven. A set's page carries a Tout / Trouvés / Manquants filter. The
     // state lives in the custom-ids (nothing secret: it is someone's public book), and every click
     // re-reads the inventory, so the page is never stale. Two verbs for the two controls —
     // `col:set:` and `col:fil:` — so their ids can never collide.
