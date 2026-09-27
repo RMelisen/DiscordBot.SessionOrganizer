@@ -59,6 +59,16 @@ public class PebbleService
             wallet.PassiveDay == AppTime.TodayKey ? wallet.PassiveToday : 0);
     }
 
+    // /admin pebble: a staff correction, clamped at 0 so « remove » never leaves a debt. One save.
+    public async Task<(long Old, long New)> AdjustAsync(ulong guildId, ulong userId, long delta)
+    {
+        var wallet = await GetOrCreateWalletAsync(_db_context, guildId, userId);
+        var old = wallet.Balance;
+        wallet.Balance = Math.Max(0, old + delta);
+        await _db_context.SaveChangesAsync();
+        return (old, wallet.Balance);
+    }
+
     // Static and context-taking so PlynlingService can load the wallet in *its own*
     // context — paying and feeding must save together, and AppDbContext is transient.
     public static async Task<PebbleWallet> GetOrCreateWalletAsync(AppDbContext db, ulong guildId, ulong userId)

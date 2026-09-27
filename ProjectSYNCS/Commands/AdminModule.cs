@@ -94,6 +94,58 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
         }
     }
 
+    // Correcting someone's cailloux: a refund, a bug, an event prize. Same shape as /admin xp —
+    // ephemeral, bots refused, a cap that catches a slipped digit — and, like it, the person is
+    // not notified.
+    [Group("pebble", "Ajuster les cailloux de quelqu'un")]
+    public class PebbleAdminModule : InteractionModuleBase<SocketInteractionContext>
+    {
+        private const int MaxAdjustment = 1_000_000;
+
+        private const string Denied =
+            "Cette commande est réservée aux administrateurs et aux modérateurs. Bien tenté (˶ᵔ ᵕ ᵔ˶)";
+
+        private readonly PebbleService _pebbles;
+
+        public PebbleAdminModule(PebbleService pebbles)
+        {
+            _pebbles = pebbles;
+        }
+
+        [SlashCommand("add", "Ajouter des cailloux à quelqu'un")]
+        public Task AddAsync(
+            [Summary("member", "À qui donner des cailloux")] IUser user,
+            [Summary("amount", "Combien de cailloux ajouter")]
+            [MinValue(1)] [MaxValue(MaxAdjustment)] int amount) => AdjustAsync(user, amount);
+
+        [SlashCommand("remove", "Retirer des cailloux à quelqu'un (jamais en dessous de 0)")]
+        public Task RemoveAsync(
+            [Summary("member", "À qui retirer des cailloux")] IUser user,
+            [Summary("amount", "Combien de cailloux retirer")]
+            [MinValue(1)] [MaxValue(MaxAdjustment)] int amount) => AdjustAsync(user, -amount);
+
+        private async Task AdjustAsync(IUser target, long delta)
+        {
+            if (!SessionPermissions.IsStaff(Context.User))
+            {
+                await RespondAsync(Denied, ephemeral: true);
+                return;
+            }
+            if (target.IsBot)
+            {
+                await RespondAsync("Les bots n'ont pas de portefeuille.", ephemeral: true);
+                return;
+            }
+
+            var (old, now) = await _pebbles.AdjustAsync(Context.Guild.Id, target.Id, delta);
+            var moved = Math.Abs(now - old);
+            var text = delta >= 0
+                ? $"{PebbleEconomy.Cailloux(moved)} ajoutés à {target.Mention}."
+                : $"{PebbleEconomy.Cailloux(moved)} retirés à {target.Mention}" + (moved < -delta ? " (le solde ne descend pas sous 0)." : ".");
+            await RespondAsync($"{text} Solde : **{PebbleEconomy.Cailloux(now)}**.", ephemeral: true, allowedMentions: AllowedMentions.None);
+        }
+    }
+
     [Group("plynling", "Gérer le Plynling de quelqu'un")]
     public class PlynlingAdminModule : InteractionModuleBase<SocketInteractionContext>
     {
