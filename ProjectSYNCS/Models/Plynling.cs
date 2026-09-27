@@ -80,4 +80,13 @@ public class Plynling
     // Set by the sweep once the death has been announced (or attempted), so it is never
     // announced twice. A death found lazily by a command is announced by the next sweep.
     public bool DeathAnnounced { get; set; }
+
+    // What it wears — CosmeticCatalog keys, one per slot, null for none. The cosmetics belong to
+    // the owner's inventory; wearing uses nothing up. Kept on a dead row, which is how its grave
+    // shows its frame; InventoryService takes one off a *living* Plynling when its owner no
+    // longer holds any.
+    public string? ThemeKey { get; set; }
+    public string? TitleKey { get; set; }
+    public string? AccessoryKey { get; set; }
+    public string? GraveKey { get; set; }
 }

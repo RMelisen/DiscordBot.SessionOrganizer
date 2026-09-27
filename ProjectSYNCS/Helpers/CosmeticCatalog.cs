@@ -19,6 +19,33 @@ public sealed record CosmeticInfo(
     string Emoji, string Name, string? NameF, uint? Accent, string? Banner, string? GraveLeft, string? GraveRight,
     long Price, IReadOnlyList<(string ItemKey, int Count)> Recipe);
 
+// Reads and writes the slot columns on Plynling by slot, so nothing switches on the four
+// property names but here.
+public static class CosmeticSlots
+{
+    public static string? Get(Plynling p, CosmeticSlot slot) => slot switch
+    {
+        CosmeticSlot.Theme => p.ThemeKey,
+        CosmeticSlot.Title => p.TitleKey,
+        CosmeticSlot.Accessory => p.AccessoryKey,
+        _ => p.GraveKey,
+    };
+
+    public static void Set(Plynling p, CosmeticSlot slot, string? key)
+    {
+        switch (slot)
+        {
+            case CosmeticSlot.Theme: p.ThemeKey = key; break;
+            case CosmeticSlot.Title: p.TitleKey = key; break;
+            case CosmeticSlot.Accessory: p.AccessoryKey = key; break;
+            default: p.GraveKey = key; break;
+        }
+    }
+
+    // What it wears, slot by slot, as catalog entries (an unknown key reads as nothing).
+    public static CosmeticInfo? Worn(Plynling p, CosmeticSlot slot) => CosmeticCatalog.ByKey(Get(p, slot));
+}
+
 /// <summary>
 /// Every cosmetic, and the weekly shop. Keys are stored on inventory rows and on the Plynlings
 /// wearing them, so they are append-only like every item key. Pure: the shop is a function of

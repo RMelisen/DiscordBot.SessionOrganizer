@@ -126,6 +126,7 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
         {
             InventoryService.GiveOutcome.Given => PlynlingText.Sold(quantity, ItemCatalog.ByKey(item)!, earned, balance),
             InventoryService.GiveOutcome.UnknownItem => PlynlingText.UnknownItem,
+            InventoryService.GiveOutcome.NotSellable => PlynlingText.NotSellable,
             _ => PlynlingText.NotEnoughItems,
         }, ephemeral: true);
     }

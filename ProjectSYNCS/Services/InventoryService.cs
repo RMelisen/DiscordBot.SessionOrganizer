@@ -31,12 +31,23 @@ public class InventoryService
     public static async Task<int> CountAsync(AppDbContext db, ulong guildId, ulong userId, string key) =>
         (await FindAsync(db, guildId, userId, key))?.Quantity ?? 0;
 
-    /// <summary>Takes <paramref name="count"/> of an item, or nothing at all when there are not enough.</summary>
+    /// <summary>
+    /// Takes <paramref name="count"/> of an item, or nothing at all when there are not enough. A
+    /// cosmetic that falls to 0 is taken off the person's living Plynling in the same unit of
+    /// work, so a card never shows something its owner no longer has; a grave keeps its own.
+    /// </summary>
     public static async Task<bool> TakeAsync(AppDbContext db, ulong guildId, ulong userId, string key, int count)
     {
         var row = await FindAsync(db, guildId, userId, key);
         if (row is null || row.Quantity < count) return false;
         row.Quantity -= count;                            // the row stays at 0: still discovered
+        if (row.Quantity == 0 && CosmeticCatalog.ByKey(key) is { } cosmetic)
+        {
+            var wearer = db.Plynlings.Local.FirstOrDefault(p => p.GuildId == guildId && p.OwnerId == userId && p.DiedAt == null)
+                         ?? await db.Plynlings.FirstOrDefaultAsync(p => p.GuildId == guildId && p.OwnerId == userId && p.DiedAt == null);
+            if (wearer is not null && CosmeticSlots.Get(wearer, cosmetic.Slot) == key)
+                CosmeticSlots.Set(wearer, cosmetic.Slot, null);
+        }
         return true;
     }
 
@@ -80,7 +91,7 @@ public class InventoryService
     public static async Task<ItemFind> GrantAsync(AppDbContext db, ulong guildId, ulong userId, ItemInfo item, DateTimeOffset now) =>
         new(item, await AddAsync(db, guildId, userId, item.Key, 1, now));
 
-    public enum GiveOutcome { Given, NotEnough, UnknownItem }
+    public enum GiveOutcome { Given, NotEnough, UnknownItem, NotSellable }
 
     /// <summary>/inventory shop: the money and the food land together, or neither.</summary>
     public async Task<(bool Bought, long Price, long Balance)> BuyAsync(ulong guildId, ulong userId, PlynlingFood food, int quantity, DateTimeOffset now)
@@ -128,6 +139,8 @@ public class InventoryService
     public async Task<(GiveOutcome Outcome, long Earned, long Balance)> SellAsync(ulong guildId, ulong userId, string key, int quantity)
     {
         if (ItemCatalog.ByKey(key) is not { } item) return (GiveOutcome.UnknownItem, 0, 0);
+        // Cosmetics are given and traded, never sold: a buy-back price would invite loops.
+        if (item.Kind == ItemKind.Cosmetic) return (GiveOutcome.NotSellable, 0, 0);
         if (!await TakeAsync(_db_context, guildId, userId, key, quantity)) return (GiveOutcome.NotEnough, 0, 0);
         var earned = ItemCatalog.SellPrice(item.Rarity) * quantity;
         var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, guildId, userId);

@@ -70,6 +70,7 @@ public static class PlynlingText
     public const string GiveBot = "Les bots n'ont pas d'inventaire.";
     public const string NotEnoughItems = "Tu n'en as pas assez.";
     public const string UnknownItem = "Cet objet n'existe pas. Choisis-le dans la liste.";
+    public const string NotSellable = "Les cosmétiques ne se vendent pas, mais tu peux les offrir ou les échanger.";
 
     public static string Bought(int quantity, string food, long price, long balance, bool discounted) =>
         $"🛒 Tu as acheté **{quantity} × {food}** pour {PebbleEconomy.Cailloux(price)}" +
