@@ -14,7 +14,7 @@ namespace ProjectSYNCS.Helpers;
 // do not move and stay PNG.
 public static class PlynlingArt
 {
-    public const int Version = 3;
+    public const int Version = 4;
 
     public const string BaseUrl =
         "https://raw.githubusercontent.com/RMelisen/DiscordBot.SessionOrganizer/main/assets/plynlings/";

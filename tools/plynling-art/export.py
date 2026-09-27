@@ -18,7 +18,7 @@ from memorials import memorial
 from motion import FRAMES, FRAME_MS
 from sprites import build
 
-ART_VERSION = 3
+ART_VERSION = 4
 SIZE = 256
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, "..", "..", "assets", "plynlings"))

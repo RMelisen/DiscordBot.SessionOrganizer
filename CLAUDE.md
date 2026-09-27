@@ -1414,7 +1414,7 @@ Doré's pictures without a word. Every line is written family-neutral — never 
 petals or spores in a Plynling line — which is why the three "chapeau" lines were rewritten.
 
 **A living Plynling is an animated WebP; memorials and foods are PNG.** `PlynlingArt.Sprite`
-ends in `.webp` and the other two in `.png` — they share `Version` (3) but not the extension, so
+ends in `.webp` and the other two in `.png` — they share `Version` (4) but not the extension, so
 don't "tidy" them into one. Components V2 thumbnails play animated WebP; a client that cannot
 shows frame 0, which `tools/plynling-art` keeps pixel-identical to the v2 still. The idle loop
 lives in `motion.py`, and **nothing in it moves side to side** — the owner rejected every

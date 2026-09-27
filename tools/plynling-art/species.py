@@ -99,7 +99,7 @@ def cepe(state, frame=0, shadow=True, stage="adult"):
 # stubby body with no feet, the face set lower. It goes through finish() like the reshaped
 # species (clipped face, measured sweat and frost), since the original's fixed extras were
 # placed for the adult's silhouette. The other life stages wear the adult sprite.
-BABY_TOP, BABY_BOTTOM, BABY_SPAN, BABY_ARMS = 20, 28, (11, 20), (24, 25)
+BABY_TOP, BABY_BOTTOM, BABY_SPAN, BABY_ARMS = 20, 28, (11, 20), (24, 25)          # every baby's arms sit at BABY_ARMS
 BABY_CAP, BABY_CUT = (18.5, 11.6, 11.0), 18                        # cap: centre row, x and y radii
 
 
@@ -159,6 +159,20 @@ def shade_row(g, S, y, a, b, region, extra=0):
         g.put(x, y, S[min(4, i + extra)], region)
 
 
+ADULT_ARMS = (21, 22)                    # the rows of the Cèpe's arms, halfway down the body
+
+
+def arms(g, S, rows=ADULT_ARMS):
+    """The Cèpe's two little arms, given to every species: one pixel out from the body on each side,
+    lit on the left, shaded on the right. Their own region, so the face (the blush) never paints
+    over them, and the sweat drops still measure from the body itself."""
+    for y in rows:
+        xs = [x for x in range(N) if g.r[y][x] == "stem"]
+        if xs:
+            g.put(min(xs) - 1, y, S[2], "arm")
+            g.put(max(xs) + 1, y, S[3], "arm")
+
+
 def feet(g, S, xs=(12, 13, 18, 19), y=28):
     for x in xs:
         g.put(x, y, S[3], "stem")
@@ -195,6 +209,7 @@ def outline(g, cap, extra=None):
     out = {"cap": cap[4], "ring": STEM_OUT}
     if extra:
         out.update(extra)
+    out.setdefault("arm", out.get("stem", STEM_OUT))
     g.outline(lambda reg, ny: INK if ny >= 29 else out.get(reg, STEM_OUT))
 
 
@@ -248,7 +263,7 @@ def face_on(g, state, S, ox=0, oy=0, **kw):
     """The shared face, moved onto this body and clipped to it — never onto its outline."""
     class Clip:
         def put(self, x, y, c, region=None):
-            if 0 <= x < N and 0 <= y < N and g.r[y][x] is not None:
+            if 0 <= x < N and 0 <= y < N and g.r[y][x] not in (None, "arm"):
                 g.put(x, y, c, region)
     face(Clip(), state, 0, ox=ox, oy=oy, skin=S, **kw)
 
@@ -377,6 +392,7 @@ def amanite(state, frame=0, shadow=True, stage="adult"):
             for x in range(N):
                 if (x - sx) ** 2 + (y - sy - sag) ** 2 <= r * r and g.r[y][x] == "cap" and y < 9 + sag:
                     g.put(x, y, p["spot"][0] if (x - sx) + (y - sy - sag) <= r * 0.55 else p["spot"][1])
+    arms(g, S)
     outline(g, cap)
     return finish(g, p, state, S, shadow=shadow, pose=pose)
 
@@ -413,6 +429,7 @@ def amanite_baby(state, frame, shadow):
             for x in range(N):
                 if (x - sx) ** 2 + (y - sy) ** 2 <= r * r and g.r[y][x] == "cap" and y < 16 + sag:
                     g.put(x, y, p["spot"][0] if (x - sx) + (y - sy) <= r * 0.55 else p["spot"][1])
+    arms(g, S, BABY_ARMS)
     outline(g, cap)
     return finish(g, p, state, S, face_oy=BABY_FACE_OY, shadow=shadow, pose=pose)
 
@@ -442,6 +459,7 @@ def rose(state, frame=0, shadow=True, stage="adult"):
             if y >= 14 + sag and abs(x + 0.5 - cx) < 7:
                 continue                                              # the opening under the curled rim
             g.put(x, y, shade_cap(x, y, cap, cx, cy, rx, ry, 10, 5 + sag, 8, 4.4, 14 + sag), "cap")
+    arms(g, S)
     outline(g, cap)
     return finish(g, p, state, S, face_oy=1, shadow=shadow, pose=pose)
 
@@ -465,6 +483,7 @@ def rose_baby(state, frame, shadow):
             if y >= 18 + sag and abs(x + 0.5 - cx) < 6:
                 continue                                              # the opening under the curled rim
             g.put(x, y, shade_cap(x, y, cap, cx, cy, rx, ry, 11, 10 + sag, 6.5, 3.8, 18 + sag), "cap")
+    arms(g, S, BABY_ARMS)
     outline(g, cap)
     return finish(g, p, state, S, face_oy=BABY_FACE_OY, shadow=shadow, pose=pose)
 
@@ -508,6 +527,7 @@ def russule(state, frame=0, shadow=True, stage="adult"):
             if abs(nx) < 0.3 and y + 0.5 - top < 1.2:
                 c = cap[3]                                            # the dip, in shadow
             g.put(x, y, c, "cap")
+    arms(g, S)
     outline(g, cap)
     return finish(g, p, state, S, shadow=shadow, pose=pose)
 
@@ -539,6 +559,7 @@ def russule_baby(state, frame, shadow):
             if abs(nx) < 0.3 and y + 0.5 - top < 1.2:
                 c = cap[3]                                            # the dip, in shadow
             g.put(x, y, c, "cap")
+    arms(g, S, BABY_ARMS)
     outline(g, cap)
     return finish(g, p, state, S, face_oy=BABY_FACE_OY, shadow=shadow, pose=pose)
 
@@ -587,6 +608,7 @@ def mystique(state, frame=0, shadow=True, stage="adult"):
     for x in range(N):                                                 # the glowing rim
         if g.r[int(rim)][x] == "cap":
             g.put(x, int(rim), glow[0] if (x % 3 or pose.glow) else glow[1])
+    arms(g, S, (20, 21))                                               # a row higher: on the tall spindle, mid-body reads as fins
     outline(g, cap)
     im = finish(g, p, state, S, shadow=shadow, pose=pose)
     if state not in ("frozen", "starving"):                            # a soft halo under the rim
@@ -632,6 +654,7 @@ def mystique_baby(state, frame, shadow):
     for x in range(N):
         if g.r[int(rim)][x] == "cap":
             g.put(x, int(rim), glow[0] if (x % 3 or pose.glow) else glow[1])
+    arms(g, S, (23, 24))                                               # likewise one row higher
     outline(g, cap)
     im = finish(g, p, state, S, face_oy=BABY_FACE_OY, shadow=shadow, pose=pose)
     if state not in ("frozen", "starving"):                            # a soft halo under the rim
@@ -702,6 +725,7 @@ def dore(state, frame=0, shadow=True, stage="adult"):
                 dark = cap[3] if k < 0 else cap[4]
                 g.put(x, y, lerp(dark, g.c[y][x], max(0.0, f - 0.55) * 1.6))
     feet(g, S)
+    arms(g, S)
     outline(g, cap, {"stem": lerp(STEM_OUT, cap[4], 0.6)})
     return finish(g, p, state, S, shadow=shadow, pose=pose)
 
@@ -758,6 +782,7 @@ def dore_baby(state, frame, shadow):
             if g.c[y][x] is not None and y - rim_top(x) > 2.2:
                 dark = cap[2] if k < 0 else cap[3]
                 g.put(x, y, lerp(dark, g.c[y][x], max(0.0, f - 0.45) * 1.8))
+    arms(g, S, BABY_ARMS)
     outline(g, cap, {"stem": lerp(STEM_OUT, cap[4], 0.6)})
     return finish(g, p, state, S, face_oy=BABY_FACE_OY, shadow=shadow, pose=pose)
 
@@ -904,6 +929,7 @@ def coprin(state, frame=0, shadow=True, stage="adult"):
     apex, rim = 2 + sag, 16 + sag
     coprin_cap(g, p, apex, rim, 6.8)
     ink_rim(g, p, rim, COPRIN_INK[state], COPRIN_DRIPS[COPRIN_INK[state]])
+    arms(g, STEM)
     outline(g, p["cap"])
     im = finish(g, p, state, STEM, face_oy=1, shadow=shadow, pose=pose)
     ink_drop(im, pose, rim, 9)
@@ -922,6 +948,7 @@ def coprin_baby(state, frame, shadow):
     coprin_cap(g, p, apex, rim, 6.2, egg=True)
     level = COPRIN_BABY_INK[state]
     ink_rim(g, p, rim, level, COPRIN_BABY_DRIPS[level])
+    arms(g, STEM, BABY_ARMS)
     outline(g, p["cap"])
     return finish(g, p, state, STEM, face_oy=BABY_FACE_OY, shadow=shadow, pose=pose)
 
