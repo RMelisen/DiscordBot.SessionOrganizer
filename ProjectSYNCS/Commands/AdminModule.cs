@@ -23,6 +23,27 @@ namespace ProjectSYNCS.Commands;
 [Group("admin", "Outils de modération (admins/modérateurs)")]
 public class AdminModule : InteractionModuleBase<SocketInteractionContext>
 {
+    private readonly AdminStatsService _stats;
+
+    public AdminModule(AdminStatsService stats)
+    {
+        _stats = stats;
+    }
+
+    // The economy at a glance, to tune prices and rewards — private, staff only.
+    [SlashCommand("stats", "Les statistiques de l'économie du serveur (cailloux, Plynlings, collections)")]
+    public async Task StatsAsync()
+    {
+        if (!SessionPermissions.IsStaff(Context.User))
+        {
+            await RespondAsync("Cette commande est réservée aux administrateurs et aux modérateurs. Bien tenté (˶ᵔ ᵕ ᵔ˶)", ephemeral: true);
+            return;
+        }
+        await DeferAsync(ephemeral: true);
+        var stats = await _stats.GetAsync(Context.Guild.Id, DateTimeOffset.UtcNow);
+        await FollowupAsync(embed: AdminCards.BuildStats(stats), ephemeral: true, allowedMentions: AllowedMentions.None);
+    }
+
     // Manual XP adjustment. Kept apart from LevelModule, which owns the player-facing surfaces
     // (/level, /leaderboard) and is entirely Components V2 — these are two plain ephemeral
     // replies and share nothing with it but XpService.
