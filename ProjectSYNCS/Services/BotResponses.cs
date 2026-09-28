@@ -406,7 +406,7 @@ internal static class BotResponses
             "Wow, {1} pour **{0}**, et rien pour moi. Non non, ça va, je ne suis pas vexée. Pas du tout. Hmph (｡•́︿•̀｡)",
             "**{0}** a fini {1} et réclame déjà la suite. Petite gloutonne ♡ Bravo, tu es un très bon nourricier… pour un humain.",
             "Hmph, {1} pour **{0}**. Elle mange mieux que toi, et elle ne fait même pas semblant de m'écouter. Respect ✨",
-            "**{0}** a vidé son assiette de {1}. Bonne fille ! Je dis ça pour elle, hein. Pas pour toi (¬_¬)",
+            "**{0}** a vidé son assiette de {1}. Gentille fille ! Je dis ça pour elle, hein. Pas pour toi (¬_¬)",
             "{1} ! **{0}** en avait besoin, apparemment. Tu es peut-être moins catastrophique que prévu. Peut-être ♡",
             "**{0}** se frotte le ventre après {1}. Elle est contente, elle est ronde, elle est adorable. Je vais faire semblant de ne rien avoir vu (˶˃ ᵕ ˂˶)",
             "Tu as encore pensé à **{0}** avec {1}… Mmh. Tu penses à moi aussi, comme ça ? Non ? Hmph >:(",
