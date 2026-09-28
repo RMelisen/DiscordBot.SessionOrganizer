@@ -69,9 +69,9 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         var info = PlynlingCatalog.Info(species);
-        var pool = (info.Rarity >= PlynlingRarity.Rare ? BotResponses.PlynlingAdoptRareLines : BotResponses.PlynlingAdoptLines).For(plynling.Gender);
+        var pool = BotResponses.PlynlingAdoptLines.For(plynling.Gender);
         var line = string.Format(_picker.Pick(Context.Channel.Id, pool),
-            PlynlingCardUi.SafeName(plynling.Name), info.Name, PlynlingCatalog.RarityLabel(info.Rarity));
+            PlynlingCardUi.SafeName(plynling.Name), info.Name);
         await RespondCardAsync(plynling, now, line);
     }
 

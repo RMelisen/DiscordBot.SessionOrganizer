@@ -73,32 +73,32 @@ public static class PlynlingText
     public const string NotSellable = "Les cosmétiques ne se vendent pas, mais tu peux les offrir ou les échanger.";
 
     public static string Bought(int quantity, string food, long price, long balance, bool discounted) =>
-        $"🛒 Tu as acheté **{quantity} × {food}** pour {PebbleEconomy.Cailloux(price)}" +
+        $"Tu as acheté **{quantity} × {food}** pour {PebbleEconomy.Cailloux(price)}" +
         (discounted ? " (−10 %)" : "") + $". Il te reste {PebbleEconomy.Cailloux(balance)}.";
 
     public static string Gave(ulong fromId, ulong toId, int quantity, string emoji, string name) =>
-        $"🎁 <@{fromId}> offre **{quantity} × {emoji} {name}** à <@{toId}> !";
+        $"<@{fromId}> offre **{quantity} × {emoji} {name}** à <@{toId}> !";
 
     public static string Sold(int quantity, ItemInfo item, long earned, long balance) =>
-        $"💰 Tu as vendu **{quantity} × {item.Emoji} {ItemCatalog.ClearName(item)}** pour {PebbleEconomy.Cailloux(earned)}. Il te reste {PebbleEconomy.Cailloux(balance)}.";
+        $"Tu as vendu **{quantity} × {item.Emoji} {ItemCatalog.ClearName(item)}** pour {PebbleEconomy.Cailloux(earned)}. Il te reste {PebbleEconomy.Cailloux(balance)}.";
 
     // Trades. The two sides are « N × emoji nom ».
     public static string TradeSide(ItemInfo item, int quantity) => $"**{quantity} × {item.Emoji} {ItemCatalog.ClearName(item)}**";
 
     public static string TradeOffered(ulong fromId, ulong toId, string give, string want, DateTimeOffset expires) =>
-        $"🔁 <@{fromId}> propose un échange à <@{toId}> : {give} contre {want}.\n-# Expire <t:{expires.ToUnixTimeSeconds()}:R>.";
+        $"<@{fromId}> propose un échange à <@{toId}> : {give} contre {want}.\n-# Expire <t:{expires.ToUnixTimeSeconds()}:R>.";
 
     public static string TradeDone(ulong fromId, ulong toId, string give, string want) =>
-        $"🤝 Échange conclu ! <@{fromId}> a donné {give} à <@{toId}> contre {want}.";
+        $"Échange conclu ! <@{fromId}> a donné {give} à <@{toId}> contre {want}.";
 
     public static string TradeDeclined(ulong fromId, ulong toId, string give, string want) =>
-        $"❌ <@{toId}> a refusé l'échange de <@{fromId}> ({give} contre {want}).";
+        $"<@{toId}> a refusé l'échange de <@{fromId}> ({give} contre {want}).";
 
     public static string TradeCancelled(ulong fromId, string give, string want) =>
-        $"🚫 <@{fromId}> a retiré son offre ({give} contre {want}).";
+        $"<@{fromId}> a retiré son offre ({give} contre {want}).";
 
     public static string TradeFailed(ulong fromId, string give, string want) =>
-        $"⚠️ Échange impossible : <@{fromId}> n'a plus {give}. L'offre est retirée. (Il fallait {want} en retour.)";
+        $"Échange impossible : <@{fromId}> n'a plus {give}. L'offre est retirée. (Il fallait {want} en retour.)";
 
     public const string TradeSelf = "Tu ne peux pas échanger avec toi-même !";
     public const string TradeSameItem = "Échanger un objet contre le même, ça ne change rien !";
@@ -109,44 +109,44 @@ public static class PlynlingText
     public static string TradeTheyLack(ulong toId) => $"<@{toId}> n'en a pas assez pour cet échange.";
 
     public static string SetCompleted(ulong userId, CollectionSet set) =>
-        $"🏆 <@{userId}> a complété la collection **{set.Emoji} {set.Name}** ! +{PebbleEconomy.Cailloux(set.Reward)}";
+        $"<@{userId}> a complété la collection **{set.Emoji} {set.Name}** ! +{PebbleEconomy.Cailloux(set.Reward)}";
 
     // A visit's confession, the visitor declaring itself. Names are already sanitised.
-    public static string ConfessionAccepted(string a, string b) => $"💞 **{a}** a déclaré sa flamme à **{b}**… et c'est oui !";
-    public static string ConfessionRefused(string a, string b) => $"💔 **{a}** a déclaré sa flamme à **{b}**… mais c'est non.";
+    public static string ConfessionAccepted(string a, string b) => $"💞 **{a}** a déclaré sa flamme à **{b}**... et c'est oui !";
+    public static string ConfessionRefused(string a, string b) => $"💔 **{a}** a déclaré sa flamme à **{b}**... mais c'est non.";
     public static string BrokeUp(string a, string b) => $"💔 **{a}** et **{b}** se sont séparés.";
     public const string VisitSelf = "Ton Plynling ne peut pas se rendre visite à lui-même !";
     public const string NotYourInvite = "Cette invitation ne t'est pas adressée.";
-    public const string VisitorGone = "Le visiteur n'est plus là…";
+    public const string VisitorGone = "Le visiteur n'est plus là...";
     public const string VisitFrozen = "L'un des deux Plynlings est gelé : pas de visite pour l'instant.";
     public const string StoryGone = "Cette histoire n'est plus disponible.";
-    public const string InviteExpired = "🚪 Personne n'a ouvert : l'invitation a expiré.";
+    public const string InviteExpired = "Personne n'a ouvert : l'invitation a expiré.";
 
     public static string VisitedToday(ulong otherId) =>
         $"Vos Plynlings se sont déjà vus aujourd'hui, avec <@{otherId}>. Revenez demain !";
-    public const string NotYourGame = "Ce n'est pas ta partie — lance la tienne avec `/plynling play`.";
+    public const string NotYourGame = "Ce n'est pas ta partie. Lance la tienne avec `/plynling play`.";
     public const string GuessRange = "Un nombre entier entre 1 et 100, s'il te plaît.";
 
     // The name is already sanitised by the caller.
     public static string GiftFound(string name, long amount) =>
-        $"🪨 **{name}** a trouvé un joli caillou pour toi ! +{PebbleEconomy.Cailloux(amount)}";
+        $"**{name}** a trouvé un joli caillou pour toi ! +{PebbleEconomy.Cailloux(amount)}";
 
     // The item finds. Names are sanitised by the caller. A find is followed by any set it completed.
     public static string ItemLabel(ItemInfo item) =>
         item.Kind == ItemKind.Food ? $"{item.Emoji} **{item.Name}**" : $"{item.Emoji} **{item.Name}** ({ItemCatalog.RarityLabel(item.Rarity)})";
 
     public static string GiftItem(string name, ItemInfo item) =>
-        $"🎁 **{name}** a trouvé quelque chose pour toi : {ItemLabel(item)} !";
+        $"**{name}** a trouvé quelque chose pour toi : {ItemLabel(item)} !";
 
     public static string PlayFind(string name, ItemInfo item) =>
-        $"✨ En jouant, **{name}** a déniché {ItemLabel(item)} !";
+        $"En jouant, **{name}** a déniché {ItemLabel(item)} !";
 
     public static string VisitFind(string name, ulong ownerId, ItemInfo item) =>
-        $"✨ **{name}** rapporte {ItemLabel(item)} pour <@{ownerId}> !";
+        $"**{name}** rapporte {ItemLabel(item)} pour <@{ownerId}> !";
 
     public static string Foraged(string name, PlynlingGender g, ItemInfo item) => item.Kind == ItemKind.Food
-        ? $"🧺 **{name}** est {g.Agree("revenu", "revenue")} de sa balade avec de quoi manger : {ItemLabel(item)}, rangé dans ton garde-manger !"
-        : $"🧺 **{name}** est {g.Agree("revenu", "revenue")} de sa balade avec {ItemLabel(item)} !";
+        ? $"**{name}** est {g.Agree("revenu", "revenue")} de sa balade avec de quoi manger : {ItemLabel(item)}, rangé dans ton garde-manger !"
+        : $"**{name}** est {g.Agree("revenu", "revenue")} de sa balade avec {ItemLabel(item)} !";
 
     public static string ForageTooSoon(PlynlingGender g, DateTimeOffset ready) =>
         $"{g.Agree("Il", "Elle")} se remet de sa dernière balade. Prochaine sortie <t:{ready.ToUnixTimeSeconds()}:R>.";
@@ -166,7 +166,7 @@ public static class PlynlingText
 
     private static int Pct(double share) => (int)Math.Round(share * 100);
 
-    public static string Asleep(PlynlingGender g) => $"Chut… {g.Agree("il", "elle")} dort. Reviens après 5 h.";
+    public static string Asleep(PlynlingGender g) => $"Chut... {g.Agree("il", "elle")} dort. Reviens après 5 h.";
 
     public static string AlreadyFrozen(PlynlingGender g) => g.Agree("Il est déjà gelé.", "Elle est déjà gelée.");
 
@@ -189,7 +189,7 @@ public static class PlynlingText
         : $"❄️ **{name}** est {g.Agree("gelé", "gelée")} jusqu'à nouvel ordre du staff.";
 
     public static string ThawedNotice(PlynlingGender g, string name) =>
-        $"🌱 **{name}** est {g.Agree("dégelé", "dégelée")}. La faim reprend son cours !";
+        $"**{name}** est {g.Agree("dégelé", "dégelée")}. La faim reprend son cours !";
 
     // Appended to the pet line on the card: "— caressée par @quelqu'un".
     public static string PettedBy(PlynlingGender g, ulong petterId) => $"{g.Agree("caressé", "caressée")} par <@{petterId}>";
