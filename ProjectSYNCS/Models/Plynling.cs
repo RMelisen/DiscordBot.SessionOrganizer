@@ -16,6 +16,10 @@ public enum PlynlingSpecies
 // value for the rows that predate it.
 public enum PlynlingGender { Male, Female }
 
+// A Plynling's innate passion (Helpers/PlynlingPassions). Stored as an int: **append-only** —
+// a value inserted in the middle would turn every later Plynling's passion into its neighbour's.
+public enum PlynlingPassion { Cooking, Music, Gaming, Astronomy, Gardening, Rocks, Stories, Dance, Painting, Sport, Insects, Naps }
+
 // One Plynling, alive or dead. A death does not create a second row: DiedAt is set and
 // the row is what the graveyard lists; a resurrection clears DiedAt on the same row.
 //
@@ -36,6 +40,12 @@ public class Plynling
     public PlynlingSpecies Species { get; set; }
     // Decides the French: a female one is "une Plynling", "gelée", "morte".
     public PlynlingGender Gender { get; set; }
+    // Rolled at adoption, never changes. Rows older than passions were backfilled from the id.
+    public PlynlingPassion Passion { get; set; }
+    // What its owner taught it (/plynling passion): free text, cleaned, hostile input like the name.
+    public string? TaughtPassion { get; set; }
+    // When it was last taught or cleared — the start of the change cooldown.
+    public DateTimeOffset? TaughtPassionAt { get; set; }
     public DateTimeOffset AdoptedAt { get; set; }
 
     // 0..1, as of NeedsAsOf. While frozen or dead they are simply the stored values.

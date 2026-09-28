@@ -24,7 +24,7 @@ a wall of shame. The bot's user-facing language is French.
 | `/goodbot` | Who praised or scolded the bot | everyone |
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
 | `/shame` | The wall of shame | everyone |
-| `/plynling adopt · view · list · journal · relations · play · visit · forage · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card) | everyone |
+| `/plynling adopt · view · list · journal · relations · play · visit · passion · forage · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card) | everyone |
 | `/inventory view · collection · shop · cosmetics · craft · give · trade · sell` | Your items: pantry, collection, cosmetics, swaps | everyone |
 | `/work · /balance` | Earn cailloux; see your balance | everyone |
 | `/shame user:@someone` | Put someone on it | staff |
@@ -33,7 +33,7 @@ a wall of shame. The bot's user-facing language is French.
 | `/admin pebble add · remove` | Manual cailloux adjustment | staff |
 | `/admin stats` | The server's economy at a glance | staff |
 | `/admin dashboard` | The economy day by day: flows, activity, finds | staff |
-| `/admin plynling rename · resurrect`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
+| `/admin plynling rename · resurrect · passion-reset`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
 | `/leaderboard` | Server ranking — three views, three windows | owner |
 | `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
 | `/help` | In-Discord usage guide | everyone |
@@ -225,13 +225,20 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   two) or plus ou moins (a number from 1 to 100 in six guesses). Once an hour; it always
   cheers it up (+15 % happiness), and a win adds +10 % and a few cailloux.
 - **Visits:** `/plynling visit user:` sends your Plynling knocking at someone's door. If they
-  press *Accueillir* within the hour, the visit plays out as a little story in three beats —
-  arriving somewhere (the park, the pond, the café, the host's home, or at night the rooftop
-  under the stars…), doing something together with a short exchange, then parting with what
-  the visit changed. What they do and say follows their relationship: shy small talk between
-  acquaintances, games between friends, secrets between best friends, tenderness in a couple,
-  teasing between rivals, sulking after a squabble. Once told, ◀ ▶ page back through it. Both
-  get +20 % happiness. Once a day per pair, and no cailloux.
+  press *Accueillir* within the hour, the knock closes and the visit plays out below it, as a
+  new message, in five beats: arriving somewhere (the park, the pond, the bakery, the
+  host's home, or at night the rooftop under the stars…); one of them bringing up a passion;
+  the other's reaction; doing something together with a short exchange; then parting with
+  what the visit changed. What they do and say follows their passions and their relationship:
+  polite interest between acquaintances, a club of two when a passion is shared, one-upmanship
+  between rivals, tenderness in a couple, sulking after a squabble. Once told, ◀ ▶ page back
+  through it. Both get +20 % happiness. Once a day per pair, and no cailloux.
+- **Passions:** every Plynling is born with one of twelve passions (cooking, music, video
+  games, stars, gardening, pebbles, stories, dance, painting, sport, insects, naps), shown on
+  its card. `/plynling passion` lets its owner teach it a second one in their own words
+  (« la pêche », « les trains ») — once a day, cleared by leaving it empty, and cleared by
+  staff with `/admin plynling passion-reset` if it is inappropriate. A typed passion that names
+  one of the twelve gets that passion's own scenes.
 - **Badges and the journal:** each Plynling earns its own badges — 16 of them, for living a
   week, a month, six months and a year, for games played and won, visits, meals and pets, for
   being fed by a friend or saved from starving at the last moment, and for coming back from the

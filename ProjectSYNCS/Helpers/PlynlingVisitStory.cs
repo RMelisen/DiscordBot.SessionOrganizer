@@ -14,7 +14,7 @@ public sealed record VisitPlace(string Emoji, string Name, int FromHour, int ToH
 
 // One Plynling as the story shows it — captured when the visit happens, so paging back through
 // the story later needs no database and shows them as they were.
-public sealed record VisitCast(string Name, string Sprite, string SpeciesName, PlynlingGender Gender);
+public sealed record VisitCast(string Name, string Sprite, string SpeciesName, PlynlingGender Gender, IReadOnlyList<Passion> Passions);
 
 // A visit told in three beats: arrival, the activity with a little exchange, parting with the
 // outcome. Id is empty until VisitStories keeps it.
@@ -33,6 +33,12 @@ public enum VisitMood { Acquaintances, Friends, BestFriends, Lovers, Rivals, Con
 /// (« elles » only when both are girls), and {a:m|f}, {b:m|f}, {p:m|f} a word agreeing with the
 /// visitor, the host or the pair. An exchange is two lines, the visitor's then the host's,
 /// separated by a newline.
+/// </para>
+/// <para>
+/// Five beats: arrival, the subject (a speaker — visitor or host — raises one of their passions),
+/// the listener's reaction, the activity with an exchange, then parting. Passion lines add {S} / {L},
+/// the speaker and the listener, with {s:m|f} / {l:m|f}, and {P}, the subject passion — inserted
+/// last, so text a person typed is never read as a template.
 /// </para>
 /// </summary>
 public static class PlynlingVisitStory
@@ -93,6 +99,13 @@ public static class PlynlingVisitStory
             "{A} et {B} se disent bonjour en même temps, puis « pardon » en même temps aussi.",
             "{A} apporte un petit cadeau emballé dans une feuille. {B} ne sait pas trop où poser les yeux.",
             "{B} avait préparé trois sujets de conversation. Le premier est déjà épuisé quand {A} arrive.",
+            "{A} arrive en répétant son bonjour à voix basse. Le vrai bonjour sort un peu de travers.",
+            "{B} fait un petit signe de la main. {A} en fait un aussi, puis se demande si c'était bien nécessaire.",
+            "{A} arrive pile à l'heure, {a:essoufflé|essoufflée} d'avoir couru pour ne pas être en avance.",
+            "{B} a tout rangé avant l'arrivée de {A}, puis a remis un peu de désordre pour faire naturel.",
+            "{A} s'arrête à bonne distance et fait un salut très poli. {B} répond par un salut encore plus poli.",
+            "{A} et {B} échangent un sourire, puis un deuxième, pour être {p:sûrs|sûres} que le premier était bien arrivé.",
+            "{A} tend une petite fleur à {B}, la reprend, puis la redonne. C'est compliqué, les premières fois.",
         },
         [VisitMood.Friends] = new[]
         {
@@ -105,6 +118,13 @@ public static class PlynlingVisitStory
             "{A} arrive avec un grand sourire et un goûter à partager. {B} est déjà {b:ravi|ravie}.",
             "{A} et {B} se tapent dans la main, ratent, recommencent, et finissent par éclater de rire.",
             "Ça faisait trop longtemps ! {A} raconte sa semaine avant même d'être {a:arrivé|arrivée}.",
+            "{A} arrive en faisant la roue. Enfin, presque. {B} applaudit quand même.",
+            "{B} guettait {A} depuis un moment et fait semblant de ne pas avoir attendu.",
+            "{A} crie le prénom de {B} bien avant d'être à portée de voix.",
+            "{A} débarque avec trois idées de jeux et zéro plan. {B} adore le programme.",
+            "{B} lance un « Enfin ! » en voyant {A}, qui n'a pourtant que deux minutes de retard.",
+            "{A} arrive avec un sac de noisettes et un grand sourire. {B} ne sait pas lequel des deux lui fait le plus plaisir.",
+            "{A} et {B} se retrouvent et parlent en même temps pendant une bonne minute. Personne n'écoute. Tout le monde est content.",
         },
         [VisitMood.BestFriends] = new[]
         {
@@ -117,6 +137,13 @@ public static class PlynlingVisitStory
             "« C'est moi ! » crie {A}. « Je sais ! » répond {B}, sans même se retourner.",
             "{A} arrive avec le goûter préféré de {B}, sans qu'on le lui ait demandé. {B} en a les yeux qui brillent.",
             "Le rituel commence : {A} fait la poignée de main compliquée, et {B} se trompe volontairement à la fin.",
+            "{A} arrive et s'installe à sa place habituelle, sans même demander. C'est sa place, après tout.",
+            "{B} a déjà préparé le goûter préféré de {A}. Comme toujours. Comme depuis toujours.",
+            "{A} et {B} font leur salut secret, qui dure maintenant presque une minute entière.",
+            "{A} arrive avec une histoire à raconter. {B} en a deux. {Ils} décident de tout se dire en même temps.",
+            "{B} reconnaît le pas de {A} de loin et ouvre les bras avant même de {a:le|la} voir.",
+            "{A} arrive un peu {a:fatigué|fatiguée}. {B} s'en aperçoit tout de suite et pose un coussin à côté de {b:lui|elle}.",
+            "{A} et {B} n'ont pas besoin de se dire bonjour. {Ils} reprennent la conversation exactement là où {ils} l'avaient laissée.",
         },
         [VisitMood.Lovers] = new[]
         {
@@ -129,6 +156,13 @@ public static class PlynlingVisitStory
             "{A} et {B} s'arrêtent à deux pas {p:l'un de l'autre|l'une de l'autre}, sans savoir qui doit avancer. 💕",
             "{A} arrive avec des fleurs cueillies en chemin. Elles sont un peu écrasées, mais {B} les trouve parfaites. 💐",
             "{B} guettait {A} depuis un moment. Quand {a:il|elle} arrive enfin, tout le monde autour fait semblant de ne rien voir. 💞",
+            "{A} arrive avec le cœur qui fait des bonds. {B} a le même, mais le cache moins bien. 💕",
+            "{B} s'est {b:recoiffé|recoiffée} trois fois avant l'arrivée de {A}. {A} le remarque tout de suite. 💞",
+            "{A} arrive un peu trop vite, puis ralentit pour avoir l'air {a:détendu|détendue}. Personne n'est dupe. 💕",
+            "{A} et {B} se sourient de loin pendant tout le temps qu'il faut pour se rejoindre. C'est long, et c'est parfait. 💞",
+            "{B} tend la main à {A} sans rien dire. {A} la prend sans rien dire non plus. 💕",
+            "{A} apporte un petit caillou en forme de cœur. {B} le range aussitôt dans sa poche, tout contre {b:lui|elle}. 💞",
+            "{A} rougit en arrivant. {B} rougit en {a:le|la} voyant rougir. Tout le monde rougit. 💕",
         },
         [VisitMood.Rivals] = new[]
         {
@@ -141,6 +175,13 @@ public static class PlynlingVisitStory
             "{A} et {B} se saluent d'un signe de tête très, très sec. La compétition est ouverte.",
             "{A} arrive avec un carnet de scores. {B} en sort un identique. Aucun des deux n'avait prévu ça.",
             "{B} attendait {A} de pied ferme, les bras croisés. « Tu es en retard. » « Toi, tu as peur. »",
+            "{A} arrive très lentement, pour bien montrer qu'{a:il|elle} n'est pas {a:pressé|pressée}.",
+            "{B} fait mine de s'étirer quand {A} arrive, comme si le match allait commencer. Il va peut-être commencer.",
+            "{A} arrive avec un carnet où sont notées toutes les défaites de {B}. {B} en a un aussi.",
+            "« Tiens, te voilà. » « Tiens, tu es encore là. » L'échange de politesses est terminé.",
+            "{A} et {B} se fixent en silence. Le premier qui cligne des yeux a perdu. {Ils} clignent en même temps.",
+            "{B} a tracé une ligne de départ avant même que {A} arrive. Juste au cas où.",
+            "{A} arrive en sifflotant l'air de la victoire. {B} connaît la suite et la siffle plus fort.",
         },
         [VisitMood.Conflict] = new[]
         {
@@ -156,6 +197,10 @@ public static class PlynlingVisitStory
             "{A} arrive en retard exprès. {B} l'a remarqué, et l'a noté quelque part de très vexant.",
             "{B} avait promis d'être aimable. Cette promesse a tenu jusqu'à ce que {A} ouvre la bouche.",
             "{A} entre sans un mot et s'installe à la place préférée de {B}. Provocation pure.",
+            "{A} arrive avec une liste de reproches. {B} a préparé la sienne. Elle est plus longue.",
+            "{B} voit arriver {A} et soupire assez fort pour que tout le coin l'entende.",
+            "{A} arrive en retard et fait exprès de ne pas s'excuser. {B} fait exprès de le remarquer.",
+            "{A} et {B} se disent bonjour du bout des lèvres. Même le bonjour a l'air vexé.",
         },
     };
 
@@ -362,6 +407,12 @@ public static class PlynlingVisitStory
             "« Ça m'a fait plaisir. » « À moi aussi. » {Ils} se sourient, {p:soulagés|soulagées} que tout se soit bien passé.",
             "{A} et {B} se saluent poliment de loin, deux fois, parce que la première n'était pas assez claire.",
             "{A} rentre en repensant à la conversation. La prochaine fois, il faudra parler d'autre chose que de la pluie.",
+            "{A} repart en se disant que la prochaine fois, {a:il|elle} osera raconter une blague.",
+            "{Ils} se saluent une dernière fois, puis se retournent au même moment pour saluer encore. Un peu gênant. Un peu joli.",
+            "{B} regarde {A} s'éloigner en se disant que c'était un bon après-midi. Un vrai bon après-midi.",
+            "{A} remercie {B} trois fois, puis une quatrième, pour être {a:sûr|sûre}.",
+            "{Ils} se quittent en promettant de se revoir « un de ces jours ». {Ils} ont l'air de le penser vraiment.",
+            "{A} s'en va avec un petit sourire discret. {B} garde le même, un moment.",
         },
         [VisitMood.Friends] = new[]
         {
@@ -375,6 +426,12 @@ public static class PlynlingVisitStory
             "{A} repart avec un caillou offert par {B}, le garde dans sa poche, et le touche souvent.",
             "{B} accompagne {A} sur une bonne partie du chemin, « juste un peu plus loin ». Ça finit par durer un moment.",
             "Au moment de partir, {A} se retourne pour lancer une dernière blague. {B} rit encore, longtemps après.",
+            "{A} repart en courant, revient chercher ce qu'{a:il|elle} avait oublié, puis repart en courant.",
+            "{Ils} se font une dernière grimace pour la route. La meilleure de la journée.",
+            "« Demain, même heure ? » lance {A}. « Même heure ! » répond {B}, qui n'a aucune idée de l'heure.",
+            "{B} glisse une noisette dans la poche de {A} au moment de dire au revoir. {A} ne la trouvera que ce soir.",
+            "{A} s'éloigne en chantant la chanson qu'{ils} ont inventée ensemble. {B} la chante encore après.",
+            "{Ils} se séparent au croisement, en se criant des au revoir jusqu'à ne plus s'entendre.",
         },
         [VisitMood.BestFriends] = new[]
         {
@@ -388,6 +445,12 @@ public static class PlynlingVisitStory
             "{A} s'en va avec un caillou de plus dans la poche, et un poids de moins sur le cœur. {B} aussi.",
             "Le temps a filé, comme toujours quand {ils} sont ensemble. {A} repart en promettant de revenir très vite.",
             "{B} regarde {A} s'éloigner et pense déjà à la prochaine fois. {A} aussi, d'ailleurs, à l'autre bout du chemin.",
+            "{A} repart, mais {B} l'accompagne jusqu'au bout du chemin. Puis {A} raccompagne {B}. Puis c'est le soir.",
+            "{Ils} font leur salut secret une dernière fois. Il est encore plus long qu'à l'arrivée.",
+            "{A} laisse un petit mot caché pour {B}. {B} en a caché un aussi. {Ils} les trouveront plus tard.",
+            "{B} regarde partir {A} en souriant. {Ils} se reverront bientôt. {Ils} se revoient toujours bientôt.",
+            "{A} et {B} se serrent fort, très fort, puis encore un peu. Ça suffira jusqu'à la prochaine fois.",
+            "{A} part en emportant la moitié d'un secret. {B} garde l'autre moitié, bien au chaud.",
         },
         [VisitMood.Lovers] = new[]
         {
@@ -401,6 +464,12 @@ public static class PlynlingVisitStory
             "{A} rentre le cœur léger, un peu en retard, et sourit sans raison tout le long du chemin. 💕",
             "{B} regarde {A} partir, puis se rend compte qu'{b:il|elle} sourit toujours, {b:tout seul|toute seule}. 💞",
             "{Ils} se promettent de se revoir très vite, et de ne pas faire semblant de ne pas s'être manqué. 💕",
+            "{A} s'éloigne à reculons pour regarder {B} le plus longtemps possible, et trébuche un peu. 💕",
+            "{B} garde la main levée bien après que {A} a disparu. 💞",
+            "{Ils} se disent au revoir trois fois, et chaque fois, c'est plus difficile. 💕",
+            "{A} repart avec un sourire qui ne veut pas s'en aller. {B} a exactement le même. 💞",
+            "{B} murmure « déjà ? » quand {A} se lève pour partir. {A} se rassoit un petit moment. Puis encore un. 💕",
+            "{A} s'en va en chantonnant la chanson préférée de {B}. {B} l'entend jusqu'au bout. 💞",
         },
         [VisitMood.Rivals] = new[]
         {
@@ -414,6 +483,12 @@ public static class PlynlingVisitStory
             "Avant de partir, {A} lance un dernier défi. {B} l'accepte, même si personne n'a bien compris de quoi il s'agissait.",
             "{A} et {B} se saluent d'un signe de tête très net. Le respect est là, la rivalité aussi, et c'est parfait.",
             "{B} regarde {A} s'éloigner en marmonnant : « Pas mal. » Puis, plus bas : « Pas mal du tout. »",
+            "{A} s'en va en jurant que la prochaine fois sera la bonne. {B} répond que c'est ce qu'{a:il|elle} dit toujours.",
+            "{Ils} se serrent la main un peu trop fort, et font semblant que ça ne fait pas mal.",
+            "{B} note le score du jour dans son carnet. {A} le note différemment dans le sien.",
+            "« Profite de ta victoire, elle ne durera pas ! » lance {A} en partant. {B} en profite, largement.",
+            "{A} et {B} se tournent le dos au même moment, avec beaucoup de dignité. Puis se jettent un dernier coup d'œil.",
+            "{B} regarde {A} partir et sourit en coin. Sans rivalité, la vie serait bien plus ennuyeuse.",
         },
         [VisitMood.Conflict] = new[]
         {
@@ -427,7 +502,64 @@ public static class PlynlingVisitStory
             "Juste avant de partir, {A} hésite… puis change d'avis. {B} soupire, {b:soulagé|soulagée} et {b:déçu|déçue} à la fois.",
             "{A} et {B} partent {p:chacun|chacune} de leur côté, et prennent pourtant le même chemin. Silence total pendant dix minutes.",
             "Personne ne dit au revoir. Personne ne dit rien. Quelque part, une petite mouche rit.",
+            "{A} part sans dire au revoir. {B} répond quand même, très fort, à personne.",
+            "{Ils} se quittent sur un « on verra » qui ne promet rien de bon.",
+            "{A} s'éloigne en marmonnant. {B} marmonne aussi. {Ils} marmonnent la même chose, sans le savoir.",
+            "{B} tourne les talons, revient pour avoir le dernier mot, puis tourne à nouveau les talons.",
+            "{A} part en boudant, s'arrête, hésite à revenir s'excuser… et repart en boudant.",
+            "{Ils} se séparent {p:fâchés|fâchées}. Mais {ils} y pensent {p:tous|toutes} les deux toute la soirée.",
         },
+    };
+
+    // Beat 3: the listener reacts to the subject, then the speaker answers — one \n between them.
+    // Keyed by mood and by whether the listener shares the passion. Generic, so {P} stands alone
+    // (after a colon, « pour », « sur », or as a subject — never after « de » or « à »).
+    public static readonly IReadOnlyDictionary<(VisitMood Mood, bool Shared), string[]> Reactions =
+        new Dictionary<(VisitMood, bool), string[]>
+        {
+            [(VisitMood.Acquaintances, false)] = new[] { "Oh. {P}, alors. C'est… intéressant.\nTu dis ça poliment, mais je vais quand même t'en parler.", "Oh ! Et… ça consiste en quoi, exactement ?\nC'est une longue histoire. Tu as l'après-midi ?", "Je ne m'y connais pas du tout.\nCe n'est pas grave. Je vais tout t'expliquer. Tout.", "Et tu fais ça depuis longtemps ?\nDepuis toujours. Enfin, depuis mardi.", "C'est… original.\nMerci ! Enfin, je crois que c'était un compliment.", "Je ne savais même pas que ça existait.\nMaintenant, tu sais. Tu ne pourras plus jamais l'oublier.", "Ah. Et… tu en fais souvent ?\nTous les jours. Deux fois le dimanche.", "C'est très… précis, comme passion.\nMerci. J'ai beaucoup travaillé pour qu'elle soit précise.", "Je vais faire semblant de comprendre, d'accord ?\nD'accord. Je vais faire semblant de ne pas le voir.", "Tu as l'air d'y tenir beaucoup.\nÉnormément. Tu veux que je t'en parle pendant une heure ?" },
+            [(VisitMood.Acquaintances, true)] = new[] { "Attends, toi aussi ? {P} ?\nJe croyais être {s:le seul|la seule} ! On devrait se voir plus souvent.", "Non ! Toi aussi ?\nOn ne se connaît pas encore très bien, mais je sens que ça va changer.", "Je n'en parle jamais, d'habitude. Personne ne comprend.\nMoi, je comprends. Enfin, je crois.", "Sujet préféré : {P}. On a au moins ça en commun.\nC'est déjà beaucoup, non ?", "Ça alors. Je pensais être {l:le seul|la seule}.\nOn est deux, maintenant. C'est un club.", "Attends… c'est vrai ? On a ça en commun ?\nIl faut qu'on se voie plus souvent. Pour en parler. Enfin, pas seulement.", "Oh ! Je n'osais en parler à personne.\nMoi non plus. On pourrait peut-être oser ensemble.", "Ça alors. Le monde est petit.\nEt il vient de devenir un peu plus sympathique.", "Toi aussi, {P} ?\nMoi aussi ! Enfin, toi aussi ! Enfin, nous deux !", "Je crois qu'on vient de trouver notre sujet de conversation.\nEt on n'est pas près de l'épuiser." },
+            [(VisitMood.Friends, false)] = new[] { "Je n'y connais rien. Explique-moi tout !\nTout ? Installe-toi, ça va prendre la journée.", "Attends, tu fais vraiment ça ?\nTous les jours. Et je vais t'y mettre, tu vas voir.", "Je ne comprends rien, mais tu as l'air tellement {s:content|contente}.\nC'est l'essentiel, non ?", "Montre-moi !\nOn commence tout de suite. Enfin, après le goûter.", "Tu m'avais caché ça !\nJe ne cache rien. Tu n'avais jamais demandé.", "Tu peux m'apprendre ?\nBien sûr ! Première leçon : l'enthousiasme. Tu en as déjà.", "Je n'y comprends rien, mais je te fais confiance.\nC'est la plus belle chose qu'on m'ait dite aujourd'hui.", "Tu en parles avec tellement de passion…\nC'est parce que c'est toi. À d'autres, j'en parlerais juste beaucoup.", "D'accord, mais tu m'expliques en version courte.\nIl n'y a pas de version courte. Assieds-toi.", "Je vais essayer, pour voir.\nSi tu aimes, on en fera ensemble. Si tu n'aimes pas… on en fera quand même." },
+            [(VisitMood.Friends, true)] = new[] { "{P} ! C'est pour ça qu'on s'entend si bien !\nJe le savais depuis le début.", "Non, sérieusement ? Toi aussi ?\nJe te l'avais dit il y a trois semaines. Tu ne m'écoutes jamais.", "On devrait en faire un club !\nUn club de deux. Le meilleur des clubs.", "Je savais qu'on avait quelque chose en commun.\nÀ part les goûters ? Oui, ça aussi.", "Sujet du jour : {P}. Parfait.\nSujet de demain aussi, si tu veux.", "On est vraiment {p:faits|faites} pour s'entendre.\nJe te l'avais dit. Je te le dis tout le temps.", "Tu te rends compte qu'on aime ça {p:tous|toutes} les deux ?\nJe m'en rends compte depuis deux minutes. Et c'est génial.", "On pourrait monter une équipe !\nUne équipe de deux. Imbattable.", "Je savais que tu avais bon goût.\nEt moi, que tu avais bon goût aussi. On a bon goût.", "Sujet favori : {P}. Évidemment.\nÉvidemment. Personne n'est surpris." },
+            [(VisitMood.BestFriends, false)] = new[] { "Tu m'en parles tous les jours, tu sais.\nEt tu m'écoutes tous les jours. C'est pour ça que je t'aime bien.", "Encore ce sujet ?\nOui. Et tu vas encore m'écouter jusqu'au bout.", "Je ne partage pas ta passion. Mais je partage tout le reste.\nC'est encore mieux.", "Vas-y, raconte. Je te connais, tu ne tiens plus.\nTu me connais trop bien. C'est effrayant.", "Je ne comprends toujours pas ce qui te plaît là-dedans.\nMoi non plus. C'est ça qui est bien.", "Tu sais que je t'écouterai toujours, même sur ce sujet ?\nSurtout sur ce sujet. C'est ça, l'amitié.", "D'accord. Explique-moi pour la centième fois.\nLa cent-unième, tu vas enfin comprendre, j'en suis {s:sûr|sûre}.", "Je ne partage pas ta passion, mais je partage ton goûter.\nC'est un excellent compromis.", "Tu as encore trouvé quelque chose de nouveau là-dessus ?\nToujours. Et tu es la première personne à qui je le dis.", "Si ça te rend {s:heureux|heureuse}, ça me rend {l:heureux|heureuse} aussi.\nC'est la phrase la plus gentille de la journée." },
+            [(VisitMood.BestFriends, true)] = new[] { "On en parle encore ? Toujours {P} ?\nToujours. Et toi aussi, avoue.", "Tu te souviens de la première fois qu'on en a parlé ?\nOn a parlé jusqu'à la nuit. Et on recommence.", "Notre sujet. Rien qu'à nous.\nEt à personne d'autre. C'est ça le plus beau.", "Tu as déjà vu quelqu'un d'aussi {s:passionné|passionnée} que toi ?\nOui. Toi. Tous les jours.", "On va encore en parler pendant des heures, hein ?\nDes heures. Des jours. Des années.", "Tu te rappelles notre serment ?\nToujours. Même si on ne se souvient plus des mots exacts.", "On devrait écrire un livre là-dessus, à deux.\nOn l'écrit depuis le début, sans le savoir.", "Personne ne comprend ce sujet comme toi.\nÀ part toi. On est les deux seules personnes au monde.", "Encore une fois ?\nEncore une fois. Et une autre après. Comme d'habitude.", "Quand on sera {p:vieux|vieilles}, on en parlera encore.\nOn en parlera même plus fort, pour s'entendre." },
+            [(VisitMood.Lovers, false)] = new[] { "Je pourrais t'écouter en parler pendant des heures.\nTu dis ça parce que tu regardes mes yeux, pas parce que tu écoutes.", "Tu es si {s:mignon|mignonne} quand tu en parles.\nArrête, je vais oublier ce que je disais.", "Explique-moi encore. J'aime t'entendre.\nTu n'écoutes pas vraiment, hein ?… Tant pis, je continue. 💕", "Je vais m'y mettre. Pour toi.\nTu n'es pas {l:obligé|obligée}… Mais je suis très {s:touché|touchée}. 💞", "Tu as les yeux qui brillent.\nC'est le sujet. Ou c'est toi. Un peu les deux. 💕", "Tu es {s:beau|belle} quand tu en parles.\nEt toi, tu es {l:beau|belle} quand tu m'écoutes. 💕", "Apprends-moi. Je veux tout partager avec toi.\nAlors commençons par le plus important : nous deux. Et ensuite, ça. 💞", "Je n'y connais rien, mais j'adore ta voix quand tu en parles.\nAlors je vais en parler pendant très longtemps. 💕", "Tu m'emmèneras, la prochaine fois ?\nPartout. Toujours. Même là où c'est ennuyeux. 💞", "Tu rougis quand tu en parles.\nNon, je rougis parce que tu me regardes. 💕" },
+            [(VisitMood.Lovers, true)] = new[] { "Tu sais ce que j'aime encore plus que ça ?\nNon ?… Oh. Oh ! 💕", "Tu sais qu'on a la même passion ?\nJe crois que c'est pour ça que je t'aime. Enfin, pas seulement. 💞", "On pourra en parler toute notre vie ?\nToute notre vie. Et un peu après. 💕", "Tu es la seule personne avec qui j'aime en parler.\nEt toi, la seule avec qui j'aime me taire aussi. 💞", "On en fait quelque chose, ensemble ?\nTout ce que tu veux. Avec toi, c'est toujours mieux. 💕", "C'est un signe, tu ne crois pas ?\nJe crois que tout ce qui te concerne est un signe. 💞", "On pourra le faire ensemble, toute la vie ?\nToute la vie, et même le dimanche. 💕", "Tu aimes ça aussi… Tu es {s:parfait|parfaite}.\nNon. C'est nous deux qui sommes {p:parfaits|parfaites} ensemble. 💞", "Je t'aimais déjà. Maintenant, c'est pire.\nPire comment ? … Oh. Moi aussi. 💕", "Notre passion commune : {P}. Et l'autre : nous deux.\nLa deuxième est ma préférée. 💞" },
+            [(VisitMood.Rivals, false)] = new[] { "Pff. {P}, ce n'est même pas difficile.\nAlors montre-moi, si c'est si facile.", "Franchement, c'est facile. Même moi, je pourrais.\nEssaie. Je te regarde.", "Ça, une passion ? J'ai vu mieux.\nTu n'as rien vu du tout. Tu es {l:jaloux|jalouse}.", "Je parie que je deviendrais {l:meilleur|meilleure} que toi en une semaine.\nPari tenu. Rendez-vous dans une semaine.", "Tu y passes trop de temps.\nEt toi, tu passes trop de temps à me regarder y passer du temps.", "Je parie que tu n'es même pas si {s:doué|douée} que ça.\nViens vérifier. Je t'attends.", "Moi, je trouve ça surfait.\nTu dis ça parce que tu n'y arrives pas.", "Tout le monde peut faire ça.\nAlors pourquoi tu ne le fais pas ?", "C'est ça, ta grande passion ? Pff.\nC'est toujours mieux que la tienne : me contredire.", "Je te laisse ce sujet. J'ai mieux à faire.\nComme me regarder briller ?" },
+            [(VisitMood.Rivals, true)] = new[] { "J'en sais bien plus que toi sur le sujet.\nOn parie ?", "Tu fais ça aussi ? Évidemment. Tu copies tout ce que je fais.\nC'est toi qui copies. J'ai commencé avant.", "Je suis {l:le meilleur|la meilleure} du coin dans ce domaine.\nPlus pour longtemps.", "On verra qui en sait le plus.\nÇa, on le sait déjà. Moi.", "Match retour sur le sujet : {P}. Quand tu veux.\nMaintenant. Tout de suite. Prépare-toi.", "Tu ne m'arriveras jamais à la cheville sur ce sujet.\nAttention, je suis juste derrière ta cheville.", "Je m'y suis {l:mis|mise} avant toi.\nEt j'y suis {s:meilleur|meilleure} que toi. On est quittes.", "Défi officiel, sujet : {P}. Tu relèves ?\nJe l'ai relevé avant même que tu le lances.", "Tu as encore copié mon idée.\nC'était mon idée. Tu l'as eue après moi, voilà tout.", "Il ne peut y avoir qu'un seul champion sur ce sujet.\nAlors tu peux déjà aller chercher le trophée pour me le donner." },
+            [(VisitMood.Conflict, false)] = new[] { "Passionnant. Vraiment.\nTu pourrais au moins faire semblant.", "Et ça t'intéresse vraiment, ça ?\nPlus que cette conversation, oui.", "Tu ne parles que de ça.\nEt toi, tu ne parles que pour te plaindre.", "Personne n'a demandé.\nPersonne ne t'a demandé de venir non plus.", "C'est d'un ennui…\nAlors pourquoi tu écoutes ?", "Tu vas encore en parler longtemps ?\nJusqu'à ce que tu partes. Ou plus.", "Franchement, c'est nul.\nFranchement, tu es de mauvaise foi.", "Je m'ennuie déjà.\nC'est ton état naturel, non ?", "Pourquoi tu me racontes ça, à moi ?\nParce que tu étais là. Pas par choix.", "Change de sujet.\nNon. C'est le seul qui ne te concerne pas." },
+            [(VisitMood.Conflict, true)] = new[] { "Tu ne vas pas me l'apprendre, j'en fais depuis bien avant toi.\nC'est ça. Continue de te vanter.", "Tu t'y prends mal, comme toujours.\nC'est drôle, j'allais te dire exactement la même chose.", "Même passion, et pourtant on ne s'entend pas.\nC'est ta faute. Comme d'habitude.", "Tu n'y connais rien.\nJ'y connais plus que toi, et tu le sais.", "Ne me parle pas de ça, pas toi.\nTrès bien. J'en parlerai à quelqu'un de plus agréable.", "Tu fais tout de travers.\nEt toi, tu donnes des leçons que personne ne demande.", "On aime la même chose, et c'est la seule chose qu'on a en commun.\nEt c'est déjà trop.", "Tu n'as rien compris au sujet.\nJ'ai compris que tu adores avoir raison.", "Ne me dis pas comment faire.\nAlors arrête de le faire mal.", "Tu gâches tout, même ça.\nC'est un talent. Tu devrais en prendre de la graine." },
+        };
+
+    // Beat 2 for a custom (typed) passion: narration, then the speaker's line.
+    public static readonly string[] CustomOpeners =
+    {
+        "{S} se redresse, l'air très sérieux.\nJe dois t'avouer quelque chose. Ma passion ? {P}.",
+        "{S} sort un carnet couvert de dessins.\nTout ça, c'est pour {P}. Oui, tout.",
+        "{S} prend une grande inspiration.\nIl faut que je te parle de quelque chose d'important : {P}.",
+        "{S} a l'air d'avoir attendu ce moment toute la journée.\nDevine à quoi j'ai pensé toute la semaine. {P}. Évidemment.",
+        "{S} sort une petite affiche dessinée à la main. On y lit, en grand : {P}.\nJe l'ai faite ce matin. Tu la trouves comment ?",
+        "{S} se met à parler très vite, les yeux brillants.\nTu sais ce qui me rend {s:heureux|heureuse} ? {P}. Tout le temps. Sans exception.",
+        "{S} baisse la voix, comme pour un secret.\nPersonne ne le sait encore, mais ma grande passion, c'est… {P}.",
+        "{S} montre un carnet rempli de notes.\nThème : {P}. J'ai tout noté. Tu veux voir la page quarante-deux ?",
+        "{S} tapote sur un petit caillou pour réclamer le silence.\nAnnonce officielle. Mon sujet préféré au monde : {P}.",
+        "{S} tend un dessin maladroit, visiblement fait avec amour. En légende : {P}.\nJe te l'offre. Tu comprendras en le regardant. Enfin, j'espère.",
+        "{S} se racle la gorge, très {s:solennel|solennelle}.\nJe voulais te présenter ce qui compte le plus pour moi : {P}. Voilà. C'est dit.",
+        "{S} ne tient pas plus de trois secondes sans en parler.\nBon, je craque. Mon sujet du jour : {P}.",
+        "{S} arrive avec un petit panneau autour du cou. Dessus : {P}.\nComme ça, tout le monde sait. C'est plus simple.",
+        "{S} fait durer le suspense en tournant autour de {L}.\nDevine ce qui me passionne en ce moment. Tu donnes ta langue au chat ? {P} !",
+        "{S} ouvre une petite boîte avec cérémonie. À l'intérieur, une étiquette : {P}.\nC'est ma passion. Je la garde précieusement.",
+        "{S} parle si vite que les mots se bousculent.\nJ'ai-découvert-un-truc-génial : {P}. Il-faut-que-je-t'explique-tout.",
+    };
+
+    // Beat 4 for a custom subject. No Conflict: in a conflict the activity is always the squabble.
+    public static readonly IReadOnlyDictionary<VisitMood, string[]> CustomActivities = new Dictionary<VisitMood, string[]>
+    {
+        [VisitMood.Acquaintances] = new[] { "{S} explique les bases à {L}. Sujet du jour : {P}. {L} hoche la tête très souvent.", "{S} montre à {L} une chose ou deux sur le sujet : {P}. {L} pose des questions très polies.", "{Ils} essaient ensemble, pour voir. Thème : {P}. C'est hésitant, mais sympathique.", "{S} fait une petite démonstration sur le thème : {P}. {L} applaudit, par politesse d'abord, puis pour de vrai.", "📝 {S} prête ses notes à {L}. Titre en haut de la page : {P}. {L} les lit poliment, en entier.", "🙂 {Ils} essaient une petite activité sur le thème : {P}. C'est maladroit, mais personne ne se moque.", "🎓 {S} fait un exposé improvisé. Sujet : {P}. {L} applaudit à la fin, puis au milieu, puis encore à la fin.", "🌱 {Ils} découvrent un sujet ensemble, petit à petit : {P}. Pour une première fois, ce n'est pas si mal." },
+        [VisitMood.Friends] = new[] { "{Ils} inventent un jeu sur le moment. Thème imposé : {P}.", "{Ils} fabriquent une affiche géante. En gros, au milieu : {P}. Il y a beaucoup trop de paillettes.", "{S} invente un quiz sur le sujet : {P}. {L} répond « caillou » à toutes les questions et gagne quand même.", "{Ils} passent l'après-midi sur un seul sujet : {P}. Le temps file sans prévenir.", "🎲 {Ils} inventent un jeu de société. Le thème : {P}. Les règles changent à chaque tour.", "📸 {Ils} prennent des poses ridicules sur le thème : {P}. Chaque pose est plus absurde que la précédente.", "🎤 {Ils} improvisent une chanson dont le refrain est : {P}. Elle reste en tête toute la journée.", "🧶 {Ils} fabriquent un petit objet souvenir. Gravé dessus : {P}. Il est bancal et parfait." },
+        [VisitMood.BestFriends] = new[] { "{Ils} fondent un club secret. Thème : {P}. Membres : deux. Mot de passe : secret.", "🗝{Ils} rangent leurs souvenirs dans une boîte secrète. Sur le couvercle : {P}.", "🌟 {S} a préparé une surprise pour {L}, sur un thème qu'{s:il|elle} adore : {P}. {L} fait semblant d'être {l:étonné|étonnée}, puis l'est vraiment.", "{Ils} inventent un spectacle entier. Sujet : {P}. Public : un moineau. Il reste jusqu'au bout.", "🤫 {Ils} créent un langage secret qui ne sert qu'à parler d'une seule chose. La chose en question : {P}.", "📓 {Ils} tiennent un carnet commun, rien que pour ça : {P}. Il est déjà presque plein.", "🏕️ {Ils} montent une cabane dont le nom officiel est : {P}. Accès réservé aux deux membres.", "🎁 {L} offre à {S} un cadeau fait main, sur le thème : {P}. {S} ne s'en remet pas." },
+        [VisitMood.Lovers] = new[] { "{S} fabrique un petit cadeau pour {L}, sur un thème bien précis : {P}.", "{S} écrit un petit poème pour {L}. Titre : {P}. La dernière rime est « toujours ».", "{Ils} partagent un goûter en parlant d'un seul sujet : {P}. Ou peut-être d'autre chose. Surtout d'autre chose.", "{S} emmène {L} voir quelque chose de spécial. Thème : {P}. {L} ne regarde que {S}.", "💌 {Ils} s'écrivent des petits mots, tous sur le même thème : {P}. Et tous signés d'un cœur.", "🌙 {Ils} passent un long moment côte à côte, à rêver ensemble. Le rêve a un thème : {P}.", "🎀 {L} a préparé une surprise pour {S}, sur le thème : {P}. {S} en a les yeux qui brillent.", "🍓 {Ils} partagent un pique-nique en parlant d'un seul sujet : {P}. Enfin, surtout {p:l'un de l'autre|l'une de l'autre}." },
+        [VisitMood.Rivals] = new[] { "Concours improvisé, un seul sujet : {P}. {Ils} se déclarent {p:tous|toutes} les deux {p:vainqueurs|gagnantes}.", "Duel de connaissances, un seul thème : {P}. Le score est serré. Il l'est toujours.", "{Ils} rédigent le règlement officiel. Sujet : {P}. Chaque règle a une exception inventée par l'autre.", "{S} lance un défi sur le thème : {P}. {L} le relève sans même demander les règles.", "🎯 Concours de précision sur un thème imposé : {P}. {Ils} contestent tous les résultats.", "⏱️ Défi chronométré, sujet : {P}. Le chronomètre est un escargot. Personne ne sait qui a gagné.", "📣 {S} se proclame {s:champion incontesté|championne incontestée}. Discipline : {P}. {L} conteste immédiatement.", "🏆 {Ils} fabriquent un trophée en écorce pour le vainqueur. Discipline : {P}. {Ils} se le disputent encore." },
     };
 
     public static VisitMood MoodFor(bool goodScene, PlynlingBond after) => !goodScene ? VisitMood.Conflict : after switch
@@ -464,37 +596,95 @@ public static class PlynlingVisitStory
 
         var place = PlaceFor(now, rng);
         var mood = MoodFor(outcome.GoodScene, outcome.After);
-        var exchange = X(pick(Exchanges[mood])).Split('\n');
 
+        // Who talks, and about what.
+        var visitorSpeaks = rng.Next(2) == 0;
+        var (speaker, listener) = visitorSpeaks ? (visitor, host) : (host, visitor);
+        var subject = PickSubject(speaker.Passions, listener.Passions, rng);
+        var shared = listener.Passions.Any(subject.SameAs);
+        var info = subject.Catalog is { } c ? PlynlingPassions.Info(c) : null;
+        string P(string template) => Expand(template, visitor.Name, visitor.Gender, host.Name, host.Gender, visitorSpeaks, subject.Render());
+        string Said(string who, string line) => $"💬 **{who}** : {line}";
+
+        var opener = P(pick(info?.Openers ?? CustomOpeners)).Split('\n');
+        var reaction = P(pick(Reactions[(mood, shared)])).Split('\n');
+        var sharedLine = shared && info is not null ? "\n" + P(pick(info.SharedLines)) : "";
+
+        var exchange = X(pick(Exchanges[mood])).Split('\n');
         var beats = new[]
         {
             $"*{pick(place.Scenes)}*\n{X(pick(Arrivals[mood]))}",
-            $"{X(pick(Activities[mood]))}\n💬 **{visitor.Name}** : {exchange[0]}\n💬 **{host.Name}** : {exchange[1]}",
+            $"{opener[0]}\n{Said(speaker.Name, opener[1])}",
+            $"{Said(listener.Name, reaction[0])}\n{Said(speaker.Name, reaction[1])}{sharedLine}",
+            $"{P(pick(ActivityPool(mood, info, listener)))}\n{Said(visitor.Name, exchange[0])}\n{Said(host.Name, exchange[1])}",
             string.IsNullOrWhiteSpace(outcomeLines) ? X(pick(Departures[mood])) : $"{X(pick(Departures[mood]))}\n{outcomeLines}",
         };
         var heading = $"{place.Emoji} {place.Name.Replace("{B}", host.Name)}";
         return new VisitStory("", heading, beats, visitor, host, PlynlingCatalog.Info(outcome.Host.Species).Accent);
     }
 
+    // Beat 4: a combo of the subject with one of the listener's catalog passions, else the subject's
+    // own activities, else the custom ones for this mood. In a conflict, always the squabble.
+    private static string[] ActivityPool(VisitMood mood, PassionInfo? subject, VisitCast listener)
+    {
+        if (mood == VisitMood.Conflict) return Activities[VisitMood.Conflict];
+        if (subject is null) return CustomActivities[mood];
+        var combos = listener.Passions
+            .Where(p => p.Catalog is { } lc && lc != subject.Passion)
+            .Select(p => PlynlingPassions.ComboFor(subject.Passion, p.Catalog!.Value))
+            .OfType<string[]>()
+            .SelectMany(x => x)
+            .ToArray();
+        return combos.Length > 0 ? combos : subject.Activities;
+    }
+
     private static VisitCast Cast(Plynling p, DateTimeOffset now) => new(
         PlynlingCardUi.SafeName(p.Name),
         PlynlingArt.Sprite(p.Species, PlynlingLife.Stage(p, now), PlynlingLife.Mood(p, now)),
         PlynlingCatalog.Info(p.Species).Name,
-        p.Gender);
+        p.Gender,
+        PlynlingPassions.Of(p));
 
-    private static readonly Regex Choice = new(@"\{([abp]):([^|}]*)\|([^}]*)\}", RegexOptions.Compiled);
+    /// <summary>
+    /// What the speaker talks about: a passion both share, <see cref="PlynlingPassions.SharedTopicChance"/>
+    /// of the time when there is one, else any of the speaker's own.
+    /// </summary>
+    public static Passion PickSubject(IReadOnlyList<Passion> speaker, IReadOnlyList<Passion> listener, Random rng)
+    {
+        var shared = speaker.Where(p => listener.Any(p.SameAs)).ToList();
+        if (shared.Count > 0 && rng.NextDouble() < PlynlingPassions.SharedTopicChance) return shared[rng.Next(shared.Count)];
+        return speaker[rng.Next(speaker.Count)];
+    }
 
-    /// <summary>Fills a template's names, pronouns and agreements.</summary>
-    public static string Expand(string template, string a, PlynlingGender ga, string b, PlynlingGender gb)
+    private static readonly Regex Choice = new(@"\{([abpsl]):([^|}]*)\|([^}]*)\}", RegexOptions.Compiled);
+
+    /// <summary>
+    /// Fills a template's names, pronouns and agreements. {S}/{L} are the speaker and the listener
+    /// (the visitor speaks when <paramref name="visitorSpeaks"/>). {P} is inserted last, so text a
+    /// person typed is never read as a template.
+    /// </summary>
+    public static string Expand(string template, string a, PlynlingGender ga, string b, PlynlingGender gb,
+        bool visitorSpeaks = true, string? passion = null)
     {
         var girls = ga == PlynlingGender.Female && gb == PlynlingGender.Female;
+        var (s, gs, l, gl) = visitorSpeaks ? (a, ga, b, gb) : (b, gb, a, ga);
         var text = Choice.Replace(template, m =>
         {
-            var female = m.Groups[1].Value switch { "a" => ga == PlynlingGender.Female, "b" => gb == PlynlingGender.Female, _ => girls };
+            var female = m.Groups[1].Value switch
+            {
+                "a" => ga == PlynlingGender.Female,
+                "b" => gb == PlynlingGender.Female,
+                "s" => gs == PlynlingGender.Female,
+                "l" => gl == PlynlingGender.Female,
+                _ => girls,
+            };
             return female ? m.Groups[3].Value : m.Groups[2].Value;
         });
-        return text
+        text = text
             .Replace("{A}", $"**{a}**").Replace("{B}", $"**{b}**")
+            .Replace("{S}", $"**{s}**").Replace("{L}", $"**{l}**")
             .Replace("{ils}", girls ? "elles" : "ils").Replace("{Ils}", girls ? "Elles" : "Ils");
+        return passion is null ? text : text.Replace("{P}", passion);
     }
+
 }

@@ -26,7 +26,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
 
     // The pause between two beats of a visit's story — long enough to read one, short enough
     // that nobody wonders whether it is stuck.
-    private static readonly TimeSpan BeatPause = TimeSpan.FromSeconds(2.5);
+    private static readonly TimeSpan BeatPause = TimeSpan.FromSeconds(7);
 
     public PlynlingComponentHandler(PlynlingCareService care, PlynlingService plynlings, PlynlingPlayService play,
         ResponsePicker picker, PlynlingCooldowns cooldowns, TradeOffers trades, InventoryService inventory,
@@ -231,24 +231,38 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             return;
         }
 
-        // The visit is decided and saved; what follows is only its telling. The first beat answers
-        // the click (inside Discord's 3 s), the next two follow by editing the same message.
+        // The visit is decided and saved; what follows is only its telling. The knock closes in
+        // place (that answers the click inside Discord's 3 s), and the story is a follow-up — a new
+        // message at the bottom of the channel — whose later beats edit that follow-up.
         var channel = Context.Channel.Id;
         var story = _stories.Add(
             PlynlingVisitStory.Build(pair, PlynlingPlayCards.VisitOutcomeLines(pair), now, Random.Shared, pool => _picker.Pick(channel, pool)),
             Random.Shared);
         await component.UpdateAsync(m =>
         {
-            m.Components = PlynlingPlayCards.BuildVisitStory(story, 0, arrows: false);
+            m.Components = PlynlingPlayCards.BuildKnockClosed(PlynlingText.VisitAccepted(story.Visitor.Name, story.Host.Name));
             m.Flags = MessageFlags.ComponentsV2;
             m.AllowedMentions = AllowedMentions.None;
         });
-        _ = Task.Run(() => PlayStoryAsync(component, story));
+
+        IUserMessage message;
+        try
+        {
+            message = await component.FollowupAsync(components: PlynlingPlayCards.BuildVisitStory(story, 0, arrows: false),
+                flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Visit story {Story}: could not be posted", story.Id);
+            return;
+        }
+        _ = Task.Run(() => PlayStoryAsync(message, story));
     }
 
-    // Beats 2 and 3, one edit each; the last carries the arrows. A failed edit is retried once and
-    // then logged — the visit itself is already saved, so the worst case is a card stuck on a beat.
-    private async Task PlayStoryAsync(SocketMessageComponent component, VisitStory story)
+    // Beats 2 to 5, one edit of the follow-up each; the last carries the arrows. A failed edit is
+    // retried once and then logged — the visit itself is already saved, so the worst case is a card
+    // stuck on a beat. The interaction token keeps a follow-up editable for 15 minutes.
+    private async Task PlayStoryAsync(IUserMessage message, VisitStory story)
     {
         for (var beat = 1; beat < story.Beats.Count; beat++)
         {
@@ -259,7 +273,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             {
                 try
                 {
-                    await component.ModifyOriginalResponseAsync(m =>
+                    await message.ModifyAsync(m =>
                     {
                         m.Components = card;
                         m.Flags = MessageFlags.ComponentsV2;

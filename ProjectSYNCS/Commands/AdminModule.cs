@@ -257,5 +257,31 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
                 ephemeral: true, allowedMentions: AllowedMentions.None);
             await _announcer.AnnounceResurrectionAsync(plynling, now);   // after the reply — see PlynlingModule.FreezeAsync
         }
+
+        // Staff only: the taught passion is free text shown publicly (card, visit stories), so
+        // clearing an offensive one is moderation — the same reasoning as rename.
+        [SlashCommand("passion-reset", "Effacer la passion apprise au Plynling de quelqu'un")]
+        public async Task PassionResetAsync([Summary("user", "À qui est le Plynling")] IUser user)
+        {
+            if (!SessionPermissions.IsStaff(Context.User))
+            {
+                await RespondAsync(PlynlingText.StaffOnly, ephemeral: true);
+                return;
+            }
+
+            var plynling = await _plynlings.ResetPassionAsync(Context.Guild.Id, user.Id, DateTimeOffset.UtcNow);
+            if (plynling is null)
+            {
+                await RespondAsync(PlynlingText.NoneFor(user.Id), ephemeral: true, allowedMentions: AllowedMentions.None);
+                return;
+            }
+
+            await RespondAsync(PlynlingText.PassionResetDone(PlynlingCardUi.SafeName(plynling.Name)),
+                ephemeral: true, allowedMentions: AllowedMentions.None);
+            if (user.Id != Context.User.Id)   // after the reply — see PlynlingModule.FreezeAsync
+                await _announcer.DmOwnerAsync(plynling.OwnerId, string.Format(
+                    _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffPassionResetDms.For(plynling.Gender)),
+                    PlynlingCardUi.SafeName(plynling.Name)));
+        }
     }
 }

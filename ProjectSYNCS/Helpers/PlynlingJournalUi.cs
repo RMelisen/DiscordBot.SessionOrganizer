@@ -9,6 +9,8 @@ public enum JournalKind
     Adopted, FirstMeal, GrewUp, FirstWin, Visited, Hosted, Frozen, Thawed, FedByFriend, Badge, Resurrected, Died,
     // relationships (detail: the other Plynling's name)
     BecameFriends, BecameBestFriends, BecameLovers, BecameRivals, BecameEnemies, Heartbroken, BrokeUp, Grieving,
+    // detail: the taught text
+    LearnedPassion,
 }
 
 // The wording of each moment — pure string work, gendered at display (the entry stores the
@@ -44,6 +46,7 @@ public static class PlynlingJournalUi
         JournalKind.Heartbroken => $"💔 Un chagrin d'amour avec **{Other(detail)}**.",
         JournalKind.BrokeUp => $"💔 Rupture avec **{Other(detail)}**.",
         JournalKind.Grieving => $"🕯️ Pleure **{Other(detail)}**.",
+        JournalKind.LearnedPassion => $"💭 S'est {g.Agree("pris", "prise")} de passion pour « {PlynlingCardUi.SafeName(detail ?? "?")} ».",
         _ => "…",
     };
 

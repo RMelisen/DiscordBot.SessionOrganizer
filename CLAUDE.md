@@ -92,7 +92,7 @@ person's belongings (which outlive the creature), `/admin` every moderation *act
 `/config` the settings, `/debug` the owner's own tools — grouped so everyone else sees one
 entry in the picker instead of three, since no Discord permission can hide a command from
 all but one user. Discord allows **25 subcommands per top-level command**; `/plynling` holds
-14 and `/inventory` 8. A new batch of commands goes into the group that owns the thing, or into a new group —
+15 and `/inventory` 8. A new batch of commands goes into the group that owns the thing, or into a new group —
 never onto a top-level command that is near the cap, since the 26th throws at registration
 on startup. Renaming a command changes what people type, so moves are done once, in a batch. Component handlers for the published cards live apart
 from the commands, in `Interactions/Components/` (`EventComponentHandler`,
@@ -196,7 +196,7 @@ Easy to forget when adding a model. A *derived* property on a model needs
 `[NotMapped]` instead (see `EmoteStat.Markup`), or EF tries to map it and demands a
 migration for a column that should not exist.
 
-**Two migrations carry data, not schema**, and both are XP wipes with an empty `Down`:
+**Three migrations carry data, not schema.** Two are XP wipes with an empty `Down`:
 `ResetMemberXp` shipped with the level-up card rework, `ResetXpTotals` with the voice-XP
 taper. They ride the automatic apply-on-startup so they land in prod without anyone
 touching the add-on's SQLite file. Every other migration here is schema-only and should
@@ -211,6 +211,11 @@ table then held nothing but `TotalXp`. It now also carries `ReactionsUsed` and
 `ResetXpTotals` is `UPDATE … SET TotalXp = 0` plus the same on `MemberDailyStats.XpEarned`
 — deleting the rows would falsify `/leaderboard`'s Réactions and Vocal views. Any future
 wipe must make the same distinction: reset the reward, keep the record.
+
+`AddPlynlingPassions` is the third, and the first that is not a wipe: it backfills an innate
+passion for the Plynlings that predate passions, from the id (`(Id * 5 + 1) % 12`), so every row
+has one and nothing is rolled at runtime. Deriving the passion from the id at read time instead
+was rejected — adding a 13th passion would have silently changed every existing Plynling's.
 
 **Never use `DateTime.Now`.** Production runs in UTC; all wall-clock handling goes
 through `Helpers/AppTime` (pinned to `Europe/Paris`, DST-aware via
@@ -1246,18 +1251,32 @@ if the visit then fails. A visit pays no cailloux on purpose — two accounts co
 zero the day they shipped.
 
 **A visit is told as a story, but decided before it starts.** `VisitAsync` saves everything first;
-`Helpers/PlynlingVisitStory.Build` (pure) then picks a place open at that Paris hour and three
-beats — arrival, activity with a two-line exchange, parting plus `PlynlingPlayCards.VisitOutcomeLines`
-— from pools keyed by `VisitMood`: the bond **after** the visit, or `Conflict` for a bad scene or
+`Helpers/PlynlingVisitStory.Build` (pure) then picks a place open at that Paris hour and five
+beats — arrival, the subject (one of them raises a passion), the reaction, the activity with a
+two-line exchange, parting plus `PlynlingPlayCards.VisitOutcomeLines` — from pools keyed by `VisitMood`: the bond **after** the visit, or `Conflict` for a bad scene or
 enemies. So a failed edit or a restart mid-story can never change what happened; the worst case is a
 card stuck on a beat. Lines are templates — `{A}`/`{B}` names, `{ils}`/`{Ils}` (« elles » only for two
 girls), `{a:m|f}`/`{b:m|f}`/`{p:m|f}` agreements — and the harness expands every line for all four
-gender pairs. « Accueillir » answers with beat 1; the next two are background
-`ModifyOriginalResponseAsync` edits 2.5 s apart, retried once then logged. The last beat adds ◀ ▶
+gender pairs. « Accueillir » closes the knock in place and posts beat 1 as a
+follow-up — a new message at the bottom of the channel; the next four are background edits of that
+follow-up, 7 s apart, retried once then logged. The last beat adds ◀ ▶
 (`vis:prev:{story}:{beat}` / `vis:next:…`, two verbs, disabled at the ends); stories live in the
 `VisitStories` singleton, the last 300 kept, with a snapshot of both Plynlings (name, sprite) so paging
 needs no database. The card is one `Section` with a thumbnail per Plynling — a `MediaGallery` of two
 stretched full width on a phone.
+
+**Plynling passions: one innate, one taught, and the taught one is hostile input.** `Plynling.Passion`
+is one of the 12 in `Helpers/PlynlingPassions` — stored as an int, so **append-only** — rolled at
+adoption. `TaughtPassion` is free text from `/plynling passion` (2–40 characters, no links, 24 h
+cooldown, staff clear it with `/admin plynling passion-reset`), sanitised and sent with pings off
+like a name. `PlynlingPassions.Resolve` upgrades a typed text that names a catalog passion, so it
+gets the rich lines. Catalog passions have hand-written pools (openers, shared lines, activities,
+pair combos); a custom one only ever appears through generic templates as `{P}`, which is why those
+never put `{P}` after « de » or « à » (« parler de les trains »), and why `Expand` inserts `{P}` last
+— typed text is never read as a template. `{S}`/`{L}` are the speaker and the listener, with
+`{s:m|f}`/`{l:m|f}`. Beat 2's speaker is visitor or host at random; the subject is a shared passion
+60 % of the time when there is one. Beat 4 prefers a pair combo, then the subject's own activities,
+then the custom ones; a conflict always gets the squabble.
 
 **Plynling badges are stored, and paid in the action's own save.** `Helpers/PlynlingBadges` is the
 catalog (16, each with a **stable key** — a rename orphans every copy already earned);

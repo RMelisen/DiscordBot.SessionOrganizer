@@ -36,8 +36,13 @@ public static class PlynlingCardUi
                $"{p.Gender.Symbol()} {info.Name} · *{PlynlingCatalog.RarityLabel(info.Rarity)}*\n" +
                $"à <@{p.OwnerId}> · {StageLabel(PlynlingLife.Stage(p, now), p.Gender)} · {p.Gender.Agree("âgé", "âgée")} de {age}" +
                accessory +
+               "\n" + PassionsLine(p) +
                (partnerName is null ? "" : $"\n💞 En couple avec **{SafeName(partnerName)}**");
     }
+
+    // Its passions, innate then taught, on one line of the heading — no extra component.
+    public static string PassionsLine(Plynling p) =>
+        "💭 " + string.Join(" · ", PlynlingPassions.Of(p).Select(x => x.Display()));
 
     public static string Status(Plynling p, DateTimeOffset now)
     {

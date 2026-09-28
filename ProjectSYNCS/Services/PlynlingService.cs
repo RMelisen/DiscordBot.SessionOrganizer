@@ -23,6 +23,8 @@ public enum ThawOutcome { Thawed, NoPlynling, Dead, NotFrozen, StaffOnly }
 
 public enum ResurrectOutcome { Resurrected, NoGrave, AlreadyHasOne }
 
+public enum TeachOutcome { Taught, Cleared, NoPlynling, Cooldown }
+
 // What an accepted visit did: the scene, the bond before and after, any confession, and the
 // happiness both Plynlings got (negative between enemies). Badges per Plynling.
 public sealed record VisitOutcome(
@@ -77,14 +79,15 @@ public class PlynlingService
 
     public async Task<(AdoptOutcome Outcome, Plynling? Plynling)> AdoptAsync(
         ulong guildId, ulong ownerId, string name, PlynlingSpecies species, DateTimeOffset now,
-        PlynlingGender? gender = null)
+        PlynlingGender? gender = null, PlynlingPassion? passion = null)
     {
         var current = await GetCurrentAsync(guildId, ownerId, now);
         if (current is { DiedAt: null }) return (AdoptOutcome.AlreadyHasOne, current);
 
         // Rolled here unless given, so PlynlingLife.Create stays pure and the harnesses
-        // can pin a gender.
+        // can pin a gender or a passion.
         var plynling = PlynlingLife.Create(guildId, ownerId, name, species, gender ?? PlynlingCatalog.RollGender(), now);
+        plynling.Passion = passion ?? PlynlingPassions.RollInnate(Random.Shared);
         _db_context.Plynlings.Add(plynling);
         try
         {
@@ -408,6 +411,35 @@ public class PlynlingService
         plynling.Name = name;
         await _db_context.SaveChangesAsync();
         return (plynling, oldName);
+    }
+
+    // /plynling passion: set (or clear, when text is null) what its owner taught it. The cooldown
+    // runs from the last change either way, so set/clear cannot be toggled for spam.
+    public async Task<(TeachOutcome Outcome, Plynling? Plynling, DateTimeOffset? ReadyAt)> TeachPassionAsync(
+        int plynlingId, ulong ownerId, string? text, DateTimeOffset now)
+    {
+        var plynling = await GetByIdAsync(plynlingId, now);
+        if (plynling is null || plynling.OwnerId != ownerId || plynling.DiedAt is not null)
+            return (TeachOutcome.NoPlynling, null, null);
+        if (plynling.TaughtPassionAt is { } at && at + PlynlingPassions.TeachCooldown > now)
+            return (TeachOutcome.Cooldown, plynling, at + PlynlingPassions.TeachCooldown);
+
+        plynling.TaughtPassion = text;
+        plynling.TaughtPassionAt = now;
+        if (text is not null) await AddMomentAsync(plynling, JournalKind.LearnedPassion, text, now);
+        await _db_context.SaveChangesAsync();
+        return (text is null ? TeachOutcome.Cleared : TeachOutcome.Taught, plynling, null);
+    }
+
+    // Staff moderation, like RenameAsync: reaches the latest grave too, since its card shows it.
+    public async Task<Plynling?> ResetPassionAsync(ulong guildId, ulong ownerId, DateTimeOffset now)
+    {
+        var plynling = await GetShownAsync(guildId, ownerId, now);
+        if (plynling is null) return null;
+        plynling.TaughtPassion = null;
+        plynling.TaughtPassionAt = null;
+        await _db_context.SaveChangesAsync();
+        return plynling;
     }
 
     public async Task<(ResurrectOutcome Outcome, Plynling? Plynling)> ResurrectAsync(

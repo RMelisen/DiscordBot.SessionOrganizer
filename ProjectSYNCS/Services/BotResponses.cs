@@ -73,11 +73,12 @@ namespace ProjectSYNCS.Services;
 //   Plynlings — every pool is a GenderedLines (M/F halves), picked with .For(p.Gender)
 //     PlynlingAdoptLines ....... a new Plynling
 //     PlynlingFeedLines · PlynlingPetLines .......... shown on the card
+//     PlynlingPassionTaughtLines ..... /plynling passion
 //     PlynlingPlayPlayerWonLines · PlynlingPlayPlayerLostLines ... end of a /plynling play game
 //     PlynlingVisitKnockLines ...... /plynling visit's knock (the story is Helpers/PlynlingVisitStory)
 //     PlynlingDeathLines · PlynlingResurrectLines · PlynlingAbandonLines ... public, game channel
 //     PlynlingWarningLines ..... the ~3h DM before death
-//     PlynlingStaffFreezeDms · PlynlingStaffThawDms · PlynlingStaffRenameDms
+//     PlynlingStaffFreezeDms · PlynlingStaffThawDms · PlynlingStaffRenameDms · PlynlingStaffPassionResetDms
 //
 //   Per-person data and lookups (not pools)
 //     PersonalComebacks ........ per-user roast lines
@@ -420,6 +421,22 @@ internal static class BotResponses
             "{1} pour **{0}**, et elle remercie à sa façon : en te bavant dessus. C'est de l'amour. Probablement (˶ᵔ ᵕ ᵔ˶)",
             "Attention, **{0}** vient de finir {1} et elle te regarde. Elle en veut encore. Ne cède pas. …Tu as cédé. Je savais ♡",
             "**{0}** a mangé {1} en faisant des petits bruits de mastication. Adorable, épuisante, et très mal élevée. Comme certaines personnes ici >:(",
+        });
+
+    // /plynling passion, on the card. {0} = name, {1} = the passion (« la cuisine », or the typed
+    // text in « guillemets »). « pour {1} » is safe: « pour » never contracts with an article.
+    public static readonly GenderedLines PlynlingPassionTaughtLines = new(
+        M: new[]
+        {
+            "**{0}** s'est pris de passion pour {1}. Je ne comprends pas, mais je respecte. ♡",
+            "Nouvelle obsession pour **{0}** : {1}. Prépare-toi à en entendre parler tous les jours (¬_¬)",
+            "**{0}** ne parle plus que de ça : {1}. Il est adorable. Un peu fatigant. Adorable ✨",
+        },
+        F: new[]
+        {
+            "**{0}** s'est prise de passion pour {1}. Je ne comprends pas, mais je respecte. ♡",
+            "Nouvelle obsession pour **{0}** : {1}. Prépare-toi à en entendre parler tous les jours (¬_¬)",
+            "**{0}** ne parle plus que de ça : {1}. Elle est adorable. Un peu fatigante. Adorable ✨",
         });
 
     // Shown on the card after a pet. {0} = name.
@@ -865,6 +882,11 @@ internal static class BotResponses
             "Petit changement d'identité : **{0}** s'appelle désormais **{1}** (décision du staff).",
             "Ta Plynling répond maintenant au nom de **{1}** — le staff a jugé que **{0}** ne lui allait plus.",
         });
+
+    // DM when staff clear a taught passion. {0} = name.
+    public static readonly GenderedLines PlynlingStaffPassionResetDms = new(
+        M: new[] { "💭 Le staff a effacé la passion que tu avais apprise à **{0}**. Tu peux lui en apprendre une autre avec `/plynling passion`." },
+        F: new[] { "💭 Le staff a effacé la passion que tu avais apprise à **{0}**. Tu peux lui en apprendre une autre avec `/plynling passion`." });
 
     // /yesno's two verdicts. The coin flip is even; these are only how she *delivers*
     // the result, so nothing here should hedge — a line that reads as "maybe" makes the

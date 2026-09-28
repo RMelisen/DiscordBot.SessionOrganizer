@@ -122,6 +122,19 @@ public static class PlynlingText
     public const string StoryGone = "Cette histoire n'est plus disponible.";
     public const string InviteExpired = "Personne n'a ouvert : l'invitation a expiré.";
 
+    // The knock once accepted: the story itself is posted as a new message under it.
+    public static string VisitAccepted(string visitor, string host) =>
+        $"✅ **{host}** a accueilli **{visitor}** — l'histoire est juste en dessous ↓";
+
+    public static string PassionCooldown(DateTimeOffset ready) =>
+        $"Tu lui as appris une passion il y a peu. Tu pourras en changer <t:{ready.ToUnixTimeSeconds()}:R>.";
+    public const string PassionTooShort = "Une passion d'une seule lettre ? Essaie avec au moins deux.";
+    public const string PassionLink = "Pas de lien dans une passion, merci.";
+    public static string PassionCleared(string name) =>
+        $"C'est effacé : **{name}** n'a plus que sa passion de naissance.";
+    public static string PassionResetDone(string name) =>
+        $"💭 La passion apprise de **{name}** a été effacée.";
+
     public static string VisitedToday(ulong otherId) =>
         $"Vos Plynlings se sont déjà vus aujourd'hui, avec <@{otherId}>. Revenez demain !";
     public const string NotYourGame = "Ce n'est pas ta partie. Lance la tienne avec `/plynling play`.";

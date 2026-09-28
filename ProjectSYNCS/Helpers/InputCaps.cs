@@ -47,4 +47,10 @@ public static class InputCaps
     /// lines and in public announcements, so it is capped at the option like every title.
     /// </summary>
     public const int PlynlingName = 32;
+
+    /// <summary>
+    /// A passion taught to a Plynling (/plynling passion). Shown on the card and inside visit
+    /// story lines, so it stays short enough to read as a phrase, not a paragraph.
+    /// </summary>
+    public const int Passion = 40;
 }

@@ -372,6 +372,72 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         await RespondAsync(embed: embed, components: components, ephemeral: true, allowedMentions: AllowedMentions.None);
     }
 
+    // Free text, like a Tomodachi Life word: it only ever appears through generic story
+    // templates, or upgraded to a catalog passion when PlynlingPassions.Resolve recognises it.
+    [SlashCommand("passion", "Apprendre une passion à ton Plynling (ou effacer celle apprise)")]
+    public async Task PassionAsync()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var plynling = await _plynlings.GetCurrentAsync(Context.Guild.Id, Context.User.Id, now);
+        if (plynling is null || plynling.DiedAt is not null)
+        {
+            await RespondAsync(PlynlingText.NoPlynling, ephemeral: true);
+            return;
+        }
+        if (plynling.TaughtPassionAt is { } at && at + PlynlingPassions.TeachCooldown > now)
+        {
+            await RespondAsync(PlynlingText.PassionCooldown(at + PlynlingPassions.TeachCooldown), ephemeral: true);
+            return;
+        }
+        // Hand-built to pre-fill it; binds to PassionModal — keep the two in sync.
+        var modal = new ModalBuilder()
+            .WithTitle("Sa passion")
+            .WithCustomId($"plyn:passion:{plynling.Id}")
+            .AddTextInput("Quelle passion veux-tu lui apprendre ?", "passion",
+                placeholder: "Avec son article : la pêche, les trains…", maxLength: InputCaps.Passion,
+                required: false, value: plynling.TaughtPassion)
+            .Build();
+        await RespondWithModalAsync(modal);
+    }
+
+    [ModalInteraction("plyn:passion:*", ignoreGroupNames: true)]
+    public async Task OnPassionTaughtAsync(string idStr, PassionModal modal)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var cleaned = PlynlingPassions.Clean(modal.Passion);
+        if (cleaned.Length == 1)
+        {
+            await RespondAsync(PlynlingText.PassionTooShort, ephemeral: true);
+            return;
+        }
+        if (PlynlingPassions.ContainsLink(cleaned))
+        {
+            await RespondAsync(PlynlingText.PassionLink, ephemeral: true);
+            return;
+        }
+
+        var text = cleaned.Length == 0 ? null : cleaned;
+        var (outcome, plynling, ready) = int.TryParse(idStr, out var id)
+            ? await _plynlings.TeachPassionAsync(id, Context.User.Id, text, now)
+            : (TeachOutcome.NoPlynling, null, null);
+        switch (outcome)
+        {
+            case TeachOutcome.NoPlynling:
+                await RespondAsync(PlynlingText.NoPlynling, ephemeral: true);
+                return;
+            case TeachOutcome.Cooldown:
+                await RespondAsync(PlynlingText.PassionCooldown(ready!.Value), ephemeral: true);
+                return;
+            case TeachOutcome.Cleared:
+                await RespondAsync(PlynlingText.PassionCleared(PlynlingCardUi.SafeName(plynling!.Name)), ephemeral: true);
+                return;
+        }
+
+        var line = string.Format(_picker.Pick(Context.Channel.Id, BotResponses.PlynlingPassionTaughtLines.For(plynling!.Gender)),
+            PlynlingCardUi.SafeName(plynling.Name), PlynlingPassions.Taught(plynling)!.Render());
+        await RespondCardAsync(plynling, now, line);
+    }
+
     [SlashCommand("help", "Comment fonctionnent les Plynlings")]
     public Task HelpAsync() => RespondAsync(embed: BuildHelpEmbed(), ephemeral: true);
 
@@ -416,6 +482,11 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 "Un garçon et une fille très proches peuvent tomber **amoureux**. Plus ils s'aiment, plus leurs visites " +
                 "les rendent heureux ; entre ennemis, elles les attristent.\n" +
                 "**`/plynling relations [user]`** — Ses amis, ses amours et ses ennemis.")
+            .AddField("Passions",
+                "Chaque Plynling naît avec une **passion** : la cuisine, la musique, les étoiles, les siestes… " +
+                "Pendant les visites, il en parle, et selon l'autre, ça passionne, ça ennuie ou ça tourne à la compétition.\n" +
+                "**`/plynling passion`** — Apprends-lui une seconde passion, en toutes lettres (« la pêche », « les trains »). " +
+                "Une fois par jour ; laisse vide pour l'effacer.")
             .AddField("Gagner des cailloux",
                 "**`/work`** — 40 à 60 cailloux, toutes les 4 h.\n" +
                 "Parler, réagir et le vocal rapportent aussi quelques cailloux (45 au plus par jour).\n" +
@@ -450,7 +521,8 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 "avant d'en adopter un autre.")
             .AddField("Staff",
                 "**`/plynling freeze user:`** · **`/plynling thaw user:`** — Sur n'importe quel Plynling.\n" +
-                "**`/admin plynling rename user: name:`** · **`/admin plynling resurrect user:`**")
+                "**`/admin plynling rename user: name:`** · **`/admin plynling resurrect user:`** · " +
+                "**`/admin plynling passion-reset user:`**")
             .WithFooter($"Project S.Y.N.C.S. v{AppInfo.Version}")
             .Build();
 
