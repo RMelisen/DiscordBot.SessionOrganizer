@@ -24,10 +24,12 @@ namespace ProjectSYNCS.Commands;
 public class AdminModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly AdminStatsService _stats;
+    private readonly EconomyDashboardService _dashboard;
 
-    public AdminModule(AdminStatsService stats)
+    public AdminModule(AdminStatsService stats, EconomyDashboardService dashboard)
     {
         _stats = stats;
+        _dashboard = dashboard;
     }
 
     // The economy at a glance, to tune prices and rewards — private, staff only.
@@ -42,6 +44,22 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
         await DeferAsync(ephemeral: true);
         var stats = await _stats.GetAsync(Context.Guild.Id, DateTimeOffset.UtcNow);
         await FollowupAsync(embed: AdminCards.BuildStats(stats), ephemeral: true, allowedMentions: AllowedMentions.None);
+    }
+
+    // The economy over time, day by day — the trends /admin stats cannot show. Opens on the last
+    // 7 days; its buttons are handled by AdminComponentHandler, which re-checks IsStaff.
+    [SlashCommand("dashboard", "L'économie jour après jour : flux de cailloux, activité, objets")]
+    public async Task DashboardAsync()
+    {
+        if (!SessionPermissions.IsStaff(Context.User))
+        {
+            await RespondAsync("Cette commande est réservée aux administrateurs et aux modérateurs. Bien tenté (˶ᵔ ᵕ ᵔ˶)", ephemeral: true);
+            return;
+        }
+        await DeferAsync(ephemeral: true);
+        var data = await _dashboard.GetAsync(Context.Guild.Id, DashboardWindow.Week, DateTimeOffset.UtcNow);
+        var (embed, components) = AdminCards.BuildDashboard(data);
+        await FollowupAsync(embed: embed, components: components, ephemeral: true, allowedMentions: AllowedMentions.None);
     }
 
     // Manual XP adjustment. Kept apart from LevelModule, which owns the player-facing surfaces
