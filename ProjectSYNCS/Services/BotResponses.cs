@@ -281,16 +281,40 @@ internal static class BotResponses
     // are absurd on purpose: the money is real, the employment is not.
     public static readonly string[] WorkLines =
     {
-        "Tu as trié des spores toute la matinée. Passionnant. {0}",
         "Tu as ramassé des cailloux au bord de la rivière. Littéralement. {0}",
         "Tu as aidé un escargot à traverser la route. Il t'a payé, bizarrement. {0}",
-        "Tu as nettoyé les chapeaux de trois Plynlings capricieux. {0}",
+        "Tu as donné un bain à des Plynlings capricieux. {0}",
         "Tu as tenu la caisse du marché aux champignons. {0}",
         "Tu as creusé un tunnel pour une taupe syndiquée. {0}",
-        "Service de nuit à la cueillette des morilles. Les mains sales, mais {0}",
+        "Service de nuit à la cueillette des morilles. {0}",
         "Tu as livré du terreau dans tout le village. Ton dos s'en souviendra. {0}",
         "Tu as servi de guide à des touristes perdus dans la forêt. {0}",
         "Tu as poli des cailloux. On t'a payé en cailloux. La boucle est bouclée. {0}",
+        "Tu as essayé d'apprendre à rouler à un caillou. Il n'a rien compris, mais tu as reçu {0}.",
+        "Tu as passé 8 heures à fixer un mur pour vérifier qu'il ne bougeait pas. {0}",
+        "Tu as fais le traducteur pour un écureuil sourd. {0}",
+        "Tu as arrosé l'océan. {0}",
+        "Tu as peint des feuilles en vert pour empêcher l'automne d'arriver. {0}",
+        "Tu as organisé un marathon pour escargots. C'est toujours en cours, mais voici {0}.",
+        "Tu as donné des cours de natation à une brique. {0}",
+        "Tu as aboyé sur un chien jusqu'à ce qu'il s'excuse. {0}",
+        "Tu as classé des grains de poussière par taille. {0}",
+        "Tu as organisé un défilé de mode pour des chaussettes orphelines. {0}",
+        "Tu as expliqué la physique quantique à un pigeon. Il a approuvé et t'a donné {0}.",
+        "Tu as essayé de mordre ton propre cou. {0}",
+        "Tu as essayé de traire un nuage pour obtenir de la pluie. {0}",
+        "Tu as trié des grains de riz par ordre alphabétique. {0}",
+        "Tu as passé l'aspirateur sur le sol de la forêt. {0}",
+        "Tu as appris à un poisson à cligner des yeux. {0}",
+        "Tu as essayé de photocopier un miroir. {0}",
+        "Tu as essayé de plier une boule de bowling en deux. {0}",
+        "Tu as essayé de faire fondre des glaçons avec ton esprit. Tu as réussi. Je crois. {0}",
+        "Tu as organisé une réunion syndicale pour les trombones de bureau. {0}",
+        "Tu as organisé un tournoi de poker pour des corbeaux. Ils ont triché. {0}",
+        "Tu as ramassé du cuivre avec Jessy. {0}",
+        "Tu as fais un échange avec Sandra. {0}",
+        "Tu as rempli une passoire avec de l'eau. Un succès total. {0}",
+
     };
 
     // ---- Plynlings ----------------------------------------------------------------------
@@ -303,17 +327,17 @@ internal static class BotResponses
     public static readonly GenderedLines PlynlingAdoptLines = new(
         M: new[]
         {
-            "Un nouveau Plynling pointe le bout de son nez : **{0}**, espèce {1}. C'est un garçon ! Nourris-le bien (˶ᵔ ᵕ ᵔ˶)",
-            "**{0}** vient de sortir de terre ! Un Plynling {1}, tout frais tout mignon — et c'est un garçon ✨",
+            "Un nouveau Plynling pointe le bout de son nez : **{0}**, un {1}. C'est un garçon ! Nourris-le bien (˶ᵔ ᵕ ᵔ˶)",
+            "**{0}** vient de sortir de terre ! Un Plynling {1}, tout frais tout mignon, et c'est un garçon ✨",
             "Félicitations, c'est un garçon ! **{0}** ({1}) te regarde déjà avec des yeux affamés.",
-            "Un Plynling de plus dans le monde : **{0}**, {1}. C'est un petit garçon. Promets-moi de ne pas l'oublier.",
+            "Un Plynling de plus dans le monde : **{0}**, {1}. C'est un petit garçon. Promets-moi de ne pas l'oublier. >:(",
         },
         F: new[]
         {
-            "Une nouvelle Plynling pointe le bout de son nez : **{0}**, espèce {1}. C'est une fille ! Nourris-la bien (˶ᵔ ᵕ ᵔ˶)",
+            "Une nouvelle Plynling pointe le bout de son nez : **{0}**, une {1}. C'est une fille ! Nourris-la bien (˶ᵔ ᵕ ᵔ˶)",
             "**{0}** vient de sortir de terre ! Une Plynling {1}, toute fraîche toute mignonne — et c'est une fille ✨",
             "Félicitations, c'est une fille ! **{0}** ({1}) te regarde déjà avec des yeux affamés.",
-            "Une Plynling de plus dans le monde : **{0}**, {1}. C'est une petite fille. Promets-moi de ne pas l'oublier.",
+            "Une Plynling de plus dans le monde : **{0}**, {1}. C'est une petite fille. Promets-moi de ne pas l'oublier. >:(",
         });
 
     // The same moment for a rare or legendary pull, which is worth making a fuss about.
