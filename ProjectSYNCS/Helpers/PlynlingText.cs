@@ -119,6 +119,7 @@ public static class PlynlingText
     public const string NotYourInvite = "Cette invitation ne t'est pas adressée.";
     public const string VisitorGone = "Le visiteur n'est plus là…";
     public const string VisitFrozen = "L'un des deux Plynlings est gelé : pas de visite pour l'instant.";
+    public const string StoryGone = "Cette histoire n'est plus disponible.";
     public const string InviteExpired = "🚪 Personne n'a ouvert : l'invitation a expiré.";
 
     public static string VisitedToday(ulong otherId) =>

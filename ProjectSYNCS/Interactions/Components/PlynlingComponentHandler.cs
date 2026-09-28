@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Commands;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Interactions.Modals;
@@ -20,10 +21,19 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
     private readonly PlynlingCooldowns _cooldowns;
     private readonly TradeOffers _trades;
     private readonly InventoryService _inventory;
+    private readonly VisitStories _stories;
+    private readonly ILogger<PlynlingComponentHandler> _logger;
+
+    // The pause between two beats of a visit's story — long enough to read one, short enough
+    // that nobody wonders whether it is stuck.
+    private static readonly TimeSpan BeatPause = TimeSpan.FromSeconds(2.5);
 
     public PlynlingComponentHandler(PlynlingCareService care, PlynlingService plynlings, PlynlingPlayService play,
-        ResponsePicker picker, PlynlingCooldowns cooldowns, TradeOffers trades, InventoryService inventory)
+        ResponsePicker picker, PlynlingCooldowns cooldowns, TradeOffers trades, InventoryService inventory,
+        VisitStories stories, ILogger<PlynlingComponentHandler> logger)
     {
+        _stories = stories;
+        _logger = logger;
         _trades = trades;
         _inventory = inventory;
         _cooldowns = cooldowns;
@@ -221,29 +231,76 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             return;
         }
 
-        var a = PlynlingCardUi.SafeName(pair.Visitor.Name);
-        var b = PlynlingCardUi.SafeName(pair.Host.Name);
-        var line = pair.GoodScene
-            ? string.Format(_picker.Pick(Context.Channel.Id, BotResponses.PlynlingVisitMeetLines.For(pair.Visitor.Gender)), a, b)
-            : string.Format(_picker.Pick(Context.Channel.Id, BotResponses.PlynlingVisitSquabbleLines), a, b);
-        if (pair.Confession == Confession.Accepted) line += "\n" + PlynlingText.ConfessionAccepted(a, b);
-        else if (pair.Confession == Confession.Refused) line += "\n" + PlynlingText.ConfessionRefused(a, b);
-        if (pair.After != pair.Before && pair.Confession != Confession.Accepted
-            && !(pair.Before == PlynlingBond.BestFriends && pair.After == PlynlingBond.Friends))   // a quiet drift
-        {
-            line += "\n" + (pair.Before == PlynlingBond.Lovers
-                ? PlynlingText.BrokeUp(a, b)
-                : PlynlingBonds.ChangeLine(pair.After, a, pair.Visitor.Gender, b, pair.Host.Gender));
-        }
-        foreach (var (who, badges) in new[] { (pair.Visitor, pair.VisitorBadges), (pair.Host, pair.HostBadges) })
-            if (badges.Count > 0)
-                line += "\n**" + PlynlingCardUi.SafeName(who.Name) + "** · " + PlynlingBadges.NewBadgeLines(badges, who.Gender);
-        foreach (var (who, find) in new[] { (pair.Visitor, pair.VisitorFind), (pair.Host, pair.HostFind) })
-            if (find is not null)
-                line += "\n" + PlynlingText.FindLines(PlynlingText.VisitFind(PlynlingCardUi.SafeName(who.Name), who.OwnerId, find.Item), find, who.OwnerId);
+        // The visit is decided and saved; what follows is only its telling. The first beat answers
+        // the click (inside Discord's 3 s), the next two follow by editing the same message.
+        var channel = Context.Channel.Id;
+        var story = _stories.Add(
+            PlynlingVisitStory.Build(pair, PlynlingPlayCards.VisitOutcomeLines(pair), now, Random.Shared, pool => _picker.Pick(channel, pool)),
+            Random.Shared);
         await component.UpdateAsync(m =>
         {
-            m.Components = PlynlingPlayCards.BuildMeeting(pair.Visitor, pair.Host, line, now, pair.Happiness);
+            m.Components = PlynlingPlayCards.BuildVisitStory(story, 0, arrows: false);
+            m.Flags = MessageFlags.ComponentsV2;
+            m.AllowedMentions = AllowedMentions.None;
+        });
+        _ = Task.Run(() => PlayStoryAsync(component, story));
+    }
+
+    // Beats 2 and 3, one edit each; the last carries the arrows. A failed edit is retried once and
+    // then logged — the visit itself is already saved, so the worst case is a card stuck on a beat.
+    private async Task PlayStoryAsync(SocketMessageComponent component, VisitStory story)
+    {
+        for (var beat = 1; beat < story.Beats.Count; beat++)
+        {
+            await Task.Delay(BeatPause);
+            var last = beat == story.Beats.Count - 1;
+            var card = PlynlingPlayCards.BuildVisitStory(story, beat, arrows: last);
+            for (var attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    await component.ModifyOriginalResponseAsync(m =>
+                    {
+                        m.Components = card;
+                        m.Flags = MessageFlags.ComponentsV2;
+                        m.AllowedMentions = AllowedMentions.None;
+                    });
+                    break;
+                }
+                catch (Exception ex) when (attempt < 2)
+                {
+                    _logger.LogWarning(ex, "Visit story {Story}: beat {Beat} failed, retrying", story.Id, beat + 1);
+                    await Task.Delay(TimeSpan.FromSeconds(1));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Visit story {Story}: beat {Beat} could not be shown", story.Id, beat + 1);
+                    return;
+                }
+            }
+        }
+    }
+
+    // ◀ ▶ on a told story. Anyone may page — the card is public, like the story. After a restart
+    // the story is gone: the card stays on its last beat and the one who clicked is told privately.
+    [ComponentInteraction("vis:prev:*:*", ignoreGroupNames: true)]
+    public Task OnVisitPrevAsync(string id, string beatStr) => PageStoryAsync(id, beatStr, -1);
+
+    [ComponentInteraction("vis:next:*:*", ignoreGroupNames: true)]
+    public Task OnVisitNextAsync(string id, string beatStr) => PageStoryAsync(id, beatStr, +1);
+
+    private async Task PageStoryAsync(string id, string beatStr, int step)
+    {
+        var story = _stories.Get(id);
+        if (story is null || !int.TryParse(beatStr, out var beat))
+        {
+            await RespondAsync(PlynlingText.StoryGone, ephemeral: true);
+            return;
+        }
+        var card = PlynlingPlayCards.BuildVisitStory(story, beat + step, arrows: true);
+        await ((SocketMessageComponent)Context.Interaction).UpdateAsync(m =>
+        {
+            m.Components = card;
             m.Flags = MessageFlags.ComponentsV2;
             m.AllowedMentions = AllowedMentions.None;
         });

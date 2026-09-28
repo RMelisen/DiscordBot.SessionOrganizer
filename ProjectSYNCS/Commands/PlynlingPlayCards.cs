@@ -79,21 +79,65 @@ public static class PlynlingPlayCards
     public static MessageComponent BuildKnockClosed(string text) =>
         new ComponentBuilderV2().AddComponent(new ContainerBuilder().AddComponent(new TextDisplayBuilder(text))).Build();
 
-    /// <summary>The visit: both Plynlings side by side, her line, and what it gave them.</summary>
-    public static MessageComponent BuildMeeting(Plynling visitor, Plynling host, string line, DateTimeOffset now, double happinessShare)
+    // The two arrows' verbs differ, so a card never carries the same id twice (disabled or not).
+    public static string VisitPrevId(string story, int beat) => $"vis:prev:{story}:{beat}";
+    public static string VisitNextId(string story, int beat) => $"vis:next:{story}:{beat}";
+
+    /// <summary>
+    /// What a visit changed, closing its story: the confession, the bond, badges, finds, and the
+    /// happiness line — everything the old one-line visit card said after its line.
+    /// </summary>
+    public static string VisitOutcomeLines(VisitOutcome pair)
     {
-        string Sprite(Plynling p) => PlynlingArt.Sprite(p.Species, PlynlingLife.Stage(p, now), PlynlingLife.Mood(p, now));
-        var happiness = (int)Math.Round(Math.Abs(happinessShare) * 100);
-        var sign = happinessShare < 0 ? "−" : "+";
-        return new ComponentBuilderV2()
-            .AddComponent(new ContainerBuilder()
-                .WithAccentColor(new Color(PlynlingCatalog.Info(host.Species).Accent))
-                .AddComponent(new TextDisplayBuilder($"## 🏡 Visite\n{line}"))
-                .AddComponent(new MediaGalleryBuilder()
-                    .AddItem(Sprite(visitor), PlynlingCardUi.SafeName(visitor.Name), false)
-                    .AddItem(Sprite(host), PlynlingCardUi.SafeName(host.Name), false))
-                .AddComponent(new TextDisplayBuilder(
-                    $"-# {sign}{happiness} % de bonheur pour **{PlynlingCardUi.SafeName(visitor.Name)}** et **{PlynlingCardUi.SafeName(host.Name)}**")))
-            .Build();
+        var a = PlynlingCardUi.SafeName(pair.Visitor.Name);
+        var b = PlynlingCardUi.SafeName(pair.Host.Name);
+        var lines = new List<string>();
+        if (pair.Confession == Confession.Accepted) lines.Add(PlynlingText.ConfessionAccepted(a, b));
+        else if (pair.Confession == Confession.Refused) lines.Add(PlynlingText.ConfessionRefused(a, b));
+        if (pair.After != pair.Before && pair.Confession != Confession.Accepted
+            && !(pair.Before == PlynlingBond.BestFriends && pair.After == PlynlingBond.Friends))   // a quiet drift
+        {
+            lines.Add(pair.Before == PlynlingBond.Lovers
+                ? PlynlingText.BrokeUp(a, b)
+                : PlynlingBonds.ChangeLine(pair.After, a, pair.Visitor.Gender, b, pair.Host.Gender));
+        }
+        foreach (var (who, badges) in new[] { (pair.Visitor, pair.VisitorBadges), (pair.Host, pair.HostBadges) })
+            if (badges.Count > 0)
+                lines.Add("**" + PlynlingCardUi.SafeName(who.Name) + "** · " + PlynlingBadges.NewBadgeLines(badges, who.Gender));
+        foreach (var (who, find) in new[] { (pair.Visitor, pair.VisitorFind), (pair.Host, pair.HostFind) })
+            if (find is not null)
+                lines.Add(PlynlingText.FindLines(PlynlingText.VisitFind(PlynlingCardUi.SafeName(who.Name), who.OwnerId, find.Item), find, who.OwnerId));
+        var happiness = (int)Math.Round(Math.Abs(pair.Happiness) * 100);
+        var sign = pair.Happiness < 0 ? "−" : "+";
+        lines.Add($"-# {sign}{happiness} % de bonheur pour **{a}** et **{b}**");
+        return string.Join("\n", lines);
+    }
+
+    /// <summary>
+    /// One beat of a visit's story: the place, each Plynling as a small picture beside its name
+    /// (the Plynling card's layout — a gallery of two stretched full width on a phone), then the
+    /// beat. <paramref name="arrows"/> adds ◀ ▶ and « 2/3 », once the story has been told.
+    /// </summary>
+    public static MessageComponent BuildVisitStory(VisitStory story, int beat, bool arrows)
+    {
+        beat = Math.Clamp(beat, 0, story.Beats.Count - 1);
+        SectionBuilder Who(VisitCast cast, string role) => new SectionBuilder()
+            .WithAccessory(new ThumbnailBuilder().WithMedia(new UnfurledMediaItemProperties(cast.Sprite)).WithDescription(cast.SpeciesName))
+            .AddComponent(new TextDisplayBuilder($"**{cast.Name}** {cast.Gender.Symbol()}\n-# {role}"));
+
+        var text = story.Beats[beat];
+        if (arrows) text += $"\n-# {beat + 1}/{story.Beats.Count}";
+        var builder = new ComponentBuilderV2().AddComponent(new ContainerBuilder()
+            .WithAccentColor(new Color(story.Accent))
+            .AddComponent(new TextDisplayBuilder($"## {story.Heading}"))
+            .AddComponent(Who(story.Visitor, "en visite"))
+            .AddComponent(Who(story.Host, story.Host.Gender.Agree("l'hôte", "l'hôtesse")))
+            .AddComponent(new SeparatorBuilder())
+            .AddComponent(new TextDisplayBuilder(text)));
+        if (arrows)
+            builder.AddComponent(new ActionRowBuilder()
+                .WithButton("◀", VisitPrevId(story.Id, beat), ButtonStyle.Secondary, disabled: beat == 0)
+                .WithButton("▶", VisitNextId(story.Id, beat), ButtonStyle.Secondary, disabled: beat == story.Beats.Count - 1));
+        return builder.Build();
     }
 }

@@ -74,7 +74,7 @@ namespace ProjectSYNCS.Services;
 //     PlynlingAdoptLines · PlynlingAdoptRareLines ... a new Plynling
 //     PlynlingFeedLines · PlynlingPetLines .......... shown on the card
 //     PlynlingPlayPlayerWonLines · PlynlingPlayPlayerLostLines ... end of a /plynling play game
-//     PlynlingVisitKnockLines · PlynlingVisitMeetLines ............ /plynling visit
+//     PlynlingVisitKnockLines ...... /plynling visit's knock (the story is Helpers/PlynlingVisitStory)
 //     PlynlingDeathLines · PlynlingResurrectLines · PlynlingAbandonLines ... public, game channel
 //     PlynlingWarningLines ..... the ~3h DM before death
 //     PlynlingStaffFreezeDms · PlynlingStaffThawDms · PlynlingStaffRenameDms
@@ -431,31 +431,6 @@ internal static class BotResponses
             "🚪 **{0}** a mis son plus beau sourire pour aller voir le Plynling de {1}. Elle frappe à la porte…",
             "🚪 **{0}** toque chez {1}. Elle a apporté un petit caillou en cadeau.",
         });
-
-    // The visit accepted: {0} = the visitor's name, {1} = the host's. Gendered by the visitor.
-    public static readonly GenderedLines PlynlingVisitMeetLines = new(
-        M: new[]
-        {
-            "**{0}** et **{1}** jouent à cache-cache dans l'herbe.",
-            "**{0}** et **{1}** se racontent leur semaine. Que de rires !",
-            "**{0}** est reparti le cœur léger après son goûter chez **{1}**.",
-        },
-        F: new[]
-        {
-            "**{0}** et **{1}** jouent à cache-cache dans l'herbe.",
-            "**{0}** et **{1}** se racontent leur semaine. Que de rires !",
-            "**{0}** est repartie le cœur léger après son goûter chez **{1}**.",
-        });
-
-    // A visit gone wrong — a squabble. {0} = the visitor, {1} = the host. Names only, so no
-    // agreement: one flat pool.
-    public static readonly string[] PlynlingVisitSquabbleLines =
-    {
-        "💢 **{0}** et **{1}** se disputent pour un caillou.",
-        "😤 **{1}** trouve que **{0}** parle beaucoup trop fort.",
-        "💢 **{0}** et **{1}** ne sont pas d'accord sur le meilleur repas.",
-        "🙄 **{0}** a marché sur les pieds de **{1}**. Ambiance.",
-    };
 
     // Posted publicly when an owner abandons theirs (/plynling abandon), with its sad
     // picture. {0} = name, {1} = owner mention (sent with pings off). Meant to sting a little:

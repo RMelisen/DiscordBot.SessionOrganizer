@@ -71,6 +71,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<PlynlingCareService>();
         services.AddSingleton<PlynlingCooldowns>();
         services.AddSingleton<TradeOffers>();
+        services.AddSingleton<VisitStories>();
         services.AddSingleton<PlynlingPlayService>();
         services.AddSingleton<PlynlingAnnouncer>();
 
