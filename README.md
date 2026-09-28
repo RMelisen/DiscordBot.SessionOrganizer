@@ -228,8 +228,8 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   press *Accueillir* within the hour, the knock closes and the visit is told below it, as a new
   message, in eight steps you page through with ◀ ▶: arriving somewhere (the park, the pond, the
   bakery, the host's home, or at night the rooftop under the stars…); one of them bringing up a
-  passion; the other's reaction; two more exchanges on the subject — questions, anecdotes, and
-  sometimes someone talking twice in a row; the talk turning into doing something; the activity;
+  passion, and a real little conversation about it — each line answering the last, sometimes
+  with one of them talking twice in a row; the talk turning into doing something; the activity;
   then parting with what the visit changed. The two Plynlings stand side by side, and their faces
   follow the conversation — happy, content, sad, or angry (a face only visits use). What they do
   and say follows their passions and their relationship: polite interest between acquaintances, a

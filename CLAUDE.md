@@ -1252,14 +1252,23 @@ zero the day they shipped.
 
 **A visit is told as a story, but decided before it starts.** `VisitAsync` saves everything first;
 `Helpers/PlynlingVisitStory.Build` (pure) then picks a place open at that Paris hour and tells it in
-**eight steps** — arrival; the opener (A, the one whose passion is the subject, raises it); B's
-reaction; two talk steps; a closer that turns the talk into doing something; the activity with a
-two-line exchange; parting plus `PlynlingPlayCards.VisitOutcomeLines` — from pools keyed by
-`VisitMood`: the bond **after** the visit, or `Conflict` for a bad scene or enemies. In a talk step
-the other one speaks `TurnChance` (70 %) of the time and the same one again otherwise, so someone may
-talk twice in a row; A says a `Details` line (per passion, or `CustomDetails`) or an
-`AnswerFollowups` line, B a `Followups` line, and every one of those stands alone for that reason.
-So a restart mid-story can never change what happened. Lines are templates — `{A}`/`{B}` names,
+**eight steps** — arrival; a four-line conversation (steps 2–5); a closer that turns the talk into
+doing something; the activity with a two-line exchange; parting plus
+`PlynlingPlayCards.VisitOutcomeLines` — the rest from pools keyed by `VisitMood`: the bond **after**
+the visit, or `Conflict` for a bad scene or enemies. So a restart mid-story can never change what
+happened.
+
+**The conversation is one script, never lines drawn separately.** Drawing each line from its own
+pool made every line fine alone and the exchange « décousu » — the reply never answered what was
+said — so `Helpers/PlynlingScripts` holds whole conversations: four `ConvoLine`s written together,
+A's opener (narration `\n` words) then three spoken lines each answering the last, from whichever
+of A and B the script says (some let one talk twice in a row). Keyed by passion, `ConvoFlavor`
+(rivals and conflicts are `Tense`, every other bond `Friendly`) and whether B shares the passion; a
+typed passion only gets the generic `ForCustom` scripts, which name the subject as `{P}` and nothing
+more. The engine draws a script by its opener (so the picker's no-repeat history works) — openers
+must therefore be unique within a key, which the harness checks. **Add conversations as whole
+scripts, never as loose lines**: a line added on its own answers nothing. `PlynlingScripts.cs` is
+generated from the scratch writing sheets but reads fine by hand. Lines are templates — `{A}`/`{B}` names,
 `{ils}`/`{Ils}` (« elles » only for two girls), `{a:m|f}`/`{b:m|f}`/`{p:m|f}` agreements — and the
 harness expands every line for all four gender pairs and builds full stories.
 

@@ -526,292 +526,6 @@ public static class PlynlingVisitStory
     // Beat 3: the listener reacts to the subject, then the speaker answers — one \n between them.
     // Keyed by mood and by whether the listener shares the passion. Generic, so {P} stands alone
     // (after a colon, « pour », « sur », or as a subject — never after « de » or « à »).
-    // Step 3: B reacts to A's opener — one line. Keyed by mood and by whether B shares the passion.
-    // {S}/{L} are A and B throughout the conversation. Generic, so {P} stands alone (after a colon,
-    // « pour », « sur », or as a subject — never after « de » or « à »).
-    public static readonly IReadOnlyDictionary<(VisitMood Mood, bool Shared), string[]> Reactions =
-        new Dictionary<(VisitMood, bool), string[]>
-        {
-            [(VisitMood.Acquaintances, false)] = new[] { "[content] Oh. {P}, alors. C'est… intéressant.", "Oh ! Et… ça consiste en quoi, exactement ?", "[content] Je ne m'y connais pas du tout.", "Et tu fais ça depuis longtemps ?", "[content] C'est… original.", "[content] Je ne savais même pas que ça existait.", "Ah. Et… tu en fais souvent ?", "[content] C'est très… précis, comme passion.", "[content] Je vais faire semblant de comprendre, d'accord ?", "Tu as l'air d'y tenir beaucoup." },
-            [(VisitMood.Acquaintances, true)] = new[] { "Attends, toi aussi ? {P} ?", "Non ! Toi aussi ?", "Je n'en parle jamais, d'habitude. Personne ne comprend.", "Sujet préféré : {P}. On a au moins ça en commun.", "Ça alors. Je pensais être {l:le seul|la seule}.", "Attends… c'est vrai ? On a ça en commun ?", "Oh ! Je n'osais en parler à personne.", "Ça alors. Le monde est petit.", "Toi aussi, {P} ?", "Je crois qu'on vient de trouver notre sujet de conversation." },
-            [(VisitMood.Friends, false)] = new[] { "Je n'y connais rien. Explique-moi tout !", "Attends, tu fais vraiment ça ?", "Je ne comprends rien, mais tu as l'air tellement {s:content|contente}.", "Montre-moi !", "Tu m'avais caché ça !", "Tu peux m'apprendre ?", "Je n'y comprends rien, mais je te fais confiance.", "Tu en parles avec tellement de passion…", "D'accord, mais tu m'expliques en version courte.", "Je vais essayer, pour voir." },
-            [(VisitMood.Friends, true)] = new[] { "{P} ! C'est pour ça qu'on s'entend si bien !", "Non, sérieusement ? Toi aussi ?", "On devrait en faire un club !", "Je savais qu'on avait quelque chose en commun.", "Sujet du jour : {P}. Parfait.", "On est vraiment {p:faits|faites} pour s'entendre.", "Tu te rends compte qu'on aime ça {p:tous|toutes} les deux ?", "On pourrait monter une équipe !", "Je savais que tu avais bon goût.", "Sujet favori : {P}. Évidemment." },
-            [(VisitMood.BestFriends, false)] = new[] { "Tu m'en parles tous les jours, tu sais.", "Encore ce sujet ?", "Je ne partage pas ta passion. Mais je partage tout le reste.", "Vas-y, raconte. Je te connais, tu ne tiens plus.", "Je ne comprends toujours pas ce qui te plaît là-dedans.", "Tu sais que je t'écouterai toujours, même sur ce sujet ?", "D'accord. Explique-moi pour la centième fois.", "Je ne partage pas ta passion, mais je partage ton goûter.", "Tu as encore trouvé quelque chose de nouveau là-dessus ?", "Si ça te rend {s:heureux|heureuse}, ça me rend {l:heureux|heureuse} aussi." },
-            [(VisitMood.BestFriends, true)] = new[] { "On en parle encore ? Toujours {P} ?", "Tu te souviens de la première fois qu'on en a parlé ?", "Notre sujet. Rien qu'à nous.", "Tu as déjà vu quelqu'un d'aussi {s:passionné|passionnée} que toi ?", "On va encore en parler pendant des heures, hein ?", "Tu te rappelles notre serment ?", "On devrait écrire un livre là-dessus, à deux.", "Personne ne comprend ce sujet comme toi.", "Encore une fois ?", "Quand on sera {p:vieux|vieilles}, on en parlera encore." },
-            [(VisitMood.Lovers, false)] = new[] { "Je pourrais t'écouter en parler pendant des heures.", "Tu es si {s:mignon|mignonne} quand tu en parles.", "Explique-moi encore. J'aime t'entendre.", "Je vais m'y mettre. Pour toi.", "Tu as les yeux qui brillent.", "Tu es {s:beau|belle} quand tu en parles.", "Apprends-moi. Je veux tout partager avec toi.", "Je n'y connais rien, mais j'adore ta voix quand tu en parles.", "Tu m'emmèneras, la prochaine fois ?", "Tu rougis quand tu en parles." },
-            [(VisitMood.Lovers, true)] = new[] { "Tu sais ce que j'aime encore plus que ça ?", "Tu sais qu'on a la même passion ?", "On pourra en parler toute notre vie ?", "Tu es la seule personne avec qui j'aime en parler.", "On en fait quelque chose, ensemble ?", "C'est un signe, tu ne crois pas ?", "On pourra le faire ensemble, toute la vie ?", "Tu aimes ça aussi… Tu es {s:parfait|parfaite}.", "Je t'aimais déjà. Maintenant, c'est pire.", "Notre passion commune : {P}. Et l'autre : nous deux." },
-            [(VisitMood.Rivals, false)] = new[] { "[angry] Pff. {P}, ce n'est même pas difficile.", "Franchement, c'est facile. Même moi, je pourrais.", "Ça, une passion ? J'ai vu mieux.", "Je parie que je deviendrais {l:meilleur|meilleure} que toi en une semaine.", "Tu y passes trop de temps.", "Je parie que tu n'es même pas si {s:doué|douée} que ça.", "[angry] Moi, je trouve ça surfait.", "Tout le monde peut faire ça.", "C'est ça, ta grande passion ? Pff.", "Je te laisse ce sujet. J'ai mieux à faire." },
-            [(VisitMood.Rivals, true)] = new[] { "J'en sais bien plus que toi sur le sujet.", "Tu fais ça aussi ? Évidemment. Tu copies tout ce que je fais.", "Je suis {l:le meilleur|la meilleure} du coin dans ce domaine.", "On verra qui en sait le plus.", "Match retour sur le sujet : {P}. Quand tu veux.", "Tu ne m'arriveras jamais à la cheville sur ce sujet.", "Je m'y suis {l:mis|mise} avant toi.", "Défi officiel, sujet : {P}. Tu relèves ?", "Tu as encore copié mon idée.", "Il ne peut y avoir qu'un seul champion sur ce sujet." },
-            [(VisitMood.Conflict, false)] = new[] { "Passionnant. Vraiment.", "Et ça t'intéresse vraiment, ça ?", "Tu ne parles que de ça.", "Personne n'a demandé.", "C'est d'un ennui…", "Tu vas encore en parler longtemps ?", "Franchement, c'est nul.", "Je m'ennuie déjà.", "Pourquoi tu me racontes ça, à moi ?", "Change de sujet." },
-            [(VisitMood.Conflict, true)] = new[] { "Tu ne vas pas me l'apprendre, j'en fais depuis bien avant toi.", "Tu t'y prends mal, comme toujours.", "Même passion, et pourtant on ne s'entend pas.", "Tu n'y connais rien.", "Ne me parle pas de ça, pas toi.", "Tu fais tout de travers.", "On aime la même chose, et c'est la seule chose qu'on a en commun.", "Tu n'as rien compris au sujet.", "Ne me dis pas comment faire.", "Tu gâches tout, même ça." },
-        };
-
-    // Steps 4–5, when A talks: a reply that keeps the exchange going (A's other option is a Detail).
-    // Each stands alone — the line before it may be B's reaction, B's follow-up, or A's own Detail.
-    public static readonly IReadOnlyDictionary<(VisitMood Mood, bool Shared), string[]> AnswerFollowups =
-        new Dictionary<(VisitMood, bool), string[]>
-        {
-            [(VisitMood.Acquaintances, false)] = new[]
-            {
-                "Tu dis ça poliment, mais je vais quand même continuer à t'en parler.",
-                "C'est une longue histoire. Tu as l'après-midi ?",
-                "Ce n'est pas grave si tu n'y connais rien. Je vais tout t'expliquer. Tout.",
-                "Je m'y suis {s:mis|mise} un mardi. Depuis, je ne pense qu'à ça.",
-                "Merci de m'écouter. Ce n'est pas tout le monde qui le fait.",
-                "Maintenant que tu sais, tu ne pourras plus jamais l'oublier.",
-                "J'y passe tous mes jours. Deux fois le dimanche.",
-                "Je suis {s:content|contente} que ça t'intéresse. Enfin, que tu fasses semblant.",
-                "[sad] Je vois bien que tu fais semblant de comprendre. C'est gentil quand même.",
-                "Tu veux que je t'en parle encore une petite heure ?",
-            },
-            [(VisitMood.Acquaintances, true)] = new[]
-            {
-                "Je croyais être {s:le seul|la seule} ! On devrait se voir plus souvent.",
-                "On ne se connaît pas encore très bien, mais je sens que ça va changer.",
-                "Je n'en parle jamais, d'habitude. Avec toi, c'est facile.",
-                "On a ça en commun. C'est déjà beaucoup, non ?",
-                "On est deux, maintenant. C'est un club.",
-                "Il faut qu'on se voie plus souvent. Pour en parler. Enfin, pas seulement.",
-                "On pourrait en parler plus souvent. Si tu veux. Sans obligation.",
-                "Le monde vient de devenir un peu plus sympathique.",
-                "Toi aussi ! Enfin, moi aussi ! Enfin, nous deux !",
-                "Je crois qu'on n'est pas près d'épuiser le sujet.",
-            },
-            [(VisitMood.Friends, false)] = new[]
-            {
-                "Tout t'expliquer ? Installe-toi, ça va prendre la journée.",
-                "Un jour, je vais t'y mettre, tu vas voir.",
-                "Tu n'as pas besoin de comprendre. Tu as juste besoin de m'écouter.",
-                "On pourrait essayer tout de suite. Enfin, après le goûter.",
-                "Je ne cache rien. Tu n'avais jamais demandé.",
-                "Première leçon : l'enthousiasme. Tu en as déjà, c'est bien parti.",
-                "C'est gentil de t'intéresser à ça. Vraiment.",
-                "À d'autres, j'en parlerais juste beaucoup. À toi, j'en parle énormément.",
-                "Il n'y a pas de version courte. Assieds-toi.",
-                "Si tu aimes, on en fera ensemble. Si tu n'aimes pas… on en fera quand même.",
-            },
-            [(VisitMood.Friends, true)] = new[]
-            {
-                "Je le savais depuis le début, qu'on avait ça en commun.",
-                "[angry] Je te l'avais dit il y a trois semaines. Tu ne m'écoutes jamais.",
-                "Un club de deux. Le meilleur des clubs.",
-                "Les goûters, et maintenant ça. On a vraiment tout en commun.",
-                "On en reparle demain aussi, si tu veux.",
-                "Je te le dis tout le temps : on est {p:faits|faites} pour s'entendre.",
-                "C'est génial. Vraiment génial.",
-                "Une équipe de deux. Imbattable.",
-                "On a bon goût, {p:tous|toutes} les deux. C'est un fait.",
-                "Évidemment. Personne n'est surpris.",
-            },
-            [(VisitMood.BestFriends, false)] = new[]
-            {
-                "Et tu m'écoutes tous les jours. C'est pour ça que je t'aime bien.",
-                "Tu vas encore m'écouter jusqu'au bout. Comme toujours.",
-                "Tu n'as pas besoin d'aimer ça. Tu as juste besoin de m'aimer, moi.",
-                "Tu me connais trop bien. C'est effrayant.",
-                "Je ne sais pas non plus pourquoi j'aime autant ça. C'est ça qui est bien.",
-                "C'est ça, l'amitié : écouter l'autre parler de choses qu'on ne comprend pas.",
-                "La cent-unième fois, tu vas enfin comprendre, j'en suis {s:sûr|sûre}.",
-                "Tu m'écoutes, je te fais un goûter. C'est un excellent compromis.",
-                "Tu es toujours la première personne à qui je raconte tout ça.",
-                "C'est gentil de faire semblant de t'y intéresser. Je le vois, tu sais.",
-            },
-            [(VisitMood.BestFriends, true)] = new[]
-            {
-                "Et toi aussi, tu adores ça, avoue.",
-                "On en a parlé jusqu'à la nuit, la dernière fois. On recommence ?",
-                "Rien qu'à nous. Et à personne d'autre. C'est ça le plus beau.",
-                "Tu es la seule personne qui comprenne vraiment.",
-                "On pourrait en parler des heures. Des jours. Des années.",
-                "On ne se souvient même plus comment ça a commencé. Et on continue.",
-                "On écrit notre histoire là-dessus depuis le début, sans le savoir.",
-                "On est les deux seules personnes au monde à comprendre ça.",
-                "Encore une fois ? Encore une fois. Comme d'habitude.",
-                "Quand on sera {p:vieux|vieilles}, on en parlera encore. Plus fort.",
-            },
-            [(VisitMood.Lovers, false)] = new[]
-            {
-                "Tu dis que tu écoutes, mais tu regardes surtout mes yeux. 💕",
-                "Arrête de me regarder comme ça, je vais oublier ce que je disais.",
-                "Tu n'écoutes pas vraiment, hein ?… Tant pis, je continue. 💕",
-                "Tu n'es pas {l:obligé|obligée} d'aimer ça… Mais je suis très {s:touché|touchée} que tu essaies. 💞",
-                "Je ne sais plus si c'est le sujet qui me plaît, ou toi. Un peu les deux. 💕",
-                "Tu es {l:beau|belle} quand tu m'écoutes, tu sais. 💕",
-                "Le plus important, c'est nous deux. Ça, c'est juste en deuxième. 💞",
-                "Alors je vais en parler pendant très longtemps, rien que pour toi. 💕",
-                "Un jour, je t'emmènerai. Partout. Même là où c'est ennuyeux. 💞",
-                "Si je rougis, ce n'est pas à cause du sujet. C'est parce que tu me regardes. 💕",
-            },
-            [(VisitMood.Lovers, true)] = new[]
-            {
-                "On aime vraiment la même chose… Oh. Oh ! 💕",
-                "Je crois que c'est pour ça que je t'aime. Enfin, pas seulement. 💞",
-                "On en fera toute notre vie. Et un peu après. 💕",
-                "Tu es la seule personne avec qui j'aime me taire aussi. 💞",
-                "Tout ce que tu veux. Avec toi, c'est toujours mieux. 💕",
-                "Tout ce qui te concerne est un signe, je crois. 💞",
-                "Toute la vie, et même le dimanche. 💕",
-                "On est {p:parfaits|parfaites} ensemble, tu ne trouves pas ? 💞",
-                "Je t'aimais déjà. Maintenant, c'est pire. 💕",
-                "Notre passion commune, c'est bien. Mais ma préférée, c'est nous deux. 💞",
-            },
-            [(VisitMood.Rivals, false)] = new[]
-            {
-                "Si c'est si facile, montre-moi.",
-                "Essaie, pour voir. Je te regarde.",
-                "Tu n'y connais rien. Tu es juste {l:jaloux|jalouse}.",
-                "Pari tenu : rendez-vous dans une semaine.",
-                "Tu passes beaucoup de temps à me regarder faire, pour quelqu'un qui s'en fiche.",
-                "Viens vérifier. Je t'attends.",
-                "Tu dis ça parce que tu n'y arrives pas.",
-                "Si c'est si simple, pourquoi tu ne le fais pas ?",
-                "Ta seule passion, à toi, c'est de me contredire.",
-                "Regarde bien. Et apprends.",
-            },
-            [(VisitMood.Rivals, true)] = new[]
-            {
-                "On parie ?",
-                "C'est toi qui copies. J'ai commencé avant.",
-                "Tu te crois {l:le meilleur|la meilleure} du coin ? Plus pour longtemps.",
-                "On sait déjà qui en sait le plus. Moi.",
-                "Maintenant. Tout de suite. Prépare-toi.",
-                "Attention, je suis juste derrière toi. Tout près.",
-                "J'y suis {s:meilleur|meilleure} que toi, et tu le sais.",
-                "Ton défi, je l'ai relevé avant même que tu le lances.",
-                "C'était mon idée. Tu l'as eue après moi, voilà tout.",
-                "Tu peux déjà aller chercher le trophée pour me le donner.",
-            },
-            [(VisitMood.Conflict, false)] = new[]
-            {
-                "Tu pourrais au moins faire semblant de t'intéresser.",
-                "Ça m'intéresse plus que cette conversation, en tout cas.",
-                "Et toi, tu ne parles que pour te plaindre.",
-                "Personne ne t'a {l:obligé|obligée} à venir.",
-                "Si ça t'ennuie, pourquoi tu écoutes ?",
-                "J'en parlerai jusqu'à ce que tu partes. Ou plus.",
-                "Franchement, tu es de mauvaise foi.",
-                "Tu t'ennuies ? C'est ton état naturel, non ?",
-                "Je t'en parle parce que tu es là. Pas par choix.",
-                "C'est le seul sujet qui ne te concerne pas. C'est reposant.",
-            },
-            [(VisitMood.Conflict, true)] = new[]
-            {
-                "C'est ça. Continue de te vanter.",
-                "C'est drôle, j'allais te dire exactement la même chose.",
-                "Si on ne s'entend pas, c'est ta faute. Comme d'habitude.",
-                "J'y connais plus que toi, et tu le sais.",
-                "Très bien. J'en parlerai à quelqu'un de plus agréable.",
-                "Tu donnes des leçons que personne ne demande.",
-                "On a au moins ça en commun. Et c'est déjà trop.",
-                "J'ai compris que tu adores avoir raison.",
-                "Arrête de le faire mal, et on en reparlera.",
-                "Tu gâches tout. C'est presque un talent.",
-            },
-        };
-
-    // Steps 4–5, when B talks: a question or a comment on what A is saying. B may talk twice in a
-    // row, so each stands alone too.
-    public static readonly IReadOnlyDictionary<(VisitMood Mood, bool Shared), string[]> Followups =
-        new Dictionary<(VisitMood, bool), string[]>
-        {
-            [(VisitMood.Acquaintances, false)] = new[]
-            {
-                "Et… ça consiste en quoi, exactement ?",
-                "[content] Je ne suis pas {l:sûr|sûre} de tout suivre, mais continue.",
-                "D'accord. Et c'est difficile ?",
-                "Tu as appris ça {s:tout seul|toute seule} ?",
-                "[content] C'est… intéressant. Vraiment. Enfin, je crois.",
-            },
-            [(VisitMood.Acquaintances, true)] = new[]
-            {
-                "Toi aussi, tu as commencé comment ?",
-                "Je fais exactement pareil ! C'est fou.",
-                "On devrait comparer nos techniques, un jour.",
-                "Tu en connais beaucoup, des gens comme nous ?",
-                "Je n'en parle jamais à personne, d'habitude.",
-            },
-            [(VisitMood.Friends, false)] = new[]
-            {
-                "Attends, attends. Refais-moi le passage important.",
-                "Et moi, je pourrais essayer ?",
-                "Tu m'expliques encore ? J'ai décroché au milieu.",
-                "Tu as l'air tellement {s:heureux|heureuse} quand tu en parles.",
-                "D'accord, mais qu'est-ce qui est si génial, exactement ?",
-            },
-            [(VisitMood.Friends, true)] = new[]
-            {
-                "Et tu connais celle-là ? Non ? Attends, je te raconte !",
-                "On est vraiment {p:pareils|pareilles}, toi et moi.",
-                "Tu te souviens de la première fois qu'on en a parlé ?",
-                "Je savais que tu comprendrais !",
-                "On devrait en faire un club. Avec des badges.",
-            },
-            [(VisitMood.BestFriends, false)] = new[]
-            {
-                "Encore ? Vas-y, je t'écoute. Comme toujours.",
-                "Je ne comprends toujours rien, mais j'adore te voir en parler.",
-                "Raconte-moi la suite, je sais qu'il y en a une.",
-                "Tu me l'as déjà racontée hier. Raconte-la encore.",
-                "Tu devrais écrire un livre là-dessus. Je le lirais. Enfin, je regarderais les images.",
-            },
-            [(VisitMood.BestFriends, true)] = new[]
-            {
-                "Tu te souviens quand on en a parlé jusqu'à la nuit ?",
-                "On est {p:les seuls|les seules} à comprendre ça, hein ?",
-                "Je te préviens : moi aussi, je vais tout te raconter.",
-                "C'est notre truc. Rien qu'à nous.",
-                "On pourrait ne parler que de ça pendant une semaine.",
-            },
-            [(VisitMood.Lovers, false)] = new[]
-            {
-                "Continue. J'aime t'entendre parler. 💕",
-                "Je ne comprends pas tout, mais tu es adorable quand tu en parles.",
-                "Tu m'apprendras ? Rien que pour être avec toi. 💞",
-                "Tu as les yeux qui brillent. C'est beau.",
-                "Je pourrais t'écouter des heures. Enfin, je t'écoute des heures. 💕",
-            },
-            [(VisitMood.Lovers, true)] = new[]
-            {
-                "On aime même les mêmes choses… C'est un signe. 💞",
-                "Tu sais que c'est un peu pour ça que je suis {l:tombé amoureux|tombée amoureuse} ?",
-                "On fera tout ça ensemble, hein ? Promis ? 💕",
-                "Ton passage préféré, c'est aussi le mien.",
-                "Même là-dessus, on est d'accord. C'est presque trop. 💞",
-            },
-            [(VisitMood.Rivals, false)] = new[]
-            {
-                "[angry] Pff. N'importe qui pourrait faire ça.",
-                "[angry] Et c'est censé m'impressionner ?",
-                "J'y arriverais en deux jours, moi.",
-                "[angry] C'est tout ce que tu as ?",
-                "Tu en parles beaucoup, pour quelqu'un qui n'est pas si {s:doué|douée}.",
-            },
-            [(VisitMood.Rivals, true)] = new[]
-            {
-                "Moi, je fais ça depuis plus longtemps que toi.",
-                "Ma technique est meilleure, tu le sais.",
-                "On verra qui en sait le plus.",
-                "[angry] Tu copies tout ce que je fais, c'est fou.",
-                "Match retour quand tu veux.",
-            },
-            [(VisitMood.Conflict, false)] = new[]
-            {
-                "Tu vas encore en parler longtemps ?",
-                "Ça n'intéresse personne, tu sais.",
-                "Change de sujet. Vraiment.",
-                "Et alors ?",
-                "Je fais semblant d'écouter, là. Ça se voit ?",
-            },
-            [(VisitMood.Conflict, true)] = new[]
-            {
-                "Tu t'y prends mal, comme toujours.",
-                "Tu n'as rien compris au sujet.",
-                "Ne me dis pas comment faire.",
-                "Tu gâches même ça.",
-                "C'est moi qui t'ai fait découvrir ça, je te rappelle.",
-            },
-        };
-
     // Step 6: the talk winds down and turns into doing something. {S} is whoever says it here.
     public static readonly IReadOnlyDictionary<VisitMood, string[]> Closers = new Dictionary<VisitMood, string[]>
     {
@@ -871,42 +585,6 @@ public static class PlynlingVisitStory
         },
     };
 
-    // Steps 4–5, when A talks about a typed passion: a fact or an anecdote, {P} standalone.
-    public static readonly string[] CustomDetails =
-    {
-        "Le plus beau souvenir de ma vie ? Il a un rapport avec ça : {P}.",
-        "J'y pense même en dormant. {P}, toujours {P}.",
-        "Tout a commencé un mardi. Depuis, ma passion, c'est ça : {P}.",
-        "Je pourrais en parler pendant des heures. Le sujet ? {P}. Évidemment.",
-        "Je collectionne tout ce qui a un rapport avec ça : {P}. J'ai une boîte entière.",
-        "Un jour, je serai {s:le meilleur|la meilleure} du monde. Discipline : {P}.",
-        "Quand ça ne va pas, je pense à une seule chose : {P}. Et ça va mieux.",
-        "Il y a encore tellement à apprendre. Le sujet est immense : {P}.",
-        "J'en ai même rêvé la nuit dernière. Le thème du rêve : {P}. C'était très beau.",
-        "Personne ne comprend pourquoi j'aime autant ça : {P}. Toi, peut-être ?",
-    };
-
-    // Beat 2 for a custom (typed) passion: narration, then the speaker's line.
-    public static readonly string[] CustomOpeners =
-    {
-        "{S} se redresse, l'air très sérieux.\nJe dois t'avouer quelque chose. Ma passion ? {P}.",
-        "{S} sort un carnet couvert de dessins.\nTout ça, c'est pour {P}. Oui, tout.",
-        "{S} prend une grande inspiration.\nIl faut que je te parle de quelque chose d'important : {P}.",
-        "{S} a l'air d'avoir attendu ce moment toute la journée.\nDevine à quoi j'ai pensé toute la semaine. {P}. Évidemment.",
-        "{S} sort une petite affiche dessinée à la main. On y lit, en grand : {P}.\nJe l'ai faite ce matin. Tu la trouves comment ?",
-        "{S} se met à parler très vite, les yeux brillants.\nTu sais ce qui me rend {s:heureux|heureuse} ? {P}. Tout le temps. Sans exception.",
-        "{S} baisse la voix, comme pour un secret.\nPersonne ne le sait encore, mais ma grande passion, c'est… {P}.",
-        "{S} montre un carnet rempli de notes.\nThème : {P}. J'ai tout noté. Tu veux voir la page quarante-deux ?",
-        "{S} tapote sur un petit caillou pour réclamer le silence.\nAnnonce officielle. Mon sujet préféré au monde : {P}.",
-        "{S} tend un dessin maladroit, visiblement fait avec amour. En légende : {P}.\nJe te l'offre. Tu comprendras en le regardant. Enfin, j'espère.",
-        "{S} se racle la gorge, très {s:solennel|solennelle}.\nJe voulais te présenter ce qui compte le plus pour moi : {P}. Voilà. C'est dit.",
-        "{S} ne tient pas plus de trois secondes sans en parler.\nBon, je craque. Mon sujet du jour : {P}.",
-        "{S} arrive avec un petit panneau autour du cou. Dessus : {P}.\nComme ça, tout le monde sait. C'est plus simple.",
-        "{S} fait durer le suspense en tournant autour de {L}.\nDevine ce qui me passionne en ce moment. Tu donnes ta langue au chat ? {P} !",
-        "{S} ouvre une petite boîte avec cérémonie. À l'intérieur, une étiquette : {P}.\nC'est ma passion. Je la garde précieusement.",
-        "{S} parle si vite que les mots se bousculent.\nJ'ai-découvert-un-truc-génial : {P}. Il-faut-que-je-t'explique-tout.",
-    };
-
     // Beat 4 for a custom subject. No Conflict: in a conflict the activity is always the squabble.
     public static readonly IReadOnlyDictionary<VisitMood, string[]> CustomActivities = new Dictionary<VisitMood, string[]>
     {
@@ -936,8 +614,8 @@ public static class PlynlingVisitStory
     }
 
     /// <summary>
-    /// The story of <paramref name="outcome"/>, in eight steps: arrival, the opener (A raises the
-    /// subject), B's reaction, two talk steps, a closer, the activity, then parting with
+    /// The story of <paramref name="outcome"/>, in eight steps: arrival, then a four-line script in which
+    /// A raises the subject and each line answers the one before (steps 2–5), a closer, the activity, then parting with
     /// <paramref name="outcomeLines"/> — what the visit changed. Each step carries both faces.
     /// <paramref name="pick"/> chooses a line from a pool (the handler passes ResponsePicker, so a
     /// channel does not see the same line twice in a row); by default it draws from <paramref name="rng"/>.
@@ -974,37 +652,27 @@ public static class PlynlingVisitStory
         var f = new FacePair(faces.Narration, faces.Narration).Narrate(arrivalTag);
         beats.Add(f.Beat($"*{pick(place.Scenes)}*\n{X(arrival)}"));
 
-        // 2. The opener: narration, then A's line.
-        var opener = pick(info?.Openers ?? CustomOpeners).Split('\n');
+        // 2–5. The conversation: one script, four lines that answer each other — the opener (A's
+        // narration and words), then one spoken line per step, from whichever of them the script says.
+        var flavor = mood is VisitMood.Rivals or VisitMood.Conflict ? ConvoFlavor.Tense : ConvoFlavor.Friendly;
+        var scripts = subject.Catalog is { } passion
+            ? PlynlingScripts.For(passion, flavor, shared)
+            : PlynlingScripts.ForCustom(flavor, shared);
+        var openerKey = pick(scripts.Select(x => x.Lines[0].Text).ToArray());
+        var script = scripts.First(x => x.Lines[0].Text == openerKey);
+
+        var opener = script.Lines[0].Text.Split('\n');
         var (narration, narrationTag) = Untag(opener[0]);
         var (said, saidTag) = Untag(opener[1]);
         f = Talking(aIsVisitor).Narrate(narrationTag).Speak(saidTag, aIsVisitor);
         beats.Add(f.Beat($"{C(narration)}\n{Said(a, C(said))}"));
 
-        // 3. B reacts; a shared catalog passion adds its shared line.
-        var (reaction, reactionTag) = Untag(pick(Reactions[(mood, shared)]));
-        f = Talking(!aIsVisitor).Speak(reactionTag, !aIsVisitor);
-        var text = Said(b, C(reaction));
-        if (shared && info is not null)
+        foreach (var line in script.Lines.Skip(1))
         {
-            var (line, lineTag) = Untag(pick(info.SharedLines));
-            f.Narrate(lineTag);
-            text += "\n" + C(line);
-        }
-        beats.Add(f.Beat(text));
-
-        // 4–5. Talk: usually the other one's turn, sometimes the same one again.
-        var talkerIsA = false;
-        for (var step = 0; step < 2; step++)
-        {
-            talkerIsA = rng.NextDouble() < TurnChance ? !talkerIsA : talkerIsA;
-            var talkerIsVisitor = talkerIsA == aIsVisitor;
-            var pool = !talkerIsA ? Followups[(mood, shared)]
-                : rng.Next(2) == 0 ? (info?.Details ?? CustomDetails)
-                : AnswerFollowups[(mood, shared)];
-            var (talk, talkTag) = Untag(pick(pool));
-            f = Talking(talkerIsVisitor).Speak(talkTag, talkerIsVisitor);
-            beats.Add(f.Beat(Said(talkerIsA ? a : b, C(talk))));
+            var byVisitor = line.ByA == aIsVisitor;
+            var (talk, talkTag) = Untag(line.Text);
+            f = Talking(byVisitor).Speak(talkTag, byVisitor);
+            beats.Add(f.Beat(Said(line.ByA ? a : b, C(talk))));
         }
 
         // 6. The closer, from either of them; {S} is whoever says it.
@@ -1030,9 +698,6 @@ public static class PlynlingVisitStory
         var heading = $"{place.Emoji} {place.Name.Replace("{B}", host.Name)}";
         return new VisitStory("", heading, beats, visitor, host, PlynlingCatalog.Info(outcome.Host.Species).Accent);
     }
-
-    // How often a talk step goes to the other one rather than the same one again.
-    public const double TurnChance = 0.7;
 
     // The default faces by mood: whoever talks, whoever listens, and both during narration.
     private static (PlynlingMood Speaker, PlynlingMood Listener, PlynlingMood Narration) Faces(VisitMood mood) => mood switch
