@@ -31,6 +31,7 @@ public class AppDbContext : DbContext
     public DbSet<PlynlingRelation> PlynlingRelations => Set<PlynlingRelation>();
     public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
     public DbSet<CollectionCompletion> CollectionCompletions => Set<CollectionCompletion>();
+    public DbSet<EconomyDailyStat> EconomyDailyStats => Set<EconomyDailyStat>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -237,6 +238,12 @@ public class AppDbContext : DbContext
             e.Property(x => x.GuildId).HasConversion<long>();
             e.Property(x => x.UserId).HasConversion<long>();
             e.HasIndex(x => new { x.GuildId, x.UserId, x.SetKey }).IsUnique();
+        });
+
+        modelBuilder.Entity<EconomyDailyStat>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.Day, x.Metric }).IsUnique();
         });
 
         modelBuilder.Entity<PebbleWallet>(e =>

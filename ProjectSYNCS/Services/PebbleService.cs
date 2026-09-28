@@ -28,6 +28,7 @@ public class PebbleService
 
         wallet.Balance += pay;
         wallet.LastWorkAt = now;
+        await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.EarnWork, pay, now);
         await _db_context.SaveChangesAsync();
         return new WorkResult(true, pay, wallet.Balance, now + PebbleEconomy.WorkCooldown);
     }
@@ -43,6 +44,7 @@ public class PebbleService
         wallet.Balance += granted;
         wallet.PassiveDay = today;
         wallet.PassiveToday = total;
+        await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.EarnPassive, granted, DateTimeOffset.UtcNow);
         await _db_context.SaveChangesAsync();
         return granted;
     }
@@ -65,6 +67,8 @@ public class PebbleService
         var wallet = await GetOrCreateWalletAsync(_db_context, guildId, userId);
         var old = wallet.Balance;
         wallet.Balance = Math.Max(0, old + delta);
+        var moved = wallet.Balance - old;
+        await EconomyLog.AddAsync(_db_context, guildId, moved >= 0 ? EconomyLog.EarnAdmin : EconomyLog.SpendAdmin, Math.Abs(moved), DateTimeOffset.UtcNow);
         await _db_context.SaveChangesAsync();
         return (old, wallet.Balance);
     }

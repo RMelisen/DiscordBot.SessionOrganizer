@@ -83,13 +83,18 @@ public class InventoryService
         db.CollectionCompletions.Add(new CollectionCompletion { GuildId = guildId, UserId = userId, SetKey = setKey, CompletedAt = now });
         var wallet = await PebbleService.GetOrCreateWalletAsync(db, guildId, userId);
         wallet.Balance += set.Reward;
+        await EconomyLog.AddAsync(db, guildId, EconomyLog.ItemSet, 1, now);
+        await EconomyLog.AddAsync(db, guildId, EconomyLog.EarnCollection, set.Reward, now);
         completed.Add(set);
         return completed;
     }
 
     /// <summary>One found item into someone's inventory (not saved, like <see cref="AddAsync"/>).</summary>
-    public static async Task<ItemFind> GrantAsync(AppDbContext db, ulong guildId, ulong userId, ItemInfo item, DateTimeOffset now) =>
-        new(item, await AddAsync(db, guildId, userId, item.Key, 1, now));
+    public static async Task<ItemFind> GrantAsync(AppDbContext db, ulong guildId, ulong userId, ItemInfo item, DateTimeOffset now)
+    {
+        await EconomyLog.AddAsync(db, guildId, EconomyLog.ItemFound, 1, now);
+        return new(item, await AddAsync(db, guildId, userId, item.Key, 1, now));
+    }
 
     public enum GiveOutcome { Given, NotEnough, UnknownItem, NotSellable }
 
@@ -101,6 +106,7 @@ public class InventoryService
         if (wallet.Balance < price) return (false, price, wallet.Balance);
         wallet.Balance -= price;
         await AddAsync(_db_context, guildId, userId, ItemCatalog.FoodKey(food), quantity, now);
+        await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.SpendShop, price, now);
         await _db_context.SaveChangesAsync();
         return (true, price, wallet.Balance);
     }
@@ -112,6 +118,7 @@ public class InventoryService
         if (ItemCatalog.ByKey(key) is null) return (GiveOutcome.UnknownItem, new());
         if (!await TakeAsync(_db_context, guildId, fromId, key, quantity)) return (GiveOutcome.NotEnough, new());
         var completed = await AddAsync(_db_context, guildId, toId, key, quantity, now);
+        await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.ActGive, 1, now);
         await _db_context.SaveChangesAsync();
         return (GiveOutcome.Given, completed);
     }
@@ -131,6 +138,7 @@ public class InventoryService
         await TakeAsync(_db_context, g, offer.ToId, offer.WantKey, offer.WantQty);
         var toSets = await AddAsync(_db_context, g, offer.ToId, offer.GiveKey, offer.GiveQty, now);
         var fromSets = await AddAsync(_db_context, g, offer.FromId, offer.WantKey, offer.WantQty, now);
+        await EconomyLog.AddAsync(_db_context, g, EconomyLog.ActTrade, 1, now);
         await _db_context.SaveChangesAsync();
         return (TradeOutcome.Done, fromSets, toSets);
     }
@@ -145,6 +153,7 @@ public class InventoryService
         var earned = ItemCatalog.SellPrice(item.Rarity) * quantity;
         var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, guildId, userId);
         wallet.Balance += earned;
+        await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.EarnSale, earned, DateTimeOffset.UtcNow);
         await _db_context.SaveChangesAsync();
         return (GiveOutcome.Given, earned, wallet.Balance);
     }

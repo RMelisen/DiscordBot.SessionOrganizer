@@ -126,7 +126,12 @@ public class PlynlingService
         var wasStarving = PlynlingLife.HungerAt(plynling, now) < PlynlingLife.StarvingBelow;
         var factor = PlynlingLife.MealFactor(plynling, now);
         if (fromPantry) await InventoryService.TakeAsync(_db_context, plynling.GuildId, actorId, foodKey, pantryNeeded);
-        else wallet.Balance -= price;
+        else
+        {
+            wallet.Balance -= price;
+            await EconomyLog.AddAsync(_db_context, plynling.GuildId, isOwner ? EconomyLog.SpendMeal : EconomyLog.SpendMealOther, price, now);
+        }
+        await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActMeal, 1, now);
         PlynlingLife.Feed(plynling, info, now);
         plynling.Meals++;
         if (plynling.Meals == 1) await AddMomentAsync(plynling, JournalKind.FirstMeal, null, now);
@@ -149,6 +154,7 @@ public class PlynlingService
 
         PlynlingLife.Pet(plynling, now);
         plynling.Pets++;
+        await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActPet, 1, now);
         var badges = await AwardAsync(plynling, now);
         await _db_context.SaveChangesAsync();
         return (CareOutcome.Done, plynling, badges);
@@ -207,7 +213,12 @@ public class PlynlingService
         PlynlingLife.Play(plynling, now, won);
         if (won && plynling.PlaysWon == 1) await AddMomentAsync(plynling, JournalKind.FirstWin, null, now);
         var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, plynling.GuildId, ownerId);
-        if (won && pebbles > 0) wallet.Balance += pebbles;
+        if (won && pebbles > 0)
+        {
+            wallet.Balance += pebbles;
+            await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.EarnGame, pebbles, now);
+        }
+        await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActGame, 1, now);
         var find = won && rng.NextDouble() < ItemCatalog.PlayFindChance
             ? await InventoryService.GrantAsync(_db_context, plynling.GuildId, ownerId, ItemCatalog.DrawCollectible(rng, now), now)
             : null;
@@ -293,6 +304,7 @@ public class PlynlingService
         var hostFind = await FindFor(host);
         var visitorBadges = await AwardAsync(visitor, now, evt);
         var hostBadges = await AwardAsync(host, now, evt);
+        await EconomyLog.AddAsync(_db_context, visitor.GuildId, EconomyLog.ActVisit, 1, now);
         await _db_context.SaveChangesAsync();
         return new VisitOutcome(visitor, host, visitorBadges, hostBadges, good, before, after, confession, happiness,
             visitorFind, hostFind);
@@ -471,6 +483,7 @@ public class PlynlingService
         {
             var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, p.GuildId, p.OwnerId);
             wallet.Balance += found;
+            await EconomyLog.AddAsync(_db_context, p.GuildId, EconomyLog.EarnGift, found, now);
             result = new GiftResult(found, null);
         }
         await _db_context.SaveChangesAsync();
@@ -494,6 +507,7 @@ public class PlynlingService
 
         wallet.LastForageAt = now;
         var find = await InventoryService.GrantAsync(_db_context, guildId, ownerId, ItemCatalog.DrawForage(rng, now), now);
+        await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.ActForage, 1, now);
         await _db_context.SaveChangesAsync();
         return new ForageResult(CareOutcome.Done, p, find);
     }
@@ -581,6 +595,7 @@ public class PlynlingService
         {
             var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, p.GuildId, p.OwnerId);
             wallet.Balance += reward;
+            await EconomyLog.AddAsync(_db_context, p.GuildId, EconomyLog.EarnBadge, reward, now);
         }
         return fresh;
     }
