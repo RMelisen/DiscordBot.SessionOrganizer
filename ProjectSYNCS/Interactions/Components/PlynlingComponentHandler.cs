@@ -263,7 +263,12 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
     [ComponentInteraction("vis:next:*:*", ignoreGroupNames: true)]
     public Task OnVisitNextAsync(string id, string beatStr) => PageStoryAsync(id, beatStr, +1);
 
-    private async Task PageStoryAsync(string id, string beatStr, int step)
+    // « ↺ Début », on the last step: back to the first.
+    [ComponentInteraction("vis:first:*:*", ignoreGroupNames: true)]
+    public Task OnVisitFirstAsync(string id, string beatStr) =>
+        PageStoryAsync(id, beatStr, 0, toStart: true);
+
+    private async Task PageStoryAsync(string id, string beatStr, int step, bool toStart = false)
     {
         var story = _stories.Get(id);
         if (story is null || !int.TryParse(beatStr, out var beat))
@@ -271,7 +276,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             await RespondAsync(PlynlingText.StoryGone, ephemeral: true);
             return;
         }
-        var card = PlynlingPlayCards.BuildVisitStory(story, beat + step);
+        var card = PlynlingPlayCards.BuildVisitStory(story, toStart ? 0 : beat + step);
         await ((SocketMessageComponent)Context.Interaction).UpdateAsync(m =>
         {
             m.Components = card;

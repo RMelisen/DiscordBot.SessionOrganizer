@@ -37,9 +37,16 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   narrow round cap puts that corner near the top, so the Mycena and the Coprin nudge it with
   `anger_nudge` in `common.SPECIES`. Its 14 files (7 adults, 7 babies) were added without a
   version bump — they are new filenames, and every existing file re-exports byte-identical.
+- **Visit pictures** (`plynling_<species>[_baby]_<face>_visit_v4.webp`, 56 files: happy, content, sad
+  and angry, adults and babies) are the same animation on a larger transparent canvas
+  (`VISIT_CANVAS = 40` cells against the sprite's 32, so the sprite fills 80 % of its tile; still
+  whole-pixel scaling, so the pixel art stays sharp). A visit shows two Plynlings side by side in a
+  gallery and Discord stretches each to half the message width, which can't be shrunk from the
+  bot — so the sprite is shrunk inside its picture. Change `VISIT_CANVAS` and re-export to make
+  them smaller or larger. Added without a version bump, like the angry faces.
 - `memorials.py` — the five memorial tiers (cairn → statue), each carrying the species' accent colour.
 - `source/` — the four food sprites (16×16, hand-drawn), exported as-is.
-- `export.py` — renders all 151 files at 256×256 into `assets/plynlings/`: the 112 living sprites as
+- `export.py` — renders all 207 files into `assets/plynlings/` (256×256, and 320×320 for the 56 `_visit` ones): the 112 living sprites as
   looping, lossless animated WebP (so the soft shadow and the Mycena's halo keep their partial
   transparency), the memorials and foods as PNG. Pillow merges identical consecutive frames into
   one longer frame, so a file holds fewer than 16 frames while still lasting 2 s.

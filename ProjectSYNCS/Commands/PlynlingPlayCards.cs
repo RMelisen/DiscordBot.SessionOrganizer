@@ -82,6 +82,7 @@ public static class PlynlingPlayCards
     // The two arrows' verbs differ, so a card never carries the same id twice (disabled or not).
     public static string VisitPrevId(string story, int beat) => $"vis:prev:{story}:{beat}";
     public static string VisitNextId(string story, int beat) => $"vis:next:{story}:{beat}";
+    public static string VisitFirstId(string story, int beat) => $"vis:first:{story}:{beat}";
 
     /// <summary>
     /// What a visit changed, closing its story: the confession, the bond, badges, finds, and the
@@ -113,6 +114,17 @@ public static class PlynlingPlayCards
         return string.Join("\n", lines);
     }
 
+    // ◀ and ▶; on the last step ▶ has nowhere to go, so it becomes « ↺ Début », back to step 1.
+    // Its own verb, so it can never share an id with ▶.
+    private static ActionRowBuilder BuildVisitArrows(VisitStory story, int beat)
+    {
+        var row = new ActionRowBuilder()
+            .WithButton("◀", VisitPrevId(story.Id, beat), ButtonStyle.Secondary, disabled: beat == 0);
+        return beat == story.Beats.Count - 1
+            ? row.WithButton("↺ Début", VisitFirstId(story.Id, beat), ButtonStyle.Secondary)
+            : row.WithButton("▶", VisitNextId(story.Id, beat), ButtonStyle.Secondary);
+    }
+
     /// <summary>
     /// One step of a visit's story: the place, the two Plynlings side by side (a gallery of two, each
     /// in this step's face; the alt text is its name), then the step's text, « 3/8 », and ◀ ▶ — from
@@ -131,9 +143,7 @@ public static class PlynlingPlayCards
                     .AddItem(story.Host.Sprite(step.HostFace), story.Host.Name, false))
                 .AddComponent(new SeparatorBuilder())
                 .AddComponent(new TextDisplayBuilder($"{step.Text}\n-# {beat + 1}/{story.Beats.Count}")))
-            .AddComponent(new ActionRowBuilder()
-                .WithButton("◀", VisitPrevId(story.Id, beat), ButtonStyle.Secondary, disabled: beat == 0)
-                .WithButton("▶", VisitNextId(story.Id, beat), ButtonStyle.Secondary, disabled: beat == story.Beats.Count - 1))
+            .AddComponent(BuildVisitArrows(story, beat))
             .Build();
     }
 }

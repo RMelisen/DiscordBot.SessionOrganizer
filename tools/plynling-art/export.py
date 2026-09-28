@@ -28,6 +28,13 @@ FOODS = ["mushroom", "shiitake", "morel", "truffle"]
 # (artcheck compares them). The adult keeps its stage-less filename, and ado and ancien wear
 # it too; the baby inserts "_baby".
 STAGED = {"amanite", "cepe", "rose", "russule", "mystique", "dore", "coprin"}
+# A visit shows two Plynlings side by side in a gallery, and Discord stretches each to half the
+# message width. To make them a little smaller, the visit pictures put the same 32x32 sprite on a
+# larger transparent canvas: VISIT_CANVAS grid cells wide, so the sprite fills 32 / VISIT_CANVAS of
+# its tile (40 -> 80 %). Whole-pixel scaling only, so the pixel art stays sharp. Only the four faces
+# a visit uses. Must match PlynlingArt.VisitSprite in the bot.
+VISIT_CANVAS = 40
+VISIT_STATES = ["happy", "content", "sad", "angry"]
 
 
 def big(im):
@@ -38,6 +45,21 @@ def big(im):
 
 def save(im, name):
     big(im).save(os.path.join(OUT, f"{name}_v{ART_VERSION}.png"), optimize=True)
+
+
+def padded(im):
+    """The sprite centred on the larger visit canvas, then scaled up without smoothing."""
+    canvas = Image.new("RGBA", (VISIT_CANVAS, VISIT_CANVAS), (0, 0, 0, 0))
+    pad = (VISIT_CANVAS - im.width) // 2
+    canvas.alpha_composite(im, (pad, pad))
+    scale = SIZE // 32
+    return canvas.resize((VISIT_CANVAS * scale, VISIT_CANVAS * scale), Image.NEAREST)
+
+
+def save_visit_loop(frames, name):
+    frames = [padded(f) for f in frames]
+    frames[0].save(os.path.join(OUT, f"{name}_visit_v{ART_VERSION}.webp"), save_all=True,
+                   append_images=frames[1:], duration=FRAME_MS, loop=0, lossless=True, method=6)
 
 
 def save_loop(frames, name):
@@ -59,6 +81,12 @@ def main():
             if sp in STAGED:
                 save_loop([build(state, sp, f, stage="baby") for f in range(FRAMES)], f"plynling_{sp}_baby_{state}")
                 count += 1
+            if state in VISIT_STATES:
+                save_visit_loop([build(state, sp, f) for f in range(FRAMES)], f"plynling_{sp}_{state}")
+                count += 1
+                if sp in STAGED:
+                    save_visit_loop([build(state, sp, f, stage="baby") for f in range(FRAMES)], f"plynling_{sp}_baby_{state}")
+                    count += 1
         for tier in range(1, 6):
             save(memorial(tier, sp), f"memorial_{sp}_{tier}")
             count += 1

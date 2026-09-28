@@ -1277,8 +1277,11 @@ faces parse — an unknown word stays text, and the harness fails on any line st
 ◀ ▶ (`vis:prev:{story}:{beat}` / `vis:next:…`, two verbs, disabled at the ends) **from the first
 step**: « Accueillir » closes the knock in place and posts step 1 as a follow-up — a new message at
 the bottom of the channel — and the reader pages at their own pace. There is no timer and no
-background edit. A gallery of two spans the full width on a phone, so each sprite is about half the
-screen; that was accepted when it replaced the one-thumbnail-per-Plynling `Section`. Stories live in
+background edit. A gallery of two spans the full width, so each sprite is about half the message;
+Discord fixes that, so the sprite is shrunk *inside* its picture instead: `PlynlingArt.VisitSprite`
+links the `_visit` files, the same animation on a larger transparent canvas (`VISIT_CANVAS` in
+`tools/plynling-art/export.py`, 80 %). On the last step ▶ becomes « ↺ Début » (`vis:first:…`, its
+own verb), back to step 1. Stories live in
 the `VisitStories` singleton, the last 300 kept, with a snapshot of both Plynlings (name, species,
 stage, passions) so paging needs no database — the picture URL is rebuilt per step from species,
 stage and face.

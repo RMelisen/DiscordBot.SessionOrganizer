@@ -35,6 +35,15 @@ public static class PlynlingArt
     public static string Sprite(PlynlingSpecies species, PlynlingStage stage, PlynlingMood mood) =>
         $"{BaseUrl}plynling_{Key(species)}{StageSegment(species, stage)}_{mood.ToString().ToLowerInvariant()}_v{Version}.webp";
 
+    /// <summary>
+    /// The picture a visit story shows (happy, content, sad or angry): the same animation on a larger
+    /// transparent canvas, so the two side-by-side Plynlings are a little smaller than the card's
+    /// (see VISIT_CANVAS in tools/plynling-art/export.py). Any other mood shows the content face.
+    /// </summary>
+    public static string VisitSprite(PlynlingSpecies species, PlynlingStage stage, PlynlingMood mood) =>
+        $"{BaseUrl}plynling_{Key(species)}{StageSegment(species, stage)}_" +
+        $"{(mood is PlynlingMood.Happy or PlynlingMood.Sad or PlynlingMood.Angry ? mood : PlynlingMood.Content).ToString().ToLowerInvariant()}_visit_v{Version}.webp";
+
     private static string StageSegment(PlynlingSpecies species, PlynlingStage stage) =>
         stage == PlynlingStage.Baby && StagedSpecies.Contains(species) ? "_baby" : "";
 

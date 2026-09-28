@@ -18,7 +18,7 @@ public sealed record VisitPlace(string Emoji, string Name, int FromHour, int ToH
 public sealed record VisitCast(string Name, PlynlingSpecies Species, PlynlingStage Stage, string SpeciesName,
     PlynlingGender Gender, IReadOnlyList<Passion> Passions)
 {
-    public string Sprite(PlynlingMood face) => PlynlingArt.Sprite(Species, Stage, face);
+    public string Sprite(PlynlingMood face) => PlynlingArt.VisitSprite(Species, Stage, face);
 }
 
 // One step of a story: its text and each Plynling's face on it.
