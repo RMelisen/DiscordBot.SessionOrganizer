@@ -249,7 +249,6 @@ public static class CosmeticCatalog
         Accessory("couronne", "👑", "une petite couronne", Rot, L);
         Accessory("tulipe", "🌷", "une tulipe", S, season: Season.Spring);
         Accessory("glace", "🍦", "une glace", S, season: Season.Summer);
-        Accessory("lanterne_citrouille", "🎃", "une lanterne citrouille", S, season: Season.Autumn);
         Accessory("moufles", "🧤", "des moufles", S, season: Season.Winter);
         // « plume d'or », not « plume dorée »: that is already the collectible it is made from.
         Accessory("plume_doree", "🪶", "une plume d'or", Cr, craftPrice: 200,
