@@ -225,8 +225,13 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   two) or plus ou moins (a number from 1 to 100 in six guesses). Once an hour; it always
   cheers it up (+15 % happiness), and a win adds +10 % and a few cailloux.
 - **Visits:** `/plynling visit user:` sends your Plynling knocking at someone's door. If they
-  press *Accueillir* within the hour, the two meet on one card and both get +20 % happiness.
-  Once a day per pair, and no cailloux.
+  press *Accueillir* within the hour, the visit plays out as a little story in three beats —
+  arriving somewhere (the park, the pond, the café, the host's home, or at night the rooftop
+  under the stars…), doing something together with a short exchange, then parting with what
+  the visit changed. What they do and say follows their relationship: shy small talk between
+  acquaintances, games between friends, secrets between best friends, tenderness in a couple,
+  teasing between rivals, sulking after a squabble. Once told, ◀ ▶ page back through it. Both
+  get +20 % happiness. Once a day per pair, and no cailloux.
 - **Badges and the journal:** each Plynling earns its own badges — 16 of them, for living a
   week, a month, six months and a year, for games played and won, visits, meals and pets, for
   being fed by a friend or saved from starving at the last moment, and for coming back from the

@@ -1245,6 +1245,20 @@ if the visit then fails. A visit pays no cailloux on purpose — two accounts co
 `Plays`, `PlaysWon` and `Visits` on `Plynling` are recorded for the achievements; they started at
 zero the day they shipped.
 
+**A visit is told as a story, but decided before it starts.** `VisitAsync` saves everything first;
+`Helpers/PlynlingVisitStory.Build` (pure) then picks a place open at that Paris hour and three
+beats — arrival, activity with a two-line exchange, parting plus `PlynlingPlayCards.VisitOutcomeLines`
+— from pools keyed by `VisitMood`: the bond **after** the visit, or `Conflict` for a bad scene or
+enemies. So a failed edit or a restart mid-story can never change what happened; the worst case is a
+card stuck on a beat. Lines are templates — `{A}`/`{B}` names, `{ils}`/`{Ils}` (« elles » only for two
+girls), `{a:m|f}`/`{b:m|f}`/`{p:m|f}` agreements — and the harness expands every line for all four
+gender pairs. « Accueillir » answers with beat 1; the next two are background
+`ModifyOriginalResponseAsync` edits 2.5 s apart, retried once then logged. The last beat adds ◀ ▶
+(`vis:prev:{story}:{beat}` / `vis:next:…`, two verbs, disabled at the ends); stories live in the
+`VisitStories` singleton, the last 300 kept, with a snapshot of both Plynlings (name, sprite) so paging
+needs no database. The card is one `Section` with a thumbnail per Plynling — a `MediaGallery` of two
+stretched full width on a phone.
+
 **Plynling badges are stored, and paid in the action's own save.** `Helpers/PlynlingBadges` is the
 catalog (16, each with a **stable key** — a rename orphans every copy already earned);
 `PlynlingBadge` rows record them, with a unique index on (Plynling, key) that is what really
