@@ -29,9 +29,17 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   keeps its stage-less name (`plynling_cepe_happy_v3.webp`); the baby inserts the stage
   (`plynling_cepe_baby_happy_v3.webp`). Adding a species' baby adds files and changes none, so
   it needs no `ART_VERSION` bump.
+- **The angry face** (`angry`) is a visit face only — the bot never shows it on a Plynling's own
+  card. Brows in a V, narrowed eyes, a tight frown, flushed cheeks, and a red 💢 that pulses in
+  place, with two short vertical stomps per loop. The 💢 is placed from the drawing itself
+  (`sprites.cap_corner`: the solid pixel furthest up and to the right), so it sits on the cap's
+  top-right shoulder for every species and every stage, and follows the head on every frame; a
+  narrow round cap puts that corner near the top, so the Mycena and the Coprin nudge it with
+  `anger_nudge` in `common.SPECIES`. Its 14 files (7 adults, 7 babies) were added without a
+  version bump — they are new filenames, and every existing file re-exports byte-identical.
 - `memorials.py` — the five memorial tiers (cairn → statue), each carrying the species' accent colour.
 - `source/` — the four food sprites (16×16, hand-drawn), exported as-is.
-- `export.py` — renders all 123 files at 256×256 into `assets/plynlings/`: the 84 living sprites as
+- `export.py` — renders all 151 files at 256×256 into `assets/plynlings/`: the 112 living sprites as
   looping, lossless animated WebP (so the soft shadow and the Mycena's halo keep their partial
   transparency), the memorials and foods as PNG. Pillow merges identical consecutive frames into
   one longer frame, so a file holds fewer than 16 frames while still lasting 2 s.

@@ -6,7 +6,12 @@ using ProjectSYNCS.Models;
 namespace ProjectSYNCS.Helpers;
 
 public sealed record PassionInfo(PlynlingPassion Passion, string Emoji, string Label, string[] Keywords,
-    string[] Openers, string[] SharedLines, string[] Activities);
+    string[] Openers, string[] SharedLines, string[] Activities)
+{
+    // A's talk lines in a visit (steps 4–5): facts and anecdotes, one line each. Kept in their own
+    // table (PlynlingPassions.DetailsByPassion) so the catalog rows above stay readable.
+    public string[] Details => PlynlingPassions.DetailsByPassion[Passion];
+}
 
 /// <summary>
 /// One passion a Plynling has: a catalog one (rich, hand-written lines) or a custom text taught by
@@ -60,7 +65,7 @@ public static class PlynlingPassions
                 "{S} renifle ses doigts, l'air satisfait.\nCannelle. Je sens la cannelle depuis ce matin. Je crois que c'est devenu mon odeur.",
                 "{S} montre une crêpe pliée en quatre dans une feuille.\nJe t'en ai gardé une. Elle a un peu voyagé, mais elle est pleine de bonnes intentions.",
                 "{S} parle en comptant sur ses doigts.\nIl y a quatre saveurs : sucré, salé, acide, amer. Et une cinquième : « encore ».",
-                "{S} soupire, l'air très sérieux.\nJ'ai laissé brûler mes biscuits. Je les ai appelés « biscuits croustillants ». Personne n'a rien vu.",
+                "{S} soupire, l'air très sérieux.\n[sad] J'ai laissé brûler mes biscuits. Je les ai appelés « biscuits croustillants ». Personne n'a rien vu.",
                 "{S} porte un petit tablier noué de travers.\nOn ne cuisine pas sans tablier. C'est la règle. Même pour une tartine.",
                 "{S} lève un doigt plein de confiture.\nFramboise. Faite maison. Enfin, faite par moi, pas vraiment dans une maison.",
                 "{S} agite un petit pot d'épices comme un grelot.\nUne pincée de ça, et n'importe quel plat devient une aventure. Parfois une aventure dangereuse." },
@@ -136,7 +141,7 @@ public static class PlynlingPassions
                 "{S} a les yeux un peu rouges.\nJ'ai joué jusqu'à très tard. Je ne dirai pas jusqu'à quelle heure. Très tard.",
                 "{S} mime une manette avec les mains.\nIl existe un niveau secret derrière la cascade. Je le sais. Je l'ai presque trouvé.",
                 "{S} parle très vite, très bas.\nSi tu sautes pile au bon moment sur le troisième champignon, tu gagnes une vie. Ne le dis à personne.",
-                "{S} soupire comme après une longue bataille.\nJ'ai perdu contre le boss final. Il avait triché. Je ne peux pas le prouver, mais il avait triché.",
+                "{S} soupire comme après une longue bataille.\n[angry] J'ai perdu contre le boss final. Il avait triché. Je ne peux pas le prouver, mais il avait triché.",
                 "{S} sort un petit carnet couvert de cartes dessinées à la main.\nJ'ai noté tous les raccourcis du jeu. Tous. Même ceux qui n'existent pas encore.",
                 "{S} lève un poing victorieux avant même de dire bonjour.\nJ'ai trouvé le trésor caché du niveau quatre ! C'était une pomme. Mais une pomme légendaire.",
                 "{S} marche en ligne droite, puis tourne brusquement à angle droit.\nJe m'entraîne à me déplacer comme dans mon jeu. Ça surprend les gens.",
@@ -235,11 +240,11 @@ public static class PlynlingPassions
                 "{S} parle tout bas, comme devant un berceau.\nMa graine de tournesol a germé cette nuit. Je suis {s:resté|restée} à côté d'elle toute la matinée.",
                 "{S} montre ses mains couvertes de terre, sans aucune honte.\nLa terre sous les ongles, c'est la preuve qu'on a bien travaillé.",
                 "{S} compte des graines dans le creux de sa main.\nDouze graines, douze fleurs. Enfin, si les oiseaux ne passent pas avant.",
-                "{S} a l'air {s:inquiet|inquiète}.\nMes courgettes poussent trop vite. J'en ai une plus grande que moi. Elle me regarde.",
+                "{S} a l'air {s:inquiet|inquiète}.\n[sad] Mes courgettes poussent trop vite. J'en ai une plus grande que moi. Elle me regarde.",
                 "{S} tend un petit bouquet d'herbes aromatiques.\nThym, romarin, persil. Je les ai présentés les uns aux autres. Ils s'entendent bien.",
                 "{S} fixe le sol avec une grande patience.\nJe regarde pousser mes radis. Il paraît qu'ils sont timides quand on les regarde.",
                 "{S} montre une étiquette écrite à la main : « Ici poussera une fraise. »\nJe prépare le terrain. Pour la fraise. Et un peu pour moi.",
-                "{S} secoue la tête, un peu {s:vexé|vexée}.\nLes pissenlits poussent partout sans qu'on leur demande rien. Mes roses, elles, font des caprices." },
+                "{S} secoue la tête, un peu {s:vexé|vexée}.\n[angry] Les pissenlits poussent partout sans qu'on leur demande rien. Mes roses, elles, font des caprices." },
             new[] { "{Ils} s'échangent des graines comme d'autres s'échangent des secrets.",
                 "{Ils} s'échangent leurs astuces contre les limaces, à voix basse, comme des secrets d'État.",
                 "{Ils} tombent à genoux devant la même petite fleur, exactement au même moment.",
@@ -282,7 +287,7 @@ public static class PlynlingPassions
                 "{S} tient deux cailloux presque identiques.\nDevine lequel est le plus beau. Non, c'est l'autre. Tout le monde se trompe.",
                 "{S} porte une petite loupe autour du cou.\nDe près, chaque caillou a des paysages entiers dedans. Des montagnes, des rivières… en miniature.",
                 "{S} soupèse un caillou, l'air {s:concentré|concentrée}.\nIl est lourd pour sa taille. C'est souvent signe de caractère.",
-                "{S} arrive les poches vides, l'air un peu {s:perdu|perdue}.\nJ'ai offert toute ma collection à la rivière. Elle en avait plus besoin que moi. Je recommence.",
+                "{S} arrive les poches vides, l'air un peu {s:perdu|perdue}.\n[sad] J'ai offert toute ma collection à la rivière. Elle en avait plus besoin que moi. Je recommence.",
                 "{S} présente un caillou tout noir.\nCelui-là, je l'ai appelé Minuit. Il ne brille pas, mais il a beaucoup de profondeur." },
             new[] { "{Ils} étalent leurs collections côte à côte. Le silence qui suit est plein de respect.",
                 "{Ils} s'échangent deux cailloux, solennellement. C'est plus important qu'une poignée de main.",
@@ -308,7 +313,7 @@ public static class PlynlingPassions
                 "🔦 {S} montre à {L} un caillou qui brille dans le noir. Il ne brille pas vraiment, mais {L} fait semblant de le voir." }),
         new(PlynlingPassion.Stories, "📚", "les histoires",
             new[] { "histoire", "histoires", "lecture", "lire", "livre", "livres", "conte", "contes", "roman", "romans" },
-            new[] { "{S} serre un vieux livre tout contre {s:lui|elle}.\nJ'en suis au moment où le dragon avoue qu'il a peur du noir. Je ne m'en remets pas.",
+            new[] { "{S} serre un vieux livre tout contre {s:lui|elle}.\n[sad] J'en suis au moment où le dragon avoue qu'il a peur du noir. Je ne m'en remets pas.",
                 "{S} parle en chuchotant, comme au coin du feu.\nIl était une fois un Plynling qui ne voulait jamais dormir. Tu devines la fin ? Moi non plus, je m'endors toujours avant.",
                 "{S} referme un livre d'un coup sec.\nJe l'ai fini. Je ne sais plus quoi faire de ma vie. C'était tellement bien.",
                 "{S} a les yeux qui brillent.\nJ'écris une histoire. Il y a un dragon, un pirate et un escargot. L'escargot est le héros.",
@@ -317,7 +322,7 @@ public static class PlynlingPassions
                 "{S} arrive en marchant comme dans un conte.\nAujourd'hui, je suis {s:un chevalier|une chevalière}. Demain, je redeviens moi.",
                 "{S} lit en marchant et manque de trébucher.\nPardon ! J'étais en pleine bataille navale. Les pirates étaient sur le point de gagner.",
                 "{S} tourne une page imaginaire.\nJ'ai commencé une histoire hier soir. Elle n'a pas de fin. Je crois qu'elle attend que je l'invente.",
-                "{S} a les yeux encore un peu rouges.\nLe petit renard du livre a enfin retrouvé sa maison. Je ne pleure pas. Je suis juste {s:ému|émue}.",
+                "{S} a les yeux encore un peu rouges.\n[sad] Le petit renard du livre a enfin retrouvé sa maison. Je ne pleure pas. Je suis juste {s:ému|émue}.",
                 "{S} tient un livre à l'envers sans s'en apercevoir.\nC'est un livre très moderne. Il se lit dans les deux sens.",
                 "{S} garde un petit marque-page en forme de feuille.\nJe l'ai laissé au meilleur passage. J'y retourne tous les soirs, juste pour le relire.",
                 "{S} parle avec une voix grave de conteur.\nDans un pays lointain vivait un caillou qui rêvait de voler. Tu veux la suite ? Il n'y en a pas encore.",
@@ -346,7 +351,7 @@ public static class PlynlingPassions
                 "🏰 {S} raconte un conte de chevaliers ; {L} essaie de deviner la fin et se trompe à chaque fois.",
                 "📚 {Ils} construisent un fort avec des livres et lisent dedans jusqu'à ce que le fort s'écroule.",
                 "🎭 {Ils} jouent une pièce de théâtre à deux personnages. Chaque personnage change trois fois de costume.",
-                "🕯️ {S} raconte une histoire qui fait peur. {L} a peur. {S} aussi, un peu.",
+                "[sad] 🕯️ {S} raconte une histoire qui fait peur. {L} a peur. {S} aussi, un peu.",
                 "🦉 {Ils} inventent une histoire sur le hibou du coin. Le hibou écoute, et n'approuve pas la fin.",
                 "📜 {Ils} écrivent un conte sur une grande feuille roulée. Il commence par « Il était une fois » et finit par « etc. ».",
                 "🧚 {S} lit un passage à voix haute ; {L} mime tous les personnages, y compris le vent." }),
@@ -570,6 +575,167 @@ public static class PlynlingPassions
                 "🎐 {S} fabrique un petit mobile qui tinte au vent pour bercer {L}. Ça marche très bien. Trop bien.",
                 "⏳ {Ils} chronomètrent la sieste parfaite avec un sablier. Le sablier se termine bien avant la sieste.",
                 "🐑 {Ils} comptent les nuages au lieu des moutons. Au quatrième, plus personne ne compte." }),
+    };
+
+    // A's talk lines, one line each (no \\n): facts, anecdotes, confidences about the passion.
+    public static readonly IReadOnlyDictionary<PlynlingPassion, string[]> DetailsByPassion = new Dictionary<PlynlingPassion, string[]>
+    {
+        [PlynlingPassion.Cooking] = new[]
+        {
+            "Le secret d'une bonne soupe, c'est de lui parler pendant qu'elle cuit. Doucement.",
+            "Une fois, j'ai fait un gâteau si haut qu'il a fallu une échelle pour le décorer.",
+            "Je note tout ce que je goûte dans un carnet. J'en suis au quatrième carnet.",
+            "La cannelle, c'est la seule épice qui sent comme un câlin.",
+            "Mon plat préféré, c'est celui que je n'ai pas encore inventé.",
+            "Il faut toujours goûter la pâte crue. C'est risqué, mais c'est la tradition.",
+            "J'ai fait des crêpes pour tout le quartier, une fois. Il en restait une. Je l'ai mangée.",
+            "Un bon plat, ça se partage. Enfin, sauf le dernier morceau.",
+            "Si tu mets trop de sel, il faut ajouter une pomme de terre. Ou recommencer. Surtout recommencer.",
+            "Le jour où je réussirai la tarte parfaite, je crois que je pleurerai.",
+        },
+        [PlynlingPassion.Music] = new[]
+        {
+            "J'ai une chanson pour chaque saison. Celle de l'hiver est très lente.",
+            "Si tu écoutes bien, la pluie joue toujours en rythme. C'est nous qui ne suivons pas.",
+            "Je fredonne quand je suis {s:heureux|heureuse}, et encore plus quand je suis triste.",
+            "J'ai appris une nouvelle note hier. Elle est entre deux autres. Personne ne la connaît.",
+            "Mon rêve, c'est de jouer devant tout le village. Ou devant trois fourmis. Ce serait déjà bien.",
+            "Une chanson, c'est une histoire qu'on peut chanter. C'est pour ça que j'aime les deux.",
+            "J'ai écrit un refrain qui ne se termine jamais. C'était un accident.",
+            "Le silence aussi, c'est de la musique. Mais je préfère quand il y a du bruit.",
+            "Il y a un oiseau qui chante la même mélodie que moi chaque matin. On est en duo.",
+            "Quand je chante faux, je fais comme si c'était exprès. Ça marche presque toujours.",
+        },
+        [PlynlingPassion.Gaming] = new[]
+        {
+            "Le meilleur moment d'un jeu, c'est juste avant le boss final. On a peur, mais on y va.",
+            "J'ai joué au même jeu tellement de fois que je connais chaque pierre par cœur.",
+            "Mon personnage préféré est un petit forgeron. Il ne se bat jamais. Il répare tout.",
+            "Il y a un bug dans mon jeu qui fait voler les vaches. Je ne le signalerai jamais.",
+            "[sad] Perdre, ça fait partie du jeu. Mais ça fait quand même un peu mal.",
+            "Les jeux à deux, c'est les meilleurs. On perd ensemble, c'est moins triste.",
+            "J'ai trouvé un passage secret que personne n'a trouvé. Enfin, je crois.",
+            "Quand je joue, je parle aux personnages. Ils ne répondent pas, mais je sens qu'ils écoutent.",
+            "Mon plus beau record, je l'ai battu à moitié endormi{s:|e}. Je ne sais toujours pas comment.",
+            "Un bon jeu, c'est comme une bonne histoire : on ne veut pas que ça finisse.",
+        },
+        [PlynlingPassion.Astronomy] = new[]
+        {
+            "La lumière de certaines étoiles a mis des milliers d'années à venir jusqu'ici. Rien que pour nous.",
+            "Il y a une étoile qui clignote bizarrement. Je crois qu'elle me fait signe.",
+            "Les planètes ne scintillent pas. C'est comme ça qu'on les reconnaît.",
+            "Un jour, j'aimerais voir une aurore. Des lumières qui dansent dans le ciel. Tu imagines ?",
+            "La nuit, je compte les étoiles filantes. Mon record, c'est onze. Enfin, douze avec la fausse.",
+            "La lune a toujours la même face tournée vers nous. Elle est timide, je crois.",
+            "Chaque constellation a une histoire. J'en invente quand je ne connais pas la vraie.",
+            "Le ciel n'est jamais tout à fait pareil deux nuits de suite. C'est ce que je préfère.",
+            "Quand je regarde le ciel longtemps, j'oublie tous mes soucis. Même la faim. Presque.",
+            "Si je pouvais, j'irais vivre sur la lune. Avec un goûter. Et une couverture.",
+        },
+        [PlynlingPassion.Gardening] = new[]
+        {
+            "Une plante, ça pousse mieux quand on lui fait des compliments. J'en ai la preuve.",
+            "J'ai une tomate qui ne veut pas rougir. Je lui laisse le temps.",
+            "Le meilleur moment, c'est quand une graine sort enfin de terre. On dirait qu'elle dit bonjour.",
+            "Les mauvaises herbes, ce ne sont que des plantes que personne n'a invitées.",
+            "J'ai planté une fleur pour chaque bonne journée. Mon jardin est très fleuri.",
+            "Il faut arroser le matin, jamais en plein soleil. Les plantes détestent les douches chaudes.",
+            "J'ai un rosier qui a plus de caractère que moi. Il pique tout le monde.",
+            "Si tu parles à tes fraises, elles deviennent plus sucrées. C'est scientifique. Presque.",
+            "Mon rêve, c'est un jardin si grand qu'on s'y perdrait. Exprès.",
+            "Le jardinage, ça apprend la patience. Moi, j'apprends encore.",
+        },
+        [PlynlingPassion.Rocks] = new[]
+        {
+            "Chaque caillou a une histoire. Il suffit d'écouter. Longtemps. Très longtemps.",
+            "Mon plus vieux caillou, je l'ai trouvé le jour de ma naissance. Enfin, presque.",
+            "Un caillou mouillé est toujours plus beau qu'un caillou sec. C'est la règle.",
+            "J'ai un caillou qui ressemble exactement à une crêpe. Je ne le mange pas. Promis.",
+            "Les galets de rivière sont tout lisses parce que l'eau les caresse depuis des siècles.",
+            "J'ai rangé ma collection par couleur, puis par forme, puis par humeur.",
+            "Il y a des cailloux qui brillent au soleil. Ce sont mes préférés. Ils sont un peu vaniteux.",
+            "Je n'ai jamais jeté un seul caillou. Ils ont tous une place quelque part.",
+            "Un bon caillou, ça tient dans la main et ça rassure. C'est un ami qui ne parle pas.",
+            "Le jour où je trouverai un caillou parfaitement rond, j'arrêterai de chercher. Non. Jamais.",
+        },
+        [PlynlingPassion.Stories] = new[]
+        {
+            "Les meilleures histoires commencent toujours par une porte qu'on n'aurait pas dû ouvrir.",
+            "[sad] J'ai lu le même livre sept fois. Et la septième, j'ai encore pleuré au même endroit.",
+            "Le personnage que je préfère, c'est celui qui n'apparaît que deux fois. Il est mystérieux.",
+            "Je lis toujours la dernière page en premier. Je sais, c'est mal.",
+            "Un livre, c'est un voyage qu'on peut faire sans bouger. Même allongé dans l'herbe.",
+            "J'invente des fins différentes quand je n'aime pas celle du livre. C'est mon droit.",
+            "Il y a un livre dont je ne lis jamais le dernier chapitre. Comme ça, il ne finit jamais.",
+            "Les dragons sont toujours méchants au début. Et gentils à la fin. Presque toujours.",
+            "J'ai commencé à écrire mon propre conte. Il y a un Plynling héroïque. Devine qui.",
+            "Le soir, je lis à voix haute pour que les étoiles entendent la suite.",
+        },
+        [PlynlingPassion.Dance] = new[]
+        {
+            "Danser, c'est comme parler, mais avec les pieds. Et sans dire de bêtises.",
+            "J'ai une danse pour chaque humeur. Celle de la colère est très rapide.",
+            "La première fois que j'ai dansé, je suis {s:tombé|tombée}. La deuxième aussi. La troisième, c'était de l'art.",
+            "Quand je danse, j'ai l'impression que le vent danse avec moi.",
+            "Le secret, c'est de continuer même quand on se trompe. Surtout quand on se trompe.",
+            "J'ai inventé une danse pour la pluie. Il a plu. Je ne dis pas que c'est moi, mais c'est moi.",
+            "Je danse même en marchant. Les gens pensent que je trébuche. Ils ont tort.",
+            "Mon rêve, c'est de danser sous la pleine lune. Toute la nuit. Enfin, jusqu'à ce que je m'endorme.",
+            "Il y a des pas qu'on ne peut faire qu'à deux. Ce sont les plus beaux.",
+            "Si je m'arrête de danser, j'ai l'impression que la musique s'arrête aussi.",
+        },
+        [PlynlingPassion.Painting] = new[]
+        {
+            "Le plus difficile à peindre, c'est la lumière. Elle ne tient jamais en place.",
+            "J'ai peint le même arbre à chaque saison. Il a l'air différent à chaque fois. Moi aussi.",
+            "Je signe tous mes tableaux avec une petite feuille. C'est ma marque.",
+            "Il y a une couleur que je n'arrive pas à reproduire : celle du ciel juste après la pluie.",
+            "Quand je peins, j'oublie de manger. Et je n'oublie jamais de manger.",
+            "Mon plus beau tableau, je l'ai fait avec de la boue. Personne ne me croit.",
+            "Les erreurs en peinture, ça n'existe pas. Ce sont juste des surprises.",
+            "J'aimerais peindre un tableau si grand qu'on puisse marcher dedans.",
+            "Le bleu, c'est ma couleur préférée. Sauf le mardi. Le mardi, c'est le jaune.",
+            "J'ai accroché mes tableaux partout. Même au plafond. Surtout au plafond.",
+        },
+        [PlynlingPassion.Sport] = new[]
+        {
+            "Le plus dur, ce n'est pas de courir. C'est de commencer.",
+            "Je m'entraîne tous les matins. Enfin, presque tous. Enfin, certains.",
+            "Mon record de saut, c'est la hauteur d'un gros caillou. Un très gros caillou.",
+            "Quand je cours, j'ai l'impression de voler un tout petit peu.",
+            "Le secret, c'est de bien s'échauffer. Et de bien manger après. Surtout de bien manger après.",
+            "J'ai couru si vite une fois que j'ai dépassé mon ombre. Elle était vexée.",
+            "Perdre une course, ça donne envie d'en refaire une. C'est ça, le sport.",
+            "Je fais des étirements même en dormant. C'est ce que dit mon voisin, en tout cas.",
+            "Mon rêve, c'est de faire le tour du monde en courant. Ou au moins le tour du jardin.",
+            "Après une bonne course, le goûter a un goût de victoire.",
+        },
+        [PlynlingPassion.Insects] = new[]
+        {
+            "Les fourmis se parlent en se touchant les antennes. C'est une forme de politesse.",
+            "Une coccinelle ne vit que quelques mois. Alors je lui dis bonjour chaque fois que j'en vois une.",
+            "Les papillons ont été des chenilles. Il y a de l'espoir pour tout le monde.",
+            "J'ai compté les points de trente coccinelles. Aucune n'en avait vingt-deux. Je cherche encore.",
+            "Les abeilles dansent pour dire où sont les fleurs. Elles dansent mieux que moi.",
+            "Il y a un scarabée qui passe tous les jours au même endroit, à la même heure. On est devenus amis.",
+            "Les grillons chantent avec leurs ailes. Je trouve ça très élégant.",
+            "Une libellule peut voler dans tous les sens, même en arrière. Je suis {s:jaloux|jalouse}.",
+            "Les insectes sont minuscules, mais ils font tourner le monde. Enfin, le jardin.",
+            "J'ai construit un petit abri pour les insectes. Il y a déjà une araignée qui fait la loi.",
+        },
+        [PlynlingPassion.Naps] = new[]
+        {
+            "La meilleure sieste, c'est celle qu'on n'avait pas prévue.",
+            "Je connais le coin le plus confortable du monde. Je ne te dirai pas où.",
+            "Une bonne sieste, c'est vingt minutes. Ou trois heures. Ça dépend du soleil.",
+            "J'ai fait une sieste si profonde que j'ai rêvé trois rêves différents.",
+            "Le secret, c'est de fermer les yeux avant d'être {s:fatigué|fatiguée}. Comme ça, on gagne du temps.",
+            "Je fais la sieste après le goûter, avant le dîner, et parfois entre les deux.",
+            "Quand il pleut, les siestes sont deux fois meilleures. C'est prouvé. Par moi.",
+            "J'ai un oreiller préféré. Il s'appelle Nuage. Il est un peu aplati.",
+            "Ma plus longue sieste a duré tout un après-midi. Je me suis {s:réveillé|réveillée} {s:content|contente}, et un peu {s:perdu|perdue}.",
+            "Faire la sieste, ce n'est pas de la paresse. C'est de l'entraînement au rêve.",
+        },
     };
 
     // Pair activities, keyed in either order (see ComboFor). Beat 4 prefers these.

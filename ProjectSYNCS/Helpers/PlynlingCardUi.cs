@@ -41,8 +41,11 @@ public static class PlynlingCardUi
     }
 
     // Its passions, innate then taught, on one line of the heading — no extra component.
-    public static string PassionsLine(Plynling p) =>
-        "💭 " + string.Join(" · ", PlynlingPassions.Of(p).Select(x => x.Display()));
+    public static string PassionsLine(Plynling p)
+    {
+        var passions = PlynlingPassions.Of(p);
+        return $"**{(passions.Count > 1 ? "Passions" : "Passion")}** : " + string.Join(" · ", passions.Select(x => x.Display()));
+    }
 
     public static string Status(Plynling p, DateTimeOffset now)
     {
@@ -80,6 +83,7 @@ public static class PlynlingCardUi
         PlynlingMood.Starving => gender.Agree("mourant de faim", "mourante de faim"),
         PlynlingMood.Frozen => gender.Agree("gelé", "gelée"),
         PlynlingMood.Sleeping => gender.Agree("endormi", "endormie"),
+        PlynlingMood.Angry => gender.Agree("fâché", "fâchée"),
         _ => gender.Agree("content", "contente"),
     };
 

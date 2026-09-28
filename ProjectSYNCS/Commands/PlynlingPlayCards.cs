@@ -114,30 +114,26 @@ public static class PlynlingPlayCards
     }
 
     /// <summary>
-    /// One beat of a visit's story: the place, each Plynling as a small picture beside its name
-    /// (the Plynling card's layout — a gallery of two stretched full width on a phone), then the
-    /// beat. <paramref name="arrows"/> adds ◀ ▶ and « 2/3 », once the story has been told.
+    /// One step of a visit's story: the place, the two Plynlings side by side (a gallery of two, each
+    /// in this step's face; the alt text is its name), then the step's text, « 3/8 », and ◀ ▶ — from
+    /// the very first step, since the reader pages through at their own pace.
     /// </summary>
-    public static MessageComponent BuildVisitStory(VisitStory story, int beat, bool arrows)
+    public static MessageComponent BuildVisitStory(VisitStory story, int beat)
     {
         beat = Math.Clamp(beat, 0, story.Beats.Count - 1);
-        SectionBuilder Who(VisitCast cast, string role) => new SectionBuilder()
-            .WithAccessory(new ThumbnailBuilder().WithMedia(new UnfurledMediaItemProperties(cast.Sprite)).WithDescription(cast.SpeciesName))
-            .AddComponent(new TextDisplayBuilder($"**{cast.Name}** {cast.Gender.Symbol()}\n-# {role}"));
-
-        var text = story.Beats[beat];
-        if (arrows) text += $"\n-# {beat + 1}/{story.Beats.Count}";
-        var builder = new ComponentBuilderV2().AddComponent(new ContainerBuilder()
-            .WithAccentColor(new Color(story.Accent))
-            .AddComponent(new TextDisplayBuilder($"## {story.Heading}"))
-            .AddComponent(Who(story.Visitor, "en visite"))
-            .AddComponent(Who(story.Host, story.Host.Gender.Agree("l'hôte", "l'hôtesse")))
-            .AddComponent(new SeparatorBuilder())
-            .AddComponent(new TextDisplayBuilder(text)));
-        if (arrows)
-            builder.AddComponent(new ActionRowBuilder()
+        var step = story.Beats[beat];
+        return new ComponentBuilderV2()
+            .AddComponent(new ContainerBuilder()
+                .WithAccentColor(new Color(story.Accent))
+                .AddComponent(new TextDisplayBuilder($"## {story.Heading}"))
+                .AddComponent(new MediaGalleryBuilder()
+                    .AddItem(story.Visitor.Sprite(step.VisitorFace), story.Visitor.Name, false)
+                    .AddItem(story.Host.Sprite(step.HostFace), story.Host.Name, false))
+                .AddComponent(new SeparatorBuilder())
+                .AddComponent(new TextDisplayBuilder($"{step.Text}\n-# {beat + 1}/{story.Beats.Count}")))
+            .AddComponent(new ActionRowBuilder()
                 .WithButton("◀", VisitPrevId(story.Id, beat), ButtonStyle.Secondary, disabled: beat == 0)
-                .WithButton("▶", VisitNextId(story.Id, beat), ButtonStyle.Secondary, disabled: beat == story.Beats.Count - 1));
-        return builder.Build();
+                .WithButton("▶", VisitNextId(story.Id, beat), ButtonStyle.Secondary, disabled: beat == story.Beats.Count - 1))
+            .Build();
     }
 }

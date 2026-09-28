@@ -26,7 +26,6 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
 
     // The pause between two beats of a visit's story — long enough to read one, short enough
     // that nobody wonders whether it is stuck.
-    private static readonly TimeSpan BeatPause = TimeSpan.FromSeconds(7);
 
     public PlynlingComponentHandler(PlynlingCareService care, PlynlingService plynlings, PlynlingPlayService play,
         ResponsePicker picker, PlynlingCooldowns cooldowns, TradeOffers trades, InventoryService inventory,
@@ -233,7 +232,8 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
 
         // The visit is decided and saved; what follows is only its telling. The knock closes in
         // place (that answers the click inside Discord's 3 s), and the story is a follow-up — a new
-        // message at the bottom of the channel — whose later beats edit that follow-up.
+        // message at the bottom of the channel — opened on its first step with ◀ ▶ already there:
+        // the reader pages through at their own pace, nothing moves on its own.
         var channel = Context.Channel.Id;
         var story = _stories.Add(
             PlynlingVisitStory.Build(pair, PlynlingPlayCards.VisitOutcomeLines(pair), now, Random.Shared, pool => _picker.Pick(channel, pool)),
@@ -244,54 +244,14 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             m.Flags = MessageFlags.ComponentsV2;
             m.AllowedMentions = AllowedMentions.None;
         });
-
-        IUserMessage message;
         try
         {
-            message = await component.FollowupAsync(components: PlynlingPlayCards.BuildVisitStory(story, 0, arrows: false),
+            await component.FollowupAsync(components: PlynlingPlayCards.BuildVisitStory(story, 0),
                 flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Visit story {Story}: could not be posted", story.Id);
-            return;
-        }
-        _ = Task.Run(() => PlayStoryAsync(message, story));
-    }
-
-    // Beats 2 to 5, one edit of the follow-up each; the last carries the arrows. A failed edit is
-    // retried once and then logged — the visit itself is already saved, so the worst case is a card
-    // stuck on a beat. The interaction token keeps a follow-up editable for 15 minutes.
-    private async Task PlayStoryAsync(IUserMessage message, VisitStory story)
-    {
-        for (var beat = 1; beat < story.Beats.Count; beat++)
-        {
-            await Task.Delay(BeatPause);
-            var last = beat == story.Beats.Count - 1;
-            var card = PlynlingPlayCards.BuildVisitStory(story, beat, arrows: last);
-            for (var attempt = 1; ; attempt++)
-            {
-                try
-                {
-                    await message.ModifyAsync(m =>
-                    {
-                        m.Components = card;
-                        m.Flags = MessageFlags.ComponentsV2;
-                        m.AllowedMentions = AllowedMentions.None;
-                    });
-                    break;
-                }
-                catch (Exception ex) when (attempt < 2)
-                {
-                    _logger.LogWarning(ex, "Visit story {Story}: beat {Beat} failed, retrying", story.Id, beat + 1);
-                    await Task.Delay(TimeSpan.FromSeconds(1));
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Visit story {Story}: beat {Beat} could not be shown", story.Id, beat + 1);
-                    return;
-                }
-            }
         }
     }
 
@@ -311,7 +271,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             await RespondAsync(PlynlingText.StoryGone, ephemeral: true);
             return;
         }
-        var card = PlynlingPlayCards.BuildVisitStory(story, beat + step, arrows: true);
+        var card = PlynlingPlayCards.BuildVisitStory(story, beat + step);
         await ((SocketMessageComponent)Context.Interaction).UpdateAsync(m =>
         {
             m.Components = card;

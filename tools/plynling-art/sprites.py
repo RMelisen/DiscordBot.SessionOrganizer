@@ -8,6 +8,7 @@ PINK, PINK_SOFT = (246, 146, 160), (244, 190, 190)
 MOUTH, TONGUE = (192, 58, 72), (255, 142, 152)
 TEAR, TEAR_HI = (130, 200, 255), (220, 242, 255)
 LID = (150, 122, 104)
+ANGRY_FLUSH = (232, 96, 96)
 PALE = (206, 204, 204)
 
 
@@ -135,6 +136,17 @@ def face(g, state, f, ox=0, oy=0, skin=None, skin_out=None, blink=False, tear=0,
         closed_eye(18)
         for x in range(14, 18):                                         # a closed, flat mouth
             P(x, 24, INK)
+    elif state == "angry":
+        for x0 in (12, 18):                                             # narrowed: the top row is lidded
+            for x in (x0, x0 + 1):
+                P(x, 20, INK)
+                P(x, 21, INK)
+            P(x0, 20, WHITE)
+        for x, y in ((11, 16), (12, 17), (13, 18), (20, 16), (19, 17), (18, 18)):   # brows in a V
+            P(x, y, INK)
+        for x, y in ((14, 25), (15, 24), (16, 24), (17, 25)):           # a tight frown
+            P(x, y, INK)
+        blush(ANGRY_FLUSH)
     elif state == "sleeping":
         for x0 in (12, 18):                                             # eyes shut, lids curved down
             P(x0 - 1, 20, INK)
@@ -196,6 +208,35 @@ def sweat_drops(f):
     return None if k == -1 else (k or 0)
 
 
+ANGER = (226, 58, 58)
+
+
+def cap_corner(im):
+    """The top-right corner of this drawing: the solid pixel furthest up and to the right. Solid
+    only, so the soft ground shadow and the Mycena's halo never count."""
+    best = None
+    for y in range(N):
+        for x in range(N):
+            if im.getpixel((x, y))[3] == 255 and (best is None or x - y > best[0] - best[1]):
+                best = (x, y)
+    return best or (27, 4)
+
+
+def anger_mark(px, pose, corner, nudge=(0, 0)):
+    """The anger mark (💢), sitting on the cap's top-right corner: four little arcs pointing at
+    its centre, which spread out and back in place as it pulses. Measured on every frame, so it
+    stays on the head through the breath and the stomps."""
+    d = 1 if (pose and pose.pulse) else 0
+    # half off the cap, so it reads on a red one; a narrow round cap (Mycena, Coprin) has its
+    # corner near the top, so those species nudge it lower and to the right (SPECIES anger_nudge)
+    cx, cy = min(corner[0] + 1 + nudge[0], N - 4), max(corner[1] - 1 + nudge[1], 3)
+    for sx, sy in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
+        x, y = cx + sx * (1 + d), cy + sy * (1 + d)
+        px(x, y, ANGER)
+        px(x + sx, y, ANGER)
+        px(x, y + sy, ANGER)
+
+
 def extras(im, state, p, pose=None, body=(0, 0)):
     """The mood extras. `body` is how far the head has moved this frame, so anything stuck to
     the face (the sweat) moves with it; the heart, the frost and the sparkles float free."""
@@ -211,6 +252,8 @@ def extras(im, state, p, pose=None, body=(0, 0)):
                      (25, 19), (26, 19), (27, 19), (26, 20)):
             px(x, y + h, (246, 116, 140))
         px(25, 18 + h, (255, 196, 206))
+    if state == "angry":
+        anger_mark(px, pose, cap_corner(im), p.get("anger_nudge", (0, 0)))
     if state == "hungry" and k is not None:                              # sweat drop
         for x, y in ((25, 17), (25, 18), (24, 18), (25, 19)):
             px(x + bx, y + by + k, TEAR)

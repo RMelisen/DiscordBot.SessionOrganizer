@@ -36,6 +36,11 @@ class Pose:
             self.bob = 1 if (not still and _within(f, 6, 12)) else 0
         # happy: a little two-pixel hop once the breath is out
         self.hop = {13: 1, 14: 2, 15: 1}.get(f, 0) if state == "happy" else 0
+        # angry: two short stomps — straight up and down, one pixel each
+        if state == "angry":
+            self.hop = 1 if f in (3, 11) else 0
+        # angry: the anger mark pulses, big every other quarter-beat
+        self.pulse = 1 if state == "angry" and (f // 4) % 2 == 1 else 0
         # one blink per loop, where the eyes are open to begin with
         self.blink = state in ("content", "sad", "hungry") and f == 14
 

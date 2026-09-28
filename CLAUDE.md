@@ -1251,19 +1251,37 @@ if the visit then fails. A visit pays no cailloux on purpose — two accounts co
 zero the day they shipped.
 
 **A visit is told as a story, but decided before it starts.** `VisitAsync` saves everything first;
-`Helpers/PlynlingVisitStory.Build` (pure) then picks a place open at that Paris hour and five
-beats — arrival, the subject (one of them raises a passion), the reaction, the activity with a
-two-line exchange, parting plus `PlynlingPlayCards.VisitOutcomeLines` — from pools keyed by `VisitMood`: the bond **after** the visit, or `Conflict` for a bad scene or
-enemies. So a failed edit or a restart mid-story can never change what happened; the worst case is a
-card stuck on a beat. Lines are templates — `{A}`/`{B}` names, `{ils}`/`{Ils}` (« elles » only for two
-girls), `{a:m|f}`/`{b:m|f}`/`{p:m|f}` agreements — and the harness expands every line for all four
-gender pairs. « Accueillir » closes the knock in place and posts beat 1 as a
-follow-up — a new message at the bottom of the channel; the next four are background edits of that
-follow-up, 7 s apart, retried once then logged. The last beat adds ◀ ▶
-(`vis:prev:{story}:{beat}` / `vis:next:…`, two verbs, disabled at the ends); stories live in the
-`VisitStories` singleton, the last 300 kept, with a snapshot of both Plynlings (name, sprite) so paging
-needs no database. The card is one `Section` with a thumbnail per Plynling — a `MediaGallery` of two
-stretched full width on a phone.
+`Helpers/PlynlingVisitStory.Build` (pure) then picks a place open at that Paris hour and tells it in
+**eight steps** — arrival; the opener (A, the one whose passion is the subject, raises it); B's
+reaction; two talk steps; a closer that turns the talk into doing something; the activity with a
+two-line exchange; parting plus `PlynlingPlayCards.VisitOutcomeLines` — from pools keyed by
+`VisitMood`: the bond **after** the visit, or `Conflict` for a bad scene or enemies. In a talk step
+the other one speaks `TurnChance` (70 %) of the time and the same one again otherwise, so someone may
+talk twice in a row; A says a `Details` line (per passion, or `CustomDetails`) or an
+`AnswerFollowups` line, B a `Followups` line, and every one of those stands alone for that reason.
+So a restart mid-story can never change what happened. Lines are templates — `{A}`/`{B}` names,
+`{ils}`/`{Ils}` (« elles » only for two girls), `{a:m|f}`/`{b:m|f}`/`{p:m|f}` agreements — and the
+harness expands every line for all four gender pairs and builds full stories.
+
+**Every step carries both faces, and a line can set them.** `VisitBeat` holds the text and a face
+per Plynling — happy, content, sad, or `PlynlingMood.Angry`, which exists for visits only
+(`PlynlingLife.Mood` never returns it, so a Plynling's own card never shows it). The defaults come
+from `Faces(mood)` — speaker, listener, narration — and a parting follows the outcome first (a
+refused confession or a break-up is sad, a new couple happy, new enemies angry). A line may start
+with a tag, stripped before display: `[sad]` on a spoken line is the speaker's face, on a narration
+line both faces, and `[A:sad B:happy]` sets the visitor's and the host's separately. Only those four
+faces parse — an unknown word stays text, and the harness fails on any line still starting with `[`.
+
+**The story card shows both Plynlings side by side and never moves on its own.** Each step is a
+`MediaGallery` of two (each sprite in that step's face, alt text = its name), the text, « 3/8 », and
+◀ ▶ (`vis:prev:{story}:{beat}` / `vis:next:…`, two verbs, disabled at the ends) **from the first
+step**: « Accueillir » closes the knock in place and posts step 1 as a follow-up — a new message at
+the bottom of the channel — and the reader pages at their own pace. There is no timer and no
+background edit. A gallery of two spans the full width on a phone, so each sprite is about half the
+screen; that was accepted when it replaced the one-thumbnail-per-Plynling `Section`. Stories live in
+the `VisitStories` singleton, the last 300 kept, with a snapshot of both Plynlings (name, species,
+stage, passions) so paging needs no database — the picture URL is rebuilt per step from species,
+stage and face.
 
 **Plynling passions: one innate, one taught, and the taught one is hostile input.** `Plynling.Passion`
 is one of the 12 in `Helpers/PlynlingPassions` — stored as an int, so **append-only** — rolled at

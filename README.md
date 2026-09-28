@@ -225,14 +225,16 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   two) or plus ou moins (a number from 1 to 100 in six guesses). Once an hour; it always
   cheers it up (+15 % happiness), and a win adds +10 % and a few cailloux.
 - **Visits:** `/plynling visit user:` sends your Plynling knocking at someone's door. If they
-  press *Accueillir* within the hour, the knock closes and the visit plays out below it, as a
-  new message, in five beats: arriving somewhere (the park, the pond, the bakery, the
-  host's home, or at night the rooftop under the stars…); one of them bringing up a passion;
-  the other's reaction; doing something together with a short exchange; then parting with
-  what the visit changed. What they do and say follows their passions and their relationship:
-  polite interest between acquaintances, a club of two when a passion is shared, one-upmanship
-  between rivals, tenderness in a couple, sulking after a squabble. Once told, ◀ ▶ page back
-  through it. Both get +20 % happiness. Once a day per pair, and no cailloux.
+  press *Accueillir* within the hour, the knock closes and the visit is told below it, as a new
+  message, in eight steps you page through with ◀ ▶: arriving somewhere (the park, the pond, the
+  bakery, the host's home, or at night the rooftop under the stars…); one of them bringing up a
+  passion; the other's reaction; two more exchanges on the subject — questions, anecdotes, and
+  sometimes someone talking twice in a row; the talk turning into doing something; the activity;
+  then parting with what the visit changed. The two Plynlings stand side by side, and their faces
+  follow the conversation — happy, content, sad, or angry (a face only visits use). What they do
+  and say follows their passions and their relationship: polite interest between acquaintances, a
+  club of two when a passion is shared, one-upmanship between rivals, tenderness in a couple,
+  sulking after a squabble. Both get +20 % happiness. Once a day per pair, and no cailloux.
 - **Passions:** every Plynling is born with one of twelve passions (cooking, music, video
   games, stars, gardening, pebbles, stories, dance, painting, sport, insects, naps), shown on
   its card. `/plynling passion` lets its owner teach it a second one in their own words
