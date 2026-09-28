@@ -79,7 +79,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/inventory view`** — Tes objets, ton garde-manger et ta collection.")
             .AddField("Commandes — Staff & aide",
                 "**`/admin xp add|remove`** · **`/admin pebble add|remove`** — Ajuster l'XP ou les cailloux de quelqu'un.\n" +
-                "**`/admin stats`** — L'économie du serveur en un coup d'œil.\n" +
+                "**`/admin stats`** · **`/admin dashboard`** — L'économie du serveur, en un coup d'œil et jour après jour.\n" +
                 "**`/admin plynling rename`** · **`/admin plynling resurrect`** — Gérer le Plynling de quelqu'un.\n" +
                 "**`/config`** — Le rôle autorisé à voter avec `/shame`, et les salons où rien ne " +
                 "compte. **`/config show`** affiche la configuration actuelle.\n" +

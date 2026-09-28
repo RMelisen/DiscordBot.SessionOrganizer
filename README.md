@@ -32,6 +32,7 @@ a wall of shame. The bot's user-facing language is French.
 | `/admin xp add · remove` | Manual XP adjustment | staff |
 | `/admin pebble add · remove` | Manual cailloux adjustment | staff |
 | `/admin stats` | The server's economy at a glance | staff |
+| `/admin dashboard` | The economy day by day: flows, activity, finds | staff |
 | `/admin plynling rename · resurrect`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
 | `/leaderboard` | Server ranking — three views, three windows | owner |
 | `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
@@ -302,7 +303,12 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   never below 0; the person is not notified.
 - **`/admin stats`** — a private snapshot of the economy: cailloux in circulation and the five
   richest, Plynlings alive / frozen / buried by species, set completions, discoveries, and the
-  cosmetics held, worn and most popular. Only stored state — flows over time are not recorded.
+  cosmetics held, worn and most popular. Only stored state; the flows are `/admin dashboard`'s.
+- **`/admin dashboard`** — the economy over time, private: cailloux earned and spent (with
+  where they came from and went), the Plynling activity (meals, pets, games, visits, forages,
+  trades, gifts) and items and cosmetics found, bought or crafted — each with its trend against
+  the previous period and a small day-by-day bar line. 7 days, 30 days or everything since
+  recording began; the counters started at zero the day it shipped.
 - **`/admin xp add <member> <amount>` · `/admin xp remove <member> <amount>`** — manual XP
   adjustment. Ephemeral, clamped at zero, and deliberately silent: crossing a level this
   way fires no level-up card, since that card celebrates something earned.

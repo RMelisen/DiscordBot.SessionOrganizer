@@ -1039,11 +1039,23 @@ Deliberately **no** `HasMaxLength` in `AppDbContext`: SQLite does not enforce a 
 width, so it would document the cap without applying it, and the option-level cap is what
 actually holds.
 
-**`/admin` holds `xp`, `plynling`, `pebble` and `stats`.** `/admin pebble` mirrors `/admin xp`
+**`/admin` holds `xp`, `plynling`, `pebble`, `stats` and `dashboard`.** `/admin pebble` mirrors `/admin xp`
 (ephemeral, bots refused, capped, no notification) through `PebbleService.AdjustAsync`, which
 clamps at 0. `/admin stats` is `AdminStatsService` — reads only: Plynlings are loaded
 `AsNoTracking` and settled in memory, so an unnoticed death counts as a grave without the stats
 ever writing it — rendered by the static `AdminCards.BuildStats`.
+
+**`/admin dashboard` reads `EconomyDailyStat`, and every flow writes it in its own save.**
+One row per (guild, Paris day, metric), `Day` an int `yyyymmdd` so windows filter in SQL.
+`Helpers/EconomyLog.AddAsync` finds or creates the row (`Local` first) and **never saves** — the
+action's own `SaveChanges` carries it, so a refused action records nothing and a recorded one
+cannot be lost. A new source or sink of cailloux, or a new Plynling action, needs its own
+`EconomyLog` call and metric key; **metric keys are stored, so append-only**. Admin adjustments
+record what actually moved (after the clamp at 0), not what was asked. There is no totals row:
+the stored balances already are the totals, and `/admin stats` reads those. Nothing was
+backfilled. The window buttons are `dash:win:{Week|Month|All}` in `AdminComponentHandler`,
+which re-checks `IsStaff`; « Tout » has no trend, and its sparkline sums days into at most 30
+buckets so it stays one line.
 
 **`/admin` is guarded once per handler, and only in code — deliberately no
 `[DefaultMemberPermissions]`.** That attribute is a Discord permission *bit*, which
