@@ -127,7 +127,7 @@ public static class PlynlingPlayCards
 
     /// <summary>
     /// One step of a visit's story: the place, the two Plynlings side by side (a gallery of two, each
-    /// in this step's face; the alt text is its name), then the step's text, « 3/8 », and ◀ ▶ — from
+    /// in this step's face; the alt text is its name), then the step's text, « 3/7 », and ◀ ▶ — from
     /// the very first step, since the reader pages through at their own pace.
     /// </summary>
     public static MessageComponent BuildVisitStory(VisitStory story, int beat)

@@ -614,9 +614,10 @@ public static class PlynlingVisitStory
     }
 
     /// <summary>
-    /// The story of <paramref name="outcome"/>, in eight steps: arrival, then a four-line script in which
-    /// A raises the subject and each line answers the one before (steps 2–5), a closer, the activity, then parting with
-    /// <paramref name="outcomeLines"/> — what the visit changed. Each step carries both faces.
+    /// The story of <paramref name="outcome"/>: arrival; a script in which A raises the subject and each line
+    /// answers the one before — the opener on its own step, then the rest two lines to a step, the closer
+    /// finishing the last pair; the activity; then parting with <paramref name="outcomeLines"/> — what the
+    /// visit changed. Six steps for a four-line script, seven for a six-line one. Each step carries both faces.
     /// <paramref name="pick"/> chooses a line from a pool (the handler passes ResponsePicker, so a
     /// channel does not see the same line twice in a row); by default it draws from <paramref name="rng"/>.
     /// </summary>
@@ -652,8 +653,8 @@ public static class PlynlingVisitStory
         var f = new FacePair(faces.Narration, faces.Narration).Narrate(arrivalTag);
         beats.Add(f.Beat($"*{pick(place.Scenes)}*\n{X(arrival)}"));
 
-        // 2–5. The conversation: one script, four lines that answer each other — the opener (A's
-        // narration and words), then one spoken line per step, from whichever of them the script says.
+        // The conversation: one script whose lines answer each other — the opener (A's narration and
+        // words) on its own step, from whichever of them the script says.
         var flavor = mood is VisitMood.Rivals or VisitMood.Conflict ? ConvoFlavor.Tense : ConvoFlavor.Friendly;
         var scripts = subject.Catalog is { } passion
             ? PlynlingScripts.For(passion, flavor, shared)
@@ -667,19 +668,30 @@ public static class PlynlingVisitStory
         f = Talking(aIsVisitor).Narrate(narrationTag).Speak(saidTag, aIsVisitor);
         beats.Add(f.Beat($"{C(narration)}\n{Said(a, C(said))}"));
 
-        foreach (var line in script.Lines.Skip(1))
+        // Then the rest of the script and the closer, two lines to a step, so both of them talk on
+        // it. The closer goes to whoever did not say the script's last line, so the final step is
+        // always an exchange; {S} in it is whoever says it. Two lines in a row from the same one
+        // share one bubble.
+        var spoken = script.Lines.Skip(1).Select(line =>
         {
-            var byVisitor = line.ByA == aIsVisitor;
-            var (talk, talkTag) = Untag(line.Text);
-            f = Talking(byVisitor).Speak(talkTag, byVisitor);
-            beats.Add(f.Beat(Said(line.ByA ? a : b, C(talk))));
-        }
-
-        // 6. The closer, from either of them; {S} is whoever says it.
-        var closerIsVisitor = rng.Next(2) == 0;
+            var (talk, tag) = Untag(line.Text);
+            return (Visitor: line.ByA == aIsVisitor, Text: C(talk), Tag: tag);
+        }).ToList();
+        var closerIsVisitor = !spoken[^1].Visitor;
         var (closer, closerTag) = Untag(pick(Closers[mood]));
-        f = Talking(closerIsVisitor).Speak(closerTag, closerIsVisitor);
-        beats.Add(f.Beat(Said(closerIsVisitor ? visitor : host, By(closer, closerIsVisitor))));
+        spoken.Add((closerIsVisitor, By(closer, closerIsVisitor), closerTag));
+        foreach (var pair in spoken.Chunk(2))
+        {
+            f = Talking(pair[0].Visitor);
+            var lines = new List<(bool Visitor, string Text)>();
+            foreach (var (byVisitor, talk, tag) in pair)
+            {
+                f.Speak(tag, byVisitor);
+                if (lines.Count > 0 && lines[^1].Visitor == byVisitor) lines[^1] = (byVisitor, $"{lines[^1].Text} {talk}");
+                else lines.Add((byVisitor, talk));
+            }
+            beats.Add(f.Beat(string.Join("\n", lines.Select(l => Said(l.Visitor ? visitor : host, l.Text)))));
+        }
 
         // 7. The activity, then a little exchange (visitor, then host).
         var (activity, activityTag) = Untag(pick(ActivityPool(mood, info, b)));

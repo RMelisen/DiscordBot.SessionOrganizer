@@ -1252,17 +1252,18 @@ zero the day they shipped.
 
 **A visit is told as a story, but decided before it starts.** `VisitAsync` saves everything first;
 `Helpers/PlynlingVisitStory.Build` (pure) then picks a place open at that Paris hour and tells it in
-**eight steps** — arrival; a four-line conversation (steps 2–5); a closer that turns the talk into
-doing something; the activity with a two-line exchange; parting plus
+**six or seven steps** — arrival; the script's opener; the rest of the script **two lines to a
+step**, the last pair finished by a closer that turns the talk into doing something; the activity
+with a two-line exchange; parting plus
 `PlynlingPlayCards.VisitOutcomeLines` — the rest from pools keyed by `VisitMood`: the bond **after**
 the visit, or `Conflict` for a bad scene or enemies. So a restart mid-story can never change what
 happened.
 
 **The conversation is one script, never lines drawn separately.** Drawing each line from its own
 pool made every line fine alone and the exchange « décousu » — the reply never answered what was
-said — so `Helpers/PlynlingScripts` holds whole conversations: four `ConvoLine`s written together,
-A's opener (narration `\n` words) then three spoken lines each answering the last, from whichever
-of A and B the script says (some let one talk twice in a row). Keyed by passion, `ConvoFlavor`
+said — so `Helpers/PlynlingScripts` holds whole conversations: four or six `ConvoLine`s written
+together, A's opener (narration `\n` words) then three or five spoken lines each answering the last,
+from whichever of A and B the script says (some let one talk twice in a row). Keyed by passion, `ConvoFlavor`
 (rivals and conflicts are `Tense`, every other bond `Friendly`) and whether B shares the passion; a
 typed passion only gets the generic `ForCustom` scripts, which name the subject as `{P}` and nothing
 more. The engine draws a script by its opener (so the picker's no-repeat history works) — openers
@@ -1271,6 +1272,16 @@ scripts, never as loose lines**: a line added on its own answers nothing. `Plynl
 generated from the scratch writing sheets but reads fine by hand. Lines are templates — `{A}`/`{B}` names,
 `{ils}`/`{Ils}` (« elles » only for two girls), `{a:m|f}`/`{b:m|f}`/`{p:m|f}` agreements — and the
 harness expands every line for all four gender pairs and builds full stories.
+
+**Two lines to a step, so both of them talk on it.** Showing one spoken line per step left every
+conversation step a monologue; now the lines after the opener are paired, and the closer goes to
+whoever did **not** say the script's last line, so the final pair is always an exchange. That is
+also why a script must have an **even** number of lines (4 or 6, which the harness checks): the
+spoken lines plus the closer must pair up exactly. Two lines in a row from the same Plynling share
+one bubble — the ~116 four-line scripts whose lines 1 and 2 have one speaker give a one-voice step,
+which is the cue for which ones to lengthen next. A quarter of the scripts (every fourth in each
+key) have six lines, the two extra ones written into the middle of the exchange; lengthening one is
+inserting two lines, never appending, since the last line is the one that leads into the activity.
 
 **Every step carries both faces, and a line can set them.** `VisitBeat` holds the text and a face
 per Plynling — happy, content, sad, or `PlynlingMood.Angry`, which exists for visits only
@@ -1282,7 +1293,7 @@ line both faces, and `[A:sad B:happy]` sets the visitor's and the host's separat
 faces parse — an unknown word stays text, and the harness fails on any line still starting with `[`.
 
 **The story card shows both Plynlings side by side and never moves on its own.** Each step is a
-`MediaGallery` of two (each sprite in that step's face, alt text = its name), the text, « 3/8 », and
+`MediaGallery` of two (each sprite in that step's face, alt text = its name), the text, « 3/7 », and
 ◀ ▶ (`vis:prev:{story}:{beat}` / `vis:next:…`, two verbs, disabled at the ends) **from the first
 step**: « Accueillir » closes the knock in place and posts step 1 as a follow-up — a new message at
 the bottom of the channel — and the reader pages at their own pace. There is no timer and no
