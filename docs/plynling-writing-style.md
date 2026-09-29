@@ -93,6 +93,28 @@ family-neutral.
 - Face tags: `[happy]`, `[content]`, `[sad]`, `[angry]` — on a spoken line, the speaker's face; on
   narration, both. Use them where the emotion visibly turns, not everywhere.
 
+## The narration around the conversation (`PlynlingVisitStory`)
+
+Place scenes, arrivals, activities, exchanges, closers and partings are drawn **independently** and
+recombined at random, so each line must stand on its own:
+
+- **No props tied to a place.** A door, a table or a chair can land « Sur la falaise, face au
+  vent ». Use what travels: hands, pockets, a scarf, the path, the grass. (« {A} s'en va en claquant
+  des talons, faute de porte à claquer. »)
+- **No time of day or weather**, except in a place scene, which is already filtered by the hour.
+- **Respect what the mood guarantees.** Arrivals follow the bond *before* the visit, everything else
+  the bond *after*. A Friends arrival may open two people's first visit as friends, so no « comme
+  d'habitude »; a Lovers parting may follow a brand-new confession. Partings stay warm but not
+  euphoric, since an outcome line (a badge, a new bond) follows them.
+- **Exchanges follow any activity**, so they never refer to what was just done.
+- **Closers follow any last line** and turn it into doing something, with a little character.
+- **Passion activities serve every mood but conflict — rivals included** — so they stay light and
+  neutral. Bond activities (`Activities[mood]`) are where the mood shows.
+- **Place scenes are plain text**, printed as they are: no `{A}`, `{B}` or tags.
+- **Typed-passion moments** (`Typed…` pools) are the owner's words turning up out of nowhere,
+  Tomodachi-style: `{S}` owns the passion. They follow the `{P}` rules above, and so do the card's
+  thought bubbles (`PlynlingThoughtTypedLines`, `PlynlingDreamTypedLines`, passion as `{1}`).
+
 ## SYNCS's own lines on the Plynling card (`BotResponses`)
 
 These are in *her* voice — bratty, kawaii, petty — and players see them after every pet, meal,

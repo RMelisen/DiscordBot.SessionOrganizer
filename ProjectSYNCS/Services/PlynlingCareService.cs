@@ -37,7 +37,8 @@ public class PlynlingCareService
             return new CareReply(null, Refusal(outcome, plynling?.Gender ?? PlynlingGender.Male));
         }
 
-        var line = string.Format(_picker.Pick(channelId, BotResponses.PlynlingPetLines.For(plynling.Gender)), PlynlingCardUi.SafeName(plynling.Name));
+        var (petPool, typed) = PlynlingPassions.PickLines(BotResponses.PlynlingPetLines, BotResponses.PlynlingPetTypedLines, plynling, Random.Shared);
+        var line = string.Format(_picker.Pick(channelId, petPool), PlynlingCardUi.SafeName(plynling.Name), typed);
         var text = $"{line} — {PlynlingText.PettedBy(plynling.Gender, actorId)}";
         if (badges.Count > 0) text += "\n" + PlynlingBadges.NewBadgeLines(badges, plynling.Gender);
         text += await GiftLineAsync(plynling, actorId, now);
@@ -57,8 +58,9 @@ public class PlynlingCareService
 
         var info = PlynlingCatalog.Info(food);
         var g = result.Plynling.Gender;
-        var line = string.Format(_picker.Pick(channelId, BotResponses.PlynlingFeedLines.For(g)),
-            PlynlingCardUi.SafeName(result.Plynling.Name), info.WithArticle);
+        var (feedPool, typed) = PlynlingPassions.PickLines(BotResponses.PlynlingFeedLines, BotResponses.PlynlingFeedTypedLines, result.Plynling, Random.Shared);
+        var line = string.Format(_picker.Pick(channelId, feedPool),
+            PlynlingCardUi.SafeName(result.Plynling.Name), info.WithArticle, typed);
         // Someone else's: say who paid, and that it cost them double.
         var paid = result.Plynling.OwnerId == actorId
             ? $"−{PebbleEconomy.Cailloux(result.Price)}"

@@ -4,8 +4,8 @@ namespace ProjectSYNCS.Helpers;
 public static class PebbleEconomy
 {
     public static readonly TimeSpan WorkCooldown = TimeSpan.FromHours(4);
-    public const int WorkMin = 40;
-    public const int WorkMax = 60;
+    public const int WorkMin = 25;
+    public const int WorkMax = 40;
 
     // "A normal day of /work" for the passive cap: three shifts, not the six that are
     // theoretically possible, because nobody works through the night.

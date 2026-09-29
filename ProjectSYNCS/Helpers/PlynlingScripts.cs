@@ -3119,7 +3119,7 @@ public static class PlynlingScripts
               A("[sad] Le reste revient. Mais un peu plus petit, à chaque fois."),
               B("Alors continue. Et si un jour le reste est trop grand, viens me voir. On le rapetissera à deux.")),
             S(A("{S} tend à {L} une feuille couverte de notes.\nTout sur ma passion : {P}. À ton tour. Toi, c'est quoi ?"),
-              B("Les cuillères. Je collectionne les cuillères."),
+              B("Moi ? Je range mes cuillères par taille, tous les soirs. Ce n'est pas une passion. C'est une habitude."),
               A("Les cuillères ?"),
               B("Chacun ses mystères. Je t'écoute sur le tien si tu m'écoutes sur les miennes. J'en ai quarante.")),
             S(A("{S} rougit jusqu'aux oreilles.\nIl paraît que je parle en dormant. Toujours du même sujet : {P}."),

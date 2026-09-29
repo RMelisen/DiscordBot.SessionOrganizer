@@ -1257,7 +1257,24 @@ step**, the last pair finished by a closer that turns the talk into doing someth
 with a two-line exchange; parting plus
 `PlynlingPlayCards.VisitOutcomeLines` — the rest from pools keyed by `VisitMood`: the bond **after**
 the visit, or `Conflict` for a bad scene or enemies. So a restart mid-story can never change what
-happened.
+happened. **The arrival is the exception: it uses the bond *before* the visit** (`MoodFor(true,
+Before)`), so two acquaintances who become friends during it still arrive as acquaintances, and a
+scene that goes badly has not gone badly yet — Conflict arrivals are therefore for enemies only.
+
+**A typed passion is quoted back, Tomodachi-style.** A taught passion that stayed free text
+(`PlynlingPassions.Typed`, one the catalog did not recognise) is the owner's own words, and it turns
+up in ordinary moments. In a visit, when either Plynling has one, `TypedMomentChance` (45 %) of the
+time it comes up once outside the conversation — in the arrival, the exchange or the parting, from
+`TypedArrivals` / `TypedExchangesOwnerFirst|Second` / `TypedDepartures`, where `{S}` is its owner and
+`{P}` the text. The exchange pool is chosen by who owns it (the visitor always speaks first), and a
+typed parting never replaces a refusal's or a break-up's. On the card, `PlynlingPassions.PickLines`
+swaps in `PlynlingPetTypedLines` / `PlynlingFeedTypedLines` / `PlynlingVisitKnockTypedLines`
+`TypedLineChance` (15 %) of the time, the rendered passion passed as the **last** format argument
+(`{1}` for pet, `{2}` for feed and knock); callers always pass it, so an ordinary line ignores it.
+The text is sanitised and never opens a sentence, since it is lowercase. `/plynling view` adds a
+thought bubble: `PlynlingPassions.Thought` returns `PlynlingThoughtTypedLines` — or
+`PlynlingDreamTypedLines` while it sleeps — `ThoughtChance` (25 %) of the time, never on a dead or
+frozen one, and only when no gift line already fills the card.
 
 **The conversation is one script, never lines drawn separately.** Drawing each line from its own
 pool made every line fine alone and the exchange « décousu » — the reply never answered what was
@@ -1321,8 +1338,8 @@ never put `{P}` after « de » or « à » (« parler de les trains »), and why
 60 % of the time when there is one. The activity is the squabble in a conflict; otherwise 30 % of the
 time (`MoodActivityShare`) it comes from `Activities[mood]`, which fits the bond rather than the
 subject, and the rest from the subject: a catalog passion's activities **plus** any combo with the
-listener's passions, or the custom ones. Combos join the pool rather than replacing it — a pair has
-one combo at most, and alone it made every Cooking-meets-Music visit identical.
+listener's passions, or the custom ones. Combos join the pool rather than replacing it — alone, a
+pair's one combo made every Cooking-meets-Music visit identical; each of the 25 pairs now has three.
 
 **The parting follows the outcome when the visit broke something.** The mood is the bond *after* the
 visit, so a couple who just split would otherwise leave on a cheerful Friends line. `DeparturePool`

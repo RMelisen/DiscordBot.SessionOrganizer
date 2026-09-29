@@ -182,8 +182,9 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         var expires = now + PlynlingLife.VisitInviteLife;
-        var line = string.Format(_picker.Pick(Context.Channel.Id, BotResponses.PlynlingVisitKnockLines.For(mine.Gender)),
-            PlynlingCardUi.SafeName(mine.Name), $"<@{user.Id}>");
+        var (knockPool, typed) = PlynlingPassions.PickLines(BotResponses.PlynlingVisitKnockLines, BotResponses.PlynlingVisitKnockTypedLines, mine, Random.Shared);
+        var line = string.Format(_picker.Pick(Context.Channel.Id, knockPool),
+            PlynlingCardUi.SafeName(mine.Name), $"<@{user.Id}>", typed);
         await RespondAsync(components: PlynlingPlayCards.BuildKnock(mine, user.Id, expires, line, now),
             flags: MessageFlags.ComponentsV2, allowedMentions: new AllowedMentions { UserIds = new List<ulong> { user.Id } });
     }
@@ -247,7 +248,12 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         }
         // The owner's first look of the day at a happy Plynling may turn up a gift.
         var gift = await _plynlings.TryGiftAsync(plynling, Context.User.Id, now, Random.Shared);
-        await RespondCardAsync(plynling, now, gift.Any ? PlynlingCareService.GiftLine(plynling, gift) : null);
+        // Otherwise, now and then, what its typed passion has it thinking about (a gift says enough).
+        var line = gift.Any ? PlynlingCareService.GiftLine(plynling, gift)
+            : PlynlingPassions.Thought(plynling, now, Random.Shared) is (var pool, var typed)
+                ? string.Format(_picker.Pick(Context.Channel.Id, pool), PlynlingCardUi.SafeName(plynling.Name), typed)
+                : null;
+        await RespondCardAsync(plynling, now, line);
     }
 
     // Without `user`, the owner freezes their own under the self-freeze rules. With a
