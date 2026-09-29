@@ -57,14 +57,14 @@ public static class PlynlingVisitStory
 {
     public static readonly IReadOnlyList<VisitPlace> Places = new VisitPlace[]
     {
-        new("🌳", "Au parc", 0, 24, new[] { "Les feuilles bruissent doucement.", "Un écureuil passe en coup de vent." }),
+        new("🌳", "Au parc", 0, 24, new[] { "Un banc garde encore la chaleur de quelqu'un qui vient de partir.", "Un écureuil traverse l'allée, s'arrête, reconsidère sa vie, et repart.", "Les feuilles bruissent comme si elles se racontaient quelque chose." }),
         new("🍂", "Sous le grand chêne", 0, 24, new[] { "Des glands tombent de temps en temps, avec un petit « toc ».", "Le vieux chêne fait de l'ombre à tout le monde." }),
         new("🏡", "Chez {B}", 0, 24, new[] { "Ça sent bon le gâteau aux noisettes.", "La maison est petite, mais très bien rangée." }),
-        new("☕", "Au café du coin", 0, 24, new[] { "Ça sent le chocolat chaud.", "La serveuse, une vieille tortue, prend tout son temps." }),
-        new("🪵", "Au bord de l'étang", 0, 24, new[] { "Une grenouille observe la scène depuis son nénuphar.", "L'eau fait des ronds tout doucement." }),
+        new("☕", "Au café du coin", 0, 24, new[] { "La tortue qui sert a pris une commande il y a une heure. Elle arrive.", "Ça sent le chocolat chaud et le bois ciré.", "Une cuillère tinte contre une tasse, quelque part, puis plus rien." }),
+        new("🪵", "Au bord de l'étang", 0, 24, new[] { "Une grenouille observe la scène depuis son nénuphar, sans prendre parti.", "L'eau fait des ronds qui s'agrandissent jusqu'à disparaître.", "Une libellule s'arrête en plein vol, comme pour écouter." }),
         new("🌼", "Dans la prairie", 6, 20, new[] { "Les fleurs sentent bon et les abeilles bourdonnent.", "L'herbe haute chatouille tout le monde." }),
         new("☀️", "Au soleil, sur les rochers", 10, 19, new[] { "Les pierres sont toutes chaudes. Parfait pour une sieste.", "Un lézard leur cède la place, de mauvaise grâce." }),
-        new("🌙", "Sur le toit, sous les étoiles", 20, 6, new[] { "La lune est ronde et le toit encore tiède.", "Une chouette hulule quelque part." }),
+        new("🌙", "Sur le toit, sous les étoiles", 20, 6, new[] { "Le toit est encore tiède du soleil de la journée.", "La lune est ronde, et une chouette la commente à voix basse.", "Les tuiles craquent doucement sous chaque pas." }),
         new("🌉", "Sur le vieux pont de pierre", 0, 24, new[] { "L'eau murmure sous les arches.", "Un héron immobile fait semblant de ne rien voir." }),
         new("🌲", "Dans la clairière", 0, 24, new[] { "Un rayon de lumière traverse les branches.", "Des papillons zigzaguent entre les troncs." }),
         new("🍃", "Sous une grande feuille, à l'abri de la pluie", 0, 24, new[] { "Les gouttes tambourinent sur la feuille, tout là-haut.", "Il fait sec, tiède, et un peu trop calme." }),
@@ -81,7 +81,7 @@ public static class PlynlingVisitStory
         new("🔥", "Autour du feu de camp", 18, 1, new[] { "Les flammes crépitent et font danser les ombres.", "Ça sent la noisette grillée." }),
         new("✨", "Dans la grotte aux lucioles", 20, 1, new[] { "Les lucioles dessinent des constellations sur les parois.", "L'écho répète tout, un peu de travers." }),
         new("🛖", "Dans la cabane dans l'arbre", 0, 24, new[] { "L'échelle de corde grince à chaque pas.", "Le plancher est couvert de coussins moelleux." }),
-        new("🕰️", "Dans le vieux grenier", 0, 24, new[] { "La poussière danse dans un rayon de lumière.", "Une malle entrouverte déborde de vieux trésors." }),
+        new("🕰️", "Dans le vieux grenier", 0, 24, new[] { "La poussière danse dans un rayon de lumière, sans se presser.", "Une malle entrouverte laisse dépasser la manche d'un vieux costume.", "Quelque part sous les poutres, un loir ronfle." }),
         new("🌈", "Sous l'arc-en-ciel", 8, 20, new[] { "Les couleurs se reflètent dans les flaques.", "Personne n'a trouvé le pot d'or, mais tout le monde a cherché." }),
         new("🏔️", "Sur la falaise, face au vent", 8, 19, new[] { "Le vent leur ébouriffe tout ce qui dépasse.", "En bas, le monde a l'air minuscule." }),
         new("⛲", "Près de la fontaine de la place", 7, 22, new[] { "L'eau clapote et des pièces brillent au fond du bassin.", "Un pigeon se prend pour le maître des lieux." }),
@@ -89,7 +89,7 @@ public static class PlynlingVisitStory
         new("🎣", "Au bord de la rivière", 6, 20, new[] { "Le courant emporte une feuille comme un petit bateau.", "Un poisson passe en ricanant. Il a compris qu'il n'y avait pas d'appât." }),
         new("🍦", "Chez le glacier", 12, 22, new[] { "Des boules de glace colorées s'alignent derrière la vitre.", "Le glacier, un vieil ours, sert chaque cornet avec un soin infini." }),
         new("🌌", "Dans un champ, à regarder les étoiles", 21, 1, new[] { "Une étoile filante passe, puis une autre.", "L'herbe est fraîche et le ciel n'en finit pas." }),
-        new("🚂", "À la petite gare", 6, 22, new[] { "Un petit train siffle au loin.", "Le chef de gare, un hérisson, consulte sa montre avec gravité." }),
+        new("🚂", "À la petite gare", 6, 22, new[] { "Le chef de gare, un hérisson, consulte sa montre, puis le ciel, puis encore sa montre.", "Un petit train siffle au loin, sans jamais avoir l'air d'approcher.", "Sur le quai, une valise attend quelqu'un depuis très longtemps." }),
         new("🎭", "Au petit théâtre du village", 15, 23, new[] { "Le rideau rouge est un peu mité, mais très fier.", "Dans les coulisses, quelqu'un répète la même réplique en boucle." }),
         new("🍵", "Au salon de thé", 13, 19, new[] { "Les tasses sont minuscules et les gâteaux aussi.", "Une théière ronronne doucement sur la table." }),
         new("🎨", "Dans l'atelier du peintre", 9, 18, new[] { "Ça sent la peinture et le bois. Il y a des taches partout.", "Un tableau à moitié fini attend qu'on lui trouve un titre." }),
@@ -121,22 +121,22 @@ public static class PlynlingVisitStory
         },
         [VisitMood.Friends] = new[]
         {
-            "{A} déboule en courant : « Me voilà ! »",
-            "{B} saute de joie en voyant arriver {A}.",
-            "{A} arrive les poches pleines de cailloux à montrer à {B}.",
-            "{A} arrive en sifflotant, les mains derrière le dos : {B} sait qu'il y a une surprise.",
-            "« Devine qui c'est ! » crie {A} de loin. {B} devine très vite.",
-            "{B} n'a pas fini d'ouvrir que {A} lui saute déjà dessus pour un câlin.",
-            "{A} arrive avec un grand sourire et un goûter à partager. {B} est déjà {b:ravi|ravie}.",
-            "{A} et {B} se tapent dans la main, ratent, recommencent, et finissent par éclater de rire.",
-            "Ça faisait trop longtemps ! {A} raconte sa semaine avant même d'être {a:arrivé|arrivée}.",
-            "{A} arrive en faisant la roue. Enfin, presque. {B} applaudit quand même.",
-            "{B} guettait {A} depuis un moment et fait semblant de ne pas avoir attendu.",
-            "{A} crie le prénom de {B} bien avant d'être à portée de voix.",
-            "{A} débarque avec trois idées de jeux et zéro plan. {B} adore le programme.",
-            "{B} lance un « Enfin ! » en voyant {A}, qui n'a pourtant que deux minutes de retard.",
-            "{A} arrive avec un sac de noisettes et un grand sourire. {B} ne sait pas lequel des deux lui fait le plus plaisir.",
-            "{A} et {B} se retrouvent et parlent en même temps pendant une bonne minute. Personne n'écoute. Tout le monde est content.",
+            "{A} arrive les mains fermées sur quelque chose. « Devine. » {B} devine trois fois de travers, exprès, pour faire durer.",
+            "{B} entend {A} arriver bien avant de {a:le|la} voir : {a:il|elle} chante faux, fort, et toujours la même chanson.",
+            "{A} arrive les poches pleines : un caillou rayé, une plume, un gland mordillé. « J'ai tout gardé pour te le montrer. »",
+            "{B} fait semblant d'être très {b:occupé|occupée}. Ça tient trois secondes, puis {b:il|elle} court au-devant de {A}.",
+            "{A} arrive en marchant sur les mains. Enfin, sur une main et demie. {B} applaudit avant la chute, par prudence.",
+            "{A} et {B} se tapent dans la main, ratent, recommencent, ratent encore. Au troisième essai, {ils} renoncent et se font un câlin.",
+            "{B} a gardé pour {A} la meilleure part de son goûter. Elle a un peu fondu en attendant. {A} la trouve parfaite quand même.",
+            "{A} arrive avec une feuille collée dans le dos. {B} décide de ne rien dire. Pour l'instant.",
+            "{A} arrive en racontant déjà une histoire, visiblement commencée bien avant d'être à portée de voix.",
+            "{B} attendait {A} en faisant des ricochets imaginaires. {b:Il|Elle} lance le dernier en {a:le|la} voyant, et annonce : « Sept. »",
+            "{A} arrive avec deux bâtons presque identiques. « Un pour toi. » Personne ne sait encore à quoi ils serviront. Ça viendra.",
+            "{B} crie le nom de {A} en {a:le|la} voyant. Un oiseau s'envole. {A} crie le nom de {B}. Un deuxième oiseau s'envole.",
+            "{A} surgit derrière {B} avec un « Bouh ! » très réussi. {B} sursaute, puis jure qu'{b:il|elle} l'avait vu venir.",
+            "{A} arrive avec un mot tout juste appris, et le place dès sa première phrase. Il ne va pas du tout. {B} hoche la tête, très {b:impressionné|impressionnée}.",
+            "{B} a dessiné {A} dans la poussière, pour patienter. Le dessin a un sourire immense. {A} le trouve très ressemblant.",
+            "{A} arrive {a:essoufflé|essoufflée} : {a:il|elle} a couru tout le chemin, sans raison, juste parce que c'était {B} au bout.",
         },
         [VisitMood.BestFriends] = new[]
         {
@@ -329,18 +329,18 @@ public static class PlynlingVisitStory
         },
         [VisitMood.Friends] = new[]
         {
-            "Tu crois que les nuages ont un goût ?\nSûrement fraise.",
-            "On refait la course ?\nSeulement si tu me laisses de l'avance !",
-            "Je t'ai apporté un caillou tout rond !\nOh, c'est le plus beau de ma collection !",
-            "J'ai inventé un jeu ! Personne ne peut gagner.\nParfait, je suis déjà {b:le meilleur|la meilleure}.",
-            "Tu as vu ma galipette ?\nJ'ai vu ta galipette. J'ai vu ton atterrissage aussi.",
-            "Tu me gardes la dernière noisette ?\nJe te la garde. Je te promets de ne pas la goûter. Juste un peu.",
-            "On fait quoi, après ?\nOn improvise. On est très {p:bons|bonnes} en improvisation.",
-            "Tu sais pourquoi je t'aime bien ?\nParce que je ris à toutes tes blagues, même les mauvaises.",
-            "C'était la meilleure journée du mois !\nEt on n'a même pas fini !",
-            "Tu as un secret ?\nJ'en ai trois. Je t'en donne un contre une noisette.",
-            "Ne me dis pas que tu as encore gagné.\nJe ne dis rien. Je souris juste très fort.",
-            "Ça fait du bien de te voir.\nÇa fait du bien de te voir aussi. Bon, c'est dit, on passe à autre chose.",
+            "Tu crois que les escargots se font des amis ?\nForcément. Ils ont tout leur temps pour ça.",
+            "J'ai rêvé de toi, cette nuit.\nJ'espère que j'étais drôle, au moins.",
+            "Tu as de la boue sur le nez.\nJe sais. Je la garde pour plus tard.",
+            "Si tu étais un fruit, tu serais lequel ?\nUne cerise. Ça va toujours par deux.",
+            "On devrait faire ça plus souvent.\nOn le fait déjà tout le temps. Plus souvent, ce serait tout le temps et demi.",
+            "Tu m'as manqué. Un peu.\nToi aussi. Un peu beaucoup.",
+            "Je te dois un caillou, non ?\nTu m'en dois trois. Mais je ne tiens pas les comptes. Enfin, si. Trois.",
+            "Pourquoi tu souris ?\nJe ne sais pas. C'est toi qui as commencé.",
+            "Tu as triché, là, non ?\nUn tout petit peu. Pour que ce soit plus drôle.",
+            "C'est quoi, ton secret, pour toujours avoir faim ?\nL'entraînement. Beaucoup d'entraînement.",
+            "Tu crois qu'on sera encore {p:amis|amies} dans cent ans ?\nDans cent ans, on sera deux vieux cailloux qui rigolent au soleil.",
+            "Tu gardes le secret ?\nQuel secret ? … Voilà. Déjà gardé.",
         },
         [VisitMood.BestFriends] = new[]
         {
@@ -428,22 +428,22 @@ public static class PlynlingVisitStory
         },
         [VisitMood.Friends] = new[]
         {
-            "{A} repart en sautillant, {a:ravi|ravie} de sa journée.",
-            "« À la prochaine ! » crie {A} en s'éloignant. {B} agite la main jusqu'au bout.",
-            "{A} part en courant et en criant « À demain ! ». Rien ne garantit que {ils} se verront demain, mais c'est joli.",
-            "{B} a droit à un dernier câlin avant que {A} ne parte. Il est très long. Personne ne compte.",
-            "« La prochaine fois, c'est moi qui choisis le jeu ! » crie {A}. « On verra ! » répond {B}, sans aucune intention de céder.",
-            "{A} s'en va en fredonnant. {B} reconnaît la chanson et la fredonne aussi, longtemps après.",
-            "{Ils} se font le signe de la victoire à distance, jusqu'à ce que {A} disparaisse derrière un tournant.",
-            "{A} repart avec un caillou offert par {B}, le garde dans sa poche, et le touche souvent.",
-            "{B} accompagne {A} sur une bonne partie du chemin, « juste un peu plus loin ». Ça finit par durer un moment.",
-            "Au moment de partir, {A} se retourne pour lancer une dernière blague. {B} rit encore, longtemps après.",
-            "{A} repart en courant, revient chercher ce qu'{a:il|elle} avait oublié, puis repart en courant.",
-            "{Ils} se font une dernière grimace pour la route. La meilleure de la journée.",
-            "« Demain, même heure ? » lance {A}. « Même heure ! » répond {B}, qui n'a aucune idée de l'heure.",
-            "{B} glisse une noisette dans la poche de {A} au moment de dire au revoir. {A} ne la trouvera que ce soir.",
-            "{A} s'éloigne en chantant la chanson qu'{ils} ont inventée ensemble. {B} la chante encore après.",
-            "{Ils} se séparent au croisement, en se criant des au revoir jusqu'à ne plus s'entendre.",
+            "{A} s'en va à reculons pour faire durer les au revoir, et manque de tomber dans un buisson. {B} rit jusqu'à ce qu'{a:il|elle} disparaisse.",
+            "{B} glisse une noisette dans la poche de {A} sans rien dire. {A} la trouvera plus tard, et saura tout de suite d'où elle vient.",
+            "{A} part en courant, revient chercher son écharpe, repart, revient dire une dernière chose, et repart pour de bon. Presque.",
+            "{Ils} se séparent au croisement, et continuent de se parler en criant, jusqu'à ce que les mots ne soient plus que du bruit.",
+            "{A} s'éloigne en sifflotant un air que {B} ne connaît pas. Plus tard, {B} se surprend à le siffloter aussi.",
+            "{B} raccompagne {A} « juste jusqu'au grand arbre ». Puis jusqu'au suivant. Au troisième, {ils} se disent que c'est ridicule, et continuent.",
+            "{A} repart avec un caillou que {B} lui a donné « pour rien ». Les cailloux donnés pour rien sont ceux qu'on garde le plus longtemps.",
+            "« À la prochaine ! » « À la prochaine prochaine ! » « À la… » {Ils} pourraient continuer longtemps. {Ils} continuent un peu.",
+            "{A} se retourne une dernière fois pour faire une grimace. {B} répond par une grimace pire. Match nul : on rejouera.",
+            "{B} regarde {A} partir en se demandant pourquoi les bonnes journées passent toujours deux fois plus vite que les autres.",
+            "{A} part en sautillant. Au bout du chemin, {a:il|elle} saute un peu moins haut : la visite est finie, et ça se sent jusque dans les pieds.",
+            "{Ils} se promettent de se revoir bientôt. Ce n'est pas une formule : {ils} ont déjà choisi le jour.",
+            "{A} laisse derrière {a:lui|elle} une plume, une miette et un fou rire. {B} range la plume, et garde le reste.",
+            "{B} fait de grands signes jusqu'à ce que {A} ne soit plus qu'un point. Puis encore un peu, au cas où.",
+            "[sad] {A} repart un peu plus lentement qu'à l'aller. Ce n'est pas la fatigue. C'est qu'il faut partir.",
+            "{A} et {B} se disent au revoir comme on se lance une balle : vite, fort, et en espérant que l'autre la renverra.",
         },
         [VisitMood.BestFriends] = new[]
         {
@@ -523,6 +523,37 @@ public static class PlynlingVisitStory
         },
     };
 
+    // The parting after a refused confession: the visitor ({A}) confessed, the host ({B}) said no.
+    // The outcome line follows and the faces are sad whatever the line says (see DeparturePool).
+    public static readonly string[] RefusedDepartures =
+    {
+        "{B} a répondu avec beaucoup de douceur. C'est presque pire. {A} repart en regardant ses pieds.",
+        "{A} se répète « ce n'est rien » tout le long du chemin. Ça ne marche pas encore.",
+        "{Ils} se disent au revoir un peu trop poliment, comme deux personnes qui ne savent plus quoi faire de leurs mains.",
+        "{B} regarde {A} partir, le cœur serré {b:lui aussi|elle aussi}. Dire non ne fait de bien à personne.",
+        "{A} repart en serrant, au fond de sa poche, le caillou qu'{a:il|elle} voulait offrir. Il pèse bien plus lourd qu'à l'aller.",
+        "« On reste {p:amis|amies} ? » demande {B}. {A} hoche la tête. Il faudra un peu de temps. Mais oui.",
+        "Sur le chemin, {A} donne un coup de pied dans un gland, puis s'excuse auprès du gland. Ce n'était pas sa faute non plus.",
+        "{B} voudrait dire quelque chose de gentil. Tout ce qui lui vient est trop petit. {b:Il|Elle} se tait, et c'est mieux.",
+        "{A} s'éloigne très droit, très digne. C'est au premier tournant qu'{a:il|elle} s'autorise à renifler.",
+        "Autour, le monde continue comme si de rien n'était, ce qui est un peu vexant. {A} rentre quand même, un pas après l'autre.",
+    };
+
+    // The parting after a break-up: the two were a couple when the visit began and are not any more.
+    public static readonly string[] BreakUpDepartures =
+    {
+        "{Ils} se séparent sans se disputer. C'est ce qui rend la chose si triste : il n'y a personne à qui en vouloir.",
+        "{A} rend à {B} la fleur séchée qu'{a:il|elle} gardait sur {a:lui|elle}. {B} la lui redonne. Certaines choses peuvent rester.",
+        "{Ils} font une partie du chemin ensemble, une dernière fois, sans se tenir la main. C'est étrange, des mains vides.",
+        "« Tu vas me manquer. » « Toi aussi. » C'est vrai des deux côtés, et ça ne change rien. C'est bien ça, le plus dur.",
+        "{B} regarde {A} s'éloigner, et se surprend à attendre qu'{a:il|elle} se retourne. {A} se retourne. Un tout petit signe. C'est tout.",
+        "{A} et {B} se quittent comme on referme un livre qu'on a aimé : doucement, en gardant un doigt entre les pages.",
+        "{Ils} décident de rester {p:amis|amies}. {Ils} le disent en même temps, pour se donner du courage.",
+        "Le caillou en forme de cœur reste là où {ils} l'ont posé. Personne ne sait plus très bien à qui il appartient.",
+        "{A} rentre par le chemin le plus long. Il faut du temps pour réapprendre à rentrer {a:seul|seule}.",
+        "Plus tard, chez {b:lui|elle}, {B} sort deux tasses par habitude. {b:Il|Elle} en range une, très lentement.",
+    };
+
     // Beat 3: the listener reacts to the subject, then the speaker answers — one \n between them.
     // Keyed by mood and by whether the listener shares the passion. Generic, so {P} stands alone
     // (after a colon, « pour », « sur », or as a subject — never after « de » or « à »).
@@ -540,12 +571,14 @@ public static class PlynlingVisitStory
         },
         [VisitMood.Friends] = new[]
         {
-            "Assez parlé : on y va !",
-            "Allez, viens, j'ai une idée !",
-            "Tu sais ce qui serait encore mieux que d'en parler ? Le faire !",
-            "Le dernier arrivé est une pomme de pin !",
-            "Bon, on arrête de parler et on s'amuse ?",
-            "J'ai une idée géniale. Enfin, une idée. Viens !",
+            "Bon, assez parlé. Viens, j'ai une idée. Elle est presque bonne.",
+            "Tu sais ce qui serait encore mieux que d'en parler ? Le faire. Tout de suite.",
+            "Le dernier arrivé range tout, après !",
+            "Allez, viens. On verra bien ce que ça donne : c'est toujours le meilleur moment.",
+            "J'ai une idée. Ne demande pas. Suis-moi.",
+            "On arrête de parler, sinon on va encore oublier de s'amuser. Viens !",
+            "Tope là. On essaie, et si on rate, on aura au moins bien ri.",
+            "Et si on arrêtait d'en parler pour commencer, plutôt ?",
         },
         [VisitMood.BestFriends] = new[]
         {
@@ -694,7 +727,7 @@ public static class PlynlingVisitStory
         }
 
         // 7. The activity, then a little exchange (visitor, then host).
-        var (activity, activityTag) = Untag(pick(ActivityPool(mood, info, b)));
+        var (activity, activityTag) = Untag(pick(ActivityPool(mood, info, b, rng)));
         var exchange = pick(Exchanges[mood]).Split('\n');
         var (first, firstTag) = Untag(exchange[0]);
         var (second, secondTag) = Untag(exchange[1]);
@@ -702,7 +735,7 @@ public static class PlynlingVisitStory
         beats.Add(f.Beat($"{C(activity)}\n{Said(visitor, X(first))}\n{Said(host, X(second))}"));
 
         // 8. Parting. What the visit did sets the faces first; a tag only colours an ordinary parting.
-        var (departure, departureTag) = Untag(pick(Departures[mood]));
+        var (departure, departureTag) = Untag(pick(DeparturePool(outcome, mood)));
         var ending = OutcomeFace(outcome);
         f = ending is { } end ? new FacePair(end, end) : new FacePair(faces.Narration, faces.Narration).Narrate(departureTag);
         beats.Add(f.Beat(string.IsNullOrWhiteSpace(outcomeLines) ? X(departure) : $"{X(departure)}\n{outcomeLines}"));
@@ -773,20 +806,35 @@ public static class PlynlingVisitStory
         return (line[m.Length..], new FaceTag(Face(m.Groups[1]), Face(m.Groups[2]), Face(m.Groups[3])));
     }
 
-    // Step 7: a combo of the subject with one of the listener's catalog passions, else the subject's
-    // own activities, else the custom ones for this mood. In a conflict, always the squabble.
-    private static string[] ActivityPool(VisitMood mood, PassionInfo? subject, VisitCast listener)
+    // Step 7, in a conflict: always the squabble. Otherwise, MoodActivityShare of the time an activity
+    // that fits the bond rather than the subject (Activities[mood]); the rest of the time the subject's
+    // own — a catalog passion's activities plus any combo with one of the listener's catalog passions,
+    // or the custom ones for this mood. Combos join the passion's pool rather than replacing it: a
+    // pair has one combo at most, and on its own it made every Cooking-meets-Music visit the same.
+    private static string[] ActivityPool(VisitMood mood, PassionInfo? subject, VisitCast listener, Random rng)
     {
         if (mood == VisitMood.Conflict) return Activities[VisitMood.Conflict];
+        if (rng.NextDouble() < MoodActivityShare) return Activities[mood];
         if (subject is null) return CustomActivities[mood];
         var combos = listener.Passions
             .Where(p => p.Catalog is { } lc && lc != subject.Passion)
             .Select(p => PlynlingPassions.ComboFor(subject.Passion, p.Catalog!.Value))
             .OfType<string[]>()
-            .SelectMany(x => x)
-            .ToArray();
-        return combos.Length > 0 ? combos : subject.Activities;
+            .SelectMany(x => x);
+        return subject.Activities.Concat(combos).ToArray();
     }
+
+    // How often the activity comes from the bond's pool instead of the subject's.
+    private const double MoodActivityShare = 0.3;
+
+    // The parting's pool: the outcome decides it when the visit broke something — a refused
+    // confession or a break-up — and the mood otherwise. The mood is the bond *after* the visit, so
+    // a couple who just split would otherwise leave on a cheerful Friends line. These are exactly the
+    // outcomes OutcomeFace turns sad.
+    private static string[] DeparturePool(VisitOutcome o, VisitMood mood) =>
+        o.Confession == Confession.Refused ? RefusedDepartures
+        : o.Before == PlynlingBond.Lovers && o.After != PlynlingBond.Lovers ? BreakUpDepartures
+        : Departures[mood];
 
     private static VisitCast Cast(Plynling p, DateTimeOffset now) => new(
         PlynlingCardUi.SafeName(p.Name),

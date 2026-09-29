@@ -1318,8 +1318,17 @@ pair combos); a custom one only ever appears through generic templates as `{P}`,
 never put `{P}` after « de » or « à » (« parler de les trains »), and why `Expand` inserts `{P}` last
 — typed text is never read as a template. `{S}`/`{L}` are the speaker and the listener, with
 `{s:m|f}`/`{l:m|f}`. Beat 2's speaker is visitor or host at random; the subject is a shared passion
-60 % of the time when there is one. Beat 4 prefers a pair combo, then the subject's own activities,
-then the custom ones; a conflict always gets the squabble.
+60 % of the time when there is one. The activity is the squabble in a conflict; otherwise 30 % of the
+time (`MoodActivityShare`) it comes from `Activities[mood]`, which fits the bond rather than the
+subject, and the rest from the subject: a catalog passion's activities **plus** any combo with the
+listener's passions, or the custom ones. Combos join the pool rather than replacing it — a pair has
+one combo at most, and alone it made every Cooking-meets-Music visit identical.
+
+**The parting follows the outcome when the visit broke something.** The mood is the bond *after* the
+visit, so a couple who just split would otherwise leave on a cheerful Friends line. `DeparturePool`
+hands a refused confession `RefusedDepartures` (the visitor always confessed, the host said no) and a
+break-up `BreakUpDepartures`; these are exactly the outcomes `OutcomeFace` turns sad. Every other
+parting stays mood-keyed, so those pools must still read right just before any outcome line.
 
 **Plynling badges are stored, and paid in the action's own save.** `Helpers/PlynlingBadges` is the
 catalog (16, each with a **stable key** — a rename orphans every copy already earned);
