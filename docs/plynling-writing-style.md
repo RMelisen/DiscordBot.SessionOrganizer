@@ -93,6 +93,27 @@ family-neutral.
 - Face tags: `[happy]`, `[content]`, `[sad]`, `[angry]` — on a spoken line, the speaker's face; on
   narration, both. Use them where the emotion visibly turns, not everywhere.
 
+## SYNCS's own lines on the Plynling card (`BotResponses`)
+
+These are in *her* voice — bratty, kawaii, petty — and players see them after every pet, meal,
+game and knock, so structural sameness shows fast. A pool used to be one shape repeated: the
+Plynling does something cute, she turns it back onto herself, a kaomoji closes it. Keep each pool
+to roughly:
+
+- **Openings:** at most a third start with `**{0}**`. Others open on « Tu… », on her reaction, on
+  a quoted line, or on a sound (« Crunch, crunch. », « Toc, toc-toc, toc. »).
+- **Her reactions:** in about half the lines, not all — and in many modes: jealous, bossy, fake
+  conspirator, openly competing with the Plynling, secretly soft, dramatic, petty score-keeping,
+  fake indifference. Each mode only a few times per pool.
+- **Kaomoji:** on about 60 % of lines, sometimes mid-line. A line that lands on its own words ends
+  there.
+- **A running joke lives in one pool, once.** « Oui, les Plynlings ronronnent, ne pose pas de
+  questions » was in three pools; « je l'ai enregistré » in two.
+- **Never gender the player.** Their gender is unknown: « tu sais nourrir un Plynling », not « tu
+  es un très bon nourricier ». Only the Plynling's words agree, through the M/F halves.
+- **`{1}` in the feed pool carries its article** (« une truffe »): never start a line with it (it
+  would start lowercase) and never put « de », « à » or « que » in front of it.
+
 ## Checklist before a batch ships
 
 1. Read each script aloud: does the last line land?
