@@ -76,7 +76,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .AddField("Commandes — Plynlings",
                 "**`/plynling help`** — Adopte un petit champignon, nourris-le, garde-le en vie. " +
                 "Tout est expliqué là-dedans.\n" +
-                "**`/inventory view`** — Tes objets, ton garde-manger et ta collection.")
+                "**`/inventory view`** — Tes objets, ton garde-manger, ta collection et ta garde-robe.")
             .AddField("Commandes — Staff & aide",
                 "**`/admin xp add|remove`** · **`/admin pebble add|remove`** — Ajuster l'XP ou les cailloux de quelqu'un.\n" +
                 "**`/admin stats`** · **`/admin dashboard`** — L'économie du serveur, en un coup d'œil et jour après jour.\n" +

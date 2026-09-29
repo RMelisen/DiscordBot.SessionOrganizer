@@ -41,7 +41,7 @@ public static class CosmeticCards
                 .WithPlaceholder("Acheter…");
             foreach (var c in buyable)
                 menu.AddOption($"{CosmeticCatalog.Label(c)} — {PebbleEconomy.Cailloux(c.Price)}", c.Key,
-                    $"{CosmeticCatalog.SlotLabel(c.Slot)} · {SourceLabel(c)}", new Emoji(c.Emoji));
+                    $"{CosmeticCatalog.SlotLabel(c.Slot)} · {SourceLabel(c)}", EmoteMarkup.Parse(c.Emoji));
             components.WithSelectMenu(menu);
         }
         return (embed.Build(), components.Build());
@@ -86,7 +86,7 @@ public static class CosmeticCards
             foreach (var c in craftable)
             {
                 var ready = c.Recipe.All(r => held.GetValueOrDefault(r.ItemKey) >= r.Count) && balance >= c.Price;
-                menu.AddOption(CosmeticCatalog.Label(c), c.Key, ready ? "Tout est prêt ✅" : "Il manque quelque chose", new Emoji(c.Emoji));
+                menu.AddOption(CosmeticCatalog.Label(c), c.Key, ready ? "Tout est prêt ✅" : "Il manque quelque chose", EmoteMarkup.Parse(c.Emoji));
             }
             components.WithSelectMenu(menu);
         }
@@ -122,7 +122,7 @@ public static class CosmeticCards
                 .WithPlaceholder(CosmeticCatalog.SlotLabel(slot))
                 .AddOption("Aucun", NoneValue, isDefault: worn is null);
             foreach (var c in owned.Where(c => c.Slot == slot))
-                menu.AddOption(Shown(c), c.Key, emote: new Emoji(c.Emoji), isDefault: c.Key == worn?.Key);
+                menu.AddOption(Shown(c), c.Key, emote: EmoteMarkup.Parse(c.Emoji), isDefault: c.Key == worn?.Key);
             components.WithSelectMenu(menu, row++);
         }
         return (embed.Build(), components.Build());

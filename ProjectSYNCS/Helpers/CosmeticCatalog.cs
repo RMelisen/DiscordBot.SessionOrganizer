@@ -16,8 +16,16 @@ public enum CosmeticSource { Basic, Rotating, Seasonal, Crafted }
 // for titles. Price is the shop price — or, for a crafted one, the cailloux its recipe adds.
 public sealed record CosmeticInfo(
     string Key, CosmeticSlot Slot, CosmeticSource Source, ItemRarity Rarity, Season Season,
-    string Emoji, string Name, string? NameF, uint? Accent, string? Banner, string? GraveLeft, string? GraveRight,
-    long Price, IReadOnlyList<(string ItemKey, int Count)> Recipe);
+    string DefaultEmoji, string Name, string? NameF, uint? Accent,
+    long Price, IReadOnlyList<(string ItemKey, int Count)> Recipe)
+{
+    // Its icon once uploaded (ItemEmojis), else its Unicode. The thème's banner and the cadre's two
+    // sides are made of it, so they are read at display time and picture the icon too.
+    public string Emoji => ItemEmojis.For(Key) ?? DefaultEmoji;
+    public string? Banner => Slot == CosmeticSlot.Theme ? string.Join(" · ", Enumerable.Repeat(Emoji, 5)) : null;
+    public string? GraveLeft => Slot == CosmeticSlot.Grave ? $"{Emoji} {Emoji}" : null;
+    public string? GraveRight => GraveLeft;
+}
 
 // Reads and writes the slot columns on Plynling by slot, so nothing switches on the four
 // property names but here.
@@ -176,23 +184,23 @@ public static class CosmeticCatalog
         void Theme(string key, string name, string emoji, uint accent, CosmeticSource source, ItemRarity rarity = C,
             Season season = Season.None, long craftPrice = 0, (string, int)[]? recipe = null) =>
             list.Add(new CosmeticInfo($"cos.theme.{key}", CosmeticSlot.Theme, source, rarity, season, emoji, name, null,
-                accent, string.Join(" · ", Enumerable.Repeat(emoji, 5)), null, null,
+                accent,
                 source == CosmeticSource.Crafted ? craftPrice : PriceOf(CosmeticSlot.Theme, source, rarity), recipe ?? none));
 
         void Title(string key, string m, string f, CosmeticSource source, ItemRarity rarity = C, long craftPrice = 0, (string, int)[]? recipe = null) =>
             list.Add(new CosmeticInfo($"cos.title.{key}", CosmeticSlot.Title, source, rarity, Season.None, "🏷️", m, f,
-                null, null, null, null,
+                null,
                 source == CosmeticSource.Crafted ? craftPrice : PriceOf(CosmeticSlot.Title, source, rarity), recipe ?? none));
 
         void Accessory(string key, string emoji, string name, CosmeticSource source, ItemRarity rarity = C,
             Season season = Season.None, long craftPrice = 0, (string, int)[]? recipe = null) =>
             list.Add(new CosmeticInfo($"cos.accessory.{key}", CosmeticSlot.Accessory, source, rarity, season, emoji, name, null,
-                null, null, null, null,
+                null,
                 source == CosmeticSource.Crafted ? craftPrice : PriceOf(CosmeticSlot.Accessory, source, rarity), recipe ?? none));
 
         void Grave(string key, string emoji, string name, CosmeticSource source, ItemRarity rarity = C, long craftPrice = 0, (string, int)[]? recipe = null) =>
             list.Add(new CosmeticInfo($"cos.grave.{key}", CosmeticSlot.Grave, source, rarity, Season.None, emoji, name, null,
-                null, null, $"{emoji} {emoji}", $"{emoji} {emoji}",
+                null,
                 source == CosmeticSource.Crafted ? craftPrice : PriceOf(CosmeticSlot.Grave, source, rarity), recipe ?? none));
 
         const CosmeticSource B = CosmeticSource.Basic, Rot = CosmeticSource.Rotating, S = CosmeticSource.Seasonal, Cr = CosmeticSource.Crafted;

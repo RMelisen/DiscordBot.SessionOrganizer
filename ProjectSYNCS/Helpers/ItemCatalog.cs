@@ -16,7 +16,11 @@ public sealed record ItemInfo(
     public string Emoji => ItemEmojis.For(ItemCatalog.PictureKey(Key)) ?? DefaultEmoji;
 }
 
-public sealed record CollectionSet(string Key, string Emoji, string Name, long Reward);
+// A collection set. DefaultEmoji is its Unicode; Emoji is its own icon once uploaded (set.<key>).
+public sealed record CollectionSet(string Key, string DefaultEmoji, string Name, long Reward)
+{
+    public string Emoji => ItemEmojis.For(ItemEmojis.SetKey(Key)) ?? DefaultEmoji;
+}
 
 /// <summary>
 /// Every item there is — foods, collectibles and cosmetics (CosmeticCatalog) — and the
@@ -86,6 +90,10 @@ public static class ItemCatalog
     public static string FoodKey(PlynlingFood food) => $"food.{food.ToString().ToLowerInvariant()}";
 
     public static IEnumerable<ItemInfo> InSet(string setKey) => All.Where(i => i.Set == setKey);
+
+    // What may carry an icon: any item, or a set by its « set.<key> » icon key.
+    public static bool IsIconKey(string key) =>
+        ByKey(key) is not null || Sets.Any(s => ItemEmojis.SetKey(s.Key) == key);
 
     public static long SellPrice(ItemRarity rarity) => rarity switch
     {
@@ -272,7 +280,7 @@ public static class ItemCatalog
         // Cosmetics are items too, so gifts, trades and the inventory see them; their slot data
         // lives in CosmeticCatalog. No set: they are not part of the collection book.
         foreach (var c in CosmeticCatalog.All)
-            items.Add(new ItemInfo(c.Key, ItemKind.Cosmetic, c.Emoji, CosmeticCatalog.Label(c), null, c.Rarity, c.Season, null));
+            items.Add(new ItemInfo(c.Key, ItemKind.Cosmetic, c.DefaultEmoji, CosmeticCatalog.Label(c), null, c.Rarity, c.Season, null));
         return items;
     }
 }

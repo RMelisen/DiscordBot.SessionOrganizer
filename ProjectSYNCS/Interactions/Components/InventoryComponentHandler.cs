@@ -6,9 +6,9 @@ using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Interactions.Components;
 
-// /inventory collection's controls: the category menu and the filter buttons. Anyone may flip
-// through someone's book — it is public, like the message — and every click re-reads the
-// inventory, so the page shows the book as it is now.
+// /inventory collection's controls (the category menu and the filter buttons) and /inventory
+// view's two pages. Anyone may flip through someone's book — it is public, like the message — and
+// every click re-reads the inventory, so the page shows the book as it is now.
 public class InventoryComponentHandler : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly InventoryService _inventory;
@@ -24,6 +24,23 @@ public class InventoryComponentHandler : InteractionModuleBase<SocketInteraction
 
     [ComponentInteraction("col:fil:*:*:*", ignoreGroupNames: true)]
     public Task OnFilterAsync(string user, string page, string filter) => ShowAsync(user, page, filter);
+
+    // The inventory is ephemeral, so whoever clicks is its owner.
+    [ComponentInteraction("inv:page:*", ignoreGroupNames: true)]
+    public async Task OnInventoryPageAsync(string pageStr)
+    {
+        if (!Enum.TryParse<InventoryPage>(pageStr, out var page)) page = InventoryPage.Items;
+        var userId = Context.User.Id;
+        var held = await _inventory.GetAllAsync(Context.Guild.Id, userId);
+        var completions = await _inventory.GetCompletionsAsync(Context.Guild.Id, userId);
+        var balance = await _inventory.BalanceAsync(Context.Guild.Id, userId);
+        var (embed, components) = InventoryModule.BuildInventoryPage(held, completions.Count, balance, page);
+        await ((SocketMessageComponent)Context.Interaction).UpdateAsync(m =>
+        {
+            m.Embed = embed;
+            m.Components = components;
+        });
+    }
 
     private async Task ShowAsync(string userStr, string page, string filterStr)
     {

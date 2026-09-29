@@ -10,6 +10,11 @@ namespace ProjectSYNCS.Commands;
 // What a collection page lists: everything, what was found (held or not), or what never was.
 public enum CollectionFilter { All, Found, Missing }
 
+// /inventory view's two pages. One page no longer fits once every item has its icon: a custom
+// emoji is ~35 characters where Unicode is 2, and someone holding everything passed Discord's 6000
+// for a message's embeds (measured ≈ 7 100).
+public enum InventoryPage { Items, Wardrobe }
+
 // /inventory — what a person holds: the pantry, the collectibles and the book, and the ways
 // items change hands. Its own group rather than part of /plynling because items belong to the
 // person, not to a Plynling — they survive its death and abandonment — and because /plynling
@@ -161,7 +166,8 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
         var held = await _inventory.GetAllAsync(Context.Guild.Id, Context.User.Id);
         var completions = await _inventory.GetCompletionsAsync(Context.Guild.Id, Context.User.Id);
         var balance = await _inventory.BalanceAsync(Context.Guild.Id, Context.User.Id);
-        await RespondAsync(embed: BuildInventoryEmbed(held, completions.Count, balance), ephemeral: true);
+        var (embed, components) = BuildInventoryPage(held, completions.Count, balance, InventoryPage.Items);
+        await RespondAsync(embed: embed, components: components, ephemeral: true);
     }
 
     [SlashCommand("collection", "Le carnet de collection : ce que tu as trouvé et ce qui manque (le tien par défaut)")]
@@ -204,7 +210,7 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
             var items = ItemCatalog.InSet(s.Key).ToList();
             var have = items.Count(i => quantities.ContainsKey(i.Key));
             menu.AddOption(s.Name, s.Key, done.Contains(s.Key) ? "Complète ✅" : $"{have}/{items.Count} trouvés",
-                new Emoji(s.Emoji), isDefault: s.Key == set?.Key);
+                EmoteMarkup.Parse(s.Emoji), isDefault: s.Key == set?.Key);
         }
         var components = new ComponentBuilder().WithSelectMenu(menu, row: 0);
         if (set is not null)
@@ -289,43 +295,64 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
             : $"{item.Emoji} {item.Name} · plus en stock{rarity}";
     }
 
-    // Static and Context-free, like every other builder here, so its size is checkable.
-    public static Embed BuildInventoryEmbed(IReadOnlyCollection<InventoryItem> held, int setsCompleted, long balance)
+    // Static and Context-free, like every other builder here, so its size is checkable. Both pages
+    // share the title and the footer; the buttons carry one id per page (inv:page:{page}), so the
+    // two can never collide, and the page on screen is the disabled one.
+    public static (Embed Embed, MessageComponent Components) BuildInventoryPage(
+        IReadOnlyCollection<InventoryItem> held, int setsCompleted, long balance, InventoryPage page)
     {
         var byKey = held.ToDictionary(i => i.Key);
         int Count(string key) => byKey.TryGetValue(key, out var row) ? row.Quantity : 0;
 
-        var pantry = string.Join("\n", PlynlingCatalog.Foods.Select(f =>
-        {
-            var item = ItemCatalog.ByKey(ItemCatalog.FoodKey(f.Food))!;
-            return $"{item.Emoji} {item.Name} : **{Count(item.Key)}**";
-        }));
-
         var embed = new EmbedBuilder()
-            .WithTitle("Ton inventaire")
+            .WithTitle(page == InventoryPage.Items ? "Ton inventaire" : "Ton inventaire — garde-robe")
             .WithColor(Color.Purple)
-            .AddField("Garde-manger",pantry + "\n-# Nourrir puise ici d'abord : 1 pour ton Plynling, 2 pour celui d'un autre.");
+            .WithFooter($"🪨 {PebbleEconomy.Cailloux(balance)}");
 
-        // One field per set (per rarity for a big one), holding only what is in hand.
-        foreach (var set in ItemCatalog.Sets)
-            foreach (var (label, section) in ItemCatalog.Sections(set.Key))
-            {
-                var lines = section.Where(i => Count(i.Key) > 0).Select(i => $"{i.Emoji} {i.Name} ×{Count(i.Key)}").ToList();
-                if (lines.Count > 0)
-                    embed.AddField($"{set.Name}{(label.Length > 0 ? $" ({label})" : "")}", string.Join("\n", lines), inline: true);
-            }
-
-        // The Garde-robe: what is held, one compact field per slot (60 lines would not fit one).
-        foreach (var slot in Enum.GetValues<CosmeticSlot>())
+        if (page == InventoryPage.Items)
         {
-            var owned = CosmeticCatalog.InSlot(slot).Where(c => Count(c.Key) > 0).Select(c => $"{c.Emoji} {CosmeticCatalog.ShortName(c)}").ToList();
-            if (owned.Count > 0) embed.AddField($"Garde-robe — {CosmeticCatalog.SlotPlural(slot)}", string.Join(" · ", owned));
+            var pantry = string.Join("\n", PlynlingCatalog.Foods.Select(f =>
+            {
+                var item = ItemCatalog.ByKey(ItemCatalog.FoodKey(f.Food))!;
+                return $"{item.Emoji} {item.Name} : **{Count(item.Key)}**";
+            }));
+            embed.AddField("Garde-manger", pantry + "\n-# Nourrir puise ici d'abord : 1 pour ton Plynling, 2 pour celui d'un autre.");
+
+            // One field per set (per rarity for a big one), holding only what is in hand.
+            foreach (var set in ItemCatalog.Sets)
+                foreach (var (label, section) in ItemCatalog.Sections(set.Key))
+                {
+                    var lines = section.Where(i => Count(i.Key) > 0).Select(i => $"{i.Emoji} {i.Name} ×{Count(i.Key)}").ToList();
+                    if (lines.Count > 0)
+                        embed.AddField($"{set.Name}{(label.Length > 0 ? $" ({label})" : "")}", string.Join("\n", lines), inline: true);
+                }
+
+            var discovered = ItemCatalog.Collectibles.Count(i => byKey.ContainsKey(i.Key));
+            embed.AddField("Collection",
+                $"{discovered}/{ItemCatalog.Collectibles.Count()} objets découverts · {setsCompleted}/{ItemCatalog.Sets.Count} collections complètes");
+        }
+        else
+        {
+            // What is held, one field per slot.
+            var any = false;
+            foreach (var slot in Enum.GetValues<CosmeticSlot>())
+            {
+                var owned = CosmeticCatalog.InSlot(slot).Where(c => Count(c.Key) > 0).Select(c => $"{c.Emoji} {CosmeticCatalog.ShortName(c)}").ToList();
+                if (owned.Count == 0) continue;
+                any = true;
+                embed.AddField(CosmeticCatalog.SlotPlural(slot), string.Join(" · ", owned));
+            }
+            embed.WithDescription(any
+                ? "Pour habiller ton Plynling : `/plynling wardrobe`."
+                : "Aucun cosmétique pour l'instant. La boutique : `/inventory cosmetics`.");
         }
 
-        var discovered = ItemCatalog.Collectibles.Count(i => byKey.ContainsKey(i.Key));
-        embed.AddField("Collection",
-            $"{discovered}/{ItemCatalog.Collectibles.Count()} objets découverts · {setsCompleted}/{ItemCatalog.Sets.Count} collections complètes");
-        embed.WithFooter($"🪨 {PebbleEconomy.Cailloux(balance)}");
-        return embed.Build();
+        var components = new ComponentBuilder()
+            .WithButton("🎒 Objets", $"inv:page:{InventoryPage.Items}", page == InventoryPage.Items ? ButtonStyle.Primary : ButtonStyle.Secondary,
+                disabled: page == InventoryPage.Items)
+            .WithButton("👗 Garde-robe", $"inv:page:{InventoryPage.Wardrobe}", page == InventoryPage.Wardrobe ? ButtonStyle.Primary : ButtonStyle.Secondary,
+                disabled: page == InventoryPage.Wardrobe)
+            .Build();
+        return (embed.Build(), components);
     }
 }

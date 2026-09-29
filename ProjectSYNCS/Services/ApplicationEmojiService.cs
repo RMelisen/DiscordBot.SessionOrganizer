@@ -6,8 +6,9 @@ using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
 
-// Makes sure the bot's own application emojis exist for every item sprite it ships with (the
-// Champignons, in Assets/Mushrooms), then records their markup in ItemEmojis.
+// Makes sure the bot's own application emojis exist for every sprite it ships with — the
+// Champignons (Assets/Mushrooms) and the other icons (Assets/Icons: collectibles, sets and
+// cosmetics) — then records their markup in ItemEmojis.
 //
 // Application emojis belong to the bot's application rather than to a server, so the bot can
 // show them in any server it is in, and each bot — dev or prod — keeps its own copy: nobody has
@@ -16,9 +17,9 @@ namespace ProjectSYNCS.Services;
 // list request. To replace a picture, delete that emoji in the developer portal and restart.
 //
 // Not a loop: it runs once, on the first Ready (Ready fires again on every reconnect), in the
-// background so the gateway handler returns at once — 30 first-time uploads take a while. A
+// background so the gateway handler returns at once — up to 135 first-time uploads take a while. A
 // failure to *list* allows another try on the next Ready; a failed upload is logged and that
-// item keeps its 🍄 fallback. Hooks Ready itself, like PresenceService, since nothing else in
+// item keeps its Unicode fallback. Hooks Ready itself, like PresenceService, since nothing else in
 // BotService needs to know.
 internal sealed class ApplicationEmojiService : IHostedService
 {
@@ -31,8 +32,6 @@ internal sealed class ApplicationEmojiService : IHostedService
         _client = client;
         _logger = logger;
     }
-
-    public static string SpriteDirectory => Path.Combine(AppContext.BaseDirectory, "Assets", "Mushrooms");
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
@@ -69,26 +68,23 @@ internal sealed class ApplicationEmojiService : IHostedService
 
         var byName = existing.ToDictionary(e => e.Name, StringComparer.Ordinal);
         var uploaded = 0;
-        foreach (var file in Directory.Exists(SpriteDirectory) ? Directory.GetFiles(SpriteDirectory, "*.png") : Array.Empty<string>())
+        foreach (var source in ItemEmojis.Sources(ItemEmojis.MushroomDirectory, ItemEmojis.IconDirectory))
         {
-            var slug = Path.GetFileNameWithoutExtension(file);
-            var key = $"col.{slug}";
-            if (ItemCatalog.ByKey(key) is null)
+            if (source.EmojiName is not { } name)
             {
-                _logger.LogWarning("Sprite {File} matches no item; skipped.", Path.GetFileName(file));
+                _logger.LogWarning("Sprite {File} matches no item or set; skipped.", Path.GetFileName(source.File));
                 continue;
             }
 
-            var name = ItemEmojis.MushroomPrefix + slug;
             try
             {
                 if (!byName.TryGetValue(name, out var emote))
                 {
-                    using var image = new Image(file);
+                    using var image = new Image(source.File);
                     emote = await _client.CreateApplicationEmoteAsync(name, image);
                     uploaded++;
                 }
-                ItemEmojis.Set(key, ItemEmojis.Markup(emote.Name, emote.Id));
+                ItemEmojis.Set(source.Key, ItemEmojis.Markup(emote.Name, emote.Id));
             }
             catch (Exception ex)
             {
