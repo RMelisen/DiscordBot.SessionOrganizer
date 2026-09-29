@@ -1252,7 +1252,7 @@ zero the day they shipped.
 
 **A visit is told as a story, but decided before it starts.** `VisitAsync` saves everything first;
 `Helpers/PlynlingVisitStory.Build` (pure) then picks a place open at that Paris hour and tells it in
-**six or seven steps** — arrival; the script's opener; the rest of the script **two lines to a
+**five to eight steps** (four plus half the script's lines) — arrival; the script's opener; the rest of the script **two lines to a
 step**, the last pair finished by a closer that turns the talk into doing something; the activity
 with a two-line exchange; parting plus
 `PlynlingPlayCards.VisitOutcomeLines` — the rest from pools keyed by `VisitMood`: the bond **after**
@@ -1261,14 +1261,15 @@ happened.
 
 **The conversation is one script, never lines drawn separately.** Drawing each line from its own
 pool made every line fine alone and the exchange « décousu » — the reply never answered what was
-said — so `Helpers/PlynlingScripts` holds whole conversations: four or six `ConvoLine`s written
-together, A's opener (narration `\n` words) then three or five spoken lines each answering the last,
+said — so `Helpers/PlynlingScripts` holds whole conversations: two, four, six or eight `ConvoLine`s written
+together, A's opener (narration `\n` words) then the spoken lines, each answering the last,
 from whichever of A and B the script says (some let one talk twice in a row). Keyed by passion, `ConvoFlavor`
 (rivals and conflicts are `Tense`, every other bond `Friendly`) and whether B shares the passion; a
 typed passion only gets the generic `ForCustom` scripts, which name the subject as `{P}` and nothing
 more. The engine draws a script by its opener (so the picker's no-repeat history works) — openers
 must therefore be unique within a key, which the harness checks. **Add conversations as whole
-scripts, never as loose lines**: a line added on its own answers nothing. `PlynlingScripts.cs` is
+scripts, never as loose lines**: a line added on its own answers nothing. **Before writing any
+Plynling line, read `docs/plynling-writing-style.md`** — the voice, the tricks, the length mix. `PlynlingScripts.cs` is
 generated from the scratch writing sheets but reads fine by hand. Lines are templates — `{A}`/`{B}` names,
 `{ils}`/`{Ils}` (« elles » only for two girls), `{a:m|f}`/`{b:m|f}`/`{p:m|f}` agreements — and the
 harness expands every line for all four gender pairs and builds full stories.
@@ -1276,12 +1277,13 @@ harness expands every line for all four gender pairs and builds full stories.
 **Two lines to a step, so both of them talk on it.** Showing one spoken line per step left every
 conversation step a monologue; now the lines after the opener are paired, and the closer goes to
 whoever did **not** say the script's last line, so the final pair is always an exchange. That is
-also why a script must have an **even** number of lines (4 or 6, which the harness checks): the
-spoken lines plus the closer must pair up exactly. Two lines in a row from the same Plynling share
-one bubble — the ~116 four-line scripts whose lines 1 and 2 have one speaker give a one-voice step,
-which is the cue for which ones to lengthen next. A quarter of the scripts (every fourth in each
-key) have six lines, the two extra ones written into the middle of the exchange; lengthening one is
-inserting two lines, never appending, since the last line is the one that leads into the activity.
+also why a script must have an **even** number of lines (2, 4, 6 or 8, which the harness checks):
+the spoken lines plus the closer must pair up exactly. A two-line script is the opener and one
+answer that lands on its own — a punchline or a quiet beat — with the closer as the reply to it.
+Every key was rewritten into short scenes with a turn, and each mixes the lengths — about a third
+at 2, half at 4, the rest 6 or 8; keep that mix when adding to one. Two lines in a row from the same Plynling share one bubble, so use
+that on purpose. Lengthening a script is inserting lines into the middle, never appending, since the
+last line is the one that leads into the activity.
 
 **Every step carries both faces, and a line can set them.** `VisitBeat` holds the text and a face
 per Plynling — happy, content, sad, or `PlynlingMood.Angry`, which exists for visits only

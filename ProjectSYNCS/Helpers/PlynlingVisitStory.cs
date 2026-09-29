@@ -617,7 +617,7 @@ public static class PlynlingVisitStory
     /// The story of <paramref name="outcome"/>: arrival; a script in which A raises the subject and each line
     /// answers the one before — the opener on its own step, then the rest two lines to a step, the closer
     /// finishing the last pair; the activity; then parting with <paramref name="outcomeLines"/> — what the
-    /// visit changed. Six steps for a four-line script, seven for a six-line one. Each step carries both faces.
+    /// visit changed. Four steps plus half the script's lines: five for a two-line script, eight for an eight-line one. Each step carries both faces.
     /// <paramref name="pick"/> chooses a line from a pool (the handler passes ResponsePicker, so a
     /// channel does not see the same line twice in a row); by default it draws from <paramref name="rng"/>.
     /// </summary>
