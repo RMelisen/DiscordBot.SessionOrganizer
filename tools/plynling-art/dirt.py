@@ -75,7 +75,7 @@ GRIME, GRIME_SHARE = (132, 104, 72), 0.16
 STINK = (128, 158, 74)
 # A wisp: a little zigzag three rows tall, which reads as a wavy line at this size.
 WISP = ((0, 0), (1, 1), (0, 2), (1, 3))
-FLY, WING = (96, 92, 104), (226, 234, 242)       # mid-grey, so it reads on a dark theme too
+FLY, WING = (40, 36, 40), (214, 226, 236)
 
 
 def stink(im, f, fly=None):
@@ -97,10 +97,10 @@ def stink(im, f, fly=None):
     if fly is not None:
         x, y = fly
         y -= 1 if f % 4 < 2 else 0                                      # hopping up a pixel and back, in place
-        put(x, y, FLY)                                                  # a body under two wings
+        put(x, y, FLY)                                                  # a body, wings spread above it
         put(x + 1, y, FLY)
-        put(x, y - 1, WING)
-        put(x + 1, y - 1, WING)
+        put(x - 1, y - 1, WING)
+        put(x + 2, y - 1, WING)
 
     bottom = 27
     ceiling_at = lambda x: max((y for y in range(bottom) if solid(x, y) or solid(x + 1, y)), default=-1)
@@ -135,8 +135,10 @@ def fly_spot(g, key):
 
     def open_air(x, y):
         return all(not solid(x + dx, y + dy) for dx in range(-1, 3) for dy in range(-4, 3))
-    # above eye level (row 17 at the latest): the starving cold sweat hangs beside the body lower
-    # down. A cap too wide to leave room under its brim sends it to the free corner above.
-    spots = [(x, y) for y in range(3, 18) for x in range(0, left - 2) if open_air(x, y)]
+    # Never where the starving cold sweat hangs (columns left-5..left-3, from eye level down). A cap
+    # too wide to leave room under its brim sends it lower beside the body, or to a free corner.
+    def sweat_zone(x, y):
+        return x - 1 <= left - 3 and x + 2 >= left - 5 and y >= 17
+    spots = [(x, y) for y in range(3, 23) for x in range(1, left - 2) if open_air(x, y) and not sweat_zone(x, y)]
     _spots[key] = (min(spots, key=lambda s: (abs(s[0] - (left - 5)) + abs(s[1] - 15), s)) if spots else None)
     return _spots[key]
