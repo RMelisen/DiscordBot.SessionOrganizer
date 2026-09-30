@@ -43,7 +43,8 @@ public class PlynlingCareService
         if (badges.Count > 0) text += "\n" + PlynlingBadges.NewBadgeLines(badges, plynling.Gender);
         text += await GiftLineAsync(plynling, actorId, now);
         var partner = await _plynlings.GetPartnerAsync(plynling);
-        return new CareReply(PlynlingModule.BuildCard(plynling, now, text, partnerName: partner?.Name), null);
+        return new CareReply(PlynlingModule.BuildCard(plynling, now, text, partnerName: partner?.Name,
+            pantry: await _plynlings.GetPantryAsync(plynling)), null);
     }
 
     // Owner only, every PlynlingLife.BathCooldown; the claim is released on a refusal, like petting.
@@ -62,7 +63,8 @@ public class PlynlingCareService
         var line = string.Format(_picker.Pick(channelId, BotResponses.PlynlingBathLines.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name));
         var partner = await _plynlings.GetPartnerAsync(plynling);
-        return new CareReply(PlynlingModule.BuildCard(plynling, now, line, partnerName: partner?.Name), null);
+        return new CareReply(PlynlingModule.BuildCard(plynling, now, line, partnerName: partner?.Name,
+            pantry: await _plynlings.GetPantryAsync(plynling)), null);
     }
 
     // « Soigner »: owner only, once between two mornings, from the pantry or at MedicinePrice.
@@ -87,7 +89,8 @@ public class PlynlingCareService
             ? "\n-# 💊 un médicament de ton garde-manger"
             : $"\n-# −{PebbleEconomy.Cailloux(price)} · il te reste {PebbleEconomy.Cailloux(balance)}";
         var partner = await _plynlings.GetPartnerAsync(plynling);
-        return new CareReply(PlynlingModule.BuildCard(plynling, now, line, partnerName: partner?.Name), null);
+        return new CareReply(PlynlingModule.BuildCard(plynling, now, line, partnerName: partner?.Name,
+            pantry: await _plynlings.GetPantryAsync(plynling)), null);
     }
 
     public async Task<CareReply> FeedAsync(int plynlingId, ulong actorId, PlynlingFood food, ulong channelId, DateTimeOffset now)
@@ -118,7 +121,8 @@ public class PlynlingCareService
         if (result.Badges is { Count: > 0 } badges) text += "\n" + PlynlingBadges.NewBadgeLines(badges, g);
         text += await GiftLineAsync(result.Plynling, actorId, now);
         var partner = await _plynlings.GetPartnerAsync(result.Plynling);
-        return new CareReply(PlynlingModule.BuildCard(result.Plynling, now, text, PlynlingArt.Food(food), partner?.Name), null);
+        return new CareReply(PlynlingModule.BuildCard(result.Plynling, now, text, PlynlingArt.Food(food), partner?.Name,
+            await _plynlings.GetPantryAsync(result.Plynling)), null);
     }
 
     // The owner caring for their own may find today's happy gift, as one more line under hers.

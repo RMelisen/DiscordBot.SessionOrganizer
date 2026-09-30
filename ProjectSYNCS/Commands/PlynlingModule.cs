@@ -546,7 +546,8 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
     private async Task RespondCardAsync(Plynling plynling, DateTimeOffset now, string? line)
     {
         var partner = await _plynlings.GetPartnerAsync(plynling);
-        await RespondAsync(components: BuildCard(plynling, now, line, partnerName: partner?.Name),
+        var pantry = await _plynlings.GetPantryAsync(plynling);
+        await RespondAsync(components: BuildCard(plynling, now, line, partnerName: partner?.Name, pantry: pantry),
             flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
     }
 
@@ -614,7 +615,8 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
     /// owner — the real check is in code, as with every gate here.
     /// </remarks>
     public static MessageComponent BuildCard(
-        Plynling plynling, DateTimeOffset now, string? lastAction, string? lastActionImage = null, string? partnerName = null)
+        Plynling plynling, DateTimeOffset now, string? lastAction, string? lastActionImage = null, string? partnerName = null,
+        IReadOnlyDictionary<PlynlingFood, int>? pantry = null)
     {
         var info = PlynlingCatalog.Info(plynling.Species);
         var alive = plynling.DiedAt is null;
@@ -669,7 +671,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 .WithCustomId($"plyn:feed:{plynling.Id}")
                 .WithPlaceholder("Nourrir…");
             foreach (var food in PlynlingCatalog.Foods)
-                menu.AddOption($"{food.Name} — {PebbleEconomy.Cailloux(food.Price)}", food.Food.ToString(),
+                menu.AddOption(PlynlingCardUi.FoodOptionLabel(food, pantry?.GetValueOrDefault(food.Food) ?? 0), food.Food.ToString(),
                     PlynlingCardUi.FoodOptionDescription(food),
                     // Its picture once the bot's emojis are up; no icon rather than 🍄 ×4 before that.
                     Emote.TryParse(ItemCatalog.ByKey(ItemCatalog.FoodKey(food.Food))!.Emoji, out var foodPicture) ? foodPicture : null);

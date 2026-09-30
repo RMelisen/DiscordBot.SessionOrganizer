@@ -119,6 +119,12 @@ public static class PlynlingCardUi
         return string.Join(", ", parts);
     }
 
+    // A « Nourrir » option's label: the owner's stock of it when there is any — one is all a
+    // meal takes from their own pantry — else the owner's price.
+    public static string FoodOptionLabel(FoodInfo food, int inStock) => inStock > 0
+        ? $"{food.Name} — {inStock} en stock"
+        : $"{food.Name} — {PebbleEconomy.Cailloux(food.Price)}";
+
     // A « Nourrir » option's second line: what it does, and what it costs someone who is not
     // the owner (the label already shows the owner's price). Discord caps it at 100.
     public static string FoodOptionDescription(FoodInfo food) =>

@@ -1210,7 +1210,10 @@ Its two controls use two verbs (`plyn:pet:{id}`, `plyn:feed:{id}`), and they are
 only while the Plynling is alive and not frozen. "Nourrir" is a select *on the card*
 rather than a button opening a second message: one fewer round trip. Anyone may feed
 anyone's, but a non-owner pays double (`PlynlingLife.FeedPrice`), from their own wallet in
-the same single save; each option's description says what others pay. « Caresser » is
+the same single save; each option's description says what others pay. An option's label shows the
+**owner's** stock of that food instead of the price when they have any (`PlynlingService.GetPantryAsync`,
+passed to `BuildCard` by every call site) — the owner's, not the clicker's, since the card is one
+message everyone sees and is redrawn by whoever last pressed a button. « Caresser » is
 hidden while the Plynling sleeps, and the pet itself is refused then too. A button press rewrites
 the card in place with her line on it, instead of posting a second message under it.
 Feeding and petting happen **only on the card** — `/plynling feed` and `/plynling pet` were

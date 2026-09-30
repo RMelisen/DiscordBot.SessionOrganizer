@@ -466,6 +466,21 @@ public class PlynlingService
             : await _db_context.Plynlings.FirstOrDefaultAsync(x => ids.Contains(x.Id) && x.DiedAt == null);
     }
 
+    // The owner's pantry, food by food, for the card's « Nourrir » menu — the owner's rather than
+    // whoever pressed a button, since the card is one message everyone sees. Empty on a dead or
+    // frozen one, whose card has no menu.
+    public async Task<IReadOnlyDictionary<PlynlingFood, int>> GetPantryAsync(Plynling p)
+    {
+        if (p.DiedAt is not null || p.FrozenAt is not null) return new Dictionary<PlynlingFood, int>();
+        var keys = PlynlingCatalog.Foods.ToDictionary(f => ItemCatalog.FoodKey(f.Food), f => f.Food);
+        var names = keys.Keys.ToList();
+        var rows = await _db_context.InventoryItems
+            .Where(i => i.GuildId == p.GuildId && i.UserId == p.OwnerId && names.Contains(i.Key) && i.Quantity > 0)
+            .Select(i => new { i.Key, i.Quantity })
+            .ToListAsync();
+        return rows.ToDictionary(r => keys[r.Key], r => r.Quantity);
+    }
+
     // /plynling relations and the journal: everyone it has met, with the other Plynling.
     public async Task<List<(PlynlingRelation Relation, Plynling Other)>> GetRelationsAsync(int plynlingId)
     {
