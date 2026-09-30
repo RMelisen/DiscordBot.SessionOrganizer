@@ -37,6 +37,19 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   narrow round cap puts that corner near the top, so the Mycena and the Coprin nudge it with
   `anger_nudge` in `common.SPECIES`. Its 14 files (7 adults, 7 babies) were added without a
   version bump — they are new filenames, and every existing file re-exports byte-identical.
+- **The sick face** (`sick`) is a card face only: heavy lids with bags, a queasy wavy mouth, a
+  greenish flush instead of the pink, a green tint over the whole Plynling, a sliding fever sweat
+  drop and a fever shiver (the starving shudder: in place, never sideways). A rare species' sparkles
+  go out while it is sick. 14 files, added without a version bump.
+- **The dirt** (`dirt.py`, `build(..., dirty=True)`, `plynling_<species>[_baby]_<face>_dirty_v4.webp`,
+  98 files) marks a « sale » Plynling on its card, for the living faces in `DIRTY_STATES` — not
+  frozen (the ice covers it), not angry and not the visit pictures. A brownish grime tint, mud on the
+  cap, a streak and splashes on the body — painted on the model *before* the face, so the face is
+  always on top — three stink wisps rising beside the left flank, and a fly. The fly's spot is
+  searched for once per animation on its rest pose, with room for the breath, the hop and the
+  Russule's tipping cap, and outside the starving cold sweat; it is drawn before the wisps so they go
+  round it. Everything is placed from the drawing, so it fits every species and stage. Added
+  without a version bump.
 - **Visit pictures** (`plynling_<species>[_baby]_<face>_visit_v4.webp`, 56 files: happy, content, sad
   and angry, adults and babies) are the same animation on a larger transparent canvas
   (`VISIT_CANVAS = 40` cells against the sprite's 32, so the sprite fills 80 % of its tile; still
@@ -46,7 +59,7 @@ Placeholder pixel art for the Plynlings, drawn by code so a tweak is an edit, no
   them smaller or larger. Added without a version bump, like the angry faces.
 - `memorials.py` — the five memorial tiers (cairn → statue), each carrying the species' accent colour.
 - `source/` — the four food sprites (16×16, hand-drawn), exported as-is.
-- `export.py` — renders all 207 files into `assets/plynlings/` (256×256, and 320×320 for the 56 `_visit` ones): the 112 living sprites as
+- `export.py` — renders all 319 files into `assets/plynlings/` (256×256, and 320×320 for the 56 `_visit` ones): the 224 living sprites as
   looping, lossless animated WebP (so the soft shadow and the Mycena's halo keep their partial
   transparency), the memorials and foods as PNG. Pillow merges identical consecutive frames into
   one longer frame, so a file holds fewer than 16 frames while still lasting 2 s.

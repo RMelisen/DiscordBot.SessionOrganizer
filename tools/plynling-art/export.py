@@ -22,7 +22,11 @@ ART_VERSION = 4
 SIZE = 256
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, "..", "..", "assets", "plynlings"))
-STATES = ["happy", "content", "sad", "hungry", "starving", "frozen", "sleeping", "angry"]
+STATES = ["happy", "content", "sad", "hungry", "starving", "frozen", "sleeping", "angry", "sick"]
+# The card's living faces that also get a « _dirty » version (dirt.py): a Plynling whose hygiene is
+# below 33 %. Not frozen (the ice hides it), not angry and not the visit pictures (visits stay
+# clean). Must match PlynlingArt.DirtyMoods in the bot.
+DIRTY_STATES = ["happy", "content", "sad", "hungry", "starving", "sleeping", "sick"]
 FOODS = ["mushroom", "shiitake", "morel", "truffle"]
 # Species whose bébé has its own art. Must match PlynlingArt.StagedSpecies in the bot
 # (artcheck compares them). The adult keeps its stage-less filename, and ado and ancien wear
@@ -81,6 +85,13 @@ def main():
             if sp in STAGED:
                 save_loop([build(state, sp, f, stage="baby") for f in range(FRAMES)], f"plynling_{sp}_baby_{state}")
                 count += 1
+            if state in DIRTY_STATES:
+                save_loop([build(state, sp, f, dirty=True) for f in range(FRAMES)], f"plynling_{sp}_{state}_dirty")
+                count += 1
+                if sp in STAGED:
+                    save_loop([build(state, sp, f, stage="baby", dirty=True) for f in range(FRAMES)],
+                              f"plynling_{sp}_baby_{state}_dirty")
+                    count += 1
             if state in VISIT_STATES:
                 save_visit_loop([build(state, sp, f) for f in range(FRAMES)], f"plynling_{sp}_{state}")
                 count += 1
