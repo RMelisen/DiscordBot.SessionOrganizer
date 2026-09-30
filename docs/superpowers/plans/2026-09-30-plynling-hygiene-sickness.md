@@ -220,7 +220,7 @@ Replace `HappinessAt` and add the hygiene functions:
     }
 ```
 
-In `Rebase`, add `p.Hygiene = HygieneAt(p, at);` **before** `p.Happiness = HappinessAt(p, at);` is wrong — happiness must be computed from the *old* hygiene. Write `Rebase` as:
+`Rebase` must compute every value before assigning any: `HappinessAt` reads the *stored* hygiene, so overwriting `p.Hygiene` first would bend the happiness slope. Write it as:
 
 ```csharp
     private static void Rebase(Plynling p, DateTimeOffset at)
@@ -421,7 +421,7 @@ Add to `Refusal`: `CareOutcome.NotOwner => PlynlingText.NotYourPlynling(gender),
         $"Encore tout propre de son dernier bain. Prochain bain <t:{readyAt.ToUnixTimeSeconds()}:R>.";
 
     public static string AlreadyClean(PlynlingGender g) =>
-        $"{g.Agree("Il", "Elle")} est déjà tout {g.Agree("propre", "propre")} ! Garde l'eau pour plus tard.";
+        $"{g.Agree("Il est déjà tout propre", "Elle est déjà toute propre")} ! Garde l'eau pour plus tard.";
 
     public static string NotYourPlynling(PlynlingGender g) =>
         $"{g.Agree("Ce", "Cette")} Plynling n'est pas {g.Agree("le tien", "la tienne")} : seul son propriétaire peut faire ça.";
@@ -431,7 +431,7 @@ Add to `Refusal`: `CareOutcome.NotOwner => PlynlingText.NotYourPlynling(gender),
 
 ```
 🛁 Plouf ! **{0}** ressort de l'eau en brillant comme un caillou mouillé ✨
-Frotte, frotte… **{0}** est ⟨propre|propre⟩ comme un sou neuf. Et un peu vexé⟨|e⟩ d'avoir été frotté⟨|e⟩ (¬_¬)
+Frotte, frotte… **{0}** est propre comme un sou neuf. Et un peu vexé⟨|e⟩ d'avoir été frotté⟨|e⟩ (¬_¬)
 **{0}** a fait des bulles. Beaucoup de bulles. Il y en a partout sauf sur ⟨lui|elle⟩.
 Bain terminé : **{0}** sent la mousse et le linge frais (˶ᵔ ᵕ ᵔ˶)
 Tu as lavé **{0}**. ⟨Il|Elle⟩ fait semblant de détester ça. ⟨Il|Elle⟩ adore ça.
@@ -667,26 +667,41 @@ Check(rs.All(r => r >= 0 && r < 1) && Math.Abs(rs.Average() - 0.5) < 0.03, "roll
 SicknessRoll Script(double onset, double death, double rec = 0.5, double med = 0.5) =>
     (id, day, purpose) => purpose switch { RollPurpose.Onset => onset, RollPurpose.Death => death, RollPurpose.Recovery => rec, _ => med };
 
+// Full again at `at`, without going through the rules under test: HungerLife is 2 days, so a check
+// spanning several mornings would otherwise starve before its illness death. Happiness is read
+// before hygiene changes, as in Rebase. Only call it at the instant of the last Settle.
+void Refill(Plynling x, DateTimeOffset at)
+{
+    var happiness = PlynlingLife.HappinessAt(x, at);
+    var hygiene = PlynlingLife.HygieneAt(x, at);
+    x.Hunger = 1; x.Happiness = happiness; x.Hygiene = hygiene; x.NeedsAsOf = at;
+}
+
 var s0 = Paris(2026, 10, 5, 12);
 var sick = Fresh(s0); sick.Id = 11; sick.Hunger = 1; sick.Hygiene = 0;          // 20261005 already played
 PlynlingLife.Settle(sick, Paris(2026, 10, 6, 6), Script(0.0, 0.99));
 Check(sick.SickSince == PlynlingLife.MorningAt(20261006) && sick.Recovery == 0, "falls sick at 05:00, nothing else that morning");
 Check(sick.PendingMoments.Any(m => m.Kind == JournalKind.FellSick), "the onset is journaled");
 Check(PlynlingLife.Mood(sick, Paris(2026, 10, 6, 12)) == PlynlingMood.Sick, "the Sick mood");
+Refill(sick, Paris(2026, 10, 6, 6));
 PlynlingLife.Settle(sick, Paris(2026, 10, 7, 6), Script(0.0, 0.0));             // 2nd sick morning: grace
 Check(sick.DiedAt is null && sick.Recovery == 10, "grace morning: recovery only (5 + 0.5*11 = 10)");
+Refill(sick, Paris(2026, 10, 7, 6));
 PlynlingLife.Settle(sick, Paris(2026, 10, 8, 6), Script(0.0, 0.0));             // 3rd: the death roll
 Check(sick.DiedAt == PlynlingLife.MorningAt(20261008) && sick.DeathCause == DeathCause.Illness, "dies of illness at 05:00 on the third morning");
 
+// Stops at the cure: hygiene is still 0 and the onset roll is scripted to hit, so one more
+// morning would make it fall sick again.
 var treated = Fresh(s0); treated.Id = 12; treated.Hunger = 1; treated.Hygiene = 0;
 PlynlingLife.Settle(treated, Paris(2026, 10, 6, 6), Script(0.0, 0.0));
-for (var d = 7; d <= 12; d++)
+for (var d = 7; d <= 10; d++)
 {
+    Refill(treated, Paris(2026, 10, d - 1, 6));
     treated.LastMedicineAt = Paris(2026, 10, d - 1, 12);                          // a dose every day
     PlynlingLife.Settle(treated, Paris(2026, 10, d, 6), Script(0.0, 0.0));
 }
 Check(treated.DiedAt is null && treated.SickSince is null && treated.PendingMoments.Any(m => m.Kind == JournalKind.Recovered),
-    "medicine cancels the death roll and heals (+30 a morning → cured on the 4th)");
+    "medicine cancels the death roll and heals (+30 a morning → cured on the 4th, 2026-10-10)");
 
 var catchup = Fresh(s0); catchup.Id = 13; catchup.Hunger = 0.3; catchup.Hygiene = 1;     // starves 2026-10-06 02:24 → 05:00
 PlynlingLife.Settle(catchup, Paris(2026, 10, 9, 12), Script(0.99, 0.99));
@@ -1106,11 +1121,9 @@ Une cuillère pour **{0}**… ⟨il|elle⟩ a tout recraché. Deuxième essai : 
 Médicament donné. **{0}** fait semblant d'aller mieux pour te faire plaisir. Ça marche un peu.
 **{0}** trouve que le médicament a un goût de caillou mouillé. Moi je trouve que ⟨il|elle⟩ exagère.
 Et hop, la dose du jour ! **{0}** a le droit à un bisou sur le front en échange.
-**{0}** tend la patte pour son médicament comme un⟨| e⟩ grand⟨|e⟩. Je suis fière de ⟨lui|elle⟩ ✨
+**{0}** tend la patte pour son médicament comme ⟨un grand|une grande⟩. Je suis fière de ⟨lui|elle⟩ ✨
 Le médicament est pris. **{0}** va dormir un peu mieux ce soir (˶ᵔ ᵕ ᵔ˶)
 ```
-
-(Fix the one « un⟨| e⟩ grand⟨|e⟩ » to read « comme un grand » / « comme une grande » when expanding.)
 
 - [ ] **Step 6: Build, harness, hand over**
 
@@ -1329,7 +1342,7 @@ In `DebugModule`, following the owner check pattern of `absent`:
     {
         if (Context.User.Id != AvailabilityService.OwnerId)
         {
-            await RespondAsync(<the same refusal the other /debug commands use>, ephemeral: true);
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
             return;
         }
         if (Context.Guild is null)
@@ -1344,7 +1357,7 @@ In `DebugModule`, following the owner check pattern of `absent`:
     }
 ```
 
-Inject `PlynlingService` into `DebugModule` (constructor) if it is not already there. Use exactly the refusal text the module's other commands send to non-owners.
+Inject `PlynlingService` into `DebugModule` (constructor) if it is not already there. The refusal is the literal the module's three other commands already send.
 
 - [ ] **Step 4: Build, hand over** — 0/0. Files as listed.
 
