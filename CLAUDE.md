@@ -85,14 +85,14 @@ modules), plus the flat `EmoteStatsModule`, `BotFeedbackModule` (`/goodbot`),
 `YesNoModule` (`/yesno`), `ConfigModule` (`/config`, itself a group module),
 `PlynlingModule` (`/plynling`, a group module), `InventoryModule` (`/inventory`),
 `EconomyModule` (`/work`, `/balance`), `AdminModule` (`/admin xp add|remove`,
-`/admin plynling rename|resurrect`) and `DebugModule` (`/debug tell|dm|absent`).
+`/admin plynling rename|resurrect|passion-reset|cure`) and `DebugModule` (`/debug tell|dm|absent|plynling`).
 
 **Commands are grouped by whose thing it is.** `/plynling` is the creature, `/inventory` the
 person's belongings (which outlive the creature), `/admin` every moderation *action* and
 `/config` the settings, `/debug` the owner's own tools — grouped so everyone else sees one
 entry in the picker instead of three, since no Discord permission can hide a command from
 all but one user. Discord allows **25 subcommands per top-level command**; `/plynling` holds
-15 and `/inventory` 8. A new batch of commands goes into the group that owns the thing, or into a new group —
+15 and `/inventory` 9. A new batch of commands goes into the group that owns the thing, or into a new group —
 never onto a top-level command that is near the cap, since the 26th throws at registration
 on startup. Renaming a command changes what people type, so moves are done once, in a batch. Component handlers for the published cards live apart
 from the commands, in `Interactions/Components/` (`EventComponentHandler`,
@@ -1090,7 +1090,7 @@ only gate — no `[DefaultMemberPermissions]` on the group, for the same reason 
 **There are three separate authorization models.** Session and poll management uses
 `Helpers/SessionPermissions.CanManage` — the organizer, or any guild
 Administrator / ManageGuild holder. The owner-only commands (`/debug tell`, `dm`,
-`absent`) instead compare `Context.User.Id` against `AvailabilityService.OwnerId`
+`absent`, `plynling`) instead compare `Context.User.Id` against `AvailabilityService.OwnerId`
 inline in the module and reply ephemerally. `SessionPermissions.IsStaff` is the third —
 Administrator / ManageGuild **or** the owner, with no notion of owning the thing being
 acted on, which is what `/admin xp add|remove` need since nobody owns someone else's
@@ -1374,6 +1374,28 @@ never be what kills it, and at night nothing could end it, since petting is refu
 gift is one draw per Paris day (`Plynling.LastGiftDay`, stored so a restart cannot grant a
 second), made on the owner's first look while it is happy — `/plynling view` or a pet or meal
 from the card; a look while it is not happy leaves the day's draw unspent.
+
+**Hygiene is a third need and dirt a knock-on, never a killer.** `Hygiene` is stored at
+`NeedsAsOf` like hunger and happiness, and below `DirtyBelow` (33 %) happiness drains
+`DirtyHappinessFactor` faster **from the exact instant** hygiene crosses it — hygiene falls
+linearly, so `HappinessAt` is two straight pieces, not an approximation. `Rebase` must compute
+every value before storing any, because `HappinessAt` reads the stored hygiene. « Laver » is
+owner-only, free, and rationed in memory like petting.
+
+**Sickness is played in `Settle`, one 05:00 morning at a time, and every roll is hashed.**
+`LastMorningDay` is the last morning played; `Settle` plays each later one in time order — a
+starvation due first wins and stops the loop, frozen mornings are skipped but recorded — so a
+command and the hourly sweep always reach the same outcome. That is also why the rolls come from
+`PlynlingSickness.Roll(id, day, purpose)` and **never a `Random`**: the same morning must decide the
+same way whoever settles it. `Settle` stays pure, so the journal moments it produces ride on
+`Plynling.PendingMoments` (not mapped) until whoever saves calls `FlushMomentsAsync` — every save
+path after a settle must. `DeathCause` and the `FellSick`/`Recovered` journal kinds are stored as
+ints: **append-only**. Sick: half meals, no games, no visits either way, no self-freeze (freezing
+pauses the illness, so it would dodge the death rolls). `/admin plynling cure` sends no DM on
+purpose; `/debug plynling` exists because sickness is rare by design and could take days to see.
+
+**`/plynling help` is within ~150 characters of the 6000 embed cap.** Measure it before adding
+anything; shorten a field or split the guide rather than let it throw at send time.
 
 **Plynling relationships grow out of visits, and every rule lives in `Helpers/PlynlingBonds`.**
 One `PlynlingRelation` row per pair, **lower id first** (unique index), so a pair has one row
@@ -1807,7 +1829,8 @@ accepted only when exactly one channel matches, for the same reason.
 without the attribute the command is reachable in a DM, where `Context.Guild` is null
 and the handler can only throw. All six guild-dependent modules carry it;
 `HelpModule` and `DebugModule` deliberately do not, because they
-never touch `Context.Guild` and `/help` genuinely works in a DM. Note the older
+never touch `Context.Guild` and `/help` genuinely works in a DM — except `/debug plynling`, which
+checks for a DM itself rather than hiding the owner's DM-only tools with it. Note the older
 `[EnabledInDm(false)]` is obsolete in Discord.Net 3.20 and fails the build under
 `-warnaserror`.
 

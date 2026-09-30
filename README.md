@@ -26,7 +26,7 @@ a wall of shame. The bot's user-facing language is French.
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
 | `/shame` | The wall of shame | everyone |
 | `/plynling adopt · view · list · journal · relations · play · visit · passion · forage · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card) | everyone |
-| `/inventory view · collection · shop · cosmetics · craft · give · trade · sell` | Your items: pantry, collection, cosmetics, swaps | everyone |
+| `/inventory view · collection · shop · medicine · cosmetics · craft · give · trade · sell` | Your items: pantry, collection, cosmetics, swaps | everyone |
 | `/work · /balance` | Earn cailloux; see your balance | everyone |
 | `/shame user:@someone` | Put someone on it | staff |
 | `/config` | Per-server settings, no redeploy | staff |
@@ -34,7 +34,7 @@ a wall of shame. The bot's user-facing language is French.
 | `/admin pebble add · remove` | Manual cailloux adjustment | staff |
 | `/admin stats` | The server's economy at a glance | staff |
 | `/admin dashboard` | The economy day by day: flows, activity, finds | staff |
-| `/admin plynling rename · resurrect · passion-reset`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
+| `/admin plynling rename · resurrect · passion-reset · cure`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
 | `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
 | `/help` | In-Discord usage guide | everyone |
 
@@ -216,7 +216,14 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   costs double; **Caresser** is free, every 4 hours, and anyone can pet anyone's.
 - **Hygiene** empties in 3 days, and a forage (−10 %) or a game (−5 %) dirties it a little.
   Below 33 % it is *sale*: its happiness drains 1.5× faster and its card says so. **Laver** on
-  its card washes it (+60 %), free, every 6 hours, for its owner only.
+  its card washes it (+60 %), free, every 6 hours, for its owner only. A dirty Plynling wears mud,
+  stink lines and a fly on its card picture.
+- **Sickness:** each morning at 5 am a Plynling may fall **malade** — rarely when clean, much more
+  often the dirtier it is — and its owner gets a DM. Sick, it eats half as well, will not play or
+  visit, and cannot be self-frozen. **Soigner** on its card gives one dose a day (from the pantry,
+  or 30 cailloux; `/inventory medicine` stocks up). Treated daily it recovers in a few days;
+  left untreated, from its third sick morning it may die of it. Staff can cure one with
+  `/admin plynling cure`.
 - **Mood matters:** a happy Plynling (above 80 % happiness) gets 15 % more out of every meal,
   and the first time its owner looks at it each day it has a one-in-two chance of having found
   5–15 cailloux for them. A sad one (below 30 %) gets 25 % less. At 0 % it sulks and refuses to

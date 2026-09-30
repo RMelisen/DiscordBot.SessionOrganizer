@@ -483,10 +483,11 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 "Son **humeur** compte : heureux, un repas le nourrit 15 % de plus et il te rapporte parfois un caillou ou un objet ; " +
                 "triste, 25 % de moins. À 0 %, il **boude** et refuse de manger tant qu'on n'a pas joué avec lui ou qu'on " +
                 "ne l'a pas caressé — sauf s'il meurt de faim.")
-            .AddField("Propreté",
-                "L'**hygiène** se vide en **3 jours** ; balades et jeux le salissent un peu. Sous 33 %, il est **sale** " +
-                "et son bonheur baisse plus vite.\n" +
-                "**Laver** (bouton de sa carte, son propriétaire seulement) — +60 %, toutes les 6 h, gratuit.")
+            .AddField("Propreté et santé",
+                "L'**hygiène** se vide en 3 jours ; balades et jeux le salissent. Sous 33 %, il est **sale** et déprime plus vite. " +
+                "**Laver** (sa carte, son propriétaire) : +60 %, toutes les 6 h.\n" +
+                "Au réveil, il peut tomber **malade**, surtout sale : il mange moitié moins, ne joue ni ne visite. " +
+                "**Soigner** (sa carte) : un médicament par jour (`/inventory medicine`), sinon il peut en mourir.")
             .AddField("Jouer & rendre visite",
                 "**`/plynling play`** — Un mini-jeu au hasard avec ton Plynling : cache-cache, pierre-papier-ciseaux " +
                 "ou plus ou moins. Une fois par heure : +15 % de bonheur, +25 % et quelques cailloux si tu gagnes.\n" +
@@ -536,7 +537,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             .AddField("Staff",
                 "**`/plynling freeze user:`** · **`/plynling thaw user:`** — Sur n'importe quel Plynling.\n" +
                 "**`/admin plynling rename user: name:`** · **`/admin plynling resurrect user:`** · " +
-                "**`/admin plynling passion-reset user:`**")
+                "**`/admin plynling passion-reset user:`** · **`/admin plynling cure user:`**")
             .WithFooter($"Project S.Y.N.C.S. v{AppInfo.Version}")
             .Build();
 
