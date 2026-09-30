@@ -25,7 +25,7 @@ public sealed class PlynlingGameState
     public const int RpsToWin = 2;         // first to two; a tie is replayed
     public const int GuessMin = 1;
     public const int GuessMax = 100;
-    public const int GuessTries = 6;
+    public const int GuessTries = 7;
 
     public PlynlingGame Game { get; }
     public GameStatus Status { get; private set; } = GameStatus.Playing;
@@ -47,6 +47,9 @@ public sealed class PlynlingGameState
     public int TriesLeft { get; private set; } = GuessTries;
     public int? LastGuess { get; private set; }
     public GuessHint? LastHint { get; private set; }
+    // Every guess so far with its hint, oldest first — the card shows them all.
+    private readonly List<(int Guess, GuessHint Hint)> _guesses = new();
+    public IReadOnlyList<(int Guess, GuessHint Hint)> Guesses => _guesses;
 
     public PlynlingGameState(PlynlingGame game, Random rng)
     {
@@ -103,6 +106,7 @@ public sealed class PlynlingGameState
         LastGuess = n;
         var hint = n < Secret ? GuessHint.Higher : n > Secret ? GuessHint.Lower : GuessHint.Correct;
         LastHint = hint;
+        _guesses.Add((n, hint));
         if (hint == GuessHint.Correct) Status = GameStatus.Won;
         else if (TriesLeft <= 0) Status = GameStatus.Lost;
         return hint;

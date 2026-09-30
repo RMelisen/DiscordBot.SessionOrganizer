@@ -54,11 +54,21 @@ public static class PlynlingGameUi
     {
         var text = "## 🔢 Plus ou moins\n" +
                    $"**{name}** pense à un nombre entre {PlynlingGameState.GuessMin} et {PlynlingGameState.GuessMax}.";
-        if (s.Status == GameStatus.Won) return text + $"\nBravo, c'était **{s.LastGuess}** !";
+        if (s.Status == GameStatus.Won) return text + History(s) + $"\nBravo, c'était **{s.LastGuess}** !";
         if (s.Status == GameStatus.Lost)
-            return text + $"\n{s.LastGuess} ? **C'est {Hint(s.LastHint)} !**\nPerdu… c'était **{s.Secret}**.";
-        if (s.LastGuess is { } guess) text += $"\n{guess} ? **C'est {Hint(s.LastHint)} !**";
+            return text + History(s) + $"\n{s.LastGuess} ? **C'est {Hint(s.LastHint)} !**\nPerdu… c'était **{s.Secret}**.";
+        if (s.LastGuess is { } guess) text += History(s) + $"\n{guess} ? **C'est {Hint(s.LastHint)} !**";
         return text + $"\n-# {s.TriesLeft} essai{(s.TriesLeft > 1 ? "s" : "")} restant{(s.TriesLeft > 1 ? "s" : "")}";
+    }
+
+    // Every earlier guess with its arrow (⬆ the number is higher, ⬇ lower), oldest first. The last
+    // guess is left out: it has its own line just below. Empty until there are two guesses.
+    private static string History(PlynlingGameState s)
+    {
+        var earlier = s.Guesses.Take(s.Guesses.Count - 1)
+            .Select(x => $"{x.Guess} {(x.Hint == GuessHint.Higher ? "⬆" : "⬇")}")
+            .ToList();
+        return earlier.Count == 0 ? "" : $"\n-# Déjà essayé : {string.Join(" · ", earlier)}";
     }
 
     // What a finished game gave: happiness always, cailloux on a win.

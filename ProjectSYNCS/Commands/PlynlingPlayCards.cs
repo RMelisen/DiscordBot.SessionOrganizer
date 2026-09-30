@@ -83,6 +83,7 @@ public static class PlynlingPlayCards
     public static string VisitPrevId(string story, int beat) => $"vis:prev:{story}:{beat}";
     public static string VisitNextId(string story, int beat) => $"vis:next:{story}:{beat}";
     public static string VisitFirstId(string story, int beat) => $"vis:first:{story}:{beat}";
+    public static string VisitLastId(string story, int beat) => $"vis:last:{story}:{beat}";
 
     /// <summary>
     /// What a visit changed, closing its story: the confession, the bond, badges, finds, and the
@@ -114,15 +115,17 @@ public static class PlynlingPlayCards
         return string.Join("\n", lines);
     }
 
-    // ◀ and ▶; on the last step ▶ has nowhere to go, so it becomes « ↺ Début », back to step 1.
-    // Its own verb, so it can never share an id with ▶.
+    // ◀, ▶ and « ⏭ Fin », which skips to the last step (the outcome). On the last step ▶ has nowhere
+    // to go, so it becomes « ↺ Début », back to step 1, and « Fin » goes. Each has its own verb, so a
+    // card can never carry the same id twice.
     private static ActionRowBuilder BuildVisitArrows(VisitStory story, int beat)
     {
         var row = new ActionRowBuilder()
             .WithButton("◀", VisitPrevId(story.Id, beat), ButtonStyle.Secondary, disabled: beat == 0);
         return beat == story.Beats.Count - 1
             ? row.WithButton("↺ Début", VisitFirstId(story.Id, beat), ButtonStyle.Secondary)
-            : row.WithButton("▶", VisitNextId(story.Id, beat), ButtonStyle.Secondary);
+            : row.WithButton("▶", VisitNextId(story.Id, beat), ButtonStyle.Secondary)
+                .WithButton("⏭ Fin", VisitLastId(story.Id, beat), ButtonStyle.Secondary);
     }
 
     /// <summary>

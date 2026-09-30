@@ -1319,8 +1319,9 @@ the bottom of the channel — and the reader pages at their own pace. There is n
 background edit. A gallery of two spans the full width, so each sprite is about half the message;
 Discord fixes that, so the sprite is shrunk *inside* its picture instead: `PlynlingArt.VisitSprite`
 links the `_visit` files, the same animation on a larger transparent canvas (`VISIT_CANVAS` in
-`tools/plynling-art/export.py`, 80 %). On the last step ▶ becomes « ↺ Début » (`vis:first:…`, its
-own verb), back to step 1. Stories live in
+`tools/plynling-art/export.py`, 80 %). Every step before the last also carries « ⏭ Fin »
+(`vis:last:…`), straight to the outcome. On the last step ▶ becomes « ↺ Début » (`vis:first:…`)
+and « Fin » goes — every button its own verb. Stories live in
 the `VisitStories` singleton, the last 300 kept, with a snapshot of both Plynlings (name, species,
 stage, passions) so paging needs no database — the picture URL is rebuilt per step from species,
 stage and face.
