@@ -6,6 +6,7 @@ namespace ProjectSYNCS.Helpers;
 // the middle would silently rewrite every later entry into its neighbour.
 public enum JournalKind
 {
+    // Visited and Hosted are no longer written (too noisy); kept so old rows still render.
     Adopted, FirstMeal, GrewUp, FirstWin, Visited, Hosted, Frozen, Thawed, FedByFriend, Badge, Resurrected, Died,
     // relationships (detail: the other Plynling's name)
     BecameFriends, BecameBestFriends, BecameLovers, BecameRivals, BecameEnemies, Heartbroken, BrokeUp, Grieving,
