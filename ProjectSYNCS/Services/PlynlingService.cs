@@ -296,6 +296,7 @@ public class PlynlingService
         if (visitor is null || host is null || visitor.Id == host.Id) return null;
         if (visitor.DiedAt is not null || host.DiedAt is not null) return null;
         if (visitor.FrozenAt is not null || host.FrozenAt is not null) return null;
+        if (PlynlingLife.IsSick(visitor) || PlynlingLife.IsSick(host)) return null;      // the callers say why
 
         var (lo, hi) = visitor.Id < host.Id ? (visitor.Id, host.Id) : (host.Id, visitor.Id);
         var relation = await _db_context.PlynlingRelations.FirstOrDefaultAsync(r => r.PlynlingAId == lo && r.PlynlingBId == hi);

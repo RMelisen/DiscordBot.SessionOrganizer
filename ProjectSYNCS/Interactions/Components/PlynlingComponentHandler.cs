@@ -209,6 +209,8 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             : visitor is null || visitor.DiedAt is not null ? PlynlingText.VisitorGone
             : visitor.FrozenAt is not null || host.FrozenAt is not null ? PlynlingText.VisitFrozen
             : PlynlingLife.IsAsleep(now) ? PlynlingText.Asleep(host.Gender)
+            : PlynlingLife.IsSick(visitor) ? PlynlingText.VisitSick(PlynlingCardUi.SafeName(visitor.Name))
+            : PlynlingLife.IsSick(host) ? PlynlingText.VisitSick(PlynlingCardUi.SafeName(host.Name))
             : null;
         if (refusal is not null || visitor is null || host is null)
         {

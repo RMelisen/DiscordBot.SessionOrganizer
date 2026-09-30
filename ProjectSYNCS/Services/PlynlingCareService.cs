@@ -111,6 +111,7 @@ public class PlynlingCareService
             : $"offert par <@{actorId}> · −{PebbleEconomy.Cailloux(result.Price)} (le double : ce n'est pas {g.Agree("le sien", "la sienne")})";
         var text = line;
         if (PlynlingText.MealMood(g, result.MealFactor) is { } mood) text += $"\n*{mood}*";
+        if (PlynlingLife.IsSick(result.Plynling)) text += $"\n*{PlynlingText.SickMeal(g)}*";
         text += result.PantryUsed > 0
             ? $"\n-# {PlynlingText.FromPantry(info.Name, result.PantryUsed, result.PantryLeft, result.Plynling.OwnerId != actorId ? actorId : null)}"
             : $"\n-# {paid} · il te reste {PebbleEconomy.Cailloux(result.Balance)}";

@@ -139,6 +139,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             : plynling.DiedAt is not null ? PlynlingText.Dead(plynling.Gender)
             : plynling.FrozenAt is not null ? PlynlingText.Frozen(plynling.Gender)
             : PlynlingLife.IsAsleep(now) ? PlynlingText.Asleep(plynling.Gender)
+            : PlynlingLife.IsSick(plynling) ? PlynlingText.SickNoPlay(plynling.Gender)      // before the claim: no cooldown spent
             : !_cooldowns.Play.TryClaim(plynling.Id) ? PlynlingText.PlayCooldown(plynling.Gender)
             : null;
         if (refusal is not null || plynling is null)
@@ -173,6 +174,8 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             : theirs is null || theirs.DiedAt is not null ? PlynlingText.NoneFor(user.Id)
             : mine.FrozenAt is not null || theirs.FrozenAt is not null ? PlynlingText.VisitFrozen
             : PlynlingLife.IsAsleep(now) ? PlynlingText.Asleep(mine.Gender)
+            : PlynlingLife.IsSick(mine) ? PlynlingText.VisitSick(PlynlingCardUi.SafeName(mine.Name))
+            : PlynlingLife.IsSick(theirs) ? PlynlingText.VisitSick(PlynlingCardUi.SafeName(theirs.Name))
             : _cooldowns.VisitedToday(Context.User.Id, user.Id, AppTime.DayKey(now)) ? PlynlingText.VisitedToday(user.Id)
             : null;
         if (refusal is not null || mine is null)

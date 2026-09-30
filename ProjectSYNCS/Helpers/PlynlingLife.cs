@@ -362,7 +362,8 @@ public static class PlynlingLife
 
     public static void Feed(Plynling p, FoodInfo food, DateTimeOffset now)
     {
-        var factor = MealFactor(p, now);                 // its mood *before* this meal cheers it
+        // its mood *before* this meal cheers it; sick, it only eats half
+        var factor = MealFactor(p, now) * (IsSick(p) ? PlynlingSickness.SickMealFactor : 1);
         Rebase(p, now);
         p.Hunger = Clamp(p.Hunger + food.Hunger * factor);
         p.Happiness = Clamp(p.Happiness + food.Happiness);

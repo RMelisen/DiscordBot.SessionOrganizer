@@ -202,6 +202,14 @@ public static class PlynlingText
     public static string AlreadyTreated(PlynlingGender g) =>
         $"{g.Agree("Il", "Elle")} a déjà eu son médicament aujourd'hui. Le prochain après 5 h.";
 
+    public static string SickNoPlay(PlynlingGender g) =>
+        $"{g.Agree("Il", "Elle")} est malade : pas de jeux avant d'être {g.Agree("guéri", "guérie")}. Un médicament, peut-être ?";
+
+    // The name is sanitised by the caller.
+    public static string VisitSick(string name) => $"**{name}** est malade : pas de visite pour l'instant.";
+
+    public static string SickMeal(PlynlingGender g) => $"Malade, {g.Agree("il", "elle")} n'a mangé que la moitié.";
+
     public static string SickNoFreeze(PlynlingGender g) =>
         $"{g.Agree("Il", "Elle")} est malade : on ne gèle pas un Plynling malade, on le soigne.";
 
