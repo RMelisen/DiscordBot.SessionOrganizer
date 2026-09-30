@@ -20,6 +20,7 @@ a wall of shame. The bot's user-facing language is French.
 | `/vote create · list · delete` | Vote on free-text options | everyone |
 | `/giveaway create · list · delete` | Prize draws | everyone |
 | `/level [user]` | Your card: level, rank, progress | everyone |
+| `/leaderboard` | Server ranking — three views, three windows | everyone |
 | `/emotestats` | Most-used emotes | everyone |
 | `/goodbot` | Who praised or scolded the bot | everyone |
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
@@ -34,7 +35,6 @@ a wall of shame. The bot's user-facing language is French.
 | `/admin stats` | The server's economy at a glance | staff |
 | `/admin dashboard` | The economy day by day: flows, activity, finds | staff |
 | `/admin plynling rename · resurrect · passion-reset`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
-| `/leaderboard` | Server ranking — three views, three windows | owner |
 | `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
 | `/help` | In-Discord usage guide | everyone |
 
@@ -112,15 +112,13 @@ Vocal leaderboard stays honest about time actually spent.
 
 - **`/level [user]`** — a card: avatar, level, rank, and a progress bar toward the
   next level. No filters — it's a profile, not a ranking.
-- **`/leaderboard`** *(owner-only)* — the ranked list, five per page, every row carrying that
+- **`/leaderboard`** — the ranked list, five per page, every row carrying that
   person's real avatar. Three buttons switch what it ranks — **Niveaux** (XP),
   **Réactions** (reactions added), **Vocal** (eligible time in voice) — and three more
   switch the window: **all time** (default), **30 days**, **7 days**. In a window the
   XP view ranks by XP earned in that window and drops the level, which is a lifetime
-  figure and can't be recomputed for a week. Anyone else who runs it, or clicks one of
-  its buttons, gets a vague "something went wrong" from her — deliberately with no hint
-  that it works for someone — and `/level` cards only carry the "Voir le classement"
-  button when the owner opened them.
+  figure and can't be recomputed for a week. A `/level` card's "Voir le classement"
+  button opens it in place.
 - Crossing a level gets an unprompted card in her own voice: your avatar, the levels
   you went from and to, and a line she picks herself. Earned in voice, it's announced
   in that voice channel's own text chat rather than in the server's main one.
