@@ -30,7 +30,8 @@ class Pose:
         # Nothing moves side to side: every motion here is up and down, or in place.
         # the breath: the body sinks one row for most of the second half of the beat;
         # starving has no breath, only a weak shudder — the same sink, one frame at a time
-        if state == "starving":
+        # sick shivers with fever the same way, in place: nothing sideways here either
+        if state in ("starving", "sick"):
             self.bob = 1 if f in (4, 6, 12, 14) else 0
         else:
             self.bob = 1 if (not still and _within(f, 6, 12)) else 0
@@ -52,7 +53,7 @@ class Pose:
         self.drool = 1 if state == "hungry" and _within(f, 8, 11) else 0
         # hungry / starving: the sweat drops slide down the face and vanish, then reappear
         self.sweat = None
-        if state in ("hungry", "starving"):
+        if state in ("hungry", "starving", "sick"):
             self.sweat = 0 if f <= 5 else 1 if f <= 9 else 2 if f <= 12 else -1
         # happy: the heart lifts twice, once on its own and once with the hop
         self.heart = -1 if state == "happy" and (f in (3, 4) or f in (13, 14)) else 0

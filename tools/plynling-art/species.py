@@ -11,12 +11,14 @@ model itself rather than from the Cèpe's coordinates.
 import math
 
 from PIL import Image
+import dirt
 
 from common import N, Grid, lerp, tone, SPECIES, SPOTS, STEM, STEM_OUT, INK
 from motion import moved, pose as pose_for
 from sprites import face, extras, star, sweat_drops, PALE, TEAR, TEAR_HI
 
 ICE, SNOW, FROST_TINT = (206, 242, 255), (255, 255, 255), (176, 226, 255)
+SICK_TINT = (150, 200, 120)
 CX = 16.0                    # the face's own axis: eyes at 12-13 and 18-19, feet likewise
 
 
@@ -285,7 +287,7 @@ def sweat(im, state, g, oy, k=0):
     eye = 19 + oy
     left, right = body_edges(g, eye + 1)
     eye += k
-    if state == "hungry":
+    if state in ("hungry", "sick"):                     # sick: a fever sweat, the same drop
         xr = right + 4
         for x, y in ((xr, eye - 2), (xr, eye - 1), (xr - 1, eye - 1), (xr, eye)):
             px(x, y, TEAR)
@@ -304,6 +306,8 @@ def finish(g, p, state, S, face_oy=0, face_ox=0, shadow=True, pose=None, origina
     pose = pose or pose_for(None, state, 0)
     tops, bottoms = cap_profile(g)
     kw = dict(blink=pose.blink, tear=pose.tear, drool=pose.drool)
+    if dirt.ACTIVE:
+        dirt.muddy(g, face_ox, face_oy)                  # under the face, so the face stays on top
     if original:
         face(g, state, 0, **kw)
     else:
@@ -325,17 +329,21 @@ def finish(g, p, state, S, face_oy=0, face_ox=0, shadow=True, pose=None, origina
                 c = lerp(c, FROST_TINT, 0.45)
             elif state == "starving":
                 c = lerp(c, PALE, 0.28)
+            elif state == "sick":
+                c = lerp(c, SICK_TINT, 0.22)
             im.putpixel((x, y), c + (255,))
     if original:
         extras(im, state, p, pose, pose.body)
     elif state == "frozen":
         frost(im, tops, bottoms, pose)
-    elif state in ("hungry", "starving"):
+    elif state in ("hungry", "starving", "sick"):
         sweat(im, state, g, face_oy + pose.body[1], sweat_drops(pose))
         if p["sparkle"] and state == "hungry":
             extras(im, "content", p, pose)               # a rare species keeps its sparkle
     else:
         extras(im, state, p, pose)
+    if dirt.ACTIVE:
+        dirt.stink(im, pose.f)
     return im
 
 
@@ -791,8 +799,8 @@ def dore_baby(state, frame, shadow):
 
 # How much of the cap has turned to ink, by mood: the hungrier, the more it melts. A baby is
 # too young to melt until hunger makes it.
-COPRIN_INK = {"angry": 2, "happy": 2, "content": 2, "sad": 2, "sleeping": 2, "hungry": 3, "starving": 4, "frozen": "frozen"}
-COPRIN_BABY_INK = {"angry": 0, "happy": 0, "content": 0, "sad": 0, "sleeping": 0, "hungry": 1, "starving": 3,
+COPRIN_INK = {"angry": 2, "happy": 2, "content": 2, "sad": 2, "sleeping": 2, "hungry": 3, "starving": 4, "frozen": "frozen", "sick": 3}
+COPRIN_BABY_INK = {"angry": 0, "happy": 0, "content": 0, "sad": 0, "sleeping": 0, "hungry": 1, "starving": 3, "sick": 1,
                    "frozen": "frozen"}
 DROP, DROP_SHINE = (112, 102, 140), (214, 206, 238)    # glossy and lighter than the ink, to read on a dark theme
 # Beads and drips hanging from the rim at each ink level: (column, length).

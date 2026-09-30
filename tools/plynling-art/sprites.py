@@ -10,16 +10,24 @@ TEAR, TEAR_HI = (130, 200, 255), (220, 242, 255)
 LID = (150, 122, 104)
 ANGRY_FLUSH = (232, 96, 96)
 PALE = (206, 204, 204)
+SICK_BLUSH = (140, 186, 96)
+THERMO_GLASS, THERMO_RED = (176, 196, 222), (214, 44, 44)
 
 
-def build(state, sp, frame=0, shadow=True, stage="adult"):
-    """The living Plynling of species `sp` in one of the six moods, at a life stage. Each species
+def build(state, sp, frame=0, shadow=True, stage="adult", dirty=False):
+    """The living Plynling of species `sp` in one of the moods, at a life stage. Each species
     draws its own silhouette in species.py, and every one of them wears the face below. Only
-    species with baby art (export.STAGED) accept a stage other than "adult"."""
+    species with baby art (export.STAGED) accept a stage other than "adult". `dirty` adds the mud
+    (dirt.py), painted under the face."""
+    import dirt
     from species import DRAW          # imported here: species.py imports this module
-    if stage == "adult":
-        return DRAW[sp](state, frame, shadow)
-    return DRAW[sp](state, frame, shadow, stage=stage)
+    dirt.ACTIVE = dirty
+    try:
+        if stage == "adult":
+            return DRAW[sp](state, frame, shadow)
+        return DRAW[sp](state, frame, shadow, stage=stage)
+    finally:
+        dirt.ACTIVE = False
 
 
 # ---- the face -------------------------------------------------------------------------
@@ -147,6 +155,16 @@ def face(g, state, f, ox=0, oy=0, skin=None, skin_out=None, blink=False, tear=0,
         for x, y in ((14, 25), (15, 24), (16, 24), (17, 25)):           # a tight frown
             P(x, y, INK)
         blush(ANGRY_FLUSH)
+    elif state == "sick":
+        tired_eye(12)                                                   # heavy lids, bags under the eyes
+        tired_eye(18)
+        for x, y in ((12, 24), (13, 23), (14, 24), (15, 23)):          # a queasy, wavy mouth
+            P(x, y, INK)
+        blush(SICK_BLUSH)                                               # a greenish flush for the pink
+        for x in (16, 17, 18):                                          # a thermometer in the corner
+            P(x, 24, THERMO_GLASS)
+        P(19, 24, THERMO_RED)
+        P(19, 25, THERMO_RED)
     elif state == "sleeping":
         for x0 in (12, 18):                                             # eyes shut, lids curved down
             P(x0 - 1, 20, INK)
@@ -254,7 +272,7 @@ def extras(im, state, p, pose=None, body=(0, 0)):
         px(25, 18 + h, (255, 196, 206))
     if state == "angry":
         anger_mark(px, pose, cap_corner(im), p.get("anger_nudge", (0, 0)))
-    if state == "hungry" and k is not None:                              # sweat drop
+    if state in ("hungry", "sick") and k is not None:                    # sweat drop (hunger, or fever)
         for x, y in ((25, 17), (25, 18), (24, 18), (25, 19)):
             px(x + bx, y + by + k, TEAR)
         px(25 + bx, 17 + by + k, TEAR_HI)
@@ -269,7 +287,7 @@ def extras(im, state, p, pose=None, body=(0, 0)):
         for x, y in ((9, 5), (10, 4), (15, 3), (20, 4)):
             px(x, y, WHITE)
         star(px, pose)
-    if p["sparkle"] and state not in ("frozen", "starving"):
+    if p["sparkle"] and state not in ("frozen", "starving", "sick"):
         sparkles(px, p["sparkle"], pose)
 
 
