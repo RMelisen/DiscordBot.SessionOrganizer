@@ -204,6 +204,12 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             return;
         }
 
+        // Everything below reads and writes the database before anything can be shown, and on the Pi
+        // that outran Discord's 3 s: the visit was saved and claimed, the knock never closed, and the
+        // host was told « déjà vus » on the next click. Deferring first buys the 15 minutes a
+        // follow-up allows; refusals therefore go out as ephemeral follow-ups.
+        await DeferAsync();
+
         var visitor = await _plynlings.GetByIdAsync(visitorId, now);
         var host = await _plynlings.GetCurrentAsync(Context.Guild.Id, hostOwnerId, now);
         string? refusal =
@@ -216,22 +222,22 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             : null;
         if (refusal is not null || visitor is null || host is null)
         {
-            await RespondAsync(refusal, ephemeral: true);
+            await FollowupAsync(refusal, ephemeral: true);
             return;
         }
 
         var (story, visitRefusal) = await _visits.RunAsync(visitor, host, Context.Channel.Id, now);
         if (story is null)
         {
-            await RespondAsync(visitRefusal, ephemeral: true, allowedMentions: AllowedMentions.None);
+            await FollowupAsync(visitRefusal, ephemeral: true, allowedMentions: AllowedMentions.None);
             return;
         }
 
         // The visit is decided and saved; what follows is only its telling. The knock closes in
-        // place (that answers the click inside Discord's 3 s), and the story is a follow-up — a new
-        // message at the bottom of the channel — opened on its first step with ◀ ▶ already there:
-        // the reader pages through at their own pace, nothing moves on its own.
-        await component.UpdateAsync(m =>
+        // place, and the story is a follow-up — a new message at the bottom of the channel — opened
+        // on its first step with ◀ ▶ already there: the reader pages through at their own pace,
+        // nothing moves on its own.
+        await component.ModifyOriginalResponseAsync(m =>
         {
             m.Components = PlynlingPlayCards.BuildKnockClosed(PlynlingText.VisitAccepted(story.Visitor.Name, story.Host.Name));
             m.Flags = MessageFlags.ComponentsV2;

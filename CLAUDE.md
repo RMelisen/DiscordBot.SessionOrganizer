@@ -196,7 +196,7 @@ Easy to forget when adding a model. A *derived* property on a model needs
 `[NotMapped]` instead (see `EmoteStat.Markup`), or EF tries to map it and demands a
 migration for a column that should not exist.
 
-**Four migrations carry data, not schema.** Two are XP wipes with an empty `Down`:
+**Five migrations carry data, not schema.** Two are XP wipes with an empty `Down`:
 `ResetMemberXp` shipped with the level-up card rework, `ResetXpTotals` with the voice-XP
 taper. They ride the automatic apply-on-startup so they land in prod without anyone
 touching the add-on's SQLite file. Every other migration here is schema-only and should
@@ -221,12 +221,14 @@ was rejected — adding a 13th passion would have silently changed every existin
 server's wallets and deletes its `EconomyDailyStats` (the beta's money), and copies Pwet from a test
 server into production as a newborn. It computes its timestamps in C# inside `Up`, which runs when
 the migration is applied — never generate a SQL script from it, or "now" is baked at script time.
-Its launch companion is `Helpers/PlynlingLaunch`: two people's *first* Plynling on production is
-chosen (a male Coprin, a female Girolle) rather than rolled — "first" meaning no row there and no
-abandonment on `/shame`, since an abandonment deletes the row. Those two are also made for each
-other without any special case at visit time: compatibility is a hash of the two Plynling ids, so
-whichever of them adopts second is given an explicit id (`PlynlingLaunch.MatchingId`, about one in
-41 qualifies) that hashes to the maximum, +20, with the other's. Their affinity starts at 0.
+Its launch companion, `Helpers/PlynlingLaunch`, chose two people's *first* Plynling on production
+(and gave the second of them an id whose compatibility hashed to the maximum); it was removed once
+both existed, so the two rows are now ordinary ones.
+
+`SwapLaunchPairGenders` is the fifth, and the smallest: it flips those two living Plynlings' genders
+(Coprin male→female, Girolle female→male), matching on the current species and gender so it is a
+no-op on any row that is no longer the launch one. Nothing else stores a gender — compatibility comes
+from the ids, the art is not gendered, journal moments are worded at display.
 
 **Never use `DateTime.Now`.** Production runs in UTC; all wall-clock handling goes
 through `Helpers/AppTime` (pinned to `Europe/Paris`, DST-aware via
@@ -1930,8 +1932,6 @@ he reacts to), the level-up bot id in `ChatterService`, the `hi_cat` emote id in
 `MessageCues` and `ReminderService`, `XpTracker.ExcludedChannels` (the spam channels
 that earn no XP), `ShameModule.ExtraVoters`, and the per-user `PersonalComebacks` /
 `RealNames` maps in `BotResponses` are literal snowflakes tied to one specific server.
-
-`PlynlingLaunch` (the production guild, two owners' first Plynlings and their pairing) is one more.
 
 `PlynlingAnnouncer.GameChannelId` (`878305034432045080`) is where Plynling deaths and
 resurrections are announced. Commands themselves work in any channel. Only Plynlings of the

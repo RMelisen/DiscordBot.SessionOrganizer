@@ -86,25 +86,9 @@ public class PlynlingService
         var current = await GetCurrentAsync(guildId, ownerId, now);
         if (current is { DiedAt: null }) return (AdoptOutcome.AlreadyHasOne, current);
 
-        // A launch arrangement replaces the roll for someone's very first Plynling on the server.
-        // No row means none alive or dead, but an abandonment deletes its row — so an abandonment
-        // on the wall of shame (L'Indigne) also means the first one has been spent.
-        int? launchId = null;
-        if (current is null && PlynlingLaunch.FirstAdoption(guildId, ownerId) is { } pick
-            && !await _db_context.ShameRecords.AnyAsync(r => r.GuildId == guildId && r.UserId == ownerId && r.AbandonHits > 0))
-        {
-            (species, gender) = (pick.Species, pick.Gender);
-            // The second of the launch pair to adopt gets an id made to match the other's.
-            if (PlynlingLaunch.SoulmateOf(guildId, ownerId) is { } mateOwner
-                && await _db_context.Plynlings.Where(p => p.GuildId == guildId && p.OwnerId == mateOwner && p.DiedAt == null)
-                    .Select(p => (int?)p.Id).FirstOrDefaultAsync() is { } mateId)
-                launchId = PlynlingLaunch.MatchingId(mateId, (await _db_context.Plynlings.MaxAsync(p => (int?)p.Id) ?? 0) + 1);
-        }
-
         // Rolled here unless given, so PlynlingLife.Create stays pure and the harnesses
         // can pin a gender or a passion.
         var plynling = PlynlingLife.Create(guildId, ownerId, name, species, gender ?? PlynlingCatalog.RollGender(), now);
-        if (launchId is { } id) plynling.Id = id;  // an explicit key: EF inserts it instead of generating one
         plynling.Passion = passion ?? PlynlingPassions.RollInnate(Random.Shared);
         _db_context.Plynlings.Add(plynling);
         try
