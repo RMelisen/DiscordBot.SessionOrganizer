@@ -1448,6 +1448,22 @@ stored, names are not). Wherever the two could meet with the same picture — au
 trades, sales — print `ItemCatalog.ClearName`, which suffixes « (nourriture) » / « (collection) »
 to a shared name only.
 
+**Every other collectible, the six sets and every cosmetic have icons too, drawn in the same
+style.** They are ours, not the pack's: 16×16 text grids in `tools/item-art/icons.py`, in the pack's
+palette (Pear36 plus eight of its colours), exported ×8 to `ProjectSYNCS/Assets/Icons/<key>.png` —
+the key is the item key, or `set.<set key>` for a set. `ApplicationEmojiService` reads both folders
+through `ItemEmojis.Sources`; the mushrooms keep their `shroom_` names and the rest get
+`ItemEmojis.EmojiName`'s short prefixes (`c_`, `s_`, `th_`, `ti_`, `ac_`, `gr_`), since Discord caps a
+name at 32 characters. `CollectionSet.Emoji` and `CosmeticInfo.Emoji` are computed like
+`ItemInfo.Emoji` — the icon once uploaded, else the stored `DefaultEmoji` — and so are a thème's
+`Banner` and a cadre's `GraveLeft`/`GraveRight`, which are made of it. A select option must get
+`EmoteMarkup.Parse(emoji)`, never `new Emoji(emoji)`, which Discord rejects for custom markup.
+**A custom emoji costs ~35 characters where Unicode costs 2**, which is why `/inventory view` is two
+pages (`InventoryPage`, `inv:page:{page}`): on one, someone holding everything reached ≈ 7 100 of
+the 6 000 a message's embeds may hold. Anything new that lists many items must be measured with every
+icon uploaded. Like the mushrooms, an uploaded icon is never replaced: delete it in the developer
+portal and restart.
+
 **`/inventory collection` is a book, not one embed.** An overview page, then one page per set
 picked from a **select menu** — not buttons, because the overview plus six sets is already seven
 and a row holds five — with a Tout / Trouvés / Manquants filter row on set pages. State lives in
