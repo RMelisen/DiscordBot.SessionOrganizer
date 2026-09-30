@@ -50,9 +50,9 @@ changes what people type, so do not rename one casually.
 
 `Program.cs` is the composition root: DI wiring, `MigrateAsync()`, then the hosted
 services — `BotService`, `ReminderService`, `PresenceService`, `VoiceXpService`,
-`GiveawayDrawService`, `PlynlingSweepService` and `ApplicationEmojiService`. `PresenceService` to
+`GiveawayDrawService`, `PlynlingSweepService`, `ApplicationEmojiService` and `PlynlingMascotService`. `PresenceService` to
 `PlynlingSweepService` each run their own interval on purpose; see the notes below before sharing
-one. `ApplicationEmojiService` is not a loop — it runs once, on the first Ready.
+one. `ApplicationEmojiService` is not a loop — it runs once, on the first Ready; `PlynlingMascotService` is not one either, and runs on every Ready.
 
 - **`BotService`** — gateway login, slash-command registration, interaction
   dispatch. Fans `MessageReceived` out to `EmoteTracker`, `ReactionService` and
@@ -1575,6 +1575,32 @@ and `elle`, `-la`, `morte` in `M` (whole words, with an allow-list for *la mort*
 it catches the likeliest mistake, a line pasted into the wrong half. `PetCooldown` is the one
 Plynling line with no gender: it is refused before the Plynling is loaded, so it is worded to
 need none.
+
+**The bot has a Plynling of her own: Ping-Qilin, a girl Amanite whose passion is naps.** One per guild,
+an ordinary row owned by the bot's own user id, so view, pet, feed, list and the journal need no special
+case. `Helpers/PlynlingMascot` holds the name, species, gender and passion and the runtime-bound owner
+id — **bound on Ready by `PlynlingMascotService`, never hardcoded**, because the dev and the production
+bot are different applications with different ids. It also creates the row in any guild that lacks one
+(any row owned by the bot counts, so it never makes a second), on every Ready and on `JoinedGuild`. She
+**cannot die**: `PlynlingLife.Settle` hands her row to `Tend` instead of playing it out, and because that
+is inside `Settle` it holds on every read, not only after the hourly sweep. `Tend` tops a need up to 90 %
+(80 % for happiness, 100 % for hygiene) the moment it falls under 50 % — deliberately not to full, so a
+meal from someone else is still worth giving — cures any illness silently and marks the mornings played
+without rolling, so there is nothing to journal. A staff freeze is left alone. Her badges are earned
+and journaled but **pay nothing** (`AwardAsync`): a reward would open a wallet for the bot and put
+cailloux from nowhere into `/admin dashboard`; her visits find no items, for the same reason.
+Because `Tend` restores happiness under 50 %, grief or a refused confession fades on her next read.
+
+**She speaks for her own Plynling.** On Ping-Qilin's card, `MascotPetLines` / `MascotFeedLines` replace
+the usual pools (no typed-passion variant — she has none), `/plynling view` always opens with a
+`MascotViewLines` line, and « Laver » answers with `PlynlingText.MascotBath`. These pools are plain
+`string[]`, **not** `GenderedLines`: Ping-Qilin is always a girl, so an M half would be dead text.
+
+**Visiting her skips the knock.** Nobody can press « Accueillir » for a bot, so `/plynling visit user:@SYNCS`
+runs the visit at once, posts a `MascotWelcomeLines` line in place of the knock (no ping), and tells the
+story as a follow-up. Both ways in go through `PlynlingVisitRunner` — the once-a-day claim, the scene,
+the release on failure, the story — so the two cannot drift; each caller keeps its own pre-checks.
+`/plynling visit` otherwise still refuses a bot as the host.
 
 **Plynling families exist in the code and are dormant.** `PlynlingFamily`, the six sunflower
 species and their catalog rows are in place, and `PlynlingCatalog` rolls only within a family

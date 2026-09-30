@@ -22,6 +22,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
     private readonly TradeOffers _trades;
     private readonly InventoryService _inventory;
     private readonly VisitStories _stories;
+    private readonly PlynlingVisitRunner _visits;
     private readonly ILogger<PlynlingComponentHandler> _logger;
 
     // The pause between two beats of a visit's story — long enough to read one, short enough
@@ -29,9 +30,10 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
 
     public PlynlingComponentHandler(PlynlingCareService care, PlynlingService plynlings, PlynlingPlayService play,
         ResponsePicker picker, PlynlingCooldowns cooldowns, TradeOffers trades, InventoryService inventory,
-        VisitStories stories, ILogger<PlynlingComponentHandler> logger)
+        VisitStories stories, PlynlingVisitRunner visits, ILogger<PlynlingComponentHandler> logger)
     {
         _stories = stories;
+        _visits = visits;
         _logger = logger;
         _trades = trades;
         _inventory = inventory;
@@ -218,17 +220,10 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             return;
         }
 
-        var day = AppTime.DayKey(now);
-        if (!_cooldowns.TryClaimVisit(visitor.OwnerId, hostOwnerId, day))
+        var (story, visitRefusal) = await _visits.RunAsync(visitor, host, Context.Channel.Id, now);
+        if (story is null)
         {
-            await RespondAsync(PlynlingText.VisitedToday(visitor.OwnerId), ephemeral: true, allowedMentions: AllowedMentions.None);
-            return;
-        }
-        var met = await _plynlings.VisitAsync(visitor.Id, host.Id, now);
-        if (met is not { } pair)
-        {
-            _cooldowns.ReleaseVisit(visitor.OwnerId, hostOwnerId, day);
-            await RespondAsync(PlynlingText.Unknown, ephemeral: true);
+            await RespondAsync(visitRefusal, ephemeral: true, allowedMentions: AllowedMentions.None);
             return;
         }
 
@@ -236,10 +231,6 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         // place (that answers the click inside Discord's 3 s), and the story is a follow-up — a new
         // message at the bottom of the channel — opened on its first step with ◀ ▶ already there:
         // the reader pages through at their own pace, nothing moves on its own.
-        var channel = Context.Channel.Id;
-        var story = _stories.Add(
-            PlynlingVisitStory.Build(pair, PlynlingPlayCards.VisitOutcomeLines(pair), now, Random.Shared, pool => _picker.Pick(channel, pool)),
-            Random.Shared);
         await component.UpdateAsync(m =>
         {
             m.Components = PlynlingPlayCards.BuildKnockClosed(PlynlingText.VisitAccepted(story.Visitor.Name, story.Host.Name));

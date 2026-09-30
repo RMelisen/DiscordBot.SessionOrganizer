@@ -25,12 +25,14 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
     private readonly ShameService _shame;
     private readonly PlynlingPlayService _play;
     private readonly CosmeticService _cosmetics;
+    private readonly PlynlingVisitRunner _visits;
     private readonly ILogger<PlynlingModule> _logger;
 
     public PlynlingModule(PlynlingService plynlings, ResponsePicker picker,
         PlynlingAnnouncer announcer, PlynlingCooldowns cooldowns, ShameService shame, PlynlingPlayService play,
-        CosmeticService cosmetics, ILogger<PlynlingModule> logger)
+        CosmeticService cosmetics, PlynlingVisitRunner visits, ILogger<PlynlingModule> logger)
     {
+        _visits = visits;
         _play = play;
         _cosmetics = cosmetics;
         _plynlings = plynlings;
@@ -167,7 +169,8 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         var mine = await _plynlings.GetCurrentAsync(Context.Guild.Id, Context.User.Id, now);
-        var theirs = user.IsBot ? null : await _plynlings.GetCurrentAsync(Context.Guild.Id, user.Id, now);
+        // Bots have no Plynling — except her, whose Ping-Qilin can be visited.
+        var theirs = user.IsBot && user.Id != PlynlingMascot.OwnerId ? null : await _plynlings.GetCurrentAsync(Context.Guild.Id, user.Id, now);
         string? refusal =
             mine is null ? PlynlingText.NoPlynling
             : mine.DiedAt is not null ? PlynlingText.Dead(mine.Gender)
@@ -181,6 +184,32 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         if (refusal is not null || mine is null)
         {
             await RespondAsync(refusal, ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+
+        // At her home nobody could press « Accueillir », so she opens the door herself: no knock, no
+        // ping, straight to the story — the same way « Accueillir » tells it.
+        if (theirs is not null && PlynlingMascot.Is(theirs))
+        {
+            var (story, visitRefusal) = await _visits.RunAsync(mine, theirs, Context.Channel.Id, now);
+            if (story is null)
+            {
+                await RespondAsync(visitRefusal, ephemeral: true, allowedMentions: AllowedMentions.None);
+                return;
+            }
+            var welcome = string.Format(_picker.Pick(Context.Channel.Id, BotResponses.MascotWelcomeLines),
+                PlynlingCardUi.SafeName(mine.Name), $"<@{Context.User.Id}>");
+            await RespondAsync(components: PlynlingPlayCards.BuildKnockClosed($"{welcome}\n-# L'histoire est juste en dessous ↓"),
+                flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+            try
+            {
+                await FollowupAsync(components: PlynlingPlayCards.BuildVisitStory(story, 0),
+                    flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Visit story {Story}: could not be posted", story.Id);
+            }
             return;
         }
 
@@ -252,7 +281,10 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         // The owner's first look of the day at a happy Plynling may turn up a gift.
         var gift = await _plynlings.TryGiftAsync(plynling, Context.User.Id, now, Random.Shared);
         // Otherwise, now and then, what its typed passion has it thinking about (a gift says enough).
+        // Her own is introduced by her, every time — nobody else's card speaks for its owner.
         var line = gift.Any ? PlynlingCareService.GiftLine(plynling, gift)
+            : PlynlingMascot.Is(plynling) && plynling.DiedAt is null
+                ? string.Format(_picker.Pick(Context.Channel.Id, BotResponses.MascotViewLines), PlynlingCardUi.SafeName(plynling.Name))
             : PlynlingPassions.Thought(plynling, now, Random.Shared) is (var pool, var typed)
                 ? string.Format(_picker.Pick(Context.Channel.Id, pool), PlynlingCardUi.SafeName(plynling.Name), typed)
                 : null;

@@ -246,6 +246,7 @@ public static class PlynlingLife
     public static bool Settle(Plynling p, DateTimeOffset now, SicknessRoll? roll = null)
     {
         if (IsDead(p)) return false;
+        if (PlynlingMascot.Is(p)) return Tend(p, now);          // she looks after it: nothing to play out
         roll ??= PlynlingSickness.Roll;
         var changed = false;
 
@@ -285,6 +286,45 @@ public static class PlynlingLife
         }
 
         return changed;
+    }
+
+    // What the bot's own Plynling gets instead of Settle: it never starves, is never dirty enough to
+    // matter and never falls ill, whoever does or does not press a button. Each need is topped up
+    // the moment it falls below TendFloor — to less than full, so a meal from someone else is
+    // still worth giving — and the mornings are marked played without rolling, so it has no
+    // sickness to journal and nothing to replay if the mascot were ever unbound. A freeze is
+    // staff's and is left alone.
+    public const double TendFloor = 0.5;
+    private const double TendMeal = 0.9;
+    private const double TendCheer = 0.8;
+
+    public static bool Tend(Plynling p, DateTimeOffset now)
+    {
+        var changed = false;
+        var morning = MorningDayAtOrBefore(now);
+        if (p.LastMorningDay != morning)
+        {
+            p.LastMorningDay = morning;
+            changed = true;
+        }
+        if (IsSick(p))
+        {
+            Cure(p);
+            changed = true;
+        }
+        if (IsFrozen(p)) return changed;
+
+        var hungry = HungerAt(p, now) < TendFloor;
+        var sad = HappinessAt(p, now) < TendFloor;
+        var dirty = HygieneAt(p, now) < TendFloor;
+        if (!hungry && !sad && !dirty) return changed;
+
+        Rebase(p, now);
+        if (hungry) p.Hunger = TendMeal;
+        if (sad) p.Happiness = TendCheer;
+        if (dirty) p.Hygiene = 1.0;
+        p.WarningSent = false;
+        return true;
     }
 
     // One morning: the onset roll when healthy; otherwise, from the second sick morning, the death

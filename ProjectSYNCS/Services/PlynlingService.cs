@@ -121,6 +121,31 @@ public class PlynlingService
         return (AdoptOutcome.Adopted, plynling);
     }
 
+    // Ping-Qilin, the bot's own: created once per guild, and never again — any row owned by the bot
+    // there, alive or not, counts. Safe to call on every Ready and every join; a raced second
+    // insert is turned away by the one-living-per-owner index.
+    public async Task<Plynling?> EnsureMascotAsync(ulong guildId, DateTimeOffset now)
+    {
+        if (PlynlingMascot.OwnerId == 0) return null;
+        var owner = PlynlingMascot.OwnerId;
+        if (await _db_context.Plynlings.AnyAsync(p => p.GuildId == guildId && p.OwnerId == owner)) return null;
+
+        var plynling = PlynlingLife.Create(guildId, owner, PlynlingMascot.Name, PlynlingMascot.Species, PlynlingMascot.Gender, now);
+        plynling.Passion = PlynlingMascot.Passion;
+        _db_context.Plynlings.Add(plynling);
+        try
+        {
+            await _db_context.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            return null;
+        }
+        await AddMomentAsync(plynling, JournalKind.Adopted, null, now);
+        await _db_context.SaveChangesAsync();
+        return plynling;
+    }
+
     public async Task<FeedResult> FeedAsync(int plynlingId, ulong actorId, PlynlingFood food, DateTimeOffset now)
     {
         var info = PlynlingCatalog.Info(food);
@@ -393,7 +418,8 @@ public class PlynlingService
             };
             if (Closeness(after) > Closeness(before)) evt = BadgeEvent.None;     // drifting apart earns nothing
         }
-        async Task<ItemFind?> FindFor(Plynling p) => good && findRng.NextDouble() < ItemCatalog.VisitFindChance
+        // Her own Plynling finds nothing: an item would land in the bot's inventory, where nobody can use it.
+        async Task<ItemFind?> FindFor(Plynling p) => good && !PlynlingMascot.Is(p) && findRng.NextDouble() < ItemCatalog.VisitFindChance
             ? await InventoryService.GrantAsync(_db_context, p.GuildId, p.OwnerId, ItemCatalog.DrawCollectible(findRng, now), now)
             : null;
         var visitorFind = await FindFor(visitor);
@@ -738,7 +764,9 @@ public class PlynlingService
             await AddMomentAsync(p, JournalKind.Badge, badge.Key, now);
         }
         var reward = fresh.Sum(b => b.Reward);
-        if (reward > 0)
+        // The bot's own Plynling earns its badges but is paid nothing: it would open a wallet for
+        // the bot and put cailloux from nowhere into /admin dashboard.
+        if (reward > 0 && !PlynlingMascot.Is(p))
         {
             var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, p.GuildId, p.OwnerId);
             wallet.Balance += reward;

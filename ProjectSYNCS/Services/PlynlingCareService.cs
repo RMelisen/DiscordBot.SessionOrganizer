@@ -37,7 +37,9 @@ public class PlynlingCareService
             return new CareReply(null, Refusal(outcome, plynling?.Gender ?? PlynlingGender.Male));
         }
 
-        var (petPool, typed) = PlynlingPassions.PickLines(BotResponses.PlynlingPetLines, BotResponses.PlynlingPetTypedLines, plynling, Random.Shared);
+        var (petPool, typed) = PlynlingMascot.Is(plynling)
+            ? (BotResponses.MascotPetLines, "")                   // her own: she has something to say about it
+            : PlynlingPassions.PickLines(BotResponses.PlynlingPetLines, BotResponses.PlynlingPetTypedLines, plynling, Random.Shared);
         var line = string.Format(_picker.Pick(channelId, petPool), PlynlingCardUi.SafeName(plynling.Name), typed);
         var text = $"{line} — {PlynlingText.PettedBy(plynling.Gender, actorId)}";
         if (badges.Count > 0) text += "\n" + PlynlingBadges.NewBadgeLines(badges, plynling.Gender);
@@ -57,7 +59,10 @@ public class PlynlingCareService
         {
             _cooldowns.Bath.Release(plynlingId);
             var g = plynling?.Gender ?? PlynlingGender.Male;
-            return new CareReply(null, outcome == CareOutcome.Wasted ? PlynlingText.AlreadyClean(g) : Refusal(outcome, g));
+            return new CareReply(null,
+                outcome == CareOutcome.Wasted ? PlynlingText.AlreadyClean(g)
+                : outcome == CareOutcome.NotOwner && plynling is not null && PlynlingMascot.Is(plynling) ? PlynlingText.MascotBath
+                : Refusal(outcome, g));
         }
 
         var line = string.Format(_picker.Pick(channelId, BotResponses.PlynlingBathLines.For(plynling.Gender)),
@@ -105,7 +110,9 @@ public class PlynlingCareService
 
         var info = PlynlingCatalog.Info(food);
         var g = result.Plynling.Gender;
-        var (feedPool, typed) = PlynlingPassions.PickLines(BotResponses.PlynlingFeedLines, BotResponses.PlynlingFeedTypedLines, result.Plynling, Random.Shared);
+        var (feedPool, typed) = PlynlingMascot.Is(result.Plynling)
+            ? (BotResponses.MascotFeedLines, "")
+            : PlynlingPassions.PickLines(BotResponses.PlynlingFeedLines, BotResponses.PlynlingFeedTypedLines, result.Plynling, Random.Shared);
         var line = string.Format(_picker.Pick(channelId, feedPool),
             PlynlingCardUi.SafeName(result.Plynling.Name), info.WithArticle, typed);
         // Someone else's: say who paid, and that it cost them double.

@@ -125,6 +125,9 @@ public static class PlynlingText
     public static string ConfessionAccepted(string a, string b) => $"💞 **{a}** a déclaré sa flamme à **{b}**... et c'est oui !";
     public static string ConfessionRefused(string a, string b) => $"💔 **{a}** a déclaré sa flamme à **{b}**... mais c'est non.";
     public static string BrokeUp(string a, string b) => $"💔 **{a}** et **{b}** se sont séparés.";
+    // « Laver » on her own Plynling, pressed by anyone: she baths it herself.
+    public const string MascotBath = "C'est moi qui lui donne son bain. Personne d'autre. Question de confiance (¬_¬)";
+
     public const string VisitSelf = "Ton Plynling ne peut pas se rendre visite à lui-même !";
     public const string NotYourInvite = "Cette invitation ne t'est pas adressée.";
     public const string VisitorGone = "Le visiteur n'est plus là...";

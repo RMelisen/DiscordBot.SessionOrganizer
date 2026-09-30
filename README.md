@@ -209,6 +209,11 @@ A **Plynling** is a small mushroom creature each member can adopt — one at a t
 Its species is rolled among seven mushrooms, all equally likely.
 Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Plynling*.
 
+The bot has one of her own: **Ping-Qilin**, a girl Amanite whose passion is naps. Anyone can see
+her with `/plynling view user:@SYNCS`, pet and feed her from her card, and take their own Plynling
+to visit with `/plynling visit user:@SYNCS` — she opens the door herself. She never dies: SYNCS
+looks after her.
+
 - **Hunger** empties in 2 days and **happiness** in 36 hours. At 0% hunger it **dies** — really.
   Both are looked after from its card (`/plynling view [user]`): **Nourrir** (Champignon,
   Shiitake, Morille, Truffe) costs **cailloux** — anyone can feed anyone's, but someone else's
