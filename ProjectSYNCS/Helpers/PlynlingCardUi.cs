@@ -33,7 +33,7 @@ public static class PlynlingCardUi
         var title = CosmeticSlots.Worn(p, CosmeticSlot.Title) is { } t ? $"*« {CosmeticCatalog.TitleFor(t, p.Gender)} »*\n" : "";
         var accessory = CosmeticSlots.Worn(p, CosmeticSlot.Accessory) is { } a ? $"\nPorte {a.Emoji} {a.Name}" : "";
         return $"## {SafeName(p.Name)}\n" + title +
-               $"{p.Gender.Symbol()} {info.Name} · *{PlynlingCatalog.RarityLabel(info.Rarity)}*\n" +
+               $"{p.Gender.Symbol()} {info.Name}\n" +
                $"À <@{p.OwnerId}> · {StageLabel(PlynlingLife.Stage(p, now), p.Gender)} · {p.Gender.Agree("âgé", "âgée")} de {age}" +
                accessory +
                "\n" + PassionsLine(p) +
