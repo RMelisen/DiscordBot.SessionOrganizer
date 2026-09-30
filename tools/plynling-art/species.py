@@ -331,6 +331,8 @@ def finish(g, p, state, S, face_oy=0, face_ox=0, shadow=True, pose=None, origina
                 c = lerp(c, PALE, 0.28)
             elif state == "sick":
                 c = lerp(c, SICK_TINT, 0.22)
+            if dirt.ACTIVE:
+                c = lerp(c, dirt.GRIME, dirt.GRIME_SHARE)
             im.putpixel((x, y), c + (255,))
     if original:
         extras(im, state, p, pose, pose.body)

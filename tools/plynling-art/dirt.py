@@ -1,4 +1,4 @@
-"""The dirt overlay: mud smudges and two rising stink wisps on a living Plynling's card picture
+"""The dirt overlay: a grime tint, mud smudges, three rising stink wisps and a fly on a living Plynling's card picture
 when it is « sale ».
 
 Painted on the model grid *before* the face, so the face always sits on top of the mud and the
@@ -53,41 +53,64 @@ def muddy(g, face_ox=0, face_oy=0):
         y = caps[0] + (caps[-1] - caps[0]) * 2 // 3                    # the lower, wider part of the cap
         left, right = _span(g, y, "cap")
         stamp(left + (right - left) // 4, y, CAP_BLOB, "cap")
-        stamp(left + (right - left) * 3 // 4, y - 1, CAP_DOT, "cap")
+        stamp(left + (right - left) * 3 // 4, y - 1, CAP_BLOB, "cap")
+        top = caps[0] + max(1, (caps[-1] - caps[0]) // 3)              # and one higher up
+        if (r := _span(g, top, "cap")):
+            stamp((r[0] + r[1]) // 2 + 1, top, CAP_DOT, "cap")
     stems = [y for y in range(N) if _span(g, y, "stem")]
     if stems:
-        low = stems[-1] - 1                                             # a splash on the feet
+        # a streak running down from under the brim, on the left
+        left, _ = _span(g, stems[0], "stem")
+        for dy, c in ((0, MUD_DARK), (1, MUD), (2, MUD), (3, MUD_LIGHT)):
+            stamp(left + 1, stems[0] + dy, ((0, 0, c),), "stem")
+        low = stems[-1] - 1                                             # splashes on both feet
         left, right = _span(g, low, "stem")
-        stamp(left + 1, low, SPLASH, "stem")
-        stamp(right - 2, low, DOT, "stem")
+        stamp(left + 1, low, BLOB, "stem")
+        stamp(right - 1, low, SPLASH, "stem")
 
 
-STINK = (150, 168, 104)
+# A brownish grime over the whole Plynling, so « sale » reads at a glance even where no mud landed.
+GRIME, GRIME_SHARE = (132, 104, 72), 0.16
+
+STINK = (128, 158, 74)
 # A wisp: a little zigzag three rows tall, which reads as a wavy line at this size.
 WISP = ((0, 0), (1, 1), (0, 2), (1, 3))
+FLY, WING = (40, 36, 40), (214, 226, 236)
 
 
 def stink(im, f):
-    """Two stink wisps rising straight up beside the body's left flank, from the ground to just
-    under the brim, fading as they climb, half a loop apart. The left, because the right already
-    carries the heart, the sweat drop and the « z »s; and beside the body because the caps fill
-    the top of the picture. Measured from the drawing, so they fit every species and stage."""
+    """Three stink wisps rising straight up beside the body's left flank, from the ground to just
+    under the brim, fading as they climb, a third of a loop apart — and a fly hovering above them,
+    bobbing up and down on the spot. The left, because the right already carries the heart, the
+    sweat drop and the « z »s; and beside the body because the caps fill the top of the picture.
+    Measured from the drawing, so they fit every species and stage. Nothing moves sideways."""
     px = im.load()
     solid = lambda x, y: 0 <= x < N and 0 <= y < N and px[x, y][3] == 255
+
+    def put(x, y, c, a=255):
+        if 0 <= x < N and 0 <= y < N and not solid(x, y):              # never over the Plynling
+            px[x, y] = c + (a,)
+
     left = next((x for x in range(N) if solid(x, 24)), None)
     if left is None:
         return
     bottom = 27
-    for x, phase in ((left - 4, 0), (left - 7, 8)):
+    ceiling_at = lambda x: max((y for y in range(bottom) if solid(x, y) or solid(x + 1, y)), default=-1)
+    for x, phase in ((left - 3, 0), (left - 6, 5), (left - 9, 11)):
         if x < 0:
             continue
-        ceiling = max((y for y in range(bottom) if solid(x, y) or solid(x + 1, y)), default=-1)
-        room = bottom - ceiling - 4                                     # rows the wisp can climb
+        room = bottom - ceiling_at(x) - 4                               # rows the wisp can climb
         if room < 3:
             continue
         k = (f + phase) % 16                                            # 0..15 along its climb
         y0 = bottom - 3 - k * room // 16
-        a = 220 if k < 9 else max(40, 220 - (k - 8) * 28)               # fading near the top
+        a = 255 if k < 9 else max(60, 255 - (k - 8) * 28)               # fading near the top
         for dx, dy in WISP:
-            if not solid(x + dx, y0 + dy):                              # never over the Plynling
-                px[x + dx, y0 + dy] = STINK + (a,)
+            put(x + dx, y0 + dy, STINK, a)
+    # the fly: in the open air left of the body, well under the brim, hopping up a pixel and back
+    x = max(left - 6, 2)
+    y = min(max(ceiling_at(x) + 4, 13), 19) - (1 if f % 4 < 2 else 0)
+    put(x, y, FLY)
+    put(x + 1, y, FLY)
+    put(x - 1, y - 1, WING, 230)
+    put(x + 2, y - 1, WING, 230)

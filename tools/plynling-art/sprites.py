@@ -11,7 +11,6 @@ LID = (150, 122, 104)
 ANGRY_FLUSH = (232, 96, 96)
 PALE = (206, 204, 204)
 SICK_BLUSH = (140, 186, 96)
-THERMO_GLASS, THERMO_RED = (176, 196, 222), (214, 44, 44)
 
 
 def build(state, sp, frame=0, shadow=True, stage="adult", dirty=False):
@@ -158,13 +157,9 @@ def face(g, state, f, ox=0, oy=0, skin=None, skin_out=None, blink=False, tear=0,
     elif state == "sick":
         tired_eye(12)                                                   # heavy lids, bags under the eyes
         tired_eye(18)
-        for x, y in ((12, 24), (13, 23), (14, 24), (15, 23)):          # a queasy, wavy mouth
+        for x, y in ((13, 24), (14, 23), (15, 24), (16, 23), (17, 24), (18, 23)):   # a queasy, wavy mouth
             P(x, y, INK)
         blush(SICK_BLUSH)                                               # a greenish flush for the pink
-        for x in (16, 17, 18):                                          # a thermometer in the corner
-            P(x, 24, THERMO_GLASS)
-        P(19, 24, THERMO_RED)
-        P(19, 25, THERMO_RED)
     elif state == "sleeping":
         for x0 in (12, 18):                                             # eyes shut, lids curved down
             P(x0 - 1, 20, INK)
