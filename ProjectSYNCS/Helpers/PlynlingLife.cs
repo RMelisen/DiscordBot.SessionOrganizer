@@ -89,6 +89,21 @@ public static class PlynlingLife
         p.SickNotified = false;
     }
 
+    // /debug plynling: set its hygiene (0..1) and/or its sickness, to test what is rare by design.
+    // Falling sick this way counts from this morning's 05:00, like a real onset.
+    public static void DebugSet(Plynling p, DateTimeOffset now, double? hygiene, bool? sick)
+    {
+        Rebase(p, now);
+        if (hygiene is { } h) p.Hygiene = Clamp(h);
+        if (sick == true && !IsSick(p))
+        {
+            p.SickSince = MorningAt(MorningDayAtOrBefore(now));
+            p.Recovery = 0;
+            p.SickNotified = false;
+        }
+        if (sick == false) Cure(p);
+    }
+
     public static Plynling Create(ulong guildId, ulong ownerId, string name, PlynlingSpecies species, PlynlingGender gender, DateTimeOffset now) => new()
     {
         GuildId = guildId,

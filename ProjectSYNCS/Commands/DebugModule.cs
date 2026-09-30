@@ -22,7 +22,8 @@ namespace ProjectSYNCS.Commands;
 // intercepts mentions of him and replies, formally, that he is unavailable (in memory only — a
 // restart clears the flag).
 //
-// No [CommandContextType]: nothing here reads Context.Guild, and all three work from a DM.
+// No [CommandContextType]: tell, dm and absent never read Context.Guild and work from a DM;
+// /debug plynling does, and checks for a DM itself rather than hiding the whole group there.
 [Group("debug", "Outils du propriétaire du bot")]
 public class DebugModule : InteractionModuleBase<SocketInteractionContext>
 {
@@ -32,9 +33,17 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         [ChoiceDisplay("Désactiver")] Off,
     }
 
+    public enum SickState
+    {
+        [ChoiceDisplay("Inchangé")] Unchanged,
+        [ChoiceDisplay("Malade")] Sick,
+        [ChoiceDisplay("Guéri")] Healthy,
+    }
+
     private readonly ILogger<DebugModule> _logger;
     private readonly AvailabilityService _availability;
     private readonly ResponsePicker _picker;
+    private readonly PlynlingService _plynlings;
 
     // Discord caps a message at 2000 characters; leave room for the herald line
     // and the blockquote markers.
@@ -45,8 +54,9 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     private static readonly Regex _messageLinkRegex =
         new(@"channels/(\d+)/(\d+)/(\d+)", RegexOptions.Compiled);
 
-    public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability)
+    public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings)
     {
+        _plynlings = plynlings;
         _availability = availability;
         _logger = logger;
         _picker = picker;
@@ -372,6 +382,36 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
             return (null, null, "Je ne retrouve pas ce message — il a peut-être été supprimé. ❌");
 
         return (channel, original, null);
+    }
+
+    // Sickness is rare by design and could take days to reach, so the owner can force it — and a
+    // low hygiene — on his own living Plynling to test the card, the art and the refusals. The
+    // hygiene default (-1) means « unchanged »: Discord only enforces 0–100 on what is typed.
+    [SlashCommand("plynling", "Régler l'hygiène ou la maladie de ton propre Plynling (tests)")]
+    public async Task PlynlingAsync(
+        [Summary("hygiene", "Hygiène en %")] [MinValue(0)] [MaxValue(100)] int hygiene = -1,
+        [Summary("sick", "Malade ou non")] SickState sick = SickState.Unchanged)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+        if (Context.Guild is null)
+        {
+            await RespondAsync("Sur un serveur, pas en message privé.", ephemeral: true);
+            return;
+        }
+
+        var p = await _plynlings.DebugSetAsync(Context.Guild.Id, Context.User.Id,
+            hygiene >= 0 ? hygiene / 100.0 : null,
+            sick switch { SickState.Sick => true, SickState.Healthy => false, _ => null },
+            DateTimeOffset.UtcNow);
+        await RespondAsync(p is null
+                ? PlynlingText.NoPlynling
+                : $"🔧 **{PlynlingCardUi.SafeName(p.Name)}** : hygiène {Math.Round(p.Hygiene * 100)} %, " +
+                  $"{(PlynlingLife.IsSick(p) ? "malade" : "en bonne santé")}.",
+            ephemeral: true, allowedMentions: AllowedMentions.None);
     }
 
     [SlashCommand("absent", "Activer ou désactiver ton mode absent")]

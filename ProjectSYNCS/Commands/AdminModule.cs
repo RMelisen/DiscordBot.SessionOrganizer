@@ -6,7 +6,7 @@ using ProjectSYNCS.Services;
 namespace ProjectSYNCS.Commands;
 
 // /admin — every moderation action in one place: /admin xp add|remove and /admin plynling
-// rename|resurrect. Settings are not actions and stay in /config. Staff freezing or thawing
+// rename|resurrect|passion-reset|cure. Settings are not actions and stay in /config. Staff freezing or thawing
 // someone's Plynling stays in /plynling freeze|thaw user:, because players use those same
 // commands on their own.
 //
@@ -256,6 +256,26 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
             await RespondAsync($"✨ **{PlynlingCardUi.SafeName(plynling.Name)}** est de retour (annoncé dans <#{PlynlingAnnouncer.GameChannelId}>).",
                 ephemeral: true, allowedMentions: AllowedMentions.None);
             await _announcer.AnnounceResurrectionAsync(plynling, now);   // after the reply — see PlynlingModule.FreezeAsync
+        }
+
+        // Staff only. Silent on purpose: no DM — the owner sees it on the card.
+        [SlashCommand("cure", "Guérir le Plynling malade de quelqu'un")]
+        public async Task CureAsync([Summary("user", "À qui est le Plynling")] IUser user)
+        {
+            if (!SessionPermissions.IsStaff(Context.User))
+            {
+                await RespondAsync(PlynlingText.StaffOnly, ephemeral: true);
+                return;
+            }
+
+            var (outcome, plynling) = await _plynlings.CureAsync(Context.Guild.Id, user.Id, DateTimeOffset.UtcNow);
+            await RespondAsync(outcome switch
+            {
+                CureOutcome.Cured => $"💊 **{PlynlingCardUi.SafeName(plynling!.Name)}** est {plynling.Gender.Agree("guéri", "guérie")}.",
+                CureOutcome.NotSick => $"**{PlynlingCardUi.SafeName(plynling!.Name)}** n'est pas malade.",
+                CureOutcome.Dead => PlynlingText.Dead(plynling!.Gender),
+                _ => PlynlingText.NoneFor(user.Id),
+            }, ephemeral: true, allowedMentions: AllowedMentions.None);
         }
 
         // Staff only: the taught passion is free text shown publicly (card, visit stories), so

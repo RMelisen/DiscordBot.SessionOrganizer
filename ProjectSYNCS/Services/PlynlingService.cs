@@ -7,6 +7,8 @@ namespace ProjectSYNCS.Services;
 
 public enum AdoptOutcome { Adopted, AlreadyHasOne }
 
+public enum CureOutcome { Cured, NoPlynling, Dead, NotSick }
+
 public enum CareOutcome { Done, NoPlynling, Dead, Frozen, Wasted, TooPoor, Asleep, Sulking, TooSoon, NotOwner, NotSick, AlreadyTreated }
 
 // The happy gift: cailloux, or an item instead — never both. Nothing when both are empty.
@@ -214,6 +216,29 @@ public class PlynlingService
         await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActMedicine, 1, now);
         await _db_context.SaveChangesAsync();
         return (CareOutcome.Done, plynling, fromPantry, fromPantry ? 0 : ItemCatalog.MedicinePrice, wallet.Balance);
+    }
+
+    // /admin plynling cure: cured at once, silently — no DM; the owner sees it on the card.
+    public async Task<(CureOutcome Outcome, Plynling? Plynling)> CureAsync(ulong guildId, ulong ownerId, DateTimeOffset now)
+    {
+        var p = await GetCurrentAsync(guildId, ownerId, now);
+        if (p is null) return (CureOutcome.NoPlynling, null);
+        if (p.DiedAt is not null) return (CureOutcome.Dead, p);
+        if (!PlynlingLife.IsSick(p)) return (CureOutcome.NotSick, p);
+        PlynlingLife.Cure(p);
+        await AddMomentAsync(p, JournalKind.Recovered, null, now);
+        await _db_context.SaveChangesAsync();
+        return (CureOutcome.Cured, p);
+    }
+
+    // /debug plynling, on the owner's own living Plynling.
+    public async Task<Plynling?> DebugSetAsync(ulong guildId, ulong ownerId, double? hygiene, bool? sick, DateTimeOffset now)
+    {
+        var p = await GetCurrentAsync(guildId, ownerId, now);
+        if (p is null || p.DiedAt is not null) return null;
+        PlynlingLife.DebugSet(p, now, hygiene, sick);
+        await _db_context.SaveChangesAsync();
+        return p;
     }
 
     public async Task<(FreezeOutcome Outcome, Plynling? Plynling)> FreezeAsync(
