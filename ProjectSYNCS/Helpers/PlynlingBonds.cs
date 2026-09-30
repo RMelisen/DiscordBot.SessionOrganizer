@@ -31,6 +31,8 @@ public static class PlynlingBonds
     /// A pair's hidden compatibility, −20…+20: some pairs click, others never will. Derived from
     /// the two ids in either order, so it needs no storage and never changes.
     /// </summary>
+    public const int MaxCompatibility = 20;
+
     public static int Compatibility(int a, int b)
     {
         var (lo, hi) = a < b ? (a, b) : (b, a);
@@ -112,7 +114,8 @@ public static class PlynlingBonds
     public static Confession RollConfession(int compatibility, Random rng)
     {
         if (rng.NextDouble() >= ConfessionChance) return Confession.None;
-        return rng.NextDouble() < 0.5 + compatibility / 100.0 ? Confession.Accepted : Confession.Refused;
+        // 50 % for an average pair, 85 % at the maximum compatibility and 15 % at the minimum.
+        return rng.NextDouble() < 0.5 + 0.35 * compatibility / MaxCompatibility ? Confession.Accepted : Confession.Refused;
     }
 
     // What a visit does to both Plynlings' happiness, by the bond it ends on.

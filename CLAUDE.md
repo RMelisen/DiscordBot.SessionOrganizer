@@ -223,8 +223,10 @@ server into production as a newborn. It computes its timestamps in C# inside `Up
 the migration is applied — never generate a SQL script from it, or "now" is baked at script time.
 Its launch companion is `Helpers/PlynlingLaunch`: two people's *first* Plynling on production is
 chosen (a male Coprin, a female Girolle) rather than rolled — "first" meaning no row there and no
-abandonment on `/shame`, since an abandonment deletes the row — and that pair's Plynlings always get
-the maximum compatibility (+20). Their affinity starts at 0 like anyone's.
+abandonment on `/shame`, since an abandonment deletes the row. Those two are also made for each
+other without any special case at visit time: compatibility is a hash of the two Plynling ids, so
+whichever of them adopts second is given an explicit id (`PlynlingLaunch.MatchingId`, about one in
+41 qualifies) that hashes to the maximum, +20, with the other's. Their affinity starts at 0.
 
 **Never use `DateTime.Now`.** Production runs in UTC; all wall-clock handling goes
 through `Helpers/AppTime` (pinned to `Europe/Paris`, DST-aware via
