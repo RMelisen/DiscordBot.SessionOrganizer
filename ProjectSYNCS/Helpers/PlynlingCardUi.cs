@@ -78,12 +78,13 @@ public static class PlynlingCardUi
         return $"{Gauge("Faim", hunger)}{clock}\n" +
                $"{Gauge("Bonheur", happiness)}\n" +
                $"{Gauge("Hygiène", hygiene)}\n" +
-               $"**Humeur** · *{MoodLabel(PlynlingLife.Mood(p, now), p.Gender)}{dirty}*";
+               $"`{"Humeur".PadRight(GaugeLabelWidth)}{MoodLabel(PlynlingLife.Mood(p, now), p.Gender)}{dirty}`";
     }
 
     // The label sits inside the bar's code span, padded to one width: Discord's text is
     // proportional, so bold labels of different lengths pushed each bar to a different column.
-    // In monospace they all start, and end, at the same place — and so do the percentages.
+    // In monospace they all start, and end, at the same place — and so do the percentages. The
+    // mood line uses the same span and padding, so the mood starts where the bars do.
     private const int GaugeLabelWidth = 8;
 
     private static string Gauge(string label, double value) =>
