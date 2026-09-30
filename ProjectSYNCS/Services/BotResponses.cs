@@ -72,7 +72,7 @@ namespace ProjectSYNCS.Services;
 //
 //   Plynlings — every pool is a GenderedLines (M/F halves), picked with .For(p.Gender)
 //     PlynlingAdoptLines ....... a new Plynling
-//     PlynlingFeedLines · PlynlingPetLines · PlynlingBathLines ... shown on the card
+//     PlynlingFeedLines · PlynlingPetLines · PlynlingBathLines · PlynlingMedicineLines ... shown on the card
 //     PlynlingPassionTaughtLines ..... /plynling passion
 //     PlynlingPlayPlayerWonLines · PlynlingPlayPlayerLostLines ... end of a /plynling play game
 //     PlynlingVisitKnockLines ...... /plynling visit's knock (the story is Helpers/PlynlingVisitStory)
@@ -451,6 +451,31 @@ internal static class BotResponses
             "Un cri de joie : **{0}** vient de trouver sa passion. Pour aujourd'hui : {1}. Pour les mois à venir : {1}, encore {1}, et toujours {1}.",
             "Je note dans mon carnet : **{0}**, deuxième passion, {1}. Je note aussi que le calme, c'était bien, avant (¬_¬)",
             "**{0}** te regarde avec des étoiles plein les yeux. Merci pour {1}. Elle ne l'oubliera jamais, et ne te laissera pas l'oublier non plus ♡",
+        });
+
+    // Shown on the card after « Soigner ». {0} = name.
+    public static readonly GenderedLines PlynlingMedicineLines = new(
+        M: new[]
+        {
+            "💊 **{0}** avale son médicament en faisant une grimace héroïque. Courage ♡",
+            "Une cuillère pour **{0}**… il a tout recraché. Deuxième essai : réussi (¬_¬)",
+            "Il prend son médicament, puis se blottit contre toi. Ça va aller, **{0}** (╥﹏╥)",
+            "Médicament donné. **{0}** fait semblant d'aller déjà mieux, pour te faire plaisir. Ça marche un peu.",
+            "« Ça a un goût de caillou mouillé », dit toute la tête de **{0}**. Moi, je trouve qu'il exagère.",
+            "La dose du jour, avalée. En échange, **{0}** exige un bisou sur le front. Il l'a mérité ✨",
+            "**{0}** tend la patte pour son médicament comme un grand. Je suis fière de lui (˶ᵔ ᵕ ᵔ˶)",
+            "Tu as soigné **{0}**. Il dormira un peu mieux ce soir. Moi aussi, du coup.",
+        },
+        F: new[]
+        {
+            "💊 **{0}** avale son médicament en faisant une grimace héroïque. Courage ♡",
+            "Une cuillère pour **{0}**… elle a tout recraché. Deuxième essai : réussi (¬_¬)",
+            "Elle prend son médicament, puis se blottit contre toi. Ça va aller, **{0}** (╥﹏╥)",
+            "Médicament donné. **{0}** fait semblant d'aller déjà mieux, pour te faire plaisir. Ça marche un peu.",
+            "« Ça a un goût de caillou mouillé », dit toute la tête de **{0}**. Moi, je trouve qu'elle exagère.",
+            "La dose du jour, avalée. En échange, **{0}** exige un bisou sur le front. Elle l'a mérité ✨",
+            "**{0}** tend la patte pour son médicament comme une grande. Je suis fière d'elle (˶ᵔ ᵕ ᵔ˶)",
+            "Tu as soigné **{0}**. Elle dormira un peu mieux ce soir. Moi aussi, du coup.",
         });
 
     // Shown on the card after « Laver ». {0} = name.

@@ -30,6 +30,7 @@ public static class EconomyLog
     public const string SpendCosmetic = "spend.cosmetic";
     public const string SpendCraft = "spend.craft";
     public const string SpendAdmin = "spend.admin";
+    public const string SpendMedicine = "spend.medicine";
 
     // What people did.
     public const string ActMeal = "act.meal";
@@ -40,6 +41,7 @@ public static class EconomyLog
     public const string ActTrade = "act.trade";
     public const string ActGive = "act.give";
     public const string ActBath = "act.bath";
+    public const string ActMedicine = "act.medicine";
 
     // What they found and bought.
     public const string ItemFound = "item.found";
@@ -48,8 +50,8 @@ public static class EconomyLog
     public const string CosCrafted = "cos.crafted";
 
     public static readonly IReadOnlyList<string> Earnings = new[] { EarnWork, EarnPassive, EarnGame, EarnGift, EarnBadge, EarnCollection, EarnSale, EarnAdmin };
-    public static readonly IReadOnlyList<string> Spendings = new[] { SpendShop, SpendMeal, SpendMealOther, SpendCosmetic, SpendCraft, SpendAdmin };
-    public static readonly IReadOnlyList<string> Activities = new[] { ActMeal, ActPet, ActGame, ActVisit, ActForage, ActTrade, ActGive, ActBath };
+    public static readonly IReadOnlyList<string> Spendings = new[] { SpendShop, SpendMeal, SpendMealOther, SpendCosmetic, SpendCraft, SpendAdmin, SpendMedicine };
+    public static readonly IReadOnlyList<string> Activities = new[] { ActMeal, ActPet, ActGame, ActVisit, ActForage, ActTrade, ActGive, ActBath, ActMedicine };
     public static readonly IReadOnlyList<string> Findings = new[] { ItemFound, ItemSet, CosBought, CosCrafted };
 
     /// <summary>Adds <paramref name="amount"/> to today's counter. Not saved: the caller's save carries it.</summary>

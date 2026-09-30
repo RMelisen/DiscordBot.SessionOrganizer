@@ -435,6 +435,17 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         await ApplyAsync(await _care.BathAsync(id, Context.User.Id, Context.Channel.Id, DateTimeOffset.UtcNow));
     }
 
+    [ComponentInteraction("plyn:heal:*", ignoreGroupNames: true)]
+    public async Task OnHealAsync(string idStr)
+    {
+        if (!int.TryParse(idStr, out var id))
+        {
+            await RespondAsync(PlynlingText.Unknown, ephemeral: true);
+            return;
+        }
+        await ApplyAsync(await _care.MedicateAsync(id, Context.User.Id, Context.Channel.Id, DateTimeOffset.UtcNow));
+    }
+
     [ComponentInteraction("plyn:feed:*", ignoreGroupNames: true)]
     public async Task OnFeedAsync(string idStr, string[] selected)
     {

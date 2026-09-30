@@ -65,6 +65,31 @@ public class PlynlingCareService
         return new CareReply(PlynlingModule.BuildCard(plynling, now, line, partnerName: partner?.Name), null);
     }
 
+    // « Soigner »: owner only, once between two mornings, from the pantry or at MedicinePrice.
+    public async Task<CareReply> MedicateAsync(int plynlingId, ulong actorId, ulong channelId, DateTimeOffset now)
+    {
+        var (outcome, plynling, fromPantry, price, balance) = await _plynlings.MedicateAsync(plynlingId, actorId, now);
+        if (outcome != CareOutcome.Done || plynling is null)
+        {
+            var g = plynling?.Gender ?? PlynlingGender.Male;
+            return new CareReply(null, outcome switch
+            {
+                CareOutcome.TooPoor => PlynlingText.TooPoor(price, balance),
+                CareOutcome.NotSick => PlynlingText.NotSick(g),
+                CareOutcome.AlreadyTreated => PlynlingText.AlreadyTreated(g),
+                _ => Refusal(outcome, g),
+            });
+        }
+
+        var line = string.Format(_picker.Pick(channelId, BotResponses.PlynlingMedicineLines.For(plynling.Gender)),
+            PlynlingCardUi.SafeName(plynling.Name));
+        line += fromPantry
+            ? "\n-# 💊 un médicament de ton garde-manger"
+            : $"\n-# −{PebbleEconomy.Cailloux(price)} · il te reste {PebbleEconomy.Cailloux(balance)}";
+        var partner = await _plynlings.GetPartnerAsync(plynling);
+        return new CareReply(PlynlingModule.BuildCard(plynling, now, line, partnerName: partner?.Name), null);
+    }
+
     public async Task<CareReply> FeedAsync(int plynlingId, ulong actorId, PlynlingFood food, ulong channelId, DateTimeOffset now)
     {
         var result = await _plynlings.FeedAsync(plynlingId, actorId, food, now);

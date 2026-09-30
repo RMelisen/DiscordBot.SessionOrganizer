@@ -74,6 +74,7 @@ public sealed class PlynlingSweepService : BackgroundService
             try
             {
                 PlynlingLife.Settle(plynling, now);
+                await plynlings.FlushMomentsAsync(plynling);        // fell sick / recovered, if a morning did it
                 await plynlings.ProgressAsync(plynling, now);      // time's badges and stage moments
 
                 if (plynling.DiedAt is not null && !plynling.DeathAnnounced)

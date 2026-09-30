@@ -156,7 +156,7 @@ public static class PlynlingText
 
     // The item finds. Names are sanitised by the caller. A find is followed by any set it completed.
     public static string ItemLabel(ItemInfo item) =>
-        item.Kind == ItemKind.Food ? $"{item.Emoji} **{item.Name}**" : $"{item.Emoji} **{item.Name}** ({ItemCatalog.RarityLabel(item.Rarity)})";
+        item.Kind is ItemKind.Food or ItemKind.Care ? $"{item.Emoji} **{item.Name}**" : $"{item.Emoji} **{item.Name}** ({ItemCatalog.RarityLabel(item.Rarity)})";
 
     public static string GiftItem(string name, ItemInfo item) =>
         $"**{name}** a trouvé quelque chose pour toi : {ItemLabel(item)} !";
@@ -196,6 +196,12 @@ public static class PlynlingText
     public static string NotFrozen(PlynlingGender g) => g.Agree("Il n'est pas gelé.", "Elle n'est pas gelée.");
 
     // Freezing pauses the illness, so it would be a way out of the death rolls.
+    public static string NotSick(PlynlingGender g) =>
+        $"{g.Agree("Il", "Elle")} n'est pas malade : pas besoin de médicament.";
+
+    public static string AlreadyTreated(PlynlingGender g) =>
+        $"{g.Agree("Il", "Elle")} a déjà eu son médicament aujourd'hui. Le prochain après 5 h.";
+
     public static string SickNoFreeze(PlynlingGender g) =>
         $"{g.Agree("Il", "Elle")} est malade : on ne gèle pas un Plynling malade, on le soigne.";
 

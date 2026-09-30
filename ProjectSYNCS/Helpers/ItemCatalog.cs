@@ -1,6 +1,6 @@
 namespace ProjectSYNCS.Helpers;
 
-public enum ItemKind { Food, Collectible, Cosmetic }
+public enum ItemKind { Food, Collectible, Cosmetic, Care }
 
 public enum ItemRarity { Common, Uncommon, Rare, Legendary }
 
@@ -121,11 +121,18 @@ public static class ItemCatalog
     };
 
     // The shop's price for `quantity` of a food: the menu price each, 10 % off from 5.
-    public static long ShopPrice(FoodInfo food, int quantity)
+    public static long ShopPrice(FoodInfo food, int quantity) => BulkPrice(food.Price, quantity);
+
+    public static long BulkPrice(long unit, int quantity)
     {
-        var full = food.Price * quantity;
+        var full = unit * quantity;
         return quantity >= 5 ? (long)Math.Round(full * 0.9, MidpointRounding.AwayFromZero) : full;
     }
+
+    // The one care item: bought (/inventory medicine), held in the pantry, given from the card
+    // while the Plynling is sick. Its key is stored, so it is never renamed.
+    public const string MedicineKey = "care.medicine";
+    public const long MedicinePrice = 30;
 
     // Paris calendar: spring March–May, summer June–August, autumn September–November, winter the rest.
     public static Season SeasonAt(DateTimeOffset now) => AppTime.ToZoned(now).Month switch
@@ -194,6 +201,7 @@ public static class ItemCatalog
         var items = PlynlingCatalog.Foods
             .Select(f => new ItemInfo(FoodKey(f.Food), ItemKind.Food, "🍄", f.Name, null, ItemRarity.Common, Season.None, f.Food))
             .ToList();
+        items.Add(new ItemInfo(MedicineKey, ItemKind.Care, "💊", "Médicament", null, ItemRarity.Common, Season.None, null));
 
         void Add(string set, string key, string emoji, string name, ItemRarity rarity, Season season = Season.None) =>
             items.Add(new ItemInfo($"col.{key}", ItemKind.Collectible, emoji, name, set, rarity, season, null));

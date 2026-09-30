@@ -7,7 +7,7 @@ namespace ProjectSYNCS.Services;
 
 public enum AdoptOutcome { Adopted, AlreadyHasOne }
 
-public enum CareOutcome { Done, NoPlynling, Dead, Frozen, Wasted, TooPoor, Asleep, Sulking, TooSoon, NotOwner }
+public enum CareOutcome { Done, NoPlynling, Dead, Frozen, Wasted, TooPoor, Asleep, Sulking, TooSoon, NotOwner, NotSick, AlreadyTreated }
 
 // The happy gift: cailloux, or an item instead — never both. Nothing when both are empty.
 public sealed record GiftResult(long Cailloux, ItemFind? Find)
@@ -181,6 +181,39 @@ public class PlynlingService
         await EconomyLog.AddAsync(_db_context, plynling!.GuildId, EconomyLog.ActBath, 1, now);
         await _db_context.SaveChangesAsync();
         return (CareOutcome.Done, plynling);
+    }
+
+    // « Soigner »: owner only, once between two mornings. A dose from the owner's pantry, else
+    // MedicinePrice from the wallet — the feeding rule — in one save.
+    public async Task<(CareOutcome Outcome, Plynling? Plynling, bool FromPantry, long Price, long Balance)> MedicateAsync(
+        int plynlingId, ulong actorId, DateTimeOffset now)
+    {
+        var plynling = await GetByIdAsync(plynlingId, now);
+        if (plynling is null) return (CareOutcome.NoPlynling, null, false, 0, 0);
+        var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, plynling.GuildId, actorId);
+        var fromPantry = await InventoryService.CountAsync(_db_context, plynling.GuildId, actorId, ItemCatalog.MedicineKey) >= 1;
+        var lastMorning = PlynlingLife.MorningAt(plynling.LastMorningDay);
+        CareOutcome? refusal =
+            plynling.DiedAt is not null ? CareOutcome.Dead
+            : plynling.OwnerId != actorId ? CareOutcome.NotOwner
+            : plynling.FrozenAt is not null ? CareOutcome.Frozen
+            : PlynlingLife.IsAsleep(now) ? CareOutcome.Asleep
+            : !PlynlingLife.IsSick(plynling) ? CareOutcome.NotSick
+            : plynling.LastMedicineAt is { } dose && dose >= lastMorning ? CareOutcome.AlreadyTreated
+            : !fromPantry && wallet.Balance < ItemCatalog.MedicinePrice ? CareOutcome.TooPoor
+            : null;
+        if (refusal is { } r) return (r, plynling, false, ItemCatalog.MedicinePrice, wallet.Balance);
+
+        if (fromPantry) await InventoryService.TakeAsync(_db_context, plynling.GuildId, actorId, ItemCatalog.MedicineKey, 1);
+        else
+        {
+            wallet.Balance -= ItemCatalog.MedicinePrice;
+            await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.SpendMedicine, ItemCatalog.MedicinePrice, now);
+        }
+        plynling.LastMedicineAt = now;
+        await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActMedicine, 1, now);
+        await _db_context.SaveChangesAsync();
+        return (CareOutcome.Done, plynling, fromPantry, fromPantry ? 0 : ItemCatalog.MedicinePrice, wallet.Balance);
     }
 
     public async Task<(FreezeOutcome Outcome, Plynling? Plynling)> FreezeAsync(
@@ -493,7 +526,10 @@ public class PlynlingService
         var living = await _db_context.Plynlings.Where(x => x.GuildId == guildId && x.DiedAt == null).ToListAsync();
         var changed = false;
         foreach (var plynling in living)
+        {
             changed |= PlynlingLife.Settle(plynling, now);
+            await FlushMomentsAsync(plynling);
+        }
         if (changed) await _db_context.SaveChangesAsync();
 
         var query = _db_context.Plynlings.Where(x => x.GuildId == guildId && x.DiedAt != null);
@@ -508,7 +544,10 @@ public class PlynlingService
         var living = await _db_context.Plynlings.Where(x => x.GuildId == guildId && x.DiedAt == null).ToListAsync();
         var changed = false;
         foreach (var plynling in living)
+        {
             changed |= PlynlingLife.Settle(plynling, now);
+            await FlushMomentsAsync(plynling);
+        }
         if (changed) await _db_context.SaveChangesAsync();
         return living.Where(x => x.DiedAt is null).ToList();
     }
@@ -656,7 +695,18 @@ public class PlynlingService
     private async Task<Plynling?> SettledAsync(Plynling? plynling, DateTimeOffset now)
     {
         if (plynling is not null && PlynlingLife.Settle(plynling, now))
+        {
+            await FlushMomentsAsync(plynling);
             await _db_context.SaveChangesAsync();
+        }
         return plynling;
+    }
+
+    // Writes the moments a Settle produced (fell sick, recovered) into the journal. Not saved:
+    // the caller's save carries them, like every other moment.
+    public async Task FlushMomentsAsync(Plynling p)
+    {
+        foreach (var (kind, at) in p.PendingMoments) await AddMomentAsync(p, kind, null, at);
+        p.PendingMoments.Clear();
     }
 }

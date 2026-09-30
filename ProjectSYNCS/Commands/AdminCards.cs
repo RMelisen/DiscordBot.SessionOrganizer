@@ -48,13 +48,14 @@ public static class AdminCards
     {
         (EconomyLog.SpendShop, "boutique"), (EconomyLog.SpendMeal, "repas"), (EconomyLog.SpendMealOther, "repas offerts"),
         (EconomyLog.SpendCosmetic, "cosmétiques"), (EconomyLog.SpendCraft, "fabrication"), (EconomyLog.SpendAdmin, "staff"),
+        (EconomyLog.SpendMedicine, "médicaments"),
     };
 
     private static readonly (string Metric, string Label)[] ActivityLabels =
     {
         (EconomyLog.ActMeal, "Repas"), (EconomyLog.ActPet, "Caresses"), (EconomyLog.ActGame, "Parties"),
         (EconomyLog.ActVisit, "Visites"), (EconomyLog.ActForage, "Balades"), (EconomyLog.ActTrade, "Échanges"),
-        (EconomyLog.ActGive, "Objets offerts"), (EconomyLog.ActBath, "Bains"),
+        (EconomyLog.ActGive, "Objets offerts"), (EconomyLog.ActBath, "Bains"), (EconomyLog.ActMedicine, "Soins"),
     };
 
     private static readonly (string Metric, string Label)[] FindingLabels =

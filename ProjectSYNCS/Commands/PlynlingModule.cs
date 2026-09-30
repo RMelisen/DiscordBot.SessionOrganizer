@@ -604,7 +604,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     /// Static and Context-free so its component budget is checkable without a gateway.
-    /// Every control uses its own verb (<c>plyn:pet</c>, <c>plyn:bath</c>, <c>plyn:feed</c>): duplicated
+    /// Every control uses its own verb (<c>plyn:pet</c>, <c>plyn:bath</c>, <c>plyn:heal</c>, <c>plyn:feed</c>): duplicated
     /// custom ids are rejected outright by Discord, disabled components included.
     /// Nourrir is offered to everyone and refused in the handler for anyone but the
     /// owner — the real check is in code, as with every gate here.
@@ -650,10 +650,16 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             // No petting or washing a sleeping Plynling — the buttons go, feeding stays. Laver is
             // offered to everyone like the rest of the card and refused in the handler for anyone
             // but the owner.
+            // « Soigner » joins them only while it is sick.
             if (!PlynlingLife.IsAsleep(now))
-                builder.AddComponent(new ActionRowBuilder()
+            {
+                var row = new ActionRowBuilder()
                     .WithButton("🤲 Caresser", $"plyn:pet:{plynling.Id}", ButtonStyle.Primary)
-                    .WithButton("🛁 Laver", $"plyn:bath:{plynling.Id}", ButtonStyle.Secondary));
+                    .WithButton("🛁 Laver", $"plyn:bath:{plynling.Id}", ButtonStyle.Secondary);
+                if (PlynlingLife.IsSick(plynling))
+                    row.WithButton("💊 Soigner", $"plyn:heal:{plynling.Id}", ButtonStyle.Success);
+                builder.AddComponent(row);
+            }
 
             var menu = new SelectMenuBuilder()
                 .WithCustomId($"plyn:feed:{plynling.Id}")

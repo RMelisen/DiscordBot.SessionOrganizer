@@ -74,6 +74,17 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
             ephemeral: true);
     }
 
+    [SlashCommand("medicine", "Acheter des médicaments pour soigner un Plynling malade (−10 % dès 5)")]
+    public async Task MedicineAsync(
+        [Summary("quantity", "Combien (1 à 20)")] [MinValue(1)] [MaxValue(MaxShopQuantity)] int quantity = 1)
+    {
+        var (bought, price, balance) = await _inventory.BuyMedicineAsync(Context.Guild.Id, Context.User.Id, quantity, DateTimeOffset.UtcNow);
+        await RespondAsync(bought
+                ? PlynlingText.Bought(quantity, "Médicament", price, balance, discounted: quantity >= 5)
+                : $"{PlynlingText.ShopTooPoor} ({PebbleEconomy.Cailloux(price)}, tu en as {PebbleEconomy.Cailloux(balance)})",
+            ephemeral: true);
+    }
+
     [SlashCommand("give", "Offrir un objet de ton inventaire à quelqu'un")]
     public async Task GiveAsync(
         [Summary("user", "À qui l'offrir")] IUser user,
@@ -316,7 +327,10 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
                 var item = ItemCatalog.ByKey(ItemCatalog.FoodKey(f.Food))!;
                 return $"{item.Emoji} {item.Name} : **{Count(item.Key)}**";
             }));
-            embed.AddField("Garde-manger", pantry + "\n-# Nourrir puise ici d'abord : 1 pour ton Plynling, 2 pour celui d'un autre.");
+            var medicine = ItemCatalog.ByKey(ItemCatalog.MedicineKey)!;
+            pantry += $"\n{medicine.Emoji} {medicine.Name} : **{Count(medicine.Key)}**";
+            embed.AddField("Garde-manger", pantry + "\n-# Nourrir puise ici d'abord : 1 pour ton Plynling, 2 pour celui d'un autre. " +
+                "« Soigner » aussi, 1 médicament.");
 
             // One field per set (per rarity for a big one), holding only what is in hand.
             foreach (var set in ItemCatalog.Sets)

@@ -111,6 +111,19 @@ public class InventoryService
         return (true, price, wallet.Balance);
     }
 
+    /// <summary>/inventory medicine: like the food shop — the money and the doses land together.</summary>
+    public async Task<(bool Bought, long Price, long Balance)> BuyMedicineAsync(ulong guildId, ulong userId, int quantity, DateTimeOffset now)
+    {
+        var price = ItemCatalog.BulkPrice(ItemCatalog.MedicinePrice, quantity);
+        var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, guildId, userId);
+        if (wallet.Balance < price) return (false, price, wallet.Balance);
+        wallet.Balance -= price;
+        await AddAsync(_db_context, guildId, userId, ItemCatalog.MedicineKey, quantity, now);
+        await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.SpendShop, price, now);
+        await _db_context.SaveChangesAsync();
+        return (true, price, wallet.Balance);
+    }
+
     /// <summary>/inventory give: from one person's inventory to another's, in one save.</summary>
     public async Task<(GiveOutcome Outcome, List<CollectionSet> Completed)> GiveAsync(
         ulong guildId, ulong fromId, ulong toId, string key, int quantity, DateTimeOffset now)
