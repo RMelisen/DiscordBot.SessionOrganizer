@@ -11,8 +11,8 @@ public enum Confession { None, Accepted, Refused }
 /// <summary>
 /// Every rule of the relationships, pure: no database, no clock, and each draw takes the
 /// <see cref="Random"/> it should use. Visits move a pair's affinity (−100…+100) through a
-/// good scene or a squabble; the bond follows the affinity, except a couple, which only a
-/// confession makes and only a slide below <see cref="BreakUpBelow"/> undoes.
+/// good scene or a squabble; the bond follows the affinity (with a margin), except a couple,
+/// which only a confession makes and only a slide below <see cref="BreakUpBelow"/> undoes.
 /// </summary>
 public static class PlynlingBonds
 {
@@ -44,31 +44,65 @@ public static class PlynlingBonds
         }
     }
 
-    // The chance a visit goes well: 75 %, tilted by compatibility and by how they already get on.
-    public static double GoodSceneChance(int compatibility, PlynlingBond bond)
+    // Tuned by simulation (see CLAUDE.md): BaseSceneChance sits just above the 55 % at which good
+    // and bad scenes cancel out, and AffinityPull draws a pair back toward the middle, so where a
+    // pair settles is set by its compatibility — about +2 + 4 × compatibility — with wide scatter,
+    // rather than every pair ending as best friends. The pull is also what keeps enemies from
+    // being a dead end.
+    public const double BaseSceneChance = 0.55;
+    public const double AffinityPull = 400;
+    public const double EnemiesPenalty = 0.05;   // a grudge: enemies find it a little harder to make up
+    public const double LoversBonus = 0.10;      // a couple feels no pull, or nearly all would break up
+    // How far past a band's edge affinity must go before the bond changes, so a pair sitting on a
+    // boundary does not flip back and forth (and get announced) every visit.
+    public const int BondMargin = 10;
+
+    // The chance a visit goes well: tilted by compatibility, pulled back by how far the pair already is
+    // from the middle — except a couple, which instead gets a bonus.
+    public static double GoodSceneChance(int compatibility, PlynlingBond bond, int affinity)
     {
-        var chance = 0.75 + compatibility / 100.0
-                     - (bond == PlynlingBond.Enemies ? 0.15 : bond == PlynlingBond.Rivals ? 0.05 : 0);
-        return Math.Clamp(chance, 0.10, 0.95);
+        var chance = BaseSceneChance + compatibility / 100.0
+                     + (bond == PlynlingBond.Lovers ? LoversBonus : -affinity / AffinityPull)
+                     - (bond == PlynlingBond.Enemies ? EnemiesPenalty : 0);
+        return Math.Clamp(chance, 0.05, 0.95);
     }
 
     /// <summary>One visit's scene: whether it went well, and what it did to their affinity.</summary>
-    public static (bool Good, int Delta) RollScene(int compatibility, PlynlingBond bond, Random rng) =>
-        rng.NextDouble() < GoodSceneChance(compatibility, bond)
+    public static (bool Good, int Delta) RollScene(int compatibility, PlynlingBond bond, int affinity, Random rng) =>
+        rng.NextDouble() < GoodSceneChance(compatibility, bond, affinity)
             ? (true, rng.Next(10, 16))
             : (false, -rng.Next(12, 19));
 
     /// <summary>
     /// The bond an affinity makes. A couple stays a couple until its affinity falls below
-    /// <see cref="BreakUpBelow"/> — then it becomes whatever that affinity says.
+    /// <see cref="BreakUpBelow"/> — then it becomes whatever that affinity says. Any other bond
+    /// changes only once affinity is <see cref="BondMargin"/> past the edge of its band.
     /// </summary>
-    public static PlynlingBond BondFor(int affinity, PlynlingBond current) =>
-        current == PlynlingBond.Lovers && affinity >= BreakUpBelow ? PlynlingBond.Lovers
-        : affinity <= EnemiesAtMost ? PlynlingBond.Enemies
+    public static PlynlingBond BondFor(int affinity, PlynlingBond current)
+    {
+        if (current == PlynlingBond.Lovers)
+            return affinity >= BreakUpBelow ? PlynlingBond.Lovers : Band(affinity);
+        var next = Band(affinity);
+        if (next == current) return current;
+        return Band(affinity + (Rank(next) > Rank(current) ? -BondMargin : BondMargin));
+    }
+
+    private static PlynlingBond Band(int affinity) =>
+        affinity <= EnemiesAtMost ? PlynlingBond.Enemies
         : affinity <= RivalsAtMost ? PlynlingBond.Rivals
         : affinity >= BestFriendsFrom ? PlynlingBond.BestFriends
         : affinity >= FriendsFrom ? PlynlingBond.Friends
         : PlynlingBond.Acquaintances;
+
+    // Bands from worst to best, to tell which way a pair is moving.
+    private static int Rank(PlynlingBond bond) => bond switch
+    {
+        PlynlingBond.Enemies => 0,
+        PlynlingBond.Rivals => 1,
+        PlynlingBond.Acquaintances => 2,
+        PlynlingBond.Friends => 3,
+        _ => 4,
+    };
 
     // Whether a good visit can turn into a confession: best friends, a boy and a girl, close
     // enough, and neither already in a couple (one partner at a time).

@@ -254,7 +254,7 @@ public class PlynlingService
 
         var before = relation.Bond;
         var compatibility = PlynlingBonds.Compatibility(lo, hi);
-        var (good, delta) = PlynlingBonds.RollScene(compatibility, before, rng);
+        var (good, delta) = PlynlingBonds.RollScene(compatibility, before, relation.Affinity, rng);
         relation.Affinity = Math.Clamp(relation.Affinity + delta, -100, 100);
         relation.Meetings++;
 
