@@ -283,6 +283,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 FreezeOutcome.Dead => PlynlingText.Dead(g),
                 FreezeOutcome.AlreadyFrozen => PlynlingText.AlreadyFrozen(g),
                 FreezeOutcome.TooHungry => PlynlingText.TooHungryToFreeze(g),
+                FreezeOutcome.Sick => PlynlingText.SickNoFreeze(g),
                 FreezeOutcome.Cooldown => PlynlingText.FreezeCooldown(g, plynling!.LastSelfThawAt!.Value + PlynlingLife.SelfFreezeCooldown),
                 _ => PlynlingText.Unknown,
             }, ephemeral: true, allowedMentions: AllowedMentions.None);

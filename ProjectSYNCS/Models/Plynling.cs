@@ -16,6 +16,10 @@ public enum PlynlingSpecies
 // value for the rows that predate it.
 public enum PlynlingGender { Male, Female }
 
+// Why it died. Stored as an int: **append-only**. Starvation is 0, so every row that predates
+// illness reads right.
+public enum DeathCause { Starvation, Illness }
+
 // A Plynling's innate passion (Helpers/PlynlingPassions). Stored as an int: **append-only** —
 // a value inserted in the middle would turn every later Plynling's passion into its neighbour's.
 public enum PlynlingPassion { Cooking, Music, Gaming, Astronomy, Gardening, Rocks, Stories, Dance, Painting, Sport, Insects, Naps }
@@ -92,10 +96,18 @@ public class Plynling
     // PlynlingLife.Settle plays every later one, in order, exactly once.
     public int LastMorningDay { get; set; }
 
+    // Sickness (Helpers/PlynlingSickness): the morning it fell ill (null when healthy), the hidden
+    // 0..100 healing bar, its last dose of medicine, and whether its owner has been told.
+    public DateTimeOffset? SickSince { get; set; }
+    public int Recovery { get; set; }
+    public DateTimeOffset? LastMedicineAt { get; set; }
+    public bool SickNotified { get; set; }
+
     public DateTimeOffset? DiedAt { get; set; }
     // Set by the sweep once the death has been announced (or attempted), so it is never
     // announced twice. A death found lazily by a command is announced by the next sweep.
     public bool DeathAnnounced { get; set; }
+    public DeathCause DeathCause { get; set; }
 
     // What it wears — CosmeticCatalog keys, one per slot, null for none. The cosmetics belong to
     // the owner's inventory; wearing uses nothing up. Kept on a dead row, which is how its grave
@@ -105,4 +117,10 @@ public class Plynling
     public string? TitleKey { get; set; }
     public string? AccessoryKey { get; set; }
     public string? GraveKey { get; set; }
+
+    // Moments a Settle produced (fell sick, recovered) that the journal still has to record.
+    // Settle is pure, so whoever saves the row writes them (PlynlingService.FlushMomentsAsync).
+    // Never stored.
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public List<(Helpers.JournalKind Kind, DateTimeOffset At)> PendingMoments { get; } = new();
 }

@@ -604,7 +604,7 @@ public class PlynlingService
     public async Task JournalDeathAsync(Plynling p)
     {
         if (p.DiedAt is not { } died) return;
-        await AddMomentAsync(p, JournalKind.Died, null, died);
+        await AddMomentAsync(p, JournalKind.Died, p.DeathCause == DeathCause.Illness ? "illness" : null, died);
         await GrieveForAsync(p, died);
     }
 

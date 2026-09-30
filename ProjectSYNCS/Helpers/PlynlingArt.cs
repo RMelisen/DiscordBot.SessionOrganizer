@@ -36,7 +36,7 @@ public static class PlynlingArt
     private static readonly IReadOnlySet<PlynlingMood> DirtyMoods = new HashSet<PlynlingMood>
     {
         PlynlingMood.Happy, PlynlingMood.Content, PlynlingMood.Sad, PlynlingMood.Hungry,
-        PlynlingMood.Starving, PlynlingMood.Sleeping,
+        PlynlingMood.Starving, PlynlingMood.Sleeping, PlynlingMood.Sick,
     };
 
     // The adult filename deliberately carries no stage segment: it is the file every species

@@ -11,6 +11,8 @@ public enum JournalKind
     BecameFriends, BecameBestFriends, BecameLovers, BecameRivals, BecameEnemies, Heartbroken, BrokeUp, Grieving,
     // detail: the taught text
     LearnedPassion,
+    // sickness (Died's detail is "illness" for an illness death)
+    FellSick, Recovered,
 }
 
 // The wording of each moment — pure string work, gendered at display (the entry stores the
@@ -37,7 +39,11 @@ public static class PlynlingJournalUi
             ? $"Badge obtenu : {badge.Emoji} {badge.Name(g)}."
             : "Badge obtenu.",
         JournalKind.Resurrected => $"{g.Agree("Revenu", "Revenue")} d'entre les morts !",
-        JournalKind.Died => $"{g.Agree("Mort", "Morte")} de faim.",
+        JournalKind.Died => detail == "illness"
+            ? $"{g.Agree("Mort", "Morte")} de maladie."
+            : $"{g.Agree("Mort", "Morte")} de faim.",
+        JournalKind.FellSick => $"🤒 {g.Agree("Tombé", "Tombée")} malade.",
+        JournalKind.Recovered => $"💊 {g.Agree("Guéri", "Guérie")} !",
         JournalKind.BecameFriends => $"🤝 Une nouvelle amitié avec **{Other(detail)}**.",
         JournalKind.BecameBestFriends => $"💛 Meilleurs amis avec **{Other(detail)}**.",
         JournalKind.BecameLovers => $"💞 {g.Agree("Amoureux", "Amoureuse")} de **{Other(detail)}**.",

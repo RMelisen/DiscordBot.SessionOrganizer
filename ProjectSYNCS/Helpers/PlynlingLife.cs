@@ -2,7 +2,7 @@ using ProjectSYNCS.Models;
 
 namespace ProjectSYNCS.Helpers;
 
-public enum FreezeOutcome { Frozen, NoPlynling, Dead, AlreadyFrozen, TooHungry, Cooldown }
+public enum FreezeOutcome { Frozen, NoPlynling, Dead, AlreadyFrozen, TooHungry, Cooldown, Sick }
 
 // All of a Plynling's time-based behaviour, as pure functions of the row and an instant.
 // No Discord, no database: this is the part that is checkable outright, and it is where
@@ -80,6 +80,14 @@ public static class PlynlingLife
 
     public static bool IsDead(Plynling p) => p.DiedAt is not null;
     public static bool IsFrozen(Plynling p) => p.FrozenAt is not null;
+    public static bool IsSick(Plynling p) => p.SickSince is not null;
+
+    public static void Cure(Plynling p)
+    {
+        p.SickSince = null;
+        p.Recovery = 0;
+        p.SickNotified = false;
+    }
 
     public static Plynling Create(ulong guildId, ulong ownerId, string name, PlynlingSpecies species, PlynlingGender gender, DateTimeOffset now) => new()
     {
@@ -197,6 +205,7 @@ public static class PlynlingLife
     {
         if (IsFrozen(p)) return PlynlingMood.Frozen;
         if (IsAsleep(now)) return PlynlingMood.Sleeping;
+        if (IsSick(p)) return PlynlingMood.Sick;
         var hunger = HungerAt(p, now);
         if (hunger < StarvingBelow) return PlynlingMood.Starving;
         if (hunger < HungryBelow) return PlynlingMood.Hungry;
@@ -208,36 +217,100 @@ public static class PlynlingLife
 
     /// <summary>
     /// Brings a Plynling up to <paramref name="now"/>: an expired self-freeze thaws at the
-    /// moment it was due, then it dies at the moment it starved. Returns whether anything
-    /// changed, so the caller knows to save.
+    /// moment it was due; then every 05:00 morning since the last one played is played, oldest
+    /// first (sickness, PlayMorning); then it dies at the moment it starved. Returns whether
+    /// anything changed, so the caller knows to save.
     /// </summary>
     /// <remarks>
     /// Every read goes through this first. That is what makes a death discovered by a
     /// command identical to one the hourly sweep found — same instant, same age, same
-    /// memorial — and why the sweep is a safety net rather than the source of truth.
-    /// Order matters: the thaw is applied first, so the death is computed from the thaw.
+    /// memorial — and why the sweep is a safety net rather than the source of truth. The
+    /// morning rolls are hashed, never random, for the same reason. Time order is kept: a
+    /// starvation due before a morning wins, and no later morning is played.
     /// </remarks>
-    public static bool Settle(Plynling p, DateTimeOffset now)
+    public static bool Settle(Plynling p, DateTimeOffset now, SicknessRoll? roll = null)
     {
         if (IsDead(p)) return false;
+        roll ??= PlynlingSickness.Roll;
         var changed = false;
 
+        // Frozen until when? Mornings before the thaw are skipped, even once it has thawed below.
+        var frozenUntil = IsFrozen(p) ? p.FreezeUntil ?? DateTimeOffset.MaxValue : DateTimeOffset.MinValue;
         if (IsFrozen(p) && p.FreezeUntil is { } until && until <= now)
         {
             EndFreeze(p, until);
             changed = true;
         }
 
+        while (true)
+        {
+            var day = NextDay(p.LastMorningDay);
+            var morning = MorningAt(day);
+            if (morning > now) break;
+            if (EffectiveDeathAt(p) is { } starve && starve <= morning) break;
+            p.LastMorningDay = day;
+            changed = true;
+            if (morning < frozenUntil || IsFrozen(p)) continue;         // the illness pauses with the rest
+            PlayMorning(p, morning, day, roll);
+            if (IsDead(p)) return true;
+        }
+
         if (EffectiveDeathAt(p) is { } death && death <= now)
         {
-            Rebase(p, death);
-            p.AgeBankedSeconds += (long)(death - p.LiveSince).TotalSeconds;
-            p.Hunger = 0;
-            p.DiedAt = death;
+            Die(p, death, DeathCause.Starvation);
             changed = true;
         }
 
         return changed;
+    }
+
+    // One morning: the onset roll when healthy; otherwise, from the second sick morning, the death
+    // roll (from the third, unless dosed since the previous morning) and then the day's recovery.
+    private static void PlayMorning(Plynling p, DateTimeOffset morning, int day, SicknessRoll roll)
+    {
+        if (!IsSick(p))
+        {
+            if (roll(p.Id, day, RollPurpose.Onset) < PlynlingSickness.OnsetChance(HygieneAt(p, morning)))
+            {
+                p.SickSince = morning;
+                p.Recovery = 0;
+                p.SickNotified = false;
+                p.PendingMoments.Add((JournalKind.FellSick, morning));
+            }
+            return;
+        }
+
+        // 0 = the onset morning. Rounded, because a clock-change night is 23 or 25 hours.
+        var sickMorning = (int)Math.Round((morning - p.SickSince!.Value).TotalDays);
+        if (sickMorning == 0) return;
+        var previous = MorningAt(MorningDayAtOrBefore(morning - TimeSpan.FromHours(1)));
+        var dosed = p.LastMedicineAt is { } dose && dose >= previous;
+        if (sickMorning >= PlynlingSickness.GraceMornings && !dosed
+            && roll(p.Id, day, RollPurpose.Death) < PlynlingSickness.IllnessDeathChance)
+        {
+            Die(p, morning, DeathCause.Illness);
+            return;
+        }
+
+        p.Recovery += PlynlingSickness.Gain(roll(p.Id, day, RollPurpose.Recovery),
+            PlynlingSickness.RecoveryDailyMin, PlynlingSickness.RecoveryDailyMax);
+        if (dosed)
+            p.Recovery += PlynlingSickness.Gain(roll(p.Id, day, RollPurpose.Medicine),
+                PlynlingSickness.RecoveryMedicineMin, PlynlingSickness.RecoveryMedicineMax);
+        if (p.Recovery >= PlynlingSickness.Healed)
+        {
+            Cure(p);
+            p.PendingMoments.Add((JournalKind.Recovered, morning));
+        }
+    }
+
+    private static void Die(Plynling p, DateTimeOffset at, DeathCause cause)
+    {
+        Rebase(p, at);
+        p.AgeBankedSeconds += (long)(at - p.LiveSince).TotalSeconds;
+        if (cause == DeathCause.Starvation) p.Hunger = 0;
+        p.DiedAt = at;
+        p.DeathCause = cause;
     }
 
     // Null when an owner may freeze their own Plynling now; otherwise why not.
@@ -245,6 +318,7 @@ public static class PlynlingLife
         IsDead(p) ? FreezeOutcome.Dead
         : IsFrozen(p) ? FreezeOutcome.AlreadyFrozen
         : HungerAt(p, now) < SelfFreezeMinHunger ? FreezeOutcome.TooHungry
+        : IsSick(p) ? FreezeOutcome.Sick
         : p.LastSelfThawAt is { } thawed && now - thawed < SelfFreezeCooldown ? FreezeOutcome.Cooldown
         : null;
 
@@ -280,7 +354,7 @@ public static class PlynlingLife
     // Whether looking at it now draws today's gift: alive, awake, not frozen, happy, and no draw
     // yet today. An unhappy look does not spend the day.
     public static bool CanDrawGift(Plynling p, DateTimeOffset now) =>
-        !IsDead(p) && !IsFrozen(p) && !IsAsleep(now) && HappinessAt(p, now) > HappyAbove
+        !IsDead(p) && !IsFrozen(p) && !IsAsleep(now) && !IsSick(p) && HappinessAt(p, now) > HappyAbove
         && p.LastGiftDay != AppTime.DayKey(now);
 
     public static bool IsSulking(Plynling p, DateTimeOffset now) =>
@@ -371,6 +445,8 @@ public static class PlynlingLife
         p.NeedsAsOf = now;
         p.LiveSince = now;
         p.LastMorningDay = MorningDayAtOrBefore(now);
+        p.DeathCause = DeathCause.Starvation;
+        Cure(p);
     }
 
     // Stores the current values as of `at`. Only meaningful while alive and not frozen.

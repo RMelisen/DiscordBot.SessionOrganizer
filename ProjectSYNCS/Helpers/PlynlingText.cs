@@ -195,6 +195,10 @@ public static class PlynlingText
 
     public static string NotFrozen(PlynlingGender g) => g.Agree("Il n'est pas gelé.", "Elle n'est pas gelée.");
 
+    // Freezing pauses the illness, so it would be a way out of the death rolls.
+    public static string SickNoFreeze(PlynlingGender g) =>
+        $"{g.Agree("Il", "Elle")} est malade : on ne gèle pas un Plynling malade, on le soigne.";
+
     public static string TooHungryToFreeze(PlynlingGender g) => g.Agree(
         "Trop tard pour le geler : il a déjà trop faim (moins de 50 %). Nourris-le d'abord.",
         "Trop tard pour la geler : elle a déjà trop faim (moins de 50 %). Nourris-la d'abord.");

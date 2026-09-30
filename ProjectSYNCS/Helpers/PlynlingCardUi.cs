@@ -89,6 +89,7 @@ public static class PlynlingCardUi
         PlynlingMood.Frozen => gender.Agree("gelé", "gelée"),
         PlynlingMood.Sleeping => gender.Agree("endormi", "endormie"),
         PlynlingMood.Angry => gender.Agree("fâché", "fâchée"),
+        PlynlingMood.Sick => "malade",
         _ => gender.Agree("content", "contente"),
     };
 
