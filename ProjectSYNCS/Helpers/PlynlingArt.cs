@@ -30,10 +30,29 @@ public static class PlynlingArt
             PlynlingSpecies.Coprin,
         };
 
+    // The card faces that have a « _dirty » picture. Must match DIRTY_STATES in
+    // tools/plynling-art/export.py. Frozen hides the dirt under the ice, angry is a visit face,
+    // and visits stay clean.
+    private static readonly IReadOnlySet<PlynlingMood> DirtyMoods = new HashSet<PlynlingMood>
+    {
+        PlynlingMood.Happy, PlynlingMood.Content, PlynlingMood.Sad, PlynlingMood.Hungry,
+        PlynlingMood.Starving, PlynlingMood.Sleeping,
+    };
+
     // The adult filename deliberately carries no stage segment: it is the file every species
-    // already had, so adding the baby invalidated nothing Discord had cached.
-    public static string Sprite(PlynlingSpecies species, PlynlingStage stage, PlynlingMood mood) =>
-        $"{BaseUrl}plynling_{Key(species)}{StageSegment(species, stage)}_{mood.ToString().ToLowerInvariant()}_v{Version}.webp";
+    // already had, so adding the baby invalidated nothing Discord had cached. The dirty version
+    // adds « _dirty » after the face — new filenames, so no version bump.
+    public static string Sprite(PlynlingSpecies species, PlynlingStage stage, PlynlingMood mood, bool dirty = false) =>
+        $"{BaseUrl}plynling_{Key(species)}{StageSegment(species, stage)}_{mood.ToString().ToLowerInvariant()}" +
+        $"{(dirty && DirtyMoods.Contains(mood) ? "_dirty" : "")}_v{Version}.webp";
+
+    /// <summary>
+    /// The one way to picture a living Plynling on its own: its species, its stage, its mood (or
+    /// the one given) and whether it is « sale ». Never frozen and dirty — the ice covers it.
+    /// </summary>
+    public static string SpriteOf(Plynling p, DateTimeOffset now, PlynlingMood? mood = null) =>
+        Sprite(p.Species, PlynlingLife.Stage(p, now), mood ?? PlynlingLife.Mood(p, now),
+            p.FrozenAt is null && PlynlingLife.IsDirty(p, now));
 
     /// <summary>
     /// The picture a visit story shows (happy, content, sad or angry): the same animation on a larger

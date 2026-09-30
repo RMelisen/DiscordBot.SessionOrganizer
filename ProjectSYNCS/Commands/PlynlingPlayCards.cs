@@ -20,7 +20,7 @@ public static class PlynlingPlayCards
     {
         var info = PlynlingCatalog.Info(plynling.Species);
         var state = session.State;
-        var sprite = PlynlingArt.Sprite(plynling.Species, PlynlingLife.Stage(plynling, now), PlynlingLife.Mood(plynling, now));
+        var sprite = PlynlingArt.SpriteOf(plynling, now);
         var text = PlynlingGameUi.Text(state, PlynlingCardUi.SafeName(plynling.Name), plynling.Gender);
         if (!string.IsNullOrWhiteSpace(endLine)) text += "\n" + endLine;
 
@@ -62,7 +62,7 @@ public static class PlynlingPlayCards
     public static MessageComponent BuildKnock(Plynling visitor, ulong hostOwnerId, DateTimeOffset expires, string line, DateTimeOffset now)
     {
         var info = PlynlingCatalog.Info(visitor.Species);
-        var sprite = PlynlingArt.Sprite(visitor.Species, PlynlingLife.Stage(visitor, now), PlynlingLife.Mood(visitor, now));
+        var sprite = PlynlingArt.SpriteOf(visitor, now);
         return new ComponentBuilderV2()
             .AddComponent(new ContainerBuilder()
                 .WithAccentColor(new Color(info.Accent))

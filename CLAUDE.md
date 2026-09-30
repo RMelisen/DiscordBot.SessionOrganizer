@@ -1560,6 +1560,13 @@ lives in `motion.py`, and **nothing in it moves side to side** — the owner rej
 left-right motion (sways, wobbles, a sideways shiver, even a travelling shimmer), so keep new
 motion vertical or in place.
 
+**A « sale » Plynling wears `_dirty` art on its own pictures, and only there.** `PlynlingArt.SpriteOf`
+is the one way to picture a living Plynling (card, play card, journal, knock, announcements) and
+adds `_dirty` when hygiene is below 33 % and it is not frozen; `DirtyMoods` must match
+`DIRTY_STATES` in `export.py`. Visit stories stay clean (`VisitSprite` never takes it) — a decision,
+not an oversight. The mud is painted under the face and the fly's spot is searched for once per
+animation on the rest pose; `tools/plynling-art/README.md` says why.
+
 **Life stages are derived from `Age` and never stored.** `PlynlingLife.Stage` maps time actually
 lived to bébé (< 2 d), ado (< 14 d), adulte (< 180 d) and ancien — so a frozen Plynling does not
 grow up, a resurrected one resumes where its age puts it, and there is no column to migrate.

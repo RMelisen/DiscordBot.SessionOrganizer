@@ -614,7 +614,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         var info = PlynlingCatalog.Info(plynling.Species);
         var alive = plynling.DiedAt is null;
         var picture = alive
-            ? PlynlingArt.Sprite(plynling.Species, PlynlingLife.Stage(plynling, now), PlynlingLife.Mood(plynling, now))
+            ? PlynlingArt.SpriteOf(plynling, now)
             : PlynlingArt.Memorial(plynling.Species, PlynlingCatalog.MemorialTier(PlynlingLife.Age(plynling, now)));
 
         // A worn thème recolours the card and opens it with its banner — the one cosmetic that

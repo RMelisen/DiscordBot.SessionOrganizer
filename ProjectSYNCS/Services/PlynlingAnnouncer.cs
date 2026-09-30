@@ -41,7 +41,7 @@ public sealed class PlynlingAnnouncer
     {
         var line = string.Format(_picker.Pick(GameChannelId, BotResponses.PlynlingResurrectLines.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name), $"<@{plynling.OwnerId}>");
-        return PostAsync(plynling.GuildId, line, PlynlingArt.Sprite(plynling.Species, PlynlingLife.Stage(plynling, now), PlynlingLife.Mood(plynling, now)), "resurrection");
+        return PostAsync(plynling.GuildId, line, PlynlingArt.SpriteOf(plynling, now), "resurrection");
     }
 
     // The shame of /plynling abandon, with its sad picture. The row is already gone; the
@@ -51,7 +51,7 @@ public sealed class PlynlingAnnouncer
         var line = string.Format(_picker.Pick(GameChannelId, BotResponses.PlynlingAbandonLines.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name), $"<@{plynling.OwnerId}>");
         return PostAsync(plynling.GuildId, line,
-            PlynlingArt.Sprite(plynling.Species, PlynlingLife.Stage(plynling, now), PlynlingMood.Sad), "abandon");
+            PlynlingArt.SpriteOf(plynling, now, PlynlingMood.Sad), "abandon");
     }
 
     // Called only once PlynlingLife.ShouldWarn has seen death coming; the DM says so without
