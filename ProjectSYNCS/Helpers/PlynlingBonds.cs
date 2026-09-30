@@ -28,7 +28,7 @@ public static class PlynlingBonds
     public const double GriefCeiling = 0.20;
 
     /// <summary>
-    /// A pair's hidden compatibility, −15…+15: some pairs click, others never will. Derived from
+    /// A pair's hidden compatibility, −20…+20: some pairs click, others never will. Derived from
     /// the two ids in either order, so it needs no storage and never changes.
     /// </summary>
     public static int Compatibility(int a, int b)
@@ -40,7 +40,7 @@ public static class PlynlingBonds
             h ^= h >> 13;
             h *= 0x5bd1e995;
             h ^= h >> 15;
-            return (int)(h % 31) - 15;
+            return (int)(h % 41) - 20;
         }
     }
 

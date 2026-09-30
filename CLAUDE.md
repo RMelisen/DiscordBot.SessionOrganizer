@@ -1382,9 +1382,10 @@ compatibility is derived from the two ids, never stored. `PlynlingBond` is store
 **append-only**. **Where a pair ends up is decided by its compatibility, with wide scatter — not by
 how often it visits.** A 75 % base chance once made every pair drift to best friends given enough
 visits, and made enemies a dead end; now `BaseSceneChance` (55 %) sits near the break-even point and
-`AffinityPull` draws affinity back toward about +2 + 4 × compatibility, so over 100 visits the
-bonds spread roughly 14 % enemies / 22 % rivals / 27 % acquaintances / 20 % friends / 8 % best
-friends / 9 % couples. A couple feels no pull and gets `LoversBonus` instead — under the pull
+`AffinityPull` draws affinity back toward about +2 + 4 × compatibility (−20…+20, so −78…+82), so
+over 100 visits the bonds spread roughly 18 % enemies / 20 % rivals / 22 % acquaintances / 19 %
+friends / 10 % best friends / 11 % couples. The range was widened from ±15 for stronger contrasts;
+changing it reshuffles every existing pair's compatibility, since it is derived, not stored. A couple feels no pull and gets `LoversBonus` instead — under the pull
 nearly every couple broke up within 50 visits. `BondMargin` (10) keeps a pair on a band's edge from
 flipping, and being announced, on every visit. Retune by re-running the simulation, never by feel. The bond follows the affinity (`BondFor`), except a couple, which only a
 confession makes and only a slide below +40 undoes. Confessions are **a boy and a girl only** —
