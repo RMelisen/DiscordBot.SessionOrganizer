@@ -75,11 +75,19 @@ public static class PlynlingCardUi
         // « sale » rides on the mood line rather than replacing the mood: it is a state on top of
         // it (the dirt is an overlay on the face, not a face of its own). Hidden under the ice.
         var dirty = p.FrozenAt is null && PlynlingLife.IsDirty(p, now) ? " · sale" : "";
-        return $"**Faim** `{Bar(hunger)}` {Percent(hunger)}{clock}\n" +
-               $"**Bonheur** `{Bar(happiness)}` {Percent(happiness)}\n" +
-               $"**Hygiène** `{Bar(hygiene)}` {Percent(hygiene)}\n" +
+        return $"{Gauge("Faim", hunger)}{clock}\n" +
+               $"{Gauge("Bonheur", happiness)}\n" +
+               $"{Gauge("Hygiène", hygiene)}\n" +
                $"**Humeur** · *{MoodLabel(PlynlingLife.Mood(p, now), p.Gender)}{dirty}*";
     }
+
+    // The label sits inside the bar's code span, padded to one width: Discord's text is
+    // proportional, so bold labels of different lengths pushed each bar to a different column.
+    // In monospace they all start, and end, at the same place — and so do the percentages.
+    private const int GaugeLabelWidth = 8;
+
+    private static string Gauge(string label, double value) =>
+        $"`{label.PadRight(GaugeLabelWidth)}{Bar(value)}` {Percent(value)}";
 
     public static string MoodLabel(PlynlingMood mood, PlynlingGender gender) => mood switch
     {

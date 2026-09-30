@@ -293,7 +293,7 @@ Files to commit: `Plynling.cs`, `PlynlingLife.cs`, the migration and its designe
 // ---- the card ------------------------------------------------------------------------------
 var card = Fresh(t0); card.Id = 3; card.Hygiene = 0.2;
 var status = PlynlingCardUi.Status(card, t0);
-Check(status.Contains("**Hygiène**") && status.Contains("20 %"), "the card shows the Hygiène bar");
+Check(status.Contains("`Hygiène ") && status.Contains("20 %"), "the card shows the Hygiène bar");
 Check(status.Contains("· sale"), "the mood line says « sale » when dirty");
 var built = ProjectSYNCS.Commands.PlynlingModule.BuildCard(card, t0.AddHours(8), null);
 var ids = built.Components.OfType<Discord.ActionRowComponent>().SelectMany(r => r.Components).OfType<Discord.ButtonComponent>().Select(x => x.CustomId).ToList();
