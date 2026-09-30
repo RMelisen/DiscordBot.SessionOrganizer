@@ -76,7 +76,8 @@ namespace ProjectSYNCS.Services;
 //     PlynlingPassionTaughtLines ..... /plynling passion
 //     PlynlingPlayPlayerWonLines · PlynlingPlayPlayerLostLines ... end of a /plynling play game
 //     PlynlingVisitKnockLines ...... /plynling visit's knock (the story is Helpers/PlynlingVisitStory)
-//     PlynlingDeathLines · PlynlingResurrectLines · PlynlingAbandonLines ... public, game channel
+//     PlynlingDeathLines · PlynlingIllnessDeathLines · PlynlingResurrectLines · PlynlingAbandonLines ... public, game channel
+//     PlynlingSickWarningLines ...... DM when it falls sick
 //     PlynlingWarningLines ..... the ~3h DM before death
 //     PlynlingStaffFreezeDms · PlynlingStaffThawDms · PlynlingStaffRenameDms · PlynlingStaffPassionResetDms
 //
@@ -598,6 +599,48 @@ internal static class BotResponses
             "Clic ! Photo mentale de **{0}**, toute molle dans ta main. Direction : mon album secret ♡",
             "**{0}** fredonne sous la caresse. C'est ma chanson. Voleuse ! Et elle la chante mieux que moi. Hmph >:(",
             "Une caresse, et **{0}** oublie tout : la faim, le monde, et mon existence. Surtout mon existence (╥﹏╥)",
+        });
+
+    // An illness death, in the game channel like PlynlingDeathLines, same {0}–{3}.
+    public static readonly GenderedLines PlynlingIllnessDeathLines = new(
+        M: new[]
+        {
+            "🕯️ **{0}**, le Plynling de {1}, s'est éteint au petit matin, emporté par la maladie. {2} de vie. Il repose sous {3}. Je ne pleure pas (╥﹏╥)",
+            "🕯️ La maladie a eu raison de **{0}**. {1}, un médicament par jour, c'était tout ce dont il avait besoin. Il dort sous {3}, maintenant >:(",
+            "🕯️ **{0}** n'a pas guéri. {2} de vie, et puis {3}. Minute de silence. Et toi, {1}, tu réfléchis à ce que tu as fait.",
+            "🕯️ Malade depuis trop longtemps, **{0}** ({1}) nous a quittés après {2}. Il repose sous {3}. Un bain, un médicament… je le note pour le prochain.",
+            "🕯️ Silence au village : **{0}** est mort de maladie après {2}. {3} le garde désormais. {1}, prends soin du prochain (╥﹏╥)",
+            "🕯️ **{0}** n'a pas passé la nuit. La fièvre a gagné. {2} de vie, compagnon de {1}, et maintenant {3}.",
+        },
+        F: new[]
+        {
+            "🕯️ **{0}**, la Plynling de {1}, s'est éteinte au petit matin, emportée par la maladie. {2} de vie. Elle repose sous {3}. Je ne pleure pas (╥﹏╥)",
+            "🕯️ La maladie a eu raison de **{0}**. {1}, un médicament par jour, c'était tout ce dont elle avait besoin. Elle dort sous {3}, maintenant >:(",
+            "🕯️ **{0}** n'a pas guéri. {2} de vie, et puis {3}. Minute de silence. Et toi, {1}, tu réfléchis à ce que tu as fait.",
+            "🕯️ Malade depuis trop longtemps, **{0}** ({1}) nous a quittés après {2}. Elle repose sous {3}. Un bain, un médicament… je le note pour la prochaine.",
+            "🕯️ Silence au village : **{0}** est morte de maladie après {2}. {3} la garde désormais. {1}, prends soin de la prochaine (╥﹏╥)",
+            "🕯️ **{0}** n'a pas passé la nuit. La fièvre a gagné. {2} de vie, compagne de {1}, et maintenant {3}.",
+        });
+
+    // DM'd once when it falls sick (the hourly sweep). {0} = name.
+    public static readonly GenderedLines PlynlingSickWarningLines = new(
+        M: new[]
+        {
+            "🤒 **{0}** ne va pas bien du tout : il est malade. Un médicament par jour, et vite (╥﹏╥)",
+            "Alerte : **{0}** est tombé malade. `/inventory medicine`, puis « 💊 Soigner » sur sa carte. Tous les jours, hein.",
+            "**{0}** a de la fièvre. Je ne panique pas. Je te préviens, c'est tout. Soigne-le chaque jour, d'accord ?",
+            "Petit message pour te dire que **{0}** est malade. Un médicament par jour et ça passera. Sans… je préfère ne pas y penser.",
+            "**{0}** tousse, renifle et fait une tête de salade fanée. Malade. Soigne-le, je t'en supplie ♡",
+            "Mauvaise nouvelle : **{0}** est malade. Bonne nouvelle : ça se soigne. Mais seulement si tu le fais (¬_¬)",
+        },
+        F: new[]
+        {
+            "🤒 **{0}** ne va pas bien du tout : elle est malade. Un médicament par jour, et vite (╥﹏╥)",
+            "Alerte : **{0}** est tombée malade. `/inventory medicine`, puis « 💊 Soigner » sur sa carte. Tous les jours, hein.",
+            "**{0}** a de la fièvre. Je ne panique pas. Je te préviens, c'est tout. Soigne-la chaque jour, d'accord ?",
+            "Petit message pour te dire que **{0}** est malade. Un médicament par jour et ça passera. Sans… je préfère ne pas y penser.",
+            "**{0}** tousse, renifle et fait une tête de salade fanée. Malade. Soigne-la, je t'en supplie ♡",
+            "Mauvaise nouvelle : **{0}** est malade. Bonne nouvelle : ça se soigne. Mais seulement si tu le fais (¬_¬)",
         });
 
     // Posted publicly in the game channel, with the memorial as the picture.

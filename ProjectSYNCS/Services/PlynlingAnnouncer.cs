@@ -31,7 +31,8 @@ public sealed class PlynlingAnnouncer
     {
         var lived = PlynlingLife.Age(plynling, now);
         var tier = PlynlingCatalog.MemorialTier(lived);
-        var line = string.Format(_picker.Pick(GameChannelId, BotResponses.PlynlingDeathLines.For(plynling.Gender)),
+        var pool = plynling.DeathCause == DeathCause.Illness ? BotResponses.PlynlingIllnessDeathLines : BotResponses.PlynlingDeathLines;
+        var line = string.Format(_picker.Pick(GameChannelId, pool.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name), $"<@{plynling.OwnerId}>",
             LevelCardUi.Duration((long)lived.TotalMinutes), PlynlingCatalog.MemorialName(tier));
         return PostAsync(plynling.GuildId, line, PlynlingArt.Memorial(plynling.Species, tier), "death");
@@ -59,6 +60,14 @@ public sealed class PlynlingAnnouncer
     public Task WarnOwnerAsync(Plynling plynling)
     {
         var line = string.Format(_picker.Pick(plynling.OwnerId, BotResponses.PlynlingWarningLines.For(plynling.Gender)),
+            PlynlingCardUi.SafeName(plynling.Name));
+        return DmOwnerAsync(plynling.OwnerId, line);
+    }
+
+    // Once per illness, from the sweep: it fell sick this morning, and what to do about it.
+    public Task WarnSickAsync(Plynling plynling)
+    {
+        var line = string.Format(_picker.Pick(plynling.OwnerId, BotResponses.PlynlingSickWarningLines.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name));
         return DmOwnerAsync(plynling.OwnerId, line);
     }

@@ -86,6 +86,14 @@ public sealed class PlynlingSweepService : BackgroundService
                     await plynlings.SaveAsync();
                     await _announcer.AnnounceDeathAsync(plynling, now);
                 }
+                else if (PlynlingLife.IsSick(plynling) && !plynling.SickNotified)
+                {
+                    // Flag saved before the DM, like DeathAnnounced: one attempt, never a repeat.
+                    // An onset is always at 05:00, so this never lands in the night.
+                    plynling.SickNotified = true;
+                    await plynlings.SaveAsync();
+                    await _announcer.WarnSickAsync(plynling);
+                }
                 else if (PlynlingLife.ShouldWarn(plynling, now))
                 {
                     plynling.WarningSent = true;
