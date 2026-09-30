@@ -196,7 +196,7 @@ Easy to forget when adding a model. A *derived* property on a model needs
 `[NotMapped]` instead (see `EmoteStat.Markup`), or EF tries to map it and demands a
 migration for a column that should not exist.
 
-**Three migrations carry data, not schema.** Two are XP wipes with an empty `Down`:
+**Four migrations carry data, not schema.** Two are XP wipes with an empty `Down`:
 `ResetMemberXp` shipped with the level-up card rework, `ResetXpTotals` with the voice-XP
 taper. They ride the automatic apply-on-startup so they land in prod without anyone
 touching the add-on's SQLite file. Every other migration here is schema-only and should
@@ -216,6 +216,14 @@ wipe must make the same distinction: reset the reward, keep the record.
 passion for the Plynlings that predate passions, from the id (`(Id * 5 + 1) % 12`), so every row
 has one and nothing is rolled at runtime. Deriving the passion from the id at read time instead
 was rejected — adding a 13th passion would have silently changed every existing Plynling's.
+
+`PrepareProdLaunch` is the fourth, and the only one scoped to one guild: it zeroes the production
+server's wallets and deletes its `EconomyDailyStats` (the beta's money), and copies Pwet from a test
+server into production as a newborn. It computes its timestamps in C# inside `Up`, which runs when
+the migration is applied — never generate a SQL script from it, or "now" is baked at script time.
+Its launch companion is `Helpers/PlynlingLaunch`: two people's *first* Plynling on production is
+chosen (a male Coprin, a female Girolle) rather than rolled, and those two start as best friends at
+affinity 100 with the maximum compatibility, so visits hold them there instead of pulling them back.
 
 **Never use `DateTime.Now`.** Production runs in UTC; all wall-clock handling goes
 through `Helpers/AppTime` (pinned to `Europe/Paris`, DST-aware via
@@ -1890,6 +1898,8 @@ he reacts to), the level-up bot id in `ChatterService`, the `hi_cat` emote id in
 `MessageCues` and `ReminderService`, `XpTracker.ExcludedChannels` (the spam channels
 that earn no XP), `ShameModule.ExtraVoters`, and the per-user `PersonalComebacks` /
 `RealNames` maps in `BotResponses` are literal snowflakes tied to one specific server.
+
+`PlynlingLaunch` (the production guild, two owners' first Plynlings and their pairing) is one more.
 
 `PlynlingAnnouncer.GameChannelId` (`878305034432045080`) is where Plynling deaths and
 resurrections are announced. Commands themselves work in any channel. Only Plynlings of the

@@ -68,7 +68,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        var info = PlynlingCatalog.Info(species);
+        var info = PlynlingCatalog.Info(plynling.Species);  // not `species`: a launch arrangement may replace it
         var pool = BotResponses.PlynlingAdoptLines.For(plynling.Gender);
         var line = string.Format(_picker.Pick(Context.Channel.Id, pool),
             PlynlingCardUi.SafeName(plynling.Name), info.Name);
@@ -464,7 +464,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             .WithColor(new Color(0xCE323A))
             .AddField("Adopter & regarder",
                 "**`/plynling adopt name:`** — Gratuit, un seul à la fois. L'espèce est tirée au sort : " +
-                "commune, peu commune, rare… ou légendaire. Garçon ou fille ? Surprise.\n" +
+                "toutes ont les mêmes chances. Garçon ou fille ? Surprise.\n" +
                 "**`/plynling view [user]`** — Sa carte, avec les boutons **Caresser** et **Nourrir**.\n" +
                 "**`/plynling list`** — Tous les Plynlings vivants du serveur, du plus vieux au plus jeune.\n" +
                 "**`/plynling journal [user]`** — Son journal : ses badges et ses souvenirs. Il gagne des **badges** " +
