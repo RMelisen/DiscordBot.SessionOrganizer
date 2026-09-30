@@ -354,8 +354,6 @@ public class PlynlingService
         var happiness = PlynlingBonds.VisitHappiness(after);
         PlynlingLife.Visit(visitor, now, happiness);
         PlynlingLife.Visit(host, now, happiness);
-        await AddMomentAsync(visitor, JournalKind.Visited, host.Name, now);
-        await AddMomentAsync(host, JournalKind.Hosted, visitor.Name, now);
         if (confession == Confession.Refused)
         {
             foreach (var (p, other) in new[] { (visitor, host), (host, visitor) })
