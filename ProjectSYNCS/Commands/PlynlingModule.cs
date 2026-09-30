@@ -658,16 +658,16 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
             if (!PlynlingLife.IsAsleep(now))
             {
                 var row = new ActionRowBuilder()
-                    .WithButton("🤲 Caresser", $"plyn:pet:{plynling.Id}", ButtonStyle.Primary)
-                    .WithButton("🛁 Laver", $"plyn:bath:{plynling.Id}", ButtonStyle.Secondary);
+                    .WithButton("Caresser", $"plyn:pet:{plynling.Id}", ButtonStyle.Primary)
+                    .WithButton("Laver", $"plyn:bath:{plynling.Id}", ButtonStyle.Secondary);
                 if (PlynlingLife.IsSick(plynling))
-                    row.WithButton("💊 Soigner", $"plyn:heal:{plynling.Id}", ButtonStyle.Success);
+                    row.WithButton("Soigner", $"plyn:heal:{plynling.Id}", ButtonStyle.Success);
                 builder.AddComponent(row);
             }
 
             var menu = new SelectMenuBuilder()
                 .WithCustomId($"plyn:feed:{plynling.Id}")
-                .WithPlaceholder("🍄 Nourrir…");
+                .WithPlaceholder("Nourrir…");
             foreach (var food in PlynlingCatalog.Foods)
                 menu.AddOption($"{food.Name} — {PebbleEconomy.Cailloux(food.Price)}", food.Food.ToString(),
                     PlynlingCardUi.FoodOptionDescription(food),

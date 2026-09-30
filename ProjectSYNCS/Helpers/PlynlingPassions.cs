@@ -23,8 +23,9 @@ public sealed record Passion(PlynlingPassion? Catalog, string? Custom)
     /// <summary>For {P} and SYNCS's lines: « la cuisine », or the typed text in « guillemets ».</summary>
     public string Render() => Catalog is { } c ? PlynlingPassions.Info(c).Label : $"« {PlynlingCardUi.SafeName(Custom ?? "")} »";
 
-    /// <summary>For the card: with the catalog emoji.</summary>
-    public string Display() => Catalog is { } c ? $"{PlynlingPassions.Info(c).Emoji} {PlynlingPassions.Info(c).Label}" : Render();
+    /// <summary>For the card: the same as <see cref="Render"/>. The catalog emoji used to lead it;
+    /// the owner took it off the card.</summary>
+    public string Display() => Render();
 }
 
 /// <summary>

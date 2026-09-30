@@ -627,7 +627,7 @@ internal static class BotResponses
         M: new[]
         {
             "🤒 **{0}** ne va pas bien du tout : il est malade. Un médicament par jour, et vite (╥﹏╥)",
-            "Alerte : **{0}** est tombé malade. `/inventory medicine`, puis « 💊 Soigner » sur sa carte. Tous les jours, hein.",
+            "Alerte : **{0}** est tombé malade. `/inventory medicine`, puis « Soigner » sur sa carte. Tous les jours, hein.",
             "**{0}** a de la fièvre. Je ne panique pas. Je te préviens, c'est tout. Soigne-le chaque jour, d'accord ?",
             "Petit message pour te dire que **{0}** est malade. Un médicament par jour et ça passera. Sans… je préfère ne pas y penser.",
             "**{0}** tousse, renifle et fait une tête de salade fanée. Malade. Soigne-le, je t'en supplie ♡",
@@ -636,7 +636,7 @@ internal static class BotResponses
         F: new[]
         {
             "🤒 **{0}** ne va pas bien du tout : elle est malade. Un médicament par jour, et vite (╥﹏╥)",
-            "Alerte : **{0}** est tombée malade. `/inventory medicine`, puis « 💊 Soigner » sur sa carte. Tous les jours, hein.",
+            "Alerte : **{0}** est tombée malade. `/inventory medicine`, puis « Soigner » sur sa carte. Tous les jours, hein.",
             "**{0}** a de la fièvre. Je ne panique pas. Je te préviens, c'est tout. Soigne-la chaque jour, d'accord ?",
             "Petit message pour te dire que **{0}** est malade. Un médicament par jour et ça passera. Sans… je préfère ne pas y penser.",
             "**{0}** tousse, renifle et fait une tête de salade fanée. Malade. Soigne-la, je t'en supplie ♡",
