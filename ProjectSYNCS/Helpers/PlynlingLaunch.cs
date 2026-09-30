@@ -4,8 +4,9 @@ namespace ProjectSYNCS.Helpers;
 
 /// <summary>
 /// One-off arrangements for the Plynlings' launch on the production server, requested by the
-/// owner: a few people's *first* Plynling is chosen rather than rolled, and one pair is made for
-/// each other. Literal snowflakes tied to one server, like the other hardcoded ids.
+/// owner: a few people's *first* Plynling is chosen rather than rolled, and one pair of owners'
+/// Plynlings always has the best possible compatibility. Literal snowflakes tied to one server,
+/// like the other hardcoded ids.
 /// </summary>
 public static class PlynlingLaunch
 {
@@ -14,9 +15,8 @@ public static class PlynlingLaunch
     private const ulong CoprinOwner = 345917214966415362;
     private const ulong GirolleOwner = 324768221372743681;
 
-    // Applied only to someone's first Plynling on the production server — i.e. while they have
-    // no row there at all. Nothing marks it as used, so an abandoned first Plynling (whose row is
-    // deleted) makes the next adoption "first" again.
+    // Applied only to someone's first Plynling on the production server: while they have no row
+    // there and no abandonment on record (PlynlingService.AdoptAsync checks both).
     private static readonly Dictionary<ulong, (PlynlingSpecies Species, PlynlingGender Gender)> FirstAdoptions = new()
     {
         [CoprinOwner] = (PlynlingSpecies.Coprin, PlynlingGender.Male),
@@ -26,8 +26,9 @@ public static class PlynlingLaunch
     public static (PlynlingSpecies Species, PlynlingGender Gender)? FirstAdoption(ulong guildId, ulong ownerId) =>
         guildId == ProdGuildId && FirstAdoptions.TryGetValue(ownerId, out var pick) ? pick : null;
 
-    // The pair whose Plynlings start at maximum affinity and keep the best possible compatibility,
-    // so visits pull them up rather than back toward the middle.
+    // The pair whose Plynlings have the best possible compatibility. Their affinity starts at 0 like
+    // anyone's; the compatibility only tilts every visit their way. Keyed on the owners, so it holds
+    // for any Plynlings they have later too.
     public static ulong? SoulmateOf(ulong guildId, ulong ownerId) =>
         guildId != ProdGuildId ? null
         : ownerId == CoprinOwner ? GirolleOwner

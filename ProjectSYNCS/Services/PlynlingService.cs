@@ -87,7 +87,10 @@ public class PlynlingService
         if (current is { DiedAt: null }) return (AdoptOutcome.AlreadyHasOne, current);
 
         // A launch arrangement replaces the roll for someone's very first Plynling on the server.
-        if (current is null && PlynlingLaunch.FirstAdoption(guildId, ownerId) is { } pick)
+        // No row means none alive or dead, but an abandonment deletes its row — so an abandonment
+        // on the wall of shame (L'Indigne) also means the first one has been spent.
+        if (current is null && PlynlingLaunch.FirstAdoption(guildId, ownerId) is { } pick
+            && !await _db_context.ShameRecords.AnyAsync(r => r.GuildId == guildId && r.UserId == ownerId && r.AbandonHits > 0))
             (species, gender) = (pick.Species, pick.Gender);
 
         // Rolled here unless given, so PlynlingLife.Create stays pure and the harnesses
@@ -105,28 +108,8 @@ public class PlynlingService
             return (AdoptOutcome.AlreadyHasOne, null);
         }
         await AddMomentAsync(plynling, JournalKind.Adopted, null, now);  // needs its id: after the first save
-        await BindSoulmatesAsync(plynling, now);
         await _db_context.SaveChangesAsync();
         return (AdoptOutcome.Adopted, plynling);
-    }
-
-    // The launch's soulmate pair: whichever adopts second finds the other's living Plynling and
-    // they start as best friends at maximum affinity. Rides the adoption's save.
-    private async Task BindSoulmatesAsync(Plynling plynling, DateTimeOffset now)
-    {
-        if (PlynlingLaunch.SoulmateOf(plynling.GuildId, plynling.OwnerId) is not { } mateOwner) return;
-        var mate = await _db_context.Plynlings
-            .FirstOrDefaultAsync(p => p.GuildId == plynling.GuildId && p.OwnerId == mateOwner && p.DiedAt == null);
-        if (mate is null) return;
-
-        var (lo, hi) = plynling.Id < mate.Id ? (plynling.Id, mate.Id) : (mate.Id, plynling.Id);
-        if (await _db_context.PlynlingRelations.AnyAsync(r => r.PlynlingAId == lo && r.PlynlingBId == hi)) return;
-        _db_context.PlynlingRelations.Add(new PlynlingRelation
-        {
-            PlynlingAId = lo, PlynlingBId = hi, Affinity = 100, Bond = PlynlingBond.BestFriends, Since = now,
-        });
-        await AddMomentAsync(plynling, JournalKind.BecameBestFriends, mate.Name, now);
-        await AddMomentAsync(mate, JournalKind.BecameBestFriends, plynling.Name, now);
     }
 
     public async Task<FeedResult> FeedAsync(int plynlingId, ulong actorId, PlynlingFood food, DateTimeOffset now)

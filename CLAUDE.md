@@ -222,8 +222,9 @@ server's wallets and deletes its `EconomyDailyStats` (the beta's money), and cop
 server into production as a newborn. It computes its timestamps in C# inside `Up`, which runs when
 the migration is applied — never generate a SQL script from it, or "now" is baked at script time.
 Its launch companion is `Helpers/PlynlingLaunch`: two people's *first* Plynling on production is
-chosen (a male Coprin, a female Girolle) rather than rolled, and those two start as best friends at
-affinity 100 with the maximum compatibility, so visits hold them there instead of pulling them back.
+chosen (a male Coprin, a female Girolle) rather than rolled — "first" meaning no row there and no
+abandonment on `/shame`, since an abandonment deletes the row — and that pair's Plynlings always get
+the maximum compatibility (+20). Their affinity starts at 0 like anyone's.
 
 **Never use `DateTime.Now`.** Production runs in UTC; all wall-clock handling goes
 through `Helpers/AppTime` (pinned to `Europe/Paris`, DST-aware via
