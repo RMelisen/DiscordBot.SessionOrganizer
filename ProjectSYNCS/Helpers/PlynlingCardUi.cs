@@ -59,6 +59,7 @@ public static class PlynlingCardUi
 
         var hunger = PlynlingLife.HungerAt(p, now);
         var happiness = PlynlingLife.HappinessAt(p, now);
+        var hygiene = PlynlingLife.HygieneAt(p, now);
         // Only a freeze is shown beside the hunger bar. A living Plynling's card deliberately
         // carries no "mourra de faim dans …" countdown — the owner removed it; the bar and the
         // mood already say how hungry it is. The absolute :f form is the one that takes "jusqu'au".
@@ -70,9 +71,13 @@ public static class PlynlingCardUi
 
         // The mood gets its own line: it covers hunger as well as happiness, so beside the
         // happiness bar a starving Plynling would read "Bonheur 20 % · affamé".
+        // « sale » rides on the mood line rather than replacing the mood: it is a state on top of
+        // it (the dirt is an overlay on the face, not a face of its own). Hidden under the ice.
+        var dirty = p.FrozenAt is null && PlynlingLife.IsDirty(p, now) ? " · sale" : "";
         return $"**Faim** `{Bar(hunger)}` {Percent(hunger)}{clock}\n" +
                $"**Bonheur** `{Bar(happiness)}` {Percent(happiness)}\n" +
-               $"**Humeur** · *{MoodLabel(PlynlingLife.Mood(p, now), p.Gender)}*";
+               $"**Hygiène** `{Bar(hygiene)}` {Percent(hygiene)}\n" +
+               $"**Humeur** · *{MoodLabel(PlynlingLife.Mood(p, now), p.Gender)}{dirty}*";
     }
 
     public static string MoodLabel(PlynlingMood mood, PlynlingGender gender) => mood switch

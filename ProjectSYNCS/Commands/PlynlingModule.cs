@@ -479,6 +479,10 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
                 "Son **humeur** compte : heureux, un repas le nourrit 15 % de plus et il te rapporte parfois un caillou ou un objet ; " +
                 "triste, 25 % de moins. À 0 %, il **boude** et refuse de manger tant qu'on n'a pas joué avec lui ou qu'on " +
                 "ne l'a pas caressé — sauf s'il meurt de faim.")
+            .AddField("Propreté",
+                "L'**hygiène** se vide en **3 jours** ; balades et jeux le salissent un peu. Sous 33 %, il est **sale** " +
+                "et son bonheur baisse plus vite.\n" +
+                "**Laver** (bouton de sa carte, son propriétaire seulement) — +60 %, toutes les 6 h, gratuit.")
             .AddField("Jouer & rendre visite",
                 "**`/plynling play`** — Un mini-jeu au hasard avec ton Plynling : cache-cache, pierre-papier-ciseaux " +
                 "ou plus ou moins. Une fois par heure : +15 % de bonheur, +25 % et quelques cailloux si tu gagnes.\n" +
@@ -545,7 +549,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
     /// <summary>
     /// The card: picture (the sprite for its mood, or its memorial once dead), heading,
     /// bars, an optional line in her voice, and — only while alive and not frozen — a
-    /// "Caresser" button and a "Nourrir…" select.
+    /// "Caresser" and "Laver" buttons and a "Nourrir…" select.
     /// </summary>
     /// <remarks>
     public const int ListPageSize = 10;
@@ -599,7 +603,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     /// Static and Context-free so its component budget is checkable without a gateway.
-    /// The two rows use different verbs (<c>plyn:pet</c>, <c>plyn:feed</c>): duplicated
+    /// Every control uses its own verb (<c>plyn:pet</c>, <c>plyn:bath</c>, <c>plyn:feed</c>): duplicated
     /// custom ids are rejected outright by Discord, disabled components included.
     /// Nourrir is offered to everyone and refused in the handler for anyone but the
     /// owner — the real check is in code, as with every gate here.
@@ -642,10 +646,13 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         var builder = new ComponentBuilderV2().AddComponent(container);
         if (alive && plynling.FrozenAt is null)
         {
-            // No petting a sleeping Plynling — the button goes, feeding stays.
+            // No petting or washing a sleeping Plynling — the buttons go, feeding stays. Laver is
+            // offered to everyone like the rest of the card and refused in the handler for anyone
+            // but the owner.
             if (!PlynlingLife.IsAsleep(now))
                 builder.AddComponent(new ActionRowBuilder()
-                    .WithButton("🤲 Caresser", $"plyn:pet:{plynling.Id}", ButtonStyle.Primary));
+                    .WithButton("🤲 Caresser", $"plyn:pet:{plynling.Id}", ButtonStyle.Primary)
+                    .WithButton("🛁 Laver", $"plyn:bath:{plynling.Id}", ButtonStyle.Secondary));
 
             var menu = new SelectMenuBuilder()
                 .WithCustomId($"plyn:feed:{plynling.Id}")

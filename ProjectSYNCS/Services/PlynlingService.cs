@@ -7,7 +7,7 @@ namespace ProjectSYNCS.Services;
 
 public enum AdoptOutcome { Adopted, AlreadyHasOne }
 
-public enum CareOutcome { Done, NoPlynling, Dead, Frozen, Wasted, TooPoor, Asleep, Sulking, TooSoon }
+public enum CareOutcome { Done, NoPlynling, Dead, Frozen, Wasted, TooPoor, Asleep, Sulking, TooSoon, NotOwner }
 
 // The happy gift: cailloux, or an item instead — never both. Nothing when both are empty.
 public sealed record GiftResult(long Cailloux, ItemFind? Find)
@@ -161,6 +161,26 @@ public class PlynlingService
         var badges = await AwardAsync(plynling, now);
         await _db_context.SaveChangesAsync();
         return (CareOutcome.Done, plynling, badges);
+    }
+
+    // « Laver »: owner only, free. Refused asleep, frozen, dead, or already clean.
+    public async Task<(CareOutcome Outcome, Plynling? Plynling)> BathAsync(int plynlingId, ulong actorId, DateTimeOffset now)
+    {
+        var plynling = await GetByIdAsync(plynlingId, now);
+        CareOutcome? refusal =
+            plynling is null ? CareOutcome.NoPlynling
+            : plynling.DiedAt is not null ? CareOutcome.Dead
+            : plynling.OwnerId != actorId ? CareOutcome.NotOwner
+            : plynling.FrozenAt is not null ? CareOutcome.Frozen
+            : PlynlingLife.IsAsleep(now) ? CareOutcome.Asleep
+            : PlynlingLife.WouldWasteBath(plynling, now) ? CareOutcome.Wasted
+            : null;
+        if (refusal is { } r) return (r, plynling);
+
+        PlynlingLife.Bath(plynling!, now);
+        await EconomyLog.AddAsync(_db_context, plynling!.GuildId, EconomyLog.ActBath, 1, now);
+        await _db_context.SaveChangesAsync();
+        return (CareOutcome.Done, plynling);
     }
 
     public async Task<(FreezeOutcome Outcome, Plynling? Plynling)> FreezeAsync(
@@ -538,6 +558,7 @@ public class PlynlingService
             return new ForageResult(CareOutcome.TooSoon, p, ReadyAt: last + ItemCatalog.ForageCooldown);
 
         wallet.LastForageAt = now;
+        PlynlingLife.Dirty(p, now, PlynlingLife.ForageDirt);          // an outing in the undergrowth
         var find = await InventoryService.GrantAsync(_db_context, guildId, ownerId, ItemCatalog.DrawForage(rng, now), now);
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.ActForage, 1, now);
         await _db_context.SaveChangesAsync();

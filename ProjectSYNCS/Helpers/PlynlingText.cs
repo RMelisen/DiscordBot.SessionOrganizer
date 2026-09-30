@@ -30,6 +30,16 @@ public static class PlynlingText
     public static string PetCooldown(DateTimeOffset readyAt) =>
         $"Une caresse toutes les 4 heures, pas plus. Prochaine caresse <t:{readyAt.ToUnixTimeSeconds()}:R>.";
 
+    // Refused before the Plynling is loaded, like PetCooldown: worded to need no gender.
+    public static string BathCooldown(DateTimeOffset readyAt) =>
+        $"Un bain toutes les 6 heures, pas plus : la peau d'un Plynling, ça se ménage. Prochain bain <t:{readyAt.ToUnixTimeSeconds()}:R>.";
+
+    public static string AlreadyClean(PlynlingGender g) =>
+        $"{g.Agree("Il est déjà tout propre", "Elle est déjà toute propre")} ! Garde l'eau pour plus tard.";
+
+    public static string NotYourPlynling(PlynlingGender g) =>
+        $"{g.Agree("Ce Plynling n'est pas le tien", "Cette Plynling n'est pas la tienne")} : seul son propriétaire peut faire ça.";
+
     public static string NoneFor(ulong userId) => $"<@{userId}> n'a pas de Plynling.";
 
     // About the person, not a Plynling (the abandoned one is gone): generic masculine.

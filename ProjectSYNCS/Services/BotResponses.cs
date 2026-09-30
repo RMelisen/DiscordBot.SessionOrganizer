@@ -72,7 +72,7 @@ namespace ProjectSYNCS.Services;
 //
 //   Plynlings — every pool is a GenderedLines (M/F halves), picked with .For(p.Gender)
 //     PlynlingAdoptLines ....... a new Plynling
-//     PlynlingFeedLines · PlynlingPetLines .......... shown on the card
+//     PlynlingFeedLines · PlynlingPetLines · PlynlingBathLines ... shown on the card
 //     PlynlingPassionTaughtLines ..... /plynling passion
 //     PlynlingPlayPlayerWonLines · PlynlingPlayPlayerLostLines ... end of a /plynling play game
 //     PlynlingVisitKnockLines ...... /plynling visit's knock (the story is Helpers/PlynlingVisitStory)
@@ -451,6 +451,39 @@ internal static class BotResponses
             "Un cri de joie : **{0}** vient de trouver sa passion. Pour aujourd'hui : {1}. Pour les mois à venir : {1}, encore {1}, et toujours {1}.",
             "Je note dans mon carnet : **{0}**, deuxième passion, {1}. Je note aussi que le calme, c'était bien, avant (¬_¬)",
             "**{0}** te regarde avec des étoiles plein les yeux. Merci pour {1}. Elle ne l'oubliera jamais, et ne te laissera pas l'oublier non plus ♡",
+        });
+
+    // Shown on the card after « Laver ». {0} = name.
+    public static readonly GenderedLines PlynlingBathLines = new(
+        M: new[]
+        {
+            "🛁 Plouf ! **{0}** ressort de l'eau en brillant comme un caillou mouillé ✨",
+            "Frotte, frotte… Tu as lavé **{0}**. Il a fait semblant de détester ça pendant tout le bain. Il adore ça (¬_¬)",
+            "Des bulles partout. Sur toi, par terre, sur moi. Pas une seule sur **{0}**, qui est pourtant tout propre. Je ne comprends pas.",
+            "**{0}** s'ébroue et m'éclabousse. Exprès. Je l'ai vu sourire (╬ Ò﹏Ó)",
+            "Toute la boue est partie. Enfin presque : **{0}** en a gardé un peu derrière l'oreille, par principe.",
+            "Tu sors **{0}** du bain, enroulé dans une serviette trois fois trop grande. Adorable. Ne le lui dis pas, il se croit majestueux (˶ᵔ ᵕ ᵔ˶)",
+            "Ça sent la mousse et le linge frais. **{0}** se renifle lui-même, très fier ✨",
+            "« Pas les oreilles ! » a crié **{0}**. Tu as lavé les oreilles. Il boude un peu. Il est propre, par contre.",
+            "Je réclame un bain, moi aussi. **{0}** a eu de la mousse, de l'eau tiède et une serviette chaude. Moi, rien >:(",
+            "**{0}** est tout propre. Et aussi tout fripé. On ne peut pas tout avoir.",
+            "Le seau est vide, la serviette est trempée, et **{0}** brille. Mission accomplie (•̀ᴗ•́)و",
+            "Trois seaux d'eau. **{0}** jure qu'il n'a pas marché dans la flaque habituelle. Je le crois à moitié.",
+        },
+        F: new[]
+        {
+            "🛁 Plouf ! **{0}** ressort de l'eau en brillant comme un caillou mouillé ✨",
+            "Frotte, frotte… Tu as lavé **{0}**. Elle a fait semblant de détester ça pendant tout le bain. Elle adore ça (¬_¬)",
+            "Des bulles partout. Sur toi, par terre, sur moi. Pas une seule sur **{0}**, qui est pourtant toute propre. Je ne comprends pas.",
+            "**{0}** s'ébroue et m'éclabousse. Exprès. Je l'ai vue sourire (╬ Ò﹏Ó)",
+            "Toute la boue est partie. Enfin presque : **{0}** en a gardé un peu derrière l'oreille, par principe.",
+            "Tu sors **{0}** du bain, enroulée dans une serviette trois fois trop grande. Adorable. Ne le lui dis pas, elle se croit majestueuse (˶ᵔ ᵕ ᵔ˶)",
+            "Ça sent la mousse et le linge frais. **{0}** se renifle elle-même, très fière ✨",
+            "« Pas les oreilles ! » a crié **{0}**. Tu as lavé les oreilles. Elle boude un peu. Elle est propre, par contre.",
+            "Je réclame un bain, moi aussi. **{0}** a eu de la mousse, de l'eau tiède et une serviette chaude. Moi, rien >:(",
+            "**{0}** est toute propre. Et aussi toute fripée. On ne peut pas tout avoir.",
+            "Le seau est vide, la serviette est trempée, et **{0}** brille. Mission accomplie (•̀ᴗ•́)و",
+            "Trois seaux d'eau. **{0}** jure qu'elle n'a pas marché dans la flaque habituelle. Je la crois à moitié.",
         });
 
     // Shown on the card after a pet. {0} = name.

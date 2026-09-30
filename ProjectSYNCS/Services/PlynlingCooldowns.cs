@@ -12,6 +12,10 @@ public sealed class PlynlingCooldowns
     public CooldownGate<(ulong Petter, int PlynlingId)> Pet { get; } =
         new(PlynlingLife.PetCooldown, forget: TimeSpan.FromHours(8));
 
+    // One bath every PlynlingLife.BathCooldown per Plynling — only its owner washes it. In memory
+    // like the pet gate, and for the same reason: a restart granting one early bath costs nothing.
+    public CooldownGate<int> Bath { get; } = new(PlynlingLife.BathCooldown, forget: TimeSpan.FromHours(12));
+
     // One game an hour per Plynling, claimed when the game *starts*, so abandoning a game
     // never rolls a new one.
     public CooldownGate<int> Play { get; } = new(PlynlingLife.PlayCooldown, forget: TimeSpan.FromHours(2));

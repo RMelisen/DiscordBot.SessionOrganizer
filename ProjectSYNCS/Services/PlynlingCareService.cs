@@ -46,6 +46,25 @@ public class PlynlingCareService
         return new CareReply(PlynlingModule.BuildCard(plynling, now, text, partnerName: partner?.Name), null);
     }
 
+    // Owner only, every PlynlingLife.BathCooldown; the claim is released on a refusal, like petting.
+    public async Task<CareReply> BathAsync(int plynlingId, ulong actorId, ulong channelId, DateTimeOffset now)
+    {
+        if (!_cooldowns.Bath.TryClaim(plynlingId, out var readyAt)) return new CareReply(null, PlynlingText.BathCooldown(readyAt));
+
+        var (outcome, plynling) = await _plynlings.BathAsync(plynlingId, actorId, now);
+        if (outcome != CareOutcome.Done || plynling is null)
+        {
+            _cooldowns.Bath.Release(plynlingId);
+            var g = plynling?.Gender ?? PlynlingGender.Male;
+            return new CareReply(null, outcome == CareOutcome.Wasted ? PlynlingText.AlreadyClean(g) : Refusal(outcome, g));
+        }
+
+        var line = string.Format(_picker.Pick(channelId, BotResponses.PlynlingBathLines.For(plynling.Gender)),
+            PlynlingCardUi.SafeName(plynling.Name));
+        var partner = await _plynlings.GetPartnerAsync(plynling);
+        return new CareReply(PlynlingModule.BuildCard(plynling, now, line, partnerName: partner?.Name), null);
+    }
+
     public async Task<CareReply> FeedAsync(int plynlingId, ulong actorId, PlynlingFood food, ulong channelId, DateTimeOffset now)
     {
         var result = await _plynlings.FeedAsync(plynlingId, actorId, food, now);
@@ -102,6 +121,7 @@ public class PlynlingCareService
         CareOutcome.Wasted => PlynlingText.Wasted(gender),
         CareOutcome.Asleep => PlynlingText.Asleep(gender),
         CareOutcome.Sulking => PlynlingText.Sulking(gender),
+        CareOutcome.NotOwner => PlynlingText.NotYourPlynling(gender),
         _ => PlynlingText.Unknown,
     };
 }

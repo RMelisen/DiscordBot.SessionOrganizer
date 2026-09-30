@@ -214,13 +214,16 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   Both are looked after from its card (`/plynling view [user]`): **Nourrir** (Champignon,
   Shiitake, Morille, Truffe) costs **cailloux** — anyone can feed anyone's, but someone else's
   costs double; **Caresser** is free, every 4 hours, and anyone can pet anyone's.
+- **Hygiene** empties in 3 days, and a forage (−10 %) or a game (−5 %) dirties it a little.
+  Below 33 % it is *sale*: its happiness drains 1.5× faster and its card says so. **Laver** on
+  its card washes it (+60 %), free, every 6 hours, for its owner only.
 - **Mood matters:** a happy Plynling (above 80 % happiness) gets 15 % more out of every meal,
   and the first time its owner looks at it each day it has a one-in-two chance of having found
   5–15 cailloux for them. A sad one (below 30 %) gets 25 % less. At 0 % it sulks and refuses to
   eat until someone plays with it or pets it — unless it is starving, when hunger wins.
 - **Play:** `/plynling play` starts one of three mini-games at random with your own Plynling —
   cache-cache (find it behind one of three rocks, two tries), pierre-papier-ciseaux (first to
-  two) or plus ou moins (a number from 1 to 100 in six guesses). Once an hour; it always
+  two) or plus ou moins (a number from 1 to 100 in seven guesses, with every earlier guess listed). Once an hour; it always
   cheers it up (+15 % happiness), and a win adds +10 % and a few cailloux.
 - **Visits:** `/plynling visit user:` sends your Plynling knocking at someone's door. If they
   press *Accueillir* within the hour, the knock closes and the visit is told below it, as a new
@@ -257,7 +260,7 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
   picture. It can be fed but not petted, and it never dies in its sleep — a death due at
   night happens at 5 am instead.
 - **The card** (`/plynling view`) shows it in its current mood — gently animated, each species
-  fidgeting in its own way — with its hunger and happiness bars and **Caresser** /
+  fidgeting in its own way — with its hunger, happiness and hygiene bars and **Caresser** / **Laver** /
   **Nourrir** buttons.
 - **Growing up:** *bébé* for its first 2 days, *ado* until 14 days, *adulte*, then *ancien*
   after 6 months — counted in time actually lived, so a freeze pauses it. The card names the
