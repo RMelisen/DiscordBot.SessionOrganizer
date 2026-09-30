@@ -31,10 +31,10 @@ public static class PlynlingCardUi
         // The gender sign sits on the species line, not in the heading: a "## " line renders
         // ♂/♀ at heading size, far too big beside the name.
         var title = CosmeticSlots.Worn(p, CosmeticSlot.Title) is { } t ? $"*« {CosmeticCatalog.TitleFor(t, p.Gender)} »*\n" : "";
-        var accessory = CosmeticSlots.Worn(p, CosmeticSlot.Accessory) is { } a ? $"\nporte {a.Emoji} {a.Name}" : "";
+        var accessory = CosmeticSlots.Worn(p, CosmeticSlot.Accessory) is { } a ? $"\nPorte {a.Emoji} {a.Name}" : "";
         return $"## {SafeName(p.Name)}\n" + title +
                $"{p.Gender.Symbol()} {info.Name} · *{PlynlingCatalog.RarityLabel(info.Rarity)}*\n" +
-               $"à <@{p.OwnerId}> · {StageLabel(PlynlingLife.Stage(p, now), p.Gender)} · {p.Gender.Agree("âgé", "âgée")} de {age}" +
+               $"À <@{p.OwnerId}> · {StageLabel(PlynlingLife.Stage(p, now), p.Gender)} · {p.Gender.Agree("âgé", "âgée")} de {age}" +
                accessory +
                "\n" + PassionsLine(p) +
                (partnerName is null ? "" : $"\n💞 En couple avec **{SafeName(partnerName)}**");
