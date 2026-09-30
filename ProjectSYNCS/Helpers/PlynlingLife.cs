@@ -249,6 +249,14 @@ public static class PlynlingLife
         roll ??= PlynlingSickness.Roll;
         var changed = false;
 
+        // A row that never had a morning (0 would be year 0, which throws) starts at the latest one
+        // rather than replaying all of history. Create and the migration both set it; this is a net.
+        if (p.LastMorningDay == 0)
+        {
+            p.LastMorningDay = MorningDayAtOrBefore(now);
+            changed = true;
+        }
+
         // Frozen until when? Mornings before the thaw are skipped, even once it has thawed below.
         var frozenUntil = IsFrozen(p) ? p.FreezeUntil ?? DateTimeOffset.MaxValue : DateTimeOffset.MinValue;
         if (IsFrozen(p) && p.FreezeUntil is { } until && until <= now)
