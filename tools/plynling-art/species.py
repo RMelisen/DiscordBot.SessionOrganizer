@@ -312,6 +312,7 @@ def finish(g, p, state, S, face_oy=0, face_ox=0, shadow=True, pose=None, origina
         face(g, state, 0, **kw)
     else:
         face_on(g, state, S, face_ox, face_oy, **kw)
+    fly = dirt.fly_spot(g, (id(p), face_oy, state)) if dirt.ACTIVE else None   # found at rest
     g = moved(g, pose)
     im = Image.new("RGBA", (N, N), (0, 0, 0, 0))
     if shadow:
@@ -345,7 +346,7 @@ def finish(g, p, state, S, face_oy=0, face_ox=0, shadow=True, pose=None, origina
     else:
         extras(im, state, p, pose)
     if dirt.ACTIVE:
-        dirt.stink(im, pose.f)
+        dirt.stink(im, pose.f, fly)
     return im
 
 

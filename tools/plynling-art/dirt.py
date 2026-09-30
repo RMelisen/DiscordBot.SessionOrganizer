@@ -75,10 +75,10 @@ GRIME, GRIME_SHARE = (132, 104, 72), 0.16
 STINK = (128, 158, 74)
 # A wisp: a little zigzag three rows tall, which reads as a wavy line at this size.
 WISP = ((0, 0), (1, 1), (0, 2), (1, 3))
-FLY, WING = (40, 36, 40), (214, 226, 236)
+FLY, WING = (96, 92, 104), (226, 234, 242)       # mid-grey, so it reads on a dark theme too
 
 
-def stink(im, f):
+def stink(im, f, fly=None):
     """Three stink wisps rising straight up beside the body's left flank, from the ground to just
     under the brim, fading as they climb, a third of a loop apart — and a fly hovering above them,
     bobbing up and down on the spot. The left, because the right already carries the heart, the
@@ -94,6 +94,14 @@ def stink(im, f):
     left = next((x for x in range(N) if solid(x, 24)), None)
     if left is None:
         return
+    if fly is not None:
+        x, y = fly
+        y -= 1 if f % 4 < 2 else 0                                      # hopping up a pixel and back, in place
+        put(x, y, FLY)                                                  # a body under two wings
+        put(x + 1, y, FLY)
+        put(x, y - 1, WING)
+        put(x + 1, y - 1, WING)
+
     bottom = 27
     ceiling_at = lambda x: max((y for y in range(bottom) if solid(x, y) or solid(x + 1, y)), default=-1)
     for x, phase in ((left - 3, 0), (left - 6, 5), (left - 9, 11)):
@@ -107,10 +115,28 @@ def stink(im, f):
         a = 255 if k < 9 else max(60, 255 - (k - 8) * 28)               # fading near the top
         for dx, dy in WISP:
             put(x + dx, y0 + dy, STINK, a)
-    # the fly: in the open air left of the body, well under the brim, hopping up a pixel and back
-    x = max(left - 6, 2)
-    y = min(max(ceiling_at(x) + 4, 13), 19) - (1 if f % 4 < 2 else 0)
-    put(x, y, FLY)
-    put(x + 1, y, FLY)
-    put(x - 1, y - 1, WING, 230)
-    put(x + 2, y - 1, WING, 230)
+
+
+_spots = {}
+
+
+def fly_spot(g, key):
+    """Where the fly hovers — found once per animation (`key`) on its first frame, the rest pose,
+    so a species whose shape changes along the loop (the Amanite's skirt) cannot move it. It is
+    in open air left of the body, as near as possible to just under the brim, searched on the model
+    before the breath and the hop move it, with a margin wide enough that neither can reach it. It
+    is drawn before the wisps, and opaque, so they go round it: it stays whole all loop."""
+    if key in _spots:
+        return _spots[key]
+    solid = lambda x, y: 0 <= x < N and 0 <= y < N and g.c[y][x] is not None
+    left = next((x for x in range(N) if solid(x, 24)), None)
+    if left is None:
+        return None
+
+    def open_air(x, y):
+        return all(not solid(x + dx, y + dy) for dx in range(-1, 3) for dy in range(-4, 3))
+    # above eye level (row 17 at the latest): the starving cold sweat hangs beside the body lower
+    # down. A cap too wide to leave room under its brim sends it to the free corner above.
+    spots = [(x, y) for y in range(3, 18) for x in range(0, left - 2) if open_air(x, y)]
+    _spots[key] = (min(spots, key=lambda s: (abs(s[0] - (left - 5)) + abs(s[1] - 15), s)) if spots else None)
+    return _spots[key]
