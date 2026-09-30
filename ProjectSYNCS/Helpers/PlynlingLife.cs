@@ -17,10 +17,12 @@ public static class PlynlingLife
     // HungerLife moves deaths earlier, and one already past fires on the next settle.
     public static readonly TimeSpan HungerLife = TimeSpan.FromDays(2);
     public static readonly TimeSpan HappinessLife = TimeSpan.FromHours(36);
+    public static readonly TimeSpan HygieneLife = TimeSpan.FromDays(3);
     public static readonly TimeSpan SelfFreezeMax = TimeSpan.FromDays(14);
     public static readonly TimeSpan SelfFreezeCooldown = TimeSpan.FromDays(7);
     public static readonly TimeSpan WarningLead = TimeSpan.FromHours(3);
     public static readonly TimeSpan PetCooldown = TimeSpan.FromHours(4);
+    public static readonly TimeSpan BathCooldown = TimeSpan.FromHours(6);
     public static readonly TimeSpan AbandonCooldown = TimeSpan.FromMinutes(30);
 
     // /plynling play and /plynling visit. Playing always cheers it up, winning more so; a win
@@ -49,6 +51,16 @@ public static class PlynlingLife
     public const double HungryBelow = 0.50;
     public const double SadBelow = 0.30;
     public const double HappyAbove = 0.80;
+
+    // Below DirtyBelow a Plynling is « sale »: its happiness drains DirtyHappinessFactor times
+    // faster and the card shows it. Strict, like the thresholds above. A bath washes BathAmount
+    // off; an outing (a forage, a game) costs a little.
+    public const double DirtyBelow = 0.33;
+    public const double DirtyHappinessFactor = 1.5;
+    public const double BathAmount = 0.60;
+    public const double ForageDirt = 0.10;
+    public const double PlayDirt = 0.05;
+    public const double ResurrectHygiene = 0.50;
 
     // Mood changes what a meal is worth — its hunger only, never its price or its happiness —
     // and at 0 % it sulks and refuses to eat at all, unless it is starving: the sulk must never
@@ -79,15 +91,32 @@ public static class PlynlingLife
         AdoptedAt = now,
         Hunger = StartNeeds,
         Happiness = StartNeeds,
+        Hygiene = 1.0,
         NeedsAsOf = now,
         LiveSince = now,
+        LastMorningDay = MorningDayAtOrBefore(now),
     };
 
     public static double HungerAt(Plynling p, DateTimeOffset t) =>
         IsFrozen(p) || IsDead(p) ? p.Hunger : Clamp(p.Hunger - (t - p.NeedsAsOf) / HungerLife);
 
-    public static double HappinessAt(Plynling p, DateTimeOffset t) =>
-        IsFrozen(p) || IsDead(p) ? p.Happiness : Clamp(p.Happiness - (t - p.NeedsAsOf) / HappinessLife);
+    public static double HygieneAt(Plynling p, DateTimeOffset t) =>
+        IsFrozen(p) || IsDead(p) ? p.Hygiene : Clamp(p.Hygiene - (t - p.NeedsAsOf) / HygieneLife);
+
+    public static bool IsDirty(Plynling p, DateTimeOffset t) => HygieneAt(p, t) < DirtyBelow;
+
+    // Happiness drains at its own rate while clean and DirtyHappinessFactor times faster once
+    // hygiene has fallen below DirtyBelow. Hygiene falls linearly, so it crosses at one exact
+    // instant and the drain is two straight pieces — exact, not approximated.
+    public static double HappinessAt(Plynling p, DateTimeOffset t)
+    {
+        if (IsFrozen(p) || IsDead(p)) return p.Happiness;
+        var elapsed = Math.Max(0, (t - p.NeedsAsOf).TotalSeconds);
+        var cleanFor = p.Hygiene < DirtyBelow ? 0 : (p.Hygiene - DirtyBelow) * HygieneLife.TotalSeconds;
+        var clean = Math.Min(elapsed, cleanFor);
+        var dirty = elapsed - clean;
+        return Clamp(p.Happiness - (clean + dirty * DirtyHappinessFactor) / HappinessLife.TotalSeconds);
+    }
 
     // When it will starve if nothing changes. Null when it cannot: frozen, or already dead.
     // The raw instant its hunger reaches zero — EffectiveDeathAt is when it actually dies.
@@ -121,6 +150,23 @@ public static class PlynlingLife
     }
 
     private static DateTimeOffset AtWallClock(DateTime wall) => new(wall, AppTime.Zone.GetUtcOffset(wall));
+
+    // ---- mornings: 05:00 Paris, when every Plynling wakes -----------------------------------------
+
+    public static DateTimeOffset MorningAt(int dayKey) => AtWallClock(FromDayKey(dayKey) + NightEnd);
+
+    public static int NextDay(int dayKey) => ToDayKey(FromDayKey(dayKey).AddDays(1));
+
+    // The day of the latest morning at or before t: today's from 05:00, yesterday's before.
+    public static int MorningDayAtOrBefore(DateTimeOffset t)
+    {
+        var zoned = AppTime.ToZoned(t);
+        return ToDayKey(zoned.TimeOfDay >= NightEnd ? zoned.Date : zoned.Date.AddDays(-1));
+    }
+
+    private static DateTime FromDayKey(int dayKey) => new(dayKey / 10000, dayKey / 100 % 100, dayKey % 100);
+
+    private static int ToDayKey(DateTime day) => day.Year * 10000 + day.Month * 100 + day.Day;
 
     public static TimeSpan Age(Plynling p, DateTimeOffset now) =>
         TimeSpan.FromSeconds(p.AgeBankedSeconds) + (IsFrozen(p) || IsDead(p) ? TimeSpan.Zero : now - p.LiveSince);
@@ -249,12 +295,28 @@ public static class PlynlingLife
         if (WarnAt(p) is { } warn && now < warn) p.WarningSent = false;
     }
 
+    public static bool WouldWasteBath(Plynling p, DateTimeOffset now) => HygieneAt(p, now) >= Full;
+
+    public static void Bath(Plynling p, DateTimeOffset now)
+    {
+        Rebase(p, now);
+        p.Hygiene = Clamp(p.Hygiene + BathAmount);
+    }
+
+    // What an outing costs in hygiene (a forage, a game).
+    public static void Dirty(Plynling p, DateTimeOffset now, double amount)
+    {
+        Rebase(p, now);
+        p.Hygiene = Clamp(p.Hygiene - amount);
+    }
+
     public static long RollPlayPebbles(Random rng) => rng.Next(PlayWinPebblesMin, PlayWinPebblesMax + 1);
 
     public static void Play(Plynling p, DateTimeOffset now, bool won)
     {
         Rebase(p, now);
         p.Happiness = Clamp(p.Happiness + PlayAmount + (won ? PlayWinBonus : 0));
+        p.Hygiene = Clamp(p.Hygiene - PlayDirt);
         p.Plays++;
         if (won) p.PlaysWon++;
     }
@@ -305,15 +367,22 @@ public static class PlynlingLife
         p.FrozenByStaff = false;
         p.Hunger = ResurrectNeeds;
         p.Happiness = ResurrectNeeds;
+        p.Hygiene = ResurrectHygiene;
         p.NeedsAsOf = now;
         p.LiveSince = now;
+        p.LastMorningDay = MorningDayAtOrBefore(now);
     }
 
     // Stores the current values as of `at`. Only meaningful while alive and not frozen.
+    // Every value is computed before any is stored: HappinessAt reads the stored hygiene.
     private static void Rebase(Plynling p, DateTimeOffset at)
     {
-        p.Hunger = HungerAt(p, at);
-        p.Happiness = HappinessAt(p, at);
+        var hunger = HungerAt(p, at);
+        var happiness = HappinessAt(p, at);
+        var hygiene = HygieneAt(p, at);
+        p.Hunger = hunger;
+        p.Happiness = happiness;
+        p.Hygiene = hygiene;
         p.NeedsAsOf = at;
     }
 

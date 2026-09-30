@@ -51,6 +51,8 @@ public class Plynling
     // 0..1, as of NeedsAsOf. While frozen or dead they are simply the stored values.
     public double Hunger { get; set; }
     public double Happiness { get; set; }
+    // Below PlynlingLife.DirtyBelow it is « sale ». Starts clean.
+    public double Hygiene { get; set; } = 1.0;
     public DateTimeOffset NeedsAsOf { get; set; }
 
     // Age = AgeBankedSeconds, plus the current stretch since LiveSince while alive and
@@ -85,6 +87,10 @@ public class Plynling
     // The Paris day (AppTime.DayKey) of its last happy-gift draw, win or lose — one a day,
     // stored so a restart cannot grant a second. 0 = never.
     public int LastGiftDay { get; set; }
+
+    // The last 05:00 Paris morning already played (yyyymmdd, like AppTime.DayKey):
+    // PlynlingLife.Settle plays every later one, in order, exactly once.
+    public int LastMorningDay { get; set; }
 
     public DateTimeOffset? DiedAt { get; set; }
     // Set by the sweep once the death has been announced (or attempted), so it is never
