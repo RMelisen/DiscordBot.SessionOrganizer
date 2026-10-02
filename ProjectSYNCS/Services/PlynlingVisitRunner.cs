@@ -32,7 +32,18 @@ public class PlynlingVisitRunner
         if (!_cooldowns.TryClaimVisit(visitor.OwnerId, host.OwnerId, day))
             return (null, PlynlingText.VisitedToday(visitor.OwnerId));
 
-        var met = await _plynlings.VisitAsync(visitor.Id, host.Id, now);
+        // A throw here means nothing was saved (the save is VisitAsync's last step), so the claim
+        // goes back — left held, the pair would be told « déjà vus » for a visit that never happened.
+        VisitOutcome? met;
+        try
+        {
+            met = await _plynlings.VisitAsync(visitor.Id, host.Id, now);
+        }
+        catch
+        {
+            _cooldowns.ReleaseVisit(visitor.OwnerId, host.OwnerId, day);
+            throw;
+        }
         if (met is not { } pair)
         {
             _cooldowns.ReleaseVisit(visitor.OwnerId, host.OwnerId, day);

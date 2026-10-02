@@ -125,7 +125,12 @@ claimed at **start**, so abandoning never rerolls. A restart ends games in progr
 **An invitation, with a knock meant to ping** — `AllowedMentions` with the invited owner's id only.
 « Accueillir » carries the visitor's Plynling, the host and the expiry in its custom-id (nothing
 secret); only the host may press it, within the hour. **Once a day per pair of owners, either
-direction**, in memory in `PlynlingCooldowns`, released if the visit fails. **A visit pays no
+direction**, in memory in `PlynlingCooldowns`, released if the visit fails **or `VisitAsync` throws**
+(its save is its last step, so a throw means nothing happened — a held claim would answer « déjà
+vus » for a visit that never took place). **« Accueillir » defers before any database work**: on the
+Pi the reads and the save outran Discord's 3 s, leaving the visit claimed with the knock never
+closed. Its refusals are therefore ephemeral follow-ups, and the knock closes through
+`ModifyOriginalResponseAsync`. **A visit pays no
 cailloux** (two accounts could farm it). `Plays`, `PlaysWon` and `Visits` are recorded for badges.
 
 **Decided before it starts, told as a story.** `VisitAsync` saves everything first; then
@@ -321,8 +326,10 @@ let it throw. The main `/help` points to it in one line only.
 - `PrepareProdLaunch` (scoped to the production guild) zeroed wallets, deleted its
   `EconomyDailyStats` (the beta's money) and copied Pwet from a test server as a newborn. Its
   timestamps are computed in C# inside `Up` — never generate a SQL script from it.
-- `Helpers/PlynlingLaunch`: two people's *first* Plynling on production is chosen (a male Coprin, a
-  female Girolle) rather than rolled — "first" meaning no row there and no abandonment on `/shame`.
-  They're made for each other with no special case: whichever adopts second gets an explicit id
-  (`PlynlingLaunch.MatchingId`, about 1 in 41 qualifies) whose compatibility hash with the other's is
-  the maximum, +20. Their affinity starts at 0.
+- `Helpers/PlynlingLaunch` once chose two people's *first* Plynling on production (a Coprin and a
+  Girolle) and gave the second an id whose compatibility hashed to the maximum (+20). It was removed
+  once both existed; the two rows are now ordinary ones.
+- `SwapLaunchPairGenders` flips those two living Plynlings' genders (Coprin male → female, Girolle
+  female → male), matching on current species and gender so it is a no-op on any row that is no
+  longer the launch one. Nothing else stores a gender — compatibility comes from the ids, the art is
+  not gendered, journal moments are worded at display.

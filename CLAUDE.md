@@ -122,9 +122,10 @@ restart **by design**.
   to** — everything before the buckets existed lives only in the totals. A removal always
   decrements *today's* bucket. Follow this shape for any new dated leaderboard.
 - **No `HasMaxLength`**: SQLite doesn't enforce it. Cap at the input instead (below).
-- **Migrations are schema-only, except four deliberate data migrations** riding apply-on-startup:
-  `ResetMemberXp` and `ResetXpTotals` (XP wipes), `AddPlynlingPassions` (backfill) and
-  `PrepareProdLaunch` (one-guild launch prep, details in `plynling.md`). Rules learned from them:
+- **Migrations are schema-only, except five deliberate data migrations** riding apply-on-startup:
+  `ResetMemberXp` and `ResetXpTotals` (XP wipes), `AddPlynlingPassions` (backfill),
+  `PrepareProdLaunch` (one-guild launch prep) and `SwapLaunchPairGenders` (details of the last three
+  in `plynling.md`). Rules learned from them:
   a wipe **resets the reward and keeps the record** (`UPDATE … SET TotalXp = 0`, never deleting
   rows that also carry facts like `ReactionsUsed`); a data migration's `Down` cannot restore
   anything, so it is for one-off corrections only; never generate a SQL script from a migration
@@ -201,6 +202,12 @@ free). `AllowedMentions.None` keeps the clickable pill while silencing it. Avata
 
 - **Discord side effects must never break the flow.** Swallow and log (`SessionEventSync` degrades
   silently without Manage Events; reminder DMs catch `CannotSendMessageToUser`).
+- **An interaction must be answered within 3 s, and the Pi's database can outrun that.** A handler
+  that reads or writes the database before it can show anything defers first (`DeferAsync`, then
+  follow-ups / `ModifyOriginalResponseAsync`). Otherwise the work is saved while the click looks
+  dead — « Accueillir » on a visit did exactly that.
+- **An in-memory claim taken before a save is released if the save throws**, or the person is
+  refused for something that never happened.
 - **An exception escaping a hosted loop stops the whole bot** (default `StopHost`). Every sweep
   catches **per item**, not per pass, so one bad row doesn't stop the batch — and
   `BackgroundServiceExceptionBehavior.Ignore` is *not* the fix (it leaves the loop silently dead).
@@ -262,8 +269,8 @@ tokens go in user secrets (dev) or add-on options (prod), never in a tracked fil
 These literal snowflakes are tied to one specific server: `AvailabilityService.OwnerId`; the other
 leveling bot's id in `Helpers/LevelUpAnnouncement`; the custom emote ids in `Helpers/Emotes`;
 `XpTracker.ExcludedChannels`; `ShameModule.ExtraVoters`; the per-user maps in `BotResponses`
-(`PersonalComebacks`, `RealNames`, `KnownGenders`, `TataId`, `FamilyNicknames`);
-`Helpers/PlynlingLaunch`; and `PlynlingAnnouncer.GameChannelId`.
+(`PersonalComebacks`, `RealNames`, `KnownGenders`, `TataId`, `FamilyNicknames`); and
+`PlynlingAnnouncer.GameChannelId`.
 
 `ExcludedChannels` and `ExtraVoters` are *floors*: `/config` can add to them but never remove from
 them. `OwnerId` is deliberately **not** configurable — it gates `/debug` and the DM relay, so making
