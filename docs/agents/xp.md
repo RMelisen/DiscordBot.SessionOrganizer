@@ -3,9 +3,11 @@
 ## The system
 
 **`/level` is SYNCS's own XP system, deliberately parallel to the server's other leveling bot.**
-They share no code, state or vocabulary beyond "niveau". Neither may reference the other — not in a
-line, not in a comment implying one is better. (`Helpers/LevelUpAnnouncement` only *detects* the
-other bot's announcements so she can cheer them.)
+They share no code, state or vocabulary beyond "niveau", and no code or comment may treat one as
+the better system. (`Helpers/LevelUpAnnouncement` only *detects* the other bot's announcements so
+she can answer them.) Her *lines* may sulk about it, but only in her jealousy pools
+(`RivalLevelUpLines`, `JealousLines`, `RivalMutters`); `XpLevelUpLines` and the `/level` UI never
+mention it. See `docs/syncs-voice.md`.
 
 **`XpTracker` is the singleton every signal funnels through**: message, reaction, bot-interaction
 bonus, verdict bonus, voice sweep. Same `IServiceProvider` + `CreateAsyncScope` shape as the other

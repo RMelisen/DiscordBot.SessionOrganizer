@@ -195,8 +195,9 @@ services agree on what an announcement is.
 **A rival's level-up gets a grudging congratulation**: `BotResponses.RivalLevelUpLines` mixes warm
 and jealous in **one** pool (the person is still owed a "bravo"). `{0}` is the level from
 `LevelUpAnnouncement.TryReadLevel`, so the pool goes through `string.Format` — a stray brace
-throws. Her own system's `XpLevelUpLines` stays entirely warm; keep them apart. `/level` and the
-other bot share no code and no state, and no line may compare them.
+throws. Her own system's `XpLevelUpLines` stays entirely warm and never mentions the
+other bot; keep them apart. `/level` and the other bot share no code and no state — the comparison
+lives only in her jealousy lines.
 
 ## `/yesno`
 
