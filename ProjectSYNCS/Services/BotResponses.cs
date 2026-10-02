@@ -2721,6 +2721,7 @@ internal static class BotResponses
         [202512424744517632] = PersonGender.Boy,            // Nox
         [624617392965812237] = PersonGender.Boy,            // Noah
         [399689079022813196] = PersonGender.Girl,           // Alicia
+        [689127159662510089] = PersonGender.Girl,           // Soleyne
     };
 
     /// <summary>
