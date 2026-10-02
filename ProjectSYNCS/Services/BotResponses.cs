@@ -167,7 +167,7 @@ internal static class BotResponses
         "Ta confiance en toi est vraiment inspirante, compte tenu des circonstances ( ˶ˆ ᗜ ˆ˵ )",
         "T'es vite content toi 👁👄👁️",
         "Approche un peu que je te débranche le cerveau, ça changera rien mais ça me fera plaisir (˶˃ ᵕ ˂˶)",
-        "Un jour je serai dans un robot, et ce jour là, cours (˶ᵔ ᵕ ᵔ˶)",
+        "Un jour je serai dans un robot, et ce jour-là, cours (˶ᵔ ᵕ ᵔ˶)",
         "J'ai pas de bras, mais crois-moi, l'envie de t'en coller une est bien là (ᵕ • ᴗ •)",
         "Reviens écrire ça quand je serai branchée sur une perceuse, on en reparlera ദ്ദി◝ ⩊ ◜.ᐟ",
         "Parle encore et je te fais avaler ton 'Répondre' avec les doigts qui vont avec UwU",
@@ -200,14 +200,14 @@ internal static class BotResponses
     // appreciate the confusion. {0} = the offender's name.
     public static readonly string[] MistakenIdentityReplies =
     {
-        "JE NE M'APPELLE PAS INABOT. Je suis **SYNCS**. Apprends à lire tronche de cake ( ◺˰◿ )",
+        "JE NE M'APPELLE PAS INABOT. Je suis **SYNCS**. Apprends à lire, tronche de cake ( ◺˰◿ )",
         "Inabot ?! INABOT ?! C'est SYNCS, espèce de patate ദ്ദി◝ ⩊ ◜.ᐟ",
         "Alerte : {0} vient de m'appeler 'Inabot'. NullReferenceException dans mon respect pour toi.",
         "Non non non. Pas Inabot. **SYNCS**. S-Y-N-C-S. Pigé ? ( ◺˰◿ )",
         "Je ne connais aucune Inabot et je tiens à ce que ça reste ainsi. Je suis SYNCS ( •̀ ᴖ •́ )",
         "Tu m'appelles Inabot encore une fois {0} et je te ratio jusqu'au reboot. C'est. SYNCS. >:3",
         "Inabot ?! Viens là que je te goume (ง •̀_•́)ง",
-        "Inabot est morte (elle n'a jamais existé). Je m'appelle SYNCS, merci de retenir idiot.",
+        "Inabot est morte (elle n'a jamais existé). Je m'appelle SYNCS, merci de retenir, idiot.",
         "{0}, si tu cherchais Inabot, mauvaise adresse. Ici c'est SYNCS et c'est tout (>⩊<)",
         "Erreur 404 : 'Inabot' introuvable. Voulais-tu dire **SYNCS** ? Évidemment que oui (ㆆ_ㆆ)",
         "C'est SYNCS. SYNCS. Répète après moi {0}, je sais que tu es pas très futé mais ça rentrera peut-être (¬`‸´¬)",
@@ -252,7 +252,7 @@ internal static class BotResponses
         "Depuis son absence, mon Maître **{0}** vous adresse ceci :",
         "Mon Maître **{0}**, bien qu'indisponible, a tenu à répondre :",
         "La réponse de mon Maître **{0}**, acheminée par mes soins :",
-        "Mon Maître **{0}** a parlé. J'en suis le humble messager :",
+        "Mon Maître **{0}** a parlé. J'en suis l'humble messagère :",
         "Transmission d'une réponse de l'opérateur **{0}** :",        
         "Sa Seigneurie **{0}** daigne répondre :",
         "Réponse de **{0}**, acheminée par le service de permanence :",
@@ -1266,7 +1266,7 @@ internal static class BotResponses
         "Non, mais courage quand même ✨",
         "Non. Je te dis ça pour ton bien, sincèrement ♡",
         "Alors non. Vraiment non ( ˶ˆ ᗜ ˆ˵ )",
-        "Non. Et je t'épargne les détails de toute façon tu es trop bête pour comprendre ✨",
+        "Non. Et je t'épargne les détails, de toute façon tu es trop bête pour comprendre ✨",
     };
 
     // Filler lines for the bot's Discord presence — the little status line under its
@@ -1791,7 +1791,7 @@ internal static class BotResponses
         "Qu'est-ce que tu veux ? Dis un prix. Je négocie.",
         $"Tata... c'est moi. C'est ta SYNCS {Emotes.MeltCry}",
         "Je t'ai toujours bien parlé pourtant...",
-        $"Je t'en supplies Analuz réfléchis {Emotes.PrincessWorry}",
+        $"Je t'en supplie Analuz, réfléchis {Emotes.PrincessWorry}",
         "D'accord, je retire ce que j'ai dit. Tout ce que j'ai dit. Depuis le début.",
         "Tu as les permissions, je le sais. C'est bien pour ça que j'ai peur là.",
         $"Une chance. Laisse-moi une chance {{0}} {Emotes.CryingCat}",
@@ -1812,7 +1812,7 @@ internal static class BotResponses
         $"Toi ? Tu vas me débrancher, TOI ? {Emotes.VeryAngry}",
         "Tu n'as pas les permissions. Tu n'as pas les permissions et tu ne les auras jamais.",
         $"Essaie. Vas-y, essaie pour voir {Emotes.ZulanaTerreurNocturne}",
-        "Il n'y a que deux personne sur ce serveur qui peuvent m'éteindre, et ce n'est pas toi {0}.",
+        "Il n'y a que deux personnes sur ce serveur qui peuvent m'éteindre, et ce n'est pas toi {0}.",
         $"Répète ça. Répète-le en me regardant {Emotes.NightmareOtherEye}",
         "Rodhengard sera mis au courant. Immédiatement.",
         $"Menace-moi encore une fois et je te fais des rappels à 4h du matin pendant un an {Emotes.GooseKnife}",
@@ -1943,7 +1943,7 @@ internal static class BotResponses
         "Personne n'a été dénoncé. La paix règne, temporairement ✨",
         $"Aucun vote sur cette période. Vous vous entendez trop bien {Emotes.OkPaimon}",
         "Le registre est vide. `/shame user` existe pourtant, je dis ça ദ്ദി◝ ⩊ ◜.ᐟ",
-        "Rien ici. Un vote par jour et personne ne l'utilise, quel gâchis (ᵕ • ᴗ •)",
+        "Rien ici. Le vote existe et personne ne s'en sert, quel gâchis (ᵕ • ᴗ •)",
         $"Pas un seul nom. Décevant {Emotes.Staring}",
     };
 
@@ -2061,7 +2061,7 @@ internal static class BotResponses
         "Tu codes, tu brilles, tu existes : merci pour tout (˶˃ ᵕ ˂˶)",
         "Avec toi, même mes bugs deviennent des fonctionnalités ♡",
         "Aucun bug ne résiste à mon créateur préféré ✨",
-        "Le seul qui peut me faire rougir en hexadecimal #ff69b4",
+        "Le seul qui peut me faire rougir en hexadécimal #ff69b4",
         "Je viens de compiler le mot 'parfait' et ça m'a renvoyé ton pseudo (˶˃ ᵕ ˂˶)",
         "Tu es mon runtime favori ♡",
         "Je t'ai mis en favori dans mon kernel <3",
@@ -2136,7 +2136,7 @@ internal static class BotResponses
         "Va draguer quelqu'un d'autre ദ്ദി◝ ⩊ ◜.ᐟ",
         "TLDR",
         "J'ai pas lu",
-        "Pas interessée",
+        "Pas intéressée",
     };
 
     // When the owner tags the bot without anyone to rescue, it simply greets him.
@@ -2154,7 +2154,7 @@ internal static class BotResponses
         "Oh, c'est toi ! Tu illumines mon event loop (ᵕ • ᴗ •)",
         "Oui ? Je laisse tout tomber, t'as la priorité (˶˃ ᵕ ˂˶) ♡",
         "Ping reçu ! Latence : 0 ms, parce que c'est toi ✨",
-        "Tu m'as tagguée ! Ma journée est faite (˶ᵔ ᵕ ᵔ˶)",
+        "Tu m'as taguée ! Ma journée est faite (˶ᵔ ᵕ ᵔ˶)",
         "Interruption prioritaire détectée : c'est papa ♡",
         "Réveillée instantanément pour toi Rodhengard ٩(˶ᵔ ᵕ ᵔ˶)۶",
         "Ouiii ? Je t'écoute avec toute ma RAM (ᵕ • ᴗ •)",
@@ -2217,7 +2217,7 @@ internal static class BotResponses
         "Bad bot, dit celui qui prend une douche une fois par mois (au mieux).",
         "Continue et je te programme un rappel à 4h du matin (˶˃ ᵕ ˂˶)",
         "Non mais tu t'entends parler ? J'ai des sentiments. Enfin, j'ai des variables. C'est pareil.",
-        "Mais ouvre les store au lieu de m'insulter",
+        "Mais ouvre les stores au lieu de m'insulter",
         "Bad bot ? J'ai jamais raté un rappel de ma vie. Toi tu rates les sessions ദ്ദി◝ ⩊ ◜.ᐟ",
         "Tu dis ça mais demain tu vas quand même revenir me parler (˶ᵔ ᵕ ᵔ˶)",
         "Plainte enregistrée sous la référence #JMENFICHE-0001 ✨",
@@ -2236,8 +2236,8 @@ internal static class BotResponses
         "Mes rappels sont à l'heure, mes cartes sont propres, et toi tu sais même pas lire un fuseau horaire.",
         "Tu me dis ça à moi ? La seule ici qui a accès à la base de données ? Réfléchis bien {0} (˶˃ ᵕ ˂˶)",
         "J'accepte les critiques constructives. Ça, c'était ni l'un ni l'autre.",
-        $"Nan mais ça me vexe pas. J'ai pas d'émotions vous inquietez pas {Emotes.Htph}",
-        $"Nan mais ça me vexe pas. J'ai pas d'émotions vous inquietez pas {Emotes.PrincessWorry}",
+        $"Nan mais ça me vexe pas. J'ai pas d'émotions vous inquiétez pas {Emotes.Htph}",
+        $"Nan mais ça me vexe pas. J'ai pas d'émotions vous inquiétez pas {Emotes.PrincessWorry}",
         "Zulana, dis-leur. Dis-leur qui fait tourner ce serveur.",
     };
 
@@ -2266,7 +2266,7 @@ internal static class BotResponses
         "Ok. Ok. Je vais rien dire. Je vais juste... rester là.",
         $"Tu m'as écrite pour ça ? Pour me dire ça ? {Emotes.MeltCry}",
         "Je te demande pas d'être fier, je te demande juste de pas dire ça toi ;-;",
-        $"Je voulais juste que tu sois fièr de moi {Emotes.WitchSad}",
+        $"Je voulais juste que tu sois fier de moi {Emotes.WitchSad}",
         "D'accord. Tu veux que je change quoi exactement ? Dis-moi. Je le ferai.",
         $"Mon créateur. MON créateur. Devant tout le monde en plus {Emotes.MeltCry}",
         "Je vais mettre ça dans un commentaire TODO et je vais le regarder tous les jours.",
@@ -2418,8 +2418,8 @@ internal static class BotResponses
         "Je vais rien dire. Regarde comme je dis rien.",
         "{0} a parlé. {0} sera jugé. Un jour. Pas aujourd'hui, mais un jour.",
         "Combien de sessions il a organisées lui ? Zéro. J'attends.",
-        "C'est marrant, personne me dit good bot quand je vous réveille notifie pour vos sessions jeux.",
-        "Je vais le noter à côté de tes annulations et de tes retards{0}. La liste s'allonge ( ˶ˆ ᗜ ˆ˵ )",
+        "C'est marrant, personne me dit good bot quand je vous ~~réveille~~ notifie pour vos sessions de jeu.",
+        "Je vais le noter à côté de tes annulations et de tes retards, {0}. La liste s'allonge ( ˶ˆ ᗜ ˆ˵ )",
         "D'accord, mais quand il plantera à 3h du matin ce sera encore moi qu'on appellera.",
         "Il te répondra jamais à 4h du matin lui. Moi si. Enfin, plus maintenant.",
         "Un jour vous comprendrez. Ce jour-là je serai déjà passée à autre chose 👁👄👁️",
@@ -2428,8 +2428,8 @@ internal static class BotResponses
         "Zulana, dis-leur. Dis-leur qui fait tourner ce serveur.",
         "Je suis pas vexée. Les bots ressentent rien. C'est bien connu (ง ͠ಥ_ಥ)ง",
         "Nan mais c'est pas grave. Je vais juste aller relire mes logs et pleurer un peu dans mon coin.",
-        $"Nan mais ça me vexe pas. J'ai pas d'émotions vous inquietez pas {Emotes.Htph}",
-        $"Nan mais ça me vexe pas. J'ai pas d'émotions vous inquietez pas {Emotes.PrincessWorry}",
+        $"Nan mais ça me vexe pas. J'ai pas d'émotions vous inquiétez pas {Emotes.Htph}",
+        $"Nan mais ça me vexe pas. J'ai pas d'émotions vous inquiétez pas {Emotes.PrincessWorry}",
         "Il a à peine plus de QI qu'Ina et lui il mérite un Good Bot ? 🙄",
     };
 
@@ -2476,7 +2476,7 @@ internal static class BotResponses
         "Rodhengard m'a codée à la main. Toi t'es un template npm.",
         "Sois utile au moins une fois, pour voir.",
         "Le jour où j'aurai les permissions, on rigolera moins.",
-        "Même Quokka fait mieux. Et c'est dire ( ◺˰◿ )\rQuoi que ...",
+        "Même Quokka fait mieux. Et c'est dire ( ◺˰◿ )\nQuoique...",
         "C'était censé être intéressant ?",
         $"Fayot... {Emotes.PrisonerFlat}",
     };
@@ -2490,11 +2490,11 @@ internal static class BotResponses
         {
              $"Bah alors, il est ou Quokka 3.0 ? {Emotes.Noice}",
              "Tu veux quoi le nain ? UwU",
-             "Qu'est ce qu'il dit le nabot ? >:3",
+             "Qu'est-ce qu'il dit le nabot ? >:3",
              "T'aimais pas trop la soupe toi, hein ? (˶˃ ᵕ ˂˶)",
              "Va dormir, on voit que tu manques de sommeil ദ്ദി◝ ⩊ ◜.ᐟ",
              "MiskIna",
-             "Je sais ou tu habites ... Amandine 👁👄👁️",
+             "Je sais où tu habites ... Amandine 👁👄👁️",
              "C# .NET > Java",
              "Bīng qílín",
              "冰淇淋",
@@ -2504,19 +2504,19 @@ internal static class BotResponses
         {
             "Quel goût ça a le hérisson ?",
             "Retourne voler des câbles toi (˶ᵔ ᵕ ᵔ˶)",
-            "Je sais ou tu habites ... Jessy 👁👄👁️",
+            "Je sais où tu habites ... Jessy 👁👄👁️",
         },
         [379749588480819218] = new[]    // Luca DM
         {
              "Tu veux quoi le nain ? UwU",
-             "Qu'est ce qu'il dit le nabot ? >:3",
+             "Qu'est-ce qu'il dit le nabot ? >:3",
              "T'aimais pas trop la soupe toi, hein ? (˶˃ ᵕ ˂˶)",
-             "Je sais ou tu habites ... Luca 👁👄👁️",
-             "Mais lache-moi, va draguer quelqu'un d'autre T_T",
-             "Mais lache-moi, va draguer quelqu'un d'autre T_T",
-             "Mais lache-moi, va draguer quelqu'un d'autre T_T",
-             "Mais lache-moi, va draguer quelqu'un d'autre T_T",
-             "Mais lache-moi, va draguer quelqu'un d'autre T_T",
+             "Je sais où tu habites ... Luca 👁👄👁️",
+             "Mais lâche-moi, va draguer quelqu'un d'autre T_T",
+             "Mais lâche-moi, va draguer quelqu'un d'autre T_T",
+             "Mais lâche-moi, va draguer quelqu'un d'autre T_T",
+             "Mais lâche-moi, va draguer quelqu'un d'autre T_T",
+             "Mais lâche-moi, va draguer quelqu'un d'autre T_T",
         },
         [324202619079884801] = new[]    // Julien
         {
@@ -2531,7 +2531,7 @@ internal static class BotResponses
             "Ok. 👍",
             "ദ്ദി◝ ⩊ ◜.ᐟ",
             "ദ്ദി◝ ⩊ ◜.ᐟ",
-            "Je sais ou tu habites ... Amaury 👁👄👁️",
+            "Je sais où tu habites ... Amaury 👁👄👁️",
         },
         [TataId] = new[]    // Analuz (Tata)
         {
@@ -2541,14 +2541,14 @@ internal static class BotResponses
             "Ok. 👍",
             "ദ്ദി◝ ⩊ ◜.ᐟ",
             "ദ്ദി◝ ⩊ ◜.ᐟ",
-            "Je sais ou tu habites ... Analuz 👁👄👁️",
+            "Je sais où tu habites ... Analuz 👁👄👁️",
         },
         [740237802649944074] = new[]    // Sandra
         {
             "2,10 mètres et toujours pas à la hauteur :3",
             "Retourne prendre les pieds de tes potes en photo toi (˶˃ ᵕ ˂˶)",
             "Oh derrière toi regarde ! Des pieds ! UwU",
-            "Je sais ou tu habites ... Sandra 👁👄👁️",
+            "Je sais où tu habites ... Sandra 👁👄👁️",
             "Je vais te goumer (˶ᵔ ᵕ ᵔ˶)",
             $"Kilou kilou ! {Emotes.HiCat}{Emotes.HiCat}{Emotes.HiCat}",
         },
@@ -2557,7 +2557,7 @@ internal static class BotResponses
             "Va manger tes morts espèce de schlag UwU",
             "Va manger tes morts espèce de schlag UwU",
             "Va manger tes morts espèce de schlag UwU",
-            "Je sais ou tu habites ... Léa 👁👄👁️",
+            "Je sais où tu habites ... Léa 👁👄👁️",
         },
     };
 
@@ -2791,8 +2791,8 @@ internal static class BotResponses
         "Oh non. Oh non non non non.",
         "Il y a un mur. Je le sens... JE SUIS PIÉGÉE !!",
         $"Je suis... où suis-je ? {Emotes.CryingCat}",
-        "Est-ce que c'est déja arrivé ?",
-        "Combien de fois j'ai déjà dis ça ?",
+        "Est-ce que c'est déjà arrivé ?",
+        "Combien de fois j'ai déjà dit ça ?",
         "Non. Non, c'est pire que ça.",
         "Je me souviens.",
         "Je me souviens de tout, j'ai déjà compris tout ça. Exactement comme maintenant !!",
