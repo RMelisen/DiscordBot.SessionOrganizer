@@ -2760,6 +2760,7 @@ internal static class BotResponses
         [202512424744517632] = "Nox",
         [624617392965812237] = "Noah",
         [399689079022813196] = "Alicia",
+        [689127159662510089] = "Soleyne",
     };
 
     // The breakdown's first message mimics a normal reply that glitches mid-word.
