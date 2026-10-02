@@ -14,9 +14,14 @@ namespace ProjectSYNCS.Commands;
 // No DeferAsync anywhere: every action is one or two row reads and one write, well inside
 // Discord's 3 s, and not deferring is what lets a success be a *public* V2 card while a
 // refusal stays *private* — a public "thinking…" cannot become an ephemeral reply.
+//
+// Abstract and group-less on purpose: the commands are registered twice, under /plynling and
+// under the /pl shortcut, by the two sealed groups in PlynlingGroups.cs. Discord.Net picks up
+// inherited [SlashCommand]s and skips abstract modules, so a command added here lands in both.
+// The modal handlers are *not* attributed here — two copies of one custom-id would be two
+// owners — and are wired up by PlynlingLongModule only.
 [CommandContextType(InteractionContextType.Guild)]
-[Group("plynling", "Ton Plynling : l'adopter, t'en occuper, le regarder vivre")]
-public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
+public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly PlynlingService _plynlings;
     private readonly ResponsePicker _picker;
@@ -28,7 +33,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
     private readonly PlynlingVisitRunner _visits;
     private readonly ILogger<PlynlingModule> _logger;
 
-    public PlynlingModule(PlynlingService plynlings, ResponsePicker picker,
+    protected PlynlingModule(PlynlingService plynlings, ResponsePicker picker,
         PlynlingAnnouncer announcer, PlynlingCooldowns cooldowns, ShameService shame, PlynlingPlayService play,
         CosmeticService cosmetics, PlynlingVisitRunner visits, ILogger<PlynlingModule> logger)
     {
@@ -92,8 +97,8 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         await RespondWithModalAsync<AbandonModal>($"plyn:abandon:{plynling.Id}");
     }
 
-    [ModalInteraction("plyn:abandon:*", ignoreGroupNames: true)]
-    public async Task OnAbandonConfirmedAsync(string idStr, AbandonModal modal)
+    // Bound to "plyn:abandon:*" by PlynlingLongModule.
+    protected async Task OnAbandonConfirmedAsync(string idStr, AbandonModal modal)
     {
         var now = DateTimeOffset.UtcNow;
         var plynling = int.TryParse(idStr, out var id) ? await _plynlings.GetByIdAsync(id, now) : null;
@@ -442,8 +447,8 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         await RespondWithModalAsync(modal);
     }
 
-    [ModalInteraction("plyn:passion:*", ignoreGroupNames: true)]
-    public async Task OnPassionTaughtAsync(string idStr, PassionModal modal)
+    // Bound to "plyn:passion:*" by PlynlingLongModule.
+    protected async Task OnPassionTaughtAsync(string idStr, PassionModal modal)
     {
         var now = DateTimeOffset.UtcNow;
         var cleaned = PlynlingPassions.Clean(modal.Passion);
@@ -492,7 +497,7 @@ public class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
         new EmbedBuilder()
             .WithTitle("🍄 Plynlings — mode d'emploi")
             .WithDescription("Un Plynling est un petit champignon qui vit avec toi. Nourris-le, caresse-le, " +
-                             "et surtout… ne l'oublie pas.")
+                             "et surtout… ne l'oublie pas.\n-# Raccourci : `/pl` marche partout à la place de `/plynling`.")
             .WithColor(new Color(0xCE323A))
             .AddField("Adopter & regarder",
                 "**`/plynling adopt name:`** — Gratuit, un seul à la fois. L'espèce est tirée au sort : " +

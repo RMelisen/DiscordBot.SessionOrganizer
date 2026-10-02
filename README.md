@@ -25,7 +25,7 @@ a wall of shame. The bot's user-facing language is French.
 | `/goodbot` | Who praised or scolded the bot | everyone |
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
 | `/shame` | The wall of shame | everyone |
-| `/plynling adopt · view · list · journal · relations · play · visit · passion · forage · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card) | everyone |
+| `/plynling adopt · view · list · journal · relations · play · visit · passion · forage · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card). `/pl` is a shortcut for every one of them | everyone |
 | `/inventory view · collection · shop · medicine · cosmetics · craft · give · trade · sell` | Your items: pantry, collection, cosmetics, swaps | everyone |
 | `/work · /balance` | Earn cailloux; see your balance | everyone |
 | `/shame user:@someone` | Put someone on it | staff |

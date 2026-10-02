@@ -4,6 +4,18 @@ The virtual pet. `/plynling` (`PlynlingModule`), card buttons in `PlynlingCompon
 rules in `Helpers/PlynlingLife`. Money, items and cosmetics are in `economy.md`. **Before writing any
 Plynling line, read `docs/plynling-writing-style.md`.**
 
+**`/pl` is a shortcut for `/plynling`**, asked for by people on phones ("/pl v" finds "pl view",
+never "plynling view"). Discord has no aliases, so `PlynlingModule` is **abstract and group-less**
+and `Commands/PlynlingGroups.cs` registers it twice: `PlynlingLongModule` (`/plynling`) and
+`PlynlingShortModule` (`/pl`). Discord.Net picks up inherited `[SlashCommand]`s and
+`[CommandContextType]`, and skips abstract modules, so **a command added to `PlynlingModule` lands in
+both** — and counts toward each one's 25-subcommand cap. **Never put a `[ModalInteraction]` or
+`[ComponentInteraction]` on `PlynlingModule`**: it would register once per group, two owners for one
+custom-id. Keep the handler `protected` there and bind it in `PlynlingLongModule` only
+(`ignoreGroupNames` lets it answer a modal opened from either group). Both subclasses repeat the
+base constructor, so a new dependency goes in three places. Texts keep saying `/plynling`; the
+shortcut is mentioned once in each help.
+
 ## State is computed; nothing ticks
 
 `Plynling` stores hunger, happiness and hygiene **as they were at `NeedsAsOf`**; `PlynlingLife`
@@ -316,7 +328,7 @@ before listing. Ties break on id.
 
 ## `/plynling help`
 
-Within ~150 characters of the 6000 embed cap. Measure before adding; shorten or split rather than
+Within ~100 characters of the 6000 embed cap (5 894). Measure before adding; shorten or split rather than
 let it throw. The main `/help` points to it in one line only.
 
 ## Data migrations and the production launch

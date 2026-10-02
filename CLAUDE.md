@@ -85,7 +85,8 @@ be checkable without a gateway here).
 belongings, `/admin` moderation actions, `/config` settings, `/debug` the owner's tools. Discord
 allows **25 subcommands per top-level command** and the 26th throws at registration on startup —
 count before adding to `/plynling` (15) or `/inventory` (9); a new batch goes to the group that owns
-the thing, or a new group. Component handlers live in `Interactions/Components/`; the module keeps
+the thing, or a new group. `/pl` is a second registration of `/plynling`'s commands (see
+`plynling.md` before touching `PlynlingModule`). Component handlers live in `Interactions/Components/`; the module keeps
 the commands and the static card builders those handlers render through.
 
 **DI lifetimes are not arbitrary.** `AppDbContext` and the services wrapping it are **transient**.
