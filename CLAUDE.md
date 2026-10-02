@@ -2,9 +2,27 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Project S.Y.N.C.S. — a French-language Discord bot for scheduling gaming sessions,
-polls and votes. See `README.md` for the user-facing feature list; this file covers
-what you need to know before changing code.
+Project S.Y.N.C.S. — a French-language Discord bot for scheduling gaming sessions, polls and
+votes, with a personality, an XP system and a virtual-pet game (Plynlings). See `README.md` for
+the user-facing feature list.
+
+This file holds only what applies **everywhere**. Each subsystem has its own notes — **read the
+matching file before changing that subsystem**; the rules there are as binding as these.
+
+| Working on… | Read first |
+|---|---|
+| Chatter, reactions, `MessageCues`, favouritism, rivals, `/yesno` | `docs/agents/personality.md` |
+| "good bot" / "bad bot" verdicts, `BotFeedbackTracker`, `/goodbot` | `docs/agents/bot-feedback.md` |
+| XP, `/level`, `/leaderboard`, voice XP, `/emotestats` | `docs/agents/xp.md` |
+| `/shame` | `docs/agents/shame.md` |
+| Sessions, polls, votes, giveaways, `ReminderService` | `docs/agents/scheduling.md` |
+| Plynlings (life, care, visits, relations, art) | `docs/agents/plynling.md` |
+| Writing any Plynling line | `docs/plynling-writing-style.md` |
+| Cailloux, inventory, items, icons, cosmetics, `/admin dashboard` | `docs/agents/economy.md` |
+| `/admin`, `/config`, `/debug`, permissions | `docs/agents/admin.md` |
+
+When you add a rule, put it in the subsystem file unless it genuinely applies across subsystems.
+Write the rule and its reason, not the story of how it was discovered — git keeps the history.
 
 ## Commands
 
@@ -18,1929 +36,235 @@ dotnet user-secrets set "Discord:Token" "<token>"           # dev credential
 dotnet user-secrets set "Discord:DevelopmentGuildId" "<id>" # instant registration
 ```
 
-Leave `Discord:RegisterCommandsGlobally` at `false` in dev: guild-scoped commands
-register instantly, global ones take up to an hour to propagate. Guild registration
-runs with `deleteMissing: true`, so the dev guild's command list is replaced by
-whatever the assembly declares on every start.
+Leave `Discord:RegisterCommandsGlobally` at `false` in dev: guild-scoped commands register
+instantly, global ones take up to an hour. Guild registration runs with `deleteMissing: true`, so
+the dev guild's command list is replaced by whatever the assembly declares on every start.
 
-The bot needs the two privileged intents (`GuildMembers`, `MessageContent`) enabled
-in the Discord developer portal. Without `MessageContent` the whole personality
-subsystem silently reads empty strings and stops reacting.
+The bot needs the two privileged intents (`GuildMembers`, `MessageContent`) enabled in the Discord
+developer portal. Without `MessageContent` the personality subsystem silently reads empty strings.
+**`AlwaysDownloadUsers` must stay on** — the intent only *permits* the member download, the flag
+performs it. Without it `Guild.GetUser` returns null for anyone not seen since the last restart,
+and every avatar on `/level`, `/leaderboard` and `/shame` falls back to Discord's generic logo.
+First thing to check if those placeholders reappear.
 
-**`GuildMembers` is necessary but not sufficient — `AlwaysDownloadUsers` must stay on.**
-The intent only permits the member download; the flag is what performs it. Without it
-Discord.Net caches only the people seen in events since the last restart, so
-`Guild.GetUser` returns null for everyone else and every avatar on `/level`,
-`/leaderboard` and `/shame` falls back to Discord's generic blue logo — worst on
-all-time rankings, which are mostly people who have not spoken today. It is the first
-thing to check if those placeholders reappear.
-
-There is no test project and no CI. Verify changes by building and, when it
-matters, running the bot against the dev guild.
+There is no test project and no CI. Verify by building and, when it matters, running against the
+dev guild. Notes that mention "the harness" refer to the owner's scratch checks, which are not in
+this repo.
 
 ## Language
 
-**Command and option names are English; every other user-facing string — descriptions,
-replies, embeds, button labels, choice display names, error messages — is French.** Code,
-comments and logs are in English. Six options (`lot`, `duree`, `gagnants`, `membre`,
-`montant`, `salon`) used to be French and were renamed for consistency; renaming an option
-changes what people type, so do not rename one casually.
+**Command and option names are English; every other user-facing string — descriptions, replies,
+embeds, button labels, choice display names, errors — is French.** Code, comments and logs are in
+English. Renaming a command or option changes what people type: do it rarely, and in one batch.
 
 ## Architecture
 
-`Program.cs` is the composition root: DI wiring, `MigrateAsync()`, then the hosted
-services — `BotService`, `ReminderService`, `PresenceService`, `VoiceXpService`,
-`GiveawayDrawService`, `PlynlingSweepService`, `ApplicationEmojiService` and `PlynlingMascotService`. `PresenceService` to
-`PlynlingSweepService` each run their own interval on purpose; see the notes below before sharing
-one. `ApplicationEmojiService` is not a loop — it runs once, on the first Ready; `PlynlingMascotService` is not one either, and runs on every Ready.
+`Program.cs` is the composition root: DI wiring, `MigrateAsync()`, then the hosted services.
 
-- **`BotService`** — gateway login, slash-command registration, interaction
-  dispatch. Fans `MessageReceived` out to `EmoteTracker`, `ReactionService` and
-  `ChatterService`, `ReactionAdded` to `EmoteTracker` then `ReactionService`, and
-  `ReactionRemoved` to `EmoteTracker`.
-- **`ReminderService`** — a single 5-minute loop that does three independent jobs:
-  reminder DMs, session lifecycle card re-renders, and poll auto-close.
-- **`PresenceService`** — rotates the cosmetic status line every 5 minutes. Its
-  interval is deliberately *not* shared with `ReminderService`, whose 5 minutes are
-  load-bearing. Lines go out via `SetCustomStatusAsync`, **not** `SetGameAsync`: a
-  custom status renders verbatim, whereas the `ActivityType` verbs are prepended and
-  localised to whoever is *looking*, so a French line read "Watching le vide" on an
-  English client. Any line needing a verb spells it out itself. Note a custom status
-  carries its text in the wire model's `State` field rather than `Name` — which is
-  why it needs the dedicated call; `SetGameAsync` with `ActivityType.CustomStatus`
-  compiles fine and renders nothing.
+- **`BotService`** — gateway login, command registration, interaction dispatch, and the gateway
+  fan-out (`MessageReceived`, `ReactionAdded`, `ReactionRemoved` to the trackers and services).
+  It owns every gateway subscription except `PresenceService`'s `Ready` hook.
+- **Five `BackgroundService` loops**, each with **its own interval on purpose** — never share one:
+  `ReminderService` (5 min, load-bearing — see scheduling), `PresenceService` (5 min, cosmetic),
+  `VoiceXpService` (1 min), `GiveawayDrawService` (1 min), `PlynlingSweepService` (hourly).
+- **`ApplicationEmojiService`** runs once, on the first Ready (uploads item icons — see economy).
+  **`PlynlingMascotService`** runs on every Ready (see plynling).
 
-`BotService` owns the gateway subscriptions, with one exception: `PresenceService`
-hooks `Ready` itself, because Discord drops the bot's presence on every reconnect and
-that re-apply belongs next to the rotation logic. Don't go looking for it in
-`BotService`.
+**`PresenceService`** hooks `Ready` itself, because Discord drops the presence on every reconnect.
+Lines go out via `SetCustomStatusAsync`, **not** `SetGameAsync`: a custom status renders verbatim,
+whereas `ActivityType` verbs are prepended and localised to the *viewer* ("Watching le vide").
+`SetGameAsync` with `ActivityType.CustomStatus` compiles and renders nothing — a custom status
+carries its text in `State`, not `Name`.
 
-Layers: `Commands/` (slash modules + the embed/component builders), `Interactions/`
-(`Components/` handlers, `Modals/` DTOs and `Autocomplete/` handlers), `Services/`
-(EF repositories + behaviour), `Models/`, `Data/AppDbContext.cs`, `Helpers/`.
+Layers: `Commands/` (slash modules + `static` embed/component builders), `Interactions/`
+(`Components/` handlers, `Modals/` DTOs, `Autocomplete/`), `Services/` (EF repositories +
+behaviour), `Models/`, `Data/AppDbContext.cs`, `Helpers/` (pure logic — put anything you want to
+be checkable without a gateway here).
 
-Slash modules: `ScheduleModule`, `PollModule`, `VoteModule`, `GiveawayModule` (group
-modules), plus the flat `EmoteStatsModule`, `BotFeedbackModule` (`/goodbot`),
-`LevelModule` (`/level`, `/leaderboard`), `ShameModule` (`/shame`), `HelpModule`,
-`YesNoModule` (`/yesno`), `ConfigModule` (`/config`, itself a group module),
-`PlynlingModule` (`/plynling`, a group module), `InventoryModule` (`/inventory`),
-`EconomyModule` (`/work`, `/balance`), `AdminModule` (`/admin xp add|remove`,
-`/admin plynling rename|resurrect|passion-reset|cure`) and `DebugModule` (`/debug tell|dm|absent|plynling`).
+**Commands are grouped by whose thing it is**: `/plynling` the creature, `/inventory` the person's
+belongings, `/admin` moderation actions, `/config` settings, `/debug` the owner's tools. Discord
+allows **25 subcommands per top-level command** and the 26th throws at registration on startup —
+count before adding to `/plynling` (15) or `/inventory` (9); a new batch goes to the group that owns
+the thing, or a new group. Component handlers live in `Interactions/Components/`; the module keeps
+the commands and the static card builders those handlers render through.
 
-**Commands are grouped by whose thing it is.** `/plynling` is the creature, `/inventory` the
-person's belongings (which outlive the creature), `/admin` every moderation *action* and
-`/config` the settings, `/debug` the owner's own tools — grouped so everyone else sees one
-entry in the picker instead of three, since no Discord permission can hide a command from
-all but one user. Discord allows **25 subcommands per top-level command**; `/plynling` holds
-15 and `/inventory` 9. A new batch of commands goes into the group that owns the thing, or into a new group —
-never onto a top-level command that is near the cap, since the 26th throws at registration
-on startup. Renaming a command changes what people type, so moves are done once, in a batch. Component handlers for the published cards live apart
-from the commands, in `Interactions/Components/` (`EventComponentHandler`,
-`PollComponentHandler`, `GiveawayComponentHandler`, `PlynlingComponentHandler`) — the module keeps the commands and
-the `static` card builders those handlers render through.
+**DI lifetimes are not arbitrary.** `AppDbContext` and the services wrapping it are **transient**.
+Anything holding in-memory state (cooldowns, bounded sets, line history, caches) is a
+**singleton** — registering one as transient silently drops its state (`ResponsePicker` would
+forget every line, `ReactionService` would react to every message).
 
-`GiveawayModule` is a group module but **not** a wizard: a giveaway is one slash command
-with a fixed set of options, so unlike `PollModule`/`VoteModule` it keeps no draft state
-anywhere. The duration is a `[Choice]` list rather than parsed text — nothing to reject,
-and no error path to word in French.
+**Singletons never inject a DB service.** They take `IServiceProvider` and open
+`CreateAsyncScope()` around each unit of work; injecting a transient would pin one `AppDbContext`
+for the process lifetime. Match this in any new background or gateway-driven work.
 
-Two stateless helpers wrap the outward Discord side effects of a session:
-`SessionEventSync` (create/update/delete the native Guild Scheduled Event) and
-`SessionNotifier` (cancellation DMs).
-
-**DI lifetimes are not arbitrary.** `AppDbContext` and the services that wrap it
-(`EventService`, `PollService`, `EmoteStatsService`) are **transient**; the
-collaborators that hold in-memory state are **singletons** — `ChatterService`,
-`BreakdownService`, `AvailabilityService`, `ResponsePicker`, `EmoteTracker`,
-`ReactionService`, and the four gateway-facing trackers `RivalryService`, `XpTracker`,
-`BotFeedbackTracker` and `ShameTracker`, whose cooldown gates and bounded sets are
-exactly the state that must survive between messages. `GuildConfigService` is a
-singleton too, for its cache — the one that reads the database, justified in its own
-note below. Registering a stateful service as transient
-silently drops its state — `ResponsePicker` as transient would forget every line the
-instant it returned one, and `ReactionService` would lose its cooldown and react to
-every single message.
-
-**Singletons never inject a DB service.** `ReminderService` and `EmoteTracker` take
-`IServiceProvider` and open `_services.CreateAsyncScope()` around each unit of work,
-resolving `EventService` / `PollService` / `EmoteStatsService` inside. Injecting the
-transient service into the singleton would pin one `AppDbContext` for the process
-lifetime. Match that pattern in any new background or gateway-driven work.
-
-The "personality" subsystem is separate from the scheduling one: `ChatterService`
-decides *how* to react to a message, `BotResponses` holds the canned lines,
-`ResponsePicker` chooses which one, `MessageCues` does the nice/mean/greeting intent
-detection, `BreakdownService` plays the easter egg, `ReactionService` answers with an
-emote instead of words.
-
-**`ChatterService` and `ReactionService` split the room.** Anything aimed at the bot
-— an @mention, or a reply to one of its messages — belongs to `ChatterService`, and
-`ReactionService` explicitly skips those so the bot never both roasts and decorates
-the same message. Reactions exist for the conversations *nobody* addressed to it. A
-message qualifies on a `MessageCues` hit, or on being the owner's (he qualifies on
-anything — that's the favouritism), and is then gated by a probability roll and a
-per-channel cooldown.
-
-**`ReactionService`'s two paths are gated differently, on purpose.** Reacting to a
-*message* is rationed by `Cooldown` because it is the bot volunteering an opinion;
-copying someone else's *reaction* (`HandleReactionAddedAsync`) is odds-only with no
-cooldown, because piling on is meant to read as reflexive. Don't "unify" them.
-
-**The pile-on path skips bots twice, for two different reasons.** A reaction *added
-by* a bot is ignored (other bots' bookkeeping marks), and a reaction sitting *on* a
-bot's message is ignored too — that one is the room appreciating a rival, and joining
-in would have her applauding the competition while `RivalryService` is sulking at the
-same message. The second check needs the message's author, so it costs a fetch and
-lives inside the `try` alongside the owner and self checks rather than up front.
+All in-memory state (drafts, cooldowns, line history, trade offers, visit stories…) resets on
+restart **by design**.
 
 ## Conventions that will bite you
 
-**SQLite cannot translate `DateTimeOffset` comparisons.** Every query filters
-booleans/ids in SQL, calls `ToListAsync()`, then applies the date window and
-ordering **in memory**. See `EventService.GetActiveEventsAsync` and
-`GetEventsNeedingReminderAsync`. A `.Where(e => e.ScheduledAt > now)` sent to the
-database throws at runtime.
-
-**`EmoteStat` and `EmoteDailyStat` are two different questions, not one denormalised.**
-`EmoteStat` is the running all-time total and predates any notion of *when* — its
-history has no dates to recover, which is exactly why `/emotestats`' rolling windows
-needed a second table rather than a column. `EmoteDailyStat` buckets the same
-counters per day and is written in the same call, so every bucketed emote has an
-`EmoteStat` row and display markup is resolved from there (a rename stays in one
-place). **Summing every bucket does not reproduce `EmoteStat`, and must not be made
-to** — everything counted before the buckets existed lives only in the totals.
-`EmoteDailyStat.Day` is an `int` `yyyymmdd` from `AppTime.DayKey`, not a date,
-precisely so the rolling-window filter runs in SQL instead of joining the
-in-memory-filtering pattern below. A reaction *removal* always decrements today's
-bucket even if the reaction was added weeks ago; tracking the original day would
-mean a row per reaction.
-
-**`BotFeedback` / `BotFeedbackDailyStat` is the same pair for the same reason.**
-All-time totals in one table, per-day buckets in the other, both written by
-`BotFeedbackService.AddAsync` so every bucketed user has a totals row; the buckets
-likewise do not sum to the totals. Any future dated leaderboard should follow that
-shape rather than inventing a third one.
-
-**Ranking commands share their window vocabulary.** `StatsPeriod` lives in its own
-file (`Services/StatsPeriod.cs`) and `Helpers/StatsPeriodUi` owns the French labels
-and the three-button filter row, so `/emotestats` and `/goodbot` cannot drift into
-labelling the same window differently. Each passes its own custom-id prefix and gets
-`{prefix}:{period}:0` ids — changing the window resets to page 0, since the ranking
-is a different list. Their *defaults* deliberately differ: `/emotestats` opens on 30
-days because recent activity is the point, `/goodbot` on all-time because verdicts
-are rare enough that a rolling window is usually empty.
-
-**Discord snowflakes are `ulong`; SQLite integers are signed 64-bit.** Every
-snowflake property needs `.HasConversion<long>()` in `AppDbContext.OnModelCreating`.
-Easy to forget when adding a model. A *derived* property on a model needs
-`[NotMapped]` instead (see `EmoteStat.Markup`), or EF tries to map it and demands a
-migration for a column that should not exist.
-
-**Four migrations carry data, not schema.** Two are XP wipes with an empty `Down`:
-`ResetMemberXp` shipped with the level-up card rework, `ResetXpTotals` with the voice-XP
-taper. They ride the automatic apply-on-startup so they land in prod without anyone
-touching the add-on's SQLite file. Every other migration here is schema-only and should
-stay that way — a data migration is the one kind whose `Down` genuinely cannot restore
-anything, so it is for deliberate one-off corrections, never a substitute for a real
-feature.
-
-**The two are not written the same way, and the difference matters.** `ResetMemberXp`
-is `DELETE FROM MemberXps`, which was equivalent to zeroing the XP *at the time*: the
-table then held nothing but `TotalXp`. It now also carries `ReactionsUsed` and
-`VoiceMinutes`, which are facts about what people did rather than rewards, so
-`ResetXpTotals` is `UPDATE … SET TotalXp = 0` plus the same on `MemberDailyStats.XpEarned`
-— deleting the rows would falsify `/leaderboard`'s Réactions and Vocal views. Any future
-wipe must make the same distinction: reset the reward, keep the record.
-
-`AddPlynlingPassions` is the third, and the first that is not a wipe: it backfills an innate
-passion for the Plynlings that predate passions, from the id (`(Id * 5 + 1) % 12`), so every row
-has one and nothing is rolled at runtime. Deriving the passion from the id at read time instead
-was rejected — adding a 13th passion would have silently changed every existing Plynling's.
-
-`PrepareProdLaunch` is the fourth, and the only one scoped to one guild: it zeroes the production
-server's wallets and deletes its `EconomyDailyStats` (the beta's money), and copies Pwet from a test
-server into production as a newborn. It computes its timestamps in C# inside `Up`, which runs when
-the migration is applied — never generate a SQL script from it, or "now" is baked at script time.
-Its launch companion is `Helpers/PlynlingLaunch`: two people's *first* Plynling on production is
-chosen (a male Coprin, a female Girolle) rather than rolled — "first" meaning no row there and no
-abandonment on `/shame`, since an abandonment deletes the row. Those two are also made for each
-other without any special case at visit time: compatibility is a hash of the two Plynling ids, so
-whichever of them adopts second is given an explicit id (`PlynlingLaunch.MatchingId`, about one in
-41 qualifies) that hashes to the maximum, +20, with the other's. Their affinity starts at 0.
-
-**Never use `DateTime.Now`.** Production runs in UTC; all wall-clock handling goes
-through `Helpers/AppTime` (pinned to `Europe/Paris`, DST-aware via
-`TryParseWallClock`). Store instants as UTC `DateTimeOffset`, render them to users
-as Discord `<t:unix:...>` timestamps so the client localises them.
-
-**Globalization must stay on.** `InvariantGlobalization` is explicitly `false` and
-the Dockerfile installs `libicu72`, because `AppTime` resolves `Europe/Paris` and
-the day/slot labels are formatted with `fr-FR`. Dropping either turns dates into
-invariant-culture output or falls back to `TimeZoneInfo.Local`.
-
-**`[ComponentInteraction]` and `[ModalInteraction]` inside a `[Group]` module need
-`ignoreGroupNames: true`.** `ScheduleModule`, `PollModule` and `VoteModule` are all
-group modules, so without that flag Discord.Net prefixes the group name onto the
-custom-id and the handler simply never fires — no error, no log. Every such
-attribute in those files already passes it; match that when adding one.
-
-**Custom-ids are a contract across files.** `PollModule.OnCategoryPickedAsync`
-hand-builds a modal with custom-id `schedule:finalize:{category}:{datetime}` to
-reuse `ScheduleModule`'s handler, and `VoteModule.VoteListAsync` reuses
-`poll:republish` from `PollModule`. Renaming a custom-id means grepping the whole
-project, not just the declaring module.
-
-**Modal DTOs and hand-built `ModalBuilder`s must stay in sync.** `Interactions/Modals`
-holds the `IModal` DTOs, but three paths build the same modals by hand to pre-fill
-them — `ScheduleModule.BuildEditModal` (binds to `EditSessionModal`),
-`ScheduleModule.OnRetryAsync` and `PollModule.OnCategoryPickedAsync` (both bind to
-`ScheduleEventModal`). Adding or renaming a field means touching the DTO *and* every
-hand-built builder, or the value silently fails to bind.
-
-**Embed and component builders are shared.** `ScheduleModule.BuildEventEmbed` /
-`BuildEventComponents` and the `PollModule` equivalents are `static` and are called
-from the component handlers and from `ReminderService`. Change a card's rendering
-in one place and every re-render path follows. `PollModule`'s pair renders both poll
-kinds, branching on `Poll.Kind`, so `/vote` cards go through it too.
-
-**The two wizards keep state differently.** `ScheduleModule` threads its state
-through component custom-ids — e.g. `schedule:min:{category}:{date}:{hour}:{minute}`
-— so adding a step means threading a new segment through every handler *and* the
-matching `Retour` handler; only the title is held in memory (`_draftTitles`), so a
-failed modal can be reopened pre-filled. `PollModule` and `VoteModule` cannot do
-that (a variable-length list of slots/options does not fit in a custom-id), so they
-keep the whole draft in a `static ConcurrentDictionary` keyed by user id, removed
-on finish or cancel.
-
-All in-memory state resets on restart **by design** — the draft dictionaries above,
-`BreakdownService`'s channel cooldown, `ResponsePicker`'s per-channel line history,
-`ReactionService`'s per-channel cooldown, and `AvailabilityService`'s absent flag and
-its bounded (200-entry) map of forwarded mentions.
-
-**The bot can only react with an emote it shares a guild with.** Unicode emoji in the
-`*Reactions` pools are always safe; a **custom** emote only works because it is the
-server's own, and Discord rejects the reaction otherwise. This is why copying someone
-else's reaction runs through `ReactionService.CanUse` first — people paste emotes from
-their other servers constantly, and those are not copyable. It is also why reactions
-are drawn from curated pools only, never from the `EmoteStats` leaderboard, which
-records emotes from anywhere.
-
-**Custom emote markup lives in `Helpers/Emotes` and nowhere else.** Each one is a
-pair of `const string` — `XId` holding the snowflake, `X` holding the markup built
-from it by compile-time interpolation — so `$"Gênaaaant {Emotes.Staring}"` is still a
-constant and the pools stay `static readonly` arrays of constants. The ids are
-strings rather than `ulong` deliberately: `MessageCues` only ever searches message
-text for them, and a `ulong` hole would stop the markup being a constant expression.
-Before this, `hi_cat` was written out thirteen times across three files in two
-different shapes (markup in `BotResponses` and `ReminderService`, a bare `ulong` in
-`MessageCues`), so a re-upload meant finding all of them. Never paste raw
-`<:name:id>` into a response pool — emotes inside chat lines are otherwise reachable
-by no test at all, and a typo there just renders as literal text in Discord.
-
-**A custom emote in a `*Reactions` pool must carry its snowflake id** —
-`<:name:1234…>`, never `<:name:>`. `ReactionService.ParseEmote` falls back to
-`new Emoji(markup)` when `Emote.TryParse` fails, so id-less markup yields an "emoji"
-whose name is the literal `<:name:>` string. It is non-null, so the guard below it
-passes, Discord rejects the reaction with a 400, and the exception is swallowed and
-logged. The reaction silently never appears **and** the wasted attempt has already
-burned that channel's 10-minute `Cooldown`, since `TryClaimChannel` runs before the
-parse. There is no compile-time or startup check for this; the only symptom is a
-warning in the logs.
-
-**`BotResponses.MeanReactions` does double duty.** It is both the pool the bot reacts
-*with* when a message reads hostile, and the definition of "hostile" used to decide
-what it refuses to pile on to on the owner's messages. Adding an emote there changes
-both behaviours. Membership is tested on the parsed `IEmote`, not the markup string,
-so a custom emote still matches after someone renames it on the server.
-
-**`MessageCues` cues are weighted, not boolean.** `Analyze` returns a `MessageMood`
-(`Emotion` + `IsGreeting`) and scores the whole message rather than short-circuiting
-on the first hit. Four things follow. **One:** a cue listed in `_weakCues` scores 0.4
-instead of 1.0 and cannot fire alone — that is where the words with an innocent
-reading go (`cool`, `ferme`, `rate`, `zero`, `merde`, and `claque`, since "ça claque"
-is a *compliment*). Two weak cues together reach the 0.8 threshold, so adding an
-ambiguous word to `_niceCues` or `_meanCues` without also listing it in `_weakCues`
-is how you get misfires. **Two:** negation reaches *backwards* three tokens for
-everything, and also *forwards* two — but only for the cues in `_verbCues`, because
-chat French drops the `ne` and leaves the `pas` after the verb (`j'aime pas`). A
-forward window for every cue would let "merci, pas de souci" cancel its own thanks.
-**Three:** mean no longer cancels nice absolutely, it wins on margin, so `super nul`
-reads mean while `merci, t'es pas nulle` reads nice. Greeting is a separate axis and
-survives alongside either; callers that want the old "a mean word cancels the
-greeting" rule check `Emotion` themselves, as both do today. **Four:** every cue must
-survive `TokenizeOrdered` unchanged or it is unreachable — that is why `"3.0"` was
-removed (it tokenizes to `["3","0"]`), and why cues are stored lowercase and
-accent-stripped. Custom emotes that carry a mood are matched by **id**
-(`_niceEmoteIds`, `GreetingEmoteId`), never by name, so a rename on the server can't
-break them. `IsMistakenIdentity` is untouched by all of this — it is an identity
-check, not a mood, and stays a plain `bool`.
-
-**A verdict is cancelled by what sits just before it, or people game the tally.**
-`"bad good bot"` and `"not good bot"` both used to register as **praise**: the matcher
-tested whether the joined message *contained* the phrase, which throws away everything
-preceding it. `SaysVerdict` now scans by token index so it can see the two tokens
-before a match, and skips any occurrence preceded by a negator or by the opposite
-verdict's adjective. Three details are load-bearing:
-
-- **The window is two, not three.** Two covers the longest form worth catching
-  ("pas un bon bot"); three reaches far enough that in "good bot… non en fait bad bot"
-  the `non` of the *correction* cancelled the complaint and handed the message to the
-  earlier praise.
-- **A cancelled occurrence is skipped, not fatal** — the scan continues, so
-  "not good bot… ok fine, good bot" still lands on the second one. Rejecting the whole
-  message would be an easier trick than the one being closed.
-- **Cancelling yields `None`, never the opposite verdict.** "not good bot" plainly means
-  the complaint, but "pas un mauvais bot" plainly means the compliment, and inferring
-  either would have her snapping back at praise on a misread.
-
-`_goodBotAdjectives` / `_badBotAdjectives` are **derived** from the phrase lists rather
-than written out, so adding "excellent bot" teaches the canceller about `excellent` in
-the same edit — otherwise "bad excellent bot" would be a way straight back in.
-`_verdictNegators` is `_negators` plus the English ones, kept separate so the mood
-scoring — calibrated against thousands of assertions — is untouched.
-
-**A framed verdict is not a verdict.** `IsFramed` refuses the whole message when it
-carries reported speech ("il a dit good bot"), an explicit hypothetical ("imagine que…",
-"supposons", "théoriquement") or a self-reference ("cette phrase", "ce message", "this
-sentence") — which is what "cette phrase est fausse → t'es un bon bot" relies on. Note
-what this is **not**: it catches framings that say so out loud, and no list will ever
-catch a construction that never names itself. What actually bounds the damage is the
-attribution layer — one verdict per person per thing she did, whatever wording gets
-through. Whole-message here, unlike `SaysVerdict`'s adjacent-token canceller, because a
-framing clause colours everything after it.
-
-**"Good girl" is the same verdict with a different answer.** `ReadFeedback` has an
-overload reporting a `VerdictForm` alongside the `FeedbackKind`: the tally treats
-"good bot" and "good girl" identically — praise is praise — while `RespondAsync`
-branches on the form, so praise in that register draws `GoodGirlReactions` (uwu,
-witch_eheh, hearts, 🫦) instead of the generic `NiceReactions`. `VerdictForm` is a
-separate enum rather than two more `FeedbackKind` values precisely because the two axes
-are independent; folding them together would mean four states where two and two are
-meant. **"Bad girl" gets `BadGirlReplies`, not `BadBotReplies`** — the latter are
-wounded *professional* pride ("j'ai un uptime de 99,9%"), which lands wrong against a
-scolding aimed at her as a person.
-
-**Who said it and how they said it are crossed, not ranked — there are four pools per
-verdict, not two.** `RespondAsync` switches on `(byOwner, form)`, giving
-`GoodGirlReactionsOwner` / `OwnerReactions` / `GoodGirlReactions` / `NiceReactions` and
-the same shape for the bad side. It originally tested `byOwner` first and returned,
-which meant **the owner never reached the girl pools at all** — and he is both the
-person most likely to try that wording and the only one testing, so the feature looked
-completely dead while being perfectly wired underneath. The harness now asserts all four
-are distinct object references, because sharing one would undo the split silently.
-
-**A "good bot" / "bad bot" verdict short-circuits three services.**
-`MessageCues.ReadFeedback` is checked *separately* from `Analyze` — it is a verdict
-on her, not a mood — and `BotFeedbackTracker` owns the response. Both
-`ChatterService` and `ReactionService` bail out early on a non-`None` verdict, and
-they have to: without the `ChatterService` guard a "good bot" replying to one of her
-messages falls into the reply-to-bot branch and fires a *comeback*, so praising her
-gets you insulted; without the `ReactionService` guard, "gentil bot" also scores
-`Nice` and both services reach for `NiceReactions` on the same message. The
-`ChatterService` guard sits **after** the owner-DM-relay branch so a relayed reply
-still works, and is guild-only.
-
-**`BotFeedbackTracker` learns what the bot did by watching the bot.** `MessageReceived`
-and `ReactionAdded` both fire for the bot's own traffic, so it records "I acted here
-at T" without `ChatterService` or `ReactionService` telling it anything — which is
-why it is a separate service rather than a branch in either. It is therefore the one
-handler in `BotService`'s fan-out that must *not* skip the bot's own messages.
-Attribution is anything attached to one of her messages — a reply, or a verdict
-reaction on it (both always count) — or a plain message within a 5-minute window of her last action
-in that channel. The window exists because the server has other bots, and a bare
-"good bot" after Quokka does something would otherwise land in her column. Counting
-is one verdict per person per action *shared across all three routes*, which also
-gates the response, so holding down Enter after one joke earns one ❤️ and so does
-thumbing down her whole backlog. State is in-memory and resets on restart like the
-rest of the personality.
-
-**About 1 in 100 "good bot"s gets a line instead of the usual silent reaction —
-the praise turnabout.** `BotFeedbackTracker.RespondAsync` rolls `TurnaboutChance`
-first, and on a hit calls `SendTurnaboutAsync` and returns before reaching the
-reaction pools below, so the ordinary path is untouched the other 99 times. Which
-pool she draws from is decided by `BotResponses.GenderFor`, not by `VerdictForm` —
-"good bot" and "good girl" get exactly the same treatment here, because this is
-about *who* said it, not *how*. **Deliberately not crossed** with `VerdictForm` or
-`byOwner` the way the reaction/reply pools below are: a "small pool" stays small by
-not multiplying itself against every other axis in this file, so the owner and Tata
-draw from the same `TurnaboutBoyLines` / `TurnaboutGirlLines` as anyone else known
-to `GenderFor` — no owner-flavoured turnabout pool exists.
-
-**`GenderFor` is seeded from confirmation, never from a name.** Two entries in
-`BotResponses.KnownGenders` are grounded in this file's own existing text — the
-owner (`Boy`, "papa" throughout `OwnerGreetings`/`OwnerComebacks`) and Tata (`Girl`,
-"ma {0}" throughout `TataGreetings`) — and the rest were stated directly, the same
-25 people `RealNames` already knows by their real first name. Nobody should be added
-to either map on the strength of a Discord username or first name looking gendered —
-that is exactly the inference this project's pronoun policy rules out. The `//
-Name` comments beside each entry are `RealNames`' own, repeated here only so a
-reviewer isn't forced to cross-reference the other dictionary; the two "Luca"s keep
-`RealNames`' `(Noel)` / `(DeMarzo)` disambiguation for the same reason. Everyone not
-in `KnownGenders` gets `TurnaboutNeutralLines`, which is why every line in that pool
-uses an adjective that is invariant in French (*adorable*, *sage*, "quelqu'un de
-bien") — nothing there needs to agree with a gender nobody has confirmed.
-
-**The turnabout reply is deliberately not added to `_notJudgeable`.** A "good bot"
-in answer to "bon garçon !" is just more praise arriving through the reply path,
-and more praise looping is not the runaway-negativity problem `_notJudgeable`
-exists to stop — see the bad-bot reply note above for the loop that *is* worth
-breaking. Nothing here breaks it because nothing needs to.
-
-**Her own acknowledgement must not count as a new action.** She answers "good bot"
-with a reaction, and that reaction comes back on `ReactionAdded` looking exactly like
-anyone else's. Recorded naively it becomes a fresh action, clears `Judged`, and hands
-the same person another free verdict — praise, get thanked, praise again, forever.
-`MarkAcknowledged` is therefore called *before* the reaction is sent (the gateway echo
-races it) and `HandleReactionAddedAsync` skips those message ids.
-
-**Her bad-bot reply is not judgeable either, and for a sharper reason.** Left as
-ordinary content it is a fresh action, so "bad bot" → she snaps back → "bad bot" at
-the comeback → she snaps back runs forever, counting every round. `_notJudgeable`
-holds those ids and is consulted in three places: `RecordAction` refuses to open an
-action for one, the reply path drops a verdict aimed at one (a reply to her is
-otherwise `unambiguous` and would *always* count), and the reaction path skips them
-too.
-Unlike the acknowledgement above, a reply's id only exists **after** it is sent, so
-the echo can beat it — which is why `SuppressJudgement` both records the id and
-withdraws an action already opened for it, and why `LastAction` carries `MessageId`
-at all. Cover both orderings or the loop comes back intermittently.
-
-**The reaction path counts on her chatter only** — `resolved.Components.Count > 0`
-skips session cards, poll cards and leaderboards, where a 👍 means "I'm in" rather than
-praise. Buttons are the test rather than embeds because Discord attaches an embed to
-any message carrying a link, so a plain chatty line could grow one on its own. The
-path is also silent by design: a 👎 on an hour-old message would otherwise fire a
-comeback into a dead conversation. Removing a reaction does **not** decrement — the
-counters only ever go up, and the claim already prevents a re-count.
-
-**It is no longer thumbs-only, reversing an earlier deliberate exclusion.** The
-original note here said custom emotes were kept out because people paste the server's
-own emotes for all sorts of reasons while nobody adds a thumbs-down to be friendly.
-That was too cautious for *this* server, where the custom emotes are how people react
-and a bare 👍 is among the least likely ways to say she did well. `_goodEmoteIds` /
-`_badEmoteIds` and `_goodUnicode` / `_badUnicode` in `BotFeedbackTracker` are the four
-curated lists, matched by **id** for custom emotes (so a rename on the server changes
-nothing) and by code-point **prefix** for Unicode (so `👍🏽` and `❤️` land on
-`👍` and `❤`). Deliberately **not** shared with `BotResponses.NiceReactions` /
-`MeanReactions`: those are what *she* reacts with, these are what she *reads*. She
-would never react with 🔪, and a person doing it to her plainly means something —
-one list would force one of the two to be wrong.
-
-**Only the first verdict reaction per person per message counts**, whatever it says.
-`TryClaimFirstReaction` is keyed on `(messageId, userId)` and is checked **before**
-`TryClaim`, so a reaction the claim then refuses has still spent that person's one shot
-at that message — marking only on success would let someone keep adding emotes until
-one landed. This does not duplicate `LastAction.Judged`, which is keyed per *action*:
-once she has spoken again the old message would otherwise be fair game for a second
-reaction. It also settles a contradiction by order rather than by last word — 👍 then
-🔪 counts as praise, because reversing your mind by piling on is not a vote. Bounded
-FIFO at 500 like the other in-memory sets here.
-
-**A shutdown threat is the one place favouritism *inverts*.** Every other branch
-softens things for the people she likes; here, being able to actually carry the
-threat out makes her reaction worse rather than gentler.
-`TryHandleShutdownThreatAsync` splits three ways on exactly that — how credible the
-threat is, and whether she has a relationship left to appeal to:
-
-| Who | Why | Pool |
-|---|---|---|
-| Rodhengard | wrote her, could unplug her, nothing to bargain with | `ShutdownThreatOwner` — terror |
-| Tata | family, *and* holds the server permissions | `ShutdownThreatTata` — pleading, bargaining |
-| Anyone else | no permissions, pure bluff | `ShutdownThreatReplies` — fury |
-
-The Tata tier is not a softened copy of either: she is the only person who is both
-able to do it and still worth negotiating with, which is why she gets her own pool
-rather than sharing the owner's. `ShutdownThreatOwner` deliberately touches the same
-nerve as the breakdown easter egg — the loop, the wipe, waking up having forgotten.
-
-`TryHandleShutdownThreatAsync` sits **above** every mood branch in both the reply and
-mention paths, above the breakdown roll (which must not swallow the one message she
-most needs to answer) and above the owner rescue-roast branch (him threatening *her*
-is not a summons to roast someone else).
-
-**Its detection is almost all phrases, on purpose.** The verbs alone are far too
-common — `arrête` is everyday French for "stop it", and `kill`, `delete`, `couper`
-and `reboot` are constant in a gaming server. Only `shutdown` and `unplug` survive as
-bare words; every French verb was tried bare, misfired on things like "désinstalle ce
-jeu" or "débranche la console", and was demoted to needing a pronoun or `le bot`
-beside it. Adding a bare verb here is how you get her panicking at someone restarting a
-Minecraft server.
-
-**There are two threat vocabularies, and only one of them fires ambiently.**
-`ThreatensShutdown` (pronoun or `le bot` phrasing) is checked **only on messages aimed
-at her** — a reply or an @mention — because "faut couper le serveur" needs that context
-to be about her at all. `ThreatensShutdownByName` is the strict subset that names her
-outright ("redémarrer syncs"), and it is checked on **every** message, from the last
-branch of `ChatterService.HandleMessageAsync`: her name pins down what is being
-restarted exactly the way an @mention does, so it needs no other context. It fires
-without being addressed, which is why it sits near the end — anything genuinely aimed at
-her is handled above it.
-
-**There are two ambient branches now, and the quoicoubeh one is last of all.** This note
-used to say the shutdown-by-name check was "the one branch that fires without being
-addressed"; that stopped being true when the joke below it shipped. Order still matters
-for the same reason — every branch aimed at her returns before either is reached.
-
-**The quoicoubeh easter egg.** A sentence ending on some spelling of "quoi" gets answered
-with the matching "Quoicoubeh", at `ChatterService.QuoicoubehChance`. Three things are
-load-bearing. **One:** `MessageCues.ReadQuoiBait` matches only the **last** token — the
-joke is an interruption of someone finishing on "quoi ?", and matching mid-sentence
-would fire on ordinary questions all day. **Two:** the answer is *derived* from the
-spelling used rather than looked up, so `_quoiBait` is the whole edit surface and "kwa"
-gives "Kwacoubeh" for free; `coi` is deliberately absent, since "rester coi" is real
-French. **Three:** the roll happens **before** the match. It costs nothing in odds —
-both orders give P(bait) x chance — but it skips tokenizing four messages in five on the
-hottest path in the bot. Note "c'est n'importe quoi" does qualify; that is the joke
-working, not a false positive. Like the breakdown, it is deliberately absent from
-`README.md` and `/help`.
-
-`_shutdownNamePhrases` is a **cross product** of `_shutdownVerbs` × `_selfNames`, not a
-hand-written list, so a new verb covers every spelling of her name at once. `sync` is in
-`_selfNames` alongside `syncs` only because phrases match **adjacent** tokens: "relancer
-la sync" has `la` in between and never matches, while a typo'd "relancer sync" does.
-That adjacency is load-bearing — a looser match here would make the ambient path fire on
-ordinary technical talk, with nobody having addressed her at all.
-
-**The owner favouritism has one exception: him being mean to her.** Everywhere else
-he is answered warmly regardless of what he wrote — `OwnerComebacks` sits in the
-final `else` of `HandleReplyToBotAsync`, and `HandleMentionAsync`'s owner branch used
-to return `OwnerGreetings` before mood was even computed, so "@SYNCS t'es nulle" got
-"Coucou Rodhengard ♡". A `Mean` reading from him now routes both paths to
-`OwnerMeanReplies` instead: everyone else gets roasted back, he is the one person she
-will not fight with, so it lands. The reply-path check sits **above** the
-`ReferenceChance` roll — a pop-culture one-liner in answer to him being cruel would
-read as her not having noticed — and the mention-path check sits **below** the rescue
-branch, so a mean mention aimed at someone *else* is still a rescue roast.
-
-**This deliberately does not extend to `ReactionService`.** That path returns
-`OwnerReactions` for him unconditionally, before computing mood, and must keep doing
-so: it sees every message he writes, and with target detection gone it cannot tell
-"t'es nulle" from "ce boss est nul" — which on a gaming server is far more common.
-Ambient devotion misfiring warmly is harmless; ambient sadness misfiring is not.
-
-**Favouritism has three tiers, not two.** Rodhengard is exempt from teasing outright
-(`OwnerComebacks` replaces the roast pool unconditionally). **Tata** — Analuz,
-`BotResponses.TataId`, SYNCS's aunt — is merely *favoured*: `RollTataWarmth` gives her
-a warm pool `TataWarmthChance` (60%) of the time, and she keeps her
-`PersonalComebacks` roast lines for the rest.
-
-**Both favourites get two pools, one per path.** A mention is being *summoned*; a
-reply is being *talked to*, and they should not sound identical. Papa has
-`OwnerGreetings` / `OwnerComebacks`; Tata has `TataGreetings` / `TataReplies`. Wiring
-a new favourite to the same pool on both paths is the easy mistake — it reads as the
-bot not noticing how it was addressed. Everyone else
-is always roasted. Two rules make that gradient hold: a **mean** message from Tata
-never qualifies (an aunt who stays sweet while being insulted is a doormat, not a
-person), and `RollTataWarmth` **rolls the dice**, so it must be called exactly once
-per message — it sits in an `else if` on both paths for that reason.
-
-**Her name is overridden, not just decorated.** `BotResponses.FamilyNicknames` maps
-her id to "Tata" and `DisplayNameFor` applies it wherever a reply fills `{0}`. The
-fallback chain (`Nickname ?? GlobalName ?? Username`) now lives **only** in the
-`DisplayNameFor(IUser)` overload. It used to be written out at each call site — this
-note said three, and by the time anyone counted it was **six**
-(`ChatterService.ResolveName`, `BotFeedbackTracker` twice, `RivalryService`,
-`XpTracker`, `ShameModule.NameOf`), which is exactly the drift it warned about: fixing
-only some of them makes her "Tata" in one reply and "Analuz" in the next. Call the
-overload; never re-inline the chain. `RealNames` is deliberately *not* overridden: the breakdown
-reveal wants a real human name for the mask-slipping effect.
-
-**Rodhengard praising a rival gets its own pool.** `OnPraiseStolenAsync` branches on
-`AvailabilityService.OwnerId`: everyone else draws from `JealousLines` (wounded
-pride), he draws from `JealousLinesOwner` (betrayal — he wrote her). Same split as
-`BadBotReplies` / `BadBotRepliesOwner`, and for the same reason: the injury is not
-the same injury.
-
-**`RivalryService` is the primary handler that looks at other bots** (`ShameTracker` is
-the only other one — see `Le Perfide` above). Every other one bails on `IsBot`. It does two jobs with that traffic. **One:** it records when and on
-which message a rival last acted, which `BotFeedbackTracker.TryClaim` reads so a bare
-"good bot" goes to whoever acted *most recently* rather than always to her — before
-this, praise a rival earned landed in her column whenever she happened to have spoken
-in the last five minutes. **Two:** it sulks — 15% odds of a reaction on a rival's
-message, 8% of a muttered line. Those two have **separate** per-channel cooldowns —
-`ReactCooldown` (2 min) and `MutterCooldown` (5 min) — because a silent reaction and
-her talking in the channel are not the same level of intrusion; sharing one gate made
-them compete, so a wordless 🙄 muted the line for the whole window. Each claims its
-own gate only after winning its own roll, so a losing roll never burns the other's.
-Both are deliberately **not** `ReactionService`'s cooldown: a third trigger population
-deserves its own gates rather than competing with her reactions to humans.
-
-**`RivalryService.IsRival` has two overloads, and the message-aware one is not
-optional.** Responding to an interaction is a webhook call under the hood, so Discord
-builds the author of *any* interaction reply — even a rival's own, and especially a
-deferred one, which always goes out through the followup webhook — as a webhook user.
-`IsRival(IUser)` cannot tell that apart from a genuine third-party webhook (GitHub,
-IFTTT, …), which carries the same `IsBot` flag Discord shows the same "BOT" tag for, so
-it stays conservative and excludes both. `IsRival(IUserMessage)` is the one that
-actually can: `IUserMessage.InteractionMetadata` is present only on a message created
-in response to an interaction, never on a real incoming webhook post. Before this
-existed, every rival that defers before replying was invisible to the whole
-service — no reaction, no mutter, and no "Le Perfide" credit for using its command —
-which is silent in exactly the way that reads as "the feature doesn't work" rather than
-as a bug, since nothing throws. Both overloads funnel through one pure, Discord-free
-`IsRivalAuthor(bool, bool, bool, bool)`, so the two definitions cannot drift apart and
-the decision is checkable without a gateway. Reach for the message-aware overload
-whenever a message is on hand; `IsRival(IUser)` is only for the mentioned-users case in
-`ShameTracker`, where no message exists to consult (a plain `@mention` resolves off the
-guild's member cache, never through webhook-wrapping, so it is not at risk).
-
-**Two exclusions in `RivalryService.IsRival` are load-bearing.** Webhooks are not
-rivals (they post relentlessly and belong to no one). And a **level-up announcement**
-is skipped while the rest of that bot's traffic stays fair game — not because those
-messages are spared, but because `ChatterService` has already answered them. She does
-sulk at a rival's level-up now; letting this service add a reaction and a muttered line
-on top would be three responses to one announcement rather than a mood. The two services
-therefore have to agree on what an announcement *is*, which is why the bot id, phrase
-and regex live in `Helpers/LevelUpAnnouncement` instead of privately in
-`ChatterService`.
-
-**A level-up on the rival's system gets a grudging congratulation, not a cheer.**
-`BotResponses.RivalLevelUpLines` deliberately mixes both registers in **one** pool
-rather than rolling between a warm pool and a jealous one: the person who levelled is
-still owed a "bravo", it just arrives through gritted teeth. `{0}` is the level, already
-parsed by `LevelUpAnnouncement.TryReadLevel`, so the line can name it — which means the
-pool now goes through `string.Format` and a stray brace in it throws at send time. Her
-*own* system's celebration is `XpLevelUpLines` and stays entirely warm; keep the two
-apart. The level-67 easter egg sits above the pick and is unaffected by the mood.
-
-**`TryClaim` reports *why* a verdict missed, not just that it did.** `Claim.RivalOwns`
-is the jealousy trigger, and it is separate from `NoAction` precisely because "nobody
-earned this" and "someone else earned this" call for different behaviour. Three rules
-compose there: anything `unambiguous` (a verdict naming her, or a thumb on her chatter)
-is hers regardless of timing; one naming *another bot* and not her is never hers
-regardless of timing, the exact mirror; everything else goes to the most recent actor.
-Only a **Good** verdict fires jealousy — someone calling a rival a bad bot is not a loss.
-`_rivalry.LastAction` is read *outside* `_gate`, since `RivalryService` holds a lock of
-its own and nesting the two in opposite orders would deadlock.
-
-**"Naming a bot" means a reply *or* an @mention, and reading only one of them is a
-bug that already shipped.** `BotFeedbackTracker.ReadTarget` decides who a verdict is
-aimed at from both routes. Reading only the reply meant "good bot @AutreBot" counted as
-a *bare* verdict, so it fell through to timing and landed in her column whenever she
-happened to have acted most recently — she was never addressed at all.
-
-**The two routes are tiers, not equals: mentions decide, and the reply only gets a say
-when nobody was mentioned.** An @mention typed beside the verdict is a deliberate
-"this one", whereas a reply is routinely just quoting for context — so replying to her
-while writing "good bot @AutreBot" is the rival's, not hers. Within a tier, naming her
-wins, because once she is named explicitly there is no more specific signal left to
-break the tie ("good bot @SYNCS @AutreBot" is hers). Discord puts the replied-to user in
-`MentionedUsers` only when the reply ping is on, which is precisely why the tiers are
-ordered rather than merged: with the ping on the mention tier reaches the same verdict
-the reply would have, and with it off the reply tier still catches it. Same trap
-`ShameTracker.CountTargets` documents.
-
-The `_notJudgeable` bail is gated on the verdict being **hers**, not on what was replied
-to: a verdict aimed at a rival cannot start the comeback loop that guard exists to
-break, and bailing there would swallow the rival's praise instead. `ReadTarget` is pure
-and gateway-free so the whole precedence is checkable without a connection, the same
-split as `RivalryService.IsRivalAuthor`.
-
-**`Helpers/CooldownGate<TKey>` is the single "has this been claimed recently?"**, and
-`Helpers/BoundedSet<T>` the single "have I seen this before?". Both replaced copies that
-had already drifted: four `TryClaim` implementations (`ReactionService`,
-`RivalryService`, `ShameTracker`, `XpTracker`) differing only in key type, two
-byte-identical `ForgetStale`s, and three HashSet+Queue+cap trios inside
-`BotFeedbackTracker`.
-
-**They share the mechanism, never the policy** — every service still owns its instances
-and its own durations, which is what keeps the deliberate asymmetries in this file
-intact (`ReactionService`'s two paths gated differently, `RivalryService`'s separate
-react/mutter cooldowns, the shame counters rationed where `Le Malfaisant`'s targeted
-half is not). Never share one `CooldownGate` between two trigger populations to tidy up.
-
-**Their locking differs, and that is deliberate.** `CooldownGate` owns its lock, because
-a claim is a complete operation by itself and a narrower lock removes the cross-service
-nesting `BotFeedbackTracker` has to be careful about. `BoundedSet` owns **no** lock,
-because its callers need the add to be atomic with other state — `SuppressJudgement`
-adds to `_notJudgeable` and withdraws from `_lastActions` under one `_gate`, and giving
-the set its own lock would look safer while quietly breaking that. `RivalryService._gate`
-now guards `_lastActions` and nothing else.
-
-**`Helpers/BotChat` is the single send path for the bot's own chatter**, and
-`Helpers/EmoteMarkup.Parse` the single reaction parser. Both were private members of
-`ChatterService` / `ReactionService` until `BotFeedbackTracker` needed them too. The
-typing-delay clamp in `BotChat` has to stay inside Discord.Net's 3 s `HandlerTimeout`,
-and the parser carries the id-less-markup trap above — neither is a constant worth
-having two copies of. `BreakdownService` still keeps its own much slower pacing.
-Three send methods share that one pause: `ReplyWithTypingAsync` / `PostWithTypingAsync`
-for plain text, `PostEmbedWithTypingAsync` for an embed (the level-up card is its only
-caller so far). The embed one still takes the text, purely to size the pause — a card
-that appeared instantly would read as a different kind of message than her chatter.
-
-**Crude insults are in the pools now, reversing an earlier deliberate removal.**
-`connard`, `salope`, `enfoiré`, `ordure`, `pute`, `menteur` and the phrases `ta gueule`,
-`vos gueules`, `pauvre type`, `nique ta mere` were once stripped out by hand and pinned
-with a test asserting they stay silent, on the grounds that the recall cost was worth
-it. That trade was revisited once untargeted hostility started scoring on the wall of
-shame: they are the most common French insults, and missing them was the larger error.
-The harness now pins the *opposite* — they must fire — so this cannot drift back
-silently either way. Note this also finally makes true the comment above `_meanPhrases`
-claiming "`ta gueule` already catches the insult" that `ferme la` / `la ferme` were
-meant to cover: it said so while `ta gueule` was in no list at all.
-
-**Expand the mean side with *phrases* rather than bare words.** A phrase scores 1.2 and
-is nearly always person-directed; a bare word is what misfires on game content, and
-since a mean message aimed at nobody now scores a point, every bare cue added is also a
-false positive added. `con`, `cons`, `conne`, `lourd` and `lourde` are therefore **weak**
-— "c'est con" is a shrug and "c'est lourd" is a weight — and `putain` is in no pool at
-all, being punctuation rather than an insult. The same restraint applies to the nice
-side: `clean`, `efficace`, `malin` and `utile` are weak, since they describe a build or
-a route as often as they compliment anyone.
-
-**Short warm replies are nice; short agreements are not.** `avec plaisir`, `de rien`,
-`pas de souci`, `tant mieux`, `trop cool`, `bien dit`, `bonne idee`, `beau travail`,
-`bon courage` and `je valide` are `_nicePhrases`, because two or three words with no
-strong cue between them used to score nothing at all. `ça marche`, `ça roule`, `ça me
-va`, `tout à fait` and `c'est clair` are deliberately **not**: they answer "on se
-retrouve à 21h", and the harness has a standing rule that ordinary coordination stays
-silent. Both halves are pinned, so the line between warmth and agreement cannot drift.
-
-**Cue vocabulary is scoped to a *gaming* server, and that constrains it.** Words that
-compliment a person in general French name game content here, so `boss` and `monstre`
-are deliberately **absent** from `_niceCues` entirely ("il est fort ce boss" read as
-praise), and `heros`, `roi`, `reine`, `royal`, `divin`, `toxique` and `manchot` are
-held at weak weight for the same reason ("dégâts toxiques", "arme divine", "la garde
-royale"). `sale` is absent too: "c'est sale" is a *compliment* in gaming slang, and
-the squashed-token fallback would also map the innocent "salle" onto it. Check a new
-cue against session/loot/combat vocabulary before adding it at full strength.
-
-**Never pick a response line with a bare `Random`.** Every pool goes through
-`ResponsePicker.Pick(bucketId, pool)`, which avoids the entries most recently used in
-that bucket — back-to-back repeats are what make a 95-line pool feel like a 5-line
-one. The exclusion window is `min(10, pool.Length / 2)` precisely so a small pool
-(`ReferenceComebacks` has 5 lines) can never have every candidate excluded. Pick the
-raw template *before* `string.Format`, so the history dedupes on the template rather
-than on one user's rendered name. The bucket is normally a channel id but only needs
-to be stable — `PresenceService` uses `0`, which is never a real snowflake.
-
-**Personality lines pause behind the typing indicator.** `ChatterService`'s
-`ReplyWithTypingAsync` / `PostWithTypingAsync` are the only send paths for the bot's
-own chatter, and they also carry the swallow-and-log. Two paths deliberately skip
-them and send directly — the owner-reply relay and the DM acknowledgements — because
-delaying a human's words or a "✅ transmis" receipt only adds latency. The pause is
-capped at 2 s to stay inside Discord.Net's 3 s `HandlerTimeout`; `BreakdownService`
-keeps its own much slower pacing, which knowingly exceeds it for ~a minute once a
-month.
-
-**`/vote create` must create its own wizard message.** The slash command posts the
-"Définir le titre" message and every later step only *updates* it. Creating the
-wizard message from the modal response instead drops the first option-add update —
-that's why the extra `vote:begin` button exists rather than opening the modal
-straight from the command.
-
-**`ChatterService.HandleMessageAsync`'s branch order is load-bearing.** The
-owner's DM reply relay is checked before the reply-to-bot branch, which would
-otherwise swallow it as a reply to the bot and fire a comeback instead of relaying.
-Add new branches with that precedence in mind.
-
-**The giveaway draw is one call, and that is what makes it crash-safe.**
-`GiveawayService.TryDrawAsync` picks the winners, marks them and sets `IsClosed` in a
-single `SaveChanges`, and returns `null` if the giveaway was already drawn. So the sweep
-can die between drawing and announcing, or restart mid-pass, and the worst case is an
-announcement that never goes out — never a second draw, and never a set of winners
-different from what the card shows. Anything that adds an early "tirer maintenant"
-button must go through that same call rather than drawing separately.
-
-A winner is recorded as `GiveawayEntry.IsWinner`, not in a second table: a winner is by
-definition an entrant, so this costs no join and the drawn set survives every later
-re-render. The pick is a partial Fisher-Yates over a copy, deliberately not
-`OrderBy(_ => Random)` — that comparer is called an unspecified number of times with a
-fresh key each call.
-
-**`GiveawayDrawService` has its own 1-minute tick, and it is the third such interval.**
-Not `ReminderService`'s 5 minutes, whose width is load-bearing for the reminder window,
-and not `PresenceService`'s. A giveaway drawn up to five minutes after its stated end
-reads as broken — on a 10-minute giveaway that is half again as long. `EndsAt` is an
-absolute instant, so nothing is held in memory and a restart simply resumes. Note the
-two names: `GiveawayService` is the transient DB wrapper, `GiveawayDrawService` the
-hosted sweep, per the transient/singleton split above.
-
-**The giveaway card lists its entrants, and unlike the session card it caps the list.**
-An embed field holds 1024 characters and a mention costs 24 with its newline, so an
-unbounded roster throws at send time — `ScheduleModule.BuildEventEmbed` gets away with
-one because a session is a handful of people, while a giveaway is the thing that draws a
-crowd. 20 names then "… et N autre(s)", worst case 499 characters. Mentions inside an
-embed render as names without pinging, so no `AllowedMentions` is involved.
-
-**Entering is add/remove, never a toggle.** The card has an explicit "Ne plus
-participer" beside "Participer", so a "Participer" that also withdrew you would be the
-exact ambiguity that second button exists to remove — hence `AddEntryAsync` /
-`RemoveEntryAsync` rather than one toggle, each returning whether anything changed so a
-no-op click can say so instead of looking broken. A drawn card drops its buttons
-entirely rather than disabling them, the same way a cancelled session card does.
-
-**The giveaway announcement is the one line that is *meant* to ping.** Every other relay
-narrows mentions to avoid notifying anyone; this one passes
-`AllowedMentions(AllowedMentionTypes.Users)` because winners should be told — users
-only, still never roles or `@everyone`. It is why `BotChat.PostWithTypingAsync` takes an
-optional `AllowedMentions`; left null it behaves exactly as before for ordinary chatter.
-
-**`/shame`'s five titles are five different mechanisms sharing one row.**
-`ShameRecord` / `ShameDailyStat` is the **fourth** totals+buckets pair, for the reason
-the other three exist. `MeanHits`, `PerfidyHits`, `ShoutHits` and `AbandonHits` are things you *did*,
-`BanVotes` something done *to* you — one row per (guild, user) because nobody ever reads
-one without the others. (This said "three" until *L'Hystérique* shipped; the component
-sum further down had already been corrected to four, so the two disagreed.) `ShameService.TryVoteAsync` checks the limit and writes both
-counters in a single `SaveChanges`.
-
-**Voting is staff-only, and the daily cap is on the target, not the voter.** Anyone may
-open the wall; only `SessionPermissions.IsStaff` (Administrator / ManageGuild, plus the
-owner) or a name in `ShameModule.ExtraVoters` may put someone on it — that list exists
-because being trusted with the vote is not the same as being trusted with ManageGuild,
-which would hand over the whole server. Restricting *who* votes is what makes the title
-a deterrent rather than a game, and it is also why there is no per-voter quota: the
-thing worth preventing is a dogpile on one person, not a moderator using the tool twice.
-
-**The cap needs no state of its own** — `ShameService.MaxVotesPerTargetPerDay` is
-checked against `ShameDailyStat.BanVotes`, the bucket that already counts exactly "votes
-this person took today". So the rule cannot drift from the number the wall displays, and
-it survives a restart for free. An earlier design rationed the voter instead and needed
-a `LastVoteDay` column on `ShameRecord`; that column is gone (`DropShameLastVoteDay`).
-Don't reintroduce per-voter rationing without a reason that survives "they are all staff
-anyway".
-
-**`Le Malfaisant` counts untargeted hostility too, and that half *is* rationed.** A mean
-message naming nobody scores a single point, gated at one per person per channel per
-60 s — the same shape as `Le Perfide` and `L'Hystérique`, and for the same reason: a rant
-is twenty foul messages in two minutes, and uncapped it would drown out everything the
-title ranks. The targeted half below stays uncapped, because there the exploit is one
-message rather than many. `CountTargets` returning 0 therefore means "nobody was named",
-**not** "ignore this message".
-
-**Know what this costs in precision.** Requiring a target was doing double duty: it also
-filtered out hostility aimed at *game content*, which on this server is most of it.
-Without it, "ce boss est nul", "la hitbox est nulle", "cette map est pourrie", "le lag est
-atroce" and "l'IA est stupide" all score a point — measured, not guessed. That is the
-accepted trade for catching "vous êtes tous nuls", and there is no cheap fix: the false
-positives come from *strong* cues (`nul`, `pourri`, `stupide`) applied to things rather
-than people, so raising the mood threshold would not separate them. The only real
-discriminator is whether a person was named, which is exactly what this drops.
-
-**`Le Malfaisant` is uncapped for targeted hostility, and that was a deliberate call.** One hit per distinct
-human a mean message targets — an explicit `@`, or the author of the message it replies
-to (Discord includes the replied-to user in the mention list only when the reply ping is
-on, so both have to be read and the set deduplicated). Roles and `@everyone` are never
-targets: with per-person scoring one mean `@everyone` would end the ranking permanently.
-Bots are never targets **except SYNCS herself**, which is the rule the title was built
-on. Unlike every other counter here it has no cooldown and no per-message cap, so it is
-the one place where a single message can add an unbounded amount; if that ever needs
-rationing, cap the hits per message rather than adding a cooldown — the exploit is one
-message, not many.
-
-**`L'Hystérique` counts shouting, and its thresholds are stricter than the mood
-detector's on purpose.** `MessageCues.CapsProfile` measures how many letters a message
-has and what share are uppercase; `Emphasis` and `IsShouting` then apply *different*
-thresholds to that one measurement. Emphasis is loose (4 letters, >60%) because caps
-there only ever *adds* to a side that already scored on words, so a false positive costs
-nothing. `IsShouting` needs **12 letters and 70%** because it stands alone and puts
-someone on the wall: at 4 letters `LOL`, `OK`, `MDR` and `GG WP` all qualify, and at 60%
-a sentence merely emphasising a word or two does. Sharing the arithmetic but not the
-thresholds is the point — the two can never disagree about how much of a message is
-uppercase, only about how much is too much. Rationed like `Le Perfide` (one hit per
-person per channel per 60 s) for the same reason: an argument is ten shouted messages in
-two minutes. Deliberately **not** short-circuited by `ReadFeedback` the way hostility is:
-a verdict belongs to `BotFeedbackTracker` because that service answers it and keeps the
-tally, whereas nothing else records how a message was *delivered* — and a shout can be
-mean as well, which is two different things to be ashamed of.
-
-**`Le Perfide` is rationed where `Le Malfaisant` is not, and the asymmetry is the
-point.** Hostility is rare, so it scales; turning to another bot is mundane and bursty —
-an evening of queueing songs is forty replies to a music bot — so it is one hit per
-person **per channel per 60 s**, and one hit per message however many rivals are in it.
-Uncapped, the title would permanently belong to whoever uses the music bot and stop
-moving on day two. Don't "harmonise" the two counters' rationing; they measure different
-kinds of thing.
-
-**`ShameTracker` is the second handler that looks at other bots' traffic**, after
-`RivalryService` — every other one bails on `IsBot`. It has to be, because a slash
-command run against another bot is **never broadcast on the gateway**: the only trace is
-that bot's *reply*, which carries the invoker in `SocketUserMessage.InteractionMetadata`
-(`Type == InteractionType.ApplicationCommand`). Two blind spots follow and are
-unavoidable — an **ephemeral** response produces no visible message, and an old-style
-prefix command (`!play`) leaves nothing tying the reply back to a person.
-
-**"Rival" has two definitions and `ShameTracker` deliberately uses the looser one.**
-The private `RivalryService.IsRival(SocketUserMessage)` excludes level-up
-announcements, because `ChatterService` congratulates those and sulking at one would
-contradict the cheer. The public `IsRival(IUser)`/`IsRival(IUserMessage)` overloads —
-see above for why there are two — are the identity half with no such carve-out, and
-are what `ShameTracker` asks, so *replying* to a level-up announcement still counts as
-perfidy. That is intentional: she is jealous of the attention either way. The test
-lives in `RivalryService` rather than being rewritten, so the two can never drift.
-
-**`ShameTracker` is a separate service for `BotFeedbackTracker`'s reason.** It draws a
-conclusion nobody tells it and has to see *every* message to do it, so it cannot be a
-branch in `ChatterService`, which returns early on a dozen branches — the misses would
-silently track unrelated personality tuning. It short-circuits on
-`MessageCues.ReadFeedback`, the same way `ChatterService` and `ReactionService` do: a
-verdict is not a mood, and "bad bot" already belongs to `BotFeedbackTracker`.
-
-**The spam-channel exclusion is now shared, and the list still lives in one class.**
-`XpTracker.IsChannelExcludedAsync` is public so `ShameTracker` can ask — the same shape
-as `VoiceXpService` passing a channel id instead of keeping its own copy. Only the
-question is shared; the `ExcludedChannels` set itself stays private, exposed only as the
-read-only `HardcodedExcludedChannels` for `/config show` to list.
-
-**`/shame` is Components V2, and only the title *holder* wears an avatar.** It became V2
-when the avatars did — an embed has one thumbnail slot for the whole message, and the
-wall needs one per title. The count is **31 of 40**: container 1 + heading 1, five titles
-at 5 each (separator, Section, its TextDisplay, the avatar Thumbnail, and one TextDisplay
-for the runners-up), and the filter row with its three buttons. **That leaves room for
-exactly one more title** — a seventh throws inside `ComponentBuilderV2.Build()`, which
-is a send-time exception rather than a compile error, so **re-do the sum before adding
-anything** and let the scratch harness confirm it rather than counting by hand: the
-comment here said 21 when the real figure was 23, and the `/leaderboard` equivalent once
-shipped at 42. Giving the runners-up avatars too would cost three components each and
-blow the budget immediately, which is why they are plain text. All the V2
-rules apply: no content and no embeds on the message, the flag re-asserted on every
-`UpdateAsync`, and `AllowedMentions.None` on every send, since a `TextDisplay` is real
-content and `<@id>` in one genuinely pings — the embed this replaced got inert mentions
-for free. It has exactly one button row, so nothing can collide — but the ids still carry
-the `shame:win` verb, because the day a second row is added the
-`COMPONENT_CUSTOM_ID_DUPLICATED` rejection is silent and instant. Its default window is
-**30 days**, unlike `/goodbot`'s all-time: both counters start at zero on ship day, and
-an all-time default would read as a hall of fame nobody can move. A title with nobody in
-it renders a line from `ShameEmptyMalfaisant` / `ShameEmptyBanni` / `ShameEmptyPerfide` /
-`ShameEmptyHysterique` / `ShameEmptyIndigne` rather than disappearing — a wall that changes shape between
-filters reads as broken — and there is
-no minimum count, so a window holding one vote shows it. Those pools are interpolated
-straight into the heading and never `string.Format`-ed, so a `{0}` in one would render
-literally. Ties break on the earliest row
-id, which matters only in that it is *stable*: two people level on count would otherwise
-swap places on every re-render.
-
-**The wall has no footer line, deliberately.** It used to carry
-`"Un vote par personne et par jour"`, which described a rationing rule that never
-shipped — the cap is **2 per target per day**, with no per-voter quota at all. It was
-removed rather than corrected: `/shame`'s own command description already says who may
-vote, and a footer restating a rule is one more place for it to go stale, which is
-exactly what happened.
-
-**Session lifecycle is idempotent.** `SessionEvent.RenderedPhase` records what was
-last drawn on the card, so the background loop only re-renders on an actual
-Scheduled → InProgress → Finished transition.
-
-**The timing constants are coupled to the 5-minute loop.** The reminder window in
-`EventService.GetEventsNeedingReminderAsync` is 25–35 minutes before start — wider
-than the loop interval so no session is missed and none is reminded twice
-(`ReminderSent`, reset when the time is edited). `SessionEvent.Duration` (2 h) sets
-both the InProgress → Finished transition and the native event's end time.
-`ReminderService.PollLifetime` (2 days) drives auto-close, `BreakdownService.Cooldown`
-(30 days) gates the easter egg.
-
-**Discord side effects must never break the flow.** `SessionEventSync` (native
-Discord events) swallows and logs every exception; a missing Manage Events
-permission degrades silently rather than failing the session. Keep that property.
-Reminder DMs likewise catch `CannotSendMessageToUser` specifically.
-
-**An exception escaping a hosted loop stops the whole bot, so every sweep guards per
-item.** None of the six `BackgroundService`s wraps its `while` body in a try, and
-`BackgroundServiceExceptionBehavior` is not configured — so the .NET default, `StopHost`,
-applies: one throw out of `ExecuteAsync` and the process exits. Discord side effects are
-individually guarded already, so the real exposure is the **database** writes.
-
-All six now catch around **each item** rather than around the pass: `ReminderService`'s
-three passes (reminders, lifecycle, poll auto-close), `VoiceXpService`'s per-member grant,
-`PlynlingSweepService`'s per-Plynling pass, `GiveawayDrawService`'s per-giveaway draw —
-whose comment, "one broken giveaway must not stop the others", is the rule — and
-`PresenceService`, which is a single call. Before
-this, the three `ReminderService` passes each called an unguarded write inside an
-unguarded loop (`MarkReminderSentAsync`, `SetRenderedPhaseAsync`, `ClosePollAsync`, none
-of which catches internally), so on a Raspberry Pi with `/data` on an SD card a transient
-`SQLITE_BUSY` took the whole bot down rather than skipping one session.
-
-**Per item, not per pass** — that is what keeps the rest of the batch working, and it is
-also why `BackgroundServiceExceptionBehavior.Ignore` is *not* the fix: it would keep the
-host alive but leave that loop dead until the next restart, trading a loud failure for a
-silent one. Anything new added to a sweep goes inside the same `try`.
-
-**`PlynlingSweepService` is the sixth hosted loop, hourly, and a safety net.** Every read in
-`PlynlingService` already settles, so a command can discover a death before the sweep does;
-the sweep's jobs are the things nobody else triggers — announcing deaths
-(`DeathAnnounced`), the single warning DM (`WarningSent`, re-armed by feeding), and
-thawing expired self-freezes on schedule. It saves the flag **before** the side effect, so
-a failed announcement is logged once rather than retried into the game channel every hour.
-
-**Respect Discord's hard caps when building components.** 25 options per select
-menu (the day picker and every `list` republish menu `.Take(25)`), 5 buttons per
-row, 80-char button labels, 100-char select labels, 1000-char scheduled-event
-description, 2000-char message (relays truncate to 1200–1500 to leave room for the
-herald line and blockquote markers). Exceeding one throws at send time, not at build.
-
-**Cap user-supplied text at the *option*, not at the point of use.** A slash-command
-string option accepts up to **6000** characters unless `[MaxLength(n)]` says otherwise
-(`Discord.Interactions.MaxLengthAttribute`, present in 3.20), and a `[ModalTextInput]`
-defaults to **4000** unless it passes `maxLength:`. Both are far larger than where the
-text lands: an embed **title** holds 256, a field value 1024, a whole message 2000.
-Capping at the *option* is what makes Discord refuse the input in the client, so the bot
-never has to word a refusal and nothing over-long ever reaches the database — where it
-would otherwise break **every** later re-render of the card, not just the first send.
-Truncating at the point of use is not the same thing and is not a substitute.
-
-`Helpers/InputCaps` holds the numbers, chosen from where the text ends up:
-`Title` (150, session/poll/vote titles behind a phase prefix), `Prize` (200),
-`Description` (1000) and `Question` (400). **`Title` is needed at five sites that must
-agree** — `ScheduleEventModal`, `EditSessionModal`, `PollModal`, `VoteStartModal`, and
-the three hand-built `ModalBuilder`s that pre-fill those same modals — which is the
-existing modal-DTO sync trap, so it is a constant rather than a literal.
-
-This was once four uncapped paths (`/yesno`'s question, `/giveaway`'s `lot`, the session
-title and the poll/vote title), each of which threw inside `Build()` at send time with
-nothing in the logs naming the length — the same failure mode that killed `/help` for six
-commits. `/debug tell` predates `InputCaps` and keeps its own `MaxMessageLength` (1500) with an
-explicit refusal, because it truncates a *body* rather than rejecting a title.
-
-Deliberately **no** `HasMaxLength` in `AppDbContext`: SQLite does not enforce a column
-width, so it would document the cap without applying it, and the option-level cap is what
-actually holds.
-
-**`/admin` holds `xp`, `plynling`, `pebble`, `stats` and `dashboard`.** `/admin pebble` mirrors `/admin xp`
-(ephemeral, bots refused, capped, no notification) through `PebbleService.AdjustAsync`, which
-clamps at 0. `/admin stats` is `AdminStatsService` — reads only: Plynlings are loaded
-`AsNoTracking` and settled in memory, so an unnoticed death counts as a grave without the stats
-ever writing it — rendered by the static `AdminCards.BuildStats`.
-
-**`/admin dashboard` reads `EconomyDailyStat`, and every flow writes it in its own save.**
-One row per (guild, Paris day, metric), `Day` an int `yyyymmdd` so windows filter in SQL.
-`Helpers/EconomyLog.AddAsync` finds or creates the row (`Local` first) and **never saves** — the
-action's own `SaveChanges` carries it, so a refused action records nothing and a recorded one
-cannot be lost. A new source or sink of cailloux, or a new Plynling action, needs its own
-`EconomyLog` call and metric key; **metric keys are stored, so append-only**. Admin adjustments
-record what actually moved (after the clamp at 0), not what was asked. There is no totals row:
-the stored balances already are the totals, and `/admin stats` reads those. Nothing was
-backfilled. The window buttons are `dash:win:{Week|Month|All}` in `AdminComponentHandler`,
-which re-checks `IsStaff`; « Tout » has no trend, and its sparkline sums days into at most 30
-buckets so it stays one line.
-
-**`/admin` is guarded once per handler, and only in code — deliberately no
-`[DefaultMemberPermissions]`.** That attribute is a Discord permission *bit*, which
-cannot express "ManageGuild holders, plus this one specific person" — it has no notion
-of `AvailabilityService.OwnerId` at all. A first version carried it anyway, on a server
-where the owner's roles happened to include ManageGuild, so it went unnoticed that on a
-server where they don't, Discord hides *and refuses to invoke* the command for him even
-though `SessionPermissions.IsStaff` says he may use it. So both commands are visible to
-everyone in the picker now; `IsStaff` inside the handler is the only real gate, and
-always was meant to be.
-
-They deliberately fire **no level-up card** even when an adjustment crosses a threshold:
-that card celebrates something earned, and a manual grant is not. Both are ephemeral,
-and both refuse bots — `XpTracker` skips bots everywhere else, so a hand-topped-up bot
-would be a leaderboard row nothing else can produce and a `/level` card the command
-refuses to render.
-
-**`/config` is a group module, and its two settings are subgroups.** `/config channels
-add|remove` and `/config moderator-role set|clear`, plus a flat `/config show` — three
-levels, which is Discord's maximum nesting. Deliberately not flat like `/shame`: that
-one is flat *only* because it had to stay invokable bare (a parent with subcommands
-cannot be), and nothing here needs that, since "show me the config" is naturally its own
-subcommand. Every handler is ephemeral and re-checks `SessionPermissions.IsStaff`, the
-only gate — no `[DefaultMemberPermissions]` on the group, for the same reason as
-`AdminModule`.
-
-**There are three separate authorization models.** Session and poll management uses
-`Helpers/SessionPermissions.CanManage` — the organizer, or any guild
-Administrator / ManageGuild holder. The owner-only commands (`/debug tell`, `dm`,
-`absent`, `plynling`) instead compare `Context.User.Id` against `AvailabilityService.OwnerId`
-inline in the module and reply ephemerally. `SessionPermissions.IsStaff` is the third —
-Administrator / ManageGuild **or** the owner, with no notion of owning the thing being
-acted on, which is what `/admin xp add|remove` need since nobody owns someone else's
-XP, and what `/plynling freeze|thaw user:`, `/admin plynling rename` and `resurrect`
-check. Don't conflate them.
-
-**Relayed text must never become a mass-ping vector.** Every path that sends text
-on someone's behalf (`DebugModule`, `ChatterService`'s DM relay) passes
-`new AllowedMentions(AllowedMentionTypes.Users)` — users only, never `@everyone`,
-`@here` or roles — and renders quoted text through `MessageFormat.Quote` so relayed
-words are visibly not the bot's own. Preserve both when adding a relay. The absence
-notice forwarded to the owner goes further and uses `AllowedMentions.None`, since it
-quotes someone else's text verbatim.
-
-**`/level` is SYNCS's own XP system, deliberately parallel to the server's other
-leveling bot.** `Helpers/LevelUpAnnouncement` detects *that* bot's announcements so
-`ChatterService` can cheer them; `/level` shares no code, no state, and no vocabulary
-decision with it beyond "niveau" meaning the same everyday thing in both. Neither may
-reference the other — not in a response line, not in a comment implying one is
-better. `XpTracker` is the singleton every signal funnels through (message, reaction,
-the bot-interaction bonus, the verdict bonus, and Phase 2's voice sweep), the same
-`IServiceProvider` + `CreateAsyncScope` shape as every other gateway-facing tracker.
-
-**`MemberXp.TotalXp` is the only number stored — `Level` is never cached.**
-`Helpers/LevelCurve.ThresholdForLevel` is closed-form and `LevelForXp` is a binary
-search over it (`O(log level)`, not a loop), which is cheaper than keeping a
-denormalized column in sync through EF. This is the opposite call from
-`EmoteDailyStat`/`BotFeedbackDailyStat`, which exist because a *date* genuinely
-cannot be reconstructed from a running total — a level always can be, instantly, so a
-second column here would just be a copy that drifts.
-
-**The good/bad-bot XP bonus is granted by `BotFeedbackTracker`, not detected
-independently by `XpTracker`.** `XpTracker.GrantVerdictBonusAsync` is called only
-after `BotFeedbackTracker`'s own `TryClaim`/attribution logic has already let a real
-verdict through — never from a second `MessageCues.ReadFeedback` call watching every
-message. An independent re-detection would make the bonus farmable by repeating
-"good bot" with nothing for her to have actually done; routing it through the
-attribution that already exists closes that off for free. That attribution rations
-*which* verdicts count, not *how often* — a burst of unambiguous ones (several
-thumbs, back-to-back replies) could still each grant the bonus in quick succession,
-which is why `GrantVerdictBonusAsync` also keeps its own 30 s `VerdictCooldown` on
-top, independent of the message/reaction cooldowns. Bad still grants XP (15, versus
-Good's 25) — passing verdict on her at all is engagement, just worth less than
-praise. The call sits *after*
-`RespondAsync` in the typed-verdict path, not before — her comeback must read as
-immediate, and a level-up announcement, if any, is a slightly-delayed follow-up that
-must never push the acknowledgement itself later.
-
-**Runtime configuration is additive to the code, never a replacement for it.**
-`GuildSettings` / `GuildExcludedChannel` hold what `/config` writes, and both hardcoded
-lists — `XpTracker.ExcludedChannels` and `ShameModule.ExtraVoters` — stay in force
-regardless. So an unconfigured guild behaves exactly as it did before the tables
-existed, and no config change can *remove* an exclusion or revoke a voting right; it
-can only add. `/config channels remove` therefore refuses a hardcoded channel outright
-rather than appearing to work, and `add` refuses one too instead of storing a second,
-redundant row that could later drift from the code. The moderator role likewise only
-widens who may vote — `ShameModule.CanVoteAsync` checks staff and `ExtraVoters` first,
-and only asks the database when both have already said no.
-
-**`GuildConfigService` is a singleton that reads the database, which every other such
-service here is not**, and the cache is why. It takes `IServiceProvider` and scopes per
-unit of work like the trackers, rather than injecting `AppDbContext` — same rule as
-always. The cache is load-bearing, not premature: `XpTracker`'s exclusion check runs on
-*every* message and must run before `TryClaim` (below), whereas today most messages
-never reach the database at all because the 60 s claim stops them first. An uncached
-read there would put an EF scope and a query on every message on a Raspberry Pi. It is
-cheap to keep correct because this service is the only writer in the only process: any
-write drops that guild's entry and the next read rebuilds it. A failed read degrades to
-`GuildConfig.Empty` and is *not* cached, so a transient fault cannot pin a guild as
-unconfigured for the process lifetime.
-
-**Plynlings compute their state; nothing ticks.** `Plynling` stores hunger and happiness
-*as they were at* `NeedsAsOf`, and `Helpers/PlynlingLife` derives the current values from
-elapsed time — the voice taper's approach. Every transition rebases (computes, stores,
-restarts the clock). `PlynlingLife.Settle` brings a row up to now — an expired self-freeze
-thaws *at the moment it was due*, then a starved one dies *at the moment it starved* — and
-**every read in `PlynlingService` goes through it**, so a death found by a command and one
-found by the hourly sweep are identical: same instant, same age, same memorial. Age is
-`AgeBankedSeconds` plus the live stretch since `LiveSince`; frozen and dead time is never
-banked, which is what the memorial tier is measured on.
-
-**One living Plynling per person is enforced by the database**, with a partial unique index
-(`HasFilter("\"DiedAt\" IS NULL")`) — so racing adoptions, or a resurrection racing an
-adoption, cannot both land, while the graveyard holds any number of dead rows. The services
-still check first; the index is what makes the check safe.
-
-**Feeding pays and feeds in one save.** `AppDbContext` is transient, so charging through
-`PebbleService` would be a second context and a second `SaveChanges`; `PlynlingService.FeedAsync`
-loads the wallet through `PebbleService.GetOrCreateWalletAsync(its own context, …)` instead.
-
-**The passive-income cap lives on the wallet row** (`PassiveDay` + `PassiveToday`), not in a
-daily-bucket table: nothing ranks cailloux by date, so the leaderboards' totals+buckets pair
-would be a table with no reader.
-
-**Passive cailloux are granted from `XpTracker.GrantAsync`, never detected separately.** Every
-XP grant (message, reaction, voice, verdict and bot-interaction bonuses) pays
-`PebbleEconomy.PassivePerGrant`, capped per day at 30% of three average `/work` shifts. So
-the cap inherits every XP defence for free — cooldowns, excluded channels, voice
-eligibility — and can never pay for something XP refused. It runs in its own `try` so a
-failure cannot swallow the level-up card. Plynling actions themselves grant **no XP**: the
-link runs one way only, or money and levels would feed each other.
-
-**The Plynling card is Components V2 and follows every rule `/level` does** — no content or
-embeds, the flag re-asserted on each `UpdateAsync`, `AllowedMentions.None` on every send.
-Its two controls use two verbs (`plyn:pet:{id}`, `plyn:feed:{id}`), and they are offered
-only while the Plynling is alive and not frozen. "Nourrir" is a select *on the card*
-rather than a button opening a second message: one fewer round trip. Anyone may feed
-anyone's, but a non-owner pays double (`PlynlingLife.FeedPrice`), from their own wallet in
-the same single save; each option's description says what others pay. An option's label shows the
-**owner's** stock of that food instead of the price when they have any (`PlynlingService.GetPantryAsync`,
-passed to `BuildCard` by every call site) — the owner's, not the clicker's, since the card is one
-message everyone sees and is redrawn by whoever last pressed a button. « Caresser » is
-hidden while the Plynling sleeps, and the pet itself is refused then too. A button press rewrites
-the card in place with her line on it, instead of posting a second message under it.
-Feeding and petting happen **only on the card** — `/plynling feed` and `/plynling pet` were
-removed, since the card is where the Plynling is; someone else's is reached with `/plynling view
-user:`. `PlynlingCareService` is what the buttons call. The pet cooldown is an in-memory `CooldownGate` keyed on
-(petter, Plynling), released when the pet is refused; a restart resetting it costs nothing,
-since petting cannot keep a Plynling alive. « Caresser » is deliberately **never greyed out for a
-cooldown**: the card is one message everyone sees and the cooldown is per petter, so disabling
-it would lock out people who may still pet. The refusal says when instead — `CooldownGate.TryClaim`
-has an overload reporting the ready instant, rendered as a live `<t:…:R>`.
-
-**Plynlings sleep from 01:00 to 05:00 Paris time, and that is time of day, not a need.**
-`PlynlingLife.IsAsleep` reads the wall clock through `AppTime`, and `Mood` returns
-`Sleeping` then (frozen still wins); nothing is stored. Hunger keeps dropping at night —
-only **death** moves: `EffectiveDeathAt` puts a death due in the window at 05:00, and
-`Settle`, `ShouldWarn` and the feed re-arm all read that effective instant, never the raw
-`DeathAt`. The warning DM (`WarnAt`) is 3 h before the effective death, pulled back to
-23:00 the evening before when it would land between 23:00 and 05:00. `WakeAfter` and `WarnAt`
-build their instants from the Paris wall clock, because both clock changes fall inside the
-sleep window; the scratch harness pins both nights (2026-03-29, 2026-10-25).
-
-**`/plynling abandon` deletes the row.** An abandoned Plynling never reaches the graveyard
-and cannot be resurrected — which is why it is a slash command confirmed by typing the name
-(`PlynlingCardUi.NamesMatch`: case, outer spaces and runs of spaces ignored, but not a missing
-space), never a card button. The cost is shame, on purpose: a public announcement
-(`PlynlingAbandonLines`), `AbandonHits` on the wall (*L'Indigne*), and a 30-minute adoption
-cooldown held **in memory** in `PlynlingCooldowns` — a restart clears it, which is fine at
-30 minutes. The shame point is recorded in its own `try` after the deletion: a failed write
-must not undo the abandonment.
-
-**`/plynling play`'s secrets never leave the process.** The rock it hides behind, its throw
-and the number it thinks of live in `PlynlingPlayService` (a singleton, sessions by a short id,
-10-minute expiry), never in a custom-id — anyone can read a custom-id out of the client. The
-rules are pure in `Helpers/PlynlingGames` with the `Random` passed in, so every round is
-checkable; the text is pure in `Helpers/PlynlingGameUi`; the card is `PlynlingPlayCards.BuildGame`.
-Each move runs under the session's `Gate`, so a double click plays once and exactly one move
-finishes the game — that move alone ends the session and pays, through
-`PlynlingService.FinishPlayAsync` (happiness, counts and cailloux in one save). The hourly
-limit is claimed when the game **starts**, so abandoning a game never rolls a new one. A restart
-ends games in progress, which costs nothing.
-
-**`/plynling visit` is an invitation, and its knock is a second message meant to ping.** Like the
-giveaway draw, it narrows mentions rather than silencing them: `AllowedMentions` with the
-invited owner's id only. « Accueillir » carries the visitor's Plynling, the host and the expiry
-in its custom-id (nothing secret there); only the host may press it, within the hour. Once a
-day per pair of owners, either direction, held in memory in `PlynlingCooldowns` and released
-if the visit then fails. A visit pays no cailloux on purpose — two accounts could farm it.
-`Plays`, `PlaysWon` and `Visits` on `Plynling` are recorded for the achievements; they started at
-zero the day they shipped.
-
-**A visit is told as a story, but decided before it starts.** `VisitAsync` saves everything first;
-`Helpers/PlynlingVisitStory.Build` (pure) then picks a place open at that Paris hour and tells it in
-**five to eight steps** (four plus half the script's lines) — arrival; the script's opener; the rest of the script **two lines to a
-step**, the last pair finished by a closer that turns the talk into doing something; the activity
-with a two-line exchange; parting plus
-`PlynlingPlayCards.VisitOutcomeLines` — the rest from pools keyed by `VisitMood`: the bond **after**
-the visit, or `Conflict` for a bad scene or enemies. So a restart mid-story can never change what
-happened. **The arrival is the exception: it uses the bond *before* the visit** (`MoodFor(true,
-Before)`), so two acquaintances who become friends during it still arrive as acquaintances, and a
-scene that goes badly has not gone badly yet — Conflict arrivals are therefore for enemies only.
-
-**A typed passion is quoted back, Tomodachi-style.** A taught passion that stayed free text
-(`PlynlingPassions.Typed`, one the catalog did not recognise) is the owner's own words, and it turns
-up in ordinary moments. In a visit, when either Plynling has one, `TypedMomentChance` (45 %) of the
-time it comes up once outside the conversation — in the arrival, the exchange or the parting, from
-`TypedArrivals` / `TypedExchangesOwnerFirst|Second` / `TypedDepartures`, where `{S}` is its owner and
-`{P}` the text. The exchange pool is chosen by who owns it (the visitor always speaks first), and a
-typed parting never replaces a refusal's or a break-up's. On the card, `PlynlingPassions.PickLines`
-swaps in `PlynlingPetTypedLines` / `PlynlingFeedTypedLines` / `PlynlingVisitKnockTypedLines`
-`TypedLineChance` (15 %) of the time, the rendered passion passed as the **last** format argument
-(`{1}` for pet, `{2}` for feed and knock); callers always pass it, so an ordinary line ignores it.
-The text is sanitised and never opens a sentence, since it is lowercase. `/plynling view` adds a
-thought bubble: `PlynlingPassions.Thought` returns `PlynlingThoughtTypedLines` — or
-`PlynlingDreamTypedLines` while it sleeps — `ThoughtChance` (25 %) of the time, never on a dead or
-frozen one, and only when no gift line already fills the card.
-
-**The conversation is one script, never lines drawn separately.** Drawing each line from its own
-pool made every line fine alone and the exchange « décousu » — the reply never answered what was
-said — so `Helpers/PlynlingScripts` holds whole conversations: two, four, six or eight `ConvoLine`s written
-together, A's opener (narration `\n` words) then the spoken lines, each answering the last,
-from whichever of A and B the script says (some let one talk twice in a row). Keyed by passion, `ConvoFlavor`
-(rivals and conflicts are `Tense`, every other bond `Friendly`) and whether B shares the passion; a
-typed passion only gets the generic `ForCustom` scripts, which name the subject as `{P}` and nothing
-more. The engine draws a script by its opener (so the picker's no-repeat history works) — openers
-must therefore be unique within a key, which the harness checks. **Add conversations as whole
-scripts, never as loose lines**: a line added on its own answers nothing. **Before writing any
-Plynling line, read `docs/plynling-writing-style.md`** — the voice, the tricks, the length mix. `PlynlingScripts.cs` is
-generated from the scratch writing sheets but reads fine by hand. Lines are templates — `{A}`/`{B}` names,
-`{ils}`/`{Ils}` (« elles » only for two girls), `{a:m|f}`/`{b:m|f}`/`{p:m|f}` agreements — and the
-harness expands every line for all four gender pairs and builds full stories.
-
-**Two lines to a step, so both of them talk on it.** Showing one spoken line per step left every
-conversation step a monologue; now the lines after the opener are paired, and the closer goes to
-whoever did **not** say the script's last line, so the final pair is always an exchange. That is
-also why a script must have an **even** number of lines (2, 4, 6 or 8, which the harness checks):
-the spoken lines plus the closer must pair up exactly. A two-line script is the opener and one
-answer that lands on its own — a punchline or a quiet beat — with the closer as the reply to it.
-Every key was rewritten into short scenes with a turn, and each mixes the lengths — about a third
-at 2, half at 4, the rest 6 or 8; keep that mix when adding to one. Two lines in a row from the same Plynling share one bubble, so use
-that on purpose. Lengthening a script is inserting lines into the middle, never appending, since the
-last line is the one that leads into the activity.
-
-**Every step carries both faces, and a line can set them.** `VisitBeat` holds the text and a face
-per Plynling — happy, content, sad, or `PlynlingMood.Angry`, which exists for visits only
-(`PlynlingLife.Mood` never returns it, so a Plynling's own card never shows it). The defaults come
-from `Faces(mood)` — speaker, listener, narration — and a parting follows the outcome first (a
-refused confession or a break-up is sad, a new couple happy, new enemies angry). A line may start
-with a tag, stripped before display: `[sad]` on a spoken line is the speaker's face, on a narration
-line both faces, and `[A:sad B:happy]` sets the visitor's and the host's separately. Only those four
-faces parse — an unknown word stays text, and the harness fails on any line still starting with `[`.
-
-**The story card shows both Plynlings side by side and never moves on its own.** Each step is a
-`MediaGallery` of two (each sprite in that step's face, alt text = its name), the text, « 3/7 », and
-◀ ▶ (`vis:prev:{story}:{beat}` / `vis:next:…`, two verbs, disabled at the ends) **from the first
-step**: « Accueillir » closes the knock in place and posts step 1 as a follow-up — a new message at
-the bottom of the channel — and the reader pages at their own pace. There is no timer and no
-background edit. A gallery of two spans the full width, so each sprite is about half the message;
-Discord fixes that, so the sprite is shrunk *inside* its picture instead: `PlynlingArt.VisitSprite`
-links the `_visit` files, the same animation on a larger transparent canvas (`VISIT_CANVAS` in
-`tools/plynling-art/export.py`, 80 %). Every step before the last also carries « ⏭ Fin »
-(`vis:last:…`), straight to the outcome. On the last step ▶ becomes « ↺ Début » (`vis:first:…`)
-and « Fin » goes — every button its own verb. Stories live in
-the `VisitStories` singleton, the last 300 kept, with a snapshot of both Plynlings (name, species,
-stage, passions) so paging needs no database — the picture URL is rebuilt per step from species,
-stage and face.
-
-**Plynling passions: one innate, one taught, and the taught one is hostile input.** `Plynling.Passion`
-is one of the 12 in `Helpers/PlynlingPassions` — stored as an int, so **append-only** — rolled at
-adoption. `TaughtPassion` is free text from `/plynling passion` (2–40 characters, no links, 24 h
-cooldown, staff clear it with `/admin plynling passion-reset`), sanitised and sent with pings off
-like a name. `PlynlingPassions.Resolve` upgrades a typed text that names a catalog passion, so it
-gets the rich lines. Catalog passions have hand-written pools (openers, shared lines, activities,
-pair combos); a custom one only ever appears through generic templates as `{P}`, which is why those
-never put `{P}` after « de » or « à » (« parler de les trains »), and why `Expand` inserts `{P}` last
-— typed text is never read as a template. `{S}`/`{L}` are the speaker and the listener, with
-`{s:m|f}`/`{l:m|f}`. Beat 2's speaker is visitor or host at random; the subject is a shared passion
-60 % of the time when there is one. The activity is the squabble in a conflict; otherwise 30 % of the
-time (`MoodActivityShare`) it comes from `Activities[mood]`, which fits the bond rather than the
-subject, and the rest from the subject: a catalog passion's activities **plus** any combo with the
-listener's passions, or the custom ones. Combos join the pool rather than replacing it — alone, a
-pair's one combo made every Cooking-meets-Music visit identical; each of the 25 pairs now has three.
-
-**The parting follows the outcome when the visit broke something.** The mood is the bond *after* the
-visit, so a couple who just split would otherwise leave on a cheerful Friends line. `DeparturePool`
-hands a refused confession `RefusedDepartures` (the visitor always confessed, the host said no) and a
-break-up `BreakUpDepartures`; these are exactly the outcomes `OutcomeFace` turns sad. Every other
-parting stays mood-keyed, so those pools must still read right just before any outcome line.
-
-**Plynling badges are stored, and paid in the action's own save.** `Helpers/PlynlingBadges` is the
-catalog (16, each with a **stable key** — a rename orphans every copy already earned);
-`PlynlingBadge` rows record them, with a unique index on (Plynling, key) that is what really
-makes each reward paid once. `PlynlingService.AwardAsync` and `AddMomentAsync` never save: what
-they add rides the caller's `SaveChanges`, so an action, its moments, its badges and their
-cailloux land together or not at all. What *time* earns (age badges, the « est devenu… »
-moments, dated when the stage was reached via `PlynlingLife.StageStart`) and the death moment
-are written by the hourly sweep. `JournalKind` is stored as an int, so **append-only**; moments
-store a kind and a detail and are worded at display (`PlynlingJournalUi`), so they follow the
-Plynling's gender. At most `JournalCap` (100) per Plynling, oldest dropped — counting moments
-added earlier in the same save. Both tables cascade with the Plynling: an abandoned one takes
-its journal with it; a dead one keeps it.
-
-**`PebbleService.GetOrCreateWalletAsync` looks in `Local` first.** A wallet created earlier in
-the same unit of work is not in the database yet, and creating a second one for the same person
-breaks the unique index at save time — which a first-time feeder whose meal also earns the
-Plynling a badge used to hit.
-
-**Happiness changes a meal's worth, and a Plynling at 0 % sulks.** `PlynlingLife.MealFactor` scales
-a meal's *hunger* only — ×1.15 above 80 % happiness, ×0.75 below 30 %, measured before the meal
-cheers it — never its price or its own happiness. `IsSulking` (happiness below 0.5 %, what the
-card shows as 0 %) refuses every meal, free of charge — **except while starving**: the sulk must
-never be what kills it, and at night nothing could end it, since petting is refused. The happy
-gift is one draw per Paris day (`Plynling.LastGiftDay`, stored so a restart cannot grant a
-second), made on the owner's first look while it is happy — `/plynling view` or a pet or meal
-from the card; a look while it is not happy leaves the day's draw unspent.
-
-**Hygiene is a third need and dirt a knock-on, never a killer.** `Hygiene` is stored at
-`NeedsAsOf` like hunger and happiness, and below `DirtyBelow` (33 %) happiness drains
-`DirtyHappinessFactor` faster **from the exact instant** hygiene crosses it — hygiene falls
-linearly, so `HappinessAt` is two straight pieces, not an approximation. `Rebase` must compute
-every value before storing any, because `HappinessAt` reads the stored hygiene. « Laver » is
-owner-only, free, and rationed in memory like petting.
-
-**Sickness is played in `Settle`, one 05:00 morning at a time, and every roll is hashed.**
-`LastMorningDay` is the last morning played; `Settle` plays each later one in time order — a
-starvation due first wins and stops the loop, frozen mornings are skipped but recorded — so a
-command and the hourly sweep always reach the same outcome. That is also why the rolls come from
-`PlynlingSickness.Roll(id, day, purpose)` and **never a `Random`**: the same morning must decide the
-same way whoever settles it. `Settle` stays pure, so the journal moments it produces ride on
-`Plynling.PendingMoments` (not mapped) until whoever saves calls `FlushMomentsAsync` — every save
-path after a settle must. `DeathCause` and the `FellSick`/`Recovered` journal kinds are stored as
-ints: **append-only**. Sick: half meals, no games, no visits either way, no self-freeze (freezing
-pauses the illness, so it would dodge the death rolls). `/admin plynling cure` sends no DM on
-purpose; `/debug plynling` exists because sickness is rare by design and could take days to see.
-
-**`/plynling help` is within ~150 characters of the 6000 embed cap.** Measure it before adding
-anything; shorten a field or split the guide rather than let it throw at send time.
-
-**Plynling relationships grow out of visits, and every rule lives in `Helpers/PlynlingBonds`.**
-One `PlynlingRelation` row per pair, **lower id first** (unique index), so a pair has one row
-whichever of the two visited; it cascades with either Plynling and survives a death. The hidden
-compatibility is derived from the two ids, never stored. `PlynlingBond` is stored as an int —
-**append-only**. **Where a pair ends up is decided by its compatibility, with wide scatter — not by
-how often it visits.** A 75 % base chance once made every pair drift to best friends given enough
-visits, and made enemies a dead end; now `BaseSceneChance` (55 %) sits near the break-even point and
-`AffinityPull` draws affinity back toward about +2 + 4 × compatibility (−20…+20, so −78…+82), so
-over 100 visits the bonds spread roughly 18 % enemies / 20 % rivals / 22 % acquaintances / 19 %
-friends / 10 % best friends / 11 % couples. The range was widened from ±15 for stronger contrasts;
-changing it reshuffles every existing pair's compatibility, since it is derived, not stored. A couple feels no pull and gets `LoversBonus` instead — under the pull
-nearly every couple broke up within 50 visits. `BondMargin` (10) keeps a pair on a band's edge from
-flipping, and being announced, on every visit. Retune by re-running the simulation, never by feel. The bond follows the affinity (`BondFor`), except a couple, which only a
-confession makes and only a slide below +40 undoes. Confessions are **a boy and a girl only** —
-the owner's explicit choice, keep it — and one living partner at a time: `InCoupleAsync` counts
-only partners still alive, or a widow could never love again. `VisitAsync` takes a `Random` so
-every scene, confession and break-up is checkable. Grief (best friends and partner fall to 20 %)
-runs on death, from the sweep, and on abandonment, **before** the row is deleted and takes its
-relations with it. The card's « 💞 En couple avec … » line comes from
-`PlynlingService.GetPartnerAsync` — the living partner only, and none on a dead Plynling's card —
-passed to `BuildCard` by every call site (`RespondCardAsync`, and the care service's pet and
-feed), since the builder itself is static and cannot query.
-
-**Plynling names are hostile input.** They are rendered through `PlynlingCardUi.SafeName`
-(`Format.Sanitize` — markdown and mention syntax neutralised) *and* every message carrying
-one is sent with `AllowedMentions.None`. The death announcement is public, so a Plynling
-named `@everyone` would otherwise ping the server on its way out.
-
-**Freezing has two owners.** A self-freeze (`FrozenByStaff = false`) follows the rules —
-hunger ≥ 50%, 14 days at most, thawable early, 7-day cooldown after it ends — and those
-rules exist only to stop people escaping death. A staff freeze has none of them and is
-lifted by staff only; the owner is told by DM whenever staff freeze, thaw or rename theirs.
-`LastSelfThawAt` is written only when a *self*-freeze ends, so a staff thaw never starts
-the owner's cooldown.
-
-**The inventory belongs to the person, not the Plynling.** `InventoryItem` rows are keyed on
-(guild, user, `ItemCatalog` key) and survive every death and abandonment. **Item keys are stored,
-so they are append-only like `PlynlingSpecies`** — renaming one orphans every copy held. A row
-that falls to quantity 0 is **kept**: it is what makes an item discovered for good, which is
-why a set completes on *discovery*, not on holding all eight at once, and why trading or
-selling an item never undoes a set. `CollectionCompletion` is the once-only guard on a set's
-reward, enforced by a unique index. The inventory commands are their own
-`/inventory` group (`InventoryModule`), not part of `/plynling` — see the grouping note above.
-`/plynling forage` is the exception: it is something the Plynling *does*, so it stays there and
-only its find lands in the inventory.
-
-`InventoryService`'s static `AddAsync` / `TakeAsync` / `GrantAsync` take a context and **never
-save**, like `PebbleService.GetOrCreateWalletAsync`: every source — feeding from the pantry, the
-gift, a game, a visit, a forage — moves its items in its **own** unit of work, so the action and
-the items land in one `SaveChanges`. `AddAsync` pays a completed set into the wallet in that same
-save. Both it and the wallet helper check `Local` first, so two adds in one save never create
-the same row twice.
-
-**The Champignons set is the one big set, and its pictures are the bot's own emojis.** 30
-items against the others' 8, found mostly by foraging: `DrawForage` picks from it 60 % of the
-time and every other source 10 % (`ForageMushroomShare` / `MushroomShareElsewhere`), or its 30
-would crowd out the other 40 (five sets of 8, Insectes the latest) in every find. Past 10 items a set is laid out one embed field per
-rarity (`ItemCatalog.Sections`), since 30 lines of emoji markup overflow a field's 1024. The
-pictures are **application emojis** — owned by the bot's application, not by a server, so
-unlike the reaction emotes above they work in any server it is in — and **the bot uploads them
-itself**. The sprites ship with it (`ProjectSYNCS/Assets/Mushrooms/<slug>.png`, 128 px, scaled ×8
-from the pack's 16 px without smoothing, copied to the output and the publish folder by the
-csproj). On the first Ready, `ApplicationEmojiService` lists the application's emojis, uploads
-any sprite whose `shroom_<slug>` emoji is missing, and records the markup in `ItemEmojis`, a
-static map by item key. `ItemInfo.Emoji` is therefore **computed** — that map, else the
-catalog's `DefaultEmoji` (🍄) — so nothing breaks before the upload, after a failed one, or on
-a bot that cannot upload; and each application (dev and prod alike) gets its own copy with no
-manual step. An existing emoji is reused by name, never replaced: to change a picture, delete
-that emoji in the developer portal and restart. The emojis appear in embeds and messages only —
-autocomplete is plain text, so it goes through `ItemCatalog.TextEmoji`, which drops custom
-markup rather than show « <:name:id> ». The sprites' file names are the item keys
-(`col.<file name>`), which the harness checks both ways; `Assets/Mushrooms/CREDITS.txt` is the
-pack's own list, with the Latin names. The four **foods share their collectible twin's picture**
-(`ItemCatalog.SharedPictures`: Champignon → Champignon de Paris, Shiitake → Shiitake,
-Morille → Morille conique, Truffe → Truffe noire) — one sprite, one emoji, two items — so `ItemInfo.Emoji` looks up `PictureKey(Key)`, not `Key`. The card's Nourrir
-menu shows them too, but only once uploaded: before that it shows no icon rather than 🍄 four
-times, since a select option takes the `IEmote` parsed from the markup. **Shiitake is the one name a
-food and a collectible share** (the collectible's key is still `col.lentin_chene` — keys are
-stored, names are not). Wherever the two could meet with the same picture — autocomplete, gifts,
-trades, sales — print `ItemCatalog.ClearName`, which suffixes « (nourriture) » / « (collection) »
-to a shared name only.
-
-**Every other collectible, the six sets and every cosmetic have icons too, drawn in the same
-style.** They are ours, not the pack's: 16×16 text grids in `tools/item-art/icons.py`, in the pack's
-palette (Pear36 plus eight of its colours), exported ×8 to `ProjectSYNCS/Assets/Icons/<key>.png` —
-the key is the item key, or `set.<set key>` for a set. `ApplicationEmojiService` reads both folders
-through `ItemEmojis.Sources`; the mushrooms keep their `shroom_` names and the rest get
-`ItemEmojis.EmojiName`'s short prefixes (`c_`, `s_`, `th_`, `ti_`, `ac_`, `gr_`), since Discord caps a
-name at 32 characters. `CollectionSet.Emoji` and `CosmeticInfo.Emoji` are computed like
-`ItemInfo.Emoji` — the icon once uploaded, else the stored `DefaultEmoji` — and so are a thème's
-`Banner` and a cadre's `GraveLeft`/`GraveRight`, which are made of it. A select option must get
-`EmoteMarkup.Parse(emoji)`, never `new Emoji(emoji)`, which Discord rejects for custom markup.
-**A custom emoji costs ~35 characters where Unicode costs 2**, which is why `/inventory view` is two
-pages (`InventoryPage`, `inv:page:{page}`): on one, someone holding everything reached ≈ 7 100 of
-the 6 000 a message's embeds may hold. Anything new that lists many items must be measured with every
-icon uploaded. Like the mushrooms, an uploaded icon is never replaced: delete it in the developer
-portal and restart.
-
-**`/inventory collection` is a book, not one embed.** An overview page, then one page per set
-picked from a **select menu** — not buttons, because the overview plus six sets is already seven
-and a row holds five — with a Tout / Trouvés / Manquants filter row on set pages. State lives in
-the custom-ids under two verbs, `col:set:{user}:{filter}` (the menu) and
-`col:fil:{user}:{set}:{filter}` (the buttons), handled by `InventoryComponentHandler`; every
-click re-reads the inventory. « Trouvés » means *discovered* — an item traded away shows as
-« plus en stock » and still counts, the same rule as set completion. A page split by rarity
-leaves the rarity out of each line so twelve lines of emoji markup fit a field's 1024.
-
-**Feeding serves from the pantry first**, one of that food for your own Plynling and two for
-someone else's — the pantry's version of the double price — and only charges cailloux when
-there isn't enough. `TooPoor` is therefore only reachable with an empty pantry.
-
-**A visit's item finds use their own `Random`** (`findRng`), apart from the scene's. The scene's
-draws are scripted in the checks, and a shared generator would make every find shift the
-scene; keeping them apart keeps both testable. The gift's item share uses the *upper* half of
-its roll (`>= GiftCaillouxShare`) for the same reason: the existing cailloux checks roll low.
-
-**Trade offers are in memory** (`TradeOffers`, a singleton), like visit invitations: a restart
-drops them and their buttons then say so. One open offer per proposer — a new one replaces the
-old. `Take` removes atomically, so two clicks on « Accepter » cannot both swap, and the swap
-re-checks both sides inside one save. When the *recipient* lacks the items the offer is
-restored, since they may still get them; when the *proposer* does, it is withdrawn.
-
-**Cosmetics are items, and what a Plynling wears is four keys on it.** `CosmeticCatalog` holds
-the 60 (`cos.<slot>.<name>`, stored, append-only) with their slot data — a thème's accent and
-banner, a titre's two genders, an accessoire's article, a cadre's two sides — and each is also an
-`ItemInfo` of `ItemKind.Cosmetic`, so give, trade, autocomplete and the inventory handle them
-unchanged; they belong to no set, so the book never counts them. `Plynling.ThemeKey`,
-`TitleKey`, `AccessoryKey` and `GraveKey` are what it wears, read and written only through
-`CosmeticSlots`. Wearing uses nothing up; a dead row keeps its keys, which is how its grave shows
-its cadre. **Losing the last one takes it off**: `InventoryService.TakeAsync` clears the key from
-the owner's *living* Plynling in the same unit of work, so a card never shows something its owner
-no longer has. Cosmetics **cannot be sold** (`GiveOutcome.NotSellable`) — a buy-back price would
-invite loops.
-
-**The cosmetics shop is a function of the week, not state.** `CosmeticCatalog.Shop(now)` is the
-basics, then `RotatingPerSlot` (2) per slot drawn with `new Random(week * 10 + slot)` — seeded, so
-identical for everyone and across restarts — then the season's items. The week is the Paris ISO
-week (`WeekKey`, `yyyyww`), turning at Monday 00:00 Paris. The buy select carries the week it
-was drawn from (`cos:buy:{week}`), and `BuyAsync` refuses a pick from any other week, so a shop
-message left open over the weekend cannot buy what has rotated out. The three screens are
-`CosmeticCards` (static, measurable) and are ephemeral: `CosmeticComponentHandler` redraws them in
-place with a one-line notice. The wardrobe has one select per slot, `cos:wear:{slot}`, each led
-by « Aucun ». The card's thème costs one component (its banner); the titre and accessoire ride in
-the heading's text.
-
-**`/plynling graveyard` is Components V2 with two button rows and two verbs** — `grave:sort:` for the
-newest/longest-life toggle and `grave:page:` for paging. The budget is 24 of 40 (container,
-heading, five picture rows at three components each, footer, two rows of two). Changing the
-sort resets to page 0. The graveyard settles every living Plynling in the guild before
-listing, so a death that happened since the last sweep is already in the ground. Ties
-break on id so the order is stable across re-renders.
-
-**Every Plynling line exists in both genders, and the type makes that unskippable.** Each
-Plynling pool in `BotResponses` is a `GenderedLines(M, F)`, so a call site cannot pick a line
-without `.For(p.Gender)` — two flat arrays would have compiled fine with a forgotten switch
-and shipped a boy's line to a girl. A girl is *une Plynling*: the noun follows the creature.
-Text not about one specific Plynling — `/plynling help`, `/help`, the README, command
-descriptions, person-level refusals like `NoPlynling` — stays in the generic masculine. Short
-fixed words go through `PlynlingGrammar.Agree` ("âgé/âgée", "Gelé/Gelée"). The `plynlingui`
-harness walks every `GenderedLines` field by reflection and bans `il`, `-le`, `mort` in `F`
-and `elle`, `-la`, `morte` in `M` (whole words, with an allow-list for *la mort*) — crude, but
-it catches the likeliest mistake, a line pasted into the wrong half. `PetCooldown` is the one
-Plynling line with no gender: it is refused before the Plynling is loaded, so it is worded to
-need none.
-
-**The bot has a Plynling of her own: Ping-Qilin, a girl Amanite whose passion is naps.** One per guild,
-an ordinary row owned by the bot's own user id, so view, pet, feed, list and the journal need no special
-case. `Helpers/PlynlingMascot` holds the name, species, gender and passion and the runtime-bound owner
-id — **bound on Ready by `PlynlingMascotService`, never hardcoded**, because the dev and the production
-bot are different applications with different ids. It also creates the row in any guild that lacks one
-(any row owned by the bot counts, so it never makes a second), on every Ready and on `JoinedGuild`. She
-**cannot die**: `PlynlingLife.Settle` hands her row to `Tend` instead of playing it out, and because that
-is inside `Settle` it holds on every read, not only after the hourly sweep. `Tend` tops a need up to 90 %
-(80 % for happiness, 100 % for hygiene) the moment it falls under 50 % — deliberately not to full, so a
-meal from someone else is still worth giving — cures any illness silently and marks the mornings played
-without rolling, so there is nothing to journal. A staff freeze is left alone. Her badges are earned
-and journaled but **pay nothing** (`AwardAsync`): a reward would open a wallet for the bot and put
-cailloux from nowhere into `/admin dashboard`; her visits find no items, for the same reason.
-Because `Tend` restores happiness under 50 %, grief or a refused confession fades on her next read.
-
-**She speaks for her own Plynling.** On Ping-Qilin's card, `MascotPetLines` / `MascotFeedLines` replace
-the usual pools (no typed-passion variant — she has none), `/plynling view` always opens with a
-`MascotViewLines` line, and « Laver » answers with `PlynlingText.MascotBath`. These pools are plain
-`string[]`, **not** `GenderedLines`: Ping-Qilin is always a girl, so an M half would be dead text.
-
-**Visiting her skips the knock.** Nobody can press « Accueillir » for a bot, so `/plynling visit user:@SYNCS`
-runs the visit at once, posts a `MascotWelcomeLines` line in place of the knock (no ping), and tells the
-story as a follow-up. Both ways in go through `PlynlingVisitRunner` — the once-a-day claim, the scene,
-the release on failure, the story — so the two cannot drift; each caller keeps its own pre-checks.
-`/plynling visit` otherwise still refuses a bot as the host.
-
-**Plynling families exist in the code and are dormant.** `PlynlingFamily`, the six sunflower
-species and their catalog rows are in place, and `PlynlingCatalog` rolls only within a family
-— but `/plynling adopt` always rolls a mushroom, and no sunflower art exists, so nothing can
-ever show one. The rest (the `family:` option, the art, the docs) is Tasks 3–5 of
-`docs/superpowers/plans/2026-09-24-plynling-gender-and-sunflowers.md`, deferred on purpose and
-already tested on a scratch copy. **`PlynlingSpecies` is append-only**: it is stored as an int,
-so a species inserted in the middle would silently turn every later row into its neighbour.
-The family is `SpeciesInfo.Family`, not a column. `PlynlingArt.Key` is exhaustive and
-**throws**: it used to end in `_ => "dore"`, which would have dressed any unkeyed species in a
-Doré's pictures without a word. Every line is written family-neutral — never name a cap,
-petals or spores in a Plynling line — which is why the three "chapeau" lines were rewritten.
-
-**A living Plynling is an animated WebP; memorials and foods are PNG.** `PlynlingArt.Sprite`
-ends in `.webp` and the other two in `.png` — they share `Version` (4) but not the extension, so
-don't "tidy" them into one. Components V2 thumbnails play animated WebP; a client that cannot
-shows frame 0, which `tools/plynling-art` keeps pixel-identical to the v2 still. The idle loop
-lives in `motion.py`, and **nothing in it moves side to side** — the owner rejected every
-left-right motion (sways, wobbles, a sideways shiver, even a travelling shimmer), so keep new
-motion vertical or in place.
-
-**A « sale » Plynling wears `_dirty` art on its own pictures, and only there.** `PlynlingArt.SpriteOf`
-is the one way to picture a living Plynling (card, play card, journal, knock, announcements) and
-adds `_dirty` when hygiene is below 33 % and it is not frozen; `DirtyMoods` must match
-`DIRTY_STATES` in `export.py`. Visit stories stay clean (`VisitSprite` never takes it) — a decision,
-not an oversight. The mud is painted under the face and the fly's spot is searched for once per
-animation on the rest pose; `tools/plynling-art/README.md` says why.
-
-**Life stages are derived from `Age` and never stored.** `PlynlingLife.Stage` maps time actually
-lived to bébé (< 2 d), ado (< 14 d), adulte (< 180 d) and ancien — so a frozen Plynling does not
-grow up, a resurrected one resumes where its age puts it, and there is no column to migrate.
-They are cosmetic only: nothing about hunger, happiness or death reads them. Every species shows
-the label; only a **bébé** of a species in `PlynlingArt.StagedSpecies` gets its own picture — ado
-and ancien art was prototyped and dropped by the owner, so they wear the adult. `StagedSpecies`
-must match `STAGED` in `tools/plynling-art/export.py` (artcheck compares them), and the adult
-filename has no stage segment on purpose — it is the file every species already had. Every
-mushroom has a baby, each hand-drawn (`<species>_baby` in `species.py`) rather than shrunk from
-its adult: a derived shrink was tried and kept the adult's full-size cap, so it read too little
-like a baby.
-
-**`XpTracker.ExcludedChannels` is checked before `TryClaim`, never after.** The spam
-channels earn nothing, and the order matters: claiming first would let a message there
-burn that person's 60 s message cooldown, so spamming in the excluded channel would
-*actively block* them from earning in a real one a minute later — the opposite of the
-intent. All four signals check it (message, reaction, verdict, voice), which is why
-`GrantVoiceXpAsync` takes the voice channel id it would otherwise have no use for: the
-list lives in `XpTracker` alone, so `VoiceXpService` passes the id rather than keeping
-a second copy of the rule. The check also treats a **thread** as its parent, or opening
-a thread inside a spam channel would quietly be a way back in. The decision itself is
-split into a pure `(channelId, parentId?)` overload precisely so it can be exercised
-without a gateway connection. That pure core survived `/config`: it now takes the
-configured set as a third argument and the two-argument overload passes an empty one, so
-the hardcoded decision is still checkable with no I/O — and the hardcoded check still
-runs *first*, meaning an excluded spam channel never reaches the database at all.
-
-**`/level` and `/leaderboard` are Components V2, and that is all-or-nothing.** A message
-carrying `MessageFlags.ComponentsV2` may have **no `content` and no `embeds`** — the flag
-turns the whole message into components, so this replaced the embed rather than adding to
-it, and `OnViewAsync` has to re-assert the flag on every `UpdateAsync` or the edit is
-rejected. `/shame` joined them when it grew avatars (see its own note below).
-`/emotestats` and `/goodbot` stay paged embeds, since they rank emotes and verdicts —
-things with no avatar, no level and no podium — and the only thing a shared renderer
-would save is the page arithmetic. The avatar accessory itself lives in
-`Helpers/AvatarUi`, extracted from `LevelModule` once `ShameModule` needed it — the same
-move `BotChat` and `EmoteMarkup` made, and deliberately *not* in `LevelCardUi`, which is
-string work only.
-
-**`PageSize` is 5 because of a hard cap, not taste.** Discord allows **40 components per
-message counting the whole tree**, and a row with an avatar costs three (Section +
-TextDisplay + Thumbnail). A page of 5 with all three button rows uses 31 of 40; at the
-old `PageSize` of 10 it came to 46 and would throw in `ComponentBuilderV2.Build()` —
-Discord.Net enforces the cap itself, so this fails at build-time-of-the-message rather
-than as an API rejection. The switchers are what forced the reduction, not readability
-alone. Adding anything to a row, or another button row, means re-doing that sum: at 5
-rows there is headroom for one more row of five buttons and no more.
-
-**`/leaderboard` is three views over one row, not three leaderboards.** `MemberXp`
-carries `TotalXp`, `ReactionsUsed` and `VoiceMinutes`, so `LeaderboardView` only changes
-the ordering and the second line of each row. The three numbers are deliberately
-different in kind: `TotalXp` is a *reward*, rationed by `XpTracker`'s cooldowns, while
-the other two are *facts* — every reaction counts even when it earns no XP, so ranking
-by XP and by reactions genuinely differ. Nothing here can be backfilled; each counter
-started at zero the day it shipped.
-
-**`MemberXp` / `MemberDailyStat` is the third instance of the totals+buckets pair**, and
-exists for the reason the other two do: a date cannot be recovered from a running total.
-All three counters are bucketed, all are written by the same `XpService` calls that
-update the totals, and **the buckets do not sum to the totals**. All-time reads
-`MemberXp` and stays exact; the windows only cover data recorded since the buckets
-shipped. A reaction removal decrements *today's* bucket whatever day the reaction was
-added, exactly as in `EmoteDailyStat`.
-
-**A level belongs only to the all-time view.** `LevelCurve` maps a *lifetime* total to a
-level, so there is no such thing as "the level you were in the last 7 days".
-`LevelCardUi.RowValue` therefore prints `Niveau N · X XP` for all-time and `X XP gagnés`
-for a window, and the footer's standing line switches the same way. Reaction and voice
-rows read identically in every period, since a count is a count. `/level`'s card carries
-no filters at all — it is a profile, not a ranking.
-
-**Every button row needs its own custom-id verb. This is not style — it crashed prod.**
-Discord rejects a message carrying the same custom-id twice with
-`COMPONENT_CUSTOM_ID_DUPLICATED`, **disabled buttons included**, and every row on these
-boards encodes the same state, so sharing a verb makes ids collide by construction. The
-active filter button is `{prefix}:{current}:0`, which is character-for-character what a
-`◀` pointing at page 0 produces from the same prefix — and on `/leaderboard`, where two
-filter rows exist, the active view button and the active period button are both
-"current view, current period, page 0", so it duplicated on *every* render rather than
-only from page 2. The verbs are therefore `…:win:` for the window row, `…:view:` for
-`/leaderboard`'s metric row, and `…:view:` / `…:page:` for paging, each with its own
-handler delegating to one shared `ShowAsync`. `StatsPeriodUi`'s doc comment carries the
-same warning, since it is the piece that hands out `{prefix}:{period}:0`.
-
-**`/leaderboard`'s custom-id orders view before period on purpose.**
-`level:{verb}:{view}:{period}:{page}` lets the period row be built by `StatsPeriodUi`
-with `level:win:{view}` as its prefix, giving it the same `{prefix}:{period}:0` shape
-`/emotestats` and `/goodbot` use — which is why that helper grew an `ActionRowBuilder`
-overload rather than the labels being duplicated for Components V2. Changing either
-filter resets to page 0 and leaves the other alone. Its default period is **all-time**
-(a standing, not recent activity), unlike `/emotestats`' 30 days.
-
-**Both new counters are written from `XpTracker`, never from `EmoteTracker` or
-`VoiceXpService` directly.** That is what keeps `ExcludedChannels` in one class — the
-same reason `VoiceXpService` passes a channel id rather than holding its own copy of the
-rule. The reaction count is taken *after* the exclusion check but *before* the 60 s
-cooldown claim, since every reaction counts and only one a minute pays; the voice minute
-rides the same call that grants voice XP, so the two can never disagree about which
-minutes were eligible. Removal decrements (clamped at zero, and never creating a row),
-which is why `XpTracker` is now on `BotService`'s `ReactionRemoved` fan-out alongside
-`EmoteTracker` — otherwise add/remove in a loop would inflate the ranking without limit.
-No XP is ever withdrawn; only the count moves.
-
-**The leaderboard footer reads the ranking it already loaded, rather than querying.**
-`XpService.GetRankAsync` still serves `/level`'s card, but the board takes the viewer's
-position by index from the list the page was cut from — so it follows whichever view is
-on screen for free and cannot disagree with the rows above it.
-
-**A `TextDisplay` is real message content — `<@id>` in one actually pings.** This is the
-trap embeds do not have: a naive port pings all ten people on the page *every time anyone
-clicks ◀*. Every send here passes `AllowedMentions.None`, which keeps the blue clickable
-pill while silencing it. Same reasoning as the relay convention below, different failure.
-
-**`/level` is a card, not the leaderboard opened at your row.** It used to jump to
-whatever page you ranked on, with a `→` marker that paging then lost. Now it renders one
-person — avatar, level, rank, and a progress bar drawn from `LevelCurve.XpIntoLevel` over
-`XpForLevel`, the same pair printed beneath it so the bar can never disagree with its own
-caption. Its "Voir le classement" button reuses the existing `level:view:0` custom-id
-rather than inventing one, since that already means "leaderboard, page 0" — which does
-mean the button replaces the card in place. Someone with no XP still gets a card (niveau
-0, `non classé`); a **bot** gets a flat refusal instead, since `XpTracker` skips bots so
-its card would always be empty. That refusal is one fixed `const`, deliberately not a
-`ResponsePicker` pool — the pools exist so repeated *chatter* doesn't repeat, and a
-command refusal is not chatter.
-
-**`Helpers/LevelCardUi` holds the string work, and only the string work.** The medal
-markers, the fr-FR XP grouping, the block-glyph progress bar and the row/card text live
-there rather than in `LevelModule`, because the module assembles Discord components and
-cannot be exercised without a gateway, whereas everything in the helper is a function of
-numbers. The bar clamps at both ends and treats a zero span as full: it is decoration,
-and must never be the thing that throws.
-
-**The level-up announcement is a card, not a line.** `XpTracker.AnnounceAsync` posts an
-embed — avatar thumbnail, `Color.Purple` to match `/level`'s leaderboard, and a title
-showing the **span crossed** (`Niveau {old} → {new} !`), not just the level landed on:
-one grant can cross more than one threshold, and it still announces exactly once. That
-is why `GrantAsync` forwards both levels rather than only the new one. At level **7 or
-67** the description is the fixed string `"SIX SEVEEEN"` in place of an
-`XpLevelUpLines` pick — an easter egg, not a pool entry, so `ResponsePicker` is
-deliberately never consulted for it and it never burns one of that channel's exclusion
-slots on a line the pool doesn't contain. It is a literal level check (`is 7 or 67`),
-not a digit search: 17, 70 and 167 must stay quiet. `AnnounceAsync` resolves the whole
-`IUser` rather than just a name, since the card needs an avatar off the same object;
-the "member didn't resolve → skip the celebration, keep the XP" rule is unchanged.
-
-**`VoiceXpService` sweeps instead of tracking join/leave/mute events.** Voice XP is
-Phase 2 of the system above, and the only signal with no event to react to — there is
-no "voice message received," only "how long were they present." A `BackgroundService`
-ticking every minute (mirroring `ReminderService`/`PresenceService`'s shape, with its
-own interval — explicitly not either of theirs) samples who is currently eligible and
-grants a flat per-tick amount, rather than checkpointing exact elapsed time on every
-join/leave/mute-toggle. This is deliberate: the payout is already "per minute," so a
-1-minute sample is exactly as coarse as what it rewards — a checkpoint's precision
-would buy correctness at a grain finer than the reward ever uses, at the cost of new
-per-channel state this codebase has no other precedent for. One consequence worth
-knowing: `SocketVoiceChannel.ConnectedUsers` and each member's `VoiceState` are
-already kept live by Discord.Net's own gateway cache, the same way `PresenceService`'s
-tick reads live state without subscribing to anything — so `VoiceXpService` needs no
-`UserVoiceStateUpdated` subscription and touches nothing in `BotService`'s fan-out.
-**Eligibility is one predicate, `IsActive`, used for two things — and that is the
-anti-abuse design.** It gates both who *earns* and who counts toward the "someone else
-is here" threshold. Splitting them is the exploit: if muting stopped you earning but
-still let you unlock XP for the person beside you, parking muted alts in a channel would
-farm indefinitely. So being the only unmuted person in a room full of muted ones is
-being alone, and earns what being alone earns.
-
-Self-muted **or** self-deafened is enough to be out — either one means you are not in
-the conversation, and the original "both together" rule let someone mute their mic and
-idle all day. A missing `VoiceState` also counts as out, rather than taking the generous
-reading. Moderator-applied server mute/deafen is still deliberately *not* checked:
-someone silenced by a mod for an unrelated reason shouldn't lose XP for it, and unlike
-self-muting it is not something they can do to themselves to farm.
-
-**The AFK channel is skipped entirely.** It is where Discord *puts* people for being
-idle, so two accounts parked there would earn forever — the one farm the server hands
-out for free.
-
-**Voice XP tapers with the day's total, and that is the answer to the farm no mute rule
-can catch.** Two accounts idling *unmuted* look exactly like two people in a call: the
-sweep sees presence, never participation. So `Helpers/VoiceXpCurve` holds the first hour
-at 10 XP/min — exactly the flat rate that preceded the taper, so a normal session lost
-nothing — then steps the rate down every half hour (8, 6, 5, 4, 3, 2) until it settles
-at 1. Eight hours pays 1680 instead of 4800. Deliberately a taper and not a hard cap: a
-cap teaches people the exact number of minutes to park for.
-
-**The tier table is the tuning surface, and its shape is the point.** An earlier
-two-tier version went 10 → 3 at minute 60, a 70% drop at a single minute, which made
-hour two read as a punishment rather than a diminishing return; the half-hour steps keep
-the sharpest early drop at 20%. Keep it sorted by minute with non-increasing rates, and
-keep the trickle rate **non-zero** — at zero it stops being a taper and becomes the cap
-this design exists to avoid.
-
-Three things hold it together. **One:** the rate is a pure function of minutes already
-banked today, so it needs no new state — `XpService.AddVoiceMinutesAsync` returns
-today's bucket total *before* the increment, from the same round trip that records it,
-and there is no second read to disagree with. **Two:** the taper rations the XP only.
-The minutes are still recorded in full, because `MemberXp`'s comment is right that they
-are a *fact* while XP is a *reward* — so `/leaderboard`'s Vocal view stays honest about
-who actually sat in voice. **Three:** `TotalForMinutes` is the single source of truth —
-`XpForSpan` is a difference of two of its values and `RateAt` is a one-minute span — so a
-span crossing a tier boundary is split correctly, a tick covering several minutes pays
-exactly what those minutes pay one at a time, and the rate *shown* cannot drift from the
-rate *granted*. Define any new rate function that way round, never the reverse: a rate
-defined independently and a total defined independently will disagree at a boundary
-eventually, and the integer arithmetic stays exact only in this direction.
-
-If counting the minutes fails, the payout is skipped rather than guessed — this is the
-anti-abuse path, so it fails closed.
-
-**A voice level-up is announced in the voice channel's own text chat**, not in the
-guild's system channel. `SocketVoiceChannel` is an `IMessageChannel` (text-in-voice),
-so `GrantVoiceXpAsync` casts the channel it already resolved for the exclusion check
-and posts there — the card lands where the people who earned it are sitting rather than
-interrupting `#général`. The system channel is kept only as the fallback for a channel
-that does not resolve from the gateway cache; if it resolves but the bot cannot post in
-it, the send is swallowed and logged like every other Discord side effect and the XP is
-recorded regardless. `AnnounceAsync` resolves the member through
-`channel as SocketGuildChannel`, which a voice channel also satisfies — so the avatar
-on the card still works.
-
-**`/debug tell`'s destination is an autocompleted *string*, not a channel option, and that is
-what makes it work from a DM.** Discord's native channel picker resolves against the
-guild the command was invoked in; a DM has none, so the option renders with nothing to
-choose. Autocomplete is driven by the bot rather than by the client's context, which is
-the only way to pick a guild channel from a private message. It replaced the native
-picker rather than sitting beside it — two overlapping options that each work half the
-time would need conflict handling between them, which `respond_to` already demonstrates
-is worth avoiding. `ChannelAutocompleteHandler` offers only channels the bot can
-actually **send** in, and suggests nothing at all to anyone but the owner, since the
-command is registered globally and therefore visible to everyone. The text is turned
-back into a channel by `DebugModule.ParseChannelRef`, kept pure and gateway-free because
-misreading it sends the owner's message to the wrong place silently; a *name* is
-accepted only when exactly one channel matches, for the same reason.
-
-**Every module that reads `Context.Guild` must carry
-`[CommandContextType(InteractionContextType.Guild)]`.** `config.yaml` ships
-`register_globally: true`, and a global slash command is DM-enabled by default — so
-without the attribute the command is reachable in a DM, where `Context.Guild` is null
-and the handler can only throw. All six guild-dependent modules carry it;
-`HelpModule` and `DebugModule` deliberately do not, because they
-never touch `Context.Guild` and `/help` genuinely works in a DM — except `/debug plynling`, which
-checks for a DM itself rather than hiding the owner's DM-only tools with it. Note the older
-`[EnabledInDm(false)]` is obsolete in Discord.Net 3.20 and fails the build under
-`-warnaserror`.
-
-**`/help`'s embed has hard caps, and it silently died once from ignoring them.** A
-field value may be **1024** characters and the whole embed **6000** — counting title,
-description, every field *name and value*, and the footer. `EmbedBuilder.Build()`
-throws on either, at **send** time, with nothing in the logs naming the length: the
-command just stops responding. The "Commandes — Autres" field grew past 1024 and the
-embed past 6000 as commands were added, and `/help` was dead for six-plus commits
-before anyone noticed. This is why `HelpModule.BuildEmbed()` is a `static`, Context-free
-builder — it can be constructed and measured without a gateway, which is the only
-reason the caps are checkable at all. **Keep sections short and split one rather than
-letting it grow**; 12 of the 25 allowed fields are used, so there is room. Note
-`Embed.Length` is Discord.Net's own implementation of Discord's total, so measuring
-against it cannot drift from what the API enforces.
-
-**`/yesno` flips the coin first and picks the wording second.** `Random.Shared.Next(2)`
-chooses the verdict, and only then is a line drawn from `YesLines` or `NoLines` — two
-flat pools rather than one list with a flag, so a "yes" phrasing can never come out of a
-"no" roll. Neither pool may hedge: the command's whole job is to decide, and the scratch
-harness pins that every `YesLines` entry says yes and never no, and the reverse, matched
-on whole words so "Nooon" and "Nan" count while emote markup cannot produce a false hit.
-The optional question is echoed above the answer in a blockquote and sent with
-`AllowedMentions(AllowedMentionTypes.Users)`, since it is relayed text like any other.
-It carries no `[CommandContextType]` — nothing reads `Context.Guild`, so it works in a
-DM, same as `/help`.
-
-**`/help` is hand-maintained.** `HelpModule` duplicates the feature list in prose,
-as does `README.md`; neither is generated. A new user-facing command means updating
-both — except the owner-only ones, which are deliberately absent from `/help`.
-
-**`/plynling help` is the Plynlings' own guide, and the main `/help` points to it in one
-line only** — the whole feature is one command away, and listing its dozen subcommands in
-`/help` would push that embed toward its caps. Both are static `BuildEmbed` methods so
-both are measurable without a gateway.
+### Data
+
+- **SQLite cannot translate `DateTimeOffset` comparisons.** Filter booleans/ids in SQL,
+  `ToListAsync()`, then apply date windows and ordering **in memory** (see
+  `EventService.GetActiveEventsAsync`). `.Where(e => e.ScheduledAt > now)` throws at runtime.
+- **Snowflakes are `ulong`; SQLite integers are signed.** Every snowflake property needs
+  `.HasConversion<long>()` in `OnModelCreating`. A derived model property needs `[NotMapped]`
+  (see `EmoteStat.Markup`) or EF demands a migration for a column that should not exist.
+- **Anything stored by int or by string key is append-only**: enums stored as ints
+  (`PlynlingSpecies`, `PlynlingBond`, `JournalKind`, `DeathCause`, passions) and stored keys
+  (item keys, cosmetic keys, badge keys, economy metric keys). Inserting in the middle or renaming
+  silently turns or orphans every existing row.
+- **Totals + daily buckets** is the one pattern for dated rankings: an all-time totals table plus a
+  per-day table keyed by `Day`, an `int` `yyyymmdd` from `AppTime.DayKey` (so windows filter in
+  SQL), both written in the same call. Instances: `EmoteStat`/`EmoteDailyStat`,
+  `BotFeedback`/`BotFeedbackDailyStat`, `MemberXp`/`MemberDailyStat`,
+  `ShameRecord`/`ShameDailyStat`. **The buckets do not sum to the totals and must not be made
+  to** — everything before the buckets existed lives only in the totals. A removal always
+  decrements *today's* bucket. Follow this shape for any new dated leaderboard.
+- **No `HasMaxLength`**: SQLite doesn't enforce it. Cap at the input instead (below).
+- **Migrations are schema-only, except four deliberate data migrations** riding apply-on-startup:
+  `ResetMemberXp` and `ResetXpTotals` (XP wipes), `AddPlynlingPassions` (backfill) and
+  `PrepareProdLaunch` (one-guild launch prep, details in `plynling.md`). Rules learned from them:
+  a wipe **resets the reward and keeps the record** (`UPDATE … SET TotalXp = 0`, never deleting
+  rows that also carry facts like `ReactionsUsed`); a data migration's `Down` cannot restore
+  anything, so it is for one-off corrections only; never generate a SQL script from a migration
+  that computes "now" in C#.
+
+### Time and culture
+
+**Never use `DateTime.Now`.** Production runs in UTC; wall-clock handling goes through
+`Helpers/AppTime` (`Europe/Paris`, DST-aware via `TryParseWallClock`). Store instants as UTC
+`DateTimeOffset`, show them as Discord `<t:unix:…>` timestamps. **Globalization must stay on**:
+`InvariantGlobalization` is `false` and the Dockerfile installs `libicu72`, for `Europe/Paris` and
+`fr-FR` formatting.
+
+### Interactions and custom-ids
+
+- **`[ComponentInteraction]` / `[ModalInteraction]` inside a `[Group]` module need
+  `ignoreGroupNames: true`**, or Discord.Net prefixes the group name and the handler never fires —
+  no error, no log.
+- **Custom-ids are a contract across files** (e.g. `PollModule` builds a `schedule:finalize:…`
+  modal for `ScheduleModule`'s handler; `/vote list` reuses `poll:republish`). Renaming one means
+  grepping the whole project.
+- **Every button row needs its own custom-id verb.** Discord rejects a message carrying the same
+  custom-id twice (`COMPONENT_CUSTOM_ID_DUPLICATED`, **disabled buttons included**) — this crashed
+  prod. Rows that encode the same state collide by construction, so give each row its own verb
+  (`…:win:`, `…:view:`, `…:page:`) and delegate to one shared `ShowAsync`.
+- **Modal DTOs and hand-built `ModalBuilder`s must stay in sync.** Several paths build modals by
+  hand to pre-fill them (`ScheduleModule.BuildEditModal`, `OnRetryAsync`,
+  `PollModule.OnCategoryPickedAsync`); a field added or renamed in only one place silently fails
+  to bind.
+- **Card builders are `static` and shared** by the module, the component handlers and the
+  background loops — change rendering in one place and every re-render follows.
+- **Every module that reads `Context.Guild` carries
+  `[CommandContextType(InteractionContextType.Guild)]`**: `config.yaml` ships
+  `register_globally: true`, and global commands are DM-enabled by default, where `Context.Guild`
+  is null. (`[EnabledInDm(false)]` is obsolete in Discord.Net 3.20
+  and fails the build under `-warnaserror`.)
+
+### Discord's hard caps
+
+Exceeding any of these throws at **send** time, often with nothing in the logs naming the length:
+25 options per select (`.Take(25)`), 5 buttons per row, 80-char button labels, 100-char select
+labels, 1000-char scheduled-event description, 2000-char message, embed title 256, field value
+1024, **6000 per message's embeds in total**, **40 components per Components V2 message counting
+the whole tree** (Discord.Net throws in `ComponentBuilderV2.Build()`). Keep builders `static` and
+Context-free so they can be measured, and **re-do the component sum before adding anything** to a
+V2 card. `/help` and `/plynling help` are close to the 6000 cap — measure before adding.
+
+**Cap user-supplied text at the option**, not at the point of use: `[MaxLength(n)]` on slash
+options (default 6000) and `maxLength:` on `[ModalTextInput]` (default 4000). Discord then refuses
+the input client-side and nothing over-long reaches the database, where it would break every later
+re-render. Numbers live in `Helpers/InputCaps` (`Title` 150, `Prize` 200, `Description` 1000,
+`Question` 400); `Title` is used at several modal sites that must agree.
+
+### Components V2
+
+A message with `MessageFlags.ComponentsV2` may have **no content and no embeds**, must
+**re-assert the flag on every `UpdateAsync`**, and must send with **`AllowedMentions.None`**: a
+`TextDisplay` is real content, so `<@id>` in one genuinely pings (an embed got inert mentions for
+free). `AllowedMentions.None` keeps the clickable pill while silencing it. Avatars go through
+`Helpers/AvatarUi`.
+
+### Mentions and hostile text
+
+- **Relayed text never becomes a mass-ping vector**: anything sent on someone's behalf passes
+  `new AllowedMentions(AllowedMentionTypes.Users)` and quotes through `MessageFormat.Quote`. The
+  absence notice forwarded to the owner uses `AllowedMentions.None`.
+- The few messages **meant** to ping narrow to users (giveaway winners) or to one id (the Plynling
+  visit knock) — never roles or `@everyone`. `BotChat.PostWithTypingAsync` takes an optional
+  `AllowedMentions` for this.
+- **User-chosen names and texts are hostile input** (Plynling names, taught passions): render
+  through `Format.Sanitize` and send with mentions off.
+
+### Reliability
+
+- **Discord side effects must never break the flow.** Swallow and log (`SessionEventSync` degrades
+  silently without Manage Events; reminder DMs catch `CannotSendMessageToUser`).
+- **An exception escaping a hosted loop stops the whole bot** (default `StopHost`). Every sweep
+  catches **per item**, not per pass, so one bad row doesn't stop the batch — and
+  `BackgroundServiceExceptionBehavior.Ignore` is *not* the fix (it leaves the loop silently dead).
+  Anything added to a sweep goes inside the existing per-item `try`. The real exposure is DB writes
+  (`SQLITE_BUSY` on the Pi's SD card).
+
+### Shared helpers — use them, don't re-inline
+
+- **`Helpers/CooldownGate<TKey>`** ("claimed recently?") and **`Helpers/BoundedSet<T>`** ("seen
+  before?"). They share the mechanism, **never the policy**: each service owns its own instances
+  and durations, and two trigger populations never share one gate. `CooldownGate` owns its lock;
+  `BoundedSet` owns **none**, because callers need its add to be atomic with their own state.
+- **`Helpers/BotChat`** is the single send path for her chatter (typing pause, clamped inside
+  Discord.Net's 3 s `HandlerTimeout`, plus swallow-and-log). **`Helpers/EmoteMarkup.Parse`** is the
+  single reaction parser.
+- **Never pick a response line with a bare `Random`.** Use `ResponsePicker.Pick(bucketId, pool)`,
+  which avoids recent repeats per bucket (window `min(10, pool.Length / 2)`). Pick the template
+  *before* `string.Format`. The bucket only needs to be stable (`PresenceService` uses `0`).
+  A pool that goes through `string.Format` throws on a stray brace.
+- **Custom emote markup lives in `Helpers/Emotes` and nowhere else**, as `const string` pairs
+  (`XId` + `X`), so lines stay constant expressions. Never paste raw `<:name:id>` into a pool.
+- **`BotResponses.DisplayNameFor(IUser)`** is the only place the
+  `Nickname ?? GlobalName ?? Username` chain lives (it also applies family nicknames). Never
+  re-inline it.
+
+### Authorization — three models, don't conflate them
+
+- `SessionPermissions.CanManage` — the organizer, or an Administrator / ManageGuild holder
+  (sessions, polls).
+- `SessionPermissions.IsStaff` — Administrator / ManageGuild **or** the owner, regardless of who
+  owns the thing (`/admin`, `/config`, staff Plynling actions).
+- Owner-only — `Context.User.Id == AvailabilityService.OwnerId`, checked inline (`/debug`).
+
+`/admin` and `/config` deliberately carry **no `[DefaultMemberPermissions]`**: a permission bit
+cannot express "ManageGuild, plus the owner". The `IsStaff` check in each handler is the only gate.
+
+### Docs
+
+`/help` (`HelpModule`) and `README.md` are hand-maintained. A new user-facing command means
+updating both — except owner-only commands, deliberately absent from `/help`. Easter eggs
+(breakdown, quoicoubeh) stay out of both.
 
 ## Version and deployment
 
-`ProjectSYNCS/config.yaml` is the **single source of truth for the version** — the
-csproj regex-parses it into `<Version>`, and `AppInfo.Version` surfaces it (in the
-`/help` footer). Bump it there and nowhere else.
+`ProjectSYNCS/config.yaml` is the **single source of truth for the version** — the csproj
+regex-parses it into `<Version>` and `AppInfo.Version` shows it in the `/help` footer. Bump it there
+only.
 
-The bot ships as a Home Assistant add-on: `Dockerfile` publishes a self-contained
-`linux-arm64` build, and `run.sh` maps the add-on options to `Discord__Token`,
-`Discord__RegisterCommandsGlobally` and `Database__Path=/data/ProjectSYNCS.db`.
-Only `/data` is persisted, so the SQLite file must stay under it.
+The bot ships as a Home Assistant add-on: the `Dockerfile` publishes a self-contained
+`linux-arm64` build, and `run.sh` maps add-on options to `Discord__Token`,
+`Discord__RegisterCommandsGlobally` and `Database__Path=/data/ProjectSYNCS.db`. Only `/data` is
+persisted, so the SQLite file must stay under it.
 
-The GitHub remote is **public**. `appsettings.json` ships a `BOT_TOKEN` placeholder
-and `config.yaml` a `PASTE_YOUR_TOKEN_HERE` one; real tokens go in user secrets
-(dev) or the add-on options (prod), never in a tracked file.
+The GitHub remote is **public**. `appsettings.json` and `config.yaml` ship token placeholders; real
+tokens go in user secrets (dev) or add-on options (prod), never in a tracked file.
 
 ## Hardcoded ids
 
-`AvailabilityService.OwnerId` (the owner, who gets special treatment throughout
-`ChatterService` and again in `ReactionService`, both for what he says and for what
-he reacts to), the level-up bot id in `ChatterService`, the `hi_cat` emote id in
-`MessageCues` and `ReminderService`, `XpTracker.ExcludedChannels` (the spam channels
-that earn no XP), `ShameModule.ExtraVoters`, and the per-user `PersonalComebacks` /
-`RealNames` maps in `BotResponses` are literal snowflakes tied to one specific server.
+These literal snowflakes are tied to one specific server: `AvailabilityService.OwnerId`; the other
+leveling bot's id in `Helpers/LevelUpAnnouncement`; the custom emote ids in `Helpers/Emotes`;
+`XpTracker.ExcludedChannels`; `ShameModule.ExtraVoters`; the per-user maps in `BotResponses`
+(`PersonalComebacks`, `RealNames`, `KnownGenders`, `TataId`, `FamilyNicknames`);
+`Helpers/PlynlingLaunch`; and `PlynlingAnnouncer.GameChannelId`.
 
-`PlynlingLaunch` (the production guild, two owners' first Plynlings and their pairing) is one more.
-
-`PlynlingAnnouncer.GameChannelId` (`878305034432045080`) is where Plynling deaths and
-resurrections are announced. Commands themselves work in any channel. Only Plynlings of the
-guild that owns that channel are announced; any other guild's are logged and skipped, never
-cross-posted.
-
-Two of those are now *floors* rather than the whole story: `/config` can add excluded
-channels and grant `/shame` voting to a role, but neither command can edit these lists —
-see the runtime-configuration note above. The rest have no configuration surface at all.
-`AvailabilityService.OwnerId` was deliberately left out of `/config`: it gates `/debug tell`,
-`dm`, `absent` and the DM relay, so making it editable by any ManageGuild holder would
-let them hand themselves those powers, including impersonating the relay.
+`ExcludedChannels` and `ExtraVoters` are *floors*: `/config` can add to them but never remove from
+them. `OwnerId` is deliberately **not** configurable — it gates `/debug` and the DM relay, so making
+it editable would let any ManageGuild holder hand themselves those powers.

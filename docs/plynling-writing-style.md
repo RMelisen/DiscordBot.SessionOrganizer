@@ -3,7 +3,7 @@
 How Plynling lines are written — the visit conversations in `Helpers/PlynlingScripts.cs` first, and
 the same voice for the other Plynling pools (arrivals, activities, closers, `BotResponses`). Taken
 from the approved rewrite of `Cooking/Friendly/false`; the engine rules themselves are in
-`CLAUDE.md` ("The conversation is one script", "Two lines to a step").
+`docs/agents/plynling.md` ("Conversations — `Helpers/PlynlingScripts`").
 
 ## The voice
 
