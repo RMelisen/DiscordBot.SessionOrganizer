@@ -11,8 +11,11 @@ namespace ProjectSYNCS.Services;
 public sealed class ResponsePicker
 {
     // Upper bound on the lines remembered per channel. The number actually excluded
-    // on a given pick is scaled to the pool (see Pick), so this is only a ceiling.
-    private const int HistoryLength = 10;
+    // on a given pick is scaled to the pool (see Pick), so this is only a ceiling —
+    // it only bites on pools over twice its size. Generous because a channel's history
+    // is shared by every pool spoken there: the last few lines of a busy channel
+    // rarely come from the pool being picked. Cheap: references to existing strings.
+    private const int HistoryLength = 50;
 
     private readonly ConcurrentDictionary<ulong, List<string>> _recent = new();
 

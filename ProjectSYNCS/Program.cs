@@ -101,6 +101,10 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddHostedService<BotService>();
         services.AddHostedService<ReminderService>();
         services.AddHostedService<PresenceService>();
+        // One instance for both roles: the host runs its loop, BotService feeds it
+        // messages so a greeting can bring the hello forward.
+        services.AddSingleton<MorningGreetingService>();
+        services.AddHostedService(sp => sp.GetRequiredService<MorningGreetingService>());
         services.AddHostedService<VoiceXpService>();
         services.AddHostedService<GiveawayDrawService>();
         services.AddHostedService<PlynlingSweepService>();

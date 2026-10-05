@@ -386,6 +386,10 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
   syncs") reaches her from anywhere, mention or not.
 - **Rotating status** — the status line under the bot's name cycles through a large
   pool of one-liners.
+- **Morning hello** — once a day she says hello in the general channel, at a random
+  time between 8:00 and 10:00 (Paris time), followed by a fun fact. If
+  someone says hello in that channel first — from 7:00 on — there's a 30% chance she
+  answers with her hello of the day right away instead of waiting.
 
 All personality state is in memory by design and resets when the bot restarts.
 
@@ -435,6 +439,7 @@ ProjectSYNCS/
 | `BotService` | — | Gateway connection, command registration, interaction dispatch |
 | `ReminderService` | 5 min | Reminder DMs, session lifecycle, poll auto-close |
 | `PresenceService` | 5 min | The rotating status line |
+| `MorningGreetingService` | daily, random 8:00–10:00 | The morning hello |
 | `VoiceXpService` | 1 min | Samples voice channels and grants XP |
 | `GiveawayDrawService` | 1 min | Draws giveaways whose time is up |
 

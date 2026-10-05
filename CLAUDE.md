@@ -68,6 +68,8 @@ English. Renaming a command or option changes what people type: do it rarely, an
 - **Five `BackgroundService` loops**, each with **its own interval on purpose** — never share one:
   `ReminderService` (5 min, load-bearing — see scheduling), `PresenceService` (5 min, cosmetic),
   `VoiceXpService` (1 min), `GiveawayDrawService` (1 min), `PlynlingSweepService` (hourly).
+- **`MorningGreetingService`** has no interval: it sleeps until one random slot per morning
+  (8:00–10:00 Paris, `Helpers/MorningGreeting`) — see personality.
 - **`ApplicationEmojiService`** runs once, on the first Ready (uploads item icons — see economy).
   **`PlynlingMascotService`** runs on every Ready (see plynling).
 
@@ -226,7 +228,7 @@ free). `AllowedMentions.None` keeps the clickable pill while silencing it. Avata
   Discord.Net's 3 s `HandlerTimeout`, plus swallow-and-log). **`Helpers/EmoteMarkup.Parse`** is the
   single reaction parser.
 - **Never pick a response line with a bare `Random`.** Use `ResponsePicker.Pick(bucketId, pool)`,
-  which avoids recent repeats per bucket (window `min(10, pool.Length / 2)`). Pick the template
+  which avoids recent repeats per bucket (window `min(50, pool.Length / 2)`). Pick the template
   *before* `string.Format`. The bucket only needs to be stable (`PresenceService` uses `0`).
   A pool that goes through `string.Format` throws on a stray brace.
 - **Custom emote markup lives in `Helpers/Emotes` and nowhere else**, as `const string` pairs
@@ -271,8 +273,8 @@ tokens go in user secrets (dev) or add-on options (prod), never in a tracked fil
 These literal snowflakes are tied to one specific server: `AvailabilityService.OwnerId`; the other
 leveling bot's id in `Helpers/LevelUpAnnouncement`; the custom emote ids in `Helpers/Emotes`;
 `XpTracker.ExcludedChannels`; `ShameModule.ExtraVoters`; the per-user maps in `BotResponses`
-(`PersonalComebacks`, `RealNames`, `KnownGenders`, `TataId`, `FamilyNicknames`); and
-`PlynlingAnnouncer.GameChannelId`.
+(`PersonalComebacks`, `RealNames`, `KnownGenders`, `TataId`, `FamilyNicknames`);
+`PlynlingAnnouncer.GameChannelId`; and `MorningGreetingService.ChannelId`.
 
 `ExcludedChannels` and `ExtraVoters` are *floors*: `/config` can add to them but never remove from
 them. `OwnerId` is deliberately **not** configurable — it gates `/debug` and the DM relay, so making

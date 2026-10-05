@@ -26,6 +26,7 @@ internal sealed class BotService : IHostedService
     private readonly RivalryService _rivalry;
     private readonly XpTracker _xp;
     private readonly ShameTracker _shame;
+    private readonly MorningGreetingService _morning;
 
     public BotService(
         DiscordSocketClient client,
@@ -39,7 +40,8 @@ internal sealed class BotService : IHostedService
         BotFeedbackTracker feedback,
         RivalryService rivalry,
         XpTracker xp,
-        ShameTracker shame)
+        ShameTracker shame,
+        MorningGreetingService morning)
     {
         _client = client;
         _interactions = interactions;
@@ -53,6 +55,7 @@ internal sealed class BotService : IHostedService
         _rivalry = rivalry;
         _xp = xp;
         _shame = shame;
+        _morning = morning;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -120,6 +123,9 @@ internal sealed class BotService : IHostedService
         await _rivalry.HandleMessageAsync(rawMessage);
         await _feedback.HandleMessageAsync(rawMessage);
         await _reactions.HandleMessageAsync(rawMessage);
+        // After the reactions, so a wave at a "bonjour" lands before her early hello.
+        // Skips anything aimed at her, so it never doubles ChatterService's answer.
+        await _morning.HandleMessageAsync(rawMessage);
         await _chatter.HandleMessageAsync(rawMessage);
     }
 

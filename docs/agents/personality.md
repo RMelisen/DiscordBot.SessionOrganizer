@@ -168,6 +168,37 @@ the 3 s `HandlerTimeout`. The embed variant still takes text, to size the pause.
 keeps its own much slower pacing, knowingly exceeding the timeout for ~a minute once a month
 (`BreakdownService.Cooldown`, 30 days).
 
+## Morning hello
+
+`MorningGreetingService` posts one `MorningGreetings` line a day in
+`MorningGreetingService.ChannelId`, at a random slot from `Helpers/MorningGreeting` (8:00–10:00 in
+`AppTime.Zone`). It sleeps until the slot rather than ticking. A `MorningFunFacts` line
+always goes underneath. **Each pool has its own `ResponsePicker` bucket, never the channel's**:
+history is per bucket, so at one pick a day a day of ordinary chatter in the channel would push
+yesterday's hello out of it, and the two pools would crowd each other. **Every fun fact must be true**: the joke is
+her commentary or the fact's uselessness, never an invented fact.
+
+- **A restart inside the window draws a new slot for today**, so before posting she scans the
+  channel's last 50 messages for one of her own from today whose **first line** is exactly a
+  `MorningGreetings` line. That match is why no two hellos may be identical, why a hello never
+  contains a newline, and why the pool takes no `string.Format` placeholder.
+- A slot that comes before the gateway has delivered the channel waits for it, never past the
+  window's end. In the dev guild the channel never resolves and the day is skipped with a log.
+- One attempt per day: a failed send is not retried that morning.
+
+**Someone else's greeting can bring the hello forward.** `BotService` feeds every message to
+`MorningGreetingService.HandleMessageAsync`, after `ReactionService` and before `ChatterService`. A
+`MessageCues` greeting (not `Mean`, not a verdict) in her channel, from
+`MorningGreeting.ReplyWindowStart` (7:00, an hour before her own window) and before her slot, rolls `EarlyHelloChance` (30%) to post the hello right away; the slot then finds
+the day claimed and skips. Each person gets **one roll per morning**, so a chorus of "bonjour"
+doesn't make it certain. Messages aimed at her are skipped: `ChatterService` already answers those.
+
+- **The timer and the gateway share one claim** (`TryClaimDay` / `TryClaimEarly`, under one lock).
+  Claiming outside that lock is how she would say hello twice.
+- **The service is registered twice on one instance**: `AddSingleton` plus `AddHostedService(sp =>
+  sp.GetRequiredService<…>())`. A plain `AddHostedService<MorningGreetingService>()` would make the
+  host run a second instance whose claim `BotService` never sees.
+
 ## `RivalryService` — other bots
 
 The primary handler that looks at other bots' traffic (`ShameTracker` is the only other one; every
