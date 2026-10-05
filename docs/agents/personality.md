@@ -173,9 +173,13 @@ keeps its own much slower pacing, knowingly exceeding the timeout for ~a minute 
 `MorningGreetingService` posts one `MorningGreetings` line a day in
 `MorningGreetingService.ChannelId`, at a random slot from `Helpers/MorningGreeting` (8:00–10:00 in
 `AppTime.Zone`). It sleeps until the slot rather than ticking. A `MorningFunFacts` line
-always goes underneath. **Each pool has its own `ResponsePicker` bucket, never the channel's**:
-history is per bucket, so at one pick a day a day of ordinary chatter in the channel would push
-yesterday's hello out of it, and the two pools would crowd each other. **Every fun fact must be true**: the joke is
+always goes underneath. **Both lines come from `Helpers/DailyRotation`, not `ResponsePicker`**: a
+shuffled walk through the pool, one step per calendar day, computed from the date, so restarts
+don't reset it and an early hello says what the slot would have. No line repeats until the whole
+pool is used, and the join between two passes keeps any line at least `pool / 4` days from its
+last use (17 days for 65 hellos). Each pool has its own salt (`GreetingSalt`, `FunFactSalt`);
+editing a pool's length reshuffles it from that day, so one recent line may come back once.
+**Every fun fact must be true**: the joke is
 her commentary or the fact's uselessness, never an invented fact.
 
 - **A restart inside the window draws a new slot for today**, so before posting she scans the

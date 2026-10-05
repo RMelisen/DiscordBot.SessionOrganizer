@@ -32,7 +32,7 @@ public class EconomyModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        var line = string.Format(_picker.Pick(Context.Channel.Id, BotResponses.WorkLines),
+        var line = string.Format(_picker.Pick(BotResponses.WorkLines),
             $"+{PebbleEconomy.Cailloux(result.Amount)}");
         await RespondAsync(
             $"{line}\n-# Solde : {PebbleEconomy.Cailloux(result.Balance)} · prochain service <t:{result.NextWorkAt.ToUnixTimeSeconds()}:R>",

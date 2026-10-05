@@ -38,7 +38,7 @@ public class YesNoModule : InteractionModuleBase<SocketInteractionContext>
 
         // Bucketed per channel like every other pool, so the same verdict phrasing
         // doesn't come back twice running in the same conversation.
-        var verdict = string.Format(_picker.Pick(Context.Channel.Id, pool), name);
+        var verdict = string.Format(_picker.Pick(pool), name);
 
         // Public on purpose: the whole point is that the room sees the ruling. The
         // question is echoed only when one was given, so a bare /yesno stays a clean

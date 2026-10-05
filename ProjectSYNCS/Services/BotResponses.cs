@@ -1448,7 +1448,7 @@ internal static class BotResponses
         "Salut tout le monde ! Le premier qui me répond gagne mon respect. Le deuxième aussi, en vrai. Je suis pas difficile, le matin.",
     };
 
-    // Added under every morning hello, on its own line, from its own picker bucket.
+    // Added under every morning hello, on its own line, through Helpers/DailyRotation.
     // Spent at one a day, so the pool needs to stay large. Every fact must be true — the joke is her commentary, or that the
     // fact is useless, never that it's made up. Each line brings its own lead-in.
     // No string.Format placeholder.

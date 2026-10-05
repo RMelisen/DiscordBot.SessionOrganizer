@@ -229,7 +229,7 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
                 ephemeral: true, allowedMentions: AllowedMentions.None);
             if (user.Id != Context.User.Id)   // after the reply — see PlynlingModule.FreezeAsync
                 await _announcer.DmOwnerAsync(plynling.OwnerId, string.Format(
-                    _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffRenameDms.For(plynling.Gender)),
+                    _picker.Pick(BotResponses.PlynlingStaffRenameDms.For(plynling.Gender)),
                     PlynlingCardUi.SafeName(oldName), PlynlingCardUi.SafeName(plynling.Name)));
         }
 
@@ -300,7 +300,7 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
                 ephemeral: true, allowedMentions: AllowedMentions.None);
             if (user.Id != Context.User.Id)   // after the reply — see PlynlingModule.FreezeAsync
                 await _announcer.DmOwnerAsync(plynling.OwnerId, string.Format(
-                    _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffPassionResetDms.For(plynling.Gender)),
+                    _picker.Pick(BotResponses.PlynlingStaffPassionResetDms.For(plynling.Gender)),
                     PlynlingCardUi.SafeName(plynling.Name)));
         }
     }

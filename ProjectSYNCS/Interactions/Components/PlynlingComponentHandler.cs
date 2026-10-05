@@ -226,7 +226,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             return;
         }
 
-        var (story, visitRefusal) = await _visits.RunAsync(visitor, host, Context.Channel.Id, now);
+        var (story, visitRefusal) = await _visits.RunAsync(visitor, host, now);
         if (story is null)
         {
             await FollowupAsync(visitRefusal, ephemeral: true, allowedMentions: AllowedMentions.None);
@@ -371,7 +371,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             {
                 plynling = after;
                 var pool = (won ? BotResponses.PlynlingPlayPlayerWonLines : BotResponses.PlynlingPlayPlayerLostLines).For(plynling.Gender);
-                endLine = string.Format(_picker.Pick(Context.Channel.Id, pool), PlynlingCardUi.SafeName(plynling.Name)) +
+                endLine = string.Format(_picker.Pick(pool), PlynlingCardUi.SafeName(plynling.Name)) +
                           "\n" + PlynlingGameUi.Reward(won, pebbles, balance);
                 if (badges.Count > 0) endLine += "\n" + PlynlingBadges.NewBadgeLines(badges, plynling.Gender);
                 if (find is not null)
@@ -420,7 +420,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             await RespondAsync(PlynlingText.Unknown, ephemeral: true);
             return;
         }
-        await ApplyAsync(await _care.PetAsync(id, Context.User.Id, Context.Channel.Id, DateTimeOffset.UtcNow));
+        await ApplyAsync(await _care.PetAsync(id, Context.User.Id, DateTimeOffset.UtcNow));
     }
 
     [ComponentInteraction("plyn:bath:*", ignoreGroupNames: true)]
@@ -431,7 +431,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             await RespondAsync(PlynlingText.Unknown, ephemeral: true);
             return;
         }
-        await ApplyAsync(await _care.BathAsync(id, Context.User.Id, Context.Channel.Id, DateTimeOffset.UtcNow));
+        await ApplyAsync(await _care.BathAsync(id, Context.User.Id, DateTimeOffset.UtcNow));
     }
 
     [ComponentInteraction("plyn:heal:*", ignoreGroupNames: true)]
@@ -442,7 +442,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             await RespondAsync(PlynlingText.Unknown, ephemeral: true);
             return;
         }
-        await ApplyAsync(await _care.MedicateAsync(id, Context.User.Id, Context.Channel.Id, DateTimeOffset.UtcNow));
+        await ApplyAsync(await _care.MedicateAsync(id, Context.User.Id, DateTimeOffset.UtcNow));
     }
 
     [ComponentInteraction("plyn:feed:*", ignoreGroupNames: true)]
@@ -453,7 +453,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             await RespondAsync(PlynlingText.Unknown, ephemeral: true);
             return;
         }
-        await ApplyAsync(await _care.FeedAsync(id, Context.User.Id, food, Context.Channel.Id, DateTimeOffset.UtcNow));
+        await ApplyAsync(await _care.FeedAsync(id, Context.User.Id, food, DateTimeOffset.UtcNow));
     }
 
     private async Task ApplyAsync(CareReply reply)

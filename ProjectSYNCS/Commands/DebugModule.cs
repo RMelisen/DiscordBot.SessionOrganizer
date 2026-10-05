@@ -111,7 +111,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        var receipt = await SendAsync(target, BuildContent(text, announce, target.Id), repliedTo, announce);
+        var receipt = await SendAsync(target, BuildContent(text, announce), repliedTo, announce);
         await FollowupAsync(receipt, ephemeral: true);
     }
 
@@ -220,7 +220,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         {
             var dm = await user.CreateDMChannelAsync();
             await dm.SendMessageAsync(
-                BuildContent(text, announce, user.Id),
+                BuildContent(text, announce),
                 // Same policy as everywhere else: no @everyone/@here, no roles.
                 allowedMentions: new AllowedMentions(AllowedMentionTypes.Users));
 
@@ -258,9 +258,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
 
     // Either a herald line naming the owner, or — by default — pure
     // ventriloquism: the bot's own voice, nothing pointing back to him.
-    // bucketId only groups the herald history (destination channel, or recipient
-    // for a DM), so the same one doesn't come up twice in a row.
-    private string BuildContent(string text, bool announce, ulong bucketId)
+    private string BuildContent(string text, bool announce)
     {
         if (!announce) return text;
 
@@ -268,7 +266,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
             ?? Context.User.GlobalName
             ?? Context.User.Username;
         var herald = string.Format(
-            _picker.Pick(bucketId, BotResponses.OwnerAnnouncementHeralds),
+            _picker.Pick(BotResponses.OwnerAnnouncementHeralds),
             ownerName);
 
         return $"{herald}\n{MessageFormat.Quote(text, MaxMessageLength)}";

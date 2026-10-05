@@ -77,7 +77,7 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
 
         var info = PlynlingCatalog.Info(plynling.Species);  // not `species`: a launch arrangement may replace it
         var pool = BotResponses.PlynlingAdoptLines.For(plynling.Gender);
-        var line = string.Format(_picker.Pick(Context.Channel.Id, pool),
+        var line = string.Format(_picker.Pick(pool),
             PlynlingCardUi.SafeName(plynling.Name), info.Name);
         await RespondCardAsync(plynling, now, line);
     }
@@ -196,13 +196,13 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
         // ping, straight to the story — the same way « Accueillir » tells it.
         if (theirs is not null && PlynlingMascot.Is(theirs))
         {
-            var (story, visitRefusal) = await _visits.RunAsync(mine, theirs, Context.Channel.Id, now);
+            var (story, visitRefusal) = await _visits.RunAsync(mine, theirs, now);
             if (story is null)
             {
                 await RespondAsync(visitRefusal, ephemeral: true, allowedMentions: AllowedMentions.None);
                 return;
             }
-            var welcome = string.Format(_picker.Pick(Context.Channel.Id, BotResponses.MascotWelcomeLines),
+            var welcome = string.Format(_picker.Pick(BotResponses.MascotWelcomeLines),
                 PlynlingCardUi.SafeName(mine.Name), $"<@{Context.User.Id}>");
             await RespondAsync(components: PlynlingPlayCards.BuildKnockClosed($"{welcome}\n-# L'histoire est juste en dessous ↓"),
                 flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
@@ -220,7 +220,7 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
 
         var expires = now + PlynlingLife.VisitInviteLife;
         var (knockPool, typed) = PlynlingPassions.PickLines(BotResponses.PlynlingVisitKnockLines, BotResponses.PlynlingVisitKnockTypedLines, mine, Random.Shared);
-        var line = string.Format(_picker.Pick(Context.Channel.Id, knockPool),
+        var line = string.Format(_picker.Pick(knockPool),
             PlynlingCardUi.SafeName(mine.Name), $"<@{user.Id}>", typed);
         await RespondAsync(components: PlynlingPlayCards.BuildKnock(mine, user.Id, expires, line, now),
             flags: MessageFlags.ComponentsV2, allowedMentions: new AllowedMentions { UserIds = new List<ulong> { user.Id } });
@@ -289,9 +289,9 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
         // Her own is introduced by her, every time — nobody else's card speaks for its owner.
         var line = gift.Any ? PlynlingCareService.GiftLine(plynling, gift)
             : PlynlingMascot.Is(plynling) && plynling.DiedAt is null
-                ? string.Format(_picker.Pick(Context.Channel.Id, BotResponses.MascotViewLines), PlynlingCardUi.SafeName(plynling.Name))
+                ? string.Format(_picker.Pick(BotResponses.MascotViewLines), PlynlingCardUi.SafeName(plynling.Name))
             : PlynlingPassions.Thought(plynling, now, Random.Shared) is (var pool, var typed)
-                ? string.Format(_picker.Pick(Context.Channel.Id, pool), PlynlingCardUi.SafeName(plynling.Name), typed)
+                ? string.Format(_picker.Pick(pool), PlynlingCardUi.SafeName(plynling.Name), typed)
                 : null;
         await RespondCardAsync(plynling, now, line);
     }
@@ -335,7 +335,7 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
         // REST calls against Discord's 3 s deadline for answering the interaction.
         if (byStaff)
             await _announcer.DmOwnerAsync(plynling.OwnerId, string.Format(
-                _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffFreezeDms.For(plynling.Gender)), PlynlingCardUi.SafeName(plynling.Name)));
+                _picker.Pick(BotResponses.PlynlingStaffFreezeDms.For(plynling.Gender)), PlynlingCardUi.SafeName(plynling.Name)));
     }
 
     [SlashCommand("thaw", "Dégeler un Plynling")]
@@ -370,7 +370,7 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
         await RespondCardAsync(plynling, now, PlynlingText.ThawedNotice(plynling.Gender, PlynlingCardUi.SafeName(plynling.Name)));
         if (target.Id != Context.User.Id)   // after the reply — see FreezeAsync
             await _announcer.DmOwnerAsync(plynling.OwnerId, string.Format(
-                _picker.Pick(plynling.OwnerId, BotResponses.PlynlingStaffThawDms.For(plynling.Gender)), PlynlingCardUi.SafeName(plynling.Name)));
+                _picker.Pick(BotResponses.PlynlingStaffThawDms.For(plynling.Gender)), PlynlingCardUi.SafeName(plynling.Name)));
     }
 
     [SlashCommand("forage", "Envoyer ton Plynling fouiller les environs — un objet ou de quoi manger, toutes les 4 h")]
@@ -480,7 +480,7 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
                 return;
         }
 
-        var line = string.Format(_picker.Pick(Context.Channel.Id, BotResponses.PlynlingPassionTaughtLines.For(plynling!.Gender)),
+        var line = string.Format(_picker.Pick(BotResponses.PlynlingPassionTaughtLines.For(plynling!.Gender)),
             PlynlingCardUi.SafeName(plynling.Name), PlynlingPassions.Taught(plynling)!.Render());
         await RespondCardAsync(plynling, now, line);
     }

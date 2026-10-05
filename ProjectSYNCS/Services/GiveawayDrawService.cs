@@ -143,9 +143,9 @@ internal sealed class GiveawayDrawService : BackgroundService
     {
         var line = winners.Count == 0
             ? string.Format(
-                _picker.Pick(channel.Id, BotResponses.GiveawayEmptyLines), giveaway.Prize)
+                _picker.Pick(BotResponses.GiveawayEmptyLines), giveaway.Prize)
             : string.Format(
-                _picker.Pick(channel.Id, BotResponses.GiveawayDrawLines),
+                _picker.Pick(BotResponses.GiveawayDrawLines),
                 string.Join(", ", winners.Select(id => $"<@{id}>")),
                 giveaway.Prize);
 

@@ -91,7 +91,7 @@ internal sealed class ReactionService
         // is released below instead — see the catch clause.
         if (!_messageGate.TryClaim(message.Channel.Id)) return;
 
-        var line = _picker.Pick(message.Channel.Id, pool);
+        var line = _picker.Pick(pool);
         var emote = ParseEmote(line);
         if (emote is null)
         {

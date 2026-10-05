@@ -156,7 +156,7 @@ internal sealed class ChatterService
         // exclusion slots on a line the pool doesn't contain.
         var line = level == "67"
             ? "SIX SEVEEEN"
-            : string.Format(_picker.Pick(message.Channel.Id, BotResponses.RivalLevelUpLines), level);
+            : string.Format(_picker.Pick(BotResponses.RivalLevelUpLines), level);
 
         await PostWithTypingAsync(message.Channel, line, "rival level-up reaction");
     }
@@ -190,7 +190,7 @@ internal sealed class ChatterService
             var targetName = ResolveName(target.Author);
             _logger.LogInformation("Owner summoned a rescue roast against {Name}.", targetName);
             var roast = string.Format(
-                _picker.Pick(message.Channel.Id, BotResponses.RescueRoasts), targetName, weekday);
+                _picker.Pick(BotResponses.RescueRoasts), targetName, weekday);
             // Reply to the target's own message so the roast is clearly aimed at
             // them (and pings them).
             await ReplyWithTypingAsync(target, roast, "rescue roast");
@@ -211,7 +211,7 @@ internal sealed class ChatterService
 
             var ownerPool = unkind ? BotResponses.OwnerMeanReplies : BotResponses.OwnerGreetings;
             var ownerLine = string.Format(
-                _picker.Pick(message.Channel.Id, ownerPool), ResolveName(message.Author), weekday);
+                _picker.Pick(ownerPool), ResolveName(message.Author), weekday);
 
             await ReplyWithTypingAsync(message, ownerLine, "owner greeting");
             return;
@@ -247,7 +247,7 @@ internal sealed class ChatterService
             pool = BotResponses.Interrogations;
 
         _logger.LogInformation("{Name} mentioned the bot.", name);
-        var line = string.Format(_picker.Pick(message.Channel.Id, pool), name, weekday);
+        var line = string.Format(_picker.Pick(pool), name, weekday);
         await ReplyWithTypingAsync(message, line, "mention reply");
     }
 
@@ -326,7 +326,7 @@ internal sealed class ChatterService
             if (BotResponses.PersonalComebacks.TryGetValue(message.Author.Id, out var personal))
                 pool = pool.Concat(personal).Concat(personal).ToArray();
         }
-        var comeback = string.Format(_picker.Pick(message.Channel.Id, pool), name, CurrentWeekday());
+        var comeback = string.Format(_picker.Pick(pool), name, CurrentWeekday());
         await ReplyWithTypingAsync(message, comeback, "reply comeback");
     }
 
@@ -342,7 +342,7 @@ internal sealed class ChatterService
         var name = ResolveName(message.Author);
         _logger.LogInformation("{Name} pinged the absent owner — sending unavailability notice.", name);
         var notice = string.Format(
-            _picker.Pick(message.Channel.Id, BotResponses.OwnerAbsentNotices),
+            _picker.Pick(BotResponses.OwnerAbsentNotices),
             name, CurrentWeekday());
         await ReplyWithTypingAsync(message, notice, "owner-absence notice");
 
@@ -449,7 +449,7 @@ internal sealed class ChatterService
 
             var ownerName = guild!.GetUser(OwnerId)?.Nickname ?? "Rodhengard";
             var herald = string.Format(
-                _picker.Pick(pending.ChannelId, BotResponses.OwnerReplyHeralds),
+                _picker.Pick(BotResponses.OwnerReplyHeralds),
                 ownerName);
 
             await original.ReplyAsync(
@@ -516,7 +516,7 @@ internal sealed class ChatterService
 
         _logger.LogInformation("{Name} threatened to shut the bot down — {Reaction}.", name, who);
 
-        var line = string.Format(_picker.Pick(message.Channel.Id, pool), name, CurrentWeekday());
+        var line = string.Format(_picker.Pick(pool), name, CurrentWeekday());
         await ReplyWithTypingAsync(message, line, "shutdown-threat reply");
         return true;
     }
@@ -528,7 +528,7 @@ internal sealed class ChatterService
         var name = ResolveName(message.Author);
         _logger.LogInformation("{Name} called the bot 'Inabot' — correcting them.", name);
         var line = string.Format(
-            _picker.Pick(message.Channel.Id, BotResponses.MistakenIdentityReplies),
+            _picker.Pick(BotResponses.MistakenIdentityReplies),
             name, CurrentWeekday());
         await ReplyWithTypingAsync(message, line, "mistaken-identity reply");
         return true;

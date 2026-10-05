@@ -22,10 +22,6 @@ internal sealed class PresenceService : BackgroundService
     // it saying something different whenever someone happens to look.
     private static readonly TimeSpan RotateInterval = TimeSpan.FromMinutes(5);
 
-    // Bucket key for the picker's no-repeat history. Presence isn't attached to a
-    // channel, and 0 is never a real snowflake, so it can't collide with one.
-    private const ulong PresenceBucket = 0;
-
     public PresenceService(
         DiscordSocketClient client,
         ResponsePicker picker,
@@ -58,7 +54,7 @@ internal sealed class PresenceService : BackgroundService
 
     private async Task RotateAsync()
     {
-        var line = _picker.Pick(PresenceBucket, BotResponses.PresenceFillers);
+        var line = _picker.Pick(BotResponses.PresenceFillers);
 
         try
         {

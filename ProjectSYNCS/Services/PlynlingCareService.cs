@@ -25,7 +25,7 @@ public class PlynlingCareService
 
     // Anyone may pet anyone's Plynling; the 4 h cooldown is per petter per Plynling. The
     // claim is released if the pet does not happen, so a refusal never costs a cooldown.
-    public async Task<CareReply> PetAsync(int plynlingId, ulong actorId, ulong channelId, DateTimeOffset now)
+    public async Task<CareReply> PetAsync(int plynlingId, ulong actorId, DateTimeOffset now)
     {
         var key = (actorId, plynlingId);
         if (!_cooldowns.Pet.TryClaim(key, out var readyAt)) return new CareReply(null, PlynlingText.PetCooldown(readyAt));
@@ -40,7 +40,7 @@ public class PlynlingCareService
         var (petPool, typed) = PlynlingMascot.Is(plynling)
             ? (BotResponses.MascotPetLines, "")                   // her own: she has something to say about it
             : PlynlingPassions.PickLines(BotResponses.PlynlingPetLines, BotResponses.PlynlingPetTypedLines, plynling, Random.Shared);
-        var line = string.Format(_picker.Pick(channelId, petPool), PlynlingCardUi.SafeName(plynling.Name), typed);
+        var line = string.Format(_picker.Pick(petPool), PlynlingCardUi.SafeName(plynling.Name), typed);
         var text = $"{line} — {PlynlingText.PettedBy(plynling.Gender, actorId)}";
         if (badges.Count > 0) text += "\n" + PlynlingBadges.NewBadgeLines(badges, plynling.Gender);
         text += await GiftLineAsync(plynling, actorId, now);
@@ -50,7 +50,7 @@ public class PlynlingCareService
     }
 
     // Owner only, every PlynlingLife.BathCooldown; the claim is released on a refusal, like petting.
-    public async Task<CareReply> BathAsync(int plynlingId, ulong actorId, ulong channelId, DateTimeOffset now)
+    public async Task<CareReply> BathAsync(int plynlingId, ulong actorId, DateTimeOffset now)
     {
         if (!_cooldowns.Bath.TryClaim(plynlingId, out var readyAt)) return new CareReply(null, PlynlingText.BathCooldown(readyAt));
 
@@ -65,7 +65,7 @@ public class PlynlingCareService
                 : Refusal(outcome, g));
         }
 
-        var line = string.Format(_picker.Pick(channelId, BotResponses.PlynlingBathLines.For(plynling.Gender)),
+        var line = string.Format(_picker.Pick(BotResponses.PlynlingBathLines.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name));
         var partner = await _plynlings.GetPartnerAsync(plynling);
         return new CareReply(PlynlingModule.BuildCard(plynling, now, line, partnerName: partner?.Name,
@@ -73,7 +73,7 @@ public class PlynlingCareService
     }
 
     // « Soigner »: owner only, once between two mornings, from the pantry or at MedicinePrice.
-    public async Task<CareReply> MedicateAsync(int plynlingId, ulong actorId, ulong channelId, DateTimeOffset now)
+    public async Task<CareReply> MedicateAsync(int plynlingId, ulong actorId, DateTimeOffset now)
     {
         var (outcome, plynling, fromPantry, price, balance) = await _plynlings.MedicateAsync(plynlingId, actorId, now);
         if (outcome != CareOutcome.Done || plynling is null)
@@ -88,7 +88,7 @@ public class PlynlingCareService
             });
         }
 
-        var line = string.Format(_picker.Pick(channelId, BotResponses.PlynlingMedicineLines.For(plynling.Gender)),
+        var line = string.Format(_picker.Pick(BotResponses.PlynlingMedicineLines.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name));
         line += fromPantry
             ? "\n-# 💊 un médicament de ton garde-manger"
@@ -98,7 +98,7 @@ public class PlynlingCareService
             pantry: await _plynlings.GetPantryAsync(plynling)), null);
     }
 
-    public async Task<CareReply> FeedAsync(int plynlingId, ulong actorId, PlynlingFood food, ulong channelId, DateTimeOffset now)
+    public async Task<CareReply> FeedAsync(int plynlingId, ulong actorId, PlynlingFood food, DateTimeOffset now)
     {
         var result = await _plynlings.FeedAsync(plynlingId, actorId, food, now);
         if (result.Outcome != CareOutcome.Done || result.Plynling is null)
@@ -113,7 +113,7 @@ public class PlynlingCareService
         var (feedPool, typed) = PlynlingMascot.Is(result.Plynling)
             ? (BotResponses.MascotFeedLines, "")
             : PlynlingPassions.PickLines(BotResponses.PlynlingFeedLines, BotResponses.PlynlingFeedTypedLines, result.Plynling, Random.Shared);
-        var line = string.Format(_picker.Pick(channelId, feedPool),
+        var line = string.Format(_picker.Pick(feedPool),
             PlynlingCardUi.SafeName(result.Plynling.Name), info.WithArticle, typed);
         // Someone else's: say who paid, and that it cost them double.
         var paid = result.Plynling.OwnerId == actorId

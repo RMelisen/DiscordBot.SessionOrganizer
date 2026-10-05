@@ -32,7 +32,7 @@ public sealed class PlynlingAnnouncer
         var lived = PlynlingLife.Age(plynling, now);
         var tier = PlynlingCatalog.MemorialTier(lived);
         var pool = plynling.DeathCause == DeathCause.Illness ? BotResponses.PlynlingIllnessDeathLines : BotResponses.PlynlingDeathLines;
-        var line = string.Format(_picker.Pick(GameChannelId, pool.For(plynling.Gender)),
+        var line = string.Format(_picker.Pick(pool.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name), $"<@{plynling.OwnerId}>",
             LevelCardUi.Duration((long)lived.TotalMinutes), PlynlingCatalog.MemorialName(tier));
         return PostAsync(plynling.GuildId, line, PlynlingArt.Memorial(plynling.Species, tier), "death");
@@ -40,7 +40,7 @@ public sealed class PlynlingAnnouncer
 
     public Task AnnounceResurrectionAsync(Plynling plynling, DateTimeOffset now)
     {
-        var line = string.Format(_picker.Pick(GameChannelId, BotResponses.PlynlingResurrectLines.For(plynling.Gender)),
+        var line = string.Format(_picker.Pick(BotResponses.PlynlingResurrectLines.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name), $"<@{plynling.OwnerId}>");
         return PostAsync(plynling.GuildId, line, PlynlingArt.SpriteOf(plynling, now), "resurrection");
     }
@@ -49,7 +49,7 @@ public sealed class PlynlingAnnouncer
     // object still carries everything the line and the picture need.
     public Task AnnounceAbandonAsync(Plynling plynling, DateTimeOffset now)
     {
-        var line = string.Format(_picker.Pick(GameChannelId, BotResponses.PlynlingAbandonLines.For(plynling.Gender)),
+        var line = string.Format(_picker.Pick(BotResponses.PlynlingAbandonLines.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name), $"<@{plynling.OwnerId}>");
         return PostAsync(plynling.GuildId, line,
             PlynlingArt.SpriteOf(plynling, now, PlynlingMood.Sad), "abandon");
@@ -59,7 +59,7 @@ public sealed class PlynlingAnnouncer
     // naming when.
     public Task WarnOwnerAsync(Plynling plynling)
     {
-        var line = string.Format(_picker.Pick(plynling.OwnerId, BotResponses.PlynlingWarningLines.For(plynling.Gender)),
+        var line = string.Format(_picker.Pick(BotResponses.PlynlingWarningLines.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name));
         return DmOwnerAsync(plynling.OwnerId, line);
     }
@@ -67,7 +67,7 @@ public sealed class PlynlingAnnouncer
     // Once per illness, from the sweep: it fell sick this morning, and what to do about it.
     public Task WarnSickAsync(Plynling plynling)
     {
-        var line = string.Format(_picker.Pick(plynling.OwnerId, BotResponses.PlynlingSickWarningLines.For(plynling.Gender)),
+        var line = string.Format(_picker.Pick(BotResponses.PlynlingSickWarningLines.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name));
         return DmOwnerAsync(plynling.OwnerId, line);
     }

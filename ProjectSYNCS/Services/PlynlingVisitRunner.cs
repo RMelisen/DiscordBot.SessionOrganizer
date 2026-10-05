@@ -26,7 +26,7 @@ public class PlynlingVisitRunner
     }
 
     // The story, or the refusal to send privately.
-    public async Task<(VisitStory? Story, string? Refusal)> RunAsync(Plynling visitor, Plynling host, ulong channelId, DateTimeOffset now)
+    public async Task<(VisitStory? Story, string? Refusal)> RunAsync(Plynling visitor, Plynling host, DateTimeOffset now)
     {
         var day = AppTime.DayKey(now);
         if (!_cooldowns.TryClaimVisit(visitor.OwnerId, host.OwnerId, day))
@@ -51,7 +51,7 @@ public class PlynlingVisitRunner
         }
 
         var story = _stories.Add(
-            PlynlingVisitStory.Build(pair, PlynlingPlayCards.VisitOutcomeLines(pair), now, Random.Shared, pool => _picker.Pick(channelId, pool)),
+            PlynlingVisitStory.Build(pair, PlynlingPlayCards.VisitOutcomeLines(pair), now, Random.Shared, pool => _picker.Pick(pool)),
             Random.Shared);
         return (story, null);
     }

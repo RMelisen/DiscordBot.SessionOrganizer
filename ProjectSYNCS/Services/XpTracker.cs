@@ -310,7 +310,7 @@ internal sealed class XpTracker
         // line that isn't actually a pool entry.
         var description = IsSixSeven(newLevel)
             ? "SIX SEVEEEN"
-            : string.Format(_picker.Pick(channel.Id, BotResponses.XpLevelUpLines), name, newLevel);
+            : string.Format(_picker.Pick(BotResponses.XpLevelUpLines), name, newLevel);
 
         var embed = new EmbedBuilder()
             .WithTitle(BuildLevelUpTitle(oldLevel, newLevel))

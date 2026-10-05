@@ -554,7 +554,7 @@ internal sealed class BotFeedbackTracker
                 (false, VerdictForm.Girl) => BotResponses.GoodGirlReactions,
                 _ => BotResponses.NiceReactions,
             };
-            var emote = EmoteMarkup.Parse(_picker.Pick(message.Channel.Id, pool));
+            var emote = EmoteMarkup.Parse(_picker.Pick(pool));
             if (emote is null) return;
 
             // Before sending, not after: the gateway echoes the reaction back and the
@@ -588,7 +588,7 @@ internal sealed class BotFeedbackTracker
         };
         var name = BotResponses.DisplayNameFor(message.Author);
 
-        var line = string.Format(_picker.Pick(message.Channel.Id, lines), name);
+        var line = string.Format(_picker.Pick(lines), name);
         var sent = await BotChat.ReplyWithTypingAsync(message, line, _logger, "bad-bot reply");
 
         // Her comeback is not itself up for judgement — otherwise answering it with
@@ -611,7 +611,7 @@ internal sealed class BotFeedbackTracker
 
         var name = BotResponses.DisplayNameFor(message.Author);
 
-        var line = string.Format(_picker.Pick(message.Channel.Id, pool), name);
+        var line = string.Format(_picker.Pick(pool), name);
         await BotChat.ReplyWithTypingAsync(message, line, _logger, "praise turnabout");
     }
 }

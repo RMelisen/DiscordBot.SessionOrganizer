@@ -46,6 +46,14 @@ public static class AppTime
         return zoned.Year * 10000 + zoned.Month * 100 + zoned.Day;
     }
 
+    /// <summary>
+    /// The calendar day in the app's zone as a count of days (DateOnly.DayNumber).
+    /// Unlike <see cref="DayKey"/> it is contiguous, so consecutive days differ by one —
+    /// what Helpers/DailyRotation needs to step through a pool.
+    /// </summary>
+    public static int DayNumber(DateTimeOffset instant) =>
+        DateOnly.FromDateTime(ToZoned(instant).Date).DayNumber;
+
     /// <summary>Today's day key, in the app's zone.</summary>
     public static int TodayKey => DayKey(DateTimeOffset.UtcNow);
 

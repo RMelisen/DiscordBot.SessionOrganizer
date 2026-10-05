@@ -25,11 +25,12 @@ internal sealed class MorningGreetingService : BackgroundService
     // How far back to look for a hello she already said today.
     private const int HistoryDepth = 50;
 
-    // Each pool's own picker bucket, never the channel's. History is per bucket, and at
-    // one pick a day, a day of chatter in the channel would push yesterday's hello out
-    // of it; the two pools would also crowd each other. Not snowflakes.
-    private const ulong GreetingBucket = 2;
-    private const ulong FunFactBucket = 1;
+    // Both pools go through Helpers/DailyRotation, not ResponsePicker: at one line a
+    // day, an in-memory history would be wiped by every restart long before it helped.
+    // Each pool has its own salt so the two orders are unrelated; changing a salt
+    // reshuffles that pool's rotation.
+    private const ulong GreetingSalt = 0x5359_4E43_5348_454C; // "SYNCSHEL"
+    private const ulong FunFactSalt = 0x5359_4E43_5346_4143;  // "SYNCSFAC"
 
     // Odds that someone else's greeting draws her hello out before its slot. Rolled
     // once per person per morning, so a chorus of "bonjour" doesn't make it a certainty.
@@ -38,7 +39,6 @@ internal sealed class MorningGreetingService : BackgroundService
     private static readonly HashSet<string> Lines = new(BotResponses.MorningGreetings);
 
     private readonly DiscordSocketClient _client;
-    private readonly ResponsePicker _picker;
     private readonly ILogger<MorningGreetingService> _logger;
 
     // Guards everything below: the loop and the gateway both read and claim the day.
@@ -57,11 +57,9 @@ internal sealed class MorningGreetingService : BackgroundService
 
     public MorningGreetingService(
         DiscordSocketClient client,
-        ResponsePicker picker,
         ILogger<MorningGreetingService> logger)
     {
         _client = client;
-        _picker = picker;
         _logger = logger;
     }
 
@@ -189,8 +187,10 @@ internal sealed class MorningGreetingService : BackgroundService
 
         // The hello comes first, alone on its line, and the fun fact under it:
         // AlreadyGreetedTodayAsync recognises the hello by that first line.
-        var line = _picker.Pick(GreetingBucket, BotResponses.MorningGreetings)
-                   + "\n" + _picker.Pick(FunFactBucket, BotResponses.MorningFunFacts);
+        // Today's lines, so a restart or an early hello says what the slot would have.
+        var day = AppTime.DayNumber(DateTimeOffset.UtcNow);
+        var line = DailyRotation.Pick(BotResponses.MorningGreetings, day, GreetingSalt)
+                   + "\n" + DailyRotation.Pick(BotResponses.MorningFunFacts, day, FunFactSalt);
 
         await BotChat.PostWithTypingAsync(channel, line, _logger, "morning greeting", AllowedMentions.None);
     }

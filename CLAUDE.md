@@ -227,10 +227,13 @@ free). `AllowedMentions.None` keeps the clickable pill while silencing it. Avata
 - **`Helpers/BotChat`** is the single send path for her chatter (typing pause, clamped inside
   Discord.Net's 3 s `HandlerTimeout`, plus swallow-and-log). **`Helpers/EmoteMarkup.Parse`** is the
   single reaction parser.
-- **Never pick a response line with a bare `Random`.** Use `ResponsePicker.Pick(bucketId, pool)`,
-  which avoids recent repeats per bucket (window `min(50, pool.Length / 2)`). Pick the template
-  *before* `string.Format`. The bucket only needs to be stable (`PresenceService` uses `0`).
-  A pool that goes through `string.Format` throws on a stray brace.
+- **Never pick a response line with a bare `Random`.** Use `ResponsePicker.Pick(pool)`, which
+  excludes the pool's `min(50, pool.Length / 2)` most recently said lines. Its memory is **global**,
+  not per channel — the same people read every channel and their DMs — and records when each line
+  was last said, so busy pools (emote reactions) never crowd out rare ones. Pick the template
+  *before* `string.Format`. A pool that goes through `string.Format` throws on a stray brace. **A pool spent once a day uses
+  `Helpers/DailyRotation` instead** — a restart wipes the picker's history, which at one pick a
+  day means it never helps; the rotation is computed from the date, with nothing stored.
 - **Custom emote markup lives in `Helpers/Emotes` and nowhere else**, as `const string` pairs
   (`XId` + `X`), so lines stay constant expressions. Never paste raw `<:name:id>` into a pool.
 - **`BotResponses.DisplayNameFor(IUser)`** is the only place the

@@ -181,8 +181,8 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
         // Self-shaming is allowed and gets its own pool: a line about two different
         // people cannot land when both of them are the same person.
         var line = Context.User.Id == target.Id
-            ? string.Format(_picker.Pick(Context.Channel.Id, BotResponses.ShameSelfVoteLines), voterName)
-            : string.Format(_picker.Pick(Context.Channel.Id, BotResponses.ShameVoteLines), voterName, targetName);
+            ? string.Format(_picker.Pick(BotResponses.ShameSelfVoteLines), voterName)
+            : string.Format(_picker.Pick(BotResponses.ShameVoteLines), voterName, targetName);
 
         // Names are rendered as text, not mentions: the announcement is public and
         // pinging the person you just shamed turns a joke into a notification.
@@ -248,7 +248,7 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
         if (rows.Count == 0)
         {
             container.AddComponent(new TextDisplayBuilder(
-                $"### {heading}\n*{_picker.Pick(Context.Channel.Id, emptyPool)}*"));
+                $"### {heading}\n*{_picker.Pick(emptyPool)}*"));
             return;
         }
 

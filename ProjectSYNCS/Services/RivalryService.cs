@@ -92,7 +92,7 @@ internal sealed class RivalryService
         if (Random.Shared.NextDouble() < MutterChance
             && _mutterGate.TryClaim(message.Channel.Id))
         {
-            var line = _picker.Pick(message.Channel.Id, BotResponses.RivalMutters);
+            var line = _picker.Pick(BotResponses.RivalMutters);
             await BotChat.ReplyWithTypingAsync(message, line, _logger, "rival mutter");
         }
     }
@@ -115,7 +115,7 @@ internal sealed class RivalryService
         // creator doing it is a different injury from anyone else doing it — everyone
         // else gets wounded pride, he gets betrayal.
         var pool = byOwner ? BotResponses.JealousLinesOwner : BotResponses.JealousLines;
-        var line = string.Format(_picker.Pick(praise.Channel.Id, pool), name);
+        var line = string.Format(_picker.Pick(pool), name);
         await BotChat.ReplyWithTypingAsync(praise, line, _logger, "jealous reply");
 
         var target = rivalMessageId ?? LastAction(praise.Channel.Id)?.MessageId;
@@ -216,7 +216,7 @@ internal sealed class RivalryService
 
     private async Task MarkAsync(IUserMessage message)
     {
-        var emote = EmoteMarkup.Parse(_picker.Pick(message.Channel.Id, BotResponses.MeanReactions));
+        var emote = EmoteMarkup.Parse(_picker.Pick(BotResponses.MeanReactions));
         if (emote is null) return;
 
         try
