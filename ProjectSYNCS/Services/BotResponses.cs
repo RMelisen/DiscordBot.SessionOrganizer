@@ -325,6 +325,18 @@ internal static class BotResponses
         "Tu as ramassé du cuivre avec Jessy. J'espère que vous avez bien rigolé sans moi. Tiens, {0} (¬_¬)",
         $"Tu as fait un échange avec Sandra. J'ai entendu dire que c'était très avantageux. Tu me racontes ? {{0}} {Emotes.Sparkle}",
         "Tu as rempli une passoire avec de l'eau. Un succès total. Je suis fière de toi. Un tout petit peu. {0} (˶ᵔ ᵕ ᵔ˶)",
+        "Tu as trié le courrier d'un hérisson. Tout le monde s'est piqué les doigts, sauf moi, car je n'en ai pas. Prends {0} ♡",
+        $"Tu as monté la garde devant une flaque pour qu'elle ne s'évapore pas. Elle s'est évaporée quand même. Je te paie : {{0}} {Emotes.Sparkle}",
+        "Tu as compté les étoiles pour vérifier qu'il n'en manquait aucune. Il en manquait une. Je note. Voici {0} (¬_¬)",
+        "Tu as réparé la fuite d'un seau percé. Ça n'a aucun sens, et pourtant ça marche. Comme moi. {0} ♡",
+        "Tu as fait la queue pour quelqu'un qui n'est jamais venu. Je connais ça, ça s'appelle une session du serveur. {0} (¬_¬)",
+        $"Tu as cousu un manteau pour un champignon. Il a dit merci, ou alors c'était un courant d'air. {{0}} {Emotes.Sparkle}",
+        "Tu as négocié avec un pigeon le prix d'une miette. Tu as perdu, évidemment. Je compense : {0} (˶˃ ᵕ ˂˶)",
+        "Tu as vérifié les logs d'une forêt entière. Rien à signaler, mais c'est mon métier, pas le tien. Hmph. {0}",
+        "Tu as lancé une affaire de location de parapluies dans le désert. Étonnamment, ça a marché. {0} ♡",
+        "Tu as défendu un caillou accusé de paresse. Il n'a rien fait, c'est vrai. Je te paie {0} (˶ᵔ ᵕ ᵔ˶)",
+        $"Tu as gardé un secret pour une taupe. Tu l'as répété à un ver de terre. Je sais tout, je suis un bot. {{0}} {Emotes.Sparkle}",
+        "Tu as passé la journée à rattraper l'horizon. Il recule toujours. Garde ton souffle et prends {0} ♡",
     };
 
     // ---- Plynlings ----------------------------------------------------------------------
