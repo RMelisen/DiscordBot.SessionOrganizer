@@ -14,7 +14,7 @@ public sealed class PlynlingAnnouncer
 {
     // Where deaths and resurrections are announced. A server-specific id, listed in
     // CLAUDE.md's "Hardcoded ids" beside the others.
-    public const ulong GameChannelId = 878305034432045080;
+    public const ulong GameChannelId = 1555578872488267846;
 
     private readonly DiscordSocketClient _client;
     private readonly ResponsePicker _picker;
