@@ -253,7 +253,7 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
                 return;
             }
 
-            await RespondAsync($"✨ **{PlynlingCardUi.SafeName(plynling.Name)}** est de retour (annoncé dans <#{PlynlingAnnouncer.GameChannelId}>).",
+            await RespondAsync($"{Emotes.Sparkle} **{PlynlingCardUi.SafeName(plynling.Name)}** est de retour (annoncé dans <#{PlynlingAnnouncer.GameChannelId}>).",
                 ephemeral: true, allowedMentions: AllowedMentions.None);
             await _announcer.AnnounceResurrectionAsync(plynling, now);   // after the reply — see PlynlingModule.FreezeAsync
         }

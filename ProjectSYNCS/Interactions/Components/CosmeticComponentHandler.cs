@@ -64,7 +64,7 @@ public class CosmeticComponentHandler : InteractionModuleBase<SocketInteractionC
             return;
         }
         var notice = outcome == CosmeticOutcome.Done
-            ? (key is null ? $"{CosmeticCatalog.SlotLabel(slot)} retiré." : $"✨ {PlynlingCardUi.SafeName(plynling.Name)} porte maintenant ça !")
+            ? (key is null ? $"{CosmeticCatalog.SlotLabel(slot)} retiré." : $"{Emotes.Sparkle} {PlynlingCardUi.SafeName(plynling.Name)} porte maintenant ça !")
             : CosmeticCards.Notice(outcome, CosmeticCatalog.ByKey(key));
         var owned = await _cosmetics.OwnedAsync(Context.Guild.Id, Context.User.Id);
         var (embed, components) = CosmeticCards.BuildWardrobe(plynling, owned, notice);

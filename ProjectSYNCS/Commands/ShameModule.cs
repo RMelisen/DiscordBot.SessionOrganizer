@@ -46,7 +46,7 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
         "Non. Tu ne me mets pas au mur. C'est mon mur ദ്ദി◝ ⩊ ◜.ᐟ";
 
     private const string RefusalBotTarget =
-        "Les autres bots n'ont pas d'honneur à perdre. Garde ton vote pour un vrai coupable ✨";
+        $"Les autres bots n'ont pas d'honneur à perdre. Garde ton vote pour un vrai coupable {Emotes.Sparkle}";
 
     private const string RefusalTargetLimit =
         "Cette personne a déjà pris son quota du jour. Laisse-la respirer jusqu'à demain (ᵕ • ᴗ •)";

@@ -306,8 +306,8 @@ internal sealed class XpTracker
         var name = BotResponses.DisplayNameFor(user);
 
         // 7 and 67 are a fixed line, not a pool pick — ResponsePicker is skipped
-        // entirely, so the egg never burns one of that channel's exclusion slots on a
-        // line that isn't actually a pool entry.
+        // entirely, so the egg never records a line that isn't actually a pool entry
+        // in the picker's memory.
         var description = IsSixSeven(newLevel)
             ? "SIX SEVEEEN"
             : string.Format(_picker.Pick(BotResponses.XpLevelUpLines), name, newLevel);

@@ -108,7 +108,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
             if (XpTracker.HardcodedExcludedChannels.Contains(channel.Id))
             {
                 await FollowupAsync(
-                    $"<#{channel.Id}> est déjà exclu par défaut, dans le code. Rien à faire ✨",
+                    $"<#{channel.Id}> est déjà exclu par défaut, dans le code. Rien à faire {Emotes.Sparkle}",
                     ephemeral: true, allowedMentions: AllowedMentions.None);
                 return;
             }
@@ -148,7 +148,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
 
             await FollowupAsync(
                 removed
-                    ? $"<#{channel.Id}> compte de nouveau. L'XP y est à nouveau gagnable ✨"
+                    ? $"<#{channel.Id}> compte de nouveau. L'XP y est à nouveau gagnable {Emotes.Sparkle}"
                     : $"<#{channel.Id}> n'était pas dans la liste (ᵕ • ᴗ •)",
                 ephemeral: true, allowedMentions: AllowedMentions.None);
         }

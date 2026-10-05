@@ -427,7 +427,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
 
         await RespondAsync(
             absent
-                ? "Mode absent **activé**. Je préviendrai poliment quiconque te mentionne. ✨"
+                ? $"Mode absent **activé**. Je préviendrai poliment quiconque te mentionne. {Emotes.Sparkle}"
                 : "Mode absent **désactivé**. Tu es de nouveau disponible (˶˃ ᵕ ˂˶)",
             ephemeral: true);
     }

@@ -242,7 +242,7 @@ public class GiveawayModule : InteractionModuleBase<SocketInteractionContext>
 
         if (entrants.Count == 0)
         {
-            embed.AddField("Participants", "Personne pour l'instant. Soyez le premier ✨");
+            embed.AddField("Participants", $"Personne pour l'instant. Soyez le premier {Emotes.Sparkle}");
             return;
         }
 

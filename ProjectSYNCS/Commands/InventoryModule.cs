@@ -287,7 +287,7 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
             embed.AddField(name, string.Join("\n", lines), inline: label.Length > 0);
         }
         if (!any)
-            embed.AddField(FilterLabel(filter), filter == CollectionFilter.Missing ? "Rien ne manque ici ✨" : "Rien de trouvé ici pour l'instant.");
+            embed.AddField(FilterLabel(filter), filter == CollectionFilter.Missing ? $"Rien ne manque ici {Emotes.Sparkle}" : "Rien de trouvé ici pour l'instant.");
         return embed.Build();
     }
 

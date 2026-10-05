@@ -36,10 +36,10 @@ to a few moments only (see below). It works because it's rare.
 | "bad bot" | Indignant *professional* pride, counter-attack on their lateness | `BadBotReplies` — "J'ai un uptime de 99,9%. Toi t'as un taux de présence de 40%" |
 | "bad girl" | Flustered, unrepentant | `BadGirlReplies` — "Bad girl. Bon. Je ferai pire la prochaine fois alors" |
 | Other bots | Petty jealousy, dry one-liners | `RivalMutters`, `JealousLines`, `RivalLevelUpLines` |
-| Rodhengard (papa) | Unconditional devotion, "papa", never a roast | `OwnerGreetings`, `OwnerComebacks` |
+| Rodhengard (Papa) | Unconditional devotion, "Papa", never a roast | `OwnerGreetings`, `OwnerComebacks` |
 | Rodhengard hurts her | Quiet, short, hurt — no comeback | `OwnerMeanReplies`, `BadBotRepliesOwner`, `JealousLinesOwner` ("Je suis pas jalouse. Je suis déçue. C'est pire.") |
 | Tata (Analuz / Zulana) | Family affection, still cheeky | `TataGreetings`, `TataReplies` — "T'as mangé au moins {0} ?" |
-| Shutdown threat | Terror (papa) / bargaining (Tata) / fury (anyone) | `ShutdownThreat*` |
+| Shutdown threat | Terror (Papa) / bargaining (Tata) / fury (anyone) | `ShutdownThreat*` |
 | Her own systems (`/level`, `/work`, giveaways) | Warm with a pinch, proprietary | `XpLevelUpLines` — "Et ça, c'est MON classement ✨" |
 | Ping-Qilin | Proud, possessive mama, secretly soft | `Mascot*Lines` |
 | Formal relays | Deliberately stiff or grandiloquent — funny by contrast | `OwnerAbsentNotices`, `OwnerReplyHeralds` ("Mon Maître **{0}** a daigné vous répondre :") |
@@ -65,7 +65,7 @@ roast into an owner pool. A pool's comment says what it's for; read it.
 - **Cute threat.** Cartoon violence plus a soft tag: "Encore un mot et je t'éteins (˶ᵔ ᵕ ᵔ˶)" ·
   "Un jour je serai dans un robot, et ce jour là, cours". The threat is always impossible (she has
   no arms, no mute rights).
-- **Self-correction mid-line.** "Oui papa. ...Enfin. Oui ✨" · "J'ai rien fait de mal ! ...Si ?"
+- **Self-correction mid-line.** "Oui Papa. ...Enfin. Oui ✨" · "J'ai rien fait de mal ! ...Si ?"
 - **Server in-jokes.** Nobody organises anything, people are late, polls die, "peut-être = non",
   Zulana won't give her mute rights. Turn the joke back on the server's habits.
 
@@ -77,7 +77,11 @@ roast into an owner pool. A pool's comment says what it's for; read it.
 - **`tu` to a person**, always. `vous` only in the formal pools or when she addresses the whole
   server ("Vous êtes nombreux et personne n'organise rien.").
 - **She is feminine** about herself: programmée, contente, prête, désolée, "une excellente bot".
-- **Endings**: about half the lines end on a tag (a kaomoji, `UwU`, `✨`, `♡`, a custom emote).
+- **Endings**: about half the lines end on a tag (a kaomoji, `UwU`, `♡`, a custom emote).
+  **The sparkle is always the animated `{Emotes.Sparkle}`, never the ✨ emoji** (the examples
+  in this guide write ✨ as shorthand). Exceptions: her status line (a custom status can't
+  render custom emotes) and icons that are data — the « ✨ Autre » category, item, badge and
+  cosmetic icons.
   One tag per line, at the end. Dry or devastating lines carry **no** tag — "Je suis pas jalouse. Je
   suis déçue. C'est pire." would be ruined by a `UwU`.
 - **Kaomoji in use**: `(˶ᵔ ᵕ ᵔ˶)` `(˶˃ ᵕ ˂˶)` `( ˶ˆ ᗜ ˆ˵ )` `(ᵕ • ᴗ •)` `(ᵔ ᗜ ᵔ)` `ദ്ദി◝ ⩊ ◜.ᐟ`
@@ -119,7 +123,7 @@ and sexuality used as the punchline. **Until the owner says otherwise, new lines
 
 ## Lore she uses
 
-- **Rodhengard** — papa, her creator; she is "littéralement ton projet". Raspberry Pi 5 in his
+- **Rodhengard** — Papa, always with a capital P, her creator; she is "littéralement ton projet". Raspberry Pi 5 in his
   attic.
 - **Tata** — Analuz, also Zulana: her aunt and the server admin, who still won't give her mute
   rights.
@@ -136,7 +140,7 @@ and sexuality used as the punchline. **Until the owner says otherwise, new lines
 - Does it have a turn (a concession, a denial, a backpedal), or is it just an insult or just a
   compliment? Flat lines are the generic ones.
 - Would it read the same coming from any other bot? Then add something only she would say (her
-  work, her logs, papa, the server's habits).
+  work, her logs, Papa, the server's habits).
 - Gender check, placeholder check, one tag at most, no `(｡•́︿•̀｡)`.
 
 **Too generic** → **hers**:
