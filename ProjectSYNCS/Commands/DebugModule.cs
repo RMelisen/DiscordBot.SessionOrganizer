@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 using Discord;
 using Discord.Interactions;
@@ -410,6 +411,43 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
                 : $"🔧 **{PlynlingCardUi.SafeName(p.Name)}** : hygiène {Math.Round(p.Hygiene * 100)} %, " +
                   $"{(PlynlingLife.IsSick(p) ? "malade" : "en bonne santé")}.",
             ephemeral: true, allowedMentions: AllowedMentions.None);
+    }
+
+    // Adding an emote to Helpers/Emotes.cs meant copying its name and snowflake by hand. This
+    // writes the entries for every emote of this server that isn't declared yet, ready to paste.
+    // Short results go out as a code block (one tap to copy); long ones as a file, since a
+    // message is capped at 2000 characters.
+    [SlashCommand("emotes", "Générer le code des émotes du serveur absentes d'Emotes.cs")]
+    public async Task EmotesAsync()
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+        if (Context.Guild is null)
+        {
+            await RespondAsync("Sur un serveur, pas en message privé.", ephemeral: true);
+            return;
+        }
+
+        var (snippet, count) = EmoteSnippet.Build(Context.Guild.Emotes);
+        if (count == 0)
+        {
+            await RespondAsync("Toutes les émotes du serveur sont déjà dans `Emotes.cs`. ✅", ephemeral: true);
+            return;
+        }
+
+        var header = $"**{count}** émote(s) à ajouter dans `Helpers/Emotes.cs` :";
+        if (snippet.Length <= 1800)
+        {
+            await RespondAsync($"{header}\n```csharp\n{snippet}\n```", ephemeral: true);
+            return;
+        }
+
+        await DeferAsync(ephemeral: true);
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(snippet));
+        await FollowupWithFileAsync(stream, "Emotes.generated.txt", header, ephemeral: true);
     }
 
     [SlashCommand("absent", "Activer ou désactiver ton mode absent")]

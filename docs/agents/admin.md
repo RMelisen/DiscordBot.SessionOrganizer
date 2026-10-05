@@ -46,7 +46,7 @@ service is the only writer: any write drops that guild's entry. A failed read de
 
 ## `/debug` — owner only
 
-`tell`, `dm`, `absent`, `plynling`, each comparing `Context.User.Id` to `AvailabilityService.OwnerId`
+`tell`, `dm`, `absent`, `plynling`, `emotes`, each comparing `Context.User.Id` to `AvailabilityService.OwnerId`
 inline and replying ephemerally. `DebugModule` carries no `[CommandContextType]` (it never reads
 `Context.Guild`); `/debug plynling` checks for a DM itself.
 
