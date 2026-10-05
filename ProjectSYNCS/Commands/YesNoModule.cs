@@ -36,8 +36,8 @@ public class YesNoModule : InteractionModuleBase<SocketInteractionContext>
             ?? Context.User.GlobalName
             ?? Context.User.Username);
 
-        // Bucketed per channel like every other pool, so the same verdict phrasing
-        // doesn't come back twice running in the same conversation.
+        // Through the picker like every other pool, so the same verdict phrasing
+        // doesn't come back twice running (its memory is global, not per channel).
         var verdict = string.Format(_picker.Pick(pool), name);
 
         // Public on purpose: the whole point is that the room sees the ruling. The
