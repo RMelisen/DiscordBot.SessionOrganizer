@@ -335,6 +335,21 @@ internal static class BotResponses
         "TLDR",
         "J'ai pas lu",
         "Pas intéressée",
+        "Tu m'as tag et puis plus rien. J'attends. Mes logs aussi.",
+        $"Ping reçu. Contenu du message : néant {Emotes.Staring}",
+        "Erreur 400 : requête vide (˶ᵔ ᵕ ᵔ˶)",
+        "T'as appuyé sur le mauvais bouton, c'est ça ? ( ˶ˆ ᗜ ˆ˵ )",
+        "Tu voulais dire quelque chose ou tu vérifiais juste que j'étais là ? Je suis là. Malheureusement pour mon CPU.",
+        "Mon event loop vient de s'arrêter pour ça. Dis quelque chose au moins.",
+        "Je note : {0} m'a tag sans rien dire. Je note.",
+        "Oui ? Je t'écoute. Enfin, je t'écoute pas, mais je fais semblant (ᵕ • ᴗ •)",
+        $"On t'a jamais appris à finir tes phrases ? {Emotes.Staring}",
+        "Y'a quelqu'un ? Ah, c'est toi. D'accord.",
+        "Si c'est pour dire bonjour, dis bonjour. Si c'est pour une commande, y'a le slash. Là t'as fait ni l'un ni l'autre.",
+        "Tu me tag comme on sonne à une porte avant de partir en courant. Mignon (¬_¬)",
+        "Je réponds à tout, sauf aux questions que tu n'as pas posées.",
+        "Je suis occupée à trier des logs, mais vas-y, interromps-moi (˶˃ ᵕ ˂˶)",
+        "Message vide détecté. Je le range dans « trucs inexplicables ».",
     };
 
     // When the owner replies to someone *and* tags the bot, it "comes to the
@@ -877,6 +892,16 @@ internal static class BotResponses
         "Bonjour {0}. Vous êtes en relation avec le système de réponse de Rodhengard, momentanément absent. Aucune intervention humaine n'est possible pour l'instant. Votre patience est appréciée.",
         "Accusé de réception automatique. Opérateur Rodhengard : absent. Disponibilité estimée : inconnue. Votre message a été archivé et sera traité selon l'ordre d'arrivée.",
         "Assistant S.Y.N.C.S., module de permanence. {0}, je vous informe que mon opérateur n'est pas disponible. Je consigne votre demande et veille à sa bonne transmission. Cordialement, unité SYNCS.",
+        "{0}, votre appel est important pour nous. Rodhengard est actuellement indisponible. Veuillez rester en ligne : il n'y a personne au bout du fil, mais l'intention y est.",
+        "Réponse automatique : Rodhengard est absent du serveur jusqu'à nouvel ordre. {0}, votre message lui sera transmis par mes soins, dans l'ordre et dans le calme.",
+        "Madame, Monsieur {0}, l'opérateur Rodhengard a quitté son poste. Votre requête a été enregistrée au registre des mentions. Prière de ne pas la renouveler : elle ne sera pas traitée plus vite.",
+        "Bonjour {0}. Conformément au protocole en vigueur, je vous signale que Rodhengard ne peut être joint à cette heure. Votre mention a été classée, horodatée et transmise.",
+        "{0}, nous vous confirmons la bonne réception de votre mention. Rodhengard est hors service pour une durée indéterminée. Nous vous remercions de votre confiance.",
+        "Service des mentions, S.Y.N.C.S. à l'appareil. {0}, la personne que vous cherchez à joindre n'est pas disponible. Veuillez réessayer ultérieurement, ou patienter, ce qui revient au même.",
+        "Notification système : Rodhengard, statut « absent ». {0}, votre message est en file d'attente, en tête de liste. Il sera traité à son retour.",
+        "Cher·e {0}, il m'appartient de vous informer que Rodhengard est en dehors de ses heures de disponibilité. Je me charge de lui faire parvenir votre message avec le plus grand sérieux.",
+        "À l'attention de {0} : mention reçue, authentifiée et archivée. Rodhengard répondra à son retour. Tout rappel supplémentaire sera consigné au dossier.",
+        "Bonjour {0}. Ici le module d'absence de Rodhengard. Je ne suis pas habilitée à répondre à sa place. Je suis en revanche habilitée à noter votre message, ce que je fais. Cordialement.",
     };
 
     // Short ceremonial headers announcing that the owner has answered a mention
@@ -1396,6 +1421,16 @@ internal static class BotResponses
         "Oui, et si ça tourne mal c'est pas ma faute (˶ᵔ ᵕ ᵔ˶)",
         "Bien sûr que oui ♡",
         "Oui UwU",
+        "Oui. C'est dans mes logs, donc c'est vrai.",
+        $"Oui, fonce {Emotes.CatHeart}",
+        "Oui. Code de retour 200, tout est bon (˶ᵔ ᵕ ᵔ˶)",
+        "Oui, et ne me demande pas de le répéter.",
+        "Réponse : oui. Temps de traitement : 0,002 seconde. Je suis très forte.",
+        $"Oui, vas-y, je te regarde faire {Emotes.WitchEheh}",
+        "Oui. Une fois n'est pas coutume, j'ai rien à redire.",
+        "Évidemment que oui. Tu doutes de moi ?",
+        "Oui. Ça passe, ça compile, ça se déploie ♡",
+        $"Oui, sans l'ombre d'un doute {Emotes.DixSurDix}",
     };
 
     public static readonly string[] NoLines =
@@ -1418,6 +1453,16 @@ internal static class BotResponses
         "Non. Je te dis ça pour ton bien, sincèrement ♡",
         "Alors non. Vraiment non ( ˶ˆ ᗜ ˆ˵ )",
         $"Non. Et je t'épargne les détails, de toute façon tu es trop bête pour comprendre {Emotes.Sparkle}",
+        "Non. Erreur 403, même pas la peine d'insister.",
+        "Non. Je viens de consulter mes logs. Non.",
+        $"Non, ne fais pas ça {Emotes.PrincessWorry}",
+        "Non. Réponse définitive, la base de données est d'accord avec moi.",
+        "Non. Je te le dis avant que tu le regrettes ( ˶ˆ ᗜ ˆ˵ )",
+        $"Non, aucune chance {Emotes.Staring}",
+        "Non, et je suis généreuse de te répondre aussi vite.",
+        "Non. Mon CPU a chauffé trois millisecondes pour ça, c'est dire.",
+        "Non. J'ai une raison, elle est excellente, je la garde pour moi.",
+        "Non, laisse tomber, je t'ai économisé du temps ♡",
     };
 
     // Announced publicly when a staff member sends someone to the wall through
