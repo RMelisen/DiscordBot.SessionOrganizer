@@ -83,12 +83,46 @@ public static class PlynlingPersonality
             text.AppendLine($"{t.Emoji} **{t.Name(p.Gender)}** — {t.Description}{Effects(t)}");
 
         var stats = string.Join("\n", PlynlingStats.Compute(p, traits).Select(StatText));
-        return new EmbedBuilder()
+        var embed = new EmbedBuilder()
             .WithTitle($"📜 Personnalité de {PlynlingCardUi.SafeName(p.Name)}")
             .WithColor(new Color(PlynlingCatalog.Info(p.Species).Accent))
             .WithDescription(text.ToString())
-            .AddField("Statistiques", stats)
-            .Build();
+            .AddField("Statistiques", stats);
+
+        var state = new List<string>();
+        if (p.Stress > 0) state.Add($"😣 **Stress {p.Stress}**/{PlynlingStress.Max} · niveau {PlynlingStress.Level(p.Stress)}");
+        foreach (var (info, ends) in PlynlingModifiers.Active(p))
+            state.Add($"{info.Emoji} **{info.Name(p.Gender)}** — {info.Description} *(jusqu'à <t:{ends.ToUnixTimeSeconds()}:R>)*");
+        if (state.Count > 0) embed.AddField("État", FieldText(state));
+        return embed.Build();
+    }
+
+    // Lines for one embed field, cut before Discord's 1024-character cap (every modifier at once
+    // would pass it). The cut lines are counted, not lost silently.
+    private static string FieldText(IReadOnlyList<string> lines)
+    {
+        const int cap = 1000;
+        var kept = new List<string>();
+        var length = 0;
+        foreach (var line in lines)
+        {
+            if (length + line.Length + 1 > cap) break;
+            kept.Add(line);
+            length += line.Length + 1;
+        }
+        if (kept.Count < lines.Count) kept.Add($"*… et {lines.Count - kept.Count} de plus*");
+        return string.Join("\n", kept);
+    }
+
+    // Its stress level (from 1) and its modifiers' icons, for the card. Null when there is neither.
+    public static string? StateLine(Plynling p, DateTimeOffset now)
+    {
+        var parts = new List<string>();
+        var level = PlynlingStress.Level(p.Stress);
+        if (level > 0) parts.Add($"😣 Stress {level}");
+        var icons = string.Join(" ", PlynlingModifiers.Active(p).Where(m => m.Ends > now).Select(m => m.Info.Emoji));
+        if (icons.Length > 0) parts.Add(icons);
+        return parts.Count == 0 ? null : string.Join(" · ", parts);
     }
 
     private static string Signed(int v) => v > 0 ? $"+{v}" : $"−{-v}";

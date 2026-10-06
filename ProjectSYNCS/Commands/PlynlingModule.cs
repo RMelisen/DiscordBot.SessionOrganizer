@@ -705,9 +705,13 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
                 .AddComponent(new TextDisplayBuilder(PlynlingCardUi.Heading(plynling, now, partnerName))))
             .AddComponent(new SeparatorBuilder())
             .AddComponent(new TextDisplayBuilder(PlynlingCardUi.Status(plynling, now)));
-        // Its personality under the status: the title and the trait emojis (PlynlingPersonality).
-        if (PlynlingPersonality.CardLine(traits ?? Array.Empty<TraitInfo>(), plynling.Gender) is { } personality)
-            container.AddComponent(new TextDisplayBuilder(personality));
+        // Its personality under the status: the title, the trait emojis, then its stress level and its
+        // modifiers' icons (PlynlingPersonality) — one component, as before.
+        var personality = PlynlingPersonality.CardLine(traits ?? Array.Empty<TraitInfo>(), plynling.Gender);
+        var stateLine = alive ? PlynlingPersonality.StateLine(plynling, now) : null;
+        var line = string.Join(" · ", new[] { personality, stateLine }.OfType<string>());
+        if (line.Length > 0)
+            container.AddComponent(new TextDisplayBuilder(line));
         if (!string.IsNullOrWhiteSpace(lastAction))
         {
             // After a meal the food's own sprite sits beside her line — the one place the

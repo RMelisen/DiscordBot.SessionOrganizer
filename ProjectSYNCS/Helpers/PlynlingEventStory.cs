@@ -46,7 +46,8 @@ public static class PlynlingEventStory
         return new EventStory(inst.Id, $"📜 {def.Title}", pages, self, target, accent);
     }
 
-    // The outcome and what it changed: growth, and a new bond if the band moved.
+    // The outcome and what it changed: growth, a new bond if the band moved, stress, modifiers, and a
+    // coping trait.
     public static string OutcomeText(PlynlingEventInstance inst, EventCast self, EventCast? target)
     {
         if (PlynlingEvents.ByKey(inst.EventKey) is not { } def
@@ -59,6 +60,14 @@ public static class PlynlingEventStory
             lines.Add($"-# {PlynlingStats.Emoji(g.Stat)} {PlynlingStats.Name(g.Stat)} +{g.Amount} pour **{self.Name}**");
         if (target is not null && inst.BondBefore is { } before && inst.BondAfter is { } after && before != after)
             lines.Add(PlynlingBonds.ChangeLine(after, self.Name, self.Gender, target.Name, target.Gender));
+        if (inst.StressDelta is { } ds && ds != 0)
+            lines.Add(ds > 0 ? $"-# 😣 Stress +{ds} pour **{self.Name}**" : $"-# 🌿 Stress −{-ds} pour **{self.Name}**");
+        // Only what actually applied: alone, a negative modifier was skipped (outside a break).
+        foreach (var m in (success ? option.OnSuccess : option.OnFailure).OfType<ApplyModifier>())
+            if (PlynlingModifiers.ByKey(m.Key) is { } mod && (!inst.DecidedAlone || PlynlingEventEngine.AppliesWhenAlone(m, def)))
+                lines.Add($"-# {mod.Emoji} **{mod.Name(self.Gender)}** pour {(int)mod.Duration.TotalDays} jour{(mod.Duration.TotalDays >= 2 ? "s" : "")}");
+        if (inst.GainedTraitKey is { } gained && PlynlingTraits.ByKey(gained) is { } trait)
+            lines.Add($"-# {trait.Emoji} Nouveau trait : **{trait.Name(self.Gender)}**");
         return string.Join("\n", lines);
     }
 }
