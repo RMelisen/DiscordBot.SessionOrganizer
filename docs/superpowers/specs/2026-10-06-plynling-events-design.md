@@ -403,11 +403,13 @@ two transitions.
 
 ## Modifiers
 
-- **Storage — `PlynlingModifier`:** `Id`, `PlynlingId` (cascade), `Key` (append-only), `StartedAt`,
-  `EndsAt`, `SourceInstanceId` (nullable).
+- **Storage — a column, `Plynling.Modifiers`** (`key:unixSeconds;…`), not a table: `PlynlingLife` is
+  pure and reads only the row, and `Settle` must see every modifier's end to play it in time order.
+  The journal keeps the history; the instance that applied one can be found from the event history.
 - **Catalog — `Helpers/PlynlingModifiers`:** M/F name, icon, description, duration, and effects: stat
-  deltas; multipliers on happiness, hygiene and hunger drain; meal factor; happy-gift chance; pet
-  cooldown; stress decay; event weights.
+  deltas; multipliers on happiness, hygiene and hunger drain; meal factor; happy-gift chance; stress
+  decay; event weights. (A pet-cooldown effect was dropped: the cooldown is an in-memory gate per
+  petter on a shared card.)
 - The **same key re-applied refreshes** its end; different keys combine, each combined multiplier
   clamped to 0.5–2.
 - **A negative modifier never touches hunger** — the death clock and the warning DM can only become
@@ -517,8 +519,8 @@ About 10 social events (the four big moments included) and 3–4 chains.
 
 - **Append-only:** trait, event, option and modifier keys; `PlynlingStat`; new `JournalKind`
   values (`TraitGained`, `EventStory`, `MentalBreak`) appended at the end; `PlynlingTrait.Kind`.
-- **Migrations are schema-only:** tables `PlynlingTrait`, `PlynlingEventInstance`,
-  `PlynlingModifier`; columns `Stress`, `LastPulseDay`, the five growth columns.
+- **Migrations are schema-only:** tables `PlynlingTrait`, `PlynlingEventInstance`; columns `Stress`,
+  `Modifiers`, `StressLossBonusPercent`, `LastPulseDay`, the five growth columns.
 - **Custom-ids:** `plyn:traits:`, `plyn:events:`, `plev:pick:`, `evs:prev|next|first|last:` — grep
   the project for collisions before adding.
 - Handlers live in `Interactions/Components/` with `ignoreGroupNames: true`, **never on

@@ -96,6 +96,19 @@ public class Plynling
     public int GrowthIntrigue { get; set; }
     public int GrowthCourage { get; set; }
 
+    // CK3's stress, 0..400 (Helpers/PlynlingStress). Only the owner's choices raise it; care and the
+    // mornings lower it. Every change rebases the needs, since its level changes how fast happiness drains.
+    public int Stress { get; set; }
+
+    // Active modifiers, "key:unixSeconds;…" (Helpers/PlynlingModifiers). On the row, not in a table:
+    // the drain maths are pure and read only this row. Settle drops each one at its end, rebasing.
+    public string? Modifiers { get; set; }
+
+    // Its traits' daily stress-decay multiplier as a bonus percent (0 = ×1, 50 = ×1.5, −50 = ×0.5),
+    // cached here so Settle can decay stress without loading the traits. Refreshed whenever its traits
+    // change (PlynlingService.EnsureTraitsAsync, a coping trait).
+    public int StressLossBonusPercent { get; set; }
+
     // The Paris day (AppTime.DayKey) of its last happy-gift draw, win or lose — one a day,
     // stored so a restart cannot grant a second. 0 = never.
     public int LastGiftDay { get; set; }

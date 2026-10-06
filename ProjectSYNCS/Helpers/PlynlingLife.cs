@@ -120,31 +120,39 @@ public static class PlynlingLife
         LastMorningDay = MorningDayAtOrBefore(now),
     };
 
+    // The current segment's drain multipliers: its stress level and its modifiers, both on the row and
+    // constant between two transitions (every change of either rebases first). 1 = the base rate.
+    public static double HungerRate(Plynling p) => PlynlingModifiers.Multiplier(p, Need.Hunger);
+    public static double HygieneRate(Plynling p) => PlynlingModifiers.Multiplier(p, Need.Hygiene);
+    public static double HappinessRate(Plynling p) =>
+        PlynlingStress.HappinessFactor(PlynlingStress.Level(p.Stress)) * PlynlingModifiers.Multiplier(p, Need.Happiness);
+
     public static double HungerAt(Plynling p, DateTimeOffset t) =>
-        IsFrozen(p) || IsDead(p) ? p.Hunger : Clamp(p.Hunger - (t - p.NeedsAsOf) / HungerLife);
+        IsFrozen(p) || IsDead(p) ? p.Hunger : Clamp(p.Hunger - (t - p.NeedsAsOf) / HungerLife * HungerRate(p));
 
     public static double HygieneAt(Plynling p, DateTimeOffset t) =>
-        IsFrozen(p) || IsDead(p) ? p.Hygiene : Clamp(p.Hygiene - (t - p.NeedsAsOf) / HygieneLife);
+        IsFrozen(p) || IsDead(p) ? p.Hygiene : Clamp(p.Hygiene - (t - p.NeedsAsOf) / HygieneLife * HygieneRate(p));
 
     public static bool IsDirty(Plynling p, DateTimeOffset t) => HygieneAt(p, t) < DirtyBelow;
 
-    // Happiness drains at its own rate while clean and DirtyHappinessFactor times faster once
-    // hygiene has fallen below DirtyBelow. Hygiene falls linearly, so it crosses at one exact
-    // instant and the drain is two straight pieces — exact, not approximated.
+    // Happiness drains at its segment rate while clean and DirtyHappinessFactor times faster once
+    // hygiene has fallen below DirtyBelow. Hygiene falls linearly within a segment, so it crosses at one
+    // exact instant and the drain is two straight pieces — exact, not approximated.
     public static double HappinessAt(Plynling p, DateTimeOffset t)
     {
         if (IsFrozen(p) || IsDead(p)) return p.Happiness;
         var elapsed = Math.Max(0, (t - p.NeedsAsOf).TotalSeconds);
-        var cleanFor = p.Hygiene < DirtyBelow ? 0 : (p.Hygiene - DirtyBelow) * HygieneLife.TotalSeconds;
+        var cleanFor = p.Hygiene < DirtyBelow ? 0 : (p.Hygiene - DirtyBelow) * HygieneLife.TotalSeconds / HygieneRate(p);
         var clean = Math.Min(elapsed, cleanFor);
         var dirty = elapsed - clean;
-        return Clamp(p.Happiness - (clean + dirty * DirtyHappinessFactor) / HappinessLife.TotalSeconds);
+        return Clamp(p.Happiness - (clean + dirty * DirtyHappinessFactor) * HappinessRate(p) / HappinessLife.TotalSeconds);
     }
 
-    // When it will starve if nothing changes. Null when it cannot: frozen, or already dead.
-    // The raw instant its hunger reaches zero — EffectiveDeathAt is when it actually dies.
+    // When it will starve at the current segment's rate. Null when it cannot: frozen, or already dead.
+    // The raw instant its hunger reaches zero — EffectiveDeathAt is when it actually dies. Settle plays
+    // any modifier end first, so a death it finds is always computed within one segment.
     public static DateTimeOffset? DeathAt(Plynling p) =>
-        IsFrozen(p) || IsDead(p) ? null : p.NeedsAsOf + p.Hunger * HungerLife;
+        IsFrozen(p) || IsDead(p) ? null : p.NeedsAsOf + p.Hunger * HungerLife / HungerRate(p);
 
     public static bool IsAsleep(DateTimeOffset t)
     {
@@ -232,9 +240,10 @@ public static class PlynlingLife
 
     /// <summary>
     /// Brings a Plynling up to <paramref name="now"/>: an expired self-freeze thaws at the
-    /// moment it was due; then every 05:00 morning since the last one played is played, oldest
-    /// first (sickness, PlayMorning); then it dies at the moment it starved. Returns whether
-    /// anything changed, so the caller knows to save.
+    /// moment it was due; then every modifier end and every 05:00 morning since the last one
+    /// played is played, oldest first (modifiers dropped; sickness and stress decay, PlayMorning);
+    /// then it dies at the moment it starved. Returns whether anything changed, so the caller
+    /// knows to save.
     /// </summary>
     /// <remarks>
     /// Every read goes through this first. That is what makes a death discovered by a
@@ -266,12 +275,22 @@ public static class PlynlingLife
             changed = true;
         }
 
+        // The timeline: modifier ends and mornings, in time order, each rebasing; a starvation due
+        // before the next of them wins and stops it.
         while (true)
         {
             var day = NextDay(p.LastMorningDay);
             var morning = MorningAt(day);
-            if (morning > now) break;
-            if (EffectiveDeathAt(p) is { } starve && starve <= morning) break;
+            var ends = PlynlingModifiers.NextEnd(p);
+            var next = ends is { } e && e < morning ? e : morning;
+            if (next > now) break;
+            if (EffectiveDeathAt(p) is { } starve && starve <= next) break;
+            if (ends is { } end && end < morning)
+            {
+                EndModifiersAt(p, end);
+                changed = true;
+                continue;
+            }
             p.LastMorningDay = day;
             changed = true;
             if (morning < frozenUntil || IsFrozen(p)) continue;         // the illness pauses with the rest
@@ -286,6 +305,16 @@ public static class PlynlingLife
         }
 
         return changed;
+    }
+
+    // Every modifier ending at `at` goes; the needs are rebased there first — unless they do not run
+    // at `at`: frozen (they do not move, and the thaw restarts the clock), or before the current
+    // segment began (an end hidden inside a self-freeze already thawed: rebasing there would run the
+    // clock backwards).
+    private static void EndModifiersAt(Plynling p, DateTimeOffset at)
+    {
+        if (!IsFrozen(p) && !IsDead(p) && at > p.NeedsAsOf) Rebase(p, at);
+        PlynlingModifiers.Write(p, PlynlingModifiers.Active(p).Where(m => m.Ends > at).Select(m => (m.Info.Key, m.Ends)));
     }
 
     // What the bot's own Plynling gets instead of Settle: it never starves, is never dirty enough to
@@ -312,6 +341,11 @@ public static class PlynlingLife
             Cure(p);
             changed = true;
         }
+        if (PlynlingModifiers.Active(p).Any(m => m.Ends <= now))
+        {
+            PlynlingModifiers.Write(p, PlynlingModifiers.Active(p).Where(m => m.Ends > now).Select(m => (m.Info.Key, m.Ends)));
+            changed = true;
+        }
         if (IsFrozen(p)) return changed;
 
         var hungry = HungerAt(p, now) < TendFloor;
@@ -331,6 +365,13 @@ public static class PlynlingLife
     // roll (from the third, unless dosed since the previous morning) and then the day's recovery.
     private static void PlayMorning(Plynling p, DateTimeOffset morning, int day, SicknessRoll roll)
     {
+        // The morning eases its stress — a transition, so the needs are rebased at 05:00 first.
+        if (p.Stress > 0)
+        {
+            Rebase(p, morning);
+            p.Stress = Math.Max(0, p.Stress - PlynlingStress.DecayAt(p));
+        }
+
         if (!IsSick(p))
         {
             if (roll(p.Id, day, RollPurpose.Onset) < PlynlingSickness.OnsetChance(HygieneAt(p, morning)))
@@ -406,13 +447,15 @@ public static class PlynlingLife
     public static double MealFactor(Plynling p, DateTimeOffset now)
     {
         var happiness = HappinessAt(p, now);
-        return happiness > HappyAbove ? 1 + HappyMealBonus
+        var mood = happiness > HappyAbove ? 1 + HappyMealBonus
             : happiness < SadBelow ? 1 - SadMealPenalty
             : 1.0;
+        return mood * PlynlingModifiers.MealFactor(p);
     }
 
-    // A draw's result: the cailloux it found, or 0.
-    public static long GiftDraw(Random rng) => rng.NextDouble() < GiftChance ? rng.Next(GiftMin, GiftMax + 1) : 0;
+    // A draw's result: the cailloux it found, or 0. Its modifiers may change the chance.
+    public static long GiftDraw(Random rng, double chanceFactor = 1) =>
+        rng.NextDouble() < Math.Min(1, GiftChance * chanceFactor) ? rng.Next(GiftMin, GiftMax + 1) : 0;
 
     // Whether looking at it now draws today's gift: alive, awake, not frozen, happy, and no draw
     // yet today. An unhappy look does not spend the day.
@@ -488,6 +531,54 @@ public static class PlynlingLife
     {
         Rebase(p, now);
         p.Happiness = Clamp(p.Happiness + PetAmount);
+    }
+
+    // ---- stress and modifiers: every change is a transition and rebases first --------------------
+
+    // Raises stress (capped at 400) and returns how many levels it climbed — each one a mental break
+    // for the caller to queue.
+    public static int AddStress(Plynling p, DateTimeOffset now, int amount)
+    {
+        if (amount <= 0) return 0;
+        RebaseIfLive(p, now);
+        var before = PlynlingStress.Level(p.Stress);
+        p.Stress = Math.Min(PlynlingStress.Max, p.Stress + amount);
+        return Math.Max(0, PlynlingStress.Level(p.Stress) - before);
+    }
+
+    public static void Relieve(Plynling p, DateTimeOffset now, int amount)
+    {
+        if (amount <= 0 || p.Stress == 0) return;
+        RebaseIfLive(p, now);
+        p.Stress = Math.Max(0, p.Stress - amount);
+    }
+
+    // /debug stress only.
+    public static void SetStress(Plynling p, DateTimeOffset now, int value)
+    {
+        RebaseIfLive(p, now);
+        p.Stress = Math.Clamp(value, 0, PlynlingStress.Max);
+    }
+
+    // Applies or refreshes (same key) a modifier from now.
+    public static void AddModifier(Plynling p, DateTimeOffset now, ModifierInfo modifier)
+    {
+        RebaseIfLive(p, now);
+        PlynlingModifiers.Write(p, PlynlingModifiers.Active(p)
+            .Where(m => m.Info.Key != modifier.Key && m.Ends > now)
+            .Select(m => (m.Info.Key, m.Ends))
+            .Append((modifier.Key, now + modifier.Duration)));
+    }
+
+    public static void RemoveModifier(Plynling p, DateTimeOffset now, string key)
+    {
+        RebaseIfLive(p, now);
+        PlynlingModifiers.Write(p, PlynlingModifiers.Active(p).Where(m => m.Info.Key != key).Select(m => (m.Info.Key, m.Ends)));
+    }
+
+    private static void RebaseIfLive(Plynling p, DateTimeOffset at)
+    {
+        if (!IsFrozen(p) && !IsDead(p)) Rebase(p, at);
     }
 
     public static bool ShouldWarn(Plynling p, DateTimeOffset now) =>

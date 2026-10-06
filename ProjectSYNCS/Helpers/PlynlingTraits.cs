@@ -61,8 +61,8 @@ public static class PlynlingTraits
         new(key, TraitKind.Personality, group, m, f, emoji, description, stats, axes, gain, loss);
 
     private static TraitInfo K(string key, string m, string f, string emoji, string description,
-        Dictionary<PlynlingStat, int> stats, Dictionary<AiAxis, int> axes) =>
-        new(key, TraitKind.Coping, "coping", m, f, emoji, description, stats, axes);
+        Dictionary<PlynlingStat, int> stats, Dictionary<AiAxis, int> axes, double loss = 1) =>
+        new(key, TraitKind.Coping, "coping", m, f, emoji, description, stats, axes, StressLoss: loss);
 
     // Order matters only for draws not yet made; append new traits at the end of their kind.
     public static readonly IReadOnlyList<TraitInfo> All = new[]
@@ -158,13 +158,13 @@ public static class PlynlingTraits
         K("comfort_eater", "Mange ses émotions", "Mange ses émotions", "🍪", "Quand ça ne va pas, la réponse est dans la boîte à biscuits.",
             S(inte: -1), A(gre: 5, ene: -5)),
         K("inappetetic", "Sans appétit", "Sans appétit", "🥄", "Tourne la cuillère dans le bol sans rien avaler. Ça passera.",
-            S(dip: -1, cou: -3), A(gre: -5, ene: -10)),
+            S(dip: -1, cou: -3), A(gre: -5, ene: -10), loss: 1.25),
         K("contrite", "Repentant", "Repentante", "🙏", "S'excuse pour des choses que personne n'avait remarquées.",
             S(rus: -2), A(com: 10, hon: 10, zea: 10, ven: -10)),
         K("improvident", "Imprévoyant", "Imprévoyante", "💸", "Donne ses cailloux au premier qui les regarde.",
             S(dip: 1), A(zea: 10, com: 10, gre: -10)),
         K("reclusive", "Reclus", "Recluse", "🐚", "A collé un mot sur sa porte : « Plus tard ».",
-            S(dip: -2, inte: -1), A(bol: -10, ene: -10, soc: -35)),
+            S(dip: -2, inte: -1), A(bol: -10, ene: -10, soc: -35), loss: 1.5),
         K("irritable", "Irritable", "Irritable", "🌩️", "Mieux vaut ne pas lui parler avant sa sieste. Ni après.",
             S(dip: -2, cou: 2), A(bol: 10, ene: 10, ven: 10, com: -10, rat: -20)),
         K("profligate", "Dépensier", "Dépensière", "🛍️", "Revient du marché les bras chargés, sans savoir de quoi.",
@@ -172,7 +172,7 @@ public static class PlynlingTraits
         K("confider", "Confident", "Confidente", "🫂", "Va mieux après avoir tout raconté à quelqu'un. Vraiment tout.",
             S(dip: 1), A(soc: 20, com: 10)),
         K("journaller", "Écrit son journal", "Écrit son journal", "📔", "Note tout dans un petit carnet, même la météo de ses humeurs.",
-            S(sag: 1), A(rat: 10)),
+            S(sag: 1), A(rat: 10), loss: 1.5),
         K("athletic", "Sportif", "Sportive", "🏃", "Fait trois fois le tour du village en courant quand quelque chose ne va pas.",
             S(cou: 1), A(ene: 25, bol: 5)),
     };

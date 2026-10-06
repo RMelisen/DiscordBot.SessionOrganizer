@@ -682,7 +682,7 @@ public partial class PlynlingService
     {
         if (viewerId != p.OwnerId || !PlynlingLife.CanDrawGift(p, now)) return GiftResult.None;
         p.LastGiftDay = AppTime.DayKey(now);
-        var found = PlynlingLife.GiftDraw(rng);
+        var found = PlynlingLife.GiftDraw(rng, PlynlingModifiers.GiftFactor(p));
         var result = GiftResult.None;
         if (found > 0 && rng.NextDouble() >= ItemCatalog.GiftCaillouxShare)
         {
