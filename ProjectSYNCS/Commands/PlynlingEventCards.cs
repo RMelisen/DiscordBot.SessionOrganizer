@@ -20,10 +20,12 @@ public static class PlynlingEventCards
     {
         string X(string t) => PlynlingEvents.Expand(t, self.Name, self.Gender, target?.Name ?? "quelqu'un", target?.Gender ?? PlynlingGender.Male);
         var options = def.Options.Where(o => PlynlingEventEngine.Visible(o, ctx)).ToList();
-        var lines = options.Select(o => $"**{o.Label}**{Details(o, ctx, self.Gender)}");
+        // Labels may name the other ({B}): expanded, plain (they sit in bold or on a button), and a
+        // button's cut to Discord's 80 characters — a long name could pass it.
+        var lines = options.Select(o => $"**{PlynlingEventStory.Label(o, X)}**{Details(o, ctx, self.Gender, target)}");
         var row = new ActionRowBuilder();
         foreach (var o in options)
-            row.WithButton(o.Label, PickId(inst.Id, o.Key), ButtonStyle.Primary, ButtonEmoji(o));
+            row.WithButton(Clip(PlynlingEventStory.Label(o, X), 80), PickId(inst.Id, o.Key), ButtonStyle.Primary, ButtonEmoji(o));
         return new ComponentBuilderV2()
             .AddComponent(new ContainerBuilder()
                 .WithAccentColor(new Color(PlynlingCatalog.Info(self.Species).Accent))
@@ -38,12 +40,15 @@ public static class PlynlingEventCards
             .Build();
     }
 
-    private static string Details(EventOption o, EventContext ctx, PlynlingGender g)
+    private static string Clip(string text, int max) => text.Length <= max ? text : text[..(max - 1)] + "…";
+
+    private static string Details(EventOption o, EventContext ctx, PlynlingGender g, EventCast? target)
     {
         var parts = new List<string>();
         if (o.Gate is TraitGate tg && PlynlingTraits.ByKey(tg.TraitKey) is { } trait) parts.Add($"{trait.Emoji} {trait.Name(g)}");
         if (o.Gate is StatGate sg) parts.Add($"{PlynlingStats.Emoji(sg.Stat)} {PlynlingStats.Name(sg.Stat)} {sg.AtLeast}+");
-        if (o.Challenge is { } c) parts.Add($"🎲 {PlynlingStats.Name(c.Stat)} : {PlynlingEventEngine.Chance(c, ctx)} %");
+        if (o.Challenge is { } c)
+            parts.Add($"🎲 {PlynlingStats.Name(c.Stat)} : {PlynlingEventEngine.Chance(c, ctx)} %{(c.VsTarget && target is not null ? $" contre **{target.Name}**" : "")}");
         // What choosing it against its nature costs, after its traits' multipliers, and which traits object.
         var cost = PlynlingStress.Scaled(PlynlingEventEngine.StressCost(o, ctx), ctx.Traits);
         if (cost > 0)

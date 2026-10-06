@@ -375,7 +375,10 @@ public partial class PlynlingService
         var self = await _db_context.Plynlings.FirstOrDefaultAsync(x => x.Id == inst.PlynlingId);
         if (self is null) return null;
         var target = inst.TargetPlynlingId is { } tid ? await _db_context.Plynlings.FirstOrDefaultAsync(x => x.Id == tid) : null;
-        return PlynlingEventStory.Build(inst, EventCast.Of(self, now), target is null ? null : EventCast.Of(target, now));
+        var parentTitle = inst.ParentInstanceId is { } pid && await GetEventInstanceAsync(pid) is { } parent
+            ? PlynlingEvents.ByKey(parent.EventKey)?.Title : null;
+        var answered = await _db_context.PlynlingEventInstances.AnyAsync(i => i.ParentInstanceId == inst.Id && i.ResolvedAt != null);
+        return PlynlingEventStory.Build(inst, EventCast.Of(self, now), target is null ? null : EventCast.Of(target, now), parentTitle, answered);
     }
 
     // /debug event only: any other living Plynling of the guild, for a forced social event.
