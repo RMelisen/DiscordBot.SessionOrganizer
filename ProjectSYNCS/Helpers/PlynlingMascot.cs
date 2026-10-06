@@ -17,6 +17,14 @@ public static class PlynlingMascot
     public const PlynlingGender Gender = PlynlingGender.Female;
     public const PlynlingPassion Passion = PlynlingPassion.Naps;
 
+    // Chosen, not drawn, so she is the same character on every guild and on dev: Adorable,
+    // Vaniteuse, Méfiante, Moqueuse. PlynlingService.EnsureTraitsAsync gives her rows these four.
+    public static readonly IReadOnlyList<string> TraitKeys = new[] { "charming", "arrogant", "paranoid", "sadistic" };
+
+    // Her die for every stat (PlynlingStats.Base), instead of a roll hashed from a row id that
+    // differs per guild.
+    public const int BaseStat = 4;
+
     private static ulong _ownerId;
 
     public static ulong OwnerId => Volatile.Read(ref _ownerId);

@@ -4,6 +4,9 @@ The virtual pet. `/plynling` (`PlynlingModule`), card buttons in `PlynlingCompon
 rules in `Helpers/PlynlingLife`. Money, items and cosmetics are in `economy.md`. **Before writing any
 Plynling line, read `docs/plynling-writing-style.md`.**
 
+Traits, stats, the personality title — and later events, stress and modifiers — are in
+`plynling-events.md`.
+
 **`/pl` is a shortcut for `/plynling`**, asked for by people on phones ("/pl v" finds "pl view",
 never "plynling view"). Discord has no aliases, so `PlynlingModule` is **abstract and group-less**
 and `Commands/PlynlingGroups.cs` registers it twice: `PlynlingLongModule` (`/plynling`) and
@@ -79,9 +82,9 @@ pauses the illness and would dodge the death rolls). `/admin plynling cure` send
 
 ### Life stages
 
-`PlynlingLife.Stage` derives them from `Age`, never stored: bébé (< 2 d), ado (< 14 d), adulte (< 180 d), ancien. A frozen
-Plynling doesn't grow up; a resurrected one resumes. **Cosmetic only** — nothing about needs or death
-reads them. Every species shows the label; only a **bébé** of a species in
+`PlynlingLife.Stage` derives them from `Age`, never stored: bébé (< 7 d), ado (< 14 d), adulte (< 180 d), ancien. A frozen
+Plynling doesn't grow up; a resurrected one resumes. Nothing about needs or death reads them; they
+gate trait draws (`plynling-events.md`). Every species shows the label; only a **bébé** of a species in
 `PlynlingArt.StagedSpecies` gets its own picture (ado/ancien art was dropped by the owner).
 
 ## The card and care
@@ -258,14 +261,14 @@ earned copy). `PlynlingBadge` rows have a unique index on (Plynling, key), which
 each reward paid once. **`AwardAsync` and `AddMomentAsync` never save**: an action, its moments, its
 badges and their cailloux land in the caller's one `SaveChanges`. Time-earned badges, the « est
 devenu… » moments (dated by `PlynlingLife.StageStart`) and the death moment are written by the sweep.
-A stage moment is written only within `GrewUpWindow` (2 days) of the stage starting: past that, a
-missing one was trimmed, and re-adding it as the oldest entry would evict the next-oldest — another
-stage moment the next sweep re-adds, every hour.
+A stage moment is written only within 2 days of the stage starting (`PlynlingTraits.JustGained`, the
+window trait moments use): past that, a missing one was trimmed, and re-adding it as the oldest
+entry would evict the next-oldest — another stage moment the next sweep re-adds, every hour.
 `JournalKind` is an int (**append-only**); moments store kind + detail and are worded at display
 (`PlynlingJournalUi`) so they follow gender. At most `JournalCap` (100), oldest dropped — counting
-moments added earlier in the same save, and the new moment itself: a backdated one older than
-the whole journal is dropped, not a newer memory. Both tables cascade: an abandoned Plynling takes its journal
-with it; a dead one keeps it.
+moments added earlier in the same save, and the new moment itself: a backdated one older than the
+whole journal is dropped, not a newer memory. Both tables cascade: an abandoned Plynling takes its
+journal with it; a dead one keeps it.
 
 ## Gender
 

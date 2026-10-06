@@ -17,6 +17,7 @@ matching file before changing that subsystem**; the rules there are as binding a
 | `/shame` | `docs/agents/shame.md` |
 | Sessions, polls, votes, giveaways, `ReminderService` | `docs/agents/scheduling.md` |
 | Plynlings (life, care, visits, relations, art) | `docs/agents/plynling.md` |
+| Plynling traits, stats, personality, events | `docs/agents/plynling-events.md` |
 | Writing any Plynling line | `docs/plynling-writing-style.md` |
 | Writing any line SYNCS says in her own voice | `docs/syncs-voice.md` |
 | Cailloux, inventory, items, icons, cosmetics, `/admin dashboard` | `docs/agents/economy.md` |

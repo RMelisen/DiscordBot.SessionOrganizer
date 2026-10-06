@@ -210,7 +210,7 @@ public static class PlynlingLife
     // moments both read, so the two cannot disagree about when it grew up.
     public static TimeSpan StageStart(PlynlingStage stage) => stage switch
     {
-        PlynlingStage.Teen => TimeSpan.FromDays(2),
+        PlynlingStage.Teen => TimeSpan.FromDays(7),
         PlynlingStage.Adult => TimeSpan.FromDays(14),
         PlynlingStage.Elder => TimeSpan.FromDays(180),
         _ => TimeSpan.Zero,
