@@ -30,4 +30,9 @@ public class PlynlingEventInstance
     public int? ChancePercent { get; set; }
     public PlynlingBond? BondBefore { get; set; }
     public PlynlingBond? BondAfter { get; set; }
+
+    // The net stress this event caused (cost + effects), and the coping trait a break gave — both
+    // depend on state at the time, so the story stores them rather than recomputing.
+    public int? StressDelta { get; set; }
+    public string? GainedTraitKey { get; set; }
 }

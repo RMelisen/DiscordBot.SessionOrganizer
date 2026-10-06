@@ -129,8 +129,8 @@ public partial class PlynlingService
         return told;
     }
 
-    // Saves, so the instance has its id (rolls are hashed from it).
-    public async Task<PlynlingEventInstance> CreateEventAsync(Plynling p, EventDef def, int? targetId, DateTimeOffset now)
+    // Adds an instance without saving — inside another unit of work (a break queued by an event).
+    public Task<PlynlingEventInstance> QueueEventAsync(Plynling p, EventDef def, int? targetId, DateTimeOffset now)
     {
         var inst = new PlynlingEventInstance
         {
@@ -138,6 +138,13 @@ public partial class PlynlingService
             CreatedAt = now, AvailableAt = now, ExpiresAt = now + PlynlingEventEngine.Lifetime,
         };
         _db_context.PlynlingEventInstances.Add(inst);
+        return Task.FromResult(inst);
+    }
+
+    // Saves, so the instance has its id (rolls are hashed from it).
+    public async Task<PlynlingEventInstance> CreateEventAsync(Plynling p, EventDef def, int? targetId, DateTimeOffset now)
+    {
+        var inst = await QueueEventAsync(p, def, targetId, now);
         await _db_context.SaveChangesAsync();
         return inst;
     }
@@ -150,13 +157,20 @@ public partial class PlynlingService
     }
 
     // The roll, the effects, the journal. Never saves. A target that is gone (abandoned, dead, frozen)
-    // simply skips the affinity: the event still happened to this one.
+    // simply skips the affinity: the event still happened to this one. Deciding alone skips what
+    // AppliesWhenAlone forbids; each stress level climbed queues its mental break.
     private async Task ApplyEventAsync(Plynling p, PlynlingEventInstance inst, EventDef def, EventOption option,
         EventContext ctx, bool decidedAlone, DateTimeOffset now)
     {
         // Loaded first: reading a Plynling settles it and may save, which must happen before this
         // unit of work starts changing anything.
         var target = inst.TargetPlynlingId is { } tid ? await GetByIdAsync(tid, now) : null;
+        var stressBefore = p.Stress;
+        var climbed = 0;
+        // The owner's own choice may cost stress, scaled by its traits. Alone, the option had no cost.
+        if (!decidedAlone)
+            climbed += PlynlingLife.AddStress(p, now, PlynlingStress.Scaled(PlynlingEventEngine.StressCost(option, ctx), ctx.Traits));
+
         var success = true;
         if (option.Challenge is { } challenge)
         {
@@ -166,6 +180,7 @@ public partial class PlynlingService
         }
         foreach (var effect in success ? option.OnSuccess : option.OnFailure)
         {
+            if (decidedAlone && !PlynlingEventEngine.AppliesWhenAlone(effect, def)) continue;
             switch (effect)
             {
                 case GrowStat g:
@@ -176,12 +191,38 @@ public partial class PlynlingService
                     inst.BondBefore ??= before;
                     inst.BondAfter = after;
                     break;
+                case StressChange s when s.Amount > 0:
+                    climbed += PlynlingLife.AddStress(p, now, PlynlingStress.Scaled(s.Amount, ctx.Traits));
+                    break;
+                case StressChange s:
+                    PlynlingLife.Relieve(p, now, -s.Amount);
+                    break;
+                case ApplyModifier m when PlynlingModifiers.ByKey(m.Key) is { } modifier:
+                    PlynlingLife.AddModifier(p, now, modifier);
+                    break;
+                case GainCoping:
+                    var held = ctx.Traits.Select(t => t.Key).ToList();
+                    if (PlynlingTraits.DrawCoping(p.Id, inst.Id, held) is { } coping)
+                    {
+                        _db_context.PlynlingTraits.Add(new PlynlingTrait { PlynlingId = p.Id, Key = coping.Key, Kind = TraitKind.Coping, AcquiredAt = now });
+                        await AddMomentAsync(p, JournalKind.TraitGained, coping.Key, now);
+                        inst.GainedTraitKey = coping.Key;
+                        await RefreshStressCacheAsync(p);
+                    }
+                    break;
             }
         }
+        inst.StressDelta = p.Stress - stressBefore;
         inst.ResolvedAt = now;
         inst.OptionKey = option.Key;
         inst.DecidedAlone = decidedAlone;
         await AddMomentAsync(p, JournalKind.EventStory, def.Key, now);
+
+        // Each level climbed brings on its mental break, whatever the pulse cap says.
+        var level = PlynlingStress.Level(p.Stress);
+        for (var l = level - climbed + 1; l <= level; l++)
+            if (PlynlingEventEngine.PickBreak(p.Id, inst.Id, l, PlynlingEvents.All) is { } breakDef)
+                await QueueEventAsync(p, breakDef, null, now);
     }
 
     // Who a social event may involve, by kind: living, unfrozen Plynlings of the same guild, not

@@ -180,8 +180,19 @@ public static class PlynlingTraits
     private static readonly Dictionary<string, TraitInfo> ByKeyMap = All.ToDictionary(t => t.Key);
     private static readonly TraitInfo[] Childhood = All.Where(t => t.Kind == TraitKind.Childhood).ToArray();
     private static readonly TraitInfo[] Personality = All.Where(t => t.Kind == TraitKind.Personality).ToArray();
+    private static readonly TraitInfo[] Coping = All.Where(t => t.Kind == TraitKind.Coping).ToArray();
+    public const int MaxCoping = 2;
+    private const int CopingSalt = 400;         // + the instance
 
     public static TraitInfo? ByKey(string key) => ByKeyMap.GetValueOrDefault(key);
+
+    // A mental break's coping trait: uniform among those it lacks — never from its other traits. Null at two.
+    public static TraitInfo? DrawCoping(int plynlingId, int salt, IReadOnlyCollection<string> held)
+    {
+        if (held.Count(k => ByKey(k)?.Kind == TraitKind.Coping) >= MaxCoping) return null;
+        var pool = Coping.Where(t => !held.Contains(t.Key)).ToArray();
+        return pool.Length == 0 ? null : Pick(pool, plynlingId, CopingSalt + salt);
+    }
 
     // How many personality traits each stage is owed (the childhood one is owed from bébé on).
     private static int PersonalityOwed(PlynlingStage stage) => stage switch
