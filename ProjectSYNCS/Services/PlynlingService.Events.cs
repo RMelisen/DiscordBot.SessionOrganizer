@@ -270,6 +270,34 @@ public partial class PlynlingService
         await _db_context.Plynlings.Where(x => x.GuildId == p.GuildId && x.Id != p.Id && x.DiedAt == null)
             .Select(x => (int?)x.Id).FirstOrDefaultAsync();
 
+    // /debug stress: set it, and queue the breaks for any level climbed, as play would. Null without a
+    // living Plynling.
+    public async Task<string?> DebugStressAsync(ulong guildId, ulong ownerId, int value, DateTimeOffset now)
+    {
+        var p = await GetCurrentAsync(guildId, ownerId, now);
+        if (p is null || p.DiedAt is not null) return null;
+        var before = PlynlingStress.Level(p.Stress);
+        PlynlingLife.SetStress(p, now, value);
+        for (var l = before + 1; l <= PlynlingStress.Level(p.Stress); l++)
+            if (PlynlingEventEngine.PickBreak(p.Id, (int)(now.ToUnixTimeSeconds() % 100000), l, PlynlingEvents.All) is { } def)
+                await QueueEventAsync(p, def, null, now);
+        await FlushMomentsAsync(p);
+        await _db_context.SaveChangesAsync();
+        return $"🔧 Stress {p.Stress} (niveau {PlynlingStress.Level(p.Stress)}).";
+    }
+
+    // /debug modifier: apply (or refresh) or remove one. False without a living Plynling.
+    public async Task<bool> DebugModifierAsync(ulong guildId, ulong ownerId, ModifierInfo mod, bool remove, DateTimeOffset now)
+    {
+        var p = await GetCurrentAsync(guildId, ownerId, now);
+        if (p is null || p.DiedAt is not null) return false;
+        if (remove) PlynlingLife.RemoveModifier(p, now, mod.Key);
+        else PlynlingLife.AddModifier(p, now, mod);
+        await FlushMomentsAsync(p);
+        await _db_context.SaveChangesAsync();
+        return true;
+    }
+
     // /debug event only: make a pending event due now, so the next sweep decides it alone.
     public async Task ExpireEventNowAsync(int instanceId, DateTimeOffset now)
     {

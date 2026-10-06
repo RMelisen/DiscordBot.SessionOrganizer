@@ -467,6 +467,49 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         await FollowupAsync($"🔧 `{def.Key}` créé (#{inst.Id}, {mode}).", ephemeral: true);
     }
 
+    // Stress builds over days of the owner's own choices: set it directly to test the levels, the
+    // card and a mental break (raising it past a level queues the break, as in play).
+    [SlashCommand("stress", "Régler le stress de ton propre Plynling (tests)")]
+    public async Task StressAsync([Summary("value", "0 à 400")] [MinValue(0)] [MaxValue(400)] int value)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+        if (Context.Guild is null)
+        {
+            await RespondAsync("Sur un serveur, pas en message privé.", ephemeral: true);
+            return;
+        }
+        await DeferAsync(ephemeral: true);
+        var result = await _plynlings.DebugStressAsync(Context.Guild.Id, Context.User.Id, value, DateTimeOffset.UtcNow);
+        await FollowupAsync(result ?? PlynlingText.NoPlynling, ephemeral: true, allowedMentions: AllowedMentions.None);
+    }
+
+    [SlashCommand("modifier", "Ajouter ou retirer un modificateur sur ton propre Plynling (tests)")]
+    public async Task ModifierAsync([Summary("key", "Clé du modificateur")] string key, [Summary("remove", "Le retirer")] bool remove = false)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+        if (Context.Guild is null)
+        {
+            await RespondAsync("Sur un serveur, pas en message privé.", ephemeral: true);
+            return;
+        }
+        if (PlynlingModifiers.ByKey(key) is not { } mod)
+        {
+            await RespondAsync("Clés : " + string.Join(", ", PlynlingModifiers.All.Select(m => $"`{m.Key}`")), ephemeral: true);
+            return;
+        }
+        await DeferAsync(ephemeral: true);
+        var ok = await _plynlings.DebugModifierAsync(Context.Guild.Id, Context.User.Id, mod, remove, DateTimeOffset.UtcNow);
+        await FollowupAsync(ok ? $"🔧 `{key}` {(remove ? "retiré" : "appliqué")}." : PlynlingText.NoPlynling, ephemeral: true);
+    }
+
     // Adding an emote to Helpers/Emotes.cs meant copying its name and snowflake by hand. This
     // writes the entries for every emote of this server that isn't declared yet, ready to paste.
     // Short results go out as a code block (one tap to copy); long ones as a file, since a

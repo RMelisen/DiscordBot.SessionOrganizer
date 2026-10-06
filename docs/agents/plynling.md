@@ -60,7 +60,8 @@ harness pins 2026-03-29 and 2026-10-25).
 charge — **except while starving**: the sulk must never be what kills it (and at night petting is
 refused, so nothing could end it). **The happy gift** is one draw per Paris day (`LastGiftDay`,
 stored so a restart can't grant a second), made on the owner's first look while happy (`/plynling
-view`, or a pet or meal from the card); a look while not happy leaves the draw unspent.
+view`, or a pet or meal from the card); a look while not happy leaves the draw unspent. Stress levels
+and modifiers change drain rates, the meal factor and the gift chance — see `plynling-events.md`.
 
 ### Hygiene
 

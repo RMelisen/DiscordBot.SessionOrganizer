@@ -518,6 +518,12 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
                 "Ses choix font grandir ses stats, et ce qu'il vit ado oriente son trait d'adulte.\n" +
                 "Sans réponse en 24 h, il décide **tout seul**, selon son caractère — sans jamais y perdre quoi que ce soit.\n" +
                 "Chaque histoire est racontée dans le salon du jeu, page par page.")
+            .AddField("Stress et humeurs",
+                "Forcer un choix contre son caractère le **stresse** (le coût est affiché). Caresses, jeux, visites et bains " +
+                "l'apaisent, et chaque matin aussi. À chaque palier (100, 200, 300), son bonheur file plus vite, puis ses stats " +
+                "baissent, et il **craque** : un événement spécial, qui peut lui laisser une manie pour faire face.\n" +
+                "Certains choix lui donnent une **humeur** pour quelques jours (💡, 🌧️…) : stats, appétit, bonheur. " +
+                "Le stress ne vient **que** de tes choix : un Plynling qui décide seul n'en prend jamais.")
             .WithFooter($"Project S.Y.N.C.S. v{AppInfo.Version}")
             .Build();
 
