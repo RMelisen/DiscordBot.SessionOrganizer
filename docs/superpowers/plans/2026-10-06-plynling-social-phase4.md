@@ -653,7 +653,7 @@ In `TickEventsAsync`, replace the `PickPulse` call with one that checks each soc
                         infos[id] = (await GetEventContextAsync(p, now, t)).Other!;
                 IReadOnlyList<int> CandidatesFor(EventDef d) =>
                     targets[d.Target].Where(id => infos.TryGetValue(id, out var info) && (d.TargetCondition?.Invoke(info) ?? true)).ToList();
-                if (PlynlingEventEngine.PickPulse(p.Id, day, PlynlingEvents.All, ctx, recent, targetable, d => CandidatesFor(d).Count > 0) is { } def)
+                if (PlynlingEventEngine.PickPulse(p.Id, day, defs, ctx, recent, targetable, d => CandidatesFor(d).Count > 0) is { } def)
                 {
                     var targetId = def.Target == TargetKind.None ? null : PlynlingEventEngine.PickTarget(p.Id, day, CandidatesFor(def));
 ```

@@ -654,6 +654,28 @@ public partial class PlynlingService
 
     public Task SaveAsync() => _db_context.SaveChangesAsync();
 
+    // After a failed save, forgets every change it held. The sweep shares one context across its
+    // batch: left tracked, a failed unit of work (an event an owner decided a moment before the
+    // sweep — the concurrency token refuses the second resolution) would be retried, and refused
+    // again, by every later Plynling's save. The next pass redoes whatever was dropped.
+    public void DiscardChanges()
+    {
+        foreach (var entry in _db_context.ChangeTracker.Entries().ToList())
+        {
+            switch (entry.State)
+            {
+                case EntityState.Added:
+                    entry.State = EntityState.Detached;
+                    break;
+                case EntityState.Modified:
+                case EntityState.Deleted:
+                    entry.CurrentValues.SetValues(entry.OriginalValues);
+                    entry.State = EntityState.Unchanged;
+                    break;
+            }
+        }
+    }
+
     // The happy gift, when its owner looks: the day's single draw, spent win or lose and saved
     // with what it found — cailloux, or on half the wins an item instead.
     public async Task<GiftResult> TryGiftAsync(Plynling p, ulong viewerId, DateTimeOffset now, Random rng)
@@ -718,11 +740,14 @@ public partial class PlynlingService
     {
         if (p.DiedAt is not null) return;
         var held = await _db_context.PlynlingTraits.Where(t => t.PlynlingId == p.Id).Select(t => t.Key).ToListAsync();
+        var stage = PlynlingLife.Stage(p, now);
+        var slot = held.Count(k => PlynlingTraits.ByKey(k)?.Kind == TraitKind.Personality);
+        // The ado history is read only when the adulte trait is actually due, not on every sweep.
+        var adultWeight = stage >= PlynlingStage.Adult && slot < 3 ? await AdultWeightAsync(p, now) : null;
         var add = PlynlingMascot.Is(p)
             ? PlynlingMascot.TraitKeys.Where(k => !held.Contains(k)).Select(k => PlynlingTraits.ByKey(k)!).ToList()
-            : PlynlingTraits.Draw(p.Id, PlynlingLife.Stage(p, now), held, await AdultWeightAsync(p, now));
+            : PlynlingTraits.Draw(p.Id, stage, held, adultWeight);
         var age = PlynlingLife.Age(p, now);
-        var slot = held.Count(k => PlynlingTraits.ByKey(k)?.Kind == TraitKind.Personality);
         foreach (var trait in add)
         {
             _db_context.PlynlingTraits.Add(new PlynlingTrait { PlynlingId = p.Id, Key = trait.Key, Kind = trait.Kind, AcquiredAt = now });

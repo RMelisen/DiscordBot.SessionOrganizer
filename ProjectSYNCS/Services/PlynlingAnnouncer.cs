@@ -55,8 +55,6 @@ public sealed class PlynlingAnnouncer
             PlynlingArt.SpriteOf(plynling, now, PlynlingMood.Sad), "abandon");
     }
 
-    // Called only once PlynlingLife.ShouldWarn has seen death coming; the DM says so without
-    // naming when.
     // An event's story. In the game channel's guild it goes there; elsewhere (the dev guild) it goes to
     // `fallback`, the channel the choice was made in, when there is one — a sweep resolution there is
     // logged and dropped, like every other announcement.
@@ -81,6 +79,8 @@ public sealed class PlynlingAnnouncer
         }
     }
 
+    // Called only once PlynlingLife.ShouldWarn has seen death coming; the DM says so without
+    // naming when.
     public Task WarnOwnerAsync(Plynling plynling)
     {
         var line = string.Format(_picker.Pick(BotResponses.PlynlingWarningLines.For(plynling.Gender)),
