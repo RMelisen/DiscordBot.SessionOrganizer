@@ -103,6 +103,7 @@ public static class PlynlingPersonality
         if (l.Passion != 0) parts.Add($"passion {Signed(l.Passion)}");
         if (l.Traits != 0) parts.Add($"traits {Signed(l.Traits)}");
         if (l.Growth != 0) parts.Add($"progrès {Signed(l.Growth)}");
+        if (l.State != 0) parts.Add($"état {Signed(l.State)}");
         return $"{PlynlingStats.Emoji(l.Stat)} **{PlynlingStats.Name(l.Stat)} {l.Total}** · {string.Join(" · ", parts)}";
     }
 }

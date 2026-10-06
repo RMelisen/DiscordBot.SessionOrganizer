@@ -7,11 +7,13 @@ namespace ProjectSYNCS.Helpers;
 public enum PlynlingStat { Diplomacy, Stewardship, Learning, Intrigue, Courage }
 
 // One stat and where it comes from, for the « Personnalité » breakdown.
-public sealed record StatLine(PlynlingStat Stat, int Base, int Passion, int Traits, int Growth, int Total);
+// State is what passes: the stress penalty and the modifiers' deltas.
+public sealed record StatLine(PlynlingStat Stat, int Base, int Passion, int Traits, int Growth, int State, int Total);
 
 /// <summary>
 /// A stat is computed, never stored: a die rolled from the id (1d6, hashed — nothing stored), the
-/// passion's +2, every trait's modifier, and the growth events earned. Floor 0, no upper limit.
+/// passion's +2, every trait's modifier, the growth events earned, and its state (stress, modifiers).
+/// Floor 0, no upper limit.
 /// The mascot's die is fixed at <see cref="PlynlingMascot.BaseStat"/>, so she is the same character
 /// on every guild and on dev.
 /// </summary>
@@ -93,7 +95,8 @@ public static class PlynlingStats
             var passion = stat == passionStat ? PassionBonus : 0;
             var fromTraits = traits.Sum(t => t.Stats.GetValueOrDefault(stat));
             var growth = Growth(p, stat);
-            return new StatLine(stat, die, passion, fromTraits, growth, Math.Max(0, die + passion + fromTraits + growth));
+            var state = PlynlingStress.StatPenalty(PlynlingStress.Level(p.Stress)) + PlynlingModifiers.StatDelta(p, stat);
+            return new StatLine(stat, die, passion, fromTraits, growth, state, Math.Max(0, die + passion + fromTraits + growth + state));
         }).ToList();
     }
 }

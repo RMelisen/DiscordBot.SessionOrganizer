@@ -165,6 +165,7 @@ public partial class PlynlingService
         }
         await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActMeal, 1, now);
         PlynlingLife.Feed(plynling, info, now);
+        PlynlingLife.Relieve(plynling, now, PlynlingStress.Relief(CareAct.Meal, await GetTraitsAsync(plynling)));
         plynling.Meals++;
         if (plynling.Meals == 1) await AddMomentAsync(plynling, JournalKind.FirstMeal, null, now);
         if (plynling.OwnerId != actorId && ++plynling.FedByOthers == 1)
@@ -185,6 +186,7 @@ public partial class PlynlingService
         if (PlynlingLife.IsAsleep(now)) return (CareOutcome.Asleep, plynling, NoBadges);   // feeding still works
 
         PlynlingLife.Pet(plynling, now);
+        PlynlingLife.Relieve(plynling, now, PlynlingStress.Relief(CareAct.Pet, await GetTraitsAsync(plynling)));
         plynling.Pets++;
         await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActPet, 1, now);
         var badges = await AwardAsync(plynling, now);
@@ -207,6 +209,7 @@ public partial class PlynlingService
         if (refusal is { } r) return (r, plynling);
 
         PlynlingLife.Bath(plynling!, now);
+        PlynlingLife.Relieve(plynling!, now, PlynlingStress.Relief(CareAct.Bath, await GetTraitsAsync(plynling!)));
         await EconomyLog.AddAsync(_db_context, plynling!.GuildId, EconomyLog.ActBath, 1, now);
         await _db_context.SaveChangesAsync();
         return (CareOutcome.Done, plynling);
@@ -319,6 +322,7 @@ public partial class PlynlingService
             return (null, 0, NoBadges, null);
 
         PlynlingLife.Play(plynling, now, won);
+        PlynlingLife.Relieve(plynling, now, PlynlingStress.Relief(CareAct.Game, await GetTraitsAsync(plynling)));
         if (won && plynling.PlaysWon == 1) await AddMomentAsync(plynling, JournalKind.FirstWin, null, now);
         var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, plynling.GuildId, ownerId);
         if (won && pebbles > 0)
@@ -381,6 +385,9 @@ public partial class PlynlingService
         var happiness = PlynlingBonds.VisitHappiness(after);
         PlynlingLife.Visit(visitor, now, happiness);
         PlynlingLife.Visit(host, now, happiness);
+        var close = after is PlynlingBond.Friends or PlynlingBond.BestFriends or PlynlingBond.Lovers;
+        PlynlingLife.Relieve(visitor, now, PlynlingStress.Relief(CareAct.Visit, await GetTraitsAsync(visitor), close));
+        PlynlingLife.Relieve(host, now, PlynlingStress.Relief(CareAct.Visit, await GetTraitsAsync(host), close));
         if (confession == Confession.Refused)
         {
             foreach (var (p, other) in new[] { (visitor, host), (host, visitor) })
@@ -756,12 +763,23 @@ public partial class PlynlingService
                 await AddMomentAsync(p, JournalKind.TraitGained, trait.Key, now);
             if (trait.Kind == TraitKind.Personality) slot++;
         }
+        await RefreshStressCacheAsync(p);   // every sweep: also fills the cache for rows that predate it
     }
 
     // Its traits in the order acquired. A key no longer in the catalog is skipped, never thrown on.
     public async Task<IReadOnlyList<TraitInfo>> GetTraitsAsync(Plynling p) =>
         (await _db_context.PlynlingTraits.Where(t => t.PlynlingId == p.Id).OrderBy(t => t.Id).Select(t => t.Key).ToListAsync())
         .Select(PlynlingTraits.ByKey).OfType<TraitInfo>().ToList();
+
+    // Its traits' stress-decay multiplier, cached on the row for Settle (which cannot load traits).
+    // Counts traits added earlier in this unit of work. Never saves.
+    public async Task RefreshStressCacheAsync(Plynling p)
+    {
+        var keys = (await _db_context.PlynlingTraits.Where(t => t.PlynlingId == p.Id).Select(t => t.Key).ToListAsync())
+            .Concat(_db_context.PlynlingTraits.Local.Where(t => t.PlynlingId == p.Id).Select(t => t.Key))
+            .Distinct();
+        p.StressLossBonusPercent = PlynlingStress.LossBonusPercent(keys.Select(PlynlingTraits.ByKey).OfType<TraitInfo>());
+    }
 
     // What only time earns, for the hourly sweep: the « est devenu… » moments — dated when the
     // stage was reached, so a Plynling that already existed when the journal shipped gets its
