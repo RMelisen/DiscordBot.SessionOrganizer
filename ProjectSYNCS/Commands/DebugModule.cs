@@ -41,10 +41,18 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         [ChoiceDisplay("Guéri")] Healthy,
     }
 
+    public enum EventMode
+    {
+        [ChoiceDisplay("En attente")] Pending,
+        [ChoiceDisplay("Expiré (décidé au prochain passage)")] Expired,
+        [ChoiceDisplay("Décidé tout de suite, raconté ici")] Now,
+    }
+
     private readonly ILogger<DebugModule> _logger;
     private readonly AvailabilityService _availability;
     private readonly ResponsePicker _picker;
     private readonly PlynlingService _plynlings;
+    private readonly PlynlingAnnouncer _announcer;
 
     // Discord caps a message at 2000 characters; leave room for the herald line
     // and the blockquote markers.
@@ -55,9 +63,11 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     private static readonly Regex _messageLinkRegex =
         new(@"channels/(\d+)/(\d+)/(\d+)", RegexOptions.Compiled);
 
-    public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings)
+    public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings,
+        PlynlingAnnouncer announcer)
     {
         _plynlings = plynlings;
+        _announcer = announcer;
         _availability = availability;
         _logger = logger;
         _picker = picker;
@@ -411,6 +421,50 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
                 : $"🔧 **{PlynlingCardUi.SafeName(p.Name)}** : hygiène {Math.Round(p.Hygiene * 100)} %, " +
                   $"{(PlynlingLife.IsSick(p) ? "malade" : "en bonne santé")}.",
             ephemeral: true, allowedMentions: AllowedMentions.None);
+    }
+
+    // Events come once a day: the owner forces one on his own living Plynling — waiting, already
+    // expired (the next sweep decides it alone), or decided at once with its story posted here.
+    // Ignores the pulse, the cap and the stage; a social event takes any other living Plynling.
+    [SlashCommand("event", "Forcer un événement sur ton propre Plynling (tests)")]
+    public async Task EventAsync(
+        [Summary("key", "Clé de l'événement")] string key,
+        [Summary("mode", "Quand le décider")] EventMode mode = EventMode.Pending)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+        if (Context.Guild is null)
+        {
+            await RespondAsync("Sur un serveur, pas en message privé.", ephemeral: true);
+            return;
+        }
+        if (PlynlingEvents.ByKey(key) is not { } def)
+        {
+            await RespondAsync("Clés : " + string.Join(", ", PlynlingEvents.All.Select(e => $"`{e.Key}`")), ephemeral: true);
+            return;
+        }
+        await DeferAsync(ephemeral: true);
+        var now = DateTimeOffset.UtcNow;
+        var p = await _plynlings.GetCurrentAsync(Context.Guild.Id, Context.User.Id, now);
+        if (p is null)
+        {
+            await FollowupAsync(PlynlingText.NoPlynling, ephemeral: true);
+            return;
+        }
+        var targetId = def.Target == TargetKind.None ? null : await _plynlings.AnyOtherLivingIdAsync(p);
+        var inst = await _plynlings.CreateEventAsync(p, def, targetId, now);
+        if (mode == EventMode.Expired) await _plynlings.ExpireEventNowAsync(inst.Id, now);
+        if (mode == EventMode.Now)
+        {
+            await _plynlings.ResolveAloneAsync(p, inst, now);
+            await _plynlings.SaveAsync();
+            if (await _plynlings.GetEventStoryAsync(inst.Id, now) is { } story)
+                await _announcer.PostEventStoryAsync(Context.Guild.Id, PlynlingEventCards.BuildStory(story, 0), Context.Channel);
+        }
+        await FollowupAsync($"🔧 `{def.Key}` créé (#{inst.Id}, {mode}).", ephemeral: true);
     }
 
     // Adding an emote to Helpers/Emotes.cs meant copying its name and snowflake by hand. This

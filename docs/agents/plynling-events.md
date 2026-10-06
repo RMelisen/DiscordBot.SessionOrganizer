@@ -49,3 +49,27 @@ shows each trait and each stat's breakdown.
 The one SplitMix64 for every roll that must come out the same whoever computes it.
 `PlynlingSickness.Roll` delegates with `purpose + 1` as the third input, bit-identical to before —
 never change that mapping, every stored morning depends on it.
+
+## Events — `Helpers/PlynlingEvents`, `PlynlingEventEngine`, `PlynlingService.Events.cs`
+
+- **Catalog:** C# data. Event and option keys are stored — **never renamed**, append only. Every event
+  needs an **ungated option with no stress cost** (deciding alone); no « il »/« elle » in event text
+  (one text serves every gender pair). The harness checks both.
+- **Every rule is pure and hashed** (`StableRoll`): pulse time (08:00–20:00 Paris), which event,
+  the target, the challenge roll (from the instance id), the in-character choice. Never a `Random`.
+- **Pacing:** one pulse a day, skipped when 3 pulse events wait; 24 h to choose; frozen = nothing
+  happens; a death cancels what waits; the mascot decides at once.
+- **Deciding alone** never picks a hidden option or one with a stress cost for a held trait — the
+  code enforces the "no penalty for not playing" rule, not just the content.
+- **One context:** event logic lives in the `PlynlingService` partial, so growth, the relation change
+  (`ShiftAffinityAsync`, shared with visits through `ApplyBondChangeAsync`), badges and the journal
+  land in one save. Events never make a couple.
+- **Never applied twice:** `ResolvedAt` is a concurrency token. When the sweep and a click resolve the
+  same event, the second save throws and rolls back; `PickEventAsync` answers « déjà décidé ».
+- **Stories are rebuilt from the row** on every page turn: the row stores the chance shown, the roll,
+  and the bond before/after. No in-memory story store. A removed event still renders a plain story.
+- **Where stories go:** the game channel for its guild; a pick made elsewhere (the dev guild) posts in
+  the channel it was made in; a sweep resolution elsewhere is dropped.
+- **Testing:** `/debug event key: mode:` (owner only) forces one — pending, expired, or decided now.
+  The scratch harness also runs the service against an in-memory SQLite database.
+- `/plynling help` is two pages (`plyn:help:0|1`); measure each after editing.

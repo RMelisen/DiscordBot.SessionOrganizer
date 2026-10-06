@@ -57,6 +57,30 @@ public sealed class PlynlingAnnouncer
 
     // Called only once PlynlingLife.ShouldWarn has seen death coming; the DM says so without
     // naming when.
+    // An event's story. In the game channel's guild it goes there; elsewhere (the dev guild) it goes to
+    // `fallback`, the channel the choice was made in, when there is one — a sweep resolution there is
+    // logged and dropped, like every other announcement.
+    public async Task PostEventStoryAsync(ulong guildId, MessageComponent story, IMessageChannel? fallback = null)
+    {
+        try
+        {
+            IMessageChannel? channel = _client.GetChannel(GameChannelId) is IMessageChannel game
+                                       && game is IGuildChannel home && home.GuildId == guildId
+                ? game
+                : fallback;
+            if (channel is null)
+            {
+                _logger.LogInformation("Event story in guild {GuildId} not posted: no game channel there.", guildId);
+                return;
+            }
+            await channel.SendMessageAsync(components: story, flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to post an event story.");
+        }
+    }
+
     public Task WarnOwnerAsync(Plynling plynling)
     {
         var line = string.Format(_picker.Pick(BotResponses.PlynlingWarningLines.For(plynling.Gender)),

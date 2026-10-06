@@ -48,7 +48,7 @@ public sealed record FeedResult(CareOutcome Outcome, Plynling? Plynling, long Pr
 // charging through PebbleService would be a second context and a second SaveChanges — a
 // crash between the two would take the cailloux without feeding it. One context, one
 // save, the same shape as ShameService.TryVoteAsync.
-public class PlynlingService
+public partial class PlynlingService
 {
     private readonly AppDbContext _db_context;
 
@@ -390,20 +390,7 @@ public class PlynlingService
             }
         }
 
-        var evt = BadgeEvent.None;
-        if (after != before && BondMoment(before, after) is { } kind)
-        {
-            await AddMomentAsync(visitor, kind, host.Name, now);
-            await AddMomentAsync(host, kind, visitor.Name, now);
-            evt = after switch
-            {
-                PlynlingBond.Friends => BadgeEvent.BecameFriends,
-                PlynlingBond.BestFriends => BadgeEvent.BecameBestFriends,
-                PlynlingBond.Lovers => BadgeEvent.BecameLovers,
-                _ => BadgeEvent.None,
-            };
-            if (Closeness(after) > Closeness(before)) evt = BadgeEvent.None;     // drifting apart earns nothing
-        }
+        var evt = await ApplyBondChangeAsync(visitor, host, before, after, now);
         // Her own Plynling finds nothing: an item would land in the bot's inventory, where nobody can use it.
         async Task<ItemFind?> FindFor(Plynling p) => good && !PlynlingMascot.Is(p) && findRng.NextDouble() < ItemCatalog.VisitFindChance
             ? await InventoryService.GrantAsync(_db_context, p.GuildId, p.OwnerId, ItemCatalog.DrawCollectible(findRng, now), now)
@@ -416,6 +403,48 @@ public class PlynlingService
         await _db_context.SaveChangesAsync();
         return new VisitOutcome(visitor, host, visitorBadges, hostBadges, good, before, after, confession, happiness,
             visitorFind, hostFind);
+    }
+
+    // A change of bond between two Plynlings: both journal it, and getting closer may earn a badge.
+    // Shared by visits and events so the two can never word or reward it differently. Never saves.
+    private async Task<BadgeEvent> ApplyBondChangeAsync(Plynling a, Plynling b, PlynlingBond before, PlynlingBond after, DateTimeOffset now)
+    {
+        if (after == before || BondMoment(before, after) is not { } kind) return BadgeEvent.None;
+        await AddMomentAsync(a, kind, b.Name, now);
+        await AddMomentAsync(b, kind, a.Name, now);
+        var evt = after switch
+        {
+            PlynlingBond.Friends => BadgeEvent.BecameFriends,
+            PlynlingBond.BestFriends => BadgeEvent.BecameBestFriends,
+            PlynlingBond.Lovers => BadgeEvent.BecameLovers,
+            _ => BadgeEvent.None,
+        };
+        return Closeness(after) > Closeness(before) ? BadgeEvent.None : evt;     // drifting apart earns nothing
+    }
+
+    // An event moving two Plynlings' affinity, one-sided: the same relation row, clamp and bands as a
+    // visit, but no scene roll and no confession — an event never makes a couple. Never saves.
+    public async Task<(PlynlingBond Before, PlynlingBond After)> ShiftAffinityAsync(Plynling a, Plynling b, int delta, DateTimeOffset now)
+    {
+        var (lo, hi) = a.Id < b.Id ? (a.Id, b.Id) : (b.Id, a.Id);
+        var relation = await _db_context.PlynlingRelations.FirstOrDefaultAsync(r => r.PlynlingAId == lo && r.PlynlingBId == hi);
+        if (relation is null)
+        {
+            relation = new PlynlingRelation { PlynlingAId = lo, PlynlingBId = hi, Bond = PlynlingBond.Acquaintances, Since = now };
+            _db_context.PlynlingRelations.Add(relation);
+        }
+        var before = relation.Bond;
+        relation.Affinity = Math.Clamp(relation.Affinity + delta, -100, 100);
+        var after = PlynlingBonds.BondFor(relation.Affinity, before);
+        if (after != before)
+        {
+            relation.Bond = after;
+            relation.Since = now;
+        }
+        var evt = await ApplyBondChangeAsync(a, b, before, after, now);
+        await AwardAsync(a, now, evt);
+        await AwardAsync(b, now, evt);
+        return (before, after);
     }
 
     private static int Closeness(PlynlingBond bond) => PlynlingBonds.Closeness(bond);
@@ -691,7 +720,7 @@ public class PlynlingService
         var held = await _db_context.PlynlingTraits.Where(t => t.PlynlingId == p.Id).Select(t => t.Key).ToListAsync();
         var add = PlynlingMascot.Is(p)
             ? PlynlingMascot.TraitKeys.Where(k => !held.Contains(k)).Select(k => PlynlingTraits.ByKey(k)!).ToList()
-            : PlynlingTraits.Draw(p.Id, PlynlingLife.Stage(p, now), held);
+            : PlynlingTraits.Draw(p.Id, PlynlingLife.Stage(p, now), held, await AdultWeightAsync(p, now));
         var age = PlynlingLife.Age(p, now);
         var slot = held.Count(k => PlynlingTraits.ByKey(k)?.Kind == TraitKind.Personality);
         foreach (var trait in add)

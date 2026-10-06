@@ -195,10 +195,11 @@ public static class PlynlingTraits
     /// The traits a Plynling at <paramref name="stage"/> is owed and lacks, in the order to add them.
     /// Pure: the same id, stage and held traits always give the same answer. Slot n of the
     /// personality traits is always rolled with the same salt, so a Plynling drawn as an ado and
-    /// again as an adulte keeps its first two and only adds the third. Uniform for now; the event
-    /// engine weights the adulte slot by the ado years.
+    /// again as an adulte keeps its first two and only adds the third. The adulte slot is uniform
+    /// unless <paramref name="adultWeight"/> is given (the ado years, from the event history).
     /// </summary>
-    public static IReadOnlyList<TraitInfo> Draw(int plynlingId, PlynlingStage stage, IReadOnlyCollection<string> held)
+    public static IReadOnlyList<TraitInfo> Draw(int plynlingId, PlynlingStage stage, IReadOnlyCollection<string> held,
+        Func<TraitInfo, double>? adultWeight = null)
     {
         var owned = held.Select(ByKey).OfType<TraitInfo>().ToList();
         var drawn = new List<TraitInfo>();
@@ -209,7 +210,11 @@ public static class PlynlingTraits
         for (var slot = have; slot < PersonalityOwed(stage); slot++)
         {
             var taken = owned.Concat(drawn).Where(t => t.Kind == TraitKind.Personality).Select(t => t.Group).ToHashSet();
-            drawn.Add(Pick(Personality.Where(t => !taken.Contains(t.Group)).ToArray(), plynlingId, PersonalitySalt + slot));
+            var pool = Personality.Where(t => !taken.Contains(t.Group)).ToArray();
+            // The adulte trait (slot 2) leans toward what its ado years were like, when that is known.
+            drawn.Add(slot == 2 && adultWeight is not null
+                ? PickWeighted(pool, adultWeight, plynlingId, PersonalitySalt + slot)
+                : Pick(pool, plynlingId, PersonalitySalt + slot));
         }
         return drawn;
     }
@@ -231,4 +236,16 @@ public static class PlynlingTraits
 
     private static TraitInfo Pick(TraitInfo[] pool, int plynlingId, int salt) =>
         pool[Math.Min(pool.Length - 1, (int)(StableRoll.Unit(plynlingId, salt, 0) * pool.Length))];
+
+    private static TraitInfo PickWeighted(TraitInfo[] pool, Func<TraitInfo, double> weight, int plynlingId, int salt)
+    {
+        var weights = pool.Select(t => Math.Max(0, weight(t))).ToArray();
+        var target = StableRoll.Unit(plynlingId, salt, 0) * weights.Sum();
+        for (var i = 0; i < pool.Length; i++)
+        {
+            if (target < weights[i]) return pool[i];
+            target -= weights[i];
+        }
+        return pool[^1];
+    }
 }

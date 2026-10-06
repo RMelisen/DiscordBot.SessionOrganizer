@@ -486,14 +486,42 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
     }
 
     [SlashCommand("help", "Comment fonctionnent les Plynlings")]
-    public Task HelpAsync() => RespondAsync(embed: BuildHelpEmbed(), ephemeral: true);
+    public Task HelpAsync() => RespondAsync(embed: BuildHelpEmbed(0), components: BuildHelpButtons(0), ephemeral: true);
 
     /// <summary>
     /// The Plynling guide. Static and Context-free for the same reason as
     /// <see cref="HelpModule.BuildEmbed"/>: embed caps throw at *send* time, so the only way
     /// to know it fits is to build and measure it without a gateway.
     /// </summary>
-    public static Embed BuildHelpEmbed() =>
+    // /plynling help is two pages: the pet, and its personality and events. One embed could not hold
+    // both under Discord's 6000-character cap. Each page is measured by the harness.
+    public static Embed BuildHelpEmbed(int page = 0) => page == 1 ? BuildPersonalityHelp() : BuildCareHelp();
+
+    public static MessageComponent BuildHelpButtons(int page) =>
+        new ComponentBuilder()
+            .WithButton("Le Plynling", "plyn:help:0", ButtonStyle.Secondary, new Emoji("🍄"), disabled: page == 0)
+            .WithButton("Personnalité & événements", "plyn:help:1", ButtonStyle.Secondary, new Emoji("✨"), disabled: page == 1)
+            .Build();
+
+    private static Embed BuildPersonalityHelp() =>
+        new EmbedBuilder()
+            .WithTitle("🍄 Plynlings — personnalité et événements")
+            .WithColor(new Color(0xCE323A))
+            .AddField("Personnalité",
+                "En grandissant, il gagne **4 traits** : un trait d'enfance bébé, deux de plus ado, un dernier adulte. " +
+                "Ils façonnent ses **stats** (Diplomatie, Intendance, Sagesse, Ruse, Courage) et un petit titre. " +
+                "**📜 Personnalité** (bouton de sa carte) détaille tout, pour n'importe quel Plynling.")
+            .AddField("Événements",
+                "À peu près une fois par jour, il lui arrive quelque chose : **✨ Événement** apparaît sur sa carte " +
+                "(3 en attente au plus). Son propriétaire choisit pour lui, en privé.\n" +
+                "Certains choix demandent un trait ou une stat ; d'autres sont des **défis**, avec leurs chances affichées. " +
+                "Ses choix font grandir ses stats, et ce qu'il vit ado oriente son trait d'adulte.\n" +
+                "Sans réponse en 24 h, il décide **tout seul**, selon son caractère — sans jamais y perdre quoi que ce soit.\n" +
+                "Chaque histoire est racontée dans le salon du jeu, page par page.")
+            .WithFooter($"Project S.Y.N.C.S. v{AppInfo.Version}")
+            .Build();
+
+    private static Embed BuildCareHelp() =>
         new EmbedBuilder()
             .WithTitle("🍄 Plynlings — mode d'emploi")
             .WithDescription("Un Plynling est un petit champignon qui vit avec toi. Nourris-le, caresse-le, " +
@@ -507,8 +535,7 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
                 "**`/plynling journal [user]`** — Son journal : ses badges et ses souvenirs. Il gagne des **badges** " +
                 "en vieillissant, en jouant, en rendant visite et en étant choyé — chacun rapporte quelques cailloux.\n" +
                 "Il grandit : **bébé** sa première semaine, **ado** jusqu'à 14 jours, **adulte**, " +
-                "puis **ancien** après 6 mois. Le temps passé gelé ne compte pas.\n" +
-                "**Personnalité** (bouton de sa carte) — Ses 4 traits, gagnés en grandissant, et ses stats.")
+                "puis **ancien** après 6 mois. Le temps passé gelé ne compte pas.")
             .AddField("S'en occuper",
                 "La **faim** se vide en **2 jours** : à 0 %, il meurt. Le **bonheur** se vide en **36 heures** " +
                 "(il est juste triste).\n" +
@@ -586,7 +613,7 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
         var partner = await _plynlings.GetPartnerAsync(plynling);
         var pantry = await _plynlings.GetPantryAsync(plynling);
         await RespondAsync(components: BuildCard(plynling, now, line, partnerName: partner?.Name, pantry: pantry,
-                traits: await _plynlings.GetTraitsAsync(plynling)),
+                traits: await _plynlings.GetTraitsAsync(plynling), pendingEvents: await _plynlings.CountPendingEventsAsync(plynling, now)),
             flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
     }
 
@@ -655,7 +682,7 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
     /// </remarks>
     public static MessageComponent BuildCard(
         Plynling plynling, DateTimeOffset now, string? lastAction, string? lastActionImage = null, string? partnerName = null,
-        IReadOnlyDictionary<PlynlingFood, int>? pantry = null, IReadOnlyList<TraitInfo>? traits = null)
+        IReadOnlyDictionary<PlynlingFood, int>? pantry = null, IReadOnlyList<TraitInfo>? traits = null, int pendingEvents = 0)
     {
         var info = PlynlingCatalog.Info(plynling.Species);
         var alive = plynling.DiedAt is null;
@@ -720,10 +747,16 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
             builder.AddComponent(new ActionRowBuilder().WithSelectMenu(menu));
         }
         // Its own row, the card's last: the care row is hidden at night and holds three buttons when
-        // sick. Shown frozen too — a personality does not thaw. Anyone may look.
+        // sick. Shown frozen too. « Personnalité » for anyone; « Événement » only while one waits —
+        // offered to everyone like « Laver », refused in the handler for anyone but the owner.
         if (alive)
-            builder.AddComponent(new ActionRowBuilder()
-                .WithButton("Personnalité", $"plyn:traits:{plynling.Id}", ButtonStyle.Secondary, new Emoji("📜")));
+        {
+            var personalityRow = new ActionRowBuilder()
+                .WithButton("Personnalité", $"plyn:traits:{plynling.Id}", ButtonStyle.Secondary, new Emoji("📜"));
+            if (pendingEvents > 0)
+                personalityRow.WithButton($"Événement ({pendingEvents})", $"plyn:events:{plynling.Id}", ButtonStyle.Success, new Emoji("✨"));
+            builder.AddComponent(personalityRow);
+        }
         return builder.Build();
     }
 }

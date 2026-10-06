@@ -71,6 +71,19 @@ public static class PlynlingStats
         _ => throw new ArgumentOutOfRangeException(nameof(stat), stat, null),
     };
 
+    public static void AddGrowth(Plynling p, PlynlingStat stat, int amount)
+    {
+        switch (stat)
+        {
+            case PlynlingStat.Diplomacy: p.GrowthDiplomacy += amount; break;
+            case PlynlingStat.Stewardship: p.GrowthStewardship += amount; break;
+            case PlynlingStat.Learning: p.GrowthLearning += amount; break;
+            case PlynlingStat.Intrigue: p.GrowthIntrigue += amount; break;
+            case PlynlingStat.Courage: p.GrowthCourage += amount; break;
+            default: throw new ArgumentOutOfRangeException(nameof(stat), stat, null);
+        }
+    }
+
     public static IReadOnlyList<StatLine> Compute(Plynling p, IReadOnlyList<TraitInfo> traits)
     {
         var passionStat = PassionStat(PassionFor(p));

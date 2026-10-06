@@ -100,6 +100,10 @@ public class Plynling
     // stored so a restart cannot grant a second. 0 = never.
     public int LastGiftDay { get; set; }
 
+    // The Paris day (AppTime.DayKey) of its last event pulse, drawn or skipped — one a day, stored so a
+    // restart cannot pulse twice. 0 = never.
+    public int LastPulseDay { get; set; }
+
     // The last 05:00 Paris morning already played (yyyymmdd, like AppTime.DayKey):
     // PlynlingLife.Settle plays every later one, in order, exactly once.
     public int LastMorningDay { get; set; }

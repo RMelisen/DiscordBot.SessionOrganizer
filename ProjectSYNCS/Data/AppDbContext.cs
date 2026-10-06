@@ -28,6 +28,7 @@ public class AppDbContext : DbContext
     public DbSet<PebbleWallet> PebbleWallets => Set<PebbleWallet>();
     public DbSet<PlynlingBadge> PlynlingBadges => Set<PlynlingBadge>();
     public DbSet<PlynlingTrait> PlynlingTraits => Set<PlynlingTrait>();
+    public DbSet<PlynlingEventInstance> PlynlingEventInstances => Set<PlynlingEventInstance>();
     public DbSet<PlynlingJournalEntry> PlynlingJournalEntries => Set<PlynlingJournalEntry>();
     public DbSet<PlynlingRelation> PlynlingRelations => Set<PlynlingRelation>();
     public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
@@ -218,6 +219,19 @@ public class AppDbContext : DbContext
         {
             e.HasOne<Plynling>().WithMany().HasForeignKey(x => x.PlynlingId).OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => new { x.PlynlingId, x.Key }).IsUnique();
+        });
+
+        // Events: queue and history. Cascade with the Plynling it happened to; the target is only a
+        // reference, nulled if that Plynling is abandoned.
+        modelBuilder.Entity<PlynlingEventInstance>(e =>
+        {
+            e.HasOne<Plynling>().WithMany().HasForeignKey(x => x.PlynlingId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Plynling>().WithMany().HasForeignKey(x => x.TargetPlynlingId).OnDelete(DeleteBehavior.SetNull);
+            e.HasIndex(x => new { x.PlynlingId, x.ResolvedAt });
+            // The sweep deciding an expired event and the owner clicking it can race: the UPDATE only
+            // lands while ResolvedAt is still null, so the second save throws and its whole unit of
+            // work (growth, relation, journal) rolls back — an event is never applied twice.
+            e.Property(x => x.ResolvedAt).IsConcurrencyToken();
         });
 
         modelBuilder.Entity<PlynlingJournalEntry>(e =>

@@ -16,6 +16,8 @@ public enum JournalKind
     FellSick, Recovered,
     // detail: the trait key (Helpers/PlynlingTraits)
     TraitGained,
+    // detail: the event key (Helpers/PlynlingEvents)
+    EventStory,
 }
 
 // The wording of each moment — pure string work, gendered at display (the entry stores the
@@ -50,6 +52,7 @@ public static class PlynlingJournalUi
         JournalKind.TraitGained => PlynlingTraits.ByKey(detail ?? "") is { } trait
             ? $"{trait.Emoji} Un nouveau trait : **{trait.Name(g)}**."
             : "🎭 Un nouveau trait.",
+        JournalKind.EventStory => PlynlingEvents.ByKey(detail ?? "") is { } evt ? $"📜 {evt.Title}." : "📜 Une petite aventure.",
         JournalKind.BecameFriends => $"🤝 Une nouvelle amitié avec **{Other(detail)}**.",
         JournalKind.BecameBestFriends => $"💛 Meilleurs amis avec **{Other(detail)}**.",
         JournalKind.BecameLovers => $"💞 {g.Agree("Amoureux", "Amoureuse")} de **{Other(detail)}**.",

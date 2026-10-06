@@ -1,0 +1,33 @@
+using ProjectSYNCS.Helpers;
+
+namespace ProjectSYNCS.Models;
+
+// One event that happened (or is waiting) for a Plynling — the queue and the history in one table.
+// Pending = neither resolved nor cancelled, and AvailableAt reached. EventKey and OptionKey are
+// PlynlingEvents keys: stored, never renamed. Everything a story needs that the catalog cannot give
+// back later (the chance shown, the roll, the bond before and after) is stored here, so a story is
+// rebuilt from this row alone, after any restart.
+public class PlynlingEventInstance
+{
+    public int Id { get; set; }
+    public int PlynlingId { get; set; }
+    public string EventKey { get; set; } = string.Empty;
+
+    // The other Plynling of a social event; set null if that one is abandoned (deleted).
+    public int? TargetPlynlingId { get; set; }
+    // The event this one follows from (follow-ups and responses, phase 4).
+    public int? ParentInstanceId { get; set; }
+
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset AvailableAt { get; set; }
+    public DateTimeOffset ExpiresAt { get; set; }
+
+    public DateTimeOffset? ResolvedAt { get; set; }
+    public DateTimeOffset? CancelledAt { get; set; }
+    public string? OptionKey { get; set; }
+    public bool DecidedAlone { get; set; }
+    public bool? ChallengeSucceeded { get; set; }
+    public int? ChancePercent { get; set; }
+    public PlynlingBond? BondBefore { get; set; }
+    public PlynlingBond? BondAfter { get; set; }
+}

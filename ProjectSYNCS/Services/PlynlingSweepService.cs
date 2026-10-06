@@ -3,6 +3,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ProjectSYNCS.Commands;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Models;
 
@@ -76,6 +77,7 @@ public sealed class PlynlingSweepService : BackgroundService
                 PlynlingLife.Settle(plynling, now);
                 await plynlings.FlushMomentsAsync(plynling);        // fell sick / recovered, if a morning did it
                 await plynlings.ProgressAsync(plynling, now);      // time's badges and stage moments
+                var told = await plynlings.TickEventsAsync(plynling, now);   // cancels, decides alone, pulses — saves
 
                 if (plynling.DiedAt is not null && !plynling.DeathAnnounced)
                 {
@@ -104,6 +106,11 @@ public sealed class PlynlingSweepService : BackgroundService
                 {
                     await plynlings.SaveAsync();
                 }
+
+                // Told after every save above; a failed post is logged by the announcer, never retried.
+                foreach (var instanceId in told)
+                    if (await plynlings.GetEventStoryAsync(instanceId, now) is { } story)
+                        await _announcer.PostEventStoryAsync(plynling.GuildId, PlynlingEventCards.BuildStory(story, 0));
             }
             catch (Exception ex)
             {

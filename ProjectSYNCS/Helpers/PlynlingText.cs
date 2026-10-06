@@ -133,6 +133,11 @@ public static class PlynlingText
     public const string VisitorGone = "Le visiteur n'est plus là...";
     public const string VisitFrozen = "L'un des deux Plynlings est gelé : pas de visite pour l'instant.";
     public const string StoryGone = "Cette histoire n'est plus disponible.";
+    public const string NoEventWaiting = "Rien ne l'attend pour l'instant. Reviens plus tard.";
+    public const string EventAlreadyDecided = "Trop tard : c'est déjà décidé.";
+    public const string EventOptionGone = "Ce choix n'est plus possible.";
+    public static string EventNotYours(PlynlingGender g) =>
+        $"Ce n'est pas ton Plynling : c'est à son propriétaire de choisir pour {g.Agree("lui", "elle")}.";
     public const string InviteExpired = "Personne n'a ouvert : l'invitation a expiré.";
 
     // The knock once accepted: the story itself is posted as a new message under it.
