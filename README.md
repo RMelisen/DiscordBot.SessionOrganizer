@@ -286,6 +286,10 @@ looks after her.
   privately from « ✨ Événement » on the card; after 24 h it decides on its own, in character, at no
   cost. Choices grow its stats, and its *ado* years lean its adult trait. Every outcome is told as a
   paged story in the game channel.
+- **Stress and moods:** forcing a choice against its nature stresses it; care and mornings soothe it.
+  Past 100, 200 and 300 its happiness drains faster, its stats dip, and it has a little breakdown — an
+  event that may leave it a coping habit. Some choices give a mood for a few days (inspired, grumpy,
+  well rested…). Stress only ever comes from its owner's choices.
 - **Holidays:** `/plynling freeze` stops everything for up to 14 days, as long as it isn't
   already hungry; then a week before it can be frozen again.
 - **Death** is announced to the whole server, after a private warning about 3 hours

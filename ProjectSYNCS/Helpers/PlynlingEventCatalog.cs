@@ -16,11 +16,18 @@ public sealed record StatGate(PlynlingStat Stat, int AtLeast) : EventGate;
 
 public sealed record EventChallenge(PlynlingStat Stat, int Difficulty);
 
-// What an option does. This phase: stats and affinity; stress, modifiers, follow-ups and responses
-// are appended by later phases. Target-side effects are affinity only (anti-griefing).
+// What an option does: stats, affinity, stress, modifiers, coping; follow-ups and responses are
+// appended by a later phase. Target-side effects are affinity only (anti-griefing).
 public abstract record EventEffect;
 public sealed record GrowStat(PlynlingStat Stat, int Amount = 1) : EventEffect;
 public sealed record AffinityShift(int Delta) : EventEffect;
+// Positive = gain (owner choices and breaks only), negative = relief (always).
+public sealed record StressChange(int Amount) : EventEffect;
+// Applies or refreshes a modifier. A negative one never applies when the Plynling decided alone,
+// outside a mental break.
+public sealed record ApplyModifier(string Key) : EventEffect;
+// Mental breaks only: one coping trait it lacks, drawn uniformly; nothing at two.
+public sealed record GainCoping : EventEffect;
 
 /// <summary>
 /// One choice. <see cref="Key"/> is stored and never renamed. <see cref="Outcome"/> is told on
@@ -37,12 +44,15 @@ public sealed record EventOption(
 /// <summary>
 /// One event. <see cref="Key"/> is stored and never renamed. Text is templated: {A}/{B} names,
 /// {a:m|f}/{b:m|f} agreements (PlynlingVisitStory.Expand). Weight 100 is ordinary;
-/// <see cref="WeightByTrait"/> multiplies it for a held trait.
+/// <see cref="WeightByTrait"/> and <see cref="WeightByModifier"/> multiply it for a held trait or an
+/// active modifier. <see cref="BreakLevel"/> > 0 marks the mental break for that stress level
+/// (triggered only).
 /// </summary>
 public sealed record EventDef(
     string Key, EventType Type, IReadOnlyList<PlynlingStage> Stages, string Title, string Scene,
     IReadOnlyList<EventOption> Options, int Weight = 100, TargetKind Target = TargetKind.None,
-    Func<EventContext, bool>? Condition = null, IReadOnlyDictionary<string, double>? WeightByTrait = null);
+    Func<EventContext, bool>? Condition = null, IReadOnlyDictionary<string, double>? WeightByTrait = null,
+    int BreakLevel = 0, IReadOnlyDictionary<string, double>? WeightByModifier = null);
 
 // What the rules read about the Plynling an event happens to.
 public sealed record EventContext(Plynling Self, IReadOnlyList<TraitInfo> Traits, IReadOnlyList<StatLine> Stats, PlynlingStage Stage)

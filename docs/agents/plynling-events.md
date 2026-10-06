@@ -83,3 +83,24 @@ never change that mapping, every stored morning depends on it.
 - **Testing:** `/debug event key: mode:` (owner only) forces one — pending, expired, or decided now.
   The scratch harness also runs the service against an in-memory SQLite database.
 - `/plynling help` is two pages (`plyn:help:0|1`); measure each after editing.
+
+## Stress and modifiers — `Helpers/PlynlingStress`, `Helpers/PlynlingModifiers`
+
+- **On the row** (`Stress`, `Modifiers` as `key:unix;…`, `StressLossBonusPercent`): `PlynlingLife` is
+  pure, and its drain helpers read the current segment's rates from the row. **Every change of stress
+  or modifiers goes through `PlynlingLife` and rebases first** — never set the fields directly.
+- **`Settle` is a timeline:** modifier ends, mornings (sickness, stress decay) and starvation, in time
+  order, rebasing at each. A death is always computed within one segment. A modifier end that falls
+  before `NeedsAsOf` (inside a self-freeze that has since thawed) drops the modifier without rebasing:
+  rebasing backwards would run the clock in reverse and refill the needs.
+- **Hunger can only slow** (clamp 0.5–1): the death clock and the warning only get more lenient.
+- **The "not playing is free" rule is code:** `PlynlingEventEngine.AppliesWhenAlone` drops stress gains,
+  negative modifiers and coping traits when it decided alone — except in a mental break, which only
+  stress (the owner's own choices) can trigger. The harness simulates 60 days of deciding alone.
+- `StressLossBonusPercent` caches the traits' decay multiplier for `Settle`; `EnsureTraitsAsync`
+  refreshes it every sweep and a new coping trait refreshes it at once.
+- Modifier keys are stored — never renamed, append only. `Negative` must mean exactly "makes
+  something worse" (harness).
+- « État » in « Personnalité » is cut before the 1024-character field cap (every modifier at once
+  would pass it).
+- Tests: `/debug stress value:`, `/debug modifier key: [remove:]`.

@@ -13,6 +13,7 @@ public static class PlynlingEvents
     private static readonly PlynlingStage[] Baby = { PlynlingStage.Baby };
     private static readonly PlynlingStage[] Teen = { PlynlingStage.Teen };
     private static readonly PlynlingStage[] Grown = { PlynlingStage.Adult, PlynlingStage.Elder };
+    private static readonly PlynlingStage[] AnyStage = Enum.GetValues<PlynlingStage>();
 
     private static readonly IReadOnlyList<EventEffect> Nothing = Array.Empty<EventEffect>();
     private static IReadOnlyList<EventEffect> E(params EventEffect[] effects) => effects;
@@ -74,7 +75,7 @@ public static class PlynlingEvents
                 Try("sneak", "Passer quand même", new EventChallenge(PlynlingStat.Intrigue, 7),
                     "{A} passe, revient, et personne n'a rien vu. Sauf le héron, qui fait semblant de rien.",
                     "Le hérisson attendait derrière le premier buisson. {A} écope d'un sermon de vingt minutes, avec des schémas.",
-                    E(new GrowStat(PlynlingStat.Intrigue)), Nothing,
+                    E(new GrowStat(PlynlingStat.Intrigue)), E(new StressChange(20)),
                     Ai((AiAxis.Boldness, 1), (AiAxis.Honor, -2)), Stress(("honest", 30), ("just", 20))),
                 Try("ask", "Demander au hérisson pourquoi", new EventChallenge(PlynlingStat.Diplomacy, 6),
                     "Une famille de grenouilles y fait la sieste. {A} promet de chuchoter et obtient un laissez-passer.",
@@ -101,7 +102,7 @@ public static class PlynlingEvents
                     Ai((AiAxis.Honor, -2), (AiAxis.Greed, 1)), Stress(("honest", 40), ("just", 20))),
                 Plain("polish", "Aider les autres à cirer les leurs",
                     "{A} passe l'après-midi à faire briller les pommes de pin des autres. Personne ne gagne grâce à ça, mais tout le monde brille.",
-                    E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Compassion, 2), (AiAxis.Sociability, 1))),
+                    E(new GrowStat(PlynlingStat.Stewardship), new ApplyModifier("light_heart")), Ai((AiAxis.Compassion, 2), (AiAxis.Sociability, 1))),
             }),
 
         // ---- adulte et ancien
@@ -112,7 +113,7 @@ public static class PlynlingEvents
                 Try("open", "L'ouvrir", new EventChallenge(PlynlingStat.Courage, 7),
                     "Dedans : une clochette, et un mot. « Pour sonner quand tu as besoin d'aide. » Pas de signature. {A} la garde près de son lit.",
                     "Dedans : une clochette qui sonne toute seule, toute la nuit. {A} la rapporte au marché au matin, les yeux cernés.",
-                    E(new GrowStat(PlynlingStat.Courage)), Nothing,
+                    E(new GrowStat(PlynlingStat.Courage), new ApplyModifier("lucky")), Nothing,
                     Ai((AiAxis.Boldness, 2)), Stress(("craven", 20), ("paranoid", 20))),
                 Try("owner", "Chercher son propriétaire dans tout le village", new EventChallenge(PlynlingStat.Diplomacy, 8),
                     "Après quatorze portes, la tortue du café reconnaît son dessin, et offre un chocolat chaud pour la peine.",
@@ -142,6 +143,55 @@ public static class PlynlingEvents
                     Ai((AiAxis.Sociability, 1), (AiAxis.Compassion, 1)), gate: new StatGate(PlynlingStat.Diplomacy, 8)),
             },
             Target: TargetKind.Known),
+
+        // ---- mental breaks (one per stress level; triggered when it climbs past one)
+        new EventDef("break_cloud", EventType.Triggered, AnyStage, "Le petit nuage noir",
+            "Depuis ce matin, un petit nuage noir suit {A} partout, et pleut un peu dessus quand personne ne regarde.",
+            new[]
+            {
+                Plain("shout", "Crier un bon coup dans la forêt",
+                    "{A} crie si fort que trois corbeaux changent d'adresse. Le nuage, impressionné, s'en va. Reste une petite humeur de chien.",
+                    E(new StressChange(-80), new ApplyModifier("grumpy")), Ai((AiAxis.Boldness, 2), (AiAxis.Vengefulness, 1))),
+                Plain("tell", "Aller tout raconter à quelqu'un",
+                    "{A} parle longtemps. Le nuage écoute aussi, puis s'éloigne. Quelque chose a changé dans sa façon de faire face.",
+                    E(new StressChange(-70), new GainCoping()), Ai((AiAxis.Sociability, 2))),
+                Plain("curl", "Se rouler en boule sous une feuille",
+                    "{A} reste sous la feuille jusqu'au soir. Le nuage finit par s'ennuyer.",
+                    E(new StressChange(-60)), Ai((AiAxis.Energy, -1), (AiAxis.Sociability, -1))),
+            },
+            BreakLevel: 1),
+
+        new EventDef("break_drop", EventType.Triggered, AnyStage, "La goutte d'eau",
+            "Une miette de travers, et c'est la goutte d'eau. {A} sent quelque chose monter, monter…",
+            new[]
+            {
+                Plain("smash", "Tout casser (un peu)",
+                    "Un pot de confiture n'a pas survécu. {A} se sent mieux, et un peu {a:honteux|honteuse}.",
+                    E(new StressChange(-90), new ApplyModifier("grumpy"), new GainCoping()), Ai((AiAxis.Vengefulness, 2), (AiAxis.Rationality, -2))),
+                Plain("walk", "Partir marcher très loin",
+                    "{A} revient à la nuit tombée, {a:couvert|couverte} de boue jusqu'aux oreilles, l'air plus léger.",
+                    E(new StressChange(-80), new ApplyModifier("muddy_paws")), Ai((AiAxis.Energy, 2))),
+                Plain("cry", "Pleurer un bon coup",
+                    "{A} pleure contre la carapace de la tortue du café, qui a toujours un mouchoir propre.",
+                    E(new StressChange(-70)), Ai((AiAxis.Compassion, 1), (AiAxis.Sociability, 1))),
+            },
+            BreakLevel: 2),
+
+        new EventDef("break_toomuch", EventType.Triggered, AnyStage, "Trop, c'est trop",
+            "{A} n'a plus envie de rien. Même le miel a un goût de rien.",
+            new[]
+            {
+                Plain("hide", "Se terrer chez soi",
+                    "{A} ferme les volets deux jours entiers. À la réouverture, quelque chose a changé.",
+                    E(new StressChange(-100), new GainCoping()), Ai((AiAxis.Sociability, -2))),
+                Plain("help", "Accepter l'aide du hérisson",
+                    "Le hérisson apporte une couverture, une soupe, et ses horaires de train préférés, à lire pour s'endormir.",
+                    E(new StressChange(-90), new ApplyModifier("soothed")), Ai((AiAxis.Sociability, 1), (AiAxis.Rationality, 1))),
+                Plain("drift", "Se laisser porter",
+                    "{A} se laisse flotter quelques jours. Les choses glissent, puis reviennent doucement à leur place.",
+                    E(new StressChange(-100), new ApplyModifier("distracted")), Ai((AiAxis.Energy, -2))),
+            },
+            BreakLevel: 3),
     };
 
     private static readonly Dictionary<string, EventDef> ByKeyMap = All.ToDictionary(e => e.Key);

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProjectSYNCS.Data;
 
@@ -10,9 +11,11 @@ using ProjectSYNCS.Data;
 namespace ProjectSYNCS.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261006173705_AddPlynlingStress")]
+    partial class AddPlynlingStress
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
@@ -696,9 +699,6 @@ namespace ProjectSYNCS.Migrations
                     b.Property<DateTimeOffset>("ExpiresAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("GainedTraitKey")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("OptionKey")
                         .HasColumnType("TEXT");
 
@@ -711,9 +711,6 @@ namespace ProjectSYNCS.Migrations
                     b.Property<DateTimeOffset?>("ResolvedAt")
                         .IsConcurrencyToken()
                         .HasColumnType("TEXT");
-
-                    b.Property<int?>("StressDelta")
-                        .HasColumnType("INTEGER");
 
                     b.Property<int?>("TargetPlynlingId")
                         .HasColumnType("INTEGER");

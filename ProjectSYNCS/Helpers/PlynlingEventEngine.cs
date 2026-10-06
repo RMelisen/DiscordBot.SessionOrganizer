@@ -11,7 +11,7 @@ public static class PlynlingEventEngine
     public static readonly TimeSpan Lifetime = TimeSpan.FromHours(24);
     public const int RecentWindow = 14;            // events not drawn again within the last 14 resolved, while another can be
 
-    private const int PulseTimeSalt = 300, PulsePickSalt = 301, TargetSalt = 302, ChallengeSalt = 310, AloneSalt = 311;
+    private const int PulseTimeSalt = 300, PulsePickSalt = 301, TargetSalt = 302, ChallengeSalt = 310, AloneSalt = 311, BreakSalt = 330;
     private const int PulseFromMinute = 8 * 60, PulseSpanMinutes = 12 * 60;
 
     // Today's pulse: a minute between 08:00 and 20:00 Paris, hashed from the Plynling and the day.
@@ -31,6 +31,12 @@ public static class PlynlingEventEngine
         if (def.WeightByTrait is { } byTrait)
             foreach (var (trait, factor) in byTrait)
                 if (ctx.Has(trait)) w *= factor;
+        if (def.WeightByModifier is { } byModifier)
+        {
+            var active = PlynlingModifiers.Active(ctx.Self).Select(m => m.Info.Key).ToHashSet();
+            foreach (var (key, factor) in byModifier)
+                if (active.Contains(key)) w *= factor;
+        }
         return Math.Max(0, w);
     }
 
@@ -43,7 +49,7 @@ public static class PlynlingEventEngine
         IReadOnlyList<string> recent, IReadOnlySet<TargetKind> targetable)
     {
         var eligible = defs
-            .Where(d => d.Type == EventType.Pulse && Eligible(d, ctx))
+            .Where(d => d.Type == EventType.Pulse && d.BreakLevel == 0 && Eligible(d, ctx))
             .Where(d => d.Target == TargetKind.None || targetable.Contains(d.Target))
             .Select(d => (Def: d, W: WeightOf(d, ctx)))
             .Where(x => x.W > 0)
@@ -56,6 +62,13 @@ public static class PlynlingEventEngine
         }
         var pool = eligible.Where(x => !excluded.Contains(x.Def.Key)).ToList();
         return pool.Count == 0 ? null : Weighted(pool, StableRoll.Unit(plynlingId, dayKey, PulsePickSalt));
+    }
+
+    // The mental break for a stress level just reached (hashed pick if a level ever has several).
+    public static EventDef? PickBreak(int plynlingId, int salt, int level, IEnumerable<EventDef> defs)
+    {
+        var pool = defs.Where(d => d.BreakLevel == level).OrderBy(d => d.Key).ToList();
+        return pool.Count == 0 ? null : pool[Math.Min(pool.Count - 1, (int)(StableRoll.Unit(plynlingId, salt, BreakSalt) * pool.Count))];
     }
 
     public static int? PickTarget(int plynlingId, int dayKey, IReadOnlyList<int> candidateIds)
@@ -86,6 +99,18 @@ public static class PlynlingEventEngine
     // event — the harness checks every event has an ungated option with no stress cost at all.
     public static IReadOnlyList<EventOption> AloneOptions(EventDef def, EventContext ctx) =>
         def.Options.Where(o => Visible(o, ctx) && StressCost(o, ctx) == 0).ToList();
+
+    // The rule that keeps "not playing costs nothing": alone, an event never gains stress and never
+    // applies a negative modifier or a coping trait — except a mental break, which only stress (from
+    // the owner's own choices) can bring on.
+    public static bool AppliesWhenAlone(EventEffect effect, EventDef def) =>
+        def.BreakLevel > 0 || effect switch
+        {
+            StressChange s => s.Amount < 0,
+            ApplyModifier m => PlynlingModifiers.ByKey(m.Key) is { Negative: false },
+            GainCoping => false,
+            _ => true,
+        };
 
     public static EventOption DecideAlone(EventDef def, EventContext ctx, int instanceId)
     {

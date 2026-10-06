@@ -61,8 +61,8 @@ public static class PlynlingTraits
         new(key, TraitKind.Personality, group, m, f, emoji, description, stats, axes, gain, loss);
 
     private static TraitInfo K(string key, string m, string f, string emoji, string description,
-        Dictionary<PlynlingStat, int> stats, Dictionary<AiAxis, int> axes) =>
-        new(key, TraitKind.Coping, "coping", m, f, emoji, description, stats, axes);
+        Dictionary<PlynlingStat, int> stats, Dictionary<AiAxis, int> axes, double loss = 1) =>
+        new(key, TraitKind.Coping, "coping", m, f, emoji, description, stats, axes, StressLoss: loss);
 
     // Order matters only for draws not yet made; append new traits at the end of their kind.
     public static readonly IReadOnlyList<TraitInfo> All = new[]
@@ -158,13 +158,13 @@ public static class PlynlingTraits
         K("comfort_eater", "Mange ses émotions", "Mange ses émotions", "🍪", "Quand ça ne va pas, la réponse est dans la boîte à biscuits.",
             S(inte: -1), A(gre: 5, ene: -5)),
         K("inappetetic", "Sans appétit", "Sans appétit", "🥄", "Tourne la cuillère dans le bol sans rien avaler. Ça passera.",
-            S(dip: -1, cou: -3), A(gre: -5, ene: -10)),
+            S(dip: -1, cou: -3), A(gre: -5, ene: -10), loss: 1.25),
         K("contrite", "Repentant", "Repentante", "🙏", "S'excuse pour des choses que personne n'avait remarquées.",
             S(rus: -2), A(com: 10, hon: 10, zea: 10, ven: -10)),
         K("improvident", "Imprévoyant", "Imprévoyante", "💸", "Donne ses cailloux au premier qui les regarde.",
             S(dip: 1), A(zea: 10, com: 10, gre: -10)),
         K("reclusive", "Reclus", "Recluse", "🐚", "A collé un mot sur sa porte : « Plus tard ».",
-            S(dip: -2, inte: -1), A(bol: -10, ene: -10, soc: -35)),
+            S(dip: -2, inte: -1), A(bol: -10, ene: -10, soc: -35), loss: 1.5),
         K("irritable", "Irritable", "Irritable", "🌩️", "Mieux vaut ne pas lui parler avant sa sieste. Ni après.",
             S(dip: -2, cou: 2), A(bol: 10, ene: 10, ven: 10, com: -10, rat: -20)),
         K("profligate", "Dépensier", "Dépensière", "🛍️", "Revient du marché les bras chargés, sans savoir de quoi.",
@@ -172,7 +172,7 @@ public static class PlynlingTraits
         K("confider", "Confident", "Confidente", "🫂", "Va mieux après avoir tout raconté à quelqu'un. Vraiment tout.",
             S(dip: 1), A(soc: 20, com: 10)),
         K("journaller", "Écrit son journal", "Écrit son journal", "📔", "Note tout dans un petit carnet, même la météo de ses humeurs.",
-            S(sag: 1), A(rat: 10)),
+            S(sag: 1), A(rat: 10), loss: 1.5),
         K("athletic", "Sportif", "Sportive", "🏃", "Fait trois fois le tour du village en courant quand quelque chose ne va pas.",
             S(cou: 1), A(ene: 25, bol: 5)),
     };
@@ -180,8 +180,19 @@ public static class PlynlingTraits
     private static readonly Dictionary<string, TraitInfo> ByKeyMap = All.ToDictionary(t => t.Key);
     private static readonly TraitInfo[] Childhood = All.Where(t => t.Kind == TraitKind.Childhood).ToArray();
     private static readonly TraitInfo[] Personality = All.Where(t => t.Kind == TraitKind.Personality).ToArray();
+    private static readonly TraitInfo[] Coping = All.Where(t => t.Kind == TraitKind.Coping).ToArray();
+    public const int MaxCoping = 2;
+    private const int CopingSalt = 400;         // + the instance
 
     public static TraitInfo? ByKey(string key) => ByKeyMap.GetValueOrDefault(key);
+
+    // A mental break's coping trait: uniform among those it lacks — never from its other traits. Null at two.
+    public static TraitInfo? DrawCoping(int plynlingId, int salt, IReadOnlyCollection<string> held)
+    {
+        if (held.Count(k => ByKey(k)?.Kind == TraitKind.Coping) >= MaxCoping) return null;
+        var pool = Coping.Where(t => !held.Contains(t.Key)).ToArray();
+        return pool.Length == 0 ? null : Pick(pool, plynlingId, CopingSalt + salt);
+    }
 
     // How many personality traits each stage is owed (the childhood one is owed from bébé on).
     private static int PersonalityOwed(PlynlingStage stage) => stage switch
