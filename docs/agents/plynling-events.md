@@ -59,6 +59,12 @@ never change that mapping, every stored morning depends on it.
   the target, the challenge roll (from the instance id), the in-character choice. Never a `Random`.
 - **Pacing:** one pulse a day, skipped when 3 pulse events wait; 24 h to choose; frozen = nothing
   happens; a death cancels what waits; the mascot decides at once.
+- **The draw:** an event still waiting is never drawn again. The last 14 resolved are excluded
+  most recent first, **but never every eligible event**: the least recently seen comes back. A hard
+  exclusion locks any stage with fewer events than the window for good — nothing new resolves, so
+  the window never moves.
+- **A key gone from the catalog** is cancelled by the next sweep, waiting or not, and never offered:
+  it would sit first in the queue, unopenable, in front of the real ones.
 - **Deciding alone** never picks a hidden option or one with a stress cost for a held trait — the
   code enforces the "no penalty for not playing" rule, not just the content.
 - **One context:** event logic lives in the `PlynlingService` partial, so growth, the relation change
@@ -66,6 +72,10 @@ never change that mapping, every stored morning depends on it.
   land in one save. Events never make a couple.
 - **Never applied twice:** `ResolvedAt` is a concurrency token. When the sweep and a click resolve the
   same event, the second save throws and rolls back; `PickEventAsync` answers « déjà décidé ».
+  The sweep's context serves the whole batch, so its per-item `catch` calls
+  `PlynlingService.DiscardChanges()`: a refused unit of work left tracked would be retried, and
+  refused, by every later Plynling's save. Its reads of other Plynlings' instances and relations
+  are `AsNoTracking` for the same reason (a tracked row is served stale later in the pass).
 - **Stories are rebuilt from the row** on every page turn: the row stores the chance shown, the roll,
   and the bond before/after. No in-memory story store. A removed event still renders a plain story.
 - **Where stories go:** the game channel for its guild; a pick made elsewhere (the dev guild) posts in

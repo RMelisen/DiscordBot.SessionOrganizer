@@ -675,7 +675,7 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
     }
 
     /// Static and Context-free so its component budget is checkable without a gateway.
-    /// Every control uses its own verb (<c>plyn:pet</c>, <c>plyn:bath</c>, <c>plyn:heal</c>, <c>plyn:feed</c>, <c>plyn:traits</c>): duplicated
+    /// Every control uses its own verb (<c>plyn:pet</c>, <c>plyn:bath</c>, <c>plyn:heal</c>, <c>plyn:feed</c>, <c>plyn:traits</c>, <c>plyn:events</c>): duplicated
     /// custom ids are rejected outright by Discord, disabled components included.
     /// Nourrir is offered to everyone and refused in the handler for anyone but the
     /// owner — the real check is in code, as with every gate here.

@@ -9,7 +9,7 @@ public static class PlynlingEventEngine
 {
     public const int MaxPendingPulses = 3;
     public static readonly TimeSpan Lifetime = TimeSpan.FromHours(24);
-    public const int RecentWindow = 14;            // events not drawn again within the last 14 resolved
+    public const int RecentWindow = 14;            // events not drawn again within the last 14 resolved, while another can be
 
     private const int PulseTimeSalt = 300, PulsePickSalt = 301, TargetSalt = 302, ChallengeSalt = 310, AloneSalt = 311;
     private const int PulseFromMinute = 8 * 60, PulseSpanMinutes = 12 * 60;
@@ -35,16 +35,26 @@ public static class PlynlingEventEngine
     }
 
     // The day's event among the pulse events it is eligible for, not seen recently, and — for a
-    // social one — only when a target of that kind exists.
+    // social one — only when a target of that kind exists. `recent` is the keys of its last resolved
+    // events, most recent first. They are excluded from the most recent back, but never all of the
+    // eligible ones: a stage with fewer events than the window would otherwise lock for good, since
+    // nothing new gets resolved and the window never moves. Then the least recently seen comes back.
     public static EventDef? PickPulse(int plynlingId, int dayKey, IEnumerable<EventDef> defs, EventContext ctx,
-        IReadOnlyCollection<string> recent, IReadOnlySet<TargetKind> targetable)
+        IReadOnlyList<string> recent, IReadOnlySet<TargetKind> targetable)
     {
-        var pool = defs
-            .Where(d => d.Type == EventType.Pulse && Eligible(d, ctx) && !recent.Contains(d.Key))
+        var eligible = defs
+            .Where(d => d.Type == EventType.Pulse && Eligible(d, ctx))
             .Where(d => d.Target == TargetKind.None || targetable.Contains(d.Target))
             .Select(d => (Def: d, W: WeightOf(d, ctx)))
             .Where(x => x.W > 0)
             .ToList();
+        var excluded = new HashSet<string>();
+        foreach (var key in recent.Take(RecentWindow))
+        {
+            if (eligible.All(x => x.Def.Key == key || excluded.Contains(x.Def.Key))) break;
+            excluded.Add(key);
+        }
+        var pool = eligible.Where(x => !excluded.Contains(x.Def.Key)).ToList();
         return pool.Count == 0 ? null : Weighted(pool, StableRoll.Unit(plynlingId, dayKey, PulsePickSalt));
     }
 

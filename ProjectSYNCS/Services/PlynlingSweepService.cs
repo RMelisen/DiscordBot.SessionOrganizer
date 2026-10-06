@@ -115,6 +115,7 @@ public sealed class PlynlingSweepService : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to sweep Plynling {PlynlingId}.", plynling.Id);
+                plynlings.DiscardChanges();     // or the next Plynling's save retries this one's, and fails too
             }
         }
     }

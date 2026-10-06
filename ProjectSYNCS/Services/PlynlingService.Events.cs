@@ -27,8 +27,10 @@ public partial class PlynlingService
             .OrderBy(i => i.Id)
             .ToListAsync();
 
+    // An event removed from the catalog is never offered (the sweep cancels it within the hour): it
+    // would stand first in the queue, unopenable, in front of the real ones.
     public async Task<List<PlynlingEventInstance>> GetPendingEventsAsync(Plynling p, DateTimeOffset now) =>
-        (await OpenEventsAsync(p.Id)).Where(i => i.AvailableAt <= now).ToList();
+        (await OpenEventsAsync(p.Id)).Where(i => i.AvailableAt <= now && PlynlingEvents.ByKey(i.EventKey) is not null).ToList();
 
     public async Task<int> CountPendingEventsAsync(Plynling p, DateTimeOffset now) =>
         p.DiedAt is null ? (await GetPendingEventsAsync(p, now)).Count : 0;
@@ -66,9 +68,9 @@ public partial class PlynlingService
         return new(EventPickOutcome.Done, await CountPendingEventsAsync(p, now));
     }
 
-    // The sweep's turn, per Plynling: cancel what a death left pending, decide what expired, then the
-    // day's pulse. Saves (an instance needs its id before it can be rolled). Returns the instances
-    // resolved now, for the caller to tell after the save.
+    // The sweep's turn, per Plynling: cancel what a death or the catalog left pending, decide what
+    // expired, then the day's pulse. Saves (an instance needs its id before it can be rolled).
+    // Returns the instances resolved now, for the caller to tell after the save.
     public async Task<IReadOnlyList<int>> TickEventsAsync(Plynling p, DateTimeOffset now)
     {
         var told = new List<int>();
@@ -79,11 +81,15 @@ public partial class PlynlingService
             await _db_context.SaveChangesAsync();
             return told;
         }
-        if (PlynlingLife.IsFrozen(p)) return told;
-
-        foreach (var inst in open.Where(i => i.AvailableAt <= now && i.ExpiresAt <= now))
+        foreach (var inst in open.Where(i => PlynlingEvents.ByKey(i.EventKey) is null)) inst.CancelledAt = now;
+        if (PlynlingLife.IsFrozen(p))
         {
-            if (PlynlingEvents.ByKey(inst.EventKey) is null) { inst.CancelledAt = now; continue; }
+            await _db_context.SaveChangesAsync();
+            return told;
+        }
+
+        foreach (var inst in open.Where(i => i.CancelledAt is null && i.AvailableAt <= now && i.ExpiresAt <= now))
+        {
             await ResolveAloneAsync(p, inst, now);
             told.Add(inst.Id);
         }
@@ -103,7 +109,10 @@ public partial class PlynlingService
                     .OrderByDescending(i => i.Id).Take(PlynlingEventEngine.RecentWindow)
                     .Select(i => i.EventKey).ToListAsync();
                 var targetable = targets.Where(kv => kv.Value.Count > 0).Select(kv => kv.Key).ToHashSet();
-                if (PlynlingEventEngine.PickPulse(p.Id, day, PlynlingEvents.All, ctx, recent, targetable) is { } def)
+                // Never the same event twice in the queue: what still waits is out of the draw.
+                var waiting = open.Where(i => i.ResolvedAt is null && i.CancelledAt is null).Select(i => i.EventKey).ToHashSet();
+                var defs = PlynlingEvents.All.Where(d => !waiting.Contains(d.Key));
+                if (PlynlingEventEngine.PickPulse(p.Id, day, defs, ctx, recent, targetable) is { } def)
                 {
                     var targetId = def.Target == TargetKind.None ? null : PlynlingEventEngine.PickTarget(p.Id, day, targets[def.Target]);
                     var inst = await CreateEventAsync(p, def, targetId, now);
@@ -176,19 +185,21 @@ public partial class PlynlingService
     }
 
     // Who a social event may involve, by kind: living, unfrozen Plynlings of the same guild, not
-    // already in a social event with this one in the last 24 h (either direction).
+    // already in a social event with this one in the last 24 h (either direction). Untracked reads: the
+    // sweep's context lives for the whole batch, and another Plynling's instance or a relation tracked
+    // here would be served stale later in the pass (an owner's pick, a visit) instead of re-read.
     private async Task<Dictionary<TargetKind, IReadOnlyList<int>>> TargetCandidatesAsync(Plynling p, DateTimeOffset now)
     {
         var others = await _db_context.Plynlings
             .Where(x => x.GuildId == p.GuildId && x.Id != p.Id && x.DiedAt == null && x.FrozenAt == null)
             .Select(x => x.Id).ToListAsync();
-        var recentPairs = (await _db_context.PlynlingEventInstances
+        var recentPairs = (await _db_context.PlynlingEventInstances.AsNoTracking()
                 .Where(i => (i.PlynlingId == p.Id && i.TargetPlynlingId != null) || i.TargetPlynlingId == p.Id)
                 .ToListAsync())
             .Where(i => now - i.CreatedAt < TimeSpan.FromHours(24))
             .Select(i => i.PlynlingId == p.Id ? i.TargetPlynlingId!.Value : i.PlynlingId)
             .ToHashSet();
-        var relations = (await _db_context.PlynlingRelations
+        var relations = (await _db_context.PlynlingRelations.AsNoTracking()
                 .Where(r => r.PlynlingAId == p.Id || r.PlynlingBId == p.Id).ToListAsync())
             .ToDictionary(r => r.PlynlingAId == p.Id ? r.PlynlingBId : r.PlynlingAId, r => r.Bond);
         var free = others.Where(id => !recentPairs.Contains(id)).ToList();
