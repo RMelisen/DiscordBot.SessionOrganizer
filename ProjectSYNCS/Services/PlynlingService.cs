@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Data;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Models;
@@ -51,10 +52,12 @@ public sealed record FeedResult(CareOutcome Outcome, Plynling? Plynling, long Pr
 public partial class PlynlingService
 {
     private readonly AppDbContext _db_context;
+    private readonly ILogger<PlynlingService> _logger;
 
-    public PlynlingService(AppDbContext db_context)
+    public PlynlingService(AppDbContext db_context, ILogger<PlynlingService> logger)
     {
         _db_context = db_context;
+        _logger = logger;
     }
 
     // The owner's living Plynling, brought up to date. If it starved since anyone last
@@ -103,6 +106,8 @@ public partial class PlynlingService
         await AddMomentAsync(plynling, JournalKind.Adopted, null, now);  // needs its id: after the first save
         await EnsureTraitsAsync(plynling, now);                           // its childhood trait, at once
         await _db_context.SaveChangesAsync();
+        QueueOnAction(OnAction.Adopted, plynling, traitText: await NewTraitKeysAsync(plynling, TraitKind.Childhood));
+        await FlushOnActionsAsync(now);                                   // « Bienvenue », after the adoption is safe
         return (AdoptOutcome.Adopted, plynling);
     }
 
@@ -408,6 +413,10 @@ public partial class PlynlingService
         var hostBadges = await AwardAsync(host, now, evt);
         await EconomyLog.AddAsync(_db_context, visitor.GuildId, EconomyLog.ActVisit, 1, now);
         await _db_context.SaveChangesAsync();
+        // Sometimes something is left behind (FlushOnActionsAsync rolls it per Plynling and day).
+        QueueOnAction(OnAction.AfterVisit, visitor, host.Id);
+        QueueOnAction(OnAction.AfterVisit, host, visitor.Id);
+        await FlushOnActionsAsync(now);
         return new VisitOutcome(visitor, host, visitorBadges, hostBadges, good, before, after, confession, happiness,
             visitorFind, hostFind);
     }
@@ -430,7 +439,8 @@ public partial class PlynlingService
     }
 
     // An event moving two Plynlings' affinity, one-sided: the same relation row, clamp and bands as a
-    // visit, but no scene roll and no confession — an event never makes a couple. Never saves.
+    // visit, but no scene roll and no confession — a couple comes only from an accepted declaration
+    // (MakeCoupleAsync). Never saves.
     public async Task<(PlynlingBond Before, PlynlingBond After)> ShiftAffinityAsync(Plynling a, Plynling b, int delta, DateTimeOffset now)
     {
         var (lo, hi) = a.Id < b.Id ? (a.Id, b.Id) : (b.Id, a.Id);
@@ -452,6 +462,31 @@ public partial class PlynlingService
         await AwardAsync(a, now, evt);
         await AwardAsync(b, now, evt);
         return (before, after);
+    }
+
+    // Lifts the pair's affinity to at least `value` (never lowers it), reading the current value from
+    // the tracked row — so a shift earlier in the same unit of work counts. Never saves.
+    public async Task<(PlynlingBond Before, PlynlingBond After)?> LiftAffinityAsync(Plynling a, Plynling b, int value, DateTimeOffset now)
+    {
+        var (lo, hi) = a.Id < b.Id ? (a.Id, b.Id) : (b.Id, a.Id);
+        var relation = await _db_context.PlynlingRelations.FirstOrDefaultAsync(r => r.PlynlingAId == lo && r.PlynlingBId == hi);
+        var current = relation?.Affinity ?? 0;
+        return value > current ? await ShiftAffinityAsync(a, b, value - current, now) : null;
+    }
+
+    // The visit's accepted confession, as an effect: lovers, both journals, the badge. The caller has
+    // checked the visit rules (CanConfess), which imply a relation row (best friends). Never saves.
+    private async Task<(PlynlingBond Before, PlynlingBond After)> MakeCoupleAsync(Plynling a, Plynling b, DateTimeOffset now)
+    {
+        var (lo, hi) = a.Id < b.Id ? (a.Id, b.Id) : (b.Id, a.Id);
+        var relation = await _db_context.PlynlingRelations.FirstAsync(r => r.PlynlingAId == lo && r.PlynlingBId == hi);
+        var before = relation.Bond;
+        relation.Bond = PlynlingBond.Lovers;
+        relation.Since = now;
+        var evt = await ApplyBondChangeAsync(a, b, before, PlynlingBond.Lovers, now);
+        await AwardAsync(a, now, evt);
+        await AwardAsync(b, now, evt);
+        return (before, PlynlingBond.Lovers);
     }
 
     private static int Closeness(PlynlingBond bond) => PlynlingBonds.Closeness(bond);
@@ -484,8 +519,10 @@ public partial class PlynlingService
     }
 
     // Its best friends and partner, living, grieve it: happiness down to the grief ceiling, and a
-    // moment in their journal. Not saved — the caller's save carries it.
-    private async Task GrieveForAsync(Plynling gone, DateTimeOffset now)
+    // moment in their journal. Not saved — the caller's save carries it. A death also brings each
+    // mourner an event about it (queued; the caller flushes); an abandonment does not — the row is
+    // deleted, and no event may point at it.
+    private async Task GrieveForAsync(Plynling gone, DateTimeOffset now, bool died = true)
     {
         var close = await _db_context.PlynlingRelations
             .Where(r => (r.PlynlingAId == gone.Id || r.PlynlingBId == gone.Id)
@@ -498,6 +535,7 @@ public partial class PlynlingService
             if (mourner is null || mourner.DiedAt is not null) continue;
             PlynlingLife.Grieve(mourner, now);
             await AddMomentAsync(mourner, JournalKind.Grieving, gone.Name, now);
+            if (died) QueueOnAction(OnAction.Bereaved, mourner, gone.Id);
         }
     }
 
@@ -551,7 +589,7 @@ public partial class PlynlingService
         var plynling = await GetByIdAsync(plynlingId, now);
         if (plynling is null || plynling.OwnerId != ownerId || plynling.DiedAt is not null) return null;
 
-        await GrieveForAsync(plynling, now);          // before the relations go with it
+        await GrieveForAsync(plynling, now, died: false);   // before the relations go with it
         _db_context.Plynlings.Remove(plynling);
         await _db_context.SaveChangesAsync();
         return plynling;
@@ -633,9 +671,13 @@ public partial class PlynlingService
             changed |= PlynlingLife.Settle(plynling, now);
             await FlushMomentsAsync(plynling);
         }
-        if (changed) await _db_context.SaveChangesAsync();
+        if (changed)
+        {
+            await _db_context.SaveChangesAsync();
+            await FlushOnActionsAsync(now);
+        }
 
-        var query = _db_context.Plynlings.Where(x => x.GuildId == guildId && x.DiedAt != null);
+        var query =_db_context.Plynlings.Where(x => x.GuildId == guildId && x.DiedAt != null);
         if (ownerId is { } owner) query = query.Where(x => x.OwnerId == owner);
         return await query.ToListAsync();
     }
@@ -651,7 +693,11 @@ public partial class PlynlingService
             changed |= PlynlingLife.Settle(plynling, now);
             await FlushMomentsAsync(plynling);
         }
-        if (changed) await _db_context.SaveChangesAsync();
+        if (changed)
+        {
+            await _db_context.SaveChangesAsync();
+            await FlushOnActionsAsync(now);
+        }
         return living.Where(x => x.DiedAt is null).ToList();
     }
 
@@ -664,8 +710,17 @@ public partial class PlynlingService
     // After a failed save, forgets every change it held. The sweep shares one context across its
     // batch: left tracked, a failed unit of work (an event an owner decided a moment before the
     // sweep — the concurrency token refuses the second resolution) would be retried, and refused
-    // again, by every later Plynling's save. The next pass redoes whatever was dropped.
+    // again, by every later Plynling's save. The next pass redoes whatever was dropped. The on-actions
+    // and the mascot's ask that unit queued go too: they belong to work that was never saved.
     public void DiscardChanges()
+    {
+        ResetTracked();
+        _onActions.Clear();
+        _askedMascot = false;
+    }
+
+    // Forgets every unsaved change the context holds, and nothing else.
+    private void ResetTracked()
     {
         foreach (var entry in _db_context.ChangeTracker.Entries().ToList())
         {
@@ -794,6 +849,7 @@ public partial class PlynlingService
                 .ToListAsync())
             .ToHashSet();
         var age = PlynlingLife.Age(p, now);
+        PlynlingStage? grewTo = null;      // several at once (a backfill) keeps the last
         foreach (var stage in new[] { PlynlingStage.Teen, PlynlingStage.Adult, PlynlingStage.Elder })
         {
             var start = PlynlingLife.StageStart(stage);
@@ -801,9 +857,16 @@ public partial class PlynlingService
             // As long ago as it has lived past the threshold — never before it was adopted.
             var at = now - (age - start);
             await AddMomentAsync(p, JournalKind.GrewUp, stage.ToString(), at < p.AdoptedAt ? p.AdoptedAt : at);
+            grewTo = stage;
         }
         await EnsureTraitsAsync(p, now);   // the traits its new stage brings — and any it predates
         await AwardAsync(p, now);
+        // Growing up reveals its new traits in an event; the caller flushes after its save. Only when the
+        // stage has just begun (the traits' journal window): a stage moment written late — a backfill,
+        // or one the journal trimmed and the sweep writes again — must not bring the event again.
+        if (grewTo is { } grown && !PlynlingTraits.JustGained(grown, age)) grewTo = null;
+        if (grewTo == PlynlingStage.Teen) QueueOnAction(OnAction.BecameTeen, p, traitText: await NewTraitKeysAsync(p, TraitKind.Personality, 2));
+        if (grewTo == PlynlingStage.Adult) QueueOnAction(OnAction.BecameAdult, p, traitText: await NewTraitKeysAsync(p, TraitKind.Personality, 1));
     }
 
     // The sweep, announcing a death: the journal's last moment, dated when it died. Not saved.
@@ -862,21 +925,40 @@ public partial class PlynlingService
         return fresh;
     }
 
+    // A read that finds it fell sick or recovered (a morning played on this read) creates that
+    // on-action's event here, after the save — any read may be the first to see it, not only the sweep.
     private async Task<Plynling?> SettledAsync(Plynling? plynling, DateTimeOffset now)
     {
         if (plynling is not null && PlynlingLife.Settle(plynling, now))
         {
             await FlushMomentsAsync(plynling);
             await _db_context.SaveChangesAsync();
+            await FlushOnActionsAsync(now);
         }
         return plynling;
     }
 
-    // Writes the moments a Settle produced (fell sick, recovered) into the journal. Not saved:
-    // the caller's save carries them, like every other moment.
+    // Writes the moments a Settle produced (fell sick, recovered) into the journal, and queues their
+    // on-actions. Not saved: the caller's save carries them, like every other moment; the caller flushes
+    // the on-actions after it.
     public async Task FlushMomentsAsync(Plynling p)
     {
-        foreach (var (kind, at) in p.PendingMoments) await AddMomentAsync(p, kind, null, at);
+        foreach (var (kind, at) in p.PendingMoments)
+        {
+            await AddMomentAsync(p, kind, null, at);
+            if (kind == JournalKind.FellSick) QueueOnAction(OnAction.FellSick, p);
+            if (kind == JournalKind.Recovered) QueueOnAction(OnAction.Recovered, p);
+        }
         p.PendingMoments.Clear();
+    }
+
+    // The newest traits of a kind, as "key,key" — the {T} of a trait reveal. Counts traits added in
+    // this unit of work. Null when there is none.
+    private async Task<string?> NewTraitKeysAsync(Plynling p, TraitKind kind, int count = 1)
+    {
+        var keys = (await _db_context.PlynlingTraits.Where(t => t.PlynlingId == p.Id && t.Kind == kind).OrderBy(t => t.Id).Select(t => t.Key).ToListAsync())
+            .Concat(_db_context.PlynlingTraits.Local.Where(t => t.PlynlingId == p.Id && t.Kind == kind && t.Id == 0).Select(t => t.Key))
+            .Distinct().TakeLast(count).ToList();
+        return keys.Count == 0 ? null : string.Join(",", keys);
     }
 }

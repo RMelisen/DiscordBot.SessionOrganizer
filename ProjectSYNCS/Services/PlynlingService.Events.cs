@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Models;
 
@@ -6,18 +7,41 @@ namespace ProjectSYNCS.Services;
 
 public enum EventPickOutcome { Done, NotOwner, Gone, NotAvailable, Unknown }
 
-public sealed record EventPick(EventPickOutcome Outcome, int PendingLeft = 0);
+// Told: every instance resolved by this pick, for the caller to tell — the picked one, then any
+// answer the mascot gave at once.
+public sealed record EventPick(EventPickOutcome Outcome, int PendingLeft = 0, IReadOnlyList<int>? Told = null);
 
 // Events, in the same class (and so the same AppDbContext) as the rest of the Plynling's state: an
 // event's growth, its relation change, its badges and its journal moment land in one save. The rules
 // are pure in Helpers/PlynlingEventEngine; this file only loads, applies and stores.
 public partial class PlynlingService
 {
-    public async Task<EventContext> GetEventContextAsync(Plynling p, DateTimeOffset now)
+    // With `other`, the context also knows the pair: their relation, hidden compatibility, whether
+    // either is taken and whether the visit rules would let them couple, and the other's stats (for a
+    // duel). The relation is read untracked: the sweep's context lives for its whole batch, and a
+    // tracked row would be served stale to a later write in the pass (ShiftAffinityAsync re-reads it).
+    public async Task<EventContext> GetEventContextAsync(Plynling p, DateTimeOffset now, Plynling? other = null)
     {
         var traits = await GetTraitsAsync(p);
-        return new EventContext(p, traits, PlynlingStats.Compute(p, traits), PlynlingLife.Stage(p, now));
+        var ctx = new EventContext(p, traits, PlynlingStats.Compute(p, traits), PlynlingLife.Stage(p, now));
+        if (other is null) return ctx;
+        var (lo, hi) = p.Id < other.Id ? (p.Id, other.Id) : (other.Id, p.Id);
+        var relation = await _db_context.PlynlingRelations.AsNoTracking().FirstOrDefaultAsync(r => r.PlynlingAId == lo && r.PlynlingBId == hi);
+        var bond = relation?.Bond ?? PlynlingBond.Acquaintances;
+        var affinity = relation?.Affinity ?? 0;
+        var taken = await InCoupleAsync(p.Id, other.Id) || await InCoupleAsync(other.Id, p.Id);
+        var info = new TargetInfo(other, bond, affinity, PlynlingBonds.Compatibility(lo, hi), taken,
+            PlynlingBonds.CanConfess(bond, affinity, p, other, taken));
+        return ctx with { Other = info, OtherStats = PlynlingStats.Compute(other, await GetTraitsAsync(other)) };
     }
+
+    // The other Plynling of an instance, if it has one (settled; may be dead or frozen).
+    private async Task<Plynling?> TargetOfAsync(PlynlingEventInstance inst, DateTimeOffset now) =>
+        inst.TargetPlynlingId is { } tid ? await GetByIdAsync(tid, now) : null;
+
+    // A response whose asker is gone (abandoned: its id was set null) has nobody left to answer.
+    private static bool Orphaned(EventDef def, PlynlingEventInstance inst) =>
+        def.Type == EventType.Response && inst.TargetPlynlingId is null;
 
     // Open = neither resolved nor cancelled (pending, or a follow-up not yet available). Dates are
     // compared in memory: SQLite cannot translate DateTimeOffset comparisons.
@@ -50,8 +74,14 @@ public partial class PlynlingService
         if (inst.ResolvedAt is not null || inst.CancelledAt is not null || p.DiedAt is not null || inst.AvailableAt > now)
             return new(EventPickOutcome.Gone);
         if (PlynlingEvents.ByKey(inst.EventKey) is not { } def) return new(EventPickOutcome.Gone);
+        if (Orphaned(def, inst))
+        {
+            inst.CancelledAt = now;
+            await _db_context.SaveChangesAsync();
+            return new(EventPickOutcome.Gone);
+        }
 
-        var ctx = await GetEventContextAsync(p, now);
+        var ctx = await GetEventContextAsync(p, now, await TargetOfAsync(inst, now));
         var option = def.Options.FirstOrDefault(o => o.Key == optionKey);
         if (option is null || !PlynlingEventEngine.Visible(option, ctx)) return new(EventPickOutcome.NotAvailable);
 
@@ -63,9 +93,12 @@ public partial class PlynlingService
         }
         catch (DbUpdateConcurrencyException)
         {
+            DiscardChanges();
             return new(EventPickOutcome.Gone);
         }
-        return new(EventPickOutcome.Done, await CountPendingEventsAsync(p, now));
+        var told = new List<int> { instanceId };
+        told.AddRange(await AnswerForMascotAsync(told, now));
+        return new(EventPickOutcome.Done, await CountPendingEventsAsync(p, now), told);
     }
 
     // The sweep's turn, per Plynling: cancel what a death or the catalog left pending, decide what
@@ -90,6 +123,11 @@ public partial class PlynlingService
 
         foreach (var inst in open.Where(i => i.CancelledAt is null && i.AvailableAt <= now && i.ExpiresAt <= now))
         {
+            if (Orphaned(PlynlingEvents.ByKey(inst.EventKey)!, inst))
+            {
+                inst.CancelledAt = now;
+                continue;
+            }
             await ResolveAloneAsync(p, inst, now);
             told.Add(inst.Id);
         }
@@ -112,9 +150,17 @@ public partial class PlynlingService
                 // Never the same event twice in the queue: what still waits is out of the draw.
                 var waiting = open.Where(i => i.ResolvedAt is null && i.CancelledAt is null).Select(i => i.EventKey).ToHashSet();
                 var defs = PlynlingEvents.All.Where(d => !waiting.Contains(d.Key));
-                if (PlynlingEventEngine.PickPulse(p.Id, day, defs, ctx, recent, targetable) is { } def)
+                // Who each candidate is to it, so a social event is drawn only when a candidate meets
+                // its target condition (a declaration needs someone it could couple with).
+                var infos = new Dictionary<int, TargetInfo>();
+                foreach (var id in targets.Values.SelectMany(v => v).Distinct())
+                    if (await GetByIdAsync(id, now) is { DiedAt: null, FrozenAt: null } t)
+                        infos[id] = (await GetEventContextAsync(p, now, t)).Other!;
+                IReadOnlyList<int> CandidatesFor(EventDef d) =>
+                    targets[d.Target].Where(id => infos.TryGetValue(id, out var info) && (d.TargetCondition?.Invoke(info) ?? true)).ToList();
+                if (PlynlingEventEngine.PickPulse(p.Id, day, defs, ctx, recent, targetable, d => CandidatesFor(d).Count > 0) is { } def)
                 {
-                    var targetId = def.Target == TargetKind.None ? null : PlynlingEventEngine.PickTarget(p.Id, day, targets[def.Target]);
+                    var targetId = def.Target == TargetKind.None ? null : PlynlingEventEngine.PickTarget(p.Id, day, CandidatesFor(def));
                     var inst = await CreateEventAsync(p, def, targetId, now);
                     if (PlynlingMascot.Is(p))
                     {
@@ -126,6 +172,8 @@ public partial class PlynlingService
             }
         }
         await _db_context.SaveChangesAsync();
+        // Anything it resolved that asked the mascot: she answers now, in character.
+        told.AddRange(await AnswerForMascotAsync(told, now));
         return told;
     }
 
@@ -149,11 +197,40 @@ public partial class PlynlingService
         return inst;
     }
 
+    // In character: a response by acceptance (affinity, compatibility), anything else by its axes.
     public async Task ResolveAloneAsync(Plynling p, PlynlingEventInstance inst, DateTimeOffset now)
     {
         var def = PlynlingEvents.ByKey(inst.EventKey)!;
-        var ctx = await GetEventContextAsync(p, now);
-        await ApplyEventAsync(p, inst, def, PlynlingEventEngine.DecideAlone(def, ctx, inst.Id), ctx, decidedAlone: true, now);
+        var ctx = await GetEventContextAsync(p, now, await TargetOfAsync(inst, now));
+        var option = def.Type == EventType.Response
+            ? PlynlingEventEngine.DecideResponse(def, ctx, inst.Id)
+            : PlynlingEventEngine.DecideAlone(def, ctx, inst.Id);
+        await ApplyEventAsync(p, inst, def, option, ctx, decidedAlone: true, now);
+    }
+
+    // Set when an event asked the mascot: she answers right after the save (PickEventAsync, TickEventsAsync).
+    private bool _askedMascot;
+
+    // The responses these events queued on the mascot: she answers in character, now. Saves. Takes every
+    // parent at once — the flag says only that one of them asked her.
+    private async Task<IReadOnlyList<int>> AnswerForMascotAsync(IReadOnlyCollection<int> parentIds, DateTimeOffset now)
+    {
+        if (!_askedMascot || parentIds.Count == 0) return Array.Empty<int>();
+        _askedMascot = false;
+        var ids = parentIds.ToList();
+        var answered = new List<int>();
+        foreach (var reply in await _db_context.PlynlingEventInstances
+                     .Where(i => i.ParentInstanceId != null && ids.Contains(i.ParentInstanceId.Value) && i.ResolvedAt == null && i.CancelledAt == null)
+                     .ToListAsync())
+        {
+            var mascot = await GetByIdAsync(reply.PlynlingId, now);
+            if (mascot is null || !PlynlingMascot.Is(mascot) || PlynlingEvents.ByKey(reply.EventKey) is null) continue;
+            await ResolveAloneAsync(mascot, reply, now);
+            await FlushMomentsAsync(mascot);
+            answered.Add(reply.Id);
+        }
+        await _db_context.SaveChangesAsync();
+        return answered;
     }
 
     // The roll, the effects, the journal. Never saves. A target that is gone (abandoned, dead, frozen)
@@ -209,6 +286,42 @@ public partial class PlynlingService
                         inst.GainedTraitKey = coping.Key;
                         await RefreshStressCacheAsync(p);
                     }
+                    break;
+                case FollowUp f when PlynlingEvents.ByKey(f.EventKey) is { } next:
+                    // Comes back later, about the same Plynling; a death cancels it with the rest.
+                    var later = await QueueEventAsync(p, next, inst.TargetPlynlingId, now);
+                    later.AvailableAt = PlynlingEventEngine.FollowUpAt(inst.Id, f, now);
+                    later.ExpiresAt = later.AvailableAt + PlynlingEventEngine.Lifetime;
+                    later.ParentInstanceId = inst.Id;
+                    break;
+                case AskTarget ask when target is { DiedAt: null, FrozenAt: null } && PlynlingEvents.ByKey(ask.ResponseKey) is { } reply:
+                    // Queued on the other Plynling, pointing back at this one; its owner answers.
+                    var asked = await QueueEventAsync(target, reply, p.Id, now);
+                    asked.ParentInstanceId = inst.Id;
+                    _askedMascot |= PlynlingMascot.Is(target);
+                    break;
+                case SetAffinityAtLeast lift when target is { DiedAt: null }:
+                    if (await LiftAffinityAsync(p, target, lift.Value, now) is var (l0, l1))
+                    {
+                        inst.BondBefore ??= l0;
+                        inst.BondAfter = l1;
+                    }
+                    break;
+                case Couple when target is { DiedAt: null } && ctx.Other is { CanCouple: true }:
+                    // The visit rules, checked again now: someone may have coupled since the ask.
+                    // When they no longer allow it, BondAfter stays unset and the story says « trop tard ».
+                    var (c0, c1) = await MakeCoupleAsync(p, target, now);
+                    inst.BondBefore ??= c0;
+                    inst.BondAfter = c1;
+                    break;
+                case Heartbreak when target is { DiedAt: null, FrozenAt: null }:
+                    // In a response: the one who declared — whose owner chose to — is saddened. Not
+                    // while frozen: nothing about a frozen Plynling moves.
+                    PlynlingLife.Sadden(target, now, PlynlingBonds.HeartbreakSadness);
+                    await AddMomentAsync(target, JournalKind.Heartbroken, p.Name, now);
+                    var (h0, h1) = await ShiftAffinityAsync(p, target, -PlynlingBonds.HeartbreakLoss, now);
+                    inst.BondBefore ??= h0;
+                    inst.BondAfter = h1;
                     break;
             }
         }
@@ -325,5 +438,65 @@ public partial class PlynlingService
         if (resolved.Count == 0) return null;
         var (leaning, growth) = PlynlingEventEngine.AdoHistory(resolved);
         return t => PlynlingEventEngine.AdultTraitWeight(t, leaning, growth);
+    }
+
+    // ---- on-actions: life's moments that bring an event --------------------------------------------
+
+    private const int AfterVisitSalt = 350;
+    private const double AfterVisitChance = 0.33;
+
+    // On-actions noticed during a unit of work, created after its save (FlushOnActionsAsync): an event
+    // must never be what breaks an adoption, a visit or a sweep. TraitText is the {T} of a trait reveal.
+    private readonly List<(OnAction Kind, int PlynlingId, int? TargetId, string? TraitText)> _onActions = new();
+
+    private void QueueOnAction(OnAction kind, Plynling p, int? targetId = null, string? traitText = null) =>
+        _onActions.Add((kind, p.Id, targetId, traitText));
+
+    /// <summary>
+    /// Creates the queued on-actions' events, each in its own save and its own try: one that throws is
+    /// logged and its half-made changes dropped, never the caller's (which saved before calling). Call
+    /// only right after a save. Returns the instances the mascot answered at once, for the caller to tell.
+    /// </summary>
+    public async Task<IReadOnlyList<int>> FlushOnActionsAsync(DateTimeOffset now)
+    {
+        var told = new List<int>();
+        while (_onActions.Count > 0)
+        {
+            // Copied then cleared: reading a Plynling below may settle it and queue more, handled next round.
+            var queued = _onActions.ToList();
+            _onActions.Clear();
+            foreach (var (kind, plynlingId, targetId, traitText) in queued)
+            {
+                try
+                {
+                    var p = await GetByIdAsync(plynlingId, now);
+                    if (p is null || p.DiedAt is not null || p.FrozenAt is not null) continue;
+                    // A visit brings its event only sometimes (hashed per Plynling and day).
+                    if (kind == OnAction.AfterVisit && StableRoll.Unit(p.Id, AppTime.DayKey(now), AfterVisitSalt) >= AfterVisitChance) continue;
+                    var other = targetId is { } tid ? await GetByIdAsync(tid, now) : null;
+                    var ctx = await GetEventContextAsync(p, now, other);
+                    if (PlynlingEventEngine.PickTriggered(kind, p.Id, (int)(now.ToUnixTimeSeconds() % 1_000_000), PlynlingEvents.All, ctx) is not { } def)
+                        continue;
+                    // Never the same event twice in the queue (several visits on a lucky day).
+                    if ((await OpenEventsAsync(p.Id)).Any(i => i.EventKey == def.Key)) continue;
+                    var inst = await QueueEventAsync(p, def, def.Target == TargetKind.None ? null : targetId, now);
+                    inst.GainedTraitKey = traitText;
+                    await _db_context.SaveChangesAsync();
+                    if (PlynlingMascot.Is(p))
+                    {
+                        await ResolveAloneAsync(p, inst, now);
+                        await FlushMomentsAsync(p);
+                        await _db_context.SaveChangesAsync();
+                        told.Add(inst.Id);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "On-action {Kind} for Plynling {PlynlingId} failed.", kind, plynlingId);
+                    ResetTracked();
+                }
+            }
+        }
+        return told;
     }
 }
