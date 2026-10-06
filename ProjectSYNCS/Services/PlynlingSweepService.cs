@@ -111,6 +111,12 @@ public sealed class PlynlingSweepService : BackgroundService
                 foreach (var instanceId in told)
                     if (await plynlings.GetEventStoryAsync(instanceId, now) is { } story)
                         await _announcer.PostEventStoryAsync(plynling.GuildId, PlynlingEventCards.BuildStory(story, 0));
+
+                // Growing up, falling sick, recovering, a friend's death: their events, created after
+                // this Plynling's saves, each on its own (FlushOnActionsAsync swallows and logs).
+                foreach (var instanceId in await plynlings.FlushOnActionsAsync(now))
+                    if (await plynlings.GetEventStoryAsync(instanceId, now) is { } story)
+                        await _announcer.PostEventStoryAsync(plynling.GuildId, PlynlingEventCards.BuildStory(story, 0));
             }
             catch (Exception ex)
             {

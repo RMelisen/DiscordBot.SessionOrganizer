@@ -516,6 +516,8 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
                 "(3 en attente au plus). Son propriétaire choisit pour lui, en privé.\n" +
                 "Certains choix demandent un trait ou une stat ; d'autres sont des **défis**, avec leurs chances affichées. " +
                 "Ses choix font grandir ses stats, et ce qu'il vit ado oriente son trait d'adulte.\n" +
+                "Certains concernent un autre Plynling : une déclaration, un défi, un pacte, une réconciliation — " +
+                "son propriétaire reçoit alors la question sur sa propre carte.\n" +
                 "Sans réponse en 24 h, il décide **tout seul**, selon son caractère — sans jamais y perdre quoi que ce soit.\n" +
                 "Chaque histoire est racontée dans le salon du jeu, page par page.")
             .AddField("Stress et humeurs",

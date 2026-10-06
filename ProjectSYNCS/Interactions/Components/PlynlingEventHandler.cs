@@ -48,7 +48,7 @@ public class PlynlingEventHandler : InteractionModuleBase<SocketInteractionConte
             return;
         }
         var target = inst.TargetPlynlingId is { } tid ? await _plynlings.GetByIdAsync(tid, now) : null;
-        var card = PlynlingEventCards.BuildChoice(inst, def, await _plynlings.GetEventContextAsync(p, now),
+        var card = PlynlingEventCards.BuildChoice(inst, def, await _plynlings.GetEventContextAsync(p, now, target),
             EventCast.Of(p, now), target is null ? null : EventCast.Of(target, now));
         await FollowupAsync(components: card, ephemeral: true, flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
     }
@@ -83,7 +83,10 @@ public class PlynlingEventHandler : InteractionModuleBase<SocketInteractionConte
             m.Flags = MessageFlags.ComponentsV2;
             m.AllowedMentions = AllowedMentions.None;
         });
-        await _announcer.PostEventStoryAsync(Context.Guild?.Id ?? 0, PlynlingEventCards.BuildStory(story, 0), Context.Channel);
+        // Every story the pick caused: the picked one, then any answer the mascot gave at once.
+        foreach (var toldId in pick.Told ?? new[] { id })
+            if ((toldId == id ? story : await _plynlings.GetEventStoryAsync(toldId, now)) is { } s)
+                await _announcer.PostEventStoryAsync(Context.Guild?.Id ?? 0, PlynlingEventCards.BuildStory(s, 0), Context.Channel);
     }
 
     [ComponentInteraction("evs:prev:*:*", ignoreGroupNames: true)]
