@@ -425,11 +425,13 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
 
     // Events come once a day: the owner forces one on his own living Plynling — waiting, already
     // expired (the next sweep decides it alone), or decided at once with its story posted here.
-    // Ignores the pulse, the cap and the stage; a social event takes any other living Plynling.
+    // Ignores the pulse, the cap, the stage and target conditions; a social event takes the chosen
+    // target's living Plynling, or any other.
     [SlashCommand("event", "Forcer un événement sur ton propre Plynling (tests)")]
     public async Task EventAsync(
         [Summary("key", "Clé de l'événement")] string key,
-        [Summary("mode", "Quand le décider")] EventMode mode = EventMode.Pending)
+        [Summary("mode", "Quand le décider")] EventMode mode = EventMode.Pending,
+        [Summary("target", "Le propriétaire de l'autre Plynling")] IUser? target = null)
     {
         if (Context.User.Id != AvailabilityService.OwnerId)
         {
@@ -454,7 +456,12 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
             await FollowupAsync(PlynlingText.NoPlynling, ephemeral: true);
             return;
         }
-        var targetId = def.Target == TargetKind.None ? null : await _plynlings.AnyOtherLivingIdAsync(p);
+        // A chosen other, or any. A Response forced this way lands on your Plynling, the target as the
+        // one who asked — a quick way to test answering.
+        var social = def.Target != TargetKind.None || def.Type == EventType.Response;
+        var targetId = !social ? null
+            : target is not null ? (await _plynlings.GetCurrentAsync(Context.Guild.Id, target.Id, now))?.Id
+            : await _plynlings.AnyOtherLivingIdAsync(p);
         var inst = await _plynlings.CreateEventAsync(p, def, targetId, now);
         if (mode == EventMode.Expired) await _plynlings.ExpireEventNowAsync(inst.Id, now);
         if (mode == EventMode.Now)

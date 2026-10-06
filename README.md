@@ -290,6 +290,10 @@ looks after her.
   Past 100, 200 and 300 its happiness drains faster, its stats dip, and it has a little breakdown — an
   event that may leave it a coping habit. Some choices give a mood for a few days (inspired, grumpy,
   well rested…). Stress only ever comes from its owner's choices.
+- **Together:** some events involve another Plynling — a declaration, a race challenge, a best-friend
+  pact, making peace. The other owner answers from their own card (or their Plynling answers in
+  character after a day). Events also follow life: a welcome on adoption, growing up, an object left
+  behind after a visit, a friend's passing, falling sick, getting better — and some come back days later.
 - **Holidays:** `/plynling freeze` stops everything for up to 14 days, as long as it isn't
   already hungry; then a week before it can be frozen again.
 - **Death** is announced to the whole server, after a private warning about 3 hours

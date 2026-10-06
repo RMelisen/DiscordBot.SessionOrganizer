@@ -104,3 +104,34 @@ never change that mapping, every stored morning depends on it.
 - « État » in « Personnalité » is cut before the 1024-character field cap (every modifier at once
   would pass it).
 - Tests: `/debug stress value:`, `/debug modifier key: [remove:]`.
+
+## Social events, follow-ups, on-actions
+
+- **Responses** (`AskTarget`) are `Response` instances on the *other* Plynling, pointing back
+  (`TargetPlynlingId` = the asker, `ParentInstanceId` = the ask). Decided alone by acceptance
+  (`AcceptWeight`: affinity, compatibility). The mascot answers right after the save
+  (`AnswerForMascotAsync`, given every parent resolved in that unit of work). A response whose asker
+  was abandoned (its id set null) is cancelled, never answered.
+- **Anti-griefing is in the effect types:** another owner's Plynling is touched only through the
+  relation. The one exception, `Heartbreak`, saddens the one who *declared* — declaring is
+  `OwnerOnly`, so it is always that owner's choice (never while frozen). **`OwnerOnly` options are
+  never picked alone.**
+- **Couples** reuse the visit rules: `TargetInfo.CanCouple` is `PlynlingBonds.CanConfess` (gender
+  included — a condition on the target alone cannot see it), checked when asked (target condition)
+  and again when answered; a couple formed meanwhile makes the story say « trop tard ».
+- **Affinity lifts** (`SetAffinityAtLeast`) must clear `BondFor`'s `BondMargin` to change the bond:
+  the pact lifts to `BestFriendsFrom + BondMargin` (harness).
+- **Follow-ups** are instances with a future `AvailableAt`; "open" includes them, so a death cancels them.
+- **On-actions** are queued during a unit of work and created after its save by
+  `FlushOnActionsAsync`, each in its own save and `try` — never what breaks an adoption, a visit or a
+  sweep; a failed one's half-made changes are dropped (`ResetTracked`), and `DiscardChanges` also
+  drops the queue of a failed sweep item. Any read that settles a Plynling into sickness or recovery
+  flushes too (`SettledAsync`), not only the sweep. An on-action never queues an event already open
+  for that Plynling. Growing up brings its event only within `PlynlingTraits.JournalWindow` of the
+  stage — a stage moment rewritten later must not bring it again. `{T}` (trait reveals) comes from
+  the instance's `GainedTraitKey` ("key,key").
+- Labels may name the other (`{B}`): `PlynlingEventStory.Label` expands them for the card, the
+  button (clipped to 80) and the story.
+- Social pulses check `TargetCondition` against each candidate before an event is drawn.
+- Tests: `/debug event key: [mode:] [target:]`. The scratch harness drives `PlynlingService` against
+  in-memory SQLite with the real migrations.
