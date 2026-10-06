@@ -273,9 +273,14 @@ looks after her.
 - **The card** (`/plynling view`) shows it in its current mood — gently animated, each species
   fidgeting in its own way — with its hunger, happiness and hygiene bars and **Caresser** / **Laver** /
   **Nourrir** buttons.
-- **Growing up:** *bébé* for its first 2 days, *ado* until 14 days, *adulte*, then *ancien*
+- **Growing up:** *bébé* for its first week, *ado* until 14 days, *adulte*, then *ancien*
   after 6 months — counted in time actually lived, so a freeze pauses it. The card names the
   stage, every species has its own baby picture, and ado and ancien wear the adult one.
+- **Personality:** every Plynling gets traits as it grows — one childhood trait as a *bébé*, two
+  personality traits as an *ado*, a fourth as an *adulte* — adapted from Crusader Kings III (Courageux,
+  Timide, Gourmand…). Its traits and its passion shape five stats (Diplomatie, Intendance, Sagesse,
+  Ruse, Courage) and a little title (« Piquante et intrépide »). The card shows them; « 📜 Personnalité »
+  details them privately.
 - **Holidays:** `/plynling freeze` stops everything for up to 14 days, as long as it isn't
   already hungry; then a week before it can be frozen again.
 - **Death** is announced to the whole server, after a private warning about 3 hours

@@ -506,8 +506,9 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
                 "**`/plynling list`** — Tous les Plynlings vivants du serveur, du plus vieux au plus jeune.\n" +
                 "**`/plynling journal [user]`** — Son journal : ses badges et ses souvenirs. Il gagne des **badges** " +
                 "en vieillissant, en jouant, en rendant visite et en étant choyé — chacun rapporte quelques cailloux.\n" +
-                "Il grandit : **bébé** ses 2 premiers jours, **ado** jusqu'à 14 jours, **adulte**, " +
-                "puis **ancien** après 6 mois. Le temps passé gelé ne compte pas.")
+                "Il grandit : **bébé** sa première semaine, **ado** jusqu'à 14 jours, **adulte**, " +
+                "puis **ancien** après 6 mois. Le temps passé gelé ne compte pas.\n" +
+                "**Personnalité** (bouton de sa carte) — Ses 4 traits, gagnés en grandissant, et ses stats.")
             .AddField("S'en occuper",
                 "La **faim** se vide en **2 jours** : à 0 %, il meurt. Le **bonheur** se vide en **36 heures** " +
                 "(il est juste triste).\n" +
@@ -584,7 +585,8 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
     {
         var partner = await _plynlings.GetPartnerAsync(plynling);
         var pantry = await _plynlings.GetPantryAsync(plynling);
-        await RespondAsync(components: BuildCard(plynling, now, line, partnerName: partner?.Name, pantry: pantry),
+        await RespondAsync(components: BuildCard(plynling, now, line, partnerName: partner?.Name, pantry: pantry,
+                traits: await _plynlings.GetTraitsAsync(plynling)),
             flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
     }
 
@@ -646,14 +648,14 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
     }
 
     /// Static and Context-free so its component budget is checkable without a gateway.
-    /// Every control uses its own verb (<c>plyn:pet</c>, <c>plyn:bath</c>, <c>plyn:heal</c>, <c>plyn:feed</c>): duplicated
+    /// Every control uses its own verb (<c>plyn:pet</c>, <c>plyn:bath</c>, <c>plyn:heal</c>, <c>plyn:feed</c>, <c>plyn:traits</c>): duplicated
     /// custom ids are rejected outright by Discord, disabled components included.
     /// Nourrir is offered to everyone and refused in the handler for anyone but the
     /// owner — the real check is in code, as with every gate here.
     /// </remarks>
     public static MessageComponent BuildCard(
         Plynling plynling, DateTimeOffset now, string? lastAction, string? lastActionImage = null, string? partnerName = null,
-        IReadOnlyDictionary<PlynlingFood, int>? pantry = null)
+        IReadOnlyDictionary<PlynlingFood, int>? pantry = null, IReadOnlyList<TraitInfo>? traits = null)
     {
         var info = PlynlingCatalog.Info(plynling.Species);
         var alive = plynling.DiedAt is null;
@@ -676,6 +678,9 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
                 .AddComponent(new TextDisplayBuilder(PlynlingCardUi.Heading(plynling, now, partnerName))))
             .AddComponent(new SeparatorBuilder())
             .AddComponent(new TextDisplayBuilder(PlynlingCardUi.Status(plynling, now)));
+        // Its personality under the status: the title and the trait emojis (PlynlingPersonality).
+        if (PlynlingPersonality.CardLine(traits ?? Array.Empty<TraitInfo>(), plynling.Gender) is { } personality)
+            container.AddComponent(new TextDisplayBuilder(personality));
         if (!string.IsNullOrWhiteSpace(lastAction))
         {
             // After a meal the food's own sprite sits beside her line — the one place the
@@ -714,6 +719,11 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
                     Emote.TryParse(ItemCatalog.ByKey(ItemCatalog.FoodKey(food.Food))!.Emoji, out var foodPicture) ? foodPicture : null);
             builder.AddComponent(new ActionRowBuilder().WithSelectMenu(menu));
         }
+        // Its own row, the card's last: the care row is hidden at night and holds three buttons when
+        // sick. Shown frozen too — a personality does not thaw. Anyone may look.
+        if (alive)
+            builder.AddComponent(new ActionRowBuilder()
+                .WithButton("Personnalité", $"plyn:traits:{plynling.Id}", ButtonStyle.Secondary, new Emoji("📜")));
         return builder.Build();
     }
 }

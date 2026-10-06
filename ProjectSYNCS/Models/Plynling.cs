@@ -88,6 +88,14 @@ public class Plynling
     public long Pets { get; set; }
     public long FedByOthers { get; set; }
 
+    // What events have taught it, per stat (Helpers/PlynlingStats). The rest of a stat is computed —
+    // a hashed die, its passion, its traits — so only what was earned is stored. 0 until events exist.
+    public int GrowthDiplomacy { get; set; }
+    public int GrowthStewardship { get; set; }
+    public int GrowthLearning { get; set; }
+    public int GrowthIntrigue { get; set; }
+    public int GrowthCourage { get; set; }
+
     // The Paris day (AppTime.DayKey) of its last happy-gift draw, win or lose — one a day,
     // stored so a restart cannot grant a second. 0 = never.
     public int LastGiftDay { get; set; }

@@ -101,6 +101,7 @@ public class PlynlingService
             return (AdoptOutcome.AlreadyHasOne, null);
         }
         await AddMomentAsync(plynling, JournalKind.Adopted, null, now);  // needs its id: after the first save
+        await EnsureTraitsAsync(plynling, now);                           // its childhood trait, at once
         await _db_context.SaveChangesAsync();
         return (AdoptOutcome.Adopted, plynling);
     }
@@ -126,6 +127,7 @@ public class PlynlingService
             return null;
         }
         await AddMomentAsync(plynling, JournalKind.Adopted, null, now);
+        await EnsureTraitsAsync(plynling, now);
         await _db_context.SaveChangesAsync();
         return plynling;
     }
@@ -679,10 +681,38 @@ public class PlynlingService
         return (badges, moments);
     }
 
+    // Whatever its stage is owed and it lacks (PlynlingTraits.Draw): the childhood trait from bébé,
+    // two personality traits at ado, the fourth trait at adulte. The mascot gets her four chosen ones
+    // instead. One path for adoption, the mascot's creation and every sweep — which is also what gives
+    // Plynlings that predate traits theirs. Adds and journals; never saves (rides the caller's save).
+    public async Task EnsureTraitsAsync(Plynling p, DateTimeOffset now)
+    {
+        if (p.DiedAt is not null) return;
+        var held = await _db_context.PlynlingTraits.Where(t => t.PlynlingId == p.Id).Select(t => t.Key).ToListAsync();
+        var add = PlynlingMascot.Is(p)
+            ? PlynlingMascot.TraitKeys.Where(k => !held.Contains(k)).Select(k => PlynlingTraits.ByKey(k)!).ToList()
+            : PlynlingTraits.Draw(p.Id, PlynlingLife.Stage(p, now), held);
+        var age = PlynlingLife.Age(p, now);
+        var slot = held.Count(k => PlynlingTraits.ByKey(k)?.Kind == TraitKind.Personality);
+        foreach (var trait in add)
+        {
+            _db_context.PlynlingTraits.Add(new PlynlingTrait { PlynlingId = p.Id, Key = trait.Key, Kind = trait.Kind, AcquiredAt = now });
+            // Journaled only when its stage has just begun: a backfill stays out of the journal.
+            if (!PlynlingMascot.Is(p) && PlynlingTraits.JustGained(PlynlingTraits.StageOf(trait.Kind, slot), age))
+                await AddMomentAsync(p, JournalKind.TraitGained, trait.Key, now);
+            if (trait.Kind == TraitKind.Personality) slot++;
+        }
+    }
+
+    // Its traits in the order acquired. A key no longer in the catalog is skipped, never thrown on.
+    public async Task<IReadOnlyList<TraitInfo>> GetTraitsAsync(Plynling p) =>
+        (await _db_context.PlynlingTraits.Where(t => t.PlynlingId == p.Id).OrderBy(t => t.Id).Select(t => t.Key).ToListAsync())
+        .Select(PlynlingTraits.ByKey).OfType<TraitInfo>().ToList();
+
     // What only time earns, for the hourly sweep: the « est devenu… » moments — dated when the
     // stage was reached, so a Plynling that already existed when the journal shipped gets its
-    // past written in — and any badge it now qualifies for (the age ones, and on ship day the
-    // counts). Not saved: the sweep's own save carries it.
+    // past written in — any badge it now qualifies for (the age ones, and on ship day the
+    // counts), and the traits its stage is owed. Not saved: the sweep's own save carries it.
     public async Task ProgressAsync(Plynling p, DateTimeOffset now)
     {
         if (p.DiedAt is not null) return;
@@ -700,6 +730,7 @@ public class PlynlingService
             var at = now - (age - start);
             await AddMomentAsync(p, JournalKind.GrewUp, stage.ToString(), at < p.AdoptedAt ? p.AdoptedAt : at);
         }
+        await EnsureTraitsAsync(p, now);   // the traits its new stage brings — and any it predates
         await AwardAsync(p, now);
     }
 

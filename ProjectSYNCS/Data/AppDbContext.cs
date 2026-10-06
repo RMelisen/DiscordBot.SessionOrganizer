@@ -27,6 +27,7 @@ public class AppDbContext : DbContext
     public DbSet<Plynling> Plynlings => Set<Plynling>();
     public DbSet<PebbleWallet> PebbleWallets => Set<PebbleWallet>();
     public DbSet<PlynlingBadge> PlynlingBadges => Set<PlynlingBadge>();
+    public DbSet<PlynlingTrait> PlynlingTraits => Set<PlynlingTrait>();
     public DbSet<PlynlingJournalEntry> PlynlingJournalEntries => Set<PlynlingJournalEntry>();
     public DbSet<PlynlingRelation> PlynlingRelations => Set<PlynlingRelation>();
     public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
@@ -206,6 +207,14 @@ public class AppDbContext : DbContext
         // A Plynling's badges and journal belong to it: deleted with it (abandoned), kept when it
         // dies. One row per badge per Plynling is what makes each reward paid exactly once.
         modelBuilder.Entity<PlynlingBadge>(e =>
+        {
+            e.HasOne<Plynling>().WithMany().HasForeignKey(x => x.PlynlingId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.PlynlingId, x.Key }).IsUnique();
+        });
+
+        // Its traits: drawn once and stored, so the catalog can grow without changing anyone. One row
+        // per trait per Plynling; deleted with an abandoned one, kept on a dead one, like its badges.
+        modelBuilder.Entity<PlynlingTrait>(e =>
         {
             e.HasOne<Plynling>().WithMany().HasForeignKey(x => x.PlynlingId).OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => new { x.PlynlingId, x.Key }).IsUnique();

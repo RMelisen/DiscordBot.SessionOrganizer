@@ -14,6 +14,8 @@ public enum JournalKind
     LearnedPassion,
     // sickness (Died's detail is "illness" for an illness death)
     FellSick, Recovered,
+    // detail: the trait key (Helpers/PlynlingTraits)
+    TraitGained,
 }
 
 // The wording of each moment — pure string work, gendered at display (the entry stores the
@@ -45,6 +47,9 @@ public static class PlynlingJournalUi
             : $"{g.Agree("Mort", "Morte")} de faim.",
         JournalKind.FellSick => $"🤒 {g.Agree("Tombé", "Tombée")} malade.",
         JournalKind.Recovered => $"💊 {g.Agree("Guéri", "Guérie")} !",
+        JournalKind.TraitGained => PlynlingTraits.ByKey(detail ?? "") is { } trait
+            ? $"{trait.Emoji} Un nouveau trait : **{trait.Name(g)}**."
+            : "🎭 Un nouveau trait.",
         JournalKind.BecameFriends => $"🤝 Une nouvelle amitié avec **{Other(detail)}**.",
         JournalKind.BecameBestFriends => $"💛 Meilleurs amis avec **{Other(detail)}**.",
         JournalKind.BecameLovers => $"💞 {g.Agree("Amoureux", "Amoureuse")} de **{Other(detail)}**.",

@@ -27,16 +27,8 @@ public static class PlynlingSickness
     // A whole number from min to max inclusive, from a roll in [0, 1).
     public static int Gain(double roll, int min, int max) => min + (int)(roll * (max - min + 1));
 
-    // SplitMix64 over the three inputs: stable across runs and machines, unlike string.GetHashCode.
-    public static double Roll(int plynlingId, int dayKey, RollPurpose purpose)
-    {
-        ulong x = (ulong)(uint)plynlingId * 0x9E3779B97F4A7C15UL
-                  ^ (ulong)(uint)dayKey * 0xC2B2AE3D27D4EB4FUL
-                  ^ ((ulong)purpose + 1) * 0x165667B19E3779F9UL;
-        x += 0x9E3779B97F4A7C15UL;
-        x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9UL;
-        x = (x ^ (x >> 27)) * 0x94D049BB133111EBUL;
-        x ^= x >> 31;
-        return (x >> 11) * (1.0 / (1UL << 53));
-    }
+    // SplitMix64 over the three inputs (StableRoll): stable across runs and machines. The purpose
+    // goes in as purpose + 1, exactly as before StableRoll existed — every stored morning depends on it.
+    public static double Roll(int plynlingId, int dayKey, RollPurpose purpose) =>
+        StableRoll.Unit(plynlingId, dayKey, (int)purpose + 1);
 }
