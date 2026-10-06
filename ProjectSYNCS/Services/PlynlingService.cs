@@ -837,9 +837,9 @@ public partial class PlynlingService
     }
 
     // What only time earns, for the hourly sweep: the « est devenu… » moments — dated when the
-    // stage was reached, so a Plynling that already existed when the journal shipped gets its
-    // past written in — any badge it now qualifies for (the age ones, and on ship day the
-    // counts), and the traits its stage is owed. Not saved: the sweep's own save carries it.
+    // stage was reached, written once while that is recent (PlynlingTraits.JustGained) — any badge
+    // it now qualifies for (the age ones, and on ship day the counts), and the traits its stage is
+    // owed. Not saved: the sweep's own save carries it.
     public async Task ProgressAsync(Plynling p, DateTimeOffset now)
     {
         if (p.DiedAt is not null) return;
@@ -853,7 +853,10 @@ public partial class PlynlingService
         foreach (var stage in new[] { PlynlingStage.Teen, PlynlingStage.Adult, PlynlingStage.Elder })
         {
             var start = PlynlingLife.StageStart(stage);
-            if (age < start || written.Contains(stage.ToString())) continue;
+            // Past the window, a missing moment is one the journal trimmed: written again it would be
+            // the oldest entry and push out the next-oldest — another stage moment the next sweep
+            // re-adds, every hour.
+            if (age < start || !PlynlingTraits.JustGained(stage, age) || written.Contains(stage.ToString())) continue;
             // As long ago as it has lived past the threshold — never before it was adopted.
             var at = now - (age - start);
             await AddMomentAsync(p, JournalKind.GrewUp, stage.ToString(), at < p.AdoptedAt ? p.AdoptedAt : at);
@@ -886,16 +889,22 @@ public partial class PlynlingService
 
     // Adds a moment, then trims this Plynling's journal to JournalCap, oldest first — counting
     // moments added earlier in this same unit of work, so several in one save cannot overshoot.
+    // The new moments are candidates too: a backdated one older than everything kept goes itself
+    // rather than pushing out a newer memory (unsaved, its Id is 0 — on a tie, stored ones go first).
     private async Task AddMomentAsync(Plynling p, JournalKind kind, string? detail, DateTimeOffset at)
     {
         _db_context.PlynlingJournalEntries.Add(new PlynlingJournalEntry { PlynlingId = p.Id, At = at, Kind = kind, Detail = detail });
 
         var stored = await _db_context.PlynlingJournalEntries.Where(e => e.PlynlingId == p.Id).ToListAsync();
-        var kept = stored.Where(e => _db_context.Entry(e).State != EntityState.Deleted).ToList();
+        var kept = stored.Where(e => _db_context.Entry(e).State != EntityState.Deleted);
         var pending = _db_context.ChangeTracker.Entries<PlynlingJournalEntry>()
-            .Count(e => e.State == EntityState.Added && e.Entity.PlynlingId == p.Id);
-        var over = kept.Count + pending - JournalCap;
-        if (over > 0) _db_context.PlynlingJournalEntries.RemoveRange(kept.OrderBy(e => e.At).ThenBy(e => e.Id).Take(over));
+            .Where(e => e.State == EntityState.Added && e.Entity.PlynlingId == p.Id)
+            .Select(e => e.Entity);
+        var journal = kept.Concat(pending).ToList();
+        var over = journal.Count - JournalCap;
+        if (over > 0)
+            _db_context.PlynlingJournalEntries.RemoveRange(
+                journal.OrderBy(e => e.At).ThenBy(e => e.Id == 0).ThenBy(e => e.Id).Take(over));
     }
 
     // Awards every badge this Plynling now qualifies for and has not earned — each written once
