@@ -864,10 +864,8 @@ public partial class PlynlingService
         }
         await EnsureTraitsAsync(p, now);   // the traits its new stage brings — and any it predates
         await AwardAsync(p, now);
-        // Growing up reveals its new traits in an event; the caller flushes after its save. Only when the
-        // stage has just begun (the traits' journal window): a stage moment written late — a backfill,
-        // or one the journal trimmed and the sweep writes again — must not bring the event again.
-        if (grewTo is { } grown && !PlynlingTraits.JustGained(grown, age)) grewTo = null;
+        // Growing up reveals its new traits in an event; the caller flushes after its save. The window
+        // above means this happens once per stage, never again for a moment the journal trimmed.
         if (grewTo == PlynlingStage.Teen) QueueOnAction(OnAction.BecameTeen, p, traitText: await NewTraitKeysAsync(p, TraitKind.Personality, 2));
         if (grewTo == PlynlingStage.Adult) QueueOnAction(OnAction.BecameAdult, p, traitText: await NewTraitKeysAsync(p, TraitKind.Personality, 1));
     }
