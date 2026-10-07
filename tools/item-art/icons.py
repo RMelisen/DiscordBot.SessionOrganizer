@@ -1937,3 +1937,572 @@ icon("cadres", "cos.grave.cercle_fees", "Cercle de fées", "🍄",
      "...##########...",
      "................",
      "................")
+
+
+# ---- Traits -------------------------------------------------------------------------------------
+# A Plynling trait is a tile, as in CK3: a framed square whose rim and background say the kind,
+# with the symbol on it. Only the symbol is drawn by hand; tile() composes the frame.
+
+TRAIT_KINDS = {
+    # kind: (rim lit, rim shaded, background, background shaded)
+    "childhood": ("y", "a", "r", "z"),
+    "personality": ("J", "j", "t", "T"),
+    "coping": ("s", "G", "P", "p"),
+}
+
+
+def outlined(*fill):
+    """A symbol's fill (at most 8×8) wrapped in the 1-pixel outline: every empty cell touching the
+    fill becomes "#". Holes of one or two cells come out dark, like a shadow."""
+    w = max(len(r) for r in fill) + 2
+    rows = ["." * w] + ["." + r.ljust(w - 2, ".") + "." for r in fill] + ["." * w]
+    def filled(x, y):
+        return 0 <= y < len(rows) and 0 <= x < w and rows[y][x] != "."
+    return ["".join(c if c != "." or not any(filled(x + dx, y + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+                    else "#" for x, c in enumerate(r)) for y, r in enumerate(rows)]
+
+
+def tile(kind, *symbol, at=None, glints=()):
+    """A 16×16 trait tile: a 1-pixel outline, a rim lit from the top left, a two-tone background,
+    and the symbol (at most 10×10, "." where the background shows) centred in the 10×10 inside —
+    or with its top left at `at`. glints are (x, y, char) in tile coordinates, set last, for
+    details that take no outline (steam, sparkles)."""
+    lit, shade, bg, bg_shade = TRAIT_KINDS[kind]
+    rows = [r for r in symbol if r.strip(".")]
+    left = min(len(r) - len(r.lstrip(".")) for r in rows)
+    width = max(len(r.rstrip(".")) for r in rows) - left
+    rows = [r[left:left + width].ljust(width, ".") for r in rows]
+    assert width <= 10 and len(rows) <= 10, f"a trait symbol is at most 10×10, not {width}×{len(rows)}"
+    ox, oy = at or (3 + (10 - width) // 2, 3 + (10 - len(rows)) // 2)
+    assert 3 <= ox and ox + width <= 13 and 3 <= oy and oy + len(rows) <= 13, "the symbol leaves the inside"
+    grid = []
+    for y in range(16):
+        row = []
+        for x in range(16):
+            if not (1 <= x <= 14 and 1 <= y <= 14) or (x in (1, 14) and y in (1, 14)):
+                row.append(".")
+            elif x in (1, 14) or y in (1, 14) or (x in (2, 13) and y in (2, 13)):
+                row.append("#")
+            elif x in (2, 13) or y in (2, 13):
+                row.append(lit if x == 2 or y == 2 else shade)
+            else:
+                sx, sy = x - ox, y - oy
+                c = rows[sy][sx] if 0 <= sy < len(rows) and 0 <= sx < width else "."
+                row.append(c if c != "." else bg if x + y <= 18 else bg_shade)
+        grid.append(row)
+    for x, y, c in glints:
+        assert 3 <= x <= 12 and 3 <= y <= 12, f"glint ({x},{y}) outside the inside"
+        grid[y][x] = c
+    return ["".join(r) for r in grid]
+
+
+# Enfance
+
+icon("traits_enfance", "trait.bossy", "Autoritaire", "📣", *tile("childhood",
+     ".....####.",
+     "...##EEEw#",
+     ".##fEEEEw#",
+     "#GfEEEEEw#",
+     "#GcEEEEEs#",
+     ".##cEEEcs#",
+     "...##cccG#",
+     "....#U###.",
+     "....#U#...",
+     ".....#...."))
+
+icon("traits_enfance", "trait.charming", "Adorable", "🥺", *tile("childhood",
+     "..######..",
+     ".#yyyyyy#.",
+     "#yyyyyyyA#",
+     "#yw#yyw#A#",
+     "#y##yy##A#",
+     "#iyyyyyiA#",
+     "#Ayy##yyA#",
+     ".#AyyyyA#.",
+     "..######.."))
+
+icon("traits_enfance", "trait.curious", "Curieux", "🔍", *tile("childhood",
+     "..####....",
+     ".#xxxh#...",
+     "#xwxhhb#..",
+     "#wxhhhb#..",
+     "#xhhhbb#..",
+     "#hhhbbd#..",
+     ".#hbbd###.",
+     "..####UU#.",
+     "......#UU#",
+     ".......##."))
+
+icon("traits_enfance", "trait.pensive", "Rêveur", "☁️", *tile("childhood",
+     ".y........",
+     "yyy.###...",
+     ".y.#wws#..",
+     ".##wwwss##",
+     "#wwwwsssG#",
+     "#wwssssGG#",
+     "#sssGGGGg#",
+     ".########."))
+
+icon("traits_enfance", "trait.rowdy", "Turbulent", "🌪️", *tile("childhood",
+     ".########.",
+     "#wwsssssG#",
+     "#GGGGGggg#",
+     ".##ssssG#.",
+     "..#GGggg#.",
+     "..##ssG#..",
+     "...#Ggg#..",
+     "....#sG#..",
+     "....#g#...",
+     ".....#...."))
+
+
+# Personnalité (1)
+
+icon("traits_perso_1", "trait.brave", "Courageux", "🦁", *tile("personality", *outlined(
+     ".o.oo.o.",
+     "ooRooRoo",
+     "oRyyyyRo",
+     "Ry#yy#aR",
+     "oyyyyyao",
+     "Roy##aoR",
+     ".Royyao.",
+     "..RooR..")))
+
+icon("traits_perso_1", "trait.craven", "Peureux", "🫣", *tile("personality", *outlined(
+     ".wI..wI.",
+     ".wI..wI.",
+     ".ws..ws.",
+     "wwwwwwss",
+     "ww#ww#ss",
+     "wiwIIwis",
+     ".wwwwss.",
+     "..ssGG..")))
+
+icon("traits_perso_1", "trait.calm", "Calme", "🍃", *tile("personality", *outlined(
+     ".....llY",
+     "...lllYL",
+     "..lllYLL",
+     ".lllYLLL",
+     ".llYLLL.",
+     ".lYLLL..",
+     ".YLL....",
+     "Y.......")))
+
+icon("traits_perso_1", "trait.wrathful", "Colérique", "💢", *tile("personality", *outlined(
+     "...E....",
+     "..EE..E.",
+     "..EfE.EE",
+     ".EEffEEE",
+     "EEfyyfEc",
+     "Efyywyfc",
+     "Efyyyyfc",
+     ".cfyyfc.")))
+
+icon("traits_perso_1", "trait.chaste", "Pudique", "🙈", *tile("personality", *outlined(
+     "...ws...",
+     "w..ws..s",
+     "ww.ws.ss",
+     "wwwyysss",
+     ".wwyyss.",
+     "..wsss..",
+     "...LL...",
+     "..LL.L..")))
+
+icon("traits_perso_1", "trait.lustful", "Fleur bleue", "💘", *tile("personality", *outlined(
+     ".ii..ii.",
+     "iwiiiiiC",
+     "iiiiiiiC",
+     "iiiiiiCC",
+     ".iiiiCC.",
+     "..iiCC..",
+     "...CC..."),
+     glints=((12, 3, "s"), (11, 3, "s"), (12, 4, "s"), (11, 4, "U"), (10, 5, "U"), (9, 6, "U"), (8, 7, "U"),
+             (7, 8, "U"), (6, 9, "U"), (5, 10, "U"), (4, 11, "w"), (3, 11, "w"), (4, 12, "w"))))
+
+icon("traits_perso_1", "trait.content", "Content", "😌", *tile("personality", *outlined(
+     "sUUUUG..",
+     "wsssGGGG",
+     "wsssGG.G",
+     "wsssGGGG",
+     ".ssGG..."), at=(3, 6),
+     glints=((5, 3, "w"), (6, 4, "w"), (5, 5, "w"), (8, 3, "w"), (9, 4, "w"), (8, 5, "w"))))
+
+icon("traits_perso_1", "trait.ambitious", "Ambitieux", "🏆", *tile("personality", *outlined(
+     "yywyyyaa",
+     "y.wyyy.a",
+     "yywyyyaa",
+     "..yyya..",
+     "...ya...",
+     "...ya...",
+     "..aaao..",
+     ".UUUUUu.")))
+
+icon("traits_perso_1", "trait.diligent", "Travailleur", "🧺", *tile("personality", *outlined(
+     "..UUUU..",
+     ".U....U.",
+     ".U....U.",
+     "sGhGsGhG",
+     "jJjJjJjJ",
+     "JjJjJjJj",
+     ".jJjJjJ.",
+     "..uuuu..")))
+
+icon("traits_perso_1", "trait.lazy", "Paresseux", "🛌", *tile("personality", *outlined(
+     ".wwwwws.",
+     "wwsssssG",
+     "wsssssGG",
+     ".sGGGGG."), at=(3, 7),
+     glints=((8, 3, "w"), (9, 3, "w"), (10, 3, "w"), (11, 3, "w"), (10, 4, "w"), (9, 5, "w"),
+             (8, 6, "w"), (9, 6, "w"), (10, 6, "w"), (11, 6, "w"),
+             (5, 5, "w"), (6, 5, "w"), (5, 6, "w"), (6, 6, "w"))))
+
+icon("traits_perso_1", "trait.stubborn", "Têtu", "🪨", *tile("personality", *outlined(
+     "..sssG..",
+     ".ssssGGg",
+     "s#GGGG#g",
+     "sG#GG#gg",
+     "sGGGGggk",
+     "GGgggggk",
+     ".ggggkk.")))
+
+icon("traits_perso_1", "trait.fickle", "Lunatique", "🌗", *tile("personality", *outlined(
+     "..wyPP..",
+     ".wyyPPp.",
+     "wyyyPPpp",
+     "yyyyPPpp",
+     "yyyyPppp",
+     "ayyyPppp",
+     ".aayPpp.",
+     "..aaPp..")))
+
+# Personnalité (2)
+
+icon("traits_perso_2", "trait.forgiving", "Indulgent", "🤲", *tile("personality", *outlined(
+     ".....ws.",
+     "....wws.",
+     ".ww.wss.",
+     "aw#wwssG",
+     "lwwwsssG",
+     "l.sssGG.",
+     "....GG..")))
+
+icon("traits_perso_2", "trait.vengeful", "Rancunier", "📝", *tile("personality", *outlined(
+     "JJJJJ..w",
+     "JUUUJ.ws",
+     "JJJJJws.",
+     "JEEEws..",
+     "JJJkJ...",
+     "JUUUJ...",
+     "JJJJJ...",
+     "jjjjj...")))
+
+icon("traits_perso_2", "trait.generous", "Généreux", "🎁", *tile("personality", *outlined(
+     ".yy..yy.",
+     "..yyyy..",
+     "EEEyaEEE",
+     "cccyaccc",
+     ".EEyaEc.",
+     ".EEyaEc.",
+     ".EEyaEc.",
+     ".ccyacc.")))
+
+icon("traits_perso_2", "trait.greedy", "Radin", "🪙", *tile("personality", *outlined(
+     "..jJJj..",
+     "...uu...",
+     "..JJJj..",
+     ".JJJJJj.",
+     "JJJyaJjj",
+     "JJJaojjj",
+     ".JJjjjj.",
+     "..jjjj..")))
+
+icon("traits_perso_2", "trait.gregarious", "Sociable", "🗣️", *tile("personality", *outlined(
+     "wwwwws..",
+     "wkwkws..",
+     "swwwss..",
+     ".s.hhhhh",
+     "...hkhkh",
+     "...hhhhD",
+     "......D.")))
+
+icon("traits_perso_2", "trait.shy", "Timide", "🫥", *tile("personality", *outlined(
+     "jUu.yy..",
+     "jUuyyyy.",
+     "jUu#yyyA",
+     "jUuiyyyA",
+     "jUuyyyA.",
+     "jUu.AA..",
+     "jUu.....",
+     "jUu.....")))
+
+icon("traits_perso_2", "trait.honest", "Franc", "🫡", *tile("personality", *outlined(
+     "...J.J..",
+     ".J.J.J.J",
+     ".J.J.J.J",
+     ".JJJJJJJ",
+     "JJJJJJJj",
+     ".JJJJJjj",
+     "..JJJjj.",
+     "..jjjj..")))
+
+icon("traits_perso_2", "trait.deceitful", "Menteur", "🤥", *tile("personality", *outlined(
+     "C......c",
+     "CiC..Ccc",
+     "C##CC##c",
+     "C##CC##c",
+     ".CCccCc.",
+     ".....J..",
+     ".....J..",
+     "....J...")))
+
+icon("traits_perso_2", "trait.humble", "Modeste", "🌱", *tile("personality", *outlined(
+     "ll....LL",
+     "lll..LLL",
+     ".lllLLL.",
+     "...l....",
+     "...l....",
+     ".uUUUUu.",
+     "uUUUUUUu")))
+
+icon("traits_perso_2", "trait.arrogant", "Vaniteux", "🪞", *tile("personality", *outlined(
+     "..yyyy..",
+     ".yxwhhy.",
+     ".yxhhby.",
+     ".yhhbby.",
+     ".yhbbdy.",
+     "..yyya..",
+     "...ya...",
+     "...ya...")))
+
+icon("traits_perso_2", "trait.just", "Juste", "⚖️", *tile("personality", *outlined(
+     "...yy...",
+     "yyyyyyya",
+     "s..ya..s",
+     "s..ya..s",
+     "ya.ya.ya",
+     "...ya...",
+     "..yyaa..",
+     ".aaaaao.")))
+
+icon("traits_perso_2", "trait.arbitrary", "Capricieux", "🎲", *tile("personality", *outlined(
+     ".wwwws.",
+     "wkwwwks",
+     "wwwwwss",
+     "wwwkwss",
+     "wwwwwss",
+     "wkwwsks",
+     ".sssss.")))
+
+# Personnalité (3)
+
+icon("traits_perso_3", "trait.patient", "Patient", "⏳", *tile("personality", *outlined(
+     "uUUUUUUu",
+     ".hhhhhh.",
+     "..yyyy..",
+     "...ya...",
+     "...ha...",
+     "..hyyh..",
+     ".hyyaah.",
+     "uUUUUUUu")))
+
+icon("traits_perso_3", "trait.impatient", "Impatient", "⏰", *tile("personality", *outlined(
+     ".EE..EE.",
+     "EEEEEEEc",
+     "Ewwkwwsc",
+     "Ewwkwwsc",
+     "Ewwkkksc",
+     "Ewwwwssc",
+     ".cEEEEc.",
+     ".c....c.")))
+
+icon("traits_perso_3", "trait.temperate", "Frugal", "🥣", *tile("personality", *outlined(
+     "...fE...",
+     "...Ec...",
+     "wwwwwwws",
+     "swwwwwsG",
+     "sssssGGG",
+     ".ssssGG.",
+     "..GGGG..")))
+
+icon("traits_perso_3", "trait.gluttonous", "Gourmand", "🍯", *tile("personality", *outlined(
+     ".jJJJJj.",
+     ".yyyyya.",
+     "oyyoyyaR",
+     "oyooyoRR",
+     "ooooyoRR",
+     "ooooooRR",
+     ".ooooRR.",
+     "..RRRR..")))
+
+icon("traits_perso_3", "trait.trusting", "Confiant", "🤝", *tile("personality", *outlined(
+     ".sss....",
+     "s...s...",
+     "s...s...",
+     "....s...",
+     "..yyyyya",
+     "..yy#yaa",
+     "..yy#aaa",
+     "..aaaaao")))
+
+icon("traits_perso_3", "trait.paranoid", "Méfiant", "👀", *tile("personality", *outlined(
+     "..ssss..",
+     ".wwwbbs.",
+     "wwwbk#bs",
+     "wwwb##bs",
+     ".wwwbbs.",
+     "..ssss..")))
+
+icon("traits_perso_3", "trait.zealous", "Superstitieux", "🍀", *tile("personality", *outlined(
+     ".ll#lL.",
+     "lll#lLL",
+     "lll#LLL",
+     "###Y###",
+     "lll#LLL",
+     "llL#LLL",
+     ".lL#LL.",
+     "....L..")))
+
+icon("traits_perso_3", "trait.cynical", "Sceptique", "🤨", *tile("personality", *outlined(
+     "..yyyy..",
+     ".y##yyyA",
+     "yyyyy##A",
+     "yy#yyy#A",
+     "yyyyyyyA",
+     "yyy###yA",
+     ".yyyyyA.",
+     "..AAAA..")))
+
+icon("traits_perso_3", "trait.compassionate", "Bienveillant", "💗", *tile("personality", *outlined(
+     ".ii..ii.",
+     ".iwiiiC.",
+     ".iiiiCC.",
+     "J.iiCC.J",
+     "JJ.CC.JJ",
+     "JJJJJJJj",
+     ".jjjjjj.")))
+
+icon("traits_perso_3", "trait.callous", "Froid", "🧊", *tile("personality", *outlined(
+     ".xxxxxx.",
+     "xwwxxxxh",
+     "xwxxxxhh",
+     "xxxxxhhB",
+     "xxxxhhBB",
+     "xxxhhBBB",
+     "hhhhBBBb",
+     ".hBBBbb.")))
+
+icon("traits_perso_3", "trait.sadistic", "Moqueur", "😏", *tile("personality", *outlined(
+     "...Eb...",
+     ".EEEbbb.",
+     "EEEEbbbb",
+     "E.EEbb.b",
+     "y.EEbb.y",
+     ".yyyyyy.",
+     ".aaaaaa.")))
+
+icon("traits_perso_3", "trait.eccentric", "Excentrique", "🎩", *tile("personality", *outlined(
+     ".nVVVVz.",
+     ".nVVVVz.",
+     ".nVVVVz.",
+     ".lLlYLl.",
+     ".nVVVVz.",
+     "nVVVVVVz",
+     ".zzzzzz.")))
+
+# Coping
+
+icon("traits_coping", "trait.comfort_eater", "Mange ses émotions", "🍪", *tile("coping", *outlined(
+     "..JJJ...",
+     ".JJuJj..",
+     "JJJJJuj.",
+     "JuJJJJjj",
+     "JJJJujjj",
+     "JJujjjuj",
+     ".jjjjuj.",
+     "..jjjj..")))
+
+icon("traits_coping", "trait.inappetetic", "Sans appétit", "🥄", *tile("coping", *outlined(
+     "......s.",
+     ".....s..",
+     "....s...",
+     "wkkkkkks",
+     "swwwwwsG",
+     ".sssssG.",
+     "..GGGG..")))
+
+icon("traits_coping", "trait.contrite", "Repentant", "🙏", *tile("coping", *outlined(
+     "...y....",
+     "..yfy...",
+     "..fEf...",
+     "...k....",
+     "..wwss..",
+     "..wwss..",
+     "..wsss..",
+     ".GGGGGG.")))
+
+icon("traits_coping", "trait.improvident", "Imprévoyant", "💸", *tile("coping", *outlined(
+     "w......s",
+     "ww.yy.ss",
+     ".wywyas.",
+     "..yyya..",
+     "..aaoo..",
+     "...oo...")))
+
+icon("traits_coping", "trait.reclusive", "Reclus", "🐚", *tile("coping", *outlined(
+     "..UUUU..",
+     ".UjUUjU.",
+     ".UjwwjU.",
+     ".UjwsjU.",
+     ".UjUUjy.",
+     ".UjUUjU.",
+     ".UjUUjU.",
+     "GGGGGGGG")))
+
+icon("traits_coping", "trait.irritable", "Irritable", "🌩️", *tile("coping", *outlined(
+     "..GGG...",
+     ".GsGGGG.",
+     "GGGGGGGg",
+     "GGgggggg",
+     ".gggggg.",
+     "....y...",
+     "...yy...",
+     "...y....")))
+
+icon("traits_coping", "trait.profligate", "Dépensier", "🛍️", *tile("coping", *outlined(
+     "..wwww..",
+     "..w..w..",
+     "iiiiiiiC",
+     "iIiiiiiC",
+     "iiiiiiCC",
+     "iiiiiiCC",
+     "iiiiiCCC",
+     "CCCCCCCC")))
+
+icon("traits_coping", "trait.confider", "Confident", "🫂", *tile("coping", *outlined(
+     ".wwwwww.",
+     "wwiwiwws",
+     "wwiiiwss",
+     "wwwiwsss",
+     ".wwssss.",
+     ".ws.....",
+     ".s......")))
+
+icon("traits_coping", "trait.journaller", "Écrit son journal", "📔", *tile("coping", *outlined(
+     ".LLLLLLl",
+     "sLlLLLLl",
+     ".LwwwwLl",
+     "sLLLLLLl",
+     ".LLLLLLl",
+     "sLLLLLLl",
+     ".LLLLLLl",
+     ".lllllll")))
+
+icon("traits_coping", "trait.athletic", "Sportif", "🏃", *tile("coping", *outlined(
+     "EE......",
+     "EEE.....",
+     "EwEE....",
+     "EEwEEE..",
+     "EEEwEEEE",
+     "EEEEEEEc",
+     "wwwwwwww",
+     ".GGGGGG.")))

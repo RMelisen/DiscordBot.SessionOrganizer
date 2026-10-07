@@ -8,6 +8,9 @@ the pack's colours) to match it.
 
 - `palette.py` — the 44 colours, one character each (`.` transparent, `#` the outline).
 - `icons.py` — every icon, by key, in `GROUPS` (the batches).
+  Plynling traits (`trait.<key>`) are CK3-style tiles: `tile(kind, …)` draws the frame, its rim and
+  background giving the kind (enfance gold on wine, personnalité bronze on teal, coping silver on
+  slate), and only the symbol is drawn — `outlined()` wraps an 8×8 fill in the outline.
 - `export.py [group…]` — writes the PNGs and `out/sheet_<group>.html`, which shows each icon at
   128 px, at 22 px (Discord's inline emoji size) beside the Unicode it replaces and a mushroom.
 - `check.py` — grid shape, palette, a 1-pixel `#272736` outline wherever the drawing meets air,
