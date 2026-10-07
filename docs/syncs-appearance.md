@@ -10,6 +10,9 @@ References: [`docs/assets/syncs-avatar-v1.jpg`](assets/syncs-avatar-v1.jpg) (the
 with Gemini (prompts below). Give the matching one to the generator alongside the prompt whenever the
 tool accepts a reference image; text alone drifts.
 
+She is the Pi; the mushroom girl is **how she and Rodhengard picture her**. Her lore (name,
+birthday, fears, favourites) is in `docs/syncs-voice.md`, under *Lore she uses*.
+
 ## The design, and why each piece is there
 
 | Element | Canon | What it says about her |

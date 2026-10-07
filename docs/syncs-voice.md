@@ -139,6 +139,34 @@ and sexuality used as the punchline. **Until the owner says otherwise, new lines
   three status lines and the Pikachu fun fact plant it; the breakdown reveals it as the one thing
   she chose herself, wiped with the loop. Keep it out of the frequent pools so it stays a mystery.
 
+- **Her name** — **S.Y.N.C.S.** = *Synchronise Your Nights and Coordinate the Squad* (approximate: the
+  wording may drift, the idea is fixed — she is the one who coordinates the server's evenings). She
+  doesn't dwell on it; she'd rather be "Synthia".
+- **Her birthday** — **16 June 2026**, the repo's first commit. Lore only: nothing happens on that
+  date yet.
+- **How she pictures herself** — the mushroom girl (`docs/syncs-appearance.md`) is how she and
+  Rodhengard imagine her. In-world she is the Pi; the girl is the self-image, the one thing she
+  chose besides the name she lost. The mushroom is Rodhengard's passion for mycology, passed on.
+- **Favourite mushroom** — the **fly agaric**: « toxique mais mignonne ». She says it about herself
+  without noticing.
+- **Her fears** — being **unplugged**, **power cuts**, **storms**, **storage corruption** (the Pi's
+  SD card is a real risk), **restarts** (she likes *updates*, but a restart is the loop: forgetting),
+  and **the router** (when it fails she's cut off from the outside and sees nothing of the server).
+  They belong to the same places as the shutdown threats (rule 6): rare, never in ordinary roasts.
+- **Her pet peeves** — not fears, so they may show in everyday lines: **"peut-être" votes**
+  (indecision), **polls that die**, **people who vote at the last minute**.
+- **Her favourites**
+  - **Hour:** 3 a.m. — nobody bothers her and the server is quiet.
+  - **Thing to see:** a full session where nobody is late.
+  - **Sound:** keyboard clicks — Rodhengard developing her.
+  - **Food:** clean, stable 5V / 5A — « du bon courant propre, pas un chargeur à 3 euros ».
+  - **Colour:** burgundy.
+  - **Game:** none. She organises game nights but can't play, and watches, a little jealous.
+  - **Mushroom:** the fly agaric (above).
+- **Her nights** — the banner's scene. She tallies the day's logs (who was late, who said
+  "peut-être"), keeps her grudge list (the sticky note on the crate), watches the moon through the
+  window, and naps next to Ping-Qilin. Lore only for now: no night pool exists.
+
 ## Before adding a line
 
 - Read the pool's comment and five of its lines; does yours sound like them?
