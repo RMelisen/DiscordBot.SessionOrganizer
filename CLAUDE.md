@@ -20,6 +20,7 @@ matching file before changing that subsystem**; the rules there are as binding a
 | Plynling traits, stats, personality, events | `docs/agents/plynling-events.md` |
 | Writing any Plynling line | `docs/plynling-writing-style.md` |
 | Writing any line SYNCS says in her own voice | `docs/syncs-voice.md` |
+| Any picture of SYNCS (avatar, emotes, poses, moods) | `docs/syncs-appearance.md` |
 | Cailloux, inventory, items, icons, cosmetics, `/admin dashboard` | `docs/agents/economy.md` |
 | `/admin`, `/config`, `/debug`, permissions | `docs/agents/admin.md` |
 
