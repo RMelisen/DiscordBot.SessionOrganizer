@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Helpers;
-using ProjectSYNCS.Models;
 
 namespace ProjectSYNCS.Services;
 
@@ -52,13 +51,11 @@ public sealed class PlynlingSweepService : BackgroundService
 
     private async Task SweepAsync()
     {
-        await using var scope = _services.CreateAsyncScope();
-        var plynlings = scope.ServiceProvider.GetRequiredService<PlynlingService>();
-
-        List<Plynling> batch;
+        List<int> ids;
         try
         {
-            batch = await plynlings.GetSweepBatchAsync();
+            await using var scope = _services.CreateAsyncScope();
+            ids = await scope.ServiceProvider.GetRequiredService<PlynlingService>().GetSweepIdsAsync();
         }
         catch (Exception ex)
         {
@@ -67,12 +64,19 @@ public sealed class PlynlingSweepService : BackgroundService
         }
 
         var now = DateTimeOffset.UtcNow;
-        foreach (var plynling in batch)
+        foreach (var id in ids)
         {
             // Per item: one broken Plynling must not stop the others, and an exception
-            // escaping ExecuteAsync would stop the whole host.
+            // escaping ExecuteAsync would stop the whole host. Each in its own scope, so its own
+            // AppDbContext: nothing it reads is served stale to a later Plynling (a care click or
+            // a pick made meanwhile), and a refused save dies with its scope instead of being
+            // retried by the next Plynling's.
             try
             {
+                await using var scope = _services.CreateAsyncScope();
+                var plynlings = scope.ServiceProvider.GetRequiredService<PlynlingService>();
+                if (await plynlings.GetForSweepAsync(id) is not { } plynling) continue;   // abandoned meanwhile
+
                 PlynlingLife.Settle(plynling, now);
                 await plynlings.FlushMomentsAsync(plynling);        // fell sick / recovered, if a morning did it
                 await plynlings.ProgressAsync(plynling, now);      // time's badges and stage moments
@@ -115,8 +119,7 @@ public sealed class PlynlingSweepService : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to sweep Plynling {PlynlingId}.", plynling.Id);
-                plynlings.DiscardChanges();     // or the next Plynling's save retries this one's, and fails too
+                _logger.LogError(ex, "Failed to sweep Plynling {PlynlingId}.", id);
             }
         }
     }

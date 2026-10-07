@@ -77,10 +77,9 @@ never change that mapping, every stored morning depends on it.
   land in one save. Events never make a couple.
 - **Never applied twice:** `ResolvedAt` is a concurrency token. When the sweep and a click resolve the
   same event, the second save throws and rolls back; `PickEventAsync` answers « déjà décidé ».
-  The sweep's context serves the whole batch, so its per-item `catch` calls
-  `PlynlingService.DiscardChanges()`: a refused unit of work left tracked would be retried, and
-  refused, by every later Plynling's save. Its reads of other Plynlings' instances and relations
-  are `AsNoTracking` for the same reason (a tracked row is served stale later in the pass).
+  **The sweep opens a scope per Plynling** (ids first, then `GetForSweepAsync`): a context shared by
+  the pass served rows read early to every later Plynling, stale after any click made meanwhile,
+  and kept a refused unit of work tracked for every later save to retry. Keep it per item.
 - **Stories are rebuilt from the row** on every page turn: the row stores the chance shown, the roll,
   and the bond before/after. No in-memory story store. A removed event still renders a plain story.
 - **Where stories go:** the game channel for its guild; a pick made elsewhere (the dev guild) posts in

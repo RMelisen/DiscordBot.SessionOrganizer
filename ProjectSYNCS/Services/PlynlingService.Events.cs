@@ -18,8 +18,7 @@ public partial class PlynlingService
 {
     // With `other`, the context also knows the pair: their relation, hidden compatibility, whether
     // either is taken and whether the visit rules would let them couple, and the other's stats (for a
-    // duel). The relation is read untracked: the sweep's context lives for its whole batch, and a
-    // tracked row would be served stale to a later write in the pass (ShiftAffinityAsync re-reads it).
+    // duel).
     public async Task<EventContext> GetEventContextAsync(Plynling p, DateTimeOffset now, Plynling? other = null)
     {
         var traits = await GetTraitsAsync(p);
@@ -32,7 +31,7 @@ public partial class PlynlingService
     // the visit rules would let them couple. Enough for a target condition, without either's traits.
     private async Task<TargetInfo> TargetInfoAsync(Plynling p, Plynling other)
     {
-        var relation = await FindRelationAsync(p.Id, other.Id, tracked: false);
+        var relation = await FindRelationAsync(p.Id, other.Id);
         var bond = relation?.Bond ?? PlynlingBond.Acquaintances;
         var affinity = relation?.Affinity ?? 0;
         var taken = await InCoupleAsync(p.Id, other.Id) || await InCoupleAsync(other.Id, p.Id);
@@ -348,9 +347,7 @@ public partial class PlynlingService
     }
 
     // Who a social event may involve, by kind: living, unfrozen Plynlings of the same guild, not
-    // already in a social event with this one in the last 24 h (either direction). Untracked reads: the
-    // sweep's context lives for the whole batch, and another Plynling's instance or a relation tracked
-    // here would be served stale later in the pass (an owner's pick, a visit) instead of re-read.
+    // already in a social event with this one in the last 24 h (either direction).
     private async Task<Dictionary<TargetKind, IReadOnlyList<int>>> TargetCandidatesAsync(Plynling p, DateTimeOffset now)
     {
         var others = await _db_context.Plynlings
@@ -364,7 +361,7 @@ public partial class PlynlingService
             .Where(i => now - i.CreatedAt < TimeSpan.FromHours(24))
             .Select(i => i.PlynlingId == p.Id ? i.TargetPlynlingId!.Value : i.PlynlingId)
             .ToHashSet();
-        var relations = (await _db_context.PlynlingRelations.AsNoTracking()
+        var relations = (await _db_context.PlynlingRelations
                 .Where(r => r.PlynlingAId == p.Id || r.PlynlingBId == p.Id).ToListAsync())
             .ToDictionary(r => r.PlynlingAId == p.Id ? r.PlynlingBId : r.PlynlingAId, r => r.Bond);
         var free = others.Where(id => !recentPairs.Contains(id)).ToList();

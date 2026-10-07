@@ -68,10 +68,11 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
         // Only mushrooms are adoptable for now: the sunflower species exist in the catalog but
         // stay dormant until families ship (the plan's deferred Task 3 adds the family: option).
         var species = PlynlingCatalog.RollSpecies(PlynlingFamily.Mushroom);
+        await DeferAsync();
         var (outcome, plynling) = await _plynlings.AdoptAsync(Context.Guild.Id, Context.User.Id, name, species, now);
         if (outcome != AdoptOutcome.Adopted || plynling is null)
         {
-            await RespondAsync(PlynlingText.AlreadyHasOne, ephemeral: true);
+            await RefuseAsync(PlynlingText.AlreadyHasOne);
             return;
         }
 
@@ -276,11 +277,11 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
     {
         var target = user ?? Context.User;
         var now = DateTimeOffset.UtcNow;
+        await DeferAsync();
         var plynling = await _plynlings.GetShownAsync(Context.Guild.Id, target.Id, now);
         if (plynling is null)
         {
-            await RespondAsync(target.Id == Context.User.Id ? PlynlingText.NoPlynling : PlynlingText.NoneFor(target.Id),
-                ephemeral: true, allowedMentions: AllowedMentions.None);
+            await RefuseAsync(target.Id == Context.User.Id ? PlynlingText.NoPlynling : PlynlingText.NoneFor(target.Id));
             return;
         }
         // The owner's first look of the day at a happy Plynling may turn up a gift.
@@ -312,12 +313,13 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
         }
 
         var now = DateTimeOffset.UtcNow;
+        await DeferAsync();
         var (outcome, plynling) = await _plynlings.FreezeAsync(Context.Guild.Id, target.Id, byStaff, now);
         if (outcome != FreezeOutcome.Frozen || plynling is null)
         {
             // Every refusal but NoPlynling carries the Plynling, so its gender is known.
             var g = plynling?.Gender ?? PlynlingGender.Male;
-            await RespondAsync(outcome switch
+            await RefuseAsync(outcome switch
             {
                 FreezeOutcome.NoPlynling => byStaff ? PlynlingText.NoneFor(target.Id) : PlynlingText.NoPlynling,
                 FreezeOutcome.Dead => PlynlingText.Dead(g),
@@ -326,13 +328,13 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
                 FreezeOutcome.Sick => PlynlingText.SickNoFreeze(g),
                 FreezeOutcome.Cooldown => PlynlingText.FreezeCooldown(g, plynling!.LastSelfThawAt!.Value + PlynlingLife.SelfFreezeCooldown),
                 _ => PlynlingText.Unknown,
-            }, ephemeral: true, allowedMentions: AllowedMentions.None);
+            });
             return;
         }
 
         await RespondCardAsync(plynling, now, PlynlingText.FrozenNotice(plynling.Gender, PlynlingCardUi.SafeName(plynling.Name), plynling.FreezeUntil));
-        // After the reply, never before: nothing here defers, and a DM is two or three
-        // REST calls against Discord's 3 s deadline for answering the interaction.
+        // After the card, never before: the card is what the person is waiting for, and a DM is two
+        // or three REST calls that may fail.
         if (byStaff)
             await _announcer.DmOwnerAsync(plynling.OwnerId, string.Format(
                 _picker.Pick(BotResponses.PlynlingStaffFreezeDms.For(plynling.Gender)), PlynlingCardUi.SafeName(plynling.Name)));
@@ -352,18 +354,19 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
 
         var now = DateTimeOffset.UtcNow;
         // Staff may lift any freeze, including a staff freeze on their own Plynling.
+        await DeferAsync();
         var (outcome, plynling) = await _plynlings.ThawAsync(Context.Guild.Id, target.Id, asStaff, now);
         if (outcome != ThawOutcome.Thawed || plynling is null)
         {
             var g = plynling?.Gender ?? PlynlingGender.Male;
-            await RespondAsync(outcome switch
+            await RefuseAsync(outcome switch
             {
                 ThawOutcome.NoPlynling => target.Id == Context.User.Id ? PlynlingText.NoPlynling : PlynlingText.NoneFor(target.Id),
                 ThawOutcome.Dead => PlynlingText.Dead(g),
                 ThawOutcome.NotFrozen => PlynlingText.NotFrozen(g),
                 ThawOutcome.StaffOnly => PlynlingText.ThawStaffOnly(g),
                 _ => PlynlingText.Unknown,
-            }, ephemeral: true, allowedMentions: AllowedMentions.None);
+            });
             return;
         }
 
@@ -464,19 +467,20 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
         }
 
         var text = cleaned.Length == 0 ? null : cleaned;
+        await DeferAsync();
         var (outcome, plynling, ready) = int.TryParse(idStr, out var id)
             ? await _plynlings.TeachPassionAsync(id, Context.User.Id, text, now)
             : (TeachOutcome.NoPlynling, null, null);
         switch (outcome)
         {
             case TeachOutcome.NoPlynling:
-                await RespondAsync(PlynlingText.NoPlynling, ephemeral: true);
+                await RefuseAsync(PlynlingText.NoPlynling);
                 return;
             case TeachOutcome.Cooldown:
-                await RespondAsync(PlynlingText.PassionCooldown(ready!.Value), ephemeral: true);
+                await RefuseAsync(PlynlingText.PassionCooldown(ready!.Value));
                 return;
             case TeachOutcome.Cleared:
-                await RespondAsync(PlynlingText.PassionCleared(PlynlingCardUi.SafeName(plynling!.Name)), ephemeral: true);
+                await RefuseAsync(PlynlingText.PassionCleared(PlynlingCardUi.SafeName(plynling!.Name)));
                 return;
         }
 
@@ -616,9 +620,28 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
 
     // ---- rendering --------------------------------------------------------------
 
-    private async Task RespondCardAsync(Plynling plynling, DateTimeOffset now, string? line) =>
-        await RespondAsync(components: await BuildCardAsync(_plynlings, plynling, now, line),
-            flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+    // The card commands (adopt, view, freeze, thaw, passion) read and write the database before they
+    // know what to show, and on the Pi that can outrun Discord's 3 s: the action was saved while the
+    // command looked dead. So they defer first, publicly since the card is public, and the card
+    // fills the deferred reply. Checks that need no database still refuse before deferring.
+    private async Task RespondCardAsync(Plynling plynling, DateTimeOffset now, string? line)
+    {
+        var card = await BuildCardAsync(_plynlings, plynling, now, line);
+        await ModifyOriginalResponseAsync(m =>
+        {
+            m.Components = card;
+            m.Flags = MessageFlags.ComponentsV2;
+            m.AllowedMentions = AllowedMentions.None;
+        });
+    }
+
+    // A refusal after deferring stays private: a follow-up to a public deferral would take its place
+    // publicly, so the deferred reply is deleted first and the refusal sent as a private follow-up.
+    private async Task RefuseAsync(string text)
+    {
+        await DeleteOriginalResponseAsync();
+        await FollowupAsync(text, ephemeral: true, allowedMentions: AllowedMentions.None);
+    }
 
     // The card with everything it shows besides the Plynling itself — its partner, its owner's pantry,
     // its traits, what events wait — loaded in one place, so a new input is added once, not at every

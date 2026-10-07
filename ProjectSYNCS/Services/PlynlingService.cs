@@ -478,13 +478,11 @@ public partial class PlynlingService
     // A pair's relation row is keyed lower id first (its unique index).
     private static (int Lo, int Hi) Pair(int a, int b) => a < b ? (a, b) : (b, a);
 
-    // The pair's relation row, or null. Untracked when asked: a read that must not be served stale to
-    // a later write in the sweep's long-lived context.
-    private async Task<PlynlingRelation?> FindRelationAsync(int a, int b, bool tracked = true)
+    // The pair's relation row, or null.
+    private async Task<PlynlingRelation?> FindRelationAsync(int a, int b)
     {
         var (lo, hi) = Pair(a, b);
-        IQueryable<PlynlingRelation> rows = tracked ? _db_context.PlynlingRelations : _db_context.PlynlingRelations.AsNoTracking();
-        return await rows.FirstOrDefaultAsync(r => r.PlynlingAId == lo && r.PlynlingBId == hi);
+        return await _db_context.PlynlingRelations.FirstOrDefaultAsync(r => r.PlynlingAId == lo && r.PlynlingBId == hi);
     }
 
     // The pair's relation row, created (acquaintances, from now) if they never met. Never saves.
@@ -717,18 +715,22 @@ public partial class PlynlingService
         return living.Where(x => x.DiedAt is null).ToList();
     }
 
-    // Every Plynling the hourly sweep has to look at: the living, and deaths not yet announced.
-    public async Task<List<Plynling>> GetSweepBatchAsync() =>
-        await _db_context.Plynlings.Where(x => x.DiedAt == null || !x.DeathAnnounced).ToListAsync();
+    // Every Plynling the hourly sweep has to look at: the living, and deaths not yet announced. Ids
+    // only: the sweep loads each one in its own scope (GetForSweepAsync).
+    public async Task<List<int>> GetSweepIdsAsync() =>
+        await _db_context.Plynlings.Where(x => x.DiedAt == null || !x.DeathAnnounced).Select(x => x.Id).ToListAsync();
+
+    // One Plynling for the sweep, as stored — the sweep settles it itself. Null if it was abandoned,
+    // or its death announced, since the ids were read.
+    public Task<Plynling?> GetForSweepAsync(int id) =>
+        _db_context.Plynlings.FirstOrDefaultAsync(x => x.Id == id && (x.DiedAt == null || !x.DeathAnnounced));
 
     public Task SaveAsync() => _db_context.SaveChangesAsync();
 
-    // After a failed save, forgets every change it held. The sweep shares one context across its
-    // batch: left tracked, a failed unit of work (an event an owner decided a moment before the
-    // sweep — the concurrency token refuses the second resolution) would be retried, and refused
-    // again, by every later Plynling's save. The next pass redoes whatever was dropped. The on-actions
-    // and the mascot's ask that unit queued go too: they belong to work that was never saved.
-    public void DiscardChanges()
+    // After a refused save (PickEventAsync: the sweep decided it first), forgets every change it held,
+    // so no later save on this context retries it. The on-actions and the mascot's ask that unit queued
+    // go too: they belong to work that was never saved.
+    private void DiscardChanges()
     {
         ResetTracked();
         _onActions.Clear();

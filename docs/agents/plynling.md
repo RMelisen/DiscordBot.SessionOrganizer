@@ -107,8 +107,14 @@ view user:`. `PlynlingCareService` is what the buttons call.
   `CooldownGate` keyed on (petter, Plynling), released when the pet is refused; the refusal shows
   the ready time via `CooldownGate.TryClaim`'s overload as `<t:…:R>`.
 - **« 💞 En couple avec … »** comes from `PlynlingService.GetPartnerAsync` (living partner only,
-  none on a dead card), passed to `BuildCard` by every call site (`RespondCardAsync`, the care
-  service's pet and feed) since the builder is static.
+  none on a dead card), loaded with the rest by `PlynlingModule.BuildCardAsync`, which every call site uses.
+- **Everything that shows the card defers first** (the care buttons; `adopt`, `view`, `freeze`,
+  `thaw` and the passion modal): each reads and saves before it knows what to show, and the card
+  reads more, which on the Pi can outrun Discord's 3 s. A care button's refusal is an ephemeral
+  follow-up and the card is redrawn through `ModifyOriginalResponseAsync`. A command defers
+  publicly (the card is public), so its refusal deletes the deferred reply and follows up privately
+  (`RefuseAsync`). Checks that need no database (an empty name, a cooldown in memory, staff rights)
+  still refuse before deferring.
 
 **Freezing has two owners.** A self-freeze (`FrozenByStaff = false`) follows rules that exist only
 to stop people escaping death: hunger ≥ 50%, 14 days max, thawable early, 7-day cooldown after it

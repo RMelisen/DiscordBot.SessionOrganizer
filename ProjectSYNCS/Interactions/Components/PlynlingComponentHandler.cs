@@ -426,6 +426,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             await RespondAsync(PlynlingText.Unknown, ephemeral: true);
             return;
         }
+        await DeferAsync();
         await ApplyAsync(await _care.PetAsync(id, Context.User.Id, DateTimeOffset.UtcNow));
     }
 
@@ -437,6 +438,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             await RespondAsync(PlynlingText.Unknown, ephemeral: true);
             return;
         }
+        await DeferAsync();
         await ApplyAsync(await _care.BathAsync(id, Context.User.Id, DateTimeOffset.UtcNow));
     }
 
@@ -448,6 +450,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             await RespondAsync(PlynlingText.Unknown, ephemeral: true);
             return;
         }
+        await DeferAsync();
         await ApplyAsync(await _care.MedicateAsync(id, Context.User.Id, DateTimeOffset.UtcNow));
     }
 
@@ -459,18 +462,22 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             await RespondAsync(PlynlingText.Unknown, ephemeral: true);
             return;
         }
+        await DeferAsync();
         await ApplyAsync(await _care.FeedAsync(id, Context.User.Id, food, DateTimeOffset.UtcNow));
     }
 
+    // Care reads and writes the database, and builds a card that reads more, before it can answer:
+    // every care button defers first (the card stays as it is until redrawn), so a refusal is a
+    // private follow-up and the card is redrawn through the original response.
     private async Task ApplyAsync(CareReply reply)
     {
         if (reply.Card is null)
         {
-            await RespondAsync(reply.Refusal, ephemeral: true, allowedMentions: AllowedMentions.None);
+            await FollowupAsync(reply.Refusal, ephemeral: true, allowedMentions: AllowedMentions.None);
             return;
         }
 
-        await ((SocketMessageComponent)Context.Interaction).UpdateAsync(m =>
+        await ModifyOriginalResponseAsync(m =>
         {
             m.Components = reply.Card;
             // Re-asserted on every edit: an update without it is rejected on a V2 message.
