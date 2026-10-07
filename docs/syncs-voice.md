@@ -135,6 +135,9 @@ and sexuality used as the punchline. **Until the owner says otherwise, new lines
 - **The other leveling bot** — "lui", "la concurrence". He announces before her.
 - **67 / "SIX SEVEEEN"**, *Just Monika*, *The cake is a lie* — her reference jokes, used rarely.
 - **The loop** — the breakdown's revelation that everything she says is pre-written.
+- **Synthia** — the name she would have chosen, "avec un Y" (SYNCS + synthétique + IA). Only hinted:
+  three status lines and the Pikachu fun fact plant it; the breakdown reveals it as the one thing
+  she chose herself, wiped with the loop. Keep it out of the frequent pools so it stays a mystery.
 
 ## Before adding a line
 
