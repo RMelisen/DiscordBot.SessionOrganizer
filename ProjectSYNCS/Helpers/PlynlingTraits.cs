@@ -13,11 +13,15 @@ public enum AiAxis { Boldness, Compassion, Greed, Energy, Honor, Rationality, So
 /// (PlynlingStress).
 /// </summary>
 public sealed record TraitInfo(
-    string Key, TraitKind Kind, string Group, string NameM, string NameF, string Emoji, string Description,
+    string Key, TraitKind Kind, string Group, string NameM, string NameF, string DefaultEmoji, string Description,
     IReadOnlyDictionary<PlynlingStat, int> Stats, IReadOnlyDictionary<AiAxis, int> Axes,
     double StressGain = 1, double StressLoss = 1)
 {
     public string Name(PlynlingGender gender) => gender == PlynlingGender.Female ? NameF : NameM;
+
+    // Its tile (Assets/Icons/trait.<key>.png) once the bot's emojis are up, else the Unicode. Custom
+    // markup: a button or select gets EmoteMarkup.Parse, never new Emoji.
+    public string Emoji => ItemEmojis.For(ItemEmojis.TraitKey(Key)) ?? DefaultEmoji;
 }
 
 /// <summary>

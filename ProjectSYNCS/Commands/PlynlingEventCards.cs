@@ -53,7 +53,7 @@ public static class PlynlingEventCards
     }
 
     private static IEmote? ButtonEmoji(EventOption o) =>
-        o.Gate is TraitGate tg && PlynlingTraits.ByKey(tg.TraitKey) is { } t ? new Emoji(t.Emoji)
+        o.Gate is TraitGate tg && PlynlingTraits.ByKey(tg.TraitKey) is { } t ? EmoteMarkup.Parse(t.Emoji)
         : o.Challenge is not null ? new Emoji("🎲")
         : null;
 

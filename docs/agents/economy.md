@@ -81,19 +81,20 @@ they work in any server), and **the bot uploads them itself**.
   16 px without smoothing; copied to output and publish by the csproj). File names are the item keys
   (`col.<file name>`) — the harness checks both ways. `CREDITS.txt` is the pack's list with Latin
   names.
-- Every other collectible, the six sets and every cosmetic have icons drawn in the same style: 16×16
-  text grids in `tools/item-art/icons.py`, in the pack's palette (Pear36 + eight pack colours),
-  exported ×8 to `ProjectSYNCS/Assets/Icons/<key>.png` (`<key>` = item key, or `set.<set key>`).
+- Every other collectible, the six sets, every cosmetic and every Plynling trait have icons drawn in
+  the same style: 16×16 text grids in `tools/item-art/icons.py`, in the pack's palette (Pear36 +
+  eight pack colours), exported ×8 to `ProjectSYNCS/Assets/Icons/<key>.png` (`<key>` = item key,
+  `set.<set key>` or `trait.<trait key>`).
 - **`ApplicationEmojiService`**, on the first Ready, lists the application's emojis, uploads any
   missing sprite (from both folders via `ItemEmojis.Sources`), and records the markup in the static
   `ItemEmojis` map. Names: mushrooms `shroom_<slug>`, the rest `ItemEmojis.EmojiName`'s short
-  prefixes (`c_`, `s_`, `th_`, `ti_`, `ac_`, `gr_`) — Discord caps names at 32 chars. Each
+  prefixes (`c_`, `s_`, `th_`, `ti_`, `ac_`, `gr_`, `tr_`) — Discord caps names at 32 chars. Each
   application (dev, prod) gets its own copy with no manual step.
 - **An existing emoji is reused by name, never replaced** — to change a picture, delete the emoji in
   the developer portal and restart.
 - **Emoji properties are computed**: `ItemInfo.Emoji`, `CollectionSet.Emoji`, `CosmeticInfo.Emoji`,
-  a thème's `Banner` and a cadre's `GraveLeft`/`GraveRight` use the uploaded icon, else the stored
-  `DefaultEmoji` — so nothing breaks before or without the upload.
+  `TraitInfo.Emoji`, a thème's `Banner` and a cadre's `GraveLeft`/`GraveRight` use the uploaded
+  icon, else the stored `DefaultEmoji` — so nothing breaks before or without the upload.
 - **Autocomplete is plain text**: go through `ItemCatalog.TextEmoji`, which drops custom markup.
 - **A select option must get `EmoteMarkup.Parse(emoji)`, never `new Emoji(emoji)`** (Discord
   rejects custom markup there).

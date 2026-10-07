@@ -7,8 +7,8 @@ using ProjectSYNCS.Helpers;
 namespace ProjectSYNCS.Services;
 
 // Makes sure the bot's own application emojis exist for every sprite it ships with — the
-// Champignons (Assets/Mushrooms) and the other icons (Assets/Icons: collectibles, sets and
-// cosmetics) — then records their markup in ItemEmojis.
+// Champignons (Assets/Mushrooms) and the other icons (Assets/Icons: collectibles, sets, cosmetics
+// and Plynling traits) — then records their markup in ItemEmojis.
 //
 // Application emojis belong to the bot's application rather than to a server, so the bot can
 // show them in any server it is in, and each bot — dev or prod — keeps its own copy: nobody has
@@ -17,7 +17,7 @@ namespace ProjectSYNCS.Services;
 // list request. To replace a picture, delete that emoji in the developer portal and restart.
 //
 // Not a loop: it runs once, on the first Ready (Ready fires again on every reconnect), in the
-// background so the gateway handler returns at once — up to 135 first-time uploads take a while. A
+// background so the gateway handler returns at once — up to 186 first-time uploads take a while. A
 // failure to *list* allows another try on the next Ready; a failed upload is logged and that
 // item keeps its Unicode fallback. Hooks Ready itself, like PresenceService, since nothing else in
 // BotService needs to know.
@@ -72,7 +72,7 @@ internal sealed class ApplicationEmojiService : IHostedService
         {
             if (source.EmojiName is not { } name)
             {
-                _logger.LogWarning("Sprite {File} matches no item or set; skipped.", Path.GetFileName(source.File));
+                _logger.LogWarning("Sprite {File} matches no item, set, cosmetic or trait; skipped.", Path.GetFileName(source.File));
                 continue;
             }
 

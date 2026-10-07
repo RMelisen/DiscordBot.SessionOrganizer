@@ -3,9 +3,9 @@ using System.Collections.Concurrent;
 namespace ProjectSYNCS.Helpers;
 
 /// <summary>
-/// The custom emoji markup of items and sets pictured by the bot's own application emojis — the
-/// Champignons (Assets/Mushrooms, a third-party pack) and every other icon (Assets/Icons, drawn by
-/// tools/item-art) — by icon key. Filled once the gateway is ready by
+/// The custom emoji markup of items, sets, cosmetics and Plynling traits pictured by the bot's own
+/// application emojis — the Champignons (Assets/Mushrooms, a third-party pack) and every other icon
+/// (Assets/Icons, drawn by tools/item-art) — by icon key. Filled once the gateway is ready by
 /// <see cref="Services.ApplicationEmojiService"/>; until then, and for any key missing from it,
 /// each caller falls back to its catalog's Unicode emoji.
 /// </summary>
@@ -23,8 +23,9 @@ public static class ItemEmojis
     public static string MushroomDirectory => Path.Combine(AppContext.BaseDirectory, "Assets", "Mushrooms");
     public static string IconDirectory => Path.Combine(AppContext.BaseDirectory, "Assets", "Icons");
 
-    // Sets are not items, so their icon keys get a prefix of their own.
+    // Sets and traits are not items, so their icon keys get a prefix of their own.
     public static string SetKey(string setKey) => "set." + setKey;
+    public static string TraitKey(string traitKey) => "trait." + traitKey;
 
     // Every other icon is Assets/Icons/<icon key>.png, and its emoji name swaps the key's prefix for
     // a short one: Discord allows [A-Za-z0-9_] and 32 characters, and « cos.accessory. » alone would
@@ -32,7 +33,7 @@ public static class ItemEmojis
     private static readonly (string Key, string Emoji)[] Prefixes =
     {
         ("col.", "c_"), ("set.", "s_"), ("cos.theme.", "th_"), ("cos.title.", "ti_"),
-        ("cos.accessory.", "ac_"), ("cos.grave.", "gr_"),
+        ("cos.accessory.", "ac_"), ("cos.grave.", "gr_"), ("trait.", "tr_"),
     };
 
     private static readonly ConcurrentDictionary<string, string> ByKey = new();
@@ -69,9 +70,12 @@ public static class ItemEmojis
         foreach (var file in PngsIn(iconDir))
         {
             var key = Path.GetFileNameWithoutExtension(file);
-            yield return new IconSource(file, key, ItemCatalog.IsIconKey(key) ? EmojiName(key) : null);
+            yield return new IconSource(file, key, IsIconKey(key) ? EmojiName(key) : null);
         }
     }
+
+    private static bool IsIconKey(string key) =>
+        ItemCatalog.IsIconKey(key) || key.StartsWith("trait.", StringComparison.Ordinal) && PlynlingTraits.ByKey(key["trait.".Length..]) is not null;
 
     private static string[] PngsIn(string dir) => Directory.Exists(dir) ? Directory.GetFiles(dir, "*.png") : Array.Empty<string>();
 
