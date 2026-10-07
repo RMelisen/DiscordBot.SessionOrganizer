@@ -296,9 +296,20 @@ public partial class PlynlingService
                 case ApplyModifier m when PlynlingModifiers.ByKey(m.Key) is { } modifier:
                     PlynlingLife.AddModifier(p, now, modifier);
                     break;
-                case GainCoping:
+                case GiveCailloux c when !PlynlingMascot.Is(p):
+                    var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, p.GuildId, p.OwnerId);
+                    wallet.Balance += c.Amount;
+                    await EconomyLog.AddAsync(_db_context, p.GuildId, EconomyLog.EarnEvent, c.Amount, now);
+                    break;
+                case GiveItem gi when !PlynlingMascot.Is(p) && ItemCatalog.ByKey(gi.ItemKey) is { } item:
+                    await InventoryService.GrantAsync(_db_context, p.GuildId, p.OwnerId, item, now);
+                    break;
+                case LiftNeed n:
+                    PlynlingLife.Lift(p, now, n.Need, n.Amount);
+                    break;
+                case GainCoping gc:
                     var held = ctx.Traits.Select(t => t.Key).ToList();
-                    if (PlynlingTraits.DrawCoping(p.Id, inst.Id, held) is { } coping)
+                    if ((gc.TraitKey is { } named ? PlynlingTraits.CopingIfOwed(named, held) : PlynlingTraits.DrawCoping(p.Id, inst.Id, held)) is { } coping)
                     {
                         _db_context.PlynlingTraits.Add(new PlynlingTrait { PlynlingId = p.Id, Key = coping.Key, Kind = TraitKind.Coping, AcquiredAt = now });
                         await AddMomentAsync(p, JournalKind.TraitGained, coping.Key, now);

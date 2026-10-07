@@ -36,7 +36,9 @@ public sealed record StressChange(int Amount) : EventEffect;
 // outside a mental break.
 public sealed record ApplyModifier(string Key) : EventEffect;
 // Mental breaks only: one coping trait it lacks, drawn uniformly; nothing at two.
-public sealed record GainCoping : EventEffect;
+// With TraitKey, that coping trait (CK3 ties each to its choice: eating → comfort_eater); nothing if it
+// already has it or holds two. Without, one it lacks, drawn uniformly.
+public sealed record GainCoping(string? TraitKey = null) : EventEffect;
 // Brings a later event (same target), between MinHours and MaxHours from now, hashed.
 public sealed record FollowUp(string EventKey, double MinHours, double MaxHours) : EventEffect;
 // Asks the other Plynling's owner to answer with ResponseKey (a Response event on their card).
@@ -48,6 +50,14 @@ public sealed record Couple : EventEffect;
 // A refused declaration: the one who declared (the event's target, in a response) is saddened and
 // the pair loses PlynlingBonds.HeartbreakLoss.
 public sealed record Heartbreak : EventEffect;
+// CK3's add_gold: cailloux into the owner's wallet (EconomyLog.EarnEvent). Never the mascot's — it has
+// no player to pay. Keep it small: a /work shift pays 25–40.
+public sealed record GiveCailloux(int Amount) : EventEffect;
+// CK3's artifacts: one ItemCatalog item into the owner's inventory (a set it completes pays out in the
+// same save). Never the mascot's.
+public sealed record GiveItem(string ItemKey) : EventEffect;
+// Raises one of its needs by Amount (0–1): a good laugh, a meal, a dip in the river.
+public sealed record LiftNeed(Need Need, double Amount) : EventEffect;
 
 /// <summary>
 /// One choice. <see cref="Key"/> is stored and never renamed. <see cref="Outcome"/> is told on

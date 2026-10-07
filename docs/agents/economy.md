@@ -29,6 +29,8 @@ be lost.
 
 - **A new source or sink of cailloux, or a new Plynling action, needs its own `EconomyLog` call and
   metric key. Metric keys are stored — append-only.**
+- Plynling events pay through `GiveCailloux` under `earn.event` (« événements » on the dashboard), and
+  their `GiveItem` finds count as `item.found` like every other find.
 - Admin adjustments record what actually moved (after the clamp), not what was asked.
 - No totals row: the stored balances already are the totals (`/admin stats` reads those). Nothing
   was backfilled.

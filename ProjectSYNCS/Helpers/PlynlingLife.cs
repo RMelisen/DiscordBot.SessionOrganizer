@@ -518,6 +518,18 @@ public static class PlynlingLife
         p.Happiness = Clamp(p.Happiness - amount);
     }
 
+    // An event's lift (LiftNeed): one need up by `amount`, capped at full.
+    public static void Lift(Plynling p, DateTimeOffset now, Need need, double amount)
+    {
+        Rebase(p, now);
+        switch (need)
+        {
+            case Need.Hunger: p.Hunger = Clamp(p.Hunger + amount); break;
+            case Need.Happiness: p.Happiness = Clamp(p.Happiness + amount); break;
+            default: p.Hygiene = Clamp(p.Hygiene + amount); break;
+        }
+    }
+
     // Losing a best friend or a partner: its happiness falls to the grief ceiling at most.
     public static void Grieve(Plynling p, DateTimeOffset now)
     {

@@ -194,6 +194,12 @@ public static class PlynlingTraits
         return pool.Length == 0 ? null : Pick(pool, plynlingId, CopingSalt + salt);
     }
 
+    // A named coping trait (an option's GainCoping), under the same cap as a drawn one.
+    public static TraitInfo? CopingIfOwed(string key, IReadOnlyCollection<string> held) =>
+        held.Count(k => ByKey(k)?.Kind == TraitKind.Coping) >= MaxCoping || held.Contains(key)
+            ? null
+            : ByKey(key) is { Kind: TraitKind.Coping } trait ? trait : null;
+
     // How many personality traits each stage is owed (the childhood one is owed from bébé on).
     private static int PersonalityOwed(PlynlingStage stage) => stage switch
     {

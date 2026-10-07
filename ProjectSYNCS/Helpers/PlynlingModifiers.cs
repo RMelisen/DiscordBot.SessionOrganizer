@@ -25,7 +25,9 @@ public static class PlynlingModifiers
     private static readonly Dictionary<PlynlingStat, int> NoStats = new();
     private static Dictionary<PlynlingStat, int> S(PlynlingStat stat, int v) => new() { [stat] = v };
 
-    // Append new modifiers at the end; keys are stored.
+    // Append new modifiers at the end; keys are stored. Retired keys stay retired — never reuse one:
+    // a row still holding it would read as the new meaning. Retired: "lucky" (« Porte-bonheur »), whose
+    // uses became the story-specific rewards below. An unknown key on a row is skipped (Active).
     public static readonly IReadOnlyList<ModifierInfo> All = new[]
     {
         new ModifierInfo("inspired", "Inspiré", "Inspirée", "💡", "Les idées arrivent plus vite que les mots.",
@@ -36,8 +38,6 @@ public static class PlynlingModifiers
             TimeSpan.FromDays(2), false, NoStats, Hunger: 0.8),
         new ModifierInfo("light_heart", "Le cœur léger", "Le cœur léger", "🎈", "Les petits tracas glissent dessus comme la pluie sur une feuille.",
             TimeSpan.FromDays(2), false, NoStats, Happiness: 0.8),
-        new ModifierInfo("lucky", "Porte-bonheur", "Porte-bonheur", "🍀", "Trouve des trèfles à quatre feuilles sans même les chercher.",
-            TimeSpan.FromDays(3), false, NoStats, Gift: 1.5),
         new ModifierInfo("soothed", "Apaisé", "Apaisée", "🫖", "Une tasse chaude, une couverture, et le monde peut attendre.",
             TimeSpan.FromDays(3), false, NoStats, Happiness: 0.8, StressDecay: 2),
         new ModifierInfo("grumpy", "Grognon", "Grognonne", "🌧️", "Tout agace. Surtout ce qui ne fait rien.",
@@ -50,6 +50,32 @@ public static class PlynlingModifiers
             TimeSpan.FromDays(3), true, S(PlynlingStat.Learning, -2)),
         new ModifierInfo("woods_cold", "Rhume des bois", "Rhume des bois", "🤧", "Éternue des feuilles mortes. C'est moins joli qu'on croit.",
             TimeSpan.FromDays(2), true, NoStats, Happiness: 1.2, Hygiene: 1.3),
+        new ModifierInfo("fragrant", "Parfumé", "Parfumée", "🌿", "Laisse derrière soi une odeur de menthe et de dimanche.",
+            TimeSpan.FromDays(3), false, NoStats, Hygiene: 0.7),
+        // Rewards named for what happened, as CK3 does (« Honorable Soul », « Practicing Trade »…).
+        new ModifierInfo("cherished", "Choyé", "Choyée", "💛", "Quelque part, quelqu'un a pensé à ce petit cœur. Ça réchauffe pour des jours.",
+            TimeSpan.FromDays(3), false, NoStats, Happiness: 0.7),
+        new ModifierInfo("clear_conscience", "La conscience tranquille", "La conscience tranquille", "🕊️", "Rien ne pèse, pas même un gland. Les soucis glissent tout seuls.",
+            TimeSpan.FromDays(3), false, NoStats, StressDecay: 1.5),
+        new ModifierInfo("well_spoken", "En verve", "En verve", "💬", "Trouve le mot juste avant même que la phrase commence.",
+            TimeSpan.FromDays(3), false, S(PlynlingStat.Diplomacy, 2)),
+        new ModifierInfo("trade_sense", "Le sens des affaires", "Le sens des affaires", "🧺", "Compte les glands d'un coup d'œil, et ne se trompe jamais sur la monnaie.",
+            TimeSpan.FromDays(3), false, S(PlynlingStat.Stewardship, 2)),
+        new ModifierInfo("sly", "Malicieux", "Malicieuse", "🦊", "Sait toujours où est caché le dernier biscuit.",
+            TimeSpan.FromDays(3), false, S(PlynlingStat.Intrigue, 2)),
+        new ModifierInfo("hearty", "Bien calé", "Bien calée", "🍲", "Chaque repas tient deux fois mieux au ventre.",
+            TimeSpan.FromDays(2), false, NoStats, Meal: 1.25),
+        new ModifierInfo("magpie_friend", "Ami des pies", "Amie des pies", "🪶", "Un objet brillant attend parfois sur le rebord de la fenêtre.",
+            TimeSpan.FromDays(5), false, NoStats, Gift: 1.5),
+        // Mental-break penalties (CK3 « On Edge », « Afraid », « Tense », « Sleep Deprived »).
+        new ModifierInfo("on_edge", "À cran", "À cran", "⚡", "Répond avant même qu'on ait fini de parler. Et pas gentiment.",
+            TimeSpan.FromDays(3), true, S(PlynlingStat.Diplomacy, -2)),
+        new ModifierInfo("shaken", "Ébranlé", "Ébranlée", "🫨", "Sursaute quand une feuille tombe. Même une petite.",
+            TimeSpan.FromDays(3), true, S(PlynlingStat.Courage, -2)),
+        new ModifierInfo("tense", "Tendu", "Tendue", "😬", "Recompte trois fois les glands, et se trompe quand même.",
+            TimeSpan.FromDays(3), true, S(PlynlingStat.Stewardship, -2)),
+        new ModifierInfo("sleepless", "Les nuits blanches", "Les nuits blanches", "🌙", "Compte les moutons. Les moutons, eux, dorment très bien.",
+            TimeSpan.FromDays(3), true, NoStats, StressDecay: 0.7),
     };
 
     private static readonly Dictionary<string, ModifierInfo> ByKeyMap = All.ToDictionary(m => m.Key);

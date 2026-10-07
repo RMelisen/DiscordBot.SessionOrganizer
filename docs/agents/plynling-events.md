@@ -59,6 +59,10 @@ never change that mapping, every stored morning depends on it.
 - **Catalog:** C# data. Event and option keys are stored — **never renamed**, append only. Every event
   needs an **ungated option with no stress cost** (deciding alone); no « il »/« elle » in event text
   (one text serves every gender pair). The harness checks both.
+- **Stages and keys:** keys are prefixed `baby_`, `teen_`, `grown_` (adulte and ancien) or `elder_` (the
+  `Elder` array — ancien only, so any reachability check must simulate the Elder stage). A bébé holds
+  only its childhood trait, so bébé gates and stress costs use childhood traits (`bossy`, `charming`,
+  `curious`, `pensive`, `rowdy`); a personality trait there never applies.
 - **Every rule is pure and hashed** (`StableRoll`): pulse time (08:00–20:00 Paris), which event,
   the target, the challenge roll (from the instance id), the in-character choice. Never a `Random`.
 - **Pacing:** one pulse a day, skipped when 3 pulse events wait; 24 h to choose; frozen = nothing
@@ -96,12 +100,21 @@ never change that mapping, every stored morning depends on it.
   before `NeedsAsOf` (inside a self-freeze that has since thawed) drops the modifier without rebasing:
   rebasing backwards would run the clock in reverse and refill the needs.
 - **Hunger can only slow** (clamp 0.5–1): the death clock and the warning only get more lenient.
+- **Mental breaks** (`BreakLevel` 1–3, several per level, picked by hash, never filtered by stage — so
+  no grown-ups-only scenes): **every option** is either a lot of relief **with a malus** (a negative
+  modifier, or a coping trait — CK3 ties each to its choice: `GainCoping("comfort_eater")` for eating)
+  or **no malus and less relief** (30–50 points less); no option carries a bonus. Each break keeps at
+  least one malus-free option. The scratch checker enforces all of it.
 - **The "not playing is free" rule is code:** `PlynlingEventEngine.AppliesWhenAlone` drops stress gains,
   negative modifiers and coping traits when it decided alone — except in a mental break, which only
   stress (the owner's own choices) can trigger. The harness simulates 60 days of deciding alone.
 - `StressLossBonusPercent` caches the traits' decay multiplier for `Settle`; `EnsureTraitsAsync`
   refreshes it every sweep and a new coping trait refreshes it at once.
-- Modifier keys are stored — never renamed, append only. `Negative` must mean exactly "makes
+- Modifier keys are stored — never renamed, append only. A key can be **retired** (removed from the
+  catalog; a row still holding it is skipped by `Active`) but never reused for another meaning.
+  Retired: `lucky`. Rewards follow CK3's habit: name the modifier after what happened (« La
+  conscience tranquille » for an honest choice, « Le sens des affaires » for a good deal) rather than
+  reaching for a generic one. `Negative` must mean exactly "makes
   something worse" (harness).
 - « État » in « Personnalité » is cut before the 1024-character field cap (every modifier at once
   would pass it).
@@ -113,6 +126,16 @@ never change that mapping, every stored morning depends on it.
   (`AcceptWeight`: affinity, compatibility). The mascot answers right after the save
   (`AnswerForMascotAsync`, given every parent resolved in that unit of work). A response whose asker
   was abandoned (its id set null) is cancelled, never answered.
+- **Rewards beyond stats (CK3's gold, artifacts):** `GiveCailloux` pays the *owner's* wallet
+  (`EconomyLog.EarnEvent`), `GiveItem` puts one `ItemCatalog` item in the owner's inventory (a set it
+  completes pays in the same save), `LiftNeed` raises one of the Plynling's needs. All three are
+  positive, so they apply when it decides alone too. Never paid to the mascot (no player behind it);
+  the story leaves those lines out for it. Keep cailloux small (≤ 30; a `/work` shift pays 25–40),
+  items collectible or food and never legendary, lifts ≤ 0.3 — the scratch checker enforces all three.
+- **Story cycles** (wave 5+) are chains of `FollowUp`s, three or four steps, each scene 3–5 sentences.
+  A follow-up cannot know which option led to it, so a branch that must remember (a chosen mentor)
+  gets its own follow-up key per branch. A social chain's follow-ups declare the parent's `Target` kind
+  (they carry its target anyway): `/debug event` reads it to attach the other Plynling.
 - **Anti-griefing is in the effect types:** another owner's Plynling is touched only through the
   relation. The one exception, `Heartbreak`, saddens the one who *declared* — declaring is
   `OwnerOnly`, so it is always that owner's choice (never while frozen). **`OwnerOnly` options are

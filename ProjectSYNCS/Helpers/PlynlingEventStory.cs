@@ -84,6 +84,26 @@ public static class PlynlingEventStory
         foreach (var m in (success ? option.OnSuccess : option.OnFailure).OfType<ApplyModifier>())
             if (PlynlingModifiers.ByKey(m.Key) is { } mod && PlynlingEventEngine.Applies(m, def, inst.DecidedAlone))
                 lines.Add($"-# {mod.Emoji} **{mod.Name(self.Gender)}** pour {(int)mod.Duration.TotalDays} jour{(mod.Duration.TotalDays >= 2 ? "s" : "")}");
+        // Rewards: cailloux and items go to the owner (never the mascot's — it has no player), needs to it.
+        var paid = self.OwnerId != PlynlingMascot.OwnerId;
+        foreach (var effect in success ? option.OnSuccess : option.OnFailure)
+            switch (effect)
+            {
+                case GiveCailloux c when paid:
+                    lines.Add($"-# 🪙 **+{c.Amount} cailloux** dans la bourse");
+                    break;
+                case GiveItem gi when paid && ItemCatalog.ByKey(gi.ItemKey) is { } item:
+                    lines.Add($"-# {item.Emoji} **{ItemCatalog.ClearName(item)}** rejoint l'inventaire");
+                    break;
+                case LiftNeed n:
+                    lines.Add(n.Need switch
+                    {
+                        Need.Hunger => $"-# 🍯 Le ventre de **{self.Name}** est plus plein",
+                        Need.Happiness => $"-# 😊 Le moral de **{self.Name}** remonte",
+                        _ => $"-# 🫧 **{self.Name}** est plus propre",
+                    });
+                    break;
+            }
         // A break's coping trait. (In a trait reveal the same field holds the {T} traits, already told.)
         if (!IsReveal(def) && inst.GainedTraitKey is { } gained && PlynlingTraits.ByKey(gained) is { } trait)
             lines.Add($"-# {trait.Emoji} Nouveau trait : **{trait.Name(self.Gender)}**");
