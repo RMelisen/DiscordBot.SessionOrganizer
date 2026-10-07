@@ -3,7 +3,6 @@ using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using ProjectSYNCS.Commands;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Models;
 
@@ -108,15 +107,11 @@ public sealed class PlynlingSweepService : BackgroundService
                 }
 
                 // Told after every save above; a failed post is logged by the announcer, never retried.
-                foreach (var instanceId in told)
-                    if (await plynlings.GetEventStoryAsync(instanceId, now) is { } story)
-                        await _announcer.PostEventStoryAsync(plynling.GuildId, PlynlingEventCards.BuildStory(story, 0));
+                await _announcer.TellAsync(plynlings, told, plynling.GuildId, now);
 
                 // Growing up, falling sick, recovering, a friend's death: their events, created after
                 // this Plynling's saves, each on its own (FlushOnActionsAsync swallows and logs).
-                foreach (var instanceId in await plynlings.FlushOnActionsAsync(now))
-                    if (await plynlings.GetEventStoryAsync(instanceId, now) is { } story)
-                        await _announcer.PostEventStoryAsync(plynling.GuildId, PlynlingEventCards.BuildStory(story, 0));
+                await _announcer.TellAsync(plynlings, await plynlings.FlushOnActionsAsync(now), plynling.GuildId, now);
             }
             catch (Exception ex)
             {

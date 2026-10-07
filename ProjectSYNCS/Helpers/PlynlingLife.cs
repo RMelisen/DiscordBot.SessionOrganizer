@@ -162,7 +162,7 @@ public static class PlynlingLife
 
     // 05:00 Paris on the morning of t. Built from the wall clock, so the nights the clocks
     // change (both inside the sleep window) still wake at 05:00 local.
-    public static DateTimeOffset WakeAfter(DateTimeOffset t) => AtWallClock(AppTime.ToZoned(t).Date + NightEnd);
+    public static DateTimeOffset WakeAfter(DateTimeOffset t) => AppTime.AtWallClock(AppTime.ToZoned(t).Date + NightEnd);
 
     // When it dies: its starvation instant, or 05:00 when that falls while it sleeps.
     public static DateTimeOffset? EffectiveDeathAt(Plynling p) =>
@@ -175,18 +175,17 @@ public static class PlynlingLife
         if (EffectiveDeathAt(p) is not { } death) return null;
         var warn = death - WarningLead;
         var zoned = AppTime.ToZoned(warn);
-        if (zoned.TimeOfDay >= QuietStart) return AtWallClock(zoned.Date + QuietStart);
-        if (zoned.TimeOfDay < NightEnd) return AtWallClock(zoned.Date.AddDays(-1) + QuietStart);
+        if (zoned.TimeOfDay >= QuietStart) return AppTime.AtWallClock(zoned.Date + QuietStart);
+        if (zoned.TimeOfDay < NightEnd) return AppTime.AtWallClock(zoned.Date.AddDays(-1) + QuietStart);
         return warn;
     }
 
-    private static DateTimeOffset AtWallClock(DateTime wall) => new(wall, AppTime.Zone.GetUtcOffset(wall));
 
     // ---- mornings: 05:00 Paris, when every Plynling wakes -----------------------------------------
 
-    public static DateTimeOffset MorningAt(int dayKey) => AtWallClock(FromDayKey(dayKey) + NightEnd);
+    public static DateTimeOffset MorningAt(int dayKey) => AppTime.AtWallClock(AppTime.FromDayKey(dayKey) + NightEnd);
 
-    public static int NextDay(int dayKey) => ToDayKey(FromDayKey(dayKey).AddDays(1));
+    public static int NextDay(int dayKey) => ToDayKey(AppTime.FromDayKey(dayKey).AddDays(1));
 
     // The day of the latest morning at or before t: today's from 05:00, yesterday's before.
     public static int MorningDayAtOrBefore(DateTimeOffset t)
@@ -195,7 +194,6 @@ public static class PlynlingLife
         return ToDayKey(zoned.TimeOfDay >= NightEnd ? zoned.Date : zoned.Date.AddDays(-1));
     }
 
-    private static DateTime FromDayKey(int dayKey) => new(dayKey / 10000, dayKey / 100 % 100, dayKey % 100);
 
     private static int ToDayKey(DateTime day) => day.Year * 10000 + day.Month * 100 + day.Day;
 
@@ -314,7 +312,7 @@ public static class PlynlingLife
     private static void EndModifiersAt(Plynling p, DateTimeOffset at)
     {
         if (!IsFrozen(p) && !IsDead(p) && at > p.NeedsAsOf) Rebase(p, at);
-        PlynlingModifiers.Write(p, PlynlingModifiers.Active(p).Where(m => m.Ends > at).Select(m => (m.Info.Key, m.Ends)));
+        PlynlingModifiers.Keep(p, m => m.Ends > at);
     }
 
     // What the bot's own Plynling gets instead of Settle: it never starves, is never dirty enough to
@@ -343,7 +341,7 @@ public static class PlynlingLife
         }
         if (PlynlingModifiers.Active(p).Any(m => m.Ends <= now))
         {
-            PlynlingModifiers.Write(p, PlynlingModifiers.Active(p).Where(m => m.Ends > now).Select(m => (m.Info.Key, m.Ends)));
+            PlynlingModifiers.Keep(p, m => m.Ends > now);
             changed = true;
         }
         if (IsFrozen(p)) return changed;
@@ -564,16 +562,13 @@ public static class PlynlingLife
     public static void AddModifier(Plynling p, DateTimeOffset now, ModifierInfo modifier)
     {
         RebaseIfLive(p, now);
-        PlynlingModifiers.Write(p, PlynlingModifiers.Active(p)
-            .Where(m => m.Info.Key != modifier.Key && m.Ends > now)
-            .Select(m => (m.Info.Key, m.Ends))
-            .Append((modifier.Key, now + modifier.Duration)));
+        PlynlingModifiers.Keep(p, m => m.Info.Key != modifier.Key && m.Ends > now, (modifier.Key, now + modifier.Duration));
     }
 
     public static void RemoveModifier(Plynling p, DateTimeOffset now, string key)
     {
         RebaseIfLive(p, now);
-        PlynlingModifiers.Write(p, PlynlingModifiers.Active(p).Where(m => m.Info.Key != key).Select(m => (m.Info.Key, m.Ends)));
+        PlynlingModifiers.Keep(p, m => m.Info.Key != key);
     }
 
     private static void RebaseIfLive(Plynling p, DateTimeOffset at)

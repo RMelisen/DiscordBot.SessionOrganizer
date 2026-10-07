@@ -3,14 +3,14 @@ using ProjectSYNCS.Models;
 namespace ProjectSYNCS.Helpers;
 
 // CK3's AI personality. Each trait pushes these; the sum names the Plynling (PlynlingPersonality)
-// and, from the event engine on, decides for it when its owner does not. Not stored.
+// and decides events for it when its owner does not (PlynlingEventEngine). Not stored.
 public enum AiAxis { Boldness, Compassion, Greed, Energy, Honor, Rationality, Sociability, Vengefulness, Zeal }
 
 /// <summary>
 /// One trait. <see cref="Key"/> is stored and **never renamed**. <see cref="Group"/> is the
 /// exclusion group: a Plynling never holds two personality traits of one group. The description is
-/// shared by both genders, so it never agrees with the Plynling. Stress multipliers are CK3's, used
-/// from the stress phase on.
+/// shared by both genders, so it never agrees with the Plynling. Stress multipliers are CK3's
+/// (PlynlingStress).
 /// </summary>
 public sealed record TraitInfo(
     string Key, TraitKind Kind, string Group, string NameM, string NameF, string Emoji, string Description,
@@ -154,7 +154,7 @@ public static class PlynlingTraits
         P("eccentric", "eccentric", "Excentrique", "Excentrique", "🎩", "Porte une feuille de chou en guise d'écharpe. Par conviction.",
             S(dip: -2, sag: 2), A(bol: 75, hon: -20, soc: -20, rat: -200), gain: 1.5, loss: 1.5),
 
-        // ---- coping: from mental breaks only (stress phase), never drawn here
+        // ---- coping: from mental breaks only, never drawn here
         K("comfort_eater", "Mange ses émotions", "Mange ses émotions", "🍪", "Quand ça ne va pas, la réponse est dans la boîte à biscuits.",
             S(inte: -1), A(gre: 5, ene: -5)),
         K("inappetetic", "Sans appétit", "Sans appétit", "🥄", "Tourne la cuillère dans le bol sans rien avaler. Ça passera.",
@@ -224,7 +224,7 @@ public static class PlynlingTraits
             var pool = Personality.Where(t => !taken.Contains(t.Group)).ToArray();
             // The adulte trait (slot 2) leans toward what its ado years were like, when that is known.
             drawn.Add(slot == 2 && adultWeight is not null
-                ? PickWeighted(pool, adultWeight, plynlingId, PersonalitySalt + slot)
+                ? StableRoll.Weighted(pool.Select(t => (t, Math.Max(0, adultWeight(t)))).ToList(), plynlingId, PersonalitySalt + slot, 0)
                 : Pick(pool, plynlingId, PersonalitySalt + slot));
         }
         return drawn;
@@ -237,26 +237,14 @@ public static class PlynlingTraits
         : personalitySlot < 2 ? PlynlingStage.Teen
         : PlynlingStage.Adult;
 
-    // Whether a trait drawn now was gained *now* — its stage began within the last two days — and so
-    // belongs in the journal. A Plynling older than traits gets its backfill silently: a full journal
-    // would otherwise lose its oldest memories to traits it « always had ».
+    // Whether a stage began within the last two days — reached, and recently. What happened then (its
+    // « est devenu… » moment, the traits it brought) belongs in the journal; a backfill for an older
+    // Plynling stays silent: a full journal would otherwise lose its oldest memories to traits it
+    // « always had ».
     public static readonly TimeSpan JournalWindow = TimeSpan.FromDays(2);
 
     public static bool JustGained(PlynlingStage stage, TimeSpan age) =>
-        age - PlynlingLife.StageStart(stage) < JournalWindow;
+        age >= PlynlingLife.StageStart(stage) && age - PlynlingLife.StageStart(stage) < JournalWindow;
 
-    private static TraitInfo Pick(TraitInfo[] pool, int plynlingId, int salt) =>
-        pool[Math.Min(pool.Length - 1, (int)(StableRoll.Unit(plynlingId, salt, 0) * pool.Length))];
-
-    private static TraitInfo PickWeighted(TraitInfo[] pool, Func<TraitInfo, double> weight, int plynlingId, int salt)
-    {
-        var weights = pool.Select(t => Math.Max(0, weight(t))).ToArray();
-        var target = StableRoll.Unit(plynlingId, salt, 0) * weights.Sum();
-        for (var i = 0; i < pool.Length; i++)
-        {
-            if (target < weights[i]) return pool[i];
-            target -= weights[i];
-        }
-        return pool[^1];
-    }
+    private static TraitInfo Pick(TraitInfo[] pool, int plynlingId, int salt) => StableRoll.Pick(pool, plynlingId, salt, 0);
 }

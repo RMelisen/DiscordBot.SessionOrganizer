@@ -89,7 +89,7 @@ public class Plynling
     public long FedByOthers { get; set; }
 
     // What events have taught it, per stat (Helpers/PlynlingStats). The rest of a stat is computed —
-    // a hashed die, its passion, its traits — so only what was earned is stored. 0 until events exist.
+    // a hashed die, its passion, its traits — so only what was earned is stored (event choices).
     public int GrowthDiplomacy { get; set; }
     public int GrowthStewardship { get; set; }
     public int GrowthLearning { get; set; }

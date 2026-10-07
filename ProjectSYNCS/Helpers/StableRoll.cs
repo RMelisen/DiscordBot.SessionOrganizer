@@ -3,12 +3,28 @@ namespace ProjectSYNCS.Helpers;
 /// <summary>
 /// A number in [0, 1) hashed from three integers — SplitMix64, stable across runs and machines,
 /// unlike <c>string.GetHashCode</c> or a seeded <see cref="Random"/>. Every Plynling roll that must
-/// come out the same whoever computes it goes through here: sickness mornings (purpose + 1 as
-/// <paramref name="c"/>), trait draws and base stats (with <paramref name="c"/> = 0 and a salt in
-/// <paramref name="b"/>).
+/// come out the same whoever computes it goes through here: sickness mornings (purpose + 1 as the
+/// third input), trait draws, base stats and every event roll (a salt names each purpose).
 /// </summary>
 public static class StableRoll
 {
+    // One of `items`, uniformly, from a roll of (a, b, c). Never empty.
+    public static T Pick<T>(IReadOnlyList<T> items, int a, int b, int c) =>
+        items[Math.Min(items.Count - 1, (int)(Unit(a, b, c) * items.Count))];
+
+    // One of `pool` in proportion to its weight, from a roll of (a, b, c). Never empty; with every
+    // weight zero, the last.
+    public static T Weighted<T>(IReadOnlyList<(T Item, double Weight)> pool, int a, int b, int c)
+    {
+        var target = Unit(a, b, c) * pool.Sum(x => x.Weight);
+        foreach (var (item, weight) in pool)
+        {
+            if (target < weight) return item;
+            target -= weight;
+        }
+        return pool[^1].Item;
+    }
+
     public static double Unit(int a, int b, int c)
     {
         ulong x = (ulong)(uint)a * 0x9E3779B97F4A7C15UL

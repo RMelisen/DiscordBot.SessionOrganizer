@@ -281,7 +281,7 @@ looks after her.
   Timide, Gourmand…). Its traits and its passion shape five stats (Diplomatie, Intendance, Sagesse,
   Ruse, Courage) and a little title (« Piquante et intrépide »). The card shows them; « 📜 Personnalité »
   details them privately.
-- **Events:** about once a day, something happens to each Plynling — a little scene with two to four
+- **Events:** about once a day, something happens to each Plynling — a little scene with two or three
   choices, some needing a trait or a stat, some a challenge with its odds shown. Its owner chooses
   privately from « ✨ Événement » on the card; after 24 h it decides on its own, in character, at no
   cost. Choices grow its stats, and its *ado* years lean its adult trait. Every outcome is told as a

@@ -468,8 +468,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         {
             await _plynlings.ResolveAloneAsync(p, inst, now);
             await _plynlings.SaveAsync();
-            if (await _plynlings.GetEventStoryAsync(inst.Id, now) is { } story)
-                await _announcer.PostEventStoryAsync(Context.Guild.Id, PlynlingEventCards.BuildStory(story, 0), Context.Channel);
+            await _announcer.TellAsync(_plynlings, new[] { inst.Id }, Context.Guild.Id, now, Context.Channel);
         }
         await FollowupAsync($"🔧 `{def.Key}` créé (#{inst.Id}, {mode}).", ephemeral: true);
     }

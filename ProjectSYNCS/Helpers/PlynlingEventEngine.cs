@@ -19,8 +19,7 @@ public static class PlynlingEventEngine
     public static DateTimeOffset PulseAt(int plynlingId, int dayKey)
     {
         var minute = PulseFromMinute + (int)(StableRoll.Unit(plynlingId, dayKey, PulseTimeSalt) * PulseSpanMinutes);
-        var wall = new DateTime(dayKey / 10000, dayKey / 100 % 100, dayKey % 100).AddMinutes(minute);
-        return new DateTimeOffset(wall, AppTime.Zone.GetUtcOffset(wall));
+        return AppTime.AtWallClock(AppTime.FromDayKey(dayKey).AddMinutes(minute));
     }
 
     public static bool Eligible(EventDef def, EventContext ctx) =>
@@ -48,11 +47,11 @@ public static class PlynlingEventEngine
     // nothing new gets resolved and the window never moves. Then the least recently seen comes back.
     // `hasTarget` says whether a social event has a candidate meeting its target condition.
     public static EventDef? PickPulse(int plynlingId, int dayKey, IEnumerable<EventDef> defs, EventContext ctx,
-        IReadOnlyList<string> recent, IReadOnlySet<TargetKind> targetable, Func<EventDef, bool>? hasTarget = null)
+        IReadOnlyList<string> recent, Func<EventDef, bool> hasTarget)
     {
         var eligible = defs
             .Where(d => d.Type == EventType.Pulse && d.BreakLevel == 0 && Eligible(d, ctx))
-            .Where(d => d.Target == TargetKind.None || (targetable.Contains(d.Target) && (hasTarget?.Invoke(d) ?? true)))
+            .Where(d => d.Target == TargetKind.None || hasTarget(d))
             .Select(d => (Def: d, W: WeightOf(d, ctx)))
             .Where(x => x.W > 0)
             .ToList();
@@ -63,22 +62,18 @@ public static class PlynlingEventEngine
             excluded.Add(key);
         }
         var pool = eligible.Where(x => !excluded.Contains(x.Def.Key)).ToList();
-        return pool.Count == 0 ? null : Weighted(pool, StableRoll.Unit(plynlingId, dayKey, PulsePickSalt));
+        return pool.Count == 0 ? null : StableRoll.Weighted(pool, plynlingId, dayKey, PulsePickSalt);
     }
 
     // The mental break for a stress level just reached (hashed pick if a level ever has several).
     public static EventDef? PickBreak(int plynlingId, int salt, int level, IEnumerable<EventDef> defs)
     {
         var pool = defs.Where(d => d.BreakLevel == level).OrderBy(d => d.Key).ToList();
-        return pool.Count == 0 ? null : pool[Math.Min(pool.Count - 1, (int)(StableRoll.Unit(plynlingId, salt, BreakSalt) * pool.Count))];
+        return pool.Count == 0 ? null : StableRoll.Pick(pool, plynlingId, salt, BreakSalt);
     }
 
-    public static int? PickTarget(int plynlingId, int dayKey, IReadOnlyList<int> candidateIds)
-    {
-        if (candidateIds.Count == 0) return null;
-        var sorted = candidateIds.OrderBy(i => i).ToList();
-        return sorted[Math.Min(sorted.Count - 1, (int)(StableRoll.Unit(plynlingId, dayKey, TargetSalt) * sorted.Count))];
-    }
+    public static int? PickTarget(int plynlingId, int dayKey, IReadOnlyList<int> candidateIds) =>
+        candidateIds.Count == 0 ? null : StableRoll.Pick(candidateIds.OrderBy(i => i).ToList(), plynlingId, dayKey, TargetSalt);
 
     public static bool Visible(EventOption option, EventContext ctx) => option.Gate switch
     {
@@ -121,21 +116,32 @@ public static class PlynlingEventEngine
             _ => true,
         };
 
+    // Whether an option's effect took place — what ApplyEventAsync does and what the story tells.
+    public static bool Applies(EventEffect effect, EventDef def, bool decidedAlone) =>
+        !decidedAlone || AppliesWhenAlone(effect, def);
+
     // How willing a responder is: affinity (−100…100) and hidden compatibility (−20…20) — CK3's
     // acceptance. Applied to Accept options; its inverse to Refuse ones.
     public static double AcceptWeight(int affinity, int compatibility) =>
         Math.Max(0.05, 1 + affinity / 50.0 + compatibility / 20.0);
 
     // A response decided alone: its axes, as any choice, leaned by acceptance.
-    public static EventOption DecideResponse(EventDef def, EventContext ctx, int instanceId)
+    public static EventOption DecideResponse(EventDef def, EventContext ctx, int instanceId) =>
+        Decide(def, ctx, ctx.Other is { } other ? AcceptWeight(other.Affinity, other.Compatibility) : 1, instanceId, ResponseSalt);
+
+    public static EventOption DecideAlone(EventDef def, EventContext ctx, int instanceId) =>
+        Decide(def, ctx, 1, instanceId, AloneSalt);
+
+    // In character: each option it may take alone, weighted by its axes, and an Accept/Refuse stance
+    // by `accept` or its inverse (1 outside a response).
+    private static EventOption Decide(EventDef def, EventContext ctx, double accept, int instanceId, int salt)
     {
         var axes = PlynlingPersonality.Axes(ctx.Traits);
-        var accept = ctx.Other is { } other ? AcceptWeight(other.Affinity, other.Compatibility) : 1;
         var pool = AloneOptions(def, ctx)
-            .Select(o => (Def: o, W: Math.Max(1.0, 100 + o.Ai.Sum(kv => kv.Value * axes[kv.Key] / 10.0))
-                                     * (o.Stance == Stance.Accept ? accept : o.Stance == Stance.Refuse ? 1 / accept : 1)))
+            .Select(o => (o, Math.Max(1.0, 100 + o.Ai.Sum(kv => kv.Value * axes[kv.Key] / 10.0))
+                             * (o.Stance == Stance.Accept ? accept : o.Stance == Stance.Refuse ? 1 / accept : 1)))
             .ToList();
-        return Weighted(pool, StableRoll.Unit(instanceId, ResponseSalt, 0));
+        return StableRoll.Weighted(pool, instanceId, salt, 0);
     }
 
     public static DateTimeOffset FollowUpAt(int instanceId, FollowUp f, DateTimeOffset now) =>
@@ -145,16 +151,7 @@ public static class PlynlingEventEngine
     public static EventDef? PickTriggered(OnAction trigger, int plynlingId, int salt, IEnumerable<EventDef> defs, EventContext ctx)
     {
         var pool = defs.Where(d => d.Trigger == trigger && Eligible(d, ctx)).Select(d => (Def: d, W: WeightOf(d, ctx))).Where(x => x.W > 0).ToList();
-        return pool.Count == 0 ? null : Weighted(pool, StableRoll.Unit(plynlingId, salt, TriggeredSalt));
-    }
-
-    public static EventOption DecideAlone(EventDef def, EventContext ctx, int instanceId)
-    {
-        var axes = PlynlingPersonality.Axes(ctx.Traits);
-        var pool = AloneOptions(def, ctx)
-            .Select(o => (Def: o, W: Math.Max(1.0, 100 + o.Ai.Sum(kv => kv.Value * axes[kv.Key] / 10.0))))
-            .ToList();
-        return Weighted(pool, StableRoll.Unit(instanceId, AloneSalt, 0));
+        return pool.Count == 0 ? null : StableRoll.Weighted(pool, plynlingId, salt, TriggeredSalt);
     }
 
     // What its ado years leaned toward: every choice's AI weights, and the growth that actually applied.
@@ -177,16 +174,5 @@ public static class PlynlingEventEngine
         var dot = trait.Axes.Sum(kv => kv.Value * leaning.GetValueOrDefault(kv.Key));
         var fromGrowth = trait.Stats.Where(kv => kv.Value > 0).Sum(kv => 0.5 * growth.GetValueOrDefault(kv.Key));
         return Math.Max(0.25, 1 + dot / 400.0) + fromGrowth;
-    }
-
-    private static T Weighted<T>(IReadOnlyList<(T Def, double W)> pool, double roll)
-    {
-        var target = roll * pool.Sum(x => x.W);
-        foreach (var (item, w) in pool)
-        {
-            if (target < w) return item;
-            target -= w;
-        }
-        return pool[^1].Def;
     }
 }

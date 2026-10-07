@@ -54,6 +54,15 @@ public static class AppTime
     public static int DayNumber(DateTimeOffset instant) =>
         DateOnly.FromDateTime(ToZoned(instant).Date).DayNumber;
 
+    /// <summary>The calendar day a <see cref="DayKey"/> names (midnight, unspecified kind).</summary>
+    public static DateTime FromDayKey(int dayKey) => new(dayKey / 10000, dayKey / 100 % 100, dayKey % 100);
+
+    /// <summary>
+    /// A wall-clock time in the app's zone as an instant, with that date's offset — so a time built
+    /// from a date (05:00, 23:00) stays at that local hour across both clock changes.
+    /// </summary>
+    public static DateTimeOffset AtWallClock(DateTime wall) => new(wall, Zone.GetUtcOffset(wall));
+
     /// <summary>Today's day key, in the app's zone.</summary>
     public static int TodayKey => DayKey(DateTimeOffset.UtcNow);
 

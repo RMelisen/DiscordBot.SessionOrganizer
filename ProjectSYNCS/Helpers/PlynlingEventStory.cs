@@ -9,7 +9,7 @@ public sealed record EventCast(string Name, PlynlingGender Gender, PlynlingSpeci
         new(PlynlingCardUi.SafeName(p.Name), p.Gender, p.Species, PlynlingLife.Stage(p, now), p.OwnerId);
 }
 
-public sealed record EventStory(int InstanceId, string Heading, IReadOnlyList<string> Pages, EventCast Self, EventCast? Target, uint Accent);
+public sealed record EventStory(int InstanceId, int PlynlingId, string Heading, IReadOnlyList<string> Pages, EventCast Self, EventCast? Target, uint Accent);
 
 /// <summary>
 /// An event told as pages — the scene, the choice, the challenge if any, the outcome — built only
@@ -33,28 +33,28 @@ public static class PlynlingEventStory
         var accent = PlynlingCatalog.Info(self.Species).Accent;
         if (PlynlingEvents.ByKey(inst.EventKey) is not { } def
             || def.Options.FirstOrDefault(o => o.Key == inst.OptionKey) is not { } option)
-            return new EventStory(inst.Id, "📜 Une petite aventure",
+            return new EventStory(inst.Id, inst.PlynlingId, "📜 Une petite aventure",
                 new[] { $"**{self.Name}** a vécu une petite aventure. Les détails se sont perdus en route." }, self, target, accent);
 
         var X = Expander(inst, def, self, target);
         var pages = new List<string> { (parentTitle is null ? "" : $"-# Suite de « {parentTitle} »\n") + X(def.Scene) };
         pages.Add(inst.DecidedAlone
-            ? X(AloneLines[(int)(StableRoll.Unit(inst.Id, 320, 0) * AloneLines.Length) % AloneLines.Length])
+            ? X(StableRoll.Pick(AloneLines, inst.Id, 320, 0))
             : $"<@{self.OwnerId}> a tranché pour **{self.Name}** : **{Label(option, X)}**.");
         if (option.Challenge is { } c && inst.ChancePercent is { } chance)
             pages.Add($"🎲 **{PlynlingStats.Name(c.Stat)}**{(c.VsTarget && target is not null ? $" contre **{target.Name}**" : "")} — {chance} % de chances… " +
                       (inst.ChallengeSucceeded == true ? "**réussi !**" : "**raté.**"));
         pages.Add(OutcomeText(inst, self, target, answered));
-        return new EventStory(inst.Id, $"📜 {def.Title}", pages, self, target, accent);
+        return new EventStory(inst.Id, inst.PlynlingId, $"📜 {def.Title}", pages, self, target, accent);
     }
 
     // An option's label as shown: expanded ({B} → the other's name), without the names' bold — it sits
     // inside bold itself, on a button or in the story.
     public static string Label(EventOption option, Func<string, string> expand) => expand(option.Label).Replace("**", "");
 
-    // The event's text expander: names, agreements, and for a trait reveal {T} — the new traits stored
-    // on the instance ("key,key"), named in its gender.
-    private static Func<string, string> Expander(PlynlingEventInstance inst, EventDef def, EventCast self, EventCast? target)
+    // The event's text expander, shared by the story and the choice card: names, agreements, and for
+    // a trait reveal {T} — the new traits stored on the instance ("key,key"), named in its gender.
+    public static Func<string, string> Expander(PlynlingEventInstance inst, EventDef def, EventCast self, EventCast? target)
     {
         var traitText = inst.GainedTraitKey is { } keys && IsReveal(def)
             ? string.Join(" et ", keys.Split(',').Select(PlynlingTraits.ByKey).OfType<TraitInfo>().Select(t => t.Name(self.Gender)))
@@ -66,7 +66,7 @@ public static class PlynlingEventStory
 
     // The outcome and what it changed: growth, a new bond if the band moved, stress, modifiers, a
     // coping trait — and for a social event, whether the answer is still awaited or came too late.
-    public static string OutcomeText(PlynlingEventInstance inst, EventCast self, EventCast? target, bool answered = false)
+    private static string OutcomeText(PlynlingEventInstance inst, EventCast self, EventCast? target, bool answered = false)
     {
         if (PlynlingEvents.ByKey(inst.EventKey) is not { } def
             || def.Options.FirstOrDefault(o => o.Key == inst.OptionKey) is not { } option)
@@ -82,7 +82,7 @@ public static class PlynlingEventStory
             lines.Add(ds > 0 ? $"-# 😣 Stress +{ds} pour **{self.Name}**" : $"-# 🌿 Stress −{-ds} pour **{self.Name}**");
         // Only what actually applied: alone, a negative modifier was skipped (outside a break).
         foreach (var m in (success ? option.OnSuccess : option.OnFailure).OfType<ApplyModifier>())
-            if (PlynlingModifiers.ByKey(m.Key) is { } mod && (!inst.DecidedAlone || PlynlingEventEngine.AppliesWhenAlone(m, def)))
+            if (PlynlingModifiers.ByKey(m.Key) is { } mod && PlynlingEventEngine.Applies(m, def, inst.DecidedAlone))
                 lines.Add($"-# {mod.Emoji} **{mod.Name(self.Gender)}** pour {(int)mod.Duration.TotalDays} jour{(mod.Duration.TotalDays >= 2 ? "s" : "")}");
         // A break's coping trait. (In a trait reveal the same field holds the {T} traits, already told.)
         if (!IsReveal(def) && inst.GainedTraitKey is { } gained && PlynlingTraits.ByKey(gained) is { } trait)

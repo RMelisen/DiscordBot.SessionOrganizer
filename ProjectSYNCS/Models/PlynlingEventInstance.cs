@@ -15,7 +15,7 @@ public class PlynlingEventInstance
 
     // The other Plynling of a social event; set null if that one is abandoned (deleted).
     public int? TargetPlynlingId { get; set; }
-    // The event this one follows from (follow-ups and responses, phase 4).
+    // The event this one follows from (a follow-up, or a response to an ask).
     public int? ParentInstanceId { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
@@ -31,8 +31,9 @@ public class PlynlingEventInstance
     public PlynlingBond? BondBefore { get; set; }
     public PlynlingBond? BondAfter { get; set; }
 
-    // The net stress this event caused (cost + effects), and the coping trait a break gave — both
-    // depend on state at the time, so the story stores them rather than recomputing.
+    // The net stress this event caused (cost + effects), and the trait key(s) it involved — the coping
+    // trait a break gave, or for a trait reveal the new traits as "key,key" (its {T}). Both depend on
+    // state at the time, so the story stores them rather than recomputing.
     public int? StressDelta { get; set; }
     public string? GainedTraitKey { get; set; }
 }

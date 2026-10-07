@@ -75,18 +75,15 @@ public class PlynlingEventHandler : InteractionModuleBase<SocketInteractionConte
             return;
         }
         var story = await _plynlings.GetEventStoryAsync(id, now);
-        var inst = await _plynlings.GetEventInstanceAsync(id);
-        if (story is null || inst is null) return;
+        if (story is null) return;
         await ModifyOriginalResponseAsync(m =>
         {
-            m.Components = PlynlingEventCards.BuildResult(story.Pages[^1], pick.PendingLeft, inst.PlynlingId);
+            m.Components = PlynlingEventCards.BuildResult(story.Pages[^1], pick.PendingLeft, story.PlynlingId);
             m.Flags = MessageFlags.ComponentsV2;
             m.AllowedMentions = AllowedMentions.None;
         });
         // Every story the pick caused: the picked one, then any answer the mascot gave at once.
-        foreach (var toldId in pick.Told ?? new[] { id })
-            if ((toldId == id ? story : await _plynlings.GetEventStoryAsync(toldId, now)) is { } s)
-                await _announcer.PostEventStoryAsync(Context.Guild?.Id ?? 0, PlynlingEventCards.BuildStory(s, 0), Context.Channel);
+        await _announcer.TellAsync(_plynlings, pick.Told ?? new[] { id }, Context.Guild?.Id ?? 0, now, Context.Channel);
     }
 
     [ComponentInteraction("evs:prev:*:*", ignoreGroupNames: true)]

@@ -1,9 +1,13 @@
 # Plynling personality and events
 
-Traits, stats and the personality title (phase 1 of
-`docs/superpowers/specs/2026-10-06-plynling-events-design.md`); events, stress and modifiers come in
-later phases and get their rules here. The pet itself is in `plynling.md`. **Before writing any
-trait, title or event text, read `docs/plynling-writing-style.md`.**
+Traits, stats, the personality title, events, stress and modifiers (design:
+`docs/superpowers/specs/2026-10-06-plynling-events-design.md`). The pet itself is in `plynling.md`.
+**Before writing any trait, title or event text, read `docs/plynling-writing-style.md`.**
+
+**Testing (owner only, absent from `/help`):** `/debug event key: [mode:] [target:]` forces an event —
+pending, expired (the next sweep decides it alone) or decided now; `/debug stress value:`;
+`/debug modifier key: [remove:]`. The scratch harness drives `PlynlingService` against in-memory
+SQLite with the real migrations.
 
 ## Traits — `Helpers/PlynlingTraits`
 
@@ -80,8 +84,6 @@ never change that mapping, every stored morning depends on it.
   and the bond before/after. No in-memory story store. A removed event still renders a plain story.
 - **Where stories go:** the game channel for its guild; a pick made elsewhere (the dev guild) posts in
   the channel it was made in; a sweep resolution elsewhere is dropped.
-- **Testing:** `/debug event key: mode:` (owner only) forces one — pending, expired, or decided now.
-  The scratch harness also runs the service against an in-memory SQLite database.
 - `/plynling help` is two pages (`plyn:help:0|1`); measure each after editing.
 
 ## Stress and modifiers — `Helpers/PlynlingStress`, `Helpers/PlynlingModifiers`
@@ -103,7 +105,6 @@ never change that mapping, every stored morning depends on it.
   something worse" (harness).
 - « État » in « Personnalité » is cut before the 1024-character field cap (every modifier at once
   would pass it).
-- Tests: `/debug stress value:`, `/debug modifier key: [remove:]`.
 
 ## Social events, follow-ups, on-actions
 
@@ -133,5 +134,3 @@ never change that mapping, every stored morning depends on it.
 - Labels may name the other (`{B}`): `PlynlingEventStory.Label` expands them for the card, the
   button (clipped to 80) and the story.
 - Social pulses check `TargetCondition` against each candidate before an event is drawn.
-- Tests: `/debug event key: [mode:] [target:]`. The scratch harness drives `PlynlingService` against
-  in-memory SQLite with the real migrations.

@@ -44,9 +44,7 @@ public class PlynlingCareService
         var text = $"{line} — {PlynlingText.PettedBy(plynling.Gender, actorId)}";
         if (badges.Count > 0) text += "\n" + PlynlingBadges.NewBadgeLines(badges, plynling.Gender);
         text += await GiftLineAsync(plynling, actorId, now);
-        var partner = await _plynlings.GetPartnerAsync(plynling);
-        return new CareReply(PlynlingModule.BuildCard(plynling, now, text, partnerName: partner?.Name,
-            pantry: await _plynlings.GetPantryAsync(plynling), traits: await _plynlings.GetTraitsAsync(plynling), pendingEvents: await _plynlings.CountPendingEventsAsync(plynling, now)), null);
+        return new CareReply(await PlynlingModule.BuildCardAsync(_plynlings, plynling, now, text), null);
     }
 
     // Owner only, every PlynlingLife.BathCooldown; the claim is released on a refusal, like petting.
@@ -67,9 +65,7 @@ public class PlynlingCareService
 
         var line = string.Format(_picker.Pick(BotResponses.PlynlingBathLines.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name));
-        var partner = await _plynlings.GetPartnerAsync(plynling);
-        return new CareReply(PlynlingModule.BuildCard(plynling, now, line, partnerName: partner?.Name,
-            pantry: await _plynlings.GetPantryAsync(plynling), traits: await _plynlings.GetTraitsAsync(plynling), pendingEvents: await _plynlings.CountPendingEventsAsync(plynling, now)), null);
+        return new CareReply(await PlynlingModule.BuildCardAsync(_plynlings, plynling, now, line), null);
     }
 
     // « Soigner »: owner only, once between two mornings, from the pantry or at MedicinePrice.
@@ -93,9 +89,7 @@ public class PlynlingCareService
         line += fromPantry
             ? "\n-# 💊 un médicament de ton garde-manger"
             : $"\n-# −{PebbleEconomy.Cailloux(price)} · il te reste {PebbleEconomy.Cailloux(balance)}";
-        var partner = await _plynlings.GetPartnerAsync(plynling);
-        return new CareReply(PlynlingModule.BuildCard(plynling, now, line, partnerName: partner?.Name,
-            pantry: await _plynlings.GetPantryAsync(plynling), traits: await _plynlings.GetTraitsAsync(plynling), pendingEvents: await _plynlings.CountPendingEventsAsync(plynling, now)), null);
+        return new CareReply(await PlynlingModule.BuildCardAsync(_plynlings, plynling, now, line), null);
     }
 
     public async Task<CareReply> FeedAsync(int plynlingId, ulong actorId, PlynlingFood food, DateTimeOffset now)
@@ -127,9 +121,7 @@ public class PlynlingCareService
             : $"\n-# {paid} · il te reste {PebbleEconomy.Cailloux(result.Balance)}";
         if (result.Badges is { Count: > 0 } badges) text += "\n" + PlynlingBadges.NewBadgeLines(badges, g);
         text += await GiftLineAsync(result.Plynling, actorId, now);
-        var partner = await _plynlings.GetPartnerAsync(result.Plynling);
-        return new CareReply(PlynlingModule.BuildCard(result.Plynling, now, text, PlynlingArt.Food(food), partner?.Name,
-            await _plynlings.GetPantryAsync(result.Plynling), traits: await _plynlings.GetTraitsAsync(result.Plynling), pendingEvents: await _plynlings.CountPendingEventsAsync(result.Plynling, now)), null);
+        return new CareReply(await PlynlingModule.BuildCardAsync(_plynlings, result.Plynling, now, text, PlynlingArt.Food(food)), null);
     }
 
     // The owner caring for their own may find today's happy gift, as one more line under hers.

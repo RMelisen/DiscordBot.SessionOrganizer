@@ -76,6 +76,14 @@ public static class PlynlingModifiers
         p.Modifiers = text.Length == 0 ? null : text;
     }
 
+    // Keeps only the active modifiers that pass `keep` — every removal (an end, a staff removal,
+    // a refresh) goes through here. Plus `add`, when given. Callers rebase first (PlynlingLife).
+    public static void Keep(Plynling p, Func<(ModifierInfo Info, DateTimeOffset Ends), bool> keep, (string Key, DateTimeOffset Ends)? add = null)
+    {
+        var kept = Active(p).Where(keep).Select(m => (m.Info.Key, m.Ends));
+        Write(p, add is { } extra ? kept.Append(extra) : kept);
+    }
+
     public static DateTimeOffset? NextEnd(Plynling p) => Active(p).Select(m => (DateTimeOffset?)m.Ends).FirstOrDefault();
 
     // A need's drain multiplier now: the product of its modifiers, clamped — hunger can only slow.

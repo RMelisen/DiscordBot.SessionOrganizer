@@ -2,6 +2,7 @@ using Discord;
 using Discord.Net;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
+using ProjectSYNCS.Commands;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Models;
 
@@ -58,6 +59,16 @@ public sealed class PlynlingAnnouncer
     // An event's story. In the game channel's guild it goes there; elsewhere (the dev guild) it goes to
     // `fallback`, the channel the choice was made in, when there is one — a sweep resolution there is
     // logged and dropped, like every other announcement.
+    // The stories of these resolved events, each posted as PostEventStoryAsync does. Takes the caller's
+    // PlynlingService: the announcer is a singleton and never holds a database service itself.
+    public async Task TellAsync(PlynlingService plynlings, IEnumerable<int> instanceIds, ulong guildId, DateTimeOffset now,
+        IMessageChannel? fallback = null)
+    {
+        foreach (var id in instanceIds)
+            if (await plynlings.GetEventStoryAsync(id, now) is { } story)
+                await PostEventStoryAsync(guildId, PlynlingEventCards.BuildStory(story, 0), fallback);
+    }
+
     public async Task PostEventStoryAsync(ulong guildId, MessageComponent story, IMessageChannel? fallback = null)
     {
         try

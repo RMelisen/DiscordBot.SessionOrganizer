@@ -9,16 +9,12 @@ namespace ProjectSYNCS.Commands;
 public static class PlynlingEventCards
 {
     public static string PickId(int instanceId, string optionKey) => $"plev:pick:{instanceId}:{optionKey}";
-    public static string StoryPrevId(int instanceId, int page) => $"evs:prev:{instanceId}:{page}";
-    public static string StoryNextId(int instanceId, int page) => $"evs:next:{instanceId}:{page}";
-    public static string StoryFirstId(int instanceId, int page) => $"evs:first:{instanceId}:{page}";
-    public static string StoryLastId(int instanceId, int page) => $"evs:last:{instanceId}:{page}";
 
     // The choice, ephemeral: the scene, one line per option it can see (what it needs, its odds), and
     // one button each. Hidden options are simply absent.
     public static MessageComponent BuildChoice(PlynlingEventInstance inst, EventDef def, EventContext ctx, EventCast self, EventCast? target)
     {
-        string X(string t) => PlynlingEvents.Expand(t, self.Name, self.Gender, target?.Name ?? "quelqu'un", target?.Gender ?? PlynlingGender.Male);
+        var X = PlynlingEventStory.Expander(inst, def, self, target);
         var options = def.Options.Where(o => PlynlingEventEngine.Visible(o, ctx)).ToList();
         // Labels may name the other ({B}): expanded, plain (they sit in bold or on a button), and a
         // button's cut to Discord's 80 characters — a long name could pass it.
@@ -91,17 +87,9 @@ public static class PlynlingEventCards
             .AddComponent(new TextDisplayBuilder($"{story.Pages[page]}\n-# {page + 1}/{story.Pages.Count}"));
 
         var builder = new ComponentBuilderV2().AddComponent(container);
+        // evs:prev|next|first|last:{instance}:{page} — the verbs PlynlingEventHandler binds.
         if (story.Pages.Count > 1)
-        {
-            var row = new ActionRowBuilder()
-                .WithButton("◀", StoryPrevId(story.InstanceId, page), ButtonStyle.Secondary, disabled: page == 0);
-            if (page == story.Pages.Count - 1)
-                row.WithButton("↺ Début", StoryFirstId(story.InstanceId, page), ButtonStyle.Secondary);
-            else
-                row.WithButton("▶", StoryNextId(story.InstanceId, page), ButtonStyle.Secondary)
-                   .WithButton("⏭ Fin", StoryLastId(story.InstanceId, page), ButtonStyle.Secondary);
-            builder.AddComponent(row);
-        }
+            builder.AddComponent(StoryPager.Row(page, story.Pages.Count, verb => $"evs:{verb}:{story.InstanceId}:{page}"));
         return builder.Build();
     }
 }

@@ -104,9 +104,9 @@ public partial class PlynlingService
             return (AdoptOutcome.AlreadyHasOne, null);
         }
         await AddMomentAsync(plynling, JournalKind.Adopted, null, now);  // needs its id: after the first save
-        await EnsureTraitsAsync(plynling, now);                           // its childhood trait, at once
+        var traits = await EnsureTraitsAsync(plynling, now);             // its childhood trait, at once
         await _db_context.SaveChangesAsync();
-        QueueOnAction(OnAction.Adopted, plynling, traitText: await NewTraitKeysAsync(plynling, TraitKind.Childhood));
+        QueueOnAction(OnAction.Adopted, plynling, traitText: RevealText(traits, TraitKind.Childhood));
         await FlushOnActionsAsync(now);                                   // « Bienvenue », after the adoption is safe
         return (AdoptOutcome.Adopted, plynling);
     }
@@ -170,7 +170,7 @@ public partial class PlynlingService
         }
         await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActMeal, 1, now);
         PlynlingLife.Feed(plynling, info, now);
-        PlynlingLife.Relieve(plynling, now, PlynlingStress.Relief(CareAct.Meal, await GetTraitsAsync(plynling)));
+        await RelieveAsync(plynling, CareAct.Meal, now);
         plynling.Meals++;
         if (plynling.Meals == 1) await AddMomentAsync(plynling, JournalKind.FirstMeal, null, now);
         if (plynling.OwnerId != actorId && ++plynling.FedByOthers == 1)
@@ -191,7 +191,7 @@ public partial class PlynlingService
         if (PlynlingLife.IsAsleep(now)) return (CareOutcome.Asleep, plynling, NoBadges);   // feeding still works
 
         PlynlingLife.Pet(plynling, now);
-        PlynlingLife.Relieve(plynling, now, PlynlingStress.Relief(CareAct.Pet, await GetTraitsAsync(plynling)));
+        await RelieveAsync(plynling, CareAct.Pet, now);
         plynling.Pets++;
         await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActPet, 1, now);
         var badges = await AwardAsync(plynling, now);
@@ -214,7 +214,7 @@ public partial class PlynlingService
         if (refusal is { } r) return (r, plynling);
 
         PlynlingLife.Bath(plynling!, now);
-        PlynlingLife.Relieve(plynling!, now, PlynlingStress.Relief(CareAct.Bath, await GetTraitsAsync(plynling!)));
+        await RelieveAsync(plynling!, CareAct.Bath, now);
         await EconomyLog.AddAsync(_db_context, plynling!.GuildId, EconomyLog.ActBath, 1, now);
         await _db_context.SaveChangesAsync();
         return (CareOutcome.Done, plynling);
@@ -327,7 +327,7 @@ public partial class PlynlingService
             return (null, 0, NoBadges, null);
 
         PlynlingLife.Play(plynling, now, won);
-        PlynlingLife.Relieve(plynling, now, PlynlingStress.Relief(CareAct.Game, await GetTraitsAsync(plynling)));
+        await RelieveAsync(plynling, CareAct.Game, now);
         if (won && plynling.PlaysWon == 1) await AddMomentAsync(plynling, JournalKind.FirstWin, null, now);
         var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, plynling.GuildId, ownerId);
         if (won && pebbles > 0)
@@ -359,13 +359,8 @@ public partial class PlynlingService
         if (visitor.FrozenAt is not null || host.FrozenAt is not null) return null;
         if (PlynlingLife.IsSick(visitor) || PlynlingLife.IsSick(host)) return null;      // the callers say why
 
-        var (lo, hi) = visitor.Id < host.Id ? (visitor.Id, host.Id) : (host.Id, visitor.Id);
-        var relation = await _db_context.PlynlingRelations.FirstOrDefaultAsync(r => r.PlynlingAId == lo && r.PlynlingBId == hi);
-        if (relation is null)
-        {
-            relation = new PlynlingRelation { PlynlingAId = lo, PlynlingBId = hi, Bond = PlynlingBond.Acquaintances, Since = now };
-            _db_context.PlynlingRelations.Add(relation);
-        }
+        var (lo, hi) = Pair(visitor.Id, host.Id);
+        var relation = await RelationForAsync(visitor.Id, host.Id, now);
 
         var before = relation.Bond;
         var compatibility = PlynlingBonds.Compatibility(lo, hi);
@@ -391,8 +386,8 @@ public partial class PlynlingService
         PlynlingLife.Visit(visitor, now, happiness);
         PlynlingLife.Visit(host, now, happiness);
         var close = after is PlynlingBond.Friends or PlynlingBond.BestFriends or PlynlingBond.Lovers;
-        PlynlingLife.Relieve(visitor, now, PlynlingStress.Relief(CareAct.Visit, await GetTraitsAsync(visitor), close));
-        PlynlingLife.Relieve(host, now, PlynlingStress.Relief(CareAct.Visit, await GetTraitsAsync(host), close));
+        await RelieveAsync(visitor, CareAct.Visit, now, close);
+        await RelieveAsync(host, CareAct.Visit, now, close);
         if (confession == Confession.Refused)
         {
             foreach (var (p, other) in new[] { (visitor, host), (host, visitor) })
@@ -443,13 +438,7 @@ public partial class PlynlingService
     // (MakeCoupleAsync). Never saves.
     public async Task<(PlynlingBond Before, PlynlingBond After)> ShiftAffinityAsync(Plynling a, Plynling b, int delta, DateTimeOffset now)
     {
-        var (lo, hi) = a.Id < b.Id ? (a.Id, b.Id) : (b.Id, a.Id);
-        var relation = await _db_context.PlynlingRelations.FirstOrDefaultAsync(r => r.PlynlingAId == lo && r.PlynlingBId == hi);
-        if (relation is null)
-        {
-            relation = new PlynlingRelation { PlynlingAId = lo, PlynlingBId = hi, Bond = PlynlingBond.Acquaintances, Since = now };
-            _db_context.PlynlingRelations.Add(relation);
-        }
+        var relation = await RelationForAsync(a.Id, b.Id, now);
         var before = relation.Bond;
         relation.Affinity = Math.Clamp(relation.Affinity + delta, -100, 100);
         var after = PlynlingBonds.BondFor(relation.Affinity, before);
@@ -468,9 +457,7 @@ public partial class PlynlingService
     // the tracked row — so a shift earlier in the same unit of work counts. Never saves.
     public async Task<(PlynlingBond Before, PlynlingBond After)?> LiftAffinityAsync(Plynling a, Plynling b, int value, DateTimeOffset now)
     {
-        var (lo, hi) = a.Id < b.Id ? (a.Id, b.Id) : (b.Id, a.Id);
-        var relation = await _db_context.PlynlingRelations.FirstOrDefaultAsync(r => r.PlynlingAId == lo && r.PlynlingBId == hi);
-        var current = relation?.Affinity ?? 0;
+        var current = (await FindRelationAsync(a.Id, b.Id))?.Affinity ?? 0;
         return value > current ? await ShiftAffinityAsync(a, b, value - current, now) : null;
     }
 
@@ -478,8 +465,7 @@ public partial class PlynlingService
     // checked the visit rules (CanConfess), which imply a relation row (best friends). Never saves.
     private async Task<(PlynlingBond Before, PlynlingBond After)> MakeCoupleAsync(Plynling a, Plynling b, DateTimeOffset now)
     {
-        var (lo, hi) = a.Id < b.Id ? (a.Id, b.Id) : (b.Id, a.Id);
-        var relation = await _db_context.PlynlingRelations.FirstAsync(r => r.PlynlingAId == lo && r.PlynlingBId == hi);
+        var relation = (await FindRelationAsync(a.Id, b.Id))!;
         var before = relation.Bond;
         relation.Bond = PlynlingBond.Lovers;
         relation.Since = now;
@@ -487,6 +473,36 @@ public partial class PlynlingService
         await AwardAsync(a, now, evt);
         await AwardAsync(b, now, evt);
         return (before, PlynlingBond.Lovers);
+    }
+
+    // A pair's relation row is keyed lower id first (its unique index).
+    private static (int Lo, int Hi) Pair(int a, int b) => a < b ? (a, b) : (b, a);
+
+    // The pair's relation row, or null. Untracked when asked: a read that must not be served stale to
+    // a later write in the sweep's long-lived context.
+    private async Task<PlynlingRelation?> FindRelationAsync(int a, int b, bool tracked = true)
+    {
+        var (lo, hi) = Pair(a, b);
+        IQueryable<PlynlingRelation> rows = tracked ? _db_context.PlynlingRelations : _db_context.PlynlingRelations.AsNoTracking();
+        return await rows.FirstOrDefaultAsync(r => r.PlynlingAId == lo && r.PlynlingBId == hi);
+    }
+
+    // The pair's relation row, created (acquaintances, from now) if they never met. Never saves.
+    private async Task<PlynlingRelation> RelationForAsync(int a, int b, DateTimeOffset now)
+    {
+        if (await FindRelationAsync(a, b) is { } found) return found;
+        var (lo, hi) = Pair(a, b);
+        var created = new PlynlingRelation { PlynlingAId = lo, PlynlingBId = hi, Bond = PlynlingBond.Acquaintances, Since = now };
+        _db_context.PlynlingRelations.Add(created);
+        return created;
+    }
+
+    // Care eases stress, by its coping traits (PlynlingStress.Relief). The traits are read only when
+    // there is stress to ease. Never saves.
+    private async Task RelieveAsync(Plynling p, CareAct act, DateTimeOffset now, bool closeBond = false)
+    {
+        if (p.Stress > 0)
+            PlynlingLife.Relieve(p, now, PlynlingStress.Relief(act, await GetTraitsAsync(p), closeBond));
     }
 
     private static int Closeness(PlynlingBond bond) => PlynlingBonds.Closeness(bond);
@@ -677,7 +693,7 @@ public partial class PlynlingService
             await FlushOnActionsAsync(now);
         }
 
-        var query =_db_context.Plynlings.Where(x => x.GuildId == guildId && x.DiedAt != null);
+        var query = _db_context.Plynlings.Where(x => x.GuildId == guildId && x.DiedAt != null);
         if (ownerId is { } owner) query = query.Where(x => x.OwnerId == owner);
         return await query.ToListAsync();
     }
@@ -798,9 +814,10 @@ public partial class PlynlingService
     // two personality traits at ado, the fourth trait at adulte. The mascot gets her four chosen ones
     // instead. One path for adoption, the mascot's creation and every sweep — which is also what gives
     // Plynlings that predate traits theirs. Adds and journals; never saves (rides the caller's save).
-    public async Task EnsureTraitsAsync(Plynling p, DateTimeOffset now)
+    // Returns what it added, in order (a trait reveal names them).
+    public async Task<IReadOnlyList<TraitInfo>> EnsureTraitsAsync(Plynling p, DateTimeOffset now)
     {
-        if (p.DiedAt is not null) return;
+        if (p.DiedAt is not null) return Array.Empty<TraitInfo>();
         var held = await _db_context.PlynlingTraits.Where(t => t.PlynlingId == p.Id).Select(t => t.Key).ToListAsync();
         var stage = PlynlingLife.Stage(p, now);
         var slot = held.Count(k => PlynlingTraits.ByKey(k)?.Kind == TraitKind.Personality);
@@ -813,12 +830,14 @@ public partial class PlynlingService
         foreach (var trait in add)
         {
             _db_context.PlynlingTraits.Add(new PlynlingTrait { PlynlingId = p.Id, Key = trait.Key, Kind = trait.Kind, AcquiredAt = now });
-            // Journaled only when its stage has just begun: a backfill stays out of the journal.
+            // Journaled only when its stage has just begun: a backfill stays out of the journal, and so do
+            // the mascot's chosen traits (she does not grow into them).
             if (!PlynlingMascot.Is(p) && PlynlingTraits.JustGained(PlynlingTraits.StageOf(trait.Kind, slot), age))
                 await AddMomentAsync(p, JournalKind.TraitGained, trait.Key, now);
             if (trait.Kind == TraitKind.Personality) slot++;
         }
-        await RefreshStressCacheAsync(p);   // every sweep: also fills the cache for rows that predate it
+        RefreshStressCache(p, held.Concat(add.Select(t => t.Key)));   // every sweep: also fills rows that predate the cache
+        return add;
     }
 
     // Its traits in the order acquired. A key no longer in the catalog is skipped, never thrown on.
@@ -826,15 +845,10 @@ public partial class PlynlingService
         (await _db_context.PlynlingTraits.Where(t => t.PlynlingId == p.Id).OrderBy(t => t.Id).Select(t => t.Key).ToListAsync())
         .Select(PlynlingTraits.ByKey).OfType<TraitInfo>().ToList();
 
-    // Its traits' stress-decay multiplier, cached on the row for Settle (which cannot load traits).
-    // Counts traits added earlier in this unit of work. Never saves.
-    public async Task RefreshStressCacheAsync(Plynling p)
-    {
-        var keys = (await _db_context.PlynlingTraits.Where(t => t.PlynlingId == p.Id).Select(t => t.Key).ToListAsync())
-            .Concat(_db_context.PlynlingTraits.Local.Where(t => t.PlynlingId == p.Id).Select(t => t.Key))
-            .Distinct();
-        p.StressLossBonusPercent = PlynlingStress.LossBonusPercent(keys.Select(PlynlingTraits.ByKey).OfType<TraitInfo>());
-    }
+    // Its traits' stress-decay multiplier, cached on the row for Settle (which cannot load traits),
+    // from the keys it holds now — including any added in this unit of work.
+    private static void RefreshStressCache(Plynling p, IEnumerable<string> traitKeys) =>
+        p.StressLossBonusPercent = PlynlingStress.LossBonusPercent(traitKeys.Distinct().Select(PlynlingTraits.ByKey).OfType<TraitInfo>());
 
     // What only time earns, for the hourly sweep: the « est devenu… » moments — dated when the
     // stage was reached, written once while that is recent (PlynlingTraits.JustGained) — any badge
@@ -856,18 +870,18 @@ public partial class PlynlingService
             // Past the window, a missing moment is one the journal trimmed: written again it would be
             // the oldest entry and push out the next-oldest — another stage moment the next sweep
             // re-adds, every hour.
-            if (age < start || !PlynlingTraits.JustGained(stage, age) || written.Contains(stage.ToString())) continue;
+            if (!PlynlingTraits.JustGained(stage, age) || written.Contains(stage.ToString())) continue;
             // As long ago as it has lived past the threshold — never before it was adopted.
             var at = now - (age - start);
             await AddMomentAsync(p, JournalKind.GrewUp, stage.ToString(), at < p.AdoptedAt ? p.AdoptedAt : at);
             grewTo = stage;
         }
-        await EnsureTraitsAsync(p, now);   // the traits its new stage brings — and any it predates
+        var added = await EnsureTraitsAsync(p, now);   // the traits its new stage brings — and any it predates
         await AwardAsync(p, now);
         // Growing up reveals its new traits in an event; the caller flushes after its save. The window
         // above means this happens once per stage, never again for a moment the journal trimmed.
-        if (grewTo == PlynlingStage.Teen) QueueOnAction(OnAction.BecameTeen, p, traitText: await NewTraitKeysAsync(p, TraitKind.Personality, 2));
-        if (grewTo == PlynlingStage.Adult) QueueOnAction(OnAction.BecameAdult, p, traitText: await NewTraitKeysAsync(p, TraitKind.Personality, 1));
+        if (grewTo == PlynlingStage.Teen) QueueOnAction(OnAction.BecameTeen, p, traitText: RevealText(added, TraitKind.Personality));
+        if (grewTo == PlynlingStage.Adult) QueueOnAction(OnAction.BecameAdult, p, traitText: RevealText(added, TraitKind.Personality));
     }
 
     // The sweep, announcing a death: the journal's last moment, dated when it died. Not saved.
@@ -959,13 +973,10 @@ public partial class PlynlingService
         p.PendingMoments.Clear();
     }
 
-    // The newest traits of a kind, as "key,key" — the {T} of a trait reveal. Counts traits added in
-    // this unit of work. Null when there is none.
-    private async Task<string?> NewTraitKeysAsync(Plynling p, TraitKind kind, int count = 1)
+    // The {T} of a trait reveal: the traits of a kind this pass just added, as "key,key". Null without.
+    private static string? RevealText(IReadOnlyList<TraitInfo> added, TraitKind kind)
     {
-        var keys = (await _db_context.PlynlingTraits.Where(t => t.PlynlingId == p.Id && t.Kind == kind).OrderBy(t => t.Id).Select(t => t.Key).ToListAsync())
-            .Concat(_db_context.PlynlingTraits.Local.Where(t => t.PlynlingId == p.Id && t.Kind == kind && t.Id == 0).Select(t => t.Key))
-            .Distinct().TakeLast(count).ToList();
+        var keys = added.Where(t => t.Kind == kind).Select(t => t.Key).ToList();
         return keys.Count == 0 ? null : string.Join(",", keys);
     }
 }

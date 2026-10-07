@@ -25,14 +25,20 @@ public partial class PlynlingService
         var traits = await GetTraitsAsync(p);
         var ctx = new EventContext(p, traits, PlynlingStats.Compute(p, traits), PlynlingLife.Stage(p, now));
         if (other is null) return ctx;
-        var (lo, hi) = p.Id < other.Id ? (p.Id, other.Id) : (other.Id, p.Id);
-        var relation = await _db_context.PlynlingRelations.AsNoTracking().FirstOrDefaultAsync(r => r.PlynlingAId == lo && r.PlynlingBId == hi);
+        return ctx with { Other = await TargetInfoAsync(p, other), OtherStats = PlynlingStats.Compute(other, await GetTraitsAsync(other)) };
+    }
+
+    // Who `other` is to `p`: their relation, hidden compatibility, whether either is taken, and whether
+    // the visit rules would let them couple. Enough for a target condition, without either's traits.
+    private async Task<TargetInfo> TargetInfoAsync(Plynling p, Plynling other)
+    {
+        var relation = await FindRelationAsync(p.Id, other.Id, tracked: false);
         var bond = relation?.Bond ?? PlynlingBond.Acquaintances;
         var affinity = relation?.Affinity ?? 0;
         var taken = await InCoupleAsync(p.Id, other.Id) || await InCoupleAsync(other.Id, p.Id);
-        var info = new TargetInfo(other, bond, affinity, PlynlingBonds.Compatibility(lo, hi), taken,
+        var (lo, hi) = Pair(p.Id, other.Id);
+        return new TargetInfo(other, bond, affinity, PlynlingBonds.Compatibility(lo, hi), taken,
             PlynlingBonds.CanConfess(bond, affinity, p, other, taken));
-        return ctx with { Other = info, OtherStats = PlynlingStats.Compute(other, await GetTraitsAsync(other)) };
     }
 
     // The other Plynling of an instance, if it has one (settled; may be dead or frozen).
@@ -146,7 +152,6 @@ public partial class PlynlingService
                     .Where(i => i.PlynlingId == p.Id && i.ResolvedAt != null)
                     .OrderByDescending(i => i.Id).Take(PlynlingEventEngine.RecentWindow)
                     .Select(i => i.EventKey).ToListAsync();
-                var targetable = targets.Where(kv => kv.Value.Count > 0).Select(kv => kv.Key).ToHashSet();
                 // Never the same event twice in the queue: what still waits is out of the draw.
                 var waiting = open.Where(i => i.ResolvedAt is null && i.CancelledAt is null).Select(i => i.EventKey).ToHashSet();
                 var defs = PlynlingEvents.All.Where(d => !waiting.Contains(d.Key));
@@ -155,10 +160,10 @@ public partial class PlynlingService
                 var infos = new Dictionary<int, TargetInfo>();
                 foreach (var id in targets.Values.SelectMany(v => v).Distinct())
                     if (await GetByIdAsync(id, now) is { DiedAt: null, FrozenAt: null } t)
-                        infos[id] = (await GetEventContextAsync(p, now, t)).Other!;
+                        infos[id] = await TargetInfoAsync(p, t);
                 IReadOnlyList<int> CandidatesFor(EventDef d) =>
                     targets[d.Target].Where(id => infos.TryGetValue(id, out var info) && (d.TargetCondition?.Invoke(info) ?? true)).ToList();
-                if (PlynlingEventEngine.PickPulse(p.Id, day, defs, ctx, recent, targetable, d => CandidatesFor(d).Count > 0) is { } def)
+                if (PlynlingEventEngine.PickPulse(p.Id, day, defs, ctx, recent, d => CandidatesFor(d).Count > 0) is { } def)
                 {
                     var targetId = def.Target == TargetKind.None ? null : PlynlingEventEngine.PickTarget(p.Id, day, CandidatesFor(def));
                     var inst = await CreateEventAsync(p, def, targetId, now);
@@ -178,7 +183,7 @@ public partial class PlynlingService
     }
 
     // Adds an instance without saving — inside another unit of work (a break queued by an event).
-    public Task<PlynlingEventInstance> QueueEventAsync(Plynling p, EventDef def, int? targetId, DateTimeOffset now)
+    private PlynlingEventInstance QueueEvent(Plynling p, EventDef def, int? targetId, DateTimeOffset now)
     {
         var inst = new PlynlingEventInstance
         {
@@ -186,15 +191,31 @@ public partial class PlynlingService
             CreatedAt = now, AvailableAt = now, ExpiresAt = now + PlynlingEventEngine.Lifetime,
         };
         _db_context.PlynlingEventInstances.Add(inst);
-        return Task.FromResult(inst);
+        return inst;
     }
 
     // Saves, so the instance has its id (rolls are hashed from it).
     public async Task<PlynlingEventInstance> CreateEventAsync(Plynling p, EventDef def, int? targetId, DateTimeOffset now)
     {
-        var inst = await QueueEventAsync(p, def, targetId, now);
+        var inst = QueueEvent(p, def, targetId, now);
         await _db_context.SaveChangesAsync();
         return inst;
+    }
+
+    // The mental break for each stress level above `fromLevel` up to its current one, whatever the
+    // pulse cap says. Never saves.
+    private void QueueBreaks(Plynling p, int fromLevel, int salt, DateTimeOffset now)
+    {
+        for (var l = fromLevel + 1; l <= PlynlingStress.Level(p.Stress); l++)
+            if (PlynlingEventEngine.PickBreak(p.Id, salt, l, PlynlingEvents.All) is { } breakDef)
+                QueueEvent(p, breakDef, null, now);
+    }
+
+    // The bond an event moved, for its story: the first "before" seen and the last "after".
+    private static void RecordBond(PlynlingEventInstance inst, (PlynlingBond Before, PlynlingBond After) change)
+    {
+        inst.BondBefore ??= change.Before;
+        inst.BondAfter = change.After;
     }
 
     // In character: a response by acceptance (affinity, compatibility), anything else by its axes.
@@ -235,18 +256,17 @@ public partial class PlynlingService
 
     // The roll, the effects, the journal. Never saves. A target that is gone (abandoned, dead, frozen)
     // simply skips the affinity: the event still happened to this one. Deciding alone skips what
-    // AppliesWhenAlone forbids; each stress level climbed queues its mental break.
+    // AppliesWhenAlone forbids; each stress level climbed queues its mental break. The target is the
+    // one `ctx` was built with — loaded (and settled, which may save) before anything here changes.
     private async Task ApplyEventAsync(Plynling p, PlynlingEventInstance inst, EventDef def, EventOption option,
         EventContext ctx, bool decidedAlone, DateTimeOffset now)
     {
-        // Loaded first: reading a Plynling settles it and may save, which must happen before this
-        // unit of work starts changing anything.
-        var target = inst.TargetPlynlingId is { } tid ? await GetByIdAsync(tid, now) : null;
+        var target = ctx.Other?.Target;
         var stressBefore = p.Stress;
-        var climbed = 0;
+        var levelBefore = PlynlingStress.Level(p.Stress);
         // The owner's own choice may cost stress, scaled by its traits. Alone, the option had no cost.
         if (!decidedAlone)
-            climbed += PlynlingLife.AddStress(p, now, PlynlingStress.Scaled(PlynlingEventEngine.StressCost(option, ctx), ctx.Traits));
+            PlynlingLife.AddStress(p, now, PlynlingStress.Scaled(PlynlingEventEngine.StressCost(option, ctx), ctx.Traits));
 
         var success = true;
         if (option.Challenge is { } challenge)
@@ -257,19 +277,17 @@ public partial class PlynlingService
         }
         foreach (var effect in success ? option.OnSuccess : option.OnFailure)
         {
-            if (decidedAlone && !PlynlingEventEngine.AppliesWhenAlone(effect, def)) continue;
+            if (!PlynlingEventEngine.Applies(effect, def, decidedAlone)) continue;
             switch (effect)
             {
                 case GrowStat g:
                     PlynlingStats.AddGrowth(p, g.Stat, g.Amount);
                     break;
                 case AffinityShift a when target is { DiedAt: null, FrozenAt: null }:
-                    var (before, after) = await ShiftAffinityAsync(p, target, a.Delta, now);
-                    inst.BondBefore ??= before;
-                    inst.BondAfter = after;
+                    RecordBond(inst, await ShiftAffinityAsync(p, target, a.Delta, now));
                     break;
                 case StressChange s when s.Amount > 0:
-                    climbed += PlynlingLife.AddStress(p, now, PlynlingStress.Scaled(s.Amount, ctx.Traits));
+                    PlynlingLife.AddStress(p, now, PlynlingStress.Scaled(s.Amount, ctx.Traits));
                     break;
                 case StressChange s:
                     PlynlingLife.Relieve(p, now, -s.Amount);
@@ -284,44 +302,36 @@ public partial class PlynlingService
                         _db_context.PlynlingTraits.Add(new PlynlingTrait { PlynlingId = p.Id, Key = coping.Key, Kind = TraitKind.Coping, AcquiredAt = now });
                         await AddMomentAsync(p, JournalKind.TraitGained, coping.Key, now);
                         inst.GainedTraitKey = coping.Key;
-                        await RefreshStressCacheAsync(p);
+                        RefreshStressCache(p, held.Append(coping.Key));
                     }
                     break;
                 case FollowUp f when PlynlingEvents.ByKey(f.EventKey) is { } next:
                     // Comes back later, about the same Plynling; a death cancels it with the rest.
-                    var later = await QueueEventAsync(p, next, inst.TargetPlynlingId, now);
+                    var later = QueueEvent(p, next, inst.TargetPlynlingId, now);
                     later.AvailableAt = PlynlingEventEngine.FollowUpAt(inst.Id, f, now);
                     later.ExpiresAt = later.AvailableAt + PlynlingEventEngine.Lifetime;
                     later.ParentInstanceId = inst.Id;
                     break;
                 case AskTarget ask when target is { DiedAt: null, FrozenAt: null } && PlynlingEvents.ByKey(ask.ResponseKey) is { } reply:
                     // Queued on the other Plynling, pointing back at this one; its owner answers.
-                    var asked = await QueueEventAsync(target, reply, p.Id, now);
-                    asked.ParentInstanceId = inst.Id;
+                    QueueEvent(target, reply, p.Id, now).ParentInstanceId = inst.Id;
                     _askedMascot |= PlynlingMascot.Is(target);
                     break;
                 case SetAffinityAtLeast lift when target is { DiedAt: null }:
-                    if (await LiftAffinityAsync(p, target, lift.Value, now) is var (l0, l1))
-                    {
-                        inst.BondBefore ??= l0;
-                        inst.BondAfter = l1;
-                    }
+                    if (await LiftAffinityAsync(p, target, lift.Value, now) is { } lifted)
+                        RecordBond(inst, lifted);
                     break;
                 case Couple when target is { DiedAt: null } && ctx.Other is { CanCouple: true }:
                     // The visit rules, checked again now: someone may have coupled since the ask.
                     // When they no longer allow it, BondAfter stays unset and the story says « trop tard ».
-                    var (c0, c1) = await MakeCoupleAsync(p, target, now);
-                    inst.BondBefore ??= c0;
-                    inst.BondAfter = c1;
+                    RecordBond(inst, await MakeCoupleAsync(p, target, now));
                     break;
                 case Heartbreak when target is { DiedAt: null, FrozenAt: null }:
                     // In a response: the one who declared — whose owner chose to — is saddened. Not
                     // while frozen: nothing about a frozen Plynling moves.
                     PlynlingLife.Sadden(target, now, PlynlingBonds.HeartbreakSadness);
                     await AddMomentAsync(target, JournalKind.Heartbroken, p.Name, now);
-                    var (h0, h1) = await ShiftAffinityAsync(p, target, -PlynlingBonds.HeartbreakLoss, now);
-                    inst.BondBefore ??= h0;
-                    inst.BondAfter = h1;
+                    RecordBond(inst, await ShiftAffinityAsync(p, target, -PlynlingBonds.HeartbreakLoss, now));
                     break;
             }
         }
@@ -332,10 +342,7 @@ public partial class PlynlingService
         await AddMomentAsync(p, JournalKind.EventStory, def.Key, now);
 
         // Each level climbed brings on its mental break, whatever the pulse cap says.
-        var level = PlynlingStress.Level(p.Stress);
-        for (var l = level - climbed + 1; l <= level; l++)
-            if (PlynlingEventEngine.PickBreak(p.Id, inst.Id, l, PlynlingEvents.All) is { } breakDef)
-                await QueueEventAsync(p, breakDef, null, now);
+        QueueBreaks(p, levelBefore, inst.Id, now);
     }
 
     // Who a social event may involve, by kind: living, unfrozen Plynlings of the same guild, not
@@ -347,8 +354,10 @@ public partial class PlynlingService
         var others = await _db_context.Plynlings
             .Where(x => x.GuildId == p.GuildId && x.Id != p.Id && x.DiedAt == null && x.FrozenAt == null)
             .Select(x => x.Id).ToListAsync();
-        var recentPairs = (await _db_context.PlynlingEventInstances.AsNoTracking()
+        // Only the three columns needed (the history grows without bound); the date window in memory.
+        var recentPairs = (await _db_context.PlynlingEventInstances
                 .Where(i => (i.PlynlingId == p.Id && i.TargetPlynlingId != null) || i.TargetPlynlingId == p.Id)
+                .Select(i => new { i.PlynlingId, i.TargetPlynlingId, i.CreatedAt })
                 .ToListAsync())
             .Where(i => now - i.CreatedAt < TimeSpan.FromHours(24))
             .Select(i => i.PlynlingId == p.Id ? i.TargetPlynlingId!.Value : i.PlynlingId)
@@ -394,9 +403,7 @@ public partial class PlynlingService
         if (p is null || p.DiedAt is not null) return null;
         var before = PlynlingStress.Level(p.Stress);
         PlynlingLife.SetStress(p, now, value);
-        for (var l = before + 1; l <= PlynlingStress.Level(p.Stress); l++)
-            if (PlynlingEventEngine.PickBreak(p.Id, (int)(now.ToUnixTimeSeconds() % 100000), l, PlynlingEvents.All) is { } def)
-                await QueueEventAsync(p, def, null, now);
+        QueueBreaks(p, before, (int)(now.ToUnixTimeSeconds() % 100000), now);
         await FlushMomentsAsync(p);
         await _db_context.SaveChangesAsync();
         return $"🔧 Stress {p.Stress} (niveau {PlynlingStress.Level(p.Stress)}).";
@@ -482,7 +489,7 @@ public partial class PlynlingService
                         continue;
                     // Never the same event twice in the queue (several visits on a lucky day).
                     if ((await OpenEventsAsync(p.Id)).Any(i => i.EventKey == def.Key)) continue;
-                    var inst = await QueueEventAsync(p, def, def.Target == TargetKind.None ? null : targetId, now);
+                    var inst = QueueEvent(p, def, def.Target == TargetKind.None ? null : targetId, now);
                     inst.GainedTraitKey = traitText;
                     await _db_context.SaveChangesAsync();
                     if (PlynlingMascot.Is(p))

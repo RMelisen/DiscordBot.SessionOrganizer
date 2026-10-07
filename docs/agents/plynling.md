@@ -4,7 +4,7 @@ The virtual pet. `/plynling` (`PlynlingModule`), card buttons in `PlynlingCompon
 rules in `Helpers/PlynlingLife`. Money, items and cosmetics are in `economy.md`. **Before writing any
 Plynling line, read `docs/plynling-writing-style.md`.**
 
-Traits, stats, the personality title — and later events, stress and modifiers — are in
+Traits, stats, the personality title, events, stress and modifiers are in
 `plynling-events.md`.
 
 **`/pl` is a shortcut for `/plynling`**, asked for by people on phones ("/pl v" finds "pl view",

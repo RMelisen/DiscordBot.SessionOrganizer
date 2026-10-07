@@ -616,14 +616,20 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
 
     // ---- rendering --------------------------------------------------------------
 
-    private async Task RespondCardAsync(Plynling plynling, DateTimeOffset now, string? line)
-    {
-        var partner = await _plynlings.GetPartnerAsync(plynling);
-        var pantry = await _plynlings.GetPantryAsync(plynling);
-        await RespondAsync(components: BuildCard(plynling, now, line, partnerName: partner?.Name, pantry: pantry,
-                traits: await _plynlings.GetTraitsAsync(plynling), pendingEvents: await _plynlings.CountPendingEventsAsync(plynling, now)),
+    private async Task RespondCardAsync(Plynling plynling, DateTimeOffset now, string? line) =>
+        await RespondAsync(components: await BuildCardAsync(_plynlings, plynling, now, line),
             flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
-    }
+
+    // The card with everything it shows besides the Plynling itself — its partner, its owner's pantry,
+    // its traits, what events wait — loaded in one place, so a new input is added once, not at every
+    // caller (the view command and each care button).
+    public static async Task<MessageComponent> BuildCardAsync(PlynlingService plynlings, Plynling plynling, DateTimeOffset now,
+        string? lastAction, string? lastActionImage = null) =>
+        BuildCard(plynling, now, lastAction, lastActionImage,
+            partnerName: (await plynlings.GetPartnerAsync(plynling))?.Name,
+            pantry: await plynlings.GetPantryAsync(plynling),
+            traits: await plynlings.GetTraitsAsync(plynling),
+            pendingEvents: await plynlings.CountPendingEventsAsync(plynling, now));
 
 
     /// <summary>
