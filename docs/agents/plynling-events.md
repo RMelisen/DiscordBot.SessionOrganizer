@@ -25,7 +25,7 @@ SQLite with the real migrations.
   call is also the backfill for Plynlings older than traits; there is no data migration. Dead rows
   are skipped; a resurrected one catches up on the next sweep. It never saves.
 - **Only traits gained as it happens are journaled** (`PlynlingTraits.JustGained`: the stage that
-  brings the trait began less than 2 days ago). A backfill is silent — at the 100-moment cap, four
+  brings the trait began less than 2 days ago). A backfill is silent — at the 500-moment cap, four
   « nouveau trait » moments would push out its oldest memories. The mascot's traits are never journaled.
 - Descriptions are **shared by both genders**, so they never agree with the Plynling (the harness
   bans il/elle in them); names have M and F forms.
@@ -62,7 +62,8 @@ never change that mapping, every stored morning depends on it.
 - **Every rule is pure and hashed** (`StableRoll`): pulse time (08:00–20:00 Paris), which event,
   the target, the challenge roll (from the instance id), the in-character choice. Never a `Random`.
 - **Pacing:** one pulse a day, skipped when 3 pulse events wait; 24 h to choose; frozen = nothing
-  happens; a death cancels what waits; the mascot decides at once.
+  happens; a death cancels what waits; the mascot decides at once — a pulse, an on-action or an
+  answer right away, anything else (a follow-up coming due, a break) on the next sweep.
 - **The draw:** an event still waiting is never drawn again. The last 14 resolved are excluded
   most recent first, **but never every eligible event**: the least recently seen comes back. A hard
   exclusion locks any stage with fewer events than the window for good — nothing new resolves, so

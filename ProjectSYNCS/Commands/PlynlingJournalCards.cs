@@ -68,10 +68,13 @@ public static class PlynlingJournalCards
                 .AddComponent(new SectionBuilder()
                     .WithAccessory(new ThumbnailBuilder().WithMedia(new UnfurledMediaItemProperties(picture)).WithDescription(info.Name))
                     .AddComponent(new TextDisplayBuilder(JournalText(p, badges, moments, page, now, relations)))))
-            // Two verbs: with one, a disabled ◀ on page 0 and a ▶ elsewhere could share an id.
+            // One verb per button: with one, a disabled ◀ on page 0 and a ⏮ could share an id. ⏮ and ⏭
+            // jump to the newest and the oldest page — a full journal runs to dozens of pages.
             .AddComponent(new ActionRowBuilder()
+                .WithButton("⏮", $"plyn:jfirst:{p.Id}:0", ButtonStyle.Secondary, disabled: page == 0)
                 .WithButton("◀", $"plyn:jprev:{p.Id}:{Math.Max(0, page - 1)}", ButtonStyle.Secondary, disabled: page == 0)
-                .WithButton("▶", $"plyn:jnext:{p.Id}:{Math.Min(pages - 1, page + 1)}", ButtonStyle.Secondary, disabled: page >= pages - 1))
+                .WithButton("▶", $"plyn:jnext:{p.Id}:{Math.Min(pages - 1, page + 1)}", ButtonStyle.Secondary, disabled: page >= pages - 1)
+                .WithButton("⏭", $"plyn:jlast:{p.Id}:{pages - 1}", ButtonStyle.Secondary, disabled: page >= pages - 1))
             .Build();
     }
 

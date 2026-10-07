@@ -108,7 +108,8 @@ public partial class PlynlingService
     }
 
     // The sweep's turn, per Plynling: cancel what a death or the catalog left pending, decide what
-    // expired, then the day's pulse. Saves (an instance needs its id before it can be rolled).
+    // expired (for the mascot, everything available: a follow-up or a break never waits on her card),
+    // then the day's pulse. Saves (an instance needs its id before it can be rolled).
     // Returns the instances resolved now, for the caller to tell after the save.
     public async Task<IReadOnlyList<int>> TickEventsAsync(Plynling p, DateTimeOffset now)
     {
@@ -127,7 +128,8 @@ public partial class PlynlingService
             return told;
         }
 
-        foreach (var inst in open.Where(i => i.CancelledAt is null && i.AvailableAt <= now && i.ExpiresAt <= now))
+        var mascot = PlynlingMascot.Is(p);
+        foreach (var inst in open.Where(i => i.CancelledAt is null && i.AvailableAt <= now && (mascot || i.ExpiresAt <= now)))
         {
             if (Orphaned(PlynlingEvents.ByKey(inst.EventKey)!, inst))
             {
@@ -167,7 +169,7 @@ public partial class PlynlingService
                 {
                     var targetId = def.Target == TargetKind.None ? null : PlynlingEventEngine.PickTarget(p.Id, day, CandidatesFor(def));
                     var inst = await CreateEventAsync(p, def, targetId, now);
-                    if (PlynlingMascot.Is(p))
+                    if (mascot)
                     {
                         // She decides at once and never keeps anything waiting.
                         await ResolveAloneAsync(p, inst, now);

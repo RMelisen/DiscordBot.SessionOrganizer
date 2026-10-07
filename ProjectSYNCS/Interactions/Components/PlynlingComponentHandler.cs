@@ -148,12 +148,18 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         });
     }
 
-    // ---- /plynling journal's pages: two verbs, one redraw, re-read on every click.
+    // ---- /plynling journal's pages: four verbs, one redraw, re-read on every click.
+    [ComponentInteraction("plyn:jfirst:*:*", ignoreGroupNames: true)]
+    public Task OnJournalFirstAsync(string id, string page) => ShowJournalAsync(id, page);
+
     [ComponentInteraction("plyn:jprev:*:*", ignoreGroupNames: true)]
     public Task OnJournalPrevAsync(string id, string page) => ShowJournalAsync(id, page);
 
     [ComponentInteraction("plyn:jnext:*:*", ignoreGroupNames: true)]
     public Task OnJournalNextAsync(string id, string page) => ShowJournalAsync(id, page);
+
+    [ComponentInteraction("plyn:jlast:*:*", ignoreGroupNames: true)]
+    public Task OnJournalLastAsync(string id, string page) => ShowJournalAsync(id, page);
 
     private async Task ShowJournalAsync(string idStr, string pageStr)
     {

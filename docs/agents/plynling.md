@@ -266,7 +266,7 @@ A stage moment is written only within 2 days of the stage starting (`PlynlingTra
 window trait moments use): past that, a missing one was trimmed, and re-adding it as the oldest
 entry would evict the next-oldest — another stage moment the next sweep re-adds, every hour.
 `JournalKind` is an int (**append-only**); moments store kind + detail and are worded at display
-(`PlynlingJournalUi`) so they follow gender. At most `JournalCap` (100), oldest dropped — counting
+(`PlynlingJournalUi`) so they follow gender. At most `JournalCap` (500), oldest dropped — counting
 moments added earlier in the same save, and the new moment itself: a backdated one older than the
 whole journal is dropped, not a newer memory. Both tables cascade: an abandoned Plynling takes its
 journal with it; a dead one keeps it.

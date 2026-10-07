@@ -896,7 +896,7 @@ public partial class PlynlingService
     // ---- badges and the journal. Neither helper saves: what they add rides the caller's save,
     // so an action, its moments, its badges and their cailloux land together or not at all.
 
-    public const int JournalCap = 100;
+    public const int JournalCap = 500;
     private static readonly IReadOnlyList<BadgeInfo> NoBadges = Array.Empty<BadgeInfo>();
 
     // Adds a moment, then trims this Plynling's journal to JournalCap, oldest first — counting
