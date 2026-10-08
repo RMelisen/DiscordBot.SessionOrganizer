@@ -265,6 +265,20 @@ updating both — except owner-only commands, deliberately absent from `/help`. 
 regex-parses it into `<Version>` and `AppInfo.Version` shows it in the `/help` footer. Bump it there
 only.
 
+**Every change to the bot bumps the version**, because Home Assistant only offers the add-on update
+when `version` changes: an unbumped push never reaches the Pi.
+
+- **Once per batch, not per edit.** If `config.yaml` already differs from `HEAD`, the batch is
+  bumped — don't bump again. The owner commits by hand, so check `git diff` rather than assuming.
+- **Patch** (`5.18.11` → `5.18.12`): lines, fun facts, emotes, fixes, art, tweaks to existing
+  behaviour.
+- **Minor** (`5.18.12` → `5.19.0`, patch reset): a new command, subcommand, subsystem or
+  user-visible behaviour, or anything that adds a migration.
+- **Major**: the owner's call only; never bump it unasked.
+- **No bump** for changes that stay out of the build: `docs/`, `README.md`, `CLAUDE.md`, `tools/`.
+- Numbers don't roll over: `5.11.26` is fine. When you bump, say so in the summary, with the
+  new number.
+
 The bot ships as a Home Assistant add-on: the `Dockerfile` publishes a self-contained
 `linux-arm64` build, and `run.sh` maps add-on options to `Discord__Token`,
 `Discord__RegisterCommandsGlobally` and `Database__Path=/data/ProjectSYNCS.db`. Only `/data` is
