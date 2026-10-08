@@ -36,4 +36,9 @@ public class PlynlingEventInstance
     // state at the time, so the story stores them rather than recomputing.
     public int? StressDelta { get; set; }
     public string? GainedTraitKey { get; set; }
+
+    // Whether its lesson (GrowStat) stuck for good. Null when it taught nothing — or when it was
+    // resolved before lessons became a few days' Practice, when every +1 was permanent: the story tells
+    // those as they happened.
+    public bool? GrewForGood { get; set; }
 }

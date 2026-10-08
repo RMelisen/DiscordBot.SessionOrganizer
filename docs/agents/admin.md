@@ -46,9 +46,10 @@ service is the only writer: any write drops that guild's entry. A failed read de
 
 ## `/debug` — owner only
 
-`tell`, `dm`, `absent`, `plynling`, `emotes`, each comparing `Context.User.Id` to `AvailabilityService.OwnerId`
-inline and replying ephemerally. `DebugModule` carries no `[CommandContextType]` (it never reads
-`Context.Guild`); `/debug plynling` checks for a DM itself.
+`tell`, `dm`, `absent`, `plynling`, `emotes`, plus the Plynling testing tools (`event`, `stress`,
+`modifier`, `sweep`, in `plynling-events.md`), each comparing `Context.User.Id` to
+`AvailabilityService.OwnerId` inline and replying ephemerally. `DebugModule` carries no
+`[CommandContextType]` (it never reads `Context.Guild`); `/debug plynling` checks for a DM itself.
 
 **`/debug tell`'s destination is an autocompleted string, not a channel option** — that's what makes
 it work from a DM (the native channel picker resolves against the invoking guild, which a DM lacks).

@@ -76,11 +76,34 @@ public static class PlynlingModifiers
             TimeSpan.FromDays(3), true, S(PlynlingStat.Stewardship, -2)),
         new ModifierInfo("sleepless", "Les nuits blanches", "Les nuits blanches", "🌙", "Compte les moutons. Les moutons, eux, dorment très bien.",
             TimeSpan.FromDays(3), true, NoStats, StressDecay: 0.7),
+        // What an event's GrowStat gives (Practice): +1 for a few days — the permanent +1 is the rare
+        // exception (PlynlingEventEngine.GrowsForGood). One per stat, so a second lesson refreshes it.
+        new ModifierInfo("practice_diplomacy", "En confiance", "En confiance", "🌼", "Trouve encore les mots qu'il faut, et le ton qui va avec.",
+            TimeSpan.FromDays(5), false, S(PlynlingStat.Diplomacy, 1)),
+        new ModifierInfo("practice_stewardship", "Bien organisé", "Bien organisée", "🧮", "Les glands sont comptés, les pots étiquetés, les cailloux triés par couleur.",
+            TimeSpan.FromDays(5), false, S(PlynlingStat.Stewardship, 1)),
+        new ModifierInfo("practice_learning", "La tête pleine", "La tête pleine", "📖", "Repense à la journée chaque soir, et en tire une petite leçon de plus.",
+            TimeSpan.FromDays(5), false, S(PlynlingStat.Learning, 1)),
+        new ModifierInfo("practice_intrigue", "L'œil malin", "L'œil malin", "🗝️", "Remarque les détails que personne ne voit. Et s'en souvient.",
+            TimeSpan.FromDays(5), false, S(PlynlingStat.Intrigue, 1)),
+        new ModifierInfo("practice_courage", "Le cœur bien accroché", "Le cœur bien accroché", "⛰️", "Grimpe un peu plus haut qu'hier. Sans regarder en bas.",
+            TimeSpan.FromDays(5), false, S(PlynlingStat.Courage, 1)),
     };
 
     private static readonly Dictionary<string, ModifierInfo> ByKeyMap = All.ToDictionary(m => m.Key);
 
     public static ModifierInfo? ByKey(string key) => ByKeyMap.GetValueOrDefault(key);
+
+    // The few days' +1 an event's GrowStat gives to one stat.
+    public static ModifierInfo Practice(PlynlingStat stat) => ByKeyMap[stat switch
+    {
+        PlynlingStat.Diplomacy => "practice_diplomacy",
+        PlynlingStat.Stewardship => "practice_stewardship",
+        PlynlingStat.Learning => "practice_learning",
+        PlynlingStat.Intrigue => "practice_intrigue",
+        PlynlingStat.Courage => "practice_courage",
+        _ => throw new ArgumentOutOfRangeException(nameof(stat), stat, null),
+    }];
 
     // What the row holds, in order of end. Unknown keys and malformed entries are skipped, never thrown on.
     public static IReadOnlyList<(ModifierInfo Info, DateTimeOffset Ends)> Active(Plynling p)

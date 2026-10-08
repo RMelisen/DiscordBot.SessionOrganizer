@@ -36,7 +36,9 @@ never banked.
 (`HasFilter("\"DiedAt\" IS NULL")`), so racing adoptions or resurrections can't both land. Services
 still check first; the index makes the check safe.
 
-**`PlynlingSweepService` (hourly) is a safety net** for what nobody else triggers: announcing deaths
+**`PlynlingSweepService` (hourly; first pass 2 min after start, so an update takes effect at once;
+`/debug sweep` runs one on demand, never alongside a running one) is a safety net** for what nobody
+else triggers: announcing deaths
 (`DeathAnnounced`), the single warning DM (`WarningSent`, re-armed by feeding), thawing expired
 self-freezes, time-earned badges and moments. It saves the flag **before** the side effect, so a
 failed announcement is logged once rather than retried hourly. Deaths and resurrections are

@@ -321,7 +321,10 @@ public partial class PlynlingService
             switch (effect)
             {
                 case GrowStat g:
-                    PlynlingStats.AddGrowth(p, g.Stat, g.Amount);
+                    // A few days' practice; the permanent +1 only when the instance's roll says so.
+                    PlynlingLife.AddModifier(p, now, PlynlingModifiers.Practice(g.Stat));
+                    inst.GrewForGood = PlynlingEventEngine.GrowsForGood(inst.Id);
+                    if (inst.GrewForGood == true) PlynlingStats.AddGrowth(p, g.Stat, g.Amount);
                     break;
                 case AffinityShift a when target is { DiedAt: null, FrozenAt: null }:
                     RecordBond(inst, await ShiftAffinityAsync(p, target, a.Delta, now));

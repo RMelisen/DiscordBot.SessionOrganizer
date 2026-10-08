@@ -110,7 +110,9 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddHostedService(sp => sp.GetRequiredService<AmbientService>());
         services.AddHostedService<VoiceXpService>();
         services.AddHostedService<GiveawayDrawService>();
-        services.AddHostedService<PlynlingSweepService>();
+        // Same shape: the host runs its hourly loop, /debug sweep runs a pass on demand.
+        services.AddSingleton<PlynlingSweepService>();
+        services.AddHostedService(sp => sp.GetRequiredService<PlynlingSweepService>());
         services.AddHostedService<ApplicationEmojiService>();
         services.AddHostedService<PlynlingMascotService>();
     })

@@ -6,7 +6,7 @@ Traits, stats, the personality title, events, stress and modifiers (design:
 
 **Testing (owner only, absent from `/help`):** `/debug event key: [mode:] [target:]` forces an event —
 pending, expired (the next sweep decides it alone) or decided now; `/debug stress value:`;
-`/debug modifier key: [remove:]`. The scratch harness drives `PlynlingService` against in-memory
+`/debug modifier key: [remove:]`; `/debug sweep` runs the hourly pass now, every guild. The scratch harness drives `PlynlingService` against in-memory
 SQLite with the real migrations.
 
 ## Traits — `Helpers/PlynlingTraits`
@@ -49,13 +49,23 @@ SQLite with the real migrations.
   markup once uploaded: a button or select takes `EmoteMarkup.Parse`, never `new Emoji`.
 - **Ping-Qilin's traits are chosen**, not drawn (`PlynlingMascot.TraitKeys`: Adorable, Vaniteuse,
   Méfiante, Moqueuse) and her die is fixed at 4, so she is the same character on every guild and
-  on dev.
+  on dev. `EnsureMascotAsync` (every Ready) gives a living one any she lacks, at once — not only at
+  her creation, or a mascot older than traits waited for the first hourly sweep.
 
 ## Stats — `Helpers/PlynlingStats`
 
 Computed, never stored: a hashed 1d6 per stat, +2 on its passion's stat (a taught passion the
 catalog recognises takes the bonus; free text leaves it on the innate one), every trait's
-modifier, and the stored growth columns. **Floor 0, no upper limit.** `PlynlingStat` is
+modifier, and the stored growth columns. **Floor 0, no upper limit.**
+
+**A lesson is mostly temporary.** An event's `GrowStat` applies that stat's Practice modifier (+1 for
+5 days, `PlynlingModifiers.Practice`) and only rarely the permanent growth:
+`PlynlingEventEngine.GrowsForGood` (10 %, hashed from the instance), stored in
+`PlynlingEventInstance.GrewForGood` so the story tells it. Half the options carry a `GrowStat`; when
+every one was permanent, an adulte passed the 95 % challenge ceiling within about three months. Rows
+resolved before the change have `GrewForGood` null, and their story keeps the old permanent « +1 »
+line — never backfill it. Growth earned before then is kept. The ado history (`AdoHistory`) still
+counts every `GrowStat` as what the choice leaned toward, whether it stuck or not. `PlynlingStat` is
 append-only — the RPG appends Force, Agilité, Endurance. `PassionStat` is exhaustive and throws on a
 passion it does not map.
 
@@ -63,7 +73,7 @@ passion it does not map.
 
 The traits' AI axes are summed; the two largest by size (ties: axis order) pick adjectives from an
 18-entry table, « {Adj1} et {adj2} ». The card shows it with the trait emojis under the status;
-« 📜 Personnalité » (`plyn:traits:{id}`, `PlynlingPersonalityHandler`, anyone, ephemeral, deferred)
+« Personnalité » (`plyn:traits:{id}`, `PlynlingPersonalityHandler`, anyone, ephemeral, deferred)
 shows each trait and each stat's breakdown.
 
 ## `StableRoll`
@@ -124,6 +134,9 @@ never change that mapping, every stored morning depends on it.
   order, rebasing at each. A death is always computed within one segment. A modifier end that falls
   before `NeedsAsOf` (inside a self-freeze that has since thawed) drops the modifier without rebasing:
   rebasing backwards would run the clock in reverse and refill the needs.
+- **The card shows the stress number** as soon as it is above 0 (« Stress 45 », « Stress 145 ·
+  niv. 1 »), after the personality line (`PlynlingPersonality.StateLine`): an owner must see it build
+  before a break, not only once it reaches a level.
 - **Hunger can only slow** (clamp 0.5–1): the death clock and the warning only get more lenient.
 - **Mental breaks** (`BreakLevel` 1–3, several per level, picked by hash, never filtered by stage — so
   no grown-ups-only scenes): **every option** is either a lot of relief **with a malus** (a negative

@@ -53,6 +53,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     private readonly ResponsePicker _picker;
     private readonly PlynlingService _plynlings;
     private readonly PlynlingAnnouncer _announcer;
+    private readonly PlynlingSweepService _sweep;
 
     // Discord caps a message at 2000 characters; leave room for the herald line
     // and the blockquote markers.
@@ -64,10 +65,11 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         new(@"channels/(\d+)/(\d+)/(\d+)", RegexOptions.Compiled);
 
     public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings,
-        PlynlingAnnouncer announcer)
+        PlynlingAnnouncer announcer, PlynlingSweepService sweep)
     {
         _plynlings = plynlings;
         _announcer = announcer;
+        _sweep = sweep;
         _availability = availability;
         _logger = logger;
         _picker = picker;
@@ -471,6 +473,25 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
             await _announcer.TellAsync(_plynlings, new[] { inst.Id }, Context.Guild.Id, now, Context.Channel);
         }
         await FollowupAsync($"🔧 `{def.Key}` créé (#{inst.Id}, {mode}).", ephemeral: true);
+    }
+
+    // The hourly Plynling sweep, now, for every guild: settle, traits owed, due events, today's pulse,
+    // deaths and warnings, as the loop would. Never a second pass alongside a running one.
+    [SlashCommand("sweep", "Lancer tout de suite le passage horaire des Plynlings (tests)")]
+    public async Task SweepAsync()
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+        // A pass reads and writes every Plynling: far past Discord's 3 s on the Pi.
+        await DeferAsync(ephemeral: true);
+        var count = await _sweep.RunPassAsync(wait: false);
+        await FollowupAsync(count is { } n
+                ? $"🔧 Passage terminé : {n} Plynling{(n > 1 ? "s" : "")} vu{(n > 1 ? "s" : "")}."
+                : "🔧 Un passage est déjà en cours. Réessaie dans un instant.",
+            ephemeral: true);
     }
 
     // Stress builds over days of the owner's own choices: set it directly to test the levels, the

@@ -516,12 +516,13 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
             .AddField("Personnalité",
                 "En grandissant, il gagne **4 traits** : un trait d'enfance bébé, deux de plus ado, un dernier adulte. " +
                 "Ils façonnent ses **stats** (Diplomatie, Intendance, Sagesse, Ruse, Courage) et un petit titre. " +
-                "**📜 Personnalité** (bouton de sa carte) détaille tout, pour n'importe quel Plynling.")
+                "**Personnalité** (bouton de sa carte) détaille tout, pour n'importe quel Plynling.")
             .AddField("Événements",
                 "À peu près une fois par jour, il lui arrive quelque chose : **✨ Événement** apparaît sur sa carte " +
                 "(3 en attente au plus). Son propriétaire choisit pour lui, en privé.\n" +
                 "Certains choix demandent un trait ou une stat ; d'autres sont des **défis**, avec leurs chances affichées. " +
-                "Ses choix font grandir ses stats, et ce qu'il vit ado oriente son trait d'adulte.\n" +
+                "Ses choix l'entraînent : une stat monte pour quelques jours, et parfois, rarement, pour de bon. " +
+                "Ce qu'il vit ado oriente son trait d'adulte.\n" +
                 "Certains concernent un autre Plynling : une déclaration, un défi, un pacte, une réconciliation — " +
                 "son propriétaire reçoit alors la question sur sa propre carte.\n" +
                 "Sans réponse en 24 h, il décide **tout seul**, selon son caractère — sans jamais y perdre quoi que ce soit.\n" +
@@ -796,7 +797,7 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
         if (alive)
         {
             var personalityRow = new ActionRowBuilder()
-                .WithButton("Personnalité", $"plyn:traits:{plynling.Id}", ButtonStyle.Secondary, new Emoji("📜"));
+                .WithButton("Personnalité", $"plyn:traits:{plynling.Id}", ButtonStyle.Secondary);
             if (pendingEvents > 0)
                 personalityRow.WithButton($"Événement ({pendingEvents})", $"plyn:events:{plynling.Id}", ButtonStyle.Success, new Emoji("✨"));
             builder.AddComponent(personalityRow);

@@ -15,9 +15,17 @@ namespace ProjectSYNCS.Services;
 // and the other loops' intervals are load-bearing for other things. It is a safety net,
 // not the source of truth: every read already settles, so a command can find a death
 // first; the sweep then announces it.
+//
+// The first pass comes a few minutes after start, not an hour: an update or a restart then takes
+// effect at once (due events decided, traits owed, deaths announced). A pass is idempotent — a pulse
+// is spent once a day, only what is due gets decided — so an extra one changes nothing.
 public sealed class PlynlingSweepService : BackgroundService
 {
     private static readonly TimeSpan CheckInterval = TimeSpan.FromHours(1);
+    private static readonly TimeSpan FirstDelay = TimeSpan.FromMinutes(2);
+
+    // One pass at a time: /debug sweep and the loop must never walk the same Plynlings together.
+    private readonly SemaphoreSlim _passGate = new(1, 1);
 
     private readonly DiscordSocketClient _client;
     private readonly IServiceProvider _services;
@@ -38,18 +46,36 @@ public sealed class PlynlingSweepService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        var delay = FirstDelay;
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(CheckInterval, stoppingToken);
+            await Task.Delay(delay, stoppingToken);
+            delay = CheckInterval;
 
             // Announcing into a stale gateway cache would fail every send.
             if (_client.ConnectionState != ConnectionState.Connected) continue;
 
-            await SweepAsync();
+            await RunPassAsync(wait: true);
         }
     }
 
-    private async Task SweepAsync()
+    // One pass now: how many Plynlings it looked at, or null when a pass was already running and
+    // `wait` is false (/debug sweep says so rather than queueing a second one behind it).
+    public async Task<int?> RunPassAsync(bool wait)
+    {
+        if (wait) await _passGate.WaitAsync();
+        else if (!await _passGate.WaitAsync(0)) return null;
+        try
+        {
+            return await SweepAsync();
+        }
+        finally
+        {
+            _passGate.Release();
+        }
+    }
+
+    private async Task<int> SweepAsync()
     {
         List<int> ids;
         try
@@ -60,7 +86,7 @@ public sealed class PlynlingSweepService : BackgroundService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load Plynlings for the sweep.");
-            return;
+            return 0;
         }
 
         var now = DateTimeOffset.UtcNow;
@@ -124,5 +150,6 @@ public sealed class PlynlingSweepService : BackgroundService
                 _logger.LogError(ex, "Failed to sweep Plynling {PlynlingId}.", id);
             }
         }
+        return ids.Count;
     }
 }

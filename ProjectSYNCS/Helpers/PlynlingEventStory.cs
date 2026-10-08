@@ -79,8 +79,21 @@ public static class PlynlingEventStory
         var X = Expander(inst, def, self, target);
         var success = inst.ChallengeSucceeded ?? true;
         var lines = new List<string> { X(success ? option.Outcome : option.FailOutcome ?? option.Outcome) };
+        // A lesson: a few days' practice, and rarely the permanent +1. GrewForGood is null on events
+        // resolved while every lesson was permanent — told as they happened.
         foreach (var g in (success ? option.OnSuccess : option.OnFailure).OfType<GrowStat>())
-            lines.Add($"-# {PlynlingStats.Emoji(g.Stat)} {PlynlingStats.Name(g.Stat)} +{g.Amount} pour **{self.Name}**");
+        {
+            if (inst.GrewForGood is null)
+            {
+                lines.Add($"-# {PlynlingStats.Emoji(g.Stat)} {PlynlingStats.Name(g.Stat)} +{g.Amount} pour **{self.Name}**");
+                continue;
+            }
+            var practice = PlynlingModifiers.Practice(g.Stat);
+            lines.Add($"-# {practice.Emoji} **{practice.Name(self.Gender)}** pour {(int)practice.Duration.TotalDays} jours " +
+                      $"({PlynlingStats.Emoji(g.Stat)} {PlynlingStats.Name(g.Stat)} +{practice.Stats[g.Stat]})");
+            if (inst.GrewForGood == true)
+                lines.Add($"-# 📈 Et ça reste : **{PlynlingStats.Name(g.Stat)} +{g.Amount}** pour de bon, pour **{self.Name}** !");
+        }
         if (target is not null && inst.BondBefore is { } before && inst.BondAfter is { } after && before != after)
             lines.Add(PlynlingBonds.ChangeLine(after, self.Name, self.Gender, target.Name, target.Gender));
         if (inst.StressDelta is { } ds && ds != 0)

@@ -28,6 +28,9 @@ public sealed record EventChallenge(PlynlingStat Stat, int Difficulty, bool VsTa
 // relation. Another owner's Plynling is touched only through the relation (anti-griefing) — the one
 // exception being Heartbreak, which saddens the one who declared.
 public abstract record EventEffect;
+// A lesson in that stat: its Practice modifier (+1 for a few days), and only rarely the permanent
+// +Amount (PlynlingEventEngine.GrowsForGood) — permanent growth on every choice made every challenge
+// trivial within a season.
 public sealed record GrowStat(PlynlingStat Stat, int Amount = 1) : EventEffect;
 public sealed record AffinityShift(int Delta) : EventEffect;
 // Positive = gain (owner choices and breaks only), negative = relief (always).

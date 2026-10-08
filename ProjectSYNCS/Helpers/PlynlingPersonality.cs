@@ -114,12 +114,13 @@ public static class PlynlingPersonality
         return string.Join("\n", kept);
     }
 
-    // Its stress level (from 1) and its modifiers' icons, for the card. Null when there is neither.
+    // Its stress as a number (out of 400, with the level once it has one — a mental break comes at each)
+    // and its modifiers' icons, for the card. Null when there is neither: no stress, nothing to say.
     public static string? StateLine(Plynling p, DateTimeOffset now)
     {
         var parts = new List<string>();
         var level = PlynlingStress.Level(p.Stress);
-        if (level > 0) parts.Add($"😣 Stress {level}");
+        if (p.Stress > 0) parts.Add(level > 0 ? $"Stress {p.Stress} · niv. {level}" : $"Stress {p.Stress}");
         var icons = string.Join(" ", PlynlingModifiers.Active(p).Where(m => m.Ends > now).Select(m => m.Info.Emoji));
         if (icons.Length > 0) parts.Add(icons);
         return parts.Count == 0 ? null : string.Join(" · ", parts);

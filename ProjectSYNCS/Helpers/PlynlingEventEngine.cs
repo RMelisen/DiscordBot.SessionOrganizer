@@ -109,6 +109,14 @@ public static class PlynlingEventEngine
     public static bool Succeeds(int instanceId, int chance) =>
         StableRoll.Unit(instanceId, ChallengeSalt, 0) * 100 < chance;
 
+    // Whether an event's lesson (GrowStat) sticks for good, beyond its few days of Practice: rare, so a
+    // stat keeps a meaning. One roll per instance, stored (PlynlingEventInstance.GrewForGood).
+    public const double PermanentGrowthChance = 0.10;
+    private const int GrowthSalt = 360;
+
+    public static bool GrowsForGood(int instanceId) =>
+        StableRoll.Unit(instanceId, GrowthSalt, 0) < PermanentGrowthChance;
+
     // What it may pick on its own: shown to it, costing it no stress, and not its owner's alone to take.
     // Never empty for a catalog event — the harness checks every event has such an option.
     public static IReadOnlyList<EventOption> AloneOptions(EventDef def, EventContext ctx) =>

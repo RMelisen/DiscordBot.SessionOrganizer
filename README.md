@@ -284,7 +284,8 @@ looks after her.
 - **Events:** about once a day, something happens to each Plynling — a little scene with two or three
   choices, some needing a trait or a stat, some a challenge with its odds shown. Its owner chooses
   privately from « ✨ Événement » on the card; after 24 h it decides on its own, in character, at no
-  cost. Choices grow its stats, and its *ado* years lean its adult trait. Every outcome is told as a
+  cost. Choices give a stat a boost for a few days — rarely for good — and its *ado* years lean its
+  adult trait. Every outcome is told as a
   paged story in the game channel.
 - **Stress and moods:** forcing a choice against its nature stresses it; care and mornings soothe it.
   Past 100, 200 and 300 its happiness drains faster, its stats dip, and it has a little breakdown — an

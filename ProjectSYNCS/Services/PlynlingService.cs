@@ -113,11 +113,18 @@ public partial class PlynlingService
 
     // Ping-Qilin, the bot's own: created once per guild, and never again — any row owned by the bot
     // there, alive or not, counts. Safe to call on every Ready and every join; a raced second
-    // insert is turned away by the one-living-per-owner index.
+    // insert is turned away by the one-living-per-owner index. A living one that lacks any of her
+    // chosen traits gets them here too, at once, rather than at the first hourly sweep.
     public async Task<Plynling?> EnsureMascotAsync(ulong guildId, DateTimeOffset now)
     {
         if (PlynlingMascot.OwnerId == 0) return null;
         var owner = PlynlingMascot.OwnerId;
+        if (await _db_context.Plynlings.FirstOrDefaultAsync(p => p.GuildId == guildId && p.OwnerId == owner && p.DiedAt == null) is { } living)
+        {
+            await EnsureTraitsAsync(living, now);
+            await _db_context.SaveChangesAsync();
+            return null;
+        }
         if (await _db_context.Plynlings.AnyAsync(p => p.GuildId == guildId && p.OwnerId == owner)) return null;
 
         var plynling = PlynlingLife.Create(guildId, owner, PlynlingMascot.Name, PlynlingMascot.Species, PlynlingMascot.Gender, now);
