@@ -31,6 +31,11 @@ internal sealed class ChatterService
     // seldom that nobody connected the answer to the setup.
     private const double QuoicoubehChance = 0.2;
 
+    // How often a sentence ending on a "si" sound gets "Tron" / "Trouille". Lower than
+    // quoicoubeh: "merci", "aussi" and "ici" end sentences all day.
+    private const double TronChance = 0.08;
+    private static readonly string[] _tronLines = { "Tron", "Trouille" };
+
     // How often Tata gets warmth instead of the usual roast or brush-off. Deliberately
     // short of Papa's unconditional treatment: he is never teased, she mostly isn't,
     // everyone else always is. Three legible tiers rather than two arbitrary favourites.
@@ -109,7 +114,24 @@ internal sealed class ChatterService
             return;
         }
 
-        await TryQuoicoubehAsync(message);
+        // Both eggs bait on the last word, so at most one can match; the first to fire
+        // ends the pass either way.
+        if (await TryQuoicoubehAsync(message)) return;
+        await TryTronAsync(message);
+    }
+
+    // Someone finished a sentence on a "si" sound ("merci", "aussi", "ici") and got
+    // caught. Same ambient slot and same rationing philosophy as quoicoubeh, with a
+    // lower roll: these endings are far commoner than "quoi", so the bait rations the
+    // joke less and the odds have to do more of the work.
+    private async Task TryTronAsync(SocketUserMessage message)
+    {
+        if (Random.Shared.NextDouble() >= TronChance) return;
+
+        if (!MessageCues.EndsOnSiSound(message.Content ?? string.Empty)) return;
+
+        _logger.LogInformation("Tron fired on a message ending in a 'si' sound.");
+        await ReplyWithTypingAsync(message, _picker.Pick(_tronLines) + " " + Emotes.Sparkle, "tron");
     }
 
     // Someone finished a sentence on "quoi ?" and got caught. Ambient like the
@@ -121,18 +143,19 @@ internal sealed class ChatterService
     // the way ReactionService and RivalryService have: ending a sentence on "quoi" is
     // itself uncommon, so the bait rations the joke far more than the odds do, and a
     // cooldown on top would bury it. Same call ReferenceChance makes.
-    private async Task TryQuoicoubehAsync(SocketUserMessage message)
+    private async Task<bool> TryQuoicoubehAsync(SocketUserMessage message)
     {
-        if (Random.Shared.NextDouble() >= QuoicoubehChance) return;
+        if (Random.Shared.NextDouble() >= QuoicoubehChance) return false;
 
         // Rolled before the match, which costs nothing in odds — both orders give
         // P(bait) x QuoicoubehChance — but skips tokenizing four messages in five, on
         // the hottest path in the bot.
         var answer = MessageCues.ReadQuoiBait(message.Content ?? string.Empty);
-        if (answer is null) return;
+        if (answer is null) return false;
 
         _logger.LogInformation("Quoicoubeh fired on a message ending in bait.");
         await ReplyWithTypingAsync(message, answer, "quoicoubeh");
+        return true;
     }
 
     // Answers the *other* leveling bot's announcements — congratulating the person and

@@ -681,6 +681,35 @@ internal static class MessageCues
         return word is null ? null : char.ToUpperInvariant(word[0]) + word[1..] + "coubeh " + Emotes.Sparkle;
     }
 
+    // Endings that sound like "si". Matched as suffixes of the last word, so "merci",
+    // "aussi", "ici", "ainsi", "pharmacie" and "démocratie" all land.
+    //
+    // "tie" is deliberately not a suffix of its own: it only sounds like "si" after a, é,
+    // u or i ("démocratie", "prophétie", "minutie"), while "partie", "sortie" and
+    // "garantie" say "ti". "sie" is absent for the same reason ("Asie", "poésie" say "zi").
+    private static readonly string[] _siEndings =
+    {
+        "si", "ssi", "ci", "cie", "ssie", "cy", "atie", "etie", "utie", "itie",
+    };
+
+    /// <summary>
+    /// Whether the message ends on a word that sounds like "si" — the bait for the
+    /// "Tron" / "Trouille" answer. Same rule as <see cref="ReadQuoiBait"/>: the last
+    /// word only, punctuation and elongation ("merciii") already absorbed.
+    /// </summary>
+    public static bool EndsOnSiSound(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return false;
+
+        var tokens = TokenizeOrdered(content);
+        if (tokens.Count == 0) return false;
+
+        var last = tokens[^1];
+        var squashed = Squash(last);
+        return _siEndings.Any(e => last.EndsWith(e, StringComparison.Ordinal)
+                                || squashed.EndsWith(e, StringComparison.Ordinal));
+    }
+
     // Energy drinks she answers with a can, every time (ReactionService). "monster"
     // alone means the drink here; "Monster Hunter" is a game this server talks about,
     // so "hunter" right after it doesn't count. Posting the :monster: emote counts

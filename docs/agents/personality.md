@@ -166,6 +166,21 @@ A sentence ending on a spelling of "quoi" gets the matching "Quoicoubeh", at
 
 "c'est n'importe quoi" qualifies — that's the joke. Absent from `README.md` and `/help`.
 
+## Tron / Trouille easter egg
+
+A sentence ending on a word that sounds like "si" ("merci", "aussi", "ici", "celui-ci", "démocratie")
+gets "Tron" or "Trouille" (`ChatterService.TronChance`, 8% — lower than quoicoubeh because these
+endings are far commoner than "quoi"). Runs right after quoicoubeh in the same ambient slot; both
+bait on the last word, so at most one fires.
+
+1. `MessageCues.EndsOnSiSound` matches **suffixes of the last token** only (`_siEndings`), raw or
+   squashed so "merciii" lands.
+2. **`tie` is not a suffix on its own**: it sounds like "si" only after a/é/u/i ("-atie", "-étie",
+   "-utie", "-itie"); "partie", "sortie", "garantie" say "ti". Same for `sie` ("Asie", "poésie" say
+   "zi") — absent.
+3. The line goes through `ResponsePicker.Pick` (two-line pool, so it alternates). Roll before match,
+   as quoicoubeh. Absent from `README.md` and `/help`.
+
 ## Sending
 
 Her chatter goes through `BotChat` (`ReplyWithTypingAsync` / `PostWithTypingAsync` /
