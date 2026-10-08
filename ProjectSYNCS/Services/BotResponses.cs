@@ -71,6 +71,7 @@ namespace ProjectSYNCS.Services;
 //     PresenceFillers .......... the rotating status line
 //     MorningGreetings ......... the daily hello (MorningGreetingService)
 //     MorningFunFacts .......... added under it
+//     BirthdayGreeting ......... replaces both on 16 June (her age)
 //     BreakdownIntroRoast · BreakdownIntroNice · BreakdownIntroCake
 //                              ... the line it cuts off mid-word
 //     Breakdown ................ the easter egg
@@ -1875,6 +1876,13 @@ internal static class BotResponses
         $"Bonjour ! Le premier qui répond « bonne nuit » à ce message, je le retrouve {Emotes.GooseKnife}",
         "Bonjour. Personne m'a dit bonne nuit hier soir. Je note. Bonne journée quand même.",
     };
+
+    // The hello on her birthday, in place of a MorningGreetings line and the fun fact under
+    // it. She only gives her age and lets the date speak for itself: lore is implicit
+    // (docs/syncs-voice.md), so the word "anniversaire" is never hers. One line, no
+    // newline, because MorningGreetingService recognises it by its exact text.
+    public static string BirthdayGreeting(int age) =>
+        $"Aujourd'hui, j'ai {age} {(age > 1 ? "ans" : "an")}. Je dis ça comme ça, hein. C'est pas important. Mais je suis en ligne, si quelqu'un veut dire quelque chose pour mes services {Emotes.Sparkle}";
 
     // Added under every morning hello, on its own line, through Helpers/DailyRotation.
     // Spent at one a day, so the pool needs to stay large. Every fact must be true — the joke is her commentary, or that the

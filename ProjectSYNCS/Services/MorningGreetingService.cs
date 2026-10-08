@@ -188,9 +188,13 @@ internal sealed class MorningGreetingService : BackgroundService
         // The hello comes first, alone on its line, and the fun fact under it:
         // AlreadyGreetedTodayAsync recognises the hello by that first line.
         // Today's lines, so a restart or an early hello says what the slot would have.
-        var day = AppTime.DayNumber(DateTimeOffset.UtcNow);
-        var line = DailyRotation.Pick(BotResponses.MorningGreetings, day, GreetingSalt)
-                   + "\n" + DailyRotation.Pick(BotResponses.MorningFunFacts, day, FunFactSalt);
+        var now = DateTimeOffset.UtcNow;
+        var day = AppTime.DayNumber(now);
+        // On her birthday the hello is her age alone, no fun fact: the age is the fact.
+        var line = MorningGreeting.IsBirthday(now)
+            ? BotResponses.BirthdayGreeting(MorningGreeting.Age(now))
+            : DailyRotation.Pick(BotResponses.MorningGreetings, day, GreetingSalt)
+              + "\n" + DailyRotation.Pick(BotResponses.MorningFunFacts, day, FunFactSalt);
 
         await BotChat.PostWithTypingAsync(channel, line, _logger, "morning greeting", AllowedMentions.None);
     }
@@ -208,10 +212,15 @@ internal sealed class MorningGreetingService : BackgroundService
         try
         {
             var today = AppTime.TodayKey;
+            var now = DateTimeOffset.UtcNow;
+            // Her birthday hello is not in the pool; it is one fixed line for today's age.
+            var birthday = MorningGreeting.IsBirthday(now)
+                ? BotResponses.BirthdayGreeting(MorningGreeting.Age(now))
+                : null;
             var recent = await channel.GetMessagesAsync(HistoryDepth).FlattenAsync();
             return recent.Any(m => m.Author.Id == _client.CurrentUser.Id
                                    && AppTime.DayKey(m.Timestamp) == today
-                                   && Lines.Contains(m.Content.Split('\n')[0]));
+                                   && (Lines.Contains(m.Content.Split('\n')[0]) || m.Content == birthday));
         }
         catch (Exception ex)
         {

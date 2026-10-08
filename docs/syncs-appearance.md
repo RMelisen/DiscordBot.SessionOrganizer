@@ -45,6 +45,9 @@ Sampled from v1 (approximate — JPEG, soft shading):
 | Outline / turtleneck | `#262041` / `#393653` |
 | Power LED | `#80f88a` |
 
+Her favourite colour, burgundy (`docs/syncs-voice.md`), is a taste and **not** part of this
+palette: don't tint her design to match it.
+
 The family is **deep navy, soft purple, pink**. The green LED is the only cold accent — keep it
 tiny so it stays a detail.
 

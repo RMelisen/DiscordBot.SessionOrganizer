@@ -8,6 +8,22 @@ public static class MorningGreeting
     public static readonly TimeSpan WindowStart = new(8, 0, 0);
     public static readonly TimeSpan WindowEnd = new(10, 0, 0);
 
+    // Her birthday: the repo's first commit. On that day each year the hello is her age
+    // instead of a pool line.
+    public const int BirthYear = 2026;
+    public const int BirthMonth = 6;
+    public const int BirthDay = 16;
+
+    /// <summary>Whether <paramref name="now"/> falls on her birthday, in the app's zone.</summary>
+    public static bool IsBirthday(DateTimeOffset now)
+    {
+        var day = AppTime.ToZoned(now);
+        return day.Month == BirthMonth && day.Day == BirthDay;
+    }
+
+    /// <summary>Her age in whole years on <paramref name="now"/>'s year (0 on the first birthday itself).</summary>
+    public static int Age(DateTimeOffset now) => AppTime.ToZoned(now).Year - BirthYear;
+
     // Someone else's greeting can draw her hello out from this earlier time on, up to
     // WindowEnd. Earlier than her own window on purpose: an early riser gets an answer.
     public static readonly TimeSpan ReplyWindowStart = new(7, 0, 0);

@@ -182,6 +182,11 @@ editing a pool's length reshuffles it from that day, so one recent line may come
 **Every fun fact must be true**: the joke is
 her commentary or the fact's uselessness, never an invented fact.
 
+- **On 16 June (her birthday, `MorningGreeting.IsBirthday`) the hello is
+  `BotResponses.BirthdayGreeting(age)`**: her age, the year minus `BirthYear` (2026), and **no fun
+  fact** under it. It replaces the rotation for the day; the rotation is date-based, so nothing
+  shifts. It is one line without a newline, and the restart scan below matches it by its exact
+  text for today's age.
 - **A restart inside the window draws a new slot for today**, so before posting she scans the
   channel's last 50 messages for one of her own from today whose **first line** is exactly a
   `MorningGreetings` line. That match is why no two hellos may be identical, why a hello never

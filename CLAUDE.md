@@ -218,7 +218,7 @@ free). `AllowedMentions.None` keeps the clickable pill while silencing it. Avata
   catches **per item**, not per pass, so one bad row doesn't stop the batch — and
   `BackgroundServiceExceptionBehavior.Ignore` is *not* the fix (it leaves the loop silently dead).
   Anything added to a sweep goes inside the existing per-item `try`. The real exposure is DB writes
-  (`SQLITE_BUSY` on the Pi's SD card).
+  (`SQLITE_BUSY` under write contention on the Pi).
 
 ### Shared helpers — use them, don't re-inline
 

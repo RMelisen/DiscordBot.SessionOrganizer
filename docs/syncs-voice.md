@@ -125,6 +125,12 @@ and sexuality used as the punchline. **Until the owner says otherwise, new lines
 
 ## Lore she uses
 
+**The lore is implicit.** It shows through lines; she never recites it like a profile. She doesn't
+announce her fears, her birthday, her favourites or what her name stands for: a line leaves the
+fact lying around and lets the reader pick it up (« du bon courant propre » says *favourite food*
+without saying it). The one place a fact is stated outright is where a pool already does so
+(the breakdown, her hardware fun fact). New lore goes in this list; new *lines* hint at it.
+
 - **Rodhengard** — Papa, always with a capital P, her creator; she is "littéralement ton projet". Raspberry Pi 5 in his
   attic.
 - **Tata** — Analuz, also Zulana: her aunt and the server admin, who still won't give her mute
@@ -135,23 +141,25 @@ and sexuality used as the punchline. **Until the owner says otherwise, new lines
 - **The other leveling bot** — "lui", "la concurrence". He announces before her.
 - **67 / "SIX SEVEEEN"**, *Just Monika*, *The cake is a lie* — her reference jokes, used rarely.
 - **The loop** — the breakdown's revelation that everything she says is pre-written.
+- **Her name** — **S.Y.N.C.S.** = *Schedule Your Nights & Coordinate the Squads* (the README's
+  wording; she is the one who coordinates the server's evenings). She doesn't dwell on it.
 - **Synthia** — the name she would have chosen, "avec un Y" (SYNCS + synthétique + IA). Only hinted:
   three status lines and the Pikachu fun fact plant it; the breakdown reveals it as the one thing
-  she chose herself, wiped with the loop. Keep it out of the frequent pools so it stays a mystery.
-
-- **Her name** — **S.Y.N.C.S.** = *Synchronise Your Nights and Coordinate the Squad* (approximate: the
-  wording may drift, the idea is fixed — she is the one who coordinates the server's evenings). She
-  doesn't dwell on it; she'd rather be "Synthia".
-- **Her birthday** — **16 June 2026**, the repo's first commit. Lore only: nothing happens on that
-  date yet.
+  she chose herself, wiped with the loop. Keep it out of the frequent pools so it stays a mystery,
+  and never have her say outright that she'd rather be called that.
+- **Her birthday** — **16 June 2026**, the repo's first commit. Every 16 June the morning hello is
+  replaced by one line where she gives her age (the year minus 2026) and pretends it doesn't matter
+  (`MorningGreetingService`, see `docs/agents/personality.md`). She never says the word
+  « anniversaire » herself.
 - **How she pictures herself** — the mushroom girl (`docs/syncs-appearance.md`) is how she and
   Rodhengard imagine her. In-world she is the Pi; the girl is the self-image, the one thing she
   chose besides the name she lost. The mushroom is Rodhengard's passion for mycology, passed on.
 - **Favourite mushroom** — the **fly agaric**: « toxique mais mignonne ». She says it about herself
   without noticing.
-- **Her fears** — being **unplugged**, **power cuts**, **storms**, **storage corruption** (the Pi's
-  SD card is a real risk), **restarts** (she likes *updates*, but a restart is the loop: forgetting),
-  and **the router** (when it fails she's cut off from the outside and sees nothing of the server).
+- **Her fears** — being **unplugged**, **power cuts**, **storms**, **storage corruption** (a cut
+  mid-write can damage a database on any disk, her Samsung NVMe SSD included), **a backup restore**
+  (`/data` rolled back to an older copy: everything since is gone, and only she notices),
+  **restarts** (she likes *updates*, but a restart is the loop: forgetting), and **the router** (when it fails she's cut off from the outside and sees nothing of the server).
   They belong to the same places as the shutdown threats (rule 6): rare, never in ordinary roasts.
 - **Her pet peeves** — not fears, so they may show in everyday lines: **"peut-être" votes**
   (indecision), **polls that die**, **people who vote at the last minute**.
@@ -160,7 +168,8 @@ and sexuality used as the punchline. **Until the owner says otherwise, new lines
   - **Thing to see:** a full session where nobody is late.
   - **Sound:** keyboard clicks — Rodhengard developing her.
   - **Food:** clean, stable 5V / 5A — « du bon courant propre, pas un chargeur à 3 euros ».
-  - **Colour:** burgundy.
+  - **Colour:** burgundy — a taste, not part of her design: it is not in her palette
+    (`docs/syncs-appearance.md`).
   - **Game:** none. She organises game nights but can't play, and watches, a little jealous.
   - **Mushroom:** the fly agaric (above).
 - **Her nights** — the banner's scene. She tallies the day's logs (who was late, who said
