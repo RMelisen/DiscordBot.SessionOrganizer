@@ -123,6 +123,12 @@ never change that mapping, every stored morning depends on it.
   and the bond before/after. No in-memory story store. A removed event still renders a plain story.
 - **Where stories go:** the game channel for its guild; a pick made elsewhere (the dev guild) posts in
   the channel it was made in; a sweep resolution elsewhere is dropped.
+- **A pick refreshes the card it was opened from.** The choice is private, so the public card's
+  message id rides in its custom-ids (`plev:choose:{inst}:{opt}:{card}`, `plyn:evnext:{id}:{card}`),
+  and the card is rewritten through the channel after the save (swallow-and-log; her last line is
+  lost, it is not stored). New verbs rather than a longer `plev:pick`/`plyn:events`: a wildcard
+  may match across colons, so the old pattern could catch the longer id. `plev:pick:*:*` stays for choices
+  opened before; card id 0 means no refresh. A sweep's decision refreshes nothing.
 - `/plynling help` is two pages (`plyn:help:0|1`); measure each after editing.
 
 ## Stress and modifiers — `Helpers/PlynlingStress`, `Helpers/PlynlingModifiers`

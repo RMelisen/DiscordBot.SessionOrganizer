@@ -1,5 +1,7 @@
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Commands;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Services;
@@ -9,19 +11,38 @@ namespace ProjectSYNCS.Interactions.Components;
 // Events: « ✨ Événement » opens the oldest pending one privately; a pick resolves it and tells its
 // story; ◀ ▶ page any told story, rebuilt from the database. Every path reads the database, so every
 // path defers first.
+// The public card the choice was opened from rides along in the choice's custom-ids (a private message
+// cannot reach it otherwise), so a pick rewrites it: the « Événement (n) » count, stress, modifiers,
+// needs and traits all change with the outcome.
 public class PlynlingEventHandler : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly PlynlingService _plynlings;
     private readonly PlynlingAnnouncer _announcer;
+    private readonly ILogger<PlynlingEventHandler> _logger;
 
-    public PlynlingEventHandler(PlynlingService plynlings, PlynlingAnnouncer announcer)
+    public PlynlingEventHandler(PlynlingService plynlings, PlynlingAnnouncer announcer, ILogger<PlynlingEventHandler> logger)
     {
         _plynlings = plynlings;
         _announcer = announcer;
+        _logger = logger;
     }
 
+    // From the card itself: the card is the message clicked. An older private result still carrying
+    // this id is ephemeral, which the channel cannot edit — no card then.
     [ComponentInteraction("plyn:events:*", ignoreGroupNames: true)]
-    public async Task OnOpenAsync(string idStr)
+    public Task OnOpenAsync(string idStr)
+    {
+        var message = (Context.Interaction as SocketMessageComponent)?.Message;
+        var cardId = message is null || (message.Flags ?? MessageFlags.None).HasFlag(MessageFlags.Ephemeral) ? 0UL : message.Id;
+        return OpenAsync(idStr, cardId);
+    }
+
+    // « Événement suivant » on a private result: the card it started from comes in the id.
+    [ComponentInteraction("plyn:evnext:*:*", ignoreGroupNames: true)]
+    public Task OnNextEventAsync(string idStr, string cardStr) =>
+        OpenAsync(idStr, ulong.TryParse(cardStr, out var cardId) ? cardId : 0);
+
+    private async Task OpenAsync(string idStr, ulong cardId)
     {
         if (!int.TryParse(idStr, out var id))
         {
@@ -55,12 +76,19 @@ public class PlynlingEventHandler : InteractionModuleBase<SocketInteractionConte
         }
         var target = inst.TargetPlynlingId is { } tid ? await _plynlings.GetByIdAsync(tid, now) : null;
         var card = PlynlingEventCards.BuildChoice(inst, def, await _plynlings.GetEventContextAsync(p, now, target),
-            EventCast.Of(p, now), target is null ? null : EventCast.Of(target, now));
+            EventCast.Of(p, now), target is null ? null : EventCast.Of(target, now), cardId);
         await FollowupAsync(components: card, ephemeral: true, flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
     }
 
+    [ComponentInteraction("plev:choose:*:*:*", ignoreGroupNames: true)]
+    public Task OnPickAsync(string idStr, string optionKey, string cardStr) =>
+        PickAsync(idStr, optionKey, ulong.TryParse(cardStr, out var cardId) ? cardId : 0);
+
+    // A choice opened before the card id rode along: picked as before, no card to refresh.
     [ComponentInteraction("plev:pick:*:*", ignoreGroupNames: true)]
-    public async Task OnPickAsync(string idStr, string optionKey)
+    public Task OnLegacyPickAsync(string idStr, string optionKey) => PickAsync(idStr, optionKey, 0);
+
+    private async Task PickAsync(string idStr, string optionKey, ulong cardId)
     {
         if (!int.TryParse(idStr, out var id))
         {
@@ -85,12 +113,37 @@ public class PlynlingEventHandler : InteractionModuleBase<SocketInteractionConte
         if (story is null) return;
         await ModifyOriginalResponseAsync(m =>
         {
-            m.Components = PlynlingEventCards.BuildResult(story.Pages[^1], pick.PendingLeft, story.PlynlingId);
+            m.Components = PlynlingEventCards.BuildResult(story.Pages[^1], pick.PendingLeft, story.PlynlingId, cardId);
             m.Flags = MessageFlags.ComponentsV2;
             m.AllowedMentions = AllowedMentions.None;
         });
+        await RefreshCardAsync(cardId, story.PlynlingId, now);
         // Every story the pick caused: the picked one, then any answer the mascot gave at once.
         await _announcer.TellAsync(_plynlings, pick.Told ?? new[] { id }, Context.Guild?.Id ?? 0, now, Context.Channel);
+    }
+
+    // Rewrites the public card after the outcome landed. Her last line is not stored, so the card comes
+    // back without it. A side effect: a card deleted, or a channel the bot can no longer edit in, never
+    // breaks the pick.
+    private async Task RefreshCardAsync(ulong cardId, int plynlingId, DateTimeOffset now)
+    {
+        if (cardId == 0 || Context.Channel is null) return;
+        try
+        {
+            var p = await _plynlings.GetByIdAsync(plynlingId, now);
+            if (p is null) return;
+            var card = await PlynlingModule.BuildCardAsync(_plynlings, p, now, null);
+            await Context.Channel.ModifyMessageAsync(cardId, m =>
+            {
+                m.Components = card;
+                m.Flags = MessageFlags.ComponentsV2;
+                m.AllowedMentions = AllowedMentions.None;
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Plynling {Id}: card {Card} could not be refreshed after an event", plynlingId, cardId);
+        }
     }
 
     [ComponentInteraction("evs:prev:*:*", ignoreGroupNames: true)]

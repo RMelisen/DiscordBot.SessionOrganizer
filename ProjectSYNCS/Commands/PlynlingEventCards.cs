@@ -8,11 +8,17 @@ namespace ProjectSYNCS.Commands;
 // harness measures them; every button carries its own verb (Discord rejects a duplicated id).
 public static class PlynlingEventCards
 {
-    public static string PickId(int instanceId, string optionKey) => $"plev:pick:{instanceId}:{optionKey}";
+    // cardId is the public card the choice was opened from (0 if unknown), refreshed after the pick.
+    // Its own verb, not a third segment on plev:pick: a wildcard may match across colons, so
+    // plev:pick:*:* could also catch the longer id.
+    public static string PickId(int instanceId, string optionKey, ulong cardId) => $"plev:choose:{instanceId}:{optionKey}:{cardId}";
+
+    public static string NextId(int plynlingId, ulong cardId) => $"plyn:evnext:{plynlingId}:{cardId}";
 
     // The choice, ephemeral: the scene, one line per option it can see (what it needs, its odds), and
     // one button each. Hidden options are simply absent.
-    public static MessageComponent BuildChoice(PlynlingEventInstance inst, EventDef def, EventContext ctx, EventCast self, EventCast? target)
+    public static MessageComponent BuildChoice(PlynlingEventInstance inst, EventDef def, EventContext ctx, EventCast self, EventCast? target,
+        ulong cardId)
     {
         var X = PlynlingEventStory.Expander(inst, def, self, target);
         var options = def.Options.Where(o => PlynlingEventEngine.Visible(o, ctx)).ToList();
@@ -21,7 +27,7 @@ public static class PlynlingEventCards
         var lines = options.Select(o => $"**{PlynlingEventStory.Label(o, X)}**{Details(o, ctx, self.Gender, target)}");
         var row = new ActionRowBuilder();
         foreach (var o in options)
-            row.WithButton(Clip(PlynlingEventStory.Label(o, X), 80), PickId(inst.Id, o.Key), ButtonStyle.Primary, ButtonEmoji(o));
+            row.WithButton(Clip(PlynlingEventStory.Label(o, X), 80), PickId(inst.Id, o.Key, cardId), ButtonStyle.Primary, ButtonEmoji(o));
         return new ComponentBuilderV2()
             .AddComponent(new ContainerBuilder()
                 .WithAccentColor(new Color(PlynlingCatalog.Info(self.Species).Accent))
@@ -58,15 +64,15 @@ public static class PlynlingEventCards
         : null;
 
     // After a pick, in place of the choice: the outcome, where the story is told, and the next
-    // event if one waits.
-    public static MessageComponent BuildResult(string outcome, int pendingLeft, int plynlingId)
+    // event if one waits — still pointing at the same card.
+    public static MessageComponent BuildResult(string outcome, int pendingLeft, int plynlingId, ulong cardId)
     {
         var builder = new ComponentBuilderV2()
             .AddComponent(new ContainerBuilder()
                 .AddComponent(new TextDisplayBuilder($"{outcome}\n-# L'histoire est racontée dans le salon du jeu.")));
         if (pendingLeft > 0)
             builder.AddComponent(new ActionRowBuilder()
-                .WithButton($"Événement suivant ({pendingLeft})", $"plyn:events:{plynlingId}", ButtonStyle.Primary, new Emoji("✨")));
+                .WithButton($"Événement suivant ({pendingLeft})", NextId(plynlingId, cardId), ButtonStyle.Primary, new Emoji("✨")));
         return builder.Build();
     }
 
