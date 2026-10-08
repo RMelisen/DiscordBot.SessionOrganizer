@@ -105,6 +105,9 @@ var host = Host.CreateDefaultBuilder(args)
         // messages so a greeting can bring the hello forward.
         services.AddSingleton<MorningGreetingService>();
         services.AddHostedService(sp => sp.GetRequiredService<MorningGreetingService>());
+        // Same shape: BotService feeds it the main channel's messages, the host runs its loop.
+        services.AddSingleton<AmbientService>();
+        services.AddHostedService(sp => sp.GetRequiredService<AmbientService>());
         services.AddHostedService<VoiceXpService>();
         services.AddHostedService<GiveawayDrawService>();
         services.AddHostedService<PlynlingSweepService>();

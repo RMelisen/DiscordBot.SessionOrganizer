@@ -229,6 +229,39 @@ doesn't make it certain. Messages aimed at her are skipped: `ChatterService` alr
   sp.GetRequiredService<…>())`. A plain `AddHostedService<MorningGreetingService>()` would make the
   host run a second instance whose claim `BotService` never sees.
 
+## Ambient life
+
+Her life in the main channel (`MorningGreetingService.ChannelId`) when nobody is talking to her.
+Rare on purpose: the point is that she seems to be there, not that she talks. Odds, windows and
+thresholds live in `Helpers/Ambient` (pure, Paris wall-clock hours, so DST never moves a rule).
+
+| What | Who | When |
+|---|---|---|
+| Idle moon + `NightPresenceFillers` | `PresenceService` | 1:00–7:00 |
+| 3 a.m. line (`NightLines`) | `AmbientService` tick | decided once a night (25%, random minute 3:00–3:49), channel quiet ≥ 1 h |
+| Idle turn | `AmbientService` tick | 10:00–23:00, quiet ≥ 6 h, one 50% roll per silence, max 1/day: 30% late `SeenReactions` on the last human message, else an `IdleLines` line, a quarter of the time an `IdleEditLines` pair (posted, then edited 3–6 s later) |
+| Ghost typing | `AmbientService.HandleMessageAsync` | a human message after ≥ 1 h quiet, not aimed at her, 3%, max 1/day |
+| Hesitant reaction | `ReactionService` | 3% of mood reactions are removed 2–4 s later |
+| Wake line | `AmbientService`, first `Ready` only | 9:00–23:00, max 1/day: `WakeUpdateLines` always when the version changed, else 30% `WakeLines` |
+
+- **`AmbientService` is registered twice on one instance**, like `MorningGreetingService`: `BotService`
+  feeds it the main channel's human messages (the quiet clock) and the host runs its 10-minute tick.
+  The first tick seeds the clock from the channel's last 50 messages, or from the start time when
+  none is human, so a restart is never followed straight away by an idle line.
+- **Every pool but `NightPresenceFillers` goes through `DailyRotation`**: each is spent at most once a
+  day, and a restart would wipe `ResponsePicker`. `NightLines` must stay distinct and newline-free:
+  a restart inside the hour re-rolls the night, and she checks the last 50 messages for tonight's
+  line by exact text before posting another.
+- **The wake line's memory is `ambient-state.json`** next to the SQLite file (`/data` in prod), not
+  the database: `LastVersion` (compared with `AppInfo.Version`) and `LastWakeDay`. Missing or
+  unreadable means "same version, not woken today". The version is written on every start, even
+  when she stays quiet.
+- **The hesitation runs off the gateway handler** (`Task.Run`): waiting inline would hold up every
+  handler after `ReactionService` in the fan-out. Not on the energy-drink can or the pile-on path.
+- Nothing fires in DMs, on bots, or during a breakdown; every send uses `AllowedMentions.None`. In the
+  dev guild the channel never resolves, so only the night status is visible there.
+- Ghost typing and the hesitant reaction stay out of `README.md` and `/help`, like the easter eggs.
+
 ## `RivalryService` — other bots
 
 The primary handler that looks at other bots' traffic (`ShameTracker` is the only other one; every

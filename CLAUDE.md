@@ -72,6 +72,8 @@ English. Renaming a command or option changes what people type: do it rarely, an
   `VoiceXpService` (1 min), `GiveawayDrawService` (1 min), `PlynlingSweepService` (hourly).
 - **`MorningGreetingService`** has no interval: it sleeps until one random slot per morning
   (8:00–10:00 Paris, `Helpers/MorningGreeting`) — see personality.
+- **`AmbientService`** (10 min, cosmetic, its own interval like the loops above): the 3 a.m. line,
+  idle fillers and the wake-up line after a restart — see personality, *Ambient life*.
 - **`ApplicationEmojiService`** runs once, on the first Ready (uploads item icons — see economy).
   **`PlynlingMascotService`** runs on every Ready (see plynling).
 
@@ -282,7 +284,8 @@ when `version` changes: an unbumped push never reaches the Pi.
 The bot ships as a Home Assistant add-on: the `Dockerfile` publishes a self-contained
 `linux-arm64` build, and `run.sh` maps add-on options to `Discord__Token`,
 `Discord__RegisterCommandsGlobally` and `Database__Path=/data/ProjectSYNCS.db`. Only `/data` is
-persisted, so the SQLite file must stay under it.
+persisted, so the SQLite file must stay under it — and so does `ambient-state.json`, which
+`AmbientService` writes next to it.
 
 The GitHub remote is **public**. `appsettings.json` and `config.yaml` ship token placeholders; real
 tokens go in user secrets (dev) or add-on options (prod), never in a tracked file.

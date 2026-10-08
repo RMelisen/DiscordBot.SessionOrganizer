@@ -314,7 +314,7 @@ internal sealed class XpTracker
 
         var embed = new EmbedBuilder()
             .WithTitle(BuildLevelUpTitle(oldLevel, newLevel))
-            .WithDescription(description)
+            .WithDescription(MessageFormat.KeepKaomojiTogether(description))
             .WithThumbnailUrl(user.GetAvatarUrl() ?? user.GetDefaultAvatarUrl())
             .WithColor(Color.Purple)
             .Build();

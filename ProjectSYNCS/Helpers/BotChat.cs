@@ -46,8 +46,10 @@ public static class BotChat
     /// rare line that is *meant* to ping — the giveaway draw announcing its winners —
     /// and should be as narrow as the line needs (users only, never roles or everyone).
     /// Left null, Discord's default applies, which is what ordinary chatter wants.
+    /// Returns the sent message, or null if the send failed (AmbientService edits its
+    /// self-correcting lines through it).
     /// </summary>
-    public static async Task PostWithTypingAsync(
+    public static async Task<IUserMessage?> PostWithTypingAsync(
         IMessageChannel channel, string line, ILogger logger, string what,
         AllowedMentions? allowedMentions = null)
     {
@@ -57,11 +59,12 @@ public static class BotChat
             {
                 await Task.Delay(TypingDelayFor(line));
             }
-            await channel.SendMessageAsync(line, allowedMentions: allowedMentions);
+            return await channel.SendMessageAsync(line, allowedMentions: allowedMentions);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to send {What} in channel {ChannelId}.", what, channel.Id);
+            return null;
         }
     }
 

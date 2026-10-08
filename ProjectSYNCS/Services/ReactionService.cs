@@ -45,6 +45,10 @@ internal sealed class ReactionService
     private const double CopyChance = 0.10;
     private const double OwnerCopyChance = 0.20;
 
+    // Now and then a mood reaction is taken back a moment later, as if she changed her
+    // mind. Only someone watching sees it.
+    private const double HesitateChance = 0.03;
+
     private readonly CooldownGate<ulong> _messageGate = new(Cooldown);
 
     public ReactionService(
@@ -114,6 +118,8 @@ internal sealed class ReactionService
         try
         {
             await message.AddReactionAsync(emote);
+            if (Random.Shared.NextDouble() < HesitateChance)
+                HesitateLater(message, emote);
         }
         catch (HttpException ex) when (ex.DiscordCode is DiscordErrorCode.UnknownEmoji
             or DiscordErrorCode.TheSpecifiedEmojiIsInvalid)
@@ -132,6 +138,23 @@ internal sealed class ReactionService
             _logger.LogWarning(ex, "Failed to react in channel {ChannelId}.", message.Channel.Id);
         }
     }
+
+    // Takes the reaction back 2–4 s later. Off the gateway handler on purpose: the wait
+    // would otherwise hold up every handler after this one in BotService's fan-out.
+    private void HesitateLater(SocketUserMessage message, IEmote emote) =>
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(Random.Shared.Next(2000, 4000)));
+                await message.RemoveReactionAsync(emote, _client.CurrentUser);
+                _logger.LogInformation("Took a reaction back in channel {ChannelId}.", message.Channel.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to take a reaction back in channel {ChannelId}.", message.Channel.Id);
+            }
+        });
 
     private async Task ReactEnergyDrinkAsync(SocketUserMessage message)
     {

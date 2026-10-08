@@ -2,6 +2,7 @@ using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
 
@@ -54,10 +55,14 @@ internal sealed class PresenceService : BackgroundService
 
     private async Task RotateAsync()
     {
-        var line = _picker.Pick(BotResponses.PresenceFillers);
+        // From 1:00 to 7:00 she "sleeps": the idle moon and a sleepy line. She doesn't really
+        // sleep — she does it to be like everyone (docs/syncs-voice.md, "Her nights").
+        bool asleep = Ambient.IsSleepHours(DateTimeOffset.UtcNow);
+        var line = _picker.Pick(asleep ? BotResponses.NightPresenceFillers : BotResponses.PresenceFillers);
 
         try
         {
+            await _client.SetStatusAsync(asleep ? UserStatus.Idle : UserStatus.Online);
             // Custom status rather than SetGameAsync: it renders the line verbatim,
             // with no verb prepended, and Discord doesn't localise it per viewer. Note
             // the text travels in the wire model's State field rather than Name, which

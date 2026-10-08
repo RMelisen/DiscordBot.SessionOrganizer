@@ -203,7 +203,11 @@ without saying it). The one place a fact is stated outright is where a pool alre
   - **Mushroom:** the fly agaric (above).
 - **Her nights** — the banner's scene. She tallies the day's logs (who was late, who said
   "peut-être"), keeps her grudge list (the sticky note on the crate), watches the moon through the
-  window, and naps next to Ping-Qilin. Lore only for now: no night pool exists.
+  window, and stays by Ping-Qilin while she naps. **She doesn't sleep; she pretends to, to be a bit
+  like everyone**: the idle moon and sleepy status from 1:00 to 7:00, and her sleep-talk, are an act
+  that knows it is one (« zzz… (je dors pas, je fais comme vous) »). **3 a.m., her favourite hour, is
+  when she drops the act**, because nobody is watching (`NightLines`, see
+  `docs/agents/personality.md`, *Ambient life*).
 
 ## Before adding a line
 

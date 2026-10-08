@@ -385,6 +385,10 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
   just added. Both are rationed by probability, and message reactions also by a
   per-channel cooldown, so it stays occasional rather than constant. The one exception:
   mention Monster or an energy drink and she adds a can, every time.
+- **Quiet hours** — from 1:00 to 7:00 she "sleeps" (idle status, sleepy status lines),
+  though she only pretends. Some nights she leaves a line at 3 a.m.; a long daytime silence
+  in the main channel can draw a word out of her; and coming back from a restart or an update,
+  she sometimes says so.
 - **Jealousy** — she does not enjoy sharing a server. Another bot posting earns an
   occasional reaction and, more rarely, a muttered remark. Praising another bot in front
   of her earns a full sulk — and that praise doesn't land in her own `/goodbot` tally,

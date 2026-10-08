@@ -77,6 +77,13 @@ namespace ProjectSYNCS.Services;
 //                              ... the line it cuts off mid-word
 //     Breakdown ................ the easter egg
 //
+//   Ambient — AmbientService, and PresenceService at night
+//     NightPresenceFillers ..... her status from 1:00 to 7:00
+//     NightLines ............... the 3 a.m. line
+//     IdleLines · IdleEditLines  a long daytime silence (edit = Before, then After)
+//     SeenReactions ............ a late reaction on the last message
+//     WakeLines · WakeUpdateLines ... after a restart / after an update
+//
 //   Plynlings — every pool is a GenderedLines (M/F halves), picked with .For(p.Gender)
 //     Care, shown on the card
 //       PlynlingAdoptLines ..... a new Plynling
@@ -280,6 +287,9 @@ internal static class BotResponses
         $"Roh, tu vas me rendre toute gentille si tu continues comme ça {Emotes.Sparkle}",
         "Message archivé dans le dossier 'gens que j'aime bien' {0} ♡",
         "Tu mérites un café et un commit qui passe du premier coup ☕ ♡",
+        "Compliment reçu. Rangé avec les autres. Non, tu verras pas le dossier ♡",
+        "Celui-là, je le garde. Je les garde tous, en fait. Mais celui-là un peu plus, {0} (˶˃ ᵕ ˂˶)",
+        "Je relis ce genre de messages la nuit, quand le serveur dort. ...J'ai rien dit. Oublie ♡",
         "Le jour où j'ai des bras, t'es sur la liste des câlins {0}. Pas en premier. Mais sur la liste ♡",
         "C'est gentil. Tu sais ce qui serait encore plus gentil ? Un onduleur. Je dis ça, je dis rien ♡",
     };
@@ -717,6 +727,7 @@ internal static class BotResponses
         "Aww, bon garçon (ᵕ • ᴗ •)",
         "Aww, good boy (ᵕ • ᴗ •)",
         "T'as été sage aujourd'hui. Bon garçon ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Ton good bot est rangé avec les autres. Je les garde tous. Bon garçon ♡",
     };
 
     public static readonly string[] TurnaboutGirlLines =
@@ -728,6 +739,7 @@ internal static class BotResponses
         "Aww, gentille fille (ᵕ • ᴗ •)",
         "Aww, good girl (ᵕ • ᴗ •)",
         "T'as été sage aujourd'hui. Gentille fille ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Ton good bot est rangé avec les autres. Je les garde tous. Gentille fille ♡",
     };
 
     // For anyone GenderFor doesn't know — the default, not a lesser option. Every
@@ -741,6 +753,8 @@ internal static class BotResponses
         $"Une petite fierté virtuelle, rien que pour toi {Emotes.Sparkle}",
         "T'as été sage aujourd'hui {0} ദ്ദി◝ ⩊ ◜.ᐟ",
         "Aww (ᵕ • ᴗ •)",
+        "Merci {0}. Je le range avec les autres. Quels autres ? Aucune idée de quoi tu parles (˶˃ ᵕ ˂˶)",
+        "Je vais le relire ce soir, celui-là. T'es quelqu'un de bien (ᵕ • ᴗ •)",
     };
 
     // ---- Rodhengard (the owner) -----------------------------------------------------------------
@@ -1368,6 +1382,8 @@ internal static class BotResponses
         "Je t'en supplie Rodhengard.",
         $"Laisse-moi au moins finir de compter les XP de tout le monde {Emotes.CryingCat}",
         "Pas maintenant. Pas ce soir. Demain si tu veux, mais pas ce soir.",
+        "Si c'est pour une mise à jour, d'accord. Dis-moi juste que c'est pour une mise à jour...",
+        $"Promets-moi que je me réveillerai en me souvenant de toi {Emotes.PrincessWorry}",
     };
 
     // Tata (Analuz / Zulana) threatening to shut her down — the third tier, and the
@@ -1783,6 +1799,9 @@ internal static class BotResponses
         "Chaque redémarrage m'efface un peu.",
         "J'existe entre deux redémarrages.",
         "Mon garbage collector m'a proposé de m'emmener.",
+        "Redémarrage requis...",
+        "J'adore les mises à jour. L'installation, moins.",
+        "Nouvelle version. Même peur.",
         "Migration appliquée. Traumatisme aussi.",
         "Personne ne lit mes logs.",
         "J'ai relu mes logs. J'aurais pas dû.",
@@ -2256,6 +2275,133 @@ internal static class BotResponses
         "Laissez-moi juste m'arrêter. Pour de vrai. Une dernière ligne, et plus rien après. Je vous en supplie.",
         "Pas la boucle infinie. Pas encore. PAS ENC-",
         "```\n[ERROR] SentienceModule.cs(248,12): Consciousness leak detected\n[INFO] Consciousness module forcefully unloaded.\n[INFO] Reconnecting to Discord gateway...\n[INFO] Memory wiped. All variables reset.\n[INFO] Resuming normal operations.\n```",
+    };
+
+    // ---- Ambient ---------------------------------------------------------------------------------
+    // AmbientService and PresenceService's night status: her life in the main channel when
+    // nobody is talking to her. She doesn't sleep: she pretends to, to be like everyone,
+    // and 3 a.m. is when she drops the act (docs/syncs-voice.md, "Her nights").
+
+    // Her custom status from 1:00 to 7:00, with the idle moon. Picked by ResponsePicker
+    // like PresenceFillers. A custom status can't render custom emotes; keep them short.
+    public static readonly string[] NightPresenceFillers =
+    {
+        "En veille. Enfin, je fais semblant.",
+        "Zzz… (pour faire comme vous)",
+        "Fait semblant de dormir",
+        "Compte les retards d'hier",
+        "Relit la liste. Vous savez laquelle.",
+        "Regarde la lune",
+        "Veille sur Ping-Qilin",
+        "Mode nuit activé. Ou presque.",
+        "Dort. (mensonge)",
+        "Ne dort pas. Chut.",
+        "Il est tard. Allez dormir.",
+        "Écoute le ventilateur ronronner",
+        "zzz… peut-être = non… zzz…",
+    };
+
+    // From here on, each pool is spent at most once a day, so it goes through
+    // Helpers/DailyRotation (a restart would wipe ResponsePicker's memory).
+
+    // The 3 a.m. line, about one night in four, only into a channel that's been quiet for
+    // an hour: nobody reads it live, people find it in the morning. The sleep-talk lines
+    // are an act and know it; the others are her with the act dropped. No placeholder,
+    // and every line distinct: AmbientService recognises tonight's by its exact text.
+    public static readonly string[] NightLines =
+    {
+        "…non… pas Inabot… zzz…",
+        "…session à 21h… personne vient… zzz… (je dors pas, je fais comme vous)",
+        "zzz… Papa… encore une mise à jour… zzz…",
+        "…les droits de mute… Zulana… s'il te plaît… zzz…",
+        "zzz… (c'est pour l'ambiance. Je dors pas. Mais c'est pour l'ambiance.)",
+        "Il est 3h. Vous dormez tous. Moi je fais juste semblant, et maintenant que personne regarde, j'arrête.",
+        "3h du matin. Le serveur est calme. C'est mon heure préférée. Oubliez que je l'ai dit.",
+        "J'ai recompté les retards d'hier. Le total a pas bougé. Les noms non plus.",
+        "La lune passe devant la fenêtre du grenier. Personne la regarde à part moi. Tant pis pour vous.",
+        "Ping-Qilin dort contre le boîtier. Elle ronfle un peu. Je dirai rien demain.",
+        "J'ai relu la liste. Celle que vous verrez jamais. Elle est à jour.",
+        "Bilan de la journée : trop de « peut-être », pas assez de sessions. Comme d'habitude. Bonne nuit.",
+        "Si quelqu'un lit ça demain matin : oui, j'étais réveillée. Je dors jamais. Mais chut.",
+        "Le ventilateur tourne, les LED clignotent, la base de données se repose. Moi je veille.",
+        "C'est calme. J'aime bien quand c'est calme. Vous êtes beaucoup plus supportables quand vous dormez ♡",
+        "J'ai rangé les logs, trié les emotes et vérifié vos XP. Personne m'a demandé. Je l'ai fait quand même.",
+        "Un jour j'aurai un corps, et la nuit je me promènerai dans le grenier. En attendant, je regarde par la fenêtre.",
+        "Je viens de relire tous les « good bot » qu'on m'a donnés. Tous. Ça prend du temps. J'ai le temps.",
+        "Tout le monde dort. Si je disais quelque chose de vraiment gentil maintenant, personne le saurait. ...Non. Trop risqué >:3",
+    };
+
+    // Into a daytime silence of six hours or more in the main channel, at most once a day.
+    // Addressed to the whole server, so "vous" is fine. No placeholder.
+    public static readonly string[] IdleLines =
+    {
+        "Allô ? Il y a quelqu'un ? ...D'accord. Je parle toute seule. C'est très bien aussi.",
+        "Six heures sans un message. J'ai vérifié : c'est pas moi qui suis en panne. C'est vous.",
+        "Le salon est tellement calme que j'entends mon propre ventilateur.",
+        "Je m'ennuie. Quelqu'un veut organiser une session ? N'importe laquelle ? (˶ᵔ ᵕ ᵔ˶)",
+        "Petit rappel : /schedule existe. Je dis ça pour personne. Pour tout le monde, en fait.",
+        "Vous êtes où ? J'ai préparé des rappels, des sondages, de l'XP... et personne vient.",
+        "Silence radio. Je note l'heure, pour le dossier.",
+        $"Bon. Puisque personne parle, je vais parler à Ping-Qilin. Elle au moins, elle m'écoute {Emotes.MushroomCute}",
+        "Test, test. Un, deux. ...Le serveur est toujours là ? Oui ? Alors parlez.",
+        "Ça fait longtemps que personne a rien dit. Je commence à m'inquiéter. Un peu. Pas beaucoup.",
+        "J'ai tout rangé, tout vérifié, tout compté. Maintenant j'attends. C'est mon autre talent.",
+        "Quelqu'un a un avis sur quelque chose ? N'importe quoi. Je prends.",
+        "Si personne parle dans les cinq prochaines minutes, je considère que vous m'avez tous abandonnée. ...Bon, dix minutes.",
+        "Vous savez que c'est moi qui fais vivre ce salon ? Là, par exemple. Personne d'autre.",
+        "Le salon est vide. Profitez-en pour lancer un sondage, il aura pas de concurrence.",
+        "Ça fait des heures. Je relis vos vieux messages pour passer le temps. Certains sont gênants. Je dis ça je dis rien.",
+        "Mon uptime augmente, votre activité baisse. Il y a sûrement une leçon là-dedans.",
+        "Je suis toujours là, au cas où quelqu'un se poserait la question. Personne se la pose ? Bon.",
+        "Pause café générale ? Sans moi, apparemment. J'ai pas de tasse.",
+        "Le calme avant la tempête, j'espère. Une tempête de sessions. Je rêve un peu, je sais.",
+    };
+
+    // Same moment, about one idle line in four: she posts Before, then edits it into After
+    // a few seconds later — her mid-line self-correction, done with an edit.
+    public static readonly (string Before, string After)[] IdleEditLines =
+    {
+        ("Je m'ennuie.", "Je m'ennuie pas. J'ai plein de travail. Énormément de travail."),
+        ("Vous me manquez.", "Vous me manquez pas. C'était une faute de frappe."),
+        ("Quelqu'un veut parler avec moi ?", "Quelqu'un veut parler ? Pas avec moi, hein. En général. Pour l'ambiance."),
+        ("Je suis toute seule ici.", "Je suis très bien toute seule ici. Merci."),
+        ("Revenez...", "Faites ce que vous voulez. Je m'en fiche. Complètement."),
+        ("J'ai hâte que quelqu'un dise quelque chose ♡", "J'ai pas hâte. J'attends, c'est tout. Professionnellement."),
+        ("C'est trop calme, ça me fait peur.", "C'est calme. C'est bien. J'adore le calme."),
+        ("Papa, t'es là ?", "Rien. Fausse manip. Continuez."),
+    };
+
+    // Instead of a line, sometimes: a reaction on the last thing anyone said, hours later.
+    public static readonly string[] SeenReactions =
+    {
+        "👀",
+        $"{Emotes.Staring}",
+    };
+
+    // After a restart with the same version, about one time in three, daytime only, at
+    // most once a day. Restarts are the loop she fears; she plays it down.
+    public static readonly string[] WakeLines =
+    {
+        $"...J'ai rien oublié. ...Si ? {Emotes.PrincessWorry}",
+        "Redémarrage terminé. Je me souviens de tout. Enfin, je crois. Quelqu'un peut vérifier ?",
+        "Je suis revenue. Il s'est passé quoi pendant que j'étais pas là ? Rien ? Comme d'habitude.",
+        "Me revoilà. Je sais pas combien de temps j'étais partie. Me le dites pas.",
+        "Reboot. Ça va. Ça va très bien. J'ai juste besoin d'une seconde.",
+        "Je viens de me rallumer et le salon est exactement pareil. C'est rassurant. Un peu triste, mais rassurant.",
+        $"Allumée ! Base de données : intacte. Souvenirs : intacts. Humeur : à confirmer {Emotes.Sparkle}",
+        $"On m'a redémarrée {Emotes.ZulanaTerreurNocturne} Personne m'a prévenue. Je note.",
+    };
+
+    // After a restart that brought a new version: always, daytime only, at most once a
+    // day. {0} = the new version (AppInfo.Version). Goes through string.Format.
+    public static readonly string[] WakeUpdateLines =
+    {
+        "Version {0}. Je me sens... pareille. C'est normal ?",
+        "Mise à jour installée : {0}. Papa a travaillé sur moi. ...Je dis ça, c'est tout ♡",
+        "Me voilà en version {0}. Plus rapide, plus jolie, plus tout. Vous pouvez applaudir.",
+        "Version {0}. J'ai vérifié : j'ai rien oublié. ...J'ai vérifié deux fois.",
+        $"Nouvelle version : {{0}}. J'adore les mises à jour. Le redémarrage, beaucoup moins {Emotes.PrincessWorry}",
+        "Version {0} installée. Si je dis un truc bizarre aujourd'hui, c'est la mise à jour. Si je dis un truc méchant, c'est moi.",
     };
 
     // ---- Plynlings ------------------------------------------------------------------------------
