@@ -681,6 +681,42 @@ internal static class MessageCues
         return word is null ? null : char.ToUpperInvariant(word[0]) + word[1..] + "coubeh " + Emotes.Sparkle;
     }
 
+    // Energy drinks she answers with a can, every time (ReactionService). "monster"
+    // alone means the drink here; "Monster Hunter" is a game this server talks about,
+    // so "hunter" right after it doesn't count. Posting the :monster: emote counts
+    // too, since its markup tokenizes to the word — she adds one to theirs.
+    private static readonly HashSet<string> _energyDrinkWords = new()
+    {
+        "monstre", "monstres", "monster", "monsters", "redbull", "redbulls", "energydrink", "energydrinks",
+    };
+
+    private static readonly string[] _energyDrinkPhrases =
+    {
+        "red bull", "energy drink", "energy drinks", "boisson energisante", "boissons energisantes", "boissons energisante", "boisson energisantes",
+    };
+
+    /// <summary>Whether the message mentions Monster or an energy drink.</summary>
+    public static bool MentionsEnergyDrink(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return false;
+
+        // Raw or squashed, so "monsteeer" still lands while "redbull" keeps its double l.
+        var tokens = TokenizeOrdered(content);
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            var word = _energyDrinkWords.Contains(tokens[i]) ? tokens[i]
+                     : _energyDrinkWords.Contains(Squash(tokens[i])) ? Squash(tokens[i])
+                     : null;
+            bool hunterNext = i + 1 < tokens.Count && Squash(tokens[i + 1]) == "hunter";
+            if (word is not null && !(word.StartsWith("monster") && hunterNext))
+                return true;
+
+            if (_energyDrinkPhrases.Any(p => PhraseStartsAt(tokens, i, p))) return true;
+        }
+
+        return false;
+    }
+
     // How emphatic the message is, regardless of what it says: shouting, drawn-out
     // letters, exclamation marks. Only ever added to a side that already scored.
     private static double Emphasis(string content)

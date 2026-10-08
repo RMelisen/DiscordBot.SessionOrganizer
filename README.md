@@ -383,7 +383,8 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
 - **Reactions** — it adds an emote to messages nobody addressed to it (when they read
   as kind, hostile or a greeting), and sometimes joins in on a reaction someone else
   just added. Both are rationed by probability, and message reactions also by a
-  per-channel cooldown, so it stays occasional rather than constant.
+  per-channel cooldown, so it stays occasional rather than constant. The one exception:
+  mention Monster or an energy drink and she adds a can, every time.
 - **Jealousy** — she does not enjoy sharing a server. Another bot posting earns an
   occasional reaction and, more rarely, a muttered remark. Praising another bot in front
   of her earns a full sulk — and that praise doesn't land in her own `/goodbot` tally,

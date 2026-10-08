@@ -15,6 +15,12 @@ addressed to her: a message qualifies on a `MessageCues` hit, or on being the ow
 writes qualifies — that's the favouritism), then passes a probability roll and a per-channel
 cooldown.
 
+**One exception: the energy drink can.** A message mentioning Monster or an energy drink
+(`MessageCues.MentionsEnergyDrink`) gets an `EnergyDrinkReactions` can **every time**: no roll, no
+cooldown, even on a message aimed at her (only bots, DMs and a running breakdown are skipped). It
+names a drink rather than reading the message, so it is not a decoration on a comeback, and it never
+takes the mood reaction's turn. "Monster Hunter" doesn't count; posting the `:monster:` emote does.
+
 **`ReactionService`'s two paths are gated differently, on purpose — don't unify them.** Reacting to
 a *message* is rationed by `Cooldown` (she volunteers an opinion). Copying someone else's
 *reaction* (`HandleReactionAddedAsync`) is odds-only, no cooldown (piling on should feel reflexive).

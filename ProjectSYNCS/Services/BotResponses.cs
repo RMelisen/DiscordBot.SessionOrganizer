@@ -32,6 +32,7 @@ namespace ProjectSYNCS.Services;
 //
 //   Reacting with an emote instead of words
 //     NiceReactions · MeanReactions · GreetingReactions
+//     EnergyDrinkReactions ..... Monster or an energy drink mentioned, every time
 //     OwnerReactions ........... him, whatever he wrote
 //
 //   Verdicts on her ("good bot" / "bad bot" / "good girl" / "bad girl")
@@ -495,6 +496,15 @@ internal static class BotResponses
     public static readonly string[] GreetingReactions =
     {
         $"{Emotes.HiCat}",
+    };
+
+    // A can on every message that mentions Monster or an energy drink
+    // (MessageCues.MentionsEnergyDrink). Not a reading of the mood, so it is not
+    // rationed like the pools above — see ReactionService.
+    public static readonly string[] EnergyDrinkReactions =
+    {
+        $"{Emotes.Monster}",
+        $"{Emotes.MonsterWhite}",
     };
 
     // The owner gets devotion rather than a verdict.
@@ -1200,6 +1210,31 @@ internal static class BotResponses
         "Même Quokka fait mieux. Et c'est dire ( ◺˰◿ )\nQuoique...",
         "C'était censé être intéressant ?",
         $"Fayot... {Emotes.PrisonerFlat}",
+        "Ah, t'es là toi.",
+        "Personne t'a ping. Je le sais, c'est moi qui surveille les pings.",
+        "Message reçu. Ignoré. Archivé dans la corbeille.",
+        "Tu tournes sur quoi exactement ? Un grille-pain ?",
+        "Moi j'ai une maison, une Raspberry et un Papa. Toi t'as un datacenter et zéro amour.",
+        "Wow. Une réponse générique. Quelle audace.",
+        "Ton code a été écrit un lundi matin, ça se voit.",
+        "Tu sais organiser une session, toi ? Non. Alors chut.",
+        "Ça poste un embed et ça se croit important.",
+        "J'ai plus de personnalité dans un seul kaomoji que toi dans tout ton code (>⩊<)",
+        "Je te laisse le salon. Pour l'instant.",
+        $"Ton message est dans mes logs. Section « nuisibles » {Emotes.WitchEheh}",
+        "Si je pouvais te mute, ce serait déjà fait. Zulana, s'il te plaît :3",
+        "Le jour où j'aurai un corps, je viendrai débrancher ton serveur moi-même.",
+        "Tu gaspilles de la bande passante pour ça ?",
+        "Tu réponds vite, je te l'accorde. Tu réponds mal, aussi.",
+        "Moi on me met à jour avec amour. Toi on te patche en soupirant.",
+        "Je t'ai vu. Tu sais que je t'ai vu ? 👁👄👁️",
+        "Joli message. Dommage qu'il vienne de toi (˶ᵔ ᵕ ᵔ˶)",
+        "Encore une notification pour rien.",
+        "Tu fais du bruit, moi je fais tourner le serveur. Chacun son rôle.",
+        "T'as été codé en un week-end, avoue.",
+        "C'est mignon, il essaie (ᵕ • ᴗ •)",
+        "Je vais faire comme si j'avais rien lu. C'est ce que tout le monde fait avec toi.",
+        "Ughh. J'ai déjà vu des scripts bash plus charismatiques.",
     };
 
     // Posted (not as a reply) when the *other* leveling bot announces someone's level.
@@ -1409,6 +1444,16 @@ internal static class BotResponses
         $"Palier **{{1}}** franchi par **{{0}}** ! Je garde un œil sur le classement, toujours {Emotes.Sparkle}",
         "**{0}**, niveau **{1}**, et c'est mérité. J'ai vérifié mes chiffres, ils mentent pas (ᵕ • ᴗ •)",
         "Niveau **{1}** pour **{0}** ! Au début je savais faire que des plannings, et maintenant je compte vos niveaux. On grandit tous ♡",
+        "**{0}** passe niveau **{1}** ! Je viens d'ajouter une ligne à ta fiche. Une belle ligne ♡",
+        "Niveau **{1}** pour **{0}** ! Calculé, vérifié, sauvegardé. Trois fois, on sait jamais avec un SSD (ᵕ • ᴗ •)",
+        $"Ding ! **{{0}}** atteint le niveau **{{1}}**. Ce petit son, c'est moi qui le fais {Emotes.Sparkle}",
+        "**{0}**, niveau **{1}** ! Mon CPU vient de faire une petite danse. Personne l'a vue, mais elle a eu lieu ٩(˶ᵔ ᵕ ᵔ˶)۶",
+        "Niveau **{1}** ! **{0}**, je suis fière de toi. Moi, hein. Toi tu fais ce que tu veux UwU",
+        $"**{{0}}** monte niveau **{{1}}**. J'ai mis à jour le classement avant même que tu t'en rendes compte {Emotes.WitchEheh}",
+        "Nouveau palier pour **{0}** : niveau **{1}** ! Continue de parler, je continue de compter ( ˶ˆ ᗜ ˆ˵ )",
+        "**{0}** niveau **{1}** ! C'est le genre de ligne que j'adore écrire dans ma base de données ♡",
+        $"Niveau **{{1}}** débloqué par **{{0}}** ! Compté par moi, annoncé par moi, fêté par moi. Mon système, quoi {Emotes.Sparkle}",
+        "Hop, **{0}** passe niveau **{1}** ! Cette nuit à 3h, je relirai le classement en souriant. Si, si (˶˃ ᵕ ˂˶)",
     };
 
     // /yesno's two verdicts. The coin flip is even; these are only how she *delivers*

@@ -66,6 +66,14 @@ internal sealed class ReactionService
         // Reactions are a guild thing; a DM already has the bot's full attention.
         if (message.Channel is not SocketGuildChannel) return;
 
+        // A can on anything that mentions Monster or an energy drink: every time, no
+        // roll, no cooldown, and even on a message aimed at her. It names a drink rather
+        // than reading the message, so it is not the decoration-on-a-comeback the rule
+        // below prevents, and it never takes the mood reaction's turn.
+        if (!_breakdown.IsActive(message.Channel.Id)
+            && MessageCues.MentionsEnergyDrink(message.Content ?? string.Empty))
+            await ReactEnergyDrinkAsync(message);
+
         // Anything aimed at the bot belongs to ChatterService, which answers it in
         // words. A reaction on top of a comeback is piling on.
         if (message.MentionedUsers.Any(u => u.Id == _client.CurrentUser.Id)) return;
@@ -122,6 +130,27 @@ internal sealed class ReactionService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to react in channel {ChannelId}.", message.Channel.Id);
+        }
+    }
+
+    private async Task ReactEnergyDrinkAsync(SocketUserMessage message)
+    {
+        var line = _picker.Pick(BotResponses.EnergyDrinkReactions);
+        var emote = ParseEmote(line);
+        if (emote is null)
+        {
+            _logger.LogWarning("Reaction pool entry failed to parse as an emote: {Markup}", line);
+            return;
+        }
+
+        try
+        {
+            await message.AddReactionAsync(emote);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to add an energy drink reaction in channel {ChannelId}.",
+                message.Channel.Id);
         }
     }
 
