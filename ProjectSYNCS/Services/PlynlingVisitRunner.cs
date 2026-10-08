@@ -25,12 +25,14 @@ public class PlynlingVisitRunner
         _picker = picker;
     }
 
-    // The story, or the refusal to send privately.
-    public async Task<(VisitStory? Story, string? Refusal)> RunAsync(Plynling visitor, Plynling host, DateTimeOffset now)
+    // The story, or the refusal to send privately. Untold: the event stories the visit brought that the
+    // mascot already decided (an after-visit event at her home) — the caller tells them after the visit's
+    // own story; this service is its own PlynlingService instance, so only it can hand them over.
+    public async Task<(VisitStory? Story, string? Refusal, IReadOnlyList<int> Untold)> RunAsync(Plynling visitor, Plynling host, DateTimeOffset now)
     {
         var day = AppTime.DayKey(now);
         if (!_cooldowns.TryClaimVisit(visitor.OwnerId, host.OwnerId, day))
-            return (null, PlynlingText.VisitedToday(visitor.OwnerId));
+            return (null, PlynlingText.VisitedToday(visitor.OwnerId), Array.Empty<int>());
 
         // A throw here means nothing was saved (the save is VisitAsync's last step), so the claim
         // goes back — left held, the pair would be told « déjà vus » for a visit that never happened.
@@ -47,12 +49,12 @@ public class PlynlingVisitRunner
         if (met is not { } pair)
         {
             _cooldowns.ReleaseVisit(visitor.OwnerId, host.OwnerId, day);
-            return (null, PlynlingText.Unknown);
+            return (null, PlynlingText.Unknown, _plynlings.TakeUntold());
         }
 
         var story = _stories.Add(
             PlynlingVisitStory.Build(pair, PlynlingPlayCards.VisitOutcomeLines(pair), now, Random.Shared, pool => _picker.Pick(pool)),
             Random.Shared);
-        return (story, null);
+        return (story, null, _plynlings.TakeUntold());
     }
 }

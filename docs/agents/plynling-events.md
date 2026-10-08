@@ -24,6 +24,20 @@ SQLite with the real migrations.
   called at adoption, at the mascot's creation and from `ProgressAsync` on every sweep. That last
   call is also the backfill for Plynlings older than traits; there is no data migration. Dead rows
   are skipped; a resurrected one catches up on the next sweep. It never saves.
+- **Held traits include the unsaved ones** (`HeldTraitKeysAsync`, behind `GetTraitsAsync` and
+  `EnsureTraitsAsync`): two mental breaks decided in one sweep must see each other's coping trait.
+  Reading the database alone let the second add the same trait again — the unique index refused the
+  save, and since every roll is hashed, every later sweep of that Plynling failed the same way.
+- **The adulte trait leans toward the ado years** (`AdultTraitWeight`), measured against an *average*
+  ado (`AdoLeaningBaseline` / `AdoGrowthBaseline`, from the catalog), never in absolute terms: the
+  options lean kind and sociable and grow Diplomacy most, so absolute sums made every adulte kind and
+  talkative (×5 between the likeliest and rarest trait under random play). The leaning is measured
+  along each trait's own direction (axes as a unit vector), or the traits with a 200 on one axis swing
+  furthest and the 0.25 floor hands them a head start. Target, checked by simulation: random play
+  within ~1.4× of uniform, a consistent ado about ×2–2.5 for the matching traits. Greed, Energy,
+  Vengefulness and Zeal barely move it — few ado options lean on them; that is content, not the formula.
+  The ado years start at its first stored personality trait's `AcquiredAt`, never at "now minus the
+  age past the threshold": the age leaves out time spent frozen, which would start them late.
 - **Only traits gained as it happens are journaled** (`PlynlingTraits.JustGained`: the stage that
   brings the trait began less than 2 days ago). A backfill is silent — at the 500-moment cap, four
   « nouveau trait » moments would push out its oldest memories. The mascot's traits are never journaled.
@@ -69,13 +83,20 @@ never change that mapping, every stored morning depends on it.
   `curious`, `pensive`, `rowdy`); a personality trait there never applies.
 - **Every rule is pure and hashed** (`StableRoll`): pulse time (08:00–20:00 Paris), which event,
   the target, the challenge roll (from the instance id), the in-character choice. Never a `Random`.
-- **Pacing:** one pulse a day, skipped when 3 pulse events wait; 24 h to choose; frozen = nothing
-  happens; a death cancels what waits; the mascot decides at once — a pulse, an on-action or an
-  answer right away, anything else (a follow-up coming due, a break) on the next sweep.
-- **The draw:** an event still waiting is never drawn again. The last 14 resolved are excluded
-  most recent first, **but never every eligible event**: the least recently seen comes back. A hard
-  exclusion locks any stage with fewer events than the window for good — nothing new resolves, so
-  the window never moves.
+- **Pacing:** one pulse a day, skipped when 3 pulse events wait; 24 h to choose; a death cancels what
+  waits; the mascot decides at once — a pulse, an on-action or an answer right away, anything else (a
+  follow-up coming due, a break) on the next sweep.
+- **Frozen = nothing happens, the owner's choices included:** no pulse, no decision alone, no pick
+  (`EventPickOutcome.Frozen`), and the card hides « Événement » (`CountPendingEventsAsync` is 0). The
+  24 h clock pauses too: `PlynlingEventEngine.DueAt` gives an event that was waiting before the thaw a
+  fresh 24 h from `LiveSince`, which every thaw resets — use it, never `ExpiresAt`, to know when an
+  event is decided alone. (`/debug event` *expired* sets `ExpiresAt`, so it does not hurry an event
+  that was waiting across a freeze.)
+- **The draw:** an event still waiting is never drawn again. The last 14 resolved **pulses** are
+  excluded most recent first — follow-ups, responses, breaks and on-actions never take a slot, or a
+  story chain would let the same pulses come back sooner — **but never every eligible event**: the
+  least recently seen comes back. A hard exclusion locks any stage with fewer events than the window
+  for good — nothing new resolves, so the window never moves.
 - **A key gone from the catalog** is cancelled by the next sweep, waiting or not, and never offered:
   it would sit first in the queue, unopenable, in front of the real ones.
 - **Deciding alone** never picks a hidden option or one with a stress cost for a held trait — the
@@ -108,7 +129,9 @@ never change that mapping, every stored morning depends on it.
   no grown-ups-only scenes): **every option** is either a lot of relief **with a malus** (a negative
   modifier, or a coping trait — CK3 ties each to its choice: `GainCoping("comfort_eater")` for eating)
   or **no malus and less relief** (30–50 points less); no option carries a bonus. Each break keeps at
-  least one malus-free option. The scratch checker enforces all of it.
+  least one malus-free option. The scratch checker enforces all of it. **One break per level at a
+  time** (`QueueBreaksAsync`): stress can dip below a level overnight and climb back while its break
+  still waits, and that must not queue a second one.
 - **The "not playing is free" rule is code:** `PlynlingEventEngine.AppliesWhenAlone` drops stress gains,
   negative modifiers and coping traits when it decided alone — except in a mental break, which only
   stress (the owner's own choices) can trigger. The harness simulates 60 days of deciding alone.
@@ -129,7 +152,12 @@ never change that mapping, every stored morning depends on it.
   (`TargetPlynlingId` = the asker, `ParentInstanceId` = the ask). Decided alone by acceptance
   (`AcceptWeight`: affinity, compatibility). The mascot answers right after the save
   (`AnswerForMascotAsync`, given every parent resolved in that unit of work). A response whose asker
-  was abandoned (its id set null) is cancelled, never answered.
+  is gone — abandoned (its id set null) or dead — is never offered nor answered: hidden from the card
+  at once, cancelled by the next sweep or the click (`GoneAskerResponsesAsync`). That is also why
+  « trop tard » after a `Couple` always means someone else got there first.
+- **The ask's story follows the answer** (`ReplyState`, from the instance's Response children): « attend
+  la réponse » while one is open, nothing once answered, « n'est jamais arrivée » when it was cancelled
+  or never queued (the other one was frozen or gone when asked).
 - **Rewards beyond stats (CK3's gold, artifacts):** `GiveCailloux` pays the *owner's* wallet
   (`EconomyLog.EarnEvent`), `GiveItem` puts one `ItemCatalog` item in the owner's inventory (a set it
   completes pays in the same save), `LiftNeed` raises one of the Plynling's needs. All three are
@@ -158,6 +186,10 @@ never change that mapping, every stored morning depends on it.
   for that Plynling. Growing up brings its event only within `PlynlingTraits.JournalWindow` of the
   stage — a stage moment rewritten later must not bring it again. `{T}` (trait reveals) comes from
   the instance's `GainedTraitKey` ("key,key").
+- **What the mascot decides from an on-action waits in `TakeUntold`**, not in a return value: a flush
+  also runs inside any settling read, where nobody holds a channel. Whoever does tells them after its
+  own story — the sweep, a pick (`EventPick.Told`), a visit (`PlynlingVisitRunner` hands them back,
+  since it wraps its own `PlynlingService` instance). A new caller that tells stories drains it too.
 - Labels may name the other (`{B}`): `PlynlingEventStory.Label` expands them for the card, the
   button (clipped to 80) and the story.
 - Social pulses check `TargetCondition` against each candidate before an event is drawn.

@@ -820,7 +820,7 @@ public partial class PlynlingService
     public async Task<IReadOnlyList<TraitInfo>> EnsureTraitsAsync(Plynling p, DateTimeOffset now)
     {
         if (p.DiedAt is not null) return Array.Empty<TraitInfo>();
-        var held = await _db_context.PlynlingTraits.Where(t => t.PlynlingId == p.Id).Select(t => t.Key).ToListAsync();
+        var held = await HeldTraitKeysAsync(p.Id);
         var stage = PlynlingLife.Stage(p, now);
         var slot = held.Count(k => PlynlingTraits.ByKey(k)?.Kind == TraitKind.Personality);
         // The ado history is read only when the adulte trait is actually due, not on every sweep.
@@ -844,8 +844,19 @@ public partial class PlynlingService
 
     // Its traits in the order acquired. A key no longer in the catalog is skipped, never thrown on.
     public async Task<IReadOnlyList<TraitInfo>> GetTraitsAsync(Plynling p) =>
-        (await _db_context.PlynlingTraits.Where(t => t.PlynlingId == p.Id).OrderBy(t => t.Id).Select(t => t.Key).ToListAsync())
-        .Select(PlynlingTraits.ByKey).OfType<TraitInfo>().ToList();
+        (await HeldTraitKeysAsync(p.Id)).Select(PlynlingTraits.ByKey).OfType<TraitInfo>().ToList();
+
+    // The keys it holds, stored first, then any added in this unit of work and not saved yet: two
+    // mental breaks decided in one sweep must see each other's coping trait, or the second can add the
+    // same one again (the unique index refuses the save, and every later sweep makes the same rolls).
+    private async Task<List<string>> HeldTraitKeysAsync(int plynlingId)
+    {
+        var keys = await _db_context.PlynlingTraits.Where(t => t.PlynlingId == plynlingId).OrderBy(t => t.Id).Select(t => t.Key).ToListAsync();
+        foreach (var entry in _db_context.ChangeTracker.Entries<PlynlingTrait>())
+            if (entry.State == EntityState.Added && entry.Entity.PlynlingId == plynlingId && !keys.Contains(entry.Entity.Key))
+                keys.Add(entry.Entity.Key);
+        return keys;
+    }
 
     // Its traits' stress-decay multiplier, cached on the row for Settle (which cannot load traits),
     // from the keys it holds now — including any added in this unit of work.

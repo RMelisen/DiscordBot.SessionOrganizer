@@ -31,7 +31,7 @@ public static class PlynlingEventCards
                     .AddComponent(new TextDisplayBuilder($"## ✨ {def.Title}\n{X(def.Scene)}")))
                 .AddComponent(new SeparatorBuilder())
                 .AddComponent(new TextDisplayBuilder(string.Join("\n", lines) +
-                    $"\n-# Sans choix de ta part, **{self.Name}** décidera {self.Gender.Agree("seul", "seule")} <t:{inst.ExpiresAt.ToUnixTimeSeconds()}:R>.")))
+                    $"\n-# Sans choix de ta part, **{self.Name}** décidera {self.Gender.Agree("seul", "seule")} <t:{PlynlingEventEngine.DueAt(inst, ctx.Self).ToUnixTimeSeconds()}:R>.")))
             .AddComponent(row)
             .Build();
     }

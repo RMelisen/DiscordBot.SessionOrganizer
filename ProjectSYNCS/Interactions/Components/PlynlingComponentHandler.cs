@@ -23,6 +23,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
     private readonly InventoryService _inventory;
     private readonly VisitStories _stories;
     private readonly PlynlingVisitRunner _visits;
+    private readonly PlynlingAnnouncer _announcer;
     private readonly ILogger<PlynlingComponentHandler> _logger;
 
     // The pause between two beats of a visit's story — long enough to read one, short enough
@@ -30,10 +31,11 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
 
     public PlynlingComponentHandler(PlynlingCareService care, PlynlingService plynlings, PlynlingPlayService play,
         ResponsePicker picker, PlynlingCooldowns cooldowns, TradeOffers trades, InventoryService inventory,
-        VisitStories stories, PlynlingVisitRunner visits, ILogger<PlynlingComponentHandler> logger)
+        VisitStories stories, PlynlingVisitRunner visits, PlynlingAnnouncer announcer, ILogger<PlynlingComponentHandler> logger)
     {
         _stories = stories;
         _visits = visits;
+        _announcer = announcer;
         _logger = logger;
         _trades = trades;
         _inventory = inventory;
@@ -232,7 +234,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             return;
         }
 
-        var (story, visitRefusal) = await _visits.RunAsync(visitor, host, now);
+        var (story, visitRefusal, untold) = await _visits.RunAsync(visitor, host, now);
         if (story is null)
         {
             await FollowupAsync(visitRefusal, ephemeral: true, allowedMentions: AllowedMentions.None);
@@ -258,6 +260,8 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         {
             _logger.LogWarning(ex, "Visit story {Story}: could not be posted", story.Id);
         }
+        // An after-visit event the mascot already decided, if she was in it — after the visit's story.
+        await _announcer.TellAsync(_plynlings, untold, Context.Guild.Id, now, Context.Channel);
     }
 
     // ◀ ▶ on a told story. Anyone may page — the card is public, like the story. After a restart

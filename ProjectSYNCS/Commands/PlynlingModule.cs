@@ -197,7 +197,7 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
         // ping, straight to the story — the same way « Accueillir » tells it.
         if (theirs is not null && PlynlingMascot.Is(theirs))
         {
-            var (story, visitRefusal) = await _visits.RunAsync(mine, theirs, now);
+            var (story, visitRefusal, untold) = await _visits.RunAsync(mine, theirs, now);
             if (story is null)
             {
                 await RespondAsync(visitRefusal, ephemeral: true, allowedMentions: AllowedMentions.None);
@@ -216,6 +216,8 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
             {
                 _logger.LogWarning(ex, "Visit story {Story}: could not be posted", story.Id);
             }
+            // What the visit left behind at her home, decided by her at once — after the visit's story.
+            await _announcer.TellAsync(_plynlings, untold, Context.Guild.Id, now, Context.Channel);
             return;
         }
 
@@ -788,8 +790,9 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
             builder.AddComponent(new ActionRowBuilder().WithSelectMenu(menu));
         }
         // Its own row, the card's last: the care row is hidden at night and holds three buttons when
-        // sick. Shown frozen too. « Personnalité » for anyone; « Événement » only while one waits —
-        // offered to everyone like « Laver », refused in the handler for anyone but the owner.
+        // sick. Shown frozen too, for « Personnalité » (anyone). « Événement » only while one waits and
+        // never frozen (pendingEvents is 0 then) — offered to everyone like « Laver », refused in the
+        // handler for anyone but the owner.
         if (alive)
         {
             var personalityRow = new ActionRowBuilder()

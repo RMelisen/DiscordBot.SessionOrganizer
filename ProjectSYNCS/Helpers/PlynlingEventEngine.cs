@@ -1,4 +1,9 @@
+using ProjectSYNCS.Models;
+
 namespace ProjectSYNCS.Helpers;
+
+// What the ado years were like, for the adulte trait (PlynlingEventEngine.AdultTraitWeight).
+public sealed record AdoYears(IReadOnlyDictionary<AiAxis, int> Leaning, IReadOnlyDictionary<PlynlingStat, int> Growth, int Count);
 
 /// <summary>
 /// Every event rule, pure. Rolls are hashed (<see cref="StableRoll"/>) from the Plynling, the day or
@@ -9,7 +14,7 @@ public static class PlynlingEventEngine
 {
     public const int MaxPendingPulses = 3;
     public static readonly TimeSpan Lifetime = TimeSpan.FromHours(24);
-    public const int RecentWindow = 14;            // events not drawn again within the last 14 resolved, while another can be
+    public const int RecentWindow = 14;            // pulses not drawn again within the last 14 resolved pulses, while another can be
 
     private const int PulseTimeSalt = 300, PulsePickSalt = 301, TargetSalt = 302, ChallengeSalt = 310, AloneSalt = 311, BreakSalt = 330,
         FollowUpSalt = 340, ResponseSalt = 341, TriggeredSalt = 342;
@@ -21,6 +26,13 @@ public static class PlynlingEventEngine
         var minute = PulseFromMinute + (int)(StableRoll.Unit(plynlingId, dayKey, PulseTimeSalt) * PulseSpanMinutes);
         return AppTime.AtWallClock(AppTime.FromDayKey(dayKey).AddMinutes(minute));
     }
+
+    // When it decides alone: 24 h after the event became available — unless a freeze ended since.
+    // Nothing happens while frozen, the clock included, so an event that was waiting gets a fresh 24 h
+    // from the thaw (which resets LiveSince). Deaths cancel what waits, so the LiveSince of a
+    // resurrection or an adoption never meets an older open event.
+    public static DateTimeOffset DueAt(PlynlingEventInstance inst, Plynling p) =>
+        inst.AvailableAt < p.LiveSince && p.LiveSince + Lifetime > inst.ExpiresAt ? p.LiveSince + Lifetime : inst.ExpiresAt;
 
     public static bool Eligible(EventDef def, EventContext ctx) =>
         def.Stages.Contains(ctx.Stage) && (def.Condition?.Invoke(ctx) ?? true);
@@ -42,7 +54,7 @@ public static class PlynlingEventEngine
 
     // The day's event among the pulse events it is eligible for, not seen recently, and — for a
     // social one — only when a target of that kind exists. `recent` is the keys of its last resolved
-    // events, most recent first. They are excluded from the most recent back, but never all of the
+    // pulse events, most recent first (follow-ups, responses and the rest never take a slot). They are excluded from the most recent back, but never all of the
     // eligible ones: a stage with fewer events than the window would otherwise lock for good, since
     // nothing new gets resolved and the window never moves. Then the least recently seen comes back.
     // `hasTarget` says whether a social event has a candidate meeting its target condition.
@@ -154,25 +166,58 @@ public static class PlynlingEventEngine
         return pool.Count == 0 ? null : StableRoll.Weighted(pool, plynlingId, salt, TriggeredSalt);
     }
 
-    // What its ado years leaned toward: every choice's AI weights, and the growth that actually applied.
-    public static (IReadOnlyDictionary<AiAxis, int> Leaning, IReadOnlyDictionary<PlynlingStat, int> Growth) AdoHistory(
-        IEnumerable<(EventOption Option, bool Success)> choices)
+    // What its ado years leaned toward: every choice's AI weights, the growth that actually applied, and
+    // how many choices that was.
+    public static AdoYears AdoHistory(IEnumerable<(EventOption Option, bool Success)> choices)
     {
         var leaning = new Dictionary<AiAxis, int>();
         var growth = new Dictionary<PlynlingStat, int>();
+        var count = 0;
         foreach (var (option, success) in choices)
         {
+            count++;
             foreach (var (axis, v) in option.Ai) leaning[axis] = leaning.GetValueOrDefault(axis) + v;
             foreach (var g in (success ? option.OnSuccess : option.OnFailure).OfType<GrowStat>())
                 growth[g.Stat] = growth.GetValueOrDefault(g.Stat) + g.Amount;
         }
-        return (leaning, growth);
+        return new AdoYears(leaning, growth, count);
     }
 
-    public static double AdultTraitWeight(TraitInfo trait, IReadOnlyDictionary<AiAxis, int> leaning, IReadOnlyDictionary<PlynlingStat, int> growth)
+    // An average ado choice: per axis, and per stat for the growth it brings (a challenge counted half
+    // won), the mean of each event's options, averaged over every event the ado years can meet. The
+    // catalog leans kind and sociable and grows Diplomacy most, so a history is read as its distance from
+    // `count` average choices — otherwise even an owner who clicks at random raises a kind, talkative adulte.
+    private static readonly EventDef[] AdoEvents = PlynlingEvents.All
+        .Where(d => d.Stages.Contains(PlynlingStage.Teen) && d.BreakLevel == 0 && d.Options.Count > 0).ToArray();
+
+    private static readonly IReadOnlyDictionary<AiAxis, double> AdoLeaningBaseline = Enum.GetValues<AiAxis>().ToDictionary(a => a,
+        a => AdoEvents.Length == 0 ? 0 : AdoEvents.Average(d => d.Options.Average(o => (double)o.Ai.GetValueOrDefault(a))));
+
+    private static readonly IReadOnlyDictionary<PlynlingStat, double> AdoGrowthBaseline = PlynlingStats.All.ToDictionary(s => s,
+        s => AdoEvents.Length == 0 ? 0 : AdoEvents.Average(d => d.Options.Average(o =>
+        {
+            double Grown(IReadOnlyList<EventEffect> effects) => effects.OfType<GrowStat>().Where(g => g.Stat == s).Sum(g => g.Amount);
+            return o.Challenge is null ? Grown(o.OnSuccess) : (Grown(o.OnSuccess) + Grown(o.OnFailure)) / 2;
+        })));
+
+    // How far the ado years pull: the recentred leaning measured along the trait's own direction (its
+    // axes as a unit vector — otherwise a trait with a 200 on one axis swings far more than one with a few
+    // 35s, and the 0.25 floor turns that swing into a head start), +100 % per LeaningScale points; plus
+    // the recentred growth of the stats the trait raises, weighted by its bonus (so a trait that raises
+    // every stat — Ambitieux — gets their average, not their sum), GrowthPull per point.
+    private const double LeaningScale = 2.5, GrowthPull = 0.5;
+
+    public static double AdultTraitWeight(TraitInfo trait, AdoYears ado)
     {
-        var dot = trait.Axes.Sum(kv => kv.Value * leaning.GetValueOrDefault(kv.Key));
-        var fromGrowth = trait.Stats.Where(kv => kv.Value > 0).Sum(kv => 0.5 * growth.GetValueOrDefault(kv.Key));
-        return Math.Max(0.25, 1 + dot / 400.0) + fromGrowth;
+        var length = Math.Sqrt(trait.Axes.Values.Sum(v => (double)v * v));
+        var dot = length == 0
+            ? 0
+            : trait.Axes.Sum(kv => kv.Value * (ado.Leaning.GetValueOrDefault(kv.Key) - ado.Count * AdoLeaningBaseline[kv.Key])) / length;
+        var raised = trait.Stats.Where(kv => kv.Value > 0).ToList();
+        var fromGrowth = raised.Count == 0
+            ? 0
+            : GrowthPull * raised.Sum(kv => kv.Value * (ado.Growth.GetValueOrDefault(kv.Key) - ado.Count * AdoGrowthBaseline[kv.Key]))
+              / raised.Sum(kv => kv.Value);
+        return Math.Max(0.25, 1 + dot / LeaningScale + fromGrowth);
     }
 }

@@ -5,11 +5,12 @@ using ProjectSYNCS.Models;
 
 namespace ProjectSYNCS.Services;
 
-public enum EventPickOutcome { Done, NotOwner, Gone, NotAvailable, Unknown }
+public enum EventPickOutcome { Done, NotOwner, Gone, NotAvailable, Unknown, Frozen }
 
 // Told: every instance resolved by this pick, for the caller to tell — the picked one, then any
-// answer the mascot gave at once.
-public sealed record EventPick(EventPickOutcome Outcome, int PendingLeft = 0, IReadOnlyList<int>? Told = null);
+// answer the mascot gave at once. Gender: the Plynling's, for a refusal that names it (Frozen).
+public sealed record EventPick(EventPickOutcome Outcome, int PendingLeft = 0, IReadOnlyList<int>? Told = null,
+    PlynlingGender Gender = PlynlingGender.Male);
 
 // Events, in the same class (and so the same AppDbContext) as the rest of the Plynling's state: an
 // event's growth, its relation change, its badges and its journal moment land in one save. The rules
@@ -44,9 +45,18 @@ public partial class PlynlingService
     private async Task<Plynling?> TargetOfAsync(PlynlingEventInstance inst, DateTimeOffset now) =>
         inst.TargetPlynlingId is { } tid ? await GetByIdAsync(tid, now) : null;
 
-    // A response whose asker is gone (abandoned: its id was set null) has nobody left to answer.
-    private static bool Orphaned(EventDef def, PlynlingEventInstance inst) =>
-        def.Type == EventType.Response && inst.TargetPlynlingId is null;
+    // The responses among `instances` whose asker is gone — abandoned (its id was set null) or dead:
+    // nobody is left to answer, so they are cancelled and never offered. A plain read, no settle: an
+    // asker that starved unseen is caught once any read has settled it.
+    private async Task<HashSet<int>> GoneAskerResponsesAsync(IReadOnlyCollection<PlynlingEventInstance> instances)
+    {
+        var responses = instances.Where(i => PlynlingEvents.ByKey(i.EventKey)?.Type == EventType.Response).ToList();
+        if (responses.Count == 0) return new HashSet<int>();
+        var askerIds = responses.Select(i => i.TargetPlynlingId).OfType<int>().Distinct().ToList();
+        var dead = (await _db_context.Plynlings.Where(x => askerIds.Contains(x.Id) && x.DiedAt != null).Select(x => x.Id).ToListAsync())
+            .ToHashSet();
+        return responses.Where(i => i.TargetPlynlingId is not { } asker || dead.Contains(asker)).Select(i => i.Id).ToHashSet();
+    }
 
     // Open = neither resolved nor cancelled (pending, or a follow-up not yet available). Dates are
     // compared in memory: SQLite cannot translate DateTimeOffset comparisons.
@@ -57,12 +67,18 @@ public partial class PlynlingService
             .ToListAsync();
 
     // An event removed from the catalog is never offered (the sweep cancels it within the hour): it
-    // would stand first in the queue, unopenable, in front of the real ones.
-    public async Task<List<PlynlingEventInstance>> GetPendingEventsAsync(Plynling p, DateTimeOffset now) =>
-        (await OpenEventsAsync(p.Id)).Where(i => i.AvailableAt <= now && PlynlingEvents.ByKey(i.EventKey) is not null).ToList();
+    // would stand first in the queue, unopenable, in front of the real ones. Nor is a response to an
+    // asker who is gone.
+    public async Task<List<PlynlingEventInstance>> GetPendingEventsAsync(Plynling p, DateTimeOffset now)
+    {
+        var open = await OpenEventsAsync(p.Id);
+        var gone = await GoneAskerResponsesAsync(open);
+        return open.Where(i => i.AvailableAt <= now && PlynlingEvents.ByKey(i.EventKey) is not null && !gone.Contains(i.Id)).ToList();
+    }
 
+    // Nothing to offer dead or frozen: nothing happens to a frozen Plynling, its owner's choices included.
     public async Task<int> CountPendingEventsAsync(Plynling p, DateTimeOffset now) =>
-        p.DiedAt is null ? (await GetPendingEventsAsync(p, now)).Count : 0;
+        p.DiedAt is null && p.FrozenAt is null ? (await GetPendingEventsAsync(p, now)).Count : 0;
 
     public Task<PlynlingEventInstance?> GetEventInstanceAsync(int instanceId) =>
         _db_context.PlynlingEventInstances.FirstOrDefaultAsync(i => i.Id == instanceId);
@@ -76,17 +92,20 @@ public partial class PlynlingService
         var p = await GetByIdAsync(inst.PlynlingId, now);
         if (p is null) return new(EventPickOutcome.Unknown);
         if (p.OwnerId != actorId) return new(EventPickOutcome.NotOwner);
+        if (p.FrozenAt is not null) return new(EventPickOutcome.Frozen, Gender: p.Gender);
         if (inst.ResolvedAt is not null || inst.CancelledAt is not null || p.DiedAt is not null || inst.AvailableAt > now)
             return new(EventPickOutcome.Gone);
         if (PlynlingEvents.ByKey(inst.EventKey) is not { } def) return new(EventPickOutcome.Gone);
-        if (Orphaned(def, inst))
+        var target = await TargetOfAsync(inst, now);
+        if (def.Type == EventType.Response && target is not { DiedAt: null })
         {
+            // Its asker is gone (abandoned, or dead): nobody is left to answer.
             inst.CancelledAt = now;
             await _db_context.SaveChangesAsync();
             return new(EventPickOutcome.Gone);
         }
 
-        var ctx = await GetEventContextAsync(p, now, await TargetOfAsync(inst, now));
+        var ctx = await GetEventContextAsync(p, now, target);
         var option = def.Options.FirstOrDefault(o => o.Key == optionKey);
         if (option is null || !PlynlingEventEngine.Visible(option, ctx)) return new(EventPickOutcome.NotAvailable);
 
@@ -103,12 +122,18 @@ public partial class PlynlingService
         }
         var told = new List<int> { instanceId };
         told.AddRange(await AnswerForMascotAsync(told, now));
+        told.AddRange(TakeUntold());     // anything the reads above flushed for her
         return new(EventPickOutcome.Done, await CountPendingEventsAsync(p, now), told);
     }
 
-    // The sweep's turn, per Plynling: cancel what a death or the catalog left pending, decide what
-    // expired (for the mascot, everything available: a follow-up or a break never waits on her card),
-    // then the day's pulse. Saves (an instance needs its id before it can be rolled).
+    // The recent-events window counts the daily draws only: follow-ups, responses, breaks and
+    // on-actions would otherwise fill its slots and let the same pulses come back sooner.
+    private static readonly string[] PulseKeys =
+        PlynlingEvents.All.Where(d => d.Type == EventType.Pulse && d.BreakLevel == 0).Select(d => d.Key).ToArray();
+
+    // The sweep's turn, per Plynling: cancel what a death, the catalog or a gone asker left pending,
+    // decide what is due (for the mascot, everything available: a follow-up or a break never waits on
+    // her card), then the day's pulse. Saves (an instance needs its id before it can be rolled).
     // Returns the instances resolved now, for the caller to tell after the save.
     public async Task<IReadOnlyList<int>> TickEventsAsync(Plynling p, DateTimeOffset now)
     {
@@ -120,7 +145,8 @@ public partial class PlynlingService
             await _db_context.SaveChangesAsync();
             return told;
         }
-        foreach (var inst in open.Where(i => PlynlingEvents.ByKey(i.EventKey) is null)) inst.CancelledAt = now;
+        var goneAskers = await GoneAskerResponsesAsync(open);
+        foreach (var inst in open.Where(i => PlynlingEvents.ByKey(i.EventKey) is null || goneAskers.Contains(i.Id))) inst.CancelledAt = now;
         if (PlynlingLife.IsFrozen(p))
         {
             await _db_context.SaveChangesAsync();
@@ -128,13 +154,9 @@ public partial class PlynlingService
         }
 
         var mascot = PlynlingMascot.Is(p);
-        foreach (var inst in open.Where(i => i.CancelledAt is null && i.AvailableAt <= now && (mascot || i.ExpiresAt <= now)))
+        foreach (var inst in open.Where(i => i.CancelledAt is null && i.AvailableAt <= now
+                                             && (mascot || PlynlingEventEngine.DueAt(i, p) <= now)))
         {
-            if (Orphaned(PlynlingEvents.ByKey(inst.EventKey)!, inst))
-            {
-                inst.CancelledAt = now;
-                continue;
-            }
             await ResolveAloneAsync(p, inst, now);
             told.Add(inst.Id);
         }
@@ -150,7 +172,7 @@ public partial class PlynlingService
                 var ctx = await GetEventContextAsync(p, now);
                 var targets = await TargetCandidatesAsync(p, now);
                 var recent = await _db_context.PlynlingEventInstances
-                    .Where(i => i.PlynlingId == p.Id && i.ResolvedAt != null)
+                    .Where(i => i.PlynlingId == p.Id && i.ResolvedAt != null && PulseKeys.Contains(i.EventKey))
                     .OrderByDescending(i => i.Id).Take(PlynlingEventEngine.RecentWindow)
                     .Select(i => i.EventKey).ToListAsync();
                 // Never the same event twice in the queue: what still waits is out of the draw.
@@ -203,12 +225,27 @@ public partial class PlynlingService
         return inst;
     }
 
+    private static readonly string[] BreakKeys = PlynlingEvents.All.Where(d => d.BreakLevel > 0).Select(d => d.Key).ToArray();
+
     // The mental break for each stress level above `fromLevel` up to its current one, whatever the
-    // pulse cap says. Never saves.
-    private void QueueBreaks(Plynling p, int fromLevel, int salt, DateTimeOffset now)
+    // pulse cap says — but never a second one for a level whose break still waits: stress can dip
+    // below a level overnight and climb back while it does. Never saves.
+    private async Task QueueBreaksAsync(Plynling p, int fromLevel, int salt, DateTimeOffset now)
     {
-        for (var l = fromLevel + 1; l <= PlynlingStress.Level(p.Stress); l++)
-            if (PlynlingEventEngine.PickBreak(p.Id, salt, l, PlynlingEvents.All) is { } breakDef)
+        var level = PlynlingStress.Level(p.Stress);
+        if (level <= fromLevel) return;
+        // Stored and queued in this unit of work alike; ResolvedAt re-checked in memory, for one resolved
+        // in this unit and not saved yet.
+        var waiting = (await _db_context.PlynlingEventInstances
+                .Where(i => i.PlynlingId == p.Id && i.ResolvedAt == null && i.CancelledAt == null && BreakKeys.Contains(i.EventKey))
+                .ToListAsync())
+            .Concat(_db_context.ChangeTracker.Entries<PlynlingEventInstance>()
+                .Where(e => e.State == EntityState.Added && e.Entity.PlynlingId == p.Id).Select(e => e.Entity))
+            .Where(i => i.ResolvedAt is null && i.CancelledAt is null)
+            .Select(i => PlynlingEvents.ByKey(i.EventKey)?.BreakLevel ?? 0)
+            .ToHashSet();
+        for (var l = fromLevel + 1; l <= level; l++)
+            if (!waiting.Contains(l) && PlynlingEventEngine.PickBreak(p.Id, salt, l, PlynlingEvents.All) is { } breakDef)
                 QueueEvent(p, breakDef, null, now);
     }
 
@@ -246,7 +283,9 @@ public partial class PlynlingService
                      .ToListAsync())
         {
             var mascot = await GetByIdAsync(reply.PlynlingId, now);
-            if (mascot is null || !PlynlingMascot.Is(mascot) || PlynlingEvents.ByKey(reply.EventKey) is null) continue;
+            // Frozen, she answers after the thaw, like anyone (AskTarget does not ask a frozen one anyway).
+            if (mascot is null || !PlynlingMascot.Is(mascot) || mascot.FrozenAt is not null || PlynlingEvents.ByKey(reply.EventKey) is null)
+                continue;
             await ResolveAloneAsync(mascot, reply, now);
             await FlushMomentsAsync(mascot);
             answered.Add(reply.Id);
@@ -354,7 +393,7 @@ public partial class PlynlingService
         await AddMomentAsync(p, JournalKind.EventStory, def.Key, now);
 
         // Each level climbed brings on its mental break, whatever the pulse cap says.
-        QueueBreaks(p, levelBefore, inst.Id, now);
+        await QueueBreaksAsync(p, levelBefore, inst.Id, now);
     }
 
     // Who a social event may involve, by kind: living, unfrozen Plynlings of the same guild, not
@@ -396,8 +435,14 @@ public partial class PlynlingService
         var target = inst.TargetPlynlingId is { } tid ? await _db_context.Plynlings.FirstOrDefaultAsync(x => x.Id == tid) : null;
         var parentTitle = inst.ParentInstanceId is { } pid && await GetEventInstanceAsync(pid) is { } parent
             ? PlynlingEvents.ByKey(parent.EventKey)?.Title : null;
-        var answered = await _db_context.PlynlingEventInstances.AnyAsync(i => i.ParentInstanceId == inst.Id && i.ResolvedAt != null);
-        return PlynlingEventStory.Build(inst, EventCast.Of(self, now), target is null ? null : EventCast.Of(target, now), parentTitle, answered);
+        // Its children include follow-ups; only a response answers an ask. None open and none resolved:
+        // the ask was cancelled, or never queued (the other one was frozen or gone).
+        var replies = (await _db_context.PlynlingEventInstances.Where(i => i.ParentInstanceId == inst.Id).ToListAsync())
+            .Where(i => PlynlingEvents.ByKey(i.EventKey)?.Type == EventType.Response).ToList();
+        var reply = replies.Any(i => i.ResolvedAt is not null) ? ReplyState.Answered
+            : replies.Any(i => i.CancelledAt is null) ? ReplyState.Waiting
+            : ReplyState.Lost;
+        return PlynlingEventStory.Build(inst, EventCast.Of(self, now), target is null ? null : EventCast.Of(target, now), parentTitle, reply);
     }
 
     // /debug event only: any other living Plynling of the guild, for a forced social event.
@@ -413,7 +458,7 @@ public partial class PlynlingService
         if (p is null || p.DiedAt is not null) return null;
         var before = PlynlingStress.Level(p.Stress);
         PlynlingLife.SetStress(p, now, value);
-        QueueBreaks(p, before, (int)(now.ToUnixTimeSeconds() % 100000), now);
+        await QueueBreaksAsync(p, before, (int)(now.ToUnixTimeSeconds() % 100000), now);
         await FlushMomentsAsync(p);
         await _db_context.SaveChangesAsync();
         return $"🔧 Stress {p.Stress} (niveau {PlynlingStress.Level(p.Stress)}).";
@@ -442,10 +487,18 @@ public partial class PlynlingService
     }
 
     // The ado years, for the adulte trait: what it chose (or chose alone) between turning ado and now.
+    // Turning ado is dated by its ado traits, stored as it happened: the age leaves out time spent
+    // frozen, so "now minus the age past the threshold" would start the ado years late and drop the
+    // first choices of anyone frozen meanwhile. The age stands in only when none are stored yet (a
+    // backfill drawing every slot at once).
     private async Task<Func<TraitInfo, double>?> AdultWeightAsync(Plynling p, DateTimeOffset now)
     {
-        var age = PlynlingLife.Age(p, now);
-        var teenFrom = now - (age - PlynlingLife.StageStart(PlynlingStage.Teen));
+        var adoTraitsAt = await _db_context.PlynlingTraits
+            .Where(t => t.PlynlingId == p.Id && t.Kind == TraitKind.Personality)
+            .Select(t => t.AcquiredAt).ToListAsync();
+        var teenFrom = adoTraitsAt.Count > 0
+            ? adoTraitsAt.Min()
+            : now - (PlynlingLife.Age(p, now) - PlynlingLife.StageStart(PlynlingStage.Teen));
         var resolved = (await _db_context.PlynlingEventInstances
                 .Where(i => i.PlynlingId == p.Id && i.ResolvedAt != null && i.OptionKey != null).ToListAsync())
             .Where(i => i.ResolvedAt >= teenFrom)
@@ -456,8 +509,8 @@ public partial class PlynlingService
             .Select(x => (x.Option!, x.Success))
             .ToList();
         if (resolved.Count == 0) return null;
-        var (leaning, growth) = PlynlingEventEngine.AdoHistory(resolved);
-        return t => PlynlingEventEngine.AdultTraitWeight(t, leaning, growth);
+        var ado = PlynlingEventEngine.AdoHistory(resolved);
+        return t => PlynlingEventEngine.AdultTraitWeight(t, ado);
     }
 
     // ---- on-actions: life's moments that bring an event --------------------------------------------
@@ -472,14 +525,25 @@ public partial class PlynlingService
     private void QueueOnAction(OnAction kind, Plynling p, int? targetId = null, string? traitText = null) =>
         _onActions.Add((kind, p.Id, targetId, traitText));
 
+    // Saved events the mascot decided at once from an on-action, not told yet. Kept here rather than
+    // returned, because a flush also runs deep inside any read that settles (SettledAsync), where nobody
+    // holds a channel. Whoever does tells them after its own story (TakeUntold): the sweep, a pick, a visit.
+    private readonly List<int> _untold = new();
+
+    public IReadOnlyList<int> TakeUntold()
+    {
+        var ids = _untold.ToList();
+        _untold.Clear();
+        return ids;
+    }
+
     /// <summary>
     /// Creates the queued on-actions' events, each in its own save and its own try: one that throws is
     /// logged and its half-made changes dropped, never the caller's (which saved before calling). Call
-    /// only right after a save. Returns the instances the mascot answered at once, for the caller to tell.
+    /// only right after a save. What the mascot decides at once waits in <see cref="TakeUntold"/>.
     /// </summary>
-    public async Task<IReadOnlyList<int>> FlushOnActionsAsync(DateTimeOffset now)
+    public async Task FlushOnActionsAsync(DateTimeOffset now)
     {
-        var told = new List<int>();
         while (_onActions.Count > 0)
         {
             // Copied then cleared: reading a Plynling below may settle it and queue more, handled next round.
@@ -507,7 +571,7 @@ public partial class PlynlingService
                         await ResolveAloneAsync(p, inst, now);
                         await FlushMomentsAsync(p);
                         await _db_context.SaveChangesAsync();
-                        told.Add(inst.Id);
+                        _untold.Add(inst.Id);
                     }
                 }
                 catch (Exception ex)
@@ -517,6 +581,5 @@ public partial class PlynlingService
                 }
             }
         }
-        return told;
     }
 }

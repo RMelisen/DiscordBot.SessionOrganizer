@@ -54,7 +54,7 @@ public static class PlynlingEvents
                     "Splash. Le ciel éclate en mille morceaux, puis se recolle. {A} recommence onze fois.",
                     "{A} glisse sur le bord et s'assoit dedans. Le ciel, vexé, ne dit rien.",
                     E(new GrowStat(PlynlingStat.Courage)), Nothing,
-                    Ai((AiAxis.Boldness, 2), (AiAxis.Energy, 1)), Stress(("craven", 20))),
+                    Ai((AiAxis.Boldness, 2), (AiAxis.Energy, 1)), Stress(("pensive", 20))),
                 Plain("greet", "Saluer son reflet poliment",
                     "{A} fait une petite révérence. Le reflet aussi. C'est le début d'une grande amitié, au moins d'un côté.",
                     E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Sociability, 2), (AiAxis.Compassion, 1))),

@@ -41,6 +41,12 @@ public class PlynlingEventHandler : InteractionModuleBase<SocketInteractionConte
             await FollowupAsync(PlynlingText.EventNotYours(p.Gender), ephemeral: true);
             return;
         }
+        if (p.FrozenAt is not null)
+        {
+            // Nothing happens while frozen, its owner's choices included (an old card may still show the button).
+            await FollowupAsync(PlynlingText.Frozen(p.Gender), ephemeral: true);
+            return;
+        }
         var inst = (await _plynlings.GetPendingEventsAsync(p, now)).FirstOrDefault();
         if (inst is null || PlynlingEvents.ByKey(inst.EventKey) is not { } def)
         {
@@ -70,6 +76,7 @@ public class PlynlingEventHandler : InteractionModuleBase<SocketInteractionConte
             {
                 EventPickOutcome.Gone => PlynlingText.EventAlreadyDecided,
                 EventPickOutcome.NotAvailable => PlynlingText.EventOptionGone,
+                EventPickOutcome.Frozen => PlynlingText.Frozen(pick.Gender),
                 _ => PlynlingText.Unknown,
             }, ephemeral: true);
             return;

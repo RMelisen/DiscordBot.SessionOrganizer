@@ -9,6 +9,10 @@ public sealed record EventCast(string Name, PlynlingGender Gender, PlynlingSpeci
         new(PlynlingCardUi.SafeName(p.Name), p.Gender, p.Species, PlynlingLife.Stage(p, now), p.OwnerId);
 }
 
+// Where the answer to an ask stands: still awaited, given, or lost for good (cancelled — the other
+// one died or was abandoned — or never asked, because the other one was frozen or gone by then).
+public enum ReplyState { Waiting, Answered, Lost }
+
 public sealed record EventStory(int InstanceId, int PlynlingId, string Heading, IReadOnlyList<string> Pages, EventCast Self, EventCast? Target, uint Accent);
 
 /// <summary>
@@ -26,9 +30,10 @@ public static class PlynlingEventStory
         "Faute d'avis, {A} a écouté son petit caractère.",
     };
 
-    // parentTitle: the event this one follows from (a response, a follow-up). answered: whether the
-    // response this one asked for has come — until then its outcome says it waits.
-    public static EventStory Build(PlynlingEventInstance inst, EventCast self, EventCast? target, string? parentTitle = null, bool answered = false)
+    // parentTitle: the event this one follows from (a response, a follow-up). reply: where the response
+    // this one asked for stands — its outcome says it waits, or that it never came.
+    public static EventStory Build(PlynlingEventInstance inst, EventCast self, EventCast? target, string? parentTitle = null,
+        ReplyState reply = ReplyState.Waiting)
     {
         var accent = PlynlingCatalog.Info(self.Species).Accent;
         if (PlynlingEvents.ByKey(inst.EventKey) is not { } def
@@ -44,7 +49,7 @@ public static class PlynlingEventStory
         if (option.Challenge is { } c && inst.ChancePercent is { } chance)
             pages.Add($"🎲 **{PlynlingStats.Name(c.Stat)}**{(c.VsTarget && target is not null ? $" contre **{target.Name}**" : "")} — {chance} % de chances… " +
                       (inst.ChallengeSucceeded == true ? "**réussi !**" : "**raté.**"));
-        pages.Add(OutcomeText(inst, self, target, answered));
+        pages.Add(OutcomeText(inst, self, target, reply));
         return new EventStory(inst.Id, inst.PlynlingId, $"📜 {def.Title}", pages, self, target, accent);
     }
 
@@ -66,7 +71,7 @@ public static class PlynlingEventStory
 
     // The outcome and what it changed: growth, a new bond if the band moved, stress, modifiers, a
     // coping trait — and for a social event, whether the answer is still awaited or came too late.
-    private static string OutcomeText(PlynlingEventInstance inst, EventCast self, EventCast? target, bool answered = false)
+    private static string OutcomeText(PlynlingEventInstance inst, EventCast self, EventCast? target, ReplyState reply)
     {
         if (PlynlingEvents.ByKey(inst.EventKey) is not { } def
             || def.Options.FirstOrDefault(o => o.Key == inst.OptionKey) is not { } option)
@@ -108,8 +113,16 @@ public static class PlynlingEventStory
         if (!IsReveal(def) && inst.GainedTraitKey is { } gained && PlynlingTraits.ByKey(gained) is { } trait)
             lines.Add($"-# {trait.Emoji} Nouveau trait : **{trait.Name(self.Gender)}**");
         var effects = (success ? option.OnSuccess : option.OnFailure).ToList();
-        if (effects.OfType<AskTarget>().Any() && target is not null && !answered)
-            lines.Add($"-# ⏳ **{self.Name}** attend la réponse de **{target.Name}**.");
+        if (effects.OfType<AskTarget>().Any() && target is not null)
+            switch (reply)
+            {
+                case ReplyState.Waiting:
+                    lines.Add($"-# ⏳ **{self.Name}** attend la réponse de **{target.Name}**.");
+                    break;
+                case ReplyState.Lost:
+                    lines.Add($"-# ✉️ La réponse de **{target.Name}** n'est jamais arrivée.");
+                    break;
+            }
         if (effects.OfType<Couple>().Any() && inst.BondAfter != PlynlingBond.Lovers && target is not null)
             lines.Add("-# Hélas, trop tard : l'un des deux a déjà quelqu'un.");
         return string.Join("\n", lines);

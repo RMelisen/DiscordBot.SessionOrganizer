@@ -114,8 +114,10 @@ public sealed class PlynlingSweepService : BackgroundService
                 await _announcer.TellAsync(plynlings, told, plynling.GuildId, now);
 
                 // Growing up, falling sick, recovering, a friend's death: their events, created after
-                // this Plynling's saves, each on its own (FlushOnActionsAsync swallows and logs).
-                await _announcer.TellAsync(plynlings, await plynlings.FlushOnActionsAsync(now), plynling.GuildId, now);
+                // this Plynling's saves, each on its own (FlushOnActionsAsync swallows and logs). Then
+                // whatever the mascot decided at once, here or in a read earlier in this pass.
+                await plynlings.FlushOnActionsAsync(now);
+                await _announcer.TellAsync(plynlings, plynlings.TakeUntold(), plynling.GuildId, now);
             }
             catch (Exception ex)
             {
