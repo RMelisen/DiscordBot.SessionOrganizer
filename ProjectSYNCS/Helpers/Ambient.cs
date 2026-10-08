@@ -15,6 +15,8 @@ public static class Ambient
     public const int NightLineHour = 3;
     public const double NightLineChance = 0.25;
     public static readonly TimeSpan NightQuiet = TimeSpan.FromHours(1);
+    // Anyone who answers the 3 a.m. line before this gets told to go to bed.
+    public static readonly TimeSpan ScoldUntil = new(5, 30, 0);
 
     // Daytime silence she may speak into, once a day at most.
     public const int IdleStartHour = 10;
@@ -25,15 +27,19 @@ public static class Ambient
     public const double SeenChance = 0.3;
     // Of an idle line: the self-correcting edit instead of a plain line.
     public const double EditChance = 0.25;
+    // The edit lands this long after the line, or this soon after someone speaks after it:
+    // she got caught.
+    public static readonly TimeSpan EditAfter = TimeSpan.FromMinutes(5);
+    public static readonly TimeSpan CaughtEditDelay = TimeSpan.FromSeconds(2);
 
     // "SYNCS est en train d'écrire…" and then nothing, on a message breaking a silence.
     public static readonly TimeSpan GhostTypingQuiet = TimeSpan.FromHours(1);
     public const double GhostTypingChance = 0.03;
 
-    // Waking after a restart: daytime only, so a 2 a.m. deploy stays silent.
+    // Waking after a restart: every time, but daytime only (a 2 a.m. deploy stays silent)
+    // and at most once a day.
     public const int WakeStartHour = 9;
     public const int WakeEndHour = 23;
-    public const double WakeChance = 0.3;
 
     public static bool IsSleepHours(DateTimeOffset now) => InHours(now, SleepStartHour, SleepEndHour);
 
@@ -42,6 +48,9 @@ public static class Ambient
     public static bool IsIdleHours(DateTimeOffset now) => InHours(now, IdleStartHour, IdleEndHour);
 
     public static bool IsWakeHours(DateTimeOffset now) => InHours(now, WakeStartHour, WakeEndHour);
+
+    /// <summary>Whether a message at <paramref name="now"/> is still early enough to be scolded.</summary>
+    public static bool IsBeforeScoldEnd(DateTimeOffset now) => AppTime.ToZoned(now).TimeOfDay < ScoldUntil;
 
     /// <summary>
     /// Tonight's 3 a.m. decision: the minute past three she'll speak at, or null when she

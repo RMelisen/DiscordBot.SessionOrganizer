@@ -129,8 +129,9 @@ internal sealed class BotService : IHostedService
         // After the reactions, so a wave at a "bonjour" lands before her early hello.
         // Skips anything aimed at her, so it never doubles ChatterService's answer.
         await _morning.HandleMessageAsync(rawMessage);
-        // Keeps the main channel's quiet clock; independent of the others.
-        await _ambient.HandleMessageAsync(rawMessage);
+        // Keeps the quiet clocks. Before the chatter: someone answering her 3 a.m. line
+        // gets sent to bed, and that is their answer — no comeback on top.
+        if (await _ambient.HandleMessageAsync(rawMessage)) return;
         await _chatter.HandleMessageAsync(rawMessage);
     }
 

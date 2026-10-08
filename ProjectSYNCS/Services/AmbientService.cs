@@ -8,11 +8,12 @@ using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
 
-// Her life in the main channel when nobody is talking to her: the 3 a.m. line, a word
-// into a long daytime silence, a typing indicator that never becomes a message, and a
-// line when she comes back from a restart. Cosmetic, like PresenceService (which owns
-// the night status), and rare on purpose: the point is that she seems to be there, not
-// that she talks. When and how often lives in Helpers/Ambient.
+// Her life in the main channel when nobody is talking to her: the 3 a.m. line (and a
+// scolding for whoever answers it), a word into a long daytime silence, a typing
+// indicator that never becomes a message, and a line when she comes back from a restart.
+// Cosmetic, like PresenceService (which owns the night status), and rare on purpose: the
+// point is that she seems to be there, not that she talks. When and how often lives in
+// Helpers/Ambient.
 //
 // Registered as a singleton and as the hosted service, like MorningGreetingService, so
 // BotService feeds this one instance the messages it uses to know how long it's been quiet.
@@ -22,16 +23,31 @@ internal sealed class AmbientService : BackgroundService
     // random minute past three and a six-hour silence.
     private static readonly TimeSpan TickInterval = TimeSpan.FromMinutes(10);
 
-    // How far back to look for the last human message on the first tick after a start,
-    // and for a 3 a.m. line already said tonight.
+    // The channels that must all be quiet before she speaks into the silence: the main
+    // channel and the server's other everyday ones. Server-specific, listed in CLAUDE.md's
+    // "Hardcoded ids". A thread counts for its parent channel.
+    private static readonly HashSet<ulong> IdleChannelIds = new()
+    {
+        MorningGreetingService.ChannelId, // Général
+        878306977887957042,               // Média
+        1025683260157722704,              // Galerie
+        878305034432045080,               // Gaming
+        1483863597041062109,              // Musique
+        1500799769914773574,              // Nourriture
+    };
+
+    // How far back to look in the main channel on the first tick after a start (last human
+    // message, tonight's line), and in each other channel for its last human message.
     private const int HistoryDepth = 50;
+    private const int OtherHistoryDepth = 10;
 
     // How long to wait for the channel after the first Ready before giving up the wake line.
     private static readonly TimeSpan WakeChannelWait = TimeSpan.FromMinutes(2);
     private static readonly TimeSpan ChannelPollInterval = TimeSpan.FromSeconds(10);
 
-    // Every pool here is spent at most once a day, so it goes through DailyRotation (a
-    // restart would wipe ResponsePicker's memory long before it helped). One salt each.
+    // Every pool here but the scolding is spent at most once a day, so it goes through
+    // DailyRotation (a restart would wipe ResponsePicker's memory long before it helped).
+    // One salt each.
     private const ulong NightSalt = 0x5359_4E43_4E49_4748;      // "SYNCNIGH"
     private const ulong IdleSalt = 0x5359_4E43_4944_4C45;       // "SYNCIDLE"
     private const ulong EditSalt = 0x5359_4E43_4544_4954;       // "SYNCEDIT"
@@ -43,6 +59,7 @@ internal sealed class AmbientService : BackgroundService
 
     private readonly DiscordSocketClient _client;
     private readonly BreakdownService _breakdown;
+    private readonly ResponsePicker _picker;
     private readonly ILogger<AmbientService> _logger;
     private readonly string _statePath;
     private readonly DateTimeOffset _startedAt = DateTimeOffset.UtcNow;
@@ -50,10 +67,12 @@ internal sealed class AmbientService : BackgroundService
     // Guards everything below: the loop and the gateway both read and claim it.
     private readonly object _gate = new();
 
-    // The last human message in the main channel. In memory; the first tick after a
-    // start seeds it from the channel's history.
+    // The last human message in the main channel (night quiet, ghost typing, the late
+    // "seen" reaction), and in any of IdleChannelIds (the idle silence). In memory; the
+    // first tick after a start seeds both from the channels' history.
     private DateTimeOffset? _lastHumanAt;
     private ulong? _lastHumanMessageId;
+    private DateTimeOffset? _lastActivityAt;
     private bool _seeded;
 
     // Idle: the silence already rolled for (its start), and the day she last spoke into one.
@@ -65,17 +84,26 @@ internal sealed class AmbientService : BackgroundService
     private int? _nightMinute;
     private bool _nightDone;
 
+    // When tonight's line went out, and who has already been sent to bed for answering it.
+    private DateTimeOffset? _nightLineAt;
+    private readonly HashSet<ulong> _scolded = new();
+
+    // A self-correcting line waiting for its edit; completed when someone speaks after it.
+    private TaskCompletionSource? _pendingEdit;
+
     private int _ghostDay;
     private int _woken;
 
     public AmbientService(
         DiscordSocketClient client,
         BreakdownService breakdown,
+        ResponsePicker picker,
         IConfiguration config,
         ILogger<AmbientService> logger)
     {
         _client = client;
         _breakdown = breakdown;
+        _picker = picker;
         _logger = logger;
 
         // Next to the database, so it lives under /data in production and survives updates.
@@ -106,7 +134,7 @@ internal sealed class AmbientService : BackgroundService
 
             // Each step in its own try: an exception escaping a hosted loop stops the bot.
             try { await SeedAsync(channel); }
-            catch (Exception ex) { _logger.LogWarning(ex, "Ambient: could not read the main channel's history."); }
+            catch (Exception ex) { _logger.LogWarning(ex, "Ambient: could not read the channels' history."); }
 
             var now = DateTimeOffset.UtcNow;
             try { await TryNightLineAsync(channel, now); }
@@ -117,37 +145,75 @@ internal sealed class AmbientService : BackgroundService
         }
     }
 
-    // Called by BotService for every message. Keeps the main channel's clock, and now and
-    // then answers a message that breaks a silence with a typing indicator and nothing else.
-    public async Task HandleMessageAsync(SocketMessage rawMessage)
+    /// <summary>
+    /// Called by BotService for every message. Keeps the quiet clocks, catches her out on a
+    /// pending self-correction, sends to bed whoever answers the 3 a.m. line, and now and
+    /// then meets a message that breaks a silence with a typing indicator and nothing else.
+    /// Returns true when she answered the message herself (the scolding), so ChatterService
+    /// doesn't answer it a second time.
+    /// </summary>
+    public async Task<bool> HandleMessageAsync(SocketMessage rawMessage)
     {
-        if (rawMessage is not SocketUserMessage message) return;
-        if (message.Author.IsBot || message.Channel.Id != MorningGreetingService.ChannelId) return;
+        if (rawMessage is not SocketUserMessage message || message.Author.IsBot) return false;
 
         var now = DateTimeOffset.UtcNow;
+        var channelId = message.Channel.Id;
+        var parentId = (message.Channel as SocketThreadChannel)?.ParentChannel?.Id;
+        if (IdleChannelIds.Contains(channelId) || parentId is { } p && IdleChannelIds.Contains(p))
+            lock (_gate) _lastActivityAt = now;
+
+        if (channelId != MorningGreetingService.ChannelId) return false;
+
         var today = AppTime.DayKey(now);
         // Aimed at her, ChatterService answers it with real typing; a ghost would be lost under it.
         bool aimedAtHer = message.MentionedUsers.Any(u => u.Id == _client.CurrentUser.Id)
                           || message.ReferencedMessage?.Author.Id == _client.CurrentUser.Id;
+        // A verdict is BotFeedbackTracker's to answer, even at night.
+        bool verdict = MessageCues.ReadFeedback(message.Content ?? string.Empty) != FeedbackKind.None;
 
-        bool ghost = false;
+        bool ghost = false, scold = false;
+        TaskCompletionSource? caught;
         lock (_gate)
         {
             var previous = _lastHumanAt;
             _lastHumanAt = now;
             _lastHumanMessageId = message.Id;
 
-            if (!aimedAtHer
-                && previous is { } p && now - p >= Ambient.GhostTypingQuiet
-                && _ghostDay != today
-                && Random.Shared.NextDouble() < Ambient.GhostTypingChance)
+            caught = _pendingEdit;
+            _pendingEdit = null;
+
+            // Up after her 3 a.m. line, before 5:30: once a person, a night.
+            if (_nightLineAt is { } lineAt && AppTime.DayKey(lineAt) == today
+                && Ambient.IsBeforeScoldEnd(now) && !verdict
+                && _scolded.Add(message.Author.Id))
+            {
+                scold = true;
+            }
+            else if (!aimedAtHer
+                     && previous is { } before && now - before >= Ambient.GhostTypingQuiet
+                     && _ghostDay != today
+                     && Random.Shared.NextDouble() < Ambient.GhostTypingChance)
             {
                 _ghostDay = today;
                 ghost = true;
             }
         }
 
-        if (!ghost || _breakdown.IsActive(message.Channel.Id)) return;
+        // Someone spoke after her self-correcting line: she edits it now, caught out.
+        caught?.TrySetResult();
+
+        if (_breakdown.IsActive(channelId)) return false;
+
+        if (scold)
+        {
+            var line = string.Format(_picker.Pick(BotResponses.NightScoldLines),
+                BotResponses.DisplayNameFor(message.Author));
+            await BotChat.ReplyWithTypingAsync(message, line, _logger, "night scolding");
+            _logger.LogInformation("Ambient: sent {UserId} to bed.", message.Author.Id);
+            return true;
+        }
+
+        if (!ghost) return false;
 
         try
         {
@@ -159,27 +225,62 @@ internal sealed class AmbientService : BackgroundService
         {
             _logger.LogWarning(ex, "Ambient: ghost typing failed.");
         }
+        return false;
     }
 
-    // Once per process: the gateway can drop the human clock's history, but not this.
-    private async Task SeedAsync(IMessageChannel channel)
+    // Once per process: the clocks start from the channels' history, not from nowhere.
+    private async Task SeedAsync(IMessageChannel main)
     {
         lock (_gate)
             if (_seeded) return;
 
-        var recent = await channel.GetMessagesAsync(HistoryDepth).FlattenAsync();
+        var now = DateTimeOffset.UtcNow;
+        var recent = (await main.GetMessagesAsync(HistoryDepth).FlattenAsync()).ToList();
         var last = recent.Where(m => !m.Author.IsBot).MaxBy(m => m.Timestamp);
+
+        // Tonight's line, if a restart came between it and 5:30: the scolding still holds.
+        var tonight = recent
+            .Where(m => m.Author.Id == _client.CurrentUser.Id
+                        && AppTime.DayKey(m.Timestamp) == AppTime.DayKey(now)
+                        && NightLineSet.Contains(m.Content))
+            .MaxBy(m => m.Timestamp);
+
+        var latest = last?.Timestamp;
+        foreach (var id in IdleChannelIds.Where(id => id != main.Id))
+        {
+            // A forum or a channel she can't read is skipped; its threads still count live.
+            if (_client.GetChannel(id) is not IMessageChannel other) continue;
+            try
+            {
+                var lastThere = (await other.GetMessagesAsync(OtherHistoryDepth).FlattenAsync())
+                    .Where(m => !m.Author.IsBot).MaxBy(m => m.Timestamp);
+                if (lastThere is not null && (latest is null || lastThere.Timestamp > latest))
+                    latest = lastThere.Timestamp;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Ambient: could not read channel {ChannelId}'s history.", id);
+            }
+        }
 
         lock (_gate)
         {
             _seeded = true;
             // A message seen live since the start is newer than anything in the history.
+            // No human in the history: count from the start, so a restart is never followed
+            // straight away by an idle line.
             if (_lastHumanAt is null)
             {
-                // No human in the recent history: count from the start rather than from
-                // nowhere, so a restart is never followed straight away by an idle line.
                 _lastHumanAt = last?.Timestamp ?? _startedAt;
                 _lastHumanMessageId = last?.Id;
+            }
+            _lastActivityAt ??= latest ?? _startedAt;
+
+            if (tonight is not null && Ambient.IsBeforeScoldEnd(now))
+            {
+                _nightLineAt = tonight.Timestamp;
+                _nightDay = AppTime.DayKey(now);
+                _nightDone = true;
             }
         }
     }
@@ -211,7 +312,14 @@ internal sealed class AmbientService : BackgroundService
         if (await SaidNightLineTodayAsync(channel, today)) return;
 
         var line = DailyRotation.Pick(BotResponses.NightLines, AppTime.DayNumber(now), NightSalt);
-        await BotChat.PostWithTypingAsync(channel, line, _logger, "night line", AllowedMentions.None);
+        var sent = await BotChat.PostWithTypingAsync(channel, line, _logger, "night line", AllowedMentions.None);
+        if (sent is null) return;
+
+        lock (_gate)
+        {
+            _nightLineAt = sent.Timestamp;
+            _scolded.Clear();
+        }
         _logger.LogInformation("Ambient: night line posted.");
     }
 
@@ -241,7 +349,8 @@ internal sealed class AmbientService : BackgroundService
         lock (_gate)
         {
             if (_idleDay == today) return;
-            if (_lastHumanAt is not { } silenceStart || now - silenceStart < Ambient.IdleQuiet) return;
+            // Every everyday channel quiet together, not just this one.
+            if (_lastActivityAt is not { } silenceStart || now - silenceStart < Ambient.IdleQuiet) return;
             // One roll per silence: a lost roll keeps her quiet until someone speaks again.
             if (_idleRolledFor == silenceStart) return;
             _idleRolledFor = silenceStart;
@@ -263,7 +372,10 @@ internal sealed class AmbientService : BackgroundService
 
         if (Random.Shared.NextDouble() < Ambient.EditChance)
         {
-            await PostEditedAsync(channel, DailyRotation.Pick(BotResponses.IdleEditLines, day, EditSalt));
+            var pair = DailyRotation.Pick(BotResponses.IdleEditLines, day, EditSalt);
+            var message = await BotChat.PostWithTypingAsync(channel, pair.Before, _logger, "idle line", AllowedMentions.None);
+            if (message is not null)
+                _ = Task.Run(() => CorrectLaterAsync(message, pair.After));
             return;
         }
 
@@ -295,18 +407,26 @@ internal sealed class AmbientService : BackgroundService
         }
     }
 
-    // Says the first version, then thinks better of it: her mid-line self-correction,
-    // done with an edit.
-    private async Task PostEditedAsync(IMessageChannel channel, (string Before, string After) pair)
+    // Her mid-line self-correction, done with an edit: five minutes after the line, or two
+    // seconds after someone speaks after it — she got caught. Runs off the tick loop. A
+    // restart before the edit leaves the first version standing.
+    private async Task CorrectLaterAsync(IUserMessage message, string after)
     {
-        var message = await BotChat.PostWithTypingAsync(channel, pair.Before, _logger, "idle line", AllowedMentions.None);
-        if (message is null) return;
-
-        await Task.Delay(TimeSpan.FromSeconds(Random.Shared.Next(3, 7)));
         try
         {
-            await message.ModifyAsync(p => p.Content = pair.After);
-            _logger.LogInformation("Ambient: self-correcting idle line posted.");
+            var caught = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            lock (_gate) _pendingEdit = caught;
+
+            var first = await Task.WhenAny(Task.Delay(Ambient.EditAfter), caught.Task);
+            lock (_gate)
+                if (_pendingEdit == caught) _pendingEdit = null;
+
+            if (first == caught.Task)
+                await Task.Delay(Ambient.CaughtEditDelay);
+
+            await message.ModifyAsync(p => p.Content = after);
+            _logger.LogInformation("Ambient: self-correcting idle line edited ({How}).",
+                first == caught.Task ? "caught" : "after five minutes");
         }
         catch (Exception ex)
         {
@@ -336,7 +456,6 @@ internal sealed class AmbientService : BackgroundService
             SaveState(state with { LastVersion = AppInfo.Version });
 
             if (!Ambient.IsWakeHours(now) || state.LastWakeDay == today) return;
-            if (!updated && Random.Shared.NextDouble() >= Ambient.WakeChance) return;
 
             var channel = await WaitForChannelAsync();
             if (channel is null || _breakdown.IsActive(channel.Id)) return;

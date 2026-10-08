@@ -72,8 +72,9 @@ English. Renaming a command or option changes what people type: do it rarely, an
   `VoiceXpService` (1 min), `GiveawayDrawService` (1 min), `PlynlingSweepService` (hourly).
 - **`MorningGreetingService`** has no interval: it sleeps until one random slot per morning
   (8:00–10:00 Paris, `Helpers/MorningGreeting`) — see personality.
-- **`AmbientService`** (10 min, cosmetic, its own interval like the loops above): the 3 a.m. line,
-  idle fillers and the wake-up line after a restart — see personality, *Ambient life*.
+- **`AmbientService`** (10 min, cosmetic, its own interval like the loops above): the 3 a.m. line
+  and the scolding for answering it, idle fillers and the wake-up line after a restart — see
+  personality, *Ambient life*.
 - **`ApplicationEmojiService`** runs once, on the first Ready (uploads item icons — see economy).
   **`PlynlingMascotService`** runs on every Ready (see plynling).
 
@@ -296,7 +297,8 @@ These literal snowflakes are tied to one specific server: `AvailabilityService.O
 leveling bot's id in `Helpers/LevelUpAnnouncement`; the custom emote ids in `Helpers/Emotes`;
 `XpTracker.ExcludedChannels`; `ShameModule.ExtraVoters`; the per-user maps in `BotResponses`
 (`PersonalComebacks`, `RealNames`, `KnownGenders`, `TataId`, `FamilyNicknames`);
-`PlynlingAnnouncer.GameChannelId`; and `MorningGreetingService.ChannelId`.
+`PlynlingAnnouncer.GameChannelId`; `MorningGreetingService.ChannelId`; and
+`AmbientService.IdleChannelIds` (the everyday channels that must all be quiet for an idle line).
 
 `ExcludedChannels` and `ExtraVoters` are *floors*: `/config` can add to them but never remove from
 them. `OwnerId` is deliberately **not** configurable — it gates `/debug` and the DM relay, so making

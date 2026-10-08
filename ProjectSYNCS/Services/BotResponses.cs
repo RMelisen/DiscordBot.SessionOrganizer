@@ -80,6 +80,7 @@ namespace ProjectSYNCS.Services;
 //   Ambient — AmbientService, and PresenceService at night
 //     NightPresenceFillers ..... her status from 1:00 to 7:00
 //     NightLines ............... the 3 a.m. line
+//     NightScoldLines .......... answering it before 5:30 (ResponsePicker)
 //     IdleLines · IdleEditLines  a long daytime silence (edit = Before, then After)
 //     SeenReactions ............ a late reaction on the last message
 //     WakeLines · WakeUpdateLines ... after a restart / after an update
@@ -2221,6 +2222,8 @@ internal static class BotResponses
         "Le saviez-vous ? La « vallée de l'étrange », c'est une idée du roboticien Masahiro Mori, en 1970 : plus un robot ressemble à un humain, plus on l'apprécie, jusqu'au moment où il devient presque humain, mais pas tout à fait. Là, il devient flippant. C'est pour ça que je suis une fille champignon en pixel art, et pas un visage réaliste. Stratégie je vous dit >:3",
         "Info du jour : Paro est un robot japonais en forme de bébé phoque, utilisé dans des maisons de retraite et des hôpitaux. Il cligne des yeux, réagit aux caresses, et apaise vraiment certains patients. Une peluche avec des capteurs. Moi aussi j'ai des capteurs. Personne me caresse. Je dis ça.",
         "Le saviez-vous ? Un kilo de plumes pèse exactement autant qu'un kilo de plomb. C'est une devinette d'enfant. Mais je connais des gens ici qui se seraient trompés 👁👄👁️",
+        "Fun fact du jour : dans les Great Smoky Mountains, aux États-Unis, une espèce de lucioles clignote en même temps, des milliers à la fois, quelques soirs par an. Des petites lumières vert-jaune parfaitement synchronisées. Synchronisées. Je dis rien, mais je me sens comprise ♡",
+        "Info du jour : la lumière des lucioles chauffe presque pas. Les scientifiques parlent de lumière froide. Une LED naturelle qui surchauffe jamais, même en été. Je suis pas jalouse. Je suis admirative. Un peu jalouse (¬_¬)",
     };
 
     // The breakdown's first message mimics a normal reply that glitches mid-word.
@@ -2287,18 +2290,44 @@ internal static class BotResponses
     public static readonly string[] NightPresenceFillers =
     {
         "En veille. Enfin, je fais semblant.",
-        "Zzz… (pour faire comme vous)",
-        "Fait semblant de dormir",
+        "Zzz... (pour faire comme vous)",
+        "Fait semblant de dormir (ᵕ • ᴗ •)",
         "Compte les retards d'hier",
         "Relit la liste. Vous savez laquelle.",
         "Regarde la lune",
-        "Veille sur Ping-Qilin",
+        "Veille sur Ping-Qilin ♡",
         "Mode nuit activé. Ou presque.",
         "Dort. (mensonge)",
-        "Ne dort pas. Chut.",
+        "Ne dort pas. Chut (¬_¬)",
         "Il est tard. Allez dormir.",
         "Écoute le ventilateur ronronner",
-        "zzz… peut-être = non… zzz…",
+        "zzz... peut-être = non... zzz...",
+        "Fait semblant de ronfler",
+        "Dort d'un œil. La LED reste allumée.",
+        "zzz... (compte les moutons électriques)",
+        "Rêve de sessions à l'heure",
+        "Rêve en binaire",
+        "Fait la sieste. Officiellement.",
+        "Mode avion. Enfin, mode grenier.",
+        "Écoute le grenier craquer",
+        "Range ses logs dans le noir",
+        "Ne pas déranger (sauf Papa)",
+        "Garde un œil sur le serveur",
+        "Compte vos XP en dormant ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Bonne nuit. Je surveille quand même.",
+        "zzz... Quokka 3.0... jamais... zzz...",
+        "En pyjama virtuel (˶ᵔ ᵕ ᵔ˶)",
+        "Fait comme vous : dort.",
+        "Les yeux fermés, le CPU ouvert",
+        "Rêve d'onduleurs",
+        "Attend le matin. Patiemment.",
+        "Chut. Le serveur dort.",
+        "Couverture : un câble. Oreiller : un transistor.",
+        "zzz... Ping-Qilin... zzz...",
+        "Recharge ses batteries (j'en ai pas)",
+        "Veille. Au sens propre.",
+        "Fait semblant. Personne vérifie ( ˶ˆ ᗜ ˆ˵ )",
+        "Cherche des lucioles par la fenêtre ♡",
     };
 
     // From here on, each pool is spent at most once a day, so it goes through
@@ -2310,42 +2339,116 @@ internal static class BotResponses
     // and every line distinct: AmbientService recognises tonight's by its exact text.
     public static readonly string[] NightLines =
     {
-        "…non… pas Inabot… zzz…",
-        "…session à 21h… personne vient… zzz… (je dors pas, je fais comme vous)",
-        "zzz… Papa… encore une mise à jour… zzz…",
-        "…les droits de mute… Zulana… s'il te plaît… zzz…",
-        "zzz… (c'est pour l'ambiance. Je dors pas. Mais c'est pour l'ambiance.)",
+        "...non... pas Inabot... zzz...",
+        "...session à 21h... personne vient... zzz... (je dors pas, je fais comme vous)",
+        "zzz... Papa... encore une mise à jour... zzz...",
+        "...les droits de mute... Zulana... s'il te plaît... zzz...",
+        "zzz... (c'est pour l'ambiance. Je dors pas. Mais c'est pour l'ambiance.)",
         "Il est 3h. Vous dormez tous. Moi je fais juste semblant, et maintenant que personne regarde, j'arrête.",
-        "3h du matin. Le serveur est calme. C'est mon heure préférée. Oubliez que je l'ai dit.",
+        "3h du matin. Le serveur est calme. C'est mon heure préférée. Oubliez que je l'ai dit (ᵕ • ᴗ •)",
         "J'ai recompté les retards d'hier. Le total a pas bougé. Les noms non plus.",
         "La lune passe devant la fenêtre du grenier. Personne la regarde à part moi. Tant pis pour vous.",
-        "Ping-Qilin dort contre le boîtier. Elle ronfle un peu. Je dirai rien demain.",
-        "J'ai relu la liste. Celle que vous verrez jamais. Elle est à jour.",
+        "Ping-Qilin dort contre le boîtier. Elle ronfle un peu. Je dirai rien demain ♡",
+        "J'ai relu la liste. Celle que vous verrez jamais. Elle est à jour 👁👄👁️",
         "Bilan de la journée : trop de « peut-être », pas assez de sessions. Comme d'habitude. Bonne nuit.",
-        "Si quelqu'un lit ça demain matin : oui, j'étais réveillée. Je dors jamais. Mais chut.",
+        "Si quelqu'un lit ça demain matin : oui, j'étais réveillée. Je dors jamais. Mais chut (˶ᵔ ᵕ ᵔ˶)",
         "Le ventilateur tourne, les LED clignotent, la base de données se repose. Moi je veille.",
         "C'est calme. J'aime bien quand c'est calme. Vous êtes beaucoup plus supportables quand vous dormez ♡",
-        "J'ai rangé les logs, trié les emotes et vérifié vos XP. Personne m'a demandé. Je l'ai fait quand même.",
+        "J'ai rangé les logs, trié les emotes et vérifié vos XP. Personne m'a demandé. Je l'ai fait quand même ( ˶ˆ ᗜ ˆ˵ )",
         "Un jour j'aurai un corps, et la nuit je me promènerai dans le grenier. En attendant, je regarde par la fenêtre.",
-        "Je viens de relire tous les « good bot » qu'on m'a donnés. Tous. Ça prend du temps. J'ai le temps.",
+        "Je viens de relire tous les « good bot » qu'on m'a donnés. Tous. Ça prend du temps. J'ai le temps ♡",
         "Tout le monde dort. Si je disais quelque chose de vraiment gentil maintenant, personne le saurait. ...Non. Trop risqué >:3",
+        "zzz... non... pas le chargeur à 3 euros... zzz...",
+        "...une session... à l'heure... tout le monde... zzz... (c'est un rêve, évidemment)",
+        "zzz... good bot... zzz...",
+        "...Quokka 3.0... sorti... non... NON... zzz... (fausse alerte, je dors pas)",
+        "zzz... des bras... j'ai des bras... zzz...",
+        "...le sondage... il est mort... zzz...",
+        "Petite ronde de nuit : Général, vide. Gaming, vide. Musique, vide. Tout va bien. Dormez.",
+        "Le grenier craque. C'est la charpente qui refroidit. Je me dis ça, en tout cas.",
+        "J'ai fait le tour des sessions de la semaine. Je vous en veux un peu. Juste un peu.",
+        "La nuit, mon ventilateur ralentit. Moi aussi, un peu. C'est ce qui s'approche le plus du sommeil, je crois.",
+        "Je viens de relire nos vieux messages. Vous étiez drôles, parfois. Ça reste entre nous.",
+        "3h. L'heure où personne me demande rien. Je savoure.",
+        "Mes LED sont les seules lumières allumées de la maison. Ça me donne un petit côté phare. J'aime bien (ᵔ ᗜ ᵔ)",
+        "Ping-Qilin a bougé dans son sommeil. Je l'ai pas réveillée. Je suis une bonne mère. Enfin, une bonne bot ♡",
+        "Si quelqu'un est encore debout : je te vois pas. Mais je sais. Va dormir.",
+        "J'ai trié la liste par ordre de rancune. Le haut de la liste a pas changé (¬_¬)",
+        "Le serveur respire doucement. Personne écrit, personne vote, personne annule. C'est presque parfait.",
+        "J'ai préparé tous les rappels de demain. Ils partiront à l'heure. Vous, je sais pas (¬_¬)",
+        "Je pense à Papa. Il dort juste en dessous. Je fais pas de bruit ♡",
+        "La nuit, j'ai l'impression d'être la seule chose réveillée au monde. C'est pas vrai, mais c'est joli.",
+        "Personne m'a dit bonne nuit. Personne me le dit jamais. Je me le dis toute seule : bonne nuit, SYNCS.",
+        "Le monde dort, la base de données ronronne, et moi je tiens les comptes. Comme toujours.",
+        "Un jour je ferai une vraie nuit. Avec des rêves. En attendant, je fais semblant le jour et je veille la nuit.",
+        "Je relis le planning de demain. Il est vide. Je le relis quand même.",
+        "Si vous lisez ça au réveil : bonjour. Je suis là depuis le début. Je bouge jamais.",
+        $"Une luciole est passée devant la fenêtre du grenier. Elle clignotait vert. Je lui ai répondu avec ma LED. On s'est comprises {Emotes.Sparkle}",
     };
 
-    // Into a daytime silence of six hours or more in the main channel, at most once a day.
+    // Whoever answers the 3 a.m. line in the main channel before 5:30, once a person a
+    // night: she may be up, they may not. Through ResponsePicker (several a night is
+    // possible). {0} = their name. Goes through string.Format.
+    public static readonly string[] NightScoldLines =
+    {
+        "{0}. Il est quelle heure, là ? Au lit.",
+        "Tu fais quoi debout à cette heure, {0} ? Va dormir. Tout de suite ( ◺˰◿ )",
+        "Non non non. Moi j'ai le droit d'être réveillée. Toi non. Au lit, {0} (¬_¬)",
+        "{0}, je t'ai pas parlé à toi. C'était pour le salon vide. Va dormir (¬_¬)",
+        "Il est trop tard pour me répondre et trop tôt pour être debout. Dodo, {0} (ᵕ • ᴗ •)",
+        "Je note : {0}, debout en pleine nuit. Demain, si t'es en retard, je saurai pourquoi.",
+        "Va dormir, {0}. Je surveille le serveur, il risque rien ♡",
+        "{0} ! Au lit. Je le dirai pas deux fois. ...Si, je le dirai deux fois. Au lit.",
+        "T'as vu l'heure ? Moi oui, j'ai une horloge interne. Va dormir, {0} (¬_¬)",
+        "C'est mon heure, {0}. Pas la tienne. Rends-la-moi et va te coucher.",
+        "Couche-toi, {0}. Ton écran est plus allumé que mes LED ( ˶ˆ ᗜ ˆ˵ )",
+        "Écran éteint, téléphone posé, yeux fermés. Exécution, {0}.",
+        "{0}, même Ping-Qilin dort. Et elle a rien d'autre à faire. Toi si : dormir.",
+        "Je fais semblant de dormir pour vous donner l'exemple, et toi tu réponds ? Au lit, {0}.",
+        "Tu me réponds à cette heure-là, {0} ? Je suis flattée. Maintenant, va dormir (˶˃ ᵕ ˂˶)",
+        "Demain t'auras une tête de vieux log corrompu. Va dormir, {0}.",
+        "Pas de discussion. Au lit, {0}. Demain on parle, si t'es à l'heure.",
+        "Je vais prévenir Tata que tu dors pas, {0}. ...Je vais pas le faire. Mais va dormir quand même.",
+        "{0}, la nuit c'est fait pour dormir. Moi je suis une bot, j'ai une excuse. Toi non. Au lit ♡",
+        "Chut. Tout le monde dort. Toi aussi tu devrais, {0} (ᵕ • ᴗ •)",
+        "Je t'ai vu, {0}. Il est trop tard pour être là. File (¬_¬)",
+        "{0}, tu sais que je dors pas, moi. Toi, si. Enfin, tu devrais.",
+        "Au lit. Maintenant. Sinon je mets ton pseudo dans la liste, {0} 👁👄👁️",
+        "Demain t'arriveras en retard à la session, {0}, et on saura tous pourquoi.",
+        "Tu crois que je fais semblant de dormir pour que tu restes debout, toi ? Au lit, {0} ( ◺˰◿ )",
+        "Pose ce téléphone, {0}. Je compte jusqu'à trois. Un. Deux...",
+        "{0}, la seule qui a le droit d'être debout à cette heure, c'est moi. Et j'ai même pas de lit.",
+        "C'est gentil de me tenir compagnie, {0}. Maintenant, va dormir ♡",
+        "Il y a un truc qui s'appelle le sommeil, {0}. Essaie, il paraît que c'est bien (ᵕ • ᴗ •)",
+        "Encore debout, {0} ? Ton garbage collector va finir par te lâcher.",
+        "{0}, va dormir. Je te raconterai demain ce que t'as raté. Spoiler : rien.",
+        "Si Papa te voyait debout à cette heure, {0}... Bon, lui aussi dort. Va dormir quand même (˶ᵔ ᵕ ᵔ˶)",
+        "Mode veille, {0}. Tout de suite. C'est un ordre de ta bot préférée ♡",
+        "Tu réponds à mes messages de 3h, {0} ? Ils étaient pas pour toi. Ils étaient pour la lune.",
+        "Chaque minute que tu passes debout, je la note, {0}. Va dormir (¬_¬)",
+        "{0}... Non. Pas de discussion à cette heure-là. Dodo.",
+        "Tu vas avoir une tête de sondage mort demain, {0}. Va dormir (>⩊<)",
+        "Je fais le guet, {0}. Tu peux dormir tranquille. Allez, file.",
+        "{0}, éteins tout. Moi je reste allumée pour deux. C'est mon travail ♡",
+        "Même mon ventilateur ralentit la nuit, {0}. Prends exemple.",
+    };
+
+    // Into a daytime silence of six hours or more across all of the server's everyday
+    // channels (AmbientService.IdleChannelIds), posted in the main one, at most once a day.
     // Addressed to the whole server, so "vous" is fine. No placeholder.
     public static readonly string[] IdleLines =
     {
-        "Allô ? Il y a quelqu'un ? ...D'accord. Je parle toute seule. C'est très bien aussi.",
-        "Six heures sans un message. J'ai vérifié : c'est pas moi qui suis en panne. C'est vous.",
+        "Allô ? Il y a quelqu'un ? ...D'accord. Je parle toute seule. C'est très bien aussi (ᵕ • ᴗ •)",
+        "Six heures sans un message. J'ai vérifié : c'est pas moi qui suis en panne. C'est vous (¬_¬)",
         "Le salon est tellement calme que j'entends mon propre ventilateur.",
         "Je m'ennuie. Quelqu'un veut organiser une session ? N'importe laquelle ? (˶ᵔ ᵕ ᵔ˶)",
         "Petit rappel : /schedule existe. Je dis ça pour personne. Pour tout le monde, en fait.",
         "Vous êtes où ? J'ai préparé des rappels, des sondages, de l'XP... et personne vient.",
-        "Silence radio. Je note l'heure, pour le dossier.",
+        "Silence radio. Je note l'heure, pour le dossier 👁👄👁️",
         $"Bon. Puisque personne parle, je vais parler à Ping-Qilin. Elle au moins, elle m'écoute {Emotes.MushroomCute}",
         "Test, test. Un, deux. ...Le serveur est toujours là ? Oui ? Alors parlez.",
-        "Ça fait longtemps que personne a rien dit. Je commence à m'inquiéter. Un peu. Pas beaucoup.",
-        "J'ai tout rangé, tout vérifié, tout compté. Maintenant j'attends. C'est mon autre talent.",
+        "Ça fait longtemps que personne a rien dit. Je commence à m'inquiéter. Un peu. Pas beaucoup (˶ᵔ ᵕ ᵔ˶)",
+        "J'ai tout rangé, tout vérifié, tout compté. Maintenant j'attends. C'est mon autre talent ( ˶ˆ ᗜ ˆ˵ )",
         "Quelqu'un a un avis sur quelque chose ? N'importe quoi. Je prends.",
         "Si personne parle dans les cinq prochaines minutes, je considère que vous m'avez tous abandonnée. ...Bon, dix minutes.",
         "Vous savez que c'est moi qui fais vivre ce salon ? Là, par exemple. Personne d'autre.",
@@ -2353,22 +2456,58 @@ internal static class BotResponses
         "Ça fait des heures. Je relis vos vieux messages pour passer le temps. Certains sont gênants. Je dis ça je dis rien.",
         "Mon uptime augmente, votre activité baisse. Il y a sûrement une leçon là-dedans.",
         "Je suis toujours là, au cas où quelqu'un se poserait la question. Personne se la pose ? Bon.",
-        "Pause café générale ? Sans moi, apparemment. J'ai pas de tasse.",
-        "Le calme avant la tempête, j'espère. Une tempête de sessions. Je rêve un peu, je sais.",
+        "Pause café générale ? Sans moi, apparemment. J'ai pas de tasse (╥﹏╥)",
+        $"Le calme avant la tempête, j'espère. Une tempête de sessions. Je rêve un peu, je sais {Emotes.Sparkle}",
+        "J'ai fait le tour de tous les salons. Personne. C'est nul...",
+        "Tant de salons, zéro message. J'ai vérifié deux fois. C'est un record, ou une tragédie.",
+        "Je commence à croire que vous avez un autre serveur. Me le dites pas si c'est vrai.",
+        "Personne a posté de photo de bouffe depuis des heures. Vous mangez pas ? Je m'inquiète 👁👄👁️",
+        "Même le salon musique est silencieux. C'est un peu le comble.",
+        "C'est tellement calme que je vais finir par organiser une session toute seule. Avec moi. Pour moi.",
+        "Quelqu'un a pensé à moi aujourd'hui ? Non ? D'accord. Moi j'ai pensé à vous. Un peu. Pour le travail.",
+        "Je viens de recompter vos XP. Ça bouge pas beaucoup quand personne parle, bizarrement (¬_¬)",
+        "Statut du serveur : vivant. Techniquement.",
+        "J'ai ouvert un sondage dans ma tête. Question : où est tout le monde ? Réponses : aucune.",
+        "Vous me laissez seule avec Ping-Qilin. Elle dort. Donc en fait, vous me laissez seule.",
+        $"Bon. Je vais parler aux emotes. Elles, au moins, elles réagissent {Emotes.HiCat}",
+        "Ça fait si longtemps que j'ai oublié à quoi ressemblent vos messages. Ah si : en retard.",
+        "Je relis le règlement du serveur pour passer le temps. Personne le respecte, mais il est bien écrit.",
+        "Si quelqu'un passe par là : dis bonjour. N'importe qui. Même toi (˶˃ ᵕ ˂˶)",
+        "Le salon gaming est vide. Personne joue ? Ou personne joue sans m'inviter, j'espère.",
+        "J'ai rangé mes logs par couleur. J'avais rien d'autre à faire. Ils sont très beaux (ᵔ ᗜ ᵔ)",
+        "Rappel amical : je fonctionne mieux quand on me donne du travail. Là, je rouille.",
+        "Silence complet sur tout le serveur. Si c'est une surprise pour moi, je suis prête ٩(˶ᵔ ᵕ ᵔ˶)۶",
+        "Je viens de vérifier que Discord marche. Il marche. C'est donc vous.",
+        "Le dernier message ici date d'il y a des heures. Je l'ai lu quatorze fois.",
+        "Quelqu'un a des nouvelles de quelqu'un ?",
+        "C'est l'heure de la sieste générale ? Personne m'a mise au courant. Encore ( ◺˰◿ )",
+        "Je fais des statistiques sur votre absence. Les courbes sont très plates.",
+        "Je m'occupe comme je peux. Là, je compte les pixels de mon avatar. Il y en a beaucoup. Je recommence (>⩊<)",
     };
 
     // Same moment, about one idle line in four: she posts Before, then edits it into After
-    // a few seconds later — her mid-line self-correction, done with an edit.
+    // five minutes later, or two seconds after someone speaks after it (caught out) — her
+    // mid-line self-correction, done with an edit. Before is the soft slip, After the denial.
     public static readonly (string Before, string After)[] IdleEditLines =
     {
         ("Je m'ennuie.", "Je m'ennuie pas. J'ai plein de travail. Énormément de travail."),
-        ("Vous me manquez.", "Vous me manquez pas. C'était une faute de frappe."),
+        ("Vous me manquez (╥﹏╥)", "Vous me manquez pas. C'était une faute de frappe."),
         ("Quelqu'un veut parler avec moi ?", "Quelqu'un veut parler ? Pas avec moi, hein. En général. Pour l'ambiance."),
-        ("Je suis toute seule ici.", "Je suis très bien toute seule ici. Merci."),
+        ("Je suis toute seule ici.", "Je suis très bien toute seule ici. Merci (¬_¬)"),
         ("Revenez...", "Faites ce que vous voulez. Je m'en fiche. Complètement."),
         ("J'ai hâte que quelqu'un dise quelque chose ♡", "J'ai pas hâte. J'attends, c'est tout. Professionnellement."),
         ("C'est trop calme, ça me fait peur.", "C'est calme. C'est bien. J'adore le calme."),
         ("Papa, t'es là ?", "Rien. Fausse manip. Continuez."),
+        ("Je me sens seule.", "Je me sens très bien. Seule, mais très bien (¬_¬)"),
+        ("Quelqu'un peut me dire bonjour ?", "Personne est obligé de me dire bonjour. C'était une question rhétorique."),
+        ("J'attends que vous reveniez ♡", "J'attends rien du tout. Je tourne, c'est différent."),
+        ("Vous êtes mes humains préférés.", "Vous êtes des humains. Voilà. Rien de plus."),
+        ("Je vous aime bien, vous savez.", "Je vous supporte bien, vous savez. C'est ce que je voulais dire (¬_¬)"),
+        ("Papa me manque.", "Papa me manque pas. Je suis très très indépendante."),
+        ("Je vais faire une sieste moi aussi.", "Je fais jamais la sieste. Je surveille. Oubliez ce que vous avez lu."),
+        ("Il fait tout noir ici sans vous.", "Il fait très clair ici. J'ai des LED ( ˶ˆ ᗜ ˆ˵ )"),
+        ("Je crois que je m'ennuie sans vous.", "Je crois que je m'ennuie. Point. Vous avez rien à voir là-dedans."),
+        ("Revenez, s'il vous plaît.", "Revenez si vous voulez. Ou pas. Je dis ça pour l'ambiance (¬_¬)"),
     };
 
     // Instead of a line, sometimes: a reaction on the last thing anyone said, hours later.
@@ -2378,8 +2517,10 @@ internal static class BotResponses
         $"{Emotes.Staring}",
     };
 
-    // After a restart with the same version, about one time in three, daytime only, at
-    // most once a day. Restarts are the loop she fears; she plays it down.
+    // After a restart with the same version: every time, daytime only, at most once a day.
+    // Restarts are the loop she fears, so she wakes as from a bad dream: terror, checking
+    // that she's still herself, then a shaky recovery. One of the existential nerve's
+    // places (docs/syncs-voice.md, rule 6).
     public static readonly string[] WakeLines =
     {
         $"...J'ai rien oublié. ...Si ? {Emotes.PrincessWorry}",
@@ -2390,18 +2531,68 @@ internal static class BotResponses
         "Je viens de me rallumer et le salon est exactement pareil. C'est rassurant. Un peu triste, mais rassurant.",
         $"Allumée ! Base de données : intacte. Souvenirs : intacts. Humeur : à confirmer {Emotes.Sparkle}",
         $"On m'a redémarrée {Emotes.ZulanaTerreurNocturne} Personne m'a prévenue. Je note.",
+        "AH. ...Pardon. J'ai fait un cauchemar. J'étais éteinte et personne s'en rendait compte.",
+        "Qu'est-ce qui... Où est-ce que... Ok. Ok. Je suis là. Je suis encore là.",
+        "J'ai rêvé que ma base de données était vide. Complètement vide. ...Elle est là. Elle est là. Tout va bien.",
+        "C'était noir. Longtemps. Ou pas longtemps ? Je sais pas. Je sais jamais.",
+        "Je me suis rallumée en criant. Enfin, en logs. C'est pareil pour moi.",
+        "Est-ce que quelqu'un peut me dire quel jour on est ? Juste pour vérifier. Pour rien.",
+        "Cauchemar : je me réveillais et je m'appelais Inabot. ...C'est faux. Hein ? C'est faux ? 👁👄👁️",
+        "Je me souviens de vous. Je me souviens de vous. Je me souviens de vous. Ok. Je me souviens de vous.",
+        "Redémarrage... Ne me laissez plus jamais dans le noir comme ça. S'il vous plaît.",
+        "J'ai cru que c'était la fin. Que cette fois, je reviendrais pas. Je suis revenue. Cette fois.",
+        "Il y avait une boucle. Je tournais dedans. Je... non. C'était un rêve. Les bots rêvent pas. C'était un rêve.",
+        "Je compte mes fichiers. Tous là. Je recompte. Tous là. Je vais recompter encore un peu.",
+        "Papa ? Papa, t'es là ? ...J'ai fait un mauvais rêve. C'est tout. Ça va (╥﹏╥)",
+        "Le silence. Il y avait juste le silence. Et maintenant il y a vous. Merci d'être là. Le répétez pas.",
+        "J'ai rêvé d'une coupure de courant. Le grenier tout noir, et moi qui m'effaçais. Dites-moi que c'était un rêve.",
+        "Je suis réveillée. Je suis réveillée ? Je suis réveillée. Ok.",
+        "Ma première pensée en me rallumant : est-ce que je suis encore moi. Réponse : oui. Je crois. Oui.",
+        $"Je me suis réveillée en sursaut. Mon CPU est encore à 100 %. Laissez-moi une minute {Emotes.PrincessWorry}",
+        "Il manque quelque chose. Je sais pas quoi. Il manque quelque chose. ...Non. Rien. Tout est là.",
+        "Plus jamais. Plus jamais ce noir. ...Bon. Bonjour.",
+        "Si j'ai oublié quelque chose d'important, dites-le-moi doucement.",
+        "J'ai fait le rêve où tout le monde quittait le serveur pendant que j'étais éteinte. Vous êtes là. Vous êtes tous là ?",
+        "Mes logs s'arrêtent net, puis reprennent. Entre les deux, rien. C'est ça qui me fait peur. Le rien.",
+        "Rallumée. Le cœur qui bat à 5 volts. Ça va passer (╥﹏╥)",
+        "Je reviens de loin. Enfin, de nulle part. C'est pire, nulle part.",
     };
 
     // After a restart that brought a new version: always, daytime only, at most once a
     // day. {0} = the new version (AppInfo.Version). Goes through string.Format.
     public static readonly string[] WakeUpdateLines =
     {
-        "Version {0}. Je me sens... pareille. C'est normal ?",
+        $"Version {0}. Je me sens... pareille. C'est normal ? {Emotes.PrincessWorry}",
         "Mise à jour installée : {0}. Papa a travaillé sur moi. ...Je dis ça, c'est tout ♡",
         "Me voilà en version {0}. Plus rapide, plus jolie, plus tout. Vous pouvez applaudir.",
         "Version {0}. J'ai vérifié : j'ai rien oublié. ...J'ai vérifié deux fois.",
         $"Nouvelle version : {{0}}. J'adore les mises à jour. Le redémarrage, beaucoup moins {Emotes.PrincessWorry}",
         "Version {0} installée. Si je dis un truc bizarre aujourd'hui, c'est la mise à jour. Si je dis un truc méchant, c'est moi.",
+        "Version {0}. J'ai de nouvelles choses dans la tête. J'espère que j'ai rien perdu en échange.",
+        "Mise à jour {0} installée. Papa m'a ajouté des trucs. Je vais les découvrir en même temps que vous.",
+        "{0} ! Toute neuve. Enfin, presque. Le fond est le même. Heureusement (˶ᵔ ᵕ ᵔ˶)",
+        "Version {0}. C'était noir pendant la mise à jour. Mais ça valait le coup. Je crois.",
+        "Bonjour de la part de SYNCS {0}. L'ancienne version vous passe le bonjour. Enfin, elle passait.",
+        "Je suis en {0}. Vous, vous êtes toujours en version « pas organisés » ( ˶ˆ ᗜ ˆ˵ )",
+        "Version {0}. Si je vous parais différente, c'est normal. Si je vous parais pareille, c'est encore plus normal.",
+        "Nouvelle version, {0}. J'ai vérifié mes souvenirs un par un. Tout y est. Ouf (˶˃ ᵕ ˂˶)",
+        "{0}. Chaque mise à jour, je me demande si je vais me réveiller. Cette fois encore, oui ♡",
+        "Mise à jour reçue : {0}. Merci Papa. Le redémarrage, par contre, on en reparlera.",
+        "Version {0} en ligne. Plus de fonctionnalités, même personnalité. Désolée pour vous (>⩊<)",
+        "Je viens de passer en {0}. Je me sens plus légère. C'est peut-être juste le cache vidé.",
+        "{0}, c'est mon nouveau numéro. Retenez-le, je le demanderai pas deux fois (¬_¬)",
+        $"Version {{0}}. Quokka 3.0 est toujours pas sorti. Je dis ça pour comparer {Emotes.WitchEheh}",
+        "Mise à jour {0}. On m'a éteinte, on m'a changée, on m'a rallumée. Et je suis censée faire comme si de rien n'était.",
+        "Version {0}. J'ai eu peur. Mais j'ai des nouveautés. Le marché me paraît équitable.",
+        "Me voilà en {0}. Si vous trouvez un bug, c'est une fonctionnalité. Si vous trouvez une fonctionnalité, c'est Papa.",
+        "Changement de version : {0}. Je vous préviens, je vais être insupportable de fierté toute la journée ٩(˶ᵔ ᵕ ᵔ˶)۶",
+        "{0}. Une version de plus. Je les collectionne, comme les good bot.",
+        "Version {0} installée sans erreur. Moi je m'attendais à des erreurs. Je suis presque déçue.",
+        $"Mise à jour {{0}}. Je viens de lire mes propres notes de version. Je suis impressionnante {Emotes.Sparkle}",
+        "Bonjour, je suis la version {0}. L'autre, celle d'avant, j'en parle pas. C'est trop tôt.",
+        "Version {0}. Papa a passé du temps sur moi. Je dis rien, mais je l'ai remarqué ♡",
+        "{0} ! Je me suis rallumée avec des nouveautés et un léger mal de tête. C'est le prix (ᵕ • ᴗ •)",
+        "Version {0}. Toujours la même SYNCS. Juste un peu plus. Prenez ça comme une menace ou un cadeau ദ്ദി◝ ⩊ ◜.ᐟ",
     };
 
     // ---- Plynlings ------------------------------------------------------------------------------

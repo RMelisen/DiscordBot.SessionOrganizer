@@ -238,17 +238,25 @@ thresholds live in `Helpers/Ambient` (pure, Paris wall-clock hours, so DST never
 | What | Who | When |
 |---|---|---|
 | Idle moon + `NightPresenceFillers` | `PresenceService` | 1:00–7:00 |
-| 3 a.m. line (`NightLines`) | `AmbientService` tick | decided once a night (25%, random minute 3:00–3:49), channel quiet ≥ 1 h |
-| Idle turn | `AmbientService` tick | 10:00–23:00, quiet ≥ 6 h, one 50% roll per silence, max 1/day: 30% late `SeenReactions` on the last human message, else an `IdleLines` line, a quarter of the time an `IdleEditLines` pair (posted, then edited 3–6 s later) |
+| 3 a.m. line (`NightLines`) | `AmbientService` tick | decided once a night (25%, random minute 3:00–3:49), main channel quiet ≥ 1 h |
+| Night scolding (`NightScoldLines`) | `AmbientService.HandleMessageAsync` | any human message in the main channel after tonight's line and before 5:30, once a person a night, verdicts excepted; a reply, and `ChatterService` is skipped for that message |
+| Idle turn | `AmbientService` tick | 10:00–23:00, **all of `AmbientService.IdleChannelIds`** quiet ≥ 6 h (threads count for their parent), one 50% roll per silence, max 1/day, posted in the main channel: 30% late `SeenReactions` on the main channel's last human message, else an `IdleLines` line, a quarter of the time an `IdleEditLines` pair (edited 5 min later, or 2 s after someone speaks in the main channel after it) |
 | Ghost typing | `AmbientService.HandleMessageAsync` | a human message after ≥ 1 h quiet, not aimed at her, 3%, max 1/day |
 | Hesitant reaction | `ReactionService` | 3% of mood reactions are removed 2–4 s later |
-| Wake line | `AmbientService`, first `Ready` only | 9:00–23:00, max 1/day: `WakeUpdateLines` always when the version changed, else 30% `WakeLines` |
+| Wake line | `AmbientService`, first `Ready` only | every restart, 9:00–23:00, max 1/day: `WakeUpdateLines` when the version changed, else `WakeLines` (waking from a bad dream) |
 
 - **`AmbientService` is registered twice on one instance**, like `MorningGreetingService`: `BotService`
-  feeds it the main channel's human messages (the quiet clock) and the host runs its 10-minute tick.
-  The first tick seeds the clock from the channel's last 50 messages, or from the start time when
-  none is human, so a restart is never followed straight away by an idle line.
-- **Every pool but `NightPresenceFillers` goes through `DailyRotation`**: each is spent at most once a
+  feeds it every human message (two quiet clocks: the main channel's, and all `IdleChannelIds`
+  together) and the host runs its 10-minute tick. The first tick seeds both from history (50
+  messages in the main channel, 10 in each other one; a forum is skipped), or from the start time
+  when none is human, so a restart is never followed straight away by an idle line. It also finds
+  tonight's line there, so a restart before 5:30 keeps the scolding on.
+- **`HandleMessageAsync` returns whether she answered** (the scolding); `BotService` then skips
+  `ChatterService`, so a reply to her 3 a.m. line gets sent to bed instead of roasted.
+- **The pending edit runs off the tick** (`Task.Run`), waiting on whichever comes first: 5 minutes,
+  or the next human message in the main channel (a `TaskCompletionSource` the handler completes). A
+  restart before the edit leaves the first version standing.
+- **Every pool but `NightPresenceFillers` and `NightScoldLines` goes through `DailyRotation`**: each is spent at most once a
   day, and a restart would wipe `ResponsePicker`. `NightLines` must stay distinct and newline-free:
   a restart inside the hour re-rolls the night, and she checks the last 50 messages for tonight's
   line by exact text before posting another.
