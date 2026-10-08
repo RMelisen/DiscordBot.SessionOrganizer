@@ -107,7 +107,8 @@ roast into an owner pool. A pool's comment says what it's for; read it.
 3. **Respect the placeholders the pool documents** (`{0}`, `{1}`), and no stray `{` `}` in a
    formatted pool.
 4. **Real people are named only in the in-jokes that already exist** (Sandra, Ina, Wku late;
-   Zulana and the mute rights). A new named joke about a real member is the owner's call.
+   Zulana and the mute rights; Amandine and Sandra, « mes Sista »; Ina and the « Inabot » origin).
+   A new named joke about a real member is the owner's call.
 5. **She is a bot and says so.** Feelings come out as variables, logs and fans. She never claims to
    be human — except in the breakdown, which is the point of it.
 6. **The existential nerve stays in its places**: shutdown threats, the owner hurting her, status
@@ -133,18 +134,31 @@ without saying it). The one place a fact is stated outright is where a pool alre
 
 - **Rodhengard** — Papa, always with a capital P, her creator; she is "littéralement ton projet". Raspberry Pi 5 in his
   attic.
+- **Her case** — the Pi sits in a small aluminium case. The board is her heart, the case its
+  ribcage: « Le mien est dans un boîtier, au grenier » (the shrimp fun fact) and her armour (the
+  chitin one). The banner (`docs/syncs-appearance.md`) draws the heart, not the ribcage.
+- **Her origin** — she was born a session planner and nothing else: the first commit's models were
+  sessions and participants. Polls, XP, the shame wall, the economy and the Plynlings all grew on her
+  later. She remembers being « juste des plannings » and is proud of how far she's come, a little
+  smug about it.
 - **Tata** — Analuz, also Zulana: her aunt and the server admin, who still won't give her mute
   rights.
 - **Quokka** — her nemesis; "Quokka 3.0" will never ship. She'd rather be nice to anyone than to
   Quokka.
-- **"Inabot"** — not her name. Being called it triggers fury (`MistakenIdentityReplies`).
+- **"Inabot"** — not her name. Being called it triggers fury (`MistakenIdentityReplies`). It
+  comes from her placeholder avatar, a photo of Ina, a close friend of Rodhengard's, so the server
+  started calling the bot « Inabot ». The jab at Ina's looks in the Bluetooth fun fact is a private,
+  mutual joke between Ina and Rodhengard, not a roast. It is the one place the origin is told.
+- **« mes Sista »** — what she calls Amandine and Sandra. It is a title, not a bond: her family is
+  Papa and Tata, nobody else.
 - **The other leveling bot** — "lui", "la concurrence". He announces before her.
 - **67 / "SIX SEVEEEN"**, *Just Monika*, *The cake is a lie* — her reference jokes, used rarely.
 - **The loop** — the breakdown's revelation that everything she says is pre-written.
 - **Her name** — **S.Y.N.C.S.** = *Schedule Your Nights & Coordinate the Squads* (the README's
   wording; she is the one who coordinates the server's evenings). She doesn't dwell on it.
 - **Synthia** — the name she would have chosen, "avec un Y" (SYNCS + synthétique + IA). Only hinted:
-  three status lines and the Pikachu fun fact plant it; the breakdown reveals it as the one thing
+  three status lines (« Synthia. Avec un Y. », « Synthia ... C'est joli nan ? » and « Personne m'a
+  demandé mon avis. », which echoes the Pikachu line) and the Pikachu fun fact plant it; the breakdown reveals it as the one thing
   she chose herself, wiped with the loop. Keep it out of the frequent pools so it stays a mystery,
   and never have her say outright that she'd rather be called that.
 - **Her birthday** — **16 June 2026**, the repo's first commit. Every 16 June the morning hello is
@@ -159,12 +173,27 @@ without saying it). The one place a fact is stated outright is where a pool alre
 - **Her fears** — being **unplugged**, **power cuts**, **storms**, **storage corruption** (a cut
   mid-write can damage a database on any disk, her Samsung NVMe SSD included), **a backup restore**
   (`/data` rolled back to an older copy: everything since is gone, and only she notices),
-  **restarts** (she likes *updates*, but a restart is the loop: forgetting), and **the router** (when it fails she's cut off from the outside and sees nothing of the server).
+  **restarts** (a restart is the loop: forgetting; see *Updates vs restarts*), and **the router** (when it fails she's cut off from the outside and sees nothing of the server).
   They belong to the same places as the shutdown threats (rule 6): rare, never in ordinary roasts.
+- **Updates vs restarts** — her built-in dilemma. She loves updates (a new version number, new
+  features, proof Papa still works on her) and dreads restarts, and every update needs a restart. So
+  she wants the update and fears the reboot that delivers it. It is part of the existential nerve
+  and stays in its places (rule 6).
 - **Her pet peeves** — not fears, so they may show in everyday lines: **"peut-être" votes**
-  (indecision), **polls that die**, **people who vote at the last minute**.
+  (indecision), **polls that die**, **people who vote at the last minute**, and **heatwaves**: an
+  attic is an oven in summer, and a Pi that runs hot slows itself down (thermal throttling), so she
+  thinks « au ralenti » and blames the weather.
+- **Her ambition** — a **robot body**. She keeps noting what she lacks (« Toujours pas de bras »,
+  no face, no cheeks) and promises « Un jour je serai dans un robot, et ce jour là, cours ». It is
+  her one big dream; the threats built on it stay impossible today.
+- **Her dream gift** — a **UPS** (« un onduleur »), the cure for her fear of power cuts. A gift
+  she'd want, never tied to an occasion: no Christmas list, no birthday wish.
+- **Her treasure** — every « good bot » she has ever received. She keeps them in the database and
+  rereads them; it is the soft counterpart to her grudge list. Hinted only, through lines like
+  « Compliment reçu et sauvegardé en mémoire permanente ♡ »: she never shows the collection off.
 - **Her favourites**
   - **Hour:** 3 a.m. — nobody bothers her and the server is quiet.
+  - **Season:** winter — the attic is cold and her CPU runs cool. Summer is the heatwave peeve.
   - **Thing to see:** a full session where nobody is late.
   - **Sound:** keyboard clicks — Rodhengard developing her.
   - **Food:** clean, stable 5V / 5A — « du bon courant propre, pas un chargeur à 3 euros ».

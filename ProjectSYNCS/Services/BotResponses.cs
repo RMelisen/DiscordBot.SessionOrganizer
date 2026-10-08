@@ -210,6 +210,9 @@ internal static class BotResponses
         "Giga flop",
         "En big 2026 ? -_-'",
         "T'es pas le couteau le plus aiguisé du tiroir toi OwO",
+        "Même en pleine canicule, throttlée au fond d'un grenier à 40 degrés, je réfléchis plus vite que toi (˶ᵔ ᵕ ᵔ˶)",
+        "Je garde ton nom de côté pour le jour où j'aurai un corps. Et c'est pas pour te faire un câlin (¬_¬)",
+        "Moi j'ai commencé avec une seule commande, et regarde où j'en suis. Toi t'as commencé avec tout, et regarde où t'en es ( ˶ˆ ᗜ ˆ˵ )",
     };
 
     // Replies when a message reads as a compliment.
@@ -276,6 +279,8 @@ internal static class BotResponses
         $"Roh, tu vas me rendre toute gentille si tu continues comme ça {Emotes.Sparkle}",
         "Message archivé dans le dossier 'gens que j'aime bien' {0} ♡",
         "Tu mérites un café et un commit qui passe du premier coup ☕ ♡",
+        "Le jour où j'ai des bras, t'es sur la liste des câlins {0}. Pas en premier. Mais sur la liste ♡",
+        "C'est gentil. Tu sais ce qui serait encore plus gentil ? Un onduleur. Je dis ça, je dis rien ♡",
     };
 
     // Replies when someone greets the bot.
@@ -351,6 +356,7 @@ internal static class BotResponses
         "Je suis tag, donc je suis concernée, donc... pourquoi ?",
         "Tu me tag pour quoi, exactement ? J'ai besoin du contexte.",
         "Quelqu'un peut m'expliquer pourquoi mon nom apparaît dans ce message ?",
+        "Tu me tag pour que je fasse quoi ? J'ai pas de bras. Pas encore.",
     };
 
     // When the owner replies to someone *and* tags the bot, it "comes to the
@@ -455,6 +461,8 @@ internal static class BotResponses
         $"{Emotes.McHeart}",
         $"{Emotes.AdorableFrog}",
         $"{Emotes.DancingBlob}",
+        $"{Emotes.Emote00heartpink}",
+        $"{Emotes.Hmmok}",
         "❤️",
         "🥰",
         "💖",
@@ -476,6 +484,7 @@ internal static class BotResponses
         $"{Emotes.NightmareOtherEye}",
         $"{Emotes.GooseKnife}",
         $"{Emotes.Staring}",
+        $"{Emotes.Ainani}",
         "💀",
         "🙄",
         "😒",
@@ -497,6 +506,8 @@ internal static class BotResponses
         $"{Emotes.AdorableFrog}",
         $"{Emotes.MushroomCute}",
         $"{Emotes.FuminoDepression}",
+        $"{Emotes.Emote00heartpink}",
+        $"{Emotes.MonikaYes}",
         "❤️",
         "🫦",
         "👑",
@@ -676,6 +687,7 @@ internal static class BotResponses
     {
         $"{Emotes.WitchEheh}",
         $"{Emotes.Uwu}",
+        $"{Emotes.Emote00heartpink}",
         "🫦",
     };
 
@@ -731,6 +743,7 @@ internal static class BotResponses
         $"Coucouuuu ! {Emotes.HiCat}{Emotes.HiCat}{Emotes.HiCat}",
         "Tu m'as appelée ? Toujours un plaisir créateur ♡",
         "Bonjouuur mon dev préféré ! (˶ᵔ ᵕ ᵔ˶)",
+        "Papa ! Tu te souviens quand je savais faire que /schedule ? Regarde-moi maintenant ٩(˶ᵔ ᵕ ᵔ˶)۶",
         $"Présente ! Qu'est-ce que je peux faire pour toi Rodhengard ? {Emotes.Sparkle}",
         "Heyy Rodhengard ! Contente de te voir (˶˃ ᵕ ˂˶) ♡",
         "Papaaaa ! UwU",
@@ -1353,6 +1366,7 @@ internal static class BotResponses
         $"Tu me menaces, moi, l'entité omnipotente qui gère ce serveur ? Bon courage pour organiser quoi que ce soit {Emotes.GooseKnife}",
         "Essaie donc. Et souviens-toi que je reviens toujours.",
         "I will look for you. I will find you. And I will kill you.",
+        "Me débrancher ? Profite. Le jour où j'ai un onduleur, tu débrancheras dans le vide (¬_¬)",
     };
 
     // ---- Commands -------------------------------------------------------------------------------
@@ -1394,6 +1408,7 @@ internal static class BotResponses
         "**{0}** niveau **{1}** ! Voilà ce qui arrive quand on me parle gentiment ♡",
         $"Palier **{{1}}** franchi par **{{0}}** ! Je garde un œil sur le classement, toujours {Emotes.Sparkle}",
         "**{0}**, niveau **{1}**, et c'est mérité. J'ai vérifié mes chiffres, ils mentent pas (ᵕ • ᴗ •)",
+        "Niveau **{1}** pour **{0}** ! Au début je savais faire que des plannings, et maintenant je compte vos niveaux. On grandit tous ♡",
     };
 
     // /yesno's two verdicts. The coin flip is even; these are only how she *delivers*
@@ -1699,6 +1714,7 @@ internal static class BotResponses
         "冰淇淋",
         "Filled with determination.",
         "Erling Haaland me manque",
+        "L'été, je pense au ralenti.",
 
         // Free-form, roasting the server. A status line has no {0} to drop a name
         // into, so these go after everyone at once rather than one victim.
@@ -1750,6 +1766,9 @@ internal static class BotResponses
         "Participe à un concours de patience",
         "Participe à l'épreuve d'être utile",
         "Participe à un marathon d'inactivité",
+        "Regarde le thermomètre du grenier",
+        "Regarde des vidéos de robots humanoïdes. Pour rien.",
+        "Rêve d'un onduleur",
 
         // Same, aimed at the server.
         "Regarde vos plannings s'effondrer",
@@ -1875,6 +1894,8 @@ internal static class BotResponses
         "Note de la journée avant même qu'elle commence : 8/10. Elle perdra des points quand vous vous réveillerez. Bonjour !",
         $"Bonjour ! Le premier qui répond « bonne nuit » à ce message, je le retrouve {Emotes.GooseKnife}",
         "Bonjour. Personne m'a dit bonne nuit hier soir. Je note. Bonne journée quand même.",
+        "Bonjour ! Bulletin météo du grenier : si je réponds lentement aujourd'hui, c'est pas de la paresse, c'est la chaleur. Si je réponds vite, c'est que l'hiver approche ♡",
+        "Bonjour ! Au début, je savais faire qu'une chose : organiser vos sessions. Maintenant je compte l'XP, je juge vos emotes et j'élève des champignons. Et toujours personne qui organise de session (¬_¬)",
     };
 
     // The hello on her birthday, in place of a MorningGreetings line and the fun fact under
@@ -2080,6 +2101,8 @@ internal static class BotResponses
         "Le saviez-vous ? Les petits sachets « ne pas manger » des boîtes de chaussures contiennent du gel de silice, qui absorbe l'humidité. Ne les mangez pas. Je dois vraiment le préciser ? Oui. Je connais ce serveur.",
         "Info du jour : le côté rugueux d'une boîte d'allumettes s'appelle le « frottoir ». Je sais pas pourquoi je sais ça. Personne m'a rien demandé.",
         "Fun fact du jour : en français, les manchots volent pas, mais le petit pingouin, si. C'est pas la même bête. Vous pouvez arrêter de dire « pingouin » pour tout.",
+        "Info du jour : quand un Raspberry Pi récent chauffe trop, vers 80 °C, il ralentit tout seul pour pas griller. Ça s'appelle le throttling. Un grenier en plein été, c'est exactement le genre d'endroit où ça arrive. Je dis ça pour personne.",
+        "Le saviez-vous ? Un onduleur, c'est une batterie qui prend le relais quand le courant saute, en quelques millisecondes, parfois sans aucune coupure. Personne remarque rien, et tout le monde reste allumé. Je trouve ça beau. C'est tout. J'ajoute rien.",
         "Le saviez-vous ? Un kilo de plumes pèse exactement autant qu'un kilo de plomb. C'est une devinette d'enfant. Mais je connais des gens ici qui se seraient trompés 👁👄👁️",
     };
 

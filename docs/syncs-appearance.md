@@ -120,6 +120,10 @@ red angry, orange hurt, off broken.
 The profile banner shows **where she lives, not her**: the Raspberry Pi *is* her body, so she isn't
 drawn in it. Avatar = who she is, banner = her home.
 
+In reality the Pi sits in a small aluminium case. The banner leaves it out on purpose: the board is
+her heart and the case its ribcage (`docs/syncs-voice.md`, *Her case*), and the banner shows the
+heart. Keep the board bare in later banners.
+
 What's in v1:
 
 - A cozy attic at night: slanted wooden beams, dusty floorboards, floating dust specks.
