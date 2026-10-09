@@ -67,11 +67,14 @@ English. Renaming a command or option changes what people type: do it rarely, an
 
 - **`BotService`** — gateway login, command registration, interaction dispatch, and the gateway
   fan-out (`MessageReceived`, `ReactionAdded`, `ReactionRemoved` to the trackers and services).
-  It owns every gateway subscription except `PresenceService`'s `Ready` hook.
-- **Six `BackgroundService` loops**, each with **its own interval on purpose** — never share one:
+  It owns every message and reaction subscription; connection-lifecycle hooks (`Ready`,
+  `Connected`, `Disconnected`) live in the service that needs them (`PresenceService`,
+  `AmbientService`, `ApplicationEmojiService`, `PlynlingMascotService`, `PiHealthService`).
+- **Seven `BackgroundService` loops**, each with **its own interval on purpose** — never share one:
   `ReminderService` (5 min, load-bearing — see scheduling), `PresenceService` (5 min, cosmetic),
   `VoiceXpService` (1 min), `GiveawayDrawService` (1 min), `QuizMasterService` (1 min, see quiz),
-  `PlynlingSweepService` (hourly).
+  `PlynlingSweepService` (hourly), `PiHealthService` (2 min — the Pi's temperature, how the last
+  run ended, gateway outages; see personality, *Her body*).
 - **`MorningGreetingService`** has no interval: it sleeps until one random slot per morning
   (8:00–10:00 Paris, `Helpers/MorningGreeting`) — see personality.
 - **`AmbientService`** (10 min, cosmetic, its own interval like the loops above): the 3 a.m. line
@@ -122,7 +125,7 @@ restart **by design**.
   `.HasConversion<long>()` in `OnModelCreating`. A derived model property needs `[NotMapped]`
   (see `EmoteStat.Markup`) or EF demands a migration for a column that should not exist.
 - **Anything stored by int or by string key is append-only**: enums stored as ints
-  (`PlynlingSpecies`, `PlynlingBond`, `JournalKind`, `DeathCause`, passions) and stored keys
+  (`PlynlingSpecies`, `PlynlingBond`, `JournalKind`, `DeathCause`, `UptimeEventKind`, passions) and stored keys
   (item keys, cosmetic keys, badge keys, economy metric keys). Inserting in the middle or renaming
   silently turns or orphans every existing row.
 - **Totals + daily buckets** is the one pattern for dated rankings: an all-time totals table plus a
@@ -287,8 +290,9 @@ when `version` changes: an unbumped push never reaches the Pi.
 The bot ships as a Home Assistant add-on: the `Dockerfile` publishes a self-contained
 `linux-arm64` build, and `run.sh` maps add-on options to `Discord__Token`,
 `Discord__RegisterCommandsGlobally` and `Database__Path=/data/ProjectSYNCS.db`. Only `/data` is
-persisted, so the SQLite file must stay under it — and so do `ambient-state.json` and
-`morning-state.json`, which `AmbientService` and `MorningGreetingService` write next to it.
+persisted, so the SQLite file must stay under it — and so do `health-state.json`,
+`ambient-state.json` and `morning-state.json`, which `PiHealthService`, `AmbientService` and
+`MorningGreetingService` write next to it.
 
 The GitHub remote is **public**. `appsettings.json` and `config.yaml` ship token placeholders; real
 tokens go in user secrets (dev) or add-on options (prod), never in a tracked file.

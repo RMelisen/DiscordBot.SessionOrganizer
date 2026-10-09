@@ -249,6 +249,10 @@ thresholds live in `Helpers/Ambient` (pure, Paris wall-clock hours, so DST never
 | Ghost typing | `AmbientService.HandleMessageAsync` | a human message after ≥ 1 h quiet, not aimed at her, 3%, max 1/day |
 | Hesitant reaction | `ReactionService` | 3% of mood reactions are removed 2–4 s later |
 | Wake line | `AmbientService`, first `Ready` only | every restart, 9:00–23:00, max 1/day: `WakeUpdateLines` when the version changed, else `WakeLines` (waking from a bad dream) |
+| Abrupt wake | `AmbientService`, first `Ready` only | after a power cut or a crash (`PiHealthService.LastStop`): **always**, any hour, no daily cap, in place of the line above: `PowerCutWakeLines` / `CrashWakeLines` |
+| Hot status | `PresenceService` | awake, Pi ≥ 70 °C: half the rotations `HotPresenceFillers` |
+| Heat record | `PiHealthService` tick | today's max beats every other day by ≥ 1 °C, ≥ 30 days of history, 10:00–23:00, max 1/day: `HeatRecordLines` |
+| Router return | `PiHealthService`, `Connected` | gateway back after ≥ 10 min, any hour, max 1/day: `RouterReturnLines` (what she missed in the main channel) or `RouterReturnQuietLines` |
 
 - **`AmbientService` is registered twice on one instance**, like `MorningGreetingService`: `BotService`
   feeds it every human message (two quiet clocks: the main channel's, and all idle channels
@@ -274,6 +278,37 @@ thresholds live in `Helpers/Ambient` (pure, Paris wall-clock hours, so DST never
 - Nothing fires in DMs, on bots, or during a breakdown; every send uses `AllowedMentions.None`. In the
   dev guild the channel never resolves, so only the night status is visible there.
 - Ghost typing and the hesitant reaction stay out of `README.md` and `/help`, like the easter eggs.
+
+### Her body — `PiHealthService`
+
+Reads the real Pi (`Helpers/PiHardware`: `/sys/class/thermal/thermal_zone0/temp`, `/proc/uptime`),
+null everywhere else, so dev on Windows simply has no temperature. `/debug health` shows what it
+reads — the first thing to run after a deploy if the status never mentions the heat.
+
+- **Temperature** is sampled every tick into `PiThermalDay` (one row per Paris day: min, max and
+  when, sum and count for the average, minutes ≥ 80 °C). Thresholds live in `Helpers/PiHealth`
+  and are first guesses: tune them against real rows.
+- **How the last run ended** comes from `health-state.json` next to the database: `CleanExit` is
+  written false on start and true **on `ApplicationStopping`** — the moment Home Assistant's
+  SIGTERM arrives, not after every service has stopped, because the Supervisor kills an add-on
+  that overruns its stop timeout (10 s by default) and that must not read as a crash.
+  `LastAliveAt` is refreshed every tick. Unclean on a host up for under 15 minutes, or booted
+  after the last heartbeat, is a **power cut** (the whole Pi went down — a hard reset looks the
+  same); the uptime test needs no clock, since a Pi without an RTC battery may start with the
+  wrong time until NTP syncs. Unclean on a machine that stayed up is a **crash** (killed, OOM,
+  a native fault). Both are recorded as `UptimeEvent`s.
+  `PiHealth.Classify` is pure; the state is read once, before the file is overwritten, on first
+  use — `AmbientService` may ask before `StartAsync` runs.
+- **Outages**: the first `Disconnected` starts the clock, the next `Connected` stops it; ten
+  minutes or more is an outage (`UptimeEvent`, plus the router line). Shorter gaps are Discord's
+  ordinary reconnects. She blames the router whatever the cause — she can't tell from the attic.
+- **The duration is optional.** About a third of the wake lines and some router lines don't
+  mention it at all — a frightened bot doesn't always look at the clock. Where `{0}` is used in
+  `PowerCutWakeLines` / `CrashWakeLines`, it must read with `PiHealth.UnknownDowntime`
+  (« un bon moment ») as well as with « 2 h 05 »: no sentence starts with `{0}`, and no
+  « de {0} ». In the router pools `{1}` may be « 1 message », so nothing around it assumes a
+  plural. Interpolated lines (the ones with a custom emote) write the placeholder `{{0}}`: a
+  bare `{0}` inside `$"…"` prints the number 0.
 
 ## `RivalryService` — other bots
 

@@ -61,6 +61,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     private readonly PlynlingAnnouncer _announcer;
     private readonly PlynlingSweepService _sweep;
     private readonly QuizMasterService _quiz;
+    private readonly PiHealthService _health;
 
     // Discord caps a message at 2000 characters; leave room for the herald line
     // and the blockquote markers.
@@ -72,9 +73,10 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         new(@"channels/(\d+)/(\d+)/(\d+)", RegexOptions.Compiled);
 
     public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings,
-        PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz)
+        PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz, PiHealthService health)
     {
         _quiz = quiz;
+        _health = health;
         _plynlings = plynlings;
         _announcer = announcer;
         _sweep = sweep;
@@ -500,6 +502,22 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
                 ? $"🔧 Passage terminé : {n} Plynling{(n > 1 ? "s" : "")} vu{(n > 1 ? "s" : "")}."
                 : "🔧 Un passage est déjà en cours. Réessaie dans un instant.",
             ephemeral: true);
+    }
+
+    // What she reads off the Pi: temperature now and today, the host's boot time, how her last
+    // run ended, an outage in progress. The first check after a deploy: it shows whether /sys
+    // and /proc are readable from inside the add-on's container.
+    [SlashCommand("health", "Voir ce que le bot lit du Raspberry Pi (température, arrêts)")]
+    public async Task HealthAsync()
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+        // Reads the database: may be past Discord's 3 s on the Pi.
+        await DeferAsync(ephemeral: true);
+        await FollowupAsync(await _health.DescribeAsync(), ephemeral: true, allowedMentions: AllowedMentions.None);
     }
 
     // The pop quiz on demand, in this guild's quiz channel: post a round now (the next in the

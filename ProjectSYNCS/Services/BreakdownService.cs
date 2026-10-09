@@ -9,7 +9,7 @@ namespace ProjectSYNCS.Services;
 // per-channel in-progress lock, and the timed playback of the scripted lines.
 // Kept as a singleton so the cooldown and active-channel state are shared across
 // every entry point (reply-to-bot and mention).
-internal sealed class BreakdownService
+public sealed class BreakdownService
 {
     private readonly ILogger<BreakdownService> _logger;
 

@@ -39,6 +39,8 @@ public class AppDbContext : DbContext
     public DbSet<QuizRound> QuizRounds => Set<QuizRound>();
     public DbSet<QuizStat> QuizStats => Set<QuizStat>();
     public DbSet<QuizDailyStat> QuizDailyStats => Set<QuizDailyStat>();
+    public DbSet<PiThermalDay> PiThermalDays => Set<PiThermalDay>();
+    public DbSet<UptimeEvent> UptimeEvents => Set<UptimeEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -327,6 +329,18 @@ public class AppDbContext : DbContext
             e.Property(x => x.UserId).HasConversion<long>();
             e.HasIndex(x => new { x.GuildId, x.UserId, x.Day }).IsUnique();
             e.HasIndex(x => new { x.GuildId, x.Day });
+        });
+
+        // One row per Paris day, keyed by the day itself: there is one Pi.
+        modelBuilder.Entity<PiThermalDay>(e =>
+        {
+            e.HasKey(x => x.Day);
+            e.Property(x => x.Day).ValueGeneratedNever();
+        });
+
+        modelBuilder.Entity<UptimeEvent>(e =>
+        {
+            e.HasIndex(x => x.Kind);
         });
     }
 }

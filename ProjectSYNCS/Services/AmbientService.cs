@@ -10,7 +10,8 @@ namespace ProjectSYNCS.Services;
 
 // Her life in the main channel when nobody is talking to her: the 3 a.m. line (and a
 // scolding for whoever answers it), a word into a long daytime silence, a typing
-// indicator that never becomes a message, and a line when she comes back from a restart.
+// indicator that never becomes a message, and a line when she comes back from a restart
+// (a shaken one, at any hour, when PiHealthService says the restart was a power cut or a crash).
 // Cosmetic, like PresenceService (which owns the night status), and rare on purpose: the
 // point is that she seems to be there, not that she talks. When and how often lives in
 // Helpers/Ambient.
@@ -61,12 +62,15 @@ internal sealed class AmbientService : BackgroundService
     private const ulong SeenSalt = 0x5359_4E43_5345_454E;       // "SYNCSEEN"
     private const ulong WakeSalt = 0x5359_4E43_5741_4B45;       // "SYNCWAKE"
     private const ulong WakeUpdateSalt = 0x5359_4E43_5550_4454; // "SYNCUPDT"
+    private const ulong PowerCutSalt = 0x5359_4E43_504F_5752;   // "SYNCPOWR"
+    private const ulong CrashSalt = 0x5359_4E43_4352_5348;      // "SYNCCRSH"
 
     private static readonly HashSet<string> NightLineSet = new(BotResponses.NightLines);
 
     private readonly DiscordSocketClient _client;
     private readonly GuildConfigService _config;
     private readonly BreakdownService _breakdown;
+    private readonly PiHealthService _health;
     private readonly ResponsePicker _picker;
     private readonly ILogger<AmbientService> _logger;
     private readonly string _statePath;
@@ -106,6 +110,7 @@ internal sealed class AmbientService : BackgroundService
         DiscordSocketClient client,
         GuildConfigService guildConfig,
         BreakdownService breakdown,
+        PiHealthService health,
         ResponsePicker picker,
         IConfiguration config,
         ILogger<AmbientService> logger)
@@ -113,6 +118,7 @@ internal sealed class AmbientService : BackgroundService
         _client = client;
         _config = guildConfig;
         _breakdown = breakdown;
+        _health = health;
         _picker = picker;
         _logger = logger;
 
@@ -469,15 +475,24 @@ internal sealed class AmbientService : BackgroundService
             // restart compares against this one.
             SaveState(state with { LastVersion = AppInfo.Version });
 
-            if (!Ambient.IsWakeHours(now) || state.LastWakeDay == today) return;
+            // A power cut or a crash is never a quiet wake: whatever the hour, however many
+            // times today. It takes the place of the update line too.
+            var stop = _health.LastStop;
+            bool abrupt = PiHealth.IsAbrupt(stop);
+            if (!abrupt && (!Ambient.IsWakeHours(now) || state.LastWakeDay == today)) return;
 
             var channel = await WaitForChannelAsync();
             if (channel is null || _breakdown.IsActive(channel.Id)) return;
 
             var day = AppTime.DayNumber(now);
-            var line = updated
-                ? string.Format(DailyRotation.Pick(BotResponses.WakeUpdateLines, day, WakeUpdateSalt), AppInfo.Version)
-                : DailyRotation.Pick(BotResponses.WakeLines, day, WakeSalt);
+            var line = abrupt
+                ? string.Format(stop == StopKind.PowerCut
+                        ? DailyRotation.Pick(BotResponses.PowerCutWakeLines, day, PowerCutSalt)
+                        : DailyRotation.Pick(BotResponses.CrashWakeLines, day, CrashSalt),
+                    PiHealth.Duration(_health.Downtime))
+                : updated
+                    ? string.Format(DailyRotation.Pick(BotResponses.WakeUpdateLines, day, WakeUpdateSalt), AppInfo.Version)
+                    : DailyRotation.Pick(BotResponses.WakeLines, day, WakeSalt);
 
             var sent = await BotChat.PostWithTypingAsync(channel, line, _logger, "wake line", AllowedMentions.None);
             if (sent is not null)

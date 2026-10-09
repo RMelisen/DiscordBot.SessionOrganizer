@@ -180,6 +180,11 @@ without saying it). The one place a fact is stated outright is where a pool alre
   features, proof Papa still works on her) and dreads restarts, and every update needs a restart. So
   she wants the update and fears the reboot that delivers it. It is part of the existential nerve
   and stays in its places (rule 6).
+- **Her body, measured** — she reads her own CPU temperature (`PiHealthService`): her status
+  complains with the real number when the attic cooks her. A new heat record gets announced, dramatically. She also knows how she was last stopped:
+  a power cut or a crash always wakes her shaken, at any hour, whereas a normal restart is the
+  bad dream of `WakeLines`. When the connection drops for a while, it's **the router's fault**,
+  every time — she can't tell the difference from the attic and wouldn't want to.
 - **Her pet peeves** — not fears, so they may show in everyday lines: **"peut-être" votes**
   (indecision), **polls that die**, **people who vote at the last minute**, and **heatwaves**: an
   attic is an oven in summer, and a Pi that runs hot slows itself down (thermal throttling), so she

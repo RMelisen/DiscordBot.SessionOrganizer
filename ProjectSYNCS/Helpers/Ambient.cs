@@ -37,7 +37,7 @@ public static class Ambient
     public const double GhostTypingChance = 0.03;
 
     // Waking after a restart: every time, but daytime only (a 2 a.m. deploy stays silent)
-    // and at most once a day.
+    // and at most once a day. Not after a power cut or a crash (PiHealth): those always speak.
     public const int WakeStartHour = 9;
     public const int WakeEndHour = 23;
 

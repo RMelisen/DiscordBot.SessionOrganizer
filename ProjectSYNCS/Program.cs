@@ -100,6 +100,10 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<ShameTracker>();
 
         services.AddHostedService<BotService>();
+        // One instance for both roles: the host runs its 2-minute loop, AmbientService,
+        // PresenceService and /debug health read what it knows about the Pi.
+        services.AddSingleton<PiHealthService>();
+        services.AddHostedService(sp => sp.GetRequiredService<PiHealthService>());
         services.AddHostedService<ReminderService>();
         services.AddHostedService<PresenceService>();
         // One instance for both roles: the host runs its loop, BotService feeds it
