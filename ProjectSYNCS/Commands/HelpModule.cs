@@ -118,7 +118,11 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "Les inscrits reçoivent un **rappel en message privé** avant le début de la session.\n" +
                 "À l'heure prévue la carte passe en **🔴 EN COURS**, puis en **✅ TERMINÉE** environ " +
                 "2 h plus tard. Une session **annulée** prévient les inscrits par message privé.\n" +
-                "L'**ID** d'une session est en pied de carte, pour `/schedule edit` et `/schedule cancel`.")
+                "L'**ID** d'une session est en pied de carte, pour `/schedule edit` et `/schedule cancel`.\n" +
+                "Pour un **Jeu** ou un **Film**, je fais l'appel : 10 min après le début, je relance les " +
+                "inscrits pas encore en vocal, puis je fais le bilan.\n" +
+                "Chaque **mercredi soir**, je lance un sondage pour le weekend : qui a voté pour le soir " +
+                "retenu peut en faire une session.")
             .WithFooter($"Project S.Y.N.C.S. v{AppInfo.Version}")
             .Build();
 }

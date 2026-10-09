@@ -22,6 +22,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
     private const int MaxOptions = 10;
 
     private readonly PollService _pollService;
+    private readonly EventService _eventService;
 
     // The slots a user is assembling before publishing. The wizard adds them one
     // at a time, so the in-progress poll lives here (keyed by user) rather than
@@ -39,9 +40,10 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         public List<DateTimeOffset> Slots { get; } = new();
     }
 
-    public PollModule(PollService pollService)
+    public PollModule(PollService pollService, EventService eventService)
     {
         _pollService = pollService;
+        _eventService = eventService;
     }
 
     // ---- Entry: ask for a title, then start adding slots ------------------
@@ -309,29 +311,56 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        if (!SessionPermissions.CanManage(Context.User, poll))
+        var now = DateTimeOffset.Now;
+        var futureSlots = poll.Options.Where(o => o.ScheduledAt > now).ToList();
+        int max = futureSlots.Count == 0 ? 0 : futureSlots.Max(o => o.Votes.Count);
+        var winners = max > 0
+            ? futureSlots.Where(o => o.Votes.Count == max).OrderBy(o => o.ScheduledAt).ToList()
+            : futureSlots.OrderBy(o => o.ScheduledAt).ToList();
+
+        // Her own weekend poll (WeekendPollService) has no human organizer, so whoever voted for
+        // a winning evening may plan it too, and becomes the session's organizer. Only her polls:
+        // everyone else's stay with their organizer and staff.
+        bool ownPoll = poll.OrganizerId == Context.Client.CurrentUser.Id;
+        bool votedForWinner = ownPoll && max > 0
+            && winners.Any(o => o.Votes.Any(v => v.UserId == Context.User.Id));
+        if (!SessionPermissions.CanManage(Context.User, poll) && !votedForWinner)
         {
             await RespondAsync(
-                "Seul l'organisateur ou un administrateur peut créer une session depuis ce sondage.",
+                ownPoll
+                    ? "Seul quelqu'un qui a voté pour le créneau retenu (ou un administrateur) peut créer cette session."
+                    : "Seul l'organisateur ou un administrateur peut créer une session depuis ce sondage.",
                 ephemeral: true);
             return;
         }
 
-        var now = DateTimeOffset.Now;
-        var futureSlots = poll.Options.Where(o => o.ScheduledAt > now).ToList();
         if (futureSlots.Count == 0)
         {
             await RespondAsync("Tous les créneaux de ce sondage sont déjà passés.", ephemeral: true);
             return;
         }
 
-        // Pre-fill the future modal's title with the poll's title.
-        _toSessionTitles[Context.User.Id] = poll.Title;
+        // Several voters can click the same button: once one of them has planned a winning
+        // evening, the others are told instead of creating a second session.
+        if (ownPoll)
+        {
+            var planned = await _eventService.GetActiveEventsAsync(Context.Guild.Id);
+            var taken = winners.FirstOrDefault(o => planned.Any(e => e.ScheduledAt == o.ScheduledAt));
+            if (taken is not null)
+            {
+                await RespondAsync(
+                    $"Une session est déjà prévue à ce créneau (<t:{taken.ScheduledAt.ToUnixTimeSeconds()}:F>).",
+                    ephemeral: true);
+                return;
+            }
+        }
 
-        int max = futureSlots.Max(o => o.Votes.Count);
-        var winners = max > 0
-            ? futureSlots.Where(o => o.Votes.Count == max).OrderBy(o => o.ScheduledAt).ToList()
-            : futureSlots.OrderBy(o => o.ScheduledAt).ToList();
+        // Pre-fill the future modal's title with the poll's title — not hers, which is a
+        // question (« Qui est dispo ce weekend ? »), not the name of what they'll play.
+        if (ownPoll)
+            _toSessionTitles.TryRemove(Context.User.Id, out _);
+        else
+            _toSessionTitles[Context.User.Id] = poll.Title;
 
         // A single clear winner skips straight to category selection.
         if (max > 0 && winners.Count == 1)

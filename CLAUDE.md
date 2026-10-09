@@ -66,15 +66,18 @@ English. Renaming a command or option changes what people type: do it rarely, an
 `Program.cs` is the composition root: DI wiring, `MigrateAsync()`, then the hosted services.
 
 - **`BotService`** — gateway login, command registration, interaction dispatch, and the gateway
-  fan-out (`MessageReceived`, `ReactionAdded`, `ReactionRemoved` to the trackers and services).
+  fan-out (`MessageReceived`, `ReactionAdded`, `ReactionRemoved`, `UserJoined` to the trackers and
+  services).
   It owns every message and reaction subscription; connection-lifecycle hooks (`Ready`,
   `Connected`, `Disconnected`) live in the service that needs them (`PresenceService`,
   `AmbientService`, `ApplicationEmojiService`, `PlynlingMascotService`, `PiHealthService`).
-- **Seven `BackgroundService` loops**, each with **its own interval on purpose** — never share one:
+- **Eight `BackgroundService` loops**, each with **its own interval on purpose** — never share one:
   `ReminderService` (5 min, load-bearing — see scheduling), `PresenceService` (5 min, cosmetic),
-  `VoiceXpService` (1 min), `GiveawayDrawService` (1 min), `QuizMasterService` (1 min, see quiz),
+  `VoiceXpService` (1 min — also feeds the voice spectator, the session roll call and her voice
+  seat), `GiveawayDrawService` (1 min), `QuizMasterService` (1 min, see quiz),
   `PlynlingSweepService` (hourly), `PiHealthService` (2 min — the Pi's temperature, how the last
-  run ended, gateway outages; see personality, *Her body*).
+  run ended, gateway outages; see personality, *Her body*), `WeekendPollService` (15 min, her
+  Wednesday poll; see scheduling).
 - **`MorningGreetingService`** has no interval: it sleeps until one random slot per morning
   (8:00–10:00 Paris, `Helpers/MorningGreeting`) — see personality.
 - **`AmbientService`** (10 min, cosmetic, its own interval like the loops above): the 3 a.m. line

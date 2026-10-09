@@ -15,6 +15,7 @@ public class ReminderService : BackgroundService
 {
     private readonly IServiceProvider _services;
     private readonly DiscordSocketClient _client;
+    private readonly ResponsePicker _picker;
     private readonly ILogger<ReminderService> _logger;
 
     private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(5);
@@ -22,10 +23,12 @@ public class ReminderService : BackgroundService
     public ReminderService(
         IServiceProvider services,
         DiscordSocketClient client,
+        ResponsePicker picker,
         ILogger<ReminderService> logger)
     {
         _services = services;
         _client = client;
+        _picker = picker;
         _logger = logger;
     }
 
@@ -72,6 +75,9 @@ public class ReminderService : BackgroundService
                 await pollService.ClosePollAsync(poll.Id);
                 poll.IsClosed = true;
                 await UpdatePollCardAsync(poll);
+                // Her own weekend poll (WeekendPollService) gets its result said out loud.
+                if (poll.OrganizerId == _client.CurrentUser.Id)
+                    await AnnounceOwnPollAsync(poll);
             }
             catch (Exception ex)
             {
@@ -102,6 +108,45 @@ public class ReminderService : BackgroundService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to update auto-closed poll card for poll {PollId}.", poll.Id);
+        }
+    }
+
+    // Her weekend poll just closed: she says which evening won, as a reply to the card (whose
+    // « Créer une session » button anyone who voted for that evening may use), or sulks that
+    // nobody voted. Only future slots count, like the button. Swallows its own failures: the
+    // close is already written, and a missing line is the worst case.
+    private async Task AnnounceOwnPollAsync(Poll poll)
+    {
+        if (poll.MessageId == 0) return;
+
+        try
+        {
+            if (_client.GetGuild(poll.GuildId)?.GetTextChannel(poll.ChannelId) is not { } channel) return;
+
+            var now = DateTimeOffset.UtcNow;
+            var future = poll.Options.Where(o => o.ScheduledAt > now).ToList();
+            int max = future.Count == 0 ? 0 : future.Max(o => o.Votes.Count);
+
+            string line;
+            if (max == 0)
+            {
+                line = _picker.Pick(BotResponses.WeekendPollDeadLines);
+            }
+            else
+            {
+                var slots = string.Join(" ou ", future
+                    .Where(o => o.Votes.Count == max)
+                    .OrderBy(o => o.ScheduledAt)
+                    .Select(o => $"<t:{o.ScheduledAt.ToUnixTimeSeconds()}:F>"));
+                line = string.Format(_picker.Pick(BotResponses.WeekendPollResultLines), slots);
+            }
+
+            var reference = new MessageReference(poll.MessageId, poll.ChannelId, poll.GuildId, failIfNotExists: false);
+            await BotChat.PostWithTypingAsync(channel, line, _logger, "weekend poll result", AllowedMentions.None, reference);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to announce the result of poll {PollId}.", poll.Id);
         }
     }
 

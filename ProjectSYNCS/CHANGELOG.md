@@ -3,6 +3,16 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.6.0 — 2026-10-09
+
+- Roll call for Game and Movie sessions: a ping for whoever is late ten minutes in, then a tally
+  (who came, who was late, how many never showed).
+- Weekend poll every Wednesday evening; anyone who voted for the winning evening can turn it into
+  a session.
+- Newcomers get a welcome (or a welcome back) in reply to Discord's join message.
+- SYNCS sometimes sits in a busy voice channel, muted and deafened, and her end-of-session line
+  changes when she was there.
+
 ## 6.5.1 — 2026-10-09
 
 - The voice spectator line now fits the channel: Général, Gaming (both channels), Cinéma and

@@ -16,5 +16,9 @@ public class Participant
     public ParticipantStatus Status { get; set; }
     public DateTimeOffset JoinedAt { get; set; } = DateTimeOffset.UtcNow;
 
+    // The first sweep that saw them in one of the server's voice channels inside the session's window
+    // (SessionAttendanceService). Null: not seen (yet). Reset when the session's time moves.
+    public DateTimeOffset? FirstSeenInVoiceAt { get; set; }
+
     public SessionEvent SessionEvent { get; set; } = null!;
 }

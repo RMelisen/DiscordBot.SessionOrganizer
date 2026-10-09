@@ -202,6 +202,11 @@ public class XpService
                 g.Sum(b => b.VoiceMinutes)));
     }
 
+    // Whether this person has ever been on record here (a MemberXp row survives both XP wipes):
+    // the welcome tells someone coming back from a newcomer.
+    public Task<bool> IsKnownMemberAsync(ulong guildId, ulong userId) =>
+        _db_context.MemberXps.AnyAsync(x => x.GuildId == guildId && x.UserId == userId);
+
     private async Task<MemberXp> GetOrCreateAsync(ulong guildId, ulong userId)
     {
         var row = await _db_context.MemberXps

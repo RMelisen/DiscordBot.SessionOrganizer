@@ -272,6 +272,7 @@ thresholds live in `Helpers/Ambient` (pure, Paris wall-clock hours, so DST never
 | Heat record | `PiHealthService` tick | today's max beats every other day by ≥ 1 °C, ≥ 30 days of history, 10:00–23:00, max 1/day: `HeatRecordLines` |
 | Voice spectator | `VoiceSpectatorService`, fed by `VoiceXpService`'s sweep | a home-guild voice channel where ≥ 2 active people spent ≥ 1 h together empties (or has < 2 active for 15 min): in that voice channel's chat, from the pool of its room (`Helpers/VoiceRoom`: `VoiceSpectatorGamingLines` for both Gaming channels, `…CinemaLines`, `…StudyLines`, `…GeneralLines` for Général and any unlisted channel), max 1/day across all rooms, any hour |
 | Synthia flinch | `SynthiaService`, before `ChatterService` | « Synthia » in any guild message, max 1/day: 40% a reaction taken back (`SynthiaReactions`), 35% a reply deleted 4–6 s later (`SynthiaVanishLines`), 25% a slip edited into a denial (`SynthiaEditLines`); returns true so no comeback lands on top |
+| Voice seat | `VoiceSeatService`, fed by `VoiceXpService`'s sweep | a home-guild voice channel with ≥ 3 active people for 10 min rolls 30% **once per gathering**; a win seats her there (muted, deafened) until it has had < 3 active for 5 min; see *Her seat in voice* |
 | Router return | `PiHealthService`, `Connected` | gateway back after ≥ 10 min, any hour, max 1/day: `RouterReturnLines` (what she missed in the main channel) or `RouterReturnQuietLines` |
 
 - **`AmbientService` is registered twice on one instance**, like `MorningGreetingService`: `BotService`
@@ -298,6 +299,36 @@ thresholds live in `Helpers/Ambient` (pure, Paris wall-clock hours, so DST never
 - Nothing fires in DMs, on bots, or during a breakdown; every send uses `AllowedMentions.None`. In the
   dev guild the channel never resolves, so only the night status is visible there.
 - Ghost typing and the hesitant reaction stay out of `README.md` and `/help`, like the easter eggs.
+
+### Her seat in voice — `VoiceSeatService`
+
+She joins with `ConnectAsync(selfDeaf: true, selfMute: true, external: true)`: `external` sends the
+voice-state update only, with no audio client, so no libsodium/opus and no voice encryption. Rules
+are pure, in `Helpers/VoiceSeat`.
+
+- **One seat per guild** (Discord's rule). With two won channels: most active people, then one
+  hosting a live session (`SessionAttendanceService.IsInLiveSession`), then the first started. **She
+  never switches while her gathering holds her** — every move plays Discord's sounds in two
+  channels; when hers ends she moves to another won one in one voice-state update
+  (`disconnect: false`).
+- **She reconciles against where Discord says she is** every sweep, 90 s after her last move:
+  kicked or dropped by a reconnect → that gathering is given up; dragged elsewhere → she adopts that
+  channel while its gathering lasts; sitting somewhere after a restart → she leaves.
+- Channels excluded with `/config` never get her. Home guild only, so it can't be seen on the dev
+  guild. Bots count for neither voice XP nor the spectator, so her presence changes neither.
+- **The spectator line knows**: when she sat in that channel during the stretch,
+  `VoiceSpectatorSeatedLines` (« j'y étais, sourde et muette ») replaces the room pools, which are
+  written for a bot watching names from outside.
+
+## Welcome — `WelcomeService`
+
+She answers Discord's own join line (`SocketSystemMessage`, `MessageType.GuildMemberJoin`, which
+every other handler skips) as a reply, so there is one welcome and she follows Discord's timing
+(membership screening included). `WelcomeLines` pings the newcomer, narrowed to them;
+`WelcomeBackLines` when a `MemberXp` row already exists. More than 3 welcomes in an hour → one
+`WelcomeRushLines`, then silence for the hour. Bots are skipped there; a bot gets `RivalJoinLines`
+in her main channel through `UserJoined` (home guild), since an OAuth-added bot may get no join
+line. Departures are deliberately silent: without the audit log she can't tell a leave from a ban.
 
 ### Her body — `PiHealthService`
 

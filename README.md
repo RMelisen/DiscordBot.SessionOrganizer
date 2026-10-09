@@ -61,6 +61,10 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 - **Lifecycle** — at start time a card flips to **🔴 In progress** (buttons
   disabled), then to **✅ Finished** ~2 h later.
 - **Reminders** — signed-up participants get a DM before the session starts.
+- **Roll call** — for a *Game* or *Movie* session, she watches who turns up in voice. Ten
+  minutes in, she pings the people who signed up and aren't there yet (once someone is); when
+  the group scatters she posts the tally — who came, who was late, and how many never showed
+  (a count, no names).
 
 ### Polls & votes
 
@@ -71,6 +75,10 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 - **`/poll list` · `/vote list`** — list and republish active polls/votes.
 - **`/poll delete <id>` · `/vote delete <id>`** — delete one you created.
 - Polls and votes left open **auto-close after 2 days**.
+- **Weekend poll** — every Wednesday evening she posts her own poll for Friday, Saturday and
+  Sunday at 21:00, unless a session is already planned that weekend or someone's poll is still
+  open. When it closes she announces the winning evening, and anyone who voted for it can turn
+  it into a session.
 
 ### Giveaways
 
@@ -440,6 +448,13 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
   syncs") reaches her from anywhere, mention or not.
 - **Rotating status** — the status line under the bot's name cycles through a large
   pool of one-liners.
+- **Welcome** — she answers Discord's "X joined" message with a welcome that pings the
+  newcomer, or a welcome back for someone she already knows. More than three arrivals in an hour
+  get one line for all of them. A new bot gets a much colder reception.
+- **A seat in voice** — when three or more people are talking in a voice channel for ten
+  minutes, there's a 30% chance she comes and sits with them, muted and deafened, until the
+  group breaks up. With two such channels she picks the busiest, and she never hops between
+  them while hers is still going.
 - **Morning hello** — once a day she says hello in the general channel, at a random
   time between 8:00 and 10:00 (Paris time), followed by a fun fact. If
   someone says hello in that channel first — from 7:00 on — there's a 30% chance she

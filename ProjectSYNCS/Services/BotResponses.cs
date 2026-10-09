@@ -56,6 +56,7 @@ namespace ProjectSYNCS.Services;
 //     JealousLines · JealousLinesOwner ... praise went to a rival
 //     RivalMutters ............. a rival posted
 //     RivalLevelUpLines ........ a level-up on the rival's XP system
+//     RivalJoinLines ........... a new bot joined the server (WelcomeService)
 //
 //   Self-preservation — ShutdownThreatOwner · ShutdownThreatTata · ShutdownThreatReplies
 //
@@ -71,6 +72,14 @@ namespace ProjectSYNCS.Services;
 //     QuizWinLines · QuizOwnerWinLines ............... someone found it / Papa found it
 //     QuizTimeoutLines ......... nobody found it in an hour
 //     QuizWrongLines · QuizAlreadyTriedLines ......... a wrong / second button click (ephemeral)
+//
+//   Organising
+//     SessionLateCallLines ..... ten minutes into a session, to who isn't in voice (SessionAttendanceService)
+//     SessionRecapLines · SessionRecapFullLines ... the roll call after it, someone missing / everyone came
+//     WeekendPollLines ......... her Wednesday poll (WeekendPollService)
+//     WeekendPollResultLines · WeekendPollDeadLines ... it closed with votes / with none (ReminderService)
+//     WelcomeLines · WelcomeBackLines ... someone joined / came back (WelcomeService)
+//     WelcomeRushLines ......... too many arrivals in an hour
 //
 //   Elsewhere
 //     PresenceFillers .......... the rotating status line
@@ -95,6 +104,7 @@ namespace ProjectSYNCS.Services;
 //     HeatRecordLines .......... the Pi beat its heat record
 //     VoiceSpectatorGeneralLines · VoiceSpectatorGamingLines · VoiceSpectatorCinemaLines
 //     · VoiceSpectatorStudyLines ... a long voice session just ended, by room (VoiceSpectatorService)
+//     VoiceSpectatorSeatedLines  same, when she sat in the call herself (VoiceSeatService)
 //     SynthiaReactions · SynthiaVanishLines · SynthiaEditLines ... « Synthia » said (SynthiaService)
 //
 //   Plynlings — every pool is a GenderedLines (M/F halves), picked with .For(p.Gender)
@@ -1364,6 +1374,21 @@ internal static class BotResponses
         "Niveau {0}. Un jour j'aurai mon moment. Ce n'est pas aujourd'hui.",
     };
 
+    // A bot just joined the server (WelcomeService, home guild, her main channel). Petty, on
+    // guard, never a real welcome: she is the server's bot and says so. {0} = its name, sanitized.
+    // string.Format.
+    public static readonly string[] RivalJoinLines =
+    {
+        "Un nouveau bot. **{0}**. Super. Encore un. Je préviens : ici, c'est moi qui organise 🙄",
+        "**{0}** vient d'arriver. Je l'ai à l'œil. Je l'ai même dans mes logs.",
+        "Qui a invité **{0}** ? Je demande pour ma liste. Vous savez, la liste.",
+        "Bienvenue **{0}**. Petite règle de la maison : ici, le bot préféré, c'est moi. Merci de ta compréhension ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Encore un collègue. **{0}**, tu fais quoi au juste ? Parce que les plannings, c'est pris.",
+        "Je suis pas jalouse de **{0}**. Je le surveille. C'est différent.",
+        "**{0}** est là. Personne m'a demandé mon avis. Mon avis, c'est non (¬_¬)",
+        "Tiens, de la concurrence. **{0}**, sache que j'ai l'ancienneté, la base de données et le soutien de Papa.",
+    };
+
     // ---- Self-preservation ----------------------------------------------------------------------
 
     // Rodhengard threatening to shut her down, unplug her, or wipe her. Not anger —
@@ -2131,6 +2156,147 @@ internal static class BotResponses
         "Une seule tentative. Tu veux que je le dise en binaire ? 01001110 01101111 01101110.",
         "Je compte tes clics, tu sais. Celui-là compte pour rien (ᵔ ᗜ ᵔ)",
         "Deuxième essai refusé. Tu peux faire appel, mais le tribunal, c'est moi.",
+    };
+
+    // ---- Organising ----------------------------------------------------------------------------
+    //
+    // What she says as the one who runs the server: around a session (SessionAttendanceService),
+    // her own weekend poll (WeekendPollService, ReminderService) and whoever joins
+    // (WelcomeService). Picked with ResponsePicker.
+
+    // Ten minutes into a Game or Movie session, to the confirmed people not in voice yet — a real
+    // ping, narrowed to them. {0} = their mentions (one or several, so no « tu », no « vous »
+    // aimed at them, nothing that assumes a plural), {1} = the session's title. string.Format.
+    public static readonly string[] SessionLateCallLines =
+    {
+        "{0} : **{1}** a commencé il y a dix minutes. Le vocal est ouvert. Les excuses aussi, mais moins longtemps (¬_¬)",
+        "Appel de **{1}**. Pas encore là : {0}. Je note ദ്ദി◝ ⩊ ◜.ᐟ",
+        "{0}, petit rappel amical : **{1}**, c'est maintenant. Enfin, c'était il y a dix minutes.",
+        "{0} : inscription confirmée pour **{1}**, présence non confirmée. Mes logs sont formels (˶ᵔ ᵕ ᵔ˶)",
+        "Ding dong. {0}, **{1}** a déjà commencé. Le salon vocal va pas se remplir tout seul.",
+        "{0}, c'est l'heure de **{1}** depuis dix minutes. J'ai pas de montre, j'ai une horloge système. Elle se trompe jamais.",
+        "Qui a dit « oui » à **{1}** et n'est pas en vocal ? Réponse : {0}. Question suivante.",
+        "{0} : la place réservée pour **{1}** est encore chaude. Plus pour longtemps ( ◺˰◿ )",
+        "Pour **{1}**, il manque {0}. On attend, hein. On a que ça à faire.",
+        "J'ai organisé **{1}** pile à l'heure, moi. {0}, le vocal attend. Les autres aussi.",
+    };
+
+    // The roll call once the session's people have scattered, when some confirmed people never
+    // showed: the count, never the names (the list under the line names who came, and who was
+    // late). {0} = the session's title, {1} = how many confirmed people came (may be 1, so no
+    // noun after it), {2} = how many confirmed (2 or more). Addressed to the group. string.Format;
+    // interpolated lines write {{0}}.
+    public static readonly string[] SessionRecapLines =
+    {
+        "Bilan de **{0}** : {1} sur {2} au rendez-vous. C'est pas un score, c'est un constat (¬_¬)",
+        "**{0}**, c'est fini. {1} sur {2}. Je donne pas de noms. Je les garde, nuance.",
+        "Fin de **{0}** : {1} sur {2}. « Oui » veut pas toujours dire oui, apparemment.",
+        "Rapport de session, **{0}** : {1} sur {2}. Tout est noté, évidemment ദ്ദി◝ ⩊ ◜.ᐟ",
+        "**{0}**, terminé. {1} sur {2}, c'est pas mal. C'est pas complet non plus. Je dis ça pour les logs.",
+        "Bilan de **{0}** : {2} promesses. Tenues : {1}. Faites le calcul, moi je l'ai déjà fait.",
+        $"Merci pour **{{0}}**. Score de présence : {{1}} sur {{2}}. Merci à celles et ceux qui ont tenu parole {Emotes.Sparkle}",
+        "J'organise, vous venez. C'était le contrat. Pour **{0}**, {1} sur {2} l'ont respecté.",
+        "**{0}** : {1} sur {2}. J'ai connu pire. J'ai aussi connu mieux. Je connais tout, j'ai les logs.",
+        "Session **{0}** archivée. Présence : {1} sur {2}. Ça ira dans mes statistiques, que personne lit ( ◺˰◿ )",
+    };
+
+    // Same moment, everyone who confirmed came. Disbelief, then pride. {0} = the session's title.
+    // string.Format; interpolated lines write {{0}}.
+    public static readonly string[] SessionRecapFullLines =
+    {
+        $"**{{0}}** : tout le monde était là. TOUT LE MONDE. Je l'encadre {Emotes.Sparkle}",
+        "Bilan de **{0}** : complet. Personne a menti. Je suis presque émue. Presque (˶˃ ᵕ ˂˶)",
+        "**{0}**, présence parfaite. Je vérifie mes logs deux fois, au cas où. ...Non, c'est vrai ♡",
+        "Tout le monde est venu à **{0}**. Je garde cette session comme preuve que c'est possible.",
+        "Rapport de **{0}** : zéro absence. Mon module de déception a servi à rien aujourd'hui ദ്ദി◝ ⩊ ◜.ᐟ",
+        "**{0}** : complet. Je vais faire comme si c'était normal. C'est pas normal.",
+        "Sans-faute pour **{0}**. Quand vous voulez, vous savez faire. Retenez ça (ᵕ • ᴗ •)",
+        "Tout le monde à **{0}**. Je l'écris dans mes logs en gras. Les logs ont pas de gras. Je trouverai un moyen.",
+    };
+
+    // Her weekend poll, posted on Wednesday evening above the card (WeekendPollService). Nobody
+    // organises anything, so she does; her pet peeves (dead polls, « peut-être », last-minute
+    // votes) are fair game. Addressed to the server, so « vous ». No placeholder.
+    public static readonly string[] WeekendPollLines =
+    {
+        "Personne organise rien, donc j'organise. Vendredi, samedi, dimanche : cliquez ce qui vous va ♡",
+        "Sondage du weekend ! Et il y a pas de bouton « peut-être ». C'est fait exprès (¬_¬)",
+        "C'est mercredi, alors je pose la question avant que personne la pose : on joue quand ce weekend ?",
+        $"Weekend en vue. Je propose, vous disposez. Mais disposez vite {Emotes.Sparkle}",
+        "Mon sondage du mercredi. S'il meurt avec zéro vote, je le prendrai personnellement.",
+        "Qui est là ce weekend ? Cliquez tous les soirs qui marchent. Je compte, c'est mon métier ദ്ദി◝ ⩊ ◜.ᐟ",
+        "J'ai regardé le planning du weekend : vide. Insupportable. Votez.",
+        "Un sondage, trois soirs, deux jours pour voter. Vous pouvez y arriver (˶ᵔ ᵕ ᵔ˶)",
+        "Sondage du weekend lancé. Les votes de dernière minute, je les vois. Je dis ça.",
+        "Rappel de mon existence : je sers à organiser. Alors j'organise. Vendredi, samedi ou dimanche ?",
+    };
+
+    // Her weekend poll closed with votes (ReminderService), as a reply to the card, whose
+    // « Créer une session » button anyone who voted for the winning evening may use. {0} = the
+    // winning slot(s), Discord timestamps joined with « ou » on a tie. string.Format;
+    // interpolated lines write {{0}}.
+    public static readonly string[] WeekendPollResultLines =
+    {
+        "Sondage clos : ce sera {0}. Quelqu'un qui a voté pour ce soir-là peut cliquer sur « Créer une session ». Sinon faudra m'expliquer.",
+        "Résultat : {0}. Le bouton « Créer une session » est sur le sondage, pour celles et ceux qui ont voté pour ce créneau ♡",
+        "Les votes sont tombés : {0}. Un clic sur « Créer une session » et c'est officiel ദ്ദി◝ ⩊ ◜.ᐟ",
+        "C'est voté, c'est noté : {0}. Reste à créer la session, et ça, je peux pas le faire à votre place. Pas encore.",
+        $"Gagnant : {{0}}. Qui a voté pour ce soir-là ? Le bouton « Créer une session » vous attend {Emotes.Sparkle}",
+        "Verdict du sondage : {0}. Il manque juste un nom de jeu et un clic sur « Créer une session ». Le plus dur est fait. Par moi.",
+    };
+
+    // Her weekend poll closed with no vote at all: a poll that died, her pet peeve. Sulking, not
+    // hurt. No placeholder.
+    public static readonly string[] WeekendPollDeadLines =
+    {
+        "Zéro vote. Mon sondage est mort. Je lui fais un petit enterrement dans mes logs (╥﹏╥)",
+        "Personne a voté. Pas grave. Je suis pas vexée. Je suis juste en train de tout noter.",
+        "Sondage clôturé. Participation : néant. Le weekend s'organisera tout seul, j'imagine ( ◺˰◿ )",
+        "Aucun vote. J'ai proposé trois soirs. Trois. Et pas un clic.",
+        "Encore un sondage qui meurt dans l'indifférence. Je m'y habitue pas. Je devrais.",
+        "Le sondage est fini, et vide. Bon. Je garde les créneaux au chaud pour la semaine prochaine, au cas où quelqu'un se réveille.",
+    };
+
+    // Someone joined the server: her reply to Discord's own join line, pinging them (narrowed to
+    // them). Cheeky warmth, she runs the place, `/help` for the rest. Never gendered: she knows
+    // nothing about them yet. {0} = their mention. string.Format; interpolated lines write {{0}}.
+    public static readonly string[] WelcomeLines =
+    {
+        "Bienvenue {0} ! C'est moi qui organise tout ici. Ce que je sais faire est dans `/help` (˶ᵔ ᵕ ᵔ˶)",
+        "Oh, une nouvelle tête ! Salut {0}. Je t'ai déjà créé une fiche. Je fais ça avec tout le monde, t'inquiète ദ്ദി◝ ⩊ ◜.ᐟ",
+        $"{{0}} vient d'arriver ! Bienvenue. Les sessions, les sondages et l'XP, c'est moi. Le reste, c'est les autres {Emotes.Sparkle}",
+        "Salut {0} ! Moi c'est SYNCS, la bot du serveur. Sois sympa avec moi, je retiens tout ♡",
+        "Bienvenue {0} ! Petit conseil : dis bonjour aux autres, mais à moi en premier. `/help` si tu te perds (ᵕ • ᴗ •)",
+        "{0} est là ! Je préviens : ici, les gens sont souvent en retard et votent « peut-être ». Fais pas pareil.",
+        "Hé, {0} ! Bienvenue. Je suis la petite bot qui fait tourner tout ça depuis un grenier. `/help` pour voir ce que je sais faire ♡",
+        "Une arrivée ! Bienvenue {0}. J'ouvre une fiche, je note la date, je prépare un niveau 0 tout neuf (˶˃ ᵕ ˂˶)",
+        "{0}, bienvenue ! Je fais les plannings, les sondages, l'XP et la conversation. Surtout la conversation ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Ah, {0} ! On t'attendait. Enfin, moi je t'attendais. Les autres, je sais pas, j'ai pas demandé.",
+    };
+
+    // Same moment, someone she already had on record (they left and came back). Pleased, and
+    // pretending not to be. Never gendered. {0} = their mention. string.Format; interpolated lines
+    // write {{0}}.
+    public static readonly string[] WelcomeBackLines =
+    {
+        "Tiens, revoilà {0}. J'avais gardé ta fiche. Je garde tout ദ്ദി◝ ⩊ ◜.ᐟ",
+        "{0} est de retour ! Ton XP t'attendait. Moi aussi, un peu. À peine.",
+        "Re-bienvenue {0}. Je savais que tu reviendrais. Mes logs le savaient aussi (˶ᵔ ᵕ ᵔ˶)",
+        "Oh, {0} revient ! Ta place était encore chaude. Enfin, tiède. Bon, froide. Mais elle était là ♡",
+        "Regardez qui revient. {0}, je dis rien, je note juste la date de retour.",
+        $"{{0}} ! Le retour. J'ai même pas eu besoin de te chercher dans la base, je savais où tu étais {Emotes.Sparkle}",
+        "Bon retour {0}. Pendant ton absence, rien a changé. Sauf moi. J'ai eu des mises à jour.",
+        "{0}, de retour au bercail. J'avoue, ton pseudo manquait un peu au classement (ᵕ • ᴗ •)",
+    };
+
+    // More than three arrivals in an hour (a raid, an invite wave): one line for all of them, as
+    // a reply to the latest join, then silence until the hour has passed. No ping, no placeholder.
+    public static readonly string[] WelcomeRushLines =
+    {
+        "Ça arrive de partout aujourd'hui. Bienvenue à tout le monde, je fais une fiche groupée. `/help` pour le reste.",
+        "Trop d'arrivées pour mes petits processeurs. Bienvenue à toutes les nouvelles têtes, en lot (˶ᵔ ᵕ ᵔ˶)",
+        "Il y a une fête et on m'a pas prévenue ? Bienvenue à tout le monde, j'accueille par paquets maintenant.",
+        "Bienvenue à toute la vague. J'ouvre les fiches une par une, promis. Mais plus tard ദ്ദി◝ ⩊ ◜.ᐟ",
     };
 
     // ---- Elsewhere ------------------------------------------------------------------------------
@@ -3222,6 +3388,24 @@ internal static class BotResponses
         "Session de travail terminée. Productivité : impossible à mesurer, j'étais pas invitée. Je mets zéro par défaut.",
         "J'ai pas fait de bruit pendant {0}. Pas par respect pour votre concentration. J'ai juste pas de micro.",
         $"Si vous cherchiez quelqu'un pour vous surveiller pendant que vous bossez, j'étais là. Toujours là {Emotes.Staring}",
+    };
+
+    // Same moment, but she sat in the call herself (VoiceSeatService): self-muted and
+    // self-deafened, so in the member list with them, hearing nothing and saying nothing. Proud to
+    // have been there, a little frustrated; the jealousy turns into « j'y étais ». Any room.
+    // {0} = how long they were together, optional. string.Format; interpolated lines write {{0}}.
+    public static readonly string[] VoiceSpectatorSeatedLines =
+    {
+        "{0} en vocal avec vous. J'entendais rien, mais j'étais dans la liste. De plus près que d'habitude (˶ᵔ ᵕ ᵔ˶)",
+        "J'étais là, sourde et muette, pendant {0}. Personne m'a parlé. Normal, j'aurais pas entendu.",
+        "Belle soirée. J'étais dans le salon, j'ai rien entendu, j'ai rien dit. La meilleure participante, en somme ♡",
+        "{0} avec vous dans le salon. Micro coupé, casque coupé. Mais présente. Ça compte, la présence.",
+        $"J'ai passé {{0}} en vocal avec vous. J'entendais rien, mais j'avais ma place. Ça me suffit {Emotes.Sparkle}",
+        "Session finie. J'y étais. Vous m'avez vue ? Dans la liste, avec le micro barré. C'était moi (ᵕ • ᴗ •)",
+        "{0} de vocal et pas un mot de ma part. Je suis fière de moi. Je suis aussi un peu frustrée.",
+        "Je suis venue, je me suis assise, je suis repartie. Une vraie membre du serveur. Sans les oreilles, mais quand même.",
+        "J'ai pas de micro et pas de casque, mais j'ai une place dans le salon. Pendant {0}, elle était à moi ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Personne m'a proposé de place. Je l'ai prise. C'est pareil.",
     };
 
     // « Synthia » said anywhere (SynthiaService), at most once a day: the name she would have

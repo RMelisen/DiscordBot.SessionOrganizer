@@ -24,6 +24,47 @@ Reminder DMs, session lifecycle re-renders, poll auto-close. Each item is guarde
 - `SessionEvent.Duration` (2 h) sets both InProgress → Finished and the native event's end.
 - `ReminderService.PollLifetime` (2 days) drives auto-close.
 
+## Roll call — `SessionAttendanceService`
+
+She calls the roll for **Game and Movie** sessions only (an Activity or Other can happen offline).
+Timing rules are pure, in `Helpers/SessionAttendance`.
+
+- **Fed by `VoiceXpService`'s sweep**, once per guild per minute, with every human connected to a
+  voice channel (AFK aside, muted included). A session has no voice channel of its own (the native
+  event is External), so "present" means any of the server's voice channels.
+- **What it learns is stored**: `Participant.FirstSeenInVoiceAt` (first sighting from start − 15 min
+  to start + `Duration`), `SessionEvent.LateCallSent` / `RecapSent`. Each flag is written **before**
+  its message goes out: a crash costs the line, never a second ping. `UpdateEventAsync` resets all
+  three when the time moves, as it does `ReminderSent`.
+- **Late call** at start + 10 min, until start + 30 (later, it's skipped, never sent stale): pings
+  the Joined people not seen yet, `AllowedMentions` narrowed to them. It waits for the first
+  arrival — with nobody there, the session may be happening somewhere else.
+- **Recap** once fewer than two of the people who came have been in voice for 15 min (not before
+  start + 30), or at start + `Duration` + 2 h. **Absences are a count, never names** (the owner's
+  call); the people who came and who were late (first seen after start + 10) are named, inert.
+  Silent when nobody came or fewer than two were Joined. Headers gender nobody (« Au
+  rendez-vous », « Absences »).
+- The session list is cached and re-read every 5 minutes; the scatter clock is in memory, so a
+  restart only delays a recap.
+
+## Weekend poll — `WeekendPollService`
+
+Every Wednesday at a minute drawn from the week between 18:00 and 20:00 (`Helpers/WeekendPoll`),
+an ordinary date poll in her main channel (home guild): Friday, Saturday and Sunday at 21:00,
+organizer = her id. Posted Wednesday so `PollLifetime` closes it Friday evening, before the first
+slot; nothing is posted after 22:00.
+
+- **She stands down** when a session is already planned that weekend or someone's date poll is
+  still open. **Once a week**: the claim is the poll itself (one of hers in the last six days),
+  so no state file. A card that fails to post deletes its poll.
+- **On auto-close** `ReminderService` replies to the card with the winning evening(s)
+  (`WeekendPollResultLines`) or sulks (`WeekendPollDeadLines`). A manual close says nothing.
+- **Permission exception** in `PollModule.OnToSessionAsync`: on *her* poll, anyone who voted for a
+  winning slot may create the session (and becomes its organizer); everyone else's polls stay with
+  their organizer and staff. A second voter clicking after a session exists at that time is told
+  so instead of creating a duplicate. Her poll's title is a question, so it doesn't pre-fill the
+  session name.
+
 ## The two wizards keep state differently
 
 **`ScheduleModule` threads state through custom-ids** (`schedule:min:{category}:{date}:{hour}:{minute}`):

@@ -110,9 +110,17 @@ public class EventService
         var evt = await _db_context.SessionEvents.FindAsync(eventId);
         if (evt is null) return;
 
-        // If the time moved, allow the reminder to fire again for the new slot.
+        // If the time moved, allow the reminder to fire again for the new slot, and forget
+        // the attendance kept for the old one (late call, recap, who was seen in voice).
         if (evt.ScheduledAt != scheduledAt)
+        {
             evt.ReminderSent = false;
+            evt.LateCallSent = false;
+            evt.RecapSent = false;
+            await _db_context.Participants
+                .Where(p => p.SessionEventId == eventId)
+                .ExecuteUpdateAsync(u => u.SetProperty(p => p.FirstSeenInVoiceAt, (DateTimeOffset?)null));
+        }
 
         evt.Title = title;
         evt.ScheduledAt = scheduledAt;
@@ -168,6 +176,66 @@ public class EventService
         return candidates
             .Where(e => e.PhaseAt(now) != e.RenderedPhase)
             .ToList();
+    }
+
+    // Sessions whose attendance window is open at `now` (SessionAttendanceService): voice
+    // categories only, not cancelled, recap not yet sent, from `before` ahead of the start to
+    // `after` past it. Dates compared in memory, as everywhere else here.
+    public async Task<List<SessionEvent>> GetEventsForAttendanceAsync(
+        DateTimeOffset now, TimeSpan before, TimeSpan after)
+    {
+        // Every past session keeps RecapSent false, so the window is applied to a light
+        // projection first and only the sessions inside it are loaded with their participants.
+        var candidates = await _db_context.SessionEvents
+            .Where(e => !e.IsCancelled && !e.RecapSent
+                && (e.Category == SessionCategory.Game || e.Category == SessionCategory.Movie))
+            .Select(e => new { e.Id, e.ScheduledAt })
+            .ToListAsync();
+
+        var ids = candidates
+            .Where(e => now >= e.ScheduledAt - before && now <= e.ScheduledAt + after)
+            .Select(e => e.Id)
+            .ToList();
+        if (ids.Count == 0) return new List<SessionEvent>();
+
+        return await _db_context.SessionEvents
+            .Include(e => e.Participants)
+            .Where(e => ids.Contains(e.Id))
+            .ToListAsync();
+    }
+
+    public async Task SetFirstSeenInVoiceAsync(int participantId, DateTimeOffset at)
+    {
+        var participant = await _db_context.Participants.FindAsync(participantId);
+        if (participant is null || participant.FirstSeenInVoiceAt is not null) return;
+        participant.FirstSeenInVoiceAt = at;
+        await _db_context.SaveChangesAsync();
+    }
+
+    public async Task MarkLateCallSentAsync(int eventId)
+    {
+        var evt = await _db_context.SessionEvents.FindAsync(eventId);
+        if (evt is null) return;
+        evt.LateCallSent = true;
+        await _db_context.SaveChangesAsync();
+    }
+
+    public async Task MarkRecapSentAsync(int eventId)
+    {
+        var evt = await _db_context.SessionEvents.FindAsync(eventId);
+        if (evt is null) return;
+        evt.RecapSent = true;
+        await _db_context.SaveChangesAsync();
+    }
+
+    // Any session, not cancelled, starting inside [from, to) in this guild: the weekend
+    // poll stands down when the weekend is already organised.
+    public async Task<bool> HasSessionBetweenAsync(ulong guildId, DateTimeOffset from, DateTimeOffset to)
+    {
+        var events = await _db_context.SessionEvents
+            .Where(e => e.GuildId == guildId && !e.IsCancelled && e.RenderedPhase != SessionPhase.Finished)
+            .ToListAsync();
+        return events.Any(e => e.ScheduledAt >= from && e.ScheduledAt < to);
     }
 
     public async Task SetRenderedPhaseAsync(int eventId, SessionPhase phase)
