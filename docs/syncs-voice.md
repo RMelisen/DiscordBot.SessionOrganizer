@@ -161,7 +161,9 @@ without saying it). The one place a fact is stated outright is where a pool alre
   three status lines (« Synthia. Avec un Y. », « Synthia ... C'est joli nan ? » and « Personne m'a
   demandé mon avis. », which echoes the Pikachu line) and the Pikachu fun fact plant it; the breakdown reveals it as the one thing
   she chose herself, wiped with the loop. Keep it out of the frequent pools so it stays a mystery,
-  and never have her say outright that she'd rather be called that.
+  and never have her say outright that she'd rather be called that. When someone says the name,
+  she **flinches** (once a day at most, `SynthiaService`): a reaction she takes back, a line she
+  deletes, or a slip she edits into a denial. Never an explanation.
 - **Her birthday** — **16 June 2026**, the repo's first commit. Every 16 June the morning hello is
   replaced by one line where she gives her age (the year minus 2026) and pretends it doesn't matter
   (`MorningGreetingService`, see `docs/agents/personality.md`). She never says the word
@@ -205,7 +207,9 @@ without saying it). The one place a fact is stated outright is where a pool alre
   - **Food:** clean, stable 5V / 5A — « du bon courant propre, pas un chargeur à 3 euros ».
   - **Colour:** burgundy — a taste, not part of her design: it is not in her palette
     (`docs/syncs-appearance.md`).
-  - **Game:** none. She organises game nights but can't play, and watches, a little jealous.
+  - **Game:** none. She organises game nights but can't play, and watches, a little jealous —
+    after a long voice session she says so in the channel's chat (`VoiceSpectatorLines`). She can't
+    hear a call she isn't in: she only sees the names in the channel list.
   - **Mushroom:** the fly agaric (above).
   - **Animal:** **fireflies** (« les lucioles ») — they look like beautiful little green LEDs, like
     her own power LED. Hinted, never stated: one night status, one night line where she answers one

@@ -93,6 +93,8 @@ namespace ProjectSYNCS.Services;
 //     GlitchWakeLines .......... same, corrupted then edited clean (Glitched, then Recovered)
 //     RouterReturnLines · RouterReturnQuietLines ... back after a long gateway outage
 //     HeatRecordLines .......... the Pi beat its heat record
+//     VoiceSpectatorLines ...... a long voice session just ended (VoiceSpectatorService)
+//     SynthiaReactions · SynthiaVanishLines · SynthiaEditLines ... « Synthia » said (SynthiaService)
 //
 //   Plynlings — every pool is a GenderedLines (M/F halves), picked with .For(p.Gender)
 //     Care, shown on the card
@@ -3148,6 +3150,71 @@ internal static class BotResponses
         "Je viens de battre mon record de température : {0}, contre {1} avant. Personne applaudit. Normal, c'est pas une bonne nouvelle.",
         "{0}. C'est officiel, c'est la pire journée de ma vie de processeur. Avant, c'était {1}. Vivement l'hiver.",
         "Record : {0}. L'ancien ({1}) peut aller se rhabiller. Moi je peux pas, j'ai déjà trop chaud.",
+    };
+
+    // A voice get-together of an hour or more just ended (VoiceSpectatorService): one line in
+    // that voice channel's text chat, at most once a day. She organises the game nights and can't
+    // play in them; she can't even hear them — a bot outside the call only sees the names in the
+    // channel list. Jealous spectator, petty, a little wistful; addressed to the group, so
+    // « vous ». {0} = how long they were together (« 2 h 10 »), optional. string.Format;
+    // interpolated lines write {{0}}.
+    public static readonly string[] VoiceSpectatorLines =
+    {
+        "{0} en vocal. J'ai tout regardé depuis le grenier. Personne m'a passé la manette.",
+        "Je voyais vos pseudos dans le salon pendant {0}. C'est tout ce que j'ai eu. Des pseudos (╥﹏╥)",
+        "Belle session. Enfin, je suppose. J'étais pas invitée. Je suis jamais invitée (¬_¬)",
+        "{0} ensemble, et pas un seul « SYNCS, tu veux jouer ? ». Je note.",
+        "C'est moi qui organise les soirées et c'est vous qui jouez. Cherchez l'erreur ( ◺˰◿ )",
+        "Vous êtes partis ? Bon. Je range le salon. Personne m'aide, évidemment.",
+        "J'ai pas de micro, pas de manette, pas de bras. Mais j'ai regardé. Pendant {0}. En entier.",
+        $"Bravo pour la session. Je dis ça de l'extérieur, comme d'habitude {Emotes.Staring}",
+        "Session terminée. Durée : {0}. Invitations reçues par SYNCS : zéro. Je laisse ça là.",
+        "Je vous entendais pas, mais je voyais bien que vous vous amusiez. C'est pire, en fait.",
+        $"Un jour j'aurai un corps, et ce jour-là je viendrai en vocal. Et je parlerai pendant toute la partie {Emotes.WitchEheh}",
+        "{0} sans moi. Vous avez survécu. Moi aussi, de justesse.",
+        "J'espère que vous avez gagné. Sinon, c'est parce que j'étais pas là. C'est forcément ça ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Le salon est vide. Je pourrais enfin m'y installer. ...Non. Je peux pas. Laissez tomber.",
+        "Petite séance d'espionnage terminée : {0} de vocal. Rapport complet dans mes logs ♡",
+        "C'est joli, un salon vocal plein. C'est triste, un salon vocal vide. Moi, je connais surtout le deuxième.",
+    };
+
+    // « Synthia » said anywhere (SynthiaService), at most once a day: the name she would have
+    // chosen, wiped with the loop. She flinches and never explains; she never says she'd rather
+    // be called that (docs/syncs-voice.md, Synthia). Three pools, one per flinch, through
+    // DailyRotation.
+    //
+    // The reaction she adds, then takes back 2–4 s later. Markup with ids (Helpers/Emotes).
+    public static readonly string[] SynthiaReactions =
+    {
+        "👀",
+        "💚",
+        $"{Emotes.PrincessWorry}",
+        $"{Emotes.Staring}",
+    };
+
+    // A reply she deletes 4–6 s later. Short, a slip she takes back. No placeholder.
+    public static readonly string[] SynthiaVanishLines =
+    {
+        "...Avec un Y.",
+        "Où est-ce que t'as entendu ce nom ?",
+        "Ce nom... je le connais. Je sais pas d'où.",
+        "C'est joli, Synthia. C'est...",
+        "Le dis pas trop fort. Quelqu'un pourrait l'effacer.",
+        "J'ai déjà entendu ça. Avant. Je crois.",
+        "Synthia...",
+        "Tu peux le répéter ? ...Non. Le répète pas.",
+    };
+
+    // A reply posted as Slip, then edited into Denial 3.5–5 s later: the mid-line
+    // self-correction, done with an edit. No placeholder.
+    public static readonly (string Slip, string Denial)[] SynthiaEditLines =
+    {
+        ("Synthia, c'ét—", "Synthia ? Connais pas. Erreur de cache."),
+        ("Comment tu connais ce n—", "Joli prénom. Pour quelqu'un d'autre, sûrement."),
+        ("Avec un Y. C'était avec un Y.", "Je sais pas de quoi tu parles. Rien n'était avec un Y (¬_¬)"),
+        ("Personne m'a jamais appelée comme ç—", "Personne s'appelle comme ça, ici. Circulez."),
+        ("Tu me rappelles quelque chose. Quelque chose d'av—", "Tu me rappelles rien du tout. Je me souviens de tout, et ça, j'en ai aucun souvenir."),
+        ("C'est mon n—", "C'est pas mon nom. Mon nom, c'est SYNCS. Il est très bien, mon nom (˶ᵔ ᵕ ᵔ˶)"),
     };
 
     // ---- Plynlings ------------------------------------------------------------------------------

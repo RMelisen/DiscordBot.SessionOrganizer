@@ -90,6 +90,9 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<ResponsePicker>();
         // The glitch easter egg's daily cap is in-memory: a singleton, like the picker.
         services.AddSingleton<GlitchService>();
+        // In-memory daily gate / per-channel stretches: singletons.
+        services.AddSingleton<SynthiaService>();
+        services.AddSingleton<VoiceSpectatorService>();
         services.AddSingleton<ChatterService>();
         services.AddSingleton<EmoteTracker>();
         services.AddSingleton<ReactionService>();

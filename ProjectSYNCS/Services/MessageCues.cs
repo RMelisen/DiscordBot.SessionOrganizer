@@ -970,6 +970,17 @@ internal static class MessageCues
                                 || squashed.Contains(" " + Squash(p) + " "));
     }
 
+    // Spellings of the name she would have chosen (docs/syncs-voice.md, Synthia). Lowercase and
+    // accent-stripped, like every cue; each survives TokenizeOrdered unchanged.
+    private static readonly HashSet<string> _synthiaNames = new() { "synthia", "synthya", "sinthia", "synthiaa" };
+
+    // True when the message says « Synthia », anywhere in it, for SynthiaService's flinch.
+    public static bool MentionsSynthia(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return false;
+        return TokenizeOrdered(content).Any(_synthiaNames.Contains);
+    }
+
     // True when the message calls the bot by the wrong name "Inabot" — written as
     // one word ("inabot"), split in two ("ina bot"), or spelled out letter by
     // letter ("I.N.A.B.O.T", "I N A B O T", "i-n-a-b-o-t"). The bot is SYNCS, and

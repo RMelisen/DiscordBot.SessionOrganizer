@@ -29,6 +29,7 @@ internal sealed class BotService : IHostedService
     private readonly MorningGreetingService _morning;
     private readonly AmbientService _ambient;
     private readonly QuizMasterService _quiz;
+    private readonly SynthiaService _synthia;
 
     public BotService(
         DiscordSocketClient client,
@@ -45,8 +46,10 @@ internal sealed class BotService : IHostedService
         ShameTracker shame,
         MorningGreetingService morning,
         AmbientService ambient,
-        QuizMasterService quiz)
+        QuizMasterService quiz,
+        SynthiaService synthia)
     {
+        _synthia = synthia;
         _client = client;
         _interactions = interactions;
         _services = services;
@@ -138,6 +141,8 @@ internal sealed class BotService : IHostedService
         // Keeps the quiz channel's quiet clock and judges typed answers. A winning answer
         // gets her congratulations as its reply, so no comeback on top.
         if (await _quiz.HandleMessageAsync(rawMessage)) return;
+        // « Synthia »: her flinch is her whole answer, aimed at her or not — no comeback on top.
+        if (await _synthia.HandleMessageAsync(rawMessage)) return;
         await _chatter.HandleMessageAsync(rawMessage);
     }
 

@@ -13,6 +13,9 @@ namespace ProjectSYNCS.Services;
 // checkpoint's extra precision would only buy correctness at a grain finer than the
 // reward ever uses. See CLAUDE.md for the fuller reasoning.
 //
+// Also feeds VoiceSpectatorService (her jealous line after a long session) the same per-channel
+// reading, rather than giving it a loop of its own.
+//
 // Fully self-contained: Discord.Net already keeps SocketVoiceChannel.ConnectedUsers
 // and each member's VoiceState live from the gateway in its own cache, the same way
 // PresenceService's tick reads live state without subscribing to anything — so this
@@ -35,12 +38,14 @@ internal sealed class VoiceXpService : BackgroundService
 
     private readonly DiscordSocketClient _client;
     private readonly XpTracker _xp;
+    private readonly VoiceSpectatorService _spectator;
     private readonly ILogger<VoiceXpService> _logger;
 
-    public VoiceXpService(DiscordSocketClient client, XpTracker xp, ILogger<VoiceXpService> logger)
+    public VoiceXpService(DiscordSocketClient client, XpTracker xp, VoiceSpectatorService spectator, ILogger<VoiceXpService> logger)
     {
         _client = client;
         _xp = xp;
+        _spectator = spectator;
         _logger = logger;
     }
 
@@ -76,6 +81,19 @@ internal sealed class VoiceXpService : BackgroundService
                 // earns, which is nothing. That is what stops idle or alt accounts
                 // being parked in a channel to unlock someone else's XP.
                 var active = channel.ConnectedUsers.Where(IsActive).ToList();
+
+                // The spectator watches every channel, empty ones included: an emptying channel
+                // is how a session ends. Its own try, like every per-item step of this sweep.
+                try
+                {
+                    var humans = channel.ConnectedUsers.Count(u => !u.IsBot);
+                    await _spectator.ObserveAsync(channel, active.Count, humans, CheckInterval);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Spectator failed on channel {ChannelId}.", channel.Id);
+                }
+
                 if (active.Count < 2) continue;
 
                 foreach (var member in active)

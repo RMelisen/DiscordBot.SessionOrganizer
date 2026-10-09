@@ -270,6 +270,8 @@ thresholds live in `Helpers/Ambient` (pure, Paris wall-clock hours, so DST never
 | Abrupt wake | `AmbientService`, first `Ready` only | after a power cut or a crash (`PiHealthService.LastStop`): **always**, any hour, no daily cap, in place of the line above: `PowerCutWakeLines` / `CrashWakeLines`, or 35% of the time a corrupted `GlitchWakeLines` pair (posted glitched, edited clean 2 min later, or 2 s after someone speaks in the main channel) |
 | Hot status | `PresenceService` | awake, Pi ≥ 70 °C: half the rotations `HotPresenceFillers` |
 | Heat record | `PiHealthService` tick | today's max beats every other day by ≥ 1 °C, ≥ 30 days of history, 10:00–23:00, max 1/day: `HeatRecordLines` |
+| Voice spectator | `VoiceSpectatorService`, fed by `VoiceXpService`'s sweep | a home-guild voice channel where ≥ 2 active people spent ≥ 1 h together empties (or has < 2 active for 15 min): `VoiceSpectatorLines` in that voice channel's chat, max 1/day, any hour |
+| Synthia flinch | `SynthiaService`, before `ChatterService` | « Synthia » in any guild message, max 1/day: 40% a reaction taken back (`SynthiaReactions`), 35% a reply deleted 4–6 s later (`SynthiaVanishLines`), 25% a slip edited into a denial (`SynthiaEditLines`); returns true so no comeback lands on top |
 | Router return | `PiHealthService`, `Connected` | gateway back after ≥ 10 min, any hour, max 1/day: `RouterReturnLines` (what she missed in the main channel) or `RouterReturnQuietLines` |
 
 - **`AmbientService` is registered twice on one instance**, like `MorningGreetingService`: `BotService`

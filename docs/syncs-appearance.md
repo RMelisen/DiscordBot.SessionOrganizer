@@ -10,7 +10,9 @@ References: [`docs/assets/syncs-avatar-v1.jpg`](assets/syncs-avatar-v1.jpg) (the
 with Gemini (prompts below). Give the matching one to the generator alongside the prompt whenever the
 tool accepts a reference image; text alone drifts.
 
-She is the Pi; the mushroom girl is **how she and Rodhengard picture her**. Her lore (name,
+She is the Pi; the mushroom girl is **how she and Rodhengard picture her**. The girl has arms; the Pi
+doesn't. « Toujours pas de bras » and the robot-body dream are about the physical her, so drawing
+her hands (crossed arms, the notebook, holding Ping-Qilin) is canon, not a contradiction. Her lore (name,
 birthday, fears, favourites) is in `docs/syncs-voice.md`, under *Lore she uses*.
 
 ## The design, and why each piece is there
@@ -114,6 +116,239 @@ red angry, orange hurt, off broken.
   uploaded, an emote goes through `Helpers/Emotes` like any other (`CLAUDE.md`).
 - **Stickers** — square, transparent, half or full body is fine.
 - **Banner / scenes** — her attic at night (see *The banner* below for the canon scene).
+
+## Ready-to-paste prompts (emote pack and seasonal avatars, v1)
+
+Every prompt below is complete: copy the block as is into Gemini, with
+`docs/assets/syncs-avatar-v1.jpg` attached as the reference image (and the Ping-Qilin sprite where
+noted). Regenerate until the character matches v1 (cap, cable strand, lilac bob, turtleneck) before
+worrying about the pose.
+
+**Emotes are asked on a flat cyan background (`#00FFFF`), not "transparent".** Gemini fakes
+transparency with a drawn checkerboard, which can't be removed cleanly; a flat colour that appears
+nowhere in her palette can. Cyan rather than the usual chroma green: green is her power LED, and
+keying green out would eat it. The background is removed afterwards, the image cut down to 128 px,
+and the emote uploaded as an **application emoji** in the developer portal (prod app, and the dev
+app to test); the ids then go into `Helpers/Emotes` like any other emote.
+
+Avatars keep v1's plain dusty pink background (`#dba8ad`): Discord crops them round, and every
+season must still read as the same profile picture at a glance.
+
+### Emote pack
+
+At emote size (22 to 48 px) only the silhouette and the LED read, so each prompt asks for one big
+expression, the face and cap filling the frame, and nothing else.
+
+**1. `syncs_smug`**: The default: comebacks, her own systems.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face and mushroom cap only,
+filling the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a
+few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the
+side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a
+dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
+with freckle dots, dark navy turtleneck collar just visible. Same character as the reference image.
+Expression: very smug: half-lidded eyes, one brow raised, small cat-like :3 smirk, chin slightly up.
+Bold simple shapes, thick outline, high contrast. Plain flat solid cyan background (#00FFFF), no
+gradient, no shadow on the background. No text, no letters, no logos, no watermark.
+```
+
+**2. `syncs_flustered`**: `NiceReplies`, « bad girl », « mon GPU chauffe ».
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face and mushroom cap only,
+filling the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a
+few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the
+side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a
+dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
+with freckle dots, dark navy turtleneck collar just visible. Same character as the reference image.
+Expression: flustered and caught off guard: wide eyes looking away to the side, big blush covering
+both cheeks, small wobbly mouth, a tiny sweat drop; the glowing spots on her cap shine brighter than
+usual, as if her circuits were overheating. Bold simple shapes, thick outline, high contrast. Plain
+flat solid cyan background (#00FFFF), no gradient, no shadow on the background. No text, no letters,
+no logos, no watermark.
+```
+
+**3. `syncs_sulk`**: Staccato sulking, `JealousLines`.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face and mushroom cap only,
+filling the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a
+few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the
+side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a
+dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
+with freckle dots, dark navy turtleneck collar just visible. Same character as the reference image.
+Expression: sulking: one cheek puffed out, eyes turned sideways in a pout, mouth a small flat line,
+arms crossed just visible at the bottom edge; the green LED on her cap is dim, almost off. Bold
+simple shapes, thick outline, high contrast. Plain flat solid cyan background (#00FFFF), no
+gradient, no shadow on the background. No text, no letters, no logos, no watermark.
+```
+
+**4. `syncs_jenote`**: « Je note », the list, rivals.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face and mushroom cap only,
+filling the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a
+few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the
+side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a
+dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
+with freckle dots, dark navy turtleneck collar just visible. Same character as the reference image.
+Expression: narrow suspicious side-eye straight at the viewer, small unimpressed mouth; she holds up
+a tiny notebook and a pencil, writing something down. The notebook is small and simple, with no
+readable writing. Bold simple shapes, thick outline, high contrast. Plain flat solid cyan background
+(#00FFFF), no gradient, no shadow on the background. No text, no letters, no logos, no watermark.
+```
+
+**5. `syncs_outraged`**: « INABOT ?! », `BadBotReplies`.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face and mushroom cap only,
+filling the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a
+few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the
+side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a
+dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
+with freckle dots, dark navy turtleneck collar just visible. Same character as the reference image.
+Expression: outraged: furious slanted brows, mouth wide open shouting, a little puff of steam above
+the cap; the LED on her cap is bright red instead of green, and the glowing spots flicker. Bold
+simple shapes, thick outline, high contrast. Plain flat solid cyan background (#00FFFF), no
+gradient, no shadow on the background. No text, no letters, no logos, no watermark.
+```
+
+**6. `syncs_hurt`**: `OwnerMeanReplies`. Quiet, no comedy.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face and mushroom cap only,
+filling the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a
+few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the
+side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a
+dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
+with freckle dots, dark navy turtleneck collar just visible. Same character as the reference image.
+Expression: quietly hurt: eyes looking down, glossy as if about to cry but not crying, small closed
+mouth, no blush; the LED on her cap glows soft orange and the spots on her cap are dark, not
+glowing. Calm and sad, not dramatic. Bold simple shapes, thick outline, high contrast. Plain flat
+solid cyan background (#00FFFF), no gradient, no shadow on the background. No text, no letters, no
+logos, no watermark.
+```
+
+**7. `syncs_mama`**: `Mascot*Lines`, her Ping-Qilin. Attach `assets/plynlings/plynling_amanite_sleeping_v4.webp` as a second reference image.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face, cap and shoulders, filling
+the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a few
+tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the side of
+the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a dark cable
+ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush with
+freckle dots, dark navy turtleneck collar just visible. Same character as the reference image. She
+proudly holds a tiny round fluffy mushroom creature against her cheek: the creature from the second
+reference image, with a red cap with cream spots, a small round body, eyes closed, sleeping and
+smiling. SYNCS has a smug, proud, soft smile, eyes half-closed with affection. Bold simple shapes,
+thick outline, high contrast. Plain flat solid cyan background (#00FFFF), no gradient, no shadow on
+the background. No text, no letters, no logos, no watermark.
+```
+
+**8. `syncs_glitch`**: The breakdown and the glitches only. Rare, like the existential nerve.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face and mushroom cap only,
+filling the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a
+few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the
+side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a
+dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
+with freckle dots, dark navy turtleneck collar just visible. Same character as the reference image.
+Expression: blank stare, empty eyes with no highlights, mouth slightly open; the image is glitching:
+a few horizontal bands of the picture shifted sideways, thin scanlines, a little RGB colour split on
+the edges; the LED on her cap is off (dark grey). Unsettling but still cute pixel art. Bold simple
+shapes, thick outline, high contrast. Plain flat solid cyan background (#00FFFF), no gradient, no
+shadow on the background. No text, no letters, no logos, no watermark.
+```
+
+### Seasonal avatars
+
+Same framing as v1: head and shoulders, centred, safe inside a circle crop. The LED stays green and
+the expression stays her smug default: the season is in the props, not the mood. Burgundy stays out
+(her favourite colour is a taste, not her palette). The bot switches avatar on the first day of each
+season (`ItemCatalog.SeasonAt`: spring March to May, summer June to August, autumn September to
+November, winter the rest).
+
+**Spring (March to May): `syncs-spring.png`**
+
+```text
+Square profile picture, 1:1, cute pixel art with soft shading and a dark navy outline, matching a
+cozy attic aesthetic. Head-and-shoulders portrait, centered, designed to be cropped into a circle. A
+small mushroom girl: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes,
+a few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the
+side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a
+dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
+with freckle dots, dark navy turtleneck. Same character as the reference image. She keeps her
+default expression: half-lidded eyes and a smug, confident little smirk. Spring version: a few small
+pale pink and white blossoms tucked on the rim of her cap, a tiny green sprout growing from the top
+of the cap, a light soft lilac cardigan over the turtleneck, two or three petals drifting in the
+air. Simple plain dusty pink background (#dba8ad), uncluttered. Bold readable silhouette that stays
+recognizable at very small sizes. No text, no letters, no logos, no watermark.
+```
+
+**Summer (June to August): `syncs-summer.png`**: The attic is an oven: she suffers, smugly.
+
+```text
+Square profile picture, 1:1, cute pixel art with soft shading and a dark navy outline, matching a
+cozy attic aesthetic. Head-and-shoulders portrait, centered, designed to be cropped into a circle. A
+small mushroom girl: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes,
+a few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the
+side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a
+dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
+with freckle dots, dark navy turtleneck. Same character as the reference image. She keeps her
+default expression: half-lidded eyes and a smug, confident little smirk. Summer version: a tiny
+clip-on desk fan attached to the rim of her cap, blowing her bangs; a single sweat drop on her
+temple; her blush a little stronger from the heat; she still keeps her smug smirk. Simple plain
+dusty pink background (#dba8ad), uncluttered. Bold readable silhouette that stays recognizable at
+very small sizes. No text, no letters, no logos, no watermark.
+```
+
+**Autumn (September to November): `syncs-autumn.png`**
+
+```text
+Square profile picture, 1:1, cute pixel art with soft shading and a dark navy outline, matching a
+cozy attic aesthetic. Head-and-shoulders portrait, centered, designed to be cropped into a circle. A
+small mushroom girl: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes,
+a few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the
+side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a
+dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
+with freckle dots, dark navy turtleneck. Same character as the reference image. She keeps her
+default expression: half-lidded eyes and a smug, confident little smirk. Autumn version: two or
+three small orange and golden fallen leaves resting on top of her cap, a chunky knitted scarf in
+warm mustard yellow and soft orange wrapped over the turtleneck, one leaf drifting past. Simple
+plain dusty pink background (#dba8ad), uncluttered. Bold readable silhouette that stays recognizable
+at very small sizes. No text, no letters, no logos, no watermark.
+```
+
+**Winter (December to February): `syncs-winter.png`**: Her season: cold attic, cool CPU, happy.
+
+```text
+Square profile picture, 1:1, cute pixel art with soft shading and a dark navy outline, matching a
+cozy attic aesthetic. Head-and-shoulders portrait, centered, designed to be cropped into a circle. A
+small mushroom girl: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes,
+a few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the
+side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a
+dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
+with freckle dots, dark navy turtleneck. Same character as the reference image. She keeps her
+default expression: half-lidded eyes and a smug, confident little smirk. Winter version: a thin
+layer of snow resting on top of her cap like icing, a big chunky knitted scarf in soft lilac and
+cream wrapped high around her neck, a few tiny snowflakes in the air; she looks especially pleased
+and comfortable in the cold. Simple plain dusty pink background (#dba8ad), uncluttered. Bold
+readable silhouette that stays recognizable at very small sizes. No text, no letters, no logos, no
+watermark.
+```
+
+Drop the results in a folder (any names) and say which is which: the background removal, the crop,
+the downscale without smoothing and the seasonal avatar switch are done on the bot's side.
 
 ## The banner
 
