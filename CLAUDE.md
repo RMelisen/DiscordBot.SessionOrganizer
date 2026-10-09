@@ -309,7 +309,8 @@ leveling bot's id in `Helpers/LevelUpAnnouncement`; the custom emote ids in `Hel
 `XpTracker.ExcludedChannels`; `ShameModule.ExtraVoters`; the per-user maps in `BotResponses`
 (`PersonalComebacks`, `RealNames`, `KnownGenders`, `TataId`, `FamilyNicknames`);
 `PlynlingAnnouncer.DefaultGameChannelId`; `MorningGreetingService.DefaultChannelId`;
-`AmbientService.IdleChannelIds` (the everyday channels that must all be quiet for an idle line); and
+`AmbientService.IdleChannelIds` (the everyday channels that must all be quiet for an idle line);
+the voice channels in `Helpers/VoiceRoom` (which spectator pool each one gets); and
 `Helpers/HomeGuild.Id` (the one server the morning hello and `AmbientService` live in).
 
 `ExcludedChannels`, `ExtraVoters` and `IdleChannelIds` are *floors*: `/config` can add to them but

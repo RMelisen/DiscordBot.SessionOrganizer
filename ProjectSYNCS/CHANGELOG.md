@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.5.1 — 2026-10-09
+
+- The voice spectator line now fits the channel: Général, Gaming (both channels), Cinéma and
+  Étude/Travail each get their own lines.
+
 ## 6.5.0 — 2026-10-09
 
 - Voice spectator line after long voice sessions.
