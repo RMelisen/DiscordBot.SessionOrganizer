@@ -1,7 +1,7 @@
 # Plynling events — content waves 2 and 3 (selection)
 
-Both waves follow `docs/superpowers/plans/2026-10-06-plynling-content-phase5.md` unchanged from Task 2
-on (writing sheet → owner review → catalog → harness → dev-guild read-through, a patch version per wave).
+Both waves follow the content-wave process in `docs/agents/plynling-events.md`
+(writing sheet → owner review → catalog → harness → dev-guild read-through, a patch version per wave).
 This file records **what was selected and why**; the full shortlist with the rejected candidates lives in
 the owner's scratch notes, not here.
 
