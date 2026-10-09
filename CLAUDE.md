@@ -265,7 +265,7 @@ cannot express "ManageGuild, plus the owner". The `IsStaff` check in each handle
 
 `/help` (`HelpModule`) and `README.md` are hand-maintained. A new user-facing command means
 updating both — except owner-only commands, deliberately absent from `/help`. Easter eggs
-(breakdown, quoicoubeh) stay out of both.
+(breakdown, quoicoubeh, the glitch) stay out of both.
 
 ## Version and deployment
 

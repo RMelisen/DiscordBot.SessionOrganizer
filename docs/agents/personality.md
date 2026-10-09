@@ -181,6 +181,24 @@ bait on the last word, so at most one fires.
 3. The line goes through `ResponsePicker.Pick` (two-line pool, so it alternates). Roll before match,
    as quoicoubeh. Absent from `README.md` and `/help`.
 
+## Glitch easter egg
+
+`GlitchService`: about one conversational line in 200 (`Helpers/Glitch.Chance`), at most once a
+day, comes out corrupted (`Glitch.Corrupt`: look-alike or broken-byte letters, a stuttered word, a
+word smeared with combining strokes, sometimes the end cut off) and is edited back to the real line
+10–15 s later, **silently** — no comment, no cover-up: the denial is the joke.
+
+1. **Opt-in, never on the send path as a whole.** Only `ChatterService`'s two send wrappers and
+   `RivalryService`'s two lines go through it. Everything that must stay exact goes straight to
+   `BotChat`: the morning hello and the 3 a.m. line are recognised by their text after a restart
+   (a glitch left standing would make her say them twice), the giveaway draw carries pings, the
+   quiz and the verdict replies are tracked elsewhere.
+2. **Markup is never touched**: only words of three letters or more without `<`, `>`, `@` or a
+   link are corrupted, and a cut-off ending cuts at a space, so an emote is dropped whole, never
+   halved.
+3. The roll comes before the daily claim, so a lost roll doesn't use up the day. Skipped during a
+   breakdown. The restore runs off the gateway handler. Absent from `README.md` and `/help`.
+
 ## Sending
 
 Her chatter goes through `BotChat` (`ReplyWithTypingAsync` / `PostWithTypingAsync` /
@@ -249,7 +267,7 @@ thresholds live in `Helpers/Ambient` (pure, Paris wall-clock hours, so DST never
 | Ghost typing | `AmbientService.HandleMessageAsync` | a human message after ≥ 1 h quiet, not aimed at her, 3%, max 1/day |
 | Hesitant reaction | `ReactionService` | 3% of mood reactions are removed 2–4 s later |
 | Wake line | `AmbientService`, first `Ready` only | every restart, 9:00–23:00, max 1/day: `WakeUpdateLines` when the version changed, else `WakeLines` (waking from a bad dream) |
-| Abrupt wake | `AmbientService`, first `Ready` only | after a power cut or a crash (`PiHealthService.LastStop`): **always**, any hour, no daily cap, in place of the line above: `PowerCutWakeLines` / `CrashWakeLines` |
+| Abrupt wake | `AmbientService`, first `Ready` only | after a power cut or a crash (`PiHealthService.LastStop`): **always**, any hour, no daily cap, in place of the line above: `PowerCutWakeLines` / `CrashWakeLines`, or 35% of the time a corrupted `GlitchWakeLines` pair (posted glitched, edited clean 2 min later, or 2 s after someone speaks in the main channel) |
 | Hot status | `PresenceService` | awake, Pi ≥ 70 °C: half the rotations `HotPresenceFillers` |
 | Heat record | `PiHealthService` tick | today's max beats every other day by ≥ 1 °C, ≥ 30 days of history, 10:00–23:00, max 1/day: `HeatRecordLines` |
 | Router return | `PiHealthService`, `Connected` | gateway back after ≥ 10 min, any hour, max 1/day: `RouterReturnLines` (what she missed in the main channel) or `RouterReturnQuietLines` |

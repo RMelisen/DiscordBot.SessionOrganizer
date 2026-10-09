@@ -64,6 +64,7 @@ internal sealed class AmbientService : BackgroundService
     private const ulong WakeUpdateSalt = 0x5359_4E43_5550_4454; // "SYNCUPDT"
     private const ulong PowerCutSalt = 0x5359_4E43_504F_5752;   // "SYNCPOWR"
     private const ulong CrashSalt = 0x5359_4E43_4352_5348;      // "SYNCCRSH"
+    private const ulong GlitchSalt = 0x5359_4E43_474C_4954;     // "SYNCGLIT"
 
     private static readonly HashSet<string> NightLineSet = new(BotResponses.NightLines);
 
@@ -395,7 +396,7 @@ internal sealed class AmbientService : BackgroundService
             var pair = DailyRotation.Pick(BotResponses.IdleEditLines, day, EditSalt);
             var message = await BotChat.PostWithTypingAsync(channel, pair.Before, _logger, "idle line", AllowedMentions.None);
             if (message is not null)
-                _ = Task.Run(() => CorrectLaterAsync(message, pair.After));
+                _ = Task.Run(() => CorrectLaterAsync(message, pair.After, Ambient.EditAfter, "self-correcting idle line"));
             return;
         }
 
@@ -427,17 +428,18 @@ internal sealed class AmbientService : BackgroundService
         }
     }
 
-    // Her mid-line self-correction, done with an edit: five minutes after the line, or two
-    // seconds after someone speaks after it — she got caught. Runs off the tick loop. A
-    // restart before the edit leaves the first version standing.
-    private async Task CorrectLaterAsync(IUserMessage message, string after)
+    // A line she edits later, in the main channel: after `wait`, or two seconds after
+    // someone speaks there — she got caught (the idle self-correction) or snapped back (the
+    // glitched wake). Runs off the tick loop and the gateway handler. A restart before the edit
+    // leaves the first version standing.
+    private async Task CorrectLaterAsync(IUserMessage message, string after, TimeSpan wait, string what)
     {
         try
         {
             var caught = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             lock (_gate) _pendingEdit = caught;
 
-            var first = await Task.WhenAny(Task.Delay(Ambient.EditAfter), caught.Task);
+            var first = await Task.WhenAny(Task.Delay(wait), caught.Task);
             lock (_gate)
                 if (_pendingEdit == caught) _pendingEdit = null;
 
@@ -445,12 +447,12 @@ internal sealed class AmbientService : BackgroundService
                 await Task.Delay(Ambient.CaughtEditDelay);
 
             await message.ModifyAsync(p => p.Content = after);
-            _logger.LogInformation("Ambient: self-correcting idle line edited ({How}).",
-                first == caught.Task ? "caught" : "after five minutes");
+            _logger.LogInformation("Ambient: {What} edited ({How}).", what,
+                first == caught.Task ? "someone spoke" : "timed out");
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Ambient: could not edit the idle line.");
+            _logger.LogWarning(ex, "Ambient: could not edit the {What}.", what);
         }
     }
 
@@ -485,6 +487,12 @@ internal sealed class AmbientService : BackgroundService
             if (channel is null || _breakdown.IsActive(channel.Id)) return;
 
             var day = AppTime.DayNumber(now);
+            if (abrupt && Random.Shared.NextDouble() < Ambient.GlitchWakeChance)
+            {
+                await GlitchWakeAsync(channel, day, today);
+                return;
+            }
+
             var line = abrupt
                 ? string.Format(stop == StopKind.PowerCut
                         ? DailyRotation.Pick(BotResponses.PowerCutWakeLines, day, PowerCutSalt)
@@ -502,6 +510,20 @@ internal sealed class AmbientService : BackgroundService
         {
             _logger.LogWarning(ex, "Ambient: wake line failed.");
         }
+    }
+
+    // Back from a power cut or a crash, corrupted: the glitched line stands for a while — two
+    // minutes, or until someone speaks in the main channel and she snaps back — then the same
+    // message is edited clean. Already off the gateway handler (WakeAsync runs in Task.Run).
+    private async Task GlitchWakeAsync(IMessageChannel channel, int day, int today)
+    {
+        var (glitched, recovered) = DailyRotation.Pick(BotResponses.GlitchWakeLines, day, GlitchSalt);
+        var sent = await BotChat.PostWithTypingAsync(channel, glitched, _logger, "glitch wake line", AllowedMentions.None);
+        if (sent is null) return;
+        SaveState(new AmbientState(AppInfo.Version, today));
+
+        var clean = string.Format(recovered, PiHealth.Duration(_health.Downtime));
+        await CorrectLaterAsync(sent, clean, Ambient.GlitchEditAfter, "glitch wake line");
     }
 
     private async Task<IMessageChannel?> WaitForChannelAsync()

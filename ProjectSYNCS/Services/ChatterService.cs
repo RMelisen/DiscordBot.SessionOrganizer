@@ -16,6 +16,7 @@ internal sealed class ChatterService
     private readonly DiscordSocketClient _client;
     private readonly BreakdownService _breakdown;
     private readonly AvailabilityService _availability;
+    private readonly GlitchService _glitch;
     private readonly ResponsePicker _picker;
     private readonly ILogger<ChatterService> _logger;
 
@@ -49,8 +50,10 @@ internal sealed class ChatterService
         BreakdownService breakdown,
         AvailabilityService availability,
         ResponsePicker picker,
+        GlitchService glitch,
         ILogger<ChatterService> logger)
     {
+        _glitch = glitch;
         _client = client;
         _breakdown = breakdown;
         _availability = availability;
@@ -562,13 +565,14 @@ internal sealed class ChatterService
     // formula and the swallow-and-log. It lives there rather than here because
     // BotFeedbackTracker sends chatter too, and a second copy of the delay clamp —
     // which has to stay inside Discord.Net's 3 s HandlerTimeout — is exactly the
-    // kind of constant that drifts apart. `what` only labels the log line.
+    // kind of constant that drifts apart. `what` only labels the log line. Through
+    // GlitchService, so a very rare line comes out corrupted and is quietly fixed.
 
     private Task ReplyWithTypingAsync(SocketUserMessage replyTo, string line, string what) =>
-        BotChat.ReplyWithTypingAsync(replyTo, line, _logger, what);
+        _glitch.ReplyWithTypingAsync(replyTo, line, _logger, what);
 
     private Task PostWithTypingAsync(ISocketMessageChannel channel, string line, string what) =>
-        BotChat.PostWithTypingAsync(channel, line, _logger, what);
+        _glitch.PostWithTypingAsync(channel, line, _logger, what);
 
     // The current weekday name in French, for the {1} format placeholder.
     private static string CurrentWeekday() =>

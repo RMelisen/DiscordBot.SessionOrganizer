@@ -31,6 +31,7 @@ internal readonly record struct RivalAction(DateTimeOffset At, ulong MessageId, 
 internal sealed class RivalryService
 {
     private readonly DiscordSocketClient _client;
+    private readonly GlitchService _glitch;
     private readonly ResponsePicker _picker;
     private readonly ILogger<RivalryService> _logger;
 
@@ -65,8 +66,10 @@ internal sealed class RivalryService
     public RivalryService(
         DiscordSocketClient client,
         ResponsePicker picker,
+        GlitchService glitch,
         ILogger<RivalryService> logger)
     {
+        _glitch = glitch;
         _client = client;
         _picker = picker;
         _logger = logger;
@@ -93,7 +96,7 @@ internal sealed class RivalryService
             && _mutterGate.TryClaim(message.Channel.Id))
         {
             var line = _picker.Pick(BotResponses.RivalMutters);
-            await BotChat.ReplyWithTypingAsync(message, line, _logger, "rival mutter");
+            await _glitch.ReplyWithTypingAsync(message, line, _logger, "rival mutter");
         }
     }
 
@@ -116,7 +119,7 @@ internal sealed class RivalryService
         // else gets wounded pride, he gets betrayal.
         var pool = byOwner ? BotResponses.JealousLinesOwner : BotResponses.JealousLines;
         var line = string.Format(_picker.Pick(pool), name);
-        await BotChat.ReplyWithTypingAsync(praise, line, _logger, "jealous reply");
+        await _glitch.ReplyWithTypingAsync(praise, line, _logger, "jealous reply");
 
         var target = rivalMessageId ?? LastAction(praise.Channel.Id)?.MessageId;
         if (target is null) return;

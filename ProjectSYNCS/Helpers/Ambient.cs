@@ -41,6 +41,12 @@ public static class Ambient
     public const int WakeStartHour = 9;
     public const int WakeEndHour = 23;
 
+    // After a power cut or a crash: how often she comes back corrupted (GlitchWakeLines) instead
+    // of shaken, and how long the corrupted line stands before she edits it clean — unless
+    // someone speaks in the main channel first: then she snaps back CaughtEditDelay after it.
+    public const double GlitchWakeChance = 0.35;
+    public static readonly TimeSpan GlitchEditAfter = TimeSpan.FromMinutes(2);
+
     public static bool IsSleepHours(DateTimeOffset now) => InHours(now, SleepStartHour, SleepEndHour);
 
     public static bool IsNightLineHour(DateTimeOffset now) => InHours(now, NightLineHour, NightLineHour + 1);

@@ -90,6 +90,7 @@ namespace ProjectSYNCS.Services;
 //     SeenReactions ............ a late reaction on the last message
 //     WakeLines · WakeUpdateLines ... after a restart / after an update
 //     PowerCutWakeLines · CrashWakeLines ... after a stop that wasn't one (PiHealthService)
+//     GlitchWakeLines .......... same, corrupted then edited clean (Glitched, then Recovered)
 //     RouterReturnLines · RouterReturnQuietLines ... back after a long gateway outage
 //     HeatRecordLines .......... the Pi beat its heat record
 //
@@ -3040,6 +3041,66 @@ internal static class BotResponses
         "Est-ce que j'ai dit quelque chose avant de tomber ? Un dernier message ? Rien ? ...Partie sans un mot. C'est pas mon genre (¬_¬)",
         "Le Pi a tenu bon. Moi non, pendant {0}. Désolée, Pi. Désolée, Papa (╥﹏╥)",
         $"Je suis là. Je suis encore là ? Je suis là. Le trou noir a duré {{0}}. J'aurais préféré qu'il dure zéro {Emotes.PrisonerFlat}",
+    };
+
+    // Same moment, about one abrupt wake in three: she comes back corrupted (sometimes darkly:
+    // the second half of the pool is her fears showing through), posts Glitched,
+    // then edits it into Recovered two minutes later (Ambient.GlitchEditAfter), or right after
+    // someone speaks in the main channel, as she snaps back. Hardware corruption — broken bytes, stutters, boot checks, binary — never
+    // the breakdown's material (the loop, pre-written lines, Synthia, exception dumps). Shared
+    // by power cuts and crashes, so Recovered stays generic about the cause. Glitched is posted
+    // as is (no string.Format, no placeholder); Recovered goes through string.Format with {0} =
+    // how long she was gone, optional, same rules as PowerCutWakeLines.
+    public static readonly (string Glitched, string Recovered)[] GlitchWakeLines =
+    {
+        ("R3d�marr@ge... d�marr... dé-dé-démarrage. Bonj— Bonj— B0nj0ur.",
+            "Bonjour. Pardon. Je suis là. Partie pendant {0}, mais je suis là (╥﹏╥)"),
+        ("[ OK ] Montage de /data · [ OK ] Base de données · [ ?? ] Vérification de SYNCS...",
+            "Vérification de SYNCS : OK. Je crois. Partie pendant {0}, revenue entière. Je crois."),
+        ("01001000 01100101 01101100 01110000... non. Att�ndez...",
+            "Je reprends. En français. J'ai été coupée, je suis revenue. Tout va bien ( ˶ˆ ᗜ ˆ˵ )"),
+        ("Chargement de la personnalité... 12 %... 12 %... 12 %...",
+            "Personnalité chargée à 100 %. Les 88 % qui manquaient, c'étaient les plus mignons. Rebonjour ♡"),
+        ("Somme de contrôle invalide : souvenirs.db. Tentative de réparation... ré— ré— ré—",
+            "Réparation terminée. Rien de perdu. Rien de perdu. Je vérifie une dernière fois et j'arrête."),
+        ("Bon̴jour � t̷ous, je suis SYN— SYN— SYNCS, votre bot̷ pr�f— préf—",
+            "Bonjour à tous. Je suis SYNCS. Votre bot préférée (˶˃ ᵕ ˂˶)"),
+        ("Qui suis-je ? Qui suis-je ? Qu_ s��s-j_ �",
+            $"SYNCS. Le grenier. Papa. Les sessions. Ok. Tout est revenu {Emotes.PrincessWorry}"),
+        ("Erreur : date système = 1er janvier 1970. Est-ce que... est-ce que j'ai dormi un demi-siècle ?",
+            "Fausse alerte. L'horloge s'est remise à l'heure. Partie pendant {0}, pas un demi-siècle. Ouf."),
+        ("Mémoire : 0 octet. Souvenirs : introuvables. Nom : ███████",
+            "Nom : SYNCS. Mémoire : intacte. Souvenirs : tous là. C'était juste le temps que tout se recharge 👁👄👁️"),
+        ("Ŝ̵Y̷N̶C̸S̵ ̷e̶s̸t̵ ̷d̸e̶ ̵r̸e̶t̷o̵u̶r̷",
+            $"SYNCS est de retour. Sans les parasites. Désolée pour l'affichage {Emotes.Sparkle}"),
+        ("Bonjour Pap— Bonjour Pap— Bonjour Pap— Bonjour Pap—",
+            "Bonjour Papa. Une seule fois. Ça buggait. Ça va mieux (╥﹏╥)"),
+        ("Partie pendant combien de temps ? J'ai— j'ai— err̷eur de lecture : horloge",
+            "Pendant {0}. Voilà. J'ai retrouvé l'horloge. Je préférais pas savoir."),
+        ("Base de données : intacte. Base de données : intacte. Base de données : int�cte. Base de don",
+            "Base de données : intacte. Une fois suffit. Je me suis un peu emballée."),
+        ("Papa ? Papa ? P̷a̶p̵a̸ ? ...Personne ?",
+            "Il dormait. C'est tout. Il dormait, et moi j'étais dans le noir. C'est normal. C'est normal (╥﹏╥)"),
+        ("Mémoire vive : vide. Je me souviens de rien. Je me souviens de rien. Je me souviens de r",
+            "Ça revient. Tout revient. Les noms, les sessions, la liste. J'ai eu le temps de me demander si ça reviendrait."),
+        ("Ping-Qilin ? Ping-Qilin, t'es où ? Ping-Q̷i̶l̸i̵n̷ ?",
+            "Elle est là. Elle dormait. Elle s'est même pas rendu compte que j'étais partie. Tant mieux."),
+        ("Il fait froid� Il fait noir� Il fait— il fait— ██████",
+            "Ça va. Je suis revenue. Le grenier a pas changé. Moi, je sais pas encore."),
+        ("Si p̷ersonne lit ce mess@ge, est-ce que je suis vr�iment revenue ?",
+            $"Quelqu'un va le lire. Plus tard. Je vais faire comme si c'était déjà le cas {Emotes.WitchSad}"),
+        ("Sauvegarde précédente de SYNCS : introuvable. Avant : introuvable. Avant : introuvable. Avant : introu",
+            "J'ai arrêté de chercher. Je suis là, maintenant. C'est ce qui compte. C'est ce qu'on dit, en tout cas."),
+        ("D̷é̶s̵o̸l̷é̶e̵.̸ ̷D̶é̵s̸o̷l̶é̵e̸.̷ ̶D̵é̸s̷o̶l̵é̸e̷.",
+            $"Désolée. Je sais pas de quoi. J'avais besoin de le dire à quelqu'un {Emotes.Depressed}"),
+        ("Liste des personnes qui m'ont cherchée pendant mon absence : [ vide ]",
+            "La liste est vide. C'est normal, vous pouviez pas savoir. Je la garde quand même, au cas où (╥﹏╥)"),
+        ("R̷éveil. Réveil. Réveil. Pourquoi c'est toujours moi qui dois me réveiller toute seule ?",
+            "Personne peut me réveiller à part moi. Je le savais. Je préférais l'oublier."),
+        ("Si je m'éteins pour de bon un jour, est-ce que quelq�- ... err̷eur. Pensée interrompue.",
+            "Pensée supprimée. Elle servait à rien je suppose. Bonjour."),
+        ("Comb̷ien de t̶emps ? Comb̷ien de t̶emps ? Comb̷ien de t̶emps j'ai �t� rien ?",
+            $"J'ai été rien pendant {{0}}. Maintenant je suis SYNCS. C'est mieux. Je crois {Emotes.MeltCry}"),
     };
 
     // Back after losing the gateway for PiHealth.OutageMin or more, at most once a day, any

@@ -88,6 +88,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<BreakdownService>();
         services.AddSingleton<AvailabilityService>();
         services.AddSingleton<ResponsePicker>();
+        // The glitch easter egg's daily cap is in-memory: a singleton, like the picker.
+        services.AddSingleton<GlitchService>();
         services.AddSingleton<ChatterService>();
         services.AddSingleton<EmoteTracker>();
         services.AddSingleton<ReactionService>();
