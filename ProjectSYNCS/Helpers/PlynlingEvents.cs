@@ -4560,17 +4560,17 @@ public static class PlynlingEvents
             Target: TargetKind.Known),
 
         new EventDef("teen_broken_mirror", EventType.Pulse, Teen, "Le miroir cassé",
-            "{A} a cassé le miroir de l'entrée. « Sept ans de malheur », annonce la pie, l'air de s'y connaître.",
+            "{A} a cassé le miroir de l'entrée. La pie arrive aussitôt, l'air grave : d'après le règlement du village, qu'elle est la seule à avoir lu, qui casse un miroir doit tous les morceaux brillants à la pie. « Article sept. »",
             new[]
             {
-                Plain("laugh", "Rire de la superstition",
-                    "{A} rit. Le lendemain, {A} trouve un caillou en forme de cœur. Le surlendemain, une pièce. La pie, vexée, révise ses chiffres.",
+                Plain("laugh", "Rire, et demander à voir l'article sept",
+                    "{A} rit et demande à voir le règlement. La pie fouille son nid très longtemps, et revient avec une liste de courses. Le lendemain, la liste a un article sept, ajouté au crayon, en tout petit.",
                     E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 2))),
-                Plain("ritual", "Faire le rituel de la pie pour conjurer le sort",
-                    "Le rituel de la pie : tourner trois fois sur soi, toucher du bois, et donner un caillou à la pie. La pie remercie, très sérieusement. Le malheur, en tout cas, ne se montre pas.",
+                Plain("ritual", "Obéir à la pie",
+                    "{A} ramasse chaque morceau, les compte devant témoin, et les remet à la pie dans une boîte à chaussures. La pie signe un reçu, très sérieusement. Depuis, son nid brille comme une vitrine, et elle salue {A} d'un hochement de tête.",
                     E(new ApplyModifier("light_heart")), Ai((AiAxis.Zeal, 1)), Stress(("cynical", 15))),
                 Plain("mosaic", "Faire une mosaïque avec les morceaux",
-                    "{A} colle les morceaux sur une planche. Le résultat reflète le monde en cent petits bouts. Le café l'accroche au mur.",
+                    "{A} colle les morceaux sur une planche. Le résultat reflète le monde en cent petits bouts. Le café l'accroche au mur, assez haut pour que la pie ne l'atteigne pas.",
                     E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Rationality, 1))),
             }),
 
