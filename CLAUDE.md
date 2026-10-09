@@ -283,9 +283,14 @@ when `version` changes: an unbumped push never reaches the Pi.
 - **Minor** (`5.18.12` → `5.19.0`, patch reset): a new command, subcommand, subsystem or
   user-visible behaviour, or anything that adds a migration.
 - **Major**: the owner's call only; never bump it unasked.
-- **No bump** for changes that stay out of the build: `docs/`, `README.md`, `CLAUDE.md`, `tools/`.
+- **No bump** for changes that stay out of the build: `docs/`, `README.md`, `CLAUDE.md`, `CHANGELOG.md`, `tools/`.
 - Numbers don't roll over: `5.11.26` is fine. When you bump, say so in the summary, with the
   new number.
+- **A bump adds its entry to `ProjectSYNCS/CHANGELOG.md`** (newest first, `## x.y.z — yyyy-mm-dd`,
+  one short bullet per user-visible change); if the batch is already bumped, extend that entry.
+  Home Assistant shows this file in the add-on's Changelog tab, so it must stay next to
+  `config.yaml`. Keep easter-egg triggers and member names out of it — the repo is public.
+  Editing the changelog alone needs no bump.
 
 The bot ships as a Home Assistant add-on: the `Dockerfile` publishes a self-contained
 `linux-arm64` build, and `run.sh` maps add-on options to `Discord__Token`,
