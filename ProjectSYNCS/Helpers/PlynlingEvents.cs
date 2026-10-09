@@ -2805,7 +2805,7 @@ public static class PlynlingEvents
             new[]
             {
                 Try("follow", "Suivre la lanterne, sans bruit", new EventChallenge(PlynlingStat.Intrigue, 7),
-                    "{A} se faufile jusqu'au moulin et colle un œil à la fenêtre : tout le village est là, en pyjama, autour d'un gâteau à cent bougies. C'est l'anniversaire de l'escargot. Personne ne sait qui a oublié d'inviter {A}. {A} entre, et on fait comme si de rien n'était, avec une part en plus.",
+                    "{A} se faufile jusqu'au moulin et colle un œil à la fenêtre : tout le village est là, en pyjama, autour d'un énorme gâteau. L'escargot vient de finir le tour de la mare, commencé au printemps. Personne ne sait qui a oublié d'inviter {A}. {A} entre, et on fait comme si de rien n'était, avec une part en plus.",
                     "{A} se faufile, marche sur une branche, et la porte du moulin s'ouvre d'un coup : « SURPRISE ! » La surprise n'est pas pour {A}, mais pour l'escargot, qui arrive juste derrière. L'escargot est très touché qu'on ait crié pour {A} aussi.",
                     E(new GrowStat(PlynlingStat.Intrigue), new LiftNeed(Need.Hunger, 0.2)), E(new LiftNeed(Need.Happiness, 0.2)), Ai((AiAxis.Boldness, 1), (AiAxis.Rationality, 1))),
                 Plain("bed", "Retourner se coucher, le ventre vide",
@@ -4393,8 +4393,8 @@ public static class PlynlingEvents
                     E(new LiftNeed(Need.Happiness, 0.2), new ApplyModifier("muddy_paws")), Ai((AiAxis.Boldness, 1), (AiAxis.Energy, 1))),
             }),
 
-        new EventDef("baby_bear_birthday", EventType.Pulse, Baby, "L'anniversaire de l'ours",
-            "C'est l'anniversaire de l'ours. Tout le village a apporté un cadeau. {A} n'a rien, et la fête commence dans une heure.",
+        new EventDef("baby_bear_birthday", EventType.Pulse, Baby, "Le réveil de l'ours",
+            "L'ours rouvre sa boutique après tout un hiver à dormir. Tout le village a apporté un cadeau pour fêter son retour. {A} n'a rien, et la fête commence dans une heure.",
             new[]
             {
                 Plain("draw", "Faire un dessin de l'ours",
@@ -4805,7 +4805,7 @@ public static class PlynlingEvents
                     "{A} explique le problème. Le pic-vert écoute, hoche la tête, en tapant le rythme du bec. Le lendemain : toc-toc-toc, à six heures. Mais plus doucement.",
                     E(new GrowStat(PlynlingStat.Diplomacy)), Nothing, Ai((AiAxis.Sociability, 1), (AiAxis.Honor, 1))),
                 Plain("plugs", "Acheter des bouchons d'oreilles",
-                    "{A} achète des bouchons en cire au marché. Le lendemain, {A} dort jusqu'à neuf heures, et rate le facteur, le livreur de pain et l'anniversaire de l'escargot.",
+                    "{A} achète des bouchons en cire au marché. Le lendemain, {A} dort jusqu'à neuf heures, et rate le facteur, le livreur de pain et l'arrivée de l'escargot au bout du jardin, attendue depuis l'été.",
                     E(new ApplyModifier("well_rested")), Ai((AiAxis.Rationality, 1))),
                 Plain("duet", "Taper aussi, en rythme",
                     "À l'aube, {A} répond au pic-vert en tapant sur une casserole. Le pic-vert s'arrête, surpris, puis répond. Ça devient un duo. Les voisins, eux, envisagent de déménager.",
@@ -5199,18 +5199,18 @@ public static class PlynlingEvents
             }),
 
         // ---- ancien
-        new EventDef("elder_birthdays", EventType.Pulse, Elder, "Les anniversaires d'avant",
-            "Aujourd'hui, c'est l'anniversaire de {A}. Personne ne s'en souvient, ce qui arrive, à cet âge. {A}, en revanche, se souvient de tous les autres, un par un.",
+        new EventDef("elder_birthdays", EventType.Pulse, Elder, "Les fêtes d'avant",
+            "Au fond d'un tiroir, {A} retrouve une vieille boîte de bougies à moitié fondues. Une par fête : les moissons, la grande crue, le mariage des hérissons. Au village, plus personne ne s'en souvient. {A} se souvient de toutes, une par une.",
             new[]
             {
                 Plain("cake", "Se faire un gâteau, rien que pour soi",
-                    "{A} fait un petit gâteau, plante une bougie, et chante, sans public. À la deuxième phrase, on frappe : la tortue, avec un gâteau aussi. La tortue s'en souvenait.",
+                    "{A} fait un petit gâteau, plante la plus vieille bougie de la boîte, et chante, sans public. À la deuxième phrase, on frappe : la tortue, avec un gâteau aussi. La tortue s'en souvenait.",
                     E(new ApplyModifier("cherished")), Ai((AiAxis.Compassion, 1))),
-                Plain("remember", "Se rappeler les anniversaires d'autrefois",
+                Plain("remember", "Se rappeler les fêtes d'autrefois",
                     "{A} s'assoit au soleil et se souvient : le gâteau tombé, la surprise ratée, la fois où tout le village avait chanté faux. Le soir, {A} est {a:heureux|heureuse} comme après une grande fête.",
                     E(new ApplyModifier("soothed")), Ai((AiAxis.Rationality, 1))),
-                Plain("tell", "Le dire à tout le monde, au café",
-                    "« C'est mon anniversaire. » Le café se tait, puis chante, très fort, très faux. La tortue sort une bougie de sous le comptoir. La tortue a toujours une bougie sous le comptoir.",
+                Plain("tell", "Raconter tout ça au café",
+                    "« Vous vous souvenez de la fête des moissons, la vraie ? » Le café se tait, puis tout le monde la refait, là, tout de suite, et chante, très fort, très faux. La tortue sort une bougie de sous le comptoir. La tortue a toujours une bougie sous le comptoir.",
                     E(new LiftNeed(Need.Happiness, 0.25)), Ai((AiAxis.Sociability, 2))),
             }),
 
