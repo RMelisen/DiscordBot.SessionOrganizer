@@ -143,3 +143,57 @@ New penalties: `on_edge` (−2 Diplomatie), `shaken` (−2 Courage), `tense` (�
 | `grown_chronicle` → `_tarts` → `_reading` | Adulte+ | Writing the village chronicle; what to leave out | commissioned epics, legacies | `carte_tresor`, `clear_conscience` |
 | `grown_bridge` → `_box` → `_open` | Adulte+ | Rebuilding the cracked old bridge; a box in the foundations | great projects | `boussole`, up to 20 cailloux |
 | `elder_student` → `_grows` → `_leaves` | Ancien only | A village little one becomes {A}'s last student | mentor_student events | `trefle_quatre`, `cherished` |
+
+## Wave 8: 181 events (126 pulses, 48 follow-ups and endings, 7 echoes), 6.0.3
+
+Selected from the CK3 survey in `2026-10-08-plynling-events-waves-8-plus.md`; written and shipped in one
+pass, with the almanac page as the review copy. No engine change. New modifiers: `laureate`, `party_soul`,
+`flood_hero` (positive) and `guilty` (negative, owner choices only). Existing events gained echo
+follow-ups: `baby_grow_up` (all four answers) and the three `teen_apprentice_*` endings.
+
+**Long arcs (4–7 events each)**
+
+| Chain | Stage | Story | CK3 inspiration | Rewards |
+|---|---|---|---|---|
+| `grown_exam` → `_eve` → `_paper` → `_laureate` / `_honest` / `_hollow` / `_caught` | Adulte+ | The owl's Grand Concours; a slip of answers in the hall; four endings by roll | imperial_examination 1000–7000, 4100, 6000 | `laureate`, 25 cailloux, `guilty` |
+| `grown_regatta` → `_start` → `_lead` / `_back` | Adulte+ | Leaf-boat regatta; the old snail's first finish in forty years | chariot_race 0100–0600, 3000–3050 | up to 30 cailloux, `coquille_escargot` |
+| `grown_darling` → `_lesson` / `_rival` / `_visit` → `_party` | Adulte+ | A weasel at the mill everyone adores: admire, envy or befriend | story_cycle_party_baron | `party_soul`, `well_spoken`, `sly` |
+| `grown_flood` → `_shelter` → `_mud` → `_supper` | Adulte+ | The river overflows; shelter, mud, the thank-you supper | tgp natural_disaster_flavor | `flood_hero`, 20 cailloux, `piece_ancienne` |
+| `elder_academy` → `_master` → `_students` → `_debate` → `_home` | Ancien only | A season at the academy: the mole who answers with questions, the jay's debate | bp2_adult_education, debate_event 2050 / 2060 | `carte_tresor`, `inspired` |
+| `grown_scarecrow` → `_crows` → `_judging` | Adulte+ | Scarecrow contest judged by the sparrow (a bird, nervous) | contests | 25 cailloux, `well_spoken` |
+| `grown_forage` → `_fog` → `_find` | Adulte+ | The badger's secret morel clearing | hunt activity | `food.morel`, `food.truffle` |
+| `grown_hiccups` → `_cure` → `_relapse` | Adulte+ | A hiccup epidemic, the cure, then {A} catches it | epidemics (comic) | `light_heart`, `soothed` |
+| `grown_pond_war` → `_raid` → `_peace` | Adulte+ | Frogs and ducks fight over the pond | house feuds | `party_soul` |
+| `teen_rival` → `_race` → `_end` | Ado | A ferret who always wins; the race; the bridge | education rivals | `fired_up`, `cherished` |
+| `teen_camp` → `_night` → `_back` | Ado | Three days on the lake island | tour / travel | `coquille_escargot` |
+| `elder_memoirs` → `_visitors` → `_reading` | Ancien only | Writing memoirs; the village wants in | tgp_commission_book | `cherished` |
+
+**Social arcs:** `grown_secret_dance` (Known, 3: {B}'s secret dance lessons, then the ball);
+`grown_storm_shelter` (Hostile, 3: a rival in the same hollow oak); `grown_prank` (Hostile, 3: a prank
+war, 17–17); `grown_journey` (Known, 3: the road, the inn with one bed, the fair).
+
+**Echoes (adulte):** `grown_dream_explore` / `_cafe` / `_owl` / `_chief` (14–16 days after
+`baby_grow_up`, CK3 court_events 3090–3092 *I Want a Pony!*); `grown_master_owl` / `_station` / `_market`
+(7–10 days after the apprenticeship ends).
+
+**Pairs and singles:** bébé `baby_swing`, `baby_bath`, `baby_dress_up`, `baby_imaginary` (+ `_bye`),
+`baby_otter`, `baby_cant_sleep`, `baby_mud_pie`, `baby_doudou` (+ `_found`); ado `teen_fox_wedding`
+(festival.106), `teen_tug_of_war` (festival.022), `teen_runaway`, `teen_crush` (Known),
+`teen_bakery` (+ `_week`), `teen_hidden_garden` (+ `_owl`); adulte `grown_moon_party` (Known,
+festival.100), `grown_spilled` (Known, festival.016), `grown_empty_village` (court_events.3040),
+`grown_hare` (court_events.3070), `grown_clock_feud`, `grown_lost_letter` (Known), `grown_board_game`
+(+ `_end`, board_game_events), `grown_rumor`, `grown_ghost` (+ `_owl`), `grown_beetle_duel`,
+`grown_portrait`; ancien `elder_rocking_chair`, `elder_old_rival`, `elder_dance`, `elder_acorn`.
+
+**Short events (81 singles, no sequel):** CK3 has hundreds of one-scene yearly events; these are their
+Plynling counterpart: one or two sentences of scene, two or three quick choices, small rewards. Inspired
+by Comet Sighted!, Peek-a-boo!, A Lonely Doll, Smuggling Sweets, Children Say Such Funny Things, I Need a
+Hero, A Little Language, Captured Beast, Gray Days, Pawful of Pooches, The Cat-apult, Experimenting,
+The Flower Thief, My Arm Against Yours, A Superstitious Mind, A Wonderful Phrase, A New Fashion at
+Court, Petty Vandalism, Sprouting Interest, Tall Tales at the Table, Saffron in Flames, Bullying, The
+Apple Falls, An Honest Mistake, Heavy Days, Annoying Company, Generous Praise, Snide Remarks, A Friend
+in Need, Misery Loves Company, Out with the Old, Grandiose Decor, Open Schedule, Suspicious Snickering,
+Lost and Found, Foreign Merchants, Explorer from the West, Delicious Excess, It Came to Me in a Dream,
+Not Forgotten, The Good Witch of the Bog, Life in Color, A Helpful Warning, Remembering Birthdays Past,
+A Face From Long Ago, Old Regrets, Evening Reflections. 20 bébé, 20 ado (3 social), 31 adulte+
+(4 Known, 2 Hostile), 10 ancien. Keys run from `baby_comet` to `elder_sunrise` in the catalog.

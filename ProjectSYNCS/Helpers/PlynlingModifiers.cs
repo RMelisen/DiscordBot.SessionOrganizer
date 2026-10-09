@@ -88,6 +88,15 @@ public static class PlynlingModifiers
             TimeSpan.FromDays(5), false, S(PlynlingStat.Intrigue, 1)),
         new ModifierInfo("practice_courage", "Le cœur bien accroché", "Le cœur bien accroché", "⛰️", "Grimpe un peu plus haut qu'hier. Sans regarder en bas.",
             TimeSpan.FromDays(5), false, S(PlynlingStat.Courage, 1)),
+        // Wave 8: the endings of the long arcs (the exam, the mill party, the flood).
+        new ModifierInfo("laureate", "Lauréat", "Lauréate", "🎓", "Un nom peint en lettres dorées, et la tête qui suit.",
+            TimeSpan.FromDays(5), false, S(PlynlingStat.Learning, 2)),
+        new ModifierInfo("party_soul", "L'âme de la fête", "L'âme de la fête", "🎉", "Entend encore la musique, longtemps après la fin du bal.",
+            TimeSpan.FromDays(3), false, NoStats, Happiness: 0.75),
+        new ModifierInfo("flood_hero", "Héros de la crue", "Héroïne de la crue", "🌊", "Le village salue bien bas au passage, et ça donne du cœur.",
+            TimeSpan.FromDays(5), false, S(PlynlingStat.Courage, 2)),
+        new ModifierInfo("guilty", "La conscience lourde", "La conscience lourde", "🪨", "Un petit papier plié, au fond d'une manche, pèse plus lourd qu'une pierre.",
+            TimeSpan.FromDays(3), true, NoStats, StressDecay: 0.7),
     };
 
     private static readonly Dictionary<string, ModifierInfo> ByKeyMap = All.ToDictionary(m => m.Key);

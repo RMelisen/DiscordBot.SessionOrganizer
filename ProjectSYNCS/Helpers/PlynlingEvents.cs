@@ -1158,16 +1158,16 @@ public static class PlynlingEvents
             {
                 Plain("explore", "« …partir explorer le monde entier ! »",
                     "« Commence par le fond du jardin », dit le héron. {A} part aussitôt, et revient avec une carte, un ver de terre et de grandes ambitions.",
-                    E(new GrowStat(PlynlingStat.Courage)), Ai((AiAxis.Boldness, 2))),
+                    E(new GrowStat(PlynlingStat.Courage), new FollowUp("grown_dream_explore", 336, 384)), Ai((AiAxis.Boldness, 2))),
                 Plain("cafe", "« …tenir le café, comme la tortue ! »",
                     "« Alors entraîne-toi », dit le héron, en tendant une tasse vide. {A} sert un café imaginaire, rend une monnaie imaginaire, et réclame un pourboire bien réel.",
-                    E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Greed, 1), (AiAxis.Sociability, 1))),
+                    E(new GrowStat(PlynlingStat.Stewardship), new FollowUp("grown_dream_cafe", 336, 384)), Ai((AiAxis.Greed, 1), (AiAxis.Sociability, 1))),
                 Plain("owl", "« …tout savoir, comme la chouette ! »",
                     "« Alors dis-moi combien j'ai de plumes », dit le héron. {A} commence à compter. Le soleil se couche à la plume trois cent quatre.",
-                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 2))),
+                    E(new GrowStat(PlynlingStat.Learning), new FollowUp("grown_dream_owl", 336, 384)), Ai((AiAxis.Rationality, 2))),
                 Plain("chief", "« …chef du village, et de tout le monde ! »",
                     "« Très bien, chef », dit le héron, sans bouger d'une plume. {A} donne trois ordres au héron, deux à l'escargot et un à la rivière. Seul l'escargot obéit, mais l'escargot allait déjà dans ce sens.",
-                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Boldness, 1), (AiAxis.Sociability, 1)), gate: new TraitGate("bossy")),
+                    E(new GrowStat(PlynlingStat.Diplomacy), new FollowUp("grown_dream_chief", 336, 384)), Ai((AiAxis.Boldness, 1), (AiAxis.Sociability, 1)), gate: new TraitGate("bossy")),
             }),
 
         // ---- wave 3: ado
@@ -1874,10 +1874,10 @@ public static class PlynlingEvents
                 Try("recite", "Réciter tout ce qui a été appris, dans l'ordre", new EventChallenge(PlynlingStat.Learning, 7),
                     "{A} récite les étoiles, les rivières, les noms latins des fougères et l'année où le vieux pont a été construit. La chouette écoute jusqu'au bout, puis hoche la tête, une seule fois. Venant d'une chouette, c'est une médaille.",
                     "{A} commence par les étoiles et se perd dans les rivières. La chouette lève une aile : « Tu en sais plus que tu ne crois. Reviens l'an prochain, on vérifiera. »",
-                    E(new GrowStat(PlynlingStat.Learning), new ApplyModifier("inspired")), Nothing, Ai((AiAxis.Rationality, 2))),
+                    E(new GrowStat(PlynlingStat.Learning), new ApplyModifier("inspired"), new FollowUp("grown_master_owl", 168, 240)), E(new FollowUp("grown_master_owl", 168, 240)), Ai((AiAxis.Rationality, 2))),
                 Plain("humble", "Répondre : « Que je ne sais presque rien. »",
                     "La chouette ferme les yeux un long moment. Puis la chouette sort de son tiroir une petite clé et la tend à {A} : la clé de la réserve, où dorment les livres que personne n'a le droit de lire. « Maintenant, tu peux commencer. »",
-                    E(new GrowStat(PlynlingStat.Learning), new GiveItem("col.cle_rouillee")), Ai((AiAxis.Honor, 1), (AiAxis.Rationality, 1)), Stress(("arrogant", 20))),
+                    E(new GrowStat(PlynlingStat.Learning), new GiveItem("col.cle_rouillee"), new FollowUp("grown_master_owl", 168, 240)), Ai((AiAxis.Honor, 1), (AiAxis.Rationality, 1)), Stress(("arrogant", 20))),
             }),
 
         new EventDef("teen_apprentice_station", EventType.FollowUp, AnyStage, "La tournée d'inspection",
@@ -1887,10 +1887,10 @@ public static class PlynlingEvents
                 Try("run", "Faire la tournée au pas de course", new EventChallenge(PlynlingStat.Stewardship, 7),
                     "{A} vérifie onze horloges, en remet trois à l'heure, réveille le coucou du café et pousse la porte de la gare à 17 h 02. Le hérisson range sa montre et tend à {A} une vieille pièce frappée d'une locomotive. « Pour ta première minute d'avance. »",
                     "L'horloge de la tortue retarde de deux heures, par principe. {A} discute, perd du temps, et arrive à 17 h 05. Le hérisson ne dit rien. Le silence est pire qu'un sermon.",
-                    E(new GrowStat(PlynlingStat.Stewardship), new GiveItem("col.piece_ancienne")), Nothing, Ai((AiAxis.Energy, 2)), Stress(("lazy", 20))),
+                    E(new GrowStat(PlynlingStat.Stewardship), new GiveItem("col.piece_ancienne"), new FollowUp("grown_master_station", 168, 240)), E(new FollowUp("grown_master_station", 168, 240)), Ai((AiAxis.Energy, 2)), Stress(("lazy", 20))),
                 Plain("plan", "Tracer d'abord le chemin le plus court sur une carte",
                     "{A} passe une heure à tracer l'itinéraire, puis fait la tournée en marchant, sans jamais courir, et arrive à 17 h 03 pile. Le hérisson regarde le plan, longtemps. Le plan est accroché depuis au mur de la gare, sous verre.",
-                    E(new GrowStat(PlynlingStat.Stewardship), new ApplyModifier("trade_sense")), Ai((AiAxis.Rationality, 2))),
+                    E(new GrowStat(PlynlingStat.Stewardship), new ApplyModifier("trade_sense"), new FollowUp("grown_master_station", 168, 240)), Ai((AiAxis.Rationality, 2))),
             }),
 
         new EventDef("teen_apprentice_market", EventType.FollowUp, AnyStage, "La leçon de la pie",
@@ -1900,13 +1900,13 @@ public static class PlynlingEvents
                 Try("borrow", "Emprunter, puis tout rendre sans être {a:vu|vue}", new EventChallenge(PlynlingStat.Intrigue, 7),
                     "{A} emprunte une cuillère, un ruban et la casquette du marchand de miel, les montre à la pie, et rend tout avant le soir sans que personne ne remarque rien. La pie fait la révérence, pour la première fois de sa vie, et offre à {A} une bague trouvée « on ne sait où ».",
                     "Le marchand de miel remarque l'absence de sa casquette au moment où {A} la porte sur la tête. Explications. Excuses. Pot de miel acheté pour se faire pardonner. Derrière le tonneau, la pie rit à s'en étouffer.",
-                    E(new GrowStat(PlynlingStat.Intrigue), new GiveItem("col.bague")), Nothing, Ai((AiAxis.Honor, -2)), Stress(("honest", 30), ("just", 20))),
+                    E(new GrowStat(PlynlingStat.Intrigue), new GiveItem("col.bague"), new FollowUp("grown_master_market", 168, 240)), E(new FollowUp("grown_master_market", 168, 240)), Ai((AiAxis.Honor, -2)), Stress(("honest", 30), ("just", 20))),
                 Plain("refuse", "Refuser : rendre, oui ; prendre, non",
                     "La pie penche la tête. « Bien. C'est la vraie leçon. Tout le monde sait prendre ; les meilleurs savent quand ne pas le faire. » Puis la pie rend à {A}, discrètement, trois boutons perdus depuis le début de la saison.",
-                    E(new GiveItem("col.bouton"), new ApplyModifier("clear_conscience")), Ai((AiAxis.Honor, 2))),
+                    E(new GiveItem("col.bouton"), new ApplyModifier("clear_conscience"), new FollowUp("grown_master_market", 168, 240)), Ai((AiAxis.Honor, 2))),
                 Plain("notes", "Regarder la pie faire, et prendre des notes",
                     "{A} observe la pie toute la journée. Le soir, le carnet contient trois pages de croquis, deux de théories et une liste intitulée « Comment ne plus jamais se faire avoir ». La pie lit la liste, et ajoute une ligne à la fin.",
-                    E(new ApplyModifier("sly")), Ai((AiAxis.Rationality, 1))),
+                    E(new ApplyModifier("sly"), new FollowUp("grown_master_market", 168, 240)), Ai((AiAxis.Rationality, 1))),
             }),
 
         // ado: les jeux du village (CK3 tournaments: sign up, train, compete)
@@ -2588,6 +2588,2744 @@ public static class PlynlingEvents
                 Plain("walk", "L'accompagner jusqu'au vieux pont",
                     "{A} accompagne le petit jusqu'au vieux pont, à petits pas. Sur le pont, le petit se retourne, fait de grands signes et crie : « Je reviendrai te montrer ! » {A} reste sur la rive jusqu'à ce que le baluchon ne soit plus qu'un point. Le héron, à côté, reste aussi.",
                     E(new LiftNeed(Need.Happiness, 0.2), new ApplyModifier("soothed")), Ai((AiAxis.Sociability, 1))),
+            }),
+
+        // ==== wave 8 (CK3: playdates, festivals, court guests, the imperial examination, the chariot race,
+        // the party baron, natural disasters, adult education, debates; echoes are long follow-ups that land
+        // in adulte: bébé and ado last a week each)
+
+        // ---- wave 8: bébé
+        new EventDef("baby_swing", EventType.Pulse, Baby, "La balançoire",
+            "Sur la place, la balançoire est prise. Un jeune blaireau s'y balance depuis le matin et crie à chaque passage : « Encore dix ! » On en est au quarantième « encore dix ». {A} attend, les pattes croisées.",
+            new[]
+            {
+                Try("push", "Proposer de pousser le blaireau, très haut", new EventChallenge(PlynlingStat.Diplomacy, 4),
+                    "{A} pousse, le blaireau monte, crie de joie, et au retour propose de lui-même d'échanger. Depuis, les deux se poussent à tour de rôle, en comptant jusqu'à dix pour de vrai.",
+                    "{A} pousse trop fort. Le blaireau atterrit dans le bac à sable, ravi, et réclame qu'on recommence. La balançoire reste prise.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Nothing, Ai((AiAxis.Sociability, 1), (AiAxis.Compassion, 1))),
+                Try("stand", "Se planter devant, et réclamer son tour", new EventChallenge(PlynlingStat.Courage, 4),
+                    "{A} se plante devant la balançoire, les poings sur les hanches. Le blaireau ralentit, réfléchit, et descend : « Bon. Dix. Pas un de plus. » {A} en fait onze, par principe.",
+                    "{A} se plante devant, mais un peu trop près. La balançoire repasse. {A} aussi, dans l'autre sens, sur les fesses.",
+                    E(new GrowStat(PlynlingStat.Courage)), Nothing, Ai((AiAxis.Boldness, 2))),
+                Plain("rope", "Trouver mieux : une corde et une branche basse",
+                    "{A} noue une corde à une branche basse et invente sa propre balançoire, qui tourne, en plus. Le soir, le blaireau fait la queue derrière.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Rationality, 1), (AiAxis.Energy, 1))),
+            }),
+
+        new EventDef("baby_bath", EventType.Pulse, Baby, "L'heure du bain",
+            "C'est l'heure du bain. {A} a disparu. Une bassine d'eau tiède attend au milieu de la pièce, et sous le lit, deux yeux brillent dans le noir, très décidés.",
+            new[]
+            {
+                Plain("ducks", "Accepter, à condition d'emmener un canard en bois",
+                    "{A} entre dans l'eau avec un canard en bois, puis un deuxième, puis une flotte entière. Le bain dure une heure et finit en bataille navale. Le plancher est trempé ; {A} brille comme un sou neuf.",
+                    E(new LiftNeed(Need.Hygiene, 0.3)), Ai((AiAxis.Energy, 1), (AiAxis.Sociability, 1))),
+                Try("escape", "Filer par la fenêtre", new EventChallenge(PlynlingStat.Intrigue, 4),
+                    "{A} file par la fenêtre, traverse le jardin et plonge dans le tas de feuilles. Personne ne trouve {A} avant le dîner. Les feuilles, en revanche, ont trouvé un locataire.",
+                    "{A} file par la fenêtre et atterrit pile dans le tonneau de pluie. Le bain a eu lieu quand même, en plus froid.",
+                    E(new GrowStat(PlynlingStat.Intrigue)), E(new LiftNeed(Need.Hygiene, 0.2)), Ai((AiAxis.Boldness, 1), (AiAxis.Honor, -1))),
+                Plain("bubbles", "Étudier les bulles, très sérieusement",
+                    "{A} passe le bain à observer les bulles : les grosses montent plus vite, les petites restent en bande. À la fin, {A} est propre sans s'en être {a:aperçu|aperçue}.",
+                    E(new GrowStat(PlynlingStat.Learning), new LiftNeed(Need.Hygiene, 0.2)), Ai((AiAxis.Rationality, 2)), gate: new TraitGate("curious")),
+            }),
+
+        new EventDef("baby_dress_up", EventType.Pulse, Baby, "Le petit chef de gare",
+            "{A} a trouvé une casquette trop grande, une pomme de pin en guise de montre, et s'est {a:installé|installée} sur le quai. Le hérisson chef de gare observe la scène depuis son guichet, sans un mot. Le train de 10 h 12 arrive dans trois minutes.",
+            new[]
+            {
+                Try("whistle", "Siffler le départ, comme un vrai chef", new EventChallenge(PlynlingStat.Courage, 4),
+                    "{A} siffle. Le train part. Pile à l'heure. Le hérisson sort de son guichet, regarde sa montre, regarde {A}, et note quelque chose dans son carnet. On ne saura jamais quoi, mais c'était souligné.",
+                    "{A} siffle trop tôt. Le train ne part pas. Les voyageurs applaudissent quand même. Le hérisson soupire, puis siffle à son tour, un peu moins fort, pour ne vexer personne.",
+                    E(new GrowStat(PlynlingStat.Courage)), Nothing, Ai((AiAxis.Boldness, 2))),
+                Plain("tickets", "Vérifier les billets de tous les voyageurs",
+                    "{A} poinçonne les billets avec les dents. L'ours a payé deux fois ; l'escargot n'a pas de billet, mais un abonnement d'avant le pont. Le hérisson, impressionné, laisse {A} tenir le carnet jusqu'au soir.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Rationality, 1), (AiAxis.Honor, 1))),
+                Plain("ask", "Demander au hérisson comment on devient chef",
+                    "Le hérisson réfléchit longuement. « On arrive avant tout le monde. On part après tout le monde. Et on ne court jamais. » {A} répète la phrase toute la journée, en marchant très lentement.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 1), (AiAxis.Sociability, 1))),
+                Plain("orders", "Donner des ordres à tout le quai",
+                    "{A} ordonne aux voyageurs de monter, aux pigeons de descendre et au train d'attendre. Le train n'attend pas. Mais les pigeons, bizarrement, obéissent.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Boldness, 2)), gate: new TraitGate("bossy")),
+            }),
+
+        new EventDef("baby_imaginary", EventType.Pulse, Baby, "L'ami invisible",
+            "Depuis mardi, {A} a un nouvel ami : Plouf. Plouf est invisible, mange beaucoup de biscuits, et a toujours une place à table. Ce matin, Plouf a une idée, et {A} est {a:seul|seule} à le savoir.",
+            new[]
+            {
+                Plain("cafe", "Commander un chocolat pour Plouf au café",
+                    "{A} commande deux chocolats. La tortue en sert deux, sans poser de questions, et essuie la tasse de Plouf avec le même soin que l'autre. Plouf, paraît-il, a tout bu.",
+                    E(new LiftNeed(Need.Happiness, 0.15), new FollowUp("baby_imaginary_bye", 72, 120)), Ai((AiAxis.Sociability, 1), (AiAxis.Compassion, 1))),
+                Plain("blame", "Accuser Plouf pour les biscuits disparus",
+                    "La boîte à biscuits est vide. « C'est Plouf. » Le héron, consulté, confirme que Plouf avait l'air coupable. {A} s'essuie la bouche, discrètement.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new FollowUp("baby_imaginary_bye", 72, 120)), Ai((AiAxis.Honor, -1), (AiAxis.Greed, 1))),
+                Plain("explore", "Partir avec Plouf explorer le fond du jardin",
+                    "Plouf connaît le chemin. Plouf a peur des limaces, alors {A} doit être {a:courageux|courageuse} pour deux. Le soir, {A} raconte l'expédition : Plouf a été très bien.",
+                    E(new GrowStat(PlynlingStat.Courage), new FollowUp("baby_imaginary_bye", 72, 120)), Ai((AiAxis.Boldness, 1), (AiAxis.Energy, 1))),
+            }),
+
+        new EventDef("baby_imaginary_bye", EventType.FollowUp, AnyStage, "Au revoir, Plouf",
+            "Ce matin, {A} met la table et s'arrête, une tasse à la patte. Plouf n'est pas là. {A} cherche sous le lit, derrière la porte, dans la boîte à biscuits. Puis comprend, sans trop savoir comment, que Plouf est parti voir un autre petit, quelque part, qui en a plus besoin.",
+            new[]
+            {
+                Plain("letter", "Écrire une lettre à Plouf",
+                    "{A} écrit une lettre de trois mots, avec un dessin de biscuit, et la confie au héron, qui promet de la porter « au bon endroit ». Le héron la range sous son aile, et l'y garde encore.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Compassion, 1))),
+                Plain("chair", "Laisser sa chaise libre, au cas où",
+                    "{A} laisse la chaise de Plouf libre. Un jour, quelqu'un s'y assoit : un vrai ami, cette fois, qui demande la permission de rester.",
+                    E(new LiftNeed(Need.Happiness, 0.2)), Ai((AiAxis.Sociability, 1))),
+                Plain("grown", "Annoncer qu'on est trop grand pour ces choses-là",
+                    "{A} annonce à tout le village qu'on est désormais trop {a:grand|grande} pour ce genre de choses. Le soir, en se couchant, {A} dit quand même bonne nuit au plafond. Juste au cas où.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("baby_otter", EventType.Pulse, Baby, "La loutre du ponton",
+            "Chaque soir, une vieille loutre s'assoit au bout du ponton et regarde l'eau, sans bouger, jusqu'à la nuit. Personne ne sait ce que la loutre attend. Ce soir, {A} s'approche, à petits pas.",
+            new[]
+            {
+                Plain("sit", "S'asseoir à côté, sans rien dire",
+                    "{A} s'assoit. La loutre ne dit rien. {A} non plus. Au bout d'un long moment, la loutre pose une patte sur la tête de {A}, juste une seconde. Puis les deux regardent l'eau jusqu'à la nuit.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Compassion, 2))),
+                Try("ask", "Demander ce qu'on attend, au bout d'un ponton", new EventChallenge(PlynlingStat.Diplomacy, 4),
+                    "« Un bateau à voile rouge, parti quand j'avais ton âge. » La loutre sourit. « Je sais bien que le bateau ne reviendra pas. Mais j'aime l'heure où on l'attend. »",
+                    "La loutre ne répond pas, mais tend à {A} un caillou plat. {A} le lance : trois ricochets. La loutre hoche la tête, et c'est tout pour ce soir.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), E(new GiveItem("col.caillou_plat")), Ai((AiAxis.Sociability, 1), (AiAxis.Compassion, 1))),
+                Plain("boat", "Fabriquer un petit bateau, avec une voile rouge",
+                    "{A} plie une feuille, la colore au jus de framboise, et pose le bateau sur l'eau, devant la loutre. La loutre le regarde partir, très loin. Ce soir-là, pour la première fois, la loutre rentre avant la nuit.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Compassion, 1), (AiAxis.Rationality, 1))),
+            }),
+
+        // ---- wave 8: ado
+        new EventDef("teen_fox_wedding", EventType.Pulse, Teen, "La noce des renards",
+            "Grand soleil, et pourtant la pluie tombe. Au village, tout le monde sait ce que ça veut dire : les renards se marient. La noce traverse le bois en ce moment même, et la tradition est claire : personne ne doit regarder. {A} entend déjà les clochettes, juste derrière les fougères.",
+            new[]
+            {
+                Try("peek", "Écarter les fougères, juste un peu", new EventChallenge(PlynlingStat.Intrigue, 6),
+                    "{A} écarte deux fougères. Un long cortège de renards passe sous la pluie dorée, en silence, des clochettes aux oreilles. La mariée tourne la tête, regarde {A} droit dans les yeux, et sourit. {A} ne racontera jamais ça à personne.",
+                    "Une fougère craque. Le cortège s'arrête net. Puis un vieux renard sort du rang, pose une part de gâteau de noce sur une souche, devant {A}, et repart. Personne ne sait si c'était une punition.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new ApplyModifier("inspired")), E(new LiftNeed(Need.Hunger, 0.2)), Ai((AiAxis.Boldness, 1), (AiAxis.Honor, -1))),
+                Plain("count", "Fermer les yeux et compter jusqu'à cent",
+                    "{A} ferme les yeux et compte. À quatre-vingt-dix, les clochettes s'éloignent. À cent, la pluie s'arrête. Sur la souche, devant {A}, quelqu'un a laissé une châtaigne bien ronde.",
+                    E(new GiveItem("col.chataigne"), new ApplyModifier("clear_conscience")), Ai((AiAxis.Honor, 2))),
+                Plain("flowers", "Laisser un bouquet au bord du chemin, sans regarder",
+                    "{A} cueille trois fleurs mouillées et les pose au bord du chemin, les yeux fermés. Le lendemain, le bouquet a disparu. À sa place attend une plume rousse.",
+                    E(new GiveItem("col.plume"), new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Compassion, 1), (AiAxis.Sociability, 1))),
+            }),
+
+        new EventDef("teen_tug_of_war", EventType.Pulse, Teen, "La corde de la rivière",
+            "Chaque année, le village et celui d'en face se disputent la rivière au tir à la corde, d'une rive à l'autre. Les perdants finissent dans l'eau. Cette année, le moineau a désigné {A} pour l'équipe. Sur l'autre rive, l'équipe adverse compte un castor. Un vrai.",
+            new[]
+            {
+                Try("front", "Prendre la tête de la corde", new EventChallenge(PlynlingStat.Courage, 7),
+                    "{A} tient bon, les pattes plantées dans la boue, et crie le rythme. Le castor glisse, puis toute l'équipe adverse, un par un, dans la rivière. Le village porte {A} en triomphe jusqu'au café, où l'ours offre la tournée et une petite bourse.",
+                    "{A} tient bon, très bon, trop bon : quand l'équipe lâche, {A} part {a:seul|seule} dans la rivière. Le castor aide {A} à sortir, ce qui est humiliant, puis tend une serviette, ce qui l'est encore plus.",
+                    E(new GrowStat(PlynlingStat.Courage), new GiveCailloux(15)), E(new LiftNeed(Need.Hygiene, 0.2)), Ai((AiAxis.Boldness, 2)), Stress(("craven", 20))),
+                Try("anchor", "S'enrouler la corde autour de la taille, en dernier", new EventChallenge(PlynlingStat.Stewardship, 7),
+                    "{A} s'enroule la corde autour de la taille et s'assoit. Tout simplement. L'équipe adverse tire, tire, et ne comprend pas. La victoire doit plus au poids qu'à la force, mais une victoire est une victoire.",
+                    "{A} s'enroule la corde trois fois autour de la taille, se retrouve {a:ficelé|ficelée} comme un saucisson, puis {a:traîné|traînée} doucement jusqu'au bord de l'eau. On s'arrête juste avant. Le castor, beau joueur, déclare le match nul.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new GiveCailloux(10)), Nothing, Ai((AiAxis.Rationality, 2))),
+                Try("butter", "Beurrer discrètement le bout de corde adverse", new EventChallenge(PlynlingStat.Intrigue, 7),
+                    "Le bout adverse glisse comme une anguille. Victoire éclatante. Le soir, le castor renifle sa patte, et regarde {A} longuement. Pas un mot. Ça viendra.",
+                    "Le beurre a coulé du mauvais côté. C'est l'équipe de {A} qui glisse dans la rivière, en entier. Personne ne sait d'où vient le beurre. Presque personne.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new ApplyModifier("sly")), Nothing, Ai((AiAxis.Honor, -2), (AiAxis.Greed, 1)), Stress(("honest", 30), ("just", 20))),
+                Plain("song", "Rester sur la berge, et mener les chants",
+                    "{A} invente une chanson sur le castor, qui rime avec « pas si fort », et tout le village la reprend. Le castor, vexé, perd sa concentration. Le moineau se demande si une chanson compte comme une aide extérieure, et décide que non.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Sociability, 2))),
+            }),
+
+        new EventDef("teen_runaway", EventType.Pulse, Teen, "Partir pour toujours",
+            "Ce matin, {A} a décidé de quitter le village. Pour toujours. Le baluchon est prêt : deux tartines, un caillou porte-bonheur, une chaussette de rechange. La lettre d'adieu est punaisée sur la porte. Sur son pont, le héron regarde {A} approcher avec beaucoup d'intérêt.",
+            new[]
+            {
+                Plain("hill", "Partir loin, jusqu'au bout du chemin",
+                    "{A} marche jusqu'au bout du chemin, puis un peu plus loin, jusqu'à la colline d'où l'on voit tout le village, minuscule. Les tartines sont mangées là-haut. Puis le village a l'air de faire signe, et {A} rentre pour le dîner, avec une nouvelle façon de le regarder.",
+                    E(new GrowStat(PlynlingStat.Courage)), Ai((AiAxis.Boldness, 1), (AiAxis.Energy, 1))),
+                Try("raft", "Construire un radeau, et descendre la rivière", new EventChallenge(PlynlingStat.Stewardship, 6),
+                    "Le radeau flotte. Le radeau avance. Le radeau, après un dernier virage, accoste… au ponton du village, par l'autre côté. {A} débarque sous les applaudissements de l'escargot, qui croyait à une course.",
+                    "Le radeau flotte trois secondes. {A} rentre à la nage, le baluchon sur la tête, et décrète que partir pour toujours peut attendre l'été.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), E(new LiftNeed(Need.Hygiene, 0.15)), Ai((AiAxis.Energy, 1), (AiAxis.Rationality, 1))),
+                Plain("heron", "Demander d'abord conseil au héron",
+                    "« Partir pour toujours, dit le héron, ça se prépare. Reviens demain. » {A} revient le lendemain, puis le surlendemain. Au bout d'une semaine, {A} a oublié de partir, mais connaît par cœur tous les oiseaux migrateurs.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 1), (AiAxis.Sociability, 1))),
+            }),
+
+        new EventDef("teen_crush", EventType.Pulse, Teen, "Un nom dans la marge",
+            "Depuis quelque temps, {A} rougit quand {B} passe. {A} a écrit le nom de {B} dans la marge d'un livre de la bibliothèque, puis l'a effacé, puis l'a réécrit, plus petit. La chouette a remarqué. La chouette remarque tout.",
+            new[]
+            {
+                Plain("flower", "Laisser une fleur devant la porte de {B}, sans signer",
+                    "{A} dépose la fleur à l'aube et s'enfuit. {B} la trouve, la met dans un verre d'eau, et demande à tout le village qui l'a laissée. Personne ne sait. {A}, {a:interrogé|interrogée}, rougit jusqu'aux oreilles et parle très vite de la météo.",
+                    E(new AffinityShift(10)), Ai((AiAxis.Compassion, 1), (AiAxis.Boldness, -1))),
+                Try("talk", "Aller parler à {B}, de n'importe quoi", new EventChallenge(PlynlingStat.Courage, 6),
+                    "{A} s'approche et parle des nuages pendant dix minutes. {B} écoute, répond, rit au bon moment. Ce n'est pas une déclaration. C'est mieux : c'est une conversation.",
+                    "{A} s'approche, ouvre la bouche, et dit « bonjour la météo ». {B} cligne des yeux. {A} s'en va très vite, très dignement, dans la mauvaise direction.",
+                    E(new GrowStat(PlynlingStat.Courage), new AffinityShift(15)), E(new AffinityShift(5)), Ai((AiAxis.Boldness, 2)), Stress(("shy", 20))),
+                Plain("owl", "Demander à la chouette un livre sur la question",
+                    "La chouette pose devant {A} un recueil de poèmes, un seul, avec un marque-page déjà glissé à la bonne page. {A} lit le poème trois fois. Personne ne saura jamais lequel.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 1))),
+            },
+            Target: TargetKind.Known,
+            TargetCondition: t => !t.EitherInCouple),
+
+        // ---- wave 8: adulte et ancien
+        new EventDef("grown_moon_party", EventType.Pulse, Grown, "La fête de la lune",
+            "{B} a glissé une invitation sous la porte de {A} : « Pleine lune, sur la colline. Apporte une couverture et une histoire. » Ce soir, la lune est énorme, posée sur la colline comme une tarte sur une table. {B} a déjà étendu une nappe, et attend.",
+            new[]
+            {
+                Plain("story", "Apporter la plus belle histoire qu'on connaisse",
+                    "{A} raconte l'histoire du lapin qui vit sur la lune et y fait des confitures. {B} jure voir le lapin, là, à gauche. Les deux restent jusqu'à ce que la lune ait traversé tout le ciel.",
+                    E(new AffinityShift(15), new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Sociability, 1), (AiAxis.Compassion, 1))),
+                Plain("tea", "Apporter une théière, deux tasses et du miel",
+                    "Le thé fume dans le froid. {B} boit sa tasse en silence, puis dit : « C'est la première fois que quelqu'un vient. » {A} ressert du thé, sans rien dire. Rien d'autre à dire.",
+                    E(new AffinityShift(20), new ApplyModifier("soothed")), Ai((AiAxis.Compassion, 2))),
+                Try("poem", "Improviser un poème à la lune", new EventChallenge(PlynlingStat.Learning, 8),
+                    "{A} improvise douze vers à la lune. {B} applaudit, puis en improvise douze autres, moins bons, mais avec beaucoup plus de rimes en « -ette ». C'est la meilleure soirée du mois.",
+                    "{A} commence un poème et s'arrête au troisième vers, faute de rime pour « lune ». {B} propose « prune ». Le poème devient une recette. Personne ne s'en plaint.",
+                    E(new GrowStat(PlynlingStat.Learning), new AffinityShift(15)), E(new AffinityShift(10)), Ai((AiAxis.Rationality, 1), (AiAxis.Sociability, 1)), Stress(("shy", 15))),
+            },
+            Target: TargetKind.Known),
+
+        new EventDef("grown_spilled", EventType.Pulse, Grown, "La soupe renversée",
+            "Au banquet du marché, {B} arrive avec un bol de soupe de potiron, trébuche sur une racine, et le renverse en entier sur le plus beau pull de {A}. Le marché se tait. Le moineau suspend sa fourchette en l'air. Tout le monde attend de voir ce que {A} va faire.",
+            new[]
+            {
+                Try("laugh", "Éclater de rire, et en reprendre un bol", new EventChallenge(PlynlingStat.Diplomacy, 7),
+                    "{A} éclate de rire, cueille un peu de soupe sur sa manche, la goûte, et la déclare excellente. Le marché rit aussi. {B}, rouge comme le potiron, apporte un deuxième bol, en marchant très, très prudemment.",
+                    "{A} rit, mais un peu trop longtemps, d'un rire de plus en plus aigu. {B} ne sait plus si c'est grave. Personne ne le sait. Le moineau repose sa fourchette.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new AffinityShift(20)), E(new AffinityShift(5)), Ai((AiAxis.Sociability, 2)), Stress(("wrathful", 20))),
+                Plain("fashion", "Annoncer que c'est la nouvelle mode",
+                    "« C'est voulu », annonce {A}. « Soupe sur laine. Très en vogue au-delà de la rivière. » Le lendemain, deux jeunes du village portent un pull taché de potiron. {B} n'en revient pas.",
+                    E(new AffinityShift(10), new ApplyModifier("well_spoken")), Ai((AiAxis.Boldness, 1), (AiAxis.Sociability, 1))),
+                Plain("sulk", "Rentrer se changer, sans un mot",
+                    "{A} se lève et rentre se changer, sans un mot, avec une dignité de héron. {B} passe la soirée à fixer son bol vide. Le lendemain, un pull neuf, tricoté de travers, attend devant la porte de {A}.",
+                    E(new AffinityShift(-5)), Ai((AiAxis.Vengefulness, 1), (AiAxis.Sociability, -1)), Stress(("forgiving", 15))),
+            },
+            Target: TargetKind.Known),
+
+        new EventDef("grown_empty_village", EventType.Pulse, Grown, "Le village vide",
+            "Minuit. {A} a une envie terrible de tartine au miel, mais le pot est vide. Le café est fermé, la boulangerie aussi. Chez l'ours, chez le blaireau, chez la tortue : personne. Le village entier a disparu. Seule une lanterne brille au loin, du côté du moulin.",
+            new[]
+            {
+                Try("follow", "Suivre la lanterne, sans bruit", new EventChallenge(PlynlingStat.Intrigue, 7),
+                    "{A} se faufile jusqu'au moulin et colle un œil à la fenêtre : tout le village est là, en pyjama, autour d'un gâteau à cent bougies. C'est l'anniversaire de l'escargot. Personne ne sait qui a oublié d'inviter {A}. {A} entre, et on fait comme si de rien n'était, avec une part en plus.",
+                    "{A} se faufile, marche sur une branche, et la porte du moulin s'ouvre d'un coup : « SURPRISE ! » La surprise n'est pas pour {A}, mais pour l'escargot, qui arrive juste derrière. L'escargot est très touché qu'on ait crié pour {A} aussi.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new LiftNeed(Need.Hunger, 0.2)), E(new LiftNeed(Need.Happiness, 0.2)), Ai((AiAxis.Boldness, 1), (AiAxis.Rationality, 1))),
+                Plain("bed", "Retourner se coucher, le ventre vide",
+                    "{A} retourne se coucher et rêve de tartines. Au matin, devant la porte : une part de gâteau, une bougie plantée dedans, et un mot de l'escargot. « On t'a {a:cherché|cherchée} partout. »",
+                    E(new LiftNeed(Need.Hunger, 0.15)), Ai((AiAxis.Energy, -1))),
+                Plain("bake", "Inventer une tartine avec ce qui reste",
+                    "Pas de miel, mais un fond de confiture de mûres, trois noisettes et une idée. La tartine de minuit de {A} est si réussie que, le lendemain, la tortue en veut la recette. {A} ne s'en souvient plus du tout.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new ApplyModifier("hearty")), Ai((AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("grown_hare", EventType.Pulse, Grown, "Le voyageur sans bagage",
+            "Un lièvre frappe à la porte de {A} à la nuit tombée. Le manteau est usé, les poches vides, les oreilles pleines de poussière de route. « Je n'ai rien pour payer, dit le lièvre. Seulement des histoires. Des vraies. Presque toutes. »",
+            new[]
+            {
+                Plain("host", "Ouvrir sa porte, et écouter les histoires",
+                    "Le lièvre raconte les montagnes, la mer, une ville où les maisons flottent. À l'aube, le lièvre repart, et laisse sur la table une vieille carte dessinée à la main, avec une croix tout au bout.",
+                    E(new GiveItem("col.carte_tresor")), Ai((AiAxis.Compassion, 1), (AiAxis.Sociability, 1))),
+                Try("deal", "Proposer un marché : le couvert contre un peu de travail", new EventChallenge(PlynlingStat.Stewardship, 8),
+                    "Le lièvre répare la gouttière, le volet et la chaise bancale avant le petit-déjeuner, en racontant une histoire par clou. En partant, le lièvre glisse à {A} quelques cailloux trouvés « sur une route d'argent ».",
+                    "Le lièvre accepte, répare la chaise, et casse la table. Les deux finissent la nuit à rire, assis par terre, et le lièvre explique comment on mange sans table, dans le désert.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new GiveCailloux(15)), E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Greed, 1), (AiAxis.Rationality, 1)), Stress(("generous", 15))),
+                Plain("proof", "Demander une preuve, une seule",
+                    "« Une preuve ? » Le lièvre sourit, retire son chapeau, et en sort un coquillage qui sent encore la mer. {A} le porte à son oreille : la mer est bien là, toute petite, au fond. Le lièvre reprend le coquillage. « Celui-là, je le garde. »",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 2))),
+            }),
+
+        new EventDef("grown_clock_feud", EventType.Pulse, Grown, "La guerre des horloges",
+            "L'horloge du café retarde de deux heures depuis toujours. La tortue dit que c'est voulu. Le hérisson chef de gare dit que c'est une honte. Ce matin, la dispute a éclaté sur la place, devant tout le monde, et les deux se tournent vers {A} en même temps : « Dis-lui, toi ! »",
+            new[]
+            {
+                Try("mediate", "Proposer un compromis : une heure de retard seulement", new EventChallenge(PlynlingStat.Diplomacy, 8),
+                    "Après une longue négociation, l'horloge du café ne retarde plus que d'une heure, et la tortue offre au hérisson un chocolat chaque jour, à l'heure exacte de la gare. Les deux font semblant d'avoir gagné. C'est le signe d'un bon compromis.",
+                    "Le compromis ne plaît à personne. La tortue et le hérisson, enfin d'accord sur quelque chose, se retournent ensemble contre {A}. {A} paie les chocolats.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new ApplyModifier("well_spoken")), Nothing, Ai((AiAxis.Sociability, 1), (AiAxis.Honor, 1))),
+                Try("fix", "Régler l'horloge soi-même, en pleine nuit", new EventChallenge(PlynlingStat.Stewardship, 8),
+                    "{A} règle l'horloge à minuit. Au matin, le café est à l'heure. La tortue arrive en avance pour la première fois de sa vie, trouve la porte fermée, et s'assoit sur le banc pour attendre. La tortue trouve ça très reposant. On ne touche plus à l'horloge.",
+                    "{A} ouvre l'horloge. Un coucou en sort, très en colère, et refuse d'y retourner. Le café a désormais un coucou de comptoir, qui chante quand ça lui chante.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), Nothing, Ai((AiAxis.Rationality, 1), (AiAxis.Boldness, 1))),
+                Plain("both", "Donner raison aux deux, à tour de rôle",
+                    "{A} donne raison à la tortue le matin et au hérisson l'après-midi. Ça marche trois jours. Le quatrième, les deux comparent leurs notes. {A} prend des vacances au fond du jardin.",
+                    E(new GrowStat(PlynlingStat.Intrigue)), Ai((AiAxis.Honor, -1), (AiAxis.Sociability, 1))),
+            }),
+
+        new EventDef("grown_lost_letter", EventType.Pulse, Grown, "La lettre égarée",
+            "Le facteur, un pigeon distrait, a glissé dans la boîte de {A} une lettre adressée à {B}. L'enveloppe est mal fermée. Très mal fermée. Un souffle suffirait à l'ouvrir, et on distingue déjà, en travers, les mots « ne le dis à personne ».",
+            new[]
+            {
+                Plain("deliver", "Porter la lettre à {B}, sans l'ouvrir",
+                    "{A} traverse le village, la lettre tenue du bout des doigts comme une braise. {B} l'ouvre devant {A}, lit, et éclate de rire : c'est la recette secrète de la tarte du blaireau. {B} promet une part. La promesse est tenue.",
+                    E(new AffinityShift(10), new ApplyModifier("clear_conscience")), Ai((AiAxis.Honor, 2))),
+                Try("read", "Lire juste la première ligne", new EventChallenge(PlynlingStat.Intrigue, 8),
+                    "{A} lit la première ligne, puis toutes les autres, et recolle l'enveloppe sans une trace. C'est la recette secrète de la tarte du blaireau. Le soir même, {A} fait une tarte. Le blaireau la goûte, plisse les yeux, et ne dit rien. Pour l'instant.",
+                    "L'enveloppe se déchire en deux. Impossible de faire comme si de rien n'était. {A} porte les deux moitiés à {B}, avec des excuses et un pot de colle. {B} recolle la lettre, la lit, et regarde {A} d'un drôle d'air.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new LiftNeed(Need.Hunger, 0.2)), E(new AffinityShift(-10)), Ai((AiAxis.Honor, -2)), Stress(("honest", 30), ("just", 15))),
+                Plain("pigeon", "Rattraper le pigeon, et lui faire la leçon",
+                    "{A} rattrape le pigeon et lui fait un exposé de vingt minutes sur l'importance des adresses. Le pigeon écoute, hoche la tête, et repart livrer la lettre… chez l'escargot.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Rationality, 1), (AiAxis.Honor, 1))),
+            },
+            Target: TargetKind.Known),
+
+        new EventDef("grown_board_game", EventType.Pulse, Grown, "La partie de la semaine",
+            "La chouette a sorti son vieux plateau de jeu, celui avec les pions en noyaux de cerise. « Une partie, dit la chouette. Un coup par jour, posé sur le rebord de ma fenêtre. » La dernière partie de la chouette a duré un hiver entier. {A} pose le premier pion.",
+            new[]
+            {
+                Try("attack", "Attaquer tout de suite, sans réfléchir", new EventChallenge(PlynlingStat.Courage, 7),
+                    "Le premier coup de {A} fait tomber trois pions d'un coup. Le lendemain, sur le rebord de la fenêtre, un mot de la chouette : « Intéressant. » La partie s'annonce longue.",
+                    "Le premier coup de {A} est audacieux. Le deuxième coup de la chouette le rend ridicule. La partie s'annonce longue, et un peu humiliante.",
+                    E(new GrowStat(PlynlingStat.Courage), new FollowUp("grown_board_game_end", 72, 120)), E(new FollowUp("grown_board_game_end", 72, 120)),
+                    Ai((AiAxis.Boldness, 2))),
+                Plain("slow", "Jouer lentement, en étudiant chaque coup",
+                    "{A} réfléchit une journée entière avant chaque coup, la nuit aussi. La chouette trouve enfin un adversaire à sa mesure, et commence à arriver en retard à la bibliothèque.",
+                    E(new GrowStat(PlynlingStat.Learning), new FollowUp("grown_board_game_end", 72, 120)), Ai((AiAxis.Rationality, 2))),
+                Plain("notes", "Glisser un petit mot à côté de chaque coup",
+                    "Chaque jour, {A} pose son pion et un petit mot à côté : la météo, un potin, une question sur les étoiles. La chouette répond à tout, en tout petit, au dos du mot. La partie avance lentement. La correspondance, très vite.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new FollowUp("grown_board_game_end", 72, 120)), Ai((AiAxis.Sociability, 2))),
+            }),
+
+        new EventDef("grown_board_game_end", EventType.FollowUp, AnyStage, "Le dernier coup",
+            "Une semaine plus tard, deux pions seulement restent sur le plateau : un à {A}, un à la chouette. Le village entier passe devant la fenêtre pour regarder, mine de rien. Le prochain coup décide de tout, et c'est à {A} de jouer.",
+            new[]
+            {
+                Try("win", "Jouer le coup préparé depuis trois jours", new EventChallenge(PlynlingStat.Learning, 9),
+                    "{A} pose le pion. La chouette regarde le plateau longtemps, très longtemps, puis enlève ses lunettes et les essuie. « Personne ne m'avait battue depuis l'hiver de la grande neige. » La chouette offre à {A} le pion vainqueur, un noyau de cerise poli par les années.",
+                    "{A} pose le pion. La chouette pose le sien juste à côté, avec un petit bruit sec. Fin de la partie. « Belle partie, dit la chouette. On recommence ? » Et {A} dit oui, malgré tout.",
+                    E(new GrowStat(PlynlingStat.Learning), new ApplyModifier("inspired")), E(new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Rationality, 2))),
+                Plain("draw", "Proposer la nulle, et un thé",
+                    "{A} propose la nulle. La chouette réfléchit, puis accepte, et sort deux tasses. Le plateau reste sur le rebord, tel quel. Les deux pions y sont encore, et personne n'ose y toucher.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Compassion, 1), (AiAxis.Sociability, 1))),
+                Plain("lose", "Perdre exprès, pour faire plaisir",
+                    "{A} joue un coup volontairement mauvais. La chouette le voit tout de suite, fronce les sourcils, et refuse de prendre le pion. « On ne me fait pas de cadeau. Rejoue. » {A} rejoue, et perd quand même. Tout le monde est content.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Compassion, 1), (AiAxis.Honor, -1)), Stress(("honest", 10))),
+            }),
+
+        new EventDef("grown_rumor", EventType.Pulse, Grown, "La rumeur du marché",
+            "Une rumeur court au marché : {A} serait riche, très riche, et cacherait un trésor sous son lit. La pie jure que ça ne vient pas du marché, ce qui veut dire que ça vient du marché. Depuis ce matin, on salue {A} beaucoup plus bas.",
+            new[]
+            {
+                Plain("open", "Démentir, en ouvrant grand sa porte",
+                    "{A} ouvre sa porte à tout le village : sous le lit, trois chaussettes et un gland. La foule repart, déçue. Seule la pie reste, et examine le gland de très près.",
+                    E(new ApplyModifier("clear_conscience")), Ai((AiAxis.Honor, 2))),
+                Try("play", "Laisser courir, et jouer le jeu", new EventChallenge(PlynlingStat.Intrigue, 8),
+                    "{A} achète un chapeau, prend un air mystérieux, et paie son pain avec une lenteur de millionnaire. Le boulanger, impressionné, offre une brioche « pour un client de marque ». La rumeur double.",
+                    "{A} joue au riche trois jours, jusqu'à ce que passe le bonnet de la collecte pour la fête du village. Tout le monde regarde. {A} donne un caillou. Fin de la rumeur.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new LiftNeed(Need.Hunger, 0.2)), Nothing, Ai((AiAxis.Boldness, 1), (AiAxis.Honor, -1)), Stress(("honest", 20))),
+                Plain("piggy", "En faire une vérité : commencer une tirelire",
+                    "{A} décide qu'au fond, ce n'est pas une mauvaise idée, et commence une tirelire. Le premier caillou y tombe avec un joli bruit. Le deuxième, un peu plus tard. On commence petit.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new ApplyModifier("trade_sense")), Ai((AiAxis.Greed, 1), (AiAxis.Rationality, 1))),
+            }),
+
+        // adulte et ancien: le Grand Concours (CK3's imperial examination: the notice, the night before,
+        // a slip of paper in the hall, then four endings)
+        new EventDef("grown_exam", EventType.Pulse, Grown, "Le Grand Concours",
+            "Une affiche est clouée sur la porte de la bibliothèque, écrite à la plume par la chouette en personne : « Grand Concours. Une épreuve, un lauréat, un nom peint sur le tableau d'honneur. » Le tableau est dans l'entrée. Le dernier nom peint date de douze hivers, et la peinture s'écaille. {A} relit l'affiche trois fois.",
+            new[]
+            {
+                Plain("study", "S'inscrire, et réviser dès ce soir",
+                    "{A} s'inscrit en lettres soignées, emprunte onze livres, et les empile sur la table de la cuisine. Le premier est ouvert avant le dîner. Le dîner attendra.",
+                    E(new GrowStat(PlynlingStat.Learning), new FollowUp("grown_exam_eve", 48, 96)), Ai((AiAxis.Rationality, 2)), Stress(("lazy", 15))),
+                Plain("sign", "S'inscrire, pour voir",
+                    "{A} signe d'un trait rapide, entre l'ours et l'escargot. L'escargot s'inscrit tous les ans, depuis toujours, et n'a encore jamais fini l'épreuve à temps.",
+                    E(new FollowUp("grown_exam_eve", 48, 96)), Ai((AiAxis.Boldness, 1), (AiAxis.Sociability, 1))),
+                Plain("cakes", "Ne pas s'inscrire, mais cuisiner pour les candidats",
+                    "Le jour du concours, un plateau de gâteaux au miel attend devant la bibliothèque. Les candidats mangent tout. Le soir, la chouette fait savoir que le concours de l'an prochain aura une catégorie « pâtisserie ». Personne ne sait si c'est une blague.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new ApplyModifier("cherished")), Ai((AiAxis.Compassion, 2))),
+            }),
+
+        new EventDef("grown_exam_eve", EventType.FollowUp, AnyStage, "La veille du concours",
+            "C'est la veille du concours. Les livres sont ouverts partout, même sur la chaise. Dehors, des rires : les autres candidats vont au café, « pour se détendre ». Et sur le banc devant chez {A}, un jeune loir sanglote dans son cahier, persuadé de tout rater.",
+            new[]
+            {
+                Try("cram", "Réviser toute la nuit", new EventChallenge(PlynlingStat.Learning, 8),
+                    "{A} révise jusqu'à ce que les étoiles pâlissent. À l'aube, tout est là, rangé, à sa place dans la tête. {A} part au concours les yeux rouges et l'esprit clair.",
+                    "{A} révise jusqu'à l'aube, mais les mots finissent par danser sur la page. Au matin, {A} connaît par cœur la liste des fleuves… à l'envers.",
+                    E(new ApplyModifier("inspired"), new FollowUp("grown_exam_paper", 12, 24)), E(new ApplyModifier("sleepless"), new FollowUp("grown_exam_paper", 12, 24)),
+                    Ai((AiAxis.Rationality, 1), (AiAxis.Energy, 1))),
+                Plain("cafe", "Rejoindre les autres au café",
+                    "Au café, les candidats parlent de tout sauf du concours. La tortue sert des tisanes « pour la mémoire », et l'ours raconte son propre concours, perdu de très loin, avec une telle joie que plus personne n'a peur.",
+                    E(new LiftNeed(Need.Happiness, 0.2), new FollowUp("grown_exam_paper", 12, 24)), Ai((AiAxis.Sociability, 2))),
+                Plain("dormouse", "S'asseoir à côté du loir, et réviser à deux",
+                    "{A} s'assoit à côté du loir, et les deux révisent ensemble, une question chacun. À minuit, le loir ne pleure plus. À une heure, le loir dort sur l'épaule de {A}, et {A} n'ose plus bouger.",
+                    E(new ApplyModifier("clear_conscience"), new FollowUp("grown_exam_paper", 12, 24)), Ai((AiAxis.Compassion, 2))),
+                Plain("sleep", "Se coucher tôt : une tête reposée vaut deux livres",
+                    "{A} ferme les livres à huit heures, boit un lait chaud et dort comme une pierre. Au matin, la tête est légère. Un peu vide, peut-être, mais légère.",
+                    E(new ApplyModifier("well_rested"), new FollowUp("grown_exam_paper", 12, 24)), Ai((AiAxis.Rationality, 1), (AiAxis.Energy, -1))),
+            }),
+
+        new EventDef("grown_exam_paper", EventType.FollowUp, AnyStage, "Le papier plié",
+            "La salle de lecture a été vidée, et des pupitres alignés. La chouette distribue les sujets, puis s'installe sur son perchoir pour surveiller. Au bout d'une heure, la chouette dort. Un papier plié glisse alors jusqu'aux pattes de {A}, poussé par une patte inconnue. Dessus, d'une écriture minuscule : toutes les réponses.",
+            new[]
+            {
+                Try("own", "Repousser le papier du pied, et écrire ses propres réponses", new EventChallenge(PlynlingStat.Learning, 8),
+                    "{A} repousse le papier sous le pupitre voisin, du bout du pied, et écrit. Les mots viennent, un par un, puis tous ensemble. {A} pose la plume au moment où la chouette se réveille.",
+                    "{A} repousse le papier et écrit. Mais la question trois porte sur les fougères, et {A} n'en connaît que la couleur. {A} rend sa copie le cœur un peu lourd, et la conscience légère.",
+                    E(new FollowUp("grown_exam_laureate", 24, 48)), E(new FollowUp("grown_exam_honest", 24, 48)), Ai((AiAxis.Honor, 1), (AiAxis.Rationality, 1))),
+                Try("report", "Réveiller la chouette, et lui remettre le papier", new EventChallenge(PlynlingStat.Learning, 7),
+                    "{A} toussote. La chouette ouvre un œil, voit le papier, et le déchire en mille morceaux. Puis accorde à {A}, sans un mot, dix minutes de plus que tout le monde. Ces dix minutes suffisent.",
+                    "{A} toussote. La chouette ouvre un œil, voit le papier, et le déchire en mille morceaux. Puis accorde à {A} dix minutes de plus. Dix minutes, ce n'est pas assez pour les fougères.",
+                    E(new ApplyModifier("clear_conscience"), new FollowUp("grown_exam_laureate", 24, 48)), E(new ApplyModifier("clear_conscience"), new FollowUp("grown_exam_honest", 24, 48)),
+                    Ai((AiAxis.Honor, 2))),
+                Try("peek", "Jeter un coup d'œil, un seul", new EventChallenge(PlynlingStat.Intrigue, 8),
+                    "{A} déplie le papier sous le pupitre, copie tout, et le fait disparaître dans sa manche avant que la chouette ne s'étire. Personne n'a rien vu. Presque rien.",
+                    "{A} déplie le papier. Le papier craque. La chouette ouvre un œil, puis deux, et descend de son perchoir en silence.",
+                    E(new FollowUp("grown_exam_hollow", 24, 48)), E(new FollowUp("grown_exam_caught", 6, 12)), Ai((AiAxis.Honor, -2), (AiAxis.Greed, 1)), Stress(("honest", 30), ("just", 20))),
+            }),
+
+        new EventDef("grown_exam_laureate", EventType.FollowUp, AnyStage, "Le tableau d'honneur",
+            "Une semaine plus tard, tout le village se presse dans l'entrée de la bibliothèque. Le peintre a sorti ses pinceaux. La chouette déplie un papier, ajuste ses lunettes, et lit le nom du lauréat. C'est {A}. Le silence dure une seconde, puis l'escargot se met à applaudir, et tout le monde suit.",
+            new[]
+            {
+                Try("speech", "Faire un discours, un vrai", new EventChallenge(PlynlingStat.Diplomacy, 8),
+                    "{A} remercie la chouette, les livres, la tortue, et l'escargot, pour son exemple de persévérance. L'escargot pleure. L'ours aussi. On peint le nom de {A} en lettres dorées, et la chouette remet la bourse du concours.",
+                    "{A} commence à remercier tout le monde et oublie la moitié du village. Le discours dure quarante minutes, à force de rattrapages. On peint le nom quand même, et la bourse est remise pendant la quarante et unième.",
+                    E(new ApplyModifier("laureate"), new GiveCailloux(25)), E(new GiveCailloux(25)), Ai((AiAxis.Sociability, 2)), Stress(("shy", 20))),
+                Plain("thanks", "Dire merci, et rien d'autre",
+                    "« Merci. » Puis {A} descend de l'estrade. Le village trouve ça très élégant, et en parle pendant des semaines. Le nom de {A} est peint en lettres dorées, et la bourse glissée dans sa patte.",
+                    E(new ApplyModifier("laureate"), new GiveCailloux(25)), Ai((AiAxis.Rationality, 1), (AiAxis.Sociability, -1))),
+                Plain("library", "Offrir la bourse à la bibliothèque",
+                    "{A} tend la bourse à la chouette : « Pour la réserve. » La chouette, émue, range ses lunettes trois fois de suite. Une semaine plus tard, une étagère neuve porte une petite plaque au nom de {A}.",
+                    E(new ApplyModifier("laureate"), new ApplyModifier("clear_conscience")), Ai((AiAxis.Compassion, 1), (AiAxis.Honor, 1)), Stress(("greedy", 20))),
+            }),
+
+        new EventDef("grown_exam_honest", EventType.FollowUp, AnyStage, "La mention de la chouette",
+            "Les résultats sont affichés. Le nom peint sur le tableau d'honneur n'est pas celui de {A}, mais celui d'un jeune loir, qui n'en revient pas. En bas de la liste, pourtant, d'une écriture minuscule, la chouette a ajouté une ligne : « Mention spéciale : {A}, pour la copie la plus honnête. »",
+            new[]
+            {
+                Plain("congrats", "Aller féliciter le loir",
+                    "{A} serre la patte du loir, qui tremble encore. Le loir murmure : « C'est un peu grâce à toi, tu sais. » {A} ne sait pas trop pourquoi, mais rentre avec quelque chose de chaud dans la poitrine.",
+                    E(new ApplyModifier("cherished")), Ai((AiAxis.Compassion, 2))),
+                Plain("next", "Recopier la liste des livres, pour l'an prochain",
+                    "{A} recopie la liste des livres, en ajoute deux, et punaise le tout au-dessus du lit. L'an prochain, le nom sera peint. En attendant, on révise les fougères.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 1), (AiAxis.Energy, 1))),
+                Plain("frame", "Encadrer la mention",
+                    "La mention est découpée, encadrée, et accrochée au-dessus de la cheminée. Les visiteurs la lisent à voix haute. {A} fait semblant de ne pas écouter, à chaque fois.",
+                    E(new LiftNeed(Need.Happiness, 0.2), new ApplyModifier("clear_conscience")), Ai((AiAxis.Sociability, 1))),
+            }),
+
+        new EventDef("grown_exam_caught", EventType.FollowUp, AnyStage, "Pris sur le fait",
+            "La chouette se tient devant le pupitre de {A}, le papier plié entre deux plumes. Toute la salle a cessé d'écrire. « Ce papier », dit la chouette, très doucement. « Je t'écoute. »",
+            new[]
+            {
+                Plain("confess", "Tout avouer",
+                    "{A} avoue tout, d'une petite voix. La chouette hoche la tête, déchire la copie, et en tend une neuve. « Recommence, avec ta tête à toi. Tu as une heure. » {A} écrit pendant une heure, moins bien, mais vrai. Le soir, sur la copie, un mot de la chouette : « Mieux. »",
+                    E(new GrowStat(PlynlingStat.Learning), new ApplyModifier("clear_conscience")), Ai((AiAxis.Honor, 2))),
+                Try("deny", "Jurer que le papier est arrivé tout seul", new EventChallenge(PlynlingStat.Intrigue, 9),
+                    "« Arrivé tout seul, je le jure. » La chouette fixe {A} un long moment, puis le papier, puis la rangée de derrière, où un jeune corbeau regarde ses pattes avec beaucoup d'intérêt. La chouette va s'asseoir à côté du corbeau, et n'en bouge plus.",
+                    "« Arrivé tout seul, je le jure. » La chouette retourne le papier : au dos, en tout petit, le nom de {A}, sur un vieux brouillon de {A}. Le silence de la salle est terrible. {A} rentre avant la fin.",
+                    E(new GrowStat(PlynlingStat.Intrigue)), E(new ApplyModifier("guilty")), Ai((AiAxis.Honor, -2)), Stress(("honest", 30))),
+            }),
+
+        new EventDef("grown_exam_hollow", EventType.FollowUp, AnyStage, "Des lettres dorées",
+            "Le nom de {A} est peint sur le tableau d'honneur, en lettres dorées. Tout le village applaudit. La chouette serre la patte de {A} : « Je n'avais jamais lu de réponses aussi justes. » Au fond de la manche de {A}, le petit papier plié pèse aussi lourd qu'une pierre.",
+            new[]
+            {
+                Plain("confess", "Tout avouer, là, devant tout le monde",
+                    "{A} sort le papier de sa manche et le tend à la chouette, devant tout le village. Silence. Puis la chouette prend un pinceau, efface le nom, et écrit à la place, en petit : « Le plus courageux. » Le village n'a jamais vu de tableau d'honneur aussi bizarre, ni aussi beau.",
+                    E(new GrowStat(PlynlingStat.Courage), new ApplyModifier("clear_conscience")), Ai((AiAxis.Honor, 2))),
+                Plain("keep", "Sourire, saluer, et garder le papier dans sa manche",
+                    "{A} sourit, salue, et empoche la bourse. Le nom brille au soleil. Ensuite, chaque fois que {A} passe devant la bibliothèque, {A} change de trottoir.",
+                    E(new GiveCailloux(25), new ApplyModifier("guilty")), Ai((AiAxis.Greed, 2), (AiAxis.Honor, -1)), Stress(("honest", 30), ("just", 20))),
+                Plain("burn", "Brûler le papier, et mériter le nom après coup",
+                    "Le soir, {A} brûle le papier dans la cheminée et regarde la petite flamme bleue. Le nom reste sur le tableau. {A} révise pourtant tous les soirs de l'année suivante, pour mériter, avec un peu de retard, ce qui y est écrit.",
+                    E(new GrowStat(PlynlingStat.Learning), new ApplyModifier("laureate")), Ai((AiAxis.Rationality, 1), (AiAxis.Honor, 1))),
+            }),
+
+        // adulte et ancien: la Régate des Feuilles (CK3's chariot race: the build, the start, then
+        // the lead or the back of the field)
+        new EventDef("grown_regatta", EventType.Pulse, Grown, "La Régate des Feuilles",
+            "Dimanche, c'est la Régate des Feuilles sur l'étang : des bateaux grands comme une main, faits de ce qu'on trouve, et poussés par le vent. Le premier prix est une bourse, et le droit de porter toute l'année la casquette de l'amiral. {A} a une semaine pour construire un bateau.",
+            new[]
+            {
+                Plain("fast", "Un bateau fin et rapide, en écorce de bouleau",
+                    "{A} taille une coque fine comme une feuille de papier, et une voile en plume de pie. Au premier essai, le bateau file si vite que {A} doit le rattraper à la nage.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new FollowUp("grown_regatta_start", 48, 96)), Ai((AiAxis.Boldness, 1), (AiAxis.Rationality, 1))),
+                Plain("sturdy", "Une coque de noix, solide comme un rocher",
+                    "{A} choisit la plus grosse coque de noix du marché, la calfeutre à la cire et y plante un mât en brindille. Le bateau n'est pas rapide. Le bateau ne coulera jamais. C'est une philosophie.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new FollowUp("grown_regatta_start", 48, 96)), Ai((AiAxis.Rationality, 2))),
+                Plain("pretty", "Le plus beau bateau de l'étang, avec un pavillon",
+                    "{A} peint la coque en rouge, coud un pavillon brodé à son nom, et ajoute un minuscule équipage en glands. Les passants s'arrêtent pour regarder. Personne ne pose la question de la flottaison.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new FollowUp("grown_regatta_start", 48, 96)), Ai((AiAxis.Sociability, 2))),
+            }),
+
+        new EventDef("grown_regatta_start", EventType.FollowUp, AnyStage, "Le départ",
+            "Vingt bateaux sont alignés entre deux roseaux. Le moineau tient le sifflet, l'ours tient les paris, et tout le village tient la rive. À côté du bateau de {A} : celui de la pie, noir et luisant, et celui du vieil escargot, qui participe depuis quarante ans sans jamais avoir fini. Coup de sifflet. Le vent se lève.",
+            new[]
+            {
+                Try("gap", "Foncer dans le trou entre deux bateaux", new EventChallenge(PlynlingStat.Courage, 8),
+                    "{A} souffle dans la voile et vise le trou. Le bateau s'y faufile à un cheveu près, frôle celui de la pie, et passe en tête au premier virage. Sur la rive, quelqu'un crie le nom de {A}.",
+                    "{A} vise le trou. Le trou se referme. Le bateau rebondit sur celui de la pie, tourne trois fois sur lui-même, et repart… dans le mauvais sens.",
+                    E(new FollowUp("grown_regatta_lead", 2, 6)), E(new FollowUp("grown_regatta_back", 2, 6)), Ai((AiAxis.Boldness, 2)), Stress(("craven", 20))),
+                Try("wind", "Lire le vent, et attendre la bonne rafale", new EventChallenge(PlynlingStat.Learning, 8),
+                    "{A} attend. Les autres partent, s'emmêlent, se cognent. Puis la rafale arrive, exactement comme prévu, et pousse le bateau de {A} au-dessus de la mêlée, jusqu'en tête.",
+                    "{A} attend la bonne rafale. La bonne rafale ne vient pas. Une mauvaise vient à la place, et range le bateau de {A} soigneusement derrière tous les autres.",
+                    E(new FollowUp("grown_regatta_lead", 2, 6)), E(new FollowUp("grown_regatta_back", 2, 6)), Ai((AiAxis.Rationality, 2))),
+                Plain("duckling", "Redresser le bateau d'un caneton qui chavire",
+                    "À peine parti, le bateau d'un caneton chavire. {A} se penche, le redresse, l'égoutte, et le remet à l'eau. Le caneton repart, ravi. Le bateau de {A}, lui, est désormais tout au fond de la course.",
+                    E(new ApplyModifier("cherished"), new FollowUp("grown_regatta_back", 2, 6)), Ai((AiAxis.Compassion, 2))),
+            }),
+
+        new EventDef("grown_regatta_lead", EventType.FollowUp, AnyStage, "La dernière bouée",
+            "Le bateau de {A} est en tête, seul, à l'approche de la dernière bouée. La pie est trop loin pour inquiéter. Mais le long de la rive, sans un bruit, une petite coque grise remonte : le bateau du vieil escargot, porté par un courant que personne n'avait vu. Sur la rive, l'escargot ne respire plus.",
+            new[]
+            {
+                Try("push", "Tout donner jusqu'à la ligne", new EventChallenge(PlynlingStat.Stewardship, 8),
+                    "{A} tend la voile au maximum. Le bateau franchit la ligne avec une longueur d'avance. Le moineau siffle, l'ours compte la bourse, et on pose sur la tête de {A} la casquette de l'amiral, un peu grande. L'escargot, deuxième, est fou de joie : l'escargot n'avait jamais fini.",
+                    "{A} tend la voile. La voile se déchire. Le bateau gris passe, lentement, majestueusement, et franchit la ligne. Quarante ans d'attente. Le village pleure. {A}, deuxième, pleure aussi, de joie, ou presque.",
+                    E(new GiveCailloux(30), new ApplyModifier("fired_up")), E(new GiveCailloux(10), new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Boldness, 1), (AiAxis.Energy, 1))),
+                Plain("let", "Laisser passer l'escargot",
+                    "{A} relâche la voile, juste un peu. Le petit bateau gris passe, lentement, et franchit la ligne en premier. L'escargot ne dit rien pendant une minute entière. Puis l'escargot offre à {A} sa vieille coquille de rechange, gardée quarante ans pour ce jour-là.",
+                    E(new GiveItem("col.coquille_escargot"), new ApplyModifier("clear_conscience")), Ai((AiAxis.Compassion, 2)), Stress(("ambitious", 15))),
+            }),
+
+        new EventDef("grown_regatta_back", EventType.FollowUp, AnyStage, "Au fond de l'étang",
+            "Le bateau de {A} est dernier, très dernier, coincé entre un nénuphar et une famille de grenouilles qui trouve ça très drôle. Devant, la course continue sans {A}. Mais {A} connaît l'étang : à gauche, derrière les roseaux, s'ouvre un passage étroit que personne n'emprunte jamais.",
+            new[]
+            {
+                Try("reeds", "Prendre le passage des roseaux", new EventChallenge(PlynlingStat.Intrigue, 8),
+                    "Le bateau de {A} disparaît dans les roseaux, et ressort de l'autre côté, juste derrière la pie. Troisième place ! Les grenouilles, qui ont tout suivi, applaudissent avec leurs pattes palmées, ce qui fait un bruit très particulier.",
+                    "Le bateau de {A} disparaît dans les roseaux, et n'en ressort pas. On le retrouve le lendemain, décoré de lentilles d'eau, avec un têtard à bord. Le têtard refuse de descendre.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new GiveCailloux(10)), E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Boldness, 1), (AiAxis.Rationality, 1))),
+                Plain("parade", "Profiter de la promenade, et saluer la rive",
+                    "{A} renonce à la course et salue la foule, comme à une parade. Le bateau dérive doucement jusqu'à la ligne, bon dernier, sous la plus grande ovation de la journée. Le moineau invente un prix : « Le plus beau voyage ».",
+                    E(new ApplyModifier("light_heart"), new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Sociability, 2))),
+                Plain("frogs", "Engager les grenouilles comme équipage",
+                    "{A} négocie avec les grenouilles : une mouche chacune, payable à l'arrivée. Les grenouilles poussent le bateau à la nage, un peu dans tous les sens. Septième place. L'équipage réclame sa paye, et une revanche.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Sociability, 1), (AiAxis.Rationality, 1))),
+            }),
+
+        // adulte et ancien: la belette du moulin (CK3's party baron: admire, envy or befriend the one
+        // everyone loves; the three branches meet at the mill party)
+        new EventDef("grown_darling", EventType.Pulse, Grown, "La belette du moulin",
+            "Une belette s'est installée dans le vieux moulin, et en trois semaines, tout le village l'adore. La belette connaît le prénom de chacun, rit à toutes les blagues de l'ours, et donne des fêtes où même le hérisson arrive en retard. Ce matin encore, au café, on ne parle que de la belette. {A} remue son thé.",
+            new[]
+            {
+                Plain("watch", "Observer la belette, pour percer son secret",
+                    "{A} s'installe au fond du café, un carnet sur les genoux. La belette entre, et en une minute, salue onze personnes par leur nom, demande des nouvelles d'un genou, et complimente un chapeau. {A} note tout. Ça va être un long carnet.",
+                    E(new FollowUp("grown_darling_lesson", 24, 72)), Ai((AiAxis.Rationality, 1), (AiAxis.Sociability, 1))),
+                Plain("envy", "Trouver que la belette, c'est surfait",
+                    "« Surfait », dit {A} tout haut, dans le café silencieux. Toutes les têtes se tournent. {A} boit son thé avec une grande dignité, en se brûlant un peu. La guerre est déclarée, au moins d'un côté.",
+                    E(new FollowUp("grown_darling_rival", 24, 72)), Ai((AiAxis.Vengefulness, 1), (AiAxis.Boldness, 1)), Stress(("content", 15))),
+                Plain("knock", "Monter frapper à la porte du moulin",
+                    "{A} monte au moulin avec un pot de confiture, et frappe. Rien. Puis la porte s'ouvre sur la belette, couverte de farine jusqu'aux oreilles, l'air un peu perdu. « Oh. Personne ne frappe jamais. On vient directement aux fêtes. Entre. »",
+                    E(new FollowUp("grown_darling_visit", 24, 72)), Ai((AiAxis.Sociability, 2))),
+            }),
+
+        new EventDef("grown_darling_lesson", EventType.FollowUp, AnyStage, "Le carnet",
+            "Le carnet de {A} est plein, et le secret de la belette tient en une page : se souvenir des prénoms, poser des questions, écouter les réponses, et rire quand c'est drôle, pas avant. Ça paraît simple. {A} décide d'essayer la méthode sur l'ours, ce matin, au marché.",
+            new[]
+            {
+                Try("method", "Appliquer la méthode, à la lettre", new EventChallenge(PlynlingStat.Diplomacy, 8),
+                    "{A} demande à l'ours des nouvelles de son genou, se souvient de son parfum de glace préféré, et écoute jusqu'au bout l'histoire de la grande tempête. L'ours, ému, offre un cornet. Le soir, une invitation arrive du moulin.",
+                    "{A} demande à l'ours des nouvelles de son genou. L'ours n'a jamais eu mal au genou, et passe l'après-midi à s'inquiéter. Le soir, une invitation arrive quand même : la belette a entendu l'histoire, et l'a trouvée irrésistible.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new ApplyModifier("well_spoken"), new FollowUp("grown_darling_party", 48, 96)), E(new FollowUp("grown_darling_party", 48, 96)),
+                    Ai((AiAxis.Sociability, 2))),
+                Plain("own", "Refermer le carnet : on ne copie pas les gens",
+                    "{A} referme le carnet et le range. On n'est pas une belette. Ce soir-là, au café, {A} raconte une histoire à sa façon, maladroite, trop longue. La tortue rit au bon moment. Le lendemain, une invitation arrive du moulin.",
+                    E(new ApplyModifier("clear_conscience"), new FollowUp("grown_darling_party", 48, 96)), Ai((AiAxis.Honor, 1), (AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("grown_darling_rival", EventType.FollowUp, AnyStage, "La contre-fête",
+            "Pour prouver qu'on peut s'amuser sans belette, {A} donne une fête le même soir que celle du moulin. Guirlandes, gâteaux, musique : tout est prêt, sauf les invités. À huit heures, la salle est vide. À huit heures et demie, on frappe à la porte.",
+            new[]
+            {
+                Plain("open", "Ouvrir, en se préparant au pire",
+                    "Sur le seuil : la belette, un gâteau dans les pattes, et derrière, la moitié du village. « On a annulé la nôtre, dit la belette. Une fête sans toi, ça n'avait pas de sens. » {A} reste bouche bée, puis s'écarte pour laisser entrer tout le monde.",
+                    E(new LiftNeed(Need.Happiness, 0.2), new FollowUp("grown_darling_party", 72, 120)), Ai((AiAxis.Sociability, 1))),
+                Plain("hide", "Souffler les bougies, et faire le mort",
+                    "{A} souffle les bougies. On frappe encore. Puis un papier glisse sous la porte : « On a vu la lumière. On laisse le gâteau devant. Viens au moulin samedi ? La belette. » Le gâteau est délicieux. C'est le pire.",
+                    E(new LiftNeed(Need.Hunger, 0.2), new FollowUp("grown_darling_party", 72, 120)), Ai((AiAxis.Sociability, -1))),
+                Try("full", "Ouvrir, et annoncer que c'est complet", new EventChallenge(PlynlingStat.Intrigue, 8),
+                    "« Complet », dit {A}. La belette regarde la salle vide derrière {A}, sourit, et repart sans un mot. Le lendemain, tout le village parle de la fête « complète » de {A}. Personne n'y était. Tout le monde voudrait y avoir été.",
+                    "« Complet », dit {A}. Derrière, un ballon se dégonfle avec un long sifflement. La belette essaie de ne pas rire, très fort, et échoue. {A} finit par rire aussi. Les deux mangent tout le gâteau sur les marches.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new ApplyModifier("sly"), new FollowUp("grown_darling_party", 72, 120)), E(new LiftNeed(Need.Hunger, 0.2), new FollowUp("grown_darling_party", 72, 120)),
+                    Ai((AiAxis.Boldness, 1), (AiAxis.Honor, -1)), Stress(("honest", 15))),
+            }),
+
+        new EventDef("grown_darling_visit", EventType.FollowUp, AnyStage, "Le moulin sans fête",
+            "Dans le moulin, sans les lampions ni la foule, tout est très calme. La belette verse le thé, et ses pattes tremblent un peu. « Je donne des fêtes, avoue la belette, parce que le moulin grince la nuit. Avec du monde, on ne l'entend pas. »",
+            new[]
+            {
+                Plain("tea", "Revenir prendre le thé, les soirs sans fête",
+                    "{A} revient le lendemain, et le surlendemain. Le moulin grince toujours, mais les deux en rient maintenant, et lui ont même donné un nom. Quand vient la grande fête du samedi, la belette garde à {A} la meilleure place.",
+                    E(new ApplyModifier("cherished"), new FollowUp("grown_darling_party", 72, 120)), Ai((AiAxis.Compassion, 2))),
+                Try("grease", "Graisser les rouages, pour faire taire le moulin", new EventChallenge(PlynlingStat.Stewardship, 8),
+                    "{A} grimpe dans les rouages avec une burette et graisse tout, jusqu'à la dernière dent. Le soir, silence complet. La belette dort douze heures d'affilée, et se réveille avec une seule idée : une fête, en l'honneur de {A}.",
+                    "{A} graisse les rouages. Le moulin ne grince plus. Le moulin chante, maintenant, une note haute et tremblante, toute la nuit. La belette trouve ça plus joli, finalement, et l'invitation pour samedi arrive avec une partition.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new FollowUp("grown_darling_party", 72, 120)), E(new FollowUp("grown_darling_party", 72, 120)),
+                    Ai((AiAxis.Rationality, 1), (AiAxis.Compassion, 1))),
+            }),
+
+        new EventDef("grown_darling_party", EventType.FollowUp, AnyStage, "La fête du moulin",
+            "Samedi soir. Le moulin brille de cent lanternes. On danse dans la cour, on mange dans l'escalier, et l'escargot porte un nœud papillon. À minuit, la belette grimpe sur un tonneau, lève son verre de jus de pomme, et cherche quelqu'un dans la foule. Son regard s'arrête sur {A}. « À {A} ! » Et tout le moulin répète.",
+            new[]
+            {
+                Try("toast", "Grimper sur un tonneau, et porter un toast en retour", new EventChallenge(PlynlingStat.Diplomacy, 8),
+                    "{A} grimpe sur le tonneau d'à côté. « À la belette, qui a appris au moulin à se taire et au village à danser ! » Le moulin explose. On porte {A} et la belette jusqu'au matin, en chantant faux.",
+                    "{A} grimpe sur le tonneau d'à côté, qui roule. {A} porte le toast en roulant à travers la cour, puis jusque dans la mare. Le moulin trouve ça encore mieux qu'un discours.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new ApplyModifier("party_soul")), E(new ApplyModifier("party_soul")), Ai((AiAxis.Sociability, 2)), Stress(("shy", 20))),
+                Plain("dance", "Danser jusqu'à l'aube",
+                    "{A} danse avec l'ours, avec le hérisson, avec trois grenouilles à la fois et, pour finir, avec la belette, pendant que le soleil se lève sur la roue du moulin. Personne ne se souvient de la musique. Tout le monde se souvient de la danse.",
+                    E(new ApplyModifier("party_soul"), new LiftNeed(Need.Happiness, 0.25)), Ai((AiAxis.Energy, 2))),
+                Plain("roof", "S'éclipser sur le toit, regarder les étoiles",
+                    "Vers deux heures, {A} et la belette grimpent sur le toit du moulin. En bas, la fête continue toute seule. La belette montre les étoiles une par une, et leur donne des noms d'habitants du village. Une étoile porte désormais le nom de {A}. Discrètement.",
+                    E(new ApplyModifier("cherished"), new ApplyModifier("soothed")), Ai((AiAxis.Compassion, 1), (AiAxis.Sociability, 1))),
+            }),
+
+        // adulte et ancien: la grande crue (CK3's natural disasters: the night, the shelter, the mud,
+        // the thank-you supper)
+        new EventDef("grown_flood", EventType.Pulse, Grown, "La nuit de la crue",
+            "Trois jours de pluie, sans arrêt. Cette nuit, un grondement réveille {A} : la rivière est sortie de son lit. L'eau monte dans les rues basses, et on entend crier du côté du café. Pas le temps de réfléchir : où courir d'abord ?",
+            new[]
+            {
+                Try("cellar", "Sauver la cave à confitures de la tortue", new EventChallenge(PlynlingStat.Courage, 8),
+                    "{A} plonge dans la cave, de l'eau jusqu'au cou, et remonte les pots un par un, jusqu'au tout premier, étiqueté d'une année que personne ne connaît. La tortue serre le pot contre sa carapace, sans un mot. Les mots, ce sera pour plus tard.",
+                    "{A} plonge dans la cave et remonte… un pot de cornichons. Un seul. La tortue le regarde, regarde {A}, {a:trempé|trempée}, et éclate de rire au milieu de la nuit et de l'eau. C'est déjà ça.",
+                    E(new GrowStat(PlynlingStat.Courage), new FollowUp("grown_flood_shelter", 6, 12)), E(new FollowUp("grown_flood_shelter", 6, 12)), Ai((AiAxis.Boldness, 2)), Stress(("craven", 20))),
+                Plain("snail", "Porter l'escargot en haut de la colline",
+                    "La maison de l'escargot, c'est l'escargot. {A} le porte à deux mains jusqu'en haut de la colline, en courant, sous la pluie. L'escargot, qui n'est jamais allé aussi vite de sa vie, demande si on peut recommencer.",
+                    E(new ApplyModifier("cherished"), new FollowUp("grown_flood_shelter", 6, 12)), Ai((AiAxis.Compassion, 2))),
+                Plain("bell", "Sonner la cloche de la gare pour réveiller tout le monde",
+                    "{A} court à la gare et sonne la cloche du hérisson, à toute volée. En cinq minutes, le village entier est debout, en chemise de nuit, et s'organise. Le hérisson arrive en dernier, pour la première fois de sa vie, et ne fera jamais le moindre reproche.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new FollowUp("grown_flood_shelter", 6, 12)), Ai((AiAxis.Rationality, 1), (AiAxis.Energy, 1))),
+            }),
+
+        new EventDef("grown_flood_shelter", EventType.FollowUp, AnyStage, "Un toit pour tout le monde",
+            "La maison de {A} est sur la hauteur, et l'eau ne l'atteint pas. Alors on frappe à la porte, toute la nuit : le blaireau et ses couvertures, trois grenouilles ravies, le moineau trempé, l'escargot. Au matin, on ne voit plus le plancher, et tout ce petit monde a faim.",
+            new[]
+            {
+                Try("organize", "Organiser les rations et les lits, avec une liste", new EventChallenge(PlynlingStat.Stewardship, 8),
+                    "{A} fait une liste, puis deux, puis un tableau. Chacun reçoit un coin, une couverture et une part de pain. Le blaireau, impressionné, prend des notes. Au bout de trois jours, la maison tourne comme une horloge : celle de la gare, pas celle du café.",
+                    "{A} fait une liste, mais les grenouilles la mangent. Le reste du séjour se fait au hasard, dans la bonne humeur et un certain désordre. Personne n'a faim. Personne ne sait vraiment comment.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new ApplyModifier("trade_sense"), new FollowUp("grown_flood_mud", 24, 48)), E(new FollowUp("grown_flood_mud", 24, 48)),
+                    Ai((AiAxis.Rationality, 2))),
+                Plain("pantry", "Vider le garde-manger, jusqu'à la dernière noix",
+                    "{A} sort tout : le miel, les noix, la confiture des grandes occasions. Le petit-déjeuner dure jusqu'à midi. Le garde-manger est vide, mais la maison n'a jamais été aussi pleine.",
+                    E(new ApplyModifier("cherished"), new FollowUp("grown_flood_mud", 24, 48)), Ai((AiAxis.Compassion, 2)), Stress(("greedy", 20))),
+                Plain("stories", "Raconter des histoires, pour que la nuit passe",
+                    "Chaque soir, à la lumière d'une bougie, {A} raconte une histoire, et chacun en raconte une à son tour. Celle de l'escargot dure deux soirs entiers. Personne ne pense plus à l'eau, dehors.",
+                    E(new LiftNeed(Need.Happiness, 0.2), new FollowUp("grown_flood_mud", 24, 48)), Ai((AiAxis.Sociability, 2))),
+            }),
+
+        new EventDef("grown_flood_mud", EventType.FollowUp, AnyStage, "Ce que la rivière rend",
+            "L'eau s'est retirée. Le village est couvert d'une boue épaisse, qui sent la rivière et les racines. Tout le monde sort les pelles. Et dans la boue, on trouve de tout : des cuillères, une botte, des choses que la rivière gardait depuis très longtemps.",
+            new[]
+            {
+                Try("dig", "Fouiller la boue, là où le courant a tourné", new EventChallenge(PlynlingStat.Learning, 8),
+                    "{A} devine où le courant a ralenti, et creuse là. Sous la boue : une vieille pièce frappée d'un pont qui n'existe plus. La rivière la gardait pour quelqu'un. Visiblement, pour {A}.",
+                    "{A} creuse au mauvais endroit, et trouve une botte. La botte contient une grenouille. La grenouille a beaucoup d'opinions sur le dérangement.",
+                    E(new GiveItem("col.piece_ancienne"), new FollowUp("grown_flood_supper", 48, 96)), E(new FollowUp("grown_flood_supper", 48, 96)), Ai((AiAxis.Rationality, 1), (AiAxis.Greed, 1))),
+                Plain("cafe", "Dégager le café de la tortue, pelle après pelle",
+                    "{A} pellette toute la journée devant le café. Le soir, la porte s'ouvre de nouveau, et la tortue sert le premier chocolat de l'après-crue, sur un comptoir encore humide. Gratuit, pour tout le monde, jusqu'à nouvel ordre.",
+                    E(new LiftNeed(Need.Hunger, 0.2), new FollowUp("grown_flood_supper", 48, 96)), Ai((AiAxis.Compassion, 1), (AiAxis.Energy, 1))),
+                Plain("nest", "Aider le héron à refaire son nid, sous le vieux pont",
+                    "Le nid du héron est parti avec la crue. {A} rapporte des brindilles, de la mousse, une plume trouvée dans la boue. Le héron arrange tout, sans un mot, puis s'y installe, sur une patte, et regarde {A} une longue seconde. Venant du héron, c'est un discours.",
+                    E(new ApplyModifier("clear_conscience"), new FollowUp("grown_flood_supper", 48, 96)), Ai((AiAxis.Compassion, 1), (AiAxis.Honor, 1))),
+            }),
+
+        new EventDef("grown_flood_supper", EventType.FollowUp, AnyStage, "Le souper de la crue",
+            "Une semaine après la crue, le village dresse une grande table sur la place, avec tout ce qu'on a sauvé. La tortue a sorti un pot de sa plus vieille confiture. Avant le dessert, l'ours se lève et tape sur son verre. « On voudrait dire merci à quelqu'un. » Tous les yeux se tournent vers {A}.",
+            new[]
+            {
+                Plain("purse", "Accepter les remerciements, et la petite bourse",
+                    "Le village a fait une collecte : une petite bourse, cousue par le blaireau. {A} la prend, rougit, et dit merci à son tour. Le reste de la soirée, on raconte la crue, et chaque fois, l'histoire grandit un peu.",
+                    E(new ApplyModifier("flood_hero"), new GiveCailloux(20)), Ai((AiAxis.Sociability, 1), (AiAxis.Greed, 1))),
+                Plain("all", "Lever son verre à tout le village",
+                    "{A} se lève : « Ce n'est pas moi. C'est nous. » Puis nomme tout le monde, un par un, grenouilles comprises. Le village applaudit, chacun pour chacun, et la confiture de la tortue fait trois fois le tour de la table.",
+                    E(new ApplyModifier("flood_hero"), new ApplyModifier("clear_conscience")), Ai((AiAxis.Compassion, 1), (AiAxis.Honor, 1))),
+                Plain("dishes", "S'éclipser à la cuisine pour faire la vaisselle",
+                    "Quand on cherche {A} pour le discours, {A} est déjà à la cuisine, les manches retroussées, à essuyer les assiettes avec la tortue. Les deux parlent de la vieille confiture, de l'année sur l'étiquette, et de tout ce que la rivière a emporté, autrefois.",
+                    E(new ApplyModifier("flood_hero"), new ApplyModifier("soothed")), Ai((AiAxis.Compassion, 1), (AiAxis.Sociability, -1))),
+            }),
+
+        // adulte et ancien: le secret de l'aube (CK3's discovered secrets, kept harmless)
+        new EventDef("grown_secret_dance", EventType.Pulse, Grown, "Le secret de l'aube",
+            "À l'aube, sous le vieux pont, {A} surprend une scène étonnante : {B} prend une leçon de danse. Le professeur est le héron, qui compte les pas sur une patte. {B} marche sur les pieds du héron, s'excuse, recommence, et n'a aucune idée que quelqu'un regarde.",
+            new[]
+            {
+                Plain("quiet", "Repartir sans bruit, et garder le secret",
+                    "{A} recule sur la pointe des pieds, et n'en parle à personne. Le soir, au café, quand {B} prétend avoir mal aux pieds « à cause de nouvelles chaussures », {A} hoche la tête, très {a:sérieux|sérieuse}.",
+                    E(new AffinityShift(5), new FollowUp("grown_secret_dance_known", 48, 96)), Ai((AiAxis.Honor, 1), (AiAxis.Compassion, 1))),
+                Try("join", "Sortir des roseaux, et demander à danser aussi", new EventChallenge(PlynlingStat.Courage, 8),
+                    "{A} sort des roseaux. {B} se fige, rouge jusqu'aux oreilles. Le héron, imperturbable, désigne une place à côté : « Le pas chassé. Un, deux. » Désormais, {A} et {B} se marchent sur les pieds à tour de rôle, avec beaucoup de sérieux.",
+                    "{A} sort des roseaux, glisse sur la berge, et entre dans la leçon en roulant. {B} éclate de rire. Le héron note : « Original. Mais non. »",
+                    E(new GrowStat(PlynlingStat.Courage), new AffinityShift(15), new FollowUp("grown_secret_dance_known", 48, 96)), E(new AffinityShift(10), new FollowUp("grown_secret_dance_known", 48, 96)),
+                    Ai((AiAxis.Boldness, 2)), Stress(("shy", 20))),
+                Plain("clap", "Applaudir très fort depuis les roseaux",
+                    "{A} applaudit à tout rompre. {B} sursaute, rate le pas, et tombe dans la rivière. Le héron soupire. {B} sort de l'eau et regarde {A} avec une froideur de fond de rivière.",
+                    E(new AffinityShift(-15)), Ai((AiAxis.Boldness, 1), (AiAxis.Compassion, -1)), Stress(("compassionate", 15))),
+            },
+            Target: TargetKind.Known),
+
+        new EventDef("grown_secret_dance_known", EventType.FollowUp, AnyStage, "Tu as vu",
+            "{B} attend devant chez {A}, les bras croisés. « Le héron m'a tout dit. Tu as vu. » Ce n'est pas une question. Puis, plus bas : « Le bal du village, c'est dans une semaine. Je voulais que ce soit une surprise. »",
+            new[]
+            {
+                Plain("promise", "Promettre de ne rien dire, juré",
+                    "{A} jure, très fort, la patte sur le cœur. {B} sourit enfin, et propose à {A} de venir voir la dernière répétition, puisque de toute façon, le secret est éventé.",
+                    E(new AffinityShift(10), new FollowUp("grown_secret_dance_ball", 72, 120)), Ai((AiAxis.Honor, 2))),
+                Plain("partner", "Proposer d'être le partenaire de {B}, au bal",
+                    "« Tu as besoin d'un partenaire, non ? Quelqu'un qui connaît déjà le secret. » {B} regarde {A} longuement, puis tend la patte. « Le pas chassé. Un, deux. On commence demain, à l'aube. »",
+                    E(new AffinityShift(15), new FollowUp("grown_secret_dance_ball", 72, 120)), Ai((AiAxis.Sociability, 1), (AiAxis.Boldness, 1))),
+            },
+            Target: TargetKind.Known),
+
+        new EventDef("grown_secret_dance_ball", EventType.FollowUp, AnyStage, "Le bal du village",
+            "Le bal du village, sur la place, sous les lampions. L'orchestre de grillons attaque la valse. Tout le monde danse mal, joyeusement. Puis {B} entre sur la piste, et c'est autre chose : le pas chassé est parfait. Au bord de la place, le héron essuie quelque chose dans son œil. {B} cherche {A} du regard.",
+            new[]
+            {
+                Try("dance", "Rejoindre {B} sur la piste", new EventChallenge(PlynlingStat.Diplomacy, 8),
+                    "{A} rejoint {B}. Un, deux. Le pas chassé, puis un tour, puis un autre que le héron n'a jamais enseigné. La place s'arrête pour regarder. À la fin, on applaudit si fort que les grillons rejouent la valse depuis le début.",
+                    "{A} rejoint {B}, et marche sur les pieds de {B} dès le premier pas. Puis au deuxième. Au troisième, {B} rit tellement que la danse s'arrête. Ce n'était pas la valse prévue. C'était peut-être mieux.",
+                    E(new AffinityShift(20), new ApplyModifier("light_heart")), E(new AffinityShift(15)), Ai((AiAxis.Sociability, 2))),
+                Plain("applaud", "Applaudir le plus fort de toute la place",
+                    "{A} applaudit plus fort que tout le monde, et siffle même, ce qui ne se fait pas au bal. {B} salue, rouge de bonheur, et adresse une révérence rien qu'à {A}.",
+                    E(new AffinityShift(10), new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Compassion, 1), (AiAxis.Sociability, 1))),
+            },
+            Target: TargetKind.Known),
+
+        // adulte et ancien: l'orage et le rival (CK3's party baron endings: the rival who becomes a friend)
+        new EventDef("grown_storm_shelter", EventType.Pulse, Grown, "Le chêne creux",
+            "L'orage éclate d'un coup, en pleine forêt. Le seul abri à des lieues : le vieux chêne creux. {A} s'y engouffre, {a:trempé|trempée}, et se fige : au fond du creux, déjà {b:installé|installée}, attend {B}. De tout le village, c'est bien la dernière personne que {A} voulait croiser. Dehors, la pluie redouble.",
+            new[]
+            {
+                Plain("corner", "Se serrer dans le coin opposé, sans un mot",
+                    "{A} se tasse dans le coin opposé. {B} aussi. Le chêne est petit. Les coudes se touchent. Chaque coup de tonnerre fait sursauter les deux en même temps, ce qui est très agaçant.",
+                    E(new AffinityShift(5), new FollowUp("grown_storm_night", 2, 6)), Ai((AiAxis.Rationality, 1))),
+                Plain("share", "Couper son sandwich au miel en deux",
+                    "{A} sort le sandwich, le coupe en deux, et tend une moitié sans regarder. Un long silence. Puis une patte prend la moitié. « Pas mal », marmonne {B}, la bouche pleine. Venant de {B}, c'est presque un compliment.",
+                    E(new AffinityShift(10), new FollowUp("grown_storm_night", 2, 6)), Ai((AiAxis.Compassion, 2)), Stress(("vengeful", 20))),
+                Plain("rain", "Ressortir sous la pluie, par fierté",
+                    "{A} ressort sous l'orage, par principe. Dix minutes plus tard, {A} revient, {a:trempé|trempée} jusqu'aux os, et se rassoit sans un mot. {B} ne dit rien non plus, mais tend une feuille sèche pour s'essuyer.",
+                    E(new ApplyModifier("woods_cold"), new FollowUp("grown_storm_night", 2, 6)), Ai((AiAxis.Boldness, 1), (AiAxis.Vengefulness, 1))),
+            },
+            Target: TargetKind.Hostile),
+
+        new EventDef("grown_storm_night", EventType.FollowUp, AnyStage, "La nuit dans le chêne",
+            "La nuit tombe, et l'orage ne faiblit pas. Dans le noir du chêne, {B} finit par parler, très bas : « Tu te souviens pourquoi on se dispute, toi ? Moi, je ne sais plus. » Un éclair illumine le creux. {B} a l'air sincère, et un peu {b:fatigué|fatiguée} de cette vieille histoire.",
+            new[]
+            {
+                Plain("forgot", "Avouer qu'on ne sait plus non plus",
+                    "{A} cherche, longtemps. Une histoire de pomme de pin ? De place au café ? Rien. Les deux finissent par rire dans le noir, si fort que le chêne en tremble. Le tonnerre, vexé, s'éloigne.",
+                    E(new AffinityShift(20), new FollowUp("grown_storm_morning", 6, 12)), Ai((AiAxis.Sociability, 1), (AiAxis.Compassion, 1))),
+                Plain("remember", "S'en souvenir parfaitement, et le raconter",
+                    "{A} raconte : le concours, la pomme de pin, le moineau, l'injustice. {B} écoute jusqu'au bout, puis donne sa version. Ce ne sont pas du tout les mêmes histoires. À trois heures du matin, la dispute est devenue si comique que les deux en rient encore.",
+                    E(new AffinityShift(15), new FollowUp("grown_storm_morning", 6, 12)), Ai((AiAxis.Rationality, 1))),
+                Plain("fear", "Avouer qu'on a peur de l'orage",
+                    "« J'ai peur de l'orage », dit {A}, très vite. Un silence. Puis {B} : « Moi aussi. Depuis toujours. » Les deux se rapprochent un peu, et attendent la fin du tonnerre épaule contre épaule, sans rien ajouter.",
+                    E(new AffinityShift(20), new FollowUp("grown_storm_morning", 6, 12)), Ai((AiAxis.Compassion, 1), (AiAxis.Honor, 1)), Stress(("arrogant", 15))),
+            },
+            Target: TargetKind.Hostile),
+
+        new EventDef("grown_storm_morning", EventType.FollowUp, AnyStage, "Après l'orage",
+            "Au matin, le ciel est lavé. {A} et {B} sortent du chêne, les pattes raides, et prennent le chemin du village, côte à côte. À l'entrée du village, les vieilles habitudes reviennent : chacun s'apprête à partir de son côté, comme avant. {B} hésite.",
+            new[]
+            {
+                Plain("peace", "Proposer la paix, pour de bon",
+                    "« On arrête ? » {B} réfléchit, puis tend la patte. La poignée est maladroite, trop longue, et sent encore un peu le chêne mouillé. Ce midi-là, la tortue voit entrer {A} et {B} ensemble au café, et laisse tomber une tasse.",
+                    E(new AffinityShift(25), new ApplyModifier("clear_conscience")), Ai((AiAxis.Compassion, 1), (AiAxis.Honor, 1)), Stress(("vengeful", 20))),
+                Plain("rivals", "Proposer une rivalité, mais amicale",
+                    "« La pomme de pin, l'an prochain. Je te battrai. » {B} sourit, pour la première fois : « Compte là-dessus. » Les deux se séparent à l'entrée du village en se faisant de grands signes, très menaçants et très joyeux.",
+                    E(new AffinityShift(15), new ApplyModifier("fired_up")), Ai((AiAxis.Boldness, 1), (AiAxis.Sociability, 1))),
+            },
+            Target: TargetKind.Hostile),
+
+        // adulte et ancien: échos de « Plus tard, je serai… » (CK3's I Want a Pony!: the dream comes back)
+        new EventDef("grown_dream_explore", EventType.FollowUp, AnyStage, "Le fond du jardin",
+            "En rangeant le grenier, {A} retrouve une vieille carte dessinée au crayon : le fond du jardin, un ver de terre, une flèche, et en lettres énormes, « LE MONDE ENTIER ». Le héron avait dit, ce jour-là : « Commence par le fond du jardin. » Le jardin est fait depuis longtemps. Le reste du monde, pas encore.",
+            new[]
+            {
+                Try("hills", "Partir enfin, au-delà de la colline", new EventChallenge(PlynlingStat.Courage, 8),
+                    "{A} part à l'aube, passe la colline, puis la suivante, et découvre une vallée que personne au village n'a jamais décrite. {A} revient trois jours plus tard, avec une boussole trouvée sur un rocher, et de nouvelles flèches à dessiner.",
+                    "{A} part à l'aube, se perd derrière la deuxième colline, et tourne en rond jusqu'au soir. Au retour, le héron lève un œil : « Le monde est grand. Recommence par le fond du jardin. » {A} rit, pour la première fois depuis des jours.",
+                    E(new GrowStat(PlynlingStat.Courage), new GiveItem("col.boussole")), E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Boldness, 2))),
+                Plain("map", "Compléter la carte d'enfance, au crayon",
+                    "{A} reprend la carte d'enfant et y ajoute, une à une, toutes les routes connues : le vieux pont, la gare, le moulin, le chemin de la mer. Le ver de terre reste au centre, par respect.",
+                    E(new GrowStat(PlynlingStat.Learning), new ApplyModifier("inspired")), Ai((AiAxis.Rationality, 1))),
+                Plain("heron", "Aller montrer la carte au héron",
+                    "{A} déplie la carte devant le héron. Le héron la regarde longtemps, sur une patte, puis tapote de la pointe du bec un endroit vide, tout au bord. « Là. Je n'y suis jamais allé. » Depuis, les deux en parlent parfois, en regardant la rivière.",
+                    E(new ApplyModifier("cherished")), Ai((AiAxis.Sociability, 1), (AiAxis.Compassion, 1))),
+            }),
+
+        new EventDef("grown_dream_cafe", EventType.FollowUp, AnyStage, "La tasse ébréchée",
+            "Au café, la tortue sort de sous le comptoir une petite tasse ébréchée. « Tu te souviens ? Tu servais des cafés imaginaires au héron, et tu réclamais un pourboire. » La tortue pose la tasse devant {A}. « Mes pattes fatiguent. Le café aurait bien besoin d'aide, le samedi. »",
+            new[]
+            {
+                Try("apron", "Prendre le tablier, ce samedi", new EventChallenge(PlynlingStat.Stewardship, 8),
+                    "Samedi, {A} sert quarante chocolats, rend la monnaie juste, et prépare la commande de l'escargot avant même que l'escargot n'ouvre la bouche. Le soir, la tortue verse dans la tasse ébréchée les pourboires de la journée.",
+                    "Samedi, {A} renverse trois chocolats, confond le miel et la moutarde, et sert l'ours deux fois. Le soir, la tortue rit si fort que sa carapace en résonne. « Moi, le premier jour, j'ai mis le feu au rideau. »",
+                    E(new GrowStat(PlynlingStat.Stewardship), new GiveCailloux(20)), E(new LiftNeed(Need.Happiness, 0.2)), Ai((AiAxis.Sociability, 1), (AiAxis.Energy, 1))),
+                Plain("regular", "Garder la tasse, et venir en client",
+                    "{A} garde la tasse et promet de venir chaque samedi, comme client. Un très bon client, qui laisse toujours un pourboire dans la tasse ébréchée, posée au bout du comptoir. La tortue fait semblant de ne pas comprendre.",
+                    E(new ApplyModifier("cherished")), Ai((AiAxis.Compassion, 1))),
+                Plain("secret", "Demander d'abord le secret du chocolat",
+                    "La tortue regarde à droite, à gauche, puis chuchote le secret à l'oreille de {A}. C'est très simple, et très surprenant. {A} jure de ne jamais le répéter, et ne l'a jamais répété.",
+                    E(new GrowStat(PlynlingStat.Learning), new ApplyModifier("hearty")), Ai((AiAxis.Rationality, 1), (AiAxis.Greed, 1))),
+            }),
+
+        new EventDef("grown_dream_owl", EventType.FollowUp, AnyStage, "Trois cent cinq",
+            "Une plume grise tombe sur la table de {A}, par la fenêtre ouverte. Le héron est sur le rebord. « Trois cent cinq », dit le héron. {A} met une seconde à comprendre : le soir où {A} comptait ses plumes, le soleil s'était couché à la trois cent quatre. Le héron a attendu tout ce temps pour donner la suite.",
+            new[]
+            {
+                Plain("count", "Reprendre le compte, à partir de trois cent six",
+                    "{A} reprend le compte à voix haute. Le héron se tient immobile, très patient. À la nuit tombée, le compte est fini : sept cent douze. Le héron hoche la tête, une fois. Le grand mystère d'enfance est résolu, et c'était beau.",
+                    E(new GrowStat(PlynlingStat.Learning), new ApplyModifier("inspired")), Ai((AiAxis.Rationality, 2))),
+                Plain("keep", "Garder la plume, comme marque-page",
+                    "{A} glisse la plume dans le livre de chevet. Chaque soir, en l'ouvrant, {A} lit une page de plus. Le héron n'en parle jamais. Mais le héron vient plus souvent sur le rebord.",
+                    E(new GiveItem("col.plume"), new ApplyModifier("cherished")), Ai((AiAxis.Compassion, 1))),
+                Try("riddle", "Répondre au héron par une énigme", new EventChallenge(PlynlingStat.Learning, 8),
+                    "« Combien d'écailles a la carpe dorée ? » Le héron ouvre le bec, le referme, et s'envole, l'air soucieux. Trois jours plus tard, une écaille dorée attend sur la table, avec un mot : « Je cherche encore. »",
+                    "« Combien de pierres compte le vieux pont ? » Le héron répond aussitôt : « Mille quarante et une. » Le héron a eu toute une vie pour compter.",
+                    E(new GrowStat(PlynlingStat.Learning)), E(new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Rationality, 1), (AiAxis.Boldness, 1))),
+            }),
+
+        new EventDef("grown_dream_chief", EventType.FollowUp, AnyStage, "Le chef de la fête",
+            "Le maire cherche quelqu'un pour organiser la fête d'été. Personne ne se propose. Puis l'escargot lève lentement une antenne : « Quand {A} était {a:petit|petite}, {A} m'a donné un ordre. J'ai obéi. Je propose {A}. » Le village, à la surprise générale, approuve.",
+            new[]
+            {
+                Try("lead", "Accepter, et tout diriger", new EventChallenge(PlynlingStat.Diplomacy, 8),
+                    "{A} donne des ordres à tout le monde, avec tact, cette fois. La fête est la plus belle depuis des années. Au premier rang, l'escargot porte un ruban : « Premier à avoir obéi ».",
+                    "{A} donne trop d'ordres, trop vite. La fête finit en désordre, mais en joyeux désordre, et seul l'escargot a suivi chaque consigne à la lettre. Ça compte.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new ApplyModifier("well_spoken")), E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Boldness, 1), (AiAxis.Sociability, 1))),
+                Plain("deputy", "Accepter, à condition que l'escargot soit adjoint",
+                    "L'escargot, ému, prend son rôle très au sérieux, et inspecte chaque lampion, un par un. Les préparatifs prennent deux fois plus de temps, et sont deux fois plus soignés.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new ApplyModifier("cherished")), Ai((AiAxis.Compassion, 1), (AiAxis.Rationality, 1))),
+                Plain("decline", "Refuser poliment : c'était un rêve d'enfant",
+                    "{A} refuse, avec un sourire. Le village insiste un peu, pour la forme, puis se tourne vers l'ours. Le soir, l'escargot passe chez {A}, très lentement, pour dire : « Tu aurais fait un très bon chef. » {A} garde la phrase pour les mauvais jours.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Rationality, 1), (AiAxis.Boldness, -1))),
+            }),
+
+        // adulte et ancien: échos du grand apprentissage (the old master comes back)
+        new EventDef("grown_master_owl", EventType.FollowUp, AnyStage, "La clé de la réserve",
+            "La chouette frappe chez {A}, pour la première fois, emmitouflée dans un châle. « Je pars trois jours, de l'autre côté de la rivière. La bibliothèque a besoin de quelqu'un qui sache dire chut. » La chouette tend la clé de la réserve, celle des livres que personne n'a le droit de lire. « Je ne te demande pas de ne pas les ouvrir. »",
+            new[]
+            {
+                Plain("guard", "Garder la bibliothèque, sans ouvrir la réserve",
+                    "{A} garde la bibliothèque trois jours, dit « chut » quarante fois, et ne touche pas à la réserve. Au retour, la chouette vérifie la poussière sur la poignée, intacte, et sourit. « Tu as retenu la leçon d'autrefois. »",
+                    E(new ApplyModifier("clear_conscience")), Ai((AiAxis.Honor, 2))),
+                Try("read", "Ouvrir la réserve, et lire un seul livre", new EventChallenge(PlynlingStat.Learning, 8),
+                    "{A} ouvre la réserve et choisit un livre au hasard : c'est le journal de la chouette, écrit quand la chouette avait l'âge de {A}. {A} le lit d'une traite, et le remet exactement à sa place. Au retour, la chouette regarde {A} et dit seulement : « Alors, tu sais. »",
+                    "{A} ouvre la réserve. Un nuage de poussière en sort, avec un papillon de nuit très âgé et très vexé, qui suit {A} pendant trois jours. Au retour, la chouette salue le papillon par son nom.",
+                    E(new GrowStat(PlynlingStat.Learning), new ApplyModifier("inspired")), E(new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Rationality, 1), (AiAxis.Honor, -1))),
+            }),
+
+        new EventDef("grown_master_station", EventType.FollowUp, AnyStage, "Le train de 17 h 03",
+            "Le hérisson chef de gare a attrapé un rhume, le premier de sa carrière. Couché, une bouillotte sur le ventre, le hérisson tend à {A} la montre de gare, la casquette et le sifflet. « Le 17 h 03. Le grand train de l'année. Tu te souviens de la leçon un ? » {A} s'en souvient : on n'est jamais en avance.",
+            new[]
+            {
+                Try("station", "Tenir la gare toute la journée, comme le hérisson", new EventChallenge(PlynlingStat.Stewardship, 8),
+                    "{A} ouvre la gare à l'aube, vend les billets, chasse un pigeon du quai, et siffle le départ du 17 h 03 à la seconde exacte. Le soir, {A} rapporte la montre au hérisson, qui la regarde, regarde {A}, et éternue de fierté.",
+                    "{A} siffle le départ du 17 h 03 à 17 h 02. Le train part. Les voyageurs ne remarquent rien. Mais au lit, le hérisson a entendu, et a compté. Le hérisson n'en dira jamais rien. Mais le hérisson sait.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new GiveCailloux(15)), Nothing, Ai((AiAxis.Rationality, 1), (AiAxis.Energy, 1))),
+                Plain("soup", "Tenir la gare, et porter la soupe entre deux trains",
+                    "Entre chaque train, {A} court porter une soupe, une tisane, le journal. Le hérisson finit par guérir, surtout pour pouvoir dormir tranquille. Le 17 h 03 part à l'heure. À peu près.",
+                    E(new ApplyModifier("cherished")), Ai((AiAxis.Compassion, 2))),
+            }),
+
+        new EventDef("grown_master_market", EventType.FollowUp, AnyStage, "La retraite de la pie",
+            "La pie prend sa retraite. Le tonneau du marché est vide, et la pie porte un petit sac sur l'épaule. « Avant de partir, dit la pie à {A}, je dois rendre tout ce que j'ai emprunté depuis trente ans. Ça fait beaucoup. Tu m'aides ? » Le sac fait un bruit de cuillères.",
+            new[]
+            {
+                Try("night", "Tout rendre en une nuit, sans être {a:vu|vue}", new EventChallenge(PlynlingStat.Intrigue, 8),
+                    "Toute la nuit, {A} et la pie remettent à leur place les cuillères, les boutons, les dés à coudre et une paire de lunettes que tout le monde cherchait. Au matin, le village retrouve trente ans d'objets perdus. En partant, la pie laisse à {A} une bague. « Celle-là, je l'ai trouvée, pas empruntée. Promis. »",
+                    "{A} et la pie se font surprendre par l'ours, au moment de remettre sa propre cuillère dans son propre tiroir. Long silence. Puis l'ours éclate de rire, et aide à rendre le reste.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new GiveItem("col.bague")), E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Honor, 1), (AiAxis.Boldness, 1))),
+                Plain("stall", "Tout rendre au grand jour, sur un étal",
+                    "{A} étale tout sur une table, au milieu du marché, avec une pancarte : « Rendu par la pie ». Le village vient chercher ses affaires en riant. La pie, très gênée, reçoit en échange tant de cadeaux que le petit sac déborde au départ.",
+                    E(new ApplyModifier("clear_conscience"), new ApplyModifier("magpie_friend")), Ai((AiAxis.Honor, 2), (AiAxis.Sociability, 1))),
+            }),
+
+        // ancien: jamais trop tard (CK3's adult education and debates: a season at the academy)
+        new EventDef("elder_academy", EventType.Pulse, Elder, "Jamais trop tard",
+            "Une lettre arrive de l'autre côté de la vallée, cachetée de cire verte. L'académie des Collines accepte, pour une saison, quelques élèves « d'un certain âge ». {A} relit la lettre en ajustant ses lunettes. Dehors, le potager attend, le fauteuil aussi. La vallée paraît très loin, et très près.",
+            new[]
+            {
+                Plain("go", "Faire sa valise",
+                    "{A} fait sa valise : trois carnets, un pull, un pot de miel pour la route. Le village accompagne {A} jusqu'au vieux pont, comme pour un tout jeune. Le héron, sur une patte, fait un signe de tête qui veut dire « enfin ».",
+                    E(new FollowUp("elder_academy_master", 48, 96)), Ai((AiAxis.Boldness, 1), (AiAxis.Rationality, 1))),
+                Plain("walk", "Partir à pied, par le chemin des crêtes",
+                    "{A} part à pied, par les crêtes, en prenant son temps. Le voyage dure quatre jours. {A} arrive à l'académie avec des ampoules, un carnet plein de croquis, et l'impression d'avoir déjà appris quelque chose.",
+                    E(new GrowStat(PlynlingStat.Courage), new FollowUp("elder_academy_master", 48, 96)), Ai((AiAxis.Energy, 1), (AiAxis.Boldness, 1))),
+                Plain("stay", "Ranger la lettre : c'est pour les jeunes, ces choses-là",
+                    "{A} range la lettre dans le tiroir et retourne au potager. Le soir, {A} la ressort, la relit, puis la remet. Les tomates sont très belles cette année. C'est déjà beaucoup.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Energy, -1), (AiAxis.Boldness, -1))),
+            }),
+
+        new EventDef("elder_academy_master", EventType.FollowUp, AnyStage, "Le maître des questions",
+            "Le maître de l'académie est une vieille taupe presque aveugle, qui ne répond jamais à une question que par une autre question. Les jeunes élèves en pleurent de rage. Au premier cours, la taupe se tourne droit vers {A}, sans voir : « Et toi, qu'es-tu {a:venu|venue} chercher si loin, à ton âge ? »",
+            new[]
+            {
+                Try("question", "Répondre par une question, à son tour", new EventChallenge(PlynlingStat.Learning, 9),
+                    "« Et toi, pourquoi enseignes-tu encore, à ton âge ? » La salle retient son souffle. La taupe éclate de rire, pour la première fois depuis des années, et fait asseoir {A} au premier rang. Le reste de la saison, les deux se répondent par des questions, et les jeunes prennent des notes.",
+                    "{A} répond par une question. La taupe répond par une question. {A} aussi. Au bout de vingt minutes, plus personne ne sait de quoi on parlait, et la cloche sonne. Les jeunes appellent ça « le grand match nul ».",
+                    E(new GrowStat(PlynlingStat.Learning), new FollowUp("elder_academy_students", 48, 96)), E(new FollowUp("elder_academy_students", 48, 96)), Ai((AiAxis.Rationality, 2))),
+                Plain("truth", "Répondre franchement : « Je ne sais pas encore. »",
+                    "« Je ne sais pas encore. » La taupe hoche lentement la tête. « Bien. C'est la seule bonne réponse, ici. Les autres ont mis trois semaines à la trouver. » Les jeunes élèves regardent {A} d'un autre œil, désormais.",
+                    E(new ApplyModifier("clear_conscience"), new FollowUp("elder_academy_students", 48, 96)), Ai((AiAxis.Honor, 2))),
+                Plain("young", "S'asseoir au fond, avec les jeunes",
+                    "{A} s'installe au fond et demande aux jeunes comment ça marche, ici. Une musaraigne explique tout, très vite, avec des schémas. En échange, {A} explique les fractions. C'est le début d'une drôle d'amitié.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new FollowUp("elder_academy_students", 48, 96)), Ai((AiAxis.Sociability, 2))),
+            }),
+
+        new EventDef("elder_academy_students", EventType.FollowUp, AnyStage, "La nuit des étudiants",
+            "Un soir, on gratte à la fenêtre de {A}. Ce sont les jeunes élèves, la musaraigne en tête, qui font le mur pour aller danser au village voisin. « Tu viens ? » C'est une blague, évidemment. Tout le monde rit. Tout le monde attend aussi la réponse.",
+            new[]
+            {
+                Try("dance", "Y aller, et danser plus longtemps que tous", new EventChallenge(PlynlingStat.Courage, 8),
+                    "{A} enjambe la fenêtre (doucement), danse la gigue, la polka et une danse inventée sur place, et rentre à l'aube en portant la musaraigne endormie sur son dos. Au petit-déjeuner, la taupe fait semblant de ne rien savoir, et sourit dans son bol.",
+                    "{A} enjambe la fenêtre, se coince le pull dans le volet, et reste {a:suspendu|suspendue} là jusqu'à ce que les jeunes reviennent, à l'aube, pour décrocher {A} en riant. Toute la saison, ce volet s'appellera « le volet de {A} ».",
+                    E(new GrowStat(PlynlingStat.Courage), new LiftNeed(Need.Happiness, 0.2), new FollowUp("elder_academy_debate", 48, 96)), E(new FollowUp("elder_academy_debate", 48, 96)),
+                    Ai((AiAxis.Energy, 2), (AiAxis.Boldness, 1))),
+                Plain("fountain", "Y aller, mais pour raconter des histoires à la fontaine",
+                    "{A} s'assoit à la fontaine du village voisin pendant que les jeunes dansent. Peu à peu, les danseurs s'arrêtent pour écouter : la crue d'autrefois, le vieux pont, la carpe dorée. À minuit, plus personne ne danse. Tout le monde écoute.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new FollowUp("elder_academy_debate", 48, 96)), Ai((AiAxis.Sociability, 2))),
+                Plain("window", "Rester, mais laisser la fenêtre ouverte",
+                    "{A} reste, laisse la fenêtre entrouverte et une lampe allumée. À trois heures, les jeunes rentrent sur la pointe des pieds, et trouvent sur le rebord une assiette de biscuits. Personne n'en parle jamais. Les biscuits disparaissent quand même.",
+                    E(new ApplyModifier("cherished"), new FollowUp("elder_academy_debate", 48, 96)), Ai((AiAxis.Compassion, 2))),
+            }),
+
+        new EventDef("elder_academy_debate", EventType.FollowUp, AnyStage, "La grande dispute",
+            "Fin de saison : la grande dispute publique. Le jeune geai le plus brillant de l'académie monte sur l'estrade, gonfle ses plumes, et lance devant tout le monde : « Les vieux ne savent que des choses vieilles. » Puis désigne {A}. La salle se retourne. Au premier rang, la taupe croise les pattes et attend.",
+            new[]
+            {
+                Try("argue", "Répondre point par point, sans hausser le ton", new EventChallenge(PlynlingStat.Learning, 9),
+                    "{A} répond calmement, point par point, avec trois exemples, une date et une recette de confiture. À la fin, le geai ouvre le bec, le referme, et descend de l'estrade. Puis revient, l'air penaud, pour noter la recette.",
+                    "{A} répond point par point, mais perd le fil au deuxième. Le geai triomphe. Puis, dans le couloir, le geai rattrape {A} : « Ton premier point, c'était le meilleur. Tu peux me le réexpliquer ? »",
+                    E(new GrowStat(PlynlingStat.Learning), new ApplyModifier("well_spoken"), new FollowUp("elder_academy_home", 48, 96)), E(new FollowUp("elder_academy_home", 48, 96)),
+                    Ai((AiAxis.Rationality, 2)), Stress(("shy", 20))),
+                Try("joke", "Répondre par une plaisanterie", new EventChallenge(PlynlingStat.Diplomacy, 8),
+                    "« Les vieux ne savent que des choses vieilles, dit {A}. Par exemple, où le cuisinier cache les biscuits. » La salle éclate de rire. Le geai aussi, finalement, après une longue seconde. Fin de la dispute, début d'une amitié.",
+                    "La plaisanterie tombe à plat. Un seul rire, au fond : la taupe, qui rit cinq minutes toute seule et finit par entraîner la salle entière. Plus personne ne sait pourquoi on rit. C'est encore mieux.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new FollowUp("elder_academy_home", 48, 96)), E(new LiftNeed(Need.Happiness, 0.15), new FollowUp("elder_academy_home", 48, 96)),
+                    Ai((AiAxis.Sociability, 2))),
+                Plain("concede", "Concéder : « Tu as raison. Apprends-moi. »",
+                    "{A} descend vers le geai et lui demande, sincèrement, de lui apprendre quelque chose de neuf. Le geai, désarmé, explique les étoiles filantes, à sa façon, très bien. La taupe applaudit. Ce n'était pas une dispute, finalement. C'était un cours.",
+                    E(new ApplyModifier("clear_conscience"), new FollowUp("elder_academy_home", 48, 96)), Ai((AiAxis.Compassion, 1), (AiAxis.Honor, 1)), Stress(("arrogant", 20))),
+            }),
+
+        new EventDef("elder_academy_home", EventType.FollowUp, AnyStage, "Le retour",
+            "La saison est finie. Sur le seuil de l'académie, la taupe tend à {A} un petit paquet ficelé, et dit, pour la première fois, une phrase sans point d'interrogation : « Tu vas me manquer. » Trois jours plus tard, {A} passe le vieux pont. Tout le village attend sur l'autre rive, et le héron a mis sa plus belle patte devant.",
+            new[]
+            {
+                Plain("parcel", "Ouvrir le paquet de la taupe",
+                    "Dans le paquet : une carte de la vallée, dessinée à la main par la taupe, avec tous les chemins qu'on ne voit pas d'en haut. Au dos, une seule question, bien sûr : « Et maintenant ? »",
+                    E(new GiveItem("col.carte_tresor"), new ApplyModifier("inspired")), Ai((AiAxis.Rationality, 1))),
+                Plain("teach", "Réunir les petits du village, et leur raconter l'académie",
+                    "Dès le lendemain, {A} réunit les petits sous le vieux chêne, et répond à toutes leurs questions par d'autres questions. Les petits en pleurent de rage. {A} n'a jamais été aussi {a:heureux|heureuse}.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new ApplyModifier("cherished")), Ai((AiAxis.Sociability, 1), (AiAxis.Compassion, 1))),
+                Plain("chair", "Rentrer, et retrouver son fauteuil",
+                    "{A} rentre, pose la valise, et s'assoit dans le fauteuil. Le fauteuil a gardé sa forme. Le potager a poussé tout seul, dans tous les sens. {A} le regarde longtemps, et commence déjà une liste de questions pour l'an prochain.",
+                    E(new GrowStat(PlynlingStat.Learning), new ApplyModifier("soothed")), Ai((AiAxis.Rationality, 1), (AiAxis.Energy, -1))),
+            }),
+
+        // ---- wave 8: ancien
+        new EventDef("elder_rocking_chair", EventType.Pulse, Elder, "Le fauteuil à bascule",
+            "Le village s'est cotisé pour offrir à {A} un fauteuil à bascule, avec un coussin brodé : « Repos bien mérité ». Toute la place regarde {A} découvrir le cadeau. Le blaireau, qui l'a fabriqué, tortille sa casquette.",
+            new[]
+            {
+                Plain("sit", "S'y asseoir tout de suite, et se balancer",
+                    "{A} s'assoit, se balance une fois, deux fois, et s'endort au troisième balancement, devant tout le village. On fait silence. Le blaireau, très fier, déclare le fauteuil réussi.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Energy, -1), (AiAxis.Compassion, 1))),
+                Try("ride", "Y voir plutôt un véhicule", new EventChallenge(PlynlingStat.Courage, 8),
+                    "{A} pose le fauteuil en haut de la côte, s'y installe, et descend la grand-rue en se balançant, sous les cris du village. Arrivée devant le café, sans une égratignure. Le blaireau commence déjà les plans d'un deuxième fauteuil, avec des freins.",
+                    "{A} pose le fauteuil en haut de la côte. Le fauteuil part sans {A}, descend toute la grand-rue tout seul, et s'arrête pile devant le café. La tortue s'y assoit aussitôt, et refuse de le rendre.",
+                    E(new GrowStat(PlynlingStat.Courage), new ApplyModifier("fired_up")), E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Boldness, 2), (AiAxis.Energy, 1))),
+                Plain("attic", "Remercier, et le monter au grenier",
+                    "{A} remercie très poliment, monte le fauteuil au grenier, et redescend d'un pas très vif, pour bien montrer. Le soir, en secret, {A} remonte essayer le fauteuil. Le fauteuil est parfait. Personne ne le saura jamais.",
+                    E(new GrowStat(PlynlingStat.Intrigue)), Ai((AiAxis.Boldness, 1)), Stress(("humble", 15))),
+            }),
+
+        new EventDef("elder_old_rival", EventType.Pulse, Elder, "Une dernière partie",
+            "Un vieux renard descend du train de midi, une canne à la patte et une boîte sous le bras. {A} le reconnaît tout de suite : le seul adversaire qui ait jamais battu {A} aux noix, voilà cinquante ans, d'un seul point. Le renard pose la boîte sur une table du café et l'ouvre : le même plateau. « Une dernière ? »",
+            new[]
+            {
+                Try("play", "Jouer pour gagner, enfin", new EventChallenge(PlynlingStat.Intrigue, 8),
+                    "La partie dure tout l'après-midi. Au dernier coup, {A} gagne d'un seul point. Le renard regarde le plateau, puis éclate de rire : « Cinquante ans que j'attendais ça. » Le renard laisse le plateau à {A}, et reprend le train du soir.",
+                    "La partie dure tout l'après-midi. Au dernier coup, le renard gagne d'un seul point. Encore. « On se revoit dans cinquante ans ? » demande le renard. {A} dit oui, très sérieusement.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new ApplyModifier("fired_up")), E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Boldness, 1), (AiAxis.Rationality, 1))),
+                Plain("talk", "Laisser le plateau fermé, et parler du bon vieux temps",
+                    "{A} referme la boîte. Les deux parlent jusqu'au train du soir : des chemins qui ont changé, des gens partis, et de la partie d'autrefois, que chacun se souvient d'avoir gagnée. Sur le quai, le renard dit : « La prochaine fois, on joue. » Les deux savent qu'on dira la même chose.",
+                    E(new ApplyModifier("soothed"), new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Sociability, 2))),
+                Plain("gift", "Laisser gagner le renard, encore une fois",
+                    "{A} joue un peu moins bien, exprès, au tout dernier coup. Le renard gagne d'un point, comme avant. Sur le quai, le renard se retourne : « Tu m'as laissé gagner. Merci. » Puis le train part.",
+                    E(new ApplyModifier("clear_conscience")), Ai((AiAxis.Compassion, 2))),
+            }),
+
+        new EventDef("elder_dance", EventType.Pulse, Elder, "La première danse",
+            "Au bal du village, {A} est {a:assis|assise} près de l'orchestre, à battre la mesure du bout de sa canne. Un tout petit du village s'approche, tire sur la manche de {A}, et demande, très sérieusement : « Tu veux danser ? » Le tout petit arrive à peine aux genoux de {A}.",
+            new[]
+            {
+                Plain("slow", "Accepter, et ouvrir la danse",
+                    "{A} se lève, prend les deux pattes du petit, et danse, tout doucement, au milieu de la place. D'autres s'arrêtent pour regarder, puis pour imiter. À la fin, toute la place danse au rythme lent de {A}.",
+                    E(new LiftNeed(Need.Happiness, 0.25), new ApplyModifier("cherished")), Ai((AiAxis.Sociability, 1), (AiAxis.Compassion, 1))),
+                Try("spin", "Montrer comment on dansait autrefois", new EventChallenge(PlynlingStat.Courage, 8),
+                    "{A} lance le petit dans un tourbillon, puis un autre : une vieille danse que plus personne ne connaît. Les anciens du village se lèvent un à un et retrouvent les pas. Le temps d'une chanson, le bal a cinquante ans de moins.",
+                    "{A} lance un tourbillon, et la canne avec, et un peu de sa dignité. Le petit rattrape la canne, la rapporte, et propose : « On fait plutôt la danse lente ? » Oui. On fait plutôt la danse lente.",
+                    E(new GrowStat(PlynlingStat.Courage), new LiftNeed(Need.Happiness, 0.2)), E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Energy, 2), (AiAxis.Boldness, 1))),
+                Plain("lesson", "Proposer d'abord une leçon, sur le côté",
+                    "{A} et le petit s'installent dans un coin, et {A} enseigne les pas un par un, en comptant. À la dernière chanson, le petit entraîne {A} sur la piste et fait tout parfaitement, sauf sur les pieds de {A}, qui s'en moque bien.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new ApplyModifier("soothed")), Ai((AiAxis.Compassion, 1), (AiAxis.Rationality, 1))),
+            }),
+
+        // ---- wave 8, second batch: bébé
+        new EventDef("baby_cant_sleep", EventType.Pulse, Baby, "Les yeux grands ouverts",
+            "Minuit passé. Tout le village dort, sauf {A}, qui compte les poutres du plafond pour la neuvième fois. Dehors, sur la branche, la chouette ne dort pas non plus. La nuit, la chouette ne dort jamais : c'est son métier.",
+            new[]
+            {
+                Plain("owl", "Ouvrir la fenêtre, et parler à la chouette",
+                    "La chouette raconte ce qui se passe la nuit : les souris qui font leurs courses, la lune qui change de place, le hérisson qui ronfle en morse. À la troisième histoire, {A} dort, le nez sur le rebord.",
+                    E(new ApplyModifier("well_rested")), Ai((AiAxis.Sociability, 1), (AiAxis.Rationality, 1))),
+                Plain("sheep", "Compter les moutons, sérieusement",
+                    "{A} compte les moutons. Au quatre-vingtième, un mouton refuse de sauter. {A} négocie. Le mouton finit par sauter. {A} dort avant le quatre-vingt-unième.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Rationality, 1))),
+                Try("night", "Sortir explorer la nuit, en pyjama", new EventChallenge(PlynlingStat.Courage, 4),
+                    "{A} sort en pyjama et découvre le village de nuit : les lucioles au-dessus de la mare, la boulangerie déjà allumée, et le boulanger qui offre la première brioche, encore chaude. {A} rentre à l'aube, et dort jusqu'à midi.",
+                    "{A} sort en pyjama, fait trois pas, et entend un bruit. C'est une feuille. {A} rentre très vite, et dort enfin, sous la couverture, la tête comprise.",
+                    E(new GrowStat(PlynlingStat.Courage), new LiftNeed(Need.Hunger, 0.15)), Nothing, Ai((AiAxis.Boldness, 2))),
+            }),
+
+        new EventDef("baby_mud_pie", EventType.Pulse, Baby, "La pâtisserie de boue",
+            "{A} a ouvert une pâtisserie au bord de la flaque. Au menu : tarte de boue, gâteau de boue, et une spécialité de boue aux pâquerettes. Le premier client s'approche : l'ours, qui a l'air d'avoir très faim.",
+            new[]
+            {
+                Plain("sell", "Vendre une tarte à l'ours, très cher",
+                    "« Trois cailloux », annonce {A}. L'ours paie trois cailloux, très sérieusement, prend la tarte, la renifle, et la pose délicatement sur un muret, « pour plus tard ». Les trois cailloux sont rangés sous le lit, pour toujours.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new GiveCailloux(3)), Ai((AiAxis.Greed, 1), (AiAxis.Sociability, 1))),
+                Plain("gift", "Offrir la plus belle part, gratuitement",
+                    "{A} offre la plus belle part. L'ours la reçoit comme une médaille, et le lendemain, apporte en échange un vrai gâteau, au miel. {A} trouve l'échange équitable.",
+                    E(new LiftNeed(Need.Hunger, 0.2)), Ai((AiAxis.Compassion, 2))),
+                Try("tower", "Inventer un gâteau à trois étages, devant le client", new EventChallenge(PlynlingStat.Learning, 4),
+                    "{A} invente sur place le gâteau de boue à trois étages, décoré de cailloux blancs. L'ours applaudit. Le gâteau tient debout une heure entière, un record.",
+                    "Le troisième étage glisse sur le deuxième, puis sur {A}. L'ours aide à tout nettoyer, et rit tout le long.",
+                    E(new GrowStat(PlynlingStat.Learning)), Nothing, Ai((AiAxis.Rationality, 1), (AiAxis.Energy, 1))),
+            }),
+
+        new EventDef("baby_doudou", EventType.Pulse, Baby, "La grenouille en tricot",
+            "La grenouille en tricot de {A} a disparu. Celle avec un œil en bouton et une patte recousue trois fois. Sans la grenouille, impossible de dormir, ni de manger, ni de faire quoi que ce soit. {A} a fouillé partout. Partout, sauf peut-être…",
+            new[]
+            {
+                Plain("village", "Fouiller tout le village, maison par maison",
+                    "{A} frappe à toutes les portes. Personne n'a vu la grenouille. Mais tout le monde promet de chercher, et l'ours colle même une affiche sur son kiosque : « Recherchée : grenouille, un œil, très aimée. »",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new FollowUp("baby_doudou_found", 24, 48)), Ai((AiAxis.Sociability, 2))),
+                Plain("thread", "Suivre la piste : un fil de laine verte",
+                    "Un fil de laine verte traverse le jardin, passe sous la haie, monte le long d'un arbre. {A} le suit jusqu'à la nuit, et rentre avec une pelote énorme et une piste très chaude.",
+                    E(new GrowStat(PlynlingStat.Learning), new FollowUp("baby_doudou_found", 24, 48)), Ai((AiAxis.Rationality, 2))),
+                Plain("new", "Essayer la grenouille neuve du magasin de jouets",
+                    "Le blaireau du magasin de jouets propose une grenouille neuve, plus verte, avec deux yeux. {A} la regarde longtemps, et la repose. « Ce n'est pas la même. » Le blaireau hoche la tête : ça, le blaireau le savait.",
+                    E(new FollowUp("baby_doudou_found", 24, 48)), Ai((AiAxis.Rationality, 1), (AiAxis.Honor, 1))),
+            }),
+
+        new EventDef("baby_doudou_found", EventType.FollowUp, AnyStage, "La grenouille retrouvée",
+            "Ce matin, la grenouille en tricot attend sur le rebord de la fenêtre. Lavée, séchée, avec un nouvel œil : un bouton doré. Posée à côté, une petite plume noire et blanche. Sur le toit d'en face, la pie regarde ailleurs avec beaucoup d'application.",
+            new[]
+            {
+                Plain("thanks", "Crier merci vers le toit",
+                    "{A} crie merci vers le toit. La pie fait semblant de ne pas entendre, puis laisse tomber, l'air de rien, un deuxième bouton doré, de rechange.",
+                    E(new GiveItem("col.bouton"), new ApplyModifier("cherished")), Ai((AiAxis.Compassion, 1), (AiAxis.Sociability, 1))),
+                Plain("hug", "Serrer la grenouille, et ne plus jamais la lâcher",
+                    "{A} serre la grenouille si fort que le nouveau bouton laisse une marque sur la joue. Cette nuit-là, {A} dort douze heures. La grenouille aussi, sans doute.",
+                    E(new ApplyModifier("well_rested"), new LiftNeed(Need.Happiness, 0.2)), Ai((AiAxis.Compassion, 1))),
+                Plain("suspect", "Plisser les yeux vers la pie",
+                    "{A} plisse les yeux vers le toit. La pie plisse les yeux en retour. Personne ne cède. Mais le bouton doré est très joli, et on décide, sans un mot, d'en rester là.",
+                    E(new GrowStat(PlynlingStat.Intrigue)), Ai((AiAxis.Rationality, 1), (AiAxis.Boldness, 1))),
+            }),
+
+        // ---- wave 8, second batch: ado
+        new EventDef("teen_rival", EventType.Pulse, Teen, "Toujours deuxième",
+            "Un jeune furet est arrivé au village, et depuis, à la bibliothèque, à la course, au lancer de pomme de pin, le furet finit premier, et {A} deuxième. Ce matin, le furet passe devant {A}, ralentit, et lâche : « Toujours deuxième ? » Puis s'éloigne en sifflotant.",
+            new[]
+            {
+                Plain("train", "S'entraîner en secret, tous les matins",
+                    "{A} se lève avant le soleil, court autour de l'étang, lit deux livres par jour, et lance des pommes de pin contre le mur du jardin jusqu'au dîner. Trois jours plus tard, un défi arrive, écrit à la main : la grande course, samedi.",
+                    E(new GrowStat(PlynlingStat.Courage), new FollowUp("teen_rival_race", 24, 48)), Ai((AiAxis.Energy, 2)), Stress(("lazy", 15))),
+                Plain("shrug", "Hausser les épaules : deuxième, c'est très bien",
+                    "{A} hausse les épaules et retourne à son livre. Le furet s'arrête, vexé que ça ne marche pas. Le soir, un défi arrive, en bonne et due forme : la grande course, samedi.",
+                    E(new ApplyModifier("clear_conscience"), new FollowUp("teen_rival_race", 24, 48)), Ai((AiAxis.Rationality, 1))),
+                Try("retort", "Répondre du tac au tac", new EventChallenge(PlynlingStat.Diplomacy, 6),
+                    "« Deuxième, peut-être. Mais moi, je ne siffle pas faux. » Le furet s'arrête net, et s'en va sans siffler. Le soir, un défi arrive : la grande course, samedi.",
+                    "{A} cherche une réponse, et la trouve trois heures plus tard, en se brossant les dents. Trop tard. Le soir, un défi arrive : la grande course, samedi.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new FollowUp("teen_rival_race", 24, 48)), E(new FollowUp("teen_rival_race", 24, 48)),
+                    Ai((AiAxis.Boldness, 1), (AiAxis.Sociability, 1)), Stress(("shy", 15))),
+            }),
+
+        new EventDef("teen_rival_race", EventType.FollowUp, AnyStage, "La grande course",
+            "Samedi, la moitié du village s'est installée le long du chemin de l'étang. Le moineau tient le sifflet. Le furet s'étire, très sûr de soi. Le parcours : trois tours d'étang, le vieux pont, et retour. Coup de sifflet.",
+            new[]
+            {
+                Try("sprint", "Partir à fond dès le départ", new EventChallenge(PlynlingStat.Courage, 7),
+                    "{A} part comme une flèche et mène deux tours entiers. Au troisième, le furet revient, épaule contre épaule. Sur le vieux pont, {A} passe d'un museau. Le moineau hésite longtemps, puis lève la patte de {A}.",
+                    "{A} part comme une flèche, mène deux tours, et s'effondre au troisième. Le furet gagne presque en marchant. Puis revient en arrière, et finit le dernier tour à côté de {A}, sans un mot.",
+                    E(new GrowStat(PlynlingStat.Courage), new FollowUp("teen_rival_end", 6, 12)), E(new FollowUp("teen_rival_end", 6, 12)), Ai((AiAxis.Boldness, 2))),
+                Try("pace", "Garder son souffle pour la fin", new EventChallenge(PlynlingStat.Stewardship, 7),
+                    "{A} laisse filer le furet, garde son rythme, et le rattrape dans la dernière ligne droite, à bout de souffle. Victoire d'un cheveu. Le furet, pour la première fois, ne trouve rien à dire.",
+                    "{A} garde son souffle pour la fin. La fin arrive trop vite. Le furet gagne, se retourne, et pour la première fois, ne dit rien.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new FollowUp("teen_rival_end", 6, 12)), E(new FollowUp("teen_rival_end", 6, 12)), Ai((AiAxis.Rationality, 2))),
+                Try("brambles", "Couper par les ronces", new EventChallenge(PlynlingStat.Intrigue, 7),
+                    "{A} coupe par les ronces, ressort devant le furet, et gagne. Le furet regarde les épines accrochées partout sur {A}, et sourit d'un drôle d'air.",
+                    "{A} coupe par les ronces et y reste {a:coincé|coincée}. Le furet, en passant, s'arrête pour aider {A} à se dégager, et perd la course. Le moineau ne sait plus du tout quoi noter.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new FollowUp("teen_rival_end", 6, 12)), E(new FollowUp("teen_rival_end", 6, 12)),
+                    Ai((AiAxis.Honor, -2)), Stress(("honest", 20), ("just", 20))),
+            }),
+
+        new EventDef("teen_rival_end", EventType.FollowUp, AnyStage, "Au bout du pont",
+            "Le soir de la course, {A} trouve le furet, seul, au bout du vieux pont, les pattes dans le vide. Plus de sifflotement. « Là d'où je viens, dit le furet sans se retourner, quand on n'est pas premier, on n'existe pas. »",
+            new[]
+            {
+                Plain("sit", "S'asseoir à côté, les pattes dans le vide",
+                    "{A} s'assoit. Le soleil se couche. Au bout d'un moment, {A} dit : « Ici, on existe même septième. Demande à l'escargot. » Le furet rit, pour la première fois sans moquerie. Le lendemain, les deux courent ensemble, pour rien, juste pour courir.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new ApplyModifier("cherished")), Ai((AiAxis.Compassion, 2))),
+                Plain("rematch", "Proposer une revanche, chaque samedi",
+                    "« Revanche samedi prochain ? Et celui d'après ? » Le furet se retourne, l'œil brillant. Depuis, chaque samedi, le village vient voir la course, et plus personne ne tient les comptes, surtout pas les deux coureurs.",
+                    E(new ApplyModifier("fired_up")), Ai((AiAxis.Boldness, 1), (AiAxis.Sociability, 1))),
+            }),
+
+        new EventDef("teen_bakery", EventType.Pulse, Teen, "Le fournil à l'aube",
+            "Le boulanger cherche quelqu'un pour l'aider le matin, avant le lever du soleil. Le salaire : quelques cailloux, et tous les croissants ratés. {A} se présente à quatre heures. Le fournil est chaud, sombre, et sent si bon que c'en est presque injuste.",
+            new[]
+            {
+                Try("knead", "Pétrir la pâte, comme le boulanger montre", new EventChallenge(PlynlingStat.Stewardship, 6),
+                    "{A} pétrit, plie, laisse reposer, recommence. À six heures, la première fournée sort, dorée, parfaite. Le boulanger casse un croissant en deux, l'écoute craquer, et hoche la tête : « Demain aussi. »",
+                    "{A} pétrit trop fort. Les croissants sortent en forme de cailloux. Le boulanger en goûte un quand même, très courageusement. « Demain, plus doucement. »",
+                    E(new GrowStat(PlynlingStat.Stewardship), new FollowUp("teen_bakery_week", 72, 120)), E(new LiftNeed(Need.Hunger, 0.2), new FollowUp("teen_bakery_week", 72, 120)),
+                    Ai((AiAxis.Energy, 1), (AiAxis.Rationality, 1))),
+                Plain("taste", "Goûter chaque fournée, par conscience professionnelle",
+                    "{A} goûte la première fournée, puis la deuxième, par sécurité. À six heures, le boulanger compte les croissants, recompte, et regarde {A}, qui a des miettes jusqu'aux oreilles. « Demain, tu goûtes moins. Mais tu reviens. »",
+                    E(new LiftNeed(Need.Hunger, 0.25), new FollowUp("teen_bakery_week", 72, 120)), Ai((AiAxis.Greed, 1), (AiAxis.Energy, -1)), Stress(("temperate", 15))),
+                Plain("sing", "Chanter, pour que la pâte lève",
+                    "Le boulanger assure que la pâte lève mieux en musique. {A} chante tout ce qu'on connaît, puis invente. La pâte lève. Le boulanger lève aussi un sourcil, mais ne dit rien, parce que la pâte a levé.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new FollowUp("teen_bakery_week", 72, 120)), Ai((AiAxis.Sociability, 2))),
+            }),
+
+        new EventDef("teen_bakery_week", EventType.FollowUp, AnyStage, "Le dernier jour au fournil",
+            "Une semaine de fournées à l'aube. {A} sait maintenant pétrir, plier, et ne jamais ouvrir le four trop tôt. Le dernier jour, le boulanger tend une petite bourse, et pose à côté une boule de pâte crue. « Le salaire. Et ça, c'est pour ton pain à toi. Fais-en ce que tu veux. »",
+            new[]
+            {
+                Plain("sun", "Façonner un pain en forme de soleil",
+                    "{A} façonne un soleil aux rayons tressés. Le boulanger l'enfourne sans un mot, puis le pose en vitrine, avec une étiquette : « Pas à vendre ». La bourse, de son côté, pèse son poids de cailloux.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new GiveCailloux(15)), Ai((AiAxis.Rationality, 1))),
+                Plain("long", "Faire un pain pour toute la place",
+                    "Une seule boule de pâte, mais {A} l'étire, l'étire, et en fait un pain long comme un banc. Toute la place en mange un morceau. Le boulanger mesure le pain deux fois, et l'inscrit dans le carnet des records.",
+                    E(new GiveCailloux(15), new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Sociability, 1), (AiAxis.Compassion, 1))),
+                Plain("back", "Demander à revenir la semaine prochaine",
+                    "{A} garde la boule de pâte dans un torchon et demande à revenir. Le boulanger sourit, pour la première fois de la semaine. « Quatre heures. Pas une minute de plus. » Avec le hérisson, ça fait deux personnes au village qui comptent les minutes.",
+                    E(new GiveCailloux(15), new ApplyModifier("trade_sense")), Ai((AiAxis.Energy, 1), (AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("teen_hidden_garden", EventType.Pulse, Teen, "Sous le lierre",
+            "Derrière la bibliothèque, un vieux mur couvert de lierre. {A} y est {a:passé|passée} cent fois. Aujourd'hui, le vent soulève le lierre, et dessous apparaît une petite porte en bois, sans poignée, entrouverte.",
+            new[]
+            {
+                Try("push", "Pousser la porte", new EventChallenge(PlynlingStat.Courage, 6),
+                    "La porte grince. Derrière : un jardin oublié, des fleurs hautes comme des arbres, une fontaine sèche, et un banc où quelqu'un a laissé un livre ouvert, la page cornée. Le jardin attend quelqu'un depuis longtemps.",
+                    "La porte grince si fort que {A} s'enfuit. Une heure plus tard, {A} revient sur la pointe des pieds. La porte, patiente, attend toujours.",
+                    E(new GrowStat(PlynlingStat.Courage), new FollowUp("teen_hidden_garden_owl", 24, 48)), E(new FollowUp("teen_hidden_garden_owl", 24, 48)), Ai((AiAxis.Boldness, 2))),
+                Plain("ask", "Demander d'abord à la chouette où mène la porte",
+                    "La chouette ferme son livre, très lentement. « Le jardin de la vieille bibliothécaire. Avant moi. » Puis, après un silence : « Personne n'y est entré depuis. Tu peux, si tu fais attention. »",
+                    E(new GrowStat(PlynlingStat.Learning), new FollowUp("teen_hidden_garden_owl", 24, 48)), Ai((AiAxis.Rationality, 1), (AiAxis.Honor, 1))),
+                Plain("ivy", "Remettre le lierre en place, et garder le secret",
+                    "{A} remet le lierre en place, très soigneusement, et n'en dit rien à personne. Certaines portes sont plus belles fermées, avec un secret derrière. {A} repasse devant chaque jour, juste pour savoir.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Rationality, 1), (AiAxis.Boldness, -1))),
+            }),
+
+        new EventDef("teen_hidden_garden_owl", EventType.FollowUp, AnyStage, "Le jardin de la bibliothécaire",
+            "Dans le jardin, {A} a commencé à arracher les ronces, à remplir la fontaine, à replanter. Ce matin, quelqu'un est assis sur le banc, le livre à la page cornée sur les genoux : la chouette. « J'étais son élève, dit la chouette. Je n'ai jamais osé revenir. »",
+            new[]
+            {
+                Plain("together", "Proposer de jardiner ensemble",
+                    "Désormais, tous les matins, la chouette et {A} jardinent en silence. La fontaine coule de nouveau. Un jour, la chouette lit à voix haute la page cornée : un poème sur un jardin. La chouette pleure un peu. {A} fait semblant d'arroser.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new ApplyModifier("cherished")), Ai((AiAxis.Compassion, 2))),
+                Plain("give", "Rendre le jardin à la chouette",
+                    "{A} tend le petit arrosoir à la chouette. « Le jardin vous attendait. » La chouette tient l'arrosoir longtemps, puis donne à {A} une petite clé de bronze, celle de la porte sous le lierre. « À nous deux, alors. »",
+                    E(new GiveItem("col.cle_rouillee"), new ApplyModifier("clear_conscience")), Ai((AiAxis.Honor, 1), (AiAxis.Compassion, 1))),
+            }),
+
+        new EventDef("teen_camp", EventType.Pulse, Teen, "L'île du lac",
+            "Chaque été, les jeunes du village passent trois jours sur l'île du lac, avec un sac, une tente, et le moineau comme moniteur. Le radeau part dans une heure. {A} a fait son sac trois fois, et l'a défait deux fois.",
+            new[]
+            {
+                Plain("light", "Partir avec presque rien, pour l'aventure",
+                    "{A} emporte une couverture, un couteau à beurre et beaucoup d'optimisme. Sur le radeau, le moineau regarde le sac de {A}, puis {A}, et soupire profondément.",
+                    E(new GrowStat(PlynlingStat.Courage), new FollowUp("teen_camp_night", 12, 24)), Ai((AiAxis.Boldness, 2))),
+                Plain("everything", "Emporter tout ce qui pourrait servir",
+                    "{A} emporte trois couvertures, une lanterne, une boussole, du miel, des pansements et un parapluie. Le radeau penche. Personne ne rit : tout le monde sait déjà chez qui on frappera quand la pluie viendra.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new FollowUp("teen_camp_night", 12, 24)), Ai((AiAxis.Rationality, 2))),
+                Plain("stay", "Rester au village : trois jours, c'est long",
+                    "{A} regarde le radeau partir depuis le ponton. Le village est très calme sans les jeunes. {A} aide la tortue au café, et le soir, entend des chansons qui viennent de l'île, portées par l'eau.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Boldness, -1), (AiAxis.Energy, -1))),
+            }),
+
+        new EventDef("teen_camp_night", EventType.FollowUp, AnyStage, "La nuit sur l'île",
+            "Première nuit sur l'île. Le feu crépite, le moineau ronfle déjà sous sa tente, et quelqu'un vient de raconter l'histoire du monstre du lac, qui sort les nuits sans lune. Ce soir, justement, pas de lune. Et derrière les roseaux, quelque chose fait « plop ».",
+            new[]
+            {
+                Try("look", "Aller voir ce qui fait « plop »", new EventChallenge(PlynlingStat.Courage, 7),
+                    "{A} écarte les roseaux, la lanterne levée. Le monstre du lac est une vieille carpe, énorme, qui fait des bulles en dormant. {A} revient au feu et raconte, très sérieusement, avoir vu le monstre. C'est vrai, en un sens.",
+                    "{A} s'avance, la lanterne levée. « Plop. » {A} recule. « Plop. » {A} est déjà sous la tente, sous trois couvertures. Le lendemain, on découvre une grenouille qui s'ennuyait.",
+                    E(new GrowStat(PlynlingStat.Courage), new FollowUp("teen_camp_back", 24, 36)), E(new FollowUp("teen_camp_back", 24, 36)), Ai((AiAxis.Boldness, 2)), Stress(("craven", 20))),
+                Try("prank", "Faire « plop » à son tour, pour effrayer les autres", new EventChallenge(PlynlingStat.Intrigue, 7),
+                    "{A} se glisse derrière la tente et fait « plop » avec un caillou dans l'eau. Panique générale, cris, une tente qui s'effondre. Le moineau se réveille, compte les têtes, et surveille {A} avec méfiance jusqu'à la fin du séjour.",
+                    "{A} lance un caillou pour faire « plop ». Le caillou tombe dans la marmite de chocolat. Tout le monde sait d'où vient le caillou. On boit le chocolat quand même, caillou compris.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new FollowUp("teen_camp_back", 24, 36)), E(new FollowUp("teen_camp_back", 24, 36)), Ai((AiAxis.Boldness, 1), (AiAxis.Honor, -1))),
+                Plain("story", "Raconter une autre histoire, plus rassurante",
+                    "{A} raconte l'histoire du monstre du lac qui avait peur du noir, et qui venait, les nuits sans lune, se réchauffer près des feux de camp. Plus personne n'a peur. Quelqu'un laisse même une couverture près des roseaux, au cas où.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new FollowUp("teen_camp_back", 24, 36)), Ai((AiAxis.Compassion, 1), (AiAxis.Sociability, 1))),
+            }),
+
+        new EventDef("teen_camp_back", EventType.FollowUp, AnyStage, "Le radeau du retour",
+            "Le dernier matin, on démonte les tentes. Sur le radeau du retour, tout le monde est fatigué, sale et heureux. Le moineau distribue les médailles du séjour, des bouchons peints, une par personne. Le moineau arrive devant {A} avec la dernière, et hésite sur l'inscription.",
+            new[]
+            {
+                Plain("medal", "Accepter la médaille, quoi qu'on y lise",
+                    "La médaille dit : « Le plus inattendu ». {A} ne sait pas si c'est un compliment. Le moineau non plus. {A} la porte quand même tout l'été, et finit par décider que oui.",
+                    E(new LiftNeed(Need.Happiness, 0.2), new ApplyModifier("light_heart")), Ai((AiAxis.Sociability, 1))),
+                Plain("swim", "Sauter du radeau, et finir à la nage",
+                    "{A} saute du radeau à mi-chemin et finit la traversée à la nage, sous les acclamations. Le moineau crie quelque chose sur la sécurité, puis saute aussi, parce que tout le monde saute. Le radeau arrive vide au ponton.",
+                    E(new GrowStat(PlynlingStat.Courage), new LiftNeed(Need.Hygiene, 0.2)), Ai((AiAxis.Boldness, 1), (AiAxis.Energy, 1))),
+                Plain("keepsake", "Garder un souvenir de l'île au fond de la poche",
+                    "Au fond de la poche de {A} : une coquille d'escargot vide, en spirale parfaite, ramassée sur la plage de l'île. Posée sur la table de chevet, la coquille sent encore l'eau douce et le feu de camp.",
+                    E(new GiveItem("col.coquille_escargot"), new ApplyModifier("cherished")), Ai((AiAxis.Compassion, 1))),
+            }),
+
+        // ---- wave 8, second batch: adulte et ancien
+        // le concours d'épouvantails (CK3 contests: the build, the night raid, the judging)
+        new EventDef("grown_scarecrow", EventType.Pulse, Grown, "Le concours d'épouvantails",
+            "Le moineau a annoncé le concours du plus bel épouvantail, jugé dans une semaine sur la place. Le juge, c'est le moineau lui-même, ce que personne ne semble trouver bizarre. L'an dernier, le blaireau a gagné avec un épouvantail si réussi que le moineau n'a jamais osé s'approcher pour remettre le ruban. {A} a une botte de paille, un vieux manteau, et une idée.",
+            new[]
+            {
+                Plain("scary", "Le plus effrayant possible",
+                    "{A} coud des sourcils froncés, des dents en noyaux de prune, et un manteau noir qui claque au vent. Le premier soir, {A} sursaute en le croisant dans le jardin. C'est bon signe.",
+                    E(new GrowStat(PlynlingStat.Courage), new FollowUp("grown_scarecrow_crows", 72, 120)), Ai((AiAxis.Boldness, 2))),
+                Plain("elegant", "Le plus élégant du village",
+                    "{A} lui offre un chapeau à plume, un nœud papillon et une canne. L'épouvantail a plus d'allure que la moitié du village. Les corbeaux viennent le saluer.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new FollowUp("grown_scarecrow_crows", 72, 120)), Ai((AiAxis.Sociability, 2))),
+                Plain("twin", "Un épouvantail à son image",
+                    "{A} lui fait porter son écharpe, son chapeau et son air du dimanche. La ressemblance est troublante. Le facteur lui dit bonjour deux fois, et attend la réponse.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new FollowUp("grown_scarecrow_crows", 72, 120)), Ai((AiAxis.Boldness, 1), (AiAxis.Sociability, 1))),
+            }),
+
+        new EventDef("grown_scarecrow_crows", EventType.FollowUp, AnyStage, "La nuit des corbeaux",
+            "Une nuit, des croassements réveillent {A}. Dans le jardin, sous la lune, une bande de corbeaux s'est installée sur l'épouvantail : un sur le chapeau, deux sur les bras, et le plus gros dans la poche du manteau. Les corbeaux n'ont pas peur du tout. Les corbeaux ont l'air de beaucoup s'amuser.",
+            new[]
+            {
+                Try("chase", "Sortir en chemise de nuit, et chasser les corbeaux", new EventChallenge(PlynlingStat.Courage, 8),
+                    "{A} sort en agitant un balai, et les corbeaux s'envolent en croassant très fort, vexés. Au matin, l'épouvantail est intact, à un bouton près : les corbeaux l'ont emporté en souvenir.",
+                    "{A} sort en agitant un balai. Les corbeaux s'envolent, tournent, et se reposent tous sur {A}. Au matin, l'épouvantail est intact, et {A} a des plumes partout.",
+                    E(new GrowStat(PlynlingStat.Courage), new FollowUp("grown_scarecrow_judging", 72, 120)), E(new FollowUp("grown_scarecrow_judging", 72, 120)),
+                    Ai((AiAxis.Boldness, 1), (AiAxis.Energy, 1))),
+                Try("bells", "Ajouter des clochettes et des rubans qui claquent", new EventChallenge(PlynlingStat.Stewardship, 8),
+                    "{A} accroche des clochettes aux manches et des rubans au chapeau. Au moindre souffle, l'épouvantail tinte et danse. Les corbeaux le regardent, se consultent, et vont s'installer chez le blaireau.",
+                    "{A} accroche des clochettes. Les corbeaux adorent les clochettes. La nuit suivante, les corbeaux reviennent à douze, pour le concert.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new FollowUp("grown_scarecrow_judging", 72, 120)), E(new FollowUp("grown_scarecrow_judging", 72, 120)),
+                    Ai((AiAxis.Rationality, 2))),
+                Plain("deal", "Négocier avec le plus gros corbeau",
+                    "{A} propose un marché au plus gros corbeau : des miettes de pain chaque matin, contre la paix pour l'épouvantail. Le corbeau accepte d'un hochement de bec. Le jour du concours, les corbeaux viennent même encourager.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new FollowUp("grown_scarecrow_judging", 72, 120)), Ai((AiAxis.Sociability, 1), (AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("grown_scarecrow_judging", EventType.FollowUp, AnyStage, "Le jugement du moineau",
+            "Jour du concours. Les épouvantails sont alignés sur la place, et le moineau passe devant chacun, un carnet à la patte, à distance prudente. Devant celui du blaireau, le moineau recule de trois pas. Puis vient le tour de celui de {A}. Le moineau s'approche, et ses plumes se hérissent un peu.",
+            new[]
+            {
+                Try("speech", "Présenter son épouvantail avec un petit discours", new EventChallenge(PlynlingStat.Diplomacy, 8),
+                    "{A} présente l'épouvantail comme un vieil ami : son nom, ses goûts, sa peur des chats. Le moineau rit, prend des notes, et décerne à {A} le premier prix, avec la bourse. Le blaireau, beau joueur, vient serrer la manche de l'épouvantail.",
+                    "{A} commence le discours. Une rafale fait pivoter l'épouvantail vers le moineau, d'un coup. Le moineau s'envole sur le toit de la gare, et n'en redescend qu'à la nuit. Le prix arrive par courrier le lendemain : deuxième place.",
+                    E(new GiveCailloux(25), new ApplyModifier("well_spoken")), E(new GiveCailloux(10), new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Sociability, 2)), Stress(("shy", 15))),
+                Plain("gift", "Offrir l'épouvantail au potager de la tortue",
+                    "{A} retire l'épouvantail du concours et l'installe dans le potager de la tortue, qui se fait voler ses fraises depuis des années. Plus une fraise ne disparaît. La tortue donne à l'épouvantail le nom de {A}.",
+                    E(new ApplyModifier("cherished"), new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Compassion, 2))),
+                Plain("inside", "Se glisser dans le manteau, et bouger au bon moment",
+                    "Quand le moineau s'approche, l'épouvantail lui fait un clin d'œil. Le moineau pousse un cri que toute la vallée entend. Prix spécial du jury : « Le plus vivant ». Le moineau refuse de le remettre en main propre.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Boldness, 1), (AiAxis.Honor, -1))),
+            }),
+
+        // le coin du blaireau (CK3's hunt activity: the invitation, the fog, the find)
+        new EventDef("grown_forage", EventType.Pulse, Grown, "Le coin du blaireau",
+            "Le vieux blaireau, qui connaît la forêt mieux que personne, propose à {A} de l'accompagner à la cueillette des morilles. « Une condition : tu ne diras jamais à personne où on va. » Départ demain, avant l'aube. Le blaireau a déjà deux paniers.",
+            new[]
+            {
+                Plain("swear", "Jurer le secret, et préparer son panier",
+                    "{A} jure, la patte levée. Le blaireau ne sourit pas, mais tend un bandeau. « Pour le chemin. » {A} met le bandeau. Le secret est bien gardé, au moins jusqu'à la forêt.",
+                    E(new FollowUp("grown_forage_fog", 12, 24)), Ai((AiAxis.Honor, 1))),
+                Plain("notes", "Accepter, et noter discrètement le chemin",
+                    "{A} accepte, et glisse un carnet dans sa poche. Tout le long du chemin, {A} note les arbres, les pierres, les virages. Le blaireau ne voit rien, ou fait semblant.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new FollowUp("grown_forage_fog", 12, 24)), Ai((AiAxis.Honor, -1), (AiAxis.Greed, 1)), Stress(("honest", 20))),
+                Plain("sleep", "Refuser : avant l'aube, très peu pour soi",
+                    "« Avant l'aube ? Non merci. » Le blaireau hausse les épaules et part seul. Le lendemain soir, une petite morille attend devant la porte de {A}, sans un mot. C'est tout le blaireau, ça.",
+                    E(new GiveItem("food.morel")), Ai((AiAxis.Energy, -2))),
+            }),
+
+        new EventDef("grown_forage_fog", EventType.FollowUp, AnyStage, "Le brouillard",
+            "Au cœur de la forêt, le brouillard tombe d'un coup, épais comme du lait. Le blaireau, devant, a disparu. {A} appelle. Rien. Seulement le bruit des gouttes sur les feuilles, et quelque part, très loin, un pic qui tape.",
+            new[]
+            {
+                Try("track", "Suivre les traces du blaireau dans la mousse", new EventChallenge(PlynlingStat.Learning, 8),
+                    "{A} s'accroupit, trouve une empreinte, puis une autre, puis une brindille cassée. Dix minutes plus tard, le blaireau est là, assis sur une souche. « Tu en as mis, du temps. » C'était un test. {A} l'a réussi.",
+                    "{A} suit des traces, longtemps, très {a:sûr|sûre} de soi, et tombe nez à nez avec un sanglier, qui suivait aussi des traces. Les deux s'excusent. Le blaireau retrouve {A} une heure plus tard, mort de rire.",
+                    E(new GrowStat(PlynlingStat.Learning), new FollowUp("grown_forage_find", 2, 6)), E(new FollowUp("grown_forage_find", 2, 6)), Ai((AiAxis.Rationality, 2))),
+                Plain("wait", "Ne plus bouger, et attendre",
+                    "{A} s'assoit au pied d'un chêne, et attend. Le brouillard passe autour, comme une rivière. Au bout d'une heure, le blaireau sort de la brume, l'air satisfait. « Bien. On ne court jamais dans le brouillard. »",
+                    E(new ApplyModifier("soothed"), new FollowUp("grown_forage_find", 2, 6)), Ai((AiAxis.Rationality, 1), (AiAxis.Energy, -1))),
+                Try("whistle", "Siffler deux notes, comme le blaireau a appris", new EventChallenge(PlynlingStat.Courage, 7),
+                    "{A} siffle deux notes. Une réponse arrive, sur la gauche. Puis le blaireau, qui s'était caché tout près, exprès. « Tu as retenu. Bien. »",
+                    "{A} siffle. Un merle répond. Puis deux. Puis toute la forêt. Le blaireau finit par retrouver {A} au milieu d'un concert d'oiseaux, et en oublie de faire la leçon.",
+                    E(new GrowStat(PlynlingStat.Courage), new FollowUp("grown_forage_find", 2, 6)), E(new FollowUp("grown_forage_find", 2, 6)), Ai((AiAxis.Sociability, 1), (AiAxis.Boldness, 1))),
+            }),
+
+        new EventDef("grown_forage_find", EventType.FollowUp, AnyStage, "La clairière",
+            "Le blaireau écarte une branche basse. Derrière, au pied d'un vieux frêne, une clairière où la mousse est criblée de morilles, des dizaines, comme si quelqu'un les avait plantées. Le blaireau parle tout bas : « Mon coin. Depuis quarante ans. Personne d'autre ne l'a jamais vu. »",
+            new[]
+            {
+                Plain("few", "Ne cueillir que le nécessaire",
+                    "{A} cueille trois morilles, pas une de plus. Le blaireau regarde le panier, puis {A}. « Tu reviendras, alors. » C'est une invitation. Le blaireau n'en a jamais fait.",
+                    E(new GiveItem("food.morel"), new ApplyModifier("clear_conscience")), Ai((AiAxis.Honor, 1), (AiAxis.Compassion, 1))),
+                Plain("fill", "Remplir le panier à ras bord",
+                    "{A} remplit le panier à ras bord. Le blaireau ne dit rien, mais sur le chemin du retour, marche un peu plus vite, et ne se retourne pas.",
+                    E(new GiveItem("food.morel"), new LiftNeed(Need.Hunger, 0.2)), Ai((AiAxis.Greed, 2)), Stress(("temperate", 15), ("generous", 15))),
+                Try("truffle", "Gratter au pied du frêne, là où la terre sent bon", new EventChallenge(PlynlingStat.Learning, 9),
+                    "{A} gratte au pied du frêne, là où la terre sent la noisette et le sous-bois. Une truffe noire, grosse comme une noix. Le blaireau en reste bouche bée. Quarante ans, et le blaireau ne savait pas.",
+                    "{A} gratte, gratte, et trouve un ver de terre, très étonné. Le blaireau rit si fort qu'une morille tombe du panier.",
+                    E(new GiveItem("food.truffle")), E(new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Rationality, 1), (AiAxis.Greed, 1))),
+            }),
+
+        // le grand hoquet (CK3's epidemics, played for laughs: the outbreak, the cure, the relapse)
+        new EventDef("grown_hiccups", EventType.Pulse, Grown, "Le grand hoquet",
+            "Ça a commencé avec l'ours, au café, mardi. Puis la tortue. Puis le moineau, en plein milieu d'un discours. Aujourd'hui, la moitié du village a le hoquet, un hoquet tenace, qui ne part plus. On entend le village de loin : hic. Hic. Le médecin est en vacances.",
+            new[]
+            {
+                Plain("infirmary", "Ouvrir une infirmerie dans sa cuisine",
+                    "{A} installe des chaises, des couvertures et une grande théière dans la cuisine. Les malades arrivent un par un, en faisant hic. La cuisine résonne comme une horloge détraquée.",
+                    E(new ApplyModifier("cherished"), new FollowUp("grown_hiccups_cure", 24, 48)), Ai((AiAxis.Compassion, 2))),
+                Plain("books", "Chercher un remède dans les livres de la chouette",
+                    "{A} passe la journée à la bibliothèque. La chouette, qui a le hoquet aussi, fait « chut… hic » toutes les deux minutes. À la nuit, {A} a trouvé trois remèdes, dont un avec un œuf et la pleine lune.",
+                    E(new GrowStat(PlynlingStat.Learning), new FollowUp("grown_hiccups_cure", 24, 48)), Ai((AiAxis.Rationality, 2))),
+                Plain("shut", "S'enfermer chez soi, pour ne pas l'attraper",
+                    "{A} ferme les volets, bouche la serrure, et attend. Le soir, dans le silence de la maison : hic. {A} l'a quand même. Autant aider, maintenant.",
+                    E(new FollowUp("grown_hiccups_cure", 24, 48)), Ai((AiAxis.Rationality, 1), (AiAxis.Sociability, -1))),
+            }),
+
+        new EventDef("grown_hiccups_cure", EventType.FollowUp, AnyStage, "Le remède",
+            "Trois jours de hoquet. Le village n'en peut plus. Le moineau n'arrive plus à siffler, le hérisson n'arrive plus à annoncer les trains, et la tortue a renversé quarante tasses. Tout le monde se tourne vers {A}, qui a peut-être une idée.",
+            new[]
+            {
+                Try("boo", "Leur faire très peur, à tous en même temps", new EventChallenge(PlynlingStat.Intrigue, 8),
+                    "{A} rassemble le village derrière la boulangerie, puis surgit, un drap sur la tête : « BOUH ! » Silence. Plus un seul hic. Le village est guéri d'un coup, un peu fâché, mais guéri.",
+                    "{A} surgit, un drap sur la tête : « BOUH ! » Personne n'a peur. Tout le monde rit. Et en riant, le hoquet passe, chez tout le monde, d'un seul coup. Personne ne comprend pourquoi. Le remède est noté quand même.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new FollowUp("grown_hiccups_relapse", 24, 48)), E(new FollowUp("grown_hiccups_relapse", 24, 48)), Ai((AiAxis.Boldness, 2))),
+                Try("water", "Le grand verre d'eau bu à l'envers, pour tout le monde", new EventChallenge(PlynlingStat.Stewardship, 8),
+                    "{A} aligne quarante verres d'eau sur la place et montre comment boire à l'envers, penché en avant. Le village s'exécute, en rang, très sérieusement. Une demi-heure plus tard, plus un hic. Le moineau siffle la fin de l'épidémie.",
+                    "Quarante verres d'eau bus à l'envers, et quarante chemises trempées. Le hoquet est toujours là. Le hoquet finit par partir tout seul, le lendemain, sans prévenir, comme le hoquet était venu.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new FollowUp("grown_hiccups_relapse", 24, 48)), E(new FollowUp("grown_hiccups_relapse", 24, 48)), Ai((AiAxis.Rationality, 2))),
+                Plain("nap", "Une tisane pour tout le monde, et une sieste générale",
+                    "{A} prépare un chaudron de tisane et ordonne une sieste générale. Le village dort tout l'après-midi, sur la place, dans l'herbe. Au réveil, plus aucun hic. Juste des marques d'herbe sur les joues.",
+                    E(new ApplyModifier("soothed"), new FollowUp("grown_hiccups_relapse", 24, 48)), Ai((AiAxis.Compassion, 2))),
+            }),
+
+        new EventDef("grown_hiccups_relapse", EventType.FollowUp, AnyStage, "Hic",
+            "Le village est guéri. Tout le monde remercie {A} ; on parle de statue, ou au moins d'une plaque. Et ce matin, au café, au moment de prendre son chocolat, devant tout le monde, {A} fait : « Hic. » Toutes les têtes se tournent. « Hic. »",
+            new[]
+            {
+                Plain("laugh", "En rire avec tout le monde",
+                    "{A} éclate de rire, entre deux hics. Le café entier rit avec {A}, et en riant, le hoquet passe. Personne ne fait de statue, finalement, mais la tortue baptise un chocolat « le Hic », et c'est mieux.",
+                    E(new LiftNeed(Need.Happiness, 0.2), new ApplyModifier("light_heart")), Ai((AiAxis.Sociability, 2))),
+                Plain("own", "Appliquer son propre remède, très dignement",
+                    "{A} applique son propre remède, très dignement, devant tout le monde. Ça marche. Le café applaudit un remède qui marche même sur son inventeur. {A} salue, et fait un dernier petit hic, minuscule, qui ne compte pas.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Rationality, 1))),
+            }),
+
+        // la guerre de la mare (CK3's feuds between houses: the flags, the raid, the peace)
+        new EventDef("grown_pond_war", EventType.Pulse, Grown, "La guerre de la mare",
+            "Les grenouilles et les canards ne se parlent plus. Les grenouilles réclament la mare depuis toujours. Les canards aussi, depuis plus longtemps encore, à les entendre. Ce matin, chaque camp a planté un drapeau sur la rive. Les deux drapeaux se regardent. Les deux camps regardent {A}.",
+            new[]
+            {
+                Try("treaty", "Proposer un traité : le matin aux uns, l'après-midi aux autres", new EventChallenge(PlynlingStat.Diplomacy, 8),
+                    "Après trois heures de palabres, le traité est signé d'une patte palmée et d'une empreinte de bec. La mare est partagée. Tout le monde est mécontent à parts égales. C'est le signe d'un bon traité, même si ce traité ne tiendra peut-être pas.",
+                    "{A} propose le partage. Les grenouilles veulent le matin. Les canards aussi. La réunion finit dans un grand plouf collectif, et {A} rentre {a:trempé|trempée}.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new FollowUp("grown_pond_war_raid", 24, 48)), E(new FollowUp("grown_pond_war_raid", 24, 48)), Ai((AiAxis.Sociability, 1), (AiAxis.Honor, 1))),
+                Plain("frogs", "Prendre le parti des grenouilles",
+                    "{A} se range du côté des grenouilles, qui chantent en l'honneur de {A} toute la nuit. Les canards, eux, tournent le dos à {A} avec une synchronisation parfaite.",
+                    E(new FollowUp("grown_pond_war_raid", 24, 48)), Ai((AiAxis.Boldness, 1)), Stress(("just", 15))),
+                Plain("ducks", "Prendre le parti des canards",
+                    "{A} se range du côté des canards, qui défilent devant {A} en file indienne, en signe d'honneur. Les grenouilles coassent des choses que personne ne traduira.",
+                    E(new FollowUp("grown_pond_war_raid", 24, 48)), Ai((AiAxis.Boldness, 1)), Stress(("just", 15))),
+            }),
+
+        new EventDef("grown_pond_war_raid", EventType.FollowUp, AnyStage, "Le raid de minuit",
+            "En pleine nuit, des cris montent de la mare. {A} accourt : les grenouilles ont volé le drapeau des canards, les canards celui des grenouilles, et dans la mêlée, les deux drapeaux sont tombés au milieu de l'eau. Les deux camps se tournent vers {A}, chacun persuadé que {A} soutient l'autre.",
+            new[]
+            {
+                Try("dive", "Plonger récupérer les deux drapeaux", new EventChallenge(PlynlingStat.Courage, 8),
+                    "{A} plonge, une fois, deux fois, et ressort avec les deux drapeaux, trempés, emmêlés, cousus ensemble par les algues. Les deux camps contemplent le drapeau double. Personne n'ose le défaire.",
+                    "{A} plonge et ressort avec un seul drapeau, méconnaissable, couvert de vase. Grenouilles et canards le réclament en même temps. Puis, ensemble, se moquent de la vase sur {A}. C'est un début.",
+                    E(new GrowStat(PlynlingStat.Courage), new FollowUp("grown_pond_war_peace", 24, 48)), E(new FollowUp("grown_pond_war_peace", 24, 48)), Ai((AiAxis.Boldness, 2))),
+                Plain("sew", "Proposer de coudre un seul drapeau, pour tous",
+                    "Les grenouilles veulent du vert, les canards du blanc. Au petit matin, le drapeau de la mare est vert et blanc, à rayures, et assez laid. Tout le monde l'adore.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new FollowUp("grown_pond_war_peace", 24, 48)), Ai((AiAxis.Rationality, 1), (AiAxis.Compassion, 1))),
+            }),
+
+        new EventDef("grown_pond_war_peace", EventType.FollowUp, AnyStage, "La fête de la mare",
+            "Une semaine plus tard, grenouilles et canards organisent ensemble une fête sur la rive, la première depuis que la mare existe. Sur la nappe, des mouches pour les uns, du pain pour les autres, et des gâteaux pour {A}, {a:l'invité|l'invitée} d'honneur. Le vieux crapaud, qui n'est d'aucun camp, se lève pour le discours.",
+            new[]
+            {
+                Plain("listen", "Écouter le discours du crapaud",
+                    "Le crapaud parle longtemps, d'une voix grave : de la mare d'avant, de l'hiver où la mare avait gelé, et où canards et grenouilles s'étaient tenu chaud, ensemble. Personne ne s'en souvenait. Ce soir, tout le monde s'en souvient.",
+                    E(new ApplyModifier("soothed"), new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Rationality, 1), (AiAxis.Compassion, 1))),
+                Plain("swim", "Lancer la première baignade commune",
+                    "{A} se jette à l'eau. Les canards suivent, puis les grenouilles. La mare déborde un peu. Le drapeau à rayures flotte au-dessus, laid et magnifique.",
+                    E(new ApplyModifier("party_soul"), new LiftNeed(Need.Hygiene, 0.2)), Ai((AiAxis.Energy, 1), (AiAxis.Sociability, 1))),
+            }),
+
+        // la guerre des farces (rivals: the jam on the door, the escalation, the count)
+        new EventDef("grown_prank", EventType.Pulse, Grown, "La porte à la confiture",
+            "Ce matin, la porte de {A} est couverte de confiture. Toute la porte. Au milieu, un mot collé : « Bonne journée. » L'écriture est celle de {B}. Aucun doute possible : {B} a même signé.",
+            new[]
+            {
+                Try("salt", "Riposter : remplacer le sucre de {B} par du sel", new EventChallenge(PlynlingStat.Intrigue, 7),
+                    "Le lendemain matin, de la maison de {B}, un cri monte, suivi d'un long silence, puis d'un rire. Un rire qui promet beaucoup de choses. La guerre est déclarée.",
+                    "{A} se glisse chez {B} avec le sel, et trouve sur la table un mot : « Pas le sucre. Trop facile. » {B} avait prévu. {A} rentre, très {a:vexé|vexée}, et planifie mieux.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new FollowUp("grown_prank_war", 24, 48)), E(new FollowUp("grown_prank_war", 24, 48)), Ai((AiAxis.Vengefulness, 2)), Stress(("forgiving", 20))),
+                Plain("taste", "Goûter la porte, et remercier",
+                    "{A} goûte la porte. Confiture d'abricots, excellente. {A} laisse un mot à son tour : « Merci. Encore ? » Le lendemain, une deuxième couche. Fraise, cette fois. La guerre devient bizarre.",
+                    E(new AffinityShift(5), new LiftNeed(Need.Hunger, 0.2), new FollowUp("grown_prank_war", 24, 48)), Ai((AiAxis.Compassion, 1), (AiAxis.Sociability, 1))),
+                Plain("wash", "Laver la porte, comme si de rien n'était",
+                    "{A} lave la porte en sifflotant, pendant que {B} passe devant, exprès, trois fois. Pas un regard. Rien n'est plus agaçant que l'absence de réaction. {B} le sait. {A} aussi.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new FollowUp("grown_prank_war", 24, 48)), Ai((AiAxis.Rationality, 1))),
+            },
+            Target: TargetKind.Hostile),
+
+        new EventDef("grown_prank_war", EventType.FollowUp, AnyStage, "L'escalade",
+            "Une semaine de guerre. Chaussettes cousues ensemble, tasse collée au comptoir, faux mots d'amour du hérisson glissés sous les portes. Le village compte les points. Ce soir, {A} tient la farce ultime : une poule, une brouette, et la cheminée de {B}. Mais par la fenêtre éclairée, on voit {B}, {b:seul|seule} à table, l'air très fatigué.",
+            new[]
+            {
+                Plain("knock", "Ranger la brouette, et frapper à la porte",
+                    "{A} gare la brouette, la poule dedans, et frappe. {B} ouvre, {b:surpris|surprise}. « Tu as l'air à bout. » {B} hausse les épaules : « Les farces, ça prend du temps. Le reste aussi. » {A} entre. La poule aussi.",
+                    E(new AffinityShift(10), new FollowUp("grown_prank_truce", 6, 12)), Ai((AiAxis.Compassion, 2))),
+                Try("hen", "Exécuter la farce ultime", new EventChallenge(PlynlingStat.Intrigue, 8),
+                    "La poule descend par la cheminée, très calmement, et s'installe sur la table de {B}, en face. {B} et la poule se regardent. Puis {B} éclate de rire, si fort que tout le village l'entend. Point pour {A}.",
+                    "La poule refuse la cheminée, saute de la brouette et rentre au poulailler. La brouette roule toute seule jusqu'à la porte de {B}, qui ouvre, voit {A}, la brouette, les plumes. « Sérieusement ? »",
+                    E(new GrowStat(PlynlingStat.Intrigue), new FollowUp("grown_prank_truce", 6, 12)), E(new FollowUp("grown_prank_truce", 6, 12)),
+                    Ai((AiAxis.Vengefulness, 1), (AiAxis.Boldness, 1)), Stress(("compassionate", 15))),
+            },
+            Target: TargetKind.Hostile),
+
+        new EventDef("grown_prank_truce", EventType.FollowUp, AnyStage, "Dix-sept partout",
+            "{A} et {B} se font face, un carnet ouvert entre les deux : le décompte des farces, tenu par le moineau. Égalité parfaite. Dix-sept partout. Le moineau attend, crayon en l'air.",
+            new[]
+            {
+                Plain("draw", "Déclarer l'égalité, et signer la paix",
+                    "{A} et {B} signent le carnet, côte à côte, sous « match nul ». Le moineau le fait encadrer au café. Depuis, les deux se saluent poliment, avec une lueur dans l'œil qui inquiète tout le village.",
+                    E(new AffinityShift(20), new ApplyModifier("light_heart")), Ai((AiAxis.Compassion, 1), (AiAxis.Honor, 1))),
+                Plain("team", "Proposer une alliance : farcer le village, ensemble",
+                    "« Dix-sept partout. Et si on s'occupait du hérisson, maintenant ? » {B} sourit lentement. Le lendemain, toutes les horloges du village avancent de douze minutes. Personne ne sait qui. Tout le monde sait qui.",
+                    E(new AffinityShift(25), new ApplyModifier("sly")), Ai((AiAxis.Boldness, 1), (AiAxis.Sociability, 1))),
+            },
+            Target: TargetKind.Hostile),
+
+        // la route de la foire (CK3's travel with a companion: the road, the inn, the fair)
+        new EventDef("grown_journey", EventType.Pulse, Grown, "La route de la foire",
+            "La grande foire de la ville d'en bas, c'est trois jours de marche. {B} y va aussi, et propose de faire la route ensemble : « On partage les frais, la carte, et les ampoules. » Départ à l'aube, sac au dos.",
+            new[]
+            {
+                Plain("together", "Accepter, et partir ensemble",
+                    "{A} et {B} partent à l'aube. Au bout d'une heure, chacun connaît les chansons préférées de l'autre. Au bout de deux, plus personne ne les supporte. Au bout de trois, on les chante en chœur.",
+                    E(new AffinityShift(10), new FollowUp("grown_journey_inn", 24, 48)), Ai((AiAxis.Sociability, 2))),
+                Plain("map", "Accepter, à condition de tenir la carte",
+                    "{A} tient la carte, et la tient à l'envers pendant deux heures, avant que {B} ne le fasse remarquer, très gentiment. La carte change de mains. Le chemin aussi.",
+                    E(new AffinityShift(5), new FollowUp("grown_journey_inn", 24, 48)), Ai((AiAxis.Rationality, 1), (AiAxis.Boldness, 1))),
+                Plain("alone", "Refuser : on marche mieux {a:seul|seule}",
+                    "{A} part {a:seul|seule}, une heure plus tard. Sur la route, {A} aperçoit {B} loin devant, toujours à la même distance, comme un repère. Le soir, les deux feux de camp brillent à cent pas l'un de l'autre. Personne ne fait le premier pas.",
+                    E(new GrowStat(PlynlingStat.Courage)), Ai((AiAxis.Sociability, -1), (AiAxis.Boldness, 1))),
+            },
+            Target: TargetKind.Known),
+
+        new EventDef("grown_journey_inn", EventType.FollowUp, AnyStage, "L'auberge du sanglier",
+            "Le deuxième soir, une averse pousse {A} et {B} dans une auberge au bord de la route. L'aubergiste, un vieux sanglier, n'a plus qu'une chambre, avec un seul lit, étroit, et un fauteuil qui a l'air de mordre.",
+            new[]
+            {
+                Plain("armchair", "Prendre le fauteuil, sans discuter",
+                    "{A} prend le fauteuil. Le fauteuil mord, effectivement. À trois heures, {B} se lève sans un mot, et étend sa propre couverture sur {A}. Au matin, personne n'en parle.",
+                    E(new AffinityShift(15), new FollowUp("grown_journey_fair", 24, 48)), Ai((AiAxis.Compassion, 2))),
+                Try("coin", "Tirer le lit à pile ou face", new EventChallenge(PlynlingStat.Intrigue, 7),
+                    "{A} gagne à pile ou face. Puis propose la revanche. Puis la belle. Ça dure jusqu'à minuit, en riant. Finalement, personne ne dort dans le lit : les deux s'endorment sur la table, sur le jeu de cartes.",
+                    "{A} perd à pile ou face, et s'installe dans le fauteuil. {B} montre alors la pièce : deux côtés face. Fou rire. Le sanglier apporte une deuxième couverture, par pitié.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new AffinityShift(10), new FollowUp("grown_journey_fair", 24, 48)), E(new AffinityShift(10), new FollowUp("grown_journey_fair", 24, 48)),
+                    Ai((AiAxis.Boldness, 1), (AiAxis.Sociability, 1))),
+                Plain("talk", "Ne pas dormir, et parler toute la nuit",
+                    "Ni lit, ni fauteuil : {A} et {B} s'assoient sous la fenêtre et parlent jusqu'à l'aube, de tout, des étoiles, du village, de choses jamais dites à personne. Au matin, les deux repartent avec des cernes et un drôle de sourire.",
+                    E(new AffinityShift(20), new FollowUp("grown_journey_fair", 24, 48)), Ai((AiAxis.Sociability, 1), (AiAxis.Compassion, 1))),
+            },
+            Target: TargetKind.Known),
+
+        new EventDef("grown_journey_fair", EventType.FollowUp, AnyStage, "La grande foire",
+            "La foire de la ville d'en bas : des étals à perte de vue, des musiciens, une odeur de pommes grillées. {A} et {B} ont quelques cailloux et une seule journée. Devant un stand, {B} s'arrête net devant une petite boîte à musique en forme d'escargot. Puis repart, trop vite.",
+            new[]
+            {
+                Plain("gift", "Retourner discrètement acheter la boîte, pour {B}",
+                    "{A} retourne au stand, achète la boîte et la cache dans son sac. Au dernier virage avant le village, {A} la tend à {B}. {B} ne dit rien, tourne la petite clé, et la boîte joue jusqu'au village.",
+                    E(new AffinityShift(25), new ApplyModifier("cherished")), Ai((AiAxis.Compassion, 2)), Stress(("greedy", 15))),
+                Plain("apple", "Partager une pomme grillée, devant les musiciens",
+                    "{A} et {B} partagent une pomme grillée sur une caisse, devant les musiciens. On ne dépense rien d'autre. On n'a besoin de rien d'autre.",
+                    E(new AffinityShift(15), new LiftNeed(Need.Hunger, 0.15)), Ai((AiAxis.Sociability, 1))),
+                Try("haggle", "Marchander les meilleurs prix, pour deux", new EventChallenge(PlynlingStat.Stewardship, 8),
+                    "{A} marchande tout, partout, avec un aplomb terrifiant. À la fin de la journée, les deux repartent avec deux sacs pleins, et des cailloux encore en poche. {B} regarde {A} avec une admiration un peu inquiète.",
+                    "{A} marchande si fort que le marchand de pommes, vexé, refuse de vendre quoi que ce soit. {B} doit acheter les pommes en cachette, à l'autre bout de la foire, et les deux rient tout le long du retour.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new GiveCailloux(10), new AffinityShift(10)), E(new AffinityShift(10)), Ai((AiAxis.Greed, 1), (AiAxis.Rationality, 1))),
+            },
+            Target: TargetKind.Known),
+
+        // l'effraie du grenier (CK3's haunted-house mysteries, with a feathered answer)
+        new EventDef("grown_ghost", EventType.Pulse, Grown, "Des pas au grenier",
+            "Depuis trois nuits, on entend marcher dans le grenier de {A}. Des pas légers, un frottement, parfois un soupir. Le grenier est fermé à clé, et la clé est dans la poche de {A}. Ce soir, les pas reprennent.",
+            new[]
+            {
+                Try("climb", "Monter au grenier, une bougie à la patte", new EventChallenge(PlynlingStat.Courage, 8),
+                    "{A} monte. Les marches grincent. Au grenier, la bougie éclaire une vieille effraie, entrée par une tuile cassée, qui a fait son nid dans le carton des décorations de fête. L'effraie cligne des yeux. {A} aussi.",
+                    "{A} monte, la bougie s'éteint, quelque chose souffle « hhhh » dans le noir, et {A} redescend toutes les marches d'un coup. En plein jour, le lendemain, on trouve l'explication : une vieille effraie, dans le carton des décorations.",
+                    E(new GrowStat(PlynlingStat.Courage), new FollowUp("grown_ghost_owl", 24, 48)), E(new FollowUp("grown_ghost_owl", 24, 48)), Ai((AiAxis.Boldness, 2)), Stress(("craven", 20))),
+                Plain("badger", "Demander au blaireau de monter avec soi",
+                    "Le blaireau monte devant, un balai à la patte, très brave. Au grenier, une vieille effraie s'est installée dans le carton des décorations de fête. Le blaireau redescend, très digne, et ne reparle jamais du cri qui lui a échappé.",
+                    E(new FollowUp("grown_ghost_owl", 24, 48)), Ai((AiAxis.Sociability, 1), (AiAxis.Rationality, 1))),
+                Plain("cotton", "Mettre du coton dans ses oreilles",
+                    "{A} met du coton dans ses oreilles et dort très bien. Trois nuits plus tard, des plumes blanches descendent par l'escalier, et on finit par comprendre : une vieille effraie habite le grenier.",
+                    E(new ApplyModifier("well_rested"), new FollowUp("grown_ghost_owl", 24, 48)), Ai((AiAxis.Energy, -1), (AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("grown_ghost_owl", EventType.FollowUp, AnyStage, "L'effraie du grenier",
+            "L'effraie est vieille, presque blanche, et visiblement décidée à rester. La nuit, l'effraie chasse les souris du quartier. Le jour, l'effraie dort dans le carton des décorations, la tête sur une guirlande. Consultée, la chouette de la bibliothèque dit que c'est une lointaine cousine, très difficile.",
+            new[]
+            {
+                Plain("stay", "La laisser rester, contre la chasse aux souris",
+                    "Marché conclu : l'effraie reste, les souris partent. Le grenier n'a jamais été aussi tranquille. Parfois, la nuit, {A} entend un soupir là-haut, et ça a quelque chose de rassurant, maintenant.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new ApplyModifier("soothed")), Ai((AiAxis.Compassion, 1), (AiAxis.Rationality, 1))),
+                Plain("box", "Lui construire un nichoir, dans le vieux chêne",
+                    "{A} construit un nichoir au toit en pente, avec un carton de décorations neuf à l'intérieur, pour l'ambiance. L'effraie déménage après une semaine de réflexion. Sur le rebord, en partant, l'effraie laisse une plume, blanche et douce comme la neige.",
+                    E(new GiveItem("col.plume"), new ApplyModifier("clear_conscience")), Ai((AiAxis.Compassion, 2))),
+            }),
+
+        new EventDef("grown_beetle_duel", EventType.Pulse, Grown, "Le duel du lucane",
+            "Un lucane, très grand, très cornu, barre le chemin de {A}. « Tu as insulté ma mère. » {A} n'a jamais vu la mère du lucane. « Duel. Demain, à l'aube, sur la souche. » Le lucane repart sans attendre de réponse, en faisant claquer ses mandibules.",
+            new[]
+            {
+                Try("fight", "Se présenter au duel, et lutter à la loyale", new EventChallenge(PlynlingStat.Courage, 8),
+                    "À l'aube, sur la souche, {A} et le lucane luttent trois minutes. {A} renverse le lucane sur le dos, l'aide à se relever, et le lucane, ému, déclare l'honneur lavé. On apprend ensuite que le lucane s'était trompé de personne. Excuses longues et sincères.",
+                    "À l'aube, sur la souche, le lucane soulève {A} au-dessus de sa tête, très facilement, et dépose {A} délicatement dans l'herbe. Puis demande : « Au fait, tu es bien… ? » Erreur sur la personne. Excuses longues et sincères.",
+                    E(new GrowStat(PlynlingStat.Courage), new ApplyModifier("fired_up")), E(new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Boldness, 2)), Stress(("craven", 20))),
+                Try("talk", "Retrouver le lucane avant l'aube, et s'expliquer", new EventChallenge(PlynlingStat.Diplomacy, 8),
+                    "{A} trouve le lucane et pose trois questions. À la troisième, le lucane comprend que l'insulte venait de quelqu'un d'autre, qui portait le même chapeau. Le lucane offre un thé pour s'excuser. Le thé est très fort.",
+                    "{A} s'explique. Le lucane écoute, hoche la tête, et répond : « Demain. À l'aube. » Le lendemain, le lucane ne vient pas : le lucane a fini par comprendre tout seul, et a beaucoup trop honte.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Nothing, Ai((AiAxis.Sociability, 1), (AiAxis.Rationality, 1))),
+                Plain("champion", "Envoyer un champion : l'escargot",
+                    "L'escargot accepte d'être le champion de {A}. À l'aube, l'escargot part vers la souche. Le lucane attend une heure, puis deux. L'escargot arrive à midi. Le lucane, épuisé d'attendre, déclare forfait.",
+                    E(new GrowStat(PlynlingStat.Intrigue)), Ai((AiAxis.Rationality, 1), (AiAxis.Boldness, -1))),
+            }),
+
+        new EventDef("grown_portrait", EventType.Pulse, Grown, "Le portrait du café",
+            "Une hermine peintre est de passage au village, avec un chevalet et une boîte de pinceaux. Le café veut un portrait pour son mur, et la tortue a choisi le modèle : {A}. La séance commence dans une heure. L'hermine taille déjà ses crayons.",
+            new[]
+            {
+                Plain("noble", "Prendre la pose la plus noble possible",
+                    "{A} prend la pose : menton levé, patte sur le cœur, regard au loin. Trois heures plus tard, le portrait est magnifique, et {A} ne sent plus sa nuque. Le tableau trône au café, et les clients le saluent en entrant.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Boldness, 1), (AiAxis.Sociability, 1)), Stress(("humble", 15))),
+                Plain("usual", "Faire comme d'habitude, sans poser",
+                    "{A} boit son chocolat, lit le journal, chasse une miette. L'hermine peint tout. Le portrait est si ressemblant que l'escargot, en le voyant, dit bonjour au tableau, et attend la réponse.",
+                    E(new ApplyModifier("light_heart")), Ai((AiAxis.Rationality, 1))),
+                Try("still", "Tenir trois heures sans bouger", new EventChallenge(PlynlingStat.Stewardship, 8),
+                    "{A} ne bouge pas. Pas un cil. Trois heures. L'hermine, impressionnée, offre à {A} une esquisse, avec une dédicace : « Au modèle le plus patient de la vallée ».",
+                    "Au bout de dix minutes, le nez de {A} gratte. Au bout de vingt, l'oreille. Le portrait final montre {A} en train de se gratter, en plein mouvement, et c'est de loin le plus vivant de tout le café.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new LiftNeed(Need.Happiness, 0.15)), E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Rationality, 1), (AiAxis.Energy, -1))),
+            }),
+
+        // ---- wave 8, second batch: ancien
+        // les mémoires (CK3's commissioned books: the first page, the visitors, the reading)
+        new EventDef("elder_memoirs", EventType.Pulse, Elder, "Les mémoires",
+            "La chouette a offert à {A} un gros cahier relié, aux pages blanches. « Tes mémoires. Avant que tout s'envole. » Le cahier attend sur la table depuis une semaine. Ce matin, {A} débouche l'encrier. Reste à choisir par où commencer.",
+            new[]
+            {
+                Plain("start", "Commencer par le tout début",
+                    "{A} écrit : « Je suis {a:né|née} un mardi, d'après la rumeur. » Puis la suite vient toute seule : la première flaque, l'escargot, le héron. Le soir, quinze pages. La main tremble un peu. Pas les souvenirs.",
+                    E(new GrowStat(PlynlingStat.Learning), new FollowUp("elder_memoirs_visitors", 48, 96)), Ai((AiAxis.Rationality, 1))),
+                Plain("best", "Commencer par le plus beau souvenir",
+                    "{A} ferme les yeux, choisit, et écrit le plus beau souvenir en premier, au cas où. Le reste suivra, dans le désordre. La vraie vie aussi était dans le désordre.",
+                    E(new ApplyModifier("soothed"), new FollowUp("elder_memoirs_visitors", 48, 96)), Ai((AiAxis.Compassion, 1))),
+                Plain("embellish", "Embellir un peu. Beaucoup",
+                    "{A} écrit que la carpe dorée était grande comme une barque, que l'orage a duré dix jours, et que le héron, un jour, a ri. Le héron, qui lit par-dessus l'épaule, conteste le dernier point, très sèchement.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new FollowUp("elder_memoirs_visitors", 48, 96)), Ai((AiAxis.Honor, -1), (AiAxis.Boldness, 1)), Stress(("honest", 15))),
+            }),
+
+        new EventDef("elder_memoirs_visitors", EventType.FollowUp, AnyStage, "Les visiteurs",
+            "La nouvelle a fait le tour du village : {A} écrit ses mémoires. Depuis, on frappe à la porte tous les jours. L'ours voudrait savoir s'y trouver, la tortue a « deux ou trois précisions », et l'escargot a apporté une liste de ses propres exploits, longue de quatre pages.",
+            new[]
+            {
+                Plain("everyone", "Faire une place à tout le monde",
+                    "{A} écoute tout le monde, note tout, et ajoute un chapitre par visiteur. Les mémoires de {A} deviennent celles du village entier. Le cahier ne suffit plus. La chouette en apporte un deuxième, sans rien dire.",
+                    E(new ApplyModifier("cherished"), new FollowUp("elder_memoirs_reading", 72, 120)), Ai((AiAxis.Sociability, 2))),
+                Plain("sign", "Accrocher un écriteau : « Mémoires en cours »",
+                    "{A} accroche un écriteau sur la porte : « Mémoires en cours. Revenez au prochain chapitre. » Le village respecte l'écriteau, à peu près. Seul l'escargot attend devant, avec sa liste, toute la semaine.",
+                    E(new GrowStat(PlynlingStat.Learning), new FollowUp("elder_memoirs_reading", 72, 120)), Ai((AiAxis.Rationality, 1), (AiAxis.Sociability, -1))),
+            }),
+
+        new EventDef("elder_memoirs_reading", EventType.FollowUp, AnyStage, "La lecture",
+            "Les mémoires sont finies. La chouette a organisé une lecture à la bibliothèque, et pour une fois, personne ne dit « chut ». Le village est là, au complet. {A} ouvre le cahier à la première page, et s'éclaircit la voix. Au premier rang, le héron s'est même assis.",
+            new[]
+            {
+                Plain("all", "Tout lire, depuis le début",
+                    "{A} lit pendant trois heures. On rit, on pleure, on proteste (l'ours), on corrige (la tortue). À la dernière page, le silence dure longtemps. Puis le héron se lève et, pour la première fois de mémoire de village, applaudit.",
+                    E(new ApplyModifier("cherished"), new LiftNeed(Need.Happiness, 0.2)), Ai((AiAxis.Sociability, 2))),
+                Plain("library", "Confier le cahier à la bibliothèque, sans le lire",
+                    "{A} pose le cahier sur le pupitre et le tend à la chouette : « Pour la réserve. Pour plus tard. » La chouette le range avec les livres que personne n'a le droit de lire, et y colle une étiquette : « À ouvrir quand on aura besoin de se souvenir. »",
+                    E(new ApplyModifier("clear_conscience"), new ApplyModifier("soothed")), Ai((AiAxis.Compassion, 1), (AiAxis.Rationality, 1))),
+                Try("chapter", "Lire un seul chapitre, le plus important", new EventChallenge(PlynlingStat.Diplomacy, 8),
+                    "{A} choisit un seul chapitre : un matin ordinaire, au café, avec la tortue. Rien ne s'y passe. Tout le monde pleure. Au fond, la tortue sort son mouchoir propre, et le garde à la main longtemps.",
+                    "{A} choisit un chapitre, puis un autre, puis s'aperçoit que tous sont les plus importants. La lecture dure jusqu'à minuit. Personne ne part.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new ApplyModifier("cherished")), E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Rationality, 1), (AiAxis.Sociability, 1))),
+            }),
+
+        new EventDef("elder_acorn", EventType.Pulse, Elder, "Le gland",
+            "{A} a ramassé un gland, ce matin, au pied du vieux chêne. Un beau gland, lisse, bien rond. Un chêne met cent ans à devenir grand. {A} retourne le gland dans sa patte, longtemps.",
+            new[]
+            {
+                Plain("plant", "Le planter quand même, au milieu de la place",
+                    "{A} plante le gland au milieu de la place, l'arrose, et plante à côté un petit panneau : « Pour plus tard. » Les petits du village viennent l'arroser à tour de rôle. Dans cent ans, quelqu'un s'assiéra à son ombre sans savoir. C'est très bien comme ça.",
+                    E(new ApplyModifier("clear_conscience"), new ApplyModifier("soothed")), Ai((AiAxis.Compassion, 2))),
+                Plain("pocket", "Le garder dans sa poche",
+                    "Le gland va dans la poche, et y reste. Parfois, {A} le roule entre deux doigts en marchant. Ça ne porte pas spécialement bonheur. Mais ça rappelle qu'on peut toujours commencer quelque chose.",
+                    E(new GiveItem("col.gland")), Ai((AiAxis.Rationality, 1))),
+                Plain("give", "Le donner au plus petit du village",
+                    "{A} donne le gland au plus petit du village, avec une seule consigne : « Plante-le le jour où tu en auras envie. » Le petit le serre dans sa patte comme un trésor, et court le montrer à tout le monde.",
+                    E(new LiftNeed(Need.Happiness, 0.2), new ApplyModifier("cherished")), Ai((AiAxis.Compassion, 1), (AiAxis.Sociability, 1))),
+            }),
+
+        // ==== wave 8, short events: one scene, two or three quick choices, no sequel (CK3's yearly flavour
+        // events: Comet Sighted!, Peek-a-boo!, The Flower Thief, Snide Remarks, Lost and Found, Old Regrets…)
+
+        // ---- bébé
+        new EventDef("baby_comet", EventType.Pulse, Baby, "La comète",
+            "Ce soir, une étoile à longue traîne traverse le ciel, très lentement. Tout le village est dehors, le nez en l'air. {A} n'a jamais rien vu d'aussi beau, ni d'aussi long.",
+            new[]
+            {
+                Plain("wish", "Faire un vœu, très fort",
+                    "{A} fait un vœu en serrant les poings si fort que les oreilles tremblent. Le vœu reste secret. Le lendemain, {A} vérifie trois fois. Pas encore. Mais bientôt.",
+                    E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Compassion, 1))),
+                Plain("chase", "Courir derrière la comète",
+                    "{A} court derrière la comète jusqu'au bout du champ. La comète gagne. {A} rentre {a:essoufflé|essoufflée}, et très {a:fier|fière} d'avoir fait la course avec une comète.",
+                    E(new GrowStat(PlynlingStat.Courage)), Ai((AiAxis.Energy, 2))),
+                Plain("owl", "Demander à la chouette ce que c'est",
+                    "La chouette explique : une boule de glace qui voyage, et qui repassera dans soixante-seize ans. {A} décide de l'attendre. Ça laisse le temps de goûter.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 2))),
+            }),
+
+        new EventDef("baby_tower", EventType.Pulse, Baby, "La tour de cubes",
+            "{A} construit une tour de cubes en bois. La tour arrive déjà aux genoux de l'ours. Un dernier cube attend, dans la patte de {A}.",
+            new[]
+            {
+                Try("top", "Poser le dernier cube tout en haut", new EventChallenge(PlynlingStat.Stewardship, 4),
+                    "Le cube tient. La tour tient. {A} ne respire plus pendant une minute entière, puis applaudit si fort que tout s'écroule. Ça valait le coup.",
+                    "La tour penche, hésite, et s'effondre dans un fracas magnifique. {A} trouve ça encore mieux.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), E(new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Rationality, 1))),
+                Plain("crash", "Tout renverser d'un coup de patte",
+                    "{A} donne un grand coup de patte. Les cubes volent partout, un atterrit dans la soupe. C'était le but depuis le début.",
+                    E(new GrowStat(PlynlingStat.Courage)), Ai((AiAxis.Energy, 1), (AiAxis.Boldness, 1))),
+            }),
+
+        new EventDef("baby_peekaboo", EventType.Pulse, Baby, "Coucou, caché",
+            "{A} a trouvé la meilleure cachette du monde : derrière le rideau. On voit les pieds qui dépassent. Le hérisson, en visite, fait semblant de chercher partout.",
+            new[]
+            {
+                Plain("still", "Ne surtout pas bouger",
+                    "{A} ne bouge pas pendant dix minutes. Le hérisson cherche sous le tapis, dans la théière, derrière le pain, puis abandonne, très déçu. {A} sort en triomphe.",
+                    E(new GrowStat(PlynlingStat.Intrigue)), Ai((AiAxis.Rationality, 1))),
+                Plain("giggle", "Pouffer de rire",
+                    "Le rideau pouffe. Le hérisson s'arrête et tend l'oreille. « Quel drôle de rideau. » Le rideau éclate de rire.",
+                    E(new LiftNeed(Need.Happiness, 0.2)), Ai((AiAxis.Sociability, 1))),
+                Plain("boo", "Surgir d'un coup : « Coucou ! »",
+                    "{A} surgit : « COUCOU ! » Le hérisson fait un bond, perd une épine, et l'offre à {A} en souvenir.",
+                    E(new GrowStat(PlynlingStat.Courage)), Ai((AiAxis.Boldness, 2))),
+            }),
+
+        new EventDef("baby_sweets", EventType.Pulse, Baby, "Les bonbons du haut",
+            "Sur l'étagère du haut trône le bocal de bonbons au miel. {A} a déjà empilé deux coussins et un tabouret. Personne ne regarde.",
+            new[]
+            {
+                Try("climb", "Grimper, en silence", new EventChallenge(PlynlingStat.Intrigue, 4),
+                    "{A} grimpe, attrape un bonbon, redescend, remet tout en place. Crime parfait. Sauf la petite trace de miel sur le nez.",
+                    "Le tabouret vacille, les coussins glissent, le bocal tombe. Pas un bonbon de cassé. Mais beaucoup d'explications à donner.",
+                    E(new GrowStat(PlynlingStat.Intrigue)), Nothing, Ai((AiAxis.Greed, 1), (AiAxis.Boldness, 1))),
+                Plain("ask", "Demander poliment",
+                    "{A} demande, très poliment, avec la formule magique. Ça marche. Deux bonbons, même, pour la politesse.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new LiftNeed(Need.Hunger, 0.1)), Ai((AiAxis.Honor, 1), (AiAxis.Sociability, 1))),
+            }),
+
+        new EventDef("baby_doll", EventType.Pulse, Baby, "La poupée oubliée",
+            "Sur un banc du parc, quelqu'un a oublié une poupée de chiffon. La poupée regarde le ciel de ses yeux en boutons, l'air un peu triste. Le soir tombe.",
+            new[]
+            {
+                Plain("stay", "Rester à côté, pour lui tenir compagnie",
+                    "{A} s'assoit à côté et raconte des histoires à la poupée, jusqu'à ce qu'une petite souris arrive en courant, en larmes. La souris serre la poupée, puis {A}, puis la poupée encore.",
+                    E(new ApplyModifier("cherished")), Ai((AiAxis.Compassion, 2))),
+                Plain("kiosk", "La porter au kiosque des objets trouvés",
+                    "L'ours range la poupée sur l'étagère des objets trouvés, entre un parapluie et une chaussette orpheline. « Quelqu'un viendra. » Quelqu'un vient, le lendemain matin.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Honor, 1))),
+            }),
+
+        new EventDef("baby_funny_words", EventType.Pulse, Baby, "Vieille comme le pain",
+            "Au café, {A} annonce à voix haute que la tortue est « vieille comme le pain ». Silence. Toutes les têtes se tournent vers la tortue.",
+            new[]
+            {
+                Plain("explain", "Expliquer : le pain, c'est vieux, et c'est le meilleur",
+                    "« Le pain, c'est très vieux, et c'est le meilleur. » La tortue réfléchit, puis pose une tartine devant {A}. Le compliment a été accepté.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new LiftNeed(Need.Hunger, 0.15)), Ai((AiAxis.Sociability, 1))),
+                Plain("hide", "Disparaître sous la table",
+                    "{A} disparaît sous la table. La tortue rit si fort que les tasses tremblent. « Vieille comme le pain. Je vais le faire broder. »",
+                    E(new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Boldness, -1))),
+            }),
+
+        new EventDef("baby_pirate", EventType.Pulse, Baby, "Le capitaine du bac à sable",
+            "Le bac à sable est devenu un océan, la pelle un mât, et {A} le capitaine. À l'horizon avance l'escargot : c'est évidemment un navire ennemi.",
+            new[]
+            {
+                Plain("board", "À l'abordage !",
+                    "{A} aborde l'escargot en criant. L'escargot, beau joueur, se rend, et paie la rançon : une feuille de salade, un peu mâchée.",
+                    E(new GrowStat(PlynlingStat.Courage)), Ai((AiAxis.Boldness, 2))),
+                Plain("treaty", "Proposer un traité de paix",
+                    "{A} et l'escargot signent un traité dans le sable : le bac est partagé. L'escargot reste jusqu'au soir, à faire le phare.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Compassion, 1), (AiAxis.Sociability, 1))),
+                Plain("dig", "Creuser pour trouver le trésor",
+                    "{A} creuse, creuse, et trouve une bille bleue, enterrée là par un autre capitaine, autrefois.",
+                    E(new GiveItem("col.bille")), Ai((AiAxis.Greed, 1), (AiAxis.Energy, 1))),
+            }),
+
+        new EventDef("baby_nightmare", EventType.Pulse, Baby, "Le mauvais rêve",
+            "{A} se réveille en pleine nuit, le cœur battant : dans le rêve, une limace géante mangeait toutes les tartines du monde. La chambre est très noire.",
+            new[]
+            {
+                Plain("candle", "Allumer la bougie, et vérifier sous le lit",
+                    "Sous le lit : une chaussette, un gland, aucune limace. {A} se rendort, la bougie allumée, juste au cas où.",
+                    E(new GrowStat(PlynlingStat.Courage)), Ai((AiAxis.Rationality, 1), (AiAxis.Boldness, 1))),
+                Plain("owl", "Aller frapper chez la chouette, à côté",
+                    "La chouette ouvre, écoute, et explique que les limaces géantes ne mangent pas de tartines, seulement des nuages. C'est très rassurant. {A} dort jusqu'au matin.",
+                    E(new ApplyModifier("well_rested")), Ai((AiAxis.Sociability, 1))),
+                Plain("toast", "Manger une tartine, pour la sauver",
+                    "{A} file à la cuisine et mange une tartine, pour qu'au moins celle-là soit sauvée. Mission accomplie. Retour au lit, le ventre content.",
+                    E(new LiftNeed(Need.Hunger, 0.15)), Ai((AiAxis.Greed, 1))),
+            }),
+
+        new EventDef("baby_slope", EventType.Pulse, Baby, "La pente",
+            "Derrière la gare, une longue pente d'herbe descend jusqu'à la rivière. {A} la regarde depuis le haut. La pente, en bas, a l'air de faire signe.",
+            new[]
+            {
+                Try("roll", "Se laisser rouler jusqu'en bas", new EventChallenge(PlynlingStat.Courage, 4),
+                    "{A} roule, roule, roule, et s'arrête pile au bord de l'eau, la tête qui tourne et le ventre qui rit. Puis remonte, pour recommencer onze fois.",
+                    "{A} roule, rebondit sur une motte, et termine dans les roseaux, {a:coiffé|coiffée} d'un nénuphar. La grenouille du coin, propriétaire du nénuphar, réclame qu'on le rende.",
+                    E(new GrowStat(PlynlingStat.Courage), new LiftNeed(Need.Happiness, 0.1)), Nothing, Ai((AiAxis.Boldness, 1), (AiAxis.Energy, 1))),
+                Plain("sled", "Descendre sur une feuille, comme en traîneau",
+                    "{A} trouve une grande feuille de rhubarbe et descend dessus comme sur un traîneau. Le soir, la moitié des petits du village fait la queue avec sa feuille.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Rationality, 1), (AiAxis.Energy, 1))),
+            }),
+
+        new EventDef("baby_apple_tree", EventType.Pulse, Baby, "Tout en haut du pommier",
+            "{A} a grimpé dans le pommier pour attraper une pomme. La pomme est attrapée. Le problème, c'est la descente : la branche du bas paraît maintenant très, très loin.",
+            new[]
+            {
+                Plain("call", "Appeler à l'aide",
+                    "{A} appelle. L'ours arrive, tend les bras, et {A} saute dedans. L'ours fait semblant que {A} pèse très lourd, puis dépose {A} par terre, avec la pomme.",
+                    E(new LiftNeed(Need.Hunger, 0.1)), Ai((AiAxis.Sociability, 1))),
+                Try("down", "Redescendre sans aide, branche par branche", new EventChallenge(PlynlingStat.Courage, 4),
+                    "{A} redescend, une branche, puis une autre, la pomme entre les dents. En bas, {A} croque la pomme comme une médaille.",
+                    "{A} rate la dernière branche et atterrit dans un tas de feuilles mortes, la pomme toujours en patte. Bilan : zéro dégât, une pomme.",
+                    E(new GrowStat(PlynlingStat.Courage)), E(new LiftNeed(Need.Hunger, 0.1)), Ai((AiAxis.Boldness, 2))),
+                Plain("wait", "Attendre que le pommier se baisse",
+                    "{A} attend. Le pommier ne se baisse pas. Au bout d'une heure, le héron passe, tend son long cou, et dépose {A} en bas, comme on cueille un fruit.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Energy, -1), (AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("baby_secret_language", EventType.Pulse, Baby, "La langue secrète",
+            "{A} a inventé une langue que personne d'autre ne parle. « Blouf », ça veut dire bonjour. « Plimpli », ça veut dire biscuit. Le problème, c'est que personne ne comprend les commandes au café.",
+            new[]
+            {
+                Plain("teach", "Apprendre la langue à la tortue",
+                    "La tortue apprend vite : au bout d'une semaine, la tortue sert les « plimpli » sans qu'on les demande deux fois. C'est sa première langue étrangère.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Sociability, 1))),
+                Plain("dictionary", "Écrire un dictionnaire",
+                    "{A} écrit un dictionnaire de onze mots, avec des dessins. La chouette le range à la bibliothèque, au rayon « langues rares ».",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 1))),
+                Plain("biscuit", "Redemander un biscuit, avec les mots de tout le monde",
+                    "{A} redemande un biscuit, en vrai français. Ça marche tout de suite. Les langues secrètes, c'est joli, mais les biscuits, c'est mieux.",
+                    E(new LiftNeed(Need.Hunger, 0.1)), Ai((AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("baby_butterfly", EventType.Pulse, Baby, "Le papillon dans le bocal",
+            "{A} a attrapé un papillon dans un bocal. Le papillon est bleu, magnifique, et cogne doucement contre le verre.",
+            new[]
+            {
+                Plain("free", "Ouvrir le bocal",
+                    "{A} ouvre le bocal. Le papillon reste une seconde sur le bord, puis s'envole, fait un tour au-dessus de {A}, et s'en va. Ça ressemblait beaucoup à un merci.",
+                    E(new ApplyModifier("clear_conscience")), Ai((AiAxis.Compassion, 2))),
+                Plain("draw", "Le dessiner d'abord, puis le libérer",
+                    "{A} dessine le papillon, toutes les taches, une par une. Puis ouvre le bocal. Le dessin est accroché au mur. Le papillon, au ciel.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 1), (AiAxis.Compassion, 1))),
+            }),
+
+        new EventDef("baby_market", EventType.Pulse, Baby, "Un caillou au marché",
+            "Pour la première fois, {A} va au marché avec un caillou à dépenser. Un seul. Les étals sont immenses, et tout coûte un caillou.",
+            new[]
+            {
+                Plain("honey", "Acheter un bâton de miel",
+                    "{A} achète un bâton de miel et le mange très lentement, pour que le caillou dure longtemps.",
+                    E(new LiftNeed(Need.Hunger, 0.15)), Ai((AiAxis.Greed, 1))),
+                Plain("flower", "Acheter une fleur, pour l'offrir",
+                    "{A} achète une fleur et l'offre au premier qui passe : le hérisson, qui ne sait pas du tout quoi en faire, et la garde toute la journée à la boutonnière.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Compassion, 2))),
+                Plain("save", "Garder le caillou, pour plus tard",
+                    "{A} garde le caillou au fond de la poche, et rentre sans rien. Le soir, le caillou est toujours là. C'est une sensation très nouvelle.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Rationality, 1), (AiAxis.Greed, 1))),
+            }),
+
+        new EventDef("baby_rainy_day", EventType.Pulse, Baby, "Le jour de pluie",
+            "La pluie tombe depuis ce matin, sans arrêt. Pas de jardin, pas de flaque, pas de copains. {A} colle le nez à la vitre, et soupire très fort, pour que tout le monde entende.",
+            new[]
+            {
+                Plain("fort", "Construire une cabane de couvertures",
+                    "{A} construit une cabane avec toutes les couvertures de la maison et deux chaises. À l'intérieur, le soleil est revenu, au moins dans la tête.",
+                    E(new LiftNeed(Need.Happiness, 0.2)), Ai((AiAxis.Energy, 1))),
+                Plain("drops", "Faire la course des gouttes sur la vitre",
+                    "{A} choisit une goutte, l'encourage, la regarde descendre. La goutte gagne. Puis perd. Puis regagne. Le championnat dure tout l'après-midi.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 1))),
+                Plain("out", "Sortir quand même, en ciré",
+                    "{A} sort en ciré jaune et saute dans toutes les flaques du village. Le jour de pluie devient le meilleur jour de la semaine.",
+                    E(new LiftNeed(Need.Happiness, 0.2), new ApplyModifier("muddy_paws")), Ai((AiAxis.Boldness, 1), (AiAxis.Energy, 1))),
+            }),
+
+        new EventDef("baby_bear_birthday", EventType.Pulse, Baby, "L'anniversaire de l'ours",
+            "C'est l'anniversaire de l'ours. Tout le village a apporté un cadeau. {A} n'a rien, et la fête commence dans une heure.",
+            new[]
+            {
+                Plain("draw", "Faire un dessin de l'ours",
+                    "{A} dessine l'ours, avec une couronne et beaucoup trop de dents. L'ours encadre le dessin et l'accroche au-dessus de la caisse. Les autres cadeaux vont au placard.",
+                    E(new ApplyModifier("cherished")), Ai((AiAxis.Compassion, 1))),
+                Plain("song", "Inventer une chanson",
+                    "{A} chante une chanson inventée, qui fait rimer « ours » avec « course », « douce » et « mousse ». L'ours la fait rechanter quatre fois.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Sociability, 2))),
+                Plain("pebble", "Offrir son plus beau caillou",
+                    "{A} offre son plus beau caillou, rond et blanc. L'ours le reçoit comme un diamant, et le pose sur le comptoir, à côté de la caisse, pour toujours.",
+                    E(new ApplyModifier("light_heart")), Ai((AiAxis.Compassion, 2))),
+            }),
+
+        new EventDef("baby_puppy", EventType.Pulse, Baby, "Le chiot perdu",
+            "Un chiot tout rond suit {A} depuis la boulangerie. Quand {A} s'arrête, le chiot s'arrête. Quand {A} repart, le chiot repart. Le chiot n'a pas de collier.",
+            new[]
+            {
+                Plain("home", "Chercher sa maison",
+                    "{A} et le chiot font le tour du village. À la ferme d'en haut, une grande chienne attend sur le seuil, et lèche le chiot de la tête aux pieds. {A} reçoit une part de tarte pour la peine.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new LiftNeed(Need.Hunger, 0.15)), Ai((AiAxis.Compassion, 1), (AiAxis.Honor, 1))),
+                Plain("play", "Jouer avec le chiot jusqu'au soir",
+                    "{A} et le chiot jouent à la balle, au bâton, à la course. Le soir, le chiot rentre chez soi tout seul : le chemin, le chiot le connaissait depuis le début.",
+                    E(new LiftNeed(Need.Happiness, 0.2)), Ai((AiAxis.Energy, 2))),
+            }),
+
+        new EventDef("baby_daisy_crown", EventType.Pulse, Baby, "La couronne de pâquerettes",
+            "{A} a tressé une couronne de pâquerettes. La couronne est un peu de travers, mais c'est la première. Reste à décider qui la portera.",
+            new[]
+            {
+                Plain("wear", "La porter soi-même, toute la journée",
+                    "{A} porte la couronne toute la journée, et salue le village d'un geste très royal. Le village salue en retour. Le moineau fait même une révérence.",
+                    E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Boldness, 1))),
+                Plain("heron", "La poser sur la tête du héron",
+                    "{A} grimpe sur le parapet et pose la couronne sur la tête du héron. Le héron ne bouge pas. Le héron la garde jusqu'au soir, très digne.",
+                    E(new ApplyModifier("cherished")), Ai((AiAxis.Compassion, 1), (AiAxis.Boldness, 1))),
+            }),
+
+        new EventDef("baby_name", EventType.Pulse, Baby, "Son nom en lettres",
+            "{A} vient d'apprendre à écrire son nom. Toutes les lettres, dans le bon ordre, presque. Le crayon brûle d'en écrire plus.",
+            new[]
+            {
+                Plain("everywhere", "L'écrire partout",
+                    "{A} écrit son nom sur le mur, sur la porte, et sur le dos du blaireau qui faisait la sieste. Le blaireau porte le nom de {A} une semaine entière, sans le savoir.",
+                    E(new GrowStat(PlynlingStat.Intrigue)), Ai((AiAxis.Boldness, 1))),
+                Plain("letter", "Écrire une lettre à la chouette",
+                    "{A} écrit une lettre à la chouette : son nom, et un dessin. La chouette répond le lendemain, avec son propre nom et un dessin aussi, plus raté.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Sociability, 1), (AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("baby_thunder", EventType.Pulse, Baby, "Le tonnerre",
+            "Un coup de tonnerre fait trembler les vitres. Puis un autre. {A} a déjà disparu sous la couverture. Seul le bout du nez dépasse.",
+            new[]
+            {
+                Plain("count", "Compter entre l'éclair et le tonnerre",
+                    "La chouette l'a dit : on compte entre l'éclair et le tonnerre, et plus on compte loin, plus l'orage s'éloigne. Un, deux, trois… sept… douze. L'orage s'en va. {A} a gagné.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 1))),
+                Plain("drum", "Taper sur une casserole, plus fort que le tonnerre",
+                    "{A} tape sur une casserole à chaque coup de tonnerre. Le tonnerre finit par se taire. Les voisins aussi, depuis longtemps.",
+                    E(new GrowStat(PlynlingStat.Courage)), Ai((AiAxis.Boldness, 2))),
+                Plain("blanket", "Rester sous la couverture",
+                    "{A} reste sous la couverture. La couverture tient bon. Quand {A} ressort, le soleil est là, et l'orage n'a rien pu faire contre la couverture.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Boldness, -1))),
+            }),
+
+        new EventDef("baby_shadow", EventType.Pulse, Baby, "La chose qui suit",
+            "Ce matin, {A} a découvert que quelque chose suit {A} partout, en silence, sur le sol. Quand {A} lève une patte, la chose lève une patte. C'est très suspect.",
+            new[]
+            {
+                Plain("lose", "Essayer de la semer",
+                    "{A} court, tourne, se cache derrière un arbre. À l'ombre de l'arbre, la chose disparaît. Victoire ! Puis {A} ressort au soleil.",
+                    E(new GrowStat(PlynlingStat.Intrigue)), Ai((AiAxis.Boldness, 1), (AiAxis.Energy, 1))),
+                Plain("friend", "Lui proposer d'être amis",
+                    "{A} propose. La chose accepte, évidemment. Depuis, {A} et son ombre font tout ensemble, sauf la nuit, où l'ombre prend congé.",
+                    E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Sociability, 1))),
+                Plain("ask", "Demander à la chouette d'où vient la chose",
+                    "La chouette explique le soleil, la lumière, les ombres. {A} écoute très sérieusement, puis demande si l'ombre mange. La chouette doit admettre que personne ne sait.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 2)), gate: new TraitGate("curious")),
+            }),
+
+        // ---- ado
+        new EventDef("teen_catapult", EventType.Pulse, Teen, "La catapulte",
+            "Avec une cuillère, un élastique et une planche, {A} a construit une catapulte. La catapulte lance des glands très loin. Personne ne sait encore exactement où.",
+            new[]
+            {
+                Try("aim", "Viser le seau, au bout du jardin", new EventChallenge(PlynlingStat.Stewardship, 6),
+                    "Le gland atterrit pile dans le seau. Encore : pile dans le seau. Le blaireau, impressionné, commande une catapulte pour son magasin de jouets.",
+                    "Le gland part de travers, traverse la haie, et rebondit sur le chapeau du hérisson. Le hérisson regarde le gland, puis la haie, puis note quelque chose dans son carnet.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new GiveCailloux(5)), Nothing, Ai((AiAxis.Rationality, 1), (AiAxis.Energy, 1))),
+                Plain("far", "Lancer le plus loin possible",
+                    "Le gland s'envole au-dessus du toit, de la gare, de la rivière. On ne le retrouvera jamais. Un chêne poussera peut-être un jour, très loin, grâce à {A}.",
+                    E(new GrowStat(PlynlingStat.Courage)), Ai((AiAxis.Boldness, 2))),
+                Plain("dismantle", "Démonter la catapulte avant l'accident",
+                    "{A} démonte la catapulte et rend la cuillère à la cuisine. Personne ne saura jamais ce qui a failli arriver. C'est souvent le mieux.",
+                    E(new ApplyModifier("clear_conscience")), Ai((AiAxis.Rationality, 1), (AiAxis.Honor, 1))),
+            }),
+
+        new EventDef("teen_experiment", EventType.Pulse, Teen, "L'expérience",
+            "Dans la cuisine, {A} mélange du vinaigre, du bicarbonate et un peu de jus de mûre, pour voir. Le bol se met à mousser. Beaucoup. De plus en plus.",
+            new[]
+            {
+                Plain("notes", "Observer et prendre des notes",
+                    "La mousse violette monte, déborde, et coule jusqu'au plancher. {A} note tout : le temps, la couleur, la hauteur. La chouette, à qui {A} montre le carnet, en demande une copie.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 2))),
+                Plain("lid", "Poser vite un couvercle",
+                    "{A} pose un couvercle. Le couvercle s'envole jusqu'au plafond, et y reste collé. Le couvercle y est toujours. On s'y est habitué.",
+                    E(new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Boldness, 1))),
+                Plain("show", "Appeler tout le monde pour regarder",
+                    "{A} appelle les voisins. Le temps que les voisins arrivent, la mousse a envahi la cuisine. On applaudit quand même, en pataugeant.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Sociability, 2))),
+            }),
+
+        new EventDef("teen_flute", EventType.Pulse, Teen, "La flûte du grenier",
+            "{A} a trouvé une vieille flûte au grenier. Personne ne sait en jouer. Ça n'a jamais arrêté personne.",
+            new[]
+            {
+                Try("practice", "S'entraîner tous les soirs", new EventChallenge(PlynlingStat.Learning, 6),
+                    "Au bout d'une semaine, {A} joue un air entier, presque juste. Le moineau s'arrête de chanter pour écouter. C'est un compliment.",
+                    "Au bout d'une semaine, {A} joue un air entier. Les chats du quartier aussi, en chœur. Les voisins proposent des leçons, avec insistance.",
+                    E(new GrowStat(PlynlingStat.Learning)), Nothing, Ai((AiAxis.Rationality, 1))),
+                Plain("window", "Jouer à la fenêtre, pour tout le village",
+                    "{A} joue à la fenêtre, très fort, très faux, avec un enthousiasme magnifique. Le village ferme ses volets, un par un. Seul l'escargot reste, et applaudit à la fin, une heure plus tard.",
+                    E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Sociability, 1), (AiAxis.Boldness, 1))),
+            }),
+
+        new EventDef("teen_flower_thief", EventType.Pulse, Teen, "Le voleur de fleurs",
+            "Chaque matin, une fleur de plus disparaît du jardin de {A}. Proprement coupée, sans un brin par terre.",
+            new[]
+            {
+                Try("watch", "Guetter à l'aube, derrière la fenêtre", new EventChallenge(PlynlingStat.Intrigue, 6),
+                    "À l'aube, un jeune lapin se glisse dans le jardin, coupe une fleur, et file… chez la vieille taupe aveugle, à qui le lapin apporte une fleur chaque matin, pour l'odeur. {A} plante une rangée de plus, exprès.",
+                    "{A} guette, et s'endort à l'aube. Au réveil, une fleur manque, et à sa place, un petit mot : « Merci. C'est pour la taupe. »",
+                    E(new GrowStat(PlynlingStat.Intrigue), new ApplyModifier("cherished")), E(new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Rationality, 1))),
+                Plain("sign", "Planter une pancarte : « Défense de cueillir »",
+                    "{A} plante une pancarte. Le lendemain, une fleur manque, et la pancarte a été complétée : « Défense de cueillir (sauf pour la taupe) ».",
+                    E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Honor, 1))),
+            }),
+
+        new EventDef("teen_arm_wrestling", EventType.Pulse, Teen, "Le bras de fer",
+            "Au café, {B} pose le coude sur la table et tend la patte à {A}. « Bras de fer. Le perdant paie les chocolats. » Le café entier se retourne.",
+            new[]
+            {
+                Try("wrestle", "Accepter, et serrer la patte", new EventChallenge(PlynlingStat.Courage, 6, VsTarget: true),
+                    "{A} gagne, après une minute de grimaces des deux côtés. {B} paie les chocolats en riant, et réclame la revanche pour demain.",
+                    "{B} gagne, d'un coup sec. {A} paie les chocolats. {B} boit la moitié du sien, et pousse le reste vers {A}.",
+                    E(new GrowStat(PlynlingStat.Courage), new AffinityShift(10)), E(new AffinityShift(10)), Ai((AiAxis.Boldness, 2))),
+                Plain("thumbs", "Proposer plutôt un bras de fer… de pouces",
+                    "Le bras de fer de pouces dure vingt minutes et finit en fou rire. Personne ne paie. Le café réclame une finale.",
+                    E(new AffinityShift(15)), Ai((AiAxis.Sociability, 1))),
+            },
+            Target: TargetKind.Known),
+
+        new EventDef("teen_pillow_fight", EventType.Pulse, Teen, "Les polochons",
+            "{A} dort chez {B}, pour la première fois. Minuit. Les lumières sont éteintes depuis longtemps. Dans le noir, un oreiller vole, et atterrit sur {A}.",
+            new[]
+            {
+                Plain("fight", "Riposter, de toutes ses forces",
+                    "{A} riposte. La bataille dure une heure, et se termine dans un nuage de plumes. On s'endort au milieu, à bout de souffle.",
+                    E(new AffinityShift(15), new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Energy, 2))),
+                Plain("still", "Faire semblant de dormir",
+                    "{A} ne bouge pas. {B} attend, perplexe, puis s'approche pour vérifier. {A} attrape {B} par surprise, et on rit jusqu'à l'aube.",
+                    E(new GrowStat(PlynlingStat.Intrigue), new AffinityShift(10)), Ai((AiAxis.Rationality, 1), (AiAxis.Boldness, 1))),
+            },
+            Target: TargetKind.Known),
+
+        new EventDef("teen_broken_mirror", EventType.Pulse, Teen, "Le miroir cassé",
+            "{A} a cassé le miroir de l'entrée. « Sept ans de malheur », annonce la pie, l'air de s'y connaître.",
+            new[]
+            {
+                Plain("laugh", "Rire de la superstition",
+                    "{A} rit. Le lendemain, {A} trouve un caillou en forme de cœur. Le surlendemain, une pièce. La pie, vexée, révise ses chiffres.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 2))),
+                Plain("ritual", "Faire le rituel de la pie pour conjurer le sort",
+                    "Le rituel de la pie : tourner trois fois sur soi, toucher du bois, et donner un caillou à la pie. La pie remercie, très sérieusement. Le malheur, en tout cas, ne se montre pas.",
+                    E(new ApplyModifier("light_heart")), Ai((AiAxis.Zeal, 1)), Stress(("cynical", 15))),
+                Plain("mosaic", "Faire une mosaïque avec les morceaux",
+                    "{A} colle les morceaux sur une planche. Le résultat reflète le monde en cent petits bouts. Le café l'accroche au mur.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("teen_slang", EventType.Pulse, Teen, "Tout mirabelle",
+            "Par accident, {A} a dit « c'est tout mirabelle » pour dire que c'était bien. Le lendemain, la moitié des jeunes du village le disent aussi.",
+            new[]
+            {
+                Plain("claim", "Revendiquer l'invention",
+                    "{A} rappelle à qui veut l'entendre qui a dit « tout mirabelle » en premier. Personne ne s'en souvient. Mais tout le monde le dit, et ça, c'est un peu à {A}.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Boldness, 1))),
+                Plain("another", "Inventer une nouvelle expression",
+                    "{A} tente « ça fait pomme ». Ça ne prend pas. Puis « c'est très escargot », pour dire lent. Ça prend tout de suite, au grand déplaisir de l'escargot.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Sociability, 1), (AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("teen_cabbage_hats", EventType.Pulse, Teen, "La mode du chou",
+            "Au village, une nouvelle mode est arrivée : les chapeaux en feuilles de chou. Tous les jeunes en portent un. {A} n'en a pas.",
+            new[]
+            {
+                Plain("make", "Fabriquer le plus beau chapeau de chou",
+                    "{A} fabrique un chapeau de chou à trois étages, avec une plume. Le lendemain, la mode a changé : c'est {A} qui l'a changée.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Sociability, 1), (AiAxis.Boldness, 1))),
+                Plain("refuse", "Refuser la mode, par principe",
+                    "{A} sort tête nue, très dignement. Une semaine plus tard, plus personne ne porte de chou, et {A} est la seule personne du village à n'avoir jamais eu l'air ridicule.",
+                    E(new GrowStat(PlynlingStat.Courage)), Ai((AiAxis.Rationality, 1), (AiAxis.Boldness, 1))),
+                Plain("eat", "En acheter un, et le manger au déjeuner",
+                    "{A} achète un chapeau de chou et le mange au déjeuner. C'est la mode la plus nourrissante de l'année.",
+                    E(new LiftNeed(Need.Hunger, 0.15)), Ai((AiAxis.Greed, 1))),
+            }),
+
+        new EventDef("teen_fence", EventType.Pulse, Teen, "La palissade de la gare",
+            "Quelqu'un a dessiné un énorme escargot à moustache sur la palissade de la gare. Le hérisson, furieux, dévisage tous les jeunes du village, un par un. Son regard s'arrête sur {A}, qui a de la craie sur les doigts. Pour une tout autre raison.",
+            new[]
+            {
+                Try("explain", "Expliquer la craie, calmement", new EventChallenge(PlynlingStat.Diplomacy, 6),
+                    "{A} montre le cahier de géométrie, plein de craie. Le hérisson vérifie, s'excuse, et demande à {A} de l'aider à trouver le vrai coupable. C'était l'escargot, qui voulait son portrait.",
+                    "{A} explique, mais le hérisson ne croit rien. {A} passe l'après-midi à frotter la palissade. Le soir, le vrai coupable passe : l'escargot, qui voulait son portrait.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Nothing, Ai((AiAxis.Honor, 1), (AiAxis.Sociability, 1))),
+                Plain("improve", "Améliorer le dessin, tant qu'à faire",
+                    "{A} ajoute un chapeau, un parapluie et un coucher de soleil. Le hérisson, d'abord furieux, finit par trouver ça « pas mal ». Le dessin reste.",
+                    E(new GrowStat(PlynlingStat.Intrigue)), Ai((AiAxis.Boldness, 1), (AiAxis.Honor, -1))),
+            }),
+
+        new EventDef("teen_seed", EventType.Pulse, Teen, "La graine mystère",
+            "La chouette a donné une graine à chaque jeune du village. Personne ne sait ce qui poussera. {A} a mis la sienne dans un pot, sur le rebord de la fenêtre.",
+            new[]
+            {
+                Plain("care", "S'en occuper chaque jour, avec un carnet",
+                    "Arrosage, soleil, notes. Au bout de dix jours : un petit pied de tomates cerises. Les premières sont pour la chouette.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Rationality, 1))),
+                Plain("talk", "Lui parler tous les soirs",
+                    "{A} raconte sa journée au pot chaque soir. La plante pousse, pousse, et devient une courge rampante qui envahit la cuisine. Les histoires aident peut-être un peu trop.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Sociability, 1), (AiAxis.Compassion, 1))),
+                Plain("forget", "L'oublier un peu",
+                    "{A} oublie le pot. Trois semaines plus tard, une fleur rouge magnifique a poussé, toute seule. Certaines choses poussent mieux quand on ne les regarde pas.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Energy, -1))),
+            }),
+
+        new EventDef("teen_shopping", EventType.Pulse, Teen, "La liste des courses",
+            "Pour la première fois, on a confié à {A} la liste des courses du mois, et la bourse qui va avec. La liste fait deux pages. La bourse, beaucoup moins.",
+            new[]
+            {
+                Try("budget", "Tout acheter, et rapporter la monnaie", new EventChallenge(PlynlingStat.Stewardship, 6),
+                    "{A} négocie les pommes, compare les farines, et rentre avec tout, plus trois cailloux de monnaie, rendus fièrement.",
+                    "{A} achète tout… sauf le sel, oublié. Et deux pots de miel en trop, achetés par erreur. Personne ne s'en plaint vraiment.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), E(new LiftNeed(Need.Hunger, 0.1)), Ai((AiAxis.Rationality, 1))),
+                Plain("treat", "Tout acheter, plus un petit plaisir",
+                    "{A} achète tout, et un chou à la crème, mangé sur le chemin du retour. La liste ne mentionnait pas de chou à la crème. La liste ne l'interdisait pas non plus.",
+                    E(new LiftNeed(Need.Hunger, 0.15)), Ai((AiAxis.Greed, 1)), Stress(("temperate", 10))),
+            }),
+
+        new EventDef("teen_song_bridge", EventType.Pulse, Teen, "La chanson du pont",
+            "{A} chante en traversant le vieux pont. Fort. Très fort. Au milieu du pont, le héron ouvre un œil.",
+            new[]
+            {
+                Plain("louder", "Chanter encore plus fort",
+                    "{A} chante plus fort. Le héron ouvre l'autre œil, puis s'envole sur la rive d'en face. Depuis, chaque fois que {A} approche, le héron change de rive, par précaution.",
+                    E(new GrowStat(PlynlingStat.Courage)), Ai((AiAxis.Boldness, 2))),
+                Plain("duet", "Inviter le héron à chanter aussi",
+                    "Le héron réfléchit, puis pousse un cri long et grave, parfaitement juste. Personne n'avait jamais entendu chanter le héron. {A} non plus.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Sociability, 2))),
+            }),
+
+        new EventDef("teen_boredom", EventType.Pulse, Teen, "L'ennui",
+            "Rien à faire. Tout le monde est occupé, le ciel est gris, et {A} a déjà relu tous ses livres deux fois. L'après-midi s'étire comme un chat.",
+            new[]
+            {
+                Plain("tidy", "Ranger enfin sa chambre",
+                    "{A} range la chambre, par désespoir. Sous le lit : un livre perdu, deux glands et une lettre jamais envoyée. L'après-midi finit en lecture.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Rationality, 1))),
+                Plain("game", "Inventer un jeu",
+                    "{A} invente un jeu avec une balle, un mur et des règles de plus en plus compliquées. Le soir, trois jeunes du village jouent avec {A}. Les règles tiennent sur quatre pages.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Sociability, 1), (AiAxis.Energy, 1))),
+                Plain("nap", "Faire une sieste de quatre heures",
+                    "{A} fait une sieste de quatre heures. Au réveil, c'est déjà le soir, et ce n'est plus l'ennui : c'est le dîner.",
+                    E(new ApplyModifier("well_rested")), Ai((AiAxis.Energy, -2))),
+            }),
+
+        new EventDef("teen_fish_tale", EventType.Pulse, Teen, "Grand comme ça",
+            "Au café, {A} raconte avoir pêché un brochet grand comme ça. Les bras écartés au maximum. Tout le monde se tourne vers l'ours, qui a pêché le vrai brochet du village, l'an dernier.",
+            new[]
+            {
+                Try("bluff", "Maintenir l'histoire, et en rajouter", new EventChallenge(PlynlingStat.Intrigue, 6),
+                    "{A} en rajoute : le brochet parlait, et réclamait un avocat. Le café rit si fort que l'ours oublie de vérifier. L'histoire fait le tour du village avant le soir.",
+                    "« Combien de kilos ? » demande l'ours. {A} dit un chiffre. L'ours dit le sien. Le brochet de {A} rétrécit à vue d'œil.",
+                    E(new GrowStat(PlynlingStat.Intrigue)), Nothing, Ai((AiAxis.Honor, -1), (AiAxis.Boldness, 1)), Stress(("honest", 15))),
+                Plain("truth", "Avouer : c'était une sardine",
+                    "« C'était une sardine. Une grosse. » Le café éclate de rire, et l'ours offre à {A} une leçon de pêche pour dimanche.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new ApplyModifier("clear_conscience")), Ai((AiAxis.Honor, 2))),
+            }),
+
+        new EventDef("teen_burnt_cake", EventType.Pulse, Teen, "Le gâteau brûlé",
+            "{A} a voulu faire un gâteau pour la première fois. Une odeur de brûlé envahit la maison, et par la porte du four s'échappe une petite fumée noire.",
+            new[]
+            {
+                Plain("save", "Sauver ce qui peut l'être",
+                    "{A} gratte le dessus brûlé, et dessous, le gâteau est… presque bon. Avec beaucoup de confiture, très bon même.",
+                    E(new LiftNeed(Need.Hunger, 0.15)), Ai((AiAxis.Rationality, 1))),
+                Plain("again", "Tout recommencer, en lisant la recette, cette fois",
+                    "Deuxième essai, recette sous les yeux. Le gâteau sort doré, parfait. {A} découvre que les recettes disent des choses utiles.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Rationality, 2))),
+                Plain("smoked", "Le servir comme un « gâteau fumé », exprès",
+                    "{A} sert le gâteau fumé aux voisins, en expliquant que c'est une spécialité de la ville d'en bas. Les voisins sont polis. Très polis.",
+                    E(new GrowStat(PlynlingStat.Intrigue)), Ai((AiAxis.Boldness, 1), (AiAxis.Honor, -1))),
+            }),
+
+        new EventDef("teen_lost_bet", EventType.Pulse, Teen, "Le pari perdu",
+            "{A} a parié avec {B} que le moineau arriverait en retard au concours. Le moineau est arrivé en avance, pour la première fois de sa vie. Le gage : porter une tenue choisie par {B}, une journée entière.",
+            new[]
+            {
+                Plain("honor", "Honorer le gage, la tête haute",
+                    "{B} choisit un chapeau à fleurs, une cape et des chaussettes dépareillées. {A} porte tout, la tête haute, toute la journée. Le village applaudit au passage.",
+                    E(new GrowStat(PlynlingStat.Courage), new AffinityShift(15)), Ai((AiAxis.Honor, 2))),
+                Try("haggle", "Négocier un gage plus raisonnable", new EventChallenge(PlynlingStat.Diplomacy, 6),
+                    "Après négociation, le gage devient : un nœud papillon, pendant une heure. {B} admire la manœuvre, à contrecœur.",
+                    "{A} négocie si mal que le gage passe à deux jours, avec un chapeau en plus. {B} en rit encore en rentrant.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new AffinityShift(5)), E(new AffinityShift(10)), Ai((AiAxis.Rationality, 1))),
+            },
+            Target: TargetKind.Known),
+
+        new EventDef("teen_first_catch", EventType.Pulse, Teen, "La première prise",
+            "L'ours a prêté sa vieille canne à {A}. Trois heures au bord de l'eau, sans une touche. Puis le bouchon plonge, d'un coup.",
+            new[]
+            {
+                Try("pull", "Tirer de toutes ses forces", new EventChallenge(PlynlingStat.Courage, 6),
+                    "{A} tire, tire, et sort de l'eau une truite dorée qui se débat dans le soleil. L'ours en a les larmes aux yeux : la canne n'avait rien pris depuis des années.",
+                    "{A} tire de toutes ses forces, et sort de l'eau… une vieille botte. Dans la botte, une grenouille, très contrariée.",
+                    E(new GrowStat(PlynlingStat.Courage), new LiftNeed(Need.Hunger, 0.2)), Nothing, Ai((AiAxis.Boldness, 1), (AiAxis.Energy, 1))),
+                Plain("release", "Remonter doucement, et relâcher le poisson",
+                    "{A} remonte doucement un petit gardon, le regarde une seconde, et le remet à l'eau. L'ours hoche la tête : « Celui-là reviendra plus gros. »",
+                    E(new ApplyModifier("clear_conscience")), Ai((AiAxis.Compassion, 2))),
+            }),
+
+        new EventDef("teen_rowboat", EventType.Pulse, Teen, "La barque du blaireau",
+            "Le blaireau prête sa vieille barque à {A} pour l'après-midi. L'étang est calme, le ciel bleu, et les rames sont presque de la même taille.",
+            new[]
+            {
+                Try("island", "Ramer jusqu'à l'île du milieu", new EventChallenge(PlynlingStat.Stewardship, 6),
+                    "{A} rame jusqu'à l'île, en zigzag mais sans erreur, et pique-nique sous le saule. Au retour, le blaireau demande si la barque a pris l'eau. Non. Tant mieux.",
+                    "{A} rame, mais toujours plus fort à gauche. La barque tourne en rond tout l'après-midi, sous l'œil très intéressé des canards.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), E(new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Energy, 1))),
+                Plain("drift", "Se laisser dériver, au fond de la barque",
+                    "{A} s'allonge au fond de la barque et regarde les nuages. La barque dérive jusqu'aux roseaux, où {A} s'endort. Le soir, le blaireau vient chercher sa barque, et {A} avec.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Energy, -1))),
+            }),
+
+        new EventDef("teen_bullies", EventType.Pulse, Teen, "Le goûter du mulot",
+            "Derrière l'école, deux grands renardeaux ont pris le goûter d'un petit mulot, et le tiennent très haut, hors de portée. Le mulot ne pleure pas encore. Presque.",
+            new[]
+            {
+                Try("stand", "S'interposer", new EventChallenge(PlynlingStat.Courage, 7),
+                    "{A} s'interpose, très droit. Les renardeaux hésitent, se regardent, et rendent le goûter en marmonnant que c'était pour rire. Le mulot partage le goûter avec {A}.",
+                    "{A} s'interpose, et un renardeau pose le goûter sur la tête de {A}, très haut. Le mulot et {A} sautillent ensemble. Puis le hérisson passe, ne rit pas du tout, et les renardeaux filent.",
+                    E(new GrowStat(PlynlingStat.Courage), new ApplyModifier("clear_conscience")), Nothing, Ai((AiAxis.Boldness, 1), (AiAxis.Honor, 1)), Stress(("craven", 20))),
+                Plain("fetch", "Aller chercher le hérisson",
+                    "{A} court chercher le hérisson, qui arrive un sifflet à la bouche. Les renardeaux rendent le goûter en un temps record. Le mulot suit {A} toute la semaine, comme une ombre reconnaissante.",
+                    E(new ApplyModifier("cherished")), Ai((AiAxis.Rationality, 1), (AiAxis.Honor, 1))),
+                Plain("share", "Partager son propre goûter avec le mulot",
+                    "{A} partage sa tartine avec le mulot. Les renardeaux, sans public, s'ennuient et rendent l'autre goûter. Le mulot repart avec deux goûters.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Compassion, 2))),
+            }),
+
+        // ---- adulte et ancien
+        new EventDef("grown_apple_idea", EventType.Pulse, Grown, "La pomme et l'idée",
+            "{A} faisait la sieste sous le pommier quand une pomme est tombée, pile sur la tête. Et avec la pomme, une idée.",
+            new[]
+            {
+                Plain("write", "Noter l'idée tout de suite",
+                    "{A} note l'idée : une gouttière qui arrose le potager toute seule. Une semaine plus tard, la gouttière marche. Les voisins en commandent trois.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new GiveCailloux(10)), Ai((AiAxis.Rationality, 2))),
+                Plain("eat", "Manger la pomme, et tant pis pour l'idée",
+                    "{A} mange la pomme. La pomme est excellente. L'idée est partie. Ça arrive.",
+                    E(new LiftNeed(Need.Hunger, 0.15)), Ai((AiAxis.Greed, 1), (AiAxis.Energy, -1))),
+                Plain("owl", "Courir raconter l'idée à la chouette",
+                    "La chouette écoute, puis sort un livre très ancien : quelqu'un a déjà eu la même idée, sous un autre pommier, autrefois. {A} est {a:déçu|déçue}. La chouette, ravie.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Sociability, 1), (AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("grown_umbrella", EventType.Pulse, Grown, "Le parapluie à pois",
+            "En sortant du café, {A} a pris le mauvais parapluie. Celui-ci est rouge, à pois blancs, avec un nom brodé sur le manche : celui du hérisson.",
+            new[]
+            {
+                Plain("return", "Le rapporter tout de suite",
+                    "{A} court à la gare. Le hérisson, trempé, tient le parapluie de {A} et regarde le ciel d'un air sévère. L'échange se fait sans un mot, avec une petite courbette.",
+                    E(new ApplyModifier("clear_conscience")), Ai((AiAxis.Honor, 2))),
+                Plain("keep", "Le garder jusqu'à la fin de l'averse",
+                    "{A} garde le parapluie jusqu'au soir, et le rapporte sec et plié. Le hérisson, coincé sous l'auvent, en a profité pour refaire tous les horaires d'hiver.",
+                    E(new GrowStat(PlynlingStat.Intrigue)), Ai((AiAxis.Greed, 1)), Stress(("honest", 10))),
+            }),
+
+        new EventDef("grown_bad_day", EventType.Pulse, Grown, "Un jour sans",
+            "Le lacet a cassé, le pain a brûlé, la porte a coincé. Et ce n'est que huit heures du matin. {A} regarde le lit avec beaucoup d'intérêt.",
+            new[]
+            {
+                Plain("bed", "Retourner se coucher, et recommencer à midi",
+                    "{A} retourne se coucher. À midi, {A} se relève. Le pain de midi est parfait. La journée était juste partie du mauvais pied.",
+                    E(new ApplyModifier("well_rested")), Ai((AiAxis.Energy, -1))),
+                Plain("count", "Continuer, en comptant les catastrophes",
+                    "{A} continue, en comptant. À la onzième catastrophe, {A} éclate de rire au milieu de la rue. La douzième ne vient jamais.",
+                    E(new ApplyModifier("light_heart")), Ai((AiAxis.Rationality, 1))),
+                Plain("cafe", "Aller se plaindre à la tortue",
+                    "La tortue écoute la liste, hoche la tête, et sert un chocolat avec deux sucres de plus. « Les jours sans, on les compense. »",
+                    E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Sociability, 1))),
+            }),
+
+        new EventDef("grown_woodpecker", EventType.Pulse, Grown, "Toc-toc-toc",
+            "Depuis une semaine, le nouveau voisin, un pic-vert, tape sur son tronc dès l'aube. Toc-toc-toc. Tous les matins. {A} n'a pas dormi après six heures depuis lundi.",
+            new[]
+            {
+                Try("talk", "Aller lui parler, poliment", new EventChallenge(PlynlingStat.Diplomacy, 7),
+                    "{A} frappe chez le pic-vert, qui ne se doutait pas qu'on l'entendait. Le pic-vert promet de commencer à neuf heures, et offre un pot de larves au miel. {A} accepte le pot, par politesse.",
+                    "{A} explique le problème. Le pic-vert écoute, hoche la tête, en tapant le rythme du bec. Le lendemain : toc-toc-toc, à six heures. Mais plus doucement.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Nothing, Ai((AiAxis.Sociability, 1), (AiAxis.Honor, 1))),
+                Plain("plugs", "Acheter des bouchons d'oreilles",
+                    "{A} achète des bouchons en cire au marché. Le lendemain, {A} dort jusqu'à neuf heures, et rate le facteur, le livreur de pain et l'anniversaire de l'escargot.",
+                    E(new ApplyModifier("well_rested")), Ai((AiAxis.Rationality, 1))),
+                Plain("duet", "Taper aussi, en rythme",
+                    "À l'aube, {A} répond au pic-vert en tapant sur une casserole. Le pic-vert s'arrête, surpris, puis répond. Ça devient un duo. Les voisins, eux, envisagent de déménager.",
+                    E(new GrowStat(PlynlingStat.Courage)), Ai((AiAxis.Boldness, 1), (AiAxis.Sociability, 1))),
+            }),
+
+        new EventDef("grown_compliment", EventType.Pulse, Grown, "La meilleure confiture",
+            "Au marché, {B} a déclaré devant tout le monde que {A} faisait la meilleure confiture du village. {A} n'a jamais fait de confiture de sa vie.",
+            new[]
+            {
+                Plain("correct", "Rectifier, gentiment",
+                    "« Ce n'est pas moi, c'est la tortue. » {B} rougit, puis rit. Le soir, {A} essaie quand même de faire de la confiture, pour voir.",
+                    E(new AffinityShift(10), new ApplyModifier("clear_conscience")), Ai((AiAxis.Honor, 2))),
+                Try("jam", "Accepter, et faire une confiture cette nuit même", new EventChallenge(PlynlingStat.Stewardship, 8),
+                    "{A} passe la nuit sur une confiture de mûres. Au matin, le pot est parfait. {B} goûte, et confirme : la meilleure du village. Maintenant, c'est vrai.",
+                    "{A} passe la nuit sur la confiture, qui finit en caramel de mûres collé au fond. {B} goûte quand même, très courageusement, et en redemande.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new AffinityShift(15)), E(new AffinityShift(10)), Ai((AiAxis.Boldness, 1)), Stress(("honest", 15))),
+            },
+            Target: TargetKind.Known),
+
+        new EventDef("grown_snide", EventType.Pulse, Grown, "La remarque",
+            "En passant devant la table de {A}, {B} glisse que ce chapeau « a dû être très à la mode, autrefois ». Le café a entendu. Le café attend.",
+            new[]
+            {
+                Try("retort", "Répondre du tac au tac", new EventChallenge(PlynlingStat.Diplomacy, 7, VsTarget: true),
+                    "« Comme ta coiffure, alors. » Le café éclate de rire. {B} ouvre la bouche, la referme, et sort sans finir son thé.",
+                    "{A} cherche une réplique, la trouve en rentrant, et la répète devant le miroir, très {a:satisfait|satisfaite}. Le miroir rit poliment.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new AffinityShift(-5)), E(new AffinityShift(-5)), Ai((AiAxis.Vengefulness, 1), (AiAxis.Boldness, 1))),
+                Plain("smile", "Sourire, et ne rien dire",
+                    "{A} sourit, et retourne à son chocolat. {B}, {b:frustré|frustrée}, attend une réponse qui ne vient pas, et finit par partir. Le café trouve que {A} a gagné sans dire un mot.",
+                    E(new ApplyModifier("clear_conscience")), Ai((AiAxis.Rationality, 1))),
+                Plain("agree", "Approuver : « Autrefois, oui. Et ça reviendra. »",
+                    "{A} approuve, et prédit le retour de la mode. Trois semaines plus tard, trois jeunes du village portent le même chapeau. {B} enrage.",
+                    E(new GrowStat(PlynlingStat.Intrigue)), Ai((AiAxis.Rationality, 1), (AiAxis.Boldness, 1))),
+            },
+            Target: TargetKind.Hostile),
+
+        new EventDef("grown_moving_day", EventType.Pulse, Grown, "Le déménagement",
+            "{B} déménage à l'autre bout du village, et a besoin de bras. Les cartons s'entassent jusqu'au plafond, l'armoire ne passe pas la porte, et le chariot a une roue qui grince.",
+            new[]
+            {
+                Try("wardrobe", "S'attaquer à l'armoire", new EventChallenge(PlynlingStat.Stewardship, 8),
+                    "{A} trouve l'angle exact : en biais, un pied en l'air, en retenant son souffle. L'armoire passe. {B} applaudit, puis offre à {A} une tarte entière.",
+                    "L'armoire reste coincée dans la porte. {A} et {B} déjeunent de part et d'autre, en se passant les tartines par le trou de la serrure. On la démonte le lendemain.",
+                    E(new AffinityShift(15), new LiftNeed(Need.Hunger, 0.15)), E(new AffinityShift(10)), Ai((AiAxis.Rationality, 1), (AiAxis.Energy, 1))),
+                Plain("boxes", "Porter les cartons, toute la journée",
+                    "{A} porte quarante-trois cartons. Le quarante-quatrième contenait les assiettes. Personne n'en parle. {B} offre un dîner, servi dans des bols.",
+                    E(new AffinityShift(15)), Ai((AiAxis.Compassion, 1), (AiAxis.Energy, 1))),
+                Plain("excuse", "Inventer une excuse pour ne pas venir",
+                    "{A} invente un rhume. {B} déménage avec l'ours, qui porte l'armoire à lui seul. Le lendemain, {B} apporte une soupe à {A}, pour le rhume.",
+                    E(new AffinityShift(-5)), Ai((AiAxis.Energy, -1), (AiAxis.Honor, -1)), Stress(("honest", 20))),
+            },
+            Target: TargetKind.Known),
+
+        new EventDef("grown_gray_bench", EventType.Pulse, Grown, "Sur le banc de la place",
+            "{B} est {b:assis|assise} sur le banc de la place depuis le matin, sans rien faire, le regard dans le vide. Les passants saluent ; {B} ne répond pas.",
+            new[]
+            {
+                Plain("sit", "S'asseoir à côté, en silence",
+                    "{A} s'assoit, sans poser de question. Au bout d'une heure, {B} pose la tête sur l'épaule de {A}. Au bout de deux, {B} dit merci.",
+                    E(new AffinityShift(20)), Ai((AiAxis.Compassion, 2))),
+                Plain("cake", "Poser un gâteau sur le banc, sans rien demander",
+                    "{A} pose un gâteau sur le banc, entre les deux. {B} le regarde longtemps, puis en prend une part. Puis une deuxième. Puis parle.",
+                    E(new AffinityShift(15)), Ai((AiAxis.Compassion, 1), (AiAxis.Sociability, 1))),
+                Plain("joke", "Raconter la blague la plus bête qu'on connaisse",
+                    "{A} raconte la blague de l'escargot qui prend le train. {B} ne rit pas. Puis, trois minutes plus tard, éclate de rire d'un coup, et ne peut plus s'arrêter.",
+                    E(new AffinityShift(10), new ApplyModifier("light_heart")), Ai((AiAxis.Sociability, 2))),
+            },
+            Target: TargetKind.Known),
+
+        new EventDef("grown_rival_ladder", EventType.Pulse, Grown, "L'échelle",
+            "{B}, avec qui {A} ne s'entend pas, frappe à la porte, l'air très {b:gêné|gênée}. « Mon échelle est cassée. Mon toit fuit. Tu as une échelle. » Ce n'est pas une question. Presque.",
+            new[]
+            {
+                Plain("lend", "Prêter l'échelle",
+                    "{A} prête l'échelle, sans un mot. Le lendemain, l'échelle revient, réparée, avec une marche en plus et un pot de miel accroché au barreau du haut.",
+                    E(new AffinityShift(15)), Ai((AiAxis.Compassion, 1), (AiAxis.Honor, 1))),
+                Plain("help", "Prêter l'échelle, et monter aider",
+                    "{A} tient l'échelle, puis monte sur le toit, puis répare la fuite avec {B}. Au coucher du soleil, les deux sont assis sur le toit, sans se disputer, pour une fois.",
+                    E(new AffinityShift(20)), Ai((AiAxis.Compassion, 2)), Stress(("vengeful", 20))),
+                Plain("refuse", "Refuser, poliment mais fermement",
+                    "« Non. » {B} repart sous la pluie. Le soir, en écoutant l'averse, {A} pense au toit de {B}, et dort moins bien que prévu.",
+                    E(new AffinityShift(-10)), Ai((AiAxis.Vengefulness, 2)), Stress(("compassionate", 20), ("forgiving", 15))),
+            },
+            Target: TargetKind.Hostile),
+
+        new EventDef("grown_spring_clean", EventType.Pulse, Grown, "Le grand ménage",
+            "{A} a décidé de faire le grand ménage : le grenier, la cave, les placards. Au bout d'une heure, la pile « à jeter » est plus petite que la pile « on ne sait jamais ».",
+            new[]
+            {
+                Plain("throw", "Tout jeter, sans pitié",
+                    "{A} jette tout. La maison respire. {A} aussi. Deux jours plus tard, {A} cherche désespérément une ficelle, jetée lundi.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Rationality, 1))),
+                Plain("give", "Tout donner, sur une table au marché",
+                    "{A} installe une table au marché, avec une pancarte : « Gratuit ». Tout part en une heure. La pie repart avec trois boutons, sans même faire semblant d'en avoir besoin.",
+                    E(new ApplyModifier("clear_conscience")), Ai((AiAxis.Compassion, 1), (AiAxis.Sociability, 1))),
+                Plain("keep", "Tout garder, finalement",
+                    "{A} remet tout en place, dans le même désordre. Au passage, une bille perdue depuis des années refait surface. Le grand ménage est reporté au printemps prochain, comme chaque année.",
+                    E(new GiveItem("col.bille")), Ai((AiAxis.Greed, 1))),
+            }),
+
+        new EventDef("grown_redecorate", EventType.Pulse, Grown, "La nouvelle déco",
+            "{A} trouve sa maison un peu triste. Au marché, on vend des rideaux à fleurs, de la peinture jaune, et un tapis en forme d'escargot.",
+            new[]
+            {
+                Plain("yellow", "Tout repeindre en jaune",
+                    "{A} repeint tout en jaune, plafond compris. La maison ressemble à un œuf à la coque. C'est très gai. Les visiteurs plissent les yeux en entrant.",
+                    E(new ApplyModifier("light_heart")), Ai((AiAxis.Boldness, 1))),
+                Plain("rug", "Acheter le tapis escargot",
+                    "{A} achète le tapis escargot. L'escargot du village, invité pour l'inauguration, reste une heure à le contempler, très ému.",
+                    E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Compassion, 1))),
+                Plain("nothing", "Ne rien changer : la maison est bien comme ça",
+                    "{A} rentre sans rien acheter, et regarde la maison d'un œil neuf. La maison, au fond, est très bien comme ça.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("grown_free_day", EventType.Pulse, Grown, "Une journée libre",
+            "Pour la première fois depuis longtemps, {A} n'a rien de prévu. Rien du tout. La journée entière est vide, et brille comme une assiette propre.",
+            new[]
+            {
+                Plain("nothing", "Ne rien faire, mais vraiment rien",
+                    "{A} ne fait rien, avec beaucoup de sérieux. Le soir, {A} est {a:épuisé|épuisée} d'avoir tant reposé. C'était parfait.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Energy, -2))),
+                Plain("walk", "Partir marcher au hasard",
+                    "{A} marche au hasard et découvre un sentier inconnu, une source, et un banc de pierre qui donne sur toute la vallée. Le banc devient un endroit à soi.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Energy, 1), (AiAxis.Boldness, 1))),
+                Plain("visit", "Rendre visite à tout le monde",
+                    "{A} fait le tour du village, maison par maison. Onze tasses de thé. Le soir, {A} ne dort pas, mais connaît toutes les nouvelles.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Sociability, 2))),
+            }),
+
+        new EventDef("grown_snickers", EventType.Pulse, Grown, "Les rires dans le dos",
+            "Toute la matinée, les gens sourient en croisant {A}. Certains pouffent. La pie rit franchement. Personne ne dit rien.",
+            new[]
+            {
+                Plain("window", "Aller se regarder dans une vitrine",
+                    "Dans la vitrine du boulanger, {A} découvre une feuille de chou collée dans le dos, avec écrit dessus : « Je suis très {a:gentil|gentille} ». C'est signé l'escargot. C'est vrai, en plus.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 1))),
+                Plain("laugh", "Rire aussi, sans savoir pourquoi",
+                    "{A} rit aussi, de bon cœur. Le village rit encore plus. Le soir, quelqu'un décolle enfin la feuille dans le dos de {A} : « Je suis très {a:gentil|gentille} ». Signé l'escargot.",
+                    E(new ApplyModifier("light_heart")), Ai((AiAxis.Sociability, 2))),
+            }),
+
+        new EventDef("grown_tin_box", EventType.Pulse, Grown, "La boîte en fer",
+            "En balayant devant chez soi, {A} trouve une petite boîte en fer. Dedans : une clé, un dessin pâli, et un mot : « Pour retrouver le chemin. »",
+            new[]
+            {
+                Try("owner", "Chercher à qui appartient la boîte", new EventChallenge(PlynlingStat.Diplomacy, 8),
+                    "Après une semaine d'enquête, la boîte retourne à la vieille loutre du ponton, qui la croyait perdue depuis trente ans. La clé était celle de sa première maison. La loutre offre le dessin à {A}.",
+                    "Personne ne reconnaît la boîte. {A} la dépose au kiosque des objets trouvés. Un matin, la boîte a disparu, et un mot la remplace : « Merci. »",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new ApplyModifier("cherished")), E(new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Honor, 1))),
+                Plain("keep", "La garder, au cas où",
+                    "{A} range la boîte dans un tiroir. Parfois, {A} la ressort et regarde la clé, en se demandant quelle porte la clé ouvrait. C'est un très bon mystère pour les soirs de pluie.",
+                    E(new GiveItem("col.cle_rouillee")), Ai((AiAxis.Greed, 1))),
+            }),
+
+        new EventDef("grown_spices", EventType.Pulse, Grown, "Le marchand d'épices",
+            "Un marchand venu de très loin a dressé son étal au marché : des épices rouges, jaunes, violettes, et des odeurs que le village n'a jamais senties. Les prix sont fous. Les odeurs, encore plus.",
+            new[]
+            {
+                Try("haggle", "Marchander une pincée de chaque", new EventChallenge(PlynlingStat.Stewardship, 8),
+                    "{A} marchande en riant, le marchand aussi. {A} repart avec sept petits sachets pour le prix de trois. Le soir, la soupe de {A} a un goût de voyage.",
+                    "{A} marchande, le marchand aussi, et {A} repart avec un seul sachet, très cher, de quelque chose qui pique beaucoup. La soupe du soir fait pleurer, de joie ou de piment.",
+                    E(new GrowStat(PlynlingStat.Stewardship), new ApplyModifier("hearty")), Nothing, Ai((AiAxis.Greed, 1))),
+                Plain("listen", "Écouter les histoires du marchand",
+                    "Le marchand raconte les routes, les déserts, les villes au bord de la mer. {A} écoute jusqu'à la fermeture. En partant, le marchand offre une pincée de cannelle, « pour se souvenir ».",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Sociability, 1))),
+            }),
+
+        new EventDef("grown_mapmaker", EventType.Pulse, Grown, "La cartographe",
+            "Une cartographe de passage, une martre aux lunettes rondes, cherche quelqu'un pour la guider jusqu'à la source de la rivière. Personne au village n'y est jamais allé.",
+            new[]
+            {
+                Try("guide", "Proposer de servir de guide", new EventChallenge(PlynlingStat.Courage, 8),
+                    "{A} et la martre remontent la rivière pendant trois jours. À la source : une petite cascade, et une grotte pleine de cristaux. La martre dessine tout, et inscrit sur la carte : « Source de {A} ».",
+                    "{A} et la martre se perdent dès le deuxième jour, et reviennent au village par le chemin d'en face. La carte de la martre indique désormais : « Ici, on s'est perdus. Très joli quand même. »",
+                    E(new GrowStat(PlynlingStat.Courage), new ApplyModifier("inspired")), E(new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Boldness, 2))),
+                Plain("sketch", "Lui dessiner ce qu'on connaît du chemin",
+                    "{A} dessine tout ce qu'on sait : le pont, la gare, le moulin, puis « après, on ne sait pas ». La martre est ravie : c'est exactement là que commence son travail.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("grown_school_roof", EventType.Pulse, Grown, "La collecte pour l'école",
+            "Le maire fait le tour des maisons : on collecte pour réparer le toit de l'école. La boîte est presque vide, et le maire a l'air fatigué.",
+            new[]
+            {
+                Plain("give", "Donner, généreusement",
+                    "{A} glisse une poignée de cailloux dans la boîte. Le maire regarde dedans, puis {A}, puis dans la boîte encore. Le toit est réparé avant l'hiver.",
+                    E(new ApplyModifier("clear_conscience")), Ai((AiAxis.Compassion, 1), (AiAxis.Greed, -1)), Stress(("greedy", 20))),
+                Plain("roof", "Proposer plutôt de réparer le toit soi-même",
+                    "{A} monte sur le toit de l'école avec l'ours et une pile de tuiles. Le toit est réparé en deux jours, et l'argent de la collecte part en goûters pour l'école.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Energy, 1), (AiAxis.Compassion, 1))),
+                Plain("pebble", "Donner un petit caillou, en s'excusant",
+                    "{A} donne un petit caillou. Le maire remercie, très sincèrement : « C'est le geste qui compte. » Le petit caillou est noté dans le carnet avec le même soin que les autres.",
+                    E(new LiftNeed(Need.Happiness, 0.05)), Ai((AiAxis.Greed, 1))),
+            }),
+
+        new EventDef("grown_pie_contest", EventType.Pulse, Grown, "Le concours de tartes",
+            "À la fête du village, le concours de mangeurs de tartes commence dans cinq minutes. L'ours a gagné les neuf dernières éditions. Une place est libre, juste à côté de l'ours.",
+            new[]
+            {
+                Try("eat", "S'inscrire, et manger le plus vite possible", new EventChallenge(PlynlingStat.Courage, 7),
+                    "Sept tartes. L'ours en est à six, et pose sa fourchette. Pour la première fois en dix ans, l'ours perd, et serre la patte de {A} en riant, la moustache pleine de crème.",
+                    "Trois tartes, et {A} abandonne, le ventre tendu comme un tambour. L'ours en mange douze. {A} rentre presque en roulant.",
+                    E(new GiveCailloux(15), new ApplyModifier("hearty")), E(new LiftNeed(Need.Hunger, 0.3)), Ai((AiAxis.Greed, 1), (AiAxis.Boldness, 1)), Stress(("temperate", 20))),
+                Plain("judge", "Proposer d'être juge, plutôt",
+                    "{A} devient juge, ce qui consiste à goûter un morceau de chaque tarte, pour vérifier la qualité. C'est le meilleur poste du concours.",
+                    E(new LiftNeed(Need.Hunger, 0.2)), Ai((AiAxis.Rationality, 1))),
+                Plain("cheer", "Encourager l'escargot, inscrit pour la première fois",
+                    "L'escargot mange une seule tarte, en deux heures, très dignement. {A} applaudit à chaque bouchée. L'escargot reçoit le prix de la persévérance.",
+                    E(new ApplyModifier("light_heart")), Ai((AiAxis.Compassion, 1), (AiAxis.Sociability, 1))),
+            }),
+
+        new EventDef("grown_dream_machine", EventType.Pulse, Grown, "La machine du rêve",
+            "Cette nuit, {A} a rêvé d'une machine merveilleuse, avec des roues, des ressorts, et une cheminée qui fait des bulles. Au réveil, le rêve est encore là, très net.",
+            new[]
+            {
+                Try("build", "La construire, de mémoire", new EventChallenge(PlynlingStat.Learning, 8),
+                    "Trois jours de travail. La machine fait des bulles, exactement comme dans le rêve. Ça ne sert à rien, et c'est merveilleux. Les petits du village viennent la regarder chaque soir.",
+                    "Trois jours de travail. La machine fait un bruit terrible, tremble, et produit… une seule bulle. Une belle bulle, cela dit.",
+                    E(new GrowStat(PlynlingStat.Learning), new ApplyModifier("inspired")), E(new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Rationality, 2))),
+                Plain("draw", "La dessiner, et passer à autre chose",
+                    "{A} dessine la machine dans un carnet, avec toutes ses roues. Le dessin est très beau. La machine restera un rêve, et c'est peut-être mieux ainsi.",
+                    E(new ApplyModifier("inspired")), Ai((AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("grown_old_kindness", EventType.Pulse, Grown, "Un bienfait oublié",
+            "Une lettre arrive, d'une écriture inconnue. Un hérisson de la ville d'en bas écrit : « Vous m'avez aidé un soir de pluie, autrefois, quand j'étais perdu. Je ne l'ai jamais oublié. » Dans l'enveloppe, quelques cailloux. {A} ne se souvient de rien.",
+            new[]
+            {
+                Plain("reply", "Répondre, même sans se souvenir",
+                    "{A} répond avec sincérité : on ne se souvient pas, mais on est très {a:content|contente} que ça ait compté. Une correspondance commence, qui dure encore.",
+                    E(new GiveCailloux(10), new ApplyModifier("cherished")), Ai((AiAxis.Sociability, 1), (AiAxis.Honor, 1))),
+                Plain("forward", "Garder les cailloux pour aider quelqu'un d'autre",
+                    "{A} range les cailloux dans une boîte marquée « Pour le prochain soir de pluie ». La boîte sert trois fois cette année-là.",
+                    E(new ApplyModifier("clear_conscience")), Ai((AiAxis.Compassion, 2))),
+            }),
+
+        new EventDef("grown_marsh_remedy", EventType.Pulse, Grown, "Le remède de la crapaude",
+            "{A} a mal au dos depuis une semaine. Au marais, la vieille crapaude herboriste prépare des remèdes. Ses remèdes marchent, paraît-il. Mais ont un goût d'étang.",
+            new[]
+            {
+                Plain("drink", "Boire le remède, d'un trait",
+                    "Le remède a le goût d'un étang qui aurait avalé une chaussette. Mais le lendemain, le dos va beaucoup mieux. La crapaude n'en doutait pas une seconde.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Boldness, 1))),
+                Plain("chat", "Rester bavarder avec la crapaude",
+                    "La crapaude raconte le marais, les herbes, les recettes de sa grand-mère. {A} repart avec un carnet de remèdes, et le dos toujours tordu.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Sociability, 1))),
+                Plain("plank", "Refuser poliment, et dormir sur une planche",
+                    "{A} remercie, rentre, et dort sur une planche. Ça marche aussi, au bout de trois nuits. La crapaude, quand on le lui raconte, hausse les épaules : « La planche, c'est mon autre remède. »",
+                    E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("grown_canvas", EventType.Pulse, Grown, "La toile blanche",
+            "{A} a acheté des couleurs et une toile. La toile est blanche. Très blanche. Le pinceau attend.",
+            new[]
+            {
+                Plain("bridge", "Peindre le vieux pont",
+                    "{A} peint le vieux pont, avec le héron dessus. Le pont est un peu tordu, le héron très réussi. Le héron, consulté, approuve d'un hochement de bec.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 1))),
+                Plain("feelings", "Peindre ce qu'on ressent, sans réfléchir",
+                    "{A} peint des taches, des spirales, un grand cercle orange. Personne ne sait ce que c'est. Le café l'accroche quand même, à l'envers, et c'est encore mieux.",
+                    E(new ApplyModifier("light_heart")), Ai((AiAxis.Boldness, 1))),
+                Plain("tortoise", "Peindre la tortue du café",
+                    "{A} peint la tortue derrière son comptoir. La tortue pose une heure sans bouger, ce qui n'est pas difficile pour une tortue. Le portrait rejoint le mur du café.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Sociability, 1))),
+            }),
+
+        new EventDef("grown_heron_warning", EventType.Pulse, Grown, "L'avertissement du héron",
+            "Le héron, qui ne parle presque jamais, arrête {A} sur le vieux pont : « Ne passe pas par le bois aujourd'hui. » Puis se tait. Le bois, c'est le chemin le plus court pour le marché.",
+            new[]
+            {
+                Plain("listen", "Écouter le héron, et faire le détour",
+                    "{A} fait le grand détour. Le soir, on apprend qu'une branche énorme est tombée sur le chemin du bois, à midi. Le héron, interrogé, dit seulement : « Les arbres parlent. »",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 1), (AiAxis.Honor, 1))),
+                Try("woods", "Passer quand même, mais prudemment", new EventChallenge(PlynlingStat.Courage, 8),
+                    "{A} passe par le bois, prudemment. À midi, un craquement : une énorme branche tombe, trois pas derrière. {A} arrive au marché les jambes en coton, et avec une estime toute neuve pour le héron.",
+                    "{A} passe par le bois, et trouve le chemin barré par une branche tombée, énorme. Une heure de détour quand même. Au retour, le héron ne dit rien. Le silence du héron en dit long.",
+                    E(new GrowStat(PlynlingStat.Courage)), Nothing, Ai((AiAxis.Boldness, 2))),
+            }),
+
+        new EventDef("grown_hedge", EventType.Pulse, Grown, "La haie qui penche",
+            "Le blaireau et le lapin, voisins de {A}, se disputent la haie entre leurs jardins. Selon le blaireau, la haie penche chez le lapin. Selon le lapin, c'est le blaireau qui penche. Les deux viennent chercher {A} pour trancher.",
+            new[]
+            {
+                Try("measure", "Mesurer la haie, avec une ficelle", new EventChallenge(PlynlingStat.Stewardship, 7),
+                    "{A} mesure, au centimètre près. La haie est parfaitement droite : ce sont les deux maisons qui penchent, chacune de son côté. Les voisins, déconcertés, se réconcilient pour en discuter.",
+                    "{A} mesure, se trompe, remesure, se trompe dans l'autre sens. Au bout d'une heure, les deux voisins, lassés, vont boire un thé ensemble et laissent {A} avec la ficelle.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), Nothing, Ai((AiAxis.Rationality, 2))),
+                Plain("flowers", "Proposer de planter des fleurs à la place",
+                    "{A} propose d'arracher la haie et de planter des fleurs. Les voisins hésitent, puis acceptent. Les deux jardins n'en font plus qu'un, et les deux voisins prennent le thé au milieu.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Compassion, 1), (AiAxis.Sociability, 1))),
+            }),
+
+        new EventDef("grown_wrong_name", EventType.Pulse, Grown, "Bonjour, Josette",
+            "Depuis un mois, le nouveau boulanger appelle {A} par le mauvais prénom. Tous les matins. « Bonjour, Josette ! » Trop tard pour corriger, maintenant ?",
+            new[]
+            {
+                Plain("correct", "Corriger, enfin",
+                    "{A} corrige. Le boulanger devient tout rouge, s'excuse dix fois, et offre une brioche par semaine pendant un mois, pour réparer.",
+                    E(new LiftNeed(Need.Hunger, 0.15)), Ai((AiAxis.Honor, 1))),
+                Plain("josette", "Devenir Josette, à la boulangerie",
+                    "{A} répond « Bonjour ! » comme si de rien n'était. Un an plus tard, la moitié du village appelle {A} Josette, et {A} s'y est très bien {a:habitué|habituée}.",
+                    E(new GrowStat(PlynlingStat.Intrigue)), Ai((AiAxis.Rationality, 1), (AiAxis.Energy, -1))),
+            }),
+
+        new EventDef("grown_clover", EventType.Pulse, Grown, "Le trèfle du talus",
+            "Dans l'herbe du talus, {A} aperçoit un trèfle à quatre feuilles. Juste là. Le premier de sa vie.",
+            new[]
+            {
+                Plain("pick", "Le cueillir, et le garder dans un livre",
+                    "{A} cueille le trèfle et compte les feuilles : trois. C'était un effet de lumière. Un trèfle quand même, et un très beau.",
+                    E(new GiveItem("col.trefle")), Ai((AiAxis.Greed, 1))),
+                Plain("leave", "Le laisser, pour la personne suivante",
+                    "{A} le laisse. Quelqu'un d'autre en a peut-être plus besoin. Le reste de la journée, {A} se sent {a:chanceux|chanceuse} quand même.",
+                    E(new ApplyModifier("light_heart")), Ai((AiAxis.Compassion, 1))),
+                Try("search", "Chercher d'autres trèfles autour", new EventChallenge(PlynlingStat.Learning, 8),
+                    "{A} fouille le talus, brin par brin, et trouve un deuxième trèfle à quatre feuilles, un vrai. Le premier n'en avait que trois, finalement.",
+                    "{A} cherche tout l'après-midi. Rien. Et le premier trèfle, recompté, n'en avait que trois. Belle journée quand même.",
+                    E(new GiveItem("col.trefle_quatre")), Nothing, Ai((AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("grown_sad_bear", EventType.Pulse, Grown, "L'ours ne sourit plus",
+            "L'ours du kiosque à glaces ne sourit plus depuis une semaine. Les cornets sont toujours aussi bons, mais l'ours les tend sans un mot.",
+            new[]
+            {
+                Try("ask", "Demander à l'ours ce qui ne va pas", new EventChallenge(PlynlingStat.Diplomacy, 7),
+                    "L'ours finit par avouer : demain, le kiosque a quarante ans, et personne ne s'en souvient. Le lendemain, le village entier vient fêter le kiosque. L'ours pleure dans un cornet.",
+                    "L'ours assure que tout va bien, très vite. {A} n'insiste pas. Le lendemain, l'ours sourit de nouveau, sans qu'on sache pourquoi. Peut-être que la question a suffi.",
+                    E(new GrowStat(PlynlingStat.Diplomacy), new ApplyModifier("cherished")), Nothing, Ai((AiAxis.Compassion, 1), (AiAxis.Sociability, 1))),
+                Plain("daily", "Acheter une glace chaque jour, et dire merci",
+                    "{A} achète une glace chaque jour pendant une semaine, et dit merci à chaque fois. Le septième jour, l'ours sourit. Le huitième, l'ours offre la glace.",
+                    E(new LiftNeed(Need.Hunger, 0.15), new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Compassion, 1), (AiAxis.Greed, 1))),
+            }),
+
+        new EventDef("grown_hat_wind", EventType.Pulse, Grown, "Le chapeau envolé",
+            "Une rafale arrache le chapeau de {A}, qui file au-dessus des toits, vers la rivière.",
+            new[]
+            {
+                Try("run", "Courir après", new EventChallenge(PlynlingStat.Courage, 7),
+                    "{A} court, saute une haie, et attrape le chapeau au vol sur le vieux pont, à un bec du héron. Le héron, qui allait le prendre, fait semblant de rien.",
+                    "{A} court, saute une haie, et le chapeau plonge dans la rivière. Trois jours plus tard, le chapeau revient, porté par une famille de canards qui en a fait un nid.",
+                    E(new GrowStat(PlynlingStat.Courage)), E(new LiftNeed(Need.Happiness, 0.1)), Ai((AiAxis.Energy, 2))),
+                Plain("let", "Le laisser partir",
+                    "{A} regarde le chapeau disparaître. Une semaine plus tard, une carte postale arrive de la ville d'en bas : un dessin du chapeau, sur la tête d'un épouvantail. Le chapeau va bien.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("grown_magician", EventType.Pulse, Grown, "Le prestidigitateur",
+            "Un lapin prestidigitateur fait des tours sur la place. Le lapin cherche un volontaire dans le public, et son regard s'arrête sur {A}.",
+            new[]
+            {
+                Plain("stage", "Monter sur l'estrade",
+                    "Le lapin fait disparaître le chapeau de {A}, puis le fait réapparaître… dans la poche du hérisson, au premier rang. Le hérisson n'a pas du tout apprécié. Le public, si.",
+                    E(new LiftNeed(Need.Happiness, 0.2)), Ai((AiAxis.Boldness, 1), (AiAxis.Sociability, 1))),
+                Try("spot", "Rester dans le public, et repérer le truc", new EventChallenge(PlynlingStat.Learning, 7),
+                    "{A} observe et comprend tout : la manche, le double fond, le pigeon dans le chapeau. Le soir, {A} refait le tour pour les petits du village, sans le pigeon.",
+                    "{A} observe très attentivement, et ne comprend rien du tout. Le pigeon, lui, regarde {A} d'un air narquois.",
+                    E(new GrowStat(PlynlingStat.Learning)), Nothing, Ai((AiAxis.Rationality, 2))),
+            }),
+
+        new EventDef("grown_goose_toll", EventType.Pulse, Grown, "Le péage de l'oie",
+            "Une oie s'est installée au milieu du vieux pont et réclame un péage : une graine par passage. Le héron, à côté, ne dit rien. Le héron a déjà payé.",
+            new[]
+            {
+                Try("contest", "Contester le péage", new EventChallenge(PlynlingStat.Diplomacy, 8),
+                    "{A} demande à voir l'autorisation de péage. L'oie fouille ses plumes, ne trouve rien, et part en grommelant. Le héron récupère sa graine.",
+                    "{A} conteste. L'oie conteste la contestation. Au bout d'une heure, {A} paie deux graines : une pour passer, une pour le temps perdu.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Nothing, Ai((AiAxis.Honor, 1), (AiAxis.Boldness, 1))),
+                Plain("pay", "Payer, et passer",
+                    "{A} paie une graine. L'oie fait une petite courbette et souhaite une bonne journée. C'est le péage le plus aimable de la vallée.",
+                    E(new ApplyModifier("light_heart")), Ai((AiAxis.Compassion, 1))),
+                Plain("swim", "Traverser à la nage, par principe",
+                    "{A} traverse la rivière à la nage, sous le regard outré de l'oie. De l'autre côté, {A} s'ébroue, très digne, et très {a:mouillé|mouillée}.",
+                    E(new GrowStat(PlynlingStat.Courage), new LiftNeed(Need.Hygiene, 0.2)), Ai((AiAxis.Boldness, 2))),
+            }),
+
+        new EventDef("grown_hammock", EventType.Pulse, Grown, "Le hamac",
+            "{A} a tendu un hamac entre les deux pommiers du jardin. Le soleil est doux, le vent léger, et les abeilles bourdonnent comme une berceuse.",
+            new[]
+            {
+                Plain("nap", "Faire la sieste du siècle",
+                    "{A} s'endort à midi et se réveille au coucher du soleil, une pomme sur le ventre, tombée pendant le sommeil. La meilleure sieste de l'année.",
+                    E(new ApplyModifier("well_rested")), Ai((AiAxis.Energy, -2))),
+                Plain("read", "Lire, en se balançant",
+                    "{A} lit tout un livre en se balançant doucement. À la dernière page, le hamac s'arrête, comme pour laisser le temps de finir.",
+                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Rationality, 1))),
+                Plain("share", "Inviter les voisins à essayer",
+                    "Le blaireau essaie, puis le lapin, puis l'ours. Le hamac tient pour le blaireau, pour le lapin, et pas du tout pour l'ours. On en rit toute la soirée.",
+                    E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Sociability, 2))),
+            }),
+
+        // ---- ancien
+        new EventDef("elder_birthdays", EventType.Pulse, Elder, "Les anniversaires d'avant",
+            "Aujourd'hui, c'est l'anniversaire de {A}. Personne ne s'en souvient, ce qui arrive, à cet âge. {A}, en revanche, se souvient de tous les autres, un par un.",
+            new[]
+            {
+                Plain("cake", "Se faire un gâteau, rien que pour soi",
+                    "{A} fait un petit gâteau, plante une bougie, et chante, sans public. À la deuxième phrase, on frappe : la tortue, avec un gâteau aussi. La tortue s'en souvenait.",
+                    E(new ApplyModifier("cherished")), Ai((AiAxis.Compassion, 1))),
+                Plain("remember", "Se rappeler les anniversaires d'autrefois",
+                    "{A} s'assoit au soleil et se souvient : le gâteau tombé, la surprise ratée, la fois où tout le village avait chanté faux. Le soir, {A} est {a:heureux|heureuse} comme après une grande fête.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Rationality, 1))),
+                Plain("tell", "Le dire à tout le monde, au café",
+                    "« C'est mon anniversaire. » Le café se tait, puis chante, très fort, très faux. La tortue sort une bougie de sous le comptoir. La tortue a toujours une bougie sous le comptoir.",
+                    E(new LiftNeed(Need.Happiness, 0.25)), Ai((AiAxis.Sociability, 2))),
+            }),
+
+        new EventDef("elder_old_face", EventType.Pulse, Elder, "Un visage d'autrefois",
+            "Au marché, une vieille cigogne s'arrête net devant {A}. « Toi ! La grande partie de balle ! Tu avais marqué contre ton camp ! » {A} n'en a aucun souvenir.",
+            new[]
+            {
+                Plain("pretend", "Faire semblant de s'en souvenir",
+                    "{A} fait semblant, et la cigogne raconte toute l'histoire. Au bout d'un moment, {A} s'en souvient vraiment, et les deux rient au milieu du marché comme des jeunes.",
+                    E(new LiftNeed(Need.Happiness, 0.2)), Ai((AiAxis.Sociability, 1))),
+                Plain("admit", "Avouer qu'on ne se souvient de rien",
+                    "« Aucun souvenir. » La cigogne réfléchit, puis rit : « Moi non plus, en fait. C'était peut-être quelqu'un d'autre. » Les deux prennent un thé quand même, pour vérifier.",
+                    E(new ApplyModifier("clear_conscience")), Ai((AiAxis.Honor, 2))),
+            }),
+
+        new EventDef("elder_unsent_letter", EventType.Pulse, Elder, "La lettre jamais envoyée",
+            "Au fond d'un tiroir, {A} retrouve une lettre jamais envoyée : des excuses, écrites quarante ans plus tôt, pour une dispute dont {A} ne se rappelle plus la raison. Le destinataire, un vieux blaireau, habite toujours à l'autre bout du village.",
+            new[]
+            {
+                Plain("send", "L'envoyer, enfin",
+                    "{A} glisse la lettre dans la boîte. Trois jours plus tard, une réponse : « J'avais oublié la dispute. Toi, non. Viens prendre le thé. »",
+                    E(new ApplyModifier("cherished"), new ApplyModifier("clear_conscience")), Ai((AiAxis.Honor, 1), (AiAxis.Compassion, 1))),
+                Plain("visit", "Porter la lettre en personne",
+                    "{A} traverse le village, frappe, et tend la lettre. Le vieux blaireau la lit sur le seuil, puis serre {A} dans ses bras, sans rien dire, très longtemps.",
+                    E(new ApplyModifier("soothed"), new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Boldness, 1), (AiAxis.Compassion, 1))),
+                Plain("burn", "La brûler : c'est du passé",
+                    "{A} brûle la lettre dans la cheminée. Ce qui devait être dit l'a été, quelque part, un jour, ou ne compte plus. La flamme est petite et chaude.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("elder_cane", EventType.Pulse, Elder, "La canne",
+            "Le médecin a conseillé une canne à {A}. « Pour la sécurité. » Posée contre la porte, la canne a tout d'une ennemie.",
+            new[]
+            {
+                Plain("carve", "La sculpter, et en faire une œuvre",
+                    "{A} sculpte la canne : un escargot en haut, des feuilles tout le long, un héron au bout. Le village s'arrête pour l'admirer. {A} en oublierait presque que c'est une canne.",
+                    E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Rationality, 1))),
+                Plain("corner", "La laisser au coin de la porte",
+                    "{A} laisse la canne au coin de la porte, par principe. Au bout d'une semaine, la canne sert à attraper les pommes du haut. C'est un début.",
+                    E(new GrowStat(PlynlingStat.Courage)), Ai((AiAxis.Boldness, 1))),
+                Plain("adopt", "L'adopter, sans faire d'histoires",
+                    "{A} prend la canne et se promène jusqu'à l'étang, plus loin que depuis des mois. La canne n'est pas une ennemie. C'est une collègue.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("elder_evening_bench", EventType.Pulse, Elder, "Le banc du soir",
+            "Le soleil se couche derrière le moulin. {A} est {a:assis|assise} sur le banc devant chez soi, comme chaque soir. Le village rentre, et les lumières s'allument une à une.",
+            new[]
+            {
+                Plain("count", "Compter les fenêtres qui s'allument",
+                    "{A} compte les fenêtres qui s'allument : trente-deux. Chacune, {A} la connaît. Chacune a une histoire. Le compte est bon.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Rationality, 1))),
+                Plain("wave", "Saluer chaque passant",
+                    "{A} salue chaque passant : le hérisson, l'ours, trois petits, la tortue qui rentre lentement. Tout le monde rend le salut. C'est une bonne journée qui se termine.",
+                    E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Sociability, 1))),
+            }),
+
+        new EventDef("elder_pardon", EventType.Pulse, Elder, "Pardon ?",
+            "Depuis quelque temps, {A} entend un peu moins bien. Ce matin, au marché, {A} a demandé un chocolat et reçu un chapeau. Le chapeau est très joli, cela dit.",
+            new[]
+            {
+                Plain("keep", "Garder le chapeau, et le porter",
+                    "{A} paie le chapeau, le met, et redemande un chocolat, plus fort. Le chocolat arrive. Le chapeau reste. Bonne affaire.",
+                    E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Rationality, 1))),
+                Plain("horn", "Se fabriquer un cornet acoustique",
+                    "{A} fabrique un cornet en écorce. Ça marche très bien. Peut-être trop : {A} entend maintenant tous les potins du café, même ceux du fond.",
+                    E(new GrowStat(PlynlingStat.Intrigue)), Ai((AiAxis.Rationality, 1), (AiAxis.Boldness, 1))),
+            }),
+
+        new EventDef("elder_knitting", EventType.Pulse, Elder, "Les aiguilles",
+            "Un petit du village regarde {A} tricoter depuis une heure, sans un mot, la bouche ouverte. Les aiguilles cliquettent.",
+            new[]
+            {
+                Plain("teach", "Lui apprendre, maille par maille",
+                    "{A} pose de petites aiguilles dans les pattes du petit. Maille à l'endroit, maille à l'envers. Au bout d'une semaine, le petit tricote une écharpe bosselée, et l'offre à {A}.",
+                    E(new ApplyModifier("cherished")), Ai((AiAxis.Compassion, 2))),
+                Plain("gift", "Finir l'écharpe, et la lui offrir",
+                    "{A} finit l'écharpe et la noue autour du cou du petit. Le petit la porte toute la saison, même les jours chauds.",
+                    E(new LiftNeed(Need.Happiness, 0.15)), Ai((AiAxis.Compassion, 1))),
+            }),
+
+        new EventDef("elder_knees", EventType.Pulse, Elder, "Les genoux savent",
+            "Les genoux de {A} annoncent la pluie. Ce matin, les genoux annoncent un orage, un gros. Le ciel est pourtant tout bleu, et le village se moque gentiment.",
+            new[]
+            {
+                Plain("warn", "Prévenir tout le monde quand même",
+                    "{A} prévient tout le monde. On rit. À quinze heures, l'orage éclate. À quinze heures cinq, le village entier vient demander l'avis des genoux pour la semaine prochaine.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Sociability, 1))),
+                Plain("tea", "Se faire un thé, et attendre",
+                    "{A} se fait un thé, ferme les volets, et attend. L'orage éclate à l'heure dite. Les genoux avaient raison. Les genoux ont toujours raison.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Rationality, 1))),
+            }),
+
+        new EventDef("elder_before_trains", EventType.Pulse, Elder, "Avant les trains",
+            "Un petit du village demande à {A}, très sérieusement : « C'était comment, avant les trains ? » {A} ne se savait pas si {a:vieux|vieille}.",
+            new[]
+            {
+                Plain("tale", "Inventer une histoire extraordinaire",
+                    "{A} raconte qu'avant les trains, on voyageait à dos d'escargot géant, et que ça prenait des années. Le petit écoute, les yeux ronds. L'escargot, qui passait par là, ne dément pas.",
+                    E(new ApplyModifier("light_heart")), Ai((AiAxis.Boldness, 1), (AiAxis.Sociability, 1))),
+                Plain("truth", "Dire la vérité : les trains existaient déjà",
+                    "« Les trains existaient déjà. Mais le hérisson n'était pas encore chef de gare. » Le petit trouve ça encore plus incroyable.",
+                    E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Honor, 1))),
+            }),
+
+        new EventDef("elder_sunrise", EventType.Pulse, Elder, "Le lever du soleil",
+            "{A} s'est {a:réveillé|réveillée} avant l'aube, sans raison. Dehors, tout est gris et silencieux. Le soleil va bientôt se lever, derrière la colline.",
+            new[]
+            {
+                Plain("hill", "Monter sur la colline pour le voir",
+                    "{A} monte la colline, lentement, et arrive au sommet pile au moment où le soleil se lève sur toute la vallée. Ça faisait longtemps. Ça valait chaque pas.",
+                    E(new GrowStat(PlynlingStat.Courage), new ApplyModifier("soothed")), Ai((AiAxis.Energy, 1))),
+                Plain("window", "Le regarder par la fenêtre, avec un thé",
+                    "{A} prépare un thé et s'installe à la fenêtre. Le soleil se lève sur les toits, la gare, le moulin. Le premier oiseau chante. La journée commence bien.",
+                    E(new ApplyModifier("soothed")), Ai((AiAxis.Energy, -1))),
             }),
     };
 

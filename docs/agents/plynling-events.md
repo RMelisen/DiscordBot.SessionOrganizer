@@ -197,6 +197,13 @@ never change that mapping, every stored morning depends on it.
 - **Affinity lifts** (`SetAffinityAtLeast`) must clear `BondFor`'s `BondMargin` to change the bond:
   the pact lifts to `BestFriendsFrom + BondMargin` (harness).
 - **Follow-ups** are instances with a future `AvailableAt`; "open" includes them, so a death cancels them.
+- **Echoes** are follow-ups long enough to cross a stage: bébé and ado last 7 days each, so a bébé
+  event's `FollowUp(…, 336, 384)` and an ado event's `FollowUp(…, 168, 240)` always land in adulte
+  (`baby_grow_up` → `grown_dream_*`, the apprentice endings → `grown_master_*`). Their text is written
+  for an adulte. Shorten those hours and the echo can land mid-childhood.
+- **A chain's ending can depend on a roll** by sending `OnSuccess` and `OnFailure` to different
+  follow-up keys (`grown_exam_paper` → laureate / honest / hollow / caught). That is the only way a
+  later step knows how an earlier one went.
 - **On-actions** are queued during a unit of work and created after its save by
   `FlushOnActionsAsync`, each in its own save and `try` — never what breaks an adoption, a visit or a
   sweep; a failed one's half-made changes are dropped (`ResetTracked`), and `DiscardChanges` also
