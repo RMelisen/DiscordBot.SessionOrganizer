@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -10,11 +11,21 @@ namespace ProjectSYNCS.Services;
 /// <remarks>
 /// A snapshot rather than live entities: it is handed out from a cache and read from
 /// several threads, so it has to be immutable.
+///
+/// Ids of zero mean "not configured": the single-channel settings then fall back to their
+/// hardcoded default. The sets hold only what an admin added on top of the hardcoded floor.
 /// </remarks>
-public sealed record GuildConfig(ulong ModeratorRoleId, IReadOnlySet<ulong> ExcludedChannels)
+public sealed record GuildConfig(
+    ulong ModeratorRoleId,
+    ulong GameChannelId,
+    ulong MainChannelId,
+    IReadOnlySet<ulong> ExcludedChannels,
+    IReadOnlySet<ulong> IdleChannels,
+    IReadOnlySet<ulong> ShameVoters)
 {
-    /// <summary>What an unconfigured guild looks like — no role, nothing extra excluded.</summary>
-    public static readonly GuildConfig Empty = new(0, new HashSet<ulong>());
+    /// <summary>What an unconfigured guild looks like — nothing set, nothing added.</summary>
+    public static readonly GuildConfig Empty = new(0, 0, 0,
+        new HashSet<ulong>(), new HashSet<ulong>(), new HashSet<ulong>());
 }
 
 // Per-guild settings an admin can change at runtime, and the cache that makes them
@@ -71,12 +82,24 @@ public sealed class GuildConfigService
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             var settings = await db.GuildSettings.FirstOrDefaultAsync(s => s.GuildId == guildId);
-            var channels = await db.GuildExcludedChannels
+            var excluded = await db.GuildExcludedChannels
                 .Where(c => c.GuildId == guildId)
                 .Select(c => c.ChannelId)
                 .ToListAsync();
+            var idle = await db.GuildIdleChannels
+                .Where(c => c.GuildId == guildId)
+                .Select(c => c.ChannelId)
+                .ToListAsync();
+            var voters = await db.GuildShameVoters
+                .Where(v => v.GuildId == guildId)
+                .Select(v => v.UserId)
+                .ToListAsync();
 
-            loaded = new GuildConfig(settings?.ModeratorRoleId ?? 0, channels.ToHashSet());
+            loaded = new GuildConfig(
+                settings?.ModeratorRoleId ?? 0,
+                settings?.GameChannelId ?? 0,
+                settings?.MainChannelId ?? 0,
+                excluded.ToHashSet(), idle.ToHashSet(), voters.ToHashSet());
         }
         catch (Exception ex)
         {
@@ -99,45 +122,60 @@ public sealed class GuildConfigService
     /// Adds a channel to this guild's excluded list. Returns false if it was already
     /// there — the caller says so rather than reporting a change that did not happen.
     /// </summary>
-    public async Task<bool> AddExcludedChannelAsync(ulong guildId, ulong channelId)
-    {
-        await using var scope = _services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        if (await db.GuildExcludedChannels.AnyAsync(c => c.GuildId == guildId && c.ChannelId == channelId))
-            return false;
-
-        db.GuildExcludedChannels.Add(new GuildExcludedChannel { GuildId = guildId, ChannelId = channelId });
-        await db.SaveChangesAsync();
-
-        Invalidate(guildId);
-        return true;
-    }
+    public Task<bool> AddExcludedChannelAsync(ulong guildId, ulong channelId) =>
+        AddRowAsync(guildId, db => db.GuildExcludedChannels,
+            c => c.GuildId == guildId && c.ChannelId == channelId,
+            () => new GuildExcludedChannel { GuildId = guildId, ChannelId = channelId });
 
     /// <summary>
     /// Removes an admin-added channel. Returns false if it was not on the list.
     /// Cannot touch the hardcoded exclusions — those are not in this table at all.
     /// </summary>
-    public async Task<bool> RemoveExcludedChannelAsync(ulong guildId, ulong channelId)
-    {
-        await using var scope = _services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    public Task<bool> RemoveExcludedChannelAsync(ulong guildId, ulong channelId) =>
+        RemoveRowAsync(guildId, db => db.GuildExcludedChannels,
+            c => c.GuildId == guildId && c.ChannelId == channelId);
 
-        var row = await db.GuildExcludedChannels
-            .FirstOrDefaultAsync(c => c.GuildId == guildId && c.ChannelId == channelId);
-        if (row is null) return false;
+    /// <summary>Adds an idle channel. Same contract as <see cref="AddExcludedChannelAsync"/>.</summary>
+    public Task<bool> AddIdleChannelAsync(ulong guildId, ulong channelId) =>
+        AddRowAsync(guildId, db => db.GuildIdleChannels,
+            c => c.GuildId == guildId && c.ChannelId == channelId,
+            () => new GuildIdleChannel { GuildId = guildId, ChannelId = channelId });
 
-        db.GuildExcludedChannels.Remove(row);
-        await db.SaveChangesAsync();
+    /// <summary>Removes an admin-added idle channel. Returns false if it was not on the list.</summary>
+    public Task<bool> RemoveIdleChannelAsync(ulong guildId, ulong channelId) =>
+        RemoveRowAsync(guildId, db => db.GuildIdleChannels,
+            c => c.GuildId == guildId && c.ChannelId == channelId);
 
-        Invalidate(guildId);
-        return true;
-    }
+    /// <summary>Adds a /shame voter. Returns false if they were already on the list.</summary>
+    public Task<bool> AddShameVoterAsync(ulong guildId, ulong userId) =>
+        AddRowAsync(guildId, db => db.GuildShameVoters,
+            v => v.GuildId == guildId && v.UserId == userId,
+            () => new GuildShameVoter { GuildId = guildId, UserId = userId });
+
+    /// <summary>
+    /// Removes an admin-added voter. Returns false if they were not on the list. Cannot
+    /// touch ShameModule's hardcoded voters — those are not in this table at all.
+    /// </summary>
+    public Task<bool> RemoveShameVoterAsync(ulong guildId, ulong userId) =>
+        RemoveRowAsync(guildId, db => db.GuildShameVoters,
+            v => v.GuildId == guildId && v.UserId == userId);
 
     /// <summary>
     /// Sets the moderator role, or clears it with <paramref name="roleId"/> of zero.
     /// </summary>
-    public async Task SetModeratorRoleAsync(ulong guildId, ulong roleId)
+    public Task SetModeratorRoleAsync(ulong guildId, ulong roleId) =>
+        UpdateSettingsAsync(guildId, s => s.ModeratorRoleId = roleId);
+
+    /// <summary>Sets the Plynling game channel, or goes back to the default with zero.</summary>
+    public Task SetGameChannelAsync(ulong guildId, ulong channelId) =>
+        UpdateSettingsAsync(guildId, s => s.GameChannelId = channelId);
+
+    /// <summary>Sets her main channel, or goes back to the default with zero.</summary>
+    public Task SetMainChannelAsync(ulong guildId, ulong channelId) =>
+        UpdateSettingsAsync(guildId, s => s.MainChannelId = channelId);
+
+    // The settings row is created lazily, the first time anything is configured.
+    private async Task UpdateSettingsAsync(ulong guildId, Action<GuildSettings> apply)
     {
         await using var scope = _services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -149,10 +187,45 @@ public sealed class GuildConfigService
             db.GuildSettings.Add(settings);
         }
 
-        settings.ModeratorRoleId = roleId;
+        apply(settings);
         await db.SaveChangesAsync();
 
         Invalidate(guildId);
+    }
+
+    // The three set-tables (excluded channels, idle channels, voters) share one shape: a
+    // row per (guild, id), added once, removed if present.
+    private async Task<bool> AddRowAsync<T>(ulong guildId, Func<AppDbContext, DbSet<T>> table,
+        Expression<Func<T, bool>> match, Func<T> create) where T : class
+    {
+        await using var scope = _services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var set = table(db);
+        if (await set.AnyAsync(match)) return false;
+
+        set.Add(create());
+        await db.SaveChangesAsync();
+
+        Invalidate(guildId);
+        return true;
+    }
+
+    private async Task<bool> RemoveRowAsync<T>(ulong guildId, Func<AppDbContext, DbSet<T>> table,
+        Expression<Func<T, bool>> match) where T : class
+    {
+        await using var scope = _services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var set = table(db);
+        var row = await set.FirstOrDefaultAsync(match);
+        if (row is null) return false;
+
+        set.Remove(row);
+        await db.SaveChangesAsync();
+
+        Invalidate(guildId);
+        return true;
     }
 
     // Dropped rather than updated in place: the next read rebuilds it from the table

@@ -11,8 +11,9 @@ counters in one `SaveChanges`.
 ## Voting
 
 **Staff-only, and the daily cap is on the target, not the voter.** Anyone may open the wall; only
-`SessionPermissions.IsStaff`, a name in `ShameModule.ExtraVoters`, or the `/config` moderator role
-may vote (`CanVoteAsync` checks staff and `ExtraVoters` before asking the database). Restricting
+`SessionPermissions.IsStaff`, a name in `ShameModule.ExtraVoters`, someone added with
+`/config shame-voters`, or the `/config` moderator role may vote (`CanVoteAsync` checks staff and
+`ExtraVoters` before asking the database). Restricting
 *who* makes it a deterrent rather than a game; the thing to prevent is a dogpile, not a moderator
 voting twice.
 

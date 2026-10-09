@@ -13,19 +13,39 @@ namespace ProjectSYNCS.Services;
 // swallowed and logged — a missing permission or closed DMs must never break a flow.
 public sealed class PlynlingAnnouncer
 {
-    // Where deaths and resurrections are announced. A server-specific id, listed in
-    // CLAUDE.md's "Hardcoded ids" beside the others.
-    public const ulong GameChannelId = 1555578872488267846;
+    // Where deaths and resurrections are announced unless the guild configured its own
+    // game channel (/config game-channel). A server-specific id, listed in CLAUDE.md's
+    // "Hardcoded ids" beside the others.
+    public const ulong DefaultGameChannelId = 1555578872488267846;
 
     private readonly DiscordSocketClient _client;
+    private readonly GuildConfigService _config;
     private readonly ResponsePicker _picker;
     private readonly ILogger<PlynlingAnnouncer> _logger;
 
-    public PlynlingAnnouncer(DiscordSocketClient client, ResponsePicker picker, ILogger<PlynlingAnnouncer> logger)
+    public PlynlingAnnouncer(DiscordSocketClient client, GuildConfigService config, ResponsePicker picker,
+        ILogger<PlynlingAnnouncer> logger)
     {
         _client = client;
+        _config = config;
         _picker = picker;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// This guild's game channel: the configured one, else the default when it lives in
+    /// this guild. Null when there is neither (an unconfigured dev guild), or when the
+    /// channel is gone. The guild check matters: the default is one fixed id, so without
+    /// it a Plynling from any other guild would be announced on the home server.
+    /// </summary>
+    public async Task<IMessageChannel?> ResolveGameChannelAsync(ulong guildId)
+    {
+        var configured = (await _config.GetAsync(guildId)).GameChannelId;
+        var id = configured != 0 ? configured : DefaultGameChannelId;
+        return _client.GetChannel(id) is IMessageChannel channel
+               && channel is IGuildChannel home && home.GuildId == guildId
+            ? channel
+            : null;
     }
 
     public Task AnnounceDeathAsync(Plynling plynling, DateTimeOffset now)
@@ -73,10 +93,7 @@ public sealed class PlynlingAnnouncer
     {
         try
         {
-            IMessageChannel? channel = _client.GetChannel(GameChannelId) is IMessageChannel game
-                                       && game is IGuildChannel home && home.GuildId == guildId
-                ? game
-                : fallback;
+            var channel = await ResolveGameChannelAsync(guildId) ?? fallback;
             if (channel is null)
             {
                 _logger.LogInformation("Event story in guild {GuildId} not posted: no game channel there.", guildId);
@@ -131,17 +148,9 @@ public sealed class PlynlingAnnouncer
     {
         try
         {
-            if (_client.GetChannel(GameChannelId) is not IMessageChannel channel)
+            if (await ResolveGameChannelAsync(guildId) is not { } channel)
             {
-                _logger.LogWarning("Game channel {ChannelId} not found; Plynling {What} not announced.", GameChannelId, what);
-                return;
-            }
-
-            // The channel is one fixed id, so without this a Plynling from any other guild
-            // the bot sits in — the dev guild, typically — would be announced here.
-            if (channel is not IGuildChannel home || home.GuildId != guildId)
-            {
-                _logger.LogInformation("Plynling {What} in guild {GuildId} not announced: the game channel is in another guild.",
+                _logger.LogInformation("Plynling {What} in guild {GuildId} not announced: no game channel there.",
                     what, guildId);
                 return;
             }

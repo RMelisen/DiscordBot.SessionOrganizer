@@ -83,8 +83,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/admin xp add|remove`** · **`/admin pebble add|remove`** — Ajuster l'XP ou les cailloux de quelqu'un.\n" +
                 "**`/admin stats`** · **`/admin dashboard`** — L'économie du serveur, en un coup d'œil et jour après jour.\n" +
                 "**`/admin plynling rename`** · **`/admin plynling resurrect`** — Gérer le Plynling de quelqu'un.\n" +
-                "**`/config`** — Le rôle autorisé à voter avec `/shame`, et les salons où rien ne " +
-                "compte. **`/config show`** affiche la configuration actuelle.\n" +
+                "**`/config`** — Qui vote avec `/shame`, les salons où rien ne compte, le salon de jeu " +
+                "et le salon principal. **`/config show`** affiche la configuration actuelle.\n" +
                 "**`/help`** — Affiche ce message.")
             .AddField("Créer une session — pas à pas",
                 "Lance **`/schedule create`**. Un assistant privé te guide :\n" +

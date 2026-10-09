@@ -337,13 +337,18 @@ looks after her.
 
 ### Staff & owner
 
-- **`/config`** — per-server configuration, applied without a redeploy: a **moderator
-  role** allowed to vote with `/shame`, and extra **channels where nothing counts** (no
-  XP, and ignored by the wall of shame). Everything here is *additive* — the defaults
-  built into the code stay in force, so configuring something can never revoke an
-  existing right or un-exclude a channel, and a server that never touches `/config`
-  behaves exactly as before. **`/config show`** prints the current state, separating the
-  built-in defaults from what was added.
+- **`/config`** — per-server configuration, applied without a redeploy:
+  - `moderator-role set|clear` and `shame-voters add|remove` — who may vote with `/shame`;
+  - `excluded-channels add|remove` — channels where nothing counts (no XP, ignored by the wall);
+  - `game-channel set|clear` — where Plynling deaths, comebacks and event stories are announced;
+  - `main-channel set|clear` and `idle-channels add|remove` — her morning hello and night life, and
+    the channels that must all be quiet before she talks into the silence (main server only).
+
+  Lists are *additive*: the defaults built into the code stay in force, so configuring something
+  can never revoke an existing right or un-exclude a channel. A configured game or main channel
+  replaces its default; clearing it goes back. A server that never touches `/config` behaves
+  exactly as before. **`/config show`** shows everything on one card, defaults apart from what
+  was added.
 - **`/admin pebble add|remove <member> <amount>`** — manual cailloux correction, private,
   never below 0; the person is not notified.
 - **`/admin stats`** — a private snapshot of the economy: cailloux in circulation and the five

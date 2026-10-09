@@ -297,9 +297,11 @@ These literal snowflakes are tied to one specific server: `AvailabilityService.O
 leveling bot's id in `Helpers/LevelUpAnnouncement`; the custom emote ids in `Helpers/Emotes`;
 `XpTracker.ExcludedChannels`; `ShameModule.ExtraVoters`; the per-user maps in `BotResponses`
 (`PersonalComebacks`, `RealNames`, `KnownGenders`, `TataId`, `FamilyNicknames`);
-`PlynlingAnnouncer.GameChannelId`; `MorningGreetingService.ChannelId`; and
-`AmbientService.IdleChannelIds` (the everyday channels that must all be quiet for an idle line).
+`PlynlingAnnouncer.DefaultGameChannelId`; `MorningGreetingService.DefaultChannelId`;
+`AmbientService.IdleChannelIds` (the everyday channels that must all be quiet for an idle line); and
+`Helpers/HomeGuild.Id` (the one server the morning hello and `AmbientService` live in).
 
-`ExcludedChannels` and `ExtraVoters` are *floors*: `/config` can add to them but never remove from
-them. `OwnerId` is deliberately **not** configurable — it gates `/debug` and the DM relay, so making
+`ExcludedChannels`, `ExtraVoters` and `IdleChannelIds` are *floors*: `/config` can add to them but
+never remove from them. The game and main channels are *defaults*: a channel set with `/config`
+replaces them, and clearing it falls back (see `docs/agents/admin.md`). `OwnerId` is deliberately **not** configurable — it gates `/debug` and the DM relay, so making
 it editable would let any ManageGuild holder hand themselves those powers.

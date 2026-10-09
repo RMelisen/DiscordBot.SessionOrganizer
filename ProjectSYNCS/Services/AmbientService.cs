@@ -23,12 +23,19 @@ internal sealed class AmbientService : BackgroundService
     // random minute past three and a six-hour silence.
     private static readonly TimeSpan TickInterval = TimeSpan.FromMinutes(10);
 
+    /// <summary>
+    /// The default idle channels, for <c>/config idle-channels</c> to refuse removing (and
+    /// adding again) and for <c>/config show</c>. A floor, like XpTracker's exclusions.
+    /// </summary>
+    public static IReadOnlySet<ulong> HardcodedIdleChannels => IdleChannelIds;
+
     // The channels that must all be quiet before she speaks into the silence: the main
     // channel and the server's other everyday ones. Server-specific, listed in CLAUDE.md's
-    // "Hardcoded ids". A thread counts for its parent channel.
+    // "Hardcoded ids". The home guild adds to them with /config idle-channels, and the
+    // main channel always counts wherever it is configured. A thread counts for its parent.
     private static readonly HashSet<ulong> IdleChannelIds = new()
     {
-        MorningGreetingService.ChannelId, // Général
+        MorningGreetingService.DefaultChannelId, // Général
         878306977887957042,               // Média
         1025683260157722704,              // Galerie
         878305034432045080,               // Gaming
@@ -58,6 +65,7 @@ internal sealed class AmbientService : BackgroundService
     private static readonly HashSet<string> NightLineSet = new(BotResponses.NightLines);
 
     private readonly DiscordSocketClient _client;
+    private readonly GuildConfigService _config;
     private readonly BreakdownService _breakdown;
     private readonly ResponsePicker _picker;
     private readonly ILogger<AmbientService> _logger;
@@ -96,12 +104,14 @@ internal sealed class AmbientService : BackgroundService
 
     public AmbientService(
         DiscordSocketClient client,
+        GuildConfigService guildConfig,
         BreakdownService breakdown,
         ResponsePicker picker,
         IConfiguration config,
         ILogger<AmbientService> logger)
     {
         _client = client;
+        _config = guildConfig;
         _breakdown = breakdown;
         _picker = picker;
         _logger = logger;
@@ -129,7 +139,7 @@ internal sealed class AmbientService : BackgroundService
         {
             await Task.Delay(TickInterval, stoppingToken);
 
-            var channel = ResolveChannel();
+            var channel = await ResolveChannelAsync();
             if (channel is null) continue;
 
             // Each step in its own try: an exception escaping a hosted loop stops the bot.
@@ -159,10 +169,13 @@ internal sealed class AmbientService : BackgroundService
         var now = DateTimeOffset.UtcNow;
         var channelId = message.Channel.Id;
         var parentId = (message.Channel as SocketThreadChannel)?.ParentChannel?.Id;
-        if (IdleChannelIds.Contains(channelId) || parentId is { } p && IdleChannelIds.Contains(p))
+        // From GuildConfigService's cache: this runs on every message.
+        var home = await _config.GetAsync(HomeGuild.Id);
+        var mainId = MorningGreetingService.MainChannelOf(home);
+        if (IsIdleChannel(channelId, home, mainId) || parentId is { } p && IsIdleChannel(p, home, mainId))
             lock (_gate) _lastActivityAt = now;
 
-        if (channelId != MorningGreetingService.ChannelId) return false;
+        if (channelId != mainId) return false;
 
         var today = AppTime.DayKey(now);
         // Aimed at her, ChatterService answers it with real typing; a ghost would be lost under it.
@@ -246,7 +259,8 @@ internal sealed class AmbientService : BackgroundService
             .MaxBy(m => m.Timestamp);
 
         var latest = last?.Timestamp;
-        foreach (var id in IdleChannelIds.Where(id => id != main.Id))
+        var home = await _config.GetAsync(HomeGuild.Id);
+        foreach (var id in IdleChannelIds.Union(home.IdleChannels).Where(id => id != main.Id))
         {
             // A forum or a channel she can't read is skipped; its threads still count live.
             if (_client.GetChannel(id) is not IMessageChannel other) continue;
@@ -479,7 +493,7 @@ internal sealed class AmbientService : BackgroundService
     {
         var deadline = DateTimeOffset.UtcNow + WakeChannelWait;
         IMessageChannel? channel;
-        while ((channel = ResolveChannel()) is null)
+        while ((channel = await ResolveChannelAsync()) is null)
         {
             // In the dev guild the channel never appears; this just runs out.
             if (DateTimeOffset.UtcNow >= deadline) return null;
@@ -488,10 +502,14 @@ internal sealed class AmbientService : BackgroundService
         return channel;
     }
 
-    private IMessageChannel? ResolveChannel() =>
+    private async Task<IMessageChannel?> ResolveChannelAsync() =>
         _client.ConnectionState == ConnectionState.Connected
-            ? _client.GetChannel(MorningGreetingService.ChannelId) as IMessageChannel
+            ? _client.GetChannel(await MorningGreetingService.MainChannelIdAsync(_config)) as IMessageChannel
             : null;
+
+    // The hardcoded floor, what the home guild added, and the main channel wherever it is.
+    private static bool IsIdleChannel(ulong channelId, GuildConfig home, ulong mainId) =>
+        channelId == mainId || IdleChannelIds.Contains(channelId) || home.IdleChannels.Contains(channelId);
 
     // What a restart must not forget: the version she last ran (for the update line) and
     // the day she last spoke on waking (one wake line a day, however many deploys).

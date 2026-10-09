@@ -191,8 +191,8 @@ keeps its own much slower pacing, knowingly exceeding the timeout for ~a minute 
 
 ## Morning hello
 
-`MorningGreetingService` posts one `MorningGreetings` line a day in
-`MorningGreetingService.ChannelId`, at a random slot from `Helpers/MorningGreeting` (8:00–10:00 in
+`MorningGreetingService` posts one `MorningGreetings` line a day in her main channel
+(`/config main-channel` in the home guild, else `MorningGreetingService.DefaultChannelId`), at a random slot from `Helpers/MorningGreeting` (8:00–10:00 in
 `AppTime.Zone`). It sleeps until the slot rather than ticking. A `MorningFunFacts` line
 always goes underneath. **Both lines come from `Helpers/DailyRotation`, not `ResponsePicker`**: a
 shuffled walk through the pool, one step per calendar day, computed from the date, so restarts
@@ -231,7 +231,8 @@ doesn't make it certain. Messages aimed at her are skipped: `ChatterService` alr
 
 ## Ambient life
 
-Her life in the main channel (`MorningGreetingService.ChannelId`) when nobody is talking to her.
+Her life in the main channel (`MorningGreetingService.MainChannelIdAsync`, the same one as the
+morning hello) when nobody is talking to her.
 Rare on purpose: the point is that she seems to be there, not that she talks. Odds, windows and
 thresholds live in `Helpers/Ambient` (pure, Paris wall-clock hours, so DST never moves a rule).
 
@@ -240,13 +241,13 @@ thresholds live in `Helpers/Ambient` (pure, Paris wall-clock hours, so DST never
 | Idle moon + `NightPresenceFillers` | `PresenceService` | 1:00–7:00 |
 | 3 a.m. line (`NightLines`) | `AmbientService` tick | decided once a night (25%, random minute 3:00–3:49), main channel quiet ≥ 1 h |
 | Night scolding (`NightScoldLines`) | `AmbientService.HandleMessageAsync` | any human message in the main channel after tonight's line and before 5:30, once a person a night, verdicts excepted; a reply, and `ChatterService` is skipped for that message |
-| Idle turn | `AmbientService` tick | 10:00–23:00, **all of `AmbientService.IdleChannelIds`** quiet ≥ 6 h (threads count for their parent), one 50% roll per silence, max 1/day, posted in the main channel: 30% late `SeenReactions` on the main channel's last human message, else an `IdleLines` line, a quarter of the time an `IdleEditLines` pair (edited 5 min later, or 2 s after someone speaks in the main channel after it) |
+| Idle turn | `AmbientService` tick | 10:00–23:00, **all idle channels** (`IdleChannelIds`, plus `/config idle-channels`, plus the main channel) quiet ≥ 6 h (threads count for their parent), one 50% roll per silence, max 1/day, posted in the main channel: 30% late `SeenReactions` on the main channel's last human message, else an `IdleLines` line, a quarter of the time an `IdleEditLines` pair (edited 5 min later, or 2 s after someone speaks in the main channel after it) |
 | Ghost typing | `AmbientService.HandleMessageAsync` | a human message after ≥ 1 h quiet, not aimed at her, 3%, max 1/day |
 | Hesitant reaction | `ReactionService` | 3% of mood reactions are removed 2–4 s later |
 | Wake line | `AmbientService`, first `Ready` only | every restart, 9:00–23:00, max 1/day: `WakeUpdateLines` when the version changed, else `WakeLines` (waking from a bad dream) |
 
 - **`AmbientService` is registered twice on one instance**, like `MorningGreetingService`: `BotService`
-  feeds it every human message (two quiet clocks: the main channel's, and all `IdleChannelIds`
+  feeds it every human message (two quiet clocks: the main channel's, and all idle channels
   together) and the host runs its 10-minute tick. The first tick seeds both from history (50
   messages in the main channel, 10 in each other one; a forum is skipped), or from the start time
   when none is human, so a restart is never followed straight away by an idle line. It also finds

@@ -42,8 +42,9 @@ else triggers: announcing deaths
 (`DeathAnnounced`), the single warning DM (`WarningSent`, re-armed by feeding), thawing expired
 self-freezes, time-earned badges and moments. It saves the flag **before** the side effect, so a
 failed announcement is logged once rather than retried hourly. Deaths and resurrections are
-announced in `PlynlingAnnouncer.GameChannelId`, only for the guild owning that channel (others are
-logged and skipped, never cross-posted).
+announced in the guild's game channel (`PlynlingAnnouncer.ResolveGameChannelAsync`: the one set with
+`/config game-channel`, else `DefaultGameChannelId` when it belongs to that guild). A guild with
+neither is logged and skipped, never cross-posted.
 
 ### Sleep (01:00–05:00 Paris)
 

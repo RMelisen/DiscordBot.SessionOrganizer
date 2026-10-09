@@ -66,6 +66,12 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
     // configured role *adds* voters, it never removes them. Configuring a role that
     // happens to omit one of these people must not silently revoke access they already
     // had — a config change should not be able to take something away by accident.
+    /// <summary>
+    /// The hardcoded voters, for <c>/config shame-voters</c> to refuse removing (and adding
+    /// again) and for <c>/config show</c>.
+    /// </summary>
+    public static IReadOnlySet<ulong> HardcodedExtraVoters => ExtraVoters;
+
     private static readonly HashSet<ulong> ExtraVoters = new()
     {
         177049957818302464,
@@ -85,14 +91,16 @@ public class ShameModule : InteractionModuleBase<SocketInteractionContext>
         _config = config;
     }
 
-    // Staff, one of the hardcoded names above, or a holder of the guild's configured
-    // moderator role — whichever comes first. The role is the only part that touches
-    // the database, and only when the two free checks have already said no.
+    // Staff, one of the hardcoded names above, someone added with /config shame-voters, or
+    // a holder of the guild's configured moderator role — whichever comes first. The config
+    // is the only part that touches the database, and only when the two free checks have
+    // already said no.
     private async Task<bool> CanVoteAsync(IUser user)
     {
         if (SessionPermissions.IsStaff(user) || ExtraVoters.Contains(user.Id)) return true;
 
         var config = await _config.GetAsync(Context.Guild.Id);
+        if (config.ShameVoters.Contains(user.Id)) return true;
         if (config.ModeratorRoleId == 0) return false;
 
         return user is SocketGuildUser member

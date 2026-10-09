@@ -19,6 +19,8 @@ public class AppDbContext : DbContext
     public DbSet<MemberXp> MemberXps => Set<MemberXp>();
     public DbSet<GuildSettings> GuildSettings => Set<GuildSettings>();
     public DbSet<GuildExcludedChannel> GuildExcludedChannels => Set<GuildExcludedChannel>();
+    public DbSet<GuildIdleChannel> GuildIdleChannels => Set<GuildIdleChannel>();
+    public DbSet<GuildShameVoter> GuildShameVoters => Set<GuildShameVoter>();
     public DbSet<MemberDailyStat> MemberDailyStats => Set<MemberDailyStat>();
     public DbSet<Giveaway> Giveaways => Set<Giveaway>();
     public DbSet<GiveawayEntry> GiveawayEntries => Set<GiveawayEntry>();
@@ -178,6 +180,8 @@ public class AppDbContext : DbContext
         {
             e.Property(x => x.GuildId).HasConversion<long>();
             e.Property(x => x.ModeratorRoleId).HasConversion<long>();
+            e.Property(x => x.GameChannelId).HasConversion<long>();
+            e.Property(x => x.MainChannelId).HasConversion<long>();
             // At most one settings row per guild.
             e.HasIndex(x => x.GuildId).IsUnique();
         });
@@ -190,6 +194,23 @@ public class AppDbContext : DbContext
             e.HasIndex(x => new { x.GuildId, x.ChannelId }).IsUnique();
             // Serves the only read there is: every excluded channel for one guild,
             // loaded once and then cached (see GuildConfigService).
+            e.HasIndex(x => x.GuildId);
+        });
+
+        // Same shape and same reasons as GuildExcludedChannel.
+        modelBuilder.Entity<GuildIdleChannel>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.ChannelId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.ChannelId }).IsUnique();
+            e.HasIndex(x => x.GuildId);
+        });
+
+        modelBuilder.Entity<GuildShameVoter>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.UserId }).IsUnique();
             e.HasIndex(x => x.GuildId);
         });
 

@@ -253,7 +253,10 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
                 return;
             }
 
-            await RespondAsync($"{Emotes.Sparkle} **{PlynlingCardUi.SafeName(plynling.Name)}** est de retour (annoncé dans <#{PlynlingAnnouncer.GameChannelId}>).",
+            var where = await _announcer.ResolveGameChannelAsync(Context.Guild.Id) is { } game
+                ? $"annoncé dans <#{game.Id}>"
+                : "pas de salon de jeu ici, donc pas d'annonce";
+            await RespondAsync($"{Emotes.Sparkle} **{PlynlingCardUi.SafeName(plynling.Name)}** est de retour ({where}).",
                 ephemeral: true, allowedMentions: AllowedMentions.None);
             await _announcer.AnnounceResurrectionAsync(plynling, now);   // after the reply — see PlynlingModule.FreezeAsync
         }

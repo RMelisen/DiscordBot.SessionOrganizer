@@ -36,7 +36,7 @@ All four signals check it (message, reaction, verdict, voice — which is why
 as its parent. The decision is a pure `(channelId, parentId?, configured)` overload; the hardcoded
 check runs first, so a hardcoded channel never reaches the database. `IsChannelExcludedAsync` is
 public so `ShameTracker` can ask; the set itself is private, exposed read-only as
-`HardcodedExcludedChannels` for `/config show`. `/config` can add channels, never remove hardcoded
+`HardcodedExcludedChannels` for `/config show` and `/config excluded-channels`. `/config` can add channels, never remove hardcoded
 ones (see `admin.md`).
 
 ## Bonuses

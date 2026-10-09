@@ -24,18 +24,33 @@ same check.
 
 ## `/config`
 
-A group module with two subgroups — `/config channels add|remove`, `/config moderator-role
-set|clear` — plus a flat `/config show`. Three levels is Discord's maximum nesting. (`/shame` is flat
-only because it had to stay invokable bare; nothing here needs that.) Every handler is ephemeral and
-re-checks `IsStaff`; no `[DefaultMemberPermissions]`, same reason as `/admin`.
+A flat `/config show` (a static Components V2 card, `ConfigCards.Build`) plus one subgroup per
+setting: `excluded-channels add|remove`, `idle-channels add|remove`, `shame-voters add|remove`,
+`moderator-role set|clear`, `game-channel set|clear`, `main-channel set|clear`. Three levels is
+Discord's maximum nesting. (`/shame` is flat only because it had to stay invokable bare; nothing here
+needs that.) Every handler goes through `ConfigModule.BeginAsync` (`IsStaff`, then an ephemeral
+defer); no `[DefaultMemberPermissions]`, same reason as `/admin`.
 
-**Runtime configuration is additive to the code, never a replacement.** `GuildSettings` /
-`GuildExcludedChannel` hold what `/config` writes; `XpTracker.ExcludedChannels` and
-`ShameModule.ExtraVoters` stay in force regardless. An unconfigured guild behaves exactly as before;
-no config change can *remove* an exclusion or revoke a voting right. So `/config channels remove`
-refuses a hardcoded channel outright (rather than appearing to work), and `add` refuses one too
-(rather than storing a redundant row that could drift). The moderator role only widens who may vote
-on `/shame`.
+**Two rules, by the shape of the setting.** An unconfigured guild behaves exactly as before either way.
+
+- **Lists are additive to the code, never a replacement.** `GuildExcludedChannel`,
+  `GuildIdleChannel` and `GuildShameVoter` hold only what `/config` added; `XpTracker.ExcludedChannels`,
+  `AmbientService.IdleChannelIds` and `ShameModule.ExtraVoters` stay in force regardless, each exposed
+  read-only as `Hardcoded…` for the refusals and the card. No config change can *remove* an exclusion
+  or revoke a voting right: `remove` refuses a hardcoded entry outright (rather than appearing to
+  work), and `add` refuses one too (rather than storing a redundant row that could drift). The
+  moderator role and `shame-voters` only widen who may vote on `/shame`; voters refuse bots.
+- **Single channels replace their default.** `GuildSettings.GameChannelId` / `MainChannelId`, zero
+  meaning unset: a destination grants and revokes nothing, so a configured one simply wins, and
+  `clear` (or setting the default itself, stored as zero) falls back. `set` refuses a channel the bot
+  can't view and send in — a silent destination would otherwise fail on every use with nobody told.
+
+**Main and idle channels are home-guild only.** `MorningGreetingService` and `AmbientService` keep
+one state each, so they live in `Helpers/HomeGuild.Id` and read that guild's config
+(`MorningGreetingService.MainChannelIdAsync` / `MainChannelOf`, shared by both). Elsewhere those
+subcommands refuse rather than store a row nothing reads. The main channel always counts as an idle
+channel wherever it is set. The game channel is per guild (`PlynlingAnnouncer.ResolveGameChannelAsync`),
+so a dev guild gets announcements once it configures one.
 
 **`GuildConfigService` is a singleton that reads the database — the cache is why.** It takes
 `IServiceProvider` and scopes per unit of work (never inject `AppDbContext`). The cache is

@@ -16,8 +16,9 @@ namespace ProjectSYNCS.Services;
 // and as the hosted service, so BotService and the host share this one instance.
 internal sealed class MorningGreetingService : BackgroundService
 {
-    // Where she says hello. A server-specific id, listed in CLAUDE.md's "Hardcoded ids".
-    public const ulong ChannelId = 878305034432045079;
+    // Where she says hello unless the home guild configured another main channel
+    // (/config main-channel). A server-specific id, listed in CLAUDE.md's "Hardcoded ids".
+    public const ulong DefaultChannelId = 878305034432045079;
 
     // How often to look again for the channel while the gateway is still coming up.
     private static readonly TimeSpan ChannelPollInterval = TimeSpan.FromSeconds(30);
@@ -39,6 +40,7 @@ internal sealed class MorningGreetingService : BackgroundService
     private static readonly HashSet<string> Lines = new(BotResponses.MorningGreetings);
 
     private readonly DiscordSocketClient _client;
+    private readonly GuildConfigService _config;
     private readonly ILogger<MorningGreetingService> _logger;
 
     // Guards everything below: the loop and the gateway both read and claim the day.
@@ -57,11 +59,24 @@ internal sealed class MorningGreetingService : BackgroundService
 
     public MorningGreetingService(
         DiscordSocketClient client,
+        GuildConfigService config,
         ILogger<MorningGreetingService> logger)
     {
         _client = client;
+        _config = config;
         _logger = logger;
     }
+
+    /// <summary>
+    /// Her main channel: the home guild's configured one, else the default. Shared with
+    /// AmbientService, which lives in the same channel. Cheap enough for every message:
+    /// GuildConfigService answers from its cache.
+    /// </summary>
+    internal static async Task<ulong> MainChannelIdAsync(GuildConfigService config) =>
+        MainChannelOf(await config.GetAsync(HomeGuild.Id));
+
+    internal static ulong MainChannelOf(GuildConfig home) =>
+        home.MainChannelId != 0 ? home.MainChannelId : DefaultChannelId;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -108,11 +123,11 @@ internal sealed class MorningGreetingService : BackgroundService
         // guilds, so wait for the channel — but never past the window. In the dev guild
         // the channel never appears and this just runs out.
         IMessageChannel? channel;
-        while ((channel = ResolveChannel()) is null)
+        while ((channel = await ResolveChannelAsync()) is null)
         {
             if (DateTimeOffset.UtcNow + ChannelPollInterval >= deadline)
             {
-                _logger.LogInformation("Morning greeting skipped: channel {ChannelId} not available.", ChannelId);
+                _logger.LogInformation("Morning greeting skipped: main channel not available.");
                 return;
             }
             await Task.Delay(ChannelPollInterval, stoppingToken);
@@ -128,7 +143,7 @@ internal sealed class MorningGreetingService : BackgroundService
     public async Task HandleMessageAsync(SocketMessage rawMessage)
     {
         if (rawMessage is not SocketUserMessage message) return;
-        if (message.Author.IsBot || message.Channel.Id != ChannelId) return;
+        if (message.Author.IsBot || message.Channel.Id != await MainChannelIdAsync(_config)) return;
         if (message.MentionedUsers.Any(u => u.Id == _client.CurrentUser.Id)) return;
         if (message.ReferencedMessage?.Author.Id == _client.CurrentUser.Id) return;
 
@@ -199,9 +214,9 @@ internal sealed class MorningGreetingService : BackgroundService
         await BotChat.PostWithTypingAsync(channel, line, _logger, "morning greeting", AllowedMentions.None);
     }
 
-    private IMessageChannel? ResolveChannel() =>
+    private async Task<IMessageChannel?> ResolveChannelAsync() =>
         _client.ConnectionState == ConnectionState.Connected
-            ? _client.GetChannel(ChannelId) as IMessageChannel
+            ? _client.GetChannel(await MainChannelIdAsync(_config)) as IMessageChannel
             : null;
 
     // A restart inside the window draws a fresh slot for today; this keeps it from
@@ -225,7 +240,7 @@ internal sealed class MorningGreetingService : BackgroundService
         catch (Exception ex)
         {
             // Better a rare double hello than none.
-            _logger.LogWarning(ex, "Could not read channel {ChannelId} history before the morning greeting.", ChannelId);
+            _logger.LogWarning(ex, "Could not read channel {ChannelId} history before the morning greeting.", channel.Id);
             return false;
         }
     }
