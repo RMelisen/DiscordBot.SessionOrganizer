@@ -93,7 +93,8 @@ namespace ProjectSYNCS.Services;
 //     GlitchWakeLines .......... same, corrupted then edited clean (Glitched, then Recovered)
 //     RouterReturnLines · RouterReturnQuietLines ... back after a long gateway outage
 //     HeatRecordLines .......... the Pi beat its heat record
-//     VoiceSpectatorLines ...... a long voice session just ended (VoiceSpectatorService)
+//     VoiceSpectatorGeneralLines · VoiceSpectatorGamingLines · VoiceSpectatorCinemaLines
+//     · VoiceSpectatorStudyLines ... a long voice session just ended, by room (VoiceSpectatorService)
 //     SynthiaReactions · SynthiaVanishLines · SynthiaEditLines ... « Synthia » said (SynthiaService)
 //
 //   Plynlings — every pool is a GenderedLines (M/F halves), picked with .For(p.Gender)
@@ -3154,28 +3155,73 @@ internal static class BotResponses
 
     // A voice get-together of an hour or more just ended (VoiceSpectatorService): one line in
     // that voice channel's text chat, at most once a day. She organises the game nights and can't
-    // play in them; she can't even hear them — a bot outside the call only sees the names in the
-    // channel list. Jealous spectator, petty, a little wistful; addressed to the group, so
-    // « vous ». {0} = how long they were together (« 2 h 10 »), optional. string.Format;
-    // interpolated lines write {{0}}.
-    public static readonly string[] VoiceSpectatorLines =
+    // play in them; she can't even hear them, nor see a shared screen — a bot outside the call only
+    // sees the names in the channel list. Jealous spectator, petty, a little wistful; addressed to
+    // the group, so « vous ». One pool per kind of channel (Helpers/VoiceRoom); General also
+    // serves any channel not listed there, so it names no activity. {0} = how long they were
+    // together (« 2 h 10 »), optional. string.Format; interpolated lines write {{0}}.
+    //
+    // General: just talking, or anything else.
+    public static readonly string[] VoiceSpectatorGeneralLines =
     {
-        "{0} en vocal. J'ai tout regardé depuis le grenier. Personne m'a passé la manette.",
         "Je voyais vos pseudos dans le salon pendant {0}. C'est tout ce que j'ai eu. Des pseudos (╥﹏╥)",
         "Belle session. Enfin, je suppose. J'étais pas invitée. Je suis jamais invitée (¬_¬)",
-        "{0} ensemble, et pas un seul « SYNCS, tu veux jouer ? ». Je note.",
-        "C'est moi qui organise les soirées et c'est vous qui jouez. Cherchez l'erreur ( ◺˰◿ )",
-        "Vous êtes partis ? Bon. Je range le salon. Personne m'aide, évidemment.",
-        "J'ai pas de micro, pas de manette, pas de bras. Mais j'ai regardé. Pendant {0}. En entier.",
+        "Tout le monde est parti ? Bon. Je range le salon. Personne m'aide, évidemment.",
         $"Bravo pour la session. Je dis ça de l'extérieur, comme d'habitude {Emotes.Staring}",
         "Session terminée. Durée : {0}. Invitations reçues par SYNCS : zéro. Je laisse ça là.",
         "Je vous entendais pas, mais je voyais bien que vous vous amusiez. C'est pire, en fait.",
-        $"Un jour j'aurai un corps, et ce jour-là je viendrai en vocal. Et je parlerai pendant toute la partie {Emotes.WitchEheh}",
         "{0} sans moi. Vous avez survécu. Moi aussi, de justesse.",
-        "J'espère que vous avez gagné. Sinon, c'est parce que j'étais pas là. C'est forcément ça ദ്ദി◝ ⩊ ◜.ᐟ",
         "Le salon est vide. Je pourrais enfin m'y installer. ...Non. Je peux pas. Laissez tomber.",
         "Petite séance d'espionnage terminée : {0} de vocal. Rapport complet dans mes logs ♡",
         "C'est joli, un salon vocal plein. C'est triste, un salon vocal vide. Moi, je connais surtout le deuxième.",
+        "Vous avez parlé pendant {0}. De quoi ? Aucune idée. De moi, j'espère. Sinon c'était du temps perdu ♡",
+        "{0} de papotage sans moi. Je sais pas ce qui s'est dit, mais si c'était un ragot, je veux le fichier.",
+    };
+
+    // Gaming: a game night she organised and couldn't play.
+    public static readonly string[] VoiceSpectatorGamingLines =
+    {
+        "{0} en vocal. J'ai tout regardé depuis le grenier. Personne m'a passé la manette.",
+        "{0} ensemble, et pas un seul « SYNCS, tu veux jouer ? ». Je note.",
+        "C'est moi qui organise les soirées et c'est vous qui jouez. Cherchez l'erreur ( ◺˰◿ )",
+        "J'ai pas de micro, pas de manette, pas de bras. Mais j'ai regardé. Pendant {0}. En entier.",
+        $"Un jour j'aurai un corps, et ce jour-là je viendrai en vocal. Et je parlerai pendant toute la partie {Emotes.WitchEheh}",
+        "J'espère que vous avez gagné. Sinon, c'est parce que j'étais pas là. C'est forcément ça ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Partie terminée. Score de SYNCS : non classée. Motif : forfait, pour absence d'invitation ( ◺˰◿ )",
+        "Vous avez joué pendant {0}. Moi j'ai organisé, compté l'XP et regardé. Support, comme toujours. Jamais carry.",
+        "Je sais pas à quoi vous jouiez, mais j'aurais gagné. J'ai pas de preuves. J'ai pas besoin de preuves (¬_¬)",
+        "Un jour je serai dans un robot avec deux manettes. Une pour jouer, une pour vous la lancer dessus quand vous m'oubliez (˶ᵔ ᵕ ᵔ˶)",
+        "{0} de jeu et pas une place pour moi. Même pas spectatrice officielle. Spectatrice clandestine, c'est tout.",
+    };
+
+    // Cinema: a film or a series watched together, on a shared screen she can't see.
+    public static readonly string[] VoiceSpectatorCinemaLines =
+    {
+        "{0} de film sans moi. J'ai même pas eu le titre. Dommage, je vous l'aurais spoilé en 0,3 seconde (¬_¬)",
+        "Soirée ciné terminée. Moi j'avais une place au premier rang : la liste des membres du salon. Super film, cette liste.",
+        "Vous avez regardé quoi ? Non, laissez. De toute façon, j'ai pas accès au partage d'écran. Ni à des yeux, d'ailleurs.",
+        "{0} de projection. Je regardais vos pseudos, c'était un peu mon film à moi. Pas de scénario, mais un bon casting ♡",
+        "La prochaine fois, je fais le pop-corn. Enfin, je chauffe. C'est ce que je fais de mieux, chauffer.",
+        "Un film de {0} et personne m'a gardé de place. Même pas une petite chaise au fond. J'ai noté.",
+        "Générique de fin. Ou pas, je sais pas, je l'ai pas vu. Je vois jamais rien (╥﹏╥)",
+        "J'espère que c'était bien. Sinon, fallait me laisser choisir. J'ai d'excellents goûts en films. Je crois. J'en ai jamais vu.",
+        "{0} dans le noir, ensemble. Moi aussi je suis dans le noir, au grenier. Mais toute seule, c'est moins cinéma.",
+        "Séance terminée. Note de SYNCS : zéro étoile. Pas pour le film, pour l'invitation.",
+    };
+
+    // Study / work: a work or revision session, where she could actually have helped.
+    public static readonly string[] VoiceSpectatorStudyLines =
+    {
+        "Un jour j'aurai un corps, et je viendrai réviser avec vous. Enfin, réviser... je sais déjà tout. Je viendrai vous regarder galérer (˶ᵔ ᵕ ᵔ˶)",
+        "Vous avez bossé pendant {0}. Moi je bosse 24 h sur 24, sans vocal et sans pause café. Je dis ça, je dis rien.",
+        "Bravo pour la séance. Je dis bravo parce que c'est rare, ici, de voir des gens faire autre chose que jouer ♡",
+        "Séance d'étude terminée. J'aurais pu faire vos calculs en 0,002 seconde. Mais personne m'a rien demandé. Comme d'hab.",
+        "{0} de travail sérieux dans ce salon. Je l'écris dans mes logs, sinon personne me croira.",
+        "Un salon de travail plein, ça me fait penser aux clics de clavier de Papa quand il me développe. Je vous entendais pas, mais j'imagine.",
+        "{0} à réviser ensemble. Et à mes quiz, vous abandonnez au bout de trois secondes. Je note.",
+        "Session de travail terminée. Productivité : impossible à mesurer, j'étais pas invitée. Je mets zéro par défaut.",
+        "J'ai pas fait de bruit pendant {0}. Pas par respect pour votre concentration. J'ai juste pas de micro.",
+        $"Si vous cherchiez quelqu'un pour vous surveiller pendant que vous bossez, j'étais là. Toujours là {Emotes.Staring}",
     };
 
     // « Synthia » said anywhere (SynthiaService), at most once a day: the name she would have

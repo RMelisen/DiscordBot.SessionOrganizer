@@ -7,7 +7,8 @@ namespace ProjectSYNCS.Services;
 
 // The jealous spectator: she organises the game nights and can't play in them. When a voice
 // get-together of an hour or more ends (Helpers/VoiceStretch), she posts one line in that voice
-// channel's own text chat, at most once a day, home guild only.
+// channel's own text chat, at most once a day, home guild only. The pool follows what the channel
+// is for (Helpers/VoiceRoom): a game night, a film, a study session or just talking.
 //
 // No loop and no gateway subscription of its own: VoiceXpService's one-minute sweep already reads
 // every voice channel's live state, and feeds it here. A singleton: the per-channel stretches are
@@ -62,14 +63,23 @@ internal sealed class VoiceSpectatorService
         // Same exclusions as voice XP: a channel the server keeps out of everything stays out.
         if (await _xp.IsChannelExcludedAsync(channel.Guild.Id, channel)) return;
 
+        var room = VoiceRooms.For(channel.Id);
+        var pool = room switch
+        {
+            VoiceRoom.Gaming => BotResponses.VoiceSpectatorGamingLines,
+            VoiceRoom.Cinema => BotResponses.VoiceSpectatorCinemaLines,
+            VoiceRoom.Study => BotResponses.VoiceSpectatorStudyLines,
+            _ => BotResponses.VoiceSpectatorGeneralLines,
+        };
+        // Each pool gets its own order: the salt moves with the room.
         var line = string.Format(
-            DailyRotation.Pick(BotResponses.VoiceSpectatorLines, AppTime.DayNumber(DateTimeOffset.UtcNow), SpectatorSalt),
+            DailyRotation.Pick(pool, AppTime.DayNumber(DateTimeOffset.UtcNow), SpectatorSalt + (ulong)room),
             LevelCardUi.Duration((long)together.TotalMinutes));
         // A voice channel carries its own text chat: the line lands where the session was.
         var sent = await BotChat.PostWithTypingAsync(channel, line, _logger, "voice spectator line", AllowedMentions.None);
         if (sent is null) return;
 
         lock (_gate) _lastLineDay = today;
-        _logger.LogInformation("Spectator: {Minutes:0} min together in {ChannelId}, line posted.", together.TotalMinutes, channel.Id);
+        _logger.LogInformation("Spectator: {Minutes:0} min together in {ChannelId} ({Room}), line posted.", together.TotalMinutes, channel.Id, room);
     }
 }

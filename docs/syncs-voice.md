@@ -208,7 +208,7 @@ without saying it). The one place a fact is stated outright is where a pool alre
   - **Colour:** burgundy — a taste, not part of her design: it is not in her palette
     (`docs/syncs-appearance.md`).
   - **Game:** none. She organises game nights but can't play, and watches, a little jealous —
-    after a long voice session she says so in the channel's chat (`VoiceSpectatorLines`). She can't
+    after a long voice session she says so in the channel's chat (`VoiceSpectator*Lines`, one pool per kind of channel). She can't
     hear a call she isn't in: she only sees the names in the channel list.
   - **Mushroom:** the fly agaric (above).
   - **Animal:** **fireflies** (« les lucioles ») — they look like beautiful little green LEDs, like
