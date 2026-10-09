@@ -5,8 +5,8 @@ using ProjectSYNCS.Services;
 namespace ProjectSYNCS.Commands;
 
 // /config show — one Components V2 card, a section per setting. Static and Context-free, so
-// its size is checkable without a gateway: 1 container + 1 title + 6 × (separator + text)
-// = 14 of the 40 components.
+// its size is checkable without a gateway: 1 container + 1 title + 7 × (separator + text)
+// = 16 of the 40 components.
 //
 // Every list shows its hardcoded part and its configured part apart: only one of them can
 // be edited, and merging them would invite someone to remove a hardcoded entry and be
@@ -37,6 +37,10 @@ public static class ConfigCards
             "> " + Single(config.GameChannelId,
                 defaultGameChannelHere ? PlynlingAnnouncer.DefaultGameChannelId : 0,
                 "*aucun : pas d'annonces sur ce serveur*"));
+
+        Section(container,
+            "**Salon du quiz** — où elle pose ses questions, jusqu'à deux fois par jour",
+            "> " + Single(config.QuizChannelId, 0, "*aucun : pas de quiz sur ce serveur*"));
 
         if (isHomeGuild)
         {

@@ -16,6 +16,7 @@ matching file before changing that subsystem**; the rules there are as binding a
 | XP, `/level`, `/leaderboard`, voice XP, `/emotestats` | `docs/agents/xp.md` |
 | `/shame` | `docs/agents/shame.md` |
 | Sessions, polls, votes, giveaways, `ReminderService` | `docs/agents/scheduling.md` |
+| Pop quiz, `QuizBank`, `/quiz leaderboard` | `docs/agents/quiz.md` |
 | Plynlings (life, care, visits, relations, art) | `docs/agents/plynling.md` |
 | Plynling traits, stats, personality, events | `docs/agents/plynling-events.md` |
 | Writing any Plynling line | `docs/plynling-writing-style.md` |
@@ -67,9 +68,10 @@ English. Renaming a command or option changes what people type: do it rarely, an
 - **`BotService`** — gateway login, command registration, interaction dispatch, and the gateway
   fan-out (`MessageReceived`, `ReactionAdded`, `ReactionRemoved` to the trackers and services).
   It owns every gateway subscription except `PresenceService`'s `Ready` hook.
-- **Five `BackgroundService` loops**, each with **its own interval on purpose** — never share one:
+- **Six `BackgroundService` loops**, each with **its own interval on purpose** — never share one:
   `ReminderService` (5 min, load-bearing — see scheduling), `PresenceService` (5 min, cosmetic),
-  `VoiceXpService` (1 min), `GiveawayDrawService` (1 min), `PlynlingSweepService` (hourly).
+  `VoiceXpService` (1 min), `GiveawayDrawService` (1 min), `QuizMasterService` (1 min, see quiz),
+  `PlynlingSweepService` (hourly).
 - **`MorningGreetingService`** has no interval: it sleeps until one random slot per morning
   (8:00–10:00 Paris, `Helpers/MorningGreeting`) — see personality.
 - **`AmbientService`** (10 min, cosmetic, its own interval like the loops above): the 3 a.m. line
@@ -127,7 +129,7 @@ restart **by design**.
   per-day table keyed by `Day`, an `int` `yyyymmdd` from `AppTime.DayKey` (so windows filter in
   SQL), both written in the same call. Instances: `EmoteStat`/`EmoteDailyStat`,
   `BotFeedback`/`BotFeedbackDailyStat`, `MemberXp`/`MemberDailyStat`,
-  `ShameRecord`/`ShameDailyStat`. **The buckets do not sum to the totals and must not be made
+  `ShameRecord`/`ShameDailyStat`, `QuizStat`/`QuizDailyStat`. **The buckets do not sum to the totals and must not be made
   to** — everything before the buckets existed lives only in the totals. A removal always
   decrements *today's* bucket. Follow this shape for any new dated leaderboard.
 - **No `HasMaxLength`**: SQLite doesn't enforce it. Cap at the input instead (below).
@@ -285,8 +287,8 @@ when `version` changes: an unbumped push never reaches the Pi.
 The bot ships as a Home Assistant add-on: the `Dockerfile` publishes a self-contained
 `linux-arm64` build, and `run.sh` maps add-on options to `Discord__Token`,
 `Discord__RegisterCommandsGlobally` and `Database__Path=/data/ProjectSYNCS.db`. Only `/data` is
-persisted, so the SQLite file must stay under it — and so does `ambient-state.json`, which
-`AmbientService` writes next to it.
+persisted, so the SQLite file must stay under it — and so do `ambient-state.json` and
+`morning-state.json`, which `AmbientService` and `MorningGreetingService` write next to it.
 
 The GitHub remote is **public**. `appsettings.json` and `config.yaml` ship token placeholders; real
 tokens go in user secrets (dev) or add-on options (prod), never in a tracked file.

@@ -38,4 +38,10 @@ public class GuildSettings
     /// the home guild only.
     /// </summary>
     public ulong MainChannelId { get; set; }
+
+    /// <summary>
+    /// Where her pop quiz goes. Zero means off: unlike the channels above there is no
+    /// hardcoded default, so a server only gets quizzes once staff picks a channel.
+    /// </summary>
+    public ulong QuizChannelId { get; set; }
 }

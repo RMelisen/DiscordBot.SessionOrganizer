@@ -208,7 +208,11 @@ her commentary or the fact's uselessness, never an invented fact.
   fact** under it. It replaces the rotation for the day; the rotation is date-based, so nothing
   shifts. It is one line without a newline, and the restart scan below matches it by its exact
   text for today's age.
-- **A restart inside the window draws a new slot for today**, so before posting she scans the
+- **The claimed day is saved to `morning-state.json`** next to the database (under `/data` in
+  prod), on every claim, early or on the slot. A restart between an early hello and the slot (a
+  deploy at 8:30) otherwise forgets the claim and says hello twice; the history scan below misses
+  it once 50 messages have gone by since the hello.
+- **A restart inside the window draws a new slot for today**, so before posting she also scans the
   channel's last 50 messages for one of her own from today whose **first line** is exactly a
   `MorningGreetings` line. That match is why no two hellos may be identical, why a hello never
   contains a newline, and why the pool takes no `string.Format` placeholder.

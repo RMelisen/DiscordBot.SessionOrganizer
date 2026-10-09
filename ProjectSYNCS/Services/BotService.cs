@@ -28,6 +28,7 @@ internal sealed class BotService : IHostedService
     private readonly ShameTracker _shame;
     private readonly MorningGreetingService _morning;
     private readonly AmbientService _ambient;
+    private readonly QuizMasterService _quiz;
 
     public BotService(
         DiscordSocketClient client,
@@ -43,7 +44,8 @@ internal sealed class BotService : IHostedService
         XpTracker xp,
         ShameTracker shame,
         MorningGreetingService morning,
-        AmbientService ambient)
+        AmbientService ambient,
+        QuizMasterService quiz)
     {
         _client = client;
         _interactions = interactions;
@@ -59,6 +61,7 @@ internal sealed class BotService : IHostedService
         _shame = shame;
         _morning = morning;
         _ambient = ambient;
+        _quiz = quiz;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -132,6 +135,9 @@ internal sealed class BotService : IHostedService
         // Keeps the quiet clocks. Before the chatter: someone answering her 3 a.m. line
         // gets sent to bed, and that is their answer — no comeback on top.
         if (await _ambient.HandleMessageAsync(rawMessage)) return;
+        // Keeps the quiz channel's quiet clock and judges typed answers. A winning answer
+        // gets her congratulations as its reply, so no comeback on top.
+        if (await _quiz.HandleMessageAsync(rawMessage)) return;
         await _chatter.HandleMessageAsync(rawMessage);
     }
 

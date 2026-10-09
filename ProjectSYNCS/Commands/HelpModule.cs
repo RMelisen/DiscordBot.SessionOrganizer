@@ -19,7 +19,7 @@ namespace ProjectSYNCS.Commands;
 // assert both caps.
 //
 // So: keep every field short, and split a section rather than letting one grow. There
-// is plenty of room in the 25-field limit — 12 are used.
+// is plenty of room in the 25-field limit — 13 are used.
 public class HelpModule : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("help", "Comment utiliser le bot d'organisation de sessions")]
@@ -75,6 +75,11 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "MAJUSCULES.\n" +
                 "**`/shame user:@quelqu'un`** — Dénonce quelqu'un. **Réservé au staff**, et " +
                 "**2 votes maximum par personne visée et par jour**.")
+            .AddField("Quiz",
+                "Jusqu'à **deux fois par jour**, je pose une question dans le salon du quiz : " +
+                "le **premier** qui trouve gagne des cailloux. Question à choix : **un seul clic** " +
+                "par personne. Question libre : réponds directement dans le salon.\n" +
+                "**`/quiz leaderboard`** — Les meilleurs au quiz.")
             .AddField("Commandes — Plynlings",
                 "**`/plynling help`** — Adopte un petit champignon, nourris-le, garde-le en vie. " +
                 "Tout est expliqué là-dedans. Raccourci : `/pl`.\n" +
@@ -83,8 +88,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/admin xp add|remove`** · **`/admin pebble add|remove`** — Ajuster l'XP ou les cailloux de quelqu'un.\n" +
                 "**`/admin stats`** · **`/admin dashboard`** — L'économie du serveur, en un coup d'œil et jour après jour.\n" +
                 "**`/admin plynling rename`** · **`/admin plynling resurrect`** — Gérer le Plynling de quelqu'un.\n" +
-                "**`/config`** — Qui vote avec `/shame`, les salons où rien ne compte, le salon de jeu " +
-                "et le salon principal. **`/config show`** affiche la configuration actuelle.\n" +
+                "**`/config`** — Qui vote avec `/shame`, les salons où rien ne compte, le salon de jeu, " +
+                "le salon du quiz et le salon principal. **`/config show`** affiche la configuration actuelle.\n" +
                 "**`/help`** — Affiche ce message.")
             .AddField("Créer une session — pas à pas",
                 "Lance **`/schedule create`**. Un assistant privé te guide :\n" +

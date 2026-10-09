@@ -41,6 +41,12 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         [ChoiceDisplay("Guéri")] Healthy,
     }
 
+    public enum QuizAction
+    {
+        [ChoiceDisplay("Poser une question")] Post,
+        [ChoiceDisplay("Fermer le quiz en cours")] Close,
+    }
+
     public enum EventMode
     {
         [ChoiceDisplay("En attente")] Pending,
@@ -54,6 +60,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     private readonly PlynlingService _plynlings;
     private readonly PlynlingAnnouncer _announcer;
     private readonly PlynlingSweepService _sweep;
+    private readonly QuizMasterService _quiz;
 
     // Discord caps a message at 2000 characters; leave room for the herald line
     // and the blockquote markers.
@@ -65,8 +72,9 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         new(@"channels/(\d+)/(\d+)/(\d+)", RegexOptions.Compiled);
 
     public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings,
-        PlynlingAnnouncer announcer, PlynlingSweepService sweep)
+        PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz)
     {
+        _quiz = quiz;
         _plynlings = plynlings;
         _announcer = announcer;
         _sweep = sweep;
@@ -492,6 +500,33 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
                 ? $"🔧 Passage terminé : {n} Plynling{(n > 1 ? "s" : "")} vu{(n > 1 ? "s" : "")}."
                 : "🔧 Un passage est déjà en cours. Réessaie dans un instant.",
             ephemeral: true);
+    }
+
+    // The pop quiz on demand, in this guild's quiz channel: post a round now (the next in the
+    // rotation, or the question named by `key`), or close the open one as the hour running out
+    // would. Skips the slots, the daily count and the quiet clock; never opens a second round.
+    [SlashCommand("quiz", "Poser ou fermer un quiz tout de suite (tests)")]
+    public async Task QuizAsync(
+        [Summary("action", "Poser une question ou fermer celle en cours")] QuizAction action = QuizAction.Post,
+        [Summary("key", "Clé de la question (par défaut : la suivante de la rotation)")]
+        [Autocomplete(typeof(QuizKeyAutocompleteHandler))] string? key = null)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+        if (Context.Guild is null)
+        {
+            await RespondAsync("Sur un serveur, pas en message privé.", ephemeral: true);
+            return;
+        }
+
+        await DeferAsync(ephemeral: true);
+        var result = action == QuizAction.Close
+            ? await _quiz.CloseNowAsync(Context.Guild.Id)
+            : await _quiz.PostNowAsync(Context.Guild.Id, key);
+        await FollowupAsync(result, ephemeral: true, allowedMentions: AllowedMentions.None);
     }
 
     // Stress builds over days of the owner's own choices: set it directly to test the levels, the

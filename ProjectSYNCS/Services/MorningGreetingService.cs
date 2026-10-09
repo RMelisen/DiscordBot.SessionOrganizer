@@ -1,5 +1,7 @@
+using System.Text.Json;
 using Discord;
 using Discord.WebSocket;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Helpers;
@@ -42,12 +44,14 @@ internal sealed class MorningGreetingService : BackgroundService
     private readonly DiscordSocketClient _client;
     private readonly GuildConfigService _config;
     private readonly ILogger<MorningGreetingService> _logger;
+    private readonly string _statePath;
 
     // Guards everything below: the loop and the gateway both read and claim the day.
     private readonly object _gate = new();
 
-    // The day key of the last hello this process claimed. In memory, so a restart
-    // forgets it — the channel history check in PostHelloAsync covers that case.
+    // The day key of the last hello claimed, saved to _statePath on every claim so a
+    // restart between an early hello and the slot doesn't say it twice. The channel
+    // history check in PostHelloAsync stays as a backstop if the file is lost.
     private int _lastDay;
 
     // The slot the loop is sleeping towards; an early hello only counts before it.
@@ -60,11 +64,17 @@ internal sealed class MorningGreetingService : BackgroundService
     public MorningGreetingService(
         DiscordSocketClient client,
         GuildConfigService config,
+        IConfiguration configuration,
         ILogger<MorningGreetingService> logger)
     {
         _client = client;
         _config = config;
         _logger = logger;
+
+        // Next to the database, so it lives under /data in production and survives updates.
+        var dbPath = Path.GetFullPath(configuration["Database:Path"] ?? "ProjectSYNCS.db");
+        _statePath = Path.Combine(Path.GetDirectoryName(dbPath) ?? ".", "morning-state.json");
+        _lastDay = LoadState().LastDay;
     }
 
     /// <summary>
@@ -164,6 +174,7 @@ internal sealed class MorningGreetingService : BackgroundService
         {
             if (_lastDay == day) return false;
             _lastDay = day;
+            SaveState(new MorningState(day));
             return true;
         }
     }
@@ -188,6 +199,7 @@ internal sealed class MorningGreetingService : BackgroundService
             if (Random.Shared.NextDouble() >= EarlyHelloChance) return false;
 
             _lastDay = today;
+            SaveState(new MorningState(today));
             return true;
         }
     }
@@ -242,6 +254,36 @@ internal sealed class MorningGreetingService : BackgroundService
             // Better a rare double hello than none.
             _logger.LogWarning(ex, "Could not read channel {ChannelId} history before the morning greeting.", channel.Id);
             return false;
+        }
+    }
+
+    // What a restart must not forget: the day the hello was last claimed.
+    private sealed record MorningState(int LastDay);
+
+    private MorningState LoadState()
+    {
+        try
+        {
+            if (File.Exists(_statePath))
+                return JsonSerializer.Deserialize<MorningState>(File.ReadAllText(_statePath))
+                       ?? new MorningState(0);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Morning greeting: could not read {Path}; starting fresh.", _statePath);
+        }
+        return new MorningState(0);
+    }
+
+    private void SaveState(MorningState state)
+    {
+        try
+        {
+            File.WriteAllText(_statePath, JsonSerializer.Serialize(state));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Morning greeting: could not write {Path}.", _statePath);
         }
     }
 }

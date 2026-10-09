@@ -26,7 +26,8 @@ same check.
 
 A flat `/config show` (a static Components V2 card, `ConfigCards.Build`) plus one subgroup per
 setting: `excluded-channels add|remove`, `idle-channels add|remove`, `shame-voters add|remove`,
-`moderator-role set|clear`, `game-channel set|clear`, `main-channel set|clear`. Three levels is
+`moderator-role set|clear`, `game-channel set|clear`, `main-channel set|clear`,
+`quiz-channel set|clear`. Three levels is
 Discord's maximum nesting. (`/shame` is flat only because it had to stay invokable bare; nothing here
 needs that.) Every handler goes through `ConfigModule.BeginAsync` (`IsStaff`, then an ephemeral
 defer); no `[DefaultMemberPermissions]`, same reason as `/admin`.
@@ -44,6 +45,8 @@ defer); no `[DefaultMemberPermissions]`, same reason as `/admin`.
   meaning unset: a destination grants and revokes nothing, so a configured one simply wins, and
   `clear` (or setting the default itself, stored as zero) falls back. `set` refuses a channel the bot
   can't view and send in — a silent destination would otherwise fail on every use with nobody told.
+  **`QuizChannelId` is the exception: it has no default**, so zero means no quiz, `clear` turns it
+  off, and it is per guild (see `quiz.md`).
 
 **Main and idle channels are home-guild only.** `MorningGreetingService` and `AmbientService` keep
 one state each, so they live in `Helpers/HomeGuild.Id` and read that guild's config
@@ -61,8 +64,8 @@ service is the only writer: any write drops that guild's entry. A failed read de
 
 ## `/debug` — owner only
 
-`tell`, `dm`, `absent`, `plynling`, `emotes`, plus the Plynling testing tools (`event`, `stress`,
-`modifier`, `sweep`, in `plynling-events.md`), each comparing `Context.User.Id` to
+`tell`, `dm`, `absent`, `plynling`, `emotes`, `quiz` (post or close a pop quiz now, see `quiz.md`),
+plus the Plynling testing tools (`event`, `stress`, `modifier`, `sweep`, in `plynling-events.md`), each comparing `Context.User.Id` to
 `AvailabilityService.OwnerId` inline and replying ephemerally. `DebugModule` carries no
 `[CommandContextType]` (it never reads `Context.Guild`); `/debug plynling` checks for a DM itself.
 

@@ -12,7 +12,8 @@ namespace ProjectSYNCS.Commands;
 //   code hardcodes: the hardcoded entries are a floor that no command can remove, so a
 //   config change can never take away an exclusion or a voting right by accident.
 // - **Single channels** (game, main) *replace* their hardcoded default when set, and fall
-//   back to it when cleared. A destination grants and revokes nothing.
+//   back to it when cleared. A destination grants and revokes nothing. The quiz channel is
+//   the one without a default: clearing it turns the quiz off.
 //
 // Either way, a server that never runs these commands behaves exactly as it did before
 // they existed.
@@ -315,6 +316,47 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
 
             await SayAsync(Context,
                 $"Je rentre à la maison, dans <#{MorningGreetingService.DefaultChannelId}> {Emotes.Sparkle}");
+        }
+    }
+
+    [Group("quiz-channel", "Le salon où elle pose ses questions de quiz")]
+    public class QuizChannelModule : InteractionModuleBase<SocketInteractionContext>
+    {
+        private readonly GuildConfigService _config;
+
+        public QuizChannelModule(GuildConfigService config)
+        {
+            _config = config;
+        }
+
+        [SlashCommand("set", "Choisir le salon du quiz (jusqu'à deux questions par jour)")]
+        public async Task SetAsync(
+            [Summary("channel", "Le salon du quiz")]
+            [ChannelTypes(ChannelType.Text, ChannelType.News)] IGuildChannel channel)
+        {
+            if (!await BeginAsync(Context)) return;
+
+            if (!CanSendIn(Context.Guild, channel))
+            {
+                await SayAsync(Context, CannotSend(channel));
+                return;
+            }
+
+            await _config.SetQuizChannelAsync(Context.Guild.Id, channel.Id);
+
+            await SayAsync(Context,
+                $"Le quiz se passera dans <#{channel.Id}>. Jusqu'à deux questions par jour, quand il y a du monde. Révisez ദ്ദി◝ ⩊ ◜.ᐟ");
+        }
+
+        [SlashCommand("clear", "Arrêter le quiz sur ce serveur")]
+        public async Task ClearAsync()
+        {
+            if (!await BeginAsync(Context)) return;
+
+            await _config.SetQuizChannelAsync(Context.Guild.Id, 0);
+
+            await SayAsync(Context,
+                "Plus de quiz ici. Une question déjà posée ira quand même jusqu'au bout. Je garde mes cailloux (ᵕ • ᴗ •)");
         }
     }
 

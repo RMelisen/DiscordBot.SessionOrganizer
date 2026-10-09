@@ -13,7 +13,8 @@ namespace ProjectSYNCS.Services;
 /// several threads, so it has to be immutable.
 ///
 /// Ids of zero mean "not configured": the single-channel settings then fall back to their
-/// hardcoded default. The sets hold only what an admin added on top of the hardcoded floor.
+/// hardcoded default — except the quiz channel, which has none (zero means no quiz). The
+/// sets hold only what an admin added on top of the hardcoded floor.
 /// </remarks>
 public sealed record GuildConfig(
     ulong ModeratorRoleId,
@@ -21,11 +22,12 @@ public sealed record GuildConfig(
     ulong MainChannelId,
     IReadOnlySet<ulong> ExcludedChannels,
     IReadOnlySet<ulong> IdleChannels,
-    IReadOnlySet<ulong> ShameVoters)
+    IReadOnlySet<ulong> ShameVoters,
+    ulong QuizChannelId)
 {
     /// <summary>What an unconfigured guild looks like — nothing set, nothing added.</summary>
     public static readonly GuildConfig Empty = new(0, 0, 0,
-        new HashSet<ulong>(), new HashSet<ulong>(), new HashSet<ulong>());
+        new HashSet<ulong>(), new HashSet<ulong>(), new HashSet<ulong>(), 0);
 }
 
 // Per-guild settings an admin can change at runtime, and the cache that makes them
@@ -99,7 +101,8 @@ public sealed class GuildConfigService
                 settings?.ModeratorRoleId ?? 0,
                 settings?.GameChannelId ?? 0,
                 settings?.MainChannelId ?? 0,
-                excluded.ToHashSet(), idle.ToHashSet(), voters.ToHashSet());
+                excluded.ToHashSet(), idle.ToHashSet(), voters.ToHashSet(),
+                settings?.QuizChannelId ?? 0);
         }
         catch (Exception ex)
         {
@@ -173,6 +176,10 @@ public sealed class GuildConfigService
     /// <summary>Sets her main channel, or goes back to the default with zero.</summary>
     public Task SetMainChannelAsync(ulong guildId, ulong channelId) =>
         UpdateSettingsAsync(guildId, s => s.MainChannelId = channelId);
+
+    /// <summary>Sets the pop quiz channel, or turns the quiz off with zero.</summary>
+    public Task SetQuizChannelAsync(ulong guildId, ulong channelId) =>
+        UpdateSettingsAsync(guildId, s => s.QuizChannelId = channelId);
 
     // The settings row is created lazily, the first time anything is configured.
     private async Task UpdateSettingsAsync(ulong guildId, Action<GuildSettings> apply)

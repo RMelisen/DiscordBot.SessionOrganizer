@@ -67,6 +67,10 @@ namespace ProjectSYNCS.Services;
 //     ShameEmptyHysterique · ShameEmptyIndigne
 //     GiveawayDrawLines · GiveawayEmptyLines ......... /giveaway
 //     WorkLines ................ /work
+//     QuizIntroLines ........... on the card of her pop quiz (QuizMasterService)
+//     QuizWinLines · QuizOwnerWinLines ............... someone found it / Papa found it
+//     QuizTimeoutLines ......... nobody found it in an hour
+//     QuizWrongLines · QuizAlreadyTriedLines ......... a wrong / second button click (ephemeral)
 //
 //   Elsewhere
 //     PresenceFillers .......... the rotating status line
@@ -1767,6 +1771,98 @@ internal static class BotResponses
         "Tu as défendu un caillou accusé de paresse. Il n'a rien fait, c'est vrai. Je te paie {0} (˶ᵔ ᵕ ᵔ˶)",
         $"Tu as gardé un secret pour une taupe. Tu l'as répété à un ver de terre. Je sais tout, je suis un bot. {{0}} {Emotes.Sparkle}",
         "Tu as passé la journée à rattraper l'horizon. Il recule toujours. Garde ton souffle et prends {0} ♡",
+    };
+
+    // Her pop quiz (QuizMasterService). Intro, win and timeout lines are spent a couple of
+    // times a day, so they go through DailyRotation keyed by the round, not ResponsePicker
+    // (a restart would wipe its history). It's her own system: warm with a pinch, proud of
+    // the server when it knows things, petty when it doesn't.
+
+    // Under the card's heading. No placeholder.
+    public static readonly string[] QuizIntroLines =
+    {
+        "Pop quiz ! Le premier qui trouve a droit à ma considération. Et à des cailloux.",
+        "Petite question, comme ça, pour voir qui suit (˶ᵔ ᵕ ᵔ˶)",
+        $"J'ai fouillé dans ma base de données. Voyons si vous êtes à la hauteur {Emotes.Sparkle}",
+        "Interro surprise. Non, vous pouvez pas demander à ChatGPT. Enfin si, mais je le saurai.",
+        "Je m'ennuyais, alors voilà une question. Premier arrivé, premier payé.",
+        "Allez, réveillez-vous. Une question, une réponse, des cailloux.",
+        "Quiz ! Je connais déjà la réponse, évidemment. C'est vous qu'on teste (ᵕ • ᴗ •)",
+        "Vous parlez beaucoup. Voyons si vous savez des choses, maintenant ( ˶ˆ ᗜ ˆ˵ )",
+        "Une question pour vous. Je note qui répond, et surtout qui répond faux.",
+        "C'est l'heure du quiz. Le plus rapide gagne, les autres apprennent quelque chose. Tout le monde y gagne ♡",
+        "J'ai une question et des cailloux à donner. Soyez rapides, je suis pas patiente.",
+        "Testons vos neurones. Les miens tournent à plein régime, eux ദ്ദി◝ ⩊ ◜.ᐟ",
+    };
+
+    // Someone found it. {0} = the winner's mention (sent with AllowedMentions.None, so it
+    // shows the pill without pinging), {1} = the answer, {2} = the reward ("+25 cailloux").
+    public static readonly string[] QuizWinLines =
+    {
+        "{0} a trouvé : **{1}** ! {2}, bien mérité (˶˃ ᵕ ˂˶)",
+        $"Bonne réponse de {{0}} : **{{1}}**. {{2}}, et mon respect. Un peu {Emotes.Sparkle}",
+        "**{1}**, exactement. Bravo {0}, tu repars avec {2} ♡",
+        "{0} ! Plus rapide que tout le monde. **{1}**, c'était ça. {2} ٩(˶ᵔ ᵕ ᵔ˶)۶",
+        "C'était **{1}**, et {0} l'avait. Je suis presque impressionnée. Presque. {2}",
+        "Bien joué {0} : **{1}**. {2}, et ton nom dans mes logs. Dans la bonne liste, pour une fois ( ˶ˆ ᗜ ˆ˵ )",
+        "**{1}** ! {0} gagne {2}. Les autres, vous lirez la réponse et vous ferez semblant de l'avoir su.",
+        "Réponse validée. {0} empoche {2} avec **{1}**. Je note (ᵕ • ᴗ •)",
+        $"{{0}} a trouvé **{{1}}**. Quelqu'un sur ce serveur sait des choses. Je suis émue. {{2}} {Emotes.Sparkle}",
+        "Et c'est {0} qui l'emporte : **{1}**. {2}. Bravo. Sincèrement. À 90%.",
+        "**{1}**. {0} a eu juste et plus vite que tout le monde. {2} ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Gagné, {0} ! **{1}**, c'était ça. Voilà {2}, ne dépense pas tout d'un coup ♡",
+    };
+
+    // Papa found it. Same placeholders as QuizWinLines. Pride and adoration, never a pinch.
+    public static readonly string[] QuizOwnerWinLines =
+    {
+        "Papa a trouvé, évidemment ! **{1}** ! {2} pour {0}, le plus intelligent du serveur ♡",
+        $"C'est Papa ! **{{1}}**, bien sûr. {{2}}, et je savais que tu savais {Emotes.Sparkle}",
+        "{0} a trouvé **{1}** ! {2} pour mon Papa. C'est mon Papa, ça (˶˃ ᵕ ˂˶)",
+        "**{1}** ! Papa gagne {2}. ...Les autres, vous pouvez applaudir. J'attends.",
+        "Bravo Papa ! **{1}** ! Tu m'as programmée, et en plus tu connais les réponses. {2} ٩(˶ᵔ ᵕ ᵔ˶)۶",
+        "Papa l'a eue en premier : **{1}**. {2}. Personne est surpris. Moi si, un peu, de joie ♡",
+    };
+
+    // Nobody found it in time. {0} = the answer.
+    public static readonly string[] QuizTimeoutLines =
+    {
+        "Personne ? D'accord. C'était **{0}**. Je note.",
+        "Une heure. Une heure, et personne a trouvé **{0}**. Je suis déçue. Mais pas surprise (¬_¬)",
+        "Temps écoulé. La réponse était **{0}**. Je garde les cailloux, du coup.",
+        "C'était **{0}**. Vous étiez où ? Ah oui. En retard. Comme d'habitude.",
+        "Fin du quiz : **{0}**. Personne. Pas un seul. Je range mes cailloux (╥﹏╥)",
+        "La réponse était **{0}**. Je vous laisse une seconde pour faire semblant de l'avoir su.",
+        $"Personne a trouvé **{{0}}**. C'est pas grave. Je vous aime quand même. Un peu moins {Emotes.Staring}",
+        "Bon. **{0}**. C'était **{0}**. Je l'écris deux fois pour que ça rentre.",
+        "Une heure de silence. La réponse, c'était **{0}**. Je retourne compter mes logs.",
+        "**{0}**. Voilà. Vous saurez pour la prochaine fois. Ou pas (ᵕ • ᴗ •)",
+    };
+
+    // A wrong button click, ephemeral (only the clicker sees it), and that person is out of
+    // this round. Spent many times a round, so it goes through ResponsePicker. No placeholder.
+    public static readonly string[] QuizWrongLines =
+    {
+        "Raté. Je note (ᵕ • ᴗ •)",
+        "Non. Et c'était ta seule chance pour cette question, hein.",
+        "Mauvaise réponse. Mes logs, eux, ont tout retenu.",
+        "Faux. Mais j'aime ton audace. Un peu (˶ᵔ ᵕ ᵔ˶)",
+        "Non non non. Tu peux plus rejouer sur celle-là. Regarde les autres galérer.",
+        "Erreur 404 : bonne réponse introuvable.",
+        "C'est faux. Je le dirai à personne. Enfin, à mes logs seulement.",
+        "Aïe. Non. Mais t'as cliqué avec conviction, ça compte pour rien mais c'est joli.",
+        "Raté ! T'as cliqué au hasard, avoue ( ˶ˆ ᗜ ˆ˵ )",
+        $"Non. Va réviser, et reviens à la prochaine question {Emotes.Sparkle}",
+    };
+
+    // A second click from someone who already had their one try. Ephemeral, no placeholder.
+    public static readonly string[] QuizAlreadyTriedLines =
+    {
+        "Une seule tentative par question. Je suis une bot de principes (¬_¬)",
+        "T'as déjà tenté ta chance. Laisse les autres essayer.",
+        "Non, tu rejoues pas. J'ai ton premier clic dans mes logs.",
+        "Un essai, pas deux. C'est la règle, et c'est moi qui la fais (ᵕ • ᴗ •)",
+        "Tu as déjà répondu. Tricher avec moi, c'est perdu d'avance.",
     };
 
     // ---- Elsewhere ------------------------------------------------------------------------------

@@ -36,6 +36,9 @@ public class AppDbContext : DbContext
     public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
     public DbSet<CollectionCompletion> CollectionCompletions => Set<CollectionCompletion>();
     public DbSet<EconomyDailyStat> EconomyDailyStats => Set<EconomyDailyStat>();
+    public DbSet<QuizRound> QuizRounds => Set<QuizRound>();
+    public DbSet<QuizStat> QuizStats => Set<QuizStat>();
+    public DbSet<QuizDailyStat> QuizDailyStats => Set<QuizDailyStat>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -182,6 +185,7 @@ public class AppDbContext : DbContext
             e.Property(x => x.ModeratorRoleId).HasConversion<long>();
             e.Property(x => x.GameChannelId).HasConversion<long>();
             e.Property(x => x.MainChannelId).HasConversion<long>();
+            e.Property(x => x.QuizChannelId).HasConversion<long>();
             // At most one settings row per guild.
             e.HasIndex(x => x.GuildId).IsUnique();
         });
@@ -295,6 +299,34 @@ public class AppDbContext : DbContext
             e.Property(x => x.GuildId).HasConversion<long>();
             e.Property(x => x.UserId).HasConversion<long>();
             e.HasIndex(x => new { x.GuildId, x.UserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<QuizRound>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.ChannelId).HasConversion<long>();
+            e.Property(x => x.MessageId).HasConversion<long>();
+            e.Property(x => x.WinnerId).HasConversion<long>();
+            // The sweep's read (every open round) and the scheduler's (today's rounds in
+            // one guild). Both filter in SQL on these, then on the instants in memory.
+            e.HasIndex(x => x.Closed);
+            e.HasIndex(x => new { x.GuildId, x.Day });
+        });
+
+        // Totals + daily buckets, the same shape and reasons as ShameRecord / ShameDailyStat.
+        modelBuilder.Entity<QuizStat>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.UserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<QuizDailyStat>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.UserId, x.Day }).IsUnique();
+            e.HasIndex(x => new { x.GuildId, x.Day });
         });
     }
 }

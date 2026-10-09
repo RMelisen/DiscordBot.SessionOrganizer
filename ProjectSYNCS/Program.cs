@@ -68,6 +68,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<CosmeticService>();
         services.AddTransient<AdminStatsService>();
         services.AddTransient<EconomyDashboardService>();
+        services.AddTransient<QuizService>();
         services.AddTransient<PlynlingCareService>();
         services.AddTransient<PlynlingVisitRunner>();
         services.AddSingleton<PlynlingCooldowns>();
@@ -110,6 +111,10 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddHostedService(sp => sp.GetRequiredService<AmbientService>());
         services.AddHostedService<VoiceXpService>();
         services.AddHostedService<GiveawayDrawService>();
+        // Same shape: the host runs its 1-minute loop, BotService feeds it messages (typed
+        // answers, the quiet clock), the quiz buttons and /debug quiz call into it.
+        services.AddSingleton<QuizMasterService>();
+        services.AddHostedService(sp => sp.GetRequiredService<QuizMasterService>());
         // Same shape: the host runs its hourly loop, /debug sweep runs a pass on demand.
         services.AddSingleton<PlynlingSweepService>();
         services.AddHostedService(sp => sp.GetRequiredService<PlynlingSweepService>());

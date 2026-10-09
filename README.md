@@ -2,12 +2,12 @@
 
 **S**chedule **Y**our **N**ights & **C**oordinate the **S**quads — a Discord bot for
 planning gaming sessions, activities and movie nights, and letting people sign up
-in one click. It also keeps score: XP and levels, emote and verdict leaderboards, and
-a wall of shame. The bot's user-facing language is French.
+in one click. It also keeps score: XP and levels, emote and verdict leaderboards, a
+wall of shame, and a pop quiz. The bot's user-facing language is French.
 
 - [Commands](#commands)
 - [Sessions](#sessions) · [Polls & votes](#polls--votes) · [Giveaways](#giveaways)
-- [Levels & XP](#levels--xp) · [Leaderboards & stats](#leaderboards--stats) · [Wall of shame](#wall-of-shame) · [Plynlings](#plynlings)
+- [Levels & XP](#levels--xp) · [Leaderboards & stats](#leaderboards--stats) · [Wall of shame](#wall-of-shame) · [Pop quiz](#pop-quiz) · [Plynlings](#plynlings)
 - [Staff & owner](#staff--owner) · [Personality](#personality)
 - [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Configuration](#configuration) · [Running locally](#running-locally) · [Deployment](#deployment)
 
@@ -25,6 +25,7 @@ a wall of shame. The bot's user-facing language is French.
 | `/goodbot` | Who praised or scolded the bot | everyone |
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
 | `/shame` | The wall of shame | everyone |
+| `/quiz leaderboard` | Who wins her pop quiz | everyone |
 | `/plynling adopt · view · list · journal · relations · play · visit · passion · forage · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card). `/pl` is a shortcut for every one of them | everyone |
 | `/inventory view · collection · shop · medicine · cosmetics · craft · give · trade · sell` | Your items: pantry, collection, cosmetics, swaps | everyone |
 | `/work · /balance` | Earn cailloux; see your balance | everyone |
@@ -36,6 +37,7 @@ a wall of shame. The bot's user-facing language is French.
 | `/admin dashboard` | The economy day by day: flows, activity, finds | staff |
 | `/admin plynling rename · resurrect · passion-reset · cure`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
 | `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
+| `/debug quiz` | Post or close a pop quiz now (tests) | owner |
 | `/help` | In-Discord usage guide | everyone |
 
 "Staff" means Administrator or Manage Server, the bot's owner, or a configured
@@ -203,6 +205,27 @@ rationed: it's rare, and deliberate — you have to type its name to do it.
 
 Every counter starts at zero the day it ships and nothing can be backfilled.
 
+### Pop quiz
+
+Up to **twice a day** she posts a question in the server's quiz channel, and the **first
+right answer wins** cailloux: 15, 25 or 40 depending on difficulty. Off until staff pick
+a channel with **`/config quiz-channel set`**.
+
+- **When:** one slot between 11:00 and 16:00 and one between 16:30 and 22:00 (Paris), each
+  kept three times in four, so 0 to 2 a day. A slot waits until someone has spoken in the
+  channel in the last 45 minutes, so she never asks an empty room, and two questions are at
+  least 3 hours apart.
+- **Multiple choice** (A/B/C/D buttons): **one click per person**. A wrong click is told
+  privately and that person is out of the round.
+- **Open questions:** type the answer in the channel. Case, accents, punctuation and small
+  typos don't matter, and the answer can sit in a sentence (« je pense que c'est backrub »).
+  A message listing several guesses doesn't count.
+- After **1 hour** with no winner she closes it and gives the answer, with a comment.
+- About 125 questions: tech, video games, general knowledge, absurd riddles and a few about
+  her. Many come from her morning fun facts. Nothing repeats until the whole bank is used.
+- **`/quiz leaderboard`** — wins over 30 days, 7 days or all time (with each person's fastest
+  winning answer).
+
 ### Plynlings
 
 A **Plynling** is a small mushroom creature each member can adopt — one at a time, free.
@@ -341,6 +364,7 @@ looks after her.
   - `moderator-role set|clear` and `shame-voters add|remove` — who may vote with `/shame`;
   - `excluded-channels add|remove` — channels where nothing counts (no XP, ignored by the wall);
   - `game-channel set|clear` — where Plynling deaths, comebacks and event stories are announced;
+  - `quiz-channel set|clear` — where her pop quiz goes; no channel, no quiz;
   - `main-channel set|clear` and `idle-channels add|remove` — her morning hello and night life, and
     the channels that must all be quiet before she talks into the silence (main server only).
 
@@ -462,7 +486,7 @@ ProjectSYNCS/
 └─ Dockerfile / run.sh     # Container build (HA add-on)
 ```
 
-**Five hosted services** run in the background, each on its own interval by design:
+**The hosted services** run in the background, each on its own interval by design:
 
 | Service | Interval | Job |
 | --- | --- | --- |
@@ -472,6 +496,7 @@ ProjectSYNCS/
 | `MorningGreetingService` | daily, random 8:00–10:00 | The morning hello |
 | `VoiceXpService` | 1 min | Samples voice channels and grants XP |
 | `GiveawayDrawService` | 1 min | Draws giveaways whose time is up |
+| `QuizMasterService` | 1 min | Posts the pop quiz, closes rounds nobody won |
 
 ## Configuration
 

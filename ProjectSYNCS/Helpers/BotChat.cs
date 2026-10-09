@@ -21,10 +21,13 @@ public static class BotChat
     /// Replies behind the typing indicator. Returns the sent message, or null if the
     /// send failed — callers that need to remember what they just said (see
     /// BotFeedbackTracker suppressing verdicts on its own bad-bot replies) need its
-    /// id, and there is no other way to learn it.
+    /// id, and there is no other way to learn it. <paramref name="allowedMentions"/> as in
+    /// <see cref="PostWithTypingAsync"/>: left null, Discord's default applies; the quiz
+    /// passes AllowedMentions.None so a winner's mention shows without pinging.
     /// </summary>
     public static async Task<IUserMessage?> ReplyWithTypingAsync(
-        IUserMessage replyTo, string line, ILogger logger, string what)
+        IUserMessage replyTo, string line, ILogger logger, string what,
+        AllowedMentions? allowedMentions = null)
     {
         try
         {
@@ -32,7 +35,7 @@ public static class BotChat
             {
                 await Task.Delay(TypingDelayFor(line));
             }
-            return await replyTo.ReplyAsync(line);
+            return await replyTo.ReplyAsync(line, allowedMentions: allowedMentions);
         }
         catch (Exception ex)
         {
