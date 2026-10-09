@@ -183,6 +183,12 @@ never change that mapping, every stored morning depends on it.
   positive, so they apply when it decides alone too. Never paid to the mascot (no player behind it);
   the story leaves those lines out for it. Keep cailloux small (≤ 30; a `/work` shift pays 25–40),
   items collectible or food and never legendary, lifts ≤ 0.3 — the scratch checker enforces all three.
+- **Content waves** go shortlist → writing sheet (owner review, no C# before) → catalog → harness →
+  dev-guild read-through, one patch version per wave. CK3 is inspiration only: its files never enter
+  the repo (public remote, Paradox's files), nothing is copied or translated. Per event: 2–4 options,
+  labels ≤ 80 characters, at most one `GrowStat` (amount 1) per outcome, stress costs 10–40 and only on
+  options against a trait, negative modifiers only behind owner choices. A new key the harness
+  simulation never draws (stage, condition or target condition too narrow) fails the wave.
 - **Story cycles** (wave 5+) are chains of `FollowUp`s, three or four steps, each scene 3–5 sentences.
   A follow-up cannot know which option led to it, so a branch that must remember (a chosen mentor)
   gets its own follow-up key per branch. A social chain's follow-ups declare the parent's `Target` kind

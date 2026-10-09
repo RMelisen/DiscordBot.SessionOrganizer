@@ -2,7 +2,7 @@
 
 ## Context
 
-Plynlings v1 (plan: `docs/superpowers/plans/2026-09-24-plynlings-v1.md`) shipped one
+Plynlings v1 shipped one
 family — six mushroom species — and wrote every line about a Plynling in the masculine.
 This adds two things:
 
