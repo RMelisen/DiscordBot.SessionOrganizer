@@ -36,6 +36,13 @@ public class SessionEvent
     public bool ReminderSent { get; set; } = false;
     public bool IsCancelled { get; set; } = false;
 
+    // Her two lines around a voice session (SessionAttendanceService): the late call at
+    // start + LateCallAfter, and the recap once the group has scattered. Each is set before
+    // its message goes out, so a crash costs a missing line, never a second one. Reset with
+    // ReminderSent when the time moves.
+    public bool LateCallSent { get; set; } = false;
+    public bool RecapSent { get; set; } = false;
+
     // Tracks the lifecycle phase already rendered onto the Discord card, so the
     // background service only re-renders the card on an actual transition.
     public SessionPhase RenderedPhase { get; set; } = SessionPhase.Scheduled;

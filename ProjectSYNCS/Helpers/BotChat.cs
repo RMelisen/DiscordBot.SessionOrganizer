@@ -50,11 +50,12 @@ public static class BotChat
     /// and should be as narrow as the line needs (users only, never roles or everyone).
     /// Left null, Discord's default applies, which is what ordinary chatter wants.
     /// Returns the sent message, or null if the send failed (AmbientService edits its
-    /// self-correcting lines through it).
+    /// self-correcting lines through it). <paramref name="replyTo"/> answers a message that
+    /// isn't an <see cref="IUserMessage"/> — Discord's own « X joined » line (WelcomeService).
     /// </summary>
     public static async Task<IUserMessage?> PostWithTypingAsync(
         IMessageChannel channel, string line, ILogger logger, string what,
-        AllowedMentions? allowedMentions = null)
+        AllowedMentions? allowedMentions = null, MessageReference? replyTo = null)
     {
         try
         {
@@ -62,7 +63,7 @@ public static class BotChat
             {
                 await Task.Delay(TypingDelayFor(line));
             }
-            return await channel.SendMessageAsync(line, allowedMentions: allowedMentions);
+            return await channel.SendMessageAsync(line, allowedMentions: allowedMentions, messageReference: replyTo);
         }
         catch (Exception ex)
         {

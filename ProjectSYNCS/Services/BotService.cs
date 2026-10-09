@@ -30,6 +30,7 @@ internal sealed class BotService : IHostedService
     private readonly AmbientService _ambient;
     private readonly QuizMasterService _quiz;
     private readonly SynthiaService _synthia;
+    private readonly WelcomeService _welcome;
 
     public BotService(
         DiscordSocketClient client,
@@ -47,9 +48,11 @@ internal sealed class BotService : IHostedService
         MorningGreetingService morning,
         AmbientService ambient,
         QuizMasterService quiz,
-        SynthiaService synthia)
+        SynthiaService synthia,
+        WelcomeService welcome)
     {
         _synthia = synthia;
+        _welcome = welcome;
         _client = client;
         _interactions = interactions;
         _services = services;
@@ -78,6 +81,9 @@ internal sealed class BotService : IHostedService
         _client.MessageReceived += HandleMessageAsync;
         _client.ReactionAdded += HandleReactionAddedAsync;
         _client.ReactionRemoved += HandleReactionRemovedAsync;
+        // Only a new bot is handled there; a person is welcomed through Discord's join line,
+        // which arrives as a message (see WelcomeService).
+        _client.UserJoined += _welcome.HandleUserJoinedAsync;
         _client.Ready += RegisterCommandsAsync;
 
         var token = _config["Discord:Token"]
@@ -118,6 +124,8 @@ internal sealed class BotService : IHostedService
     // themselves rather than being routed around here.
     private async Task HandleMessageAsync(SocketMessage rawMessage)
     {
+        // Discord's « X joined » line is a system message, which every handler below skips.
+        await _welcome.HandleMessageAsync(rawMessage);
         await _emotes.HandleMessageAsync(rawMessage);
         // Independent of every other tracker here — reads only the raw message and
         // its own per-user cooldown gates — so its position relative to the others

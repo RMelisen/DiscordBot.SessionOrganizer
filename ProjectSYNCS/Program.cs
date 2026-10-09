@@ -92,7 +92,13 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<GlitchService>();
         // In-memory daily gate / per-channel stretches: singletons.
         services.AddSingleton<SynthiaService>();
+        // The roll call and the voice seat keep in-memory clocks; both are fed by VoiceXpService's
+        // sweep, and the seat reads the roll call's sessions (live-session tie-break).
+        services.AddSingleton<SessionAttendanceService>();
+        services.AddSingleton<VoiceSeatService>();
         services.AddSingleton<VoiceSpectatorService>();
+        // In-memory hourly window against raids: a singleton.
+        services.AddSingleton<WelcomeService>();
         services.AddSingleton<ChatterService>();
         services.AddSingleton<EmoteTracker>();
         services.AddSingleton<ReactionService>();
@@ -120,6 +126,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddHostedService(sp => sp.GetRequiredService<AmbientService>());
         services.AddHostedService<VoiceXpService>();
         services.AddHostedService<GiveawayDrawService>();
+        services.AddHostedService<WeekendPollService>();
         // Same shape: the host runs its 1-minute loop, BotService feeds it messages (typed
         // answers, the quiet clock), the quiz buttons and /debug quiz call into it.
         services.AddSingleton<QuizMasterService>();

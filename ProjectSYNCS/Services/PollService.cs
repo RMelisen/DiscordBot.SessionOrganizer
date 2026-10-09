@@ -143,6 +143,16 @@ public class PollService
         return open.Where(p => p.CreatedAt <= cutoff).ToList();
     }
 
+    // Whether this organizer created a poll here since `since` (the weekend poll's once-a-week
+    // claim, which survives a restart because it is the poll itself). Dates compared in memory.
+    public async Task<bool> HasPollByOrganizerSinceAsync(ulong guildId, ulong organizerId, DateTimeOffset since)
+    {
+        var polls = await _db_context.Polls
+            .Where(p => p.GuildId == guildId && p.OrganizerId == organizerId)
+            .ToListAsync();
+        return polls.Any(p => p.CreatedAt >= since);
+    }
+
     // Removes the poll and (by cascade) its options and votes.
     public async Task DeletePollAsync(int pollId)
     {

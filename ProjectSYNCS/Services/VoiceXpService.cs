@@ -14,7 +14,9 @@ namespace ProjectSYNCS.Services;
 // reward ever uses. See CLAUDE.md for the fuller reasoning.
 //
 // Also feeds VoiceSpectatorService (her jealous line after a long session) the same per-channel
-// reading, rather than giving it a loop of its own.
+// reading, and after each guild's channels SessionAttendanceService (who is in voice, for the
+// session roll call) and VoiceSeatService (whether she comes and sits in a channel), rather than
+// giving any of them a loop of its own.
 //
 // Fully self-contained: Discord.Net already keeps SocketVoiceChannel.ConnectedUsers
 // and each member's VoiceState live from the gateway in its own cache, the same way
@@ -39,13 +41,19 @@ internal sealed class VoiceXpService : BackgroundService
     private readonly DiscordSocketClient _client;
     private readonly XpTracker _xp;
     private readonly VoiceSpectatorService _spectator;
+    private readonly SessionAttendanceService _attendance;
+    private readonly VoiceSeatService _seat;
     private readonly ILogger<VoiceXpService> _logger;
 
-    public VoiceXpService(DiscordSocketClient client, XpTracker xp, VoiceSpectatorService spectator, ILogger<VoiceXpService> logger)
+    public VoiceXpService(
+        DiscordSocketClient client, XpTracker xp, VoiceSpectatorService spectator,
+        SessionAttendanceService attendance, VoiceSeatService seat, ILogger<VoiceXpService> logger)
     {
         _client = client;
         _xp = xp;
         _spectator = spectator;
+        _attendance = attendance;
+        _seat = seat;
         _logger = logger;
     }
 
@@ -67,6 +75,10 @@ internal sealed class VoiceXpService : BackgroundService
         foreach (var guild in _client.Guilds)
         {
             var afkChannelId = guild.AFKChannel?.Id;
+            // Everyone in voice (muted or not: someone muted is still there) for the roll call,
+            // and each channel's active count for her seat — gathered here, handed over below.
+            var inVoice = new HashSet<ulong>();
+            var readings = new List<(SocketVoiceChannel Channel, int Active)>();
 
             foreach (var channel in guild.VoiceChannels)
             {
@@ -75,12 +87,16 @@ internal sealed class VoiceXpService : BackgroundService
                 // one farm the server hands out for free.
                 if (channel.Id == afkChannelId) continue;
 
+                foreach (var user in channel.ConnectedUsers)
+                    if (!user.IsBot) inVoice.Add(user.Id);
+
                 // Only people who could actually be taking part count. Someone muted
                 // is not company, so being the only unmuted person in a room full of
                 // muted ones is being alone — and earns exactly what being alone
                 // earns, which is nothing. That is what stops idle or alt accounts
                 // being parked in a channel to unlock someone else's XP.
                 var active = channel.ConnectedUsers.Where(IsActive).ToList();
+                readings.Add((channel, active.Count));
 
                 // The spectator watches every channel, empty ones included: an emptying channel
                 // is how a session ends. Its own try, like every per-item step of this sweep.
@@ -122,6 +138,25 @@ internal sealed class VoiceXpService : BackgroundService
                             member.Id, channel.Id);
                     }
                 }
+            }
+
+            // Each in its own try, like every per-item step of this sweep.
+            try
+            {
+                await _attendance.ObserveAsync(guild, inVoice, CheckInterval);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Session attendance failed in guild {GuildId}.", guild.Id);
+            }
+
+            try
+            {
+                await _seat.ObserveAsync(guild, readings, CheckInterval);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Voice seat failed in guild {GuildId}.", guild.Id);
             }
         }
     }
