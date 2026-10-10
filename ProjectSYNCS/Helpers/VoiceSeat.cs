@@ -14,7 +14,7 @@ namespace ProjectSYNCS.Helpers;
 public sealed class VoiceGathering
 {
     public const int MinActive = 3;
-    public const double JoinChance = 0.30;
+    public const double JoinChance = 0.66;
     public static readonly TimeSpan SettleTime = TimeSpan.FromMinutes(10);
     public static readonly TimeSpan GraceToEnd = TimeSpan.FromMinutes(5);
 
