@@ -7,7 +7,7 @@ namespace ProjectSYNCS.Services;
 
 // Her seat in voice: when a home-guild voice channel holds a real get-together, she sometimes
 // comes and sits in it, self-muted and self-deafened — in the member list with the others, which
-// is the strongest sign of being one of them. The rules (threshold, the 30% roll once per
+// is the strongest sign of being one of them. The rules (threshold, the 66% roll once per
 // gathering, the tie-break between two channels, the grace before leaving) live in
 // Helpers/VoiceSeat.
 //

@@ -452,7 +452,7 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
   newcomer, or a welcome back for someone she already knows. More than three arrivals in an hour
   get one line for all of them. A new bot gets a much colder reception.
 - **A seat in voice** — when three or more people are talking in a voice channel for ten
-  minutes, there's a 30% chance she comes and sits with them, muted and deafened, until the
+  minutes, there's a 66% chance she comes and sits with them, muted and deafened, until the
   group breaks up. With two such channels she picks the busiest, and she never hops between
   them while hers is still going.
 - **Morning hello** — once a day she says hello in the general channel, at a random
