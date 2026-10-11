@@ -386,8 +386,7 @@ side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one 
 dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
 with freckle dots, dark navy turtleneck collar just visible. Same character as the reference image.
 Expression: stunned disbelief: eyes opened very wide and round, tiny round open mouth, eyebrows shot
-up high; the cable strand of her hair sticks straight up in surprise, and all the spots on her cap
-flash bright white at once. Surprised, not scared and not angry. Bold simple shapes, thick outline,
+up high. Surprised, not scared and not angry. Bold simple shapes, thick outline,
 high contrast. Plain flat solid cyan background (#00FFFF), no gradient, no shadow on the background.
 No text, no letters, no logos, no watermark.
 ```
@@ -518,6 +517,14 @@ Drop the results in a folder (any names) and say which is which: the crop, the d
 smoothing and the seasonal avatar switch are done on the bot's side. Avatars keep their pink
 background; only the emotes have theirs removed.
 
+The seasonal pictures live in `ProjectSYNCS/Assets/Avatars/syncs-<season>.png`. Gemini's v1 came
+back at 2000×2000 on an exact 10 px grid, so each was snapped to its 200×200 true pixels (median
+of each cell, which also cleans the JPEG noise) and scaled back up ×5 with nearest-neighbour: crisp
+pixels, no blur. `SeasonalAvatarService` uploads the season's picture when it differs from the last
+one applied (`avatar-state.json` next to the database keeps the season and a fingerprint of the
+file), so replacing a PNG is enough for the new one to go up after the next update. Discord
+rate-limits avatar changes; a refused upload is retried on the next hourly check.
+
 ## The banner
 
 The profile banner shows **where she lives, not her**: the Raspberry Pi *is* her body, so she isn't
@@ -570,8 +577,9 @@ two pictures read as one world.
 
 | Version | File | Notes |
 |---|---|---|
-| Avatar v1 | `assets/syncs-avatar-v1.jpg` | First avatar, Gemini. Current bot profile picture |
+| Avatar v1 | `assets/syncs-avatar-v1.jpg` | First avatar, Gemini. Profile picture until the seasonal ones (6.8.0); still the reference for every new picture |
 | Banner v1 | `assets/syncs-banner-v1.jpg` | First banner, Gemini. Current profile banner |
+| Seasonal avatars v1 | `../ProjectSYNCS/Assets/Avatars/syncs-{spring,summer,autumn,winter}.png` | Gemini, from the prompts above. Rotate with the seasons (6.8.0); v1 is the reference they were drawn from |
 
 When a new avatar or banner replaces one of these, add it here and keep the old file: the reference that fixed
 the design is worth keeping.

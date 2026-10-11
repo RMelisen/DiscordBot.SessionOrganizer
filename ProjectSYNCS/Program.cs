@@ -137,6 +137,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddHostedService(sp => sp.GetRequiredService<PlynlingSweepService>());
         services.AddHostedService<ApplicationEmojiService>();
         services.AddHostedService<PlynlingMascotService>();
+        services.AddHostedService<SeasonalAvatarService>();
     })
     .Build();
 

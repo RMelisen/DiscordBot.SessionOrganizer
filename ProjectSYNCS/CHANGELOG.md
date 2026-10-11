@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.8.0 — 2026-10-11
+
+- SYNCS's profile picture now follows the seasons: blossoms in spring, sunglasses in summer, leaves
+  and a scarf in autumn, snow in winter. It changes on the first day of each season.
+
 ## 6.7.1 — 2026-10-11
 
 - 20 new lines for SYNCS's Wednesday weekend poll, 20 for its result and 20 for when nobody votes.
