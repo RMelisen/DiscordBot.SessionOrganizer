@@ -451,11 +451,14 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
 - **Welcome** — she answers Discord's "X joined" message with a welcome that pings the
   newcomer, or a welcome back for someone she already knows. More than three arrivals in an hour
   get one line for all of them. A new bot gets a much colder reception.
-- **A seat in voice** — when three or more people are talking in a voice channel for ten
-  minutes, there's a 66% chance she comes and sits with them, muted and deafened, until the
-  group breaks up. With two such channels she picks the busiest, and she never hops between
-  them while hers is still going. Her creator is the exception: with him there, two people are
-  enough, she decides sooner, says yes 90% of the time, and follows him if he changes channel.
+- **A seat in voice** — when three or more people have been talking in a voice channel for
+  about ten minutes, there's a 66% chance she comes and sits with them, muted and deafened, until
+  the group breaks up; her status then says where she is. With two such channels she picks the
+  busiest, and she never hops between them while hers is still going. Family gets better odds:
+  80% with her aunt there; with her creator, or during a session she organised, two people are
+  enough, she decides sooner and says yes 90% of the time. She follows her creator between
+  channels, and sometimes leaves when he does. At night she only joins him. Throw her out of the
+  call and she either sulks for the rest of the day or comes straight back, furious — once.
 - **Morning hello** — once a day she says hello in the general channel, at a random
   time between 8:00 and 10:00 (Paris time), followed by a fun fact. If
   someone says hello in that channel first — from 7:00 on — there's a 30% chance she

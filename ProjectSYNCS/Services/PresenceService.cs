@@ -8,8 +8,9 @@ namespace ProjectSYNCS.Services;
 
 // Rotates the bot's Discord presence — the status line under its name in the member
 // list — through the filler pool in BotResponses. Cosmetic: it keeps the member list from
-// looking dead. The one piece of real state it shows is the Pi's temperature, when it runs
-// hot enough to complain about (PiHealthService).
+// looking dead. The real state it shows: the Pi's temperature, when it runs hot enough to
+// complain about (PiHealthService), and where she sits in voice (VoiceSeatService) — that one
+// wins over everything, night included, and refreshes the moment she sits down or leaves.
 //
 // Kept apart from ReminderService on purpose. That loop's 5-minute interval is tied
 // to the reminder window it has to catch; this one is free to change cadence without
@@ -19,6 +20,7 @@ internal sealed class PresenceService : BackgroundService
     private readonly DiscordSocketClient _client;
     private readonly ResponsePicker _picker;
     private readonly PiHealthService _health;
+    private readonly VoiceSeatService _seat;
     private readonly ILogger<PresenceService> _logger;
 
     // Slow on purpose. Nobody sits watching the member list; the effect comes from
@@ -29,11 +31,13 @@ internal sealed class PresenceService : BackgroundService
         DiscordSocketClient client,
         ResponsePicker picker,
         PiHealthService health,
+        VoiceSeatService seat,
         ILogger<PresenceService> logger)
     {
         _client = client;
         _picker = picker;
         _health = health;
+        _seat = seat;
         _logger = logger;
     }
 
@@ -44,6 +48,8 @@ internal sealed class PresenceService : BackgroundService
         // the loop below sleeps first, so without it the bot would show nothing for
         // the first few minutes after a restart.
         _client.Ready += RotateAsync;
+        // Sitting down or leaving shows at once, not up to five minutes later.
+        _seat.SeatChanged += RotateAsync;
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -62,8 +68,14 @@ internal sealed class PresenceService : BackgroundService
         // From 1:00 to 7:00 she "sleeps": the idle moon and a sleepy line. She doesn't really
         // sleep — she does it to be like everyone (docs/syncs-voice.md, "Her nights").
         var now = DateTimeOffset.UtcNow;
-        bool asleep = Ambient.IsSleepHours(now);
-        var line = asleep ? _picker.Pick(BotResponses.NightPresenceFillers) : PickAwakeLine();
+        var seat = _seat.CurrentSeat();
+        // In a call she is awake, whatever the hour: at night that only happens with Papa.
+        bool asleep = seat is null && Ambient.IsSleepHours(now);
+        var line = seat is { } s
+            ? s.WithOwner
+                ? _picker.Pick(BotResponses.SeatPresenceOwnerLines)
+                : string.Format(_picker.Pick(BotResponses.SeatPresenceLines), s.Channel.Name)
+            : asleep ? _picker.Pick(BotResponses.NightPresenceFillers) : PickAwakeLine();
 
         try
         {

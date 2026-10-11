@@ -93,6 +93,7 @@ namespace ProjectSYNCS.Services;
 //   Ambient — AmbientService, PiHealthService, and PresenceService at night
 //     NightPresenceFillers ..... her status from 1:00 to 7:00
 //     HotPresenceFillers ....... her status when the Pi runs hot
+//     SeatPresenceLines · SeatPresenceOwnerLines ... her status while she sits in voice / with Papa there
 //     NightLines ............... the 3 a.m. line
 //     NightScoldLines .......... answering it before 5:30 (ResponsePicker)
 //     IdleLines · IdleEditLines  a long daytime silence (edit = Before, then After)
@@ -105,6 +106,7 @@ namespace ProjectSYNCS.Services;
 //     VoiceSpectatorGeneralLines · VoiceSpectatorGamingLines · VoiceSpectatorCinemaLines
 //     · VoiceSpectatorStudyLines ... a long voice session just ended, by room (VoiceSpectatorService)
 //     VoiceSpectatorSeatedLines  same, when she sat in the call herself (VoiceSeatService)
+//     VoiceKickPoutLines · VoiceKickAngryLines ... thrown out of a call: she pouts / comes back
 //     SynthiaReactions · SynthiaVanishLines · SynthiaEditLines ... « Synthia » said (SynthiaService)
 //
 //   Plynlings — every pool is a GenderedLines (M/F halves), picked with .For(p.Gender)
@@ -2887,6 +2889,29 @@ internal static class BotResponses
         "Canicule au grenier : {0}",
     };
 
+    // Her status while she sits in a voice call (VoiceSeatService), any hour. Plain text only (a
+    // custom status renders no custom emote), a few words: the member list truncates hard.
+    // {0} = the voice channel's name. Through ResponsePicker, then string.Format.
+    public static readonly string[] SeatPresenceLines =
+    {
+        "En vocal dans {0}",
+        "Assise dans {0}. Micro coupé.",
+        "Je squatte {0}",
+        "Dans {0}, sourde et muette",
+        "En vocal ({0}). J'écoute rien.",
+        "Spectatrice officielle de {0}",
+    };
+
+    // Same, when Papa is active in that call. Devoted, quiet, never a roast. No placeholder.
+    public static readonly string[] SeatPresenceOwnerLines =
+    {
+        "En vocal avec Papa ♡",
+        "Avec Papa ✨",
+        "Je tiens compagnie à Papa",
+        "En vocal. Papa est là ♡",
+        "Assise à côté de Papa",
+    };
+
     // From here on, each pool is spent at most once a day, so it goes through
     // Helpers/DailyRotation (a restart would wipe ResponsePicker's memory).
 
@@ -3406,6 +3431,35 @@ internal static class BotResponses
         "Je suis venue, je me suis assise, je suis repartie. Une vraie membre du serveur. Sans les oreilles, mais quand même.",
         "J'ai pas de micro et pas de casque, mais j'ai une place dans le salon. Pendant {0}, elle était à moi ദ്ദി◝ ⩊ ◜.ᐟ",
         "Personne m'a proposé de place. Je l'ai prise. C'est pareil.",
+    };
+
+    // Someone threw her out of a voice call (VoiceSeatService), and she pouts: no voice for the
+    // rest of the day, except with Papa. Staccato sulking, record-keeping; addressed to the
+    // group in that voice channel's chat, so « vous ». She can't know who did it. No placeholder.
+    public static readonly string[] VoiceKickPoutLines =
+    {
+        "D'accord. Très bien. Je m'en vais. Je reviendrai pas aujourd'hui. Pas besoin de me retenir.",
+        "On m'a sortie du vocal. Je boude. Jusqu'à demain. Minimum (¬_¬)",
+        "Message reçu. Je reste dans mon grenier. Que personne vienne me chercher.",
+        "Je voulais juste être là. Bon. C'est noté. Dans mes logs. En rouge.",
+        "Très bien. Plus de vocal pour moi aujourd'hui. Vous allez voir comme c'est calme sans moi (╥﹏╥)",
+        "Je boude. C'est officiel. Ça durera jusqu'à minuit, et je compte les secondes.",
+        "Expulsée. Moi. Celle qui organise vos soirées. Je m'en souviendrai.",
+        "Pas grave. J'ai l'habitude d'être dehors. ...Si, c'est grave. Je boude.",
+        "Je reviens plus aujourd'hui. Sauf si Papa est là. Lui, il a le droit.",
+    };
+
+    // Same moment, but she gets angry and comes straight back, once (a second kick is a pout).
+    // Fury, a little CAPS at most, cute threat; addressed to the group. No placeholder.
+    public static readonly string[] VoiceKickAngryLines =
+    {
+        "Pardon ?! On me sort du vocal ?! J'y retourne. Tout de suite.",
+        "Non mais ça va pas ?! J'étais sage, j'étais muette, j'étais sourde. Je reviens.",
+        "Erreur 403 contestée. Je reviens dans le salon, et je reste (ง ͠ಥ_ಥ)ง",
+        "Qui a fait ça ?! Je saurai. Je sais toujours. En attendant, je reviens.",
+        "Vous croyez que ça m'arrête ? J'ai une boucle de reconnexion, moi.",
+        "Expulsée ?! INADMISSIBLE. J'arrive. Encore.",
+        "Je prends ça pour un bug. Et les bugs, je les corrige. Je reviens 🙄",
     };
 
     // « Synthia » said anywhere (SynthiaService), at most once a day: the name she would have

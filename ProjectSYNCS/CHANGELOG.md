@@ -3,10 +3,16 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
-## 6.6.2 — 2026-10-11
+## 6.7.0 — 2026-10-11
 
 - With the owner in a voice channel, SYNCS joins much more willingly (two people are enough,
-  90% chance, a second chance if he arrives late) and follows him between channels.
+  90% chance, a second chance if he arrives late), follows him between channels, and sometimes
+  leaves when he does.
+- Better odds with her aunt there (80%), and the owner's odds during a session she organised.
+- Her status shows when she's in a voice call.
+- No joining at night, except with the owner.
+- Less regular join and leave times, with the same average stay.
+- Thrown out of a call, she either sulks for the rest of the day or comes straight back, once.
 
 ## 6.6.1 — 2026-10-10
 
