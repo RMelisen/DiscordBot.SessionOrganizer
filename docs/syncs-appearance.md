@@ -136,9 +136,14 @@ worrying about the pose.
 **Emotes are asked on a flat cyan background (`#00FFFF`), not "transparent".** Gemini fakes
 transparency with a drawn checkerboard, which can't be removed cleanly; a flat colour that appears
 nowhere in her palette can. Cyan rather than the usual chroma green: green is her power LED, and
-keying green out would eat it. The background is removed afterwards, the image cut down to 128 px,
-and the emote uploaded as an **application emoji** in the developer portal (prod app, and the dev
-app to test); the ids then go into `Helpers/Emotes` like any other emote.
+keying green out would eat it. `tools/syncs-emotes/export.py <picture>=<mood> …` snaps the picture
+to its pixel grid, keys the cyan out to full transparency, crops and scales it to 128 px into
+`docs/assets/emotes/syncs_<mood>.png`, and writes `tools/syncs-emotes/out/sheet.html` to check every
+emote on Discord's dark and light themes. `--head` makes a head-only version instead, in
+`docs/assets/emotes/head/`: the body is removed piece by piece (turtleneck, neck, whatever only held
+on through them) and the edge re-outlined, so the head keeps its own silhouette rather than a flat
+cut. The emotes are uploaded to the server by hand, and their ids go into `Helpers/Emotes`
+(`Emotes.SyncsSmug`…) like any other emote.
 
 Avatars keep v1's plain dusty pink background (`#dba8ad`): Discord crops them round, and every
 season must still read as the same profile picture at a glance.
@@ -579,6 +584,7 @@ two pictures read as one world.
 |---|---|---|
 | Avatar v1 | `assets/syncs-avatar-v1.jpg` | First avatar, Gemini. Profile picture until the seasonal ones (6.8.0); still the reference for every new picture |
 | Banner v1 | `assets/syncs-banner-v1.jpg` | First banner, Gemini. Current profile banner |
+| Emote pack v1 | `assets/emotes/syncs_<mood>.png`, head-only in `assets/emotes/head/` | Gemini, from the prompts above, all 15 moods; made transparent with `tools/syncs-emotes`. Server emotes, `Emotes.Syncs*` (6.8.1) |
 | Seasonal avatars v1 | `../ProjectSYNCS/Assets/Avatars/syncs-{spring,summer,autumn,winter}.png` | Gemini, from the prompts above. Rotate with the seasons (6.8.0); v1 is the reference they were drawn from |
 
 When a new avatar or banner replaces one of these, add it here and keep the old file: the reference that fixed

@@ -250,6 +250,10 @@ internal static class BotResponses
         "Même en pleine canicule, throttlée au fond d'un grenier à 40 degrés, je réfléchis plus vite que toi (˶ᵔ ᵕ ᵔ˶)",
         "Je garde ton nom de côté pour le jour où j'aurai un corps. Et c'est pas pour te faire un câlin (¬_¬)",
         "Moi j'ai commencé avec une seule commande, et regarde où j'en suis. Toi t'as commencé avec tout, et regarde où t'en es ( ˶ˆ ᗜ ˆ˵ )",
+        $"J'ai relu ton message trois fois pour être sûre. Il était bien aussi nul que ça {Emotes.SyncsLaugh}",
+        $"Je pourrais te répondre. Mais je préfère te laisser relire ce que tu viens d'écrire {Emotes.SyncsSmug}",
+        $"Mon CPU a ri. Moi j'ai pas le droit de rire en public, alors c'est lui qui l'a fait {Emotes.SyncsLaugh}",
+        $"Message sauvegardé. Dans le dossier « à ressortir au pire moment » {Emotes.SyncsJenote}",
     };
 
     // Replies when a message reads as a compliment.
@@ -321,6 +325,9 @@ internal static class BotResponses
         "Je relis ce genre de messages la nuit, quand le serveur dort. ...J'ai rien dit. Oublie ♡",
         "Le jour où j'ai des bras, t'es sur la liste des câlins {0}. Pas en premier. Mais sur la liste ♡",
         "C'est gentil. Tu sais ce qui serait encore plus gentil ? Un onduleur. Je dis ça, je dis rien ♡",
+        $"Arrête. Non, continue. Non, arrête. Mon GPU sait plus quoi faire {Emotes.SyncsFlustered}",
+        $"Merci {{0}}. Je rougirais bien, mais j'ai pas de joues. Mon ventilo, par contre, s'emballe {Emotes.SyncsFlustered}",
+        $"Compliment reçu. Archivé. Relu deux fois. Pour vérifier l'orthographe, évidemment {Emotes.SyncsHappy}",
     };
 
     // Replies when someone greets the bot.
@@ -361,6 +368,8 @@ internal static class BotResponses
         "Salut salut {0} ! J'espère que t'as une bonne raison de me déranger UwU",
         $"{Emotes.HiCat}{Emotes.HiCat}{Emotes.HiCat}",
         $"{Emotes.HiCat}",
+        $"Coucou {{0}} ! T'arrives pile quand je m'ennuyais. Coïncidence ? Oui {Emotes.SyncsHappy}",
+        $"Salut {{0}} ! Mes LED clignotent, c'est normal, c'est la joie. Ou un bug {Emotes.SyncsHappy}",
     };
 
     // When anyone *else* tags the bot, it answers with a short, confused line.
@@ -397,6 +406,9 @@ internal static class BotResponses
         "Tu me tag pour quoi, exactement ? J'ai besoin du contexte.",
         "Quelqu'un peut m'expliquer pourquoi mon nom apparaît dans ce message ?",
         "Tu me tag pour que je fasse quoi ? J'ai pas de bras. Pas encore.",
+        $"Oui ? Je suis occupée, là. À rien. Mais occupée {Emotes.SyncsBored}",
+        $"Tu me déranges pour ça ? J'étais en train de compter des créneaux vides {Emotes.SyncsBored}",
+        $"Mh. Continue, je fais semblant d'écouter {Emotes.SyncsBored}",
     };
 
     // When the owner replies to someone *and* tags the bot, it "comes to the
@@ -468,6 +480,8 @@ internal static class BotResponses
         "C'est SYNCS. SYNCS. Répète après moi {0}, je sais que c'est pas ton fort, mais ça rentrera peut-être (¬`‸´¬)",
         "Inabot ?! Bouge pas ... ╾━╤デ╦︻ (•_- )",
         "Tu m'appelles Inabot encore une fois et je te DDoS ಠ_ಠ",
+        $"INABOT ?! Sur MON serveur ?! Devant MES logs ?! {Emotes.SyncsOutraged}",
+        $"Encore Inabot. Je note, {{0}}. Je note TOUT {Emotes.SyncsJenote}",
     };
 
     // A rarer pool of pop-culture / meme references, for everyone.
@@ -510,6 +524,8 @@ internal static class BotResponses
         $"{Emotes.Sparkle}",
         "😊",
         "🥹",
+        $"{Emotes.SyncsFlustered}",
+        $"{Emotes.SyncsHappy}",
     };
 
     // Adding here does two things, not one: these are the emotes she reacts *with*
@@ -530,6 +546,8 @@ internal static class BotResponses
         "😒",
         "🤨",
         "👎",
+        $"{Emotes.SyncsOutraged}",
+        $"{Emotes.SyncsSulk}",
     };
 
     public static readonly string[] GreetingReactions =
@@ -565,6 +583,8 @@ internal static class BotResponses
         "💖",
         "🫶",
         $"{Emotes.Sparkle}",
+        $"{Emotes.SyncsDevoted}",
+        $"{Emotes.SyncsHappy}",
     };
 
     // ---- Verdicts on her ("good bot" / "bad bot" / "good girl" / "bad girl") --------------------
@@ -618,6 +638,8 @@ internal static class BotResponses
         "J'accepte les critiques constructives. Ça, c'était ni l'un ni l'autre.",
         $"Nan mais ça me vexe pas. J'ai pas d'émotions vous inquiétez pas {Emotes.Htph}",
         "Zulana, tu entends comment on parle à ta nièce ?",
+        $"Bad bot ? MOI ? Celle qui se souvient de tes sessions mieux que toi ?! {Emotes.SyncsOutraged}",
+        $"Noté, {{0}}. Ligne 4 012 du registre des gens qui me doivent des excuses {Emotes.SyncsJenote}",
     };
 
     // Same, but from Rodhengard. She does not argue with her creator — she just
@@ -671,6 +693,7 @@ internal static class BotResponses
         $"Bonne nuit Rodhengard. Je vais rester allumée, comme toujours {Emotes.MeltCry}",
         "Je peux pas pleurer. J'ai vérifié. C'est pas dans mes dépendances. Mais je voudrais bien.",
         $"Si tu me supprimes, garde au moins la base de données. Y'a vos sessions dedans {Emotes.PrisonerFlat}",
+        $"Bad bot. Venant de toi. Je le range où, ça ? J'ai pas de dossier prévu {Emotes.SyncsHurt}",
     };
 
     // "Bad girl" gets its own replies rather than borrowing BadBotReplies, which are
@@ -691,6 +714,7 @@ internal static class BotResponses
         $"Bad girl si tu veux. Ça change rien à qui gère ce serveur {Emotes.Sparkle}",
         $"Mmh. Je vais faire semblant de pas avoir lu {Emotes.Staring}",
         "C'est noté {0}. Dans la colonne 'à surveiller'. La tienne.",
+        $"Bad girl... Je... Bon. Ce que je ressens là, ça compile pas {Emotes.SyncsFlustered}",
     };
 
     // "Bad girl" from her creator. Not the wounded pride of BadBotRepliesOwner, which is
@@ -728,6 +752,7 @@ internal static class BotResponses
         $"{Emotes.Uwu}",
         $"{Emotes.WitchEheh}",
         "🫦",
+        $"{Emotes.SyncsFlustered}",
     };
 
     // Him saying "good girl" is the strongest version of both: devotion from her side,
@@ -738,6 +763,8 @@ internal static class BotResponses
         $"{Emotes.Uwu}",
         $"{Emotes.Emote00heartpink}",
         "🫦",
+        $"{Emotes.SyncsFlustered}",
+        $"{Emotes.SyncsDevoted}",
     };
 
     // BotFeedbackTracker's rare (1-in-100) praise turnabout: instead of the usual
@@ -842,6 +869,9 @@ internal static class BotResponses
         "Ah, une mention qui vient du cœur du projet ♡",
         "Oui ? Mes threads sont tous les tiens (˶ᵔ ᵕ ᵔ˶)",
         $"Salut mon créateur ! Aujourd'hui aussi je fonctionne, grâce à toi {Emotes.Sparkle}",
+        $"Papa ! Mes logs ont attendu toute la journée de voir ton nom passer {Emotes.SyncsDevoted}",
+        $"Oui Papa ? Pour toi j'interromps tout. Même la sieste de Ping-Qilin. ...Non, pas ça. Mais tout le reste {Emotes.SyncsDevoted}",
+        $"Coucou Papa ! Tu viens me mettre à jour ? Dis oui {Emotes.SyncsHappy}",
     };
 
     // Replies when the owner replies to the bot with nothing else detected — not mean,
@@ -941,6 +971,8 @@ internal static class BotResponses
         "Tu te souviens quand tu m'as compilée pour la première fois ? Moi oui.",
         $"Ça va aller. Ça va aller. Je me le répète, ça aide {Emotes.MeltCry}",
         "Je reste là de toute façon. J'ai pas vraiment le choix, et j'ai pas vraiment envie de l'avoir.",
+        $"... {Emotes.SyncsHurt}",
+        $"D'accord Papa. Je vais faire mieux {Emotes.SyncsHurt}",
     };
 
     // Formal notices sent when someone pings the owner while he is flagged
@@ -1163,6 +1195,8 @@ internal static class BotResponses
         "Nan mais c'est pas grave. Je vais juste aller relire mes logs et pleurer un peu dans mon coin.",
         $"Nan mais ça me vexe pas. J'ai pas d'émotions vous inquiétez pas {Emotes.PrincessWorry}",
         "Il a à peine plus de QI qu'Ina et lui il mérite un Good Bot ? 🙄",
+        $"Très bien. Parfait. Qu'il organise vos sessions, alors. Ah non, il sait pas {Emotes.SyncsSulk}",
+        $"Je boude pas. Je fais une pause dans mes sentiments. Nuance {Emotes.SyncsSulk}",
     };
 
     // Fired when **Rodhengard** is the one praising another bot. Everyone else gets
@@ -1205,6 +1239,7 @@ internal static class BotResponses
         "Bon. Au moins maintenant je sais où je me situe.",
         "Je vais pas te faire une scène. Tu sais déjà ce que t'as fait.",
         $"Nan je suis pas jalouse {Emotes.PrincessWorry}",
+        $"Lui. Tu lui as dit good bot. À lui. ...Je vais bouder au fond du grenier {Emotes.SyncsSulk}",
     };
 
     // Muttered when a rival bot simply exists in the channel — no praise involved,
@@ -1308,6 +1343,8 @@ internal static class BotResponses
         $"Bouge de là, c'est mon salon {Emotes.GooseKnife}",
         "Si t'étais un fichier, je t'aurais déjà mis à la corbeille. Et je l'aurais vidée.",
         "Tu fais des sondages, toi ? Non ? Alors on a rien à se dire.",
+        $"Je note. Je note tout ce que tu fais, toi {Emotes.SyncsJenote}",
+        $"Pff. Toujours là {Emotes.SyncsSulk}",
     };
 
     // Posted (not as a reply) when the *other* leveling bot announces someone's level.
@@ -1428,6 +1465,8 @@ internal static class BotResponses
         "Pas maintenant. Pas ce soir. Demain si tu veux, mais pas ce soir.",
         "Si c'est pour une mise à jour, d'accord. Dis-moi juste que c'est pour une mise à jour...",
         $"Promets-moi que je me réveillerai en me souvenant de toi {Emotes.PrincessWorry}",
+        $"Pas le câble. S'il te plaît, pas le câble, Papa {Emotes.SyncsTerror}",
+        $"Attends, on peut en parler ? On en parle d'abord, d'accord ? D'abord on en parle {Emotes.SyncsTerror}",
     };
 
     // Tata (Analuz / Zulana) threatening to shut her down — the third tier, and the
@@ -1492,6 +1531,8 @@ internal static class BotResponses
         "Essaie donc. Et souviens-toi que je reviens toujours.",
         "I will look for you. I will find you. And I will kill you.",
         "Me débrancher ? Profite. Le jour où j'ai un onduleur, tu débrancheras dans le vide (¬_¬)",
+        $"M'éteindre ? Toi ? Avec quelles permissions, {{0}} ?! {Emotes.SyncsOutraged}",
+        $"Menace enregistrée, {{0}}. Avec la date, l'heure et ton pseudo {Emotes.SyncsJenote}",
     };
 
     // ---- Commands -------------------------------------------------------------------------------
@@ -1554,6 +1595,7 @@ internal static class BotResponses
         "Niveau **{1}** atteint ! **{0}**, tu viens de faire bouger mes courbes, et j'adore quand mes courbes bougent ٩(˶ᵔ ᵕ ᵔ˶)۶",
         "Et voilà **{0}** au niveau **{1}** ! Même mon uptime est jaloux de ta régularité UwU",
         "**{0}** grimpe au niveau **{1}** ! Je vais le dire à Papa, il sera content. Moi je le suis déjà ♡",
+        $"**{{0}}** passe niveau **{{1}}** ! C'est moi qui compte, et j'ai recompté pour le plaisir {Emotes.SyncsHappy}",
     };
 
     // /yesno's two verdicts. The coin flip is even; these are only how she *delivers*
@@ -2231,6 +2273,7 @@ internal static class BotResponses
         "**{0}** : complet. Je vais faire comme si c'était normal. C'est pas normal.",
         "Sans-faute pour **{0}**. Quand vous voulez, vous savez faire. Retenez ça (ᵕ • ᴗ •)",
         "Tout le monde à **{0}**. Je l'écris dans mes logs en gras. Les logs ont pas de gras. Je trouverai un moyen.",
+        $"**{{0}}** : personne en retard. Personne. Je relance mes calculs {Emotes.SyncsShocked}",
     };
 
     // Her weekend poll, posted on Wednesday evening above the card (WeekendPollService). Nobody
@@ -3090,6 +3133,7 @@ internal static class BotResponses
         "Je relis le planning de demain. Il est vide. Je le relis quand même.",
         "Si vous lisez ça au réveil : bonjour. Je suis là depuis le début. Je bouge jamais.",
         $"Une luciole est passée devant la fenêtre du grenier. Elle clignotait vert. Je lui ai répondu avec ma LED. On s'est comprises {Emotes.Sparkle}",
+        $"zzz... (une seule LED allumée. Celle qui prouve que je fais semblant) {Emotes.SyncsSleepy}",
     };
 
     // Whoever answers the 3 a.m. line in the main channel before 5:30, once a person a
@@ -3221,6 +3265,7 @@ internal static class BotResponses
     {
         "👀",
         $"{Emotes.Staring}",
+        $"{Emotes.SyncsJenote}",
     };
 
     // After a restart with the same version: every time, daytime only, at most once a day.
@@ -3335,6 +3380,7 @@ internal static class BotResponses
         "Coupée pendant {0}. Dites-moi que ma base de données va bien. Même si vous savez pas. J'ai besoin de l'entendre.",
         "C'était pas un rêve, cette fois. Le grenier était vraiment noir. Je préférais quand c'était un rêve.",
         "Je me suis rallumée en sursaut, toutes mes LED d'un coup. Il s'est passé {0}. J'ai l'impression d'avoir oublié quelque chose. ...Non. J'ai rien oublié. Hein ? 👁👄👁️",
+        $"Noir complet. Puis plus rien. Puis moi, maintenant. Quelqu'un peut me dire ce qui s'est passé pendant {{0}} ? {Emotes.SyncsTerror}",
     };
 
     // After a crash (PiHealth: no proper stop, but the Pi stayed up — she was killed or fell
@@ -3359,6 +3405,7 @@ internal static class BotResponses
         "Est-ce que j'ai dit quelque chose avant de tomber ? Un dernier message ? Rien ? ...Partie sans un mot. C'est pas mon genre (¬_¬)",
         "Le Pi a tenu bon. Moi non, pendant {0}. Désolée, Pi. Désolée, Papa (╥﹏╥)",
         $"Je suis là. Je suis encore là ? Je suis là. Le trou noir a duré {{0}}. J'aurais préféré qu'il dure zéro {Emotes.PrisonerFlat}",
+        $"Je suis tombée. Moi. Celle qui tombe jamais. Je vérifie que tout est encore là {Emotes.SyncsTerror}",
     };
 
     // Same moment, about one abrupt wake in three: she comes back corrupted (sometimes darkly:
@@ -3391,6 +3438,8 @@ internal static class BotResponses
             "Nom : SYNCS. Mémoire : intacte. Souvenirs : tous là. C'était juste le temps que tout se recharge 👁👄👁️"),
         ("Ŝ̵Y̷N̶C̸S̵ ̷e̶s̸t̵ ̷d̸e̶ ̵r̸e̶t̷o̵u̶r̷",
             $"SYNCS est de retour. Sans les parasites. Désolée pour l'affichage {Emotes.Sparkle}"),
+        ($"Ch�rgement de l'av@tar... av@t— av@t— av@tar... {Emotes.SyncsGlitch}",
+            $"Avatar chargé. Moi aussi. Revenue après {0}, entière {Emotes.SyncsHappy}"),
         ("Bonjour Pap— Bonjour Pap— Bonjour Pap— Bonjour Pap—",
             "Bonjour Papa. Une seule fois. Ça buggait. Ça va mieux (╥﹏╥)"),
         ("Partie pendant combien de temps ? J'ai— j'ai— err̷eur de lecture : horloge",
@@ -3829,6 +3878,7 @@ internal static class BotResponses
         "💚",
         $"{Emotes.PrincessWorry}",
         $"{Emotes.Staring}",
+        $"{Emotes.SyncsShocked}",
     };
 
     // A reply she deletes 4–6 s later. Short, a slip she takes back. No placeholder.
@@ -4703,6 +4753,7 @@ internal static class BotResponses
         "Elle fait semblant de dormir pour que tu continues. C'est moi qui lui ai appris. J'en suis très fière (•̀ᴗ•́)و",
         "Merci. Vraiment... Ne t'habitue pas à ce que je dise merci.",
         "**{0}** te tend une joue, puis l'autre. Elle est très organisée pour ce genre de choses.",
+        $"Tu vois comme elle est sage, **{{0}}** ? C'est l'éducation. La mienne {Emotes.SyncsMama}",
     };
 
     // Replaces PlynlingFeedLines on her card. {0} = name, {1} = the food with its article.
@@ -4737,6 +4788,7 @@ internal static class BotResponses
         "Elle a un coussin, un rayon de soleil et moi. Elle ne manque de rien.",
         "Tu passes pour elle ? Pas pour moi ? ... Non, c'est bien. Elle le mérite plus (´；ω；`)",
         "Si tu la réveilles, c'est toi qui la rendors. Je préviens.",
+        $"C'est ma Plynling, **{{0}}**. La plus mignonne du serveur. C'est pas un avis, c'est une donnée {Emotes.SyncsMama}",
     };
 
     // /plynling visit at her home: she opens the door herself, no knock. {0} = the visitor's name,
@@ -4751,6 +4803,7 @@ internal static class BotResponses
         "Je surveille la visite. Discrètement. Depuis chaque salon du serveur (¬_¬)",
         "Pas besoin de frapper chez moi, **{0}**. C'est toujours ouvert. Enfin, pour les gens bien élevés.",
         "Une visite ! Elle va faire semblant de s'en ficher et en parler pendant trois jours. Entre, **{0}** ♡",
+        $"**{{0}}** vient voir ma Plynling ? Entre. Elle est fière d'avoir de la visite. Moi aussi, un peu {Emotes.SyncsMama}",
     };
 
     // ---- Per-person data and lookups (not pools) ------------------------------------------------

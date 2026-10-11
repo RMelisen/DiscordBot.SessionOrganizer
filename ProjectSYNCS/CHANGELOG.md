@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.8.1 — 2026-10-11
+
+- SYNCS now has 15 emotes of her own, one per mood (smug, sulking, outraged, sleepy…), and uses
+  them: in about forty new lines, and in her reactions.
+
 ## 6.8.0 — 2026-10-11
 
 - SYNCS's profile picture now follows the seasons: blossoms in spring, sunglasses in summer, leaves
