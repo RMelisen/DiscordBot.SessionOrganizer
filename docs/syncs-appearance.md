@@ -262,21 +262,31 @@ thick outline, high contrast. Plain flat solid cyan background (#00FFFF), no gra
 the background. No text, no letters, no logos, no watermark.
 ```
 
-**8. `syncs_glitch`**: The breakdown and the glitches only. Rare, like the existential nerve.
+**8. `syncs_glitch`**: The breakdown and the glitches only. Rare, like the existential nerve. The
+glitch is the subject here, so it is asked as a few big displaced slices (thin scanlines vanish at
+32 px), and its colour split is red and blue, never cyan: a cyan fringe would be keyed out with the
+background.
 
 ```text
-Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
-emote that must stay readable at 32x32 px. A small mushroom girl, face and mushroom cap only,
-filling the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a
-few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the
-side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a
-dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
-with freckle dots, dark navy turtleneck collar just visible. Same character as the reference image.
-Expression: blank stare, empty eyes with no highlights, mouth slightly open; the image is glitching:
-a few horizontal bands of the picture shifted sideways, thin scanlines, a little RGB colour split on
-the edges; the LED on her cap is off (dark grey). Unsettling but still cute pixel art. Bold simple
-shapes, thick outline, high contrast. Plain flat solid cyan background (#00FFFF), no gradient, no
-shadow on the background. No text, no letters, no logos, no watermark.
+Square image, 1:1, pixel art with a dark navy outline, designed as a Discord emote that must stay
+readable at 32x32 px. A heavily corrupted, glitching picture of a small mushroom girl, face and
+mushroom cap only, filling the frame: large round red-pink mushroom cap worn as her hat, cream spots
+of uneven sizes (dark, none of them glowing), tan gills under the rim, a tiny power LED on the side
+of the cap that is switched off (dark grey). Short pale lilac bob with choppy bangs; one thin strand
+on one side turns into a dark cable ending in a small plug. Dark navy turtleneck collar just
+visible. Same character as the reference image. Expression: dead blank stare, flat empty navy eyes
+with no highlights, mouth slightly open, no blush.
+The glitch is the main subject and must stay obvious even when tiny: the picture is sliced into 4 to
+6 thick horizontal bands, each shoved sideways by a different large amount (up to a quarter of the
+width), so her face no longer lines up: one eye torn away from the other, the cap split and offset
+from the face, the cable strand broken across the bands. One band is duplicated and repeated below
+itself. A few rectangular blocks of the picture are missing, replaced by blocky colour noise and
+stretched, smeared pixels; one eye smears sideways into a streak. Strong colour split on every edge:
+red and magenta ghosts on one side, deep blue on the other, no cyan anywhere in the glitch. Dark
+scanlines across the whole character. It looks broken and unsettling, like a crashed screen, not
+cute. Displaced bands may hang out over the background, but the background itself stays plain flat
+solid cyan (#00FFFF), untouched: no gradient, no noise, no shadow. No text, no letters, no error
+windows, no logos, no watermark.
 ```
 
 **9. `syncs_devoted`**: `OwnerGreetings`. Papa only, never a roast.
@@ -402,7 +412,10 @@ no watermark.
 
 ### Seasonal avatars
 
-Same framing as v1: head and shoulders, centred, safe inside a circle crop. The LED stays green and
+Same framing as v1: head and shoulders, centred, safe inside a circle crop, and the bust **closes
+in a rounded outlined bottom** floating on the pink. Left unsaid, Gemini runs the shoulders off the
+bottom edge, and the round crop then cuts them flat. Every prompt also names the sides (LED and
+cable on the viewer's right), so a season never comes back mirrored. The LED stays green and
 the expression stays her smug default: the season is in the props, not the mood. Burgundy stays out
 (her favourite colour is a taste, not her palette). The bot switches avatar on the first day of each
 season (`ItemCatalog.SeasonAt`: spring March to May, summer June to August, autumn September to
@@ -412,38 +425,49 @@ November, winter the rest).
 
 ```text
 Square profile picture, 1:1, cute pixel art with soft shading and a dark navy outline, matching a
-cozy attic aesthetic. Head-and-shoulders portrait, centered, designed to be cropped into a circle. A
-small mushroom girl: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes,
-a few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the
-side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a
-dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
-with freckle dots, dark navy turtleneck. Same character as the reference image. She keeps her
-default expression: half-lidded eyes and a smug, confident little smirk. Spring version: a few small
-pale pink and white blossoms tucked on the rim of her cap, a tiny green sprout growing from the top
-of the cap, a light soft lilac cardigan over the turtleneck, two or three petals drifting in the
-air. Simple plain dusty pink background (#dba8ad), uncluttered. Bold readable silhouette that stays
-recognizable at very small sizes. No text, no letters, no logos, no watermark.
+cozy attic aesthetic. Head-and-shoulders bust, centered, designed to be cropped into a circle,
+framed exactly like the reference image: the bust ends at the bottom in a rounded, outlined edge
+(her chunky turtleneck closing the shape), floating on the background with an even margin of
+background all around. Nothing touches or is cut by the edges of the image, props included; make her
+slightly smaller if the props need room. A small mushroom girl: large round red-pink mushroom cap
+worn as her hat, cream spots of uneven sizes, a few tiny spots glowing faintly like LEDs, tan gills
+under the rim, a tiny green power LED on a little wire on the viewer's right side of the cap. Short
+pale lilac bob with choppy bangs; one thin strand on the viewer's right turns into a dark cable
+ending in a small plug, hanging at shoulder height. Big dark navy eyes with square pixel highlights,
+soft pink blush with freckle dots, chunky dark navy turtleneck. Same character as the reference
+image. She keeps her default expression: half-lidded eyes and a smug, confident little smirk. Spring
+version: a few small pale pink and white blossoms tucked on the rim of her cap, a tiny green sprout
+growing from the top of the cap, a light soft lilac cardigan over the turtleneck, keeping the same
+rounded bust shape, two or three petals drifting in the air. Simple plain dusty pink background
+(#dba8ad), uncluttered. Bold readable silhouette that stays recognizable at very small sizes. No
+text, no letters, no logos, no watermark.
 ```
 
 **Summer (June to August): `syncs-summer.png`**: The attic is an oven and a hot Pi throttles
-itself (her heatwave peeve). She cools her processor the only way she can and won't admit it's
-working badly. The heat is in the props and one sweat drop; the face stays her smug default, and no
-extra blush (that reads as flustered). The turtleneck stays on, heatwave or not.
+itself (her heatwave peeve). She plays it cool with sunglasses; the one sweat drop shows the act
+isn't working. The sunglasses sit low on her nose so the
+half-lidded eyes still show above them. Sunglasses worn properly would hide the eyes, and at avatar
+size the eyes carry the smugness. No extra blush (that reads as flustered). The turtleneck stays
+on, heatwave or not.
 
 ```text
 Square profile picture, 1:1, cute pixel art with soft shading and a dark navy outline, matching a
-cozy attic aesthetic. Head-and-shoulders portrait, centered, designed to be cropped into a circle. A
-small mushroom girl: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes,
-a few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the
-side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a
-dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
-with freckle dots, dark navy turtleneck. Same character as the reference image. She keeps her
-default expression: half-lidded eyes and a smug, confident little smirk, as if the heat were beneath
-her. Summer version: a small pale blue ice pack balanced on top of her cap, with one or two water
-drops running down the cap; she fans herself with a small round paper hand fan in soft lilac, held
-near her chin; one single sweat drop on her temple. Nothing else changes: same cap, same
-turtleneck, same blush. Simple plain dusty pink background (#dba8ad), uncluttered. Bold readable
-silhouette that stays recognizable at very small sizes. No text, no letters, no logos, no
+cozy attic aesthetic. Head-and-shoulders bust, centered, designed to be cropped into a circle,
+framed exactly like the reference image: the bust ends at the bottom in a rounded, outlined edge
+(her chunky turtleneck closing the shape), floating on the background with an even margin of
+background all around. Nothing touches or is cut by the edges of the image, props included; make her
+slightly smaller if the props need room. A small mushroom girl: large round red-pink mushroom cap
+worn as her hat, cream spots of uneven sizes, a few tiny spots glowing faintly like LEDs, tan gills
+under the rim, a tiny green power LED on a little wire on the viewer's right side of the cap. Short
+pale lilac bob with choppy bangs; one thin strand on the viewer's right turns into a dark cable
+ending in a small plug, hanging at shoulder height. Big dark navy eyes with square pixel highlights,
+soft pink blush with freckle dots, chunky dark navy turtleneck. Same character as the reference
+image. She keeps her default expression: half-lidded eyes and a smug, confident little smirk, as if
+the heat were beneath her. Summer version: small dark navy pixel sunglasses with a thin lilac frame,
+slid down low on her nose, so her half-lidded eyes look at the viewer over the top of the lenses;
+one single sweat drop on her temple. Nothing else changes: same cap,
+same turtleneck, same blush. Simple plain dusty pink background (#dba8ad), uncluttered. Bold
+readable silhouette that stays recognizable at very small sizes. No text, no letters, no logos, no
 watermark.
 ```
 
@@ -451,39 +475,48 @@ watermark.
 
 ```text
 Square profile picture, 1:1, cute pixel art with soft shading and a dark navy outline, matching a
-cozy attic aesthetic. Head-and-shoulders portrait, centered, designed to be cropped into a circle. A
-small mushroom girl: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes,
-a few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the
-side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a
-dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
-with freckle dots, dark navy turtleneck. Same character as the reference image. She keeps her
-default expression: half-lidded eyes and a smug, confident little smirk. Autumn version: two or
-three small orange and golden fallen leaves resting on top of her cap, a chunky knitted scarf in
-warm mustard yellow and soft orange wrapped over the turtleneck, one leaf drifting past. Simple
-plain dusty pink background (#dba8ad), uncluttered. Bold readable silhouette that stays recognizable
-at very small sizes. No text, no letters, no logos, no watermark.
+cozy attic aesthetic. Head-and-shoulders bust, centered, designed to be cropped into a circle,
+framed exactly like the reference image: the bust ends at the bottom in a rounded, outlined edge
+(her chunky turtleneck closing the shape), floating on the background with an even margin of
+background all around. Nothing touches or is cut by the edges of the image, props included; make her
+slightly smaller if the props need room. A small mushroom girl: large round red-pink mushroom cap
+worn as her hat, cream spots of uneven sizes, a few tiny spots glowing faintly like LEDs, tan gills
+under the rim, a tiny green power LED on a little wire on the viewer's right side of the cap. Short
+pale lilac bob with choppy bangs; one thin strand on the viewer's right turns into a dark cable
+ending in a small plug, hanging at shoulder height. Big dark navy eyes with square pixel highlights,
+soft pink blush with freckle dots, chunky dark navy turtleneck. Same character as the reference
+image. She keeps her default expression: half-lidded eyes and a smug, confident little smirk. Autumn
+version: two or three small orange and golden fallen leaves resting on top of her cap, a chunky
+knitted scarf in warm mustard yellow and soft orange wrapped over the turtleneck, one leaf drifting
+past. Simple plain dusty pink background (#dba8ad), uncluttered. Bold readable silhouette that stays
+recognizable at very small sizes. No text, no letters, no logos, no watermark.
 ```
 
 **Winter (December to February): `syncs-winter.png`**: Her season: cold attic, cool CPU, happy.
 
 ```text
 Square profile picture, 1:1, cute pixel art with soft shading and a dark navy outline, matching a
-cozy attic aesthetic. Head-and-shoulders portrait, centered, designed to be cropped into a circle. A
-small mushroom girl: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes,
-a few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the
-side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a
-dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
-with freckle dots, dark navy turtleneck. Same character as the reference image. She keeps her
-default expression: half-lidded eyes and a smug, confident little smirk. Winter version: a thin
-layer of snow resting on top of her cap like icing, a big chunky knitted scarf in soft lilac and
-cream wrapped high around her neck, a few tiny snowflakes in the air; she looks especially pleased
-and comfortable in the cold. Simple plain dusty pink background (#dba8ad), uncluttered. Bold
-readable silhouette that stays recognizable at very small sizes. No text, no letters, no logos, no
-watermark.
+cozy attic aesthetic. Head-and-shoulders bust, centered, designed to be cropped into a circle,
+framed exactly like the reference image: the bust ends at the bottom in a rounded, outlined edge
+(her chunky turtleneck closing the shape), floating on the background with an even margin of
+background all around. Nothing touches or is cut by the edges of the image, props included; make her
+slightly smaller if the props need room. A small mushroom girl: large round red-pink mushroom cap
+worn as her hat, cream spots of uneven sizes, a few tiny spots glowing faintly like LEDs, tan gills
+under the rim, a tiny green power LED on a little wire on the viewer's right side of the cap. Short
+pale lilac bob with choppy bangs; one thin strand on the viewer's right turns into a dark cable
+ending in a small plug, hanging at shoulder height. Big dark navy eyes with square pixel highlights,
+soft pink blush with freckle dots, chunky dark navy turtleneck. Same character as the reference
+image. She keeps her default expression: half-lidded eyes and a smug, confident little smirk. Winter
+version: a thin layer of snow resting on top of her cap like icing, a big chunky knitted scarf in
+soft lilac and cream wrapped high around her neck, a few tiny snowflakes in the air; she looks
+especially pleased and comfortable in the cold. Simple plain dusty pink background (#dba8ad),
+uncluttered. Bold readable silhouette that stays recognizable at very small sizes. No text, no
+letters, no logos, no watermark.
 ```
 
-Drop the results in a folder (any names) and say which is which: the background removal, the crop,
-the downscale without smoothing and the seasonal avatar switch are done on the bot's side.
+Drop the results in a folder (any names) and say which is which: the crop, the downscale without
+smoothing and the seasonal avatar switch are done on the bot's side. Avatars keep their pink
+background; only the emotes have theirs removed.
 
 ## The banner
 
