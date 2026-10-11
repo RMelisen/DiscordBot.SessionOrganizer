@@ -64,7 +64,8 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 - **Roll call** — for a *Game* or *Movie* session, she watches who turns up in voice. Ten
   minutes in, she pings the people who signed up and aren't there yet (once someone is); when
   the group scatters she posts the tally — who came, who was late, and how many never showed
-  (a count, no names).
+  (a count, no names). She's usually first in voice herself, a couple of minutes before the
+  start, and while the session runs its title shows under the voice channel's name.
 
 ### Polls & votes
 
@@ -457,8 +458,10 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
   busiest, and she never hops between them while hers is still going. Family gets better odds:
   80% with her aunt there; with her creator, or during a session she organised, two people are
   enough, she decides sooner and says yes 90% of the time. She follows her creator between
-  channels, and sometimes leaves when he does. At night she only joins him. Throw her out of the
-  call and she either sulks for the rest of the day or comes straight back, furious — once.
+  channels, and sometimes leaves when he does. At night she only joins him, and sends him to bed
+  before long. Another bot in the call puts her off. Her status shows the call she's in, or whose
+  stream she's "watching". Throw her out of the call and she either sulks for the rest of the day
+  or comes straight back, furious — once.
 - **Morning hello** — once a day she says hello in the general channel, at a random
   time between 8:00 and 10:00 (Paris time), followed by a fun fact. If
   someone says hello in that channel first — from 7:00 on — there's a 30% chance she

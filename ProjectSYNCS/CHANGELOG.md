@@ -13,6 +13,13 @@ the git history; versions that were skipped or only existed on a side branch are
 - No joining at night, except with the owner.
 - Less regular join and leave times, with the same average stay.
 - Thrown out of a call, she either sulks for the rest of the day or comes straight back, once.
+- For a Game or Movie session, SYNCS sits in voice a couple of minutes before the start, and the
+  session's title shows under the voice channel's name while it runs.
+- Her status shows whose stream she is "watching".
+- Another bot in the call halves her odds of joining, and she says so.
+- Late at night in a call with the owner, she sends him to bed.
+- Now and then her mic and headset icons flicker for a moment.
+- Time spent in voice with her is recorded for a future monthly report.
 
 ## 6.6.1 — 2026-10-10
 

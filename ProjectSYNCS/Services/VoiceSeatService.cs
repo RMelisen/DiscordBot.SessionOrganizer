@@ -1,5 +1,6 @@
 using Discord;
 using Discord.WebSocket;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Helpers;
 
@@ -29,6 +30,21 @@ namespace ProjectSYNCS.Services;
 //   (VoiceKickAngryLines, back in 10–20 s, once — a second kick is a pout). The line goes in the
 //   voice channel's own chat.
 //
+// - a Game or Movie session she organised: she sits in voice two minutes before the start,
+//   whatever her odds — the first one there — in the channel its people already use, else the
+//   room of its kind (VoiceRooms.DefaultFor); a gathering forming around her adopts her, and with
+//   none by start + 15 min she leaves;
+// - another bot in the call halves her odds (Papa and sessions aside); she says why once when
+//   she refuses (VoiceRivalRefuseLines), or grumbles once when she sits next to one anyway
+//   (VoiceRivalSeatedLines);
+// - with Papa at night, once a night between 1:15 and 2:15, she scolds him for not being in bed
+//   (OwnerBedtimeLines) and leaves a minute later; no call at all until morning, his included;
+// - once in a while (20% of seats) she undeafens and unmutes for two seconds, then thinks better
+//   of it: the icons flicker, no sound;
+// - every minute she is confirmed in a call is credited to everyone in it (VoiceCompanionService),
+//   for a future monthly report;
+// - her status (PresenceService) says where she is, and whose stream she is "watching".
+//
 // She reconciles every sweep against where Discord says she is, which also covers being dragged
 // into another channel (she adopts it while its gathering lasts), still sitting somewhere after a
 // restart (she leaves), or dropped by a gateway reconnect (that gathering is given up, silently).
@@ -39,6 +55,7 @@ internal sealed class VoiceSeatService
     private static readonly TimeSpan SettleAfterMove = TimeSpan.FromSeconds(90);
 
     private readonly DiscordSocketClient _client;
+    private readonly IServiceProvider _services;
     private readonly SessionAttendanceService _attendance;
     private readonly XpTracker _xp;
     private readonly ResponsePicker _picker;
@@ -59,15 +76,27 @@ internal sealed class VoiceSeatService
     private DateTimeOffset? _leaveAfterOwnerAt;
     // The Paris day she pouts through (AppTime.DayKey), 0 for none.
     private int _poutDay;
+    // The night (AppTime.DayKey, after midnight) she was sent to bed, and when she leaves.
+    private int _bedtimeDay;
+    private DateTimeOffset? _bedtimeLeaveAt;
+    // Per seat: the moment of the mic flicker (null: none this seat), the rival grumble said.
+    private DateTimeOffset? _micGagAt;
+    private bool _micGagRolled;
+    private bool _rivalSeatSaid;
+    // Per channel: the gatherings whose refusal for a rival was already said.
+    private readonly HashSet<ulong> _rivalRefusalSaid = new();
+    // Whose stream she shows in her status, to refresh it when that changes.
+    private ulong? _streamer;
 
     /// <summary>Raised after she sits down, moves or leaves, so PresenceService can say so now.</summary>
     public event Func<Task>? SeatChanged;
 
     public VoiceSeatService(
-        DiscordSocketClient client, SessionAttendanceService attendance, XpTracker xp,
+        DiscordSocketClient client, IServiceProvider services, SessionAttendanceService attendance, XpTracker xp,
         ResponsePicker picker, ILogger<VoiceSeatService> logger)
     {
         _client = client;
+        _services = services;
         _attendance = attendance;
         _xp = xp;
         _picker = picker;
@@ -102,16 +131,23 @@ internal sealed class VoiceSeatService
     }
 
     /// <summary>
-    /// Where she sits right now, for her status: the channel, and whether Papa is active in it.
-    /// Null when she sits nowhere.
+    /// Where she sits right now, for her status: the channel, whether Papa is active in it, and who
+    /// is streaming there (Papa first). Null when she sits nowhere.
     /// </summary>
-    public (SocketVoiceChannel Channel, bool WithOwner)? CurrentSeat()
+    public (SocketVoiceChannel Channel, bool WithOwner, SocketGuildUser? Streamer)? CurrentSeat()
     {
         var channel = _client.GetGuild(HomeGuild.Id)?.CurrentUser?.VoiceChannel;
         if (channel is null) return null;
         var withOwner = channel.ConnectedUsers.Any(u => u.Id == AvailabilityService.OwnerId && IsActive(u));
-        return (channel, withOwner);
+        return (channel, withOwner, StreamerIn(channel));
     }
+
+    private static SocketGuildUser? StreamerIn(SocketVoiceChannel channel) =>
+        channel.ConnectedUsers
+            .Where(u => !u.IsBot && u.VoiceState?.IsStreaming == true)
+            .OrderByDescending(u => u.Id == AvailabilityService.OwnerId)
+            .ThenBy(u => u.Id)
+            .FirstOrDefault();
 
     /// <summary>
     /// One sweep of the home guild: each voice channel (the AFK one already left out) with its
@@ -125,6 +161,7 @@ internal sealed class VoiceSeatService
         // everything never gets her either. The config is cached, so this costs no I/O per sweep.
         var channels = new List<(VoiceReading Reading, bool SessionLive)>(readings.Count);
         var now = DateTimeOffset.UtcNow;
+        var self = _client.CurrentUser.Id;
         foreach (var reading in readings)
         {
             if (await _xp.IsChannelExcludedAsync(guild.Id, reading.Channel)) continue;
@@ -135,10 +172,15 @@ internal sealed class VoiceSeatService
         var actual = guild.CurrentUser?.VoiceChannel?.Id;
         var night = Ambient.IsSleepHours(now);
         var today = AppTime.DayKey(now);
+        var hosted = _attendance.SessionsToHost(guild.Id, now);
         ulong? desired;
         bool settled;
         ulong? kickedFrom = null;
         int kicks = 0;
+        // Lines and side effects decided under the lock, carried out after it.
+        var said = new List<(ulong ChannelId, string Line, string What)>();
+        bool micGagNow = false, streamerChanged = false;
+        ulong? creditSeat = null;
 
         lock (_gate)
         {
@@ -151,7 +193,13 @@ internal sealed class VoiceSeatService
                     if (r.Active < VoiceGathering.RulesFor(tier).MinActive) continue;
                     _gatherings[r.Channel.Id] = gathering = new VoiceGathering();
                 }
-                gathering.Observe(r.Active, tier, r.OwnerActive, tick, now, Random.Shared.NextDouble);
+                var rival = RivalIn(r.Channel, self);
+                gathering.Observe(r.Active, tier, r.OwnerActive, tick, now, Random.Shared.NextDouble, rival is not null);
+
+                if (!gathering.Started)
+                    _rivalRefusalSaid.Remove(r.Channel.Id);
+                else if (gathering.RefusedForRival && _rivalRefusalSaid.Add(r.Channel.Id))
+                    said.Add((r.Channel.Id, _picker.Pick(BotResponses.VoiceRivalRefuseLines), "rival refusal line"));
             }
 
             settled = now - _movedAt >= SettleAfterMove;
@@ -185,25 +233,97 @@ internal sealed class VoiceSeatService
             {
                 _lastSeated[sitting] = now;
                 TrackOwnerLeaving(sitting, channels, now);
+
+                var here = channels.FirstOrDefault(c => c.Reading.Channel.Id == sitting).Reading;
+                if (_confirmed && actual == sitting && here.Channel is not null)
+                {
+                    creditSeat = sitting;
+
+                    if (!_rivalSeatSaid && RivalIn(here.Channel, self) is { } rival)
+                    {
+                        _rivalSeatSaid = true;
+                        said.Add((sitting, string.Format(_picker.Pick(BotResponses.VoiceRivalSeatedLines), Format.Sanitize(rival.Username)), "rival seated line"));
+                    }
+
+                    if (!_micGagRolled)
+                    {
+                        _micGagRolled = true;
+                        if (Random.Shared.NextDouble() < VoiceSeat.MicGagChance)
+                            _micGagAt = now.AddMinutes(VoiceSeat.Between(VoiceSeat.MicGagMinMinutes, VoiceSeat.MicGagMaxMinutes, Random.Shared.NextDouble()));
+                    }
+                    if (_micGagAt is { } gagAt && now >= gagAt)
+                    {
+                        _micGagAt = null;
+                        micGagNow = true;
+                    }
+
+                    // Papa still up at night: once a night she sends him to bed, and goes herself.
+                    if (night && here.OwnerActive && _bedtimeDay != today && now >= VoiceSeat.BedtimeFor(now))
+                    {
+                        _bedtimeDay = today;
+                        _bedtimeLeaveAt = now + VoiceSeat.BedtimeLeaveAfter;
+                        said.Add((sitting, _picker.Pick(BotResponses.OwnerBedtimeLines), "bedtime line"));
+                    }
+
+                    var streamer = StreamerIn(here.Channel)?.Id;
+                    if (streamer != _streamer)
+                    {
+                        _streamer = streamer;
+                        streamerChanged = true;
+                    }
+                }
             }
+            bool sentToBed = night && _bedtimeDay == today;
 
             var candidates = channels
                 .Where(c => _gatherings.TryGetValue(c.Reading.Channel.Id, out var g) && g.Started)
                 .Select(c =>
                 {
                     var g = _gatherings[c.Reading.Channel.Id];
-                    bool allowed = c.Reading.OwnerActive || (!night && _poutDay != today);
+                    bool allowed = !sentToBed && (c.Reading.OwnerActive || (!night && _poutDay != today));
                     return new VoiceSeat.Candidate(c.Reading.Channel.Id, c.Reading.Active, g.Won, c.SessionLive,
                         g.StartedAt, c.Reading.OwnerActive, allowed);
                 })
                 .ToList();
             desired = kickedFrom is null ? VoiceSeat.Choose(_seat, candidates) : null;
 
+            // First one there: nothing else holds her, and a session she organised is about to
+            // start or just started.
+            ulong? holding = null;
+            if (kickedFrom is null && desired is null && !sentToBed && _poutDay != today
+                && hosted.Count > 0 && HostChannel(hosted[0], channels, night) is { } host
+                && (_seat is null || _seat == host))
+            {
+                if (!_gatherings.TryGetValue(host, out var g))
+                    _gatherings[host] = g = new VoiceGathering();
+                if (!g.GaveUp)
+                {
+                    // A gathering formed around her: she was there first, she stays for it.
+                    if (g.Started) g.Adopt();
+                    desired = holding = host;
+                }
+            }
+
+            if (sentToBed && _bedtimeLeaveAt is { } bedtime && now >= bedtime)
+                desired = null;
+
             // Drop the gatherings that ended, so the dictionary only holds what's going on.
             var present = channels.Where(c => c.Reading.Active > 0).Select(c => c.Reading.Channel.Id).ToHashSet();
-            foreach (var id in _gatherings.Where(kv => !kv.Value.Started && !present.Contains(kv.Key)).Select(kv => kv.Key).ToList())
+            foreach (var id in _gatherings.Where(kv => !kv.Value.Started && !present.Contains(kv.Key) && kv.Key != holding).Select(kv => kv.Key).ToList())
+            {
                 _gatherings.Remove(id);
+                _rivalRefusalSaid.Remove(id);
+            }
         }
+
+        foreach (var (channelId, line, what) in said)
+            if (guild.GetVoiceChannel(channelId) is { } where)
+                await BotChat.PostWithTypingAsync(where, line, _logger, what, AllowedMentions.None);
+        if (micGagNow && guild.CurrentUser?.VoiceChannel is { } gagged)
+            _ = Task.Run(() => MicGagAsync(gagged));
+        if (streamerChanged) await NotifyAsync();
+        if (creditSeat is { } credited && guild.GetVoiceChannel(credited) is { } company)
+            await CreditAsync(guild.Id, company, tick);
 
         if (kickedFrom is { } from)
         {
@@ -248,6 +368,69 @@ internal sealed class VoiceSeatService
         _confirmed = false;
         _ownerWasHere = false;
         _leaveAfterOwnerAt = null;
+        _micGagAt = null;
+        _micGagRolled = false;
+        _rivalSeatSaid = false;
+        _streamer = null;
+    }
+
+    // Under _gate. Where she waits for a session: the allowed channel holding most of its confirmed
+    // people, else the room of its kind if it isn't excluded. Null when she may not sit anywhere
+    // (night without Papa in that channel).
+    private static ulong? HostChannel(
+        SessionAttendanceService.HostedSession session, List<(VoiceReading Reading, bool SessionLive)> channels, bool night)
+    {
+        var joined = session.Joined.ToHashSet();
+        var withPeople = channels
+            .Select(c => (c.Reading, Count: c.Reading.Channel.ConnectedUsers.Count(u => joined.Contains(u.Id))))
+            .Where(x => x.Count > 0)
+            .OrderByDescending(x => x.Count)
+            .Select(x => x.Reading)
+            .FirstOrDefault();
+
+        var room = withPeople.Channel is not null
+            ? withPeople
+            : channels.Select(c => c.Reading).FirstOrDefault(r => r.Channel.Id == VoiceRooms.DefaultFor(session.Category));
+        if (room.Channel is null) return null;
+        if (night && !room.OwnerActive) return null;
+        return room.Channel.Id;
+    }
+
+    // Another bot in the call (her own account aside): a music bot, the other leveling bot.
+    private static SocketGuildUser? RivalIn(SocketVoiceChannel channel, ulong self) =>
+        channel.ConnectedUsers.FirstOrDefault(u => u.IsBot && u.Id != self);
+
+    private async Task MicGagAsync(SocketVoiceChannel channel)
+    {
+        try
+        {
+            await channel.ModifyAsync(p => { p.SelfDeaf = false; p.SelfMute = false; });
+            await Task.Delay(VoiceSeat.MicGagLength);
+            await channel.ModifyAsync(p => { p.SelfDeaf = true; p.SelfMute = true; });
+            _logger.LogInformation("Voice seat: mic flicker in {ChannelId}.", channel.Id);
+        }
+        catch (Exception ex)
+        {
+            // Only a seat this process joined can be modified (an adopted one after a restart
+            // can't): cosmetic, so it's simply skipped.
+            _logger.LogDebug(ex, "Voice seat: mic flicker skipped in {ChannelId}.", channel.Id);
+        }
+    }
+
+    private async Task CreditAsync(ulong guildId, SocketVoiceChannel channel, TimeSpan tick)
+    {
+        var people = channel.ConnectedUsers.Where(u => !u.IsBot).Select(u => u.Id).ToList();
+        if (people.Count == 0) return;
+        try
+        {
+            await using var scope = _services.CreateAsyncScope();
+            await scope.ServiceProvider.GetRequiredService<VoiceCompanionService>()
+                .AddAsync(guildId, people, (long)tick.TotalMinutes);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Voice seat: failed to credit time in {ChannelId}.", channel.Id);
+        }
     }
 
     private async Task OnKickedAsync(SocketGuild guild, ulong channelId, int kicks, DateTimeOffset now)
@@ -277,8 +460,9 @@ internal sealed class VoiceSeatService
         {
             await Task.Delay(delay);
             bool still;
+            // Still wanted there: a won gathering, or a session she was waiting for (no gathering yet).
             lock (_gate)
-                still = _seat is null && _gatherings.TryGetValue(channelId, out var g) && g.Won;
+                still = _seat is null && _gatherings.TryGetValue(channelId, out var g) && !g.GaveUp && (g.Won || !g.Started);
             if (still) await MoveAsync(guild, channelId, DateTimeOffset.UtcNow);
         });
     }

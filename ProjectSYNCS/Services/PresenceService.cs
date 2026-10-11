@@ -71,10 +71,14 @@ internal sealed class PresenceService : BackgroundService
         var seat = _seat.CurrentSeat();
         // In a call she is awake, whatever the hour: at night that only happens with Papa.
         bool asleep = seat is null && Ambient.IsSleepHours(now);
+        // Someone streaming in her call wins (she "watches" — she can't see a thing), then Papa.
         var line = seat is { } s
-            ? s.WithOwner
-                ? _picker.Pick(BotResponses.SeatPresenceOwnerLines)
-                : string.Format(_picker.Pick(BotResponses.SeatPresenceLines), s.Channel.Name)
+            ? s.Streamer is { } streamer
+                ? string.Format(_picker.Pick(BotResponses.SeatStreamPresenceLines),
+                    streamer.Id == AvailabilityService.OwnerId ? "Papa" : BotResponses.DisplayNameFor(streamer))
+                : s.WithOwner
+                    ? _picker.Pick(BotResponses.SeatPresenceOwnerLines)
+                    : string.Format(_picker.Pick(BotResponses.SeatPresenceLines), s.Channel.Name)
             : asleep ? _picker.Pick(BotResponses.NightPresenceFillers) : PickAwakeLine();
 
         try

@@ -40,6 +40,10 @@ internal sealed class SessionAttendanceService
     private readonly Dictionary<ulong, (DateTimeOffset At, List<SessionEvent> Sessions)> _cache = new();
     // Per session id: how long fewer than two of the people who came have been in voice.
     private readonly Dictionary<int, TimeSpan> _scattered = new();
+    // Voice channel statuses (SyncVoiceStatusAsync): what she last wrote where, and where it failed.
+    private static readonly TimeSpan StatusRetryAfter = TimeSpan.FromMinutes(30);
+    private readonly Dictionary<ulong, (string Text, DateTimeOffset At)> _statusSent = new();
+    private readonly Dictionary<ulong, DateTimeOffset> _statusFailedAt = new();
 
     public SessionAttendanceService(
         IServiceProvider services, ResponsePicker picker, BreakdownService breakdown,
@@ -66,6 +70,31 @@ internal sealed class SessionAttendanceService
         }
     }
 
+    /// <summary>A session she should be in voice for (VoiceSeatService, "first one there").</summary>
+    public sealed record HostedSession(int Id, SessionCategory Category, IReadOnlyList<ulong> Joined);
+
+    /// <summary>
+    /// Sessions from <see cref="VoiceSeat.ArrivalLead"/> before their start to
+    /// <see cref="VoiceSeat.HoldUntil"/> after it, with enough confirmed people for a roll call.
+    /// Reads the cache only.
+    /// </summary>
+    public IReadOnlyList<HostedSession> SessionsToHost(ulong guildId, DateTimeOffset now)
+    {
+        lock (_gate)
+        {
+            if (!_cache.TryGetValue(guildId, out var entry)) return Array.Empty<HostedSession>();
+            return entry.Sessions
+                .Where(s => !s.RecapSent
+                    && now >= s.ScheduledAt - VoiceSeat.ArrivalLead
+                    && now <= s.ScheduledAt + VoiceSeat.HoldUntil)
+                .OrderBy(s => s.ScheduledAt)
+                .Select(s => new HostedSession(s.Id, s.Category,
+                    s.Participants.Where(p => p.Status == ParticipantStatus.Joined).Select(p => p.UserId).ToList()))
+                .Where(s => s.Joined.Count >= SessionAttendance.MinConfirmed)
+                .ToList();
+        }
+    }
+
     /// <summary>
     /// One sweep of one server: <paramref name="inVoice"/> holds every human connected to one of its
     /// voice channels (the AFK one aside), muted or not — someone muted is still there.
@@ -87,6 +116,91 @@ internal sealed class SessionAttendanceService
                 _logger.LogError(ex, "Attendance failed for session {EventId}.", session.Id);
             }
         }
+
+        // Its own try: a status is cosmetic, and must never cost the roll call anything.
+        try
+        {
+            await SyncVoiceStatusAsync(guild, sessions, now);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Voice channel status sync failed in guild {GuildId}.", guild.Id);
+        }
+    }
+
+    // While a session is under way, the voice channel holding most of its confirmed people shows
+    // the session under its name (« 🎮 Among Us »), and loses it when the live window ends.
+    // Stateless against Discord, so a restart picks up where it left: a status she would write for
+    // a cached session is hers to clear, anything else is someone's and is never touched.
+    // Channels she can't set (no Set Voice Channel Status permission, or Discord refusing) are left
+    // alone for StatusRetryAfter instead of being retried every minute.
+    private async Task SyncVoiceStatusAsync(SocketGuild guild, List<SessionEvent> sessions, DateTimeOffset now)
+    {
+        var afk = guild.AFKChannel?.Id;
+        var voice = guild.VoiceChannels.Where(c => c.Id != afk).ToList();
+
+        var wanted = new Dictionary<ulong, string>();
+        foreach (var session in sessions.Where(s => SessionAttendance.IsLive(now, s.ScheduledAt)).OrderBy(s => s.ScheduledAt))
+        {
+            var joined = session.Participants.Where(p => p.Status == ParticipantStatus.Joined).Select(p => p.UserId).ToHashSet();
+            var best = voice
+                .Select(c => (Channel: c, Count: c.ConnectedUsers.Count(u => joined.Contains(u.Id))))
+                .Where(x => x.Count > 0)
+                .OrderByDescending(x => x.Count)
+                .Select(x => x.Channel)
+                .FirstOrDefault();
+            if (best is not null) wanted.TryAdd(best.Id, StatusText(session));
+        }
+
+        var ours = sessions.Select(StatusText).ToHashSet();
+        foreach (var channel in voice)
+        {
+            var current = channel.Status ?? string.Empty;
+            string? target = null;
+            if (wanted.TryGetValue(channel.Id, out var text))
+            {
+                // Someone else's status stays, whatever the session.
+                if (current != text && (current.Length == 0 || ours.Contains(current))) target = text;
+            }
+            else if (current.Length > 0 && ours.Contains(current))
+            {
+                target = string.Empty;
+            }
+            if (target is null) continue;
+
+            lock (_gate)
+            {
+                if (_statusFailedAt.TryGetValue(channel.Id, out var failed) && now - failed < StatusRetryAfter) continue;
+                // The cache may lag behind our own write: don't send the same status twice in a row.
+                if (_statusSent.TryGetValue(channel.Id, out var sent) && sent.Text == target && now - sent.At < StatusRetryAfter) continue;
+            }
+
+            if (!guild.CurrentUser.GetPermissions(channel).SetVoiceChannelStatus)
+            {
+                lock (_gate) _statusFailedAt[channel.Id] = now;
+                continue;
+            }
+
+            try
+            {
+                await channel.SetStatusAsync(target);
+                lock (_gate) _statusSent[channel.Id] = (target, now);
+            }
+            catch (Exception ex)
+            {
+                lock (_gate) _statusFailedAt[channel.Id] = now;
+                _logger.LogWarning(ex, "Failed to set the status of voice channel {ChannelId}.", channel.Id);
+            }
+        }
+    }
+
+    private static string StatusText(SessionEvent session)
+    {
+        var emoji = session.Category == SessionCategory.Movie ? "🎬" : "🎮";
+        var text = $"{emoji} {session.Title}";
+        return text.Length > DiscordConfig.MaxVoiceChannelStatusLength
+            ? text[..DiscordConfig.MaxVoiceChannelStatusLength]
+            : text;
     }
 
     private async Task<List<SessionEvent>> SessionsAsync(ulong guildId, DateTimeOffset now)
@@ -202,7 +316,11 @@ internal sealed class SessionAttendanceService
         if (guild.GetChannel(session.ChannelId) is not IMessageChannel channel) return;
 
         var mentions = Names(missing);
-        var line = string.Format(_picker.Pick(BotResponses.SessionLateCallLines), mentions, Format.Sanitize(session.Title));
+        // Already in a call herself (she arrives before the start): the line says so.
+        var seated = guild.CurrentUser?.VoiceChannel is not null;
+        var pool = seated ? BotResponses.SessionLateCallSeatedLines : BotResponses.SessionLateCallLines;
+        var line = string.Format(_picker.Pick(pool), mentions, Format.Sanitize(session.Title),
+            AppTime.ToZoned(session.ScheduledAt).ToString("HH'h'mm"));
         // Meant to ping, so narrowed to exactly the people it names (root CLAUDE.md, mentions).
         var allowed = new AllowedMentions { UserIds = missing.Select(p => p.UserId).ToList() };
         await BotChat.PostWithTypingAsync(channel, line, _logger, "session late call", allowed);

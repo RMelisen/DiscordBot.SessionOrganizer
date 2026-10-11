@@ -69,14 +69,25 @@ public sealed class VoiceGathering
     /// <summary>How many times she was thrown out of this gathering's call.</summary>
     public int Kicks { get; private set; }
 
+    /// <summary>Out for good this gathering (a pout, a refused join).</summary>
+    public bool GaveUp => _gaveUp;
+
+    /// <summary>
+    /// The roll that started it was lost with a rival bot in the call: she refuses to sit next to
+    /// it, and says so once (VoiceSeatService). Cleared when the gathering ends.
+    /// </summary>
+    public bool RefusedForRival { get; private set; }
+
     /// <summary>
     /// Records one sweep. <paramref name="tier"/> is the best tier present right now;
     /// <paramref name="ownerActive"/> is Papa himself, apart from a live session. Every random draw
     /// comes from <paramref name="roll"/>, in [0, 1).
     /// </summary>
-    public void Observe(int active, SeatTier tier, bool ownerActive, TimeSpan tick, DateTimeOffset now, Func<double> roll)
+    public void Observe(int active, SeatTier tier, bool ownerActive, TimeSpan tick, DateTimeOffset now, Func<double> roll,
+        bool rivalPresent = false)
     {
         var rules = RulesFor(tier);
+        var chance = VoiceSeat.ChanceWith(rules.Chance, tier, rivalPresent);
         if (active >= rules.MinActive)
         {
             _below = TimeSpan.Zero;
@@ -90,9 +101,9 @@ public sealed class VoiceGathering
                     _released = false;
                     _bestRolled = 0;
                 }
-                if (rules.Chance <= _bestRolled) return;
-                _bestRolled = rules.Chance;
-                Won = roll() < rules.Chance;
+                if (chance <= _bestRolled) return;
+                _bestRolled = chance;
+                Won = roll() < chance;
                 return;
             }
 
@@ -102,8 +113,11 @@ public sealed class VoiceGathering
 
             Started = true;
             StartedAt = now;
-            _bestRolled = rules.Chance;
-            Won = roll() < rules.Chance;
+            _bestRolled = chance;
+            var draw = roll();
+            Won = draw < chance;
+            // Only the rival's fault if, without it, the same draw would have seated her.
+            RefusedForRival = !Won && draw < rules.Chance;
             return;
         }
 
@@ -121,6 +135,7 @@ public sealed class VoiceGathering
         _gaveUp = false;
         _released = false;
         Kicks = 0;
+        RefusedForRival = false;
         Started = false;
         Won = false;
     }
@@ -162,6 +177,46 @@ public sealed class VoiceGathering
 
 public static class VoiceSeat
 {
+    // Another bot sits in the call (a music bot, the rival): she halves her odds — she won't sit
+    // next to it — except for Papa or a session she organised, where she comes anyway.
+    public const double RivalChanceFactor = 0.5;
+
+    // A Game or Movie session she organised: she sits in voice ArrivalLead before the start,
+    // whatever her odds — the first one there — and holds the seat until HoldUntil past the start
+    // if no gathering forms around her.
+    public static readonly TimeSpan ArrivalLead = TimeSpan.FromMinutes(2);
+    public static readonly TimeSpan HoldUntil = TimeSpan.FromMinutes(15);
+
+    // Once in a while she undeafens and unmutes for a moment, then thinks better of it: the icons
+    // flicker, no sound. At most once per seat, MicGagChance of the time, between the bounds
+    // after she sat down.
+    public const double MicGagChance = 0.20;
+    public const int MicGagMinMinutes = 5;
+    public const int MicGagMaxMinutes = 40;
+    public static readonly TimeSpan MicGagLength = TimeSpan.FromSeconds(2);
+
+    // Sitting with Papa at night: once a night, at a minute drawn in [BedtimeFrom, BedtimeTo)
+    // (Paris), she scolds him for not being in bed and leaves; no call at all until morning.
+    public static readonly TimeSpan BedtimeFrom = TimeSpan.FromHours(1) + TimeSpan.FromMinutes(15);
+    public static readonly TimeSpan BedtimeTo = TimeSpan.FromHours(2) + TimeSpan.FromMinutes(15);
+    public static readonly TimeSpan BedtimeLeaveAfter = TimeSpan.FromMinutes(1);
+
+    /// <summary>A tier's chance once a rival bot in the call is accounted for.</summary>
+    public static double ChanceWith(double chance, SeatTier tier, bool rivalPresent) =>
+        rivalPresent && tier != SeatTier.Favoured ? chance * RivalChanceFactor : chance;
+
+    /// <summary>
+    /// Tonight's bedtime for the night that <paramref name="now"/> belongs to (Paris): a minute in
+    /// the window, drawn from the date so a restart lands on the same one.
+    /// </summary>
+    public static DateTimeOffset BedtimeFor(DateTimeOffset now)
+    {
+        var night = AppTime.ToZoned(now).Date;
+        var span = (int)(BedtimeTo - BedtimeFrom).TotalMinutes;
+        var minute = (int)(StableRoll.Unit(DateOnly.FromDateTime(night).DayNumber, 0x4245_4454, 0) * span);
+        return AppTime.AtWallClock(night + BedtimeFrom + TimeSpan.FromMinutes(minute));
+    }
+
     // Papa leaves the channel she sits in (and isn't somewhere she can follow): half the time she
     // goes too, a minute or three later — she was there for him. The others stay; that's the point.
     public const double LeaveAfterOwnerChance = 0.5;

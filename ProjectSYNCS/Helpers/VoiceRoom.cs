@@ -24,4 +24,14 @@ public static class VoiceRooms
 
     public static VoiceRoom For(ulong channelId) =>
         Rooms.TryGetValue(channelId, out var room) ? room : VoiceRoom.General;
+
+    /// <summary>
+    /// Where she waits for a session nobody has joined yet (VoiceSeatService, "first one there"):
+    /// Cinéma for a film, the first Gaming channel for anything else.
+    /// </summary>
+    public static ulong DefaultFor(ProjectSYNCS.Models.SessionCategory category) =>
+        category == ProjectSYNCS.Models.SessionCategory.Movie ? CinemaDefault : GamingDefault;
+
+    private const ulong GamingDefault = 1535968645140848670; // Gaming
+    private const ulong CinemaDefault = 878307678374490204;  // Cinéma
 }
