@@ -71,13 +71,14 @@ English. Renaming a command or option changes what people type: do it rarely, an
   It owns every message and reaction subscription; connection-lifecycle hooks (`Ready`,
   `Connected`, `Disconnected`) live in the service that needs them (`PresenceService`,
   `AmbientService`, `ApplicationEmojiService`, `PlynlingMascotService`, `PiHealthService`).
-- **Eight `BackgroundService` loops**, each with **its own interval on purpose** — never share one:
+- **Nine `BackgroundService` loops**, each with **its own interval on purpose** — never share one:
   `ReminderService` (5 min, load-bearing — see scheduling), `PresenceService` (5 min, cosmetic),
   `VoiceXpService` (1 min — also feeds the voice spectator, the session roll call and her voice
   seat), `GiveawayDrawService` (1 min), `QuizMasterService` (1 min, see quiz),
   `PlynlingSweepService` (hourly), `PiHealthService` (2 min — the Pi's temperature, how the last
   run ended, gateway outages; see personality, *Her body*), `WeekendPollService` (15 min, her
-  Wednesday poll; see scheduling).
+  Wednesday poll; see scheduling), `SeasonalAvatarService` (hourly, plus every Ready — her
+  seasonal profile picture; see `docs/syncs-appearance.md`).
 - **`MorningGreetingService`** has no interval: it sleeps until one random slot per morning
   (8:00–10:00 Paris, `Helpers/MorningGreeting`) — see personality.
 - **`AmbientService`** (10 min, cosmetic, its own interval like the loops above): the 3 a.m. line
@@ -299,8 +300,8 @@ The bot ships as a Home Assistant add-on: the `Dockerfile` publishes a self-cont
 `linux-arm64` build, and `run.sh` maps add-on options to `Discord__Token`,
 `Discord__RegisterCommandsGlobally` and `Database__Path=/data/ProjectSYNCS.db`. Only `/data` is
 persisted, so the SQLite file must stay under it — and so do `health-state.json`,
-`ambient-state.json` and `morning-state.json`, which `PiHealthService`, `AmbientService` and
-`MorningGreetingService` write next to it.
+`ambient-state.json`, `morning-state.json` and `avatar-state.json`, which `PiHealthService`,
+`AmbientService`, `MorningGreetingService` and `SeasonalAvatarService` write next to it.
 
 The GitHub remote is **public**. `appsettings.json` and `config.yaml` ship token placeholders; real
 tokens go in user secrets (dev) or add-on options (prod), never in a tracked file.

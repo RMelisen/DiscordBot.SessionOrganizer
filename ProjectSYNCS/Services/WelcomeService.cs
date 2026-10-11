@@ -1,6 +1,5 @@
 using Discord;
 using Discord.WebSocket;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Helpers;
 
@@ -10,9 +9,8 @@ namespace ProjectSYNCS.Services;
 // « X a rejoint le serveur » line, so there is one welcome, not two, and she follows whatever
 // Discord does (membership screening included — the line appears when Discord posts it).
 //
-// - A newcomer gets WelcomeLines, a real ping narrowed to them (root CLAUDE.md, mentions).
-// - Someone coming back (a MemberXp row from before: both XP wipes kept the rows) gets
-//   WelcomeBackLines.
+// - Whoever joins gets WelcomeLines, a real ping narrowed to them (root CLAUDE.md, mentions),
+//   whether or not they were here before.
 // - Past MaxPerHour welcomes in an hour (a raid, an invite wave), one WelcomeRushLines line,
 //   then silence until the hour has rolled on.
 // - A bot gets no welcome there; as far as we know Discord posts no join line for one added
@@ -25,7 +23,6 @@ internal sealed class WelcomeService
     private const int MaxPerHour = 3;
     private static readonly TimeSpan Window = TimeSpan.FromHours(1);
 
-    private readonly IServiceProvider _services;
     private readonly GuildConfigService _config;
     private readonly ResponsePicker _picker;
     private readonly BreakdownService _breakdown;
@@ -36,10 +33,9 @@ internal sealed class WelcomeService
     private DateTimeOffset _rushLineAt = DateTimeOffset.MinValue;
 
     public WelcomeService(
-        IServiceProvider services, GuildConfigService config, ResponsePicker picker,
+        GuildConfigService config, ResponsePicker picker,
         BreakdownService breakdown, ILogger<WelcomeService> logger)
     {
-        _services = services;
         _config = config;
         _picker = picker;
         _breakdown = breakdown;
@@ -74,25 +70,10 @@ internal sealed class WelcomeService
         }
         if (!welcome) return;
 
-        bool known;
-        try
-        {
-            await using var scope = _services.CreateAsyncScope();
-            known = await scope.ServiceProvider.GetRequiredService<XpService>()
-                .IsKnownMemberAsync(channel.Guild.Id, joined.Author.Id);
-        }
-        catch (Exception ex)
-        {
-            // A newcomer's welcome is the safe reading when the database can't say.
-            _logger.LogWarning(ex, "Failed to look up {UserId} for the welcome.", joined.Author.Id);
-            known = false;
-        }
-
-        var pool = known ? BotResponses.WelcomeBackLines : BotResponses.WelcomeLines;
-        var line = string.Format(_picker.Pick(pool), joined.Author.Mention);
+        var line = string.Format(_picker.Pick(BotResponses.WelcomeLines), joined.Author.Mention);
         var allowed = new AllowedMentions { UserIds = new List<ulong> { joined.Author.Id } };
         await BotChat.PostWithTypingAsync(channel, line, _logger, "welcome", allowed, reference);
-        _logger.LogInformation("Welcomed {UserId} (back: {Known}).", joined.Author.Id, known);
+        _logger.LogInformation("Welcomed {UserId}.", joined.Author.Id);
     }
 
     /// <summary>A member joined: only a bot is handled here (see the class comment).</summary>

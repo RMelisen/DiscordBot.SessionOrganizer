@@ -19,7 +19,8 @@
     <None Update="appsettings.Development.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <!-- Item sprites the bot uploads as its own emojis on start (ApplicationEmojiService). -->
+    <!-- Item sprites the bot uploads as its own emojis on start (ApplicationEmojiService), and
+         her seasonal profile pictures (SeasonalAvatarService). -->
     <None Include="Assets\**\*.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>

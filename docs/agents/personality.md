@@ -376,8 +376,8 @@ are pure, in `Helpers/VoiceSeat`.
 
 She answers Discord's own join line (`SocketSystemMessage`, `MessageType.GuildMemberJoin`, which
 every other handler skips) as a reply, so there is one welcome and she follows Discord's timing
-(membership screening included). `WelcomeLines` pings the newcomer, narrowed to them;
-`WelcomeBackLines` when a `MemberXp` row already exists. More than 3 welcomes in an hour → one
+(membership screening included). `WelcomeLines` pings the newcomer, narrowed to them, whether
+or not they were here before: there is no welcome back. More than 3 welcomes in an hour → one
 `WelcomeRushLines`, then silence for the hour. Bots are skipped there; a bot gets `RivalJoinLines`
 in her main channel through `UserJoined` (home guild), since an OAuth-added bot may get no join
 line. Departures are deliberately silent: without the audit log she can't tell a leave from a ban.
