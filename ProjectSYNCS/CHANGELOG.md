@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.6.2 — 2026-10-11
+
+- With the owner in a voice channel, SYNCS joins much more willingly (two people are enough,
+  90% chance, a second chance if he arrives late) and follows him between channels.
+
 ## 6.6.1 — 2026-10-10
 
 - SYNCS joins busy voice channels more often (66% of gatherings instead of 30%).

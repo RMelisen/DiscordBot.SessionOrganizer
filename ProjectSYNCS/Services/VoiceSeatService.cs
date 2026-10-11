@@ -8,8 +8,8 @@ namespace ProjectSYNCS.Services;
 // Her seat in voice: when a home-guild voice channel holds a real get-together, she sometimes
 // comes and sits in it, self-muted and self-deafened — in the member list with the others, which
 // is the strongest sign of being one of them. The rules (threshold, the 66% roll once per
-// gathering, the tie-break between two channels, the grace before leaving) live in
-// Helpers/VoiceSeat.
+// gathering, the tie-break between two channels, the grace before leaving, and how Papa being
+// there changes all of it) live in Helpers/VoiceSeat.
 //
 // Joining is a bare voice-state update (ConnectAsync with external: true): no audio client, so
 // no libsodium or opus on the Pi and no voice encryption to negotiate. She can't hear and can't
@@ -61,15 +61,15 @@ internal sealed class VoiceSeatService
 
     /// <summary>
     /// One sweep of the home guild: each voice channel (the AFK one already left out) with its
-    /// count of active people, voice XP's rule.
+    /// count of active people, voice XP's rule, and whether Papa is one of them.
     /// </summary>
-    public async Task ObserveAsync(SocketGuild guild, IReadOnlyList<(SocketVoiceChannel Channel, int Active)> readings, TimeSpan tick)
+    public async Task ObserveAsync(SocketGuild guild, IReadOnlyList<(SocketVoiceChannel Channel, int Active, bool OwnerActive)> readings, TimeSpan tick)
     {
         if (guild.Id != HomeGuild.Id) return;
 
         // Same exclusions as voice XP and the spectator: a channel the server keeps out of
         // everything never gets her either. The config is cached, so this costs no I/O per sweep.
-        var channels = new List<(SocketVoiceChannel Channel, int Active)>(readings.Count);
+        var channels = new List<(SocketVoiceChannel Channel, int Active, bool OwnerActive)>(readings.Count);
         foreach (var reading in readings)
             if (!await _xp.IsChannelExcludedAsync(guild.Id, reading.Channel))
                 channels.Add(reading);
@@ -81,15 +81,15 @@ internal sealed class VoiceSeatService
 
         lock (_gate)
         {
-            foreach (var (channel, active) in channels)
+            foreach (var (channel, active, ownerActive) in channels)
             {
                 if (!_gatherings.TryGetValue(channel.Id, out var gathering))
                 {
                     // Nothing going on: don't keep a row for every empty channel.
-                    if (active < VoiceGathering.MinActive) continue;
+                    if (active < VoiceGathering.MinActiveFor(ownerActive)) continue;
                     _gatherings[channel.Id] = gathering = new VoiceGathering();
                 }
-                gathering.Observe(active, tick, now, Random.Shared.NextDouble);
+                gathering.Observe(active, ownerActive, tick, now, Random.Shared.NextDouble);
             }
 
             settled = now - _movedAt >= SettleAfterMove;
@@ -117,7 +117,7 @@ internal sealed class VoiceSeatService
                 {
                     var g = _gatherings[c.Channel.Id];
                     var live = c.Channel.ConnectedUsers.Any(u => !u.IsBot && _attendance.IsInLiveSession(guild.Id, u.Id, now));
-                    return new VoiceSeat.Candidate(c.Channel.Id, c.Active, g.Won, live, g.StartedAt);
+                    return new VoiceSeat.Candidate(c.Channel.Id, c.Active, g.Won, live, g.StartedAt, c.OwnerActive);
                 })
                 .ToList();
             desired = VoiceSeat.Choose(_seat, candidates);

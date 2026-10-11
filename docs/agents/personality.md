@@ -272,7 +272,7 @@ thresholds live in `Helpers/Ambient` (pure, Paris wall-clock hours, so DST never
 | Heat record | `PiHealthService` tick | today's max beats every other day by ≥ 1 °C, ≥ 30 days of history, 10:00–23:00, max 1/day: `HeatRecordLines` |
 | Voice spectator | `VoiceSpectatorService`, fed by `VoiceXpService`'s sweep | a home-guild voice channel where ≥ 2 active people spent ≥ 1 h together empties (or has < 2 active for 15 min): in that voice channel's chat, from the pool of its room (`Helpers/VoiceRoom`: `VoiceSpectatorGamingLines` for both Gaming channels, `…CinemaLines`, `…StudyLines`, `…GeneralLines` for Général and any unlisted channel), max 1/day across all rooms, any hour |
 | Synthia flinch | `SynthiaService`, before `ChatterService` | « Synthia » in any guild message, max 1/day: 40% a reaction taken back (`SynthiaReactions`), 35% a reply deleted 4–6 s later (`SynthiaVanishLines`), 25% a slip edited into a denial (`SynthiaEditLines`); returns true so no comeback lands on top |
-| Voice seat | `VoiceSeatService`, fed by `VoiceXpService`'s sweep | a home-guild voice channel with ≥ 3 active people for 10 min rolls 66% **once per gathering**; a win seats her there (muted, deafened) until it has had < 3 active for 5 min; see *Her seat in voice* |
+| Voice seat | `VoiceSeatService`, fed by `VoiceXpService`'s sweep | a home-guild voice channel with ≥ 3 active people for 10 min rolls 66% **once per gathering** (with Papa there: ≥ 2 for 5 min, 90%, and one more roll if he arrives late); a win seats her there (muted, deafened) until it has had fewer than that for 5 min; see *Her seat in voice* |
 | Router return | `PiHealthService`, `Connected` | gateway back after ≥ 10 min, any hour, max 1/day: `RouterReturnLines` (what she missed in the main channel) or `RouterReturnQuietLines` |
 
 - **`AmbientService` is registered twice on one instance**, like `MorningGreetingService`: `BotService`
@@ -306,6 +306,11 @@ She joins with `ConnectAsync(selfDeaf: true, selfMute: true, external: true)`: `
 voice-state update only, with no audio client, so no libsodium/opus and no voice encryption. Rules
 are pure, in `Helpers/VoiceSeat`.
 
+- **Papa changes the rules** (`AvailabilityService.OwnerId` active — not muted, not deafened — in
+  the channel): 2 active people are enough (him and one more, never him alone), it settles in 5
+  min, and it rolls 90%. If he arrives after a lost roll, the gathering rolls once more at 90% — a
+  kick (`GiveUp`) blocks that second chance. A won channel with him comes first, **even over her
+  current seat**: she follows him, and only him. 90%, not 100%: every single time reads as a script.
 - **One seat per guild** (Discord's rule). With two won channels: most active people, then one
   hosting a live session (`SessionAttendanceService.IsInLiveSession`), then the first started. **She
   never switches while her gathering holds her** — every move plays Discord's sounds in two
