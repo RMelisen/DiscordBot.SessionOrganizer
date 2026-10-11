@@ -3,6 +3,24 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.7.0 — 2026-10-11
+
+- With the owner in a voice channel, SYNCS joins much more willingly (two people are enough,
+  90% chance, a second chance if he arrives late), follows him between channels, and sometimes
+  leaves when he does.
+- Better odds with her aunt there (80%), and the owner's odds during a session she organised.
+- Her status shows when she's in a voice call.
+- No joining at night, except with the owner.
+- Less regular join and leave times, with the same average stay.
+- Thrown out of a call, she either sulks for the rest of the day or comes straight back, once.
+- For a Game or Movie session, SYNCS sits in voice a couple of minutes before the start, and the
+  session's title shows under the voice channel's name while it runs.
+- Her status shows whose stream she is "watching".
+- Another bot in the call halves her odds of joining, and she says so.
+- Late at night in a call with the owner, she sends him to bed.
+- Now and then her mic and headset icons flicker for a moment.
+- Time spent in voice with her is recorded for a future monthly report.
+
 ## 6.6.1 — 2026-10-10
 
 - SYNCS joins busy voice channels more often (66% of gatherings instead of 30%).

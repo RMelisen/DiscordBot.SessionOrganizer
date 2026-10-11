@@ -41,6 +41,8 @@ public class AppDbContext : DbContext
     public DbSet<QuizDailyStat> QuizDailyStats => Set<QuizDailyStat>();
     public DbSet<PiThermalDay> PiThermalDays => Set<PiThermalDay>();
     public DbSet<UptimeEvent> UptimeEvents => Set<UptimeEvent>();
+    public DbSet<VoiceCompanionStat> VoiceCompanionStats => Set<VoiceCompanionStat>();
+    public DbSet<VoiceCompanionDailyStat> VoiceCompanionDailyStats => Set<VoiceCompanionDailyStat>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -127,6 +129,23 @@ public class AppDbContext : DbContext
             // One row per (guild, user); the all-time totals. The dated sibling is
             // MemberDailyStat below — see MemberXp.cs for why they are two tables.
             e.HasIndex(x => new { x.GuildId, x.UserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<VoiceCompanionStat>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.UserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<VoiceCompanionDailyStat>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            // One row per (guild, user, day) — the upsert key.
+            e.HasIndex(x => new { x.GuildId, x.UserId, x.Day }).IsUnique();
+            // Serves the month read: "this guild, days N to M".
+            e.HasIndex(x => new { x.GuildId, x.Day });
         });
 
         modelBuilder.Entity<MemberDailyStat>(e =>

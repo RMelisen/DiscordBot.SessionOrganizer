@@ -44,8 +44,15 @@ Timing rules are pure, in `Helpers/SessionAttendance`.
   call); the people who came and who were late (first seen after start + 10) are named, inert.
   Silent when nobody came or fewer than two were Joined. Headers gender nobody (« Au
   rendez-vous », « Absences »).
-- The session list is cached and re-read every 5 minutes; the scatter clock is in memory, so a
-  restart only delays a recap.
+- The session list is cached and re-read every 5 minutes (recapped sessions included, until their
+  window closes); the scatter clock is in memory, so a restart only delays a recap.
+- **Voice channel status**: while a session is live, the voice channel holding most of its Joined
+  people shows « 🎮 Title » (« 🎬 » for a film) under its name, cleared when the live window ends.
+  Stateless against Discord, so restart-safe: a status equal to one she would write for a cached
+  session is hers to clear; anything else is someone's and is never overwritten. Needs Set Voice
+  Channel Status; a channel she can't set is left alone for 30 min.
+- She also **sits in voice before the start** (`VoiceSeatService`, see personality, *Her seat in
+  voice*); the late call then uses `SessionLateCallSeatedLines` ({2} = the start time).
 
 ## Weekend poll — `WeekendPollService`
 

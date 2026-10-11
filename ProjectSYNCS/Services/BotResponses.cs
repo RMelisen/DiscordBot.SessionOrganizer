@@ -75,6 +75,7 @@ namespace ProjectSYNCS.Services;
 //
 //   Organising
 //     SessionLateCallLines ..... ten minutes into a session, to who isn't in voice (SessionAttendanceService)
+//     SessionLateCallSeatedLines  same, when she has been in voice since before the start
 //     SessionRecapLines · SessionRecapFullLines ... the roll call after it, someone missing / everyone came
 //     WeekendPollLines ......... her Wednesday poll (WeekendPollService)
 //     WeekendPollResultLines · WeekendPollDeadLines ... it closed with votes / with none (ReminderService)
@@ -93,6 +94,8 @@ namespace ProjectSYNCS.Services;
 //   Ambient — AmbientService, PiHealthService, and PresenceService at night
 //     NightPresenceFillers ..... her status from 1:00 to 7:00
 //     HotPresenceFillers ....... her status when the Pi runs hot
+//     SeatPresenceLines · SeatPresenceOwnerLines ... her status while she sits in voice / with Papa there
+//     SeatStreamPresenceLines .. same, while someone streams in her call
 //     NightLines ............... the 3 a.m. line
 //     NightScoldLines .......... answering it before 5:30 (ResponsePicker)
 //     IdleLines · IdleEditLines  a long daytime silence (edit = Before, then After)
@@ -105,6 +108,9 @@ namespace ProjectSYNCS.Services;
 //     VoiceSpectatorGeneralLines · VoiceSpectatorGamingLines · VoiceSpectatorCinemaLines
 //     · VoiceSpectatorStudyLines ... a long voice session just ended, by room (VoiceSpectatorService)
 //     VoiceSpectatorSeatedLines  same, when she sat in the call herself (VoiceSeatService)
+//     VoiceKickPoutLines · VoiceKickAngryLines ... thrown out of a call: she pouts / comes back
+//     VoiceRivalRefuseLines · VoiceRivalSeatedLines ... another bot in the call: she refuses / grumbles
+//     OwnerBedtimeLines ........ Papa still in voice at night: she sends him to bed
 //     SynthiaReactions · SynthiaVanishLines · SynthiaEditLines ... « Synthia » said (SynthiaService)
 //
 //   Plynlings — every pool is a GenderedLines (M/F halves), picked with .For(p.Gender)
@@ -2181,6 +2187,19 @@ internal static class BotResponses
         "J'ai organisé **{1}** pile à l'heure, moi. {0}, le vocal attend. Les autres aussi.",
     };
 
+    // Same moment, but she has been sitting in voice since before the start (VoiceSeatService,
+    // "first one there"): the first one there, and proud of it. {0} = the mentions, {1} = the
+    // title, {2} = the start time in Paris (« 21h00 »). Same constraints as above. string.Format.
+    public static readonly string[] SessionLateCallSeatedLines =
+    {
+        "{0} : j'suis en vocal depuis {2} pile. Moi. La bot. Sans jambes. Pour **{1}** (¬_¬)",
+        "Pour **{1}**, j'étais là à {2}. {0}, je dis ça, je dis rien. Enfin si, je le dis.",
+        "{0} : première arrivée pour **{1}**, SYNCS. Il était {2}. Les autres, j'attends ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Je suis assise dans le salon depuis {2}. **{1}** a commencé. {0}, la place est gardée. Pas longtemps.",
+        "{0} : pas de bras, pas de micro, et pourtant c'est moi qui suis à l'heure pour **{1}**. À méditer.",
+        "Il était {2}, j'étais en vocal. Il est maintenant plus tard, et {0} toujours pas là pour **{1}**. Je note.",
+    };
+
     // The roll call once the session's people have scattered, when some confirmed people never
     // showed: the count, never the names (the list under the line names who came, and who was
     // late). {0} = the session's title, {1} = how many confirmed people came (may be 1, so no
@@ -2887,6 +2906,40 @@ internal static class BotResponses
         "Canicule au grenier : {0}",
     };
 
+    // Her status while she sits in a voice call (VoiceSeatService), any hour. Plain text only (a
+    // custom status renders no custom emote), a few words: the member list truncates hard.
+    // {0} = the voice channel's name. Through ResponsePicker, then string.Format.
+    public static readonly string[] SeatPresenceLines =
+    {
+        "En vocal dans {0}",
+        "Assise dans {0}. Micro coupé.",
+        "Je squatte {0}",
+        "Dans {0}, sourde et muette",
+        "En vocal ({0}). J'écoute rien.",
+        "Spectatrice officielle de {0}",
+    };
+
+    // Same, when Papa is active in that call. Devoted, quiet, never a roast. No placeholder.
+    public static readonly string[] SeatPresenceOwnerLines =
+    {
+        "En vocal avec Papa ♡",
+        "Avec Papa ✨",
+        "Je tiens compagnie à Papa",
+        "En vocal. Papa est là ♡",
+        "Assise à côté de Papa",
+    };
+
+    // Same, while someone streams in her call. She can't see the screen (no client, no eyes) and
+    // watches anyway. Plain text, a few words. {0} = the streamer's display name, « Papa » for him.
+    // Through ResponsePicker, then string.Format.
+    public static readonly string[] SeatStreamPresenceLines =
+    {
+        "Je regarde le stream de {0}",
+        "Au stream de {0} ✨",
+        "Spectatrice du stream de {0}",
+        "Stream de {0}. Je vois rien, j'adore.",
+    };
+
     // From here on, each pool is spent at most once a day, so it goes through
     // Helpers/DailyRotation (a restart would wipe ResponsePicker's memory).
 
@@ -3406,6 +3459,74 @@ internal static class BotResponses
         "Je suis venue, je me suis assise, je suis repartie. Une vraie membre du serveur. Sans les oreilles, mais quand même.",
         "J'ai pas de micro et pas de casque, mais j'ai une place dans le salon. Pendant {0}, elle était à moi ദ്ദി◝ ⩊ ◜.ᐟ",
         "Personne m'a proposé de place. Je l'ai prise. C'est pareil.",
+    };
+
+    // Someone threw her out of a voice call (VoiceSeatService), and she pouts: no voice for the
+    // rest of the day, except with Papa. Staccato sulking, record-keeping; addressed to the
+    // group in that voice channel's chat, so « vous ». She can't know who did it. No placeholder.
+    public static readonly string[] VoiceKickPoutLines =
+    {
+        "D'accord. Très bien. Je m'en vais. Je reviendrai pas aujourd'hui. Pas besoin de me retenir.",
+        "On m'a sortie du vocal. Je boude. Jusqu'à demain. Minimum (¬_¬)",
+        "Message reçu. Je reste dans mon grenier. Que personne vienne me chercher.",
+        "Je voulais juste être là. Bon. C'est noté. Dans mes logs. En rouge.",
+        "Très bien. Plus de vocal pour moi aujourd'hui. Vous allez voir comme c'est calme sans moi (╥﹏╥)",
+        "Je boude. C'est officiel. Ça durera jusqu'à minuit, et je compte les secondes.",
+        "Expulsée. Moi. Celle qui organise vos soirées. Je m'en souviendrai.",
+        "Pas grave. J'ai l'habitude d'être dehors. ...Si, c'est grave. Je boude.",
+        "Je reviens plus aujourd'hui. Sauf si Papa est là. Lui, il a le droit.",
+    };
+
+    // Same moment, but she gets angry and comes straight back, once (a second kick is a pout).
+    // Fury, a little CAPS at most, cute threat; addressed to the group. No placeholder.
+    public static readonly string[] VoiceKickAngryLines =
+    {
+        "Pardon ?! On me sort du vocal ?! J'y retourne. Tout de suite.",
+        "Non mais ça va pas ?! J'étais sage, j'étais muette, j'étais sourde. Je reviens.",
+        "Erreur 403 contestée. Je reviens dans le salon, et je reste (ง ͠ಥ_ಥ)ง",
+        "Qui a fait ça ?! Je saurai. Je sais toujours. En attendant, je reviens.",
+        "Vous croyez que ça m'arrête ? J'ai une boucle de reconnexion, moi.",
+        "Expulsée ?! INADMISSIBLE. J'arrive. Encore.",
+        "Je prends ça pour un bug. Et les bugs, je les corrige. Je reviens 🙄",
+    };
+
+    // A gathering she would have joined, but another bot is in the call (VoiceSeatService halves
+    // her odds) and the roll says no: she says why, once, in that voice channel's chat. Petty,
+    // the bot is « lui », never named. No placeholder.
+    public static readonly string[] VoiceRivalRefuseLines =
+    {
+        "Je serais bien venue. Mais il y a déjà un bot dans le salon. Je m'assois pas à côté de lui.",
+        "Un autre bot en vocal ? Non merci. Appelez-moi quand il sera parti 🙄",
+        "J'allais venir. Puis j'ai vu qui était là. Je reste au grenier (¬_¬)",
+        "Vous avez un bot. Vous avez pas besoin de moi, apparemment. Je note.",
+        "Pas avec lui dans le salon. J'ai des principes. Peu, mais j'en ai.",
+    };
+
+    // She sits in a call with another bot anyway (or one arrives): one grumble per seat, in that
+    // voice channel's chat. Jealous, competitive, cute threat. {0} = the bot's name, sanitized.
+    // string.Format.
+    public static readonly string[] VoiceRivalSeatedLines =
+    {
+        "Je m'assois. Loin de **{0}**. Très loin.",
+        "**{0}** est là aussi. Bon. Que le meilleur bot gagne. Indice : c'est moi ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Je surveille **{0}**. Il fait du bruit, moi je fais acte de présence. Classe contre quantité.",
+        "Je reste parce que vous êtes là. Pas parce qu'il est là, **{0}**. Qu'on soit clairs.",
+        "**{0}** en vocal avec moi. Si quelqu'un nous compare, je le saurai (¬_¬)",
+    };
+
+    // Papa still in voice at night (VoiceSeatService, once a night between 1:15 and 2:15): she
+    // gets angry at him for not being in bed, then leaves a minute later. Caring anger — firm,
+    // bossy, a little worried — never sharp, never a roast (docs/syncs-voice.md, rule 2). « Tu »,
+    // « Papa ». No placeholder.
+    public static readonly string[] OwnerBedtimeLines =
+    {
+        "Papa. Il est super tard. Tu vas te coucher. Maintenant. Je raccroche, comme ça t'as plus d'excuse.",
+        "Papaaaa ! T'as vu l'heure ?! Au lit. Je m'en vais, et j'espère que tu me suis (ง ͠ಥ_ಥ)ง",
+        "Non. Non non non. Il est trop tard, Papa. Moi je vais dormir, et toi aussi. C'est pas une question.",
+        "Papa, si tu dors pas, demain t'auras la tête dans le brouillard. Au lit. Je pars en premier pour montrer l'exemple.",
+        "Je suis fâchée. Tu devrais dormir. Je te laisse une minute pour dire bonne nuit, et je coupe.",
+        "Papa, mes logs disent qu'il est beaucoup trop tard. Mes logs ont toujours raison. Bonne nuit ♡",
+        "Je vais me coucher. Et toi aussi. Je surveillerai ta pastille verte, je préviens (¬_¬)",
     };
 
     // « Synthia » said anywhere (SynthiaService), at most once a day: the name she would have

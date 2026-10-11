@@ -1253,6 +1253,57 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("UptimeEvents");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.VoiceCompanionDailyStat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Minutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "Day");
+
+                    b.HasIndex("GuildId", "UserId", "Day")
+                        .IsUnique();
+
+                    b.ToTable("VoiceCompanionDailyStats");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.VoiceCompanionStat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Minutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("VoiceCompanionStats");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.GiveawayEntry", b =>
                 {
                     b.HasOne("ProjectSYNCS.Models.Giveaway", "Giveaway")

@@ -78,7 +78,7 @@ internal sealed class VoiceXpService : BackgroundService
             // Everyone in voice (muted or not: someone muted is still there) for the roll call,
             // and each channel's active count for her seat — gathered here, handed over below.
             var inVoice = new HashSet<ulong>();
-            var readings = new List<(SocketVoiceChannel Channel, int Active)>();
+            var readings = new List<VoiceReading>();
 
             foreach (var channel in guild.VoiceChannels)
             {
@@ -96,7 +96,11 @@ internal sealed class VoiceXpService : BackgroundService
                 // earns, which is nothing. That is what stops idle or alt accounts
                 // being parked in a channel to unlock someone else's XP.
                 var active = channel.ConnectedUsers.Where(IsActive).ToList();
-                readings.Add((channel, active.Count));
+                // Papa and Tata count by the same rule as everyone: muted or deafened, they aren't
+                // there for her.
+                readings.Add(new VoiceReading(channel, active.Count,
+                    active.Any(m => m.Id == AvailabilityService.OwnerId),
+                    active.Any(m => m.Id == BotResponses.TataId)));
 
                 // The spectator watches every channel, empty ones included: an emptying channel
                 // is how a session ends. Its own try, like every per-item step of this sweep.

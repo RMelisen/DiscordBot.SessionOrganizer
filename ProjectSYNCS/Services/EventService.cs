@@ -179,15 +179,15 @@ public class EventService
     }
 
     // Sessions whose attendance window is open at `now` (SessionAttendanceService): voice
-    // categories only, not cancelled, recap not yet sent, from `before` ahead of the start to
-    // `after` past it. Dates compared in memory, as everywhere else here.
+    // categories only, not cancelled, from `before` ahead of the start to `after` past it. Dates compared in memory, as everywhere else here.
     public async Task<List<SessionEvent>> GetEventsForAttendanceAsync(
         DateTimeOffset now, TimeSpan before, TimeSpan after)
     {
-        // Every past session keeps RecapSent false, so the window is applied to a light
-        // projection first and only the sessions inside it are loaded with their participants.
+        // The window is applied to a light projection first and only the sessions inside it are
+        // loaded with their participants. A recapped session stays in: its voice channel status
+        // is cleared at the end of its live window, which can come after the recap.
         var candidates = await _db_context.SessionEvents
-            .Where(e => !e.IsCancelled && !e.RecapSent
+            .Where(e => !e.IsCancelled
                 && (e.Category == SessionCategory.Game || e.Category == SessionCategory.Movie))
             .Select(e => new { e.Id, e.ScheduledAt })
             .ToListAsync();

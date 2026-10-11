@@ -64,7 +64,8 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 - **Roll call** — for a *Game* or *Movie* session, she watches who turns up in voice. Ten
   minutes in, she pings the people who signed up and aren't there yet (once someone is); when
   the group scatters she posts the tally — who came, who was late, and how many never showed
-  (a count, no names).
+  (a count, no names). She's usually first in voice herself, a couple of minutes before the
+  start, and while the session runs its title shows under the voice channel's name.
 
 ### Polls & votes
 
@@ -451,10 +452,16 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
 - **Welcome** — she answers Discord's "X joined" message with a welcome that pings the
   newcomer, or a welcome back for someone she already knows. More than three arrivals in an hour
   get one line for all of them. A new bot gets a much colder reception.
-- **A seat in voice** — when three or more people are talking in a voice channel for ten
-  minutes, there's a 66% chance she comes and sits with them, muted and deafened, until the
-  group breaks up. With two such channels she picks the busiest, and she never hops between
-  them while hers is still going.
+- **A seat in voice** — when three or more people have been talking in a voice channel for
+  about ten minutes, there's a 66% chance she comes and sits with them, muted and deafened, until
+  the group breaks up; her status then says where she is. With two such channels she picks the
+  busiest, and she never hops between them while hers is still going. Family gets better odds:
+  80% with her aunt there; with her creator, or during a session she organised, two people are
+  enough, she decides sooner and says yes 90% of the time. She follows her creator between
+  channels, and sometimes leaves when he does. At night she only joins him, and sends him to bed
+  before long. Another bot in the call puts her off. Her status shows the call she's in, or whose
+  stream she's "watching". Throw her out of the call and she either sulks for the rest of the day
+  or comes straight back, furious — once.
 - **Morning hello** — once a day she says hello in the general channel, at a random
   time between 8:00 and 10:00 (Paris time), followed by a fun fact. If
   someone says hello in that channel first — from 7:00 on — there's a 30% chance she

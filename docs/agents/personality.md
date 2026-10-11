@@ -272,7 +272,7 @@ thresholds live in `Helpers/Ambient` (pure, Paris wall-clock hours, so DST never
 | Heat record | `PiHealthService` tick | today's max beats every other day by ≥ 1 °C, ≥ 30 days of history, 10:00–23:00, max 1/day: `HeatRecordLines` |
 | Voice spectator | `VoiceSpectatorService`, fed by `VoiceXpService`'s sweep | a home-guild voice channel where ≥ 2 active people spent ≥ 1 h together empties (or has < 2 active for 15 min): in that voice channel's chat, from the pool of its room (`Helpers/VoiceRoom`: `VoiceSpectatorGamingLines` for both Gaming channels, `…CinemaLines`, `…StudyLines`, `…GeneralLines` for Général and any unlisted channel), max 1/day across all rooms, any hour |
 | Synthia flinch | `SynthiaService`, before `ChatterService` | « Synthia » in any guild message, max 1/day: 40% a reaction taken back (`SynthiaReactions`), 35% a reply deleted 4–6 s later (`SynthiaVanishLines`), 25% a slip edited into a denial (`SynthiaEditLines`); returns true so no comeback lands on top |
-| Voice seat | `VoiceSeatService`, fed by `VoiceXpService`'s sweep | a home-guild voice channel with ≥ 3 active people for 10 min rolls 66% **once per gathering**; a win seats her there (muted, deafened) until it has had < 3 active for 5 min; see *Her seat in voice* |
+| Voice seat | `VoiceSeatService`, fed by `VoiceXpService`'s sweep | a home-guild voice channel with ≥ 3 active people for ~10 min rolls 66% **once per gathering** (Tata 80%; Papa or a live session: ≥ 2 for ~5 min, 90%; a better tier arriving late rolls once more); a win seats her there (muted, deafened) until it has had fewer than that for ~5 min; not at night without Papa; see *Her seat in voice* |
 | Router return | `PiHealthService`, `Connected` | gateway back after ≥ 10 min, any hour, max 1/day: `RouterReturnLines` (what she missed in the main channel) or `RouterReturnQuietLines` |
 
 - **`AmbientService` is registered twice on one instance**, like `MorningGreetingService`: `BotService`
@@ -306,14 +306,66 @@ She joins with `ConnectAsync(selfDeaf: true, selfMute: true, external: true)`: `
 voice-state update only, with no audio client, so no libsodium/opus and no voice encryption. Rules
 are pure, in `Helpers/VoiceSeat`.
 
-- **One seat per guild** (Discord's rule). With two won channels: most active people, then one
-  hosting a live session (`SessionAttendanceService.IsInLiveSession`), then the first started. **She
-  never switches while her gathering holds her** — every move plays Discord's sounds in two
-  channels; when hers ends she moves to another won one in one voice-state update
+- **Three tiers**, the best present wins (`VoiceSeat.TierFor`), each person counted only when
+  active (not muted, not deafened):
+
+  | Tier | When | Threshold | Settle | Chance |
+  |---|---|---|---|---|
+  | Favoured | Papa (`AvailabilityService.OwnerId`), or a session under way there | 2 (never him alone) | 3–7 min | 90% |
+  | Tata | `BotResponses.TataId` | 3 | 8–12 min | 80% |
+  | Base | anyone | 3 | 8–12 min | 66% |
+
+  A better tier arriving after a lost roll rolls once more at its chance (a tier never rolls twice).
+  90%, not 100%: every single time reads as a script.
+- **The draws keep the averages.** The settle time is drawn once per gathering (whole minutes, so
+  8–12 averages 10 and 3–7 averages 5, as before the draws), the grace once per dip (4–6, average
+  5): she joins and leaves at the same average times as with fixed ones, so the average stay is
+  unchanged — only the regularity is gone. Don't widen one end of a range without the other.
+- **She follows Papa, and only him**: a won channel where he is active comes first, even over her
+  current seat. When he leaves her channel and she can't follow him, half the time she leaves too,
+  1–3 min later (`Release`: only his return rolls her back into that gathering); him coming back
+  before then cancels it. Muting counts as leaving, like everywhere else here.
+- **At night** (`Ambient.IsSleepHours`) she sits down nowhere he isn't; a seat taken before 1:00 is
+  kept.
+- **Thrown out of the call** — seen there (the sweep, or her own `UserVoiceStateUpdated`, which is why
+  the seat is recorded *before* the call to Discord), then gone, with no `Connected` since she sat
+  down. 40% she **pouts**: `VoiceKickPoutLines` in that voice channel's chat, that gathering given up,
+  and no sitting down for the rest of the Paris day anywhere he isn't. Otherwise she gets **angry**:
+  `VoiceKickAngryLines`, and back in 10–20 s, once; a second kick in the same gathering is always a
+  pout. A seat lost to a reconnect, or a join that never took, is given up silently.
+- **First one there.** A Game or Movie session with ≥ 2 Joined
+  (`SessionAttendanceService.SessionsToHost`): from 2 min before the start to 15 min after, if
+  nothing else seats her she sits in the channel holding most of its confirmed people, else
+  `VoiceRooms.DefaultFor` (Cinéma for a film, the first Gaming channel otherwise). A gathering
+  forming there **adopts** her (she was there first); with none by start + 15 min she leaves. No
+  early arrival while she pouts, after bedtime, or at night without Papa in that room. The late
+  call switches to `SessionLateCallSeatedLines` when she is in voice.
+- **Another bot in the call** (any bot but her) halves Base and Tata odds; Favoured is untouched.
+  When a start roll is lost *because of it* (the same draw would have won without it) she says so
+  once per gathering in that voice chat (`VoiceRivalRefuseLines`); seated with one anyway, one
+  grumble per seat (`VoiceRivalSeatedLines`).
+- **Bedtime.** Seated with Papa active at night, once a night at a minute drawn from the date
+  between 1:15 and 2:15 (`VoiceSeat.BedtimeFor`), she scolds him (`OwnerBedtimeLines`: caring
+  anger, never sharp) and leaves a minute later; then no call at all until 7:00, his included. A
+  gathering still won at 7:00 gets her back.
+- **The mic flicker.** 20% of seats, once, 5–40 min in: self-deaf and self-mute off for 2 s, then
+  back on — the icons flicker, no sound (she has no audio client). Only works on a seat this
+  process joined (Discord.Net keeps the voice-state parameters); otherwise skipped.
+- **Time together** is recorded: every sweep she is confirmed in a call credits one minute to every
+  human connected there, muted or not (`VoiceCompanionStat` totals + `VoiceCompanionDailyStat`
+  buckets, the root pattern). For a future monthly report; nothing reads it yet.
+- **One seat per guild** (Discord's rule). With two won channels and no Papa: most active people, then
+  one hosting a live session (`SessionAttendanceService.IsInLiveSession`), then the first started.
+  **She never switches while her gathering holds her** (Papa aside) — every move plays Discord's
+  sounds in two channels; when hers ends she moves to another won one in one voice-state update
   (`disconnect: false`).
 - **She reconciles against where Discord says she is** every sweep, 90 s after her last move:
-  kicked or dropped by a reconnect → that gathering is given up; dragged elsewhere → she adopts that
-  channel while its gathering lasts; sitting somewhere after a restart → she leaves.
+  dragged elsewhere → she adopts that channel while its gathering lasts; sitting somewhere after a
+  restart → she leaves.
+- **Her status says where she is** (`PresenceService`, refreshed on `SeatChanged`, which also fires
+  when the streamer in her call changes): `SeatStreamPresenceLines` while someone streams there
+  (Papa first; she "watches", no remark in the chat), else `SeatPresenceOwnerLines` with Papa
+  active in her call, else `SeatPresenceLines` with the channel's name. It wins over every other status, night included (at night she's only in a call with him).
 - Channels excluded with `/config` never get her. Home guild only, so it can't be seen on the dev
   guild. Bots count for neither voice XP nor the spectator, so her presence changes neither.
 - **The spectator line knows**: when she sat in that channel during the stretch,
