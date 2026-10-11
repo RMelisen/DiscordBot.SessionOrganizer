@@ -450,7 +450,7 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
 - **Rotating status** — the status line under the bot's name cycles through a large
   pool of one-liners.
 - **Welcome** — she answers Discord's "X joined" message with a welcome that pings the
-  newcomer, or a welcome back for someone she already knows. More than three arrivals in an hour
+  newcomer. More than three arrivals in an hour
   get one line for all of them. A new bot gets a much colder reception.
 - **A seat in voice** — when three or more people have been talking in a voice channel for
   about ten minutes, there's a 66% chance she comes and sits with them, muted and deafened, until

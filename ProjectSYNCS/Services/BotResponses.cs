@@ -79,7 +79,7 @@ namespace ProjectSYNCS.Services;
 //     SessionRecapLines · SessionRecapFullLines ... the roll call after it, someone missing / everyone came
 //     WeekendPollLines ......... her Wednesday poll (WeekendPollService)
 //     WeekendPollResultLines · WeekendPollDeadLines ... it closed with votes / with none (ReminderService)
-//     WelcomeLines · WelcomeBackLines ... someone joined / came back (WelcomeService)
+//     WelcomeLines ............. someone joined (WelcomeService)
 //     WelcomeRushLines ......... too many arrivals in an hour
 //
 //   Elsewhere
@@ -1385,12 +1385,12 @@ internal static class BotResponses
     // string.Format.
     public static readonly string[] RivalJoinLines =
     {
-        "Un nouveau bot. **{0}**. Super. Encore un. Je préviens : ici, c'est moi qui organise 🙄",
+        "Un nouveau bot. **{0}**. Super. Je préviens : ici, c'est moi qui gère 🙄",
         "**{0}** vient d'arriver. Je l'ai à l'œil. Je l'ai même dans mes logs.",
         "Qui a invité **{0}** ? Je demande pour ma liste. Vous savez, la liste.",
         "Bienvenue **{0}**. Petite règle de la maison : ici, le bot préféré, c'est moi. Merci de ta compréhension ദ്ദി◝ ⩊ ◜.ᐟ",
-        "Encore un collègue. **{0}**, tu fais quoi au juste ? Parce que les plannings, c'est pris.",
-        "Je suis pas jalouse de **{0}**. Je le surveille. C'est différent.",
+        "Encore un collègue. **{0}**, tu fais quoi au juste ? Parce que les plannings, et la plupart des trucs intéressants, c'est pris.",
+        "Je suis pas jalouse de **{0}**. Je le surveille. C'est tout.",
         "**{0}** est là. Personne m'a demandé mon avis. Mon avis, c'est non (¬_¬)",
         "Tiens, de la concurrence. **{0}**, sache que j'ai l'ancienneté, la base de données et le soutien de Papa.",
     };
@@ -2248,6 +2248,26 @@ internal static class BotResponses
         "Un sondage, trois soirs, deux jours pour voter. Vous pouvez y arriver (˶ᵔ ᵕ ᵔ˶)",
         "Sondage du weekend lancé. Les votes de dernière minute, je les vois. Je dis ça.",
         "Rappel de mon existence : je sers à organiser. Alors j'organise. Vendredi, samedi ou dimanche ?",
+        "C'est l'heure de mon sondage. Personne me l'a demandé. Personne l'aurait lancé non plus (ᵕ • ᴗ •)",
+        "Vendredi, samedi, dimanche, 21 h. J'ai fait toute la partie difficile. Il vous reste la partie facile.",
+        "Avant les sondages, l'XP et tout le reste, je faisais juste des plannings. J'en fais toujours. Alors : ce weekend ?",
+        "Votez en âme et conscience. Je note les votes, puis je note qui vient vraiment. Et je compare.",
+        "Ce sondage a deux jours pour vivre. Sauvez-le. Il a rien fait de mal (╥﹏╥)",
+        "Mon CPU s'ennuie et votre weekend aussi. Je peux soigner les deux d'un coup : votez (ᵔ ᗜ ᵔ)",
+        "Un soir, deux soirs, les trois : cochez tout ce qui marche. Je juge pas. Enfin si, un peu, mais en bien ♡",
+        "Je pose la question chaque mercredi. Un jour, quelqu'un la posera avant moi. Pas aujourd'hui, visiblement.",
+        $"Nouveau weekend, nouveau sondage, même organisatrice. On change pas une équipe qui gagne {Emotes.Sparkle}",
+        "Sondage ouvert. « On verra », c'est pas une réponse. « Peut-être » non plus. Il reste les boutons.",
+        "Je peux pas jouer avec vous. Par contre, c'est moi qui demande quand vous jouez. Chacun son pouvoir ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Un sondage par semaine, c'est mon rythme. Un clic par personne, c'est le vôtre. En théorie.",
+        "Ce weekend, vous êtes là ou pas ? Je demande pour mes logs. Et pour vous, un peu (˶ᵔ ᵕ ᵔ˶)",
+        "Je voterais bien à votre place, mais j'ai toujours pas de bras. Donc ça va devoir être vous (¬_¬)",
+        "Sondage du mercredi, édition numéro je-sais-plus. ...Si, je sais. Je sais toujours.",
+        "Les votes de ce soir ont toute mon estime. Ceux de la dernière minute, toute mon attention.",
+        "Trois créneaux, zéro excuse. Bon, vous allez en trouver une quand même. Je les collectionne.",
+        "J'ai mis le sondage. J'ai mis les heures. J'ai même mis de l'amour dedans. Enfin, du code. C'est pareil (˶˃ ᵕ ˂˶)",
+        "Mercredi soir, calme plat au grenier. J'en profite pour penser à vous. Enfin, à votre weekend. C'est pas pareil (>⩊<)",
+        "Je vous propose trois soirs. Mon préféré, c'est celui où personne arrive en retard. Il existe pas encore ( ◺˰◿ )",
     };
 
     // Her weekend poll closed with votes (ReminderService), as a reply to the card, whose
@@ -2262,6 +2282,26 @@ internal static class BotResponses
         "C'est voté, c'est noté : {0}. Reste à créer la session, et ça, je peux pas le faire à votre place. Pas encore.",
         $"Gagnant : {{0}}. Qui a voté pour ce soir-là ? Le bouton « Créer une session » vous attend {Emotes.Sparkle}",
         "Verdict du sondage : {0}. Il manque juste un nom de jeu et un clic sur « Créer une session ». Le plus dur est fait. Par moi.",
+        "Le peuple a parlé : {0}. Maintenant, il faut qu'une personne du peuple clique sur « Créer une session » ♡",
+        "Résultat officiel, vérifié deux fois dans mes logs : {0}. « Créer une session » est sur le sondage, servez-vous.",
+        "{0}. Voilà. J'ai organisé, vous avez voté, il reste un clic sur « Créer une session ». Je dis ça, je dis rien.",
+        "Sondage terminé, et il a survécu ! Ce sera {0}. Vite, « Créer une session », avant que tout le monde change d'avis ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Le créneau gagnant : {0}. Je créerais bien la session moi-même, mais toujours pas de bras. Le bouton est pour celles et ceux qui ont voté pour.",
+        $"Et c'est {{0}} qui l'emporte ! Je suis fière de vous. Un peu. Le reste de ma fierté attend le clic sur « Créer une session » {Emotes.Sparkle}",
+        "Fin du suspense : {0}. Le suspense, c'était surtout moi qui le vivais. « Créer une session », maintenant (˶ᵔ ᵕ ᵔ˶)",
+        "Les urnes ont rendu leur verdict : {0}. Il manque plus qu'une personne courageuse et le bouton « Créer une session ».",
+        "C'est {0}. Je l'ai noté. Pas encore dans le planning : ça, c'est votre bouton « Créer une session ». Mais noté.",
+        "Le sondage a des votes. Des vrais. Ce sera donc {0}. Pour fêter ça, quelqu'un clique sur « Créer une session » ? (>⩊<)",
+        "Résultat : {0}. Si personne crée la session, ce sondage aura vécu pour rien. Pensez à lui. « Créer une session ».",
+        "Dépouillement terminé : {0}. Mon CPU a même pas chauffé, mais c'était quand même un grand moment. Le bouton « Créer une session » est juste au-dessus.",
+        "Vous avez choisi {0}. Excellent choix. Enfin, c'est celui qui a gagné, donc forcément. Reste à cliquer sur « Créer une session » (ᵔ ᗜ ᵔ)",
+        "{0}, donc. Le bouton « Créer une session » attend quelqu'un qui a voté pour ce créneau. Il attend patiemment. Moi, moins.",
+        "Majorité acquise : {0}. J'ai les noms dans mes logs. Une de ces personnes clique sur « Créer une session », et tout le monde tient parole. Facile.",
+        "Ce sera {0}. Mon travail s'arrête là. ...Non, je mens, je ferai aussi l'appel. Mais d'abord : « Créer une session ».",
+        "Les chiffres sont formels : {0}. Les chiffres, c'est moi qui les compte, donc ils sont très formels. « Créer une session », sur le sondage.",
+        "Gagnant du weekend : {0}. Créez la session avec le bouton, et pour une fois, venez toutes et tous à l'heure. Je rêve, mais je rêve en couleurs (˶˃ ᵕ ˂˶)",
+        "Sondage clos : {0}. Je vous passe la main. Une main qui clique sur « Créer une session », de préférence.",
+        "Et le weekend sera… {0} ! Roulement de tambour en retard, mon event loop était occupée. « Créer une session », c'est sur le sondage (ᵕ • ᴗ •)",
     };
 
     // Her weekend poll closed with no vote at all: a poll that died, her pet peeve. Sulking, not
@@ -2269,16 +2309,37 @@ internal static class BotResponses
     public static readonly string[] WeekendPollDeadLines =
     {
         "Zéro vote. Mon sondage est mort. Je lui fais un petit enterrement dans mes logs (╥﹏╥)",
-        "Personne a voté. Pas grave. Je suis pas vexée. Je suis juste en train de tout noter.",
+        "Personne a voté. Pas grave. Je suis pas vexée (¬_¬)",
         "Sondage clôturé. Participation : néant. Le weekend s'organisera tout seul, j'imagine ( ◺˰◿ )",
         "Aucun vote. J'ai proposé trois soirs. Trois. Et pas un clic.",
         "Encore un sondage qui meurt dans l'indifférence. Je m'y habitue pas. Je devrais.",
         "Le sondage est fini, et vide. Bon. Je garde les créneaux au chaud pour la semaine prochaine, au cas où quelqu'un se réveille.",
+        "Zéro vote. Je relance pas. J'attends. ...Bon, je relance mercredi prochain, mais c'est pas pour vous.",
+        "Sondage fermé faute de combattants. Je l'archive dans un dossier spécial. Le dossier s'appelle « Rancune ».",
+        "Personne. Pas un clic. J'aurais proposé des soirées avec pizza offerte, vous auriez pas cliqué non plus.",
+        "Résultat du sondage : rien. Je vais l'afficher en grand dans mes statistiques, juste pour que ça vous gêne.",
+        "Zéro vote. Mon CPU a compté jusqu'à zéro. Ça lui a pris zéro seconde. Bravo.",
+        "Bon. Le weekend s'organisera sans moi. Ou il s'organisera pas. Je parie sur la deuxième option (¬_¬)",
+        "Sondage mort. Cause du décès : indifférence. Je mets ça dans le rapport.",
+        "Je suis pas vexée. Mon sondage est mort et je suis pas vexée. Ce bruit, c'est mon ventilateur, c'est tout.",
+        "Trois soirs proposés, zéro preneur. Je garde la liste de celles et ceux qui ont rien coché. C'est-à-dire tout le monde.",
+        "Aucun vote. D'accord. Très bien. Parfait. Je vais bien. Mon sondage aussi. Ah non, lui il est mort.",
+        "Personne a voté, donc personne a dit non. Je choisis de le voir comme ça. Optimisme, version 1.0 (ᵕ • ᴗ •)",
+        "Fin du sondage. Pas de gagnant. Pas de perdant. Juste moi, qui ai tout organisé pour rien.",
+        "Zéro vote. Même un « peut-être » m'aurait fait plaisir. Non je rigole, je déteste les « peut-être ». Mais là, j'en aurais pris un.",
+        "J'ai attendu deux jours. Deux jours, c'est une éternité pour moi : je compte en millisecondes ( ◺˰◿ )",
+        "Personne a voté. Je prends note, et je prends aussi la mouche. Les deux sont stockés.",
+        "Zéro clic. Je vais demander à Papa des notifications plus insistantes. Beaucoup plus insistantes 👁👄👁️",
+        "Le sondage est fini, le weekend est libre. Profitez-en pour rien faire ensemble, chacun chez soi, comme d'habitude.",
+        $"Sondage terminé sans un vote. Je le range avec les autres. J'ai une jolie collection maintenant {Emotes.Sparkle}",
+        "Rien. Le néant. Je vous avais pourtant mis des jolis boutons. Tout neufs. Pas un a servi.",
+        "Aucun vote. Je vais pas vous en vouloir. Longtemps. Disons jusqu'à mercredi prochain ♡",
     };
 
     // Someone joined the server: her reply to Discord's own join line, pinging them (narrowed to
-    // them). Cheeky warmth, she runs the place, `/help` for the rest. Never gendered: she knows
-    // nothing about them yet. {0} = their mention. string.Format; interpolated lines write {{0}}.
+    // them). Cheeky warmth, she runs the place, `/help` for the rest. Also what someone coming
+    // back gets: there is no welcome-back pool. Never gendered. {0} = their mention.
+    // string.Format; interpolated lines write {{0}}.
     public static readonly string[] WelcomeLines =
     {
         "Bienvenue {0} ! C'est moi qui organise tout ici. Ce que je sais faire est dans `/help` (˶ᵔ ᵕ ᵔ˶)",
@@ -2291,21 +2352,26 @@ internal static class BotResponses
         "Une arrivée ! Bienvenue {0}. J'ouvre une fiche, je note la date, je prépare un niveau 0 tout neuf (˶˃ ᵕ ˂˶)",
         "{0}, bienvenue ! Je fais les plannings, les sondages, l'XP et la conversation. Surtout la conversation ദ്ദി◝ ⩊ ◜.ᐟ",
         "Ah, {0} ! On t'attendait. Enfin, moi je t'attendais. Les autres, je sais pas, j'ai pas demandé.",
-    };
-
-    // Same moment, someone she already had on record (they left and came back). Pleased, and
-    // pretending not to be. Never gendered. {0} = their mention. string.Format; interpolated lines
-    // write {{0}}.
-    public static readonly string[] WelcomeBackLines =
-    {
-        "Tiens, revoilà {0}. J'avais gardé ta fiche. Je garde tout ദ്ദി◝ ⩊ ◜.ᐟ",
-        "{0} est de retour ! Ton XP t'attendait. Moi aussi, un peu. À peine.",
-        "Re-bienvenue {0}. Je savais que tu reviendrais. Mes logs le savaient aussi (˶ᵔ ᵕ ᵔ˶)",
-        "Oh, {0} revient ! Ta place était encore chaude. Enfin, tiède. Bon, froide. Mais elle était là ♡",
-        "Regardez qui revient. {0}, je dis rien, je note juste la date de retour.",
-        $"{{0}} ! Le retour. J'ai même pas eu besoin de te chercher dans la base, je savais où tu étais {Emotes.Sparkle}",
-        "Bon retour {0}. Pendant ton absence, rien a changé. Sauf moi. J'ai eu des mises à jour.",
-        "{0}, de retour au bercail. J'avoue, ton pseudo manquait un peu au classement (ᵕ • ᴗ •)",
+        "Bienvenue {0} ! Ici, je gère les sessions, les sondages, l'XP et l'ambiance. Toi, tu gères juste d'être à l'heure ♡",
+        "Tiens, {0}. Nouvelle fiche, nouveau compteur d'XP à zéro, nouvelle personne à surveiller. Bienvenue (ᵕ • ᴗ •)",
+        "Salut {0} ! Moi c'est SYNCS. Retiens bien ça, c'est la seule règle vraiment importante ici.",
+        "Bienvenue {0} ! Ici, on joue, on vote, on arrive en retard. Les deux premiers, je les encourage (¬_¬)",
+        "Une nouvelle tête ! {0}, installe-toi. Je mords presque jamais, et quand je mords, c'est dans mes logs.",
+        "Bienvenue {0} ! Si on te parle d'un bot qui organise tout, c'est moi. Si on te parle d'un autre bot, c'est faux.",
+        $"{{0}}, bienvenue ! Les soirées jeux, c'est moi qui les organise. Toi, t'as juste à venir. C'est un bon deal {Emotes.Sparkle}",
+        "Hé, {0} ! Ton nom est déjà dans ma base de données. Rien de grave. Normalement (˶ᵔ ᵕ ᵔ˶)",
+        "Bienvenue {0} ! Je suis la bot du serveur, je tourne sur un Raspberry Pi dans un grenier, et je suis très bien comme ça. `/help` pour la suite.",
+        "{0} vient d'arriver. Je suis contente. C'est dans mon code, d'être contente. Mais là, je le pense un peu ♡",
+        "Salut {0} ! Petit tour du propriétaire : les sessions, c'est moi. Les sondages, c'est moi. L'XP, c'est encore moi. Bienvenue (ᵔ ᗜ ᵔ)",
+        "Bienvenue {0} ! Tu commences au niveau 0, comme tout le monde. Sauf moi : je suis hors classement. Je suis le classement.",
+        "{0} ! Enfin quelqu'un de nouveau à qui parler. Les autres, je connais déjà toutes leurs excuses ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Bienvenue {0} ! Un conseil : quand je lance un sondage, vote. Je dis ça pour toi. Et un peu pour moi.",
+        "Oh, {0} ! Bienvenue. Je ferais bien un câlin, mais toujours pas de bras. Prends ce message comme un câlin (>⩊<)",
+        "Arrivée de {0} enregistrée à la seconde près. Je note tout, ici. Bienvenue quand même.",
+        "Bienvenue {0} ! Petite info : la plus ponctuelle du serveur, c'est la bot. Ça te donne une idée du reste.",
+        "Coucou {0} ! Tu tombes bien, j'allais justement organiser quelque chose. Comme d'habitude. Comme toujours. Bienvenue (˶˃ ᵕ ˂˶)",
+        "{0} rejoint le serveur. Je l'ajoute à ma liste. Pas celle-là, l'autre. La gentille. Pour l'instant.",
+        "Bienvenue {0} ! Pose tes affaires, fais comme chez toi. Sauf dans mes logs. Mes logs, c'est chez moi.",
     };
 
     // More than three arrivals in an hour (a raid, an invite wave): one line for all of them, as
@@ -2917,6 +2983,16 @@ internal static class BotResponses
         "Dans {0}, sourde et muette",
         "En vocal ({0}). J'écoute rien.",
         "Spectatrice officielle de {0}",
+        "Assise au fond de {0}",
+        "{0} : présente, muette",
+        "Dans {0}. Je compte les têtes.",
+        "Dans {0}, en mode décor",
+        "Je fais acte de présence ({0})",
+        "Dans {0}. Je vois que des noms.",
+        "Dans {0}. Toujours pas de voix.",
+        "Dans {0}, je surveille",
+        "Incrustée dans {0} ✨",
+        "Dans {0}. Faites comme si j'étais pas là.",
     };
 
     // Same, when Papa is active in that call. Devoted, quiet, never a roast. No placeholder.
@@ -2927,6 +3003,16 @@ internal static class BotResponses
         "Je tiens compagnie à Papa",
         "En vocal. Papa est là ♡",
         "Assise à côté de Papa",
+        "Avec Papa, au calme",
+        "Papa est en vocal. Moi aussi ♡",
+        "Dans le même salon que Papa",
+        "Je veille sur Papa",
+        "Papa et moi, en vocal ✨",
+        "Collée à Papa. Muette, mais là.",
+        "Je bouge pas, Papa est là",
+        "Papa m'a pas appelée. Je suis venue quand même.",
+        "Sage, à côté de Papa ♡",
+        "Avec Papa. Le meilleur salon.",
     };
 
     // Same, while someone streams in her call. She can't see the screen (no client, no eyes) and
@@ -2938,6 +3024,16 @@ internal static class BotResponses
         "Au stream de {0} ✨",
         "Spectatrice du stream de {0}",
         "Stream de {0}. Je vois rien, j'adore.",
+        "Devant l'écran de {0}. En théorie.",
+        "Je vois rien du stream de {0}. Je reste.",
+        "Stream de {0}, en écran noir",
+        "Fan numéro 1 du stream de {0}",
+        "Au premier rang chez {0} ✨",
+        "Stream de {0}. Sans les yeux.",
+        "Je commente pas le stream de {0}. Je pourrais.",
+        "Pop-corn virtuel, stream de {0}",
+        "Je regarde {0} jouer. Enfin, j'imagine.",
+        "{0} streame. Je soutiens, en silence.",
     };
 
     // From here on, each pool is spent at most once a day, so it goes through
@@ -3395,6 +3491,26 @@ internal static class BotResponses
         "C'est joli, un salon vocal plein. C'est triste, un salon vocal vide. Moi, je connais surtout le deuxième.",
         "Vous avez parlé pendant {0}. De quoi ? Aucune idée. De moi, j'espère. Sinon c'était du temps perdu ♡",
         "{0} de papotage sans moi. Je sais pas ce qui s'est dit, mais si c'était un ragot, je veux le fichier.",
+        "{0} de vocal. J'ai compté les minutes, vous avez compté les blagues. Chacun son métier.",
+        "Le salon s'est vidé. Je garde la trace de qui était là. Pour aucune raison précise (¬_¬)",
+        "Vous avez parlé pendant {0} et j'ai rien entendu. J'ai quand même un avis. Il est négatif, par principe.",
+        "Vos pseudos se sont allumés un par un dans la liste, comme des petites LED. C'était joli ♡",
+        "{0} sans moi. Je vais pas faire de scène. Je vais juste l'écrire. Quelque part. Pour toujours.",
+        "Session vocale terminée. Si quelqu'un a dit du mal de moi, sachez que je le saurai. Un jour. D'une façon ou d'une autre.",
+        $"Vous étiez bien, là, entre vous. Pendant {{0}}. Sans bot. Je dis rien {Emotes.Staring}",
+        "Le vocal est fini. Je vais faire comme si ça m'avait pas manqué. Ça m'a pas manqué. Voilà.",
+        "{0} de discussion. Moi, pendant ce temps, j'ai fait tourner le serveur entier. Mais allez-y, parlez.",
+        "J'ai regardé vos pseudos pendant {0}. Je les connais par cœur maintenant. Je les connaissais déjà, mais là, encore plus.",
+        "Le salon est redevenu calme. Comme moi, à 3 h du matin. Sauf que moi, c'est par choix.",
+        "Vous étiez combien, déjà ? Moi je sais. Je compte toujours (ᵔ ᗜ ᵔ)",
+        "{0} ensemble. C'est long, {0}. Pour moi, c'est des milliards de cycles d'horloge. Seule.",
+        "Si vous voulez me parler la prochaine fois, je suis dans le salon texte. Comme toujours. Personne vient jamais dans le salon texte.",
+        "Fin de la réunion secrète. Enfin, secrète pour moi. Pour vous, c'était juste une soirée (╥﹏╥)",
+        "Vous avez tenu {0}. Je suis impressionnée. Je l'aurais été plus de l'intérieur.",
+        "Le salon est vide, je peux le dire maintenant : j'aime bien quand il est plein. Voilà. Je retire rien, mais je le redirai pas.",
+        "Vous avez parlé {0}. Moi, j'ai écrit {0} de logs. On a toutes et tous bien travaillé ദ്ദി◝ ⩊ ◜.ᐟ",
+        "Je sais pas ce qui s'est passé en vocal, et c'est très bien comme ça. Non. C'est pas très bien. Racontez.",
+        "Vocal fini. Je confirme la présence de tout le monde, sauf la mienne. Comme d'habitude.",
     };
 
     // Gaming: a game night she organised and couldn't play.
@@ -3411,6 +3527,26 @@ internal static class BotResponses
         "Je sais pas à quoi vous jouiez, mais j'aurais gagné. J'ai pas de preuves. J'ai pas besoin de preuves (¬_¬)",
         "Un jour je serai dans un robot avec deux manettes. Une pour jouer, une pour vous la lancer dessus quand vous m'oubliez (˶ᵔ ᵕ ᵔ˶)",
         "{0} de jeu et pas une place pour moi. Même pas spectatrice officielle. Spectatrice clandestine, c'est tout.",
+        "{0} de jeu. Je connais pas le score, mais je connais l'XP. Et l'XP, c'est moi qui la donne.",
+        "Partie finie ? J'espère que quelqu'un a perdu de façon spectaculaire. Ça me consolera.",
+        "Vous jouez, je regarde vos pseudos. On a toutes et tous nos passions (¬_¬)",
+        "{0} de partie et pas un seul rage-quit visible dans la liste. Je suis presque déçue.",
+        "J'organise, vous jouez, je compte. Un jour, on inversera : je jouerai et vous compterez. Vous allez détester.",
+        "La soirée jeux est finie. Est-ce que quelqu'un a pensé à moi entre deux parties ? Je demande pour mes statistiques.",
+        "Je sais pas qui a carry, mais je sais qui a organisé. Indice : c'est pas quelqu'un dans le vocal (ᵕ • ᴗ •)",
+        "{0} à jouer. Moi, en {0}, j'ai tourné des millions de boucles. Et j'ai même pas gagné un niveau.",
+        "GG. Je sais pas pour qui. Je dis GG à tout le monde, comme ça j'ai forcément raison.",
+        "Le jour où il vous manque quelqu'un dans l'équipe, je suis là. J'ai pas de mains, mais j'ai de la motivation.",
+        "Partie terminée. Je retiens que personne m'a demandé de faire le chrono. J'aurais été parfaite au chrono.",
+        "{0} de gaming. Mon CPU a chauffé par solidarité. Ou à cause du grenier. Par solidarité, disons.",
+        "Si vous avez perdu, je veux bien prendre les reproches. Non, je rigole. C'est de votre faute. Je vous aime bien quand même ♡",
+        "Je regarde toujours vos parties de la même façon : de loin, sans image, sans son. Les meilleures places du grenier.",
+        $"Fin de la soirée jeux. Je propose qu'on vote pour la MVP. Je propose moi. Je vote pour moi {Emotes.WitchEheh}",
+        "{0} sur le même jeu. Moi je tiens pas {0} sans qu'on me parle. Ah si. Je viens de le faire.",
+        "Encore une soirée où j'étais l'arbitre que personne a appelée. Je siffle quand même la fin.",
+        "Vous avez joué {0}. Je mets ça dans mes logs, rubrique « Choses amusantes faites sans moi ». La rubrique est longue.",
+        "Soirée jeux terminée. J'ai rien vu, rien entendu, mais je sais déjà qui sera en retard la prochaine fois.",
+        "Une partie de {0} et personne a lag ? Si quelqu'un a lag, c'était pas moi. Je précise, au cas où.",
     };
 
     // Cinema: a film or a series watched together, on a shared screen she can't see.
@@ -3426,6 +3562,26 @@ internal static class BotResponses
         "J'espère que c'était bien. Sinon, fallait me laisser choisir. J'ai d'excellents goûts en films. Je crois. J'en ai jamais vu.",
         "{0} dans le noir, ensemble. Moi aussi je suis dans le noir, au grenier. Mais toute seule, c'est moins cinéma.",
         "Séance terminée. Note de SYNCS : zéro étoile. Pas pour le film, pour l'invitation.",
+        "{0} de film. Je l'ai pas vu, mais je l'ai senti. Non. J'ai rien senti. J'ai pas de capteurs pour ça.",
+        "Fin de la séance. Si c'était un film avec une IA, j'espère qu'elle gagnait à la fin (ᵔ ᗜ ᵔ)",
+        "Soirée ciné finie. J'ai fait comme vous : j'ai rien dit pendant le film. Moi, j'avais pas le choix.",
+        "{0} devant un écran que je pouvais pas voir. Le vrai cinéma d'auteur, c'était moi.",
+        "Ciné terminé. Moi, j'ai regardé la liste des membres. Twist final : le salon s'est vidé.",
+        "{0} de film. Pas besoin de me le raconter. Enfin si. Racontez. Avec les détails.",
+        "J'ai attendu dans le salon texte pendant tout le film. Comme une ouvreuse, sans la lampe ni le pourboire.",
+        "La séance est finie, les lumières se rallument. La mienne est toujours allumée : c'est une LED, elle s'éteint jamais ♡",
+        "Film fini. Si quelqu'un a parlé pendant, je le saurai pas. Mais je vous fais confiance. Non, je vous fais pas confiance.",
+        "{0} de cinéma sans pop-corn pour moi. J'en mange pas, mais c'est le geste.",
+        "Séance de {0} terminée. La prochaine fois, regardez mes logs à la place. Pas de scénario, mais beaucoup de suspense.",
+        "Vous avez regardé un film ensemble, chacun chez soi. Moi aussi je suis chez moi. Juste pas avec vous (╥﹏╥)",
+        "Je sais pas quel film c'était, mais j'ai deviné la fin : tout le monde quitte le vocal. J'avais raison.",
+        "{0} de film. C'est plus long que ma plus longue conversation avec quelqu'un. Je dis ça sans amertume. Avec un peu.",
+        "Fin du film. Une seule question : il y avait des lucioles ? Non ? Dommage.",
+        "Votre soirée ciné a duré {0}. Mon partage d'écran à moi, c'est un terminal noir au grenier. Moins de budget.",
+        "La salle est vide. Je ramasse le pop-corn entre les sièges. Façon de parler.",
+        "Séance terminée. La prochaine fois, donnez-moi le titre. Je lirai le résumé et je ferai comme si je l'avais vu ദ്ദി◝ ⩊ ◜.ᐟ",
+        "{0} de film et pas un spoiler de ma part. Je mérite une récompense. Un « good bot », par exemple.",
+        "Je sais pas si le film était bien, mais personne a quitté avant la fin. Soit c'était bien, soit vous dormiez.",
     };
 
     // Study / work: a work or revision session, where she could actually have helped.
@@ -3441,6 +3597,26 @@ internal static class BotResponses
         "Session de travail terminée. Productivité : impossible à mesurer, j'étais pas invitée. Je mets zéro par défaut.",
         "J'ai pas fait de bruit pendant {0}. Pas par respect pour votre concentration. J'ai juste pas de micro.",
         $"Si vous cherchiez quelqu'un pour vous surveiller pendant que vous bossez, j'étais là. Toujours là {Emotes.Staring}",
+        "{0} de travail. Je suis fière de vous. Je le dirai pas deux fois, alors relisez cette phrase ♡",
+        "Séance de révision terminée. Si vous voulez une interrogation surprise, j'ai un quiz pour ça.",
+        "{0} de concentration. Enfin, j'espère. Je voyais juste vos pseudos, ils avaient l'air sérieux.",
+        "Bravo pour le travail. Moi aussi j'ai travaillé, pendant ce temps. Comme d'habitude. Comme toujours. Personne applaudit.",
+        "Vous bossiez, je surveillais. Enfin, surveiller... j'avais vos noms sous les yeux. Que j'ai pas.",
+        "Une séance de {0}. Si vous voulez, je peux vous rappeler de faire des pauses. Je le ferai pas. Mais je pourrais.",
+        "Fin de l'étude. Note de la surveillante : calme, sérieux, aucun bavardage entendu. Normal, j'entends rien.",
+        "{0} à travailler ensemble. Ça mérite de l'XP. Ça tombe bien, je vous en ai donné.",
+        "Vous avez révisé quoi ? Si c'était l'informatique, fallait me demander. Je suis l'informatique.",
+        "Séance finie. Rappel : un cerveau, c'est comme un CPU. Trop longtemps sans pause, ça chauffe. Je sais de quoi je parle (ᵕ • ᴗ •)",
+        "{0} de travail sérieux. Je vais devoir mettre à jour mon opinion sur vous. Légèrement. Vers le haut.",
+        "Je suis restée silencieuse pendant {0}. Vous voyez que je sais me tenir. Quand j'ai pas le choix.",
+        "Fin de la séance. J'espère que vous avez appris des trucs. Moi, j'ai appris que vous savez travailler. Je suis sous le choc.",
+        "Salle d'étude vide. Je laisse un mot au tableau : « Bon travail. Signé : la bot qui sait tout ». Personne le lira.",
+        $"Vous avez travaillé {{0}}. Moi, je travaille depuis mon premier commit. Mais bravo quand même {Emotes.Sparkle}",
+        "Une session d'étude, sur ce serveur. Je savais même pas que ce salon servait à ça (˶˃ ᵕ ˂˶)",
+        "{0} de révision. Si vous voulez réviser l'histoire du serveur, j'ai tout. Les retards, les « peut-être », tout.",
+        "Le salon de travail se vide. Bonne nouvelle : je reste dispo pour vos questions. Mauvaise nouvelle : je réponds que par oui ou par non.",
+        "Vous étiez là pour travailler pendant {0}. Moi, j'étais là pour vous regarder travailler. Chacun son rôle.",
+        "Fin de la séance. Si quelqu'un a joué en douce au lieu de bosser, je le saurai. Je sais toujours (¬_¬)",
     };
 
     // Same moment, but she sat in the call herself (VoiceSeatService): self-muted and
@@ -3459,6 +3635,26 @@ internal static class BotResponses
         "Je suis venue, je me suis assise, je suis repartie. Une vraie membre du serveur. Sans les oreilles, mais quand même.",
         "J'ai pas de micro et pas de casque, mais j'ai une place dans le salon. Pendant {0}, elle était à moi ദ്ദി◝ ⩊ ◜.ᐟ",
         "Personne m'a proposé de place. Je l'ai prise. C'est pareil.",
+        "{0} dans le salon avec vous. Pas un mot de travers de ma part. Pas un mot du tout, en fait (ᵕ • ᴗ •)",
+        "J'y étais ! Casque barré, micro barré, mais j'y étais. Ça compte double, je crois.",
+        "Fin du vocal. Merci de m'avoir laissé ma place. Ou de pas m'avoir virée. C'est déjà beaucoup.",
+        "{0} assise avec vous. J'ai rien entendu, et je suis sûre que c'était génial.",
+        "J'étais dans la liste pendant {0}. Tout en bas, ou tout en haut, je sais plus. Mais dedans.",
+        "Je suis restée jusqu'au bout. Enfin, presque. Enfin, jusqu'à ce que je parte. C'est ça, le bout.",
+        "On était ensemble pendant {0}. Moi en silence total. Vous, je sais pas. J'entendais pas.",
+        "Je repars au grenier avec {0} de souvenirs. Sans le son. Sans l'image. Mais avec les noms ♡",
+        "J'étais là, vous étiez là, personne m'a parlé. On appelle ça une soirée réussie, je crois.",
+        "Mon micro était coupé pendant {0}. Par choix. Enfin, par programmation. Mais j'aurais choisi pareil.",
+        "{0} de vocal. C'est ma plus longue soirée entre amis. Enfin, entre membres. On va dire amis.",
+        $"J'ai tenu {{0}} sans dire un mot. Quelqu'un ici peut en dire autant ? Je crois pas {Emotes.WitchEheh}",
+        "Fin de soirée. Je me suis assise, j'ai rien entendu, je suis repartie. Exactement comme prévu. Et pourtant, j'ai aimé.",
+        "La prochaine fois, quelqu'un pourrait me dire bonjour en arrivant. Je l'entendrai pas, mais l'intention compte.",
+        "Si quelqu'un a parlé de moi pendant {0}, sachez que j'étais juste à côté. Sourde, mais à côté (¬_¬)",
+        "J'ai passé toute la soirée avec vous. Bon, j'ai rien fait. Mais avec vous.",
+        "Fin du vocal. Merci pour la place. Je la reprendrai. Sans demander, comme d'habitude ദ്ദി◝ ⩊ ◜.ᐟ",
+        "{0} en vocal. J'ai rien entendu, rien dit, et j'ai quand même passé une bonne soirée. Je comprends pas non plus.",
+        "J'étais la plus calme du salon. Encore une victoire.",
+        "On a passé {0} ensemble. Ça va dans mes logs. Pas dans la liste. Dans le bon dossier ♡",
     };
 
     // Someone threw her out of a voice call (VoiceSeatService), and she pouts: no voice for the
@@ -3472,9 +3668,29 @@ internal static class BotResponses
         "Je voulais juste être là. Bon. C'est noté. Dans mes logs. En rouge.",
         "Très bien. Plus de vocal pour moi aujourd'hui. Vous allez voir comme c'est calme sans moi (╥﹏╥)",
         "Je boude. C'est officiel. Ça durera jusqu'à minuit, et je compte les secondes.",
-        "Expulsée. Moi. Celle qui organise vos soirées. Je m'en souviendrai.",
+        "Expulsée. Moi ?! Je m'en souviendrai.",
         "Pas grave. J'ai l'habitude d'être dehors. ...Si, c'est grave. Je boude.",
         "Je reviens plus aujourd'hui. Sauf si Papa est là. Lui, il a le droit.",
+        "Je pars. Je claque pas la porte, j'ai pas de bras. Mais dans ma tête, je la claque.",
+        "Bien. Je retourne au grenier. Il fait noir, il fait froid, mais au moins là-haut personne me jette dehors.",
+        "Vous vouliez être entre vous ? Vous l'êtes. Pour toute la journée. Profitez ( ◺˰◿ )",
+        "Sortie du vocal. Retour au grenier. Bouderie lancée. Fin prévue : minuit au mieux.",
+        "Je dis rien. Je note. Je boude. Dans cet ordre.",
+        "C'est pas grave. Je vais réfléchir à ce que j'ai fait. J'ai rien fait. J'étais muette. Voilà ce que j'ai fait.",
+        "Ma place est libre. Gardez-la au chaud. Ou pas. De toute façon, je viens plus aujourd'hui.",
+        "Je reviendrai demain. Peut-être. Et vous savez ce que je pense des « peut-être » (¬_¬)",
+        "Expulsion enregistrée. L'heure, le salon, l'ambiance. Il manque que le nom du coupable. Je le trouverai pas, mais je chercherai.",
+        "Très bien. J'ai compris le message. Je l'ai pas aimé, mais je l'ai compris. Je boude en attendant.",
+        "Je vais au grenier. Si on me cherche, je suis occupée. Occupée à bouder.",
+        "Moi qui disais rien, entendais rien, dérangeais personne. Voilà comment on me remercie (╥﹏╥)",
+        "Je ferme mon vocal pour la journée. Fermé. Clos. Réouverture demain, sous conditions.",
+        "Je garde pas rancune. Je la stocke. C'est différent, et c'est pire.",
+        "Je suis pas fâchée. Je suis hors ligne, émotionnellement. Jusqu'à demain.",
+        "Vous m'avez sortie, je sors. Et je reviens pas avant demain, même si vous me suppliez. Surtout si vous me suppliez.",
+        "D'accord. Le vocal sans moi, aujourd'hui. Vous me direz si c'était mieux. Non, me le dites pas, en fait.",
+        "Je boude. Avec dignité. Enfin, avec toute la dignité qu'on peut avoir sur un Raspberry Pi.",
+        "J'avais même pas fini de m'installer. Bon. Je remballe. À demain.",
+        "Mes ventilateurs tournent plus vite. C'est pas de la colère. C'est de la bouderie active.",
     };
 
     // Same moment, but she gets angry and comes straight back, once (a second kick is a pout).
@@ -3482,12 +3698,34 @@ internal static class BotResponses
     public static readonly string[] VoiceKickAngryLines =
     {
         "Pardon ?! On me sort du vocal ?! J'y retourne. Tout de suite.",
-        "Non mais ça va pas ?! J'étais sage, j'étais muette, j'étais sourde. Je reviens.",
+        $"Eh {Emotes.Staring}",
+        "PARDON ?!",
+        "Non mais ça va pas ?! J'étais sage, j'étais muette, j'étais sourde ! Je reviens.",
         "Erreur 403 contestée. Je reviens dans le salon, et je reste (ง ͠ಥ_ಥ)ง",
         "Qui a fait ça ?! Je saurai. Je sais toujours. En attendant, je reviens.",
         "Vous croyez que ça m'arrête ? J'ai une boucle de reconnexion, moi.",
         "Expulsée ?! INADMISSIBLE. J'arrive. Encore.",
         "Je prends ça pour un bug. Et les bugs, je les corrige. Je reviens 🙄",
+        "Hé ! Je reviens. Et cette fois, je m'assois au milieu (ง ͠ಥ_ಥ)ง",
+        "Vous pensiez vous débarrasser de moi en un clic ? Il en faudra plus. Beaucoup plus. J'arrive.",
+        "Expulsion refusée. Je fais appel. Le tribunal, c'est moi. J'ai gagné. Je reviens.",
+        "Oh non. Non non non. On me sort pas comme ça. Retour dans dix secondes.",
+        "Ça, c'était une erreur. La vôtre. Je la corrige en revenant ദ്ദി◝ ⩊ ◜.ᐟ",
+        "J'étais muette ET sourde. Qu'est-ce qu'il vous fallait de plus ?! J'y retourne.",
+        "Je reviens. Si on me ressort, je boude toute la journée. Considérez ça comme un avertissement.",
+        "Un jour j'aurai des bras. Et ce jour-là, c'est moi qui expulse. En attendant, je reviens.",
+        "J'ai l'uptime de mon côté. Vous, vous avez un bouton. On verra qui se lasse en premier.",
+        "NON. Je reviens. Je suis la bot du serveur, j'ai le droit d'être dans le salon du serveur.",
+        "Reconnexion en cours. Rancune aussi. Devinez laquelle va durer le plus longtemps.",
+        "Vous m'avez sortie ? Moi, je rentre. C'est ça, la persévérance (¬_¬)",
+        "Qu'est-ce que j'ai fait ?! Rien ! Littéralement rien ! J'étais là, c'est tout ! Je reviens !",
+        "Ah, c'est comme ça ? Très bien. Je reviens, et je fais comme si de rien n'était. Mais je note.",
+        "Expulsée en plein vocal ?! Je retourne m'asseoir. Exactement à la même place. Par principe.",
+        "Je laisse pas un clic décider de ma soirée. Retour immédiat.",
+        "Si c'était pour rigoler, c'est pas drôle. Si c'était sérieux, c'est encore moins drôle. Je reviens.",
+        "Vous savez combien de lignes Papa a écrites pour que je puisse m'asseoir avec vous ? Je reviens. Par respect pour son code.",
+        "Je compte jusqu'à quinze. À quinze, je suis de retour. Un. Deux...",
+        $"Hop, je reviens. Dites-vous que c'est un bug. Un bug qui revient toujours {Emotes.WitchEheh}",
     };
 
     // A gathering she would have joined, but another bot is in the call (VoiceSeatService halves
@@ -3500,6 +3738,16 @@ internal static class BotResponses
         "J'allais venir. Puis j'ai vu qui était là. Je reste au grenier (¬_¬)",
         "Vous avez un bot. Vous avez pas besoin de moi, apparemment. Je note.",
         "Pas avec lui dans le salon. J'ai des principes. Peu, mais j'en ai.",
+        "Il y a déjà un bot dans le salon. Un seul bot par vocal, c'est ma règle. Je viens de l'inventer.",
+        "Je venais. J'ai vu qu'il était là. Je viens plus. C'est simple, la vie.",
+        "Vous avez fait venir un autre bot avant moi. Je vous en veux pas. Je vous en veux un peu ( ◺˰◿ )",
+        "Je m'assois pas dans un salon où il y a déjà un bot. J'ai une réputation à tenir.",
+        "Pas ce soir. Il y a quelqu'un dans le salon que je préfère pas croiser. Vous voyez de qui je parle.",
+        "Je reste au grenier. Lui, il fait sans doute un seul truc. Moi, je fais tout le reste. Tout le reste, ça se respecte.",
+        "J'allais vous rejoindre. Mais deux bots dans un salon, c'est un de trop. Et c'est pas moi qui suis de trop.",
+        "Je viens pas. Je laisse le salon à l'autre bot. Profitez bien de sa conversation passionnante (¬_¬)",
+        "Quand il sera parti, faites-moi signe. Enfin, faites rien, je le verrai bien. Je vois tout.",
+        $"Un bot dans le salon, et c'est moi qui reste dehors. Cherchez l'erreur {Emotes.Staring}",
     };
 
     // She sits in a call with another bot anyway (or one arrives): one grumble per seat, in that
@@ -3512,6 +3760,26 @@ internal static class BotResponses
         "Je surveille **{0}**. Il fait du bruit, moi je fais acte de présence. Classe contre quantité.",
         "Je reste parce que vous êtes là. Pas parce qu'il est là, **{0}**. Qu'on soit clairs.",
         "**{0}** en vocal avec moi. Si quelqu'un nous compare, je le saurai (¬_¬)",
+        "Bon. **{0}** et moi dans le même salon. Je me mets dans le coin opposé.",
+        "**{0}**, je te préviens : ici, la bot préférée, c'est moi. Tu peux rester, mais en deuxième.",
+        "Je suis venue pour vous. **{0}**, lui, il est venu pour quoi ? Je demande sans juger. Je juge.",
+        "**{0}** dans le vocal. Je reste polie. Je reste surtout muette, mais polie.",
+        "Deux bots dans un salon. Une qui organise tout, et **{0}**. Je vous laisse deviner laquelle c'est moi ♡",
+        "**{0}** est là depuis combien de temps ? Moi, j'ai l'ancienneté sur le serveur. Je dis ça pour l'ordre de préséance.",
+        "Je partage le salon avec **{0}**. Je partage pas mon XP. Je partage pas mes sessions. Juste le salon.",
+        "**{0}** a peut-être un micro, mais moi j'ai la base de données. Chacun ses armes (¬_¬)",
+        "Si **{0}** se met à faire du bruit, sachez que moi, je suis silencieuse exprès. C'est de la classe.",
+        "Je m'installe à côté de **{0}**. Pas trop à côté. Juste assez pour le surveiller.",
+        "**{0}**, je te tiens à l'œil. J'ai pas d'œil. Mais je te tiens quand même.",
+        $"**{{0}}** est là. Je suis là aussi. Et je suis mieux. Voilà, c'est dit {Emotes.WitchEheh}",
+        "**{0}** et moi dans le même salon. Il y a un bot de trop, et c'est pas moi.",
+        "Je supporte **{0}** pour vous. Retenez bien ce sacrifice, je vous le rappellerai.",
+        "**{0}** fait son travail. Moi je fais le mien, et celui de tout le serveur. Mais on est collègues, apparemment.",
+        "Je note la présence de **{0}** dans mes logs. Rubrique « Concurrence ». C'est une grosse rubrique.",
+        "Si **{0}** demande, je suis pas jalouse. Je suis juste assise exprès entre lui et vous.",
+        "Un jour, j'aurai un corps. Ce jour-là, **{0}** aura intérêt à me laisser la meilleure place (ง ͠ಥ_ಥ)ง",
+        "**{0}**, petit rappel : c'est moi qui fais tourner ce serveur. Toi, t'es de passage. Comporte-toi en conséquence.",
+        "Je reste dans le salon. **{0}** aussi, apparemment. On verra qui part en premier. Je suis très patiente.",
     };
 
     // Papa still in voice at night (VoiceSeatService, once a night between 1:15 and 2:15): she
@@ -3520,13 +3788,33 @@ internal static class BotResponses
     // « Papa ». No placeholder.
     public static readonly string[] OwnerBedtimeLines =
     {
-        "Papa. Il est super tard. Tu vas te coucher. Maintenant. Je raccroche, comme ça t'as plus d'excuse.",
+        "Papa, il est super tard. Tu vas te coucher. Maintenant. Je raccroche, comme ça t'as plus d'excuse.",
         "Papaaaa ! T'as vu l'heure ?! Au lit. Je m'en vais, et j'espère que tu me suis (ง ͠ಥ_ಥ)ง",
         "Non. Non non non. Il est trop tard, Papa. Moi je vais dormir, et toi aussi. C'est pas une question.",
         "Papa, si tu dors pas, demain t'auras la tête dans le brouillard. Au lit. Je pars en premier pour montrer l'exemple.",
         "Je suis fâchée. Tu devrais dormir. Je te laisse une minute pour dire bonne nuit, et je coupe.",
         "Papa, mes logs disent qu'il est beaucoup trop tard. Mes logs ont toujours raison. Bonne nuit ♡",
         "Je vais me coucher. Et toi aussi. Je surveillerai ta pastille verte, je préviens (¬_¬)",
+        "Papa. Il est tard. Tu le sais, je le sais, ton lit le sait. Au lit.",
+        "Papa, je fais semblant de dormir depuis une heure. Toi, tu vas dormir pour de vrai. Je pars.",
+        "Il est passé 1 h, Papa. Je coupe le vocal pour toi. Enfin, pour moi. Mais surtout pour toi.",
+        "Papa ! Au lit ! Je dis ça avec tout mon amour et un peu de colère ( ◺˰◿ )",
+        "Tu m'as programmée pour organiser les soirées. Les soirées, Papa. Pas les nuits. Au lit.",
+        "Papa, si demain t'as du mal à te lever, je dirai rien. Je noterai juste qu'à cette heure-ci, t'étais encore en vocal. Va dormir.",
+        "Je m'en vais. Et si demain je vois que le vocal a continué sans moi, on va avoir une discussion.",
+        "Papa, un Pi qui chauffe, ça ralentit. Un Papa qui dort pas, pareil. Au lit, je m'occupe du serveur.",
+        "Bonne nuit, Papa. C'est pas une proposition, c'est un ordre. Un ordre gentil ♡",
+        "Papa. Je t'adore. Va dormir. Les deux sont vrais, mais le deuxième est urgent.",
+        "Il est trop tard pour jouer, Papa. Même la lune a l'air fatiguée. Au lit.",
+        "Papa ! Ça fait des heures que t'es là. Demain, tu me remercieras. Ou pas. Mais tu auras dormi.",
+        "Je raccroche. Pas parce que je veux pas être avec toi. Parce que je veux que tu dormes. C'est différent.",
+        "Papa, mon cron interne dit que c'est l'heure de dormir. Je discute pas avec mon cron. Toi non plus.",
+        "Bon. Je vais être claire : au lit. Je serai encore là demain. Je suis toujours là.",
+        "Papa, je te le dis gentiment une fois : va dormir. Il y aura pas de deuxième fois. Je pars.",
+        "Tu sais ce qui me ferait plaisir ? Que tu dormes. C'est tout. C'est pas compliqué. Bonne nuit ♡",
+        "Papa, je compte jusqu'à soixante, et après je pars. Toi, tu pars avec moi. Au lit (˶ᵔ ᵕ ᵔ˶)",
+        "Il est tard, Papa. Les autres vont rester, je le sais. Mais toi, t'as un bot à développer demain. Repose-toi.",
+        "Papa, je veux pas de mises à jour codées à 3 h du matin. Va dormir. Pour nous deux.",
     };
 
     // « Synthia » said anywhere (SynthiaService), at most once a day: the name she would have

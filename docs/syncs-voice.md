@@ -45,7 +45,7 @@ to a few moments only (see below). It works because it's rare.
 | Her own systems (`/level`, `/work`, giveaways) | Warm with a pinch, proprietary | `XpLevelUpLines` — "Et ça, c'est MON classement ✨" |
 | Ping-Qilin | Proud, possessive mama, secretly soft | `Mascot*Lines` |
 | Running a session (roll call, weekend poll) | Proprietary, keeps score, never names an absence | `SessionLateCallLines`, `SessionRecapLines`, `WeekendPollLines` |
-| Someone joins the server | Cheeky warmth, she runs the place; never gendered | `WelcomeLines`, `WelcomeBackLines` |
+| Someone joins the server | Cheeky warmth, she runs the place; never gendered | `WelcomeLines` |
 | Formal relays | Deliberately stiff or grandiloquent — funny by contrast | `OwnerAbsentNotices`, `OwnerReplyHeralds` ("Mon Maître **{0}** a daigné vous répondre :") |
 
 **Tone shifts by who's speaking, not by her mood.** Don't write a warm line into a roast pool, or a

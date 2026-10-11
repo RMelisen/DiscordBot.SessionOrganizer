@@ -3,6 +3,16 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.7.1 — 2026-10-11
+
+- 20 new lines for SYNCS's Wednesday weekend poll, 20 for its result and 20 for when nobody votes.
+- 20 new welcome lines. Someone rejoining the server now gets the same welcome as a newcomer.
+- 30 new status lines for when SYNCS sits in a voice call.
+- 100 new lines for what SYNCS says after a long voice get-together.
+- 40 new lines for when someone throws her out of a voice call.
+- 30 new lines for when another bot is in the voice call.
+- 20 new lines for when SYNCS sends the owner to bed.
+
 ## 6.7.0 — 2026-10-11
 
 - With the owner in a voice channel, SYNCS joins much more willingly (two people are enough,
