@@ -26,17 +26,23 @@ public class EconomyModule : InteractionModuleBase<SocketInteractionContext>
     {
         var now = DateTimeOffset.UtcNow;
         var result = await _pebbles.WorkAsync(Context.Guild.Id, Context.User.Id, PebbleEconomy.RollWorkPay(), now);
-        if (!result.Paid)
-        {
-            await RespondAsync(PlynlingText.WorkCooldown(result.NextWorkAt), ephemeral: true);
-            return;
-        }
+        var (text, refused) = WorkReply(result, _picker);
+        if (refused)
+            await RespondAsync(text, ephemeral: true);
+        else
+            await RespondAsync(text, allowedMentions: AllowedMentions.None);
+    }
 
-        var line = string.Format(_picker.Pick(BotResponses.WorkLines),
+    // What /work answers, shared with the ;work shortcut (PlynlingShortcutService). A refusal is
+    // shown privately — or as a passing reply, from the shortcut.
+    public static (string Text, bool Refused) WorkReply(WorkResult result, ResponsePicker picker)
+    {
+        if (!result.Paid) return (PlynlingText.WorkCooldown(result.NextWorkAt), true);
+
+        var line = string.Format(picker.Pick(BotResponses.WorkLines),
             $"+{PebbleEconomy.Cailloux(result.Amount)}");
-        await RespondAsync(
-            $"{line}\n-# Solde : {PebbleEconomy.Cailloux(result.Balance)} · prochain service <t:{result.NextWorkAt.ToUnixTimeSeconds()}:R>",
-            allowedMentions: AllowedMentions.None);
+        return ($"{line}\n-# Solde : {PebbleEconomy.Cailloux(result.Balance)} · prochain service <t:{result.NextWorkAt.ToUnixTimeSeconds()}:R>",
+            false);
     }
 
     // Private: balances are nobody else's business, and nothing in v1 needs a rich list.

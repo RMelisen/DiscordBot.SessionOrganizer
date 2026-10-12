@@ -82,7 +82,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/quiz leaderboard`** — Les meilleurs au quiz.")
             .AddField("Commandes — Plynlings",
                 "**`/plynling help`** — Adopte un petit champignon, nourris-le, garde-le en vie. " +
-                "Tout est expliqué là-dedans. Raccourci : `/pl`.\n" +
+                "Tout est expliqué là-dedans. Raccourcis : `/pl`, et `;pl` en texte.\n" +
                 "**`/inventory view`** — Tes objets, ton garde-manger, ta collection et ta garde-robe.")
             .AddField("Commandes — Staff & aide",
                 "**`/admin xp add|remove`** · **`/admin pebble add|remove`** — Ajuster l'XP ou les cailloux de quelqu'un.\n" +

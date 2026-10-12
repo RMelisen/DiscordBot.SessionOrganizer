@@ -19,6 +19,22 @@ custom-id. Keep the handler `protected` there and bind it in `PlynlingLongModule
 base constructor, so a new dependency goes in three places. Texts keep saying `/plynling`; the
 shortcut is mentioned once in each help.
 
+**Typed shortcuts** — `;pl` (your card), `;pl @x`, `;pl visit @x`, `;forage` and `;work` (both also
+under `;pl`), sent as a plain message. Grammar in `Helpers/Plynling/PlynlingShortcut` (pure: only an
+exact first word counts, so `;-;` or `;plop` stay chatter); `PlynlingShortcutService` runs them,
+first in `BotService`'s message fan-out, and **a handled message goes no further** — no XP, no
+passive cailloux, no chatter, like the slash command it stands for.
+- **They run the slash command's own code**, never a copy: `PlynlingModule.ViewLineAsync` (the
+  daily gift included), `BuildCardAsync`, `ForageReply`, `OpenVisitAsync` (every visit check, and
+  the visit itself at her home) and `EconomyModule.WorkReply`. A behaviour change goes there, and
+  both entry points follow.
+- **A message cannot be answered privately**: a refusal is a reply that deletes itself after 15 s.
+  Successes are the same public answers as the commands, as replies.
+- **The knock does not ping** from `;pl visit @x` — the person's own message already did.
+- Only the commands that are routine and need no form: anything with a modal (`passion`,
+  `abandon`) or several options stays a slash command. An unknown `;pl …` gets the usage line.
+- Its own `CooldownGate` per (person, shortcut), 3 s, drops repeats silently.
+
 ## State is computed; nothing ticks
 
 `Plynling` stores hunger, happiness and hygiene **as they were at `NeedsAsOf`**; `PlynlingLife`
@@ -345,7 +361,7 @@ before listing. Ties break on id.
 
 ## `/plynling help`
 
-Within ~100 characters of the 6000 embed cap (5 894). Measure before adding; shorten or split rather than
+Within ~60 characters of the 6000 embed cap (5 938). Measure before adding; shorten or split rather than
 let it throw. The main `/help` points to it in one line only.
 
 ## Data migrations and the production launch

@@ -29,6 +29,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/plynling adopt · view · list · journal · relations · play · visit · passion · forage · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card). `/pl` is a shortcut for every one of them | everyone |
 | `/inventory view · collection · shop · medicine · cosmetics · craft · give · trade · sell` | Your items: pantry, collection, cosmetics, swaps | everyone |
 | `/work · /balance` | Earn cailloux; see your balance | everyone |
+| `;pl · ;pl @someone · ;pl visit @someone · ;forage · ;work` | Typed shortcuts, sent as a plain message: your card (or someone's), a visit, a forage, a shift. `;pl forage` and `;pl work` work too | everyone |
 | `/shame user:@someone` | Put someone on it | staff |
 | `/config` | Per-server settings, no redeploy | staff |
 | `/admin xp add · remove` | Manual XP adjustment | staff |

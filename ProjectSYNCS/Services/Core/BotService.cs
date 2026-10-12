@@ -31,6 +31,7 @@ internal sealed class BotService : IHostedService
     private readonly QuizMasterService _quiz;
     private readonly SynthiaService _synthia;
     private readonly WelcomeService _welcome;
+    private readonly PlynlingShortcutService _shortcuts;
 
     public BotService(
         DiscordSocketClient client,
@@ -49,8 +50,10 @@ internal sealed class BotService : IHostedService
         AmbientService ambient,
         QuizMasterService quiz,
         SynthiaService synthia,
-        WelcomeService welcome)
+        WelcomeService welcome,
+        PlynlingShortcutService shortcuts)
     {
+        _shortcuts = shortcuts;
         _synthia = synthia;
         _welcome = welcome;
         _client = client;
@@ -126,6 +129,9 @@ internal sealed class BotService : IHostedService
     {
         // Discord's « X joined » line is a system message, which every handler below skips.
         await _welcome.HandleMessageAsync(rawMessage);
+        // A typed shortcut (« ;pl », « ;work »…) is a command, not talk: like the slash command it
+        // stands for, nothing below sees it — no XP, no cailloux, no chatter, no tracker.
+        if (await _shortcuts.HandleMessageAsync(rawMessage)) return;
         await _emotes.HandleMessageAsync(rawMessage);
         // Independent of every other tracker here — reads only the raw message and
         // its own per-user cooldown gates — so its position relative to the others

@@ -77,6 +77,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<VisitStories>();
         services.AddSingleton<PlynlingPlayService>();
         services.AddSingleton<PlynlingAnnouncer>();
+        services.AddSingleton<PlynlingShortcutService>();
 
         // Singleton despite reading the database, unlike every other service here that
         // does: it caches per-guild config, which a transient would drop on every

@@ -168,45 +168,16 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
     public async Task VisitAsync([Summary("user", "Chez qui aller")] IUser user)
     {
         var now = DateTimeOffset.UtcNow;
-        if (user.Id == Context.User.Id)
+        var opening = await OpenVisitAsync(_plynlings, _cooldowns, _visits, _picker, Context.Guild.Id, Context.User.Id, user, now);
+        if (opening.Refusal is not null || opening.Card is null)
         {
-            await RespondAsync(PlynlingText.VisitSelf, ephemeral: true);
+            await RespondAsync(opening.Refusal, ephemeral: true, allowedMentions: AllowedMentions.None);
             return;
         }
 
-        var mine = await _plynlings.GetCurrentAsync(Context.Guild.Id, Context.User.Id, now);
-        // Bots have no Plynling — except her, whose Ping-Qilin can be visited.
-        var theirs = user.IsBot && user.Id != PlynlingMascot.OwnerId ? null : await _plynlings.GetCurrentAsync(Context.Guild.Id, user.Id, now);
-        string? refusal =
-            mine is null ? PlynlingText.NoPlynling
-            : mine.DiedAt is not null ? PlynlingText.Dead(mine.Gender)
-            : theirs is null || theirs.DiedAt is not null ? PlynlingText.NoneFor(user.Id)
-            : mine.FrozenAt is not null || theirs.FrozenAt is not null ? PlynlingText.VisitFrozen
-            : PlynlingLife.IsAsleep(now) ? PlynlingText.Asleep(mine.Gender)
-            : PlynlingLife.IsSick(mine) ? PlynlingText.VisitSick(PlynlingCardUi.SafeName(mine.Name))
-            : PlynlingLife.IsSick(theirs) ? PlynlingText.VisitSick(PlynlingCardUi.SafeName(theirs.Name))
-            : _cooldowns.VisitedToday(Context.User.Id, user.Id, AppTime.DayKey(now)) ? PlynlingText.VisitedToday(user.Id)
-            : null;
-        if (refusal is not null || mine is null)
+        if (opening.Story is { } story)
         {
-            await RespondAsync(refusal, ephemeral: true, allowedMentions: AllowedMentions.None);
-            return;
-        }
-
-        // At her home nobody could press « Accueillir », so she opens the door herself: no knock, no
-        // ping, straight to the story — the same way « Accueillir » tells it.
-        if (theirs is not null && PlynlingMascot.Is(theirs))
-        {
-            var (story, visitRefusal, untold) = await _visits.RunAsync(mine, theirs, now);
-            if (story is null)
-            {
-                await RespondAsync(visitRefusal, ephemeral: true, allowedMentions: AllowedMentions.None);
-                return;
-            }
-            var welcome = string.Format(_picker.Pick(BotResponses.MascotWelcomeLines),
-                PlynlingCardUi.SafeName(mine.Name), $"<@{Context.User.Id}>");
-            await RespondAsync(components: PlynlingPlayCards.BuildKnockClosed($"{welcome}\n-# L'histoire est juste en dessous ↓"),
-                flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
+            await RespondAsync(components: opening.Card, flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
             try
             {
                 await FollowupAsync(components: PlynlingPlayCards.BuildVisitStory(story, 0),
@@ -217,16 +188,57 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
                 _logger.LogWarning(ex, "Visit story {Story}: could not be posted", story.Id);
             }
             // What the visit left behind at her home, decided by her at once — after the visit's story.
-            await _announcer.TellAsync(_plynlings, untold, Context.Guild.Id, now, Context.Channel);
+            await _announcer.TellAsync(_plynlings, opening.Untold ?? [], Context.Guild.Id, now, Context.Channel);
             return;
+        }
+
+        await RespondAsync(components: opening.Card,
+            flags: MessageFlags.ComponentsV2, allowedMentions: new AllowedMentions { UserIds = new List<ulong> { user.Id } });
+    }
+
+    /// <summary>
+    /// Everything a visit request decides before anything is sent — the checks, the knock, or at her
+    /// home the visit itself — shared by /plynling visit and the <c>;pl visit</c> shortcut so the two
+    /// cannot drift. Each caller only sends what it returns, with its own mention rules.
+    /// </summary>
+    public static async Task<VisitOpening> OpenVisitAsync(PlynlingService plynlings, PlynlingCooldowns cooldowns,
+        PlynlingVisitRunner visits, ResponsePicker picker, ulong guildId, ulong visitorId, IUser host, DateTimeOffset now)
+    {
+        if (host.Id == visitorId) return new VisitOpening(PlynlingText.VisitSelf);
+
+        var mine = await plynlings.GetCurrentAsync(guildId, visitorId, now);
+        // Bots have no Plynling — except her, whose Ping-Qilin can be visited.
+        var theirs = host.IsBot && host.Id != PlynlingMascot.OwnerId ? null : await plynlings.GetCurrentAsync(guildId, host.Id, now);
+        string? refusal =
+            mine is null ? PlynlingText.NoPlynling
+            : mine.DiedAt is not null ? PlynlingText.Dead(mine.Gender)
+            : theirs is null || theirs.DiedAt is not null ? PlynlingText.NoneFor(host.Id)
+            : mine.FrozenAt is not null || theirs.FrozenAt is not null ? PlynlingText.VisitFrozen
+            : PlynlingLife.IsAsleep(now) ? PlynlingText.Asleep(mine.Gender)
+            : PlynlingLife.IsSick(mine) ? PlynlingText.VisitSick(PlynlingCardUi.SafeName(mine.Name))
+            : PlynlingLife.IsSick(theirs) ? PlynlingText.VisitSick(PlynlingCardUi.SafeName(theirs.Name))
+            : cooldowns.VisitedToday(visitorId, host.Id, AppTime.DayKey(now)) ? PlynlingText.VisitedToday(host.Id)
+            : null;
+        if (refusal is not null || mine is null || theirs is null)
+            return new VisitOpening(refusal ?? PlynlingText.NoPlynling);
+
+        // At her home nobody could press « Accueillir », so she opens the door herself: no knock, no
+        // ping, straight to the story — the same way « Accueillir » tells it.
+        if (PlynlingMascot.Is(theirs))
+        {
+            var (story, visitRefusal, untold) = await visits.RunAsync(mine, theirs, now);
+            if (story is null) return new VisitOpening(visitRefusal ?? PlynlingText.Unknown);
+            var welcome = string.Format(picker.Pick(BotResponses.MascotWelcomeLines),
+                PlynlingCardUi.SafeName(mine.Name), $"<@{visitorId}>");
+            return new VisitOpening(null, PlynlingPlayCards.BuildKnockClosed($"{welcome}\n-# L'histoire est juste en dessous ↓"),
+                story, untold);
         }
 
         var expires = now + PlynlingLife.VisitInviteLife;
         var (knockPool, typed) = PlynlingPassions.PickLines(BotResponses.PlynlingVisitKnockLines, BotResponses.PlynlingVisitKnockTypedLines, mine, Random.Shared);
-        var line = string.Format(_picker.Pick(knockPool),
-            PlynlingCardUi.SafeName(mine.Name), $"<@{user.Id}>", typed);
-        await RespondAsync(components: PlynlingPlayCards.BuildKnock(mine, user.Id, expires, line, now),
-            flags: MessageFlags.ComponentsV2, allowedMentions: new AllowedMentions { UserIds = new List<ulong> { user.Id } });
+        var line = string.Format(picker.Pick(knockPool),
+            PlynlingCardUi.SafeName(mine.Name), $"<@{host.Id}>", typed);
+        return new VisitOpening(null, PlynlingPlayCards.BuildKnock(mine, host.Id, expires, line, now));
     }
 
     // Its stats, badges and moments — the living one, or else the latest grave, like view.
@@ -286,17 +298,24 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
             await RefuseAsync(target.Id == Context.User.Id ? PlynlingText.NoPlynling : PlynlingText.NoneFor(target.Id));
             return;
         }
+        await RespondCardAsync(plynling, now, await ViewLineAsync(_plynlings, _picker, plynling, Context.User.Id, now));
+    }
+
+    // The line a looked-at card opens with — shared with the ;pl shortcut, so looking by text is
+    // looking (the daily gift included).
+    public static async Task<string?> ViewLineAsync(PlynlingService plynlings, ResponsePicker picker, Plynling plynling,
+        ulong viewerId, DateTimeOffset now)
+    {
         // The owner's first look of the day at a happy Plynling may turn up a gift.
-        var gift = await _plynlings.TryGiftAsync(plynling, Context.User.Id, now, Random.Shared);
+        var gift = await plynlings.TryGiftAsync(plynling, viewerId, now, Random.Shared);
         // Otherwise, now and then, what its typed passion has it thinking about (a gift says enough).
         // Her own is introduced by her, every time — nobody else's card speaks for its owner.
-        var line = gift.Any ? PlynlingCareService.GiftLine(plynling, gift)
+        return gift.Any ? PlynlingCareService.GiftLine(plynling, gift)
             : PlynlingMascot.Is(plynling) && plynling.DiedAt is null
-                ? string.Format(_picker.Pick(BotResponses.MascotViewLines), PlynlingCardUi.SafeName(plynling.Name))
+                ? string.Format(picker.Pick(BotResponses.MascotViewLines), PlynlingCardUi.SafeName(plynling.Name))
             : PlynlingPassions.Thought(plynling, now, Random.Shared) is (var pool, var typed)
-                ? string.Format(_picker.Pick(pool), PlynlingCardUi.SafeName(plynling.Name), typed)
+                ? string.Format(picker.Pick(pool), PlynlingCardUi.SafeName(plynling.Name), typed)
                 : null;
-        await RespondCardAsync(plynling, now, line);
     }
 
     // Without `user`, the owner freezes their own under the self-freeze rules. With a
@@ -383,21 +402,25 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
     {
         var now = DateTimeOffset.UtcNow;
         var result = await _plynlings.ForageAsync(Context.Guild.Id, Context.User.Id, now, Random.Shared);
+        var (text, refused) = ForageReply(result, Context.User.Id);
+        if (refused)
+            await RespondAsync(text, ephemeral: true);
+        else
+            await RespondAsync(text, allowedMentions: AllowedMentions.None);
+    }
+
+    // What /plynling forage answers, shared with the ;forage shortcut. A refusal is shown privately —
+    // or as a passing reply, from the shortcut.
+    public static (string Text, bool Refused) ForageReply(ForageResult result, ulong userId)
+    {
         var gender = result.Plynling?.Gender ?? PlynlingGender.Male;
         if (result.Outcome == CareOutcome.TooSoon)
-        {
-            await RespondAsync(PlynlingText.ForageTooSoon(gender, result.ReadyAt!.Value), ephemeral: true);
-            return;
-        }
+            return (PlynlingText.ForageTooSoon(gender, result.ReadyAt!.Value), true);
         if (result.Outcome != CareOutcome.Done || result.Find is null || result.Plynling is null)
-        {
-            await RespondAsync(PlynlingCareService.Refusal(result.Outcome, gender), ephemeral: true);
-            return;
-        }
+            return (PlynlingCareService.Refusal(result.Outcome, gender), true);
         // A plain message, not a card: the find is the news, and the Plynling's state has not changed.
-        var line = PlynlingText.FindLines(
-            PlynlingText.Foraged(PlynlingCardUi.SafeName(result.Plynling.Name), gender, result.Find.Item), result.Find, Context.User.Id);
-        await RespondAsync(line, allowedMentions: AllowedMentions.None);
+        return (PlynlingText.FindLines(
+            PlynlingText.Foraged(PlynlingCardUi.SafeName(result.Plynling.Name), gender, result.Find.Item), result.Find, userId), false);
     }
 
     [SlashCommand("graveyard", "Le cimetière des Plynlings (ou seulement ceux de quelqu'un)")]
@@ -540,7 +563,7 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
         new EmbedBuilder()
             .WithTitle("🍄 Plynlings — mode d'emploi")
             .WithDescription("Un Plynling est un petit champignon qui vit avec toi. Nourris-le, caresse-le, " +
-                             "et surtout… ne l'oublie pas.\n-# Raccourci : `/pl` marche partout à la place de `/plynling`.")
+                             "et surtout… ne l'oublie pas.\n-# Raccourcis : `/pl` au lieu de `/plynling` ; en texte, `;pl`, `;pl @…`, `;pl visit @…`, `;forage`, `;work`.")
             .WithColor(new Color(0xCE323A))
             .AddField("Adopter & regarder",
                 "**`/plynling adopt name:`** — Gratuit, un seul à la fois. L'espèce est tirée au sort : " +
@@ -805,3 +828,11 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
         return builder.Build();
     }
 }
+
+/// <summary>
+/// What <see cref="PlynlingModule.OpenVisitAsync"/> decided: a refusal; or a card to post — the knock,
+/// or at her home the closed knock with the visit's <see cref="Story"/> and the event stories it left
+/// <see cref="Untold"/>.
+/// </summary>
+public sealed record VisitOpening(string? Refusal, MessageComponent? Card = null, VisitStory? Story = null,
+    IReadOnlyList<int>? Untold = null);

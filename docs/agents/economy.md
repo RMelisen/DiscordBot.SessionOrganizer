@@ -2,7 +2,8 @@
 
 `/work`, `/balance` (`EconomyModule`), `/inventory` (`InventoryModule`, its own group — belongings
 outlive the creature). `/plynling forage` stays under `/plynling` (it's something the Plynling
-*does*); only its find lands in the inventory.
+*does*); only its find lands in the inventory. `;work` and `;forage` are typed shortcuts for the two
+(see `plynling.md`, *Typed shortcuts*).
 
 ## Cailloux (pebbles)
 
