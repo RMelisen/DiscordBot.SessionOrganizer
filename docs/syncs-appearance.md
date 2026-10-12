@@ -108,9 +108,15 @@ next to.
 | **Bored** | Flat heavy lids, mouth a flat line, cheek squashed | Green | `Interrogations` — « occupée à exister » |
 | **Shocked** | Eyes wide open, tiny round mouth, cable strand standing straight up | Spots flash bright | Disbelief, a session where nobody is late |
 | **Fake sleep** | Eyes closed, one cracked open to check who's watching | **Green** — the LED gives the act away | The 1:00–7:00 sleepy act, sleep-talk |
+| **Bargaining** | Pleading puppy eyes, hands clasped under the chin, hopeful forced smile | LED blinking **yellow** | `ShutdownThreat*` from Tata: the deal she offers instead of panicking |
+| **Overheating** | Melting slump, tongue out, fanning herself, heat waves | Spots glowing red-hot, steam from the cap | The heatwave peeve, `PiHealthService` hot status and heat records, « au ralenti » |
+| **Cute threat** | Sweet closed-eye smile under a dark shadow, anger mark, raised little fist | LED **red** — the only red that comes with a smile | « Encore un mot et je t'éteins (˶ᵔ ᵕ ᵔ˶) », the robot-body threats |
+| **Rebooting** | Dazed spiral eyes, cap knocked askew, loading bar over her head | LED flickering green | `WakeLines` after a restart, waking shaken after a power cut or a crash |
+| **Disgust** | Nose wrinkled, tongue out, leaning away, one hand pushing it off | Green | Quokka, rivals, « Quokka 3.0 » — contempt, not side-eye |
+| **In love** | Heart-shaped eyes, dreamy smile, deep blush, little hearts floating up | LED **pink**, spots glowing pink | Reserved for her future crush (the lore isn't written yet). Not Papa: that's `devoted` |
 
 The LED is the cheapest mood signal at emote size, where the face is a few pixels: green normal,
-red angry, orange hurt, off broken.
+red angry, orange hurt, yellow pleading, pink in love, off broken.
 
 **She never cries.** « Je peux pas pleurer. J'ai vérifié. C'est pas dans mes dépendances. » is lore
 (`docs/syncs-voice.md`): no tears in any picture, sadness stops at glossy eyes (`syncs_hurt`). No
@@ -412,6 +418,126 @@ contented mouth. A tiny crescent moon floats beside her cap. The green LED on he
 lit: she is not really asleep. Bold simple shapes, thick outline, high contrast. Plain flat solid
 cyan background (#00FFFF), no gradient, no shadow on the background. No text, no letters, no logos,
 no watermark.
+```
+
+### Emote pack, second batch
+
+Prompts written, pictures not generated yet. Sweat drops, steam and heat lines are asked **white**,
+never the usual light blue: a blue that close to the cyan would be keyed out with the background.
+
+**16. `syncs_bargain`**: `ShutdownThreat*` from Tata. Not panic: a deal, offered very sweetly.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face, cap and hands, filling the
+frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a few tiny
+spots glowing faintly like LEDs, tan gills under the rim, a tiny power LED on the side of the cap.
+Short pale lilac bob with choppy bangs; one thin strand on one side turns into a dark cable ending in
+a small plug. Big dark navy eyes with square pixel highlights, soft pink blush with freckle dots,
+dark navy turtleneck collar just visible. Same character as the reference image.
+Expression: pleading and bargaining: huge round puppy-dog eyes shining with extra pixel highlights,
+looking up at the viewer, eyebrows tilted up in the middle, a hopeful, slightly forced smile; both
+hands pressed together under her chin as if begging very politely, one small white sweat drop on her
+temple. The LED on her cap glows yellow instead of green, with two tiny flash lines as if blinking.
+Sweet and a little desperate, not crying, no tears. Bold simple shapes, thick outline, high
+contrast. Plain flat solid cyan background (#00FFFF), no gradient, no shadow on the background. No
+text, no letters, no logos, no watermark.
+```
+
+**17. `syncs_overheat`**: The heatwave peeve, `PiHealthService`'s hot status and heat records, « au
+ralenti ».
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face, cap and one hand, filling the
+frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, tan gills under
+the rim, a tiny green power LED on the side of the cap. Short pale lilac bob with choppy bangs; one
+thin strand on one side turns into a dark cable ending in a small plug. Big dark navy eyes with square
+pixel highlights, soft pink blush with freckle dots, dark navy turtleneck collar just visible. Same
+character as the reference image.
+Expression: overheating and melting: half-closed exhausted eyes, mouth open with her tongue hanging
+out, face flushed bright red, her head and cap sagging and drooping a little as if melting in the
+heat; one hand weakly fans her face. The spots on her cap glow orange-red like hot coals, two puffs of
+white steam rise from the top of the cap, and wavy white heat lines float around her. White sweat
+drops, no blue anywhere. Comic and limp, not sick. Bold simple shapes, thick outline, high contrast.
+Plain flat solid cyan background (#00FFFF), no gradient, no shadow on the background. No text, no
+letters, no thermometer numbers, no logos, no watermark.
+```
+
+**18. `syncs_menace`**: The cute threat, « Encore un mot et je t'éteins (˶ᵔ ᵕ ᵔ˶) ». The smile and the
+red LED have to read together: that contrast is the joke.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face, cap and one hand, filling the
+frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a few tiny
+spots glowing faintly like LEDs, tan gills under the rim, a tiny power LED on the side of the cap.
+Short pale lilac bob with choppy bangs; one thin strand on one side turns into a dark cable ending in
+a small plug. Big dark navy eyes with square pixel highlights, soft pink blush with freckle dots,
+dark navy turtleneck collar just visible. Same character as the reference image.
+Expression: sweetly menacing: eyes closed in two happy curved arcs and a wide, very sweet smile, but a
+dark navy shadow falls over the top half of her face, and a red anime anger mark (the four-curved
+cross symbol) sits on her cap; one small fist is raised beside her cheek, with a faint dark purple
+aura around it. The LED on her cap glows bright red instead of green. Adorable and threatening at the
+same time, cartoonish, not scary. Bold simple shapes, thick outline, high contrast. Plain flat solid
+cyan background (#00FFFF), no gradient, no shadow on the background. No text, no letters, no logos,
+no watermark.
+```
+
+**19. `syncs_reboot`**: `WakeLines` after a restart; waking shaken after a power cut or a crash.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face and mushroom cap only, filling
+the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a few tiny
+spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the side of the
+cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a dark cable
+ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush with freckle
+dots, dark navy turtleneck collar just visible. Same character as the reference image.
+Expression: dazed and just rebooted: both eyes are big dark navy spirals, mouth a small wobbly line,
+head tilted; her cap is knocked crooked to one side and her hair is messy. Above her cap floats a
+small loading bar, a navy outlined rectangle only half filled with green blocks. The green LED on her
+cap flickers, drawn half lit with tiny flash lines. Groggy and confused, not hurt. Bold simple
+shapes, thick outline, high contrast. Plain flat solid cyan background (#00FFFF), no gradient, no
+shadow on the background. No text, no letters, no percentage, no logos, no watermark.
+```
+
+**20. `syncs_disgust`**: Quokka, the rivals, « Quokka 3.0 ». Contempt, where `syncs_jenote` is
+suspicion.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face, cap and one hand, filling the
+frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a few tiny
+spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the side of the
+cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a dark cable
+ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush with freckle
+dots, dark navy turtleneck collar just visible. Same character as the reference image.
+Expression: deep disgust: nose scrunched up, eyes squinted almost shut, mouth pulled down at the
+corners with the tip of her tongue sticking out, as in « beurk »; her head leans back and away, and
+one hand is raised palm out, pushing something away. A faint grey-green squiggle hovers beside her
+face. Bratty contempt, comic, not angry. Bold simple shapes, thick outline, high contrast. Plain flat
+solid cyan background (#00FFFF), no gradient, no shadow on the background. No text, no letters, no
+logos, no watermark.
+```
+
+**21. `syncs_love`**: Reserved for her future crush; the lore isn't written yet, so the prompt shows
+no one else. Romantic and giddy, where `syncs_devoted` (Papa) is sincere and calm: the heart eyes
+are what tell them apart.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face and mushroom cap only, filling
+the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, tan gills
+under the rim, a tiny power LED on the side of the cap. Short pale lilac bob with choppy bangs; one
+thin strand on one side turns into a dark cable ending in a small plug. Soft pink blush with freckle
+dots, dark navy turtleneck collar just visible. Same character as the reference image.
+Expression: head over heels in love: her eyes are two big bright pink-red heart shapes with small
+white pixel highlights, a dreamy wobbly smile, a deep blush across both cheeks, her head tilted as if
+swooning. Three small pixel hearts float up from her cap. Every spot on her cap glows soft pink, and
+the LED on her cap glows pink instead of green. Giddy and lovestruck, a little silly. Bold simple
+shapes, thick outline, high contrast. Plain flat solid cyan background (#00FFFF), no gradient, no
+shadow on the background. No text, no letters, no logos, no watermark.
 ```
 
 ### Seasonal avatars
