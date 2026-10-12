@@ -148,7 +148,8 @@ to its pixel grid, keys the cyan out to full transparency, crops and scales it t
 emote on Discord's dark and light themes. `--head` makes a head-only version instead, in
 `docs/assets/emotes/head/`: the body is removed piece by piece (turtleneck, neck, whatever only held
 on through them) and the edge re-outlined, so the head keeps its own silhouette rather than a flat
-cut. The emotes are uploaded to the server by hand, and their ids go into `Helpers/Core/Emotes`
+cut. `--sticker` makes a 320 px server sticker instead (Discord's size, 512 KB max), in
+`docs/assets/stickers/`; the art is scaled up by whole pixels first, so it stays crisp. The emotes are uploaded to the server by hand, and their ids go into `Helpers/Core/Emotes`
 (`Emotes.SyncsSmug`…) like any other emote.
 
 Avatars keep v1's plain dusty pink background (`#dba8ad`): Discord crops them round, and every
