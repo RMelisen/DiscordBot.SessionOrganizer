@@ -53,4 +53,10 @@ public static class InputCaps
     /// story lines, so it stays short enough to read as a phrase, not a paragraph.
     /// </summary>
     public const int Passion = 40;
+
+    /// <summary>
+    /// A <c>/admin mute|unmute</c> reason. Goes to the audit log, which holds 512, behind
+    /// "Par {username} : ".
+    /// </summary>
+    public const int MuteReason = 400;
 }

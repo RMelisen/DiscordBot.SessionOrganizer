@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.10.0 — 2026-10-12
+
+- `/admin mute` and `/admin unmute` (staff): a Discord timeout of up to 28 days, with an optional
+  reason for the audit log. When the bot can't do it, the reply says which permission or role is
+  missing.
+
 ## 6.9.0 — 2026-10-12
 
 - Typed shortcuts for the Plynling routine, sent as a plain message: `;pl` shows your card

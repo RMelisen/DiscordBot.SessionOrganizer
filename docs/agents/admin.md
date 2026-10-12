@@ -4,8 +4,8 @@ The three authorization models are summarised in the root `CLAUDE.md`. Don't con
 
 ## `/admin`
 
-Holds `xp`, `plynling` (`rename`, `resurrect`, `passion-reset`, `cure`), `pebble`, `stats` and
-`dashboard`. **Guarded once per handler by `SessionPermissions.IsStaff`, in code only — no
+Holds `xp`, `plynling` (`rename`, `resurrect`, `passion-reset`, `cure`), `pebble`, `stats`,
+`dashboard`, `mute` and `unmute`. **Guarded once per handler by `SessionPermissions.IsStaff`, in code only — no
 `[DefaultMemberPermissions]`**: a permission bit can't express "ManageGuild, plus the owner", and on a
 server where the owner lacks ManageGuild Discord would hide *and refuse* the command for him. So the
 commands are visible to everyone; `IsStaff` is the only gate. `/plynling freeze|thaw user:` uses the
@@ -21,6 +21,13 @@ same check.
   settled in memory, so an unnoticed death counts as a grave without the stats ever writing it.
   Rendered by the static `AdminCards.BuildStats`.
 - **`/admin dashboard`** — see `economy.md`.
+- **`/admin mute|unmute`** are a Discord timeout, ephemeral. `AdminModule.MuteRefusal` checks, in
+  order, what Discord would otherwise answer with a bare 403 — bot lacks `ModerateMembers`, target
+  is the guild owner, bot's top role not above the target's — and names it, so a failed mute says
+  what to fix (an Administrator target is refused by `mute` only). **The invoker's rank is checked
+  too**: the bot acts with its own role, so without it a ManageGuild holder could silence someone
+  ranked above them. `AvailabilityService.OwnerId` and the guild owner are exempt from that check.
+  **`OwnerId` can't be muted by anyone else**, whatever their rank; `unmute` has no such guard.
 
 ## `/config`
 
