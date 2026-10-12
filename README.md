@@ -36,6 +36,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/admin pebble add · remove` | Manual cailloux adjustment | staff |
 | `/admin stats` | The server's economy at a glance | staff |
 | `/admin dashboard` | The economy day by day: flows, activity, finds | staff |
+| `/admin mute · unmute` | Discord timeout, saying what's missing when it can't | staff |
 | `/admin plynling rename · resurrect · passion-reset · cure`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
 | `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
 | `/debug quiz` | Post or close a pop quiz now (tests) | owner |
@@ -396,6 +397,11 @@ looks after her.
 - **`/admin xp add <member> <amount>` · `/admin xp remove <member> <amount>`** — manual XP
   adjustment. Ephemeral, clamped at zero, and deliberately silent: crossing a level this
   way fires no level-up card, since that card celebrates something earned.
+- **`/admin mute <member> [minutes] [reason]` · `/admin unmute <member> [reason]`** — a Discord
+  timeout (5 minutes by default, 28 days at most), private; the reason goes to the audit log.
+  Needs the bot's *Timeout Members* permission and its top role above the member's. When either
+  is missing, or the member is an administrator, the server owner, or ranked at or above whoever
+  asked, the reply names what's wrong instead of failing silently.
 - **Owner-only** — the configured owner can speak through the bot: **`/debug tell`** into a
   channel (usable from a DM with the bot too, picking the destination from an
   autocompleted list of channels it can post in) and **`/debug dm`** to a person. **`/debug absent`**

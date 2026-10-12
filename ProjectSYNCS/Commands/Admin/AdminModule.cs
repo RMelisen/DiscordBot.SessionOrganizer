@@ -1,5 +1,7 @@
 using Discord;
 using Discord.Interactions;
+using Discord.Net;
+using Discord.WebSocket;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Services;
 
@@ -61,6 +63,136 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
         var (embed, components) = AdminCards.BuildDashboard(data);
         await FollowupAsync(embed: embed, components: components, ephemeral: true, allowedMentions: AllowedMentions.None);
     }
+
+    // Discord's own ceiling for a timeout.
+    private const int MaxMuteMinutes = 28 * 24 * 60;
+
+    // A Discord timeout ("Exclure temporairement"). Every refusal Discord would answer with a bare
+    // 403 is checked first and named, so a failed mute says which permission or role is missing.
+    [SlashCommand("mute", "Faire taire quelqu'un pour un moment (exclusion temporaire)")]
+    public async Task MuteAsync(
+        [Summary("member", "Qui faire taire")] IUser user,
+        [Summary("minutes", "Pour combien de minutes (28 jours max)")]
+        [MinValue(1)] [MaxValue(MaxMuteMinutes)] int minutes = 5,
+        [Summary("reason", "Pourquoi (visible dans le journal d'audit)")] [MaxLength(InputCaps.MuteReason)] string? reason = null)
+    {
+        if (!SessionPermissions.IsStaff(Context.User))
+        {
+            await RespondAsync("Cette commande est réservée aux administrateurs et aux modérateurs. Bien tenté (˶ᵔ ᵕ ᵔ˶)", ephemeral: true);
+            return;
+        }
+        // The bot's owner can't be muted through her by anyone but himself, whatever his roles.
+        if (user.Id == AvailabilityService.OwnerId && Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Faire taire mon créateur ? Même pas en rêve.", ephemeral: true);
+            return;
+        }
+        var target = Context.Guild.GetUser(user.Id);
+        if (MuteRefusal(target, user) is { } refusal)
+        {
+            await RespondAsync(refusal, ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+        if (target!.GuildPermissions.Administrator)
+        {
+            await RespondAsync($"J'ai pas les droits pour ça...",
+                ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+
+        await DeferAsync(ephemeral: true);
+        try
+        {
+            await target.SetTimeOutAsync(TimeSpan.FromMinutes(minutes), AuditReason(reason));
+        }
+        catch (HttpException ex)
+        {
+            await FollowupAsync(DiscordRefused(ex), ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+
+        var until = DateTimeOffset.UtcNow.AddMinutes(minutes).ToUnixTimeSeconds();
+        await FollowupAsync($"Silence pour {target.Mention} jusqu'à <t:{until}:f> (<t:{until}:R>). Enfin (¬‿¬)",
+            ephemeral: true, allowedMentions: AllowedMentions.None);
+    }
+
+    [SlashCommand("unmute", "Lever l'exclusion temporaire de quelqu'un")]
+    public async Task UnmuteAsync(
+        [Summary("member", "Qui libérer")] IUser user,
+        [Summary("reason", "Pourquoi (visible dans le journal d'audit)")] [MaxLength(InputCaps.MuteReason)] string? reason = null)
+    {
+        if (!SessionPermissions.IsStaff(Context.User))
+        {
+            await RespondAsync("Cette commande est réservée aux administrateurs et aux modérateurs. Bien tenté (˶ᵔ ᵕ ᵔ˶)", ephemeral: true);
+            return;
+        }
+        var target = Context.Guild.GetUser(user.Id);
+        if (MuteRefusal(target, user) is { } refusal)
+        {
+            await RespondAsync(refusal, ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+        if (target!.TimedOutUntil is not { } until || until <= DateTimeOffset.UtcNow)
+        {
+            await RespondAsync($"{target.Mention} n'est pas exclu temporairement.", ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+
+        await DeferAsync(ephemeral: true);
+        try
+        {
+            await target.RemoveTimeOutAsync(AuditReason(reason));
+        }
+        catch (HttpException ex)
+        {
+            await FollowupAsync(DiscordRefused(ex), ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+
+        await FollowupAsync($"{target.Mention} peut de nouveau parler.", ephemeral: true, allowedMentions: AllowedMentions.None);
+    }
+
+    // What mute and unmute both need, in the order Discord would refuse it. Null means go ahead.
+    // The invoker's rank is checked too: the bot acts with its own role, so without this a
+    // moderator could silence someone ranked above them. The bot's owner is exempt, as IsStaff
+    // makes him staff regardless of his roles.
+    private string? MuteRefusal(SocketGuildUser? target, IUser user)
+    {
+        var me = Context.Guild.CurrentUser;
+        if (target is null)
+            return $"{user.Mention} n'est pas sur le serveur.";
+        if (target.Id == me.Id)
+            return "Me faire taire moi-même ? Non merci.";
+        if (!me.GuildPermissions.ModerateMembers)
+            return "Il me manque la permission **Exclure temporairement des membres** (Paramètres du serveur → Rôles → mon rôle).";
+        if (target.Id == Context.Guild.OwnerId)
+            return $"{target.Mention} est propriétaire du serveur : personne ne peut l'exclure temporairement.";
+        if (me.Hierarchy <= target.Hierarchy)
+            return $"Mon rôle le plus haut ({RoleName(me)}) doit être placé **au-dessus** de celui de {target.Mention} ({RoleName(target)}) dans la liste des rôles.";
+        if (Context.User.Id != AvailabilityService.OwnerId
+            && Context.User is SocketGuildUser invoker
+            && invoker.Id != Context.Guild.OwnerId
+            && invoker.Hierarchy <= target.Hierarchy)
+            return $"{target.Mention} a un rôle aussi haut que le tien ou plus haut : je ne le fais pas à ta place.";
+        return null;
+    }
+
+    private static string RoleName(SocketGuildUser member) =>
+        member.Roles.MaxBy(r => r.Position) is { IsEveryone: false } top ? $"**{Format.Sanitize(top.Name)}**" : "aucun rôle";
+
+    private RequestOptions AuditReason(string? reason) => new()
+    {
+        AuditLogReason = string.IsNullOrWhiteSpace(reason)
+            ? $"Par {Context.User.Username}"
+            : $"Par {Context.User.Username} : {reason.Trim()}",
+    };
+
+    // The checks above should leave nothing for Discord to refuse; if it still does (a role moved
+    // between the check and the call), say what it said.
+    private static string DiscordRefused(HttpException ex) =>
+        ex.HttpCode == System.Net.HttpStatusCode.Forbidden
+            ? $"Discord a refusé : permissions insuffisantes ({ex.DiscordCode?.ToString() ?? "403"})."
+            : $"Discord a refusé : {ex.Reason ?? ex.Message}";
 
     // Manual XP adjustment. Kept apart from LevelModule, which owns the player-facing surfaces
     // (/level, /leaderboard) and is entirely Components V2 — these are two plain ephemeral
