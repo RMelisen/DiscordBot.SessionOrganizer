@@ -31,7 +31,7 @@ var host = Host.CreateDefaultBuilder(args)
             //
             // Load-bearing for the avatars on /level, /leaderboard and /shame.
             // Guild.GetUser reads this cache and returns null for anyone not in it, and
-            // Helpers/AvatarUi then falls back to Discord's generic blue logo — so every
+            // Helpers/Core/AvatarUi then falls back to Discord's generic blue logo — so every
             // ranking of *historic* totals was showing that placeholder for exactly the
             // people who had not spoken since the last restart, which on an all-time
             // board is most of them. Cheap here (one small private guild); it would be a

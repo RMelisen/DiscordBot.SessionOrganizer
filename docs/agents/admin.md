@@ -49,7 +49,7 @@ defer); no `[DefaultMemberPermissions]`, same reason as `/admin`.
   off, and it is per guild (see `quiz.md`).
 
 **Main and idle channels are home-guild only.** `MorningGreetingService` and `AmbientService` keep
-one state each, so they live in `Helpers/HomeGuild.Id` and read that guild's config
+one state each, so they live in `Helpers/Core/HomeGuild.Id` and read that guild's config
 (`MorningGreetingService.MainChannelIdAsync` / `MainChannelOf`, shared by both). Elsewhere those
 subcommands refuse rather than store a row nothing reads. The main channel always counts as an idle
 channel wherever it is set. The game channel is per guild (`PlynlingAnnouncer.ResolveGameChannelAsync`),

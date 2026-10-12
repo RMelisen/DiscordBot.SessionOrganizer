@@ -5,14 +5,14 @@ wins cailloux and a point on `/quiz leaderboard`.
 
 | Piece | Role |
 |---|---|
-| `Services/QuizMasterService` | Singleton + hosted loop: when to post, typed answers, button picks, closing |
-| `Services/QuizService` | Transient EF access: rounds, the win transaction, the board |
-| `Helpers/QuizBank` | The questions (pure) |
-| `Helpers/QuizAnswer` | Judges a typed answer (pure) |
-| `Helpers/QuizSchedule` | Slots, gaps, daily cap, quiet clock rules (pure) |
-| `Commands/QuizCards` | The round card and the board card (static, measurable) |
+| `Services/Quiz/QuizMasterService` | Singleton + hosted loop: when to post, typed answers, button picks, closing |
+| `Services/Quiz/QuizService` | Transient EF access: rounds, the win transaction, the board |
+| `Helpers/Quiz/QuizBank` | The questions (pure) |
+| `Helpers/Quiz/QuizAnswer` | Judges a typed answer (pure) |
+| `Helpers/Quiz/QuizSchedule` | Slots, gaps, daily cap, quiet clock rules (pure) |
+| `Commands/Quiz/QuizCards` | The round card and the board card (static, measurable) |
 | `Interactions/Components/QuizComponentHandler` | The A/B/C/D buttons, `quiz:pick:{round}:{position}` |
-| `Commands/QuizModule` | `/quiz leaderboard`, its window buttons `quiz:win:{period}:0` |
+| `Commands/Quiz/QuizModule` | `/quiz leaderboard`, its window buttons `quiz:win:{period}:0` |
 
 ## Channel and schedule
 

@@ -122,7 +122,7 @@ laughter tears either.
   crops it round).
 - **Custom emotes** — square, transparent background, **face and cap only**, exaggerated
   expression; they render around 22–48 px, so the silhouette and the LED carry the mood. Once
-  uploaded, an emote goes through `Helpers/Emotes` like any other (`CLAUDE.md`).
+  uploaded, an emote goes through `Helpers/Core/Emotes` like any other (`CLAUDE.md`).
 - **Stickers** — square, transparent, half or full body is fine.
 - **Banner / scenes** — her attic at night (see *The banner* below for the canon scene).
 
@@ -142,7 +142,7 @@ to its pixel grid, keys the cyan out to full transparency, crops and scales it t
 emote on Discord's dark and light themes. `--head` makes a head-only version instead, in
 `docs/assets/emotes/head/`: the body is removed piece by piece (turtleneck, neck, whatever only held
 on through them) and the edge re-outlined, so the head keeps its own silhouette rather than a flat
-cut. The emotes are uploaded to the server by hand, and their ids go into `Helpers/Emotes`
+cut. The emotes are uploaded to the server by hand, and their ids go into `Helpers/Core/Emotes`
 (`Emotes.SyncsSmug`…) like any other emote.
 
 Avatars keep v1's plain dusty pink background (`#dba8ad`): Discord crops them round, and every

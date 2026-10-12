@@ -23,7 +23,7 @@ table: nothing ranks cailloux by date, so a buckets table would have no reader.
 ## `/admin dashboard` — `EconomyDailyStat`
 
 One row per (guild, Paris day, metric), `Day` an int `yyyymmdd` so windows filter in SQL.
-**`Helpers/EconomyLog.AddAsync` finds or creates the row (`Local` first) and never saves** — the
+**`Helpers/Economy/EconomyLog.AddAsync` finds or creates the row (`Local` first) and never saves** — the
 action's own `SaveChanges` carries it, so a refused action records nothing and a recorded one can't
 be lost.
 

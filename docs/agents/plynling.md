@@ -1,7 +1,7 @@
 # Plynlings
 
 The virtual pet. `/plynling` (`PlynlingModule`), card buttons in `PlynlingComponentHandler`, state
-rules in `Helpers/PlynlingLife`. Money, items and cosmetics are in `economy.md`. **Before writing any
+rules in `Helpers/Plynling/PlynlingLife`. Money, items and cosmetics are in `economy.md`. **Before writing any
 Plynling line, read `docs/plynling-writing-style.md`.**
 
 Traits, stats, the personality title, events, stress and modifiers are in
@@ -9,7 +9,7 @@ Traits, stats, the personality title, events, stress and modifiers are in
 
 **`/pl` is a shortcut for `/plynling`**, asked for by people on phones ("/pl v" finds "pl view",
 never "plynling view"). Discord has no aliases, so `PlynlingModule` is **abstract and group-less**
-and `Commands/PlynlingGroups.cs` registers it twice: `PlynlingLongModule` (`/plynling`) and
+and `Commands/Plynling/PlynlingGroups.cs` registers it twice: `PlynlingLongModule` (`/plynling`) and
 `PlynlingShortModule` (`/pl`). Discord.Net picks up inherited `[SlashCommand]`s and
 `[CommandContextType]`, and skips abstract modules, so **a command added to `PlynlingModule` lands in
 both** — and counts toward each one's 25-subcommand cap. **Never put a `[ModalInteraction]` or
@@ -139,8 +139,8 @@ not undo the abandonment.
 
 **Secrets never leave the process.** The hidden rock, the throw and the number live in
 `PlynlingPlayService` (singleton, sessions by short id, 10-minute expiry), never in a custom-id
-(readable from the client). Rules are pure in `Helpers/PlynlingGames` with the `Random` passed in;
-text in `Helpers/PlynlingGameUi`; card `PlynlingPlayCards.BuildGame`. Each move runs under the
+(readable from the client). Rules are pure in `Helpers/Plynling/PlynlingGames` with the `Random` passed in;
+text in `Helpers/Plynling/PlynlingGameUi`; card `PlynlingPlayCards.BuildGame`. Each move runs under the
 session's `Gate`, so exactly one move finishes the game, ends the session and pays through
 `PlynlingService.FinishPlayAsync` (happiness, counts, cailloux in one save). The hourly limit is
 claimed at **start**, so abandoning never rerolls. A restart ends games in progress.
@@ -159,7 +159,7 @@ closed. Its refusals are therefore ephemeral follow-ups, and the knock closes th
 cailloux** (two accounts could farm it). `Plays`, `PlaysWon` and `Visits` are recorded for badges.
 
 **Decided before it starts, told as a story.** `VisitAsync` saves everything first; then
-`Helpers/PlynlingVisitStory.Build` (pure) picks a place open at that Paris hour and tells it in
+`Helpers/Plynling/PlynlingVisitStory.Build` (pure) picks a place open at that Paris hour and tells it in
 **five to eight steps** (four plus half the script's lines): arrival; the script's opener; the rest
 of the script two lines to a step, the last pair finished by a closer that turns talk into doing;
 the activity with a two-line exchange; parting plus `PlynlingPlayCards.VisitOutcomeLines`. Pools are
@@ -172,7 +172,7 @@ confession `RefusedDepartures` (the visitor always confesses, the host said no) 
 `BreakUpDepartures` — exactly the outcomes `OutcomeFace` turns sad. Other partings stay mood-keyed,
 so they must read right just before any outcome line.
 
-### Conversations — `Helpers/PlynlingScripts`
+### Conversations — `Helpers/Plynling/PlynlingScripts`
 
 **One script, never lines drawn separately** (separately drawn lines never answered each other).
 Whole conversations of **2, 4, 6 or 8** `ConvoLine`s: A's opener (narration `\n` words), then
@@ -214,7 +214,7 @@ database; the picture URL is rebuilt per step.
 
 ### Passions
 
-`Plynling.Passion` is one of 12 in `Helpers/PlynlingPassions`, stored as an int (**append-only**),
+`Plynling.Passion` is one of 12 in `Helpers/Plynling/PlynlingPassions`, stored as an int (**append-only**),
 rolled at adoption. **`TaughtPassion` is hostile free text** from `/plynling passion` (2–40 chars, no
 links, 24 h cooldown; staff clear it with `/admin plynling passion-reset`), sanitised and sent with
 pings off. `PlynlingPassions.Resolve` upgrades a typed text naming a catalog passion.
@@ -243,7 +243,7 @@ swaps in `PlynlingPetTypedLines` / `PlynlingFeedTypedLines` / `PlynlingVisitKnoc
 (or `PlynlingDreamTypedLines` asleep) 25% (`ThoughtChance`) of the time, never dead or frozen, and
 only when no gift line fills the card.
 
-## Relationships — `Helpers/PlynlingBonds`
+## Relationships — `Helpers/Plynling/PlynlingBonds`
 
 One `PlynlingRelation` per pair, **lower id first** (unique index); cascades with either Plynling,
 survives a death. Hidden compatibility is **derived from the two ids**, never stored. `PlynlingBond`
@@ -266,7 +266,7 @@ is deleted.
 
 ## Badges and journal
 
-`Helpers/PlynlingBadges` is the catalog (16, each with a **stable key** — a rename orphans every
+`Helpers/Plynling/PlynlingBadges` is the catalog (16, each with a **stable key** — a rename orphans every
 earned copy). `PlynlingBadge` rows have a unique index on (Plynling, key), which is what really makes
 each reward paid once. **`AwardAsync` and `AddMomentAsync` never save**: an action, its moments, its
 badges and their cailloux land in the caller's one `SaveChanges`. Time-earned badges, the « est
@@ -292,7 +292,7 @@ words, allow-list for *la mort*). `PetCooldown` has no gender (refused before th
 ## The mascot — Ping-Qilin
 
 A girl Amanite whose passion is naps, **one per guild**, an ordinary row owned by the bot's user id —
-so view, pet, feed, list and journal need no special case. `Helpers/PlynlingMascot` holds her data
+so view, pet, feed, list and journal need no special case. `Helpers/Plynling/PlynlingMascot` holds her data
 and the owner id, **bound on Ready by `PlynlingMascotService`, never hardcoded** (dev and prod are
 different applications). It creates her row in any guild lacking one (any bot-owned row counts) on
 every Ready and on `JoinedGuild`.

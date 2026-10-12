@@ -9,7 +9,7 @@ pending, expired (the next sweep decides it alone) or decided now; `/debug stres
 `/debug modifier key: [remove:]`; `/debug sweep` runs the hourly pass now, every guild. The scratch harness drives `PlynlingService` against in-memory
 SQLite with the real migrations.
 
-## Traits — `Helpers/PlynlingTraits`
+## Traits — `Helpers/Plynling/PlynlingTraits`
 
 - The catalog is CK3's (values from the CK3 wiki): 5 childhood, 36 personality in 18 exclusion
   groups, 10 coping (mental breaks only — never drawn). **Keys are stored and never renamed**; append
@@ -52,7 +52,7 @@ SQLite with the real migrations.
   on dev. `EnsureMascotAsync` (every Ready) gives a living one any she lacks, at once — not only at
   her creation, or a mascot older than traits waited for the first hourly sweep.
 
-## Stats — `Helpers/PlynlingStats`
+## Stats — `Helpers/Plynling/PlynlingStats`
 
 Computed, never stored: a hashed 1d6 per stat, +2 on its passion's stat (a taught passion the
 catalog recognises takes the bonus; free text leaves it on the innate one), every trait's
@@ -69,7 +69,7 @@ counts every `GrowStat` as what the choice leaned toward, whether it stuck or no
 append-only — the RPG appends Force, Agilité, Endurance. `PassionStat` is exhaustive and throws on a
 passion it does not map.
 
-## Personality title — `Helpers/PlynlingPersonality`
+## Personality title — `Helpers/Plynling/PlynlingPersonality`
 
 The traits' AI axes are summed; the two largest by size (ties: axis order) pick adjectives from an
 18-entry table, « {Adj1} et {adj2} ». The card shows it with the trait emojis under the status;
@@ -82,7 +82,7 @@ The one SplitMix64 for every roll that must come out the same whoever computes i
 `PlynlingSickness.Roll` delegates with `purpose + 1` as the third input, bit-identical to before —
 never change that mapping, every stored morning depends on it.
 
-## Events — `Helpers/PlynlingEvents`, `PlynlingEventEngine`, `PlynlingService.Events.cs`
+## Events — `Helpers/Plynling/PlynlingEvents`, `PlynlingEventEngine`, `PlynlingService.Events.cs`
 
 - **Catalog:** C# data. Event and option keys are stored — **never renamed**, append only. Every event
   needs an **ungated option with no stress cost** (deciding alone); no « il »/« elle » in event text
@@ -131,7 +131,7 @@ never change that mapping, every stored morning depends on it.
   opened before; card id 0 means no refresh. A sweep's decision refreshes nothing.
 - `/plynling help` is two pages (`plyn:help:0|1`); measure each after editing.
 
-## Stress and modifiers — `Helpers/PlynlingStress`, `Helpers/PlynlingModifiers`
+## Stress and modifiers — `Helpers/Plynling/PlynlingStress`, `Helpers/Plynling/PlynlingModifiers`
 
 - **On the row** (`Stress`, `Modifiers` as `key:unix;…`, `StressLossBonusPercent`): `PlynlingLife` is
   pure, and its drain helpers read the current segment's rates from the row. **Every change of stress

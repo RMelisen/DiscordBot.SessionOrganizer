@@ -6,7 +6,7 @@ Plynling Ping-Qilin. Plynling *narration* (cards, visit stories) has its own gui
 `docs/plynling-writing-style.md`. Which pool goes to whom (owner, Tata, everyone else) is in
 `docs/agents/personality.md`. This file is about how she *sounds*.
 
-Taken from the pools in `Services/BotResponses.cs`. When in doubt, read the pool you're adding to
+Taken from the pools in `Services/Personality/BotResponses.cs`. When in doubt, read the pool you're adding to
 first and match it.
 
 ## Who she is
@@ -95,7 +95,7 @@ roast into an owner pool. A pool's comment says what it's for; read it.
   short and rare ("Inabot ?! INABOT ?!").
 - **Length**: most chatter is one or two short sentences. Status lines (`PresenceFillers`) are a
   few words: the member list truncates hard.
-- **Custom emotes** only through `Helpers/Emotes` (`$"… {Emotes.Staring}"`). In an interpolated
+- **Custom emotes** only through `Helpers/Core/Emotes` (`$"… {Emotes.Staring}"`). In an interpolated
   line, the format placeholder becomes `{{0}}`.
 
 ## Hard rules

@@ -42,7 +42,7 @@ inside the `try` with the owner/self checks.
   so id-less markup yields a non-null "emoji", Discord rejects it with a 400, the exception is
   swallowed — and the channel's 10-minute `Cooldown` is already burned, since `TryClaimChannel`
   runs before the parse. No compile-time check; the only symptom is a log warning. Using the
-  `Helpers/Emotes` constants avoids this.
+  `Helpers/Core/Emotes` constants avoids this.
 - **`BotResponses.MeanReactions` does double duty**: the pool she reacts *with* when a message
   reads hostile, and the definition of "hostile" used to decide what she refuses to pile onto on
   the owner's messages. Membership is tested on the parsed `IEmote`, so a renamed emote still
@@ -183,7 +183,7 @@ bait on the last word, so at most one fires.
 
 ## Glitch easter egg
 
-`GlitchService`: about one conversational line in 200 (`Helpers/Glitch.Chance`), at most once a
+`GlitchService`: about one conversational line in 200 (`Helpers/Personality/Glitch.Chance`), at most once a
 day, comes out corrupted (`Glitch.Corrupt`: look-alike or broken-byte letters, a stuttered word, a
 word smeared with combining strokes, sometimes the end cut off) and is edited back to the real line
 10–15 s later, **silently** — no comment, no cover-up: the denial is the joke.
@@ -210,9 +210,9 @@ keeps its own much slower pacing, knowingly exceeding the timeout for ~a minute 
 ## Morning hello
 
 `MorningGreetingService` posts one `MorningGreetings` line a day in her main channel
-(`/config main-channel` in the home guild, else `MorningGreetingService.DefaultChannelId`), at a random slot from `Helpers/MorningGreeting` (8:00–10:00 in
+(`/config main-channel` in the home guild, else `MorningGreetingService.DefaultChannelId`), at a random slot from `Helpers/Personality/MorningGreeting` (8:00–10:00 in
 `AppTime.Zone`). It sleeps until the slot rather than ticking. A `MorningFunFacts` line
-always goes underneath. **Both lines come from `Helpers/DailyRotation`, not `ResponsePicker`**: a
+always goes underneath. **Both lines come from `Helpers/Core/DailyRotation`, not `ResponsePicker`**: a
 shuffled walk through the pool, one step per calendar day, computed from the date, so restarts
 don't reset it and an early hello says what the slot would have. No line repeats until the whole
 pool is used, and the join between two passes keeps any line at least `pool / 4` days from its
@@ -256,7 +256,7 @@ doesn't make it certain. Messages aimed at her are skipped: `ChatterService` alr
 Her life in the main channel (`MorningGreetingService.MainChannelIdAsync`, the same one as the
 morning hello) when nobody is talking to her.
 Rare on purpose: the point is that she seems to be there, not that she talks. Odds, windows and
-thresholds live in `Helpers/Ambient` (pure, Paris wall-clock hours, so DST never moves a rule).
+thresholds live in `Helpers/Personality/Ambient` (pure, Paris wall-clock hours, so DST never moves a rule).
 
 | What | Who | When |
 |---|---|---|
@@ -270,7 +270,7 @@ thresholds live in `Helpers/Ambient` (pure, Paris wall-clock hours, so DST never
 | Abrupt wake | `AmbientService`, first `Ready` only | after a power cut or a crash (`PiHealthService.LastStop`): **always**, any hour, no daily cap, in place of the line above: `PowerCutWakeLines` / `CrashWakeLines`, or 35% of the time a corrupted `GlitchWakeLines` pair (posted glitched, edited clean 2 min later, or 2 s after someone speaks in the main channel) |
 | Hot status | `PresenceService` | awake, Pi ≥ 70 °C: half the rotations `HotPresenceFillers` |
 | Heat record | `PiHealthService` tick | today's max beats every other day by ≥ 1 °C, ≥ 30 days of history, 10:00–23:00, max 1/day: `HeatRecordLines` |
-| Voice spectator | `VoiceSpectatorService`, fed by `VoiceXpService`'s sweep | a home-guild voice channel where ≥ 2 active people spent ≥ 1 h together empties (or has < 2 active for 15 min): in that voice channel's chat, from the pool of its room (`Helpers/VoiceRoom`: `VoiceSpectatorGamingLines` for both Gaming channels, `…CinemaLines`, `…StudyLines`, `…GeneralLines` for Général and any unlisted channel), max 1/day across all rooms, any hour |
+| Voice spectator | `VoiceSpectatorService`, fed by `VoiceXpService`'s sweep | a home-guild voice channel where ≥ 2 active people spent ≥ 1 h together empties (or has < 2 active for 15 min): in that voice channel's chat, from the pool of its room (`Helpers/Voice/VoiceRoom`: `VoiceSpectatorGamingLines` for both Gaming channels, `…CinemaLines`, `…StudyLines`, `…GeneralLines` for Général and any unlisted channel), max 1/day across all rooms, any hour |
 | Synthia flinch | `SynthiaService`, before `ChatterService` | « Synthia » in any guild message, max 1/day: 40% a reaction taken back (`SynthiaReactions`), 35% a reply deleted 4–6 s later (`SynthiaVanishLines`), 25% a slip edited into a denial (`SynthiaEditLines`); returns true so no comeback lands on top |
 | Voice seat | `VoiceSeatService`, fed by `VoiceXpService`'s sweep | a home-guild voice channel with ≥ 3 active people for ~10 min rolls 66% **once per gathering** (Tata 80%; Papa or a live session: ≥ 2 for ~5 min, 90%; a better tier arriving late rolls once more); a win seats her there (muted, deafened) until it has had fewer than that for ~5 min; not at night without Papa; see *Her seat in voice* |
 | Router return | `PiHealthService`, `Connected` | gateway back after ≥ 10 min, any hour, max 1/day: `RouterReturnLines` (what she missed in the main channel) or `RouterReturnQuietLines` |
@@ -304,7 +304,7 @@ thresholds live in `Helpers/Ambient` (pure, Paris wall-clock hours, so DST never
 
 She joins with `ConnectAsync(selfDeaf: true, selfMute: true, external: true)`: `external` sends the
 voice-state update only, with no audio client, so no libsodium/opus and no voice encryption. Rules
-are pure, in `Helpers/VoiceSeat`.
+are pure, in `Helpers/Voice/VoiceSeat`.
 
 - **Three tiers**, the best present wins (`VoiceSeat.TierFor`), each person counted only when
   active (not muted, not deafened):
@@ -384,12 +384,12 @@ line. Departures are deliberately silent: without the audit log she can't tell a
 
 ### Her body — `PiHealthService`
 
-Reads the real Pi (`Helpers/PiHardware`: `/sys/class/thermal/thermal_zone0/temp`, `/proc/uptime`),
+Reads the real Pi (`Helpers/Pi/PiHardware`: `/sys/class/thermal/thermal_zone0/temp`, `/proc/uptime`),
 null everywhere else, so dev on Windows simply has no temperature. `/debug health` shows what it
 reads — the first thing to run after a deploy if the status never mentions the heat.
 
 - **Temperature** is sampled every tick into `PiThermalDay` (one row per Paris day: min, max and
-  when, sum and count for the average, minutes ≥ 80 °C). Thresholds live in `Helpers/PiHealth`
+  when, sum and count for the average, minutes ≥ 80 °C). Thresholds live in `Helpers/Pi/PiHealth`
   and are first guesses: tune them against real rows.
 - **How the last run ended** comes from `health-state.json` next to the database: `CleanExit` is
   written false on start and true **on `ApplicationStopping`** — the moment Home Assistant's
@@ -434,7 +434,7 @@ the member cache, not through webhooks).
 
 **Two exclusions are load-bearing**: real webhooks are not rivals; a rival's **level-up
 announcement** is skipped by the private `IsRival(SocketUserMessage)` because `ChatterService`
-already answers it. The bot id, phrase and regex live in `Helpers/LevelUpAnnouncement` so the two
+already answers it. The bot id, phrase and regex live in `Helpers/Xp/LevelUpAnnouncement` so the two
 services agree on what an announcement is.
 
 **A rival's level-up gets a grudging congratulation**: `BotResponses.RivalLevelUpLines` mixes warm
