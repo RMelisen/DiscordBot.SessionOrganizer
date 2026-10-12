@@ -27,7 +27,7 @@ Reminder DMs, session lifecycle re-renders, poll auto-close. Each item is guarde
 ## Roll call — `SessionAttendanceService`
 
 She calls the roll for **Game and Movie** sessions only (an Activity or Other can happen offline).
-Timing rules are pure, in `Helpers/SessionAttendance`.
+Timing rules are pure, in `Helpers/Scheduling/SessionAttendance`.
 
 - **Fed by `VoiceXpService`'s sweep**, once per guild per minute, with every human connected to a
   voice channel (AFK aside, muted included). A session has no voice channel of its own (the native
@@ -56,7 +56,7 @@ Timing rules are pure, in `Helpers/SessionAttendance`.
 
 ## Weekend poll — `WeekendPollService`
 
-Every Wednesday at a minute drawn from the week between 18:00 and 20:00 (`Helpers/WeekendPoll`),
+Every Wednesday at a minute drawn from the week between 18:00 and 20:00 (`Helpers/Scheduling/WeekendPoll`),
 an ordinary date poll in her main channel (home guild): Friday, Saturday and Sunday at 21:00,
 organizer = her id. Posted Wednesday so `PollLifetime` closes it Friday evening, before the first
 slot; nothing is posted after 22:00.

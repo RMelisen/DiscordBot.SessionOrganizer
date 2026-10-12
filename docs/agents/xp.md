@@ -4,7 +4,7 @@
 
 **`/level` is SYNCS's own XP system, deliberately parallel to the server's other leveling bot.**
 They share no code, state or vocabulary beyond "niveau", and no code or comment may treat one as
-the better system. (`Helpers/LevelUpAnnouncement` only *detects* the other bot's announcements so
+the better system. (`Helpers/Xp/LevelUpAnnouncement` only *detects* the other bot's announcements so
 she can answer them.) Her *lines* may sulk about it, but only in her jealousy pools
 (`RivalLevelUpLines`, `JealousLines`, `RivalMutters`); `XpLevelUpLines` and the `/level` UI never
 mention it. See `docs/syncs-voice.md`.
@@ -14,7 +14,7 @@ bonus, verdict bonus, voice sweep. Same `IServiceProvider` + `CreateAsyncScope` 
 trackers. It is on `BotService`'s `ReactionRemoved` fan-out too.
 
 **`MemberXp.TotalXp` is the only number stored — `Level` is never cached.**
-`Helpers/LevelCurve.ThresholdForLevel` is closed-form and `LevelForXp` a binary search over it;
+`Helpers/Xp/LevelCurve.ThresholdForLevel` is closed-form and `LevelForXp` a binary search over it;
 a level can always be recomputed, so a column would only drift.
 
 **XP is a reward; `ReactionsUsed` and `VoiceMinutes` are facts.** Every reaction counts even when it
@@ -77,7 +77,7 @@ bar from `LevelCurve.XpIntoLevel` over `XpForLevel` (the same pair printed benea
 classement" button reuses the paging id `level:page:Xp:AllTime:0` and replaces the card in place. No XP → niveau 0, `non
 classé`. A **bot** gets one fixed `const` refusal (not a pool — a refusal isn't chatter).
 
-**`Helpers/LevelCardUi` holds the string work only** (medals, fr-FR grouping, block-glyph bar,
+**`Helpers/Xp/LevelCardUi` holds the string work only** (medals, fr-FR grouping, block-glyph bar,
 row/card text) so it's checkable without a gateway. The bar clamps at both ends and treats a zero
 span as full — decoration must never throw.
 
@@ -101,7 +101,7 @@ moderator is deliberately *not* checked (not self-inflicted, not farmable). **Th
 skipped entirely.**
 
 **Voice XP tapers with the day's total** — the answer to two unmuted idle accounts, which no mute
-rule can catch. `Helpers/VoiceXpCurve`: first hour at 10 XP/min, then down every half hour (8, 6, 5,
+rule can catch. `Helpers/Xp/VoiceXpCurve`: first hour at 10 XP/min, then down every half hour (8, 6, 5,
 4, 3, 2) to a trickle of 1. A taper, not a cap (a cap teaches people exactly how long to park). Keep
 the tier table sorted by minute, rates non-increasing, the trickle **non-zero**, and avoid big
 single-step drops.
@@ -118,7 +118,7 @@ single-step drops.
 
 ## Shared ranking vocabulary — `/emotestats`, `/goodbot`, `/leaderboard`, `/shame`
 
-`StatsPeriod` (`Services/StatsPeriod.cs`) and `Helpers/StatsPeriodUi` own the windows, their French
+`StatsPeriod` (`Services/Core/StatsPeriod.cs`) and `Helpers/Core/StatsPeriodUi` own the windows, their French
 labels and the three-button filter row, so commands can't label the same window differently. Each
 caller passes its prefix and gets `{prefix}:{period}:0` ids — changing the window resets to page 0.
 Defaults differ on purpose: `/emotestats` 30 days (recent activity), `/goodbot` and `/leaderboard`

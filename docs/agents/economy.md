@@ -2,7 +2,8 @@
 
 `/work`, `/balance` (`EconomyModule`), `/inventory` (`InventoryModule`, its own group — belongings
 outlive the creature). `/plynling forage` stays under `/plynling` (it's something the Plynling
-*does*); only its find lands in the inventory.
+*does*); only its find lands in the inventory. `;work` and `;forage` are typed shortcuts for the two
+(see `plynling.md`, *Typed shortcuts*).
 
 ## Cailloux (pebbles)
 
@@ -23,7 +24,7 @@ table: nothing ranks cailloux by date, so a buckets table would have no reader.
 ## `/admin dashboard` — `EconomyDailyStat`
 
 One row per (guild, Paris day, metric), `Day` an int `yyyymmdd` so windows filter in SQL.
-**`Helpers/EconomyLog.AddAsync` finds or creates the row (`Local` first) and never saves** — the
+**`Helpers/Economy/EconomyLog.AddAsync` finds or creates the row (`Local` first) and never saves** — the
 action's own `SaveChanges` carries it, so a refused action records nothing and a recorded one can't
 be lost.
 

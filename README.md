@@ -29,6 +29,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/plynling adopt · view · list · journal · relations · play · visit · passion · forage · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card). `/pl` is a shortcut for every one of them | everyone |
 | `/inventory view · collection · shop · medicine · cosmetics · craft · give · trade · sell` | Your items: pantry, collection, cosmetics, swaps | everyone |
 | `/work · /balance` | Earn cailloux; see your balance | everyone |
+| `;pl · ;pl @someone · ;pl visit @someone · ;forage · ;work` | Typed shortcuts, sent as a plain message: your card (or someone's), a visit, a forage, a shift. `;pl forage` and `;pl work` work too | everyone |
 | `/shame user:@someone` | Put someone on it | staff |
 | `/config` | Per-server settings, no redeploy | staff |
 | `/admin xp add · remove` | Manual XP adjustment | staff |
@@ -480,30 +481,20 @@ All personality state is in memory by design and resets when the bot restarts.
 ```
 ProjectSYNCS/
 ├─ Program.cs              # Host setup, DI wiring, runs EF migrations
-├─ Commands/               # 13 slash-command modules: Schedule, Poll, Vote, Giveaway,
-│                          # Level, Shame, EmoteStats, BotFeedback, Config, XpAdmin,
-│                          # Speak, Absence, Help
+├─ Commands/               # Slash-command modules and their static card builders
 ├─ Interactions/
 │  ├─ Components/          # Button and select handlers for published cards
 │  ├─ Modals/              # Modal DTOs
 │  └─ Autocomplete/        # Channel and item suggestions
-├─ Services/               # Hosted:      BotService, ReminderService, PresenceService,
-│                          #              VoiceXpService, GiveawayDrawService,
-│                          #              PlynlingSweepService, ApplicationEmojiService
-│                          # Data (EF):   Event, Poll, EmoteStats, BotFeedback, Xp,
-│                          #              Giveaway, Shame, GuildConfig
-│                          # Gateway:     XpTracker, ShameTracker, BotFeedbackTracker,
-│                          #              EmoteTracker, RivalryService
-│                          # Personality: ChatterService, ReactionService, BotResponses,
-│                          #              MessageCues, ResponsePicker, AvailabilityService
-│                          # Discord:     SessionEventSync, SessionNotifier
-├─ Models/                 # Sessions and polls, plus a totals+daily-buckets pair each
-│                          # for emotes, verdicts, XP and shame, and the guild config
+├─ Services/               # Hosted loops, EF repositories, gateway trackers, personality
+├─ Models/                 # EF entities (totals + daily-bucket pairs for every ranking)
+├─ Helpers/                # Pure logic: catalogs, curves, card builders, time, emotes
+│                          #
+│                          # Commands, Services, Models and Helpers are split by
+│                          # subsystem: Core/, Personality/, Plynling/, Xp/, Voice/,
+│                          # Feedback/, Shame/, Scheduling/, Quiz/, Economy/, Admin/, Pi/
 ├─ Data/AppDbContext.cs    # EF Core context
 ├─ Migrations/             # EF Core migrations (applied automatically on startup)
-├─ Helpers/                # AppTime, AppInfo, LevelCurve, VoiceXpCurve, LevelCardUi,
-│                          # AvatarUi, BotChat, Emotes, EmoteMarkup, StatsPeriodUi,
-│                          # MessageFormat, SessionPermissions, LevelUpAnnouncement
 ├─ config.yaml             # Home Assistant add-on manifest (source of truth for version)
 └─ Dockerfile / run.sh     # Container build (HA add-on)
 ```

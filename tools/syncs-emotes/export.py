@@ -7,6 +7,9 @@ Discord's dark and light backgrounds at 128, 48 and 22 px.
     python -I export.py smug.jpg=smug sulk.png=sulk
 
 --head writes a head-only version to docs/assets/emotes/head/ instead (sheet: out/sheet_head.html).
+--sticker writes a 320 px server sticker (Discord's size, 512 KB max) to docs/assets/stickers/
+instead (sheet: out/sheet_sticker.html); the pixel art is scaled up whole pixels first, so it stays
+crisp rather than blurred.
 Nothing is cut along a line: the body is taken off piece by piece so the head keeps its own
 silhouette — see head_only.
 
@@ -28,16 +31,19 @@ from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MOOD_DIR = os.path.normpath(os.path.join(HERE, "..", "..", "docs", "assets", "emotes"))
+STICKER_DIR = os.path.normpath(os.path.join(HERE, "..", "..", "docs", "assets", "stickers"))
 OUT = os.path.join(HERE, "out")
 
 # The emote pack, docs/syncs-appearance.md. The emoji name is syncs_<mood>.
 MOODS = ["smug", "flustered", "sulk", "jenote", "outraged", "hurt", "mama", "glitch", "devoted",
-         "terror", "happy", "laugh", "bored", "shocked", "sleepy"]
+         "terror", "happy", "laugh", "bored", "shocked", "sleepy",
+         "bargain", "overheat", "menace", "reboot", "disgust", "love"]
 
 CYAN = (0, 255, 255)
 KEY_DISTANCE = 110      # RGB distance to cyan under which a pixel is background
 FRINGE_DISTANCE = 190   # …and under which a pixel touching the background is a leftover fringe
 SIZE = 128
+STICKER_SIZE = 320
 # Head only. The chin sits at 2/3 of the height in every v1 picture (Gemini kept the reference
 # framing), so the body is searched for below these fractions only.
 COLLAR_SEED = 0.62      # turtleneck pixels from here down seed the flood that removes it
@@ -250,23 +256,28 @@ def head_only(im):
     return im
 
 
-def frame(im):
+def frame(im, size=SIZE):
     box = im.getbbox()
     if box is None:
         raise SystemExit("nothing left after keying out the cyan")
     im = im.crop(box)
     side = max(im.size)
-    inner = SIZE - 2 * MARGIN
+    margin = MARGIN * size // SIZE
+    inner = size - 2 * margin
     square = Image.new("RGBA", (side, side))
     square.paste(im, ((side - im.width) // 2, (side - im.height) // 2))
+    if side < inner:
+        # Scaling up: whole pixels first, so the resample below only softens their edges.
+        k = 4 * inner // side + 1
+        square = square.resize((side * k, side * k), Image.NEAREST)
     # Premultiplied, so the transparent pixels' colour never bleeds into the edges.
     small = square.convert("RGBa").resize((inner, inner), Image.LANCZOS, reducing_gap=3.0).convert("RGBA")
-    out = Image.new("RGBA", (SIZE, SIZE))
-    out.paste(small, (MARGIN, MARGIN))
+    out = Image.new("RGBA", (size, size))
+    out.paste(small, (margin, margin))
     return out
 
 
-def export(path, mood, dest_dir, head):
+def export(path, mood, dest_dir, head, size=SIZE):
     im = Image.open(path).convert("RGB")
     p = grid_period(im)
     if p:
@@ -274,13 +285,13 @@ def export(path, mood, dest_dir, head):
     elif max(im.size) > 600:
         im = im.resize((600, 600 * im.height // im.width), Image.LANCZOS)
     keyed = key_out(im)
-    emote = frame(head_only(keyed) if head else keyed)
+    emote = frame(head_only(keyed) if head else keyed, size)
     dest = os.path.join(dest_dir, f"syncs_{mood}.png")
     emote.save(dest, optimize=True)
     print(f"{os.path.basename(path)} -> syncs_{mood}.png (grid {p or 'none'}, {os.path.getsize(dest) // 1024} KB)")
 
 
-def sheet(dest_dir, name):
+def sheet(dest_dir, name, sizes=(128, 48, 22)):
     files = sorted(f for f in os.listdir(dest_dir) if f.endswith(".png"))
     rows = []
     for f in files:
@@ -288,7 +299,7 @@ def sheet(dest_dir, name):
             uri = "data:image/png;base64," + base64.b64encode(fh.read()).decode()
         cells = "".join(
             f'<td style="background:{bg}">' + "".join(
-                f'<img src="{uri}" width="{s}" height="{s}">' for s in (128, 48, 22)) + "</td>"
+                f'<img src="{uri}" width="{s}" height="{s}">' for s in sizes) + "</td>"
             for bg in ("#313338", "#ffffff"))
         rows.append(f"<tr><th>{html.escape(f[:-4])}</th>{cells}</tr>")
     os.makedirs(OUT, exist_ok=True)
@@ -300,17 +311,24 @@ def sheet(dest_dir, name):
 
 def main(args):
     head = "--head" in args
-    args = [a for a in args if a != "--head"]
+    sticker = "--sticker" in args
+    args = [a for a in args if a not in ("--head", "--sticker")]
     if not args:
         raise SystemExit(__doc__)
-    dest_dir = os.path.join(MOOD_DIR, "head") if head else MOOD_DIR
+    if head and sticker:
+        raise SystemExit("--head and --sticker don't combine: a sticker keeps her body")
+    dest_dir = STICKER_DIR if sticker else os.path.join(MOOD_DIR, "head") if head else MOOD_DIR
+    size = STICKER_SIZE if sticker else SIZE
     os.makedirs(dest_dir, exist_ok=True)
     for arg in args:
         path, sep, mood = arg.rpartition("=")
         if not sep or mood not in MOODS:
             raise SystemExit(f"{arg}: expected <picture>=<mood>, mood one of {', '.join(MOODS)}")
-        export(path, mood, dest_dir, head)
-    sheet(dest_dir, "sheet_head.html" if head else "sheet.html")
+        export(path, mood, dest_dir, head, size)
+    if sticker:
+        sheet(dest_dir, "sheet_sticker.html", (320, 160))
+    else:
+        sheet(dest_dir, "sheet_head.html" if head else "sheet.html")
 
 
 if __name__ == "__main__":

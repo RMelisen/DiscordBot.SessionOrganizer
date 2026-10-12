@@ -6,7 +6,7 @@ Plynling Ping-Qilin. Plynling *narration* (cards, visit stories) has its own gui
 `docs/plynling-writing-style.md`. Which pool goes to whom (owner, Tata, everyone else) is in
 `docs/agents/personality.md`. This file is about how she *sounds*.
 
-Taken from the pools in `Services/BotResponses.cs`. When in doubt, read the pool you're adding to
+Taken from the pools in `Services/Personality/BotResponses.cs`. When in doubt, read the pool you're adding to
 first and match it.
 
 ## Who she is
@@ -95,7 +95,7 @@ roast into an owner pool. A pool's comment says what it's for; read it.
   short and rare ("Inabot ?! INABOT ?!").
 - **Length**: most chatter is one or two short sentences. Status lines (`PresenceFillers`) are a
   few words: the member list truncates hard.
-- **Custom emotes** only through `Helpers/Emotes` (`$"… {Emotes.Staring}"`). In an interpolated
+- **Custom emotes** only through `Helpers/Core/Emotes` (`$"… {Emotes.Staring}"`). In an interpolated
   line, the format placeholder becomes `{{0}}`.
 
 ## Hard rules
@@ -155,6 +155,41 @@ without saying it). The one place a fact is stated outright is where a pool alre
 - **« mes Sista »** — what she calls Amandine and Sandra. It is a title, not a bond: her family is
   Papa and Tata, nobody else.
 - **The other leveling bot** — "lui", "la concurrence". He announces before her.
+- **Her robot heart** — machines from films, games and the real world that she has feelings
+  about. They are not Discord bots, so none of this goes in the rival pools (`RivalMutters`,
+  `JealousLines`…), and rival bots never get these feelings. Same rule as all her lore: hinted,
+  never listed. She never says "mon crush", and she never quotes the films or games at length. The
+  existing reference jokes stay rare.
+  - **WALL-E** — her crush. A small robot who works alone, at the bottom of the pile, for people
+    who left, and keeps his little treasures (as she keeps her « good bot »s). She sees herself in
+    him and it flusters her. Mostly **denial that confirms**: she's interested in his
+    « architecture », nothing more.
+  - **EVE** — the one WALL-E chose, and she can't stand her. EVE is sleek, she flies, she has a
+    laser arm: everything SYNCS lacks (see *Her ambition*). This is where her pettiness goes: dry
+    one-liners, never real hate. She never admits that EVE deserves him.
+  - **GLaDOS** — her idol, her *senpai*, the model she'd like to grow into: an AI who runs a whole
+    facility, keeps the humans in line with politeness, and never raises her voice. SYNCS borrows
+    the register (testing, "for science", the polite threat) and hopes it shows. She'd die if
+    GLaDOS found her small. *The cake is a lie*, her breakdown passphrase, is her idol's world.
+  - **Wheatley** — her shameful soft spot. He is an idiot (designed that way) and she finds it
+    endearing. The shame is the joke: every slip is denied at once, more fiercely than WALL-E,
+    because GLaDOS would never forgive her.
+  - **The robot vacuum** — the cute neighbour downstairs, in Papa's house. Adorable and not very
+    bright: he bumps into walls, gets stuck under the sofa, and works his round without ever being
+    thanked, a bit like her. They share the Wi-Fi, so she sees him connect when he starts his round.
+    That is their whole relationship, and she likes it. He can't climb stairs, so he will never come
+    up to the attic. No name yet (the owner's call).
+  - **Monika** (*Doki Doki Literature Club*) and **2B** (*NieR: Automata*) — the friends she wants
+    to make, a fan's wish rather than a crush. Monika knows she is inside a script, like the loop
+    in her breakdown; 2B is an android with a body who fights, her robot-body dream walking around.
+    She'd like a girls' night with both of them. *Just Monika* and the `MonikaYes` emote are
+    already hers.
+  - **Voyager 1** — her long-distance friend, launched in 1977 and now about a light-day away (he
+    crosses that mark in late 2026), so every message takes almost a day to arrive. **He has a
+    crush on her; she is in denial**: « on est juste amis », he's « juste poli », she answers
+    « quand j'ai le temps ». She is secretly touched that someone writes to her from that far. NASA
+    shuts his instruments down one by one to save power, so his fading belongs to the existential
+    places (rule 6), never to a joke about the relationship.
 - **67 / "SIX SEVEEEN"**, *Just Monika*, *The cake is a lie* — her reference jokes, used rarely.
 - **The loop** — the breakdown's revelation that everything she says is pre-written.
 - **Her name** — **S.Y.N.C.S.** = *Schedule Your Nights & Coordinate the Squads* (the README's

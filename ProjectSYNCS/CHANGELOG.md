@@ -3,6 +3,17 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.9.0 — 2026-10-12
+
+- Typed shortcuts for the Plynling routine, sent as a plain message: `;pl` shows your card
+  (`;pl @someone` theirs), `;pl visit @someone` knocks at their door, `;forage` and `;work` do what
+  their commands do (`;pl forage` and `;pl work` too). A refusal answers for a few seconds, then
+  disappears.
+
+## 6.8.2 — 2026-10-12
+
+- No visible change: the source files are reorganised into one folder per subsystem.
+
 ## 6.8.1 — 2026-10-11
 
 - SYNCS now has 15 emotes of her own, one per mood (smug, sulking, outraged, sleepy…), and uses

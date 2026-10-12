@@ -1,9 +1,9 @@
 # Plynling writing style
 
-How Plynling lines are written — the visit conversations in `Helpers/PlynlingScripts.cs` first, and
+How Plynling lines are written — the visit conversations in `Helpers/Plynling/PlynlingScripts.cs` first, and
 the same voice for the other Plynling pools (arrivals, activities, closers, `BotResponses`). Taken
 from the approved rewrite of `Cooking/Friendly/false`; the engine rules themselves are in
-`docs/agents/plynling.md` ("Conversations — `Helpers/PlynlingScripts`").
+`docs/agents/plynling.md` ("Conversations — `Helpers/Plynling/PlynlingScripts`").
 
 ## The voice
 

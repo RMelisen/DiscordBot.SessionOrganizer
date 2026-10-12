@@ -80,7 +80,7 @@ English. Renaming a command or option changes what people type: do it rarely, an
   Wednesday poll; see scheduling), `SeasonalAvatarService` (hourly, plus every Ready — her
   seasonal profile picture; see `docs/syncs-appearance.md`).
 - **`MorningGreetingService`** has no interval: it sleeps until one random slot per morning
-  (8:00–10:00 Paris, `Helpers/MorningGreeting`) — see personality.
+  (8:00–10:00 Paris, `Helpers/Personality/MorningGreeting`) — see personality.
 - **`AmbientService`** (10 min, cosmetic, its own interval like the loops above): the 3 a.m. line
   and the scolding for answering it, idle fillers and the wake-up line after a restart — see
   personality, *Ambient life*.
@@ -97,6 +97,14 @@ Layers: `Commands/` (slash modules + `static` embed/component builders), `Intera
 (`Components/` handlers, `Modals/` DTOs, `Autocomplete/`), `Services/` (EF repositories +
 behaviour), `Models/`, `Data/AppDbContext.cs`, `Helpers/` (pure logic — put anything you want to
 be checkable without a gateway here).
+
+`Commands/`, `Helpers/`, `Services/` and `Models/` are split into **subsystem subfolders** named after
+`docs/agents/` (`Plynling/`, `Xp/`, `Voice/`, `Personality/`, `Feedback/`, `Shame/`,
+`Scheduling/`, `Quiz/`, `Economy/`, `Admin/`, `Pi/`), plus `Core/` for what every subsystem
+leans on (`AppTime`, `BotChat`, `Emotes`, `CooldownGate`, `SessionPermissions`, `BotService`…).
+**Folders are not namespaces**: every file keeps the flat `ProjectSYNCS.Commands` /
+`.Helpers` / `.Services` / `.Models` namespace, so moving a file between subfolders changes no `using` and
+the EF snapshot's type names. A new file goes in the subfolder of the subsystem that owns it.
 
 **Commands are grouped by whose thing it is**: `/plynling` the creature, `/inventory` the person's
 belongings, `/admin` moderation actions, `/config` settings, `/debug` the owner's tools. Discord
@@ -152,7 +160,7 @@ restart **by design**.
 ### Time and culture
 
 **Never use `DateTime.Now`.** Production runs in UTC; wall-clock handling goes through
-`Helpers/AppTime` (`Europe/Paris`, DST-aware via `TryParseWallClock`). Store instants as UTC
+`Helpers/Core/AppTime` (`Europe/Paris`, DST-aware via `TryParseWallClock`). Store instants as UTC
 `DateTimeOffset`, show them as Discord `<t:unix:…>` timestamps. **Globalization must stay on**:
 `InvariantGlobalization` is `false` and the Dockerfile installs `libicu72`, for `Europe/Paris` and
 `fr-FR` formatting.
@@ -194,7 +202,7 @@ V2 card. `/help` and `/plynling help` are close to the 6000 cap — measure befo
 **Cap user-supplied text at the option**, not at the point of use: `[MaxLength(n)]` on slash
 options (default 6000) and `maxLength:` on `[ModalTextInput]` (default 4000). Discord then refuses
 the input client-side and nothing over-long reaches the database, where it would break every later
-re-render. Numbers live in `Helpers/InputCaps` (`Title` 150, `Prize` 200, `Description` 1000,
+re-render. Numbers live in `Helpers/Core/InputCaps` (`Title` 150, `Prize` 200, `Description` 1000,
 `Question` 400); `Title` is used at several modal sites that must agree.
 
 ### Components V2
@@ -203,7 +211,7 @@ A message with `MessageFlags.ComponentsV2` may have **no content and no embeds**
 **re-assert the flag on every `UpdateAsync`**, and must send with **`AllowedMentions.None`**: a
 `TextDisplay` is real content, so `<@id>` in one genuinely pings (an embed got inert mentions for
 free). `AllowedMentions.None` keeps the clickable pill while silencing it. Avatars go through
-`Helpers/AvatarUi`.
+`Helpers/Core/AvatarUi`.
 
 ### Mentions and hostile text
 
@@ -234,21 +242,21 @@ free). `AllowedMentions.None` keeps the clickable pill while silencing it. Avata
 
 ### Shared helpers — use them, don't re-inline
 
-- **`Helpers/CooldownGate<TKey>`** ("claimed recently?") and **`Helpers/BoundedSet<T>`** ("seen
+- **`Helpers/Core/CooldownGate<TKey>`** ("claimed recently?") and **`Helpers/Core/BoundedSet<T>`** ("seen
   before?"). They share the mechanism, **never the policy**: each service owns its own instances
   and durations, and two trigger populations never share one gate. `CooldownGate` owns its lock;
   `BoundedSet` owns **none**, because callers need its add to be atomic with their own state.
-- **`Helpers/BotChat`** is the single send path for her chatter (typing pause, clamped inside
-  Discord.Net's 3 s `HandlerTimeout`, plus swallow-and-log). **`Helpers/EmoteMarkup.Parse`** is the
+- **`Helpers/Core/BotChat`** is the single send path for her chatter (typing pause, clamped inside
+  Discord.Net's 3 s `HandlerTimeout`, plus swallow-and-log). **`Helpers/Core/EmoteMarkup.Parse`** is the
   single reaction parser.
 - **Never pick a response line with a bare `Random`.** Use `ResponsePicker.Pick(pool)`, which
   excludes the pool's `min(50, pool.Length / 2)` most recently said lines. Its memory is **global**,
   not per channel — the same people read every channel and their DMs — and records when each line
   was last said, so busy pools (emote reactions) never crowd out rare ones. Pick the template
   *before* `string.Format`. A pool that goes through `string.Format` throws on a stray brace. **A pool spent once a day uses
-  `Helpers/DailyRotation` instead** — a restart wipes the picker's history, which at one pick a
+  `Helpers/Core/DailyRotation` instead** — a restart wipes the picker's history, which at one pick a
   day means it never helps; the rotation is computed from the date, with nothing stored.
-- **Custom emote markup lives in `Helpers/Emotes` and nowhere else**, as `const string` pairs
+- **Custom emote markup lives in `Helpers/Core/Emotes` and nowhere else**, as `const string` pairs
   (`XId` + `X`), so lines stay constant expressions. Never paste raw `<:name:id>` into a pool.
 - **`BotResponses.DisplayNameFor(IUser)`** is the only place the
   `Nickname ?? GlobalName ?? Username` chain lives (it also applies family nicknames). Never
@@ -309,14 +317,14 @@ tokens go in user secrets (dev) or add-on options (prod), never in a tracked fil
 ## Hardcoded ids
 
 These literal snowflakes are tied to one specific server: `AvailabilityService.OwnerId`; the other
-leveling bot's id in `Helpers/LevelUpAnnouncement`; the custom emote ids in `Helpers/Emotes`;
+leveling bot's id in `Helpers/Xp/LevelUpAnnouncement`; the custom emote ids in `Helpers/Core/Emotes`;
 `XpTracker.ExcludedChannels`; `ShameModule.ExtraVoters`; the per-user maps in `BotResponses`
 (`PersonalComebacks`, `RealNames`, `KnownGenders`, `TataId`, `FamilyNicknames`);
 `PlynlingAnnouncer.DefaultGameChannelId`; `MorningGreetingService.DefaultChannelId`;
 `AmbientService.IdleChannelIds` (the everyday channels that must all be quiet for an idle line);
-the voice channels in `Helpers/VoiceRoom` (which spectator pool each one gets, and where she
+the voice channels in `Helpers/Voice/VoiceRoom` (which spectator pool each one gets, and where she
 waits for a session nobody has joined yet); and
-`Helpers/HomeGuild.Id` (the one server the morning hello and `AmbientService` live in).
+`Helpers/Core/HomeGuild.Id` (the one server the morning hello and `AmbientService` live in).
 
 `ExcludedChannels`, `ExtraVoters` and `IdleChannelIds` are *floors*: `/config` can add to them but
 never remove from them. The game and main channels are *defaults*: a channel set with `/config`
