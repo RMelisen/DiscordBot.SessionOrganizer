@@ -89,7 +89,9 @@ internal sealed class PresenceService : BackgroundService
             // the text travels in the wire model's State field rather than Name, which
             // is exactly why this needs the dedicated call — SetGameAsync with
             // ActivityType.CustomStatus would fill the wrong field and render nothing.
-            await _client.SetCustomStatusAsync(line);
+            // Presence pools are never tagged; Strip is the backstop, since a custom status
+            // shows a stray sticker marker verbatim to everyone.
+            await _client.SetCustomStatusAsync(Sticker.Strip(line));
         }
         catch (Exception ex)
         {

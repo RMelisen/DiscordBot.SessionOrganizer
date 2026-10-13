@@ -15,8 +15,17 @@ namespace ProjectSYNCS.Helpers;
 // Three send methods share that one pause: ReplyWithTypingAsync / PostWithTypingAsync
 // for plain text, PostEmbedWithTypingAsync for an embed (the level-up card, so far
 // its only caller).
+//
+// Sticker tags (Helpers/Core/Sticker) are split off here: the clean text is what goes out, and a
+// tagged line that went out hands its tag to FollowUp. FollowUp is the one static seam in this
+// class, set once in Program.cs to StickerService.TryFollowUp: BotChat is static with dozens of
+// call sites, and the sticker gate is in-memory state that belongs in a singleton. Left null,
+// lines still go out clean, with no strip.
 public static class BotChat
 {
+    /// <summary>Called after a tagged line went out. Set once in Program.cs.</summary>
+    public static Action<IMessageChannel, StickerTag>? FollowUp { get; set; }
+
     /// <summary>
     /// Replies behind the typing indicator. Returns the sent message, or null if the
     /// send failed — callers that need to remember what they just said (see
@@ -29,19 +38,23 @@ public static class BotChat
         IUserMessage replyTo, string line, ILogger logger, string what,
         AllowedMentions? allowedMentions = null)
     {
+        var (text, sticker) = Sticker.Split(line);
+        IUserMessage sent;
         try
         {
             using (replyTo.Channel.EnterTypingState())
             {
-                await Task.Delay(TypingDelayFor(line));
+                await Task.Delay(TypingDelayFor(text));
             }
-            return await replyTo.ReplyAsync(line, allowedMentions: allowedMentions);
+            sent = await replyTo.ReplyAsync(text, allowedMentions: allowedMentions);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to send {What} in channel {ChannelId}.", what, replyTo.Channel.Id);
             return null;
         }
+        if (sticker is { } tag) FollowUp?.Invoke(replyTo.Channel, tag);
+        return sent;
     }
 
     /// <summary>
@@ -57,28 +70,34 @@ public static class BotChat
         IMessageChannel channel, string line, ILogger logger, string what,
         AllowedMentions? allowedMentions = null, MessageReference? replyTo = null)
     {
+        var (text, sticker) = Sticker.Split(line);
+        IUserMessage sent;
         try
         {
             using (channel.EnterTypingState())
             {
-                await Task.Delay(TypingDelayFor(line));
+                await Task.Delay(TypingDelayFor(text));
             }
-            return await channel.SendMessageAsync(line, allowedMentions: allowedMentions, messageReference: replyTo);
+            sent = await channel.SendMessageAsync(text, allowedMentions: allowedMentions, messageReference: replyTo);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to send {What} in channel {ChannelId}.", what, channel.Id);
             return null;
         }
+        if (sticker is { } tag) FollowUp?.Invoke(channel, tag);
+        return sent;
     }
 
     /// <summary>
     /// Posts an embed behind the same typing pause. <paramref name="delayText"/> is
     /// only used to size that pause — the embed carries the actual content, and
-    /// nothing here is sent as message text.
+    /// nothing here is sent as message text. The caller splits its own line (the tag
+    /// would otherwise show inside the embed) and passes the tag as <paramref name="sticker"/>.
     /// </summary>
     public static async Task PostEmbedWithTypingAsync(
-        IMessageChannel channel, Embed embed, string delayText, ILogger logger, string what)
+        IMessageChannel channel, Embed embed, string delayText, ILogger logger, string what,
+        StickerTag? sticker = null)
     {
         try
         {
@@ -91,7 +110,9 @@ public static class BotChat
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to send {What} in channel {ChannelId}.", what, channel.Id);
+            return;
         }
+        if (sticker is { } tag) FollowUp?.Invoke(channel, tag);
     }
 
     // How long to "type" a chat line before sending it. Much snappier than

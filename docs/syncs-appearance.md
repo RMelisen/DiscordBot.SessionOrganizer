@@ -141,6 +141,20 @@ laughter tears either.
   What she uses them for is in `docs/agents/personality.md`, *Sticker follow-ups*.
 - **Banner / scenes** — her attic at night (see *The banner* below for the canon scene).
 
+## Moods wanted
+
+Lines that no strip fits stay **untagged** (a wrong picture is worse than none; see
+`docs/agents/personality.md`, *Sticker follow-ups*). Each need found while tagging is recorded here,
+in the terms of *Moods mapped to her voice*. When the art exists: export it (`tools/syncs-emotes`), add
+the mood to `Helpers/Core/Sticker` (both strengths, and `Moods`), then tag the waiting lines — the
+untagged lines of a pool are listed by the owner's audit. A patch bump.
+
+None yet: the 6.13.0 pass found a fitting strip for every eligible line. `love`, `full_love` and
+`tipsy_love` are the moods still waiting for lines (no eligible pool talks about WALL-E).
+
+| Suggested mood | Face | Cap / LED | Waiting (pool × lines) |
+|---|---|---|---|
+
 ## Ready-to-paste prompts (emote pack and seasonal avatars, v1)
 
 Every prompt below is complete: copy the block as is into Gemini, with
@@ -786,7 +800,7 @@ two pictures read as one world.
 | Banner v1 | `assets/syncs-banner-v1.jpg` | First banner, Gemini. Current profile banner |
 | Emote pack v1 | `assets/emotes/syncs_<mood>.png`, head-only in `assets/emotes/head/` | Gemini, from the prompts above, all 15 moods; made transparent with `tools/syncs-emotes`. Server emotes, `Emotes.Syncs*` (6.8.1); `sleepy`, `shocked`, `mama` and `jenote` taken off the server in 6.12.0 (assets kept) |
 | Emote pack, second batch | same folders, plus 320 px stickers in `assets/stickers/` | Gemini, from the prompts above, the 8 moods `bargain` to `tipsy_love`; same pipeline. Not uploaded yet |
-| Sticker strips v1 | `../ProjectSYNCS/Assets/Stickers/syncs_<mood>.png` | Every sticker in `assets/stickers/` (23 moods) as a 1000×320 strip, `export.py --strip`. Shipped with the bot, not used by any code yet |
+| Sticker strips v1 | `../ProjectSYNCS/Assets/Stickers/syncs_<mood>.png` | Every sticker in `assets/stickers/` (23 moods) as a 1000×320 strip, `export.py --strip`. Shipped with the bot; posted after tagged lines since 6.13.0 (all but `glitch`) |
 | Seasonal avatars v1 | `../ProjectSYNCS/Assets/Avatars/syncs-{spring,summer,autumn,winter}.png` | Gemini, from the prompts above. Rotate with the seasons (6.8.0); v1 is the reference they were drawn from |
 
 When a new avatar or banner replaces one of these, add it here and keep the old file: the reference that fixed
