@@ -6,42 +6,42 @@ using ProjectSYNCS.Helpers;
 namespace ProjectSYNCS.Services;
 
 // Her robot heart (docs/syncs-voice.md): someone names WALL-E, EVE, GLaDOS, Wheatley, a robot
-// vacuum, Monika, 2B or Voyager 1, and she reacts in that character's register — a reaction
-// and a line, or one of the Synthia flinch's moves (a reaction taken back, a line deleted, a
-// slip edited). Which one, and how often, is Helpers/Personality/RobotHeart.
+// vacuum, Monika, 2B or Voyager 1. The rules are Helpers/Personality/RobotHeart.
 //
-// Not aimed at her, she reacts 60% of the time; aimed at her, always, in words, and the act is
-// her whole answer: returns true so ChatterService doesn't roast on top. When the gate refuses
-// (that character already today, or three acts already), returns false and the message goes on
-// to ChatterService as usual. A singleton: the gate is in-memory (a restart resets it). After
-// SynthiaService in the fan-out, so Synthia wins a message naming both. Absent from README.md
-// and /help.
+// - Named in passing (not aimed at her): an emote reaction, every time — taken back 5–7 s later
+//   for the ones she's in denial about — and 40% of the time the same words as below too (with no
+//   second reaction). Silent, it returns false: a reaction isn't an answer, so the message goes on
+//   to ChatterService (the absent-owner notice, the easter eggs) as usual. Speaking, true.
+// - Named to her face (a mention, or a reply to her): always words — a reaction + a line, or the
+//   character's own deleted line or edited slip. That is her whole answer: returns true so
+//   ChatterService doesn't roast on top.
+//
+// No limits: every naming gets its act, so lines come from ResponsePicker. Verdicts are
+// BotFeedbackTracker's and skipped. After SynthiaService in the fan-out, so Synthia wins a message
+// naming both. A singleton (ResponsePicker's memory is shared). Absent from README.md and /help.
 internal sealed class RobotHeartService
 {
-    // Spent at most once a day per character, so DailyRotation (CLAUDE.md). One salt per pool,
-    // shifted by the character so two characters' pools don't move in lockstep.
-    private const ulong ReactionSalt = 0x5359_4E43_4845_5245; // "SYNCHERE"
-    private const ulong LineSalt = 0x5359_4E43_4845_4C49;     // "SYNCHELI"
-    private const ulong VanishSalt = 0x5359_4E43_4845_5641;   // "SYNCHEVA"
-    private const ulong EditSalt = 0x5359_4E43_4845_4544;     // "SYNCHEED"
+    // Where « eve » means the game: there EVE counts only beside WALL-E. A thread counts for its
+    // parent. Server-specific, listed in CLAUDE.md's "Hardcoded ids".
+    internal const ulong EveStrictChannelId = 883053869423292466;
 
     private readonly DiscordSocketClient _client;
     private readonly BreakdownService _breakdown;
     private readonly StickerService _stickers;
+    private readonly ResponsePicker _picker;
     private readonly ILogger<RobotHeartService> _logger;
-
-    // Its own gate, shared with nobody.
-    private readonly HeartGate _gate = new();
 
     public RobotHeartService(
         DiscordSocketClient client,
         BreakdownService breakdown,
         StickerService stickers,
+        ResponsePicker picker,
         ILogger<RobotHeartService> logger)
     {
         _client = client;
         _breakdown = breakdown;
         _stickers = stickers;
+        _picker = picker;
         _logger = logger;
     }
 
@@ -49,38 +49,49 @@ internal sealed class RobotHeartService
     {
         if (rawMessage is not SocketUserMessage message || message.Author.IsBot) return false;
         if (message.Channel is not SocketGuildChannel) return false;
-        if (CharacterNamedIn(message.Content ?? string.Empty) is not { } who) return false;
+
+        var parentId = (message.Channel as SocketThreadChannel)?.ParentChannel?.Id;
+        bool eveNeedsWallE = message.Channel.Id == EveStrictChannelId || parentId == EveStrictChannelId;
+        if (CharacterNamedIn(message.Content ?? string.Empty, eveNeedsWallE) is not { } who) return false;
         if (_breakdown.IsActive(message.Channel.Id)) return false;
 
         bool aimedAtHer = message.MentionedUsers.Any(u => u.Id == _client.CurrentUser.Id)
                           || message.ReferencedMessage?.Author.Id == _client.CurrentUser.Id;
-        // The roll before the claim: a lost roll spends nothing.
-        if (!aimedAtHer && Random.Shared.NextDouble() >= RobotHeart.AmbientChance) return false;
+        if (!aimedAtHer)
+        {
+            _logger.LogInformation("Robot heart: {Who} named in passing.", who);
+            var emote = await ReactAsync(message, who);
+            if (emote is not null && RobotHeart.TakesBackReaction(who)) TakeBackLater(message, emote);
+            if (Random.Shared.NextDouble() >= RobotHeart.AmbientSpeakChance) return false;
+            await SpeakAsync(message, who, alreadyReacted: true);
+            return true;
+        }
 
-        var today = AppTime.DayNumber(DateTimeOffset.UtcNow);
-        if (!_gate.TryClaim(who, today)) return false;
+        await SpeakAsync(message, who, alreadyReacted: false);
+        return true;
+    }
 
-        var act = RobotHeart.RollAct(who, aimedAtHer, Random.Shared.NextDouble(), Random.Shared.NextDouble());
-        _logger.LogInformation("Robot heart: {Who} named, {Act}.", who, act);
+    // Her words: a reaction + a line (the reaction skipped when she already reacted in passing),
+    // or the character's deleted line or edited slip.
+    private async Task SpeakAsync(SocketUserMessage message, HeartCharacter who, bool alreadyReacted)
+    {
+        var act = RobotHeart.RollAct(who, Random.Shared.NextDouble(), Random.Shared.NextDouble());
+        _logger.LogInformation("Robot heart: {Who}, {Act}.", who, act);
 
         switch (act)
         {
-            case HeartActKind.TakeBackReaction:
-                await TakeBackReactionAsync(message, who, today);
-                break;
             case HeartActKind.VanishLine:
-                await VanishLineAsync(message, who, today);
+                await VanishLineAsync(message, who);
                 break;
             case HeartActKind.EditSlip:
-                await EditSlipAsync(message, who, today);
+                await EditSlipAsync(message, who);
                 break;
             default:
-                await ReactAsync(message, who, today);
-                await ReplyLineAsync(message, who,
-                    DailyRotation.Pick(BotResponses.HeartLines[who], today, LineSalt ^ Shift(who)));
+                if (!alreadyReacted && await ReactAsync(message, who) is { } emote && RobotHeart.HidesReactionWhenAimed(who))
+                    TakeBackLater(message, emote);
+                await ReplyLineAsync(message, who, _picker.Pick(BotResponses.HeartLines[who]));
                 break;
         }
-        return true;
     }
 
     /// <summary>
@@ -88,8 +99,8 @@ internal sealed class RobotHeartService
     /// which is BotFeedbackTracker's alone (docs/agents/bot-feedback.md): a verdict that names
     /// WALL-E must not be answered twice.
     /// </summary>
-    internal static HeartCharacter? CharacterNamedIn(string content) =>
-        MessageCues.ReadFeedback(content) != FeedbackKind.None ? null : MessageCues.ReadHeartCharacter(content);
+    internal static HeartCharacter? CharacterNamedIn(string content, bool eveNeedsWallE) =>
+        MessageCues.ReadFeedback(content) != FeedbackKind.None ? null : MessageCues.ReadHeartCharacter(content, eveNeedsWallE);
 
     // The line + emote reply. A character with its own sticker chance (WALL-E, 2 in 3): the tag is
     // split off here, the chance rolled here, and a win handed on promoted to sure so
@@ -108,9 +119,9 @@ internal sealed class RobotHeartService
     }
 
     // The character's reaction on the message; the emote it used, or null when it failed.
-    private async Task<IEmote?> ReactAsync(SocketUserMessage message, HeartCharacter who, int today)
+    private async Task<IEmote?> ReactAsync(SocketUserMessage message, HeartCharacter who)
     {
-        var markup = DailyRotation.Pick(BotResponses.HeartReactions[who], today, ReactionSalt ^ Shift(who));
+        var markup = _picker.Pick(BotResponses.HeartReactions[who]);
         if (EmoteMarkup.Parse(markup) is not { } emote)
         {
             _logger.LogWarning("Robot heart: reaction failed to parse: {Markup}", markup);
@@ -128,35 +139,33 @@ internal sealed class RobotHeartService
         }
     }
 
-    // A reaction, taken back five to seven seconds later.
-    private async Task TakeBackReactionAsync(SocketUserMessage message, HeartCharacter who, int today)
-    {
-        if (await ReactAsync(message, who, today) is not { } emote) return;
+    // Her reaction, taken back five to seven seconds later: she won't be caught.
+    private void TakeBackLater(SocketUserMessage message, IEmote emote) =>
         Later(TimeSpan.FromMilliseconds(Random.Shared.Next(RobotHeart.TakeBackDelayMs.Min, RobotHeart.TakeBackDelayMs.Max)),
             () => message.RemoveReactionAsync(emote, _client.CurrentUser), "take the reaction back");
-    }
 
     // A line, deleted seven to nine seconds later.
-    private async Task VanishLineAsync(SocketUserMessage message, HeartCharacter who, int today)
+    private async Task VanishLineAsync(SocketUserMessage message, HeartCharacter who)
     {
-        var line = DailyRotation.Pick(BotResponses.HeartVanishLines[who], today, VanishSalt ^ Shift(who));
+        var line = _picker.Pick(BotResponses.HeartVanishLines[who]);
         var sent = await BotChat.ReplyWithTypingAsync(message, line, _logger, "robot heart vanish line", AllowedMentions.None);
         if (sent is null) return;
         Later(TimeSpan.FromMilliseconds(Random.Shared.Next(RobotHeart.VanishDelayMs.Min, RobotHeart.VanishDelayMs.Max)),
             () => sent.DeleteAsync(), "delete the line");
     }
 
-    // A slip, edited into a denial about seven seconds later.
-    private async Task EditSlipAsync(SocketUserMessage message, HeartCharacter who, int today)
+    // A slip, edited into a denial about seven seconds later. Picked by its slip, which is
+    // distinct across the pool, so ResponsePicker's memory applies.
+    private async Task EditSlipAsync(SocketUserMessage message, HeartCharacter who)
     {
-        var (slip, denial) = DailyRotation.Pick(BotResponses.HeartEditLines[who], today, EditSalt ^ Shift(who));
+        var pairs = BotResponses.HeartEditLines[who];
+        var slip = _picker.Pick(pairs.Select(p => p.Slip).ToArray());
+        var denial = pairs.First(p => p.Slip == slip).Denial;
         var sent = await BotChat.ReplyWithTypingAsync(message, slip, _logger, "robot heart slip", AllowedMentions.None);
         if (sent is null) return;
         Later(TimeSpan.FromMilliseconds(Random.Shared.Next(RobotHeart.EditDelayMs.Min, RobotHeart.EditDelayMs.Max)),
             () => sent.ModifyAsync(p => p.Content = denial), "edit the slip");
     }
-
-    private static ulong Shift(HeartCharacter who) => (ulong)who << 8;
 
     // Off the gateway handler: the wait would hold up every handler after this one in the fan-out.
     private void Later(TimeSpan wait, Func<Task> action, string what) =>

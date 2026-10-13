@@ -6,31 +6,28 @@ namespace ProjectSYNCS.Helpers;
 /// </summary>
 public enum HeartCharacter { WallE, Eve, Glados, Wheatley, Vacuum, Monika, TwoB, Voyager }
 
-/// <summary>What she does when one of them is named.</summary>
+/// <summary>What she says when someone talking to her names one of them.</summary>
 public enum HeartActKind
 {
     /// <summary>A reaction on the message and a reply.</summary>
     LineAndEmote,
-    /// <summary>A reaction, taken back 5–7 s later. Wordless.</summary>
-    TakeBackReaction,
     /// <summary>A reply, deleted 7–9 s later.</summary>
     VanishLine,
     /// <summary>A reply, edited into a denial 6.5–8 s later.</summary>
     EditSlip,
 }
 
-// Pure rules for RobotHeartService: which act, and how often. The performances are the
-// Synthia flinch's three moves, each character keeping the ones that fit its register.
+// Pure rules for RobotHeartService. Named in passing, she reacts with an emote — and takes it back
+// for the ones she's in denial about — and 40% of the time says something too. Named to her
+// face, she answers in words: a reaction + a line, or the character's own Synthia-style move.
+// No limits: every naming gets its act.
 public static class RobotHeart
 {
-    /// <summary>Not aimed at her: the chance she reacts at all (a lore test shouldn't always work).</summary>
-    public const double AmbientChance = 0.60;
+    /// <summary>Named in passing: after her reaction, the chance she also says something.</summary>
+    public const double AmbientSpeakChance = 0.40;
 
-    /// <summary>Of an act: the share that is a performance; the rest is line + emote.</summary>
+    /// <summary>Of an act in words: the share that is a performance; the rest is line + emote.</summary>
     public const double PerformanceShare = 0.40;
-
-    /// <summary>Acts a day, all characters together (Paris day).</summary>
-    public const int DailyCap = 3;
 
     // How long she leaves it before changing her mind, drawn in [Min, Max) milliseconds. Longer
     // than the Synthia flinch's on purpose: these are things she half-means, and people should
@@ -38,6 +35,20 @@ public static class RobotHeart
     public static readonly (int Min, int Max) TakeBackDelayMs = (5000, 7000);
     public static readonly (int Min, int Max) VanishDelayMs = (7000, 9000);
     public static readonly (int Min, int Max) EditDelayMs = (6500, 8000);
+
+    /// <summary>
+    /// Named in a message not aimed at her: whether her reaction is taken back. The ones she's in
+    /// denial about — her loves and her shameful soft spots. Mentors, friends and EVE keep theirs.
+    /// </summary>
+    public static bool TakesBackReaction(HeartCharacter who) =>
+        who is HeartCharacter.WallE or HeartCharacter.Voyager or HeartCharacter.Wheatley or HeartCharacter.Vacuum;
+
+    /// <summary>
+    /// Named to her face, line + emote: whether the reaction is still taken back. Her two loves
+    /// only — the line can stand, but the heart under the message mustn't be caught.
+    /// </summary>
+    public static bool HidesReactionWhenAimed(HeartCharacter who) =>
+        who is HeartCharacter.WallE or HeartCharacter.Voyager;
 
     /// <summary>
     /// The chance a character's line gets its sticker strip, when it isn't StickerService's
@@ -50,60 +61,30 @@ public static class RobotHeart
     /// <summary>Whether <paramref name="roll"/> in [0, 1) wins the character's own sticker chance.</summary>
     public static bool WinsSticker(HeartCharacter who, double roll) => StickerChance(who) is { } chance && roll < chance;
 
+    /// <summary>The character's word performances (the vacuum has none).</summary>
     public static IReadOnlyList<HeartActKind> PerformancesOf(HeartCharacter who) => who switch
     {
-        HeartCharacter.WallE => [HeartActKind.TakeBackReaction, HeartActKind.EditSlip],
+        HeartCharacter.WallE => [HeartActKind.EditSlip],
         HeartCharacter.Eve => [HeartActKind.EditSlip],
         HeartCharacter.Glados => [HeartActKind.EditSlip],
         HeartCharacter.Wheatley => [HeartActKind.VanishLine],
-        HeartCharacter.Vacuum => [HeartActKind.TakeBackReaction],
         HeartCharacter.Monika => [HeartActKind.VanishLine],
         HeartCharacter.TwoB => [HeartActKind.EditSlip],
-        HeartCharacter.Voyager => [HeartActKind.TakeBackReaction, HeartActKind.EditSlip],
+        HeartCharacter.Voyager => [HeartActKind.EditSlip],
         _ => [],
     };
 
     /// <summary>
-    /// The act for one naming. <paramref name="roll"/> and <paramref name="pick"/> are in [0, 1):
-    /// the first chooses performance or line + emote, the second among the character's
-    /// performances. Aimed at her, a wordless performance isn't eligible: she answers in words.
+    /// The act for a naming aimed at her. <paramref name="roll"/> and <paramref name="pick"/> are
+    /// in [0, 1): the first chooses performance or line + emote, the second among the character's
+    /// performances. Without one, it's line + emote.
     /// </summary>
-    public static HeartActKind RollAct(HeartCharacter who, bool aimedAtHer, double roll, double pick)
+    public static HeartActKind RollAct(HeartCharacter who, double roll, double pick)
     {
         if (roll >= PerformanceShare) return HeartActKind.LineAndEmote;
 
-        var options = PerformancesOf(who)
-            .Where(p => !aimedAtHer || p != HeartActKind.TakeBackReaction)
-            .ToList();
+        var options = PerformancesOf(who);
         if (options.Count == 0) return HeartActKind.LineAndEmote;
         return options[Math.Min(options.Count - 1, (int)(pick * options.Count))];
-    }
-}
-
-/// <summary>
-/// RobotHeartService's gate, shared with nobody: each character at most once per 24 h, and
-/// <see cref="RobotHeart.DailyCap"/> acts per Paris day in all. Owns its lock.
-/// </summary>
-public sealed class HeartGate
-{
-    private readonly CooldownGate<HeartCharacter> _perCharacter = new(TimeSpan.FromDays(1));
-    private readonly object _lock = new();
-    private int _day;
-    private int _count;
-
-    public bool TryClaim(HeartCharacter who, int dayNumber)
-    {
-        lock (_lock)
-        {
-            if (_day != dayNumber)
-            {
-                _day = dayNumber;
-                _count = 0;
-            }
-            if (_count >= RobotHeart.DailyCap) return false;
-            if (!_perCharacter.TryClaim(who)) return false;
-            _count++;
-            return true;
-        }
     }
 }
