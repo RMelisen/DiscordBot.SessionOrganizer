@@ -11,6 +11,11 @@ namespace ProjectSYNCS.Services;
 // does: the morning hello and the 3 a.m. line are found again by their text, the giveaway
 // draw carries pings, the quiz and the verdict replies are tracked elsewhere.
 //
+// A sticker tag (Helpers/Core/Sticker) never survives a glitch: the corruption and the restore
+// both work on the clean text, so a glitched line reaches BotChat untagged and no strip follows
+// it — the silent fix relies on nothing else being posted around it. An unglitched line goes
+// through with its tag, and BotChat does the follow-up as for any line.
+//
 // A singleton: the daily cap is in-memory state (a restart resets it, by design). Absent from
 // README.md and /help, like the other easter eggs.
 public sealed class GlitchService
@@ -31,9 +36,10 @@ public sealed class GlitchService
     public async Task<IUserMessage?> ReplyWithTypingAsync(
         IUserMessage replyTo, string line, ILogger logger, string what)
     {
-        var glitched = TryGlitch(line, replyTo.Channel.Id);
+        var clean = Sticker.Strip(line);
+        var glitched = TryGlitch(clean, replyTo.Channel.Id);
         var sent = await BotChat.ReplyWithTypingAsync(replyTo, glitched ?? line, logger, what);
-        if (sent is not null && glitched is not null) Restore(sent, line, what);
+        if (sent is not null && glitched is not null) Restore(sent, clean, what);
         return sent;
     }
 
@@ -41,9 +47,10 @@ public sealed class GlitchService
     public async Task<IUserMessage?> PostWithTypingAsync(
         IMessageChannel channel, string line, ILogger logger, string what)
     {
-        var glitched = TryGlitch(line, channel.Id);
+        var clean = Sticker.Strip(line);
+        var glitched = TryGlitch(clean, channel.Id);
         var sent = await BotChat.PostWithTypingAsync(channel, glitched ?? line, logger, what);
-        if (sent is not null && glitched is not null) Restore(sent, line, what);
+        if (sent is not null && glitched is not null) Restore(sent, clean, what);
         return sent;
     }
 

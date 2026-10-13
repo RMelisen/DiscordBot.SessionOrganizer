@@ -64,6 +64,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     private readonly QuizMasterService _quiz;
     private readonly QuizCrownService _crown;
     private readonly PiHealthService _health;
+    private readonly StickerService _stickers;
 
     // Discord caps a message at 2000 characters; leave room for the herald line
     // and the blockquote markers.
@@ -75,8 +76,10 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         new(@"channels/(\d+)/(\d+)/(\d+)", RegexOptions.Compiled);
 
     public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings,
-        PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz, QuizCrownService crown, PiHealthService health)
+        PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz, QuizCrownService crown, PiHealthService health,
+        StickerService stickers)
     {
+        _stickers = stickers;
         _quiz = quiz;
         _crown = crown;
         _health = health;
@@ -521,6 +524,32 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         // Reads the database: may be past Discord's 3 s on the Pi.
         await DeferAsync(ephemeral: true);
         await FollowupAsync(await _health.DescribeAsync(), ephemeral: true, allowedMentions: AllowedMentions.None);
+    }
+
+    // Any of her sticker strips, posted here as the follow-up would post it, bypassing the
+    // roll, the cooldown and the daily cap: to see each strip on PC and on the phone.
+    [SlashCommand("sticker", "Poster ici une image de SYNCS, au choix de l'humeur (tests)")]
+    public async Task StickerAsync(
+        [Summary("mood", "L'humeur de l'image")]
+        [Autocomplete(typeof(StickerMoodAutocompleteHandler))] string mood)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+        if (!Sticker.Moods.Contains(mood))
+        {
+            await RespondAsync($"Humeur inconnue : {Format.Sanitize(mood)}.", ephemeral: true);
+            return;
+        }
+
+        // The upload can outrun Discord's 3 s.
+        await DeferAsync(ephemeral: true);
+        var posted = await _stickers.PostAsync(Context.Channel, mood);
+        await FollowupAsync(
+            posted ? "Envoyé." : "Échec de l'envoi (droit d'envoyer des fichiers ? voir les logs).",
+            ephemeral: true);
     }
 
     // The pop quiz on demand, in this guild's quiz channel: post a round now (the next in the

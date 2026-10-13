@@ -48,26 +48,43 @@ inside the `try` with the owner/self checks.
   the owner's messages. Membership is tested on the parsed `IEmote`, so a renamed emote still
   matches.
 
-## Sticker follow-ups (planned, not built)
+## Sticker follow-ups
 
-The images are ready (`ProjectSYNCS/Assets/Stickers/`, one strip per mood; why strips and not
-server stickers is in `docs/syncs-appearance.md`, *Formats*). Decided so far:
+After some of her lines she posts a picture of herself: a strip from `ProjectSYNCS/Assets/Stickers/`
+(why strips and not server stickers: `docs/syncs-appearance.md`, *Formats*).
 
-- **A follow-up to one of her lines**: the line goes out, then the mood's strip right after, as an
-  image attachment in a message of its own with no text. Sometimes, not every time; the rate is
-  still to settle.
-- **Picked by mood, not at random**: a pure helper in `Helpers/` maps a pool to a mood
-  (`NiceReplies` → `flustered`, `MistakenIdentityReplies` → `outraged`, `ShutdownThreat*` →
-  `terror`…), so it can be checked without a gateway. It only names moods that have a strip.
-- **Rare by construction**: one send path owns the rarity, with its own `CooldownGate` per channel
-  and a small daily cap. A strip is big; posted often it becomes noise.
-- **Never `glitch`**: the glitch easter egg's silent fix relies on nothing else being posted
-  around it, and the glitch emote stays rare like the breakdown.
-- Swallow and log like any Discord side effect (a channel without Attach Files just gets the line),
-  and send with `AllowedMentions.None`.
-
-Specific moments (a poll that dies → `sulk`, a heat record → `overheat`) can use the same path
-later. Building it is new user-visible behaviour: a **minor** bump.
+- **A line opts in by tag.** `Helpers/Core/Sticker` holds one constant per mood with a strip
+  (`Sticker.Bored`…), appended to the template: `"Occupée à exister." + Sticker.Bored`. The tag names
+  the face the *line* makes, not its pool's: one pool mixes snark, boredom and anger. An untagged
+  line never gets a strip. Never paste a raw `⟪…⟫` marker into a pool.
+- **Two strengths.** `Sticker.X` rolls 1 in 3; `Sticker.Sure.X` skips the roll. Sure tags live in the
+  moment pools only (`HeatRecordLines`, `CrashWakeLines`, `PowerCutWakeLines`, `RouterReturnLines`,
+  `WeekendPollDeadLines`, `SessionRecapFullLines`, `QuizCrown*Lines`, `GiveawayEmptyLines`), and
+  every tag there is sure.
+- **One gate, `StickerService`** (singleton, its own gates): after the roll, nothing in a channel in
+  breakdown, at most one strip per channel per 30 min and 12 a day in all (Paris day); a lost roll
+  uses up nothing. The strip goes out about a second after the line, off the gateway handler, as a
+  file with no text and `AllowedMentions.None`. A failure (no Attach Files) is logged and the claim
+  kept, so a channel without the permission doesn't retry on every line.
+- **`BotChat` does the split.** `ReplyWithTypingAsync` / `PostWithTypingAsync` strip the marker, send
+  the clean text and, if it went out, call `BotChat.FollowUp` — the one static seam in `BotChat`, set
+  in `Program.cs` to `StickerService.TryFollowUp`. The level-up card splits its line in `XpTracker`
+  and passes the tag to `PostEmbedWithTypingAsync`.
+- **Only pools that go out through `BotChat`, `GlitchService` or the level-up embed carry tags.**
+  Never tagged: emote reactions, statuses, slash-command replies and cards, Plynling and mascot
+  lines, heralds, easter eggs, and lines found again by their text or edited or deleted later
+  (`MorningGreetings`, `NightLines`, `IdleEditLines`, `GlitchWakeLines`, `Synthia*`). To tag a
+  text-matched pool, first make its lookup compare against `Sticker.Strip`ped templates. `Split`
+  and `PresenceService`'s `Strip` are backstops, not permission.
+- **The line's own tag wins.** `Split` removes every marker and keeps the *last* known one: a tag
+  closes its template, so a marker smuggled in through a formatted name (a nickname, a session
+  title) sits before it and is only stripped. Nothing user-written may be appended after a tag.
+- **Never `glitch`**, and a glitched line gets no strip: `GlitchService` corrupts and restores the
+  clean text, so only an unglitched line reaches `BotChat` with its tag.
+- **A line no mood fits stays untagged**, and the need goes to *Moods wanted* in
+  `docs/syncs-appearance.md`: a wrong picture is worse than none. A new line in an eligible pool
+  gets its tag when it is written.
+- `/debug sticker` posts any strip in the current channel, bypassing the gate.
 
 ## `MessageCues`
 

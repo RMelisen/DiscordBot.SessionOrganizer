@@ -249,6 +249,10 @@ free). `AllowedMentions.None` keeps the clickable pill while silencing it. Avata
 - **`Helpers/Core/BotChat`** is the single send path for her chatter (typing pause, clamped inside
   Discord.Net's 3 s `HandlerTimeout`, plus swallow-and-log). **`Helpers/Core/EmoteMarkup.Parse`** is the
   single reaction parser.
+- **`Helpers/Core/Sticker`** is the only place sticker markers live: a line opts into a picture
+  follow-up by appending a constant (`+ Sticker.Bored`), and only pools sent through `BotChat`
+  may carry one. `BotChat.FollowUp` is `BotChat`'s one static seam, set in `Program.cs` — see
+  personality, *Sticker follow-ups*.
 - **Never pick a response line with a bare `Random`.** Use `ResponsePicker.Pick(pool)`, which
   excludes the pool's `min(50, pool.Length / 2)` most recently said lines. Its memory is **global**,
   not per channel — the same people read every channel and their DMs — and records when each line

@@ -61,7 +61,8 @@ public readonly record struct StickerTag(string Mood, bool Sure);
   composed messages put text after the line (the session recap appends the roll call), so the
   marker can arrive mid-text.
 - **`Split`** finds every `⟪mood⟫` / `⟪mood!⟫` anywhere, removes all of them along with the one
-  space before each, and returns the clean text and the **first known** marker as the tag. An
+  space before each, and returns the clean text and the **last known** marker as the tag (a
+  template's tag closes it, so a marker smuggled in through a formatted name never wins). An
   unknown marker is removed and ignored, never leaked.
 - **`Strip`** is `Split(text).Text`, for paths that only need clean text.
 
