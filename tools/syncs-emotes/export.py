@@ -9,7 +9,12 @@ Discord's dark and light backgrounds at 128, 48 and 22 px.
 --head writes a head-only version to docs/assets/emotes/head/ instead (sheet: out/sheet_head.html).
 --sticker writes a 320 px server sticker (Discord's size, 512 KB max) to docs/assets/stickers/
 instead (sheet: out/sheet_sticker.html); the pixel art is scaled up whole pixels first, so it stays
-crisp rather than blurred.
+crisp rather than blurred. It also writes the sticker's strip (below).
+--strip [<mood> …], alone, rebuilds the strips from the stickers already in docs/assets/stickers/
+(every one, or the moods named): ProjectSYNCS/Assets/Stickers/syncs_<mood>.png, the sticker at the
+left of a 1000x320 transparent strip, which the bot posts as an image. The phone app stretches an
+image to the screen's width, so a square one fills the screen; at this ratio the sticker comes out
+sticker-sized on the phone and on PC alike.
 Nothing is cut along a line: the body is taken off piece by piece so the head keeps its own
 silhouette — see head_only.
 
@@ -32,6 +37,7 @@ from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__))
 MOOD_DIR = os.path.normpath(os.path.join(HERE, "..", "..", "docs", "assets", "emotes"))
 STICKER_DIR = os.path.normpath(os.path.join(HERE, "..", "..", "docs", "assets", "stickers"))
+STRIP_DIR = os.path.normpath(os.path.join(HERE, "..", "..", "ProjectSYNCS", "Assets", "Stickers"))
 OUT = os.path.join(HERE, "out")
 
 # The emote pack, docs/syncs-appearance.md. The emoji name is syncs_<mood>.
@@ -45,6 +51,7 @@ KEY_DISTANCE = 110      # RGB distance to cyan under which a pixel is background
 FRINGE_DISTANCE = 190   # …and under which a pixel touching the background is a leftover fringe
 SIZE = 128
 STICKER_SIZE = 320
+STRIP_WIDTH = 1000      # 1000x320, tested on PC and phone; 800 came out too big on PC
 # Head only. The chin sits at 2/3 of the height in every v1 picture (Gemini kept the reference
 # framing), so the body is searched for below these fractions only.
 COLLAR_SEED = 0.62      # turtleneck pixels from here down seed the flood that removes it
@@ -292,6 +299,18 @@ def export(path, mood, dest_dir, head, size=SIZE):
     print(f"{os.path.basename(path)} -> syncs_{mood}.png (grid {p or 'none'}, {os.path.getsize(dest) // 1024} KB)")
 
 
+def strip(mood):
+    sticker = Image.open(os.path.join(STICKER_DIR, f"syncs_{mood}.png")).convert("RGBA")
+    if sticker.size != (STICKER_SIZE, STICKER_SIZE):
+        raise SystemExit(f"syncs_{mood}.png is {sticker.size}, expected a {STICKER_SIZE} px sticker")
+    out = Image.new("RGBA", (STRIP_WIDTH, STICKER_SIZE))
+    out.paste(sticker, (0, 0))
+    os.makedirs(STRIP_DIR, exist_ok=True)
+    dest = os.path.join(STRIP_DIR, f"syncs_{mood}.png")
+    out.save(dest, optimize=True)
+    print(f"syncs_{mood}.png -> strip ({os.path.getsize(dest) // 1024} KB)")
+
+
 def sheet(dest_dir, name, sizes=(128, 48, 22)):
     files = sorted(f for f in os.listdir(dest_dir) if f.endswith(".png"))
     rows = []
@@ -311,6 +330,14 @@ def sheet(dest_dir, name, sizes=(128, 48, 22)):
 
 
 def main(args):
+    if args and args[0] == "--strip":
+        moods = args[1:] or sorted(f[len("syncs_"):-4] for f in os.listdir(STICKER_DIR)
+                                   if f.startswith("syncs_") and f.endswith(".png"))
+        for mood in moods:
+            if mood not in MOODS:
+                raise SystemExit(f"{mood}: mood one of {', '.join(MOODS)}")
+            strip(mood)
+        return
     head = "--head" in args
     sticker = "--sticker" in args
     args = [a for a in args if a not in ("--head", "--sticker")]
@@ -326,6 +353,8 @@ def main(args):
         if not sep or mood not in MOODS:
             raise SystemExit(f"{arg}: expected <picture>=<mood>, mood one of {', '.join(MOODS)}")
         export(path, mood, dest_dir, head, size)
+        if sticker:
+            strip(mood)
     if sticker:
         sheet(dest_dir, "sheet_sticker.html", (320, 160))
     else:
