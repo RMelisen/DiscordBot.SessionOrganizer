@@ -44,4 +44,11 @@ public class GuildSettings
     /// hardcoded default, so a server only gets quizzes once staff picks a channel.
     /// </summary>
     public ulong QuizChannelId { get; set; }
+
+    /// <summary>
+    /// The role SYNCS keeps on everyone with a living Plynling, and off everyone else.
+    /// Zero means none: no role is managed. She only adds and removes it — name, colour
+    /// and position stay staff's (see PlynlingRoleService).
+    /// </summary>
+    public ulong PlynlingRoleId { get; set; }
 }

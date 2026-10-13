@@ -323,9 +323,12 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
         private readonly PlynlingService _plynlings;
         private readonly ResponsePicker _picker;
         private readonly PlynlingAnnouncer _announcer;
+        private readonly PlynlingRoleService _roles;
 
-        public PlynlingAdminModule(PlynlingService plynlings, ResponsePicker picker, PlynlingAnnouncer announcer)
+        public PlynlingAdminModule(PlynlingService plynlings, ResponsePicker picker, PlynlingAnnouncer announcer,
+            PlynlingRoleService roles)
         {
+            _roles = roles;
             _plynlings = plynlings;
             _picker = picker;
             _announcer = announcer;
@@ -391,6 +394,7 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
             await RespondAsync($"{Emotes.Sparkle} **{PlynlingCardUi.SafeName(plynling.Name)}** est de retour ({where}).",
                 ephemeral: true, allowedMentions: AllowedMentions.None);
             await _announcer.AnnounceResurrectionAsync(plynling, now);   // after the reply — see PlynlingModule.FreezeAsync
+            await _roles.SyncMemberAsync(Context.Guild, user.Id);
         }
 
         // Staff only. Silent on purpose: no DM — the owner sees it on the card.

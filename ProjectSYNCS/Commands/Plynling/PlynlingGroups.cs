@@ -13,8 +13,8 @@ namespace ProjectSYNCS.Commands;
 [Group("plynling", "Ton Plynling : l'adopter, t'en occuper, le regarder vivre")]
 public sealed class PlynlingLongModule(PlynlingService plynlings, ResponsePicker picker,
     PlynlingAnnouncer announcer, PlynlingCooldowns cooldowns, ShameService shame, PlynlingPlayService play,
-    CosmeticService cosmetics, PlynlingVisitRunner visits, ILogger<PlynlingModule> logger)
-    : PlynlingModule(plynlings, picker, announcer, cooldowns, shame, play, cosmetics, visits, logger)
+    CosmeticService cosmetics, PlynlingVisitRunner visits, PlynlingRoleService roles, ILogger<PlynlingModule> logger)
+    : PlynlingModule(plynlings, picker, announcer, cooldowns, shame, play, cosmetics, visits, roles, logger)
 {
     // The modals answer whichever group opened them (ignoreGroupNames), so only this group
     // declares them.
@@ -28,5 +28,5 @@ public sealed class PlynlingLongModule(PlynlingService plynlings, ResponsePicker
 [Group("pl", "Raccourci de /plynling")]
 public sealed class PlynlingShortModule(PlynlingService plynlings, ResponsePicker picker,
     PlynlingAnnouncer announcer, PlynlingCooldowns cooldowns, ShameService shame, PlynlingPlayService play,
-    CosmeticService cosmetics, PlynlingVisitRunner visits, ILogger<PlynlingModule> logger)
-    : PlynlingModule(plynlings, picker, announcer, cooldowns, shame, play, cosmetics, visits, logger);
+    CosmeticService cosmetics, PlynlingVisitRunner visits, PlynlingRoleService roles, ILogger<PlynlingModule> logger)
+    : PlynlingModule(plynlings, picker, announcer, cooldowns, shame, play, cosmetics, visits, roles, logger);

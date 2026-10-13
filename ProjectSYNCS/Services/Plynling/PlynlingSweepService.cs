@@ -9,7 +9,8 @@ namespace ProjectSYNCS.Services;
 
 // Once an hour: settles every living Plynling (deaths land at the instant they happened,
 // self-freezes thaw on schedule), announces deaths nobody has announced yet, and sends
-// the single warning DM about three hours before a death.
+// the single warning DM about three hours before a death; last, it brings each guild's Plynling
+// role in line (PlynlingRoleService).
 //
 // Its own interval, like every sweep here — an hour is precise enough for a 4-day clock,
 // and the other loops' intervals are load-bearing for other things. It is a safety net,
@@ -30,14 +31,17 @@ public sealed class PlynlingSweepService : BackgroundService
     private readonly DiscordSocketClient _client;
     private readonly IServiceProvider _services;
     private readonly PlynlingAnnouncer _announcer;
+    private readonly PlynlingRoleService _roles;
     private readonly ILogger<PlynlingSweepService> _logger;
 
     public PlynlingSweepService(
         DiscordSocketClient client,
         IServiceProvider services,
         PlynlingAnnouncer announcer,
+        PlynlingRoleService roles,
         ILogger<PlynlingSweepService> logger)
     {
+        _roles = roles;
         _client = client;
         _services = services;
         _announcer = announcer;
@@ -148,6 +152,21 @@ public sealed class PlynlingSweepService : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to sweep Plynling {PlynlingId}.", id);
+            }
+        }
+
+        // Last, after every death above is stamped: a Plynling that died this pass loses its owner
+        // the Plynling role in the same pass. Per guild, and SyncGuildAsync never throws — nothing
+        // may escape the hosted loop.
+        foreach (var guild in _client.Guilds)
+        {
+            try
+            {
+                await _roles.SyncGuildAsync(guild);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Plynling role sync failed for guild {GuildId}.", guild.Id);
             }
         }
         return ids.Count;

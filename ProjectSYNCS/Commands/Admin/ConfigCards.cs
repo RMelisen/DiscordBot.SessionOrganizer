@@ -5,8 +5,8 @@ using ProjectSYNCS.Services;
 namespace ProjectSYNCS.Commands;
 
 // /config show — one Components V2 card, a section per setting. Static and Context-free, so
-// its size is checkable without a gateway: 1 container + 1 title + 7 × (separator + text)
-// = 16 of the 40 components.
+// its size is checkable without a gateway: 1 container + 1 title + 8 × (separator + text)
+// = 18 of the 40 components.
 //
 // Every list shows its hardcoded part and its configured part apart: only one of them can
 // be edited, and merging them would invite someone to remove a hardcoded entry and be
@@ -17,7 +17,9 @@ public static class ConfigCards
     /// <param name="config">This guild's configuration.</param>
     /// <param name="isHomeGuild">Whether the main and idle channels apply here at all.</param>
     /// <param name="defaultGameChannelHere">Whether the hardcoded game channel lives in this guild.</param>
-    public static MessageComponent Build(GuildConfig config, bool isHomeGuild, bool defaultGameChannelHere)
+    /// <param name="plynlingRoleProblem">Why she can't manage the configured Plynling role, or null.</param>
+    public static MessageComponent Build(GuildConfig config, bool isHomeGuild, bool defaultGameChannelHere,
+        string? plynlingRoleProblem)
     {
         var container = new ContainerBuilder()
             .WithAccentColor(Color.Purple)
@@ -26,6 +28,12 @@ public static class ConfigCards
         Section(container,
             "**Rôle modérateur** — peut voter avec `/shame`",
             config.ModeratorRoleId == 0 ? "> *non configuré*" : $"> <@&{config.ModeratorRoleId}>");
+
+        Section(container,
+            "**Rôle Plynling** — tous les maîtres d'un Plynling vivant, et personne d'autre",
+            config.PlynlingRoleId == 0
+                ? "> *non configuré*"
+                : $"> <@&{config.PlynlingRoleId}>" + (plynlingRoleProblem is null ? "" : $"\n> ⚠️ {plynlingRoleProblem}"));
 
         Section(container,
             "**Votants `/shame`** — en plus du staff et du rôle modérateur",
