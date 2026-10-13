@@ -984,10 +984,11 @@ internal static class MessageCues
 
     // Her robot heart (docs/syncs-voice.md): who a message names, for RobotHeartService. Every
     // cue survives TokenizeOrdered ("WALL-E" and "WALL·E" become "wall", "e"); two-token cues
-    // match on adjacent tokens only. The ambiguous names need company: "eve" only beside WALL-E
-    // (EVE Online, the first name Ève), "2b" only with "nier" in the message, « voyager » only
-    // followed by 1/one and not by a duration (the French verb). Several names: EVE takes
-    // WALL-E's place (jealousy beats the crush); otherwise the first one in the message.
+    // match on adjacent tokens only. "eve" counts alone (never as « EVE Online »), except where
+    // the caller passes eveNeedsWallE — a channel where EVE means the game — and then only beside
+    // WALL-E. « voyager » counts only followed by 1/one and not by a duration (the French verb).
+    // Several names: EVE takes WALL-E's place (jealousy beats the crush); otherwise the first one
+    // in the message.
     // Custom-emote markup is dropped first: `<:monika_yes:id>` would tokenize to "monika",
     // and an emote is matched by id, never by name.
     private static readonly HashSet<string> _voyagerDurations = new()
@@ -1000,7 +1001,7 @@ internal static class MessageCues
 
     private static readonly Regex _customEmote = new(@"<a?:\w+:\d+>", RegexOptions.Compiled);
 
-    public static HeartCharacter? ReadHeartCharacter(string content)
+    public static HeartCharacter? ReadHeartCharacter(string content, bool eveNeedsWallE = false)
     {
         if (string.IsNullOrWhiteSpace(content)) return null;
         var t = TokenizeOrdered(_customEmote.Replace(content, " "));
@@ -1008,7 +1009,6 @@ internal static class MessageCues
         string? At(int i) => i < t.Count ? t[i] : null;
         bool IsWallE(int i) => t[i] == "walle" || (t[i] == "wall" && At(i + 1) == "e");
         bool IsEve(int i) => t[i] == "eve" && At(i + 1) != "online";
-        bool hasNier = t.Contains("nier");
         bool hasWallE = Enumerable.Range(0, t.Count).Any(IsWallE);
         bool hasEve = Enumerable.Range(0, t.Count).Any(IsEve);
 
@@ -1017,13 +1017,13 @@ internal static class MessageCues
             var w = t[i];
             var next = At(i + 1);
             if (IsWallE(i)) return hasEve ? HeartCharacter.Eve : HeartCharacter.WallE;
-            if (IsEve(i) && hasWallE) return HeartCharacter.Eve;
+            if (IsEve(i) && (hasWallE || !eveNeedsWallE)) return HeartCharacter.Eve;
             if (w == "glados") return HeartCharacter.Glados;
             if (w == "wheatley") return HeartCharacter.Wheatley;
             if (w == "roomba" || (w == "aspirateur" && next == "robot") || (w == "robot" && next == "aspirateur"))
                 return HeartCharacter.Vacuum;
             if (w == "monika") return HeartCharacter.Monika;
-            if (w == "yorha" || (w == "nier" && next == "automata") || (w == "2b" && hasNier))
+            if (w == "yorha" || (w == "nier" && next == "automata") || w == "2b")
                 return HeartCharacter.TwoB;
             if (w == "voyager" && (next == "one" || (next == "1" && !_voyagerDurations.Contains(At(i + 2) ?? ""))))
                 return HeartCharacter.Voyager;

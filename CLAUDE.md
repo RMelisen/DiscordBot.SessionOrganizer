@@ -327,6 +327,7 @@ leveling bot's id in `Helpers/Xp/LevelUpAnnouncement`; the custom emote ids in `
 `PlynlingAnnouncer.DefaultGameChannelId`; `MorningGreetingService.DefaultChannelId`;
 `AmbientService.IdleChannelIds` (the everyday channels that must all be quiet for an idle line);
 `AmbientService.VoyagerChannelId` (where Voyager's letters land);
+`RobotHeartService.EveStrictChannelId` (where « eve » means the game, so EVE needs WALL-E beside her);
 the voice channels in `Helpers/Voice/VoiceRoom` (which spectator pool each one gets, and where she
 waits for a session nobody has joined yet); and
 `Helpers/Core/HomeGuild.Id` (the one server the morning hello and `AmbientService` live in).
