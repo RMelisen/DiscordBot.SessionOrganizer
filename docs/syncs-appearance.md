@@ -655,7 +655,9 @@ of each cell, which also cleans the JPEG noise) and scaled back up ×5 with near
 pixels, no blur. `SeasonalAvatarService` uploads the season's picture when it differs from the last
 one applied (`avatar-state.json` next to the database keeps the season and a fingerprint of the
 file), so replacing a PNG is enough for the new one to go up after the next update. Discord
-rate-limits avatar changes; a refused upload is retried on the next hourly check.
+rate-limits avatar changes; a refused upload is retried on the next hourly check. The upload is
+zoomed in a little (`ZoomKeep` in the service trims 5 % off each edge, via `PngCrop`); the files on
+disk stay the full pictures.
 
 ## The banner
 

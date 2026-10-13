@@ -24,6 +24,9 @@ internal sealed class SeasonalAvatarService : BackgroundService
 {
     private static readonly TimeSpan CheckInterval = TimeSpan.FromHours(1);
 
+    // Share of each side kept when uploading: 0.9 trims 5 % off every edge.
+    private const double ZoomKeep = 0.9;
+
     private readonly DiscordSocketClient _client;
     private readonly ILogger<SeasonalAvatarService> _logger;
     private readonly string _statePath;
@@ -90,7 +93,9 @@ internal sealed class SeasonalAvatarService : BackgroundService
             var key = $"{season}:{Fingerprint(file)}";
             if (LoadState().Applied == key) return;
 
-            using (var image = new Image(file))
+            // Zoomed in a little for the round crop; the file on disk stays the full picture.
+            using (var stream = new MemoryStream(PngCrop.CenterZoom(file, ZoomKeep)))
+            using (var image = new Image(stream))
                 await _client.CurrentUser.ModifyAsync(p => p.Avatar = image);
 
             SaveState(new AvatarState(key));
@@ -108,7 +113,7 @@ internal sealed class SeasonalAvatarService : BackgroundService
     }
 
     private static string Fingerprint(string file) =>
-        Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(file)))[..16];
+        Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(file)))[..16] + $"@{ZoomKeep}";
 
     // What a restart must not forget: which picture is already up.
     private sealed record AvatarState(string? Applied);

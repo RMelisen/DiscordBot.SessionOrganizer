@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.10.1 — 2026-10-13
+
+- Her seasonal profile pictures are zoomed in a little when applied.
+
 ## 6.10.0 — 2026-10-12
 
 - `/admin mute` and `/admin unmute` (staff): a Discord timeout of up to 28 days, with an optional
