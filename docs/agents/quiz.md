@@ -13,6 +13,8 @@ wins cailloux and a point on `/quiz leaderboard`.
 | `Commands/Quiz/QuizCards` | The round card and the board card (static, measurable) |
 | `Interactions/Components/QuizComponentHandler` | The A/B/C/D buttons, `quiz:pick:{round}:{position}` |
 | `Commands/Quiz/QuizModule` | `/quiz leaderboard`, its window buttons `quiz:win:{period}:0` |
+| `Services/Quiz/QuizCrownService` | Singleton: the Monday crown and its role (driven by the tick) |
+| `Helpers/Quiz/QuizCrown` | Which week reigns, who won it (pure) |
 
 ## Channel and schedule
 
@@ -107,8 +109,39 @@ Totals + daily buckets (`QuizStat` / `QuizDailyStat`), the project's one pattern
 rankings: all-time reads the totals (wins, then fastest `BestMs`), windows sum the buckets.
 The buckets do not sum to the totals and must not be made to.
 
+## Grosse tête de la semaine
+
+Every Monday at **10:00 Paris** (`QuizCrown.CrownHour`: after the morning hello, before the first
+slot) the best answerer of the calendar week that just ended gets the `/config quiz-role` role for
+the whole week, and she announces it in the quiz channel.
+
+- **Off until a role is set**: `QuizRoleId == 0` means no crown, no announcement, no role work.
+- **The week**: `QuizCrown.RewardedWeekStart(now)` — last Monday-to-Sunday from Monday 10:00, the
+  week before it until then. Calendar-date arithmetic in Paris, so DST never skips a week.
+- **The winner** is read from `QuizRound` (`Day` range and `WinnerId != 0`, in SQL), not from the
+  stat buckets: most wins, then most cailloux (`Reward`: harder questions count), then the fastest
+  average answer (`WonAt − PostedAt`). A perfect tie shares the role; an empty week gives nobody.
+- **Once a week**: `GuildSettings.QuizCrownedWeek` is saved **before** the role and the post, like
+  `DeathAnnounced` — a crash after it never announces twice. Between Mondays an hourly pass (its own
+  `CooldownGate`) keeps the role mirrored through `RoleMirror` (see `plynling.md`).
+- **The announcement pings the champions only** (`AllowedMentions.UserIds`), never the role. No quiz
+  channel → the role still moves, silently. Lines: `QuizCrownLines`, `QuizCrownSharedLines`,
+  `QuizCrownOwnerLines` (Papa: adoration, never a pinch), through `DailyRotation` keyed by the
+  week — one pick a week, restarts would wipe `ResponsePicker`.
+- **A role set mid-week** goes to the reigning champion at once, silently: `SetQuizRoleAsync` raises
+  `QuizCrownedWeek` to the reigning week in the same write (it is 0 on a guild that never had a
+  crown), so the first announcement is the next Monday's.
+- **No announcement while the role is broken** (deleted, above hers): « le rôle est à toi » would
+  be a lie. `/config show` and the log say why.
+- Lines rotate by **week index** (`DayNumber / 7`): `DailyRotation` only avoids repeats when its
+  key steps by one.
+- `QuizMasterService.TickAsync` calls it per guild in **its own `try`**, so a crown failure neither
+  reads as a scheduling failure nor skips the next guild's quiz.
+
 ## `/debug quiz`
 
 Owner-only: `action:Post` posts now (the next question, or `key`, with autocomplete),
 ignoring slots, cap and quiet clock but never beside an open round; `action:Close` ends the open
-round as the timeout would. How to test in the dev guild after `/config quiz-channel set`.
+round as the timeout would; `action:Crown` crowns the last finished week now, announcement
+included, without reading or writing `QuizCrownedWeek`. How to test in the dev guild after
+`/config quiz-channel set` (and `/config quiz-role create` for the crown).

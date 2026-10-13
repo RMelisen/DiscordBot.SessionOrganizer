@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Data;
+using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Models;
 
 namespace ProjectSYNCS.Services;
@@ -24,11 +25,13 @@ public sealed record GuildConfig(
     IReadOnlySet<ulong> IdleChannels,
     IReadOnlySet<ulong> ShameVoters,
     ulong QuizChannelId,
-    ulong PlynlingRoleId)
+    ulong PlynlingRoleId,
+    ulong QuizRoleId,
+    int QuizCrownedWeek)
 {
     /// <summary>What an unconfigured guild looks like — nothing set, nothing added.</summary>
     public static readonly GuildConfig Empty = new(0, 0, 0,
-        new HashSet<ulong>(), new HashSet<ulong>(), new HashSet<ulong>(), 0, 0);
+        new HashSet<ulong>(), new HashSet<ulong>(), new HashSet<ulong>(), 0, 0, 0, 0);
 }
 
 // Per-guild settings an admin can change at runtime, and the cache that makes them
@@ -104,7 +107,9 @@ public sealed class GuildConfigService
                 settings?.MainChannelId ?? 0,
                 excluded.ToHashSet(), idle.ToHashSet(), voters.ToHashSet(),
                 settings?.QuizChannelId ?? 0,
-                settings?.PlynlingRoleId ?? 0);
+                settings?.PlynlingRoleId ?? 0,
+                settings?.QuizRoleId ?? 0,
+                settings?.QuizCrownedWeek ?? 0);
         }
         catch (Exception ex)
         {
@@ -186,6 +191,24 @@ public sealed class GuildConfigService
     /// <summary>Sets the managed Plynling role, or stops managing one with zero.</summary>
     public Task SetPlynlingRoleAsync(ulong guildId, ulong roleId) =>
         UpdateSettingsAsync(guildId, s => s.PlynlingRoleId = roleId);
+
+    /// <summary>
+    /// Sets the Grosse tête role, or turns the crown off with zero. Setting one also marks the
+    /// reigning week as crowned, in the same write: the role goes to that week's champion silently,
+    /// and the next announcement is the next Monday's — not a surprise ping a minute later (the
+    /// marker is 0 on a guild that never had a crown, or behind after a clear).
+    /// </summary>
+    public Task SetQuizRoleAsync(ulong guildId, ulong roleId) =>
+        UpdateSettingsAsync(guildId, s =>
+        {
+            s.QuizRoleId = roleId;
+            if (roleId != 0)
+                s.QuizCrownedWeek = Math.Max(s.QuizCrownedWeek, QuizCrown.RewardedWeekStart(DateTimeOffset.UtcNow));
+        });
+
+    /// <summary>Records the week whose crown was just announced (QuizCrownService).</summary>
+    public Task SetQuizCrownedWeekAsync(ulong guildId, int weekStart) =>
+        UpdateSettingsAsync(guildId, s => s.QuizCrownedWeek = weekStart);
 
     // The settings row is created lazily, the first time anything is configured.
     private async Task UpdateSettingsAsync(ulong guildId, Action<GuildSettings> apply)

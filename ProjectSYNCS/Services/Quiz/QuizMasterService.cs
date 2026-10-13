@@ -67,6 +67,7 @@ public sealed class QuizMasterService : BackgroundService
     private readonly DiscordSocketClient _client;
     private readonly IServiceProvider _services;
     private readonly GuildConfigService _config;
+    private readonly QuizCrownService _crown;
     private readonly ILogger<QuizMasterService> _logger;
 
     // Guards everything below except _claimed (which owns its own concurrency).
@@ -94,11 +95,13 @@ public sealed class QuizMasterService : BackgroundService
         DiscordSocketClient client,
         IServiceProvider services,
         GuildConfigService config,
+        QuizCrownService crown,
         ILogger<QuizMasterService> logger)
     {
         _client = client;
         _services = services;
         _config = config;
+        _crown = crown;
         _logger = logger;
     }
 
@@ -157,6 +160,17 @@ public sealed class QuizMasterService : BackgroundService
             {
                 // One guild's failure must not keep the others from their quiz.
                 _logger.LogError(ex, "Quiz scheduling failed in guild {GuildId}.", guild.Id);
+            }
+
+            // Its own try: a crown failure is not a scheduling failure, and must not skip the next
+            // guild's quiz either.
+            try
+            {
+                await _crown.TickAsync(guild, now);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "The quiz crown failed in guild {GuildId}.", guild.Id);
             }
         }
     }

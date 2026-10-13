@@ -16,8 +16,8 @@ namespace ProjectSYNCS.Commands;
 // - **Single channels** (game, main) *replace* their hardcoded default when set, and fall
 //   back to it when cleared. A destination grants and revokes nothing. The quiz channel is
 //   the one without a default: clearing it turns the quiz off.
-// - **The Plynling role** is neither: SYNCS *owns* who holds it (a strict mirror of who has a
-//   living Plynling — see PlynlingRoleService). Setting it can therefore take the role away from
+// - **The mirrored roles** (Plynling, Grosse tête) are neither: SYNCS *owns* who holds them (a
+//   strict mirror — see RoleMirror). Setting one can therefore take the role away from
 //   people, which is why `set` refuses @everyone, managed roles, roles above hers and any role
 //   carrying permissions, and why `clear` only stops managing it and touches nobody.
 //
@@ -70,10 +70,13 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
 
         var roleProblem = config.PlynlingRoleId == 0
             ? null
-            : PlynlingRoleService.Problem(Context.Guild, Context.Guild.GetRole(config.PlynlingRoleId), adopting: false);
+            : RoleMirror.Problem(Context.Guild, Context.Guild.GetRole(config.PlynlingRoleId), adopting: false, RoleKind.Plynling);
+        var quizRoleProblem = config.QuizRoleId == 0
+            ? null
+            : RoleMirror.Problem(Context.Guild, Context.Guild.GetRole(config.QuizRoleId), adopting: false, RoleKind.QuizCrown);
 
         await FollowupAsync(
-            components: ConfigCards.Build(config, Context.Guild.Id == HomeGuild.Id, defaultGameHere, roleProblem),
+            components: ConfigCards.Build(config, Context.Guild.Id == HomeGuild.Id, defaultGameHere, roleProblem, quizRoleProblem),
             flags: MessageFlags.ComponentsV2,
             ephemeral: true,
             allowedMentions: AllowedMentions.None);
@@ -173,24 +176,23 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
     [Group("plynling-role", "Le rôle de tous les maîtres d'un Plynling vivant")]
     public class PlynlingRoleModule : InteractionModuleBase<SocketInteractionContext>
     {
-        // A role created over REST reaches the gateway cache a moment later; syncing before that
-        // would find "no such role" and log a problem that isn't one.
-        private static readonly TimeSpan FirstSyncDelay = TimeSpan.FromSeconds(3);
-
         private readonly GuildConfigService _config;
         private readonly PlynlingRoleService _roles;
+        private readonly RoleMirror _mirror;
         private readonly ILogger<PlynlingRoleModule> _logger;
 
-        public PlynlingRoleModule(GuildConfigService config, PlynlingRoleService roles, ILogger<PlynlingRoleModule> logger)
+        public PlynlingRoleModule(GuildConfigService config, PlynlingRoleService roles, RoleMirror mirror,
+            ILogger<PlynlingRoleModule> logger)
         {
             _config = config;
             _roles = roles;
+            _mirror = mirror;
             _logger = logger;
         }
 
-        // With its leading space, or nothing when the preview failed (the reply goes out regardless).
-        private static string CountsLine((int ToAdd, int ToRemove)? preview) =>
-            preview is { } p ? " " + PlynlingRoleSync.Counts(p.ToAdd, p.ToRemove) : "";
+        private ManagedRole Setup => new(RoleKind.Plynling, "Plynling", PlynlingRoleService.DefaultName,
+            id => _config.SetPlynlingRoleAsync(Context.Guild.Id, id),
+            () => _roles.LoadHoldersAsync(Context.Guild.Id));
 
         [SlashCommand("create", "Créer le rôle des maîtres de Plynlings et le gérer")]
         public async Task CreateAsync(
@@ -198,65 +200,9 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
             [MaxLength(InputCaps.RoleName)] string? name = null)
         {
             if (!await BeginAsync(Context)) return;
-
-            // A configured role that was deleted in Discord counts as none.
-            var current = (await _config.GetAsync(Context.Guild.Id)).PlynlingRoleId;
-            if (current != 0 && Context.Guild.GetRole(current) is not null)
-            {
-                await SayAsync(Context,
-                    $"Il y a déjà un rôle Plynling : <@&{current}>. `/config plynling-role clear` d'abord si tu en veux un autre (ᵕ • ᴗ •)");
-                return;
-            }
-            if (Context.Guild.CurrentUser?.GuildPermissions.ManageRoles != true)
-            {
-                await SayAsync(Context, PlynlingRoleSync.NoManageRoles);
-                return;
-            }
-
-            name = string.IsNullOrWhiteSpace(name) ? PlynlingRoleSync.DefaultName : name.Trim();
-            IRole role;
-            try
-            {
-                // No permissions, mentionable by everyone (it is a ping group). A new role lands at
-                // the bottom of the list, below hers, so she can manage it from the start.
-                role = await Context.Guild.CreateRoleAsync(name,
-                    permissions: GuildPermissions.None,
-                    isMentionable: true,
-                    options: new RequestOptions { AuditLogReason = "/config plynling-role create" });
-            }
-            catch (HttpException ex)
-            {
-                await SayAsync(Context, $"Discord a refusé de créer le rôle ({ex.Reason ?? ex.HttpCode.ToString()}) {Emotes.Staring}");
-                return;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Creating the Plynling role failed in guild {GuildId}.", Context.Guild.Id);
-                await SayAsync(Context, "Discord ne m'a pas répondu à temps. Réessaie dans un instant (ᵕ • ᴗ •)");
-                return;
-            }
-
-            try
-            {
-                await _config.SetPlynlingRoleAsync(Context.Guild.Id, role.Id);
-            }
-            catch (Exception ex)
-            {
-                // Not stored, so nothing would ever manage it — and a second click would make another.
-                // Take back the role just made rather than leave an orphan.
-                _logger.LogError(ex, "Saving the Plynling role failed in guild {GuildId}; deleting role {RoleId}.",
-                    Context.Guild.Id, role.Id);
-                try { await role.DeleteAsync(new RequestOptions { AuditLogReason = "/config plynling-role create a échoué" }); }
-                catch (Exception deleteEx) { _logger.LogWarning(deleteEx, "Could not delete orphan role {RoleId}.", role.Id); }
-                await SayAsync(Context, "Je n'ai pas réussi à enregistrer le rôle, alors je l'ai retiré. Réessaie dans un instant (╥﹏╥)");
-                return;
-            }
-
-            var preview = await _roles.PreviewAsync(Context.Guild, role.Id);
-            await SayAsync(Context,
-                $"<@&{role.Id}> est créé.{CountsLine(preview)} "
-                + "Renomme-le ou change sa couleur comme tu veux : moi, je ne fais que le donner et le retirer ദ്ദി◝ ⩊ ◜.ᐟ");
-            _roles.StartSync(Context.Guild, FirstSyncDelay);
+            await CreateManagedRoleAsync(Context, _mirror, _logger, Setup,
+                (await _config.GetAsync(Context.Guild.Id)).PlynlingRoleId, name,
+                "Renomme-le ou change sa couleur comme tu veux : moi, je ne fais que le donner et le retirer ദ്ദി◝ ⩊ ◜.ᐟ");
         }
 
         [SlashCommand("set", "Gérer un rôle existant comme rôle Plynling")]
@@ -264,18 +210,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
             [Summary("role", "Le rôle à donner aux maîtres de Plynlings")] IRole role)
         {
             if (!await BeginAsync(Context)) return;
-
-            if (PlynlingRoleService.Problem(Context.Guild, Context.Guild.GetRole(role.Id), adopting: true) is { } problem)
-            {
-                await SayAsync(Context, problem);
-                return;
-            }
-
-            await _config.SetPlynlingRoleAsync(Context.Guild.Id, role.Id);
-            var preview = await _roles.PreviewAsync(Context.Guild, role.Id);
-            await SayAsync(Context,
-                $"<@&{role.Id}> est maintenant le rôle Plynling.{CountsLine(preview)}");
-            _roles.StartSync(Context.Guild, TimeSpan.Zero);
+            await SetManagedRoleAsync(Context, _mirror, Setup, role, "est maintenant le rôle Plynling.");
         }
 
         [SlashCommand("clear", "Ne plus gérer de rôle Plynling")]
@@ -287,6 +222,60 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
 
             await SayAsync(Context,
                 "Je ne gère plus de rôle Plynling. Le rôle et ses membres restent tels quels : "
+                + "supprime-le dans Discord si tu n'en veux plus (ᵕ • ᴗ •)");
+        }
+    }
+
+    [Group("quiz-role", "Le rôle de la grosse tête du quiz de la semaine")]
+    public class QuizRoleModule : InteractionModuleBase<SocketInteractionContext>
+    {
+        private readonly GuildConfigService _config;
+        private readonly QuizCrownService _crown;
+        private readonly RoleMirror _mirror;
+        private readonly ILogger<QuizRoleModule> _logger;
+
+        public QuizRoleModule(GuildConfigService config, QuizCrownService crown, RoleMirror mirror,
+            ILogger<QuizRoleModule> logger)
+        {
+            _config = config;
+            _crown = crown;
+            _mirror = mirror;
+            _logger = logger;
+        }
+
+        // The first pass gives it to the champion reigning now, silently: Monday announces as usual.
+        private ManagedRole Setup => new(RoleKind.QuizCrown, "Grosse tête", QuizCrownService.DefaultName,
+            id => _config.SetQuizRoleAsync(Context.Guild.Id, id),
+            () => _crown.LoadHoldersAsync(Context.Guild.Id));
+
+        [SlashCommand("create", "Créer le rôle de la grosse tête de la semaine et le gérer")]
+        public async Task CreateAsync(
+            [Summary("name", "Le nom du rôle (par défaut : Grosse tête de la semaine)")]
+            [MaxLength(InputCaps.RoleName)] string? name = null)
+        {
+            if (!await BeginAsync(Context)) return;
+            await CreateManagedRoleAsync(Context, _mirror, _logger, Setup,
+                (await _config.GetAsync(Context.Guild.Id)).QuizRoleId, name,
+                "Chaque lundi à 10 h, je le donne à la meilleure tête du quiz de la semaine passée ദ്ദി◝ ⩊ ◜.ᐟ");
+        }
+
+        [SlashCommand("set", "Gérer un rôle existant comme rôle de la grosse tête")]
+        public async Task SetAsync(
+            [Summary("role", "Le rôle à donner à la grosse tête de la semaine")] IRole role)
+        {
+            if (!await BeginAsync(Context)) return;
+            await SetManagedRoleAsync(Context, _mirror, Setup, role, "est maintenant le rôle de la grosse tête.");
+        }
+
+        [SlashCommand("clear", "Ne plus gérer de rôle de la grosse tête")]
+        public async Task ClearAsync()
+        {
+            if (!await BeginAsync(Context)) return;
+
+            await _config.SetQuizRoleAsync(Context.Guild.Id, 0);
+
+            await SayAsync(Context,
+                "Plus de grosse tête : je ne couronne plus personne. Le rôle et ses membres restent tels quels : "
                 + "supprime-le dans Discord si tu n'en veux plus (ᵕ • ᴗ •)");
         }
     }
@@ -554,6 +543,104 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
                 ? $"<#{channel.Id}> n'est plus surveillé. Ce qui s'y dit ne m'empêchera plus de parler {Emotes.Sparkle}"
                 : $"<#{channel.Id}> n'était pas dans la liste (ᵕ • ᴗ •)");
         }
+    }
+
+    // ---- The mirrored roles (Plynling, Grosse tête) ----
+    // One create / set for both, so they can never drift apart.
+
+    /// <summary>What /config needs to drive one mirrored role.</summary>
+    /// <param name="Label">How replies name it: « un rôle {Label} ».</param>
+    /// <param name="Store">Saves the role id (zero clears it).</param>
+    /// <param name="LoadHolders">Who should hold it now.</param>
+    private sealed record ManagedRole(RoleKind Kind, string Label, string DefaultName,
+        Func<ulong, Task> Store, Func<Task<HashSet<ulong>>> LoadHolders);
+
+    // A role created over REST reaches the gateway cache a moment later; a pass before that would
+    // find "no such role" and log a problem that isn't one.
+    private static readonly TimeSpan FirstPassDelay = TimeSpan.FromSeconds(3);
+
+    // With its leading space, or nothing when the preview failed (the reply goes out regardless).
+    private static string CountsLine((int ToAdd, int ToRemove)? preview) =>
+        preview is { } p ? " " + RoleMirrorRules.Counts(p.ToAdd, p.ToRemove) : "";
+
+    private static async Task CreateManagedRoleAsync(SocketInteractionContext context, RoleMirror mirror,
+        ILogger logger, ManagedRole setup, ulong currentId, string? name, string doneTail)
+    {
+        var guild = context.Guild;
+
+        // A configured role that was deleted in Discord counts as none.
+        if (currentId != 0 && guild.GetRole(currentId) is not null)
+        {
+            await SayAsync(context,
+                $"Il y a déjà un rôle {setup.Label} : <@&{currentId}>. `/config {setup.Kind.Command} clear` d'abord si tu en veux un autre (ᵕ • ᴗ •)");
+            return;
+        }
+        if (guild.CurrentUser?.GuildPermissions.ManageRoles != true)
+        {
+            await SayAsync(context, RoleMirrorRules.NoManageRoles);
+            return;
+        }
+
+        name = string.IsNullOrWhiteSpace(name) ? setup.DefaultName : name.Trim();
+        IRole role;
+        try
+        {
+            // No permissions, mentionable by everyone (it is a ping group). A new role lands at the
+            // bottom of the list, below hers, so she can manage it from the start.
+            role = await guild.CreateRoleAsync(name,
+                permissions: GuildPermissions.None,
+                isMentionable: true,
+                options: new RequestOptions { AuditLogReason = $"/config {setup.Kind.Command} create" });
+        }
+        catch (HttpException ex)
+        {
+            await SayAsync(context, $"Discord a refusé de créer le rôle ({ex.Reason ?? ex.HttpCode.ToString()}) {Emotes.Staring}");
+            return;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Creating the {Kind} role failed in guild {GuildId}.", setup.Kind.Key, guild.Id);
+            await SayAsync(context, "Discord ne m'a pas répondu à temps. Réessaie dans un instant (ᵕ • ᴗ •)");
+            return;
+        }
+
+        try
+        {
+            await setup.Store(role.Id);
+        }
+        catch (Exception ex)
+        {
+            // Not stored, so nothing would ever manage it — and a second click would make another.
+            // Take back the role just made rather than leave an orphan.
+            logger.LogError(ex, "Saving the {Kind} role failed in guild {GuildId}; deleting role {RoleId}.",
+                setup.Kind.Key, guild.Id, role.Id);
+            try { await role.DeleteAsync(new RequestOptions { AuditLogReason = $"/config {setup.Kind.Command} create a échoué" }); }
+            catch (Exception deleteEx) { logger.LogWarning(deleteEx, "Could not delete orphan role {RoleId}.", role.Id); }
+            await SayAsync(context, "Je n'ai pas réussi à enregistrer le rôle, alors je l'ai retiré. Réessaie dans un instant (╥﹏╥)");
+            return;
+        }
+
+        var preview = await mirror.PreviewAsync(guild, role.Id, setup.LoadHolders);
+        await SayAsync(context, $"<@&{role.Id}> est créé.{CountsLine(preview)} {doneTail}");
+        var roleId = role.Id;
+        mirror.StartMirror(FirstPassDelay, () => mirror.MirrorGuildAsync(guild, setup.Kind, roleId, setup.LoadHolders));
+    }
+
+    private static async Task SetManagedRoleAsync(SocketInteractionContext context, RoleMirror mirror,
+        ManagedRole setup, IRole role, string doneLead)
+    {
+        var guild = context.Guild;
+        if (RoleMirror.Problem(guild, guild.GetRole(role.Id), adopting: true, setup.Kind) is { } problem)
+        {
+            await SayAsync(context, problem);
+            return;
+        }
+
+        await setup.Store(role.Id);
+        var preview = await mirror.PreviewAsync(guild, role.Id, setup.LoadHolders);
+        await SayAsync(context, $"<@&{role.Id}> {doneLead}{CountsLine(preview)}");
+        var roleId = role.Id;
+        mirror.StartMirror(TimeSpan.Zero, () => mirror.MirrorGuildAsync(guild, setup.Kind, roleId, setup.LoadHolders));
     }
 
     // Every handler starts here: refuse anyone who isn't staff, then defer — the writes

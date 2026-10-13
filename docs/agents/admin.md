@@ -33,7 +33,8 @@ same check.
 
 A flat `/config show` (a static Components V2 card, `ConfigCards.Build`) plus one subgroup per
 setting: `excluded-channels add|remove`, `idle-channels add|remove`, `shame-voters add|remove`,
-`moderator-role set|clear`, `plynling-role create|set|clear`, `game-channel set|clear`,
+`moderator-role set|clear`, `plynling-role create|set|clear`, `quiz-role create|set|clear`,
+`game-channel set|clear`,
 `main-channel set|clear`, `quiz-channel set|clear`. Three levels is
 Discord's maximum nesting. (`/shame` is flat only because it had to stay invokable bare; nothing here
 needs that.) Every handler goes through `ConfigModule.BeginAsync` (`IsStaff`, then an ephemeral
@@ -54,8 +55,11 @@ defer); no `[DefaultMemberPermissions]`, same reason as `/admin`.
   can't view and send in — a silent destination would otherwise fail on every use with nobody told.
   **`QuizChannelId` is the exception: it has no default**, so zero means no quiz, `clear` turns it
   off, and it is per guild (see `quiz.md`).
-- **The Plynling role is owned, not configured.** `GuildSettings.PlynlingRoleId`, zero meaning none.
-  SYNCS decides who holds it (a strict mirror — see `plynling.md`), so `set` can take it away from
+- **The mirrored roles are owned, not configured.** `GuildSettings.PlynlingRoleId` and `QuizRoleId`,
+  zero meaning none (for the quiz role, zero also turns the weekly crown off). SYNCS decides who holds
+  them (a strict mirror — see `plynling.md` and `quiz.md`; both go through `RoleMirror`), and the two
+  subgroups share one create / set (`ConfigModule.CreateManagedRoleAsync` / `SetManagedRoleAsync`),
+  so they can't drift. `set` can take a role away from
   people: it refuses `@everyone`, managed roles, roles at or above hers and any role carrying
   permissions, and its reply says how many will gain and lose it. `create` makes a mentionable,
   permission-less role and refuses while a configured role still exists (no orphan from a second

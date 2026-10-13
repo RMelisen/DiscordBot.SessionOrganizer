@@ -39,7 +39,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/admin mute · unmute` | Discord timeout, saying what's missing when it can't | staff |
 | `/admin plynling rename · resurrect · passion-reset · cure`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
 | `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
-| `/debug quiz` | Post or close a pop quiz now (tests) | owner |
+| `/debug quiz` | Post or close a pop quiz, or crown the week, now (tests) | owner |
 | `/help` | In-Discord usage guide | everyone |
 
 "Staff" means Administrator or Manage Server, the bot's owner, or a configured
@@ -236,6 +236,9 @@ a channel with **`/config quiz-channel set`**.
   her. Many come from her morning fun facts. Nothing repeats until the whole bank is used.
 - **`/quiz leaderboard`** — wins over 30 days, 7 days or all time (with each person's fastest
   winning answer).
+- **Grosse tête de la semaine:** every Monday at 10:00 she gives a role to last week's best
+  answerer (most wins, then the harder questions, then speed) and announces it in the quiz
+  channel. Off until staff set the role with **`/config quiz-role create`**.
 
 ### Plynlings
 
@@ -379,6 +382,8 @@ looks after her.
   - `plynling-role create|set|clear` — a role SYNCS keeps on everyone with a living Plynling and
     off everyone else (flair and a ping group); `create` makes it for you, `clear` stops managing it
     without touching anyone;
+  - `quiz-role create|set|clear` — the « Grosse tête de la semaine » role, handed every Monday to
+    last week's best quiz answerer; no role, no crown;
   - `main-channel set|clear` and `idle-channels add|remove` — her morning hello and night life, and
     the channels that must all be quiet before she talks into the silence (main server only).
 
@@ -543,8 +548,8 @@ placeholder.
 It also needs the usual channel permissions where you want it active: send messages,
 embed links, add reactions, and *Manage Events* if you want sessions mirrored into
 the server's Events tab (that one degrades gracefully if missing). *Manage Roles* is needed only
-for `/config plynling-role`, and her top role must sit above the Plynling role (a role she creates
-starts below hers).
+for `/config plynling-role` and `/config quiz-role`, and her top role must sit above those roles (a
+role she creates starts below hers).
 
 ## Running locally
 

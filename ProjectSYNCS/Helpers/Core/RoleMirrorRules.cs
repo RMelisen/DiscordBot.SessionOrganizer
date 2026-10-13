@@ -10,15 +10,14 @@ public readonly record struct RoleFacts(bool Exists, bool IsEveryone, bool IsMan
 /// <summary>What the sync needs to know about her own standing in the guild.</summary>
 public readonly record struct BotFacts(bool CanManageRoles, int TopPosition);
 
-// The Plynling role's rules, without a gateway: who should gain or lose it, and whether she can
-// manage a given role at all. One Refusal backs `/config plynling-role set`, `/config show` and the
-// sweep's skip check, so the three can never disagree about what is manageable.
+// The rules of a role SYNCS mirrors (the Plynling owners, the quiz's Grosse tête), without a
+// gateway: who should gain or lose it, and whether she can manage a given role at all. One Refusal
+// backs `/config … set`, `/config show` and every pass's skip check, so they can never disagree
+// about what is manageable. RoleMirror applies them.
 //
-// Strict mirror: holding the role means owning a living Plynling (frozen counts), nothing else.
-public static class PlynlingRoleSync
+// Strict mirror: holding the role means being in the set its owner computes, nothing else.
+public static class RoleMirrorRules
 {
-    public const string DefaultName = "Maîtres de Plynlings";
-
     // A wrong owner list (a bug, a bad read) could otherwise strip the role from the whole guild in
     // one pass. Additions are uncapped: a wrong one is harmless here.
     public const int MaxRemovalsPerPass = 25;
@@ -31,11 +30,12 @@ public static class PlynlingRoleSync
     /// <paramref name="adopting"/> is true for <c>set</c>: picking a role that carries
     /// permissions is refused, because the sync would then hand out and strip those permissions.
     /// The sync itself passes false — staff adding a permission to the role later is their call.
+    /// <paramref name="command"/> is the <c>/config</c> subgroup that manages it (<c>plynling-role</c>).
     /// </summary>
-    public static string? Refusal(RoleFacts role, BotFacts bot, bool adopting)
+    public static string? Refusal(RoleFacts role, BotFacts bot, bool adopting, string command)
     {
         if (!role.Exists)
-            return "Ce rôle n'existe plus. Recrée-le avec `/config plynling-role create`, ou choisis-en un autre avec `set`.";
+            return $"Ce rôle n'existe plus. Recrée-le avec `/config {command} create`, ou choisis-en un autre avec `set`.";
         if (role.IsEveryone)
             return "`@everyone`, sérieusement ? Choisis un vrai rôle (¬‿¬)";
         if (role.IsManaged)
@@ -45,7 +45,7 @@ public static class PlynlingRoleSync
         if (role.Position >= bot.TopPosition)
             return "Ce rôle est au-dessus du mien, ou au même niveau : monte mon rôle plus haut dans la liste (Paramètres du serveur → Rôles).";
         if (adopting && role.RawPermissions != 0)
-            return "Ce rôle donne des permissions. Le rôle Plynling est décoratif : choisis-en un sans aucune permission, ou laisse-moi le créer avec `create`.";
+            return "Ce rôle donne des permissions. Celui-ci doit rester décoratif : choisis-en un sans aucune permission, ou laisse-moi le créer avec `create`.";
         return null;
     }
 
