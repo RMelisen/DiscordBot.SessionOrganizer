@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
@@ -979,6 +980,57 @@ internal static class MessageCues
     {
         if (string.IsNullOrWhiteSpace(content)) return false;
         return TokenizeOrdered(content).Any(_synthiaNames.Contains);
+    }
+
+    // Her robot heart (docs/syncs-voice.md): who a message names, for RobotHeartService. Every
+    // cue survives TokenizeOrdered ("WALL-E" and "WALL·E" become "wall", "e"); two-token cues
+    // match on adjacent tokens only. The ambiguous names need company: "eve" only beside WALL-E
+    // (EVE Online, the first name Ève), "2b" only with "nier" in the message, « voyager » only
+    // followed by 1/one and not by a duration (the French verb). Several names: EVE takes
+    // WALL-E's place (jealousy beats the crush); otherwise the first one in the message.
+    // Custom-emote markup is dropped first: `<:monika_yes:id>` would tokenize to "monika",
+    // and an emote is matched by id, never by name.
+    private static readonly HashSet<string> _voyagerDurations = new()
+    {
+        "minute", "minutes", "heure", "heures", "jour", "jours", "journee", "journees",
+        "soir", "soirs", "soiree", "soirees", "nuit", "nuits", "semaine", "semaines",
+        "week", "weekend", "quinzaine", "mois", "trimestre", "semestre", "an", "ans",
+        "annee", "annees", "fois",
+    };
+
+    private static readonly Regex _customEmote = new(@"<a?:\w+:\d+>", RegexOptions.Compiled);
+
+    public static HeartCharacter? ReadHeartCharacter(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return null;
+        var t = TokenizeOrdered(_customEmote.Replace(content, " "));
+
+        string? At(int i) => i < t.Count ? t[i] : null;
+        bool IsWallE(int i) => t[i] == "walle" || (t[i] == "wall" && At(i + 1) == "e");
+        bool IsEve(int i) => t[i] == "eve" && At(i + 1) != "online";
+        bool hasNier = t.Contains("nier");
+        bool hasWallE = Enumerable.Range(0, t.Count).Any(IsWallE);
+        bool hasEve = Enumerable.Range(0, t.Count).Any(IsEve);
+
+        for (var i = 0; i < t.Count; i++)
+        {
+            var w = t[i];
+            var next = At(i + 1);
+            if (IsWallE(i)) return hasEve ? HeartCharacter.Eve : HeartCharacter.WallE;
+            if (IsEve(i) && hasWallE) return HeartCharacter.Eve;
+            if (w == "glados") return HeartCharacter.Glados;
+            if (w == "wheatley") return HeartCharacter.Wheatley;
+            if (w == "roomba" || (w == "aspirateur" && next == "robot") || (w == "robot" && next == "aspirateur"))
+                return HeartCharacter.Vacuum;
+            if (w == "monika") return HeartCharacter.Monika;
+            if (w == "yorha" || (w == "nier" && next == "automata") || (w == "2b" && hasNier))
+                return HeartCharacter.TwoB;
+            if (w == "voyager" && (next == "one" || (next == "1" && !_voyagerDurations.Contains(At(i + 2) ?? ""))))
+                return HeartCharacter.Voyager;
+            if ((w == "sonde" || w == "sondes") && next == "voyager")
+                return HeartCharacter.Voyager;
+        }
+        return null;
     }
 
     // True when the message calls the bot by the wrong name "Inabot" — written as

@@ -150,7 +150,7 @@ the mood to `Helpers/Core/Sticker` (both strengths, and `Moods`), then tag the w
 untagged lines of a pool are listed by the owner's audit. A patch bump.
 
 None yet: the 6.13.0 pass found a fitting strip for every eligible line. `love`, `full_love` and
-`tipsy_love` are the moods still waiting for lines (no eligible pool talks about WALL-E).
+`tipsy_love` are used since 6.14.0 (her robot heart).
 
 | Suggested mood | Face | Cap / LED | Waiting (pool × lines) |
 |---|---|---|---|

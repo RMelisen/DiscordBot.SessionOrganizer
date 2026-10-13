@@ -39,8 +39,8 @@ public static class Sticker
     public const string Terror = " ⟪terror⟫";
     public const string TipsyLove = " ⟪tipsy_love⟫";
 
-    // The moment pools' tags: the moment earns the picture, so the roll is skipped. The cooldown
-    // and the daily cap still apply.
+    // The moment pools' tags: the moment earns the picture, so the roll is skipped (no cooldown
+    // or daily cap exists since 6.14.0: a sure tag always gets its strip, outside a breakdown).
     public static class Sure
     {
         public const string Bargain = " ⟪bargain!⟫";

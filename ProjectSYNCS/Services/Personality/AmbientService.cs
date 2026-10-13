@@ -44,6 +44,10 @@ internal sealed class AmbientService : BackgroundService
         1500799769914773574,              // Nourriture
     };
 
+    // Where Voyager's letters land — their own channel, not the main one. Server-specific, listed
+    // in CLAUDE.md's "Hardcoded ids". In the dev guild it never resolves and the letters are skipped.
+    internal const ulong VoyagerChannelId = 901172450719584356;
+
     // How far back to look in the main channel on the first tick after a start (last human
     // message, tonight's line), and in each other channel for its last human message.
     private const int HistoryDepth = 50;
@@ -65,6 +69,8 @@ internal sealed class AmbientService : BackgroundService
     private const ulong PowerCutSalt = 0x5359_4E43_504F_5752;   // "SYNCPOWR"
     private const ulong CrashSalt = 0x5359_4E43_4352_5348;      // "SYNCCRSH"
     private const ulong GlitchSalt = 0x5359_4E43_474C_4954;     // "SYNCGLIT"
+    private const ulong VoyagerLetterSalt = 0x5359_4E43_564F_594C; // "SYNCVOYL"
+    private const ulong VoyagerAnswerSalt = 0x5359_4E43_564F_5941; // "SYNCVOYA"
 
     private static readonly HashSet<string> NightLineSet = new(BotResponses.NightLines);
 
@@ -79,6 +85,9 @@ internal sealed class AmbientService : BackgroundService
 
     // Guards everything below: the loop and the gateway both read and claim it.
     private readonly object _gate = new();
+
+    // Guards ambient-state.json: the wake line and the tick's letters both read-modify-write it.
+    private readonly object _stateLock = new();
 
     // The last human message in the main channel (night quiet, ghost typing, the late
     // "seen" reaction), and in any of IdleChannelIds (the idle silence). In memory; the
@@ -159,6 +168,9 @@ internal sealed class AmbientService : BackgroundService
 
             try { await TryIdleAsync(channel, now); }
             catch (Exception ex) { _logger.LogWarning(ex, "Ambient: idle turn failed."); }
+
+            try { await TryVoyagerAsync(now); }
+            catch (Exception ex) { _logger.LogWarning(ex, "Ambient: Voyager's letter failed."); }
         }
     }
 
@@ -456,6 +468,64 @@ internal sealed class AmbientService : BackgroundService
         }
     }
 
+    // Voyager 1 writes to her (docs/agents/personality.md, Ambient life), in VoyagerChannelId: a
+    // letter on the days Helpers/Personality/Voyager picks, at its slot; her answer, some of those
+    // days, hours later; and on 18 Nov 2026, once ever, the light-day line in place of any letter.
+    // Claimed in ambient-state.json before the send, so a restart never says one twice and a
+    // failed send isn't retried that day. One line per tick at most.
+    private async Task TryVoyagerAsync(DateTimeOffset now)
+    {
+        if (!Ambient.IsWakeHours(now)) return;
+        if (_client.GetChannel(VoyagerChannelId) is not IMessageChannel channel || _breakdown.IsActive(channel.Id)) return;
+
+        var day = AppTime.DayNumber(now);
+        var time = AppTime.ToZoned(now).TimeOfDay;
+        string? line = null, what = null;
+        lock (_stateLock)
+        {
+            var state = LoadState();
+            if (Voyager.IsCrossingDay(day))
+            {
+                if (!state.CrossingDone && state.LastLetterDay != day && time >= Voyager.LetterSlot(day))
+                {
+                    line = BotResponses.VoyagerCrossingLine;
+                    what = "Voyager crossing line";
+                    state = state with { CrossingDone = true, LastLetterDay = day };
+                }
+            }
+            else if (Voyager.LetterNumber(day) is { } number && state.LastLetterDay != day && time >= Voyager.LetterSlot(day))
+            {
+                line = VoyagerLetter(number, now);
+                what = "Voyager letter";
+                state = state with { LastLetterDay = day };
+            }
+
+            if (line is null && state.LastLetterDay == day && state.LastAnswerDay != day
+                && Voyager.AnswerSlot(day) is { } answerAt && time >= answerAt)
+            {
+                // On the crossing day the letter was the light-day line, which has no number.
+                line = VoyagerAnswer(Voyager.LetterNumber(day) ?? day);
+                what = "Voyager answer";
+                state = state with { LastAnswerDay = day };
+            }
+
+            if (line is null) return;
+            SaveState(state);
+        }
+
+        _logger.LogInformation("Ambient: {What}.", what);
+        await BotChat.PostWithTypingAsync(channel, line, _logger, what!, AllowedMentions.None);
+    }
+
+    /// <summary>Letter number <paramref name="letterNumber"/>, with his light time at <paramref name="now"/>. Also /debug voyager's.</summary>
+    internal static string VoyagerLetter(int letterNumber, DateTimeOffset now) =>
+        string.Format(DailyRotation.Pick(BotResponses.VoyagerLetterLines, letterNumber, VoyagerLetterSalt),
+            Voyager.Format(Voyager.LightTime(now)));
+
+    /// <summary>Her answer to letter <paramref name="letterNumber"/>. Also /debug voyager's.</summary>
+    internal static string VoyagerAnswer(int letterNumber) =>
+        DailyRotation.Pick(BotResponses.VoyagerAnswerLines, letterNumber, VoyagerAnswerSalt);
+
     // Ready fires on every reconnect; only the first one of the process is a wake-up.
     private Task OnReadyAsync()
     {
@@ -475,7 +545,7 @@ internal sealed class AmbientService : BackgroundService
 
             // The version she runs is recorded even when she stays quiet, so the next
             // restart compares against this one.
-            SaveState(state with { LastVersion = AppInfo.Version });
+            lock (_stateLock) SaveState(LoadState() with { LastVersion = AppInfo.Version });
 
             // A power cut or a crash is never a quiet wake: whatever the hour, however many
             // times today. It takes the place of the update line too.
@@ -504,7 +574,7 @@ internal sealed class AmbientService : BackgroundService
 
             var sent = await BotChat.PostWithTypingAsync(channel, line, _logger, "wake line", AllowedMentions.None);
             if (sent is not null)
-                SaveState(new AmbientState(AppInfo.Version, today));
+                lock (_stateLock) SaveState(LoadState() with { LastVersion = AppInfo.Version, LastWakeDay = today });
         }
         catch (Exception ex)
         {
@@ -520,7 +590,7 @@ internal sealed class AmbientService : BackgroundService
         var (glitched, recovered) = DailyRotation.Pick(BotResponses.GlitchWakeLines, day, GlitchSalt);
         var sent = await BotChat.PostWithTypingAsync(channel, glitched, _logger, "glitch wake line", AllowedMentions.None);
         if (sent is null) return;
-        SaveState(new AmbientState(AppInfo.Version, today));
+        lock (_stateLock) SaveState(LoadState() with { LastVersion = AppInfo.Version, LastWakeDay = today });
 
         var clean = string.Format(recovered, PiHealth.Duration(_health.Downtime));
         await CorrectLaterAsync(sent, clean, Ambient.GlitchEditAfter, "glitch wake line");
@@ -548,9 +618,13 @@ internal sealed class AmbientService : BackgroundService
     private static bool IsIdleChannel(ulong channelId, GuildConfig home, ulong mainId) =>
         channelId == mainId || IdleChannelIds.Contains(channelId) || home.IdleChannels.Contains(channelId);
 
-    // What a restart must not forget: the version she last ran (for the update line) and
-    // the day she last spoke on waking (one wake line a day, however many deploys).
-    private sealed record AmbientState(string? LastVersion, int LastWakeDay);
+    // What a restart must not forget: the version she last ran (for the update line), the day
+    // she last spoke on waking (one wake line a day, however many deploys) — a DayKey — and
+    // Voyager's correspondence: the last letter and answer days (DayNumbers) and whether the
+    // light-day line went out. Fields added later default, so an older file still reads.
+    private sealed record AmbientState(
+        string? LastVersion, int LastWakeDay,
+        int LastLetterDay = 0, int LastAnswerDay = 0, bool CrossingDone = false);
 
     private AmbientState LoadState()
     {

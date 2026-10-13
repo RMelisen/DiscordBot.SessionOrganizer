@@ -6,30 +6,21 @@ namespace ProjectSYNCS.Services;
 
 // Posts one of her sticker strips (Assets/Stickers) after a line tagged with Helpers/Core/Sticker.
 // BotChat reaches TryFollowUp through its static FollowUp hook, set in Program.cs; /debug sticker
-// calls PostAsync directly. Rare by construction: an ordinary tag wins 1 in 3, a sure tag (the
-// moment pools) skips the roll, and both respect a cooldown per channel and a daily cap — a strip
-// is big, and posted often it becomes noise.
+// calls PostAsync directly. An ordinary tag wins 1 in 3; a sure tag (the moment pools, and
+// WALL-E's robot-heart lines once RobotHeartService has rolled their own 2 in 3) skips the roll.
+// No cooldown per channel and no daily cap: the owner removed both in 6.14.0, so the lines' own
+// rarity is the only limit. Nothing during a breakdown.
 //
-// A singleton: the gates are in-memory state and reset on restart, by design. Its own gates,
-// shared with nobody.
+// A singleton, like the other services BotChat's static hook reaches; it holds no state.
 public sealed class StickerService
 {
     public const double Chance = 1.0 / 3;
-    public static readonly TimeSpan Cooldown = TimeSpan.FromMinutes(30);
-    public const int DailyCap = 12;
 
     // The beat between the line and its picture, so the strip reads as her reaction to it.
     private static readonly TimeSpan Beat = TimeSpan.FromSeconds(1);
 
     private readonly BreakdownService _breakdown;
     private readonly ILogger<StickerService> _logger;
-
-    // Keyed by channel id, DMs included. A day is ample before an idle channel is forgotten.
-    private readonly CooldownGate<ulong> _channels = new(Cooldown, TimeSpan.FromDays(1));
-
-    private readonly object _lock = new();
-    private int _day;
-    private int _postedToday;
 
     public StickerService(BreakdownService breakdown, ILogger<StickerService> logger)
     {
@@ -38,28 +29,13 @@ public sealed class StickerService
     }
 
     /// <summary>
-    /// The gate alone. The cheapest and non-consuming checks first: a lost roll, a breakdown in
-    /// progress or a full day uses up nothing; only an admitted strip claims the channel and
-    /// counts toward the day. Public so it can be checked without a gateway.
+    /// The gate alone: the roll for an ordinary tag, and no strip in a channel in breakdown.
+    /// Public so it can be checked without a gateway.
     /// </summary>
     public bool TryAdmit(ulong channelId, StickerTag tag)
     {
         if (!tag.Sure && Random.Shared.NextDouble() >= Chance) return false;
-        if (_breakdown.IsActive(channelId)) return false;
-
-        lock (_lock)
-        {
-            var today = AppTime.TodayKey;
-            if (today != _day)
-            {
-                _day = today;
-                _postedToday = 0;
-            }
-            if (_postedToday >= DailyCap) return false;
-            if (!_channels.TryClaim(channelId)) return false;
-            _postedToday++;
-            return true;
-        }
+        return !_breakdown.IsActive(channelId);
     }
 
     /// <summary>
@@ -78,8 +54,7 @@ public sealed class StickerService
 
     /// <summary>
     /// Posts a strip as a file with no text, never a ping. Swallows and logs: a channel without
-    /// Attach Files just gets the line. The claim is kept on failure — a missing permission is
-    /// persistent, and releasing it would retry and log on every line.
+    /// Attach Files just gets the line.
     /// </summary>
     public async Task<bool> PostAsync(IMessageChannel channel, string mood)
     {
