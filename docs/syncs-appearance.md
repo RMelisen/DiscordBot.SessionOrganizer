@@ -131,7 +131,14 @@ laughter tears either.
 - **Custom emotes** — square, transparent background, **face and cap only**, exaggerated
   expression; they render around 22–48 px, so the silhouette and the LED carry the mood. Once
   uploaded, an emote goes through `Helpers/Core/Emotes` like any other (`CLAUDE.md`).
-- **Stickers** — square, transparent, half or full body is fine.
+- **Stickers** — square, transparent, half or full body is fine. Exported at 320 px
+  (`docs/assets/stickers/`), but **not uploaded as server stickers**: the server has no free
+  sticker slot, and a bot can't send another server's stickers. She posts them as images instead,
+  as **strips** (`ProjectSYNCS/Assets/Stickers/syncs_<mood>.png`): the 320 px sticker at the left of
+  a 1000×320 transparent strip. Discord's phone app stretches every image to the screen's width,
+  so a square one fills the whole screen, blurred; at 1000×320 the sticker comes out sticker-sized
+  and sharp on the phone and on PC alike (800×320 was too big on PC). Never post the square file.
+  What she uses them for is in `docs/agents/personality.md`, *Sticker follow-ups*.
 - **Banner / scenes** — her attic at night (see *The banner* below for the canon scene).
 
 ## Ready-to-paste prompts (emote pack and seasonal avatars, v1)
@@ -151,7 +158,10 @@ emote on Discord's dark and light themes. `--head` makes a head-only version ins
 `docs/assets/emotes/head/`: the body is removed piece by piece (turtleneck, neck, whatever only held
 on through them) and the edge re-outlined, so the head keeps its own silhouette rather than a flat
 cut. `--sticker` makes a 320 px server sticker instead (Discord's size, 512 KB max), in
-`docs/assets/stickers/`; the art is scaled up by whole pixels first, so it stays crisp. The emotes are uploaded to the server by hand, and their ids go into `Helpers/Core/Emotes`
+`docs/assets/stickers/`; the art is scaled up by whole pixels first, so it stays crisp. It also
+writes the sticker's strip into `ProjectSYNCS/Assets/Stickers/` (see *Formats*), and
+`export.py --strip [<mood> …]` alone rebuilds the strips from the stickers already exported, since
+Gemini's originals aren't kept in the repo. The emotes are uploaded to the server by hand, and their ids go into `Helpers/Core/Emotes`
 (`Emotes.SyncsSmug`…) like any other emote.
 
 Avatars keep v1's plain dusty pink background (`#dba8ad`): Discord crops them round, and every
@@ -776,6 +786,7 @@ two pictures read as one world.
 | Banner v1 | `assets/syncs-banner-v1.jpg` | First banner, Gemini. Current profile banner |
 | Emote pack v1 | `assets/emotes/syncs_<mood>.png`, head-only in `assets/emotes/head/` | Gemini, from the prompts above, all 15 moods; made transparent with `tools/syncs-emotes`. Server emotes, `Emotes.Syncs*` (6.8.1); `sleepy`, `shocked`, `mama` and `jenote` taken off the server in 6.12.0 (assets kept) |
 | Emote pack, second batch | same folders, plus 320 px stickers in `assets/stickers/` | Gemini, from the prompts above, the 8 moods `bargain` to `tipsy_love`; same pipeline. Not uploaded yet |
+| Sticker strips v1 | `../ProjectSYNCS/Assets/Stickers/syncs_<mood>.png` | Every sticker in `assets/stickers/` (23 moods) as a 1000×320 strip, `export.py --strip`. Shipped with the bot, not used by any code yet |
 | Seasonal avatars v1 | `../ProjectSYNCS/Assets/Avatars/syncs-{spring,summer,autumn,winter}.png` | Gemini, from the prompts above. Rotate with the seasons (6.8.0); v1 is the reference they were drawn from |
 
 When a new avatar or banner replaces one of these, add it here and keep the old file: the reference that fixed

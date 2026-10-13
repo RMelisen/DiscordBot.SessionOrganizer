@@ -48,6 +48,27 @@ inside the `try` with the owner/self checks.
   the owner's messages. Membership is tested on the parsed `IEmote`, so a renamed emote still
   matches.
 
+## Sticker follow-ups (planned, not built)
+
+The images are ready (`ProjectSYNCS/Assets/Stickers/`, one strip per mood; why strips and not
+server stickers is in `docs/syncs-appearance.md`, *Formats*). Decided so far:
+
+- **A follow-up to one of her lines**: the line goes out, then the mood's strip right after, as an
+  image attachment in a message of its own with no text. Sometimes, not every time; the rate is
+  still to settle.
+- **Picked by mood, not at random**: a pure helper in `Helpers/` maps a pool to a mood
+  (`NiceReplies` → `flustered`, `MistakenIdentityReplies` → `outraged`, `ShutdownThreat*` →
+  `terror`…), so it can be checked without a gateway. It only names moods that have a strip.
+- **Rare by construction**: one send path owns the rarity, with its own `CooldownGate` per channel
+  and a small daily cap. A strip is big; posted often it becomes noise.
+- **Never `glitch`**: the glitch easter egg's silent fix relies on nothing else being posted
+  around it, and the glitch emote stays rare like the breakdown.
+- Swallow and log like any Discord side effect (a channel without Attach Files just gets the line),
+  and send with `AllowedMentions.None`.
+
+Specific moments (a poll that dies → `sulk`, a heat record → `overheat`) can use the same path
+later. Building it is new user-visible behaviour: a **minor** bump.
+
 ## `MessageCues`
 
 **Cues are weighted, not boolean.** `Analyze` returns a `MessageMood` (`Emotion` + `IsGreeting`)
