@@ -3,6 +3,13 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.14.0 — 2026-10-13
+
+- SYNCS a un cœur de robot : certains noms la font réagir, et un correspondant très lointain lui
+  écrit de temps en temps.
+- Nouvelles anecdotes du matin, nouveaux statuts et quelques nouvelles répliques.
+- Les images de SYNCS après ses répliques ne sont plus limitées par salon ni par jour.
+
 ## 6.13.0 — 2026-10-13
 
 - SYNCS poste parfois une image d'elle juste après une de ses répliques, assortie à ce qu'elle

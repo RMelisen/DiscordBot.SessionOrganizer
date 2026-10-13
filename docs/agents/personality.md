@@ -61,11 +61,17 @@ After some of her lines she posts a picture of herself: a strip from `ProjectSYN
   moment pools only (`HeatRecordLines`, `CrashWakeLines`, `PowerCutWakeLines`, `RouterReturnLines`,
   `WeekendPollDeadLines`, `SessionRecapFullLines`, `QuizCrown*Lines`, `GiveawayEmptyLines`), and
   every tag there is sure.
-- **One gate, `StickerService`** (singleton, its own gates): after the roll, nothing in a channel in
-  breakdown, at most one strip per channel per 30 min and 12 a day in all (Paris day); a lost roll
-  uses up nothing. The strip goes out about a second after the line, off the gateway handler, as a
-  file with no text and `AllowedMentions.None`. A failure (no Attach Files) is logged and the claim
-  kept, so a channel without the permission doesn't retry on every line.
+- **One gate, `StickerService`** (singleton): the roll, and nothing in a channel in breakdown. **No
+  cooldown per channel and no daily cap** — removed by the owner in 6.14.0; the lines' own rarity
+  is the only limit. The strip goes out about a second after the line, off the gateway handler, as
+  a file with no text and `AllowedMentions.None`. A failure (no Attach Files) is logged and the
+  line stands alone.
+- **WALL-E's `HeartLines` roll 2 in 3, not 1 in 3.** `RobotHeartService` splits the tag off itself,
+  rolls `RobotHeart.StickerChance`, and hands a win on promoted to sure so it doesn't roll twice;
+  the lines keep ordinary tags, which name the picture.
+- **Markers can be smuggled.** A user-chosen name formatted into an *untagged* line can carry a
+  marker, and with no cap it would get its strip every time that line is sent. Tag every line of a
+  pool that formats a name, so the template's own tag closes it and wins.
 - **`BotChat` does the split.** `ReplyWithTypingAsync` / `PostWithTypingAsync` strip the marker, send
   the clean text and, if it went out, call `BotChat.FollowUp` — the one static seam in `BotChat`, set
   in `Program.cs` to `StickerService.TryFollowUp`. The level-up card splits its line in `XpTracker`
@@ -73,7 +79,8 @@ After some of her lines she posts a picture of herself: a strip from `ProjectSYN
 - **Only pools that go out through `BotChat`, `GlitchService` or the level-up embed carry tags.**
   Never tagged: emote reactions, statuses, slash-command replies and cards, Plynling and mascot
   lines, heralds, easter eggs, and lines found again by their text or edited or deleted later
-  (`MorningGreetings`, `NightLines`, `IdleEditLines`, `GlitchWakeLines`, `Synthia*`). To tag a
+  (`MorningGreetings`, `NightLines`, `IdleEditLines`, `GlitchWakeLines`, `Synthia*`, `HeartVanishLines`,
+  `HeartEditLines`). To tag a
   text-matched pool, first make its lookup compare against `Sticker.Strip`ped templates. `Split`
   and `PresenceService`'s `Strip` are backstops, not permission.
 - **The line's own tag wins.** `Split` removes every marker and keeps the *last* known one: a tag
@@ -310,6 +317,8 @@ thresholds live in `Helpers/Personality/Ambient` (pure, Paris wall-clock hours, 
 | Heat record | `PiHealthService` tick | today's max beats every other day by ≥ 1 °C, ≥ 30 days of history, 10:00–23:00, max 1/day: `HeatRecordLines` |
 | Voice spectator | `VoiceSpectatorService`, fed by `VoiceXpService`'s sweep | a home-guild voice channel where ≥ 2 active people spent ≥ 1 h together empties (or has < 2 active for 15 min): in that voice channel's chat, from the pool of its room (`Helpers/Voice/VoiceRoom`: `VoiceSpectatorGamingLines` for both Gaming channels, `…CinemaLines`, `…StudyLines`, `…GeneralLines` for Général and any unlisted channel), max 1/day across all rooms, any hour |
 | Synthia flinch | `SynthiaService`, before `ChatterService` | « Synthia » in any guild message, max 1/day: 40% a reaction taken back (`SynthiaReactions`), 35% a reply deleted 4–6 s later (`SynthiaVanishLines`), 25% a slip edited into a denial (`SynthiaEditLines`); returns true so no comeback lands on top |
+| Robot heart | `RobotHeartService`, after `SynthiaService` | WALL-E, EVE (only beside WALL-E), GLaDOS, Wheatley, a robot vacuum, Monika, 2B (with NieR), Voyager 1 (« voyager 1 », « sonde Voyager ») named in any guild message (not in a verdict, which is `BotFeedbackTracker`'s; never read out of emote markup); not aimed at her 60%; each character once per 24 h, 3 acts per Paris day; 60% a reaction + a line (`HeartReactions`, `HeartLines`; WALL-E's followed by its strip 2 times in 3), 40% the character's performance (a reaction taken back 5–7 s later, a `HeartVanishLines` reply deleted 7–9 s later, a `HeartEditLines` slip edited 6.5–8 s later; delays in `RobotHeart`), never wordless when aimed at her; returns true so no comeback lands on top |
+| Voyager's letters | `AmbientService` tick | about one a fortnight (`Helpers/Personality/Voyager`: gaps of 10–18 days, slot 10:00–22:00), in their own channel (`AmbientService.VoyagerChannelId`, home guild only): `VoyagerLetterLines` with his real light time; half the time `VoyagerAnswerLines` 2–6 h later (before 23:00); on 18 Nov 2026 only, `VoyagerCrossingLine` instead; claimed in `ambient-state.json` |
 | Voice seat | `VoiceSeatService`, fed by `VoiceXpService`'s sweep | a home-guild voice channel with ≥ 3 active people for ~10 min rolls 66% **once per gathering** (Tata 80%; Papa or a live session: ≥ 2 for ~5 min, 90%; a better tier arriving late rolls once more); a win seats her there (muted, deafened) until it has had fewer than that for ~5 min; not at night without Papa; see *Her seat in voice* |
 | Router return | `PiHealthService`, `Connected` | gateway back after ≥ 10 min, any hour, max 1/day: `RouterReturnLines` (what she missed in the main channel) or `RouterReturnQuietLines` |
 
@@ -337,6 +346,13 @@ thresholds live in `Helpers/Personality/Ambient` (pure, Paris wall-clock hours, 
 - Nothing fires in DMs, on bots, or during a breakdown; every send uses `AllowedMentions.None`. In the
   dev guild the channel never resolves, so only the night status is visible there.
 - Ghost typing and the hesitant reaction stay out of `README.md` and `/help`, like the easter eggs.
+  So do the robot heart and Voyager's letters: lore is hinted, never listed.
+- **Voyager's light time is a table, not a formula** (`Helpers/Personality/Voyager`): JPL Horizons
+  samples every 30 days from 2026, interpolated, then a linear drift past 2035. To extend it, fetch
+  the same query (Voyager 1, `-31`, from `500@399`, `QUANTITIES=21`) and append the values. Lines
+  show it rounded to 5 minutes.
+- **Every `ambient-state.json` save starts from `LoadState()`**: the wake line and the letters
+  share the file, and building a fresh `AmbientState` would forget the other's fields.
 
 ### Her seat in voice — `VoiceSeatService`
 
