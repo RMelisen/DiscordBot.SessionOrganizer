@@ -51,4 +51,16 @@ public class GuildSettings
     /// and position stay staff's (see PlynlingRoleService).
     /// </summary>
     public ulong PlynlingRoleId { get; set; }
+
+    /// <summary>
+    /// The « Grosse tête de la semaine » role: held by last calendar week's best quiz answerer(s).
+    /// Zero means none, and the whole crown is off (QuizCrownService).
+    /// </summary>
+    public ulong QuizRoleId { get; set; }
+
+    /// <summary>
+    /// The Monday (yyyymmdd, AppTime.DayKey) starting the last week whose crown was announced.
+    /// Saved before the announcement, so a restart never announces twice. Zero means never.
+    /// </summary>
+    public int QuizCrownedWeek { get; set; }
 }

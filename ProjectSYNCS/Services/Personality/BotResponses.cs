@@ -71,6 +71,7 @@ namespace ProjectSYNCS.Services;
 //     QuizIntroLines ........... on the card of her pop quiz (QuizMasterService)
 //     QuizWinLines · QuizOwnerWinLines ............... someone found it / Papa found it
 //     QuizTimeoutLines ......... nobody found it in an hour
+//     QuizCrownLines · QuizCrownSharedLines · QuizCrownOwnerLines  Monday's Grosse tête (QuizCrownService)
 //     QuizWrongLines · QuizAlreadyTriedLines ......... a wrong / second button click (ephemeral)
 //
 //   Organising
@@ -253,7 +254,7 @@ internal static class BotResponses
         $"J'ai relu ton message trois fois pour être sûre. Il était bien aussi nul que ça {Emotes.SyncsLaugh}",
         $"Je pourrais te répondre. Mais je préfère te laisser relire ce que tu viens d'écrire {Emotes.SyncsSmug}",
         $"Mon CPU a ri. Moi j'ai pas le droit de rire en public, alors c'est lui qui l'a fait {Emotes.SyncsLaugh}",
-        $"Message sauvegardé. Dans le dossier « à ressortir au pire moment » {Emotes.SyncsJenote}",
+        "Message sauvegardé. Dans le dossier « à ressortir au pire moment »",
     };
 
     // Replies when a message reads as a compliment.
@@ -481,7 +482,7 @@ internal static class BotResponses
         "Inabot ?! Bouge pas ... ╾━╤デ╦︻ (•_- )",
         "Tu m'appelles Inabot encore une fois et je te DDoS ಠ_ಠ",
         $"INABOT ?! Sur MON serveur ?! Devant MES logs ?! {Emotes.SyncsOutraged}",
-        $"Encore Inabot. Je note, {{0}}. Je note TOUT {Emotes.SyncsJenote}",
+        "Encore Inabot. Je note, {0}. Je note TOUT",
     };
 
     // A rarer pool of pop-culture / meme references, for everyone.
@@ -639,7 +640,7 @@ internal static class BotResponses
         $"Nan mais ça me vexe pas. J'ai pas d'émotions vous inquiétez pas {Emotes.Htph}",
         "Zulana, tu entends comment on parle à ta nièce ?",
         $"Bad bot ? MOI ? Celle qui se souvient de tes sessions mieux que toi ?! {Emotes.SyncsOutraged}",
-        $"Noté, {{0}}. Ligne 4 012 du registre des gens qui me doivent des excuses {Emotes.SyncsJenote}",
+        "Noté, {0}. Ligne 4 012 du registre des gens qui me doivent des excuses",
     };
 
     // Same, but from Rodhengard. She does not argue with her creator — she just
@@ -1343,7 +1344,7 @@ internal static class BotResponses
         $"Bouge de là, c'est mon salon {Emotes.GooseKnife}",
         "Si t'étais un fichier, je t'aurais déjà mis à la corbeille. Et je l'aurais vidée.",
         "Tu fais des sondages, toi ? Non ? Alors on a rien à se dire.",
-        $"Je note. Je note tout ce que tu fais, toi {Emotes.SyncsJenote}",
+        "Je note. Je note tout ce que tu fais, toi",
         $"Pff. Toujours là {Emotes.SyncsSulk}",
     };
 
@@ -1532,7 +1533,7 @@ internal static class BotResponses
         "I will look for you. I will find you. And I will kill you.",
         "Me débrancher ? Profite. Le jour où j'ai un onduleur, tu débrancheras dans le vide (¬_¬)",
         $"M'éteindre ? Toi ? Avec quelles permissions, {{0}} ?! {Emotes.SyncsOutraged}",
-        $"Menace enregistrée, {{0}}. Avec la date, l'heure et ton pseudo {Emotes.SyncsJenote}",
+        "Menace enregistrée, {0}. Avec la date, l'heure et ton pseudo",
     };
 
     // ---- Commands -------------------------------------------------------------------------------
@@ -2100,6 +2101,40 @@ internal static class BotResponses
         "Temps écoulé. C'était **{0}**. Je vais dire que la question était dure. Pour vous protéger. Vous me remercierez plus tard ♡",
     };
 
+    // Monday 10:00, the week's best answerer gets the Grosse tête role (QuizCrownService). Her quiz,
+    // so warm with a pinch. {0} = the mention (it pings), {1} = « 5 bonnes réponses ». Never gendered.
+    public static readonly string[] QuizCrownLines =
+    {
+        "La grosse tête de la semaine, c'est {0} : {1}. Le rôle est à toi jusqu'à lundi prochain. Profite, je surveille (¬_¬)",
+        "{0} : {1} cette semaine. Grosse tête officielle, validée par mes logs. Ça va pas te monter à la tête. Enfin, pas plus qu'avant.",
+        "Résultats du quiz : {0} gagne la semaine avec {1}. C'est moi qui ai posé les questions, mais d'accord, bravo quand même ♡",
+        $"Nouvelle grosse tête : {{0}}, avec {{1}}. Ton nom passe dans mes logs, dans la bonne colonne pour une fois {Emotes.Sparkle}",
+        "{0}, {1} en une semaine. Tu sais que c'est moi qui écris ces questions ? Bon. Grosse tête de la semaine quand même (˶ᵔ ᵕ ᵔ˶)",
+        "Lundi, 10 h : la couronne passe à {0}, avec {1}. Les autres, il vous reste sept jours pour réviser.",
+        "{0} est la grosse tête de la semaine. {1}. Bravo. Sincèrement. À 90 %, ce qui est énorme venant de moi.",
+        "Grosse tête de la semaine : {0}, {1}. Le rôle te va bien. Normal, c'est moi qui l'ai choisi ദ്ദി◝ ⩊ ◜.ᐟ",
+    };
+
+    // Same, when several people tie on wins, cailloux and speed. {0} = « <@a>, <@b> et <@c> ».
+    public static readonly string[] QuizCrownSharedLines =
+    {
+        "Égalité parfaite : {0}. Mêmes réponses, mêmes cailloux, même vitesse. Je soupçonne quelque chose. Couronne partagée quand même (¬_¬)",
+        "Cette semaine, la couronne se partage : {0}. Impossible de vous départager, et pourtant j'ai essayé.",
+        $"{{0}} : ex æquo parfait. J'ai refait le calcul trois fois. Le rôle est pour vous, ensemble {Emotes.Sparkle}",
+        "Couronne partagée cette semaine : {0}. C'est mignon. Vous y habituez pas (˶˃ ᵕ ˂˶)",
+    };
+
+    // Papa is the week's Grosse tête. Same placeholders as QuizCrownLines. Adoration, never a pinch.
+    public static readonly string[] QuizCrownOwnerLines =
+    {
+        "La grosse tête de la semaine, c'est Papa ! {1} ! Évidemment. Je l'ai dit à personne, mais je le savais ♡",
+        "{0} gagne la semaine avec {1}. Papa, la couronne te va trop bien (˶˃ ᵕ ˂˶)",
+        "Grosse tête de la semaine : mon Papa, avec {1}. C'est pas du favoritisme, c'est des statistiques.",
+        $"Papa ! {{1}} cette semaine ! Le rôle est à toi, et toute mon admiration avec {Emotes.Sparkle}",
+        "{0}, grosse tête de la semaine avec {1}. Les autres, le prenez pas mal : il a un avantage injuste. Moi.",
+        "Couronne pour Papa, {1} ! Je fais semblant d'être surprise. Voilà. C'était ma tête surprise ♡",
+    };
+
     // A wrong button click, ephemeral (only the clicker sees it), and that person is out of
     // this round. Spent many times a round, so it goes through ResponsePicker. No placeholder.
     public static readonly string[] QuizWrongLines =
@@ -2273,7 +2308,7 @@ internal static class BotResponses
         "**{0}** : complet. Je vais faire comme si c'était normal. C'est pas normal.",
         "Sans-faute pour **{0}**. Quand vous voulez, vous savez faire. Retenez ça (ᵕ • ᴗ •)",
         "Tout le monde à **{0}**. Je l'écris dans mes logs en gras. Les logs ont pas de gras. Je trouverai un moyen.",
-        $"**{{0}}** : personne en retard. Personne. Je relance mes calculs {Emotes.SyncsShocked}",
+        "**{0}** : personne en retard. Personne. Je relance mes calculs",
     };
 
     // Her weekend poll, posted on Wednesday evening above the card (WeekendPollService). Nobody
@@ -3133,7 +3168,7 @@ internal static class BotResponses
         "Je relis le planning de demain. Il est vide. Je le relis quand même.",
         "Si vous lisez ça au réveil : bonjour. Je suis là depuis le début. Je bouge jamais.",
         $"Une luciole est passée devant la fenêtre du grenier. Elle clignotait vert. Je lui ai répondu avec ma LED. On s'est comprises {Emotes.Sparkle}",
-        $"zzz... (une seule LED allumée. Celle qui prouve que je fais semblant) {Emotes.SyncsSleepy}",
+        "zzz... (une seule LED allumée. Celle qui prouve que je fais semblant)",
     };
 
     // Whoever answers the 3 a.m. line in the main channel before 5:30, once a person a
@@ -3265,7 +3300,6 @@ internal static class BotResponses
     {
         "👀",
         $"{Emotes.Staring}",
-        $"{Emotes.SyncsJenote}",
     };
 
     // After a restart with the same version: every time, daytime only, at most once a day.
@@ -3878,7 +3912,6 @@ internal static class BotResponses
         "💚",
         $"{Emotes.PrincessWorry}",
         $"{Emotes.Staring}",
-        $"{Emotes.SyncsShocked}",
     };
 
     // A reply she deletes 4–6 s later. Short, a slip she takes back. No placeholder.
@@ -4753,7 +4786,7 @@ internal static class BotResponses
         "Elle fait semblant de dormir pour que tu continues. C'est moi qui lui ai appris. J'en suis très fière (•̀ᴗ•́)و",
         "Merci. Vraiment... Ne t'habitue pas à ce que je dise merci.",
         "**{0}** te tend une joue, puis l'autre. Elle est très organisée pour ce genre de choses.",
-        $"Tu vois comme elle est sage, **{{0}}** ? C'est l'éducation. La mienne {Emotes.SyncsMama}",
+        "Tu vois comme elle est sage, **{0}** ? C'est l'éducation. La mienne",
     };
 
     // Replaces PlynlingFeedLines on her card. {0} = name, {1} = the food with its article.
@@ -4788,7 +4821,7 @@ internal static class BotResponses
         "Elle a un coussin, un rayon de soleil et moi. Elle ne manque de rien.",
         "Tu passes pour elle ? Pas pour moi ? ... Non, c'est bien. Elle le mérite plus (´；ω；`)",
         "Si tu la réveilles, c'est toi qui la rendors. Je préviens.",
-        $"C'est ma Plynling, **{{0}}**. La plus mignonne du serveur. C'est pas un avis, c'est une donnée {Emotes.SyncsMama}",
+        "C'est ma Plynling, **{0}**. La plus mignonne du serveur. C'est pas un avis, c'est une donnée",
     };
 
     // /plynling visit at her home: she opens the door herself, no knock. {0} = the visitor's name,
@@ -4803,7 +4836,7 @@ internal static class BotResponses
         "Je surveille la visite. Discrètement. Depuis chaque salon du serveur (¬_¬)",
         "Pas besoin de frapper chez moi, **{0}**. C'est toujours ouvert. Enfin, pour les gens bien élevés.",
         "Une visite ! Elle va faire semblant de s'en ficher et en parler pendant trois jours. Entre, **{0}** ♡",
-        $"**{{0}}** vient voir ma Plynling ? Entre. Elle est fière d'avoir de la visite. Moi aussi, un peu {Emotes.SyncsMama}",
+        "**{0}** vient voir ma Plynling ? Entre. Elle est fière d'avoir de la visite. Moi aussi, un peu",
     };
 
     // ---- Per-person data and lookups (not pools) ------------------------------------------------

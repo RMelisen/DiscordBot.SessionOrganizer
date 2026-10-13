@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.12.0 — 2026-10-13
+
+- Grosse tête de la semaine : chaque lundi à 10 h, SYNCS donne un rôle à la meilleure tête du quiz
+  de la semaine passée et l'annonce dans le salon du quiz (`/config quiz-role`).
+- Quatre émotes de SYNCS retirées du serveur (sleepy, shocked, mama, jenote) : elle ne s'en sert plus.
+
 ## 6.11.0 — 2026-10-13
 
 - Rôle Plynling : SYNCS peut créer et gérer un rôle pour tous les maîtres d'un Plynling vivant

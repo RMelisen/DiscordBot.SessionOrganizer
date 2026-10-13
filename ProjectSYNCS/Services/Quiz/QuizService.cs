@@ -115,6 +115,20 @@ public class QuizService
     }
 
     /// <summary>
+    /// The won rounds of [<paramref name="fromDay"/>, <paramref name="toDay"/>], for the weekly
+    /// crown (QuizCrownService). Day is an int key, so the range filters in SQL.
+    /// </summary>
+    public async Task<List<CrownWin>> GetWeekWinsAsync(ulong guildId, int fromDay, int toDay)
+    {
+        var rows = await _db_context.QuizRounds.AsNoTracking()
+            .Where(r => r.GuildId == guildId && r.Day >= fromDay && r.Day <= toDay
+                        && r.WinnerId != 0 && r.WonAt != null)
+            .Select(r => new { r.WinnerId, r.Reward, r.PostedAt, r.WonAt })
+            .ToListAsync();
+        return rows.Select(r => new CrownWin(r.WinnerId, r.Reward, r.PostedAt, r.WonAt!.Value)).ToList();
+    }
+
+    /// <summary>
     /// Everyone with a win over <paramref name="period"/>, ranked: most wins first, then
     /// the fastest record (all-time only), then whoever got there first — a stable
     /// tie-break, or two people level on wins would swap places on every re-render.

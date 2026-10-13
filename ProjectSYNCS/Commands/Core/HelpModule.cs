@@ -90,7 +90,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/admin plynling rename`** · **`/admin plynling resurrect`** — Gérer le Plynling de quelqu'un.\n" +
                 "**`/admin mute|unmute`** — Exclusion temporaire.\n" +
                 "**`/config`** — Qui vote avec `/shame`, les salons où rien ne compte, le salon de jeu, " +
-                "le salon du quiz, le salon principal et le rôle Plynling. **`/config show`** affiche la configuration actuelle.\n" +
+                "le salon du quiz, le salon principal et les rôles Plynling et Grosse tête. **`/config show`** affiche la configuration actuelle.\n" +
                 "**`/help`** — Affiche ce message.")
             .AddField("Créer une session — pas à pas",
                 "Lance **`/schedule create`**. Un assistant privé te guide :\n" +

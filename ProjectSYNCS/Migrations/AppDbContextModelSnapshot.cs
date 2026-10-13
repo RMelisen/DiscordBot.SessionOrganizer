@@ -341,6 +341,12 @@ namespace ProjectSYNCS.Migrations
                     b.Property<long>("QuizChannelId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("QuizCrownedWeek")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("QuizRoleId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("GuildId")
