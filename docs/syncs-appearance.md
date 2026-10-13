@@ -425,7 +425,9 @@ no watermark.
 
 ### Emote pack, second batch
 
-All eight generated and exported (emote, head-only and sticker), not uploaded yet. Sweat drops, steam and heat lines are asked **white**,
+All eight generated and exported (emote, head-only and sticker). `disgust`, `love`, `full_love`,
+`overheat` and `reboot` are uploaded and in `Helpers/Core/Emotes`; `bargain`, `menace` and
+`tipsy_love` are not uploaded yet. Sweat drops, steam and heat lines are asked **white**,
 never the usual light blue: a blue that close to the cyan would be keyed out with the background.
 
 **16. `syncs_bargain`**: `ShutdownThreat*` from Tata. Not panic: a deal, offered very sweetly.

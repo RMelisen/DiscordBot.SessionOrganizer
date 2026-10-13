@@ -164,46 +164,66 @@ public static class Emotes
     // ---- Her own faces: the mood emote pack (docs/syncs-appearance.md, "Emote pack") ----
 
     /// <summary>`:syncs_bored:`</summary>
-    public const string SyncsBoredId = "1558869441985511614";
+    public const string SyncsBoredId = "1559544354459222076";
     public const string SyncsBored = $"<:syncs_bored:{SyncsBoredId}>";
 
     /// <summary>`:syncs_devoted:`</summary>
-    public const string SyncsDevotedId = "1558869470611767478";
+    public const string SyncsDevotedId = "1559544240386605076";
     public const string SyncsDevoted = $"<:syncs_devoted:{SyncsDevotedId}>";
 
+    /// <summary>`:syncs_disgust:`</summary>
+    public const string SyncsDisgustId = "1559549516351541419";
+    public const string SyncsDisgust = $"<:syncs_disgust:{SyncsDisgustId}>";
+
     /// <summary>`:syncs_flustered:`</summary>
-    public const string SyncsFlusteredId = "1558869506221150278";
+    public const string SyncsFlusteredId = "1559544184422277201";
     public const string SyncsFlustered = $"<:syncs_flustered:{SyncsFlusteredId}>";
 
+    /// <summary>`:syncs_full_love:`</summary>
+    public const string SyncsFullLoveId = "1559549795226493028";
+    public const string SyncsFullLove = $"<:syncs_full_love:{SyncsFullLoveId}>";
+
     /// <summary>`:syncs_glitch:`</summary>
-    public const string SyncsGlitchId = "1558869543114514442";
+    public const string SyncsGlitchId = "1559544081112105041";
     public const string SyncsGlitch = $"<:syncs_glitch:{SyncsGlitchId}>";
 
     /// <summary>`:syncs_happy:`</summary>
-    public const string SyncsHappyId = "1558869574022201586";
+    public const string SyncsHappyId = "1559543923892953148";
     public const string SyncsHappy = $"<:syncs_happy:{SyncsHappyId}>";
 
     /// <summary>`:syncs_hurt:`</summary>
-    public const string SyncsHurtId = "1558869617114480741";
+    public const string SyncsHurtId = "1559543844410757300";
     public const string SyncsHurt = $"<:syncs_hurt:{SyncsHurtId}>";
 
     /// <summary>`:syncs_laugh:`</summary>
-    public const string SyncsLaughId = "1558869689126490132";
+    public const string SyncsLaughId = "1559543741604171857";
     public const string SyncsLaugh = $"<:syncs_laugh:{SyncsLaughId}>";
 
+    /// <summary>`:syncs_love:`</summary>
+    public const string SyncsLoveId = "1559549644617289728";
+    public const string SyncsLove = $"<:syncs_love:{SyncsLoveId}>";
+
     /// <summary>`:syncs_outraged:`</summary>
-    public const string SyncsOutragedId = "1558869760953819146";
+    public const string SyncsOutragedId = "1559543627066384434";
     public const string SyncsOutraged = $"<:syncs_outraged:{SyncsOutragedId}>";
 
+    /// <summary>`:syncs_overheat:`</summary>
+    public const string SyncsOverheatId = "1559549910456602734";
+    public const string SyncsOverheat = $"<:syncs_overheat:{SyncsOverheatId}>";
+
+    /// <summary>`:syncs_reboot:`</summary>
+    public const string SyncsRebootId = "1559549972410798260";
+    public const string SyncsReboot = $"<:syncs_reboot:{SyncsRebootId}>";
+
     /// <summary>`:syncs_smug:`</summary>
-    public const string SyncsSmugId = "1558869847557808208";
+    public const string SyncsSmugId = "1559543422128488478";
     public const string SyncsSmug = $"<:syncs_smug:{SyncsSmugId}>";
 
     /// <summary>`:syncs_sulk:`</summary>
-    public const string SyncsSulkId = "1558869875953504307";
+    public const string SyncsSulkId = "1559543350749691965";
     public const string SyncsSulk = $"<:syncs_sulk:{SyncsSulkId}>";
 
     /// <summary>`:syncs_terror:`</summary>
-    public const string SyncsTerrorId = "1558869905363701832";
+    public const string SyncsTerrorId = "1559543267136245861";
     public const string SyncsTerror = $"<:syncs_terror:{SyncsTerrorId}>";
 }

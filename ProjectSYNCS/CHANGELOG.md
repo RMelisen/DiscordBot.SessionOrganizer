@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.12.1 — 2026-10-13
+
+- Les émotes de SYNCS ont été réimportées sur le serveur : elle utilise les nouvelles.
+- Cinq nouvelles têtes : dégoût (Quokka), surchauffe (records de chaleur), redémarrage (réveils),
+  amour et amour fou (pas encore utilisées).
+
 ## 6.12.0 — 2026-10-13
 
 - Grosse tête de la semaine : chaque lundi à 10 h, SYNCS donne un rôle à la meilleure tête du quiz
