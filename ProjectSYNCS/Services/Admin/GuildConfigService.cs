@@ -23,11 +23,12 @@ public sealed record GuildConfig(
     IReadOnlySet<ulong> ExcludedChannels,
     IReadOnlySet<ulong> IdleChannels,
     IReadOnlySet<ulong> ShameVoters,
-    ulong QuizChannelId)
+    ulong QuizChannelId,
+    ulong PlynlingRoleId)
 {
     /// <summary>What an unconfigured guild looks like — nothing set, nothing added.</summary>
     public static readonly GuildConfig Empty = new(0, 0, 0,
-        new HashSet<ulong>(), new HashSet<ulong>(), new HashSet<ulong>(), 0);
+        new HashSet<ulong>(), new HashSet<ulong>(), new HashSet<ulong>(), 0, 0);
 }
 
 // Per-guild settings an admin can change at runtime, and the cache that makes them
@@ -102,7 +103,8 @@ public sealed class GuildConfigService
                 settings?.GameChannelId ?? 0,
                 settings?.MainChannelId ?? 0,
                 excluded.ToHashSet(), idle.ToHashSet(), voters.ToHashSet(),
-                settings?.QuizChannelId ?? 0);
+                settings?.QuizChannelId ?? 0,
+                settings?.PlynlingRoleId ?? 0);
         }
         catch (Exception ex)
         {
@@ -180,6 +182,10 @@ public sealed class GuildConfigService
     /// <summary>Sets the pop quiz channel, or turns the quiz off with zero.</summary>
     public Task SetQuizChannelAsync(ulong guildId, ulong channelId) =>
         UpdateSettingsAsync(guildId, s => s.QuizChannelId = channelId);
+
+    /// <summary>Sets the managed Plynling role, or stops managing one with zero.</summary>
+    public Task SetPlynlingRoleAsync(ulong guildId, ulong roleId) =>
+        UpdateSettingsAsync(guildId, s => s.PlynlingRoleId = roleId);
 
     // The settings row is created lazily, the first time anything is configured.
     private async Task UpdateSettingsAsync(ulong guildId, Action<GuildSettings> apply)

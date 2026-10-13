@@ -107,6 +107,32 @@ Plynling doesn't grow up; a resurrected one resumes. Nothing about needs or deat
 gate trait draws (`plynling-events.md`). Every species shows the label; only a **bébé** of a species in
 `PlynlingArt.StagedSpecies` gets its own picture (ado/ancien art was dropped by the owner).
 
+## The Plynling role
+
+**A strict mirror**: the role configured with `/config plynling-role` is held by everyone with a
+living Plynling (frozen counts) and by nobody else — `PlynlingRoleService` adds it where missing and
+removes it everywhere else, hand-given copies included. Flair and a ping group; it gates nothing,
+so being an hour late is harmless.
+
+- **Two paths, one rule.** `SyncMemberAsync` right after a life change, so the role arrives at once;
+  `SyncGuildAsync` as the **last step of every `PlynlingSweepService` pass**, after deaths are
+  stamped. Deaths are lazy and raise nothing, so only the sweep covers them.
+- **The hooked life changes**: adopt and abandon (`PlynlingModule`) and staff resurrect
+  (`AdminModule`). **A new path that creates or ends a living Plynling must call
+  `SyncMemberAsync`** — otherwise its people wait up to an hour. The one deliberate exception is
+  `PlynlingMascotService.EnsureMascotAsync`: her mascot is a living Plynling she owns, so **SYNCS
+  holds the role herself** (and counts in `set`/`create`'s numbers) — the mirror applies to her too,
+  and the hourly pass is soon enough for a bot.
+- The owner list is **read-only**: loaded `AsNoTracking`, settled in memory
+  (`GetLivingOwnerIdsAsync`), so an unnoticed death counts without the read writing it.
+- **The pass is skipped when `!guild.HasAllMembers`**: on half a member list, owners look departed.
+- **At most 25 removals a pass** (`PlynlingRoleSync.MaxRemovalsPerPass`): a wrong owner list must not
+  strip the whole guild at once. Additions are uncapped.
+- **The rules are pure** (`Helpers/Plynling/PlynlingRoleSync`): `Diff` and one `Refusal` shared by
+  `set`, `/config show` and the sweep, so they can't disagree about what is manageable. A problem
+  is logged once per guild per process, and shown on `/config show`.
+- Both paths never throw to their caller; a failed role change is logged and retried next pass.
+
 ## The card and care
 
 **Components V2** (root rules apply). Two verbs, `plyn:pet:{id}` and `plyn:feed:{id}`, offered only

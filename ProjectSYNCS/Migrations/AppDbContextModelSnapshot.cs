@@ -335,6 +335,9 @@ namespace ProjectSYNCS.Migrations
                     b.Property<long>("ModeratorRoleId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<long>("PlynlingRoleId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<long>("QuizChannelId")
                         .HasColumnType("INTEGER");
 

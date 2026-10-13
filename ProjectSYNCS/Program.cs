@@ -84,6 +84,8 @@ var host = Host.CreateDefaultBuilder(args)
         // resolve. Takes IServiceProvider and scopes per unit of work, like the
         // trackers. Registered before XpTracker, which holds it.
         services.AddSingleton<GuildConfigService>();
+        // Singleton: holds the pass lock and the logged-once set (see the class).
+        services.AddSingleton<PlynlingRoleService>();
 
         // Personality / chat behaviour collaborators (singletons: they hold
         // in-memory state like the breakdown cooldown).

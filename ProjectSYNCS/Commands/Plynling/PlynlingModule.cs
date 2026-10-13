@@ -24,6 +24,7 @@ namespace ProjectSYNCS.Commands;
 public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly PlynlingService _plynlings;
+    private readonly PlynlingRoleService _roles;
     private readonly ResponsePicker _picker;
     private readonly PlynlingAnnouncer _announcer;
     private readonly PlynlingCooldowns _cooldowns;
@@ -35,8 +36,9 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
 
     protected PlynlingModule(PlynlingService plynlings, ResponsePicker picker,
         PlynlingAnnouncer announcer, PlynlingCooldowns cooldowns, ShameService shame, PlynlingPlayService play,
-        CosmeticService cosmetics, PlynlingVisitRunner visits, ILogger<PlynlingModule> logger)
+        CosmeticService cosmetics, PlynlingVisitRunner visits, PlynlingRoleService roles, ILogger<PlynlingModule> logger)
     {
+        _roles = roles;
         _visits = visits;
         _play = play;
         _cosmetics = cosmetics;
@@ -81,6 +83,7 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
         var line = string.Format(_picker.Pick(pool),
             PlynlingCardUi.SafeName(plynling.Name), info.Name);
         await RespondCardAsync(plynling, now, line);
+        await _roles.SyncMemberAsync(Context.Guild, Context.User.Id);   // after the card: never delays it, never throws
     }
 
     // A command rather than a card button, and confirmed by typing the name: nobody should
@@ -133,6 +136,7 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
             _logger.LogWarning(ex, "Failed to record the abandon shame for {UserId}.", Context.User.Id);
         }
         await _announcer.AnnounceAbandonAsync(gone, now);
+        await _roles.SyncMemberAsync(Context.Guild, Context.User.Id);
     }
 
     // Your own Plynling only, one game an hour — claimed here, at the start, so abandoning a

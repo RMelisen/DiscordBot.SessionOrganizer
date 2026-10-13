@@ -722,6 +722,28 @@ public partial class PlynlingService
         return living.Where(x => x.DiedAt is null).ToList();
     }
 
+    // Who owns a living Plynling here, for the Plynling role. Read-only on purpose: loaded untracked
+    // and settled in memory (like AdminStatsService), so a death nobody has noticed yet already
+    // counts as a death, without this read writing it — the sweep stamps and announces it.
+    public async Task<HashSet<ulong>> GetLivingOwnerIdsAsync(ulong guildId, DateTimeOffset now)
+    {
+        var living = await _db_context.Plynlings.AsNoTracking()
+            .Where(x => x.GuildId == guildId && x.DiedAt == null)
+            .ToListAsync();
+        foreach (var p in living) PlynlingLife.Settle(p, now);   // in memory only: AsNoTracking, never saved
+        return living.Where(x => x.DiedAt is null).Select(x => x.OwnerId).ToHashSet();
+    }
+
+    // The same question for one person (the role hook after adopt / abandon / resurrect).
+    public async Task<bool> HasLivingAsync(ulong guildId, ulong ownerId, DateTimeOffset now)
+    {
+        var p = await _db_context.Plynlings.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.GuildId == guildId && x.OwnerId == ownerId && x.DiedAt == null);
+        if (p is null) return false;
+        PlynlingLife.Settle(p, now);   // in memory only
+        return p.DiedAt is null;
+    }
+
     // Every Plynling the hourly sweep has to look at: the living, and deaths not yet announced. Ids
     // only: the sweep loads each one in its own scope (GetForSweepAsync).
     public async Task<List<int>> GetSweepIdsAsync() =>

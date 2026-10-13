@@ -59,4 +59,9 @@ public static class InputCaps
     /// "Par {username} : ".
     /// </summary>
     public const int MuteReason = 400;
+
+    /// <summary>
+    /// A role name (<c>/config plynling-role create</c>) — Discord's own limit for role names.
+    /// </summary>
+    public const int RoleName = 100;
 }

@@ -1,6 +1,8 @@
 using Discord;
 using Discord.Interactions;
+using Discord.Net;
 using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Services;
 
@@ -14,6 +16,10 @@ namespace ProjectSYNCS.Commands;
 // - **Single channels** (game, main) *replace* their hardcoded default when set, and fall
 //   back to it when cleared. A destination grants and revokes nothing. The quiz channel is
 //   the one without a default: clearing it turns the quiz off.
+// - **The Plynling role** is neither: SYNCS *owns* who holds it (a strict mirror of who has a
+//   living Plynling — see PlynlingRoleService). Setting it can therefore take the role away from
+//   people, which is why `set` refuses @everyone, managed roles, roles above hers and any role
+//   carrying permissions, and why `clear` only stops managing it and touches nobody.
 //
 // Either way, a server that never runs these commands behaves exactly as it did before
 // they existed.
@@ -62,8 +68,12 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
         var config = await _config.GetAsync(Context.Guild.Id);
         bool defaultGameHere = Context.Guild.GetChannel(PlynlingAnnouncer.DefaultGameChannelId) is not null;
 
+        var roleProblem = config.PlynlingRoleId == 0
+            ? null
+            : PlynlingRoleService.Problem(Context.Guild, Context.Guild.GetRole(config.PlynlingRoleId), adopting: false);
+
         await FollowupAsync(
-            components: ConfigCards.Build(config, Context.Guild.Id == HomeGuild.Id, defaultGameHere),
+            components: ConfigCards.Build(config, Context.Guild.Id == HomeGuild.Id, defaultGameHere, roleProblem),
             flags: MessageFlags.ComponentsV2,
             ephemeral: true,
             allowedMentions: AllowedMentions.None);
@@ -157,6 +167,127 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
 
             await SayAsync(Context,
                 "Plus de rôle modérateur configuré. Seuls le staff et les votants de la liste peuvent voter (ᵕ • ᴗ •)");
+        }
+    }
+
+    [Group("plynling-role", "Le rôle de tous les maîtres d'un Plynling vivant")]
+    public class PlynlingRoleModule : InteractionModuleBase<SocketInteractionContext>
+    {
+        // A role created over REST reaches the gateway cache a moment later; syncing before that
+        // would find "no such role" and log a problem that isn't one.
+        private static readonly TimeSpan FirstSyncDelay = TimeSpan.FromSeconds(3);
+
+        private readonly GuildConfigService _config;
+        private readonly PlynlingRoleService _roles;
+        private readonly ILogger<PlynlingRoleModule> _logger;
+
+        public PlynlingRoleModule(GuildConfigService config, PlynlingRoleService roles, ILogger<PlynlingRoleModule> logger)
+        {
+            _config = config;
+            _roles = roles;
+            _logger = logger;
+        }
+
+        // With its leading space, or nothing when the preview failed (the reply goes out regardless).
+        private static string CountsLine((int ToAdd, int ToRemove)? preview) =>
+            preview is { } p ? " " + PlynlingRoleSync.Counts(p.ToAdd, p.ToRemove) : "";
+
+        [SlashCommand("create", "Créer le rôle des maîtres de Plynlings et le gérer")]
+        public async Task CreateAsync(
+            [Summary("name", "Le nom du rôle (par défaut : Maîtres de Plynlings)")]
+            [MaxLength(InputCaps.RoleName)] string? name = null)
+        {
+            if (!await BeginAsync(Context)) return;
+
+            // A configured role that was deleted in Discord counts as none.
+            var current = (await _config.GetAsync(Context.Guild.Id)).PlynlingRoleId;
+            if (current != 0 && Context.Guild.GetRole(current) is not null)
+            {
+                await SayAsync(Context,
+                    $"Il y a déjà un rôle Plynling : <@&{current}>. `/config plynling-role clear` d'abord si tu en veux un autre (ᵕ • ᴗ •)");
+                return;
+            }
+            if (Context.Guild.CurrentUser?.GuildPermissions.ManageRoles != true)
+            {
+                await SayAsync(Context, PlynlingRoleSync.NoManageRoles);
+                return;
+            }
+
+            name = string.IsNullOrWhiteSpace(name) ? PlynlingRoleSync.DefaultName : name.Trim();
+            IRole role;
+            try
+            {
+                // No permissions, mentionable by everyone (it is a ping group). A new role lands at
+                // the bottom of the list, below hers, so she can manage it from the start.
+                role = await Context.Guild.CreateRoleAsync(name,
+                    permissions: GuildPermissions.None,
+                    isMentionable: true,
+                    options: new RequestOptions { AuditLogReason = "/config plynling-role create" });
+            }
+            catch (HttpException ex)
+            {
+                await SayAsync(Context, $"Discord a refusé de créer le rôle ({ex.Reason ?? ex.HttpCode.ToString()}) {Emotes.Staring}");
+                return;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Creating the Plynling role failed in guild {GuildId}.", Context.Guild.Id);
+                await SayAsync(Context, "Discord ne m'a pas répondu à temps. Réessaie dans un instant (ᵕ • ᴗ •)");
+                return;
+            }
+
+            try
+            {
+                await _config.SetPlynlingRoleAsync(Context.Guild.Id, role.Id);
+            }
+            catch (Exception ex)
+            {
+                // Not stored, so nothing would ever manage it — and a second click would make another.
+                // Take back the role just made rather than leave an orphan.
+                _logger.LogError(ex, "Saving the Plynling role failed in guild {GuildId}; deleting role {RoleId}.",
+                    Context.Guild.Id, role.Id);
+                try { await role.DeleteAsync(new RequestOptions { AuditLogReason = "/config plynling-role create a échoué" }); }
+                catch (Exception deleteEx) { _logger.LogWarning(deleteEx, "Could not delete orphan role {RoleId}.", role.Id); }
+                await SayAsync(Context, "Je n'ai pas réussi à enregistrer le rôle, alors je l'ai retiré. Réessaie dans un instant (╥﹏╥)");
+                return;
+            }
+
+            var preview = await _roles.PreviewAsync(Context.Guild, role.Id);
+            await SayAsync(Context,
+                $"<@&{role.Id}> est créé.{CountsLine(preview)} "
+                + "Renomme-le ou change sa couleur comme tu veux : moi, je ne fais que le donner et le retirer ദ്ദി◝ ⩊ ◜.ᐟ");
+            _roles.StartSync(Context.Guild, FirstSyncDelay);
+        }
+
+        [SlashCommand("set", "Gérer un rôle existant comme rôle Plynling")]
+        public async Task SetAsync(
+            [Summary("role", "Le rôle à donner aux maîtres de Plynlings")] IRole role)
+        {
+            if (!await BeginAsync(Context)) return;
+
+            if (PlynlingRoleService.Problem(Context.Guild, Context.Guild.GetRole(role.Id), adopting: true) is { } problem)
+            {
+                await SayAsync(Context, problem);
+                return;
+            }
+
+            await _config.SetPlynlingRoleAsync(Context.Guild.Id, role.Id);
+            var preview = await _roles.PreviewAsync(Context.Guild, role.Id);
+            await SayAsync(Context,
+                $"<@&{role.Id}> est maintenant le rôle Plynling.{CountsLine(preview)}");
+            _roles.StartSync(Context.Guild, TimeSpan.Zero);
+        }
+
+        [SlashCommand("clear", "Ne plus gérer de rôle Plynling")]
+        public async Task ClearAsync()
+        {
+            if (!await BeginAsync(Context)) return;
+
+            await _config.SetPlynlingRoleAsync(Context.Guild.Id, 0);
+
+            await SayAsync(Context,
+                "Je ne gère plus de rôle Plynling. Le rôle et ses membres restent tels quels : "
+                + "supprime-le dans Discord si tu n'en veux plus (ᵕ • ᴗ •)");
         }
     }
 

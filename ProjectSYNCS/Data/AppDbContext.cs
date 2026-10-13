@@ -207,6 +207,7 @@ public class AppDbContext : DbContext
             e.Property(x => x.GameChannelId).HasConversion<long>();
             e.Property(x => x.MainChannelId).HasConversion<long>();
             e.Property(x => x.QuizChannelId).HasConversion<long>();
+            e.Property(x => x.PlynlingRoleId).HasConversion<long>();
             // At most one settings row per guild.
             e.HasIndex(x => x.GuildId).IsUnique();
         });
