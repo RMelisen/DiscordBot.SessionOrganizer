@@ -73,11 +73,17 @@ internal sealed class BotFeedbackTracker
         Emotes.AdorableFrogId, Emotes.DixSurDixId, Emotes.DancingBlobId, Emotes.HiCatId,
         Emotes.GigaLaughId, Emotes.CatHeartId, Emotes.McHeartId, Emotes.PepeHappyId,
         Emotes.NoiceId, Emotes.UwuId, Emotes.MushroomCuteId,
-        Emotes.SparkleId);
+        Emotes.SparkleId, Emotes.Emote00heartpinkId, Emotes.MonikaYesId, Emotes.HmmokId,
+        // Her own faces: only the unmistakably warm ones. A person sending her one of her
+        // own sad or glitched faces could mean anything, so those stay out.
+        Emotes.SyncsHappyId, Emotes.SyncsLaughId, Emotes.SyncsLoveId,
+        Emotes.SyncsFullLoveId, Emotes.SyncsDevotedId, Emotes.SyncsCoolId);
 
     private static readonly HashSet<ulong> _badEmoteIds = Ids(
         Emotes.GooseKnifeId, Emotes.VeryAngryId,
-        Emotes.ZulanaTerreurNocturneId, Emotes.OkPaimonId);
+        Emotes.ZulanaTerreurNocturneId, Emotes.OkPaimonId,
+        Emotes.AinaniId, Emotes.NightmareOtherEyeId, Emotes.PrisonerFlatId,
+        Emotes.SyncsDisgustId, Emotes.SyncsOutragedId, Emotes.SyncsGrumpyId);
 
     // Stored without the variation selector so the prefix test catches both spellings.
     private static readonly string[] _goodUnicode =

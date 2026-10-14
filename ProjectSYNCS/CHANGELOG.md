@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.17.6 — 2026-10-14
+
+- Reacting to her with more of the server's emotes now counts as a verdict: the pink heart, the
+  yes sign, the agreeing face and her own warm faces read as praise; the disgusted, side-eye and
+  jaded faces and her own outraged, disgusted and grumpy faces read as a complaint.
+
 ## 6.17.5 — 2026-10-14
 
 - Her summer avatar catches the sun: warm shafts of light fall across her from the top-left,
