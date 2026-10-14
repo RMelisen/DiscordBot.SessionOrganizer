@@ -139,7 +139,7 @@ internal sealed class RobotHeartService
         }
     }
 
-    // Her reaction, taken back five to seven seconds later: she won't be caught.
+    // Her reaction, taken back two to four seconds later: she won't be caught.
     private void TakeBackLater(SocketUserMessage message, IEmote emote) =>
         Later(TimeSpan.FromMilliseconds(Random.Shared.Next(RobotHeart.TakeBackDelayMs.Min, RobotHeart.TakeBackDelayMs.Max)),
             () => message.RemoveReactionAsync(emote, _client.CurrentUser), "take the reaction back");
@@ -154,7 +154,7 @@ internal sealed class RobotHeartService
             () => sent.DeleteAsync(), "delete the line");
     }
 
-    // A slip, edited into a denial about seven seconds later. Picked by its slip, which is
+    // A slip, edited into a denial about four seconds later. Picked by its slip, which is
     // distinct across the pool, so ResponsePicker's memory applies.
     private async Task EditSlipAsync(SocketUserMessage message, HeartCharacter who)
     {

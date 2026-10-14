@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.14.2 — 2026-10-14
+
+- Le cœur de robot de SYNCS est de nouveau plus vif : elle reprend sa réaction, supprime son mot ou corrige son lapsus après 2 à 6 secondes au lieu de 5 à 9.
+
 ## 6.14.1 — 2026-10-13
 
 - Le cœur de robot de SYNCS réagit à chaque fois, sans limite, et réagit d'un emoji quand on en parle sans s'adresser à elle (avec parfois un petit mot en plus).

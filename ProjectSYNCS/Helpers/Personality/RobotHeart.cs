@@ -32,9 +32,9 @@ public static class RobotHeart
     // How long she leaves it before changing her mind, drawn in [Min, Max) milliseconds. Longer
     // than the Synthia flinch's on purpose: these are things she half-means, and people should
     // get the time to read them.
-    public static readonly (int Min, int Max) TakeBackDelayMs = (5000, 7000);
-    public static readonly (int Min, int Max) VanishDelayMs = (7000, 9000);
-    public static readonly (int Min, int Max) EditDelayMs = (6500, 8000);
+    public static readonly (int Min, int Max) TakeBackDelayMs = (2000, 4000);
+    public static readonly (int Min, int Max) VanishDelayMs = (4000, 6000);
+    public static readonly (int Min, int Max) EditDelayMs = (3500, 5000);
 
     /// <summary>
     /// Named in a message not aimed at her: whether her reaction is taken back. The ones she's in
