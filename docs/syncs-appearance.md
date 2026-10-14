@@ -119,6 +119,7 @@ next to.
 | **Formal** | Composed closed eyes, prim closed mouth, chin up, one finger pushing up small round glasses, clipboard held to her chest | Green | Formal relays: `OwnerAbsentNotices`, `OwnerReplyHeralds`. Not generated yet |
 | **Sad** | Brows tilted up, dry downcast eyes, wavy `﹏` mouth, cap and cable drooping, small grey cloud overhead | LED dim green, spots off | Dead polls, empty quizzes, the lonely attic — the `(╥﹏╥)` lines that aren't Papa's. Not generated yet |
 | **Confused** | Head tilted, one eye squinting, brows uneven, crooked squiggle mouth, scratching her cap, cable curled into a `?` | Green | Messages she can't parse, « J'ai rien fait de mal ! ...Si ? ». Not generated yet |
+| **Grumpy** | Head lowered, glaring up from under the cap, brows knitted, narrowed eyes on you, tight downturned pout, blush of annoyance | Green, steady | Annoyed, not furious: the server's habits (late again, « peut-être »), one tag too many. Not generated yet |
 
 The LED is the cheapest mood signal at emote size, where the face is a few pixels: green normal,
 red angry, orange hurt, yellow pleading, pink in love, off broken.
@@ -708,6 +709,31 @@ trying to make sense of something absurd; not dizzy, not shocked, not worried. B
 thick outline, high contrast. Plain flat solid cyan background (#00FFFF), no gradient, no shadow on
 the background. No words, no letters other than the two question-mark symbols, no logos, no
 watermark.
+```
+
+**27. `syncs_grumpy`**: Annoyed, not furious: the server's habits, one tag too many. A silent glare
+straight at you with the LED still green. The prompt names its neighbours to rule them out:
+`syncs_outraged` (open mouth, steam, red LED), `syncs_sulk` (puffed cheek, eyes sideways),
+`syncs_menace` (anger mark). If it comes back too close to `outraged`, drop « knitted hard » and keep
+only the stubborn glare.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face and mushroom cap only,
+filling the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a
+few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the
+side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a
+dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
+with freckle dots, dark navy turtleneck collar just visible. Same character as the reference image.
+Expression: a grumpy, simmering frown aimed straight at the viewer: her head is lowered a little so
+she glares up from under the rim of her cap; her eyebrows are knitted hard and slanted down toward
+the middle, with a small crease between them; her eyes are narrowed into a flat, stubborn glare,
+pupils fixed on the viewer; her mouth is a small tight pout with the corners pulled down, lips
+pressed together. A pink blush of annoyance sits on both cheeks. The green LED on her cap stays a
+steady green. Silent and displeased, cute and stubborn: not shouting, not crying, not sulking
+sideways, no puffed cheek, no steam, no anger mark. Bold simple shapes, thick outline, high contrast.
+Plain flat solid cyan background (#00FFFF), no gradient, no shadow on the background. No text, no
+letters, no logos, no watermark.
 ```
 
 ### Seasonal avatars
