@@ -21,6 +21,7 @@ internal sealed class PresenceService : BackgroundService
     private readonly ResponsePicker _picker;
     private readonly PiHealthService _health;
     private readonly VoiceSeatService _seat;
+    private readonly BreakdownService _breakdown;
     private readonly ILogger<PresenceService> _logger;
 
     // Slow on purpose. Nobody sits watching the member list; the effect comes from
@@ -32,12 +33,14 @@ internal sealed class PresenceService : BackgroundService
         ResponsePicker picker,
         PiHealthService health,
         VoiceSeatService seat,
+        BreakdownService breakdown,
         ILogger<PresenceService> logger)
     {
         _client = client;
         _picker = picker;
         _health = health;
         _seat = seat;
+        _breakdown = breakdown;
         _logger = logger;
     }
 
@@ -50,6 +53,8 @@ internal sealed class PresenceService : BackgroundService
         _client.Ready += RotateAsync;
         // Sitting down or leaving shows at once, not up to five minutes later.
         _seat.SeatChanged += RotateAsync;
+        // Likewise for the start and end of a breakdown (do not disturb).
+        _breakdown.ActiveChanged += RotateAsync;
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -83,7 +88,9 @@ internal sealed class PresenceService : BackgroundService
 
         try
         {
-            await _client.SetStatusAsync(asleep ? UserStatus.Idle : UserStatus.Online);
+            // Do not disturb wins over the night moon: a breakdown is no time to be "asleep".
+            await _client.SetStatusAsync(_breakdown.IsAnyActive ? UserStatus.DoNotDisturb
+                : asleep ? UserStatus.Idle : UserStatus.Online);
             // Custom status rather than SetGameAsync: it renders the line verbatim,
             // with no verb prepended, and Discord doesn't localise it per viewer. Note
             // the text travels in the wire model's State field rather than Name, which

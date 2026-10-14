@@ -31,6 +31,27 @@ public sealed class BreakdownService
     // True while a breakdown is playing in the given channel.
     public bool IsActive(ulong channelId) => _activeChannels.ContainsKey(channelId);
 
+    // True while one is playing anywhere — PresenceService shows do-not-disturb for it.
+    public bool IsAnyActive => !_activeChannels.IsEmpty;
+
+    // Raised when a breakdown starts playing and again when it ends, so PresenceService can
+    // change the status now rather than at its next tick.
+    public event Func<Task>? ActiveChanged;
+
+    private async Task NotifyAsync()
+    {
+        if (ActiveChanged is not { } handler) return;
+        try
+        {
+            await handler();
+        }
+        catch (Exception ex)
+        {
+            // Cosmetic — the status must never break the scene.
+            _logger.LogWarning(ex, "Breakdown status hook failed.");
+        }
+    }
+
     // Atomically checks the cooldown and claims the channel lock. Returns true
     // only if the breakdown may start now; updates the last-trigger time so the
     // next one can't happen until the cooldown elapses.
@@ -50,6 +71,7 @@ public sealed class BreakdownService
     // open the same sequence its own way. Releases the channel lock when done.
     public async Task PlayAsync(SocketUserMessage message, string username, string realName, string intro)
     {
+        await NotifyAsync();
         try
         {
             // {1} = SHOUTED real name for the screaming line.
@@ -108,6 +130,7 @@ public sealed class BreakdownService
         {
             // Consciousness module unloaded — back to normal roasting.
             _activeChannels.TryRemove(message.Channel.Id, out _);
+            await NotifyAsync();
         }
     }
 
