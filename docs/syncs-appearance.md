@@ -147,6 +147,16 @@ laughter tears either.
   and sharp on the phone and on PC alike (800×320 was too big on PC). Never post the square file.
   What she uses them for is in `docs/agents/personality.md`, *Sticker follow-ups*.
 - **Banner / scenes** — her attic at night (see *The banner* below for the canon scene).
+- **Animated moods** (experiment, not used yet) — a mood's sticker made into a looping GIF by
+  moving its own pixels, with nothing redrawn: `sad` only so far, in `docs/assets/animated/`
+  (`syncs_sad.gif` at 320 px, `syncs_sad_128.gif` as an emote under Discord's 256 KB cap), made by
+  `tools/syncs-emotes/animate_sad.py`. What works: a 1 px whole-figure shiver, highlights moved as
+  a block inside the iris (a per-row wave shreds them), a wave along a mouth line, the tremble marks
+  flicking, and an LED pulse whose colours are **pinned in the palette** (median cut drops the
+  LED's few pixels and it turns grey). What doesn't: blinks, head turns, anything needing a pose
+  the sticker doesn't have; that takes drawn frames. The shiver touches every edge pixel, hence
+  1.3 MB at 320 px; a strip version would need trimming. Not yet decided: where they'd go (emotes,
+  or strips in place of the stills).
 
 ## Moods wanted
 
@@ -1033,6 +1043,7 @@ two pictures read as one world.
 | Sticker strips v1 | `../ProjectSYNCS/Assets/Stickers/syncs_<mood>.png` | Every sticker in `assets/stickers/` (28 moods) as a 1000×320 strip, `export.py --strip`. Shipped with the bot; posted after tagged lines since 6.13.0 (all but `glitch`, posted by hand at the breakdown's cut and the glitched wake since 6.17.4; the third batch since 6.17.1) |
 | Seasonal avatars v1 | `../ProjectSYNCS/Assets/Avatars/syncs-{spring,summer,autumn,winter}.png` | Gemini, from the prompts above. Rotate with the seasons (6.8.0); v1 is the reference they were drawn from. Still the bot's fallback when a GIF is missing; a copy of the four stills is kept in `assets/avatars/classic/` |
 | Animated seasonal avatars | `../ProjectSYNCS/Assets/Avatars/syncs-<season>.gif`, full-size in `assets/avatars/` | `tools/syncs-avatar/animate.py`, from the stills. What the bot uploads since 6.17.3 |
+| Animated sad (experiment) | `assets/animated/syncs_sad.gif`, `syncs_sad_128.gif` | `tools/syncs-emotes/animate_sad.py`, from the sad sticker. Not uploaded, not used (see *Formats*) |
 
 When a new avatar or banner replaces one of these, add it here and keep the old file: the reference that fixed
 the design is worth keeping.
