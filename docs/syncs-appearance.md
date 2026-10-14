@@ -120,6 +120,7 @@ next to.
 | **Sad** | Exaggerated anime sadness: huge brimming, wobbling eyes that never spill, steep brows, big quivering `﹏` mouth, trembling lines, blush spread | LED dim green, spots off | Dead polls, empty quizzes, the lonely attic — the `(╥﹏╥)` lines that aren't Papa's. Not generated yet |
 | **Confused** | Head tilted, one eye squinting, brows uneven, crooked squiggle mouth, two `?` floating by the cap | Green | Messages she can't parse, « J'ai rien fait de mal ! ...Si ? ». Not generated yet |
 | **Grumpy** | Head lowered, glaring up from under the cap, brows knitted, narrowed eyes on you, tight downturned pout, blush of annoyance | Green, steady | Annoyed, not furious: the server's habits (late again, « peut-être »), one tag too many. Not generated yet |
+| **Horrified** | Anime gag horror: huge bulging eyes with pinprick pupils, strain lines under them, mouth wide open on both rows of teeth, dark hatching down the forehead, face drained | Green, spots dark | The unthinkable: being replaced, a truly cursed message. Above `terror` and `shocked`. Not generated yet |
 
 The LED is the cheapest mood signal at emote size, where the face is a few pixels: green normal,
 red angry, orange hurt, yellow pleading, pink in love, off broken.
@@ -740,6 +741,34 @@ steady green. Silent and displeased, cute and stubborn: not shouting, not crying
 sideways, no puffed cheek, no steam, no anger mark. Bold simple shapes, thick outline, high contrast.
 Plain flat solid cyan background (#00FFFF), no gradient, no shadow on the background. No text, no
 letters, no logos, no watermark.
+```
+
+**28. `syncs_horrified`**: Anime gag horror, the face a character pulls at something unthinkable:
+being replaced by another bot, a truly cursed message. The top of the scale that `syncs_shocked`
+(mild disbelief, small round mouth) and `syncs_terror` (comic panic over her plug, red LED) sit
+under: no props, no LED alarm, only the face, pushed as far as it goes, and ugly on purpose — that
+is the joke. Gag-face detail (strain lines, hatching, teeth) disappears at 32 px, so the prompt
+asks for few, thick lines. The hatching on the forehead is asked dark navy-purple and the sweat
+white: the source of this face draws them blue, which the cyan key would eat.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face and mushroom cap only,
+filling the frame, her face turned three-quarters and thrust toward the viewer: large round red-pink
+mushroom cap worn as her hat, cream spots of uneven sizes, tan gills under the rim, a tiny green power
+LED on the side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns
+into a dark cable ending in a small plug. Dark navy turtleneck collar just visible. Same character as
+the reference image.
+Expression: absolutely horrified, the exaggerated anime gag-horror face: her eyes are huge, round
+and bulging, almost all white, each with a tiny dark navy pinprick pupil in the middle, staring
+straight at the viewer; a few thick strain lines under and around each eye. Her mouth is wide open in
+a silent scream, stretched tall, showing a full row of white teeth at the top and at the bottom, a
+pink tongue inside. Short thick dark navy-purple vertical hatching lines run down her forehead under
+the cap, her face has gone pale, the blush drained away, and two or three white sweat drops fly off
+her cheek. None of the spots on her cap glow. Ugly-funny and over the top, frozen in pure horror, as
+if she had just seen something unspeakable; comic, not gory, not scary, no tears. Bold simple
+shapes, few but thick lines, high contrast. No blue anywhere. Plain flat solid cyan background
+(#00FFFF), no gradient, no shadow on the background. No text, no letters, no logos, no watermark.
 ```
 
 ### Seasonal avatars
