@@ -7,9 +7,9 @@ using ProjectSYNCS.Services;
 namespace ProjectSYNCS.Commands;
 
 // /health — her check-up, for anyone: the Pi, her process, the gateway, storage, temperature and
-// the outage log (PiHealthService.SnapshotAsync, rendered by HealthCards). Visible only to the
-// person asking, once per half-minute each; the owner skips the cooldown and also gets the state
-// file's path. Also the first check after a deploy: it shows whether /sys and /proc are readable
+// the outage log (PiHealthService.SnapshotAsync, rendered by HealthCards). Posted in the channel
+// for everyone to see, once per half-minute per person (the refusal alone is private); the owner
+// skips the cooldown and also gets the state file's path. Also the first check after a deploy: it shows whether /sys and /proc are readable
 // from inside the add-on's container.
 [CommandContextType(InteractionContextType.Guild)]
 public class HealthModule : InteractionModuleBase<SocketInteractionContext>
@@ -36,7 +36,7 @@ public class HealthModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         // Reads the database: may be past Discord's 3 s on the Pi.
-        await DeferAsync(ephemeral: true);
+        await DeferAsync();
 
         HealthReport report;
         try
@@ -46,7 +46,8 @@ public class HealthModule : InteractionModuleBase<SocketInteractionContext>
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "/health: snapshot failed.");
-            await FollowupAsync("Je n'arrive pas à faire mon bilan pour l'instant. Réessaie dans un moment.", ephemeral: true);
+            // Replaces the public « réfléchit… » placeholder, so it is public too.
+            await FollowupAsync("Je n'arrive pas à faire mon bilan pour l'instant. Réessaie dans un moment.");
             return;
         }
 
@@ -64,7 +65,6 @@ public class HealthModule : InteractionModuleBase<SocketInteractionContext>
         await FollowupAsync(
             components: HealthCards.Build(report, _picker.Pick(pool), isOwner),
             flags: MessageFlags.ComponentsV2,
-            ephemeral: true,
             allowedMentions: AllowedMentions.None);
     }
 }

@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.16.1 — 2026-10-14
+
+- `/health` now posts its check-up in the channel for everyone to see, instead of only to the
+  person who asked.
+
 ## 6.16.0 — 2026-10-14
 
 - New `/health` command, for everyone: SYNCS's check-up, opened by a line in her voice. It shows

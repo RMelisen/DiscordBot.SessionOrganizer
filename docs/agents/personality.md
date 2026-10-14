@@ -492,7 +492,7 @@ reads — the first thing to run after a deploy if the status never mentions the
 - **Outages**: the first `Disconnected` starts the clock, the next `Connected` stops it; ten
   minutes or more is an outage (`UptimeEvent`, plus the router line). Shorter gaps are Discord's
   ordinary reconnects. She blames the router whatever the cause — she can't tell from the attic.
-- **`/health`** is public: anyone, visible only to them, once per 30 s each (the owner skips
+- **`/health`** is public: anyone, posted in the channel, once per 30 s each (the owner skips
   the cooldown and also sees the state file's path). `PiHealthService.SnapshotAsync` reads
   everything into a plain `HealthReport`, which `HealthCards` renders as one V2 card (16 of 40
   components). Besides the temperature and the stops above it reads the load, memory and CPU
