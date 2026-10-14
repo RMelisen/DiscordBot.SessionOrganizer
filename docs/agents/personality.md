@@ -472,7 +472,7 @@ line. Departures are deliberately silent: without the audit log she can't tell a
 ### Her body — `PiHealthService`
 
 Reads the real Pi (`Helpers/Pi/PiHardware`: `/sys/class/thermal/thermal_zone0/temp`, `/proc/uptime`),
-null everywhere else, so dev on Windows simply has no temperature. `/debug health` shows what it
+null everywhere else, so dev on Windows simply has no temperature. `/health` shows what it
 reads — the first thing to run after a deploy if the status never mentions the heat.
 
 - **Temperature** is sampled every tick into `PiThermalDay` (one row per Paris day: min, max and
@@ -492,6 +492,18 @@ reads — the first thing to run after a deploy if the status never mentions the
 - **Outages**: the first `Disconnected` starts the clock, the next `Connected` stops it; ten
   minutes or more is an outage (`UptimeEvent`, plus the router line). Shorter gaps are Discord's
   ordinary reconnects. She blames the router whatever the cause — she can't tell from the attic.
+- **`/health`** is public: anyone, visible only to them, once per 30 s each (the owner skips
+  the cooldown and also sees the state file's path). `PiHealthService.SnapshotAsync` reads
+  everything into a plain `HealthReport`, which `HealthCards` renders as one V2 card (16 of 40
+  components). Besides the temperature and the stops above it reads the load, memory and CPU
+  frequency (`/proc`, `cpufreq`), the firmware's **power flags** (`get_throttled`, searched two
+  levels under `/sys/devices/platform`, decoded by `PiHealth.DecodeThrottled`; failing that the
+  `rpi_volt` sensor, which only knows « right now »), every gateway drop this run, the member
+  cache of the server it's run in, the database and `-wal` sizes and free disk, and the
+  `UptimeEvent` log (last 5, 30-day tally). Her line on top comes from `HealthHotLines` (≥ 70 °C or
+  slowed by the firmware), `HealthShakenLines` (under-voltage now, or a stop or outage that ended
+  within 24 h) or `HealthFineLines` — `PiHealth.Mood`, pure. A relative timestamp renders
+  « il y a 3 jours », so no « depuis » goes in front of one.
 - **The duration is optional.** About a third of the wake lines and some router lines don't
   mention it at all — a frightened bot doesn't always look at the clock. Where `{0}` is used in
   `PowerCutWakeLines` / `CrashWakeLines`, it must read with `PiHealth.UnknownDowntime`

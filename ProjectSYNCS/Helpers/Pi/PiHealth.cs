@@ -94,4 +94,56 @@ public static class PiHealth
         var hour = AppTime.ToZoned(now).Hour;
         return hour >= RecordStartHour && hour < RecordEndHour;
     }
+
+    // An outage, crash or power cut that ended this recently still shakes her on /health.
+    public static readonly TimeSpan ShakenWindow = TimeSpan.FromHours(24);
+
+    /// <summary>
+    /// The firmware's get_throttled word. Low bits are « right now », the same bits 16 higher
+    /// « since boot »: 0 under-voltage, 1 frequency capped, 2 throttled, 3 soft temperature limit.
+    /// Capped, throttled and the soft limit all mean she is running slower, so they read as one.
+    /// </summary>
+    public static PowerReading DecodeThrottled(int bits)
+    {
+        const int slowed = 0b1110;
+        return new PowerReading(
+            UnderVoltageNow: (bits & 0b0001) != 0,
+            UnderVoltageSinceBoot: (bits & (0b0001 << 16)) != 0,
+            SlowedNow: (bits & slowed) != 0,
+            SlowedSinceBoot: (bits & (slowed << 16)) != 0);
+    }
+
+    /// <summary>
+    /// Which pool opens her /health card. Hot wins (the heat, or the firmware slowing her down),
+    /// then shaken (under-voltage right now, or a stop or an outage that ended within
+    /// <see cref="ShakenWindow"/>), then fine — off a Pi too.
+    /// </summary>
+    public static HealthMood Mood(int? currentMilli, PowerReading? power, IEnumerable<DateTimeOffset> outageEnds, DateTimeOffset now)
+    {
+        if (currentMilli >= HotMilli || power?.SlowedNow == true) return HealthMood.Hot;
+        if (power?.UnderVoltageNow == true || outageEnds.Any(end => now - end < ShakenWindow)) return HealthMood.Shaken;
+        return HealthMood.Fine;
+    }
+
+    /// <summary>How the last run ended, as the /health card says it.</summary>
+    public static string StopLabel(StopKind kind) => kind switch
+    {
+        StopKind.Clean => "un arrêt normal",
+        StopKind.PowerCut => "une coupure de courant",
+        StopKind.Crash => "un plantage",
+        _ => "inconnu",
+    };
 }
+
+public enum HealthMood
+{
+    Fine,
+    Hot,
+    Shaken,
+}
+
+/// <summary>
+/// The firmware's power flags. The « since boot » halves are null when only the rpi_volt sensor
+/// could be read: it knows the present, not the history.
+/// </summary>
+public sealed record PowerReading(bool UnderVoltageNow, bool? UnderVoltageSinceBoot, bool? SlowedNow, bool? SlowedSinceBoot);

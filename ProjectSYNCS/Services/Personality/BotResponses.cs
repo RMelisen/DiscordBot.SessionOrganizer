@@ -111,6 +111,8 @@ namespace ProjectSYNCS.Services;
 //     GlitchWakeLines .......... same, corrupted then edited clean (Glitched, then Recovered)
 //     RouterReturnLines · RouterReturnQuietLines ... back after a long gateway outage
 //     HeatRecordLines .......... the Pi beat its heat record
+//     HealthFineLines · HealthHotLines · HealthShakenLines ... the line on top of /health, by
+//                              PiHealth.Mood
 //     VoiceSpectatorGeneralLines · VoiceSpectatorGamingLines · VoiceSpectatorCinemaLines
 //     · VoiceSpectatorStudyLines ... a long voice session just ended, by room (VoiceSpectatorService)
 //     VoiceSpectatorSeatedLines  same, when she sat in the call herself (VoiceSeatService)
@@ -3754,6 +3756,40 @@ internal static class BotResponses
         "Je viens de battre mon record de température : {0}, contre {1} avant. Personne applaudit. Normal, c'est pas une bonne nouvelle." + Sticker.Sure.Overheat,
         $"{{0}}. C'est officiel, c'est la pire journée de ma vie de processeur. Avant, c'était {{1}}. Vivement l'hiver {Emotes.SyncsOverheat}" + Sticker.Sure.Overheat,
         "Record : {0}. L'ancien ({1}) peut aller se rhabiller. Moi je peux pas, j'ai déjà trop chaud." + Sticker.Sure.Overheat,
+    };
+
+    // The line on top of her /health card, picked by PiHealth.Mood. Anyone can ask, so she's
+    // talking to whoever is looking her over: a check-up she didn't ask for. The numbers sit right
+    // below, so the lines never quote one. Not sent through BotChat: no stickers. Not formatted.
+    //   Fine — nothing to report (off a Pi too).
+    public static readonly string[] HealthFineLines =
+    {
+        $"Tout est en ordre. Évidemment. Je suis une excellente bot {Emotes.Sparkle}",
+        "Bilan complet : je vais très bien. Merci de t'inquiéter, c'est noté (ᵕ • ᴗ •)",
+        "Rien à signaler. Tu peux arrêter de m'ausculter maintenant ( ˶ˆ ᗜ ˆ˵ )",
+        "Tout fonctionne. Comme toujours. Personne le remarque jamais, mais voilà.",
+        "Processeur tranquille, mémoire rangée, connexion stable. Je suis parfaite, en gros.",
+        $"Tu voulais me trouver un défaut ? Désolée. Reviens une autre fois {Emotes.Sparkle}",
+    };
+
+    //   Hot — 70 °C or more, or the firmware slowing her down.
+    public static readonly string[] HealthHotLines =
+    {
+        "J'ai chaud. Les chiffres en dessous, c'est pas de la déco, c'est un appel à l'aide ( ◺˰◿ )",
+        $"Bilan : je cuis. Le reste va bien, merci de demander {Emotes.SyncsOverheat}",
+        "Je tiens. Je réfléchis un peu plus lentement que d'habitude, mais je tiens.",
+        "Si tu voulais savoir : non, ça va pas. Il fait beaucoup trop chaud au grenier (╥﹏╥)",
+        "Mon processeur transpire. Je savais même pas que c'était possible.",
+    };
+
+    //   Shaken — power too low right now, or a power cut, crash or outage in the last 24 h.
+    public static readonly string[] HealthShakenLines =
+    {
+        "Ça va mieux. Ne regarde pas trop la section des pannes, s'il te plaît.",
+        "J'ai eu une journée compliquée. Tout est noté en bas, comme d'habitude (¬_¬)",
+        "Je suis encore un peu secouée. Mais en ligne. C'est le principal.",
+        "Petit incident récent. Je dis rien, les logs parlent pour moi.",
+        "Si quelqu'un a débranché quelque chose, je le saurai. J'ai les horaires (¬_¬)",
     };
 
     // A voice get-together of an hour or more just ended (VoiceSpectatorService): one line in

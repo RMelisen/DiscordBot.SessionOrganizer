@@ -10,7 +10,7 @@ public enum UptimeEventKind
 
 // A stretch she was gone for, recorded by PiHealthService: a power cut or crash (found on the
 // next start, StartedAt being her last heartbeat) or a lost gateway connection of
-// PiHealth.OutageMin or more. Read by the monthly report.
+// PiHealth.OutageMin or more. Listed and tallied by /health.
 public class UptimeEvent
 {
     public int Id { get; set; }

@@ -40,6 +40,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/admin plynling rename · resurrect · passion-reset · cure`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
 | `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
 | `/debug quiz` | Post or close a pop quiz, or crown the week, now (tests) | owner |
+| `/health` | Her check-up: the Pi's temperature and power, her memory, the Discord connection, storage, the outage log | everyone |
 | `/help` | In-Discord usage guide | everyone |
 
 "Staff" means Administrator or Manage Server, the bot's owner, or a configured

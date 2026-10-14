@@ -71,7 +71,6 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     private readonly PlynlingSweepService _sweep;
     private readonly QuizMasterService _quiz;
     private readonly QuizCrownService _crown;
-    private readonly PiHealthService _health;
     private readonly StickerService _stickers;
 
     // Discord caps a message at 2000 characters; leave room for the herald line
@@ -84,13 +83,12 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         new(@"channels/(\d+)/(\d+)/(\d+)", RegexOptions.Compiled);
 
     public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings,
-        PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz, QuizCrownService crown, PiHealthService health,
+        PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz, QuizCrownService crown,
         StickerService stickers)
     {
         _stickers = stickers;
         _quiz = quiz;
         _crown = crown;
-        _health = health;
         _plynlings = plynlings;
         _announcer = announcer;
         _sweep = sweep;
@@ -516,22 +514,6 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
                 ? $"🔧 Passage terminé : {n} Plynling{(n > 1 ? "s" : "")} vu{(n > 1 ? "s" : "")}."
                 : "🔧 Un passage est déjà en cours. Réessaie dans un instant.",
             ephemeral: true);
-    }
-
-    // What she reads off the Pi: temperature now and today, the host's boot time, how her last
-    // run ended, an outage in progress. The first check after a deploy: it shows whether /sys
-    // and /proc are readable from inside the add-on's container.
-    [SlashCommand("health", "Voir ce que le bot lit du Raspberry Pi (température, arrêts)")]
-    public async Task HealthAsync()
-    {
-        if (Context.User.Id != AvailabilityService.OwnerId)
-        {
-            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
-            return;
-        }
-        // Reads the database: may be past Discord's 3 s on the Pi.
-        await DeferAsync(ephemeral: true);
-        await FollowupAsync(await _health.DescribeAsync(), ephemeral: true, allowedMentions: AllowedMentions.None);
     }
 
     // Any of her sticker strips, posted here as the follow-up would post it, bypassing the

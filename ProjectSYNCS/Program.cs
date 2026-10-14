@@ -123,7 +123,7 @@ var host = Host.CreateDefaultBuilder(args)
 
         services.AddHostedService<BotService>();
         // One instance for both roles: the host runs its 2-minute loop, AmbientService,
-        // PresenceService and /debug health read what it knows about the Pi.
+        // PresenceService and /health read what it knows about the Pi.
         services.AddSingleton<PiHealthService>();
         services.AddHostedService(sp => sp.GetRequiredService<PiHealthService>());
         services.AddHostedService<ReminderService>();

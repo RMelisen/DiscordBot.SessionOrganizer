@@ -18,7 +18,7 @@ namespace ProjectSYNCS.Services;
 // the gateway going dark for a while, which she blames on the router whether or not it was.
 //
 // Registered as a singleton and as the hosted service, like AmbientService: AmbientService,
-// PresenceService and /debug health read this one instance. Hooks the client's Connected and
+// PresenceService and /health read this one instance. Hooks the client's Connected and
 // Disconnected itself — connection lifecycle, like the Ready hooks in AmbientService — since no
 // one else in BotService's fan-out cares.
 public sealed class PiHealthService : BackgroundService
@@ -34,6 +34,13 @@ public sealed class PiHealthService : BackgroundService
     // How far back she reads the main channel to count what she missed.
     private const int MissedHistoryDepth = 100;
 
+    // /health reads the database and a dozen files: once per person per half-minute.
+    private static readonly TimeSpan HealthCooldown = TimeSpan.FromSeconds(30);
+
+    // How many uptime events /health lists, and the window its tally covers.
+    private const int RecentOutages = 5;
+    private static readonly TimeSpan OutageTallyWindow = TimeSpan.FromDays(30);
+
     private const ulong RouterSalt = 0x5359_4E43_524F_5554;      // "SYNCROUT"
     private const ulong RouterQuietSalt = 0x5359_4E43_5155_4954; // "SYNCQUIT"
     private const ulong RecordSalt = 0x5359_4E43_4845_4154;      // "SYNCHEAT"
@@ -44,7 +51,9 @@ public sealed class PiHealthService : BackgroundService
     private readonly BreakdownService _breakdown;
     private readonly IHostApplicationLifetime _lifetime;
     private readonly ILogger<PiHealthService> _logger;
+    private readonly string _dbPath;
     private readonly string _statePath;
+    private readonly CooldownGate<ulong> _healthChecks = new(HealthCooldown, forget: TimeSpan.FromMinutes(10));
 
     // Guards everything below.
     private readonly object _gate = new();
@@ -56,6 +65,8 @@ public sealed class PiHealthService : BackgroundService
 
     private int? _currentMilli;
     private DateTimeOffset? _outageStart;
+    // Every gateway drop this run, Discord's ordinary reconnects included.
+    private int _disconnects;
 
     // The record to beat today (every other day's maximum) and how many days of history stand
     // behind it, read once a day.
@@ -80,8 +91,8 @@ public sealed class PiHealthService : BackgroundService
         _logger = logger;
 
         // Next to the database, so it lives under /data in production and survives updates.
-        var dbPath = Path.GetFullPath(config["Database:Path"] ?? "ProjectSYNCS.db");
-        _statePath = Path.Combine(Path.GetDirectoryName(dbPath) ?? ".", "health-state.json");
+        _dbPath = Path.GetFullPath(config["Database:Path"] ?? "ProjectSYNCS.db");
+        _statePath = Path.Combine(Path.GetDirectoryName(_dbPath) ?? ".", "health-state.json");
     }
 
     /// <summary>How the previous run ended. Settled on first use, before the file is overwritten.</summary>
@@ -157,43 +168,117 @@ public sealed class PiHealthService : BackgroundService
         }
     }
 
-    /// <summary>For /debug health: everything she knows about her body right now.</summary>
-    public async Task<string> DescribeAsync()
+    /// <summary>
+    /// Claims a /health check for <paramref name="userId"/>; false while their last one is under
+    /// half a minute old, with <paramref name="readyAt"/> saying when they may ask again.
+    /// </summary>
+    public bool TryClaimHealthCheck(ulong userId, out DateTimeOffset readyAt) =>
+        _healthChecks.TryClaim(userId, out readyAt);
+
+    /// <summary>
+    /// For /health: everything she knows about her body right now. <paramref name="guild"/> is the
+    /// server the command was run in, for its member cache.
+    /// </summary>
+    public async Task<HealthReport> SnapshotAsync(SocketGuild? guild)
     {
         var now = DateTimeOffset.UtcNow;
-        var boot = PiHardware.TryReadHostUptime() is { } up ? now - up : (DateTimeOffset?)null;
+        var hostUptime = PiHardware.TryReadHostUptime();
         int? current;
-        DateTimeOffset? outage;
+        DateTimeOffset? outageSince;
+        DateTimeOffset startedAt;
+        int disconnects;
         lock (_gate)
         {
             current = _currentMilli;
-            outage = _outageStart;
+            outageSince = _outageStart;
+            startedAt = _startedAt;
+            disconnects = _disconnects;
         }
 
-        PiThermalDay? today = null;
-        int days = 0;
+        var todayKey = AppTime.DayKey(now);
+        PiThermalDay? today;
+        List<(int Day, int MaxMilli)> maxima;
+        List<UptimeEvent> events;
         await using (var scope = _services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            today = await db.PiThermalDays.FindAsync(AppTime.DayKey(now));
-            days = await db.PiThermalDays.CountAsync();
+            today = await db.PiThermalDays.AsNoTracking().FirstOrDefaultAsync(d => d.Day == todayKey);
+            // One row per day and a handful of events a month: both small enough to read whole,
+            // and the events' window is on DateTimeOffset, which SQLite can't compare.
+            maxima = (await db.PiThermalDays.Select(d => new { d.Day, d.MaxMilli }).ToListAsync())
+                .Select(d => (d.Day, d.MaxMilli)).ToList();
+            events = await db.UptimeEvents.AsNoTracking().ToListAsync();
         }
 
-        var lines = new List<string>
+        var weekStart = AppTime.KeyDaysAgo(6);
+        var week = maxima.Where(d => d.Day >= weekStart).ToList();
+        var month = events.Where(e => now - e.EndedAt < OutageTallyWindow).ToList();
+
+        using var process = System.Diagnostics.Process.GetCurrentProcess();
+
+        return new HealthReport(
+            now,
+            new PiReading(
+                hostUptime is { } up ? now - up : null,
+                PiHardware.TryReadLoadAverage(),
+                PiHardware.TryReadMemory(),
+                PiHardware.TryReadCpuMegahertz(),
+                PiHardware.TryReadPower()),
+            new ProcessReading(
+                startedAt,
+                AppInfo.Version,
+                System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription,
+                process.WorkingSet64,
+                GC.GetGCMemoryInfo().HeapSizeBytes,
+                process.Threads.Count,
+                LastStop,
+                Downtime),
+            new GatewayReading(
+                _client.ConnectionState == ConnectionState.Connected,
+                _client.Latency,
+                disconnects,
+                outageSince,
+                guild?.DownloadedMemberCount,
+                guild?.MemberCount),
+            ReadStorage(),
+            new TemperatureReading(
+                current,
+                today,
+                week.Count > 0 ? week.MaxBy(d => d.MaxMilli) : null,
+                maxima.Count > 0 ? maxima.MaxBy(d => d.MaxMilli) : null,
+                maxima.Count),
+            new OutageReading(
+                events.OrderByDescending(e => e.StartedAt).Take(RecentOutages).ToList(),
+                month.GroupBy(e => e.Kind).ToDictionary(g => g.Key, g => g.Count()),
+                TimeSpan.FromTicks(month.Sum(e => Math.Max(0, (e.EndedAt - e.StartedAt).Ticks)))),
+            _statePath);
+    }
+
+    // The database, its write-ahead log, and the disk they live on. Each read on its own: a
+    // missing -wal (no write since the last checkpoint) is ordinary.
+    private StorageReading ReadStorage()
+    {
+        static long? Size(string path)
         {
-            $"🌡️ Température : {(current is { } c ? PiHealth.Celsius(c) + $" ({c} m°C)" : "illisible")}",
-            today is null
-                ? "📅 Aujourd'hui : aucune mesure"
-                : $"📅 Aujourd'hui : min {PiHealth.Celsius(today.MinMilli)}, max {PiHealth.Celsius(today.MaxMilli)} " +
-                  $"(<t:{today.MaxAt.ToUnixTimeSeconds()}:t>), moy. {PiHealth.Celsius((int)(today.SumMilli / Math.Max(1, today.Samples)))}, " +
-                  $"{today.Samples} mesures, {today.HotMinutes} min ≥ {PiHealth.Celsius(PiHealth.ThrottleMilli)}",
-            $"📚 Jours mesurés : {days}",
-            $"🖥️ Démarrage du Pi : {(boot is { } b ? $"<t:{b.ToUnixTimeSeconds()}:f>" : "illisible")}",
-            $"🔌 Dernier arrêt : {LastStop}{(PiHealth.IsAbrupt(LastStop) ? $" (absente {PiHealth.Duration(Downtime)})" : "")}",
-            $"📡 Coupure en cours : {(outage is { } o ? $"depuis <t:{o.ToUnixTimeSeconds()}:R>" : "non")}",
-            $"📁 `{_statePath}`",
-        };
-        return string.Join('\n', lines);
+            try { return File.Exists(path) ? new FileInfo(path).Length : null; }
+            catch { return null; }
+        }
+
+        long? free = null, total = null;
+        try
+        {
+            // statvfs on Linux takes any path on the filesystem; Windows wants the drive root.
+            var dir = Path.GetDirectoryName(_dbPath) ?? ".";
+            var drive = new DriveInfo(OperatingSystem.IsWindows() ? Path.GetPathRoot(dir) ?? dir : dir);
+            free = drive.AvailableFreeSpace;
+            total = drive.TotalSize;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Pi health: could not read the disk's free space.");
+        }
+
+        return new StorageReading(Size(_dbPath), Size(_dbPath + "-wal"), free, total);
     }
 
     // Read the previous run's state once, before anything overwrites it, then mark this run as
@@ -325,7 +410,11 @@ public sealed class PiHealthService : BackgroundService
 
     private Task OnDisconnectedAsync(Exception _)
     {
-        lock (_gate) _outageStart ??= DateTimeOffset.UtcNow;
+        lock (_gate)
+        {
+            _outageStart ??= DateTimeOffset.UtcNow;
+            _disconnects++;
+        }
         return Task.CompletedTask;
     }
 

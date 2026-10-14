@@ -3,6 +3,15 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.16.0 — 2026-10-14
+
+- New `/health` command, for everyone: SYNCS's check-up, opened by a line in her voice. It shows
+  the Pi's temperature (now, today, the last 7 days, the record), its load, memory, CPU speed and
+  power warnings, her own memory and uptime, the Discord connection, the database's size and free
+  disk space, and the power cuts, crashes and network outages of the last 30 days. Replaces the
+  owner-only `/debug health`.
+- `/help` is now two pages, switched with buttons: the commands, and how everything works.
+
 ## 6.15.2 — 2026-10-14
 
 - Naming one of her favourite robots and SYNCS in the same message now always gets her answer

@@ -18,20 +18,35 @@ namespace ProjectSYNCS.Commands;
 // out makes it constructible without a gateway, which is what lets the scratch harness
 // assert both caps.
 //
-// So: keep every field short, and split a section rather than letting one grow. There
-// is plenty of room in the 25-field limit — 13 are used.
+// So: keep every field short, and split a section rather than letting one grow. The guide
+// is two pages, swapped in place by the buttons (HelpComponentHandler): the 6000 counts
+// every embed of a message, so a second embed would not have bought any room — a second
+// page does. The command list is the first page; the how-tos are the second.
 public class HelpModule : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("help", "Comment utiliser le bot d'organisation de sessions")]
-    public Task HelpAsync() => RespondAsync(embed: BuildEmbed(), ephemeral: true);
+    public Task HelpAsync() => RespondAsync(embed: BuildEmbed(CommandsPage), components: BuildButtons(CommandsPage), ephemeral: true);
+
+    public const int CommandsPage = 0;
+    public const int GuidePage = 1;
 
     /// <summary>
-    /// The whole guide. Static and Context-free so its size can be checked without a
-    /// gateway connection — see the note above for why that matters.
+    /// One page of the guide. Static and Context-free so each page's size can be checked
+    /// without a gateway connection — see the note above for why that matters.
     /// </summary>
-    public static Embed BuildEmbed() =>
+    public static Embed BuildEmbed(int page) => page == GuidePage ? BuildGuide() : BuildCommands();
+
+    // Read by HelpComponentHandler: each button carries its own page, so no two share an id.
+    public static MessageComponent BuildButtons(int page) =>
+        new ComponentBuilder()
+            .WithButton("Commandes", $"help:page:{CommandsPage}", ButtonStyle.Secondary, disabled: page == CommandsPage)
+            .WithButton("Mode d'emploi", $"help:page:{GuidePage}", ButtonStyle.Secondary, disabled: page == GuidePage)
+            .Build();
+
+    // Every command, in one list.
+    private static Embed BuildCommands() =>
         new EmbedBuilder()
-            .WithTitle("Project S.Y.N.C.S. — Aide")
+            .WithTitle("Project S.Y.N.C.S. — Aide : commandes")
             .WithDescription(
                 "Organise des sessions de jeu, des activités ou des soirées film, " +
                 "et laisse les autres s'inscrire en un clic.")
@@ -61,12 +76,6 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/goodbot`** — Qui m'a dit *good bot* (ou l'inverse). Réagir à un de mes " +
                 "messages compte pareil — 👍, un cœur, un fou rire… ou 👎, un couteau, une " +
                 "tête qui pleure. Seule ta **première** réaction par message compte.")
-            .AddField("Comment on gagne de l'XP",
-                "En parlant et en réagissant, et un peu plus en s'adressant à moi.\n" +
-                "En vocal aussi : il faut être **accompagné**, **micro ouvert** et **pas en sourdine** " +
-                "— quelqu'un de muet ne compte pas comme de la compagnie, et le salon AFK ne rapporte rien.\n" +
-                "Le gain en vocal **diminue au fil de la journée** (plein tarif la première heure, " +
-                "puis de moins en moins) et repart à zéro chaque nuit.")
             .AddField("Commandes — Mur de la honte",
                 "**`/shame`** — Quatre titres : **Le Malfaisant**, que je décerne toute seule à qui est " +
                 "méchant (un point par personne visée), **Le Banni**, que vous votez, **Le Perfide**, " +
@@ -91,7 +100,22 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/admin mute|unmute`** — Exclusion temporaire.\n" +
                 "**`/config`** — Qui vote avec `/shame`, les salons où rien ne compte, le salon de jeu, " +
                 "le salon du quiz, le salon principal et les rôles Plynling et Grosse tête. **`/config show`** affiche la configuration actuelle.\n" +
+                "**`/health`** — Mon bilan de santé : température, mémoire, connexion, pannes.\n" +
                 "**`/help`** — Affiche ce message.")
+            .WithFooter($"Project S.Y.N.C.S. v{AppInfo.Version}")
+            .Build();
+
+    // How things work: XP, the session wizard and its buttons, polls, the small print.
+    private static Embed BuildGuide() =>
+        new EmbedBuilder()
+            .WithTitle("Project S.Y.N.C.S. — Aide : mode d'emploi")
+            .WithColor(Color.Blue)
+            .AddField("Comment on gagne de l'XP",
+                "En parlant et en réagissant, et un peu plus en s'adressant à moi.\n" +
+                "En vocal aussi : il faut être **accompagné**, **micro ouvert** et **pas en sourdine** " +
+                "— quelqu'un de muet ne compte pas comme de la compagnie, et le salon AFK ne rapporte rien.\n" +
+                "Le gain en vocal **diminue au fil de la journée** (plein tarif la première heure, " +
+                "puis de moins en moins) et repart à zéro chaque nuit.")
             .AddField("Créer une session — pas à pas",
                 "Lance **`/schedule create`**. Un assistant privé te guide :\n" +
                 "**1.** *Type* — 🎮 Jeu, 🧑‍🤝‍🧑 Activité, 🎬 Film ou ✨ Autre.\n" +
