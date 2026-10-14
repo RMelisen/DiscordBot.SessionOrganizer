@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.17.3 — 2026-10-14
+
+- Her seasonal profile pictures are now animated: petals drifting in spring, a glint across her
+  sunglasses in summer, leaves falling in autumn, snow in winter.
+
 ## 6.17.2 — 2026-10-14
 
 - Her online status can now switch to do-not-disturb on rare occasions, and goes back to normal

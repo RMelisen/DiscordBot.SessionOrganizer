@@ -886,9 +886,21 @@ of each cell, which also cleans the JPEG noise) and scaled back up ×5 with near
 pixels, no blur. `SeasonalAvatarService` uploads the season's picture when it differs from the last
 one applied (`avatar-state.json` next to the database keeps the season and a fingerprint of the
 file), so replacing a PNG is enough for the new one to go up after the next update. Discord
-rate-limits avatar changes; a refused upload is retried on the next hourly check. The upload is
+rate-limits avatar changes; a refused upload is retried on the next hourly check. The PNG upload is
 zoomed in a little (`ZoomKeep` in the service trims 5 % off each edge, via `PngCrop`); the files on
 disk stay the full pictures.
+
+**Animated versions** are what the bot actually uploads: `tools/syncs-avatar/animate.py` turns
+each PNG into a looping GIF (leaves falling in autumn, petals drifting in spring, snow in winter; in
+summer a glint across the sunglasses and heat rising, while the sweat drop stays still, as sliding
+it looked wrong). The floating bits already in the picture become the particles, so nothing is
+redrawn by hand; a redrawn PNG means running the tool again. It writes
+`Assets/Avatars/syncs-<season>.gif` with the zoom already applied (900×900): `PngCrop` cannot crop
+a GIF, so the tool's `ZOOM_KEEP` must match the service's `ZoomKeep`. The service takes the GIF when
+there is one and falls back to the PNG. Discord.Net labels every upload `image/jpeg`; if Discord
+ever shows a GIF still, the service logs a warning (an animated avatar's hash starts `a_`). The full
+1000×1000 GIFs are kept in `docs/assets/avatars/`, the first autumn one as
+[`docs/assets/avatars/syncs-autumn-v1.gif`](assets/avatars/syncs-autumn-v1.gif).
 
 ## The banner
 

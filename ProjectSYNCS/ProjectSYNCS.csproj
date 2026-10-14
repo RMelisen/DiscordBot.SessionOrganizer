@@ -21,8 +21,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <!-- Item sprites the bot uploads as its own emojis on start (ApplicationEmojiService), and
-         her seasonal profile pictures (SeasonalAvatarService). -->
-    <None Include="Assets\**\*.png">
+         her seasonal profile pictures, still and animated (SeasonalAvatarService). -->
+    <None Include="Assets\**\*.png;Assets\**\*.gif">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </None>
