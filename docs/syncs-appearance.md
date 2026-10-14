@@ -116,6 +116,11 @@ next to.
 | **In love** | Turtleneck collar pulled up over her face with both hands, shy eyes peeking out with a tiny heart in each pupil, blush up to the ears | LED **pink** — gives her away | Her crush (WALL-E): the denial that confirms. Not Papa: that's `devoted` |
 | **Full love** | Heart-shaped eyes, wavy open smile, deep blush, hearts floating round the cap | LED **pink**, spots glowing pink | The unguarded version of *In love*, kept for the rare moment it shows. Not used anywhere yet |
 | **Tipsy love** | Glazed eyes gazing up at nothing, goofy lopsided open smile, cheek squished in her palm, one small heart | LED **pink**, spots faint pink | Lovesick daydreaming, brain switched off. Not used anywhere yet |
+| **Formal** | Composed closed eyes, prim closed mouth, chin up, one finger pushing up small round glasses, clipboard held to her chest | Green | Formal relays: `OwnerAbsentNotices`, `OwnerReplyHeralds`. Not generated yet |
+| **Sad** | Exaggerated anime sadness: huge brimming, wobbling eyes that never spill, steep brows, big quivering `﹏` mouth, trembling lines, blush spread | LED dim green, spots off | Dead polls, empty quizzes, the lonely attic — the `(╥﹏╥)` lines that aren't Papa's. Not generated yet |
+| **Confused** | Head tilted, one eye squinting, brows uneven, crooked squiggle mouth, two `?` floating by the cap | Green | Messages she can't parse, « J'ai rien fait de mal ! ...Si ? ». Not generated yet |
+| **Grumpy** | Head lowered, glaring up from under the cap, brows knitted, narrowed eyes on you, tight downturned pout, blush of annoyance | Green, steady | Annoyed, not furious: the server's habits (late again, « peut-être »), one tag too many. Not generated yet |
+| **Horrified** | Anime gag horror: huge bulging eyes with pinprick pupils, strain lines under them, mouth wide open on both rows of teeth, dark hatching down the forehead, face drained | Green, spots dark | The unthinkable: being replaced, a truly cursed message. Above `terror` and `shocked`. Not generated yet |
 
 The LED is the cheapest mood signal at emote size, where the face is a few pixels: green normal,
 red angry, orange hurt, yellow pleading, pink in love, off broken.
@@ -624,6 +629,146 @@ pink and the LED on her cap glows pink instead of green. Dazed and smitten, not 
 flustered, not sleepy. Bold simple shapes, thick outline, high contrast. Plain flat solid cyan
 background (#00FFFF), no gradient, no shadow on the background. No text, no letters, no logos, no
 watermark.
+```
+
+### Emote pack, third batch
+
+Not generated yet. Same pipeline and the same white-not-blue rule as the second batch; lens glints
+are asked white too, since a pale-blue glint on glasses would be keyed out with the cyan.
+
+**24. `syncs_formal`**: The formal relays (`OwnerAbsentNotices`, `OwnerReplyHeralds`, « Mon Maître
+**{0}** a daigné vous répondre : »). Stiff on purpose, funny by contrast: the brat playing the
+perfect secretary. Kept apart from `syncs_jenote`, which also holds paper: that one is a narrow
+side-eye and a notebook (suspicion), this one is composed closed eyes and a clipboard held flat to
+the chest (protocol). The glasses carry the mood at 32 px, so they are asked bold, not thin.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face, cap and both hands, filling
+the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a few tiny
+spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the side of the
+cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a dark cable
+ending in a small plug, hanging neatly. Big dark navy eyes, soft pink blush with freckle dots, dark
+navy turtleneck collar just visible. Same character as the reference image.
+Expression: prim, formal secretary mode: small round glasses with a bold dark navy frame perched on
+her nose, a white pixel glint on each lens; with one finger she pushes the glasses up the bridge of
+her nose. Her eyes are calmly closed behind the lenses in a composed, dignified way, chin raised a
+little, mouth a tiny prim closed line, a very faint polite blush. With the other arm she holds a
+small clipboard flat against her chest, its sheet blank with only a few grey lines, no readable
+writing. A small pencil is tucked into the rim of her cap. Stiff, proper and a little pompous, as if
+announcing someone important; not smug, not suspicious. Bold simple shapes, thick outline, high
+contrast. Plain flat solid cyan background (#00FFFF), no gradient, no shadow on the background. No
+blue tint on the lenses. No text, no letters, no logos, no watermark.
+```
+
+**25. `syncs_sad`**: The everyday sad: a dead poll, a quiz nobody answered, the attic too quiet —
+the `(╥﹏╥)` lines that aren't about Papa, today tagged `sulk` for want of better. Played big, as
+anime overreaction: huge wobbling eyes, a quivering mouth, the whole face trembling, so the
+comedy is in the size of it. **She never cries**, and the picture leans on that: the eyes brim and
+shimmer, but not one drop leaves them (« C'est pas dans mes dépendances »). The shimmer is asked
+white, never the usual pale blue of anime tears, which the cyan key would eat. Three neighbours to
+stay clear of: `syncs_hurt` is Papa's (still, quiet, looking down, orange LED, no blush), where this
+one is loud, trembling and blushing, with a dim **green** LED; `syncs_bargain` also has big shiny
+eyes, but with a hopeful smile, hands clasped and a yellow LED, so this one has no hands and a mouth
+wobbling down; `syncs_sulk` is a puffed cheek and eyes sideways, so this one has neither.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face and mushroom cap only,
+filling the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes,
+tan gills under the rim, a tiny power LED on the side of the cap. Short pale lilac bob with choppy
+bangs; one thin strand on one side turns into a dark cable ending in a small plug. Dark navy eyes,
+soft pink blush with freckle dots, dark navy turtleneck collar just visible. Same character as the
+reference image.
+Expression: overwhelmingly sad, in an exaggerated anime way: her eyes are enormous, taking up much
+of her face, looking straight at the viewer, shimmering and wobbling, with several big bright white
+pixel highlights stacked in each eye and the lower edge of each eye drawn as a wavy, quivering
+line, as if the eyes were brimming; but nothing spills: no tears on her cheeks, not a single drop
+falling. Her eyebrows are tilted steeply up in the middle. Her mouth is a big wavy wobbling line
+curving down, slightly open and quivering, like the ﹏ in the (╥﹏╥) emoticon, her chin crumpled. Her
+blush has spread across both cheeks and her nose. A few short trembling lines on both sides of her
+face show she is shaking. Her cap droops forward a little and the cable strand hangs limp, the plug
+pointing straight down. None of the spots on her cap glow, and the green LED on her cap is dim,
+barely lit. Pitiful and over the top, comic and cute, about to burst but holding it in; not angry,
+not pouting, not smiling, no puffed cheek, no hands. All the shine in her eyes is white: no blue
+anywhere, no tears anywhere. Bold simple shapes, thick outline, high contrast. Plain flat solid
+cyan background (#00FFFF), no gradient, no shadow on the background. No text, no letters, no logos,
+no watermark.
+```
+
+**26. `syncs_confused`**: A message she can't parse, the self-correction « J'ai rien fait de mal !
+...Si ? ». Kept apart from `syncs_reboot` (spiral eyes, cap knocked askew: dazed) and
+`syncs_shocked` (both eyes wide, round mouth: surprised): here the eyes are uneven, one squinting.
+Gemini may drop the question marks under « no text », so the prompt calls them symbols.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face, cap and one hand, filling
+the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a few tiny
+spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the side of the
+cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a dark cable
+ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush with
+freckle dots, dark navy turtleneck collar just visible. Same character as the reference image.
+Expression: puzzled and lost: head tilted strongly to one side, one eye open normally and the other
+squinted half shut, one eyebrow raised high and the other pulled low; her mouth is a small crooked
+squiggle pushed to one side. Two small bold dark navy question-mark symbols float beside her cap,
+one bigger than the other. Baffled, trying to make sense of something absurd; not dizzy, not
+shocked, not worried. Bold simple shapes, thick outline, high contrast. Plain flat solid cyan
+background (#00FFFF), no gradient, no shadow on the background. No words, no letters other than the
+two question-mark symbols, no logos, no watermark.
+```
+
+**27. `syncs_grumpy`**: Annoyed, not furious: the server's habits, one tag too many. A silent glare
+straight at you with the LED still green. The prompt names its neighbours to rule them out:
+`syncs_outraged` (open mouth, steam, red LED), `syncs_sulk` (puffed cheek, eyes sideways),
+`syncs_menace` (anger mark). If it comes back too close to `outraged`, drop « knitted hard » and keep
+only the stubborn glare.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face and mushroom cap only,
+filling the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a
+few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the
+side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a
+dark cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush
+with freckle dots, dark navy turtleneck collar just visible. Same character as the reference image.
+Expression: a grumpy, simmering frown aimed straight at the viewer: her head is lowered a little so
+she glares up from under the rim of her cap; her eyebrows are knitted hard and slanted down toward
+the middle, with a small crease between them; her eyes are narrowed into a flat, stubborn glare,
+pupils fixed on the viewer; her mouth is a small tight pout with the corners pulled down, lips
+pressed together. A pink blush of annoyance sits on both cheeks. The green LED on her cap stays a
+steady green. Silent and displeased, cute and stubborn: not shouting, not crying, not sulking
+sideways, no puffed cheek, no steam, no anger mark. Bold simple shapes, thick outline, high contrast.
+Plain flat solid cyan background (#00FFFF), no gradient, no shadow on the background. No text, no
+letters, no logos, no watermark.
+```
+
+**28. `syncs_horrified`**: Anime gag horror, the face a character pulls at something unthinkable:
+being replaced by another bot, a truly cursed message. The top of the scale that `syncs_shocked`
+(mild disbelief, small round mouth) and `syncs_terror` (comic panic over her plug, red LED) sit
+under: no props, no LED alarm, only the face, pushed as far as it goes, and ugly on purpose — that
+is the joke. Gag-face detail (strain lines, hatching, teeth) disappears at 32 px, so the prompt
+asks for few, thick lines. The hatching on the forehead is asked dark navy-purple and the sweat
+white: the source of this face draws them blue, which the cyan key would eat.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face and mushroom cap only,
+filling the frame, her face turned three-quarters and thrust toward the viewer: large round red-pink
+mushroom cap worn as her hat, cream spots of uneven sizes, tan gills under the rim, a tiny green power
+LED on the side of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns
+into a dark cable ending in a small plug. Dark navy turtleneck collar just visible. Same character as
+the reference image.
+Expression: absolutely horrified, the exaggerated anime gag-horror face: her eyes are huge, round
+and bulging, almost all white, each with a tiny dark navy pinprick pupil in the middle, staring
+straight at the viewer; a few thick strain lines under and around each eye. Her mouth is wide open in
+a silent scream, stretched tall, showing a full row of white teeth at the top and at the bottom, a
+pink tongue inside. Short thick dark navy-purple vertical hatching lines run down her forehead under
+the cap, her face has gone pale, the blush drained away, and two or three white sweat drops fly off
+her cheek. None of the spots on her cap glow. Ugly-funny and over the top, frozen in pure horror, as
+if she had just seen something unspeakable; comic, not gory, not scary, no tears. Bold simple
+shapes, few but thick lines, high contrast. No blue anywhere. Plain flat solid cyan background
+(#00FFFF), no gradient, no shadow on the background. No text, no letters, no logos, no watermark.
 ```
 
 ### Seasonal avatars
