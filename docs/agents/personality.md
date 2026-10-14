@@ -48,26 +48,50 @@ inside the `try` with the owner/self checks.
   the owner's messages. Membership is tested on the parsed `IEmote`, so a renamed emote still
   matches.
 
-## Sticker follow-ups (planned, not built)
+## Sticker follow-ups
 
-The images are ready (`ProjectSYNCS/Assets/Stickers/`, one strip per mood; why strips and not
-server stickers is in `docs/syncs-appearance.md`, *Formats*). Decided so far:
+After some of her lines she posts a picture of herself: a strip from `ProjectSYNCS/Assets/Stickers/`
+(why strips and not server stickers: `docs/syncs-appearance.md`, *Formats*).
 
-- **A follow-up to one of her lines**: the line goes out, then the mood's strip right after, as an
-  image attachment in a message of its own with no text. Sometimes, not every time; the rate is
-  still to settle.
-- **Picked by mood, not at random**: a pure helper in `Helpers/` maps a pool to a mood
-  (`NiceReplies` → `flustered`, `MistakenIdentityReplies` → `outraged`, `ShutdownThreat*` →
-  `terror`…), so it can be checked without a gateway. It only names moods that have a strip.
-- **Rare by construction**: one send path owns the rarity, with its own `CooldownGate` per channel
-  and a small daily cap. A strip is big; posted often it becomes noise.
-- **Never `glitch`**: the glitch easter egg's silent fix relies on nothing else being posted
-  around it, and the glitch emote stays rare like the breakdown.
-- Swallow and log like any Discord side effect (a channel without Attach Files just gets the line),
-  and send with `AllowedMentions.None`.
-
-Specific moments (a poll that dies → `sulk`, a heat record → `overheat`) can use the same path
-later. Building it is new user-visible behaviour: a **minor** bump.
+- **A line opts in by tag.** `Helpers/Core/Sticker` holds one constant per mood with a strip
+  (`Sticker.Bored`…), appended to the template: `"Occupée à exister." + Sticker.Bored`. The tag names
+  the face the *line* makes, not its pool's: one pool mixes snark, boredom and anger. An untagged
+  line never gets a strip. Never paste a raw `⟪…⟫` marker into a pool.
+- **Two strengths.** `Sticker.X` rolls 1 in 3; `Sticker.Sure.X` skips the roll. Sure tags live in the
+  moment pools only (`HeatRecordLines`, `CrashWakeLines`, `PowerCutWakeLines`, `RouterReturnLines`,
+  `WeekendPollDeadLines`, `SessionRecapFullLines`, `QuizCrown*Lines`, `GiveawayEmptyLines`), and
+  every tag there is sure.
+- **One gate, `StickerService`** (singleton): the roll, and nothing in a channel in breakdown. **No
+  cooldown per channel and no daily cap** — removed by the owner in 6.14.0; the lines' own rarity
+  is the only limit. The strip goes out about a second after the line, off the gateway handler, as
+  a file with no text and `AllowedMentions.None`. A failure (no Attach Files) is logged and the
+  line stands alone.
+- **WALL-E's `HeartLines` roll 2 in 3, not 1 in 3.** `RobotHeartService` splits the tag off itself,
+  rolls `RobotHeart.StickerChance`, and hands a win on promoted to sure so it doesn't roll twice;
+  the lines keep ordinary tags, which name the picture.
+- **Markers can be smuggled.** A user-chosen name formatted into an *untagged* line can carry a
+  marker, and with no cap it would get its strip every time that line is sent. Tag every line of a
+  pool that formats a name, so the template's own tag closes it and wins.
+- **`BotChat` does the split.** `ReplyWithTypingAsync` / `PostWithTypingAsync` strip the marker, send
+  the clean text and, if it went out, call `BotChat.FollowUp` — the one static seam in `BotChat`, set
+  in `Program.cs` to `StickerService.TryFollowUp`. The level-up card splits its line in `XpTracker`
+  and passes the tag to `PostEmbedWithTypingAsync`.
+- **Only pools that go out through `BotChat`, `GlitchService` or the level-up embed carry tags.**
+  Never tagged: emote reactions, statuses, slash-command replies and cards, Plynling and mascot
+  lines, heralds, easter eggs, and lines found again by their text or edited or deleted later
+  (`MorningGreetings`, `NightLines`, `IdleEditLines`, `GlitchWakeLines`, `Synthia*`, `HeartVanishLines`,
+  `HeartEditLines`). To tag a
+  text-matched pool, first make its lookup compare against `Sticker.Strip`ped templates. `Split`
+  and `PresenceService`'s `Strip` are backstops, not permission.
+- **The line's own tag wins.** `Split` removes every marker and keeps the *last* known one: a tag
+  closes its template, so a marker smuggled in through a formatted name (a nickname, a session
+  title) sits before it and is only stripped. Nothing user-written may be appended after a tag.
+- **Never `glitch`**, and a glitched line gets no strip: `GlitchService` corrupts and restores the
+  clean text, so only an unglitched line reaches `BotChat` with its tag.
+- **A line no mood fits stays untagged**, and the need goes to *Moods wanted* in
+  `docs/syncs-appearance.md`: a wrong picture is worse than none. A new line in an eligible pool
+  gets its tag when it is written.
+- `/debug sticker` posts any strip in the current channel, bypassing the gate.
 
 ## `MessageCues`
 
@@ -293,6 +317,8 @@ thresholds live in `Helpers/Personality/Ambient` (pure, Paris wall-clock hours, 
 | Heat record | `PiHealthService` tick | today's max beats every other day by ≥ 1 °C, ≥ 30 days of history, 10:00–23:00, max 1/day: `HeatRecordLines` |
 | Voice spectator | `VoiceSpectatorService`, fed by `VoiceXpService`'s sweep | a home-guild voice channel where ≥ 2 active people spent ≥ 1 h together empties (or has < 2 active for 15 min): in that voice channel's chat, from the pool of its room (`Helpers/Voice/VoiceRoom`: `VoiceSpectatorGamingLines` for both Gaming channels, `…CinemaLines`, `…StudyLines`, `…GeneralLines` for Général and any unlisted channel), max 1/day across all rooms, any hour |
 | Synthia flinch | `SynthiaService`, before `ChatterService` | « Synthia » in any guild message, max 1/day: 40% a reaction taken back (`SynthiaReactions`), 35% a reply deleted 4–6 s later (`SynthiaVanishLines`), 25% a slip edited into a denial (`SynthiaEditLines`); returns true so no comeback lands on top |
+| Robot heart | `RobotHeartService`, after `SynthiaService` | WALL-E, EVE (alone, except in `RobotHeartService.EveStrictChannelId` and its threads, where only beside WALL-E; never « EVE Online »), GLaDOS, Wheatley, a robot vacuum, Monika, 2B, Voyager 1 (« voyager 1 », « sonde Voyager ») named in any guild message, verdicts and emote markup excepted; **no limits**. Named in passing: an emote reaction every time, taken back 2–4 s later for WALL-E, Voyager, Wheatley and the vacuum (`RobotHeart.TakesBackReaction`), kept for EVE, GLaDOS, Monika and 2B; then 40% of the time (`RobotHeart.AmbientSpeakChance`) the same words as below, without a second reaction, and returns true; otherwise returns false, so `ChatterService` still runs. Named to her face: always words — 60% a reaction + a line (`HeartReactions`, `HeartLines` via `ResponsePicker`; the reaction taken back for WALL-E and Voyager; WALL-E's line followed by its strip 2 times in 3), 40% the character's word performance (a `HeartVanishLines` reply deleted 4–6 s later, a `HeartEditLines` slip edited 3.5–5 s later; the vacuum has none); returns true so no comeback lands on top |
+| Voyager's letters | `AmbientService` tick | about one a fortnight (`Helpers/Personality/Voyager`: gaps of 10–18 days, slot 10:00–22:00), in their own channel (`AmbientService.VoyagerChannelId`, home guild only): `VoyagerLetterLines` with his real light time; half the time `VoyagerAnswerLines` 2–6 h later (before 23:00); on 18 Nov 2026 only, `VoyagerCrossingLine` instead; claimed in `ambient-state.json` |
 | Voice seat | `VoiceSeatService`, fed by `VoiceXpService`'s sweep | a home-guild voice channel with ≥ 3 active people for ~10 min rolls 66% **once per gathering** (Tata 80%; Papa or a live session: ≥ 2 for ~5 min, 90%; a better tier arriving late rolls once more); a win seats her there (muted, deafened) until it has had fewer than that for ~5 min; not at night without Papa; see *Her seat in voice* |
 | Router return | `PiHealthService`, `Connected` | gateway back after ≥ 10 min, any hour, max 1/day: `RouterReturnLines` (what she missed in the main channel) or `RouterReturnQuietLines` |
 
@@ -320,6 +346,13 @@ thresholds live in `Helpers/Personality/Ambient` (pure, Paris wall-clock hours, 
 - Nothing fires in DMs, on bots, or during a breakdown; every send uses `AllowedMentions.None`. In the
   dev guild the channel never resolves, so only the night status is visible there.
 - Ghost typing and the hesitant reaction stay out of `README.md` and `/help`, like the easter eggs.
+  So do the robot heart and Voyager's letters: lore is hinted, never listed.
+- **Voyager's light time is a table, not a formula** (`Helpers/Personality/Voyager`): JPL Horizons
+  samples every 30 days from 2026, interpolated, then a linear drift past 2035. To extend it, fetch
+  the same query (Voyager 1, `-31`, from `500@399`, `QUANTITIES=21`) and append the values. Lines
+  show it rounded to 5 minutes.
+- **Every `ambient-state.json` save starts from `LoadState()`**: the wake line and the letters
+  share the file, and building a fresh `AmbientState` would forget the other's fields.
 
 ### Her seat in voice — `VoiceSeatService`
 

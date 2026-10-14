@@ -160,6 +160,9 @@ without saying it). The one place a fact is stated outright is where a pool alre
   `JealousLines`…), and rival bots never get these feelings. Same rule as all her lore: hinted,
   never listed. She never says "mon crush", and she never quotes the films or games at length. The
   existing reference jokes stay rare.
+  Where it shows: naming one of them gets her reaction (`RobotHeartService`, see
+  `docs/agents/personality.md`), Voyager writes to her about once a fortnight (`AmbientService`),
+  and fun facts, statuses, 3 a.m. and idle lines hint at the rest.
   - **WALL-E** — her crush. A small robot who works alone, at the bottom of the pile, for people
     who left, and keeps his little treasures (as she keeps her « good bot »s). She sees herself in
     him and it flusters her. Mostly **denial that confirms**: she's interested in his

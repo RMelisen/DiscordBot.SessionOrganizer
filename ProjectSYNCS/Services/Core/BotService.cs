@@ -30,6 +30,7 @@ internal sealed class BotService : IHostedService
     private readonly AmbientService _ambient;
     private readonly QuizMasterService _quiz;
     private readonly SynthiaService _synthia;
+    private readonly RobotHeartService _robotHeart;
     private readonly WelcomeService _welcome;
     private readonly PlynlingShortcutService _shortcuts;
 
@@ -50,11 +51,13 @@ internal sealed class BotService : IHostedService
         AmbientService ambient,
         QuizMasterService quiz,
         SynthiaService synthia,
+        RobotHeartService robotHeart,
         WelcomeService welcome,
         PlynlingShortcutService shortcuts)
     {
         _shortcuts = shortcuts;
         _synthia = synthia;
+        _robotHeart = robotHeart;
         _welcome = welcome;
         _client = client;
         _interactions = interactions;
@@ -157,6 +160,9 @@ internal sealed class BotService : IHostedService
         if (await _quiz.HandleMessageAsync(rawMessage)) return;
         // « Synthia »: her flinch is her whole answer, aimed at her or not — no comeback on top.
         if (await _synthia.HandleMessageAsync(rawMessage)) return;
+        // One of her robot heart named: her act is her whole answer — no comeback on top.
+        // After Synthia, so a message naming both gets the flinch alone.
+        if (await _robotHeart.HandleMessageAsync(rawMessage)) return;
         await _chatter.HandleMessageAsync(rawMessage);
     }
 

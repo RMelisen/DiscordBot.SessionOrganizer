@@ -48,6 +48,14 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         [ChoiceDisplay("Couronner la grosse tête")] Crown,
     }
 
+    public enum VoyagerPost
+    {
+        [ChoiceDisplay("Rien, juste l'état")] None,
+        [ChoiceDisplay("La prochaine lettre")] Letter,
+        [ChoiceDisplay("Sa réponse à la prochaine lettre")] Answer,
+        [ChoiceDisplay("La ligne du jour-lumière")] Crossing,
+    }
+
     public enum EventMode
     {
         [ChoiceDisplay("En attente")] Pending,
@@ -64,6 +72,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     private readonly QuizMasterService _quiz;
     private readonly QuizCrownService _crown;
     private readonly PiHealthService _health;
+    private readonly StickerService _stickers;
 
     // Discord caps a message at 2000 characters; leave room for the herald line
     // and the blockquote markers.
@@ -75,8 +84,10 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         new(@"channels/(\d+)/(\d+)/(\d+)", RegexOptions.Compiled);
 
     public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings,
-        PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz, QuizCrownService crown, PiHealthService health)
+        PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz, QuizCrownService crown, PiHealthService health,
+        StickerService stickers)
     {
+        _stickers = stickers;
         _quiz = quiz;
         _crown = crown;
         _health = health;
@@ -521,6 +532,76 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         // Reads the database: may be past Discord's 3 s on the Pi.
         await DeferAsync(ephemeral: true);
         await FollowupAsync(await _health.DescribeAsync(), ephemeral: true, allowedMentions: AllowedMentions.None);
+    }
+
+    // Any of her sticker strips, posted here as the follow-up would post it, bypassing the
+    // roll: to see each strip on PC and on the phone.
+    [SlashCommand("sticker", "Poster ici une image de SYNCS, au choix de l'humeur (tests)")]
+    public async Task StickerAsync(
+        [Summary("mood", "L'humeur de l'image")]
+        [Autocomplete(typeof(StickerMoodAutocompleteHandler))] string mood)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+        if (!Sticker.Moods.Contains(mood))
+        {
+            await RespondAsync($"Humeur inconnue : {Format.Sanitize(mood)}.", ephemeral: true);
+            return;
+        }
+
+        // The upload can outrun Discord's 3 s.
+        await DeferAsync(ephemeral: true);
+        var posted = await _stickers.PostAsync(Context.Channel, mood);
+        await FollowupAsync(
+            posted ? "Envoyé." : "Échec de l'envoi (droit d'envoyer des fichiers ? voir les logs).",
+            ephemeral: true);
+    }
+
+    // Voyager's correspondence (AmbientService): his light time now, the next letter and its
+    // answer, the light-day; and, on demand, any of its lines posted here, bypassing the
+    // calendar and the state — the only way to see them on the dev guild.
+    [SlashCommand("voyager", "Voir où en est Voyager, ou poster ici une ligne de sa correspondance (tests)")]
+    public async Task VoyagerAsync(
+        [Summary("post", "Une ligne à poster ici")] VoyagerPost post = VoyagerPost.None)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var next = AppTime.DayNumber(now);
+        // A letter comes every 18 days at most: this ends quickly.
+        while (Voyager.LetterNumber(next) is null) next++;
+        var number = Voyager.LetterNumber(next)!.Value;
+        var slot = Voyager.LetterSlot(next);
+        var light = Voyager.LightTime(now);
+        var state =
+            $"Temps-lumière : **{light.TotalMinutes:0.0} min** (« {Voyager.Format(light)} »)\n" +
+            $"Prochaine lettre : n° {number}, le {DateOnly.FromDayNumber(next):dd/MM/yyyy} à {slot.ToString(@"hh\:mm")}" +
+            (Voyager.AnswerSlot(next) is { } a ? $", réponse à {a.ToString(@"hh\:mm")}" : ", sans réponse") + "\n" +
+            $"Jour-lumière : {Voyager.CrossingDay:dd/MM/yyyy}";
+
+        if (post == VoyagerPost.None)
+        {
+            await RespondAsync(state, ephemeral: true);
+            return;
+        }
+
+        // The typing pause can outrun Discord's 3 s.
+        await DeferAsync(ephemeral: true);
+        var line = post switch
+        {
+            VoyagerPost.Letter => AmbientService.VoyagerLetter(number, now),
+            VoyagerPost.Answer => AmbientService.VoyagerAnswer(number),
+            _ => BotResponses.VoyagerCrossingLine,
+        };
+        var sent = await BotChat.PostWithTypingAsync(Context.Channel, line, _logger, "debug Voyager line", AllowedMentions.None);
+        await FollowupAsync(state + (sent is null ? "\nÉchec de l'envoi (voir les logs)." : "\nEnvoyé."), ephemeral: true);
     }
 
     // The pop quiz on demand, in this guild's quiz channel: post a round now (the next in the

@@ -249,6 +249,10 @@ free). `AllowedMentions.None` keeps the clickable pill while silencing it. Avata
 - **`Helpers/Core/BotChat`** is the single send path for her chatter (typing pause, clamped inside
   Discord.Net's 3 s `HandlerTimeout`, plus swallow-and-log). **`Helpers/Core/EmoteMarkup.Parse`** is the
   single reaction parser.
+- **`Helpers/Core/Sticker`** is the only place sticker markers live: a line opts into a picture
+  follow-up by appending a constant (`+ Sticker.Bored`), and only pools sent through `BotChat`
+  may carry one. `BotChat.FollowUp` is `BotChat`'s one static seam, set in `Program.cs` — see
+  personality, *Sticker follow-ups*.
 - **Never pick a response line with a bare `Random`.** Use `ResponsePicker.Pick(pool)`, which
   excludes the pool's `min(50, pool.Length / 2)` most recently said lines. Its memory is **global**,
   not per channel — the same people read every channel and their DMs — and records when each line
@@ -322,6 +326,8 @@ leveling bot's id in `Helpers/Xp/LevelUpAnnouncement`; the custom emote ids in `
 (`PersonalComebacks`, `RealNames`, `KnownGenders`, `TataId`, `FamilyNicknames`);
 `PlynlingAnnouncer.DefaultGameChannelId`; `MorningGreetingService.DefaultChannelId`;
 `AmbientService.IdleChannelIds` (the everyday channels that must all be quiet for an idle line);
+`AmbientService.VoyagerChannelId` (where Voyager's letters land);
+`RobotHeartService.EveStrictChannelId` (where « eve » means the game, so EVE needs WALL-E beside her);
 the voice channels in `Helpers/Voice/VoiceRoom` (which spectator pool each one gets, and where she
 waits for a session nobody has joined yet); and
 `Helpers/Core/HomeGuild.Id` (the one server the morning hello and `AmbientService` live in).

@@ -3,6 +3,26 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.14.2 — 2026-10-14
+
+- Le cœur de robot de SYNCS est de nouveau plus vif : elle reprend sa réaction, supprime son mot ou corrige son lapsus après 2 à 6 secondes au lieu de 5 à 9.
+
+## 6.14.1 — 2026-10-13
+
+- Le cœur de robot de SYNCS réagit à chaque fois, sans limite, et réagit d'un emoji quand on en parle sans s'adresser à elle (avec parfois un petit mot en plus).
+
+## 6.14.0 — 2026-10-13
+
+- SYNCS a un cœur de robot : certains noms la font réagir, et un correspondant très lointain lui
+  écrit de temps en temps.
+- Nouvelles anecdotes du matin, nouveaux statuts et quelques nouvelles répliques.
+- Les images de SYNCS après ses répliques ne sont plus limitées par salon ni par jour.
+
+## 6.13.0 — 2026-10-13
+
+- SYNCS poste parfois une image d'elle juste après une de ses répliques, assortie à ce qu'elle
+  vient de dire (au plus une toutes les 30 minutes par salon, et 12 par jour).
+
 ## 6.12.1 — 2026-10-13
 
 - Les émotes de SYNCS ont été réimportées sur le serveur : elle utilise les nouvelles.

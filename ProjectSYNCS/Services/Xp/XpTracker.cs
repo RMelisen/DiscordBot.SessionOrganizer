@@ -307,10 +307,11 @@ internal sealed class XpTracker
 
         // 7 and 67 are a fixed line, not a pool pick — ResponsePicker is skipped
         // entirely, so the egg never records a line that isn't actually a pool entry
-        // in the picker's memory.
-        var description = IsSixSeven(newLevel)
-            ? "SIX SEVEEEN"
-            : string.Format(_picker.Pick(BotResponses.XpLevelUpLines), name, newLevel);
+        // in the picker's memory. The pool's sticker tag is split off here, since the
+        // line goes inside the embed rather than through BotChat's text path.
+        var (description, sticker) = IsSixSeven(newLevel)
+            ? ("SIX SEVEEEN", (StickerTag?)null)
+            : Sticker.Split(string.Format(_picker.Pick(BotResponses.XpLevelUpLines), name, newLevel));
 
         var embed = new EmbedBuilder()
             .WithTitle(BuildLevelUpTitle(oldLevel, newLevel))
@@ -319,7 +320,7 @@ internal sealed class XpTracker
             .WithColor(Color.Purple)
             .Build();
 
-        await BotChat.PostEmbedWithTypingAsync(channel, embed, description, _logger, "level-up announcement");
+        await BotChat.PostEmbedWithTypingAsync(channel, embed, description, _logger, "level-up announcement", sticker);
     }
 
     // Shows the span crossed, not just the number landed on: one grant can cross more

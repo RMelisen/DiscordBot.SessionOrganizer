@@ -2,6 +2,7 @@
 using Discord.Interactions;
 using Discord.WebSocket;
 using ProjectSYNCS.Data;
+using ProjectSYNCS.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -96,8 +97,12 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<ResponsePicker>();
         // The glitch easter egg's daily cap is in-memory: a singleton, like the picker.
         services.AddSingleton<GlitchService>();
+        // The sticker follow-ups: one instance, reached from BotChat's static hook.
+        services.AddSingleton<StickerService>();
         // In-memory daily gate / per-channel stretches: singletons.
         services.AddSingleton<SynthiaService>();
+        // The robot heart's daily gate is in-memory: a singleton.
+        services.AddSingleton<RobotHeartService>();
         // The roll call and the voice seat keep in-memory clocks; both are fed by VoiceXpService's
         // sweep, and the seat reads the roll call's sessions (live-session tie-break).
         services.AddSingleton<SessionAttendanceService>();
@@ -146,6 +151,9 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddHostedService<SeasonalAvatarService>();
     })
     .Build();
+
+    // BotChat is static; the one thing it needs from DI is the sticker gate.
+    BotChat.FollowUp = host.Services.GetRequiredService<StickerService>().TryFollowUp;
 
     using (var scope = host.Services.CreateScope())
     {
