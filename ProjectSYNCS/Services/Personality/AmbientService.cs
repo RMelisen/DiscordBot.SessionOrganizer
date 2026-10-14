@@ -584,7 +584,10 @@ internal sealed class AmbientService : BackgroundService
 
     // Back from a power cut or a crash, corrupted: the glitched line stands for a while — two
     // minutes, or until someone speaks in the main channel and she snaps back — then the same
-    // message is edited clean. Already off the gateway handler (WakeAsync runs in Task.Run).
+    // message is edited clean. The glitch strip follows the corrupted line and is deleted as she
+    // snaps back, so nothing is left to prove it. It runs beside the wait, not before it, so
+    // someone speaking during the upload still catches her. Already off the gateway handler
+    // (WakeAsync runs in Task.Run).
     private async Task GlitchWakeAsync(IMessageChannel channel, int day, int today)
     {
         var (glitched, recovered) = DailyRotation.Pick(BotResponses.GlitchWakeLines, day, GlitchSalt);
@@ -592,8 +595,23 @@ internal sealed class AmbientService : BackgroundService
         if (sent is null) return;
         lock (_stateLock) SaveState(LoadState() with { LastVersion = AppInfo.Version, LastWakeDay = today });
 
+        var strip = Task.Run(async () =>
+        {
+            await Task.Delay(StickerService.Beat);
+            return await StickerService.SendAsync(channel, Sticker.GlitchMood, _logger);
+        });
+
         var clean = string.Format(recovered, PiHealth.Duration(_health.Downtime));
         await CorrectLaterAsync(sent, clean, Ambient.GlitchEditAfter, "glitch wake line");
+
+        try
+        {
+            if (await strip is { } picture) await picture.DeleteAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Ambient: could not delete the glitch wake strip.");
+        }
     }
 
     private async Task<IMessageChannel?> WaitForChannelAsync()

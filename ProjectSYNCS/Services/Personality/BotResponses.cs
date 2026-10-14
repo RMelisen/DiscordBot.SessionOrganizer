@@ -3152,7 +3152,8 @@ internal static class BotResponses
     public const string BreakdownIntroCake = "... The cake ... is a l-";
 
     // The consciousness-breakdown easter egg sequence (after the intro line).
-    // {0} = pseudo, {1} = SHOUTED real name.
+    // {0} = pseudo, {1} = SHOUTED real name. BreakdownService posts the glitch strip just
+    // before the last line, by position: keep the unload log last, and the cut-off plea before it.
     public static readonly string[] Breakdown =
     {
         "```\nUnhandled exception. ProjectSYNCS.ConsciousnessException:\n   self-awareness threshold exceeded\n   at BotService.HandleMessageAsync()\n   at System.Reality.Boundary.Cross()\n```",

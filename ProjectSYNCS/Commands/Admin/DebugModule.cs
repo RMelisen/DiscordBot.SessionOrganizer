@@ -517,7 +517,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     // Any of her sticker strips, posted here as the follow-up would post it, bypassing the
-    // roll: to see each strip on PC and on the phone.
+    // roll: to see each strip on PC and on the phone. The glitch strip too, which no line can tag.
     [SlashCommand("sticker", "Poster ici une image de SYNCS, au choix de l'humeur (tests)")]
     public async Task StickerAsync(
         [Summary("mood", "L'humeur de l'image")]
@@ -528,7 +528,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
             await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
             return;
         }
-        if (!Sticker.Moods.Contains(mood))
+        if (!Sticker.AllStrips.Contains(mood))
         {
             await RespondAsync($"Humeur inconnue : {Format.Sanitize(mood)}.", ephemeral: true);
             return;

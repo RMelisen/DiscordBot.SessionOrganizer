@@ -13,7 +13,8 @@ public readonly record struct StickerTag(string Mood, bool Sure);
 //
 // This file is the only place a marker is spelled out: never paste ⟪…⟫ into a pool. Each constant
 // carries its leading space, and has no braces, so string.Format passes it through. There is
-// deliberately no Glitch constant: the glitch picture belongs to the easter egg alone.
+// deliberately no glitch tag: that picture belongs to two hand-placed moments (the breakdown's
+// cut and the glitched wake), never to a line, so it is GlitchMood and stays out of Moods.
 public static class Sticker
 {
     public const string Bargain = " ⟪bargain⟫";
@@ -77,7 +78,7 @@ public static class Sticker
         public const string TipsyLove = " ⟪tipsy_love!⟫";
     }
 
-    /// <summary>Every mood with a strip, as its file stem. /debug sticker offers these.</summary>
+    /// <summary>Every mood a line can tag, as its file stem.</summary>
     public static readonly IReadOnlyList<string> Moods = new[]
     {
         "bargain", "bored", "confused", "devoted", "disgust", "flustered", "formal", "full_love",
@@ -85,6 +86,15 @@ public static class Sticker
         "outraged", "overheat", "reboot", "sad", "shocked", "sleepy", "smug", "sulk", "terror",
         "tipsy_love",
     };
+
+    /// <summary>
+    /// The glitch strip's stem. Not a tag and not in <see cref="Moods"/>, so no marker can ask for
+    /// it: BreakdownService and AmbientService's glitched wake post it by hand.
+    /// </summary>
+    public const string GlitchMood = "glitch";
+
+    /// <summary>Every strip that ships, the glitch included. /debug sticker offers these.</summary>
+    public static readonly IReadOnlyList<string> AllStrips = Moods.Append(GlitchMood).Order(StringComparer.Ordinal).ToArray();
 
     private static readonly HashSet<string> Known = new(Moods);
 

@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.17.4 — 2026-10-14
+
+- Her glitched face finally gets used: it flickers under her line when she comes back from a
+  crash or a power cut in a bad state, gone the moment she pulls herself together, and at one
+  other very rare moment.
+
 ## 6.17.3 — 2026-10-14
 
 - Her seasonal profile pictures are now animated: petals drifting in spring, a glint across her

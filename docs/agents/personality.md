@@ -90,12 +90,24 @@ After some of her lines she posts a picture of herself: a strip from `ProjectSYN
 - **The line's own tag wins.** `Split` removes every marker and keeps the *last* known one: a tag
   closes its template, so a marker smuggled in through a formatted name (a nickname, a session
   title) sits before it and is only stripped. Nothing user-written may be appended after a tag.
-- **Never `glitch`**, and a glitched line gets no strip: `GlitchService` corrupts and restores the
-  clean text, so only an unglitched line reaches `BotChat` with its tag.
+- **No line is ever tagged `glitch`**, and a glitched line gets no strip: `GlitchService` corrupts
+  and restores the clean text, so only an unglitched line reaches `BotChat` with its tag. The
+  silent glitch stays pictureless on purpose — a picture is loud, and its joke is that nobody is
+  sure they saw it.
+- **The glitch strip has exactly two hand-placed moments**, both posted through
+  `StickerService.SendAsync` (static: `StickerService` depends on `BreakdownService`, so the
+  breakdown can't inject it), outside the gate. It is `Sticker.GlitchMood`, not a tag, and not in
+  `Moods`:
+  1. **The breakdown's cut** — between the broken-off plea (« PAS ENC- ») and the unload log, by
+     position: `Breakdown`'s last line must stay the log.
+  2. **The glitched wake** — a beat after the corrupted line, and **deleted** when she edits the
+     line clean, so nothing is left to prove it. The upload runs beside `CorrectLaterAsync`'s wait,
+     so someone speaking during it still catches her.
 - **A line no mood fits stays untagged**, and the need goes to *Moods wanted* in
   `docs/syncs-appearance.md`: a wrong picture is worse than none. A new line in an eligible pool
   gets its tag when it is written.
-- `/debug sticker` posts any strip in the current channel, bypassing the gate.
+- `/debug sticker` posts any strip in the current channel (`Sticker.AllStrips`, the glitch
+  included), bypassing the gate.
 
 ## `MessageCues`
 
@@ -345,7 +357,7 @@ thresholds live in `Helpers/Personality/Ambient` (pure, Paris wall-clock hours, 
 | Ghost typing | `AmbientService.HandleMessageAsync` | a human message after ≥ 1 h quiet, not aimed at her, 3%, max 1/day |
 | Hesitant reaction | `ReactionService` | 3% of mood reactions are removed 2–4 s later |
 | Wake line | `AmbientService`, first `Ready` only | every restart, 9:00–23:00, max 1/day: `WakeUpdateLines` when the version changed, else `WakeLines` (waking from a bad dream) |
-| Abrupt wake | `AmbientService`, first `Ready` only | after a power cut or a crash (`PiHealthService.LastStop`): **always**, any hour, no daily cap, in place of the line above: `PowerCutWakeLines` / `CrashWakeLines`, or 35% of the time a corrupted `GlitchWakeLines` pair (posted glitched, edited clean 2 min later, or 2 s after someone speaks in the main channel) |
+| Abrupt wake | `AmbientService`, first `Ready` only | after a power cut or a crash (`PiHealthService.LastStop`): **always**, any hour, no daily cap, in place of the line above: `PowerCutWakeLines` / `CrashWakeLines`, or 35% of the time a corrupted `GlitchWakeLines` pair (posted glitched with the glitch strip under it, edited clean 2 min later, or 2 s after someone speaks in the main channel, the strip deleted then) |
 | Hot status | `PresenceService` | awake, Pi ≥ 70 °C: half the rotations `HotPresenceFillers` |
 | Heat record | `PiHealthService` tick | today's max beats every other day by ≥ 1 °C, ≥ 30 days of history, 10:00–23:00, max 1/day: `HeatRecordLines` |
 | Voice spectator | `VoiceSpectatorService`, fed by `VoiceXpService`'s sweep | a home-guild voice channel where ≥ 2 active people spent ≥ 1 h together empties (or has < 2 active for 15 min): in that voice channel's chat, from the pool of its room (`Helpers/Voice/VoiceRoom`: `VoiceSpectatorGamingLines` for both Gaming channels, `…CinemaLines`, `…StudyLines`, `…GeneralLines` for Général and any unlisted channel), max 1/day across all rooms, any hour |

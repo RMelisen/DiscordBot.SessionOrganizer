@@ -6,8 +6,9 @@ using ProjectSYNCS.Services;
 namespace ProjectSYNCS.Interactions.Autocomplete;
 
 /// <summary>
-/// Suggests the sticker moods for <c>/debug sticker</c>, matched on the stem. Owner-only like
-/// the command. 22 moods, under Discord's 25 suggestions.
+/// Suggests the sticker strips for <c>/debug sticker</c> (<see cref="Sticker.AllStrips"/>, the
+/// glitch included), matched on the stem. Owner-only like the command. There are more strips than
+/// Discord's 25 suggestions: the empty list shows the first 25, typing narrows it.
 /// </summary>
 public sealed class StickerMoodAutocompleteHandler : AutocompleteHandler
 {
@@ -23,7 +24,7 @@ public sealed class StickerMoodAutocompleteHandler : AutocompleteHandler
             return Task.FromResult(AutocompletionResult.FromSuccess());
 
         var typed = interaction.Data.Current.Value as string ?? string.Empty;
-        var matches = Sticker.Moods
+        var matches = Sticker.AllStrips
             .Where(m => typed.Length == 0 || m.Contains(typed, StringComparison.OrdinalIgnoreCase))
             .Take(MaxSuggestions)
             .Select(m => new AutocompleteResult(m, m));

@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
+using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
 
@@ -76,13 +77,23 @@ public sealed class BreakdownService
         {
             // {1} = SHOUTED real name for the screaming line.
             var shoutName = realName.ToUpperInvariant();
+            var script = new[] { intro }.Concat(BotResponses.Breakdown).ToArray();
             bool first = true;
-            foreach (var raw in new[] { intro }.Concat(BotResponses.Breakdown))
+            for (var i = 0; i < script.Length; i++)
             {
                 // The intro still sounds like a normal reply, so it uses the
                 // pseudo; once it "wakes up" it switches to the real name.
                 var who = first ? username : realName;
-                var line = string.Format(raw, who, shoutName);
+                var line = string.Format(script[i], who, shoutName);
+
+                if (i == script.Length - 1)
+                {
+                    // The cut: her plea breaks off, the glitch strip tears through, then the
+                    // cold unload log. Ungated (StickerService refuses strips in a breakdown)
+                    // and swallowed, so a channel without Attach Files still gets the log.
+                    await Task.Delay(TimeSpan.FromMilliseconds(150));
+                    await StickerService.SendAsync(message.Channel, Sticker.GlitchMood, _logger);
+                }
 
                 if (line.StartsWith("```"))
                 {
