@@ -3,6 +3,14 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.17.1 — 2026-10-14
+
+- Five new faces for SYNCS — formal, sad, confused, grumpy and horrified — as emotes in her
+  lines and as the pictures she posts after them. Her absence notices now come in secretary mode,
+  dead polls and empty quizzes get a properly sad face, and she looks puzzled when her name comes
+  up out of nowhere.
+- Her grumpy face joins the reactions she puts on hostile messages.
+
 ## 6.17.0 — 2026-10-14
 
 - New `/admin warn`, for staff: a formal warning, sent privately to the member by DM with the

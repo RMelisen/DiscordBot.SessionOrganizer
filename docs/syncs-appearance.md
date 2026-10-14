@@ -116,11 +116,11 @@ next to.
 | **In love** | Turtleneck collar pulled up over her face with both hands, shy eyes peeking out with a tiny heart in each pupil, blush up to the ears | LED **pink** — gives her away | Her crush (WALL-E): the denial that confirms. Not Papa: that's `devoted` |
 | **Full love** | Heart-shaped eyes, wavy open smile, deep blush, hearts floating round the cap | LED **pink**, spots glowing pink | The unguarded version of *In love*, kept for the rare moment it shows. Not used anywhere yet |
 | **Tipsy love** | Glazed eyes gazing up at nothing, goofy lopsided open smile, cheek squished in her palm, one small heart | LED **pink**, spots faint pink | Lovesick daydreaming, brain switched off. Not used anywhere yet |
-| **Formal** | Composed closed eyes, prim closed mouth, chin up, one finger pushing up small round glasses, clipboard held to her chest | Green | Formal relays: `OwnerAbsentNotices`, `OwnerReplyHeralds`. Not generated yet |
-| **Sad** | Exaggerated anime sadness: huge brimming, wobbling eyes that never spill, steep brows, big quivering `﹏` mouth, trembling lines, blush spread | LED dim green, spots off | Dead polls, empty quizzes, the lonely attic — the `(╥﹏╥)` lines that aren't Papa's. Not generated yet |
-| **Confused** | Head tilted, one eye squinting, brows uneven, crooked squiggle mouth, two `?` floating by the cap | Green | Messages she can't parse, « J'ai rien fait de mal ! ...Si ? ». Not generated yet |
-| **Grumpy** | Head lowered, glaring up from under the cap, brows knitted, narrowed eyes on you, tight downturned pout, blush of annoyance | Green, steady | Annoyed, not furious: the server's habits (late again, « peut-être »), one tag too many. Not generated yet |
-| **Horrified** | Anime gag horror: huge bulging eyes with pinprick pupils, strain lines under them, mouth wide open on both rows of teeth, dark hatching down the forehead, face drained | Green, spots dark | The unthinkable: being replaced, a truly cursed message. Above `terror` and `shocked`. Not generated yet |
+| **Formal** | Composed closed eyes, prim closed mouth, chin up, one finger pushing up small round glasses, clipboard held to her chest | Green | Formal relays: `OwnerAbsentNotices`, `OwnerReplyHeralds`, `OwnerAnnouncementHeralds` |
+| **Sad** | Exaggerated anime sadness: huge brimming, wobbling eyes that never spill, steep brows, big quivering `﹏` mouth, trembling lines, blush spread | LED dim green, spots off | Dead polls, empty quizzes, the lonely attic — the `(╥﹏╥)` lines that aren't Papa's |
+| **Confused** | Head tilted, one eye squinting, brows uneven, crooked squiggle mouth, two `?` floating by the cap | Green | Messages she can't parse, « J'ai rien fait de mal ! ...Si ? », `TalkedAboutLines` and the puzzled `Interrogations` |
+| **Grumpy** | Head lowered, glaring up from under the cap, brows knitted, narrowed eyes on you, tight downturned pout, blush of annoyance | Green, steady | Annoyed, not furious: the server's habits (late again, « peut-être »), one tag too many, people up at 3 a.m. (`NightScoldLines`). Also in `MeanReactions` |
+| **Horrified** | Anime gag horror: huge bulging eyes with pinprick pupils, strain lines under them, mouth wide open on both rows of teeth, dark hatching down the forehead, face drained | Green, spots dark | The unthinkable: being replaced, a truly cursed message. Above `terror` and `shocked` |
 
 The LED is the cheapest mood signal at emote size, where the face is a few pixels: green normal,
 red angry, orange hurt, yellow pleading, pink in love, off broken.
@@ -633,7 +633,8 @@ watermark.
 
 ### Emote pack, third batch
 
-Not generated yet. Same pipeline and the same white-not-blue rule as the second batch; lens glints
+All five generated, exported (emote, head-only, sticker and strip) and uploaded: server emotes
+`Emotes.Syncs*` and `Sticker` tags since 6.17.1. Same pipeline and the same white-not-blue rule as the second batch; lens glints
 are asked white too, since a pale-blue glint on glasses would be keyed out with the cyan.
 
 **24. `syncs_formal`**: The formal relays (`OwnerAbsentNotices`, `OwnerReplyHeralds`, « Mon Maître
@@ -703,19 +704,19 @@ Gemini may drop the question marks under « no text », so the prompt calls them
 
 ```text
 Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
-emote that must stay readable at 32x32 px. A small mushroom girl, face, cap and one hand, filling
-the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a few tiny
-spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the side of the
-cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a dark cable
-ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush with
+emote that must stay readable at 32x32 px. A small mushroom girl, face and mushroom cap only,
+filling the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a
+few tiny spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the side
+of the cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a dark
+cable ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush with
 freckle dots, dark navy turtleneck collar just visible. Same character as the reference image.
 Expression: puzzled and lost: head tilted strongly to one side, one eye open normally and the other
 squinted half shut, one eyebrow raised high and the other pulled low; her mouth is a small crooked
 squiggle pushed to one side. Two small bold dark navy question-mark symbols float beside her cap,
 one bigger than the other. Baffled, trying to make sense of something absurd; not dizzy, not
-shocked, not worried. Bold simple shapes, thick outline, high contrast. Plain flat solid cyan
-background (#00FFFF), no gradient, no shadow on the background. No words, no letters other than the
-two question-mark symbols, no logos, no watermark.
+shocked, not worried, no hands, no fingers. Bold simple shapes, thick outline, high contrast. Plain
+flat solid cyan background (#00FFFF), no gradient, no shadow on the background. No words, no letters
+other than the two question-mark symbols, no logos, no watermark.
 ```
 
 **27. `syncs_grumpy`**: Annoyed, not furious: the server's habits, one tag too many. A silent glare
@@ -945,7 +946,8 @@ two pictures read as one world.
 | Banner v1 | `assets/syncs-banner-v1.jpg` | First banner, Gemini. Current profile banner |
 | Emote pack v1 | `assets/emotes/syncs_<mood>.png`, head-only in `assets/emotes/head/` | Gemini, from the prompts above, all 15 moods; made transparent with `tools/syncs-emotes`. Server emotes, `Emotes.Syncs*` (6.8.1); `sleepy`, `shocked`, `mama` and `jenote` taken off the server in 6.12.0 (assets kept) |
 | Emote pack, second batch | same folders, plus 320 px stickers in `assets/stickers/` | Gemini, from the prompts above, the 8 moods `bargain` to `tipsy_love`; same pipeline. Not uploaded yet |
-| Sticker strips v1 | `../ProjectSYNCS/Assets/Stickers/syncs_<mood>.png` | Every sticker in `assets/stickers/` (23 moods) as a 1000×320 strip, `export.py --strip`. Shipped with the bot; posted after tagged lines since 6.13.0 (all but `glitch`) |
+| Emote pack, third batch | same folders | Gemini, from the prompts above, the 5 moods `formal` to `horrified`; same pipeline. Gemini drew these without a pixel grid, which is what the head-only neck steps for JPEG blends exist for. `horrified`'s head-only is exported with `--no-neck` (her jaw sits on the collar, and the neck steps would empty her mouth); `formal`'s had the stray sleeve outline under the chin cleared by hand (everything below the hand). Server emotes and sticker tags (6.17.1) |
+| Sticker strips v1 | `../ProjectSYNCS/Assets/Stickers/syncs_<mood>.png` | Every sticker in `assets/stickers/` (28 moods) as a 1000×320 strip, `export.py --strip`. Shipped with the bot; posted after tagged lines since 6.13.0 (all but `glitch`; the third batch since 6.17.1) |
 | Seasonal avatars v1 | `../ProjectSYNCS/Assets/Avatars/syncs-{spring,summer,autumn,winter}.png` | Gemini, from the prompts above. Rotate with the seasons (6.8.0); v1 is the reference they were drawn from |
 
 When a new avatar or banner replaces one of these, add it here and keep the old file: the reference that fixed

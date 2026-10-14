@@ -18,11 +18,15 @@ public static class Sticker
 {
     public const string Bargain = " ⟪bargain⟫";
     public const string Bored = " ⟪bored⟫";
+    public const string Confused = " ⟪confused⟫";
     public const string Devoted = " ⟪devoted⟫";
     public const string Disgust = " ⟪disgust⟫";
     public const string Flustered = " ⟪flustered⟫";
+    public const string Formal = " ⟪formal⟫";
     public const string FullLove = " ⟪full_love⟫";
+    public const string Grumpy = " ⟪grumpy⟫";
     public const string Happy = " ⟪happy⟫";
+    public const string Horrified = " ⟪horrified⟫";
     public const string Hurt = " ⟪hurt⟫";
     public const string Jenote = " ⟪jenote⟫";
     public const string Laugh = " ⟪laugh⟫";
@@ -32,6 +36,7 @@ public static class Sticker
     public const string Outraged = " ⟪outraged⟫";
     public const string Overheat = " ⟪overheat⟫";
     public const string Reboot = " ⟪reboot⟫";
+    public const string Sad = " ⟪sad⟫";
     public const string Shocked = " ⟪shocked⟫";
     public const string Sleepy = " ⟪sleepy⟫";
     public const string Smug = " ⟪smug⟫";
@@ -45,11 +50,15 @@ public static class Sticker
     {
         public const string Bargain = " ⟪bargain!⟫";
         public const string Bored = " ⟪bored!⟫";
+        public const string Confused = " ⟪confused!⟫";
         public const string Devoted = " ⟪devoted!⟫";
         public const string Disgust = " ⟪disgust!⟫";
         public const string Flustered = " ⟪flustered!⟫";
+        public const string Formal = " ⟪formal!⟫";
         public const string FullLove = " ⟪full_love!⟫";
+        public const string Grumpy = " ⟪grumpy!⟫";
         public const string Happy = " ⟪happy!⟫";
+        public const string Horrified = " ⟪horrified!⟫";
         public const string Hurt = " ⟪hurt!⟫";
         public const string Jenote = " ⟪jenote!⟫";
         public const string Laugh = " ⟪laugh!⟫";
@@ -59,6 +68,7 @@ public static class Sticker
         public const string Outraged = " ⟪outraged!⟫";
         public const string Overheat = " ⟪overheat!⟫";
         public const string Reboot = " ⟪reboot!⟫";
+        public const string Sad = " ⟪sad!⟫";
         public const string Shocked = " ⟪shocked!⟫";
         public const string Sleepy = " ⟪sleepy!⟫";
         public const string Smug = " ⟪smug!⟫";
@@ -70,9 +80,10 @@ public static class Sticker
     /// <summary>Every mood with a strip, as its file stem. /debug sticker offers these.</summary>
     public static readonly IReadOnlyList<string> Moods = new[]
     {
-        "bargain", "bored", "devoted", "disgust", "flustered", "full_love", "happy", "hurt",
-        "jenote", "laugh", "love", "mama", "menace", "outraged", "overheat", "reboot", "shocked",
-        "sleepy", "smug", "sulk", "terror", "tipsy_love",
+        "bargain", "bored", "confused", "devoted", "disgust", "flustered", "formal", "full_love",
+        "grumpy", "happy", "horrified", "hurt", "jenote", "laugh", "love", "mama", "menace",
+        "outraged", "overheat", "reboot", "sad", "shocked", "sleepy", "smug", "sulk", "terror",
+        "tipsy_love",
     };
 
     private static readonly HashSet<string> Known = new(Moods);

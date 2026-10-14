@@ -7,6 +7,9 @@ Discord's dark and light backgrounds at 128, 48 and 22 px.
     python -I export.py smug.jpg=smug sulk.png=sulk
 
 --head writes a head-only version to docs/assets/emotes/head/ instead (sheet: out/sheet_head.html).
+--no-neck, with --head, is for a picture whose jaw sits on the collar with no neck showing
+(horrified, mouth open below the chin line): it skips the neck steps of head_only, which would
+take the inside of the mouth for neck and empty it.
 --sticker writes a 320 px server sticker (Discord's size, 512 KB max) to docs/assets/stickers/
 instead (sheet: out/sheet_sticker.html); the pixel art is scaled up whole pixels first, so it stays
 crisp rather than blurred. It also writes the sticker's strip (below).
@@ -44,7 +47,7 @@ OUT = os.path.join(HERE, "out")
 MOODS = ["smug", "flustered", "sulk", "jenote", "outraged", "hurt", "mama", "glitch", "devoted",
          "terror", "happy", "laugh", "bored", "shocked", "sleepy",
          "bargain", "overheat", "menace", "reboot", "disgust", "love", "full_love",
-         "tipsy_love"]
+         "tipsy_love", "formal", "sad", "confused", "grumpy", "horrified"]
 
 CYAN = (0, 255, 255)
 KEY_DISTANCE = 110      # RGB distance to cyan under which a pixel is background
@@ -58,6 +61,7 @@ COLLAR_SEED = 0.62      # turtleneck pixels from here down seed the flood that r
 DARK_BELOW = 0.645      # from here down, navy joined to the body goes too (outline is redrawn)
 NECK_BELOW = 0.665      # from here down, neck-coloured skin joined to the body goes
 OUTLINE = (20, 22, 60)  # her navy outline, drawn where the body was taken off
+SPECK = 40              # px, at the working size: a loose bit under the chin smaller than this goes
 MARGIN = 4              # transparent pixels kept around her at 128 px
 
 
@@ -160,6 +164,16 @@ def is_outline(c):
     return a and r < 30 and g < 35 and b < 80
 
 
+def is_seam(c):
+    """The dark line between the collar and the neck in a picture with no pixel grid, where JPEG
+    blends the outline with the mauve shadow into (30,12,39)–(40,20,44), and a row of (83,50,71)
+    halfway to the neck: neither collar, outline nor neck, so without this the flood stops there
+    and the neck stays."""
+    r, g, b, a = c
+    return a and (r < 45 and g < 30 and b < 60
+                  or 50 <= r <= 130 and 30 <= g <= 80 and 50 <= b <= 110 and r >= g + 20)
+
+
 def is_neck(c):
     """Neck skin: the dark mauve shadow under her jaw, (172,100,124), and the pink of its lit part,
     (240,166,173), with the glitch's more saturated (118,59,103) and (228,140,161) — never the
@@ -168,6 +182,18 @@ def is_neck(c):
     shadow = 110 <= r <= 215 and 50 <= g <= 145 and 90 <= b <= 165 and r - g >= 50
     lit = 220 <= r <= 250 and 135 <= g <= 182 and 150 <= b <= 188 and r - g >= 60
     return a and (shadow or lit)
+
+
+def is_skin(c):
+    """The face, (254,208,195), and anything paler (teeth, highlights); not the neck's pink."""
+    r, g, b, a = c
+    return a and r >= 235 and g >= 180 and b >= 160
+
+
+def is_hair(c):
+    """The lilac bob and its shadows: blue and red both well above green."""
+    r, g, b, a = c
+    return a and b >= g + 20 and r >= g + 10 and b >= 120
 
 
 def components(px, w, h):
@@ -189,21 +215,27 @@ def components(px, w, h):
     return label
 
 
-def head_only(im):
+def head_only(im, neck=True):
     """Takes the body off, piece by piece, and leaves the head with its own outline.
 
     1. The turtleneck: its body colour flooded up from the bottom, so the bits of collar showing
        beside the chin go too, while navy elsewhere (outlines, the glitch's bands) stays.
     2. Below the chin, whatever joins the removed collar and is navy (the glitch's turtleneck is
-       outline-dark under its scanlines; outlines are redrawn in 5) or neck skin — its shadow
+       outline-dark under its scanlines; outlines are redrawn in 6) or neck skin — its shadow
        and lit pink, never the face's colour, so the chin keeps the curve it was drawn with.
+       Lower still, anything but face skin and hair: without a pixel grid, JPEG blends the
+       outline into the neck through shades no colour test can list, and they stop the flood.
     3. The collar's own outline, left floating: outline pixels beside what was removed that touch
        nothing but outline or air. Only beside it — a pupil is solid outline colour too.
     4. Whatever only held on through the body (fists, the notebook, crossed arms): every region
        that was part of her before and is no longer joined to her cap. Extras that were never
        joined (the moon, sparkles, sweat drops, steam) stay, unless they sat against the body
        below the chin (the plug's shake marks).
-    5. Her outline along every edge the body left, so the chin closes like the rest of her.
+    5. In every column the neck was in, from its top down, only face skin and hair stay, then the
+       specks left loose there go. Without a pixel grid, JPEG blurs the neck's side lines and the
+       plug into shades no test above catches, and they stay behind as hollow outlines under the
+       chin. Per column, because a jaw drawn three-quarter has neck beside its mouth.
+    6. Her outline along every edge the body left, so the chin closes like the rest of her.
     """
     w, h = im.size
     px = im.load()
@@ -225,8 +257,8 @@ def head_only(im):
 
     def goes(x, y):
         c = px[x, y]
-        return (y >= h * DARK_BELOW and (is_collar(c) or is_outline(c))
-                or y >= h * NECK_BELOW and is_neck(c))
+        return (y >= h * DARK_BELOW and (is_collar(c) or is_outline(c) or neck and is_seam(c))
+                or y >= h * NECK_BELOW and (is_neck(c) or neck and not (is_skin(c) or is_hair(c))))
 
     stack = [(x + dx, y + dy) for x, y in removed for dx, dy in SIDES]
     while stack:
@@ -235,6 +267,7 @@ def head_only(im):
             continue
         removed.add((x, y))
         stack.extend((x + dx, y + dy) for dx, dy in SIDES)
+    throat = [q for q in removed if neck and is_neck(px[q])]
     for q in removed:
         px[q] = clear
 
@@ -255,6 +288,27 @@ def head_only(im):
     for q, region in after.items():
         if before.get(q) == her and region not in kept or region in body_extras:
             px[q] = clear
+
+    tops = {}
+    for x, y in throat:
+        tops[x] = min(y, tops.get(x, h))
+    for x, top in tops.items():
+        while top > 0 and is_neck(px[x, top - 1]):   # a tilted head shows neck above NECK_BELOW
+            top -= 1
+        tops[x] = top
+        for y in range(top, h):
+            if px[x, y][3] and not (is_skin(px[x, y]) or is_hair(px[x, y])):
+                px[x, y] = clear
+                removed.add((x, y))
+    if tops:
+        floor = min(tops.values())
+        crumbs = components(px, w, h)
+        sizes = {}
+        for region in crumbs.values():
+            sizes[region] = sizes.get(region, 0) + 1
+        for q, region in crumbs.items():
+            if sizes[region] < SPECK and q[1] >= floor:
+                px[q] = clear
 
     edge = [(x, y) for x, y in removed if not px[x, y][3] and any(
         0 <= x + dx < w and 0 <= y + dy < h and px[x + dx, y + dy][3] and not is_outline(px[x + dx, y + dy])
@@ -285,7 +339,7 @@ def frame(im, size=SIZE):
     return out
 
 
-def export(path, mood, dest_dir, head, size=SIZE):
+def export(path, mood, dest_dir, head, size=SIZE, neck=True):
     im = Image.open(path).convert("RGB")
     p = grid_period(im)
     if p:
@@ -293,7 +347,7 @@ def export(path, mood, dest_dir, head, size=SIZE):
     elif max(im.size) > 600:
         im = im.resize((600, 600 * im.height // im.width), Image.LANCZOS)
     keyed = key_out(im)
-    emote = frame(head_only(keyed) if head else keyed, size)
+    emote = frame(head_only(keyed, neck) if head else keyed, size)
     dest = os.path.join(dest_dir, f"syncs_{mood}.png")
     emote.save(dest, optimize=True)
     print(f"{os.path.basename(path)} -> syncs_{mood}.png (grid {p or 'none'}, {os.path.getsize(dest) // 1024} KB)")
@@ -340,7 +394,8 @@ def main(args):
         return
     head = "--head" in args
     sticker = "--sticker" in args
-    args = [a for a in args if a not in ("--head", "--sticker")]
+    neck = "--no-neck" not in args
+    args = [a for a in args if a not in ("--head", "--sticker", "--no-neck")]
     if not args:
         raise SystemExit(__doc__)
     if head and sticker:
@@ -352,7 +407,7 @@ def main(args):
         path, sep, mood = arg.rpartition("=")
         if not sep or mood not in MOODS:
             raise SystemExit(f"{arg}: expected <picture>=<mood>, mood one of {', '.join(MOODS)}")
-        export(path, mood, dest_dir, head, size)
+        export(path, mood, dest_dir, head, size, neck)
         if sticker:
             strip(mood)
     if sticker:
