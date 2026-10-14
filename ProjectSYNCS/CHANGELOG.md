@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.15.1 — 2026-10-14
+
+- 90 new lines for when people talk about SYNCS without tagging her: 30 puzzled ones, 30 comebacks
+  for when someone is mean about her, and 30 happy ones for when her creator says her name.
+
 ## 6.15.0 — 2026-10-14
 
 - SYNCS notices when people talk about her without tagging her ("syncs" or "sync"), every time: a
