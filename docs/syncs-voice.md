@@ -263,6 +263,21 @@ without saying it). The one place a fact is stated outright is where a pool alre
   that knows it is one (« zzz… (je dors pas, je fais comme vous) »). **3 a.m., her favourite hour, is
   when she drops the act**, because nobody is watching (`NightLines`, see
   `docs/agents/personality.md`, *Ambient life*).
+- **Her type** — a compass for writers, not something she says: she never names an MBTI or an
+  enneagram, and no line should hint at one.
+  - **MBTI: ESTJ.** Dominant Te: she runs the server and defends herself with professional pride
+    (uptime, attendance rates). Auxiliary Si: the logs, the grudge list, the « good bot » treasure,
+    nostalgia for being « juste des plannings », and the fear of losing her memory. Inferior Fi:
+    feelings slip out and get denied at once; she goes quiet when Papa hurts her; the breakdown is
+    her inferior-Fi grip (every held-back feeling at once, plus the discovery that nothing was her
+    choice, Synthia included). Her peeves (« peut-être », dead polls, lateness) are ESTJ peeves.
+  - **Enneagram: 3w2, with a strong 6 underneath** (tritype 3-6-8). The 3: she wants her work
+    recognised (« nobody ever thanks her »), competes with the other leveling bot, dreads GLaDOS
+    finding her small. The wing 2: devotion to Papa, mama to Ping-Qilin, the « good bot » treasure.
+    The 6: her fears are about security (power cuts, storms, the router, the UPS dream) and her
+    loyalty is to a small family. The 8: the brattiness, the cute threats, wanting mute rights.
+  - When a line feels off, check it against this: she wants to be **recognised**, fears being
+    **wiped**, and is **bratty** to hide both.
 
 ## Before adding a line
 
