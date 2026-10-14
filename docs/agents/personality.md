@@ -15,7 +15,7 @@ addressed to her: a message qualifies on a `MessageCues` hit, or on being the ow
 writes qualifies — that's the favouritism), then passes a probability roll and a per-channel
 cooldown.
 
-**Her name counts as addressing her.** A message saying « syncs » (`MessageCues.NamesHer`) is
+**Her name counts as addressing her.** A message saying « syncs » or « sync » (`MessageCues.NamesHer`) is
 `ChatterService`'s too, mention or not: `ReactionService` and the early morning hello skip it, as
 they skip a mention, so she never both answers and decorates it. See *Talked about* below.
 
@@ -204,30 +204,28 @@ on ordinary technical talk.
 
 ## Talked about — her name without a mention
 
-`ChatterService.TryHandleTalkedAboutAsync`: someone says « syncs » in a guild without tagging or
-replying to her. She heard her name and has no idea why.
+`ChatterService.TryHandleTalkedAboutAsync`: someone says « syncs » or « sync » in a guild without
+tagging or replying to her. She heard her name and has no idea why.
 
-| Reading | Pool | Rationing |
-|---|---|---|
-| `Mean` | `BackbiteRoasts` (+ `PersonalComebacks` twice), Papa `OwnerMeanReplies` | per person, 1 min |
-| Greeting | `Greetings`, Papa `OwnerGreetings` | none, like a mention |
-| Anything else | `TalkedAboutLines`, Papa `TalkedAboutOwnerLines` | per channel, 5 min |
+| Reading | Pool |
+|---|---|
+| `Mean` | `BackbiteRoasts` (+ `PersonalComebacks` twice), Papa `OwnerMeanReplies` |
+| Greeting | `Greetings`, Papa `OwnerGreetings` |
+| Anything else | `TalkedAboutLines`, Papa `TalkedAboutOwnerLines` |
 
-- **Only « syncs »**, squashed (« synccs ») or spelled out (« S.Y.N.C.S »). A bare « sync » is
-  ordinary vocabulary (« la sync a planté »); the shutdown phrases can afford it only because a
-  verb sits right before it. Custom-emote markup is dropped first — her own emotes are
-  `<:syncs_happy:…>` — and so are links.
-- **Two gates, never one.** The puzzled line is rationed per channel so a conversation *about*
-  her gets one, not one per message; the roast per person, only against a flood. A puzzled line
-  must not shield the next insult from its roast.
+- **Spellings are `_selfNames`** (« syncs », « sync »), shared with the shutdown phrases, squashed
+  (« synccs ») or spelled out (« S.Y.N.C.S »). Bare « sync » counts at the owner's request, so
+  « la sync a planté » gets an answer too. Custom-emote markup is dropped first — her own emotes
+  are `<:syncs_happy:…>` — and so are links.
+- **No limits**, the owner's call: no roll, no cooldown, every message naming her is answered,
+  like a mention.
 - **The mean reading is the whole message's**, so « syncs, ce boss est nul » gets roasted.
   Accepted: her name narrows the target far more than `ReactionService`'s ambient read, and an
   undeserved roast is her normal register. The same reasoning lets Papa's mean remark reach
   `OwnerMeanReplies` here, which the ambient reaction path deliberately never does.
 - **Nice is not special-cased**: « merci syncs » gets the puzzled line, by design — she doesn't
   know why she's being talked about.
-- A gate that refuses falls through to the ambient eggs; a breakdown in the channel swallows the
-  message silently. Guild only: in a DM her name is already addressing her.
+- A breakdown in the channel swallows the message silently. Guild only: in a DM her name is already addressing her.
 
 ## Quoicoubeh easter egg
 

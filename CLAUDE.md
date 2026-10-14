@@ -303,7 +303,8 @@ when `version` changes: an unbumped push never reaches the Pi.
 - Numbers don't roll over: `5.11.26` is fine. When you bump, say so in the summary, with the
   new number.
 - **A bump adds its entry to `ProjectSYNCS/CHANGELOG.md`** (newest first, `## x.y.z — yyyy-mm-dd`,
-  one short bullet per user-visible change); if the batch is already bumped, extend that entry.
+  one short bullet per user-visible change, **in English** like the rest of the file); if the batch
+  is already bumped, extend that entry.
   Home Assistant shows this file in the add-on's Changelog tab, so it must stay next to
   `config.yaml`. Keep easter-egg triggers and member names out of it — the repo is public.
   Editing the changelog alone needs no bump.

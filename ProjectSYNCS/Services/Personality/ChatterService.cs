@@ -45,13 +45,6 @@ internal sealed class ChatterService
     // Secret passphrase: anyone replying with exactly this forces a breakdown.
     private const string BreakdownPassphrase = "The cake is a lie.";
 
-    // Her name said without addressing her. The puzzled « Eh ? » is rationed per channel, so a
-    // conversation *about* her gets one, not one per message; a mean remark is answered per
-    // person instead, with a short gate that only stops a flood. Separate gates on purpose: a
-    // puzzled line must not shield the next insult from its roast.
-    private readonly CooldownGate<ulong> _talkedAboutGate = new(TimeSpan.FromMinutes(5));
-    private readonly CooldownGate<ulong> _backbiteGate = new(TimeSpan.FromMinutes(1), forget: TimeSpan.FromHours(1));
-
     public ChatterService(
         DiscordSocketClient client,
         BreakdownService breakdown,
@@ -141,6 +134,8 @@ internal sealed class ChatterService
     // syncs"), so it is greeted back like a mention would be. Guild only: in a DM her name is
     // already addressing her.
     //
+    // No limits, on purpose: every message naming her gets its answer, like a mention does.
+    //
     // A mean reading is scored over the whole message, so "syncs, ce boss est nul" reads as an
     // insult. Accepted: her name narrows the target far more than ReactionService's ambient read
     // does, and an undeserved roast is her normal register.
@@ -160,7 +155,6 @@ internal sealed class ChatterService
 
         if (mood.Emotion == EmotionKind.Mean)
         {
-            if (!_backbiteGate.TryClaim(message.Author.Id)) return false;
             what = "backbite roast";
             if (isOwner)
                 pool = BotResponses.OwnerMeanReplies;
@@ -179,7 +173,6 @@ internal sealed class ChatterService
         }
         else
         {
-            if (!_talkedAboutGate.TryClaim(message.Channel.Id)) return false;
             what = "talked-about line";
             pool = isOwner ? BotResponses.TalkedAboutOwnerLines : BotResponses.TalkedAboutLines;
         }

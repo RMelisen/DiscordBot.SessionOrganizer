@@ -462,9 +462,9 @@ internal static class MessageCues
         "reset", "restart", "shutdown", "stop", "unplug",
     };
 
-    // "sync" is safe alongside "syncs" because phrases match *adjacent* tokens: an
-    // innocent "relancer la sync" has "la" in between and never matches, while a typo'd
-    // "relancer sync" does.
+    // "sync" is safe alongside "syncs" in the shutdown phrases because they match *adjacent*
+    // tokens: an innocent "relancer la sync" has "la" in between and never matches, while a
+    // typo'd "relancer sync" does. NamesHer uses this list bare, so there "la sync" does count.
     private static readonly string[] _selfNames = { "syncs", "sync" };
 
     // Her name next to one of those verbs. Kept apart from _shutdownPhrases because
@@ -983,12 +983,11 @@ internal static class MessageCues
     }
 
     // Her own name said in passing (« syncs a posté le sondage », « S.Y.N.C.S »), for
-    // ChatterService's talked-about branch. Only "syncs": a bare "sync" is ordinary vocabulary
-    // (« la sync a planté »), which the shutdown phrases can afford only because a verb sits right
-    // before it. Custom-emote markup is dropped first, since her own emotes are named after her
+    // ChatterService's talked-about branch. Same spellings as the shutdown phrases (_selfNames),
+    // bare « sync » included, at the owner's request — so « la sync a planté » reaches her too.
+    // Custom-emote markup is dropped first, since her own emotes are named after her
     // (`<:syncs_happy:id>`), and so are links. Squashed so « synccs » still lands; spelled-out
     // letters are glued back like IsMistakenIdentity does.
-    private const string SelfName = "syncs";
     private static readonly Regex _link = new(@"https?://\S+", RegexOptions.Compiled);
 
     public static bool NamesHer(string content)
@@ -996,7 +995,7 @@ internal static class MessageCues
         if (string.IsNullOrWhiteSpace(content)) return false;
         var words = TokenizeOrdered(_link.Replace(_customEmote.Replace(content, " "), " "))
             .Select(Squash).ToList();
-        return words.Contains(SelfName) || GlueSpelledOutRuns(words).Contains(SelfName);
+        return words.Concat(GlueSpelledOutRuns(words)).Any(w => _selfNames.Contains(w));
     }
 
     // Her robot heart (docs/syncs-voice.md): who a message names, for RobotHeartService. Every
