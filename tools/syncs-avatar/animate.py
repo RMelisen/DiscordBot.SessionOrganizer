@@ -1,6 +1,7 @@
 """Animates the seasonal avatars (ProjectSYNCS/Assets/Avatars/syncs-<season>.png) into looping GIFs:
-leaves falling in autumn, petals drifting in spring, snow in winter, and in summer a glint across
-her sunglasses and heat rising (her sweat drop stays still: sliding, it looked wrong).
+leaves falling in autumn, petals drifting in spring, snow in winter, and in summer sunbeams falling
+across her with dust glinting in them, a glint across her sunglasses and heat rising (her sweat drop stays still: sliding, it
+looked wrong).
 
 Writes, per season:
 - ProjectSYNCS/Assets/Avatars/syncs-<season>.gif, the one the bot uploads (SeasonalAvatarService):
@@ -252,15 +253,81 @@ def summer(av):
 
     white = (255, 255, 255); shine = (214, 214, 240)
     heat = tuple(min(255, c + 14) for c in av.bg)
-    swatch = Image.new("RGBA", (3, 1)); swatch.putdata([white + (255,), shine + (255,), heat + (255,)])
+    # Sunlight: the background warmed toward cream, in three steps so the beams stay pixel art.
+    sun = (255, 236, 196)
+    lit = [tuple(round(b + (s - b) * k) for b, s in zip(av.bg, sun)) for k in (0.16, 0.27, 0.38)]
+    # Dust, from barely lit to catching the light full on.
+    dust = [tuple(round(b + (s - b) * 0.8) for b, s in zip(av.bg, sun)), sun, (255, 250, 234)]
+    swatch = Image.new("RGBA", (9, 1))
+    swatch.putdata([c + (255,) for c in (white, shine, heat, *lit, *dust)])
 
     frames = 90
     sweep = (20, 38)   # frames the glint crosses both lenses
     sparkle_at = (139, 106)  # the right lens's outer corner
 
+    # The sunbeam: shafts fanning from a sun just off the top-left corner, the side the glint comes
+    # from. Discord crops the avatar round and that corner is the first thing cut, so the shafts run
+    # long and fall across her too, softer on her than on the background. Each breathes (width and
+    # reach) once per loop, out of step with the others. Every reach runs past the frame's edge even
+    # at its shortest: a shaft ending inside the picture shows a blunt tip.
+    sun_at = (-22, -32)
+    # direction (degrees below the horizontal), half-width (degrees), reach, phase
+    shafts = [(36, 3.4, 320, 0.0), (51, 5.0, 345, 0.35), (67, 3.6, 290, 0.7)]
+    on_her = (0.07, 0.11, 0.15)   # how far her own colours are warmed toward the sun, per step
+
+    # Dust floating everywhere, only seen where the light catches it, like a light-shaft shader:
+    # each speck loops a slow closed path (whole cycles, so the GIF loops) and twinkles, so specks
+    # drift into a shaft, glint, and fade out of it. A few big ones show as a small cross. Over her,
+    # only the bright ones: a dim speck on her face reads as a freckle, not as light.
+    rng = __import__("random").Random(11)
+    motes = [dict(x=rng.uniform(-10, N + 10), y=rng.uniform(-10, N + 10),
+                  ax=rng.uniform(3, 9), ay=rng.uniform(4, 12), cx=rng.choice((1, 1, 2)), cy=rng.choice((1, 2)),
+                  px=rng.random(), py=rng.random(), tw=rng.choice((1, 2, 3)), pt=rng.random(),
+                  big=rng.random() < 0.18)
+             for _ in range(230)]
+
+    def beam(x, y, t):
+        """How lit a pixel is: 0 (dark) to 3 (the bright middle of a shaft, near the sun)."""
+        dx, dy = x - sun_at[0], y - sun_at[1]
+        a = math.degrees(math.atan2(dy, dx)); r = math.hypot(dx, dy)
+        best = 0
+        for deg, hw, reach, ph in shafts:
+            s = math.sin(2 * math.pi * (t + ph))
+            w = hw * (1 + 0.3 * s); far = reach * (1 + 0.12 * s)
+            off = abs(a - deg) / w
+            if off > 1 or r > far: continue
+            # Brightest along the middle, nearer the sun; softer toward the edges and the far end.
+            level = 3 if off < 0.3 else 2 if off < 0.65 else 1
+            if r > far * 0.75: level = min(level, 1)
+            elif r > far * 0.5: level = min(level, 2)
+            best = max(best, level)
+        return best
+
     def draw(fr, t):
         f = round(t * frames)
         fp = fr.load()
+        for y in range(N):
+            for x in range(N):
+                level = beam(x, y, t)
+                if not level: continue
+                if av.bgmask[y][x]: fp[x, y] = lit[level - 1]
+                else:
+                    k = on_her[level - 1]
+                    fp[x, y] = tuple(round(c + (s - c) * k) for c, s in zip(fp[x, y], sun))
+        for m in motes:
+            X = round(m["x"] + m["ax"] * math.sin(2 * math.pi * (m["cx"] * t + m["px"])))
+            Y = round(m["y"] + m["ay"] * math.sin(2 * math.pi * (m["cy"] * t + m["py"])))
+            if not (0 <= X < N and 0 <= Y < N): continue
+            level = beam(X, Y, t)
+            if not level: continue
+            twinkle = 0.5 + 0.5 * math.sin(2 * math.pi * (m["tw"] * t + m["pt"]))
+            glow = level / 3 * (0.35 + 0.65 * twinkle)   # 0..1
+            if glow < 0.2 or (glow < 0.55 and not av.bgmask[Y][X]): continue
+            tone = dust[0] if glow < 0.4 else dust[1] if glow < 0.7 else dust[2]
+            fp[X, Y] = tone
+            if m["big"] and glow >= 0.55:
+                for ex, ey in ((X + 1, Y), (X - 1, Y), (X, Y + 1), (X, Y - 1)):
+                    if 0 <= ex < N and 0 <= ey < N: fp[ex, ey] = dust[0] if glow < 0.75 else dust[1]
         # Heat rising from below, behind her: short wavy strands.
         for hx, ph in ((24, 0.0), (44, 0.5), (158, 0.25), (180, 0.75), (100, 0.6)):
             u = (t + ph) % 1

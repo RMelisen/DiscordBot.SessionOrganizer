@@ -972,9 +972,11 @@ disk stay the full pictures.
 
 **Animated versions** are what the bot actually uploads: `tools/syncs-avatar/animate.py` turns
 each PNG into a looping GIF (leaves falling in autumn, petals drifting in spring, snow in winter; in
-summer a glint across the sunglasses and heat rising, while the sweat drop stays still, as sliding
-it looked wrong). The floating bits already in the picture become the particles, so nothing is
-redrawn by hand; a redrawn PNG means running the tool again. It writes
+summer sunbeams from the top-left with dust glinting as it floats through them, a glint across the
+sunglasses and heat rising, while the sweat drop stays still, as sliding it looked wrong). The
+sunbeams run long and fall across her as well as the background: Discord crops the avatar round,
+and the top-left corner they start from is the first thing cut. The floating bits already in the
+picture become the particles, so nothing is redrawn by hand; a redrawn PNG means running the tool again. It writes
 `Assets/Avatars/syncs-<season>.gif` with the zoom already applied (900×900): `PngCrop` cannot crop
 a GIF, so the tool's `ZOOM_KEEP` must match the service's `ZoomKeep`. The service takes the GIF when
 there is one and falls back to the PNG. Discord.Net labels every upload `image/jpeg`; if Discord
