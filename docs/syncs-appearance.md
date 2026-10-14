@@ -116,6 +116,9 @@ next to.
 | **In love** | Turtleneck collar pulled up over her face with both hands, shy eyes peeking out with a tiny heart in each pupil, blush up to the ears | LED **pink** — gives her away | Her crush (WALL-E): the denial that confirms. Not Papa: that's `devoted` |
 | **Full love** | Heart-shaped eyes, wavy open smile, deep blush, hearts floating round the cap | LED **pink**, spots glowing pink | The unguarded version of *In love*, kept for the rare moment it shows. Not used anywhere yet |
 | **Tipsy love** | Glazed eyes gazing up at nothing, goofy lopsided open smile, cheek squished in her palm, one small heart | LED **pink**, spots faint pink | Lovesick daydreaming, brain switched off. Not used anywhere yet |
+| **Formal** | Composed closed eyes, prim closed mouth, chin up, one finger pushing up small round glasses, clipboard held to her chest | Green | Formal relays: `OwnerAbsentNotices`, `OwnerReplyHeralds`. Not generated yet |
+| **Sad** | Brows tilted up, dry downcast eyes, wavy `﹏` mouth, cap and cable drooping, small grey cloud overhead | LED dim green, spots off | Dead polls, empty quizzes, the lonely attic — the `(╥﹏╥)` lines that aren't Papa's. Not generated yet |
+| **Confused** | Head tilted, one eye squinting, brows uneven, crooked squiggle mouth, scratching her cap, cable curled into a `?` | Green | Messages she can't parse, « J'ai rien fait de mal ! ...Si ? ». Not generated yet |
 
 The LED is the cheapest mood signal at emote size, where the face is a few pixels: green normal,
 red angry, orange hurt, yellow pleading, pink in love, off broken.
@@ -623,6 +626,87 @@ One single small pink pixel heart floats up beside her cap. The spots on her cap
 pink and the LED on her cap glows pink instead of green. Dazed and smitten, not sparkly, not
 flustered, not sleepy. Bold simple shapes, thick outline, high contrast. Plain flat solid cyan
 background (#00FFFF), no gradient, no shadow on the background. No text, no letters, no logos, no
+watermark.
+```
+
+### Emote pack, third batch
+
+Not generated yet. Same pipeline and the same white-not-blue rule as the second batch; lens glints
+are asked white too, since a pale-blue glint on glasses would be keyed out with the cyan.
+
+**24. `syncs_formal`**: The formal relays (`OwnerAbsentNotices`, `OwnerReplyHeralds`, « Mon Maître
+**{0}** a daigné vous répondre : »). Stiff on purpose, funny by contrast: the brat playing the
+perfect secretary. Kept apart from `syncs_jenote`, which also holds paper: that one is a narrow
+side-eye and a notebook (suspicion), this one is composed closed eyes and a clipboard held flat to
+the chest (protocol). The glasses carry the mood at 32 px, so they are asked bold, not thin.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face, cap and both hands, filling
+the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a few tiny
+spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the side of the
+cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a dark cable
+ending in a small plug, hanging neatly. Big dark navy eyes, soft pink blush with freckle dots, dark
+navy turtleneck collar just visible. Same character as the reference image.
+Expression: prim, formal secretary mode: small round glasses with a bold dark navy frame perched on
+her nose, a white pixel glint on each lens; with one finger she pushes the glasses up the bridge of
+her nose. Her eyes are calmly closed behind the lenses in a composed, dignified way, chin raised a
+little, mouth a tiny prim closed line, a very faint polite blush. With the other arm she holds a
+small clipboard flat against her chest, its sheet blank with only a few grey lines, no readable
+writing. A small pencil is tucked into the rim of her cap. Stiff, proper and a little pompous, as if
+announcing someone important; not smug, not suspicious. Bold simple shapes, thick outline, high
+contrast. Plain flat solid cyan background (#00FFFF), no gradient, no shadow on the background. No
+blue tint on the lenses. No text, no letters, no logos, no watermark.
+```
+
+**25. `syncs_sad`**: The everyday sad: a dead poll, a quiz nobody answered, the attic too quiet —
+the `(╥﹏╥)` lines that aren't about Papa, today tagged `sulk` for want of better. Two neighbours to
+stay clear of: `syncs_hurt` is Papa's (still, glossy eyes, orange LED, no comedy), so this one is
+lighter, a little cartoonish, with a dim **green** LED; `syncs_sulk` is a puffed cheek, crossed arms
+and eyes sideways, so this one has none of the three and looks down. **She never cries**: the eyes
+are asked dry, and the cloud carries no rain, since falling drops would read as tears.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face and mushroom cap only,
+filling the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes,
+tan gills under the rim, a tiny power LED on the side of the cap. Short pale lilac bob with choppy
+bangs; one thin strand on one side turns into a dark cable ending in a small plug. Big dark navy eyes
+with small square pixel highlights, soft pink blush with freckle dots, dark navy turtleneck collar
+just visible. Same character as the reference image.
+Expression: sad and deflated: eyebrows tilted up in the middle, big eyes looking down at the floor,
+completely dry, no tears and no wet shine; a small trembling wavy mouth curving down, like the ﹏ in
+the (╥﹏╥) emoticon. Her cap droops forward and sags a little over her eyes, her hair hangs flat, and
+the cable strand hangs limp with the plug pointing straight down. None of the spots on her cap glow,
+and the green LED on her cap is dim, barely lit. A small dark grey cloud hovers just above her cap,
+with no rain falling from it. Gloomy and pitiful in a cute, slightly comic way, not dramatic, not
+angry, not pouting: no puffed cheek, no crossed arms. No tears anywhere, no blue anywhere. Bold simple
+shapes, thick outline, high contrast. Plain flat solid cyan background (#00FFFF), no gradient, no
+shadow on the background. No text, no letters, no logos, no watermark.
+```
+
+**26. `syncs_confused`**: A message she can't parse, the self-correction « J'ai rien fait de mal !
+...Si ? ». The cable strand curled into a question mark is hers alone, and at 32 px it backs up the
+floating marks. Kept apart from `syncs_reboot` (spiral eyes, cap knocked askew: dazed) and
+`syncs_shocked` (both eyes wide, round mouth: surprised): here the eyes are uneven, one squinting.
+Gemini may drop the question marks under « no text », so the prompt calls them symbols.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face, cap and one hand, filling
+the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a few tiny
+spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the side of the
+cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a dark cable
+ending in a small plug. Big dark navy eyes with square pixel highlights, soft pink blush with
+freckle dots, dark navy turtleneck collar just visible. Same character as the reference image.
+Expression: puzzled and lost: head tilted strongly to one side, one eye open normally and the other
+squinted half shut, one eyebrow raised high and the other pulled low; her mouth is a small crooked
+squiggle pushed to one side. One finger scratches the side of her cap, under the rim. The cable
+strand of her hair curls up into the shape of a question mark, the plug hanging at its tip. Two
+small bold dark navy question-mark symbols float beside her cap, one bigger than the other. Baffled,
+trying to make sense of something absurd; not dizzy, not shocked, not worried. Bold simple shapes,
+thick outline, high contrast. Plain flat solid cyan background (#00FFFF), no gradient, no shadow on
+the background. No words, no letters other than the two question-mark symbols, no logos, no
 watermark.
 ```
 
