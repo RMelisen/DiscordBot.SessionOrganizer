@@ -51,7 +51,7 @@ performs it. Without it `Guild.GetUser` returns null for anyone not seen since t
 and every avatar on `/level`, `/leaderboard` and `/shame` falls back to Discord's generic logo.
 First thing to check if those placeholders reappear.
 
-There is no test project and no CI. Verify by building and, when it matters, running against the
+There is no test project, and CI only builds the add-on image (see *Version and deployment*). Verify by building and, when it matters, running against the
 dev guild. Notes that mention "the harness" refer to the owner's scratch checks, which are not in
 this repo.
 
@@ -299,7 +299,7 @@ when `version` changes: an unbumped push never reaches the Pi.
 - **Minor** (`5.18.12` → `5.19.0`, patch reset): a new command, subcommand, subsystem or
   user-visible behaviour, or anything that adds a migration.
 - **Major**: the owner's call only; never bump it unasked.
-- **No bump** for changes that stay out of the build: `docs/`, `README.md`, `CLAUDE.md`, `CHANGELOG.md`, `tools/`.
+- **No bump** for changes that stay out of the build: `docs/`, `README.md`, `CLAUDE.md`, `CHANGELOG.md`, `tools/`, `.github/`.
 - Numbers don't roll over: `5.11.26` is fine. When you bump, say so in the summary, with the
   new number.
 - **A bump adds its entry to `ProjectSYNCS/CHANGELOG.md`** (newest first, `## x.y.z — yyyy-mm-dd`,
@@ -315,6 +315,26 @@ The bot ships as a Home Assistant add-on: the `Dockerfile` publishes a self-cont
 persisted, so the SQLite file must stay under it — and so do `health-state.json`,
 `ambient-state.json`, `morning-state.json` and `avatar-state.json`, which `PiHealthService`,
 `AmbientService`, `MorningGreetingService` and `SeasonalAvatarService` write next to it.
+
+**The Pi never builds the image.** Building on the Pi left about 1 GB of .NET layers in Docker's
+build cache per version, until the disk filled. Now `.github/workflows/addon-image.yml` builds it on
+a native arm64 runner for every push to `main` touching `ProjectSYNCS/`, and pushes
+`ghcr.io/rmelisen/aarch64-addon-projectsyncs:<version>`; `image:` in `config.yaml` makes the
+Supervisor pull that tag. Consequences:
+
+- **Never remove `image:`** from `config.yaml`: the Supervisor would go back to building on the Pi.
+- **A published tag is never overwritten.** The workflow skips a version that already exists, so an
+  unbumped push ships nothing — one more reason for the bump rule above.
+- **Auto-update is off on the Pi.** The update can show up before CI has pushed the image; the owner
+  waits for the workflow to go green, then clicks Update. A failed run means no update, not a broken
+  bot.
+- **The Dockerfile restores from the csproj alone** before copying the source, so the NuGet layer
+  stays cached. That is why `<Version>` reads `config.yaml` only when it exists — keep that
+  condition, and never `COPY` `config.yaml` before the restore.
+- **The GHCR package must stay public** (the Supervisor pulls anonymously), and so must the repo:
+  arm64 runners are free only for public repositories.
+- **Never change the add-on repository URL in Home Assistant** (for example to `…#branch`): the
+  add-on's identity is a hash of that URL, so it would become a new add-on with an empty `/data`.
 
 The GitHub remote is **public**. `appsettings.json` and `config.yaml` ship token placeholders; real
 tokens go in user secrets (dev) or add-on options (prod), never in a tracked file.
