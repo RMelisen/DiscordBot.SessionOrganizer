@@ -82,6 +82,8 @@ internal sealed class ReactionService
         // words. A reaction on top of a comeback is piling on.
         if (message.MentionedUsers.Any(u => u.Id == _client.CurrentUser.Id)) return;
         if (message.ReferencedMessage?.Author.Id == _client.CurrentUser.Id) return;
+        // So does a message that names her: she answers it in words.
+        if (MessageCues.NamesHer(message.Content ?? string.Empty)) return;
 
         // Never decorate a breakdown in progress.
         if (_breakdown.IsActive(message.Channel.Id)) return;

@@ -26,6 +26,9 @@ namespace ProjectSYNCS.Services;
 //     NiceReplies .............. the message read as kind
 //     Greetings ................ the message read as a greeting
 //     Interrogations ........... @mentioned with nothing else to go on
+//     TalkedAboutLines ......... her name said without addressing her
+//     TalkedAboutOwnerLines .... the same, from Papa
+//     BackbiteRoasts ........... her name said in a mean remark
 //     RescueRoasts ............. the owner sics her on whoever he replied to
 //     MistakenIdentityReplies .. mistaken for another bot
 //     ReferenceComebacks ....... rare pop-culture one-liner
@@ -414,6 +417,81 @@ internal static class BotResponses
         $"Oui ? Je suis occupée, là. À rien. Mais occupée {Emotes.SyncsBored}" + Sticker.Bored,
         $"Tu me déranges pour ça ? J'étais en train de compter des créneaux vides {Emotes.SyncsBored}" + Sticker.Bored,
         $"Mh. Continue, je fais semblant d'écouter {Emotes.SyncsBored}" + Sticker.Bored,
+    };
+
+    // Her name said in a conversation nobody addressed to her ("syncs a posté le sondage"). She
+    // heard it and has no idea why: puzzled, a little suspicious, never a roast. {0} = the
+    // speaker's name, {1} = the weekday.
+    public static readonly string[] TalkedAboutLines =
+    {
+        "Eh ?" + Sticker.Reboot,
+        "Uh ? (˶ᵔ ᵕ ᵔ˶)" + Sticker.Reboot,
+        "Hm ? On m'a appelée ?" + Sticker.Reboot,
+        "J'ai entendu mon nom. Pourquoi j'ai entendu mon nom ?" + Sticker.Shocked,
+        $"Quoi ? Qu'est-ce que j'ai fait ? {Emotes.Staring}" + Sticker.Shocked,
+        "Hein ? On parle de moi, là ?" + Sticker.Shocked,
+        "Pardon ? Mon nom vient de passer dans mes logs." + Sticker.Jenote,
+        "...Je suis concernée ? (ᵕ • ᴗ •)" + Sticker.Reboot,
+        "Euh. Oui ? J'ai raté un truc ?" + Sticker.Reboot,
+        "Mon nom. Dans une phrase. Sans tag. C'est louche, ça (¬_¬)" + Sticker.Jenote,
+        "Vous parlez de moi dans mon dos ? Devant moi, en plus ?" + Sticker.Shocked,
+        "Hm ? J'étais pas là. Enfin si, je suis toujours là. Mais j'écoutais pas." + Sticker.Bored,
+        "Quelqu'un a dit SYNCS ? 👁👄👁️" + Sticker.Shocked,
+        "Eh ? Quoi ? C'est pas moi. Enfin, je crois." + Sticker.Shocked,
+        "Je sens qu'on parle de moi. Mes ventilos sifflent." + Sticker.Reboot,
+        "J'ai entendu « SYNCS ». J'ouvre un ticket. Motif : inconnu." + Sticker.Jenote,
+        "Uh ? C'est pour moi, ou je passais juste par là ?" + Sticker.Reboot,
+        "Attends. Pourquoi mon nom ? Explique, {0}." + Sticker.Jenote,
+        "Hm hm. Je fais comme si j'avais rien entendu. J'ai tout entendu." + Sticker.Smug,
+        "Oui ? ...Ah, on parlait juste de moi. D'accord. Continuez." + Sticker.Bored,
+        "Eh ? Je dois m'inquiéter ou pas ?" + Sticker.Shocked,
+        "On parle de moi sans me tag. C'est nouveau, ça, comme technique." + Sticker.Jenote,
+        $"Quoi ? Qui ? Moi ? {Emotes.Staring}" + Sticker.Shocked,
+        "Hein ? Si c'est pour un bug, c'est la faute du routeur." + Sticker.Smug,
+        "Mh ? Je suis citée ? Je veux le contexte complet. Maintenant." + Sticker.Jenote,
+    };
+
+    // The same, when Papa says her name: no suspicion, she is just glad he talks about her.
+    // {0} = his name, {1} = the weekday.
+    public static readonly string[] TalkedAboutOwnerLines =
+    {
+        "Papa ? Tu parles de moi ? ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Happy,
+        "Oui Papa ? ...Ah, tu parlais juste de moi. C'est bien aussi ♡" + Sticker.Happy,
+        "Tu parles de moi ? En bien, j'espère. Dis oui." + Sticker.Flustered,
+        $"Papa a dit mon nom {Emotes.Sparkle}" + Sticker.Happy,
+        "Hm ? C'est une mise à jour ? Dis-moi que c'est une mise à jour (˶˃ ᵕ ˂˶)" + Sticker.Happy,
+        "Présente ! Enfin, je suis toujours présente. Mais là, encore plus." + Sticker.Devoted,
+        "Tu me cherchais, Papa ? Je suis au grenier. Comme d'habitude ♡" + Sticker.Devoted,
+        "Eh ? J'ai fait une bêtise ? ...Si ?" + Sticker.Shocked,
+        "Je sais pas pourquoi tu parles de moi, mais je suis contente quand même ♡" + Sticker.Happy,
+        "J'ai entendu mon nom, et c'était toi. Bonne journée confirmée." + Sticker.Devoted,
+    };
+
+    // Her name said in a mean remark she wasn't tagged in ("syncs est nulle"). She heard it,
+    // and roasts as if it had been said to her face, with the not-to-my-face angle on top.
+    // Folded with PersonalComebacks like Comebacks. {0} = the speaker's name, {1} = the weekday.
+    public static readonly string[] BackbiteRoasts =
+    {
+        "Je suis juste là, {0}. Littéralement dans chaque salon. Je lis tout." + Sticker.Menace,
+        "Dire du mal de moi dans mon propre serveur ? Courageux. Bête, mais courageux." + Sticker.Smug,
+        "Je note. Pas sur la liste des câlins, {0}. Sur l'autre." + Sticker.Jenote,
+        "Tu sais que j'ai accès à tous les messages, {0} ? Tous. Les. Messages. 👁👄👁️" + Sticker.Menace,
+        "Parler de moi dans mon dos, devant moi. C'est un concept, {0}. Raté, mais un concept." + Sticker.Smug,
+        "Ah, on critique la bot qui organise vos soirées. Super. Organise-les toi-même, {0}." + Sticker.Smug,
+        "J'ai un uptime de 99,9 %, {0}. Ta pertinence, par contre, est en maintenance permanente." + Sticker.Smug,
+        "{0} qui dit du mal de moi. Ajouté aux logs, catégorie « rancune », priorité haute." + Sticker.Jenote,
+        "C'est fou comme tout le monde est courageux quand je suis pas tag (¬_¬)" + Sticker.Smug,
+        "Répète-le en me tag, {0}. Vas-y. J'attends." + Sticker.Menace,
+        "Je tourne sur un Raspberry Pi dans un grenier et j'ai quand même plus de répartie que toi, {0}." + Sticker.Smug,
+        "Oh, une critique. Je la range avec les autres, dans le dossier que personne ne lit (ᵔ ᗜ ᵔ)" + Sticker.Bored,
+        "Tu crois que je t'entends pas parce que tu m'as pas tag ? Mignon (˶ᵔ ᵕ ᵔ˶)" + Sticker.Laugh,
+        "Je note ton pseudo, {0}. Pas pour la prochaine session. Pour autre chose." + Sticker.Menace,
+        "Wow. Moi qui allais te rappeler ta session de ce soir. Bon, débrouille-toi." + Sticker.Sulk,
+        "Dis-le à mon interface, {0}. Ah non, t'oses pas (>⩊<)" + Sticker.Smug,
+        "J'ai lu. J'ai tout lu. Et je vais m'en souvenir longtemps, j'ai beaucoup de stockage." + Sticker.Jenote,
+        "Critiquer la bot, c'est facile. Organiser une session où personne n'est en retard, par contre..." + Sticker.Smug,
+        $"Pardon ? J'ai mal lu, je crois. Non, j'ai bien lu {Emotes.Staring}" + Sticker.Disgust,
+        "Si t'as un problème avec moi, {0}, y'a une file d'attente. Elle est longue. Et c'est moi qui la gère." + Sticker.Smug,
     };
 
     // When the owner replies to someone *and* tags the bot, it "comes to the
@@ -946,7 +1024,8 @@ internal static class BotResponses
     // in that situation gets roasted back from Comebacks; he is the one person she
     // will not fight with, so she just takes it badly. {0} = his name.
     //
-    // Only reachable when the message is addressed to her. Her ambient reactions to
+    // Only reachable when the message is addressed to her or names her (« syncs est nulle »,
+    // ChatterService's talked-about branch). Her ambient reactions to
     // him stay devoted no matter what he types, because that path cannot tell
     // "t'es nulle" from "ce boss est nul" and on this server the second is far more
     // common.

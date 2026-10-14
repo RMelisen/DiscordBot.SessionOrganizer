@@ -431,6 +431,9 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
   detected from the message text and answered in kind.
 - **No repeats** — every line goes through a picker that avoids whatever was said
   recently in that channel, so a pool feels as large as it actually is.
+- **Her name** — saying "syncs" (or "sync") without tagging her still reaches her, every
+  time. She has no idea why she's being talked about and says so, greets back a greeting,
+  and roasts anyone who is mean about her behind her back.
 - **Typing pause** — replies wait behind the typing indicator for a moment scaled to
   the length of the line, so the bot reads as composing an answer rather than firing
   back instantly.

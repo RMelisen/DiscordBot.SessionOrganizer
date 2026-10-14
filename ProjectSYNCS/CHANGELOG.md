@@ -3,46 +3,54 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.15.0 — 2026-10-14
+
+- SYNCS notices when people talk about her without tagging her ("syncs" or "sync"), every time: a
+  puzzled "Eh ?", a hello back if she is greeted, and a sharp comeback if someone is mean about her.
+
 ## 6.14.3 — 2026-10-14
 
-- Quelques répliques et événements des Plynlings sont reformulés.
+- A few Plynling lines and events are reworded.
 
 ## 6.14.2 — 2026-10-14
 
-- Le cœur de robot de SYNCS est de nouveau plus vif : elle reprend sa réaction, supprime son mot ou corrige son lapsus après 2 à 6 secondes au lieu de 5 à 9.
+- SYNCS's robot heart is quicker again: she takes back her reaction, deletes her line or corrects
+  her slip after 2 to 6 seconds instead of 5 to 9.
 
 ## 6.14.1 — 2026-10-13
 
-- Le cœur de robot de SYNCS réagit à chaque fois, sans limite, et réagit d'un emoji quand on en parle sans s'adresser à elle (avec parfois un petit mot en plus).
+- SYNCS's robot heart reacts every time, with no limit, and reacts with an emoji when one of them
+  is named without talking to her (sometimes with a few words too).
 
 ## 6.14.0 — 2026-10-13
 
-- SYNCS a un cœur de robot : certains noms la font réagir, et un correspondant très lointain lui
-  écrit de temps en temps.
-- Nouvelles anecdotes du matin, nouveaux statuts et quelques nouvelles répliques.
-- Les images de SYNCS après ses répliques ne sont plus limitées par salon ni par jour.
+- SYNCS has a robot heart: some names make her react, and a very distant pen pal writes to her now
+  and then.
+- New morning fun facts, new status lines and a few new lines.
+- The pictures SYNCS posts after her lines are no longer limited per channel or per day.
 
 ## 6.13.0 — 2026-10-13
 
-- SYNCS poste parfois une image d'elle juste après une de ses répliques, assortie à ce qu'elle
-  vient de dire (au plus une toutes les 30 minutes par salon, et 12 par jour).
+- SYNCS sometimes posts a picture of herself right after one of her lines, matching what she just
+  said (at most one every 30 minutes per channel, and 12 a day).
 
 ## 6.12.1 — 2026-10-13
 
-- Les émotes de SYNCS ont été réimportées sur le serveur : elle utilise les nouvelles.
-- Cinq nouvelles têtes : dégoût (Quokka), surchauffe (records de chaleur), redémarrage (réveils),
-  amour et amour fou (pas encore utilisées).
+- SYNCS's emotes were re-uploaded to the server: she uses the new ones.
+- Five new faces: disgust (Quokka), overheating (heat records), rebooting (wake-ups), love and
+  head over heels (not used yet).
 
 ## 6.12.0 — 2026-10-13
 
-- Grosse tête de la semaine : chaque lundi à 10 h, SYNCS donne un rôle à la meilleure tête du quiz
-  de la semaine passée et l'annonce dans le salon du quiz (`/config quiz-role`).
-- Quatre émotes de SYNCS retirées du serveur (sleepy, shocked, mama, jenote) : elle ne s'en sert plus.
+- Big brain of the week: every Monday at 10:00, SYNCS gives a role to the best quiz player of the
+  past week and announces it in the quiz channel (`/config quiz-role`).
+- Four of SYNCS's emotes removed from the server (sleepy, shocked, mama, jenote): she no longer
+  uses them.
 
 ## 6.11.0 — 2026-10-13
 
-- Rôle Plynling : SYNCS peut créer et gérer un rôle pour tous les maîtres d'un Plynling vivant
-  (`/config plynling-role`). Il arrive à l'adoption et s'en va avec le Plynling.
+- Plynling role: SYNCS can create and manage a role for every owner of a living Plynling
+  (`/config plynling-role`). It comes with the adoption and leaves with the Plynling.
 
 ## 6.10.1 — 2026-10-13
 
