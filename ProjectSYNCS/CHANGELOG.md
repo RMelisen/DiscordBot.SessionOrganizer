@@ -3,6 +3,13 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.15.2 — 2026-10-14
+
+- Naming one of her favourite robots and SYNCS in the same message now always gets her answer
+  about the robot, instead of a puzzled line about her name.
+- The add-on now installs a prebuilt image from GitHub instead of compiling on the device, so
+  updates no longer fill the disk with build cache.
+
 ## 6.15.1 — 2026-10-14
 
 - 90 new lines for when people talk about SYNCS without tagging her: 30 puzzled ones, 30 comebacks

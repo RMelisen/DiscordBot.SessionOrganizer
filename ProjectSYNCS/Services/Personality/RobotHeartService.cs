@@ -12,7 +12,7 @@ namespace ProjectSYNCS.Services;
 //   for the ones she's in denial about — and 40% of the time the same words as below too (with no
 //   second reaction). Silent, it returns false: a reaction isn't an answer, so the message goes on
 //   to ChatterService (the absent-owner notice, the easter eggs) as usual. Speaking, true.
-// - Named to her face (a mention, or a reply to her): always words — a reaction + a line, or the
+// - Named to her face (a mention, a reply to her, or her name said): always words — a reaction + a line, or the
 //   character's own deleted line or edited slip. That is her whole answer: returns true so
 //   ChatterService doesn't roast on top.
 //
@@ -55,8 +55,11 @@ internal sealed class RobotHeartService
         if (CharacterNamedIn(message.Content ?? string.Empty, eveNeedsWallE) is not { } who) return false;
         if (_breakdown.IsActive(message.Channel.Id)) return false;
 
+        // Her name counts like a mention: « WALL-E, syncs ? » is about him, so it gets his act —
+        // not, 60% of the time, ChatterService's talked-about line for her name.
         bool aimedAtHer = message.MentionedUsers.Any(u => u.Id == _client.CurrentUser.Id)
-                          || message.ReferencedMessage?.Author.Id == _client.CurrentUser.Id;
+                          || message.ReferencedMessage?.Author.Id == _client.CurrentUser.Id
+                          || MessageCues.NamesHer(message.Content ?? string.Empty);
         if (!aimedAtHer)
         {
             _logger.LogInformation("Robot heart: {Who} named in passing.", who);
