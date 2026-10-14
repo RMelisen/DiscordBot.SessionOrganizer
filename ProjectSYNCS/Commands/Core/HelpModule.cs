@@ -97,6 +97,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/admin xp add|remove`** · **`/admin pebble add|remove`** — Ajuster l'XP ou les cailloux de quelqu'un.\n" +
                 "**`/admin stats`** · **`/admin dashboard`** — L'économie du serveur, en un coup d'œil et jour après jour.\n" +
                 "**`/admin plynling rename`** · **`/admin plynling resurrect`** — Gérer le Plynling de quelqu'un.\n" +
+                "**`/admin warn`** · **`/admin warnings`** · **`/admin unwarn`** — Avertissements, reçus en DM.\n" +
                 "**`/admin mute|unmute`** — Exclusion temporaire.\n" +
                 "**`/config`** — Qui vote avec `/shame`, les salons où rien ne compte, le salon de jeu, " +
                 "le salon du quiz, le salon principal et les rôles Plynling et Grosse tête. **`/config show`** affiche la configuration actuelle.\n" +

@@ -441,6 +441,41 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("MemberDailyStats");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.MemberWarning", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("ModeratorId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("RevokedById")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "UserId");
+
+                    b.ToTable("MemberWarnings");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.MemberXp", b =>
                 {
                     b.Property<int>("Id")

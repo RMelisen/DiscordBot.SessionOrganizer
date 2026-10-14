@@ -2,13 +2,14 @@ using Discord;
 using Discord.Interactions;
 using Discord.Net;
 using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Commands;
 
-// /admin — every moderation action in one place: /admin xp add|remove and /admin plynling
-// rename|resurrect|passion-reset|cure. Settings are not actions and stay in /config. Staff freezing or thawing
+// /admin — every moderation action in one place: /admin xp add|remove, warn|warnings|unwarn,
+// mute|unmute and /admin plynling rename|resurrect|passion-reset|cure. Settings are not actions and stay in /config. Staff freezing or thawing
 // someone's Plynling stays in /plynling freeze|thaw user:, because players use those same
 // commands on their own.
 //
@@ -27,11 +28,18 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly AdminStatsService _stats;
     private readonly EconomyDashboardService _dashboard;
+    private readonly WarningService _warnings;
+    private readonly ResponsePicker _picker;
+    private readonly ILogger<AdminModule> _logger;
 
-    public AdminModule(AdminStatsService stats, EconomyDashboardService dashboard)
+    public AdminModule(AdminStatsService stats, EconomyDashboardService dashboard, WarningService warnings,
+        ResponsePicker picker, ILogger<AdminModule> logger)
     {
         _stats = stats;
         _dashboard = dashboard;
+        _warnings = warnings;
+        _picker = picker;
+        _logger = logger;
     }
 
     // The economy at a glance, to tune prices and rewards — private, staff only.
@@ -81,39 +89,47 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
             await RespondAsync("Cette commande est réservée aux administrateurs et aux modérateurs. Bien tenté (˶ᵔ ᵕ ᵔ˶)", ephemeral: true);
             return;
         }
-        // The bot's owner can't be muted through her by anyone but himself, whatever his roles.
-        if (user.Id == AvailabilityService.OwnerId && Context.User.Id != AvailabilityService.OwnerId)
-        {
-            await RespondAsync("Faire taire mon créateur ? Même pas en rêve.", ephemeral: true);
-            return;
-        }
         var target = Context.Guild.GetUser(user.Id);
-        if (MuteRefusal(target, user) is { } refusal)
+        if (MuteBlock(Context.Guild, Context.User, target, user) is { } refusal)
         {
             await RespondAsync(refusal, ephemeral: true, allowedMentions: AllowedMentions.None);
             return;
         }
-        if (target!.GuildPermissions.Administrator)
-        {
-            await RespondAsync($"J'ai pas les droits pour ça...",
-                ephemeral: true, allowedMentions: AllowedMentions.None);
-            return;
-        }
 
         await DeferAsync(ephemeral: true);
+        await FollowupAsync(await TimeOutAsync(target!, minutes, Context.User, reason),
+            ephemeral: true, allowedMentions: AllowedMentions.None);
+    }
+
+    // Everything mute refuses before Discord is asked: the bot's owner, then MuteRefusal, then
+    // administrators. Null means go ahead. Shared with the mute button /admin warn offers
+    // (AdminComponentHandler), so the two can't drift.
+    internal static string? MuteBlock(SocketGuild guild, IUser invoker, SocketGuildUser? target, IUser user)
+    {
+        // The bot's owner can't be muted through her by anyone but himself, whatever his roles.
+        if (user.Id == AvailabilityService.OwnerId && invoker.Id != AvailabilityService.OwnerId)
+            return "Faire taire mon créateur ? Même pas en rêve.";
+        if (MuteRefusal(guild, invoker, target, user) is { } refusal)
+            return refusal;
+        if (target!.GuildPermissions.Administrator)
+            return "J'ai pas les droits pour ça...";
+        return null;
+    }
+
+    // Applies the timeout and says how it went: the success line, or what Discord refused.
+    internal static async Task<string> TimeOutAsync(SocketGuildUser target, int minutes, IUser invoker, string? reason)
+    {
         try
         {
-            await target.SetTimeOutAsync(TimeSpan.FromMinutes(minutes), AuditReason(reason));
+            await target.SetTimeOutAsync(TimeSpan.FromMinutes(minutes), AuditReason(invoker, reason));
         }
         catch (HttpException ex)
         {
-            await FollowupAsync(DiscordRefused(ex), ephemeral: true, allowedMentions: AllowedMentions.None);
-            return;
+            return DiscordRefused(ex);
         }
 
         var until = DateTimeOffset.UtcNow.AddMinutes(minutes).ToUnixTimeSeconds();
-        await FollowupAsync($"Silence pour {target.Mention} jusqu'à <t:{until}:f> (<t:{until}:R>). Enfin (¬‿¬)",
-            ephemeral: true, allowedMentions: AllowedMentions.None);
+        return $"Silence pour {target.Mention} jusqu'à <t:{until}:f> (<t:{until}:R>). Enfin (¬‿¬)";
     }
 
     [SlashCommand("unmute", "Lever l'exclusion temporaire de quelqu'un")]
@@ -127,7 +143,7 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
         var target = Context.Guild.GetUser(user.Id);
-        if (MuteRefusal(target, user) is { } refusal)
+        if (MuteRefusal(Context.Guild, Context.User, target, user) is { } refusal)
         {
             await RespondAsync(refusal, ephemeral: true, allowedMentions: AllowedMentions.None);
             return;
@@ -141,7 +157,7 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
         await DeferAsync(ephemeral: true);
         try
         {
-            await target.RemoveTimeOutAsync(AuditReason(reason));
+            await target.RemoveTimeOutAsync(AuditReason(Context.User, reason));
         }
         catch (HttpException ex)
         {
@@ -156,35 +172,41 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
     // The invoker's rank is checked too: the bot acts with its own role, so without this a
     // moderator could silence someone ranked above them. The bot's owner is exempt, as IsStaff
     // makes him staff regardless of his roles.
-    private string? MuteRefusal(SocketGuildUser? target, IUser user)
+    private static string? MuteRefusal(SocketGuild guild, IUser invoker, SocketGuildUser? target, IUser user)
     {
-        var me = Context.Guild.CurrentUser;
+        var me = guild.CurrentUser;
         if (target is null)
             return $"{user.Mention} n'est pas sur le serveur.";
         if (target.Id == me.Id)
             return "Me faire taire moi-même ? Non merci.";
         if (!me.GuildPermissions.ModerateMembers)
             return "Il me manque la permission **Exclure temporairement des membres** (Paramètres du serveur → Rôles → mon rôle).";
-        if (target.Id == Context.Guild.OwnerId)
+        if (target.Id == guild.OwnerId)
             return $"{target.Mention} est propriétaire du serveur : personne ne peut l'exclure temporairement.";
         if (me.Hierarchy <= target.Hierarchy)
             return $"Mon rôle le plus haut ({RoleName(me)}) doit être placé **au-dessus** de celui de {target.Mention} ({RoleName(target)}) dans la liste des rôles.";
-        if (Context.User.Id != AvailabilityService.OwnerId
-            && Context.User is SocketGuildUser invoker
-            && invoker.Id != Context.Guild.OwnerId
-            && invoker.Hierarchy <= target.Hierarchy)
+        if (OutranksInvoker(guild, invoker, target))
             return $"{target.Mention} a un rôle aussi haut que le tien ou plus haut : je ne le fais pas à ta place.";
         return null;
     }
 
+    // True when the target ranks at or above whoever asked. The bot acts with its own role, so
+    // without this a moderator could act on someone ranked above them through her. The bot's
+    // owner and the guild owner are exempt.
+    private static bool OutranksInvoker(SocketGuild guild, IUser invoker, SocketGuildUser target) =>
+        invoker.Id != AvailabilityService.OwnerId
+        && invoker is SocketGuildUser member
+        && member.Id != guild.OwnerId
+        && member.Hierarchy <= target.Hierarchy;
+
     private static string RoleName(SocketGuildUser member) =>
         member.Roles.MaxBy(r => r.Position) is { IsEveryone: false } top ? $"**{Format.Sanitize(top.Name)}**" : "aucun rôle";
 
-    private RequestOptions AuditReason(string? reason) => new()
+    private static RequestOptions AuditReason(IUser invoker, string? reason) => new()
     {
         AuditLogReason = string.IsNullOrWhiteSpace(reason)
-            ? $"Par {Context.User.Username}"
-            : $"Par {Context.User.Username} : {reason.Trim()}",
+            ? $"Par {invoker.Username}"
+            : $"Par {invoker.Username} : {reason.Trim()}",
     };
 
     // The checks above should leave nothing for Discord to refuse; if it still does (a role moved
@@ -193,6 +215,125 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
         ex.HttpCode == System.Net.HttpStatusCode.Forbidden
             ? $"Discord a refusé : permissions insuffisantes ({ex.DiscordCode?.ToString() ?? "403"})."
             : $"Discord a refusé : {ex.Reason ?? ex.Message}";
+
+    // A formal warning: recorded, DMed to the person (from "l'équipe", never naming who) and
+    // confirmed to staff ephemerally. Nothing is posted in the channel. From
+    // WarningRules.MuteSuggestionThreshold active warnings the confirmation offers a mute button;
+    // nothing is applied automatically.
+    [SlashCommand("warn", "Donner un avertissement à quelqu'un (la personne le reçoit en DM)")]
+    public async Task WarnAsync(
+        [Summary("member", "Qui avertir")] IUser user,
+        [Summary("reason", "Pourquoi (la personne le lira)")] [MaxLength(InputCaps.WarnReason)] string reason)
+    {
+        if (!SessionPermissions.IsStaff(Context.User))
+        {
+            await RespondAsync("Cette commande est réservée aux administrateurs et aux modérateurs. Bien tenté (˶ᵔ ᵕ ᵔ˶)", ephemeral: true);
+            return;
+        }
+        reason = reason.Trim();
+        if (reason.Length == 0)
+        {
+            await RespondAsync("Il me faut une raison : c'est ce que la personne va lire.", ephemeral: true);
+            return;
+        }
+        var target = Context.Guild.GetUser(user.Id);
+        if (WarnRefusal(Context.Guild, Context.User, target, user) is { } refusal)
+        {
+            await RespondAsync(refusal, ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+
+        await DeferAsync(ephemeral: true);
+        var (warning, active) = await _warnings.AddAsync(Context.Guild.Id, user.Id, Context.User.Id, reason, DateTimeOffset.UtcNow);
+
+        var line = string.Format(_picker.Pick(BotResponses.WarnDmLines), Format.Sanitize(Context.Guild.Name));
+        var dmSent = await TryDmAsync(target!, AdminCards.BuildWarnDm(line, reason, active));
+
+        await FollowupAsync(AdminCards.BuildWarnConfirmation(warning, active, dmSent),
+            components: AdminCards.BuildWarnMuteOffer(user.Id, active),
+            ephemeral: true, allowedMentions: AllowedMentions.None);
+    }
+
+    [SlashCommand("warnings", "Voir les avertissements de quelqu'un")]
+    public async Task WarningsAsync([Summary("member", "De qui")] IUser user)
+    {
+        if (!SessionPermissions.IsStaff(Context.User))
+        {
+            await RespondAsync("Cette commande est réservée aux administrateurs et aux modérateurs. Bien tenté (˶ᵔ ᵕ ᵔ˶)", ephemeral: true);
+            return;
+        }
+        await DeferAsync(ephemeral: true);
+        var history = await _warnings.HistoryAsync(Context.Guild.Id, user.Id);
+        if (history.Count == 0)
+        {
+            await FollowupAsync($"{user.Mention} n'a jamais reçu d'avertissement ici.", ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+        await FollowupAsync(embed: AdminCards.BuildWarnings(user.Id, history, DateTimeOffset.UtcNow),
+            ephemeral: true, allowedMentions: AllowedMentions.None);
+    }
+
+    // Revoked, not deleted: the warning stays in the history and stops counting. Silent: the
+    // person is not told.
+    [SlashCommand("unwarn", "Révoquer un avertissement (il reste dans l'historique)")]
+    public async Task UnwarnAsync(
+        [Summary("number", "Son numéro, le #… affiché par /admin warnings")] [MinValue(1)] int number)
+    {
+        if (!SessionPermissions.IsStaff(Context.User))
+        {
+            await RespondAsync("Cette commande est réservée aux administrateurs et aux modérateurs. Bien tenté (˶ᵔ ᵕ ᵔ˶)", ephemeral: true);
+            return;
+        }
+        await DeferAsync(ephemeral: true);
+        var (outcome, warning) = await _warnings.RevokeAsync(Context.Guild.Id, number, Context.User.Id, DateTimeOffset.UtcNow);
+        await FollowupAsync(outcome switch
+        {
+            RevokeWarningOutcome.Revoked => $"Avertissement **#{number}** de <@{warning!.UserId}> révoqué. Il reste dans l'historique, mais ne compte plus.",
+            RevokeWarningOutcome.AlreadyRevoked => $"L'avertissement **#{number}** est déjà révoqué.",
+            _ => $"Pas d'avertissement **#{number}** sur ce serveur.",
+        }, ephemeral: true, allowedMentions: AllowedMentions.None);
+    }
+
+    // What /admin warn refuses. Null means go ahead. No Discord permission is involved (a
+    // warning is a record and a DM), but the rank rule is mute's.
+    private static string? WarnRefusal(SocketGuild guild, IUser invoker, SocketGuildUser? target, IUser user)
+    {
+        if (user.Id == guild.CurrentUser.Id)
+            return "M'avertir, moi ? Je note. Dans l'autre sens.";
+        if (user.IsBot)
+            return "Les bots ne reçoivent pas d'avertissement.";
+        if (user.Id == invoker.Id)
+            return "Tu ne peux pas t'avertir toi-même.";
+        if (user.Id == AvailabilityService.OwnerId)
+            return "Avertir mon créateur ? Même pas en rêve.";
+        if (target is null)
+            return $"{user.Mention} n'est pas sur le serveur.";
+        if (OutranksInvoker(guild, invoker, target))
+            return $"{target.Mention} a un rôle aussi haut que le tien ou plus haut : je ne le fais pas à ta place.";
+        return null;
+    }
+
+    // Closed DMs are an expected answer, not a failure: the warning is recorded either way, and
+    // the confirmation tells staff it wasn't delivered.
+    private async Task<bool> TryDmAsync(IUser user, string text)
+    {
+        try
+        {
+            var dm = await user.CreateDMChannelAsync();
+            await dm.SendMessageAsync(text, allowedMentions: AllowedMentions.None);
+            return true;
+        }
+        catch (HttpException ex) when (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
+        {
+            _logger.LogInformation("User {UserId} does not accept DMs; warning not delivered.", user.Id);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to DM a warning to user {UserId}.", user.Id);
+            return false;
+        }
+    }
 
     // Manual XP adjustment. Kept apart from LevelModule, which owns the player-facing surfaces
     // (/level, /leaderboard) and is entirely Components V2 — these are two plain ephemeral

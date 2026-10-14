@@ -5,7 +5,7 @@ The three authorization models are summarised in the root `CLAUDE.md`. Don't con
 ## `/admin`
 
 Holds `xp`, `plynling` (`rename`, `resurrect`, `passion-reset`, `cure`), `pebble`, `stats`,
-`dashboard`, `mute` and `unmute`. **Guarded once per handler by `SessionPermissions.IsStaff`, in code only — no
+`dashboard`, `warn`, `warnings`, `unwarn`, `mute` and `unmute`. **Guarded once per handler by `SessionPermissions.IsStaff`, in code only — no
 `[DefaultMemberPermissions]`**: a permission bit can't express "ManageGuild, plus the owner", and on a
 server where the owner lacks ManageGuild Discord would hide *and refuse* the command for him. So the
 commands are visible to everyone; `IsStaff` is the only gate. `/plynling freeze|thaw user:` uses the
@@ -28,6 +28,24 @@ same check.
   too**: the bot acts with its own role, so without it a ManageGuild holder could silence someone
   ranked above them. `AvailabilityService.OwnerId` and the guild owner are exempt from that check.
   **`OwnerId` can't be muted by anyone else**, whatever their rank; `unmute` has no such guard.
+- **`/admin warn|warnings|unwarn`** — `MemberWarning` rows through `WarningService`. **Private by
+  design**: the person gets a DM (`BotResponses.WarnDmLines` + `AdminCards.BuildWarnDm`) and staff
+  an ephemeral confirmation; nothing goes in the channel. **The DM never names the moderator**: it
+  comes from « l'équipe ». A warning that reads as one person's grudge invites a feud with that
+  person, not a change of behaviour. `ModeratorId` is stored and shown to staff only.
+  - **Rows are never deleted.** `unwarn` sets `RevokedAt`; a warning older than
+    `WarningRules.Lifetime` (90 days) stops counting. `WarningRules.IsActive` is the one
+    definition of "counts", evaluated in memory (SQLite can't compare `DateTimeOffset`).
+  - **Escalation is offered, never applied.** From `MuteSuggestionThreshold` (3) active warnings,
+    the confirmation carries a `warn:mute:{userId}` button for a one-hour timeout, handled in
+    `AdminComponentHandler` through the same `AdminModule.MuteBlock` / `TimeOutAsync` as
+    `/admin mute`, so the two can't drift.
+  - Refuses bots, yourself, `OwnerId`, people not on the server, and anyone ranked at or above the
+    invoker (`OutranksInvoker`, shared with mute). No Discord permission is needed.
+  - Closed DMs are not a failure: the warning is recorded and the confirmation says it wasn't
+    delivered. `unwarn` is silent toward the person.
+  - Kept apart from `/shame` on purpose: a real moderation record on a public joke wall would
+    make the warning a humiliation and the wall less of a joke.
 
 ## `/config`
 

@@ -70,6 +70,7 @@ namespace ProjectSYNCS.Services;
 //     ShameEmptyMalfaisant · ShameEmptyBanni · ShameEmptyPerfide
 //     ShameEmptyHysterique · ShameEmptyIndigne
 //     GiveawayDrawLines · GiveawayEmptyLines ......... /giveaway
+//     WarnDmLines .............. /admin warn, the DM to the person warned
 //     WorkLines ................ /work
 //     QuizIntroLines ........... on the card of her pop quiz (QuizMasterService)
 //     QuizWinLines · QuizOwnerWinLines ............... someone found it / Papa found it
@@ -1976,6 +1977,23 @@ internal static class BotResponses
         "Zéro participant pour **{0}**. J'ai préparé tout ça pour rien, merci beaucoup." + Sticker.Sure.Sulk,
         "Personne n'a cliqué. **{0}** ne trouvera pas preneur aujourd'hui ദ്ദി◝ ⩊ ◜.ᐟ" + Sticker.Sure.Bored,
         "Fin du tirage : aucun participant. **{0}** vous regarde avec déception." + Sticker.Sure.Sulk,
+    };
+
+    // /admin warn's DM to the person warned, above the quoted reason and their active count
+    // (AdminCards.BuildWarnDm). Her serious register: she relays it, she means it, and she says
+    // so. No tag, no joke at their expense — a warning that reads as banter isn't one. It comes
+    // from "l'équipe", never from a named moderator, and never genders the person.
+    // {0} = the server's name, already sanitized.
+    public static readonly string[] WarnDmLines =
+    {
+        "L'équipe de **{0}** m'a demandé de te transmettre un avertissement. Pour une fois, je ne plaisante pas.",
+        "Avertissement officiel de l'équipe de **{0}**. Je transmets, et je garde une trace dans mes logs.",
+        "Ici SYNCS, en mode sérieux. L'équipe de **{0}** t'adresse un avertissement.",
+        "Un avertissement pour toi, de la part de l'équipe de **{0}**. Et pour une fois je rigole pas.",
+        "Je ne fais pas que des blagues. L'équipe de **{0}** t'envoie un avertissement, et il compte.",
+        "L'équipe de **{0}** te donne un avertissement. Je préfère te le dire franchement : c'est enregistré.",
+        "Message de l'équipe de **{0}** : tu viens de recevoir un avertissement. Lis la suite, c'est important.",
+        "Avertissement de l'équipe de **{0}**. C'est noté dans mes registres, et pas dans la liste pour rire.",
     };
 
     // /work results. {0} = what was earned, already formatted ("+47 cailloux"). The jobs

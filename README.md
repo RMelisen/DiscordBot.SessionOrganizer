@@ -36,6 +36,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/admin pebble add · remove` | Manual cailloux adjustment | staff |
 | `/admin stats` | The server's economy at a glance | staff |
 | `/admin dashboard` | The economy day by day: flows, activity, finds | staff |
+| `/admin warn · warnings · unwarn` | Formal warnings, sent to the person by DM | staff |
 | `/admin mute · unmute` | Discord timeout, saying what's missing when it can't | staff |
 | `/admin plynling rename · resurrect · passion-reset · cure`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
 | `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
@@ -411,6 +412,14 @@ looks after her.
   Needs the bot's *Timeout Members* permission and its top role above the member's. When either
   is missing, or the member is an administrator, the server owner, or ranked at or above whoever
   asked, the reply names what's wrong instead of failing silently.
+- **`/admin warn <member> <reason>`** — a formal warning, private: nothing is posted in the
+  channel. The member gets it by DM, with the reason, from "the team" (never the moderator's
+  name), and how many active warnings they have. A warning counts for 90 days. From the third
+  active one, the confirmation offers a one-hour timeout button; nothing happens automatically.
+  If their DMs are closed, the warning is still recorded and staff are told.
+  **`/admin warnings <member>`** lists someone's history (number, date, who gave it, reason,
+  active / expired / revoked); **`/admin unwarn <number>`** revokes one: it stays in the history
+  but stops counting, and the member is not notified.
 - **Owner-only** — the configured owner can speak through the bot: **`/debug tell`** into a
   channel (usable from a DM with the bot too, picking the destination from an
   autocompleted list of channels it can post in) and **`/debug dm`** to a person. **`/debug absent`**

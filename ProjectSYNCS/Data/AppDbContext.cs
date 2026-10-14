@@ -21,6 +21,7 @@ public class AppDbContext : DbContext
     public DbSet<GuildExcludedChannel> GuildExcludedChannels => Set<GuildExcludedChannel>();
     public DbSet<GuildIdleChannel> GuildIdleChannels => Set<GuildIdleChannel>();
     public DbSet<GuildShameVoter> GuildShameVoters => Set<GuildShameVoter>();
+    public DbSet<MemberWarning> MemberWarnings => Set<MemberWarning>();
     public DbSet<MemberDailyStat> MemberDailyStats => Set<MemberDailyStat>();
     public DbSet<Giveaway> Giveaways => Set<Giveaway>();
     public DbSet<GiveawayEntry> GiveawayEntries => Set<GiveawayEntry>();
@@ -239,6 +240,17 @@ public class AppDbContext : DbContext
             e.Property(x => x.UserId).HasConversion<long>();
             e.HasIndex(x => new { x.GuildId, x.UserId }).IsUnique();
             e.HasIndex(x => x.GuildId);
+        });
+
+        modelBuilder.Entity<MemberWarning>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            e.Property(x => x.ModeratorId).HasConversion<long>();
+            e.Property(x => x.RevokedById).HasConversion<long>();
+            // Every read is one person's history in one guild; the active count is worked out
+            // in memory (SQLite can't compare DateTimeOffset).
+            e.HasIndex(x => new { x.GuildId, x.UserId });
         });
 
         modelBuilder.Entity<Plynling>(e =>

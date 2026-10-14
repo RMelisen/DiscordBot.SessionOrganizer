@@ -1,5 +1,6 @@
 using Discord;
 using ProjectSYNCS.Helpers;
+using ProjectSYNCS.Models;
 using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Commands;
@@ -149,5 +150,82 @@ public static class AdminCards
         foreach (var (w, label) in new[] { (DashboardWindow.Week, "7 jours"), (DashboardWindow.Month, "30 jours"), (DashboardWindow.All, "Tout") })
             row.WithButton(label, $"dash:win:{w}", w == d.Window ? ButtonStyle.Primary : ButtonStyle.Secondary, disabled: w == d.Window);
         return (embed, row.Build());
+    }
+
+    // ---- /admin warn, warnings ----------------------------------------------------------------------
+
+    /// <summary>
+    /// How many warnings /admin warnings lists. Each can carry a full
+    /// <see cref="InputCaps.WarnReason"/> quote plus its heading line (about 520 characters), and
+    /// they share one embed description (4096).
+    /// </summary>
+    public const int MaxWarningsShown = 7;
+
+    // "1 avertissement actif", "3 avertissements actifs".
+    public static string ActiveWarnings(int n) =>
+        n == 1 ? "**1** avertissement actif" : $"**{n}** avertissements actifs";
+
+    /// <summary>
+    /// The DM to the person warned: her line, the reason quoted, where they stand. No moderator
+    /// name — it comes from the team.
+    /// </summary>
+    public static string BuildWarnDm(string line, string reason, int activeCount)
+    {
+        var standing = activeCount == 1
+            ? "C'est ton premier avertissement actif."
+            : $"Tu as maintenant {ActiveWarnings(activeCount)}.";
+        return $"{line}\n\n**Raison :**\n{MessageFormat.Quote(reason, InputCaps.WarnReason)}\n\n" +
+               $"{standing} Un avertissement expire au bout de {WarningRules.Lifetime.Days} jours. " +
+               "Pour en parler, adresse-toi à l'équipe du serveur.";
+    }
+
+    /// <summary>The staff's confirmation after /admin warn, ephemeral.</summary>
+    public static string BuildWarnConfirmation(MemberWarning warning, int activeCount, bool dmSent)
+    {
+        var dm = dmSent
+            ? "Je lui ai transmis par DM."
+            : "Ses messages privés sont fermés, donc pas de DM : l'avertissement compte quand même.";
+        var text = $"⚠️ Avertissement **#{warning.Id}** enregistré pour <@{warning.UserId}> : " +
+                   $"{ActiveWarnings(activeCount)}. {dm}";
+        if (WarningRules.SuggestsMute(activeCount))
+            text += "\nÇa commence à faire beaucoup. Une exclusion d'une heure ?";
+        return text;
+    }
+
+    /// <summary>
+    /// The one-hour mute offered from <see cref="WarningRules.MuteSuggestionThreshold"/> active
+    /// warnings on; null below it. Handled by AdminComponentHandler.OnWarnMuteAsync.
+    /// </summary>
+    public static MessageComponent? BuildWarnMuteOffer(ulong userId, int activeCount) =>
+        WarningRules.SuggestsMute(activeCount)
+            ? new ComponentBuilder()
+                .WithButton($"Exclure {WarningRules.SuggestedMuteMinutes / 60} h", $"warn:mute:{userId}", ButtonStyle.Danger, new Emoji("🔇"))
+                .Build()
+            : null;
+
+    /// <summary>
+    /// One person's warnings for staff, newest first: number, date, who gave it, the reason, and
+    /// whether it still counts. Mentions in an embed render as names without pinging.
+    /// </summary>
+    public static Embed BuildWarnings(ulong userId, IReadOnlyList<MemberWarning> history, DateTimeOffset now)
+    {
+        var active = history.Count(w => WarningRules.IsActive(w, now));
+        var lines = history.Take(MaxWarningsShown).Select(w =>
+        {
+            var status = w.RevokedAt is { } revoked
+                ? $"révoqué le <t:{revoked.ToUnixTimeSeconds()}:d> par <@{w.RevokedById}>"
+                : WarningRules.IsActive(w, now) ? "**actif**" : "expiré";
+            return $"`#{w.Id}` · <t:{w.CreatedAt.ToUnixTimeSeconds()}:d> · par <@{w.ModeratorId}> · {status}\n" +
+                   MessageFormat.Quote(w.Reason, InputCaps.WarnReason);
+        });
+
+        var builder = new EmbedBuilder()
+            .WithTitle("Avertissements")
+            .WithColor(active == 0 ? Color.LightGrey : Color.Orange)
+            .WithDescription($"<@{userId}> · {ActiveWarnings(active)} sur {history.Count}\n\n" + string.Join("\n\n", lines));
+        var footer = $"Un avertissement compte {WarningRules.Lifetime.Days} jours. /admin unwarn pour en révoquer un.";
+        if (history.Count > MaxWarningsShown)
+            footer = $"Et {history.Count - MaxWarningsShown} plus ancien(s) non affiché(s). " + footer;
+        return builder.WithFooter(footer).Build();
     }
 }

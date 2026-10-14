@@ -61,6 +61,13 @@ public static class InputCaps
     public const int MuteReason = 400;
 
     /// <summary>
+    /// A <c>/admin warn</c> reason. Quoted in the DM under her line (2000 per message), and
+    /// listed in full on <c>/admin warnings</c>, which shows up to
+    /// <c>AdminCards.MaxWarningsShown</c> of them in one embed description (4096).
+    /// </summary>
+    public const int WarnReason = 400;
+
+    /// <summary>
     /// A role name (<c>/config plynling-role create</c>) — Discord's own limit for role names.
     /// </summary>
     public const int RoleName = 100;

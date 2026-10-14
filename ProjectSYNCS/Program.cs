@@ -68,6 +68,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<InventoryService>();
         services.AddTransient<CosmeticService>();
         services.AddTransient<AdminStatsService>();
+        services.AddTransient<WarningService>();
         services.AddTransient<EconomyDashboardService>();
         services.AddTransient<QuizService>();
         services.AddTransient<VoiceCompanionService>();

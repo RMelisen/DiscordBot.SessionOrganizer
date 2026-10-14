@@ -3,6 +3,14 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.17.0 — 2026-10-14
+
+- New `/admin warn`, for staff: a formal warning, sent privately to the member by DM with the
+  reason, from the team rather than a named moderator. Warnings count for 90 days; from the third
+  active one, staff are offered a one-hour timeout button. Nothing is posted in the channel.
+- New `/admin warnings` to see someone's history, and `/admin unwarn` to revoke one (it stays in
+  the history but no longer counts).
+
 ## 6.16.1 — 2026-10-14
 
 - `/health` now posts its check-up in the channel for everyone to see, instead of only to the
