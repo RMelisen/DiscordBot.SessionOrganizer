@@ -1,0 +1,70 @@
+# Builds the Home Assistant add-on image and pushes it to GHCR, tagged with the version in
+# ProjectSYNCS/config.yaml. The Supervisor pulls that tag instead of building on the Pi.
+name: Publish add-on image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ProjectSYNCS/**'
+      - '.github/workflows/addon-image.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+# Queue rather than cancel: a cancelled run would leave its version without an image.
+concurrency:
+  group: addon-image
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # Native arm64 runner (free for public repos): no QEMU, a few minutes per build.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    env:
+      # Must match `image:` in config.yaml, with {arch} = aarch64. GHCR names are lowercase.
+      IMAGE: ghcr.io/rmelisen/aarch64-addon-projectsyncs
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+
+      - name: Read version
+        id: version
+        run: |
+          version=$(sed -n 's/^version:[[:space:]]*"\([^"]*\)".*/\1/p' ProjectSYNCS/config.yaml)
+          if [ -z "$version" ]; then echo "::error::No version in ProjectSYNCS/config.yaml"; exit 1; fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # A published tag is never overwritten: the Pi may already run it, and it would not
+          # re-pull the same version anyway.
+          if docker buildx imagetools inspect "$IMAGE:$version" > /dev/null 2>&1; then
+            echo "::notice::$IMAGE:$version already exists; bump config.yaml to ship a change."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and push
+        if: steps.version.outputs.exists != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          SOURCE: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          docker buildx create --use --driver docker-container
+          # --provenance=false keeps a plain single-platform manifest for the Supervisor's pull.
+          docker buildx build ProjectSYNCS \
+            --platform linux/arm64 \
+            --provenance=false \
+            --label "org.opencontainers.image.source=$SOURCE" \
+            --label "io.hass.type=addon" \
+            --label "io.hass.arch=aarch64" \
+            --label "io.hass.version=$VERSION" \
+            --cache-from "type=registry,ref=$IMAGE:buildcache" \
+            --cache-to "type=registry,ref=$IMAGE:buildcache,mode=max" \
+            --tag "$IMAGE:$VERSION" \
+            --push
