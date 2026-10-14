@@ -982,6 +982,23 @@ internal static class MessageCues
         return TokenizeOrdered(content).Any(_synthiaNames.Contains);
     }
 
+    // Her own name said in passing (« syncs a posté le sondage », « S.Y.N.C.S »), for
+    // ChatterService's talked-about branch. Only "syncs": a bare "sync" is ordinary vocabulary
+    // (« la sync a planté »), which the shutdown phrases can afford only because a verb sits right
+    // before it. Custom-emote markup is dropped first, since her own emotes are named after her
+    // (`<:syncs_happy:id>`), and so are links. Squashed so « synccs » still lands; spelled-out
+    // letters are glued back like IsMistakenIdentity does.
+    private const string SelfName = "syncs";
+    private static readonly Regex _link = new(@"https?://\S+", RegexOptions.Compiled);
+
+    public static bool NamesHer(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return false;
+        var words = TokenizeOrdered(_link.Replace(_customEmote.Replace(content, " "), " "))
+            .Select(Squash).ToList();
+        return words.Contains(SelfName) || GlueSpelledOutRuns(words).Contains(SelfName);
+    }
+
     // Her robot heart (docs/syncs-voice.md): who a message names, for RobotHeartService. Every
     // cue survives TokenizeOrdered ("WALL-E" and "WALL·E" become "wall", "e"); two-token cues
     // match on adjacent tokens only. "eve" counts alone (never as « EVE Online »), except where

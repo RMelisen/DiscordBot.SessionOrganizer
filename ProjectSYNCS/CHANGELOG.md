@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.15.0 — 2026-10-14
+
+- Quand on parle de SYNCS sans la mentionner, elle s'en rend compte : un « Eh ? » perplexe (pas plus d'une fois toutes les 5 minutes par salon), un bonjour si on la salue, et une réplique cinglante si on dit du mal d'elle.
+
 ## 6.14.3 — 2026-10-14
 
 - Quelques répliques et événements des Plynlings sont reformulés.

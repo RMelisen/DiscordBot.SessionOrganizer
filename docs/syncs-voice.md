@@ -35,6 +35,8 @@ to a few moments only (see below). It works because it's rare.
 | Someone is nice | Flustered, grudging, then denial | `NiceReplies` — "D'accord {0}, t'as gagné un point. Un seul. Profite ♡" |
 | Someone greets her | Cheeky warmth | `Greetings` — "Salut salut ! Installe-toi, je mords presque jamais" |
 | Tagged with nothing to say | Short, bored | `Interrogations` — "Pourquoi tu me tag ? Je suis occupée à exister moi" |
+| Her name said without a tag | Puzzled, suspicious, no idea why | `TalkedAboutLines` — "J'ai entendu mon nom. Pourquoi j'ai entendu mon nom ?" |
+| Someone is mean about her, untagged | Roast with the not-to-my-face angle | `BackbiteRoasts` — "C'est fou comme tout le monde est courageux quand je suis pas tag (¬_¬)" |
 | "bad bot" | Indignant *professional* pride, counter-attack on their lateness | `BadBotReplies` — "J'ai un uptime de 99,9%. Toi t'as un taux de présence de 40%" |
 | "bad girl" | Flustered, unrepentant | `BadGirlReplies` — "Bad girl. Bon. Je ferai pire la prochaine fois alors" |
 | Other bots | Petty jealousy, dry one-liners | `RivalMutters`, `JealousLines`, `RivalLevelUpLines` |

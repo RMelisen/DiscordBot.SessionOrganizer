@@ -45,6 +45,13 @@ internal sealed class ChatterService
     // Secret passphrase: anyone replying with exactly this forces a breakdown.
     private const string BreakdownPassphrase = "The cake is a lie.";
 
+    // Her name said without addressing her. The puzzled « Eh ? » is rationed per channel, so a
+    // conversation *about* her gets one, not one per message; a mean remark is answered per
+    // person instead, with a short gate that only stops a flood. Separate gates on purpose: a
+    // puzzled line must not shield the next insult from its roast.
+    private readonly CooldownGate<ulong> _talkedAboutGate = new(TimeSpan.FromMinutes(5));
+    private readonly CooldownGate<ulong> _backbiteGate = new(TimeSpan.FromMinutes(1), forget: TimeSpan.FromHours(1));
+
     public ChatterService(
         DiscordSocketClient client,
         BreakdownService breakdown,
@@ -117,10 +124,71 @@ internal sealed class ChatterService
             return;
         }
 
+        // Her name said in a conversation nobody addressed to her. After the threat above,
+        // which names her too and must win.
+        if (await TryHandleTalkedAboutAsync(message)) return;
+
         // Both eggs bait on the last word, so at most one can match; the first to fire
         // ends the pass either way.
         if (await TryQuoicoubehAsync(message)) return;
         await TryTronAsync(message);
+    }
+
+    // Someone said « syncs » without tagging or replying to her. She heard her name and has no
+    // idea why: a puzzled one-liner (Papa gets his own, she is glad he talks about her). A mean
+    // reading is the exception, and gets roasted as if it had been said to her face — from Papa
+    // it lands, as on the reply path. A greeting with her name is addressed to her ("salut
+    // syncs"), so it is greeted back like a mention would be. Guild only: in a DM her name is
+    // already addressing her.
+    //
+    // A mean reading is scored over the whole message, so "syncs, ce boss est nul" reads as an
+    // insult. Accepted: her name narrows the target far more than ReactionService's ambient read
+    // does, and an undeserved roast is her normal register.
+    private async Task<bool> TryHandleTalkedAboutAsync(SocketUserMessage message)
+    {
+        if (message.Channel is not SocketGuildChannel) return false;
+
+        var content = message.Content ?? string.Empty;
+        if (!MessageCues.NamesHer(content)) return false;
+        // Silent, and swallowed: nothing interrupts a breakdown.
+        if (_breakdown.IsActive(message.Channel.Id)) return true;
+
+        var mood = MessageCues.Analyze(content);
+        var isOwner = message.Author.Id == OwnerId;
+        string[] pool;
+        string what;
+
+        if (mood.Emotion == EmotionKind.Mean)
+        {
+            if (!_backbiteGate.TryClaim(message.Author.Id)) return false;
+            what = "backbite roast";
+            if (isOwner)
+                pool = BotResponses.OwnerMeanReplies;
+            else
+            {
+                pool = BotResponses.BackbiteRoasts;
+                // Same double weight as the reply path's roast.
+                if (BotResponses.PersonalComebacks.TryGetValue(message.Author.Id, out var personal))
+                    pool = pool.Concat(personal).Concat(personal).ToArray();
+            }
+        }
+        else if (mood.IsGreeting)
+        {
+            what = "named greeting";
+            pool = isOwner ? BotResponses.OwnerGreetings : BotResponses.Greetings;
+        }
+        else
+        {
+            if (!_talkedAboutGate.TryClaim(message.Channel.Id)) return false;
+            what = "talked-about line";
+            pool = isOwner ? BotResponses.TalkedAboutOwnerLines : BotResponses.TalkedAboutLines;
+        }
+
+        var name = ResolveName(message.Author);
+        _logger.LogInformation("{Name} said her name without addressing her — {What}.", name, what);
+        var line = string.Format(_picker.Pick(pool), name, CurrentWeekday());
+        await ReplyWithTypingAsync(message, line, what);
+        return true;
     }
 
     // Someone finished a sentence on a "si" sound ("merci", "aussi", "ici") and got
