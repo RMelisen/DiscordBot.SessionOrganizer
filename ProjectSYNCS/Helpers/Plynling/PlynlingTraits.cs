@@ -146,7 +146,7 @@ public static class PlynlingTraits
             S(dip: -1, rus: 3), A(ven: 20, com: -10, hon: -20, rat: -20, soc: -35), gain: 2),
         P("belief", "zealous", "Superstitieux", "Superstitieuse", "🍀", "Garde le même gland en poche depuis toujours. Le seul jour sans le gland, la pluie est tombée.",
             S(cou: 2), A(zea: 200, ene: 20, rat: -20)),
-        P("belief", "cynical", "Sceptique", "Sceptique", "🤨", "Un gland porte-bonheur ? Pas vu, pas cru.",
+        P("belief", "cynical", "Sceptique", "Sceptique", "🤨", "Un gland qui retient la pluie ? Pas vu, pas cru.",
             S(sag: 2, rus: 2), A(rat: 35, com: -10, ene: -20, zea: -200)),
         P("compassion", "compassionate", "Bienveillant", "Bienveillante", "💗", "Garde toujours une noisette en poche pour qui en aurait besoin.",
             S(dip: 2, rus: -2), A(com: 200, hon: 35, soc: 35, gre: -20)),

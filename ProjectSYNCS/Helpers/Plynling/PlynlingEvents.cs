@@ -2732,7 +2732,7 @@ public static class PlynlingEvents
             }),
 
         new EventDef("teen_runaway", EventType.Pulse, Teen, "Partir pour toujours",
-            "Ce matin, {A} a décidé de quitter le village. Pour toujours. Le baluchon est prêt : deux tartines, un caillou porte-bonheur, une chaussette de rechange. La lettre d'adieu est punaisée sur la porte. Sur son pont, le héron regarde {A} approcher avec beaucoup d'intérêt.",
+            "Ce matin, {A} a décidé de quitter le village. Pour toujours. Le baluchon est prêt : deux tartines, un joli caillou rond, une chaussette de rechange. La lettre d'adieu est punaisée sur la porte. Sur son pont, le héron regarde {A} approcher avec beaucoup d'intérêt.",
             new[]
             {
                 Plain("hill", "Partir loin, jusqu'au bout du chemin",

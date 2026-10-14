@@ -26,7 +26,7 @@ public static class PlynlingModifiers
     private static Dictionary<PlynlingStat, int> S(PlynlingStat stat, int v) => new() { [stat] = v };
 
     // Append new modifiers at the end; keys are stored. Retired keys stay retired — never reuse one:
-    // a row still holding it would read as the new meaning. Retired: "lucky" (« Porte-bonheur »), whose
+    // a row still holding it would read as the new meaning. Retired: "lucky", whose
     // uses became the story-specific rewards below. An unknown key on a row is skipped (Active).
     public static readonly IReadOnlyList<ModifierInfo> All = new[]
     {
