@@ -118,7 +118,7 @@ next to.
 | **Tipsy love** | Glazed eyes gazing up at nothing, goofy lopsided open smile, cheek squished in her palm, one small heart | LED **pink**, spots faint pink | Lovesick daydreaming, brain switched off. Not used anywhere yet |
 | **Formal** | Composed closed eyes, prim closed mouth, chin up, one finger pushing up small round glasses, clipboard held to her chest | Green | Formal relays: `OwnerAbsentNotices`, `OwnerReplyHeralds`. Not generated yet |
 | **Sad** | Exaggerated anime sadness: huge brimming, wobbling eyes that never spill, steep brows, big quivering `﹏` mouth, trembling lines, blush spread | LED dim green, spots off | Dead polls, empty quizzes, the lonely attic — the `(╥﹏╥)` lines that aren't Papa's. Not generated yet |
-| **Confused** | Head tilted, one eye squinting, brows uneven, crooked squiggle mouth, scratching her cap, cable curled into a `?` | Green | Messages she can't parse, « J'ai rien fait de mal ! ...Si ? ». Not generated yet |
+| **Confused** | Head tilted, one eye squinting, brows uneven, crooked squiggle mouth, two `?` floating by the cap | Green | Messages she can't parse, « J'ai rien fait de mal ! ...Si ? ». Not generated yet |
 | **Grumpy** | Head lowered, glaring up from under the cap, brows knitted, narrowed eyes on you, tight downturned pout, blush of annoyance | Green, steady | Annoyed, not furious: the server's habits (late again, « peut-être »), one tag too many. Not generated yet |
 
 The LED is the cheapest mood signal at emote size, where the face is a few pixels: green normal,
@@ -696,8 +696,7 @@ no watermark.
 ```
 
 **26. `syncs_confused`**: A message she can't parse, the self-correction « J'ai rien fait de mal !
-...Si ? ». The cable strand curled into a question mark is hers alone, and at 32 px it backs up the
-floating marks. Kept apart from `syncs_reboot` (spiral eyes, cap knocked askew: dazed) and
+...Si ? ». Kept apart from `syncs_reboot` (spiral eyes, cap knocked askew: dazed) and
 `syncs_shocked` (both eyes wide, round mouth: surprised): here the eyes are uneven, one squinting.
 Gemini may drop the question marks under « no text », so the prompt calls them symbols.
 
@@ -711,13 +710,11 @@ ending in a small plug. Big dark navy eyes with square pixel highlights, soft pi
 freckle dots, dark navy turtleneck collar just visible. Same character as the reference image.
 Expression: puzzled and lost: head tilted strongly to one side, one eye open normally and the other
 squinted half shut, one eyebrow raised high and the other pulled low; her mouth is a small crooked
-squiggle pushed to one side. One finger scratches the side of her cap, under the rim. The cable
-strand of her hair curls up into the shape of a question mark, the plug hanging at its tip. Two
-small bold dark navy question-mark symbols float beside her cap, one bigger than the other. Baffled,
-trying to make sense of something absurd; not dizzy, not shocked, not worried. Bold simple shapes,
-thick outline, high contrast. Plain flat solid cyan background (#00FFFF), no gradient, no shadow on
-the background. No words, no letters other than the two question-mark symbols, no logos, no
-watermark.
+squiggle pushed to one side. Two small bold dark navy question-mark symbols float beside her cap,
+one bigger than the other. Baffled, trying to make sense of something absurd; not dizzy, not
+shocked, not worried. Bold simple shapes, thick outline, high contrast. Plain flat solid cyan
+background (#00FFFF), no gradient, no shadow on the background. No words, no letters other than the
+two question-mark symbols, no logos, no watermark.
 ```
 
 **27. `syncs_grumpy`**: Annoyed, not furious: the server's habits, one tag too many. A silent glare
