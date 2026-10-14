@@ -171,6 +171,10 @@ public static class Emotes
     public const string SyncsConfusedId = "1559864472636751872";
     public const string SyncsConfused = $"<:syncs_confused:{SyncsConfusedId}>";
 
+    /// <summary>`:syncs_cool:`</summary>
+    public const string SyncsCoolId = "1559903984993566751";
+    public const string SyncsCool = $"<:syncs_cool:{SyncsCoolId}>";
+
     /// <summary>`:syncs_devoted:`</summary>
     public const string SyncsDevotedId = "1559544240386605076";
     public const string SyncsDevoted = $"<:syncs_devoted:{SyncsDevotedId}>";

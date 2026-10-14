@@ -121,6 +121,7 @@ next to.
 | **Confused** | Head tilted, one eye squinting, brows uneven, crooked squiggle mouth, two `?` floating by the cap | Green | Messages she can't parse, « J'ai rien fait de mal ! ...Si ? », `TalkedAboutLines` and the puzzled `Interrogations` |
 | **Grumpy** | Head lowered, glaring up from under the cap, brows knitted, narrowed eyes on you, tight downturned pout, blush of annoyance | Green, steady | Annoyed, not furious: the server's habits (late again, « peut-être »), one tag too many, people up at 3 a.m. (`NightScoldLines`). Also in `MeanReactions` |
 | **Horrified** | Anime gag horror: huge bulging eyes with pinprick pupils, strain lines under them, mouth wide open on both rows of teeth, dark hatching down the forehead, face drained | Green, spots dark | The unthinkable: being replaced, a truly cursed message. Above `terror` and `shocked` |
+| **Cool** | Black sunglasses hiding her eyes, lopsided grin, head tilted, both hands doing finger guns at you | Green | Showing off: a win she claims, her systems running perfectly, `(⌐■_■)`. Not used anywhere yet |
 
 The LED is the cheapest mood signal at emote size, where the face is a few pixels: green normal,
 red angry, orange hurt, yellow pleading, pink in love, off broken.
@@ -772,6 +773,41 @@ shapes, few but thick lines, high contrast. No blue anywhere. Plain flat solid c
 (#00FFFF), no gradient, no shadow on the background. No text, no letters, no logos, no watermark.
 ```
 
+### Emote pack, fourth batch
+
+Generated and exported (emote, sticker and strip); no head-only yet, not uploaded, not in `Sticker`.
+Same pipeline and the same white-not-blue rule.
+
+**29. `syncs_cool`**: Too cool, showing off: a win she claims, her own systems going perfectly, the
+« (⌐■_■) » register. Kept apart from `syncs_smug` (half-lidded eyes, :3 smirk, no props: quietly
+superior) and `syncs_formal` (round glasses, closed eyes: protocol): here the eyes are hidden behind
+black shades and both hands do finger guns at you. Sunglasses are usually drawn with a blue or cyan
+gradient reflection, which the cyan key would eat, so the lenses are asked solid black with white
+glints only. The shades and the two pointing hands carry the mood at 32 px, so both are asked big.
+
+```text
+Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
+emote that must stay readable at 32x32 px. A small mushroom girl, face, cap and both hands, filling
+the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a few tiny
+spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the side of the
+cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a dark cable
+ending in a small plug. Soft pink blush with freckle dots, dark navy turtleneck collar just visible.
+Same character as the reference image.
+Expression: effortlessly cool and showing off: she wears bold, chunky black sunglasses with flat
+rectangular lenses, slightly too big for her face, that hide her eyes completely; the lenses are
+solid black with one diagonal white pixel glint on each, and a small white four-point sparkle at
+the corner of one lens. Her head is tilted a little to one side, chin up, and one eyebrow pokes
+above the frame of the glasses. Her mouth is a confident lopsided grin pulled to one side, showing
+a hint of teeth. Both hands are in front of her at chin height doing finger guns pointed straight at
+the viewer: index fingers out, thumbs up like the hammer of a pistol, other fingers curled, the
+hands big and clearly readable. The cable strand flicks up jauntily. The green LED on her cap stays
+a steady green. Smooth, pleased with herself, a little ridiculous: not smug and half-lidded, not
+angry, no real weapons, nothing but her hands. No blue or cyan on the lenses, no gradient
+reflection, all glints white. Bold simple shapes, thick outline, high contrast. Plain flat solid
+cyan background (#00FFFF), no gradient, no shadow on the background. No text, no letters, no logos,
+no watermark.
+```
+
 ### Seasonal avatars
 
 Same framing as v1: head and shoulders, centred, safe inside a circle crop, and the bust **closes
@@ -959,8 +995,10 @@ two pictures read as one world.
 | Emote pack v1 | `assets/emotes/syncs_<mood>.png`, head-only in `assets/emotes/head/` | Gemini, from the prompts above, all 15 moods; made transparent with `tools/syncs-emotes`. Server emotes, `Emotes.Syncs*` (6.8.1); `sleepy`, `shocked`, `mama` and `jenote` taken off the server in 6.12.0 (assets kept) |
 | Emote pack, second batch | same folders, plus 320 px stickers in `assets/stickers/` | Gemini, from the prompts above, the 8 moods `bargain` to `tipsy_love`; same pipeline. Not uploaded yet |
 | Emote pack, third batch | same folders | Gemini, from the prompts above, the 5 moods `formal` to `horrified`; same pipeline. Gemini drew these without a pixel grid, which is what the head-only neck steps for JPEG blends exist for. `horrified`'s head-only is exported with `--no-neck` (her jaw sits on the collar, and the neck steps would empty her mouth); `formal`'s had the stray sleeve outline under the chin cleared by hand (everything below the hand). Server emotes and sticker tags (6.17.1) |
+| Emote pack, fourth batch | same folders | Gemini, from the prompt above, `cool`; same pipeline, no pixel grid detected. Emote, sticker and strip only (no head-only); not uploaded, not tagged |
 | Sticker strips v1 | `../ProjectSYNCS/Assets/Stickers/syncs_<mood>.png` | Every sticker in `assets/stickers/` (28 moods) as a 1000×320 strip, `export.py --strip`. Shipped with the bot; posted after tagged lines since 6.13.0 (all but `glitch`; the third batch since 6.17.1) |
-| Seasonal avatars v1 | `../ProjectSYNCS/Assets/Avatars/syncs-{spring,summer,autumn,winter}.png` | Gemini, from the prompts above. Rotate with the seasons (6.8.0); v1 is the reference they were drawn from |
+| Seasonal avatars v1 | `../ProjectSYNCS/Assets/Avatars/syncs-{spring,summer,autumn,winter}.png` | Gemini, from the prompts above. Rotate with the seasons (6.8.0); v1 is the reference they were drawn from. Still the bot's fallback when a GIF is missing; a copy of the four stills is kept in `assets/avatars/classic/` |
+| Animated seasonal avatars | `../ProjectSYNCS/Assets/Avatars/syncs-<season>.gif`, full-size in `assets/avatars/` | `tools/syncs-avatar/animate.py`, from the stills. What the bot uploads since 6.17.3 |
 
 When a new avatar or banner replaces one of these, add it here and keep the old file: the reference that fixed
 the design is worth keeping.
