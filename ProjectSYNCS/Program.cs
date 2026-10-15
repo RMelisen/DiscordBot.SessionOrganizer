@@ -77,6 +77,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<TonightService>();
         services.AddTransient<PersonalReminderStore>();
         services.AddTransient<ArcadeService>();
+        services.AddTransient<RecapService>();
         // The /arcade games are in memory (the tables) and run by timers (the runner): singletons.
         services.AddSingleton<ArcadeTables>();
         services.AddSingleton<ArcadeRunner>();
@@ -111,6 +112,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<SynthiaService>();
         // The robot heart's daily gate is in-memory: a singleton.
         services.AddSingleton<RobotHeartService>();
+        // Open /wouldyourather rounds and their votes are in memory: a singleton.
+        services.AddSingleton<WouldYouRatherService>();
         // The roll call and the voice seat keep in-memory clocks; both are fed by VoiceXpService's
         // sweep, and the seat reads the roll call's sessions (live-session tie-break).
         services.AddSingleton<SessionAttendanceService>();

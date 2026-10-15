@@ -77,6 +77,25 @@ bar from `LevelCurve.XpIntoLevel` over `XpForLevel` (the same pair printed benea
 classement" button reuses the paging id `level:page:Xp:AllTime:0` and replaces the card in place. No XP → niveau 0, `non
 classé`. A **bot** gets one fixed `const` refusal (not a pool — a refusal isn't chatter).
 
+**`/recap` is a card about one person over a window** (`RecapModule`, Components V2, the
+`StatsPeriodUi` row with prefix `recap:win:{userId}`, opening on **30 days**). `RecapService` reads
+only tables other subsystems already write, so it has no migration and no table of its own.
+- **All-time reads the totals; a window sums the daily buckets** (`MemberDailyStat`,
+  `VoiceCompanionDailyStat`, `BotFeedbackDailyStat`, `QuizDailyStat`, `ShameDailyStat`), filtered in
+  SQL on `Day`. Never one standing in for the other.
+- Level, rank and the quiz record are lifetime figures, shown all-time only.
+- Sessions and `/tonight` answers have no buckets, so their DateTimeOffset windows are applied in
+  memory.
+- **A missed session only counts if she called its roll** (`RecapSent`). Sessions from before
+  attendance existed must not read as no-shows.
+- The Plynling, its graves and the balance are state, never windowed.
+- There is **no per-person emote stat** (`EmoteStat` is per guild): don't invent one.
+
+Her last line comes from `RecapProfile.Classify`: the first clear trait in a fixed order (shame
+before hate before flaking … before « good bot »), with thresholds scaled to the window. Papa
+always gets `RecapOwnerLines`. Her own recap answers with `RecapHerselfLines` (go see `/health`),
+and another bot gets a `const` refusal.
+
 **`Helpers/Xp/LevelCardUi` holds the string work only** (medals, fr-FR grouping, block-glyph bar,
 row/card text) so it's checkable without a gateway. The bar clamps at both ends and treats a zero
 span as full — decoration must never throw.

@@ -61,7 +61,10 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/teams`** — Répartit ton salon vocal en équipes, au hasard ou équilibrées.\n" +
                 "**`/remindme`** — Je te rappelle un truc en DM (`10m`, `dans 2h`, `demain 9h`…). " +
                 "**`/reminders`** pour les voir ou les annuler.\n" +
-                "**`/rate`** — Je note n'importe quoi sur 10. Et je ne change jamais d'avis.")
+                "**`/rate`** — Je note n'importe quoi sur 10. Et je ne change jamais d'avis.\n" +
+                "**`/ship`** — Deux noms, un pourcentage. Je calcule si ça va ensemble. `@random` tire quelqu'un au sort.\n" +
+                "**`/blame`** — C'est la faute de qui ? Je tranche, parmi les gens en vocal.\n" +
+                "**`/wouldyourather`** — Tu préfères… ? Deux boutons, résultats dans 10 minutes.")
             .AddField("Commandes — Arcade",
                 "**`/arcade duel`** · **`heist`** — Pierre-feuille-ciseaux contre quelqu'un ; un casse chez Quokka en équipe.\n" +
                 "**`/arcade race`** — Une course de Plynlings, avec des paris.\n" +
@@ -83,6 +86,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "À la fin, je tire au sort et j'annonce toute seule.")
             .AddField("Commandes — Niveaux & statistiques",
                 "**`/level [user]`** — Ta carte : niveau, progression et rang.\n" +
+                "**`/recap [user]`** — Ton récap : XP, vocal, soirées, quiz et bêtises, sur 7 jours, 30 jours ou depuis toujours.\n" +
                 "**`/leaderboard`** — Le classement, 5 par page. Trois vues (**Niveaux**, **Réactions**, " +
                 "**Vocal**) et trois filtres (**depuis toujours**, **30 jours**, **7 jours**).\n" +
                 "**`/emotestats`** — Les emotes les plus utilisées, écrites et en réaction.\n" +

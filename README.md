@@ -20,11 +20,15 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/vote create · list · delete` | Vote on free-text options | everyone |
 | `/giveaway create · list · delete` | Prize draws | everyone |
 | `/level [user]` | Your card: level, rank, progress | everyone |
+| `/recap [user]` | Your recap over 7 days, 30 days or all time | everyone |
 | `/leaderboard` | Server ranking — three views, three windows | everyone |
 | `/emotestats` | Most-used emotes | everyone |
 | `/goodbot` | Who praised or scolded the bot | everyone |
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
 | `/rate <thing>` | A score out of 10, the same every time | everyone |
+| `/ship <a> <b>` | How well two things go together, out of 100 | everyone |
+| `/blame` | Whose fault it is, among the people in voice | everyone |
+| `/wouldyourather` | A two-button dilemma, revealed after 10 minutes | everyone |
 | `/tonight` | Who's up tonight — becomes a session once enough people are in | everyone |
 | `/teams` | Split a voice channel into teams | everyone |
 | `/remindme · /reminders` | A reminder by DM later; list or cancel yours | everyone |
@@ -119,6 +123,15 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
   in the channel where you asked. **`/reminders`** lists yours and cancels one.
 - **`/rate thing`** — a score out of 10, hashed from the text: the same thing always gets the same
   score, whoever asks. A few names get a verdict of their own.
+- **`/ship a b`** — how well two things go together, out of 100: people, games, food. Hashed like
+  `/rate`, so the same pair always gets the same score, in either order, with a couple's name when
+  it's an ordinary pair. Some pairs get a verdict of their own, especially when she's one of them.
+  `@random` (or `au hasard`) on either side, or leaving `b` empty, draws someone from the server.
+- **`/blame [what] [channel]`** — whose fault it is, drawn from the people in a voice channel
+  (yours by default). Quokka is always a suspect, even when he isn't there.
+- **`/wouldyourather [a] [b]`** — a « tu préfères… » with two buttons: one of her dilemmas, or your
+  own two options. Votes stay hidden for 10 minutes, then she reveals the split, who chose what,
+  and her own pick. Open dilemmas don't survive a restart.
 
 ### Levels & XP
 
@@ -150,6 +163,10 @@ Vocal leaderboard stays honest about time actually spent.
 
 - **`/level [user]`** — a card: avatar, level, rank, and a progress bar toward the
   next level. No filters — it's a profile, not a ranking.
+- **`/recap [user]`** — a personal recap over **30 days** (default), **7 days** or **all time**: XP
+  (with level and rank all-time), reactions and voice time, time in voice with her, good/bad bot,
+  sessions joined and attended, `/tonight` answers, quiz wins, the current Plynling and its graves,
+  cailloux, and the wall of shame — then one line from her about what the numbers say.
 - **`/leaderboard`** — the ranked list, five per page, every row carrying that
   person's real avatar. Three buttons switch what it ranks — **Niveaux** (XP),
   **Réactions** (reactions added), **Vocal** (eligible time in voice) — and three more

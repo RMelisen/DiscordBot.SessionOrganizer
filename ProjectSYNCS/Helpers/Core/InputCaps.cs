@@ -94,4 +94,20 @@ public static class InputCaps
     /// in the session's title — so it shares <see cref="Title"/>'s budget.
     /// </summary>
     public const int TonightGame = Title;
+
+    /// <summary>
+    /// Each side of a <c>/ship</c>. Both are quoted on one line above her verdict.
+    /// </summary>
+    public const int Ship = 100;
+
+    /// <summary>
+    /// What <c>/blame</c> is about (« la défaite », « le ping »). Quoted above her verdict.
+    /// </summary>
+    public const int Blame = 100;
+
+    /// <summary>
+    /// Each option of a custom <c>/wouldyourather</c>. Shown in the card's embed description,
+    /// both of them, and again in her own pick on the result.
+    /// </summary>
+    public const int WyrOption = 80;
 }

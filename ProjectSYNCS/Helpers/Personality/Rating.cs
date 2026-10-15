@@ -76,14 +76,9 @@ public static partial class Rating
         // « moi » / « moi-même » is the asker, exactly as if they had mentioned themselves: Papa
         // rating « moi » is Papa, Tata is Tata, and anyone else hashes as their own mention would
         // (the word becomes their id), so « moi » and « @me » always agree.
-        var text = Normalize(subject);
+        var (text, aboutSelf) = ReplaceSelf(Normalize(subject), askerId);
         var padded = $" {text} ";
-        if (SelfWords.Any(w => padded.Contains($" {w} ")))
-        {
-            mentioned.Add(askerId);
-            foreach (var w in SelfWords) padded = padded.Replace($" {w} ", $" {askerId} ");
-            text = padded.Trim();
-        }
+        if (aboutSelf) mentioned.Add(askerId);
 
         if (mentioned.Contains(selfId)) return new(RatingKind.Herself, 10);
         if (mentioned.Contains(ownerId)) return new(RatingKind.Owner, 10, askerId == ownerId && mentioned.Contains(askerId));
@@ -106,6 +101,20 @@ public static partial class Rating
         }
 
         return new(RatingKind.Normal, (int)(StableRoll.Unit(hash, ScoreSalt, 0) * 11));
+    }
+
+    /// <summary>
+    /// What a subject hashes as: normalised, with « moi » / « moi-même » turned into the asker's
+    /// id, so « moi » and the asker's own mention are the same key. /ship compares two of these.
+    /// </summary>
+    public static string Key(string subject, ulong askerId) => ReplaceSelf(Normalize(subject), askerId).Text;
+
+    private static (string Text, bool AboutSelf) ReplaceSelf(string text, ulong askerId)
+    {
+        var padded = $" {text} ";
+        if (!SelfWords.Any(w => padded.Contains($" {w} "))) return (text, false);
+        foreach (var w in SelfWords) padded = padded.Replace($" {w} ", $" {askerId} ");
+        return (padded.Trim(), true);
     }
 
     // −1 to −10, stable for the same text like every other score.
@@ -135,8 +144,9 @@ public static partial class Rating
         return sb.ToString();
     }
 
-    // FNV-1a 32-bit over the UTF-16 code units: stable across runs and machines.
-    private static int Hash(string text)
+    // FNV-1a 32-bit over the UTF-16 code units: stable across runs and machines. Shared with
+    // /ship (Shipping) and /wouldyourather's pick, so there is one stable text hash.
+    public static int Hash(string text)
     {
         var h = 2166136261u;
         foreach (var c in text)

@@ -3,6 +3,16 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.20.0 — 2026-10-15
+
+- New `/recap [user]`: your numbers over 7 days, 30 days or all time (XP, voice, sessions, quiz,
+  Plynling, cailloux, the wall of shame), with her verdict.
+- New `/ship a b`: how well two things go together, out of 100, the same every time. She has
+  opinions about some pairs. `@random` (or an empty `b`) draws someone from the server.
+- New `/blame`: whose fault it is, picked from the people in voice. Quokka is always a suspect.
+- New `/wouldyourather`: a two-button dilemma, hers or yours; votes are revealed after 10 minutes,
+  along with her own pick.
+
 ## 6.19.0 — 2026-10-15
 
 - Eight new `/arcade` games:
