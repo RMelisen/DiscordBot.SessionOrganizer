@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.17.8 — 2026-10-15
+
+- `/work` has 100 new shifts, some borrowed from real oddball jobs (dog food taster, professional
+  sleeper, golf ball diver…), others straight from the village and her attic.
+- One more name makes SYNCS react: a very polite admirer she is flattered by, and not interested in.
+
 ## 6.17.7 — 2026-10-15
 
 - Two new stickers she can post after her lines: a too-cool face in sunglasses, and a serene,

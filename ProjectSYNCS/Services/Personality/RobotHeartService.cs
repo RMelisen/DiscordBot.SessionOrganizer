@@ -6,7 +6,7 @@ using ProjectSYNCS.Helpers;
 namespace ProjectSYNCS.Services;
 
 // Her robot heart (docs/syncs-voice.md): someone names WALL-E, EVE, GLaDOS, Wheatley, a robot
-// vacuum, Monika, 2B or Voyager 1. The rules are Helpers/Personality/RobotHeart.
+// vacuum, Monika, 2B, Voyager 1 or JARVIS. The rules are Helpers/Personality/RobotHeart.
 //
 // - Named in passing (not aimed at her): an emote reaction, every time — taken back 5–7 s later
 //   for the ones she's in denial about — and 40% of the time the same words as below too (with no

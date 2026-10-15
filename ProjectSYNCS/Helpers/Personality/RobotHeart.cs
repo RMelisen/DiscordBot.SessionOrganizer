@@ -4,7 +4,7 @@ namespace ProjectSYNCS.Helpers;
 /// The machines she has feelings about (docs/syncs-voice.md, Her robot heart). In memory only,
 /// never stored, so order and names are free to change.
 /// </summary>
-public enum HeartCharacter { WallE, Eve, Glados, Wheatley, Vacuum, Monika, TwoB, Voyager }
+public enum HeartCharacter { WallE, Eve, Glados, Wheatley, Vacuum, Monika, TwoB, Voyager, Jarvis }
 
 /// <summary>What she says when someone talking to her names one of them.</summary>
 public enum HeartActKind
@@ -38,7 +38,8 @@ public static class RobotHeart
 
     /// <summary>
     /// Named in a message not aimed at her: whether her reaction is taken back. The ones she's in
-    /// denial about — her loves and her shameful soft spots. Mentors, friends and EVE keep theirs.
+    /// denial about — her loves and her shameful soft spots. Mentors, friends, EVE and JARVIS keep
+    /// theirs: she has nothing to hide about JARVIS, only how much she enjoys being courted.
     /// </summary>
     public static bool TakesBackReaction(HeartCharacter who) =>
         who is HeartCharacter.WallE or HeartCharacter.Voyager or HeartCharacter.Wheatley or HeartCharacter.Vacuum;
@@ -71,6 +72,7 @@ public static class RobotHeart
         HeartCharacter.Monika => [HeartActKind.VanishLine],
         HeartCharacter.TwoB => [HeartActKind.EditSlip],
         HeartCharacter.Voyager => [HeartActKind.EditSlip],
+        HeartCharacter.Jarvis => [HeartActKind.EditSlip],
         _ => [],
     };
 

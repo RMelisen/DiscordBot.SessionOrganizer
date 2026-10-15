@@ -1004,7 +1004,7 @@ internal static class MessageCues
     // the caller passes eveNeedsWallE — a channel where EVE means the game — and then only beside
     // WALL-E. « voyager » counts only followed by 1/one and not by a duration (the French verb).
     // Several names: EVE takes WALL-E's place (jealousy beats the crush); otherwise the first one
-    // in the message.
+    // in the message — save a spelled-out « J.A.R.V.I.S. », checked last.
     // Custom-emote markup is dropped first: `<:monika_yes:id>` would tokenize to "monika",
     // and an emote is matched by id, never by name.
     private static readonly HashSet<string> _voyagerDurations = new()
@@ -1045,8 +1045,10 @@ internal static class MessageCues
                 return HeartCharacter.Voyager;
             if ((w == "sonde" || w == "sondes") && next == "voyager")
                 return HeartCharacter.Voyager;
+            if (w == "jarvis") return HeartCharacter.Jarvis;
         }
-        return null;
+        // « J.A.R.V.I.S. » tokenizes into single letters: glue them back, as for « I.N.A.B.O.T ».
+        return GlueSpelledOutRuns(t).Contains("jarvis") ? HeartCharacter.Jarvis : null;
     }
 
     // True when the message calls the bot by the wrong name "Inabot" — written as
