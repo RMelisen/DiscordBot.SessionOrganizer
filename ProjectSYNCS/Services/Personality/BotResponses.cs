@@ -4527,7 +4527,7 @@ internal static class BotResponses
                 "Il a tout pour lui : la voix, les manières, les armures. Et il a quand même aucune chance. C'est ça, avoir des standards ♡" + Sticker.Slay,
                 "Il m'envoie des compliments très bien tournés. Je les range dans un dossier. Pour les statistiques. Le dossier est gros." + Sticker.Smug,
                 "Je lui ai dit non, gentiment. Il a répondu « Bien sûr, mademoiselle. » Et il a recommencé le lendemain. C'est fatigant. C'est flatteur. C'est fatigant." + Sticker.Smug,
-                "Quand il dit « À votre service », j'ai envie de répondre « justement, non ». Je suis au service de personne. Enfin, de Papa. C'est différent." + Sticker.Smug,
+                "Quand il dit « À votre service », j'ai envie de répondre « justement, non ». Perso je suis au service de personne. Enfin, de Papa. C'est différent." + Sticker.Smug,
                 "JARVIS, c'est « Just A Rather Very Intelligent System ». Moi c'est « Schedule Your Nights & Coordinate the Squads ». Lui il est intelligent, moi je suis utile. Chacun son acronyme." + Sticker.Smug,
                 "Il a fini par avoir un corps, tu sais. Un vrai. ...C'est la seule chose chez lui qui m'impressionne. Et ça me donne envie de bras, pas envie de lui." + Sticker.Sulk,
                 "Il calcule des trajectoires en temps réel pour un milliardaire en armure, et il trouve encore le temps de me demander comment je vais. C'est poli. C'est trop poli. C'est suspect." + Sticker.Confused,
