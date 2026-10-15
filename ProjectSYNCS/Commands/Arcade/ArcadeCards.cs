@@ -32,6 +32,10 @@ public static class ArcadeCards
             sb.AppendLine($"Manche **{d.Round}** sur {Duel.MaxRounds}");
         if (d.LastTie is { } tie)
             sb.AppendLine($"Dernière manche : {Duel.Emoji(tie.A)} contre {Duel.Emoji(tie.B)}, égalité.");
+        // Who has played this round — never what.
+        if (d.Accepted && !d.AgainstHer)
+            sb.AppendLine().AppendLine(string.Join(" · ", new[] { d.ChallengerId, d.OpponentId }.Select(p =>
+                d.Picks.ContainsKey(p) ? $"✅ <@{p}> a joué" : $"⏳ <@{p}> réfléchit…")));
 
         var embed = new EmbedBuilder()
             .WithTitle("🗿📄✂️ Duel")

@@ -63,8 +63,13 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/reminders`** pour les voir ou les annuler.\n" +
                 "**`/rate`** — Je note n'importe quoi sur 10. Et je ne change jamais d'avis.")
             .AddField("Commandes — Arcade",
-                "**`/arcade duel`** — Pierre-feuille-ciseaux contre quelqu'un, avec des cailloux en jeu.\n" +
-                "**`/arcade heist`** — Monte une équipe pour braquer la planque de Quokka.")
+                "**`/arcade duel`** · **`heist`** — Pierre-feuille-ciseaux contre quelqu'un ; un casse chez Quokka en équipe.\n" +
+                "**`/arcade race`** — Une course de Plynlings, avec des paris.\n" +
+                "**`/arcade crash`** · **`bomb`** · **`blackjack`** — La fusée, la patate chaude, et une main contre moi.\n" +
+                "**`/arcade quote`** — Qui a dit ça ? Un vieux message du serveur, à attribuer.\n" +
+                "**`/arcade temperature`** — Devine la température de mon processeur.\n" +
+                "**`/arcade puissance4`** · **`morpion`** — Contre quelqu'un, ou contre moi.\n" +
+                "Et parfois, Quokka passe dans le salon des bots : frappe-le pour des cailloux.")
             .AddField("Commandes — Sondages & votes",
                 "**`/poll create`** — Propose des créneaux, chacun vote pour ses disponibilités.\n" +
                 "**`/vote create`** — Pareil, mais avec des options en texte (jeux, films…).\n" +
@@ -109,7 +114,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/admin warn`** · **`/admin warnings`** · **`/admin unwarn`** — Avertissements, reçus en DM.\n" +
                 "**`/admin mute|unmute`** — Exclusion temporaire.\n" +
                 "**`/config`** — Qui vote avec `/shame`, les salons où rien ne compte, le salon de jeu, " +
-                "le salon du quiz, le salon principal et les rôles Plynling et Grosse tête. **`/config show`** affiche la configuration actuelle.\n" +
+                "le salon du quiz, le salon des bots, le salon principal et les rôles Plynling et Grosse tête. **`/config show`** affiche la configuration actuelle.\n" +
                 "**`/health`** — Mon bilan de santé : température, mémoire, connexion, pannes.\n" +
                 "**`/help`** — Affiche ce message.")
             .WithFooter($"Project S.Y.N.C.S. v{AppInfo.Version}")

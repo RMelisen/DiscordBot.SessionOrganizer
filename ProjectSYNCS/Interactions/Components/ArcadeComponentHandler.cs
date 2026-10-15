@@ -65,15 +65,18 @@ public class ArcadeComponentHandler : InteractionModuleBase<SocketInteractionCon
             return;
         }
 
-        var line = string.Format(_picker.Pick(BotResponses.DuelAcceptedLines), $"<@{duel.ChallengerId}>", $"<@{duel.OpponentId}>");
-        await Component.UpdateAsync(p =>
-        {
-            p.Content = "";
-            p.Embed = ArcadeCards.DuelEmbed(duel, line,
-                $"Choisissez vos coups en secret · {Duel.PickWindow.TotalMinutes:0} minutes, sinon j'annule.");
-            p.Components = ArcadeCards.DuelPickButton(duel);
-        });
+        duel.Line = string.Format(_picker.Pick(BotResponses.DuelAcceptedLines), $"<@{duel.ChallengerId}>", $"<@{duel.OpponentId}>");
+        await DeferAsync();
+        // The card moves to the bottom, and the new message pings the challenger: they may have
+        // wandered off in ten minutes.
+        await _runner.RepostDuelAsync(duel, StageCard(id), ArcadeCards.DuelPickButton(duel),
+            $"<@{duel.ChallengerId}>, <@{duel.OpponentId}> a accepté ton défi ! À toi de choisir ton coup.",
+            new[] { duel.ChallengerId });
     }
+
+    // The current card of a running duel, built under the lock so the picks it shows are consistent.
+    private Embed StageCard(int id) => _tables.WithDuel(id, d => d is null ? null : ArcadeCards.DuelEmbed(d, d.Line,
+        $"Choisissez vos coups en secret · {Duel.PickWindow.TotalMinutes:0} minutes, sinon j'annule."))!;
 
     // The opponent refuses, or the challenger withdraws before an answer.
     [ComponentInteraction("duel:decline:*")]
@@ -97,12 +100,8 @@ public class ArcadeComponentHandler : InteractionModuleBase<SocketInteractionCon
 
         var pool = Context.User.Id == duel.OpponentId ? BotResponses.DuelDeclinedLines : BotResponses.DuelWithdrawnLines;
         var line = string.Format(_picker.Pick(pool), $"<@{Context.User.Id}>");
-        await Component.UpdateAsync(p =>
-        {
-            p.Content = "";
-            p.Embed = ArcadeCards.DuelClosedEmbed(duel, line);
-            p.Components = new ComponentBuilder().Build();
-        });
+        await DeferAsync();
+        await _runner.RepostDuelAsync(duel, ArcadeCards.DuelClosedEmbed(duel, line), null);
     }
 
     // Opens the private row of moves.
@@ -161,6 +160,7 @@ public class ArcadeComponentHandler : InteractionModuleBase<SocketInteractionCon
             d.Round++;
             d.Picks.Clear();
             d.PhaseStartedAt = DateTimeOffset.UtcNow;
+            d.Line = _picker.Pick(BotResponses.DuelTieLines);
             return MoveOutcome.Tie;
         });
 
@@ -187,18 +187,17 @@ public class ArcadeComponentHandler : InteractionModuleBase<SocketInteractionCon
 
         switch (outcome)
         {
+            // One has played and the other hasn't yet, or a tie starts a new round: either way the
+            // card comes down to the bottom to show it.
             case MoveOutcome.Waiting:
-                return;
-
             case MoveOutcome.Tie:
-                await _runner.EditAsync(duel.GuildId, duel.ChannelId, duel.MessageId,
-                    ArcadeCards.DuelEmbed(duel, _picker.Pick(BotResponses.DuelTieLines)), ArcadeCards.DuelPickButton(duel));
+                if (_tables.GetDuel(id) is null) return;
+                await _runner.RepostDuelAsync(duel, StageCard(id), ArcadeCards.DuelPickButton(duel));
                 return;
 
             case MoveOutcome.Draw:
                 if (!_tables.EndDuel(id)) return;
-                await _runner.EditAsync(duel.GuildId, duel.ChannelId, duel.MessageId,
-                    ArcadeCards.DuelClosedEmbed(duel, _picker.Pick(BotResponses.DuelDrawLines)), null);
+                await _runner.RepostDuelAsync(duel, ArcadeCards.DuelClosedEmbed(duel, _picker.Pick(BotResponses.DuelDrawLines)), null);
                 return;
 
             case MoveOutcome.Resolve:

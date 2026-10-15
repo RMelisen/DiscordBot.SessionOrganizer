@@ -1,12 +1,13 @@
 using System.Text;
 using Discord;
+using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Commands;
 
 // /config show — one Components V2 card, a section per setting. Static and Context-free, so
-// its size is checkable without a gateway: 1 container + 1 title + 9 × (separator + text)
-// = 20 of the 40 components.
+// its size is checkable without a gateway: 1 container + 1 title + 10 × (separator + text)
+// = 22 of the 40 components.
 //
 // Every list shows its hardcoded part and its configured part apart: only one of them can
 // be edited, and merging them would invite someone to remove a hardcoded entry and be
@@ -17,10 +18,11 @@ public static class ConfigCards
     /// <param name="config">This guild's configuration.</param>
     /// <param name="isHomeGuild">Whether the main and idle channels apply here at all.</param>
     /// <param name="defaultGameChannelHere">Whether the hardcoded game channel lives in this guild.</param>
+    /// <param name="defaultBotsChannelHere">Whether the hardcoded bots channel lives in this guild.</param>
     /// <param name="plynlingRoleProblem">Why she can't manage the configured Plynling role, or null.</param>
     /// <param name="quizRoleProblem">Same, for the Grosse tête role.</param>
     public static MessageComponent Build(GuildConfig config, bool isHomeGuild, bool defaultGameChannelHere,
-        string? plynlingRoleProblem, string? quizRoleProblem)
+        bool defaultBotsChannelHere, string? plynlingRoleProblem, string? quizRoleProblem)
     {
         var container = new ContainerBuilder()
             .WithAccentColor(Color.Purple)
@@ -52,6 +54,12 @@ public static class ConfigCards
             "> " + Single(config.GameChannelId,
                 defaultGameChannelHere ? PlynlingAnnouncer.DefaultGameChannelId : 0,
                 "*aucun : pas d'annonces sur ce serveur*"));
+
+        Section(container,
+            "**Salon des bots** — ce qu'elle annonce d'elle-même et qui compte peu (les visites de Quokka)",
+            "> " + Single(config.BotsChannelId,
+                defaultBotsChannelHere ? BotsChannel.DefaultId : 0,
+                "*aucun : le salon de jeu prend le relais*"));
 
         Section(container,
             "**Salon du quiz** — où elle pose ses questions, jusqu'à deux fois par jour",

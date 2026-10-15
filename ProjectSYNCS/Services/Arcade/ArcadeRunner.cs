@@ -63,7 +63,7 @@ public sealed class ArcadeRunner
                 var duel = _tables.GetDuel(id);
                 if (duel is null || !_tables.EndDuel(id)) return;
                 var line = _picker.Pick(accepted ? BotResponses.DuelAbandonedLines : BotResponses.DuelExpiredLines);
-                await EditAsync(duel.GuildId, duel.ChannelId, duel.MessageId, ArcadeCards.DuelClosedEmbed(duel, line), null);
+                await RepostDuelAsync(duel, ArcadeCards.DuelClosedEmbed(duel, line), null);
                 return;
             }
         }
@@ -116,8 +116,48 @@ public sealed class ArcadeRunner
             }
         }
 
-        await EditAsync(duel.GuildId, duel.ChannelId, duel.MessageId,
-            ArcadeCards.DuelResultEmbed(duel, challengerMove, opponentMove, line, outcome), null);
+        await RepostDuelAsync(duel, ArcadeCards.DuelResultEmbed(duel, challengerMove, opponentMove, line, outcome), null);
+    }
+
+    /// <summary>
+    /// Every step of a duel (accepted, a move played, a tie, the end) moves its card to the bottom of
+    /// the channel: a new message, then the old one deleted, so the duel never ends up buried under
+    /// the conversation. A new message also notifies, which an edit never does: <paramref name="ping"/>
+    /// is who gets pinged (users only; nobody by default). Swallows and logs — a lost repost leaves
+    /// the old card, which still works.
+    /// </summary>
+    public async Task RepostDuelAsync(DuelGame duel, Embed embed, MessageComponent? components,
+        string? content = null, IReadOnlyCollection<ulong>? ping = null)
+    {
+        await duel.CardGate.WaitAsync();
+        try
+        {
+            if (_client.GetGuild(duel.GuildId)?.GetTextChannel(duel.ChannelId) is not { } channel) return;
+            var old = duel.MessageId;
+            var message = await channel.SendMessageAsync(content, embed: embed,
+                components: components ?? new ComponentBuilder().Build(),
+                allowedMentions: ping is null ? AllowedMentions.None : new AllowedMentions { UserIds = ping.ToList() });
+            duel.MessageId = message.Id;
+            if (old != 0)
+            {
+                try
+                {
+                    await channel.DeleteMessageAsync(old);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogInformation(ex, "Old duel card {MessageId} not deleted.", old);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to repost duel {DuelId}'s card.", duel.Id);
+        }
+        finally
+        {
+            duel.CardGate.Release();
+        }
     }
 
     // ---- Heists -----------------------------------------------------------------------------------
@@ -234,6 +274,58 @@ public sealed class ArcadeRunner
     }
 
     // ---- Shared -----------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Fire-and-forget for a game's timers and long narrations: off the click that started them,
+    /// and catching everything, so a failure is logged and never escapes onto the gateway.
+    /// </summary>
+    public void Run(string what, Func<Task> work) => _ = Task.Run(async () =>
+    {
+        try
+        {
+            await work();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Arcade task failed: {What}.", what);
+        }
+    });
+
+    /// <summary><see cref="ArcadeService.SettleAsync(ulong, IReadOnlyList{ValueTuple{ulong, long}}, Func{IReadOnlyList{ulong}, IReadOnlyDictionary{ulong, long}})"/> in its own scope.</summary>
+    public async Task<ArcadeSettlement> SettleAsync(ulong guildId, IReadOnlyList<(ulong Player, long Stake)> stakes,
+        Func<IReadOnlyList<ulong>, IReadOnlyDictionary<ulong, long>> decide)
+    {
+        await using var scope = _services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<ArcadeService>().SettleAsync(guildId, stakes, decide);
+    }
+
+    /// <summary>
+    /// A new message in the game's channel (an edit never notifies), pinging exactly
+    /// <paramref name="ping"/> — users only. Swallows and logs.
+    /// </summary>
+    public async Task PostAsync(ArcadeGame game, string text, IReadOnlyCollection<ulong> ping)
+    {
+        try
+        {
+            if (_client.GetGuild(game.GuildId)?.GetTextChannel(game.ChannelId) is not { } channel) return;
+            await channel.SendMessageAsync(text,
+                allowedMentions: new AllowedMentions { UserIds = ping.ToList() },
+                messageReference: game.MessageId == 0 ? null : new MessageReference(game.MessageId));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to post for arcade game {GameId}.", game.Id);
+        }
+    }
+
+    /// <summary>Redraws a game's card; same contract as the duel and heist overload.</summary>
+    public Task EditAsync(ArcadeGame game, Embed embed, MessageComponent? components) =>
+        EditAsync(game.GuildId, game.ChannelId, game.MessageId, embed, components);
+
+    public ResponsePicker Picker => _picker;
+
+    // Her own id: she can own a racer (Ping-Qilin) but never collects a bonus.
+    public ulong BotId => _client.CurrentUser?.Id ?? 0;
 
     // Discord side effects never break a game: a failed edit skips the frame and is logged.
     public async Task EditAsync(ulong guildId, ulong channelId, ulong messageId, Embed embed, MessageComponent? components)

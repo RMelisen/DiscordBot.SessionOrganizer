@@ -67,6 +67,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
 
         var config = await _config.GetAsync(Context.Guild.Id);
         bool defaultGameHere = Context.Guild.GetChannel(PlynlingAnnouncer.DefaultGameChannelId) is not null;
+        bool defaultBotsHere = Context.Guild.GetChannel(BotsChannel.DefaultId) is not null;
 
         var roleProblem = config.PlynlingRoleId == 0
             ? null
@@ -76,7 +77,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
             : RoleMirror.Problem(Context.Guild, Context.Guild.GetRole(config.QuizRoleId), adopting: false, RoleKind.QuizCrown);
 
         await FollowupAsync(
-            components: ConfigCards.Build(config, Context.Guild.Id == HomeGuild.Id, defaultGameHere, roleProblem, quizRoleProblem),
+            components: ConfigCards.Build(config, Context.Guild.Id == HomeGuild.Id, defaultGameHere, defaultBotsHere, roleProblem, quizRoleProblem),
             flags: MessageFlags.ComponentsV2,
             ephemeral: true,
             allowedMentions: AllowedMentions.None);
@@ -382,6 +383,50 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
                 Context.Guild.GetChannel(PlynlingAnnouncer.DefaultGameChannelId) is not null
                     ? $"Retour au salon par défaut, <#{PlynlingAnnouncer.DefaultGameChannelId}> (ᵕ • ᴗ •)"
                     : "Plus de salon de jeu ici : les Plynlings de ce serveur ne seront plus annoncés (ᵕ • ᴗ •)");
+        }
+    }
+
+    [Group("bots-channel", "Le salon où elle poste ce qui compte peu (les visites de Quokka)")]
+    public class BotsChannelModule : InteractionModuleBase<SocketInteractionContext>
+    {
+        private readonly GuildConfigService _config;
+
+        public BotsChannelModule(GuildConfigService config)
+        {
+            _config = config;
+        }
+
+        [SlashCommand("set", "Choisir le salon des bots : ses annonces sans importance, comme Quokka")]
+        public async Task SetAsync(
+            [Summary("channel", "Le salon des bots")]
+            [ChannelTypes(ChannelType.Text, ChannelType.News)] IGuildChannel channel)
+        {
+            if (!await BeginAsync(Context)) return;
+
+            if (!CanSendIn(Context.Guild, channel))
+            {
+                await SayAsync(Context, CannotSend(channel));
+                return;
+            }
+
+            // The default stored as zero, like the game channel.
+            await _config.SetBotsChannelAsync(Context.Guild.Id, channel.Id == BotsChannel.DefaultId ? 0 : channel.Id);
+
+            await SayAsync(Context,
+                $"Mes annonces sans importance iront dans <#{channel.Id}>. Quokka aussi, quand il passera {Emotes.Sparkle}");
+        }
+
+        [SlashCommand("clear", "Revenir au salon des bots par défaut")]
+        public async Task ClearAsync()
+        {
+            if (!await BeginAsync(Context)) return;
+
+            await _config.SetBotsChannelAsync(Context.Guild.Id, 0);
+
+            await SayAsync(Context,
+                Context.Guild.GetChannel(BotsChannel.DefaultId) is not null
+                    ? $"Retour au salon par défaut, <#{BotsChannel.DefaultId}> (ᵕ • ᴗ •)"
+                    : "Plus de salon des bots ici : ses annonces passeront par le salon de jeu (ᵕ • ᴗ •)");
         }
     }
 

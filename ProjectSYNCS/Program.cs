@@ -80,6 +80,7 @@ var host = Host.CreateDefaultBuilder(args)
         // The /arcade games are in memory (the tables) and run by timers (the runner): singletons.
         services.AddSingleton<ArcadeTables>();
         services.AddSingleton<ArcadeRunner>();
+        services.AddSingleton<PartyRunner>();
         services.AddSingleton<PlynlingCooldowns>();
         services.AddSingleton<TradeOffers>();
         services.AddSingleton<VisitStories>();
@@ -158,6 +159,10 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddHostedService<ApplicationEmojiService>();
         services.AddHostedService<PlynlingMascotService>();
         services.AddHostedService<SeasonalAvatarService>();
+        // Quokka's visits. One instance for both roles: the host runs its slots, BotService feeds it
+        // messages (the room-is-awake clock), /debug quokka spawns one on demand.
+        services.AddSingleton<QuokkaRaidService>();
+        services.AddHostedService(sp => sp.GetRequiredService<QuokkaRaidService>());
     })
     .Build();
 

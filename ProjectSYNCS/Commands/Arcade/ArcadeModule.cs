@@ -13,19 +13,25 @@ namespace ProjectSYNCS.Commands;
 // deferred reply can't turn a refusal private afterwards.
 [Group("arcade", "Les jeux de SYNCS, avec des cailloux en jeu")]
 [CommandContextType(InteractionContextType.Guild)]
-public class ArcadeModule : InteractionModuleBase<SocketInteractionContext>
+public partial class ArcadeModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly ArcadeTables _tables;
     private readonly ArcadeRunner _runner;
     private readonly ArcadeService _arcade;
     private readonly ResponsePicker _picker;
+    private readonly PlynlingService _plynlings;
+    // XpTracker is internal and a module's constructor is public: resolved when needed instead.
+    private readonly IServiceProvider _services;
 
-    public ArcadeModule(ArcadeTables tables, ArcadeRunner runner, ArcadeService arcade, ResponsePicker picker)
+    public ArcadeModule(ArcadeTables tables, ArcadeRunner runner, ArcadeService arcade, ResponsePicker picker,
+        PlynlingService plynlings, IServiceProvider services)
     {
         _tables = tables;
         _runner = runner;
         _arcade = arcade;
         _picker = picker;
+        _plynlings = plynlings;
+        _services = services;
     }
 
     [SlashCommand("duel", "Défier quelqu'un à pierre-feuille-ciseaux, avec des cailloux en jeu")]
@@ -72,13 +78,13 @@ public class ArcadeModule : InteractionModuleBase<SocketInteractionContext>
             if (againstHer)
             {
                 // No accept step: she always accepts. And always wins. She doesn't say so.
-                var line = string.Format(_picker.Pick(BotResponses.DuelHerAcceptLines), $"<@{Context.User.Id}>");
+                var line = duel.Line = string.Format(_picker.Pick(BotResponses.DuelHerAcceptLines), $"<@{Context.User.Id}>");
                 await RespondAsync(embed: ArcadeCards.DuelEmbed(duel, line),
                     components: ArcadeCards.DuelPickButton(duel), allowedMentions: AllowedMentions.None);
             }
             else
             {
-                var line = string.Format(_picker.Pick(BotResponses.DuelChallengeLines), $"<@{Context.User.Id}>", $"<@{opponent.Id}>");
+                var line = duel.Line = string.Format(_picker.Pick(BotResponses.DuelChallengeLines), $"<@{Context.User.Id}>", $"<@{opponent.Id}>");
                 // Challenging Papa: she warns the challenger. Talk only — the game stays fair.
                 if (opponent.Id == AvailabilityService.OwnerId)
                     line += "\n\n" + _picker.Pick(BotResponses.DuelOwnerWarningLines);

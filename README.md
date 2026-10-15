@@ -28,7 +28,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/tonight` | Who's up tonight — becomes a session once enough people are in | everyone |
 | `/teams` | Split a voice channel into teams | everyone |
 | `/remindme · /reminders` | A reminder by DM later; list or cancel yours | everyone |
-| `/arcade duel · heist` | Cailloux games: rock-paper-scissors, a group heist | everyone |
+| `/arcade duel · heist · race · crash · blackjack · bomb · quote · temperature · puissance4 · morpion` | Her games, mostly for cailloux | everyone |
 | `/shame` | The wall of shame | everyone |
 | `/quiz leaderboard` | Who wins her pop quiz | everyone |
 | `/plynling adopt · view · list · journal · relations · play · visit · passion · forage · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card). `/pl` is a shortcut for every one of them | everyone |
@@ -46,6 +46,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/admin plynling rename · resurrect · passion-reset · cure`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
 | `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
 | `/debug quiz` | Post or close a pop quiz, or crown the week, now (tests) | owner |
+| `/debug quokka` | Make Quokka show up in the bots channel now (tests) | owner |
 | `/health` | Her check-up: the Pi's temperature and power, her memory, the Discord connection, storage, the outage log | everyone |
 | `/help` | In-Discord usage guide | everyone |
 
@@ -410,6 +411,31 @@ is gone).
   crew leaves after 25 minutes, or when the organizer gives the signal. A bigger crew is likelier
   to succeed (30 % alone, up to 75 %) but splits the loot, so it's a gamble at any size. One heist
   at a time, and Quokka stays on alert for 6 hours after.
+- **`/arcade race`** — 3 to 6 of the server's living Plynlings (awake, not frozen, not dying) line
+  up; for 30 minutes people bet 10, 25, 50 or 100 on one of them. Courage and happiness make a
+  Plynling a favourite, the dice do the rest. Pari-mutuel: whoever backed the winner shares the
+  pool minus 10 %, and the winner's owner gets 15 cailloux. No Plynling is changed by racing.
+- **`/arcade crash`** — a rocket takes off after a minute of boarding (10 to 100 each); the
+  multiplier climbs until it explodes, at a point nobody knows. **Encaisser** locks in your
+  multiplier; whoever's still aboard at the explosion loses their stake. About one rocket in ten
+  never takes off.
+- **`/arcade blackjack stake`** — one hand against her: she stands on 17, a blackjack pays 3:2,
+  doubling on the first two cards. Fair: she teases, she doesn't cheat.
+- **`/arcade bomb`** — hot potato for 20 cailloux each, 3 to 8 players. The bomb lands on someone;
+  only they can pass it on, at random. The hidden fuse burns 20 to 60 seconds; whoever holds it at
+  the end loses the stake, shared among the others minus 10 %.
+- **`/arcade quote`** — she digs up an old message (over a week old, from a channel everyone can
+  read, not NSFW, not excluded, by someone still on the server) and offers four names. First right
+  guess wins 15 cailloux; one try each; the author can't play. Ten minutes, then she tells.
+- **`/arcade temperature`** — guess her CPU temperature (10 each, 10 minutes, at least two
+  players): the closest guess takes the pot minus 10 %. Only on the Pi, where she can feel it.
+- **`/arcade puissance4 [opponent] [stake]`** · **`/arcade morpion …`** — against someone (who
+  accepts first) or against her. Five minutes per move, or you lose. At morpion she never loses.
+  At Puissance 4 she's beatable — though one game in five she might drop two pieces at once, and
+  she'll deny it.
+- **Quokka's visits** — up to four times a day, between noon and 11 p.m., when someone has spoken
+  in the last half hour, Quokka sneaks into the bots channel. The first to hit him wins 10 to 30
+  cailloux; after two minutes he's gone.
 
 ### Staff & owner
 
@@ -417,6 +443,8 @@ is gone).
   - `moderator-role set|clear` and `shame-voters add|remove` — who may vote with `/shame`;
   - `excluded-channels add|remove` — channels where nothing counts (no XP, ignored by the wall);
   - `game-channel set|clear` — where Plynling deaths, comebacks and event stories are announced;
+  - `bots-channel set|clear` — where her unprompted, low-stakes posts go (Quokka's visits); by
+    default the server's « spam-bots » channel, else the game channel;
   - `quiz-channel set|clear` — where her pop quiz goes; no channel, no quiz;
   - `plynling-role create|set|clear` — a role SYNCS keeps on everyone with a living Plynling and
     off everyone else (flair and a ping group); `create` makes it for you, `clear` stops managing it
@@ -576,6 +604,7 @@ ProjectSYNCS/
 | `VoiceXpService` | 1 min | Samples voice channels and grants XP |
 | `GiveawayDrawService` | 1 min | Draws giveaways whose time is up |
 | `QuizMasterService` | 1 min | Posts the pop quiz, closes rounds nobody won |
+| `QuokkaRaidService` | daily slots, 12:00–23:00 | Quokka's visits to the bots channel |
 
 ## Configuration
 

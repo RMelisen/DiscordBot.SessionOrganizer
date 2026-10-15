@@ -3,6 +3,23 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.19.0 — 2026-10-15
+
+- Eight new `/arcade` games:
+  - `/arcade race`: a Plynling race with 30 minutes of pari-mutuel betting; the winner's owner gets
+    a small bonus.
+  - `/arcade crash`: board the rocket, cash out before it explodes.
+  - `/arcade blackjack`: one hand against her, fair and square.
+  - `/arcade bomb`: hot potato for a fixed 20-cailloux stake.
+  - `/arcade quote`: guess who wrote an old message from a public channel.
+  - `/arcade temperature`: guess her CPU temperature.
+  - `/arcade puissance4` and `/arcade morpion`: against someone, or against her.
+- Quokka now sneaks into the bots channel up to four times a day; the first to hit him wins a few
+  cailloux.
+- New `/config bots-channel set|clear` for where her low-stakes announcements go.
+- Accepting a `/arcade duel` now pings whoever started it, and every step of a duel (accepted, a
+  move played, the result) moves its card to the bottom of the channel, showing who has played.
+
 ## 6.18.0 — 2026-10-15
 
 - `/tonight` asks who's up for playing tonight. Once enough people are in, the organizer can turn

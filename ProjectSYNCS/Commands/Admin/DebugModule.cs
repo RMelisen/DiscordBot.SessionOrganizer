@@ -72,6 +72,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     private readonly QuizMasterService _quiz;
     private readonly QuizCrownService _crown;
     private readonly StickerService _stickers;
+    private readonly QuokkaRaidService _quokka;
 
     // Discord caps a message at 2000 characters; leave room for the herald line
     // and the blockquote markers.
@@ -84,9 +85,10 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
 
     public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings,
         PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz, QuizCrownService crown,
-        StickerService stickers)
+        StickerService stickers, QuokkaRaidService quokka)
     {
         _stickers = stickers;
+        _quokka = quokka;
         _quiz = quiz;
         _crown = crown;
         _plynlings = plynlings;
@@ -513,6 +515,28 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         await FollowupAsync(count is { } n
                 ? $"🔧 Passage terminé : {n} Plynling{(n > 1 ? "s" : "")} vu{(n > 1 ? "s" : "")}."
                 : "🔧 Un passage est déjà en cours. Réessaie dans un instant.",
+            ephemeral: true);
+    }
+
+    // Quokka shows up now in this guild's bots channel, skipping the day's slots and the
+    // room-is-awake check: to see a visit without waiting for one.
+    [SlashCommand("quokka", "Faire venir Quokka tout de suite dans le salon des bots (tests)")]
+    public async Task QuokkaAsync()
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+        if (Context.Guild is null)
+        {
+            await RespondAsync("Sur un serveur, s'il te plaît : Quokka n'entre pas dans les DM.", ephemeral: true);
+            return;
+        }
+        await DeferAsync(ephemeral: true);
+        await FollowupAsync(await _quokka.SpawnAsync(Context.Guild.Id)
+                ? "🔧 Quokka est arrivé dans le salon des bots."
+                : "🔧 Pas de visite : Quokka est déjà là, ou il n'y a pas de salon où l'envoyer.",
             ephemeral: true);
     }
 

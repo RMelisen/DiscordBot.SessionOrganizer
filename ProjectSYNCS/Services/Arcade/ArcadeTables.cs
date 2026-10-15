@@ -24,6 +24,13 @@ public sealed class DuelGame
     // The moves of the last tied round, shown on the card.
     public (DuelMove A, DuelMove B)? LastTie { get; set; }
 
+    // Her line for the current stage, kept so a repost of the card says the same thing.
+    public string Line { get; set; } = string.Empty;
+
+    // Every step reposts the card at the bottom of the channel (ArcadeRunner.RepostDuelAsync):
+    // one repost at a time, or two quick clicks could delete the newer card and keep the older.
+    public SemaphoreSlim CardGate { get; } = new(1, 1);
+
     public bool IsPlayer(ulong userId) => userId == ChallengerId || userId == OpponentId;
 }
 
@@ -46,6 +53,20 @@ public sealed class HeistGame
     public bool Launched { get; set; }
 }
 
+// What every newer /arcade game shares: where its card is. Each game's own class (RaceGame,
+// CrashGame…) lives beside the code that runs it and adds its state. Mutable, guarded by
+// ArcadeTables' lock: touch a game's state only inside ArcadeTables.With.
+public abstract class ArcadeGame
+{
+    public int Id { get; set; }
+    public required ulong GuildId { get; init; }
+    public required ulong ChannelId { get; init; }
+    public ulong MessageId { get; set; }
+
+    // Set once, by whoever ends it (a click, a timer): the other one then does nothing.
+    public bool Done { get; set; }
+}
+
 /// <summary>
 /// The /arcade games running right now — in memory by design: a restart drops them, their buttons
 /// then say so, and since settlement only happens at the end, no cailloux moved. Singleton; owns
@@ -60,6 +81,48 @@ public sealed class ArcadeTables
     private readonly Dictionary<int, DuelGame> _duels = new();
     private readonly Dictionary<int, HeistGame> _heists = new();
     private readonly Dictionary<ulong, DateTimeOffset> _heistCooldownUntil = new();
+    private readonly Dictionary<int, ArcadeGame> _games = new();
+
+    // ---- Every other game (race, crash, blackjack, bomb, quote, temperature, boards, Quokka) --------
+
+    /// <summary>
+    /// Opens <paramref name="game"/> unless <paramref name="conflict"/> finds a running game that
+    /// stands in its way (one race per guild, one blackjack hand per person…), which is returned
+    /// instead. The check and the add are one step under the lock.
+    /// </summary>
+    public (T? Opened, ArcadeGame? Blocking) TryOpen<T>(T game, Func<ArcadeGame, bool> conflict) where T : ArcadeGame
+    {
+        lock (_lock)
+        {
+            var blocking = _games.Values.FirstOrDefault(g => !g.Done && conflict(g));
+            if (blocking is not null) return (null, blocking);
+            game.Id = ++_nextId;
+            _games[game.Id] = game;
+            return (game, null);
+        }
+    }
+
+    /// <summary>Runs <paramref name="action"/> on the game under the lock; null when it's gone or of another kind.</summary>
+    public TR With<T, TR>(int id, Func<T?, TR> action) where T : ArcadeGame
+    {
+        lock (_lock) return action(_games.GetValueOrDefault(id) as T);
+    }
+
+    /// <summary>Marks the game done and drops it; true for the one caller who did.</summary>
+    public bool End(int id)
+    {
+        lock (_lock)
+        {
+            if (!_games.Remove(id, out var game) || game.Done) return false;
+            game.Done = true;
+            return true;
+        }
+    }
+
+    public IReadOnlyList<T> All<T>() where T : ArcadeGame
+    {
+        lock (_lock) return _games.Values.OfType<T>().Where(g => !g.Done).ToList();
+    }
 
     // ---- Duels ------------------------------------------------------------------------------------
 

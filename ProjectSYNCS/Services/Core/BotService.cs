@@ -27,6 +27,7 @@ internal sealed class BotService : IHostedService
     private readonly XpTracker _xp;
     private readonly ShameTracker _shame;
     private readonly MorningGreetingService _morning;
+    private readonly QuokkaRaidService _quokka;
     private readonly AmbientService _ambient;
     private readonly QuizMasterService _quiz;
     private readonly SynthiaService _synthia;
@@ -48,6 +49,7 @@ internal sealed class BotService : IHostedService
         XpTracker xp,
         ShameTracker shame,
         MorningGreetingService morning,
+        QuokkaRaidService quokka,
         AmbientService ambient,
         QuizMasterService quiz,
         SynthiaService synthia,
@@ -72,6 +74,7 @@ internal sealed class BotService : IHostedService
         _xp = xp;
         _shame = shame;
         _morning = morning;
+        _quokka = quokka;
         _ambient = ambient;
         _quiz = quiz;
     }
@@ -152,6 +155,8 @@ internal sealed class BotService : IHostedService
         // After the reactions, so a wave at a "bonjour" lands before her early hello.
         // Skips anything aimed at her, so it never doubles ChatterService's answer.
         await _morning.HandleMessageAsync(rawMessage);
+        // Only keeps Quokka's room-is-awake clock; answers nothing.
+        await _quokka.HandleMessageAsync(rawMessage);
         // Keeps the quiet clocks. Before the chatter: someone answering her 3 a.m. line
         // gets sent to bed, and that is their answer — no comeback on top.
         if (await _ambient.HandleMessageAsync(rawMessage)) return;

@@ -42,16 +42,28 @@ public class ArcadeService
     /// for the negatives), so a duel's winner doesn't show as having spent and earned their own
     /// stake back.
     /// </remarks>
-    public async Task<ArcadeSettlement> SettleAsync(ulong guildId, IReadOnlyList<ulong> players, long stake,
+    public Task<ArcadeSettlement> SettleAsync(ulong guildId, IReadOnlyList<ulong> players, long stake,
+        Func<IReadOnlyList<ulong>, IReadOnlyDictionary<ulong, long>> decide) =>
+        SettleAsync(guildId, players.Distinct().Select(p => (p, stake)).ToList(), decide);
+
+    /// <summary>
+    /// The same, with a stake per player (a race's bets, a crash's): each must still cover their
+    /// own, and a net never goes below minus that stake. A stake of 0 always pays: that's how a
+    /// reward with nothing at risk (a quiz-like win, a race owner's bonus) goes through here too.
+    /// </summary>
+    public async Task<ArcadeSettlement> SettleAsync(ulong guildId, IReadOnlyList<(ulong Player, long Stake)> stakes,
         Func<IReadOnlyList<ulong>, IReadOnlyDictionary<ulong, long>> decide)
     {
         var wallets = new Dictionary<ulong, Models.PebbleWallet>();
+        var stakeOf = new Dictionary<ulong, long>();
         var payers = new List<ulong>();
         var dropped = new List<ulong>();
-        foreach (var id in players.Distinct())
+        foreach (var (id, stake) in stakes)
         {
+            if (stakeOf.ContainsKey(id)) continue;
             var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, guildId, id);
             wallets[id] = wallet;
+            stakeOf[id] = stake;
             (wallet.Balance >= stake ? payers : dropped).Add(id);
         }
 
@@ -60,7 +72,7 @@ public class ArcadeService
         long earned = 0, spent = 0;
         foreach (var id in payers)
         {
-            var net = Math.Max(-stake, nets.GetValueOrDefault(id));
+            var net = Math.Max(-stakeOf[id], nets.GetValueOrDefault(id));
             var wallet = wallets[id];
             var old = wallet.Balance;
             wallet.Balance = Math.Max(0, old + net);

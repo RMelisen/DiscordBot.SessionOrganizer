@@ -63,4 +63,11 @@ public class GuildSettings
     /// Saved before the announcement, so a restart never announces twice. Zero means never.
     /// </summary>
     public int QuizCrownedWeek { get; set; }
+
+    /// <summary>
+    /// Where her unprompted, low-stakes posts go (Quokka's visits). Zero means the hardcoded
+    /// <c>BotsChannel.DefaultId</c>, when it belongs to this guild — the same « default » contract
+    /// as GameChannelId.
+    /// </summary>
+    public ulong BotsChannelId { get; set; }
 }

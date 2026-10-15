@@ -83,6 +83,8 @@ English. Renaming a command or option changes what people type: do it rarely, an
   seasonal profile picture; see `docs/syncs-appearance.md`).
 - **`MorningGreetingService`** has no interval: it sleeps until one random slot per morning
   (8:00–10:00 Paris, `Helpers/Personality/MorningGreeting`) — see personality.
+  **`QuokkaRaidService`** is the same shape: it sleeps until each of the day's Quokka visits
+  (0–4, 12:00–23:00 Paris, `QuokkaRaid.SlotsFor`) — see arcade.
 - **`AmbientService`** (10 min, cosmetic, its own interval like the loops above): the 3 a.m. line
   and the scolding for answering it, idle fillers and the wake-up line after a restart — see
   personality, *Ambient life*.
@@ -111,7 +113,7 @@ the EF snapshot's type names. A new file goes in the subfolder of the subsystem 
 **Commands are grouped by whose thing it is**: `/plynling` the creature, `/inventory` the person's
 belongings, `/admin` moderation actions, `/config` settings, `/debug` the owner's tools, `/arcade` her games. Discord
 allows **25 subcommands per top-level command** and the 26th throws at registration on startup —
-count before adding to `/plynling` (15), `/inventory` (9) or `/arcade` (2); a new batch goes to the group that owns
+count before adding to `/plynling` (15), `/inventory` (9) or `/arcade` (10); a new batch goes to the group that owns
 the thing, or a new group. `/pl` is a second registration of `/plynling`'s commands (see
 `plynling.md` before touching `PlynlingModule`). Component handlers live in `Interactions/Components/`; the module keeps
 the commands and the static card builders those handlers render through.
@@ -279,6 +281,13 @@ free). `AllowedMentions.None` keeps the clickable pill while silencing it. Avata
 `/admin` and `/config` deliberately carry **no `[DefaultMemberPermissions]`**: a permission bit
 cannot express "ManageGuild, plus the owner". The `IsStaff` check in each handler is the only gate.
 
+### Where she speaks
+
+A reply goes where she was used. Something she announces **on her own initiative that doesn't
+matter much** (Quokka's visits, and whatever joins them) goes to the bots channel, through
+`BotsChannel.ResolveAsync` — never hardcoded, never the main channel. Announcements that matter
+(deaths, the morning hello, session recaps) keep their own channels.
+
 ### Docs
 
 `/help` (`HelpModule`) and `README.md` are hand-maintained. A new user-facing command means
@@ -353,9 +362,10 @@ leveling bot's id in `Helpers/Xp/LevelUpAnnouncement`; the custom emote ids in `
 `RobotHeartService.EveStrictChannelId` (where « eve » means the game, so EVE needs WALL-E beside her);
 the voice channels in `Helpers/Voice/VoiceRoom` (which spectator pool each one gets, and where she
 waits for a session nobody has joined yet); and
-`Helpers/Core/HomeGuild.Id` (the one server the morning hello and `AmbientService` live in).
+`Helpers/Core/HomeGuild.Id` (the one server the morning hello and `AmbientService` live in);
+`Helpers/Core/BotsChannel.DefaultId` (« spam-bots », where her low-stakes posts go).
 
 `ExcludedChannels`, `ExtraVoters` and `IdleChannelIds` are *floors*: `/config` can add to them but
-never remove from them. The game and main channels are *defaults*: a channel set with `/config`
+never remove from them. The game, main and bots channels are *defaults*: a channel set with `/config`
 replaces them, and clearing it falls back (see `docs/agents/admin.md`). `OwnerId` is deliberately **not** configurable — it gates `/debug` and the DM relay, so making
 it editable would let any ManageGuild holder hand themselves those powers.

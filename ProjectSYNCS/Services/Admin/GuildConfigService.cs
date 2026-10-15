@@ -27,11 +27,12 @@ public sealed record GuildConfig(
     ulong QuizChannelId,
     ulong PlynlingRoleId,
     ulong QuizRoleId,
-    int QuizCrownedWeek)
+    int QuizCrownedWeek,
+    ulong BotsChannelId)
 {
     /// <summary>What an unconfigured guild looks like — nothing set, nothing added.</summary>
     public static readonly GuildConfig Empty = new(0, 0, 0,
-        new HashSet<ulong>(), new HashSet<ulong>(), new HashSet<ulong>(), 0, 0, 0, 0);
+        new HashSet<ulong>(), new HashSet<ulong>(), new HashSet<ulong>(), 0, 0, 0, 0, 0);
 }
 
 // Per-guild settings an admin can change at runtime, and the cache that makes them
@@ -109,7 +110,8 @@ public sealed class GuildConfigService
                 settings?.QuizChannelId ?? 0,
                 settings?.PlynlingRoleId ?? 0,
                 settings?.QuizRoleId ?? 0,
-                settings?.QuizCrownedWeek ?? 0);
+                settings?.QuizCrownedWeek ?? 0,
+                settings?.BotsChannelId ?? 0);
         }
         catch (Exception ex)
         {
@@ -183,6 +185,10 @@ public sealed class GuildConfigService
     /// <summary>Sets her main channel, or goes back to the default with zero.</summary>
     public Task SetMainChannelAsync(ulong guildId, ulong channelId) =>
         UpdateSettingsAsync(guildId, s => s.MainChannelId = channelId);
+
+    /// <summary>Sets her bots channel, or goes back to the default with zero.</summary>
+    public Task SetBotsChannelAsync(ulong guildId, ulong channelId) =>
+        UpdateSettingsAsync(guildId, s => s.BotsChannelId = channelId);
 
     /// <summary>Sets the pop quiz channel, or turns the quiz off with zero.</summary>
     public Task SetQuizChannelAsync(ulong guildId, ulong channelId) =>

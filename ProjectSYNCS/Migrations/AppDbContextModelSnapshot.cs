@@ -323,6 +323,9 @@ namespace ProjectSYNCS.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<long>("BotsChannelId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<long>("GameChannelId")
                         .HasColumnType("INTEGER");
 

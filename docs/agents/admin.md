@@ -53,7 +53,7 @@ A flat `/config show` (a static Components V2 card, `ConfigCards.Build`) plus on
 setting: `excluded-channels add|remove`, `idle-channels add|remove`, `shame-voters add|remove`,
 `moderator-role set|clear`, `plynling-role create|set|clear`, `quiz-role create|set|clear`,
 `game-channel set|clear`,
-`main-channel set|clear`, `quiz-channel set|clear`. Three levels is
+`main-channel set|clear`, `quiz-channel set|clear`, `bots-channel set|clear`. Three levels is
 Discord's maximum nesting. (`/shame` is flat only because it had to stay invokable bare; nothing here
 needs that.) Every handler goes through `ConfigModule.BeginAsync` (`IsStaff`, then an ephemeral
 defer); no `[DefaultMemberPermissions]`, same reason as `/admin`.
@@ -67,6 +67,9 @@ defer); no `[DefaultMemberPermissions]`, same reason as `/admin`.
   or revoke a voting right: `remove` refuses a hardcoded entry outright (rather than appearing to
   work), and `add` refuses one too (rather than storing a redundant row that could drift). The
   moderator role and `shame-voters` only widen who may vote on `/shame`; voters refuse bots.
+- **The bots channel** (`GuildSettings.BotsChannelId`) is a default like the game channel:
+  `BotsChannel.DefaultId` (« spam-bots ») when it belongs to the guild, else the game channel.
+  Resolved only through `BotsChannel.ResolveAsync`.
 - **Single channels replace their default.** `GuildSettings.GameChannelId` / `MainChannelId`, zero
   meaning unset: a destination grants and revokes nothing, so a configured one simply wins, and
   `clear` (or setting the default itself, stored as zero) falls back. `set` refuses a channel the bot
