@@ -44,6 +44,9 @@ public class AppDbContext : DbContext
     public DbSet<UptimeEvent> UptimeEvents => Set<UptimeEvent>();
     public DbSet<VoiceCompanionStat> VoiceCompanionStats => Set<VoiceCompanionStat>();
     public DbSet<VoiceCompanionDailyStat> VoiceCompanionDailyStats => Set<VoiceCompanionDailyStat>();
+    public DbSet<TonightCall> TonightCalls => Set<TonightCall>();
+    public DbSet<TonightResponse> TonightResponses => Set<TonightResponse>();
+    public DbSet<PersonalReminder> PersonalReminders => Set<PersonalReminder>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -374,6 +377,30 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<UptimeEvent>(e =>
         {
             e.HasIndex(x => x.Kind);
+        });
+
+        modelBuilder.Entity<TonightCall>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.ChannelId).HasConversion<long>();
+            e.Property(x => x.MessageId).HasConversion<long>();
+            e.Property(x => x.OrganizerId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.Closed });
+        });
+
+        modelBuilder.Entity<TonightResponse>(e =>
+        {
+            e.Property(x => x.UserId).HasConversion<long>();
+            e.HasIndex(x => new { x.TonightCallId, x.UserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<PersonalReminder>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.ChannelId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            e.HasIndex(x => x.Sent);
+            e.HasIndex(x => new { x.UserId, x.Sent });
         });
     }
 }

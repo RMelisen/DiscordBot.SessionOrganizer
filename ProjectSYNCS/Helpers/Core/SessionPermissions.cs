@@ -20,6 +20,9 @@ public static class SessionPermissions
     public static bool CanManage(IUser user, Giveaway giveaway) =>
         CanManage(user, giveaway.OrganizerId);
 
+    public static bool CanManage(IUser user, TonightCall call) =>
+        CanManage(user, call.OrganizerId);
+
     private static bool CanManage(IUser user, ulong organizerId) =>
         organizerId == user.Id || HasGuildPower(user);
 

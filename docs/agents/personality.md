@@ -561,3 +561,27 @@ Flips the coin first (`Random.Shared.Next(2)`), then picks wording from `YesLine
 two flat pools so a "yes" phrasing can't come out of a "no" roll. Neither pool may hedge (the
 harness checks on whole words). The optional question is echoed in a blockquote with
 `AllowedMentions(AllowedMentionTypes.Users)`. No `[CommandContextType]` — it works in DMs.
+
+## `/rate`
+
+A score out of 10 **hashed from the normalised text** (`Helpers/Personality/Rating`: lower case,
+accents and punctuation off, FNV-1a, then `StableRoll`), so the same thing always gets the same
+score, whoever asks. Scores spread evenly over 0–10. A mention hashes as the person.
+**« moi » / « moi-même » is the asker**, exactly like their own mention: anyone else gets the
+score their mention would, and Papa or Tata rating themselves (« moi », their mention, or typing
+« papa » / « tata ») get `RateOwnerSelfLines` / `RateTataSelfLines`, spoken to them rather than about
+them.
+
+**Fixed verdicts** (the owner's list), first match wins, each with its own pool: herself (her name,
+her mention, « toi » alone) and Papa get over-the-top scores (∞/10, 1000/10…); WALL-E gets
+flustered denial (never the word « crush »); the nemesis (quokka, Inabot, « 3.0 » alone) gets a
+negative score; the devil −10; God by any of his names 10; Tata 9.999 (the missing bit is her mute
+rights); « routier » 10 and « mitraillette » 0. Those two are **one dish** (a baguette with
+fries, meat and sauce) with two names in a running server feud: « routier » is Papa's word,
+« mitraillette » the other camp's. Their lines rate the *name*, she takes Papa's side, and they
+never name who is in the other camp. Names match as whole words, so « dieu et diable » is
+the devil's — the devil is checked first.
+
+Every `/rate` pool goes through `string.Format` with `{0}` = the score — the fixed verdicts ignore
+it — so no stray braces in any of them. The subject is quoted (not `Format.Sanitize`d: that escapes
+`<` `>` `:` and would break a rated mention or emote) and sent with `AllowedMentions.None`.

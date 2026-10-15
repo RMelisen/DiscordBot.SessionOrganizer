@@ -6,8 +6,8 @@ in one click. It also keeps score: XP and levels, emote and verdict leaderboards
 wall of shame, and a pop quiz. The bot's user-facing language is French.
 
 - [Commands](#commands)
-- [Sessions](#sessions) · [Polls & votes](#polls--votes) · [Giveaways](#giveaways)
-- [Levels & XP](#levels--xp) · [Leaderboards & stats](#leaderboards--stats) · [Wall of shame](#wall-of-shame) · [Pop quiz](#pop-quiz) · [Plynlings](#plynlings)
+- [Sessions](#sessions) · [Polls & votes](#polls--votes) · [Giveaways](#giveaways) · [Game nights & tools](#game-nights--tools)
+- [Levels & XP](#levels--xp) · [Leaderboards & stats](#leaderboards--stats) · [Wall of shame](#wall-of-shame) · [Pop quiz](#pop-quiz) · [Plynlings](#plynlings) · [Arcade](#arcade)
 - [Staff & owner](#staff--owner) · [Personality](#personality)
 - [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Configuration](#configuration) · [Running locally](#running-locally) · [Deployment](#deployment)
 
@@ -24,6 +24,11 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/emotestats` | Most-used emotes | everyone |
 | `/goodbot` | Who praised or scolded the bot | everyone |
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
+| `/rate <thing>` | A score out of 10, the same every time | everyone |
+| `/tonight` | Who's up tonight — becomes a session once enough people are in | everyone |
+| `/teams` | Split a voice channel into teams | everyone |
+| `/remindme · /reminders` | A reminder by DM later; list or cancel yours | everyone |
+| `/arcade duel · heist` | Cailloux games: rock-paper-scissors, a group heist | everyone |
 | `/shame` | The wall of shame | everyone |
 | `/quiz leaderboard` | Who wins her pop quiz | everyone |
 | `/plynling adopt · view · list · journal · relations · play · visit · passion · forage · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card). `/pl` is a shortcut for every one of them | everyone |
@@ -96,6 +101,23 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
   and announces the result in the bot's own voice, pinging the winners (users only —
   never roles or `@everyone`). The end time is an absolute instant, so a restart loses
   nothing and anything that came due while the bot was down is drawn on the next pass.
+
+### Game nights & tools
+
+- **`/tonight [game] [time] [minimum]`** — a lighter call than a session: « qui est chaud ce
+  soir ? » (21:00 by default). People answer **Chaud / Peut-être / Pas ce soir**. When enough are in
+  (4 by default) she pings them once, and the organizer (or staff) can click **Créer la session** to
+  turn it into a real session, with everyone already signed up. One open call per server at a
+  time; it closes at midnight.
+- **`/teams [teams] [channel] [mode]`** — splits a voice channel (yours by default) into 2 to 4
+  teams, at random or **balanced** by level (the most even of many random deals, so a reshuffle
+  still changes the teams). **Remélanger** draws again from whoever is in voice now.
+- **`/remindme when what`** — a reminder by DM, in her voice: `10m`, `dans 2h`, `dans 1h30`, `3j`,
+  `21h30`, `demain 9h`, `samedi 14h`, `25/12 10:00`… (« 21h » alone is a time; a duration in hours
+  needs « dans »). Up to 60 days ahead, 15 pending at most. If your DMs are closed she pings you
+  in the channel where you asked. **`/reminders`** lists yours and cancels one.
+- **`/rate thing`** — a score out of 10, hashed from the text: the same thing always gets the same
+  score, whoever asks. A few names get a verdict of their own.
 
 ### Levels & XP
 
@@ -374,6 +396,21 @@ looks after her.
 
 `/plynling help` explains it all in Discord.
 
+### Arcade
+
+Games for cailloux, under **`/arcade`**. Nothing is taken while a game runs: everyone pays or
+gets paid at the end, so a restart mid-game costs nobody anything (its buttons then say the game
+is gone).
+
+- **`/arcade duel opponent stake`** — rock-paper-scissors (🗿 📄 ✂️) for 10 to 500 cailloux each.
+  The opponent has 10 minutes to accept; then both pick in secret. A tie replays (up to four
+  rounds, then it's a draw and nobody pays). The winner takes the loser's stake minus 10 % for
+  the referee. You can challenge her, too. Good luck.
+- **`/arcade heist`** — gather a crew (up to 8, 25 cailloux each) to rob Quokka's stash. The
+  crew leaves after 25 minutes, or when the organizer gives the signal. A bigger crew is likelier
+  to succeed (30 % alone, up to 75 %) but splits the loot, so it's a gamble at any size. One heist
+  at a time, and Quokka stays on alert for 6 hours after.
+
 ### Staff & owner
 
 - **`/config`** — per-server configuration, applied without a redeploy:
@@ -519,7 +556,8 @@ ProjectSYNCS/
 │                          #
 │                          # Commands, Services, Models and Helpers are split by
 │                          # subsystem: Core/, Personality/, Plynling/, Xp/, Voice/,
-│                          # Feedback/, Shame/, Scheduling/, Quiz/, Economy/, Admin/, Pi/
+│                          # Feedback/, Shame/, Scheduling/, Quiz/, Economy/, Arcade/,
+│                          # Admin/, Pi/
 ├─ Data/AppDbContext.cs    # EF Core context
 ├─ Migrations/             # EF Core migrations (applied automatically on startup)
 ├─ config.yaml             # Home Assistant add-on manifest (source of truth for version)
@@ -531,7 +569,8 @@ ProjectSYNCS/
 | Service | Interval | Job |
 | --- | --- | --- |
 | `BotService` | — | Gateway connection, command registration, interaction dispatch |
-| `ReminderService` | 5 min | Reminder DMs, session lifecycle, poll auto-close |
+| `ReminderService` | 5 min | Reminder DMs, session lifecycle, poll auto-close, `/tonight` expiry |
+| `PersonalReminderService` | 1 min | Delivers `/remindme` |
 | `PresenceService` | 5 min | The rotating status line |
 | `MorningGreetingService` | daily, random 8:00–10:00 | The morning hello |
 | `VoiceXpService` | 1 min | Samples voice channels and grants XP |

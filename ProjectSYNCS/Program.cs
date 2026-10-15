@@ -74,6 +74,12 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<VoiceCompanionService>();
         services.AddTransient<PlynlingCareService>();
         services.AddTransient<PlynlingVisitRunner>();
+        services.AddTransient<TonightService>();
+        services.AddTransient<PersonalReminderStore>();
+        services.AddTransient<ArcadeService>();
+        // The /arcade games are in memory (the tables) and run by timers (the runner): singletons.
+        services.AddSingleton<ArcadeTables>();
+        services.AddSingleton<ArcadeRunner>();
         services.AddSingleton<PlynlingCooldowns>();
         services.AddSingleton<TradeOffers>();
         services.AddSingleton<VisitStories>();
@@ -128,6 +134,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<PiHealthService>();
         services.AddHostedService(sp => sp.GetRequiredService<PiHealthService>());
         services.AddHostedService<ReminderService>();
+        // /remindme's delivery: its own 1-minute loop.
+        services.AddHostedService<PersonalReminderService>();
         services.AddHostedService<PresenceService>();
         // One instance for both roles: the host runs its loop, BotService feeds it
         // messages so a greeting can bring the hello forward.

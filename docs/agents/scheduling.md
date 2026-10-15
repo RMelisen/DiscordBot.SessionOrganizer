@@ -108,3 +108,43 @@ participer". `AddEntryAsync` / `RemoveEntryAsync` return whether anything change
 can say so. A drawn card drops its buttons entirely.
 
 **The announcement is meant to ping**: `AllowedMentions(AllowedMentionTypes.Users)` — users only.
+
+## `/tonight` — « qui est chaud ce soir ? »
+
+`TonightModule` (command + static card), `TonightComponentHandler` (buttons), `TonightService`
+(EF). Stored in `TonightCall` / `TonightResponse` (`TonightStatus` is stored as int — append-only).
+
+- **One open call per guild**; a second `/tonight` gets the link. The organizer is « In » from the
+  start. Buttons add or switch an answer, never toggle; they carry **no emotes** (the owner's call).
+- **Threshold ping, once**: when « chauds » reach the minimum, `ClaimThresholdAsync` flips the flag
+  in SQL *before* the reply goes out, pinging only them.
+- **« Créer la session »** (organizer or staff, `SessionPermissions.CanManage(IUser, TonightCall)`)
+  claims the close first (`ClaimCloseAsync`, so a double click or the midnight sweep can't make two),
+  creates a Game `SessionEvent` at the call's hour, signs up In → Joined and Maybe → Maybe, and posts
+  the session card through `ScheduleModule`'s builders. If creating the session throws, the claim is
+  given back (`ReopenAsync`). No native event: that stays the organizer's opt-in on the card.
+- **Expiry** is `ReminderService`'s fourth job: midnight Paris, or an hour after the start for a
+  late-night call. Claimed before the card is redrawn.
+- Her line on the card is chosen by the call's id (`StableRoll`), not the picker: the card is
+  redrawn on every click and must keep saying the same thing.
+
+## `/teams`
+
+Stateless: « Remélanger » carries `teams:roll:{channel}:{count}:{mode}` and re-reads the voice
+channel. Humans only (her seat and other bots are skipped). `TeamDraw` deals a shuffle round-robin
+(sizes differ by one at most); **balanced** keeps the most even of 400 random deals by level, not a
+snake draft — a snake draft is deterministic, so a reroll would deal the same teams.
+
+## `/remindme` and `/reminders` — `PersonalReminderService`
+
+Its **own 1-minute loop** (five minutes late reads as broken, so it can't ride `ReminderService`).
+`ReminderTime` parses « quand » (pure): « 21h » / « 1h30 » alone are **clock times**, the way French
+says « à 21h »; a duration in hours needs « dans » or a spelled unit. The confirmation shows the
+exact time either way.
+
+- The row is claimed (`Sent`) before sending and deleted after: a crash costs the reminder, never a
+  second copy. Per-item `try`, like every sweep.
+- DM first (`AllowedMentions.None`); on `CannotSendMessageToUser`, a ping in the channel where it was
+  asked, narrowed to that person. Asked in a DM (`GuildId` 0), there's nowhere to fall back to.
+- More than 10 minutes late (she was down), the line says so (`ReminderLateLines`).
+- 15 pending per person; 1 minute to 60 days ahead. No guild guard on either command.

@@ -251,4 +251,18 @@ public class XpService
 
         return new XpRank(ahead + 1, row.TotalXp, LevelCurve.LevelForXp(row.TotalXp));
     }
+
+    // The levels of a handful of people (/teams' balanced mode). Anyone without a row is level 0.
+    public async Task<Dictionary<ulong, int>> GetLevelsAsync(ulong guildId, IReadOnlyCollection<ulong> userIds)
+    {
+        // The guild's rows, filtered in memory: one small server, and it keeps the converted ulong
+        // out of an IN clause.
+        var rows = await _db_context.MemberXps.AsNoTracking()
+            .Where(x => x.GuildId == guildId)
+            .Select(x => new { x.UserId, x.TotalXp })
+            .ToListAsync();
+        var wanted = userIds.ToHashSet();
+        return rows.Where(r => wanted.Contains(r.UserId))
+            .ToDictionary(r => r.UserId, r => LevelCurve.LevelForXp(r.TotalXp));
+    }
 }

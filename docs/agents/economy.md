@@ -35,6 +35,8 @@ be lost.
 - Plynling events pay through `GiveCailloux` under `earn.event` (« événements » on the dashboard), and
   their `GiveItem` finds count as `item.found` like every other find.
 - Admin adjustments record what actually moved (after the clamp), not what was asked.
+- `/arcade` games log net flows under `earn.arcade` / `spend.arcade` (« arcade »), through
+  `ArcadeService.SettleAsync` only — see `arcade.md`.
 - No totals row: the stored balances already are the totals (`/admin stats` reads those). Nothing
   was backfilled.
 - Window buttons `dash:win:{Week|Month|All}` in `AdminComponentHandler`, which re-checks `IsStaff`.

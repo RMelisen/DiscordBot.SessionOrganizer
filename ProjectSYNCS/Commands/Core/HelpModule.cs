@@ -56,6 +56,15 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/schedule list`** — Les sessions actives. Tu peux en republier une ici.\n" +
                 "**`/schedule edit <id>`** — Modifie une session que tu as organisée.\n" +
                 "**`/schedule cancel <id>`** — Annule une session que tu as organisée.")
+            .AddField("Commandes — Soirées & outils",
+                "**`/tonight`** — « Qui est chaud ce soir ? » Assez de chauds, et ça devient une session.\n" +
+                "**`/teams`** — Répartit ton salon vocal en équipes, au hasard ou équilibrées.\n" +
+                "**`/remindme`** — Je te rappelle un truc en DM (`10m`, `dans 2h`, `demain 9h`…). " +
+                "**`/reminders`** pour les voir ou les annuler.\n" +
+                "**`/rate`** — Je note n'importe quoi sur 10. Et je ne change jamais d'avis.")
+            .AddField("Commandes — Arcade",
+                "**`/arcade duel`** — Pierre-feuille-ciseaux contre quelqu'un, avec des cailloux en jeu.\n" +
+                "**`/arcade heist`** — Monte une équipe pour braquer la planque de Quokka.")
             .AddField("Commandes — Sondages & votes",
                 "**`/poll create`** — Propose des créneaux, chacun vote pour ses disponibilités.\n" +
                 "**`/vote create`** — Pareil, mais avec des options en texte (jeux, films…).\n" +

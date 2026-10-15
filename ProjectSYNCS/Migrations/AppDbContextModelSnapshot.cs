@@ -573,6 +573,43 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("PebbleWallets");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.PersonalReminder", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("ChannelId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("DueAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Sent")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Sent");
+
+                    b.HasIndex("UserId", "Sent");
+
+                    b.ToTable("PersonalReminders");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.PiThermalDay", b =>
                 {
                     b.Property<int>("Day")
@@ -1275,6 +1312,82 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("ShameRecords");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.TonightCall", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("ChannelId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Closed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Game")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("MessageId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Minimum")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("OrganizerId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SessionEventId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("StartsAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("ThresholdAnnounced")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "Closed");
+
+                    b.ToTable("TonightCalls");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.TonightResponse", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("AnsweredAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TonightCallId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TonightCallId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("TonightResponses");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.UptimeEvent", b =>
                 {
                     b.Property<int>("Id")
@@ -1448,6 +1561,17 @@ namespace ProjectSYNCS.Migrations
                     b.Navigation("Option");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.TonightResponse", b =>
+                {
+                    b.HasOne("ProjectSYNCS.Models.TonightCall", "TonightCall")
+                        .WithMany("Responses")
+                        .HasForeignKey("TonightCallId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TonightCall");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.Giveaway", b =>
                 {
                     b.Navigation("Entries");
@@ -1466,6 +1590,11 @@ namespace ProjectSYNCS.Migrations
             modelBuilder.Entity("ProjectSYNCS.Models.SessionEvent", b =>
                 {
                     b.Navigation("Participants");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.TonightCall", b =>
+                {
+                    b.Navigation("Responses");
                 });
 #pragma warning restore 612, 618
         }

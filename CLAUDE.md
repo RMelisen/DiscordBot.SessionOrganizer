@@ -11,11 +11,11 @@ matching file before changing that subsystem**; the rules there are as binding a
 
 | Working on… | Read first |
 |---|---|
-| Chatter, reactions, `MessageCues`, favouritism, rivals, `/yesno` | `docs/agents/personality.md` |
+| Chatter, reactions, `MessageCues`, favouritism, rivals, `/yesno`, `/rate` | `docs/agents/personality.md` |
 | "good bot" / "bad bot" verdicts, `BotFeedbackTracker`, `/goodbot` | `docs/agents/bot-feedback.md` |
 | XP, `/level`, `/leaderboard`, voice XP, `/emotestats` | `docs/agents/xp.md` |
 | `/shame` | `docs/agents/shame.md` |
-| Sessions, polls, votes, giveaways, `ReminderService` | `docs/agents/scheduling.md` |
+| Sessions, polls, votes, giveaways, `ReminderService`, `/tonight`, `/teams`, `/remindme` | `docs/agents/scheduling.md` |
 | Pop quiz, `QuizBank`, `/quiz leaderboard` | `docs/agents/quiz.md` |
 | Plynlings (life, care, visits, relations, art) | `docs/agents/plynling.md` |
 | Plynling traits, stats, personality, events | `docs/agents/plynling-events.md` |
@@ -23,6 +23,7 @@ matching file before changing that subsystem**; the rules there are as binding a
 | Writing any line SYNCS says in her own voice | `docs/syncs-voice.md` |
 | Any picture of SYNCS (avatar, emotes, poses, moods) | `docs/syncs-appearance.md` |
 | Cailloux, inventory, items, icons, cosmetics, `/admin dashboard` | `docs/agents/economy.md` |
+| `/arcade` games, `ArcadeTables`, `ArcadeRunner`, `ArcadeService` | `docs/agents/arcade.md` |
 | `/admin`, `/config`, `/debug`, permissions | `docs/agents/admin.md` |
 
 When you add a rule, put it in the subsystem file unless it genuinely applies across subsystems.
@@ -71,8 +72,9 @@ English. Renaming a command or option changes what people type: do it rarely, an
   It owns every message and reaction subscription; connection-lifecycle hooks (`Ready`,
   `Connected`, `Disconnected`) live in the service that needs them (`PresenceService`,
   `AmbientService`, `ApplicationEmojiService`, `PlynlingMascotService`, `PiHealthService`).
-- **Nine `BackgroundService` loops**, each with **its own interval on purpose** — never share one:
-  `ReminderService` (5 min, load-bearing — see scheduling), `PresenceService` (5 min, cosmetic),
+- **Ten `BackgroundService` loops**, each with **its own interval on purpose** — never share one:
+  `ReminderService` (5 min, load-bearing — see scheduling), `PersonalReminderService` (1 min,
+  `/remindme` — see scheduling), `PresenceService` (5 min, cosmetic),
   `VoiceXpService` (1 min — also feeds the voice spectator, the session roll call and her voice
   seat), `GiveawayDrawService` (1 min), `QuizMasterService` (1 min, see quiz),
   `PlynlingSweepService` (hourly), `PiHealthService` (2 min — the Pi's temperature, how the last
@@ -100,16 +102,16 @@ be checkable without a gateway here).
 
 `Commands/`, `Helpers/`, `Services/` and `Models/` are split into **subsystem subfolders** named after
 `docs/agents/` (`Plynling/`, `Xp/`, `Voice/`, `Personality/`, `Feedback/`, `Shame/`,
-`Scheduling/`, `Quiz/`, `Economy/`, `Admin/`, `Pi/`), plus `Core/` for what every subsystem
+`Scheduling/`, `Quiz/`, `Economy/`, `Arcade/`, `Admin/`, `Pi/`), plus `Core/` for what every subsystem
 leans on (`AppTime`, `BotChat`, `Emotes`, `CooldownGate`, `SessionPermissions`, `BotService`…).
 **Folders are not namespaces**: every file keeps the flat `ProjectSYNCS.Commands` /
 `.Helpers` / `.Services` / `.Models` namespace, so moving a file between subfolders changes no `using` and
 the EF snapshot's type names. A new file goes in the subfolder of the subsystem that owns it.
 
 **Commands are grouped by whose thing it is**: `/plynling` the creature, `/inventory` the person's
-belongings, `/admin` moderation actions, `/config` settings, `/debug` the owner's tools. Discord
+belongings, `/admin` moderation actions, `/config` settings, `/debug` the owner's tools, `/arcade` her games. Discord
 allows **25 subcommands per top-level command** and the 26th throws at registration on startup —
-count before adding to `/plynling` (15) or `/inventory` (9); a new batch goes to the group that owns
+count before adding to `/plynling` (15), `/inventory` (9) or `/arcade` (2); a new batch goes to the group that owns
 the thing, or a new group. `/pl` is a second registration of `/plynling`'s commands (see
 `plynling.md` before touching `PlynlingModule`). Component handlers live in `Interactions/Components/`; the module keeps
 the commands and the static card builders those handlers render through.

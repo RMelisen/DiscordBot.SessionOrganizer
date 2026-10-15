@@ -43,6 +43,48 @@ public class ReminderService : BackgroundService
             await ProcessRemindersAsync();
             await ProcessLifecycleAsync();
             await ProcessPollAutoCloseAsync();
+            await ProcessTonightExpiryAsync();
+        }
+    }
+
+    // /tonight calls whose evening is over close at midnight Paris. Five minutes late is fine for
+    // that, so it rides this loop. The close is claimed before the card is redrawn: a failed edit
+    // leaves a closed call whose buttons say so when clicked.
+    private async Task ProcessTonightExpiryAsync()
+    {
+        await using var scope = _services.CreateAsyncScope();
+        var tonight = scope.ServiceProvider.GetRequiredService<TonightService>();
+
+        List<TonightCall> expired;
+        try
+        {
+            expired = await tonight.GetExpiredOpenAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to query expired tonight calls.");
+            return;
+        }
+
+        foreach (var call in expired)
+        {
+            try
+            {
+                if (!await tonight.ClaimCloseAsync(call.Id)) continue;
+                call.Closed = true;
+                if (call.MessageId == 0) continue;
+                var channel = _client.GetGuild(call.GuildId)?.GetTextChannel(call.ChannelId);
+                if (channel is null || await channel.GetMessageAsync(call.MessageId) is not IUserMessage message) continue;
+                await message.ModifyAsync(p =>
+                {
+                    p.Embed = TonightModule.BuildEmbed(call);
+                    p.Components = TonightModule.BuildComponents(call);
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to close tonight call {CallId}.", call.Id);
+            }
         }
     }
 

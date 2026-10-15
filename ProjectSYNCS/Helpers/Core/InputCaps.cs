@@ -71,4 +71,27 @@ public static class InputCaps
     /// A role name (<c>/config plynling-role create</c>) — Discord's own limit for role names.
     /// </summary>
     public const int RoleName = 100;
+
+    /// <summary>
+    /// What <c>/rate</c> rates. Quoted above her verdict, in a 2000-char message.
+    /// </summary>
+    public const int Rate = 200;
+
+    /// <summary>
+    /// A <c>/remindme</c> text. Quoted under her line in the DM (2000 per message), and shown cut
+    /// short as a select option on <c>/reminders</c>.
+    /// </summary>
+    public const int Reminder = 400;
+
+    /// <summary>
+    /// <c>/remindme</c>'s « quand » (« demain 9h », « dans 2 heures »): anything longer isn't a
+    /// time, and the parser's patterns stay cheap on short input.
+    /// </summary>
+    public const int ReminderWhen = 40;
+
+    /// <summary>
+    /// <c>/tonight</c>'s game. Lands in the card's embed title and, if the call becomes a session,
+    /// in the session's title — so it shares <see cref="Title"/>'s budget.
+    /// </summary>
+    public const int TonightGame = Title;
 }

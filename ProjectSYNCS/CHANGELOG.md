@@ -3,6 +3,20 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.18.0 — 2026-10-15
+
+- `/tonight` asks who's up for playing tonight. Once enough people are in, the organizer can turn
+  it into a real session in one click; otherwise it closes at midnight.
+- `/teams` splits your voice channel into 2 to 4 teams, at random or balanced by level, with a
+  button to reshuffle.
+- `/remindme` sends you a reminder by DM later (« 10m », « dans 2h », « demain 9h », « 25/12
+  10:00 »…), or pings you in the channel if your DMs are closed. `/reminders` lists and cancels them.
+- `/rate` scores anything out of 10, the same score every time. A few names get her very own
+  verdict.
+- New `/arcade` games for cailloux: `/arcade duel` (rock-paper-scissors against someone, or against
+  her if you dare) and `/arcade heist` (gather a crew to rob Quokka's stash).
+- The economy dashboard counts arcade winnings and losses.
+
 ## 6.17.8 — 2026-10-15
 
 - `/work` has 100 new shifts, some borrowed from real oddball jobs (dog food taster, professional
