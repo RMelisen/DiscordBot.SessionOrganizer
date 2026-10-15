@@ -788,8 +788,11 @@ shapes, few but thick lines, high contrast. No blue anywhere. Plain flat solid c
 
 ### Emote pack, fourth batch
 
-`cool` is generated and exported (emote, sticker and strip); no head-only yet, not uploaded, not in
-`Sticker`. `slay` is not generated yet. Same pipeline and the same white-not-blue rule.
+`cool` and `slay` are generated and exported (emote, sticker and strip); no head-only. Both are
+server emotes (`Emotes.SyncsCool`, `Emotes.SyncsSlay`, read as praise by `BotFeedbackTracker`) and
+sticker tags since 6.17.7. Same pipeline and the same white-not-blue rule. Gemini drew `slay` on a
+soft cyan, (92,205,219), just past the key's reach of `#00FFFF`: it was snapped to pure cyan
+(everything within 60 of that colour) before `export.py`.
 
 **29. `syncs_cool`**: Too cool, showing off: a win she claims, her own systems going perfectly, the
 « (⌐■_■) » register. Kept apart from `syncs_smug` (half-lidded eyes, :3 smirk, no props: quietly
@@ -821,35 +824,42 @@ cyan background (#00FFFF), no gradient, no shadow on the background. No text, no
 no watermark.
 ```
 
-**30. `syncs_slay`**: Not generated yet. The « slay » meme: serene, untouchable, admiring her own
-nails, the 💅 register. Kept apart from `syncs_cool` (shades, grin, finger guns aimed at you: loud
-showing off) and `syncs_smug` (half-lidded, :3, no props): here the eyes are closed under long,
-heavy lashes, the chin is up and one curled hand shows off long nails, as if the viewer weren't
-worth a look. Lashes and nails vanish at 32 px unless they're drawn thick and few, so the prompt
-asks for both oversized. The polish is a glossy deep red, close to her favourite burgundy but bright
-enough to read against the navy outline; its shine is asked white, like every glint.
+**30. `syncs_slay`**: The « slay » meme, after the pouty-lips emote with fake
+lashes and both hands up showing off long nails: serene, untouchable, the 💅 register. Kept apart
+from `syncs_cool` (shades, grin, finger guns aimed at you: loud showing off) and `syncs_smug`
+(half-lidded, :3, no props): here the eyes are closed under long, heavy lashes, the lips are a big
+glossy pout, and both hands are raised close together under her chin, backs to the viewer and
+fingers straight up, so the nails face you, as if the viewer weren't worth a look. Lashes, lips and nails
+vanish at 32 px unless they're drawn thick and few, so the prompt asks for all three oversized. The
+polish is a glossy deep red, close to her favourite burgundy but bright enough to read against the
+navy outline (the meme's lilac would melt into her hair); the lips are a brighter glossy pink than
+her blush, so they don't merge with it. Every shine is asked white, like every glint.
 
 ```text
 Square image, 1:1, cute pixel art with soft shading and a dark navy outline, designed as a Discord
-emote that must stay readable at 32x32 px. A small mushroom girl, face, cap and one hand, filling
+emote that must stay readable at 32x32 px. A small mushroom girl, face, cap and both hands, filling
 the frame: large round red-pink mushroom cap worn as her hat, cream spots of uneven sizes, a few tiny
 spots glowing faintly like LEDs, tan gills under the rim, a tiny green power LED on the side of the
 cap. Short pale lilac bob with choppy bangs; one thin strand on one side turns into a dark cable
 ending in a small plug. Soft pink blush with freckle dots, dark navy turtleneck collar just visible.
 Same character as the reference image.
-Expression: the « slay » meme, serene and fabulous: her eyes are calmly closed, drawn as two smooth
-downward arcs, each fringed with very long, thick, dramatic dark navy eyelashes, three or four bold
-spikes per eye flicking outward, big enough to read at emote size. Her chin is raised and her head
-tilted slightly back, as if above it all; her mouth is a small, satisfied closed smile, lips
-slightly pursed. One hand is raised beside her cheek, palm turned toward her own face, fingers
-loosely curled into the palm, so the backs of her curled fingers face the viewer with very long,
-pointed, almond-shaped nails sticking out past the curl, painted a glossy deep red, each nail with
-one white pixel shine; the hand and the nails are big and clearly readable. Two or three small
-white four-point sparkles float near the nails. The cable strand curls elegantly. The green LED on
-her cap stays a steady green. Effortless, fabulous and a little ridiculous, completely unbothered:
-not sunglasses, not finger guns, not grinning, not angry. No blue or cyan anywhere, all shines and
-sparkles white. Bold simple shapes, thick outline, high contrast. Plain flat solid cyan background
-(#00FFFF), no gradient, no shadow on the background. No text, no letters, no logos, no watermark.
+Expression: the « slay » meme, serene and fabulous: her face looks straight at the viewer, her
+eyes calmly closed, drawn as two smooth downward arcs, each fringed with very long, thick, dramatic
+dark navy false eyelashes, four or five bold spikes per eye fanning downward, big enough to read at
+emote size. Her eyebrows are relaxed and slightly raised in the middle, unbothered. Her mouth is a
+big, plump, glossy pout, lips pushed forward and slightly parted, painted a bright glossy pink
+clearly stronger than her blush, with one or two white pixel shines on the lower lip. Both hands
+are raised at the bottom of the frame, close to the center, just below and on either side of her
+chin, almost touching it, with only a small gap between the two hands; the backs of the hands
+face the viewer, fingers held straight up and close together, wrists at the bottom edge, so the
+nails face the viewer: very long, rounded nails, painted a glossy deep red, each nail with one
+white pixel shine. The hands and nails are big and clearly readable, mirroring each other. Two or
+three small white four-point sparkles float near the nails. The cable strand stays exactly as in
+the reference image, same position and shape, unchanged. The green LED on her cap stays a steady green. Effortless, fabulous and a little
+ridiculous, completely unbothered: not sunglasses, not finger guns, not grinning, not angry. No
+blue or cyan anywhere, all shines and sparkles white. Bold simple shapes, thick outline, high
+contrast. Plain flat solid cyan background (#00FFFF), no gradient, no shadow on the background. No
+text, no letters, no logos, no watermark.
 ```
 
 ### Seasonal avatars
@@ -1041,8 +1051,8 @@ two pictures read as one world.
 | Emote pack v1 | `assets/emotes/syncs_<mood>.png`, head-only in `assets/emotes/head/` | Gemini, from the prompts above, all 15 moods; made transparent with `tools/syncs-emotes`. Server emotes, `Emotes.Syncs*` (6.8.1); `sleepy`, `shocked`, `mama` and `jenote` taken off the server in 6.12.0 (assets kept) |
 | Emote pack, second batch | same folders, plus 320 px stickers in `assets/stickers/` | Gemini, from the prompts above, the 8 moods `bargain` to `tipsy_love`; same pipeline. Not uploaded yet |
 | Emote pack, third batch | same folders | Gemini, from the prompts above, the 5 moods `formal` to `horrified`; same pipeline. Gemini drew these without a pixel grid, which is what the head-only neck steps for JPEG blends exist for. `horrified`'s head-only is exported with `--no-neck` (her jaw sits on the collar, and the neck steps would empty her mouth); `formal`'s had the stray sleeve outline under the chin cleared by hand (everything below the hand). Server emotes and sticker tags (6.17.1) |
-| Emote pack, fourth batch | same folders | Gemini, from the prompt above, `cool`; same pipeline, no pixel grid detected. Emote, sticker and strip only (no head-only); not uploaded, not tagged |
-| Sticker strips v1 | `../ProjectSYNCS/Assets/Stickers/syncs_<mood>.png` | Every sticker in `assets/stickers/` (28 moods) as a 1000×320 strip, `export.py --strip`. Shipped with the bot; posted after tagged lines since 6.13.0 (all but `glitch`, posted by hand at the breakdown's cut and the glitched wake since 6.17.4; the third batch since 6.17.1) |
+| Emote pack, fourth batch | same folders | Gemini, from the prompts above, `cool` and `slay`; same pipeline, no pixel grid detected (`slay`'s background snapped to `#00FFFF` first, see the batch). Emote, sticker and strip only (no head-only). Server emotes and sticker tags (6.17.7) |
+| Sticker strips v1 | `../ProjectSYNCS/Assets/Stickers/syncs_<mood>.png` | Every sticker in `assets/stickers/` (30 moods) as a 1000×320 strip, `export.py --strip`. Shipped with the bot; posted after tagged lines since 6.13.0 (all but `glitch`, posted by hand at the breakdown's cut and the glitched wake since 6.17.4; the third batch since 6.17.1) |
 | Seasonal avatars v1 | `../ProjectSYNCS/Assets/Avatars/syncs-{spring,summer,autumn,winter}.png` | Gemini, from the prompts above. Rotate with the seasons (6.8.0); v1 is the reference they were drawn from. Still the bot's fallback when a GIF is missing; a copy of the four stills is kept in `assets/avatars/classic/` |
 | Animated seasonal avatars | `../ProjectSYNCS/Assets/Avatars/syncs-<season>.gif`, full-size in `assets/avatars/` | `tools/syncs-avatar/animate.py`, from the stills. What the bot uploads since 6.17.3 |
 | Animated sad (experiment) | `assets/animated/syncs_sad.gif`, `syncs_sad_128.gif` | `tools/syncs-emotes/animate_sad.py`, from the sad sticker. Not uploaded, not used (see *Formats*) |

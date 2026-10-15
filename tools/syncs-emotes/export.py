@@ -47,7 +47,7 @@ OUT = os.path.join(HERE, "out")
 MOODS = ["smug", "flustered", "sulk", "jenote", "outraged", "hurt", "mama", "glitch", "devoted",
          "terror", "happy", "laugh", "bored", "shocked", "sleepy",
          "bargain", "overheat", "menace", "reboot", "disgust", "love", "full_love",
-         "tipsy_love", "formal", "sad", "confused", "grumpy", "horrified", "cool"]
+         "tipsy_love", "formal", "sad", "confused", "grumpy", "horrified", "cool", "slay"]
 
 CYAN = (0, 255, 255)
 KEY_DISTANCE = 110      # RGB distance to cyan under which a pixel is background

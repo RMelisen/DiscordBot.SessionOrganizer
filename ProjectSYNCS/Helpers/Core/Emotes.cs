@@ -239,6 +239,10 @@ public static class Emotes
     public const string SyncsSadId = "1559864780393545790";
     public const string SyncsSad = $"<:syncs_sad:{SyncsSadId}>";
 
+    /// <summary>`:syncs_slay:`</summary>
+    public const string SyncsSlayId = "1560172582467010580";
+    public const string SyncsSlay = $"<:syncs_slay:{SyncsSlayId}>";
+
     /// <summary>`:syncs_smug:`</summary>
     public const string SyncsSmugId = "1559543422128488478";
     public const string SyncsSmug = $"<:syncs_smug:{SyncsSmugId}>";

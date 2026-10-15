@@ -20,6 +20,7 @@ public static class Sticker
     public const string Bargain = " ⟪bargain⟫";
     public const string Bored = " ⟪bored⟫";
     public const string Confused = " ⟪confused⟫";
+    public const string Cool = " ⟪cool⟫";
     public const string Devoted = " ⟪devoted⟫";
     public const string Disgust = " ⟪disgust⟫";
     public const string Flustered = " ⟪flustered⟫";
@@ -39,6 +40,7 @@ public static class Sticker
     public const string Reboot = " ⟪reboot⟫";
     public const string Sad = " ⟪sad⟫";
     public const string Shocked = " ⟪shocked⟫";
+    public const string Slay = " ⟪slay⟫";
     public const string Sleepy = " ⟪sleepy⟫";
     public const string Smug = " ⟪smug⟫";
     public const string Sulk = " ⟪sulk⟫";
@@ -52,6 +54,7 @@ public static class Sticker
         public const string Bargain = " ⟪bargain!⟫";
         public const string Bored = " ⟪bored!⟫";
         public const string Confused = " ⟪confused!⟫";
+        public const string Cool = " ⟪cool!⟫";
         public const string Devoted = " ⟪devoted!⟫";
         public const string Disgust = " ⟪disgust!⟫";
         public const string Flustered = " ⟪flustered!⟫";
@@ -71,6 +74,7 @@ public static class Sticker
         public const string Reboot = " ⟪reboot!⟫";
         public const string Sad = " ⟪sad!⟫";
         public const string Shocked = " ⟪shocked!⟫";
+        public const string Slay = " ⟪slay!⟫";
         public const string Sleepy = " ⟪sleepy!⟫";
         public const string Smug = " ⟪smug!⟫";
         public const string Sulk = " ⟪sulk!⟫";
@@ -81,10 +85,10 @@ public static class Sticker
     /// <summary>Every mood a line can tag, as its file stem.</summary>
     public static readonly IReadOnlyList<string> Moods = new[]
     {
-        "bargain", "bored", "confused", "devoted", "disgust", "flustered", "formal", "full_love",
-        "grumpy", "happy", "horrified", "hurt", "jenote", "laugh", "love", "mama", "menace",
-        "outraged", "overheat", "reboot", "sad", "shocked", "sleepy", "smug", "sulk", "terror",
-        "tipsy_love",
+        "bargain", "bored", "confused", "cool", "devoted", "disgust", "flustered", "formal",
+        "full_love", "grumpy", "happy", "horrified", "hurt", "jenote", "laugh", "love", "mama",
+        "menace", "outraged", "overheat", "reboot", "sad", "shocked", "slay", "sleepy", "smug",
+        "sulk", "terror", "tipsy_love",
     };
 
     /// <summary>

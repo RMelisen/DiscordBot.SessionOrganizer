@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.17.7 — 2026-10-15
+
+- Two new stickers she can post after her lines: a too-cool face in sunglasses, and a serene,
+  fabulous one showing off her nails. A few of her show-off lines now come with them.
+- Her new fabulous face is a server emote, and reacting to her with it counts as praise.
+
 ## 6.17.6 — 2026-10-14
 
 - Reacting to her with more of the server's emotes now counts as a verdict: the pink heart, the

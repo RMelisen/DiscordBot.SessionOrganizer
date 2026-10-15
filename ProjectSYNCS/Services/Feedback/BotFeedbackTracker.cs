@@ -77,7 +77,8 @@ internal sealed class BotFeedbackTracker
         // Her own faces: only the unmistakably warm ones. A person sending her one of her
         // own sad or glitched faces could mean anything, so those stay out.
         Emotes.SyncsHappyId, Emotes.SyncsLaughId, Emotes.SyncsLoveId,
-        Emotes.SyncsFullLoveId, Emotes.SyncsDevotedId, Emotes.SyncsCoolId);
+        Emotes.SyncsFullLoveId, Emotes.SyncsDevotedId, Emotes.SyncsCoolId,
+        Emotes.SyncsSlayId);
 
     private static readonly HashSet<ulong> _badEmoteIds = Ids(
         Emotes.GooseKnifeId, Emotes.VeryAngryId,
