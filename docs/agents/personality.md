@@ -307,6 +307,14 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   Six words at most, never after « il », « elle », « on » (« il fait genre il sait jouer ») or « j' »
   (« j'avoue » means « true »: `YouAreRight`). No « oui bien sûr », which is meant. She doubles down,
   flustered; Papa's twin can't hold the denial.
+  **Being called a liar is Disbelief too**: « t'es une menteuse », « tu mens », « pourquoi tu mens ? »,
+  « arrête de mentir », « mytho », « c'est du pipeau » (`_liarPhrases`, cancelled by a negator after
+  them: « tu mens pas »; `_liarWords`, cancelled by one before: « t'es pas une menteuse », and only
+  in a reply of two words or one speaking to her: « il est un menteur » is someone else). « menteuse »
+  is also a strong mean cue, so `ChatterService.IsMean` lets a Disbelief reading through the mean
+  check on every path — Papa's included, whose mean pool would take it as hurt. The six-word cap
+  keeps real insults roasted (« t'es une menteuse et une idiote en plus »), and on the name path
+  only when said to her (« syncs est une menteuse » stays a backbite).
 - **`Request`**: a marker (« tu peux », « stp »…, not followed by a negator) or an imperative
   opening the message (« organise », « lance »…), then `MessageCues.ReadRequestTopic` names what for
   (`RequestTopic`: session, tonight, poll, reminder, teams, giveaway, quiz, moderation, other).

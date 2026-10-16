@@ -1370,11 +1370,11 @@ internal static class MessageCues
         "rien a voir", "t es a cote de la plaque", "t es a l ouest",
         "t as faux", "tu as faux", "t es dans le faux", "tu es dans le faux", "archi faux", "completement faux",
         "totalement faux", "tu delires", "tu delire", "tu dis des betises", "tu dis des conneries",
-        "tu racontes des betises", "tu racontes des conneries", "n imp", "tu mens", "c est pas ca",
+        "tu racontes des betises", "tu racontes des conneries", "n imp", "c est pas ca",
         "jamais de la vie", "que nenni", "dans tes reves",
         "tu te plantes", "tu t es plantee", "tu t es trompe", "you re wrong", "youre wrong",
     };
-    private static readonly string[] _youAreWrongWords = { "faux", "fake", "mensonge", "nope", "nimp", "wrong", "erreur" };
+    private static readonly string[] _youAreWrongWords = { "faux", "fake", "nope", "nimp", "wrong", "erreur" };
     private const int MaxDisagreementTokens = 8;
 
     // Adverbs that negate whatever verb they follow: « pas du tout » contradicts her as (nearly) the
@@ -1577,6 +1577,28 @@ internal static class MessageCues
         "je t ai grillee", "t es demasquee", "tu rougis", "t as rougi", "sure jan", "yeah right",
     };
     private static readonly HashSet<string> _notDisbeliefAfter = new() { "il", "elle", "on", "j", "je", "ca" };
+
+    // Calling her a liar: the same disbelief, said harder. « menteuse » is an insult cue too, but a
+    // short accusation aimed at her is answered as teasing (ChatterService.IsMean). The phrases are
+    // cancelled by a negator after them (« tu mens pas »), the single words by one before them
+    // (« t'es pas une menteuse »); « il ment » is someone else (_notDisbeliefAfter).
+    private static readonly string[] _liarPhrases =
+    {
+        "tu mens", "tu nous mens", "tu me mens", "tu mentais", "t as menti", "tu as menti", "ta menti",
+        "arrete de mentir", "arretes de mentir", "arrete de mytho", "arrete de mythoner", "tu sais mentir",
+        "tu mythones", "tu mythonnes", "tu mytho", "tu bluffes", "tu baratines", "tu racontes des bobards",
+        "tu racontes des salades", "c est du mytho", "c est du pipeau", "c est du flan", "c est un mensonge",
+        "sale menteuse", "sale mytho", "les bots mentent", "une bot qui ment",
+    };
+    private static readonly string[] _liarWords =
+    {
+        "menteuse", "menteur", "menteuses", "menteurs", "mytho", "mythomane", "mensonge", "mensonges",
+        "bobard", "bobards", "pipeau", "baratin", "bluff", "liar",
+    };
+
+    // A bare liar word is about her only in a reply of two words at most (« menteuse ! ») or one
+    // that speaks to her: « il est un menteur » is someone else.
+    private static readonly HashSet<string> _secondPerson = new() { "t", "tu", "toi", "es", "te", "ta", "ton", "tes" };
     private const int MaxDisbeliefTokens = 6;
 
     // « ça va, merci », « bien merci »: the politeness closing an answer, not thanks for anything.
@@ -1825,7 +1847,10 @@ internal static class MessageCues
         // Before agreement and disagreement: « mais oui c'est ça » agrees with nothing, and « mais
         // non, fais genre » is teasing, not a correction.
         if (t.Count <= MaxDisbeliefTokens
-            && FindPhrase(t, _disbeliefPhrases, cancelAfter: false, cancelBefore: false, notAfter: _notDisbeliefAfter))
+            && (FindPhrase(t, _disbeliefPhrases, cancelAfter: false, cancelBefore: false, notAfter: _notDisbeliefAfter)
+                || FindPhrase(t, _liarPhrases, cancelAfter: true, cancelBefore: false, notAfter: _notDisbeliefAfter)
+                || ((t.Count <= 2 || t.Any(_secondPerson.Contains))
+                    && FindPhrase(t, _liarWords, cancelAfter: false, cancelBefore: true))))
             return ChatIntent.Disbelief;
 
         if (t.Count <= MaxMaybeTokens

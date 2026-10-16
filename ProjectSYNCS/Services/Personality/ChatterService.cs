@@ -188,7 +188,9 @@ internal sealed class ChatterService
         IntentPick pick;
         string what;
 
-        if (mood.Emotion == EmotionKind.Mean)
+        // Called a liar to her face is teasing (Disbelief, below); behind her back it stays a backbite.
+        if (mood.Emotion == EmotionKind.Mean
+            && (IsMean(mood, content) || !MessageCues.AddressesHer(content, _client.CurrentUser.Id)))
         {
             what = "backbite roast";
             if (isOwner)
@@ -344,7 +346,7 @@ internal sealed class ChatterService
         if (message.Author.Id == OwnerId)
         {
             var ownerMood = MessageCues.Analyze(content);
-            bool unkind = ownerMood.Emotion == EmotionKind.Mean;
+            bool unkind = IsMean(ownerMood, content);
 
             // Not mean: one of his intent twins when he asks her something she has a twin for
             // (« ça va ? », « bonne nuit »…), else the summons greeting as always.
@@ -388,7 +390,7 @@ internal sealed class ChatterService
         // cancels all of them. Otherwise the bot just answers with a confused one-liner — no
         // low-effort reading here: a bare tag *is* her « tagged for nothing » pool.
         var mood = MessageCues.Analyze(content);
-        var mean = mood.Emotion == EmotionKind.Mean;
+        var mean = IsMean(mood, content);
         var intent = mean ? ChatIntent.None : MessageCues.ReadIntent(content);
 
         IntentPick pick;
@@ -465,7 +467,7 @@ internal sealed class ChatterService
 
         var weekday = CurrentWeekday();
         var isOwner = message.Author.Id == OwnerId;
-        var mean = mood.Emotion == EmotionKind.Mean;
+        var mean = IsMean(mood, content);
 
         // Five replies in a row and she ends it; while ended, only a reaction. Never Papa.
         var (ended, streak) = await StreakGateAsync(message, ChatPath.Reply, name, weekday);
@@ -650,6 +652,13 @@ internal sealed class ChatterService
         pick = IntentPick.Of(pool, AnswerKinds.Intent(intent));
         return true;
     }
+
+    // A mean reading, unless the message is calling her a liar (« t'es une menteuse », « pourquoi tu
+    // mens ? »): « menteuse » is an insult cue, but short and aimed at her it is teasing, and Disbelief
+    // answers it — from Papa too, whose mean pool would take it as hurt. Longer insults stay mean
+    // (Disbelief is six words at most).
+    private static bool IsMean(MessageMood mood, string content) =>
+        mood.Emotion == EmotionKind.Mean && MessageCues.ReadIntent(content) != ChatIntent.Disbelief;
 
     // Someone telling her about their day (« j'ai mangé de la soupe »): interested half the time
     // (IntentLines), « euh, ok ? » the other half (SharingShrugLines). Papa always gets interest.

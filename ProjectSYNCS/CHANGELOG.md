@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.1.1 — 2026-10-16
+
+- Calling her a liar (« t'es une menteuse », « pourquoi tu mens ? ») gets her flustered denial
+  instead of a roast; longer insults are still roasted.
+
 ## 7.1.0 — 2026-10-16
 
 - She answers more of what people say to her: checking she's there (« t'es là ? », « syncs ? »),

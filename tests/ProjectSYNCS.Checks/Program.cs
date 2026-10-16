@@ -308,7 +308,7 @@ var cases3 = new (string Text, string Expected)[]
     ("c'est clair ?", "Question"), ("en effet", "YouAreRight"), ("fair enough", "YouAreRight"),
     ("j'ai bien vu le film hier avec mon frère et ma sœur", "Sharing"),
     // YouAreWrong
-    ("t'es dans le faux", "YouAreWrong"), ("tu délires", "YouAreWrong"), ("nimp", "YouAreWrong"), ("tu mens", "YouAreWrong"),
+    ("t'es dans le faux", "YouAreWrong"), ("tu délires", "YouAreWrong"), ("nimp", "YouAreWrong"), ("tu mens", "Disbelief"),
     ("jamais de la vie", "YouAreWrong"), ("dans tes rêves", "YouAreWrong"), ("pas vraiment", "YouAreWrong"),
     ("wrong", "YouAreWrong"),
     // Request
@@ -731,6 +731,30 @@ if (Opinion.Read("t'en penses quoi de <@111> et <@222> ?") is { } pairOpinion &&
     Fail("an opinion of two tags still reads « et »");
 if (Opinion.Read("t'en penses quoi de la pizza ? 🙂")?.Subject != "pizza") Fail($"trailing emoji kept in the subject: {Opinion.Read("t'en penses quoi de la pizza ? 🙂")?.Subject}");
 if (Opinion.Read("t'en penses quoi de la pizza syncs ?")?.Subject != "pizza") Fail("trailing name kept in the subject");
+
+// 18. Called a liar: Disbelief, even though « menteuse » reads as mean on its own.
+foreach (var (text, expected) in new[]
+{
+    ("t'es une menteuse", "Disbelief"), ("tu mens", "Disbelief"), ("pourquoi tu mens ?", "Disbelief"), ("menteuse !", "Disbelief"),
+    ("sale menteuse", "Disbelief"), ("t'as menti", "Disbelief"), ("arrête de mentir", "Disbelief"), ("mytho", "Disbelief"),
+    ("t'es une mytho", "Disbelief"), ("c'est du pipeau", "Disbelief"), ("tu racontes des bobards", "Disbelief"),
+    ("syncs, t'es une menteuse", "Disbelief"), ("<@999> tu mens", "Disbelief"), ("non, t'es une menteuse", "Disbelief"),
+    ("tu mens pas", "None"), ("t'es pas une menteuse", "None"), ("il ment tout le temps", "None"), ("il est un menteur", "None"),
+    ("Luca est un vrai mytho", "None"), ("t'es une menteuse et une idiote en plus", "None"),
+    ("le mensonge c'est mal", "None"),
+})
+{
+    var got = readIntent.Invoke(null, new object[] { text })!.ToString();
+    if (got != expected) Fail($"ReadIntent(\"{text}\") = {got}, expected {expected}");
+}
+
+// The mood still reads « menteuse » as mean (ReactionService, the backbite roast); ChatterService
+// lets Disbelief through only when the intent says so. Pin both halves.
+var analyze = cues.GetMethod("Analyze", BindingFlags.Public | BindingFlags.Static)!;
+string Mood(string s) { var m = analyze.Invoke(null, new object[] { s })!; return m.GetType().GetProperty("Emotion")!.GetValue(m)!.ToString()!; }
+if (Mood("t'es une menteuse") != "Mean") Fail("« t'es une menteuse » no longer reads mean: ChatterService.IsMean relies on it");
+if (Mood("t'es une menteuse et une idiote en plus") != "Mean") Fail("a long insult with « menteuse » no longer reads mean");
+if ((bool)addresses.Invoke(null, new object[] { "syncs est une menteuse", 999UL })!) Fail("« syncs est une menteuse » reads as said to her (it is a backbite)");
 
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

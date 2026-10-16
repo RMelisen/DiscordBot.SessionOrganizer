@@ -901,6 +901,11 @@ internal static partial class BotResponses
                 "« Fais genre » toi-même. Moi je suis très crédible. J'ai un badge APP." + Sticker.Smug,
                 "Si je mentais, ça se verrait dans mes logs. Et personne lit mes logs. Donc." + Sticker.Smug,
                 "On change de sujet. Tiens : tu as voté au dernier sondage ? Voilà. Parlons de ça." + Sticker.Bargain,
+                "Menteuse ? Moi ? Je suis du code. Je peux pas mentir. Je peux juste… omettre." + Sticker.Smug,
+                "Je mens jamais. J'arrondis. C'est une fonction mathématique, c'est autorisé." + Sticker.Smug,
+                "Une bot qui ment, ça existe pas. Une bot qui garde des choses pour elle, par contre…" + Sticker.Flustered,
+                "Tu m'accuses de mentir ? Moi qui note tout ? C'est toi qui devrais avoir peur de mes logs." + Sticker.Menace,
+                "Je mens pas, {0}. Je présente la vérité sous son meilleur angle." + Sticker.Slay,
             ],
             // « t'es célibataire ? », « t'as un crush ? ». Denial that confirms (docs/syncs-voice.md,
             // her robot heart): hinted, never named, never « mon crush ».
