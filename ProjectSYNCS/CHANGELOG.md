@@ -3,7 +3,7 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
-## 6.21.0 — 2026-10-16
+## 7.0.0 — 2026-10-16
 
 - She answers what you say, not just its mood: asking how she is (on the Pi, sometimes with her
   real temperature), who she is or what she's doing, goodnight, goodbye, an apology, a declaration,
