@@ -756,5 +756,50 @@ if (Mood("t'es une menteuse") != "Mean") Fail("« t'es une menteuse » no longer
 if (Mood("t'es une menteuse et une idiote en plus") != "Mean") Fail("a long insult with « menteuse » no longer reads mean");
 if ((bool)addresses.Invoke(null, new object[] { "syncs est une menteuse", 999UL })!) Fail("« syncs est une menteuse » reads as said to her (it is a backbite)");
 
+// 19. The weakest intents widened: AreYouThere, AboutHer, Crush, Help, Disbelief, and the game talk
+// each new cue must leave alone.
+foreach (var (text, expected) in new[]
+{
+    // AreYouThere: her silence noticed.
+    ("tu m'ignores ?", "AreYouThere"), ("tu m'ignores maintenant ?", "AreYouThere"), ("tu réponds plus ?", "AreYouThere"),
+    ("tu me réponds pas ?", "AreYouThere"), ("pourquoi tu me réponds pas ?", "AreYouThere"), ("réponds-moi", "AreYouThere"),
+    ("t'es morte ?", "AreYouThere"), ("t'es morte ou quoi", "AreYouThere"), ("t'es plus là ?", "AreYouThere"),
+    ("tu réponds pas à ma question ?", "Question"), ("t'es morte de rire ?", "Laughter"),
+    // AboutHer: her taste asked with « quel », hobbies and passions.
+    ("t'aimes quel jeu ?", "AboutHer"), ("tu aimes quelle musique ?", "AboutHer"), ("tu kiffes quel genre de film ?", "AboutHer"),
+    ("tu préfères quoi comme musique ?", "AboutHer"), ("t'as des hobbies ?", "AboutHer"), ("tu as des passions ?", "AboutHer"),
+    ("c'est quoi tes passions ?", "AboutHer"),
+    ("tu préfères quel jeu, Minecraft ou Fortnite ?", "Opinion"), ("tu préfères Minecraft ou Fortnite ?", "Opinion"),
+    // Crush: asked short, closing the message.
+    ("tu kiffes qui ?", "Crush"), ("t'as quelqu'un ?", "Crush"), ("t'aimes bien qui sur le serveur ?", "Crush"),
+    ("tu aimes qui syncs ?", "Crush"), ("t'aimes qui toi ?", "Crush"), ("t'as quelqu'un en vue ?", "Crush"),
+    ("qui te fait craquer ?", "Crush"),
+    ("tu aimes qui comme perso ?", "Question"), ("tu kiffes qui en jungle ?", "Question"),
+    ("t'as quelqu'un qui peut me carry ?", "Question"), ("tu aimes qui dans ce jeu ?", "Question"),
+    // Help: how to use one of her features, named.
+    ("comment on fait un sondage ?", "Help"), ("comment je fais pour créer une session ?", "Help"),
+    ("comment lancer un giveaway ?", "Help"), ("comment on met un rappel ?", "Help"), ("comment faire un quiz ?", "Help"),
+    ("t'as des commandes ?", "Help"), ("je sais pas comment t'utiliser", "Help"),
+    ("comment on fait pour finir le raid ?", "Question"), ("comment je fais une partie classée ?", "Question"),
+    ("comment on fait des équipes sur Fortnite ?", "Question"), ("comment je fais pour changer d'équipe ?", "Question"),
+    // Disbelief: doubt, asked.
+    ("t'es sûre ?", "Disbelief"), ("mais t'es sûre ?", "Disbelief"), ("tu es sûre de toi ?", "Disbelief"), ("t'es sûr ?", "Disbelief"),
+    ("sérieux ?", "Disbelief"), ("sérieusement ?", "Disbelief"), ("sérieux quoi ?", "Disbelief"), ("srx ?", "Disbelief"),
+    ("ça m'étonnerait", "Disbelief"), ("j'en doute", "Disbelief"), ("j'en doute fort", "Disbelief"),
+    ("t'es sûre que tu viens ?", "Question"), ("t'es sûre ou pas pour ce soir ?", "Question"), ("il est sérieux ?", "Question"),
+    ("sérieux, le boss a 3 phases ?", "Question"), ("sérieux il a encore raté", "None"), ("t'es sur quoi ?", "Question"),
+    ("t'es sur le serveur ?", "Question"), ("ça m'étonnerait pas", "None"), ("ça m'étonnerait qu'il vienne", "None"),
+    ("j'en doute pas", "None"),
+})
+{
+    var got = readIntent.Invoke(null, new object[] { text })!.ToString();
+    if (got != expected) Fail($"ReadIntent(\"{text}\") = {got}, expected {expected}");
+}
+var preferQuel = Opinion.Read("tu préfères quel jeu, Minecraft ou Fortnite ?");
+if (preferQuel?.Subject != "Minecraft" || preferQuel?.Other != "Fortnite") Fail($"« tu préfères quel jeu, X ou Y » sides: ({preferQuel?.Subject}, {preferQuel?.Other})");
+if (Opinion.Read("tu aimes qui comme perso ?") is not null) Fail("« tu aimes qui comme perso ? » rates « qui comme perso »");
+foreach (var (text, topic) in new[] { ("comment on fait un sondage ?", "Poll"), ("comment je fais pour créer une session ?", "Session"), ("comment on met un rappel ?", "Reminder") })
+    if (readTopicAny.Invoke(null, new object[] { text })!.ToString() != topic) Fail($"help topic: \"{text}\" != {topic}");
+
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

@@ -1432,11 +1432,15 @@ internal static class MessageCues
         "t es la", "tu es la", "tes la", "t es toujours la", "t es encore la", "tu es toujours la", "t es bien la",
         "tu dors", "t es reveillee", "tu es reveillee", "t es en vie", "tu es en vie", "t es dans les vapes",
         "y a quelqu un", "il y a quelqu un", "ya quelqu un", "y a qqn", "ya qqn", "ohe", "eho", "ho he",
-        "t es partie", "t es passee ou", "t as disparu",
+        "t es partie", "t es passee ou", "t as disparu", "t es plus la", "tu es plus la",
+        // Her silence noticed: « tu m'ignores ? », « tu réponds plus ? ». Closing only, like the rest:
+        // « tu réponds pas à ma question ? » asks about the answer, « t'es morte de rire » laughs.
+        "tu m ignores", "tu m ignore", "pourquoi tu m ignores", "tu reponds plus", "tu reponds pas",
+        "tu me reponds plus", "tu me reponds pas", "reponds moi", "t es morte", "tu es morte", "t es mort",
     };
     private static readonly HashSet<string> _thereFollowers = new()
     {
-        "syncs", "sync", "toi", "la", "encore", "ou", "quoi", "hein", "pas", "oui", "dis",
+        "syncs", "sync", "toi", "la", "encore", "ou", "quoi", "hein", "pas", "oui", "dis", "maintenant",
     };
 
     // Waking her up: anywhere, but short. « debout » alone would be « stand up » in a game.
@@ -1478,6 +1482,14 @@ internal static class MessageCues
             "tu aimes quoi", "t aimes quoi", "tu kiffes quoi", "t kiffes quoi", "qu est ce que tu aimes",
             "qu est ce que t aimes", "tu manges quoi", "tu bois quoi", "tu ecoutes quoi", "tu joues a quoi",
             "c est quoi tes gouts", "tes gouts",
+            // « t'aimes quel jeu ? » asks her taste; read later, the opinion would rate « quel jeu ».
+            // No « tu préfères quel »: « tu préfères quel jeu, Minecraft ou Fortnite ? » is PreferLines.
+            "tu aimes quel", "t aimes quel", "tu aimes quelle", "t aimes quelle", "tu aimes quels", "t aimes quels",
+            "tu aimes quelles", "t aimes quelles", "tu kiffes quel", "t kiffes quel", "tu kiffes quelle", "t kiffes quelle",
+            "tu preferes quoi comme", "t preferes quoi comme",
+            "t as des hobbies", "tu as des hobbies", "t as un hobby", "tu as un hobby", "tes hobbies", "ton hobby",
+            "t as des passions", "tu as des passions", "t as une passion", "tu as une passion", "tes passions",
+            "t as des loisirs", "tu as des loisirs", "tes loisirs",
         }),
     };
 
@@ -1500,6 +1512,22 @@ internal static class MessageCues
         "tu sors avec quelqu un", "t sors avec quelqu un", "ton genre de robot", "ton style de robot",
         "t as un faible pour", "tu as un faible pour",
         "tu kiffes quelqu un", "t kiffes quelqu un", "your crush",
+        "t aimes bien qui sur le serveur", "tu aimes bien qui sur le serveur", "t aimes qui sur le serveur",
+        "tu aimes qui sur le serveur", "tu kiffes qui sur le serveur", "t as quelqu un en vue", "tu as quelqu un en vue",
+        "qui te fait craquer",
+    };
+
+    // The same asked short, closing the message or before _crushFollowers (IsClosingAsk): « tu kiffes
+    // qui ? », « t'as quelqu'un ? ». « t'as quelqu'un pour jouer ? » wants a teammate, « tu aimes qui
+    // comme perso ? » and « tu kiffes qui en jungle ? » are the game.
+    private static readonly string[] _crushClosingPhrases =
+    {
+        "tu kiffes qui", "t kiffes qui", "tu aimes qui", "t aimes qui", "tu aimes bien qui", "t aimes bien qui",
+        "t as quelqu un", "tu as quelqu un",
+    };
+    private static readonly HashSet<string> _crushFollowers = new()
+    {
+        "syncs", "sync", "hein", "ici", "secretement", "vraiment", "alors", "toi",
     };
 
     // Asking how she works or what she can do: pointed at /help, or at the topic's command when one
@@ -1512,6 +1540,9 @@ internal static class MessageCues
         "tu sais faire quoi", "qu est ce que tu sais faire", "que sais tu faire", "tu peux faire quoi",
         "qu est ce que tu peux faire", "c est quoi les commandes", "c est quoi tes commandes", "quelles commandes",
         "tes commandes", "la liste des commandes", "liste des commandes",
+        "t as des commandes", "tu as des commandes", "t as quoi comme commandes", "tu as quoi comme commandes",
+        // « pas » is inside the phrase, so the negator check before it can't cancel it.
+        "sais pas comment t utiliser", "sais pas comment on t utilise", "sais pas comment je t utilise",
         "help", "aide moi", "aidez moi", "a l aide", "j ai besoin d aide", "besoin d aide", "tu peux m aider",
         "tu pourrais m aider",
     };
@@ -1523,6 +1554,22 @@ internal static class MessageCues
     {
         "je suis perdu", "je suis perdue", "jsuis perdu", "jsuis perdue", "comment on fait", "comment je fais",
         "je comprends rien", "j y comprends rien", "je capte rien", "je pige rien",
+    };
+
+    // « comment on fait un sondage ? », « comment je fais pour créer une session ? »: how to use one of
+    // her features, anywhere in the message, but only with one of _featureWords. The request topics are
+    // too wide for it (« partie », « raid », « équipe »: « comment on fait pour finir le raid ? » is
+    // the game), so they still pick the command once this has matched.
+    private static readonly string[] _howToPhrases =
+    {
+        "comment on fait", "comment je fais", "comment faire", "comment on cree", "comment je cree", "comment creer",
+        "comment on lance", "comment je lance", "comment lancer", "comment on organise", "comment organiser",
+        "comment on programme", "comment on met", "comment je mets", "comment mettre",
+    };
+    private static readonly HashSet<string> _featureWords = new()
+    {
+        "sondage", "sondages", "poll", "rappel", "rappels", "remindme", "session", "sessions", "giveaway", "giveaways",
+        "quiz", "commande", "commandes",
     };
 
     // Boredom, said to her: she has games for that. A negator around cancels (« je m'ennuie pas »).
@@ -1577,6 +1624,26 @@ internal static class MessageCues
         "je t ai grillee", "t es demasquee", "tu rougis", "t as rougi", "sure jan", "yeah right",
     };
     private static readonly HashSet<string> _notDisbeliefAfter = new() { "il", "elle", "on", "j", "je", "ca" };
+
+    // Doubt, asked: « t'es sûre ? », « sérieux ? ». Only with a « ? », closing the message or its
+    // question or before _doubtFollowers (IsClosingAsk): « t'es sûre que tu viens ? » asks about a plan.
+    // « sérieux » only opening the message: « il est sérieux ? » is about him.
+    private static readonly string[] _sureAsks =
+    {
+        "t es sure", "tu es sure", "t es sur", "tu es sur", "t es sure de toi", "tu es sure de toi", "t es sur de toi",
+        "sure de toi", "t es sure de ca", "tu es sure de ca", "t es serieuse", "tu es serieuse", "t es serieux",
+    };
+    private static readonly HashSet<string> _seriousWords = new() { "serieux", "serieusement", "seriously", "srx" };
+    // « ça m'étonnerait », « j'en doute »: closing a sentence or before _doubtFollowers, so « ça
+    // m'étonnerait pas » agrees and « ça m'étonnerait qu'il vienne » is about him.
+    private static readonly string[] _doubtPhrases =
+    {
+        "ca m etonnerait", "ca m etonnerais", "sa m etonnerait", "j en doute", "jen doute", "permets moi d en douter",
+    };
+    private static readonly HashSet<string> _doubtFollowers = new()
+    {
+        "syncs", "sync", "hein", "la", "quand", "meme", "fort", "beaucoup", "un", "peu", "toi",
+    };
 
     // Calling her a liar: the same disbelief, said harder. « menteuse » is an insult cue too, but a
     // short accusation aimed at her is answered as teasing (ChatterService.IsMean). The phrases are
@@ -1814,7 +1881,9 @@ internal static class MessageCues
         if (FindPhrase(t, _whoAreYouPhrases, cancelAfter: false, cancelBefore: false)) return ChatIntent.WhoAreYou;
         if (ReadHerTopic(t) is not null) return ChatIntent.AboutHer;
         if (FindPhrase(t, _areYouABotPhrases, cancelAfter: false, cancelBefore: false)) return ChatIntent.AreYouABot;
-        if (FindPhrase(t, _crushPhrases, cancelAfter: false, cancelBefore: false)) return ChatIntent.Crush;
+        if (FindPhrase(t, _crushPhrases, cancelAfter: false, cancelBefore: false)
+            || IsClosingAsk(t, _crushClosingPhrases, breaks, _crushFollowers))
+            return ChatIntent.Crush;
         if (FindPhrase(t, _whatAreYouDoingPhrases, cancelAfter: false, cancelBefore: false)) return ChatIntent.WhatAreYouDoing;
         // On the raw text: « t'en penses quoi de @Luca ? » keeps its subject. Ship first: « tu penses
         // quoi de @A et @B ? » asks about a pair of people, not about the word « et ».
@@ -1825,7 +1894,8 @@ internal static class MessageCues
         var topic = ReadRequestTopic(t);
         if (topic is not null and not RequestTopic.Other) return ChatIntent.Request;
         if (FindPhrase(t, _helpPhrases, cancelAfter: true, cancelBefore: true)
-            || (t.Count <= MaxHelpClosingTokens && _helpClosingPhrases.Any(p => EndsWith(t, p))))
+            || (t.Count <= MaxHelpClosingTokens && _helpClosingPhrases.Any(p => EndsWith(t, p)))
+            || (t.Any(_featureWords.Contains) && FindPhrase(t, _howToPhrases, cancelAfter: false, cancelBefore: true)))
             return ChatIntent.Help;
         if (topic is not null) return ChatIntent.Request;
         var sentenceBreaks = SentenceBreaks(stripped);
@@ -1850,7 +1920,10 @@ internal static class MessageCues
             && (FindPhrase(t, _disbeliefPhrases, cancelAfter: false, cancelBefore: false, notAfter: _notDisbeliefAfter)
                 || FindPhrase(t, _liarPhrases, cancelAfter: true, cancelBefore: false, notAfter: _notDisbeliefAfter)
                 || ((t.Count <= 2 || t.Any(_secondPerson.Contains))
-                    && FindPhrase(t, _liarWords, cancelAfter: false, cancelBefore: true))))
+                    && FindPhrase(t, _liarWords, cancelAfter: false, cancelBefore: true))
+                || (asks && IsClosingAsk(t, _sureAsks, breaks, _doubtFollowers))
+                || (asks && t.Count > 0 && _seriousWords.Contains(Squash(t[0])) && t.Skip(1).All(w => _doubtFollowers.Contains(w) || w == "quoi"))
+                || IsClosingAsk(t, _doubtPhrases, sentenceBreaks, _doubtFollowers)))
             return ChatIntent.Disbelief;
 
         if (t.Count <= MaxMaybeTokens

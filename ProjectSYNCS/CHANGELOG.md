@@ -3,6 +3,13 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.1.3 — 2026-10-16
+
+- She understands more ways of asking about her love life, her hobbies and tastes, how to use her
+  sessions, polls, reminders, giveaways and quiz, and of doubting her (« t'es sûre ? », « sérieux ? »).
+- « tu m'ignores ? » and « tu réponds plus ? » are now read as checking she's still there.
+- « tu aimes qui comme perso ? » no longer makes her rate « qui comme perso ».
+
 ## 7.1.1 — 2026-10-16
 
 - Calling her a liar (« t'es une menteuse », « pourquoi tu mens ? ») gets her flustered denial
