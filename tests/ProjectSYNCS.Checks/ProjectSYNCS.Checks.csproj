@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Checks for the chat reading and its pools; how to run them is at the top of Program.cs.
+       Outside ProjectSYNCS/ on purpose: the bot's project compiles every .cs under its folder, and
+       the add-on image is built from that folder alone. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Same as the bot: Europe/Paris and fr-FR formatting need ICU. -->
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\ProjectSYNCS\ProjectSYNCS.csproj" />
+  </ItemGroup>
+</Project>

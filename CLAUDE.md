@@ -52,9 +52,19 @@ performs it. Without it `Guild.GetUser` returns null for anyone not seen since t
 and every avatar on `/level`, `/leaderboard` and `/shame` falls back to Discord's generic logo.
 First thing to check if those placeholders reappear.
 
-There is no test project, and CI only builds the add-on image (see *Version and deployment*). Verify by building and, when it matters, running against the
-dev guild. Notes that mention "the harness" refer to the owner's scratch checks, which are not in
-this repo.
+**`tests/ProjectSYNCS.Checks`** checks how she reads chat (`MessageCues`, `Opinion`, `ShipAsk`), the
+pools that answer it, and the listening pieces around them (streaks, facts, `/debug answers`):
+
+```bash
+dotnet run --project tests/ProjectSYNCS.Checks   # prints failures + a few summary lines, exits 1 on any
+```
+
+Run it before shipping a change to the cues or the pools, and add a case for every misfire found
+in the wild. It is a plain console (no test framework), outside `ProjectSYNCS/` because the bot's
+project compiles every `.cs` under its folder; it is not in the add-on image and needs no version
+bump. CI only builds the add-on image (see *Version and deployment*). Everything else: verify by
+building and, when it matters, running against the dev guild. Notes elsewhere that mention "the
+harness" refer to the owner's scratch checks for other subsystems, which are not in this repo.
 
 ## Language
 
@@ -310,7 +320,7 @@ when `version` changes: an unbumped push never reaches the Pi.
 - **Minor** (`5.18.12` → `5.19.0`, patch reset): a new command, subcommand, subsystem or
   user-visible behaviour, or anything that adds a migration.
 - **Major**: the owner's call only; never bump it unasked.
-- **No bump** for changes that stay out of the build: `docs/`, `README.md`, `CLAUDE.md`, `CHANGELOG.md`, `tools/`, `.github/`.
+- **No bump** for changes that stay out of the build: `docs/`, `README.md`, `CLAUDE.md`, `CHANGELOG.md`, `tools/`, `tests/`, `.github/`.
 - Numbers don't roll over: `5.11.26` is fine. When you bump, say so in the summary, with the
   new number.
 - **A bump adds its entry to `ProjectSYNCS/CHANGELOG.md`** (newest first, `## x.y.z — yyyy-mm-dd`,
