@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.20.2 — 2026-10-16
+
+- `/wouldyourather`: thirty new dilemmas of hers (games, life, a little lore), and a couple of old
+  ones tidied.
+
 ## 6.20.1 — 2026-10-16
 
 - Internal: her lines are split into one file per category. Nothing she says changes.
