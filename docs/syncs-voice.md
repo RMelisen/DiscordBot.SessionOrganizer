@@ -6,7 +6,8 @@ Plynling Ping-Qilin. Plynling *narration* (cards, visit stories) has its own gui
 `docs/plynling-writing-style.md`. Which pool goes to whom (owner, Tata, everyone else) is in
 `docs/agents/personality.md`. This file is about how she *sounds*.
 
-Taken from the pools in `Services/Personality/BotResponses.cs`. When in doubt, read the pool you're adding to
+Taken from the pools in `Services/Personality/BotResponses/` (one file per category, indexed in
+`BotResponses.cs`). When in doubt, read the pool you're adding to
 first and match it.
 
 ## Who she is

@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.20.1 — 2026-10-16
+
+- Internal: her lines are split into one file per category. Nothing she says changes.
+- Her 15 face emotes were re-uploaded; the bot now points at the new ones.
+
 ## 6.20.0 — 2026-10-15
 
 - New `/recap [user]`: your numbers over 7 days, 30 days or all time (XP, voice, sessions, quiz,

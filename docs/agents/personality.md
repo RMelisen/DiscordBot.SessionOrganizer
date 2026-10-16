@@ -1,7 +1,8 @@
 # Personality subsystem
 
 Separate from scheduling. `ChatterService` decides *how* to react to a message, `BotResponses`
-holds the canned lines, `ResponsePicker` chooses one, `MessageCues` detects intent (mood,
+holds the canned lines (one partial file per category in `Services/Personality/BotResponses/`,
+indexed at the top of `BotResponses.cs`), `ResponsePicker` chooses one, `MessageCues` detects intent (mood,
 greeting, verdicts, threats), `BreakdownService` plays the easter egg, `ReactionService` answers
 with an emote instead of words, `RivalryService` handles other bots. Verdicts ("good bot") are
 their own subsystem — see `bot-feedback.md`.
