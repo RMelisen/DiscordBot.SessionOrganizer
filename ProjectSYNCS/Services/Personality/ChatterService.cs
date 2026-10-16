@@ -185,6 +185,8 @@ internal sealed class ChatterService
 
         var mood = MessageCues.Analyze(content);
         var isOwner = message.Author.Id == OwnerId;
+        var name = ResolveName(message.Author);
+        var intent = ChatIntent.None;
         IntentPick pick;
         string what;
 
@@ -209,8 +211,9 @@ internal sealed class ChatterService
         // when her name is only mentioned (« @Luca, discute avec Syncs quand tu peux »): that
         // « tu » is Luca.
         else if (MessageCues.AddressesHer(content, _client.CurrentUser.Id)
-                 && TryIntent(MessageCues.ReadIntent(content), message, isOwner, out var intentPick))
+                 && TryIntent(intent = MessageCues.ReadIntent(content), message, isOwner, out var intentPick))
         {
+            if (TryAnswerFromRecords(intent, message, ChatPath.Name, intentPick, name, CurrentWeekday())) return true;
             what = "named intent";
             pick = intentPick;
         }
@@ -229,7 +232,6 @@ internal sealed class ChatterService
                 : IntentPick.Of(BotResponses.TalkedAboutLines, AnswerKinds.TalkedAbout);
         }
 
-        var name = ResolveName(message.Author);
         _logger.LogInformation("{Name} said her name without addressing her — {What}.", name, what);
         Count(message, ChatPath.Name, pick.Kind);
         await ReplyWithTypingAsync(message, Format(pick, name, CurrentWeekday()), what, pick.Mentions);
@@ -396,7 +398,10 @@ internal sealed class ChatterService
         IntentPick pick;
         string what = "mention reply";
         if (TryIntent(intent, message, isOwner: false, out var intentPick))
+        {
+            if (TryAnswerFromRecords(intent, message, ChatPath.Mention, intentPick, name, weekday)) return;
             (pick, what) = (intentPick, $"mention intent ({intent})");
+        }
         else if (mood.IsGreeting && !mean)
             pick = IntentPick.Of(BotResponses.Greetings, AnswerKinds.Greeting);
         else if (RollTataWarmth(message.Author.Id, mood))
@@ -480,6 +485,11 @@ internal sealed class ChatterService
         // LowEffort, so it is answered the same way rather than roasted as if unread.
         if (intent == ChatIntent.None && string.IsNullOrWhiteSpace(content) && message.Stickers.Count > 0)
             intent = ChatIntent.LowEffort;
+        // A bare « oui » / « non » under one of her questions answers it. Not when the post has its own
+        // context line (« oui » under the late call is « j'arrive »), which Papa never gets anyway.
+        if (!mean && MessageCues.ReadAnswer(content) is { } answer && AskedSomething(message.ReferencedMessage)
+            && (isOwner || ReadReplyContext(message) is null))
+            intent = answer;
 
         IntentPick pick;
         string what = "reply comeback";
@@ -495,6 +505,7 @@ internal sealed class ChatterService
         {
             // Papa reaches this only for an intent he has a twin for (or an opinion, which is
             // the same for everyone); the rest of his replies go on down to his own pools.
+            if (TryAnswerFromRecords(intent, message, ChatPath.Reply, intentPick, name, weekday)) return;
             (pick, what) = (intentPick, $"reply intent ({intent})");
         }
         else if (!mean && !isOwner && ReadReplyContext(message) is { } context)
@@ -646,6 +657,13 @@ internal sealed class ChatterService
             pick = isOwner
                 ? new IntentPick(BotResponses.OwnerRequestLines, BotResponses.RequestCommands[topic], string.Empty, null, kind)
                 : IntentPick.Of(BotResponses.RequestLines[topic], kind);
+            return true;
+        }
+
+        // Family asking « tu m'aimes ? » or « tu te souviens de moi ? » is not anyone asking.
+        if (message.Author.Id == BotResponses.TataId && BotResponses.TataIntentLines.TryGetValue(intent, out var tata))
+        {
+            pick = IntentPick.Of(tata, AnswerKinds.Intent(intent));
             return true;
         }
 
@@ -951,6 +969,79 @@ internal sealed class ChatterService
 
         Count(message, path, kind);
         await ReplyWithTypingAsync(message, fallback, what);
+    }
+
+    // Whether the message replied to asked something: a bare « oui » only answers a question.
+    private static bool AskedSomething(IMessage? replied) => replied?.Content?.Contains('?') == true;
+
+    // « tu m'aimes ? » and « tu te souviens de moi ? » are answered from her records, in a guild and
+    // never for the family, who have their own pools: the good and bad bots they gave her in the last
+    // 30 days decide whether she loves them, and one fact she keeps proves she remembers them. Read off the gateway
+    // handler, like the fact lines; true when it took the answer over. `plain` goes out when nothing
+    // applies or the read fails.
+    private bool TryAnswerFromRecords(
+        ChatIntent intent, SocketUserMessage message, ChatPath path, IntentPick plain, string name, string weekday)
+    {
+        if (intent is not (ChatIntent.DoYouLoveMe or ChatIntent.RememberMe)) return false;
+        if (message.Author.Id is OwnerId or BotResponses.TataId) return false;
+        if (message.Channel is not SocketGuildChannel guildChannel) return false;
+
+        var guildId = guildChannel.Guild.Id;
+        _ = Task.Run(() => ReplyFromRecordsAsync(intent, message, path, guildId, plain, name, weekday));
+        return true;
+    }
+
+    private async Task ReplyFromRecordsAsync(
+        ChatIntent intent, SocketUserMessage message, ChatPath path, ulong guildId, IntentPick plain, string name,
+        string weekday)
+    {
+        var what = $"{AnswerKinds.Key(path)} intent ({intent})";
+        try
+        {
+            await using var scope = _services.CreateAsyncScope();
+            var line = intent == ChatIntent.DoYouLoveMe
+                ? LovesMeLine(await scope.ServiceProvider.GetRequiredService<BotFeedbackService>()
+                    .GetTallyAsync(guildId, message.Author.Id, StatsPeriod.Month), name, weekday)
+                : RemembersLine(await scope.ServiceProvider.GetRequiredService<RecapService>()
+                    .GetAsync(guildId, message.Author.Id, StatsPeriod.AllTime), name, weekday);
+
+            if (line is not null)
+            {
+                Count(message, path, AnswerKinds.Intent(intent));
+                await ReplyWithTypingAsync(message, line, $"{what}, from her records", AllowedMentions.None);
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not read the records of {UserId} for a {Intent} answer.", message.Author.Id, intent);
+        }
+
+        Count(message, path, plain.Kind);
+        await ReplyWithTypingAsync(message, Format(plain, name, weekday), what, plain.Mentions);
+    }
+
+    // Whether she loves them is the last 30 days only, so a grudge can be worked off: more bad bots
+    // than good ones is the grudge (quoted, with its window), more good ones the treasure (never
+    // counted), a tie or nothing is null.
+    private string? LovesMeLine(FeedbackTally tally, string name, string weekday)
+    {
+        if (tally.Bad > tally.Good)
+            return string.Format(_picker.Pick(BotResponses.DoYouLoveMeGrudgeLines), name, weekday, $"{tally.Bad} bad bot en 30 jours");
+        if (tally.Good > tally.Bad)
+            return string.Format(_picker.Pick(BotResponses.DoYouLoveMeTreasureLines), name, weekday);
+        return null;
+    }
+
+    // A fact about them, all-time, proves she remembers: its line after an opener that says their
+    // name (the answer to « comment je m'appelle ? »). Null when no fact applies.
+    private string? RemembersLine(RecapStats stats, string name, string weekday)
+    {
+        if (ChatFacts.Pick(stats, Random.Shared) is not { } fact
+            || !BotResponses.ChatFactLines.TryGetValue(fact.Kind, out var pool))
+            return null;
+        var opener = string.Format(_picker.Pick(BotResponses.RememberMeOpeners), name);
+        return opener + " " + string.Format(_picker.Pick(pool), name, weekday, fact.A, fact.B);
     }
 
     // When the owner is flagged absent and someone (other than the owner) pings

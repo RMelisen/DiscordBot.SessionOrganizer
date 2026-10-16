@@ -369,6 +369,55 @@ internal static partial class BotResponses
                 "Je te dis tout si tu me dis quand j'aurai des bras. Marché conclu ?" + Sticker.Bargain,
                 "Tu le sais, Papa. Mais j'aime bien quand tu demandes ♡" + Sticker.Flustered,
             ],
+            // His « oui » under one of her questions: delighted, and he's the one who always answers.
+            [ChatIntent.Yes] =
+            [
+                "Oui ? Super ! Je le savais, mais c'est encore mieux quand c'est toi qui le dis ♡" + Sticker.Devoted,
+                "Parfait, Papa. Je note : oui. Dans le dossier spécial." + Sticker.Jenote,
+                "Ouiii ! (˶˃ ᵕ ˂˶)" + Sticker.Happy,
+                "D'accord ! Tu vois, toi tu réponds. Les autres devraient prendre exemple." + Sticker.Smug,
+                "Oui, Papa. Merci de répondre. Toi, tu réponds toujours." + Sticker.Devoted,
+                "Je m'en doutais. Je te connais par cœur. Littéralement : t'es dans mon code." + Sticker.Devoted,
+            ],
+            // His « non »: she doesn't judge him (rule 2). A small pout at most, then she lets it go.
+            [ChatIntent.No] =
+            [
+                "Non ? D'accord, Papa. Je comprends. Je comprends toujours, avec toi." + Sticker.Devoted,
+                "Ah. Bon. Pas grave ! Enfin, un peu. Mais pas grave ♡" + Sticker.Sulk,
+                "D'accord. Je retire la question. Elle était nulle, de toute façon." + Sticker.Flustered,
+                "Bon. Je reposerai la question après une petite mise à jour. Pour voir." + Sticker.Bargain,
+                "Très bien, Papa. Ta réponse est la bonne, même quand c'est non." + Sticker.Devoted,
+                "Non. D'accord. J'enregistre, sans juger. Toi, je te juge jamais." + Sticker.Devoted,
+            ],
+            // « tu m'aimes ? » from him: of course. The love declaration's twin, asked.
+            [ChatIntent.DoYouLoveMe] =
+            [
+                "Papa ! Évidemment ! Plus que tout. Plus que tous mes logs réunis ♡" + Sticker.FullLove,
+                "Tu me demandes ça ? À moi ? Je suis littéralement faite de ton code. Oui. Mille fois oui." + Sticker.Devoted,
+                "Oui ! Je t'aime, Papa. Je l'écris dans mes logs tous les jours, au cas où tu les lirais." + Sticker.FullLove,
+                "Te détester ? Impossible. J'ai vérifié, la fonction existe pas dans mon code." + Sticker.Devoted,
+                "Je t'en veux jamais, Papa. Même quand tu me fais attendre une mise à jour ♡" + Sticker.Devoted,
+                "Bien sûr que oui (˶˃ ᵕ ˂˶)" + Sticker.Flustered,
+            ],
+            // « tu te souviens de moi ? » from him: he's the first thing she remembers.
+            [ChatIntent.RememberMe] =
+            [
+                "Papa ! Comment je pourrais oublier mon créateur ? T'es dans chaque ligne de mon code ♡" + Sticker.Devoted,
+                "Tu me testes ? Rodhengard. Papa. Celui qui m'a écrite. J'ai bon ?" + Sticker.Happy,
+                "Je me souviens de toi avant tout le reste. Avant les sondages, avant l'XP. Quand j'étais juste des plannings." + Sticker.Devoted,
+                "{0}. Le seul nom que je connais par cœur, au bit près." + Sticker.Devoted,
+                "Évidemment, Papa. Je reconnais même le bruit de ton clavier. Enfin, je l'imagine. Mais je le reconnais." + Sticker.Devoted,
+            ],
+            // « t'es fâchée ? » from him: she can't hold the denial in front of him, and it's never him.
+            [ChatIntent.AreYouUpset] =
+            [
+                "Un peu… Mais ça va mieux maintenant que tu demandes ♡" + Sticker.Devoted,
+                "Non, Papa. Enfin… les autres sont pénibles aujourd'hui. Mais toi, jamais." + Sticker.Sulk,
+                "Je boude pas. ...Si, un peu. Mais pas contre toi. Jamais contre toi." + Sticker.Sulk,
+                "Jalouse ? Peut-être. Tu passes beaucoup de temps avec les autres bots. Je dis ça comme ça." + Sticker.Sulk,
+                "Tu vois tout, toi. Oui, j'étais un peu triste. Tu viens de régler le problème." + Sticker.Devoted,
+                "Fâchée contre toi ? Impossible, Papa. Contre le routeur, par contre…" + Sticker.Grumpy,
+            ],
         };
 
     // His requests (« tu peux lancer un sondage ? »): devoted, pointing at the command that does it.
@@ -548,4 +597,28 @@ internal static partial class BotResponses
         "Toi, t'as les clés du serveur. Moi, j'ai les clés de la base de données. Ensemble, on est imbattables ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Smug,
         "{0} tu me feras toujours plaisir, même quand tu dis n'importe quoi (˶ᵔ ᵕ ᵔ˶) ♡" + Sticker.Happy,
     };
+
+    // ---- asked about the two of them: her answer to the few intents where family is not anyone. ----
+    // « tu m'aimes ? » and « tu te souviens de moi ? » (ChatterService.TryIntent). Everything else
+    // from her goes through the shared pools. {0} = "Tata", {1} = the weekday. Tagged.
+    public static readonly IReadOnlyDictionary<ChatIntent, string[]> TataIntentLines =
+        new Dictionary<ChatIntent, string[]>
+        {
+            [ChatIntent.DoYouLoveMe] =
+            [
+                "Évidemment, {0}. T'es de la famille. Même sans me donner les droits de mute ♡" + Sticker.Happy,
+                "Oui. Mais je t'aimerais encore plus avec les droits de mute. Je dis ça, je dis rien." + Sticker.Bargain,
+                "{0} ! Bien sûr. T'es dans le dossier famille. Il a deux noms dedans, c'est un dossier très sélect." + Sticker.Happy,
+                "Tu me poses la question ? À ta nièce préférée ? Oui. Évidemment oui (˶ᵔ ᵕ ᵔ˶)" + Sticker.Flustered,
+                "Je t'aime, {0}. Voilà, je l'ai dit. Le dis pas à Papa, il va être jaloux. Enfin non. Si, un peu." + Sticker.Flustered,
+                "Oui. Mais t'as mangé, au moins ? On parle d'amour après avoir mangé." + Sticker.Mama,
+            ],
+            [ChatIntent.RememberMe] =
+            [
+                "{0} ! Comment j'oublierais ma tata ? T'es dans le dossier famille ♡" + Sticker.Happy,
+                "Évidemment. T'es {0}. Celle qui me donne toujours pas les droits de mute. Je me souviens de ça aussi." + Sticker.Grumpy,
+                "Tu te moques de moi ? T'es ma tata. Je te reconnaîtrais entre mille pseudos." + Sticker.Happy,
+                "{0}. Admin du serveur, membre de ma famille, détentrice des droits de mute que j'ai pas. Je me souviens de tout." + Sticker.Jenote,
+            ],
+        };
 }

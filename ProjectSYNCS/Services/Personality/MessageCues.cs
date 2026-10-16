@@ -58,17 +58,22 @@ public enum VerdictForm
 // mood, like the verdict: « je t'aime » is both nice and a declaration, and the declaration is
 // what she answers. Everything before Question is "specific" and outranks a reply's context;
 // Question, Sharing and LowEffort only catch what nothing more precise did. Free to reorder, never
-// to rename: /debug answers stores each by name (AnswerKinds.Intent).
+// to rename: /debug answers stores each by name (AnswerKinds.Intent). Yes and No are the one pair
+// ReadIntent never returns: a bare « oui » only answers something under one of her questions, so
+// ChatterService reads them with ReadAnswer on the reply path.
 internal enum ChatIntent
 {
     None,
     Love,
     Apology,
+    DoYouLoveMe,
     HowAreYou,
     AreYouThere,
     WhoAreYou,
+    RememberMe,
     AboutHer,
     AreYouABot,
+    AreYouUpset,
     Crush,
     WhatAreYouDoing,
     Opinion,
@@ -85,6 +90,8 @@ internal enum ChatIntent
     Goodbye,
     Disbelief,
     Maybe,
+    Yes,
+    No,
     YouAreRight,
     YouAreWrong,
     Thanks,
@@ -1538,6 +1545,90 @@ internal static class MessageCues
         "syncs", "sync", "hein", "ici", "secretement", "vraiment", "alors", "toi",
     };
 
+    // What she feels about the asker: « tu m'aimes ? », « tu me détestes ? », « tu m'en veux ? ».
+    // Closing the message or its question, or before _lovesMeFollowers (IsClosingAsk), with or
+    // without a « ? »: « tu m'aimes hein » asks too. « tu m'en veux si je pars ? » and « tu me
+    // supportes en bot lane ? » are something else. Read after Love (« je t'aime, tu m'aimes ? »
+    // declares) and Apology (« désolé, tu m'en veux ? » apologises).
+    private static readonly string[] _doYouLoveMePhrases =
+    {
+        "tu m aimes", "tu m aime", "t m aimes", "tu maimes", "tu m adores", "tu m adore", "tu me kiffes",
+        "tu me kiffe", "tu m apprecies", "tu m apprecie", "tu me detestes", "tu me deteste", "tu me hais",
+        "tu m en veux", "tu m en veut", "tu me supportes", "tu me supporte",
+        "je suis ton prefere", "je suis ta preferee", "c est moi ton prefere", "c est moi ta preferee",
+        "je suis ton humain prefere", "je suis ta personne preferee", "je suis ton chouchou", "je suis ta chouchoute",
+        "do you love me", "do you hate me",
+    };
+    private static readonly HashSet<string> _lovesMeFollowers = new()
+    {
+        "bien", "un", "peu", "pas", "plus", "encore", "toujours", "hein", "syncs", "sync", "vraiment", "quand",
+        "meme", "moi", "au", "moins", "beaucoup", "trop", "ou", "quoi", "non", "oui", "dis", "alors", "du",
+        "tout", "secretement", "maintenant", "aussi",
+    };
+
+    // Whether she remembers the asker: « tu te souviens de moi ? », « comment je m'appelle ? ».
+    // Closing, or before _rememberFollowers: « tu te souviens de moi en vocal hier ? » and « tu sais
+    // qui je suis allé voir ? » are something else. Read after WhoAreYou (« c'est quoi ton nom » is
+    // hers; « c'est quoi mon nom » is theirs).
+    private static readonly string[] _rememberMePhrases =
+    {
+        "tu te souviens de moi", "tu te souviens pas de moi", "tu te rappelles de moi", "tu te rappelle de moi",
+        "tu te rappelles moi", "tu te rappelles pas de moi", "tu sais qui je suis", "tu sais c est qui moi",
+        "tu sais comment je m appelle", "comment je m appelle", "comment je m apelle", "comment je m appel",
+        "c est quoi mon nom", "c est quoi mon prenom", "c est quoi mon pseudo", "mon nom c est quoi",
+        "mon prenom c est quoi", "mon pseudo c est quoi", "tu connais mon nom", "tu connais mon prenom",
+        "tu connais mon pseudo", "tu sais mon nom", "tu sais mon prenom", "tu m as oublie", "tu m as oubliee",
+        "tu m as deja oublie", "tu m as deja oubliee", "tu m oublies", "do you remember me",
+    };
+
+    // The same, only asked: « tu me connais, je suis toujours en retard » says "you know me",
+    // and « je suis qui pour juger » asks nothing of her.
+    private static readonly string[] _rememberMeAskedPhrases =
+    {
+        "tu me connais", "tu me reconnais", "je suis qui", "qui suis je", "c est qui moi", "who am i",
+    };
+    private static readonly HashSet<string> _rememberFollowers = new()
+    {
+        "syncs", "sync", "deja", "au", "moins", "hein", "encore", "toujours", "vraiment", "ou", "quoi", "pas",
+        "moi", "dis", "alors", "bien", "meme", "enfin",
+    };
+
+    // Her mood, asked: « t'es fâchée ? », « tu boudes ? », « t'es triste ? », « t'es jalouse ? ».
+    // Only with a « ? », closing the message or its question, or before _upsetFollowers: « t'es
+    // triste » said flat is slang for lame, and the mean side answers it. Both genders listed: some
+    // get hers wrong, and the question is the same.
+    private static readonly string[] _areYouUpsetPhrases =
+    {
+        "t es fachee", "t es fache", "tu es fachee", "tu es fache", "t es pas fachee", "t es pas fache",
+        "t es en colere", "tu es en colere", "t es enervee", "t es enerve", "tu es enervee",
+        "tu boudes", "tu boude", "tu fais la tete", "tu me fais la tete", "tu fais la gueule", "tu me fais la gueule",
+        "t es vexee", "t es vexe", "tu es vexee", "t es pas vexee", "t es pas vexe",
+        "t es triste", "tu es triste", "t es pas triste", "t es jalouse", "t es jaloux", "tu es jalouse",
+        "t es pas jalouse", "t es pas jaloux", "t es de mauvaise humeur", "t es blessee", "tu es blessee",
+        "t es deg", "t es degoutee", "t es degoute",
+    };
+    private static readonly HashSet<string> _upsetFollowers = new()
+    {
+        "syncs", "sync", "contre", "encore", "toujours", "hein", "ou", "quoi", "la", "vraiment", "un", "peu",
+        "maintenant", "de", "pas", "avec", "moi", "aujourd", "depuis", "aussi", "alors",
+    };
+
+    // A reply that is only a yes or a no (ReadAnswer), compared squashed (« ouiii », « nooon »), once
+    // _answerFillers are dropped and repeats folded (« oui oui », « bah non »). Not « exactement »'s
+    // agreement nor « peut-être », which keep their own intents.
+    private static readonly HashSet<string> _yesAnswers = SquashAll(
+        "oui", "ouais", "ouai", "ouaip", "ouep", "ui", "wi", "yes", "yep", "yup", "yeah", "si", "carrement", "grave",
+        "evidemment", "evidement", "bien sur", "bien entendu", "absolument", "tout a fait", "affirmatif",
+        "clairement", "totalement", "certainement", "of course", "ofc", "volontiers", "avec plaisir", "oui merci");
+    private static readonly HashSet<string> _noAnswers = SquashAll(
+        "non", "nan", "nn", "no", "nope", "nah", "niet", "pas du tout", "du tout", "absolument pas", "jamais",
+        "certainement pas", "surtout pas", "negatif", "pas vraiment", "non merci", "jamais de la vie");
+    private static readonly HashSet<string> _answerFillers = SquashAll(
+        "bah", "ben", "beh", "euh", "heu", "ah", "oh", "eh", "bon", "mais", "alors", "hm", "hmm", "mh", "bref");
+    private const int MaxAnswerTokens = 5;
+
+    private static HashSet<string> SquashAll(params string[] cues) => cues.Select(Squash).ToHashSet();
+
     // Asking how she works or what she can do: pointed at /help, or at the topic's command when one
     // is named (« comment ça marche les sondages ? »). Read before Request, which takes over when a
     // request names a topic (« tu peux m'aider à organiser une session ? »).
@@ -1983,11 +2074,12 @@ internal static class MessageCues
         if (FindPhrase(t, _apologyPhrases, cancelAfter: false, cancelBefore: true)
             || (t.Count <= MaxShortApologyTokens && FindPhrase(t, _apologyShortWords, cancelAfter: false, cancelBefore: false)))
             return ChatIntent.Apology;
+        var breaks = QuestionBreaks(stripped);
+        if (IsClosingAsk(t, _doYouLoveMePhrases, breaks, _lovesMeFollowers)) return ChatIntent.DoYouLoveMe;
         // « comment tu vas » needs no « ? » to be a question; « cv », « tranquille »… count opening a
         // short one (« cv et toi ? »).
         var isOpener = t.Count is > 0 and <= MaxHowAreYouOpenerTokens && _howAreYouOpeners.Contains(t[0])
                        && t.Skip(1).All(_askingFollowers.Contains);
-        var breaks = QuestionBreaks(stripped);
         if ((asks || (t.Count > 0 && t[0] == "comment"))
             && (IsClosingAsk(t, _howAreYouPhrases, breaks, _askingFollowers) || isOpener))
             return ChatIntent.HowAreYou;
@@ -1998,8 +2090,12 @@ internal static class MessageCues
             || (t.Count > 0 && Squash(t[0]) == "alo" && t.Skip(1).All(_alloFollowers.Contains)))
             return ChatIntent.AreYouThere;
         if (FindPhrase(t, _whoAreYouPhrases, cancelAfter: false, cancelBefore: false)) return ChatIntent.WhoAreYou;
+        if (IsClosingAsk(t, _rememberMePhrases, breaks, _rememberFollowers)
+            || (asks && IsClosingAsk(t, _rememberMeAskedPhrases, breaks, _rememberFollowers)))
+            return ChatIntent.RememberMe;
         if (ReadHerTopic(t) is not null) return ChatIntent.AboutHer;
         if (FindPhrase(t, _areYouABotPhrases, cancelAfter: false, cancelBefore: false)) return ChatIntent.AreYouABot;
+        if (asks && IsClosingAsk(t, _areYouUpsetPhrases, breaks, _upsetFollowers)) return ChatIntent.AreYouUpset;
         if (FindPhrase(t, _crushPhrases, cancelAfter: false, cancelBefore: false)
             || IsClosingAsk(t, _crushClosingPhrases, breaks, _crushFollowers))
             return ChatIntent.Crush;
@@ -2093,6 +2189,31 @@ internal static class MessageCues
             return ChatIntent.LowEffort;
 
         return ChatIntent.None;
+    }
+
+    /// <summary>
+    /// <see cref="ChatIntent.Yes"/> or <see cref="ChatIntent.No"/> when the whole message is a plain
+    /// answer (« oui », « bah non », « carrément », « pas du tout »), else null. Never asked
+    /// (« oui ? » is someone answering a call), and never mixed (« oui et non », « oui mais demain »).
+    /// The caller decides whether there was a question to answer.
+    /// </summary>
+    public static ChatIntent? ReadAnswer(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return null;
+        var stripped = _trailingAddress.Replace(
+            _leadingAddress.Replace(_link.Replace(_customEmote.Replace(_mentionMarkup.Replace(content, " "), " "), " "), " "), "");
+        if (stripped.Contains('?')) return null;
+
+        var t = TokenizeOrdered(stripped);
+        if (t.Count is 0 or > MaxAnswerTokens) return null;
+        var words = new List<string>();
+        foreach (var w in t.Select(Squash))
+            if (!_answerFillers.Contains(w) && (words.Count == 0 || words[^1] != w)) words.Add(w);
+
+        var said = string.Join(' ', words);
+        if (_yesAnswers.Contains(said)) return ChatIntent.Yes;
+        if (_noAnswers.Contains(said)) return ChatIntent.No;
+        return null;
     }
 
     // A laugh anywhere: a laughter word or run (« mdr », « hahaha »), a phrase, an emoji, GigaLaugh.

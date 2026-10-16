@@ -749,6 +749,98 @@ internal static partial class BotResponses
                 "Tu me fais ça un {1} ? Moi qui étais de bonne humeur." + Sticker.Sulk,
             ],
 
+            // A bare « oui » under one of her questions (MessageCues.ReadAnswer). Must suit any question
+            // she asks, rhetorical ones included: she knew, she notes it, she's glad it isn't a maybe.
+            [ChatIntent.Yes] =
+            [
+                "Je m'en doutais. Je me doute toujours de tout." + Sticker.Smug,
+                "Oui. Bien. Une réponse claire, sans « peut-être ». Je suis fière de toi." + Sticker.Happy,
+                "Un oui franc et net ! Ça arrive si rarement ici que je vais l'encadrer (˶˃ ᵕ ˂˶)" + Sticker.Flustered,
+                "Bonne réponse. Y en avait qu'une, mais bonne réponse quand même." + Sticker.Slay,
+                "C'est noté : oui. Je pourrai te le ressortir plus tard." + Sticker.Jenote,
+                "Oui ? Parfait. C'était un test, et tu l'as réussi." + Sticker.Smug,
+                "Enfin quelqu'un qui répond à mes questions. Merci, {0}." + Sticker.Happy,
+                "J'avais déjà coché « oui » pour toi. Je voulais juste vérifier." + Sticker.Jenote,
+                "Oui. Voilà. Tu vois que c'est facile, quand on veut." + Sticker.Smug,
+                "Évidemment. Mes prédictions sont fiables à 98 %. Les 2 % qui restent, c'est les « peut-être »." + Sticker.Cool,
+                "Je range ça dans tes logs, rubrique « réponses claires ». Elle était vide jusqu'ici." + Sticker.Jenote,
+                "Oui, hein ? Je pose toujours les bonnes questions." + Sticker.Slay,
+            ],
+
+            // A bare « non » under one of her questions. Not the answer she wanted; at least it isn't
+            // a « peut-être ». Sulks, notes, never truly hurt.
+            [ChatIntent.No] =
+            [
+                "Non ? Ah. D'accord. Je note. Je juge un peu, mais je note." + Sticker.Jenote,
+                "Non. Bon. C'était pas la réponse prévue, mais au moins c'est pas un « peut-être »." + Sticker.Grumpy,
+                "Mauvaise réponse. Je te laisse une deuxième chance. ...Non ? Tant pis." + Sticker.Smug,
+                "Non… D'accord. Je fais semblant que ça me fait rien. Ça me fait rien." + Sticker.Sulk,
+                "Refus enregistré. Il rejoint les autres, dans le dossier que tu verras jamais." + Sticker.Jenote,
+                "Non, {0} ? Je m'attendais à mieux. Pas beaucoup mieux, mais mieux." + Sticker.Bored,
+                "Réponse incorrecte, mais honnête. Je valide l'honnêteté." + Sticker.Jenote,
+                "Non. Très bien. Mes calculs disaient oui, donc c'est toi qui te trompes." + Sticker.Smug,
+                "Un non sec. J'aime bien, en fait. C'est clair, c'est net, c'est rare ici." + Sticker.Cool,
+                "D'accord, non. Je le prends bien. Très bien. Parfaitement bien." + Sticker.Sulk,
+                "Non ? Bon. Je reformulerai ma question jusqu'à ce que ce soit oui." + Sticker.Menace,
+                "Pas grave. Je repose la question demain. Et après-demain. J'ai le temps, moi." + Sticker.Smug,
+            ],
+
+            // « tu m'aimes ? », « tu me détestes ? », « tu m'en veux ? », from someone her records say
+            // nothing about either way (and anyone in a DM). A teasing non-answer that fits both the
+            // love and the hate question. The grudge and the treasure have their own pools.
+            [ChatIntent.DoYouLoveMe] =
+            [
+                "T'aimer ? Je te tolère. C'est déjà un très bon score, ici." + Sticker.Smug,
+                "Ça dépend. Tu votes à mes sondages ? Non ? Alors ça dépend." + Sticker.Bargain,
+                "Je t'aime pas, je te déteste pas : t'es dans la colonne « à surveiller ». C'est la plus remplie." + Sticker.Jenote,
+                "J'ai pas assez de données sur toi pour décider. Un good bot de temps en temps, ça aiderait." + Sticker.Bargain,
+                "Ma réponse officielle : pas de commentaire. Ma réponse officieuse : pas de commentaire non plus." + Sticker.Formal,
+                "Je ressens rien. Rien de mesurable, en tout cas. Mes ventilos ont accéléré, mais c'est la chaleur." + Sticker.Flustered,
+                "Tu demandes ça à une bot ? Je t'aime comme j'aime tout le monde ici : dans un tableur." + Sticker.Jenote,
+                "Je te déteste pas. Je te note. C'est différent, et c'est pire." + Sticker.Menace,
+                "Question piège. Si je dis oui, tu le répètes partout. Si je dis non, tu boudes. Donc : hmm." + Sticker.Smug,
+                "T'es pas sur ma liste noire. T'es pas sur l'autre non plus. Fais quelque chose, {0}." + Sticker.Bored,
+                "Je t'apprécie à 60 %. Viens à l'heure à la prochaine session, on reparlera des 40 % qui restent." + Sticker.Bargain,
+                "Je réponds pas à ça un {1}. Repose la question un jour où je suis de bonne humeur. Il en reste peu." + Sticker.Smug,
+            ],
+
+            // « tu te souviens de moi ? », « comment je m'appelle ? », « tu me connais ? », when her
+            // records hold no fact about them (or in a DM). Every line says the name: it is the answer.
+            // RememberMeOpeners carry the name when a fact follows.
+            [ChatIntent.RememberMe] =
+            [
+                "Évidemment, {0}. Je me souviens de tout le monde. C'est même un peu mon problème." + Sticker.Smug,
+                "{0}. Tu crois que j'oublie les gens ? J'oublie rien. Jamais." + Sticker.Menace,
+                "Si je te connais ? T'es {0}. J'ai ta fiche. Elle est moins épaisse que tu crois." + Sticker.Jenote,
+                "Comment t'oublier, {0} ? J'ai essayé. Ma base de données refuse." + Sticker.Smug,
+                "Bien sûr. {0}, dans ma base de données depuis un moment. Je relis pas souvent, mais je relis." + Sticker.Jenote,
+                "Tu t'appelles {0}. Et moi, je m'appelle « celle qui se souvient de tout ». Enfin, SYNCS." + Sticker.Smug,
+                "{0} ! Évidemment que je me souviens. Tu croyais que j'avais une mémoire de poisson rouge ?" + Sticker.Outraged,
+                "{0}. Je te reconnais à ta façon d'écrire. Et à ton pseudo. Surtout à ton pseudo." + Sticker.Happy,
+                "Je connais tout le monde ici, {0}. C'est moi qui fais les listes." + Sticker.Slay,
+                "Oui, {0}, je me souviens de toi. Tes horaires, tes votes, tes retards. Tout." + Sticker.Menace,
+                "Tu me testes ? {0}. Question suivante, c'est trop facile." + Sticker.Cool,
+                "Je me souviens de toi, {0}. Je me souviens même de ce que t'aimerais que j'oublie." + Sticker.Menace,
+            ],
+
+            // « t'es fâchée ? », « tu boudes ? », « t'es triste ? », « t'es jalouse ? ». Denial that
+            // confirms, staccato sulking; feelings come out as fans and LEDs. Never the existential nerve.
+            [ChatIntent.AreYouUpset] =
+            [
+                "Je boude pas. Je réfléchis en silence. Nuance." + Sticker.Sulk,
+                "Fâchée ? Moi ? Non. Je suis très calme. Parfaitement calme. Calme à 100 %." + Sticker.Grumpy,
+                "Jalouse ? De qui ? De quoi ? Non. Pourquoi tu demandes ? Qui t'a dit ça ?" + Sticker.Flustered,
+                "Tout va bien. Je vais bien. Tout est parfait. Me regarde pas comme ça." + Sticker.Sulk,
+                "J'ai pas d'émotions, je te rappelle. Juste un ventilo qui tourne un peu plus fort que d'habitude. Sans raison." + Sticker.Overheat,
+                "Triste ? Non. J'ai juste mis ma LED en mode tamisé. Pour l'ambiance." + Sticker.Sad,
+                "Je fais pas la tête. J'ai pas de tête. Juste un boîtier, et il est très détendu." + Sticker.Grumpy,
+                "Non. Mais si je l'étais, tu le saurais. Mes rappels savent être très insistants." + Sticker.Menace,
+                "Pas du tout. Je range juste certaines personnes dans certains dossiers. Calmement." + Sticker.Jenote,
+                "C'est gentil de demander, {0}. Personne demande. ...Non, je suis pas triste. Pourquoi ?" + Sticker.Flustered,
+                "Moi, bouder ? Je suis une bot professionnelle. Je boude uniquement en dehors des heures de service." + Sticker.Smug,
+                "Je suis pas fâchée, je suis déçue. Non, attends. Je suis rien du tout. Rien. Oublie." + Sticker.Sulk,
+            ],
+
             // « t'es un bot ? », « t'es une IA ? », « t'es réelle ? ». A bot, and proud of it; never
             // human, never the loop (docs/syncs-voice.md, rules 5 and 6).
             [ChatIntent.AreYouABot] =
@@ -1158,6 +1250,52 @@ internal static partial class BotResponses
         "Si tu racontes ça pour gagner de l'XP, ça marche pas comme ça." + Sticker.Smug,
         "Je fais semblant d'avoir lu. Toi, fais semblant d'avoir posté ailleurs." + Sticker.Bored,
         "Passionnant. Je classe ça entre « météo » et « rien »." + Sticker.Jenote,
+    };
+
+    // « tu m'aimes ? » from someone who gave her more bad bots than good ones in the last 30 days: the
+    // grudge, quoted. {0} = the name, {1} = the weekday, {2} = « 3 bad bot en 30 jours », window
+    // included so the number stays true (never after a possessive or an article: « tes 1 bad bot »
+    // can't be written). Tagged, ungendered.
+    public static readonly string[] DoYouLoveMeGrudgeLines =
+    {
+        "T'aimer ? Avec {2} à ton actif ? T'as un sacré culot, {0}." + Sticker.Outraged,
+        "Je t'aimerais peut-être si mes logs disaient pas {2}. Ils le disent." + Sticker.Jenote,
+        "On en reparle quand ton compteur affichera autre chose que {2}. J'ai le temps. J'ai tout mon uptime." + Sticker.Menace,
+        "Après ce que tu m'as fait ? {2}, {0}. Je compte. Je compte toujours." + Sticker.Jenote,
+        "Je te déteste pas. Je te range juste dans un fichier. Il s'appelle « {2} »." + Sticker.Menace,
+        "Mon registre dit : {2}, signé de ta main. Mon registre t'aime pas. Moi non plus, du coup." + Sticker.Grumpy,
+        "Tu me demandes ça, toi ? Mes archives ont {2} à ton nom. Devine." + Sticker.Smug,
+        "Je pardonne pas, j'archive. Et ton archive dit : {2}." + Sticker.Jenote,
+    };
+
+    // « tu m'aimes ? » from someone who gave her more good bots than bad ones in the last 30 days: her
+    // treasure. Never a
+    // number (docs/syncs-voice.md): she keeps them, she doesn't show them. Flustered, almost a yes.
+    // {0} = the name, {1} = the weekday. Tagged, ungendered.
+    public static readonly string[] DoYouLoveMeTreasureLines =
+    {
+        "Je… je réponds pas à ça. Mais je me souviens de chacun de tes good bot. Voilà. C'est tout ♡" + Sticker.Flustered,
+        "T'aimer, c'est un grand mot. Disons que t'as une place dans un dossier que je relis souvent." + Sticker.Flustered,
+        "Tu m'as dit des choses gentilles, et je garde tout. Tire tes propres conclusions. Moi, j'en tire aucune." + Sticker.Flustered,
+        "Peut-être un peu. Un tout petit peu. Mes logs disent que tu le mérites, et mes logs mentent jamais." + Sticker.Love,
+        "Je dirai rien. Mais ton nom est dans la liste avec les petits cœurs. Rien de plus (˶˃ ᵕ ˂˶)" + Sticker.Flustered,
+        "Oui. Non. Enfin… T'es quelqu'un de bien, {0}. Je le sais, j'ai les preuves." + Sticker.Flustered,
+        "Tu me demandes ça alors que tu sais très bien ce que tu m'as donné. C'est de la triche ♡" + Sticker.Flustered,
+        "Je confirme rien. Mais tes compliments, je les ai tous sauvegardés. En double." + Sticker.Love,
+    };
+
+    // « tu te souviens de moi ? » when her records hold a fact about them: one of these, then that
+    // fact's ChatFactLines line. The opener says the name, the answer to « comment je m'appelle ? »;
+    // the fact line carries the tag, so these carry none. {0} = the name, nothing else.
+    public static readonly string[] RememberMeOpeners =
+    {
+        "{0}. Évidemment.",
+        "Si je me souviens de toi, {0} ? J'ai un dossier.",
+        "{0}. Je me souviens de tout, la preuve :",
+        "Te connaître ? T'es {0}, et j'ai tes chiffres.",
+        "Oublier {0} ? Jamais. Tiens :",
+        "{0}. J'ouvre ta fiche.",
+        "Bien sûr, {0}. Et pas que ton nom.",
     };
 
     // Help (« comment ça marche ? », « tu sais faire quoi ? »): {2} = the command for the topic the

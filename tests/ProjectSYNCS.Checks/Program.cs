@@ -37,7 +37,7 @@ var taggedPools = new[]
     "IntentLines", "HowAreYouTempLines", "ReplyContextLines", "StreakNudgeLines", "StreakEndLines",
     "ChatFactLines", "OwnerIntentLines", "RequestLines", "OpinionLines", "PreferLines", "OwnerRequestLines",
     "HelpLines", "AboutHerLines", "ShipChatLines", "ShipBestMatchLines", "ShipWorstMatchLines",
-    "SharingShrugLines", "ChoiceLines",
+    "SharingShrugLines", "ChoiceLines", "DoYouLoveMeGrudgeLines", "DoYouLoveMeTreasureLines", "TataIntentLines",
 };
 foreach (var f in taggedPools)
 foreach (var (name, lines) in Pools(f))
@@ -72,7 +72,7 @@ Covers("RequestCommands", topicType);
 Covers("ReplyContextLines", typeof(ReplyContext));
 Covers("ChatFactLines", typeof(ChatFact));
 var owner = (IDictionary)Field("OwnerIntentLines");
-if (owner.Count != 17) Fail($"OwnerIntentLines has {owner.Count} keys, expected 17");
+if (owner.Count != 22) Fail($"OwnerIntentLines has {owner.Count} keys, expected 22");
 
 // 3. Sulk reactions parse.
 foreach (var r in (string[])Field("StreakSulkReactions"))
@@ -634,6 +634,9 @@ var byIntent = new (string Intent, string[] Samples)[]
     ("Joke", new[] { "raconte une blague", "fais-moi rire", "t'as une blague ?", "une blague ?", "tu peux me raconter une blague ?" }),
     ("FunFact", new[] { "un fun fact ?", "dis-moi un truc", "apprends-moi un truc", "raconte-moi quelque chose" }),
     ("Blame", new[] { "c'est la faute de qui ?", "c'est qui le coupable ?", "à qui la faute ?" }),
+    ("DoYouLoveMe", new[] { "tu m'aimes ?", "tu m'aimes bien ?", "tu me détestes ?", "tu m'en veux ?", "je suis ton préféré ?" }),
+    ("RememberMe", new[] { "tu te souviens de moi ?", "comment je m'appelle ?", "tu me connais ?", "tu sais qui je suis ?", "c'est quoi mon pseudo ?" }),
+    ("AreYouUpset", new[] { "t'es fâchée ?", "tu boudes ?", "t'es triste ?", "t'es jalouse ?", "tu me fais la tête ?" }),
 };
 
 string WithTrailingName(string s) =>
@@ -665,8 +668,9 @@ Console.WriteLine($"variants: {checkedCount} readings, {variantFailures.Count} o
 foreach (var f in variantFailures) Console.WriteLine("  " + f);
 if (variantFailures.Count > 0) Fail($"{variantFailures.Count} variant readings off");
 
-// Every intent the enum has is covered by the table above, so a new one can't ship untested.
-var covered = byIntent.Select(b => b.Intent).ToHashSet();
+// Every intent the enum has is covered by the table above, so a new one can't ship untested. Yes and
+// No are read by ReadAnswer instead (section 21).
+var covered = byIntent.Select(b => b.Intent).Append("Yes").Append("No").ToHashSet();
 foreach (var v in Enum.GetNames(intentType).Where(n => n != "None"))
     if (!covered.Contains(v)) Fail($"intent {v} has no samples in the variant table");
 
@@ -865,6 +869,74 @@ foreach (var f in new[] { "BlameLines", "BlameSelfLines", "BlameQuokkaLines", "B
         try { string.Format(l.Replace("{0}", "{2}"), "Nom", "lundi", "<@1>", ""); } catch (FormatException) { Fail($"{f}: {l}"); }
 if (!((string[])Field("BlamePapaDodgeLines")).Any(l => l.StartsWith("~~"))) Fail("no struck-through Papa dodge line left for chat");
 if (!((string[])Field("BlamePapaDodgeQuokkaLines")).Any(l => l.StartsWith("~~"))) Fail("no struck-through Papa-Quokka dodge line left for chat");
+
+// 21. Yes / No under her questions, « tu m'aimes ? », « tu te souviens de moi ? », « t'es fâchée ? »,
+// with the chat each must leave alone.
+foreach (var (text, expected) in new[]
+{
+    // DoYouLoveMe.
+    ("tu m'aimes ?", "DoYouLoveMe"), ("tu m'aimes", "DoYouLoveMe"), ("tu m'aimes pas ?", "DoYouLoveMe"),
+    ("tu m'aimes un peu ?", "DoYouLoveMe"), ("est-ce que tu m'aimes ?", "DoYouLoveMe"), ("tu me détestes ou quoi ?", "DoYouLoveMe"),
+    ("tu m'en veux encore ?", "DoYouLoveMe"), ("tu me kiffes ?", "DoYouLoveMe"), ("tu m'apprécies ?", "DoYouLoveMe"),
+    ("je suis ta préférée ?", "DoYouLoveMe"), ("tu me supportes plus ?", "DoYouLoveMe"),
+    ("je t'aime, tu m'aimes ?", "Love"), ("désolé, tu m'en veux ?", "Apology"), ("tu m'en veux si je pars ?", "Question"),
+    ("tu me supportes en bot lane ?", "Question"), ("il m'aime pas", "None"), ("tu m'aimes plus que Luca ?", "DoYouLoveMe"),
+    // RememberMe.
+    ("tu te souviens de moi ?", "RememberMe"), ("tu te souviens pas de moi ?", "RememberMe"), ("tu te rappelles de moi", "RememberMe"),
+    ("comment je m'appelle ?", "RememberMe"), ("comment je m'appelle déjà ?", "RememberMe"), ("c'est quoi mon prénom ?", "RememberMe"),
+    ("tu me reconnais ?", "RememberMe"), ("tu sais qui je suis ?", "RememberMe"), ("je suis qui ?", "RememberMe"),
+    ("tu m'as oublié ?", "RememberMe"), ("qui suis-je ?", "RememberMe"), ("tu connais mon nom ?", "RememberMe"),
+    ("tu me connais, je suis toujours en retard", "None"), ("je suis qui pour juger", "Sharing"),
+    ("tu te souviens de moi en vocal hier ?", "Question"), ("tu sais qui je suis allé voir ?", "Question"),
+    ("c'est quoi mon pseudo sur Steam ?", "Question"), ("comment tu t'appelles ?", "WhoAreYou"), ("c'est quoi ton nom ?", "WhoAreYou"),
+    ("tu m'as oublié pour la session ?", "Question"),
+    // AreYouUpset.
+    ("t'es fâchée ?", "AreYouUpset"), ("t'es fâché ?", "AreYouUpset"), ("t'es fâchée contre moi ?", "AreYouUpset"),
+    ("tu boudes ?", "AreYouUpset"), ("tu boudes encore ?", "AreYouUpset"), ("t'es pas fâchée ?", "AreYouUpset"),
+    ("t'es jalouse de lui ?", "AreYouUpset"), ("t'es triste là ?", "AreYouUpset"), ("t'es en colère ?", "AreYouUpset"),
+    ("t'es vexée ?", "AreYouUpset"), ("ça va ? t'es fâchée ?", "HowAreYou"),
+    ("t'es fâchée", "None"), ("t'es triste ce soir ou tu viens ?", "Question"),
+})
+{
+    var got = readIntent.Invoke(null, new object[] { text })!.ToString();
+    if (got != expected) Fail($"ReadIntent(\"{text}\") = {got}, expected {expected}");
+}
+
+var readAnswer = cues.GetMethod("ReadAnswer", BindingFlags.Public | BindingFlags.Static)!;
+foreach (var (text, expected) in new[]
+{
+    ("oui", "Yes"), ("ouiii", "Yes"), ("ouais", "Yes"), ("bah oui", "Yes"), ("oui oui", "Yes"), ("carrément", "Yes"),
+    ("grave", "Yes"), ("bien sûr", "Yes"), ("évidemment !", "Yes"), ("oui syncs", "Yes"), ("<@999> oui", "Yes"), ("oui 😂", "Yes"),
+    ("tout à fait", "Yes"), ("si", "Yes"), ("oui merci", "Yes"), ("yes", "Yes"),
+    ("non", "No"), ("nan", "No"), ("nooon", "No"), ("bah non", "No"), ("mais non", "No"), ("non non non", "No"),
+    ("pas du tout", "No"), ("jamais", "No"), ("nope", "No"), ("non merci", "No"), ("absolument pas", "No"),
+    ("oui ?", ""), ("non ?", ""), ("oui et non", ""), ("oui mais demain", ""), ("ok", ""), ("peut-être", ""),
+    ("exactement", ""), ("merci", ""), ("oui je viens ce soir à la session", ""), ("", ""),
+})
+{
+    var got = readAnswer.Invoke(null, new object[] { text })?.ToString() ?? "";
+    if (got != expected) Fail($"ReadAnswer(\"{text}\") = {(got == "" ? "null" : got)}, expected {(expected == "" ? "null" : expected)}");
+}
+
+// The records pools: every plain RememberMe line and every opener says the name (the answer to
+// « comment je m'appelle ? »); the openers carry no tag, the fact line after them does; the grudge
+// quotes its count, the treasure never shows one.
+foreach (var l in (string[])((IDictionary)Field("IntentLines"))[Enum.Parse(intentType, "RememberMe")]!)
+    if (!l.Contains("{0}")) Fail($"IntentLines[RememberMe] doesn't say the name: {l}");
+foreach (var l in (string[])Field("RememberMeOpeners"))
+{
+    if (!l.Contains("{0}")) Fail($"RememberMeOpeners doesn't say the name: {l}");
+    try
+    {
+        var s = string.Format(l, "Nom");
+        if (Sticker.Strip(s) != s) Fail($"RememberMeOpeners is tagged: {l}");
+    }
+    catch (FormatException) { Fail($"RememberMeOpeners: format: {l}"); }
+}
+foreach (var l in (string[])Field("DoYouLoveMeGrudgeLines"))
+    if (!l.Contains("{2}")) Fail($"DoYouLoveMeGrudgeLines doesn't quote the count: {l}");
+foreach (var l in (string[])Field("DoYouLoveMeTreasureLines"))
+    if (l.Contains("{2}") || l.Replace("{0}", "").Replace("{1}", "").Any(char.IsDigit)) Fail($"DoYouLoveMeTreasureLines shows a number: {l}");
 
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

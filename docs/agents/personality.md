@@ -208,14 +208,17 @@ What makes her answer the message rather than its mood alone. Four pieces, all i
 
 ### Intents — `MessageCues.ReadIntent`
 
-`ChatIntent`, read on messages aimed at her: `Love`, `Apology`, `HowAreYou`, `AreYouThere`,
-`WhoAreYou`, `AboutHer`, `AreYouABot`, `Crush`, `WhatAreYouDoing`, `Ship`, `Opinion`, `Blame`,
-`ShouldI`, `Joke`, `FunFact`, `Help`, `Request`, `Down`, `Bored`, `Goodnight`, `Goodbye`, `Disbelief`, `Maybe`, `YouAreRight`, `YouAreWrong`,
+`ChatIntent`, read on messages aimed at her: `Love`, `Apology`, `DoYouLoveMe`, `HowAreYou`, `AreYouThere`,
+`WhoAreYou`, `RememberMe`, `AboutHer`, `AreYouABot`, `AreYouUpset`, `Crush`, `WhatAreYouDoing`, `Ship`, `Opinion`, `Blame`,
+`ShouldI`, `Joke`, `FunFact`, `Help`, `Request`, `Down`, `Bored`, `Goodnight`, `Goodbye`, `Disbelief`, `Maybe`,
+`Yes`, `No`, `YouAreRight`, `YouAreWrong`,
 `Thanks`, `Laughter` (the **specific** ones, which outrank a reply's context), then `Question`,
 `Sharing` and `LowEffort` (which only catch what nothing more precise did). First match wins, in that order —
 **the order is load-bearing**: `AboutHer` before `Opinion` (« tu aimes quoi comme jeu ? » would rate
 « quoi comme jeu »), `Love` before `Crush` (« t'es mon crush » declares), `Ship` before `Opinion`
 (« tu penses quoi de @A et @B ? » asks about a pair) and before `Request` (« tu peux ship X et Y ? »),
+`Love` and `Apology` before `DoYouLoveMe` (« je t'aime, tu m'aimes ? » declares, « désolé, tu m'en veux ? »
+apologises), `WhoAreYou` before `RememberMe` (« c'est quoi ton nom » is hers),
 `Bored` before `Maybe` (« je sais pas quoi faire »), `Joke` and `FunFact` before `Request` (« tu peux me
 raconter une blague ? » wants the joke), `Down` before `Bored` and the farewells (« journée de merde, je
 vais dormir » is the day, said), the farewells before `Thanks` (« merci, bonne
@@ -276,6 +279,30 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   never « match » or « partenaire » for the server-wide search (« mon pire match » is a bad game,
   « trouve-moi un partenaire » a teammate); « on » forms need « bien », « compatibles » or « couple »
   (« on est ensemble ce soir ? »).
+- **`Yes` / `No`**: a reply that is only a yes or a no (`MessageCues.ReadAnswer`: « oui », « bah non »,
+  « carrément », « pas du tout », « oui merci »; fillers dropped, repeats folded, never with a `?`, never
+  mixed), **under one of her messages that asked something** (a `?` in it). The one pair `ReadIntent`
+  never returns: a bare « oui » under a statement stays `LowEffort`, and under a post with its own
+  context line (« oui » under the late call) it gets that line instead — except from Papa, who has no
+  context lines. Reply path only. `IntentLines[Yes]` / `[No]` must suit any question she asks,
+  rhetorical ones included.
+- **`DoYouLoveMe`** (« tu m'aimes ? », « tu me détestes ? », « tu m'en veux ? », « je suis ta préférée ? »),
+  closing or before `_lovesMeFollowers`, with or without a `?`. **`RememberMe`** (« tu te souviens de
+  moi ? », « comment je m'appelle ? », « c'est quoi mon pseudo ? »; « tu me connais », « je suis qui »
+  only asked: « tu me connais, je suis toujours en retard » says "you know me"). Both are **answered
+  from her records** in a guild (`ChatterService.TryAnswerFromRecords`, off the gateway handler, like
+  the fact lines but without their roll or gate: they were asked). Love counts **the last 30 days
+  only** (`BotFeedbackService.GetTallyAsync`, the daily buckets), so a grudge can be worked off: more
+  bad bots than good ones → `DoYouLoveMeGrudgeLines` (`{2}` = « 3 bad bot en 30 jours », the window
+  quoted so the number stays true); more good ones →
+  `DoYouLoveMeTreasureLines` (never a number, the treasure is hinted); a fact → one of
+  `RememberMeOpeners` (the name, the answer to « comment je m'appelle ? », untagged) then that fact's
+  `ChatFactLines` line (all-time, through `RecapService`). Nothing applies, a DM, or a failed read: `IntentLines[DoYouLoveMe]` (a teasing
+  non-answer that suits love and hate alike) or `IntentLines[RememberMe]` (every line says `{0}`).
+  Papa gets his twins, Tata `TataIntentLines`; neither reads the records.
+- **`AreYouUpset`** (« t'es fâchée ? », « tu boudes ? », « t'es triste ? », « t'es jalouse ? », « tu me fais
+  la tête ? »): only asked, closing or before `_upsetFollowers` (« t'es triste » said flat is slang for
+  lame). Denial that confirms; Papa's twin can't hold it and it's never him.
 - **`Down`**: feeling low, said about themselves: « je suis (trop) triste », « je me sens mal »,
   « j'en peux plus », « j'ai pas le moral », « ça va pas fort », « sale journée ». She drops the pinch
   and offers something to hold on to, the way an old uncle with a teapot would, in her own images
@@ -442,9 +469,10 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   `Interrogations`' job.
 - **« ça va ? » quotes her real temperature** half the time on the Pi (`HowAreYouTempLines`, `{2}` =
   `PiHealth.Celsius`), only below `PiHealth.HotMilli`: those lines call the number fine.
-- **Papa has twins for seventeen intents** (`OwnerIntentLines`: ça va, tu fais quoi, je t'aime,
+- **Papa has twins for twenty-two intents** (`OwnerIntentLines`: ça va, tu fais quoi, je t'aime,
   pardon, bonne nuit, peut-être, t'es un bot, t'as raison, t'as tort, t'es là, merci, je m'ennuie,
-  t'as un crush, son âge et sa maison, fais genre, sa journée, un coup de mou) plus `OwnerRequestLines` (his requests and his help); an
+  t'as un crush, son âge et sa maison, fais genre, sa journée, un coup de mou, oui, non, tu m'aimes,
+  tu te souviens de moi, t'es fâchée) plus `OwnerRequestLines` (his requests and his help); an
   opinion, a ship, a yes-or-no, a blame, a joke and a fun fact are the same for him as for anyone. Any other intent from him goes on to his usual pools; he never
   gets `Question` or `LowEffort`.
 
@@ -513,10 +541,11 @@ The fallback of both paths (a roast, or `Interrogations`), in a guild and never 
   Wiring a new favourite to one pool on both paths reads as her not noticing.
 - **Her name is overridden**: `FamilyNicknames` maps Tata's id to "Tata", applied by
   `DisplayNameFor`. `RealNames` is *not* overridden (the breakdown reveal wants a real name).
-- **Papa on the listening paths** (see *Listening*): his own twins for seventeen intents
+- **Papa on the listening paths** (see *Listening*): his own twins for twenty-two intents
   (`OwnerIntentLines`) and requests (`OwnerRequestLines`), the same opinions and ships as anyone, and nothing
   else new — no reply context, no facts, no streak. Tata goes
-  through them like anyone, which costs her the warmth roll on those messages.
+  through them like anyone, which costs her the warmth roll on those messages — except « tu m'aimes ? »
+  and « tu te souviens de moi ? », which have her own pools (`TataIntentLines`).
 
 **The owner's one exception: him being mean to her.** A `Mean` reading from him routes to
 `OwnerMeanReplies` on both paths (she won't fight him, so it lands). On the reply path the check is

@@ -3,7 +3,8 @@
 `MessageCues.ReadFeedback` reads a verdict *on her*, separately from `Analyze` (a verdict is not a
 mood). `BotFeedbackTracker` attributes it, counts it and answers it. `/goodbot` ranks it via the
 `BotFeedback` / `BotFeedbackDailyStat` totals+buckets pair (default window **all-time** — verdicts
-are rare, so a rolling window is usually empty).
+are rare, so a rolling window is usually empty). `GetTallyAsync` reads one person's tally the same
+way; « tu m'aimes ? » asks it for the last 30 days (see `personality.md`).
 
 ## A verdict short-circuits three services
 

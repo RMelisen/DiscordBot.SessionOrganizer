@@ -46,6 +46,8 @@ namespace ProjectSYNCS.Services;
 //     ShipChatLines ............ « ship X et Y » in chat, around /ship's own answer
 //     ShipBestMatchLines · ShipWorstMatchLines « c'est qui mon âme sœur ? »: the server-wide search
 //     SharingShrugLines ........ « j'ai mangé de la soupe » — « euh… ok ? », half the time
+//     DoYouLoveMeGrudgeLines · DoYouLoveMeTreasureLines « tu m'aimes ? »: more bad bots, or more good bots
+//     RememberMeOpeners ........ « tu te souviens de moi ? »: their name, before one of their ChatFactLines
 //
 //   [Replies] Answering one of her own posts (HerMessages)
 //     ReplyContextLines ........ keyed by ReplyContext: the welcome, the late call, the poll…
@@ -76,7 +78,8 @@ namespace ProjectSYNCS.Services;
 //     OwnerMeanReplies ......... him being mean to her
 //     OwnerIntentLines ......... his twins of IntentLines (ça va, tu fais quoi, je t'aime, pardon, bonne nuit,
 //                                peut-être, t'es un bot, t'as raison, t'as tort, t'es là, merci,
-//                                je m'ennuie, t'as un crush, son âge et sa maison, fais genre, sa journée)
+//                                je m'ennuie, t'as un crush, son âge et sa maison, fais genre, sa journée,
+//                                oui, non, tu m'aimes, tu te souviens de moi, t'es fâchée)
 //     OwnerRequestLines ........ his requests, with the command as {2}
 //     OwnerAbsentNotices ....... someone pinged him while away
 //     OwnerReplyHeralds · OwnerAnnouncementHeralds ... /debug tell and dm heralds
@@ -84,6 +87,7 @@ namespace ProjectSYNCS.Services;
 //   [Family] Tata (Analuz)
 //     TataId ................... her id, the single source of truth
 //     TataGreetings (mentioned) · TataReplies (replied to)
+//     TataIntentLines .......... « tu m'aimes ? », « tu te souviens de moi ? » from her
 //
 //   [Rivals] Other bots
 //     JealousLines · JealousLinesOwner ... praise went to a rival
