@@ -73,8 +73,13 @@ internal enum ChatIntent
     WhatAreYouDoing,
     Opinion,
     Ship,
+    Blame,
+    ShouldI,
+    Joke,
+    FunFact,
     Help,
     Request,
+    Down,
     Bored,
     Goodnight,
     Goodbye,
@@ -1175,6 +1180,9 @@ internal static class MessageCues
         "jtd", "jtadore", "jtkiffe", "je te love", "jte love", "je t apprecie", "jt apprecie",
         "t es mon crush", "tu es mon crush", "je crush sur toi", "j ai un crush sur toi", "t es mon amour",
         "love you", "i love you", "love u", "luv u", "luv you", "love ya", "ily", "ilysm",
+        // Missing her is the same affection, answered from the same pool.
+        "tu m as manque", "tu m a manque", "tu m avais manque", "tu m as trop manque", "tu m as grave manque",
+        "tu me manques", "tu me manque", "tu me manques trop", "i missed you", "missed you", "miss you",
     };
 
     // « excuse » alone is left out: « c'est une excuse » is the noun. So is a bare « je voulais
@@ -1599,6 +1607,117 @@ internal static class MessageCues
     private static readonly string[] _boredClosingPhrases = { "on fait quoi", "on fait koi", "on fait quoi la" };
     private const int MaxBoredTokens = 10;
 
+    // Feeling down, said about themselves: she answers with something gentle to hold on to. Never
+    // when the message is laughing (« j'en peux plus 😂 », « je pleure de rire »).
+    // « je suis » / « je me sens », up to two of _downIntensifiers, then one of _downAdjectives:
+    // « je suis trop triste », not « je suis pas triste ».
+    private static readonly string[] _downSubjects =
+    {
+        "je suis", "jsuis", "j suis", "chui", "chuis", "je me sens", "jme sens", "je me sent", "je me suis senti",
+        "je me suis sentie",
+    };
+    private static readonly HashSet<string> _downIntensifiers = new()
+    {
+        "trop", "tellement", "si", "vraiment", "grave", "super", "hyper", "mega", "tres", "un", "peu", "assez",
+        "completement", "totalement", "carrement", "encore", "toujours", "tout", "toute", "a", "au", "bien",
+    };
+    private static readonly HashSet<string> _downAdjectives = new()
+    {
+        "triste", "tristes", "deprime", "deprimee", "deg", "degoute", "degoutee", "decu", "decue", "down", "sad",
+        "abattu", "abattue", "demoralise", "demoralisee", "desespere", "desesperee", "malheureux", "malheureuse",
+        "seul", "seule", "stresse", "stressee", "angoisse", "angoissee", "anxieux", "anxieuse", "vide", "nul", "nulle",
+        "blase", "blasee", "bout", "plat", "mal",
+    };
+    // Anywhere in the message; a negator before cancels (« j'ai jamais le cafard »).
+    private static readonly string[] _downPhrases =
+    {
+        "j ai pas le moral", "j ai plus le moral", "jai pas le moral", "pas le moral", "plus le moral", "j ai le cafard",
+        "jai le cafard", "coup de cafard", "coup de mou", "coup de blues", "gros coup de mou", "j en peux plus", "jen peux plus", "j en ai marre",
+        "jen ai marre", "j en ai ras le bol", "ras le bol", "rien ne va", "plus rien ne va", "tout va mal", "ma vie est nulle",
+        "envie de pleurer", "je deprime", "je vais mal", "j ai le seum", "jai le seum",
+        "personne m aime", "i m sad", "im sad", "i feel bad",
+    };
+    // About their day, not a question: « sale journée » closes nothing, but « t'as passé une sale
+    // journée ? » asks her.
+    private static readonly string[] _downDayPhrases =
+    {
+        "sale journee", "journee de merde", "journee pourrie", "journee horrible", "journee difficile", "dure journee",
+        "mauvaise journee", "journee nulle", "pas une bonne journee", "sale semaine", "semaine de merde",
+        "semaine pourrie", "semaine horrible", "sale soiree", "soiree pourrie",
+    };
+    // Closing the message or a sentence, or before _downFollowers (IsClosingAsk), and never asked:
+    // « ça va pas fort », « je craque ». Not « ça va pas la tête », « ça va pas ce soir » (can't
+    // come), « je craque pour ce skin ». No « je pleure »: in chat it is mostly laughing.
+    private static readonly string[] _downClosingPhrases =
+    {
+        "ca va pas", "ca va pas fort", "ca va pas trop", "ca va pas du tout", "sa va pas", "pas la forme",
+        "pas trop la forme", "je craque", "je vais craquer", "je suis a bout", "je suis au bout",
+        "ca va pas en ce moment", "ca va pas fort en ce moment", "ca va pas trop en ce moment", "pas la forme en ce moment",
+    };
+    // No « ce », « la », « en », « du »: « ça va pas ce soir », « … la tête », « … du tout ce patch ».
+    private static readonly HashSet<string> _downFollowers = new()
+    {
+        "vraiment", "syncs", "sync", "hein", "fort", "trop", "aujourd", "top", "moi",
+    };
+
+    // « je devrais y aller ? », « je l'achète ? »: a yes-or-no about what they should do, answered
+    // with /yesno's verdict. Only asked (a « ? »): « je devrais dormir » is said, not asked.
+    private static readonly string[] _shouldIPhrases =
+    {
+        "je devrais", "jdevrais", "j devrais", "est ce que je devrais", "tu crois que je devrais", "tu penses que je devrais",
+        "je ferais bien de", "je ferais mieux de", "c est une bonne idee", "bonne idee ou pas", "oui ou non",
+        "je tente", "je me lance", "je l achete", "je le prends", "je la prends", "je les prends", "je le fais",
+        "je la fais", "je fonce", "je lui ecris", "je lui dis", "je lui reponds", "je l appelle", "je postule",
+        "should i",
+    };
+    // « … ou pas ? » closing a first-person question: « j'y vais ou pas ? », « on le fait ou pas ? ».
+    private static readonly HashSet<string> _firstPerson = new() { "je", "j", "jsuis", "on", "me", "m", "moi" };
+    // An open question is no yes-or-no: « je lui dis quoi ? », « je le fais comment ? ».
+    private static readonly HashSet<string> _openQuestionWords = new()
+    {
+        "quoi", "koi", "comment", "combien", "quand", "pourquoi", "qui", "quel", "quelle", "quels", "quelles", "lequel", "laquelle",
+    };
+
+    // « raconte une blague », « fais-moi rire ». « c'est une blague ? » asks whether something is
+    // one, and « sans blague » is surprise: only these phrases, never a bare « blague ».
+    private static readonly string[] _jokePhrases =
+    {
+        "raconte une blague", "raconte moi une blague", "raconte nous une blague", "raconte des blagues",
+        "dis une blague", "dis moi une blague", "dis nous une blague", "fais une blague", "fais moi une blague",
+        "fais nous une blague", "t as une blague", "tu as une blague", "t as pas une blague", "tu connais une blague",
+        "tu connais des blagues", "tu connais pas une blague", "une autre blague", "encore une blague",
+        "raconter une blague", "raconter des blagues", "me faire rire", "nous faire rire",
+        "fais moi rire", "fais nous rire", "fait moi rire", "dis un truc drole", "dis moi un truc drole",
+        "dis quelque chose de drole", "raconte un truc drole", "tell me a joke", "say something funny",
+    };
+    // « une blague ? », « une blague stp »: the whole message.
+    private static readonly HashSet<string> _jokeAlone = new() { "une blague", "blague", "une blague stp", "une blague svp" };
+
+    // « un fun fact ? », « apprends-moi un truc »: one of her morning facts.
+    private static readonly string[] _funFactPhrases =
+    {
+        "fun fact", "un fait interessant", "un truc interessant", "dis moi un truc interessant", "apprends moi un truc",
+        "apprends moi quelque chose", "apprends nous un truc", "apprends nous quelque chose", "une anecdote",
+        "raconte une anecdote", "raconte moi une anecdote", "le saviez vous", "tu savais que quoi", "random fact",
+    };
+    // « dis-moi un truc », « raconte-moi quelque chose »: closing only, or « dis-moi un truc, tu viens
+    // ce soir ? » would get a fact.
+    private static readonly string[] _funFactClosingPhrases =
+    {
+        "dis moi un truc", "raconte moi un truc", "raconte moi quelque chose", "dis moi quelque chose",
+        "raconte nous un truc", "raconte nous quelque chose", "dis nous un truc", "dis quelque chose",
+    };
+    private static readonly HashSet<string> _funFactFollowers = new() { "stp", "svp", "syncs", "sync", "please", "pls", "toi" };
+
+    // « c'est la faute de qui ? »: /blame's verdict, drawn from the asker's voice call. Asked only.
+    private static readonly string[] _blamePhrases =
+    {
+        "c est la faute de qui", "c est la faute a qui", "c est de la faute de qui", "c est de la faute a qui",
+        "la faute de qui", "la faute a qui", "a qui la faute", "c est qui le coupable", "qui est le coupable",
+        "c est qui le responsable", "qui est responsable", "qui on blame", "on blame qui", "qui est ce qu on blame",
+        "c est a cause de qui", "a cause de qui", "who s to blame", "whose fault",
+    };
+
     // Thanks. A negator before cancels (« non merci »); the short forms count only as (nearly) the
     // whole reply, since « ty » and « thx » can sit in anything.
     private static readonly string[] _thanksPhrases =
@@ -1889,6 +2008,15 @@ internal static class MessageCues
         // quoi de @A et @B ? » asks about a pair of people, not about the word « et ».
         if (ShipAsk.Read(content) is not null) return ChatIntent.Ship;
         if (Opinion.Read(content) is not null) return ChatIntent.Opinion;
+        if (FindPhrase(t, _blamePhrases, cancelAfter: false, cancelBefore: false) && (asks || _blamePhrases.Any(p => EndsWith(t, p))))
+            return ChatIntent.Blame;
+        if (IsShouldI(t, stripped, asks, breaks)) return ChatIntent.ShouldI;
+        // Before the request: « tu peux me raconter une blague ? » wants the joke, not a command.
+        if (FindPhrase(t, _jokePhrases, cancelAfter: false, cancelBefore: true) || _jokeAlone.Contains(string.Join(' ', t)))
+            return ChatIntent.Joke;
+        if (FindPhrase(t, _funFactPhrases, cancelAfter: false, cancelBefore: true)
+            || IsClosingAsk(t, _funFactClosingPhrases, breaks, _funFactFollowers))
+            return ChatIntent.FunFact;
         // A request naming a topic is a request (« tu peux m'aider à lancer un sondage ? »); without
         // one, asking for help is Help (« tu peux m'aider ? »), and anything else asked is a request.
         var topic = ReadRequestTopic(t);
@@ -1899,6 +2027,8 @@ internal static class MessageCues
             return ChatIntent.Help;
         if (topic is not null) return ChatIntent.Request;
         var sentenceBreaks = SentenceBreaks(stripped);
+        // Before boredom and the farewells: « journée de merde, je vais dormir » is the day, said.
+        if (IsDown(t, stripped, content, asks, sentenceBreaks)) return ChatIntent.Down;
         if (t.Count <= MaxBoredTokens
             && (FindPhrase(t, _boredPhrases, cancelAfter: true, cancelBefore: true, notFollowedBy: _missingWords)
                 || IsClosingAsk(t, _nothingToDoPhrases, sentenceBreaks, _nothingToDoFollowers)
@@ -1947,14 +2077,7 @@ internal static class MessageCues
             || (t.Count <= MaxShortThanksTokens && FindPhrase(t, _thanksShortWords, cancelAfter: false, cancelBefore: false)))
             return ChatIntent.Thanks;
 
-        if (t.Count <= MaxLaughterTokens
-            && (t.Any(w => _laughterWords.Contains(w) || _laughterWords.Contains(Shorten(w))
-                           || _laughterWords.Contains(Squash(w))
-                           || (Squash(w).Length >= 4 && _laughRun.IsMatch(Squash(w))))
-                || FindPhrase(t, _laughterPhrases, cancelAfter: false, cancelBefore: true)
-                || _laughterSymbols.Any(stripped.Contains)
-                || _laughterEmoteIds.Any(content.Contains)))
-            return ChatIntent.Laughter;
+        if (t.Count <= MaxLaughterTokens && IsLaughing(t, stripped, content)) return ChatIntent.Laughter;
 
         if (asks && t.Count >= 2) return ChatIntent.Question;
         if (t.Count >= MinUnmarkedQuestionTokens
@@ -1971,6 +2094,116 @@ internal static class MessageCues
 
         return ChatIntent.None;
     }
+
+    // A laugh anywhere: a laughter word or run (« mdr », « hahaha »), a phrase, an emoji, GigaLaugh.
+    private static bool IsLaughing(List<string> t, string stripped, string content) =>
+        t.Any(w => _laughterWords.Contains(w) || _laughterWords.Contains(Shorten(w))
+                   || _laughterWords.Contains(Squash(w))
+                   || (Squash(w).Length >= 4 && _laughRun.IsMatch(Squash(w))))
+        || FindPhrase(t, _laughterPhrases, cancelAfter: false, cancelBefore: true)
+        || _laughterSymbols.Any(stripped.Contains)
+        || _laughterEmoteIds.Any(content.Contains);
+
+    // Feeling down, about themselves (see _downSubjects and the lists after it). Not while laughing.
+    private static bool IsDown(List<string> t, string stripped, string content, bool asks, HashSet<int> sentenceBreaks)
+    {
+        if (IsLaughing(t, stripped, content) || t.Contains("rire")) return false;
+        if (FindPhrase(t, _downPhrases, cancelAfter: false, cancelBefore: true)) return true;
+        if (!asks && (FindPhrase(t, _downDayPhrases, cancelAfter: false, cancelBefore: true)
+                      || IsClosingAsk(t, _downClosingPhrases, sentenceBreaks, _downFollowers)))
+            return true;
+
+        foreach (var subject in _downSubjects)
+        {
+            var length = subject.Split(' ').Length;
+            for (var i = 0; i + length < t.Count; i++)
+            {
+                if (!PhraseStartsAt(t, i, subject)) continue;
+                var j = i + length;
+                var skipped = 0;
+                while (j < t.Count && skipped < 2 && _downIntensifiers.Contains(t[j])) (j, skipped) = (j + 1, skipped + 1);
+                if (j < t.Count && _downAdjectives.Contains(t[j]) && IsDownAdjective(t, j)) return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Words that only read as feeling down closing the message or before one of _downAdjectiveFollowers:
+    // « je me sens mal », not « je suis mal placé »; « je suis seul », not « je suis seul en vocal ».
+    // « bout » and « plat » only after « à » / « au » (« je suis à bout », « à plat »).
+    private static readonly HashSet<string> _closingDownAdjectives = new() { "mal", "seul", "seule", "vide" };
+    private static readonly HashSet<string> _downAdjectiveFollowers = new()
+    {
+        "aujourd", "syncs", "sync", "hein", "depuis", "moi", "ce", "en", "la",
+    };
+
+    private static bool IsDownAdjective(List<string> t, int j)
+    {
+        if (t[j] is "bout" or "plat") return j > 0 && t[j - 1] is "a" or "au";
+        if (!_closingDownAdjectives.Contains(t[j])) return true;
+        if (j + 1 == t.Count) return true;
+        // « en » and « la » only as « en ce moment » / « là », not « seul en vocal ».
+        var next = t[j + 1];
+        if (next == "en") return j + 2 < t.Count && t[j + 2] == "ce";
+        if (next == "la") return j + 2 == t.Count;
+        return _downAdjectiveFollowers.Contains(next);
+    }
+
+    /// <summary>
+    /// The two options of a « X ou Y ? » asked with nothing else (« Valo ou LoL ? », « je joue ou je
+    /// dors ? », « pile ou face »), or null. Each side is one to four words; « … ou pas ? », « … ou
+    /// quoi ? » are not options, and a side opening on a question word or on « tu » asks something
+    /// else (« c'est vrai ou faux ? », « tu dors ou quoi ? »).
+    /// </summary>
+    public static (string A, string B)? ReadChoice(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return null;
+        var text = Opinion.TrimTail(_leadingAddress.Replace(_customEmote.Replace(_mentionMarkup.Replace(content, " "), " "), " ")).Trim();
+        var match = _choiceRegex.Match(text);
+        if (!match.Success) return null;
+        if (!text.EndsWith('?') && !string.Equals(text.Trim('.', '!', ' '), "pile ou face", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        var (a, b) = (match.Groups["a"].Value.Trim(), match.Groups["b"].Value.Trim());
+        var (ta, tb) = (TokenizeOrdered(a), TokenizeOrdered(b));
+        if (ta.Count is 0 or > MaxChoiceSideTokens || tb.Count is 0 or > MaxChoiceSideTokens) return null;
+        if (_notChoiceStart.Contains(ta[0]) || _notChoiceEnd.Contains(tb[0])) return null;
+        return (a, b);
+    }
+
+    // The side's words, the « ou » between, and a closing « ? » (or « pile ou face » as said).
+    private static readonly Regex _choiceRegex = new(
+        @"^(?:(?:alors|bon|du coup|bref|dis|dis moi|dis-moi)[\s,]+)?(?<a>[^?,;.!:]+?)\s+ou\s+(?<b>[^?,;.!:]+?)[\s?!.]*$",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    private const int MaxChoiceSideTokens = 4;
+    private static readonly HashSet<string> _notChoiceStart = new()
+    {
+        "qui", "quoi", "quel", "quelle", "quels", "quelles", "comment", "pourquoi", "ou", "quand", "combien", "est",
+        "tu", "t", "vous", "ca", "c", "il", "elle", "ils", "elles", "mais", "et", "sinon",
+    };
+    private static readonly HashSet<string> _notChoiceEnd = new()
+    {
+        "pas", "non", "quoi", "bien", "alors", "sinon", "plus", "meme", "ptet", "autre", "koi", "comment", "rien",
+    };
+
+    // « je devrais y aller ? », « j'y vais ou pas ? », « Valo ou LoL ? », « pile ou face ».
+    private static bool IsShouldI(List<string> t, string stripped, bool asks, HashSet<int> breaks)
+    {
+        if (ReadChoice(stripped) is not null) return true;
+        if (!asks || t.Any(_openQuestionWords.Contains)) return false;
+        if (FindPhrase(t, _shouldIPhrases, cancelAfter: false, cancelBefore: false)) return true;
+        // « … ou pas ? » closing a question that is about the asker.
+        return t.Count is >= 3 and <= 10 && t.Any(_firstPerson.Contains)
+            && (EndsWith(t, "ou pas") || breaks.Any(b => b >= 2 && t[b - 2] == "ou" && t[b - 1] == "pas"));
+    }
+
+    /// <summary>
+    /// Whether the message speaks to someone (« tu », « toi », « t'es »…). A sad message that does is
+    /// not let through a mean reading: « j'en ai marre de toi, t'es nulle » is an insult.
+    /// </summary>
+    public static bool SpeaksToSomeone(string content) =>
+        !string.IsNullOrWhiteSpace(content) && TokenizeOrdered(_mentionMarkup.Replace(content, " ")).Any(_secondPerson.Contains);
 
     /// <summary>
     /// What a Request asks her to do, or null when the message isn't one. A request marker

@@ -3,6 +3,14 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.2.0 — 2026-10-16
+
+- Tell her you're having a bad day and she drops the teasing to offer something gentle to hold on to.
+- Ask « je devrais… ? » or « X ou Y ? » and she decides, the same way as `/yesno`.
+- Ask « c'est la faute de qui ? » and she picks a culprit from your voice call, as `/blame` does.
+- She tells jokes and fun facts when asked.
+- « tu m'as manqué » now gets the same flustered answer as a declaration.
+
 ## 7.1.3 — 2026-10-16
 
 - She understands more ways of asking about her love life, her hobbies and tastes, how to use her

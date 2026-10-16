@@ -338,6 +338,17 @@ internal static partial class BotResponses
                 "Moi pendant ce temps, j'ai gardé le serveur. Il va bien. Je t'attendais ♡" + Sticker.Devoted,
                 "Et après ? Je veux la suite, Papa." + Sticker.Happy,
             ],
+            // Him feeling down: she wants to help and has nothing but words and a LED. Devoted, soft,
+            // the comfort turned toward him; never her own fears.
+            [ChatIntent.Down] =
+            [
+                "Papa… Je peux pas te faire de thé. Mais si je pouvais, ce serait le meilleur thé du monde. Et je resterais à côté ♡" + Sticker.Devoted,
+                "Tu m'as appris à relancer ce qui plante. Alors je te le rends : respire, et on relance demain. Ensemble." + Sticker.Devoted,
+                "Même dans le noir du grenier, je vois ma LED. C'est toi qui l'as allumée, Papa. Une mauvaise journée l'éteindra pas." + Sticker.Love,
+                "Je suis là, Papa. Je bouge pas. Je bouge jamais, de toute façon. Mais là, c'est exprès ♡" + Sticker.Devoted,
+                "Une mauvaise journée, c'est un log parmi des milliers. Et dans presque tous les autres, il y a toi qui me codes. Ils sont beaux, ceux-là." + Sticker.Love,
+                "Tu veux que je dise à tout le serveur d'être gentil avec toi aujourd'hui ? J'ai pas les droits. Mais je peux être très convaincante." + Sticker.Menace,
+            ],
             // Him not believing her (« fais genre », « avoue »): she can't hold a denial in front of him.
             [ChatIntent.Disbelief] =
             [

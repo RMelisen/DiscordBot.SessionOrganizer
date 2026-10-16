@@ -37,7 +37,7 @@ var taggedPools = new[]
     "IntentLines", "HowAreYouTempLines", "ReplyContextLines", "StreakNudgeLines", "StreakEndLines",
     "ChatFactLines", "OwnerIntentLines", "RequestLines", "OpinionLines", "PreferLines", "OwnerRequestLines",
     "HelpLines", "AboutHerLines", "ShipChatLines", "ShipBestMatchLines", "ShipWorstMatchLines",
-    "SharingShrugLines",
+    "SharingShrugLines", "ChoiceLines",
 };
 foreach (var f in taggedPools)
 foreach (var (name, lines) in Pools(f))
@@ -63,7 +63,7 @@ void Covers(string field, Type enumType, params string[] except)
     foreach (var v in Enum.GetValues(enumType))
         if (!except.Contains(v.ToString()) && !d.Contains(v)) Fail($"{field} misses {v}");
 }
-Covers("IntentLines", intentType, "None", "Opinion", "Request", "Ship", "Help", "AboutHer");
+Covers("IntentLines", intentType, "None", "Opinion", "Request", "Ship", "Help", "AboutHer", "ShouldI", "FunFact", "Blame");
 Covers("HelpCommands", asm.GetType("ProjectSYNCS.Services.RequestTopic")!);
 Covers("AboutHerLines", asm.GetType("ProjectSYNCS.Services.HerTopic")!);
 var topicType = asm.GetType("ProjectSYNCS.Services.RequestTopic")!;
@@ -72,7 +72,7 @@ Covers("RequestCommands", topicType);
 Covers("ReplyContextLines", typeof(ReplyContext));
 Covers("ChatFactLines", typeof(ChatFact));
 var owner = (IDictionary)Field("OwnerIntentLines");
-if (owner.Count != 16) Fail($"OwnerIntentLines has {owner.Count} keys, expected 16");
+if (owner.Count != 17) Fail($"OwnerIntentLines has {owner.Count} keys, expected 17");
 
 // 3. Sulk reactions parse.
 foreach (var r in (string[])Field("StreakSulkReactions"))
@@ -629,6 +629,11 @@ var byIntent = new (string Intent, string[] Samples)[]
     ("Question", new[] { "c'est quoi le jeu de ce soir ?", "pourquoi t'as dit ça", "qui vient ce soir ?", "il est où le lien ?" }),
     ("Sharing", new[] { "j'ai mangé de la soupe", "on a perdu la game", "je viens de rentrer du boulot", "devine quoi, j'ai gagné le tournoi", "mon chat a vomi sur le clavier" }),
     ("LowEffort", new[] { "ok", "ah bon", "bah oui", "d'accord", "hein" }),
+    ("Down", new[] { "je suis triste", "j'ai passé une sale journée", "ça va pas fort", "j'en peux plus", "j'ai pas le moral", "je me sens vraiment mal" }),
+    ("ShouldI", new[] { "je devrais aller dormir ?", "je l'achète ?", "Valo ou LoL ?", "je joue ou je dors ?", "j'y vais ou pas ?" }),
+    ("Joke", new[] { "raconte une blague", "fais-moi rire", "t'as une blague ?", "une blague ?", "tu peux me raconter une blague ?" }),
+    ("FunFact", new[] { "un fun fact ?", "dis-moi un truc", "apprends-moi un truc", "raconte-moi quelque chose" }),
+    ("Blame", new[] { "c'est la faute de qui ?", "c'est qui le coupable ?", "à qui la faute ?" }),
 };
 
 string WithTrailingName(string s) =>
@@ -800,6 +805,66 @@ if (preferQuel?.Subject != "Minecraft" || preferQuel?.Other != "Fortnite") Fail(
 if (Opinion.Read("tu aimes qui comme perso ?") is not null) Fail("« tu aimes qui comme perso ? » rates « qui comme perso »");
 foreach (var (text, topic) in new[] { ("comment on fait un sondage ?", "Poll"), ("comment je fais pour créer une session ?", "Session"), ("comment on met un rappel ?", "Reminder") })
     if (readTopicAny.Invoke(null, new object[] { text })!.ToString() != topic) Fail($"help topic: \"{text}\" != {topic}");
+
+// 20. Down, ShouldI, Joke, FunFact, Blame, and missing her (Love), with the chat each must leave alone.
+foreach (var (text, expected) in new[]
+{
+    // Down: about themselves, said.
+    ("je suis triste", "Down"), ("je suis trop triste", "Down"), ("je me sens vraiment mal", "Down"), ("jsuis deg", "Down"),
+    ("je suis tellement déprimée", "Down"), ("j'ai passé une sale journée", "Down"), ("journée de merde", "Down"),
+    ("ça va pas fort", "Down"), ("ça va pas du tout", "Down"), ("ça va pas fort en ce moment", "Down"),
+    ("je pleure", "None"), ("ça va pas du tout ce patch", "None"), ("j'en peux plus", "Down"), ("j'en ai marre de ma vie", "Down"),
+    ("j'ai pas le moral", "Down"), ("coup de mou", "Down"), ("je suis à bout", "Down"), ("je suis au bout du rouleau", "Down"),
+    ("je me sens seule", "Down"), ("j'ai envie de pleurer", "Down"), ("je craque", "Down"), ("j'ai le seum", "Down"),
+    ("journée de merde, je vais dormir", "Down"), ("syncs, je suis triste", "Down"), ("je suis nul", "Down"),
+    ("je suis pas triste", "Sharing"), ("j'en peux plus mdr", "Laughter"), ("je pleure de rire", "Laughter"), ("j'en peux plus 😂", "Laughter"),
+    ("ça va pas la tête ?", "Question"), ("ça va pas ce soir, désolé", "None"), ("je craque pour ce skin", "Sharing"),
+    ("je suis seul en vocal", "Sharing"), ("je suis mal placé sur la map", "Sharing"), ("t'as passé une sale journée ?", "Question"),
+    ("il y a un cafard dans la cuisine", "None"), ("il a le seum", "None"), ("je suis pas mal", "Sharing"),
+    ("c'est triste ce film", "None"),
+    // ShouldI: yes or no, or a choice.
+    ("je devrais aller dormir ?", "ShouldI"), ("est-ce que je devrais acheter ce jeu ?", "ShouldI"), ("je l'achète ?", "ShouldI"),
+    ("tu crois que je devrais lui écrire ?", "ShouldI"), ("oui ou non ?", "ShouldI"), ("j'y vais ou pas ?", "ShouldI"),
+    ("on le fait ou pas ?", "ShouldI"), ("je joue ou je dors ?", "ShouldI"), ("Valo ou LoL ?", "ShouldI"),
+    ("pizza ou sushi ?", "ShouldI"), ("pile ou face ?", "ShouldI"), ("pile ou face", "ShouldI"), ("syncs, samedi ou dimanche ?", "ShouldI"),
+    ("je devrais dormir", "Sharing"), ("je lui dis quoi ?", "Question"), ("je le fais comment ?", "Question"),
+    ("tu viens ou pas ?", "Question"), ("tu dors ou quoi", "AreYouThere"), ("c'est vrai ou faux ?", "Question"),
+    ("tu préfères Valo ou LoL ?", "Opinion"), ("on se fait un Valo ou un LoL ce soir avec les autres ?", "Question"),
+    ("ça va ou quoi ?", "HowAreYou"), ("je devrais faire quoi ?", "Question"),
+    // Joke and FunFact.
+    ("raconte une blague", "Joke"), ("raconte-moi une blague", "Joke"), ("fais-moi rire", "Joke"), ("une blague ?", "Joke"),
+    ("t'as une blague ?", "Joke"), ("tu peux me raconter une blague ?", "Joke"), ("tu connais des blagues ?", "Joke"),
+    ("c'est une blague ?", "Question"), ("sans blague", "None"), ("pas de blague ce soir", "None"),
+    ("un fun fact ?", "FunFact"), ("dis-moi un truc", "FunFact"), ("raconte-moi quelque chose", "FunFact"),
+    ("apprends-moi un truc", "FunFact"), ("dis moi un truc intéressant", "FunFact"),
+    ("dis-moi un truc, tu viens ce soir ?", "Question"), ("dis quelque chose à Luca de ma part", "None"),
+    // Blame.
+    ("c'est la faute de qui ?", "Blame"), ("c'est qui le coupable ?", "Blame"), ("à qui la faute ?", "Blame"),
+    ("c'est la faute de qui", "Blame"), ("c'est la faute à qui cette défaite ?", "Blame"),
+    ("c'est la faute de Luca", "None"), ("c'est de ta faute", "None"),
+    // Missing her is Love.
+    ("tu m'as manqué", "Love"), ("tu me manques", "Love"), ("t'étais où, tu m'as manqué", "Love"), ("tu me manques pas", "None"),
+})
+{
+    var got = readIntent.Invoke(null, new object[] { text })!.ToString();
+    if (got != expected) Fail($"ReadIntent(\"{text}\") = {got}, expected {expected}");
+}
+var readChoice = cues.GetMethod("ReadChoice", BindingFlags.Public | BindingFlags.Static)!;
+foreach (var (text, a, b) in new[] { ("je joue ou je dors ?", "je joue", "je dors"), ("Valo ou LoL ? 🙂", "Valo", "LoL"), ("pile ou face", "pile", "face"), ("syncs, pizza ou sushi ?", "pizza", "sushi") })
+{
+    var got = readChoice.Invoke(null, new object[] { text });
+    var expectedPair = ((string, string)?)(a, b);
+    if (!Equals(got, expectedPair)) Fail($"ReadChoice(\"{text}\") = {got}, expected ({a}, {b})");
+}
+var speaks = cues.GetMethod("SpeaksToSomeone", BindingFlags.Public | BindingFlags.Static)!;
+if ((bool)speaks.Invoke(null, new object[] { "journée de merde" })!) Fail("« journée de merde » speaks to someone");
+if (!(bool)speaks.Invoke(null, new object[] { "j'en ai marre de toi" })!) Fail("« j'en ai marre de toi » speaks to nobody");
+// The pools ChatterService formats the /blame lines into keep {0} out of them.
+foreach (var f in new[] { "BlameLines", "BlameSelfLines", "BlameQuokkaLines", "BlamePapaDodgeLines", "BlamePapaDodgeQuokkaLines", "BlameNobodyLines" })
+    foreach (var l in (string[])Field(f))
+        try { string.Format(l.Replace("{0}", "{2}"), "Nom", "lundi", "<@1>", ""); } catch (FormatException) { Fail($"{f}: {l}"); }
+if (!((string[])Field("BlamePapaDodgeLines")).Any(l => l.StartsWith("~~"))) Fail("no struck-through Papa dodge line left for chat");
+if (!((string[])Field("BlamePapaDodgeQuokkaLines")).Any(l => l.StartsWith("~~"))) Fail("no struck-through Papa-Quokka dodge line left for chat");
 
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

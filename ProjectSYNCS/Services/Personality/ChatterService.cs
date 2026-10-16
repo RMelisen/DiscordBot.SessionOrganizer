@@ -593,8 +593,8 @@ internal sealed class ChatterService
     /// <summary>
     /// The answer to a specific intent (not a generic question or a low-effort word), or false.
     /// Papa only has twins for some intents; for the others this is false and he goes on to his
-    /// own pools — except an opinion and a ship, the same verdict whoever asks, and help and
-    /// requests, which he gets in his devoted request pool.
+    /// own pools — except an opinion, a ship, a yes-or-no, a blame, a joke and a fun fact, the same
+    /// whoever asks, and help and requests, which he gets in his devoted request pool.
     /// </summary>
     private bool TryIntent(ChatIntent intent, SocketUserMessage message, bool isOwner, out IntentPick pick)
     {
@@ -603,6 +603,23 @@ internal sealed class ChatterService
 
         if (intent == ChatIntent.Opinion) return TryOpinion(message, out pick);
         if (intent == ChatIntent.Ship) return TryShip(message, out pick);
+        if (intent == ChatIntent.Blame) return TryBlame(message, out pick);
+        if (intent == ChatIntent.ShouldI)
+        {
+            pick = ShouldIPick(message);
+            return true;
+        }
+        // The same joke and the same fact for everyone, Papa included.
+        if (intent == ChatIntent.Joke)
+        {
+            pick = IntentPick.Of(BotResponses.IntentLines[ChatIntent.Joke], AnswerKinds.Intent(intent));
+            return true;
+        }
+        if (intent == ChatIntent.FunFact)
+        {
+            pick = IntentPick.Of(BotResponses.MorningFunFacts, AnswerKinds.Intent(intent));
+            return true;
+        }
 
         if (intent == ChatIntent.Help)
         {
@@ -657,8 +674,65 @@ internal sealed class ChatterService
     // mens ? »): « menteuse » is an insult cue, but short and aimed at her it is teasing, and Disbelief
     // answers it — from Papa too, whose mean pool would take it as hurt. Longer insults stay mean
     // (Disbelief is six words at most).
-    private static bool IsMean(MessageMood mood, string content) =>
-        mood.Emotion == EmotionKind.Mean && MessageCues.ReadIntent(content) != ChatIntent.Disbelief;
+    // Feeling down is let through the same way when it speaks to nobody: « journée de merde » swears
+    // at the day, not at her, while « j'en ai marre de toi » stays an insult.
+    private static bool IsMean(MessageMood mood, string content)
+    {
+        if (mood.Emotion != EmotionKind.Mean) return false;
+        var intent = MessageCues.ReadIntent(content);
+        return intent != ChatIntent.Disbelief && !(intent == ChatIntent.Down && !MessageCues.SpeaksToSomeone(content));
+    }
+
+    // « je devrais y aller ? »: /yesno's coin flip and its pools, so chat and the command agree.
+    // « Valo ou LoL ? », « je joue ou je dors ? »: the same flip between the two sides, quoted as
+    // written (ChoiceLines, {2} chosen, {3} not).
+    private static IntentPick ShouldIPick(SocketUserMessage message)
+    {
+        var kind = AnswerKinds.Intent(ChatIntent.ShouldI);
+        var yes = Random.Shared.Next(2) == 0;
+        if (MessageCues.ReadChoice(message.Content ?? string.Empty) is { } choice)
+        {
+            var (chosen, rejected) = yes ? (choice.A, choice.B) : (choice.B, choice.A);
+            return new IntentPick(BotResponses.ChoiceLines, chosen, rejected, QuotedMentions, kind);
+        }
+        return IntentPick.Of(yes ? BotResponses.YesLines : BotResponses.NoLines, kind);
+    }
+
+    // « c'est la faute de qui ? »: /blame's draw (Helpers/Personality/Blame) among the humans in the
+    // asker's voice call, and its pools. A roll on Papa can't be edited away here as the command
+    // does, so it goes out as one of the dodge lines that strike his name through. Guild only.
+    private bool TryBlame(SocketUserMessage message, out IntentPick pick)
+    {
+        pick = default;
+        if (message.Author is not SocketGuildUser asker) return false;
+
+        var candidates = asker.VoiceChannel?.ConnectedUsers.Where(u => !u.IsBot).Select(u => u.Id).ToList() ?? [];
+        var result = Blame.Pick(candidates, asker.Id, OwnerId, Random.Shared);
+        var pool = result.Kind switch
+        {
+            BlameKind.Self => BotResponses.BlameSelfLines,
+            BlameKind.Quokka => BotResponses.BlameQuokkaLines,
+            BlameKind.PapaDodge => StruckPapaDodgeLines,
+            BlameKind.PapaDodgeQuokka => StruckPapaDodgeQuokkaLines,
+            BlameKind.Nobody => BotResponses.BlameNobodyLines,
+            _ => BotResponses.BlameLines,
+        };
+        // The /blame pools take the mention as {0}; here {0} is the name, so it goes in as {2}.
+        pick = new IntentPick(BlameChatPool(pool), $"<@{result.TargetId}>", string.Empty, QuotedMentions,
+            AnswerKinds.Intent(ChatIntent.Blame));
+        return true;
+    }
+
+    // The dodge lines that carry the slip themselves (« ~~C'est la faute de Papa.~~ … »): the others
+    // speak of a message before, which in chat there isn't.
+    private static readonly string[] StruckPapaDodgeLines = BotResponses.BlamePapaDodgeLines.Where(l => l.StartsWith("~~")).ToArray();
+    private static readonly string[] StruckPapaDodgeQuokkaLines =
+        BotResponses.BlamePapaDodgeQuokkaLines.Where(l => l.StartsWith("~~")).ToArray();
+
+    // Each /blame pool with its {0} moved to {2}, computed once per pool.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string[], string[]> _blameChatPools = new();
+    private static string[] BlameChatPool(string[] pool) =>
+        _blameChatPools.GetOrAdd(pool, p => p.Select(l => l.Replace("{0}", "{2}")).ToArray());
 
     // Someone telling her about their day (« j'ai mangé de la soupe »): interested half the time
     // (IntentLines), « euh, ok ? » the other half (SharingShrugLines). Papa always gets interest.

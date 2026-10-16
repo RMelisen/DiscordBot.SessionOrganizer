@@ -523,13 +523,17 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
   detected from the message text and answered in kind, and so is what the message is
   doing: asking how she is, whether she's there, who she is, how old she is or where she
   lives, what she's up to, whether she's a bot or has a crush, saying goodnight or goodbye,
-  thanking her, apologising, declaring love, laughing, being bored, telling her about your day
+  thanking her, apologising, declaring love or saying you missed her, laughing, being bored,
+  asking for a joke or a fun fact, telling her about your day
   (she may be interested, or not at all), telling her she's right
   or wrong, answering « peut-être », asking a question, or answering with a bare « ok ». Ask
   her opinion (« t'en penses quoi de… ? », « tu préfères… ou… ? ») and she gives the same
   verdict as `/rate`; ask her to ship two people (« ship X et Y », « X et moi, ça match ? ») and
   she answers exactly as `/ship` would — or ask « c'est qui mon âme sœur ? » and she searches the
-  whole server for your best match; ask how something works and she points you to `/help`
+  whole server for your best match. Tell her you're having a bad day and she offers something
+  gentle to hold on to; ask « je devrais… ? » or « X ou Y ? » and she decides, as `/yesno` would;
+  ask « c'est la faute de qui ? » and she picks a culprit from your voice call, as `/blame` would.
+  Ask how something works and she points you to `/help`
   or the right command; ask her to organise something and she points you to the command that does it. A reply to one of her own posts (a welcome, the late call, the weekend poll, a
   level-up, a command result…) is answered about that post.
 - **Her records** — now and then, instead of the usual roast, she quotes what she actually
