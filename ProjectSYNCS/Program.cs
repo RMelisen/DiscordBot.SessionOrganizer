@@ -108,6 +108,12 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<GlitchService>();
         // The sticker follow-ups: one instance, reached from BotChat's static hook.
         services.AddSingleton<StickerService>();
+        // What her own recent posts were, so a reply to one is answered about it: in memory.
+        services.AddSingleton<HerMessages>();
+        // /debug answers: the counts are in the database (transient service), the last messages
+        // she couldn't answer specifically in memory (singleton).
+        services.AddTransient<ChatAnswerService>();
+        services.AddSingleton<UnansweredLog>();
         // In-memory daily gate / per-channel stretches: singletons.
         services.AddSingleton<SynthiaService>();
         // The robot heart's daily gate is in-memory: a singleton.

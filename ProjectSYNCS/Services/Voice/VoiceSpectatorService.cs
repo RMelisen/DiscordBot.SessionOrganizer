@@ -25,6 +25,7 @@ internal sealed class VoiceSpectatorService
     private readonly XpTracker _xp;
     private readonly BreakdownService _breakdown;
     private readonly VoiceSeatService _seat;
+    private readonly HerMessages _herMessages;
     private readonly ILogger<VoiceSpectatorService> _logger;
 
     // Guards both. The sweep is sequential today; the lock keeps it safe if that changes.
@@ -32,11 +33,14 @@ internal sealed class VoiceSpectatorService
     private readonly Dictionary<ulong, VoiceStretch> _stretches = new();
     private int _lastLineDay;
 
-    public VoiceSpectatorService(XpTracker xp, BreakdownService breakdown, VoiceSeatService seat, ILogger<VoiceSpectatorService> logger)
+    public VoiceSpectatorService(
+        XpTracker xp, BreakdownService breakdown, VoiceSeatService seat, HerMessages herMessages,
+        ILogger<VoiceSpectatorService> logger)
     {
         _xp = xp;
         _breakdown = breakdown;
         _seat = seat;
+        _herMessages = herMessages;
         _logger = logger;
     }
 
@@ -87,6 +91,7 @@ internal sealed class VoiceSpectatorService
         // A voice channel carries its own text chat: the line lands where the session was.
         var sent = await BotChat.PostWithTypingAsync(channel, line, _logger, "voice spectator line", AllowedMentions.None);
         if (sent is null) return;
+        _herMessages.Remember(sent, ReplyContext.Lonely);
 
         lock (_gate) _lastLineDay = today;
         _logger.LogInformation("Spectator: {Minutes:0} min together in {ChannelId} ({Room}, seated: {Seated}), line posted.", together.TotalMinutes, channel.Id, room, seated);

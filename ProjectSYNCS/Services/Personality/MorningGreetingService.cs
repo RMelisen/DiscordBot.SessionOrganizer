@@ -233,6 +233,15 @@ internal sealed class MorningGreetingService : BackgroundService
             ? _client.GetChannel(await MainChannelIdAsync(_config)) as IMessageChannel
             : null;
 
+    /// <summary>
+    /// Whether one of her messages is a morning hello: its first line is a pool line, or it is the
+    /// birthday hello for its day's age. By text, so it holds across a restart — ChatterService
+    /// uses it to answer a reply to the hello as one (ReplyContext.MorningHello).
+    /// </summary>
+    public static bool IsMorningHello(IMessage message) =>
+        Lines.Contains(message.Content.Split('\n')[0])
+        || message.Content == BotResponses.BirthdayGreeting(MorningGreeting.Age(message.Timestamp));
+
     // A restart inside the window draws a fresh slot for today; this keeps it from
     // saying hello twice. Matching a first line against the pool's exact text tells her
     // hello apart from anything else she posted this morning.

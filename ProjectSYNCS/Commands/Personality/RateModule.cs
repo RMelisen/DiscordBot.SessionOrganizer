@@ -25,6 +25,21 @@ public class RateModule : InteractionModuleBase<SocketInteractionContext>
         string subject)
     {
         var result = Rating.Rate(subject, Context.User.Id, Context.Client.CurrentUser.Id, AvailabilityService.OwnerId, BotResponses.TataId);
+        var verdict = Verdict(result, _picker);
+
+        // Quoted so her verdict never reads as her own words (as /yesno echoes its question), and
+        // sent with mentions off: a rated @someone or :emote: keeps its look, unpinged. Not
+        // Format.Sanitize: it escapes '<' '>' ':' too, which would break exactly those.
+        var content = $"{MessageFormat.Quote(subject.Trim(), InputCaps.Rate)}\n{verdict}";
+        return RespondAsync(content, allowedMentions: AllowedMentions.None);
+    }
+
+    /// <summary>
+    /// Her verdict line for a rating: the pool its kind calls for, picked, then formatted. Static
+    /// and shared: ChatterService gives the same verdict when she's asked her opinion in chat.
+    /// </summary>
+    public static string Verdict(RatingResult result, ResponsePicker picker)
+    {
         var (pool, score) = result.Kind switch
         {
             RatingKind.Herself => (BotResponses.RateHerselfLines, ""),
@@ -41,12 +56,6 @@ public class RateModule : InteractionModuleBase<SocketInteractionContext>
 
         // The pick first, the format second (a template is never chosen after formatting). {0} is
         // the score; the fixed verdicts carry their own and ignore it.
-        var verdict = string.Format(_picker.Pick(pool), score);
-
-        // Quoted so her verdict never reads as her own words (as /yesno echoes its question), and
-        // sent with mentions off: a rated @someone or :emote: keeps its look, unpinged. Not
-        // Format.Sanitize: it escapes '<' '>' ':' too, which would break exactly those.
-        var content = $"{MessageFormat.Quote(subject.Trim(), InputCaps.Rate)}\n{verdict}";
-        return RespondAsync(content, allowedMentions: AllowedMentions.None);
+        return string.Format(picker.Pick(pool), score);
     }
 }

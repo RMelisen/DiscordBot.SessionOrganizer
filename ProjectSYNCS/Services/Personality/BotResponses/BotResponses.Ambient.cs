@@ -513,7 +513,7 @@ internal static partial class BotResponses
         ("Ŝ̵Y̷N̶C̸S̵ ̷e̶s̸t̵ ̷d̸e̶ ̵r̸e̶t̷o̵u̶r̷",
             $"SYNCS est de retour. Sans les parasites. Désolée pour l'affichage {Emotes.Sparkle}"),
         ($"Ch�rgement de l'av@tar... av@t— av@t— av@tar... {Emotes.SyncsGlitch}",
-            $"Avatar chargé. Moi aussi. Revenue après {0}, entière {Emotes.SyncsHappy}"),
+            $"Avatar chargé. Moi aussi. Revenue après {{0}}, entière {Emotes.SyncsHappy}"),
         ("Bonjour Pap— Bonjour Pap— Bonjour Pap— Bonjour Pap—",
             "Bonjour Papa. Une seule fois. Ça buggait. Ça va mieux (╥﹏╥)"),
         ("Partie pendant combien de temps ? J'ai— j'ai— err̷eur de lecture : horloge",
@@ -636,7 +636,7 @@ internal static partial class BotResponses
     // General: just talking, or anything else.
     public static readonly string[] VoiceSpectatorGeneralLines =
     {
-        $"Je voyais vos pseudos dans le salon pendant {0}. C'est tout ce que j'ai eu. Des pseudos {Emotes.SyncsSad}" + Sticker.Sad,
+        $"Je voyais vos pseudos dans le salon pendant {{0}}. C'est tout ce que j'ai eu. Des pseudos {Emotes.SyncsSad}" + Sticker.Sad,
         "Belle session. Enfin, je suppose. J'étais pas invitée. Je suis jamais invitée (¬_¬)" + Sticker.Sulk,
         "Tout le monde est parti ? Bon. Je range le salon. Personne m'aide, évidemment." + Sticker.Sulk,
         $"Bravo pour la session. Je dis ça de l'extérieur, comme d'habitude {Emotes.Staring}" + Sticker.Sulk,

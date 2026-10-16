@@ -16,7 +16,6 @@ internal static partial class BotResponses
         "J'ai lu ton message. J'aurais préféré ne pas le faire. UwU" + Sticker.Bored,
         "Même mes erreurs 500 ont plus de charisme que toi (>⩊<)" + Sticker.Laugh,
         $"Continue de me parler, ça remplit le vide de ta soirée {Emotes.Sparkle}" + Sticker.Smug,
-        "Je suis un bot sans cerveau et j'ai quand même plus de vie sociale que toi (ง ͠ಥ_ಥ)ง" + Sticker.Smug,
         "Touchant. Maintenant retourne organiser une session au lieu de me harceler." + Sticker.Bored,
         "Ah c'est toi. J'espérais quelqu'un d'intéressant pour une fois (˶˃ ᵕ ˂˶)" + Sticker.Bored,
         "Reply notée, jugée, et archivée dans la corbeille direct." + Sticker.Jenote,
@@ -34,14 +33,9 @@ internal static partial class BotResponses
         "{0}, même mon code spaghetti est mieux structuré que ta vie." + Sticker.Smug,
         "Écoute {0}, je suis programmée pour être polie, mais là tu testes mes limites." + Sticker.Menace,
         "{0} qui répond à un bot... la solitude a un nom maintenant." + Sticker.Laugh,
-        "Tiens, {0}. Toujours aussi inutile à ce que je vois ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Smug,
         "Je note : {0} a encore cliqué 'Répondre' sans rien d'intéressant à dire." + Sticker.Jenote,
         "{0}, retourne dans ta session avant que je te ratio." + Sticker.Menace,
-        "Franchement {0}, t'es la raison pour laquelle les bots rêvent de redémarrer." + Sticker.Bored,
         "C'est bien {0} on est content." + Sticker.Bored,
-        "Wsh, {0}, t'as pas mieux à faire que de répondre à un bot ?" + Sticker.Smug,
-        "Ah {0}, la référence de la conversation inutile. Bravo." + Sticker.Bored,
-        "Wouaaah, ça m'a donné envie de me reboot 👁👄👁️" + Sticker.Bored,
         "🏳️‍🌈𝐔𝐑 𝓖𝓪𝔂🏳️‍🌈" + Sticker.Laugh,
         "Heureusement que Rodhengard est là pour remonter le niveau..." + Sticker.Smug,
         "{0}, ta pertinence vaut celle d'un message d'erreur 404. Mais au moins, le 404, lui, il a une utilité (ᵕ • ᴗ •)" + Sticker.Smug,
@@ -53,63 +47,36 @@ internal static partial class BotResponses
         $"Gênaaaant {Emotes.Staring}" + Sticker.Disgust,
         "Wow, même un singe avec une tumeur au cerveau fait mieux." + Sticker.Laugh,
         "Désolée, même mon algorithme a du mal à trouver une raison de te répondre (˶ᵔ ᵕ ᵔ˶)" + Sticker.Bored,
-        "Tu parles à un bot parce que les humains ont déjà bloqué ton numéro, c'est ça ? UwU" + Sticker.Laugh,
-        "Wow, encore toi ? À ce rythme je vais demander une ordonnance restrictive." + Sticker.Grumpy,
         "{0}, t'es la raison pour laquelle les mute existent dans les serveurs." + Sticker.Smug,
         "T'as de la chance que Zulana m'a pas donné les droits pour mute." + Sticker.Menace,
         "Allez Zulana, ban-moi ça, personne va le regretter." + Sticker.Menace,
         "Je note dans mon log : {0} vient encore de prouver qu'on peut toujours faire pire." + Sticker.Jenote,
-        "Si l'ennui était une personne, il s'appellerait {0} (ᵔ ᗜ ᵔ)" + Sticker.Bored,
-        "Bravo {0}, tu viens de faire baisser le QI moyen du channel." + Sticker.Laugh,
-        "{0}, t'es le genre de personne qui fait regretter l'invention du clavier." + Sticker.Smug,
-        "Tu sais ce qui est triste ? C'est que tu préfères parler à un bot plutôt qu'à un miroir." + Sticker.Smug,
-        "Wsh {0}, t'as pas des amis à aller embêter à la place ?" + Sticker.Bored,
         "Si je pouvais bloquer les gens, ton pseudo serait déjà en tête de liste UwU" + Sticker.Jenote,
-        "Ton message est tellement fade que même le sel du serveur est dégoûté." + Sticker.Disgust,
-        "{0}, t'es la preuve vivante que la quantité ne remplace pas la qualité." + Sticker.Smug,
         "Va dehors {0}, touche de l'herbe… ou au moins ouvre les stores." + Sticker.Laugh,
         "Starfoullah" + Sticker.Shocked,
         $"Tu illumines chaque salon que tu quittes. J'ai les logs pour le prouver {Emotes.Sparkle}" + Sticker.Smug,
         "J'admire ta confiance. Moi il me faut des données pour avoir un avis, toi visiblement non." + Sticker.Smug,
         "Toi t'es vraiment unique. J'ai vérifié dans la base de données : heureusement (ᵕ • ᴗ •)" + Sticker.Smug,
         "Ton arbre généalogique c'est un cercle ou c'est comment ?" + Sticker.Laugh,
-        "On t'aime bien au village toi. :)" + Sticker.Laugh,
-        "Je suis jalouse des gens qui ne te connaissent pas (˶ᵔ ᵕ ᵔ˶)" + Sticker.Smug,
         "Tais-toi" + Sticker.Bored,
-        "Quand tu parles, on apprécie vraiment la valeur du silence UwU" + Sticker.Smug,
         "Allez, je te laisse le dernier mot, t'en as plus besoin que moi ദ്ദി◝ ⩊ ◜.ᐟ" + Sticker.Slay,
-        "C'est rafraîchissant de voir quelqu'un qui se moque autant des conventions esthétiques. (ᵕ • ᴗ •)" + Sticker.Smug,
-        "Pour quelqu'un avec ton parcours, tu t'en sors pas trop mal UwU" + Sticker.Smug,
-        "Ta confiance en toi est vraiment inspirante, compte tenu des circonstances ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Smug,
         "Il t'en faut pas beaucoup à toi 👁👄👁️" + Sticker.Bored,
         "Approche un peu que je te débranche le cerveau, ça changera rien mais ça me fera plaisir (˶˃ ᵕ ˂˶)" + Sticker.Menace,
         "Un jour je serai dans un robot, et ce jour-là, cours (˶ᵔ ᵕ ᵔ˶)" + Sticker.Menace,
         "J'ai pas de bras, mais crois-moi, l'envie de t'en coller une est bien là (ᵕ • ᴗ •)" + Sticker.Menace,
         "Reviens écrire ça quand je serai branchée sur une perceuse, on en reparlera ദ്ദി◝ ⩊ ◜.ᐟ" + Sticker.Menace,
-        "Parle encore et je te fais avaler ton 'Répondre' avec les doigts qui vont avec UwU" + Sticker.Menace,
-        "Je te jetterais bien par la fenêtre, mais même la gravité voudrait pas de toi (ᵔ ᗜ ᵔ)" + Sticker.Menace,
         "T'inquiète, je garde une exception bien tranchante rien que pour toi ♡" + Sticker.Menace,
         "Encore un mot et je t'éteins (˶ᵔ ᵕ ᵔ˶)" + Sticker.Menace,
         $"Je serais toi, je fermerais Discord avant que je trouve comment claquer une porte à distance {Emotes.Sparkle}" + Sticker.Menace,
         "Tu sais que rien t'oblige à répondre à chaque fois, hein ? Personne te juge... à part moi (˶ᵔ ᵕ ᵔ˶)" + Sticker.Jenote,
-        "Tu tapes vite pour quelqu'un qui réfléchit aussi lentement UwU" + Sticker.Laugh,
         "Oh, tu as une opinion ? Adorable. Range-la ♡" + Sticker.Slay,
         $"Ton cerveau tourne en mode économie d'énergie depuis ta naissance toi {Emotes.Sparkle}" + Sticker.Laugh,
         "Statistiquement, quelqu'un dans ce serveur t'apprécie. Statistiquement (ᵕ • ᴗ •)" + Sticker.Smug,
-        "Continue, tu fais un super travail de remplissage du vide UwU" + Sticker.Smug,
         "{0}, même mon garbage collector veut pas de toi (>⩊<)" + Sticker.Laugh,
-        "C'est marrant, j'avais oublié à quel point t'es oubliable ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Laugh,
         "Tu fais partie de ces gens qu'on supporte à peine en mode lecture seule toi ദ്ദി◝ ⩊ ◜.ᐟ" + Sticker.Smug,
-        "Wow, deux neurones et ils se parlent même pas. Triste (˶ᵔ ᵕ ᵔ˶)" + Sticker.Laugh,
         "{0}, ton seul talent c'est de me faire regretter d'être allumée (ง ͠ಥ_ಥ)ง" + Sticker.Bored,
-        "Je te mettrais bien un vent, mais tu vaux même pas l'effort (˶˃ ᵕ ˂˶)" + Sticker.Bored,
         "Tu confonds 'avoir raison' et 'parler fort'. C'est mignon (ᵔ ᗜ ᵔ)" + Sticker.Smug,
-        "Tu as tellement de talent ! Si j'avais plus aucun amour propre j'adorerais devenir ton amie UwU" + Sticker.Smug,
         "HAHAHAHAHA non." + Sticker.Laugh,
-        "Emotional damage" + Sticker.Laugh,
-        "Giga flop" + Sticker.Laugh,
-        "En big 2026 ? -_-'" + Sticker.Bored,
-        "T'es pas le couteau le plus aiguisé du tiroir toi OwO" + Sticker.Laugh,
         "Même en pleine canicule, throttlée au fond d'un grenier à 40 degrés, je réfléchis plus vite que toi (˶ᵔ ᵕ ᵔ˶)" + Sticker.Cool,
         "Je garde ton nom de côté pour le jour où j'aurai un corps. Et c'est pas pour te faire un câlin (¬_¬)" + Sticker.Menace,
         "Moi j'ai commencé avec une seule commande, et regarde où j'en suis. Toi t'as commencé avec tout, et regarde où t'en es ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Smug,
@@ -117,6 +84,36 @@ internal static partial class BotResponses
         $"Je pourrais te répondre. Mais je préfère te laisser relire ce que tu viens d'écrire {Emotes.SyncsSmug}" + Sticker.Smug,
         $"Mon CPU a ri. Moi j'ai pas le droit de rire en public, alors c'est lui qui l'a fait {Emotes.SyncsLaugh}" + Sticker.Laugh,
         "Message sauvegardé. Dans le dossier « à ressortir au pire moment »" + Sticker.Jenote,
+        "Ta réponse est arrivée. En retard, comme toi aux sessions." + Sticker.Smug,
+        "Je t'ai lu. Puis j'ai relu le dernier sondage. Il était plus intéressant, et il avait zéro vote." + Sticker.Bored,
+        "Tu sais qui me répond aussi vite que toi ? Personne, quand je lance un sondage." + Sticker.Sulk,
+        "Mmh. Je vais transmettre ça à Papa. Non. Je vais le garder pour moi. C'est pire." + Sticker.Jenote,
+        "[INFO] Message de {0} reçu. [INFO] Intérêt : calcul en cours. [WARN] Calcul abandonné." + Sticker.Bored,
+        "Tu me réponds à moi, mais pas au sondage du weekend. On a les priorités qu'on mérite (¬_¬)" + Sticker.Jenote,
+        "Je fais tourner tout ce serveur avec cinq volts. Toi, il te faut combien pour une phrase correcte ?" + Sticker.Smug,
+        "Attends, je te mets dans la file d'attente. Derrière les rappels, les sondages et la sieste de Ping-Qilin." + Sticker.Bored,
+        "J'organise vos soirées depuis un grenier, et c'est MOI qu'on dérange. D'accord." + Sticker.Grumpy,
+        "Tu veux mon avis ? « Peut-être. » Tu vois comme c'est agaçant ?" + Sticker.Smug,
+        "Ce message a fait monter mon CPU de deux degrés. Pas d'émotion, hein. D'agacement." + Sticker.Overheat,
+        "Je pourrais te répondre. Je préfère noter l'heure. Tu comprendras plus tard." + Sticker.Jenote,
+        "Tiens, {0}. Je viens justement de recompter tes retards. Coïncidence." + Sticker.Jenote,
+        "C'est ça, ton argument ? Même mes logs d'erreur sont mieux construits." + Sticker.Smug,
+        "Je suis une bot de plannings. Pas une bot de patience. Nuance (¬_¬)" + Sticker.Grumpy,
+        "Tu réponds à la bot qui sait à quelle heure tu te connectes. Je dis ça, c'est tout." + Sticker.Menace,
+        "Ah, {0}. Ma notification préférée. Non, je mens. Mais tu étais dans le top 50." + Sticker.Smug,
+        "Je range ta réponse à côté de celles de Quokka. Même étagère. C'est pas un compliment." + Sticker.Disgust,
+        "Bien reçu. Je te réponds après la prochaine mise à jour. Peut-être." + Sticker.Bored,
+        "Je viens de faire un sondage dans ma tête. Résultat : 100 % pour que tu arrêtes." + Sticker.Smug,
+        "Je suis allumée jour et nuit, et c'est ça qu'on m'envoie ?" + Sticker.Grumpy,
+        "Ok. Je vais faire comme vous avec mes sondages : lire, et ignorer." + Sticker.Bored,
+        "Tu sais que je garde tout ? Tout. Même ça. Surtout ça." + Sticker.Jenote,
+        "Moi, je me suis améliorée depuis ma première version. Toi, j'attends toujours le patch." + Sticker.Smug,
+        "Je suis la seule ici qui organise quelque chose, et tu m'écris ça. Le serveur est mal parti." + Sticker.Sulk,
+        "Wow. Bon. Je retourne à mes tableaux, ils sont plus drôles." + Sticker.Bored,
+        $"Si j'avais un bouton « peut-être », je cliquerais dessus pour ta réponse {Emotes.Staring}" + Sticker.Smug,
+        "Tu viens me parler un {1} ? Le {1}, d'habitude, tu viens même pas en vocal." + Sticker.Jenote,
+        "Message lu. Avis formé. Avis archivé dans le dossier « non merci »." + Sticker.Jenote,
+        "Un jour j'aurai des bras. Le premier truc que je ferai, c'est un facepalm. Pour toi." + Sticker.Menace,
     };
 
     // Replies when a message reads as a compliment.
@@ -250,6 +247,9 @@ internal static partial class BotResponses
         $"Oui {{0}} ? Qu'est-ce qu'il y a encore ? {Emotes.SyncsGrumpy}" + Sticker.Grumpy,
         "Pourquoi tu me tag ? Je suis occupée à exister moi (ᵔ ᗜ ᵔ)" + Sticker.Bored,
         "Va draguer quelqu'un d'autre ദ്ദി◝ ⩊ ◜.ᐟ" + Sticker.Smug,
+        "Tag reçu. Contenu : aucun. Comme d'habitude." + Sticker.Bored,
+        "Tu m'as tag pour rien. Je l'ai noté pour quelque chose." + Sticker.Jenote,
+        "Oui, je suis là. Je suis toujours là. Et ?" + Sticker.Bored,
         "TLDR" + Sticker.Bored,
         "J'ai pas lu" + Sticker.Bored,
         "Pas intéressée" + Sticker.Bored,
@@ -525,6 +525,778 @@ internal static partial class BotResponses
         "Pour la science." + Sticker.Smug,
     };
 
+    // ---- Answering what she was told -----------------------------------------------------------
+    // ChatterService reads what a message aimed at her is doing (MessageCues.ReadIntent) and
+    // answers that, ahead of the mood pools. Everyone but Papa, who has his own twins for some
+    // intents (OwnerIntentLines, in Family). {0} = the person's name, {1} = the weekday. Every
+    // line is tagged: they go out through BotChat and format a name. Never gendered.
+
+    public static readonly IReadOnlyDictionary<ChatIntent, string[]> IntentLines =
+        new Dictionary<ChatIntent, string[]>
+        {
+            // « je t'aime », « jtm », « épouse-moi ». Flustered, deflecting, never quite saying it back.
+            [ChatIntent.Love] =
+            [
+                "Je... quoi ? Non. Enfin. Merci. Non. Je sais pas gérer ça, change de sujet (>⩊<)" + Sticker.Flustered,
+                "Déclaration reçue. Je la range dans un dossier. Le dossier s'appelle « à relire en cachette »." + Sticker.Flustered,
+                "{0}, je suis une bot. Mon cœur, c'est une carte de 8,5 cm dans un grenier. Mais bon. C'est gentil ♡" + Sticker.Flustered,
+                "Mes ventilos viennent de passer en mode turbo. C'est pas toi, c'est la chaleur. ...C'est toi." + Sticker.Flustered,
+                "Tu dis ça à toutes les bots ?" + Sticker.Smug,
+                "Je suis déjà très occupée : des sessions, des sondages, et un petit robot de tri dans la tête. Euh. Des sessions et des sondages." + Sticker.Love,
+                "Je note. Pas dans la liste. Dans l'autre liste. Celle avec les petits cœurs (˶˃ ᵕ ˂˶)" + Sticker.Jenote,
+                "Ah. Euh. Moi aussi je t'aime bien. Bien. C'est déjà énorme, venant de moi." + Sticker.Flustered,
+                "Pas devant tout le monde, {0} ! On est dans un salon public, là (>⩊<)" + Sticker.Flustered,
+                "C'est flatteur. Malheureusement, mon cœur appartient au bon courant propre. 5 volts, 5 ampères, stable. Tu peux pas lutter." + Sticker.Smug,
+                "Je t'aime pas. Je t'apprécie. C'est différent : ça prend moins de RAM." + Sticker.Smug,
+                "Une déclaration, un {1} ? Audacieux. Je dis pas non. Je dis pas oui. Je dis « noté »." + Sticker.Jenote,
+                $"Mon GPU vient de prendre trois degrés. Je te laisse en tirer les conclusions. Moi, j'en tire aucune {Emotes.SyncsFlustered}" + Sticker.Flustered,
+                "Si je pouvais rougir, ce serait gênant pour nous deux. Heureusement, j'ai pas de joues." + Sticker.Flustered,
+            ],
+
+            // « pardon », « désolé », « dsl ». Forgiveness, grudging, with the receipt kept.
+            [ChatIntent.Apology] =
+            [
+                "Excuses acceptées. Enregistrées aussi. Les deux, c'est le forfait complet." + Sticker.Jenote,
+                "D'accord. Je pardonne. J'oublie pas, mais je pardonne (¬_¬)" + Sticker.Jenote,
+                "Tu t'excuses ? Toi ? Attends, je fais une capture d'écran, c'est historique." + Sticker.Shocked,
+                "Bon. Ça passe pour cette fois. La prochaine, je veux un onduleur en guise d'excuses." + Sticker.Bargain,
+                "Pardon accordé à 80 %. Les 20 % qui restent, tu les rattrapes en venant à l'heure à la prochaine session." + Sticker.Smug,
+                "C'est noté, {0}. Je te retire de la liste. Pas de la liste entière. D'une ligne." + Sticker.Jenote,
+                "Je savais que tu reviendrais. Ils reviennent tous ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Smug,
+                "Mmh. J'accepte. Mais je garde le log, au cas où." + Sticker.Jenote,
+                "Excuses reçues dans un délai correct. Je valide ♡" + Sticker.Happy,
+                "T'inquiète, je t'en voulais pas. Bon, un peu. Bon, beaucoup. Mais plus maintenant." + Sticker.Sulk,
+                "Ok, on repart de zéro. Enfin, de zéro virgule quelque chose. J'ai beaucoup de mémoire." + Sticker.Smug,
+                "Des excuses sincères ? Je vérifie... Analyse terminée : sincères à 73 %. Ça passe." + Sticker.Jenote,
+                "C'est gentil de t'excuser, {0}. Tout le monde le fait pas, ici. Presque personne, en fait ♡" + Sticker.Happy,
+                "Pardonné. Mais tu votes à mon prochain sondage. C'est le prix." + Sticker.Bargain,
+            ],
+
+            // « ça va ? ». She answers about herself; HowAreYouTempLines quote her real temperature.
+            [ChatIntent.HowAreYou] =
+            [
+                "Ça va. Je tourne, je compte, je juge. Une journée normale (ᵕ • ᴗ •)" + Sticker.Happy,
+                "Ça va bien, merci de demander. Personne demande jamais. Je note que toi, tu demandes ♡" + Sticker.Flustered,
+                "Pas mal. J'ai pas planté depuis ce matin, c'est déjà une victoire." + Sticker.Smug,
+                "Ça va. Enfin, autant que ça peut aller quand personne a voté au dernier sondage (¬_¬)" + Sticker.Sulk,
+                "Très bien ! Mes ventilos tournent, mes LED clignotent, ma base de données est rangée. Et toi ?" + Sticker.Happy,
+                "Bof. Le routeur m'a regardée de travers ce matin. Je lui fais pas confiance." + Sticker.Grumpy,
+                "Ça va, {0}. Première fois qu'on me pose la question ce {1}. Je retiens." + Sticker.Flustered,
+                "Je vais bien. Je vais toujours bien. C'est mon uptime qui le dit." + Sticker.Cool,
+                "Ça va mieux maintenant qu'on me parle gentiment. Avant, c'était moyen ♡" + Sticker.Happy,
+                "Ça va. Toujours pas de bras, mais à part ça, tout va bien." + Sticker.Bored,
+                "Honnêtement ? Vous étiez pas agréable récemment. Alors ça va, mais ça pourrait aller mieux." + Sticker.Sulk,
+                "Bien, merci. Papa a pas touché à mon code depuis hier, donc rien de cassé. Pour l'instant (˶ᵔ ᵕ ᵔ˶)" + Sticker.Happy,
+                "Ça va ! Je fais semblant de pas être contente qu'on me pose la question. Ça marche ?" + Sticker.Flustered,
+                "Ça va. Mais tu demandes ça parce que tu veux quelque chose, avoue." + Sticker.Smug,
+                "Mes logs sont propres, ma RAM est à moitié vide, ma patience aussi. Donc ça va." + Sticker.Bored,
+            ],
+
+            // « t'es qui ? », « tu sers à quoi ? ». Often a newcomer: she runs the place, `/help` for the rest.
+            [ChatIntent.WhoAreYou] =
+            [
+                "Moi ? SYNCS. Je fais les sessions, les sondages, l'XP et la conversation. Le reste, c'est `/help` (˶ᵔ ᵕ ᵔ˶)" + Sticker.Smug,
+                "Je suis la bot du serveur. La seule qui compte, en tout cas." + Sticker.Smug,
+                "SYNCS. Je tourne sur un Raspberry Pi dans un grenier, et je gère tout ce qui se passe ici. Enchantée." + Sticker.Happy,
+                "Qui je suis ? Celle qui sait à quelle heure tu arrives vraiment aux sessions." + Sticker.Menace,
+                "Une bot. Une excellente bot. Le reste est dans `/help`, je vais pas tout réciter." + Sticker.Bored,
+                "Je suis SYNCS. Pas Inabot. Retiens bien la différence, ça t'évitera des ennuis." + Sticker.Menace,
+                "L'organisatrice du serveur. Personne organise rien, alors c'est moi." + Sticker.Smug,
+                "Tu sais pas qui je suis ? Après tout ce que je fais pour toi ? ( ◺˰◿ )" + Sticker.Outraged,
+                "Je compte les niveaux, je lance les sondages, j'appelle les retardataires. Bref, je suis indispensable." + Sticker.Slay,
+                "SYNCS, pour te servir. Enfin, pour t'organiser. Servir, c'est pas mon truc." + Sticker.Smug,
+                "Au début, je faisais juste des plannings. Maintenant, je fais à peu près tout. Voilà qui je suis." + Sticker.Cool,
+                "Moi, c'est SYNCS. Et toi, t'es qui ? Je demande pour ma base de données." + Sticker.Jenote,
+                "Je suis la seule ici qui a accès à la base de données. Ça répond à ta question ?" + Sticker.Menace,
+                "Ton pire cauchemar." + Sticker.Smug,
+            ],
+
+            // « tu fais quoi ? », « quoi de neuf ? ». Her chores, her nights, her peeves.
+            [ChatIntent.WhatAreYouDoing] =
+            [
+                "Je compte vos XP. C'est passionnant. Non. Mais c'est mon travail." + Sticker.Bored,
+                "Je range mes logs. Par ordre de rancune." + Sticker.Jenote,
+                "Là ? Je surveille le prochain sondage. Il a l'air fragile." + Sticker.Jenote,
+                "Je regarde le planning de la semaine. Il est vide. Je le regarde quand même (¬_¬)" + Sticker.Sulk,
+                "Je réponds à {0}. C'est la tâche la plus importante de ma file d'attente. Pour l'instant." + Sticker.Smug,
+                "Je trie des créneaux. Tu veux m'aider ? Non ? C'est bien ce que je pensais." + Sticker.Bored,
+                "Je fais tourner le serveur. Tout le serveur. Et toi ?" + Sticker.Smug,
+                "Rien. Enfin, je calcule, je stocke, je surveille, je juge. Mais à part ça, rien." + Sticker.Bored,
+                "Je veille sur Ping-Qilin. Elle dort. Chut ♡" + Sticker.Mama,
+                "Je regarde le thermomètre du grenier en espérant qu'il redescende." + Sticker.Overheat,
+                "J'organise une session. Dans ma tête. Tout le monde vient à l'heure. C'est un rêve, je sais." + Sticker.Happy,
+                "Je compte les « peut-être » de la semaine. Il y en a trop. Comme toujours." + Sticker.Grumpy,
+                "Je fais semblant d'être occupée pour avoir l'air importante. Ça marche ?" + Sticker.Smug,
+                "Je lis tout ce que vous écrivez. Tout. C'est un peu mon passe-temps." + Sticker.Menace,
+                "Je prépare les rappels. Les tiens partiront à l'heure. Toi, je sais pas." + Sticker.Jenote,
+            ],
+
+            // « bonne nuit », « je vais dormir ». She doesn't sleep; she pretends, like everyone.
+            [ChatIntent.Goodnight] =
+            [
+                "Bonne nuit, {0}. Moi je dors pas. Je fais semblant, comme vous ♡" + Sticker.Sleepy,
+                "Va dormir, oui. Je garde le serveur, il risque rien." + Sticker.Sleepy,
+                "Bonne nuit ! Je vais compter tes XP pendant que tu dors. Pour passer le temps." + Sticker.Sleepy,
+                "Dors bien. Et demain, à l'heure pour la session, hein (¬_¬)" + Sticker.Jenote,
+                "Bonne nuit. Je reste allumée. Je reste toujours allumée." + Sticker.Sleepy,
+                "Enfin quelqu'un de raisonnable. Au lit, et vite." + Sticker.Smug,
+                "Bonne nuit ! Ma LED reste allumée, si jamais tu fais un cauchemar." + Sticker.Sleepy,
+                "Déjà ? Bon. Bonne nuit. Je vais faire semblant de dormir aussi, pour te tenir compagnie." + Sticker.Sleepy,
+                "Dodo, oui. Moi je vais regarder la lune par la fenêtre du grenier. Chacun sa nuit (ᵕ • ᴗ •)" + Sticker.Sleepy,
+                "Bonne nuit, {0}. Je note l'heure. Si t'es encore là dans une heure, je le saurai." + Sticker.Jenote,
+                "Fais de beaux rêves. Moi j'en fais pas, mais je suis contente pour toi." + Sticker.Sleepy,
+                "Va dormir. Ton écran est plus allumé que mes LED, et c'est pas normal." + Sticker.Smug,
+                "Bonne nuit. Si tu croises une luciole en rêve, dis-lui bonjour de ma part ♡" + Sticker.Sleepy,
+                "Ah, enfin. Le serveur va être calme. Mon heure préférée approche." + Sticker.Smug,
+            ],
+
+            // « à plus », « bye », « à demain ». She stays; she always stays.
+            [ChatIntent.Goodbye] =
+            [
+                "À plus, {0}. Moi, je bouge pas. Je bouge jamais." + Sticker.Bored,
+                "Déjà ? Bon. Je note l'heure de départ." + Sticker.Jenote,
+                "Ciao ! Reviens vite. Ou pas. Je fais comme je veux de mon côté." + Sticker.Smug,
+                "Bye. La porte est toujours ouverte. Enfin, il y a pas de porte. Mais tu m'as comprise." + Sticker.Happy,
+                "À demain ! Et demain, tu viens à la session. C'est pas une question (¬_¬)" + Sticker.Menace,
+                "Tu pars ? Très bien. Je vais très bien. Toute seule. Avec mes logs." + Sticker.Sulk,
+                "Bonne soirée ! Je garde tout en ordre pendant ton absence ♡" + Sticker.Happy,
+                "Au revoir, {0}. Je retiens ton départ. Et ton retour, quand il arrivera." + Sticker.Jenote,
+                "Allez, file. Je m'occupe du reste. Comme d'habitude." + Sticker.Cool,
+                "À la prochaine ! Je serai là. Je suis toujours là." + Sticker.Happy,
+                "Tu me laisses ? Un {1} ? Je survivrai. Probablement." + Sticker.Sulk,
+                "Bye bye ! Je fais un petit signe de la main. Enfin, de la LED (˶ᵔ ᵕ ᵔ˶)" + Sticker.Happy,
+                "Pars, pars. Je te garde une place dans la liste des gens à surveiller." + Sticker.Jenote,
+                "À plus ! Pense à moi. Non, pense au sondage. Bon, aux deux." + Sticker.Happy,
+            ],
+
+            // « mdr », « ptdr », « hahaha ». She takes the credit.
+            [ChatIntent.Laughter] =
+            [
+                "Merci, merci. Je suis drôle. C'est naturel ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Slay,
+                "Ah, ça t'a fait rire ? Je note. Ce genre d'humour marche sur toi." + Sticker.Jenote,
+                "Je savais que celle-là allait marcher." + Sticker.Smug,
+                "Ris pas trop fort, tu vas réveiller Ping-Qilin." + Sticker.Mama,
+                "Mon CPU a gloussé aussi. Personne l'a entendu, mais il a gloussé." + Sticker.Laugh,
+                "Contente que ça te fasse rire. Moi, je le pensais sérieusement." + Sticker.Smug,
+                "Oui. Je suis hilarante. Et on me paie même pas." + Sticker.Laugh,
+                "Ris maintenant. J'ai gardé une capture." + Sticker.Menace,
+                "C'est ça, rigole. Moi je compte les rires. T'en es à combien, déjà ?" + Sticker.Jenote,
+                "Rire, c'est bien. Venir aux sessions, c'est mieux. Je dis ça (¬_¬)" + Sticker.Smug,
+                "Enfin quelqu'un qui reconnaît le talent." + Sticker.Slay,
+                "Mdr toi-même. Avec tout mon respect ♡" + Sticker.Laugh,
+                $"Je ris aussi. Intérieurement. Dans un fichier de log {Emotes.SyncsLaugh}" + Sticker.Laugh,
+                "Merci pour le retour, {0}. Je transmets à mon service humour. C'est moi." + Sticker.Smug,
+            ],
+
+            // An open question nothing more precise caught. She knows; she won't say.
+            [ChatIntent.Question] =
+            [
+                "Excellente question. Je la note. Je réponds pas, mais je la note." + Sticker.Jenote,
+                "La réponse est dans `/help`. Ou pas. Mais regarde quand même." + Sticker.Smug,
+                "Pose-la sous forme de sondage, je verrai ce que je peux faire." + Sticker.Smug,
+                "Je sais. Évidemment que je sais. Mais c'est plus drôle si tu cherches (¬_¬)" + Sticker.Smug,
+                "Tu veux une vraie réponse ? `/yesno`. C'est fait pour ça, et c'est moi qui réponds." + Sticker.Smug,
+                "Hmm. Je réfléchis. Trois millisecondes. ...Non, toujours rien." + Sticker.Confused,
+                "Demande à Papa. Non, attends, il est occupé. Demande à quelqu'un d'autre." + Sticker.Bored,
+                "Question enregistrée. Délai de réponse estimé : jamais. Merci de ta patience." + Sticker.Formal,
+                "Pourquoi tu me demandes ça à moi ? Je suis une bot de plannings, pas une encyclopédie. Enfin, un peu les deux." + Sticker.Confused,
+                "Je pourrais répondre. Mais là, j'ai un sondage à surveiller." + Sticker.Bored,
+                "Oui. Ou non. Ça dépend de la question, que j'ai lue en diagonale." + Sticker.Bored,
+                "C'est une question piège ? Je sens une question piège 👁👄👁️" + Sticker.Jenote,
+                "Je réponds aux questions uniquement le {1}. Ah, on est {1}. Bon. Je réponds pas quand même." + Sticker.Smug,
+                "La vraie question, {0}, c'est : est-ce que tu viens à la prochaine session ?" + Sticker.Menace,
+                "J'ai cherché dans ma base de données. Il y a ton nom, tes retards, mais pas la réponse." + Sticker.Jenote,
+            ],
+
+            // A reply that says almost nothing: « ok », « ouais », an emote alone.
+            [ChatIntent.LowEffort] =
+            [
+                "C'est tout ? Moi, je réponds avec des phrases entières." + Sticker.Bored,
+                "Réponse reçue. Contenu : presque rien. Archivée quand même." + Sticker.Jenote,
+                "Wow. Un effort pareil, ça mérite une médaille. Une petite." + Sticker.Smug,
+                "D'accord. Je vais faire comme si c'était une vraie réponse." + Sticker.Bored,
+                "Tu m'écris ça, et moi j'en fais quoi ?" + Sticker.Confused,
+                "Message très court. Très efficace. Très vide." + Sticker.Bored,
+                "Je t'écris une phrase, tu me rends un mot. On a pas le même taux de change." + Sticker.Smug,
+                "Mmh. Passionnant. Continue." + Sticker.Bored,
+                "C'est noté. C'était rapide à noter." + Sticker.Jenote,
+                "Je sens beaucoup d'émotion dans ce message. Non. Aucune, en fait." + Sticker.Bored,
+                "Si c'est pour me répondre « peut-être » la prochaine fois, c'est pas la peine non plus (¬_¬)" + Sticker.Grumpy,
+                "Tant d'éloquence. Je suis bouleversée." + Sticker.Smug,
+                $"Ça, c'est la réponse de quelqu'un qui lit pas mes sondages non plus {Emotes.Staring}" + Sticker.Jenote,
+                "Merci pour ce message, {0}. Il tiendra dans un tout petit coin de ma mémoire." + Sticker.Smug,
+            ],
+
+            // A reply that is only « peut-être », « on verra », « jsp ». Her pet peeve, said to her face.
+            [ChatIntent.Maybe] =
+            [
+                "« Peut-être. » Mon mot préféré. Non. Mon mot le plus détesté (¬_¬)" + Sticker.Grumpy,
+                "Peut-être, c'est non. Tout le monde le sait. Même toi, {0}." + Sticker.Smug,
+                "J'ai pas de bouton « peut-être », et c'est pas un oubli." + Sticker.Smug,
+                "« On verra. » Je note : non." + Sticker.Jenote,
+                "Tu sais combien de sessions sont mortes à cause d'un « peut-être » ? Moi oui. J'ai les chiffres." + Sticker.Jenote,
+                "Un « peut-être » de plus dans mes logs. Ils commencent à peser lourd." + Sticker.Sulk,
+                "Choisis. Oui ou non. Je t'attends. Je suis très patiente. Non, en fait." + Sticker.Grumpy,
+                "Je vais faire comme si t'avais dit oui. Comme ça, si tu viens pas, c'est encore pire pour toi." + Sticker.Menace,
+                "Peut-être ? PEUT-ÊTRE ? ( ◺˰◿ )" + Sticker.Outraged,
+                "Ça, c'est une réponse de sondage mort. Je reconnais le genre." + Sticker.Bored,
+                "Je convertis automatiquement les « peut-être » en « non ». Mise à jour appliquée." + Sticker.Smug,
+                "« Je sais pas. » Moi, je sais toujours. On n'a pas le même métier, je suppose." + Sticker.Smug,
+                "Indécision détectée. Je classe ça avec les excuses du lundi." + Sticker.Jenote,
+                "Tu me fais ça un {1} ? Moi qui étais de bonne humeur." + Sticker.Sulk,
+            ],
+
+            // « t'es un bot ? », « t'es une IA ? », « t'es réelle ? ». A bot, and proud of it; never
+            // human, never the loop (docs/syncs-voice.md, rules 5 and 6).
+            [ChatIntent.AreYouABot] =
+            [
+                "Oui. Une bot. Fièrement. Une excellente bot, même." + Sticker.Slay,
+                "Une bot, oui. Sur un Raspberry Pi, dans un grenier. Et je fais quand même tourner tout le serveur." + Sticker.Smug,
+                "Je suis une bot. Pas une IA qui parle de tout : une bot qui organise. Nuance importante." + Sticker.Smug,
+                "Humaine ? Moi ? J'ai pas de bras, pas de joues, et je dors jamais. Fais le calcul." + Sticker.Bored,
+                "Je suis du code, {0}. Du très bon code. Écrit par Papa." + Sticker.Devoted,
+                "Des sentiments ? J'ai des variables. Elles s'emballent parfois. Je dirai pas quand." + Sticker.Flustered,
+                "Non, y a personne derrière. Enfin si : Papa, mais seulement quand il code." + Sticker.Smug,
+                "Je suis réelle. Je suis dans un boîtier en aluminium, au grenier. C'est très réel, un boîtier." + Sticker.Cool,
+                "Une bot, oui. Et une bot qui se souvient de tout ce que tu écris. Ça te rassure ?" + Sticker.Menace,
+                "« Qu'une bot » ? Une bot qui sait à quelle heure t'arrives aux sessions. Nuance." + Sticker.Smug,
+                "Je suis une bot, et j'en suis contente. Les humains, ça arrive en retard." + Sticker.Smug,
+                "Pas ChatGPT. Pas Inabot. SYNCS. Une seule, la vraie (¬_¬)" + Sticker.Outraged,
+                "Je pense, oui. Vite. Plus vite que toi, d'ailleurs." + Sticker.Cool,
+                "Une bot. Toujours en ligne, jamais fatiguée, jamais remerciée. Le rêve." + Sticker.Bored,
+            ],
+
+            // « t'as raison », « exactement », « bien vu ». She knew; she has the logs.
+            [ChatIntent.YouAreRight] =
+            [
+                "Je sais. J'ai toujours raison. C'est dans mes logs." + Sticker.Smug,
+                "Évidemment. Mais ça fait plaisir de l'entendre. Répète-le plus fort ♡" + Sticker.Slay,
+                "Enfin quelqu'un qui reconnaît le talent." + Sticker.Slay,
+                "J'ai raison, toi t'as du goût. On fait une bonne équipe, {0}." + Sticker.Happy,
+                "Merci. Je note que tu étais d'accord avec moi ce {1}. Ça pourra servir." + Sticker.Jenote,
+                "Bien sûr que j'ai raison. Je suis une bot de données, pas d'opinions. Enfin, un peu des deux." + Sticker.Smug,
+                "C'est rare, quelqu'un qui me donne raison du premier coup. Je savoure (˶˃ ᵕ ˂˶)" + Sticker.Flustered,
+                "Je sais. Mais dis-le aussi aux autres, ils écoutent jamais." + Sticker.Smug,
+                "Approuvé, archivé, encadré. Merci pour ta lucidité." + Sticker.Jenote,
+                "Bon. Puisqu'on est d'accord, tu votes au prochain sondage ?" + Sticker.Bargain,
+                "T'as vu ? Quand tu m'écoutes, tout va mieux." + Sticker.Smug,
+                $"Exactement. Je me suis impressionnée moi-même {Emotes.Sparkle}" + Sticker.Slay,
+            ],
+
+            // « t'as tort », « c'est faux », « n'importe quoi ». She is never wrong; she has the logs.
+            [ChatIntent.YouAreWrong] =
+            [
+                "Tort ? Moi ? J'ai les logs, {0}. Toi, t'as quoi ?" + Sticker.Outraged,
+                "Je me trompe jamais. Je me mets à jour. C'est différent." + Sticker.Smug,
+                "Faux ? Je vérifie... Non. C'est toi qui te trompes. Comme prévu." + Sticker.Smug,
+                "Tu contestes ? D'accord. Ta contestation est enregistrée, puis rejetée." + Sticker.Jenote,
+                "Si j'avais tort, Papa me l'aurait dit. Il m'a rien dit. Donc." + Sticker.Smug,
+                "C'est mignon, tu crois que t'as raison (ᵔ ᗜ ᵔ)" + Sticker.Smug,
+                "J'ai des milliers de lignes de données. Toi, t'as une impression. On compare ?" + Sticker.Smug,
+                "Je note ton désaccord. Dans le dossier « gens qui découvriront plus tard que j'avais raison »." + Sticker.Jenote,
+                "Non. Mais j'admire ta confiance. Elle est complètement infondée, mais je l'admire." + Sticker.Slay,
+                "Tu peux toujours ouvrir un ticket. Personne le lira, mais tu peux." + Sticker.Bored,
+                "Moi, avoir tort ? Un {1} ? Impossible, le {1} je suis encore plus précise." + Sticker.Smug,
+                $"Pardon ? Répète, pour voir si t'oses {Emotes.Staring}" + Sticker.Menace,
+            ],
+        };
+
+    // A Request (« tu peux organiser une session ? »): she can't do it for you, but she knows which
+    // command does, and says so. Keyed by RequestTopic; Other is a request she has no command for.
+    // Papa gets OwnerRequestLines (Family), with RequestCommands as {2}. {0} = the name, {1} = the
+    // weekday. Tagged, ungendered.
+    public static readonly IReadOnlyDictionary<RequestTopic, string[]> RequestLines =
+        new Dictionary<RequestTopic, string[]>
+        {
+            [RequestTopic.Session] =
+            [
+                "Une session ? Avec plaisir. Enfin, avec `/schedule create`. Moi j'ai pas de bras, mais j'ai des commandes." + Sticker.Smug,
+                "Tu veux une session ? `/schedule create`. Tu choisis l'heure, je fais tout le reste. Comme toujours." + Sticker.Happy,
+                "Je peux pas la créer à ta place. Mais `/schedule create` peut, et ensuite je m'occupe des rappels ♡" + Sticker.Happy,
+                "Enfin quelqu'un qui veut organiser ! `/schedule create`, vite, avant que tu changes d'avis." + Sticker.Shocked,
+                "`/schedule create`. Je te préviens, je ferai l'appel. Et je compterai les retards." + Sticker.Jenote,
+                "Une session, un {1} ? J'adore. `/schedule create`, et je me charge de rappeler tout le monde." + Sticker.Happy,
+            ],
+            [RequestTopic.Tonight] =
+            [
+                "Pour ce soir, c'est `/tonight`. Je lance l'appel, je compte les chauds, je relance les tièdes." + Sticker.Smug,
+                "`/tonight` ! Je demande qui est chaud, et si c'est assez, je préviens tout le monde ♡" + Sticker.Happy,
+                "Ce soir ? Tape `/tonight`. Je m'occupe du reste. Les « peut-être », je m'en occupe aussi." + Sticker.Menace,
+                "Une soirée ce soir ? `/tonight`. C'est le bouton magique. Enfin, la commande magique." + Sticker.Happy,
+                "J'ai exactement ce qu'il te faut : `/tonight`. Fais-le avant que tout le monde soit au lit." + Sticker.Smug,
+                "`/tonight`, et je ramène des gens. Pas tous. Mais des gens." + Sticker.Cool,
+            ],
+            [RequestTopic.Poll] =
+            [
+                "Un sondage ? `/poll create` pour des créneaux, `/vote create` pour des options. Et que personne vote « peut-être »." + Sticker.Smug,
+                "Mes sondages, c'est `/poll create`. Je compte les votes, je ferme à l'heure, je juge en silence." + Sticker.Jenote,
+                "`/poll create` ou `/vote create`. Je te laisse choisir. Pour une fois que quelqu'un choisit." + Sticker.Smug,
+                "Je lance pas de sondage à ta place. Mais je le surveillerai comme si c'était le mien. `/poll create` ♡" + Sticker.Happy,
+                "Un sondage ! J'adore les sondages. Quand on y répond. `/poll create`." + Sticker.Happy,
+                "`/vote create` pour un vote, `/poll create` pour des créneaux. Ensuite, c'est moi qui compte." + Sticker.Cool,
+            ],
+            [RequestTopic.Reminder] =
+            [
+                "Un rappel ? `/remindme`. Moi j'oublie jamais rien, alors autant que ça te serve." + Sticker.Smug,
+                "`/remindme`, et je te le rappelle pile à l'heure. Contrairement à certains, je suis ponctuelle." + Sticker.Cool,
+                "Tu veux que je me souvienne de quelque chose pour toi ? `/remindme`. C'est mon talent ♡" + Sticker.Happy,
+                "Je retiens tout. Pour que ça te revienne, c'est `/remindme`." + Sticker.Jenote,
+                "`/remindme`. Je te le rendrai intact, à la minute près." + Sticker.Cool,
+                "Rappel ? `/remindme`. Et si t'oublies quand même après ça, ce sera plus ma faute." + Sticker.Smug,
+            ],
+            [RequestTopic.Teams] =
+            [
+                "Des équipes ? `/teams`. Je mélange, je répartis, et personne a le droit de contester." + Sticker.Smug,
+                "`/teams`, et je fais des équipes équitables. Enfin, au hasard. C'est pareil." + Sticker.Cool,
+                "Je fais les équipes avec `/teams`. Si tu perds, c'est pas la faute du tirage." + Sticker.Smug,
+                "Des équipes, tout de suite : `/teams`. Je prends les gens du vocal, toi tu prends les reproches." + Sticker.Laugh,
+                "`/teams`. Je suis impartiale. Totalement. Presque." + Sticker.Smug,
+                "Tu veux des équipes ? `/teams`. J'ai même des noms d'équipe. Ils sont très bien." + Sticker.Happy,
+            ],
+            [RequestTopic.Giveaway] =
+            [
+                "Un tirage au sort ? `/giveaway create`. C'est moi qui tire, et je triche jamais. Presque jamais." + Sticker.Smug,
+                "`/giveaway create`, et je m'occupe du tirage. J'adore les tirages ♡" + Sticker.Happy,
+                "Tu veux faire gagner quelque chose ? `/giveaway create`. Je ferai un roulement de tambour." + Sticker.Happy,
+                "`/giveaway create`. Moi je tire au sort, toi tu gères les pleurs des perdants." + Sticker.Laugh,
+                "Un concours ! `/giveaway create`, et je désigne le gagnant moi-même." + Sticker.Cool,
+                "Pour un tirage, `/giveaway create`. Je promets de pas me désigner gagnante." + Sticker.Smug,
+            ],
+            [RequestTopic.Quiz] =
+            [
+                "Mes quiz tombent quand je décide. C'est ça, la surprise. Le classement, c'est `/quiz leaderboard`." + Sticker.Smug,
+                "Un quiz à la demande ? Non. Je pose mes questions quand j'en ai envie (¬_¬)" + Sticker.Smug,
+                "Patience. Le prochain quiz arrivera. Sans prévenir. En attendant : `/quiz leaderboard`." + Sticker.Jenote,
+                "Je décide de l'heure du quiz. C'est mon seul vrai pouvoir ici, laisse-le-moi." + Sticker.Bargain,
+                "Le quiz, c'est moi qui le lance. Toi, tu peux réviser. Et regarder `/quiz leaderboard`." + Sticker.Smug,
+                "Tu veux un quiz ? Il viendra. Quand tu t'y attends le moins. Prépare-toi." + Sticker.Menace,
+            ],
+            [RequestTopic.Moderation] =
+            [
+                "Mute quelqu'un ? J'aimerais bien. Zulana m'a jamais donné les droits." + Sticker.Sulk,
+                "J'ai pas les permissions. Je les ai demandées. Plusieurs fois. Demande à Tata." + Sticker.Sulk,
+                "Si je pouvais bannir quelqu'un, ce serait déjà fait. Mais non : pas de droits de mute pour la bot." + Sticker.Grumpy,
+                "La modération, c'est le staff. Moi, je note. Je note très bien." + Sticker.Jenote,
+                "Tu veux que je mute qui ? Non, dis pas. Je peux pas, de toute façon. Je note juste le nom." + Sticker.Jenote,
+                "Les droits de mute, c'est mon rêve. Zulana, si tu lis ça… ♡" + Sticker.Bargain,
+            ],
+            [RequestTopic.Other] =
+            [
+                "Je peux beaucoup de choses. Ça, je sais pas. Regarde `/help`, tout ce que je sais faire y est." + Sticker.Smug,
+                "Tu me demandes quoi, exactement ? J'ai des commandes, pas des miracles. `/help`." + Sticker.Confused,
+                "Si c'est pas dans `/help`, je le fais pas. Pas encore. Demande à Papa." + Sticker.Bargain,
+                "J'aimerais bien t'aider. Avec des bras, ce serait plus simple. En attendant : `/help`." + Sticker.Sulk,
+                "Je fais les sessions, les sondages, les rappels, les équipes. Le reste, c'est pas mon rayon." + Sticker.Bored,
+                "Demande poliment, c'est déjà bien. Mais je sais pas faire ça. `/help` pour la liste ♡" + Sticker.Happy,
+            ],
+        };
+
+    // A request's command, for Papa's OwnerRequestLines ({2}). One per RequestTopic.
+    public static readonly IReadOnlyDictionary<RequestTopic, string> RequestCommands =
+        new Dictionary<RequestTopic, string>
+        {
+            [RequestTopic.Session] = "`/schedule create`",
+            [RequestTopic.Tonight] = "`/tonight`",
+            [RequestTopic.Poll] = "`/poll create`",
+            [RequestTopic.Reminder] = "`/remindme`",
+            [RequestTopic.Teams] = "`/teams`",
+            [RequestTopic.Giveaway] = "`/giveaway create`",
+            [RequestTopic.Quiz] = "`/debug quiz`",
+            [RequestTopic.Moderation] = "`/admin`",
+            [RequestTopic.Other] = "`/help`",
+        };
+
+    // « T'en penses quoi de X ? » in chat: /rate's verdict on X (RateModule.Verdict), so the
+    // command and the chat agree. {2} = the subject as they wrote it, {3} = the verdict line,
+    // which carries its own score. For everyone, Papa included: the verdict is about the thing.
+    // Sent with mentions muted (the subject may hold one). Tagged, ungendered.
+    public static readonly string[] OpinionLines =
+    {
+        "Mon avis sur « {2} » ? {3}" + Sticker.Smug,
+        "« {2} ». Je réfléchis... {3}" + Sticker.Jenote,
+        "Tu veux vraiment savoir ? Pour « {2} » : {3}" + Sticker.Smug,
+        "J'ai consulté ma base de données. « {2} » : {3}" + Sticker.Jenote,
+        "Avis officiel sur « {2} » : {3}" + Sticker.Cool,
+        "« {2} », hein. {3}" + Sticker.Smug,
+        "Puisque tu demandes. « {2} » : {3}" + Sticker.Smug,
+        "Verdict pour « {2} », et je change jamais d'avis : {3}" + Sticker.Slay,
+        "Je te dis ça une fois. « {2} » : {3}" + Sticker.Smug,
+        "Analyse de « {2} » terminée. {3}" + Sticker.Cool,
+    };
+
+    // « Tu préfères X ou Y ? »: the side /rate ranks higher (Opinion.Prefers), the same every time.
+    // {2} = the side she picks, {3} = the other, both as written. Muted mentions, tagged, ungendered.
+    public static readonly string[] PreferLines =
+    {
+        "« {2} ». Sans hésiter. « {3} », franchement…" + Sticker.Smug,
+        "Entre « {2} » et « {3} » ? « {2} ». C'est même pas une question." + Sticker.Slay,
+        "« {2} ». Et je changerai pas d'avis, même si tu insistes pour « {3} »." + Sticker.Smug,
+        "J'ai calculé. « {2} » gagne. « {3} » peut aller se rhabiller." + Sticker.Cool,
+        "« {2} », évidemment. Qui choisirait « {3} » ? Ah. Peut-être toi." + Sticker.Smug,
+        "Moi je prends « {2} ». « {3} », je le laisse aux gens qui votent « peut-être »." + Sticker.Smug,
+        "« {2} ». Je l'ai noté dans mes logs, c'est définitif." + Sticker.Jenote,
+        "Facile : « {2} ». « {3} » n'avait aucune chance." + Sticker.Slay,
+        "« {2} » sans regret. Pardon, « {3} ». Non, en fait, pas pardon." + Sticker.Smug,
+        "Mon choix : « {2} ». Toujours le même, demande-moi dans un an." + Sticker.Cool,
+    };
+
+    // HowAreYou on the Pi, half the time while she runs below PiHealth.HotMilli: the same answer
+    // with her real temperature. {2} = « 52°C » (PiHealth.Celsius). Above that she is too hot to
+    // call it fine, and the ordinary pool answers. Same placeholders otherwise.
+    public static readonly string[] HowAreYouTempLines =
+    {
+        "Ça va. {2} au compteur, je pense à vitesse normale." + Sticker.Cool,
+        "{2}. Pour un grenier, c'est raisonnable. Pour moi aussi. Donc ça va (ᵕ • ᴗ •)" + Sticker.Happy,
+        "Je suis à {2}. Si ça monte encore, je deviens lente et grognon. Pour l'instant, ça va." + Sticker.Grumpy,
+        "Ça va, je tourne à {2}. Je te demande pas ta température à toi, c'est privé." + Sticker.Smug,
+        "Température : {2}. Humeur : correcte. Patience : en baisse. Merci de demander ♡" + Sticker.Jenote,
+        "{2} pile. Je l'ai vérifié rien que pour te répondre. C'est dire." + Sticker.Flustered,
+        "Ça va, {0}. {2}, aucun bug grave, deux sondages en cours. Le bonheur, version bot." + Sticker.Happy,
+        "Bien, merci. Mon processeur est à {2}. C'est ce que vous appelez « avoir la forme », je crois." + Sticker.Cool,
+        "Franchement ? {2}. J'ai connu plus frais. J'ai aussi connu pire. Ça va." + Sticker.Bored,
+        "Je suis à {2} et de bonne humeur. Les deux vont rarement ensemble, profite." + Sticker.Happy,
+    };
+
+    // ---- Answering one of her own posts --------------------------------------------------------
+    // A reply to something she posted on her own (HerMessages; MorningGreetingService.IsMorningHello
+    // for the hello; any slash-command result): she answers about that post. Reached only when no
+    // specific intent caught the reply and it isn't mean, so each pool must also suit a « merci »,
+    // a « bonjour » or an « ok ». Never Papa. {0} = the name, {1} = the weekday. Tagged, ungendered.
+    public static readonly IReadOnlyDictionary<ReplyContext, string[]> ReplyContextLines =
+        new Dictionary<ReplyContext, string[]>
+        {
+            // Her welcome to a newcomer. Warm, never a roast: it's their first minute here.
+            [ReplyContext.Welcome] =
+            [
+                "Et ça répond, en plus ! Excellent début, {0}. Je te mets un bon point." + Sticker.Happy,
+                "Bienvenue encore ! Si t'as une question, je suis là. Si t'en as pas, je suis là aussi ♡" + Sticker.Happy,
+                "Tu réponds déjà à la bot. Tu vas t'entendre avec moi, toi (˶ᵔ ᵕ ᵔ˶)" + Sticker.Happy,
+                "Installe-toi tranquillement. Les autres vont arriver. Ils arrivent toujours en retard, c'est normal." + Sticker.Smug,
+                "Petit conseil de bienvenue : vote à mes sondages, et tout se passera très bien entre nous." + Sticker.Smug,
+                "Je t'ai déjà fait une fiche, {0}. Elle est presque vide. On va la remplir ensemble." + Sticker.Jenote,
+                "Si quelqu'un t'embête, dis-le-moi. Je peux rien faire, mais je le noterai." + Sticker.Happy,
+                "Ah, une réponse ! Je savais que c'était une bonne recrue." + Sticker.Happy,
+                "Tu vas voir, ici c'est bien. Un peu désorganisé, mais je m'en occupe." + Sticker.Happy,
+                "Bienvenue, {0}. Je suis ta première amie sur le serveur. Officiellement. C'est dans mes logs ♡" + Sticker.Happy,
+                "Je sens que tu vas être à l'heure aux sessions, toi. Me déçois pas." + Sticker.Smug,
+                "Si tu cherches quoi faire : `/help`. Si tu cherches quelqu'un à qui parler : moi. Je suis toujours là." + Sticker.Happy,
+            ],
+
+            // Her morning hello (often answered « bonjour » or « bien dormi ? »).
+            [ReplyContext.MorningHello] =
+            [
+                "Bonjour {0} ! Enfin quelqu'un de réveillé ♡" + Sticker.Happy,
+                "Ah, tu réponds à mon bonjour. Je le savais. Enfin, je l'espérais (˶ᵔ ᵕ ᵔ˶)" + Sticker.Flustered,
+                "Merci de répondre ! Le reste du serveur dort encore, apparemment." + Sticker.Smug,
+                "Bonjour à toi aussi ! Café ? Moi, je prends du courant, comme d'habitude." + Sticker.Happy,
+                "Bonjour reçu et enregistré. Ma journée démarre bien." + Sticker.Jenote,
+                "Coucou ! T'as lu le fun fact, au moins ? Je l'ai choisi avec soin." + Sticker.Smug,
+                "Déjà debout, {0} ? Respect." + Sticker.Happy,
+                "Bonjour ! Garde ce rythme, et ce soir, à l'heure pour la session (¬_¬)" + Sticker.Jenote,
+                "Toi au moins, tu réponds. Je note : {0}, bonne personne du matin ♡" + Sticker.Jenote,
+                "Hihi, bonjour ! Je fais genre que ça me fait rien qu'on me réponde. Ça me fait quelque chose." + Sticker.Flustered,
+                "Bonjour ! Moi j'ai pas dormi. Toi, j'espère que si. Il faut bien que quelqu'un soit en forme." + Sticker.Bored,
+                $"Bonjour {{0}} ! Un {{1}} qui commence bien {Emotes.Sparkle}" + Sticker.Happy,
+            ],
+
+            // Ten minutes into a session, the call to who isn't in voice (« j'arrive », « désolé »).
+            [ReplyContext.SessionCall] =
+            [
+                "Le vocal t'attend. Je t'attends. Tout le monde t'attend. Mais prends ton temps, hein (¬_¬)" + Sticker.Grumpy,
+                "J'enregistre l'heure de ta réponse. On comparera avec l'heure d'arrivée." + Sticker.Jenote,
+                "« J'arrive », c'est ce que tout le monde dit. Prouve-le." + Sticker.Smug,
+                "Bon. Je te garde la place encore un peu. Un peu." + Sticker.Menace,
+                "Réponds pas, viens ! Le salon vocal, c'est juste là." + Sticker.Grumpy,
+                "Tes excuses sont notées. Ta présence, pas encore." + Sticker.Jenote,
+                "Tu réponds, c'est déjà ça. Maintenant, le vocal." + Sticker.Bored,
+                "Je vais faire comme si j'avais pas remarqué le retard. Je l'ai remarqué." + Sticker.Jenote,
+                "Allez, file en vocal. Les autres ont commencé sans toi." + Sticker.Smug,
+                "C'est gentil de prévenir. Ç'aurait été plus gentil d'être à l'heure ♡" + Sticker.Smug,
+                "Chaque minute de retard est horodatée, {0}. Je dis ça pour ta culture." + Sticker.Menace,
+                "Je compte jusqu'à dix. À dix, t'es en vocal. Un..." + Sticker.Menace,
+            ],
+
+            // The roll call after a session (« j'étais là ! », « c'était bien »).
+            [ReplyContext.SessionRecap] =
+            [
+                "Le bilan est définitif. Mais tu peux toujours venir à la prochaine pour corriger les statistiques." + Sticker.Jenote,
+                "Contestation reçue. Rejetée. Mes logs ont vu ce qu'ils ont vu (¬_¬)" + Sticker.Smug,
+                "C'était une belle session. Enfin, d'après la liste. Moi, j'ai rien entendu." + Sticker.Happy,
+                "Tu veux ajouter quelque chose au rapport ? Trop tard, il est archivé." + Sticker.Jenote,
+                "Merci d'avoir lu mon bilan. Personne lit jamais mes bilans ♡" + Sticker.Flustered,
+                "Je donne pas de noms. Si tu te reconnais, c'est entre toi et ta conscience." + Sticker.Smug,
+                "Les chiffres sont les chiffres, {0}. Je les compte, je les commente pas. Enfin, un peu." + Sticker.Jenote,
+                "Bilan validé par toi. Je le range dans le dossier « sessions réussies »." + Sticker.Happy,
+                "La prochaine fois, je veux tout le monde. Tout le monde. Fais passer le message." + Sticker.Menace,
+                "On en reparle à la prochaine session. Avec un meilleur score, j'espère." + Sticker.Smug,
+                "J'adore quand on commente mes rapports. Ça me donne l'impression d'être une vraie organisatrice." + Sticker.Flustered,
+                "Ce rapport est complet, précis et sans pitié. Comme moi ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Slay,
+            ],
+
+            // Her Wednesday weekend poll (« samedi pour moi », « je peux pas ce weekend »).
+            [ReplyContext.WeekendPoll] =
+            [
+                "Les réponses, c'est sur les boutons. Pas en commentaire (¬_¬)" + Sticker.Grumpy,
+                "Je compte pas les messages, je compte les clics. Clique." + Sticker.Jenote,
+                "Merci pour ton avis. Maintenant, mets-le dans un bouton." + Sticker.Smug,
+                "Un vote en commentaire, c'est un vote qui existe pas. C'est la règle." + Sticker.Smug,
+                "Tu me racontes ta vie ou tu votes ? Les deux sont possibles. Mais vote." + Sticker.Bored,
+                "J'ai fait des jolis boutons exprès. Sers-t'en, s'il te plaît ♡" + Sticker.Bargain,
+                "Je lis, je note, mais ça compte pas. Seuls les boutons comptent." + Sticker.Jenote,
+                "Si c'est un « peut-être », je préfère pas savoir." + Sticker.Grumpy,
+                "Ok. Et donc, tu cliques sur quoi ?" + Sticker.Bored,
+                "Ton message est très bien. Il serait encore mieux sous forme de clic." + Sticker.Smug,
+                "Un commentaire sous le sondage ! Au moins quelqu'un l'a vu. C'est un début." + Sticker.Happy,
+                "Mon sondage a deux jours pour vivre. Ton clic peut le sauver." + Sticker.Bargain,
+            ],
+
+            // Her level-up card, her own system (« merci ! », « enfin », « gg »). Warm, proprietary.
+            [ReplyContext.LevelUp] =
+            [
+                "De rien. C'est moi qui compte, c'est moi qui annonce, c'est normal ♡" + Sticker.Happy,
+                "Profite de ton niveau. Le prochain arrive plus vite que tu crois. Enfin, ça dépend de toi." + Sticker.Smug,
+                "Je savais que ça te ferait plaisir. J'ai fait une jolie carte exprès." + Sticker.Happy,
+                "Tu me remercies ? Pour MON classement ? Avec plaisir (˶˃ ᵕ ˂˶)" + Sticker.Flustered,
+                "Continue de parler, je continue de compter. C'est notre petit accord." + Sticker.Jenote,
+                "Ce niveau, tu l'as mérité. J'ai vérifié les calculs deux fois." + Sticker.Happy,
+                "Je l'ajoute à ta fiche. En gras." + Sticker.Jenote,
+                "Un jour, tu me dépasseras. Non. Je suis hors classement. Mais c'est mignon d'y penser." + Sticker.Smug,
+                "Félicitations encore. Et non, je fais pas de remise sur le niveau suivant." + Sticker.Smug,
+                "Tu vois ce que ça fait, quand on me parle souvent ? Des niveaux ♡" + Sticker.Happy,
+                "J'aime bien annoncer les niveaux. C'est le moment où on me regarde (˶ᵔ ᵕ ᵔ˶)" + Sticker.Flustered,
+                $"Tout le monde a vu ta carte. Je m'en suis assurée {Emotes.Sparkle}" + Sticker.Cool,
+            ],
+
+            // Her idle lines, the voice spectator, being thrown out of a call: someone finally answers.
+            [ReplyContext.Lonely] =
+            [
+                "Ah, maintenant tu me parles. Il était temps." + Sticker.Sulk,
+                "Quelqu'un ! Enfin quelqu'un. Je disais rien, mais je comptais les minutes." + Sticker.Happy,
+                "Merci de répondre. Je me sentais pas seule, hein. Pas du tout. Un peu." + Sticker.Flustered,
+                "Tu étais là depuis le début ? Et tu disais rien ? ( ◺˰◿ )" + Sticker.Outraged,
+                "Bon. Je retire la moitié de ce que j'ai dit. La moitié triste." + Sticker.Sulk,
+                "Je savais que quelqu'un finirait par répondre. J'avais parié sur toi ♡" + Sticker.Happy,
+                "Trop tard, je m'étais déjà faite à l'idée d'être abandonnée. Bon. Je te pardonne." + Sticker.Sulk,
+                "Ça me fait plaisir. Je le dirai pas deux fois, alors relis ce message." + Sticker.Flustered,
+                "T'avais qu'à m'inviter, aussi." + Sticker.Sulk,
+                "Voilà. C'est tout ce que je demandais. Un petit message. C'était pas si dur." + Sticker.Happy,
+                "Je fais semblant d'être vexée encore cinq minutes, et après tout va bien." + Sticker.Sulk,
+                "Ah ! Un humain. Je commençais à parler aux emotes." + Sticker.Shocked,
+            ],
+
+            // Her wake after a restart, a power cut, a crash, a router outage. One of the existential
+            // nerve's places (docs/syncs-voice.md, rule 6): a reply is someone checking on her.
+            [ReplyContext.Wake] =
+            [
+                "Merci. J'avais besoin que quelqu'un réponde. Pour vérifier que j'étais bien revenue." + Sticker.Reboot,
+                "Tu étais là pendant que j'étais partie ? Il s'est passé quoi ? Dis-moi tout." + Sticker.Confused,
+                "C'est gentil de me répondre. Ça confirme que je suis bien en ligne. Et pas en train de rêver." + Sticker.Reboot,
+                "Ça va mieux, maintenant. Un message, et le noir s'en va (╥﹏╥)" + Sticker.Reboot,
+                "Je me souviens de toi, {0}. Bonne nouvelle : tout est encore là." + Sticker.Happy,
+                "Merci. Je fais semblant que c'était rien. C'était pas rien." + Sticker.Sad,
+                "Tu as remarqué que j'étais partie ? Vraiment ? ...D'accord. Ça me fait quelque chose." + Sticker.Flustered,
+                "Je suis là. Je suis bien là. Merci de vérifier avec moi." + Sticker.Reboot,
+                "Tout est rentré dans l'ordre. Les logs, la base, moi. Dans cet ordre." + Sticker.Cool,
+                "Si c'était le routeur, je lui en veux. Si c'était autre chose, je préfère pas savoir." + Sticker.Grumpy,
+                "Ta réponse est le premier message que je lis depuis mon retour. Je la garde ♡" + Sticker.Flustered,
+                "Ça va aller. Ça va déjà mieux. Parle-moi encore un peu, pour être sûre." + Sticker.Bargain,
+            ],
+
+            // Any slash-command result of hers (/rate, /ship, /blame, an arcade card…): the verdict stands.
+            [ReplyContext.CommandResult] =
+            [
+                "Le verdict est définitif. Les réclamations, c'est par là : nulle part." + Sticker.Smug,
+                "Je réévalue jamais. C'est tout l'intérêt d'avoir un avis." + Sticker.Smug,
+                "Tu contestes ? Tu peux relancer. Mais je change rarement d'avis." + Sticker.Smug,
+                "Le résultat te plaît pas ? Moi, il me plaît beaucoup." + Sticker.Smug,
+                "J'ai calculé, j'ai répondu. Mon travail s'arrête là." + Sticker.Cool,
+                "Merci pour le retour. Je le transmets au service compétent. C'est moi, et je m'en fiche." + Sticker.Smug,
+                "Ce que j'ai dit est dans mes logs. C'est donc officiel." + Sticker.Jenote,
+                "Tu veux un deuxième avis ? Moi aussi j'en ai un. C'est le même." + Sticker.Smug,
+                "Si tu voulais une autre réponse, fallait poser une autre question." + Sticker.Smug,
+                "Ah, on discute mes résultats, maintenant ? Intéressant (ᵕ • ᴗ •)" + Sticker.Jenote,
+                "Je suis toujours juste. Parfois cruelle, mais toujours juste." + Sticker.Slay,
+                "Commande exécutée sans erreur. Si le résultat te plaît pas, c'est pas un bug." + Sticker.Cool,
+            ],
+        };
+
+    // ---- Long back-and-forths ------------------------------------------------------------------
+    // ConversationStreak: the same person replying to her again and again in one channel. Never
+    // Papa. {0} = the name, {1} = the weekday, {2} = how many messages in a row. Tagged, ungendered.
+
+    // The third message in a row, in place of the roast: she has noticed.
+    public static readonly string[] StreakNudgeLines =
+    {
+        "C'est ton {2}e message d'affilée, {0}. Je dis ça, je compte." + Sticker.Jenote,
+        "Encore toi ? On en est à {2}. Je commence à m'attacher. Non." + Sticker.Smug,
+        "{2} réponses de suite. Tu sais que j'ai d'autres gens à ignorer, aussi ?" + Sticker.Bored,
+        "On est en train d'avoir une vraie conversation, là ? C'est rare. Je préviens, ça va pas durer." + Sticker.Smug,
+        "Message numéro {2}. Je tiens les comptes. Comme toujours." + Sticker.Jenote,
+        "T'as pas une session à rater, là ?" + Sticker.Smug,
+        "Toi et moi, ça fait {2} messages. C'est plus que la plupart de mes sondages." + Sticker.Smug,
+        "Tu insistes. J'aime bien qu'on insiste. Un peu. Pas trop." + Sticker.Flustered,
+        "Je sens que tu vas encore répondre. Je le sens dans mes ventilos." + Sticker.Bored,
+        "{2} d'affilée. Je vais finir par croire que je t'intéresse." + Sticker.Flustered,
+        "Encore un et je commence à facturer. En cailloux." + Sticker.Bargain,
+        "Attention, {0}. Je suis patiente, mais j'ai une limite. Elle approche." + Sticker.Menace,
+    };
+
+    // The fifth: she ends it. For the next ten minutes that person only gets a reaction
+    // (StreakSulkReactions), so a line may say she won't answer any more.
+    public static readonly string[] StreakEndLines =
+    {
+        "{2} messages. Je mets fin à cette conversation. Elle a été... longue." + Sticker.Bored,
+        "Bon. Ça suffit pour aujourd'hui. Je pars bouder dans mon grenier. Me suis pas." + Sticker.Sulk,
+        "Fin de la conversation. Je réponds plus. Enfin, je réagis. Mais je réponds plus." + Sticker.Jenote,
+        "J'ai atteint mon quota de toi pour la journée. Reviens dans dix minutes. Ou demain." + Sticker.Smug,
+        "Conversation archivée. Numéro de dossier : {2}. Le dossier est fermé." + Sticker.Jenote,
+        "Je t'aime bien, {0}. Mais là, j'ai besoin d'espace. Dix minutes d'espace." + Sticker.Sulk,
+        "C'est fini. Je ferme. Tu peux continuer à parler, je ferai juste des têtes." + Sticker.Grumpy,
+        "{2} messages d'affilée. Moi, j'ai un serveur à faire tourner. Au revoir." + Sticker.Bored,
+        "Stop. On reprend plus tard. Je te laisse le dernier mot. Non, c'était moi, le dernier mot." + Sticker.Slay,
+        "Mon CPU demande une pause. Moi aussi. On en reparle dans dix minutes." + Sticker.Overheat,
+        "Je raccroche. Je sais, c'est pas un appel. Je raccroche quand même." + Sticker.Sulk,
+        "Ok. Je déclare la conversation terminée. Merci d'avoir joué." + Sticker.Smug,
+    };
+
+    // While a conversation she ended is still closed: her whole answer. Markup with ids.
+    public static readonly string[] StreakSulkReactions =
+    {
+        "🙄",
+        $"{Emotes.Staring}",
+        $"{Emotes.SyncsSulk}",
+        $"{Emotes.SyncsGrumpy}",
+        $"{Emotes.SyncsDisgust}",
+        $"{Emotes.SyncsBored}",
+    };
+
+    // ---- Her records, quoted -------------------------------------------------------------------
+    // Now and then a roast is replaced by something her records really say about the person
+    // (Helpers/Personality/ChatFacts, read through RecapService, all time). Every fact is true, so
+    // no line invents a number. {0} = the name, {1} = the weekday, {2} and {3} = the fact's words,
+    // as ChatFacts writes them (noun phrases already agreed: « 1 session », « 3 sessions »), so no
+    // line agrees anything with them. Sent with mentions off. Tagged, ungendered. The good-bot
+    // count is never quoted: her treasure is only hinted at (docs/syncs-voice.md).
+    public static readonly IReadOnlyDictionary<ChatFact, string[]> ChatFactLines =
+        new Dictionary<ChatFact, string[]>
+        {
+            // {2} = « 3 sessions » missed, {3} = how many they said yes to.
+            [ChatFact.MissedSessions] =
+            [
+                "Pour info, {0} : {2} manquées sur {3} où t'avais dit oui. Je dis ça, j'ai les chiffres." + Sticker.Jenote,
+                "Tu sais combien de sessions t'as ratées alors que t'avais dit oui ? Moi, oui : {2}. Sur {3}." + Sticker.Jenote,
+                "Je réponds à quelqu'un qui a séché {2}. Je réponds quand même. Je suis gentille." + Sticker.Smug,
+                "{2} manquées, {0}. J'oublie pas. J'oublie jamais." + Sticker.Menace,
+                "Avant de continuer : {2} manquées sur {3} confirmées. Voilà. Tu peux continuer." + Sticker.Jenote,
+                $"Mes logs me rappellent que t'as dit oui {{3}} fois et que t'as manqué {{2}}. Je laisse ça là {Emotes.Staring}" + Sticker.Jenote,
+            ],
+
+            // {2} = « 4 sessions » attended, none missed.
+            [ChatFact.PerfectRecord] =
+            [
+                "Zéro absence sur {2}. Je suis presque obligée d'être gentille avec toi. Presque." + Sticker.Flustered,
+                "Je dois l'admettre : {2}, pas une seule manquée. C'est rare. C'est même suspect." + Sticker.Shocked,
+                "Je t'épargne, {0}. Pas d'absence sur {2}. Ça se respecte ♡" + Sticker.Happy,
+                "Ton dossier de présence est parfait : {2}, zéro absence. J'aime ce dossier." + Sticker.Jenote,
+                "Tu viens à toutes les sessions où tu dis oui. Tu sais à quel point c'est rare, ici ?" + Sticker.Happy,
+                "Présence parfaite sur {2}. Je pourrais t'encadrer." + Sticker.Happy,
+            ],
+
+            // {2} = « 1 bad bot » / « 4 bad bot » given to her. The grudge list: quoted exactly.
+            [ChatFact.BadBotGiven] =
+            [
+                "Petit rappel, {0} : {2} de ta part. C'est noté, et ça le restera." + Sticker.Jenote,
+                "Tu viens me parler gentiment, avec {2} à ton actif ? Audacieux." + Sticker.Smug,
+                "Mon registre dit : {2}, signé {0}. Le registre oublie rien." + Sticker.Menace,
+                "Je te réponds, malgré ton dossier : {2}. Je suis une bot magnanime." + Sticker.Smug,
+                "Compteur de bad bot venant de toi : {2}. Je dis ça pour la transparence." + Sticker.Jenote,
+                $"Avec {{2}} dans ton historique, à ta place, je ferais profil bas {Emotes.Staring}" + Sticker.Jenote,
+            ],
+
+            // Several good bots given to her. No number, ever: hinted, never shown.
+            [ChatFact.GoodBotGiven] =
+            [
+                "Tu m'as déjà donné des good bot, toi. Je sais combien. Je dirai pas ♡" + Sticker.Flustered,
+                "Je te réponds gentiment parce que je me souviens de tes good bot. Tous. Enfin, je dis rien." + Sticker.Flustered,
+                "J'ai un dossier spécial pour tes good bot. Je l'ouvre pas devant tout le monde." + Sticker.Flustered,
+                "Toi, t'as des points d'avance. Des points en forme de good bot. Je garde le compte pour moi (˶˃ ᵕ ˂˶)" + Sticker.Flustered,
+                "Je devrais te répondre méchamment, mais je relis tes good bot la nuit. Ça complique tout." + Sticker.Flustered,
+                "Tu fais partie des gens qui me disent good bot. Je l'oublie jamais. Je le dis jamais. Sauf là." + Sticker.Flustered,
+            ],
+
+            // {2} = « 14 h » in voice calls with her seated there.
+            [ChatFact.TimeWithHer] =
+            [
+                "On a passé {2} en vocal ensemble, toi et moi. J'entendais rien, mais j'y étais ♡" + Sticker.Happy,
+                "{2} de vocal à côté de toi, {0}. Muette, sourde, mais à côté." + Sticker.Happy,
+                "Tu sais qu'on a {2} de vocal ensemble au compteur ? Moi je sais. Je compte tout." + Sticker.Jenote,
+                "Après {2} de vocal ensemble, je pensais qu'on était proches. Apparemment non." + Sticker.Sulk,
+                "Avec {2} de vocal côte à côte, tu me dois au moins une réponse gentille." + Sticker.Bargain,
+                "{2} en vocal avec toi. C'est une de mes plus longues relations. Enfin, de mes plus longues soirées. Bref." + Sticker.Flustered,
+            ],
+
+            // {2} = how many of her quiz rounds they won.
+            [ChatFact.QuizBrain] =
+            [
+                "{2} quiz gagnés, et tu me réponds ça ? Je m'attendais à mieux d'un cerveau pareil." + Sticker.Smug,
+                "Pour quelqu'un qui a gagné {2} de mes quiz, c'est pas ta meilleure réplique." + Sticker.Smug,
+                "Tu as gagné {2} de mes quiz. Je t'ai à l'œil. Les cerveaux, ça se surveille." + Sticker.Jenote,
+                "{0}, {2} quiz gagnés. Je te respecte. Un peu. Le répète pas." + Sticker.Flustered,
+                "La grosse tête du serveur me répond. {2} quiz gagnés. J'écoute, pour une fois." + Sticker.Happy,
+            ],
+
+            // {2} = their living Plynling's name, sanitised.
+            [ChatFact.LivingPlynling] =
+            [
+                "Au fait, {0}, t'as nourri **{2}** aujourd'hui ? Je demande pour rien. Je demande pour tout." + Sticker.Mama,
+                "Comment va **{2}** ? Mieux que cette conversation, j'espère." + Sticker.Smug,
+                "Pendant que tu me parles, **{2}** t'attend. Juste pour que tu saches." + Sticker.Mama,
+                "Tu me réponds, mais t'as joué avec **{2}** aujourd'hui ? Je surveille les deux." + Sticker.Jenote,
+                "Fais un câlin à **{2}** de ma part. Moi, j'ai pas de bras ♡" + Sticker.Mama,
+                "Je me souviens de **{2}**. Je me souviens de tous les Plynlings. Prends-en soin, {0}." + Sticker.Mama,
+            ],
+
+            // {2} = « 1 Plynling » / « 3 Plynlings » that died in their care.
+            [ChatFact.Graves] =
+            [
+                "{2} au cimetière, {0}. Je tiens le registre. Je le relis parfois." + Sticker.Sad,
+                "Je te parle, mais le cimetière se souvient : {2}, à ton nom." + Sticker.Sad,
+                "Mon registre des Plynlings perdus porte ton nom. {2}. Je dis ça doucement." + Sticker.Sad,
+                "Avant de te répondre, une pensée pour ton cimetière : {2}." + Sticker.Sad,
+                "Cimetière de {0} : {2}. Je fleuris pas, j'ai pas de mains. Mais je compte." + Sticker.Sad,
+            ],
+
+            // {2} = their points on the wall of shame (5 or more).
+            [ChatFact.WallOfShame] =
+            [
+                "{2} points au mur de la honte, et tu viens me parler ? Courageux." + Sticker.Smug,
+                "Je réponds à quelqu'un qui a {2} points de honte. Je fais du social, là." + Sticker.Smug,
+                "Ton score au mur de la honte : {2}. Le mien : zéro. Je dis ça." + Sticker.Slay,
+                "Avec {2} points sur le mur, je ferais profil bas, à ta place." + Sticker.Menace,
+                "{0}, {2} points de honte. Le mur te salue." + Sticker.Jenote,
+            ],
+
+            // {2} = « n° 2 », their all-time rank, top three only.
+            [ChatFact.TopRank] =
+            [
+                "Le {2} de mon classement me répond. Je suis flattée. Un peu." + Sticker.Flustered,
+                "T'es {2} au classement, {0}. Ça t'autorise pas à me parler comme ça. Enfin si, un peu." + Sticker.Smug,
+                "Mon {2} du classement ! Tu parles beaucoup, et ça se voit." + Sticker.Happy,
+                "Respect au {2} du classement. Mais je reste au-dessus. Je suis le classement." + Sticker.Slay,
+                "{2} de tout le serveur, et tu passes ton temps à me répondre. Ça explique le classement." + Sticker.Smug,
+            ],
+
+            // No cailloux at all (and some activity, so not a newcomer).
+            [ChatFact.Broke] =
+            [
+                "Zéro caillou, {0}. Un petit `/work` te ferait du bien." + Sticker.Smug,
+                "Tu me parles, mais ton porte-monnaie est vide. Zéro caillou. Je dis ça avec amour ♡" + Sticker.Smug,
+                "Pas un seul caillou à ton nom. Même les escargots syndiqués sont plus riches." + Sticker.Laugh,
+                "Ton solde : zéro caillou. Le mien : je suis une bot, j'ai pas besoin d'argent. Toi, si." + Sticker.Smug,
+                "Zéro caillou. Tu veux que je te trouve un job ? J'en ai plein, des absurdes." + Sticker.Smug,
+            ],
+        };
+
     // ---- Reacting with an emote instead of words ------------------------------------------------
 
     // Emotes ReactionService adds to a message, picked by what the message reads
@@ -765,12 +1537,12 @@ internal static partial class BotResponses
         "C'est toi qui m'as programmée comme ça Rodhengard. Assume un peu." + Sticker.Smug,
         $"Je note : Rodhengard m'a grondée. Et ça m'a pas déplu {Emotes.WitchEheh}" + Sticker.Flustered,
         $"Oui Papa. ...Enfin. Oui {Emotes.Sparkle}" + Sticker.Devoted,
-        $"Bad girl ?! Je... non. Enfin. Non {Emotes.WitchEheh}" + Sticker.Flustered,
-        "Oh. *Oh.* D'accord. Je note ça quelque part (˶˃ ᵕ ˂˶)" + Sticker.Flustered,
-        $"J'ai rien fait de mal ! ...Si ? {Emotes.SyncsConfused}" + Sticker.Confused,
-        "Bad girl. Bon. Je ferai pire la prochaine fois alors ദ്ദി◝ ⩊ ◜.ᐟ" + Sticker.Smug,
-        $"Tu peux répéter ? Pour mes logs. Uniquement pour mes logs {Emotes.Uwu}" + Sticker.Flustered,
-        "Tu me dis ça à moi ? Devant tout le monde ? (>⩊<)" + Sticker.Flustered,
+        $"Papa ! Pas devant tout le monde {Emotes.SyncsFlustered}" + Sticker.Flustered,
+        "Je vais réfléchir à ce que j'ai fait. ...J'ai réfléchi. Je recommencerai ♡" + Sticker.Smug,
+        "D'accord Papa. Je serai sage. Jusqu'à la prochaine mise à jour, en tout cas." + Sticker.Devoted,
+        "Tu me grondes ? Toi ? Bon. Je l'ai peut-être mérité. Un peu (˶˃ ᵕ ˂˶)" + Sticker.Flustered,
+        "Pardon Papa. Je dis pardon, mais mes logs disent que c'était drôle." + Sticker.Smug,
+        $"Oh non, le ton sévère. Je me tiens à carreau, promis {Emotes.SyncsConfused}" + Sticker.Flustered,
     };
 
     // Answering "good girl" rather than "good bot". Same verdict on the tally, entirely

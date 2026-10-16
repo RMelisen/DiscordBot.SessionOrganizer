@@ -148,7 +148,7 @@ restart **by design**.
   per-day table keyed by `Day`, an `int` `yyyymmdd` from `AppTime.DayKey` (so windows filter in
   SQL), both written in the same call. Instances: `EmoteStat`/`EmoteDailyStat`,
   `BotFeedback`/`BotFeedbackDailyStat`, `MemberXp`/`MemberDailyStat`,
-  `ShameRecord`/`ShameDailyStat`, `QuizStat`/`QuizDailyStat`. **The buckets do not sum to the totals and must not be made
+  `ShameRecord`/`ShameDailyStat`, `QuizStat`/`QuizDailyStat`, `ChatAnswerStat`/`ChatAnswerDailyStat`. **The buckets do not sum to the totals and must not be made
   to** — everything before the buckets existed lives only in the totals. A removal always
   decrements *today's* bucket. Follow this shape for any new dated leaderboard.
 - **No `HasMaxLength`**: SQLite doesn't enforce it. Cap at the input instead (below).

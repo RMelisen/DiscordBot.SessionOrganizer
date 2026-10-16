@@ -26,6 +26,7 @@ internal sealed class WelcomeService
     private readonly GuildConfigService _config;
     private readonly ResponsePicker _picker;
     private readonly BreakdownService _breakdown;
+    private readonly HerMessages _herMessages;
     private readonly ILogger<WelcomeService> _logger;
 
     private readonly object _gate = new();
@@ -34,11 +35,12 @@ internal sealed class WelcomeService
 
     public WelcomeService(
         GuildConfigService config, ResponsePicker picker,
-        BreakdownService breakdown, ILogger<WelcomeService> logger)
+        BreakdownService breakdown, HerMessages herMessages, ILogger<WelcomeService> logger)
     {
         _config = config;
         _picker = picker;
         _breakdown = breakdown;
+        _herMessages = herMessages;
         _logger = logger;
     }
 
@@ -64,15 +66,16 @@ internal sealed class WelcomeService
         var reference = new MessageReference(joined.Id, channel.Id, channel.Guild.Id);
         if (rush)
         {
-            await BotChat.PostWithTypingAsync(channel, _picker.Pick(BotResponses.WelcomeRushLines),
-                _logger, "welcome rush line", AllowedMentions.None, reference);
+            _herMessages.Remember(await BotChat.PostWithTypingAsync(channel, _picker.Pick(BotResponses.WelcomeRushLines),
+                _logger, "welcome rush line", AllowedMentions.None, reference), ReplyContext.Welcome);
             return;
         }
         if (!welcome) return;
 
         var line = string.Format(_picker.Pick(BotResponses.WelcomeLines), joined.Author.Mention);
         var allowed = new AllowedMentions { UserIds = new List<ulong> { joined.Author.Id } };
-        await BotChat.PostWithTypingAsync(channel, line, _logger, "welcome", allowed, reference);
+        _herMessages.Remember(await BotChat.PostWithTypingAsync(channel, line, _logger, "welcome", allowed, reference),
+            ReplyContext.Welcome);
         _logger.LogInformation("Welcomed {UserId}.", joined.Author.Id);
     }
 

@@ -35,6 +35,23 @@ namespace ProjectSYNCS.Services;
 //     MistakenIdentityReplies .. mistaken for another bot
 //     ReferenceComebacks ....... rare pop-culture one-liner
 //
+//   [Replies] Answering what she was told (MessageCues.ReadIntent)
+//     IntentLines .............. keyed by ChatIntent: « je t'aime », « pardon », « ça va ? »…
+//     HowAreYouTempLines ....... « ça va ? » with her real temperature, on the Pi
+//     RequestLines ............. keyed by RequestTopic: pointing at the command that does it
+//     RequestCommands .......... each topic's command, as Papa's {2}
+//     OpinionLines · PreferLines « t'en penses quoi de X ? » / « tu préfères X ou Y ? » (/rate's verdict)
+//
+//   [Replies] Answering one of her own posts (HerMessages)
+//     ReplyContextLines ........ keyed by ReplyContext: the welcome, the late call, the poll…
+//
+//   [Replies] Long back-and-forths (ConversationStreak)
+//     StreakNudgeLines ......... the third message in a row
+//     StreakEndLines ........... the fifth: she ends it
+//     StreakSulkReactions ...... her only answer while it stays ended
+//
+//   [Replies] Her records, quoted — ChatFactLines, keyed by ChatFact (Helpers/Personality/ChatFacts)
+//
 //   [Replies] Reacting with an emote instead of words
 //     NiceReactions · MeanReactions · GreetingReactions
 //     EnergyDrinkReactions ..... Monster or an energy drink mentioned, every time
@@ -52,6 +69,9 @@ namespace ProjectSYNCS.Services;
 //   [Family] Rodhengard (the owner)
 //     OwnerGreetings ........... mentioned  |  OwnerComebacks ..... replied to
 //     OwnerMeanReplies ......... him being mean to her
+//     OwnerIntentLines ......... his twins of IntentLines (ça va, tu fais quoi, je t'aime, pardon, bonne nuit,
+//                                peut-être, t'es un bot, t'as raison, t'as tort)
+//     OwnerRequestLines ........ his requests, with the command as {2}
 //     OwnerAbsentNotices ....... someone pinged him while away
 //     OwnerReplyHeralds · OwnerAnnouncementHeralds ... /debug tell and dm heralds
 //

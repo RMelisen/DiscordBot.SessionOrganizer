@@ -31,6 +31,7 @@ internal sealed class WeekendPollService : BackgroundService
     private readonly DiscordSocketClient _client;
     private readonly GuildConfigService _config;
     private readonly ResponsePicker _picker;
+    private readonly HerMessages _herMessages;
     private readonly ILogger<WeekendPollService> _logger;
 
     // The Wednesday already decided this run (posted or stood down), so the window isn't
@@ -39,12 +40,13 @@ internal sealed class WeekendPollService : BackgroundService
 
     public WeekendPollService(
         IServiceProvider services, DiscordSocketClient client, GuildConfigService config,
-        ResponsePicker picker, ILogger<WeekendPollService> logger)
+        ResponsePicker picker, HerMessages herMessages, ILogger<WeekendPollService> logger)
     {
         _services = services;
         _client = client;
         _config = config;
         _picker = picker;
+        _herMessages = herMessages;
         _logger = logger;
     }
 
@@ -101,6 +103,7 @@ internal sealed class WeekendPollService : BackgroundService
                 embed: PollModule.BuildPollEmbed(full!),
                 components: PollModule.BuildPollComponents(full!),
                 allowedMentions: AllowedMentions.None);
+            _herMessages.Remember(message, ReplyContext.WeekendPoll);
             await polls.SetMessageIdAsync(poll.Id, message.Id);
             _logger.LogInformation("Weekend poll {PollId} posted.", poll.Id);
         }

@@ -16,6 +16,8 @@ public class AppDbContext : DbContext
     public DbSet<EmoteDailyStat> EmoteDailyStats => Set<EmoteDailyStat>();
     public DbSet<BotFeedback> BotFeedbacks => Set<BotFeedback>();
     public DbSet<BotFeedbackDailyStat> BotFeedbackDailyStats => Set<BotFeedbackDailyStat>();
+    public DbSet<ChatAnswerStat> ChatAnswerStats => Set<ChatAnswerStat>();
+    public DbSet<ChatAnswerDailyStat> ChatAnswerDailyStats => Set<ChatAnswerDailyStat>();
     public DbSet<MemberXp> MemberXps => Set<MemberXp>();
     public DbSet<GuildSettings> GuildSettings => Set<GuildSettings>();
     public DbSet<GuildExcludedChannel> GuildExcludedChannels => Set<GuildExcludedChannel>();
@@ -124,6 +126,21 @@ public class AppDbContext : DbContext
             // Serves the rolling-window read: "this guild, since day N". Day is an
             // int precisely so this range can be evaluated in SQL.
             e.HasIndex(x => new { x.GuildId, x.Day });
+        });
+
+        modelBuilder.Entity<ChatAnswerStat>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            // One row per (guild, path, kind) — the upsert key.
+            e.HasIndex(x => new { x.GuildId, x.Path, x.Kind }).IsUnique();
+        });
+
+        modelBuilder.Entity<ChatAnswerDailyStat>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            // One row per (guild, day, path, kind) — the upsert key; it also serves the
+            // rolling-window read ("this guild, since day N").
+            e.HasIndex(x => new { x.GuildId, x.Day, x.Path, x.Kind }).IsUnique();
         });
 
         modelBuilder.Entity<MemberXp>(e =>

@@ -2,7 +2,9 @@ using System.Globalization;
 using Discord;
 using Discord.Net;
 using Discord.WebSocket;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using ProjectSYNCS.Commands;
 using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
@@ -18,7 +20,26 @@ internal sealed class ChatterService
     private readonly AvailabilityService _availability;
     private readonly GlitchService _glitch;
     private readonly ResponsePicker _picker;
+    private readonly HerMessages _herMessages;
+    private readonly PiHealthService _health;
+    private readonly IServiceProvider _services;
+    private readonly UnansweredLog _unanswered;
     private readonly ILogger<ChatterService> _logger;
+
+    // Who has been going back and forth with her, per channel (ConversationStreak). In memory.
+    private readonly ConversationStreak _streaks = new();
+
+    // Fact lines (her records, quoted): at most one per person every FactCooldown. Its own gate,
+    // shared with nothing else.
+    private readonly CooldownGate<ulong> _factGate = new(FactCooldown, forget: FactCooldown);
+
+    // How often a fallback line becomes one of her records instead (ChatFacts), and how long a
+    // person then waits before the next one. Rare on purpose: a surprise, not a dashboard.
+    private const double FactChance = 0.15;
+    private static readonly TimeSpan FactCooldown = TimeSpan.FromHours(6);
+
+    // On the Pi, half of her « ça va ? » answers quote her real temperature.
+    private const double TemperatureChance = 0.5;
 
     // Rodhengard, the owner: gets compliments instead of roasts.
     private const ulong OwnerId = AvailabilityService.OwnerId;
@@ -51,13 +72,21 @@ internal sealed class ChatterService
         AvailabilityService availability,
         ResponsePicker picker,
         GlitchService glitch,
+        HerMessages herMessages,
+        PiHealthService health,
+        IServiceProvider services,
+        UnansweredLog unanswered,
         ILogger<ChatterService> logger)
     {
+        _unanswered = unanswered;
         _glitch = glitch;
         _client = client;
         _breakdown = breakdown;
         _availability = availability;
         _picker = picker;
+        _herMessages = herMessages;
+        _health = health;
+        _services = services;
         _logger = logger;
     }
 
@@ -113,7 +142,7 @@ internal sealed class ChatterService
         // so anything aimed at her above still wins.
         if (MessageCues.ThreatensShutdownByName(message.Content ?? string.Empty))
         {
-            await TryHandleShutdownThreatAsync(message);
+            await TryHandleShutdownThreatAsync(message, ChatPath.Name);
             return;
         }
 
@@ -150,37 +179,49 @@ internal sealed class ChatterService
 
         var mood = MessageCues.Analyze(content);
         var isOwner = message.Author.Id == OwnerId;
-        string[] pool;
+        IntentPick pick;
         string what;
 
         if (mood.Emotion == EmotionKind.Mean)
         {
             what = "backbite roast";
             if (isOwner)
-                pool = BotResponses.OwnerMeanReplies;
+                pick = IntentPick.Of(BotResponses.OwnerMeanReplies, AnswerKinds.PapaMean);
             else
             {
-                pool = BotResponses.BackbiteRoasts;
+                var pool = BotResponses.BackbiteRoasts;
                 // Same double weight as the reply path's roast.
                 if (BotResponses.PersonalComebacks.TryGetValue(message.Author.Id, out var personal))
                     pool = pool.Concat(personal).Concat(personal).ToArray();
+                pick = IntentPick.Of(pool, AnswerKinds.Backbite);
             }
+        }
+        // « syncs, ça va ? » is addressing her even without a tag: a specific intent is answered
+        // as such. Not a generic question or a low-effort word: she may not be the one asked.
+        else if (TryIntent(MessageCues.ReadIntent(content), message, isOwner, out var intentPick))
+        {
+            what = "named intent";
+            pick = intentPick;
         }
         else if (mood.IsGreeting)
         {
             what = "named greeting";
-            pool = isOwner ? BotResponses.OwnerGreetings : BotResponses.Greetings;
+            pick = isOwner
+                ? IntentPick.Of(BotResponses.OwnerGreetings, AnswerKinds.PapaGreeting)
+                : IntentPick.Of(BotResponses.Greetings, AnswerKinds.Greeting);
         }
         else
         {
             what = "talked-about line";
-            pool = isOwner ? BotResponses.TalkedAboutOwnerLines : BotResponses.TalkedAboutLines;
+            pick = isOwner
+                ? IntentPick.Of(BotResponses.TalkedAboutOwnerLines, AnswerKinds.PapaTalkedAbout)
+                : IntentPick.Of(BotResponses.TalkedAboutLines, AnswerKinds.TalkedAbout);
         }
 
         var name = ResolveName(message.Author);
         _logger.LogInformation("{Name} said her name without addressing her — {What}.", name, what);
-        var line = string.Format(_picker.Pick(pool), name, CurrentWeekday());
-        await ReplyWithTypingAsync(message, line, what);
+        Count(message, ChatPath.Name, pick.Kind);
+        await ReplyWithTypingAsync(message, Format(pick, name, CurrentWeekday()), what, pick.Mentions);
         return true;
     }
 
@@ -256,12 +297,12 @@ internal sealed class ChatterService
 
         // Mistaking SYNCS for "Inabot" gets an indignant correction, no matter who
         // does it — even the owner.
-        if (await TryCorrectMistakenIdentityAsync(message)) return;
+        if (await TryCorrectMistakenIdentityAsync(message, ChatPath.Mention)) return;
 
         // A threat to switch her off outranks every mood below it, and outranks the
         // owner's rescue-roast branch too: if he is threatening *her*, that is not a
         // summons to roast someone else.
-        if (await TryHandleShutdownThreatAsync(message)) return;
+        if (await TryHandleShutdownThreatAsync(message, ChatPath.Mention)) return;
 
         var weekday = CurrentWeekday();
 
@@ -280,6 +321,7 @@ internal sealed class ChatterService
                 _picker.Pick(BotResponses.RescueRoasts), targetName, weekday);
             // Reply to the target's own message so the roast is clearly aimed at
             // them (and pings them).
+            Count(message, ChatPath.Mention, AnswerKinds.Rescue);
             await ReplyWithTypingAsync(target, roast, "rescue roast");
             return;
         }
@@ -288,19 +330,28 @@ internal sealed class ChatterService
         // unkind, in which case it lands rather than bouncing. Reached only after the
         // rescue branch above, so a mean @mention aimed at *someone else* is already
         // handled and never mistaken for an insult to her.
+        var content = message.Content ?? string.Empty;
+
         if (message.Author.Id == OwnerId)
         {
-            var ownerMood = MessageCues.Analyze(message.Content ?? string.Empty);
+            var ownerMood = MessageCues.Analyze(content);
             bool unkind = ownerMood.Emotion == EmotionKind.Mean;
 
-            _logger.LogInformation("Owner mentioned the bot — {What}.",
-                unkind ? "and was mean about it" : "greeting him");
+            // Not mean: one of his intent twins when he asks her something she has a twin for
+            // (« ça va ? », « bonne nuit »…), else the summons greeting as always.
+            IntentPick ownerPick;
+            string ownerWhat;
+            if (unkind)
+                (ownerPick, ownerWhat) = (IntentPick.Of(BotResponses.OwnerMeanReplies, AnswerKinds.PapaMean), "and was mean about it");
+            else if (TryIntent(MessageCues.ReadIntent(content), message, isOwner: true, out var twin))
+                (ownerPick, ownerWhat) = (twin, "his intent twin");
+            else
+                (ownerPick, ownerWhat) = (IntentPick.Of(BotResponses.OwnerGreetings, AnswerKinds.PapaGreeting), "greeting him");
 
-            var ownerPool = unkind ? BotResponses.OwnerMeanReplies : BotResponses.OwnerGreetings;
-            var ownerLine = string.Format(
-                _picker.Pick(ownerPool), ResolveName(message.Author), weekday);
-
-            await ReplyWithTypingAsync(message, ownerLine, "owner greeting");
+            _logger.LogInformation("Owner mentioned the bot — {What}.", ownerWhat);
+            Count(message, ChatPath.Mention, ownerPick.Kind);
+            await ReplyWithTypingAsync(message, Format(ownerPick, ResolveName(message.Author), weekday),
+                "owner greeting", ownerPick.Mentions);
             return;
         }
 
@@ -313,29 +364,47 @@ internal sealed class ChatterService
         {
             _logger.LogInformation("Easter egg triggered via mention: consciousness breakdown.");
             var realName = BotResponses.RealNameFor(message.Author.Id, name);
+            Count(message, ChatPath.Mention, AnswerKinds.Breakdown);
             await _breakdown.PlayAsync(message, name, realName, intro: "Tu veux qu-");
             return;
         }
 
-        // A mention that greets the bot gets greeted back — a second entry point
-        // for the greeting, alongside replying. A mean reading cancels it. Otherwise
-        // the bot just answers with a confused one-liner.
-        var mood = MessageCues.Analyze(message.Content ?? string.Empty);
+        var (ended, streak) = await StreakGateAsync(message, ChatPath.Mention, name, weekday);
+        if (ended) return;
 
-        string[] pool;
-        if (mood.IsGreeting && mood.Emotion != EmotionKind.Mean)
-            pool = BotResponses.Greetings;
+        // What the mention says comes first: a specific intent, then a greeting (greeted back, a
+        // second entry point beside replying), Tata's warmth, a real question. A mean reading
+        // cancels all of them. Otherwise the bot just answers with a confused one-liner — no
+        // low-effort reading here: a bare tag *is* her « tagged for nothing » pool.
+        var mood = MessageCues.Analyze(content);
+        var mean = mood.Emotion == EmotionKind.Mean;
+        var intent = mean ? ChatIntent.None : MessageCues.ReadIntent(content);
+
+        IntentPick pick;
+        string what = "mention reply";
+        if (TryIntent(intent, message, isOwner: false, out var intentPick))
+            (pick, what) = (intentPick, $"mention intent ({intent})");
+        else if (mood.IsGreeting && !mean)
+            pick = IntentPick.Of(BotResponses.Greetings, AnswerKinds.Greeting);
         else if (RollTataWarmth(message.Author.Id, mood))
-            // Family doesn't get "TLDR" for tagging her. TataGreetings, not
+            // Family doesn't get « tagged for nothing » for tagging her. TataGreetings, not
             // TataReplies: a mention is Tata *calling her over*, so she answers as
             // summoned rather than as mid-conversation — the same split Papa has.
-            pool = BotResponses.TataGreetings;
+            pick = IntentPick.Of(BotResponses.TataGreetings, AnswerKinds.Tata);
+        else if (intent == ChatIntent.Question)
+            (pick, what) = (IntentPick.Of(BotResponses.IntentLines[ChatIntent.Question], AnswerKinds.Intent(ChatIntent.Question)),
+                "mention question");
         else
-            pool = BotResponses.Interrogations;
+        {
+            _logger.LogInformation("{Name} mentioned the bot.", name);
+            await SendFallbackAsync(message, ChatPath.Mention, AnswerKinds.Interrogation, streak, BotResponses.Interrogations,
+                name, weekday, "mention reply");
+            return;
+        }
 
-        _logger.LogInformation("{Name} mentioned the bot.", name);
-        var line = string.Format(_picker.Pick(pool), name, weekday);
-        await ReplyWithTypingAsync(message, line, "mention reply");
+        _logger.LogInformation("{Name} mentioned the bot — {What}.", name, what);
+        Count(message, ChatPath.Mention, pick.Kind);
+        await ReplyWithTypingAsync(message, Format(pick, name, weekday), what, pick.Mentions);
     }
 
     private async Task HandleReplyToBotAsync(SocketUserMessage message)
@@ -347,12 +416,12 @@ internal sealed class ChatterService
         _logger.LogInformation("{Name} replied to the bot.", name);
 
         // Calling SYNCS "Inabot" gets an indignant correction before anything else.
-        if (await TryCorrectMistakenIdentityAsync(message)) return;
+        if (await TryCorrectMistakenIdentityAsync(message, ChatPath.Reply)) return;
 
         // A threat to switch her off outranks every branch below — including the
         // breakdown roll, which must not swallow the one message she most needs to
         // answer, and the owner-mean pool, which is far too gentle for this.
-        if (await TryHandleShutdownThreatAsync(message)) return;
+        if (await TryHandleShutdownThreatAsync(message, ChatPath.Reply)) return;
 
         // Read the message text (requires the MessageContent intent) to detect
         // kind words or a greeting and answer in kind. A mean reading outweighs the
@@ -376,45 +445,312 @@ internal sealed class ChatterService
             var intro = secretTrigger ? BotResponses.BreakdownIntroCake
                 : nice ? BotResponses.BreakdownIntroNice
                 : BotResponses.BreakdownIntroRoast;
+            Count(message, ChatPath.Reply, AnswerKinds.Breakdown);
             await _breakdown.PlayAsync(message, name, realName, intro);
             return;
         }
 
-        string[] pool;
-        if (mood.Emotion == EmotionKind.Mean && message.Author.Id == OwnerId)
+        var weekday = CurrentWeekday();
+        var isOwner = message.Author.Id == OwnerId;
+        var mean = mood.Emotion == EmotionKind.Mean;
+
+        // Five replies in a row and she ends it; while ended, only a reaction. Never Papa.
+        var (ended, streak) = await StreakGateAsync(message, ChatPath.Reply, name, weekday);
+        if (ended) return;
+
+        // What the reply says, then what it answers, then its mood. A mean reply skips the first
+        // two: it gets roasted (or, from Papa, lands), whatever it was about.
+        var intent = mean ? ChatIntent.None : MessageCues.ReadIntent(content);
+
+        IntentPick pick;
+        string what = "reply comeback";
+        if (mean && isOwner)
         {
             // Everyone else gets roasted back. Her creator is the one person she will
             // not fight with, so an insult from him lands instead of bouncing.
             // Checked before the reference roll: a pop-culture one-liner in answer to
             // him being cruel would read as her not having noticed.
-            pool = BotResponses.OwnerMeanReplies;
+            pick = IntentPick.Of(BotResponses.OwnerMeanReplies, AnswerKinds.PapaMean);
+        }
+        else if (TryIntent(intent, message, isOwner, out var intentPick))
+        {
+            // Papa reaches this only for an intent he has a twin for (or an opinion, which is
+            // the same for everyone); the rest of his replies go on down to his own pools.
+            (pick, what) = (intentPick, $"reply intent ({intent})");
+        }
+        else if (!mean && !isOwner && ReadReplyContext(message) is { } context)
+        {
+            // An answer to one of her own posts (the late call, a welcome, the morning
+            // hello…) is answered about that post. Papa keeps his pools.
+            (pick, what) = (IntentPick.Of(BotResponses.ReplyContextLines[context], AnswerKinds.Context(context)),
+                $"reply to her {context}");
         }
         else if (nice)
         {
-            pool = BotResponses.NiceReplies;
+            pick = IntentPick.Of(BotResponses.NiceReplies, AnswerKinds.Nice);
         }
         else if (greeting)
         {
-            pool = BotResponses.Greetings;
+            pick = IntentPick.Of(BotResponses.Greetings, AnswerKinds.Greeting);
+        }
+        else if (!isOwner && intent is ChatIntent.Question or ChatIntent.LowEffort)
+        {
+            (pick, what) = (IntentPick.Of(BotResponses.IntentLines[intent], AnswerKinds.Intent(intent)), $"reply intent ({intent})");
         }
         else if (Random.Shared.NextDouble() < ReferenceChance)
         {
             // Rarer easter egg: a pop-culture reference, for everyone.
-            pool = BotResponses.ReferenceComebacks;
+            pick = IntentPick.Of(BotResponses.ReferenceComebacks, AnswerKinds.Reference);
         }
         else if (RollTataWarmth(message.Author.Id, mood))
         {
-            pool = BotResponses.TataReplies;
+            pick = IntentPick.Of(BotResponses.TataReplies, AnswerKinds.Tata);
+        }
+        else if (isOwner)
+        {
+            pick = IntentPick.Of(BotResponses.OwnerComebacks, AnswerKinds.PapaComeback);
         }
         else
         {
-            pool = message.Author.Id == OwnerId ? BotResponses.OwnerComebacks : BotResponses.Comebacks;
+            var pool = BotResponses.Comebacks;
             // Fold in this person's custom lines twice, so each has double weight.
             if (BotResponses.PersonalComebacks.TryGetValue(message.Author.Id, out var personal))
                 pool = pool.Concat(personal).Concat(personal).ToArray();
+            await SendFallbackAsync(message, ChatPath.Reply, AnswerKinds.Comeback, streak, pool, name, weekday, what);
+            return;
         }
-        var comeback = string.Format(_picker.Pick(pool), name, CurrentWeekday());
-        await ReplyWithTypingAsync(message, comeback, "reply comeback");
+
+        Count(message, ChatPath.Reply, pick.Kind);
+        await ReplyWithTypingAsync(message, Format(pick, name, weekday), what, pick.Mentions);
+    }
+
+    // ---- Listening: intents, reply context, streaks, facts --------------------------------
+
+    /// <summary>
+    /// A pool, and what its lines' {2} and {3} stand for: her temperature, an opinion's subject and
+    /// verdict, a request's command. <see cref="Mentions"/> is set when {2}/{3} quote the person's
+    /// own words (an opinion's subject), which may hold a mention: shown, never pinged.
+    /// <see cref="Kind"/> is the AnswerKinds key `/debug answers` counts it by.
+    /// </summary>
+    private readonly record struct IntentPick(string[] Pool, string A, string B, AllowedMentions? Mentions, string Kind)
+    {
+        public static IntentPick Of(string[] pool, string kind) => new(pool, string.Empty, string.Empty, null, kind);
+    }
+
+    // Counts an answer for `/debug answers` (ChatAnswerService), off the gateway handler: the
+    // fan-out awaits every handler, and a failed count must never cost an answer. A message she
+    // found nothing specific to say to is also kept, without its author (UnansweredLog).
+    private void Count(SocketUserMessage message, ChatPath path, string kind)
+    {
+        var guildId = (message.Channel as SocketGuildChannel)?.Guild.Id ?? 0;
+        if (AnswerKinds.IsUnrecognised(kind))
+            _unanswered.Add(guildId, path, kind, message.Content ?? string.Empty, DateTimeOffset.UtcNow);
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await using var scope = _services.CreateAsyncScope();
+                await scope.ServiceProvider.GetRequiredService<ChatAnswerService>().AddAsync(guildId, path, kind);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not count a {Kind} answer.", kind);
+            }
+        });
+    }
+
+    // Quoted words keep their look but ping nobody; the person replied to still gets the reply ping.
+    private static readonly AllowedMentions QuotedMentions = new(AllowedMentionTypes.None) { MentionRepliedUser = true };
+
+    // The template is picked first, formatted second: {0} the name, {1} the weekday, {2}/{3} the pick's.
+    private string Format(IntentPick pick, string name, string weekday) =>
+        string.Format(_picker.Pick(pick.Pool), name, weekday, pick.A, pick.B);
+
+    /// <summary>
+    /// The answer to a specific intent (not a generic question or a low-effort word), or false.
+    /// Papa only has twins for some intents; for the others this is false and he goes on to his
+    /// own pools — except an opinion, which is the same verdict whoever asks.
+    /// </summary>
+    private bool TryIntent(ChatIntent intent, SocketUserMessage message, bool isOwner, out IntentPick pick)
+    {
+        pick = default;
+        if (intent is ChatIntent.None or ChatIntent.Question or ChatIntent.LowEffort) return false;
+
+        if (intent == ChatIntent.Opinion) return TryOpinion(message, out pick);
+
+        if (intent == ChatIntent.Request)
+        {
+            var topic = MessageCues.ReadRequestTopic(message.Content ?? string.Empty) ?? RequestTopic.Other;
+            // Papa gets one devoted pool, with the command as {2}; everyone else a pool per topic.
+            var kind = AnswerKinds.Intent(intent);
+            pick = isOwner
+                ? new IntentPick(BotResponses.OwnerRequestLines, BotResponses.RequestCommands[topic], string.Empty, null, kind)
+                : IntentPick.Of(BotResponses.RequestLines[topic], kind);
+            return true;
+        }
+
+        if (isOwner)
+        {
+            if (!BotResponses.OwnerIntentLines.TryGetValue(intent, out var twin)) return false;
+            pick = IntentPick.Of(twin, AnswerKinds.Intent(intent));
+            return true;
+        }
+
+        // Only while she runs below the hot threshold: those lines call the number fine.
+        if (intent == ChatIntent.HowAreYou && _health.CurrentMilli is { } milli && milli < PiHealth.HotMilli
+            && Random.Shared.NextDouble() < TemperatureChance)
+        {
+            pick = new IntentPick(BotResponses.HowAreYouTempLines, PiHealth.Celsius(milli), string.Empty, null,
+                AnswerKinds.Intent(intent));
+            return true;
+        }
+
+        if (!BotResponses.IntentLines.TryGetValue(intent, out var pool)) return false;
+        pick = IntentPick.Of(pool, AnswerKinds.Intent(intent));
+        return true;
+    }
+
+    // « T'en penses quoi de X ? »: /rate's verdict on X, so chat and the command agree. « Tu préfères
+    // X ou Y ? »: the side /rate ranks higher (Opinion.Prefers). The subject is the person's own words.
+    private bool TryOpinion(SocketUserMessage message, out IntentPick pick)
+    {
+        pick = default;
+        if (Opinion.Read(message.Content ?? string.Empty) is not { } ask) return false;
+
+        var (asker, self) = (message.Author.Id, _client.CurrentUser.Id);
+        RatingResult Rate(string subject) =>
+            Rating.Rate(subject, asker, self, OwnerId, BotResponses.TataId);
+
+        if (ask.Other is { } other)
+        {
+            var aWins = Opinion.Prefers(Rate(ask.Subject), Rate(other), Rating.Key(ask.Subject, asker), Rating.Key(other, asker));
+            var (chosen, rejected) = aWins ? (ask.Subject, other) : (other, ask.Subject);
+            pick = new IntentPick(BotResponses.PreferLines, chosen, rejected, QuotedMentions, AnswerKinds.Intent(ChatIntent.Opinion));
+            return true;
+        }
+
+        pick = new IntentPick(BotResponses.OpinionLines, ask.Subject, RateModule.Verdict(Rate(ask.Subject), _picker), QuotedMentions,
+            AnswerKinds.Intent(ChatIntent.Opinion));
+        return true;
+    }
+
+    // Which of her own posts a reply answers: one she remembered sending (HerMessages), the
+    // morning hello by its text, any slash-command result by its interaction metadata.
+    private ReplyContext? ReadReplyContext(SocketUserMessage message)
+    {
+        if (message.ReferencedMessage is not { } replied) return null;
+        if (_herMessages.TryGet(replied.Id, out var kind)) return kind;
+        if (MorningGreetingService.IsMorningHello(replied)) return ReplyContext.MorningHello;
+        if (replied.InteractionMetadata is not null) return ReplyContext.CommandResult;
+        return null;
+    }
+
+    // Counts this message in the person's back-and-forth with her (ConversationStreak). Returns
+    // Handled when the gate answered it itself: a reaction while the conversation is ended, or the
+    // line that ends it. Papa is never counted: he is never told to stop.
+    private async Task<(bool Handled, int Count)> StreakGateAsync(
+        SocketUserMessage message, ChatPath path, string name, string weekday)
+    {
+        if (message.Author.Id == OwnerId) return (false, 0);
+
+        var now = DateTimeOffset.UtcNow;
+        var (channelId, userId) = (message.Channel.Id, message.Author.Id);
+        if (_streaks.IsClosed(channelId, userId, now))
+        {
+            Count(message, path, AnswerKinds.StreakSulk);
+            await SulkReactAsync(message);
+            return (true, 0);
+        }
+
+        var count = _streaks.Record(channelId, userId, now);
+        if (count < ConversationStreak.EndAt) return (false, count);
+
+        _streaks.Close(channelId, userId, now);
+        _logger.LogInformation("{Name} replied {Count} times in a row — she ends the conversation.", name, count);
+        var line = string.Format(_picker.Pick(BotResponses.StreakEndLines), name, weekday, count);
+        Count(message, path, AnswerKinds.StreakEnd);
+        await ReplyWithTypingAsync(message, line, "streak end");
+        return (true, count);
+    }
+
+    // The ended conversation's only answer: a reaction, no words. Swallowed on failure.
+    private async Task SulkReactAsync(SocketUserMessage message)
+    {
+        if (EmoteMarkup.Parse(_picker.Pick(BotResponses.StreakSulkReactions)) is not { } emote) return;
+        try
+        {
+            await message.AddReactionAsync(emote);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to add a sulk reaction in channel {ChannelId}.", message.Channel.Id);
+        }
+    }
+
+    // The last resort of both paths (a roast, or « tagged for nothing »): on the streak's third
+    // message she remarks on it instead; otherwise, now and then, one of her records replaces it.
+    // The records are read off the gateway handler — the fan-out awaits every handler in turn, and
+    // RecapService is several queries on the Pi — and the claim is given back if nothing applies.
+    private async Task SendFallbackAsync(
+        SocketUserMessage message, ChatPath path, string kind, int streak, string[] pool, string name, string weekday,
+        string what)
+    {
+        if (streak == ConversationStreak.NudgeAt)
+        {
+            var nudge = string.Format(_picker.Pick(BotResponses.StreakNudgeLines), name, weekday, streak);
+            Count(message, path, AnswerKinds.StreakNudge);
+            await ReplyWithTypingAsync(message, nudge, "streak nudge");
+            return;
+        }
+
+        var line = string.Format(_picker.Pick(pool), name, weekday);
+        if (message.Channel is SocketGuildChannel guildChannel
+            && Random.Shared.NextDouble() < FactChance
+            && _factGate.TryClaim(message.Author.Id))
+        {
+            var guildId = guildChannel.Guild.Id;
+            _ = Task.Run(() => ReplyWithFactAsync(message, path, kind, guildId, name, weekday, line, what));
+            return;
+        }
+
+        Count(message, path, kind);
+        await ReplyWithTypingAsync(message, line, what);
+    }
+
+    // One of her records about this person, or the line it was going to replace (counted as that
+    // line's kind). Sent with mentions off: a fact can quote a Plynling name, which is hostile
+    // input (root CLAUDE.md).
+    private async Task ReplyWithFactAsync(
+        SocketUserMessage message, ChatPath path, string kind, ulong guildId, string name, string weekday,
+        string fallback, string what)
+    {
+        try
+        {
+            await using var scope = _services.CreateAsyncScope();
+            var stats = await scope.ServiceProvider.GetRequiredService<RecapService>()
+                .GetAsync(guildId, message.Author.Id, StatsPeriod.AllTime);
+
+            if (ChatFacts.Pick(stats, Random.Shared) is { } fact
+                && BotResponses.ChatFactLines.TryGetValue(fact.Kind, out var pool))
+            {
+                _logger.LogInformation("{Name} gets one of her records — {Fact}.", name, fact.Kind);
+                var line = string.Format(_picker.Pick(pool), name, weekday, fact.A, fact.B);
+                Count(message, path, AnswerKinds.Fact(fact.Kind));
+                await ReplyWithTypingAsync(message, line, $"fact line ({fact.Kind})", AllowedMentions.None);
+                return;
+            }
+
+            _factGate.Release(message.Author.Id);
+        }
+        catch (Exception ex)
+        {
+            _factGate.Release(message.Author.Id);
+            _logger.LogWarning(ex, "Could not read the records of {UserId} for a fact line.", message.Author.Id);
+        }
+
+        Count(message, path, kind);
+        await ReplyWithTypingAsync(message, fallback, what);
     }
 
     // When the owner is flagged absent and someone (other than the owner) pings
@@ -588,9 +924,10 @@ internal sealed class ChatterService
     // Checked only on messages aimed at her (reply or mention), never ambiently: the
     // vocabulary overlaps with ordinary talk about restarting a game server, and
     // "faut couper le serveur" said about Minecraft must not terrify her.
-    private async Task<bool> TryHandleShutdownThreatAsync(SocketUserMessage message)
+    private async Task<bool> TryHandleShutdownThreatAsync(SocketUserMessage message, ChatPath path)
     {
-        if (!MessageCues.ThreatensShutdown(message.Content ?? string.Empty)) return false;
+        // The by-name path already matched its own wording (ThreatensShutdownByName).
+        if (path != ChatPath.Name && !MessageCues.ThreatensShutdown(message.Content ?? string.Empty)) return false;
 
         var name = ResolveName(message.Author);
 
@@ -604,11 +941,12 @@ internal sealed class ChatterService
         _logger.LogInformation("{Name} threatened to shut the bot down — {Reaction}.", name, who);
 
         var line = string.Format(_picker.Pick(pool), name, CurrentWeekday());
+        Count(message, path, AnswerKinds.Shutdown);
         await ReplyWithTypingAsync(message, line, "shutdown-threat reply");
         return true;
     }
 
-    private async Task<bool> TryCorrectMistakenIdentityAsync(SocketUserMessage message)
+    private async Task<bool> TryCorrectMistakenIdentityAsync(SocketUserMessage message, ChatPath path)
     {
         if (!MessageCues.IsMistakenIdentity(message.Content ?? string.Empty)) return false;
 
@@ -617,6 +955,7 @@ internal sealed class ChatterService
         var line = string.Format(
             _picker.Pick(BotResponses.MistakenIdentityReplies),
             name, CurrentWeekday());
+        Count(message, path, AnswerKinds.Inabot);
         await ReplyWithTypingAsync(message, line, "mistaken-identity reply");
         return true;
     }
@@ -629,8 +968,9 @@ internal sealed class ChatterService
     // kind of constant that drifts apart. `what` only labels the log line. Through
     // GlitchService, so a very rare line comes out corrupted and is quietly fixed.
 
-    private Task ReplyWithTypingAsync(SocketUserMessage replyTo, string line, string what) =>
-        _glitch.ReplyWithTypingAsync(replyTo, line, _logger, what);
+    private Task ReplyWithTypingAsync(
+        SocketUserMessage replyTo, string line, string what, AllowedMentions? allowedMentions = null) =>
+        _glitch.ReplyWithTypingAsync(replyTo, line, _logger, what, allowedMentions);
 
     private Task PostWithTypingAsync(ISocketMessageChannel channel, string line, string what) =>
         _glitch.PostWithTypingAsync(channel, line, _logger, what);

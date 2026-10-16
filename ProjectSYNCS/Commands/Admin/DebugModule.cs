@@ -56,6 +56,19 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         [ChoiceDisplay("La ligne du jour-lumière")] Crossing,
     }
 
+    public enum AnswersPeriod
+    {
+        [ChoiceDisplay("7 derniers jours")] Week,
+        [ChoiceDisplay("30 derniers jours")] Month,
+        [ChoiceDisplay("Depuis toujours")] AllTime,
+    }
+
+    public enum AnswersView
+    {
+        [ChoiceDisplay("Types de réponses")] Types,
+        [ChoiceDisplay("Exemples sans réponse précise")] Examples,
+    }
+
     public enum EventMode
     {
         [ChoiceDisplay("En attente")] Pending,
@@ -73,6 +86,8 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     private readonly QuizCrownService _crown;
     private readonly StickerService _stickers;
     private readonly QuokkaRaidService _quokka;
+    private readonly ChatAnswerService _answers;
+    private readonly UnansweredLog _unanswered;
 
     // Discord caps a message at 2000 characters; leave room for the herald line
     // and the blockquote markers.
@@ -85,8 +100,10 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
 
     public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings,
         PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz, QuizCrownService crown,
-        StickerService stickers, QuokkaRaidService quokka)
+        StickerService stickers, QuokkaRaidService quokka, ChatAnswerService answers, UnansweredLog unanswered)
     {
+        _answers = answers;
+        _unanswered = unanswered;
         _stickers = stickers;
         _quokka = quokka;
         _quiz = quiz;
@@ -718,6 +735,54 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         await DeferAsync(ephemeral: true);
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(snippet));
         await FollowupWithFileAsync(stream, "Emotes.generated.txt", header, ephemeral: true);
+    }
+
+    // What people say to her, to decide what she should learn next: how many of each kind of chat
+    // answer she gave (ChatAnswerService, by path), or the last messages she found nothing specific
+    // to say to (UnansweredLog, in memory, no authors), as a file since a hundred lines exceed a
+    // message.
+    [SlashCommand("answers", "Ce qu'on me dit le plus, et ce que je sais pas encore répondre")]
+    public async Task AnswersAsync(
+        [Summary("period", "La période comptée")] AnswersPeriod period = AnswersPeriod.Week,
+        [Summary("view", "Les comptes, ou les messages eux-mêmes")] AnswersView view = AnswersView.Types)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+        if (Context.Guild is null)
+        {
+            await RespondAsync("Sur un serveur, pas en message privé.", ephemeral: true);
+            return;
+        }
+
+        if (view == AnswersView.Examples)
+        {
+            var messages = _unanswered.For(Context.Guild.Id);
+            if (messages.Count == 0)
+            {
+                await RespondAsync("Aucun message sans réponse précise depuis le dernier redémarrage.", ephemeral: true);
+                return;
+            }
+
+            await DeferAsync(ephemeral: true);
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(AnswerStatsCards.BuildExamples(messages)));
+            await FollowupWithFileAsync(stream, "sans-reponse.txt",
+                $"**{messages.Count}** message(s) sans réponse précise, du plus récent au plus ancien.", ephemeral: true);
+            return;
+        }
+
+        // The database can outrun Discord's 3 s on the Pi.
+        await DeferAsync(ephemeral: true);
+        var statsPeriod = period switch
+        {
+            AnswersPeriod.Month => StatsPeriod.Month,
+            AnswersPeriod.AllTime => StatsPeriod.AllTime,
+            _ => StatsPeriod.Week,
+        };
+        var counts = await _answers.GetAsync(Context.Guild.Id, statsPeriod);
+        await FollowupAsync(embed: AnswerStatsCards.BuildTypes(counts, statsPeriod), ephemeral: true);
     }
 
     [SlashCommand("absent", "Activer ou désactiver ton mode absent")]

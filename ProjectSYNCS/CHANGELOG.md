@@ -3,6 +3,28 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 6.21.0 — 2026-10-16
+
+- She answers what you say, not just its mood: asking how she is (on the Pi, sometimes with her
+  real temperature), who she is or what she's doing, goodnight, goodbye, an apology, a declaration,
+  laughter, an open question, or a bare « ok ». Her creator gets his own answers to several of these.
+- She also answers « peut-être » (badly), « t'es un bot ? », « t'as raison » / « t'as tort », requests
+  (pointing to the command that does it), and opinions: « t'en penses quoi de X ? » gets the same
+  verdict as `/rate`, and « tu préfères X ou Y ? » always the same side.
+- A reply to one of her own posts — a welcome, the morning hello, the late call, a session recap,
+  the weekend poll, a level-up, an idle or wake-up line, a command result — is answered about that post.
+- Now and then she quotes her real records about you instead of a roast: missed sessions, time
+  together in voice, your Plynling, quiz wins, the wall of shame, your rank.
+- Reply to her again and again and she notices on the third message, ends the conversation herself
+  on the fifth, then answers only with an emote for ten minutes.
+- Reworked lines: about thirty generic roasts replaced with ones only she would say, her creator's
+  replies and her aunt's greetings rewritten for more range, and « TLDR »-style brush-offs gone.
+- New owner tool `/debug answers`: how many of each kind of chat answer she gave over 7 days, 30 days
+  or all time, split by how she was reached, and the last messages she had no specific answer for
+  (kept in memory, without their authors).
+- Fixed three lines that printed « 0 » instead of a number (a `/work` payslip, a wake-up line and a
+  voice-session remark).
+
 ## 6.20.2 — 2026-10-16
 
 - `/wouldyourather`: thirty new dilemmas of hers (games, life, a little lore), and a couple of old

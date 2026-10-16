@@ -32,6 +32,7 @@ internal sealed class SessionAttendanceService
     private readonly IServiceProvider _services;
     private readonly ResponsePicker _picker;
     private readonly BreakdownService _breakdown;
+    private readonly HerMessages _herMessages;
     private readonly ILogger<SessionAttendanceService> _logger;
 
     // Guards both. The sweep is sequential today; the lock keeps it safe if that changes, and
@@ -47,11 +48,12 @@ internal sealed class SessionAttendanceService
 
     public SessionAttendanceService(
         IServiceProvider services, ResponsePicker picker, BreakdownService breakdown,
-        ILogger<SessionAttendanceService> logger)
+        HerMessages herMessages, ILogger<SessionAttendanceService> logger)
     {
         _services = services;
         _picker = picker;
         _breakdown = breakdown;
+        _herMessages = herMessages;
         _logger = logger;
     }
 
@@ -323,7 +325,8 @@ internal sealed class SessionAttendanceService
             AppTime.ToZoned(session.ScheduledAt).ToString("HH'h'mm"));
         // Meant to ping, so narrowed to exactly the people it names (root CLAUDE.md, mentions).
         var allowed = new AllowedMentions { UserIds = missing.Select(p => p.UserId).ToList() };
-        await BotChat.PostWithTypingAsync(channel, line, _logger, "session late call", allowed);
+        _herMessages.Remember(await BotChat.PostWithTypingAsync(channel, line, _logger, "session late call", allowed),
+            ReplyContext.SessionCall);
         _logger.LogInformation("Late call for session {EventId}: {Count} missing.", session.Id, missing.Count);
     }
 
@@ -351,7 +354,8 @@ internal sealed class SessionAttendanceService
             sb.Append($"\n> Absences : {absent}");
 
         // The names show as pills without pinging anyone: a recap is not a summons.
-        await BotChat.PostWithTypingAsync(channel, sb.ToString(), _logger, "session recap", AllowedMentions.None);
+        _herMessages.Remember(await BotChat.PostWithTypingAsync(channel, sb.ToString(), _logger, "session recap", AllowedMentions.None),
+            ReplyContext.SessionRecap);
         _logger.LogInformation("Recap for session {EventId}: {Came} came, {Late} late, {Absent} absent.",
             session.Id, came.Count, late.Count, absent);
     }

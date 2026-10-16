@@ -21,6 +21,7 @@ internal sealed class XpTracker
     // Singleton into singleton, the same shape BotFeedbackTracker uses for
     // RivalryService — safe to hold directly, unlike a transient DB service.
     private readonly GuildConfigService _config;
+    private readonly HerMessages _herMessages;
     private readonly ILogger<XpTracker> _logger;
 
     // Tuning knobs, not load-bearing — easy to retune without touching the logic
@@ -84,12 +85,14 @@ internal sealed class XpTracker
         IServiceProvider services,
         ResponsePicker picker,
         GuildConfigService config,
+        HerMessages herMessages,
         ILogger<XpTracker> logger)
     {
         _client = client;
         _services = services;
         _picker = picker;
         _config = config;
+        _herMessages = herMessages;
         _logger = logger;
     }
 
@@ -320,7 +323,9 @@ internal sealed class XpTracker
             .WithColor(Color.Purple)
             .Build();
 
-        await BotChat.PostEmbedWithTypingAsync(channel, embed, description, _logger, "level-up announcement", sticker);
+        _herMessages.Remember(
+            await BotChat.PostEmbedWithTypingAsync(channel, embed, description, _logger, "level-up announcement", sticker),
+            ReplyContext.LevelUp);
     }
 
     // Shows the span crossed, not just the number landed on: one grant can cross more

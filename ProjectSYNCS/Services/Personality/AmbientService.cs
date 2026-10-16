@@ -79,6 +79,7 @@ internal sealed class AmbientService : BackgroundService
     private readonly BreakdownService _breakdown;
     private readonly PiHealthService _health;
     private readonly ResponsePicker _picker;
+    private readonly HerMessages _herMessages;
     private readonly ILogger<AmbientService> _logger;
     private readonly string _statePath;
     private readonly DateTimeOffset _startedAt = DateTimeOffset.UtcNow;
@@ -122,6 +123,7 @@ internal sealed class AmbientService : BackgroundService
         BreakdownService breakdown,
         PiHealthService health,
         ResponsePicker picker,
+        HerMessages herMessages,
         IConfiguration config,
         ILogger<AmbientService> logger)
     {
@@ -130,6 +132,7 @@ internal sealed class AmbientService : BackgroundService
         _breakdown = breakdown;
         _health = health;
         _picker = picker;
+        _herMessages = herMessages;
         _logger = logger;
 
         // Next to the database, so it lives under /data in production and survives updates.
@@ -407,13 +410,15 @@ internal sealed class AmbientService : BackgroundService
         {
             var pair = DailyRotation.Pick(BotResponses.IdleEditLines, day, EditSalt);
             var message = await BotChat.PostWithTypingAsync(channel, pair.Before, _logger, "idle line", AllowedMentions.None);
+            _herMessages.Remember(message, ReplyContext.Lonely);
             if (message is not null)
                 _ = Task.Run(() => CorrectLaterAsync(message, pair.After, Ambient.EditAfter, "self-correcting idle line"));
             return;
         }
 
         var line = DailyRotation.Pick(BotResponses.IdleLines, day, IdleSalt);
-        await BotChat.PostWithTypingAsync(channel, line, _logger, "idle line", AllowedMentions.None);
+        _herMessages.Remember(await BotChat.PostWithTypingAsync(channel, line, _logger, "idle line", AllowedMentions.None),
+            ReplyContext.Lonely);
         _logger.LogInformation("Ambient: idle line posted.");
     }
 
@@ -573,6 +578,7 @@ internal sealed class AmbientService : BackgroundService
                     : DailyRotation.Pick(BotResponses.WakeLines, day, WakeSalt);
 
             var sent = await BotChat.PostWithTypingAsync(channel, line, _logger, "wake line", AllowedMentions.None);
+            _herMessages.Remember(sent, ReplyContext.Wake);
             if (sent is not null)
                 lock (_stateLock) SaveState(LoadState() with { LastVersion = AppInfo.Version, LastWakeDay = today });
         }
@@ -593,6 +599,7 @@ internal sealed class AmbientService : BackgroundService
         var (glitched, recovered) = DailyRotation.Pick(BotResponses.GlitchWakeLines, day, GlitchSalt);
         var sent = await BotChat.PostWithTypingAsync(channel, glitched, _logger, "glitch wake line", AllowedMentions.None);
         if (sent is null) return;
+        _herMessages.Remember(sent, ReplyContext.Wake);
         lock (_stateLock) SaveState(LoadState() with { LastVersion = AppInfo.Version, LastWakeDay = today });
 
         var strip = Task.Run(async () =>

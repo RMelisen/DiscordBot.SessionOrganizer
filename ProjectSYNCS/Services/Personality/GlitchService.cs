@@ -34,11 +34,12 @@ public sealed class GlitchService
 
     /// <summary><see cref="BotChat.ReplyWithTypingAsync"/>, with the rare glitch.</summary>
     public async Task<IUserMessage?> ReplyWithTypingAsync(
-        IUserMessage replyTo, string line, ILogger logger, string what)
+        IUserMessage replyTo, string line, ILogger logger, string what,
+        AllowedMentions? allowedMentions = null)
     {
         var clean = Sticker.Strip(line);
         var glitched = TryGlitch(clean, replyTo.Channel.Id);
-        var sent = await BotChat.ReplyWithTypingAsync(replyTo, glitched ?? line, logger, what);
+        var sent = await BotChat.ReplyWithTypingAsync(replyTo, glitched ?? line, logger, what, allowedMentions);
         if (sent is not null && glitched is not null) Restore(sent, clean, what);
         return sent;
     }

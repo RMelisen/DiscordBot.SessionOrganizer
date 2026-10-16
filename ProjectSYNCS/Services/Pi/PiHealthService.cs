@@ -50,6 +50,7 @@ public sealed class PiHealthService : BackgroundService
     private readonly GuildConfigService _config;
     private readonly BreakdownService _breakdown;
     private readonly IHostApplicationLifetime _lifetime;
+    private readonly HerMessages _herMessages;
     private readonly ILogger<PiHealthService> _logger;
     private readonly string _dbPath;
     private readonly string _statePath;
@@ -81,6 +82,7 @@ public sealed class PiHealthService : BackgroundService
         BreakdownService breakdown,
         IHostApplicationLifetime lifetime,
         IConfiguration config,
+        HerMessages herMessages,
         ILogger<PiHealthService> logger)
     {
         _lifetime = lifetime;
@@ -88,6 +90,7 @@ public sealed class PiHealthService : BackgroundService
         _services = services;
         _config = guildConfig;
         _breakdown = breakdown;
+        _herMessages = herMessages;
         _logger = logger;
 
         // Next to the database, so it lives under /data in production and survives updates.
@@ -475,6 +478,7 @@ public sealed class PiHealthService : BackgroundService
 
             var sent = await BotChat.PostWithTypingAsync(channel, line, _logger, "router line", AllowedMentions.None);
             if (sent is null) return;
+            _herMessages.Remember(sent, ReplyContext.Wake);
 
             Update(s => s with { LastRouterDay = day });
         }

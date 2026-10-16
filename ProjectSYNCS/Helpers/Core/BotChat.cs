@@ -94,25 +94,28 @@ public static class BotChat
     /// only used to size that pause — the embed carries the actual content, and
     /// nothing here is sent as message text. The caller splits its own line (the tag
     /// would otherwise show inside the embed) and passes the tag as <paramref name="sticker"/>.
+    /// Returns the sent message, or null if the send failed, like its two siblings.
     /// </summary>
-    public static async Task PostEmbedWithTypingAsync(
+    public static async Task<IUserMessage?> PostEmbedWithTypingAsync(
         IMessageChannel channel, Embed embed, string delayText, ILogger logger, string what,
         StickerTag? sticker = null)
     {
+        IUserMessage sent;
         try
         {
             using (channel.EnterTypingState())
             {
                 await Task.Delay(TypingDelayFor(delayText));
             }
-            await channel.SendMessageAsync(embed: embed);
+            sent = await channel.SendMessageAsync(embed: embed);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to send {What} in channel {ChannelId}.", what, channel.Id);
-            return;
+            return null;
         }
         if (sticker is { } tag) FollowUp?.Invoke(channel, tag);
+        return sent;
     }
 
     // How long to "type" a chat line before sending it. Much snappier than

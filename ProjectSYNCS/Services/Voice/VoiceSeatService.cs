@@ -59,6 +59,7 @@ internal sealed class VoiceSeatService
     private readonly SessionAttendanceService _attendance;
     private readonly XpTracker _xp;
     private readonly ResponsePicker _picker;
+    private readonly HerMessages _herMessages;
     private readonly ILogger<VoiceSeatService> _logger;
 
     private readonly object _gate = new();
@@ -93,13 +94,14 @@ internal sealed class VoiceSeatService
 
     public VoiceSeatService(
         DiscordSocketClient client, IServiceProvider services, SessionAttendanceService attendance, XpTracker xp,
-        ResponsePicker picker, ILogger<VoiceSeatService> logger)
+        ResponsePicker picker, HerMessages herMessages, ILogger<VoiceSeatService> logger)
     {
         _client = client;
         _services = services;
         _attendance = attendance;
         _xp = xp;
         _picker = picker;
+        _herMessages = herMessages;
         _logger = logger;
 
         // A reconnect can drop her voice state: a seat lost right after one is not a kick.
@@ -451,7 +453,9 @@ internal sealed class VoiceSeatService
 
         if (guild.GetVoiceChannel(channelId) is not { } channel) return;
         var line = _picker.Pick(pout ? BotResponses.VoiceKickPoutLines : BotResponses.VoiceKickAngryLines);
-        await BotChat.PostWithTypingAsync(channel, line, _logger, pout ? "voice pout line" : "voice angry line", AllowedMentions.None);
+        _herMessages.Remember(
+            await BotChat.PostWithTypingAsync(channel, line, _logger, pout ? "voice pout line" : "voice angry line", AllowedMentions.None),
+            ReplyContext.Lonely);
         if (pout) return;
 
         // Angry: straight back in, once. Off the sweep, so the wait holds nothing up.

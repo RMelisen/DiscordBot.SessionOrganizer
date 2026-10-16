@@ -74,6 +74,65 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("BotFeedbackDailyStats");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.ChatAnswerDailyStat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Count")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "Day", "Path", "Kind")
+                        .IsUnique();
+
+                    b.ToTable("ChatAnswerDailyStats");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.ChatAnswerStat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Count")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "Path", "Kind")
+                        .IsUnique();
+
+                    b.ToTable("ChatAnswerStats");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.CollectionCompletion", b =>
                 {
                     b.Property<int>("Id")

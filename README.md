@@ -520,7 +520,19 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
 
 - **Replies** — an @mention, or a reply to one of its messages, gets an answer drawn
   from large pools of canned French lines. Compliments, insults and greetings are
-  detected from the message text and answered in kind.
+  detected from the message text and answered in kind, and so is what the message is
+  doing: asking how she is, who she is or what she's up to, whether she's a bot, saying
+  goodnight or goodbye, apologising, declaring love, laughing, telling her she's right or
+  wrong, answering « peut-être », asking a question, or answering with a bare « ok ». Ask her
+  opinion (« t'en penses quoi de… ? », « tu préfères… ou… ? ») and she gives the same verdict
+  as `/rate`; ask her to organise something and she points you to the command that does it. A reply to one of her own posts (a welcome, the late call, the weekend poll, a
+  level-up, a command result…) is answered about that post.
+- **Her records** — now and then, instead of the usual roast, she quotes what she actually
+  knows about you: sessions you said yes to and missed, time spent in voice with her, your
+  Plynling, your quiz wins, your place on the wall of shame. Rarely, and every number is true.
+- **Long back-and-forths** — keep replying to her and she notices on the third message,
+  then ends the conversation herself on the fifth and answers only with emotes for ten
+  minutes. Never with her creator.
 - **No repeats** — every line goes through a picker that avoids whatever was said
   recently in that channel, so a pool feels as large as it actually is.
 - **Her name** — saying "syncs" (or "sync") without tagging her still reaches her, every

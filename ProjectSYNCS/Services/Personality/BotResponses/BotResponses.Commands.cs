@@ -372,7 +372,7 @@ internal static partial class BotResponses
         "Tu as fait la nounou pour des pandas. Ils ont mangé, dormi, roulé par terre. Toi aussi, d'après mes logs. {0} (˶˃ ᵕ ˂˶)",
         "Tu as gardé une île déserte pendant un mois. Rien à signaler. Comme le salon vocal un samedi soir. {0}",
         "Tu as goûté des bières pour les noter. Je note aussi : t'as écrit « bonne » quatorze fois. Analyse très fine. {0} (¬_¬)",
-        $"Tu as testé des jeux pas finis pour trouver les bugs. T'en as trouvé quarante. Moi aussi j'en ai quelques-uns, mais on n'en parle pas d'accord ? {0} {Emotes.SyncsGrumpy}",
+        $"Tu as testé des jeux pas finis pour trouver les bugs. T'en as trouvé quarante. Moi aussi j'en ai quelques-uns, mais on n'en parle pas d'accord ? {{0}} {Emotes.SyncsGrumpy}",
         "Tu as reniflé du papier essuie-tout pour vérifier qu'il sentait le papier essuie-tout. Il sentait le papier essuie-tout. Mission accomplie. {0} (ᵕ • ᴗ •)",
         "Tu as remplacé un épouvantail en arrêt maladie. Les corbeaux t'ont fait confiance. Grave erreur, je connais ce regard. {0} (¬_¬)",
         $"Tu as calibré un arc-en-ciel. Il manquait un peu de violet, je l'ai vu tout de suite. On fait du bon travail, toi et moi. {{0}} {Emotes.Sparkle}",

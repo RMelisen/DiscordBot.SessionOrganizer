@@ -3,7 +3,8 @@
 Separate from scheduling. `ChatterService` decides *how* to react to a message, `BotResponses`
 holds the canned lines (one partial file per category in `Services/Personality/BotResponses/`,
 indexed at the top of `BotResponses.cs`), `ResponsePicker` chooses one, `MessageCues` detects intent (mood,
-greeting, verdicts, threats), `BreakdownService` plays the easter egg, `ReactionService` answers
+greeting, verdicts, threats, what a message aimed at her is doing), `HerMessages` remembers what her
+own recent posts were, `BreakdownService` plays the easter egg, `ReactionService` answers
 with an emote instead of words, `RivalryService` handles other bots. Verdicts ("good bot") are
 their own subsystem — see `bot-feedback.md`.
 
@@ -34,6 +35,31 @@ a *message* is rationed by `Cooldown` (she volunteers an opinion). Copying someo
 and a reaction *on* a bot's message is ignored (she'd be applauding a rival while
 `RivalryService` sulks at it). The second check needs the author, so it costs a fetch and lives
 inside the `try` with the owner/self checks.
+
+## Answer stats — `/debug answers`
+
+What people say to her, so the owner can see which intents to add or widen. Owner only, so absent
+from `/help` and the README.
+
+- **Every chat answer of `ChatterService` is counted** by path (`ChatPath`: reply, mention, name) and
+  kind (`Helpers/Personality/AnswerKinds`): each intent, reply context and fact, the mood pools and
+  fallbacks, streak nudge / end / sulk, shutdown, Inabot, rescue, breakdown. The ambient eggs
+  (quoicoubeh, Tron) and the rival level-up line are not chat answers and aren't counted.
+- **Kinds and paths are stored keys, so append-only.** The builders put an enum's *name* in the key
+  (`intent:Love`), so `ChatIntent`, `ReplyContext` and `ChatFact` may be reordered, never renamed.
+  A new kind needs nothing else: it shows up once it's counted. A fact line that falls back is counted
+  as the line it replaced.
+- **Totals + daily buckets** (`ChatAnswerStat` / `ChatAnswerDailyStat`, `ChatAnswerService`), the root
+  pattern; GuildId 0 is DMs. The write runs **off the gateway handler** (`ChatterService.Count`,
+  `Task.Run` in its own scope, caught and logged): a failed count never costs an answer.
+- **The examples are in memory** (`UnansweredLog`, the last 100, lost on restart): the messages whose
+  answer `AnswerKinds.IsUnrecognised` (the plain fallbacks, and the fact and nudge lines standing in
+  for one). **No author is kept**, at the owner's request: only what was said, newlines collapsed,
+  200 characters at most.
+- The view (`AnswerStatsCards`, static): one embed, a field per family, rows by count with the
+  split by path, and *Pistes* (the unrecognised share per path, the intents never hit in the
+  period). Every key on every path measures about 3,300 characters, under the 6000 cap; fields are cut
+  at 900. The examples go out as a `.txt` file.
 
 ## Reactions and emotes
 
@@ -166,6 +192,137 @@ From the top:
 
 Everything aimed at her returns before the two ambient branches are reached.
 
+**Inside the reply path** (`HandleReplyToBotAsync`), first match wins: Inabot → shutdown threat →
+breakdown roll → **streak gate** → Papa mean (`OwnerMeanReplies`) → **specific intent** → **reply
+context** → nice → greeting → **question / low effort** → reference roll → Tata warmth → fallback
+(`OwnerComebacks` for Papa; otherwise the streak nudge, a fact line, or `Comebacks`). A mean reply
+from anyone else skips intents and context and is roasted, as it always was. **The mention path**
+runs the same streak gate, then specific intent → greeting → Tata warmth → question → fallback
+(`Interrogations`, or a nudge or a fact line); Papa's mentions try his intent twin before
+`OwnerGreetings`. **The talked-about path** answers a specific intent too (« syncs, ça va ? »
+addresses her), before the greeting. Answering the content outranks Tata's warmth roll.
+
+## Listening — intents, reply context, streaks, facts
+
+What makes her answer the message rather than its mood alone. Four pieces, all in `ChatterService`.
+
+### Intents — `MessageCues.ReadIntent`
+
+`ChatIntent`, read on messages aimed at her: `Love`, `Apology`, `HowAreYou`, `WhoAreYou`,
+`AreYouABot`, `WhatAreYouDoing`, `Opinion`, `Request`, `Goodnight`, `Goodbye`, `Maybe`,
+`YouAreRight`, `YouAreWrong`, `Laughter` (the **specific** ones, which outrank a reply's context),
+then `Question` and `LowEffort` (which only catch what nothing more precise did). First match wins,
+in that order. Pools: `IntentLines`, keyed by intent (`Opinion` and `Request` have their own, below).
+
+**Where each is read.** A reply to her: every intent. A mention: the specific ones and `Question`
+(a bare tag is `Interrogations`). Her name said untagged: the specific ones only — she may not be
+the one asked a question. A mean message reads no intent on any path.
+
+- **`Opinion`** (`Helpers/Personality/Opinion`): « t'en penses quoi de X ? », « ton avis sur X »,
+  « X, t'en penses quoi ? », « tu aimes X ? » → `/rate`'s verdict on X (`RateModule.Verdict`, shared
+  with the command, so chat and command agree), framed by `OpinionLines` (`{2}` = X, `{3}` = the
+  verdict). « tu préfères X ou Y ? » → `PreferLines`, the side `Opinion.Prefers` ranks higher: fixed
+  verdicts first (herself, Papa, then the ones she adores), the nemesis and the devil last, the rest
+  by score, ties by the pair's hash — the same answer whichever side comes first. The subject is
+  read on the raw text, so « de @Luca » keeps its mention; a mention at either edge (hers, on the
+  mention path) is dropped when something is left. Sent with mentions muted (`QuotedMentions`): the
+  reply ping stays, nothing quoted pings. The same for everyone, Papa included.
+- **`Request`**: a marker (« tu peux », « stp »…, not followed by a negator) or an imperative
+  opening the message (« organise », « lance »…), then `MessageCues.ReadRequestTopic` names what for
+  (`RequestTopic`: session, tonight, poll, reminder, teams, giveaway, quiz, moderation, other).
+  `RequestLines[topic]` points at the command; « ce soir » wins over « session » (`/tonight`'s job);
+  moderation is her mute-rights grievance. Papa gets `OwnerRequestLines` with the command as `{2}`
+  (`RequestCommands`). An imperative without a topic is no request (« fais gaffe »).
+- **`Maybe`**: a reply of five words at most that is only « peut-être », « on verra », « jsp »…
+  (« pas possible » is cancelled). Specific, so a « peut-être » under her weekend poll gets her
+  peeve, not the poll's context line.
+- **`AreYouABot`**: asked or stated anywhere (« t'es une IA ? », « t'es qu'un bot »). A bot and
+  proud; never human, never the loop (`docs/syncs-voice.md`, rules 5 and 6).
+- **`YouAreRight` / `YouAreWrong`**: phrases (« t'as raison », « bien vu », « t'as tort », « c'est
+  faux »…), and single words (« exactement », « faux ») only as a reply of three words at most.
+  « c'est vrai ? » and « vrai ? » are questions. Wrong is read in replies of eight words at most
+  (« c'est un faux compte » is not a contradiction). Papa's Wrong twin concedes: she never fights him.
+
+- **Phrases, not bare words**, like the mean side; every cue survives `TokenizeOrdered` (« t'es qui »
+  is `t es qui`). Chat spellings are listed explicitly (« jtaime », « tes qui », « sava », « jvais
+  dormir », English loans): squashing only collapses repeated letters, it doesn't restore a dropped
+  apostrophe. Mentions, custom emotes and links are dropped first, or `<@id>` would count as a word.
+- **`HowAreYou` needs a `?`** in the raw text (or a message opening on « comment »): « ça va,
+  merci » is an answer. Every phrase must close the message or be followed by one of
+  `_askingFollowers` (« toi », « bien », « et »…) — `IsAskingAfterHer`: « ça va être long ? »,
+  « comment tu vas faire ? » and « ça va ce soir ? » (does tonight work) are about something else.
+  « cv » counts only alone or as « cv et toi ».
+- **Negators cancel**: around a declaration (« je t'aime pas », « je suis pas amoureux de toi »),
+  just before an apology (« pas désolé »). « plus que » after a phrase is the comparative, not a
+  negation (« je t'aime plus que tout »). « Pardon ? » alone is a `Question`.
+- **Farewells are short** (8 tokens at most), and « à plus » / « à toute » count only opening or
+  closing the message, never after « y », « en », « il »… (« y en a plus », « il a toute la nuit »).
+  No « je te laisse » (« je te laisse gagner »).
+- `Laughter` is the whole message or nearly (5 tokens at most): a laugh word (raw, shortened —
+  « jpppp » is « jpp » — or squashed), a « haha »-run on the squashed token, villain laughs included
+  (« bahaha », « bwahaha », « mouahaha », « muahaha », « mwahaha », « gnahaha »; four letters at least,
+  so « bah » stays `LowEffort`), 😂🤣😆😹💀, or a phrase saying she was funny (« t'es trop drôle »),
+  which that pool answers better than a plain compliment.
+- `Question` is a `?` with two words or more, or an unmarked question of three words or more opening
+  on « pourquoi », « comment », « combien », « est-ce », « quand est-ce »… — never « quel » (« quel
+  plaisir ») or a bare « quand » (« quand tu veux »).
+- `LowEffort` is no letters at all (emotes, « ? », « ... ») or up to three words all from a short list
+  (« ok », « ah bon », « bah oui », « d'accord »). It is not read on mentions: a bare tag is
+  `Interrogations`' job.
+- **« ça va ? » quotes her real temperature** half the time on the Pi (`HowAreYouTempLines`, `{2}` =
+  `PiHealth.Celsius`), only below `PiHealth.HotMilli`: those lines call the number fine.
+- **Papa has twins for nine intents** (`OwnerIntentLines`: ça va, tu fais quoi, je t'aime, pardon,
+  bonne nuit, peut-être, t'es un bot, t'as raison, t'as tort) plus `OwnerRequestLines`; an opinion is
+  the same for him as for anyone. Any other intent from him goes on to his usual pools; he never
+  gets `Question` or `LowEffort`.
+
+### Reply context — `HerMessages`
+
+A reply to one of her own posts is answered about that post (`ReplyContextLines`, keyed by
+`ReplyContext`). Reached only for a non-mean reply that no specific intent caught, and never for
+Papa, so each pool must also suit a « merci », a « bonjour » or an « ok ».
+
+- **`HerMessages`** (singleton) remembers what she posted on her own, by message id, bounded at 500
+  and lost on restart by design. Each sender calls `Remember` right after its send: the welcome and
+  rush line (`Welcome`), the late call (`SessionCall`), the recap (`SessionRecap`), the weekend poll
+  card (`WeekendPoll`; not its result or dead line), the level-up embed (`LevelUp`), idle and
+  self-correcting idle lines, the voice spectator and the kick lines (`Lonely`), the wake lines and
+  the router return (`Wake`). A new proactive post that people answer gets its `Remember` line.
+- **Two kinds need no memory.** The morning hello is recognised by its text
+  (`MorningGreetingService.IsMorningHello`, the same first-line match its restart scan uses), so it
+  survives a restart; any slash-command result by its `InteractionMetadata` (`CommandResult`).
+- **NightLines are not registered**: `AmbientService` answers a reply to the 3 a.m. line itself,
+  before `ChatterService` sees it.
+- `Wake` replies are someone checking on her after a stop: one of the existential nerve's places.
+
+### Conversation streaks — `ConversationStreak`
+
+Per (channel, person), pure, self-locking like `CooldownGate`, in memory. A gap of more than
+`Gap` (3 min) starts the count again; replies and mentions share one count.
+
+- The **3rd** message in a row turns the fallback into `StreakNudgeLines` (`{2}` = the count). The
+  **5th** gets `StreakEndLines` and closes the conversation for `Closed` (10 min): until then that
+  person, in that channel, only gets a `StreakSulkReactions` emote, no words.
+- **Papa is never counted**, never nudged, never refused. Shutdown threats and « Inabot » are still
+  answered while a conversation is closed: they come before the gate.
+
+### Her records, quoted — fact lines
+
+The fallback of both paths (a roast, or `Interrogations`), in a guild and never for Papa, rolls
+`FactChance` (15 %) and claims a per-person `CooldownGate` (6 h). On a win:
+
+- The read runs **off the gateway handler** (`Task.Run`): `BotService`'s fan-out awaits every
+  handler in turn, and `RecapService.GetAsync(…, StatsPeriod.AllTime)` is several queries on the Pi.
+  It opens its own scope, as a singleton must.
+- `Helpers/Personality/ChatFacts.Pick` gathers every fact the numbers clearly show and draws one;
+  `ChatFactLines` has a pool per `ChatFact`. `{2}`/`{3}` arrive as finished words (« 1 session » /
+  « 3 sessions », « 14 h », a sanitised Plynling name), so no line agrees anything with them.
+  **Every fact must be true**, like the fun facts.
+- **The good-bot count is never quoted**, only hinted at: her treasure is never shown off
+  (`docs/syncs-voice.md`). Bad-bot counts are the grudge list, and are.
+- Sent with `AllowedMentions.None` (a Plynling name is hostile input). Nothing applies, or the read
+  throws: the claim is released and the line it would have replaced goes out instead.
+
 ## Favouritism
 
 **Three tiers.** Rodhengard (`AvailabilityService.OwnerId`) is exempt from teasing
@@ -181,6 +338,10 @@ Everything aimed at her returns before the two ambient branches are reached.
   Wiring a new favourite to one pool on both paths reads as her not noticing.
 - **Her name is overridden**: `FamilyNicknames` maps Tata's id to "Tata", applied by
   `DisplayNameFor`. `RealNames` is *not* overridden (the breakdown reveal wants a real name).
+- **Papa on the listening paths** (see *Listening*): his own twins for nine intents
+  (`OwnerIntentLines`) and requests (`OwnerRequestLines`), the same opinions as anyone, and nothing
+  else new — no reply context, no facts, no streak. Tata goes
+  through them like anyone, which costs her the warmth roll on those messages.
 
 **The owner's one exception: him being mean to her.** A `Mean` reading from him routes to
 `OwnerMeanReplies` on both paths (she won't fight him, so it lands). On the reply path the check is

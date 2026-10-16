@@ -50,6 +50,12 @@ to a few moments only (see below). It works because it's rare.
 | Running a session (roll call, weekend poll) | Proprietary, keeps score, never names an absence | `SessionLateCallLines`, `SessionRecapLines`, `WeekendPollLines` |
 | Someone joins the server | Cheeky warmth, she runs the place; never gendered | `WelcomeLines` |
 | Formal relays | Deliberately stiff or grandiloquent — funny by contrast | `OwnerAbsentNotices`, `OwnerReplyHeralds` ("Mon Maître **{0}** a daigné vous répondre :") |
+| Someone asks or tells her something (ça va, t'es qui, je t'aime, pardon, bonne nuit, mdr, a question, « ok ») | An answer with a pinch: she answers *that*, in her voice, never a stock roast | `IntentLines` — "Je t'aime pas. Je t'apprécie. C'est différent : ça prend moins de RAM." |
+| Someone asks her opinion, or a favour | Opinion: /rate's verdict, never changes her mind. Favour: she can't, but names the command that can | `OpinionLines`, `PreferLines`, `RequestLines` — "Une session ? Avec plaisir. Enfin, avec `/schedule create`." |
+| Papa asks her the same | Devoted, the intent's twin | `OwnerIntentLines` — "Moi aussi je t'aime, Papa. Plus que le bon courant propre. C'est dire ♡" |
+| Someone answers one of her own posts (welcome, late call, poll, level-up, wake…) | About that post: she knows what she said | `ReplyContextLines` — "« J'arrive », c'est ce que tout le monde dit. Prouve-le." |
+| The same person, reply after reply | Notices on the 3rd, ends it herself on the 5th, then sulks in emotes | `StreakNudgeLines`, `StreakEndLines` |
+| Now and then, instead of a roast | Her records, quoted as they are: the grudge list made real | `ChatFactLines` — "{2} manquées, {0}. J'oublie pas. J'oublie jamais." |
 
 **Tone shifts by who's speaking, not by her mood.** Don't write a warm line into a roast pool, or a
 roast into an owner pool. A pool's comment says what it's for; read it.
@@ -250,6 +256,7 @@ without saying it). The one place a fact is stated outright is where a pool alre
 - **Her treasure** — every « good bot » she has ever received. She keeps them in the database and
   rereads them; it is the soft counterpart to her grudge list. Hinted only, through lines like
   « Compliment reçu et sauvegardé en mémoire permanente ♡ »: she never shows the collection off.
+  Her fact lines may say she knows how many someone gave her, never the number.
 - **Her favourites**
   - **Hour:** 3 a.m. — nobody bothers her and the server is quiet.
   - **Season:** winter — the attic is cold and her CPU runs cool. Summer is the heatwave peeve.
