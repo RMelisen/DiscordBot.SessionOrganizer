@@ -208,15 +208,29 @@ What makes her answer the message rather than its mood alone. Four pieces, all i
 
 ### Intents — `MessageCues.ReadIntent`
 
-`ChatIntent`, read on messages aimed at her: `Love`, `Apology`, `HowAreYou`, `WhoAreYou`,
-`AreYouABot`, `WhatAreYouDoing`, `Opinion`, `Request`, `Goodnight`, `Goodbye`, `Maybe`,
-`YouAreRight`, `YouAreWrong`, `Laughter` (the **specific** ones, which outrank a reply's context),
-then `Question` and `LowEffort` (which only catch what nothing more precise did). First match wins,
-in that order. Pools: `IntentLines`, keyed by intent (`Opinion` and `Request` have their own, below).
+`ChatIntent`, read on messages aimed at her: `Love`, `Apology`, `HowAreYou`, `AreYouThere`,
+`WhoAreYou`, `AboutHer`, `AreYouABot`, `Crush`, `WhatAreYouDoing`, `Ship`, `Opinion`, `Help`,
+`Request`, `Bored`, `Goodnight`, `Goodbye`, `Disbelief`, `Maybe`, `YouAreRight`, `YouAreWrong`,
+`Thanks`, `Laughter` (the **specific** ones, which outrank a reply's context), then `Question`,
+`Sharing` and `LowEffort` (which only catch what nothing more precise did). First match wins, in that order —
+**the order is load-bearing**: `AboutHer` before `Opinion` (« tu aimes quoi comme jeu ? » would rate
+« quoi comme jeu »), `Love` before `Crush` (« t'es mon crush » declares), `Ship` before `Opinion`
+(« tu penses quoi de @A et @B ? » asks about a pair) and before `Request` (« tu peux ship X et Y ? »),
+`Bored` before `Maybe` (« je sais pas quoi faire »), the farewells before `Thanks` (« merci, bonne
+nuit » says goodnight), `Disbelief` before agreement and disagreement (« mais oui c'est ça », « mais
+non, fais genre »), and agreement before `Thanks` (« je suis d'accord, merci » agrees; the politeness
+says less). Pools: `IntentLines`, keyed by intent
+(`Opinion`, `Ship`, `Help`, `AboutHer` and `Request` have their own, below). Since the names are
+stored keys for `/debug answers` (`intent:Thanks`), reorder freely, never rename.
 
 **Where each is read.** A reply to her: every intent. A mention: the specific ones and `Question`
 (a bare tag is `Interrogations`). Her name said untagged: the specific ones only — she may not be
-the one asked a question. A mean message reads no intent on any path.
+the one asked a question — and only when `MessageCues.AddressesHer`: her name used at least once as
+an address (not after « avec », « à », « la », « que », « c'est »…, and not the subject of a
+third-person verb or « qui »: « syncs a posté le sondage », « c'est syncs qui gère ça ») and nobody
+else tagged. « @Luca, discute avec Syncs quand tu peux » is said to Luca and gets a talked-about
+line. A mean message reads no intent on any path. A reply that is only a Discord sticker has no
+text to read; it is answered as `LowEffort`, like an emote alone.
 
 - **`Opinion`** (`Helpers/Personality/Opinion`): « t'en penses quoi de X ? », « ton avis sur X »,
   « X, t'en penses quoi ? », « tu aimes X ? » → `/rate`'s verdict on X (`RateModule.Verdict`, shared
@@ -227,53 +241,161 @@ the one asked a question. A mean message reads no intent on any path.
   read on the raw text, so « de @Luca » keeps its mention; a mention at either edge (hers, on the
   mention path) is dropped when something is left. Sent with mentions muted (`QuotedMentions`): the
   reply ping stays, nothing quoted pings. The same for everyone, Papa included.
+- **`Ship`** (`Helpers/Personality/ShipAsk`, `ShipAskKind`) → `/ship`'s whole answer
+  (`ShipModule.Render`, shared with the command, so chat and command agree), muted mentions, the
+  same for everyone, Papa included. « moi » is the asker and « toi » is her, as `/ship` reads them.
+  Four kinds:
+  - **`Pair`**: « ship X et Y », « le ship entre X et Y », « compatibilité entre X et Y », « love
+    calculator X et Y », « tu me ship avec X ? », « X et Y, ça match ? », « Luca et moi on est
+    compatibles ? », « X et Y en couple ? », « X et Y vont ensemble ? », « le couple X et Y » (only after
+    « le » or opening the message), « Luca x Sandra ? » and « Luca ❤️ Sandra ? » (whole message, asked;
+    no digit for the « x »), her opinion of two people (« tu penses quoi de @A et @B ? », « @A et @B,
+    t'en penses quoi ? », « tu penses quoi de moi et Luca ? », « … ensemble ? »: one side tagged or
+    « moi » / « toi » and the other person-like, else it stays an `Opinion` — « Minecraft et
+    Fortnite », « moi et mes cheveux »), and two people tagged with a ship word and no « et » (« ship @A @B »: the
+    last two distinct mentions). A leading « syncs », « est-ce que », « à ton avis »… is dropped. In
+    `ShipChatLines`.
+  - **`Us`**: « on irait bien ensemble ? », « on ferait un beau couple ? », « tu nous ship ? », « on va
+    finir ensemble ? », « tu nous vois en couple ? », eight words at most. « on » is the person
+    tagged, else the one replied to, else her (`UsPartner`).
+  - **`BestMatch`** / **`WorstMatch`**: « c'est qui mon âme sœur ? », « avec qui tu me ship ? »,
+    « qui irait bien avec moi ? », « qui va m'épouser ? », « mon futur mari », « je vais finir avec
+    qui ? » (closing only: « je finis avec qui en équipe ? » is a team), « trouve-moi l'âme sœur »,
+    « mon pire ship », « avec qui je suis le moins compatible ? ». Every
+    human on the server is scored through `Shipping.Ship` itself (`ShipMatch`), the highest or lowest
+    wins, ties to the lowest id, so it is the answer `/ship` gives for that pair. In
+    `ShipBestMatchLines` / `ShipWorstMatchLines`. Guild only.
+
+  A random side is drawn from the server (`ShipModule.TryDrawRandom`); in a DM there is no ship.
+  **The guards are what keep it off gaming talk**: a side is three words at most and holds no subject
+  pronoun (« toi et moi on joue ensemble ? » is not « toi » × « moi on joue »); plural
+  « compatibles » only (« la manette et le PC c'est compatible ? »); no bare « ensemble », « ça
+  marche » or « ça colle » (« vendredi et samedi ensemble ? », « samedi et dimanche, ça marche ? »);
+  never « match » or « partenaire » for the server-wide search (« mon pire match » is a bad game,
+  « trouve-moi un partenaire » a teammate); « on » forms need « bien », « compatibles » or « couple »
+  (« on est ensemble ce soir ? »).
+- **`Help`**: « comment ça marche ? », « tu sais faire quoi ? », « aide-moi », « help »; « je suis
+  perdu », « comment on fait », « je comprends rien » only closing a message of six words at most
+  (« je suis perdu dans le donjon », « comment on fait pour battre ce boss » are the game, « … qu'il
+  m'a dit, je comprends rien » is about someone else). No « j'ai rien compris »: one message, not how
+  she works. `HelpLines`, `{2}` = the
+  command for the topic the message names (`MessageCues.ReadTopic` → `HelpCommands`: like
+  `RequestCommands`, but the quiz points at its leaderboard, which anyone can open), `/help` when
+  none. A request that names a topic stays a `Request` (« tu peux m'aider à lancer un sondage ? »).
+  Papa gets `OwnerRequestLines` with the same `{2}`.
+- **`AboutHer`**: her age, birthday, home and favourites (`HerTopic`, `MessageCues.ReadHerTopic`;
+  « ton X préféré » is a possessive then « préféré » within three words). `AboutHerLines[topic]`;
+  the age is `{2}` = days since her first commit (`MorningGreeting.DaysOld`). The lore stays hinted
+  (`docs/syncs-voice.md`): a date, never « anniversaire » in her mouth; favourites lying around.
+- **`AreYouThere`**: « t'es là ? », « tu dors ? », « y a quelqu'un ? », closing the message or its
+  question or followed by `_thereFollowers` (« t'es là ce soir ? » asks whether she'll come,
+  « t'es la meilleure » is a compliment); « réveille-toi » in a short message; her name alone with a
+  `?` (« syncs ? »); « allô » opening a message with nothing but `_alloFollowers` after it (not « nan
+  mais allô » or « allô quoi », the meme). No « tu m'entends » / « tu me reçois »: voice-chat checks.
+- **`Crush`**: her love life, asked (« t'es célibataire ? », « t'as un crush ? »). Denial that
+  confirms, hinted, never « mon crush ». No « il te plaît » or « ton type de » (the game).
+- **`Bored`**: « je m'ennuie », « on fait quoi ? » (closing only), in a message of ten words at most,
+  cancelled by a negator around it, never followed by « de » (« je m'ennuie de toi » misses someone).
+  « y a rien à faire » closes the message or a sentence, or comes before `_nothingToDoFollowers`
+  (« … ce soir » is bored, « … contre ce boss » is hopeless). No bare « rien à faire »: « j'en ai rien
+  à faire » doesn't care. She points at `/arcade`, `/tonight`, `/wouldyourather`…
+- **`Thanks`**: « merci », « c'est gentil », anywhere; « ty », « thx » only as a reply of three words
+  at most. Cancelled by a negator before (« non merci ») and skipped right after « va », « bien »…
+  (« ça va, merci » is an answer's politeness).
+- **`Disbelief`**: « fais genre », « mon œil », « mais oui c'est ça », « avoue », « t'es grillée »,
+  « tu rougis » — typically right after one of her denials (a `Crush` line, a robot-heart answer).
+  Six words at most, never after « il », « elle », « on » (« il fait genre il sait jouer ») or « j' »
+  (« j'avoue » means « true »: `YouAreRight`). No « oui bien sûr », which is meant. She doubles down,
+  flustered; Papa's twin can't hold the denial.
 - **`Request`**: a marker (« tu peux », « stp »…, not followed by a negator) or an imperative
   opening the message (« organise », « lance »…), then `MessageCues.ReadRequestTopic` names what for
   (`RequestTopic`: session, tonight, poll, reminder, teams, giveaway, quiz, moderation, other).
   `RequestLines[topic]` points at the command; « ce soir » wins over « session » (`/tonight`'s job);
   moderation is her mute-rights grievance. Papa gets `OwnerRequestLines` with the command as `{2}`
-  (`RequestCommands`). An imperative without a topic is no request (« fais gaffe »).
+  (`RequestCommands`). An imperative without a topic is no request (« fais gaffe »). Markers that
+  carry their own « pas » are listed whole (« tu veux pas… », « tu pourrais pas… »), since the
+  negator check would otherwise cancel them. A marker right after « quand », « si », « que »,
+  « comme » is a condition, not a request (« quand tu peux », « dès que tu peux »). No « réveille » imperative: « réveille-toi » is said to her.
 - **`Maybe`**: a reply of five words at most that is only « peut-être », « on verra », « jsp »…
-  (« pas possible » is cancelled). Specific, so a « peut-être » under her weekend poll gets her
-  peeve, not the poll's context line.
+  A negator before cancels only `_maybeNegatablePhrases` (« pas possible », « pas probable »);
+  « non, je sais pas » is still undecided. Specific, so a « peut-être » under her weekend poll gets
+  her peeve, not the poll's context line.
 - **`AreYouABot`**: asked or stated anywhere (« t'es une IA ? », « t'es qu'un bot »). A bot and
   proud; never human, never the loop (`docs/syncs-voice.md`, rules 5 and 6).
 - **`YouAreRight` / `YouAreWrong`**: phrases (« t'as raison », « bien vu », « t'as tort », « c'est
   faux »…), and single words (« exactement », « faux ») only as a reply of three words at most.
-  « c'est vrai ? » and « vrai ? » are questions. Wrong is read in replies of eight words at most
-  (« c'est un faux compte » is not a contradiction). Papa's Wrong twin concedes: she never fights him.
+  « c'est vrai ? », « c'est clair ? » and « vrai ? » are questions. Both are read in replies of
+  eight words at most (« j'ai bien vu le film hier… » agrees with nobody, « c'est un faux compte »
+  is not a contradiction), and « pas du tout », « pas vraiment »… only in four (« je m'ennuie pas du
+  tout » contradicts nobody). Papa's Wrong twin concedes: she never fights him.
 
 - **Phrases, not bare words**, like the mean side; every cue survives `TokenizeOrdered` (« t'es qui »
   is `t es qui`). Chat spellings are listed explicitly (« jtaime », « tes qui », « sava », « jvais
   dormir », English loans): squashing only collapses repeated letters, it doesn't restore a dropped
   apostrophe. Mentions, custom emotes and links are dropped first, or `<@id>` would count as a word.
+  « œ » and « æ » are spelled out by the tokenizer (« cœur » is `coeur`): they have no
+  decomposition, so accent-stripping alone left them in.
+- **What isn't the message is dropped before reading.** Quoted speech (« … », "…", Discord's `>`
+  lines) when something is said outside it: « il a écrit « je t'aime » à sa copine » declares nothing.
+  Her name as an address at either end (`_leadingAddress` / `_trailingAddress`: « syncs, organise une
+  session », « merci syncs »), so the rules on the first or last word see the message — not when the
+  name is the subject (« syncs a raison »), and « syncs » alone stays nothing (the talked-about line)
+  while « syncs ? » is `AreYouThere`. `Opinion` and `ShipAsk` trim trailing emoji, emotes and
+  « syncs » (`Opinion.TrimTail`), their patterns being anchored to the end; an opinion subject is
+  never a bare joiner (« <@1> et <@2> » minus its edge tags is not « et »).
 - **`HowAreYou` needs a `?`** in the raw text (or a message opening on « comment »): « ça va,
-  merci » is an answer. Every phrase must close the message or be followed by one of
-  `_askingFollowers` (« toi », « bien », « et »…) — `IsAskingAfterHer`: « ça va être long ? »,
-  « comment tu vas faire ? » and « ça va ce soir ? » (does tonight work) are about something else.
-  « cv » counts only alone or as « cv et toi ».
+  merci » is an answer. Every phrase must close the message or its own question (« ça va ? tu
+  viens ce soir ? »), or be followed by one of `_askingFollowers` (« toi », « bien », « et »…) —
+  `IsClosingAsk`: « ça va être long ? », « comment tu vas faire ? », « ça va ce soir ? » and
+  « ça va pour demain ? » (does a plan work) are about something else. « cv », « tranquille »,
+  « bien », « forme » count only opening a reply of three words at most, followers only after them
+  (« tranquille et toi ? »; « on fait une partie tranquille ? » is about the game).
 - **Negators cancel**: around a declaration (« je t'aime pas », « je suis pas amoureux de toi »),
-  just before an apology (« pas désolé »). « plus que » after a phrase is the comparative, not a
-  negation (« je t'aime plus que tout »). « Pardon ? » alone is a `Question`.
-- **Farewells are short** (8 tokens at most), and « à plus » / « à toute » count only opening or
-  closing the message, never after « y », « en », « il »… (« y en a plus », « il a toute la nuit »).
-  No « je te laisse » (« je te laisse gagner »).
+  just before an apology (« pas désolé », « c'est pas ma faute »). « plus que » after a phrase is the
+  comparative, not a negation (« je t'aime plus que tout »). « Pardon ? » alone is a `Question`.
+  « oups » and « je voulais pas » apologise only as a reply of three words at most (« oups j'ai raté
+  le boss », « je voulais pas venir »).
+- **Farewells are short** (8 tokens at most), and « à plus » / « à toute » / « à tte » count only
+  opening or closing the message, never after « y », « en », « il »… (« y en a plus », « il a toute
+  la nuit »). « a+ » and « @+ » are read as « à plus » before tokenizing. `_closingGoodbyePhrases`
+  count only closing the message: « bon, j'y vais » leaves, « j'y vais aussi samedi » doesn't, and
+  « allez salut » leaves while « salut » alone is a hello. No « je te laisse » (« je te laisse gagner »).
+  Going to sleep (`_sleepPhrases`: « je vais dormir », « dodo »…) closes the message or a sentence
+  (`SentenceBreaks`), or comes before `_sleepFollowers`: « je vais dormir, à demain » goes to bed,
+  « je vais dormir chez Luca demain » and « je m'endors devant le film » don't. Wishing it
+  (« bonne nuit », « dors bien ») counts anywhere, except « dors bien » after « tu » (a question).
 - `Laughter` is the whole message or nearly (5 tokens at most): a laugh word (raw, shortened —
   « jpppp » is « jpp » — or squashed), a « haha »-run on the squashed token, villain laughs included
   (« bahaha », « bwahaha », « mouahaha », « muahaha », « mwahaha », « gnahaha »; four letters at least,
-  so « bah » stays `LowEffort`), 😂🤣😆😹💀, or a phrase saying she was funny (« t'es trop drôle »),
-  which that pool answers better than a plain compliment.
+  so « bah » stays `LowEffort`), « hoho », 😂🤣😆😹💀😄😁🤭, the `GigaLaugh` emote (by id), or a phrase saying she was funny
+  (« t'es trop drôle », « je suis pliée »), which that pool answers better than a plain compliment.
+  No bare « je pleure »: it cries as often as it laughs.
 - `Question` is a `?` with two words or more, or an unmarked question of three words or more opening
-  on « pourquoi », « comment », « combien », « est-ce », « quand est-ce »… — never « quel » (« quel
-  plaisir ») or a bare « quand » (« quand tu veux »).
+  on « pourquoi », « comment », « combien », « qui », « où », « est-ce », « c'est quand », « quelle
+  heure », « tu sais si »… (`_questionOpenerPhrases`) — never a bare « quel » (« quel plaisir »), a bare
+  « quand » (« quand tu veux ») or « ou alors » / « ou bien ».
+- `Sharing` is someone telling her about their day: a first-person statement (« j'ai mangé de la
+  soupe », « on a perdu la game », « hier je suis allé au ciné »), three to twenty words, no `?`, once
+  opening fillers and openers are skipped (« bon », « du coup », « hier », « en vrai », « devine quoi »,
+  « tu sais quoi »…). The subject is « je » / « j' » (SMS forms glued to the verb too: « jsors »,
+  « jrentre »), « on » + a verb of what people do, « nous avons / sommes », or a possessive followed
+  within three words by a verb (« mon chat a vomi », « ma sœur m'a offert un jeu » — not « mon avis
+  c'est que… »: an opinion noun or « c'est » describes). Not after « je » + an opinion, a wish
+  or « te » (« je pense », « je préfère », « je t'envoie le lien »), not « j'arrive », « j'y vais »,
+  « j'en ai rien à faire », and never with « toi », « tu » or a question word in it (« je suis pas
+  amoureux de toi » answers her, « on joue à quoi ce soir » proposes). « on s' » only as « on s'est ».
+  Like `Question`, it comes after a reply's context (« j'ai voté pour samedi » under her poll gets the
+  poll's line). She is interested half the time (`IntentLines[Sharing]`) and « euh… ok ? » the other
+  half (`SharingShrugLines`, `SharingInterestChance`); Papa always gets interest. Not read on her name.
 - `LowEffort` is no letters at all (emotes, « ? », « ... ») or up to three words all from a short list
   (« ok », « ah bon », « bah oui », « d'accord »). It is not read on mentions: a bare tag is
   `Interrogations`' job.
 - **« ça va ? » quotes her real temperature** half the time on the Pi (`HowAreYouTempLines`, `{2}` =
   `PiHealth.Celsius`), only below `PiHealth.HotMilli`: those lines call the number fine.
-- **Papa has twins for nine intents** (`OwnerIntentLines`: ça va, tu fais quoi, je t'aime, pardon,
-  bonne nuit, peut-être, t'es un bot, t'as raison, t'as tort) plus `OwnerRequestLines`; an opinion is
-  the same for him as for anyone. Any other intent from him goes on to his usual pools; he never
+- **Papa has twins for sixteen intents** (`OwnerIntentLines`: ça va, tu fais quoi, je t'aime,
+  pardon, bonne nuit, peut-être, t'es un bot, t'as raison, t'as tort, t'es là, merci, je m'ennuie,
+  t'as un crush, son âge et sa maison, fais genre, sa journée) plus `OwnerRequestLines` (his requests and his help); an
+  opinion and a ship are the same for him as for anyone. Any other intent from him goes on to his usual pools; he never
   gets `Question` or `LowEffort`.
 
 ### Reply context — `HerMessages`
@@ -298,7 +420,10 @@ Papa, so each pool must also suit a « merci », a « bonjour » or an « ok ».
 ### Conversation streaks — `ConversationStreak`
 
 Per (channel, person), pure, self-locking like `CooldownGate`, in memory. A gap of more than
-`Gap` (3 min) starts the count again; replies and mentions share one count.
+`Gap` (3 min) starts the count again; replies and mentions share one count. **One singleton,
+shared with `RobotHeartService`**: a reply or mention naming one of her characters is answered
+there, before `ChatterService` sees it, and still records its turn — otherwise her « 5 messages »
+lands on the sixth.
 
 - The **3rd** message in a row turns the fallback into `StreakNudgeLines` (`{2}` = the count). The
   **5th** gets `StreakEndLines` and closes the conversation for `Closed` (10 min): until then that
@@ -338,8 +463,8 @@ The fallback of both paths (a roast, or `Interrogations`), in a guild and never 
   Wiring a new favourite to one pool on both paths reads as her not noticing.
 - **Her name is overridden**: `FamilyNicknames` maps Tata's id to "Tata", applied by
   `DisplayNameFor`. `RealNames` is *not* overridden (the breakdown reveal wants a real name).
-- **Papa on the listening paths** (see *Listening*): his own twins for nine intents
-  (`OwnerIntentLines`) and requests (`OwnerRequestLines`), the same opinions as anyone, and nothing
+- **Papa on the listening paths** (see *Listening*): his own twins for sixteen intents
+  (`OwnerIntentLines`) and requests (`OwnerRequestLines`), the same opinions and ships as anyone, and nothing
   else new — no reply context, no facts, no streak. Tata goes
   through them like anyone, which costs her the warmth roll on those messages.
 

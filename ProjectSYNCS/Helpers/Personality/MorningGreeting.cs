@@ -24,6 +24,10 @@ public static class MorningGreeting
     /// <summary>Her age in whole years on <paramref name="now"/>'s year (0 on the first birthday itself).</summary>
     public static int Age(DateTimeOffset now) => AppTime.ToZoned(now).Year - BirthYear;
 
+    /// <summary>How many days she has been running on <paramref name="now"/>, in the app's zone (0 on her first day).</summary>
+    public static int DaysOld(DateTimeOffset now) =>
+        DateOnly.FromDateTime(AppTime.ToZoned(now).DateTime).DayNumber - new DateOnly(BirthYear, BirthMonth, BirthDay).DayNumber;
+
     // Someone else's greeting can draw her hello out from this earlier time on, up to
     // WindowEnd. Earlier than her own window on purpose: an early riser gets an answer.
     public static readonly TimeSpan ReplyWindowStart = new(7, 0, 0);

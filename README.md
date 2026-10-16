@@ -521,11 +521,16 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
 - **Replies** — an @mention, or a reply to one of its messages, gets an answer drawn
   from large pools of canned French lines. Compliments, insults and greetings are
   detected from the message text and answered in kind, and so is what the message is
-  doing: asking how she is, who she is or what she's up to, whether she's a bot, saying
-  goodnight or goodbye, apologising, declaring love, laughing, telling her she's right or
-  wrong, answering « peut-être », asking a question, or answering with a bare « ok ». Ask her
-  opinion (« t'en penses quoi de… ? », « tu préfères… ou… ? ») and she gives the same verdict
-  as `/rate`; ask her to organise something and she points you to the command that does it. A reply to one of her own posts (a welcome, the late call, the weekend poll, a
+  doing: asking how she is, whether she's there, who she is, how old she is or where she
+  lives, what she's up to, whether she's a bot or has a crush, saying goodnight or goodbye,
+  thanking her, apologising, declaring love, laughing, being bored, telling her about your day
+  (she may be interested, or not at all), telling her she's right
+  or wrong, answering « peut-être », asking a question, or answering with a bare « ok ». Ask
+  her opinion (« t'en penses quoi de… ? », « tu préfères… ou… ? ») and she gives the same
+  verdict as `/rate`; ask her to ship two people (« ship X et Y », « X et moi, ça match ? ») and
+  she answers exactly as `/ship` would — or ask « c'est qui mon âme sœur ? » and she searches the
+  whole server for your best match; ask how something works and she points you to `/help`
+  or the right command; ask her to organise something and she points you to the command that does it. A reply to one of her own posts (a welcome, the late call, the weekend poll, a
   level-up, a command result…) is answered about that post.
 - **Her records** — now and then, instead of the usual roast, she quotes what she actually
   knows about you: sessions you said yes to and missed, time spent in voice with her, your

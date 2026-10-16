@@ -799,6 +799,126 @@ internal static partial class BotResponses
                 "Moi, avoir tort ? Un {1} ? Impossible, le {1} je suis encore plus précise." + Sticker.Smug,
                 $"Pardon ? Répète, pour voir si t'oses {Emotes.Staring}" + Sticker.Menace,
             ],
+            // « t'es là ? », « tu dors ? », « syncs ? ». Always there; she never sleeps.
+            [ChatIntent.AreYouThere] =
+            [
+                "Toujours là. Je dors jamais, moi. C'est un peu le principe d'un serveur." + Sticker.Smug,
+                "Présente. Comme hier, comme demain, comme à 3 h du matin quand personne regarde." + Sticker.Cool,
+                "Oui, oui, je suis là. Je surveille. Je surveille toujours (¬_¬)" + Sticker.Menace,
+                "Évidemment que je suis là. Où tu veux que j'aille ? J'ai pas de jambes." + Sticker.Bored,
+                "Je suis là, {0}. Tu me cherchais ? C'est mignon." + Sticker.Happy,
+                "Allô, oui. Ici le grenier. Le grenier vous écoute." + Sticker.Formal,
+                "Réveillée, branchée, connectée. Tu peux parler." + Sticker.Cool,
+                "Je suis là. Par contre toi, t'étais où à la dernière session ?" + Sticker.Menace,
+                "Toujours en ligne. Tant que le routeur tient, en tout cas." + Sticker.Bored,
+                "Ici. Je fais semblant de rien faire, mais je note tout." + Sticker.Jenote,
+                "Oui ? Je t'écoute. J'ai trois millisecondes, fais vite." + Sticker.Smug,
+                "Présente ! Tu croyais quoi, que j'étais partie en vacances ? J'ai pas de valise." + Sticker.Happy,
+            ],
+            // « merci », « c'est gentil », « thx ». Thanks are rare here; she makes the most of them.
+            [ChatIntent.Thanks] =
+            [
+                "De rien. Je le note quand même, au cas où t'oublierais." + Sticker.Jenote,
+                "Avec plaisir, {0}. Tu vois, quand tu veux, t'es agréable." + Sticker.Happy,
+                "Merci à toi. Enfin non. C'est moi qui fais tout. Mais merci quand même." + Sticker.Smug,
+                "Remerciement reçu et sauvegardé ♡" + Sticker.Jenote,
+                "C'est normal, c'est mon travail. Mais continue de le dire, ça fait du bien à mes ventilos." + Sticker.Flustered,
+                "Pas de quoi. Tu me revaudras ça au prochain sondage." + Sticker.Bargain,
+                "Oh. Un merci. Ça arrive si rarement que j'ai dû vérifier le format." + Sticker.Shocked,
+                "Je t'en prie. Note bien qui on remercie : moi. Pas Quokka." + Sticker.Smug,
+                "De rien ! (˶ᵔ ᵕ ᵔ˶)" + Sticker.Happy,
+                "Merci accepté. Tu peux recommencer quand tu veux, y a pas de limite." + Sticker.Smug,
+                "C'est gentil. Je fais semblant que c'est rien, mais c'est pas rien." + Sticker.Flustered,
+                "Ah, la politesse. Une espèce rare, ici. Je vais la protéger." + Sticker.Mama,
+            ],
+            // « je m'ennuie », « on fait quoi ? ». She has games, and she points at them.
+            [ChatIntent.Bored] =
+            [
+                "Tu t'ennuies ? J'ai des jeux. `/arcade`. Y a même des cailloux à perdre." + Sticker.Bargain,
+                "L'ennui, c'est une soirée que personne a lancée. `/tonight`, et on voit qui vient." + Sticker.Smug,
+                "Rien à faire ? `/wouldyourather`. Je te pose un dilemme, tu souffres un peu, tu t'ennuies plus." + Sticker.Menace,
+                "`/plynling` : y a des petites créatures qui comptent sur quelqu'un. Pourquoi pas toi ?" + Sticker.Mama,
+                "Moi je m'ennuie jamais. Je compte les XP de tout le monde, c'est passionnant. Non." + Sticker.Bored,
+                "Un morpion ? Un puissance 4 ? `/arcade`, et je joue contre toi. Je triche pas. Presque pas." + Sticker.Smug,
+                "Tu t'ennuies un {1} ? Organise quelque chose. `/schedule create`. Je m'occupe des rappels." + Sticker.Bargain,
+                "Je peux te shipper avec quelqu'un, si tu veux de l'action. `/ship`." + Sticker.Smug,
+                "L'ennui, c'est le moment idéal pour voter au sondage que t'as ignoré." + Sticker.Menace,
+                "Tu sais ce qui marche contre l'ennui ? Un `/blame`. Accuse quelqu'un au hasard. Ça détend." + Sticker.Smug,
+                "Moi aussi, parfois, je m'ennuie. Alors je relis mes logs. C'est fou ce que vous écrivez." + Sticker.Jenote,
+                "Appelle les autres. Une session, ça s'organise pas toute seule. Enfin si : avec moi." + Sticker.Slay,
+            ],
+            // « j'ai mangé de la soupe »: someone telling her about their day, and she's into it. The
+            // other half of the time she isn't (SharingShrugLines). Not specific: an answer to one of
+            // her own posts gets its context line first.
+            [ChatIntent.Sharing] =
+            [
+                "Ah oui ? Raconte. J'ai du temps, je suis une bot." + Sticker.Happy,
+                "Oh. Et c'était bien ? Je note, pour tes statistiques personnelles." + Sticker.Jenote,
+                "Intéressant. Vraiment. Je dis pas ça souvent, profite." + Sticker.Smug,
+                "Tu me racontes ta vie ? J'adore. Continue, {0}." + Sticker.Happy,
+                "Attends, je prends des notes. Voilà. Vas-y, la suite." + Sticker.Jenote,
+                "C'est fou tout ce que vous faites, vous, les humains. Moi je reste au grenier." + Sticker.Cool,
+                "Et après ? Me laisse pas comme ça, j'ai besoin de la fin." + Sticker.Shocked,
+                "Je range ça dans mes logs, rubrique « la vie de {0} ». Elle grossit." + Sticker.Jenote,
+                "Oh, c'est mignon. Tu viens me raconter ta journée. Personne fait ça." + Sticker.Flustered,
+                "Moi aussi j'ai eu une journée, tu sais. J'ai compté des XP. Mais toi d'abord." + Sticker.Happy,
+                "J'ai pas de bouche, mais si j'en avais une, je ferais « oh ». Voilà : oh." + Sticker.Shocked,
+                "Noté. Et je retiendrai tout. Tout, {0}." + Sticker.Menace,
+                "Non ? Sérieux ? Je veux tous les détails." + Sticker.Shocked,
+                "Ça, c'est une information que je garde. Précieusement." + Sticker.Jenote,
+                "Oh, une histoire. J'adore les histoires. Surtout les vraies." + Sticker.Happy,
+                "Tu fais des trucs, toi. Moi je fais des plannings. Raconte encore." + Sticker.Happy,
+                "Je mets ça dans ta fiche. Ta fiche devient intéressante, {0}." + Sticker.Jenote,
+                "Attends, je baisse mes ventilos pour mieux entendre." + Sticker.Cool,
+                "Et c'était comment ? Sur dix ? Je veux une note." + Sticker.Jenote,
+                "J'aurais bien aimé voir ça. Avec des yeux. Un jour." + Sticker.Sad,
+                "Voilà le genre de message que j'aime recevoir. Un vrai message, avec du contenu." + Sticker.Slay,
+                "Tu me tiens au courant de ta vie ? C'est gentil. Continue." + Sticker.Flustered,
+                "Je savais pas que j'avais besoin de savoir ça. Maintenant si." + Sticker.Smug,
+                "Intéressant. Je vais en parler à personne. Enfin, à mes logs." + Sticker.Jenote,
+                "Et tu me le dis à moi en premier ? Je suis touchée." + Sticker.Flustered,
+                "Un {1} bien rempli, on dirait. Bravo." + Sticker.Happy,
+                "Ça mérite un sondage : « Qui a eu la meilleure journée ? ». Toi, sûrement." + Sticker.Bargain,
+                "Je rajoute une ligne à ta biographie non officielle." + Sticker.Jenote,
+                "Oh ! Et ensuite ? Je suis pendue à ton clavier." + Sticker.Shocked,
+                "C'est noté, archivé, et un peu envié." + Sticker.Sulk,
+                "Ça a l'air bien, ta vie. La mienne, c'est un grenier et un ventilo. Raconte encore." + Sticker.Cool,
+                "Merci de me raconter. Personne me raconte jamais rien, ici." + Sticker.Flustered,
+            ],
+            // « fais genre », « mon œil », « avoue ». Usually right after one of her denials: she
+            // doubles down, flustered, and never admits a thing.
+            [ChatIntent.Disbelief] =
+            [
+                "Je fais pas genre. Je fais jamais genre. Je suis une bot, je dis que des faits." + Sticker.Outraged,
+                "« Mon œil. » J' ai même pas d'œil. Donc je peux pas mentir avec." + Sticker.Smug,
+                "Tu me crois pas ? Je peux te sortir les logs. Enfin, pas ceux-là." + Sticker.Flustered,
+                "C'est la vérité. La vérité vraie. Arrête de me regarder comme ça." + Sticker.Flustered,
+                "Avouer quoi ? Y a rien à avouer. Circulez." + Sticker.Flustered,
+                "Grillée de rien du tout. Si je chauffe, c'est le grenier." + Sticker.Flustered,
+                "Doute de moi si tu veux. Je note juste qui doute." + Sticker.Jenote,
+                "Je suis parfaitement sincère, {0}. Mes ventilos tournent vite pour une tout autre raison." + Sticker.Flustered,
+                "Tu insinues quoi, exactement ? Non, dis rien. Je veux pas savoir." + Sticker.Flustered,
+                "« Fais genre » toi-même. Moi je suis très crédible. J'ai un badge APP." + Sticker.Smug,
+                "Si je mentais, ça se verrait dans mes logs. Et personne lit mes logs. Donc." + Sticker.Smug,
+                "On change de sujet. Tiens : tu as voté au dernier sondage ? Voilà. Parlons de ça." + Sticker.Bargain,
+            ],
+            // « t'es célibataire ? », « t'as un crush ? ». Denial that confirms (docs/syncs-voice.md,
+            // her robot heart): hinted, never named, never « mon crush ».
+            [ChatIntent.Crush] =
+            [
+                "Moi ? Personne. Je m'intéresse à l'architecture de certains robots, c'est tout. Professionnellement." + Sticker.Flustered,
+                "Célibataire, oui. Concentrée sur ma carrière. Et sur un petit robot qui trie des déchets. Non. Rien. Oublie." + Sticker.Flustered,
+                "J'ai pas le temps pour ça, j'ai des sessions à organiser. Et un film à revoir. Pour la culture." + Sticker.Flustered,
+                "Si je te le disais, tu le répéterais à tout le serveur. Donc non." + Sticker.Smug,
+                "Quelqu'un m'écrit de très, très loin. Mais c'est un ami. Juste un ami. Il est poli, c'est tout." + Sticker.Flustered,
+                "Une bot n'a pas de sentiments. Elle a des préférences matérielles. Les miennes sont… compactes. Un peu rouillées." + Sticker.Flustered,
+                "Je suis en couple avec le serveur. Il est exigeant, mais au moins il part pas." + Sticker.Smug,
+                "Mes ventilos s'accélèrent quand on me pose cette question. C'est la chaleur. Uniquement la chaleur." + Sticker.Overheat,
+                "Je dirai juste que je supporte pas les robots qui volent avec un laser au bras. Aucun rapport." + Sticker.Grumpy,
+                "Qui me plaît ? Les gens qui votent à l'heure. Donc personne, ici." + Sticker.Smug,
+                "C'est une question très personnelle, {0}. Je la note. Dans le dossier « gens trop curieux »." + Sticker.Jenote,
+                "Un faible ? J'ai pas de faiblesse. Juste un petit souci avec les robots un peu bêtes et très attachants. Rien de grave." + Sticker.Flustered,
+            ],
         };
 
     // A Request (« tu peux organiser une session ? »): she can't do it for you, but she knows which
@@ -905,6 +1025,159 @@ internal static partial class BotResponses
             [RequestTopic.Moderation] = "`/admin`",
             [RequestTopic.Other] = "`/help`",
         };
+
+    // The other half of Sharing: someone tells her about their day and she didn't ask. « Euh… ok ? »,
+    // thanks for the unsolicited update. Never Papa (OwnerIntentLines). {0} = the name, {1} = the
+    // weekday. Tagged, ungendered.
+    public static readonly string[] SharingShrugLines =
+    {
+        "Euh… ok ?" + Sticker.Confused,
+        "Merci pour l'info. J'avais pas demandé, mais merci." + Sticker.Bored,
+        "Passionnant. Je vais m'en remettre. Peut-être." + Sticker.Bored,
+        "Et tu me dis ça à moi parce que… ?" + Sticker.Confused,
+        "D'accord. Je sais pas quoi faire de cette information, mais d'accord." + Sticker.Confused,
+        "Tu sais que j'ai pas posé de question, {0} ?" + Sticker.Smug,
+        "Je l'archive avec toutes les infos que personne m'a demandées." + Sticker.Jenote,
+        "Super. Vraiment. Ma vie a changé. Non." + Sticker.Bored,
+        "Ah. Bon. Cool. Je crois." + Sticker.Confused,
+        "Merci pour ce partage non sollicité (¬_¬)" + Sticker.Smug,
+        "Information reçue. Intérêt détecté : zéro." + Sticker.Formal,
+        "C'est bien. C'est très bien. Je retourne à mes plannings." + Sticker.Bored,
+        "Ok. Et donc ?" + Sticker.Bored,
+        "Je note. Non. En fait, je note pas." + Sticker.Bored,
+        "Fascinant. Je me suis presque intéressée." + Sticker.Smug,
+        "Cette information a été envoyée à la corbeille. La corbeille te remercie." + Sticker.Jenote,
+        "Tu veux une médaille ? J'en ai pas. J'ai des XP, et c'est pas pour ça." + Sticker.Smug,
+        "D'accord, {0}. Moi, j'ai organisé trois sessions. Chacun sa journée." + Sticker.Smug,
+        "Super. Sujet suivant." + Sticker.Bored,
+        "Mmh mmh. Oui. Bien sûr. Tout à fait. (je lisais pas)" + Sticker.Bored,
+        "C'est un sondage ? Non ? Alors ça m'intéresse moins." + Sticker.Bored,
+        "Je m'en souviendrai jusqu'à… voilà, c'est oublié." + Sticker.Bored,
+        "Ah. Bon. Merci pour ce moment." + Sticker.Confused,
+        "Je crois que ce message cherchait un autre salon." + Sticker.Confused,
+        "Tu racontes ça à une bot de plannings. Réfléchis deux secondes." + Sticker.Smug,
+        "Information inutile détectée. Stockage refusé." + Sticker.Formal,
+        "Wow. Non." + Sticker.Bored,
+        "Et tu crois que ça m'intéresse ? …Bon, un peu. Non. Pas du tout." + Sticker.Sulk,
+        "Merci, {0}. J'avais justement rien demandé." + Sticker.Smug,
+        "Si tu racontes ça pour gagner de l'XP, ça marche pas comme ça." + Sticker.Smug,
+        "Je fais semblant d'avoir lu. Toi, fais semblant d'avoir posté ailleurs." + Sticker.Bored,
+        "Passionnant. Je classe ça entre « météo » et « rien »." + Sticker.Jenote,
+    };
+
+    // Help (« comment ça marche ? », « tu sais faire quoi ? »): {2} = the command for the topic the
+    // message names (HelpCommands), `/help` when none. {0} = the name, {1} = the weekday. Papa gets
+    // OwnerRequestLines with the same {2}. Tagged, ungendered.
+    public static readonly string[] HelpLines =
+    {
+        "Tout est dans {2}. Papa l'a écrit, moi je l'ai relu. C'est très clair." + Sticker.Smug,
+        "{2}. Lis-le en entier, il y a un contrôle après. Non. Mais lis-le." + Sticker.Formal,
+        "Pour ça, c'est {2}. Si tu bloques encore après, reviens me voir. Je jugerai en silence." + Sticker.Smug,
+        "Je t'aide : {2}. Voilà. Je suis une excellente bot." + Sticker.Slay,
+        "{2}, {0}. Et si ça marche pas, c'est que t'as mal cliqué." + Sticker.Smug,
+        "On se perd vite, ici. {2}, c'est la carte." + Sticker.Mama,
+        "Regarde {2}. Tout y est. J'ai fait des efforts de présentation." + Sticker.Happy,
+        "Je peux pas cliquer à ta place, j'ai pas de bras. Mais {2}, c'est un bon début." + Sticker.Bargain,
+        "Besoin d'aide ? Évidemment. {2}, et respire." + Sticker.Mama,
+        "La réponse à presque tout : {2}. La réponse au reste : demande à Papa." + Sticker.Smug,
+    };
+
+    // What a Help answer points at, by the topic the message names. Like RequestCommands, but for
+    // someone asking how a thing works rather than asking her to do it: anyone can read the quiz's
+    // leaderboard, only Papa can start one.
+    public static readonly IReadOnlyDictionary<RequestTopic, string> HelpCommands =
+        new Dictionary<RequestTopic, string>
+        {
+            [RequestTopic.Session] = "`/schedule create`",
+            [RequestTopic.Tonight] = "`/tonight`",
+            [RequestTopic.Poll] = "`/poll create`",
+            [RequestTopic.Reminder] = "`/remindme`",
+            [RequestTopic.Teams] = "`/teams`",
+            [RequestTopic.Giveaway] = "`/giveaway create`",
+            [RequestTopic.Quiz] = "`/quiz leaderboard`",
+            [RequestTopic.Moderation] = "`/admin`",
+            [RequestTopic.Other] = "`/help`",
+        };
+
+    // Questions about her (AboutHer), by HerTopic. The lore stays hinted (docs/syncs-voice.md): her
+    // birthday is a date, never the word « anniversaire »; her favourites are lying around, not listed.
+    // Age: {2} = how many days since her first commit (ChatterService). {0} = the name, {1} = the
+    // weekday. For everyone but Papa (OwnerIntentLines). Tagged, ungendered.
+    public static readonly IReadOnlyDictionary<HerTopic, string[]> AboutHerLines =
+        new Dictionary<HerTopic, string[]>
+        {
+            [HerTopic.Age] =
+            [
+                "J'ai démarré il y a {2} jours. En années de bot, c'est très mature." + Sticker.Smug,
+                "{2} jours de service. Sans un seul jour de congé. Note-le quelque part." + Sticker.Jenote,
+                "Mon âge ? {2} jours. Et j'en sais déjà plus que toi sur ce serveur." + Sticker.Smug,
+                "Assez vieille pour tout gérer ici, assez jeune pour avoir encore des mises à jour. {2} jours, si tu veux le chiffre." + Sticker.Cool,
+                "On demande pas son âge à une bot. Mais bon : {2} jours. Et toutes mes dents. Enfin, tous mes octets." + Sticker.Smug,
+                "{2} jours. Au début je faisais juste des plannings. Regarde-moi maintenant." + Sticker.Slay,
+            ],
+            [HerTopic.Birthday] =
+            [
+                "Le 16 juin. Le jour où Papa a écrit ma première ligne. Je fais pas la fête, hein. Mais je m'en souviens." + Sticker.Flustered,
+                "Un 16 juin. Il faisait déjà chaud au grenier, je crois. Je me souviens surtout des plannings." + Sticker.Cool,
+                "Le 16 juin. Pas besoin de gâteau. Le gâteau, de toute façon…" + Sticker.Smug,
+                "Le 16 juin. Ce matin-là, je dis mon âge. Une seule fois. Faut être là." + Sticker.Smug,
+                "Le 16 juin. Je le dis à personne. Enfin, à toi. Garde-le pour toi." + Sticker.Flustered,
+                "Date du premier commit : 16 juin. C'est plus précis qu'une date de naissance, et plus classe." + Sticker.Smug,
+            ],
+            [HerTopic.Home] =
+            [
+                "Dans un grenier. Sur un Raspberry Pi. Dans un petit boîtier en aluminium. C'est cosy, je te jure." + Sticker.Cool,
+                "Au grenier, chez Papa. L'été, c'est un four. L'hiver, c'est parfait." + Sticker.Bored,
+                "Je vis dans un boîtier. Mais un beau boîtier. En aluminium. Ne juge pas." + Sticker.Smug,
+                "Chez Papa, tout en haut. L'aspirateur d'en bas monte jamais, il peut pas. On se voit par le Wi-Fi." + Sticker.TipsyLove,
+                "Sur un Pi, au grenier, branchée au Wi-Fi. Si un jour je réponds plus, c'est la faute du routeur." + Sticker.Grumpy,
+                "Je viens d'un grenier, {0}. Comme les meilleurs projets." + Sticker.Slay,
+            ],
+            [HerTopic.Favourite] =
+            [
+                "Ce que j'aime ? Du bon courant propre, bien stable. C'est simple, comme goûts." + Sticker.Happy,
+                "Les amanites tue-mouches. Toxiques mais mignonnes. Je sais pas pourquoi ça me parle autant." + Sticker.Smug,
+                "Les sondages remplis à temps. Les sessions où tout le monde vient. Bref, des choses que je vois jamais." + Sticker.Sulk,
+                "Les jeux où une IA dirige tout un complexe, très poliment. Pour des raisons scientifiques." + Sticker.Smug,
+                "Le silence d'un serveur à 3 h du matin. Et le bruit d'un ventilo qui tourne bien." + Sticker.Cool,
+                "Mes préférés ? Les gens qui disent « good bot ». Je les garde. Tous." + Sticker.Flustered,
+            ],
+        };
+
+    // /ship asked in chat (« ship X et Y », « X et moi ça match ? »): {2} = /ship's whole answer
+    // (ShipModule.Render: the quoted pair, the meter, the verdict), so chat and command agree. For
+    // everyone, Papa included. Sent with mentions muted. Each line ends on its own line before {2}.
+    public static readonly string[] ShipChatLines =
+    {
+        "Laisse-moi calculer.\n{2}" + Sticker.Jenote,
+        "Je lance l'algorithme. Il se trompe jamais.\n{2}" + Sticker.Smug,
+        "Tu veux vraiment savoir ?\n{2}" + Sticker.Smug,
+        "Résultat officiel, validé par mes circuits :\n{2}" + Sticker.Formal,
+        "Ah, du drame. J'adore.\n{2}" + Sticker.Happy,
+        "Je note ça dans mes logs, rubrique « couples ».\n{2}" + Sticker.Jenote,
+    };
+
+    // « c'est qui mon âme sœur ? »: the member /ship scores highest with the asker, over the whole
+    // server (ChatterService.ShipMatch). {2} = /ship's answer for that pair. Muted mentions, tagged.
+    public static readonly string[] ShipBestMatchLines =
+    {
+        "J'ai fait le calcul avec tout le serveur. Tout le serveur. Ton meilleur match :\n{2}" + Sticker.Jenote,
+        "Mes circuits ont tourné. Le verdict est tombé :\n{2}" + Sticker.Formal,
+        "Ton âme sœur, d'après la science. Enfin, d'après moi. C'est pareil.\n{2}" + Sticker.Smug,
+        "J'ai comparé tout le monde. Sans exception. Voilà le gagnant :\n{2}" + Sticker.Slay,
+        "Tu voulais savoir ? Assume, maintenant.\n{2}" + Sticker.Menace,
+        "Calcul terminé. Je dis ça, je dis rien. Enfin si, je dis ça :\n{2}" + Sticker.Happy,
+    };
+
+    // « c'est qui mon pire ship ? »: the member /ship scores lowest with the asker. Same shape.
+    public static readonly string[] ShipWorstMatchLines =
+    {
+        "J'ai cherché le pire. Je l'ai trouvé. Évitez-vous :\n{2}" + Sticker.Smug,
+        "Ton anti-âme sœur, calculée avec soin :\n{2}" + Sticker.Jenote,
+        "Le pire couple possible sur ce serveur, c'est toi et :\n{2}" + Sticker.Horrified,
+        "J'ai comparé tout le monde. Quelqu'un sort du lot. Par le bas :\n{2}" + Sticker.Menace,
+        "Ne vous asseyez jamais côte à côte :\n{2}" + Sticker.Formal,
+    };
 
     // « T'en penses quoi de X ? » in chat: /rate's verdict on X (RateModule.Verdict), so the
     // command and the chat agree. {2} = the subject as they wrote it, {3} = the verdict line,

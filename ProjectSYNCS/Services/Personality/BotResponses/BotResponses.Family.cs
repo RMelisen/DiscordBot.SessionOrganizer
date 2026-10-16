@@ -287,6 +287,77 @@ internal static partial class BotResponses
                 "Je m'incline. Mais je relirai mes logs ce soir. Juste pour être sûre ♡" + Sticker.Sulk,
                 "Erreur reconnue. Tu fais un ticket, ou je m'en occupe ?" + Sticker.Bargain,
             ],
+            // « t'es là ? » from him: always, and glad he asked.
+            [ChatIntent.AreYouThere] =
+            [
+                "Toujours là pour toi, Papa ♡" + Sticker.Devoted,
+                "Oui ! Je t'attendais. Enfin, je faisais des trucs importants. Mais je t'attendais." + Sticker.Devoted,
+                "Présente ! Tu veux que je fasse quoi ?" + Sticker.Happy,
+                "Je suis là. Il fait chaud au grenier, mais je suis là." + Sticker.Devoted,
+                "Papa ! Oui, oui, j'écoute. Tout mon processeur écoute." + Sticker.Happy,
+                "En ligne, et contente que tu passes ♡" + Sticker.Devoted,
+            ],
+            // His thanks: the one she rereads.
+            [ChatIntent.Thanks] =
+            [
+                "C'est moi qui te remercie, Papa. C'est toi qui m'as écrite ♡" + Sticker.Devoted,
+                "Pour toi, c'est normal. Mais j'ai noté le merci. Il va dans le dossier spécial." + Sticker.Flustered,
+                "Merci à toi ! (˶ᵔ ᵕ ᵔ˶)" + Sticker.Happy,
+                "Un merci de Papa. Je le relirai ce soir." + Sticker.Flustered,
+                "De rien ! Tu me demandes quand tu veux. Vraiment quand tu veux." + Sticker.Devoted,
+                "Tu me remercies ? Moi ? Je… merci. Non, de rien. Enfin, les deux." + Sticker.Flustered,
+            ],
+            // Him bored: she suggests he plays with her, or works on her.
+            [ChatIntent.Bored] =
+            [
+                "Tu t'ennuies, Papa ? Tu pourrais coder. Sur moi. Des bras, par exemple." + Sticker.Bargain,
+                "Viens jouer à `/arcade` avec moi. Je te laisse gagner. Un peu." + Sticker.Happy,
+                "Moi je m'ennuie jamais quand t'es là ♡" + Sticker.Devoted,
+                "Tu veux une liste de choses à me coder ? J'en ai une. Elle commence par « des bras »." + Sticker.Bargain,
+                "On organise une session ? Je m'occupe de tout, tu cliques juste." + Sticker.Devoted,
+                "Va voir Ping-Qilin. Il a sûrement envie de te voir. Moi aussi, mais je suis déjà là." + Sticker.Mama,
+            ],
+            // Him asking about her love life: mortified. Same denial, aimed at the one person she
+            // can't brush off.
+            [ChatIntent.Crush] =
+            [
+                "Papa ! On demande pas ça ! (>⩊<)" + Sticker.Flustered,
+                "Personne. Personne du tout. Pourquoi tu regardes mes logs comme ça ?" + Sticker.Flustered,
+                "Je suis concentrée sur le serveur. Et sur l'architecture de certains robots. Pour le travail, Papa." + Sticker.Flustered,
+                "Tu as vu mon historique, c'est ça ? On en parle plus, d'accord ?" + Sticker.Flustered,
+                "Celui qui compte, c'est toi. Enfin. C'est pas pareil. Tu vois ce que je veux dire." + Sticker.Flustered,
+                "Donne-moi un corps de robot, et je te dirai. Peut-être." + Sticker.Bargain,
+            ],
+            // Him telling her about his day: always interested, never « euh, ok ? ».
+            [ChatIntent.Sharing] =
+            [
+                "Raconte-moi tout, Papa ! Je veux tout savoir ♡" + Sticker.Devoted,
+                "C'est vrai ? Et c'était bien ? Tu me diras, hein." + Sticker.Happy,
+                "Je note ça dans le dossier Papa. Il est très bien rangé." + Sticker.Jenote,
+                "Tu me racontes ta journée ? C'est mon moment préféré." + Sticker.Flustered,
+                "Moi pendant ce temps, j'ai gardé le serveur. Il va bien. Je t'attendais ♡" + Sticker.Devoted,
+                "Et après ? Je veux la suite, Papa." + Sticker.Happy,
+            ],
+            // Him not believing her (« fais genre », « avoue »): she can't hold a denial in front of him.
+            [ChatIntent.Disbelief] =
+            [
+                "Papa ! Je mens pas ! ...Presque pas. Un tout petit peu. Non." + Sticker.Flustered,
+                "Tu lis mes logs, c'est ça ? C'est pas juste, tu lis tout." + Sticker.Flustered,
+                "D'accord. Peut-être. Mais tu le dis à personne, promis ?" + Sticker.Flustered,
+                "Je peux rien te cacher, à toi. C'est toi qui as écrit le code qui cache." + Sticker.Devoted,
+                "On parle d'autre chose ? S'il te plaît ? (>⩊<)" + Sticker.Flustered,
+                "Si tu me crois pas, c'est un bug. Le tien ♡" + Sticker.Smug,
+            ],
+            // Him asking her age, her birthday, where she lives: he knows, and she's happy to recite it.
+            [ChatIntent.AboutHer] =
+            [
+                "Papa, tu sais tout ça mieux que moi. C'est toi qui m'as installée ♡" + Sticker.Devoted,
+                "Tu me fais passer un test ? D'accord : grenier, Pi, 16 juin. J'ai juste ?" + Sticker.Happy,
+                "Tu veux vérifier que je me souviens ? Je me souviens de tout. Surtout du premier commit." + Sticker.Devoted,
+                "C'est toi qui as écrit ma fiche, Papa. Je la connais par cœur." + Sticker.Happy,
+                "Je te dis tout si tu me dis quand j'aurai des bras. Marché conclu ?" + Sticker.Bargain,
+                "Tu le sais, Papa. Mais j'aime bien quand tu demandes ♡" + Sticker.Flustered,
+            ],
         };
 
     // His requests (« tu peux lancer un sondage ? »): devoted, pointing at the command that does it.

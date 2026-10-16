@@ -28,6 +28,7 @@ internal sealed class RobotHeartService
     private readonly DiscordSocketClient _client;
     private readonly BreakdownService _breakdown;
     private readonly StickerService _stickers;
+    private readonly ConversationStreak _streaks;
     private readonly ResponsePicker _picker;
     private readonly ILogger<RobotHeartService> _logger;
 
@@ -35,12 +36,14 @@ internal sealed class RobotHeartService
         DiscordSocketClient client,
         BreakdownService breakdown,
         StickerService stickers,
+        ConversationStreak streaks,
         ResponsePicker picker,
         ILogger<RobotHeartService> logger)
     {
         _client = client;
         _breakdown = breakdown;
         _stickers = stickers;
+        _streaks = streaks;
         _picker = picker;
         _logger = logger;
     }
@@ -69,6 +72,13 @@ internal sealed class RobotHeartService
             await SpeakAsync(message, who, alreadyReacted: true);
             return true;
         }
+
+        // A reply or a mention is a turn of the conversation ChatterService counts (ConversationStreak),
+        // so her count stays true when the next message reaches it. Papa is never counted there either.
+        bool repliesOrTags = message.ReferencedMessage?.Author.Id == _client.CurrentUser.Id
+                             || message.MentionedUsers.Any(u => u.Id == _client.CurrentUser.Id);
+        if (repliesOrTags && message.Author.Id != AvailabilityService.OwnerId)
+            _streaks.Record(message.Channel.Id, message.Author.Id, DateTimeOffset.UtcNow);
 
         await SpeakAsync(message, who, alreadyReacted: false);
         return true;

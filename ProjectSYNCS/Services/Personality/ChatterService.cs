@@ -26,8 +26,9 @@ internal sealed class ChatterService
     private readonly UnansweredLog _unanswered;
     private readonly ILogger<ChatterService> _logger;
 
-    // Who has been going back and forth with her, per channel (ConversationStreak). In memory.
-    private readonly ConversationStreak _streaks = new();
+    // Who has been going back and forth with her, per channel (ConversationStreak). In memory, and
+    // shared with RobotHeartService, whose answers to her are turns of the same conversation.
+    private readonly ConversationStreak _streaks;
 
     // Fact lines (her records, quoted): at most one per person every FactCooldown. Its own gate,
     // shared with nothing else.
@@ -40,6 +41,9 @@ internal sealed class ChatterService
 
     // On the Pi, half of her « ça va ? » answers quote her real temperature.
     private const double TemperatureChance = 0.5;
+
+    // Someone telling her about their day: half the time she is interested, half the time « euh, ok ? ».
+    private const double SharingInterestChance = 0.5;
 
     // Rodhengard, the owner: gets compliments instead of roasts.
     private const ulong OwnerId = AvailabilityService.OwnerId;
@@ -76,9 +80,11 @@ internal sealed class ChatterService
         PiHealthService health,
         IServiceProvider services,
         UnansweredLog unanswered,
+        ConversationStreak streaks,
         ILogger<ChatterService> logger)
     {
         _unanswered = unanswered;
+        _streaks = streaks;
         _glitch = glitch;
         _client = client;
         _breakdown = breakdown;
@@ -197,8 +203,11 @@ internal sealed class ChatterService
             }
         }
         // « syncs, ça va ? » is addressing her even without a tag: a specific intent is answered
-        // as such. Not a generic question or a low-effort word: she may not be the one asked.
-        else if (TryIntent(MessageCues.ReadIntent(content), message, isOwner, out var intentPick))
+        // as such. Not a generic question or a low-effort word: she may not be the one asked. Nor
+        // when her name is only mentioned (« @Luca, discute avec Syncs quand tu peux »): that
+        // « tu » is Luca.
+        else if (MessageCues.AddressesHer(content, _client.CurrentUser.Id)
+                 && TryIntent(MessageCues.ReadIntent(content), message, isOwner, out var intentPick))
         {
             what = "named intent";
             pick = intentPick;
@@ -345,6 +354,8 @@ internal sealed class ChatterService
                 (ownerPick, ownerWhat) = (IntentPick.Of(BotResponses.OwnerMeanReplies, AnswerKinds.PapaMean), "and was mean about it");
             else if (TryIntent(MessageCues.ReadIntent(content), message, isOwner: true, out var twin))
                 (ownerPick, ownerWhat) = (twin, "his intent twin");
+            else if (MessageCues.ReadIntent(content) == ChatIntent.Sharing)
+                (ownerPick, ownerWhat) = (SharingPick(isOwner: true), "his news");
             else
                 (ownerPick, ownerWhat) = (IntentPick.Of(BotResponses.OwnerGreetings, AnswerKinds.PapaGreeting), "greeting him");
 
@@ -391,6 +402,8 @@ internal sealed class ChatterService
             // TataReplies: a mention is Tata *calling her over*, so she answers as
             // summoned rather than as mid-conversation — the same split Papa has.
             pick = IntentPick.Of(BotResponses.TataGreetings, AnswerKinds.Tata);
+        else if (intent == ChatIntent.Sharing)
+            (pick, what) = (SharingPick(isOwner: false), "mention sharing");
         else if (intent == ChatIntent.Question)
             (pick, what) = (IntentPick.Of(BotResponses.IntentLines[ChatIntent.Question], AnswerKinds.Intent(ChatIntent.Question)),
                 "mention question");
@@ -461,6 +474,10 @@ internal sealed class ChatterService
         // What the reply says, then what it answers, then its mood. A mean reply skips the first
         // two: it gets roasted (or, from Papa, lands), whatever it was about.
         var intent = mean ? ChatIntent.None : MessageCues.ReadIntent(content);
+        // A sticker alone has no text to read: it says as little as an emote alone, which reads as
+        // LowEffort, so it is answered the same way rather than roasted as if unread.
+        if (intent == ChatIntent.None && string.IsNullOrWhiteSpace(content) && message.Stickers.Count > 0)
+            intent = ChatIntent.LowEffort;
 
         IntentPick pick;
         string what = "reply comeback";
@@ -492,6 +509,10 @@ internal sealed class ChatterService
         else if (greeting)
         {
             pick = IntentPick.Of(BotResponses.Greetings, AnswerKinds.Greeting);
+        }
+        else if (intent == ChatIntent.Sharing)
+        {
+            (pick, what) = (SharingPick(isOwner), "reply sharing");
         }
         else if (!isOwner && intent is ChatIntent.Question or ChatIntent.LowEffort)
         {
@@ -570,14 +591,33 @@ internal sealed class ChatterService
     /// <summary>
     /// The answer to a specific intent (not a generic question or a low-effort word), or false.
     /// Papa only has twins for some intents; for the others this is false and he goes on to his
-    /// own pools — except an opinion, which is the same verdict whoever asks.
+    /// own pools — except an opinion and a ship, the same verdict whoever asks, and help and
+    /// requests, which he gets in his devoted request pool.
     /// </summary>
     private bool TryIntent(ChatIntent intent, SocketUserMessage message, bool isOwner, out IntentPick pick)
     {
         pick = default;
-        if (intent is ChatIntent.None or ChatIntent.Question or ChatIntent.LowEffort) return false;
+        if (intent is ChatIntent.None or ChatIntent.Question or ChatIntent.Sharing or ChatIntent.LowEffort) return false;
 
         if (intent == ChatIntent.Opinion) return TryOpinion(message, out pick);
+        if (intent == ChatIntent.Ship) return TryShip(message, out pick);
+
+        if (intent == ChatIntent.Help)
+        {
+            // The command for what they asked about; Papa gets his devoted request pool around it.
+            var command = BotResponses.HelpCommands[MessageCues.ReadTopic(message.Content ?? string.Empty)];
+            pick = new IntentPick(isOwner ? BotResponses.OwnerRequestLines : BotResponses.HelpLines, command,
+                string.Empty, null, AnswerKinds.Intent(intent));
+            return true;
+        }
+
+        if (intent == ChatIntent.AboutHer && !isOwner)
+        {
+            var topic = MessageCues.ReadHerTopic(message.Content ?? string.Empty) ?? HerTopic.Favourite;
+            var days = topic == HerTopic.Age ? MorningGreeting.DaysOld(DateTimeOffset.UtcNow).ToString() : string.Empty;
+            pick = new IntentPick(BotResponses.AboutHerLines[topic], days, string.Empty, null, AnswerKinds.Intent(intent));
+            return true;
+        }
 
         if (intent == ChatIntent.Request)
         {
@@ -611,6 +651,17 @@ internal sealed class ChatterService
         return true;
     }
 
+    // Someone telling her about their day (« j'ai mangé de la soupe »): interested half the time
+    // (IntentLines), « euh, ok ? » the other half (SharingShrugLines). Papa always gets interest.
+    private static IntentPick SharingPick(bool isOwner)
+    {
+        var kind = AnswerKinds.Intent(ChatIntent.Sharing);
+        if (isOwner) return IntentPick.Of(BotResponses.OwnerIntentLines[ChatIntent.Sharing], kind);
+        return IntentPick.Of(Random.Shared.NextDouble() < SharingInterestChance
+            ? BotResponses.IntentLines[ChatIntent.Sharing]
+            : BotResponses.SharingShrugLines, kind);
+    }
+
     // « T'en penses quoi de X ? »: /rate's verdict on X, so chat and the command agree. « Tu préfères
     // X ou Y ? »: the side /rate ranks higher (Opinion.Prefers). The subject is the person's own words.
     private bool TryOpinion(SocketUserMessage message, out IntentPick pick)
@@ -633,6 +684,72 @@ internal sealed class ChatterService
         pick = new IntentPick(BotResponses.OpinionLines, ask.Subject, RateModule.Verdict(Rate(ask.Subject), _picker), QuotedMentions,
             AnswerKinds.Intent(ChatIntent.Opinion));
         return true;
+    }
+
+    // « ship X et Y », « X et moi ça match ? »: /ship's whole answer (ShipModule.Render), so chat and
+    // the command agree. « on irait bien ensemble ? » ships the asker with whoever « on » is; « c'est
+    // qui mon âme sœur ? » with their best match on the server (ShipMatch). A side asking for someone
+    // at random is drawn from the server, as /ship does. In a DM, or with nobody to draw or to match,
+    // there is no ship and the message goes on to the other pools.
+    private bool TryShip(SocketUserMessage message, out IntentPick pick)
+    {
+        pick = default;
+        if (ShipAsk.Read(message.Content ?? string.Empty) is not { } ask) return false;
+
+        var guild = (message.Channel as SocketGuildChannel)?.Guild;
+        var (asker, self) = (message.Author.Id, _client.CurrentUser.Id);
+        var (a, b, pool) = (ask.A, ask.B, BotResponses.ShipChatLines);
+
+        switch (ask.Kind)
+        {
+            case ShipAskKind.Us:
+                b = UsPartner(message, self);
+                break;
+            case ShipAskKind.BestMatch or ShipAskKind.WorstMatch:
+                if (guild is null || ShipMatch(guild, asker, self, best: ask.Kind == ShipAskKind.BestMatch) is not { } match)
+                    return false;
+                (b, pool) = ($"<@{match}>",
+                    ask.Kind == ShipAskKind.BestMatch ? BotResponses.ShipBestMatchLines : BotResponses.ShipWorstMatchLines);
+                break;
+        }
+
+        if (Shipping.IsRandom(a) || Shipping.IsRandom(b))
+        {
+            if (guild is null
+                || !ShipModule.TryDrawRandom(ref a, b, asker, guild.Users)
+                || !ShipModule.TryDrawRandom(ref b, a, asker, guild.Users))
+                return false;
+        }
+
+        var answer = ShipModule.Render(a, b, asker, self, _picker, side => ShipModule.NameOf(side, guild, _client));
+        pick = new IntentPick(pool, answer, string.Empty, QuotedMentions, AnswerKinds.Intent(ChatIntent.Ship));
+        return true;
+    }
+
+    // Who « on » is in « on irait bien ensemble ? »: the person tagged (not her), else the person
+    // replied to (not her, not a bot, not the asker), else her — « toi », as /ship reads it.
+    private static string UsPartner(SocketUserMessage message, ulong selfId)
+    {
+        if (message.MentionedUsers.FirstOrDefault(u => u.Id != selfId && u.Id != message.Author.Id && !u.IsBot) is { } tagged)
+            return $"<@{tagged.Id}>";
+        if (message.ReferencedMessage?.Author is { IsBot: false } replied && replied.Id != message.Author.Id)
+            return $"<@{replied.Id}>";
+        return "toi";
+    }
+
+    // The member whose /ship score with the asker is the highest (or the lowest): every human on the
+    // server but the asker, through Shipping.Ship itself, so the answer is the one /ship gives for
+    // that pair. Ties go to the lowest id, so the same server gives the same answer. Null when nobody
+    // else is there.
+    private static ulong? ShipMatch(SocketGuild guild, ulong askerId, ulong selfId, bool best)
+    {
+        var scored = guild.Users
+            .Where(u => !u.IsBot && u.Id != askerId)
+            .Select(u => (u.Id, Shipping.Ship("moi", $"<@{u.Id}>", askerId, selfId, OwnerId, BotResponses.TataId).Percent))
+            .OrderBy(s => best ? -s.Percent : s.Percent)
+            .ThenBy(s => s.Id)
+            .ToList();
+        return scored.Count == 0 ? null : scored[0].Id;
     }
 
     // Which of her own posts a reply answers: one she remembered sending (HerMessages), the

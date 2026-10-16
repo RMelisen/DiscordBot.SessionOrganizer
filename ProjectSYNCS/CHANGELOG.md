@@ -3,6 +3,38 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.1.0 — 2026-10-16
+
+- She answers more of what people say to her: checking she's there (« t'es là ? », « syncs ? »),
+  thanks, boredom (she suggests her games), questions about her age, birthday, home and tastes,
+  and questions about her love life.
+- Asking how she works (« comment ça marche ? », « tu sais faire quoi ? ») gets pointed to `/help`,
+  or to the right command when the message names one.
+- « ship X et Y » or « X et moi, ça match ? » in chat gets exactly the answer `/ship` would give;
+  so do « on irait bien ensemble ? » and « compatibilité entre X et Y ».
+- Asking her opinion of two people (« tu penses quoi de @A et @B ? ») ships them, instead of rating
+  the word « et ».
+- Quoted words (« il a écrit « je t'aime » à sa copine ») are no longer answered as if said to her.
+- Ask her « c'est qui mon âme sœur ? » and she runs `/ship` against everyone on the server to find
+  your best match (or your worst one, if you dare).
+- « fais genre », « mon œil » or « avoue » after one of her denials gets her doubling down.
+- Tell her about your day (« j'ai mangé de la soupe ») and she's either all ears or, just as often,
+  « euh… ok ? ».
+- A reply that's only a sticker is answered like an emote, rather than roasted as if unread.
+- Her conversation count no longer skips a message when she answers about one of her favourite
+  robots.
+- More laughs are recognised, emotes included.
+- She recognises many more ways of saying the things she already answers: more chat spellings,
+  slang and English for love, apologies, « ça va ? », goodbyes (« a+ » included), « peut-être »,
+  agreeing and disagreeing, requests, laughs and unmarked questions.
+- « ça va ? » is understood even when another question follows it in the same message.
+- Fewer misreads: « je voulais pas venir », « oups j'ai raté le boss » or « j'ai bien vu le film »
+  in a long message no longer get an apology or an agreement answer, and « quand tu peux » is no
+  longer a request.
+- When her name comes up in a message meant for someone else (another person tagged, or « parle
+  avec Syncs »), she reacts to being talked about instead of answering as if asked.
+- Words written with « œ » (« cœur ») now match their cues.
+
 ## 7.0.0 — 2026-10-16
 
 - She answers what you say, not just its mood: asking how she is (on the Pi, sometimes with her

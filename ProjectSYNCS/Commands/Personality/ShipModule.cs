@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Services;
 
@@ -34,12 +35,26 @@ public partial class ShipModule : InteractionModuleBase<SocketInteractionContext
         {
             if (Context.Guild is null)
                 return RespondAsync("Le « @random », c'est sur un serveur. Ici, il y a que toi et moi, et c'est 0 %.", ephemeral: true);
-            if (!TryDrawRandom(ref a, b) || !TryDrawRandom(ref b, a))
+            if (!TryDrawRandom(ref a, b, Context.User.Id, Context.Guild.Users)
+                || !TryDrawRandom(ref b, a, Context.User.Id, Context.Guild.Users))
                 return RespondAsync("J'ai cherché quelqu'un à tirer au sort. Il y a personne d'autre ici.", ephemeral: true);
         }
 
-        var result = Shipping.Ship(a, b, Context.User.Id, Context.Client.CurrentUser.Id,
-            AvailabilityService.OwnerId, BotResponses.TataId);
+        var content = Render(a, b, Context.User.Id, Context.Client.CurrentUser.Id, _picker,
+            side => NameOf(side, Context.Guild, Context.Client));
+        return RespondAsync(content, allowedMentions: AllowedMentions.None);
+    }
+
+    /// <summary>
+    /// /ship's whole answer for a pair: the quoted pair, the meter (computed scores only, with the
+    /// couple's name) and the verdict. Static and Context-free, so her chat answer
+    /// (ChatterService, « ship X et Y ») says exactly what the command would. <paramref name="nameOf"/>
+    /// turns a side into the name the couple's name is cut from. Send with mentions off.
+    /// </summary>
+    public static string Render(string a, string b, ulong askerId, ulong selfId, ResponsePicker picker,
+        Func<string, string> nameOf)
+    {
+        var result = Shipping.Ship(a, b, askerId, selfId, AvailabilityService.OwnerId, BotResponses.TataId);
 
         var pool = result.Kind switch
         {
@@ -56,21 +71,20 @@ public partial class ShipModule : InteractionModuleBase<SocketInteractionContext
 
         // The pick first, the format second. {0} is the percent; the fixed verdicts carry their
         // own score and ignore it.
-        var verdict = string.Format(_picker.Pick(pool), result.Percent);
+        var verdict = string.Format(picker.Pick(pool), result.Percent);
 
         // The meter only where the score is a computed one; the fixed verdicts say theirs.
         var meter = result.Kind is ShipKind.Normal or ShipKind.Papa or ShipKind.Nemesis
             ? $"{Shipping.Bar(result.Percent)} **{result.Percent} %**"
             : null;
         if (meter is not null && result.Kind == ShipKind.Normal
-            && Shipping.CoupleName(NameOf(a), NameOf(b)) is { } couple)
+            && Shipping.CoupleName(nameOf(a), nameOf(b)) is { } couple)
             meter += $" · nom de couple : **{Format.Sanitize(couple)}**";
 
         // Quoted like /rate's subject, so it never reads as her own words, and sent with mentions
         // off: a shipped @someone keeps its pill, unpinged.
         var subject = MessageFormat.Quote($"{a.Trim()} × {b.Trim()}", 2 * InputCaps.Ship + 3);
-        var content = meter is null ? $"{subject}\n{verdict}" : $"{subject}\n{meter}\n{verdict}";
-        return RespondAsync(content, allowedMentions: AllowedMentions.None);
+        return meter is null ? $"{subject}\n{verdict}" : $"{subject}\n{meter}\n{verdict}";
     }
 
     // Marks a side that was drawn, in the quoted pair, so nobody thinks the asker chose it.
@@ -78,15 +92,15 @@ public partial class ShipModule : InteractionModuleBase<SocketInteractionContext
 
     /// <summary>
     /// When <paramref name="side"/> asks for someone at random, replaces it with a member drawn
-    /// from the server: humans only, and never whoever the other side already names (« moi » or a
-    /// mention), so a draw can't turn into a self-ship. False when nobody is left to draw.
+    /// from <paramref name="members"/>: humans only, and never whoever the other side already names
+    /// (« moi » or a mention), so a draw can't turn into a self-ship. False when nobody is left to draw.
     /// </summary>
-    private bool TryDrawRandom(ref string side, string other)
+    public static bool TryDrawRandom(ref string side, string other, ulong askerId, IEnumerable<IGuildUser> members)
     {
         if (!Shipping.IsRandom(side)) return true;
 
-        var taken = Rating.Key(other, Context.User.Id).Split(' ');
-        var candidates = Context.Guild.Users
+        var taken = Rating.Key(other, askerId).Split(' ');
+        var candidates = members
             .Where(u => !u.IsBot && !taken.Contains(u.Id.ToString()))
             .ToList();
         if (candidates.Count == 0) return false;
@@ -98,13 +112,15 @@ public partial class ShipModule : InteractionModuleBase<SocketInteractionContext
     [GeneratedRegex(@"<@!?(\d+)>")]
     private static partial Regex MentionRegex();
 
-    // What the couple's name is cut from: a mention becomes the person's display name, everything
-    // else stays as typed (Shipping keeps only the letters).
-    private string NameOf(string side) =>
+    /// <summary>
+    /// What the couple's name is cut from: a mention becomes the person's display name, everything
+    /// else stays as typed (Shipping keeps only the letters).
+    /// </summary>
+    public static string NameOf(string side, SocketGuild? guild, DiscordSocketClient client) =>
         MentionRegex().Replace(side, m =>
         {
             if (!ulong.TryParse(m.Groups[1].Value, out var id)) return "";
-            IUser? user = Context.Guild?.GetUser(id) ?? Context.Client.GetUser(id);
+            IUser? user = guild?.GetUser(id) ?? client.GetUser(id);
             return user is null ? "" : BotResponses.DisplayNameFor(user);
         });
 }

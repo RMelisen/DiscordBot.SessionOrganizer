@@ -110,6 +110,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<StickerService>();
         // What her own recent posts were, so a reply to one is answered about it: in memory.
         services.AddSingleton<HerMessages>();
+        // Who is going back and forth with her: shared by ChatterService and RobotHeartService.
+        services.AddSingleton<ConversationStreak>();
         // /debug answers: the counts are in the database (transient service), the last messages
         // she couldn't answer specifically in memory (singleton).
         services.AddTransient<ChatAnswerService>();

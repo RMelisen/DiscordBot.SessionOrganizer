@@ -54,11 +54,29 @@ public static partial class Opinion
         "quoi", "qui", "ca", "ça", "ce", "cela", "tout", "rien", "ce que", "ce qui", "quoi de neuf",
     };
 
+    // What joins two sides; never a subject on its own.
+    private static readonly HashSet<string> Joiners = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "et", "ou", "avec", "x", "&", "+", "/", "vs", "contre",
+    };
+
+    // What may trail a question without being part of it: emoji, custom emotes, and her name as an
+    // address (« …ça match syncs ? 🙂 »). The patterns here and in ShipAsk are anchored to the end.
+    [GeneratedRegex(@"(?:[\s\p{So}\p{Sk}\p{Cs}‍️]|<a?:\w+:\d+>)+$", RegexOptions.CultureInvariant)]
+    private static partial Regex TrailingDecorRegex();
+
+    [GeneratedRegex(@"[\s,]+syncs?(?![\w.])(?=[\s?!.…]*$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex TrailingNameRegex();
+
+    /// <summary>The message without its trailing emoji, emotes and closing « syncs ».</summary>
+    internal static string TrimTail(string text) =>
+        TrailingNameRegex().Replace(TrailingDecorRegex().Replace(text, ""), "").Trim();
+
     /// <summary>The subject or the two sides asked about, or null when the message asks no opinion.</summary>
     public static OpinionAsk? Read(string content)
     {
         if (string.IsNullOrWhiteSpace(content)) return null;
-        var text = content.Replace('\n', ' ').Trim();
+        var text = TrimTail(content.Replace('\n', ' ').Trim());
 
         if (PreferRegex().Match(text) is { Success: true } prefer
             && Clean(prefer.Groups["a"].Value) is { } a && Clean(prefer.Groups["b"].Value) is { } b)
@@ -100,11 +118,15 @@ public static partial class Opinion
         _ => r.Score,
     };
 
-    private static string? Clean(string raw)
+    // A side as /rate would be typed: articles, her trailing name, punctuation and an edge mention
+    // dropped. Null when nothing usable is left. Shared with ShipAsk.
+    internal static string? Clean(string raw)
     {
         var s = TrailingRegex().Replace(LeadingRegex().Replace(raw.Trim(), ""), "").Trim();
         var unmentioned = EdgeMentionRegex().Replace(s, "").Trim();
-        if (unmentioned.Length > 0) s = TrailingRegex().Replace(LeadingRegex().Replace(unmentioned, ""), "").Trim();
+        // Only when what's left is a subject: « <@1> et <@2> » minus both edges is a bare « et ».
+        if (unmentioned.Length > 0 && !Joiners.Contains(unmentioned) && !NotASubject.Contains(unmentioned))
+            s = TrailingRegex().Replace(LeadingRegex().Replace(unmentioned, ""), "").Trim();
         if (s.Length == 0 || s.Length > MaxSubjectLength || NotASubject.Contains(s)) return null;
         return s;
     }

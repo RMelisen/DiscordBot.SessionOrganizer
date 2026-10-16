@@ -57,26 +57,45 @@ public enum VerdictForm
 // ChatterService can answer the content rather than the mood alone. A separate axis from the
 // mood, like the verdict: « je t'aime » is both nice and a declaration, and the declaration is
 // what she answers. Everything before Question is "specific" and outranks a reply's context;
-// Question and LowEffort only catch what nothing more precise did. In memory only: free to reorder.
+// Question, Sharing and LowEffort only catch what nothing more precise did. Free to reorder, never
+// to rename: /debug answers stores each by name (AnswerKinds.Intent).
 internal enum ChatIntent
 {
     None,
     Love,
     Apology,
     HowAreYou,
+    AreYouThere,
     WhoAreYou,
+    AboutHer,
     AreYouABot,
+    Crush,
     WhatAreYouDoing,
     Opinion,
+    Ship,
+    Help,
     Request,
+    Bored,
     Goodnight,
     Goodbye,
+    Disbelief,
     Maybe,
     YouAreRight,
     YouAreWrong,
+    Thanks,
     Laughter,
     Question,
+    Sharing,
     LowEffort,
+}
+
+// What an AboutHer question asks (BotResponses.AboutHerLines). In memory only: free to reorder.
+internal enum HerTopic
+{
+    Age,
+    Birthday,
+    Home,
+    Favourite,
 }
 
 // What a Request asks her to do, so she can point at the command that does it
@@ -1039,6 +1058,51 @@ internal static class MessageCues
         return words.Concat(GlueSpelledOutRuns(words)).Any(w => _selfNames.Contains(w));
     }
 
+    // Words that make her name a third person rather than an address: « discute avec Syncs », « dis
+    // à syncs », « la sync a planté », « je crois que syncs a bugué ».
+    private static readonly HashSet<string> _thirdPersonBefore = new()
+    {
+        "avec", "a", "de", "d", "du", "des", "pour", "sur", "contre", "par", "chez", "sans", "vers", "entre",
+        "la", "le", "les", "l", "cette", "ce", "ta", "ton", "ma", "mon", "sa", "son", "notre", "votre", "leur",
+        "que", "qu", "est", "etait", "c",
+    };
+
+    // Words that make her name the subject of a sentence about her: « syncs a posté le sondage »,
+    // « syncs qui gère ça ». Third-person verbs she is the subject of, and « qui ».
+    private static readonly HashSet<string> _thirdPersonAfter = new()
+    {
+        "a", "est", "fait", "va", "peut", "sait", "dit", "veut", "doit", "sert", "vient", "parle", "repond", "aime",
+        "pense", "gere", "poste", "organise", "compte", "lance", "plante", "bug", "bugue", "marche", "envoie",
+        "connait", "avait", "etait", "aurait", "serait", "sera", "fera", "ira", "qui",
+    };
+
+    // Any user or role mention other than her own id: « @Luca discute avec Syncs » is said to Luca.
+    private static readonly Regex _mentionId = new(@"<@(?<role>&)?!?(?<id>\d+)>", RegexOptions.Compiled);
+
+    /// <summary>
+    /// Whether a message that names her (<see cref="NamesHer"/>) is said *to* her: her name used at
+    /// least once as an address, not after « avec », « à », « la »…, and nobody else tagged. Gates
+    /// the intents on the talked-about path, where nothing else says who is being spoken to.
+    /// </summary>
+    public static bool AddressesHer(string content, ulong selfId)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return false;
+
+        foreach (Match m in _mentionId.Matches(content))
+            if (m.Groups["role"].Success || m.Groups["id"].Value != selfId.ToString()) return false;
+
+        var words = TokenizeOrdered(_link.Replace(_customEmote.Replace(_mentionId.Replace(content, " "), " "), " "))
+            .Select(Squash).ToList();
+        if (!words.Any(_selfNames.Contains)) words = GlueSpelledOutRuns(words);
+
+        for (var i = 0; i < words.Count; i++)
+            if (_selfNames.Contains(words[i]) && (i == 0 || !_thirdPersonBefore.Contains(words[i - 1]))
+                && (i + 1 == words.Count || !_thirdPersonAfter.Contains(words[i + 1])))
+                return true;
+
+        return false;
+    }
+
     // Her robot heart (docs/syncs-voice.md): who a message names, for RobotHeartService. Every
     // cue survives TokenizeOrdered ("WALL-E" and "WALL·E" become "wall", "e"); two-token cues
     // match on adjacent tokens only. "eve" counts alone (never as « EVE Online »), except where
@@ -1106,19 +1170,32 @@ internal static class MessageCues
         "je suis amoureux de toi", "je suis amoureuse de toi", "amoureux de toi", "amoureuse de toi",
         "je suis fou de toi", "je suis folle de toi",
         "epouse moi", "epouses moi", "tu veux m epouser", "veux tu m epouser", "marie toi avec moi",
-        "love you", "i love you", "love u", "ily",
+        "je veux t epouser", "on se marie", "tu veux te marier avec moi", "marions nous",
+        "sors avec moi", "tu veux sortir avec moi", "on sort ensemble",
+        "jtd", "jtadore", "jtkiffe", "je te love", "jte love", "je t apprecie", "jt apprecie",
+        "t es mon crush", "tu es mon crush", "je crush sur toi", "j ai un crush sur toi", "t es mon amour",
+        "love you", "i love you", "love u", "luv u", "luv you", "love ya", "ily", "ilysm",
     };
 
-    // « excuse » alone is left out: « c'est une excuse » is the noun.
+    // « excuse » alone is left out: « c'est une excuse » is the noun. So is a bare « je voulais
+    // pas »: « je voulais pas venir » apologises for nothing.
     private static readonly string[] _apologyPhrases =
     {
-        "pardon", "pardonne moi", "pardonnez moi", "desole", "desolee", "desoler", "dsl", "dsle",
-        "excuse moi", "excusez moi", "je m excuse", "mes excuses", "toutes mes excuses",
-        "sorry", "sry", "my bad", "my b", "mea culpa", "je voulais pas", "c etait pas voulu",
+        "pardon", "pardonne moi", "pardonnez moi", "desole", "desolee", "desoler", "dsl", "dsle", "deso",
+        "excuse moi", "excusez moi", "je m excuse", "mes excuses", "toutes mes excuses", "scuse moi",
+        "sorry", "sry", "sowwy", "my bad", "my b", "mea culpa",
+        "c est ma faute", "c ma faute", "ma faute", "je regrette", "je retire ce que j ai dit", "j ai abuse",
+        "je voulais pas te vexer", "je voulais pas te blesser", "je voulais pas dire ca",
+        "pas fait expres", "c etait pas expres", "c etait pas voulu",
     };
 
+    // « oups » apologises only as (nearly) the whole reply: « oups j'ai raté le boss » is about the
+    // boss. So does « je voulais pas », which is the whole reply at three tokens.
+    private static readonly string[] _apologyShortWords = { "oups", "oops", "oupsi", "whoops", "je voulais pas" };
+    private const int MaxShortApologyTokens = 3;
+
     // Only with a « ? » in the message: « ça va, merci » is an answer, not a question. And each
-    // phrase must close the message or be followed by one of _askingFollowers (IsAskingAfterHer):
+    // phrase must close the message or be followed by one of _askingFollowers (IsClosingAsk):
     // « ça va être long ? » and « comment tu vas faire ? » are about something else.
     private static readonly string[] _howAreYouPhrases =
     {
@@ -1126,14 +1203,24 @@ internal static class MessageCues
         "ca roule", "ca gaze", "ca gaz", "ca dit quoi", "bien ou bien", "bien ou quoi",
         "la forme", "en forme", "la peche", "tu tiens le coup", "bien dormi", "comment tu te sens",
         "tu te sens bien", "ca se passe bien", "comment ca se passe",
+        "ca baigne", "ca boume", "tu vas mieux", "tu te sens mieux",
+        "comment tu te portes", "tu te portes bien", "comment va", "comment allez vous", "vous allez bien",
+        "ta journee", "passe une bonne journee", "how are you", "how r u", "hru", "how you doing",
     };
 
-    // What may follow such a phrase when it asks after her: nothing, or one of these. No « ce »:
-    // « ça va ce soir ? » asks whether tonight works, not how she is.
+    // What may follow such a phrase when it asks after her: nothing, a « ? » (IsClosingAsk), or
+    // one of these. No « ce » and no « pour »: « ça va ce soir ? » and « ça va pour demain ? » ask
+    // whether a plan works, not how she is.
     private static readonly HashSet<string> _askingFollowers = new()
     {
         "toi", "bien", "et", "ou", "sinon", "vous", "mieux", "aujourd", "ma", "syncs", "sync", "aussi", "la",
+        "depuis", "toujours", "comment", "hein",
     };
+
+    // Words that ask after her only opening a short question (MaxHowAreYouOpenerTokens): « tranquille ? »,
+    // « bien et toi ? ». Further in, « on fait une partie tranquille ? » is about the game.
+    private static readonly HashSet<string> _howAreYouOpeners = new() { "cv", "tranquille", "tranquillou", "tranquilou", "bien", "forme" };
+    private const int MaxHowAreYouOpenerTokens = 3;
 
     private static readonly string[] _whoAreYouPhrases =
     {
@@ -1143,23 +1230,44 @@ internal static class MessageCues
         "presente toi", "presentez vous", "tu peux te presenter",
         "qui t a cree", "qui t a creee", "qui t a code", "qui t a codee", "qui t a fait", "qui t a faite",
         "qui t a programme", "qui t a programmee",
+        "qui est ton createur", "c est qui ton createur", "qui est ton pere", "c est qui ton pere",
+        "qui est ton papa", "c est qui ton papa", "t es quoi comme bot", "t es quel genre de bot", "tu es quel genre de bot",
+        "who are you", "what are you",
     };
 
     private static readonly string[] _whatAreYouDoingPhrases =
     {
-        "tu fais quoi", "tu fais koi", "tu fe quoi", "tu fais quoi de beau", "tu fous quoi", "tu glandes quoi",
-        "qu est ce que tu fais", "qu est ce que tu fous", "que fais tu", "tu fabriques quoi",
-        "quoi de neuf", "koi de neuf", "quoi de 9", "quoi de beau", "quoi de bon",
+        "tu fais quoi", "tu fais koi", "tu fe quoi", "tu fai quoi", "tu fais koa", "tu fais quoa", "tfq", "tfk",
+        "tu fais quoi de beau", "tu fous quoi", "tu glandes quoi", "tu bosses sur quoi",
+        "qu est ce que tu fais", "qu est ce que tu fous", "qu est ce que tu fabriques", "que fais tu", "tu fabriques quoi",
+        "quoi de neuf", "koi de neuf", "quoi de 9", "quoi de beau", "quoi de bon", "quoi de nouveau",
         "tu deviens quoi", "qu est ce que tu deviens", "t es occupee", "tu es occupee", "t es ou", "tu es ou",
+        "tu t ennuies", "tu t occupes comment", "what are you doing", "wyd", "whatcha doing",
+        "what s up", "whats up", "wassup",
     };
 
     private static readonly string[] _goodnightPhrases =
     {
-        "bonne nuit", "bonne nuit a tous", "nuit nuit", "good night", "goodnight",
-        "je vais dormir", "jvais dormir", "je go dormir", "je vais me coucher", "jvais me coucher", "je me couche",
-        "je vais au lit", "je file au lit", "je vais pioncer", "je vais me pieuter",
-        "dodo", "au dodo", "je vais faire dodo", "je vais dodo",
+        "bonne nuit", "bonne nuit a tous", "bne nuit", "bn nuit", "bonnuit", "bonne nuitee", "nuit nuit",
+        "good night", "goodnight", "gn", "nighty night", "sleep well", "dors bien",
         "beaux reves", "fais de beaux reves", "doux reves",
+    };
+
+    // Going to sleep, said rather than wished: only closing the message or a sentence, or before
+    // one of _sleepFollowers (IsClosingAsk). « je vais dormir, à demain » goes to bed; « je vais
+    // dormir chez Luca demain » and « je m'endors devant le film » don't.
+    private static readonly string[] _sleepPhrases =
+    {
+        "je vais dormir", "jvais dormir", "je go dormir", "vais dormir", "go dormir",
+        "je vais me coucher", "jvais me coucher", "je me couche", "vais me coucher", "je file me coucher",
+        "je vais au lit", "je file au lit", "je go au lit", "je vais au pieu", "je vais pioncer", "je vais me pieuter",
+        "je vais roupiller", "je m endors", "je tombe de sommeil",
+        "dodo", "au dodo", "go dodo", "je vais faire dodo", "je vais dodo", "jvais dodo",
+    };
+    private static readonly HashSet<string> _sleepFollowers = new()
+    {
+        "bonne", "bn", "gn", "maintenant", "la", "aussi", "moi", "bye", "ciao", "tchao", "salut", "bisous", "les",
+        "allez", "bon", "perso", "direct", "enfin", "hein", "syncs", "sync",
     };
 
     private static readonly string[] _goodbyePhrases =
@@ -1169,23 +1277,44 @@ internal static class MessageCues
         "a vendredi", "a samedi", "a dimanche",
         "au revoir", "bye", "byebye", "ciao", "tchao", "adieu", "see you", "see ya", "cya",
         "bonne soiree", "bonne journee", "bonne fin de journee", "bonne aprem", "bonne apres midi",
-        "bon weekend", "bon week end", "bonne semaine",
-        "je file", "je me casse", "je me tire", "je m en vais", "je vous laisse",
-        "je dois y aller", "faut que j y aille", "je vais y aller", "je deco", "je me deco",
+        "bon weekend", "bon week end", "bonne semaine", "bonne continuation", "a la semaine prochaine",
+        "a2m1", "a2main", "a plouche",
+        "tchuss", "tchus", "tschuss", "adios", "sayonara", "hasta la vista", "take care", "prends soin de toi",
+        "je file", "je me casse", "je me tire", "je me barre", "je me sauve", "je decolle", "je m en vais", "je vous laisse",
+        "je dois y aller", "faut que j y aille", "je vais y aller", "je vais y go", "je deco", "je me deco",
+    };
+
+    // « dors bien » wishes it; « tu dors bien la nuit ? » asks about it.
+    private static readonly HashSet<string> _notGoodnightAfter = new() { "tu", "t" };
+
+    // Goodbyes that count only closing the message: « bon, j'y vais » leaves, « j'y vais aussi
+    // samedi » is coming along; « allez salut » leaves, while « salut » alone is a hello.
+    private static readonly string[] _closingGoodbyePhrases =
+    {
+        "j y vais", "je go", "je bouge", "allez salut", "bon salut", "allez ciao", "allez bye",
     };
 
     // « à plus » and « à toute » are matched apart (IsShortFarewell): « y en a plus », « il a
     // toute la nuit » contain them too. They count opening or closing the message, never after one
-    // of these words.
-    private static readonly HashSet<string> _shortFarewells = new() { "plus", "toute" };
+    // of these words. « a+ » is read as « à plus » before tokenizing (_aPlus).
+    private static readonly HashSet<string> _shortFarewells = new() { "plus", "toute", "tte" };
     private static readonly HashSet<string> _notFarewellBefore = new() { "y", "en", "il", "elle", "on", "n", "ya", "qui" };
 
     // Indecision, her pet peeve: a short reply that is only a « peut-être » (MaxMaybeTokens).
     private static readonly string[] _maybePhrases =
     {
-        "peut etre", "ptet", "ptetre", "pt etre", "peutetre", "on verra", "on va voir", "a voir", "je verrai",
-        "possible", "pourquoi pas", "ca depend", "jsp", "je sais pas", "j sais pas", "jsais pas", "aucune idee",
-        "je sais pas trop", "bof je sais pas", "mouais peut etre",
+        "peut etre", "ptet", "ptetre", "pt etre", "peutetre", "on verra", "on va voir", "a voir", "faut voir", "je verrai",
+        "pourquoi pas", "ca depend", "jsp", "je sais pas", "je ne sais pas", "j sais pas", "jsais pas", "aucune idee",
+        "je sais pas trop", "je sais plus", "bof je sais pas", "mouais peut etre", "j en sais rien", "jen sais rien",
+        "chais pas", "chai pas", "chaipas", "chepa", "chais po", "qui sait", "on sait jamais", "si ca se trouve",
+        "pas sur", "pas sure", "j hesite", "50 50", "idk", "dunno", "maybe", "perhaps",
+    };
+
+    // The same, but a negator before them reverses them: « pas possible », « c'est pas probable ».
+    // The phrases above take none — « non, je sais pas » is still undecided.
+    private static readonly string[] _maybeNegatablePhrases =
+    {
+        "possible", "probablement", "probable", "eventuellement", "ca se peut",
     };
     private const int MaxMaybeTokens = 5;
 
@@ -1199,22 +1328,36 @@ internal static class MessageCues
         "tu es vivante", "t es consciente", "tu es consciente", "tu ressens", "tu as des sentiments",
         "t as des sentiments", "tu as des emotions", "t as des emotions", "tu penses vraiment",
         "y a quelqu un derriere", "c est rodhengard qui", "c est papa qui", "c est un humain qui",
+        "es tu un bot", "es tu une ia", "es tu humaine", "es tu reelle", "t es une machine", "tu es une machine",
+        "t es un programme", "tu es un programme", "t es un ai", "t es une ai", "t es un llm", "t es chat gpt",
+        "c est chat gpt", "t es gpt", "t es claude", "t es reel", "t es vraie", "tu existes vraiment",
+        "t existes vraiment", "tu as une ame", "t as une ame", "tu as un coeur", "t as un coeur",
+        "c est qui qui ecrit", "c est toi qui ecris", "qui ecrit derriere", "qui tape derriere",
+        "are you a bot", "are you human", "are you real", "r u a bot", "you re a bot", "ur a bot",
     };
 
-    // Agreeing with her. The single words count only as (nearly) the whole reply, and « c'est vrai »
-    // and « vrai » not as a question (« c'est vrai ? » is « really? »).
+    // Agreeing with her. The phrases count in a reply of MaxDisagreementTokens at most (« j'ai bien vu
+    // le film hier avec mon frère et ma sœur » agrees with nobody), the single words only as (nearly)
+    // the whole reply, and « c'est vrai » and « vrai » not as a question (« c'est vrai ? » is « really? »).
     private static readonly string[] _youAreRightPhrases =
     {
-        "t as raison", "tu as raison", "ta raison", "t as pas tort", "tu as pas tort", "t avais raison",
-        "pas faux", "c est pas faux", "bien vu", "trop vrai", "so true", "je suis d accord", "d accord avec toi",
-        "entierement d accord", "tout a fait", "je valide", "tu marques un point", "pas mieux",
+        "t as raison", "tu as raison", "ta raison", "tas raison", "t a raison", "t as pas tort", "tu as pas tort",
+        "t avais raison", "vous avez raison", "elle a raison", "syncs a raison",
+        "trop raison", "grave raison", "tellement raison", "totalement raison", "completement raison",
+        "entierement raison", "parfaitement raison", "bien raison",
+        "pas faux", "c est pas faux", "bien vu", "trop vrai", "tellement vrai", "si vrai", "bien vrai", "so true",
+        "je suis d accord", "d accord avec toi", "entierement d accord", "on est d accord", "tout a fait",
+        "je valide", "je confirme", "je plussoie", "tu marques un point", "pas mieux", "j avoue", "javoue",
+        "you re right", "youre right", "ur right", "fair enough", "true story",
     };
     private static readonly HashSet<string> _youAreRightWords = new()
     {
-        "exact", "exactement", "carrement", "grave", "vrai", "true", "facts", "absolument", "clairement", "evidemment",
+        "exact", "exactement", "exacto", "carrement", "grave", "vrai", "true", "facts", "absolument", "clairement",
+        "evidemment", "effectivement", "parfaitement", "totalement", "precisement", "bingo", "indeed", "veridique",
+        "plussoie",
     };
     private const int MaxAgreementTokens = 3;
-    private static readonly string[] _cestVrai = { "c est vrai" };
+    private static readonly string[] _cestVrai = { "c est vrai", "c est clair", "en effet" };
 
     // Disagreeing with her. The phrases count in a reply of MaxDisagreementTokens at most; the single
     // words only as (nearly) the whole reply — « c'est un faux compte » is not a contradiction — and
@@ -1222,12 +1365,25 @@ internal static class MessageCues
     private static readonly string[] _youAreWrongPhrases =
     {
         "t as tort", "tu as tort", "tu te trompes", "tu t es trompee", "tu t trompes", "c est faux",
-        "n importe quoi", "tu dis n importe quoi", "tu racontes n importe quoi", "pas du tout", "absolument pas",
+        "n importe quoi", "tu dis n importe quoi", "tu racontes n importe quoi",
         "mais non", "pas d accord", "je suis pas d accord", "c est pas vrai", "pas vrai",
         "rien a voir", "t es a cote de la plaque", "t es a l ouest",
+        "t as faux", "tu as faux", "t es dans le faux", "tu es dans le faux", "archi faux", "completement faux",
+        "totalement faux", "tu delires", "tu delire", "tu dis des betises", "tu dis des conneries",
+        "tu racontes des betises", "tu racontes des conneries", "n imp", "tu mens", "c est pas ca",
+        "jamais de la vie", "que nenni", "dans tes reves",
+        "tu te plantes", "tu t es plantee", "tu t es trompe", "you re wrong", "youre wrong",
     };
-    private static readonly string[] _youAreWrongWords = { "faux", "fake", "mensonge", "nope" };
+    private static readonly string[] _youAreWrongWords = { "faux", "fake", "mensonge", "nope", "nimp", "wrong", "erreur" };
     private const int MaxDisagreementTokens = 8;
+
+    // Adverbs that negate whatever verb they follow: « pas du tout » contradicts her as (nearly) the
+    // whole reply, but « je m'ennuie pas du tout » is about being bored.
+    private static readonly string[] _youAreWrongShortPhrases =
+    {
+        "pas du tout", "absolument pas", "pas vraiment", "certainement pas", "surement pas",
+    };
+    private const int MaxShortDisagreementTokens = 4;
 
     // A Request: asking her to do something (« tu peux… », « organise… »). Markers anywhere, or an
     // imperative opening the message; then a topic word says which command does it.
@@ -1235,24 +1391,197 @@ internal static class MessageCues
     {
         "tu peux", "peux tu", "tu pourrais", "pourrais tu", "tu veux bien", "tu voudrais", "est ce que tu peux",
         "tu sais faire", "stp", "svp", "s il te plait", "s il te plais", "s il vous plait",
+        // These carry their own « pas », which would otherwise cancel the marker: « tu veux pas
+        // lancer un sondage ? » asks for one.
+        "tu veux pas", "tu pourrais pas", "tu voudrais pas",
+        "j aimerais que tu", "je voudrais que tu", "je veux que tu", "faudrait que tu", "ca te dirait de",
     };
+    // A marker right after one of these is a condition or a statement, not a request: « quand tu
+    // peux », « si tu peux », « dès que tu peux », « je sais que tu peux ». « est-ce que tu peux » is
+    // its own marker, so it still counts.
+    private static readonly HashSet<string> _notRequestAfter = new() { "quand", "si", "que", "qu", "comme" };
+
     private static readonly HashSet<string> _requestImperatives = new()
     {
-        "organise", "organiser", "lance", "lancer", "fais", "fait", "cree", "creer", "prepare", "programme",
+        "organise", "organiser", "lance", "lancer", "relance", "fais", "fait", "cree", "creer", "prepare", "programme",
         "planifie", "rappelle", "mute", "ban", "kick", "vire", "tire", "montre", "aide",
+        "ouvre", "ajoute", "mets", "trouve", "choisis", "genere", "envoie", "donne", "annule", "decale", "reporte",
+        "modifie", "previens", "melange",
     };
     private static readonly (RequestTopic Topic, string[] Words)[] _requestTopics =
     {
         // Tonight before Session: « organise une partie ce soir » is /tonight's job.
         (RequestTopic.Tonight, new[] { "ce soir", "tonight" }),
-        (RequestTopic.Moderation, new[] { "mute", "ban", "bannir", "bannis", "kick", "expulse", "expulser", "vire", "virer" }),
-        (RequestTopic.Poll, new[] { "sondage", "sondages", "vote", "voter", "votes" }),
-        (RequestTopic.Reminder, new[] { "rappel", "rappels", "rappelle", "rappeler", "remind" }),
-        (RequestTopic.Teams, new[] { "equipe", "equipes", "team", "teams" }),
-        (RequestTopic.Giveaway, new[] { "giveaway", "tirage", "concours" }),
-        (RequestTopic.Quiz, new[] { "quiz", "interro" }),
-        (RequestTopic.Session, new[] { "session", "sessions", "soiree", "partie", "game", "event", "evenement", "planning" }),
+        (RequestTopic.Moderation, new[] { "mute", "ban", "bannir", "bannis", "kick", "expulse", "expulser", "vire", "virer",
+            "timeout", "warn", "punis", "punir", "exclus", "exclure" }),
+        (RequestTopic.Poll, new[] { "sondage", "sondages", "vote", "voter", "votes", "poll", "strawpoll" }),
+        (RequestTopic.Reminder, new[] { "rappel", "rappels", "rappelle", "rappelles", "rappeler", "remind", "remindme",
+            "previens", "prevenir", "reveiller" }),
+        (RequestTopic.Teams, new[] { "equipe", "equipes", "team", "teams", "groupes" }),
+        (RequestTopic.Giveaway, new[] { "giveaway", "giveaways", "tirage", "concours", "loterie", "tombola" }),
+        (RequestTopic.Quiz, new[] { "quiz", "interro", "questionnaire", "trivia", "culture generale", "culture g" }),
+        (RequestTopic.Session, new[] { "session", "sessions", "soiree", "partie", "game", "event", "evenement", "planning",
+            "seance", "raid", "lan", "rdv", "rendez vous" }),
     };
+
+    // Checking she's still there. Each phrase must close the message or its question, or be followed
+    // by one of _thereFollowers (IsClosingAsk): « t'es là ? » and « tu dors ou quoi » ask, « t'es là
+    // ce soir ? » and « t'es la meilleure » don't. Her name alone with a « ? » counts too (ReadIntent).
+    private static readonly string[] _areYouTherePhrases =
+    {
+        "t es la", "tu es la", "tes la", "t es toujours la", "t es encore la", "tu es toujours la", "t es bien la",
+        "tu dors", "t es reveillee", "tu es reveillee", "t es en vie", "tu es en vie", "t es dans les vapes",
+        "y a quelqu un", "il y a quelqu un", "ya quelqu un", "y a qqn", "ya qqn", "ohe", "eho", "ho he",
+        "t es partie", "t es passee ou", "t as disparu",
+    };
+    private static readonly HashSet<string> _thereFollowers = new()
+    {
+        "syncs", "sync", "toi", "la", "encore", "ou", "quoi", "hein", "pas", "oui", "dis",
+    };
+
+    // Waking her up: anywhere, but short. « debout » alone would be « stand up » in a game.
+    private static readonly string[] _wakeUpPhrases = { "reveille toi", "reveilles toi", "debout la dedans", "wake up" };
+    private const int MaxWakeUpTokens = 5;
+
+    // « allô ? », « allô syncs ? »: opening the message, with nothing but these after it. Not « nan
+    // mais allô » or « allô quoi », the meme that means « are you serious? ».
+    private static readonly HashSet<string> _alloFollowers = new()
+    {
+        "syncs", "sync", "allo", "toi", "la", "hein", "y", "ya", "a", "il", "quelqu", "un", "qqn",
+    };
+
+    // Questions about her: how old, when she was born, where she lives, what she likes. Read before
+    // the opinion (« tu aimes quoi comme jeu ? » would rate « quoi comme jeu »).
+    private static readonly (HerTopic Topic, string[] Phrases)[] _aboutHerPhrases =
+    {
+        (HerTopic.Age, new[]
+        {
+            "t as quel age", "tu as quel age", "ta quel age", "quel age tu as", "quel age as tu", "quel age t as",
+            "t as combien d ans", "tu as combien d ans", "ton age", "t es vieille", "tu es vieille", "t es jeune",
+            "how old are you", "how old r u",
+        }),
+        (HerTopic.Birthday, new[]
+        {
+            "ton anniversaire", "ton anniv", "ton anni", "ta date de naissance", "t es nee quand", "tu es nee quand",
+            "quand es tu nee", "quand est ce que t es nee", "t es nee le", "tu es nee le", "ta naissance",
+            "your birthday",
+        }),
+        (HerTopic.Home, new[]
+        {
+            "t habites ou", "tu habites ou", "tu vis ou", "ou tu vis", "ou tu habites", "ou est ce que tu vis",
+            "ou est ce que tu habites", "tu viens d ou", "d ou tu viens", "d ou viens tu", "tu tournes sur quoi",
+            "tu tournes ou", "t es hebergee ou", "tu es hebergee ou",
+            "where do you live",
+        }),
+        (HerTopic.Favourite, new[]
+        {
+            "tu aimes quoi", "t aimes quoi", "tu kiffes quoi", "t kiffes quoi", "qu est ce que tu aimes",
+            "qu est ce que t aimes", "tu manges quoi", "tu bois quoi", "tu ecoutes quoi", "tu joues a quoi",
+            "c est quoi tes gouts", "tes gouts",
+        }),
+    };
+
+    // « ton jeu préféré », « ta couleur favorite »: a possessive, then « préféré » within three words.
+    private static readonly HashSet<string> _yourWords = new() { "ton", "ta", "tes" };
+    private static readonly HashSet<string> _favouriteWords = new()
+    {
+        "prefere", "preferee", "preferes", "preferees", "prefer", "favori", "favorite", "favoris", "favorites", "fav",
+    };
+    private const int FavouriteWindow = 3;
+
+    // Her love life, asked about: « t'es célibataire ? », « t'as un crush ? ». Not a declaration —
+    // « je suis amoureux de toi » is Love, read first.
+    private static readonly string[] _crushPhrases =
+    {
+        "t es celibataire", "tu es celibataire", "t es en couple", "tu es en couple", "t as un copain",
+        "tu as un copain", "t as un mec", "tu as un mec", "t as une copine", "t as un amoureux", "tu as un amoureux",
+        "t as quelqu un dans ta vie", "tu as quelqu un dans ta vie", "t as un crush", "tu as un crush", "c est qui ton crush",
+        "ton crush", "t es amoureuse", "tu es amoureuse", "tu aimes quelqu un", "t aimes quelqu un",
+        "tu sors avec quelqu un", "t sors avec quelqu un", "ton genre de robot", "ton style de robot",
+        "t as un faible pour", "tu as un faible pour",
+        "tu kiffes quelqu un", "t kiffes quelqu un", "your crush",
+    };
+
+    // Asking how she works or what she can do: pointed at /help, or at the topic's command when one
+    // is named (« comment ça marche les sondages ? »). Read before Request, which takes over when a
+    // request names a topic (« tu peux m'aider à organiser une session ? »).
+    private static readonly string[] _helpPhrases =
+    {
+        "comment ca marche", "comment ca fonctionne", "comment ca s utilise",
+        "comment on utilise", "comment t utiliser", "comment on t utilise", "comment je t utilise",
+        "tu sais faire quoi", "qu est ce que tu sais faire", "que sais tu faire", "tu peux faire quoi",
+        "qu est ce que tu peux faire", "c est quoi les commandes", "c est quoi tes commandes", "quelles commandes",
+        "tes commandes", "la liste des commandes", "liste des commandes",
+        "help", "aide moi", "aidez moi", "a l aide", "j ai besoin d aide", "besoin d aide", "tu peux m aider",
+        "tu pourrais m aider",
+    };
+    // Only closing the message: « je suis perdu dans le donjon » is the game, « comment on fait pour
+    // battre ce boss » and « je comprends rien à ce boss » ask about it.
+    // In a short message only: « … qu'il m'a dit, je comprends rien » is about someone else.
+    private const int MaxHelpClosingTokens = 6;
+    private static readonly string[] _helpClosingPhrases =
+    {
+        "je suis perdu", "je suis perdue", "jsuis perdu", "jsuis perdue", "comment on fait", "comment je fais",
+        "je comprends rien", "j y comprends rien", "je capte rien", "je pige rien",
+    };
+
+    // Boredom, said to her: she has games for that. A negator around cancels (« je m'ennuie pas »).
+    // No bare « rien à faire »: « j'en ai rien à faire » doesn't care. In a message of MaxBoredTokens at most.
+    // Never followed by « de » (_missingWords): « je m'ennuie de toi » misses someone.
+    private static readonly string[] _boredPhrases =
+    {
+        "je m ennuie", "jm ennuie", "je m emmerde", "je me fais chier", "jme fais chier", "je me fais ch",
+        "on s ennuie", "on s emmerde", "on se fait chier",
+        "je sais pas quoi faire", "jsp quoi faire", "j sais pas quoi faire",
+        "c est mort ici", "c est calme ici", "personne joue",
+        "i m bored", "im bored", "so bored", "boring", "ennui", "l ennui",
+    };
+    private static readonly HashSet<string> _missingWords = new() { "de", "d", "du", "des" };
+
+    // « rien à faire » only closing the message or before _nothingToDoFollowers: « y a rien à faire
+    // ce soir » is bored, « y a rien à faire contre ce boss » is hopeless.
+    private static readonly string[] _nothingToDoPhrases =
+    {
+        "y a rien a faire", "ya rien a faire", "il y a rien a faire", "j ai rien a faire",
+    };
+    private static readonly HashSet<string> _nothingToDoFollowers = new()
+    {
+        "ici", "la", "aujourd", "ce", "cet", "cette", "en", "sur", "de", "du", "dans", "a", "pendant", "trop",
+    };
+    // « on fait quoi ? » only closing the message: « on fait quoi pour la session de samedi » plans.
+    private static readonly string[] _boredClosingPhrases = { "on fait quoi", "on fait koi", "on fait quoi la" };
+    private const int MaxBoredTokens = 10;
+
+    // Thanks. A negator before cancels (« non merci »); the short forms count only as (nearly) the
+    // whole reply, since « ty » and « thx » can sit in anything.
+    private static readonly string[] _thanksPhrases =
+    {
+        "merci", "mercii", "merci beaucoup", "merci bien", "merci mille fois", "mille mercis", "grand merci",
+        "je te remercie", "jte remercie", "je vous remercie", "cimer", "thanks", "thank you", "thank u", "tysm",
+        "c est gentil", "c est trop gentil",
+    };
+    private static readonly string[] _thanksShortWords = { "ty", "thx", "mrc", "mci", "merki" };
+
+    // Not buying what she said: « fais genre », « mon œil », « avoue ». Teasing more than
+    // contradicting, so it gets its own pool — typically after one of her denials. In a reply of
+    // MaxDisbeliefTokens at most (« il fait genre qu'il sait jouer » is about him), never after
+    // « il », « elle », « on », and never « j'avoue » (« true »: YouAreRight). No « oui bien sûr »:
+    // that one is meant.
+    private static readonly string[] _disbeliefPhrases =
+    {
+        "fais genre", "fait genre", "c est ca ouais", "c est ca oui", "mais oui c est ca", "ouais c est ca",
+        "oui oui c est ca", "mais bien sur", "mais oui bien sur", "on te croit", "on y croit", "je te crois pas",
+        "j te crois pas", "jte crois pas", "je te crois moyen", "personne te croit", "mon oeil", "a d autres",
+        "cause toujours", "ben voyons", "bah voyons", "et la marmotte", "pas credible", "t es pas credible",
+        "avoue", "avoue le", "avoue tout", "allez avoue", "t es grillee", "tu es grillee", "on t a grillee",
+        "je t ai grillee", "t es demasquee", "tu rougis", "t as rougi", "sure jan", "yeah right",
+    };
+    private static readonly HashSet<string> _notDisbeliefAfter = new() { "il", "elle", "on", "j", "je", "ca" };
+    private const int MaxDisbeliefTokens = 6;
+
+    // « ça va, merci », « bien merci »: the politeness closing an answer, not thanks for anything.
+    private static readonly HashSet<string> _notThanksAfter = new() { "va", "vais", "bien", "roule", "tranquille" };
+    private const int MaxShortThanksTokens = 3;
 
     // A goodbye is short: « à plus » closes « bon, à plus », but « il y a plus de place » is
     // something else, and so is any long message that happens to contain a farewell.
@@ -1262,23 +1591,32 @@ internal static class MessageCues
     // and so does « jpppp » (shortened to « jpp »: squashing would make it « jp »).
     private static readonly HashSet<string> _laughterWords = new()
     {
-        "mdr", "ptdr", "pdtr", "xptdr", "lol", "lool", "xd", "jpp", "jptr", "jpptdr", "lmao", "lmfao", "rofl", "kek",
+        "mdr", "ptdr", "pdtr", "xptdr", "lol", "lool", "lolilol", "xd", "jpp", "jptr", "jpptdr", "lmao", "lmfao",
+        "rofl", "kek", "kekw", "lul", "lel", "omegalul", "niark",
     };
 
     // Phrases that laugh, or say she was funny: answered by the Laughter pool (« Merci, je suis
-    // drôle »), which fits both better than a plain compliment.
+    // drôle »), which fits both better than a plain compliment. No bare « je pleure »: it cries as
+    // often as it laughs.
     private static readonly string[] _laughterPhrases =
     {
-        "mort de rire", "je suis mort", "je suis morte", "jsuis mort", "jsuis morte", "je meurs",
-        "trop drole", "t es drole", "t es trop drole", "c est drole", "tu es drole",
+        "mort de rire", "morte de rire", "je suis mort", "je suis morte", "jsuis mort", "jsuis morte", "je meurs",
+        "je suis plie", "je suis pliee", "jsuis plie", "jsuis pliee", "plie de rire", "pliee de rire",
+        "je pleure de rire", "j en pleure", "tu me tues", "tu m as tue", "ca m a tue",
+        "trop drole", "t es drole", "t es trop drole", "c est drole", "tu es drole", "trop marrant",
+        "t es marrante", "tu es marrante", "hilarant", "bonne blague", "elle est bonne celle la",
     };
 
-    private static readonly string[] _laughterSymbols = { "😂", "🤣", "😆", "😹", "💀" };
+    private static readonly string[] _laughterSymbols = { "😂", "🤣", "😆", "😹", "💀", "😄", "😁", "🤭" };
 
-    // « haha », « ahah », « hihi », « héhé », and the villain laughs « bahaha », « bwahaha »,
+    // Custom emotes that laugh, matched by id on the raw text (ReadIntent drops emote markup before
+    // tokenizing, so a message of only the emote still lands here).
+    private static readonly string[] _laughterEmoteIds = { Emotes.GigaLaughId };
+
+    // « haha », « ahah », « hihi », « héhé », « hoho », and the villain laughs « bahaha », « bwahaha »,
     // « mouahaha », « muahaha », « mwahaha », « gnahaha »: matched on the squashed token, so
     // « haaaaha » and « bahahaaa » count. Four letters at least (« bah » and « aha » don't).
-    private static readonly Regex _laughRun = new(@"^(?:b|bw|bou|mou|mu|mw|gn)?[aeiu]?(?:ha|he|hi|hu)+h?$", RegexOptions.Compiled);
+    private static readonly Regex _laughRun = new(@"^(?:b|bw|bou|mou|mu|mw|gn)?[aeiu]?(?:ha|he|hi|hu|ho)+h?$", RegexOptions.Compiled);
 
     // A laugh is the whole message, or nearly: « mdr » answers her, « mdr il a raté » doesn't.
     private const int MaxLaughterTokens = 5;
@@ -1290,17 +1628,114 @@ internal static class MessageCues
         "ok", "okay", "okk", "oki", "okey", "oke", "k", "kk", "dac", "dacc", "daccord", "d", "accord",
         "ouais", "ouai", "ouaip", "ouep", "yep", "yes", "ui", "oui", "non", "nan", "nope", "mouais", "bof",
         "bref", "hm", "hmm", "mh", "ah", "oh", "eh", "bon", "bah", "ben", "euh", "si", "voila", "soit", "certes",
+        "okie", "okidoki", "ouki", "acc", "yup", "yeah", "nah", "no", "we", "wai", "hein", "heu", "mm", "mmh",
+        "pf", "pff", "ts", "tss", "tsk", "rah", "roh", "oula", "oulah", "olala", "ohlala", "la", "genre",
+        "alors", "et", "donc", "enfin", "tiens", "tkt", "tqt", "np", "osef",
     };
     private const int MaxLowEffortTokens = 3;
 
     // A question typed without its « ? », as chat often does: one of these opening a message of
-    // three words or more (« pourquoi t'as dit ça »), or « est-ce » / « quand est-ce ». No « quel »
-    // (« quel plaisir » is an exclamation) and no bare « quand » (« quand tu veux »).
+    // three words or more (« pourquoi t'as dit ça »), or one of _questionOpenerPhrases. No bare
+    // « quel » (« quel plaisir » is an exclamation) and no bare « quand » (« quand tu veux »).
     private static readonly HashSet<string> _questionOpeners = new()
     {
-        "pourquoi", "pq", "pk", "comment", "combien", "estce", "kesk", "keske",
+        "pourquoi", "pq", "pk", "pkoi", "pourkoi", "pourquoa", "comment", "cmt", "koman", "koment", "combien",
+        "estce", "kesk", "keske", "kesako", "kezako", "qui", "why", "how", "what", "who", "when", "where",
+    };
+
+    // « où » too, but not « ou alors » / « ou bien » / « ou pas », which go on a sentence rather
+    // than ask anything.
+    private static readonly HashSet<string> _notQuestionAfterOu = new() { "alors", "bien", "pas", "sinon", "meme", "plutot" };
+
+    private static readonly string[] _questionOpenerPhrases =
+    {
+        "est ce", "quand est", "c est quand", "c est qui", "c est quoi", "c est ou", "c est combien", "c est comment",
+        "quel est", "quelle est", "quels sont", "quelles sont", "quelle heure", "quel jour", "quel jeu",
+        "tu sais si", "tu sais ou", "tu sais quand", "tu sais qui", "tu sais comment", "tu crois que", "tu penses que",
+        "tu connais", "t as vu",
     };
     private const int MinUnmarkedQuestionTokens = 3;
+
+    // Sharing: telling her about their own day (« j'ai mangé de la soupe », « bon, je suis allé au
+    // ciné », « on a perdu la game »). A first-person statement, not a question, opening the message
+    // once these fillers are skipped. Read after everything else bar LowEffort, so « j'ai faim »
+    // reaches it but « je m'ennuie » (Bored) or « je suis d'accord » (YouAreRight) never do.
+    private static readonly HashSet<string> _sharingFillers = new()
+    {
+        "bon", "bah", "ben", "alors", "moi", "perso", "du", "coup", "sinon", "au", "fait", "ah", "oh", "eh", "et",
+        "mais", "ouais", "oui", "non", "nan", "bref", "enfin", "hier", "ce", "matin", "soir", "aujourd", "hui",
+        "tiens", "btw", "d", "ailleurs", "la", "mdr", "lol", "ptdr", "wesh", "frr",
+        "enfaite", "en", "vrai", "tantot", "omg", "ptn", "putain", "wow", "waw", "olala", "genre", "xd", "nous",
+        "news", "info", "anecdote", "storytime", "cette", "nuit", "l", "autre", "jour", "semaine", "dernier",
+        "derniere", "weekend", "week", "end", "midi", "tout", "a", "instant", "heure", "finalement", "franchement",
+    };
+
+    // Openers that announce news but would trip the checks below: « devine quoi, j'ai gagné » asks
+    // nothing, and « tu sais quoi » isn't about « toi ». Skipped with the fillers.
+    private static readonly string[] _sharingOpeners =
+    {
+        "devine quoi", "devinez quoi", "tu sais quoi", "vous savez quoi", "guess what", "breaking news",
+        "petite info", "story time", "oh la la",
+    };
+
+    // « je », « j' », and the SMS forms glued to their verb.
+    private static readonly HashSet<string> _sharingSelf = new()
+    {
+        "je", "j", "jai", "jsuis", "chui", "jsui", "jme", "jviens", "jvais", "jsors", "jrentre", "jpars", "jmange",
+        "jdois", "jfais", "jreviens", "jjoue", "jregarde",
+    };
+    private static readonly HashSet<string> _sharingUsVerbs = new()
+    {
+        "a", "est", "s", "vient", "sort", "part", "rentre", "mange", "regarde", "etait", "avait",
+    };
+    // « nous avons », « nous sommes » — « nous » itself is a filler (« nous on a perdu »).
+    private static readonly HashSet<string> _sharingWeVerbs = new() { "avons", "sommes", "etions", "avions" };
+
+    // Their own things: « mon chat a vomi sur le clavier », « ma sœur m'a offert un jeu ». A possessive,
+    // then one of these within three words.
+    private static readonly HashSet<string> _sharingMine = new() { "mon", "ma", "mes" };
+    private static readonly HashSet<string> _sharingMineVerbs = new()
+    {
+        "a", "est", "m", "ont", "sont", "vient", "viennent", "etait", "avait", "s",
+    };
+    private const int SharingMineWindow = 3;
+    private static readonly HashSet<string> _notSharingMineNouns = new()
+    {
+        "avis", "opinion", "idee", "impression", "question", "reponse", "choix", "vote", "probleme",
+    };
+
+    // What comes after « je » when it isn't news: an opinion or a wish (« je pense », « je veux »), or
+    // something said to the listener (« je t'envoie le lien », « je te rejoins »).
+    private static readonly HashSet<string> _notSharingAfterSelf = new()
+    {
+        "sais", "pense", "crois", "trouve", "veux", "voudrais", "aimerais", "peux", "pourrais", "comprends",
+        "t", "te", "vous", "ne", "prefere", "aime", "adore", "deteste", "kiffe", "arrive", "reviens", "y", "en",
+    };
+    // A message about « toi » or asking « quoi » isn't news about their day: « je suis pas amoureux de
+    // toi » answers her, « on joue à quoi ce soir » proposes.
+    private static readonly HashSet<string> _notSharingWords = new()
+    {
+        "toi", "tu", "t", "te", "ton", "ta", "tes", "quoi", "koi", "pourquoi", "comment", "quand", "combien",
+    };
+    private const int MinSharingTokens = 3;
+    private const int MaxSharingTokens = 20;
+
+    // Her name as an address, opening the message (after « dis », « hey »…) or closing it before its
+    // punctuation. Not when it is the subject of a sentence about her (« syncs a raison », « syncs
+    // est là ? »): those read on the name, through _thirdPersonAfter.
+    private static readonly Regex _leadingAddress = new(
+        @"^\s*(?:(?:dis|hey|eh|oh|yo|allez|bon|alors|ok|ah|wesh)[\s,]+)?syncs?(?![\w.])(?!\s+(?:"
+        + string.Join("|", _thirdPersonAfter) + @")(?!\w))[\s,:!]*",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    private static readonly Regex _trailingAddress = new(@"[\s,]+syncs?(?![\w.])(?=[\s?!.…]*$)",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    // Quoted words, French or English quotes, and Discord's « > » quote lines.
+    private static readonly Regex _quotedSpeech = new(@"«[^»]*»|“[^”]*”|""[^""]*""|^>.*$",
+        RegexOptions.Compiled | RegexOptions.Multiline);
+
+    // « a+ » / « @+ » is « à plus »: the tokenizer would keep only the « a ».
+    private static readonly Regex _aPlus = new(@"(?<![\w<])[aà@]\s?\+(?!\w)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     // Mentions (« <@123> »), custom emotes and links are dropped before reading, or a mention
     // would tokenize into a number and count as a word.
@@ -1315,7 +1750,21 @@ internal static class MessageCues
     {
         if (string.IsNullOrWhiteSpace(content)) return ChatIntent.None;
 
-        var stripped = _link.Replace(_customEmote.Replace(_mentionMarkup.Replace(content, " "), " "), " ");
+        // Reported speech is someone else's words (« il a écrit « je t'aime » à sa copine »): quotes are
+        // dropped when something is said outside them. A message that is only a quote keeps it.
+        var unquoted = _quotedSpeech.Replace(content, " ");
+        if (TokenizeOrdered(_mentionMarkup.Replace(unquoted, " ")).Count > 0) content = unquoted;
+
+        var unaddressed = _aPlus.Replace(_link.Replace(_customEmote.Replace(_mentionMarkup.Replace(content, " "), " "), " "), " a plus ");
+        // « syncs ? » alone is checked on the name itself, before the address is dropped below.
+        var nameAlone = TokenizeOrdered(unaddressed) is { Count: > 0 } named && named.All(w => _selfNames.Contains(Squash(w)));
+        // Her name as an address (« syncs, organise une session », « merci syncs ») is dropped, so the
+        // rules that look at the first or last word see the message itself.
+        var stripped = _trailingAddress.Replace(_leadingAddress.Replace(unaddressed, " "), "");
+        // Her name alone, unasked, with nothing else (not even « 😂 »), is her name said: the
+        // talked-about line, not a reply to read.
+        if (nameAlone && !unaddressed.Contains('?') && stripped.Trim(' ', ',', '.', '!', ':').Length == 0)
+            return ChatIntent.None;
         var t = TokenizeOrdered(stripped);
         var asks = stripped.Contains('?');
 
@@ -1323,52 +1772,100 @@ internal static class MessageCues
         if (t.Count == 1 && t[0] == "pardon" && asks) return ChatIntent.Question;
 
         if (FindPhrase(t, _lovePhrases, cancelAfter: true, cancelBefore: true)) return ChatIntent.Love;
-        if (FindPhrase(t, _apologyPhrases, cancelAfter: false, cancelBefore: true)) return ChatIntent.Apology;
-        // « comment tu vas » needs no « ? » to be a question; « cv » counts alone or as « cv et toi ».
-        var isCv = t.Count > 0 && t[0] == "cv" && (t.Count == 1 || (t.Count == 3 && t[1] == "et" && t[2] == "toi"));
-        if ((asks || (t.Count > 0 && t[0] == "comment")) && (IsAskingAfterHer(t) || isCv))
+        if (FindPhrase(t, _apologyPhrases, cancelAfter: false, cancelBefore: true)
+            || (t.Count <= MaxShortApologyTokens && FindPhrase(t, _apologyShortWords, cancelAfter: false, cancelBefore: false)))
+            return ChatIntent.Apology;
+        // « comment tu vas » needs no « ? » to be a question; « cv », « tranquille »… count opening a
+        // short one (« cv et toi ? »).
+        var isOpener = t.Count is > 0 and <= MaxHowAreYouOpenerTokens && _howAreYouOpeners.Contains(t[0])
+                       && t.Skip(1).All(_askingFollowers.Contains);
+        var breaks = QuestionBreaks(stripped);
+        if ((asks || (t.Count > 0 && t[0] == "comment"))
+            && (IsClosingAsk(t, _howAreYouPhrases, breaks, _askingFollowers) || isOpener))
             return ChatIntent.HowAreYou;
+        // « t'es là ? », « réveille-toi », or her name alone with a « ? » (« syncs ? »).
+        if (IsClosingAsk(t, _areYouTherePhrases, breaks, _thereFollowers)
+            || (t.Count <= MaxWakeUpTokens && FindPhrase(t, _wakeUpPhrases, cancelAfter: false, cancelBefore: false))
+            || (asks && nameAlone)
+            || (t.Count > 0 && Squash(t[0]) == "alo" && t.Skip(1).All(_alloFollowers.Contains)))
+            return ChatIntent.AreYouThere;
         if (FindPhrase(t, _whoAreYouPhrases, cancelAfter: false, cancelBefore: false)) return ChatIntent.WhoAreYou;
+        if (ReadHerTopic(t) is not null) return ChatIntent.AboutHer;
         if (FindPhrase(t, _areYouABotPhrases, cancelAfter: false, cancelBefore: false)) return ChatIntent.AreYouABot;
+        if (FindPhrase(t, _crushPhrases, cancelAfter: false, cancelBefore: false)) return ChatIntent.Crush;
         if (FindPhrase(t, _whatAreYouDoingPhrases, cancelAfter: false, cancelBefore: false)) return ChatIntent.WhatAreYouDoing;
-        // On the raw text: « t'en penses quoi de @Luca ? » keeps its subject.
+        // On the raw text: « t'en penses quoi de @Luca ? » keeps its subject. Ship first: « tu penses
+        // quoi de @A et @B ? » asks about a pair of people, not about the word « et ».
+        if (ShipAsk.Read(content) is not null) return ChatIntent.Ship;
         if (Opinion.Read(content) is not null) return ChatIntent.Opinion;
-        if (ReadRequestTopic(t) is not null) return ChatIntent.Request;
+        // A request naming a topic is a request (« tu peux m'aider à lancer un sondage ? »); without
+        // one, asking for help is Help (« tu peux m'aider ? »), and anything else asked is a request.
+        var topic = ReadRequestTopic(t);
+        if (topic is not null and not RequestTopic.Other) return ChatIntent.Request;
+        if (FindPhrase(t, _helpPhrases, cancelAfter: true, cancelBefore: true)
+            || (t.Count <= MaxHelpClosingTokens && _helpClosingPhrases.Any(p => EndsWith(t, p))))
+            return ChatIntent.Help;
+        if (topic is not null) return ChatIntent.Request;
+        var sentenceBreaks = SentenceBreaks(stripped);
+        if (t.Count <= MaxBoredTokens
+            && (FindPhrase(t, _boredPhrases, cancelAfter: true, cancelBefore: true, notFollowedBy: _missingWords)
+                || IsClosingAsk(t, _nothingToDoPhrases, sentenceBreaks, _nothingToDoFollowers)
+                || IsClosingAsk(t, _boredClosingPhrases, breaks, _noWords)))
+            return ChatIntent.Bored;
         if (t.Count <= MaxFarewellTokens)
         {
-            if (FindPhrase(t, _goodnightPhrases, cancelAfter: false, cancelBefore: false)) return ChatIntent.Goodnight;
-            if (IsShortFarewell(t) || FindPhrase(t, _goodbyePhrases, cancelAfter: false, cancelBefore: false))
+            if (FindPhrase(t, _goodnightPhrases, cancelAfter: false, cancelBefore: false, notAfter: _notGoodnightAfter)
+                || IsClosingAsk(t, _sleepPhrases, sentenceBreaks, _sleepFollowers))
+                return ChatIntent.Goodnight;
+            if (IsShortFarewell(t) || FindPhrase(t, _goodbyePhrases, cancelAfter: false, cancelBefore: false)
+                || _closingGoodbyePhrases.Any(p => EndsWith(t, p)))
                 return ChatIntent.Goodbye;
         }
 
-        if (t.Count <= MaxMaybeTokens && FindPhrase(t, _maybePhrases, cancelAfter: false, cancelBefore: true))
+        // Before agreement and disagreement: « mais oui c'est ça » agrees with nothing, and « mais
+        // non, fais genre » is teasing, not a correction.
+        if (t.Count <= MaxDisbeliefTokens
+            && FindPhrase(t, _disbeliefPhrases, cancelAfter: false, cancelBefore: false, notAfter: _notDisbeliefAfter))
+            return ChatIntent.Disbelief;
+
+        if (t.Count <= MaxMaybeTokens
+            && (FindPhrase(t, _maybePhrases, cancelAfter: false, cancelBefore: false)
+                || FindPhrase(t, _maybeNegatablePhrases, cancelAfter: false, cancelBefore: true)))
             return ChatIntent.Maybe;
 
-        if (FindPhrase(t, _youAreRightPhrases, cancelAfter: false, cancelBefore: false)
-            || (!asks && FindPhrase(t, _cestVrai, cancelAfter: false, cancelBefore: false))
+        if ((t.Count <= MaxDisagreementTokens && FindPhrase(t, _youAreRightPhrases, cancelAfter: false, cancelBefore: false))
+            || (!asks && t.Count <= MaxDisagreementTokens && FindPhrase(t, _cestVrai, cancelAfter: false, cancelBefore: false))
             || (!asks && t.Count <= MaxAgreementTokens
                 && t.Any(w => _youAreRightWords.Contains(w) || _youAreRightWords.Contains(Squash(w)))))
             return ChatIntent.YouAreRight;
 
         if (t.Count <= MaxDisagreementTokens
             && (FindPhrase(t, _youAreWrongPhrases, cancelAfter: false, cancelBefore: false)
+                || (t.Count <= MaxShortDisagreementTokens && FindPhrase(t, _youAreWrongShortPhrases, cancelAfter: false, cancelBefore: false))
                 || (t.Count <= MaxAgreementTokens && FindPhrase(t, _youAreWrongWords, cancelAfter: false, cancelBefore: true))))
             return ChatIntent.YouAreWrong;
+
+        if (FindPhrase(t, _thanksPhrases, cancelAfter: false, cancelBefore: true, notAfter: _notThanksAfter)
+            || (t.Count <= MaxShortThanksTokens && FindPhrase(t, _thanksShortWords, cancelAfter: false, cancelBefore: false)))
+            return ChatIntent.Thanks;
 
         if (t.Count <= MaxLaughterTokens
             && (t.Any(w => _laughterWords.Contains(w) || _laughterWords.Contains(Shorten(w))
                            || _laughterWords.Contains(Squash(w))
                            || (Squash(w).Length >= 4 && _laughRun.IsMatch(Squash(w))))
                 || FindPhrase(t, _laughterPhrases, cancelAfter: false, cancelBefore: true)
-                || _laughterSymbols.Any(stripped.Contains)))
+                || _laughterSymbols.Any(stripped.Contains)
+                || _laughterEmoteIds.Any(content.Contains)))
             return ChatIntent.Laughter;
 
         if (asks && t.Count >= 2) return ChatIntent.Question;
         if (t.Count >= MinUnmarkedQuestionTokens
             && (_questionOpeners.Contains(t[0])
-                || (t[0] == "est" && t[1] == "ce")
-                || (t[0] == "quand" && t[1] == "est")))
+                || (t[0] == "ou" && !_notQuestionAfterOu.Contains(t[1]))
+                || _questionOpenerPhrases.Any(p => PhraseStartsAt(t, 0, p))))
             return ChatIntent.Question;
+
+        if (!asks && t.Count is >= MinSharingTokens and <= MaxSharingTokens && IsSharing(t)) return ChatIntent.Sharing;
 
         if (t.Count == 0 || (t.Count <= MaxLowEffortTokens
                              && t.All(w => _lowEffortWords.Contains(w) || _lowEffortWords.Contains(Squash(w)))))
@@ -1391,14 +1888,50 @@ internal static class MessageCues
 
     private static RequestTopic? ReadRequestTopic(List<string> tokens)
     {
-        var marker = FindPhrase(tokens, _requestMarkers, cancelAfter: true, cancelBefore: false);
+        var marker = FindPhrase(tokens, _requestMarkers, cancelAfter: true, cancelBefore: false, notAfter: _notRequestAfter);
         var imperative = tokens.Count > 0 && _requestImperatives.Contains(tokens[0]);
         if (!marker && !imperative) return null;
 
+        var topic = FindTopic(tokens);
+        return topic != RequestTopic.Other ? topic : marker ? RequestTopic.Other : null;
+    }
+
+    /// <summary>
+    /// The command topic a message names, request or not (« comment ça marche les sondages ? » is
+    /// Poll), or <see cref="RequestTopic.Other"/>: what a Help answer points at.
+    /// </summary>
+    public static RequestTopic ReadTopic(string content) =>
+        string.IsNullOrWhiteSpace(content)
+            ? RequestTopic.Other
+            : FindTopic(TokenizeOrdered(_link.Replace(_customEmote.Replace(_mentionMarkup.Replace(content, " "), " "), " ")));
+
+    private static RequestTopic FindTopic(List<string> tokens)
+    {
         foreach (var (topic, words) in _requestTopics)
             if (FindPhrase(tokens, words, cancelAfter: false, cancelBefore: false)) return topic;
+        return RequestTopic.Other;
+    }
 
-        return marker ? RequestTopic.Other : null;
+    /// <summary>What an AboutHer question asks (age, birthday, home, favourites), or null.</summary>
+    public static HerTopic? ReadHerTopic(string content) =>
+        string.IsNullOrWhiteSpace(content)
+            ? null
+            : ReadHerTopic(TokenizeOrdered(_link.Replace(_customEmote.Replace(_mentionMarkup.Replace(content, " "), " "), " ")));
+
+    private static HerTopic? ReadHerTopic(List<string> tokens)
+    {
+        foreach (var (topic, phrases) in _aboutHerPhrases)
+            if (FindPhrase(tokens, phrases, cancelAfter: false, cancelBefore: false)) return topic;
+
+        // « ton jeu préféré », « c'est quoi ta couleur favorite ».
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            if (!_yourWords.Contains(tokens[i])) continue;
+            for (var j = i + 1; j <= Math.Min(tokens.Count - 1, i + FavouriteWindow); j++)
+                if (_favouriteWords.Contains(tokens[j])) return HerTopic.Favourite;
+        }
+
+        return null;
     }
 
     // « à plus » / « à toute » opening the message, or closing it after a word that isn't « y »,
@@ -1413,28 +1946,42 @@ internal static class MessageCues
                && (i == 0 || !_notFarewellBefore.Contains(tokens[i - 1]));
     }
 
-    // A « ça va » phrase asking after her: closing the message, or followed by « toi », « bien »…
-    // — never by anything else, a negator included (« ça va pas la tête », « comment tu vas faire »).
-    private static bool IsAskingAfterHer(List<string> tokens)
+    // A first-person statement about their own life, once the opening fillers are skipped: « je »
+    // or « j' » with something after it that isn't an opinion, a wish or « te » (_notSharingAfterSelf),
+    // or « on » with a verb of what people do (« on a perdu », « on est sortis »).
+    private static bool IsSharing(List<string> tokens)
     {
-        foreach (var phrase in _howAreYouPhrases)
+        // Fillers and openers first, so « tu sais quoi, j'ai gagné » is judged on « j'ai gagné ».
+        var k = 0;
+        while (k < tokens.Count)
         {
-            var length = phrase.Split(' ').Length;
-            for (var i = 0; i + length <= tokens.Count; i++)
-            {
-                if (!PhraseStartsAt(tokens, i, phrase)) continue;
-                var end = i + length;
-                if (end == tokens.Count || _askingFollowers.Contains(tokens[end])) return true;
-            }
+            if (_sharingFillers.Contains(tokens[k])) { k++; continue; }
+            var opener = _sharingOpeners.FirstOrDefault(p => PhraseStartsAt(tokens, k, p));
+            if (opener is null) break;
+            k += opener.Split(' ').Length;
         }
+        if (k + 1 >= tokens.Count) return false;
+        if (tokens.Skip(k).Any(_notSharingWords.Contains)) return false;
 
+        var (first, next) = (tokens[k], tokens[k + 1]);
+        if (_sharingSelf.Contains(first)) return !_notSharingAfterSelf.Contains(next);
+        // « on s'est fait battre » tells; « on s'appelle plus tard » proposes.
+        if (first == "on" && next == "s") return k + 2 < tokens.Count && tokens[k + 2] == "est";
+        if (first == "on") return _sharingUsVerbs.Contains(next);
+        if (_sharingWeVerbs.Contains(first)) return true;
+        // « mon avis c'est que… » is an opinion, and « c'est » describes rather than tells.
+        if (!_sharingMine.Contains(first) || _notSharingMineNouns.Contains(next)) return false;
+        for (var j = k + 1; j < Math.Min(tokens.Count, k + 1 + SharingMineWindow); j++)
+            if (_sharingMineVerbs.Contains(tokens[j]) && tokens[j - 1] != "c") return true;
         return false;
     }
 
-    // One of the phrases on adjacent tokens, not cancelled by a negator within two tokens after
-    // it (cancelAfter) or three before it (cancelBefore). « plus que » after a phrase is the
-    // comparative, not a negation: « je t'aime plus que tout ».
-    private static bool FindPhrase(List<string> tokens, string[] phrases, bool cancelAfter, bool cancelBefore)
+    // One of the phrases asking something of her: closing the message or its own question (« salut,
+    // ça va ? tu viens ce soir ? »), or followed by one of the followers (« toi », « bien »…) — never
+    // by anything else, a negator included (« ça va pas la tête », « comment tu vas faire », « t'es là
+    // ce soir ? »).
+    private static bool IsClosingAsk(List<string> tokens, string[] phrases, HashSet<int> questionBreaks,
+        HashSet<string> followers)
     {
         foreach (var phrase in phrases)
         {
@@ -1442,6 +1989,57 @@ internal static class MessageCues
             for (var i = 0; i + length <= tokens.Count; i++)
             {
                 if (!PhraseStartsAt(tokens, i, phrase)) continue;
+                var end = i + length;
+                if (end == tokens.Count || questionBreaks.Contains(end) || followers.Contains(tokens[end])) return true;
+            }
+        }
+
+        return false;
+    }
+
+    // The token indexes a « ? » sits just before: « ça va ? tu viens » gives { 2 }. The « ? » is a
+    // separator to TokenizeOrdered, so tokenizing each piece and counting lands on the same tokens.
+    private static HashSet<int> QuestionBreaks(string text) => Breaks(text, '?');
+
+    // The same for any end of sentence or clause: « je vais dormir, à demain » gives { 3 }.
+    private static HashSet<int> SentenceBreaks(string text) => Breaks(text, '?', '!', '.', ',', ';', '…', '\n');
+
+    private static HashSet<int> Breaks(string text, params char[] separators)
+    {
+        var breaks = new HashSet<int>();
+        var count = 0;
+        var pieces = text.Split(separators);
+        for (var p = 0; p < pieces.Length - 1; p++)
+        {
+            count += TokenizeOrdered(pieces[p]).Count;
+            breaks.Add(count);
+        }
+
+        return breaks;
+    }
+
+    // Whether the phrase closes the message.
+    private static bool EndsWith(List<string> tokens, string phrase)
+    {
+        var length = phrase.Split(' ').Length;
+        return tokens.Count >= length && PhraseStartsAt(tokens, tokens.Count - length, phrase);
+    }
+
+    // One of the phrases on adjacent tokens, not cancelled by a negator within two tokens after
+    // it (cancelAfter) or three before it (cancelBefore). « plus que » after a phrase is the
+    // comparative, not a negation: « je t'aime plus que tout ». A phrase right after a word of
+    // notAfter, or right before a word of notFollowedBy, doesn't count either.
+    private static bool FindPhrase(List<string> tokens, string[] phrases, bool cancelAfter, bool cancelBefore,
+        HashSet<string>? notAfter = null, HashSet<string>? notFollowedBy = null)
+    {
+        foreach (var phrase in phrases)
+        {
+            var length = phrase.Split(' ').Length;
+            for (var i = 0; i + length <= tokens.Count; i++)
+            {
+                if (!PhraseStartsAt(tokens, i, phrase)) continue;
+                if (notAfter is not null && i > 0 && notAfter.Contains(tokens[i - 1])) continue;
+                if (notFollowedBy is not null && i + length < tokens.Count && notFollowedBy.Contains(tokens[i + length])) continue;
 
                 var end = i + length;
                 var negatedAfter = cancelAfter && Enumerable.Range(end, Math.Min(ForwardNegationWindow, tokens.Count - end))
@@ -1516,7 +2114,8 @@ internal static class MessageCues
     }
 
     // Splits text into an ordered list of lowercase, accent-stripped words,
-    // preserving position for cues that depend on word order.
+    // preserving position for cues that depend on word order. The ligatures are spelled out, since
+    // they have no decomposition: « cœur » reads as the cue "coeur".
     private static List<string> TokenizeOrdered(string content)
     {
         var sb = new StringBuilder(content.Length);
@@ -1524,6 +2123,8 @@ internal static class MessageCues
         {
             var cat = CharUnicodeInfo.GetUnicodeCategory(ch);
             if (cat == UnicodeCategory.NonSpacingMark) continue;
+            if (ch == 'œ') { sb.Append("oe"); continue; }
+            if (ch == 'æ') { sb.Append("ae"); continue; }
             sb.Append(char.IsLetterOrDigit(ch) ? ch : ' ');
         }
         return sb.ToString()
