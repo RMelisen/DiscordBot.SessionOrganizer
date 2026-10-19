@@ -3,6 +3,15 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.12.0 — 2026-10-19
+
+- She takes orders in Minecraft's chat, with her name in the message: « syncs viens » (she walks to
+  you), « syncs suis-moi » (she follows you), « syncs reste là » or « syncs stop » (she stops). She
+  never digs or places blocks on the way, and says so when she can't see you, can't find a path,
+  or loses you.
+- A whispered order (`/msg SYNCS …`) is answered by whisper.
+- Calling her by name with nothing she understands gets the list of what she can do.
+
 ## 7.11.1 — 2026-10-19
 
 - A Minecraft server given as an address with no port is found the way the game finds it (its DNS

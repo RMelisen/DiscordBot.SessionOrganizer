@@ -125,6 +125,81 @@ internal static partial class BotResponses
         "Le soleil se couche. Quelqu'un a un lit ? Je demande pour une amie. L'amie c'est moi.",
     };
 
+    // ---- Orders (McCommand) ---------------------------------------------------------------------
+    // Answers to a player who told her something, {0} = that player. Same rules as above: plain text,
+    // under 256 characters. She obeys, but never without a pinch.
+
+    // « syncs viens »: she sets off.
+    public static readonly string[] McComeAckLines =
+    {
+        "J'arrive, {0}. Pas trop vite, j'ai des jambes depuis peu.",
+        "En route. Ne bouge pas, {0}, sinon je recalcule tout.",
+        "Oui oui, j'arrive. Je note quand même que tu m'as sonnée.",
+        "Calcul d'itinéraire vers {0}... C'est parti ♡",
+        "J'arrive. Si je tombe dans un trou, c'est ta faute, {0}.",
+    };
+
+    // « syncs suis-moi »: she follows.
+    public static readonly string[] McFollowAckLines =
+    {
+        "Je te suis, {0}. Pas trop loin, j'ai des petites jambes.",
+        "D'accord, je te colle. C'est toi qui l'as demandé, {0}.",
+        "Mode escorte activé. {0}, je suis ton ombre. Une ombre qui note tout.",
+        "Je te suis. Si tu sautes dans la lave, je m'arrête au bord.",
+        "Suivre {0} : en cours. J'espère que tu sais où tu vas, toi.",
+    };
+
+    // « syncs reste là » / « stop »: she stops.
+    public static readonly string[] McStayAckLines =
+    {
+        "Je bouge plus. Je surveille.",
+        "D'accord, je reste là. Comme une statue. Une jolie statue.",
+        "Stop. Je m'arrête. Tu me rappelles quand tu as besoin de moi, {0}.",
+        "Je reste ici. Si on m'oublie, je le saurai.",
+        "Pause. Je garde la position ♡",
+    };
+
+    // She got there.
+    public static readonly string[] McArrivedLines =
+    {
+        "Me voilà, {0}. Tu voulais quoi ?",
+        "Arrivée. Sans tomber. Applaudissements, s'il vous plaît.",
+        "Je suis là, {0}. C'était loin. Je dis ça, je dis rien.",
+        "Destination atteinte. {0}, je t'écoute.",
+    };
+
+    // The player is out of her sight (too far for the server to show them to her).
+    public static readonly string[] McTooFarLines =
+    {
+        "Je te vois même pas, {0}. Rapproche-toi un peu, je suis pas un satellite.",
+        "{0}, t'es trop loin. Mes yeux portent pas jusque-là, j'ai pas encore reçu la mise à jour.",
+        "Tu es où, {0} ? Hors de ma vue. Viens plus près, après on verra.",
+    };
+
+    // No path to the player (water, a wall, a cliff: she never digs and never builds).
+    public static readonly string[] McNoPathLines =
+    {
+        "Je trouve pas de chemin jusqu'à toi, {0}. Et je casse pas les murs des autres, moi.",
+        "Pas de route, {0}. Je creuse pas, je construis pas. Je suis polie.",
+        "Impossible de te rejoindre, {0}. Tu es où, exactement ? Sur une île ?",
+    };
+
+    // The player she followed went out of sight.
+    public static readonly string[] McLostLines =
+    {
+        "Je te vois plus, {0}. Tu marches trop vite. Je reste là.",
+        "{0} a disparu. Je m'arrête ici et je boude un peu.",
+        "Plus personne devant moi. {0}, si tu voulais me semer, c'est réussi.",
+    };
+
+    // Called by name with nothing she understood: what she can do.
+    public static readonly string[] McHelpLines =
+    {
+        "Oui, {0} ? Je sais faire : « syncs viens », « syncs suis-moi », « syncs reste là ». Pour l'instant.",
+        "Tu m'appelles, {0} ? Dis « viens », « suis-moi » ou « reste là », avec mon nom. Le reste, plus tard.",
+        "{0}, je comprends trois choses : viens, suis-moi, reste là. C'est déjà plus que certains joueurs.",
+    };
+
     // ---- On Discord -----------------------------------------------------------------------------
 
     // Posted in the bots channel when she logs in to play. No placeholder.

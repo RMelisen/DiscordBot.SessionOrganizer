@@ -210,6 +210,11 @@ namespace ProjectSYNCS.Services;
 //       McHitByPlayerLines ....... a player hit her, {0} = who
 //       McAdvancementLines ....... someone earned an advancement, {0} = who
 //       McNightLines ............. night falls
+//     In game, answering an order (McCommand), {0} = who asked
+//       McComeAckLines · McFollowAckLines · McStayAckLines ... she obeys
+//       McArrivedLines ........... she got there
+//       McTooFarLines · McNoPathLines · McLostLines ... out of sight / no way / lost while following
+//       McHelpLines .............. called by name with no order she knows
 //     On Discord, in the bots channel
 //       McJoinPostLines · McLeavePostLines ... she goes to play / comes back
 //

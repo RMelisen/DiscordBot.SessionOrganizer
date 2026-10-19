@@ -1603,6 +1603,41 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         Fail("advancement earner: not a player");
     Covers("McDeathLines", typeof(McDeathKind));
 
+    // In-game orders (McCommand): her name is needed, a refusal is not an order, staying wins.
+    var mcNames = new[] { "SYNCS", "syncs" };
+    void Order(string text, McOrder expected)
+    {
+        var got = McCommand.Read(text, mcNames);
+        if (got != expected) Fail($"order « {text} »: got {got}, expected {expected}");
+    }
+    Order("syncs viens", McOrder.Come);
+    Order("SYNCS, viens ici !", McOrder.Come);
+    Order("viens syncs", McOrder.Come);
+    Order("syncs tu viens ?", McOrder.Come);
+    Order("Syncs rejoins-moi", McOrder.Come);
+    Order("syncs par ici", McOrder.Come);
+    Order("syncs suis-moi", McOrder.Follow);
+    Order("Suis moi SYNCS", McOrder.Follow);
+    Order("syncs follow me", McOrder.Follow);
+    Order("syncs accompagne-moi", McOrder.Follow);
+    Order("syncs reste là", McOrder.Stay);
+    Order("syncs reste ici", McOrder.Stay);
+    Order("syncs stop", McOrder.Stay);
+    Order("syncs arrête-toi", McOrder.Stay);
+    Order("syncs bouge pas", McOrder.Stay);
+    Order("syncs attends", McOrder.Stay);
+    Order("syncs viens pas", McOrder.None);
+    Order("syncs ne me suis pas", McOrder.None);
+    Order("viens voir", McOrder.None);
+    Order("suis moi", McOrder.None);
+    Order("je suis là syncs", McOrder.Unknown);
+    Order("syncs", McOrder.Unknown);
+    Order("syncs ?", McOrder.Unknown);
+    Order("hé syncs", McOrder.Unknown);
+    Order("je crois que syncs est un peu nulle franchement", McOrder.None);
+    Order("syncs est trop forte en vrai de vrai de vrai", McOrder.None);
+    Order("suisse", McOrder.None);
+
     // SRV only where the client library does it: a name, on the default port.
     if (!McAddress.NeedsLookup("play.example.net", 25565) || McAddress.NeedsLookup("play.example.net", 25566)
         || McAddress.NeedsLookup("192.168.1.10", 25565) || McAddress.NeedsLookup("localhost", 25565))
@@ -1615,7 +1650,9 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         Fail("server list ping: not a status");
 
     // In game there is no Discord markup: no custom emotes, no sticker tags, and Minecraft cuts chat at 256.
-    foreach (var f in new[] { "McArrivalLines", "McLeavingLines", "McDeathLines", "McHitByPlayerLines", "McAdvancementLines", "McNightLines" })
+    foreach (var f in new[] { "McArrivalLines", "McLeavingLines", "McDeathLines", "McHitByPlayerLines", "McAdvancementLines", "McNightLines",
+             "McComeAckLines", "McFollowAckLines", "McStayAckLines", "McArrivedLines", "McTooFarLines", "McNoPathLines", "McLostLines",
+             "McHelpLines" })
     foreach (var (name, lines) in Pools(f))
     {
         if (lines.Distinct().Count() != lines.Length) Fail($"{name}: duplicate lines");

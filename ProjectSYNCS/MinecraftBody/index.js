@@ -8,9 +8,11 @@
 // Environment (the C# side clears everything else, so the Discord token never reaches us):
 //   MC_HOST, MC_PORT, MC_USERNAME
 //
-// In:  {"op":"say","text":"…"} · {"op":"quit"}
-// Out: version {server,using,fallback} · spawned · players {names} · chat {player,text}
+// In:  {"op":"say","text":"…"} · {"op":"whisper","player":"…","text":"…"} · {"op":"quit"}
+//      {"op":"come","player":"…"} · {"op":"follow","player":"…"} · {"op":"stay"}
+// Out: version {server,using,fallback} · spawned · players {names} · chat {player,text,private}
 //      system {key,args:[{text,key}]} · hurt {by} · died · night · kicked {reason} · end {reason}
+//      moving {player,kind: come|follow} · arrived {player} · cantReach {player,why: notVisible|noPath|lost}
 
 'use strict';
 
@@ -24,6 +26,7 @@ for (const method of ['log', 'info', 'warn', 'error', 'debug', 'trace']) {
 }
 
 const mineflayer = require('mineflayer');
+const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
 const mc = require('minecraft-protocol');
 const minecraftData = require('minecraft-data');
 
@@ -71,10 +74,79 @@ function part(component) {
   return { text: component.toString(), key: component.translate ?? null };
 }
 
+// ---- Moving: come, follow, stay ----------------------------------------------------------------
+
+// What she was asked to do, for the events that report how it went. Null when she stands still.
+let task = null;
+
+// She walks and jumps, never digs and never places a block: a path through someone's wall or a
+// dirt pillar in the middle of their build is not help.
+function gentleMovements() {
+  const movements = new Movements(bot);
+  movements.canDig = false;
+  movements.scafoldingBlocks = [];
+  movements.allow1by1towers = false;
+  return movements;
+}
+
+// The player's entity, if it's close enough for the server to show it to her (render distance).
+function playerEntity(name) {
+  const player = bot.players[name];
+  return player && player.entity ? player.entity : null;
+}
+
+function come(player) {
+  const target = playerEntity(player);
+  if (!target) return emit('cantReach', { player, why: 'notVisible' });
+  task = { kind: 'come', player, reported: false };
+  const at = target.position;
+  bot.pathfinder.setGoal(new goals.GoalNear(at.x, at.y, at.z, 2));
+  emit('moving', { player, kind: 'come' });
+}
+
+function follow(player) {
+  const target = playerEntity(player);
+  if (!target) return emit('cantReach', { player, why: 'notVisible' });
+  task = { kind: 'follow', player, reported: false };
+  // Dynamic: the goal moves with the player.
+  bot.pathfinder.setGoal(new goals.GoalFollow(target, 2), true);
+  emit('moving', { player, kind: 'follow' });
+}
+
+function stay() {
+  task = null;
+  bot.pathfinder.setGoal(null);
+}
+
 function attach() {
+  bot.loadPlugin(pathfinder);
+
   bot.once('spawn', () => {
+    bot.pathfinder.setMovements(gentleMovements());
     emit('spawned', {});
     reportPlayers();
+  });
+
+  bot.on('goal_reached', () => {
+    if (!task || task.kind !== 'come') return;
+    emit('arrived', { player: task.player });
+    task = null;
+  });
+
+  // No way there. Coming gives up at once; following keeps trying (the player may walk somewhere
+  // reachable) but says so only once per order.
+  bot.on('path_update', (result) => {
+    if (!task || result.status !== 'noPath' || task.reported) return;
+    task.reported = true;
+    emit('cantReach', { player: task.player, why: 'noPath' });
+    if (task.kind === 'come') stay();
+  });
+
+  // The player she follows went out of sight (too far, or logged out): she stops where she is.
+  bot.on('entityGone', (entity) => {
+    if (!task || task.kind !== 'follow' || entity.username !== task.player) return;
+    emit('cantReach', { player: task.player, why: 'lost' });
+    stay();
   });
 
   bot.on('playerJoined', reportPlayers);
@@ -82,7 +154,11 @@ function attach() {
 
   bot.on('chat', (player, text) => {
     if (player === bot.username) return;
-    emit('chat', { player, text });
+    emit('chat', { player, text, private: false });
+  });
+  bot.on('whisper', (player, text) => {
+    if (player === bot.username) return;
+    emit('chat', { player, text, private: true });
   });
 
   // Deaths and advancements arrive as translated system messages. Only those two families are
@@ -186,6 +262,19 @@ input.on('line', (line) => {
       case 'say':
         // Minecraft's chat cap; C# keeps her lines under it, this is the backstop.
         if (bot && typeof command.text === 'string' && command.text.length > 0) bot.chat(command.text.slice(0, 256));
+        break;
+      case 'whisper':
+        if (bot && typeof command.player === 'string' && typeof command.text === 'string' && command.text.length > 0)
+          bot.whisper(command.player, command.text.slice(0, 200));
+        break;
+      case 'come':
+        if (bot && typeof command.player === 'string') come(command.player);
+        break;
+      case 'follow':
+        if (bot && typeof command.player === 'string') follow(command.player);
+        break;
+      case 'stay':
+        if (bot) stay();
         break;
       case 'quit':
         // A beat so a goodbye sent just before reaches the server ahead of the disconnect.

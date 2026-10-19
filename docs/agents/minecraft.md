@@ -53,6 +53,34 @@ host a player's client would. Leave `minecraft_port` at 25565 for such an addres
 The service polls on **its own 1-minute interval**, like every loop. The server is only up during
 sessions and G-Portal has no start/stop API, so she **detects** the server and never starts it.
 
+## Orders
+
+A player gives her an order in chat (`McCommand`, pure, with cases in the checks). It needs her
+name in the message, because the chat is shared. A refusal (« viens pas ») is not an order. Stay
+is read before the negation, because « bouge pas » means stay. A message that only names her
+gets the list of what she can do (`McHelpLines`), but only when the name opens or closes it: a
+call, not talk about her.
+
+- **Come** walks to where the player stood (`GoalNear`, 2 blocks). **Follow** keeps a moving goal
+  on the player (`GoalFollow`). **Stay** clears the goal.
+- **She never digs and never places a block.** `canDig = false`, no scaffolding blocks, no
+  pillaring: a path through someone's wall or a dirt tower in their build is not help. Where
+  walking can't get there she says so (`McNoPathLines`) instead.
+- **She can only reach a player the server shows her** (render distance). Beyond that the body
+  answers `cantReach notVisible` at once (`McTooFarLines`). A followed player who goes out of
+  sight ends the follow (`lost`).
+- **Come and follow are acknowledged when the body reports `moving`**, not when the order is read.
+  « J'arrive » followed by « je te vois pas » reads as a broken promise. Stay is acknowledged
+  straight away.
+- **Whispered orders get whispered answers**, outcome included. The service remembers who gave the
+  current order and how.
+- **Orders aren't rationed like remarks.** One gate per player ignores the same player repeating
+  within 3 s, and another gives each player the help list once a minute at most.
+
+Player chat reaches the body as Mineflayer's `chat` and `whisper` events. A chat plugin that
+reformats messages can hide them from Mineflayer's parser; if orders go unanswered on a server
+with one, that's the first thing to check.
+
 ## Failures
 
 An unplanned end (crash, kick, refused login, unsupported version) backs off 2, then 5, then

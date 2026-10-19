@@ -39,6 +39,10 @@ public sealed class MinecraftBodyService : BackgroundService
     // two policies; neither is shared with anything else.
     private readonly CooldownGate<string> _kindGate = new(TimeSpan.FromSeconds(30));
     private readonly CooldownGate<int> _anyGate = new(TimeSpan.FromSeconds(8));
+    // Orders are answered, not rationed like remarks: only a player repeating one within 3 s is ignored,
+    // and the list of what she understands is given to the same player once a minute at most.
+    private readonly CooldownGate<string> _orderGate = new(TimeSpan.FromSeconds(3), TimeSpan.FromHours(1));
+    private readonly CooldownGate<string> _helpGate = new(TimeSpan.FromMinutes(1), TimeSpan.FromHours(1));
     private const double NightChance = 0.5;
     private const double AdvancementChance = 0.6;
 
@@ -68,6 +72,8 @@ public sealed class MinecraftBodyService : BackgroundService
     private ServerStatus? _lastStatus;
     private DateTimeOffset? _lastPingAt;
     private string? _resolved;
+    // Who gave the order she's carrying out, and whether by whisper: the outcome is answered the same way.
+    private (string Player, bool Private)? _order;
     private (string Server, string Using, bool Fallback)? _version;
     private string? _lastKick;
     private DateTimeOffset? _lastKickAt;
@@ -303,6 +309,24 @@ public sealed class MinecraftBodyService : BackgroundService
                                 a.TryGetProperty("key", out var k) && k.ValueKind == JsonValueKind.String ? k.GetString() : null))
                             .ToList());
                     break;
+                case "chat":
+                    OnChat(root.GetProperty("player").GetString() ?? "", root.GetProperty("text").GetString() ?? "",
+                        root.TryGetProperty("private", out var priv) && priv.ValueKind == JsonValueKind.True);
+                    break;
+                case "moving":
+                    OnMoving(root.GetProperty("player").GetString() ?? "", root.GetProperty("kind").GetString() ?? "");
+                    break;
+                case "arrived":
+                    OnOutcome(root.GetProperty("player").GetString() ?? "", BotResponses.McArrivedLines);
+                    break;
+                case "cantReach":
+                    OnOutcome(root.GetProperty("player").GetString() ?? "", root.GetProperty("why").GetString() switch
+                    {
+                        "notVisible" => BotResponses.McTooFarLines,
+                        "lost" => BotResponses.McLostLines,
+                        _ => BotResponses.McNoPathLines,
+                    });
+                    break;
                 case "hurt":
                     if (root.TryGetProperty("by", out var by) && by.ValueKind == JsonValueKind.String && by.GetString() is { Length: > 0 } hitter)
                         Remark("hit", BotResponses.McHitByPlayerLines, hitter);
@@ -364,6 +388,62 @@ public sealed class MinecraftBodyService : BackgroundService
         }
         if (McDeath.AdvancementEarner(key, args, players) is { } earner && Random.Shared.NextDouble() < AdvancementChance)
             Remark("advancement", BotResponses.McAdvancementLines, earner);
+    }
+
+    // ---- Orders ---------------------------------------------------------------------------------
+
+    private void OnChat(string player, string text, bool whispered)
+    {
+        if (player.Length == 0) return;
+        var order = McCommand.Read(text, new[] { _username, "syncs" });
+        switch (order)
+        {
+            case McOrder.None:
+                return;
+            case McOrder.Unknown:
+                if (_helpGate.TryClaim(player)) Reply(player, whispered, BotResponses.McHelpLines);
+                return;
+        }
+        if (!_orderGate.TryClaim(player)) return;
+
+        var op = order switch { McOrder.Come => "come", McOrder.Follow => "follow", _ => "stay" };
+        lock (_gate)
+        {
+            if (_body is not { } body || !_spawned || _leaving) return;
+            _order = order == McOrder.Stay ? null : (player, whispered);
+            body.Send(op == "stay" ? new { op } : (object)new { op, player });
+        }
+        // Coming and following are acknowledged when the body reports it set off ("moving"): the player
+        // may be out of sight, and « j'arrive » followed by « je te vois pas » reads as a broken promise.
+        if (order == McOrder.Stay) Reply(player, whispered, BotResponses.McStayAckLines);
+    }
+
+    private void OnMoving(string player, string kind)
+    {
+        bool whispered;
+        lock (_gate) whispered = _order is { } o && o.Player == player && o.Private;
+        Reply(player, whispered, kind == "follow" ? BotResponses.McFollowAckLines : BotResponses.McComeAckLines);
+    }
+
+    // How an order went (arrived, out of sight, no way there): answered to whoever gave it, the way they gave it.
+    private void OnOutcome(string player, string[] pool)
+    {
+        bool whispered;
+        lock (_gate)
+        {
+            whispered = _order is { } o && o.Player == player && o.Private;
+            if (_order is { } current && current.Player == player) _order = null;
+        }
+        Reply(player, whispered, pool);
+    }
+
+    /// <summary>A line to one player: in the chat, or whispered back if they whispered.</summary>
+    private void Reply(string player, bool whispered, string[] pool)
+    {
+        var text = string.Format(_picker.Pick(pool), player);
+        lock (_gate)
+            if (_body is { } body && _spawned && !_leaving)
+                body.Send(whispered ? new { op = "whisper", player, text } : (object)new { op = "say", text });
     }
 
     /// <summary>One of her lines in Minecraft's chat, rationed per kind and overall.</summary>
