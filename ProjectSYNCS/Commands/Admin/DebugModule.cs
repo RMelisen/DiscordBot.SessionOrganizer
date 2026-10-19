@@ -740,7 +740,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     // What people say to her, to decide what she should learn next: how many of each kind of chat
     // answer she gave (ChatAnswerService, by path), or the last messages she found nothing specific
     // to say to (UnansweredLog, in memory, no authors), as a file since a hundred lines exceed a
-    // message.
+    // message. Posted in the open, under her report-for-duty line; only the refusals stay ephemeral.
     [SlashCommand("answers", "Ce qu'on me dit le plus, et ce que je sais pas encore répondre")]
     public async Task AnswersAsync(
         [Summary("period", "La période comptée")] AnswersPeriod period = AnswersPeriod.Week,
@@ -766,15 +766,16 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
                 return;
             }
 
-            await DeferAsync(ephemeral: true);
+            await DeferAsync();
             using var stream = new MemoryStream(Encoding.UTF8.GetBytes(AnswerStatsCards.BuildExamples(messages)));
             await FollowupWithFileAsync(stream, "sans-reponse.txt",
-                $"**{messages.Count}** message(s) sans réponse précise, du plus récent au plus ancien.", ephemeral: true);
+                $"{_picker.Pick(BotResponses.OwnerReportLines)}\n**{messages.Count}** message(s) sans réponse précise, du plus récent au plus ancien.",
+                allowedMentions: AllowedMentions.None);
             return;
         }
 
         // The database can outrun Discord's 3 s on the Pi.
-        await DeferAsync(ephemeral: true);
+        await DeferAsync();
         var statsPeriod = period switch
         {
             AnswersPeriod.Month => StatsPeriod.Month,
@@ -782,7 +783,8 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
             _ => StatsPeriod.Week,
         };
         var counts = await _answers.GetAsync(Context.Guild.Id, statsPeriod);
-        await FollowupAsync(embed: AnswerStatsCards.BuildTypes(counts, statsPeriod), ephemeral: true);
+        await FollowupAsync(_picker.Pick(BotResponses.OwnerReportLines),
+            embed: AnswerStatsCards.BuildTypes(counts, statsPeriod), allowedMentions: AllowedMentions.None);
     }
 
     [SlashCommand("absent", "Activer ou désactiver ton mode absent")]

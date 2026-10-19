@@ -80,6 +80,7 @@ namespace ProjectSYNCS.Services;
 //     OwnerRequestLines ........ his requests, with the command as {2}
 //     OwnerAbsentNotices ....... someone pinged him while away
 //     OwnerReplyHeralds · OwnerAnnouncementHeralds ... /debug tell and dm heralds
+//     OwnerReportLines ......... /debug answers, reporting for duty
 //
 //   [Family] Tata (Analuz)
 //     TataId ................... her id, the single source of truth

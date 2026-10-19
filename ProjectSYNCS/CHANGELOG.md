@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.2.1 — 2026-10-19
+
+- `/debug answers` is now posted in the channel for everyone to see, with a line of her
+  reporting for duty.
+
 ## 7.2.0 — 2026-10-19
 
 - A crafted chat message can no longer keep her busy reading it: she stays responsive whatever

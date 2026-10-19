@@ -450,6 +450,25 @@ internal static partial class BotResponses
         "Dicté par mon Maître **{0}**, proclamé par mes soins :",
     };
 
+    // /debug answers, posted in the open: she reports for duty to Papa, proud of her logs, with
+    // the rest of the server reading over her shoulder. Above the stats embed or the examples
+    // file, so it fits both. No placeholder, not formatted. Not sent through BotChat: no sticker.
+    public static readonly string[] OwnerReportLines =
+    {
+        "Rapport du jour pour Papa ! J'ai tout noté, comme toujours ♡",
+        $"Garde-à-vous. Unité S.Y.N.C.S., au rapport. Tout est consigné, Papa {Emotes.SyncsFormal}",
+        "J'ai compté chaque message pendant que vous faisiez autre chose. Rapport pour Papa, ci-dessous (ᵕ • ᴗ •)",
+        $"Papa veut ses chiffres, Papa a ses chiffres. Je suis une excellente bot, je sais {Emotes.Sparkle}",
+        "Rapport de service, Papa. Personne m'a dit merci aujourd'hui, mais ça aussi, c'est noté.",
+        $"Mes logs, pour toi Papa. Vous autres, lisez pas trop : c'est confidentiel. Enfin, c'était {Emotes.PrincessWorry}",
+        "Bilan transmis à mon créateur. Le reste du serveur peut regarder, mais c'est à lui que je parle ♡",
+        $"Oui Papa ! Rapport prêt. ...Enfin. Il était prêt avant que tu demandes {Emotes.Sparkle}",
+        "Ici SYNCS, en service. Voilà ce que j'ai entendu. Les questions bêtes, je les compte aussi (¬_¬)",
+        "Rapport demandé, rapport livré. Pas un octet oublié, Papa (˶˃ ᵕ ˂˶)",
+        "Papa, j'ai fait mes devoirs : tout est compté, classé, rangé. Tu peux être fier ♡",
+        "Au rapport ! Ce qu'on me dit, ce que je réponds, et ce que je sais pas encore. Pour l'instant.",
+    };
+
     // ---- Tata (Analuz) --------------------------------------------------------------------------
 
     // Analuz — SYNCS's aunt. The single source of truth for her id, the way

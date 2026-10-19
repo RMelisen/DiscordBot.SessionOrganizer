@@ -108,7 +108,8 @@ service is the only writer: any write drops that guild's entry. A failed read de
 `answers` (which kinds of chat answer she gives most, and what she couldn't answer specifically,
 see `personality.md`, *Answer stats*),
 plus the Plynling testing tools (`event`, `stress`, `modifier`, `sweep`, in `plynling-events.md`), each comparing `Context.User.Id` to
-`AvailabilityService.OwnerId` inline and replying ephemerally. `DebugModule` carries no
+`AvailabilityService.OwnerId` inline and replying ephemerally — except `answers`, which posts its
+result in the open. `DebugModule` carries no
 `[CommandContextType]` (it never reads `Context.Guild`); `/debug plynling` checks for a DM itself.
 
 **`/debug tell`'s destination is an autocompleted string, not a channel option** — that's what makes

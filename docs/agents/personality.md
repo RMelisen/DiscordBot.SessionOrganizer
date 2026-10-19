@@ -60,6 +60,8 @@ from `/help` and the README.
   split by path, and *Pistes* (the unrecognised share per path, the intents never hit in the
   period). Every key on every path measures about 3,300 characters, under the 6000 cap; fields are cut
   at 900. The examples go out as a `.txt` file.
+- **Posted in the open, not ephemeral**, under an `OwnerReportLines` line (her reporting for duty
+  to Papa); only the refusals stay ephemeral. Sent with `AllowedMentions.None`.
 
 ## Reactions and emotes
 
