@@ -3,18 +3,40 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
-## 7.2.1 — 2026-10-19
-
-- `/debug answers` is now posted in the channel for everyone to see, with a line of her
-  reporting for duty.
-
-## 7.2.0 — 2026-10-19
+## 7.4.0 — 2026-10-19
 
 - A crafted chat message can no longer keep her busy reading it: she stays responsive whatever
   is sent to her.
 - Gifts, trades, sales, purchases and game payouts made at the same moment are now applied one
   after the other, so items and cailloux can no longer be counted twice.
 - The Discord token is now masked in the add-on's configuration screen.
+- `/debug answers` is now posted in the channel for everyone to see, with a line of her
+  reporting for duty.
+
+## 7.3.0 — 2026-10-16
+
+- Answer one of her questions with a plain « oui » or « non » and she reacts to the answer instead of
+  shrugging at a one-word reply.
+- Ask « tu m'aimes ? » and her answer depends on the good bots and bad bots you've given her over
+  the last 30 days.
+- Ask « tu te souviens de moi ? » or « comment je m'appelle ? » and she says your name, often with
+  something her records remember about you.
+- Ask « t'es fâchée ? » or « tu boudes ? » and she denies it, not very convincingly.
+
+## 7.2.0 — 2026-10-16
+
+- Tell her you're having a bad day and she drops the teasing to offer something gentle to hold on to.
+- Ask « je devrais… ? » or « X ou Y ? » and she decides, the same way as `/yesno`.
+- Ask « c'est la faute de qui ? » and she picks a culprit from your voice call, as `/blame` does.
+- She tells jokes and fun facts when asked.
+- « tu m'as manqué » now gets the same flustered answer as a declaration.
+
+## 7.1.3 — 2026-10-16
+
+- She understands more ways of asking about her love life, her hobbies and tastes, how to use her
+  sessions, polls, reminders, giveaways and quiz, and of doubting her (« t'es sûre ? », « sérieux ? »).
+- « tu m'ignores ? » and « tu réponds plus ? » are now read as checking she's still there.
+- « tu aimes qui comme perso ? » no longer makes her rate « qui comme perso ».
 
 ## 7.1.1 — 2026-10-16
 

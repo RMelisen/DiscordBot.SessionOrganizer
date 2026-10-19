@@ -185,6 +185,8 @@ internal sealed class ChatterService
 
         var mood = MessageCues.Analyze(content);
         var isOwner = message.Author.Id == OwnerId;
+        var name = ResolveName(message.Author);
+        var intent = ChatIntent.None;
         IntentPick pick;
         string what;
 
@@ -209,8 +211,9 @@ internal sealed class ChatterService
         // when her name is only mentioned (« @Luca, discute avec Syncs quand tu peux »): that
         // « tu » is Luca.
         else if (MessageCues.AddressesHer(content, _client.CurrentUser.Id)
-                 && TryIntent(MessageCues.ReadIntent(content), message, isOwner, out var intentPick))
+                 && TryIntent(intent = MessageCues.ReadIntent(content), message, isOwner, out var intentPick))
         {
+            if (TryAnswerFromRecords(intent, message, ChatPath.Name, intentPick, name, CurrentWeekday())) return true;
             what = "named intent";
             pick = intentPick;
         }
@@ -229,7 +232,6 @@ internal sealed class ChatterService
                 : IntentPick.Of(BotResponses.TalkedAboutLines, AnswerKinds.TalkedAbout);
         }
 
-        var name = ResolveName(message.Author);
         _logger.LogInformation("{Name} said her name without addressing her — {What}.", name, what);
         Count(message, ChatPath.Name, pick.Kind);
         await ReplyWithTypingAsync(message, Format(pick, name, CurrentWeekday()), what, pick.Mentions);
@@ -396,7 +398,10 @@ internal sealed class ChatterService
         IntentPick pick;
         string what = "mention reply";
         if (TryIntent(intent, message, isOwner: false, out var intentPick))
+        {
+            if (TryAnswerFromRecords(intent, message, ChatPath.Mention, intentPick, name, weekday)) return;
             (pick, what) = (intentPick, $"mention intent ({intent})");
+        }
         else if (mood.IsGreeting && !mean)
             pick = IntentPick.Of(BotResponses.Greetings, AnswerKinds.Greeting);
         else if (RollTataWarmth(message.Author.Id, mood))
@@ -480,6 +485,11 @@ internal sealed class ChatterService
         // LowEffort, so it is answered the same way rather than roasted as if unread.
         if (intent == ChatIntent.None && string.IsNullOrWhiteSpace(content) && message.Stickers.Count > 0)
             intent = ChatIntent.LowEffort;
+        // A bare « oui » / « non » under one of her questions answers it. Not when the post has its own
+        // context line (« oui » under the late call is « j'arrive »), which Papa never gets anyway.
+        if (!mean && MessageCues.ReadAnswer(content) is { } answer && AskedSomething(message.ReferencedMessage)
+            && (isOwner || ReadReplyContext(message) is null))
+            intent = answer;
 
         IntentPick pick;
         string what = "reply comeback";
@@ -495,6 +505,7 @@ internal sealed class ChatterService
         {
             // Papa reaches this only for an intent he has a twin for (or an opinion, which is
             // the same for everyone); the rest of his replies go on down to his own pools.
+            if (TryAnswerFromRecords(intent, message, ChatPath.Reply, intentPick, name, weekday)) return;
             (pick, what) = (intentPick, $"reply intent ({intent})");
         }
         else if (!mean && !isOwner && ReadReplyContext(message) is { } context)
@@ -593,8 +604,8 @@ internal sealed class ChatterService
     /// <summary>
     /// The answer to a specific intent (not a generic question or a low-effort word), or false.
     /// Papa only has twins for some intents; for the others this is false and he goes on to his
-    /// own pools — except an opinion and a ship, the same verdict whoever asks, and help and
-    /// requests, which he gets in his devoted request pool.
+    /// own pools — except an opinion, a ship, a yes-or-no, a blame, a joke and a fun fact, the same
+    /// whoever asks, and help and requests, which he gets in his devoted request pool.
     /// </summary>
     private bool TryIntent(ChatIntent intent, SocketUserMessage message, bool isOwner, out IntentPick pick)
     {
@@ -603,6 +614,23 @@ internal sealed class ChatterService
 
         if (intent == ChatIntent.Opinion) return TryOpinion(message, out pick);
         if (intent == ChatIntent.Ship) return TryShip(message, out pick);
+        if (intent == ChatIntent.Blame) return TryBlame(message, out pick);
+        if (intent == ChatIntent.ShouldI)
+        {
+            pick = ShouldIPick(message);
+            return true;
+        }
+        // The same joke and the same fact for everyone, Papa included.
+        if (intent == ChatIntent.Joke)
+        {
+            pick = IntentPick.Of(BotResponses.IntentLines[ChatIntent.Joke], AnswerKinds.Intent(intent));
+            return true;
+        }
+        if (intent == ChatIntent.FunFact)
+        {
+            pick = IntentPick.Of(BotResponses.MorningFunFacts, AnswerKinds.Intent(intent));
+            return true;
+        }
 
         if (intent == ChatIntent.Help)
         {
@@ -632,6 +660,13 @@ internal sealed class ChatterService
             return true;
         }
 
+        // Family asking « tu m'aimes ? » or « tu te souviens de moi ? » is not anyone asking.
+        if (message.Author.Id == BotResponses.TataId && BotResponses.TataIntentLines.TryGetValue(intent, out var tata))
+        {
+            pick = IntentPick.Of(tata, AnswerKinds.Intent(intent));
+            return true;
+        }
+
         if (isOwner)
         {
             if (!BotResponses.OwnerIntentLines.TryGetValue(intent, out var twin)) return false;
@@ -657,8 +692,65 @@ internal sealed class ChatterService
     // mens ? »): « menteuse » is an insult cue, but short and aimed at her it is teasing, and Disbelief
     // answers it — from Papa too, whose mean pool would take it as hurt. Longer insults stay mean
     // (Disbelief is six words at most).
-    private static bool IsMean(MessageMood mood, string content) =>
-        mood.Emotion == EmotionKind.Mean && MessageCues.ReadIntent(content) != ChatIntent.Disbelief;
+    // Feeling down is let through the same way when it speaks to nobody: « journée de merde » swears
+    // at the day, not at her, while « j'en ai marre de toi » stays an insult.
+    private static bool IsMean(MessageMood mood, string content)
+    {
+        if (mood.Emotion != EmotionKind.Mean) return false;
+        var intent = MessageCues.ReadIntent(content);
+        return intent != ChatIntent.Disbelief && !(intent == ChatIntent.Down && !MessageCues.SpeaksToSomeone(content));
+    }
+
+    // « je devrais y aller ? »: /yesno's coin flip and its pools, so chat and the command agree.
+    // « Valo ou LoL ? », « je joue ou je dors ? »: the same flip between the two sides, quoted as
+    // written (ChoiceLines, {2} chosen, {3} not).
+    private static IntentPick ShouldIPick(SocketUserMessage message)
+    {
+        var kind = AnswerKinds.Intent(ChatIntent.ShouldI);
+        var yes = Random.Shared.Next(2) == 0;
+        if (MessageCues.ReadChoice(message.Content ?? string.Empty) is { } choice)
+        {
+            var (chosen, rejected) = yes ? (choice.A, choice.B) : (choice.B, choice.A);
+            return new IntentPick(BotResponses.ChoiceLines, chosen, rejected, QuotedMentions, kind);
+        }
+        return IntentPick.Of(yes ? BotResponses.YesLines : BotResponses.NoLines, kind);
+    }
+
+    // « c'est la faute de qui ? »: /blame's draw (Helpers/Personality/Blame) among the humans in the
+    // asker's voice call, and its pools. A roll on Papa can't be edited away here as the command
+    // does, so it goes out as one of the dodge lines that strike his name through. Guild only.
+    private bool TryBlame(SocketUserMessage message, out IntentPick pick)
+    {
+        pick = default;
+        if (message.Author is not SocketGuildUser asker) return false;
+
+        var candidates = asker.VoiceChannel?.ConnectedUsers.Where(u => !u.IsBot).Select(u => u.Id).ToList() ?? [];
+        var result = Blame.Pick(candidates, asker.Id, OwnerId, Random.Shared);
+        var pool = result.Kind switch
+        {
+            BlameKind.Self => BotResponses.BlameSelfLines,
+            BlameKind.Quokka => BotResponses.BlameQuokkaLines,
+            BlameKind.PapaDodge => StruckPapaDodgeLines,
+            BlameKind.PapaDodgeQuokka => StruckPapaDodgeQuokkaLines,
+            BlameKind.Nobody => BotResponses.BlameNobodyLines,
+            _ => BotResponses.BlameLines,
+        };
+        // The /blame pools take the mention as {0}; here {0} is the name, so it goes in as {2}.
+        pick = new IntentPick(BlameChatPool(pool), $"<@{result.TargetId}>", string.Empty, QuotedMentions,
+            AnswerKinds.Intent(ChatIntent.Blame));
+        return true;
+    }
+
+    // The dodge lines that carry the slip themselves (« ~~C'est la faute de Papa.~~ … »): the others
+    // speak of a message before, which in chat there isn't.
+    private static readonly string[] StruckPapaDodgeLines = BotResponses.BlamePapaDodgeLines.Where(l => l.StartsWith("~~")).ToArray();
+    private static readonly string[] StruckPapaDodgeQuokkaLines =
+        BotResponses.BlamePapaDodgeQuokkaLines.Where(l => l.StartsWith("~~")).ToArray();
+
+    // Each /blame pool with its {0} moved to {2}, computed once per pool.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string[], string[]> _blameChatPools = new();
+    private static string[] BlameChatPool(string[] pool) =>
+        _blameChatPools.GetOrAdd(pool, p => p.Select(l => l.Replace("{0}", "{2}")).ToArray());
 
     // Someone telling her about their day (« j'ai mangé de la soupe »): interested half the time
     // (IntentLines), « euh, ok ? » the other half (SharingShrugLines). Papa always gets interest.
@@ -877,6 +969,79 @@ internal sealed class ChatterService
 
         Count(message, path, kind);
         await ReplyWithTypingAsync(message, fallback, what);
+    }
+
+    // Whether the message replied to asked something: a bare « oui » only answers a question.
+    private static bool AskedSomething(IMessage? replied) => replied?.Content?.Contains('?') == true;
+
+    // « tu m'aimes ? » and « tu te souviens de moi ? » are answered from her records, in a guild and
+    // never for the family, who have their own pools: the good and bad bots they gave her in the last
+    // 30 days decide whether she loves them, and one fact she keeps proves she remembers them. Read off the gateway
+    // handler, like the fact lines; true when it took the answer over. `plain` goes out when nothing
+    // applies or the read fails.
+    private bool TryAnswerFromRecords(
+        ChatIntent intent, SocketUserMessage message, ChatPath path, IntentPick plain, string name, string weekday)
+    {
+        if (intent is not (ChatIntent.DoYouLoveMe or ChatIntent.RememberMe)) return false;
+        if (message.Author.Id is OwnerId or BotResponses.TataId) return false;
+        if (message.Channel is not SocketGuildChannel guildChannel) return false;
+
+        var guildId = guildChannel.Guild.Id;
+        _ = Task.Run(() => ReplyFromRecordsAsync(intent, message, path, guildId, plain, name, weekday));
+        return true;
+    }
+
+    private async Task ReplyFromRecordsAsync(
+        ChatIntent intent, SocketUserMessage message, ChatPath path, ulong guildId, IntentPick plain, string name,
+        string weekday)
+    {
+        var what = $"{AnswerKinds.Key(path)} intent ({intent})";
+        try
+        {
+            await using var scope = _services.CreateAsyncScope();
+            var line = intent == ChatIntent.DoYouLoveMe
+                ? LovesMeLine(await scope.ServiceProvider.GetRequiredService<BotFeedbackService>()
+                    .GetTallyAsync(guildId, message.Author.Id, StatsPeriod.Month), name, weekday)
+                : RemembersLine(await scope.ServiceProvider.GetRequiredService<RecapService>()
+                    .GetAsync(guildId, message.Author.Id, StatsPeriod.AllTime), name, weekday);
+
+            if (line is not null)
+            {
+                Count(message, path, AnswerKinds.Intent(intent));
+                await ReplyWithTypingAsync(message, line, $"{what}, from her records", AllowedMentions.None);
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not read the records of {UserId} for a {Intent} answer.", message.Author.Id, intent);
+        }
+
+        Count(message, path, plain.Kind);
+        await ReplyWithTypingAsync(message, Format(plain, name, weekday), what, plain.Mentions);
+    }
+
+    // Whether she loves them is the last 30 days only, so a grudge can be worked off: more bad bots
+    // than good ones is the grudge (quoted, with its window), more good ones the treasure (never
+    // counted), a tie or nothing is null.
+    private string? LovesMeLine(FeedbackTally tally, string name, string weekday)
+    {
+        if (tally.Bad > tally.Good)
+            return string.Format(_picker.Pick(BotResponses.DoYouLoveMeGrudgeLines), name, weekday, $"{tally.Bad} bad bot en 30 jours");
+        if (tally.Good > tally.Bad)
+            return string.Format(_picker.Pick(BotResponses.DoYouLoveMeTreasureLines), name, weekday);
+        return null;
+    }
+
+    // A fact about them, all-time, proves she remembers: its line after an opener that says their
+    // name (the answer to « comment je m'appelle ? »). Null when no fact applies.
+    private string? RemembersLine(RecapStats stats, string name, string weekday)
+    {
+        if (ChatFacts.Pick(stats, Random.Shared) is not { } fact
+            || !BotResponses.ChatFactLines.TryGetValue(fact.Kind, out var pool))
+            return null;
+        var opener = string.Format(_picker.Pick(BotResponses.RememberMeOpeners), name);
+        return opener + " " + string.Format(_picker.Pick(pool), name, weekday, fact.A, fact.B);
     }
 
     // When the owner is flagged absent and someone (other than the owner) pings

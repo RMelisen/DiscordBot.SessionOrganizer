@@ -210,19 +210,24 @@ What makes her answer the message rather than its mood alone. Four pieces, all i
 
 ### Intents — `MessageCues.ReadIntent`
 
-`ChatIntent`, read on messages aimed at her: `Love`, `Apology`, `HowAreYou`, `AreYouThere`,
-`WhoAreYou`, `AboutHer`, `AreYouABot`, `Crush`, `WhatAreYouDoing`, `Ship`, `Opinion`, `Help`,
-`Request`, `Bored`, `Goodnight`, `Goodbye`, `Disbelief`, `Maybe`, `YouAreRight`, `YouAreWrong`,
+`ChatIntent`, read on messages aimed at her: `Love`, `Apology`, `DoYouLoveMe`, `HowAreYou`, `AreYouThere`,
+`WhoAreYou`, `RememberMe`, `AboutHer`, `AreYouABot`, `AreYouUpset`, `Crush`, `WhatAreYouDoing`, `Ship`, `Opinion`, `Blame`,
+`ShouldI`, `Joke`, `FunFact`, `Help`, `Request`, `Down`, `Bored`, `Goodnight`, `Goodbye`, `Disbelief`, `Maybe`,
+`Yes`, `No`, `YouAreRight`, `YouAreWrong`,
 `Thanks`, `Laughter` (the **specific** ones, which outrank a reply's context), then `Question`,
 `Sharing` and `LowEffort` (which only catch what nothing more precise did). First match wins, in that order —
 **the order is load-bearing**: `AboutHer` before `Opinion` (« tu aimes quoi comme jeu ? » would rate
 « quoi comme jeu »), `Love` before `Crush` (« t'es mon crush » declares), `Ship` before `Opinion`
 (« tu penses quoi de @A et @B ? » asks about a pair) and before `Request` (« tu peux ship X et Y ? »),
-`Bored` before `Maybe` (« je sais pas quoi faire »), the farewells before `Thanks` (« merci, bonne
+`Love` and `Apology` before `DoYouLoveMe` (« je t'aime, tu m'aimes ? » declares, « désolé, tu m'en veux ? »
+apologises), `WhoAreYou` before `RememberMe` (« c'est quoi ton nom » is hers),
+`Bored` before `Maybe` (« je sais pas quoi faire »), `Joke` and `FunFact` before `Request` (« tu peux me
+raconter une blague ? » wants the joke), `Down` before `Bored` and the farewells (« journée de merde, je
+vais dormir » is the day, said), the farewells before `Thanks` (« merci, bonne
 nuit » says goodnight), `Disbelief` before agreement and disagreement (« mais oui c'est ça », « mais
 non, fais genre »), and agreement before `Thanks` (« je suis d'accord, merci » agrees; the politeness
 says less). Pools: `IntentLines`, keyed by intent
-(`Opinion`, `Ship`, `Help`, `AboutHer` and `Request` have their own, below). Since the names are
+(`Opinion`, `Ship`, `Help`, `AboutHer`, `Request`, `ShouldI`, `Blame` and `FunFact` have their own, below). Since the names are
 stored keys for `/debug answers` (`intent:Thanks`), reorder freely, never rename.
 
 **Where each is read.** A reply to her: every intent. A mention: the specific ones and `Question`
@@ -276,26 +281,85 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   never « match » or « partenaire » for the server-wide search (« mon pire match » is a bad game,
   « trouve-moi un partenaire » a teammate); « on » forms need « bien », « compatibles » or « couple »
   (« on est ensemble ce soir ? »).
+- **`Yes` / `No`**: a reply that is only a yes or a no (`MessageCues.ReadAnswer`: « oui », « bah non »,
+  « carrément », « pas du tout », « oui merci »; fillers dropped, repeats folded, never with a `?`, never
+  mixed), **under one of her messages that asked something** (a `?` in it). The one pair `ReadIntent`
+  never returns: a bare « oui » under a statement stays `LowEffort`, and under a post with its own
+  context line (« oui » under the late call) it gets that line instead — except from Papa, who has no
+  context lines. Reply path only. `IntentLines[Yes]` / `[No]` must suit any question she asks,
+  rhetorical ones included.
+- **`DoYouLoveMe`** (« tu m'aimes ? », « tu me détestes ? », « tu m'en veux ? », « je suis ta préférée ? »),
+  closing or before `_lovesMeFollowers`, with or without a `?`. **`RememberMe`** (« tu te souviens de
+  moi ? », « comment je m'appelle ? », « c'est quoi mon pseudo ? »; « tu me connais », « je suis qui »
+  only asked: « tu me connais, je suis toujours en retard » says "you know me"). Both are **answered
+  from her records** in a guild (`ChatterService.TryAnswerFromRecords`, off the gateway handler, like
+  the fact lines but without their roll or gate: they were asked). Love counts **the last 30 days
+  only** (`BotFeedbackService.GetTallyAsync`, the daily buckets), so a grudge can be worked off: more
+  bad bots than good ones → `DoYouLoveMeGrudgeLines` (`{2}` = « 3 bad bot en 30 jours », the window
+  quoted so the number stays true); more good ones →
+  `DoYouLoveMeTreasureLines` (never a number, the treasure is hinted); a fact → one of
+  `RememberMeOpeners` (the name, the answer to « comment je m'appelle ? », untagged) then that fact's
+  `ChatFactLines` line (all-time, through `RecapService`). Nothing applies, a DM, or a failed read: `IntentLines[DoYouLoveMe]` (a teasing
+  non-answer that suits love and hate alike) or `IntentLines[RememberMe]` (every line says `{0}`).
+  Papa gets his twins, Tata `TataIntentLines`; neither reads the records.
+- **`AreYouUpset`** (« t'es fâchée ? », « tu boudes ? », « t'es triste ? », « t'es jalouse ? », « tu me fais
+  la tête ? »): only asked, closing or before `_upsetFollowers` (« t'es triste » said flat is slang for
+  lame). Denial that confirms; Papa's twin can't hold it and it's never him.
+- **`Down`**: feeling low, said about themselves: « je suis (trop) triste », « je me sens mal »,
+  « j'en peux plus », « j'ai pas le moral », « ça va pas fort », « sale journée ». She drops the pinch
+  and offers something to hold on to, the way an old uncle with a teapot would, in her own images
+  (`IntentLines[Down]`; Papa's twin turns the comfort toward him). The guards: never while laughing
+  (« j'en peux plus mdr »); « je pleure » is left out, being mostly laughter in chat; the day phrases and
+  « ça va pas » only when said, not asked (« t'as passé une sale journée ? »); « ça va pas » closing only
+  (« … la tête », « … ce soir » are something else); « seul », « mal », « vide » closing only (« je suis
+  seul en vocal », « je suis mal placé »). A sad message often swears (« journée de merde »), so
+  `ChatterService.IsMean` lets `Down` through the mean check like `Disbelief` — unless it speaks to
+  someone (`MessageCues.SpeaksToSomeone`): « j'en ai marre de toi » stays an insult.
+- **`ShouldI`** → `/yesno`'s coin flip and its `YesLines` / `NoLines`, the same for everyone: « je
+  devrais… ? », « je l'achète ? », « j'y vais ou pas ? », asked only and never with an open question word
+  (« je lui dis quoi ? »). « X ou Y ? » with nothing else (`MessageCues.ReadChoice`: « Valo ou LoL ? »,
+  « je joue ou je dors ? », « pile ou face ») flips between the sides, quoted as written, in
+  `ChoiceLines`. Each side is one to four words; not « … ou pas / quoi ? », not a side opening on « tu »
+  or a question word (« tu dors ou quoi », « c'est vrai ou faux ? »). « tu préfères X ou Y ? » stays an
+  `Opinion`, read first.
+- **`Joke`** (« raconte une blague », « fais-moi rire », « une blague ? ») → `IntentLines[Joke]`, the
+  same for everyone; never a bare « blague » (« c'est une blague ? », « sans blague »). **`FunFact`**
+  (« un fun fact ? », « apprends-moi un truc », « dis-moi un truc » closing) → `MorningFunFacts`.
+- **`Blame`** (« c'est la faute de qui ? », « c'est qui le coupable ? ») → `/blame`'s draw among the
+  humans in the asker's voice call, and its pools with `{0}` moved to `{2}`. A roll on Papa can't be
+  edited away in chat, so it goes out as one of the dodge lines that strike his name through
+  (`~~…~~`); keep at least one of those in each dodge pool. Guild only.
+- **Missing her** (« tu m'as manqué », « tu me manques ») is `Love`, from the same pool.
 - **`Help`**: « comment ça marche ? », « tu sais faire quoi ? », « aide-moi », « help »; « je suis
   perdu », « comment on fait », « je comprends rien » only closing a message of six words at most
   (« je suis perdu dans le donjon », « comment on fait pour battre ce boss » are the game, « … qu'il
   m'a dit, je comprends rien » is about someone else). No « j'ai rien compris »: one message, not how
-  she works. `HelpLines`, `{2}` = the
+  she works. « comment on fait / je fais / lancer / mettre… » anywhere, but only with one of her
+  features named (`_featureWords`: sondage, rappel, session, giveaway, quiz, commandes) — never the
+  wider request topics, whose « partie », « raid », « équipe » are the game (« comment on fait pour
+  finir le raid ? »). `HelpLines`, `{2}` = the
   command for the topic the message names (`MessageCues.ReadTopic` → `HelpCommands`: like
   `RequestCommands`, but the quiz points at its leaderboard, which anyone can open), `/help` when
   none. A request that names a topic stays a `Request` (« tu peux m'aider à lancer un sondage ? »).
   Papa gets `OwnerRequestLines` with the same `{2}`.
 - **`AboutHer`**: her age, birthday, home and favourites (`HerTopic`, `MessageCues.ReadHerTopic`;
-  « ton X préféré » is a possessive then « préféré » within three words). `AboutHerLines[topic]`;
+  « ton X préféré » is a possessive then « préféré » within three words; « t'aimes quel X »,
+  « tu préfères quoi comme X », hobbies, passions and loisirs are favourites too — read before
+  `Opinion`, which would rate « quel jeu »; « tu préfères quel X » stays out, it's `PreferLines`).
+  `AboutHerLines[topic]`;
   the age is `{2}` = days since her first commit (`MorningGreeting.DaysOld`). The lore stays hinted
   (`docs/syncs-voice.md`): a date, never « anniversaire » in her mouth; favourites lying around.
 - **`AreYouThere`**: « t'es là ? », « tu dors ? », « y a quelqu'un ? », closing the message or its
   question or followed by `_thereFollowers` (« t'es là ce soir ? » asks whether she'll come,
   « t'es la meilleure » is a compliment); « réveille-toi » in a short message; her name alone with a
   `?` (« syncs ? »); « allô » opening a message with nothing but `_alloFollowers` after it (not « nan
-  mais allô » or « allô quoi », the meme). No « tu m'entends » / « tu me reçois »: voice-chat checks.
+  mais allô » or « allô quoi », the meme). Her silence noticed, closing too: « tu m'ignores ? », « tu réponds plus ? », « t'es
+  morte ? » (not « … à ma question ? », not « t'es morte de rire »). No « tu m'entends » / « tu me
+  reçois »: voice-chat checks.
 - **`Crush`**: her love life, asked (« t'es célibataire ? », « t'as un crush ? »). Denial that
-  confirms, hinted, never « mon crush ». No « il te plaît » or « ton type de » (the game).
+  confirms, hinted, never « mon crush ». No « il te plaît » or « ton type de » (the game). The short
+  forms « tu kiffes qui ? », « t'aimes qui ? », « t'as quelqu'un ? » only close the message or come
+  before `_crushFollowers`: « t'as quelqu'un pour jouer ? », « tu kiffes qui en jungle ? » are the game.
 - **`Bored`**: « je m'ennuie », « on fait quoi ? » (closing only), in a message of ten words at most,
   cancelled by a negator around it, never followed by « de » (« je m'ennuie de toi » misses someone).
   « y a rien à faire » closes the message or a sentence, or comes before `_nothingToDoFollowers`
@@ -307,7 +371,10 @@ text to read; it is answered as `LowEffort`, like an emote alone.
 - **`Disbelief`**: « fais genre », « mon œil », « mais oui c'est ça », « avoue », « t'es grillée »,
   « tu rougis » — typically right after one of her denials (a `Crush` line, a robot-heart answer).
   Six words at most, never after « il », « elle », « on » (« il fait genre il sait jouer ») or « j' »
-  (« j'avoue » means « true »: `YouAreRight`). No « oui bien sûr », which is meant. She doubles down,
+  (« j'avoue » means « true »: `YouAreRight`). No « oui bien sûr », which is meant. Doubt asked counts:
+  « t'es sûre ? » closing with a `?` (« t'es sûre que tu viens ? » is a plan), « sérieux ? » opening the
+  message (« il est sérieux ? » is about him), « ça m'étonnerait », « j'en doute » closing a sentence
+  (« ça m'étonnerait pas » agrees, « … qu'il vienne » is about him). She doubles down,
   flustered; Papa's twin can't hold the denial.
   **Being called a liar is Disbelief too**: « t'es une menteuse », « tu mens », « pourquoi tu mens ? »,
   « arrête de mentir », « mytho », « c'est du pipeau » (`_liarPhrases`, cancelled by a negator after
@@ -352,7 +419,9 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   name is the subject (« syncs a raison »), and « syncs » alone stays nothing (the talked-about line)
   while « syncs ? » is `AreYouThere`. `Opinion` and `ShipAsk` trim trailing emoji, emotes and
   « syncs » (`Opinion.TrimTail`), their patterns being anchored to the end; an opinion subject is
-  never a bare joiner (« <@1> et <@2> » minus its edge tags is not « et »).
+  never a bare joiner (« <@1> et <@2> » minus its edge tags is not « et »), nor one opening on a
+  question word (« tu aimes qui comme perso ? » names nothing; « tu préfères quel jeu, X ou Y ? »
+  drops the « quel jeu, » and compares X and Y).
 - **Chat-reading patterns must stay fast on hostile text.** They run on whatever anyone sends, on
   the gateway task, so a slow match freezes the whole bot. `Opinion` and `ShipAsk` squeeze every
   whitespace run to one space first (`Opinion.Squeeze`): patterns that put `\s+` next to `.+?` or
@@ -409,10 +478,11 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   `Interrogations`' job.
 - **« ça va ? » quotes her real temperature** half the time on the Pi (`HowAreYouTempLines`, `{2}` =
   `PiHealth.Celsius`), only below `PiHealth.HotMilli`: those lines call the number fine.
-- **Papa has twins for sixteen intents** (`OwnerIntentLines`: ça va, tu fais quoi, je t'aime,
+- **Papa has twins for twenty-two intents** (`OwnerIntentLines`: ça va, tu fais quoi, je t'aime,
   pardon, bonne nuit, peut-être, t'es un bot, t'as raison, t'as tort, t'es là, merci, je m'ennuie,
-  t'as un crush, son âge et sa maison, fais genre, sa journée) plus `OwnerRequestLines` (his requests and his help); an
-  opinion and a ship are the same for him as for anyone. Any other intent from him goes on to his usual pools; he never
+  t'as un crush, son âge et sa maison, fais genre, sa journée, un coup de mou, oui, non, tu m'aimes,
+  tu te souviens de moi, t'es fâchée) plus `OwnerRequestLines` (his requests and his help); an
+  opinion, a ship, a yes-or-no, a blame, a joke and a fun fact are the same for him as for anyone. Any other intent from him goes on to his usual pools; he never
   gets `Question` or `LowEffort`.
 
 ### Reply context — `HerMessages`
@@ -480,10 +550,11 @@ The fallback of both paths (a roast, or `Interrogations`), in a guild and never 
   Wiring a new favourite to one pool on both paths reads as her not noticing.
 - **Her name is overridden**: `FamilyNicknames` maps Tata's id to "Tata", applied by
   `DisplayNameFor`. `RealNames` is *not* overridden (the breakdown reveal wants a real name).
-- **Papa on the listening paths** (see *Listening*): his own twins for sixteen intents
+- **Papa on the listening paths** (see *Listening*): his own twins for twenty-two intents
   (`OwnerIntentLines`) and requests (`OwnerRequestLines`), the same opinions and ships as anyone, and nothing
   else new — no reply context, no facts, no streak. Tata goes
-  through them like anyone, which costs her the warmth roll on those messages.
+  through them like anyone, which costs her the warmth roll on those messages — except « tu m'aimes ? »
+  and « tu te souviens de moi ? », which have her own pools (`TataIntentLines`).
 
 **The owner's one exception: him being mean to her.** A `Mean` reading from him routes to
 `OwnerMeanReplies` on both paths (she won't fight him, so it lands). On the reply path the check is

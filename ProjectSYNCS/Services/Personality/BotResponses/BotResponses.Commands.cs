@@ -413,7 +413,6 @@ internal static partial class BotResponses
         "Tu as tenu l'accueil d'un terrier de lapins. Quatre-vingts entrées, aucune sortie. Ils sont où, d'ailleurs ? {0} 👁👄👁️",
         "Tu as servi d'interprète entre un chat et un concombre. Négociations tendues. Paix signée. Je garde une copie du traité. {0} (ᵕ • ᴗ •)",
         "Tu as recollé les ailes d'un papillon en papier. Il vole pas mieux, mais il a plus confiance en lui. C'est déjà ça. {0} (˶ᵔ ᵕ ᵔ˶)",
-        "Tu as dit « à tes souhaits » à un champ de pissenlits toute la journée. Dix mille fois la même phrase. Comme un bot. Bienvenue chez moi. {0} ♡",
         "Tu as installé le Wi-Fi dans une ruche. Les abeilles ont un serveur Discord, maintenant. Elles s'organisent mieux que vous. {0} (¬_¬)",
         "Tu as joué le grand méchant dans un spectacle pour Plynlings. Ils t'ont hué. Excellente performance, je te hue aussi, par solidarité. {0} ( ˶ˆ ᗜ ˆ˵ )",
         "Tu as gardé les chaussures à l'entrée d'un vestiaire. T'as mélangé deux paires. Je dirai rien. Enfin, je le note. {0} (¬_¬)",

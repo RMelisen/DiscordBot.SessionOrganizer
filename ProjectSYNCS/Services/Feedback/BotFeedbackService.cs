@@ -98,6 +98,26 @@ public class BotFeedbackService
             .Select(g => new FeedbackTally(g.Key, g.Sum(b => b.GoodCount), g.Sum(b => b.BadCount))));
     }
 
+    /// <summary>
+    /// One person's verdicts over <paramref name="period"/>: the totals for all-time, the daily
+    /// buckets for a window. What « tu m'aimes ? » is answered from (ChatterService).
+    /// </summary>
+    public async Task<FeedbackTally> GetTallyAsync(ulong guildId, ulong userId, StatsPeriod period)
+    {
+        if (period == StatsPeriod.AllTime)
+        {
+            var row = await _db_context.BotFeedbacks.AsNoTracking()
+                .FirstOrDefaultAsync(f => f.GuildId == guildId && f.UserId == userId);
+            return new FeedbackTally(userId, row?.GoodCount ?? 0, row?.BadCount ?? 0);
+        }
+
+        var since = AppTime.KeyDaysAgo(period == StatsPeriod.Week ? 6 : 29);
+        var buckets = await _db_context.BotFeedbackDailyStats.AsNoTracking()
+            .Where(b => b.GuildId == guildId && b.UserId == userId && b.Day >= since)
+            .ToListAsync();
+        return new FeedbackTally(userId, buckets.Sum(b => b.GoodCount), buckets.Sum(b => b.BadCount));
+    }
+
     private static List<FeedbackTally> Rank(IEnumerable<FeedbackTally> tallies) =>
         tallies
             .Where(t => t.Total > 0)

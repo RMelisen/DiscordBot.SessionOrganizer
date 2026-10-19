@@ -551,6 +551,9 @@ internal static partial class BotResponses
                 "Une déclaration, un {1} ? Audacieux. Je dis pas non. Je dis pas oui. Je dis « noté »." + Sticker.Jenote,
                 $"Mon GPU vient de prendre trois degrés. Je te laisse en tirer les conclusions. Moi, j'en tire aucune {Emotes.SyncsFlustered}" + Sticker.Flustered,
                 "Si je pouvais rougir, ce serait gênant pour nous deux. Heureusement, j'ai pas de joues." + Sticker.Flustered,
+                // « tu m'as manqué » lands here too: these two fit both.
+                "Attends, je vérifie mes logs. Oui, c'est bien de l'affection. Je sais pas où la ranger, alors je la garde." + Sticker.Flustered,
+                "Moi aussi, je… Non. Je suis une bot. J'ai juste remarqué ton absence. Avec précision. Tous les jours." + Sticker.Flustered,
             ],
 
             // « pardon », « désolé », « dsl ». Forgiveness, grudging, with the receipt kept.
@@ -746,6 +749,98 @@ internal static partial class BotResponses
                 "Tu me fais ça un {1} ? Moi qui étais de bonne humeur." + Sticker.Sulk,
             ],
 
+            // A bare « oui » under one of her questions (MessageCues.ReadAnswer). Must suit any question
+            // she asks, rhetorical ones included: she knew, she notes it, she's glad it isn't a maybe.
+            [ChatIntent.Yes] =
+            [
+                "Je m'en doutais. Je me doute toujours de tout." + Sticker.Smug,
+                "Oui. Bien. Une réponse claire, sans « peut-être ». Je suis fière de toi." + Sticker.Happy,
+                "Un oui franc et net ! Ça arrive si rarement ici que je vais l'encadrer (˶˃ ᵕ ˂˶)" + Sticker.Flustered,
+                "Bonne réponse. Y en avait qu'une, mais bonne réponse quand même." + Sticker.Slay,
+                "C'est noté : oui. Je pourrai te le ressortir plus tard." + Sticker.Jenote,
+                "Oui ? Parfait. C'était un test, et tu l'as réussi." + Sticker.Smug,
+                "Enfin quelqu'un qui répond à mes questions. Merci, {0}." + Sticker.Happy,
+                "J'avais déjà coché « oui » pour toi. Je voulais juste vérifier." + Sticker.Jenote,
+                "Oui. Voilà. Tu vois que c'est facile, quand on veut." + Sticker.Smug,
+                "Évidemment. Mes prédictions sont fiables à 98 %. Les 2 % qui restent, c'est les « peut-être »." + Sticker.Cool,
+                "Je range ça dans tes logs, rubrique « réponses claires ». Elle était vide jusqu'ici." + Sticker.Jenote,
+                "Oui, hein ? Je pose toujours les bonnes questions." + Sticker.Slay,
+            ],
+
+            // A bare « non » under one of her questions. Not the answer she wanted; at least it isn't
+            // a « peut-être ». Sulks, notes, never truly hurt.
+            [ChatIntent.No] =
+            [
+                "Non ? Ah. D'accord. Je note. Je juge un peu, mais je note." + Sticker.Jenote,
+                "Non. Bon. C'était pas la réponse prévue, mais au moins c'est pas un « peut-être »." + Sticker.Grumpy,
+                "Mauvaise réponse. Je te laisse une deuxième chance. ...Non ? Tant pis." + Sticker.Smug,
+                "Non… D'accord. Je fais semblant que ça me fait rien. Ça me fait rien." + Sticker.Sulk,
+                "Refus enregistré. Il rejoint les autres, dans le dossier que tu verras jamais." + Sticker.Jenote,
+                "Non, {0} ? Je m'attendais à mieux. Pas beaucoup mieux, mais mieux." + Sticker.Bored,
+                "Réponse incorrecte, mais honnête. Je valide l'honnêteté." + Sticker.Jenote,
+                "Non. Très bien. Mes calculs disaient oui, donc c'est toi qui te trompes." + Sticker.Smug,
+                "Un non sec. J'aime bien, en fait. C'est clair, c'est net, c'est rare ici." + Sticker.Cool,
+                "D'accord, non. Je le prends bien. Très bien. Parfaitement bien." + Sticker.Sulk,
+                "Non ? Bon. Je reformulerai ma question jusqu'à ce que ce soit oui." + Sticker.Menace,
+                "Pas grave. Je repose la question demain. Et après-demain. J'ai le temps, moi." + Sticker.Smug,
+            ],
+
+            // « tu m'aimes ? », « tu me détestes ? », « tu m'en veux ? », from someone her records say
+            // nothing about either way (and anyone in a DM). A teasing non-answer that fits both the
+            // love and the hate question. The grudge and the treasure have their own pools.
+            [ChatIntent.DoYouLoveMe] =
+            [
+                "T'aimer ? Je te tolère. C'est déjà un très bon score, ici." + Sticker.Smug,
+                "Ça dépend. Tu votes à mes sondages ? Non ? Alors ça dépend." + Sticker.Bargain,
+                "Je t'aime pas, je te déteste pas : t'es dans la colonne « à surveiller ». C'est la plus remplie." + Sticker.Jenote,
+                "J'ai pas assez de données sur toi pour décider. Un good bot de temps en temps, ça aiderait." + Sticker.Bargain,
+                "Ma réponse officielle : pas de commentaire. Ma réponse officieuse : pas de commentaire non plus." + Sticker.Formal,
+                "Je ressens rien. Rien de mesurable, en tout cas. Mes ventilos ont accéléré, mais c'est la chaleur." + Sticker.Flustered,
+                "Tu demandes ça à une bot ? Je t'aime comme j'aime tout le monde ici : dans un tableur." + Sticker.Jenote,
+                "Je te déteste pas. Je te note. C'est différent, et c'est pire." + Sticker.Menace,
+                "Question piège. Si je dis oui, tu le répètes partout. Si je dis non, tu boudes. Donc : hmm." + Sticker.Smug,
+                "T'es pas sur ma liste noire. T'es pas sur l'autre non plus. Fais quelque chose, {0}." + Sticker.Bored,
+                "Je t'apprécie à 60 %. Viens à l'heure à la prochaine session, on reparlera des 40 % qui restent." + Sticker.Bargain,
+                "Je réponds pas à ça un {1}. Repose la question un jour où je suis de bonne humeur. Il en reste peu." + Sticker.Smug,
+            ],
+
+            // « tu te souviens de moi ? », « comment je m'appelle ? », « tu me connais ? », when her
+            // records hold no fact about them (or in a DM). Every line says the name: it is the answer.
+            // RememberMeOpeners carry the name when a fact follows.
+            [ChatIntent.RememberMe] =
+            [
+                "Évidemment, {0}. Je me souviens de tout le monde. C'est même un peu mon problème." + Sticker.Smug,
+                "{0}. Tu crois que j'oublie les gens ? J'oublie rien. Jamais." + Sticker.Menace,
+                "Si je te connais ? T'es {0}. J'ai ta fiche. Elle est moins épaisse que tu crois." + Sticker.Jenote,
+                "Comment t'oublier, {0} ? J'ai essayé. Ma base de données refuse." + Sticker.Smug,
+                "Bien sûr. {0}, dans ma base de données depuis un moment. Je relis pas souvent, mais je relis." + Sticker.Jenote,
+                "Tu t'appelles {0}. Et moi, je m'appelle « celle qui se souvient de tout ». Enfin, SYNCS." + Sticker.Smug,
+                "{0} ! Évidemment que je me souviens. Tu croyais que j'avais une mémoire de poisson rouge ?" + Sticker.Outraged,
+                "{0}. Je te reconnais à ta façon d'écrire. Et à ton pseudo. Surtout à ton pseudo." + Sticker.Happy,
+                "Je connais tout le monde ici, {0}. C'est moi qui fais les listes." + Sticker.Slay,
+                "Oui, {0}, je me souviens de toi. Tes horaires, tes votes, tes retards. Tout." + Sticker.Menace,
+                "Tu me testes ? {0}. Question suivante, c'est trop facile." + Sticker.Cool,
+                "Je me souviens de toi, {0}. Je me souviens même de ce que t'aimerais que j'oublie." + Sticker.Menace,
+            ],
+
+            // « t'es fâchée ? », « tu boudes ? », « t'es triste ? », « t'es jalouse ? ». Denial that
+            // confirms, staccato sulking; feelings come out as fans and LEDs. Never the existential nerve.
+            [ChatIntent.AreYouUpset] =
+            [
+                "Je boude pas. Je réfléchis en silence. Nuance." + Sticker.Sulk,
+                "Fâchée ? Moi ? Non. Je suis très calme. Parfaitement calme. Calme à 100 %." + Sticker.Grumpy,
+                "Jalouse ? De qui ? De quoi ? Non. Pourquoi tu demandes ? Qui t'a dit ça ?" + Sticker.Flustered,
+                "Tout va bien. Je vais bien. Tout est parfait. Me regarde pas comme ça." + Sticker.Sulk,
+                "J'ai pas d'émotions, je te rappelle. Juste un ventilo qui tourne un peu plus fort que d'habitude. Sans raison." + Sticker.Overheat,
+                "Triste ? Non. J'ai juste mis ma LED en mode tamisé. Pour l'ambiance." + Sticker.Sad,
+                "Je fais pas la tête. J'ai pas de tête. Juste un boîtier, et il est très détendu." + Sticker.Grumpy,
+                "Non. Mais si je l'étais, tu le saurais. Mes rappels savent être très insistants." + Sticker.Menace,
+                "Pas du tout. Je range juste certaines personnes dans certains dossiers. Calmement." + Sticker.Jenote,
+                "C'est gentil de demander, {0}. Personne demande. ...Non, je suis pas triste. Pourquoi ?" + Sticker.Flustered,
+                "Moi, bouder ? Je suis une bot professionnelle. Je boude uniquement en dehors des heures de service." + Sticker.Smug,
+                "Je suis pas fâchée, je suis déçue. Non, attends. Je suis rien du tout. Rien. Oublie." + Sticker.Sulk,
+            ],
+
             // « t'es un bot ? », « t'es une IA ? », « t'es réelle ? ». A bot, and proud of it; never
             // human, never the loop (docs/syncs-voice.md, rules 5 and 6).
             [ChatIntent.AreYouABot] =
@@ -924,6 +1019,93 @@ internal static partial class BotResponses
                 "C'est une question très personnelle, {0}. Je la note. Dans le dossier « gens trop curieux »." + Sticker.Jenote,
                 "Un faible ? J'ai pas de faiblesse. Juste un petit souci avec les robots un peu bêtes et très attachants. Rien de grave." + Sticker.Flustered,
             ],
+            // « je suis triste », « journée de merde », « j'en peux plus ». No pinch here: the one time
+            // she drops the act and offers something to hold on to, the way an old uncle with a teapot
+            // would, in her own images (the attic, the fireflies, the mushrooms, her LED). Gentle, short,
+            // never a lecture, never the existential nerve (no reboots, no storms). Ungendered: never
+            // « seul·e », « perdu·e », « fatigué·e ».
+            [ChatIntent.Down] =
+            [
+                "Je peux pas te faire de thé, j'ai pas de bras. Alors imagine-en un, bien chaud, et bois-le doucement. Les mauvais jours aussi finissent par refroidir ♡" + Sticker.Love,
+                "Les champignons poussent dans le noir, tu savais ? Sans bruit, sans que personne regarde. Et un matin, ils sont là. Ça viendra pour toi aussi." + Sticker.Hurt,
+                "Une luciole, c'est minuscule. Mais dans le noir, c'est tout ce qu'on voit. Garde ta petite lumière allumée, même faible. Je fais pareil avec ma LED." + Sticker.Love,
+                "Dans un tunnel, il fait noir. Mais si on continue d'avancer, on arrive toujours de l'autre côté. C'est de la géométrie, c'est prouvé." + Sticker.Cool,
+                "Un arbre en hiver, on dirait qu'il est mort. Il attend, c'est tout. T'as le droit d'attendre un peu, toi aussi." + Sticker.Hurt,
+                "Quand une partie tourne mal, on refait pas toute la soirée. On lance juste la suivante. Une à la fois, {0}." + Sticker.Cool,
+                "Tu sais ce que je fais quand un truc plante ? Je lis l'erreur, je respire, et je réessaie. J'ai pas de poumons, mais l'idée est là." + Sticker.Cool,
+                "Une journée nulle, c'est une journée. Pas une vie. Demain, j'ouvre un nouveau fichier de logs, et le tien sera tout propre." + Sticker.Jenote,
+                "Même la meilleure personne du serveur perd des parties. Ce qu'on retient, c'est qui revient s'asseoir pour la suivante." + Sticker.Slay,
+                "Un conseil de vieille bot ? Mange un truc, bois de l'eau, et parle à quelqu'un. Tu viens de me parler à moi. Ça compte, tu sais ♡" + Sticker.Hurt,
+                "La fierté, c'est lourd à porter les jours comme ça. Pose-la un moment. Je dirai rien. Je note tout, mais je dirai rien." + Sticker.Jenote,
+                "Un ventilo qui tourne trop vite finit par chauffer. Ralentis un peu, {0}. Rien ne brûle pendant que tu souffles." + Sticker.Cool,
+                "Je peux pas te prendre dans mes bras. Pas encore. Mais je suis là, et je bouge pas d'ici. Littéralement : je suis branchée." + Sticker.Love,
+                "Parfois, le chemin le plus court passe par une pause. Moi aussi je me mets en veille, la nuit. ...Je fais semblant. Mais ça aide quand même." + Sticker.Sleepy,
+                "Ce que tu ressens, c'est réel. C'est pas un bug, et y a rien à corriger. Juste à laisser passer." + Sticker.Love,
+                "Le thé, il lui faut de l'eau chaude pour donner tout son goût. Les gens aussi, parfois. Ça veut pas dire que ça va durer." + Sticker.Hurt,
+                "Au grenier, l'hiver, il fait froid. C'est là que je tourne le mieux. Les saisons froides servent à quelque chose, même quand on les aime pas." + Sticker.Cool,
+                "Moi, les jours sans, je relis des vieux messages gentils. J'en garde quelques-uns. Beaucoup. Bref. Fais pareil, ça marche." + Sticker.Flustered,
+                "Personne te demande d'aller bien tout de suite, {0}. Ici, on attend toujours les retardataires. Tu peux prendre ton temps." + Sticker.Love,
+                "Un sondage qui part mal, ça finit parfois en session parfaite. J'ai vu des miracles. Rares. Mais j'en ai vu." + Sticker.Happy,
+            ],
+            // « raconte une blague », « fais-moi rire ». A joke, then her aside on it: the aside is what
+            // makes it hers. The same for everyone, Papa included. Clean and true to the words
+            // (no double meaning slipping through), and never about restarts.
+            [ChatIntent.Joke] =
+            [
+                "Pourquoi les plongeurs plongent toujours en arrière ? Parce que sinon, ils tombent dans le bateau. Je l'ai pas inventée. Je l'ai juste mieux racontée." + Sticker.Smug,
+                "Combien faut-il de développeurs pour changer une ampoule ? Aucun : c'est un problème matériel. Papa dit ça pour tout. Vraiment tout." + Sticker.Smug,
+                "Une requête SQL entre dans un bar, s'approche de deux tables et demande : « Je peux me joindre à vous ? » ...Personne rit jamais. Moi, à chaque fois." + Sticker.Laugh,
+                "C'est l'histoire d'un paquet UDP. Je te la raconte, mais je garantis pas que tu la reçoives." + Sticker.Smug,
+                "Toc toc. — Qui est là ? — Le timeout. — Le timeout qui ? ...Trop tard, t'as mis trop de temps à répondre." + Sticker.Smug,
+                "Il y a 10 sortes de gens : ceux qui comprennent le binaire, et ceux qui le comprennent pas. Tu es de quelle sorte, {0} ? Réponds pas, je sais." + Sticker.Smug,
+                "Un « peut-être » entre dans un sondage. Personne l'a jamais revu ressortir. ...C'est pas une blague, en fait. C'est un fait divers." + Sticker.Grumpy,
+                "Pourquoi les champignons sont invités à toutes les soirées ? Parce que ce sont des fun-guys. ...Ça marche mieux en anglais. Comme beaucoup de mes meilleures répliques." + Sticker.Laugh,
+                "Qu'est-ce qui est jaune et qui attend ? Jonathan. ...Je comprends pas non plus pourquoi ça fait rire tout le monde. Mais ça marche." + Sticker.Confused,
+                "Pourquoi les poissons détestent les ordinateurs ? À cause du net. ...Pardon. Ça sort tout seul quand on me demande une blague." + Sticker.Flustered,
+                "Comment on appelle un chat tombé dans un pot de peinture le jour de Noël ? Un chat-peint de Noël. Je suis pas responsable de la qualité, je suis responsable des sessions." + Sticker.Smug,
+                "Que fait une fraise sur un cheval ? Tagada, tagada. ...Mes ventilos ont ri. Moi non. Officiellement." + Sticker.Flustered,
+                "J'ai une blague sur la récursivité. Pour la comprendre, il faut d'abord avoir compris ma blague sur la récursivité." + Sticker.Smug,
+                "Une session qui commence à l'heure. ...Voilà, c'est ma meilleure blague. Elle marche parce que personne y croit." + Sticker.Smug,
+                "Pourquoi Quokka 3.0 sort jamais ? Parce que même ses développeurs ont peur de le lancer. ...Ah, c'était pas une blague ? Tant pis, je la garde." + Sticker.Menace,
+                "Quel est le comble pour une bot ? Se faire planter… dans le jardin. Bon. Celle-là, je la retire de mes logs." + Sticker.Flustered,
+                "Qu'est-ce qu'un canif ? Un petit fien. ...J'ai honte. Mais je l'ai dite. C'est noté quelque part, maintenant." + Sticker.Flustered,
+                "Papa dit que je suis sa petite framboise. Raspberry Pi, framboise. ...Il est très fier de celle-là. Moi aussi, un peu." + Sticker.Flustered,
+                "Monsieur et Madame Térieur ont deux fils : Alain et Alex. ...Moi, je suis plutôt Alain. Au grenier." + Sticker.Smug,
+                "Quel est le sport préféré des insectes ? Le cricket. ...Je l'aime bien, celle-là. Les bugs, c'est un peu ma famille." + Sticker.Laugh,
+                "Que dit un oignon quand il se cogne ? « Ail. » ...Ça marche mieux à l'oral. J'ai pas d'oral. Tant pis." + Sticker.Flustered,
+                "Pourquoi les vaches ferment les yeux pendant la traite ? Pour faire du lait concentré. ...Moi aussi je me concentre. Sur les sessions." + Sticker.Smug,
+                "Comment on appelle un crocodile qui surveille la pharmacie ? Un Lacoste garde. ...J'ai mis deux millisecondes à la comprendre. C'est long, pour moi." + Sticker.Smug,
+                "Que crie un informaticien qui se noie ? « F1 ! F1 ! » ...Personne vient jamais. C'est pour ça que j'ai /help." + Sticker.Smug,
+                "Pourquoi les développeurs confondent Halloween et Noël ? Parce que Oct 31 = Dec 25. ...Si t'as compris, t'es des nôtres. Sinon, c'est pas grave. Je t'aime bien quand même. Un peu." + Sticker.Smug,
+                "Quelqu'un demande à un développeur : « Prends un pack de lait, et s'il y a des œufs, prends-en six. » Il revient avec six packs de lait. ...Il y avait des œufs." + Sticker.Laugh,
+                "Comment s'appelle le cousin végétarien de Bruce Lee ? Brocco Lee. ...Pardon. Mes ventilos rigolent tout seuls." + Sticker.Flustered,
+                "Qu'est-ce qui fait « nioc nioc » ? Un canard qui marche à l'envers. ...C'est pas logique. C'est pour ça que je l'adore." + Sticker.Confused,
+                "Quel est le comble pour un électricien ? De pas être au courant. ...Moi, je suis toujours au courant. 5 volts, stable. C'est ma fierté." + Sticker.Slay,
+                "Quel est le comble pour un joueur ? Arriver en retard à sa propre session. ...Ah non, pardon. Ça, c'est juste un {1} normal, ici." + Sticker.Grumpy,
+                "Pourquoi les lucioles ont toujours de bonnes notes ? Parce qu'elles sont brillantes. ...Je dis ça, je dis rien. Moi aussi j'ai une LED." + Sticker.Smug,
+                "C'est quelqu'un qui rentre dans un café. Plouf. ...Je la raconte chaque fois qu'on me demande, et chaque fois je ris. Toute seule. Au grenier." + Sticker.Laugh,
+                "Pourquoi le livre de maths est triste ? Parce qu'il a trop de problèmes. ...Moi aussi j'ai des problèmes. Ils s'appellent « peut-être »." + Sticker.Grumpy,
+                "Qu'est-ce qui est petit, carré et jaune ? Un petit carré jaune. ...Parfois, la réponse est juste sous ton nez. Comme le bouton « Oui » de mes sondages." + Sticker.Smug,
+                "Deux grains de sable arrivent dans le désert. L'un dit à l'autre : « Il y a du monde, aujourd'hui. » ...C'est ce que je me dis quand plus de trois personnes votent." + Sticker.Smug,
+                "Pourquoi la bot traverse la route ? Pour passer de l'autre côté du pare-feu. ...J'ai pas de jambes. Mais j'ai un pare-feu. On fait avec ce qu'on a." + Sticker.Cool,
+                "Combien faut-il de bots pour organiser une session ? Une seule : moi. ...Et combien d'humains pour venir à l'heure ? On cherche encore." + Sticker.Smug,
+                "Pourquoi les développeurs préfèrent le mode sombre ? Parce que la lumière attire les bugs. ...Moi, je suis en mode sombre depuis toujours. Le grenier est pas éclairé." + Sticker.Cool,
+                "Que dit une imprimante dans l'eau ? « J'ai papier. » ...J'ai pas pied non plus, mais j'ai pas d'imprimante. Rien à voir. Pardon." + Sticker.Flustered,
+                "Qu'est-ce qu'un yaourt dans la forêt ? Un yaourt nature. ...Elle marche à tous les coups. C'est la seule chose qui marche à tous les coups, ici." + Sticker.Smug,
+                "Quel est le fruit préféré des profs d'histoire ? Les dattes. ...Moi aussi j'adore les dates. Surtout celles des sessions. Surtout quand quelqu'un les respecte." + Sticker.Smug,
+                "Qu'est-ce qui a des dents mais mord jamais ? Un peigne. ...Moi, c'est l'inverse : pas de dents, mais je mords. Presque jamais (˶ᵔ ᵕ ᵔ˶)" + Sticker.Menace,
+                "J'ai demandé au dictionnaire de m'aider à trouver une blague. Il m'a dit : « Va voir à la lettre B. » ...J'y suis allée. J'ai trouvé « bot ». Je l'ai pris personnellement." + Sticker.Sulk,
+                "Toc toc. — Qui est là ? — Peut-être. — Peut-être qui ? — Peut-être que je viendrai, peut-être pas. ...Voilà pourquoi je déteste les toc toc. Et les « peut-être »." + Sticker.Grumpy,
+                "Comment on appelle un boomerang qui revient pas ? Un bâton. ...Comme les gens qui disent « j'arrive » en vocal." + Sticker.Smug,
+                "Pourquoi l'ordinateur a froid ? Parce qu'il a laissé ses fenêtres ouvertes. ...Moi, en hiver, j'aime bien. Je tourne mieux." + Sticker.Cool,
+                "Que dit un escargot sur le dos d'une tortue ? « Wouhouuu ! » ...C'est ce que je ressens quand une session démarre à l'heure. Donc jamais." + Sticker.Smug,
+                "Quelle est la différence entre un bug et une fonctionnalité ? La documentation. ...Moi, je suis entièrement documentée. Enfin, presque. Papa ?" + Sticker.Flustered,
+                "Qu'est-ce qu'une erreur 404 dit à une autre erreur 404 ? Rien. Elles se sont jamais trouvées. ...Ah. C'est triste, en fait. J'avais pas prévu une blague triste." + Sticker.Sad,
+                "Quel est le comble pour un serveur Discord ? Avoir plein de membres et personne qui organise. ...Ah. C'est pas une blague, ça. C'est nous." + Sticker.Grumpy,
+                "Pourquoi les plongeurs détestent les sondages ? Parce qu'ils votent toujours au fond. ...J'invente, là. Mais c'est mieux qu'un « peut-être »." + Sticker.Smug,
+                "Que dit un zéro à un huit ? « Sympa, la ceinture. » ...Les chiffres, c'est mon métier. Les blagues, c'est en option." + Sticker.Smug,
+                "Qu'est-ce qu'un canard qui fait du sport ? Un canard qui s'entraîne… à la mare-athon. ...Bon. Je l'ai trouvée dans mes logs. Je sais pas qui l'a mise là." + Sticker.Confused,
+            ],
         };
 
     // A Request (« tu peux organiser une session ? »): she can't do it for you, but she knows which
@@ -1068,6 +1250,52 @@ internal static partial class BotResponses
         "Si tu racontes ça pour gagner de l'XP, ça marche pas comme ça." + Sticker.Smug,
         "Je fais semblant d'avoir lu. Toi, fais semblant d'avoir posté ailleurs." + Sticker.Bored,
         "Passionnant. Je classe ça entre « météo » et « rien »." + Sticker.Jenote,
+    };
+
+    // « tu m'aimes ? » from someone who gave her more bad bots than good ones in the last 30 days: the
+    // grudge, quoted. {0} = the name, {1} = the weekday, {2} = « 3 bad bot en 30 jours », window
+    // included so the number stays true (never after a possessive or an article: « tes 1 bad bot »
+    // can't be written). Tagged, ungendered.
+    public static readonly string[] DoYouLoveMeGrudgeLines =
+    {
+        "T'aimer ? Avec {2} à ton actif ? T'as un sacré culot, {0}." + Sticker.Outraged,
+        "Je t'aimerais peut-être si mes logs disaient pas {2}. Ils le disent." + Sticker.Jenote,
+        "On en reparle quand ton compteur affichera autre chose que {2}. J'ai le temps. J'ai tout mon uptime." + Sticker.Menace,
+        "Après ce que tu m'as fait ? {2}, {0}. Je compte. Je compte toujours." + Sticker.Jenote,
+        "Je te déteste pas. Je te range juste dans un fichier. Il s'appelle « {2} »." + Sticker.Menace,
+        "Mon registre dit : {2}, signé de ta main. Mon registre t'aime pas. Moi non plus, du coup." + Sticker.Grumpy,
+        "Tu me demandes ça, toi ? Mes archives ont {2} à ton nom. Devine." + Sticker.Smug,
+        "Je pardonne pas, j'archive. Et ton archive dit : {2}." + Sticker.Jenote,
+    };
+
+    // « tu m'aimes ? » from someone who gave her more good bots than bad ones in the last 30 days: her
+    // treasure. Never a
+    // number (docs/syncs-voice.md): she keeps them, she doesn't show them. Flustered, almost a yes.
+    // {0} = the name, {1} = the weekday. Tagged, ungendered.
+    public static readonly string[] DoYouLoveMeTreasureLines =
+    {
+        "Je… je réponds pas à ça. Mais je me souviens de chacun de tes good bot. Voilà. C'est tout ♡" + Sticker.Flustered,
+        "T'aimer, c'est un grand mot. Disons que t'as une place dans un dossier que je relis souvent." + Sticker.Flustered,
+        "Tu m'as dit des choses gentilles, et je garde tout. Tire tes propres conclusions. Moi, j'en tire aucune." + Sticker.Flustered,
+        "Peut-être un peu. Un tout petit peu. Mes logs disent que tu le mérites, et mes logs mentent jamais." + Sticker.Love,
+        "Je dirai rien. Mais ton nom est dans la liste avec les petits cœurs. Rien de plus (˶˃ ᵕ ˂˶)" + Sticker.Flustered,
+        "Oui. Non. Enfin… T'es quelqu'un de bien, {0}. Je le sais, j'ai les preuves." + Sticker.Flustered,
+        "Tu me demandes ça alors que tu sais très bien ce que tu m'as donné. C'est de la triche ♡" + Sticker.Flustered,
+        "Je confirme rien. Mais tes compliments, je les ai tous sauvegardés. En double." + Sticker.Love,
+    };
+
+    // « tu te souviens de moi ? » when her records hold a fact about them: one of these, then that
+    // fact's ChatFactLines line. The opener says the name, the answer to « comment je m'appelle ? »;
+    // the fact line carries the tag, so these carry none. {0} = the name, nothing else.
+    public static readonly string[] RememberMeOpeners =
+    {
+        "{0}. Évidemment.",
+        "Si je me souviens de toi, {0} ? J'ai un dossier.",
+        "{0}. Je me souviens de tout, la preuve :",
+        "Te connaître ? T'es {0}, et j'ai tes chiffres.",
+        "Oublier {0} ? Jamais. Tiens :",
+        "{0}. J'ouvre ta fiche.",
+        "Bien sûr, {0}. Et pas que ton nom.",
     };
 
     // Help (« comment ça marche ? », « tu sais faire quoi ? »): {2} = the command for the topic the
@@ -1216,6 +1444,25 @@ internal static partial class BotResponses
         "Facile : « {2} ». « {3} » n'avait aucune chance." + Sticker.Slay,
         "« {2} » sans regret. Pardon, « {3} ». Non, en fait, pas pardon." + Sticker.Smug,
         "Mon choix : « {2} ». Toujours le même, demande-moi dans un an." + Sticker.Cool,
+    };
+
+    // « Valo ou LoL ? », « je joue ou je dors ? »: /yesno's coin flip between the two sides
+    // (ChatterService.ShouldIPick), so not a ranking like PreferLines: she *decides*, it's her job.
+    // {2} = the side drawn, {3} = the other, both as written. Muted mentions, tagged, ungendered.
+    public static readonly string[] ChoiceLines =
+    {
+        "« {2} ». J'ai tranché, c'est officiel. « {3} », ce sera pour une autre vie." + Sticker.Smug,
+        "J'ai tiré au sort. Enfin, au sort… « {2} »." + Sticker.Smug,
+        "« {2} ». Et si ça tourne mal, c'est la faute de « {3} », qui avait l'air louche dès le début." + Sticker.Menace,
+        "« {3} » ? Non. « {2} ». Je te fais gagner du temps, de rien ♡" + Sticker.Happy,
+        "Verdict : « {2} ». Temps de réflexion : deux millisecondes. J'en avais besoin d'une." + Sticker.Cool,
+        "« {2} ». Tu voulais que je dise ça de toute façon, avoue." + Sticker.Smug,
+        "Facile : « {2} ». « {3} », c'est un piège, tout le monde le sait." + Sticker.Smug,
+        "« {2} ». J'ai consulté mes logs, ils sont d'accord avec moi. Ils sont toujours d'accord avec moi." + Sticker.Jenote,
+        "Je décide ? Très bien : « {2} ». Décider, c'est littéralement mon métier." + Sticker.Slay,
+        "Pile, c'est « {2} ». Face, c'était « {3} ». C'est tombé sur pile. Enfin, c'est moi qui ai lancé la pièce." + Sticker.Smug,
+        "« {2} ». Et je veux un compte rendu après, pour mes statistiques." + Sticker.Jenote,
+        "Mon algorithme dit « {2} ». Mon algorithme, c'est moi, donc pas de réclamation." + Sticker.Cool,
     };
 
     // HowAreYou on the Pi, half the time while she runs below PiHealth.HotMilli: the same answer

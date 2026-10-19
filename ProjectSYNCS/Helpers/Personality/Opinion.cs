@@ -69,6 +69,16 @@ public static partial class Opinion
         "quoi", "qui", "ca", "ça", "ce", "cela", "tout", "rien", "ce que", "ce qui", "quoi de neuf",
     };
 
+    // Nor is one that opens on a question word: « tu aimes qui comme perso ? » asks, it names nothing.
+    [GeneratedRegex(@"^(?:qui|quoi|quel|quelle|quels|quelles|lequel|laquelle|lesquels|lesquelles)\s",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex QuestionWordRegex();
+
+    // « tu préfères quel jeu, Minecraft ou Fortnite ? »: the question before the comma isn't a side.
+    [GeneratedRegex(@"^(?:qui|quoi|quel|quelle|quels|quelles|lequel|laquelle|lesquels|lesquelles)\b[^,:]*[,:]\s*",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex PreferQuestionRegex();
+
     // What joins two sides; never a subject on its own.
     private static readonly HashSet<string> Joiners = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -104,7 +114,8 @@ public static partial class Opinion
     private static OpinionAsk? ReadSqueezed(string text)
     {
         if (PreferRegex().Match(text) is { Success: true } prefer
-            && Clean(prefer.Groups["a"].Value) is { } a && Clean(prefer.Groups["b"].Value) is { } b)
+            && Clean(PreferQuestionRegex().Replace(prefer.Groups["a"].Value.Trim(), "")) is { } a
+            && Clean(prefer.Groups["b"].Value) is { } b)
             return new OpinionAsk(a, b);
 
         var about = AboutRegex().Match(text);
@@ -152,7 +163,7 @@ public static partial class Opinion
         // Only when what's left is a subject: « <@1> et <@2> » minus both edges is a bare « et ».
         if (unmentioned.Length > 0 && !Joiners.Contains(unmentioned) && !NotASubject.Contains(unmentioned))
             s = TrailingRegex().Replace(LeadingRegex().Replace(unmentioned, ""), "").Trim();
-        if (s.Length == 0 || s.Length > MaxSubjectLength || NotASubject.Contains(s)) return null;
+        if (s.Length == 0 || s.Length > MaxSubjectLength || NotASubject.Contains(s) || QuestionWordRegex().IsMatch(s)) return null;
         return s;
     }
 }
