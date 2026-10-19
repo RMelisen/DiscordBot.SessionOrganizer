@@ -42,4 +42,12 @@ public class CommunityReportService
             .Where(x => x.GuildId == guildId && x.Day >= w.FromDay && x.Day <= w.ToDay).ToListAsync();
         return CommunityReport.Compute(members, flow, emotes, markup, rounds, w);
     }
+
+    /// <summary>Each member's last day with any XP, reaction or voice minute (yyyymmdd), for /report sleeping.</summary>
+    public async Task<IReadOnlyDictionary<ulong, int>> LastActiveDaysAsync(ulong guildId) =>
+        await _db.MemberDailyStats.AsNoTracking()
+            .Where(x => x.GuildId == guildId && (x.XpEarned > 0 || x.ReactionsUsed > 0 || x.VoiceMinutes > 0))
+            .GroupBy(x => x.UserId)
+            .Select(g => new { UserId = g.Key, Last = g.Max(x => x.Day) })
+            .ToDictionaryAsync(x => x.UserId, x => x.Last);
 }

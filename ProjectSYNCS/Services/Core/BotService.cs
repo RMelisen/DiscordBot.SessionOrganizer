@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
+using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
 
@@ -35,6 +36,7 @@ internal sealed class BotService : IHostedService
     private readonly WelcomeService _welcome;
     private readonly PlynlingShortcutService _shortcuts;
     private readonly MemberFlowTracker _memberFlow;
+    private readonly ActivityCounter _activity;
 
     public BotService(
         DiscordSocketClient client,
@@ -57,8 +59,10 @@ internal sealed class BotService : IHostedService
         RobotHeartService robotHeart,
         WelcomeService welcome,
         PlynlingShortcutService shortcuts,
-        MemberFlowTracker memberFlow)
+        MemberFlowTracker memberFlow,
+        ActivityCounter activity)
     {
+        _activity = activity;
         _shortcuts = shortcuts;
         _memberFlow = memberFlow;
         _synthia = synthia;
@@ -86,6 +90,8 @@ internal sealed class BotService : IHostedService
     {
         _client.Log += LogAsync;
         _interactions.Log += LogAsync;
+        // Handlers run RunMode.Async: success or failure only arrives through this event.
+        _interactions.SlashCommandExecuted += OnSlashCommandExecutedAsync;
 
         await _interactions.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
 
@@ -144,6 +150,10 @@ internal sealed class BotService : IHostedService
         // A typed shortcut (« ;pl », « ;work »…) is a command, not talk: like the slash command it
         // stands for, nothing below sees it — no XP, no cailloux, no chatter, no tracker.
         if (await _shortcuts.HandleMessageAsync(rawMessage)) return;
+        // Every message a person writes in a guild, for /report activity (in memory: costs nothing here).
+        // After the shortcut return (a shortcut is a command, counted as one) and before every
+        // handler that may end the fan-out early.
+        _activity.CountMessage(rawMessage);
         await _emotes.HandleMessageAsync(rawMessage);
         // Independent of every other tracker here — reads only the raw message and
         // its own per-user cooldown gates — so its position relative to the others
@@ -202,6 +212,15 @@ internal sealed class BotService : IHostedService
         await _xp.HandleReactionAddedAsync(message, channel, reaction);
         await _reactions.HandleReactionAddedAsync(message, channel, reaction);
         await _feedback.HandleReactionAddedAsync(message, channel, reaction);
+    }
+
+    // Every slash command, for /report commands (in memory, never slows a command). Buttons and
+    // modals are not counted: they belong to a command already counted. DMs count under guild 0.
+    private Task OnSlashCommandExecutedAsync(SlashCommandInfo? command, IInteractionContext context, IResult result)
+    {
+        if (command is not null)
+            _activity.CountCommand(context.Guild?.Id ?? 0, CommandPath.Of(command), result.IsSuccess, DateTimeOffset.UtcNow);
+        return Task.CompletedTask;
     }
 
     private async Task HandleInteractionAsync(SocketInteraction interaction)

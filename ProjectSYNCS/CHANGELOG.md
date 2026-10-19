@@ -3,6 +3,18 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.6.0 — 2026-10-19
+
+- She now counts messages per hour and per channel, time spent in each voice room, and how often
+  each of her commands is used.
+- New `/report` subcommands for staff: `activity` (peak hours, busiest and silent channels, voice
+  rooms), `commands` (most used, errors, never used), `plynlings` (births, deaths, health, events,
+  bonds), `quiz` (found rate by category and difficulty, unanswered questions), `emotes` (the
+  server's favourites, forgotten emotes, trends) and `sleeping` (members silent for 30, 60 or 90
+  days).
+- The monthly report she sends her creator now includes activity and commands.
+- `/report community` no longer counts a quiz question whose message failed to post.
+
 ## 7.5.0 — 2026-10-19
 
 - She now answers to a few pet names from her creator, with her own reaction to each kind.

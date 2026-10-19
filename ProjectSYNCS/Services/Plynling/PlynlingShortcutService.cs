@@ -17,7 +17,8 @@ namespace ProjectSYNCS.Services;
 //
 // A shortcut is a command, not talk: BotService ends the fan-out when this handles a message, so it
 // earns no XP and no passive cailloux (Plynling actions grant none — economy.md), draws no chatter and
-// counts for no tracker, exactly like the slash command it stands for.
+// counts for no tracker, exactly like the slash command it stands for. It is counted as a command
+// (ActivityCounter, /report commands), never as a message.
 public sealed class PlynlingShortcutService
 {
     private static readonly TimeSpan RefusalLife = TimeSpan.FromSeconds(15);
@@ -27,6 +28,7 @@ public sealed class PlynlingShortcutService
     private readonly PlynlingCooldowns _cooldowns;
     private readonly PlynlingAnnouncer _announcer;
     private readonly ILogger<PlynlingShortcutService> _logger;
+    private readonly ActivityCounter _activity;
 
     // Its own gate, per person and shortcut: a held-down Enter posts one card, not five, while ;work
     // straight after ;forage still runs. A repeat inside it is dropped without a word.
@@ -34,8 +36,9 @@ public sealed class PlynlingShortcutService
         new(TimeSpan.FromSeconds(3), forget: TimeSpan.FromMinutes(10));
 
     public PlynlingShortcutService(IServiceProvider services, ResponsePicker picker, PlynlingCooldowns cooldowns,
-        PlynlingAnnouncer announcer, ILogger<PlynlingShortcutService> logger)
+        PlynlingAnnouncer announcer, ILogger<PlynlingShortcutService> logger, ActivityCounter activity)
     {
+        _activity = activity;
         _services = services;
         _picker = picker;
         _cooldowns = cooldowns;
@@ -53,14 +56,18 @@ public sealed class PlynlingShortcutService
         if (PlynlingShortcut.Parse(message.Content) is not { } shortcut) return false;
         if (!_repeat.TryClaim((message.Author.Id, shortcut.Kind))) return true;
 
+        var success = true;
         try
         {
             await RunAsync(message, channel.Guild, shortcut);
         }
         catch (Exception ex)
         {
+            success = false;
             _logger.LogWarning(ex, "Shortcut {Kind} from {UserId} failed.", shortcut.Kind, message.Author.Id);
         }
+        // Counted like the slash command it stands for (/report commands), under its own « ; » key.
+        _activity.CountCommand(channel.Guild.Id, CommandPath.Shortcut(shortcut.Kind), success, message.Timestamp);
         return true;
     }
 

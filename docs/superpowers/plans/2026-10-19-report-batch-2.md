@@ -1752,7 +1752,9 @@ public class PlynlingReportService
     var t9Worst = EmoteReport.Compute(t9ManyServer.Take(40).Select(e => T9Row(e.Id, "", 999_999, 999_999)).ToList(), t9ManyServer, t9Markup);
     var t9Embed = ProjectSYNCS.Commands.ReportCards.BuildEmotes(new(t9Worst, t9Before), ReportWindow.From(StatsPeriod.Month, DateTimeOffset.UtcNow), true);
     if (t9Embed.Length > 6000 || t9Embed.Fields.Any(f => f.Value.Length is 0 or > 1024)) Fail($"emotes embed {t9Embed.Length}");
-    if (t9Embed.Fields.Any(f => System.Text.RegularExpressions.Regex.IsMatch(f.Value, @"<a?:\w+:\d*(?!\d|>)$|<a?:\w*$"))) Fail("an emote was cut in half");
+    // Every emote that opens must close: a cut one leaves a « <:name » with no full « <:name:id> ».
+    if (t9Embed.Fields.Any(f => System.Text.RegularExpressions.Regex.Matches(f.Value, "<a?:").Count
+                                != System.Text.RegularExpressions.Regex.Matches(f.Value, @"<a?:\w+:\d+>").Count)) Fail("an emote was cut in half");
 }
 ```
 
@@ -1950,7 +1952,7 @@ public class EmoteReportService
   - `SocketGuild.Users` (`Id`, `JoinedAt`, `IsBot`; complete because `AlwaysDownloadUsers` is on);
   - `AppTime.DayKey`, `AppTime.FromDayKey`; `ReportCards.MaxFieldLength`.
 - Produces:
-  - `MemberInfo(ulong UserId, DateTimeOffset? JoinedAt, bool IsBot)`, `Sleeper(ulong UserId, int? LastDay)`
+  - `MemberSnapshot(ulong UserId, DateTimeOffset? JoinedAt, bool IsBot)`, `Sleeper(ulong UserId, int? LastDay)`
   - `SleepingReportData(int Days, int Members, IReadOnlyList<Sleeper> Sleepers)`
   - `SleepingReport.Choices` (30, 60, 90), `SleepingReport.ReliableSince` (20260809)
   - `SleepingReport.Compute(...)`
@@ -1968,19 +1970,19 @@ public class EmoteReportService
     var t10Now = new DateTimeOffset(2026, 10, 19, 12, 0, 0, TimeSpan.Zero);
     var t10Members = new[]
     {
-        new MemberInfo(1, t10Now.AddDays(-200), false),   // active 5 days ago
-        new MemberInfo(2, t10Now.AddDays(-200), false),   // last seen 40 days ago
-        new MemberInfo(3, t10Now.AddDays(-200), false),   // never active
-        new MemberInfo(4, t10Now.AddDays(-10), false),    // joined recently: never listed
-        new MemberInfo(5, null, false),                    // unknown join date: an old member
-        new MemberInfo(6, t10Now.AddDays(-200), true),    // a bot
+        new MemberSnapshot(1, t10Now.AddDays(-200), false),   // active 5 days ago
+        new MemberSnapshot(2, t10Now.AddDays(-200), false),   // last seen 40 days ago
+        new MemberSnapshot(3, t10Now.AddDays(-200), false),   // never active
+        new MemberSnapshot(4, t10Now.AddDays(-10), false),    // joined recently: never listed
+        new MemberSnapshot(5, null, false),                    // unknown join date: an old member
+        new MemberSnapshot(6, t10Now.AddDays(-200), true),    // a bot
     };
     var t10Last = new Dictionary<ulong, int> { [1] = AppTime.DayKey(t10Now.AddDays(-5)), [2] = AppTime.DayKey(t10Now.AddDays(-40)) };
     var t10 = SleepingReport.Compute(t10Members, t10Last, 30, t10Now);
     if (t10.Members != 5) Fail($"members {t10.Members} (bots excluded)");
     if (!t10.Sleepers.Select(s => s.UserId).SequenceEqual(new ulong[] { 3, 5, 2 })) Fail($"sleepers {string.Join(",", t10.Sleepers.Select(s => s.UserId))} (never-active first)");
     if (SleepingReport.Compute(t10Members, t10Last, 60, t10Now).Sleepers.Any(s => s.UserId == 2)) Fail("40 days silent is not asleep at 60");
-    if (SleepingReport.Compute(Array.Empty<MemberInfo>(), t10Last, 30, t10Now).Sleepers.Count != 0) Fail("guild unavailable");
+    if (SleepingReport.Compute(Array.Empty<MemberSnapshot>(), t10Last, 30, t10Now).Sleepers.Count != 0) Fail("guild unavailable");
 
     var t10Many = Enumerable.Range(0, 300).Select(i => new Sleeper(1_234_567_890_123_456_789 + (ulong)i, i % 2 == 0 ? null : 20260901)).ToList();
     var t10Embed = ProjectSYNCS.Commands.ReportCards.BuildSleeping(new SleepingReportData(90, 400, t10Many));
@@ -1997,7 +1999,7 @@ public class EmoteReportService
 namespace ProjectSYNCS.Helpers;
 
 /// <summary>A member of the guild as the report sees it: plain data.</summary>
-public sealed record MemberInfo(ulong UserId, DateTimeOffset? JoinedAt, bool IsBot);
+public sealed record MemberSnapshot(ulong UserId, DateTimeOffset? JoinedAt, bool IsBot);
 
 /// <summary>A member with no sign of life: the last active day (yyyymmdd), or null for never.</summary>
 public sealed record Sleeper(ulong UserId, int? LastDay);
@@ -2017,7 +2019,7 @@ public static class SleepingReport
     public const int ReliableSince = 20260809;
 
     public static SleepingReportData Compute(
-        IReadOnlyList<MemberInfo> members, IReadOnlyDictionary<ulong, int> lastActiveDay, int days, DateTimeOffset now)
+        IReadOnlyList<MemberSnapshot> members, IReadOnlyDictionary<ulong, int> lastActiveDay, int days, DateTimeOffset now)
     {
         var since = now.AddDays(-days);
         var threshold = AppTime.DayKey(since);
@@ -2061,8 +2063,8 @@ public static class SleepingReport
     /// <summary>/report sleeping: no window, a silence of <paramref name="days"/> days.</summary>
     public async Task<Embed> BuildSleepingAsync(ulong guildId, int days)
     {
-        var members = _client.GetGuild(guildId)?.Users.Select(u => new MemberInfo(u.Id, u.JoinedAt, u.IsBot)).ToList()
-            ?? new List<MemberInfo>();
+        var members = _client.GetGuild(guildId)?.Users.Select(u => new MemberSnapshot(u.Id, u.JoinedAt, u.IsBot)).ToList()
+            ?? new List<MemberSnapshot>();
         var last = await _community.LastActiveDaysAsync(guildId);
         return ReportCards.BuildSleeping(SleepingReport.Compute(members, last, days, DateTimeOffset.UtcNow));
     }

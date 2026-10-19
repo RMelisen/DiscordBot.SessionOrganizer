@@ -17,6 +17,35 @@ namespace ProjectSYNCS.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
 
+            modelBuilder.Entity("ProjectSYNCS.Models.ActivityHourStat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Hour")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Messages")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("VoiceMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "Day", "Hour")
+                        .IsUnique();
+
+                    b.ToTable("ActivityHourStats");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.BotFeedback", b =>
                 {
                     b.Property<int>("Id")
@@ -72,6 +101,40 @@ namespace ProjectSYNCS.Migrations
                         .IsUnique();
 
                     b.ToTable("BotFeedbackDailyStats");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.ChannelDailyStat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("ChannelId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Messages")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("VoiceMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("VoicePeak")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "Day");
+
+                    b.HasIndex("GuildId", "ChannelId", "Day")
+                        .IsUnique();
+
+                    b.ToTable("ChannelDailyStats");
                 });
 
             modelBuilder.Entity("ProjectSYNCS.Models.ChatAnswerDailyStat", b =>
@@ -158,6 +221,36 @@ namespace ProjectSYNCS.Migrations
                         .IsUnique();
 
                     b.ToTable("CollectionCompletions");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.CommandDailyStat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Command")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Failures")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Uses")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "Day", "Command")
+                        .IsUnique();
+
+                    b.ToTable("CommandDailyStats");
                 });
 
             modelBuilder.Entity("ProjectSYNCS.Models.EconomyDailyStat", b =>

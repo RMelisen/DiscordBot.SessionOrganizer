@@ -1,6 +1,7 @@
 # Design — `/report` batch 2: activity, commands, Plynlings, quiz, emotes, sleeping members
 
-> **Status (2026-10-19): approved by the owner, not started.** The task-by-task implementation
+> **Status (2026-10-19): implemented in 7.6.0.** `MemberInfo` became `MemberSnapshot`
+> (`System.Reflection.MemberInfo` made it ambiguous). The task-by-task implementation
 > plan is `docs/superpowers/plans/2026-10-19-report-batch-2.md`. Batch 1 is committed (7.5.0).
 
 ## Context

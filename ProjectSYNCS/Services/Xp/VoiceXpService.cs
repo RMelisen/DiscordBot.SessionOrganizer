@@ -43,12 +43,15 @@ internal sealed class VoiceXpService : BackgroundService
     private readonly VoiceSpectatorService _spectator;
     private readonly SessionAttendanceService _attendance;
     private readonly VoiceSeatService _seat;
+    private readonly ActivityCounter _activity;
     private readonly ILogger<VoiceXpService> _logger;
 
     public VoiceXpService(
         DiscordSocketClient client, XpTracker xp, VoiceSpectatorService spectator,
-        SessionAttendanceService attendance, VoiceSeatService seat, ILogger<VoiceXpService> logger)
+        SessionAttendanceService attendance, VoiceSeatService seat, ILogger<VoiceXpService> logger,
+        ActivityCounter activity)
     {
+        _activity = activity;
         _client = client;
         _xp = xp;
         _spectator = spectator;
@@ -104,9 +107,13 @@ internal sealed class VoiceXpService : BackgroundService
 
                 // The spectator watches every channel, empty ones included: an emptying channel
                 // is how a session ends. Its own try, like every per-item step of this sweep.
+                var humans = channel.ConnectedUsers.Count(u => !u.IsBot);
+                // Presence per room and per hour for /report activity: everyone connected, muted
+                // included (the AFK channel is skipped above). In memory, cannot throw.
+                _activity.CountVoice(guild.Id, channel.Id, humans, MinutesPerTick, DateTimeOffset.UtcNow);
+
                 try
                 {
-                    var humans = channel.ConnectedUsers.Count(u => !u.IsBot);
                     await _spectator.ObserveAsync(channel, active.Count, humans, CheckInterval);
                 }
                 catch (Exception ex)

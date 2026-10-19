@@ -10,9 +10,9 @@ using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
 
-// Her monthly report to Papa: on the 1st, from 09:00 Paris, the four /report embeds for the month
-// just ended (a calendar month, ReportWindow.CalendarMonth) go to the owner's DMs, one per message
-// under a line of hers. In a DM, so the reports may name people, as /report does.
+// Her monthly report to Papa: on the 1st, from 09:00 Paris, the /report embeds of ReportKinds.Digest
+// for the month just ended (a calendar month, ReportWindow.CalendarMonth) go to the owner's DMs, one
+// per message under a line of hers. In a DM, so the reports may name people, as /report does.
 //
 // report-state.json, next to the database (so under /data in production), keeps the last month
 // sent; it is written *before* sending, so a crash costs a digest, never a second one. With no
@@ -110,8 +110,8 @@ public sealed class MonthlyDigestService : BackgroundService
         }
 
         // One report per message, each in its own try: a failed one doesn't cost the others, and
-        // four embeds in one message could pass the 6000-character cap.
-        foreach (var kind in Enum.GetValues<ReportKind>())
+        // several embeds in one message could pass the 6000-character cap.
+        foreach (var kind in ReportKinds.Digest)
         {
             try
             {

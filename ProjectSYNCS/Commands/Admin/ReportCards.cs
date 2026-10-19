@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using Discord;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Models;
@@ -209,6 +210,246 @@ public static class ReportCards
         return embed.WithFooter(Footer(w, "Disponibilité : sur les jours où j'ai relevé ma température.")).Build();
     }
 
+    // ---- /report activity ---------------------------------------------------------------------
+
+    public static Embed BuildActivity(Compared<ActivityReportData> c, ReportWindow w, bool names)
+    {
+        var d = c.Current;
+        var p = c.Previous;
+        var embed = Start("📈 L'activité", w);
+        if (d.Messages == 0 && d.VoiceMinutes == 0)
+            return embed.WithDescription("Rien de compté sur cette période (comptage depuis la 7.6.0).").WithFooter(Footer(w)).Build();
+
+        embed.WithDescription(
+            $"**{LevelCardUi.Xp(d.Messages)}** messages{TextChart.Trend(d.Messages, p?.Messages)}" +
+            $" · **{Duration(d.VoiceMinutes)}** de vocal cumulé{TextChart.Trend(d.VoiceMinutes, p?.VoiceMinutes)}");
+
+        var peak = $"Messages `0h {TextChart.Sparkline(d.MessagesByHour)} 23h`\n" +
+                   $"Vocal       `0h {TextChart.Sparkline(d.VoiceByHour)} 23h`";
+        if (d.BusiestHours.Count > 0) peak += $"\nHeures de pointe : {string.Join(" · ", d.BusiestHours.Select(h => $"{h} h"))}";
+        if (d.BusiestWeekday is { } day) peak += $"\nJour le plus bavard : {Weekday((int)day)}";
+        embed.AddField("Heures de pointe", peak);
+
+        embed.AddField("Salons écrits", d.TopText.Count == 0 ? "—" : Cap(string.Join('\n', d.TopText.Select(l =>
+            $"{Mark(l)}<#{l.ChannelId}> — {LevelCardUi.Xp(l.Value)}{TextChart.Trend(l.Value, p?.MessagesByChannel.GetValueOrDefault(l.ChannelId))}"))));
+        if (d.SilentText.Count > 0)
+            embed.AddField($"Salons silencieux ({d.SilentText.Count})", Fit(d.SilentText.Select(l => $"{Mark(l)}<#{l.ChannelId}>").ToList(), " · "));
+
+        embed.AddField("Salons vocaux", d.TopVoice.Count == 0 ? "Personne en vocal." : Cap(string.Join('\n', d.TopVoice.Select(l =>
+            $"{Mark(l)}<#{l.ChannelId}> — {Duration(l.Value)} · jusqu'à {l.Peak} {Plural(l.Peak, "personne", "personnes")}"))));
+        if (d.EmptyVoice.Count > 0)
+            embed.AddField($"Vocaux inutilisés ({d.EmptyVoice.Count})", Fit(d.EmptyVoice.Select(l => $"{Mark(l)}<#{l.ChannelId}>").ToList(), " · "));
+
+        return embed.WithFooter(Footer(w,
+            "🚫 : salon exclu (rien n'y rapporte d'XP). Vocal cumulé : minutes × personnes présentes. Comptage depuis la 7.6.0.")).Build();
+    }
+
+    // ---- /report commands ---------------------------------------------------------------------
+
+    public static Embed BuildCommands(Compared<CommandReportData> c, ReportWindow w, bool names)
+    {
+        var d = c.Current;
+        var p = c.Previous;
+        var embed = Start("⌨️ Mes commandes", w);
+        embed.WithDescription(d.Uses == 0
+            ? "Aucune commande utilisée sur cette période (comptage depuis la 7.6.0)."
+            : $"**{LevelCardUi.Xp(d.Uses)}** {Plural(d.Uses, "utilisation", "utilisations")}{TextChart.Trend(d.Uses, p?.Uses)}" +
+              (d.Failures > 0 ? $" · **{d.Failures}** en erreur ({TextChart.Percent(d.Failures, d.Uses)})" : ""));
+
+        if (d.Top.Count > 0)
+            embed.AddField("Les plus utilisées", Cap(string.Join('\n', d.Top.Select(l =>
+                $"`/{l.Command}` — {LevelCardUi.Xp(l.Uses)}{TextChart.Trend(l.Uses, p?.UsesByCommand.GetValueOrDefault(l.Command))}" +
+                (l.Failures > 0 ? $" · ⚠️ {l.Failures}" : "")))));
+        if (d.Shortcuts.Count > 0)
+            embed.AddField("Raccourcis tapés", Fit(d.Shortcuts.Select(l => $"`{l.Command}` {LevelCardUi.Xp(l.Uses)}").ToList(), " · "));
+        if (d.NeverUsed.Count > 0)
+            embed.AddField($"Jamais utilisées ({d.NeverUsed.Count})", Fit(d.NeverUsed.Select(x => $"`/{x}`").ToList(), " · "));
+
+        return embed.WithFooter(Footer(w, "Les commandes en message privé ne comptent pas ici. Comptage depuis la 7.6.0.")).Build();
+    }
+
+    // ---- /report quiz -------------------------------------------------------------------------
+
+    public static Embed BuildQuiz(Compared<QuizReportData> c, ReportWindow w, bool names)
+    {
+        var d = c.Current;
+        var p = c.Previous;
+        var embed = Start("❓ Le quiz", w);
+        if (d.Posted == 0)
+            return embed.WithDescription("Aucune question posée sur cette période.").WithFooter(Footer(w)).Build();
+
+        embed.WithDescription(
+            $"**{d.Posted}** {Plural(d.Posted, "question posée", "questions posées")}{TextChart.Trend(d.Posted, p?.Posted)}" +
+            $" · trouvées : **{d.Found}** ({TextChart.Percent(d.Found, d.Posted)})" +
+            (p is { Posted: > 0 } ? $" · avant : {TextChart.Percent(p.Found, p.Posted)}" : "") +
+            $" · sans réponse : **{d.Unanswered}**" +
+            (d.MedianSeconds is { } s ? $"\nTemps de réponse médian : **{Seconds(s)}**" : ""));
+        embed.AddField("Par catégorie", Cap(Groups(d.ByCategory)), inline: true);
+        embed.AddField("Par difficulté", Cap(Groups(d.ByDifficulty)), inline: true);
+        if (d.UnfoundPrompts.Count > 0)
+            embed.AddField("Personne n'a trouvé", Cap(string.Join('\n', d.UnfoundPrompts.Select(q => $"• {q}"))));
+
+        if (names)
+        {
+            AddPeople(embed, "Les meilleurs", d.Winners, t => $"{t.Count} {Plural(t.Count, "victoire", "victoires")}");
+            if (d.Fastest is { } f)
+                embed.AddField("Le plus rapide", $"<@{f.UserId}> — " +
+                    (f.Count < 60_000 ? $"{(f.Count / 1000.0).ToString("0.0", Fr)} s" : Seconds(f.Count / 1000)), inline: true);
+        }
+        return embed.WithFooter(Footer(w)).Build();
+    }
+
+    private static string Groups(IReadOnlyList<QuizGroupLine> lines) =>
+        lines.Count == 0 ? "—" : string.Join('\n', lines.Select(l => $"{Capitalise(l.Label)} — {l.Found}/{l.Posted}"));
+
+    private static string Seconds(int s) => s < 60 ? $"{s} s" : $"{s / 60} min {s % 60:00}";
+
+    // ---- /report plynlings --------------------------------------------------------------------
+
+    public static Embed BuildPlynlings(Compared<PlynlingReportData> c, ReportWindow w, bool names)
+    {
+        var d = c.Current;
+        var p = c.Previous;
+        var embed = Start("🌱 Les Plynlings", w);
+        var deaths = d.Deaths.Sum(x => x.Count);
+        embed.WithDescription(
+            $"**{d.Living}** en vie · **{d.Born}** {Plural(d.Born, "adoption", "adoptions")}{TextChart.Trend(d.Born, p?.Born)}" +
+            $" · **{deaths}** {Plural(deaths, "décès", "décès")}" +
+            (deaths > 0 ? $" ({string.Join(", ", d.Deaths.Select(x => $"{DeathLabel(x.Cause)} : {x.Count}"))})" : "") +
+            (d.AverageLifespan is { } life ? $"\nDurée de vie moyenne des disparus : **{Math.Max(1, (int)Math.Round(life.TotalDays))} jours**" : ""));
+
+        embed.AddField("Les vivants, maintenant",
+            $"Malades : **{d.Sick}** · très faim : **{d.Starving}** · faim : **{d.Hungry}**\n" +
+            $"Sales : **{d.Dirty}** · gelés : **{d.Frozen}**\n" +
+            (d.Stages.Count == 0 ? "—" : string.Join(" · ", d.Stages.Select(s => $"{StageLabel(s.Stage)} : {s.Count}"))));
+
+        embed.AddField("Événements", d.EventsResolved == 0
+            ? "Aucun événement résolu."
+            : Cap($"Résolus : **{d.EventsResolved}**{TextChart.Trend(d.EventsResolved, p?.EventsResolved)}" +
+                  $" · choisis seuls : **{d.DecidedAlone}** ({TextChart.Percent(d.DecidedAlone, d.EventsResolved)})\n" +
+                  (d.Challenges > 0 ? $"Défis réussis : **{d.ChallengesWon}/{d.Challenges}**\n" : "") +
+                  string.Join('\n', d.TopEvents.Select(e => $"• {e.Title} ×{e.Count}"))));
+
+        embed.AddField("Liens et progrès",
+            (d.Bonds.Count == 0 ? "Aucun lien noué." : string.Join(" · ", d.Bonds.Select(b => $"{BondLabel(b.Bond)} : {b.Count}"))) +
+            $"\nBadges gagnés : **{d.Badges}** · traits acquis : **{d.Traits}**");
+
+        if (names && d.Watch.Count > 0)
+            embed.AddField("À surveiller", Cap(string.Join('\n', d.Watch.Select(x =>
+                $"<@{x.OwnerId}> — {Format.Sanitize(x.Name)}{(x.Sick ? " · malade" : "")}{(x.Starving ? " · très faim" : "")}"))));
+
+        return embed.WithFooter(Footer(w,
+            "« Choisis seuls » : sans réponse de son maître, le Plynling a décidé. Ping-Qilin n'est pas compté.")).Build();
+    }
+
+    private static string DeathLabel(DeathCause cause) => cause switch
+    {
+        DeathCause.Illness => "maladie",
+        _ => "faim",
+    };
+
+    private static string StageLabel(PlynlingStage stage) => stage switch
+    {
+        PlynlingStage.Baby => "Bébés",
+        PlynlingStage.Teen => "Ados",
+        PlynlingStage.Adult => "Adultes",
+        _ => "Anciens",
+    };
+
+    private static string BondLabel(PlynlingBond bond) => bond switch
+    {
+        PlynlingBond.Friends => "Amitiés",
+        PlynlingBond.BestFriends => "Meilleurs amis",
+        PlynlingBond.Lovers => "Amours",
+        PlynlingBond.Rivals => "Rivalités",
+        PlynlingBond.Enemies => "Inimitiés",
+        _ => "Connaissances",
+    };
+
+    // ---- /report emotes -----------------------------------------------------------------------
+
+    public static Embed BuildEmotes(Compared<EmoteReportData> c, ReportWindow w, bool names)
+    {
+        var d = c.Current;
+        var p = c.Previous;
+        var embed = Start("😀 Les émotes", w);
+        var total = d.Own + d.Foreign + d.Unicode;
+        embed.WithDescription(total == 0
+            ? "Aucune émote utilisée sur cette période."
+            : $"**{LevelCardUi.Xp(total)}** émotes{TextChart.Trend(total, p is null ? null : p.Own + p.Foreign + p.Unicode)}" +
+              $" · du serveur : **{TextChart.Percent(d.Own, total)}** · d'ailleurs : **{TextChart.Percent(d.Foreign, total)}**" +
+              $" · emoji : **{TextChart.Percent(d.Unicode, total)}**");
+
+        if (d.TopOwn.Count > 0)
+            embed.AddField("Les préférées du serveur", Fit(d.TopOwn.Select(e => $"{e.Markup} ×{LevelCardUi.Xp(e.Count)}").ToList(), " · "));
+        if (p is not null)
+        {
+            var up = EmoteReport.Movers(d, p, rising: true);
+            var down = EmoteReport.Movers(d, p, rising: false);
+            if (up.Count + down.Count > 0)
+                embed.AddField("Tendances",
+                    (up.Count > 0 ? "En hausse : " + string.Join(" · ", up.Select(e => $"{e.Markup} +{e.Count}")) : "") +
+                    (up.Count > 0 && down.Count > 0 ? "\n" : "") +
+                    (down.Count > 0 ? "En baisse : " + string.Join(" · ", down.Select(e => $"{e.Markup} −{-e.Count}")) : ""));
+        }
+        if (d.UnusedOwn.Count > 0)
+            embed.AddField($"Jamais utilisées ({d.UnusedOwn.Count})", Fit(d.UnusedOwn, " "));
+        if (d.TopForeign.Count > 0)
+            embed.AddField("Venues d'autres serveurs", Fit(d.TopForeign.Select(e => $"{e.Markup} ×{LevelCardUi.Xp(e.Count)}").ToList(), " · "));
+
+        return embed.WithFooter(Footer(w, "Écrites et en réaction.")).Build();
+    }
+
+    // ---- /report sleeping ---------------------------------------------------------------------
+
+    public static Embed BuildSleeping(SleepingReportData d)
+    {
+        var embed = new EmbedBuilder()
+            .WithTitle($"💤 Les endormis — rien depuis {d.Days} jours")
+            .WithColor(Color.Purple)
+            .WithDescription(d.Sleepers.Count == 0
+                ? "Tout le monde a donné signe de vie. Pour l'instant."
+                : $"**{d.Sleepers.Count}** sur **{d.Members}** {Plural(d.Members, "membre", "membres")}" +
+                  $" ({TextChart.Percent(d.Sleepers.Count, d.Members)}) sans XP, réaction ni vocal depuis {d.Days} jours.");
+
+        var lines = d.Sleepers.Select(s => $"<@{s.UserId}> — " + (s.LastDay is { } day
+            ? $"dernier signe : {AppTime.FromDayKey(day):dd/MM/yyyy}"
+            : $"jamais (depuis le {AppTime.FromDayKey(SleepingReport.ReliableSince):dd/MM/yyyy})")).ToList();
+        var left = AddLineFields(embed, "Endormis", lines, maxFields: 2);
+
+        var footer = $"Arrivés depuis moins de {d.Days} jours : pas comptés. L'activité dans les salons exclus ne compte pas : " +
+                     "qui ne parle que là semble endormi.";
+        if (left > 0) footer = $"… et {left} autres. " + footer;
+        return embed.WithFooter(footer).Build();
+    }
+
+    public static MessageComponent SleepRow(int days)
+    {
+        var row = new ComponentBuilder();
+        foreach (var choice in SleepingReport.Choices)
+            row.WithButton($"{choice} jours", $"report:sleep:{choice}",
+                choice == days ? ButtonStyle.Primary : ButtonStyle.Secondary, disabled: choice == days);
+        return row.Build();
+    }
+
+    // Whole lines into up to maxFields fields; returns how many lines didn't fit.
+    private static int AddLineFields(EmbedBuilder embed, string title, IReadOnlyList<string> lines, int maxFields)
+    {
+        var index = 0;
+        for (var f = 0; f < maxFields && index < lines.Count; f++)
+        {
+            var sb = new StringBuilder();
+            while (index < lines.Count && sb.Length + lines[index].Length + 1 <= MaxFieldLength - 30)
+            {
+                sb.Append(lines[index]).Append('\n');
+                index++;
+            }
+            if (sb.Length == 0) break;
+            embed.AddField(f == 0 ? title : "​", sb.ToString().TrimEnd());
+        }
+        return lines.Count - index;
+    }
+
     // ---- Shared -------------------------------------------------------------------------------
 
     private static EmbedBuilder Start(string title, ReportWindow w) => new EmbedBuilder()
@@ -267,5 +508,24 @@ public static class ReportCards
         if (text.Length <= MaxFieldLength) return text;
         var cut = text.LastIndexOf('\n', MaxFieldLength - 2);
         return (cut > 0 ? text[..cut] : text[..(MaxFieldLength - 2)]) + "\n…";
+    }
+
+    private static string Mark(ChannelLine l) => l.Excluded ? "🚫 " : "";
+
+    // Whole items only, up to a field's length: a list never cuts an emote's <:name:id> or a mention
+    // in half. What doesn't fit is counted instead.
+    private static string Fit(IReadOnlyList<string> items, string separator)
+    {
+        var sb = new StringBuilder();
+        var shown = 0;
+        foreach (var item in items)
+        {
+            var add = (shown == 0 ? "" : separator) + item;
+            if (sb.Length + add.Length > MaxFieldLength - 30) break;
+            sb.Append(add);
+            shown++;
+        }
+        if (shown < items.Count) sb.Append($" … et {items.Count - shown} autres");
+        return sb.Length == 0 ? "—" : sb.ToString();
     }
 }

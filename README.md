@@ -45,7 +45,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/admin pebble add · remove` | Manual cailloux adjustment | staff |
 | `/admin stats` | The server's economy at a glance | staff |
 | `/admin dashboard` | The economy day by day: flows, activity, finds | staff |
-| `/report sessions · polls · community · syncs` | Her reports: attendance, polls and `/tonight`, the server's life, her own health | staff |
+| `/report sessions · polls · community · syncs · activity · commands · quiz · plynlings · emotes · sleeping` | Her reports: attendance, polls and `/tonight`, the server's life, her own health, peak hours and channels, her commands, the quiz, the Plynlings, the emotes, members gone quiet | staff |
 | `/admin warn · warnings · unwarn` | Formal warnings, sent to the person by DM | staff |
 | `/admin mute · unmute` | Discord timeout, saying what's missing when it can't | staff |
 | `/admin plynling rename · resurrect · passion-reset · cure`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
@@ -497,9 +497,25 @@ is gone).
   - **`community`** — active members day by day, XP, voice, reactions, arrivals and departures
     (counted since 7.5.0), the top emotes, the quiz, the busiest people and the ones going quiet;
   - **`syncs`** — her temperature, outages and uptime, how much she chatted and how often she
-    had nothing specific to say, good bot / bad bot, and her time in voice with people.
+    had nothing specific to say, good bot / bad bot, and her time in voice with people;
+  - **`activity`** — messages and voice time hour by hour, the peak hours and the busiest
+    weekday, the busiest text channels and the silent ones, the voice rooms with their peak
+    attendance and the ones nobody used (excluded channels marked 🚫);
+  - **`commands`** — how often her commands were used, the most used with their errors, the
+    typed shortcuts, and the commands nobody used;
+  - **`quiz`** — questions posted, found and left unanswered, the found rate by category and by
+    difficulty, the median answer time, the questions nobody found, the best and the fastest;
+  - **`plynlings`** — adoptions and deaths (by cause, with the average lifespan), the living's
+    state now (sick, hungry, dirty, frozen, by stage), events and how many they decided alone,
+    challenges, bonds, badges and traits, and the Plynlings worth a look with their owners;
+  - **`emotes`** — the server's own emotes ranked, the ones nobody used, the rising and falling
+    ones, and the share of server emotes, emotes from elsewhere and emoji;
+  - **`sleeping`** — members with no XP, reaction or voice for 30, 60 or 90 days (buttons), with
+    the last day each one showed up; newcomers and bots are left out.
 
-  On the 1st of each month she also sends the owner the previous month's four reports by DM.
+  Messages, voice presence and command uses are counted from 7.6.0 on, so `activity` and
+  `commands` start empty. On the 1st of each month she also sends the owner the previous month's
+  reports by DM: `sessions`, `polls`, `community`, `syncs`, `activity` and `commands`.
 - **`/admin xp add <member> <amount>` · `/admin xp remove <member> <amount>`** — manual XP
   adjustment. Ephemeral, clamped at zero, and deliberately silent: crossing a level this
   way fires no level-up card, since that card celebrates something earned.

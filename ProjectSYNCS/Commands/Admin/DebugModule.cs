@@ -801,7 +801,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        // Four reports read the database: well past Discord's 3 s on the Pi.
+        // Six reports read the database: well past Discord's 3 s on the Pi.
         await DeferAsync(ephemeral: true);
         var (year, month) = MonthlyDigest.PreviousMonth(DateTimeOffset.UtcNow);
         var sent = await _digest.SendAsync(year, month);

@@ -81,6 +81,10 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<SchedulingReportService>();
         services.AddTransient<CommunityReportService>();
         services.AddTransient<SyncsReportService>();
+        services.AddTransient<ActivityReportService>();
+        services.AddTransient<QuizReportService>();
+        services.AddTransient<PlynlingReportService>();
+        services.AddTransient<EmoteReportService>();
         services.AddTransient<ReportService>();
         // The /arcade games are in memory (the tables) and run by timers (the runner): singletons.
         services.AddSingleton<ArcadeTables>();
@@ -135,6 +139,11 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<WelcomeService>();
         // Gateway-driven, opens its own scope per join or leave.
         services.AddSingleton<MemberFlowTracker>();
+        // Counts messages, voice presence and commands in memory; ActivityFlushService writes them.
+        // Registered before BotService and VoiceXpService on purpose: hosts stop in reverse order,
+        // so its flush on stop runs after everything that feeds the counter has stopped.
+        services.AddSingleton<ActivityCounter>();
+        services.AddHostedService<ActivityFlushService>();
         services.AddSingleton<ChatterService>();
         services.AddSingleton<EmoteTracker>();
         services.AddSingleton<ReactionService>();

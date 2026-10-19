@@ -50,6 +50,9 @@ public class AppDbContext : DbContext
     public DbSet<TonightResponse> TonightResponses => Set<TonightResponse>();
     public DbSet<PersonalReminder> PersonalReminders => Set<PersonalReminder>();
     public DbSet<MemberFlowDailyStat> MemberFlowDailyStats => Set<MemberFlowDailyStat>();
+    public DbSet<ActivityHourStat> ActivityHourStats => Set<ActivityHourStat>();
+    public DbSet<ChannelDailyStat> ChannelDailyStats => Set<ChannelDailyStat>();
+    public DbSet<CommandDailyStat> CommandDailyStats => Set<CommandDailyStat>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -360,6 +363,26 @@ public class AppDbContext : DbContext
         {
             e.Property(x => x.GuildId).HasConversion<long>();
             e.HasIndex(x => new { x.GuildId, x.Day }).IsUnique();
+        });
+
+        modelBuilder.Entity<ActivityHourStat>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.Day, x.Hour }).IsUnique();
+        });
+
+        modelBuilder.Entity<ChannelDailyStat>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.ChannelId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.ChannelId, x.Day }).IsUnique();
+            e.HasIndex(x => new { x.GuildId, x.Day });
+        });
+
+        modelBuilder.Entity<CommandDailyStat>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.Day, x.Command }).IsUnique();
         });
 
         modelBuilder.Entity<PebbleWallet>(e =>

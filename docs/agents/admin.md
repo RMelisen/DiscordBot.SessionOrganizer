@@ -49,8 +49,9 @@ same check.
 
 ## `/report` and the monthly digest
 
-`sessions`, `polls`, `community`, `syncs`: her reports to the staff. Same gate as `/admin`
-(`IsStaff` per handler, no `[DefaultMemberPermissions]`, guild-only).
+`sessions`, `polls`, `community`, `syncs`, `activity`, `commands`, `quiz`, `plynlings`, `emotes`,
+`sleeping`: her reports to the staff. Same gate as `/admin` (`IsStaff` per handler, no
+`[DefaultMemberPermissions]`, guild-only).
 
 - **Private, so they may name people** (no-shows, latecomers, the busiest, the ones going quiet).
   This is the one exception to « absences are a count, never names » (scheduling, *Roll call*),
@@ -59,7 +60,12 @@ same check.
   (the checks assert no `<@` survives).
 - **One path**: `ReportService.BuildAsync(kind, guild, window, names)` serves the command, the
   period buttons (`report:win:{kind}:{period}:0`, `ReportComponentHandler`, deferred first,
-  re-checks `IsStaff`) and the digest. `ReportKind` names are in custom-ids: never rename.
+  re-checks `IsStaff`) and the digest. `ReportKind` names are in custom-ids: append only, never
+  rename.
+- **The live guild becomes plain records in `ReportService`** (`ChannelInfo`, `ServerEmote`,
+  `MemberSnapshot`, the registered slash paths) before it reaches a helper. When the guild is
+  unavailable (gateway down, the digest firing during a reconnect) those snapshots are empty and
+  the reports render without their channel, emote or member lists: never a crash.
 - **Windows are `Helpers/Core/ReportWindow`**: inclusive Paris day keys. Bucket tables filter
   `Day` in SQL; DateTimeOffset rows (sessions, polls, `/tonight`, outages) are read whole per guild
   and windowed in memory. Opens on 30 days; the buttons are `StatsPeriodUi`'s three.
@@ -69,23 +75,60 @@ same check.
     relevés ».
   - Trends compare against `ReportWindow.Previous`: the same number of days before, the previous
     calendar month for the digest, none for all time.
-- **The arithmetic is pure** (`SessionReport`, `PollReport`, `CommunityReport`, `SyncsReport` in
-  `Helpers/`), the services only fetch rows, the cards (`ReportCards`) are static. The checks
-  feed the helpers cases and measure every card at its worst; re-run them after adding a field.
+- **The arithmetic is pure** (`SessionReport`, `PollReport`, `CommunityReport`, `SyncsReport`,
+  `ActivityReport`, `CommandReport`, `QuizReport`, `PlynlingReport`, `EmoteReport`,
+  `SleepingReport` in `Helpers/`), the services only fetch rows, the cards (`ReportCards`) are
+  static. The checks feed the helpers cases and measure every card at its worst; re-run them after
+  adding a field. A list that can grow without bound (silent channels, unused emotes, never-used
+  commands) goes through `ReportCards.Fit`, which keeps whole items only and counts the rest
+  (« … et N autres »), so an emote's `<:name:id>` is never cut in half.
 - **Rules worth knowing**:
   - a session belongs to the day of its `ScheduledAt`, and so does a cancellation (there is no
     `CancelledAt`);
   - attendance goes through `SessionAttendance.IsMissed` / `CameLate` (scheduling, *Roll call*);
   - a poll « became a session » when a non-cancelled session sits on one of its slots: nothing
     links them, it is the match `PollModule` uses against duplicates;
-  - « active » is any XP, reaction or voice minute that day (no message count exists);
-  - uptime is measured over the days the Pi recorded its temperature.
+  - « active » is any XP, reaction or voice minute that day (messages are counted per channel and
+    hour, never per person);
+  - uptime is measured over the days the Pi recorded its temperature;
+  - a quiz round counts only if its card went out (`MessageId != 0`), in `quiz` and `community`
+    alike;
+  - `plynlings` never counts the mascot (`PlynlingMascot.Is`), and cannot report abandons: an
+    abandoned Plynling is hard-deleted with its history. Needs are settled in memory
+    (`AsNoTracking`, never saved), as `/admin stats` does;
+  - `emotes`: an emote is the server's own when its id is in the live guild's list; the others
+    were counted from other servers (`EmoteTracker` counts them too);
+  - `sleeping` has no window: a silence of 30, 60 or 90 days, on its own buttons
+    (`report:sleep:{days}`, its own verb so it never collides with a period row). « Last seen » is
+    the last `MemberDailyStat` day with any counter above 0; « jamais » means never since
+    2026-08-09, when the XP buckets became reliable (`ResetXpTotals`). Members who joined less than
+    N days ago are left out, bots always. Activity in excluded channels earns nothing, so someone
+    who only talks there looks asleep (said in the footer).
 - **Joins and leaves** (`MemberFlowDailyStat`, `MemberFlowTracker` on `UserJoined` / `UserLeft`,
   bots skipped): daily buckets with **no totals table**, counted from 7.5.0 on. Nothing needs an
   all-time figure older than the buckets, and Discord shows the member count.
+- **Activity counting** (`activity`, `commands`): the one batched counter. A database write per
+  message would be the bot's first, on a Pi with no `SQLITE_BUSY` handling, so the counts go to
+  `ActivityCounter` (a singleton holding its own lock, every method synchronous and cheap) and
+  `ActivityFlushService` (its own 5-minute loop) writes them.
+  - Fed by the message fan-out right after the shortcut return (a typed shortcut is counted as a
+    command, under its `;` key, by `PlynlingShortcutService`), by `SlashCommandExecuted` (handlers
+    run `RunMode.Async`, so success or failure only arrives there; DMs count under guild 0), and by
+    `VoiceXpService`'s sweep.
+  - The flush opens one scope per guild in its own `try`; a failed guild's counts are put back
+    (`Restore`) for the next pass. It flushes once more on stop, and is registered before
+    `BotService` so it stops after everything that feeds it. A crash loses at most 5 minutes.
+  - `ActivityHourStat`, `ChannelDailyStat`, `CommandDailyStat`: buckets only, no totals, counted
+    from 7.6.0 on. A thread counts under its parent. Excluded channels are counted and marked 🚫.
+    Voice is presence (everyone connected, muted included, AFK room skipped), unlike
+    `MemberDailyStat.VoiceMinutes`, which counts XP-eligible minutes only.
+  - `CommandDailyStat.Command` is `CommandPath`'s key (`/pl` folded into `plynling`), a stored
+    string, so append-only: a renamed command keeps its old rows under its old name.
 - **The monthly digest** (`MonthlyDigestService`, its own hourly loop): from 09:00 Paris on the
-  1st, the four reports for the previous calendar month go to `OwnerId` by DM, one embed per
-  message (four in one could pass 6000), each in its own `try`, under an `OwnerDigestLines` line
+  1st, the reports of `ReportKinds.Digest` (`sessions`, `polls`, `community`, `syncs`,
+  `activity`, `commands`; the others stay on demand) for the previous calendar month go to
+  `OwnerId` by DM, one embed per message (several in one could pass 6000), each in its own `try`,
+  under an `OwnerDigestLines` line
   (picked by `DailyRotation`, since a once-a-month pool would gain nothing from the picker).
   - Timing is pure, in `Helpers/Admin/MonthlyDigest`.
   - `report-state.json` (beside the DB) holds the last month sent and is written **before** sending.

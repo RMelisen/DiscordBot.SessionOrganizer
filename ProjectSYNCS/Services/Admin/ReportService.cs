@@ -1,38 +1,71 @@
 using Discord;
+using Discord.Interactions;
 using Discord.WebSocket;
 using ProjectSYNCS.Commands;
 using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
 
-/// <summary>The four reports, in the order the digest sends them. Used in custom-ids by name: never rename.</summary>
+/// <summary>The reports, by name. Used in custom-ids by name: append only, never rename.</summary>
 public enum ReportKind
 {
     Sessions,
     Polls,
     Community,
     Syncs,
+    Activity,
+    Commands,
+    Quiz,
+    Plynlings,
+    Emotes,
+    Sleeping,
+}
+
+/// <summary>Which reports the monthly digest sends, in order. The others stay on demand.</summary>
+public static class ReportKinds
+{
+    public static readonly IReadOnlyList<ReportKind> Digest = new[]
+    {
+        ReportKind.Sessions, ReportKind.Polls, ReportKind.Community, ReportKind.Syncs, ReportKind.Activity, ReportKind.Commands,
+    };
 }
 
 /// <summary>
 /// One report as an embed, whoever asks: /report, its period buttons and the monthly digest all go
 /// through here, so they can't drift apart.
 /// </summary>
-/// <remarks>Transient: it wraps the transient report services.</remarks>
+/// <remarks>
+/// Transient: it wraps the transient report services. The live guild (channels, emotes, members,
+/// registered commands) is turned into plain records here, so the helpers stay pure; when the guild
+/// is unavailable (gateway down) those snapshots are empty and the reports render without them.
+/// </remarks>
 public class ReportService
 {
     private readonly SchedulingReportService _scheduling;
     private readonly CommunityReportService _community;
     private readonly SyncsReportService _syncs;
+    private readonly ActivityReportService _activity;
+    private readonly QuizReportService _quiz;
+    private readonly PlynlingReportService _plynlings;
+    private readonly EmoteReportService _emotes;
     private readonly DiscordSocketClient _client;
+    private readonly InteractionService _interactions;
+    private readonly GuildConfigService _config;
 
-    public ReportService(SchedulingReportService scheduling, CommunityReportService community,
-        SyncsReportService syncs, DiscordSocketClient client)
+    public ReportService(SchedulingReportService scheduling, CommunityReportService community, SyncsReportService syncs,
+        ActivityReportService activity, QuizReportService quiz, PlynlingReportService plynlings, EmoteReportService emotes,
+        DiscordSocketClient client, InteractionService interactions, GuildConfigService config)
     {
         _scheduling = scheduling;
         _community = community;
         _syncs = syncs;
+        _activity = activity;
+        _quiz = quiz;
+        _plynlings = plynlings;
+        _emotes = emotes;
         _client = client;
+        _interactions = interactions;
+        _config = config;
     }
 
     public async Task<Embed> BuildAsync(ReportKind kind, ulong guildId, ReportWindow window, bool names)
@@ -45,7 +78,51 @@ public class ReportService
             ReportKind.Polls => ReportCards.BuildPolls(
                 await _scheduling.GetPollsAsync(guildId, window, _client.CurrentUser?.Id ?? 0), window, names),
             ReportKind.Community => ReportCards.BuildCommunity(await _community.GetAsync(guildId, window), window, names),
-            _ => ReportCards.BuildSyncs(await _syncs.GetAsync(guildId, window, now), window, await _syncs.RecordAsync(), names),
+            ReportKind.Syncs => ReportCards.BuildSyncs(await _syncs.GetAsync(guildId, window, now), window, await _syncs.RecordAsync(), names),
+            ReportKind.Activity => ReportCards.BuildActivity(
+                await _activity.GetActivityAsync(guildId, window, await ChannelsAsync(guildId)), window, names),
+            ReportKind.Commands => ReportCards.BuildCommands(
+                await _activity.GetCommandsAsync(guildId, window, RegisteredCommands()), window, names),
+            ReportKind.Quiz => ReportCards.BuildQuiz(await _quiz.GetAsync(guildId, window), window, names),
+            ReportKind.Plynlings => ReportCards.BuildPlynlings(await _plynlings.GetAsync(guildId, window, now), window, names),
+            ReportKind.Emotes => ReportCards.BuildEmotes(await _emotes.GetAsync(guildId, window, ServerEmotes(guildId)), window, names),
+            // No window: a stray period button on it opens the default silence.
+            ReportKind.Sleeping => await BuildSleepingAsync(guildId, SleepingReport.Choices[0]),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "No report for this kind."),
         };
     }
+
+    /// <summary>/report sleeping: no window, a silence of <paramref name="days"/> days.</summary>
+    public async Task<Embed> BuildSleepingAsync(ulong guildId, int days)
+    {
+        var members = _client.GetGuild(guildId)?.Users.Select(u => new MemberSnapshot(u.Id, u.JoinedAt, u.IsBot)).ToList()
+            ?? new List<MemberSnapshot>();
+        var last = await _community.LastActiveDaysAsync(guildId);
+        return ReportCards.BuildSleeping(SleepingReport.Compute(members, last, days, DateTimeOffset.UtcNow));
+    }
+
+    // The guild's text and voice channels as plain data, with the excluded ones marked (the hardcoded
+    // floor plus /config's additions). Threads, voice-room chats and the AFK room are left out.
+    private async Task<IReadOnlyList<ChannelInfo>> ChannelsAsync(ulong guildId)
+    {
+        if (_client.GetGuild(guildId) is not { } guild) return Array.Empty<ChannelInfo>();
+        var added = (await _config.GetAsync(guildId)).ExcludedChannels;
+        bool Excluded(ulong id) => XpTracker.HardcodedExcludedChannels.Contains(id) || added.Contains(id);
+        var text = guild.TextChannels
+            .Where(c => c is not SocketVoiceChannel && c is not SocketThreadChannel)
+            .Select(c => new ChannelInfo(c.Id, false, Excluded(c.Id)));
+        var voice = guild.VoiceChannels
+            .Where(c => c.Id != guild.AFKChannel?.Id)
+            .Select(c => new ChannelInfo(c.Id, true, Excluded(c.Id)));
+        return text.Concat(voice).ToList();
+    }
+
+    // Every slash path registered now, /pl folded into /plynling (CommandPath).
+    private IReadOnlyCollection<string> RegisteredCommands() =>
+        _interactions.SlashCommands.Select(CommandPath.Of).ToHashSet();
+
+    // The guild's own emotes as plain data.
+    private IReadOnlyList<ServerEmote> ServerEmotes(ulong guildId) =>
+        _client.GetGuild(guildId)?.Emotes.Select(e => new ServerEmote(e.Id, e.ToString())).ToList()
+        ?? (IReadOnlyList<ServerEmote>)Array.Empty<ServerEmote>();
 }

@@ -61,7 +61,7 @@ public static class CommunityReport
             flow.Sum(f => f.Joins),
             flow.Sum(f => f.Leaves),
             topEmotes,
-            rounds.Count,
+            rounds.Count(r => r.MessageId != 0),   // a round whose card never went out is not a question
             rounds.Count(r => r.WinnerId != 0),
             rounds.Where(r => r.WinnerId != 0).Select(r => r.WinnerId).Distinct().Count(),
             members.GroupBy(m => m.UserId).ToDictionary(g => g.Key, g => g.Sum(m => m.XpEarned)));
