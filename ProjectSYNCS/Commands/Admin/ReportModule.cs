@@ -6,10 +6,11 @@ using ProjectSYNCS.Services;
 namespace ProjectSYNCS.Commands;
 
 // /report — her reports to the staff: how the sessions went, the polls and /tonight, the life of the
-// server, and how she herself is doing. Private (they name people: no-shows, latecomers, the ones
-// going quiet), staff only, opening on 30 days; the period buttons are handled by
-// ReportComponentHandler, which re-checks IsStaff. The same embeds go to the owner once a month
-// (MonthlyDigestService).
+// server, and how she herself is doing, and the rest. Asked by staff only, posted in the open with
+// every name (the owner's call: no-shows, latecomers and sleepers included), under her line for
+// whoever asked (ReportCards.DutyPool); only the refusals stay private. Opens on 30 days; the period
+// buttons are handled by ReportComponentHandler, which re-checks IsStaff. The same embeds go to the
+// owner once a month (MonthlyDigestService), without the line.
 //
 // Guild-only for the same reason as /admin: everything is scoped to Context.Guild.Id.
 [CommandContextType(InteractionContextType.Guild)]
@@ -24,10 +25,12 @@ public class ReportModule : InteractionModuleBase<SocketInteractionContext>
     public const string Refusal = "Mes rapports sont réservés aux administrateurs et aux modérateurs. Bien tenté (˶ᵔ ᵕ ᵔ˶)";
 
     private readonly ReportService _reports;
+    private readonly ResponsePicker _picker;
 
-    public ReportModule(ReportService reports)
+    public ReportModule(ReportService reports, ResponsePicker picker)
     {
         _reports = reports;
+        _picker = picker;
     }
 
     [SlashCommand("sessions", "Les sessions : présence, retards, absences, meilleurs créneaux")]
@@ -66,10 +69,11 @@ public class ReportModule : InteractionModuleBase<SocketInteractionContext>
             await RespondAsync(Refusal, ephemeral: true);
             return;
         }
-        await DeferAsync(ephemeral: true);
+        await DeferAsync();
         var days = SleepingReport.Choices[0];
         var embed = await _reports.BuildSleepingAsync(Context.Guild.Id, days);
-        await FollowupAsync(embed: embed, components: ReportCards.SleepRow(days), ephemeral: true, allowedMentions: AllowedMentions.None);
+        await FollowupAsync(embed: ReportCards.WithHeadline(embed, _picker.Pick(ReportCards.DutyPool(Context.User.Id))),
+            components: ReportCards.SleepRow(days), allowedMentions: AllowedMentions.None);
     }
 
     private async Task ShowAsync(ReportKind kind)
@@ -79,11 +83,11 @@ public class ReportModule : InteractionModuleBase<SocketInteractionContext>
             await RespondAsync(Refusal, ephemeral: true);
             return;
         }
-        // The database can outrun Discord's 3 s on the Pi.
-        await DeferAsync(ephemeral: true);
+        // The database can outrun Discord's 3 s on the Pi. Public: the report is posted in the open.
+        await DeferAsync();
         var window = ReportWindow.From(DefaultPeriod, DateTimeOffset.UtcNow);
         var embed = await _reports.BuildAsync(kind, Context.Guild.Id, window, names: true);
-        await FollowupAsync(embed: embed, components: ReportCards.PeriodRow(kind, DefaultPeriod),
-            ephemeral: true, allowedMentions: AllowedMentions.None);
+        await FollowupAsync(embed: ReportCards.WithHeadline(embed, _picker.Pick(ReportCards.DutyPool(Context.User.Id))),
+            components: ReportCards.PeriodRow(kind, DefaultPeriod), allowedMentions: AllowedMentions.None);
     }
 }

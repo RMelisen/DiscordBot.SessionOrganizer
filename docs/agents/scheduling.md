@@ -41,7 +41,7 @@ Timing rules are pure, in `Helpers/Scheduling/SessionAttendance`.
   arrival — with nobody there, the session may be happening somewhere else.
 - **Recap** once fewer than two of the people who came have been in voice for 15 min (not before
   start + 30), or at start + `Duration` + 2 h. **Absences are a count, never names** (the owner's
-  call); the people who came and who were late (first seen after start + 10) are named, inert.
+  call; `/report sessions`, asked by staff, is the one place that names them, also his call); the people who came and who were late (first seen after start + 10) are named, inert.
   Silent when nobody came or fewer than two were Joined. Headers gender nobody (« Au
   rendez-vous », « Absences »).
 - The session list is cached and re-read every 5 minutes (recapped sessions included, until their

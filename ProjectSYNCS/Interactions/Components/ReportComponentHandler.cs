@@ -7,16 +7,17 @@ using ProjectSYNCS.Services;
 namespace ProjectSYNCS.Interactions.Components;
 
 // /report's period buttons: report:win:{kind}:{period}:0 (StatsPeriodUi.AddFilterRow), and the
-// sleeping report's own row, report:sleep:{days}. The report is
-// ephemeral, so only the staff member who opened it can click — IsStaff is re-checked anyway, since
-// a demoted moderator keeps the message. Deferred first: the database can outrun the 3 s.
+// sleeping report's own row, report:sleep:{days}. The report is public, so anyone can click: IsStaff
+// is checked on every click, and a refusal is private. Deferred first: the database can outrun the 3 s.
 public class ReportComponentHandler : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly ReportService _reports;
+    private readonly ResponsePicker _picker;
 
-    public ReportComponentHandler(ReportService reports)
+    public ReportComponentHandler(ReportService reports, ResponsePicker picker)
     {
         _reports = reports;
+        _picker = picker;
     }
 
     [ComponentInteraction("report:win:*:*:*", ignoreGroupNames: true)]
@@ -32,7 +33,7 @@ public class ReportComponentHandler : InteractionModuleBase<SocketInteractionCon
 
         await DeferAsync();
         var window = ReportWindow.From(period, DateTimeOffset.UtcNow);
-        var embed = await _reports.BuildAsync(kind, Context.Guild.Id, window, names: true);
+        var embed = ReportCards.WithHeadline(await _reports.BuildAsync(kind, Context.Guild.Id, window, names: true), Line());
         await ModifyOriginalResponseAsync(m =>
         {
             m.Embed = embed;
@@ -54,7 +55,7 @@ public class ReportComponentHandler : InteractionModuleBase<SocketInteractionCon
         if (!int.TryParse(daysStr, out var days) || !SleepingReport.Choices.Contains(days)) days = SleepingReport.Choices[0];
 
         await DeferAsync();
-        var embed = await _reports.BuildSleepingAsync(Context.Guild.Id, days);
+        var embed = ReportCards.WithHeadline(await _reports.BuildSleepingAsync(Context.Guild.Id, days), Line());
         await ModifyOriginalResponseAsync(m =>
         {
             m.Embed = embed;
@@ -62,4 +63,8 @@ public class ReportComponentHandler : InteractionModuleBase<SocketInteractionCon
             m.AllowedMentions = AllowedMentions.None;
         });
     }
+
+    // Her line for whoever clicked: the card is public, so any staff member may change its period,
+    // and she answers that person.
+    private string Line() => _picker.Pick(ReportCards.DutyPool(Context.User.Id));
 }

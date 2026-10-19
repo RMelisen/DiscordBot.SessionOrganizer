@@ -87,11 +87,13 @@ namespace ProjectSYNCS.Services;
 //     OwnerReplyHeralds · OwnerAnnouncementHeralds ... /debug tell and dm heralds
 //     OwnerReportLines ......... /debug answers, reporting for duty
 //     OwnerDigestLines ......... the monthly digest in his DMs, {0} = the month
+//     OwnerReportDutyLines ..... /report asked by him, on top of the card
 //
 //   [Family] Tata (Analuz)
 //     TataId ................... her id, the single source of truth
 //     TataGreetings (mentioned) · TataReplies (replied to)
 //     TataIntentLines .......... « tu m'aimes ? », « tu te souviens de moi ? » from her
+//     TataReportLines .......... /report asked by her, on top of the card
 //
 //   [Rivals] Other bots
 //     JealousLines · JealousLinesOwner ... praise went to a rival
@@ -101,6 +103,7 @@ namespace ProjectSYNCS.Services;
 //
 //   [Commands] Commands
 //     XpLevelUpLines ........... /level
+//     StaffReportLines ......... /report asked by other staff: suspicious, on top of the card
 //     YesLines · NoLines ....... /yesno
 //     ShameVoteLines · ShameSelfVoteLines ............ /shame
 //     ShameEmptyMalfaisant · ShameEmptyBanni · ShameEmptyPerfide

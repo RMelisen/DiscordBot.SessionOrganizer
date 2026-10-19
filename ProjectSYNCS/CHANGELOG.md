@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.6.1 — 2026-10-19
+
+- `/report` is now posted in the channel for everyone to see, names included, instead of privately.
+- Each report opens with a line of hers, depending on who asked: on duty for her creator, warm for
+  her aunt, and rather suspicious of anyone else on the staff.
+
 ## 7.6.0 — 2026-10-19
 
 - She now counts messages per hour and per channel, time spent in each voice room, and how often

@@ -1382,5 +1382,24 @@ var batch2Widest = new Dictionary<string, int>();
 
 Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2Widest.Select(x => $"{x.Key} {x.Value}"))} chars");
 
+// 32. /report's line on top of the card: whose pool, untagged, and never past the caps.
+{
+    var t11Tata = (ulong)Field("TataId");
+    if (!ReferenceEquals(ProjectSYNCS.Commands.ReportCards.DutyPool(AvailabilityService.OwnerId), Field("OwnerReportDutyLines"))
+        || !ReferenceEquals(ProjectSYNCS.Commands.ReportCards.DutyPool(t11Tata), Field("TataReportLines"))
+        || !ReferenceEquals(ProjectSYNCS.Commands.ReportCards.DutyPool(42), Field("StaffReportLines")))
+        Fail("report line: wrong pool for Papa, Tata or other staff");
+    var t11Card = new Discord.EmbedBuilder().WithTitle("t").WithDescription("figures").Build();
+    var t11Full = new Discord.EmbedBuilder().WithTitle("t").WithDescription(new string('x', 4090)).Build();
+    foreach (var t11Pool in new[] { "OwnerReportDutyLines", "TataReportLines", "StaffReportLines" })
+        foreach (var l in (string[])Field(t11Pool))
+        {
+            if (Sticker.Strip(l) != l || l.Contains('{') || l.Contains('}')) Fail($"{t11Pool}: tagged or braced: {l}");
+            if (l.Length > 200) Fail($"{t11Pool}: {l.Length} characters: {l}");
+            if (!ProjectSYNCS.Commands.ReportCards.WithHeadline(t11Card, l).Description.StartsWith(l + "\n\nfigures")) Fail($"{t11Pool}: not on top: {l}");
+            if (ProjectSYNCS.Commands.ReportCards.WithHeadline(t11Full, l).Description.Length > 4096) Fail("report line pushed a description past 4096");
+        }
+}
+
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

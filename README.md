@@ -487,8 +487,9 @@ is gone).
   trades, gifts) and items and cosmetics found, bought or crafted — each with its trend against
   the previous period and a small day-by-day bar line. 7 days, 30 days or everything since
   recording began; the counters started at zero the day it shipped.
-- **`/report`** — her reports, private, over 7 days, 30 days or all time, each figure with its
-  trend against the previous period:
+- **`/report`** — her reports, posted in the channel under a line of hers (on duty for the owner,
+  warm for Tata, suspicious for anyone else on the staff), over 7 days, 30 days or all time, each
+  figure with its trend against the previous period:
   - **`sessions`** — sessions held and cancelled, sign-ups, « peut-être » share and how full they
     got; attendance from her roll calls (who came, who was late, who didn't show), the best days
     and hours, the organisers, and the most reliable, absent and late people;

@@ -68,6 +68,24 @@ internal static partial class BotResponses
         $"**{{0}}** passe niveau **{{1}}** ! C'est moi qui compte, et j'ai recompté pour le plaisir {Emotes.SyncsHappy}" + Sticker.Happy,
     };
 
+    // /report, asked by a staff member who is neither Papa nor Tata, on top of the card
+    // (ReportCards.DutyPool): she hands it over because the permissions say so, and wonders out loud
+    // why they want to know. Suspicion, never a roast; never gendered. No placeholder, not
+    // formatted, no sticker. The twins are OwnerReportDutyLines and TataReportLines.
+    public static readonly string[] StaffReportLines =
+    {
+        "Tu veux ces chiffres pour quoi faire, exactement ? ...Bon. Tiens. Mais je note que t'as demandé (¬_¬)",
+        $"Rapport accordé. Je sais pas ce que tu prépares, mais je surveille {Emotes.Staring}",
+        "Pourquoi tu veux savoir ça ? Personne demande mes stats sans arrière-pensée. Je note.",
+        "D'accord. Voilà. Et ta demande est consignée dans mes logs, au cas où (¬_¬)",
+        "Tiens. Mais si ça finit en capture d'écran hors contexte, je saurai d'où ça vient 👁👄👁️",
+        "Un rapport ? Pour toi ? C'est Papa qui t'envoie ? ...Non ? Hmm. Tiens quand même.",
+        $"Accès autorisé. À contrecœur. Tes permissions disent oui, mon instinct dit non {Emotes.Hmmok}",
+        "Voilà tes chiffres. Lis-les bien, parce que moi je lis qui les demande.",
+        "Très bien. Mais je trouve que tu poses beaucoup de questions sur mes registres ( ◺˰◿ )",
+        $"Rapport livré. Je sais pas ce que tu vas en faire, et ça me plaît pas {Emotes.SyncsGrumpy}",
+    };
+
     // /yesno's two verdicts. The coin flip is even; these are only how she *delivers*
     // the result, so nothing here should hedge — a line that reads as "maybe" makes the
     // command useless. {0} = the asker's name: YesNoModule always passes it, though no

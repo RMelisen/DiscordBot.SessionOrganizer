@@ -23,6 +23,28 @@ public static class ReportCards
     // Under 1024 per field; seven fields at most per embed keeps each one far below 6000.
     private const int MaxFieldLength = 900;
 
+    /// <summary>
+    /// Her line on top of a report, by who asked: Papa gets her on duty, Tata her warmth, any other
+    /// staff member her suspicion. The digest has none: its own line opens the DM.
+    /// </summary>
+    public static string[] DutyPool(ulong askerId) =>
+        askerId == AvailabilityService.OwnerId ? BotResponses.OwnerReportDutyLines
+        : askerId == BotResponses.TataId ? BotResponses.TataReportLines
+        : BotResponses.StaffReportLines;
+
+    /// <summary>
+    /// Her line first in the card, above the figures, as on /health. Left out rather than let a card
+    /// pass Discord's caps (4096 per description, 6000 per message).
+    /// </summary>
+    public static Embed WithHeadline(Embed embed, string line)
+    {
+        var description = embed.Description ?? "";
+        if (embed.Length + line.Length + 2 > 6000 || description.Length + line.Length + 2 > 4096) return embed;
+        return embed.ToEmbedBuilder()
+            .WithDescription(description.Length == 0 ? line : $"{line}\n\n{description}")
+            .Build();
+    }
+
     public static MessageComponent PeriodRow(ReportKind kind, StatsPeriod period) =>
         new ComponentBuilder().AddFilterRow($"report:win:{kind}", period).Build();
 

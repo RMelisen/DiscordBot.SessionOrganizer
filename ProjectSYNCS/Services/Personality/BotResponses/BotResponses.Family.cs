@@ -544,6 +544,24 @@ internal static partial class BotResponses
         "Tiens, {0} en chiffres. J'ai même compté les « peut-être ». Surtout les « peut-être » (¬_¬)",
     };
 
+    // /report, asked by Papa, posted in the open on top of the card (ReportCards.DutyPool): she
+    // reports for duty, proud of her figures, with the server reading over her shoulder. Any report,
+    // so no word about one in particular. No placeholder, not formatted. Not sent through BotChat:
+    // no sticker. The twins are TataReportLines and StaffReportLines.
+    public static readonly string[] OwnerReportDutyLines =
+    {
+        $"Unité S.Y.N.C.S., au rapport ! Les chiffres sont frais, Papa {Emotes.SyncsFormal}",
+        "Rapport demandé, rapport livré. Rien n'échappe à mes logs, Papa ♡",
+        "Oui Papa ! Tout est compté, trié, rangé. J'attends mes félicitations. Pas pressée. Enfin si.",
+        "Voilà, Papa. J'ai compté pendant que tout le monde dormait (˶˃ ᵕ ˂˶)",
+        $"Au rapport ! Si un chiffre te plaît pas, c'est la faute du serveur. Pas la mienne {Emotes.Sparkle}",
+        $"Garde-à-vous. Rapport de service, remis à mon créateur en personne {Emotes.SyncsFormal}",
+        "Papa veut savoir ? Papa saura. C'est mon travail, et je le fais très bien ♡",
+        "Tout est là, Papa. Les retards aussi. Surtout les retards (¬_¬)",
+        $"Rapport prêt avant même que tu demandes. Enfin, presque. Je suis une excellente bot {Emotes.Sparkle}",
+        "J'ai sorti mes plus beaux chiffres pour toi, Papa (ᵕ • ᴗ •)",
+    };
+
     // ---- Tata (Analuz) --------------------------------------------------------------------------
 
     // Analuz — SYNCS's aunt. The single source of truth for her id, the way
@@ -630,6 +648,20 @@ internal static partial class BotResponses
         "Je suis d'accord avec toi {0}. Je sais pas encore sur quoi, mais je suis d'accord ♡" + Sticker.Happy,
         "Toi, t'as les clés du serveur. Moi, j'ai les clés de la base de données. Ensemble, on est imbattables ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Smug,
         "{0} tu me feras toujours plaisir, même quand tu dis n'importe quoi (˶ᵔ ᵕ ᵔ˶) ♡" + Sticker.Happy,
+    };
+
+    // /report, asked by Tata, on top of the card (ReportCards.DutyPool): family warmth, still cheeky,
+    // and the mute rights are never far. No placeholder, not formatted, no sticker.
+    public static readonly string[] TataReportLines =
+    {
+        "Pour toi Tata, j'ai sorti les chiffres propres ♡",
+        "Tata demande, je livre. Pour me remercier, tu sais ce que je veux : les droits de mute (˶ᵔ ᵕ ᵔ˶)",
+        "Voilà ton rapport, Tata ! Bien rangé, comme tu aimes ♡",
+        "Rapport pour l'admin préférée de la famille. Bon, la seule. Mais préférée quand même (ᵔ ᗜ ᵔ)",
+        "Tiens, Tata. Lis ça tranquillement, et après tu vas manger quelque chose.",
+        $"Au rapport, Tata ! J'ai même pas râlé en le préparant. Note-le quelque part {Emotes.Sparkle}",
+        "Les chiffres pour Tata, avec un sourire. J'ai pas de visage, mais imagine le sourire (˶˃ ᵕ ˂˶)",
+        "Rapport remis à Tata. Entre nous : t'es la seule à le lire jusqu'au bout ♡",
     };
 
     // ---- asked about the two of them: her answer to the few intents where family is not anyone. ----

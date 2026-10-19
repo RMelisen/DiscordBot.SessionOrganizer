@@ -53,14 +53,20 @@ same check.
 `sleeping`: her reports to the staff. Same gate as `/admin` (`IsStaff` per handler, no
 `[DefaultMemberPermissions]`, guild-only).
 
-- **Private, so they may name people** (no-shows, latecomers, the busiest, the ones going quiet).
-  This is the one exception to « absences are a count, never names » (scheduling, *Roll call*),
-  and it holds only because nobody else reads them. Every card takes `names`: anything ever
-  posted where others can read it renders with `names: false`, which drops every naming field
-  (the checks assert no `<@` survives).
+- **Posted in the open, with every name** (no-shows, latecomers, the busiest, the ones going
+  quiet, the sleepers): the owner's call, and the one exception to « absences are a count, never
+  names » (scheduling, *Roll call*). Only the refusals are private. Every card still takes `names`:
+  `false` drops every naming field (the checks assert no `<@` survives), for any future place that
+  must not name; nothing passes `false` today.
+- **Her line on top of the card**, as on `/health`: `ReportCards.WithHeadline` puts it first in the
+  description (left out rather than pass 4096 / 6000). `ReportCards.DutyPool` picks the pool by who
+  asked or clicked: `OwnerReportDutyLines` (Papa, on duty), `TataReportLines` (warm, the mute
+  rights), `StaffReportLines` (any other staff member: suspicious, « pourquoi tu veux savoir
+  ça ? »). A period or 30/60/90 click re-picks for the person who clicked, since the card is public
+  and any staff member may change it. The digest has no line: its own opens the DM.
 - **One path**: `ReportService.BuildAsync(kind, guild, window, names)` serves the command, the
   period buttons (`report:win:{kind}:{period}:0`, `ReportComponentHandler`, deferred first,
-  re-checks `IsStaff`) and the digest. `ReportKind` names are in custom-ids: append only, never
+  checks `IsStaff` on every click, since anyone can see the buttons) and the digest. `ReportKind` names are in custom-ids: append only, never
   rename.
 - **The live guild becomes plain records in `ReportService`** (`ChannelInfo`, `ServerEmote`,
   `MemberSnapshot`, the registered slash paths) before it reaches a helper. When the guild is
