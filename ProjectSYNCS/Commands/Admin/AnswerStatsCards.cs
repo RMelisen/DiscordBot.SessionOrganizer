@@ -114,14 +114,14 @@ internal static class AnswerStatsCards
     }
 
     /// <summary>The unanswered messages as a text file, newest first, one per line, no author.</summary>
-    public static string BuildExamples(IReadOnlyList<UnansweredMessage> messages)
+    public static string BuildExamples(IReadOnlyList<UnansweredMessage> messages, int days)
     {
         var sb = new StringBuilder();
-        sb.AppendLine($"Les {messages.Count} derniers messages sans réponse précise (depuis le dernier redémarrage, sans auteur).");
+        sb.AppendLine($"Les {messages.Count} messages sans réponse précise des {days} derniers jours (sans auteur).");
         sb.AppendLine("Date · chemin · réponse donnée — message");
         sb.AppendLine();
         foreach (var m in messages)
-            sb.AppendLine($"[{AppTime.ToZoned(m.At):dd/MM HH:mm}] {AnswerKinds.Key(m.Path)} · {m.Kind} — « {m.Text} »");
+            sb.AppendLine($"[{AppTime.ToZoned(m.At):dd/MM HH:mm}] {m.Path} · {m.Kind} — « {m.Text} »");
         return sb.ToString();
     }
 }

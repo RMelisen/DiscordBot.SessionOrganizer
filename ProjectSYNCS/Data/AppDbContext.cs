@@ -18,6 +18,7 @@ public class AppDbContext : DbContext
     public DbSet<BotFeedbackDailyStat> BotFeedbackDailyStats => Set<BotFeedbackDailyStat>();
     public DbSet<ChatAnswerStat> ChatAnswerStats => Set<ChatAnswerStat>();
     public DbSet<ChatAnswerDailyStat> ChatAnswerDailyStats => Set<ChatAnswerDailyStat>();
+    public DbSet<UnansweredExample> UnansweredExamples => Set<UnansweredExample>();
     public DbSet<MemberXp> MemberXps => Set<MemberXp>();
     public DbSet<GuildSettings> GuildSettings => Set<GuildSettings>();
     public DbSet<GuildExcludedChannel> GuildExcludedChannels => Set<GuildExcludedChannel>();
@@ -146,6 +147,14 @@ public class AppDbContext : DbContext
             // One row per (guild, day, path, kind) — the upsert key; it also serves the
             // rolling-window read ("this guild, since day N").
             e.HasIndex(x => new { x.GuildId, x.Day, x.Path, x.Kind }).IsUnique();
+        });
+
+        modelBuilder.Entity<UnansweredExample>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            // The window read ("this guild, since day N"); Day alone serves the pruning.
+            e.HasIndex(x => new { x.GuildId, x.Day });
+            e.HasIndex(x => x.Day);
         });
 
         modelBuilder.Entity<MemberXp>(e =>

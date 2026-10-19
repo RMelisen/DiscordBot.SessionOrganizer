@@ -120,10 +120,9 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<HerMessages>();
         // Who is going back and forth with her: shared by ChatterService and RobotHeartService.
         services.AddSingleton<ConversationStreak>();
-        // /debug answers: the counts are in the database (transient service), the last messages
-        // she couldn't answer specifically in memory (singleton).
+        // /debug answers: the counts and the messages she couldn't answer specifically (30 rolling
+        // days) are both in the database, behind one transient service.
         services.AddTransient<ChatAnswerService>();
-        services.AddSingleton<UnansweredLog>();
         // In-memory daily gate / per-channel stretches: singletons.
         services.AddSingleton<SynthiaService>();
         // The robot heart's daily gate is in-memory: a singleton.

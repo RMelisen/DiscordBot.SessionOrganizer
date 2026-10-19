@@ -20,9 +20,25 @@ public class ChatAnswerService
 
     public ChatAnswerService(AppDbContext db) => _db = db;
 
-    /// <summary>Counts one answer of <paramref name="kind"/> (an AnswerKinds key) on this path.</summary>
-    public async Task AddAsync(ulong guildId, ChatPath path, string kind)
+    /// <summary>
+    /// Counts one answer of <paramref name="kind"/> (an AnswerKinds key) on this path. When the
+    /// message got no specific answer, <paramref name="unanswered"/> is what was said: it is kept
+    /// (no author) in the same save, and anything past <see cref="UnansweredLog.KeptDays"/> is pruned.
+    /// </summary>
+    public async Task AddAsync(ulong guildId, ChatPath path, string kind, string? unanswered = null)
     {
+        if (unanswered is not null && UnansweredLog.Clean(unanswered) is { Length: > 0 } text)
+        {
+            var now = DateTimeOffset.UtcNow;
+            _db.UnansweredExamples.Add(new UnansweredExample
+            {
+                GuildId = guildId, Day = AppTime.DayKey(now), At = now, Path = AnswerKinds.Key(path), Kind = kind, Text = text,
+            });
+            // Rolling window: today plus the 29 days before it. Day is an int, so this runs in SQL.
+            var oldest = AppTime.KeyDaysAgo(UnansweredLog.KeptDays - 1);
+            await _db.UnansweredExamples.Where(x => x.Day < oldest).ExecuteDeleteAsync();
+        }
+
         var pathKey = AnswerKinds.Key(path);
 
         var total = await _db.ChatAnswerStats
@@ -63,6 +79,22 @@ public class ChatAnswerService
             .GroupBy(x => (x.Path, x.Kind))
             .Select(g => new ChatAnswerCount(g.Key.Path, g.Key.Kind, g.Sum(x => x.Count)))
             .Where(x => x.Count > 0)
+            .ToList();
+    }
+
+    /// <summary>
+    /// The messages she found nothing specific to answer over the last <paramref name="days"/> days
+    /// (capped at <see cref="UnansweredLog.KeptDays"/>, all that is kept), newest first.
+    /// </summary>
+    public async Task<List<UnansweredMessage>> GetUnansweredAsync(ulong guildId, int days)
+    {
+        var since = AppTime.KeyDaysAgo(Math.Min(days, UnansweredLog.KeptDays) - 1);
+        // Newest first by Id: rows are only ever appended, and DateTimeOffset can't be ordered in SQLite.
+        return (await _db.UnansweredExamples.AsNoTracking()
+                .Where(x => x.GuildId == guildId && x.Day >= since)
+                .OrderByDescending(x => x.Id)
+                .ToListAsync())
+            .Select(x => new UnansweredMessage(x.At, x.Path, x.Kind, x.Text))
             .ToList();
     }
 }

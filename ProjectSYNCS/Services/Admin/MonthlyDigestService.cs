@@ -35,15 +35,13 @@ public sealed class MonthlyDigestService : BackgroundService
     private readonly DiscordSocketClient _client;
     private readonly IServiceProvider _services;
     private readonly ILogger<MonthlyDigestService> _logger;
-    private readonly UnansweredLog _unanswered;
     private readonly string _statePath;
 
     public MonthlyDigestService(DiscordSocketClient client, IServiceProvider services, IConfiguration config,
-        UnansweredLog unanswered, ILogger<MonthlyDigestService> logger)
+        ILogger<MonthlyDigestService> logger)
     {
         _client = client;
         _services = services;
-        _unanswered = unanswered;
         _logger = logger;
 
         var dbPath = Path.GetFullPath(config["Database:Path"] ?? "ProjectSYNCS.db");
@@ -173,21 +171,21 @@ public sealed class MonthlyDigestService : BackgroundService
 
     // Papa's « messages sans réponse » in full: the chat-answer counts by path over 30 days (as
     // /debug answers shows them; they are kept by rolling period, not by calendar month), and the
-    // last messages she found nothing specific to say to, as a file. That log is in memory, so it
-    // covers the time since her last restart.
+    // messages she found nothing specific to say to over the same 30 rolling days, as a file.
     private async Task SendAnswersAsync(IDMChannel dm, ReportWindow window)
     {
         try
         {
             await using var scope = _services.CreateAsyncScope();
-            var counts = await scope.ServiceProvider.GetRequiredService<ChatAnswerService>().GetAsync(HomeGuild.Id, StatsPeriod.Month);
+            var answers = scope.ServiceProvider.GetRequiredService<ChatAnswerService>();
+            var counts = await answers.GetAsync(HomeGuild.Id, StatsPeriod.Month);
             await dm.SendMessageAsync(embed: AnswerStatsCards.BuildTypes(counts, StatsPeriod.Month), allowedMentions: AllowedMentions.None);
 
-            var messages = _unanswered.For(HomeGuild.Id);
+            var messages = await answers.GetUnansweredAsync(HomeGuild.Id, UnansweredLog.KeptDays);
             if (messages.Count == 0) return;
-            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(AnswerStatsCards.BuildExamples(messages)));
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(AnswerStatsCards.BuildExamples(messages, UnansweredLog.KeptDays)));
             await dm.SendFileAsync(stream, "sans-reponse.txt",
-                $"**{messages.Count}** message(s) sans réponse précise depuis mon dernier redémarrage.",
+                $"**{messages.Count}** message(s) sans réponse précise sur les {UnansweredLog.KeptDays} derniers jours.",
                 allowedMentions: AllowedMentions.None);
         }
         catch (Exception ex)

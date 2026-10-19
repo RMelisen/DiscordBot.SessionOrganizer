@@ -54,10 +54,13 @@ from `/help` and the README.
 - **Totals + daily buckets** (`ChatAnswerStat` / `ChatAnswerDailyStat`, `ChatAnswerService`), the root
   pattern; GuildId 0 is DMs. The write runs **off the gateway handler** (`ChatterService.Count`,
   `Task.Run` in its own scope, caught and logged): a failed count never costs an answer.
-- **The examples are in memory** (`UnansweredLog`, the last 100, lost on restart): the messages whose
-  answer `AnswerKinds.IsUnrecognised` (the plain fallbacks, and the fact and nudge lines standing in
-  for one). **No author is kept**, at the owner's request: only what was said, newlines collapsed,
-  200 characters at most.
+- **The examples are kept 30 rolling days** (`UnansweredExample` rows; rules in `UnansweredLog`): the
+  messages whose answer `AnswerKinds.IsUnrecognised` (the plain fallbacks, and the fact and nudge
+  lines standing in for one). Written by `ChatAnswerService.AddAsync` in the same save as the count
+  (off the handler, like it), which also prunes anything older — `Day` is an int, so the delete and
+  the window run in SQL. **No author is kept**, at the owner's request: only what was said,
+  whitespace collapsed, 200 characters at most. The examples view follows `period` (7 or 30 days;
+  « depuis toujours » is the 30 kept).
 - The view (`AnswerStatsCards`, static): one embed, a field per family, rows by count with the
   split by path, and *Pistes* (the unrecognised share per path, the intents never hit in the
   period). Every key on every path measures about 3,300 characters, under the 6000 cap; fields are cut

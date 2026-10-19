@@ -249,13 +249,14 @@ if (allKinds.Distinct().Count() != allKinds.Count) Fail("duplicate answer kind k
 if (!AnswerKinds.IsUnrecognised(AnswerKinds.Comeback) || AnswerKinds.IsUnrecognised(AnswerKinds.Nice)
     || !AnswerKinds.IsUnrecognised(AnswerKinds.Fact(ChatFact.Broke))) Fail("IsUnrecognised misreads");
 
-var log = new UnansweredLog();
-for (var i = 0; i < 150; i++) log.Add(1, ChatPath.Reply, AnswerKinds.Comeback, $"message {i}\nligne", t0.AddSeconds(i));
-log.Add(2, ChatPath.Mention, AnswerKinds.Interrogation, new string('x', 500), t0);
-var kept = log.For(1);
-if (kept.Count != 99 || kept[0].Text != "message 149 ligne") Fail($"examples log kept {kept.Count}, newest '{kept.FirstOrDefault().Text}'");
-if (log.For(2).Single().Text.Length != UnansweredLog.MaxTextLength) Fail("long text not capped");
-if (typeof(UnansweredMessage).GetProperties().Any(p => p.Name.Contains("User") || p.Name.Contains("Author"))) Fail("an example stores its author");
+if (UnansweredLog.Clean("message 149\n  ligne\t") != "message 149 ligne") Fail($"examples text not collapsed: '{UnansweredLog.Clean("message 149\n  ligne\t")}'");
+if (UnansweredLog.Clean(new string('x', 500)).Length != UnansweredLog.MaxTextLength) Fail("long text not capped");
+if (UnansweredLog.Clean(" \n\t ").Length != 0) Fail("blank text kept");
+if (typeof(UnansweredMessage).GetProperties().Concat(typeof(ProjectSYNCS.Models.UnansweredExample).GetProperties())
+    .Any(p => p.Name.Contains("User") || p.Name.Contains("Author"))) Fail("an example stores its author");
+var examples = Enumerable.Range(0, 150).Reverse()
+    .Select(i => new UnansweredMessage(t0.AddSeconds(i), AnswerKinds.Key(ChatPath.Reply), AnswerKinds.Comeback, UnansweredLog.Clean($"message {i}\nligne")))
+    .ToList();
 
 var cards = asm.GetType("ProjectSYNCS.Commands.AnswerStatsCards")!;
 var buildTypes = cards.GetMethod("BuildTypes")!;
@@ -270,8 +271,8 @@ foreach (var period in Enum.GetValues<StatsPeriod>())
 }
 var empty = (Discord.Embed)buildTypes.Invoke(null, new object[] { new List<ChatAnswerCount>(), StatsPeriod.Week })!;
 if (empty.Fields.Length != 0) Fail("empty counts render fields");
-var file = (string)buildExamples.Invoke(null, new object[] { log.For(1) })!;
-if (!file.Contains("message 149")) Fail("examples file misses a line");
+var file = (string)buildExamples.Invoke(null, new object[] { examples, UnansweredLog.KeptDays })!;
+if (!file.Contains("message 149 ligne") || !file.Contains("message 0 ligne")) Fail("examples file misses a line");
 
 // 9. Widened cues, and the misfires they must not cause.
 var cases3 = new (string Text, string Expected)[]

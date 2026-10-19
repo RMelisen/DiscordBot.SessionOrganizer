@@ -23,7 +23,6 @@ internal sealed class ChatterService
     private readonly HerMessages _herMessages;
     private readonly PiHealthService _health;
     private readonly IServiceProvider _services;
-    private readonly UnansweredLog _unanswered;
     private readonly ILogger<ChatterService> _logger;
 
     // Who has been going back and forth with her, per channel (ConversationStreak). In memory, and
@@ -79,11 +78,9 @@ internal sealed class ChatterService
         HerMessages herMessages,
         PiHealthService health,
         IServiceProvider services,
-        UnansweredLog unanswered,
         ConversationStreak streaks,
         ILogger<ChatterService> logger)
     {
-        _unanswered = unanswered;
         _streaks = streaks;
         _glitch = glitch;
         _client = client;
@@ -593,19 +590,19 @@ internal sealed class ChatterService
 
     // Counts an answer for `/debug answers` (ChatAnswerService), off the gateway handler: the
     // fan-out awaits every handler, and a failed count must never cost an answer. A message she
-    // found nothing specific to say to is also kept, without its author (UnansweredLog).
+    // found nothing specific to say to is also kept, without its author, in the same save
+    // (UnansweredLog: 30 rolling days).
     private void Count(SocketUserMessage message, ChatPath path, string kind)
     {
         var guildId = (message.Channel as SocketGuildChannel)?.Guild.Id ?? 0;
-        if (AnswerKinds.IsUnrecognised(kind))
-            _unanswered.Add(guildId, path, kind, message.Content ?? string.Empty, DateTimeOffset.UtcNow);
+        var unanswered = AnswerKinds.IsUnrecognised(kind) ? message.Content ?? string.Empty : null;
 
         _ = Task.Run(async () =>
         {
             try
             {
                 await using var scope = _services.CreateAsyncScope();
-                await scope.ServiceProvider.GetRequiredService<ChatAnswerService>().AddAsync(guildId, path, kind);
+                await scope.ServiceProvider.GetRequiredService<ChatAnswerService>().AddAsync(guildId, path, kind, unanswered);
             }
             catch (Exception ex)
             {

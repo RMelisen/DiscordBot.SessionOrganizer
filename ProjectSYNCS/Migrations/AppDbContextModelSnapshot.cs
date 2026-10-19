@@ -1601,6 +1601,42 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("TonightResponses");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.UnansweredExample", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("At")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Day");
+
+                    b.HasIndex("GuildId", "Day");
+
+                    b.ToTable("UnansweredExamples");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.UptimeEvent", b =>
                 {
                     b.Property<int>("Id")

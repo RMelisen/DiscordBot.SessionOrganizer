@@ -142,8 +142,8 @@ same check.
   - **then the reports of `ReportKinds.Digest(recipient)`**, one embed per message (several in one
     could pass 6000), each in its own `try`: Papa `syncs`, `commands`, `quiz`; Tata `community`,
     `sessions`, `activity`, `sleeping`. Papa also gets the chat-answer counts over 30 days (as
-    `/debug answers`: they are kept by rolling period) and `UnansweredLog` as a file (in memory:
-    since the last restart).
+    `/debug answers`: they are kept by rolling period) and the unanswered messages of the same 30
+    rolling days as a file (`ChatAnswerService.GetUnansweredAsync`).
   - **« À regarder » is `Helpers/Admin/DigestBrief`**, pure thresholds (constants there): a
     command failing ≥ 2 times and > 5 % of its uses, power cuts, crashes, a heat record, the
     unanswered share up ≥ 5 points, « difficile » found ≥ 80 % or « facile » < 30 % (≥ 5

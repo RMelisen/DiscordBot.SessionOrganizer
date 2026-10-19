@@ -87,7 +87,6 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     private readonly StickerService _stickers;
     private readonly QuokkaRaidService _quokka;
     private readonly ChatAnswerService _answers;
-    private readonly UnansweredLog _unanswered;
     private readonly MonthlyDigestService _digest;
 
     // Discord caps a message at 2000 characters; leave room for the herald line
@@ -101,12 +100,11 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
 
     public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings,
         PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz, QuizCrownService crown,
-        StickerService stickers, QuokkaRaidService quokka, ChatAnswerService answers, UnansweredLog unanswered,
+        StickerService stickers, QuokkaRaidService quokka, ChatAnswerService answers,
         MonthlyDigestService digest)
     {
         _digest = digest;
         _answers = answers;
-        _unanswered = unanswered;
         _stickers = stickers;
         _quokka = quokka;
         _quiz = quiz;
@@ -741,9 +739,10 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     // What people say to her, to decide what she should learn next: how many of each kind of chat
-    // answer she gave (ChatAnswerService, by path), or the last messages she found nothing specific
-    // to say to (UnansweredLog, in memory, no authors), as a file since a hundred lines exceed a
-    // message. Posted in the open, under her report-for-duty line; only the refusals stay ephemeral.
+    // answer she gave (ChatAnswerService, by path), or the messages she found nothing specific to
+    // say to over the period (UnansweredLog: kept 30 rolling days, no authors — « depuis toujours »
+    // means those 30 days), as a file since they exceed a message. Posted in the open, under her
+    // report-for-duty line; only the refusals stay ephemeral.
     [SlashCommand("answers", "Ce qu'on me dit le plus, et ce que je sais pas encore répondre")]
     public async Task AnswersAsync(
         [Summary("period", "La période comptée")] AnswersPeriod period = AnswersPeriod.Week,
@@ -762,17 +761,21 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
 
         if (view == AnswersView.Examples)
         {
-            var messages = _unanswered.For(Context.Guild.Id);
+            // Only 30 days are kept, so « depuis toujours » is those 30 days.
+            var days = period == AnswersPeriod.Week ? 7 : UnansweredLog.KeptDays;
+            await DeferAsync();
+            var messages = await _answers.GetUnansweredAsync(Context.Guild.Id, days);
             if (messages.Count == 0)
             {
-                await RespondAsync("Aucun message sans réponse précise depuis le dernier redémarrage.", ephemeral: true);
+                await FollowupAsync($"Aucun message sans réponse précise sur les {days} derniers jours.", ephemeral: true);
                 return;
             }
 
-            await DeferAsync();
-            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(AnswerStatsCards.BuildExamples(messages)));
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(AnswerStatsCards.BuildExamples(messages, days)));
+            var olderNote = period == AnswersPeriod.AllTime ? $" (je ne garde que les {UnansweredLog.KeptDays} derniers jours)" : "";
             await FollowupWithFileAsync(stream, "sans-reponse.txt",
-                $"{_picker.Pick(BotResponses.OwnerReportLines)}\n**{messages.Count}** message(s) sans réponse précise, du plus récent au plus ancien.",
+                $"{_picker.Pick(BotResponses.OwnerReportLines)}\n**{messages.Count}** message(s) sans réponse précise " +
+                $"sur les {days} derniers jours{olderNote}, du plus récent au plus ancien.",
                 allowedMentions: AllowedMentions.None);
             return;
         }

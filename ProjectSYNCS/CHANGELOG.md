@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.10.0 — 2026-10-19
+
+- The messages she had no specific answer for (`/debug answers`, examples view, and the owner's
+  monthly digest) are now kept for 30 rolling days instead of being lost on every restart. The
+  examples view follows the period option (7 or 30 days).
+
 ## 7.9.0 — 2026-10-19
 
 - Collection tiers: a completed set can be turned in from its page in `/inventory collection`
