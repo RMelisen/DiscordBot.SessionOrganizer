@@ -21,13 +21,21 @@ public enum ReportKind
     Sleeping,
 }
 
-/// <summary>Which reports the monthly digest sends, in order. The others stay on demand.</summary>
+/// <summary>
+/// Which reports each monthly digest sends after its « Le mois en bref », in order. Papa's is about
+/// her running well, Tata's about the server's life; the others stay on demand.
+/// </summary>
 public static class ReportKinds
 {
-    public static readonly IReadOnlyList<ReportKind> Digest = new[]
+    public static readonly IReadOnlyList<ReportKind> OwnerDigest = new[] { ReportKind.Syncs, ReportKind.Commands, ReportKind.Quiz };
+
+    public static readonly IReadOnlyList<ReportKind> TataDigest = new[]
     {
-        ReportKind.Sessions, ReportKind.Polls, ReportKind.Community, ReportKind.Syncs, ReportKind.Activity, ReportKind.Commands,
+        ReportKind.Community, ReportKind.Sessions, ReportKind.Activity, ReportKind.Sleeping,
     };
+
+    public static IReadOnlyList<ReportKind> Digest(DigestRecipient recipient) =>
+        recipient == DigestRecipient.Tata ? TataDigest : OwnerDigest;
 }
 
 /// <summary>
@@ -93,12 +101,40 @@ public class ReportService
     }
 
     /// <summary>/report sleeping: no window, a silence of <paramref name="days"/> days.</summary>
-    public async Task<Embed> BuildSleepingAsync(ulong guildId, int days)
+    public async Task<Embed> BuildSleepingAsync(ulong guildId, int days) =>
+        ReportCards.BuildSleeping(await SleepingAsync(guildId, days));
+
+    /// <summary>
+    /// The monthly digest's first message for <paramref name="recipient"/>: the month in a few figures
+    /// and « À regarder » (DigestBrief), or <paramref name="quietLine"/> when nothing needs a look.
+    /// </summary>
+    public async Task<Embed> BuildBriefAsync(DigestRecipient recipient, ulong guildId, ReportWindow window, string quietLine)
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (recipient == DigestRecipient.Owner)
+        {
+            var commands = await _activity.GetCommandsAsync(guildId, window, RegisteredCommands());
+            var syncs = await _syncs.GetAsync(guildId, window, now);
+            var quiz = await _quiz.GetAsync(guildId, window);
+            var alerts = DigestBrief.Owner(commands, syncs, await _syncs.RecordAsync(), quiz, window);
+            return ReportCards.BuildOwnerBrief(commands, syncs, quiz, alerts, window, quietLine);
+        }
+
+        var community = await _community.GetAsync(guildId, window);
+        var sessions = await _scheduling.GetSessionsAsync(guildId, window, now);
+        var activity = await _activity.GetActivityAsync(guildId, window, await ChannelsAsync(guildId));
+        var sleeping = await SleepingAsync(guildId, SleepingReport.Choices[0]);
+        var emotes = await _emotes.GetAsync(guildId, window, ServerEmotes(guildId));
+        return ReportCards.BuildTataBrief(community, sessions, activity.Current, sleeping, emotes.Current.UnusedOwn.Count,
+            DigestBrief.Tata(community, sleeping), window, quietLine);
+    }
+
+    private async Task<SleepingReportData> SleepingAsync(ulong guildId, int days)
     {
         var members = _client.GetGuild(guildId)?.Users.Select(u => new MemberSnapshot(u.Id, u.JoinedAt, u.IsBot)).ToList()
             ?? new List<MemberSnapshot>();
         var last = await _community.LastActiveDaysAsync(guildId);
-        return ReportCards.BuildSleeping(SleepingReport.Compute(members, last, days, DateTimeOffset.UtcNow));
+        return SleepingReport.Compute(members, last, days, DateTimeOffset.UtcNow);
     }
 
     // The guild's text and voice channels as plain data, with the excluded ones marked (the hardcoded

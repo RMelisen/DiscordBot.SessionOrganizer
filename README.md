@@ -515,8 +515,15 @@ is gone).
     the last day each one showed up; newcomers and bots are left out.
 
   Messages, voice presence and command uses are counted from 7.6.0 on, so `activity` and
-  `commands` start empty. On the 1st of each month she also sends the owner the previous month's
-  reports by DM: `sessions`, `polls`, `community`, `syncs`, `activity` and `commands`.
+  `commands` start empty.
+
+  On the 1st of each month she sends two digests of the previous month by DM, each opening with
+  « Le mois en bref » (a few figures and what deserves a look):
+  - to the owner, about her running well: commands and their errors, the Pi, the messages she
+    couldn't answer precisely (with the latest ones as a file), the quiz; then `syncs`, `commands`
+    and `quiz`;
+  - to the server admin, about the server's life: members, sessions, when the server talks, silent
+    channels and forgotten emotes; then `community`, `sessions`, `activity` and `sleeping`.
 - **`/admin xp add <member> <amount>` · `/admin xp remove <member> <amount>`** — manual XP
   adjustment. Ephemeral, clamped at zero, and deliberately silent: crossing a level this
   way fires no level-up card, since that card celebrates something earned.

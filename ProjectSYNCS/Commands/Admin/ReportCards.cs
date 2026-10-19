@@ -472,6 +472,108 @@ public static class ReportCards
         return lines.Count - index;
     }
 
+    // ---- Monthly digest: « Le mois en bref » --------------------------------------------------
+
+    /// <summary>
+    /// Papa's first digest message: her commands, the Pi, what she couldn't answer and the quiz, in
+    /// a few figures, then « À regarder » (DigestBrief.Owner) or her quiet line when nothing is.
+    /// </summary>
+    public static Embed BuildOwnerBrief(Compared<CommandReportData> commands, Compared<SyncsReportData> syncs,
+        Compared<QuizReportData> quiz, IReadOnlyList<DigestAlert> alerts, ReportWindow w, string quietLine)
+    {
+        var embed = Start("📬 Le mois en bref", w);
+
+        var c = commands.Current;
+        embed.AddField("Commandes", c.Uses == 0
+            ? "Aucune commande comptée."
+            : $"**{LevelCardUi.Xp(c.Uses)}** {Plural(c.Uses, "utilisation", "utilisations")}{TextChart.Trend(c.Uses, commands.Previous?.Uses)}" +
+              $" · en erreur : **{c.Failures}** ({TextChart.Percent(c.Failures, c.Uses)})\n" +
+              $"Jamais utilisées : **{c.NeverUsed.Count}**");
+
+        var s = syncs.Current;
+        var outages = s.Outages.Sum(o => o.Count);
+        embed.AddField("Le Pi", s.DaysMeasured == 0
+            ? "Aucune mesure ce mois-ci."
+            : (s.Uptime is { } up ? $"Disponibilité **{(up * 100).ToString("0.0", Fr)} %**" : "Disponibilité —") +
+              $" · {Plural(outages, "panne", "pannes")} : **{outages}**" +
+              (s.MaxMilli is { } max ? $"\nTempérature max : **{Temp(max)}** · {s.HotMinutes} min à {Temp(PiHealth.ThrottleMilli)} ou plus" : ""));
+
+        var p = syncs.Previous;
+        embed.AddField("Messages sans réponse précise", s.Answers == 0
+            ? "Personne ne m'a parlé."
+            : $"**{TextChart.Percent(s.Unrecognised, s.Answers)}** de mes réponses ({LevelCardUi.Xp(s.Unrecognised)} sur {LevelCardUi.Xp(s.Answers)})" +
+              (p is { Answers: > 0 } ? $" · avant : {TextChart.Percent(p.Unrecognised, p.Answers)}" : ""));
+
+        var q = quiz.Current;
+        embed.AddField("Le quiz", q.Posted == 0
+            ? "Aucune question posée."
+            : $"**{q.Posted}** {Plural(q.Posted, "question", "questions")}{TextChart.Trend(q.Posted, quiz.Previous?.Posted)}" +
+              $" · trouvées : **{TextChart.Percent(q.Found, q.Posted)}** · sans réponse : **{q.Unanswered}**" +
+              (q.ByDifficulty.Count > 0
+                  ? "\nTrouvées par difficulté : " + string.Join(" · ", q.ByDifficulty.Select(l => $"{l.Label} {TextChart.Percent(l.Found, l.Posted)}"))
+                  : ""));
+
+        AddAlerts(embed, alerts, quietLine);
+        return embed.WithFooter(Footer(w, "Le détail suit.")).Build();
+    }
+
+    /// <summary>
+    /// Tata's first digest message: the members, the sessions, when the server talks, the most active
+    /// and the forgotten emotes, then « À regarder » (DigestBrief.Tata) or the quiet line.
+    /// </summary>
+    public static Embed BuildTataBrief(Compared<CommunityReportData> community, Compared<SessionReportData> sessions,
+        ActivityReportData activity, SleepingReportData sleeping, int unusedEmotes, IReadOnlyList<DigestAlert> alerts,
+        ReportWindow w, string quietLine)
+    {
+        var embed = Start("📬 Le mois en bref", w);
+
+        var m = community.Current;
+        embed.AddField("Les membres",
+            $"**{m.ActiveMembers}** {Plural(m.ActiveMembers, "membre actif", "membres actifs")}{TextChart.Trend(m.ActiveMembers, community.Previous?.ActiveMembers)}" +
+            $" · arrivées : **{m.Joins}** · départs : **{m.Leaves}**\n" +
+            $"Sans signe de vie depuis {sleeping.Days} jours : **{sleeping.Sleepers.Count}**");
+
+        var d = sessions.Current;
+        var best = DigestBrief.BestSessionDay(d);
+        embed.AddField("Les sessions", d.Held == 0
+            ? "Aucune session ce mois-ci."
+            : $"**{d.Held}** {Plural(d.Held, "session tenue", "sessions tenues")}{TextChart.Trend(d.Held, sessions.Previous?.Held)}" +
+              (d.Expected > 0 ? $" · présence : **{TextChart.Percent(d.Came, d.Expected)}**" : "") +
+              (best is { } b ? $"\nLe jour qui marche le mieux : **{Weekday(b.Slot)}** ({TextChart.Percent(b.Came, b.Expected)} présents)" : ""));
+
+        var when = new List<string>();
+        if (activity.BusiestWeekday is { } day) when.Add($"Jour le plus bavard : **{Weekday((int)day)}**");
+        if (activity.BusiestHours.Count > 0) when.Add($"heures de pointe : {string.Join(" · ", activity.BusiestHours.Select(h => $"{h} h"))}");
+        embed.AddField("Le serveur",
+            (when.Count > 0 ? Capitalise(string.Join(" · ", when)) + "\n" : "") +
+            $"Salons silencieux : **{activity.SilentText.Count}** · émotes du serveur jamais utilisées : **{unusedEmotes}**");
+
+        var top = m.XpByUser.Where(x => x.Value > 0).OrderByDescending(x => x.Value).Take(3).ToList();
+        if (top.Count > 0)
+            embed.AddField("Les plus actifs", string.Join(" · ", top.Select(x => $"<@{x.Key}>")));
+
+        AddAlerts(embed, alerts, quietLine);
+        return embed.WithFooter(Footer(w, "Le détail suit.")).Build();
+    }
+
+    private static void AddAlerts(EmbedBuilder embed, IReadOnlyList<DigestAlert> alerts, string quietLine) =>
+        embed.AddField("À regarder", alerts.Count == 0 ? quietLine : Cap(string.Join('\n', alerts.Select(AlertLine))));
+
+    public static string AlertLine(DigestAlert a) => a.Kind switch
+    {
+        DigestAlertKind.FailingCommand =>
+            $"⚠️ `/{a.Subject}` a échoué **{a.Value}** fois sur {a.Of} ({TextChart.Percent(a.Value, a.Of)})",
+        DigestAlertKind.PowerCuts => $"🔌 **{a.Value}** {Plural(a.Value, "coupure de courant", "coupures de courant")}",
+        DigestAlertKind.Crashes => $"💥 **{a.Value}** {Plural(a.Value, "plantage", "plantages")}",
+        DigestAlertKind.HeatRecord => $"🔥 Nouveau record de température : **{Temp((int)a.Value)}**",
+        DigestAlertKind.UnansweredRising => $"💬 Plus de messages sans réponse précise : **{a.Value} %**, contre {a.Of} % le mois d'avant",
+        DigestAlertKind.QuizTooEasy => $"❓ Les questions difficiles ont été trouvées à **{a.Value} %** : trop faciles ?",
+        DigestAlertKind.QuizTooHard => $"❓ Les questions faciles n'ont été trouvées qu'à **{a.Value} %** : trop dures ?",
+        DigestAlertKind.ActiveDrop => $"📉 **{a.Value}** membres actifs, contre {a.Of} le mois d'avant",
+        DigestAlertKind.MoreLeaves => $"🚪 Plus de départs (**{a.Value}**) que d'arrivées (**{a.Of}**)",
+        _ => $"💤 **{a.Value}** membres sur {a.Of} sans signe de vie depuis {SleepingReport.Choices[0]} jours",
+    };
+
     // ---- Shared -------------------------------------------------------------------------------
 
     private static EmbedBuilder Start(string title, ReportWindow w) => new EmbedBuilder()

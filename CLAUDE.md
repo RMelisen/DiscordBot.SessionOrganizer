@@ -92,7 +92,7 @@ English. Renaming a command or option changes what people type: do it rarely, an
   run ended, gateway outages; see personality, *Her body*), `WeekendPollService` (15 min, her
   Wednesday poll; see scheduling), `SeasonalAvatarService` (hourly, plus every Ready — her
   seasonal profile picture; see `docs/syncs-appearance.md`), `MonthlyDigestService` (hourly, her
-  monthly reports to the owner on the 1st; see admin), `ActivityFlushService` (5 min, writes
+  monthly digests to the owner and Tata on the 1st; see admin), `ActivityFlushService` (5 min, writes
   `ActivityCounter`'s counts; see admin).
 - **`MorningGreetingService`** has no interval: it sleeps until one random slot per morning
   (8:00–10:00 Paris, `Helpers/Personality/MorningGreeting`) — see personality.

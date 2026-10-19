@@ -790,10 +790,11 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
             embed: AnswerStatsCards.BuildTypes(counts, statsPeriod), allowedMentions: AllowedMentions.None);
     }
 
-    // The monthly digest (MonthlyDigestService) for last month, in your DMs now. It doesn't touch the
-    // digest's state: the one on the 1st still goes out.
+    // The monthly digest (MonthlyDigestService) for last month, in your DMs now: yours, or a preview of
+    // Tata's (sent to you, not to her). It doesn't touch the digest's state: the ones on the 1st still go out.
     [SlashCommand("digest", "Recevoir tout de suite en DM le rapport du mois dernier (tests)")]
-    public async Task DigestAsync()
+    public async Task DigestAsync(
+        [Summary("version", "Ta version, ou un aperçu de celle de Tata")] DigestRecipient version = DigestRecipient.Owner)
     {
         if (Context.User.Id != AvailabilityService.OwnerId)
         {
@@ -801,10 +802,10 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        // Six reports read the database: well past Discord's 3 s on the Pi.
+        // Several reports read the database: well past Discord's 3 s on the Pi.
         await DeferAsync(ephemeral: true);
         var (year, month) = MonthlyDigest.PreviousMonth(DateTimeOffset.UtcNow);
-        var sent = await _digest.SendAsync(year, month);
+        var sent = await _digest.SendAsync(version, year, month, toOwner: true);
         await FollowupAsync(sent ? "📬 Rapport envoyé en DM." : "Impossible de t'écrire en DM (voir les logs).", ephemeral: true);
     }
 

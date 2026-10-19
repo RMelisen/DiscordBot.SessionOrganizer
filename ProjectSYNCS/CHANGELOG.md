@@ -3,6 +3,14 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.7.0 — 2026-10-19
+
+- Her monthly report now opens with « Le mois en bref »: a few key figures and what deserves a
+  look (failing commands, power cuts, a heat record, more unanswered messages, a miscalibrated quiz).
+  Her creator's version is about how she runs: commands, the Pi, unanswered messages, the quiz.
+- The server admin now gets her own monthly report too, about the server's life: members,
+  sessions, when the server talks, quiet channels and forgotten emotes, with what deserves a look.
+
 ## 7.6.1 — 2026-10-19
 
 - `/report` is now posted in the channel for everyone to see, names included, instead of privately.

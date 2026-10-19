@@ -87,6 +87,7 @@ namespace ProjectSYNCS.Services;
 //     OwnerReplyHeralds · OwnerAnnouncementHeralds ... /debug tell and dm heralds
 //     OwnerReportLines ......... /debug answers, reporting for duty
 //     OwnerDigestLines ......... the monthly digest in his DMs, {0} = the month
+//     DigestQuietLines ......... a digest's « À regarder » with nothing to look at (his or Tata's)
 //     OwnerReportDutyLines ..... /report asked by him, on top of the card
 //
 //   [Family] Tata (Analuz)
@@ -94,6 +95,7 @@ namespace ProjectSYNCS.Services;
 //     TataGreetings (mentioned) · TataReplies (replied to)
 //     TataIntentLines .......... « tu m'aimes ? », « tu te souviens de moi ? » from her
 //     TataReportLines .......... /report asked by her, on top of the card
+//     TataDigestLines .......... the monthly digest in her DMs, {0} = the month
 //
 //   [Rivals] Other bots
 //     JealousLines · JealousLinesOwner ... praise went to a rival

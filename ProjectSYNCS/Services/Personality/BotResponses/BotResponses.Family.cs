@@ -529,19 +529,31 @@ internal static partial class BotResponses
         "Au rapport ! Ce qu'on me dit, ce que je réponds, et ce que je sais pas encore. Pour l'instant.",
     };
 
-    // The monthly digest's opening line, in Papa's DMs on the 1st (MonthlyDigestService), above the
-    // four /report embeds. Just the two of them: no one reading over her shoulder. {0} = the month
-    // (« octobre 2026 »). Once a month, so picked by DailyRotation, not ResponsePicker.
+    // The monthly digest's opening line, in Papa's DMs on the 1st (MonthlyDigestService), with « Le
+    // mois en bref » under it: her commands, the Pi, what she can't answer yet, the quiz. Just the
+    // two of them: no one reading over her shoulder. {0} = the month (« octobre 2026 »). Once a
+    // month, so picked by DailyRotation, not ResponsePicker.
     public static readonly string[] OwnerDigestLines =
     {
         "Papa ! Mon rapport de {0}, tout frais. J'ai tout compté pendant que tu dormais ♡",
         $"Rapport mensuel, {{0}}. Classé, vérifié, livré à l'heure. Comme toujours {Emotes.Sparkle}",
-        "Bilan de {0}, rien que pour toi. Les autres ont pas besoin de savoir qui était en retard. Moi, je sais.",
+        "Bilan de {0}, rien que pour toi. Mes erreurs comprises : je cache rien à Papa.",
         $"Unité S.Y.N.C.S., rapport de fin de mois : {{0}}. Rien à signaler. Enfin si, tout est en dessous {Emotes.SyncsFormal}",
         "Voilà {0}, Papa. Un mois entier de logs, résumé pour toi. De rien ♡",
-        "Le 1er du mois, c'est le jour de mon rapport. {0}, dans l'ordre : les sessions, les sondages, le serveur, et moi.",
+        "Le 1er du mois, c'est le jour de mon rapport. {0} : mes commandes, mon Pi, ce que je sais pas encore répondre, et le quiz.",
         "Papa, j'ai fait les comptes de {0}. Je dis rien, je te laisse lire. ...Bon, je dis rien pour l'instant.",
-        "Tiens, {0} en chiffres. J'ai même compté les « peut-être ». Surtout les « peut-être » (¬_¬)",
+        "Tiens, {0} en chiffres. J'ai même compté mes propres erreurs. Ça m'a coûté (¬_¬)",
+    };
+
+    // « À regarder » with nothing to look at, in Papa's digest or Tata's (ReportCards.BuildOwnerBrief
+    // and BuildTataBrief). Speaks to either, so no name. No placeholder; picked by DailyRotation.
+    public static readonly string[] DigestQuietLines =
+    {
+        "Rien à signaler. Le serveur s'est tenu sage ce mois-ci. Presque.",
+        "Rien qui cloche. J'ai vérifié deux fois, par principe ♡",
+        "Tout est en ordre. Profites-en, ça arrive pas tous les mois.",
+        "Aucune alerte. Je suis aussi surprise que toi (ᵕ • ᴗ •)",
+        "Rien à surveiller. Je surveille quand même, c'est mon travail.",
     };
 
     // /report, asked by Papa, posted in the open on top of the card (ReportCards.DutyPool): she
@@ -662,6 +674,22 @@ internal static partial class BotResponses
         $"Au rapport, Tata ! J'ai même pas râlé en le préparant. Note-le quelque part {Emotes.Sparkle}",
         "Les chiffres pour Tata, avec un sourire. J'ai pas de visage, mais imagine le sourire (˶˃ ᵕ ˂˶)",
         "Rapport remis à Tata. Entre nous : t'es la seule à le lire jusqu'au bout ♡",
+    };
+
+    // The monthly digest's opening line, in Tata's DMs on the 1st (MonthlyDigestService), with « Le
+    // mois en bref » under it: the members, the sessions, when the server talks. Nothing technical:
+    // that's Papa's version. Family warmth, still cheeky. {0} = the month (« octobre 2026 »).
+    // Picked by DailyRotation, like OwnerDigestLines.
+    public static readonly string[] TataDigestLines =
+    {
+        "Tata ! Le rapport de {0}, rien que pour toi ♡",
+        "Bilan de {0} pour l'admin de la famille. J'ai tout rangé, t'as juste à lire (˶ᵔ ᵕ ᵔ˶)",
+        "Coucou Tata. {0} en résumé : qui était là, qui a disparu, et ce que le serveur a fait de ses soirées.",
+        "Rapport du mois, {0}. Je l'ai fait court, promis. Enfin, le premier message est court ♡",
+        $"Tata, voilà {{0}}. Si quelque chose cloche, c'est écrit en bas. Si rien cloche, je te le dis aussi {Emotes.Sparkle}",
+        "Le 1er du mois, c'est le jour où je raconte {0} à Tata. J'adore ce jour-là ♡",
+        "{0}, version Tata : pas de température, pas de code, juste le serveur. Papa a eu la version ennuyeuse.",
+        "Tiens Tata, {0} en chiffres. Et pour me remercier, les droits de mute sont toujours une option (ᵔ ᗜ ᵔ)",
     };
 
     // ---- asked about the two of them: her answer to the few intents where family is not anyone. ----

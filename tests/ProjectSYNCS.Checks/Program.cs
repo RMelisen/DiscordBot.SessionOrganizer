@@ -1240,7 +1240,7 @@ var batch2Widest = new Dictionary<string, int>();
         Enumerable.Range(0, CommandReport.TopCommands).Select(i => new CommandLine($"plynling some-long-subcommand-{i}", 999_999, 999)).ToList(),
         new[] { new CommandLine(";pl", 9999, 0), new CommandLine(";work", 9999, 0), new CommandLine(";pl visit", 9999, 0) },
         Enumerable.Range(0, 150).Select(i => $"config some-group-name sub-{i}").ToList(),
-        new Dictionary<string, long>());
+        new Dictionary<string, long>(), Array.Empty<CommandLine>());
     var t6Month = ReportWindow.From(StatsPeriod.Month, DateTimeOffset.UtcNow);
     foreach (var t6Names in new[] { true, false })
     {
@@ -1249,8 +1249,9 @@ var batch2Widest = new Dictionary<string, int>();
     }
     var t6Quiet = ActivityReport.Compute(Array.Empty<ProjectSYNCS.Models.ActivityHourStat>(), Array.Empty<ProjectSYNCS.Models.ChannelDailyStat>(), Array.Empty<ChannelInfo>());
     T6Fits("empty activity", ProjectSYNCS.Commands.ReportCards.BuildActivity(new(t6Quiet, null), ReportWindow.From(StatsPeriod.AllTime, DateTimeOffset.UtcNow), true), true);
-    if (!ReportKinds.Digest.SequenceEqual(new[] { ReportKind.Sessions, ReportKind.Polls, ReportKind.Community, ReportKind.Syncs, ReportKind.Activity, ReportKind.Commands }))
-        Fail("digest list");
+    if (!ReportKinds.Digest(DigestRecipient.Owner).SequenceEqual(new[] { ReportKind.Syncs, ReportKind.Commands, ReportKind.Quiz })
+        || !ReportKinds.Digest(DigestRecipient.Tata).SequenceEqual(new[] { ReportKind.Community, ReportKind.Sessions, ReportKind.Activity, ReportKind.Sleeping }))
+        Fail("digest lists");
 }
 
 // 28. /report quiz: posted, found, unanswered; a round whose send failed is not a question.
@@ -1380,8 +1381,6 @@ var batch2Widest = new Dictionary<string, int>();
     if (!t10Embed.Footer!.Value.Text.Contains("autres")) Fail("the sleepers that don't fit must be counted");
 }
 
-Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2Widest.Select(x => $"{x.Key} {x.Value}"))} chars");
-
 // 32. /report's line on top of the card: whose pool, untagged, and never past the caps.
 {
     var t11Tata = (ulong)Field("TataId");
@@ -1400,6 +1399,74 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
             if (ProjectSYNCS.Commands.ReportCards.WithHeadline(t11Full, l).Description.Length > 4096) Fail("report line pushed a description past 4096");
         }
 }
+
+// 33. The monthly digest's « Le mois en bref »: what each version flags, and both cards at their worst.
+{
+    var t12Month = ReportWindow.CalendarMonth(2026, 11);
+    ProjectSYNCS.Helpers.SyncsReportData T12Syncs(int days, int? max, long answers, long unrecognised, params (ProjectSYNCS.Models.UptimeEventKind, int)[] outages) =>
+        new(days, 50_000, max, max is null ? null : 20261110, 0, new List<long>(), outages.ToList(), TimeSpan.Zero, 0.99,
+            answers, unrecognised, 0, 0, 0, Array.Empty<PersonTally>());
+    CommandReportData T12Cmd(params CommandLine[] failing) => new(failing.Sum(c => c.Uses), failing.Sum(c => c.Failures),
+        failing, Array.Empty<CommandLine>(), new[] { "never" }, new Dictionary<string, long>(), failing);
+    QuizReportData T12Quiz(params QuizGroupLine[] byDifficulty) => new(byDifficulty.Sum(l => l.Posted), byDifficulty.Sum(l => l.Found), 0,
+        Array.Empty<QuizGroupLine>(), byDifficulty, null, null, Array.Empty<string>(), Array.Empty<PersonTally>());
+
+    // Papa: a failing command (3/20) but not a rare one (1/1) nor a robust one (2/100); a power cut;
+    // a heat record only against a measured month; unanswered rising 10 points; « difficile » too easy.
+    var t12Alerts = DigestBrief.Owner(
+        new(T12Cmd(new CommandLine("report sessions", 20, 3), new CommandLine("help", 1, 1), new CommandLine("plynling feed", 100, 2)), null),
+        new(T12Syncs(30, 70_000, 200, 60, (ProjectSYNCS.Models.UptimeEventKind.PowerCut, 1)), T12Syncs(30, 60_000, 200, 40)),
+        (20261110, 70_000),
+        new(T12Quiz(new QuizGroupLine(QuizBank.Label(QuizDifficulty.Hard), 10, 9), new QuizGroupLine(QuizBank.Label(QuizDifficulty.Easy), 10, 8)), null),
+        t12Month);
+    var t12Kinds = t12Alerts.Select(a => a.Kind).ToList();
+    if (!t12Kinds.SequenceEqual(new[] { DigestAlertKind.FailingCommand, DigestAlertKind.PowerCuts, DigestAlertKind.HeatRecord,
+            DigestAlertKind.UnansweredRising, DigestAlertKind.QuizTooEasy }))
+        Fail($"owner alerts: {string.Join(", ", t12Kinds)}");
+    if (t12Alerts[0].Subject != "report sessions") Fail("the failing command is not the one at 3/20");
+    // The first month of a counter: no comparison, so no record and no « rising ».
+    var t12First = DigestBrief.Owner(new(T12Cmd(), null), new(T12Syncs(12, 70_000, 200, 90), null), (20261110, 70_000),
+        new(T12Quiz(), null), t12Month);
+    if (t12First.Count != 0) Fail($"first month raised {string.Join(", ", t12First.Select(a => a.Kind))}");
+
+    // Tata: active members down 30 %, more leaves than joins, 3 sleepers of 20.
+    CommunityReportData T12Community(int active, int joins, int leaves) => new(active, new List<long>(), 0, 0, 0, joins, leaves,
+        Array.Empty<(string, long)>(), 0, 0, 0, new Dictionary<ulong, long> { [1] = 10, [2] = 30, [3] = 20, [4] = 5 });
+    var t12Sleeping = new SleepingReportData(30, 20, Enumerable.Range(0, 3).Select(i => new Sleeper((ulong)i, null)).ToList());
+    var t12Tata = DigestBrief.Tata(new(T12Community(7, 1, 2), T12Community(10, 0, 0)), t12Sleeping);
+    if (!t12Tata.Select(a => a.Kind).SequenceEqual(new[] { DigestAlertKind.ActiveDrop, DigestAlertKind.MoreLeaves, DigestAlertKind.ManySleepers }))
+        Fail($"tata alerts: {string.Join(", ", t12Tata.Select(a => a.Kind))}");
+    if (DigestBrief.Tata(new(T12Community(7, 2, 1), T12Community(8, 0, 0)), t12Sleeping with { Sleepers = new[] { new Sleeper(1, null) } }).Count != 0)
+        Fail("a calm month for Tata raised something");
+
+    var t12Slots = new[] { new SlotTally(1, 3, 10, 6), new SlotTally(5, 2, 10, 9), new SlotTally(6, 1, 5, 5) };
+    var t12Sessions = new SessionReportData(6, 0, Array.Empty<(ProjectSYNCS.Models.SessionCategory, int)>(), 0, 0, null, 6, 25, 20, 5, 0, null,
+        t12Slots, Array.Empty<SlotTally>(), Array.Empty<PersonTally>(), Array.Empty<PersonTally>(), Array.Empty<PersonTally>(), Array.Empty<PersonTally>());
+    if (DigestBrief.BestSessionDay(t12Sessions)?.Slot != 5) Fail("best session day (a single session doesn't count)");
+
+    // Both cards at their worst: every alert at once, the longest command keys.
+    var t12Many = Enumerable.Range(0, DigestBrief.FailingListed).Select(i => new DigestAlert(DigestAlertKind.FailingCommand, 99_999, 999_999, $"config some-long-group sub-command-{i}"))
+        .Concat(Enum.GetValues<DigestAlertKind>().Select(k => new DigestAlert(k, 99_999, 999_999, "x"))).ToList();
+    var t12Owner = ProjectSYNCS.Commands.ReportCards.BuildOwnerBrief(
+        new(T12Cmd(new CommandLine("help", 999_999, 99_999)), T12Cmd()), new(T12Syncs(30, 81_234, 9_999_999, 999_999, (ProjectSYNCS.Models.UptimeEventKind.Crash, 99)), T12Syncs(30, 1, 1, 1)),
+        new(T12Quiz(Enum.GetValues<QuizDifficulty>().Select(d => new QuizGroupLine(QuizBank.Label(d), 999, 999)).ToArray()), null),
+        t12Many, t12Month, "calme");
+    var t12Activity = ActivityReport.Compute(Array.Empty<ProjectSYNCS.Models.ActivityHourStat>(), Array.Empty<ProjectSYNCS.Models.ChannelDailyStat>(),
+        Enumerable.Range(0, 60).Select(i => new ChannelInfo((ulong)i, false, false)).ToList());
+    var t12TataCard = ProjectSYNCS.Commands.ReportCards.BuildTataBrief(new(T12Community(999, 999, 999), null), new(t12Sessions, null),
+        t12Activity, t12Sleeping, 99, t12Many, t12Month, "calme");
+    foreach (var (t12What, t12Embed) in new[] { ("owner brief", t12Owner), ("tata brief", t12TataCard) })
+    {
+        if (t12Embed.Length > 6000 || t12Embed.Fields.Any(f => f.Value.Length is 0 or > 1024)) Fail($"{t12What}: {t12Embed.Length} characters");
+        batch2Widest[t12What] = t12Embed.Length;
+    }
+    if (!t12TataCard.Fields.Any(f => f.Value.Contains("<@2> · <@3> · <@1>"))) Fail("tata brief: the most active, by XP");
+    if (t12Owner.Fields.Last().Value.Contains("calme") || !ProjectSYNCS.Commands.ReportCards.BuildOwnerBrief(new(T12Cmd(), null), new(T12Syncs(0, null, 0, 0), null),
+            new(T12Quiz(), null), Array.Empty<DigestAlert>(), t12Month, "calme").Fields.Last().Value.Equals("calme"))
+        Fail("« À regarder » shows the alerts, or her quiet line when there are none");
+}
+
+Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2Widest.Select(x => $"{x.Key} {x.Value}"))} chars");
 
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

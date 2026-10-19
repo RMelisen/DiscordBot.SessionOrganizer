@@ -66,8 +66,8 @@ same check.
   and any staff member may change it. The digest has no line: its own opens the DM.
 - **One path**: `ReportService.BuildAsync(kind, guild, window, names)` serves the command, the
   period buttons (`report:win:{kind}:{period}:0`, `ReportComponentHandler`, deferred first,
-  checks `IsStaff` on every click, since anyone can see the buttons) and the digest. `ReportKind` names are in custom-ids: append only, never
-  rename.
+  checks `IsStaff` on every click, since anyone can see the buttons) and the digest. `ReportKind`
+  names are in custom-ids: append only, never rename.
 - **The live guild becomes plain records in `ReportService`** (`ChannelInfo`, `ServerEmote`,
   `MemberSnapshot`, the registered slash paths) before it reaches a helper. When the guild is
   unavailable (gateway down, the digest firing during a reconnect) those snapshots are empty and
@@ -131,16 +131,35 @@ same check.
   - `CommandDailyStat.Command` is `CommandPath`'s key (`/pl` folded into `plynling`), a stored
     string, so append-only: a renamed command keeps its old rows under its old name.
 - **The monthly digest** (`MonthlyDigestService`, its own hourly loop): from 09:00 Paris on the
-  1st, the reports of `ReportKinds.Digest` (`sessions`, `polls`, `community`, `syncs`,
-  `activity`, `commands`; the others stay on demand) for the previous calendar month go to
-  `OwnerId` by DM, one embed per message (several in one could pass 6000), each in its own `try`,
-  under an `OwnerDigestLines` line
-  (picked by `DailyRotation`, since a once-a-month pool would gain nothing from the picker).
+  1st, two digests for the previous calendar month, by DM: Papa's (`OwnerId`) and Tata's
+  (`BotResponses.TataId`, the server admin, not technical). Each is:
+  - **an opening line plus « Le mois en bref »** in one message: a few figures and « À regarder »
+    (`ReportService.BuildBriefAsync`, `ReportCards.BuildOwnerBrief` / `BuildTataBrief`). Papa's
+    figures are his choice: commands (uses, errors, never used), the Pi, messages without a
+    specific answer, the quiz. Tata's: members (active, joins, leaves, sleepers), sessions
+    (attendance, the best-attended weekday), when the server talks, silent channels, unused emotes,
+    the three most active;
+  - **then the reports of `ReportKinds.Digest(recipient)`**, one embed per message (several in one
+    could pass 6000), each in its own `try`: Papa `syncs`, `commands`, `quiz`; Tata `community`,
+    `sessions`, `activity`, `sleeping`. Papa also gets the chat-answer counts over 30 days (as
+    `/debug answers`: they are kept by rolling period) and `UnansweredLog` as a file (in memory:
+    since the last restart).
+  - **« À regarder » is `Helpers/Admin/DigestBrief`**, pure thresholds (constants there): a
+    command failing ≥ 2 times and > 5 % of its uses, power cuts, crashes, a heat record, the
+    unanswered share up ≥ 5 points, « difficile » found ≥ 80 % or « facile » < 30 % (≥ 5
+    questions); for Tata, active members down ≥ 20 %, more leaves than joins, sleepers > 10 %. **A
+    comparison is only made when the month before has data**, so a new counter's first month
+    raises nothing. Nothing to flag shows a `DigestQuietLines` line.
+  - Lines: `OwnerDigestLines`, `TataDigestLines` ({0} the month), `DigestQuietLines`, all picked by
+    `DailyRotation`, since a once-a-month pool would gain nothing from the picker.
   - Timing is pure, in `Helpers/Admin/MonthlyDigest`.
-  - `report-state.json` (beside the DB) holds the last month sent and is written **before** sending.
-  - No file means the previous month is marked sent without sending, so a deploy never DMs a
-    surprise.
-  - `/debug digest` sends last month's now, leaving the state alone.
+  - `report-state.json` (beside the DB) holds the last month sent **to each** (`LastMonth` for
+    Papa, a name kept from before; `TataLastMonth`), written **before** sending. They are claimed
+    and sent apart, so Tata's closed DMs never cost Papa his digest.
+  - No file, or no field yet for a recipient, means the previous month is marked sent without
+    sending, so a deploy never DMs a surprise.
+  - `/debug digest [version]` sends last month's now, Papa's or a preview of Tata's, **to Papa**,
+    leaving the state alone.
 
 ## `/config`
 
@@ -198,7 +217,7 @@ service is the only writer: any write drops that guild's entry. A failed read de
 
 ## `/debug` — owner only
 
-`tell`, `dm`, `absent`, `plynling`, `emotes`, `digest` (last month's digest in your DMs now, see
+`tell`, `dm`, `absent`, `plynling`, `emotes`, `digest` (last month's digest in your DMs now, yours or a preview of Tata's, see
 *`/report` and the monthly digest*), `quiz` (post or close a pop quiz now, see `quiz.md`),
 `sticker` (post any of her sticker strips here, bypassing the gate, see `personality.md`),
 `answers` (which kinds of chat answer she gives most, and what she couldn't answer specifically,

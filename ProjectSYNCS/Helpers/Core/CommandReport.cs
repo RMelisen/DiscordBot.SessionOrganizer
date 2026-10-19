@@ -11,7 +11,8 @@ public sealed record CommandReportData(
     IReadOnlyList<CommandLine> Top,
     IReadOnlyList<CommandLine> Shortcuts,
     IReadOnlyList<string> NeverUsed,
-    IReadOnlyDictionary<string, long> UsesByCommand);
+    IReadOnlyDictionary<string, long> UsesByCommand,
+    IReadOnlyList<CommandLine> Failing);
 
 /// <summary>
 /// Her commands over one window, from CommandDailyStat rows and the paths registered right now
@@ -35,6 +36,8 @@ public static class CommandReport
         return new CommandReportData(
             per.Sum(c => c.Uses), per.Sum(c => c.Failures),
             slash.Take(TopCommands).ToList(), shortcuts, never,
-            per.ToDictionary(c => c.Command, c => c.Uses));
+            per.ToDictionary(c => c.Command, c => c.Uses),
+            // Every command that failed, top ten or not, for the digest's « À regarder ».
+            per.Where(c => c.Failures > 0).OrderByDescending(c => c.Failures).ThenBy(c => c.Command, StringComparer.Ordinal).ToList());
     }
 }
