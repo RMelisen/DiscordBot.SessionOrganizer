@@ -38,6 +38,7 @@ public class AppDbContext : DbContext
     public DbSet<PlynlingRelation> PlynlingRelations => Set<PlynlingRelation>();
     public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
     public DbSet<CollectionCompletion> CollectionCompletions => Set<CollectionCompletion>();
+    public DbSet<CollectionDailyStat> CollectionDailyStats => Set<CollectionDailyStat>();
     public DbSet<EconomyDailyStat> EconomyDailyStats => Set<EconomyDailyStat>();
     public DbSet<QuizRound> QuizRounds => Set<QuizRound>();
     public DbSet<QuizStat> QuizStats => Set<QuizStat>();
@@ -351,6 +352,14 @@ public class AppDbContext : DbContext
             e.Property(x => x.GuildId).HasConversion<long>();
             e.Property(x => x.UserId).HasConversion<long>();
             e.HasIndex(x => new { x.GuildId, x.UserId, x.SetKey }).IsUnique();
+            e.Property(x => x.Count).IsConcurrencyToken();
+        });
+
+        modelBuilder.Entity<CollectionDailyStat>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.UserId, x.Day }).IsUnique();
         });
 
         modelBuilder.Entity<EconomyDailyStat>(e =>

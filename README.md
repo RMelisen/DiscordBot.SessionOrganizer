@@ -19,9 +19,9 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/poll create · list · delete` | Vote on time slots | everyone |
 | `/vote create · list · delete` | Vote on free-text options | everyone |
 | `/giveaway create · list · delete` | Prize draws | everyone |
-| `/level [user]` | Your card: level, rank, progress | everyone |
+| `/level [user]` | Your card: level, rank, progress, collection badges | everyone |
 | `/recap [user]` | Your recap over 7 days, 30 days or all time | everyone |
-| `/leaderboard` | Server ranking — three views, three windows | everyone |
+| `/leaderboard` | Server ranking — four views, three windows | everyone |
 | `/emotestats` | Most-used emotes | everyone |
 | `/goodbot` | Who praised or scolded the bot | everyone |
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
@@ -163,14 +163,16 @@ Vocal leaderboard stays honest about time actually spent.
 **Seeing it**
 
 - **`/level [user]`** — a card: avatar, level, rank, and a progress bar toward the
-  next level. No filters — it's a profile, not a ranking.
+  next level, then a badge for every collection set completed, at its tier. No filters —
+  it's a profile, not a ranking.
 - **`/recap [user]`** — a personal recap over **30 days** (default), **7 days** or **all time**: XP
   (with level and rank all-time), reactions and voice time, time in voice with her, good/bad bot,
   sessions joined and attended, `/tonight` answers, quiz wins, the current Plynling and its graves,
   cailloux, and the wall of shame — then one line from her about what the numbers say.
 - **`/leaderboard`** — the ranked list, five per page, every row carrying that
-  person's real avatar. Three buttons switch what it ranks — **Niveaux** (XP),
-  **Réactions** (reactions added), **Vocal** (eligible time in voice) — and three more
+  person's real avatar. Four buttons switch what it ranks — **Niveaux** (XP),
+  **Réactions** (reactions added), **Vocal** (eligible time in voice), **Collections** (sets
+  completed, turn-ins included) — and three more
   switch the window: **all time** (default), **30 days**, **7 days**. In a window the
   XP view ranks by XP earned in that window and drops the level, which is a lifetime
   figure and can't be recomputed for a week. A `/level` card's "Voir le classement"
@@ -396,8 +398,13 @@ looks after her.
   items are the harder finds; `/inventory collection [user]` opens the book — an overview of
   every set's progress, then a page per set picked from a menu, filtered to everything, what
   was found or what is still missing (« ??? » with its rarity and season) — and completing a
-  set pays 100 to 1000 cailloux once. Anything ever held stays discovered, so trading an item away never
-  undoes a set.
+  set pays 100 to 1000 cailloux and its **Bronze** badge. Anything ever held stays discovered, so
+  trading an item away never undoes a set.
+- **Collection tiers:** a completed set can be completed again by **turning it in** (« Déposer »
+  on its page in the book, after a confirmation): one of each of its items is spent, its reward
+  is paid again, and the completions climb the tiers — **Argent** at 2, **Or** at 3, **Platine**
+  at 5, **Diamant** at 10. A new tier is announced in the channel; the badges show on `/level`,
+  and `/leaderboard`'s **Collections** view ranks the collectors.
 - **The pantry:** `/inventory shop` opens the shop card — food, soap and medicine, picked from a
   menu and bought 1, 5 or 10 at a time (10 % off from five). Feeding serves from
   the feeder's pantry first — one of that food for their own Plynling, two for someone

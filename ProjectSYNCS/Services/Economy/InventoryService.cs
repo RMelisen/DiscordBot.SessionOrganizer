@@ -80,13 +80,71 @@ public class InventoryService
                    || await db.CollectionCompletions.AnyAsync(c => c.GuildId == guildId && c.UserId == userId && c.SetKey == setKey);
         if (paid) return completed;
 
-        db.CollectionCompletions.Add(new CollectionCompletion { GuildId = guildId, UserId = userId, SetKey = setKey, CompletedAt = now });
+        db.CollectionCompletions.Add(new CollectionCompletion { GuildId = guildId, UserId = userId, SetKey = setKey, CompletedAt = now, Count = 1 });
+        await PayCompletionAsync(db, guildId, userId, set, now);
+        completed.Add(set);
+        return completed;
+    }
+
+    // What every completion of a set pays and records — the first (discovery) and each turn-in:
+    // the set's reward, the dashboard's counters and today's ranking bucket. Not saved.
+    private static async Task<long> PayCompletionAsync(AppDbContext db, ulong guildId, ulong userId, CollectionSet set, DateTimeOffset now)
+    {
         var wallet = await PebbleService.GetOrCreateWalletAsync(db, guildId, userId);
         wallet.Balance += set.Reward;
         await EconomyLog.AddAsync(db, guildId, EconomyLog.ItemSet, 1, now);
         await EconomyLog.AddAsync(db, guildId, EconomyLog.EarnCollection, set.Reward, now);
-        completed.Add(set);
-        return completed;
+
+        var day = AppTime.DayKey(now);
+        var bucket = db.CollectionDailyStats.Local.FirstOrDefault(b => b.GuildId == guildId && b.UserId == userId && b.Day == day)
+                     ?? await db.CollectionDailyStats.FirstOrDefaultAsync(b => b.GuildId == guildId && b.UserId == userId && b.Day == day);
+        if (bucket is null)
+        {
+            bucket = new CollectionDailyStat { GuildId = guildId, UserId = userId, Day = day };
+            db.CollectionDailyStats.Add(bucket);
+        }
+        bucket.Completions++;
+        return wallet.Balance;
+    }
+
+    public enum TurnInOutcome { TurnedIn, Missing, NotCompleted, UnknownSet }
+
+    public sealed record TurnInResult(
+        TurnInOutcome Outcome, CollectionSet? Set, int Count, CollectionTier OldTier, CollectionTier NewTier,
+        long Balance, IReadOnlyList<ItemInfo> Missing);
+
+    /// <summary>
+    /// A turn-in from the collection book: one of each item of an already completed set is spent,
+    /// for another completion — its reward, and maybe the next tier. All of it in one save, or
+    /// nothing: two clicks race on the items' quantities and the loser finds them missing.
+    /// </summary>
+    public Task<TurnInResult> TurnInAsync(ulong guildId, ulong userId, string setKey, DateTimeOffset now) =>
+        EconomySave.RetryAsync(_db_context, () => TurnInOnceAsync(guildId, userId, setKey, now));
+
+    private async Task<TurnInResult> TurnInOnceAsync(ulong guildId, ulong userId, string setKey, DateTimeOffset now)
+    {
+        if (ItemCatalog.Sets.FirstOrDefault(s => s.Key == setKey) is not { } set)
+            return new(TurnInOutcome.UnknownSet, null, 0, CollectionTier.None, CollectionTier.None, 0, Array.Empty<ItemInfo>());
+
+        var completion = await _db_context.CollectionCompletions
+            .FirstOrDefaultAsync(c => c.GuildId == guildId && c.UserId == userId && c.SetKey == setKey);
+        if (completion is null)
+            return new(TurnInOutcome.NotCompleted, set, 0, CollectionTier.None, CollectionTier.None, 0, Array.Empty<ItemInfo>());
+
+        var tier = CollectionTiers.TierFor(completion.Count);
+        var items = ItemCatalog.InSet(setKey).ToList();
+        var missing = new List<ItemInfo>();
+        foreach (var item in items)
+            if (await CountAsync(_db_context, guildId, userId, item.Key) < 1) missing.Add(item);
+        if (missing.Count > 0)
+            return new(TurnInOutcome.Missing, set, completion.Count, tier, tier, 0, missing);
+
+        foreach (var item in items)
+            await TakeAsync(_db_context, guildId, userId, item.Key, 1);
+        completion.Count++;
+        var balance = await PayCompletionAsync(_db_context, guildId, userId, set, now);
+        await _db_context.SaveChangesAsync();
+        return new(TurnInOutcome.TurnedIn, set, completion.Count, tier, CollectionTiers.TierFor(completion.Count), balance, Array.Empty<ItemInfo>());
     }
 
     /// <summary>One found item into someone's inventory (not saved, like <see cref="AddAsync"/>).</summary>
@@ -183,4 +241,26 @@ public class InventoryService
 
     public Task<List<CollectionCompletion>> GetCompletionsAsync(ulong guildId, ulong userId) =>
         _db_context.CollectionCompletions.Where(c => c.GuildId == guildId && c.UserId == userId).ToListAsync();
+
+    /// <summary>
+    /// /leaderboard's Collections view: sets completed per person, most first, ties on ascending
+    /// user id. All-time sums the totals (CollectionCompletion.Count); a window sums the daily
+    /// buckets, filtered in SQL like XpService's windows. The two never agree and aren't meant to.
+    /// </summary>
+    public async Task<List<(ulong UserId, long Completions)>> GetCollectorRankingAsync(ulong guildId, StatsPeriod period)
+    {
+        List<(ulong UserId, long Completions)> tallies;
+        if (period == StatsPeriod.AllTime)
+        {
+            var rows = await _db_context.CollectionCompletions.Where(c => c.GuildId == guildId).ToListAsync();
+            tallies = rows.GroupBy(c => c.UserId).Select(g => (g.Key, (long)g.Sum(c => c.Count))).ToList();
+        }
+        else
+        {
+            var since = AppTime.KeyDaysAgo(period == StatsPeriod.Week ? 6 : 29);
+            var rows = await _db_context.CollectionDailyStats.Where(b => b.GuildId == guildId && b.Day >= since).ToListAsync();
+            tallies = rows.GroupBy(b => b.UserId).Select(g => (g.Key, (long)g.Sum(b => b.Completions))).ToList();
+        }
+        return tallies.Where(t => t.Item2 > 0).OrderByDescending(t => t.Item2).ThenBy(t => t.Item1).ToList();
+    }
 }

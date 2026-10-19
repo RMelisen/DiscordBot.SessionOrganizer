@@ -1162,6 +1162,66 @@ foreach (var (text, expected) in new[]
         Console.WriteLine($"/inventory shop: {shop.Length} chars, longest field {shop.Fields.Max(f => f.Value.Length)}");
     }
 
+    // Collection tiers: Bronze at 1, Argent 2, Or 3, Platine 5, Diamant 10.
+    {
+        var expected = new (int Count, ProjectSYNCS.Helpers.CollectionTier Tier)[]
+        {
+            (0, ProjectSYNCS.Helpers.CollectionTier.None), (1, ProjectSYNCS.Helpers.CollectionTier.Bronze),
+            (2, ProjectSYNCS.Helpers.CollectionTier.Silver), (3, ProjectSYNCS.Helpers.CollectionTier.Gold),
+            (4, ProjectSYNCS.Helpers.CollectionTier.Gold), (5, ProjectSYNCS.Helpers.CollectionTier.Platinum),
+            (9, ProjectSYNCS.Helpers.CollectionTier.Platinum), (10, ProjectSYNCS.Helpers.CollectionTier.Diamond),
+            (25, ProjectSYNCS.Helpers.CollectionTier.Diamond),
+        };
+        foreach (var (count, tier) in expected)
+            if (ProjectSYNCS.Helpers.CollectionTiers.TierFor(count) != tier) Fail($"{count} completions should be {tier}, got {ProjectSYNCS.Helpers.CollectionTiers.TierFor(count)}");
+        if (ProjectSYNCS.Helpers.CollectionTiers.Next(4) != (ProjectSYNCS.Helpers.CollectionTier.Platinum, 5)) Fail("after 4 completions the next tier is Platine at 5");
+        if (ProjectSYNCS.Helpers.CollectionTiers.Next(10) is not null) Fail("Diamant has no next tier");
+        if (ProjectSYNCS.Helpers.CollectionTiers.Next(0) != (ProjectSYNCS.Helpers.CollectionTier.Bronze, 1)) Fail("with no completion the next tier is Bronze at 1");
+        foreach (var s in ProjectSYNCS.Helpers.ItemCatalog.Sets)
+        foreach (var t in Enum.GetValues<ProjectSYNCS.Helpers.CollectionTier>().Skip(1))
+        {
+            var key = ProjectSYNCS.Helpers.ItemEmojis.BadgeKey(s.Key, t);
+            var name = ProjectSYNCS.Helpers.ItemEmojis.EmojiName(key);
+            if (!ProjectSYNCS.Helpers.CollectionTiers.IsBadgeKey(key)) Fail($"{key} is not recognised as a badge icon");
+            if (name is null || name.Length > 32 || !name.All(c => char.IsAsciiLetterOrDigit(c) || c == '_')) Fail($"badge emoji name '{name}' is not a valid Discord emoji name");
+        }
+        if (ProjectSYNCS.Helpers.CollectionTiers.IsBadgeKey("badge.nope_gold")) Fail("a badge key for an unknown set passed");
+    }
+
+    // The collection book at its widest: every icon uploaded (custom markup ~35 chars), every item
+    // held, every set at Diamant — the overview and every set page under every filter.
+    {
+        var fake = "<:a_custom_emoji_name_xx:123456789012345678>";
+        foreach (var i in ProjectSYNCS.Helpers.ItemCatalog.All) ProjectSYNCS.Helpers.ItemEmojis.Set(ProjectSYNCS.Helpers.ItemCatalog.PictureKey(i.Key), fake);
+        foreach (var s in ProjectSYNCS.Helpers.ItemCatalog.Sets)
+        {
+            ProjectSYNCS.Helpers.ItemEmojis.Set(ProjectSYNCS.Helpers.ItemEmojis.SetKey(s.Key), fake);
+            foreach (var t in Enum.GetValues<ProjectSYNCS.Helpers.CollectionTier>().Skip(1))
+                ProjectSYNCS.Helpers.ItemEmojis.Set(ProjectSYNCS.Helpers.ItemEmojis.BadgeKey(s.Key, t), fake);
+        }
+        var heldAll = ProjectSYNCS.Helpers.ItemCatalog.Collectibles
+            .Select(i => new ProjectSYNCS.Models.InventoryItem { Key = i.Key, Quantity = 9999 }).ToList();
+        var allDone = ProjectSYNCS.Helpers.ItemCatalog.Sets
+            .Select(s => new ProjectSYNCS.Models.CollectionCompletion { SetKey = s.Key, Count = 99 }).ToList();
+        var widestBook = 0;
+        foreach (var page in ProjectSYNCS.Helpers.ItemCatalog.Sets.Select(s => s.Key).Prepend(ProjectSYNCS.Commands.InventoryModule.OverviewPage))
+        foreach (var filter in Enum.GetValues<ProjectSYNCS.Commands.CollectionFilter>())
+        foreach (var done in new[] { allDone, new List<ProjectSYNCS.Models.CollectionCompletion>() })
+        {
+            var (book, bookComponents) = ProjectSYNCS.Commands.InventoryModule.BuildCollectionPage(big, heldAll, done, page, filter);
+            Measure($"collection book '{page}'", book, names: true);
+            if (book.Description.Length > 4096) Fail($"collection book '{page}' description is {book.Description.Length}");
+            widestBook = Math.Max(widestBook, book.Length);
+            var ids = bookComponents.Components.OfType<Discord.ActionRowComponent>().SelectMany(r => r.Components)
+                .Select(c => c switch { Discord.ButtonComponent b => b.CustomId, Discord.SelectMenuComponent m => m.CustomId, _ => null }).ToList();
+            if (ids.Count != ids.Distinct().Count()) Fail($"collection book '{page}' repeats a custom-id");
+        }
+        if (ProjectSYNCS.Commands.LevelModule.CardBadges(allDone) is not { } badgeLine || badgeLine.Length > 4000) Fail("/level badge line missing or too long");
+        if (ProjectSYNCS.Commands.LevelModule.CardBadges(new List<ProjectSYNCS.Models.CollectionCompletion>()) is not null) Fail("/level shows a badge line with no completion");
+        ProjectSYNCS.Helpers.ItemEmojis.Clear();
+        Console.WriteLine($"collection book at worst: {widestBook} chars");
+    }
+
     // Every digest line takes the month and nothing else.
     foreach (var line in (string[])br.GetField("OwnerDigestLines")!.GetValue(null)!)
     {

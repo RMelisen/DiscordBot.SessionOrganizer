@@ -23,9 +23,12 @@ public static class ItemEmojis
     public static string MushroomDirectory => Path.Combine(AppContext.BaseDirectory, "Assets", "Mushrooms");
     public static string IconDirectory => Path.Combine(AppContext.BaseDirectory, "Assets", "Icons");
 
-    // Sets and traits are not items, so their icon keys get a prefix of their own.
+    // Sets, traits and set badges are not items, so their icon keys get a prefix of their own. A
+    // badge joins its set and tier with « _ », not « . »: everything after the prefix becomes the
+    // emoji name, where a dot is refused (b_champignons_diamond).
     public static string SetKey(string setKey) => "set." + setKey;
     public static string TraitKey(string traitKey) => "trait." + traitKey;
+    public static string BadgeKey(string setKey, CollectionTier tier) => $"badge.{setKey}_{tier.ToString().ToLowerInvariant()}";
 
     // Every other icon is Assets/Icons/<icon key>.png, and its emoji name swaps the key's prefix for
     // a short one: Discord allows [A-Za-z0-9_] and 32 characters, and « cos.accessory. » alone would
@@ -33,7 +36,7 @@ public static class ItemEmojis
     private static readonly (string Key, string Emoji)[] Prefixes =
     {
         ("col.", "c_"), ("set.", "s_"), ("cos.theme.", "th_"), ("cos.title.", "ti_"),
-        ("cos.accessory.", "ac_"), ("cos.grave.", "gr_"), ("trait.", "tr_"),
+        ("cos.accessory.", "ac_"), ("cos.grave.", "gr_"), ("trait.", "tr_"), ("badge.", "b_"),
     };
 
     private static readonly ConcurrentDictionary<string, string> ByKey = new();
@@ -75,7 +78,9 @@ public static class ItemEmojis
     }
 
     private static bool IsIconKey(string key) =>
-        ItemCatalog.IsIconKey(key) || key.StartsWith("trait.", StringComparison.Ordinal) && PlynlingTraits.ByKey(key["trait.".Length..]) is not null;
+        ItemCatalog.IsIconKey(key)
+        || key.StartsWith("trait.", StringComparison.Ordinal) && PlynlingTraits.ByKey(key["trait.".Length..]) is not null
+        || CollectionTiers.IsBadgeKey(key);
 
     private static string[] PngsIn(string dir) => Directory.Exists(dir) ? Directory.GetFiles(dir, "*.png") : Array.Empty<string>();
 

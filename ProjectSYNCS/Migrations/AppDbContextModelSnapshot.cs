@@ -205,6 +205,10 @@ namespace ProjectSYNCS.Migrations
                     b.Property<DateTimeOffset>("CompletedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Count")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
                     b.Property<long>("GuildId")
                         .HasColumnType("INTEGER");
 
@@ -221,6 +225,32 @@ namespace ProjectSYNCS.Migrations
                         .IsUnique();
 
                     b.ToTable("CollectionCompletions");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.CollectionDailyStat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Completions")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "UserId", "Day")
+                        .IsUnique();
+
+                    b.ToTable("CollectionDailyStats");
                 });
 
             modelBuilder.Entity("ProjectSYNCS.Models.CommandDailyStat", b =>

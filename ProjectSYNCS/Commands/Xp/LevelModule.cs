@@ -52,10 +52,12 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
         "Les bots ne gagnent pas d'XP. Surtout pas ceux-là. Bien essayé (˶˃ ᵕ ˂˶)";
 
     private readonly XpService _xp;
+    private readonly InventoryService _inventory;
 
-    public LevelModule(XpService xp)
+    public LevelModule(XpService xp, InventoryService inventory)
     {
         _xp = xp;
+        _inventory = inventory;
     }
 
     [SlashCommand("level", "Ton niveau, ton XP et ta progression")]
@@ -72,9 +74,10 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         var rank = await _xp.GetRankAsync(Context.Guild.Id, target.Id);
+        var completions = await _inventory.GetCompletionsAsync(Context.Guild.Id, target.Id);
 
         await FollowupAsync(
-            components: BuildCard(target, rank),
+            components: BuildCard(target, rank, completions),
             flags: MessageFlags.ComponentsV2,
             allowedMentions: AllowedMentions.None);
     }
@@ -144,7 +147,9 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
 
     // ---- /level -------------------------------------------------------------
 
-    private MessageComponent BuildCard(IUser target, XpRank? rank)
+    // The collection badges ride along at the bottom — a separator and one TextDisplay, only for
+    // someone who has completed a set (≈ 10 components of the 40).
+    private MessageComponent BuildCard(IUser target, XpRank? rank, IReadOnlyCollection<Models.CollectionCompletion> completions)
     {
         var totalXp = rank?.TotalXp ?? 0;
         var level = rank?.Level ?? 0;
@@ -164,6 +169,11 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
             .AddComponent(new TextDisplayBuilder(
                 LevelCardUi.CardProgress(into, span, level + 1, totalXp)));
 
+        if (CardBadges(completions) is { } badges)
+            container
+                .AddComponent(new SeparatorBuilder())
+                .AddComponent(new TextDisplayBuilder(badges));
+
         return new ComponentBuilderV2()
             .AddComponent(container)
             .AddComponent(new ActionRowBuilder()
@@ -172,11 +182,31 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
             .Build();
     }
 
+    // One badge per completed set, in the catalog's order, then the total. Null with none.
+    public static string? CardBadges(IReadOnlyCollection<Models.CollectionCompletion> completions)
+    {
+        var byKey = completions.ToDictionary(c => c.SetKey, c => c.Count);
+        var badges = ItemCatalog.Sets
+            .Where(s => byKey.ContainsKey(s.Key))
+            .Select(s => CollectionTiers.Badge(s, CollectionTiers.TierFor(byKey[s.Key])))
+            .ToList();
+        if (badges.Count == 0) return null;
+        return $"**Collections** · {string.Join(" ", badges)}\n-# {LevelCardUi.Completions(byKey.Values.Sum())}";
+    }
+
     // ---- /leaderboard -------------------------------------------------------
+
+    // The Collections view ranks from the inventory's tables rather than XP's, shaped into the
+    // same MemberTally so the page, rows and footer stay one path.
+    private async Task<List<MemberTally>> RankingAsync(LeaderboardView view, StatsPeriod period) =>
+        view == LeaderboardView.Collections
+            ? (await _inventory.GetCollectorRankingAsync(Context.Guild.Id, period))
+                .Select(t => new MemberTally(t.UserId, 0, 0, 0, t.Completions)).ToList()
+            : await _xp.GetRankingAsync(Context.Guild.Id, view, period);
 
     private async Task<MessageComponent> BuildPageAsync(LeaderboardView view, StatsPeriod period, int page)
     {
-        var ranking = await _xp.GetRankingAsync(Context.Guild.Id, view, period);
+        var ranking = await RankingAsync(view, period);
 
         var totalPages = Math.Max(1, (int)Math.Ceiling(ranking.Count / (double)PageSize));
         page = Math.Clamp(page, 0, totalPages - 1);
@@ -252,6 +282,7 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
         {
             LeaderboardView.Reactions => $"{LevelCardUi.Xp(mine.ReactionsUsed)} réaction(s)",
             LeaderboardView.Voice => LevelCardUi.Duration(mine.VoiceMinutes),
+            LeaderboardView.Collections => LevelCardUi.Completions(mine.Completions),
             // Same reason the rows drop the level in a window: it is a lifetime figure.
             _ when period != StatsPeriod.AllTime => $"{LevelCardUi.Xp(mine.TotalXp)} XP gagnés",
             _ => $"niveau {mine.Level} ({LevelCardUi.Xp(mine.TotalXp)} XP)",

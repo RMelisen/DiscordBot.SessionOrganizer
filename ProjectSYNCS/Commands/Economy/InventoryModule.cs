@@ -186,16 +186,20 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
 
     public const string OverviewPage = "all";
 
+    //
+    // A completed set's page also carries « Déposer » (`col:dep:`, a third verb): it spends one of
+    // each item for another completion — the way up the tiers. It is enabled from what the page
+    // shows (completed, one of each held); the handler re-checks the clicker and everything else.
     public static (Embed Embed, MessageComponent Components) BuildCollectionPage(ulong userId,
         IReadOnlyCollection<InventoryItem> held, IReadOnlyCollection<CollectionCompletion> completions,
         string page, CollectionFilter filter)
     {
         var quantities = held.ToDictionary(i => i.Key, i => i.Quantity);
-        var done = completions.Select(c => c.SetKey).ToHashSet();
+        var done = completions.ToDictionary(c => c.SetKey, c => c.Count);
         var set = ItemCatalog.Sets.FirstOrDefault(s => s.Key == page);
         var embed = set is null
             ? BuildOverview(userId, quantities, done)
-            : BuildSetPage(userId, set, quantities, done.Contains(set.Key), filter);
+            : BuildSetPage(userId, set, quantities, done.GetValueOrDefault(set.Key), filter);
 
         var menu = new SelectMenuBuilder()
             .WithCustomId($"col:set:{userId}:{filter}")
@@ -204,15 +208,35 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
         {
             var items = ItemCatalog.InSet(s.Key).ToList();
             var have = items.Count(i => quantities.ContainsKey(i.Key));
-            menu.AddOption(s.Name, s.Key, done.Contains(s.Key) ? "Complète ✅" : $"{have}/{items.Count} trouvés",
-                EmoteMarkup.Parse(s.Emoji), isDefault: s.Key == set?.Key);
+            var description = done.TryGetValue(s.Key, out var count)
+                ? $"Complète ✅ · {CollectionTiers.Label(CollectionTiers.TierFor(count))}"
+                : $"{have}/{items.Count} trouvés";
+            menu.AddOption(s.Name, s.Key, description, EmoteMarkup.Parse(s.Emoji), isDefault: s.Key == set?.Key);
         }
         var components = new ComponentBuilder().WithSelectMenu(menu, row: 0);
         if (set is not null)
+        {
             foreach (var f in Enum.GetValues<CollectionFilter>())
                 components.WithButton(FilterLabel(f), $"col:fil:{userId}:{set.Key}:{f}",
                     f == filter ? ButtonStyle.Primary : ButtonStyle.Secondary, disabled: f == filter, row: 1);
+            if (done.ContainsKey(set.Key))
+                components.WithButton($"Déposer la collection (+{PebbleEconomy.Cailloux(set.Reward)})",
+                    $"col:dep:{userId}:{set.Key}:{filter}", ButtonStyle.Success, new Emoji("📥"),
+                    disabled: !CanTurnIn(set.Key, quantities), row: 2);
+        }
         return (embed, components.Build());
+    }
+
+    // One of each item of the set in hand — what a turn-in spends.
+    public static bool CanTurnIn(string setKey, IReadOnlyDictionary<string, int> quantities) =>
+        ItemCatalog.InSet(setKey).All(i => quantities.GetValueOrDefault(i.Key) > 0);
+
+    // A completed set's standing: badge, tier, completions and the next step up.
+    public static string TierLine(CollectionSet set, int count)
+    {
+        var tier = CollectionTiers.TierFor(count);
+        var next = CollectionTiers.Next(count) is { } n ? $" · prochain : {CollectionTiers.Label(n.Tier)} à {n.At}" : " · palier maximum";
+        return $"{CollectionTiers.Badge(set, tier)} **{CollectionTiers.Label(tier)}** · complétée {count} fois{next}";
     }
 
     public static string FilterLabel(CollectionFilter filter) => filter switch
@@ -222,37 +246,44 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
         _ => "Tout",
     };
 
-    private static Embed BuildOverview(ulong userId, IReadOnlyDictionary<string, int> quantities, IReadOnlySet<string> done)
+    private static Embed BuildOverview(ulong userId, IReadOnlyDictionary<string, int> quantities, IReadOnlyDictionary<string, int> done)
     {
         var found = ItemCatalog.Collectibles.Count(i => quantities.ContainsKey(i.Key));
         var lines = ItemCatalog.Sets.Select(s =>
         {
             var items = ItemCatalog.InSet(s.Key).ToList();
             var have = items.Count(i => quantities.ContainsKey(i.Key));
-            var status = done.Contains(s.Key) ? "✅" : $"{have}/{items.Count} · +{PebbleEconomy.Cailloux(s.Reward)}";
-            return $"**{s.Name}**\n`{LevelCardUi.ProgressBar(have, items.Count)}` {status}";
+            if (!done.TryGetValue(s.Key, out var count))
+                return $"**{s.Name}**\n`{LevelCardUi.ProgressBar(have, items.Count)}` {have}/{items.Count} · +{PebbleEconomy.Cailloux(s.Reward)}";
+            var ready = CanTurnIn(s.Key, quantities) ? " · 📥 **dépôt possible**" : "";
+            return $"**{s.Name}** ✅\n{TierLine(s, count)}{ready}";
         });
         return new EmbedBuilder()
             .WithTitle("Carnet de collection")
             .WithColor(Color.Purple)
             .WithDescription($"<@{userId}> · **{found}/{ItemCatalog.Collectibles.Count()}** objets trouvés · " +
-                             $"{done.Count}/{ItemCatalog.Sets.Count} collections complètes\n\n" + string.Join("\n", lines))
+                             $"{done.Count}/{ItemCatalog.Sets.Count} collections complètes\n\n" + string.Join("\n", lines) +
+                             "\n\n-# Une collection complète se dépose : un exemplaire de chaque objet contre sa récompense, " +
+                             "et le palier suivant (Argent à 2, Or à 3, Platine à 5, Diamant à 10).")
             .WithFooter("Trouve des objets de collection avec /plynling forage, les jeux, les visites " +
                         "ou en les échangeant avec des amis.")
             .Build();
     }
 
     private static Embed BuildSetPage(ulong userId, CollectionSet set, IReadOnlyDictionary<string, int> quantities,
-        bool complete, CollectionFilter filter)
+        int completions, CollectionFilter filter)
     {
         var items = ItemCatalog.InSet(set.Key).ToList();
         var have = items.Count(i => quantities.ContainsKey(i.Key));
-        var status = complete ? "✅ complète" : $"complète : +{PebbleEconomy.Cailloux(set.Reward)}";
+        var status = completions > 0 ? "✅ complète" : $"complète : +{PebbleEconomy.Cailloux(set.Reward)}";
+        var standing = completions > 0
+            ? $"\n{TierLine(set, completions)}\n-# Déposer : un exemplaire de chaque objet contre +{PebbleEconomy.Cailloux(set.Reward)}."
+            : "";
         var embed = new EmbedBuilder()
             .WithTitle(set.Name)
             .WithColor(Color.Purple)
             .WithDescription($"<@{userId}> · **{have}/{items.Count}** trouvés · {status}\n" +
-                             $"`{LevelCardUi.ProgressBar(have, items.Count)}`");
+                             $"`{LevelCardUi.ProgressBar(have, items.Count)}`{standing}");
 
         bool Shown(ItemInfo i) => filter switch
         {

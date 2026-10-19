@@ -60,7 +60,8 @@ be lost.
 `ItemCatalog` key) and survive every death and abandonment. **Item keys are stored — append-only.**
 A row at quantity 0 is **kept**: it is what makes an item *discovered* for good, which is why a set
 completes on discovery (not on holding all at once) and why trading or selling never undoes a set.
-`CollectionCompletion` (unique index) is the once-only guard on a set's reward.
+`CollectionCompletion` (unique index) is the once-only guard on the *discovery* reward; its `Count`
+then counts every completion (see *Tiers and turn-ins*).
 
 **`InventoryService`'s static `AddAsync` / `TakeAsync` / `GrantAsync` take a context and never
 save**: every source (pantry feeding, gift, game, visit, forage) moves items in its **own** unit of
@@ -96,6 +97,29 @@ foraging: `DrawForage` picks from it 60% of the time, every other source 10%
 (`ForageMushroomShare` / `MushroomShareElsewhere`), or its 30 would crowd out the rest. A set over 10
 items is laid out one embed field per rarity (`ItemCatalog.Sections`) — 30 lines of emoji markup
 overflow a 1024 field.
+
+## Tiers and turn-ins
+
+**A set's first completion is its discovery; every later one is a turn-in.** « Déposer » on a
+completed set's book page (`col:dep:{user}:{set}:{filter}`) opens an ephemeral confirmation naming
+the last copies it would spend; « Confirmer » (`col:depok:{set}`, ephemeral, so the clicker is the
+owner) runs `InventoryService.TurnInAsync`: one of each item taken, `Count + 1`, the set's reward
+paid again. Every completion — discovery or turn-in — goes through `PayCompletionAsync`: wallet,
+`item.set` + `earn.collection` (same source, so no new metric key) and today's bucket.
+
+- **Tiers are derived from `Count`, never stored** (`Helpers/Economy/CollectionTiers`): Bronze 1,
+  Argent 2, Or 3, Platine 5, Diamant 10. Moving a threshold needs no migration.
+- **A tier-up is announced in the channel** (`PlynlingText.SetTierUp`, mentions off); a plain
+  turn-in only answers the ephemeral.
+- **`Count` is a concurrency token**, on top of the items' `Quantity`: a double-click loses the race,
+  retries, and finds the items missing.
+- **Totals + buckets**: `CollectionCompletion.Count` is the totals (the migration started existing
+  rows at 1), `CollectionDailyStat` the per-day buckets behind `/leaderboard`'s Collections windows
+  (see `xp.md`). The buckets started empty with 7.9.0.
+- **Badges**: `CollectionTiers.Badge` shows the icon `badge.<set>_<tier>` once uploaded (emoji
+  `b_<set>_<tier>`; `_` not `.`, since the rest of the key becomes the emoji name), else the tier's
+  medal (🥉🥈🥇🏅💠) beside the set's icon. Dropping the 30 PNGs in `Assets/Icons/` is all the art
+  needs — `ItemEmojis.IsIconKey` already accepts them.
 
 ## Item icons — application emojis
 
@@ -137,7 +161,8 @@ they work in any server), and **the bot uploads them itself**.
 ## `/inventory collection` — a book
 
 An overview page, then one page per set picked from a **select menu** (overview + six sets is seven,
-a row holds five buttons), with a Tout / Trouvés / Manquants filter row on set pages. State is in the
+a row holds five buttons), with a Tout / Trouvés / Manquants filter row on set pages, and on a
+completed set's page a row-2 « Déposer » button (see *Tiers and turn-ins*). State is in the
 custom-ids under two verbs — `col:set:{user}:{filter}` (menu), `col:fil:{user}:{set}:{filter}`
 (buttons) — handled by `InventoryComponentHandler`; every click re-reads the inventory. « Trouvés »
 means *discovered*: an item traded away shows « plus en stock » and still counts. A rarity-split page

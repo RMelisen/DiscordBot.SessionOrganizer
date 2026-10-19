@@ -130,7 +130,13 @@ public static class PlynlingText
     public static string TradeTheyLack(ulong toId) => $"<@{toId}> n'en a pas assez pour cet échange.";
 
     public static string SetCompleted(ulong userId, CollectionSet set) =>
-        $"<@{userId}> a complété la collection **{set.Emoji} {set.Name}** ! +{PebbleEconomy.Cailloux(set.Reward)}";
+        $"<@{userId}> a complété la collection **{set.Emoji} {set.Name}** ! +{PebbleEconomy.Cailloux(set.Reward)} · " +
+        $"badge {CollectionTiers.Badge(set, CollectionTier.Bronze)} **Bronze**";
+
+    // A turn-in that reached the next tier of a set — announced in the open, unlike a plain turn-in.
+    public static string SetTierUp(ulong userId, CollectionSet set, CollectionTier tier) =>
+        $"<@{userId}> atteint le palier {CollectionTiers.Badge(set, tier)} **{CollectionTiers.Label(tier)}** " +
+        $"de la collection **{set.Emoji} {set.Name}** ! +{PebbleEconomy.Cailloux(set.Reward)}";
 
     // A visit's confession, the visitor declaring itself. Names are already sanitised.
     public static string ConfessionAccepted(string a, string b) => $"💞 **{a}** a déclaré sa flamme à **{b}**... et c'est oui !";

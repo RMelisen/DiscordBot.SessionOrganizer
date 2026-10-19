@@ -59,8 +59,12 @@ grant no XP.
 TextDisplay + Thumbnail). A page of 5 with all three button rows uses 31 of 40; 10 would be 46. At 5
 rows there is room for one more row of five buttons and no more.
 
-**`/leaderboard` is three views over one row** (`LeaderboardView`: XP, reactions, voice) — only the
-ordering and each row's second line change. Custom-id: **`level:{verb}:{view}:{period}:{page}`**,
+**`/leaderboard` is four views** (`LeaderboardView`: XP, reactions, voice, collections) — only the
+ordering and each row's second line change. The first three read `MemberXp`/`MemberDailyStat`;
+**Collections** reads `InventoryService.GetCollectorRankingAsync` (sets completed: the
+`CollectionCompletion.Count` totals all-time, `CollectionDailyStat` buckets in a window — see
+`economy.md`), shaped into the same `MemberTally` (`Completions`) by `LevelModule.RankingAsync`, so
+the page, rows and footer stay one path. Its button joins row 0; the component count doesn't move. Custom-id: **`level:{verb}:{view}:{period}:{page}`**,
 view before period on purpose, so the period row is built by `StatsPeriodUi` with `level:win:{view}`
 as its prefix. Verbs: `level:view:` (metric row), `level:win:` (period row), `level:page:`
 (paging) — see the root rule on one verb per row; the active view button and active period button
@@ -75,7 +79,9 @@ so it follows the view and can't disagree with the rows. (`XpService.GetRankAsyn
 **`/level` is a card, not the leaderboard opened at your row**: avatar, level, rank, and a progress
 bar from `LevelCurve.XpIntoLevel` over `XpForLevel` (the same pair printed beneath it). Its "Voir le
 classement" button reuses the paging id `level:page:Xp:AllTime:0` and replaces the card in place. No XP → niveau 0, `non
-classé`. A **bot** gets one fixed `const` refusal (not a pool — a refusal isn't chatter).
+classé`. A **bot** gets one fixed `const` refusal (not a pool — a refusal isn't chatter). Someone who
+has completed a collection set gets one more separator + TextDisplay at the bottom
+(`LevelModule.CardBadges`): one badge per completed set at its tier, then the total.
 
 **`/recap` is a card about one person over a window** (`RecapModule`, Components V2, the
 `StatsPeriodUi` row with prefix `recap:win:{userId}`, opening on **30 days**). `RecapService` reads

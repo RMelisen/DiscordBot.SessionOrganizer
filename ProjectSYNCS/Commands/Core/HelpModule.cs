@@ -85,10 +85,10 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**🎉 Participer** t'inscrit, **✖️ Ne plus participer** te retire. " +
                 "À la fin, je tire au sort et j'annonce toute seule.")
             .AddField("Commandes — Niveaux & statistiques",
-                "**`/level [user]`** — Ta carte : niveau, progression et rang.\n" +
+                "**`/level [user]`** — Ta carte : niveau, progression, rang et badges de collection.\n" +
                 "**`/recap [user]`** — Ton récap : XP, vocal, soirées, quiz et bêtises, sur 7 jours, 30 jours ou depuis toujours.\n" +
-                "**`/leaderboard`** — Le classement, 5 par page. Trois vues (**Niveaux**, **Réactions**, " +
-                "**Vocal**) et trois filtres (**depuis toujours**, **30 jours**, **7 jours**).\n" +
+                "**`/leaderboard`** — Le classement, 5 par page. Quatre vues (**Niveaux**, **Réactions**, " +
+                "**Vocal**, **Collections**) et trois filtres (**depuis toujours**, **30 jours**, **7 jours**).\n" +
                 "**`/emotestats`** — Les emotes les plus utilisées, écrites et en réaction.\n" +
                 "**`/yesno [question]`** — Tu hésites ? Je tranche. Pile ou face, mais avec du caractère.\n" +
                 "**`/goodbot`** — Qui m'a dit *good bot* (ou l'inverse). Réagir à un de mes " +
@@ -110,7 +110,9 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .AddField("Commandes — Plynlings",
                 "**`/plynling help`** — Adopte un petit champignon, nourris-le, garde-le en vie. " +
                 "Tout est expliqué là-dedans. Raccourcis : `/pl`, et `;pl` en texte.\n" +
-                "**`/inventory view`** — Tes objets, ton garde-manger, ta collection et ta garde-robe.")
+                "**`/inventory view`** — Tes objets, ton garde-manger, ta collection et ta garde-robe.\n" +
+                "**`/inventory collection`** — Ton carnet. Une collection complète se **dépose** (un exemplaire " +
+                "de chaque objet) contre sa récompense et un badge : Bronze, Argent, Or, Platine, Diamant.")
             .AddField("Commandes — Staff & aide",
                 "**`/admin xp add|remove`** · **`/admin pebble add|remove`** — Ajuster l'XP ou les cailloux de quelqu'un.\n" +
                 "**`/admin stats`** · **`/admin dashboard`** — L'économie du serveur, en un coup d'œil et jour après jour.\n" +

@@ -3,6 +3,16 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.9.0 — 2026-10-19
+
+- Collection tiers: a completed set can be turned in from its page in `/inventory collection`
+  (« Déposer »), spending one of each of its items to pay its reward again. Completions climb
+  from Bronze (the first) to Argent (2), Or (3), Platine (5) and Diamant (10); a new tier is
+  announced in the channel.
+- `/level` shows a badge for every completed set, at its tier.
+- `/leaderboard` has a fourth view, **Collections**, ranking sets completed (all time, 30 days, 7 days).
+- The collection book shows each set's tier, the next one, and when a turn-in is possible.
+
 ## 7.8.1 — 2026-10-19
 
 - Asking her opinion of a tagged member by name (« Syncs, tu penses quoi de @… ? ») gets her

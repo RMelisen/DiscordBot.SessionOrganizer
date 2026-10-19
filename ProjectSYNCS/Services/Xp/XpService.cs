@@ -18,10 +18,12 @@ public enum LeaderboardView
     Reactions,
     /// <summary>Eligible minutes spent in voice.</summary>
     Voice,
+    /// <summary>Collection sets completed (discoveries and turn-ins) — read from InventoryService, not here.</summary>
+    Collections,
 }
 
 /// <summary>One person's standing, carrying every metric the views rank by.</summary>
-public readonly record struct MemberTally(ulong UserId, long TotalXp, long ReactionsUsed, long VoiceMinutes)
+public readonly record struct MemberTally(ulong UserId, long TotalXp, long ReactionsUsed, long VoiceMinutes, long Completions = 0)
 {
     public int Level => LevelCurve.LevelForXp(TotalXp);
 
@@ -30,6 +32,7 @@ public readonly record struct MemberTally(ulong UserId, long TotalXp, long React
     {
         LeaderboardView.Reactions => ReactionsUsed,
         LeaderboardView.Voice => VoiceMinutes,
+        LeaderboardView.Collections => Completions,
         _ => TotalXp,
     };
 }
