@@ -22,7 +22,10 @@ public class CosmeticService
     /// Buys a cosmetic from the shop of <paramref name="week"/> — the week the shop message was
     /// drawn from, so a select left over from last week cannot buy what is no longer on sale.
     /// </summary>
-    public async Task<(CosmeticOutcome Outcome, long Balance)> BuyAsync(ulong guildId, ulong userId, string key, int week, DateTimeOffset now)
+    public Task<(CosmeticOutcome Outcome, long Balance)> BuyAsync(ulong guildId, ulong userId, string key, int week, DateTimeOffset now) =>
+        EconomySave.RetryAsync(_db_context, () => BuyOnceAsync(guildId, userId, key, week, now));
+
+    private async Task<(CosmeticOutcome Outcome, long Balance)> BuyOnceAsync(ulong guildId, ulong userId, string key, int week, DateTimeOffset now)
     {
         if (CosmeticCatalog.ByKey(key) is not { } cosmetic) return (CosmeticOutcome.UnknownItem, 0);
         var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, guildId, userId);
@@ -40,7 +43,10 @@ public class CosmeticService
     }
 
     /// <summary>Crafts a cosmetic: every ingredient and the cailloux, or nothing at all.</summary>
-    public async Task<(CosmeticOutcome Outcome, long Balance)> CraftAsync(ulong guildId, ulong userId, string key, DateTimeOffset now)
+    public Task<(CosmeticOutcome Outcome, long Balance)> CraftAsync(ulong guildId, ulong userId, string key, DateTimeOffset now) =>
+        EconomySave.RetryAsync(_db_context, () => CraftOnceAsync(guildId, userId, key, now));
+
+    private async Task<(CosmeticOutcome Outcome, long Balance)> CraftOnceAsync(ulong guildId, ulong userId, string key, DateTimeOffset now)
     {
         if (CosmeticCatalog.ByKey(key) is not { Source: CosmeticSource.Crafted } cosmetic) return (CosmeticOutcome.UnknownItem, 0);
         var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, guildId, userId);

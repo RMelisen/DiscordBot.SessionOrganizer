@@ -12,6 +12,18 @@ wallet created earlier in the same unit of work isn't in the database yet; creat
 the unique index at save time (a first-time feeder whose meal also earned a badge hit this).
 `PebbleService.AdjustAsync` (admin) clamps at 0.
 
+**`PebbleWallet.Balance` and `InventoryItem.Quantity` are concurrency tokens.** Every write reads
+the value, checks it, then saves a new absolute number, and commands run in parallel: two
+`/inventory give` of the same 5 items to two people both read 5 and both landed, duplicating them.
+Now the slower save throws `DbUpdateConcurrencyException` and its whole unit of work rolls back.
+The player-facing entry points (`PebbleService`, `InventoryService`, `CosmeticService`,
+`ArcadeService.SettleAsync`, `QuizService.RecordWinAsync`) go through `EconomySave.RetryAsync`,
+which clears the context and runs the work again, so the loser re-checks and gets « pas assez »
+instead of an error. Its work may run more than once: database work only, all reads inside.
+`PlynlingService`'s feeding, care, play and gift paths are not wrapped: there a conflict fails that
+one action with nothing saved. Never write a wallet or an item count any other way (no
+`ExecuteUpdate` on them, no attaching a detached row), or the token stops guarding it.
+
 **Passive cailloux are granted from `XpTracker.GrantAsync`, never detected separately.** Every XP
 grant pays `PebbleEconomy.PassivePerGrant`, capped per day at 30% of three average `/work` shifts —
 so the cap inherits every XP defence (cooldowns, excluded channels, voice eligibility) and can never

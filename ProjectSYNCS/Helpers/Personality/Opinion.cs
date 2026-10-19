@@ -19,33 +19,48 @@ public static partial class Opinion
     // The subject's cap: past it, it isn't a subject but a paragraph.
     public const int MaxSubjectLength = 80;
 
+    // Every pattern here and in ShipAsk runs on chat text anyone can send, on the gateway task. A
+    // real question matches in microseconds; a match still running at this point is crafted input
+    // backtracking, and reads as no question at all (Read catches the timeout).
+    internal const int MatchTimeoutMs = 250;
+
+    [GeneratedRegex(@"\s+", RegexOptions.CultureInvariant, MatchTimeoutMs)]
+    private static partial Regex WhitespaceRegex();
+
+    /// <summary>
+    /// The text on one line, every run of whitespace (Unicode spaces included) down to one space. The
+    /// patterns allow « \s+ » next to « .+? » and « [\s,]+ »; a long run gives each of them a share to
+    /// try, which is how a single message could keep a match busy for minutes.
+    /// </summary>
+    internal static string Squeeze(string text) => WhitespaceRegex().Replace(text, " ").Trim();
+
     // « tu préfères X ou Y », « plutôt X ou Y ».
     [GeneratedRegex(@"(?<!\w)(?:tu pr[ée]f[èée]res|t['’ ]?pr[ée]f[èée]res|tu choisirais|tu choisis|plut[ôo]t)\s+(?<a>.+?)\s+ou\s+(?<b>.+?)[\s?!.]*$",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, MatchTimeoutMs)]
     private static partial Regex PreferRegex();
 
     // « t'en penses quoi de X », « que penses-tu de X », « ton avis sur X », « tu aimes X ».
     [GeneratedRegex(@"(?<!\w)(?:t['’ ]?en penses quoi|tu en penses quoi|tu penses quoi|que penses[- ]tu|qu['’ ]?est[- ]ce que tu penses|ton avis sur|t['’ ]?as un avis sur|tu as un avis sur|tu aimes|t['’ ]?aimes|tu kiffes|t['’ ]?kiffes)\s+(?<rest>.+)$",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, MatchTimeoutMs)]
     private static partial Regex AboutRegex();
 
     // « X, t'en penses quoi ? », « X : ton avis ? ».
     [GeneratedRegex(@"^(?<rest>.+?)[\s,:]+(?:t['’ ]?en penses quoi|tu en penses quoi|qu['’ ]?en penses[- ]tu|ton avis)[\s?!.]*$",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, MatchTimeoutMs)]
     private static partial Regex BeforeRegex();
 
     // Leading words that aren't the subject: « de la pizza » is « pizza », as /rate would be typed.
     [GeneratedRegex(@"^(?:(?:de|du|des|sur|le|la|les|un|une|bien|vraiment)\s+|[dl]['’]\s*)+",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, MatchTimeoutMs)]
     private static partial Regex LeadingRegex();
 
     // Her name tacked on the end (« …de la pizza, syncs ? ») and the closing punctuation.
-    [GeneratedRegex(@"[\s,]*(?:(?<!\w)syncs?)?[\s?!.,]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"[\s,]*(?:(?<!\w)syncs?)?[\s?!.,]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, MatchTimeoutMs)]
     private static partial Regex TrailingRegex();
 
     // A mention at either edge: « @SYNCS pizza, t'en penses quoi ? » tags her, it doesn't rate her.
     // Dropped only when something is left — « t'en penses quoi de @Luca ? » is about Luca.
-    [GeneratedRegex(@"^(?:<@!?\d+>[\s,]*)+|(?:[\s,]*<@!?\d+>)+$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^(?:<@!?\d+>[\s,]*)+|(?:[\s,]*<@!?\d+>)+$", RegexOptions.CultureInvariant, MatchTimeoutMs)]
     private static partial Regex EdgeMentionRegex();
 
     // A « subject » that is really the rest of a question: « tu penses quoi de ça ? » has none.
@@ -62,10 +77,10 @@ public static partial class Opinion
 
     // What may trail a question without being part of it: emoji, custom emotes, and her name as an
     // address (« …ça match syncs ? 🙂 »). The patterns here and in ShipAsk are anchored to the end.
-    [GeneratedRegex(@"(?:[\s\p{So}\p{Sk}\p{Cs}‍️]|<a?:\w+:\d+>)+$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"(?:[\s\p{So}\p{Sk}\p{Cs}‍️]|<a?:\w+:\d+>)+$", RegexOptions.CultureInvariant, MatchTimeoutMs)]
     private static partial Regex TrailingDecorRegex();
 
-    [GeneratedRegex(@"[\s,]+syncs?(?![\w.])(?=[\s?!.…]*$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"[\s,]+syncs?(?![\w.])(?=[\s?!.…]*$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, MatchTimeoutMs)]
     private static partial Regex TrailingNameRegex();
 
     /// <summary>The message without its trailing emoji, emotes and closing « syncs ».</summary>
@@ -76,8 +91,18 @@ public static partial class Opinion
     public static OpinionAsk? Read(string content)
     {
         if (string.IsNullOrWhiteSpace(content)) return null;
-        var text = TrimTail(content.Replace('\n', ' ').Trim());
+        try
+        {
+            return ReadSqueezed(TrimTail(Squeeze(content)));
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return null;
+        }
+    }
 
+    private static OpinionAsk? ReadSqueezed(string text)
+    {
         if (PreferRegex().Match(text) is { Success: true } prefer
             && Clean(prefer.Groups["a"].Value) is { } a && Clean(prefer.Groups["b"].Value) is { } b)
             return new OpinionAsk(a, b);

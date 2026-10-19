@@ -335,6 +335,11 @@ public class AppDbContext : DbContext
             e.Property(x => x.GuildId).HasConversion<long>();
             e.Property(x => x.UserId).HasConversion<long>();
             e.HasIndex(x => new { x.GuildId, x.UserId, x.Key }).IsUnique();
+            // Every take or add reads the count, then saves the new one. Two concurrent gives of the
+            // same 5 items both read 5: without this both saves land and each recipient gets 5. Now
+            // the UPDATE only lands while the count is still the one read, so the second save throws
+            // and its whole unit of work rolls back (EconomySave retries it from a clean slate).
+            e.Property(x => x.Quantity).IsConcurrencyToken();
         });
 
         modelBuilder.Entity<CollectionCompletion>(e =>
@@ -355,6 +360,10 @@ public class AppDbContext : DbContext
             e.Property(x => x.GuildId).HasConversion<long>();
             e.Property(x => x.UserId).HasConversion<long>();
             e.HasIndex(x => new { x.GuildId, x.UserId }).IsUnique();
+            // Same reason as InventoryItem.Quantity: a balance is read, checked, then saved, so a
+            // concurrent save of the same wallet must fail rather than overwrite (a spent stake
+            // coming back, a payment counted once for two purchases).
+            e.Property(x => x.Balance).IsConcurrencyToken();
         });
 
         modelBuilder.Entity<QuizRound>(e =>

@@ -68,9 +68,13 @@ public class QuizService
     /// Records <paramref name="userId"/> as the winner and pays them, in one transaction.
     /// Null if the round was already won or closed: the conditional update is what makes a
     /// win happen once, whatever QuizMasterService's in-memory claim says. Otherwise the
-    /// round as stored after the win.
+    /// round as stored after the win. Through EconomySave: the wallet is a concurrency token, and a
+    /// conflicting save rolls the whole transaction back (the win included) before the retry.
     /// </summary>
-    public async Task<QuizRound?> RecordWinAsync(int roundId, ulong userId, DateTimeOffset now)
+    public Task<QuizRound?> RecordWinAsync(int roundId, ulong userId, DateTimeOffset now) =>
+        EconomySave.RetryAsync(_db_context, () => RecordWinOnceAsync(roundId, userId, now));
+
+    private async Task<QuizRound?> RecordWinOnceAsync(int roundId, ulong userId, DateTimeOffset now)
     {
         await using var transaction = await _db_context.Database.BeginTransactionAsync();
 

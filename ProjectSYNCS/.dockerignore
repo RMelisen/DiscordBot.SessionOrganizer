@@ -2,3 +2,8 @@ bin/
 obj/
 *.db
 ambient-state.json
+health-state.json
+morning-state.json
+avatar-state.json
+appsettings.Development.json
+appsettings.Local.json

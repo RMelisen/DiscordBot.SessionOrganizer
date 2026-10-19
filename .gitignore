@@ -41,8 +41,12 @@ coverage*/
 *.db
 *.db-shm
 *.db-wal
-# AmbientService's wake-line memory, written next to the database
+# State files the services write next to the database (PiHealthService, AmbientService,
+# MorningGreetingService, SeasonalAvatarService)
+health-state.json
 ambient-state.json
+morning-state.json
+avatar-state.json
 
 # Secrets & config overrides
 appsettings.Development.json

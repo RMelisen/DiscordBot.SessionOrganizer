@@ -456,6 +456,7 @@ namespace ProjectSYNCS.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Quantity")
+                        .IsConcurrencyToken()
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("UserId")
@@ -607,6 +608,7 @@ namespace ProjectSYNCS.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("Balance")
+                        .IsConcurrencyToken()
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("GuildId")

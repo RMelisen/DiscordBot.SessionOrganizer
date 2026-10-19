@@ -19,8 +19,12 @@ public class PebbleService
         _db_context = db_context;
     }
 
-    // The pay is a parameter rather than rolled here, so the amount is testable.
-    public async Task<WorkResult> WorkAsync(ulong guildId, ulong userId, long pay, DateTimeOffset now)
+    // The pay is a parameter rather than rolled here, so the amount is testable. Every write here
+    // goes through EconomySave: two /work at once must pay once, not race the cooldown.
+    public Task<WorkResult> WorkAsync(ulong guildId, ulong userId, long pay, DateTimeOffset now) =>
+        EconomySave.RetryAsync(_db_context, () => WorkOnceAsync(guildId, userId, pay, now));
+
+    private async Task<WorkResult> WorkOnceAsync(ulong guildId, ulong userId, long pay, DateTimeOffset now)
     {
         var wallet = await GetOrCreateWalletAsync(_db_context, guildId, userId);
         if (PebbleEconomy.NextWorkAt(wallet.LastWorkAt) is { } next && next > now)
@@ -34,7 +38,10 @@ public class PebbleService
     }
 
     // Returns how much was actually granted — zero once today's cap is reached.
-    public async Task<long> AddPassiveAsync(ulong guildId, ulong userId, long amount)
+    public Task<long> AddPassiveAsync(ulong guildId, ulong userId, long amount) =>
+        EconomySave.RetryAsync(_db_context, () => AddPassiveOnceAsync(guildId, userId, amount));
+
+    private async Task<long> AddPassiveOnceAsync(ulong guildId, ulong userId, long amount)
     {
         var wallet = await GetOrCreateWalletAsync(_db_context, guildId, userId);
         var today = AppTime.TodayKey;
@@ -62,7 +69,10 @@ public class PebbleService
     }
 
     // /admin pebble: a staff correction, clamped at 0 so « remove » never leaves a debt. One save.
-    public async Task<(long Old, long New)> AdjustAsync(ulong guildId, ulong userId, long delta)
+    public Task<(long Old, long New)> AdjustAsync(ulong guildId, ulong userId, long delta) =>
+        EconomySave.RetryAsync(_db_context, () => AdjustOnceAsync(guildId, userId, delta));
+
+    private async Task<(long Old, long New)> AdjustOnceAsync(ulong guildId, ulong userId, long delta)
     {
         var wallet = await GetOrCreateWalletAsync(_db_context, guildId, userId);
         var old = wallet.Balance;

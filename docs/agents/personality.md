@@ -351,6 +351,13 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   while « syncs ? » is `AreYouThere`. `Opinion` and `ShipAsk` trim trailing emoji, emotes and
   « syncs » (`Opinion.TrimTail`), their patterns being anchored to the end; an opinion subject is
   never a bare joiner (« <@1> et <@2> » minus its edge tags is not « et »).
+- **Chat-reading patterns must stay fast on hostile text.** They run on whatever anyone sends, on
+  the gateway task, so a slow match freezes the whole bot. `Opinion` and `ShipAsk` squeeze every
+  whitespace run to one space first (`Opinion.Squeeze`): patterns that put `\s+` next to `.+?` or
+  `[\s,]+` backtracked for minutes on a 900-character run of spaces. `ShipAsk` reads nothing longer
+  than `MaxLength` (200), and every `[GeneratedRegex]` in both carries `MatchTimeoutMs`, a timeout
+  reading as "no question". A new pattern there takes the timeout too; the Checks project times
+  hostile inputs.
 - **`HowAreYou` needs a `?`** in the raw text (or a message opening on « comment »): « ça va,
   merci » is an answer. Every phrase must close the message or its own question (« ça va ? tu
   viens ce soir ? »), or be followed by one of `_askingFollowers` (« toi », « bien », « et »…) —

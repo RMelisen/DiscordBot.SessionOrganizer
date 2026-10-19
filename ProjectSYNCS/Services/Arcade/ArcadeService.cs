@@ -51,7 +51,16 @@ public class ArcadeService
     /// own, and a net never goes below minus that stake. A stake of 0 always pays: that's how a
     /// reward with nothing at risk (a quiz-like win, a race owner's bonus) goes through here too.
     /// </summary>
-    public async Task<ArcadeSettlement> SettleAsync(ulong guildId, IReadOnlyList<(ulong Player, long Stake)> stakes,
+    /// <remarks>
+    /// Through <see cref="EconomySave"/>: two games settling for the same player at once both land,
+    /// one after the other. A retry asks <paramref name="decide"/> again, so it must only compute
+    /// (what it captures is reassigned by the run that is saved).
+    /// </remarks>
+    public Task<ArcadeSettlement> SettleAsync(ulong guildId, IReadOnlyList<(ulong Player, long Stake)> stakes,
+        Func<IReadOnlyList<ulong>, IReadOnlyDictionary<ulong, long>> decide) =>
+        EconomySave.RetryAsync(_db_context, () => SettleOnceAsync(guildId, stakes, decide));
+
+    private async Task<ArcadeSettlement> SettleOnceAsync(ulong guildId, IReadOnlyList<(ulong Player, long Stake)> stakes,
         Func<IReadOnlyList<ulong>, IReadOnlyDictionary<ulong, long>> decide)
     {
         var wallets = new Dictionary<ulong, Models.PebbleWallet>();

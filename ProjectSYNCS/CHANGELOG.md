@@ -3,6 +3,14 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.2.0 — 2026-10-19
+
+- A crafted chat message can no longer keep her busy reading it: she stays responsive whatever
+  is sent to her.
+- Gifts, trades, sales, purchases and game payouts made at the same moment are now applied one
+  after the other, so items and cailloux can no longer be counted twice.
+- The Discord token is now masked in the add-on's configuration screen.
+
 ## 7.1.1 — 2026-10-16
 
 - Calling her a liar (« t'es une menteuse », « pourquoi tu mens ? ») gets her flustered denial

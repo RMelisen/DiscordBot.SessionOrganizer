@@ -595,6 +595,31 @@ ShipIs("le couple Luca et Sandra", "Luca", "Sandra");
 ShipIs("Luca ❤️ Sandra ?", "Luca", "Sandra");
 if (ShipAsk.Read("c'est qui mon futur mari ?")?.Kind != ShipAskKind.BestMatch) Fail("futur mari is not a best-match search");
 if (ShipAsk.Read("on va finir ensemble ?")?.Kind != ShipAskKind.Us) Fail("on va finir ensemble is not Us");
+ShipIs("syncs   Luca    et   Sandra ,   ça   match ?", "Luca", "Sandra");
+ShipIs("Luca　et　Sandra ça match ?", "Luca", "Sandra");
+// Crafted whitespace once kept CompatRegex and OpinionBeforePairRegex backtracking for minutes, on
+// the gateway task. Every reader of chat text must stay fast on it.
+{
+    string Rep(string s, int n) => string.Concat(Enumerable.Repeat(s, n));
+    var hostile = new[]
+    {
+        "syncs a" + Rep(" ", 600) + "et" + Rep(" ", 600) + "b" + Rep(" ", 600) + "z",
+        "syncs a" + Rep("　", 600) + "avec" + Rep("　", 600) + "b" + Rep("　", 600) + "z",
+        "a" + Rep(" ", 600) + "x" + Rep(" ", 600) + "b" + Rep(" ", 600) + "z?",
+        "syncs " + Rep("a  et  ", 280) + "b" + Rep(" ", 40) + "!",
+        "syncs " + Rep("a et ", 40),
+        "syncs " + Rep("a x ", 50) + "z ton avis ?",
+    };
+    foreach (var text in hostile)
+    {
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        ShipAsk.Read(text);
+        Opinion.Read(text);
+        readIntent.Invoke(null, new object[] { text });
+        if (watch.ElapsedMilliseconds > 500)
+            Fail($"reading {text.Length} hostile chars took {watch.ElapsedMilliseconds} ms");
+    }
+}
 foreach (var pool in new[] { "SharingShrugLines" })
     if (((string[])Field(pool)).Length != 32) Fail($"{pool} has {((string[])Field(pool)).Length} lines, expected 32");
 var sharingIntent = ((IDictionary)Field("IntentLines"))[Enum.Parse(intentType, "Sharing")];

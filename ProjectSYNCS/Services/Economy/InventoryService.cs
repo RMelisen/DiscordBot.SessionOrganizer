@@ -99,7 +99,10 @@ public class InventoryService
     public enum GiveOutcome { Given, NotEnough, UnknownItem, NotSellable }
 
     /// <summary>/inventory shop: the money and the food land together, or neither.</summary>
-    public async Task<(bool Bought, long Price, long Balance)> BuyAsync(ulong guildId, ulong userId, PlynlingFood food, int quantity, DateTimeOffset now)
+    public Task<(bool Bought, long Price, long Balance)> BuyAsync(ulong guildId, ulong userId, PlynlingFood food, int quantity, DateTimeOffset now) =>
+        EconomySave.RetryAsync(_db_context, () => BuyOnceAsync(guildId, userId, food, quantity, now));
+
+    private async Task<(bool Bought, long Price, long Balance)> BuyOnceAsync(ulong guildId, ulong userId, PlynlingFood food, int quantity, DateTimeOffset now)
     {
         var price = ItemCatalog.ShopPrice(PlynlingCatalog.Info(food), quantity);
         var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, guildId, userId);
@@ -112,7 +115,10 @@ public class InventoryService
     }
 
     /// <summary>/inventory medicine: like the food shop — the money and the doses land together.</summary>
-    public async Task<(bool Bought, long Price, long Balance)> BuyMedicineAsync(ulong guildId, ulong userId, int quantity, DateTimeOffset now)
+    public Task<(bool Bought, long Price, long Balance)> BuyMedicineAsync(ulong guildId, ulong userId, int quantity, DateTimeOffset now) =>
+        EconomySave.RetryAsync(_db_context, () => BuyMedicineOnceAsync(guildId, userId, quantity, now));
+
+    private async Task<(bool Bought, long Price, long Balance)> BuyMedicineOnceAsync(ulong guildId, ulong userId, int quantity, DateTimeOffset now)
     {
         var price = ItemCatalog.BulkPrice(ItemCatalog.MedicinePrice, quantity);
         var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, guildId, userId);
@@ -125,7 +131,11 @@ public class InventoryService
     }
 
     /// <summary>/inventory give: from one person's inventory to another's, in one save.</summary>
-    public async Task<(GiveOutcome Outcome, List<CollectionSet> Completed)> GiveAsync(
+    public Task<(GiveOutcome Outcome, List<CollectionSet> Completed)> GiveAsync(
+        ulong guildId, ulong fromId, ulong toId, string key, int quantity, DateTimeOffset now) =>
+        EconomySave.RetryAsync(_db_context, () => GiveOnceAsync(guildId, fromId, toId, key, quantity, now));
+
+    private async Task<(GiveOutcome Outcome, List<CollectionSet> Completed)> GiveOnceAsync(
         ulong guildId, ulong fromId, ulong toId, string key, int quantity, DateTimeOffset now)
     {
         if (ItemCatalog.ByKey(key) is null) return (GiveOutcome.UnknownItem, new());
@@ -142,7 +152,10 @@ public class InventoryService
     /// An accepted offer: both sides are re-checked, then both items move in one save — or
     /// nothing does. Returns the sets each side completed.
     /// </summary>
-    public async Task<(TradeOutcome Outcome, List<CollectionSet> FromSets, List<CollectionSet> ToSets)> TradeAsync(TradeOffer offer, DateTimeOffset now)
+    public Task<(TradeOutcome Outcome, List<CollectionSet> FromSets, List<CollectionSet> ToSets)> TradeAsync(TradeOffer offer, DateTimeOffset now) =>
+        EconomySave.RetryAsync(_db_context, () => TradeOnceAsync(offer, now));
+
+    private async Task<(TradeOutcome Outcome, List<CollectionSet> FromSets, List<CollectionSet> ToSets)> TradeOnceAsync(TradeOffer offer, DateTimeOffset now)
     {
         var g = offer.GuildId;
         if (await CountAsync(_db_context, g, offer.FromId, offer.GiveKey) < offer.GiveQty) return (TradeOutcome.OfferorLacks, new(), new());
@@ -157,7 +170,10 @@ public class InventoryService
     }
 
     /// <summary>/inventory sell: items for cailloux at ItemCatalog.SellPrice, in one save. The row stays (discovered).</summary>
-    public async Task<(GiveOutcome Outcome, long Earned, long Balance)> SellAsync(ulong guildId, ulong userId, string key, int quantity)
+    public Task<(GiveOutcome Outcome, long Earned, long Balance)> SellAsync(ulong guildId, ulong userId, string key, int quantity) =>
+        EconomySave.RetryAsync(_db_context, () => SellOnceAsync(guildId, userId, key, quantity));
+
+    private async Task<(GiveOutcome Outcome, long Earned, long Balance)> SellOnceAsync(ulong guildId, ulong userId, string key, int quantity)
     {
         if (ItemCatalog.ByKey(key) is not { } item) return (GiveOutcome.UnknownItem, 0, 0);
         // Cosmetics are given and traded, never sold: a buy-back price would invite loops.
