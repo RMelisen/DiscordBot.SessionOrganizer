@@ -96,9 +96,9 @@ After some of her lines she posts a picture of herself: a strip from `ProjectSYN
   moment pools only (`HeatRecordLines`, `CrashWakeLines`, `PowerCutWakeLines`, `RouterReturnLines`,
   `WeekendPollDeadLines`, `SessionRecapFullLines`, `QuizCrown*Lines`, `GiveawayEmptyLines`), and
   every tag there is sure.
-- **One gate, `StickerService`** (singleton): the roll, and nothing in a channel in breakdown. **No
-  cooldown per channel and no daily cap** — removed by the owner in 6.14.0; the lines' own rarity
-  is the only limit. The strip goes out about a second after the line, off the gateway handler, as
+- **One gate, `StickerService`** (singleton): the roll, nothing in a channel in breakdown, then **one
+  strip per channel every 5 minutes** (`ChannelCooldown`, sure tags included; claimed after the roll,
+  so a lost roll spends nothing). No daily cap. The strip goes out about a second after the line, off the gateway handler, as
   a file with no text and `AllowedMentions.None`. A failure (no Attach Files) is logged and the
   line stands alone.
 - **WALL-E's `HeartLines` roll 2 in 3, not 1 in 3.** `RobotHeartService` splits the tag off itself,
@@ -238,7 +238,8 @@ the one asked a question — and only when `MessageCues.AddressesHer`: her name 
 an address (not after « avec », « à », « la », « que », « c'est »…, and not the subject of a
 third-person verb or « qui »: « syncs a posté le sondage », « c'est syncs qui gère ça ») and nobody
 else tagged. « @Luca, discute avec Syncs quand tu peux » is said to Luca and gets a talked-about
-line. A mean message reads no intent on any path. A reply that is only a Discord sticker has no
+line. A tag inside an `Opinion` or `Ship` subject doesn't count: « Syncs, tu penses quoi de @Luca ? »
+asks her about Luca, and gets the verdict. A mean message reads no intent on any path. A reply that is only a Discord sticker has no
 text to read; it is answered as `LowEffort`, like an emote alone.
 
 - **`Opinion`** (`Helpers/Personality/Opinion`): « t'en penses quoi de X ? », « ton avis sur X »,

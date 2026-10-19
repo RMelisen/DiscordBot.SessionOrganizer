@@ -8,20 +8,25 @@ namespace ProjectSYNCS.Services;
 // BotChat reaches TryFollowUp through its static FollowUp hook, set in Program.cs; /debug sticker
 // calls PostAsync directly. An ordinary tag wins 1 in 3; a sure tag (the moment pools, and
 // WALL-E's robot-heart lines once RobotHeartService has rolled their own 2 in 3) skips the roll.
-// No cooldown per channel and no daily cap: the owner removed both in 6.14.0, so the lines' own
-// rarity is the only limit. Nothing during a breakdown — except the breakdown's own glitch strip,
-// which goes straight through SendAsync, like the glitched wake's.
+// At most one strip per channel every five minutes, sure tags included; no daily cap. Nothing
+// during a breakdown — except the breakdown's own glitch strip, which goes straight through
+// SendAsync, like the glitched wake's.
 //
-// A singleton, like the other services BotChat's static hook reaches; it holds no state.
+// A singleton, like the other services BotChat's static hook reaches: the channel gate is its state.
 public sealed class StickerService
 {
     public const double Chance = 1.0 / 3;
+
+    // Between two strips in the same channel: a run of tagged lines would otherwise post a wall
+    // of pictures.
+    public static readonly TimeSpan ChannelCooldown = TimeSpan.FromMinutes(5);
 
     // The beat between the line and its picture, so the strip reads as her reaction to it.
     public static readonly TimeSpan Beat = TimeSpan.FromSeconds(1);
 
     private readonly BreakdownService _breakdown;
     private readonly ILogger<StickerService> _logger;
+    private readonly CooldownGate<ulong> _channelGate = new(ChannelCooldown);
 
     public StickerService(BreakdownService breakdown, ILogger<StickerService> logger)
     {
@@ -30,13 +35,15 @@ public sealed class StickerService
     }
 
     /// <summary>
-    /// The gate alone: the roll for an ordinary tag, and no strip in a channel in breakdown.
-    /// Public so it can be checked without a gateway.
+    /// The gate alone: the roll for an ordinary tag, no strip in a channel in breakdown, and the
+    /// channel's cooldown, claimed last so a lost roll doesn't spend it. Public so it can be
+    /// checked without a gateway.
     /// </summary>
     public bool TryAdmit(ulong channelId, StickerTag tag)
     {
         if (!tag.Sure && Random.Shared.NextDouble() >= Chance) return false;
-        return !_breakdown.IsActive(channelId);
+        if (_breakdown.IsActive(channelId)) return false;
+        return _channelGate.TryClaim(channelId);
     }
 
     /// <summary>

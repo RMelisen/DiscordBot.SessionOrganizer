@@ -338,6 +338,7 @@ foreach (var (text, expected) in new[]
 {
     ("<@555> Discute avec Syncs quand tu peux. J'ai rework son \"intelligence conversationelle\", donc faut que je trouve les bugs", "None"),
     ("si tu peux", "None"), ("dès que tu peux", "None"), ("je sais que tu peux le faire", "None"),
+    ("Syncs, tu penses quoi de <@555> ?", "Opinion"),
     ("est-ce que tu peux lancer un sondage ?", "Request"), ("tu peux lancer un sondage quand tu peux ?", "Request"),
 })
 {
@@ -351,6 +352,10 @@ foreach (var (text, expected) in new[]
     ("<@999> syncs ça va ?", true), ("syncs <@999> tu fais quoi", true),
     ("<@555> Discute avec Syncs quand tu peux", false), ("syncs ça va <@555> ?", false), ("<@&42> syncs ça va", false),
     ("dis à syncs de lancer un sondage", false), ("la sync a planté", false), ("je crois que syncs a bugué", false),
+    // A tag that is what she is asked about doesn't take the message away from her.
+    ("Syncs, tu penses quoi de <@555> ?", true), ("syncs tu préfères <@555> ou <@666> ?", true),
+    ("syncs, <@555> et <@666> ça match ?", true), ("<@555> tu penses quoi de syncs ?", false),
+    ("<@555> syncs, tu penses quoi de la pizza ?", false),
 })
 {
     var got = (bool)addresses.Invoke(null, new object[] { text, 999UL })!;

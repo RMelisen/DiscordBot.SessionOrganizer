@@ -1148,7 +1148,8 @@ internal static class MessageCues
 
     /// <summary>
     /// Whether a message that names her (<see cref="NamesHer"/>) is said *to* her: her name used at
-    /// least once as an address, not after « avec », « à », « la »…, and nobody else tagged. Gates
+    /// least once as an address, not after « avec », « à », « la »…, and nobody else tagged — save as
+    /// the subject of an opinion or ship ask (« syncs, tu penses quoi de @Luca ? »). Gates
     /// the intents on the talked-about path, where nothing else says who is being spoken to.
     /// </summary>
     public static bool AddressesHer(string content, ulong selfId)
@@ -1181,11 +1182,26 @@ internal static class MessageCues
         return false;
     }
 
+    // A tag inside what she is asked about is the subject, not who is spoken to: « syncs, tu penses
+    // quoi de @Luca ? » asks her about Luca. Read only once a tag of someone else turns up.
     private static bool TagsSomeoneElse(string content, ulong selfId)
     {
+        string[]? asked = null;
         foreach (Match m in _mentionId.Matches(content))
-            if (m.Groups["role"].Success || m.Groups["id"].Value != selfId.ToString()) return true;
+        {
+            if (!m.Groups["role"].Success && m.Groups["id"].Value == selfId.ToString()) continue;
+            asked ??= AskedAbout(content);
+            if (!asked.Any(s => s.Contains(m.Value, StringComparison.Ordinal))) return true;
+        }
         return false;
+    }
+
+    // The sides of a ship or an opinion ask, as written; none when the message asks neither.
+    private static string[] AskedAbout(string content)
+    {
+        if (ShipAsk.Read(content) is { } pair) return [pair.A, pair.B];
+        if (Opinion.Read(content) is { } ask) return ask.Other is null ? [ask.Subject] : [ask.Subject, ask.Other];
+        return [];
     }
 
     // The message's words with mentions, custom emotes and links dropped, squashed.

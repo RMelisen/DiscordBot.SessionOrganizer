@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.8.1 — 2026-10-19
+
+- Asking her opinion of a tagged member by name (« Syncs, tu penses quoi de @… ? ») gets her
+  verdict again, instead of a line about her name being said.
+- Her sticker strips are limited to one per channel every five minutes.
+
 ## 7.8.0 — 2026-10-19
 
 - New Plynling item, the soap (20 cailloux): while the free bath is on its 6-hour cooldown, the
