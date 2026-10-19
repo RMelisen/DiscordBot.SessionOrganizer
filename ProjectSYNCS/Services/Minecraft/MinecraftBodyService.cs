@@ -67,6 +67,8 @@ public sealed class MinecraftBodyService : BackgroundService
     private DateTimeOffset _holdUntil = DateTimeOffset.MinValue;
     private ServerStatus? _lastStatus;
     private DateTimeOffset? _lastPingAt;
+    private string? _resolved;
+    private (string Server, string Using, bool Fallback)? _version;
     private string? _lastKick;
     private DateTimeOffset? _lastKickAt;
 
@@ -147,7 +149,10 @@ public sealed class MinecraftBodyService : BackgroundService
 
     private async Task TickAsync(CancellationToken ct)
     {
-        var status = await ServerListPing.QueryAsync(_host, _port, PingTimeout, ct);
+        // A bare name on the default port may point elsewhere through SRV (McAddress); the body is
+        // given the address as configured and does the same lookup itself.
+        var (pingHost, pingPort) = await McAddress.ResolveAsync(_host, _port, ct);
+        var status = await ServerListPing.QueryAsync(pingHost, pingPort, PingTimeout, ct);
         var now = DateTimeOffset.UtcNow;
 
         bool join, leave;
@@ -155,6 +160,7 @@ public sealed class MinecraftBodyService : BackgroundService
         {
             _lastStatus = status;
             _lastPingAt = now;
+            _resolved = (pingHost, pingPort) == (_host, _port) ? null : $"{pingHost}:{pingPort}";
             var inGame = _body is not null;
 
             // Once she's in, her own player list is exact; before that, the ping's count and sample.
@@ -265,6 +271,12 @@ public sealed class MinecraftBodyService : BackgroundService
 
     private void OnEvent(string line)
     {
+        // The body keeps stdout for events; anything else that slips through is log, not protocol.
+        if (!line.StartsWith('{'))
+        {
+            _logger.LogInformation("Minecraft body: {Line}", line);
+            return;
+        }
         try
         {
             using var doc = JsonDocument.Parse(line);
@@ -273,6 +285,11 @@ public sealed class MinecraftBodyService : BackgroundService
             {
                 case "spawned":
                     OnSpawned();
+                    break;
+                case "version":
+                    var version = (root.GetProperty("server").GetString() ?? "", root.GetProperty("using").GetString() ?? "",
+                        root.TryGetProperty("fallback", out var fb) && fb.ValueKind == JsonValueKind.True);
+                    lock (_gate) _version = version;
                     break;
                 case "players":
                     var names = root.GetProperty("names").EnumerateArray().Select(n => n.GetString() ?? "")
@@ -309,7 +326,7 @@ public sealed class MinecraftBodyService : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Unreadable Minecraft body event: {Line}", line);
+            _logger.LogWarning("Unreadable Minecraft body event ({Error}): {Line}", ex.Message, line);
         }
     }
 
@@ -392,10 +409,15 @@ public sealed class MinecraftBodyService : BackgroundService
         {
             sb.AppendLine($"🔧 **Minecraft** — {Code($"{_host}:{_port}")}, en tant que {Code(_username)}"
                           + (_owner.Length > 0 ? $", propriétaire {Code(_owner)}" : ", aucun propriétaire configuré"));
+            if (_resolved is { } resolved) sb.AppendLine($"Adresse réelle (SRV) : {Code(resolved)}");
             var ping = _lastPingAt is { } at ? $" (vérifié {Stamp(at)})" : "";
             sb.AppendLine(_lastStatus is { } s
                 ? $"Serveur : en ligne, {s.Online}/{s.Max} joueurs, {Code(s.Version)}{ping}"
                 : $"Serveur : injoignable{ping}");
+            if (_version is { } v)
+                sb.AppendLine(!v.Fallback
+                    ? $"Version : {Code(v.Server)}"
+                    : $"Version : le serveur parle {Code(v.Server)}, elle se connecte en {Code(v.Using)} (il faut ViaBackwards sur le serveur)");
             sb.AppendLine(_body is null ? "SYNCS : absente"
                 : _leaving ? "SYNCS : en train de partir"
                 : _spawned ? $"SYNCS : en jeu depuis {Stamp(_inGameSince!.Value)}"

@@ -149,9 +149,11 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
   her. A few lines at most: one per kind every 30 seconds.
 - **On Discord** she says in the bots channel when she goes to play and when she's back.
 
-Set it up with the add-on options `minecraft_host` (empty turns it off), `minecraft_port`,
-`minecraft_username` and `minecraft_owner` (your in-game name). If the server has a whitelist,
-add her name to it.
+Set it up with the add-on options `minecraft_host` (empty turns it off), `minecraft_port` (leave
+25565 for an address given without a port), `minecraft_username` and `minecraft_owner` (your
+in-game name). If the server has a whitelist, add her name to it. On a Minecraft version newer than
+the one she speaks, she connects with an older client: the server then needs the ViaBackwards
+plugin. `/debug minecraft` says so when it happens.
 
 ### Levels & XP
 

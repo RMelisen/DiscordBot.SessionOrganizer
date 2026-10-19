@@ -7,6 +7,8 @@
     "node": ">=22"
   },
   "dependencies": {
+    "minecraft-data": "3.117.0",
+    "minecraft-protocol": "1.68.0",
     "mineflayer": "4.39.0",
     "prismarine-chat": "1.13.0"
   }

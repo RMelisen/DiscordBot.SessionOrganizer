@@ -1603,6 +1603,11 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         Fail("advancement earner: not a player");
     Covers("McDeathLines", typeof(McDeathKind));
 
+    // SRV only where the client library does it: a name, on the default port.
+    if (!McAddress.NeedsLookup("play.example.net", 25565) || McAddress.NeedsLookup("play.example.net", 25566)
+        || McAddress.NeedsLookup("192.168.1.10", 25565) || McAddress.NeedsLookup("localhost", 25565))
+        Fail("minecraft address: when to look up SRV");
+
     var mcStatus = ServerListPing.Parse("""{"version":{"name":"1.21.4","protocol":769},"players":{"max":20,"online":3,"sample":[{"name":"Alice","id":"x"},{"name":"Bob","id":"y"}]},"description":"hi"}""");
     if (mcStatus is not { Online: 3, Max: 20, Version: "1.21.4" } || !mcStatus.Sample.SequenceEqual(new[] { "Alice", "Bob" }))
         Fail("server list ping: parse");

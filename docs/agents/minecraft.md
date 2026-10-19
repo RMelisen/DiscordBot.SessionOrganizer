@@ -44,6 +44,12 @@ it lists at most 12 names, and a player who turned off « Allow Server Listings 
 « Anonymous Player ». So the owner can be missed before she joins: the count still applies, and so
 does `/debug minecraft join`.
 
+**An address with no port** is how most hosts hand out a server: the real host and port are in a
+DNS SRV record, `_minecraft._tcp.<name>`. `McAddress` does that lookup for the ping (DnsClient)
+under the same conditions as the client library: the default port, and a name that isn't an IP.
+The body gets the address as configured and does its own lookup, so its handshake carries the same
+host a player's client would. Leave `minecraft_port` at 25565 for such an address.
+
 The service polls on **its own 1-minute interval**, like every loop. The server is only up during
 sessions and G-Portal has no start/stop API, so she **detects** the server and never starts it.
 
@@ -74,10 +80,20 @@ image gets the `node` binary and `/app/body`. The service looks for the body at
 `<app>/body/index.js`, then at `MinecraftBody/index.js` under the working directory (a dev
 `dotnet run`), or at `Minecraft:BodyScript`.
 
-Mineflayer must support the server's version (`version: false`: it asks the server). Check
-`latestSupportedVersion` before the server updates, and bump `mineflayer` in `package.json` (exact
-pin) when it lags. Mods that add blocks or entities can break it; plugins that only add commands
-can't.
+**The server's version.** Mineflayer lags each Minecraft release by weeks. 26.3 came out while
+4.39.0 stopped at 26.1, with PrismarineJS's 26.3 work still in open pull requests. So the body pings
+first (`pickVersion`). It speaks the server's version when `minecraft-protocol` supports it, and
+otherwise the newest version it does support, reporting a `version` event with `fallback: true`
+that `/debug minecraft` shows. A newer server accepts that older client only with
+**ViaBackwards** (with ViaVersion) installed, a Paper/Spigot plugin or a Fabric mod. Without it,
+the server kicks her for an outdated client and she backs off. When Mineflayer catches up, bump
+`mineflayer`, `minecraft-protocol` and `minecraft-data` together in `package.json` (exact pins) and
+the fallback goes quiet by itself. Mods that add blocks or entities can break the body; plugins that
+only add commands can't.
+
+**stdout carries events only.** The protocol libraries print their errors through `console.*`, so
+the body sends every console method to stderr before loading them, and the service logs any stdout
+line that isn't JSON instead of parsing it.
 
 Options (`config.yaml` → `run.sh` → `Minecraft__*`): `minecraft_host` (empty: off),
 `minecraft_port`, `minecraft_username`, `minecraft_owner`. If the server has a whitelist, her name

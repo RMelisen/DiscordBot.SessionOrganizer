@@ -3,6 +3,13 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.11.1 — 2026-10-19
+
+- A Minecraft server given as an address with no port is found the way the game finds it (its DNS
+  SRV record), so she sees it come up.
+- On a server newer than she can speak (26.3), she connects as the newest version she knows (26.1),
+  which works when the server runs ViaBackwards. `/debug minecraft` says when she does.
+
 ## 7.11.0 — 2026-10-19
 
 - She plays Minecraft: a real player on the server (Java Edition, offline mode). She joins on her
