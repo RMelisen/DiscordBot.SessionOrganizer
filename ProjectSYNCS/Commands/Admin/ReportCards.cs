@@ -372,7 +372,7 @@ public static class ReportCards
     {
         var d = c.Current;
         var p = c.Previous;
-        var embed = Start("😀 Les émotes", w);
+        var embed = Start("Les émotes", w);
         var total = d.Own + d.Foreign + d.Unicode;
         embed.WithDescription(total == 0
             ? "Aucune émote utilisée sur cette période."
