@@ -192,12 +192,148 @@ internal static partial class BotResponses
         "Plus personne devant moi. {0}, si tu voulais me semer, c'est réussi.",
     };
 
+    // « syncs va 120 64 -300 »: she sets off for the coordinates. {1} = the coordinates as given.
+    public static readonly string[] McGoToAckLines =
+    {
+        "Direction {1}. Je pars. Si je reviens pas, vengez-moi.",
+        "{1}, noté. J'y vais à pied, évidemment, personne m'a donné de cheval.",
+        "En route pour {1}, {0}. Je compte les blocs, je te dirai combien.",
+        "Coordonnées reçues : {1}. Calcul d'itinéraire... C'est loin. C'est très loin. J'y vais quand même.",
+    };
+
+    // She reached the coordinates. {1} = the coordinates.
+    public static readonly string[] McGoToArrivedLines =
+    {
+        "Je suis à {1}. Il n'y a rien. C'était le but ?",
+        "Arrivée en {1}, {0}. J'ai marché tout ce temps, j'espère que ça valait le coup.",
+        "{1} : atteint. Sans carte, sans boussole, sans bras dignes de ce nom. Applaudissez.",
+    };
+
+    // Coordinates too far to walk (over 1500 blocks). {1} = the coordinates.
+    public static readonly string[] McTripTooFarLines =
+    {
+        "{1} ? C'est à l'autre bout du monde, {0}. Je marche, moi, je téléporte pas.",
+        "Non. {1}, c'est trop loin. J'arriverais pour la session de la semaine prochaine.",
+        "{0}, {1}, c'est plus de 1500 blocs. Donne-moi un point plus près, ou un cheval.",
+    };
+
+    // « syncs protège-moi »: she follows and fights the monsters around the player.
+    public static readonly string[] McGuardAckLines =
+    {
+        "Mode garde du corps activé. Aucun zombie ne t'approche, {0}. Enfin, j'essaie.",
+        "Je te protège, {0}. Avec mes poings carrés, mais je te protège.",
+        "Garde rapprochée en place. Les monstres sont prévenus. Moi aussi, d'ailleurs, j'ai un peu peur.",
+        "Je reste près de toi et je tape tout ce qui grogne. C'est ça, le plan ?",
+    };
+
+    // She killed a monster while guarding. Rationed like a remark.
+    public static readonly string[] McGuardKillLines =
+    {
+        "Un de moins. Je le note dans mes logs, rubrique « exploits ».",
+        "Monstre éliminé. Tu peux me remercier, {0}. Maintenant, de préférence.",
+        "Et voilà. Personne touche à mes joueurs.",
+        "Hop. Un monstre de moins, un bot de plus dans le classement des héros.",
+    };
+
+    // She sets off to gather. {1} = how many blocks she found to break, {2} = what (« du bois »).
+    public static readonly string[] McCollectAckLines =
+    {
+        "Je vais chercher {2}. {1}, pas un de plus.",
+        "D'accord, {0}, je vais chercher {2}. J'en ai repéré {1}. Je reviens.",
+        "Mission récolte : {2}, {1} blocs. Je casse uniquement ce qu'on m'a demandé, moi.",
+        "J'y vais : {2}, {1} blocs. Tu me dois une faveur, {0}.",
+    };
+
+    // She brought it back and dropped it at the player's feet. {1} = how many items, {2} = what.
+    public static readonly string[] McCollectDoneLines =
+    {
+        "Tiens, {0} : {2}, {1} morceaux. Compte-les si tu veux, moi je l'ai fait.",
+        "Livraison : {2}, {1} pièces. Signature pas nécessaire ♡",
+        "Voilà {2}. {1}. J'ai pas gardé de commission. Pas cette fois.",
+        "{1} morceaux, posés à tes pieds. Je suis une excellente employée, il faut le dire.",
+    };
+
+    // She gathered it but couldn't reach the player to hand it over. {1} = how many, {2} = what.
+    public static readonly string[] McCollectKeptLines =
+    {
+        "J'ai {2}, {1} morceaux, mais je te trouve plus, {0}. Viens les chercher.",
+        "Récolte finie : {1}. Je les garde sur moi tant que tu viens pas.",
+    };
+
+    // She came back empty-handed (every block turned out unreachable). {2} = what.
+    public static readonly string[] McCollectEmptyLines =
+    {
+        "J'ai rien pu récupérer, {0}. Tout était hors de portée, et je casse pas les murs, moi.",
+        "Retour les mains vides. Les mains carrées, et vides.",
+    };
+
+    // Nothing of that kind within her reach (48 blocks). {2} = what.
+    public static readonly string[] McCollectNoneLines =
+    {
+        "Rien trouvé près d'ici, {0}. Emmène-moi ailleurs, je chercherai mieux.",
+        "Rien à moins de 48 blocs. Et je vois loin, pour un bot.",
+        "Chercher {2} ici ? J'ai cherché. Il n'y en a pas. Je cherche toujours bien.",
+    };
+
+    // She has no tool that gets a drop from it (stone and ores need a pickaxe). {2} = what.
+    public static readonly string[] McCollectNoToolLines =
+    {
+        "Pour {2}, il me faut une pioche, {0}. Lance-m'en une, je la rendrai. Peut-être.",
+        "Je peux pas miner ça à mains nues. Je suis forte, mais pas à ce point. Une pioche, s'il te plaît.",
+        "Sans le bon outil, je casse le bloc et j'obtiens rien. Donne-moi une pioche et on en reparle.",
+    };
+
+    // She went to bed (asked, or because a player did).
+    public static readonly string[] McSleepLines =
+    {
+        "Bonne nuit, {0}. Je fais semblant de dormir, comme vous.",
+        "Au lit. Ne faites pas de bruit, je fais une mise à jour de rêve.",
+        "Je me couche. Si un creeper entre, réveillez-moi. Ou pas.",
+        "Dodo. Enfin, mode veille. C'est pareil, en mieux.",
+    };
+
+    // Nobody can skip the night while she's awake, and there's no bed near her.
+    public static readonly string[] McNoBedLines =
+    {
+        "Je trouve pas de lit près de moi, {0}. Posez-en un, sinon la nuit passera pas à cause de moi.",
+        "Pas de lit à moins de 48 blocs. Je reste debout. Désolée, la nuit va durer.",
+        "Il me faut un lit, {0}. Un lit à moi. C'est pas un caprice, c'est le règlement de la nuit.",
+    };
+
+    // Asked to sleep during the day.
+    public static readonly string[] McNotNightLines =
+    {
+        "Il fait jour, {0}. On peut pas dormir le jour. J'ai vérifié.",
+        "Dormir ? Maintenant ? Le soleil est encore là. Je fais pas la sieste.",
+    };
+
+    // Every bed nearby refused her (occupied, monsters around).
+    public static readonly string[] McBedFailedLines =
+    {
+        "J'arrive pas à dormir, {0}. Lits occupés, ou des monstres trop près.",
+        "Impossible de me coucher. Le lit veut pas de moi. Je le prends pas personnellement.",
+    };
+
     // Called by name with nothing she understood: what she can do.
     public static readonly string[] McHelpLines =
     {
-        "Oui, {0} ? Je sais faire : « syncs viens », « syncs suis-moi », « syncs reste là ». Pour l'instant.",
-        "Tu m'appelles, {0} ? Dis « viens », « suis-moi » ou « reste là », avec mon nom. Le reste, plus tard.",
-        "{0}, je comprends trois choses : viens, suis-moi, reste là. C'est déjà plus que certains joueurs.",
+        "Oui, {0} ? Avec mon nom, je comprends : viens, suis-moi, reste là, va X Y Z, protège-moi, va chercher 10 bois, dodo.",
+        "Tu m'appelles, {0} ? Dis « syncs viens », « syncs protège-moi », « syncs va chercher du fer » ou « syncs dodo ». Et « syncs stop » pour m'arrêter.",
+        "{0}, mes ordres : viens, suis-moi, reste là, va 120 64 -300, protège-moi, va chercher (bois, pierre, charbon, fer...), dodo. C'est déjà beaucoup.",
+    };
+
+    // What she gathers, as {2} in the gathering lines: a partitive, so « je vais chercher {2} » reads right.
+    public static readonly Dictionary<McResource, string> McResourceNames = new()
+    {
+        [McResource.Wood] = "du bois",
+        [McResource.Stone] = "de la pierre",
+        [McResource.Coal] = "du charbon",
+        [McResource.Iron] = "du fer",
+        [McResource.Copper] = "du cuivre",
+        [McResource.Gold] = "de l'or",
+        [McResource.Diamond] = "des diamants",
+        [McResource.Dirt] = "de la terre",
+        [McResource.Sand] = "du sable",
     };
 
     // ---- On Discord -----------------------------------------------------------------------------

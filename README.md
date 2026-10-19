@@ -147,11 +147,20 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
 - **She talks in the game's chat**, in her own voice: a hello and a goodbye, every kind of death
   (creepers, falls, lava, mobs, friendly fire, her own), advancements, nightfall, and whoever hits
   her. A few lines at most: one per kind every 30 seconds.
-- **She takes orders**, with her name in the message: « syncs viens » (she walks to you),
-  « syncs suis-moi » (she follows), « syncs reste là » or « syncs stop ». She never digs or places
-  a block on the way, and tells you when you're out of her sight or she can't find a path. Whisper
-  the order (`/msg SYNCS syncs viens`) and she whispers back. Say just « syncs » and she lists what
-  she understands.
+- **She takes orders**, with her name in the message:
+  - « syncs viens » (she walks to you), « syncs suis-moi », « syncs reste là » or « syncs stop »;
+  - « syncs va 120 64 -300 » (or just x and z): she walks there, up to 1500 blocks;
+  - « syncs protège-moi »: she follows you and fights the monsters around you;
+  - « syncs va chercher 10 bois » (also pierre, charbon, fer, cuivre, or, diamants, terre, sable):
+    she gathers it within 48 blocks and drops it at your feet. Stone and ores need a pickaxe: give
+    her one (drop it next to her);
+  - « syncs dodo »: she goes to bed. She also goes on her own when someone does at night, since the
+    night only passes when everyone sleeps.
+
+  She never digs through or builds on anything on the way: when gathering, she breaks only the
+  blocks she was sent for, and takes wood only from real trees. She eats when hungry and wears the
+  best armour you give her. Whisper an order (`/msg SYNCS syncs viens`) and she whispers back. Say
+  just « syncs » and she lists what she understands.
 - **On Discord** she says in the bots channel when she goes to play and when she's back.
 
 Set it up with the add-on options `minecraft_host` (empty turns it off), `minecraft_port` (leave

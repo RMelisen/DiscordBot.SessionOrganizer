@@ -39,9 +39,10 @@ public sealed class MinecraftBodyService : BackgroundService
     // two policies; neither is shared with anything else.
     private readonly CooldownGate<string> _kindGate = new(TimeSpan.FromSeconds(30));
     private readonly CooldownGate<int> _anyGate = new(TimeSpan.FromSeconds(8));
-    // Orders are answered, not rationed like remarks: only a player repeating one within 3 s is ignored,
-    // and the list of what she understands is given to the same player once a minute at most.
-    private readonly CooldownGate<string> _orderGate = new(TimeSpan.FromSeconds(3), TimeSpan.FromHours(1));
+    // Orders are answered, not rationed like remarks: only a player sending a second one within the same
+    // second is ignored (a double send), never a stop, and the list of what she understands is given to
+    // the same player once a minute at most.
+    private readonly CooldownGate<string> _orderGate = new(TimeSpan.FromSeconds(1), TimeSpan.FromHours(1));
     private readonly CooldownGate<string> _helpGate = new(TimeSpan.FromMinutes(1), TimeSpan.FromHours(1));
     private const double NightChance = 0.5;
     private const double AdvancementChance = 0.6;
@@ -73,7 +74,7 @@ public sealed class MinecraftBodyService : BackgroundService
     private DateTimeOffset? _lastPingAt;
     private string? _resolved;
     // Who gave the order she's carrying out, and whether by whisper: the outcome is answered the same way.
-    private (string Player, bool Private)? _order;
+    private (string Player, bool Private, string Detail)? _order;
     private (string Server, string Using, bool Fallback)? _version;
     private string? _lastKick;
     private DateTimeOffset? _lastKickAt;
@@ -317,14 +318,43 @@ public sealed class MinecraftBodyService : BackgroundService
                     OnMoving(root.GetProperty("player").GetString() ?? "", root.GetProperty("kind").GetString() ?? "");
                     break;
                 case "arrived":
-                    OnOutcome(root.GetProperty("player").GetString() ?? "", BotResponses.McArrivedLines);
+                    OnArrived(root.GetProperty("player").GetString() ?? "",
+                        root.TryGetProperty("kind", out var arrivedKind) ? arrivedKind.GetString() ?? "" : "");
                     break;
                 case "cantReach":
                     OnOutcome(root.GetProperty("player").GetString() ?? "", root.GetProperty("why").GetString() switch
                     {
                         "notVisible" => BotResponses.McTooFarLines,
                         "lost" => BotResponses.McLostLines,
+                        "tooFar" => BotResponses.McTripTooFarLines,
                         _ => BotResponses.McNoPathLines,
+                    });
+                    break;
+                case "killed":
+                    Remark("kill", BotResponses.McGuardKillLines, root.GetProperty("player").GetString());
+                    break;
+                case "collecting":
+                    OnCollecting(root.GetProperty("player").GetString() ?? "", root.GetProperty("resource").GetString() ?? "",
+                        root.GetProperty("count").GetInt32());
+                    break;
+                case "collected":
+                    OnCollected(root.GetProperty("player").GetString() ?? "", root.GetProperty("resource").GetString() ?? "",
+                        root.GetProperty("count").GetInt32(), root.GetProperty("delivered").GetBoolean());
+                    break;
+                case "cantCollect":
+                    OnOutcome(root.GetProperty("player").GetString() ?? "",
+                        root.GetProperty("why").GetString() == "noTool" ? BotResponses.McCollectNoToolLines : BotResponses.McCollectNoneLines,
+                        "", ResourceName(root.GetProperty("resource").GetString() ?? ""));
+                    break;
+                case "sleeping":
+                    OnOutcome(root.GetProperty("player").GetString() ?? "", BotResponses.McSleepLines);
+                    break;
+                case "cantSleep":
+                    OnOutcome(root.GetProperty("player").GetString() ?? "", root.GetProperty("why").GetString() switch
+                    {
+                        "day" => BotResponses.McNotNightLines,
+                        "noBed" => BotResponses.McNoBedLines,
+                        _ => BotResponses.McBedFailedLines,
                     });
                     break;
                 case "hurt":
@@ -395,8 +425,8 @@ public sealed class MinecraftBodyService : BackgroundService
     private void OnChat(string player, string text, bool whispered)
     {
         if (player.Length == 0) return;
-        var order = McCommand.Read(text, new[] { _username, "syncs" });
-        switch (order)
+        var request = McCommand.Parse(text, new[] { _username, "syncs" });
+        switch (request.Order)
         {
             case McOrder.None:
                 return;
@@ -404,43 +434,103 @@ public sealed class MinecraftBodyService : BackgroundService
                 if (_helpGate.TryClaim(player)) Reply(player, whispered, BotResponses.McHelpLines);
                 return;
         }
-        if (!_orderGate.TryClaim(player)) return;
+        if (request.Order != McOrder.Stay && !_orderGate.TryClaim(player)) return;
 
-        var op = order switch { McOrder.Come => "come", McOrder.Follow => "follow", _ => "stay" };
+        object command = request.Order switch
+        {
+            McOrder.Come => new { op = "come", player },
+            McOrder.Follow => new { op = "follow", player },
+            McOrder.GoTo => request.Coordinates! is [var x, var z]
+                ? new { op = "goto", player, x, y = (int?)null, z }
+                : new { op = "goto", player, x = request.Coordinates![0], y = (int?)request.Coordinates[1], z = request.Coordinates[2] },
+            McOrder.Guard => new { op = "guard", player },
+            McOrder.Collect => new { op = "collect", player, resource = request.Resource!.Value.ToString().ToLowerInvariant(), count = request.Count },
+            McOrder.Sleep => new { op = "sleep", player },
+            _ => new { op = "stay" },
+        };
+        var detail = request.Coordinates is { } coordinates ? string.Join(" ", coordinates) : "";
         lock (_gate)
         {
             if (_body is not { } body || !_spawned || _leaving) return;
-            _order = order == McOrder.Stay ? null : (player, whispered);
-            body.Send(op == "stay" ? new { op } : (object)new { op, player });
+            _order = request.Order == McOrder.Stay ? null : (player, whispered, detail);
+            body.Send(command);
         }
-        // Coming and following are acknowledged when the body reports it set off ("moving"): the player
-        // may be out of sight, and « j'arrive » followed by « je te vois pas » reads as a broken promise.
-        if (order == McOrder.Stay) Reply(player, whispered, BotResponses.McStayAckLines);
+        // Everything but staying is acknowledged when the body reports it under way ("moving",
+        // "collecting", "sleeping"): the player may be out of sight or there may be nothing to gather,
+        // and « j'arrive » followed by « je te vois pas » reads as a broken promise.
+        if (request.Order == McOrder.Stay) Reply(player, whispered, BotResponses.McStayAckLines);
+    }
+
+    // Whether this player's current order was whispered, and its detail (the coordinates), for the replies.
+    private (bool Whispered, string Detail) OrderOf(string player, bool finished)
+    {
+        lock (_gate)
+        {
+            if (_order is not { } order || order.Player != player) return (false, "");
+            if (finished) _order = null;
+            return (order.Private, order.Detail);
+        }
     }
 
     private void OnMoving(string player, string kind)
     {
-        bool whispered;
-        lock (_gate) whispered = _order is { } o && o.Player == player && o.Private;
-        Reply(player, whispered, kind == "follow" ? BotResponses.McFollowAckLines : BotResponses.McComeAckLines);
-    }
-
-    // How an order went (arrived, out of sight, no way there): answered to whoever gave it, the way they gave it.
-    private void OnOutcome(string player, string[] pool)
-    {
-        bool whispered;
-        lock (_gate)
+        var (whispered, detail) = OrderOf(player, finished: false);
+        switch (kind)
         {
-            whispered = _order is { } o && o.Player == player && o.Private;
-            if (_order is { } current && current.Player == player) _order = null;
+            case "goto":
+                Reply(player, whispered, BotResponses.McGoToAckLines, detail);
+                break;
+            case "guard":
+                Reply(player, whispered, BotResponses.McGuardAckLines);
+                break;
+            case "follow":
+                Reply(player, whispered, BotResponses.McFollowAckLines);
+                break;
+            default:
+                Reply(player, whispered, BotResponses.McComeAckLines);
+                break;
         }
-        Reply(player, whispered, pool);
     }
 
-    /// <summary>A line to one player: in the chat, or whispered back if they whispered.</summary>
-    private void Reply(string player, bool whispered, string[] pool)
+    // How an order went (arrived, out of sight, no way there…): answered to whoever gave it, the way they gave it.
+    private void OnOutcome(string player, string[] pool, params object[] extra)
     {
-        var text = string.Format(_picker.Pick(pool), player);
+        var (whispered, detail) = OrderOf(player, finished: true);
+        Reply(player, whispered, pool, extra.Length > 0 ? extra : new object[] { detail });
+    }
+
+    private void OnArrived(string player, string kind)
+    {
+        if (kind == "goto") OnOutcome(player, BotResponses.McGoToArrivedLines);
+        else OnOutcome(player, BotResponses.McArrivedLines);
+    }
+
+    private void OnCollecting(string player, string resource, int count)
+    {
+        var (whispered, _) = OrderOf(player, finished: false);
+        Reply(player, whispered, BotResponses.McCollectAckLines, count, ResourceName(resource));
+    }
+
+    private void OnCollected(string player, string resource, int count, bool delivered)
+    {
+        var pool = count == 0 ? BotResponses.McCollectEmptyLines
+            : delivered ? BotResponses.McCollectDoneLines
+            : BotResponses.McCollectKeptLines;
+        OnOutcome(player, pool, count, ResourceName(resource));
+    }
+
+    private static string ResourceName(string resource) =>
+        Enum.TryParse<McResource>(resource, ignoreCase: true, out var parsed) && BotResponses.McResourceNames.TryGetValue(parsed, out var name)
+            ? name
+            : resource;
+
+    /// <summary>
+    /// A line to one player: in the chat, or whispered back if they whispered. {0} is the player;
+    /// <paramref name="extra"/> fills {1}, {2}… as the pool documents.
+    /// </summary>
+    private void Reply(string player, bool whispered, string[] pool, params object[] extra)
+    {
+        var text = string.Format(_picker.Pick(pool), [player, .. extra]);
         lock (_gate)
             if (_body is { } body && _spawned && !_leaving)
                 body.Send(whispered ? new { op = "whisper", player, text } : (object)new { op = "say", text });

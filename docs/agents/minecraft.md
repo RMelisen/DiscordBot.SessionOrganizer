@@ -62,20 +62,44 @@ gets the list of what she can do (`McHelpLines`), but only when the name opens o
 call, not talk about her.
 
 - **Come** walks to where the player stood (`GoalNear`, 2 blocks). **Follow** keeps a moving goal
-  on the player (`GoalFollow`). **Stay** clears the goal.
+  on the player (`GoalFollow`). **Stay** clears the goal and cancels a gathering run.
+- **Go to** takes 2 numbers (x z, `GoalNearXZ`) or 3 (x y z), read from the raw text so a minus
+  sign survives normalisation. Over 1500 blocks she refuses (`tooFar`): the pathfinder can walk
+  that far by planning partial paths as chunks load, but she'd be gone for the evening.
+- **Guard** follows the player and, every physics tick, picks the closest monster within 10 blocks
+  of them (or 6 of her), chases it, and hits it on a 650 ms cooldown, with the best sword or axe she
+  carries. Our own loop, not `mineflayer-pvp`, which pulls a whole Mineflayer 2.x through
+  `mineflayer-utils`. Endermen and piglins are left alone: hitting them starts the fight she's
+  supposed to prevent. Kills are a rationed remark.
+- **Collect** (`mineflayer-collectblock`) finds the requested blocks within 48 blocks, checks she
+  can harvest them (with what she carries, or by hand; ores and stone need a pickaxe, `noTool`),
+  breaks them, then walks back and tosses what she gained (an inventory diff) at the player's
+  feet. collectblock asks the pathfinder's movements before breaking anything, so it gets
+  `gatheringMovements`: `safeToBreak` is true **only for the target blocks**, so nothing else on
+  the way is ever broken. Wood is a non-stripped log with *natural* leaves within reach
+  (`persistent: false`): a log in a wall has none, and placed leaves are persistent.
+- **Sleep**: the night only passes when every player sleeps (by default), and that includes her.
+  When a player goes to bed at night (`entitySleep`) she looks for a bed within 48 blocks, once per
+  night, and says so when there's none (`McNoBedLines`), since she is then why the night won't pass.
+  « syncs dodo » does the same on demand.
+- **Food and armour** need no order: she eats when hunger drops below 14 (never rotten flesh and
+  the like), and wears the best piece she carries for each slot on spawn and after each pickup.
+  Both are our own few lines; `mineflayer-auto-eat` is ESM-only now and the armour plugin is
+  unmaintained.
 - **She never digs and never places a block.** `canDig = false`, no scaffolding blocks, no
   pillaring: a path through someone's wall or a dirt tower in their build is not help. Where
   walking can't get there she says so (`McNoPathLines`) instead.
 - **She can only reach a player the server shows her** (render distance). Beyond that the body
   answers `cantReach notVisible` at once (`McTooFarLines`). A followed player who goes out of
   sight ends the follow (`lost`).
-- **Come and follow are acknowledged when the body reports `moving`**, not when the order is read.
-  « J'arrive » followed by « je te vois pas » reads as a broken promise. Stay is acknowledged
-  straight away.
+- **Orders are acknowledged when the body reports them under way** (`moving`, `collecting`,
+  `sleeping`), not when they're read. « J'arrive » followed by « je te vois pas » reads as a broken
+  promise. Stay is acknowledged straight away.
 - **Whispered orders get whispered answers**, outcome included. The service remembers who gave the
   current order and how.
-- **Orders aren't rationed like remarks.** One gate per player ignores the same player repeating
-  within 3 s, and another gives each player the help list once a minute at most.
+- **Orders aren't rationed like remarks.** One gate per player ignores a second order within the
+  same second (a double send), never a stop, so « viens » then « stop » always works. Another gate
+  gives each player the help list once a minute at most.
 
 Player chat reaches the body as Mineflayer's `chat` and `whisper` events. A chat plugin that
 reformats messages can hide them from Mineflayer's parser; if orders go unanswered on a server

@@ -1602,6 +1602,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     if (McDeath.AdvancementEarner("chat.type.advancement.goal", new[] { McP("Rex"), McP("x") }, mcPlayers) is not null)
         Fail("advancement earner: not a player");
     Covers("McDeathLines", typeof(McDeathKind));
+    Covers("McResourceNames", typeof(McResource));
 
     // In-game orders (McCommand): her name is needed, a refusal is not an order, staying wins.
     var mcNames = new[] { "SYNCS", "syncs" };
@@ -1637,6 +1638,34 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     Order("je crois que syncs est un peu nulle franchement", McOrder.None);
     Order("syncs est trop forte en vrai de vrai de vrai", McOrder.None);
     Order("suisse", McOrder.None);
+    Order("syncs dodo", McOrder.Sleep);
+    Order("syncs va dormir", McOrder.Sleep);
+    Order("syncs protège-moi", McOrder.Guard);
+    Order("Syncs défends-moi !", McOrder.Guard);
+    Order("syncs ramène-toi", McOrder.Come);
+    Order("syncs va chercher", McOrder.Unknown);
+    Order("syncs va chercher plus de bois", McOrder.None);
+
+    void Request(string text, McOrder order, string? coords = null, McResource? resource = null, int count = 0)
+    {
+        var got = McCommand.Parse(text, mcNames);
+        var gotCoords = got.Coordinates is null ? null : string.Join(" ", got.Coordinates);
+        if (got.Order != order || gotCoords != coords || got.Resource != resource || (count != 0 && got.Count != count))
+            Fail($"request « {text} »: got {got.Order} [{gotCoords}] {got.Resource} x{got.Count}");
+    }
+    Request("syncs va 120 64 -300", McOrder.GoTo, "120 64 -300");
+    Request("syncs viens en 120, 64, -300", McOrder.GoTo, "120 64 -300");
+    Request("syncs go -45 812", McOrder.GoTo, "-45 812");
+    Request("syncs 120 64 -300", McOrder.GoTo, "120 64 -300");
+    Request("syncs tp 0 70 0", McOrder.GoTo, "0 70 0");
+    Request("Bob123 syncs viens", McOrder.Come);
+    Request("syncs va 120", McOrder.Unknown);
+    Request("syncs va chercher 10 bois", McOrder.Collect, resource: McResource.Wood, count: 10);
+    Request("syncs ramène-moi 5 bûches", McOrder.Collect, resource: McResource.Wood, count: 5);
+    Request("syncs va chercher du fer", McOrder.Collect, resource: McResource.Iron, count: McCommand.DefaultCount);
+    Request("syncs mine 200 charbon", McOrder.Collect, resource: McResource.Coal, count: McCommand.MaxCount);
+    Request("syncs va chercher de l'or", McOrder.Collect, resource: McResource.Gold);
+    Request("syncs récolte du sable", McOrder.Collect, resource: McResource.Sand);
 
     // SRV only where the client library does it: a name, on the default port.
     if (!McAddress.NeedsLookup("play.example.net", 25565) || McAddress.NeedsLookup("play.example.net", 25566)
@@ -1652,14 +1681,17 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     // In game there is no Discord markup: no custom emotes, no sticker tags, and Minecraft cuts chat at 256.
     foreach (var f in new[] { "McArrivalLines", "McLeavingLines", "McDeathLines", "McHitByPlayerLines", "McAdvancementLines", "McNightLines",
              "McComeAckLines", "McFollowAckLines", "McStayAckLines", "McArrivedLines", "McTooFarLines", "McNoPathLines", "McLostLines",
-             "McHelpLines" })
+             "McHelpLines", "McGoToAckLines", "McGoToArrivedLines", "McTripTooFarLines", "McGuardAckLines", "McGuardKillLines",
+             "McCollectAckLines", "McCollectDoneLines", "McCollectKeptLines", "McCollectEmptyLines", "McCollectNoneLines",
+             "McCollectNoToolLines", "McSleepLines", "McNoBedLines", "McNotNightLines", "McBedFailedLines" })
     foreach (var (name, lines) in Pools(f))
     {
         if (lines.Distinct().Count() != lines.Length) Fail($"{name}: duplicate lines");
         foreach (var l in lines)
         {
             string s;
-            try { s = string.Format(l, "Abcdefghijklmnop"); } // 16, the longest Minecraft name
+            // The longest of each: a 16-letter name, the widest coordinates, the longest resource name.
+            try { s = string.Format(l, "Abcdefghijklmnop", "-29999999 320 -29999999", "des diamants"); }
             catch (FormatException) { Fail($"{name}: format: {l}"); continue; }
             if (s.Length > 256) Fail($"{name}: {s.Length} characters: {l}");
             if (Sticker.Strip(s) != s || s.Contains('<') || s.Contains('{') || s.Contains('}') || s.Contains('✨') || s.Contains("(｡•́︿•̀｡)"))

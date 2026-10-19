@@ -3,6 +3,19 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.13.0 — 2026-10-19
+
+- Minecraft: she walks to coordinates (« syncs va 120 64 -300 », or just x and z), up to 1500 blocks.
+- « syncs protège-moi »: she follows you and fights the monsters around you (never endermen or
+  piglins), with the best sword or axe she carries.
+- « syncs va chercher 10 bois » (pierre, charbon, fer, cuivre, or, diamants, terre, sable): she
+  gathers it within 48 blocks and drops it at your feet. She breaks only the blocks she was sent
+  for, takes wood only from real trees, and asks for a pickaxe when she needs one.
+- She goes to bed when a player does at night (or on « syncs dodo »), so the night can pass, and
+  says so when there's no bed near her.
+- She eats when she's hungry and puts on the best armour she's given.
+- « syncs stop » always gets through, even right after another order.
+
 ## 7.12.1 — 2026-10-19
 
 - Minecraft 26.3 servers no longer kick her for « invalid player movement » a second after she

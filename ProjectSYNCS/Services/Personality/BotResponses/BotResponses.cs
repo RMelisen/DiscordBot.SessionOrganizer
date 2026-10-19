@@ -214,7 +214,13 @@ namespace ProjectSYNCS.Services;
 //       McComeAckLines · McFollowAckLines · McStayAckLines ... she obeys
 //       McArrivedLines ........... she got there
 //       McTooFarLines · McNoPathLines · McLostLines ... out of sight / no way / lost while following
+//       McGoToAckLines · McGoToArrivedLines · McTripTooFarLines ... coordinates, {1} = them
+//       McGuardAckLines · McGuardKillLines ... protecting a player / a monster down
+//       McCollectAckLines · McCollectDoneLines · McCollectKeptLines · McCollectEmptyLines
+//       · McCollectNoneLines · McCollectNoToolLines ... gathering, {1} = how many, {2} = McResourceNames
+//       McSleepLines · McNoBedLines · McNotNightLines · McBedFailedLines ... going to bed
 //       McHelpLines .............. called by name with no order she knows
+//       McResourceNames .......... what she gathers, as a partitive (« du bois »): data, not a pool
 //     On Discord, in the bots channel
 //       McJoinPostLines · McLeavePostLines ... she goes to play / comes back
 //
