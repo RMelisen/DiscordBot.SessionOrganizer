@@ -74,6 +74,8 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         [ChoiceDisplay("Voir l'état")] Status,
         [ChoiceDisplay("La faire rejoindre maintenant")] Join,
         [ChoiceDisplay("La faire partir (30 min)")] Leave,
+        [ChoiceDisplay("L'autoriser à jouer")] Allow,
+        [ChoiceDisplay("Lui interdire de jouer")] Forbid,
     }
 
     public enum EventMode
@@ -821,9 +823,10 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         await FollowupAsync(sent ? "📬 Rapport envoyé en DM." : "Impossible de t'écrire en DM (voir les logs).", ephemeral: true);
     }
 
-    // Her body on the Minecraft server (MinecraftBodyService): where it stands, or a join or leave
-    // past her rule. A forced leave keeps her out for half an hour; a forced join still follows the
-    // rule once she's in.
+    // Her body on the Minecraft server (MinecraftBodyService): where it stands, a join or leave past
+    // her rule, or the switch that allows her on the server at all (kept across restarts, off until
+    // allowed). A forced leave keeps her out for half an hour; a forced join still follows the rule
+    // once she's in, and needs her to be allowed.
     [SlashCommand("minecraft", "Voir où en est SYNCS sur le serveur Minecraft, ou l'y envoyer (tests)")]
     public async Task MinecraftAsync(
         [Summary("action", "Voir l'état, la faire rejoindre ou partir")] MinecraftAction action = MinecraftAction.Status)
@@ -838,6 +841,8 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         {
             MinecraftAction.Join => _minecraft.ForceJoin(),
             MinecraftAction.Leave => _minecraft.ForceLeave(),
+            MinecraftAction.Allow => _minecraft.SetAllowed(true),
+            MinecraftAction.Forbid => _minecraft.SetAllowed(false),
             _ => _minecraft.StatusText(),
         };
         await RespondAsync(text, ephemeral: true);

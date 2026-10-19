@@ -52,7 +52,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
 | `/debug quiz` | Post or close a pop quiz, or crown the week, now (tests) | owner |
 | `/debug quokka` | Make Quokka show up in the bots channel now (tests) | owner |
-| `/debug minecraft` | Her state on the Minecraft server, or send her in / take her out now (tests) | owner |
+| `/debug minecraft` | Her state on the Minecraft server, send her in / take her out now, or allow / forbid her joining at all | owner |
 | `/health` | Her check-up: the Pi's temperature and power, her memory, the Discord connection, storage, the outage log | everyone |
 | `/help` | In-Discord usage guide | everyone |
 
@@ -162,6 +162,9 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
   best armour you give her. Whisper an order (`/msg SYNCS syncs viens`) and she whispers back. Say
   just « syncs » and she lists what she understands.
 - **On Discord** she says in the bots channel when she goes to play and when she's back.
+
+She joins nothing until the owner allows it with `/debug minecraft` (« L'autoriser à jouer »);
+the choice survives restarts, and « Lui interdire de jouer » takes her out at once.
 
 Set it up with the add-on options `minecraft_host` (empty turns it off), `minecraft_port` (leave
 25565 for an address given without a port), `minecraft_username` and `minecraft_owner` (your

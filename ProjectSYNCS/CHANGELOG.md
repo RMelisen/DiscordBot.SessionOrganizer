@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.13.1 — 2026-10-19
+
+- Minecraft: she no longer joins the server until the owner allows it with `/debug minecraft`
+  (« L'autoriser à jouer »). The switch is kept across restarts, and forbidding it takes her out
+  at once.
+
 ## 7.13.0 — 2026-10-19
 
 - Minecraft: she walks to coordinates (« syncs va 120 64 -300 », or just x and z), up to 1500 blocks.

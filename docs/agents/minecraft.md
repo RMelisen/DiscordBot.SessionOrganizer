@@ -29,6 +29,13 @@ victim isn't on the server, such as a named pet's (sent to its owner only), is i
 
 ## When she joins and leaves
 
+**Nothing happens until the owner allows it.** `/debug minecraft` → « L'autoriser à jouer » /
+« Lui interdire de jouer » flips a switch kept in `minecraft-state.json` next to the database: the
+one piece of her Minecraft state that survives a restart, because « off until I say so » must not
+turn itself back on after a crash. It starts off (no file = forbidden). While forbidden she still
+pings the server, so `/debug` shows it, but never joins, and a forced join is refused. Forbidding
+takes her out at once.
+
 `McPresence.Decide` is pure, and the checks walk it:
 
 - **Join** when at least 4 players are on, or the owner is (`Minecraft:Owner`, compared without

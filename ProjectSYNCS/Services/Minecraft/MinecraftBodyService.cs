@@ -17,7 +17,9 @@ namespace ProjectSYNCS.Services;
 /// <see cref="BotResponses"/>: the body itself holds no words and no policy.
 /// </summary>
 /// <remarks>
-/// Off unless <c>Minecraft:Host</c> is set (the add-on option <c>minecraft_host</c>). Singleton for
+/// Off unless <c>Minecraft:Host</c> is set (the add-on option <c>minecraft_host</c>), and she joins
+/// nothing until the owner allows it with /debug minecraft: that switch is the one thing kept across
+/// restarts (minecraft-state.json, next to the database), and it starts off. Singleton for
 /// both roles, like the other services /debug reaches: the host runs the loop, /debug minecraft
 /// reads the state and forces a join or a leave. Everything here is in memory and resets on restart.
 /// Public because the public DebugModule injects it.
@@ -59,8 +61,11 @@ public sealed class MinecraftBodyService : BackgroundService
     private readonly string _owner;
     private readonly string _node;
     private readonly string? _script;
+    private readonly string _statePath;
 
     private readonly object _gate = new();
+    // Whether the owner allows her on the server at all. Persisted, and off until allowed.
+    private bool _allowed;
     private MinecraftBodyProcess? _body;
     private bool _spawned;
     private bool _leaving;
@@ -94,6 +99,39 @@ public sealed class MinecraftBodyService : BackgroundService
         _owner = configuration["Minecraft:Owner"]?.Trim() ?? "";
         _node = configuration["Minecraft:Node"] is { Length: > 0 } node ? node : "node";
         _script = ResolveScript(configuration["Minecraft:BodyScript"]);
+
+        var dbPath = Path.GetFullPath(configuration["Database:Path"] ?? "ProjectSYNCS.db");
+        _statePath = Path.Combine(Path.GetDirectoryName(dbPath) ?? ".", "minecraft-state.json");
+        _allowed = LoadState()?.Allowed ?? false;
+    }
+
+    // What survives a restart: only the owner's switch. Everything else here is in memory on purpose.
+    private sealed record MinecraftState(bool Allowed);
+
+    private MinecraftState? LoadState()
+    {
+        try
+        {
+            if (File.Exists(_statePath))
+                return JsonSerializer.Deserialize<MinecraftState>(File.ReadAllText(_statePath));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Minecraft: could not read {Path}.", _statePath);
+        }
+        return null;
+    }
+
+    private void SaveState(MinecraftState state)
+    {
+        try
+        {
+            File.WriteAllText(_statePath, JsonSerializer.Serialize(state));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Minecraft: could not write {Path}.", _statePath);
+        }
     }
 
     public bool Enabled => _host.Length > 0;
@@ -186,7 +224,8 @@ public sealed class MinecraftBodyService : BackgroundService
                 othersCount = Math.Max(0, (status?.Online ?? 0) - (selfListed ? 1 : 0));
             }
 
-            var verdict = McPresence.Decide(status is not null, others, othersCount, _owner, inGame, _fewSince, now);
+            // Not allowed: she still watches the server (so /debug shows it) but never goes in.
+            var verdict = McPresence.Decide(status is not null && _allowed, others, othersCount, _owner, inGame, _fewSince, now);
             _fewSince = verdict.FewSince;
             join = !inGame && verdict.InGame && now >= _retryAfter && now >= _holdUntil;
             leave = inGame && !verdict.InGame && !_leaving;
@@ -579,6 +618,9 @@ public sealed class MinecraftBodyService : BackgroundService
         {
             sb.AppendLine($"🔧 **Minecraft** — {Code($"{_host}:{_port}")}, en tant que {Code(_username)}"
                           + (_owner.Length > 0 ? $", propriétaire {Code(_owner)}" : ", aucun propriétaire configuré"));
+            sb.AppendLine(_allowed
+                ? "Autorisée à jouer : **oui**"
+                : "Autorisée à jouer : **non** — elle surveille le serveur mais n'y entre pas (action « L'autoriser à jouer »)");
             if (_resolved is { } resolved) sb.AppendLine($"Adresse réelle (SRV) : {Code(resolved)}");
             var ping = _lastPingAt is { } at ? $" (vérifié {Stamp(at)})" : "";
             sb.AppendLine(_lastStatus is { } s
@@ -605,12 +647,31 @@ public sealed class MinecraftBodyService : BackgroundService
         return sb.ToString().TrimEnd();
     }
 
+    /// <summary>Allows or forbids her on the server, for good (persisted). Forbidding takes her out now.</summary>
+    public string SetAllowed(bool allowed)
+    {
+        if (!Enabled || _script is null) return StatusText();
+        bool inGame;
+        lock (_gate)
+        {
+            _allowed = allowed;
+            inGame = _body is not null;
+        }
+        SaveState(new MinecraftState(allowed));
+        if (allowed) return "🔧 Elle est autorisée à jouer. Elle rejoindra selon sa règle (4 joueurs, ou toi), au prochain passage (une minute au plus).";
+        if (inGame) Leave();
+        return inGame
+            ? "🔧 Elle n'est plus autorisée à jouer : elle quitte le serveur et n'y reviendra pas avant que tu l'autorises."
+            : "🔧 Elle n'est plus autorisée à jouer : elle n'ira pas sur le serveur avant que tu l'autorises.";
+    }
+
     /// <summary>Sends her in now, past the rule, the backoff and a forced leave. The rule still applies once she's in.</summary>
     public string ForceJoin()
     {
         if (!Enabled || _script is null) return StatusText();
         lock (_gate)
         {
+            if (!_allowed) return "🔧 Elle n'est pas autorisée à jouer : utilise d'abord l'action « L'autoriser à jouer ».";
             if (_body is not null) return "🔧 Elle est déjà sur le serveur (ou en route).";
             _retryAfter = DateTimeOffset.MinValue;
             _holdUntil = DateTimeOffset.MinValue;

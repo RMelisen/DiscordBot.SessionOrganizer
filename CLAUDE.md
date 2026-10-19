@@ -345,9 +345,9 @@ The bot ships as a Home Assistant add-on: the `Dockerfile` publishes a self-cont
 `linux-arm64` build, and `run.sh` maps add-on options to `Discord__Token`,
 `Discord__RegisterCommandsGlobally` and `Database__Path=/data/ProjectSYNCS.db`. Only `/data` is
 persisted, so the SQLite file must stay under it — and so do `health-state.json`,
-`ambient-state.json`, `morning-state.json`, `avatar-state.json` and `report-state.json`, which
-`PiHealthService`, `AmbientService`, `MorningGreetingService`, `SeasonalAvatarService` and
-`MonthlyDigestService` write next to it.
+`ambient-state.json`, `morning-state.json`, `avatar-state.json`, `report-state.json` and
+`minecraft-state.json`, which `PiHealthService`, `AmbientService`, `MorningGreetingService`,
+`SeasonalAvatarService`, `MonthlyDigestService` and `MinecraftBodyService` write next to it.
 
 **The Pi never builds the image.** Building on the Pi left about 1 GB of .NET layers in Docker's
 build cache per version, until the disk filled. Now `.github/workflows/addon-image.yml` builds it on
