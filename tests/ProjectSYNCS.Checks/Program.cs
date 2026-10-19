@@ -1139,6 +1139,24 @@ foreach (var (text, expected) in new[]
         Console.WriteLine($"/help page {page}: {embed.Length} chars, longest field {embed.Fields.Max(f => f.Value.Length)}");
     }
 
+    // /plynling help is close to the caps too, and the shop card lists every item it sells with its icon.
+    foreach (var page in new[] { 0, 1 })
+    {
+        var embed = ProjectSYNCS.Commands.PlynlingModule.BuildHelpEmbed(page);
+        if (embed.Length > 6000) Fail($"/plynling help page {page} is {embed.Length} characters");
+        if (embed.Fields.FirstOrDefault(f => f.Value.Length > 1024) is { Name: { } field }) Fail($"/plynling help field '{field}' exceeds 1024");
+        Console.WriteLine($"/plynling help page {page}: {embed.Length} chars, longest field {embed.Fields.Max(f => f.Value.Length)}");
+    }
+    {
+        var held = ProjectSYNCS.Helpers.ItemCatalog.Shop.ToDictionary(s => s.Item.Key, _ => 9999);
+        var (shop, shopComponents) = ProjectSYNCS.Commands.ShopCards.BuildShop(held, 1_000_000, ProjectSYNCS.Helpers.ItemCatalog.SoapKey,
+            new string('x', 200));
+        if (shop.Length > 6000) Fail($"/inventory shop is {shop.Length} characters");
+        if (shop.Fields.FirstOrDefault(f => f.Value.Length > 1024) is { Name: { } shopField }) Fail($"/inventory shop field '{shopField}' exceeds 1024");
+        if (shopComponents.Components.OfType<Discord.ActionRowComponent>().SelectMany(r => r.Components).Count() != 4) Fail("/inventory shop should show its select and three quantity buttons");
+        Console.WriteLine($"/inventory shop: {shop.Length} chars, longest field {shop.Fields.Max(f => f.Value.Length)}");
+    }
+
     // Every digest line takes the month and nothing else.
     foreach (var line in (string[])br.GetField("OwnerDigestLines")!.GetValue(null)!)
     {

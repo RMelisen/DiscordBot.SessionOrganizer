@@ -98,36 +98,23 @@ public class InventoryService
 
     public enum GiveOutcome { Given, NotEnough, UnknownItem, NotSellable }
 
-    /// <summary>/inventory shop: the money and the food land together, or neither.</summary>
-    public Task<(bool Bought, long Price, long Balance)> BuyAsync(ulong guildId, ulong userId, PlynlingFood food, int quantity, DateTimeOffset now) =>
-        EconomySave.RetryAsync(_db_context, () => BuyOnceAsync(guildId, userId, food, quantity, now));
+    public enum ShopOutcome { Bought, TooPoor, UnknownItem }
 
-    private async Task<(bool Bought, long Price, long Balance)> BuyOnceAsync(ulong guildId, ulong userId, PlynlingFood food, int quantity, DateTimeOffset now)
+    /// <summary>/inventory shop: any line of <see cref="ItemCatalog.Shop"/>; the money and the items land together, or neither.</summary>
+    public Task<(ShopOutcome Outcome, long Price, long Balance)> BuyAsync(ulong guildId, ulong userId, string key, int quantity, DateTimeOffset now) =>
+        EconomySave.RetryAsync(_db_context, () => BuyOnceAsync(guildId, userId, key, quantity, now));
+
+    private async Task<(ShopOutcome Outcome, long Price, long Balance)> BuyOnceAsync(ulong guildId, ulong userId, string key, int quantity, DateTimeOffset now)
     {
-        var price = ItemCatalog.ShopPrice(PlynlingCatalog.Info(food), quantity);
         var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, guildId, userId);
-        if (wallet.Balance < price) return (false, price, wallet.Balance);
+        if (ItemCatalog.ShopUnitPrice(key) is not { } unit || quantity < 1) return (ShopOutcome.UnknownItem, 0, wallet.Balance);
+        var price = ItemCatalog.BulkPrice(unit, quantity);
+        if (wallet.Balance < price) return (ShopOutcome.TooPoor, price, wallet.Balance);
         wallet.Balance -= price;
-        await AddAsync(_db_context, guildId, userId, ItemCatalog.FoodKey(food), quantity, now);
+        await AddAsync(_db_context, guildId, userId, key, quantity, now);
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.SpendShop, price, now);
         await _db_context.SaveChangesAsync();
-        return (true, price, wallet.Balance);
-    }
-
-    /// <summary>/inventory medicine: like the food shop — the money and the doses land together.</summary>
-    public Task<(bool Bought, long Price, long Balance)> BuyMedicineAsync(ulong guildId, ulong userId, int quantity, DateTimeOffset now) =>
-        EconomySave.RetryAsync(_db_context, () => BuyMedicineOnceAsync(guildId, userId, quantity, now));
-
-    private async Task<(bool Bought, long Price, long Balance)> BuyMedicineOnceAsync(ulong guildId, ulong userId, int quantity, DateTimeOffset now)
-    {
-        var price = ItemCatalog.BulkPrice(ItemCatalog.MedicinePrice, quantity);
-        var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, guildId, userId);
-        if (wallet.Balance < price) return (false, price, wallet.Balance);
-        wallet.Balance -= price;
-        await AddAsync(_db_context, guildId, userId, ItemCatalog.MedicineKey, quantity, now);
-        await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.SpendShop, price, now);
-        await _db_context.SaveChangesAsync();
-        return (true, price, wallet.Balance);
+        return (ShopOutcome.Bought, price, wallet.Balance);
     }
 
     /// <summary>/inventory give: from one person's inventory to another's, in one save.</summary>

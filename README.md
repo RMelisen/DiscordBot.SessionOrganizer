@@ -36,7 +36,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/shame` | The wall of shame | everyone |
 | `/quiz leaderboard` | Who wins her pop quiz | everyone |
 | `/plynling adopt · view · list · journal · relations · play · visit · passion · forage · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card). `/pl` is a shortcut for every one of them | everyone |
-| `/inventory view · collection · shop · medicine · cosmetics · craft · give · trade · sell` | Your items: pantry, collection, cosmetics, swaps | everyone |
+| `/inventory view · collection · shop · cosmetics · craft · give · trade · sell` | Your items: pantry, collection, cosmetics, swaps | everyone |
 | `/work · /balance` | Earn cailloux; see your balance | everyone |
 | `;pl · ;pl @someone · ;pl visit @someone · ;forage · ;work` | Typed shortcuts, sent as a plain message: your card (or someone's), a visit, a forage, a shift. `;pl forage` and `;pl work` work too | everyone |
 | `/shame user:@someone` | Put someone on it | staff |
@@ -300,12 +300,14 @@ looks after her.
   costs double; **Caresser** is free, every 4 hours, and anyone can pet anyone's.
 - **Hygiene** empties in 3 days, and a forage (−10 %) or a game (−5 %) dirties it a little.
   Below 33 % it is *sale*: its happiness drains 1.5× faster and its card says so. **Laver** on
-  its card washes it (+60 %), free, every 6 hours, for its owner only. A dirty Plynling wears mud,
+  its card washes it (+60 %), free, every 6 hours, for its owner only. While the free bath
+  waits, a **soap** (20 cailloux) pays for an extra one: the button then reads « Laver · utilise
+  1 savon » and uses one from the pantry. A dirty Plynling wears mud,
   stink lines and a fly on its card picture.
 - **Sickness:** each morning at 5 am a Plynling may fall **malade** — rarely when clean, much more
   often the dirtier it is — and its owner gets a DM. Sick, it eats half as well, will not play or
   visit, and cannot be self-frozen. **Soigner** on its card gives one dose a day (from the pantry,
-  or 30 cailloux; `/inventory medicine` stocks up). Treated daily it recovers in a few days;
+  or 30 cailloux; `/inventory shop` stocks up). Treated daily it recovers in a few days;
   left untreated, from its third sick morning it may die of it. Staff can cure one with
   `/admin plynling cure`.
 - **Mood matters:** a happy Plynling (above 80 % happiness) gets 15 % more out of every meal,
@@ -396,7 +398,8 @@ looks after her.
   was found or what is still missing (« ??? » with its rarity and season) — and completing a
   set pays 100 to 1000 cailloux once. Anything ever held stays discovered, so trading an item away never
   undoes a set.
-- **The pantry:** `/inventory shop` buys food ahead (10 % off from five). Feeding serves from
+- **The pantry:** `/inventory shop` opens the shop card — food, soap and medicine, picked from a
+  menu and bought 1, 5 or 10 at a time (10 % off from five). Feeding serves from
   the feeder's pantry first — one of that food for their own Plynling, two for someone
   else's — and only charges cailloux when there isn't enough.
 - **Swapping:** `/inventory give` hands items to someone, `/inventory trade` posts an offer the

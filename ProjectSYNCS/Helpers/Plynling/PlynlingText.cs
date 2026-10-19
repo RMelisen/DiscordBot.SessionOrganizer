@@ -30,9 +30,20 @@ public static class PlynlingText
     public static string PetCooldown(DateTimeOffset readyAt) =>
         $"Une caresse toutes les 4 heures, pas plus. Prochaine caresse <t:{readyAt.ToUnixTimeSeconds()}:R>.";
 
-    // Refused before the Plynling is loaded, like PetCooldown: worded to need no gender.
     public static string BathCooldown(DateTimeOffset readyAt) =>
-        $"Un bain toutes les 6 heures, pas plus : la peau d'un Plynling, ça se ménage. Prochain bain <t:{readyAt.ToUnixTimeSeconds()}:R>.";
+        $"Un bain gratuit toutes les 6 heures : la peau d'un Plynling, ça se ménage. Prochain bain gratuit <t:{readyAt.ToUnixTimeSeconds()}:R>.";
+
+    // The soap (ItemCatalog.SoapKey): what « Laver » says around it.
+    public const string SoapHint = "-# Pas envie d'attendre ? Un 🧼 savon paie un bain de plus (`/inventory shop`).";
+
+    public const string SoapKept = "-# Le bain gratuit était revenu : ton savon est gardé.";
+
+    public static string SoapUsed(int left, DateTimeOffset freeAt) =>
+        $"-# 🧼 1 savon utilisé — il t'en reste {left} · bain gratuit <t:{freeAt.ToUnixTimeSeconds()}:R>.";
+
+    public static string SoapOffer(DateTimeOffset freeAt, int held) =>
+        $"🧼 Bain gratuit <t:{freeAt.ToUnixTimeSeconds()}:R>, mais tu as {held} savon{(held > 1 ? "s" : "")} : " +
+        "« Laver » s'en sert maintenant. Reclique pour en utiliser un.";
 
     public static string AlreadyClean(PlynlingGender g) =>
         $"{g.Agree("Il est déjà tout propre", "Elle est déjà toute propre")} ! Garde l'eau pour plus tard.";

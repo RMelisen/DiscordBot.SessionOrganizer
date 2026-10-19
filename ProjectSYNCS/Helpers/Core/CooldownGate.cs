@@ -76,6 +76,16 @@ public sealed class CooldownGate<TKey> where TKey : notnull
     }
 
     /// <summary>
+    /// When <paramref name="key"/> can next be claimed, or null if it can be now. A look only:
+    /// it claims nothing, so the answer may be stale by the time anyone acts on it.
+    /// </summary>
+    public DateTimeOffset? ReadyAt(TKey key)
+    {
+        lock (_lock)
+            return _last.TryGetValue(key, out var last) && DateTimeOffset.UtcNow - last < _cooldown ? last + _cooldown : null;
+    }
+
+    /// <summary>
     /// Gives a claim back, so the next call may claim again immediately. For the case
     /// where the work the claim was taken for turned out not to happen.
     /// </summary>

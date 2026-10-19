@@ -53,11 +53,13 @@ public partial class PlynlingService
 {
     private readonly AppDbContext _db_context;
     private readonly ILogger<PlynlingService> _logger;
+    private readonly PlynlingCooldowns _cooldowns;   // read only, for the card's « Laver » (GetBathSoapAsync)
 
-    public PlynlingService(AppDbContext db_context, ILogger<PlynlingService> logger)
+    public PlynlingService(AppDbContext db_context, ILogger<PlynlingService> logger, PlynlingCooldowns cooldowns)
     {
         _db_context = db_context;
         _logger = logger;
+        _cooldowns = cooldowns;
     }
 
     // The owner's living Plynling, brought up to date. If it starved since anyone last
@@ -206,8 +208,12 @@ public partial class PlynlingService
         return (CareOutcome.Done, plynling, badges);
     }
 
-    // « Laver »: owner only, free. Refused asleep, frozen, dead, or already clean.
-    public async Task<(CareOutcome Outcome, Plynling? Plynling)> BathAsync(int plynlingId, ulong actorId, DateTimeOffset now)
+    // « Laver »: owner only. Refused asleep, frozen, dead, or already clean. Free when the caller
+    // claimed the bath cooldown (`free`); otherwise it takes one soap from the owner's pantry, but
+    // only if the button said so (`soapOffered`) — a plain « Laver » never spends one unannounced,
+    // it answers TooSoon with the soap count instead. Soap is what the owner holds after the bath.
+    public async Task<(CareOutcome Outcome, Plynling? Plynling, int Soap, bool UsedSoap)> BathAsync(
+        int plynlingId, ulong actorId, DateTimeOffset now, bool free, bool soapOffered)
     {
         var plynling = await GetByIdAsync(plynlingId, now);
         CareOutcome? refusal =
@@ -218,13 +224,31 @@ public partial class PlynlingService
             : PlynlingLife.IsAsleep(now) ? CareOutcome.Asleep
             : PlynlingLife.WouldWasteBath(plynling, now) ? CareOutcome.Wasted
             : null;
-        if (refusal is { } r) return (r, plynling);
+        if (refusal is { } r) return (r, plynling, 0, false);
 
-        PlynlingLife.Bath(plynling!, now);
-        await RelieveAsync(plynling!, CareAct.Bath, now);
-        await EconomyLog.AddAsync(_db_context, plynling!.GuildId, EconomyLog.ActBath, 1, now);
+        var soap = await InventoryService.CountAsync(_db_context, plynling!.GuildId, actorId, ItemCatalog.SoapKey);
+        var useSoap = !free && soapOffered && soap >= 1;
+        if (!free && !useSoap) return (CareOutcome.TooSoon, plynling, soap, false);
+        if (useSoap)
+        {
+            await InventoryService.TakeAsync(_db_context, plynling.GuildId, actorId, ItemCatalog.SoapKey, 1);
+            soap--;
+        }
+
+        PlynlingLife.Bath(plynling, now);
+        await RelieveAsync(plynling, CareAct.Bath, now);
+        await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActBath, 1, now);
         await _db_context.SaveChangesAsync();
-        return (CareOutcome.Done, plynling);
+        return (CareOutcome.Done, plynling, soap, useSoap);
+    }
+
+    // What the card's « Laver » offers: the owner's soap while the free bath is on cooldown, else 0
+    // (a plain « Laver »). Read at render time, so a card left open can go stale; the handler re-checks.
+    public async Task<int> GetBathSoapAsync(Plynling p, DateTimeOffset now)
+    {
+        if (p.DiedAt is not null || p.FrozenAt is not null || PlynlingLife.IsAsleep(now)) return 0;
+        if (_cooldowns.Bath.ReadyAt(p.Id) is null) return 0;
+        return await InventoryService.CountAsync(_db_context, p.GuildId, p.OwnerId, ItemCatalog.SoapKey);
     }
 
     // « Soigner »: owner only, once between two mornings. A dose from the owner's pantry, else

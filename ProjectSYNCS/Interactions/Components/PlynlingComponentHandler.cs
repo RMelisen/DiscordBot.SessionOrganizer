@@ -443,7 +443,20 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             return;
         }
         await DeferAsync();
-        await ApplyAsync(await _care.BathAsync(id, Context.User.Id, DateTimeOffset.UtcNow));
+        await ApplyAsync(await _care.BathAsync(id, Context.User.Id, DateTimeOffset.UtcNow, soapOffered: false));
+    }
+
+    // « Laver » while the free bath waits: the card said it uses a soap (see BuildCard).
+    [ComponentInteraction("plyn:soap:*", ignoreGroupNames: true)]
+    public async Task OnSoapAsync(string idStr)
+    {
+        if (!int.TryParse(idStr, out var id))
+        {
+            await RespondAsync(PlynlingText.Unknown, ephemeral: true);
+            return;
+        }
+        await DeferAsync();
+        await ApplyAsync(await _care.BathAsync(id, Context.User.Id, DateTimeOffset.UtcNow, soapOffered: true));
     }
 
     [ComponentInteraction("plyn:heal:*", ignoreGroupNames: true)]

@@ -88,6 +88,15 @@ A third need; dirt is a knock-on, never a killer. Below `DirtyBelow` (33%), happ
 `DirtyHappinessFactor` faster **from the exact instant** hygiene crosses it — `HappinessAt` is two
 exact straight pieces. « Laver » is owner-only, free, rationed in memory like petting.
 
+**The soap** (`care.soap`) pays for a bath while the free one is on cooldown, and **never
+unannounced**: the card swaps « Laver » (`plyn:bath`) for « Laver · utilise 1 savon (×N) »
+(`plyn:soap`) only while the cooldown runs and the owner holds soap (`GetBathSoapAsync`, a
+non-claiming `CooldownGate.ReadyAt` peek). Only the `plyn:soap` verb may spend one. A card left open
+goes stale both ways, so the handler re-decides: `plyn:soap` with the free bath back bathes for
+free and says the soap was kept; a plain `plyn:bath` on cooldown, from someone holding soap,
+redraws the card (now offering the soap) instead of refusing. A soap bath leaves the cooldown
+running and counts as `act.bath`.
+
 ### Sickness — one 05:00 morning at a time, every roll hashed
 
 `LastMorningDay` is the last morning played; `Settle` plays each later morning in time order (a

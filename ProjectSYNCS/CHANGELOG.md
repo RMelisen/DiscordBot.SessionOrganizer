@@ -3,6 +3,14 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.8.0 — 2026-10-19
+
+- New Plynling item, the soap (20 cailloux): while the free bath is on its 6-hour cooldown, the
+  card's « Laver » button offers to use one for an extra bath (+60 %), and says so on its label.
+- `/inventory shop` is now a shop card: pick food, soap or medicine from a menu, then buy 1, 5 or
+  10 with a button (10 % off from five).
+- `/inventory medicine` is gone: medicine is bought in `/inventory shop`.
+
 ## 7.7.0 — 2026-10-19
 
 - Her monthly report now opens with « Le mois en bref »: a few key figures and what deserves a

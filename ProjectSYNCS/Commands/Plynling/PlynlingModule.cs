@@ -592,9 +592,9 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
                 "ne l'a pas caressé — sauf s'il meurt de faim.")
             .AddField("Propreté et santé",
                 "L'**hygiène** se vide en 3 jours ; balades et jeux le salissent. Sous 33 %, il est **sale** et déprime plus vite. " +
-                "**Laver** (sa carte, son propriétaire) : +60 %, toutes les 6 h.\n" +
+                "**Laver** (sa carte, son propriétaire) : +60 %, toutes les 6 h, ou avec un savon.\n" +
                 "Au réveil, il peut tomber **malade**, surtout sale : il mange moitié moins, ne joue ni ne visite. " +
-                "**Soigner** (sa carte) : un médicament par jour (`/inventory medicine`), sinon il peut en mourir.")
+                "**Soigner** (sa carte) : un médicament par jour, sinon il peut en mourir.")
             .AddField("Jouer & rendre visite",
                 "**`/plynling play`** — Un mini-jeu au hasard avec ton Plynling : cache-cache, pierre-papier-ciseaux " +
                 "ou plus ou moins. Une fois par heure : +15 % de bonheur, +25 % et quelques cailloux si tu gagnes.\n" +
@@ -618,8 +618,8 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
                 "On trouve aussi des objets dans son cadeau du jour, en gagnant un jeu et pendant les bonnes visites. " +
                 "Certains ne se trouvent qu'en une saison.\n" +
                 "**`/inventory collection [user]`** — Le carnet, collection par collection : ce que tu as trouvé et ce qui manque. 5 collections de 8 objets (dont les insectes) et une grande de 30 champignons ; chacune complétée rapporte des cailloux.\n" +
-                "**`/inventory view`** — Ton garde-manger et tes objets. **`/inventory shop food: quantity:`** remplit " +
-                "le garde-manger (−10 % dès 5).\n" +
+                "**`/inventory view`** — Ton garde-manger et tes objets. **`/inventory shop`** — Nourriture, savon " +
+                "et médicaments (−10 % dès 5).\n" +
                 "**`/inventory give`** · **`/inventory trade`** · **`/inventory sell`** — Offrir, échanger (l'offre dure 1 h) ou vendre.")
             .AddField("Cosmétiques",
                 "**`/plynling wardrobe`** — Habille ton Plynling : un thème pour sa carte, un titre, un accessoire, " +
@@ -682,7 +682,8 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
             partnerName: (await plynlings.GetPartnerAsync(plynling))?.Name,
             pantry: await plynlings.GetPantryAsync(plynling),
             traits: await plynlings.GetTraitsAsync(plynling),
-            pendingEvents: await plynlings.CountPendingEventsAsync(plynling, now));
+            pendingEvents: await plynlings.CountPendingEventsAsync(plynling, now),
+            bathSoap: await plynlings.GetBathSoapAsync(plynling, now));
 
 
     /// <summary>
@@ -742,14 +743,15 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
     }
 
     /// Static and Context-free so its component budget is checkable without a gateway.
-    /// Every control uses its own verb (<c>plyn:pet</c>, <c>plyn:bath</c>, <c>plyn:heal</c>, <c>plyn:feed</c>, <c>plyn:traits</c>, <c>plyn:events</c>): duplicated
+    /// Every control uses its own verb (<c>plyn:pet</c>, <c>plyn:bath</c> or <c>plyn:soap</c>, <c>plyn:heal</c>, <c>plyn:feed</c>, <c>plyn:traits</c>, <c>plyn:events</c>): duplicated
     /// custom ids are rejected outright by Discord, disabled components included.
     /// Nourrir is offered to everyone and refused in the handler for anyone but the
     /// owner — the real check is in code, as with every gate here.
     /// </remarks>
     public static MessageComponent BuildCard(
         Plynling plynling, DateTimeOffset now, string? lastAction, string? lastActionImage = null, string? partnerName = null,
-        IReadOnlyDictionary<PlynlingFood, int>? pantry = null, IReadOnlyList<TraitInfo>? traits = null, int pendingEvents = 0)
+        IReadOnlyDictionary<PlynlingFood, int>? pantry = null, IReadOnlyList<TraitInfo>? traits = null, int pendingEvents = 0,
+        int bathSoap = 0)
     {
         var info = PlynlingCatalog.Info(plynling.Species);
         var alive = plynling.DiedAt is null;
@@ -796,12 +798,17 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
             // No petting or washing a sleeping Plynling — the buttons go, feeding stays. Laver is
             // offered to everyone like the rest of the card and refused in the handler for anyone
             // but the owner.
-            // « Soigner » joins them only while it is sick.
+            // « Soigner » joins them only while it is sick. While the free bath waits and the owner
+            // holds soap (bathSoap), Laver becomes the soap button — its own verb, plyn:soap, and a
+            // label that says it uses one, so a plain « Laver » never spends soap.
             if (!PlynlingLife.IsAsleep(now))
             {
                 var row = new ActionRowBuilder()
-                    .WithButton("Caresser", $"plyn:pet:{plynling.Id}", ButtonStyle.Primary)
-                    .WithButton("Laver", $"plyn:bath:{plynling.Id}", ButtonStyle.Secondary);
+                    .WithButton("Caresser", $"plyn:pet:{plynling.Id}", ButtonStyle.Primary);
+                if (bathSoap > 0)
+                    row.WithButton($"Laver · utilise 1 savon (×{bathSoap})", $"plyn:soap:{plynling.Id}", ButtonStyle.Secondary, new Emoji("🧼"));
+                else
+                    row.WithButton("Laver", $"plyn:bath:{plynling.Id}", ButtonStyle.Secondary);
                 if (PlynlingLife.IsSick(plynling))
                     row.WithButton("Soigner", $"plyn:heal:{plynling.Id}", ButtonStyle.Success);
                 builder.AddComponent(row);

@@ -120,19 +120,30 @@ public static class ItemCatalog
         _ => "toute l'année",
     };
 
-    // The shop's price for `quantity` of a food: the menu price each, 10 % off from 5.
-    public static long ShopPrice(FoodInfo food, int quantity) => BulkPrice(food.Price, quantity);
-
+    // 10 % off from 5, on every shop line.
     public static long BulkPrice(long unit, int quantity)
     {
         var full = unit * quantity;
         return quantity >= 5 ? (long)Math.Round(full * 0.9, MidpointRounding.AwayFromZero) : full;
     }
 
-    // The one care item: bought (/inventory medicine), held in the pantry, given from the card
-    // while the Plynling is sick. Its key is stored, so it is never renamed.
+    // The care items: bought in /inventory shop, held in the pantry, used from the card. Their keys
+    // are stored, so they are never renamed. The medicine is « Soigner » while sick; the soap is
+    // « Laver » while the free bath waits out its cooldown.
     public const string MedicineKey = "care.medicine";
     public const long MedicinePrice = 30;
+    public const string SoapKey = "care.soap";
+    public const long SoapPrice = 20;
+
+    // What /inventory shop sells, in its order: the four foods at their menu price, then the care items.
+    public static readonly IReadOnlyList<(ItemInfo Item, long Price)> Shop =
+        PlynlingCatalog.Foods.Select(f => (ByKey(FoodKey(f.Food))!, f.Price))
+            .Append((ByKey(SoapKey)!, SoapPrice))
+            .Append((ByKey(MedicineKey)!, MedicinePrice))
+            .ToList();
+
+    public static long? ShopUnitPrice(string key) =>
+        Shop.FirstOrDefault(s => s.Item.Key == key) is { Item: not null } line ? line.Price : null;
 
     // Paris calendar: spring March–May, summer June–August, autumn September–November, winter the rest.
     public static Season SeasonAt(DateTimeOffset now) => AppTime.ToZoned(now).Month switch
@@ -202,6 +213,7 @@ public static class ItemCatalog
             .Select(f => new ItemInfo(FoodKey(f.Food), ItemKind.Food, "🍄", f.Name, null, ItemRarity.Common, Season.None, f.Food))
             .ToList();
         items.Add(new ItemInfo(MedicineKey, ItemKind.Care, "💊", "Médicament", null, ItemRarity.Common, Season.None, null));
+        items.Add(new ItemInfo(SoapKey, ItemKind.Care, "🧼", "Savon", null, ItemRarity.Common, Season.None, null));
 
         void Add(string set, string key, string emoji, string name, ItemRarity rarity, Season season = Season.None) =>
             items.Add(new ItemInfo($"col.{key}", ItemKind.Collectible, emoji, name, set, rarity, season, null));

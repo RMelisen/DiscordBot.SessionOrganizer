@@ -67,6 +67,14 @@ save**: every source (pantry feeding, gift, game, visit, forage) moves items in 
 work, so the action and its items land in one `SaveChanges`. `AddAsync` pays a completed set into the
 wallet in that same save. They check `Local` first, so two adds in one save don't create two rows.
 
+**`/inventory shop` sells `ItemCatalog.Shop` and nothing else**: the four foods at their menu
+price, then the care items (Savon 20, Médicament 30), all at `BulkPrice` (−10 % from 5). It is one
+ephemeral card (`ShopCards`, static and measured by the checks project): `shop:pick` (the select)
+redraws it with ×1/×5/×10 buttons `shop:buy:{key}:{qty}`, disabled when unaffordable, and every
+purchase redraws it with a notice. `InventoryService.BuyAsync(key, qty)` refuses any key not in
+`Shop`, so a forged custom-id can't buy a collectible. A new buyable item is a line in `Shop`, not
+a new subcommand.
+
 **Feeding serves from the pantry first** — one of that food for your own Plynling, two for someone
 else's (the pantry's version of the double price) — and charges cailloux only when there isn't
 enough. So `TooPoor` is only reachable with an empty pantry.

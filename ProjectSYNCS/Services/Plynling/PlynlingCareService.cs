@@ -47,24 +47,33 @@ public class PlynlingCareService
         return new CareReply(await PlynlingModule.BuildCardAsync(_plynlings, plynling, now, text), null);
     }
 
-    // Owner only, every PlynlingLife.BathCooldown; the claim is released on a refusal, like petting.
-    public async Task<CareReply> BathAsync(int plynlingId, ulong actorId, DateTimeOffset now)
+    // Owner only, free every PlynlingLife.BathCooldown; the claim is released on a refusal, like
+    // petting. While the free bath waits, a soap from the pantry pays for one — but only through
+    // the card's soap button (`soapOffered`, `plyn:soap`), which says it will use one.
+    public async Task<CareReply> BathAsync(int plynlingId, ulong actorId, DateTimeOffset now, bool soapOffered)
     {
-        if (!_cooldowns.Bath.TryClaim(plynlingId, out var readyAt)) return new CareReply(null, PlynlingText.BathCooldown(readyAt));
+        var free = _cooldowns.Bath.TryClaim(plynlingId, out var readyAt);
 
-        var (outcome, plynling) = await _plynlings.BathAsync(plynlingId, actorId, now);
+        var (outcome, plynling, soap, usedSoap) = await _plynlings.BathAsync(plynlingId, actorId, now, free, soapOffered);
         if (outcome != CareOutcome.Done || plynling is null)
         {
-            _cooldowns.Bath.Release(plynlingId);
+            if (free) _cooldowns.Bath.Release(plynlingId);
             var g = plynling?.Gender ?? PlynlingGender.Male;
+            // A plain « Laver » drawn before the cooldown, by someone holding soap: redraw the card,
+            // whose button now offers the soap, and say so on it.
+            if (outcome == CareOutcome.TooSoon && soap > 0 && plynling is not null)
+                return new CareReply(await PlynlingModule.BuildCardAsync(_plynlings, plynling, now, PlynlingText.SoapOffer(readyAt, soap)), null);
             return new CareReply(null,
-                outcome == CareOutcome.Wasted ? PlynlingText.AlreadyClean(g)
+                outcome == CareOutcome.TooSoon ? PlynlingText.BathCooldown(readyAt) + "\n" + PlynlingText.SoapHint
+                : outcome == CareOutcome.Wasted ? PlynlingText.AlreadyClean(g)
                 : outcome == CareOutcome.NotOwner && plynling is not null && PlynlingMascot.Is(plynling) ? PlynlingText.MascotBath
                 : Refusal(outcome, g));
         }
 
         var line = string.Format(_picker.Pick(BotResponses.PlynlingBathLines.For(plynling.Gender)),
             PlynlingCardUi.SafeName(plynling.Name));
+        if (usedSoap) line += "\n" + PlynlingText.SoapUsed(soap, readyAt);
+        else if (soapOffered) line += "\n" + PlynlingText.SoapKept;
         return new CareReply(await PlynlingModule.BuildCardAsync(_plynlings, plynling, now, line), null);
     }
 
