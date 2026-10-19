@@ -239,11 +239,41 @@ async function pickVersion() {
   return newest.version.minecraftVersion;
 }
 
+// Since 26.3 the server allows one position packet per client tick and only resets that count when
+// the client sends `tick_end`, which real clients have sent after every tick since 1.21.2. Mineflayer
+// never sends it, so a 26.3 server (ViaBackwards included) kicks her for « invalid player movement »
+// on her second move, about 1.5 s after joining. The workaround from PrismarineJS/mineflayer#4189:
+// a `tick_end` after each movement packet. Drop it once Mineflayer sends the packet itself.
+const MovePackets = new Set(['position', 'position_look', 'look', 'flying']);
+
+function sendTickEnds(client) {
+  let supported = null; // known once the version is (it can be settled by Mineflayer's own ping)
+  const write = client.write.bind(client);
+  client.write = (name, params) => {
+    const result = write(name, params);
+    if (MovePackets.has(name)) {
+      if (supported === null) {
+        const data = minecraftData(client.version);
+        supported = Boolean(data && data.protocol.play.toServer.types.packet_tick_end);
+      }
+      if (supported) {
+        try {
+          write('tick_end', {});
+        } catch (err) {
+          log('tick_end failed:', err && err.message ? err.message : String(err));
+        }
+      }
+    }
+    return result;
+  };
+}
+
 async function main() {
   const version = await pickVersion();
   if (ended) return;
   // Offline mode: no auth.
   bot = mineflayer.createBot({ host, port, username, auth: 'offline', version });
+  sendTickEnds(bot._client);
   attach();
 }
 

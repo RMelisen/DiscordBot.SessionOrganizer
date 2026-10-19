@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.12.1 — 2026-10-19
+
+- Minecraft 26.3 servers no longer kick her for « invalid player movement » a second after she
+  joins: she now tells the server when each of her game ticks ends, as the game's own client does.
+
 ## 7.12.0 — 2026-10-19
 
 - She takes orders in Minecraft's chat, with her name in the message: « syncs viens » (she walks to

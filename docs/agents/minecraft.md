@@ -119,6 +119,14 @@ the server kicks her for an outdated client and she backs off. When Mineflayer c
 the fallback goes quiet by itself. Mods that add blocks or entities can break the body; plugins that
 only add commands can't.
 
+**`tick_end` after every move (PrismarineJS/mineflayer#4189).** Since 26.3 the server accepts one
+position packet per client tick and resets that count only on the client's `tick_end`, which real
+clients have sent after every tick since 1.21.2. Mineflayer never sends it, so a 26.3 server
+(ViaBackwards or not) kicks a stock bot for `invalid_player_movement` on its second move, about
+1.5 s in. `sendTickEnds` wraps the client's `write` and follows every movement packet with a
+`tick_end`, on versions whose protocol has one. Remove it once Mineflayer sends the packet itself,
+and check the issue before bumping Mineflayer.
+
 **stdout carries events only.** The protocol libraries print their errors through `console.*`, so
 the body sends every console method to stderr before loading them, and the service logs any stdout
 line that isn't JSON instead of parsing it.
