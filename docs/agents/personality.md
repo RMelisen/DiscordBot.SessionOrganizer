@@ -19,7 +19,9 @@ cooldown.
 
 **Her name counts as addressing her.** A message saying « syncs » or « sync » (`MessageCues.NamesHer`) is
 `ChatterService`'s too, mention or not: `ReactionService` and the early morning hello skip it, as
-they skip a mention, so she never both answers and decorates it. See *Talked about* below.
+they skip a mention, so she never both answers and decorates it. So does one of Papa's pet names,
+from him only: every such check goes through `MessageCues.NamesHerFrom(content, fromOwner)`. See
+*Talked about* below.
 
 **One exception: the energy drink can.** A message mentioning Monster or an energy drink
 (`MessageCues.MentionsEnergyDrink`) gets an `EnergyDrinkReactions` can **every time**: no roll, no
@@ -195,13 +197,13 @@ From the top:
 Everything aimed at her returns before the two ambient branches are reached.
 
 **Inside the reply path** (`HandleReplyToBotAsync`), first match wins: Inabot → shutdown threat →
-breakdown roll → **streak gate** → Papa mean (`OwnerMeanReplies`) → **specific intent** → **reply
-context** → nice → greeting → **question / low effort** → reference roll → Tata warmth → fallback
+breakdown roll → **streak gate** → Papa mean (`OwnerMeanReplies`) → **specific intent** → Papa's
+pet name → **reply context** → nice → greeting → **question / low effort** → reference roll → Tata warmth → fallback
 (`OwnerComebacks` for Papa; otherwise the streak nudge, a fact line, or `Comebacks`). A mean reply
 from anyone else skips intents and context and is roasted, as it always was. **The mention path**
 runs the same streak gate, then specific intent → greeting → Tata warmth → question → fallback
-(`Interrogations`, or a nudge or a fact line); Papa's mentions try his intent twin before
-`OwnerGreetings`. **The talked-about path** answers a specific intent too (« syncs, ça va ? »
+(`Interrogations`, or a nudge or a fact line); Papa's mentions try his intent twin, then his pet
+name, before `OwnerGreetings`. **The talked-about path** answers a specific intent too (« syncs, ça va ? »
 addresses her), before the greeting. Answering the content outranks Tata's warmth roll.
 
 ## Listening — intents, reply context, streaks, facts
@@ -598,6 +600,7 @@ tagging or replying to her. She heard her name and has no idea why.
 |---|---|
 | `Mean` | `BackbiteRoasts` (+ `PersonalComebacks` twice), Papa `OwnerMeanReplies` |
 | Greeting | `Greetings`, Papa `OwnerGreetings` |
+| Papa's pet name (not mean, no specific intent) | « ma framboise », « petite framboise »: `OwnerRaspberryNameLines`; « ma fille », « mon enfant »: `OwnerChildNameLines` |
 | Anything else | `TalkedAboutLines`, Papa `TalkedAboutOwnerLines` |
 
 - **Spellings are `_selfNames`** (« syncs », « sync »), shared with the shutdown phrases, squashed
@@ -612,6 +615,18 @@ tagging or replying to her. She heard her name and has no idea why.
   `OwnerMeanReplies` here, which the ambient reaction path deliberately never does.
 - **Nice is not special-cased**: « merci syncs » gets the puzzled line, by design — she doesn't
   know why she's being talked about.
+- **Papa's pet names** (`MessageCues.ReadPetName`, `PetName`) name her like « syncs », from the
+  owner only; from anyone else they are ordinary words. Two families, one pool each, counted as
+  `papa:pet-raspberry` / `papa:pet-child`. Adjacent squashed tokens (`_petNames`), longest first at
+  a position, so « ma petite framboise » is read from its « ma ». « ma petite fille » and
+  « mes framboises » match nothing. The pet-name row sits **above the greeting**: « salut ma
+  framboise » gets the pet-name line, since being called that is what she reacts to. A specific
+  intent still wins when the pet name is an address (`AddressesHerByPetName`, same before/after
+  words as `AddressesHer`): « ma fille, bonne nuit » is a goodnight, « ma fille a planté le bot »
+  is not said to her and gets the pet-name line. A reply or a mention from Papa with a pet name
+  gets the same pools (`ChatterService.PetNamePick`), right after a specific intent and ahead of
+  everything else he'd get there: no address check, since a tag or a reply already says who is
+  spoken to.
 - A breakdown in the channel swallows the message silently. Guild only: in a DM her name is already addressing her.
 - **Lore comes first.** Her name beside a robot-heart character counts as naming him to her face
   (`RobotHeartService`), so she answers about him and never reaches this branch; « Synthia » wins
@@ -827,7 +842,8 @@ are pure, in `Helpers/Voice/VoiceSeat`.
   process joined (Discord.Net keeps the voice-state parameters); otherwise skipped.
 - **Time together** is recorded: every sweep she is confirmed in a call credits one minute to every
   human connected there, muted or not (`VoiceCompanionStat` totals + `VoiceCompanionDailyStat`
-  buckets, the root pattern). For a future monthly report; nothing reads it yet.
+  buckets, the root pattern). Read by `/recap` (per person) and `/report syncs` and the monthly
+  digest (her top companions, see `admin.md`).
 - **One seat per guild** (Discord's rule). With two won channels and no Papa: most active people, then
   one hosting a live session (`SessionAttendanceService.IsInLiveSession`), then the first started.
   **She never switches while her gathering holds her** (Papa aside) — every move plays Discord's

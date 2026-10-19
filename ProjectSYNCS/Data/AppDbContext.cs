@@ -49,6 +49,7 @@ public class AppDbContext : DbContext
     public DbSet<TonightCall> TonightCalls => Set<TonightCall>();
     public DbSet<TonightResponse> TonightResponses => Set<TonightResponse>();
     public DbSet<PersonalReminder> PersonalReminders => Set<PersonalReminder>();
+    public DbSet<MemberFlowDailyStat> MemberFlowDailyStats => Set<MemberFlowDailyStat>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -353,6 +354,12 @@ public class AppDbContext : DbContext
         {
             e.Property(x => x.GuildId).HasConversion<long>();
             e.HasIndex(x => new { x.GuildId, x.Day, x.Metric }).IsUnique();
+        });
+
+        modelBuilder.Entity<MemberFlowDailyStat>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.Day }).IsUnique();
         });
 
         modelBuilder.Entity<PebbleWallet>(e =>

@@ -504,6 +504,32 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("MemberDailyStats");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.MemberFlowDailyStat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Joins")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Leaves")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "Day")
+                        .IsUnique();
+
+                    b.ToTable("MemberFlowDailyStats");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.MemberWarning", b =>
                 {
                     b.Property<int>("Id")

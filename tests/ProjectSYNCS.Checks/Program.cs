@@ -38,6 +38,7 @@ var taggedPools = new[]
     "ChatFactLines", "OwnerIntentLines", "RequestLines", "OpinionLines", "PreferLines", "OwnerRequestLines",
     "HelpLines", "AboutHerLines", "ShipChatLines", "ShipBestMatchLines", "ShipWorstMatchLines",
     "SharingShrugLines", "ChoiceLines", "DoYouLoveMeGrudgeLines", "DoYouLoveMeTreasureLines", "TataIntentLines",
+    "OwnerRaspberryNameLines", "OwnerChildNameLines",
 };
 foreach (var f in taggedPools)
 foreach (var (name, lines) in Pools(f))
@@ -962,6 +963,189 @@ foreach (var l in (string[])Field("DoYouLoveMeGrudgeLines"))
     if (!l.Contains("{2}")) Fail($"DoYouLoveMeGrudgeLines doesn't quote the count: {l}");
 foreach (var l in (string[])Field("DoYouLoveMeTreasureLines"))
     if (l.Contains("{2}") || l.Replace("{0}", "").Replace("{1}", "").Any(char.IsDigit)) Fail($"DoYouLoveMeTreasureLines shows a number: {l}");
+
+// 22. Papa's pet names: which family, whether said to her, and what they must leave alone.
+var readPetName = cues.GetMethod("ReadPetName", BindingFlags.Public | BindingFlags.Static)!;
+foreach (var (text, expected) in new[]
+{
+    ("ma framboise", "Raspberry"), ("Ma Framboise, ça va ?", "Raspberry"), ("salut petite framboise", "Raspberry"),
+    ("bonne nuit ma petite framboise", "Raspberry"), ("ma framboiiise ♡", "Raspberry"),
+    ("ma fille", "Child"), ("bravo ma fille !", "Child"), ("ma fiiille", "Child"), ("mon enfant, viens là", "Child"),
+    ("ma petite fille est passée", "None"), ("j'ai mangé des framboises", "None"), ("une framboise", "None"),
+    ("mes framboises", "None"), ("ma famille", "None"), ("mon enfance", "None"), ("syncs", "None"), ("", "None"),
+    ("<:ma_framboise:123> lol", "None"), ("https://example.com/ma-framboise", "None"),
+})
+{
+    var got = readPetName.Invoke(null, new object[] { text })!.ToString();
+    if (got != expected) Fail($"ReadPetName(\"{text}\") = {got}, expected {expected}");
+}
+
+var namesHerFrom = cues.GetMethod("NamesHerFrom", BindingFlags.Public | BindingFlags.Static)!;
+foreach (var (text, fromOwner, expected) in new[]
+{
+    ("ma framboise", true, true), ("ma framboise", false, false), ("ma fille", false, false),
+    ("syncs", false, true), ("syncs", true, true), ("rien à voir", true, false),
+})
+{
+    var got = (bool)namesHerFrom.Invoke(null, new object[] { text, fromOwner })!;
+    if (got != expected) Fail($"NamesHerFrom(\"{text}\", {fromOwner}) = {got}, expected {expected}");
+}
+
+var addressesByPet = cues.GetMethod("AddressesHerByPetName", BindingFlags.Public | BindingFlags.Static)!;
+foreach (var (text, expected) in new[]
+{
+    ("ma framboise, ça va ?", true), ("ça va ma fille ?", true), ("salut ma petite framboise", true),
+    ("<@999> mon enfant, t'en penses quoi ?", true), ("petite framboise tu fais quoi", true),
+    ("ma fille a planté le bot", false), ("je joue avec ma fille", false), ("c'est ma fille", false),
+    ("<@555> ma framboise ça va", false), ("dis à ma framboise de lancer un sondage", false),
+})
+{
+    var got = (bool)addressesByPet.Invoke(null, new object[] { text, 999UL })!;
+    if (got != expected) Fail($"AddressesHerByPetName(\"{text}\") = {got}, expected {expected}");
+}
+
+// 23. Reports (/report, the monthly digest): their windows, when the digest is due, the session
+// rules shared with /recap, and every embed measured at its worst against Discord's caps.
+{
+    var noon = new DateTimeOffset(2026, 10, 19, 12, 0, 0, TimeSpan.Zero);
+    void WindowIs(ReportWindow? w, int from, int to, string what)
+    {
+        if (w is null || w.FromDay != from || w.ToDay != to) Fail($"{what}: {w?.FromDay}..{w?.ToDay}, expected {from}..{to}");
+    }
+    var week = ReportWindow.From(StatsPeriod.Week, noon);
+    WindowIs(week, 20261013, 20261019, "week");
+    WindowIs(week.Previous, 20261006, 20261012, "week before");
+    var month = ReportWindow.From(StatsPeriod.Month, noon);
+    WindowIs(month, 20260920, 20261019, "30 days");
+    WindowIs(month.Previous, 20260821, 20260919, "30 days before");
+    if (ReportWindow.From(StatsPeriod.AllTime, noon).Previous is not null) Fail("all time has a previous window");
+    var feb = ReportWindow.CalendarMonth(2026, 2);
+    WindowIs(feb, 20260201, 20260228, "February");
+    WindowIs(feb.Previous, 20260101, 20260131, "the month before February");
+    if (feb.Label != "février 2026") Fail($"month label '{feb.Label}'");
+    if (ReportWindow.CalendarMonth(2026, 10).Days(0).Count != 31) Fail("October (clocks change) is not 31 days");
+    // 22:30 UTC on the 19th is already the 20th in Paris.
+    if (week.Contains(new DateTimeOffset(2026, 10, 19, 22, 30, 0, TimeSpan.Zero))) Fail("window ignores the Paris day");
+
+    void DueIs(DateTimeOffset now, int last, (int, int)? expected)
+    {
+        var got = MonthlyDigest.Due(now, last);
+        if (got != expected) Fail($"digest due at {now:u} after {last}: {got}, expected {expected}");
+    }
+    DueIs(new DateTimeOffset(2026, 11, 1, 7, 30, 0, TimeSpan.Zero), 202609, null);          // 08:30 Paris: too early
+    DueIs(new DateTimeOffset(2026, 11, 1, 8, 30, 0, TimeSpan.Zero), 202609, (2026, 10));
+    DueIs(new DateTimeOffset(2026, 11, 1, 8, 30, 0, TimeSpan.Zero), 202610, null);          // already sent
+    DueIs(new DateTimeOffset(2026, 11, 15, 20, 0, 0, TimeSpan.Zero), 202609, (2026, 10));   // she was down on the 1st
+    DueIs(new DateTimeOffset(2027, 1, 1, 10, 0, 0, TimeSpan.Zero), 202611, (2026, 12));
+
+    // One roll call: on time, late, a no-show, a « peut-être » who never came, one who declined.
+    var start = new DateTimeOffset(2026, 10, 15, 19, 0, 0, TimeSpan.Zero);
+    ProjectSYNCS.Models.Participant Person(ulong id, ProjectSYNCS.Models.ParticipantStatus status, int? seenAfter, int dayOffset = 0) => new()
+    {
+        UserId = id, Status = status, FirstSeenInVoiceAt = seenAfter is { } m ? start.AddDays(dayOffset).AddMinutes(m) : null,
+    };
+    ProjectSYNCS.Models.SessionEvent Session(DateTimeOffset at, bool recap, bool cancelled, params ProjectSYNCS.Models.Participant[] people) => new()
+    {
+        GuildId = 1, OrganizerId = 9, ScheduledAt = at, RecapSent = recap, IsCancelled = cancelled, MaxPlayers = 4,
+        Category = ProjectSYNCS.Models.SessionCategory.Game, Participants = people.ToList(),
+    };
+    var J = ProjectSYNCS.Models.ParticipantStatus.Joined;
+    var M = ProjectSYNCS.Models.ParticipantStatus.Maybe;
+    var sessions = new[]
+    {
+        Session(start, true, false, Person(1, J, 5), Person(2, J, 20), Person(3, J, null), Person(4, M, null),
+            Person(5, ProjectSYNCS.Models.ParticipantStatus.Declined, null)),
+        Session(start.AddDays(1), false, true, Person(1, J, null)),       // cancelled
+        Session(start.AddDays(2), false, false, Person(6, J, null)),      // no roll called: not a no-show
+        Session(start.AddDays(-1), true, false, Person(7, J, 10, -1)),    // exactly +10 min: on time
+        Session(noon.AddHours(5), false, false, Person(8, J, null)),      // later today: not held yet
+    };
+    var sr = SessionReport.Compute(sessions, week, noon);
+    if (sr.Held != 3 || sr.Cancelled != 1) Fail($"sessions held {sr.Held}, cancelled {sr.Cancelled}");
+    if (sr.RollCalls != 2 || sr.Expected != 4 || sr.Came != 3) Fail($"roll {sr.RollCalls}, came {sr.Came}/{sr.Expected}");
+    if (sr.Missed != 1 || sr.NoShows.Single().UserId != 3) Fail($"no-shows {sr.Missed}: {string.Join(",", sr.NoShows.Select(x => x.UserId))}");
+    if (sr.Late != 1 || sr.Latecomers.Single().UserId != 2 || sr.MedianLateMinutes != 20) Fail($"late {sr.Late}, median {sr.MedianLateMinutes}");
+    if (sr.Maybes != 1) Fail($"maybes {sr.Maybes}");
+
+    // Her Wednesday poll that became a session, a dead poll, and a /tonight that did too.
+    const ulong botId = 42;
+    var weekendPoll = new ProjectSYNCS.Models.Poll
+    {
+        Id = 1, OrganizerId = botId, Kind = ProjectSYNCS.Models.PollKind.DateSlots, IsClosed = true, CreatedAt = start.AddDays(-2),
+        Options = { new() { ScheduledAt = start, Votes = { new() { UserId = 1 }, new() { UserId = 2 } } } },
+    };
+    var deadPoll = new ProjectSYNCS.Models.Poll { Id = 2, OrganizerId = 1, Kind = ProjectSYNCS.Models.PollKind.Text, IsClosed = true, CreatedAt = start, Options = { new() } };
+    var call = new ProjectSYNCS.Models.TonightCall
+    {
+        OrganizerId = 1, CreatedAt = start, ThresholdAnnounced = true, SessionEventId = 5,
+        Responses = { new() { UserId = 1, Status = ProjectSYNCS.Models.TonightStatus.In }, new() { UserId = 2, Status = ProjectSYNCS.Models.TonightStatus.In } },
+    };
+    var pr = PollReport.Compute(new[] { weekendPoll, deadPoll }, new[] { call }, sessions, week, botId);
+    if (pr.WeekendPosted != 1 || pr.WeekendWon != 1 || pr.WeekendBecameSession != 1) Fail($"weekend poll {pr.WeekendPosted}/{pr.WeekendWon}/{pr.WeekendBecameSession}");
+    if (pr.Dead != 1) Fail($"dead polls {pr.Dead}");
+    if (pr.TonightReached != 1 || pr.TonightBecameSession != 1 || pr.Keen.Single().UserId != 2) Fail("tonight tallies (the organizer must not count as keen)");
+
+    // Worst case for every embed: full lists of the longest ids, long emote markup, both windows.
+    const ulong big = 1_234_567_890_123_456_789;
+    var people = Enumerable.Range(0, SessionReport.ListSize).Select(i => new PersonTally(big + (ulong)i, 999, 9999)).ToList();
+    var slots = Enumerable.Range(0, 7).Select(i => new SlotTally(i, 99, 999, 999)).ToList();
+    var sFull = new SessionReportData(999, 999,
+        Enum.GetValues<ProjectSYNCS.Models.SessionCategory>().Select(c => (c, 999)).ToList(),
+        9999, 9999, 0.87, 999, 9999, 9999, 999, 999, 123, slots, slots.Take(5).ToList(), people, people, people, people);
+    var pFull = new PollReportData(999, 999, 99, 99, 12.5, 9, 9, 9, 999, 999, 999, 7.5, people, people);
+    var xpBy = Enumerable.Range(0, 30).ToDictionary(i => big + (ulong)i, i => 1_000_000L + i);
+    var emotes = Enumerable.Range(0, CommunityReport.EmoteCount)
+        .Select(i => ($"<a:a_very_long_custom_emote_name_{i}:{big}>", 9_999_999L)).ToList();
+    var cFull = new CommunityReportData(999, Enumerable.Repeat(50L, 30).ToList(), 99_999_999, 9_999_999, 9_999_999, 999, 999,
+        emotes, 99, 99, 99, xpBy);
+    var cFading = cFull with { XpByUser = new Dictionary<ulong, long>() };
+    var outageKinds = Enum.GetValues<ProjectSYNCS.Models.UptimeEventKind>().Select(k => (k, 999)).ToList();
+    var yFull = new SyncsReportData(30, 65_432, 81_234, 20261015, 9999, Enumerable.Repeat(70_000L, 30).ToList(), outageKinds,
+        TimeSpan.FromHours(99), 0.987, 9_999_999, 999_999, 99_999, 99_999, 9_999_999, people);
+
+    void Measure(string what, Discord.Embed embed, bool names)
+    {
+        if (embed.Length > 6000) Fail($"{what} embed is {embed.Length} characters");
+        if (embed.Fields.Any(f => f.Value.Length > 1024 || f.Value.Length == 0)) Fail($"a {what} field is empty or exceeds 1024");
+        if (embed.Fields.Length > 25) Fail($"{what} has {embed.Fields.Length} fields");
+        if (!names && (embed.Description + string.Concat(embed.Fields.Select(f => f.Value))).Contains("<@")) Fail($"{what} names someone without names");
+    }
+    var digest = ReportWindow.CalendarMonth(2026, 10);
+    foreach (var names in new[] { true, false })
+    foreach (var w in new[] { month, digest, ReportWindow.From(StatsPeriod.AllTime, noon) })
+    {
+        Measure("sessions", ProjectSYNCS.Commands.ReportCards.BuildSessions(new(sFull, w.IsAllTime ? null : sFull), w, names), names);
+        Measure("polls", ProjectSYNCS.Commands.ReportCards.BuildPolls(new(pFull, w.IsAllTime ? null : pFull), w, names), names);
+        Measure("community", ProjectSYNCS.Commands.ReportCards.BuildCommunity(new(cFading, w.IsAllTime ? null : cFull), w, names), names);
+        Measure("community", ProjectSYNCS.Commands.ReportCards.BuildCommunity(new(cFull, w.IsAllTime ? null : cFull), w, names), names);
+        Measure("syncs", ProjectSYNCS.Commands.ReportCards.BuildSyncs(new(yFull, w.IsAllTime ? null : yFull), w, (20260801, 84_000), names), names);
+    }
+    var widest = new[]
+    {
+        ProjectSYNCS.Commands.ReportCards.BuildSessions(new(sFull, sFull), month, true).Length,
+        ProjectSYNCS.Commands.ReportCards.BuildPolls(new(pFull, pFull), month, true).Length,
+        ProjectSYNCS.Commands.ReportCards.BuildCommunity(new(cFading, cFull), month, true).Length,
+        ProjectSYNCS.Commands.ReportCards.BuildSyncs(new(yFull, yFull), month, (20260801, 84_000), true).Length,
+    };
+    Console.WriteLine($"report embeds at worst: {string.Join(" · ", widest)} chars (sessions, polls, community, syncs)");
+
+    // /help lists /report next to /admin, close to the caps: both pages measured.
+    var help = asm.GetType("ProjectSYNCS.Commands.HelpModule")!.GetMethod("BuildEmbed", BindingFlags.Public | BindingFlags.Static)!;
+    foreach (var page in new[] { 0, 1 })
+    {
+        var embed = (Discord.Embed)help.Invoke(null, new object[] { page })!;
+        if (embed.Length > 6000) Fail($"/help page {page} is {embed.Length} characters");
+        if (embed.Fields.FirstOrDefault(f => f.Value.Length > 1024) is { Name: { } field }) Fail($"/help field '{field}' exceeds 1024");
+        Console.WriteLine($"/help page {page}: {embed.Length} chars, longest field {embed.Fields.Max(f => f.Value.Length)}");
+    }
+
+    // Every digest line takes the month and nothing else.
+    foreach (var line in (string[])br.GetField("OwnerDigestLines")!.GetValue(null)!)
+    {
+        try { if (!string.Format(line, "octobre 2026").Contains("octobre 2026")) Fail($"digest line without the month: {line}"); }
+        catch (FormatException) { Fail($"digest line breaks string.Format: {line}"); }
+    }
+}
 
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

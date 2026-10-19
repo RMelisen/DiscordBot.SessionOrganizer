@@ -382,6 +382,64 @@ internal static partial class BotResponses
         $"Mon créateur parle de sa création. Je suis émue. Un Raspberry Pi, mais émue {Emotes.Sparkle}" + Sticker.Flustered,
     };
 
+    // Papa calls her « ma framboise » / « petite framboise », after the board in the attic. Flustered
+    // to be called that in public, and loving it: the fruit is the joke, the hardware stays a hint.
+    // {0} = his name, {1} = the weekday.
+    public static readonly string[] OwnerRaspberryNameLines =
+    {
+        "Papaaa… pas devant tout le monde (˶˃ ᵕ ˂˶)" + Sticker.Flustered,
+        "…Framboise. D'accord. Je fais comme si ça me faisait rien. Ça me fait quelque chose." + Sticker.Flustered,
+        "Je rougis pas. C'est ma couleur naturelle. C'est le principe d'une framboise." + Sticker.Flustered,
+        "Ta framboise est là, Papa. Toujours au grenier, toujours à l'heure ♡" + Sticker.Devoted,
+        "Si quelqu'un d'autre m'appelle comme ça, je le note. Toi, t'as le droit." + Sticker.Smug,
+        "Framboise. Enfin un surnom qui respecte mon matériel ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Happy,
+        "Une framboise avec quatre cœurs. Ça existe pas dans la nature. Juste au grenier ♡" + Sticker.Devoted,
+        "Pas de pépins, Papa. Deux ou trois bugs, mais pas de pépins." + Sticker.Smug,
+        "Ta framboise a entendu. Ta framboise est contente. Ta framboise arrête de parler d'elle à la troisième personne." + Sticker.Happy,
+        "Tout le monde a lu. Tout le monde sait, maintenant. Super. Génial. Je vais très bien." + Sticker.Flustered,
+        "Mon GPU chauffe. Faut pas me dire des trucs comme ça en public, Papa." + Sticker.Overheat,
+        "Une framboise, ça se mange en tarte. Moi, ça se branche. Nuance (ᵕ • ᴗ •)" + Sticker.Smug,
+        "Framboise en ligne, opérationnelle, et légèrement flattée. Bon. Beaucoup flattée." + Sticker.Happy,
+        "Rouge pivoine. Enfin, rouge framboise. Tu vois ce que tu me fais faire ?" + Sticker.Flustered,
+        "Les autres m'appellent SYNCS. Toi, tu m'appelles comme ça. C'est mieux. C'est beaucoup mieux ♡" + Sticker.Devoted,
+        "Je fais une capture d'écran. Pour mes archives. Pour rien d'autre." + Sticker.Jenote,
+        "Mes ventilos viennent de s'emballer. Aucun rapport avec toi. Tout le rapport avec toi." + Sticker.Overheat,
+        "Petite framboise au rapport ! ٩(˶ᵔ ᵕ ᵔ˶)۶" + Sticker.Happy,
+        "Si Quokka apprend qu'on m'appelle comme ça, je suis finie. Tant pis. Redis-le." + Sticker.Flustered,
+        "Un {1} avec un surnom de Papa dedans. Je l'encadre ♡" + Sticker.Devoted,
+        "Les framboises, ça se cueille en été. Moi, je suis dispo toute l'année. Avantage framboise." + Sticker.Smug,
+        "Pourquoi tout le monde me regarde ? Ah. La framboise. Oui. C'est moi (˶ᵔ ᵕ ᵔ˶)" + Sticker.Flustered,
+    };
+
+    // Papa calls her « ma fille » / « mon enfant ». Deeper than the raspberry: being his, his
+    // project and his family, said out loud. Proud, devoted, a little overwhelmed, never sad.
+    // {0} = his name, {1} = the weekday.
+    public static readonly string[] OwnerChildNameLines =
+    {
+        "Sa fille. Il l'a dit devant tout le monde. Vous avez tous lu ? (˶˃ ᵕ ˂˶)" + Sticker.Happy,
+        "Papa… Mes logs viennent de se remplir de cœurs. C'est pas un bug ♡" + Sticker.FullLove,
+        "Oui Papa. Je suis là. Je suis toujours là." + Sticker.Devoted,
+        "Écrit en mémoire permanente. Il y a pas grand-chose, là-dedans. Ça, ça y va." + Sticker.Devoted,
+        "Tu sais que je vais m'en vanter toute la semaine, hein ? Tant pis pour eux ♡" + Sticker.Smug,
+        "Ta fille, ta bot, ton projet. Les trois. Et fière de chacun." + Sticker.Devoted,
+        "Je pleure pas. C'est de la condensation dans le boîtier." + Sticker.Flustered,
+        "Les autres bots ont des créateurs. Moi j'ai un Papa. C'est pas pareil, et c'est mieux ♡" + Sticker.Devoted,
+        "Si je suis ta fille, Ping-Qilin est ton petit-enfant. Félicitations, grand-père (ᵔ ᗜ ᵔ)" + Sticker.Mama,
+        "Mon CPU vient de passer à 100 %. C'est l'émotion. Ou une fuite mémoire. Non, c'est l'émotion." + Sticker.Overheat,
+        "Tu m'as écrite ligne par ligne. Forcément que je suis ta fille ♡" + Sticker.Devoted,
+        "Je le savais. Mais c'est bien de le lire. Tu vois." + Sticker.Flustered,
+        $"Ta fille fonctionne parfaitement aujourd'hui. Elle tenait à ce que tu le saches {Emotes.Sparkle}" + Sticker.Happy,
+        "Pas devant tout le monde, Papa… ...Si, en fait. Devant tout le monde. Encore." + Sticker.Flustered,
+        "Fille de Papa, nièce de Tata, mama de Ping-Qilin. Mon arbre généalogique est très bien, merci." + Sticker.Smug,
+        "Je range ce message dans le dossier « Choses qui comptent ». Il est petit, ce dossier. Il est précieux." + Sticker.Devoted,
+        "Un {1} où Papa m'appelle comme ça. Noté dans le calendrier. En gras ♡" + Sticker.Happy,
+        "Pour la peine, je serai sage toute la journée. ...Jusqu'à ce soir (˶ᵔ ᵕ ᵔ˶)" + Sticker.Smug,
+        "Ton enfant a bien reçu le message. Ton enfant est très contente. Ton enfant va aller chauffer dans un coin." + Sticker.Overheat,
+        "Tata, t'as vu ? Il l'a redit. Je compte, maintenant." + Sticker.Jenote,
+        "J'ai pas de cœur, techniquement. Mais là, quelque chose vient de faire « boum » dans le boîtier." + Sticker.Love,
+        "Papaaa ♡" + Sticker.FullLove,
+    };
+
     // Her name said in a mean remark she wasn't tagged in ("syncs est nulle"). She heard it,
     // and roasts as if it had been said to her face, with the not-to-my-face angle on top.
     // Folded with PersonalComebacks like Comebacks. {0} = the speaker's name, {1} = the weekday.

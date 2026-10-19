@@ -53,6 +53,10 @@ Timing rules are pure, in `Helpers/Scheduling/SessionAttendance`.
   Channel Status; a channel she can't set is left alone for 30 min.
 - She also **sits in voice before the start** (`VoiceSeatService`, see personality, *Her seat in
   voice*); the late call then uses `SessionLateCallSeatedLines` ({2} = the start time).
+- **One no-show rule**: `SessionAttendance.IsMissed` (Joined, roll called — `RecapSent` — and never
+  seen) and `CameLate`. `/recap`, her chat facts and `/report sessions` all count through them, so
+  sessions from before attendance existed never read as no-shows anywhere, and a « peut-être » is
+  never absent. Change the rule there, not at a call site.
 
 ## Weekend poll — `WeekendPollService`
 

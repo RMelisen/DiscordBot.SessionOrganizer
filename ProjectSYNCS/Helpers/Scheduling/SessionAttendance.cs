@@ -36,6 +36,19 @@ public static class SessionAttendance
     public static bool IsLate(DateTimeOffset firstSeen, DateTimeOffset start) =>
         firstSeen > start + LateAfter;
 
+    /// <summary>
+    /// A no-show: they said they'd come (Joined), she called the roll (RecapSent), and never saw
+    /// them. Sessions from before attendance existed have no roll, so they never read as no-shows;
+    /// « peut-être » means no, so a Maybe is never absent. /recap, her chat facts and /report all
+    /// count through this one rule.
+    /// </summary>
+    public static bool IsMissed(Participant p, SessionEvent session) =>
+        p.Status == ParticipantStatus.Joined && session.RecapSent && p.FirstSeenInVoiceAt is null;
+
+    /// <summary>Came, but later than <see cref="LateAfter"/> past the start.</summary>
+    public static bool CameLate(Participant p, SessionEvent session) =>
+        p.FirstSeenInVoiceAt is { } seen && IsLate(seen, session.ScheduledAt);
+
     public static bool LateCallDue(DateTimeOffset now, DateTimeOffset start) =>
         now >= start + LateAfter && now <= start + LateCallUntil;
 

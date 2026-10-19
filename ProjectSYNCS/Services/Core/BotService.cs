@@ -34,6 +34,7 @@ internal sealed class BotService : IHostedService
     private readonly RobotHeartService _robotHeart;
     private readonly WelcomeService _welcome;
     private readonly PlynlingShortcutService _shortcuts;
+    private readonly MemberFlowTracker _memberFlow;
 
     public BotService(
         DiscordSocketClient client,
@@ -55,9 +56,11 @@ internal sealed class BotService : IHostedService
         SynthiaService synthia,
         RobotHeartService robotHeart,
         WelcomeService welcome,
-        PlynlingShortcutService shortcuts)
+        PlynlingShortcutService shortcuts,
+        MemberFlowTracker memberFlow)
     {
         _shortcuts = shortcuts;
+        _memberFlow = memberFlow;
         _synthia = synthia;
         _robotHeart = robotHeart;
         _welcome = welcome;
@@ -93,6 +96,9 @@ internal sealed class BotService : IHostedService
         // Only a new bot is handled there; a person is welcomed through Discord's join line,
         // which arrives as a message (see WelcomeService).
         _client.UserJoined += _welcome.HandleUserJoinedAsync;
+        // Joins and leaves counted per day, for /report community.
+        _client.UserJoined += _memberFlow.HandleUserJoinedAsync;
+        _client.UserLeft += _memberFlow.HandleUserLeftAsync;
         _client.Ready += RegisterCommandsAsync;
 
         var token = _config["Discord:Token"]

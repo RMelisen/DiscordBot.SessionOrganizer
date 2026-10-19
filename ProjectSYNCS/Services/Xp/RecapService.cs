@@ -106,7 +106,7 @@ public class RecapService
             .Where(p => p.SessionEvent.ScheduledAt <= now && (allTime || p.SessionEvent.ScheduledAt >= sinceInstant))
             .ToList();
         var attended = joined.Count(p => p.FirstSeenInVoiceAt is not null);
-        var missed = joined.Count(p => p.FirstSeenInVoiceAt is null && p.SessionEvent.RecapSent);
+        var missed = joined.Count(p => SessionAttendance.IsMissed(p, p.SessionEvent));
 
         var tonightIn = (await _db.TonightResponses.AsNoTracking()
                 .Include(r => r.TonightCall)

@@ -78,6 +78,10 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<PersonalReminderStore>();
         services.AddTransient<ArcadeService>();
         services.AddTransient<RecapService>();
+        services.AddTransient<SchedulingReportService>();
+        services.AddTransient<CommunityReportService>();
+        services.AddTransient<SyncsReportService>();
+        services.AddTransient<ReportService>();
         // The /arcade games are in memory (the tables) and run by timers (the runner): singletons.
         services.AddSingleton<ArcadeTables>();
         services.AddSingleton<ArcadeRunner>();
@@ -129,6 +133,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<VoiceSpectatorService>();
         // In-memory hourly window against raids: a singleton.
         services.AddSingleton<WelcomeService>();
+        // Gateway-driven, opens its own scope per join or leave.
+        services.AddSingleton<MemberFlowTracker>();
         services.AddSingleton<ChatterService>();
         services.AddSingleton<EmoteTracker>();
         services.AddSingleton<ReactionService>();
@@ -153,6 +159,9 @@ var host = Host.CreateDefaultBuilder(args)
         // messages so a greeting can bring the hello forward.
         services.AddSingleton<MorningGreetingService>();
         services.AddHostedService(sp => sp.GetRequiredService<MorningGreetingService>());
+        // A singleton too: /debug digest sends one on demand.
+        services.AddSingleton<MonthlyDigestService>();
+        services.AddHostedService(sp => sp.GetRequiredService<MonthlyDigestService>());
         // Same shape: BotService feeds it the main channel's messages, the host runs its loop.
         services.AddSingleton<AmbientService>();
         services.AddHostedService(sp => sp.GetRequiredService<AmbientService>());

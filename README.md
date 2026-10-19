@@ -45,6 +45,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/admin pebble add · remove` | Manual cailloux adjustment | staff |
 | `/admin stats` | The server's economy at a glance | staff |
 | `/admin dashboard` | The economy day by day: flows, activity, finds | staff |
+| `/report sessions · polls · community · syncs` | Her reports: attendance, polls and `/tonight`, the server's life, her own health | staff |
 | `/admin warn · warnings · unwarn` | Formal warnings, sent to the person by DM | staff |
 | `/admin mute · unmute` | Discord timeout, saying what's missing when it can't | staff |
 | `/admin plynling rename · resurrect · passion-reset · cure`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
@@ -486,6 +487,19 @@ is gone).
   trades, gifts) and items and cosmetics found, bought or crafted — each with its trend against
   the previous period and a small day-by-day bar line. 7 days, 30 days or everything since
   recording began; the counters started at zero the day it shipped.
+- **`/report`** — her reports, private, over 7 days, 30 days or all time, each figure with its
+  trend against the previous period:
+  - **`sessions`** — sessions held and cancelled, sign-ups, « peut-être » share and how full they
+    got; attendance from her roll calls (who came, who was late, who didn't show), the best days
+    and hours, the organisers, and the most reliable, absent and late people;
+  - **`polls`** — polls launched, how many died without a vote, how her Wednesday poll did, and
+    how many `/tonight` calls reached their minimum or became a session;
+  - **`community`** — active members day by day, XP, voice, reactions, arrivals and departures
+    (counted since 7.5.0), the top emotes, the quiz, the busiest people and the ones going quiet;
+  - **`syncs`** — her temperature, outages and uptime, how much she chatted and how often she
+    had nothing specific to say, good bot / bad bot, and her time in voice with people.
+
+  On the 1st of each month she also sends the owner the previous month's four reports by DM.
 - **`/admin xp add <member> <amount>` · `/admin xp remove <member> <amount>`** — manual XP
   adjustment. Ephemeral, clamped at zero, and deliberately silent: crossing a level this
   way fires no level-up card, since that card celebrates something earned.

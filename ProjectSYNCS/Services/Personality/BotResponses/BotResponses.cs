@@ -30,6 +30,8 @@ namespace ProjectSYNCS.Services;
 //     Interrogations ........... @mentioned with nothing else to go on
 //     TalkedAboutLines ......... her name said without addressing her
 //     TalkedAboutOwnerLines .... the same, from Papa
+//     OwnerRaspberryNameLines .. Papa calls her « ma framboise »
+//     OwnerChildNameLines ...... Papa calls her « ma fille »
 //     BackbiteRoasts ........... her name said in a mean remark
 //     RescueRoasts ............. the owner sics her on whoever he replied to
 //     MistakenIdentityReplies .. mistaken for another bot
@@ -84,6 +86,7 @@ namespace ProjectSYNCS.Services;
 //     OwnerAbsentNotices ....... someone pinged him while away
 //     OwnerReplyHeralds · OwnerAnnouncementHeralds ... /debug tell and dm heralds
 //     OwnerReportLines ......... /debug answers, reporting for duty
+//     OwnerDigestLines ......... the monthly digest in his DMs, {0} = the month
 //
 //   [Family] Tata (Analuz)
 //     TataId ................... her id, the single source of truth

@@ -38,6 +38,15 @@ public enum FeedbackKind
     Bad,
 }
 
+// Papa's pet names for her (MessageCues.ReadPetName): the raspberry ones, after the board in the
+// attic, and the daughter ones. Each family gets its own pool.
+internal enum PetName
+{
+    None,
+    Raspberry,
+    Child,
+}
+
 /// <summary>Which wording carried a verdict.</summary>
 /// <remarks>
 /// Separate from <see cref="FeedbackKind"/> because the two are independent: the tally
@@ -1070,6 +1079,52 @@ internal static class MessageCues
         return words.Concat(GlueSpelledOutRuns(words)).Any(w => _selfNames.Contains(w));
     }
 
+    // Papa's pet names for her, which name her like « syncs » does — from him only. Adjacent tokens,
+    // squashed like the words they are matched against (« fille » squashes to « file »). Longest
+    // first at a position, so « ma petite framboise » is read from its « ma », which AddressesHer's
+    // « before » check would otherwise take for a possessive in front of « petite framboise ».
+    // « ma petite fille » (a granddaughter) and « mes framboises » (fruit) match nothing.
+    private static readonly (string[] Words, PetName Kind)[] _petNames = new (string[] Words, PetName Kind)[]
+    {
+        (new[] { "ma", "petite", "framboise" }, PetName.Raspberry),
+        (new[] { "ma", "framboise" }, PetName.Raspberry),
+        (new[] { "petite", "framboise" }, PetName.Raspberry),
+        (new[] { "ma", "fille" }, PetName.Child),
+        (new[] { "mon", "enfant" }, PetName.Child),
+    }.Select(p => (p.Words.Select(Squash).ToArray(), p.Kind)).ToArray();
+
+    /// <summary>
+    /// Which of Papa's pet names the message uses, the first one in it; <see cref="PetName.None"/>
+    /// when there is none. Says nothing about who wrote it: the caller checks that it is Papa.
+    /// </summary>
+    public static PetName ReadPetName(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return PetName.None;
+        var words = AddressWords(content);
+        for (var i = 0; i < words.Count; i++)
+            if (PetNameAt(words, i) is { } match) return match.Kind;
+        return PetName.None;
+    }
+
+    /// <summary>
+    /// Whether the message names her: <see cref="NamesHer"/>, or one of Papa's pet names when he
+    /// wrote it. Every service that leaves a message naming her to ChatterService checks this one.
+    /// </summary>
+    public static bool NamesHerFrom(string content, bool fromOwner) =>
+        NamesHer(content) || fromOwner && ReadPetName(content) != PetName.None;
+
+    private static (int Length, PetName Kind)? PetNameAt(List<string> words, int i)
+    {
+        foreach (var (cue, kind) in _petNames)
+        {
+            if (i + cue.Length > words.Count) continue;
+            var hit = true;
+            for (var k = 0; k < cue.Length && hit; k++) hit = words[i + k] == cue[k];
+            if (hit) return (cue.Length, kind);
+        }
+        return null;
+    }
+
     // Words that make her name a third person rather than an address: « discute avec Syncs », « dis
     // à syncs », « la sync a planté », « je crois que syncs a bugué ».
     private static readonly HashSet<string> _thirdPersonBefore = new()
@@ -1098,22 +1153,51 @@ internal static class MessageCues
     /// </summary>
     public static bool AddressesHer(string content, ulong selfId)
     {
-        if (string.IsNullOrWhiteSpace(content)) return false;
+        if (string.IsNullOrWhiteSpace(content) || TagsSomeoneElse(content, selfId)) return false;
 
-        foreach (Match m in _mentionId.Matches(content))
-            if (m.Groups["role"].Success || m.Groups["id"].Value != selfId.ToString()) return false;
-
-        var words = TokenizeOrdered(_link.Replace(_customEmote.Replace(_mentionId.Replace(content, " "), " "), " "))
-            .Select(Squash).ToList();
+        var words = AddressWords(content);
         if (!words.Any(_selfNames.Contains)) words = GlueSpelledOutRuns(words);
 
         for (var i = 0; i < words.Count; i++)
-            if (_selfNames.Contains(words[i]) && (i == 0 || !_thirdPersonBefore.Contains(words[i - 1]))
-                && (i + 1 == words.Count || !_thirdPersonAfter.Contains(words[i + 1])))
+            if (_selfNames.Contains(words[i]) && IsAddressAt(words, i, 1))
                 return true;
 
         return false;
     }
+
+    /// <summary>
+    /// The same for Papa's pet names (<see cref="ReadPetName"/>): « ma framboise, ça va ? » is said
+    /// to her, « ma fille a planté le bot » and « je joue avec ma fille » are not.
+    /// </summary>
+    public static bool AddressesHerByPetName(string content, ulong selfId)
+    {
+        if (string.IsNullOrWhiteSpace(content) || TagsSomeoneElse(content, selfId)) return false;
+
+        var words = AddressWords(content);
+        for (var i = 0; i < words.Count; i++)
+            if (PetNameAt(words, i) is { } match && IsAddressAt(words, i, match.Length))
+                return true;
+
+        return false;
+    }
+
+    private static bool TagsSomeoneElse(string content, ulong selfId)
+    {
+        foreach (Match m in _mentionId.Matches(content))
+            if (m.Groups["role"].Success || m.Groups["id"].Value != selfId.ToString()) return true;
+        return false;
+    }
+
+    // The message's words with mentions, custom emotes and links dropped, squashed.
+    private static List<string> AddressWords(string content) =>
+        TokenizeOrdered(_link.Replace(_customEmote.Replace(_mentionId.Replace(content, " "), " "), " "))
+            .Select(Squash).ToList();
+
+    // Whether the name spanning words[i .. i + length) stands as an address, not inside a sentence
+    // about her.
+    private static bool IsAddressAt(List<string> words, int i, int length) =>
+        (i == 0 || !_thirdPersonBefore.Contains(words[i - 1]))
+        && (i + length == words.Count || !_thirdPersonAfter.Contains(words[i + length]));
 
     // Her robot heart (docs/syncs-voice.md): who a message names, for RobotHeartService. Every
     // cue survives TokenizeOrdered ("WALL-E" and "WALL·E" become "wall", "e"); two-token cues

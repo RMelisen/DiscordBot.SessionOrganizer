@@ -25,6 +25,7 @@ matching file before changing that subsystem**; the rules there are as binding a
 | Cailloux, inventory, items, icons, cosmetics, `/admin dashboard` | `docs/agents/economy.md` |
 | `/arcade` games, `ArcadeTables`, `ArcadeRunner`, `ArcadeService` | `docs/agents/arcade.md` |
 | `/admin`, `/config`, `/debug`, permissions | `docs/agents/admin.md` |
+| `/report`, the monthly digest, joins/leaves counting | `docs/agents/admin.md` |
 
 When you add a rule, put it in the subsystem file unless it genuinely applies across subsystems.
 Write the rule and its reason, not the story of how it was discovered — git keeps the history.
@@ -82,7 +83,7 @@ English. Renaming a command or option changes what people type: do it rarely, an
   It owns every message and reaction subscription; connection-lifecycle hooks (`Ready`,
   `Connected`, `Disconnected`) live in the service that needs them (`PresenceService`,
   `AmbientService`, `ApplicationEmojiService`, `PlynlingMascotService`, `PiHealthService`).
-- **Ten `BackgroundService` loops**, each with **its own interval on purpose** — never share one:
+- **Eleven `BackgroundService` loops**, each with **its own interval on purpose** — never share one:
   `ReminderService` (5 min, load-bearing — see scheduling), `PersonalReminderService` (1 min,
   `/remindme` — see scheduling), `PresenceService` (5 min, cosmetic),
   `VoiceXpService` (1 min — also feeds the voice spectator, the session roll call and her voice
@@ -90,7 +91,8 @@ English. Renaming a command or option changes what people type: do it rarely, an
   `PlynlingSweepService` (hourly), `PiHealthService` (2 min — the Pi's temperature, how the last
   run ended, gateway outages; see personality, *Her body*), `WeekendPollService` (15 min, her
   Wednesday poll; see scheduling), `SeasonalAvatarService` (hourly, plus every Ready — her
-  seasonal profile picture; see `docs/syncs-appearance.md`).
+  seasonal profile picture; see `docs/syncs-appearance.md`), `MonthlyDigestService` (hourly, her
+  monthly reports to the owner on the 1st; see admin).
 - **`MorningGreetingService`** has no interval: it sleeps until one random slot per morning
   (8:00–10:00 Paris, `Helpers/Personality/MorningGreeting`) — see personality.
   **`QuokkaRaidService`** is the same shape: it sleeps until each of the day's Quokka visits
@@ -161,6 +163,7 @@ restart **by design**.
   `ShameRecord`/`ShameDailyStat`, `QuizStat`/`QuizDailyStat`, `ChatAnswerStat`/`ChatAnswerDailyStat`. **The buckets do not sum to the totals and must not be made
   to** — everything before the buckets existed lives only in the totals. A removal always
   decrements *today's* bucket. Follow this shape for any new dated leaderboard.
+  `MemberFlowDailyStat` (joins/leaves) is buckets alone, with no totals, on purpose (see admin).
 - **No `HasMaxLength`**: SQLite doesn't enforce it. Cap at the input instead (below).
 - **Migrations are schema-only, except five deliberate data migrations** riding apply-on-startup:
   `ResetMemberXp` and `ResetXpTotals` (XP wipes), `AddPlynlingPassions` (backfill),
@@ -334,8 +337,9 @@ The bot ships as a Home Assistant add-on: the `Dockerfile` publishes a self-cont
 `linux-arm64` build, and `run.sh` maps add-on options to `Discord__Token`,
 `Discord__RegisterCommandsGlobally` and `Database__Path=/data/ProjectSYNCS.db`. Only `/data` is
 persisted, so the SQLite file must stay under it — and so do `health-state.json`,
-`ambient-state.json`, `morning-state.json` and `avatar-state.json`, which `PiHealthService`,
-`AmbientService`, `MorningGreetingService` and `SeasonalAvatarService` write next to it.
+`ambient-state.json`, `morning-state.json`, `avatar-state.json` and `report-state.json`, which
+`PiHealthService`, `AmbientService`, `MorningGreetingService`, `SeasonalAvatarService` and
+`MonthlyDigestService` write next to it.
 
 **The Pi never builds the image.** Building on the Pi left about 1 GB of .NET layers in Docker's
 build cache per version, until the disk filled. Now `.github/workflows/addon-image.yml` builds it on

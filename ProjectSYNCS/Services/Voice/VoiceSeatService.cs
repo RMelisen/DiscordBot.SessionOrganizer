@@ -42,7 +42,7 @@ namespace ProjectSYNCS.Services;
 // - once in a while (20% of seats) she undeafens and unmutes for two seconds, then thinks better
 //   of it: the icons flicker, no sound;
 // - every minute she is confirmed in a call is credited to everyone in it (VoiceCompanionService),
-//   for a future monthly report;
+//   for /recap, /report syncs and the monthly digest;
 // - her status (PresenceService) says where she is, and whose stream she is "watching".
 //
 // She reconciles every sweep against where Discord says she is, which also covers being dragged

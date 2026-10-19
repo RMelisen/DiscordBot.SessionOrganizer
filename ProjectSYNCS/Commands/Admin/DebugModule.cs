@@ -88,6 +88,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     private readonly QuokkaRaidService _quokka;
     private readonly ChatAnswerService _answers;
     private readonly UnansweredLog _unanswered;
+    private readonly MonthlyDigestService _digest;
 
     // Discord caps a message at 2000 characters; leave room for the herald line
     // and the blockquote markers.
@@ -100,8 +101,10 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
 
     public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings,
         PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz, QuizCrownService crown,
-        StickerService stickers, QuokkaRaidService quokka, ChatAnswerService answers, UnansweredLog unanswered)
+        StickerService stickers, QuokkaRaidService quokka, ChatAnswerService answers, UnansweredLog unanswered,
+        MonthlyDigestService digest)
     {
+        _digest = digest;
         _answers = answers;
         _unanswered = unanswered;
         _stickers = stickers;
@@ -785,6 +788,24 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         var counts = await _answers.GetAsync(Context.Guild.Id, statsPeriod);
         await FollowupAsync(_picker.Pick(BotResponses.OwnerReportLines),
             embed: AnswerStatsCards.BuildTypes(counts, statsPeriod), allowedMentions: AllowedMentions.None);
+    }
+
+    // The monthly digest (MonthlyDigestService) for last month, in your DMs now. It doesn't touch the
+    // digest's state: the one on the 1st still goes out.
+    [SlashCommand("digest", "Recevoir tout de suite en DM le rapport du mois dernier (tests)")]
+    public async Task DigestAsync()
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+
+        // Four reports read the database: well past Discord's 3 s on the Pi.
+        await DeferAsync(ephemeral: true);
+        var (year, month) = MonthlyDigest.PreviousMonth(DateTimeOffset.UtcNow);
+        var sent = await _digest.SendAsync(year, month);
+        await FollowupAsync(sent ? "📬 Rapport envoyé en DM." : "Impossible de t'écrire en DM (voir les logs).", ephemeral: true);
     }
 
     [SlashCommand("absent", "Activer ou désactiver ton mode absent")]

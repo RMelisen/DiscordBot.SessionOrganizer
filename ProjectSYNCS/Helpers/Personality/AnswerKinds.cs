@@ -41,6 +41,8 @@ public static class AnswerKinds
     public const string StreakNudge = "streak:nudge";
     public const string StreakEnd = "streak:end";
     public const string StreakSulk = "streak:sulk";
+    public const string PapaRaspberry = "papa:pet-raspberry";
+    public const string PapaChild = "papa:pet-child";
 
     internal static string Intent(ChatIntent intent) => "intent:" + intent;
     public static string Context(ReplyContext context) => "context:" + context;

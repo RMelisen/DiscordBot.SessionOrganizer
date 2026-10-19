@@ -47,6 +47,52 @@ same check.
   - Kept apart from `/shame` on purpose: a real moderation record on a public joke wall would
     make the warning a humiliation and the wall less of a joke.
 
+## `/report` and the monthly digest
+
+`sessions`, `polls`, `community`, `syncs`: her reports to the staff. Same gate as `/admin`
+(`IsStaff` per handler, no `[DefaultMemberPermissions]`, guild-only).
+
+- **Private, so they may name people** (no-shows, latecomers, the busiest, the ones going quiet).
+  This is the one exception to « absences are a count, never names » (scheduling, *Roll call*),
+  and it holds only because nobody else reads them. Every card takes `names`: anything ever
+  posted where others can read it renders with `names: false`, which drops every naming field
+  (the checks assert no `<@` survives).
+- **One path**: `ReportService.BuildAsync(kind, guild, window, names)` serves the command, the
+  period buttons (`report:win:{kind}:{period}:0`, `ReportComponentHandler`, deferred first,
+  re-checks `IsStaff`) and the digest. `ReportKind` names are in custom-ids: never rename.
+- **Windows are `Helpers/Core/ReportWindow`**: inclusive Paris day keys. Bucket tables filter
+  `Day` in SQL; DateTimeOffset rows (sessions, polls, `/tonight`, outages) are read whole per guild
+  and windowed in memory. Opens on 30 days; the buttons are `StatsPeriodUi`'s three.
+  - **« Depuis toujours » reads the daily buckets from day 0, not the totals tables**, unlike
+    every leaderboard: a report needs each day's shape, which totals don't have. So it covers only
+    what was counted since each table's buckets existed, and its label says « depuis le début des
+    relevés ».
+  - Trends compare against `ReportWindow.Previous`: the same number of days before, the previous
+    calendar month for the digest, none for all time.
+- **The arithmetic is pure** (`SessionReport`, `PollReport`, `CommunityReport`, `SyncsReport` in
+  `Helpers/`), the services only fetch rows, the cards (`ReportCards`) are static. The checks
+  feed the helpers cases and measure every card at its worst; re-run them after adding a field.
+- **Rules worth knowing**:
+  - a session belongs to the day of its `ScheduledAt`, and so does a cancellation (there is no
+    `CancelledAt`);
+  - attendance goes through `SessionAttendance.IsMissed` / `CameLate` (scheduling, *Roll call*);
+  - a poll « became a session » when a non-cancelled session sits on one of its slots: nothing
+    links them, it is the match `PollModule` uses against duplicates;
+  - « active » is any XP, reaction or voice minute that day (no message count exists);
+  - uptime is measured over the days the Pi recorded its temperature.
+- **Joins and leaves** (`MemberFlowDailyStat`, `MemberFlowTracker` on `UserJoined` / `UserLeft`,
+  bots skipped): daily buckets with **no totals table**, counted from 7.5.0 on. Nothing needs an
+  all-time figure older than the buckets, and Discord shows the member count.
+- **The monthly digest** (`MonthlyDigestService`, its own hourly loop): from 09:00 Paris on the
+  1st, the four reports for the previous calendar month go to `OwnerId` by DM, one embed per
+  message (four in one could pass 6000), each in its own `try`, under an `OwnerDigestLines` line
+  (picked by `DailyRotation`, since a once-a-month pool would gain nothing from the picker).
+  - Timing is pure, in `Helpers/Admin/MonthlyDigest`.
+  - `report-state.json` (beside the DB) holds the last month sent and is written **before** sending.
+  - No file means the previous month is marked sent without sending, so a deploy never DMs a
+    surprise.
+  - `/debug digest` sends last month's now, leaving the state alone.
+
 ## `/config`
 
 A flat `/config show` (a static Components V2 card, `ConfigCards.Build`) plus one subgroup per
@@ -103,7 +149,8 @@ service is the only writer: any write drops that guild's entry. A failed read de
 
 ## `/debug` — owner only
 
-`tell`, `dm`, `absent`, `plynling`, `emotes`, `quiz` (post or close a pop quiz now, see `quiz.md`),
+`tell`, `dm`, `absent`, `plynling`, `emotes`, `digest` (last month's digest in your DMs now, see
+*`/report` and the monthly digest*), `quiz` (post or close a pop quiz now, see `quiz.md`),
 `sticker` (post any of her sticker strips here, bypassing the gate, see `personality.md`),
 `answers` (which kinds of chat answer she gives most, and what she couldn't answer specifically,
 see `personality.md`, *Answer stats*),

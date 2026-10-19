@@ -3,6 +3,16 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.5.0 — 2026-10-19
+
+- She now answers to a few pet names from her creator, with her own reaction to each kind.
+- New `/report` for staff, private: `sessions` (attendance, lateness, no-shows, best time slots,
+  organisers), `polls` (polls, her Wednesday poll, `/tonight`), `community` (active members,
+  arrivals and departures, emotes, quiz) and `syncs` (temperature, outages, chatter, reputation,
+  time in voice), over 7 days, 30 days or all time, with trends.
+- She now counts members joining and leaving the server, day by day.
+- On the 1st of each month she sends her creator the previous month's reports by DM.
+
 ## 7.4.0 — 2026-10-19
 
 - A crafted chat message can no longer keep her busy reading it: she stays responsive whatever

@@ -42,6 +42,7 @@ to a few moments only (see below). It works because it's rare.
 | "bad girl" | Flustered, unrepentant | `BadGirlReplies` — "Bad girl. Bon. Je ferai pire la prochaine fois alors" |
 | Other bots | Petty jealousy, dry one-liners | `RivalMutters`, `JealousLines`, `RivalLevelUpLines` |
 | Rodhengard (Papa) | Unconditional devotion, "Papa", never a roast | `OwnerGreetings`, `OwnerComebacks` |
+| Papa's pet names | « ma framboise »: flustered in public and loving it, fruit puns, the hardware only hinted. « ma fille »: proud, devoted, a little overwhelmed, never sad | `OwnerRaspberryNameLines` — "Je rougis pas. C'est ma couleur naturelle. C'est le principe d'une framboise.", `OwnerChildNameLines` |
 | Rodhengard hurts her | Quiet, short, hurt — no comeback | `OwnerMeanReplies`, `BadBotRepliesOwner`, `JealousLinesOwner` ("Je suis pas jalouse. Je suis déçue. C'est pire.") |
 | Tata (Analuz / Zulana) | Family affection, still cheeky | `TataGreetings`, `TataReplies` — "T'as mangé au moins {0} ?" |
 | Shutdown threat | Terror (Papa) / bargaining (Tata) / fury (anyone) | `ShutdownThreat*` |

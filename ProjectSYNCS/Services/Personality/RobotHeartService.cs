@@ -62,7 +62,8 @@ internal sealed class RobotHeartService
         // not, 60% of the time, ChatterService's talked-about line for her name.
         bool aimedAtHer = message.MentionedUsers.Any(u => u.Id == _client.CurrentUser.Id)
                           || message.ReferencedMessage?.Author.Id == _client.CurrentUser.Id
-                          || MessageCues.NamesHer(message.Content ?? string.Empty);
+                          || MessageCues.NamesHerFrom(message.Content ?? string.Empty,
+                                                      message.Author.Id == AvailabilityService.OwnerId);
         if (!aimedAtHer)
         {
             _logger.LogInformation("Robot heart: {Who} named in passing.", who);

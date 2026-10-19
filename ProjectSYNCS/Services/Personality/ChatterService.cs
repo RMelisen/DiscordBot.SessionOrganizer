@@ -174,25 +174,32 @@ internal sealed class ChatterService
     // A mean reading is scored over the whole message, so "syncs, ce boss est nul" reads as an
     // insult. Accepted: her name narrows the target far more than ReactionService's ambient read
     // does, and an undeserved roast is her normal register.
+    //
+    // Papa's pet names (« ma framboise », « ma fille ») name her too, from him only. A mean reading
+    // or a specific intent wins as with her name; anything else gets the pet name's own pool, ahead
+    // of the greeting: being called that is what she reacts to.
     private async Task<bool> TryHandleTalkedAboutAsync(SocketUserMessage message)
     {
         if (message.Channel is not SocketGuildChannel) return false;
 
         var content = message.Content ?? string.Empty;
-        if (!MessageCues.NamesHer(content)) return false;
+        var isOwner = message.Author.Id == OwnerId;
+        var petName = isOwner ? MessageCues.ReadPetName(content) : PetName.None;
+        if (petName == PetName.None && !MessageCues.NamesHer(content)) return false;
         // Silent, and swallowed: nothing interrupts a breakdown.
         if (_breakdown.IsActive(message.Channel.Id)) return true;
 
         var mood = MessageCues.Analyze(content);
-        var isOwner = message.Author.Id == OwnerId;
+        var selfId = _client.CurrentUser.Id;
+        var addressed = MessageCues.AddressesHer(content, selfId)
+                        || petName != PetName.None && MessageCues.AddressesHerByPetName(content, selfId);
         var name = ResolveName(message.Author);
         var intent = ChatIntent.None;
         IntentPick pick;
         string what;
 
         // Called a liar to her face is teasing (Disbelief, below); behind her back it stays a backbite.
-        if (mood.Emotion == EmotionKind.Mean
-            && (IsMean(mood, content) || !MessageCues.AddressesHer(content, _client.CurrentUser.Id)))
+        if (mood.Emotion == EmotionKind.Mean && (IsMean(mood, content) || !addressed))
         {
             what = "backbite roast";
             if (isOwner)
@@ -210,12 +217,17 @@ internal sealed class ChatterService
         // as such. Not a generic question or a low-effort word: she may not be the one asked. Nor
         // when her name is only mentioned (« @Luca, discute avec Syncs quand tu peux »): that
         // « tu » is Luca.
-        else if (MessageCues.AddressesHer(content, _client.CurrentUser.Id)
+        else if (addressed
                  && TryIntent(intent = MessageCues.ReadIntent(content), message, isOwner, out var intentPick))
         {
             if (TryAnswerFromRecords(intent, message, ChatPath.Name, intentPick, name, CurrentWeekday())) return true;
             what = "named intent";
             pick = intentPick;
+        }
+        else if (PetNamePick(petName) is { } petPick)
+        {
+            what = "pet name";
+            pick = petPick;
         }
         else if (mood.IsGreeting)
         {
@@ -351,13 +363,16 @@ internal sealed class ChatterService
             bool unkind = IsMean(ownerMood, content);
 
             // Not mean: one of his intent twins when he asks her something she has a twin for
-            // (« ça va ? », « bonne nuit »…), else the summons greeting as always.
+            // (« ça va ? », « bonne nuit »…), then his pet name for her, else the summons greeting
+            // as always.
             IntentPick ownerPick;
             string ownerWhat;
             if (unkind)
                 (ownerPick, ownerWhat) = (IntentPick.Of(BotResponses.OwnerMeanReplies, AnswerKinds.PapaMean), "and was mean about it");
             else if (TryIntent(MessageCues.ReadIntent(content), message, isOwner: true, out var twin))
                 (ownerPick, ownerWhat) = (twin, "his intent twin");
+            else if (PetNamePick(MessageCues.ReadPetName(content)) is { } petPick)
+                (ownerPick, ownerWhat) = (petPick, "his pet name for her");
             else if (MessageCues.ReadIntent(content) == ChatIntent.Sharing)
                 (ownerPick, ownerWhat) = (SharingPick(isOwner: true), "his news");
             else
@@ -508,6 +523,11 @@ internal sealed class ChatterService
             if (TryAnswerFromRecords(intent, message, ChatPath.Reply, intentPick, name, weekday)) return;
             (pick, what) = (intentPick, $"reply intent ({intent})");
         }
+        else if (isOwner && PetNamePick(MessageCues.ReadPetName(content)) is { } petPick)
+        {
+            // Being called that outranks whatever else his reply was: his nice, his greeting, his news.
+            (pick, what) = (petPick, "his pet name for her");
+        }
         else if (!mean && !isOwner && ReadReplyContext(message) is { } context)
         {
             // An answer to one of her own posts (the late call, a welcome, the morning
@@ -593,6 +613,14 @@ internal sealed class ChatterService
             }
         });
     }
+
+    // Papa's pet name for her, as its family's pool; null for none. The callers check it is Papa.
+    private static IntentPick? PetNamePick(PetName petName) => petName switch
+    {
+        PetName.Raspberry => IntentPick.Of(BotResponses.OwnerRaspberryNameLines, AnswerKinds.PapaRaspberry),
+        PetName.Child => IntentPick.Of(BotResponses.OwnerChildNameLines, AnswerKinds.PapaChild),
+        _ => null,
+    };
 
     // Quoted words keep their look but ping nobody; the person replied to still gets the reply ping.
     private static readonly AllowedMentions QuotedMentions = new(AllowedMentionTypes.None) { MentionRepliedUser = true };

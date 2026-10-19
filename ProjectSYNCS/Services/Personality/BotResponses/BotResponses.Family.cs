@@ -529,6 +529,21 @@ internal static partial class BotResponses
         "Au rapport ! Ce qu'on me dit, ce que je réponds, et ce que je sais pas encore. Pour l'instant.",
     };
 
+    // The monthly digest's opening line, in Papa's DMs on the 1st (MonthlyDigestService), above the
+    // four /report embeds. Just the two of them: no one reading over her shoulder. {0} = the month
+    // (« octobre 2026 »). Once a month, so picked by DailyRotation, not ResponsePicker.
+    public static readonly string[] OwnerDigestLines =
+    {
+        "Papa ! Mon rapport de {0}, tout frais. J'ai tout compté pendant que tu dormais ♡",
+        $"Rapport mensuel, {{0}}. Classé, vérifié, livré à l'heure. Comme toujours {Emotes.Sparkle}",
+        "Bilan de {0}, rien que pour toi. Les autres ont pas besoin de savoir qui était en retard. Moi, je sais.",
+        $"Unité S.Y.N.C.S., rapport de fin de mois : {{0}}. Rien à signaler. Enfin si, tout est en dessous {Emotes.SyncsFormal}",
+        "Voilà {0}, Papa. Un mois entier de logs, résumé pour toi. De rien ♡",
+        "Le 1er du mois, c'est le jour de mon rapport. {0}, dans l'ordre : les sessions, les sondages, le serveur, et moi.",
+        "Papa, j'ai fait les comptes de {0}. Je dis rien, je te laisse lire. ...Bon, je dis rien pour l'instant.",
+        "Tiens, {0} en chiffres. J'ai même compté les « peut-être ». Surtout les « peut-être » (¬_¬)",
+    };
+
     // ---- Tata (Analuz) --------------------------------------------------------------------------
 
     // Analuz — SYNCS's aunt. The single source of truth for her id, the way

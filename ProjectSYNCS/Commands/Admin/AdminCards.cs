@@ -66,34 +66,8 @@ public static class AdminCards
         (EconomyLog.CosBought, "Cosmétiques achetés"), (EconomyLog.CosCrafted, "Cosmétiques fabriqués"),
     };
 
-    private const string Bars = "▁▂▃▄▅▆▇█";
-    public const int SparklineMax = 30;
-
-    /// <summary>
-    /// One character per day, scaled to the series' own maximum; past <see cref="SparklineMax"/> days
-    /// the days are summed into that many buckets, so « Tout » stays one line.
-    /// </summary>
-    public static string Sparkline(IReadOnlyList<long> values)
-    {
-        var n = values.Count;
-        var buckets = Math.Min(SparklineMax, n);
-        var sums = new long[buckets];
-        for (var b = 0; b < buckets; b++)
-            for (var i = b * n / buckets; i < (b + 1) * n / buckets; i++)
-                sums[b] += values[i];
-        var max = sums.Length == 0 ? 0 : sums.Max();
-        return new string(sums.Select(v => max <= 0 ? Bars[0]
-            : Bars[(int)Math.Round(v * 7.0 / max, MidpointRounding.ToZero)]).ToArray());
-    }
-
-    /// <summary>The trend against the previous window: « +12 % », « −8 % », « = », « nouveau », or nothing.</summary>
-    public static string Delta(long current, long? previous)
-    {
-        if (previous is not { } p) return "";
-        if (p == 0) return current > 0 ? "nouveau" : "";
-        var pct = (long)Math.Round((current - p) * 100.0 / p);
-        return pct == 0 ? "=" : pct > 0 ? $"+{pct} %" : $"−{-pct} %";
-    }
+    // Sparklines and trends are drawn by Helpers/Core/TextChart, shared with /report.
+    private static string Sparkline(IReadOnlyList<long> values) => TextChart.Sparkline(values);
 
     public static (Embed Embed, MessageComponent Components) BuildDashboard(DashboardData d)
     {
@@ -110,7 +84,7 @@ public static class AdminCards
             }
             return total;
         }
-        string Trend(long current, long? previous) => Delta(current, previous) is { Length: > 0 } t ? $" ({t})" : "";
+        string Trend(long current, long? previous) => TextChart.Trend(current, previous);
         string Shares(IEnumerable<(string Metric, string Label)> labels, long total) => total <= 0 ? "—"
             : string.Join(" · ", labels.Select(l => (l.Label, V: d.Total(l.Metric))).Where(x => x.V > 0).OrderByDescending(x => x.V)
                 .Select(x => $"{x.Label} {Math.Round(x.V * 100.0 / total)} %"));

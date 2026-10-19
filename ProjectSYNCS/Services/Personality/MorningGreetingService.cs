@@ -159,7 +159,7 @@ internal sealed class MorningGreetingService : BackgroundService
 
         var content = message.Content ?? string.Empty;
         // « Salut syncs » is aimed at her too: ChatterService greets it back.
-        if (MessageCues.NamesHer(content)) return;
+        if (MessageCues.NamesHerFrom(content, message.Author.Id == AvailabilityService.OwnerId)) return;
         if (MessageCues.ReadFeedback(content) != FeedbackKind.None) return;
         var mood = MessageCues.Analyze(content);
         if (!mood.IsGreeting || mood.Emotion == EmotionKind.Mean) return;
