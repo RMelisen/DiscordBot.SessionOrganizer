@@ -1605,7 +1605,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     Covers("McResourceNames", typeof(McResource));
 
     // In-game orders (McCommand): her name is needed, a refusal is not an order, staying wins.
-    var mcNames = new[] { "SYNCS", "syncs" };
+    var mcNames = new[] { "SYNCS" }.Concat(McCommand.HerNames).ToArray();
     void Order(string text, McOrder expected)
     {
         var got = McCommand.Read(text, mcNames);
@@ -1644,7 +1644,75 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     Order("Syncs défends-moi !", McOrder.Guard);
     Order("syncs ramène-toi", McOrder.Come);
     Order("syncs va chercher", McOrder.Unknown);
-    Order("syncs va chercher plus de bois", McOrder.None);
+    Order("syncs va chercher plus de bois", McOrder.Collect); // « plus de » is more, not a refusal
+
+    // Variants of the orders she knows: familiar French, game-chat spellings, a little English.
+    foreach (var (text, expected) in new (string, McOrder)[]
+    {
+        ("syncs vien", McOrder.Come), ("syncs vi1 stp", McOrder.Come), ("syncs ramène ta fraise", McOrder.Come),
+        ("syncs rapplique", McOrder.Come), ("syncs radine-toi", McOrder.Come), ("syncs viens me voir", McOrder.Come),
+        ("syncs rapproche-toi", McOrder.Come), ("syncs au pied", McOrder.Come), ("syncs come here", McOrder.Come),
+        ("c'est pas grave, syncs viens", McOrder.Come), ("sync viens", McOrder.Come),
+        ("syncs viens avec moi", McOrder.Follow), ("syncs reste avec moi", McOrder.Follow),
+        ("syncs colle-moi", McOrder.Follow), ("syncs suis-moi stp", McOrder.Follow), ("syncs follow me", McOrder.Follow),
+        ("syncs fige-toi", McOrder.Stay), ("syncs annule", McOrder.Stay), ("syncs laisse tomber", McOrder.Stay),
+        ("syncs ça suffit", McOrder.Stay), ("syncs arrête de me suivre", McOrder.Stay), ("syncs sur place", McOrder.Stay),
+        ("syncs bouge pu", McOrder.Stay), ("syncs wait", McOrder.Stay),
+        ("syncs au dodo", McOrder.Sleep), ("syncs va au lit", McOrder.Sleep), ("syncs pionce", McOrder.Sleep),
+        ("syncs au secours", McOrder.Guard), ("syncs à l'aide !", McOrder.Guard), ("syncs couvre-moi", McOrder.Guard),
+        ("syncs tue les monstres", McOrder.Guard), ("syncs escorte-moi", McOrder.Guard), ("syncs help me", McOrder.Guard),
+        ("syncs fais du bois", McOrder.Collect), ("syncs j'ai besoin de fer", McOrder.Collect),
+        ("syncs il me faut 20 pierres", McOrder.Collect), ("syncs ramasse du sable", McOrder.Collect),
+        ("syncs abats 5 arbres", McOrder.Collect), ("syncs trouve-moi des diams", McOrder.Collect),
+        ("syncs file-moi du charbon", McOrder.Collect), ("syncs chop some wood", McOrder.Collect),
+        ("syncs direction 100 64 -200", McOrder.GoTo), ("syncs rdv 100 -200", McOrder.GoTo),
+        ("syncs rends-toi en 100 64 -200", McOrder.GoTo),
+        // Refusals, read next to the verb only.
+        ("syncs ne viens pas", McOrder.None), ("syncs viens plus", McOrder.None), ("syncs ne va pas chercher de bois", McOrder.None),
+        ("syncs reste pas avec moi", McOrder.Stay), // « don't stay with me »: she stops following, which is what was meant
+        ("syncs protège-moi pas", McOrder.None),
+        // Not orders: words that look like one in other sentences.
+        ("syncs help", McOrder.Unknown), ("syncs t'es assez forte", McOrder.Unknown), ("c'est à moi syncs", McOrder.Unknown),
+        ("syncs tu dors ?", McOrder.Sleep), // she takes it as an invitation; accepted
+    })
+        Order(text, expected);
+    Request("syncs il me faut 20 pierres", McOrder.Collect, resource: McResource.Stone, count: 20);
+    Request("syncs abats 5 arbres", McOrder.Collect, resource: McResource.Wood, count: 5);
+    Request("syncs trouve-moi des diams", McOrder.Collect, resource: McResource.Diamond, count: McCommand.DefaultCount);
+    Request("syncs rdv 100 -200", McOrder.GoTo, "100 -200");
+
+    // How people type in game chat: stretched letters, phonetic spellings, one slip on a long verb.
+    foreach (var (text, expected) in new (string, McOrder)[]
+    {
+        ("syncs viiiiens", McOrder.Come), ("syncs stoooop", McOrder.Stay), ("syncs suis mwa", McOrder.Follow),
+        ("syncs viens vers moa", McOrder.Come), ("syncs protge-moi", McOrder.Guard), ("syncs va chercer du bois", McOrder.Collect),
+        ("syncs rapplque", McOrder.Come), ("sycns viens", McOrder.Come), ("syncsss viens", McOrder.Come),
+        ("chui là syncs", McOrder.Unknown), ("jsuis ici syncs", McOrder.Come), // « je suis ici »: here, so come
+        ("syncs viens stp", McOrder.Come), ("syncs suis moi steuplait", McOrder.Follow),
+        // Questions and infinitives.
+        ("syncs tu peux venir ?", McOrder.Come), ("syncs tu peux me suivre ?", McOrder.Follow),
+        ("syncs tu pourrais me protéger ?", McOrder.Guard), ("syncs tu peux rester là ?", McOrder.Stay),
+        ("syncs tu peux aller dormir ?", McOrder.Sleep), ("syncs tu peux aller chercher du fer ?", McOrder.Collect),
+        ("syncs tu veux bien me rejoindre", McOrder.Come), ("syncs tu peux rester avec moi", McOrder.Follow),
+        ("syncs tu peux pas venir ?", McOrder.None),
+        // Traps: short words stay exact, so one slip doesn't make another order.
+        ("syncs les liens", McOrder.Unknown), ("syncs t'es teste", McOrder.Unknown),
+    })
+        Order(text, expected);
+
+    // Quantities in words, read only right before the resource.
+    Request("syncs va chercher dix bûches", McOrder.Collect, resource: McResource.Wood, count: 10);
+    Request("syncs ramène une stack de pierre", McOrder.Collect, resource: McResource.Stone, count: 64);
+    Request("syncs il me faut une dizaine de bûches", McOrder.Collect, resource: McResource.Wood, count: 10);
+    Request("syncs ramasse un peu de sable", McOrder.Collect, resource: McResource.Sand, count: 5);
+    Request("syncs va chercher trois diamants", McOrder.Collect, resource: McResource.Diamond, count: 3);
+    Request("syncs va chercher x20 charbon", McOrder.Collect, resource: McResource.Coal, count: 20);
+    Request("syncs va chercher 15x fer", McOrder.Collect, resource: McResource.Iron, count: 15);
+    Request("syncs va chercher du bois pour une maison", McOrder.Collect, resource: McResource.Wood, count: McCommand.DefaultCount);
+    // Coordinates as Minecraft shows them: F3 decimals (floored to the block), x:/z: labels, brackets.
+    Request("syncs va XYZ: 120.523 / 64.000 / -300.700", McOrder.GoTo, "120 64 -301");
+    Request("syncs va x:120 z:-300", McOrder.GoTo, "120 -300");
+    Request("syncs va en (120, 64, -300)", McOrder.GoTo, "120 64 -300");
 
     void Request(string text, McOrder order, string? coords = null, McResource? resource = null, int count = 0)
     {

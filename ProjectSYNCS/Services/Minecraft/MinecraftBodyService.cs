@@ -464,7 +464,7 @@ public sealed class MinecraftBodyService : BackgroundService
     private void OnChat(string player, string text, bool whispered)
     {
         if (player.Length == 0) return;
-        var request = McCommand.Parse(text, new[] { _username, "syncs" });
+        var request = McCommand.Parse(text, [_username, .. McCommand.HerNames]);
         switch (request.Order)
         {
             case McOrder.None:

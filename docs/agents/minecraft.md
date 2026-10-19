@@ -63,8 +63,32 @@ sessions and G-Portal has no start/stop API, so she **detects** the server and n
 ## Orders
 
 A player gives her an order in chat (`McCommand`, pure, with cases in the checks). It needs her
-name in the message, because the chat is shared. A refusal (« viens pas ») is not an order. Stay
-is read before the negation, because « bouge pas » means stay. A message that only names her
+name in the message (`McCommand.HerNames` plus her in-game name: « sync » counts), because the
+chat is shared. Stay is read before refusals, because « bouge pas » means stay; « reste avec moi »
+is read before stay, because it means follow.
+
+**Refusals are read next to the verb only**: « ne » up to two words before, « pas » just before or
+up to two words after, « jamais » after, « plus » after unless it means more (« plus de bois »).
+A « pas » further away belongs to another sentence (« c'est pas grave, syncs viens »).
+
+**The phrase lists are written the way people type in game chat**: familiar French (« ramène ta
+fraise », « fais du bois », « il me faut »), shortcuts (« vien », « vi1 », « diams »), a little
+English, and the infinitives of questions (« tu peux venir ? »). Every phrase is whole words,
+longest first. A word that is common outside orders stays out (« assez », « help » alone, « à
+moi »): a missed order costs a retype, a false one makes her walk off. Add the misses found in the
+wild, with a case in the checks.
+
+Before matching, `Clean` squeezes letters held down for emphasis (three or more become one:
+« viiiiens »), maps game-chat spellings (`Slang`: « mwa », « twa », « chui » → « je suis », so
+« chui là » is never « suis » = follow) and drops politeness. Words of six letters or more match
+with one slip (`Close`: a letter added, dropped, changed or two swapped), and so does her name;
+shorter words must be exact, because at four or five letters one slip makes another word
+(« viens » / « liens »).
+
+**Counts** come from a number anywhere (« 20 », « x20 », « 20x »), else from a quantity in words
+right before the resource (« dix bûches », « une stack de pierre », « une dizaine de bûches »),
+else 10. Only right before: « du bois pour une maison » isn't one log. **Coordinates** accept
+F3's decimals, floored to the block (-300.7 is block -301), and labels or brackets around them. A message that only names her
 gets the list of what she can do (`McHelpLines`), but only when the name opens or closes it: a
 call, not talk about her.
 

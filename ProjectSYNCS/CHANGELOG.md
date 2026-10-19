@@ -3,6 +3,21 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.13.2 — 2026-10-19
+
+- Minecraft: she understands many more ways to give each order: familiar French (« ramène ta
+  fraise », « rapplique », « fais du bois », « il me faut 20 pierres », « au secours », « pionce »),
+  game-chat spellings (« vien », « diams ») and a little English. She also answers to « sync ».
+- A « pas » elsewhere in the message no longer cancels an order (« c'est pas grave, syncs viens »),
+  and « plus de bois » now means more wood.
+- « reste avec moi » means follow me, not stop.
+- She reads game-chat typing: stretched letters (« viiiiens »), phonetic spellings (« suis mwa »,
+  « chui là »), a one-letter slip in a long verb or in her name (« protge-moi », « sycns »), and
+  questions (« tu peux venir ? », « tu pourrais me protéger ? »).
+- Quantities in words before what to gather (« dix bûches », « une stack de pierre », « une dizaine
+  de bûches », « un peu de sable »), and « x20 » / « 20x ».
+- Coordinates pasted from the F3 screen (« 120.523 / 64.000 / -300.700 ») or written « x:120 z:-300 ».
+
 ## 7.13.1 — 2026-10-19
 
 - Minecraft: she no longer joins the server until the owner allows it with `/debug minecraft`
