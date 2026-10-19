@@ -3,6 +3,18 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.11.0 — 2026-10-19
+
+- She plays Minecraft: a real player on the server (Java Edition, offline mode). She joins on her
+  own when 4 players are on, or the owner is, and leaves once 2 or fewer have been on for more
+  than 3 minutes.
+- In the game's chat she says hello and goodbye, and comments on deaths (creepers, falls, lava,
+  mobs, friendly fire, her own), advancements, nightfall and whoever hits her. One line per kind
+  every 30 seconds at most.
+- She says in the bots channel when she goes to play and when she's back.
+- New add-on options: `minecraft_host` (empty turns it off), `minecraft_port`,
+  `minecraft_username`, `minecraft_owner`.
+
 ## 7.10.0 — 2026-10-19
 
 - The messages she had no specific answer for (`/debug answers`, examples view, and the owner's

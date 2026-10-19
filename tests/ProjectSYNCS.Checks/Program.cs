@@ -1552,5 +1552,83 @@ var batch2Widest = new Dictionary<string, int>();
 
 Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2Widest.Select(x => $"{x.Key} {x.Value}"))} chars");
 
+// 13. Minecraft: when she joins and leaves (McPresence), how she reads deaths (McDeath), and her
+// in-game pools (plain text under Minecraft's 256-character chat cap).
+{
+    var mcT0 = new DateTimeOffset(2026, 10, 19, 20, 0, 0, TimeSpan.Zero);
+    string[] Names(int n, params string[] extra) => Enumerable.Range(1, n).Select(i => $"p{i}").Concat(extra).ToArray();
+    void Presence(string what, McPresenceVerdict got, bool inGame, bool fewRunning)
+    {
+        if (got.InGame != inGame || (got.FewSince is not null) != fewRunning)
+            Fail($"presence: {what}: got InGame={got.InGame}, FewSince={got.FewSince}");
+    }
+
+    Presence("joins at 4", McPresence.Decide(true, Names(4), 4, "Papa", false, null, mcT0), true, false);
+    Presence("no join at 3", McPresence.Decide(true, Names(3), 3, "Papa", false, null, mcT0), false, false);
+    Presence("joins for the owner alone", McPresence.Decide(true, Names(0, "papa"), 1, "Papa", false, null, mcT0), true, false);
+    Presence("no owner configured", McPresence.Decide(true, Names(1), 1, "", false, null, mcT0), false, false);
+    Presence("count beyond the sample", McPresence.Decide(true, Names(2), 5, "Papa", false, null, mcT0), true, false);
+    Presence("stays at 3", McPresence.Decide(true, Names(3), 3, "Papa", true, null, mcT0), true, false);
+    Presence("≤2 starts the clock", McPresence.Decide(true, Names(2), 2, "Papa", true, null, mcT0), true, true);
+    Presence("≤2 at 3 min stays", McPresence.Decide(true, Names(2), 2, "Papa", true, mcT0, mcT0 + McPresence.Linger), true, true);
+    Presence("≤2 past 3 min leaves", McPresence.Decide(true, Names(1), 1, "Papa", true, mcT0, mcT0 + McPresence.Linger + TimeSpan.FromSeconds(1)), false, true);
+    Presence("owner on: ≤2 doesn't count", McPresence.Decide(true, Names(1, "Papa"), 2, "Papa", true, mcT0, mcT0 + TimeSpan.FromHours(1)), true, false);
+    Presence("back to 3 resets the clock", McPresence.Decide(true, Names(3), 3, "Papa", true, mcT0, mcT0 + TimeSpan.FromMinutes(2)), true, false);
+    Presence("server down", McPresence.Decide(false, Names(8, "Papa"), 9, "Papa", true, null, mcT0), false, false);
+
+    var mcPlayers = new[] { "Alice", "Bob" };
+    McArg McP(string n) => new(n, null);
+    void Death(string key, McArg[] args, McDeathKind? kind)
+    {
+        var got = McDeath.Classify(key, args, mcPlayers, "SYNCS")?.Kind;
+        if (got != kind) Fail($"death {key}: got {got?.ToString() ?? "null"}, expected {kind?.ToString() ?? "null"}");
+    }
+    Death("death.attack.explosion.player", new[] { McP("Alice"), new McArg("Creeper", "entity.minecraft.creeper") }, McDeathKind.Creeper);
+    Death("death.fell.accident.generic", new[] { McP("Alice") }, McDeathKind.Fall);
+    Death("death.attack.fall", new[] { McP("Alice") }, McDeathKind.Fall);
+    Death("death.attack.lava", new[] { McP("Bob") }, McDeathKind.Fire);
+    Death("death.attack.inFire.player", new[] { McP("Bob"), new McArg("Zombie", "entity.minecraft.zombie") }, McDeathKind.Fire);
+    Death("death.attack.drown", new[] { McP("Bob") }, McDeathKind.Drown);
+    Death("death.attack.mob", new[] { McP("Bob"), new McArg("Zombie", "entity.minecraft.zombie") }, McDeathKind.Mob);
+    Death("death.attack.arrow", new[] { McP("Bob"), new McArg("Skeleton", "entity.minecraft.skeleton") }, McDeathKind.Mob);
+    Death("death.attack.player", new[] { McP("Bob"), McP("Alice") }, McDeathKind.Player);
+    Death("death.attack.arrow.item", new[] { McP("Bob"), McP("Alice"), new McArg("Bow", null) }, McDeathKind.Player);
+    Death("death.attack.outOfWorld", new[] { McP("Alice") }, McDeathKind.Other);
+    Death("death.attack.mob", new[] { McP("SYNCS"), new McArg("Zombie", "entity.minecraft.zombie") }, McDeathKind.Self);
+    Death("death.attack.mob", new[] { McP("Rex"), new McArg("Zombie", "entity.minecraft.zombie") }, null); // a named pet
+    Death("chat.type.advancement.task", new[] { McP("Alice"), McP("Stone Age") }, null);
+    if (McDeath.AdvancementEarner("chat.type.advancement.task", new[] { McP("Alice"), McP("Stone Age") }, mcPlayers) != "Alice")
+        Fail("advancement earner");
+    if (McDeath.AdvancementEarner("chat.type.advancement.goal", new[] { McP("Rex"), McP("x") }, mcPlayers) is not null)
+        Fail("advancement earner: not a player");
+    Covers("McDeathLines", typeof(McDeathKind));
+
+    var mcStatus = ServerListPing.Parse("""{"version":{"name":"1.21.4","protocol":769},"players":{"max":20,"online":3,"sample":[{"name":"Alice","id":"x"},{"name":"Bob","id":"y"}]},"description":"hi"}""");
+    if (mcStatus is not { Online: 3, Max: 20, Version: "1.21.4" } || !mcStatus.Sample.SequenceEqual(new[] { "Alice", "Bob" }))
+        Fail("server list ping: parse");
+    if (ServerListPing.Parse("""{"version":{"name":"x"}}""") is not null || ServerListPing.Parse("not json") is not null)
+        Fail("server list ping: not a status");
+
+    // In game there is no Discord markup: no custom emotes, no sticker tags, and Minecraft cuts chat at 256.
+    foreach (var f in new[] { "McArrivalLines", "McLeavingLines", "McDeathLines", "McHitByPlayerLines", "McAdvancementLines", "McNightLines" })
+    foreach (var (name, lines) in Pools(f))
+    {
+        if (lines.Distinct().Count() != lines.Length) Fail($"{name}: duplicate lines");
+        foreach (var l in lines)
+        {
+            string s;
+            try { s = string.Format(l, "Abcdefghijklmnop"); } // 16, the longest Minecraft name
+            catch (FormatException) { Fail($"{name}: format: {l}"); continue; }
+            if (s.Length > 256) Fail($"{name}: {s.Length} characters: {l}");
+            if (Sticker.Strip(s) != s || s.Contains('<') || s.Contains('{') || s.Contains('}') || s.Contains('✨') || s.Contains("(｡•́︿•̀｡)"))
+                Fail($"{name}: not plain chat text: {l}");
+        }
+    }
+    foreach (var f in new[] { "McJoinPostLines", "McLeavePostLines" })
+    foreach (var (name, lines) in Pools(f))
+    foreach (var l in lines)
+        if (l.Contains('{') || l.Contains('}') || l.Contains('✨')) Fail($"{name}: {l}");
+}
+
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

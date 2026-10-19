@@ -52,6 +52,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
 | `/debug quiz` | Post or close a pop quiz, or crown the week, now (tests) | owner |
 | `/debug quokka` | Make Quokka show up in the bots channel now (tests) | owner |
+| `/debug minecraft` | Her state on the Minecraft server, or send her in / take her out now (tests) | owner |
 | `/health` | Her check-up: the Pi's temperature and power, her memory, the Discord connection, storage, the outage log | everyone |
 | `/help` | In-Discord usage guide | everyone |
 
@@ -133,6 +134,24 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 - **`/wouldyourather [a] [b]`** — a « tu préfères… » with two buttons: one of her dilemmas, or your
   own two options. Votes stay hidden for 10 minutes, then she reveals the split, who chose what,
   and her own pick. Open dilemmas don't survive a restart.
+
+### Minecraft
+
+She plays Minecraft with you: a real player on the server (Java Edition, offline mode), named
+`SYNCS` by default.
+
+- **She joins on her own** when at least 4 players are on the server, or when the owner is. She
+  checks every minute, from the server's status (nothing to install on the server).
+- **She leaves** once 2 players or fewer (besides her) have been on for more than 3 minutes. While
+  the owner is on, she stays.
+- **She talks in the game's chat**, in her own voice: a hello and a goodbye, every kind of death
+  (creepers, falls, lava, mobs, friendly fire, her own), advancements, nightfall, and whoever hits
+  her. A few lines at most: one per kind every 30 seconds.
+- **On Discord** she says in the bots channel when she goes to play and when she's back.
+
+Set it up with the add-on options `minecraft_host` (empty turns it off), `minecraft_port`,
+`minecraft_username` and `minecraft_owner` (your in-game name). If the server has a whitelist,
+add her name to it.
 
 ### Levels & XP
 
@@ -671,9 +690,11 @@ ProjectSYNCS/
 │                          # Commands, Services, Models and Helpers are split by
 │                          # subsystem: Core/, Personality/, Plynling/, Xp/, Voice/,
 │                          # Feedback/, Shame/, Scheduling/, Quiz/, Economy/, Arcade/,
-│                          # Admin/, Pi/
+│                          # Admin/, Pi/, Minecraft/
 ├─ Data/AppDbContext.cs    # EF Core context
 ├─ Migrations/             # EF Core migrations (applied automatically on startup)
+├─ MinecraftBody/          # Her body on the Minecraft server (Node + Mineflayer), driven by
+│                          # MinecraftBodyService over stdin/stdout
 ├─ config.yaml             # Home Assistant add-on manifest (source of truth for version)
 └─ Dockerfile / run.sh     # Container build (HA add-on)
 ```
@@ -691,6 +712,7 @@ ProjectSYNCS/
 | `GiveawayDrawService` | 1 min | Draws giveaways whose time is up |
 | `QuizMasterService` | 1 min | Posts the pop quiz, closes rounds nobody won |
 | `QuokkaRaidService` | daily slots, 12:00–23:00 | Quokka's visits to the bots channel |
+| `MinecraftBodyService` | 1 min | Joins and leaves the Minecraft server, talks in its chat |
 
 ## Configuration
 
@@ -703,6 +725,10 @@ then environment variables, then user secrets:
 | `Discord:DevelopmentGuildId` | Guild used for fast command registration in dev. |
 | `Discord:RegisterCommandsGlobally` | `true` registers commands globally; `false` registers them to the dev guild. |
 | `Database:Path` | SQLite file path (default `ProjectSYNCS.db`). |
+| `Minecraft:Host` | The Minecraft server's address; empty (the default) turns her body off. |
+| `Minecraft:Port` | Its port (default `25565`). |
+| `Minecraft:Username` | Her in-game name (default `SYNCS`). |
+| `Minecraft:Owner` | The owner's in-game name: she joins whenever it's on the server. |
 
 The bot needs both privileged intents — **Server Members** and **Message Content** —
 enabled in the Discord developer portal. Without *Message Content* the whole
@@ -729,6 +755,9 @@ dotnet run
 Set `Discord:DevelopmentGuildId` and leave `RegisterCommandsGlobally` as `false`
 for instant command registration while developing — global commands take up to an hour
 to propagate. The SQLite database is created and migrated automatically on first run.
+
+Her Minecraft body needs **Node.js 22+**: run `npm ci` once in `ProjectSYNCS/MinecraftBody`, and
+set `Minecraft:Host` in user secrets to try it.
 
 Note that guild-scoped commands aren't reachable in DMs, so anything meant to work
 there (like `/debug tell`) needs global registration to test.

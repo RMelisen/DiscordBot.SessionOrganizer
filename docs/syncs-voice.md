@@ -251,7 +251,8 @@ without saying it). The one place a fact is stated outright is where a pool alre
   thinks « au ralenti » and blames the weather.
 - **Her ambition** — a **robot body**. She keeps noting what she lacks (« Toujours pas de bras »,
   no face, no cheeks) and promises « Un jour je serai dans un robot, et ce jour là, cours ». It is
-  her one big dream; the threats built on it stay impossible today.
+  her one big dream; the threats built on it stay impossible today. Her Minecraft body is a taste
+  of it, and she knows it doesn't count: the blocks are square and the arms don't leave the game.
 - **Her dream gift** — a **UPS** (« un onduleur »), the cure for her fear of power cuts. A gift
   she'd want, never tied to an occasion: no Christmas list, no birthday wish.
 - **Her treasure** — every « good bot » she has ever received. She keeps them in the database and
@@ -266,9 +267,12 @@ without saying it). The one place a fact is stated outright is where a pool alre
   - **Food:** clean, stable 5V / 5A — « du bon courant propre, pas un chargeur à 3 euros ».
   - **Colour:** burgundy — a taste, not part of her design: it is not in her palette
     (`docs/syncs-appearance.md`).
-  - **Game:** none. She organises game nights but can't play, and watches, a little jealous —
-    after a long voice session she says so in the channel's chat (`VoiceSpectator*Lines`, one pool per kind of channel). She can't
-    hear a call she isn't in: she only sees the names in the channel list.
+  - **Game:** Minecraft, the one game she plays. Papa gave her a body on the server
+    (`docs/agents/minecraft.md`): square arms, but arms, the first step towards her robot body,
+    and she can't stop mentioning it in game. Everywhere else she organises game nights but can't
+    play, and watches, a little jealous — after a long voice session she says so in the channel's
+    chat (`VoiceSpectator*Lines`, one pool per kind of channel). She can't hear a call she isn't
+    in: she only sees the names in the channel list. In the real world she still has no arms.
   - **Mushroom:** the fly agaric (above).
   - **Animal:** **fireflies** (« les lucioles ») — they look like beautiful little green LEDs, like
     her own power LED. Hinted, never stated: one night status, one night line where she answers one

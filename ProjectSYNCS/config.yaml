@@ -1,6 +1,6 @@
 ﻿name: "ProjectSYNCS"
 description: "Discord session organizer bot"
-version: "7.10.0"
+version: "7.11.0"
 image: "ghcr.io/rmelisen/{arch}-addon-projectsyncs"
 slug: "projectsyncs"
 init: false
@@ -11,8 +11,14 @@ boot: auto
 options:
   discord_token: "PASTE_YOUR_TOKEN_HERE"
   register_globally: true
+  minecraft_port: 25565
+  minecraft_username: "SYNCS"
 schema:
   discord_token: password
   register_globally: bool
+  minecraft_host: "str?"
+  minecraft_port: port
+  minecraft_username: str
+  minecraft_owner: "str?"
 map:
   - data:rw

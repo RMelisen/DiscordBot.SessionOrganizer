@@ -203,6 +203,16 @@ namespace ProjectSYNCS.Services;
 //     VoyagerLetterLines · VoyagerAnswerLines · VoyagerCrossingLine ... Voyager 1 writes to her
 //                              (AmbientService; light time from Helpers/Personality/Voyager)
 //
+//   [Minecraft] Her body on the Minecraft server (MinecraftBodyService)
+//     In game, said in Minecraft's chat: plain text, ≤ 256 characters, no emotes or stickers
+//       McArrivalLines · McLeavingLines ... she logs in / out
+//       McDeathLines ............. keyed by McDeathKind, {0} = who died (Self: her own death)
+//       McHitByPlayerLines ....... a player hit her, {0} = who
+//       McAdvancementLines ....... someone earned an advancement, {0} = who
+//       McNightLines ............. night falls
+//     On Discord, in the bots channel
+//       McJoinPostLines · McLeavePostLines ... she goes to play / comes back
+//
 //   [Plynlings] Plynlings — every pool is a GenderedLines (M/F halves), picked with .For(p.Gender)
 //     Care, shown on the card
 //       PlynlingAdoptLines ..... a new Plynling

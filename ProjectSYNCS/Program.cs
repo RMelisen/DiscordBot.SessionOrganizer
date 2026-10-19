@@ -191,6 +191,10 @@ var host = Host.CreateDefaultBuilder(args)
         // messages (the room-is-awake clock), /debug quokka spawns one on demand.
         services.AddSingleton<QuokkaRaidService>();
         services.AddHostedService(sp => sp.GetRequiredService<QuokkaRaidService>());
+        // Her body on the Minecraft server. Same shape: the host runs its 1-minute loop, /debug
+        // minecraft reads its state and forces a join or a leave. Off without Minecraft:Host.
+        services.AddSingleton<MinecraftBodyService>();
+        services.AddHostedService(sp => sp.GetRequiredService<MinecraftBodyService>());
     })
     .Build();
 

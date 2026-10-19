@@ -1,0 +1,13 @@
+{
+  "name": "projectsyncs-minecraft-body",
+  "private": true,
+  "description": "SYNCS's body on the Minecraft server, driven by the C# bot over stdin/stdout.",
+  "main": "index.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "mineflayer": "4.39.0",
+    "prismarine-chat": "1.13.0"
+  }
+}

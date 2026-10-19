@@ -24,6 +24,7 @@ matching file before changing that subsystem**; the rules there are as binding a
 | Any picture of SYNCS (avatar, emotes, poses, moods) | `docs/syncs-appearance.md` |
 | Cailloux, inventory, items, icons, cosmetics, `/admin dashboard` | `docs/agents/economy.md` |
 | `/arcade` games, `ArcadeTables`, `ArcadeRunner`, `ArcadeService` | `docs/agents/arcade.md` |
+| Her Minecraft body, `MinecraftBodyService`, `MinecraftBody/` | `docs/agents/minecraft.md` |
 | `/admin`, `/config`, `/debug`, permissions | `docs/agents/admin.md` |
 | `/report`, the monthly digest, joins/leaves counting, activity counting | `docs/agents/admin.md` |
 
@@ -83,7 +84,7 @@ English. Renaming a command or option changes what people type: do it rarely, an
   It owns every message and reaction subscription; connection-lifecycle hooks (`Ready`,
   `Connected`, `Disconnected`) live in the service that needs them (`PresenceService`,
   `AmbientService`, `ApplicationEmojiService`, `PlynlingMascotService`, `PiHealthService`).
-- **Twelve `BackgroundService` loops**, each with **its own interval on purpose** — never share one:
+- **Thirteen `BackgroundService` loops**, each with **its own interval on purpose** — never share one:
   `ReminderService` (5 min, load-bearing — see scheduling), `PersonalReminderService` (1 min,
   `/remindme` — see scheduling), `PresenceService` (5 min, cosmetic),
   `VoiceXpService` (1 min — also feeds the voice spectator, the session roll call and her voice
@@ -93,7 +94,8 @@ English. Renaming a command or option changes what people type: do it rarely, an
   Wednesday poll; see scheduling), `SeasonalAvatarService` (hourly, plus every Ready — her
   seasonal profile picture; see `docs/syncs-appearance.md`), `MonthlyDigestService` (hourly, her
   monthly digests to the owner and Tata on the 1st; see admin), `ActivityFlushService` (5 min, writes
-  `ActivityCounter`'s counts; see admin).
+  `ActivityCounter`'s counts; see admin), `MinecraftBodyService` (1 min, her body on the
+  Minecraft server, a Node child process; see minecraft).
 - **`MorningGreetingService`** has no interval: it sleeps until one random slot per morning
   (8:00–10:00 Paris, `Helpers/Personality/MorningGreeting`) — see personality.
   **`QuokkaRaidService`** is the same shape: it sleeps until each of the day's Quokka visits
@@ -117,7 +119,7 @@ be checkable without a gateway here).
 
 `Commands/`, `Helpers/`, `Services/` and `Models/` are split into **subsystem subfolders** named after
 `docs/agents/` (`Plynling/`, `Xp/`, `Voice/`, `Personality/`, `Feedback/`, `Shame/`,
-`Scheduling/`, `Quiz/`, `Economy/`, `Arcade/`, `Admin/`, `Pi/`), plus `Core/` for what every subsystem
+`Scheduling/`, `Quiz/`, `Economy/`, `Arcade/`, `Admin/`, `Pi/`, `Minecraft/`), plus `Core/` for what every subsystem
 leans on (`AppTime`, `BotChat`, `Emotes`, `CooldownGate`, `SessionPermissions`, `BotService`…).
 **Folders are not namespaces**: every file keeps the flat `ProjectSYNCS.Commands` /
 `.Helpers` / `.Services` / `.Models` namespace, so moving a file between subfolders changes no `using` and

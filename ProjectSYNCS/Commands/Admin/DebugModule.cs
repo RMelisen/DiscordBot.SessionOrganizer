@@ -69,6 +69,13 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         [ChoiceDisplay("Exemples sans réponse précise")] Examples,
     }
 
+    public enum MinecraftAction
+    {
+        [ChoiceDisplay("Voir l'état")] Status,
+        [ChoiceDisplay("La faire rejoindre maintenant")] Join,
+        [ChoiceDisplay("La faire partir (30 min)")] Leave,
+    }
+
     public enum EventMode
     {
         [ChoiceDisplay("En attente")] Pending,
@@ -88,6 +95,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     private readonly QuokkaRaidService _quokka;
     private readonly ChatAnswerService _answers;
     private readonly MonthlyDigestService _digest;
+    private readonly MinecraftBodyService _minecraft;
 
     // Discord caps a message at 2000 characters; leave room for the herald line
     // and the blockquote markers.
@@ -101,8 +109,9 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings,
         PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz, QuizCrownService crown,
         StickerService stickers, QuokkaRaidService quokka, ChatAnswerService answers,
-        MonthlyDigestService digest)
+        MonthlyDigestService digest, MinecraftBodyService minecraft)
     {
+        _minecraft = minecraft;
         _digest = digest;
         _answers = answers;
         _stickers = stickers;
@@ -810,6 +819,28 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         var (year, month) = MonthlyDigest.PreviousMonth(DateTimeOffset.UtcNow);
         var sent = await _digest.SendAsync(version, year, month, toOwner: true);
         await FollowupAsync(sent ? "📬 Rapport envoyé en DM." : "Impossible de t'écrire en DM (voir les logs).", ephemeral: true);
+    }
+
+    // Her body on the Minecraft server (MinecraftBodyService): where it stands, or a join or leave
+    // past her rule. A forced leave keeps her out for half an hour; a forced join still follows the
+    // rule once she's in.
+    [SlashCommand("minecraft", "Voir où en est SYNCS sur le serveur Minecraft, ou l'y envoyer (tests)")]
+    public async Task MinecraftAsync(
+        [Summary("action", "Voir l'état, la faire rejoindre ou partir")] MinecraftAction action = MinecraftAction.Status)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+
+        var text = action switch
+        {
+            MinecraftAction.Join => _minecraft.ForceJoin(),
+            MinecraftAction.Leave => _minecraft.ForceLeave(),
+            _ => _minecraft.StatusText(),
+        };
+        await RespondAsync(text, ephemeral: true);
     }
 
     [SlashCommand("absent", "Activer ou désactiver ton mode absent")]

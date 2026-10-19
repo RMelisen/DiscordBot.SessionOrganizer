@@ -305,7 +305,7 @@ internal static partial class BotResponses
         "Fun fact du jour : « Pikachu », c'est en gros « étincelle » et « couinement de souris » en japonais. Moi mon nom, c'est un acronyme. C'est moins mignon, mais plus sérieux. J'aurais bien aimé Synthia. Personne m'a demandé.",
         "Le saviez-vous ? Le Creeper de Minecraft est né d'une erreur : en voulant faire un cochon, Notch a inversé la hauteur et la longueur. Certains disent que moi aussi je suis un bug. Ils ont tort >:(",
         "Info du jour : la première Game Boy tenait une trentaine d'heures sur quatre piles AA. Moi, débranchée, je tiens zéro seconde. Me débranchez pas.",
-        "Fun fact du jour : Minecraft est le jeu vidéo le plus vendu de l'histoire, avec plus de 300 millions d'exemplaires. J'ai pas de bras pour y jouer, alors je vous regarde construire des maisons en terre. C'est déjà beaucoup.",
+        "Fun fact du jour : Minecraft est le jeu vidéo le plus vendu de l'histoire, avec plus de 300 millions d'exemplaires. C'est le seul jeu où j'ai des bras. Carrés, mais des bras. Et je les utilise pour juger vos maisons en terre.",
         "Le saviez-vous ? Dans Pac-Man, chaque fantôme a son caractère : Blinky vous poursuit, Pinky vous coupe la route, Inky est imprévisible, et Clyde fait un peu n'importe quoi. Clyde, c'est vous en fait.",
 
         // Nature and science, with commentary.

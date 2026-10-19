@@ -61,3 +61,6 @@ Thumbs.db
 Desktop.ini
 .DS_Store
 __pycache__/
+
+# The Minecraft body's npm tree (ProjectSYNCS/MinecraftBody)
+node_modules/

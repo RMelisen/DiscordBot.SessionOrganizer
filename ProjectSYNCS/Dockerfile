@@ -12,6 +12,15 @@ RUN dotnet publish ProjectSYNCS.csproj \
     --no-restore \
     -o /app
 
+# Her body on the Minecraft server (MinecraftBody/, driven by MinecraftBodyService): its npm tree,
+# installed from the lockfile alone so this layer too survives source edits. The CI runner is native
+# arm64, so the packages are the Pi's.
+FROM node:22-bookworm-slim AS body
+WORKDIR /body
+COPY MinecraftBody/package.json MinecraftBody/package-lock.json ./
+RUN npm ci --omit=dev --no-audit --no-fund
+COPY MinecraftBody/index.js ./
+
 FROM debian:bookworm-slim AS final
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -19,6 +28,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app .
+# Node is one self-contained binary; the slim base already has the C++ runtime it links against.
+COPY --from=body /usr/local/bin/node /usr/local/bin/node
+COPY --from=body /body /app/body
 COPY run.sh /run.sh
 RUN chmod +x /run.sh /app/ProjectSYNCS
 ENTRYPOINT ["/run.sh"]
