@@ -296,12 +296,23 @@ list: the owner removed it.
   and a closed one can be walked past along its panel. `doorTick` looks at her next steps
   (`path_update`, `stepsAhead`) and, within 2.5 blocks, clicks a door whose panel stands on the edge
   she's about to cross (`panelSide`, from its collision box), whether it's open or closed; a fence
-  gate is a bar across its block when closed, so a closed one is clicked open. Once she's through
-  and nobody (a player, an animal) stands within 2 blocks, she puts every door she moved **back as
-  she found it** (`movedDoors`, by state id): the way someone set a door is theirs. A door the server
+  gate is a bar across its block when closed, so a closed one is clicked open. **Path points are
+  block centres (x.5)**: `stepsAhead` compares them as blocks, or a point in the door's own row reads
+  as beside it, an open door « blocks » the next step, and she clicks it shut in her own face.
+  **The pathfinder lifts a point onto whatever stands in its block** once planned (1.5 onto a closed
+  gate's bar, 1 onto a door's panel), so `setPath` puts a point standing on a gate or a door's lower
+  half back down, centred (`floorDoorNode`): otherwise she can't reach it, and `doorTick` looks a
+  block too high and never opens the gate. Once she's through (out of the doorway on the far side
+  from where she clicked it, or 3 blocks off either way) and nobody (a player, an animal) stands
+  within 2 blocks, she puts every door she moved **back as she found it** (`movedDoors`, by state
+  id): the way someone set a door is theirs. A door the server
   ignored twice (spawn protection, a plugin) is a wall again for 2 minutes, and the pathfinder's own
   stuck check re-plans around it. Never iron doors (redstone) nor trapdoors (as often floors as
-  doors). Clicking a door is using it, not placing anything: the never-builds rule stands.
+  doors). Clicking a door is using it, not placing anything: the never-builds rule stands. Checked
+  on the local server (*Testing movement locally*): doors closed and open, both hinges, both ways, a
+  door set across the wall, and a fence gate, each crossed and left as found.
+- **Ladders** are the pathfinder's own: it climbs up and down them, a 10-rung shaft included, and
+  she follows someone up and down one (checked on the local server).
 - **She can only reach a player the server shows her** (render distance). Beyond that the body
   answers `cantReach notVisible` at once (`McTooFarLines`). A followed player who goes out of
   sight ends the follow (`lost`).

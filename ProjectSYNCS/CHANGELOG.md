@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.21.4 — 2026-10-20
+
+- Minecraft: she goes through doors instead of opening one and shutting it again in front of herself,
+  opens fence gates, and closes what she opened right after passing.
+
 ## 7.21.3 — 2026-10-20
 
 - Minecraft: she climbs one-block steps again. The server refused any move that left her exactly

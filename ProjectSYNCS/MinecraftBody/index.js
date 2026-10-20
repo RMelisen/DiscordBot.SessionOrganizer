@@ -195,21 +195,40 @@ let pathIndex = 0;
 const movedDoors = new Map();
 const stuckDoors = new Map();
 const DoorReach = 2.5;
+const DoorPast = 1.5; // from the door's centre: her box is out of its block
 const DoorStuckFor = 120000;
 let doorTickAt = 0;
 
 function setPath(path) {
   currentPath = Array.isArray(path) ? path : [];
   pathIndex = 0;
+  for (const node of currentPath) floorDoorNode(node);
+}
+
+// The pathfinder puts each point of its path on top of whatever stands in that block, once planned: a closed fence gate
+// lifts it 1.5 (the top of its bar), a door 1 and onto its panel. She walks through those, not over them, so such a
+// point goes back down, centred, before she walks it: otherwise she never reaches it (a block or more below it,
+// sent back towards it until the pathfinder gives up), and doorTick looks for the door a block too high. The path
+// is the pathfinder's own (path_update hands it over before it walks it), so this is the path she walks.
+function floorDoorNode(node) {
+  // What the point stands on: a gate (nobody stands on one) or a door's lower half (the point is in its upper half).
+  const below = bot.blockAt(new Vec3(Math.floor(node.x), Math.floor(node.y) - 1, Math.floor(node.z)));
+  if (!below || !isDoor(below) || stuckDoors.has(doorKey(below))) return;
+  if (below.name.endsWith('_door') && below.getProperties().half !== 'lower') return; // on top of a door: a real floor
+  node.x = below.position.x + 0.5;
+  node.y = below.position.y;
+  node.z = below.position.z + 0.5;
 }
 
 // The next few steps on her path, from where she stands: [from, to] pairs of block positions.
 function stepsAhead(here) {
+  // Path points are block centres (x.5): compared as blocks, or a point in the door's own row reads as beside it.
+  const cell = (n) => new Vec3(Math.floor(n.x), Math.floor(n.y), Math.floor(n.z));
   for (let i = pathIndex; i < Math.min(currentPath.length, pathIndex + 4); i++) {
-    const n = currentPath[i];
+    const n = cell(currentPath[i]);
     if (n.x === here.x && n.z === here.z && Math.abs(n.y - here.y) <= 1) pathIndex = i + 1;
   }
-  const cells = [here, ...currentPath.slice(pathIndex, pathIndex + 3).map((n) => new Vec3(n.x, n.y, n.z))];
+  const cells = [here, ...currentPath.slice(pathIndex, pathIndex + 3).map(cell)];
   const steps = [];
   for (let i = 0; i + 1 < cells.length; i++) steps.push([cells[i], cells[i + 1]]);
   return steps;
@@ -241,8 +260,12 @@ function doorTick() {
       if (Date.now() - door.at > 1500) movedDoors.delete(key); // back as it was (moved twice, or by someone)
       continue;
     }
+    // Through: out of the doorway on the far side from where she clicked it, or well away from it either way (a
+    // destination just past a door would otherwise keep her « not through » and leave it open).
     const centre = door.pos.offset(0.5, 0, 0.5);
-    if (centre.distanceTo(me) <= DoorReach + 0.5) continue; // not through yet
+    const away = centre.distanceTo(me);
+    const past = (me.x - centre.x) * (door.from.x - centre.x) + (me.z - centre.z) * (door.from.z - centre.z) < 0;
+    if (!(past && away > DoorPast) && away <= DoorReach + 0.5) continue; // not through yet
     const someone = bot.nearestEntity((e) => e !== bot.entity && ['player', 'animal', 'passive'].includes(e.type)
       && e.position.distanceTo(centre) < 2);
     if (someone) continue;
@@ -268,7 +291,7 @@ function clearDoor(seen) {
   }
   movedDoors.set(key, {
     pos: block.position, found: door ? door.found : block.stateId, clicked: block.stateId,
-    ignored: door ? door.ignored : 0, at: Date.now(),
+    ignored: door ? door.ignored : 0, at: Date.now(), from: door ? door.from : bot.entity.position.clone(),
   });
   bot.activateBlock(block).catch(() => {});
 }
