@@ -1649,6 +1649,19 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     Order("syncs", McOrder.Unknown);
     Order("syncs ?", McOrder.Unknown);
     Order("hé syncs", McOrder.Unknown);
+    // A compliment or a thank-you is not a call: « gg syncs » once got « oui ? ».
+    Order("gg syncs", McOrder.Praise);
+    Order("bravo syncs", McOrder.Praise);
+    Order("syncs bien joué !", McOrder.Praise);
+    Order("t'es la meilleure syncs", McOrder.Praise);
+    Order("syncs t'es géniale", McOrder.Praise);
+    Order("syncs c'est génial", McOrder.Unknown);
+    Order("merci syncs", McOrder.Thanks);
+    Order("Merci beaucoup Syncs !", McOrder.Thanks);
+    Order("thx syncs", McOrder.Thanks);
+    Order("gg syncs viens", McOrder.Come);
+    Order("merci syncs bonne nuit", McOrder.Bye);
+    Order("j'ai dit merci à syncs pour le bois tout à l'heure", McOrder.None);
     Order("je crois que syncs est un peu nulle franchement", McOrder.None);
     Order("syncs est trop forte en vrai de vrai de vrai", McOrder.None);
     Order("suisse", McOrder.None);
@@ -1757,6 +1770,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         ("dodo", McOrder.Sleep), ("tu peux venir ?", McOrder.Come), ("120 64 -300", McOrder.GoTo),
         ("va chercher du bois", McOrder.Collect), ("viens pas", McOrder.None), ("mdr t'es nulle", McOrder.None),
         ("ok", McOrder.None), ("je suis là", McOrder.None), ("syncs ?", McOrder.Unknown), ("syncs viens", McOrder.Come),
+        ("merci", McOrder.Thanks), ("gg", McOrder.Praise),
     })
     {
         var got = McCommand.Parse(text, mcNames, called: true).Order;
@@ -2302,7 +2316,8 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         "McInventoryLines", "McHaveLines",
     };
     string[] McFamilyPools = { "McCalledLines", "McDeathLines", "McHitByPlayerLines", "McHitAgainLines", "McFedLines", "McAdvancementLines", "McComeAckLines",
-        "McFollowAckLines", "McGuardAckLines", "McCollectDoneLines", "McWaveLines", "McGiveDoneLines", "McByeLines", "McCreeperBehindLines", "McDiveLines", "McBoardLines" };
+        "McFollowAckLines", "McGuardAckLines", "McCollectDoneLines", "McWaveLines", "McGiveDoneLines", "McByeLines", "McCreeperBehindLines", "McDiveLines", "McBoardLines",
+        "McPraisedLines", "McThankedLines" };
     foreach (var p in McFamilyPools)
     foreach (var twin in new[] { p + "Owner", p + "Tata" })
     {
@@ -2321,7 +2336,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     var DiscordMarkup = new System.Text.RegularExpressions.Regex(@"<(a?:|@|#|t:)");
     foreach (var f in new[] { "McArrivalLines", "McLeavingLines", "McDeathLines", "McHitByPlayerLines", "McAdvancementLines", "McNightLines",
              "McComeAckLines", "McFollowAckLines", "McStayAckLines", "McArrivedLines", "McTooFarLines", "McNoPathLines", "McLostLines",
-             "McCalledLines", "McGoToAckLines", "McGoToArrivedLines", "McTripTooFarLines", "McGuardAckLines", "McGuardKillLines",
+             "McCalledLines", "McPraisedLines", "McThankedLines", "McGoToAckLines", "McGoToArrivedLines", "McTripTooFarLines", "McGuardAckLines", "McGuardKillLines",
              "McCollectAckLines", "McCollectDoneLines", "McCollectKeptLines", "McCollectEmptyLines", "McCollectNoneLines",
              "McCollectNoToolLines", "McSleepLines", "McBedtimeLines", "McNoBedLines", "McNotNightLines", "McBedFailedLines",
              "McBusyLines", "McTakenLines", "McHitAgainLines", "McFleeSafeLines", "McCorneredLines", "McFleeDroppedLines", "McFamilyHitLines", "McFamilySwatLines", "McFamilyFightLines", "McHungryLines", "McStarvingLines", "McHarvestAckLines", "McHarvestDoneLines", "McHarvestKeptLines", "McHarvestEmptyLines",

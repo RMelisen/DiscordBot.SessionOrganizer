@@ -3,6 +3,15 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.21.0 — 2026-10-20
+
+- Minecraft: « gg syncs », « bravo syncs » and « merci syncs » get a real answer (and a happy hop for
+  the compliments) instead of « oui ? ».
+- Minecraft: she takes a moment to type before each line, like on Discord, and her lines come out one
+  at a time.
+- Minecraft: she now tells the server which keys she holds, like a real client, to fix her stopping
+  in front of one-block steps instead of jumping.
+
 ## 7.20.1 — 2026-10-20
 
 - Minecraft: fixed her body failing to start since 7.20.0.

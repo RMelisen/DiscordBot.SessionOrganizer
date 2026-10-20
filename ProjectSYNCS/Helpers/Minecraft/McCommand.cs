@@ -39,6 +39,8 @@ namespace ProjectSYNCS.Helpers;
 //   Jump        hop (a dance is a hop too).
 //   Wave        wave back at a greeting.
 //   Bye         wave at a goodbye.
+//   Praise      « gg syncs », « bravo syncs »: she takes the compliment (and hops).
+//   Thanks      « merci syncs »: she answers it.
 //   Timer       remind the player after a delay, with an optional note.
 // Not orders
 //   None        not for her, or refused (« viens pas »): she says nothing.
@@ -80,6 +82,10 @@ public enum McOrder
     Wave,
     /// <summary>A goodbye (« bonne nuit syncs », « bye syncs »): she waves too. Takes her from nobody.</summary>
     Bye,
+    /// <summary>A compliment (« gg syncs », « bravo syncs »): she takes it, with a hop. Takes her from nobody.</summary>
+    Praise,
+    /// <summary>A thank-you (« merci syncs »): she answers it. Takes her from nobody.</summary>
+    Thanks,
     /// <summary>Remind the player in <see cref="McRequest.Seconds"/>, of <see cref="McRequest.Note"/> if any. Takes her from nobody.</summary>
     Timer,
     /// <summary>Fish until told otherwise.</summary>
@@ -532,6 +538,22 @@ public static class McCommand
         "bonne nuit", "au revoir", "aurevoir", "bye", "bye bye", "ciao", "tchao", "a plus", "a toute", "a demain", "a la prochaine",
         "bisous", "adieu", "see you", "see ya", "good night", "gn",
     };
+    // Compliments and thanks: read only where a call would be (McCommand.ParseWords), so « bravo syncs » isn't « oui ? ».
+    // Interjections alone; an adjective only said to her (« t'es géniale »), as « syncs la base est jolie » is about the
+    // base. Not « forte » alone: « syncs t'es assez forte » is a dare, not a compliment.
+    private static readonly string[] PraisePhrases =
+    {
+        "t es la meilleure", "tu es la meilleure", "t es trop forte", "tu es trop forte", "t es forte", "tu es forte",
+        "t es geniale", "tu es geniale", "t es parfaite", "t es incroyable", "t es une championne", "t es top", "trop forte",
+        "bien joue", "bien jouee", "bien ouej", "bon travail", "beau travail", "bon boulot", "beau boulot", "good job",
+        "well done", "good bot", "good girl", "gg wp", "felicitations", "felicitation", "masterclass", "championne", "chapeau",
+        "respect", "bravo", "ggwp", "gg", "wp", "gj", "nice", "goat",
+    };
+    private static readonly string[] ThanksPhrases =
+    {
+        "merci", "merci beaucoup", "merci bien", "mercii", "merki", "mrc", "mci", "cimer", "thanks", "thx", "thank you",
+        "thank u", "ty", "tyty", "c est gentil", "trop gentille", "t es gentille",
+    };
     // Greetings: she waves back. Read last, so « salut syncs viens » is still a come.
     private static readonly string[] WavePhrases =
     {
@@ -899,6 +921,15 @@ public static class McCommand
         // « donne-moi ta clé »: something of hers she doesn't know. She says so rather than « oui ? ».
         if (give is { } unknownGive && GoodsAfter(wordsOnly, unknownGive.Start + unknownGive.Length) is { Goods: null, Owned: true })
             return Unless(unknownGive, wordsOnly, new(McOrder.Give));
+        // A compliment or a thank-you, where a call would be: short, her name at one end (or right after a call), so
+        // talk about her between players stays theirs. Before the call itself, or « gg syncs » gets « oui ? ».
+        if ((calledOut || called) && rest.Length <= 6)
+            foreach (var (phrases, order) in new[] { (ThanksPhrases, McOrder.Thanks), (PraisePhrases, McOrder.Praise) })
+            {
+                var found = When(phrases, new(order));
+                if (found is null) return McRequest.Nothing;
+                if (found.Value.Order != McOrder.None) return found.Value;
+            }
         return calledOut && rest.Length <= 6 ? new(McOrder.Unknown) : McRequest.Nothing;
     }
 

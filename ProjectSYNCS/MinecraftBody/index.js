@@ -2848,6 +2848,8 @@ function attach() {
     // controls from it.
     bot.on('physicsTick', safely(waterTick));
     bot.on('physicsTick', safely(boardTick));
+    // Last, once every other tick handler has set this tick's controls.
+    bot.on('physicsTick', safely(inputTick));
     emit('spawned', {});
     reportPlayers();
     wearBestArmor().catch(() => {});
@@ -2882,6 +2884,7 @@ function attach() {
   bot.on('path_stop', () => setPath([]));
   setInterval(() => { if (bot) farmRound().catch(() => {}); }, FarmRound);
   bot.on('wake', wakeUp);
+  bot.on('forcedMove', safely(onForcedMove));
   bot.on('health', () => {
     eatIfHungry().catch(() => {});
     reportHunger();
@@ -3132,12 +3135,53 @@ function sendTickEnds(client) {
   };
 }
 
+// Since 1.21.2 a client tells the server which keys it holds (`player_input`) whenever they change. Mineflayer sends
+// that packet only for sneaking, with every other key off, so the server never hears her press forward or jump. On
+// the 26.3 server she walked up to one-block steps and went no further, though Mineflayer's own physics climbs them;
+// a server refusing a jump nobody pressed fits that. So her keys go out as a real client's would. Not while riding (leaveBoat holds shift itself), and anything else that
+// writes the packet (Mineflayer's sneak) counts as the last one sent, so the full set follows on the next tick.
+let inputsSent = '';
+
+function trackInputs(client) {
+  const write = client.write.bind(client);
+  client.write = (name, params) => {
+    if (name === 'player_input') inputsSent = JSON.stringify((params && params.inputs) || {});
+    return write(name, params);
+  };
+}
+
+function inputTick() {
+  if (!bot.supportFeature('newPlayerInputPacket') || bot.vehicle) return;
+  const c = bot.controlState;
+  const inputs = { forward: c.forward, backward: c.back, left: c.left, right: c.right, jump: c.jump, shift: c.sneak, sprint: c.sprint };
+  const key = JSON.stringify(inputs);
+  if (key === inputsSent) return;
+  bot._client.write('player_input', { inputs });
+}
+
+// The server putting her back where she was (a move it refused) while she walks: logged, at most every 30 s, since a
+// body that can't climb or keeps stopping short looks the same from outside whether the pathfinder or the server
+// is at fault.
+const PulledBackLogEvery = 30000;
+let pulledBack = 0;
+let pulledBackLoggedAt = 0;
+
+function onForcedMove() {
+  if (!bot.pathfinder || !bot.pathfinder.isMoving()) return;
+  pulledBack++;
+  if (Date.now() < pulledBackLoggedAt + PulledBackLogEvery) return;
+  pulledBackLoggedAt = Date.now();
+  const p = bot.entity.position;
+  log(`the server pulled her back while walking (${pulledBack} so far), to ${p.x.toFixed(1)} ${p.y.toFixed(1)} ${p.z.toFixed(1)}`);
+}
+
 async function main() {
   const version = await pickVersion();
   if (ended) return;
   // Offline mode: no auth.
   bot = mineflayer.createBot({ host, port, username, auth: 'offline', version });
   sendTickEnds(bot._client);
+  trackInputs(bot._client);
   attach();
 }
 

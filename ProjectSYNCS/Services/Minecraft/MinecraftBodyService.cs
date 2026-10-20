@@ -116,6 +116,8 @@ public sealed class MinecraftBodyService : BackgroundService
     private MinecraftBodyProcess? _body;
     private bool _spawned;
     private bool _leaving;
+    // Her lines waiting to be « typed » (SayLocked), one after another.
+    private Task _speech = Task.CompletedTask;
     private DateTimeOffset? _inGameSince;
     private List<string> _players = new();
     // What she carries, as the body last reported it (on spawn, then after each change), and when. Null until then.
@@ -820,7 +822,10 @@ public sealed class MinecraftBodyService : BackgroundService
             await Task.Delay(ArrivalPause);
             lock (_gate)
                 if (ReferenceEquals(_body, body) && !_leaving)
-                    body.Send(new { op = "say", text = _picker.Pick(BotResponses.McArrivalLines) });
+                {
+                    var text = _picker.Pick(BotResponses.McArrivalLines);
+                    SayLocked(body, new { op = "say", text }, text);
+                }
             await Task.Delay(SeekPause);
             lock (_gate)
                 if (ReferenceEquals(_body, body) && !_leaving)
@@ -985,6 +990,13 @@ public sealed class MinecraftBodyService : BackgroundService
             case McOrder.Bye:
                 if (Send(new { op = "wave", player }))
                     Reply(player, whispered, Kin(player, BotResponses.McByeLines, BotResponses.McByeLinesOwner, BotResponses.McByeLinesTata));
+                return true;
+            case McOrder.Praise:
+                if (Send(new { op = "jump" }))
+                    Reply(player, whispered, Kin(player, BotResponses.McPraisedLines, BotResponses.McPraisedLinesOwner, BotResponses.McPraisedLinesTata));
+                return true;
+            case McOrder.Thanks:
+                Reply(player, whispered, Kin(player, BotResponses.McThankedLines, BotResponses.McThankedLinesOwner, BotResponses.McThankedLinesTata));
                 return true;
             case McOrder.Where:
                 lock (_gate) _askedWhere[player] = whispered;
@@ -1624,8 +1636,32 @@ public sealed class MinecraftBodyService : BackgroundService
         var text = string.Format(_picker.Pick(pool), [Who(player), .. extra]);
         lock (_gate)
             if (_body is { } body && _spawned && !_leaving)
-                body.Send(whispered ? new { op = "whisper", player, text } : (object)new { op = "say", text });
+                SayLocked(body, whispered ? new { op = "whisper", player, text } : (object)new { op = "say", text }, text);
     }
+
+    // Her lines go out one after another, each after the time it takes to type it, as on Discord (BotChat): an
+    // answer in the same instant as the question reads as a machine. The queue keeps them in order. Whatever can't
+    // wait (a forced remark: a creeper behind someone, drowning) goes out at once, and so does her goodbye, which
+    // the quit right behind it would cut off.
+    private void SayLocked(MinecraftBodyProcess body, object command, string text, bool now = false)
+    {
+        if (now)
+        {
+            body.Send(command);
+            return;
+        }
+        _speech = _speech.ContinueWith(async _ =>
+        {
+            await Task.Delay(TypingPause(text));
+            lock (_gate)
+                if (ReferenceEquals(_body, body) && _spawned && !_leaving)
+                    body.Send(command);
+        }, TaskScheduler.Default).Unwrap();
+    }
+
+    // Game chat is typed slower than Discord: a short « oui ? » takes under a second, a long line about three.
+    private static TimeSpan TypingPause(string text) =>
+        TimeSpan.FromMilliseconds(Math.Clamp(400 + text.Length * 40, 700, 3000));
 
     // A player hit her. The first hits get a remark; the one that makes a streak (McHitStreaks: the same
     // player, three times, no more than a minute apart) is when she understands they want to kill her, and
@@ -1707,7 +1743,7 @@ public sealed class MinecraftBodyService : BackgroundService
         lock (_gate)
             if (_body is { } body && _spawned && !_leaving)
             {
-                body.Send(new { op = "say", text });
+                SayLocked(body, new { op = "say", text }, text, now: force);
                 return true;
             }
         return false;

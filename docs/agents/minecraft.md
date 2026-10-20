@@ -16,6 +16,11 @@ has no French in it. Every line she says in game comes from the `Mc*` pools in
 cover them like any other pool. A new reaction is a new event in the body plus a pool and a branch
 in the service, never a string in JS.
 
+**She types before she speaks**, as on Discord: every line goes through `SayLocked`, which queues
+it behind her previous one and waits 0.7–3 s by its length. A new send path goes through it too.
+Two lines skip the wait: a forced remark (a creeper behind someone, drowning: it can't wait) and
+her goodbye, which the quit right behind it would cut off.
+
 **The child starts with an empty environment.** It gets only `PATH`, `HOME`, the temp variables,
 `SYSTEMROOT` (which Node needs on Windows) and its own `MC_*` variables. The bot's environment holds
 the Discord token (`run.sh` exports it), and a third-party npm tree must never see it. Don't
@@ -110,7 +115,10 @@ short « oui ? » (`McCalledLines`), and that player's **next message within 30 
 if it carried her name (`McCommand.Parse(…, called: true)`): « syncs » … « suis moi ». One message
 only, whatever it turns out to be, so a call followed by chat doesn't keep her listening; a
 follow-up she doesn't understand gets silence, not another « oui ? ». Other players still need her
-name in that window. The window lives in the service, per player, in memory. There is no help
+name in that window. **A compliment or a thank-you in that same place is not a call**: « gg syncs »,
+« bravo syncs » (`Praise`, with a hop) and « merci syncs » (`Thanks`) get their own lines. An
+adjective counts only when said to her (« t'es géniale »): « syncs la base est jolie » is about the
+base, and stays a call. The window lives in the service, per player, in memory. There is no help
 list: the owner removed it.
 
 - **Come** walks to where the player stood (`GoalNear`, 2 blocks). **Follow** keeps a moving goal
@@ -270,7 +278,7 @@ list: the owner removed it.
   mean « take it off »).
 - **Answered at once, taking her from nobody**: where she is (the body reports her position), what
   she carries, where a place is, the list, forgetting, saving, hopping, waving (any greeting, read last so « salut
-  syncs viens » is come) and **reminders** (« préviens-moi dans 5 min », « rappelle-moi dans 10 min
+  syncs viens » is come), compliments and thanks and **reminders** (« préviens-moi dans 5 min », « rappelle-moi dans 10 min
   de sortir le fer »). A timer is read first, as its note can hold any word; the length comes from
   the raw text (`Duration`), the note is what follows the first « de », « pour » or « que » once the
   length is out. Three per player, two hours at most, in memory, gone with the body. Sitting is
@@ -555,6 +563,15 @@ clients have sent after every tick since 1.21.2. Mineflayer never sends it, so a
 1.5 s in. `sendTickEnds` wraps the client's `write` and follows every movement packet with a
 `tick_end`, on versions whose protocol has one. Remove it once Mineflayer sends the packet itself,
 and check the issue before bumping Mineflayer.
+
+**Her keys go to the server (`inputTick`).** Since 1.21.2 clients send `player_input` (forward,
+jump, sprint, shift…) whenever their keys change; Mineflayer sends it only for sneaking, with every
+other key off. On the 26.3 server she stopped in front of one-block steps, which Mineflayer's own
+physics climbs (checked offline), so `inputTick` sends her whole control state, last in each physics
+tick, whenever it changes; not while riding, where `leaveBoat` holds shift itself. The server snapping
+her back while she walks (`forcedMove`) is logged every 30 s at most (« the server pulled her
+back »): if she stops short again, that line says whether the server refuses her moves (then look at
+the server's movement checks) or the pathfinder never tried (then look at `gentleMovements`).
 
 **stdout carries events only.** The protocol libraries print their errors through `console.*`, so
 the body sends every console method to stderr before loading them, and the service logs any stdout

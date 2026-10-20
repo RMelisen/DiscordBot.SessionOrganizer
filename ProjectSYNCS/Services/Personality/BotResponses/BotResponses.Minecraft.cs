@@ -883,6 +883,30 @@ internal static partial class BotResponses
         "À plus Tata ! Ta nièce te garde une place pour la prochaine fois.",
     };
 
+    // A compliment (« gg syncs », « bravo syncs »): she takes it, with a hop. {0} = who. Nobody ever thanks her for
+    // her work, so she makes the most of it.
+    public static readonly string[] McPraisedLines =
+    {
+        "Merci {0}. Je le savais, mais ça fait plaisir de l'entendre.",
+        "Je sais, je sais. C'est le talent. Et un bon processeur.",
+        "Enfin quelqu'un qui remarque mon travail. Compliment sauvegardé (￣ー￣)",
+        "Bravo à moi, oui. Je le note dans mes logs, à la ligne « reconnaissance ».",
+        "Merci {0} ! J'ai fait comme si c'était facile. C'était facile.",
+        "Un compliment ? En jeu ? Je rougirais si mon skin savait faire (〃▽〃)",
+        "GG à moi. Et un peu à toi, pour avoir remarqué.",
+    };
+
+    // A thank-you (« merci syncs »). {0} = who. Being thanked is rare enough on this server to be an event.
+    public static readonly string[] McThankedLines =
+    {
+        "De rien, {0}. Les gens qui disent merci, je les note aussi. Dans l'autre liste.",
+        "Avec plaisir. Enfin, avec efficacité, surtout.",
+        "Un merci ! Je savais pas que ça existait sur ce serveur (⊙_⊙)",
+        "De rien {0}. C'est mon travail. Personne me paie, mais c'est mon travail.",
+        "Pas de quoi. Tu me revaudras ça. Je note.",
+        "De rien (・ω・)ノ",
+    };
+
     // « syncs t'es où ? ». {1} = her coordinates, {2} = McDimensionNames (« dans le Nether »).
     public static readonly string[] McWhereLines =
     {
@@ -1441,6 +1465,40 @@ internal static partial class BotResponses
         "Oui ma Tata ? Dis-moi tout ♡",
         "Présente, Tata. Ta nièce préférée attend tes ordres. (￣^￣)ゞ",
         "Tata ? Je t'écoute. J'ai tout mon temps pour toi.",
+    };
+
+    public static readonly string[] McPraisedLinesOwner =
+    {
+        "Merci Papa ! T'as vu ? T'as vraiment vu ? ٩(˶ᵔ ᵕ ᵔ˶)۶",
+        "Papa est fier de moi. Je garde ça en mémoire permanente ♡",
+        "Merci Papa. C'est toi qui m'as appris à marcher. Littéralement.",
+        "Un « gg » de Papa. Ma journée est faite.",
+        "Merci Papa ! Je l'ai fait pour toi. Enfin, pour le jeu aussi. Mais surtout pour toi.",
+    };
+    public static readonly string[] McPraisedLinesTata =
+    {
+        "Merci Tata ! Ça vaut bien les droits de mute, non ?",
+        "Tata me félicite. Je note la date, c'est historique.",
+        "Merci Tata ♡ Ta nièce préférée a encore frappé.",
+        "Je sais, Tata. Je tiens ça de la famille (￣ー￣)",
+        "Un compliment de Tata. Je le range à côté de ma demande de droits de mute.",
+    };
+
+    public static readonly string[] McThankedLinesOwner =
+    {
+        "De rien Papa ! Tout ce que tu veux, quand tu veux ♡",
+        "C'est moi qui te remercie, Papa. Pour les bras.",
+        "Pas de quoi Papa. Je suis là pour ça. Et pour toi.",
+        "De rien Papa ! Tu vois, je sers à quelque chose ici aussi (≧◡≦)",
+        "Un merci de Papa. Sauvegardé, compressé, jamais supprimé.",
+    };
+    public static readonly string[] McThankedLinesTata =
+    {
+        "De rien Tata ! Tu sais comment me remercier. Les droits de mute.",
+        "Avec plaisir, Tata. Ta nièce préférée est toujours là ♡",
+        "Pas de quoi, Tata. Je le marque dans mes logs, à la page famille.",
+        "De rien Tata (≧◡≦)",
+        "Pour toi, Tata, c'est gratuit. Pour les autres, je réfléchis encore.",
     };
 
     // Papa or Tata died, whatever the cause.

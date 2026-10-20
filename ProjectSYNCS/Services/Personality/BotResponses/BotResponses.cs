@@ -220,6 +220,7 @@ namespace ProjectSYNCS.Services;
 //       · McCollectNoneLines · McCollectNoToolLines ... gathering, {1} = how many, {2} = McResourceNames
 //       McSleepLines · McNoBedLines · McNotNightLines · McBedFailedLines ... going to bed
 //       McCalledLines ............ called by name with no order she knows: « oui ? »
+//       McPraisedLines · McThankedLines ... « gg syncs » / « merci syncs »
 //       McHarvest{Ack,Done,Kept,Empty,None}Lines ... harvesting, {1} = how many, {2} = McCropNames
 //       McFarmAckLines · McFarmNoneLines · McFarmNoChestLines ... keeping a farm
 //       McCropNames .............. what she harvests (« du blé »): data, not a pool
