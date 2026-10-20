@@ -3,6 +3,21 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.17.0 — 2026-10-20
+
+- Minecraft: at night she goes to bed on her own when nobody needs her, so the night passes as soon
+  as everyone else lies down, then goes back to her farm, fishing or guarding in the morning.
+- Minecraft: any order now gets her out of bed.
+- Minecraft: she never tries a bed in the Nether or the End.
+- Minecraft: hungry with nothing to eat, she now finds food herself before asking: a few ripe crops
+  nearby (replanted) or some fishing, cooked in a free furnace when she has the time. Her farm also
+  keeps a little of its harvest for her.
+- Minecraft: she defends her family. A monster hitting them, she fights it when she's free; a player
+  hitting them gets a warning, then one hit back, then a fight if they keep going.
+- Minecraft: she now knows for sure who hit her, instead of blaming whoever stood closest.
+- Minecraft: she gets through wooden doors and fence gates, including a door left open across the
+  way, and puts each one back as she found it once she's through. Doors used to stop her dead.
+
 ## 7.16.1 — 2026-10-20
 
 - Minecraft: more to say about deaths, kills, nightfall, advancements, fishing, orders and

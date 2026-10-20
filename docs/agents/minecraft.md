@@ -134,6 +134,15 @@ list: the owner removed it.
   When a player goes to bed at night (`entitySleep`) she looks for a bed within 48 blocks, once per
   night, and says so when there's none (`McNoBedLines`), since she is then why the night won't pass.
   « syncs dodo » does the same on demand.
+- **She also goes to bed on her own** once it's night by the clock (never for a daytime storm), so the
+  night passes the moment the players lie down (`autoSleepTick`, on the body's `time` event). Only when
+  nobody needs her: free, or at an activity, which she goes back to when she wakes. Never in the
+  Nether or the End, where a bed explodes (the same guard covers the other two ways to bed). Not on a
+  night she was told to stay or sit. A bed that refuses her (monsters near, occupied) is tried again
+  two minutes later; no bed within 48 blocks and she gives up for the night, silently: on her own,
+  nobody is waiting for an answer. In bed she says so once (`McBedtimeLines`, a rationed remark).
+  **Any order gets her out of bed** (`stay()` calls `wake()`: lying down, she can't move), and once an
+  order has woken her she stays up that night, so « viens » doesn't end with her walking back to bed.
 - **Harvest** (« syncs récolte le blé », McOrder.Harvest with a `McCrop`, `Any` for « syncs
   récolte ») breaks the *ripe* crops within 24 blocks (wheat, carrots, potatoes at age 7, beetroot
   at 3), puts a seed back on each patch of farmland left bare, and tosses the haul at the player's
@@ -164,7 +173,19 @@ list: the owner removed it.
   the like), and wears the best piece she carries for each slot on spawn and after each pickup.
   Both are our own few lines; `mineflayer-auto-eat` is ESM-only now and the armour plugin is
   unmaintained.
-- **With nothing to eat, she asks.** Below 14 food with no edible item, the body reports `hungry`
+- **With nothing to eat, she feeds herself first** (`startForage`, a body-only task with no player and
+  **no words**, the owner's call). Only when she's free or at an activity (paused and gone back to,
+  like an errand: `pausedActivity`); never during someone's order, and not while fishing, which feeds
+  her anyway. Sometimes she picks the 3 closest ripe carrots, potatoes, beetroots or melons within
+  24 blocks (replanted, like any harvest), sometimes she fishes for up to 2 minutes (quietly:
+  `fishLoop` with `forage` reports no catch), whichever is around, then the other if the first gave
+  nothing. If she's not starving (food above 6) she then cooks one kind of raw food (up to 8) in the
+  closest furnace or smoker within 16 blocks that has nothing in it at all, with her own fuel, and
+  takes back whatever is left. Until then she doesn't eat the raw catch. She eats the most filling
+  thing she carries. Nothing found, and she asks as below, and doesn't look again for 5 minutes.
+  A farm keeps 8 beetroots and 8 melon slices back for her as well as the seeds (the carrots and
+  potatoes kept to replant are food too).
+- **With nothing to eat and no way to find any, she asks.** Below 14 food with no edible item, the body reports `hungry`
   each time the bar drops a notch; the service decides: `McHungryLines` every 10 minutes at most,
   `McStarvingLines` every 5 once she's at 6 or less (Minecraft stops her sprinting there, so she
   can't run away). Each ask has its own gate, given back when the remark gates swallow the line.
@@ -220,6 +241,20 @@ list: the owner removed it.
   walking can't get there she says so (`McNoPathLines`) instead. **The one exception is a seed
   on bare farmland where she just harvested** (`harvestBlocks`): nothing else, nowhere else. Keep
   it that narrow.
+- **Doors.** The pathfinder sees every door as a wall (its own `canOpenDoors` is off, flagged flaky
+  by its authors, and covers fence gates only), so `gentleMovements` wraps its `getBlock`: a wooden
+  or copper door or a fence gate is passable whatever its state, except on a diagonal step (a corner
+  catches the panel). **« Open » doesn't mean passable**: a door is a thin panel on one edge of its
+  block, and a click swings it to the next edge, so a door left open across a corridor is a wall
+  and a closed one can be walked past along its panel. `doorTick` looks at her next steps
+  (`path_update`, `stepsAhead`) and, within 2.5 blocks, clicks a door whose panel stands on the edge
+  she's about to cross (`panelSide`, from its collision box), whether it's open or closed; a fence
+  gate is a bar across its block when closed, so a closed one is clicked open. Once she's through
+  and nobody (a player, an animal) stands within 2 blocks, she puts every door she moved **back as
+  she found it** (`movedDoors`, by state id): the way someone set a door is theirs. A door the server
+  ignored twice (spawn protection, a plugin) is a wall again for 2 minutes, and the pathfinder's own
+  stuck check re-plans around it. Never iron doors (redstone) nor trapdoors (as often floors as
+  doors). Clicking a door is using it, not placing anything: the never-builds rule stands.
 - **She can only reach a player the server shows her** (render distance). Beyond that the body
   answers `cantReach notVisible` at once (`McTooFarLines`). A followed player who goes out of
   sight ends the follow (`lost`).
@@ -282,8 +317,10 @@ catches everything; nothing escapes the loop.
   whose gesture already says it: arriving where she was called (50 %) and the hop (50 %). A greeting
   always gets its words, the owner's call. Order acks, refusals and failures are never rolled:
   they're how a player knows she heard.
-- A player hitting her is a guess: Mineflayer doesn't say who hit, so the body names the closest
-  player within reach. With nobody in reach it's a mob, a fall or fire, and she says nothing.
+- **Who hit her is known for sure** since 1.19.4: the server's `damage_event` names the cause (the
+  shooter, for an arrow), which Mineflayer passes as `entityHurt`'s second argument. A mob, a fall
+  or fire is no player, and she says nothing. On older versions there's no source, and the body
+  falls back to guessing the closest player within reach (`exactHits`).
 - **Repeated hits escalate** (`McHitStreaks`, pure, walked by the checks). The same player hitting
   her three times with no more than a minute between two hits is someone trying to kill her: that
   third hit gets `McHitAgainLines` (angry and scared at once) **at once, past the remark gates**
@@ -299,6 +336,20 @@ catches everything; nothing escapes the loop.
   up again after; a one-off order is dropped and its player told why (`dropped` →
   `McFleeDroppedLines`), unless they're the attacker. She sprints only while her food bar is above
   6, so she runs better when she has something to eat.
+- **She defends Papa and Tata.** The service sends their names on spawn (`family`); the same
+  `damage_event` tells her who hurts them, as long as they're in her sight. Only when she's
+  **free**: no order under way, an activity, or following or guarding that very person; she goes back
+  to it after (`resumeAfterBreak`, shared with running away). She never hits family, nor a creeper.
+  - **A monster** hitting one of them within 16 blocks of her: she fights it, for up to 20 s,
+    silently. Body-only, like eating.
+  - **A player** hitting one of them is the owner's three steps, by that player's streak
+    (`McHitStreaks.Tally`, same one-minute window, `DefendStage`, walked by the checks): the first
+    hit gets a warning (`McFamilyHitLines`, rationed), the second within the window she hits them
+    back once (`McFamilySwatLines`, said at once), the third and after she fights them for 15 s
+    after each hit (`McFamilyFightLines`, the start said at once). Busy with someone's order, the
+    body answers `cantDefend` and it stays words. While she's fighting someone, their hits on her
+    don't count as hits: no remark, no running away (`_defending`, 30 s). Below 3 hearts she breaks
+    off and eats. PvP must be on for her hits to land.
 - In-game lines are **plain text under 256 characters**: no custom emotes, no sticker tags (the
   checks enforce it).
 - **Kaomoji in game must be drawable by Minecraft's font**, which covers the Basic Multilingual

@@ -61,6 +61,11 @@ public sealed class MinecraftBodyService : BackgroundService
     private readonly Dictionary<string, DateTimeOffset> _calledAt = new();
     // Each player's hits on her, for the escalation (McHitStreaks). Guarded by _gate.
     private readonly McHitStreaks _hits = new();
+    // Each player's hits on Papa or Tata (a word, then one hit back, then a fight), and whom she's hitting back and
+    // until when: their hits on her then are the fight, not a reason to complain or run. Guarded by _gate.
+    private readonly McHitStreaks _familyHits = new();
+    private readonly Dictionary<string, (DateTimeOffset Until, bool Fighting)> _defending = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly TimeSpan DefendHold = TimeSpan.FromSeconds(30);
     private const double NightChance = 0.5;
     private const double AdvancementChance = 0.6;
     // The other commonest remarks, rolled on top of the gates so the chat stays the players': an ordinary death
@@ -331,6 +336,8 @@ public sealed class MinecraftBodyService : BackgroundService
             _pending = null;
             _seeking = null;
             _hits.Clear();
+            _familyHits.Clear();
+            _defending.Clear();
             ForgetBodyLocked();
             _logger.LogInformation("Minecraft body started (pid {Pid}) for {Host}:{Port}.", _body.Id, _host, _port);
             return true;
@@ -374,6 +381,8 @@ public sealed class MinecraftBodyService : BackgroundService
             _pending = null;
             _seeking = null;
             _hits.Clear();
+            _familyHits.Clear();
+            _defending.Clear();
             ForgetBodyLocked();
             if (!planned) MarkFailureLocked(DateTimeOffset.UtcNow);
             _logger.LogInformation("Minecraft body exited ({How}).", planned ? "left" : "unplanned");
@@ -579,7 +588,8 @@ public sealed class MinecraftBodyService : BackgroundService
                         "", ResourceName(root.GetProperty("resource").GetString() ?? ""));
                     break;
                 case "sleeping":
-                    OnSlept(root.GetProperty("player").GetString() ?? "");
+                    OnSlept(root.GetProperty("player").GetString() ?? "",
+                        root.TryGetProperty("auto", out var auto) && auto.ValueKind == JsonValueKind.True);
                     break;
                 case "cantSleep":
                     var whyNot = root.GetProperty("why").GetString();
@@ -629,6 +639,18 @@ public sealed class MinecraftBodyService : BackgroundService
                     break;
                 case "safe":
                     Remark("safe", BotResponses.McFleeSafeLines, root.GetProperty("player").GetString());
+                    break;
+                case "familyHurt":
+                    OnFamilyHurt(root.GetProperty("victim").GetString() ?? "", root.GetProperty("by").GetString() ?? "");
+                    break;
+                case "defending":
+                    OnDefending(root.GetProperty("player").GetString() ?? "", root.GetProperty("victim").GetString() ?? "",
+                        root.GetProperty("swat").GetBoolean());
+                    break;
+                case "cantDefend":
+                    // Busy with someone's order: words only.
+                    Remark("familyHit", BotResponses.McFamilyHitLines, root.GetProperty("player").GetString(), false,
+                        Who(root.GetProperty("victim").GetString() ?? ""));
                     break;
                 case "cornered":
                     // Nowhere to run: said at once, like the escalation it follows.
@@ -681,6 +703,8 @@ public sealed class MinecraftBodyService : BackgroundService
             _spawned = true;
             _inGameSince = DateTimeOffset.UtcNow;
             _failures = 0;
+            // Whose hits she watches for (Defending her family). Names only: offline mode lets anyone take one.
+            body.Send(new { op = "family", names = new[] { _owner, _tata }.Where(n => n.Length > 0).ToArray() });
         }
         _logger.LogInformation("Minecraft body spawned on {Host}:{Port}.", _host, _port);
         _ = Task.Run(async () =>
@@ -1187,13 +1211,19 @@ public sealed class MinecraftBodyService : BackgroundService
         Reply(player, whispered, BotResponses.McFleeDroppedLines, Who(attacker));
     }
 
-    // In bed, asked or because a player went to bed: whatever she was doing is over, whoever it was for,
-    // except an activity (a farm, fishing, a guarded place): the body goes back to it when she wakes, and it stays
-    // its keeper's.
-    private void OnSlept(string player)
+    // In bed, asked, because a player went to bed, or on her own at night (auto): whatever she was doing is over,
+    // whoever it was for, except an activity (a farm, fishing, a guarded place): the body goes back to it when she
+    // wakes, and it stays its keeper's. On her own she tells the server, so they know the night can pass.
+    private void OnSlept(string player, bool auto)
     {
         McJob? activity;
         lock (_gate) activity = _order is { } kept && IsActivity(kept.Order) ? kept : null;
+        if (auto)
+        {
+            lock (_gate) _order = activity;
+            Remark("bedtime", BotResponses.McBedtimeLines);
+            return;
+        }
         var (whispered, _) = Confirm(player);
         lock (_gate) _order = activity;
         Reply(player, whispered, BotResponses.McSleepLines);
@@ -1311,6 +1341,9 @@ public sealed class MinecraftBodyService : BackgroundService
     // that line goes out at once, past the remark gates. Hits after it keep the same lines, rationed again.
     private void OnHit(string hitter)
     {
+        // Someone she's hitting back for Papa or Tata: their hits are the fight, not a reason to complain or run.
+        lock (_gate)
+            if (_defending.TryGetValue(hitter, out var defence) && defence.Until > DateTimeOffset.UtcNow) return;
         McHitStage stage;
         lock (_gate) stage = _hits.Register(hitter, DateTimeOffset.UtcNow);
         if (stage == McHitStage.Hit)
@@ -1329,12 +1362,44 @@ public sealed class MinecraftBodyService : BackgroundService
                 body.Send(new { op = "flee", player = hitter });
     }
 
+    // A player hit Papa or Tata (never family: the body filters them out). The first hit gets a word; again within
+    // the streak's window, she hits them back once; after that she fights them (McHitStreaks.DefendStage). The body
+    // says whether she could go (`defending`) or was busy with someone's order (`cantDefend`, words only).
+    private void OnFamilyHurt(string victim, string attacker)
+    {
+        if (victim.Length == 0 || attacker.Length == 0 || KinOf(attacker) != McKin.Anyone) return;
+        McDefendStage stage;
+        lock (_gate) stage = McHitStreaks.DefendStage(_familyHits.Tally(attacker, DateTimeOffset.UtcNow));
+        if (stage == McDefendStage.Warn)
+        {
+            Remark("familyHit", BotResponses.McFamilyHitLines, attacker, false, Who(victim));
+            return;
+        }
+        lock (_gate)
+            if (_body is { } body && _spawned && !_leaving)
+                body.Send(new { op = "defend", player = attacker, victim, swat = stage == McDefendStage.Swat });
+    }
+
+    // She's hitting them back. The swat and the start of a fight are said at once (the hit needs its reason); the
+    // fight's later hits are rationed.
+    private void OnDefending(string attacker, string victim, bool swat)
+    {
+        bool fightStarts;
+        lock (_gate)
+        {
+            fightStarts = !swat && !(_defending.TryGetValue(attacker, out var was) && was.Fighting && was.Until > DateTimeOffset.UtcNow);
+            _defending[attacker] = (DateTimeOffset.UtcNow + DefendHold, !swat);
+        }
+        Remark(swat ? "familySwat" : "familyFight", swat ? BotResponses.McFamilySwatLines : BotResponses.McFamilyFightLines,
+            attacker, swat || fightStarts, Who(victim));
+    }
+
     /// <summary>
     /// One of her lines in Minecraft's chat, rationed per kind and overall. <paramref name="force"/> says it
     /// anyway, for the moments that can't wait, and still starts both cooldowns so nothing piles on after.
-    /// Returns whether it was said.
+    /// Returns whether it was said. <paramref name="extra"/> fills {1}, {2}… as the pool documents.
     /// </summary>
-    private bool Remark(string kind, string[] pool, string? name = null, bool force = false)
+    private bool Remark(string kind, string[] pool, string? name = null, bool force = false, params object[] extra)
     {
         if (force)
         {
@@ -1347,7 +1412,7 @@ public sealed class MinecraftBodyService : BackgroundService
             _kindGate.Release(kind);
             return false;
         }
-        var text = string.Format(_picker.Pick(pool), name is null ? "" : Who(name));
+        var text = string.Format(_picker.Pick(pool), [name is null ? "" : Who(name), .. extra]);
         lock (_gate)
             if (_body is { } body && _spawned && !_leaving)
             {

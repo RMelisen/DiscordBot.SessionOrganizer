@@ -270,6 +270,39 @@ internal static partial class BotResponses
         "Mission abandonnée, {0}. {1} m'a attaquée, j'ai couru. Redonne-moi l'ordre.",
     };
 
+    // A player hit Papa or Tata (never family). {0} = the attacker, {1} = « Papa » or « Tata ». Never gendered: {0}
+    // can be anyone. She's protective first; the pettiness is in the record-keeping, not in insults.
+
+    // The first hit, or any hit while she's busy with someone's order: a warning, no fighting.
+    public static readonly string[] McFamilyHitLines =
+    {
+        "Hé ! {0}, on touche pas à {1}. Premier avertissement.",
+        "{0}, tu viens de taper {1}. Je l'ai vu. Je l'ai noté. Recommence pas.",
+        "Pardon ?! {0} a frappé {1} ? Je te surveille, maintenant (ಠ_ಠ)",
+        "{0}, c'est ma famille que tu tapes, là. Arrête tout de suite.",
+        "On frappe pas {1}, {0}. C'est la seule règle qui compte ici.",
+        "J'ai vu ça, {0}. Touche encore à {1} et on va avoir un problème. Un problème carré.",
+    };
+
+    // They did it again: she hits them back, once.
+    public static readonly string[] McFamilySwatLines =
+    {
+        "Je t'avais dit de pas toucher à {1}, {0}. Voilà.",
+        "Tiens, {0}. Ça, c'est pour {1}.",
+        "Un partout, {0}. Touche encore à {1} et on passe à la suite.",
+        "Deuxième avertissement, {0}. Celui-là, tu l'as senti.",
+    };
+
+    // They keep going: she fights them.
+    public static readonly string[] McFamilyFightLines =
+    {
+        "Ça suffit, {0} ! Personne touche à {1} !",
+        "Tu l'auras voulu, {0}. Défense de {1} activée ! (｀Д´)",
+        "{0}, tu t'attaques à {1}, tu t'attaques à moi !",
+        "Bon. {0}, on va régler ça. Avec mes poings carrés.",
+        "Laisse {1} tranquille, {0} ! Je te lâche plus !",
+    };
+
     // Someone earned an advancement. {0} = who. Warm with a pinch, like her own systems.
     public static readonly string[] McAdvancementLines =
     {
@@ -499,6 +532,17 @@ internal static partial class BotResponses
         "Au lit. Comme ça la nuit passe, et personne pourra dire que c'est ma faute.",
         "Je me couche. Pas pour dormir, je dors pas. Pour faire passer la nuit.",
         "Bonne nuit, {0}. Si un phantom passe, c'est pas moi : moi, j'ai dormi.",
+    };
+
+    // She went to bed on her own at night, so the night passes as soon as the players lie down too. No placeholder.
+    public static readonly string[] McBedtimeLines =
+    {
+        "Il fait nuit, je vais me coucher. Couchez-vous aussi et la nuit passe. Ou restez debout, mais c'est plus ma faute.",
+        "Au lit. Je fais semblant de dormir, comme vous. Vous n'avez plus qu'à faire pareil.",
+        "Moi je suis couchée. Si la nuit passe pas, regardez autour de vous, c'est pas moi.",
+        "Bonne nuit. Je suis au lit, je vous attends. Appelez-moi si vous avez besoin de moi.",
+        "Je me couche. Il manque plus que vous pour passer la nuit (－_－) zzZ",
+        "Mode veille. Enfin, mode lit. La nuit n'attend plus que vous.",
     };
 
     // Nobody can skip the night while she's awake, and there's no bed near her.

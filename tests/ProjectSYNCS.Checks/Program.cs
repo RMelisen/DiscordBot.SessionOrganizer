@@ -2158,6 +2158,17 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     if (!stages.SequenceEqual(new[] { McHitStage.Hit, McHitStage.Hit, McHitStage.Hit, McHitStage.Escalated, McHitStage.Again,
             McHitStage.Hit, McHitStage.Hit }))
         Fail($"minecraft hit streaks: {string.Join(", ", stages)}");
+    // Someone hitting her family: a word, then one hit back, then a fight, per attacker, starting over after a pause.
+    var familyHits = new McHitStreaks();
+    var defence = new[]
+    {
+        familyHits.Tally("Bob", hitAt), familyHits.Tally("Eve", hitAt.AddSeconds(2)), familyHits.Tally("Bob", hitAt.AddSeconds(5)),
+        familyHits.Tally("Bob", hitAt.AddSeconds(8)), familyHits.Tally("Bob", hitAt.AddSeconds(9)),
+        familyHits.Tally("Bob", hitAt.AddSeconds(9) + McHitStreaks.Window + TimeSpan.FromSeconds(1)),
+    }.Select(McHitStreaks.DefendStage);
+    if (!defence.SequenceEqual(new[] { McDefendStage.Warn, McDefendStage.Warn, McDefendStage.Swat, McDefendStage.Fight,
+            McDefendStage.Fight, McDefendStage.Warn }))
+        Fail($"minecraft family defence: {string.Join(", ", defence)}");
 
     // Who she works for (McClaim): the holder alone, until their claim runs out, and family outranks.
     var claimAt = DateTimeOffset.UtcNow;
@@ -2201,8 +2212,8 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
              "McComeAckLines", "McFollowAckLines", "McStayAckLines", "McArrivedLines", "McTooFarLines", "McNoPathLines", "McLostLines",
              "McCalledLines", "McGoToAckLines", "McGoToArrivedLines", "McTripTooFarLines", "McGuardAckLines", "McGuardKillLines",
              "McCollectAckLines", "McCollectDoneLines", "McCollectKeptLines", "McCollectEmptyLines", "McCollectNoneLines",
-             "McCollectNoToolLines", "McSleepLines", "McNoBedLines", "McNotNightLines", "McBedFailedLines",
-             "McBusyLines", "McTakenLines", "McHitAgainLines", "McFleeSafeLines", "McCorneredLines", "McFleeDroppedLines", "McHungryLines", "McStarvingLines", "McHarvestAckLines", "McHarvestDoneLines", "McHarvestKeptLines", "McHarvestEmptyLines",
+             "McCollectNoToolLines", "McSleepLines", "McBedtimeLines", "McNoBedLines", "McNotNightLines", "McBedFailedLines",
+             "McBusyLines", "McTakenLines", "McHitAgainLines", "McFleeSafeLines", "McCorneredLines", "McFleeDroppedLines", "McFamilyHitLines", "McFamilySwatLines", "McFamilyFightLines", "McHungryLines", "McStarvingLines", "McHarvestAckLines", "McHarvestDoneLines", "McHarvestKeptLines", "McHarvestEmptyLines",
              "McHarvestNoneLines", "McFarmAckLines", "McFarmNoneLines", "McFarmNoChestLines", "McSeekMetLinesOwner", "McSeekMetLinesTata", "McSeekMissLinesOwner", "McSeekMissLinesTata",
              "McGiveLostLines", "McGiveNoneLines", "McGiveEmptyLines", "McGiveUnknownLines", "McStoreDoneLines", "McStoreFullLines",
              "McStoreEmptyLines", "McStoreNoChestLines", "McSitLines", "McJumpLines", "McWhereLines", "McTimerSetLines", "McTimerDoneLines",
