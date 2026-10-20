@@ -201,6 +201,9 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
   anyone with a creeper behind them; she says when a tool is wearing out or broke, or what she
   lacks (a rod, shears, arrows, room). She looks at whoever talks to her, turns her back on
   whoever hits her, and crouches when the owner or Tata walks up.
+- **She swims.** In deep water she treads, and swims up for air before it runs out. Following you,
+  she dives after you, comes up to breathe and goes back down; if you sit in a boat with a free
+  seat, she climbs in as your passenger and gets out when you do.
 - **On Discord** she says in the bots channel when she goes to play and when she's back.
 
 She joins nothing until the owner allows it with `/debug minecraft` (« L'autoriser à jouer »);

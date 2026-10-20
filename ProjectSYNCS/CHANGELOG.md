@@ -3,6 +3,17 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.19.0 — 2026-10-20
+
+- Minecraft: she no longer sinks and drowns when she stops in deep water: she treads water, and swims
+  up for air when it runs low, around a ceiling if she has to.
+- Minecraft: following someone who dives, she dives after them, comes up to breathe and goes back
+  down.
+- Minecraft: following someone who sits in a boat with a free seat, she climbs in as their passenger,
+  and gets out when they do.
+- Minecraft: she leaves drowned she can't reach alone, keeps out of bubble columns that pull down,
+  and shakes herself off after a swim.
+
 ## 7.18.0 — 2026-10-20
 
 - Minecraft: between orders she now has a life. With a farm, a fishing spot, an animal pen and a home

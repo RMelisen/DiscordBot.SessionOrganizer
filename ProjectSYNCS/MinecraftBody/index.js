@@ -45,6 +45,7 @@
 //      retrieved {count} · retrieveLost {why: otherDimension|tooFar|void|lava|noPath|despawned} · creeperBehind {player}
 //      wornOut {tool} · broke {tool} · lacking {what: rod|shears|breedFood|arrows|space}
 //      (tool: sword|pickaxe|axe|shovel|rod|shears|bow)
+//      Water: diving {player} · surfacing {player} · drowning · breathing · boarded {player} · shook
 
 'use strict';
 
@@ -126,9 +127,15 @@ function gentleMovements() {
   // The pathfinder sees every door as a wall (its own door option is off, flaky, and gates only): a wooden door or
   // a fence gate is a way through, whatever its state, and doorTick swings it out of the way as she comes. Not on
   // a diagonal step, where a corner catches the panel, nor one that refused to move: a wall again for a while.
+  // A bubble column over magma pulls whoever swims in it to the bottom: the pathfinder takes it for air, so it's
+  // made a wall.
   const getBlock = movements.getBlock.bind(movements);
   movements.getBlock = (pos, dx = 0, dy = 0, dz = 0) => {
     const b = getBlock(pos, dx, dy, dz);
+    if (isDragColumn(b)) {
+      b.safe = false;
+      return b;
+    }
     if (b && isDoor(b) && !(dx !== 0 && dz !== 0) && !stuckDoors.has(doorKey(b))) {
       b.safe = true;
       b.physical = false;
@@ -368,8 +375,9 @@ function stay() {
   if (task && task.window) { // a furnace she's cooking at
     try { task.window.close(); } catch { /* already closed */ }
   }
-  // An order gets her out of bed: lying there, she can't move.
+  // An order gets her out of bed: lying there, she can't move. And out of a boat (the ride was the old task's).
   if (bot.isSleeping) Promise.resolve().then(() => bot.wake()).catch(() => {});
+  if (riding) leaveBoat();
   task = null;
   resumeAfterSleep = null;
   sitting = false;
@@ -445,7 +453,7 @@ function freeTick() {
 function autonomyTick() {
   if (Date.now() < autonomyAt || !bot.entity) return;
   autonomyAt = Date.now() + 1000;
-  if (bot.isSleeping || eating || sitting || !isFree(task)) return;
+  if (bot.isSleeping || eating || sitting || swim || !isFree(task)) return;
   if (Date.now() < freeSince + OrderGrace || Date.now() < heldUntil) return;
   if (task && task.kind === 'retrieve') return retrieveTick(task);
   if (pendingRetrieve) return startRetrieve();
@@ -469,7 +477,7 @@ function safely(fn) {
 let sitting = false;
 
 function where(player) {
-  const p = bot.entity.position;
+  const p = (bot.vehicle || bot.entity).position; // riding, her own position isn't updated: the boat's is
   emit('position', { player, x: Math.floor(p.x), y: Math.floor(p.y), z: Math.floor(p.z), dimension: dimension() });
 }
 
@@ -680,10 +688,10 @@ function guardTick() {
     }
   }
 
-  // Every other monster: chased and hit.
-  if (t.foe && (!t.foe.isValid || t.foe.position.distanceTo(center) > radius * 1.6)) t.foe = null;
+  // Every other monster: chased and hit. Not one under water (a drowned at the bottom): she can't reach it there.
+  if (t.foe && (!t.foe.isValid || t.foe.position.distanceTo(center) > radius * 1.6 || headUnder(t.foe))) t.foe = null;
   if (!t.foe) {
-    t.foe = bot.nearestEntity((e) => isFoe(e) && e.name !== 'creeper'
+    t.foe = bot.nearestEntity((e) => isFoe(e) && e.name !== 'creeper' && !headUnder(e)
       && (e.position.distanceTo(center) < radius || e.position.distanceTo(me) < 6));
     if (!t.foe) return goHome();
   }
@@ -1592,7 +1600,7 @@ function canDefend(victim) {
 // True when she takes it on.
 function defend(foe, victim, swat) {
   if (!foe || foe.isValid === false || foe.name === 'creeper' || (foe.type === 'player' && isFamily(foe.username))) return false;
-  if (!canDefend(victim) || foe.position.distanceTo(bot.entity.position) > DefendRadius) return false;
+  if (!canDefend(victim) || foe.position.distanceTo(bot.entity.position) > DefendRadius || headUnder(foe)) return false;
   const lasts = swat ? SwatFor : foe.type === 'player' ? DefendFightFor : DefendMobFor;
   if (task && task.kind === 'defend') {
     // Already at it: a new attacker takes over, and a fight never shrinks back to one hit.
@@ -1616,7 +1624,7 @@ function defendTick() {
   const foe = t.foe;
   const me = bot.entity.position;
   if (!foe || foe.isValid === false || !bot.entities[foe.id] || foe.position.distanceTo(me) > DefendRadius
-      || Date.now() > t.until || bot.health <= RetreatHealth)
+      || Date.now() > t.until || bot.health <= RetreatHealth || headUnder(foe))
     return endDefend(t);
   setMode(t, 'fight', foe, new goals.GoalFollow(foe, 1), true);
   if (foe.position.distanceTo(me) < MeleeReach && Date.now() >= attackReadyAt) {
@@ -1931,6 +1939,16 @@ function tagAlongTick() {
   }
   const target = playerEntity(who);
   const d = target.position.distanceTo(bot.entity.position);
+  // In a boat with room for her: right up to it, so boardTick can climb in.
+  if (boardable(target)) {
+    if (t.mode !== 'board') {
+      t.mode = 'board';
+      walkPace(d > TagSprint);
+      bot.pathfinder.setGoal(new goals.GoalFollow(target, 2), true);
+    }
+    return;
+  }
+  if (t.mode === 'board') t.mode = null;
   if (d > TagFar) {
     walkPace(d > TagSprint);
     if (t.mode !== 'follow') {
@@ -1984,7 +2002,7 @@ let glanceAt = 0;
 let greeting = false;
 
 function lookFree() {
-  if (bot.isSleeping || eating || drawing || greeting || bot.pathfinder.isMoving()) return false;
+  if (bot.isSleeping || eating || drawing || greeting || swim || bot.pathfinder.isMoving()) return false;
   if (!task) return true;
   if (task.kind === 'tagAlong' || task.kind === 'home') return true;
   return Boolean(task.own && (task.kind === 'farm' || task.kind === 'ranch') && !task.busy);
@@ -2035,7 +2053,7 @@ function talker(me) {
 
 // Away is out of sight or over 10 blocks off; back within 5 is walking up.
 function greetTick() {
-  if (greeting || bot.isSleeping || eating || (task && ['defend', 'flee', 'guard', 'patrol'].includes(task.kind))) return;
+  if (greeting || swim || bot.isSleeping || eating || (task &&['defend', 'flee', 'guard', 'patrol'].includes(task.kind))) return;
   const me = bot.entity.position;
   for (const name of familyOrder) {
     const player = Object.values(bot.players).find((p) => p.username.toLowerCase() === name);
@@ -2067,6 +2085,334 @@ async function crouchFor(entity) {
   } finally {
     greeting = false;
   }
+}
+
+// ---- Water ---------------------------------------------------------------------------------------------
+
+// The pathfinder swims on the surface (it holds jump in water while it walks her) but never plans a step under it,
+// and nothing keeps her up once it stops. So whenever she's in water with nowhere to walk she treads it, head up, and
+// her air is watched: under water with little left she swims up, whatever she's doing, around a ceiling if there is
+// one. Following someone who dives (or tagging along with them), she goes down after them on her own steering, back up
+// to breathe when her air runs low, and down again. Following someone who sits in a boat with a free seat, she climbs
+// in as their passenger: they steer, and she places nothing. Out of the water after a swim, she shakes herself off.
+const WaterBlocks = new Set(['water', 'bubble_column', 'kelp', 'kelp_plant', 'seagrass', 'tall_seagrass']);
+// bot.oxygenLevel, out of AirMax: 15 seconds of air in all.
+const AirMax = 20;
+// Under water with this little left, she goes up, whatever she's doing.
+const AirLow = 8;
+// Diving: back up with this much left, and down again once she has breathed this much back.
+const AirDiveUp = 7;
+const AirDiveAgain = 19;
+const DiveReach = 24;
+const DiveAgainAfter = 3000;
+// Badly hurt on a dive: up, and no more diving for a while.
+const DiveHurtPause = 60000;
+// Wet for this long, she shakes herself off once back on dry land; once a minute at most.
+const ShakeAfter = 3000;
+const ShakeEvery = 60000;
+const BoardReach = 3;
+const BoardRetry = 2000;
+const BoardTries = 3;
+const BoardGiveUp = 30000;
+
+// What her own swimming is doing: null, a dive ({ mode: 'dive', phase: down|up }) or going up for air
+// ({ mode: 'surface' }). The pathfinder is left alone by the second, which only takes the controls.
+let swim = null;
+let treading = false;
+let drowning = false;
+let wetSince = null;
+let shakeAt = 0;
+let diveAgainAt = 0;
+
+function isWater(block) {
+  if (!block) return false;
+  if (WaterBlocks.has(block.name)) return true;
+  try {
+    return block.getProperties().waterlogged === true;
+  } catch {
+    return false;
+  }
+}
+
+// A bubble column over magma (drag) pulls down; one over soul sand lifts.
+function isDragColumn(block) {
+  return Boolean(block && block.name === 'bubble_column' && block.getProperties().drag === true);
+}
+
+// Whether someone's eyes are under water: hers (she needs air), or theirs (they dived), or a drowned's (out of reach).
+function headUnder(entity) {
+  return Boolean(entity && entity.position && bot.blockAt && isWater(bot.blockAt(entity.position.offset(0, (entity.height || 1.8) * 0.9, 0))));
+}
+
+function air() {
+  return Number.isFinite(bot.oxygenLevel) ? bot.oxygenLevel : AirMax;
+}
+
+// Water straight up to the open air above her head: nothing solid, no column pulling down.
+function clearAbove() {
+  const head = bot.entity.position.offset(0, 1.62, 0).floored();
+  for (let dy = 0; dy <= 16; dy++) {
+    const b = bot.blockAt(head.offset(0, dy, 0));
+    if (!b || isDragColumn(b)) return false;
+    if (isWater(b)) continue;
+    return b.boundingBox === 'empty';
+  }
+  return false;
+}
+
+// The closest bit of surface (water with air above it) within 8 blocks around and 12 up, none in a column pulling
+// down. Only looked for under a ceiling, so the cost (a few thousand block reads) is rare.
+function surfaceSpot() {
+  const eye = bot.entity.position.offset(0, 1.62, 0);
+  const base = eye.floored();
+  let best = null;
+  let bestD = Infinity;
+  for (let dx = -8; dx <= 8; dx++)
+    for (let dz = -8; dz <= 8; dz++)
+      for (let dy = -2; dy <= 12; dy++) {
+        const p = base.offset(dx, dy, dz);
+        const b = bot.blockAt(p);
+        if (!isWater(b) || isDragColumn(b)) continue;
+        const above = bot.blockAt(p.offset(0, 1, 0));
+        if (!above || isWater(above) || above.boundingBox !== 'empty') continue;
+        const d = p.offset(0.5, 0.5, 0.5).distanceTo(eye);
+        if (d < bestD) {
+          best = p;
+          bestD = d;
+        }
+        break;
+      }
+  return best;
+}
+
+function releaseSwim() {
+  for (const control of ['forward', 'jump', 'sprint']) bot.setControlState(control, false);
+}
+
+// Up for air: straight up when it's open, else towards the closest surface. `s` keeps the spot for a second.
+function surfaceTick(s) {
+  if (clearAbove()) {
+    bot.setControlState('forward', false);
+    bot.setControlState('jump', true);
+    return;
+  }
+  if (Date.now() >= (s.spotAt || 0)) {
+    s.spot = surfaceSpot();
+    s.spotAt = Date.now() + 1000;
+  }
+  bot.setControlState('jump', true);
+  bot.setControlState('sprint', false);
+  if (!s.spot) return bot.setControlState('forward', false);
+  const to = s.spot.offset(0.5, 0.9, 0.5);
+  const me = bot.entity.position;
+  bot.lookAt(to, true).catch(() => {});
+  bot.setControlState('forward', Math.hypot(to.x - me.x, to.z - me.z) > 0.6);
+}
+
+// Whom she'd dive after: the player she follows or tags along with, under water, in reach, not in a boat.
+function diveTarget() {
+  const t = task;
+  if (!t || (t.kind !== 'follow' && t.kind !== 'tagAlong')) return null;
+  const who = t.kind === 'follow' ? t.player : t.who;
+  const target = playerEntity(who);
+  if (!target || target.vehicle || !headUnder(target) || target.position.distanceTo(bot.entity.position) > DiveReach) return null;
+  return who;
+}
+
+function startDive(who) {
+  swim = { mode: 'dive', phase: 'down', task, who, hurt: false };
+  bot.pathfinder.setGoal(null); // her own steering now: a follow goal would fight it, and report no path
+  if (!task.dived) {
+    task.dived = true; // a word the first time per order, not on every breath
+    emit('diving', { player: who });
+  }
+}
+
+// Down after them: towards their eyes, rising when they're above her and sinking when they're below; she stops beside
+// them. Up when her air runs low, when they come up or out of reach, when she's badly hurt, or in a column pulling down.
+function diveTick(s, under) {
+  const target = playerEntity(s.who);
+  if (task !== s.task || !target || target.vehicle || target.position.distanceTo(bot.entity.position) > DiveReach) return endDive(s);
+  if (s.phase === 'down') {
+    const hurt = bot.health <= RetreatHealth;
+    const theyAreUnder = headUnder(target);
+    if (air() <= AirDiveUp || hurt || !theyAreUnder || isDragColumn(bot.blockAt(bot.entity.position.floored()))) {
+      s.phase = 'up';
+      s.hurt = hurt;
+      if (theyAreUnder && !hurt) emit('surfacing', { player: s.who });
+    } else {
+      const me = bot.entity.position;
+      const aim = eyes(target);
+      bot.lookAt(aim, true).catch(() => {});
+      bot.setControlState('sprint', false);
+      bot.setControlState('forward', Math.hypot(aim.x - me.x, aim.z - me.z) > 1.5);
+      bot.setControlState('jump', target.position.y > me.y + 0.3);
+      return;
+    }
+  }
+  if (!under) return endDive(s);
+  surfaceTick(s);
+}
+
+// The dive is over (her head is out, or the order changed): back to the follow or the tagging along, if still hers.
+function endDive(s) {
+  swim = null;
+  releaseSwim();
+  diveAgainAt = Date.now() + (s.hurt ? DiveHurtPause : DiveAgainAfter);
+  if (task !== s.task) return;
+  if (task.kind === 'tagAlong') {
+    task.mode = null;
+    return;
+  }
+  const target = playerEntity(task.player);
+  if (target) bot.pathfinder.setGoal(new goals.GoalFollow(target, 2), true);
+}
+
+// Every physics tick, after the pathfinder's own (registered on spawn, so it overrides it): air first, then a dive,
+// then treading water, then shaking herself off on dry land.
+function waterTick() {
+  if (!bot.entity || bot.vehicle || bot.isSleeping) return;
+  const me = bot.entity;
+  const under = headUnder(me);
+  if (under && air() <= 0 && !drowning) {
+    drowning = true;
+    emit('drowning', {});
+  } else if (!under && drowning) {
+    drowning = false;
+    emit('breathing', {});
+  }
+
+  if (swim && swim.mode === 'dive') return diveTick(swim, under);
+  if (swim && swim.mode === 'surface') {
+    if (under) return surfaceTick(swim);
+    swim = null;
+    releaseSwim();
+  }
+  if (under && air() <= AirLow) {
+    swim = { mode: 'surface' };
+    return surfaceTick(swim);
+  }
+  const wet = me.isInWater;
+  if (wet && air() >= AirDiveAgain && Date.now() >= diveAgainAt && bot.health > RetreatHealth) {
+    const who = diveTarget();
+    if (who) return startDive(who);
+  }
+
+  // Treading: in water, off the bottom or with her head under, and the pathfinder not swimming her anywhere. Standing
+  // in shallow water she stays put.
+  if (wet && (!me.onGround || under) && !bot.pathfinder.isMoving()) {
+    bot.setControlState('jump', true);
+    treading = true;
+  } else if (treading) {
+    treading = false;
+    if (!bot.pathfinder.isMoving()) bot.setControlState('jump', false);
+  }
+
+  if (wet) {
+    if (!wetSince) wetSince = Date.now();
+  } else if (wetSince && me.onGround) {
+    const swam = Date.now() - wetSince >= ShakeAfter;
+    wetSince = null;
+    if (swam) shakeOff().catch(() => {});
+  }
+}
+
+// Three quick crouches, the way a wet dog shakes. Not in a fight, on the run, sitting, eating or greeting.
+async function shakeOff() {
+  if (Date.now() < shakeAt || greeting || eating || sitting || drawing) return;
+  if (task && ['defend', 'flee', 'guard', 'patrol'].includes(task.kind)) return;
+  shakeAt = Date.now() + ShakeEvery;
+  greeting = true;
+  try {
+    for (let i = 0; i < 3; i++) {
+      bot.setControlState('sneak', true);
+      await wait(120);
+      bot.setControlState('sneak', false);
+      await wait(120);
+    }
+  } finally {
+    greeting = false;
+  }
+  emit('shook', {});
+}
+
+// Boats: two seats, one on a chest boat (the chest takes the back one); rafts the same.
+function isBoat(entity) {
+  const n = (entity && entity.name) || '';
+  return n.endsWith('boat') || n.endsWith('raft');
+}
+
+function freeSeat(boat) {
+  return (boat.passengers || []).length < ((boat.name || '').includes('chest') ? 1 : 2);
+}
+
+// The player she's with (following, or tagging along) sits in a boat with room for her.
+function boardable(target) {
+  const boat = target && target.vehicle;
+  return Boolean(boat && isBoat(boat) && freeSeat(boat) && (boatSkip.get(boat.id) || 0) <= Date.now());
+}
+
+// Riding: whose boat, and for which task; the ride ends with either. Physics stops while she rides (Mineflayer's), so
+// no physics tick runs: rideTick is a timer.
+let riding = null;
+let boarding = null;
+let boardAt = 0;
+const boatSkip = new Map();
+
+// Twice a second on foot or swimming: close enough to their boat, she climbs in. Three refusals (someone took the seat,
+// a plugin) and she leaves that boat alone for a while.
+function boardTick() {
+  if (Date.now() < boardAt || !bot.entity || bot.vehicle || bot.isSleeping || eating || swim) return;
+  boardAt = Date.now() + 500;
+  const t = task;
+  if (!t || (t.kind !== 'follow' && t.kind !== 'tagAlong')) return;
+  const who = t.kind === 'follow' ? t.player : t.who;
+  const target = playerEntity(who);
+  if (!boardable(target)) return;
+  const boat = target.vehicle;
+  if (boat.position.distanceTo(bot.entity.position) > BoardReach) return;
+  if (!boarding || boarding.boat !== boat || boarding.task !== t) boarding = { boat, who, task: t, tries: 0 };
+  if (++boarding.tries > BoardTries) {
+    boatSkip.set(boat.id, Date.now() + BoardGiveUp);
+    boarding = null;
+    return;
+  }
+  boardAt = Date.now() + BoardRetry;
+  bot.setControlState('sneak', false); // crouching, a click on a boat doesn't seat you
+  bot.mount(boat);
+}
+
+function onMount() {
+  const b = boarding;
+  boarding = null;
+  if (!b || bot.vehicle !== b.boat || task !== b.task) return;
+  riding = { boat: b.boat, who: b.who, task: b.task };
+  swim = null;
+  treading = false;
+  releaseSwim();
+  emit('boarded', { player: b.who });
+}
+
+// Out when they get out (or the boat goes), or when what she was doing ends: any order gets her out, as from a bed.
+function rideTick() {
+  if (!bot.vehicle || !riding) return;
+  const target = playerEntity(riding.who);
+  if (task === riding.task && target && target.vehicle === bot.vehicle) return;
+  leaveBoat();
+}
+
+// Mineflayer's own dismount sends jump, which since 1.21.2 is no longer how a passenger gets out: shift is.
+function leaveBoat() {
+  if (!bot.vehicle) return;
+  if (!bot.supportFeature('newPlayerInputPacket')) return bot.dismount();
+  bot._client.write('player_input', { inputs: { shift: true } });
+  setTimeout(() => {
+    try {
+      bot._client.write('player_input', { inputs: {} });
+    } catch {
+      // Gone meanwhile.
+    }
+  }, 150);
 }
 
 // ---- Getting her things back -------------------------------------------------------------------------
@@ -2467,6 +2813,10 @@ function attach() {
 
   bot.once('spawn', () => {
     bot.pathfinder.setMovements(gentleMovements());
+    // After the pathfinder's own tick (its plugin is injected later than attach() runs), so her swimming can take the
+    // controls from it.
+    bot.on('physicsTick', safely(waterTick));
+    bot.on('physicsTick', safely(boardTick));
     emit('spawned', {});
     reportPlayers();
     wearBestArmor().catch(() => {});
@@ -2489,6 +2839,9 @@ function attach() {
   bot.on('physicsTick', safely(creeperWatchTick));
   setInterval(() => { if (bot) ranchRound().catch(() => {}); }, RanchRound);
   setInterval(() => { if (bot) safely(needsTick)(); }, NeedsEvery);
+  setInterval(() => { if (bot) safely(rideTick)(); }, 500);
+  bot.on('mount', safely(onMount));
+  bot.on('dismount', () => { riding = null; });
   // The path she's walking, for the doors on it; closing behind her needs none.
   bot.on('path_update', (result) => setPath(result.status === 'noPath' ? [] : result.path));
   bot.on('goal_reached', () => setPath([]));
@@ -2552,6 +2905,8 @@ function attach() {
     if (!task || result.status !== 'noPath') return;
     if (task.mode === 'loot') return task.skipLoot.add(task.modeTarget.id); // out of reach: left where it is
     if (task.reported) return;
+    // Following someone who dived: no path under water, and the dive (waterTick) goes after them instead.
+    if (FollowsSomeone.has(task.kind) && headUnder(playerEntity(task.player))) return;
     if (['collect', 'sleep', 'harvest', 'farm', 'give', 'store', 'fish', 'smelt', 'patrol', 'forage', 'ranch', 'tagAlong', 'home']
       .includes(task.kind)) return;
     // Her own: a place she can't walk to is left out for a while; her things, given up.
@@ -2645,6 +3000,11 @@ function attach() {
 
   bot.on('death', () => {
     diedAt = Date.now();
+    swim = null;
+    drowning = false;
+    wetSince = null;
+    riding = null;
+    boarding = null;
     onDeath();
     emit('died', {});
   });

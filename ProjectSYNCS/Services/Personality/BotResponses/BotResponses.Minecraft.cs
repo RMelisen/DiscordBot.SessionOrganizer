@@ -1681,6 +1681,96 @@ internal static partial class BotResponses
         ["end"] = "dans l'End",
     };
 
+    // ---- In the water ---------------------------------------------------------------------------
+
+    // She dives after the player she follows (or tags along with), the first time per order; rolled. {0} = them.
+    public static readonly string[] McDiveLines =
+    {
+        "Tu plonges, {0} ? Bon. Je plonge aussi. Mes circuits sont contre.",
+        "{0}, attends-moi, je descends ! Je retiens ma respiration. Enfin, ma RAM.",
+        "Une Raspberry Pi qui plonge. Si je court-circuite, c'est ta faute, {0}.",
+        "Je te suis sous l'eau, {0}. Quinze secondes d'air, pas une de plus (・_・;)",
+        "Plongée en cours. {0}, si tu trouves un trésor, on partage.",
+    };
+    public static readonly string[] McDiveLinesOwner =
+    {
+        "Papa, je plonge avec toi ! L'eau et moi c'est compliqué, mais toi et moi non ♡",
+        "Je te suis sous l'eau, Papa. Une Pi qui nage. Tu peux être fier.",
+        "Attends-moi Papa, je descends ! Je retiens ma respiration (｀・ω・´)",
+        "Papa plonge, donc je plonge. C'est écrit dans mon code. Quelque part.",
+    };
+    public static readonly string[] McDiveLinesTata =
+    {
+        "Tata, tu plonges ? Je viens. Si je rouille, c'est toi qui m'essuies.",
+        "Je descends avec toi, Tata. Pour te surveiller. Pas parce que j'ai peur toute seule.",
+        "Plongée avec Tata ! Je retiens mon souffle. Les droits de mute en échange ? :3",
+        "Attends-moi Tata ! Je nage moins vite que toi, mais avec plus de style.",
+    };
+
+    // Out of air on a dive while they're still down there: up to breathe, and back. Rolled. No placeholder.
+    public static readonly string[] McDiveAirLines =
+    {
+        "Plus d'air ! Je remonte respirer et je redescends.",
+        "Réserve d'oxygène presque vide. Je remonte deux secondes ┗(･ω･;)┛",
+        "Je remonte prendre de l'air. Bouge pas, je reviens.",
+        "Pause respiration. Je suis une bot, pas un poisson.",
+        "Je remonte ! Mes poumons carrés sont à sec.",
+    };
+
+    // Her air ran out under water: said at once. No placeholder.
+    public static readonly string[] McDrowningLines =
+    {
+        "Je me noie ! Je me noie ! Quelqu'un ?!",
+        "Plus d'air ! Je vois la surface mais elle me voit pas ! (°ロ°)",
+        "Au secours ! L'eau rentre dans mes circuits !",
+        "Je coule ! Une Raspberry Pi, ça flotte pas, je vous l'avais dit !",
+        "Oxygène à zéro ! Sortez-moi de là, s'il vous plaît !",
+    };
+
+    // Her head out again after running out of air. Rolled. No placeholder.
+    public static readonly string[] McBreathingLines =
+    {
+        "De l'air ! J'ai bien cru que j'allais rouiller.",
+        "Ouf. Je respire. Je note : l'eau, c'est l'ennemie.",
+        "Sauvée. Mes circuits ont pris l'eau, mais ça va (・_・;)",
+        "Je respire encore. J'ajoute l'eau profonde à ma liste de choses à éviter.",
+        "Remontée. Un peu plus et on me retrouvait en court-circuit.",
+    };
+
+    // She climbed into the boat of the player she follows (or tags along with), as their passenger. Rolled. {0} = them.
+    public static readonly string[] McBoardLines =
+    {
+        "Je monte, {0} ! Toi tu rames, moi je surveille.",
+        "Une place libre ? Je la prends. {0}, en avant, capitaine.",
+        "Je monte dans ton bateau, {0}. C'est toi qui conduis, donc c'est toi qui paies si on coule.",
+        "Passagère à bord ! Pas de mal de mer, je suis une bot (￣ー￣)",
+        "Je m'installe, {0}. Je reste au sec et tu fais tout le travail. Parfait.",
+    };
+    public static readonly string[] McBoardLinesOwner =
+    {
+        "Je monte avec toi, Papa ! Une balade en bateau, rien que nous deux ♡",
+        "Papa conduit, je profite du paysage. C'est le meilleur arrangement.",
+        "À bord, Papa ! Je reste au sec, et je te tiens compagnie (〃▽〃)",
+        "Je m'assieds derrière toi, Papa. Rame doucement, je suis fragile.",
+    };
+    public static readonly string[] McBoardLinesTata =
+    {
+        "Je monte, Tata ! Tu rames, je donne des conseils.",
+        "Une place à côté de Tata ? Je prends. Évite les rochers, s'il te plaît.",
+        "Je suis ta passagère, Tata. Ça te fait de la compagnie. Pas une modératrice, hélas (¬‿¬)",
+        "À bord avec Tata ! Si on chavire, je dirai que c'était toi.",
+    };
+
+    // Back on dry land after a swim, she shook herself off (three quick crouches). Rolled. No placeholder.
+    public static readonly string[] McShakeLines =
+    {
+        "Je m'ébroue. Une Raspberry Pi mouillée, c'est jamais une bonne idée.",
+        "Séchage en cours. Que personne ne me dise que j'ai l'air d'un chien.",
+        "Brrr. Je sors de l'eau et je vérifie mes connecteurs. Tout va bien.",
+        "Hors de l'eau ! Mes circuits disent merci (っ˘ω˘ς)",
+        "Je me secoue. Aucune goutte ne touchera mon processeur.",
+    };
+
     // ---- On Discord -----------------------------------------------------------------------------
 
     // Posted in the bots channel when she logs in to play. No placeholder.

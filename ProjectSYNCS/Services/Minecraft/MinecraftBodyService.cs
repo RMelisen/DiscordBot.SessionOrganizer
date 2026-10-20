@@ -82,6 +82,13 @@ public sealed class MinecraftBodyService : BackgroundService
     private const double TagAlongChance = 0.2;
     private const double RetrievedChance = 0.5;
     private const double RetrieveLostChance = 0.5;
+    // In the water: diving after someone, coming up for air, breathing again after nearly drowning, climbing into
+    // someone's boat, shaking herself off. Rolled; running out of air is said at once (it can't wait).
+    private const double DiveChance = 0.3;
+    private const double SurfacingChance = 0.5;
+    private const double BreathingChance = 0.5;
+    private const double BoardChance = 0.5;
+    private const double ShakeChance = 0.2;
     // A creeper behind someone: one warning per player every 15 seconds, past the remark gates (it can't wait).
     private readonly CooldownGate<string> _creeperGate = new(TimeSpan.FromSeconds(15), TimeSpan.FromHours(1));
     // A worn or broken tool, or something she lacks: once every 10 minutes per thing.
@@ -680,6 +687,28 @@ public sealed class MinecraftBodyService : BackgroundService
                 case "lacking":
                     var lacked = root.GetProperty("what").GetString() ?? "";
                     if (NeedPool(lacked) is { } needPool) OnNeed(lacked, needPool);
+                    break;
+                case "diving":
+                    var diver = root.GetProperty("player").GetString() ?? "";
+                    if (Random.Shared.NextDouble() < DiveChance)
+                        Remark("dive", Kin(diver, BotResponses.McDiveLines, BotResponses.McDiveLinesOwner, BotResponses.McDiveLinesTata), diver);
+                    break;
+                case "surfacing":
+                    if (Random.Shared.NextDouble() < SurfacingChance) Remark("surfacing", BotResponses.McDiveAirLines);
+                    break;
+                case "drowning":
+                    Remark("drowning", BotResponses.McDrowningLines, force: true);
+                    break;
+                case "breathing":
+                    if (Random.Shared.NextDouble() < BreathingChance) Remark("breathing", BotResponses.McBreathingLines);
+                    break;
+                case "boarded":
+                    var skipper = root.GetProperty("player").GetString() ?? "";
+                    if (Random.Shared.NextDouble() < BoardChance)
+                        Remark("boarded", Kin(skipper, BotResponses.McBoardLines, BotResponses.McBoardLinesOwner, BotResponses.McBoardLinesTata), skipper);
+                    break;
+                case "shook":
+                    if (Random.Shared.NextDouble() < ShakeChance) Remark("shook", BotResponses.McShakeLines);
                     break;
                 case "hungry":
                     OnHungry(root.GetProperty("food").GetInt32());

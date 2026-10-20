@@ -2227,7 +2227,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         "McPlaceArrivedLines", "McGuideAckLines", "McGuideArrivedLines", "McPatrolPlaceAckLines", "McTripTooFarLines",
     };
     string[] McFamilyPools = { "McCalledLines", "McDeathLines", "McHitByPlayerLines", "McHitAgainLines", "McFedLines", "McAdvancementLines", "McComeAckLines",
-        "McFollowAckLines", "McGuardAckLines", "McCollectDoneLines", "McWaveLines", "McGiveDoneLines", "McByeLines", "McCreeperBehindLines" };
+        "McFollowAckLines", "McGuardAckLines", "McCollectDoneLines", "McWaveLines", "McGiveDoneLines", "McByeLines", "McCreeperBehindLines", "McDiveLines", "McBoardLines" };
     foreach (var p in McFamilyPools)
     foreach (var twin in new[] { p + "Owner", p + "Tata" })
     {
@@ -2242,6 +2242,8 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         else if (twinLines.Any(l => l.Contains("{0}"))) Fail($"{twin}: uses {{0}}, they're called Papa and Tata");
 
     // In game there is no Discord markup: no custom emotes, no sticker tags, and Minecraft cuts chat at 256.
+    // Markup opens with « <: », « <a: » (emotes), « <@ » (mentions, roles included), « <# » (channels), « <t: » (timestamps).
+    var DiscordMarkup = new System.Text.RegularExpressions.Regex(@"<(a?:|@|#|t:)");
     foreach (var f in new[] { "McArrivalLines", "McLeavingLines", "McDeathLines", "McHitByPlayerLines", "McAdvancementLines", "McNightLines",
              "McComeAckLines", "McFollowAckLines", "McStayAckLines", "McArrivedLines", "McTooFarLines", "McNoPathLines", "McLostLines",
              "McCalledLines", "McGoToAckLines", "McGoToArrivedLines", "McTripTooFarLines", "McGuardAckLines", "McGuardKillLines",
@@ -2261,11 +2263,14 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
              "McRanchAckLines", "McRanchNoneLines", "McRanchNoChestLines", "McRoutineFarmLines", "McRoutineFishLines", "McRoutineRanchLines",
              "McRoutineHomeLines", "McTagAlongLinesOwner", "McTagAlongLinesTata", "McRetrieveLines", "McRetrievedLines", "McRetrieveEmptyLines",
              "McRetrieveLostLines", "McToolWornLines", "McToolBrokeLines", "McNeedRodLines", "McNeedShearsLines", "McNeedBreedFoodLines",
-             "McNeedArrowsLines", "McPocketsFullLines" }
+             "McNeedArrowsLines", "McPocketsFullLines", "McDiveLines", "McDiveAirLines", "McDrowningLines", "McBreathingLines", "McBoardLines",
+             "McShakeLines" }
              .Concat(McFamilyPools.SelectMany(p => new[] { p + "Owner", p + "Tata" })))
     foreach (var (name, lines) in Pools(f))
     {
-        if (lines.Distinct().Count() != lines.Length) Fail($"{name}: duplicate lines");
+        // Empty lines are silence on purpose (the body sends nothing for them), and may repeat to weigh it.
+        var spoken = lines.Where(l => l.Length > 0).ToArray();
+        if (spoken.Distinct().Count() != spoken.Length) Fail($"{name}: duplicate lines");
         foreach (var l in lines)
         {
             string s;
@@ -2281,7 +2286,8 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
             }
             catch (FormatException) { Fail($"{name}: format: {l}"); continue; }
             if (s.Length > 256) Fail($"{name}: {s.Length} characters: {l}");
-            if (Sticker.Strip(s) != s || s.Contains('<') || s.Contains('{') || s.Contains('}') || s.Contains('✨') || s.Contains("(｡•́︿•̀｡)"))
+            // Discord markup (a custom emote, a mention, a timestamp) would show raw in game; a « <3 » is fine.
+            if (Sticker.Strip(s) != s || DiscordMarkup.IsMatch(s) || s.Contains('{') || s.Contains('}') || s.Contains('✨') || s.Contains("(｡•́︿•̀｡)"))
                 Fail($"{name}: not plain chat text: {l}");
             // Minecraft's font draws the Basic Multilingual Plane one code point at a time: nothing past it (most
             // emoji), no combining marks (« •̀ » lands beside the dot), no format characters, no § (colour codes).

@@ -353,6 +353,54 @@ starts on her own gets a rare rolled remark** (the owner's call): the routine 25
   (the owner's call): she never asks for any. The service says each once every 10 minutes at most (`_needGate`, given back when the
   remark gates swallow the line). They're about the game, so the pools are shared.
 
+## Water
+
+The pathfinder swims only on the surface: in water it holds jump while it walks her, never plans a
+step down under it, and once it stops nothing keeps her up. Mineflayer doesn't either. So the body
+has its own swimming (`waterTick`, every physics tick), **registered on spawn**, after the
+pathfinder's own tick listener (its plugin is injected after `attach()` runs), so that what
+`waterTick` sets on the controls wins. In this order:
+
+- **Air.** With her head under water and `bot.oxygenLevel` at 8 of 20 or less, she swims up
+  whatever she's doing (`swim.mode = 'surface'`): straight up when it's open to the sky, else
+  towards the closest bit of surface within 8 blocks (`surfaceSpot`, under ice or a ceiling). It
+  only takes the controls and leaves the pathfinder's goal alone. Air at 0 is `drowning` (said at
+  once), and her head out again afterwards is `breathing` (rolled).
+- **Diving.** Following someone, or tagging along with them, when their head is under water within
+  24 blocks and she's in the water with nearly full air, she dives (`swim.mode = 'dive'`). The
+  follow goal is dropped, or it would fight her steering and report no path. She steers towards
+  their eyes, rising when they're above her and sinking when they're below, and stops beside them.
+  She comes up when her air is down to 7 (`surfacing`, unless they came up too), when they come up
+  or get out of reach, when she's badly hurt (then no more diving for a minute), or in a column
+  pulling down. Once her head is out, the follow goal comes back, and she goes down again once
+  she's breathed back to 19. `diving` is reported once per order. Following someone under water
+  never reports `cantReach noPath`, because the dive is the answer to that.
+- **Treading.** In water, off the bottom or with her head under, and the pathfinder not moving
+  her: jump held, so she stays at the surface (waiting beside someone, told to stay, between casts).
+  Standing in shallow water she stays put. In Mineflayer crouching doesn't make her sink, so
+  « assis » in water is treading crouched. A current still carries her.
+- **Shaking off.** Out of the water onto dry land after at least 3 s in it, she crouches three
+  times quickly, at most once a minute (`shook`, rolled). Not in a fight, on the run, sitting,
+  eating or greeting.
+
+**Boats.** Following someone, or tagging along with them, who sits in a boat or raft with a free
+seat (two seats, one on a chest boat), she climbs in within 3 blocks of it (`boardTick`; tagging
+along, she first walks right up to it). Three refusals and she leaves that boat alone for 30 s.
+They steer and she's the passenger, so she still places nothing. **Mineflayer stops her physics
+while she rides**, so no physics tick runs then: the ride is watched by a timer (`rideTick`), and
+she gets out when they do, when the boat goes, or when her task changes. Any order gets her out
+(`stay()`), as it gets her out of bed. Mineflayer's `dismount` sends jump, which no longer gets a
+passenger out since 1.21.2 (shift does), so `leaveBoat` sends the shift input itself. While she
+rides, her own position isn't updated: « t'es où ? » answers with the boat's.
+
+**Out of reach.** Guarding or defending, she leaves alone a monster whose head is under water (a
+drowned at the bottom), since she can't reach it there. A bubble column over magma (`drag`) pulls
+whoever swims in it down faster than jump lifts them, and the pathfinder takes it for air, so
+`gentleMovements` makes it a wall and her own swimming avoids it.
+
+Lines: `McDiveLines` (with twins), `McDiveAirLines`, `McDrowningLines`, `McBreathingLines`,
+`McBoardLines` (with twins), `McShakeLines`.
+
 ## Body language
 
 Body only, no words. Her gaze is free when she isn't asleep, eating, drawing her bow or walking, and
@@ -438,7 +486,8 @@ catches everything; nothing escapes the loop.
 - **Kaomoji in game must be drawable by Minecraft's font**, which covers the Basic Multilingual
   Plane through Unifont, one code point at a time. So: nothing past U+FFFF (most emoji, `👁`), no
   combining marks (`(•̀ᴗ•́)`, `( ͡° ͜ʖ ͡°)`: the accents land beside the face), no format characters,
-  no `§` (colour codes), no `<` (the checks' markup rule), and no script that needs shaping
+  no `§` (colour codes), no Discord markup (`<:`, `<a:`, `<@`, `<#`, `<t:`, which would show raw;
+  a plain `<` like « <3 » is fine), and no script that needs shaping
   (Malayalam's `ദ്ദി`). The checks reject the first four. Katakana, box drawing, `ω`, `ಠ`, `✧`,
   `✿` all draw fine. The in-game set (`syncs-voice.md`) is wider than Discord's, but used
   sparingly, the owner's call: **about one line in four** at most, none in most pools of two or
