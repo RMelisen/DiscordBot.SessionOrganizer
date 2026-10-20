@@ -566,12 +566,20 @@ and check the issue before bumping Mineflayer.
 
 **Her keys go to the server (`inputTick`).** Since 1.21.2 clients send `player_input` (forward,
 jump, sprint, shift…) whenever their keys change; Mineflayer sends it only for sneaking, with every
-other key off. On the 26.3 server she stopped in front of one-block steps, which Mineflayer's own
-physics climbs (checked offline), so `inputTick` sends her whole control state, last in each physics
-tick, whenever it changes; not while riding, where `leaveBoat` holds shift itself. The server snapping
-her back while she walks (`forcedMove`) is logged every 30 s at most (« the server pulled her
-back »): if she stops short again, that line says whether the server refuses her moves (then look at
-the server's movement checks) or the pathfinder never tried (then look at `gentleMovements`).
+other key off. `inputTick` sends her whole control state, last in each physics tick, whenever it
+changes; not while riding, where `leaveBoat` holds shift itself.
+
+**`entity_action` by name (`fixEntityActions`).** 1.21.6 moved sneaking to `player_input` and
+renumbered the other actions; Mineflayer 4.39 still sends the old numbers, so on 26.1 « start
+sprinting » arrived as « start riding jump » and getting out of bed as « stop sprinting ». The
+wrapper sends the old numbers as names on versions with the new order. Check Mineflayer's
+`physics.js` and `bed.js` before bumping it, and remove the wrapper once they send names.
+
+**Server teleports while she walks are logged** (`watchCorrections`, « server teleport while
+walking », every 30 s at most): what the server sent, where she was, her keys, her last move sent,
+the block ahead, and « same id again » for a teleport re-sent because she never confirmed it. On the
+26.3 server she stopped in front of one-block steps with hundreds of these, which Mineflayer's own
+physics climbs (checked offline): that line says what the server refuses.
 
 **stdout carries events only.** The protocol libraries print their errors through `console.*`, so
 the body sends every console method to stderr before loading them, and the service logs any stdout

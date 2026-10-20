@@ -2884,7 +2884,6 @@ function attach() {
   bot.on('path_stop', () => setPath([]));
   setInterval(() => { if (bot) farmRound().catch(() => {}); }, FarmRound);
   bot.on('wake', wakeUp);
-  bot.on('forcedMove', safely(onForcedMove));
   bot.on('health', () => {
     eatIfHungry().catch(() => {});
     reportHunger();
@@ -3138,14 +3137,17 @@ function sendTickEnds(client) {
 // Since 1.21.2 a client tells the server which keys it holds (`player_input`) whenever they change. Mineflayer sends
 // that packet only for sneaking, with every other key off, so the server never hears her press forward or jump. On
 // the 26.3 server she walked up to one-block steps and went no further, though Mineflayer's own physics climbs them;
-// a server refusing a jump nobody pressed fits that. So her keys go out as a real client's would. Not while riding (leaveBoat holds shift itself), and anything else that
-// writes the packet (Mineflayer's sneak) counts as the last one sent, so the full set follows on the next tick.
+// a server refusing a jump nobody pressed fits that. So her keys go out as a real client's would. Not while riding
+// (leaveBoat holds shift itself), and anything else that writes the packet (Mineflayer's sneak) counts as the last one
+// sent, so the full set follows on the next tick. The same wrapper keeps her last move sent, for the corrections' log.
 let inputsSent = '';
+let lastMoveSent = null;
 
 function trackInputs(client) {
   const write = client.write.bind(client);
   client.write = (name, params) => {
     if (name === 'player_input') inputsSent = JSON.stringify((params && params.inputs) || {});
+    if (name === 'position' || name === 'position_look') lastMoveSent = { name, x: params.x, y: params.y, z: params.z, onGround: params.onGround };
     return write(name, params);
   };
 }
@@ -3159,20 +3161,74 @@ function inputTick() {
   bot._client.write('player_input', { inputs });
 }
 
-// The server putting her back where she was (a move it refused) while she walks: logged, at most every 30 s, since a
-// body that can't climb or keeps stopping short looks the same from outside whether the pathfinder or the server
-// is at fault.
+// The server putting her somewhere (a teleport: a move it refused, or one it re-sends because she never confirmed the
+// last) while she walks. She stopped in front of one-block steps on the 26.3 server with hundreds of these, and the
+// fix depends on which: logged at most every 30 s, with what the server sent, where she was and what she held just
+// before, her last move sent, and the block ahead. The same teleport id twice means an unconfirmed teleport.
 const PulledBackLogEvery = 30000;
 let pulledBack = 0;
+let pulledBackRecent = 0;
 let pulledBackLoggedAt = 0;
+let lastTeleportId = null;
 
-function onForcedMove() {
-  if (!bot.pathfinder || !bot.pathfinder.isMoving()) return;
-  pulledBack++;
-  if (Date.now() < pulledBackLoggedAt + PulledBackLogEvery) return;
-  pulledBackLoggedAt = Date.now();
-  const p = bot.entity.position;
-  log(`the server pulled her back while walking (${pulledBack} so far), to ${p.x.toFixed(1)} ${p.y.toFixed(1)} ${p.z.toFixed(1)}`);
+const fmt = (v) => (v && Number.isFinite(v.x) ? `${v.x.toFixed(2)} ${v.y.toFixed(2)} ${v.z.toFixed(2)}` : '?');
+
+function watchCorrections(client) {
+  // Before Mineflayer's own handler, which moves her: her position here is still where she thought she was.
+  client.prependListener('position', (packet) => {
+    try {
+      const repeat = packet.teleportId === lastTeleportId;
+      lastTeleportId = packet.teleportId;
+      if (!bot || !bot.entity || !bot.pathfinder || !bot.pathfinder.isMoving()) return;
+      pulledBack++;
+      pulledBackRecent++;
+      if (Date.now() < pulledBackLoggedAt + PulledBackLogEvery) return;
+      pulledBackLoggedAt = Date.now();
+      const e = bot.entity;
+      const c = bot.controlState;
+      const keys = ['forward', 'back', 'left', 'right', 'jump', 'sprint', 'sneak'].filter((k) => c[k]).join('+') || 'none';
+      const ahead = e.position.offset(-Math.sin(e.yaw), 0, -Math.cos(e.yaw)).floored();
+      const at = (dy) => (bot.blockAt(ahead.offset(0, dy, 0)) || { name: '?' }).name;
+      const sent = lastMoveSent ? `${lastMoveSent.name} ${fmt(lastMoveSent)} onGround ${lastMoveSent.onGround}` : 'none';
+      log(`server teleport while walking: ${pulledBackRecent} since the last report (${pulledBack} in all).` +
+        ` To ${fmt(packet)} flags ${JSON.stringify(packet.flags)} id ${packet.teleportId}${repeat ? ' (same id again)' : ''};` +
+        ` she was at ${fmt(e.position)} vel ${fmt(e.velocity)} onGround ${e.onGround} keys ${keys};` +
+        ` last move sent: ${sent}; ahead: ${at(0)} / ${at(1)}`);
+      pulledBackRecent = 0;
+    } catch (err) {
+      log('correction log failed:', err && err.message ? err.message : String(err));
+    }
+  });
+}
+
+// 1.21.6 took sneaking out of `entity_action` (it went to `player_input`) and renumbered the rest, but Mineflayer 4.39
+// still sends the old numbers: on 26.1 its « start sprinting » (3) reaches the server as « start riding jump », and
+// getting out of bed (2) as « stop sprinting ». So the server never knew she sprinted while her physics ran her at
+// sprint speed, and she couldn't leave a bed. The old numbers go out as the names, on versions with the new order.
+// Remove it once Mineflayer sends names there itself (check physics.js and bed.js before bumping it).
+const OldEntityActions = ['start_sneaking', 'stop_sneaking', 'stop_sleeping', 'start_sprinting', 'stop_sprinting',
+  'start_riding_jump', 'stop_riding_jump', 'open_inventory', 'start_fall_flying'];
+
+function fixEntityActions(client) {
+  let renumbered = null; // known once the version is
+  const write = client.write.bind(client);
+  client.write = (name, params) => {
+    if (name === 'entity_action' && params && typeof params.actionId === 'number') {
+      if (renumbered === null) {
+        const data = minecraftData(client.version);
+        const type = data && data.protocol.play.toServer.types.packet_entity_action;
+        const action = type && type[1].find((f) => f.name === 'actionId');
+        renumbered = Boolean(action && Array.isArray(action.type) && action.type[1].mappings['0'] === 'stop_sleeping');
+      }
+      if (renumbered) {
+        const action = OldEntityActions[params.actionId];
+        // Sneaking goes through player_input on these versions: Mineflayer never sends it here, and nor do we.
+        if (!action || action.endsWith('_sneaking')) return undefined;
+        return write(name, { ...params, actionId: action });
+      }
+    }
+    return write(name, params);
+  };
 }
 
 async function main() {
@@ -3181,7 +3237,9 @@ async function main() {
   // Offline mode: no auth.
   bot = mineflayer.createBot({ host, port, username, auth: 'offline', version });
   sendTickEnds(bot._client);
+  fixEntityActions(bot._client);
   trackInputs(bot._client);
+  watchCorrections(bot._client);
   attach();
 }
 

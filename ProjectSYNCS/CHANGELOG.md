@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.21.1 — 2026-10-20
+
+- Minecraft: the server now knows when she sprints (it was told something else), which should stop
+  it pulling her back while she walks and climbs; she can also get out of bed properly again.
+
 ## 7.21.0 — 2026-10-20
 
 - Minecraft: « gg syncs », « bravo syncs » and « merci syncs » get a real answer (and a happy hop for
