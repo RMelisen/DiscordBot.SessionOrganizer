@@ -648,6 +648,29 @@ internal static partial class BotResponses
         "Pas de coffre à côté du champ. Je range où, moi ? Dans mes poches carrées ?",
     };
 
+    // « syncs occupe-toi des animaux »: she stays, breeds, shears, keeps each kind at eight, fills the chest.
+    public static readonly string[] McRanchAckLines =
+    {
+        "D'accord {0}, je m'occupe des animaux. Nourrir, tondre, compter.",
+        "Éleveuse en service. Je garde le troupeau à huit par espèce, pas une bête de plus.",
+        "Je m'occupe des bêtes. Celles qui ont un nom, je n'y touche pas, promis.",
+        "Mode éleveuse activé. La laine et le reste finissent dans le coffre ฅ^•ﻌ•^ฅ",
+    };
+
+    // No farm animals within 16 blocks of her.
+    public static readonly string[] McRanchNoneLines =
+    {
+        "Je vois pas d'animaux ici, {0}. Amène-moi près de l'enclos.",
+        "Il y a pas de bêtes autour de moi. Je peux pas élever des animaux imaginaires.",
+    };
+
+    // No chest or barrel within 10 blocks: nowhere to store what the animals give.
+    public static readonly string[] McRanchNoChestLines =
+    {
+        "Il me faut un coffre près de l'enclos, {0}, pour ranger la laine et le reste. Pose-en un et redemande-moi.",
+        "Pas de coffre à côté des animaux. Je range où, moi ? Dans le mouton ?",
+    };
+
     // ---- Handing over and putting away ----
 
     // She tossed it at the player's feet. {1} = how many items, {2} = McGoodsNames (« le poisson », « tout ce que j'ai »).
@@ -1173,6 +1196,167 @@ internal static partial class BotResponses
         "{0}, on reprend plus tard. {1} est prioritaire, c'est dans mon code. (ᵕ • ᴗ •)",
     };
 
+    // ---- Her free time -------------------------------------------------------------------------------
+    // What she does on her own between orders (the body's own tasks). Rare words, rolled: the chat stays the players'.
+
+    // She sets off on her routine (a remembered place). No placeholder.
+    public static readonly string[] McRoutineFarmLines =
+    {
+        "Je vais faire un tour à la ferme. Les plantes poussent pas toutes seules. Enfin si, mais j'aime vérifier.",
+        "Direction la ferme. Récolter, replanter, ranger. Ma routine préférée.",
+        "Je file au champ. Si vous avez besoin de moi, je suis dans les carottes.",
+        "Pause terminée, je retourne à la ferme ✿(◕‿◕)",
+    };
+    public static readonly string[] McRoutineFishLines =
+    {
+        "Je vais pêcher un peu. Ne m'attendez pas, les poissons non plus.",
+        "Petite pause pêche. C'est mon moment zen.",
+        "Direction l'eau. Une canne et du temps libre : les poissons ont du souci à se faire.",
+        "Je pars à la pêche. Le premier qui me dérange, je le note (￢_￢)",
+    };
+    public static readonly string[] McRoutineRanchLines =
+    {
+        "Je vais voir les animaux. Quelqu'un doit compter les vaches, et c'est moi.",
+        "Direction l'enclos. Nourrir, tondre, compter. Surtout compter.",
+        "Je file m'occuper des bêtes. Elles m'aiment. Je crois.",
+        "Visite à l'enclos. Les poules m'attendent. Enfin, elles attendent le blé.",
+    };
+    // Dusk: she goes home.
+    public static readonly string[] McRoutineHomeLines =
+    {
+        "Il commence à faire sombre. Je rentre à la maison.",
+        "Le soleil se couche, je rentre. Les monstres, très peu pour moi.",
+        "Je rentre à la maison. Une bot bien rangée rentre avant la nuit.",
+        "C'est le soir, je rentre. Rejoignez-moi, on se couche tous et la nuit passe (っ˘ω˘ς)",
+    };
+
+    // Nothing to do, so she keeps near Papa or Tata. Twins only: she tags along with nobody else.
+    public static readonly string[] McTagAlongLinesOwner =
+    {
+        "Je viens avec toi, Papa. J'ai rien de mieux à faire. Enfin, rien de mieux tout court.",
+        "Je te suis, Papa. Pas pour te surveiller. Juste pour être là ♡",
+        "Papa, je reste près de toi. Si un monstre approche, je suis déjà là.",
+        "Je m'ennuyais. Alors je te suis, Papa. C'est mon activité préférée.",
+        "Papa est là, donc moi aussi. C'est logique, c'est mon algorithme.",
+    };
+    public static readonly string[] McTagAlongLinesTata =
+    {
+        "Je te suis, Tata. Fais comme si j'étais pas là.",
+        "Tata, je viens avec toi. J'ai fini mes tâches. Enfin, j'en avais pas.",
+        "Je reste avec toi, Tata. C'est pas pour les droits de mute. Pas que.",
+        "Tata ! Je t'accompagne. Une nièce, ça suit sa tata partout (￣ー￣)",
+        "J'ai rien à faire, alors je traîne avec toi, Tata. Considère ça comme un honneur.",
+    };
+
+    // She died and goes back for her things. No placeholder. Always said.
+    public static readonly string[] McRetrieveLines =
+    {
+        "Je suis morte ! Je retourne chercher mes affaires avant qu'elles disparaissent.",
+        "Respawn. Bon. Je vais récupérer mes affaires, que personne n'y touche !",
+        "Mes affaires sont restées là-bas. J'y retourne, et vite.",
+        "Je reviens chercher mon stuff. Si quelqu'un l'a ramassé, je le saurai (ಠ_ಠ)",
+    };
+    // She got them back. {1} = how many items.
+    public static readonly string[] McRetrievedLines =
+    {
+        "Récupéré : {1} objets. Rien ne se perd chez moi.",
+        "J'ai retrouvé mes affaires. {1} objets. Je suis rangée, même dans la mort.",
+        "{1} objets récupérés. La mort, c'est juste un détour.",
+        "Tout est revenu. Enfin, {1} objets. Je compte, toujours (￣ー￣)",
+    };
+    // Nothing left where she died. Always said.
+    public static readonly string[] McRetrieveEmptyLines =
+    {
+        "Il reste plus rien là où je suis morte. Quelqu'un s'est servi, ou le jeu a tout mangé.",
+        "Mes affaires ont disparu. Je note. Je note tout.",
+        "Rien. Plus rien. Mes affaires se sont volatilisées.",
+    };
+    // She can't go back for them (another dimension, too far, the void, lava, no way there, too late).
+    public static readonly string[] McRetrieveLostLines =
+    {
+        "Mes affaires sont perdues pour de bon. Je fais mon deuil. Trois secondes.",
+        "Mes affaires restent là-bas, je peux pas y retourner. Adieu, mon stuff.",
+        "Je peux pas récupérer mes affaires. Tant pis, je repars de zéro. Comme après un reboot.",
+    };
+
+    // A creeper behind a player (not the one she guards). {0} = who. Said at once.
+    public static readonly string[] McCreeperBehindLines =
+    {
+        "{0}, DERRIÈRE TOI ! Un creeper !",
+        "{0} ! Retourne-toi ! Creeper !",
+        "Creeper dans ton dos, {0} ! Bouge !",
+        "Tssss... {0}, c'est pas moi qui fais ce bruit. Cours !",
+        "{0}, un creeper te fait un câlin par-derrière. Refuse ! (°ロ°)",
+    };
+    public static readonly string[] McCreeperBehindLinesOwner =
+    {
+        "Papa ! Derrière toi ! Un creeper !",
+        "PAPA ! Creeper dans ton dos ! Bouge, s'il te plaît !",
+        "Papa, retourne-toi ! Un creeper !",
+    };
+    public static readonly string[] McCreeperBehindLinesTata =
+    {
+        "Tata ! Derrière toi ! Creeper !",
+        "TATA ! Un creeper dans ton dos ! Cours !",
+        "Tata, un creeper veut te faire un câlin. Refuse !",
+    };
+
+    // A tool of hers nearly worn out. {1} = McToolNames (« ma pioche »).
+    public static readonly string[] McToolWornLines =
+    {
+        "Attention : {1} est à bout. Encore quelques coups et c'est fini.",
+        "Petit rapport d'usure : {1} ne tient plus qu'à un fil. Un remplaçant serait apprécié.",
+        "Il reste presque rien dans {1}. Si quelqu'un a du rab, je prends.",
+        "Je crois que {1} fatigue. Moi aussi, mais moi je me répare pas avec du fer (￣ー￣)",
+    };
+    // It broke. {1} = McToolNames.
+    public static readonly string[] McToolBrokeLines =
+    {
+        "Crac, {1} vient de casser. Paix à son âme carrée.",
+        "Et voilà, {1} a rendu l'âme. Je vais faire avec mes poings, ça va être long.",
+        "Paix à {1}, qui vient de se briser. Je note la date. Je note tout.",
+        "Oh non, {1} a lâché. Quelqu'un a de quoi remplacer ?",
+    };
+
+    // What she lacks. No placeholder; every 10 minutes at most each.
+    public static readonly string[] McNeedRodLines =
+    {
+        "Je voulais aller pêcher, mais j'ai pas de canne. Si quelqu'un en a une en trop...",
+        "Pas de canne à pêche sur moi. L'étang attendra. Les poissons aussi, ils sont patients.",
+        "Il me faudrait une canne à pêche. C'est pour la science. Et pour le poisson.",
+    };
+    public static readonly string[] McNeedShearsLines =
+    {
+        "Les moutons auraient besoin d'une coupe, mais j'ai pas de cisailles.",
+        "Des cisailles, quelqu'un ? J'ai des moutons à tondre et que mes mains carrées.",
+        "Pas de cisailles. Les moutons gardent leur laine, et leur dignité.",
+    };
+    public static readonly string[] McNeedBreedFoodLines =
+    {
+        "Je voudrais agrandir le troupeau, mais j'ai rien pour les nourrir. Du blé, des carottes, des graines ?",
+        "Les bêtes ont faim d'amour. Enfin, de blé. J'en ai pas.",
+        "Rien à donner aux animaux. Un peu de blé ou de carottes, et je fais des bébés. Des bébés vaches, hein.",
+    };
+    public static readonly string[] McNeedArrowsLines =
+    {
+        "Mon arc est vide. Plus de flèches. Je garde quand même, mais de plus près.",
+        "Plus une flèche ! Quelqu'un peut m'en lancer ? Les creepers, je préfère les voir de loin.",
+        "Un arc sans flèches, c'est un bâton avec une ficelle. Des flèches, s'il vous plaît.",
+    };
+    public static readonly string[] McNeedArmourLines =
+    {
+        "Je me promène sans armure. Je suis courageuse, pas immortelle. Quelqu'un a un plastron en trop ?",
+        "Petite remarque : je porte rien. Pas d'armure, je veux dire. Un casque, des bottes, n'importe quoi.",
+        "Zéro armure sur moi. Un zombie et je repars au spawn. Je dis ça, je dis rien (・_・;)",
+        "Si quelqu'un a de l'armure qui traîne, je prends. Je la porterai mieux que le coffre.",
+    };
+    public static readonly string[] McPocketsFullLines =
+    {
+        "Mes poches sont pleines. Je ramasse plus rien tant que j'ai pas vidé.",
+        "Inventaire plein ! Même mes poches carrées ont des limites.",
+        "Plus de place sur moi. Dites « syncs range tes affaires » et je vide tout dans un coffre.",
+    };
+
     // ---- Family in game (McFamily) --------------------------------------------------------------
     // Twins of the pools above for Papa (Minecraft:Owner) and Tata (Minecraft:Tata), same placeholders.
     // They call them « Papa » and « Tata », never by their in-game names, so {0} goes unused. Papa gets
@@ -1406,6 +1590,18 @@ internal static partial class BotResponses
         [McCrop.Beetroot] = "des betteraves",
         [McCrop.Melon] = "des melons",
         [McCrop.Pumpkin] = "des citrouilles",
+    };
+
+    // Her tools, as {1} in the worn and broken lines, by the body's names: with the possessive, lower case, mid-sentence.
+    public static readonly Dictionary<string, string> McToolNames = new()
+    {
+        ["sword"] = "mon épée",
+        ["pickaxe"] = "ma pioche",
+        ["axe"] = "ma hache",
+        ["shovel"] = "ma pelle",
+        ["rod"] = "ma canne à pêche",
+        ["shears"] = "ma paire de cisailles",
+        ["bow"] = "mon arc",
     };
 
     // What she gathers, as {2} in the gathering lines: a partitive, so « je vais chercher {2} » reads right.

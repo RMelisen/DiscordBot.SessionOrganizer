@@ -19,6 +19,8 @@
 //      {"op":"give","player":"…","goods":"all|food|fish|…"} · {"op":"store","player":"…"} · {"op":"fish","player":"…"}
 //      {"op":"patrol","player":"…","spot":{x,y,z,dimension}|null} · {"op":"smelt","player":"…","what":"food|ore|sand"}
 //      {"op":"where","player":"…"} · {"op":"mark","player":"…"} · {"op":"sit"} · {"op":"jump"} · {"op":"wave","player":"…"}
+//      {"op":"ranch","player":"…"} · {"op":"routine","farm":spot|null,"fish":spot|null,"ranch":spot|null,"home":spot|null}
+//        (a spot is {x,y,z,dimension})
 // Out: version {server,using,fallback} · spawned · players {names} · chat {player,text,private}
 //      system {key,args:[{text,key}]} · hurt {by} · died · night · kicked {reason} · end {reason}
 //      moving {player,kind: come|follow|goto|guard|guide} · arrived {player,kind} · waiting {player}
@@ -38,6 +40,11 @@
 //      smelting {player,what,count} · smelted {player,what,count,delivered}
 //      cantSmelt {player,what,why: nothing|noFuel|noFurnace|busy}
 //      position {player,x,y,z,dimension} · marked {player,x,y,z,dimension} · cantMark {player}
+//      ranching {player} · cantRanch {player,why: none|noChest}
+//      Her own (no player, no claim): routine {what: farm|fish|ranch|home} · tagAlong {player} · retrieving
+//      retrieved {count} · retrieveLost {why: otherDimension|tooFar|void|lava|noPath|despawned} · creeperBehind {player}
+//      wornOut {tool} · broke {tool} · lacking {what: rod|shears|breedFood|arrows|armour|space}
+//      (tool: sword|pickaxe|axe|shovel|rod|shears|bow)
 
 'use strict';
 
@@ -369,15 +376,21 @@ function stay() {
   bot.setControlState('sneak', false);
   stopBow();
   bot.pathfinder.setGoal(null);
+  if (slowWalk) { // tagging along walked without sprinting
+    slowWalk = false;
+    walkSprint = null;
+    bot.pathfinder.setMovements(gentleMovements());
+  }
 }
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // ---- Activities: what she goes back to after a short errand or a night's sleep ----------------------
 
-// Farming, fishing and guarding a place last until someone says otherwise. Handing something over or putting
-// her things away pauses one, and she goes back to it after; so does a night's sleep.
-const Activities = new Set(['farm', 'fish', 'patrol']);
+// Farming, fishing, keeping animals and guarding a place last until someone says otherwise. Handing something over
+// or putting her things away pauses one, and she goes back to it after; so does a night's sleep. Her own (the
+// routine's) count too.
+const Activities = new Set(['farm', 'fish', 'patrol', 'ranch']);
 
 function isActivity(t) {
   return Boolean(t && Activities.has(t.kind));
@@ -394,8 +407,61 @@ function pausedActivity(t) {
 // the task and stops.
 function resumeActivity(activity) {
   if (!activity || task) return;
-  task = { ...activity, busy: false, foe: null, mode: null, modeTarget: null, casting: false };
+  task = { ...activity, busy: false, foe: null, mode: null, modeTarget: null, casting: false, target: null };
   if (task.kind === 'fish') fishLoop(task);
+}
+
+// ---- Free time: what she does on her own between orders -----------------------------------------------
+
+// Own tasks (own: true, player ''): the routine, tagging along, getting her things back. Body-only, like eating: no
+// claim, no order events, and any order ends one (through stay()). Nobody needs her during one, so she counts as free.
+function isFree(t) {
+  return !t || Boolean(t.own);
+}
+
+// An order: a task someone gave her (or the walk up to Papa on arriving), as opposed to her own or a body-only one.
+function isOrder(t) {
+  return Boolean(t && !t.own && t.player);
+}
+
+// « reste » and « assis » hold her for HeldFor: no routine, no tagging along, no retrieval (body language still runs).
+// Any other order that gets under way lets her go. And once an order is over she waits OrderGrace before starting
+// anything of her own, so « viens » doesn't end with her walking off at once.
+const HeldFor = 600000;
+const OrderGrace = 45000;
+let heldUntil = 0;
+let freeSince = 0;
+let wasOrder = false;
+let autonomyAt = 0;
+
+function freeTick() {
+  const order = isOrder(task);
+  if (wasOrder && !order) freeSince = Date.now();
+  wasOrder = order;
+}
+
+// Once a second, when nobody needs her: getting her things back after a death, else the routine (named places), else
+// tagging along with Papa or Tata, else nothing but body language.
+function autonomyTick() {
+  if (Date.now() < autonomyAt || !bot.entity) return;
+  autonomyAt = Date.now() + 1000;
+  if (bot.isSleeping || eating || sitting || !isFree(task)) return;
+  if (Date.now() < freeSince + OrderGrace || Date.now() < heldUntil) return;
+  if (task && task.kind === 'retrieve') return retrieveTick(task);
+  if (pendingRetrieve) return startRetrieve();
+  if (routineTick()) return;
+  tagAlongTick();
+}
+
+// A tick handler that can't take the process down: an exception thrown from a physics tick or a timer is uncaught.
+function safely(fn) {
+  return () => {
+    try {
+      fn();
+    } catch (err) {
+      log(`${fn.name} failed:`, err && err.message ? err.message : String(err));
+    }
+  };
 }
 
 // ---- Small things: where she is, a marked spot, sitting, hopping, waving ---------------------------------
@@ -471,7 +537,7 @@ function guard(player) {
   const target = playerEntity(player);
   if (!target) return emit('cantReach', { player, why: 'notVisible' });
   stay();
-  task = { kind: 'guard', player, foe: null, mode: null, modeTarget: null, warned: new Set(), reported: false };
+  task = { kind: 'guard', player, foe: null, mode: null, modeTarget: null, warned: new Set(), skipLoot: new Set(), reported: false };
   bot.pathfinder.setGoal(new goals.GoalFollow(target, 2), true);
   emit('moving', { player, kind: 'guard' });
 }
@@ -485,7 +551,7 @@ function patrol(player, spot) {
     anchor = new Vec3(spot.x, spot.y, spot.z);
   }
   stay();
-  task = { kind: 'patrol', player, anchor, foe: null, mode: null, modeTarget: null, warned: new Set(), reported: false };
+  task = { kind: 'patrol', player, anchor, foe: null, mode: null, modeTarget: null, warned: new Set(), skipLoot: new Set(), reported: false };
   emit('patrolling', { player });
 }
 
@@ -565,6 +631,9 @@ function guardTick() {
   const center = owner ? owner.position : t.anchor;
   const radius = owner ? GuardRadius : PatrolRadius;
   const goHome = () => {
+    // What dropped from her kills first, when it's close and inside what she guards.
+    const loot = lootNear(center, radius, t.skipLoot);
+    if (loot) return setMode(t, 'loot', loot, new goals.GoalNear(loot.position.x, loot.position.y, loot.position.z, 1));
     if (owner) return setMode(t, 'home', owner, new goals.GoalFollow(owner, 2), true);
     // Back to the spot; again if pushed off it after getting there (a reached goal is dropped).
     if (t.mode !== 'home' || (!bot.pathfinder.goal && me.distanceTo(t.anchor) > 3)) {
@@ -824,16 +893,24 @@ async function harvest(player, key) {
 // without one she says so instead of filling her pockets all evening.
 function farm(player) {
   const anchor = bot.entity.position.clone();
-  const cropIds = bot.registry.blocksArray.filter((b) => Object.values(Crops).some((c) => c.block === b.name)).map((b) => b.id);
-  if (bot.findBlocks({ matching: cropIds, maxDistance: FarmRadius, count: 1 }).length === 0)
-    return emit('cantFarm', { player, why: 'none' });
-  const chestIds = bot.registry.blocksArray.filter((b) => b.name === 'chest' || b.name === 'barrel').map((b) => b.id);
-  const chest = bot.findBlocks({ matching: chestIds, maxDistance: ChestRadius, count: 1 })[0];
+  if (!cropsNear(anchor)) return emit('cantFarm', { player, why: 'none' });
+  const chest = chestNear(anchor);
   if (!chest) return emit('cantFarm', { player, why: 'noChest' });
   stay();
   task = { kind: 'farm', player, anchor, chest, busy: false };
   emit('farming', { player });
   farmRound();
+}
+
+function cropsNear(point) {
+  const cropIds = bot.registry.blocksArray.filter((b) => Object.values(Crops).some((c) => c.block === b.name)).map((b) => b.id);
+  return bot.findBlocks({ matching: cropIds, maxDistance: FarmRadius, point, count: 1 }).length > 0;
+}
+
+// The chest or barrel a farm (or a pen) stores into.
+function chestNear(point) {
+  const chestIds = bot.registry.blocksArray.filter((b) => b.name === 'chest' || b.name === 'barrel').map((b) => b.id);
+  return bot.findBlocks({ matching: chestIds, maxDistance: ChestRadius, point, count: 1 })[0] || null;
 }
 
 async function farmRound() {
@@ -858,13 +935,17 @@ async function farmRound() {
 // Puts the produce in the farm's chest, keeping back enough seeds to replant and a little to eat. A full chest
 // keeps the rest on her.
 async function storeProduce(mine) {
-  const block = bot.blockAt(mine.chest);
-  if (!block || (block.name !== 'chest' && block.name !== 'barrel')) return;
   const totals = new Map();
   for (const item of bot.inventory.items())
     if (FarmProduce.has(item.name)) totals.set(item.name, (totals.get(item.name) || 0) + item.count);
-  const toStore = [...totals].map(([name, n]) => [name, n - (SeedsKept[name] || FoodKept[name] || 0)]).filter(([, n]) => n > 0);
-  if (toStore.length === 0) return;
+  await storeIn(mine, [...totals].map(([name, n]) => [name, n - (SeedsKept[name] || FoodKept[name] || 0)]));
+}
+
+// [name, count] pairs into the task's chest; a full chest keeps the rest on her.
+async function storeIn(mine, pairs) {
+  const toStore = pairs.filter(([, n]) => n > 0);
+  const block = bot.blockAt(mine.chest);
+  if (toStore.length === 0 || !block || (block.name !== 'chest' && block.name !== 'barrel')) return;
   await bot.pathfinder.goto(new goals.GoalNear(mine.chest.x, mine.chest.y, mine.chest.z, 2));
   if (task !== mine) return;
   const box = await bot.openContainer(block);
@@ -943,6 +1024,7 @@ async function give(player, key) {
   } catch (err) {
     log('giving failed:', err && err.message ? err.message : String(err));
   }
+  handedAt = Date.now(); // her tools may be gone now: not broken
   if (task !== mine) return;
   task = null;
   emit('given', { player, goods: key, count, delivered });
@@ -950,24 +1032,24 @@ async function give(player, key) {
 }
 
 // What she keeps when she puts her things away: the best weapon, pickaxe, axe and shovel she carries, a fishing rod,
-// and her bow with its arrows, the tools her other orders need. By slot.
+// shears, and her bow with its arrows, the tools her other orders need. By slot.
 const ToolTiers = ['wooden', 'stone', 'golden', 'iron', 'diamond', 'netherite'];
 
-function kitSlots(items) {
-  const kept = new Set();
+// Her kit, by tool (the names `wornOut` and `broke` report).
+function kitTools(items) {
   const best = (suffix) => items.filter((i) => i.name.endsWith(suffix) && !(suffix === '_axe' && i.name.endsWith('_pickaxe')))
     .sort((a, b) => ToolTiers.indexOf(b.name.split('_')[0]) - ToolTiers.indexOf(a.name.split('_')[0]))[0];
-  for (const suffix of ['_sword', '_pickaxe', '_axe', '_shovel']) {
-    const item = best(suffix);
-    if (item) kept.add(item.slot);
-  }
-  const rod = items.find((i) => i.name === 'fishing_rod');
-  if (rod) kept.add(rod.slot);
-  const bow = items.find((i) => i.name === 'bow');
-  if (bow) {
-    kept.add(bow.slot);
+  return {
+    sword: best('_sword'), pickaxe: best('_pickaxe'), axe: best('_axe'), shovel: best('_shovel'),
+    rod: items.find((i) => i.name === 'fishing_rod'), shears: items.find((i) => i.name === 'shears'),
+    bow: items.find((i) => i.name === 'bow'),
+  };
+}
+
+function kitSlots(items) {
+  const kept = new Set(Object.values(kitTools(items)).filter(Boolean).map((i) => i.slot));
+  if (items.some((i) => i.name === 'bow'))
     for (const arrow of items.filter((i) => i.name.endsWith('arrow'))) kept.add(arrow.slot);
-  }
   return kept;
 }
 
@@ -1012,6 +1094,7 @@ async function store(player) {
   } catch (err) {
     log('storing failed:', err && err.message ? err.message : String(err));
   }
+  handedAt = Date.now();
   if (task !== mine) return;
   task = null;
   emit('stored', { player, count, full });
@@ -1054,19 +1137,20 @@ function fish(player) {
   fishLoop(task);
 }
 
-// Fishing for her own supper (mine.forage) is quiet: no catch reported, a broken rod just ends it, and she stops
-// once she has something to eat or at mine.until.
+// Fishing for her own supper (mine.forage) or on her own (mine.quiet, the routine) is quiet: no catch reported, and a
+// broken rod just ends it. Either stops at mine.until; her supper, also once she has something to eat.
 async function fishLoop(mine) {
   try {
     await bot.pathfinder.goto(new goals.GoalNear(mine.water.x, mine.water.y + 1, mine.water.z, 3));
   } catch (err) {
     log('fishing walk:', err && err.message ? err.message : String(err));
   }
-  while (task === mine && !(mine.forage && (hasFood() || Date.now() > mine.until))) {
+  while (task === mine && !(mine.forage && hasFood()) && !(mine.until && Date.now() > mine.until)) {
     const rod = fishingRod();
     if (!rod) {
       if (mine.forage) return;
       task = null;
+      if (mine.quiet) return;
       return emit('cantFish', { player: mine.player, why: 'broke' });
     }
     while (eating && task === mine) await wait(500);
@@ -1084,7 +1168,7 @@ async function fishLoop(mine) {
       if (task !== mine) return;
       const gained = [...itemCounts()].find(([type, n]) => n > (before.get(type) || 0));
       const caught = gained ? bot.registry.items[gained[0]] : null;
-      if (caught && !mine.forage) {
+      if (caught && !mine.forage && !mine.quiet) {
         const kind = FishCatch.has(caught.name) ? 'fish' : FishTreasure.has(caught.name) ? 'treasure' : 'junk';
         emit('caught', { player: mine.player, kind });
       }
@@ -1243,7 +1327,8 @@ let forageAt = 0;
 function startForage() {
   if (task && task.kind === 'forage') return true;
   if (eating || bot.isSleeping || Date.now() < forageAt) return false;
-  if (task && (!isActivity(task) || task.kind === 'fish')) return false; // someone's order; fishing feeds her anyway
+  if (task && !isFree(task) && !isActivity(task)) return false; // someone's order
+  if (task && (task.kind === 'fish' || task.kind === 'retrieve')) return false; // fishing feeds her; her things won't wait
   const sources = [];
   if (findRipe(EdibleCrops, bot.entity.position, HarvestRadius).length > 0) sources.push('crops');
   if (fishingRod() && openWater()) sources.push('fish');
@@ -1254,7 +1339,7 @@ function startForage() {
 }
 
 async function forage(sources) {
-  const resume = task;
+  const resume = isActivity(task) ? task : null; // her own trip or tagging along just ends: she picks again after
   stay();
   waitingForFood = false; // what she picks up now isn't someone feeding her
   const mine = { kind: 'forage', player: '', resume, forage: true, casting: false, window: null };
@@ -1407,7 +1492,8 @@ let stayedOnDay = null;
 function autoSleepTick() {
   if (bot.isSleeping || sitting || !isNightTime() || !inOverworld()) return;
   if (sleptOnDay === bot.time.day || stayedOnDay === bot.time.day) return;
-  if (task && !isActivity(task)) return;
+  if (task && !isActivity(task) && !isFree(task)) return;
+  if (task && task.kind === 'retrieve') return; // her things despawn: bed can wait
   if (Date.now() < autoSleepAt) return;
   autoSleepAt = Date.now() + AutoSleepRetry;
   sleep('', true).catch((err) => log('sleep failed:', err && err.message ? err.message : String(err)));
@@ -1441,7 +1527,7 @@ function flee(player) {
   }
   const previous = task;
   stay();
-  const resume = pausedActivity(previous) || (previous && FollowsSomeone.has(previous.kind) ? previous : null);
+  const resume = resumeFor(previous);
   task = { kind: 'flee', player, resume, until: Date.now() + FleeTime, reported: false };
   bot.pathfinder.setGoal(new goals.GoalInvert(new goals.GoalFollow(attacker, FleeDistance)), true);
   if (previous && !resume && previous.player && previous.kind !== 'seek' && previous.kind !== 'sleep')
@@ -1459,6 +1545,13 @@ function fleeTick() {
   bot.pathfinder.setGoal(null);
   emit('safe', { player: done.player });
   resumeAfterBreak(done.resume);
+}
+
+// What running away or defending someone goes back to: an activity, or a follow or guard. Never her own: autonomy
+// picks again by itself once she's free.
+function resumeFor(previous) {
+  const kept = pausedActivity(previous) || (previous && FollowsSomeone.has(previous.kind) ? previous : null);
+  return kept && !kept.own ? kept : null;
 }
 
 // After running away or defending someone: back to the activity, or to the player she was following or guarding,
@@ -1492,7 +1585,7 @@ function isFamily(name) {
 
 function canDefend(victim) {
   if (bot.isSleeping) return false;
-  if (!task || task.kind === 'defend' || isActivity(task)) return true;
+  if (isFree(task) || task.kind === 'defend' || isActivity(task)) return true;
   return FollowsSomeone.has(task.kind) && String(task.player).toLowerCase() === String(victim).toLowerCase();
 }
 
@@ -1508,8 +1601,7 @@ function defend(foe, victim, swat) {
     task.until = Date.now() + lasts;
     return true;
   }
-  const previous = task;
-  const resume = pausedActivity(previous) || (previous && FollowsSomeone.has(previous.kind) ? previous : null);
+  const resume = resumeFor(task);
   stay();
   task = { kind: 'defend', player: '', victim, foe, swat, resume, until: Date.now() + lasts, mode: null, modeTarget: null };
   equipWeapon().catch(() => {});
@@ -1678,6 +1770,700 @@ async function wearBestArmor() {
   }
 }
 
+// ---- Routine: her day, built on the places she was asked to remember ------------------------------------
+
+// C# sends the farm, fishing spot, animal pen and home it found among the remembered places (`routine`). By day she
+// works in WorkBlock turns, one place after the other; at dusk she goes home and stays there till morning; the night
+// is autoSleepTick's. A place in another dimension, or farther than OwnTripMax, is left out; one that fails (no way
+// there, nothing to do there) is left out for SpotRetry, silently. Orders always come first.
+const routine = { farm: null, fish: null, ranch: null, home: null };
+const WorkKinds = ['farm', 'fish', 'ranch'];
+const WorkBlock = 360000;
+const OwnTripMax = 256;
+const TripTimeout = 180000;
+const SpotRetry = 600000;
+const DuskStart = 11500;
+const DuskEnd = 12541;
+const HomeNear = 6;
+const failedSpots = new Map();
+let lastWork = null;
+
+function spotUsable(what) {
+  const s = routine[what];
+  if (!s || s.dimension !== dimension() || (failedSpots.get(what) || 0) > Date.now()) return false;
+  const here = bot.entity.position;
+  return Math.hypot(s.x - here.x, s.z - here.z) <= OwnTripMax;
+}
+
+function failSpot(what, why) {
+  failedSpots.set(what, Date.now() + SpotRetry);
+  log(`routine: ${what} left out for a while (${why})`);
+}
+
+function isRoutine(t) {
+  return Boolean(t && t.own && t.what);
+}
+
+// True while the routine has her (or just took her); false leaves her to tagging along.
+function routineTick() {
+  const t = task;
+  if (t && t.kind === 'trip' && Date.now() > t.deadline) {
+    stay();
+    failSpot(t.what, 'never got there');
+    return false;
+  }
+  const time = bot.time.timeOfDay;
+  if (time < DuskStart) {
+    const kinds = WorkKinds.filter(spotUsable);
+    if (kinds.length === 0) return endRoutine();
+    if (isRoutine(t) && kinds.includes(t.what) && (t.kind === 'trip' || Date.now() < t.turnEnd)) return true;
+    const from = WorkKinds.indexOf(lastWork);
+    const next = [1, 2, 3].map((i) => WorkKinds[(from + i) % WorkKinds.length]).find((k) => kinds.includes(k));
+    if (isRoutine(t) && t.what === next && t.kind !== 'trip') {
+      t.turnEnd = Date.now() + WorkBlock; // the only place: another turn of the same
+      return true;
+    }
+    return startTrip(next);
+  }
+  if (time <= DuskEnd) {
+    if (isRoutine(t) && t.what === 'home') return true;
+    if (!spotUsable('home')) return endRoutine();
+    const h = routine.home;
+    if (bot.entity.position.distanceTo(new Vec3(h.x, h.y, h.z)) <= HomeNear) {
+      stay();
+      task = { kind: 'home', own: true, player: '', what: 'home', spot: new Vec3(h.x, h.y, h.z) };
+      return true;
+    }
+    return startTrip('home');
+  }
+  // Night: nothing new. At home (or on her way), she stays; the bed is autoSleepTick's.
+  if (isRoutine(t) && t.what === 'home') return true;
+  return endRoutine();
+}
+
+function endRoutine() {
+  if (isRoutine(task)) stay();
+  return false;
+}
+
+function startTrip(what) {
+  const s = routine[what];
+  const spot = new Vec3(s.x, s.y, s.z);
+  stay();
+  const trip = { kind: 'trip', own: true, player: '', what, spot, turnEnd: Date.now() + WorkBlock, deadline: Date.now() + TripTimeout };
+  task = trip;
+  if (WorkKinds.includes(what)) lastWork = what;
+  emit('routine', { what });
+  if (bot.entity.position.distanceTo(spot) <= 3) arriveOwn(trip);
+  else bot.pathfinder.setGoal(new goals.GoalNear(s.x, s.y, s.z, 2));
+  return true;
+}
+
+// At the place: the activity starts with the same checks as the order (crops and a chest, water and a rod, animals and
+// a chest). One that can't start leaves the place out for a while.
+function arriveOwn(trip) {
+  if (task !== trip) return;
+  bot.pathfinder.setGoal(null);
+  const base = { own: true, player: '', what: trip.what, turnEnd: trip.turnEnd };
+  if (trip.what === 'home') {
+    task = { ...base, kind: 'home', spot: trip.spot };
+    return;
+  }
+  const anchor = bot.entity.position.clone();
+  task = null;
+  if (trip.what === 'farm') {
+    if (!cropsNear(anchor)) return failSpot('farm', 'no crops');
+    const chest = chestNear(anchor);
+    if (!chest) return failSpot('farm', 'no chest');
+    task = { ...base, kind: 'farm', anchor, chest, busy: false };
+    farmRound();
+  } else if (trip.what === 'fish') {
+    if (!fishingRod()) {
+      lacking('rod');
+      return failSpot('fish', 'no rod');
+    }
+    const water = openWater();
+    if (!water) return failSpot('fish', 'no water');
+    task = { ...base, kind: 'fish', water, casting: false, quiet: true };
+    fishLoop(task);
+  } else {
+    const pen = penAt(anchor);
+    if (pen.why) return failSpot('ranch', pen.why === 'none' ? 'no animals' : 'no chest');
+    task = { ...base, kind: 'ranch', anchor, chest: pen.chest, busy: false, fedAt: new Map(), shornAt: new Map(), target: null };
+    ranchRound();
+  }
+}
+
+// ---- Tagging along with family -------------------------------------------------------------------------
+
+// Nothing in the routine: she keeps near Papa, else Tata, when one is in sight. Over TagFar blocks away she walks up to
+// TagNear, without sprinting unless they're over TagSprint off; close by she takes a few slow steps around them now
+// and then. They go out of sight, and it ends, silently.
+const TagFar = 8;
+const TagNear = 4;
+const TagSprint = 16;
+let familyOrder = []; // as C# sends them: Papa, then Tata
+let slowWalk = false;
+let walkSprint = null;
+
+function familyInSight() {
+  for (const name of familyOrder) {
+    const player = Object.values(bot.players).find((p) => p.username.toLowerCase() === name && p.entity);
+    if (player) return player.username;
+  }
+  return null;
+}
+
+const stepPause = () => 15000 + Math.random() * 25000;
+
+function tagAlongTick() {
+  let t = task;
+  const who = familyInSight();
+  if (!who) {
+    if (t && t.kind === 'tagAlong') stay();
+    return;
+  }
+  if (!t || t.kind !== 'tagAlong' || t.who !== who) {
+    stay();
+    t = { kind: 'tagAlong', own: true, player: '', who, mode: null, stepAt: Date.now() + stepPause() };
+    task = t;
+    emit('tagAlong', { player: who });
+  }
+  const target = playerEntity(who);
+  const d = target.position.distanceTo(bot.entity.position);
+  if (d > TagFar) {
+    walkPace(d > TagSprint);
+    if (t.mode !== 'follow') {
+      t.mode = 'follow';
+      bot.pathfinder.setGoal(new goals.GoalFollow(target, TagNear), true);
+    }
+    return;
+  }
+  if (t.mode === 'follow' && d <= TagNear + 1) {
+    t.mode = null;
+    t.stepAt = Date.now() + stepPause();
+    bot.pathfinder.setGoal(null);
+  }
+  if (t.mode === 'step' && !bot.pathfinder.goal) t.mode = null;
+  if (t.mode === null && Date.now() >= t.stepAt) {
+    walkPace(false);
+    const angle = Math.random() * 2 * Math.PI;
+    const r = 2 + Math.random() * 2;
+    const p = target.position;
+    t.mode = 'step';
+    t.stepAt = Date.now() + stepPause();
+    bot.pathfinder.setGoal(new goals.GoalNear(p.x + Math.cos(angle) * r, p.y, p.z + Math.sin(angle) * r, 1));
+  }
+}
+
+// Her walk while tagging along: sprinting only to catch up from far. stay() puts the usual one back.
+function walkPace(sprint) {
+  if (slowWalk && walkSprint === sprint) return;
+  const movements = gentleMovements();
+  movements.allowSprinting = sprint;
+  bot.pathfinder.setMovements(movements);
+  slowWalk = true;
+  walkSprint = sprint;
+}
+
+// ---- Body language -------------------------------------------------------------------------------------
+
+// When her gaze is free (not asleep, eating, drawing her bow or walking; nothing to do, at home, at her own farm or pen
+// between rounds, or tagging along) she looks at whoever just talked within 12 blocks, else at the closest player within
+// 6, else somewhere now and then. For 10 s after a player hits her, she turns her back on them instead. When Papa or
+// Tata walks up from afar, she looks at them and crouches twice, once every GreetEvery at most.
+const TalkLook = 8000;
+const HitSulk = 10000;
+const GreetEvery = 120000;
+const lastChat = new Map();
+const familyAway = new Map();
+const greetedAt = new Map();
+let hitBy = null;
+let idleAt = 0;
+let glanceAt = 0;
+let greeting = false;
+
+function lookFree() {
+  if (bot.isSleeping || eating || drawing || greeting || bot.pathfinder.isMoving()) return false;
+  if (!task) return true;
+  if (task.kind === 'tagAlong' || task.kind === 'home') return true;
+  return Boolean(task.own && (task.kind === 'farm' || task.kind === 'ranch') && !task.busy);
+}
+
+const eyes = (entity) => entity.position.offset(0, (entity.height || 1.8) * 0.9, 0);
+
+function idleTick() {
+  if (Date.now() < idleAt || !bot.entity) return;
+  idleAt = Date.now() + 250;
+  greetTick();
+  if (!lookFree()) return;
+  const me = bot.entity.position;
+  const hitter = hitBy && Date.now() < hitBy.until ? playerEntity(hitBy.name) : null;
+  if (hitter) {
+    const towards = Math.atan2(-(hitter.position.x - me.x), -(hitter.position.z - me.z));
+    bot.look(towards + Math.PI, 0).catch(() => {});
+    return;
+  }
+  const target = talker(me) || bot.nearestEntity((e) => e.type === 'player' && e.username !== bot.username && e.position.distanceTo(me) <= 6);
+  if (target) {
+    bot.lookAt(eyes(target)).catch(() => {});
+    return;
+  }
+  if (Date.now() >= glanceAt) {
+    glanceAt = Date.now() + 5000 + Math.random() * 5000;
+    bot.look(Math.random() * 2 * Math.PI, (Math.random() - 0.5) * 0.6).catch(() => {});
+  }
+}
+
+// Whoever chatted last, within TalkLook and 12 blocks.
+function talker(me) {
+  let best = null;
+  let bestAt = 0;
+  for (const [name, at] of lastChat) {
+    if (Date.now() - at > TalkLook) {
+      lastChat.delete(name);
+      continue;
+    }
+    const entity = playerEntity(name);
+    if (entity && at > bestAt && entity.position.distanceTo(me) <= 12) {
+      best = entity;
+      bestAt = at;
+    }
+  }
+  return best;
+}
+
+// Away is out of sight or over 10 blocks off; back within 5 is walking up.
+function greetTick() {
+  if (greeting || bot.isSleeping || eating || (task && ['defend', 'flee', 'guard', 'patrol'].includes(task.kind))) return;
+  const me = bot.entity.position;
+  for (const name of familyOrder) {
+    const player = Object.values(bot.players).find((p) => p.username.toLowerCase() === name);
+    const entity = player && player.entity;
+    const d = entity ? entity.position.distanceTo(me) : Infinity;
+    if (d > 10) {
+      familyAway.set(name, true);
+      continue;
+    }
+    if (d > 5 || familyAway.get(name) === false || Date.now() - (greetedAt.get(name) || 0) < GreetEvery) continue;
+    familyAway.set(name, false);
+    greetedAt.set(name, Date.now());
+    crouchFor(entity).catch(() => {});
+    return;
+  }
+}
+
+// Two crouches; sitting, she stands up and back down instead.
+async function crouchFor(entity) {
+  greeting = true;
+  try {
+    await bot.lookAt(eyes(entity)).catch(() => {});
+    for (let i = 0; i < 2; i++) {
+      bot.setControlState('sneak', !sitting);
+      await wait(250);
+      bot.setControlState('sneak', sitting);
+      await wait(250);
+    }
+  } finally {
+    greeting = false;
+  }
+}
+
+// ---- Getting her things back -------------------------------------------------------------------------
+
+// She dies: where, in which dimension, and whether it was by lava (her things burn). Three seconds after respawning,
+// she goes back for them (`retrieve`, ahead of the routine) unless they're in another dimension, over RetrieveFar
+// away, in the void or in lava. An order comes first; the walk waits until DespawnAfter (when the items vanish). At the
+// spot she sweeps the items within 6 blocks for RetrieveSweep. Armour goes back on by itself (playerCollect).
+const RetrieveFar = 500;
+const DespawnAfter = 300000;
+const RetrieveSweep = 20000;
+let deathAt = null;
+let pendingRetrieve = null;
+
+function minY() {
+  return bot.game && Number.isFinite(bot.game.minY) ? bot.game.minY : 0;
+}
+
+function lavaNear(pos) {
+  const lava = bot.registry.blocksByName.lava;
+  return Boolean(lava && bot.findBlocks({ matching: lava.id, point: pos, maxDistance: 2, count: 1 }).length > 0);
+}
+
+function onDeath() {
+  pendingRetrieve = null;
+  if (!bot.entity) return;
+  const pos = bot.entity.position.clone();
+  deathAt = { pos, dimension: dimension(), at: Date.now(), lava: lavaNear(pos) };
+}
+
+function armRetrieve() {
+  const d = deathAt;
+  deathAt = null;
+  if (!d || !bot.entity) return;
+  // Still carrying things: the server keeps inventories (keepInventory), nothing was dropped.
+  if (bot.inventory.items().length > 0 || wornArmour().length > 0) return;
+  const here = bot.entity.position;
+  const why = d.dimension !== dimension() ? 'otherDimension'
+    : d.pos.y < minY() + 1 ? 'void'
+    : d.lava ? 'lava'
+    : Math.hypot(d.pos.x - here.x, d.pos.z - here.z) > RetrieveFar ? 'tooFar'
+    : null;
+  if (why) return emit('retrieveLost', { why });
+  pendingRetrieve = { pos: d.pos, dimension: d.dimension, until: d.at + DespawnAfter, before: itemCounts(), announced: false };
+}
+
+function startRetrieve() {
+  const r = pendingRetrieve;
+  if (Date.now() > r.until || r.dimension !== dimension()) {
+    pendingRetrieve = null;
+    return emit('retrieveLost', { why: Date.now() > r.until ? 'despawned' : 'otherDimension' });
+  }
+  stay();
+  task = { kind: 'retrieve', own: true, player: '', pos: r.pos, sweeping: false };
+  if (!r.announced) {
+    r.announced = true;
+    emit('retrieving', {});
+  }
+  bot.pathfinder.setGoal(new goals.GoalNear(r.pos.x, r.pos.y, r.pos.z, 1));
+}
+
+function retrieveTick(t) {
+  if (t.sweeping || !pendingRetrieve || Date.now() <= pendingRetrieve.until) return;
+  stay();
+  pendingRetrieve = null;
+  emit('retrieveLost', { why: 'despawned' });
+}
+
+async function sweepRetrieve(mine) {
+  mine.sweeping = true;
+  await pickUpDrops(mine.pos, 6, RetrieveSweep, mine);
+  if (task !== mine) return; // an order came first: the walk is still pending
+  await wait(500); // the last pickup lands
+  if (task !== mine) return;
+  const before = pendingRetrieve ? pendingRetrieve.before : new Map();
+  pendingRetrieve = null;
+  task = null;
+  const items = [...itemCounts()].reduce((sum, [type, n]) => sum + Math.max(0, n - (before.get(type) || 0)), 0);
+  emit('retrieved', { count: items + wornArmour().length });
+}
+
+// Walks onto the dropped items within `radius` of a spot, one after the other, until none is left, the time is up or
+// she's no longer doing `mine`. Each item gets one try.
+async function pickUpDrops(center, radius, timeout, mine) {
+  const end = Date.now() + timeout;
+  const tried = new Set();
+  while (task === mine && Date.now() < end) {
+    const item = bot.nearestEntity((e) => e.name === 'item' && !tried.has(e.id) && e.position.distanceTo(center) <= radius);
+    if (!item) return;
+    tried.add(item.id);
+    const at = item.position;
+    try {
+      await Promise.race([
+        bot.pathfinder.goto(new goals.GoalNear(at.x, at.y, at.z, 1)),
+        wait(Math.min(8000, Math.max(0, end - Date.now()))).then(() => { throw new Error('too slow'); }),
+      ]);
+    } catch {
+      if (task === mine) bot.pathfinder.setGoal(null); // out of reach, or too slow: the next one
+    }
+    await wait(300);
+  }
+}
+
+// ---- Loot from her kills ------------------------------------------------------------------------------
+
+// Where something she was fighting (guarding, defending) or culling died, for LootFresh: what drops there is hers to
+// pick up. Nothing else is: a player's dropped items stay where they are.
+const LootFresh = 30000;
+const lootSpots = [];
+
+function pruneLoot() {
+  while (lootSpots.length > 0 && Date.now() - lootSpots[0].at > LootFresh) lootSpots.shift();
+}
+
+// A dropped item near one of her kills, within 6 blocks of her and within `radius` of what she guards.
+function lootNear(center, radius, skip) {
+  pruneLoot();
+  if (lootSpots.length === 0) return null;
+  const me = bot.entity.position;
+  return bot.nearestEntity((e) => e.name === 'item' && !(skip && skip.has(e.id)) && e.position.distanceTo(me) <= 6
+    && e.position.distanceTo(center) <= radius && lootSpots.some((s) => s.pos.distanceTo(e.position) <= 3));
+}
+
+// ---- Creeper warnings ---------------------------------------------------------------------------------
+
+// A creeper within 4 blocks of a player (within 32 of her), behind them (over 100° off where they look): she warns them,
+// once per creeper. The player she guards is guardTick's.
+const CreeperBehindAngle = Math.cos((100 * Math.PI) / 180);
+const warnedCreepers = new Set();
+let creeperWatchAt = 0;
+
+function creeperWatchTick() {
+  if (Date.now() < creeperWatchAt || !bot.entity) return;
+  creeperWatchAt = Date.now() + 250;
+  const guarded = task && task.kind === 'guard' ? task.player : null;
+  const me = bot.entity.position;
+  for (const player of Object.values(bot.players)) {
+    const e = player.entity;
+    if (!e || player.username === bot.username || player.username === guarded || e.position.distanceTo(me) > 32) continue;
+    const creeper = bot.nearestEntity((c) => c.name === 'creeper' && c.isValid !== false && !warnedCreepers.has(c.id)
+      && c.position.distanceTo(e.position) < 4);
+    if (!creeper) continue;
+    const vx = creeper.position.x - e.position.x;
+    const vz = creeper.position.z - e.position.z;
+    const len = Math.hypot(vx, vz);
+    if (len < 0.01) continue;
+    // Where they look: Mineflayer's yaw is 0 facing -z.
+    if ((-Math.sin(e.yaw) * vx - Math.cos(e.yaw) * vz) / len > CreeperBehindAngle) continue;
+    warnedCreepers.add(creeper.id);
+    emit('creeperBehind', { player: player.username });
+  }
+}
+
+// ---- Needs: worn tools, what she lacks -------------------------------------------------------------------
+
+// Every NeedsEvery: a kit tool at WornAt of its durability or less is reported once (`wornOut`), and again only for a
+// new one (its durability went back up); one reported worn that disappears (not handed over, not lost in a death)
+// `broke`. And what she lacks (`lacking`), at most once a minute each: C# decides what's said.
+const NeedsEvery = 10000;
+const WornAt = 0.1;
+const ArmourAfter = 120000;
+const worn = new Map();
+const lackingAt = new Map();
+let handedAt = 0;
+let diedAt = 0;
+let spawnedAt = 0;
+
+function lacking(what) {
+  if ((lackingAt.get(what) || 0) > Date.now()) return;
+  lackingAt.set(what, Date.now() + 60000);
+  emit('lacking', { what });
+}
+
+function needsTick() {
+  if (!bot.entity || !bot.isAlive) return;
+  const items = bot.inventory.items();
+  const handing = (task && (task.kind === 'give' || task.kind === 'store')) || Date.now() - handedAt < 15000 || Date.now() - diedAt < 30000;
+  for (const [tool, item] of Object.entries(kitTools(items))) {
+    const was = worn.get(tool);
+    if (!item) {
+      if (was === undefined) continue;
+      worn.delete(tool);
+      if (!handing) emit('broke', { tool });
+      continue;
+    }
+    const max = bot.registry.items[item.type] && bot.registry.items[item.type].maxDurability;
+    if (!max) continue;
+    const left = max - (item.durabilityUsed || 0);
+    if (was !== undefined && left > was) worn.delete(tool); // a new one
+    if (left / max > WornAt) {
+      worn.delete(tool);
+      continue;
+    }
+    if (!worn.has(tool)) emit('wornOut', { tool });
+    worn.set(tool, left);
+  }
+  if (task && (task.kind === 'guard' || task.kind === 'patrol') && items.some((i) => i.name === 'bow') && !arrows()) lacking('arrows');
+  if (spawnedAt && Date.now() - spawnedAt > ArmourAfter && wornArmour().length === 0) lacking('armour');
+  if (bot.inventory.emptySlotCount() === 0) lacking('space');
+}
+
+// ---- Animals: « syncs occupe-toi des animaux », and the routine's pen ------------------------------------
+
+// Where she stands (or the pen's spot), every RanchRound: she breeds a species under HerdMax (adults and babies within
+// FarmRadius), shears the sheep, culls the adults over HerdMax (CullPerRound at most), picks up the drops and stores
+// them in the chest within ChestRadius. Only these species, by what they eat; never a named animal, never a baby, and
+// no culling at all where the server's version doesn't say which are babies. Breeding food stays on her.
+const Livestock = {
+  cow: (n) => n === 'wheat',
+  sheep: (n) => n === 'wheat',
+  pig: (n) => n === 'carrot' || n === 'potato' || n === 'beetroot',
+  chicken: (n) => n.endsWith('_seeds'),
+  rabbit: (n) => n === 'carrot' || n === 'dandelion',
+};
+const HerdMax = 8;
+const RanchRound = 15000;
+const FedAgain = 300000;
+const ShearAgain = 300000;
+const CullPerRound = 2;
+const KillFor = 15000;
+const MeatKept = 8;
+const Meats = new Set(['beef', 'porkchop', 'chicken', 'mutton', 'rabbit',
+  'cooked_beef', 'cooked_porkchop', 'cooked_chicken', 'cooked_mutton', 'cooked_rabbit']);
+const isRanchGoods = (n) => Meats.has(n) || n === 'leather' || n.endsWith('_wool') || n === 'feather' || n === 'rabbit_hide';
+
+// An entity's metadata by name (minecraft-data's metadataKeys); undefined when the version doesn't name it.
+function meta(entity, key) {
+  const known = bot.registry.entitiesByName[entity.name];
+  const i = known && known.metadataKeys ? known.metadataKeys.indexOf(key) : -1;
+  return i >= 0 && entity.metadata ? entity.metadata[i] : undefined;
+}
+
+function knowsAge(entity) {
+  const known = bot.registry.entitiesByName[entity.name];
+  return Boolean(known && known.metadataKeys && known.metadataKeys.includes('baby'));
+}
+
+const isBaby = (e) => meta(e, 'baby') === true;
+const isNamed = (e) => Boolean(meta(e, 'custom_name'));
+const isShorn = (e) => (Number(meta(e, 'wool')) & 0x10) !== 0;
+
+// The animals around a spot, by species: how many in all, and the adults.
+function herdAround(anchor) {
+  const herd = new Map();
+  for (const e of Object.values(bot.entities)) {
+    if (!Livestock[e.name] || e.isValid === false || e.position.distanceTo(anchor) > FarmRadius) continue;
+    if (!herd.has(e.name)) herd.set(e.name, { all: 0, adults: [], aged: true });
+    const h = herd.get(e.name);
+    h.all++;
+    if (!isBaby(e)) h.adults.push(e);
+    if (!knowsAge(e)) h.aged = false;
+  }
+  return herd;
+}
+
+// Animals and a chest around a spot: { chest }, or { why }.
+function penAt(anchor) {
+  if (herdAround(anchor).size === 0) return { why: 'none' };
+  const chest = chestNear(anchor);
+  return chest ? { chest } : { why: 'noChest' };
+}
+
+function ranch(player) {
+  const anchor = bot.entity.position.clone();
+  const pen = penAt(anchor);
+  if (pen.why) return emit('cantRanch', { player, why: pen.why });
+  stay();
+  task = { kind: 'ranch', player, anchor, chest: pen.chest, busy: false, fedAt: new Map(), shornAt: new Map(), target: null };
+  emit('ranching', { player });
+  ranchRound();
+}
+
+async function ranchRound() {
+  if (!bot || !task || task.kind !== 'ranch' || task.busy) return;
+  const mine = task;
+  mine.busy = true;
+  try {
+    const herd = herdAround(mine.anchor);
+    await breed(mine, herd);
+    if (task === mine) await shear(mine, herd);
+    if (task === mine) await cull(mine, herd);
+    pruneLoot();
+    for (const spot of lootSpots.filter((s) => s.pos.distanceTo(mine.anchor) <= FarmRadius + 4)) {
+      if (task !== mine) break;
+      await pickUpDrops(spot.pos, 3, 10000, mine);
+    }
+    if (task === mine) await storeRanch(mine);
+    if (task === mine && bot.entity.position.distanceTo(mine.anchor) > 4)
+      await bot.pathfinder.goto(new goals.GoalNear(mine.anchor.x, mine.anchor.y, mine.anchor.z, 2));
+  } catch (err) {
+    log('ranch round failed:', err && err.message ? err.message : String(err));
+  } finally {
+    mine.busy = false;
+  }
+}
+
+// Two adults of a species under HerdMax, not fed in FedAgain, get its food.
+async function breed(mine, herd) {
+  for (const [species, h] of herd) {
+    if (task !== mine) return;
+    if (h.all >= HerdMax) continue;
+    const ready = h.adults.filter((e) => !isNamed(e) && Date.now() - (mine.fedAt.get(e.id) || 0) > FedAgain);
+    if (ready.length < 2) continue;
+    if (bot.inventory.items().filter((i) => Livestock[species](i.name)).reduce((sum, i) => sum + i.count, 0) < 2) {
+      lacking('breedFood');
+      continue;
+    }
+    for (const animal of ready.slice(0, 2)) {
+      if (task !== mine) return;
+      mine.fedAt.set(animal.id, Date.now());
+      await useOn(animal, (n) => Livestock[species](n));
+    }
+  }
+}
+
+async function shear(mine, herd) {
+  const sheep = ((herd.get('sheep') || {}).adults || [])
+    .filter((e) => !isNamed(e) && !isShorn(e) && Date.now() - (mine.shornAt.get(e.id) || 0) > ShearAgain);
+  if (sheep.length === 0) return;
+  if (!bot.inventory.items().some((i) => i.name === 'shears')) return lacking('shears');
+  for (const animal of sheep) {
+    if (task !== mine) return;
+    mine.shornAt.set(animal.id, Date.now());
+    await useOn(animal, (n) => n === 'shears');
+    lootSpots.push({ pos: animal.position.clone(), at: Date.now() }); // the wool
+  }
+}
+
+// The adults over HerdMax, CullPerRound at most, never a named one.
+async function cull(mine, herd) {
+  let left = CullPerRound;
+  for (const [, h] of herd) {
+    if (!h.aged) continue; // can't tell a baby from an adult here: never
+    let surplus = h.adults.length - HerdMax;
+    const victims = h.adults.filter((e) => !isNamed(e));
+    while (surplus > 0 && left > 0 && victims.length > 0 && task === mine) {
+      await slaughter(mine, victims.shift());
+      surplus--;
+      left--;
+    }
+  }
+}
+
+// The same hits as defending: chase, and hit on the weapon's cooldown, until it's dead or KillFor has passed.
+async function slaughter(mine, animal) {
+  mine.target = animal;
+  await equipWeapon();
+  bot.pathfinder.setGoal(new goals.GoalFollow(animal, 1), true);
+  const end = Date.now() + KillFor;
+  while (task === mine && animal.isValid !== false && bot.entities[animal.id] && Date.now() < end) {
+    if (animal.position.distanceTo(bot.entity.position) < MeleeReach && Date.now() >= attackReadyAt) {
+      attackReadyAt = Date.now() + 650;
+      bot.lookAt(animal.position.offset(0, (animal.height || 1) * 0.6, 0), true).catch(() => {});
+      bot.attack(animal);
+    }
+    await wait(100);
+  }
+  if (task === mine) {
+    bot.pathfinder.setGoal(null);
+    mine.target = null;
+  }
+}
+
+// Walks up to an animal and uses what `matches` on it (food, shears).
+async function useOn(animal, matches) {
+  const at = animal.position;
+  try {
+    await Promise.race([
+      bot.pathfinder.goto(new goals.GoalNear(at.x, at.y, at.z, 2)),
+      wait(10000).then(() => { throw new Error('too slow'); }),
+    ]);
+    const item = bot.inventory.items().find((i) => matches(i.name));
+    if (!item || !bot.entities[animal.id]) return;
+    await bot.equip(item, 'hand');
+    await bot.lookAt(animal.position.offset(0, (animal.height || 1) * 0.5, 0), true);
+    await bot.activateEntity(animal);
+  } catch (err) {
+    log('animal out of reach:', err && err.message ? err.message : String(err));
+    bot.pathfinder.setGoal(null);
+  }
+}
+
+// Meat, leather, wool and feathers into the chest; MeatKept pieces of meat (cooked first) stay on her to eat.
+async function storeRanch(mine) {
+  const totals = new Map();
+  for (const item of bot.inventory.items())
+    if (isRanchGoods(item.name)) totals.set(item.name, (totals.get(item.name) || 0) + item.count);
+  let meatLeft = MeatKept;
+  const pairs = [...totals].sort(([a], [b]) => Number(b.startsWith('cooked_')) - Number(a.startsWith('cooked_'))).map(([name, n]) => {
+    if (!Meats.has(name)) return [name, n];
+    const kept = Math.min(meatLeft, n);
+    meatLeft -= kept;
+    return [name, n - kept];
+  });
+  await storeIn(mine, pairs);
+}
+
 function attach() {
   bot.loadPlugin(pathfinder);
   bot.loadPlugin(collectBlock);
@@ -1688,6 +2474,11 @@ function attach() {
     reportPlayers();
     wearBestArmor().catch(() => {});
   });
+  // Every spawn, the first and each respawn: the armour clock, and her things to get back after a death.
+  bot.on('spawn', () => {
+    spawnedAt = Date.now();
+    if (deathAt) setTimeout(safely(armRetrieve), 3000);
+  });
 
   bot.on('physicsTick', () => {
     guardTick();
@@ -1696,6 +2487,12 @@ function attach() {
   });
   bot.on('physicsTick', guideTick);
   bot.on('physicsTick', doorTick);
+  bot.on('physicsTick', safely(freeTick));
+  bot.on('physicsTick', safely(idleTick));
+  bot.on('physicsTick', safely(autonomyTick));
+  bot.on('physicsTick', safely(creeperWatchTick));
+  setInterval(() => { if (bot) ranchRound().catch(() => {}); }, RanchRound);
+  setInterval(() => { if (bot) safely(needsTick)(); }, NeedsEvery);
   // The path she's walking, for the doors on it; closing behind her needs none.
   bot.on('path_update', (result) => setPath(result.status === 'noPath' ? [] : result.path));
   bot.on('goal_reached', () => setPath([]));
@@ -1714,10 +2511,14 @@ function attach() {
     }, 300);
   });
 
-  // A monster she was fighting (or shooting) died: one less, and back to the player or the spot on the next tick.
+  // A monster she was fighting (or shooting) died: one less, and back to the player or the spot on the next tick. What
+  // she was fighting or culling leaves a loot spot.
   bot.on('entityDead', (entity) => {
-    if (!task || (task.kind !== 'guard' && task.kind !== 'patrol')) return;
-    if (task.foe !== entity && task.modeTarget !== entity) return;
+    if (!task) return;
+    const fought = task.foe === entity || task.modeTarget === entity || task.target === entity;
+    if (!fought || !['guard', 'patrol', 'defend', 'ranch'].includes(task.kind)) return;
+    lootSpots.push({ pos: entity.position.clone(), at: Date.now() });
+    if (task.kind !== 'guard' && task.kind !== 'patrol') return;
     emit('killed', { player: task.player });
     task.foe = null;
     task.mode = null;
@@ -1731,7 +2532,18 @@ function attach() {
   });
 
   bot.on('goal_reached', () => {
-    if (task && task.kind === 'seek') return seekReached();
+    // What sets a new goal waits a beat: the pathfinder clears its goal once this event returns, so a goal (or a goto)
+    // started right here would be dropped.
+    const t = task;
+    const later = (fn) => setTimeout(safely(fn), 0);
+    if (t && t.kind === 'seek') return later(function seekGoal() { if (task === t) seekReached(); });
+    if (t && t.kind === 'trip') return later(function tripGoal() { arriveOwn(t); });
+    if (t && t.kind === 'retrieve' && !t.sweeping) {
+      t.sweeping = true;
+      return later(function retrieveGoal() {
+        if (task === t) sweepRetrieve(t).catch((err) => log('retrieve failed:', err && err.message ? err.message : String(err)));
+      });
+    }
     if (!task || (task.kind !== 'come' && task.kind !== 'goto' && task.kind !== 'guide')) return;
     emit('arrived', { player: task.player, kind: task.kind });
     task = null;
@@ -1741,8 +2553,22 @@ function attach() {
   // may walk somewhere reachable) but say so only once per order. Gathering and sleeping handle their
   // own paths.
   bot.on('path_update', (result) => {
-    if (!task || result.status !== 'noPath' || task.reported) return;
-    if (['collect', 'sleep', 'harvest', 'farm', 'give', 'store', 'fish', 'smelt', 'patrol', 'forage'].includes(task.kind)) return;
+    if (!task || result.status !== 'noPath') return;
+    if (task.mode === 'loot') return task.skipLoot.add(task.modeTarget.id); // out of reach: left where it is
+    if (task.reported) return;
+    if (['collect', 'sleep', 'harvest', 'farm', 'give', 'store', 'fish', 'smelt', 'patrol', 'forage', 'ranch', 'tagAlong', 'home']
+      .includes(task.kind)) return;
+    // Her own: a place she can't walk to is left out for a while; her things, given up.
+    if (task.kind === 'trip') {
+      const what = task.what;
+      stay();
+      return failSpot(what, 'no path');
+    }
+    if (task.kind === 'retrieve') {
+      stay();
+      pendingRetrieve = null;
+      return emit('retrieveLost', { why: 'noPath' });
+    }
     if (task.kind === 'seek') {
       emit('seek', { player: task.player, outcome: 'missing' });
       return stay();
@@ -1760,6 +2586,8 @@ function attach() {
   // The player she follows or guards went out of sight (too far, or logged out): she stops there.
   bot.on('entityGone', (entity) => {
     reportSeen(entity);
+    warnedCreepers.delete(entity.id);
+    if (task && task.kind === 'tagAlong' && entity.username === task.who) return stay(); // silently
     if (!task || (task.kind !== 'follow' && task.kind !== 'guard') || entity.username !== task.player) return;
     emit('cantReach', { player: task.player, why: 'lost' });
     stay();
@@ -1777,10 +2605,12 @@ function attach() {
 
   bot.on('chat', (player, text) => {
     if (player === bot.username) return;
+    lastChat.set(player, Date.now());
     emit('chat', { player, text, private: false });
   });
   bot.on('whisper', (player, text) => {
     if (player === bot.username) return;
+    lastChat.set(player, Date.now());
     emit('chat', { player, text, private: true });
   });
 
@@ -1799,6 +2629,9 @@ function attach() {
     if (!entity) return;
     const exact = exactHits();
     if (entity === bot.entity) {
+      // Any player, Papa included: she turns her back on them for a while (body language).
+      if (exact && source && source.type === 'player' && source.username !== bot.username)
+        hitBy = { name: source.username, until: Date.now() + HitSulk };
       if (exact) return emit('hurt', { by: source && source.type === 'player' && source.username !== bot.username ? source.username : null });
       // No source before 1.19.4: the closest player within reach is a fair guess, and nobody in reach means a mob,
       // a fall or fire.
@@ -1814,7 +2647,11 @@ function attach() {
     }
   });
 
-  bot.on('death', () => emit('died', {}));
+  bot.on('death', () => {
+    diedAt = Date.now();
+    onDeath();
+    emit('died', {});
+  });
 
   // Nightfall, once per night: the moment the server's clock crosses from day into night.
   let wasDay = null;
@@ -1914,6 +2751,10 @@ async function main() {
 }
 
 
+// The ops that are a player's order (the rest are words, questions, or C#'s own business).
+const OrderOps = new Set(['come', 'follow', 'goto', 'guide', 'give', 'store', 'fish', 'patrol', 'smelt', 'guard', 'collect',
+  'sleep', 'harvest', 'farm', 'ranch']);
+
 const input = readline.createInterface({ input: process.stdin });
 input.on('line', (line) => {
   let command;
@@ -1943,6 +2784,7 @@ input.on('line', (line) => {
         if (bot) {
           stay();
           stayedOnDay = bot.time.day; // told to stay put: she doesn't wander off to bed tonight
+          heldUntil = Date.now() + HeldFor;
         }
         break;
       case 'goto':
@@ -1985,6 +2827,7 @@ input.on('line', (line) => {
         if (bot) {
           sit();
           stayedOnDay = bot.time.day;
+          heldUntil = Date.now() + HeldFor;
         }
         break;
       case 'jump':
@@ -2016,8 +2859,21 @@ input.on('line', (line) => {
         if (bot && typeof command.player === 'string') flee(command.player);
         break;
       case 'family':
-        if (Array.isArray(command.names))
-          family = new Set(command.names.filter((n) => typeof n === 'string' && n.length > 0).map((n) => n.toLowerCase()));
+        if (Array.isArray(command.names)) {
+          familyOrder = command.names.filter((n) => typeof n === 'string' && n.length > 0).map((n) => n.toLowerCase());
+          family = new Set(familyOrder);
+        }
+        break;
+      case 'ranch':
+        if (bot && typeof command.player === 'string') ranch(command.player);
+        break;
+      case 'routine':
+        for (const what of Object.keys(routine)) {
+          const s = command[what];
+          routine[what] = s && Number.isFinite(s.x) && Number.isFinite(s.y) && Number.isFinite(s.z) && typeof s.dimension === 'string'
+            ? { x: s.x, y: s.y, z: s.z, dimension: s.dimension } : null;
+        }
+        failedSpots.clear(); // a place moved or added deserves another try
         break;
       case 'defend':
         if (bot && typeof command.player === 'string' && typeof command.victim === 'string') {
@@ -2045,6 +2901,8 @@ input.on('line', (line) => {
       default:
         log('unknown op:', command.op);
     }
+    // An order under way lets her go after « reste » or « assis ».
+    if (bot && OrderOps.has(command.op) && isOrder(task)) heldUntil = 0;
   } catch (err) {
     log('command failed:', err && err.message ? err.message : String(err));
   }

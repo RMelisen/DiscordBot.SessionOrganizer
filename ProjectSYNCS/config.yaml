@@ -1,6 +1,6 @@
 ﻿name: "ProjectSYNCS"
 description: "Discord session organizer bot"
-version: "7.17.0"
+version: "7.18.0"
 image: "ghcr.io/rmelisen/{arch}-addon-projectsyncs"
 slug: "projectsyncs"
 init: false

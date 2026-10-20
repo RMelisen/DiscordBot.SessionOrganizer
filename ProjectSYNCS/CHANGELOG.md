@@ -3,6 +3,24 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.18.0 — 2026-10-20
+
+- Minecraft: between orders she now has a life. With a farm, a fishing spot, an animal pen and a home
+  saved among her places (« syncs retiens ici : ferme »), she works at them in turns by day and goes
+  home at dusk; with none, she keeps near the owner or Tata. Any order comes first, and « syncs
+  reste » keeps her put for ten minutes.
+- Minecraft: new order « syncs occupe-toi des animaux »: she breeds the animals, shears the sheep,
+  keeps each kind at eight (never a named animal or a baby) and stores the wool, leather and meat in
+  the chest nearby.
+- Minecraft: after dying she goes back for her things, and picks up what drops from the monsters
+  she kills while guarding.
+- Minecraft: she warns a player when a creeper is creeping up behind them.
+- Minecraft: she says when a tool is nearly worn out or broke, and when she lacks a fishing rod,
+  shears, food for the animals, arrows, armour or room in her pockets.
+- Minecraft: body language: she looks at whoever talks to her, turns her back on whoever just hit
+  her, and crouches to greet the owner and Tata when they walk up.
+- Minecraft: putting her things away now keeps her shears too.
+
 ## 7.17.0 — 2026-10-20
 
 - Minecraft: at night she goes to bed on her own when nobody needs her, so the night passes as soon

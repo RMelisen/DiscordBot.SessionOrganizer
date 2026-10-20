@@ -59,6 +59,8 @@ public enum McOrder
     ForgetPlace,
     /// <summary>List the places she remembers. Takes her from nobody.</summary>
     ListPlaces,
+    /// <summary>Stay where she is and keep the animals: breed, shear, cull the surplus, store the drops in the chest.</summary>
+    Ranch,
 }
 
 /// <summary>What she can be asked to hand over. The body knows each by its lower-case name. Not stored.</summary>
@@ -237,6 +239,26 @@ public static class McCommand
     {
         "ferme", "fermes", "champ", "champs", "culture", "cultures", "potager", "potagers", "jardin", "plantation",
         "plantations", "recolte", "recoltes", "legumes", "farm", "field", "fields", "crops", "garden",
+    };
+    // Keeping animals, read before the farm (« occupe-toi des animaux de la ferme » is the animals). A phrase that says it
+    // alone, or a care verb with an animal word within four words after it. « garde » and « surveille » are not among the
+    // verbs: guarding animals stays a patrol, and must never start a cull. Animal words match exactly (« lapins » is one
+    // slip from « sapins »); « élever » and « élèves » stay out (one slip from « enlever », « enlèves »).
+    private static readonly string[] RanchAlonePhrases =
+    {
+        "fais de l elevage", "faire de l elevage", "mode eleveuse", "mode elevage", "fais l eleveuse", "joue a l eleveuse",
+    };
+    private static readonly string[] RanchVerbs =
+    {
+        "occupe toi", "occupes toi", "occupe", "t occuper", "s occuper", "prends soin", "prend soin", "prendre soin",
+        "entretiens", "entretient", "entretenir", "nourris", "nourrir", "nourrit", "eleve", "gere", "geres", "gerer",
+        "take care of", "feed", "breed",
+    };
+    private static readonly HashSet<string> AnimalWords = new()
+    {
+        "animaux", "animal", "betes", "bete", "betail", "troupeau", "troupeaux", "enclos", "elevage", "vaches", "vache",
+        "moutons", "mouton", "cochons", "cochon", "poules", "poule", "poulets", "poulet", "lapins", "lapin", "bergerie",
+        "etable", "poulailler", "animals", "cows", "sheep", "pigs", "chickens",
     };
     // Harvesting without naming a crop (« syncs récolte »).
     private static readonly string[] HarvestPhrases =
@@ -645,6 +667,9 @@ public static class McCommand
         if (Find(wordsOnly, ListPlacesPhrases) is { } listing) return Unless(listing, wordsOnly, new(McOrder.ListPlaces));
 
         if (Find(wordsOnly, FollowOverStayPhrases) is not null) return When(FollowOverStayPhrases, new(McOrder.Follow)) ?? McRequest.Nothing;
+        if (Find(wordsOnly, RanchAlonePhrases) is not null) return When(RanchAlonePhrases, new(McOrder.Ranch)) ?? McRequest.Nothing;
+        if (CareFor(wordsOnly, RanchVerbs, (w, j) => AnimalWords.Contains(w[j])) is { } herd)
+            return Unless(herd, wordsOnly, new(McOrder.Ranch));
         if (Find(wordsOnly, FarmAlonePhrases) is not null) return When(FarmAlonePhrases, new(McOrder.Farm)) ?? McRequest.Nothing;
         if (FarmCare(wordsOnly) is { } care) return Refused(wordsOnly, care) ? McRequest.Nothing : new(McOrder.Farm);
 

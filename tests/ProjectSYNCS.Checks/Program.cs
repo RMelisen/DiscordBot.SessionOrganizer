@@ -1835,6 +1835,35 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     })
         Crop(text, order);
 
+    // Keeping animals: a care verb with an animal word, read before the farm.
+    foreach (var text in new[]
+    {
+        "syncs occupe-toi des animaux", "syncs nourris les vaches", "syncs occupe-toi des animaux de la ferme",
+        "syncs prends soin des moutons", "syncs gère l'enclos", "syncs fais de l'élevage", "syncs mode éleveuse",
+        "syncs tu peux t'occuper des poules ?", "syncs take care of the animals", "syncs élève des cochons",
+    })
+        Crop(text, McOrder.Ranch);
+    // Guarding animals stays a patrol (it must never start a cull); a refusal is nothing.
+    Crop("syncs garde les moutons", McOrder.Patrol);
+    Crop("syncs surveille les vaches", McOrder.Patrol);
+    Crop("syncs occupe-toi pas des animaux", McOrder.None);
+    Crop("syncs ne nourris pas les cochons", McOrder.None);
+    // Talk about one's own animals, and words one slip from an animal, are no ranch.
+    foreach (var text in new[] { "syncs je nourris mes vaches", "syncs occupe-toi des sapins", "syncs enlève les cochons de là" })
+        if (McCommand.Read(text, mcNames) == McOrder.Ranch) Fail($"ranch: « {text} » is not one");
+    // Her routine's places, by name (McRoutine): a pen word anywhere, a farm or fishing word first.
+    foreach (var (keys, expected) in new (string[], string)[]
+    {
+        (new[] { "ferme", "etang", "maison", "mine de fer" }, "ferme|etang||maison"),
+        (new[] { "champ de ble", "ferme aux animaux", "base", "foret" }, "champ de ble||ferme aux animaux|base"),
+        (new[] { "lac", "enclos", "potager", "qg", "chez moi" }, "potager|lac|enclos|chez moi"),
+        (new[] { "foret", "chemin du lac", "mine" }, "|||"),
+    })
+    {
+        var (farm, fish, ranch, home) = McRoutine.Classify(keys);
+        if ($"{farm}|{fish}|{ranch}|{home}" is var got && got != expected) Fail($"routine places [{string.Join(", ", keys)}]: got {got}");
+    }
+
     // Errands, small things, timers, fishing, cooking, guarding a place, remembered places.
     var mcPlaces = new[] { "maison", "mine", "mine de fer", "base 2" };
     void Mc(string text, McOrder order, Func<McRequest, bool>? also = null, bool called = false)
@@ -2198,7 +2227,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         "McPlaceArrivedLines", "McGuideAckLines", "McGuideArrivedLines", "McPatrolPlaceAckLines", "McTripTooFarLines",
     };
     string[] McFamilyPools = { "McCalledLines", "McDeathLines", "McHitByPlayerLines", "McHitAgainLines", "McFedLines", "McAdvancementLines", "McComeAckLines",
-        "McFollowAckLines", "McGuardAckLines", "McCollectDoneLines", "McWaveLines", "McGiveDoneLines", "McByeLines" };
+        "McFollowAckLines", "McGuardAckLines", "McCollectDoneLines", "McWaveLines", "McGiveDoneLines", "McByeLines", "McCreeperBehindLines" };
     foreach (var p in McFamilyPools)
     foreach (var twin in new[] { p + "Owner", p + "Tata" })
     {
@@ -2206,6 +2235,11 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         // Papa and Tata by title, never by an in-game name.
         if (twinLines.Any(l => l.Contains("{0}"))) Fail($"{twin}: uses {{0}}, they're called Papa and Tata");
     }
+    // Pools that only exist as twins, same rule.
+    foreach (var twin in new[] { "McSeekMetLinesOwner", "McSeekMetLinesTata", "McSeekMissLinesOwner", "McSeekMissLinesTata",
+                 "McTagAlongLinesOwner", "McTagAlongLinesTata" })
+        if (Field(twin) is not string[] { Length: > 0 } twinLines) Fail($"{twin}: missing");
+        else if (twinLines.Any(l => l.Contains("{0}"))) Fail($"{twin}: uses {{0}}, they're called Papa and Tata");
 
     // In game there is no Discord markup: no custom emotes, no sticker tags, and Minecraft cuts chat at 256.
     foreach (var f in new[] { "McArrivalLines", "McLeavingLines", "McDeathLines", "McHitByPlayerLines", "McAdvancementLines", "McNightLines",
@@ -2223,7 +2257,11 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
              "McSmeltNothingLines", "McSmeltNoFuelLines", "McSmeltNoFurnaceLines", "McSmeltBusyLines", "McPlaceSavedLines",
              "McPlaceMovedLines", "McPlaceNoNameLines", "McPlaceNotYoursLines", "McPlaceFullLines", "McPlaceUnknownLines",
              "McPlaceForgottenLines", "McPlaceListLines", "McPlaceListEmptyLines", "McPlaceWhereLines", "McPlaceOtherDimensionLines",
-             "McPlaceGoAckLines", "McPlaceArrivedLines", "McGuideAckLines", "McGuideWaitLines", "McGuideArrivedLines", "McGuideLostLines" }
+             "McPlaceGoAckLines", "McPlaceArrivedLines", "McGuideAckLines", "McGuideWaitLines", "McGuideArrivedLines", "McGuideLostLines",
+             "McRanchAckLines", "McRanchNoneLines", "McRanchNoChestLines", "McRoutineFarmLines", "McRoutineFishLines", "McRoutineRanchLines",
+             "McRoutineHomeLines", "McTagAlongLinesOwner", "McTagAlongLinesTata", "McRetrieveLines", "McRetrievedLines", "McRetrieveEmptyLines",
+             "McRetrieveLostLines", "McToolWornLines", "McToolBrokeLines", "McNeedRodLines", "McNeedShearsLines", "McNeedBreedFoodLines",
+             "McNeedArrowsLines", "McNeedArmourLines", "McPocketsFullLines" }
              .Concat(McFamilyPools.SelectMany(p => new[] { p + "Owner", p + "Tata" })))
     foreach (var (name, lines) in Pools(f))
     {

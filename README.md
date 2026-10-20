@@ -158,6 +158,9 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
     just « syncs récolte »): she harvests what's ripe around her, replants, and brings it to you;
   - « syncs occupe-toi de la ferme »: she stays at the field, harvests whatever ripens, replants,
     and stores it in the chest next to it (she needs one within 10 blocks);
+  - « syncs occupe-toi des animaux » (or « nourris les vaches », « fais de l'élevage »): she stays
+    at the pen, breeds the animals, shears the sheep, keeps each kind at eight (never a named animal
+    or a baby) and stores the wool, leather and meat in the chest next to it;
   - « syncs dodo »: she goes to bed. She also goes on her own when someone does at night, since the
     night only passes when everyone sleeps;
   - « syncs vide tes poches », « syncs donne-moi ton poisson » (or ta pioche, tes armes, ton fer…):
@@ -190,6 +193,14 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
   She works for one player at a time: while she's busy with your order, others are told to wait
   and only you can stop her, for up to 10 minutes. The owner and Tata always come first. When she
   arrives she walks up to the owner (or Tata), or to where she last saw them.
+- **Between orders she lives her own life.** Save a farm, a fishing spot, an animal pen and a home
+  among her places (names like « ferme », « champ de blé », « étang », « enclos », « maison »): by
+  day she works at them in turns, and at dusk she goes home. With none of them, she keeps near the
+  owner or Tata. Any order comes first; « syncs reste » keeps her put for ten minutes. After dying
+  she goes back for her things; she picks up what drops from the monsters she kills; she warns
+  anyone with a creeper behind them; she says when a tool is wearing out or broke, or what she
+  lacks (a rod, shears, arrows, armour, room). She looks at whoever talks to her, turns her back on
+  whoever hits her, and crouches when the owner or Tata walks up.
 - **On Discord** she says in the bots channel when she goes to play and when she's back.
 
 She joins nothing until the owner allows it with `/debug minecraft` (« L'autoriser à jouer »);

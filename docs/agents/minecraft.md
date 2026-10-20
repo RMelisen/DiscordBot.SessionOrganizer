@@ -169,6 +169,19 @@ list: the owner removed it.
   (`resumeAfterSleep`); any order but an errand ends it. A farm and a guarded place are the claims
   that don't run out while their keeper is on the server (`McClaim.Decide(…, lasting)`); family can
   still take her.
+- **Ranch** (« syncs occupe-toi des animaux », « nourris les vaches », « fais de l'élevage ») anchors
+  her where she stands, like a farm, and lasts like one. Every 15 seconds, for the cows, sheep, pigs,
+  chickens and rabbits within 16 blocks: a species under 8 (adults and babies) gets two adults fed
+  its food (not the same animal twice in 5 minutes), sheep are sheared, the adults over 8 are culled
+  (2 a round at most), and the drops go in the chest within 10 blocks (meat, leather, wool,
+  feathers; 8 pieces of meat stay on her to eat, and breeding food is never stored). **Never a named
+  animal, never a baby, never another species**; where the server's version doesn't name the baby
+  flag (`metadataKeys`), she culls nothing at all. No animals or no chest, and she refuses
+  (`McRanchNoneLines`, `McRanchNoChestLines`). In the parser it's a care verb with an animal word
+  within four words after it, read **before the farm** (« occupe-toi des animaux de la ferme »).
+  « garde » and « surveille » are not ranch verbs: guarding animals stays a patrol and must never
+  start a cull. Animal words match exactly (« lapins » is one slip from « sapins »), and « élever »
+  stays out (one slip from « enlever »).
 - **Food and armour** need no order: she eats when hunger drops below 14 (never rotten flesh and
   the like), and wears the best piece she carries for each slot on spawn and after each pickup.
   Both are our own few lines; `mineflayer-auto-eat` is ESM-only now and the armour plugin is
@@ -201,7 +214,7 @@ list: the owner removed it.
   place named with it. Read before stay and guard: a care verb with a place word within four words
   after (`BaseWords`, « ici » included), never when the verb is followed by « moi » (« protège-moi à
   la maison » is guard). Like a farm, it lasts while its keeper is on the server.
-- **Errands and activities.** Farming, fishing and patrolling are activities: they last until
+- **Errands and activities.** Farming, fishing, keeping animals and patrolling are activities: they last until
   someone says otherwise. Handing something over (Give) and putting her things away (Store) are
   errands: they pause an activity, the body goes back to it after (a fresh copy of the task, so the
   old loop sees it's no longer hers and stops), and the service gives the claim back to the
@@ -213,7 +226,7 @@ list: the owner removed it.
   (`CarriedOnly`: food, fish, tools…) take any article. Give is read before Store, whose « ranger »
   is one slip from « manger ». **Store** (« range tes affaires », or anything put « dans le coffre »)
   fills the closest chest or barrel within 16 blocks and keeps her kit: the best sword, pickaxe, axe
-  and shovel, a rod, her bow and arrows.
+  and shovel, a rod, shears, her bow and arrows.
 - **Fishing** walks to open water within 16 blocks and casts until told otherwise. No bite in 45 s
   and she reels in and casts again; only then does she click to reel in, since after any other end
   a click would cast. The catch stays on her; a remark now and then (a treasure always).
@@ -280,6 +293,76 @@ list: the owner removed it.
 - **Orders aren't rationed like remarks.** One gate per player ignores a second order within the
   same second (a double send), never a stop, so « viens » then « stop » always works. Another gate
   gives each player her « oui ? » once every 10 seconds at most (the window still opens).
+
+## Free time
+
+Between orders she has her own life. **Own tasks** (`own: true`, no player) are body-only, like
+eating: they hold no claim, report no order events, and any order ends one through `stay()`. She
+counts as free during one (`isFree`), so she can still defend family, forage and go to bed. Running
+away or defending someone never goes back to an own task: autonomy picks again by itself.
+
+`autonomyTick` (once a second) starts nothing while she's asleep, eating, sitting, busy with an
+order, **held** or in the **grace**:
+
+- « reste » and « assis » hold her for **10 minutes**: no routine, tagging along or retrieval (body
+  language still runs). Any other order that gets under way lets her go.
+- Once an order is over she waits **45 s** before starting anything, so « viens » doesn't end with
+  her walking off at once.
+
+Then, in this order: getting her things back, the routine, tagging along, nothing. **What she
+starts on her own gets a rare rolled remark** (the owner's call): the routine 25 %, tagging along
+20 %. Getting her things back always gets one.
+
+- **Routine (named places).** `McRoutine.Classify` (pure, in the checks) finds among the remembered
+  places a pen (an animal-pen word anywhere in the name: « ferme aux animaux »), a farm or a fishing
+  spot (a farm or water word first: « champ de blé », « étang »), and home (`McRoutine.HomeKeys`,
+  shared with « rentre »). The service sends them (`routine`) on spawn and after every save, move or
+  forget. By day (time 0–11499) she works in **6-minute turns**, taking the places in turn, each
+  started with the order's own checks (crops and a chest, water and a rod, animals and a chest); her
+  fishing is quiet (no catch remarks). At dusk (11500–12541) she goes home and stays there till
+  morning; the night is `autoSleepTick`'s. A spot in another dimension or over **256 blocks** away is
+  left out (her own trips are far shorter than an order's 1500); one that fails (no path, not reached
+  in 3 minutes, nothing to do there) is left out for 10 minutes, silently, with a log line. A
+  player's order always replaces her own activity, and then holds her under `McClaim` as usual. Her
+  activities pause for errands and sleep like a player's.
+- **Tagging along.** With nothing in the routine, she keeps near Papa, else Tata, when one is in
+  sight: over 8 blocks away she walks up to 4, **without sprinting** unless they're over 16 off (her
+  own `Movements`; `stay()` puts the usual one back), and every 15–40 s she takes a few slow steps
+  around them. They go out of sight, and it ends silently. Family only: the twins are the only pools.
+- **Getting her things back.** On death the body notes where, in which dimension, and whether there
+  was lava; 3 s after respawning she goes back (`retrieve`, ahead of the routine) unless they're in
+  another dimension, over 500 blocks off, in the void or in lava (`retrieveLost`). At the spot she
+  sweeps the items within 6 blocks for 20 s; her armour goes back on by itself. An order comes first;
+  the walk waits until **5 minutes after the death**, when the items despawn. Still carrying things
+  after respawning means the server keeps inventories: she doesn't go. Lines: `McRetrieveLines`
+  (said at once), `McRetrieveEmptyLines` when nothing was left (always), `McRetrievedLines` and
+  `McRetrieveLostLines` half the time.
+- **Loot.** Where something she was fighting or culling dies is a loot spot for 30 s. Guarding a
+  player or a place, between fights, she walks onto the items within 3 blocks of a loot spot, within
+  6 of her and inside what she guards; one she can't reach is left. The ranch picks up its own drops.
+  **She never picks up anything else**: a player's dropped items stay where they are.
+- **Creeper warnings.** A creeper within 4 blocks of a player (within 32 of her) and behind them
+  (over 100° off where they look) gets a warning, once per creeper; the player she guards is
+  `guardTick`'s. One per player every 15 s (`_creeperGate`), said at once (`force`): a warning can't
+  wait. `McCreeperBehindLines` has family twins.
+- **Needs.** Every 10 s the body checks her kit (best sword, pickaxe, axe and shovel, rod, shears,
+  bow): a tool at **10 %** durability or less is reported once (`wornOut`), again only for a new one;
+  one reported worn that disappears without being handed over, stored or lost in a death `broke`.
+  She also reports what she lacks (`lacking`): a rod for her own fishing, shears for sheep, food for
+  the animals, arrows when guarding with a bow, armour 2 minutes after spawning with none on, room in
+  her pockets. The service says each once every 10 minutes at most (`_needGate`, given back when the
+  remark gates swallow the line). They're about the game, so the pools are shared.
+
+## Body language
+
+Body only, no words. Her gaze is free when she isn't asleep, eating, drawing her bow or walking, and
+has nothing to do, is home, is tagging along or is between rounds at her own farm or pen (fishing,
+fights and furnaces keep it). Then she looks at whoever chatted in the last 8 s within 12 blocks,
+else at the closest player within 6, else somewhere every 5–10 s, turning smoothly (no `force`).
+**For 10 s after a player hits her she turns her back on them**, Papa included: she's hurt. When
+Papa or Tata walks up (back within 5 blocks after being out of sight or over 10 off) she looks at
+them and crouches twice, at most once every 2 minutes each; sitting, she stands up and back down.
+Not while fighting, running, defending, asleep or eating.
 
 ## Arriving
 

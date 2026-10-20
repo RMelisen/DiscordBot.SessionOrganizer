@@ -76,6 +76,16 @@ public sealed class MinecraftBodyService : BackgroundService
     // Answers whose gesture already says it: she got where she was called, she hops.
     private const double ArrivedChance = 0.5;
     private const double JumpChance = 0.5;
+    // What she starts on her own gets a rare word (the owner's call); getting her things back always does, and how it
+    // went half the time.
+    private const double RoutineChance = 0.25;
+    private const double TagAlongChance = 0.2;
+    private const double RetrievedChance = 0.5;
+    private const double RetrieveLostChance = 0.5;
+    // A creeper behind someone: one warning per player every 15 seconds, past the remark gates (it can't wait).
+    private readonly CooldownGate<string> _creeperGate = new(TimeSpan.FromSeconds(15), TimeSpan.FromHours(1));
+    // A worn or broken tool, or something she lacks: once every 10 minutes per thing.
+    private readonly CooldownGate<string> _needGate = new(TimeSpan.FromMinutes(10));
 
     private readonly DiscordSocketClient _client;
     private readonly GuildConfigService _config;
@@ -135,8 +145,6 @@ public sealed class MinecraftBodyService : BackgroundService
     // Fishing remarks, rolled on top of the kind gate: a fish is common, a treasure is not.
     private const double CatchChance = 0.3;
     private const double JunkChance = 0.5;
-    // The names a home goes by, tried in this order for « rentre ».
-    private static readonly string[] HomeKeys = { "maison", "base", "home", "chez nous", "chez moi", "qg" };
     private (string Server, string Using, bool Fallback)? _version;
     private string? _lastKick;
     private DateTimeOffset? _lastKickAt;
@@ -628,6 +636,51 @@ public sealed class MinecraftBodyService : BackgroundService
                     OnOutcome(root.GetProperty("player").GetString() ?? "",
                         root.GetProperty("why").GetString() == "noChest" ? BotResponses.McFarmNoChestLines : BotResponses.McFarmNoneLines);
                     break;
+                case "ranching":
+                    var rancher = root.GetProperty("player").GetString() ?? "";
+                    Reply(rancher, Confirm(rancher).Whispered, BotResponses.McRanchAckLines);
+                    break;
+                case "cantRanch":
+                    OnOutcome(root.GetProperty("player").GetString() ?? "",
+                        root.GetProperty("why").GetString() == "noChest" ? BotResponses.McRanchNoChestLines : BotResponses.McRanchNoneLines);
+                    break;
+                case "routine":
+                    if (RoutinePool(root.GetProperty("what").GetString()) is { } routinePool && Random.Shared.NextDouble() < RoutineChance)
+                        Remark("routine", routinePool);
+                    break;
+                case "tagAlong":
+                    OnTagAlong(root.GetProperty("player").GetString() ?? "");
+                    break;
+                case "retrieving":
+                    Remark("retrieving", BotResponses.McRetrieveLines, force: true);
+                    break;
+                case "retrieved":
+                    // Nothing left where she died always gets a word; what she got back, half the time.
+                    var retrieved = root.GetProperty("count").GetInt32();
+                    if (retrieved == 0) Remark("retrieved", BotResponses.McRetrieveEmptyLines, force: true);
+                    else if (Random.Shared.NextDouble() < RetrievedChance) Remark("retrieved", BotResponses.McRetrievedLines, null, false, retrieved);
+                    break;
+                case "retrieveLost":
+                    if (Random.Shared.NextDouble() < RetrieveLostChance) Remark("retrieved", BotResponses.McRetrieveLostLines);
+                    break;
+                case "creeperBehind":
+                    var exposed = root.GetProperty("player").GetString() ?? "";
+                    if (exposed.Length > 0 && _creeperGate.TryClaim(exposed))
+                        Remark("creeperBehind", Kin(exposed, BotResponses.McCreeperBehindLines, BotResponses.McCreeperBehindLinesOwner,
+                            BotResponses.McCreeperBehindLinesTata), exposed, force: true);
+                    break;
+                case "wornOut":
+                    var wornTool = root.GetProperty("tool").GetString() ?? "";
+                    OnNeed($"worn:{wornTool}", BotResponses.McToolWornLines, ToolName(wornTool));
+                    break;
+                case "broke":
+                    var brokenTool = root.GetProperty("tool").GetString() ?? "";
+                    OnNeed($"broke:{brokenTool}", BotResponses.McToolBrokeLines, ToolName(brokenTool));
+                    break;
+                case "lacking":
+                    var lacked = root.GetProperty("what").GetString() ?? "";
+                    if (NeedPool(lacked) is { } needPool) OnNeed(lacked, needPool);
+                    break;
                 case "hungry":
                     OnHungry(root.GetProperty("food").GetInt32());
                     break;
@@ -705,6 +758,7 @@ public sealed class MinecraftBodyService : BackgroundService
             _failures = 0;
             // Whose hits she watches for (Defending her family). Names only: offline mode lets anyone take one.
             body.Send(new { op = "family", names = new[] { _owner, _tata }.Where(n => n.Length > 0).ToArray() });
+            SendRoutineLocked(body);
         }
         _logger.LogInformation("Minecraft body spawned on {Host}:{Port}.", _host, _port);
         _ = Task.Run(async () =>
@@ -793,6 +847,7 @@ public sealed class MinecraftBodyService : BackgroundService
             McOrder.Sleep => new { op = "sleep", player },
             McOrder.Harvest => new { op = "harvest", player, crop = (request.Crop ?? McCrop.Any).ToString().ToLowerInvariant() },
             McOrder.Farm => new { op = "farm", player },
+            McOrder.Ranch => new { op = "ranch", player },
             McOrder.Give => new { op = "give", player, goods = request.Goods!.Value.ToString().ToLowerInvariant() },
             McOrder.Store => new { op = "store", player },
             McOrder.Fish => new { op = "fish", player },
@@ -916,12 +971,14 @@ public sealed class MinecraftBodyService : BackgroundService
         }
     }
 
-    // Farming, fishing and guarding a place last until someone says otherwise; errands and sleep only pause them.
-    private static bool IsActivity(McOrder? order) => order is McOrder.Farm or McOrder.Fish or McOrder.Patrol;
+    // Farming, fishing, keeping animals and guarding a place last until someone says otherwise; errands and sleep only
+    // pause them.
+    private static bool IsActivity(McOrder? order) => order is McOrder.Farm or McOrder.Fish or McOrder.Patrol or McOrder.Ranch;
 
-    // A farm or a guarded place holds her while its keeper is on the server; every other claim runs out (McClaim.Expiry).
+    // A farm, a pen or a guarded place holds her while its keeper is on the server; every other claim runs out
+    // (McClaim.Expiry).
     private bool LastingLocked(McJob job) =>
-        job.Order is McOrder.Farm or McOrder.Patrol && _players.Contains(job.Player, StringComparer.OrdinalIgnoreCase);
+        job.Order is McOrder.Farm or McOrder.Patrol or McOrder.Ranch && _players.Contains(job.Player, StringComparer.OrdinalIgnoreCase);
 
     // ---- Remembered places ----------------------------------------------------------------------
 
@@ -931,13 +988,30 @@ public sealed class MinecraftBodyService : BackgroundService
     {
         lock (_gate)
         {
-            key = wanted.Length > 0 ? wanted : HomeKeys[0];
+            key = wanted.Length > 0 ? wanted : McRoutine.HomeKeys[0];
             if (_places.TryGetValue(key, out var exact)) return exact;
-            if (wanted.Length > 0 && !HomeKeys.Contains(wanted)) return null;
-            foreach (var home in HomeKeys)
+            if (wanted.Length > 0 && !McRoutine.HomeKeys.Contains(wanted)) return null;
+            foreach (var home in McRoutine.HomeKeys)
                 if (_places.TryGetValue(home, out var found)) return found;
             return null;
         }
+    }
+
+    // The places her routine is built on (McRoutine), as spots: sent on spawn and whenever a place is saved, moved or
+    // forgotten. The body decides when to go where.
+    private void SendRoutine()
+    {
+        lock (_gate)
+            if (_body is { } body && _spawned && !_leaving)
+                SendRoutineLocked(body);
+    }
+
+    private void SendRoutineLocked(MinecraftBodyProcess body)
+    {
+        var (farm, fish, ranch, home) = McRoutine.Classify(_places.Keys);
+        object? At(string? key) =>
+            key is not null && _places.TryGetValue(key, out var p) ? new { x = p.X, y = p.Y, z = p.Z, dimension = p.Dimension } : null;
+        body.Send(new { op = "routine", farm = At(farm), fish = At(fish), ranch = At(ranch), home = At(home) });
     }
 
     // How her lines show a place's name.
@@ -976,7 +1050,11 @@ public sealed class MinecraftBodyService : BackgroundService
                 pool = existing is null ? BotResponses.McPlaceSavedLines : BotResponses.McPlaceMovedLines;
             }
         }
-        if (state is not null) SaveState(state);
+        if (state is not null)
+        {
+            SaveState(state);
+            SendRoutine();
+        }
         Reply(player, mark.Private, pool, Label(existing?.Name ?? mark.Name), existing is null ? "" : Who(existing.By));
     }
 
@@ -993,7 +1071,11 @@ public sealed class MinecraftBodyService : BackgroundService
                 state = StateLocked();
             }
         }
-        if (state is not null) SaveState(state);
+        if (state is not null)
+        {
+            SaveState(state);
+            SendRoutine();
+        }
         if (place is null) Reply(player, whispered, BotResponses.McPlaceUnknownLines, Label(McCommand.PlaceName(text, key)));
         else if (state is null) Reply(player, whispered, BotResponses.McPlaceNotYoursLines, Label(place.Name), Who(place.By));
         else Reply(player, whispered, BotResponses.McPlaceForgottenLines, Label(place.Name));
@@ -1200,6 +1282,49 @@ public sealed class MinecraftBodyService : BackgroundService
         if (!gate.TryClaim(0)) return;
         if (!Remark(starving ? "starving" : "hungry", starving ? BotResponses.McStarvingLines : BotResponses.McHungryLines))
             gate.Release(0);
+    }
+
+    // Something she lacks, a tool wearing out or one that broke: once every 10 minutes per thing, and the gate is given
+    // back when the remark gates swallow the line, as for asking for food.
+    private void OnNeed(string key, string[] pool, params object[] extra)
+    {
+        if (!_needGate.TryClaim(key)) return;
+        if (!Remark($"need:{key}", pool, null, false, extra)) _needGate.Release(key);
+    }
+
+    private static string[]? NeedPool(string what) => what switch
+    {
+        "rod" => BotResponses.McNeedRodLines,
+        "shears" => BotResponses.McNeedShearsLines,
+        "breedFood" => BotResponses.McNeedBreedFoodLines,
+        "arrows" => BotResponses.McNeedArrowsLines,
+        "armour" => BotResponses.McNeedArmourLines,
+        "space" => BotResponses.McPocketsFullLines,
+        _ => null,
+    };
+
+    private static string ToolName(string tool) => BotResponses.McToolNames.TryGetValue(tool, out var name) ? name : tool;
+
+    // Where her routine takes her on her own (the body's own task): a word now and then.
+    private static string[]? RoutinePool(string? what) => what switch
+    {
+        "farm" => BotResponses.McRoutineFarmLines,
+        "fish" => BotResponses.McRoutineFishLines,
+        "ranch" => BotResponses.McRoutineRanchLines,
+        "home" => BotResponses.McRoutineHomeLines,
+        _ => null,
+    };
+
+    // Nothing to do, so she keeps near Papa or Tata (only family: the body tags along with nobody else). Now and then a word.
+    private void OnTagAlong(string player)
+    {
+        var pool = KinOf(player) switch
+        {
+            McKin.Papa => BotResponses.McTagAlongLinesOwner,
+            McKin.Tata => BotResponses.McTagAlongLinesTata,
+            _ => null,
+        };
+        if (pool is not null && Random.Shared.NextDouble() < TagAlongChance) Remark("tagAlong", pool, player);
     }
 
     // She ran from an attacker in the middle of someone's one-off order (come, go to, gather): it's over,
