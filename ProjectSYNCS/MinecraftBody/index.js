@@ -2851,6 +2851,8 @@ function attach() {
     emit('spawned', {});
     reportPlayers();
     wearBestArmor().catch(() => {});
+    // Not in attach() itself: Mineflayer creates bot.inventory with its plugins, after createBot returns.
+    bot.inventory.on('updateSlot', scheduleInventory);
     scheduleInventory();
   });
   // Every spawn, the first and each respawn: her things to get back after a death.
@@ -2884,7 +2886,6 @@ function attach() {
     eatIfHungry().catch(() => {});
     reportHunger();
   });
-  bot.inventory.on('updateSlot', scheduleInventory);
   bot.on('heldItemChanged', scheduleInventory);
   bot.on('playerCollect', (collector) => {
     if (collector !== bot.entity) return;

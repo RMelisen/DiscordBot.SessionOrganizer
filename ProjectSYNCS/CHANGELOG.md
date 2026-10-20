@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.20.1 — 2026-10-20
+
+- Minecraft: fixed her body failing to start since 7.20.0.
+
 ## 7.20.0 — 2026-10-20
 
 - Minecraft: ask her what she carries (« syncs t'as quoi sur toi ? ») and she lists it, the biggest
