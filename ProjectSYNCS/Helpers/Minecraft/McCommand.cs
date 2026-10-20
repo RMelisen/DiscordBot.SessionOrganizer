@@ -3,6 +3,45 @@ using System.Text.RegularExpressions;
 
 namespace ProjectSYNCS.Helpers;
 
+// Orders she understands (McOrder), in one line each. « Free » orders take her from nobody: she keeps doing what she was doing.
+//
+// Moving
+//   Come        walk up to the player.
+//   Follow      keep following the player.
+//   Stay        stop and stay put (also cancels whatever she was doing).
+//   GoTo        walk to coordinates (x z, or x y z).
+//   Sit         crouch and stay put.
+// Fighting and guarding
+//   Guard       follow the player and fight the monsters around them.
+//   Patrol      guard a spot (where she stands, or a remembered place) instead of a player.
+// Working
+//   Collect     gather N of a resource (wood, stone, coal, iron, copper, gold, diamond, dirt, sand) and bring it back.
+//   Harvest     harvest the ripe crops around her, replant, bring them back.
+//   Farm        stay and keep the farm: harvest, replant, store in the chest.
+//   Ranch       stay and keep the animals: breed, shear, cull the surplus, store the drops.
+//   Fish        fish until told otherwise.
+//   Smelt       put food, ore or sand in a furnace and bring back the result.
+//   Sleep       find a bed and sleep.
+// Carrying
+//   Give        hand the player what she carries (everything, or a kind: food, tools, armour...).
+//   Store       put what she carries in the nearby chest, keeping her tools.
+// Remembered places
+//   SavePlace   remember where the player stands under a name.
+//   GoToPlace   walk to a remembered place (no name: home).
+//   Guide       lead the player to a remembered place, waiting when they fall behind.
+//   WherePlace  free: say where a remembered place is.
+//   ForgetPlace free: forget a remembered place.
+//   ListPlaces  free: list the places she remembers.
+// Small talk and gestures (all free)
+//   Where       say where she is.
+//   Jump        hop (a dance is a hop too).
+//   Wave        wave back at a greeting.
+//   Bye         wave at a goodbye.
+//   Timer       remind the player after a delay, with an optional note.
+// Not orders
+//   None        not for her, or refused (« viens pas »): she says nothing.
+//   Unknown     called by name with nothing she understands: « oui ? », then she hears the next message.
+
 /// <summary>What a player asked her in Minecraft's chat. Not stored: free to reorder.</summary>
 public enum McOrder
 {
