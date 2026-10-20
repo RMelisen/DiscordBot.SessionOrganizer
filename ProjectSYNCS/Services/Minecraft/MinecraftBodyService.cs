@@ -48,6 +48,11 @@ public sealed class MinecraftBodyService : BackgroundService
     private readonly CooldownGate<string> _callGate = new(TimeSpan.FromSeconds(10), TimeSpan.FromHours(1));
     // « Je suis avec X » to a player she's refusing, once every 10 seconds at most.
     private readonly CooldownGate<string> _busyGate = new(TimeSpan.FromSeconds(10), TimeSpan.FromHours(1));
+    // Asking for food when she has none: every 10 minutes at most, every 5 once she's too hungry to sprint.
+    private readonly CooldownGate<int> _hungryGate = new(TimeSpan.FromMinutes(10));
+    private readonly CooldownGate<int> _starvingGate = new(TimeSpan.FromMinutes(5));
+    // Minecraft stops sprinting at 6 food points and lower: she can't run away any more.
+    private const int StarvingFood = 6;
     // After her hello, before she walks up to Papa or Tata: her player list has arrived by then.
     private static readonly TimeSpan SeekPause = TimeSpan.FromSeconds(2);
     // After a bare call (« syncs »), that player's next message within this long is read as if it carried
@@ -604,6 +609,25 @@ public sealed class MinecraftBodyService : BackgroundService
                     OnOutcome(root.GetProperty("player").GetString() ?? "",
                         root.GetProperty("why").GetString() == "noChest" ? BotResponses.McFarmNoChestLines : BotResponses.McFarmNoneLines);
                     break;
+                case "hungry":
+                    OnHungry(root.GetProperty("food").GetInt32());
+                    break;
+                case "fed":
+                    var feeder = root.GetProperty("by").GetString() ?? "";
+                    if (feeder.Length > 0)
+                        Remark("fed", Kin(feeder, BotResponses.McFedLines, BotResponses.McFedLinesOwner, BotResponses.McFedLinesTata), feeder,
+                            force: true);
+                    break;
+                case "safe":
+                    Remark("safe", BotResponses.McFleeSafeLines, root.GetProperty("player").GetString());
+                    break;
+                case "cornered":
+                    // Nowhere to run: said at once, like the escalation it follows.
+                    Remark("cornered", BotResponses.McCorneredLines, root.GetProperty("player").GetString(), force: true);
+                    break;
+                case "dropped":
+                    OnDropped(root.GetProperty("player").GetString() ?? "", root.GetProperty("by").GetString() ?? "");
+                    break;
                 case "seek":
                     OnSeek(root.GetProperty("player").GetString() ?? "", root.GetProperty("outcome").GetString() == "met");
                     break;
@@ -810,6 +834,10 @@ public sealed class MinecraftBodyService : BackgroundService
             case McOrder.Wave:
                 if (Send(new { op = "wave", player }))
                     Reply(player, whispered, Kin(player, BotResponses.McWaveLines, BotResponses.McWaveLinesOwner, BotResponses.McWaveLinesTata));
+                return true;
+            case McOrder.Bye:
+                if (Send(new { op = "wave", player }))
+                    Reply(player, whispered, Kin(player, BotResponses.McByeLines, BotResponses.McByeLinesOwner, BotResponses.McByeLinesTata));
                 return true;
             case McOrder.Where:
                 lock (_gate) _askedWhere[player] = whispered;
@@ -1129,6 +1157,26 @@ public sealed class MinecraftBodyService : BackgroundService
         Reply(player, whispered, pool, extra.Length > 0 ? extra : new object[] { detail });
     }
 
+    // Hungry with nothing to eat: she asks, rationed on its own clock; louder once she can't sprint. The asking
+    // gate is given back when the remark gates swallow the line, or she'd wait ten minutes for nothing.
+    private void OnHungry(int food)
+    {
+        var starving = food <= StarvingFood;
+        var gate = starving ? _starvingGate : _hungryGate;
+        if (!gate.TryClaim(0)) return;
+        if (!Remark(starving ? "starving" : "hungry", starving ? BotResponses.McStarvingLines : BotResponses.McHungryLines))
+            gate.Release(0);
+    }
+
+    // She ran from an attacker in the middle of someone's one-off order (come, go to, gather): it's over,
+    // and they hear why, unless they're the attacker.
+    private void OnDropped(string player, string attacker)
+    {
+        var (whispered, _) = Finish(player);
+        if (player.Length == 0 || Same(player, attacker)) return;
+        Reply(player, whispered, BotResponses.McFleeDroppedLines, Who(attacker));
+    }
+
     // In bed, asked or because a player went to bed: whatever she was doing is over, whoever it was for,
     // except an activity (a farm, fishing, a guarded place): the body goes back to it when she wakes, and it stays
     // its keeper's.
@@ -1261,29 +1309,39 @@ public sealed class MinecraftBodyService : BackgroundService
         }
         Remark("hit", Kin(hitter, BotResponses.McHitAgainLines, BotResponses.McHitAgainLinesOwner, BotResponses.McHitAgainLinesTata),
             hitter, force: stage == McHitStage.Escalated);
+        // And she runs. Never from Papa: she stays, scared, and takes it.
+        if (KinOf(hitter) == McKin.Papa) return;
+        lock (_gate)
+            if (_body is { } body && _spawned && !_leaving)
+                body.Send(new { op = "flee", player = hitter });
     }
 
     /// <summary>
     /// One of her lines in Minecraft's chat, rationed per kind and overall. <paramref name="force"/> says it
     /// anyway, for the moments that can't wait, and still starts both cooldowns so nothing piles on after.
+    /// Returns whether it was said.
     /// </summary>
-    private void Remark(string kind, string[] pool, string? name = null, bool force = false)
+    private bool Remark(string kind, string[] pool, string? name = null, bool force = false)
     {
         if (force)
         {
             _kindGate.TryClaim(kind);
             _anyGate.TryClaim(0);
         }
-        else if (!_kindGate.TryClaim(kind)) return;
+        else if (!_kindGate.TryClaim(kind)) return false;
         else if (!_anyGate.TryClaim(0))
         {
             _kindGate.Release(kind);
-            return;
+            return false;
         }
         var text = string.Format(_picker.Pick(pool), name is null ? "" : Who(name));
         lock (_gate)
             if (_body is { } body && _spawned && !_leaving)
+            {
                 body.Send(new { op = "say", text });
+                return true;
+            }
+        return false;
     }
 
     private async Task PostAsync(string[] pool, string what)

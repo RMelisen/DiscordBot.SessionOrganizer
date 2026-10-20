@@ -13,6 +13,7 @@
 //      {"op":"goto","player":"…","x":0,"y":null,"z":0} · {"op":"guard","player":"…"}
 //      {"op":"collect","player":"…","resource":"wood","count":10} · {"op":"sleep","player":"…"}
 //      {"op":"seek","player":"…","spot":{"x":0,"y":64,"z":0,"dimension":"…"}|null}
+//      {"op":"flee","player":"…"}
 //      {"op":"harvest","player":"…","crop":"any|wheat|carrot|potato|beetroot|melon|pumpkin"} · {"op":"farm","player":"…"}
 //      {"op":"goto",…,"dimension":"…"|null} · {"op":"guide","player":"…","x":0,"y":64,"z":0,"dimension":"…"}
 //      {"op":"give","player":"…","goods":"all|food|fish|…"} · {"op":"store","player":"…"} · {"op":"fish","player":"…"}
@@ -28,6 +29,8 @@
 //      seek {player,outcome: met|missing} · seen {player,x,y,z,dimension}
 //      harvesting {player,crop,count} · harvested {player,crop,count,replanted,delivered} · cantHarvest {player,crop,why: none}
 //      farming {player} · cantFarm {player,why: none|noChest}
+//      fleeing {player} · safe {player} · cornered {player} · dropped {player,kind,by}
+//      hungry {food} · fed {by}
 //      given {player,goods,count,delivered} · cantGive {player,goods,why: none} · stored {player,count,full}
 //      cantStore {player,why: noChest|empty} · fishing {player} · cantFish {player,why: noRod|noWater|broke}
 //      caught {player,kind: fish|treasure|junk} · patrolling {player} · cantPatrol {player,why: tooFar|otherDimension}
@@ -1116,6 +1119,53 @@ function wakeUp() {
   resumeActivity(activity);
 }
 
+// ---- Running away ------------------------------------------------------------------------------------
+
+// C# sends `flee` when a player keeps hitting her (who counts, and that Papa never does, is decided there).
+// She sprints away until she's FleeDistance blocks from them or FleeTime has passed, then says she's safe.
+// An activity (farm, fishing, a guarded place) or a follow or guard is picked up again afterwards; anything
+// else is dropped and its player told why (`dropped`). She still never digs or builds to get away: with no
+// way out she's `cornered`, once per flight.
+const FleeDistance = 20;
+const FleeTime = 15000;
+const FollowsSomeone = new Set(['follow', 'guard']);
+
+function flee(player) {
+  const attacker = playerEntity(player);
+  if (!attacker) return;
+  if (task && task.kind === 'flee') {
+    task.until = Date.now() + FleeTime; // hit again while running: keep running
+    return;
+  }
+  const previous = task;
+  stay();
+  const resume = isActivity(previous) || (previous && FollowsSomeone.has(previous.kind)) ? previous : null;
+  task = { kind: 'flee', player, resume, until: Date.now() + FleeTime, reported: false };
+  bot.pathfinder.setGoal(new goals.GoalInvert(new goals.GoalFollow(attacker, FleeDistance)), true);
+  if (previous && !resume && previous.player && previous.kind !== 'seek' && previous.kind !== 'sleep')
+    emit('dropped', { player: previous.player, kind: previous.kind, by: player });
+  emit('fleeing', { player });
+}
+
+// Every physics tick while running: far enough, out of sight or out of time, and she stops.
+function fleeTick() {
+  if (!task || task.kind !== 'flee') return;
+  const attacker = playerEntity(task.player);
+  if (attacker && attacker.position.distanceTo(bot.entity.position) < FleeDistance && Date.now() < task.until) return;
+  const done = task;
+  task = null;
+  bot.pathfinder.setGoal(null);
+  emit('safe', { player: done.player });
+  const resume = done.resume;
+  if (!resume) return;
+  if (isActivity(resume)) return resumeActivity(resume);
+  // Back to the player she was following or guarding, if she still sees them.
+  const target = playerEntity(resume.player);
+  if (!target) return emit('cantReach', { player: resume.player, why: 'lost' });
+  task = { ...resume, foe: null, mode: null, modeTarget: null };
+  bot.pathfinder.setGoal(new goals.GoalFollow(target, 2), true);
+}
+
 // ---- Seeking someone ---------------------------------------------------------------------------------
 
 // Walks to a player C# names (who, and why, is decided there): straight to them when they're in sight,
@@ -1190,6 +1240,37 @@ async function eatIfHungry(below = 14) {
   }
 }
 
+function hasFood() {
+  return bot.inventory.items().some((i) => bot.registry.foodsByName[i.name] && !BadFood.has(i.name));
+}
+
+// Hungry with nothing to eat: she reports it each time her food bar drops a notch (C# decides whether she
+// asks), and remembers she did, so the next food she picks up is someone feeding her.
+let hungerReported = null;
+let waitingForFood = false;
+
+function reportHunger() {
+  if (bot.food >= 14 || hasFood()) {
+    hungerReported = null;
+    return;
+  }
+  if (hungerReported === bot.food) return;
+  hungerReported = bot.food;
+  waitingForFood = true;
+  emit('hungry', { food: bot.food });
+}
+
+// Food landed in her inventory after she asked: whoever stands closest gets the thanks, and she eats.
+function checkFed() {
+  if (!waitingForFood || !hasFood()) return;
+  waitingForFood = false;
+  hungerReported = null;
+  const near = bot.nearestEntity((e) => e.type === 'player' && e.username !== bot.username
+    && e.position.distanceTo(bot.entity.position) < 8);
+  if (near) emit('fed', { by: near.username });
+  eatIfHungry().catch(() => {});
+}
+
 const ArmorSlots = { helmet: 'head', chestplate: 'torso', leggings: 'legs', boots: 'feet' };
 const ArmorTiers = ['leather', 'golden', 'chainmail', 'iron', 'turtle', 'diamond', 'netherite'];
 
@@ -1219,13 +1300,23 @@ function attach() {
     wearBestArmor().catch(() => {});
   });
 
-  bot.on('physicsTick', guardTick);
+  bot.on('physicsTick', () => {
+    guardTick();
+    fleeTick();
+  });
   bot.on('physicsTick', guideTick);
   setInterval(() => { if (bot) farmRound().catch(() => {}); }, FarmRound);
   bot.on('wake', wakeUp);
-  bot.on('health', () => { eatIfHungry().catch(() => {}); });
+  bot.on('health', () => {
+    eatIfHungry().catch(() => {});
+    reportHunger();
+  });
   bot.on('playerCollect', (collector) => {
-    if (collector === bot.entity) setTimeout(() => { wearBestArmor().catch(() => {}); }, 300);
+    if (collector !== bot.entity) return;
+    setTimeout(() => {
+      wearBestArmor().catch(() => {});
+      checkFed();
+    }, 300);
   });
 
   // A monster she was fighting (or shooting) died: one less, and back to the player or the spot on the next tick.
@@ -1260,6 +1351,10 @@ function attach() {
     if (task.kind === 'seek') {
       emit('seek', { player: task.player, outcome: 'missing' });
       return stay();
+    }
+    if (task.kind === 'flee') {
+      task.reported = true;
+      return emit('cornered', { player: task.player });
     }
     task.reported = true;
     emit('cantReach', { player: task.player, why: 'noPath' });
@@ -1501,6 +1596,9 @@ input.on('line', (line) => {
         break;
       case 'farm':
         if (bot && typeof command.player === 'string') farm(command.player);
+        break;
+      case 'flee':
+        if (bot && typeof command.player === 'string') flee(command.player);
         break;
       case 'seek':
         if (bot && typeof command.player === 'string') {

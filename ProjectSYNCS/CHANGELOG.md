@@ -3,6 +3,18 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.16.0 — 2026-10-20
+
+- Minecraft: when someone keeps hitting her she runs away, says when she's safe, and goes back to
+  what she was doing. She never runs from her Papa.
+- Minecraft: hungry with nothing to eat, she asks for food (louder once she's too hungry to run),
+  and thanks whoever feeds her.
+- Minecraft: she understands many more ways to give the newer orders (« vide ton inv », « t'as du
+  poisson ? », « j'ai faim », « mets le fer au four », « reste ici et surveille », « set home »,
+  « la mine c'est où ? », « rappelle-moi dans 1h30 »…) and waves goodbye at « bonne nuit syncs ».
+- Minecraft: she no longer takes chat about yourself as an order: « je range ma chambre », « j'ai
+  pêché un poisson », « je reviens dans 5 min » or « tu manges quoi ? » don't set her off any more.
+
 ## 7.15.0 — 2026-10-20
 
 - Minecraft: « syncs vide tes poches » or « donne-moi ton poisson / ta pioche / ton fer… » hands

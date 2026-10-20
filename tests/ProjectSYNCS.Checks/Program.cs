@@ -1928,7 +1928,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     Mc("syncs va à la base 2", McOrder.GoToPlace, r => r.Place == "base 2");
     Mc("syncs rentre à la maison", McOrder.GoToPlace, r => r.Place == "maison");
     Mc("syncs rentre", McOrder.GoToPlace, r => r.Place == "");
-    Mc("syncs rentre chez nous", McOrder.GoToPlace, r => r.Place == "");
+    Mc("syncs rentre chez nous", McOrder.GoToPlace, r => r.Place == "chez nous"); // a home word: the service finds the home
     Mc("syncs va au village", McOrder.GoToPlace, r => r.Place == "village"); // unknown: the service says so
     Mc("syncs montre-moi le chemin vers la mine", McOrder.Guide, r => r.Place == "mine");
     Mc("syncs emmène-moi à la maison", McOrder.Guide, r => r.Place == "maison");
@@ -1945,6 +1945,189 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         Fail("place key and name");
     Covers("McGoodsNames", typeof(McGoods));
     Covers("McSmeltNames", typeof(McSmelt));
+
+    // The ways people type the newer orders, and ordinary chat that must stay quiet: a sweep of game-chat wordings,
+    // read with five known places. Expected: the order, optionally « :detail » (goods, smelt, place, seconds).
+    var sweepPlaces = new[] { "maison", "mine", "base", "ferme", "village" };
+    foreach (var (text, expected) in new (string, string)[]
+    {
+        //  Give
+        ("syncs vide tes poches", "Give:All"), ("syncs vide ton inv", "Give:All"),
+        ("syncs vide ton inventaire stp", "Give:All"), ("syncs donne moi tt", "Give:All"),
+        ("syncs donne tout ce que tu as", "Give:All"), ("syncs donne moi tout ce que t'as", "Give:All"),
+        ("syncs file moi tout", "Give:All"), ("syncs lâche tout", "Give:All"), ("syncs drop tout", "Give:All"),
+        ("syncs drop all", "Give:All"), ("syncs balance ton stuff", "Give:All"),
+        ("syncs montre ce que t'as", "Unknown"), ("syncs qu'est ce que t'as sur toi", "None"),
+        ("syncs rends moi mes affaires", "Give:All"), ("syncs rends moi mon stuff", "Give:All"),
+        ("syncs donne ton loot", "Give:All"), ("syncs donne moi tes poissons", "Give:Fish"),
+        ("syncs file moi les poissons", "Give:Fish"), ("syncs donne moi le poisson", "Give:Fish"),
+        ("syncs t'as du poisson ?", "Give:Fish"), ("syncs passe moi ta canne", "Give:Rod"),
+        ("syncs donne moi ta canne à pêche", "Give:Rod"), ("syncs donne moi ton épée", "Give:Weapons"),
+        ("syncs file moi ton arme", "Give:Weapons"), ("syncs prête moi ta pioche", "Give:Pickaxe"),
+        ("syncs passe moi la pioche", "Give:Pickaxe"), ("syncs donne moi une pioche", "Give:Pickaxe"),
+        ("syncs lance moi ta hache", "Give:Axe"), ("syncs donne moi tes outils", "Give:Tools"),
+        ("syncs donne moi ton arc", "Give:Bow"), ("syncs donne moi tes flèches", "Give:Arrows"),
+        ("syncs donne moi ton armure", "Give:Armour"), ("syncs enlève ton armure", "Give:Armour"),
+        ("syncs donne moi à manger", "Give:Food"), ("syncs j'ai faim", "Give:Food"),
+        ("syncs t'as à manger ?", "Give:Food"), ("syncs file moi de la bouffe", "Give:Food"),
+        ("syncs donne moi du pain", "Give:Food"), ("syncs donne moi tes graines", "Give:Seeds"),
+        ("syncs donne moi ton bois", "Give:Wood"), ("syncs rends moi mes diamants", "Give:Diamond"),
+        ("syncs donne moi tes diams", "Give:Diamond"), ("syncs file moi ton charbon", "Give:Coal"),
+        ("syncs donne moi tes carottes", "Give:Produce"), ("syncs donne moi ta récolte", "Give:Produce"),
+        ("syncs give me your fish", "Give:Fish"), ("syncs give me everything", "Give:All"),
+        //  Store
+        ("syncs range tes affaires", "Store"), ("syncs range ton inventaire", "Store"), ("syncs range tout", "Store"),
+        ("syncs range tout dans le coffre", "Store"), ("syncs vide toi dans le coffre", "Store"),
+        ("syncs mets tout dans le coffre", "Store"), ("syncs mets tes poissons dans le coffre", "Store"),
+        ("syncs dépose tout au coffre", "Store"), ("syncs pose tout dans le coffre", "Store"),
+        ("syncs stocke tout", "Store"), ("syncs vide ton inventaire dans le coffre", "Store"),
+        ("syncs tu peux ranger tes affaires ?", "Store"), ("syncs fais du rangement", "Store"),
+        ("syncs ranges toi", "Unknown"), ("syncs put everything in the chest", "Store"),
+        //  Where
+        ("syncs t'es où", "Where"), ("syncs t ou", "Where"), ("syncs tes où", "Where"), ("syncs tu es où ?", "Where"),
+        ("syncs où es tu", "Where"), ("syncs ou t'es", "Where"), ("syncs t'es où là", "Where"),
+        ("syncs t'es passée où ?", "Where"), ("syncs tu es passée où", "Where"),
+        ("syncs t'es où exactement", "Where"), ("syncs tes coords", "Where"), ("syncs tes coordonnées stp", "Where"),
+        ("syncs donne tes coords", "Where"), ("syncs envoie tes coordonnées", "Where"),
+        ("syncs ta position ?", "Where"), ("syncs t'es perdue ?", "Where"), ("syncs where are you", "Where"),
+        ("syncs where r u", "Where"), ("syncs coords", "Where"),
+        //  Sit
+        ("syncs assis", "Sit"), ("syncs assise", "Sit"), ("syncs assieds toi", "Sit"), ("syncs assis toi", "Sit"),
+        ("syncs assois-toi", "Sit"), ("syncs couchée", "Sit"), ("syncs sit", "Sit"), ("syncs accroupis toi", "Sit"),
+        ("syncs baisse toi", "Sit"),
+        //  Jump
+        ("syncs saute", "Jump"), ("syncs saute saute", "Jump"), ("syncs sautes", "Jump"),
+        ("syncs fais un saut", "Jump"), ("syncs jump", "Jump"), ("syncs sautille", "Jump"),
+        ("syncs fais des bonds", "Jump"), ("syncs danse", "Jump"),
+        //  Wave
+        ("salut syncs", "Wave"), ("slt syncs", "Wave"), ("coucou syncs", "Wave"), ("cc syncs", "Wave"),
+        ("yo syncs", "Wave"), ("wesh syncs", "Wave"), ("re syncs", "Wave"), ("bonjour syncs", "Wave"),
+        ("bonsoir syncs", "Wave"), ("hello syncs", "Wave"), ("hey syncs", "Wave"), ("hi syncs", "Wave"),
+        ("salut sync ça va ?", "Wave"), ("coucou syncs tu vas bien", "Wave"), ("syncs fais coucou", "Wave"),
+        ("syncs fais coucou à bob", "Wave"), ("syncs dis bonjour", "Wave"),
+        ("syncs dis salut à tout le monde", "Wave"), ("syncs salue tout le monde", "Wave"),
+        ("bonne nuit syncs", "Bye"), ("au revoir syncs", "Bye"), ("bye syncs", "Bye"),
+        //  Timer
+        ("syncs préviens moi dans 5 min", "Timer:300"), ("syncs previens moi dans 5mn", "Timer:300"),
+        ("syncs rappelle moi dans 10 min", "Timer:600"), ("syncs rappel moi dans 10 min", "Timer:600"),
+        ("syncs rapelle moi dans 10 min", "Timer:600"), ("syncs dans 5 min tu me préviens", "Timer:300"),
+        ("syncs dans 5 min rappelle moi de rentrer", "Timer:300"),
+        ("syncs préviens moi quand ça fait 5 min", "Timer:300"), ("syncs timer 5 min", "Timer:300"),
+        ("syncs lance un timer de 3 min", "Timer:180"), ("syncs mets un minuteur de 10 minutes", "Timer:600"),
+        ("syncs minuteur 2 min", "Timer:120"), ("syncs réveille moi dans 20 min", "Timer:1200"),
+        ("syncs rappelle moi dans 1h de nourrir les poules", "Timer:3600"),
+        ("syncs rappelle moi dans 1 heure", "Timer:3600"), ("syncs rappelle moi dans 1h30", "Timer:5400"),
+        ("syncs préviens moi dans 30 secondes", "Timer:30"), ("syncs préviens moi dans 30sec", "Timer:30"),
+        ("syncs dis moi quand 5 minutes sont passées", "Timer:300"), ("syncs remind me in 5 min", "Timer:300"),
+        ("syncs rappelle moi dans 5 min que le four est prêt", "Timer:300"),
+        ("syncs rappelle-moi dans 5 min pour la potion", "Timer:300"),
+        ("syncs dans 10 min faut que je parte, préviens moi", "Timer:600"), ("syncs ping moi dans 5", "Timer:300"),
+        //  Fish
+        ("syncs va pêcher", "Fish"), ("syncs pêche", "Fish"), ("syncs va pecher", "Fish"),
+        ("syncs pêche du poisson", "Fish"), ("syncs tu peux pêcher ?", "Fish"), ("syncs va à la pêche", "Fish"),
+        ("syncs ramène du poisson", "Fish"), ("syncs il me faut du poisson", "Fish"),
+        ("syncs va chercher du poisson", "Fish"), ("syncs attrape des poissons", "Fish"),
+        ("syncs fais de la pêche", "Fish"), ("syncs mode pêche", "Fish"), ("syncs go fish", "Fish"),
+        ("syncs fish", "Fish"), ("syncs pêche moi des poissons", "Fish"),
+        //  Smelt
+        ("syncs cuis la viande", "Smelt:Food"), ("syncs cuit la viande", "Smelt:Food"),
+        ("syncs fais cuire la viande", "Smelt:Food"), ("syncs fais cuire le poisson", "Smelt:Food"),
+        ("syncs cuisine", "Smelt:Food"), ("syncs cuisine le poisson", "Smelt:Food"),
+        ("syncs fais à manger", "Smelt:Food"), ("syncs fais griller le steak", "Smelt:Food"),
+        ("syncs cuis les patates", "Smelt:Food"), ("syncs fais cuire les pommes de terre", "Smelt:Food"),
+        ("syncs fais fondre le fer", "Smelt:Ore"), ("syncs fonds le fer", "Smelt:Ore"),
+        ("syncs fond le fer", "Smelt:Ore"), ("syncs fais fondre l'or", "Smelt:Ore"),
+        ("syncs fais des lingots", "Smelt:Ore"), ("syncs fais des lingots de fer", "Smelt:Ore"),
+        ("syncs mets le fer au four", "Smelt:Ore"), ("syncs mets la viande dans le four", "Smelt:Food"),
+        ("syncs fais du verre", "Smelt:Sand"), ("syncs cuis le sable", "Smelt:Sand"),
+        ("syncs smelt the iron", "Smelt:Ore"), ("syncs cook the meat", "Smelt:Food"),
+        ("syncs utilise le four", "Smelt:Food"),
+        //  Patrol
+        ("syncs surveille la base", "Patrol:base"), ("syncs surveille la maison", "Patrol:maison"),
+        ("syncs garde la base", "Patrol:base"), ("syncs garde la maison", "Patrol:maison"),
+        ("syncs protège la base", "Patrol:base"), ("syncs défends la base", "Patrol:base"),
+        ("syncs protège le village", "Patrol:village"), ("syncs protège les animaux", "Patrol"),
+        ("syncs surveille les vaches", "Patrol"), ("syncs monte la garde ici", "Patrol"),
+        ("syncs monte la garde devant la porte", "Patrol"), ("syncs garde l'entrée", "Patrol"),
+        ("syncs surveille ici", "Patrol"), ("syncs reste ici et surveille", "Patrol"),
+        ("syncs reste ici pour surveiller", "Patrol"), ("syncs reste là et protège", "Patrol"),
+        ("syncs garde le coin", "Patrol"), ("syncs patrouille", "Patrol"), ("syncs fais une ronde", "Patrol"),
+        ("syncs mode sentinelle", "Patrol"), ("syncs tu peux surveiller la base ?", "Patrol:base"),
+        ("syncs protège la base pendant qu'on mine", "Patrol:base"), ("syncs guard the base", "Patrol:base"),
+        //  Places
+        ("syncs retiens ici : maison", "SavePlace:maison"), ("syncs retiens cet endroit : mine", "SavePlace:mine"),
+        ("syncs souviens toi d'ici, c'est la mine", "SavePlace:mine"),
+        ("syncs enregistre ici sous le nom base", "SavePlace:base"), ("syncs note ici la mine", "SavePlace:mine"),
+        ("syncs ici c'est la maison", "SavePlace:maison"), ("syncs ici c'est chez nous", "SavePlace:maison"),
+        ("syncs c'est ici la base", "SavePlace:base"), ("syncs retiens ça comme la maison", "SavePlace:maison"),
+        ("syncs mémorise cet endroit maison", "SavePlace:maison"),
+        ("syncs sauvegarde la position : portail", "SavePlace:portail"), ("syncs set home", "SavePlace:maison"),
+        ("syncs sethome", "SavePlace:maison"), ("syncs ajoute ce lieu : mine", "SavePlace:mine"),
+        ("syncs va à la maison", "GoToPlace:maison"), ("syncs va a la mine", "GoToPlace:mine"),
+        ("syncs vas à la base", "GoToPlace:base"), ("syncs va au village", "GoToPlace:village"),
+        ("syncs rentre à la maison", "GoToPlace:maison"), ("syncs rentre", "GoToPlace"),
+        ("syncs rentre à la base", "GoToPlace:base"), ("syncs retourne à la mine", "GoToPlace:mine"),
+        ("syncs go home", "GoToPlace"), ("syncs file à la maison", "GoToPlace:maison"),
+        ("syncs cours à la maison", "GoToPlace:maison"), ("syncs dirige toi vers la mine", "GoToPlace:mine"),
+        ("syncs rejoins la base", "GoToPlace:base"), ("syncs tp maison", "GoToPlace:maison"),
+        ("syncs go mine", "GoToPlace:mine"), ("syncs à la maison", "GoToPlace:maison"),
+        ("syncs direction la mine", "GoToPlace:mine"), ("syncs montre moi le chemin de la mine", "Guide:mine"),
+        ("syncs montre moi le chemin vers la maison", "Guide:maison"), ("syncs montre moi la mine", "Guide:mine"),
+        ("syncs emmène moi à la mine", "Guide:mine"), ("syncs emmène moi à la maison", "Guide:maison"),
+        ("syncs amène moi au village", "Guide:village"), ("syncs guide moi jusqu'à la base", "Guide:base"),
+        ("syncs conduis moi à la ferme", "Guide:ferme"), ("syncs ramène moi à la maison", "Guide:maison"),
+        ("syncs c'est par où la mine ?", "WherePlace:mine"),
+        ("syncs je suis perdu, ramène moi à la base", "Guide:base"),
+        ("syncs on rentre à la maison", "GoToPlace:maison"), ("syncs où est la mine ?", "WherePlace:mine"),
+        ("syncs c'est où la maison", "WherePlace:maison"), ("syncs elle est où la base ?", "WherePlace:base"),
+        ("syncs la mine c'est où ?", "WherePlace:mine"), ("syncs coords de la mine", "WherePlace:mine"),
+        ("syncs les coordonnées de la maison", "WherePlace:maison"), ("syncs oublie la mine", "ForgetPlace:mine"),
+        ("syncs efface la maison", "ForgetPlace:maison"), ("syncs supprime la base", "ForgetPlace:base"),
+        ("syncs tes lieux", "ListPlaces"), ("syncs quels endroits tu connais ?", "ListPlaces"),
+        ("syncs tu connais quels lieux", "ListPlaces"), ("syncs liste des lieux", "ListPlaces"),
+        ("syncs tes waypoints", "ListPlaces"), ("syncs les endroits que tu connais", "ListPlaces"),
+        //  Not orders: ordinary chat that names her
+        ("syncs t'es nulle", "Unknown"), ("syncs t'es où dans le classement ?", "Where"),
+        ("syncs la base est jolie", "Unknown"), ("syncs regarde ma maison", "Unknown"),
+        ("syncs j'adore la pêche", "Unknown"), ("syncs le fer c'est cuit", "Unknown"),
+        ("syncs c'est la maison de bob", "Unknown"), ("syncs ma maison a brûlé", "Unknown"),
+        ("syncs t'as vu ma base ?", "Unknown"), ("syncs tu sais où est bob ?", "Unknown"),
+        ("syncs la mine est dangereuse", "Unknown"), ("syncs j'ai trouvé un village", "Unknown"),
+        ("syncs le four est plein", "Unknown"), ("syncs je range ma chambre", "Unknown"),
+        ("syncs bonne idée", "Unknown"), ("syncs t'es drôle", "Unknown"),
+        ("syncs elle est où ta maison ?", "WherePlace:maison"), ("syncs c'est quoi ton inventaire", "Unknown"),
+        ("syncs j'ai pêché un poisson", "Unknown"), ("syncs tu manges quoi ?", "Unknown"),
+        ("syncs je reviens dans 5 min", "Unknown"), ("syncs je pars dans 10 minutes", "Unknown"),
+        ("syncs ça fait 5 min que j'attends", "None"), ("syncs t'as des poissons ?", "Give:Fish"),
+        ("syncs la base c'est la meilleure", "Unknown"), ("syncs salut la base", "Wave"),
+        ("syncs tu me manques", "Unknown"), ("syncs t'as faim ?", "Unknown"), ("syncs je mange", "Unknown"),
+        ("syncs je pêche", "Unknown"), ("syncs je cuis la viande", "Unknown"),
+        ("syncs je range mon coffre", "Unknown"), ("syncs on se retrouve à la maison", "Unknown"),
+        ("syncs ma maison est là", "Unknown"), ("syncs c'est ma base", "Unknown"),
+        ("syncs le village est loin", "Unknown"), ("syncs t'as vu la mine ?", "Unknown"),
+        ("syncs elle est belle la base", "Unknown"), ("syncs dans 5 min on y va", "Unknown"),
+        ("syncs t'as une épée ?", "Give:Weapons"), ("syncs t'as quoi comme épée", "Give:Weapons"),
+        ("syncs ta pioche est cassée", "Unknown"), ("syncs je t'ai donné ma pioche", "Unknown"),
+        ("syncs j'ai vidé mes poches", "Unknown"), ("syncs regarde mes poches", "Unknown"),
+        ("syncs salut c'est moi", "Wave"), ("syncs dis moi tout", "Unknown"),
+        ("syncs dis moi ce que tu fais", "Unknown"), ("syncs dis moi t'es où", "Where"), ("syncs bonne nuit", "Bye"),
+        ("syncs danse pas", "None"), ("syncs saute dans le vide", "Jump"), ("syncs le four est où ?", "Unknown"),
+        ("syncs t'as du charbon ?", "Unknown"), ("syncs mets toi là", "Unknown"), ("syncs pose toi là", "Sit"),
+        ("syncs j'ai trop faim", "Give:Food"), ("syncs viens on rentre", "Come"),
+        ("syncs on va à la mine", "GoToPlace:mine"), ("syncs je vais à la mine", "Unknown"),
+        ("syncs je retourne à la base", "Unknown"), ("syncs je rentre", "Unknown"),
+        ("syncs tu rentres ?", "GoToPlace"), ("syncs rentre pas", "None"), ("syncs garde mes affaires", "Patrol"),
+        ("syncs protège mes affaires", "Patrol"), ("syncs surveille mes coffres", "Patrol"),
+        ("syncs la base est protégée ?", "Unknown"), ("syncs reste ici", "Stay"),
+        ("syncs reste là je reviens", "Stay"), ("syncs reste ici et attends", "Stay"),
+        ("syncs t'es où ? je te vois pas", "Where"), ("syncs coucou t'es où", "Where"),
+    })
+    {
+        var r = McCommand.Parse(text, mcNames, false, sweepPlaces);
+        var got = r.Order + (r.Goods is { } g ? ":" + g : "") + (r.Smelt is { } sm ? ":" + sm : "") + (r.Place is { } pl ? ":" + pl : "")
+                  + (r.Seconds > 0 ? ":" + r.Seconds : "");
+        if (got != expected && !got.StartsWith(expected + ":")) Fail($"sweep « {text} »: got {got}, expected {expected}");
+    }
 
     // SRV only where the client library does it: a name, on the default port.
     if (!McAddress.NeedsLookup("play.example.net", 25565) || McAddress.NeedsLookup("play.example.net", 25566)
@@ -2003,8 +2186,8 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         "McPlaceUnknownLines", "McPlaceForgottenLines", "McPlaceWhereLines", "McPlaceOtherDimensionLines", "McPlaceGoAckLines",
         "McPlaceArrivedLines", "McGuideAckLines", "McGuideArrivedLines", "McPatrolPlaceAckLines", "McTripTooFarLines",
     };
-    string[] McFamilyPools = { "McCalledLines", "McDeathLines", "McHitByPlayerLines", "McHitAgainLines", "McAdvancementLines", "McComeAckLines",
-        "McFollowAckLines", "McGuardAckLines", "McCollectDoneLines", "McWaveLines", "McGiveDoneLines" };
+    string[] McFamilyPools = { "McCalledLines", "McDeathLines", "McHitByPlayerLines", "McHitAgainLines", "McFedLines", "McAdvancementLines", "McComeAckLines",
+        "McFollowAckLines", "McGuardAckLines", "McCollectDoneLines", "McWaveLines", "McGiveDoneLines", "McByeLines" };
     foreach (var p in McFamilyPools)
     foreach (var twin in new[] { p + "Owner", p + "Tata" })
     {
@@ -2019,7 +2202,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
              "McCalledLines", "McGoToAckLines", "McGoToArrivedLines", "McTripTooFarLines", "McGuardAckLines", "McGuardKillLines",
              "McCollectAckLines", "McCollectDoneLines", "McCollectKeptLines", "McCollectEmptyLines", "McCollectNoneLines",
              "McCollectNoToolLines", "McSleepLines", "McNoBedLines", "McNotNightLines", "McBedFailedLines",
-             "McBusyLines", "McTakenLines", "McHitAgainLines", "McHarvestAckLines", "McHarvestDoneLines", "McHarvestKeptLines", "McHarvestEmptyLines",
+             "McBusyLines", "McTakenLines", "McHitAgainLines", "McFleeSafeLines", "McCorneredLines", "McFleeDroppedLines", "McHungryLines", "McStarvingLines", "McHarvestAckLines", "McHarvestDoneLines", "McHarvestKeptLines", "McHarvestEmptyLines",
              "McHarvestNoneLines", "McFarmAckLines", "McFarmNoneLines", "McFarmNoChestLines", "McSeekMetLinesOwner", "McSeekMetLinesTata", "McSeekMissLinesOwner", "McSeekMissLinesTata",
              "McGiveLostLines", "McGiveNoneLines", "McGiveEmptyLines", "McGiveUnknownLines", "McStoreDoneLines", "McStoreFullLines",
              "McStoreEmptyLines", "McStoreNoChestLines", "McSitLines", "McJumpLines", "McWhereLines", "McTimerSetLines", "McTimerDoneLines",

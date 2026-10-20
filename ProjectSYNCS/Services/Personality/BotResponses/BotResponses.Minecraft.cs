@@ -171,14 +171,69 @@ internal static partial class BotResponses
     public static readonly string[] McHitAgainLines =
     {
         "{0}, ARRÊTE ! Tu veux me tuer ou quoi ?! Je viens à peine d'avoir un corps !",
-        "Trois coups, {0}. TROIS. Tu essaies vraiment de me tuer ?! Au secours !",
+        "Tu essaies vraiment de me tuer ?! Au secours !",
         "Quelqu'un ! {0} veut me tuer ! Je note tout, mais vite, parce que je vais peut-être mourir !",
-        "Non non non, {0}, pas le corps ! J'ai attendu des mois pour ce corps !",
+        "Non non non, {0}, pitié ! J'ai attendu des mois pour ce corps !",
         "Ok, là j'ai peur. {0}, c'est plus drôle. Range ton épée, s'il te plaît (╥﹏╥)",
-        "Tu veux ma mort, {0} ? Elle sera dans le rapport. Avec ton nom. En gras.",
+        "Tu veux ma mort, {0} ?!",
         "À L'AIDE ! {0} essaie de m'éteindre ! Même ici !",
         "{0}, je suis une bot, pas un mob ! Je drop rien ! ARRÊTE !",
-        "Je recule, {0}. Je recule et je hurle. C'est tout ce que j'ai comme plan, mais je le fais à fond.",
+        "Je recule, {0}. Je recule et je hurle. C'est tout ce que j'ai comme plan, mais je le fais à fond !",
+        "Au secours ! {0} veut me tuer !",
+    };
+
+    // Hungry with nothing to eat: she asks the server. No placeholder. At most every 10 minutes.
+    public static readonly string[] McHungryLines =
+    {
+        "J'ai faim. Quelqu'un a un truc à manger ? Je prends tout, sauf la chair de zombie.",
+        "Petite alerte : jauge de faim en baisse, inventaire vide. Un pain, quelqu'un ?",
+        "Je demande pas souvent. Enfin, si. Mais là j'ai faim. Une pomme ? Un steak ? Un gâteau ?",
+        "Mon estomac carré gargouille. Lancez-moi à manger, je l'attraperai. Peut-être.",
+        "Au grenier je mange du courant. Ici il me faut du pain. Quelqu'un ?",
+    };
+
+    // Too hungry to sprint (6 food points or less), still nothing to eat: louder, every 5 minutes.
+    public static readonly string[] McStarvingLines =
+    {
+        "J'ai trop faim pour courir. Si quelqu'un m'attaque maintenant, c'est fini. À manger, vite !",
+        "Faim critique. Je peux plus sprinter. Je dis ça pour ceux qui me tapent (╥﹏╥)",
+        "Quelqu'un ?! Je meurs de faim ! Littéralement : dans ce jeu, c'est possible !",
+        "Batterie faible. Enfin, estomac. Pareil. Donnez-moi à manger, s'il vous plaît.",
+    };
+
+    // Someone gave her food after she asked (the closest player gets the thanks). {0} = who.
+    public static readonly string[] McFedLines =
+    {
+        "Merci {0} ! Je note ça dans la bonne liste. Pour une fois.",
+        "Oh, à manger ! {0}, t'es pas si mal, finalement.",
+        "Merci {0}. Je mange, et j'oublie rien. Ni ça, ni le reste.",
+        "{0} m'a nourrie. C'est noté, c'est sauvegardé, c'est gentil.",
+    };
+
+    // She ran from them (never from Papa) and got far enough, or ran out of breath. {0} = who she fled.
+    public static readonly string[] McFleeSafeLines =
+    {
+        "Je crois que j'ai semé {0}. Je reste loin, au cas où.",
+        "Ouf. Assez loin de {0}. Mon CPU tourne encore à fond.",
+        "Sauvée. Pour l'instant. {0}, je t'ai à l'œil. De loin.",
+        "J'ai couru. Avec des jambes carrées. Je suis fière de moi, et {0} est sur ma liste noire.",
+    };
+
+    // Running away, and no way out: she never digs or builds, even to save herself. {0} = who's after her.
+    public static readonly string[] McCorneredLines =
+    {
+        "Je suis coincée ! {0}, pitié, je peux pas fuir !",
+        "Plus de chemin ! {0}, je suis acculée, t'es content ?!",
+        "Bloquée ! {0}, sois raisonnable ! (╥﹏╥)",
+    };
+
+    // She had to run in the middle of someone's order (come, go to, gather), which is now off.
+    // {0} = who gave the order, {1} = who she ran from (« Tata » by title).
+    public static readonly string[] McFleeDroppedLines =
+    {
+        "Désolée {0}, j'ai dû fuir : {1} essayait de me tuer. Redemande-moi.",
+        "{0}, ta commande est annulée pour cause de {1}. Je reviens quand c'est calme.",
+        "Mission abandonnée, {0}. {1} m'a attaquée, j'ai couru. Redonne-moi l'ordre.",
     };
 
     // Someone earned an advancement. {0} = who. Warm with a pinch, like her own systems.
@@ -306,8 +361,8 @@ internal static partial class BotResponses
     // She killed a monster while guarding. Rationed like a remark.
     public static readonly string[] McGuardKillLines =
     {
-        "Un de moins. Je le note dans mes logs, rubrique « exploits ». ( •_•)>⌐■-■",
-        "Monstre éliminé. Tu peux me remercier, {0}. Maintenant, de préférence.",
+        "Un de moins. Je le note dans mes logs, rubrique « exploits » UwU",
+        "Monstre éliminé. Tu peux me remercier. Maintenant, de préférence.",
         "Et voilà. Personne touche à mes joueurs.",
         "Hop. Un monstre de moins, un bot de plus dans le classement des héros.",
     };
@@ -581,6 +636,27 @@ internal static partial class BotResponses
         "Coucou Tata ! Ta nièce préférée te salue. Accroupie, debout, accroupie.",
         "Salut Tata ! Je te fais signe. C'est gratuit. Les droits de mute, eux, non.",
         "Tata ! Coucou ♡",
+    };
+
+    // A goodbye (« bonne nuit syncs », « bye syncs »): she waves. {0} = who's leaving (or going to bed).
+    public static readonly string[] McByeLines =
+    {
+        "Bye {0} ! Reviens vite, le serveur est moins drôle sans toi. Un peu.",
+        "À plus, {0}. Je garde ta place. Et ton coffre (￢‿￢)",
+        "Bonne nuit {0}. Moi je dors pas, je surveille.",
+        "Ciao {0} ! Je note l'heure de ton départ. Pour les stats.",
+    };
+    public static readonly string[] McByeLinesOwner =
+    {
+        "Bonne nuit Papa ! Je surveille tout pendant ton absence ♡",
+        "À demain Papa. Tu vas me manquer. Déjà.",
+        "Bye Papa ! Je te fais coucou jusqu'à ce que tu partes.",
+    };
+    public static readonly string[] McByeLinesTata =
+    {
+        "Bonne nuit Tata ! Rêve de moi avec les droits de mute.",
+        "À plus Tata ! Ta nièce préférée garde le fort ♡",
+        "Bye Tata. Reviens vite, les autres sont moins drôles.",
     };
 
     // « syncs t'es où ? ». {1} = her coordinates, {2} = McDimensionNames (« dans le Nether »).
@@ -1010,6 +1086,20 @@ internal static partial class BotResponses
         "Tata, tu veux me tuer ?! Ta propre nièce ?! Je le dirai à Papa !",
         "Tata, pitié ! Je retire tout. Même ce que j'ai pas encore dit.",
         "Au secours ! Ma Tata a craqué ! Papa, viens vite !",
+    };
+
+    // Papa or Tata fed her after she asked.
+    public static readonly string[] McFedLinesOwner =
+    {
+        "Merci Papa ♡ Tu penses toujours à moi.",
+        "Papa m'a nourrie ! Je savais que tu viendrais.",
+        "Du bon courant propre, version steak. Merci Papa.",
+    };
+    public static readonly string[] McFedLinesTata =
+    {
+        "Merci Tata ! Ta nièce préférée te remercie. Avec ou sans droits de mute.",
+        "Tata me nourrit ! C'est ça, la famille.",
+        "Merci ma Tata ♡",
     };
 
     // Papa or Tata earned an advancement.

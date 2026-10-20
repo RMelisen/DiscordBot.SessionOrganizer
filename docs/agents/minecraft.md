@@ -87,6 +87,18 @@ with one slip (`Close`: a letter added, dropped, changed or two swapped), and so
 shorter words must be exact, because at four or five letters one slip makes another word
 (« viens » / « liens »).
 
+**The slip cuts both ways at six letters too**: « ranger » / « manger », « ranges » / « manges »,
+« préviens » / « reviens », « pêches » / « poches ». Such a word stays out of a list alone and only
+comes in a longer phrase (« ranger tes affaires », « préviens-moi »). Check any new six-letter
+word against the common words one slip away.
+
+**Talk about oneself is not an order.** A phrase right after « je » doesn't count (« je range ma
+chambre », « ça fait 5 min que j'attends »), unless it starts with it (« j'ai faim »); nor does one
+right after « ai » or « as », the past tense (« je t'ai donné ma pioche », « j'ai vidé mes
+poches »). A few one-word verbs are nouns or participles after certain words (`NounAfter`: « la
+pêche », « j'ai pêché », « c'est cuit », « au fond », « la base est protégée ? »), looked up by the
+word as typed, since the slip lets « pêché » match « pêcher ».
+
 **Counts** come from a number anywhere (« 20 », « x20 », « 20x »), else from a quantity in words
 right before the resource (« dix bûches », « une stack de pierre », « une dizaine de bûches »),
 else 10. Only right before: « du bois pour une maison » isn't one log. **Coordinates** accept
@@ -152,6 +164,12 @@ list: the owner removed it.
   the like), and wears the best piece she carries for each slot on spawn and after each pickup.
   Both are our own few lines; `mineflayer-auto-eat` is ESM-only now and the armour plugin is
   unmaintained.
+- **With nothing to eat, she asks.** Below 14 food with no edible item, the body reports `hungry`
+  each time the bar drops a notch; the service decides: `McHungryLines` every 10 minutes at most,
+  `McStarvingLines` every 5 once she's at 6 or less (Minecraft stops her sprinting there, so she
+  can't run away). Each ask has its own gate, given back when the remark gates swallow the line.
+  The next food she picks up after asking is someone feeding her: the closest player within 8
+  blocks gets `McFedLines` (Papa and Tata their twins), said at once, and she eats.
 - **Guard and patrol never hit a creeper.** Its blast would land on the player she guards. With a
   bow and arrows she shoots it from 6 blocks or more (our own few lines, aimed a little high for the
   drop, not `mineflayer-hawkeye`); without, she keeps out of its reach and warns once per creeper
@@ -266,6 +284,15 @@ catches everything; nothing escapes the loop.
   (`Remark(…, force: true)`, which still starts both cooldowns). Further hits in the streak keep that
   pool, rationed like any remark. Streaks are per player and start over after a minute's pause, or
   when she leaves. Papa's twin is scared and hurt, never angry; Tata's is panicked bargaining.
+- **And she runs** (`flee`): from the escalating hit on, the service sends `flee` with the attacker,
+  **never for Papa**, the owner's call: she stays and takes it, scared. The body sprints away
+  (`GoalInvert(GoalFollow(attacker, 20))`) until she's 20 blocks off, out of sight, or 15 seconds
+  have passed (a new hit while running extends it), then reports `safe` (`McFleeSafeLines`, a
+  rationed remark). Still no digging or building: with no way out she's `cornered`
+  (`McCorneredLines`, said at once). An activity (`resumeActivity`) or a follow or guard is picked
+  up again after; a one-off order is dropped and its player told why (`dropped` →
+  `McFleeDroppedLines`), unless they're the attacker. She sprints only while her food bar is above
+  6, so she runs better when she has something to eat.
 - In-game lines are **plain text under 256 characters**: no custom emotes, no sticker tags (the
   checks enforce it).
 - **Kaomoji in game must be drawable by Minecraft's font**, which covers the Basic Multilingual
