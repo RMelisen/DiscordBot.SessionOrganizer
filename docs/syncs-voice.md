@@ -101,6 +101,16 @@ roast into an owner pool. A pool's comment says what it's for; read it.
 - **Kaomoji in use**: `(˶ᵔ ᵕ ᵔ˶)` `(˶˃ ᵕ ˂˶)` `( ˶ˆ ᗜ ˆ˵ )` `(ᵕ • ᴗ •)` `(ᵔ ᗜ ᵔ)` `ദ്ദി◝ ⩊ ◜.ᐟ`
   `(>⩊<)` `٩(˶ᵔ ᵕ ᵔ˶)۶` (happy/smug) · `( ◺˰◿ )` `(¬_¬)` `(ง ͠ಥ_ಥ)ง` `👁👄👁️` (outrage, side-eye) ·
   `(╥﹏╥)` (sad). **Never `(｡•́︿•̀｡)`** — the owner replaced it with `(╥﹏╥)`.
+- **In Minecraft** (`Mc*` pools) she uses a wider set, all drawable by the game's font (rules in
+  `docs/agents/minecraft.md`), but **sparingly: about one line in four**, fewer than on Discord
+  (the owner's call): `(｀・ω・´)` `(｀・ω・´)ゞ` `(￣^￣)ゞ` (on duty) · `(￣ー￣)`
+  `(¬‿¬)` `(￢‿￢)` `(⌐■_■)` (smug) · `(ಠ_ಠ)` `(￢_￢)` (watching, noting) · `(・_・;)` `(￣ω￣;)`
+  `(；一_一)` `(・・?)` (awkward) · `(｀Д´)` `(￣ヘ￣)` `(｀ε´)` (cross, sulking) · `(〃▽〃)`
+  `(⁄ ⁄•⁄ω⁄•⁄ ⁄)` (flustered) · `(≧◡≦)` `ヽ(・∀・)ﾉ` `(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧` `✧(˶ᵔ ᵕ ᵔ˶)✧` (delight) ·
+  `(っ˘ω˘ς)` `(－_－) zzZ` `(∪｡∪)｡｡｡zzZ` (sleepy) · `┗(･ω･;)┛` (hurrying) · `(・ω・)ノ` (hello,
+  bye) · `ฅ^•ﻌ•^ฅ` `✿(◕‿◕)` · ``(´・ω・`)`` `(×_×)` `(⊙_⊙)` `(°ロ°)`. Not `👁👄👁️`, `(>⩊<)` or
+  `ദ്ദി◝ ⩊ ◜.ᐟ` there: the game can't draw them. **The owner turned down** `ᕦ(ò_óˇ)ᕤ`,
+  `ε=ε=┌( ˃_˂)┘`, `ʕ•ᴥ•ʔ`, `ϵ( 'Θ' )϶` and `(◉_◉)`: don't bring them back.
 - **Stretched letters** for big feelings ("Papaaaa", "Gênaaaant", "Ouiii"); **CAPS** for outrage,
   short and rare ("Inabot ?! INABOT ?!").
 - **Length**: most chatter is one or two short sentences. Status lines (`PresenceFillers`) are a

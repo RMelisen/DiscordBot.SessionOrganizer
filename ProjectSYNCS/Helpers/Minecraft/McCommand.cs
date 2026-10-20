@@ -25,6 +25,80 @@ public enum McOrder
     Harvest,
     /// <summary>Stay where she is and keep the farm: harvest what ripens, replant, store it in the chest.</summary>
     Farm,
+    /// <summary>Hand the player what she carries (<see cref="McRequest.Goods"/>; null: something she doesn't know).</summary>
+    Give,
+    /// <summary>Put what she carries in the chest nearby, keeping her tools.</summary>
+    Store,
+    /// <summary>Say where she is. Takes her from nobody.</summary>
+    Where,
+    /// <summary>Crouch and stay put.</summary>
+    Sit,
+    /// <summary>Hop. Takes her from nobody.</summary>
+    Jump,
+    /// <summary>A greeting (« salut syncs », « fais coucou »): she waves back. Takes her from nobody.</summary>
+    Wave,
+    /// <summary>Remind the player in <see cref="McRequest.Seconds"/>, of <see cref="McRequest.Note"/> if any. Takes her from nobody.</summary>
+    Timer,
+    /// <summary>Fish until told otherwise.</summary>
+    Fish,
+    /// <summary>Guard a spot rather than a player: where she stands, or <see cref="McRequest.Place"/>.</summary>
+    Patrol,
+    /// <summary>Put <see cref="McRequest.Smelt"/> she carries in a furnace nearby and bring back the result.</summary>
+    Smelt,
+    /// <summary>Remember where the player stands as <see cref="McRequest.Place"/> (null: no name given).</summary>
+    SavePlace,
+    /// <summary>Walk to a remembered place (<see cref="McRequest.Place"/>; empty: home).</summary>
+    GoToPlace,
+    /// <summary>Lead the player to a remembered place, waiting when they fall behind.</summary>
+    Guide,
+    /// <summary>Say where a remembered place is. Takes her from nobody.</summary>
+    WherePlace,
+    /// <summary>Forget a remembered place. Takes her from nobody.</summary>
+    ForgetPlace,
+    /// <summary>List the places she remembers. Takes her from nobody.</summary>
+    ListPlaces,
+}
+
+/// <summary>What she can be asked to hand over. The body knows each by its lower-case name. Not stored.</summary>
+public enum McGoods
+{
+    /// <summary>Everything in her pockets (not what she wears).</summary>
+    All,
+    Food,
+    Fish,
+    Weapons,
+    Tools,
+    Pickaxe,
+    Axe,
+    Shovel,
+    Rod,
+    Bow,
+    Arrows,
+    /// <summary>Her armour, the pieces she wears included.</summary>
+    Armour,
+    Seeds,
+    /// <summary>What a field gives: wheat, carrots, potatoes, beetroot, melon slices, pumpkins.</summary>
+    Produce,
+    Wood,
+    Stone,
+    Coal,
+    Iron,
+    Copper,
+    Gold,
+    Diamond,
+    Dirt,
+    Sand,
+}
+
+/// <summary>What she can be asked to put in a furnace. The body knows each by its lower-case name. Not stored.</summary>
+public enum McSmelt
+{
+    /// <summary>Raw meat, fish, potatoes, kelp.</summary>
+    Food,
+    /// <summary>Raw iron, gold and copper, and their ores.</summary>
+    Ore,
+    /// <summary>Sand, for glass.</summary>
+    Sand,
 }
 
 /// <summary>What she can be sent to harvest. The body knows each by its lower-case name. Not stored.</summary>
@@ -55,8 +129,10 @@ public enum McResource
 }
 
 /// <summary>An order, with what it needs: the coordinates for GoTo (2 numbers: x z; 3: x y z), the resource and count
-/// for Collect, the crop for Harvest.</summary>
-public readonly record struct McRequest(McOrder Order, int[]? Coordinates = null, McResource? Resource = null, int Count = 0, McCrop? Crop = null)
+/// for Collect, the crop for Harvest, the goods for Give, what to smelt, a place's key (<see cref="McCommand.PlaceKey"/>),
+/// a timer's length and note.</summary>
+public readonly record struct McRequest(McOrder Order, int[]? Coordinates = null, McResource? Resource = null, int Count = 0,
+    McCrop? Crop = null, McGoods? Goods = null, McSmelt? Smelt = null, string? Place = null, int Seconds = 0, string? Note = null)
 {
     public static readonly McRequest Nothing = new(McOrder.None);
 }
@@ -226,6 +302,216 @@ public static class McCommand
         (McResource.Sand, new[] { "sable", "sand" }),
     };
 
+    // ---- Handing things over and putting them away ----
+
+    private static readonly string[] GiveAllPhrases =
+    {
+        "vide tes poches", "vides tes poches", "vide ton inventaire", "vide ton sac", "vide toi", "donne moi tout", "donne nous tout",
+        "donne tout", "file moi tout", "passe moi tout", "lance moi tout", "jette tout", "lache tout", "balance tout",
+        "rends moi tout", "donne moi ce que t as", "donne moi tout ce que t as", "file moi ce que t as", "donne moi ton stuff",
+        "file moi ton stuff", "donne moi tes affaires", "rends moi mes affaires", "rends moi mon stuff", "donne moi ton inventaire",
+        "drop all", "drop everything", "give me everything", "give me all", "empty your pockets", "empty your inventory",
+    };
+    private static readonly string[] GiveVerbs =
+    {
+        "donne moi", "donne nous", "donne", "donnes moi", "file moi", "file nous", "passe moi", "passe nous", "lance moi",
+        "jette moi", "rends moi", "rend moi", "rends nous", "envoie moi", "balance moi", "prete moi", "file", "passe", "rends",
+        "lache", "jette", "me donner", "me passer", "me rendre", "me filer", "me preter", "nous donner", "give me", "give", "drop",
+        "toss me", "hand me",
+    };
+    // The player's things or hers (« rends-moi mes diamants », « donne-moi ton fer »): what she carries, never something to fetch.
+    private static readonly string[] Possessives = { "ton", "ta", "tes", "votre", "vos", "mon", "ma", "mes", "your", "my" };
+    private static readonly string[] FishWords =
+    {
+        "poisson", "poissons", "poiscaille", "saumon", "saumons", "morue", "morues", "cabillaud", "cabillauds", "fish", "salmon", "cod",
+    };
+    private static readonly (McGoods Goods, string[] Words)[] GoodsWords =
+    {
+        (McGoods.All, new[] { "stuff", "affaires", "inventaire", "truc", "trucs", "items", "objets", "loot", "butin", "inventory" }),
+        (McGoods.Fish, FishWords),
+        (McGoods.Food, new[] { "bouffe", "nourriture", "manger", "provisions", "viande", "viandes", "steak", "steaks", "pain", "pains",
+            "pomme", "pommes", "boeuf", "porc", "poulet", "mouton", "food", "bread", "meat" }),
+        (McGoods.Weapons, new[] { "arme", "armes", "epee", "epees", "sword", "weapon", "weapons" }),
+        (McGoods.Tools, new[] { "outil", "outils", "tools" }),
+        (McGoods.Pickaxe, new[] { "pioche", "pioches", "pickaxe", "pick" }),
+        (McGoods.Axe, new[] { "hache", "haches", "axe" }),
+        (McGoods.Shovel, new[] { "pelle", "pelles", "shovel" }),
+        (McGoods.Rod, new[] { "canne", "cannes", "rod" }),
+        (McGoods.Bow, new[] { "arc", "arcs", "bow" }),
+        (McGoods.Arrows, new[] { "fleche", "fleches", "arrows", "arrow" }),
+        (McGoods.Armour, new[] { "armure", "armures", "armor", "armour" }),
+        (McGoods.Seeds, new[] { "graine", "graines", "seeds" }),
+        (McGoods.Wood, new[] { "bois", "buche", "buches", "planche", "planches", "wood", "logs" }),
+        (McGoods.Stone, new[] { "pierre", "pierres", "cobble", "cailloux", "stone" }),
+        (McGoods.Coal, new[] { "charbon", "coal" }),
+        (McGoods.Iron, new[] { "fer", "iron" }),
+        (McGoods.Copper, new[] { "cuivre", "copper" }),
+        (McGoods.Gold, new[] { "or", "gold" }),
+        (McGoods.Diamond, new[] { "diamant", "diamants", "diams", "diam", "diamond", "diamonds" }),
+        (McGoods.Dirt, new[] { "terre", "dirt" }),
+        (McGoods.Sand, new[] { "sable", "sand" }),
+    };
+    // Goods she can't be sent to fetch: after a give verb, any article will do (« donne-moi du poisson »). The others
+    // need a possessive, or « donne-moi du fer » would stop being the gathering order it has always been.
+    private static readonly HashSet<McGoods> CarriedOnly = new()
+    {
+        McGoods.All, McGoods.Food, McGoods.Fish, McGoods.Weapons, McGoods.Tools, McGoods.Pickaxe, McGoods.Axe, McGoods.Shovel,
+        McGoods.Rod, McGoods.Bow, McGoods.Arrows, McGoods.Armour, McGoods.Seeds,
+    };
+    private static readonly string[] StorePhrases =
+    {
+        "range tes affaires", "range ton stuff", "range ton inventaire", "range tout", "range", "ranges", "ranger",
+        "depose tout", "depose tes affaires", "depose", "deposer", "stocke", "stocker", "stock", "store", "stash", "deposit",
+    };
+    // With a chest word, putting anything away is storing it (« vide tes poches dans le coffre »).
+    private static readonly string[] ChestWords = { "coffre", "coffres", "tonneau", "tonneaux", "baril", "barils", "chest", "chests", "barrel", "barrels" };
+    private static readonly string[] IntoChestVerbs = GiveVerbs.Concat(new[]
+    {
+        "mets", "met", "mettre", "vide", "vides", "jette", "balance", "fous", "fourre", "range", "depose", "put", "dump",
+    }).Distinct().ToArray();
+
+    // ---- Fishing and cooking ----
+
+    private static readonly string[] FishPhrases =
+    {
+        // Not « pêches »: one slip from « poches ».
+        "peche", "pecher", "va pecher", "aller pecher", "va a la peche", "fais de la peche", "part a la peche",
+        "a la peche", "pecheuse", "mode peche", "fish", "fishing", "go fish", "go fishing",
+    };
+    private static readonly string[] SmeltPhrases =
+    {
+        "cuis", "cuire", "fais cuire", "faire cuire", "fait cuire", "cuisiner", "fais griller", "griller", "fais rotir",
+        "fais fondre", "faire fondre", "fondre", "fonds", "smelt", "cook", "enfourne", "mets au four", "met au four",
+        "mets a cuire", "utilise le four", "fais du verre", "faire du verre",
+    };
+    private static readonly (McSmelt Smelt, string[] Words)[] SmeltWords =
+    {
+        (McSmelt.Food, new[] { "viande", "viandes", "boeuf", "porc", "poulet", "mouton", "lapin", "steak", "steaks", "cotelette",
+            "cotelettes", "poisson", "poissons", "saumon", "morue", "cabillaud", "patate", "patates", "bouffe", "nourriture",
+            "algue", "algues", "varech", "food", "meat", "fish", "kelp" }),
+        (McSmelt.Ore, new[] { "fer", "or", "cuivre", "minerai", "minerais", "metal", "metaux", "lingot", "lingots", "ore", "ores",
+            "iron", "gold", "copper" }),
+        (McSmelt.Sand, new[] { "sable", "verre", "vitre", "vitres", "sand", "glass" }),
+    };
+
+    // ---- Small things: sitting, hopping, waving, telling where she is ----
+
+    private static readonly string[] SitPhrases =
+    {
+        "assis", "assise", "assieds toi", "assied toi", "assis toi", "assoie toi", "assois toi", "t asseoir", "s asseoir",
+        "asseoir", "pose toi", "sit", "sit down",
+    };
+    private static readonly string[] JumpPhrases = { "saute", "sautes", "sauter", "sautille", "fais un saut", "fais des sauts", "bondis", "jump" };
+    // Greetings: she waves back. Read last, so « salut syncs viens » is still a come.
+    private static readonly string[] WavePhrases =
+    {
+        "fais coucou", "fais un coucou", "fais nous coucou", "fais moi coucou", "dis coucou", "dis bonjour", "dis salut",
+        "dis bonsoir", "fais signe", "fais un signe", "fais nous signe", "salue", "salue moi", "salue nous", "coucou", "kikou",
+        "salut", "slt", "bonjour", "bjr", "bonsoir", "bsr", "hello", "hey", "hi", "yo", "wesh", "cc", "re", "salam", "wave",
+        "say hi",
+    };
+    private static readonly string[] WherePhrases =
+    {
+        "t es ou", "tu es ou", "ou es tu", "ou t es", "ou tu es", "ou est ce que tu es", "ou est ce que t es", "ou te trouves tu",
+        "ou tu te trouves", "tes coordonnees", "tes coords", "tes coordos", "ta position", "ta pos", "donne ta position",
+        "coordonnees", "coords", "position", "where are you", "where r u", "your coords", "your position",
+    };
+
+    // ---- Timers ----
+
+    private static readonly string[] TimerVerbs =
+    {
+        "previens moi", "previens nous", "previens", "prevenir", "me prevenir", "rappelle moi", "rappelle nous", "me rappeler",
+        "nous rappeler", "dis moi", "fais moi signe", "ping moi", "reveille moi", "alerte moi", "sonne", "timer", "minuteur",
+        "chrono", "chronometre", "alarme", "compte a rebours", "remind me", "ping me", "tell me", "warn me",
+    };
+    /// <summary>The longest note a reminder carries back.</summary>
+    public const int NoteMax = 80;
+    // A length of time, read from the raw text: « dans 5 min », « 10mn », « une demi-heure », « un quart d'heure », « 30 s ».
+    private static readonly Regex Duration = new(
+        @"(?:\b(?:dans|d['’]ici|pendant|pour|in)\s+)?(?:\b(?<quart>un\s+quart\s+d['’]\s*heure)\b|\b(?<demi>une\s+demi[-\s]?heure)\b"
+        + @"|\b(?<n>\d{1,4}|une?|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze|quinze|seize|vingt|trente|quarante|cinquante|soixante)"
+        + @"\s*(?<u>secondes?|seconds?|secs?|s|minutes?|mins?|mn|m|heures?|hours?|h)\b)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    // Where the note starts, once the duration is out: the first « de », « pour », « que » (« rappelle-moi de sortir le fer »).
+    private static readonly Regex NoteStart = new(@"(?:^|[\s,])(?:de|pour|que)\s+|(?:^|[\s,])(?:d|qu)['’]\s*", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    // ---- Remembered places ----
+
+    /// <summary>How many places she remembers at most, and how long a name may be.</summary>
+    public const int MaxPlaces = 20;
+    public const int MaxPlaceName = 24;
+    private static readonly string[] SaveVerbs =
+    {
+        "retiens", "retient", "retenir", "memorise", "memoriser", "enregistre", "enregistrer", "sauvegarde", "sauvegarder",
+        "souviens toi de", "souviens toi d", "souviens toi", "rappelle toi de", "rappelle toi d", "rappelle toi", "remember", "save",
+    };
+    // These save a place only right before « ici » or « cet endroit » (« note ici : la mine »): alone they mean other things.
+    private static readonly string[] SaveLooseVerbs = { "note", "noter", "marque", "marquer", "nomme", "nommer", "appelle", "baptise", "mark", "name", "call" };
+    private static readonly string[] HereWords =
+    {
+        "ici", "cet endroit", "ce lieu", "ce coin", "ce spot", "cette position", "cet emplacement", "la position", "ma position",
+        "here", "this place", "this spot",
+    };
+    // « ici c'est la mine »: only with an article after it, or « ici c'est trop bien » would be a place called « trop bien ».
+    private static readonly string[] HereIsPhrases = { "ici c est", "ici cest", "c est ici", "cest ici" };
+    private static readonly string[] ForgetVerbs = { "oublie", "oublies", "oublier", "efface", "effacer", "supprime", "supprimer", "forget", "delete" };
+    private static readonly string[] ListPlacesPhrases =
+    {
+        "tes lieux", "tes endroits", "quels lieux", "quels endroits", "quel lieux", "liste des lieux", "liste les lieux",
+        "liste tes lieux", "lieux connus", "endroits connus", "tes waypoints", "waypoints", "tes spots", "tes reperes", "reperes",
+        "tu connais quels endroits", "your places", "list places",
+    };
+    private static readonly string[] WherePlaceVerbs =
+    {
+        "ou est", "ou sont", "ou se trouve", "ou se trouvent", "c est ou", "cest ou", "c est par ou", "coordonnees de",
+        "coordonnees du", "coords de", "coords du", "position de", "position du", "where is",
+    };
+    private static readonly string[] GuideVerbs =
+    {
+        "montre moi le chemin", "montre nous le chemin", "montre moi la route", "montre nous la route", "montre moi", "montre nous",
+        "guide moi", "guide nous", "guide", "emmene moi", "emmene nous", "emmene", "amene moi", "amene nous", "conduis moi",
+        "conduis nous", "mene moi", "mene nous", "accompagne moi", "accompagne nous", "ramene moi", "ramene nous",
+        "show me the way", "show me", "take me", "lead me", "lead the way",
+    };
+    private static readonly string[] GoToPlaceVerbs = GoToPhrases.Concat(new[]
+    {
+        "rentre", "rentres", "rentrer", "retourne", "retournes", "retourner", "repars", "rejoins", "rejoint", "go back", "head to",
+        "back to",
+    }).ToArray();
+    // Going home: « rentre », « rentre chez nous ». The service tries « maison », then the other home words.
+    private static readonly string[] HomeVerbs = { "rentre", "rentres", "rentrer", "go home" };
+    private static readonly string[] Prepositions = { "a", "au", "aux", "vers", "jusqu", "jusque", "chez", "to", "at" };
+    private static readonly string[] Articles = { "la", "le", "l", "les", "ma", "mon", "mes", "notre", "nos", "ta", "ton", "the", "my", "our" };
+    // Skipped before a place's name (« retiens ici comme la mine »), and at its end.
+    private static readonly HashSet<string> NameFiller = new()
+    {
+        "ici", "cet", "cette", "ce", "endroit", "lieu", "coin", "spot", "emplacement", "position", "ca", "comme", "sous", "le", "la",
+        "les", "l", "nom", "de", "d", "du", "des", "c", "est", "cest", "en", "tant", "que", "qu", "mon", "ma", "mes", "notre", "nos",
+        "un", "une", "pour", "a", "au", "aux", "tout", "appele", "appelee", "s", "il", "te", "t", "toi", "moi", "nous", "vous", "me",
+        "m", "lui", "the", "as", "this", "place", "here", "it", "called", "on", "y", "chez", "vers", "jusqu", "jusque",
+    };
+    private static readonly HashSet<string> NameStop = new() { "et", "puis", "merci", "please", "thanks", "thx", "stp", "svp" };
+
+    // ---- Guarding a place ----
+
+    private static readonly string[] PatrolAlonePhrases =
+    {
+        "patrouille", "patrouiller", "patrouilles", "fais une ronde", "fais des rondes", "fais la ronde", "fais ta ronde",
+        "sentinelle", "mode sentinelle", "patrol", "sentry", "guard here", "keep watch",
+    };
+    private static readonly string[] PatrolVerbs =
+    {
+        "surveille", "surveiller", "surveilles", "garde", "garder", "gardes", "protege", "proteger", "proteges", "defends", "defend",
+        "defendre", "veille sur", "monte la garde", "guard", "protect", "watch",
+    };
+    private static readonly string[] BaseWords =
+    {
+        "base", "bases", "maison", "baraque", "home", "house", "village", "camp", "campement", "coin", "zone", "endroit", "spot",
+        "chateau", "fort", "forteresse", "bunker", "porte", "entree", "cabane", "abri", "perimetre", "ici", "spawn", "enclos",
+        "animaux", "betes", "qg", "lieu",
+    };
+
     // A coordinate standing alone: « 120 », « -300 », « x:120 », or F3's « 120.523 » (floored to the block).
     // Not the digits inside a name (Bob123).
     private static readonly Regex Coordinate = new(@"(?<![\w.])-?\d{1,8}(?:\.\d+)?(?![\w.])", RegexOptions.Compiled);
@@ -266,7 +552,8 @@ public static class McCommand
     /// <param name="names">Every name she answers to (her in-game name, « syncs »), any case.</param>
     /// <param name="called">The player called her just before (a bare « syncs »): her name isn't needed this time,
     /// and a message with nothing she understands is let go rather than read as another call.</param>
-    public static McRequest Parse(string text, IReadOnlyCollection<string> names, bool called = false)
+    /// <param name="places">The keys of the places she remembers (<see cref="PlaceKey"/>), so « va à la mine » finds one.</param>
+    public static McRequest Parse(string text, IReadOnlyCollection<string> names, bool called = false, IReadOnlyCollection<string>? places = null)
     {
         var words = Clean(Rating.Normalize(text));
         if (words.Length == 0) return McRequest.Nothing;
@@ -289,9 +576,36 @@ public static class McCommand
             : Refused(wordsOnly, hit) ? null
             : request;
 
+        // An order whose verb was found, unless refused around it (« ne retiens pas »): then nothing at all.
+        McRequest Unless((int Start, int Length) hit, string[] around, McRequest request) =>
+            Refused(around, hit) ? McRequest.Nothing : request;
+        var known = places ?? Array.Empty<string>();
+        var place = PlaceIn(rest, known);
+
+        // A timer first: its note can say anything (« rappelle-moi d'arrêter le four » is not stay).
+        if (Find(wordsOnly, TimerVerbs) is { } timerVerb && DurationIn(text) is { } seconds)
+            return Unless(timerVerb, wordsOnly, new(McOrder.Timer, Seconds: seconds, Note: TimerNote(text, names)));
+
+        // Places: remembering one, forgetting one, listing them. Read on the words with their numbers (« base 2 »).
+        if (SaveAt(rest) is { } save)
+            return Unless(save.Verb, rest, new(McOrder.SavePlace, Place: NameAfter(rest, save.NameFrom)));
+        if (Find(rest, ForgetVerbs) is { } forget && NameAfter(rest, forget.Start + forget.Length) is { } forgotten)
+            return Unless(forget, rest, new(McOrder.ForgetPlace, Place: place?.Key ?? forgotten));
+        if (Find(wordsOnly, ListPlacesPhrases) is { } listing) return Unless(listing, wordsOnly, new(McOrder.ListPlaces));
+
         if (Find(wordsOnly, FollowOverStayPhrases) is not null) return When(FollowOverStayPhrases, new(McOrder.Follow)) ?? McRequest.Nothing;
         if (Find(wordsOnly, FarmAlonePhrases) is not null) return When(FarmAlonePhrases, new(McOrder.Farm)) ?? McRequest.Nothing;
         if (FarmCare(wordsOnly) is { } care) return Refused(wordsOnly, care) ? McRequest.Nothing : new(McOrder.Farm);
+
+        // Guarding a place, before stay and guard: « protège la base » is not « protège-moi ». A remembered place named
+        // with it is where she guards (« surveille la mine »); otherwise, where she stands.
+        var placeWord = place is { } p ? p.Key.Split(' ')[0] : null;
+        if (Find(wordsOnly, PatrolAlonePhrases) is { } patrolAlone)
+            return Unless(patrolAlone, wordsOnly, new(McOrder.Patrol, Place: place?.Key));
+        if (CareFor(wordsOnly, PatrolVerbs, (w, j) => BaseWords.Contains(w[j]) || w[j] == placeWord, skipMe: true) is { } patrol)
+            return Unless(patrol, wordsOnly, new(McOrder.Patrol, Place: place?.Key));
+
+        if (Find(wordsOnly, SitPhrases) is { } sit) return Unless(sit, wordsOnly, new(McOrder.Sit));
         if (Find(wordsOnly, StayPhrases) is not null) return new(McOrder.Stay);
 
         foreach (var (phrases, order) in new[] { (SleepPhrases, McOrder.Sleep), (GuardPhrases, McOrder.Guard) })
@@ -300,6 +614,32 @@ public static class McCommand
             if (found is null) return McRequest.Nothing;
             if (found.Value.Order != McOrder.None) return found.Value;
         }
+
+        // What she carries: handed over, or put in a chest. Before gathering, so « donne-moi ton fer » isn't a trip to the
+        // mine. Handing over is read before storing, whose « ranger » is one slip from « manger » (« donne-moi à manger »);
+        // with a chest word, it's all storing (« jette tes poissons dans le coffre »).
+        var chest = wordsOnly.Any(w => ChestWords.Contains(w));
+        var give = Find(wordsOnly, GiveVerbs);
+        if (!chest && Find(wordsOnly, GiveAllPhrases) is { } giveAll) return Unless(giveAll, wordsOnly, new(McOrder.Give, Goods: McGoods.All));
+        if (!chest && give is { } giveVerb && GoodsAfter(wordsOnly, giveVerb.Start + giveVerb.Length) is { Goods: { } goods } asked
+            && (asked.Owned || CarriedOnly.Contains(goods)))
+            return Unless(giveVerb, wordsOnly, new(McOrder.Give, Goods: goods));
+        if (Find(wordsOnly, StorePhrases) is { } stored) return Unless(stored, wordsOnly, new(McOrder.Store));
+        if (chest && Find(wordsOnly, IntoChestVerbs) is { } intoChest) return Unless(intoChest, wordsOnly, new(McOrder.Store));
+
+        // Fishing: « va pêcher », or fish asked for with a gathering verb (« ramène du poisson »).
+        if (Find(wordsOnly, FishPhrases) is { } fishing) return Unless(fishing, wordsOnly, new(McOrder.Fish));
+        if (wordsOnly.Any(w => FishWords.Contains(w)) && Find(wordsOnly, CollectPhrases) is { } fishFetch)
+            return Unless(fishFetch, wordsOnly, new(McOrder.Fish));
+
+        // Cooking, before crops and resources: « cuis les patates », « fais fondre le fer ».
+        if (Find(wordsOnly, SmeltPhrases) is { } smelt) return Unless(smelt, wordsOnly, new(McOrder.Smelt, Smelt: SmeltIn(wordsOnly, smelt)));
+
+        // A place she knows, named after a going verb, before gathering: « va à la mine de fer » has « mine » and « fer ».
+        if (place is { } knownPlace)
+            foreach (var (verbs, order) in new[] { (WherePlaceVerbs, McOrder.WherePlace), (GuideVerbs, McOrder.Guide), (GoToPlaceVerbs, McOrder.GoToPlace) })
+                if (Find(rest, verbs) is { } placeVerb && placeVerb.Start + placeVerb.Length <= knownPlace.At)
+                    return Unless(placeVerb, rest, new(order, Place: knownPlace.Key));
 
         // A crop, before the resources: « pommes de terre » has « terre » (dirt).
         var resourceAt = Array.FindIndex(wordsOnly, w => ResourceWords.Any(r => r.Words.Contains(w)));
@@ -340,13 +680,185 @@ public static class McCommand
             }
         }
 
+        // Remembered places: where one is, the way there with the player, or the walk alone. A place she knows anywhere
+        // after the verb, else the name after a preposition (« va à la mine »), which the service may not know.
+        if (Find(rest, WherePlaceVerbs) is { } whereIs && PlaceAfter(rest, whereIs, place, needsPreposition: false) is { } asked1)
+            return Unless(whereIs, rest, new(McOrder.WherePlace, Place: asked1));
+        if (Find(rest, GuideVerbs) is { } guide && PlaceAfter(rest, guide, place, needsPreposition: true) is { } asked2)
+            return Unless(guide, rest, new(McOrder.Guide, Place: asked2));
+        if (Find(rest, GoToPlaceVerbs) is { } goPlace)
+        {
+            if (PlaceAfter(rest, goPlace, place, needsPreposition: true) is { } asked3)
+                return Unless(goPlace, rest, new(McOrder.GoToPlace, Place: asked3));
+            // « rentre », « rentre chez nous »: home.
+            if (Find(rest, HomeVerbs) is { } home && rest.Skip(home.Start + home.Length).All(w => NameFiller.Contains(w) || NameStop.Contains(w)))
+                return Unless(home, rest, new(McOrder.GoToPlace, Place: ""));
+        }
+
         foreach (var (phrases, order) in new[] { (FollowPhrases, McOrder.Follow), (ComePhrases, McOrder.Come) })
         {
             var found = When(phrases, new(order));
             if (found is null) return McRequest.Nothing;
             if (found.Value.Order != McOrder.None) return found.Value;
         }
+
+        // The small things, last: a greeting with an order in it is the order.
+        foreach (var (phrases, order) in new[] { (JumpPhrases, McOrder.Jump), (WherePhrases, McOrder.Where), (WavePhrases, McOrder.Wave) })
+        {
+            var found = When(phrases, new(order));
+            if (found is null) return McRequest.Nothing;
+            if (found.Value.Order != McOrder.None) return found.Value;
+        }
+        // « donne-moi ta clé »: something of hers she doesn't know. She says so rather than « oui ? ».
+        if (give is { } unknownGive && GoodsAfter(wordsOnly, unknownGive.Start + unknownGive.Length) is { Goods: null, Owned: true })
+            return Unless(unknownGive, wordsOnly, new(McOrder.Give));
         return calledOut && rest.Length <= 6 ? new(McOrder.Unknown) : McRequest.Nothing;
+    }
+
+    /// <summary>A place's key: its name as the parser reads it (lower case, no accents, game-chat spellings mapped).</summary>
+    public static string PlaceKey(string name) => string.Join(' ', Clean(Rating.Normalize(name)));
+
+    /// <summary>
+    /// A place's name as the player wrote it, accents kept, for her lines: the words of <paramref name="text"/> that
+    /// read as <paramref name="key"/>, in lower case. The key itself when they can't be found (a name typed with stretched
+    /// letters, say). Never longer than <see cref="MaxPlaceName"/>, and never with Minecraft's colour sign.
+    /// </summary>
+    public static string PlaceName(string text, string key)
+    {
+        var parts = key.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var raw = Regex.Matches(text, @"[\p{L}\p{N}]+").Select(m => m.Value).ToArray();
+        var folded = raw.Select(Rating.Normalize).ToArray();
+        for (var i = 0; parts.Length > 0 && i + parts.Length <= raw.Length; i++)
+            if (parts.Select((p, k) => folded[i + k] == p).All(x => x))
+            {
+                var name = string.Join(' ', raw.Skip(i).Take(parts.Length)).ToLowerInvariant();
+                return name.Length <= MaxPlaceName ? name : key;
+            }
+        return key;
+    }
+
+    // A known place named in the words (« la mine de fer » before « la mine »), with where it starts.
+    private static (string Key, int At)? PlaceIn(string[] words, IReadOnlyCollection<string> places)
+    {
+        foreach (var key in places.OrderByDescending(k => k.Length))
+        {
+            var parts = key.Split(' ');
+            for (var i = 0; i + parts.Length <= words.Length; i++)
+                if (parts.Select((p, k) => words[i + k] == p).All(x => x)) return (key, i);
+        }
+        return null;
+    }
+
+    // The place an order is about: a known one after its verb, else the name after a preposition (« va à la mine »,
+    // « emmène-moi jusqu'à la base »), else nothing. Where-is takes a name after the verb directly (« où est la mine »).
+    private static string? PlaceAfter(string[] words, (int Start, int Length) verb, (string Key, int At)? known, bool needsPreposition)
+    {
+        var after = verb.Start + verb.Length;
+        if (known is { } k && k.At >= after) return k.Key;
+        var last = words[after - 1];
+        var preposition = Prepositions.Contains(last) || (after < words.Length && Prepositions.Contains(words[after]));
+        if (needsPreposition && !preposition) return null;
+        if (!needsPreposition && !preposition && (after >= words.Length || !Articles.Contains(words[after]))) return null;
+        return NameAfter(words, after);
+    }
+
+    // A place's name after a verb: the filler skipped (« ici comme la »), then up to three words, up to « et » or « merci ».
+    private static string? NameAfter(string[] words, int from)
+    {
+        var i = from;
+        while (i < words.Length && NameFiller.Contains(words[i])) i++;
+        var parts = new List<string>();
+        for (; i < words.Length && parts.Count < 3 && !NameStop.Contains(words[i]); i++) parts.Add(words[i]);
+        while (parts.Count > 0 && NameFiller.Contains(parts[^1])) parts.RemoveAt(parts.Count - 1);
+        var name = string.Join(' ', parts);
+        return name.Length == 0 ? null : name.Length <= MaxPlaceName ? name : name[..MaxPlaceName].TrimEnd();
+    }
+
+    // Remembering a place: a verb that says it (« retiens », « enregistre »), a looser one right before « ici » (« note
+    // ici »), or « ici c'est » before an article (« ici c'est la mine »). Where the name may start.
+    private static ((int Start, int Length) Verb, int NameFrom)? SaveAt(string[] words)
+    {
+        if (Find(words, SaveVerbs) is { } verb) return (verb, verb.Start + verb.Length);
+        if (Find(words, SaveLooseVerbs) is { } loose && Find(words.Skip(loose.Start + loose.Length).ToArray(), HereWords) is { Start: 0 })
+            return (loose, loose.Start + loose.Length);
+        if (Find(words, HereIsPhrases) is { } hereIs && hereIs.Start + hereIs.Length < words.Length
+            && Articles.Contains(words[hereIs.Start + hereIs.Length]))
+            return (hereIs, hereIs.Start + hereIs.Length);
+        return null;
+    }
+
+    // What follows a give verb (within three words): a possessive and a kind of goods (« ta canne à pêche », « tes pommes
+    // de terre »), or goods with any article (« du poisson »). Goods null with Owned: something of hers she doesn't know.
+    private static (McGoods? Goods, bool Owned)? GoodsAfter(string[] words, int from)
+    {
+        var owned = false;
+        for (var j = from; j < Math.Min(words.Length, from + 4); j++)
+        {
+            if (Possessives.Contains(words[j])) { owned = true; continue; }
+            if (words[j] is "pomme" or "pommes" or "pom" && j + 2 < words.Length && words[j + 1] is "de" or "d" && words[j + 2] == "terre")
+                return (McGoods.Produce, owned);
+            if (CropWords.Any(c => c.Crop != McCrop.Any && c.Words.Any(w => Same(words[j], w)))) return (McGoods.Produce, owned);
+            foreach (var (goods, list) in GoodsWords)
+                if (list.Contains(words[j])) return (goods, owned);
+        }
+        return owned ? (null, true) : null;
+    }
+
+    // What a cooking order is about: the first food, ore or sand word, else what the verb implies (melting is ore,
+    // glass is sand, the rest is food).
+    private static McSmelt SmeltIn(string[] words, (int Start, int Length) verb)
+    {
+        foreach (var w in words)
+            foreach (var (smelt, list) in SmeltWords)
+                if (list.Contains(w)) return smelt;
+        var said = string.Join(' ', words.Skip(verb.Start).Take(verb.Length));
+        return said.Contains("fond") || said == "smelt" ? McSmelt.Ore : said.Contains("verre") ? McSmelt.Sand : McSmelt.Food;
+    }
+
+    // A verb with one of its objects within four words after it (« surveille la base »). With skipMe, a verb followed by
+    // « moi » or « nous » is about the player (« protège-moi à la maison » is guard, not patrol).
+    private static (int Start, int Length)? CareFor(string[] words, string[] verbs, Func<string[], int, bool> isObject, bool skipMe = false)
+    {
+        foreach (var phrase in verbs.OrderByDescending(p => p.Length))
+        {
+            var parts = phrase.Split(' ');
+            for (var i = 0; i + parts.Length <= words.Length; i++)
+            {
+                if (!parts.Select((p, k) => Same(words[i + k], p)).All(x => x)) continue;
+                var after = i + parts.Length;
+                if (skipMe && after < words.Length && words[after] is "moi" or "nous" or "me" or "m") continue;
+                for (var j = after; j < Math.Min(words.Length, after + 4); j++)
+                    if (isObject(words, j)) return (i, parts.Length);
+            }
+        }
+        return null;
+    }
+
+    /// <summary>How long a timer runs, in seconds, from the raw text; null when no length of time is given.</summary>
+    public static int? DurationIn(string text)
+    {
+        var m = Duration.Match(text);
+        if (!m.Success) return null;
+        if (m.Groups["quart"].Success) return 15 * 60;
+        if (m.Groups["demi"].Success) return 30 * 60;
+        var number = m.Groups["n"].Value.ToLowerInvariant();
+        var n = int.TryParse(number, out var digits) ? digits : QuantityWords.GetValueOrDefault(number, 1);
+        var unit = m.Groups["u"].Value.ToLowerInvariant();
+        return n * (unit.StartsWith('h') ? 3600 : unit.StartsWith('m') ? 60 : 1);
+    }
+
+    // What to remind them of: the raw text after the first « de », « pour », « que » once the duration and her name are
+    // out (« rappelle-moi dans 5 min de sortir le fer » → « sortir le fer »). Null when there's none.
+    private static string? TimerNote(string text, IReadOnlyCollection<string> names)
+    {
+        var rest = Duration.Replace(text, " ");
+        foreach (var name in names.Where(n => n.Length > 0))
+            rest = Regex.Replace(rest, $@"(?<![\p{{L}}\p{{N}}]){Regex.Escape(name)}(?![\p{{L}}\p{{N}}])", " ", RegexOptions.IgnoreCase);
+        var start = NoteStart.Match(rest);
+        if (!start.Success) return null;
+        var note = Regex.Replace(rest[(start.Index + start.Length)..].Replace("§", ""), @"\s+", " ").Trim().TrimEnd('?', '!', '.', ',', ';', ' ');
+        if (note.Length < 2) return null;
+        return note.Length <= NoteMax ? note : note[..NoteMax].TrimEnd() + "…";
     }
 
     // Where a phrase first matches, as whole consecutive words, so « suis » never matches inside

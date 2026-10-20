@@ -3,6 +3,32 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.15.0 — 2026-10-20
+
+- Minecraft: « syncs vide tes poches » or « donne-moi ton poisson / ta pioche / ton fer… » hands
+  you what she carries; « syncs range tes affaires » puts it in the chest nearby, keeping her tools.
+- Minecraft: « syncs va pêcher »: she fishes nearby until told otherwise and keeps the catch for you.
+- Minecraft: « syncs cuis la viande », « fais fondre le fer », « fais du verre »: she uses a free
+  furnace nearby with her own fuel and brings the result back.
+- Minecraft: « syncs surveille la base »: she guards a spot instead of a player.
+- Minecraft: remembered places. « syncs retiens ici : maison », then « va à la maison », « rentre »,
+  « montre-moi le chemin vers la mine » (she leads and waits for you), « où est la mine ? »,
+  « tes lieux », « oublie la mine ».
+- Minecraft: reminders: « syncs préviens-moi dans 5 min », « rappelle-moi dans 10 min de sortir le
+  fer ».
+- Minecraft: « syncs t'es où ? », « syncs assis », « syncs saute », and she waves back when you
+  greet her.
+- Minecraft: when guarding she never hits a creeper any more: she shoots it with a bow if she has
+  one, otherwise keeps away and warns you. Badly hurt, she backs off to heal.
+- Minecraft: after handing something over or putting her things away, she goes back to the farm,
+  the fishing or the guarding she was at; sleeping no longer ends fishing or guarding either.
+- Minecraft: 15 new lines for her hello and 15 for her goodbye.
+- Minecraft: more varied kaomojis in her in-game lines, used sparingly, all ones the game's font
+  can draw.
+- Minecraft: many more angry lines when someone hits her.
+- Minecraft: hit her three times within a minute and she realises you're trying to kill her: angry,
+  scared, and she says so straight away.
+
 ## 7.14.0 — 2026-10-20
 
 - Minecraft: orders in two steps. Say « syncs » alone, she answers « oui ? », and your next message

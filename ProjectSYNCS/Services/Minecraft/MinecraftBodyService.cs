@@ -54,6 +54,8 @@ public sealed class MinecraftBodyService : BackgroundService
     // her name (« suis moi »). One message only, whatever it turns out to be. Guarded by _gate.
     private static readonly TimeSpan CallWindow = TimeSpan.FromSeconds(30);
     private readonly Dictionary<string, DateTimeOffset> _calledAt = new();
+    // Each player's hits on her, for the escalation (McHitStreaks). Guarded by _gate.
+    private readonly McHitStreaks _hits = new();
     private const double NightChance = 0.5;
     private const double AdvancementChance = 0.6;
 
@@ -92,14 +94,31 @@ public sealed class MinecraftBodyService : BackgroundService
     // under way: she works for that player (McClaim). _pending was sent and not yet confirmed by the body;
     // one that fails at once leaves _order alone, as the body leaves her task. Robbed: who she was taken
     // from, told once the new order is under way.
+    // Resume: the activity (farm, fishing, a guarded place) an errand interrupted, which the body goes back to after
+    // it and which holds her again once it's done.
     private sealed record McJob(McOrder Order, string Player, bool Private, string Detail, DateTimeOffset Since,
-        string? Robbed = null, bool RobbedPrivate = false);
+        string? Robbed = null, bool RobbedPrivate = false, McJob? Resume = null);
     private McJob? _order;
     private McJob? _pending;
     // The family member she's walking up to after arriving (McFamily), until the body says how it went.
     private string? _seeking;
     // Where she last saw Papa and Tata, by in-game name. Persisted: they log back in where they logged out.
     private readonly Dictionary<string, McSpot> _seen;
+    // The places players asked her to remember, by key (McCommand.PlaceKey). Persisted: the map doesn't change overnight.
+    private readonly Dictionary<string, McPlace> _places;
+    // Asked where she is / to remember a spot: the body answers with a position, and these say to whom and how.
+    private readonly Dictionary<string, bool> _askedWhere = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, (string Key, string Name, bool Private)> _marking = new(StringComparer.OrdinalIgnoreCase);
+    // Reminders running, per player (McCommand Timer), for this body only: they die with it.
+    private readonly Dictionary<string, int> _timers = new(StringComparer.OrdinalIgnoreCase);
+    private const int MaxTimers = 3;
+    private static readonly TimeSpan MaxTimer = TimeSpan.FromHours(2);
+    private static readonly TimeSpan MinTimer = TimeSpan.FromSeconds(10);
+    // Fishing remarks, rolled on top of the kind gate: a fish is common, a treasure is not.
+    private const double CatchChance = 0.3;
+    private const double JunkChance = 0.5;
+    // The names a home goes by, tried in this order for « rentre ».
+    private static readonly string[] HomeKeys = { "maison", "base", "home", "chez nous", "chez moi", "qg" };
     private (string Server, string Using, bool Fallback)? _version;
     private string? _lastKick;
     private DateTimeOffset? _lastKickAt;
@@ -126,14 +145,19 @@ public sealed class MinecraftBodyService : BackgroundService
         var state = LoadState();
         _allowed = state?.Allowed ?? false;
         _seen = new Dictionary<string, McSpot>(state?.Seen ?? new Dictionary<string, McSpot>(), StringComparer.OrdinalIgnoreCase);
+        _places = new Dictionary<string, McPlace>(state?.Places ?? new Dictionary<string, McPlace>());
     }
 
-    // What survives a restart: the owner's switch, and where she last saw her family. Everything else here
-    // is in memory on purpose.
-    private sealed record MinecraftState(bool Allowed, Dictionary<string, McSpot>? Seen = null);
+    // What survives a restart: the owner's switch, where she last saw her family, and the places she was asked to
+    // remember. Everything else here is in memory on purpose.
+    private sealed record MinecraftState(bool Allowed, Dictionary<string, McSpot>? Seen = null, Dictionary<string, McPlace>? Places = null);
     private sealed record McSpot(int X, int Y, int Z, string Dimension);
+    // Name: as the player wrote it (McCommand.PlaceName), for her lines. By: who saved it, the only one besides
+    // family who may move or forget it.
+    private sealed record McPlace(string Name, int X, int Y, int Z, string Dimension, string By);
 
-    private MinecraftState StateLocked() => new(_allowed, new Dictionary<string, McSpot>(_seen));
+    private MinecraftState StateLocked() =>
+        new(_allowed, new Dictionary<string, McSpot>(_seen), new Dictionary<string, McPlace>(_places));
 
     private MinecraftState? LoadState()
     {
@@ -293,6 +317,8 @@ public sealed class MinecraftBodyService : BackgroundService
             _order = null;
             _pending = null;
             _seeking = null;
+            _hits.Clear();
+            ForgetBodyLocked();
             _logger.LogInformation("Minecraft body started (pid {Pid}) for {Host}:{Port}.", _body.Id, _host, _port);
             return true;
         }
@@ -334,10 +360,20 @@ public sealed class MinecraftBodyService : BackgroundService
             _order = null;
             _pending = null;
             _seeking = null;
+            _hits.Clear();
+            ForgetBodyLocked();
             if (!planned) MarkFailureLocked(DateTimeOffset.UtcNow);
             _logger.LogInformation("Minecraft body exited ({How}).", planned ? "left" : "unplanned");
         }
         if (wasSpawned) _ = PostAsync(BotResponses.McLeavePostLines, "Minecraft leave post");
+    }
+
+    // What only made sense for the body that's going: reminders, questions waiting for its answer.
+    private void ForgetBodyLocked()
+    {
+        _timers.Clear();
+        _marking.Clear();
+        _askedWhere.Clear();
     }
 
     private void MarkFailureLocked(DateTimeOffset now)
@@ -394,13 +430,123 @@ public sealed class MinecraftBodyService : BackgroundService
                         root.TryGetProperty("kind", out var arrivedKind) ? arrivedKind.GetString() ?? "" : "");
                     break;
                 case "cantReach":
-                    OnOutcome(root.GetProperty("player").GetString() ?? "", root.GetProperty("why").GetString() switch
+                    var unreached = root.GetProperty("player").GetString() ?? "";
+                    OnOutcome(unreached, root.GetProperty("why").GetString() switch
                     {
                         "notVisible" => BotResponses.McTooFarLines,
-                        "lost" => BotResponses.McLostLines,
+                        "lost" => JobOf(unreached) == McOrder.Guide ? BotResponses.McGuideLostLines : BotResponses.McLostLines,
                         "tooFar" => BotResponses.McTripTooFarLines,
+                        "otherDimension" => BotResponses.McPlaceOtherDimensionLines,
                         _ => BotResponses.McNoPathLines,
                     });
+                    break;
+                case "waiting":
+                    Remark("guideWait", BotResponses.McGuideWaitLines, root.GetProperty("player").GetString());
+                    break;
+                case "creeper":
+                    Remark("creeper", BotResponses.McCreeperLines, root.GetProperty("player").GetString());
+                    break;
+                case "retreat":
+                    Remark("retreat", BotResponses.McRetreatLines, root.GetProperty("player").GetString());
+                    break;
+                case "given":
+                    OnGiven(root.GetProperty("player").GetString() ?? "", root.GetProperty("goods").GetString() ?? "",
+                        root.GetProperty("count").GetInt32(), root.GetProperty("delivered").GetBoolean());
+                    break;
+                case "cantGive":
+                    var noGoods = Goods(root.GetProperty("goods").GetString() ?? "");
+                    OnOutcome(root.GetProperty("player").GetString() ?? "",
+                        noGoods == McGoods.All ? BotResponses.McGiveEmptyLines : BotResponses.McGiveNoneLines,
+                        "", noGoods is { } g ? BotResponses.McGoodsNames[g] : "");
+                    break;
+                case "stored":
+                    var storer = root.GetProperty("player").GetString() ?? "";
+                    Confirm(storer);
+                    OnOutcome(storer, root.GetProperty("full").GetBoolean() ? BotResponses.McStoreFullLines : BotResponses.McStoreDoneLines,
+                        root.GetProperty("count").GetInt32());
+                    break;
+                case "cantStore":
+                    OnOutcome(root.GetProperty("player").GetString() ?? "",
+                        root.GetProperty("why").GetString() == "empty" ? BotResponses.McStoreEmptyLines : BotResponses.McStoreNoChestLines);
+                    break;
+                case "fishing":
+                    var fisher = root.GetProperty("player").GetString() ?? "";
+                    Reply(fisher, Confirm(fisher).Whispered, BotResponses.McFishAckLines);
+                    break;
+                case "cantFish":
+                    OnOutcome(root.GetProperty("player").GetString() ?? "", root.GetProperty("why").GetString() switch
+                    {
+                        "noRod" => BotResponses.McFishNoRodLines,
+                        "broke" => BotResponses.McFishRodBrokeLines,
+                        _ => BotResponses.McFishNoWaterLines,
+                    });
+                    break;
+                case "caught":
+                    var catchKind = root.GetProperty("kind").GetString();
+                    if (catchKind == "treasure"
+                        || Random.Shared.NextDouble() < (catchKind == "fish" ? CatchChance : JunkChance))
+                        Remark("catch", catchKind switch
+                        {
+                            "treasure" => BotResponses.McFishTreasureLines,
+                            "fish" => BotResponses.McFishCatchLines,
+                            _ => BotResponses.McFishJunkLines,
+                        }, root.GetProperty("player").GetString());
+                    break;
+                case "patrolling":
+                    var keeper = root.GetProperty("player").GetString() ?? "";
+                    var (patrolPrivate, patrolDetail) = Confirm(keeper);
+                    Reply(keeper, patrolPrivate, patrolDetail.Length > 0 ? BotResponses.McPatrolPlaceAckLines : BotResponses.McPatrolAckLines,
+                        patrolDetail);
+                    break;
+                case "cantPatrol":
+                    OnOutcome(root.GetProperty("player").GetString() ?? "",
+                        root.GetProperty("why").GetString() == "tooFar" ? BotResponses.McTripTooFarLines : BotResponses.McPlaceOtherDimensionLines);
+                    break;
+                case "smelting":
+                    var cook = root.GetProperty("player").GetString() ?? "";
+                    Reply(cook, Confirm(cook).Whispered, BotResponses.McSmeltAckLines, root.GetProperty("count").GetInt32(),
+                        SmeltName(root.GetProperty("what").GetString() ?? ""));
+                    break;
+                case "smelted":
+                    var cooked = root.GetProperty("count").GetInt32();
+                    OnOutcome(root.GetProperty("player").GetString() ?? "",
+                        cooked == 0 ? BotResponses.McSmeltEmptyLines
+                        : root.GetProperty("delivered").GetBoolean() ? BotResponses.McSmeltDoneLines
+                        : BotResponses.McSmeltKeptLines,
+                        cooked, SmeltName(root.GetProperty("what").GetString() ?? ""));
+                    break;
+                case "cantSmelt":
+                    OnOutcome(root.GetProperty("player").GetString() ?? "", root.GetProperty("why").GetString() switch
+                    {
+                        "noFuel" => BotResponses.McSmeltNoFuelLines,
+                        "noFurnace" => BotResponses.McSmeltNoFurnaceLines,
+                        "busy" => BotResponses.McSmeltBusyLines,
+                        _ => BotResponses.McSmeltNothingLines,
+                    }, "", SmeltName(root.GetProperty("what").GetString() ?? ""));
+                    break;
+                case "position":
+                    var asker = root.GetProperty("player").GetString() ?? "";
+                    bool whereWhispered;
+                    lock (_gate)
+                        if (!_askedWhere.Remove(asker, out whereWhispered)) break;
+                    var dimension = root.GetProperty("dimension").GetString() ?? "";
+                    Reply(asker, whereWhispered, BotResponses.McWhereLines,
+                        $"{root.GetProperty("x").GetInt32()} {root.GetProperty("y").GetInt32()} {root.GetProperty("z").GetInt32()}",
+                        BotResponses.McDimensionNames[DimensionOf(dimension)]);
+                    break;
+                case "marked":
+                    OnMarked(root.GetProperty("player").GetString() ?? "", root.GetProperty("x").GetInt32(), root.GetProperty("y").GetInt32(),
+                        root.GetProperty("z").GetInt32(), root.GetProperty("dimension").GetString() ?? "");
+                    break;
+                case "cantMark":
+                    var unmarked = root.GetProperty("player").GetString() ?? "";
+                    bool markWhispered;
+                    lock (_gate)
+                    {
+                        if (!_marking.Remove(unmarked, out var lost)) break;
+                        markWhispered = lost.Private;
+                    }
+                    Reply(unmarked, markWhispered, BotResponses.McTooFarLines);
                     break;
                 case "killed":
                     Remark("kill", BotResponses.McGuardKillLines, root.GetProperty("player").GetString());
@@ -430,8 +576,8 @@ public sealed class MinecraftBodyService : BackgroundService
                         _ => BotResponses.McBedFailedLines,
                     });
                     // Every bed refused her after she'd dropped what she was doing: she works for nobody now,
-                    // unless it was a farm, which the body goes back to.
-                    if (whyNot == "failed") lock (_gate) if (_order?.Order != McOrder.Farm) _order = null;
+                    // unless it was an activity, which the body goes back to.
+                    if (whyNot == "failed") lock (_gate) if (!IsActivity(_order?.Order)) _order = null;
                     break;
                 case "harvesting":
                     var (harvestPrivate, _) = Confirm(root.GetProperty("player").GetString() ?? "");
@@ -467,8 +613,7 @@ public sealed class MinecraftBodyService : BackgroundService
                     break;
                 case "hurt":
                     if (root.TryGetProperty("by", out var by) && by.ValueKind == JsonValueKind.String && by.GetString() is { Length: > 0 } hitter)
-                        Remark("hit", Kin(hitter, BotResponses.McHitByPlayerLines,
-                            BotResponses.McHitByPlayerLinesOwner, BotResponses.McHitByPlayerLinesTata), hitter);
+                        OnHit(hitter);
                     break;
                 case "night":
                     if (Random.Shared.NextDouble() < NightChance) Remark("night", BotResponses.McNightLines);
@@ -542,8 +687,13 @@ public sealed class MinecraftBodyService : BackgroundService
     {
         if (player.Length == 0) return;
         bool called;
-        lock (_gate) called = _calledAt.Remove(player, out var calledAt) && DateTimeOffset.UtcNow - calledAt <= CallWindow;
-        var request = McCommand.Parse(text, [_username, .. McCommand.HerNames], called);
+        string[] known;
+        lock (_gate)
+        {
+            called = _calledAt.Remove(player, out var calledAt) && DateTimeOffset.UtcNow - calledAt <= CallWindow;
+            known = _places.Keys.ToArray();
+        }
+        var request = McCommand.Parse(text, [_username, .. McCommand.HerNames], called, known);
         switch (request.Order)
         {
             case McOrder.None:
@@ -554,7 +704,21 @@ public sealed class MinecraftBodyService : BackgroundService
                     Reply(player, whispered, Kin(player, BotResponses.McCalledLines, BotResponses.McCalledLinesOwner, BotResponses.McCalledLinesTata));
                 return;
         }
-        if (request.Order != McOrder.Stay && !_orderGate.TryClaim(player)) return;
+        var stops = request.Order is McOrder.Stay or McOrder.Sit;
+        if (!stops && !_orderGate.TryClaim(player)) return;
+        if (AnswerAtOnce(player, whispered, text, request)) return;
+
+        // A remembered place becomes coordinates here: the body only walks.
+        McPlace? place = null;
+        if (request.Order is McOrder.GoToPlace or McOrder.Guide || (request.Order == McOrder.Patrol && request.Place is not null))
+        {
+            place = FindPlace(request.Place ?? "", out var key);
+            if (place is null)
+            {
+                Reply(player, whispered, BotResponses.McPlaceUnknownLines, Label(McCommand.PlaceName(text, key)));
+                return;
+            }
+        }
 
         object command = request.Order switch
         {
@@ -563,14 +727,25 @@ public sealed class MinecraftBodyService : BackgroundService
             McOrder.GoTo => request.Coordinates! is [var x, var z]
                 ? new { op = "goto", player, x, y = (int?)null, z }
                 : new { op = "goto", player, x = request.Coordinates![0], y = (int?)request.Coordinates[1], z = request.Coordinates[2] },
+            McOrder.GoToPlace => new { op = "goto", player, x = place!.X, y = (int?)place.Y, z = place.Z, dimension = place.Dimension },
+            McOrder.Guide => new { op = "guide", player, x = place!.X, y = place.Y, z = place.Z, dimension = place.Dimension },
             McOrder.Guard => new { op = "guard", player },
+            McOrder.Patrol => new { op = "patrol", player, spot = place is null ? null : new { x = place.X, y = place.Y, z = place.Z, dimension = place.Dimension } },
             McOrder.Collect => new { op = "collect", player, resource = request.Resource!.Value.ToString().ToLowerInvariant(), count = request.Count },
             McOrder.Sleep => new { op = "sleep", player },
             McOrder.Harvest => new { op = "harvest", player, crop = (request.Crop ?? McCrop.Any).ToString().ToLowerInvariant() },
             McOrder.Farm => new { op = "farm", player },
+            McOrder.Give => new { op = "give", player, goods = request.Goods!.Value.ToString().ToLowerInvariant() },
+            McOrder.Store => new { op = "store", player },
+            McOrder.Fish => new { op = "fish", player },
+            McOrder.Smelt => new { op = "smelt", player, what = (request.Smelt ?? McSmelt.Food).ToString().ToLowerInvariant() },
+            McOrder.Sit => new { op = "sit" },
             _ => new { op = "stay" },
         };
-        var detail = request.Coordinates is { } coordinates ? string.Join(" ", coordinates) : "";
+        var detail = request.Coordinates is { } coordinates ? string.Join(" ", coordinates)
+            : place is not null ? Label(place.Name)
+            : request.Goods is { } goods ? BotResponses.McGoodsNames[goods]
+            : "";
         var now = DateTimeOffset.UtcNow;
         string? busyWith = null;
         McJob? robbed = null;
@@ -585,17 +760,23 @@ public sealed class MinecraftBodyService : BackgroundService
                 busyWith = holder.Player;
             else
             {
+                // An errand (handing over, putting away) pauses an activity, which the body goes back to after: it
+                // holds her again then, and its keeper isn't told she left.
+                var resume = request.Order is McOrder.Give or McOrder.Store && _order is { } current && IsActivity(current.Order)
+                    ? current
+                    : null;
                 // Taken from someone before their order was done: they hear why, once the new one is under way.
-                robbed = _order is { } taken && !Same(taken.Player, player) && (LastingLocked(taken) || now - taken.Since < McClaim.Expiry)
+                robbed = resume is null && _order is { } taken && !Same(taken.Player, player)
+                         && (LastingLocked(taken) || now - taken.Since < McClaim.Expiry)
                     ? taken
                     : null;
                 _seeking = null;
-                if (request.Order == McOrder.Stay)
+                if (stops)
                 {
                     _order = null;
                     _pending = null;
                 }
-                else _pending = new McJob(request.Order, player, whispered, detail, now, robbed?.Player, robbed?.Private ?? false);
+                else _pending = new McJob(request.Order, player, whispered, detail, now, robbed?.Player, robbed?.Private ?? false, resume);
                 body.Send(command);
             }
         }
@@ -607,16 +788,241 @@ public sealed class MinecraftBodyService : BackgroundService
         // Everything but staying is acknowledged when the body reports it under way ("moving",
         // "collecting", "sleeping"): the player may be out of sight or there may be nothing to gather,
         // and « j'arrive » followed by « je te vois pas » reads as a broken promise.
-        if (request.Order == McOrder.Stay)
+        if (stops)
         {
             if (robbed is not null) Reply(robbed.Player, robbed.Private, BotResponses.McTakenLines, Who(player));
-            Reply(player, whispered, BotResponses.McStayAckLines);
+            Reply(player, whispered, request.Order == McOrder.Sit ? BotResponses.McSitLines : BotResponses.McStayAckLines);
         }
     }
 
-    // A farm holds her while its keeper is on the server; every other claim runs out (McClaim.Expiry).
+    // Orders that take her from nobody and change nothing she's doing: answered here, or by a body event (where she
+    // is, a spot to remember). True when the request was one of them.
+    private bool AnswerAtOnce(string player, bool whispered, string text, McRequest request)
+    {
+        switch (request.Order)
+        {
+            case McOrder.Timer:
+                StartTimer(player, whispered, request.Seconds, request.Note);
+                return true;
+            case McOrder.Jump:
+                if (Send(new { op = "jump" })) Reply(player, whispered, BotResponses.McJumpLines);
+                return true;
+            case McOrder.Wave:
+                if (Send(new { op = "wave", player }))
+                    Reply(player, whispered, Kin(player, BotResponses.McWaveLines, BotResponses.McWaveLinesOwner, BotResponses.McWaveLinesTata));
+                return true;
+            case McOrder.Where:
+                lock (_gate) _askedWhere[player] = whispered;
+                Send(new { op = "where", player });
+                return true;
+            case McOrder.Give when request.Goods is null:
+                Reply(player, whispered, BotResponses.McGiveUnknownLines);
+                return true;
+            case McOrder.ListPlaces:
+                ListPlaces(player, whispered);
+                return true;
+            case McOrder.WherePlace:
+                if (FindPlace(request.Place ?? "", out var whereKey) is { } found)
+                    Reply(player, whispered, BotResponses.McPlaceWhereLines, Spot(found.X, found.Y, found.Z, found.Dimension), Label(found.Name));
+                else Reply(player, whispered, BotResponses.McPlaceUnknownLines, Label(McCommand.PlaceName(text, whereKey)));
+                return true;
+            case McOrder.ForgetPlace:
+                ForgetPlace(player, whispered, text, request.Place ?? "");
+                return true;
+            case McOrder.SavePlace:
+                if (request.Place is null)
+                {
+                    Reply(player, whispered, BotResponses.McPlaceNoNameLines);
+                    return true;
+                }
+                lock (_gate) _marking[player] = (request.Place, McCommand.PlaceName(text, request.Place), whispered);
+                Send(new { op = "mark", player });
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    // A command to the body while she's in game. False when she isn't.
+    private bool Send(object command)
+    {
+        lock (_gate)
+        {
+            if (_body is not { } body || !_spawned || _leaving) return false;
+            body.Send(command);
+            return true;
+        }
+    }
+
+    // Farming, fishing and guarding a place last until someone says otherwise; errands and sleep only pause them.
+    private static bool IsActivity(McOrder? order) => order is McOrder.Farm or McOrder.Fish or McOrder.Patrol;
+
+    // A farm or a guarded place holds her while its keeper is on the server; every other claim runs out (McClaim.Expiry).
     private bool LastingLocked(McJob job) =>
-        job.Order == McOrder.Farm && _players.Contains(job.Player, StringComparer.OrdinalIgnoreCase);
+        job.Order is McOrder.Farm or McOrder.Patrol && _players.Contains(job.Player, StringComparer.OrdinalIgnoreCase);
+
+    // ---- Remembered places ----------------------------------------------------------------------
+
+    // A place by key; an empty key is home (« rentre »), and a home word finds whichever home was saved. Key: what
+    // was looked for, for the « I don't know it » line.
+    private McPlace? FindPlace(string wanted, out string key)
+    {
+        lock (_gate)
+        {
+            key = wanted.Length > 0 ? wanted : HomeKeys[0];
+            if (_places.TryGetValue(key, out var exact)) return exact;
+            if (wanted.Length > 0 && !HomeKeys.Contains(wanted)) return null;
+            foreach (var home in HomeKeys)
+                if (_places.TryGetValue(home, out var found)) return found;
+            return null;
+        }
+    }
+
+    // How her lines show a place's name.
+    private static string Label(string name) => $"« {name} »";
+
+    // Coordinates for her lines, with the dimension when it isn't the overworld (« 12 40 -8 dans le Nether »).
+    private static string Spot(int x, int y, int z, string dimension) =>
+        DimensionOf(dimension) is var d && d == "overworld" ? $"{x} {y} {z}" : $"{x} {y} {z} {BotResponses.McDimensionNames[d]}";
+
+    // « overworld », « nether » or « end », from however the server names its dimension (« minecraft:the_nether »).
+    private static string DimensionOf(string dimension) =>
+        dimension.Contains("nether", StringComparison.OrdinalIgnoreCase) ? "nether"
+        : dimension.Contains("end", StringComparison.OrdinalIgnoreCase) ? "end"
+        : "overworld";
+
+    // Only whoever saved a place, or family, may move or forget it: offline mode lets anyone take any name, but a stranger
+    // shouldn't be able to wipe the group's map.
+    private bool MayChange(McPlace place, string player) => Same(place.By, player) || KinOf(player) != McKin.Anyone;
+
+    private void OnMarked(string player, int x, int y, int z, string dimension)
+    {
+        (string Key, string Name, bool Private) mark;
+        McPlace? existing;
+        MinecraftState? state = null;
+        string[] pool;
+        lock (_gate)
+        {
+            if (!_marking.Remove(player, out mark)) return;
+            _places.TryGetValue(mark.Key, out existing);
+            if (existing is not null && !MayChange(existing, player)) pool = BotResponses.McPlaceNotYoursLines;
+            else if (existing is null && _places.Count >= McCommand.MaxPlaces) pool = BotResponses.McPlaceFullLines;
+            else
+            {
+                _places[mark.Key] = new McPlace(mark.Name, x, y, z, dimension, player);
+                state = StateLocked();
+                pool = existing is null ? BotResponses.McPlaceSavedLines : BotResponses.McPlaceMovedLines;
+            }
+        }
+        if (state is not null) SaveState(state);
+        Reply(player, mark.Private, pool, Label(existing?.Name ?? mark.Name), existing is null ? "" : Who(existing.By));
+    }
+
+    private void ForgetPlace(string player, bool whispered, string text, string key)
+    {
+        McPlace? place;
+        MinecraftState? state = null;
+        lock (_gate)
+        {
+            _places.TryGetValue(key, out place);
+            if (place is not null && MayChange(place, player))
+            {
+                _places.Remove(key);
+                state = StateLocked();
+            }
+        }
+        if (state is not null) SaveState(state);
+        if (place is null) Reply(player, whispered, BotResponses.McPlaceUnknownLines, Label(McCommand.PlaceName(text, key)));
+        else if (state is null) Reply(player, whispered, BotResponses.McPlaceNotYoursLines, Label(place.Name), Who(place.By));
+        else Reply(player, whispered, BotResponses.McPlaceForgottenLines, Label(place.Name));
+    }
+
+    // The places she knows, as many as fit a chat line.
+    private void ListPlaces(string player, bool whispered)
+    {
+        List<string> names;
+        lock (_gate) names = _places.Values.Select(p => p.Name).OrderBy(n => n, StringComparer.Ordinal).ToList();
+        if (names.Count == 0)
+        {
+            Reply(player, whispered, BotResponses.McPlaceListEmptyLines);
+            return;
+        }
+        var list = new StringBuilder();
+        foreach (var name in names)
+        {
+            var next = (list.Length > 0 ? ", " : "") + name;
+            if (list.Length + next.Length > ListMax)
+            {
+                list.Append('…');
+                break;
+            }
+            list.Append(next);
+        }
+        Reply(player, whispered, BotResponses.McPlaceListLines, list.ToString());
+    }
+
+    // How long the list of places may be in a line, so the longest line still fits Minecraft's 256.
+    public const int ListMax = 120;
+
+    // ---- Reminders ------------------------------------------------------------------------------
+
+    private void StartTimer(string player, bool whispered, int seconds, string? note)
+    {
+        if (TimeSpan.FromSeconds(seconds) > MaxTimer)
+        {
+            Reply(player, whispered, BotResponses.McTimerTooLongLines);
+            return;
+        }
+        seconds = Math.Max(seconds, (int)MinTimer.TotalSeconds);
+        MinecraftBodyProcess? body;
+        lock (_gate)
+        {
+            body = _spawned && !_leaving ? _body : null;
+            if (body is null) return;
+            var running = _timers.GetValueOrDefault(player);
+            if (running >= MaxTimers) body = null;
+            else _timers[player] = running + 1;
+        }
+        if (body is null)
+        {
+            Reply(player, whispered, BotResponses.McTimerFullLines);
+            return;
+        }
+        Reply(player, whispered, BotResponses.McTimerSetLines, DurationText(seconds));
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(seconds));
+            bool fire;
+            lock (_gate)
+            {
+                // Another body since: its timers were cleared, this one died with the old one.
+                if (!ReferenceEquals(_body, body)) return;
+                if (_timers.TryGetValue(player, out var left))
+                {
+                    if (left <= 1) _timers.Remove(player);
+                    else _timers[player] = left - 1;
+                }
+                fire = _players.Contains(player, StringComparer.OrdinalIgnoreCase);
+            }
+            if (!fire) return;
+            if (note is null) Reply(player, whispered, BotResponses.McTimerDoneLines, DurationText(seconds));
+            else Reply(player, whispered, BotResponses.McTimerNoteLines, note);
+        });
+    }
+
+    // « 30 secondes », « 1 minute », « 5 minutes », « 1 heure », « 1 h 30 ».
+    private static string DurationText(int seconds)
+    {
+        if (seconds < 60) return $"{seconds} secondes";
+        if (seconds < 3600)
+        {
+            var minutes = (int)Math.Round(seconds / 60.0);
+            return minutes == 1 ? "1 minute" : $"{minutes} minutes";
+        }
+        var hours = seconds / 3600;
+        var rest = (seconds % 3600) / 60;
+        return rest > 0 ? $"{hours} h {rest:00}" : hours == 1 ? "1 heure" : $"{hours} heures";
+    }
 
     private static bool Same(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
 
@@ -663,20 +1069,37 @@ public sealed class MinecraftBodyService : BackgroundService
             }
             if (_order is { } order && Same(order.Player, player))
             {
-                _order = null;
+                // An errand done: the activity it paused holds her again, as the body went back to it.
+                _order = order.Resume;
                 return (order.Private, order.Detail);
             }
             return (false, "");
         }
     }
 
+    // The order this player gave that's pending or under way, if any.
+    private McOrder? JobOf(string player)
+    {
+        lock (_gate)
+            return _pending is { } pending && Same(pending.Player, player) ? pending.Order
+                : _order is { } order && Same(order.Player, player) ? order.Order
+                : null;
+    }
+
     private void OnMoving(string player, string kind)
     {
+        var job = JobOf(player);
         var (whispered, detail) = Confirm(player);
         switch (kind)
         {
+            case "goto" when job == McOrder.GoToPlace:
+                Reply(player, whispered, BotResponses.McPlaceGoAckLines, detail);
+                break;
             case "goto":
                 Reply(player, whispered, BotResponses.McGoToAckLines, detail);
+                break;
+            case "guide":
+                Reply(player, whispered, BotResponses.McGuideAckLines, detail);
                 break;
             case "guard":
                 Reply(player, whispered, Kin(player, BotResponses.McGuardAckLines, BotResponses.McGuardAckLinesOwner, BotResponses.McGuardAckLinesTata));
@@ -707,13 +1130,14 @@ public sealed class MinecraftBodyService : BackgroundService
     }
 
     // In bed, asked or because a player went to bed: whatever she was doing is over, whoever it was for,
-    // except a farm: the body goes back to it when she wakes, and it stays its keeper's.
+    // except an activity (a farm, fishing, a guarded place): the body goes back to it when she wakes, and it stays
+    // its keeper's.
     private void OnSlept(string player)
     {
-        McJob? farm;
-        lock (_gate) farm = _order is { Order: McOrder.Farm } kept ? kept : null;
+        McJob? activity;
+        lock (_gate) activity = _order is { } kept && IsActivity(kept.Order) ? kept : null;
         var (whispered, _) = Confirm(player);
-        lock (_gate) _order = farm;
+        lock (_gate) _order = activity;
         Reply(player, whispered, BotResponses.McSleepLines);
     }
 
@@ -762,9 +1186,29 @@ public sealed class MinecraftBodyService : BackgroundService
 
     private void OnArrived(string player, string kind)
     {
-        if (kind == "goto") OnOutcome(player, BotResponses.McGoToArrivedLines);
+        if (kind == "guide") OnOutcome(player, BotResponses.McGuideArrivedLines);
+        else if (kind == "goto" && JobOf(player) == McOrder.GoToPlace) OnOutcome(player, BotResponses.McPlaceArrivedLines);
+        else if (kind == "goto") OnOutcome(player, BotResponses.McGoToArrivedLines);
         else OnOutcome(player, BotResponses.McArrivedLines);
     }
+
+    // Handed over (the errand's outcome; the activity it paused is hers again, Finish). {1} = how many, {2} = what.
+    private void OnGiven(string player, string goodsKey, int count, bool delivered)
+    {
+        Confirm(player);
+        var goods = Goods(goodsKey) ?? McGoods.All;
+        OnOutcome(player,
+            !delivered ? BotResponses.McGiveLostLines
+            : Kin(player, BotResponses.McGiveDoneLines, BotResponses.McGiveDoneLinesOwner, BotResponses.McGiveDoneLinesTata),
+            count, BotResponses.McGoodsNames[goods]);
+    }
+
+    private static McGoods? Goods(string key) => Enum.TryParse<McGoods>(key, ignoreCase: true, out var goods) ? goods : null;
+
+    private static string SmeltName(string what) =>
+        Enum.TryParse<McSmelt>(what, ignoreCase: true, out var parsed) && BotResponses.McSmeltNames.TryGetValue(parsed, out var name)
+            ? name
+            : what;
 
     private void OnCollecting(string player, string resource, int count)
     {
@@ -802,11 +1246,36 @@ public sealed class MinecraftBodyService : BackgroundService
                 body.Send(whispered ? new { op = "whisper", player, text } : (object)new { op = "say", text });
     }
 
-    /// <summary>One of her lines in Minecraft's chat, rationed per kind and overall.</summary>
-    private void Remark(string kind, string[] pool, string? name = null)
+    // A player hit her. The first hits get a remark; the one that makes a streak (McHitStreaks: the same
+    // player, three times, no more than a minute apart) is when she understands they want to kill her, and
+    // that line goes out at once, past the remark gates. Hits after it keep the same lines, rationed again.
+    private void OnHit(string hitter)
     {
-        if (!_kindGate.TryClaim(kind)) return;
-        if (!_anyGate.TryClaim(0))
+        McHitStage stage;
+        lock (_gate) stage = _hits.Register(hitter, DateTimeOffset.UtcNow);
+        if (stage == McHitStage.Hit)
+        {
+            Remark("hit", Kin(hitter, BotResponses.McHitByPlayerLines, BotResponses.McHitByPlayerLinesOwner,
+                BotResponses.McHitByPlayerLinesTata), hitter);
+            return;
+        }
+        Remark("hit", Kin(hitter, BotResponses.McHitAgainLines, BotResponses.McHitAgainLinesOwner, BotResponses.McHitAgainLinesTata),
+            hitter, force: stage == McHitStage.Escalated);
+    }
+
+    /// <summary>
+    /// One of her lines in Minecraft's chat, rationed per kind and overall. <paramref name="force"/> says it
+    /// anyway, for the moments that can't wait, and still starts both cooldowns so nothing piles on after.
+    /// </summary>
+    private void Remark(string kind, string[] pool, string? name = null, bool force = false)
+    {
+        if (force)
+        {
+            _kindGate.TryClaim(kind);
+            _anyGate.TryClaim(0);
+        }
+        else if (!_kindGate.TryClaim(kind)) return;
+        else if (!_anyGate.TryClaim(0))
         {
             _kindGate.Release(kind);
             return;

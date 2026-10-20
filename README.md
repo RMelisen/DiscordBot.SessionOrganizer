@@ -159,12 +159,31 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
   - « syncs occupe-toi de la ferme »: she stays at the field, harvests whatever ripens, replants,
     and stores it in the chest next to it (she needs one within 10 blocks);
   - « syncs dodo »: she goes to bed. She also goes on her own when someone does at night, since the
-    night only passes when everyone sleeps.
+    night only passes when everyone sleeps;
+  - « syncs vide tes poches », « syncs donne-moi ton poisson » (or ta pioche, tes armes, ton fer…):
+    she hands you what she carries; « syncs range tes affaires » puts it in the chest nearby, keeping
+    her tools;
+  - « syncs va pêcher »: she fishes in the water nearby until told otherwise (she needs a rod) and
+    keeps the catch for you;
+  - « syncs cuis la viande », « syncs fais fondre le fer », « syncs fais du verre »: she puts what
+    she carries in a free furnace nearby, with her own fuel, and brings the result back;
+  - « syncs surveille la base »: she guards the spot instead of a player, and fights the monsters
+    that come near;
+  - « syncs retiens ici : maison », then « syncs va à la maison », « syncs rentre », « syncs
+    montre-moi le chemin vers la mine » (she leads, and waits when you fall behind), « syncs où est
+    la mine ? », « syncs tes lieux », « syncs oublie la mine »: up to 20 places, kept across
+    restarts; only whoever saved one (or the family) can move or forget it;
+  - « syncs préviens-moi dans 5 min » or « syncs rappelle-moi dans 10 min de sortir le fer »: a
+    reminder, up to two hours;
+  - « syncs t'es où ? », « syncs assis », « syncs saute », and « salut syncs » (she waves back).
 
   She never digs through or builds on anything on the way: when gathering, she breaks only the
   blocks she was sent for, and takes wood only from real trees. The only thing she ever places is
   a seed where she just harvested. She eats when hungry and wears the
-  best armour you give her. Whisper an order (`/msg SYNCS syncs viens`) and she whispers back. Say
+  best armour you give her. When guarding, she never hits a creeper: she shoots it with a bow if she
+  has one with arrows, and otherwise keeps away and warns you; badly hurt, she backs off to heal.
+  After handing something over or putting her things away, she goes back to the farm, the fishing
+  or the guarding she was at. Whisper an order (`/msg SYNCS syncs viens`) and she whispers back. Say
   just « syncs » and she answers « oui ? »: your next message is heard as an order, no name needed
   (« syncs » … « suis-moi »).
 

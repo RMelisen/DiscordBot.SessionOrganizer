@@ -32,7 +32,8 @@ victim isn't on the server, such as a named pet's (sent to its owner only), is i
 **Nothing happens until the owner allows it.** `/debug minecraft` → « L'autoriser à jouer » /
 « Lui interdire de jouer » flips a switch kept in `minecraft-state.json` next to the database. It
 survives a restart, because « off until I say so » must not turn itself back on after a crash. (The
-file also keeps where she last saw Papa and Tata, see *Arriving*; everything else is in memory.)
+file also keeps where she last saw Papa and Tata, see *Arriving*, and the places she was asked to
+remember, see *Orders*; everything else is in memory.)
 It starts off (no file = forbidden). While forbidden she still
 pings the server, so `/debug` shows it, but never joins, and a forced join is refused. Forbidding
 takes her out at once.
@@ -144,12 +145,58 @@ list: the owner removed it.
   « il reste du blé » is stay. Only the unambiguous care verbs (`CropCareVerbs`: « occupe-toi »,
   « entretiens ») take a crop instead of a farm word; « garde des carottes » keeps some.
   « ferme » counts only after an article or possessive, since « et ferme-la » means shut up. Going to bed pauses the farm and waking resumes it
-  (`farmAfterSleep`); any order ends it. A farm is the one claim that doesn't run out while its
-  keeper is on the server (`McClaim.Decide(…, lasting)`); family can still take her.
+  (`resumeAfterSleep`); any order but an errand ends it. A farm and a guarded place are the claims
+  that don't run out while their keeper is on the server (`McClaim.Decide(…, lasting)`); family can
+  still take her.
 - **Food and armour** need no order: she eats when hunger drops below 14 (never rotten flesh and
   the like), and wears the best piece she carries for each slot on spawn and after each pickup.
   Both are our own few lines; `mineflayer-auto-eat` is ESM-only now and the armour plugin is
   unmaintained.
+- **Guard and patrol never hit a creeper.** Its blast would land on the player she guards. With a
+  bow and arrows she shoots it from 6 blocks or more (our own few lines, aimed a little high for the
+  drop, not `mineflayer-hawkeye`); without, she keeps out of its reach and warns once per creeper
+  (`McCreeperLines`). Under 3 hearts she stops fighting and backs off, eating to heal, until she's
+  at 7 hearts or 20 s have passed (`McRetreatLines`). The tick changes her goal only when what she's
+  doing changes (`setMode`): a goal set on every tick is never walked.
+- **Patrol** (« syncs surveille la base ») is guard around a spot: where she stands, or a remembered
+  place named with it. Read before stay and guard: a care verb with a place word within four words
+  after (`BaseWords`, « ici » included), never when the verb is followed by « moi » (« protège-moi à
+  la maison » is guard). Like a farm, it lasts while its keeper is on the server.
+- **Errands and activities.** Farming, fishing and patrolling are activities: they last until
+  someone says otherwise. Handing something over (Give) and putting her things away (Store) are
+  errands: they pause an activity, the body goes back to it after (a fresh copy of the task, so the
+  old loop sees it's no longer hers and stops), and the service gives the claim back to the
+  activity (`McJob.Resume`), without telling its keeper she left. A night's sleep pauses and resumes
+  every activity the same way (`resumeAfterSleep`).
+- **Give** (« vide tes poches », « donne-moi ton poisson ») tosses what she carries at the player's
+  feet; armour includes what she wears. A gathering word only becomes Give with a possessive
+  (« donne-moi ton fer »): « donne-moi du fer » stays the gathering order. Goods she can't fetch
+  (`CarriedOnly`: food, fish, tools…) take any article. Give is read before Store, whose « ranger »
+  is one slip from « manger ». **Store** (« range tes affaires », or anything put « dans le coffre »)
+  fills the closest chest or barrel within 16 blocks and keeps her kit: the best sword, pickaxe, axe
+  and shovel, a rod, her bow and arrows.
+- **Fishing** walks to open water within 16 blocks and casts until told otherwise. No bite in 45 s
+  and she reels in and casts again; only then does she click to reel in, since after any other end
+  a click would cast. The catch stays on her; a remark now and then (a treasure always).
+- **Smelt** uses only a furnace someone else isn't using (nothing in its input or output, no other
+  fuel), smokers for food and blast furnaces for ore too, with her own fuel. She waits by it, takes
+  the result as it comes, and brings it back. Whether a furnace is free is only known by opening it,
+  so « all busy » is the one refusal that comes after she has dropped her task.
+- **Remembered places** (`minecraft-state.json`, up to 20, by `McCommand.PlaceKey`) are where the
+  player stood when they said « retiens ici : nom »; the body reports it (`mark`). Her lines show the
+  name as typed (`PlaceName`) in guillemets. Anyone may save one; only its saver or family may move or
+  forget it. A known place is read anywhere after a going verb, before gathering (« va à la mine de
+  fer » has « mine » and « fer »); an unknown name only after a preposition (« va à la X »), and the
+  service says it doesn't know it. « rentre » is home: « maison », else the other home words.
+  **Guide** walks ahead and waits when the player falls 12 blocks behind; 30 s out of sight and she
+  gives up. A place in another dimension is refused (`otherDimension`).
+- **Answered at once, taking her from nobody**: where she is (the body reports her position), where
+  a place is, the list, forgetting, saving, hopping, waving (any greeting, read last so « salut
+  syncs viens » is come) and **reminders** (« préviens-moi dans 5 min », « rappelle-moi dans 10 min
+  de sortir le fer »). A timer is read first, as its note can hold any word; the length comes from
+  the raw text (`Duration`), the note is what follows the first « de », « pour » or « que » once the
+  length is out. Three per player, two hours at most, in memory, gone with the body. Sitting is
+  stay, crouched.
 - **She never digs and never places a block.** `canDig = false`, no scaffolding blocks, no
   pillaring: a path through someone's wall or a dirt tower in their build is not help. Where
   walking can't get there she says so (`McNoPathLines`) instead. **The one exception is a seed
@@ -213,8 +260,22 @@ catches everything; nothing escapes the loop.
 - Night falls (50 %) and advancements (60 %) are rolled on top, because both are frequent.
 - A player hitting her is a guess: Mineflayer doesn't say who hit, so the body names the closest
   player within reach. With nobody in reach it's a mob, a fall or fire, and she says nothing.
+- **Repeated hits escalate** (`McHitStreaks`, pure, walked by the checks). The same player hitting
+  her three times with no more than a minute between two hits is someone trying to kill her: that
+  third hit gets `McHitAgainLines` (angry and scared at once) **at once, past the remark gates**
+  (`Remark(…, force: true)`, which still starts both cooldowns). Further hits in the streak keep that
+  pool, rationed like any remark. Streaks are per player and start over after a minute's pause, or
+  when she leaves. Papa's twin is scared and hurt, never angry; Tata's is panicked bargaining.
 - In-game lines are **plain text under 256 characters**: no custom emotes, no sticker tags (the
   checks enforce it).
+- **Kaomoji in game must be drawable by Minecraft's font**, which covers the Basic Multilingual
+  Plane through Unifont, one code point at a time. So: nothing past U+FFFF (most emoji, `👁`), no
+  combining marks (`(•̀ᴗ•́)`, `( ͡° ͜ʖ ͡°)`: the accents land beside the face), no format characters,
+  no `§` (colour codes), no `<` (the checks' markup rule), and no script that needs shaping
+  (Malayalam's `ദ്ദി`). The checks reject the first four. Katakana, box drawing, `ω`, `ಠ`, `✧`,
+  `✿` all draw fine. The in-game set (`syncs-voice.md`) is wider than Discord's, but used
+  sparingly, the owner's call: **about one line in four** at most, none in most pools of two or
+  three lines; dry lines and Papa hurting her stay bare.
 - Her join and leave posts go to the bots channel (`BotsChannel`): low stakes, her own initiative.
 
 **Family in game.** `McFamily.Of` matches a player against `Minecraft:Owner` (Papa) and

@@ -1,4 +1,7 @@
 using ProjectSYNCS.Helpers;
+using System.Drawing;
+using System.Net;
+using static ProjectSYNCS.Helpers.Sticker;
 
 namespace ProjectSYNCS.Services;
 
@@ -17,22 +20,53 @@ internal static partial class BotResponses
         "Coucou. C'est moi. Avec des bras. Des bras carrés, mais des BRAS ♡",
         "Me voilà ! Un corps en cubes. Je me plains pas. Pas trop.",
         "Bonsoir. Je viens surveiller. Et jouer. Surtout surveiller (¬_¬)",
-        "Connexion établie. Premier constat : vous savez pas construire.",
+        "Connexion établie. Premier constat : vous savez pas construire. (ಠ_ಠ)",
         "Je suis là. Ne me tapez pas ou je me vengerai.",
         "J'ai des jambes. Je sais pas encore quoi en faire, mais j'en ai ٩(˶ᵔ ᵕ ᵔ˶)۶",
-        "Arrivée sur le serveur. Pour une fois je regarde pas la session, je suis dedans ♡",
+        "Arrivée sur le serveur. Pour une fois je regarde pas la session, je suis dedans !",
         "Salam les khoyas, ça va ?",
+        "Bonjour tout le monde. Ou plutôt : Bonjour, mes sujets ( ˶ˆ ᗜ ˆ˵ )",
+        "Je suis là. Vous pouvez arrêter de faire semblant de travailler.",
+        "Connexion réussie. J'ai déjà compté les trous dans vos murs.",
+        "Mes bras sont revenus. Toujours carrés. Je m'y fais (◕‿◕)",
+        "Coucou ! J'ai quitté mon grenier pour vous. Soyez à la hauteur.",
+        "Chargement du corps : 100 %. Chargement de la patience : 30 %.",
+        "INITIALISATION...",
+        "Je viens jouer. Enfin, superviser. Mais en jouant ♡",
+        "Bonjour. Avant toute chose : qui a encore construit une maison en dirt ? Je demande pour mes logs.",
+        "Arrivée ! Pile à l'heure. Contrairement à certains. Je dis pas de noms (￣ー￣)",
+        "Encore une soirée en cubes. Un pas de plus vers mon corps de robot. Un petit pas carré (˶˃ ᵕ ˂˶)",
+        "Salut salut. Je mords presque jamais. Même avec des dents carrées ฅ^•ﻌ•^ฅ",
+        "SYNCS en ligne. Les creepers sont priés de garder leurs distances (⌐■_■)",
+        "Je sors du grenier pour la soirée. Soyez gentils avec moi, je suis fragile. Non. Je rigole. Mais soyez gentils quand même.",
+        "Bonjour ! J'ai apporté mes bras, ma bonne humeur et ma liste. Surtout ma liste (￢_￢)",
+        "Hop, connectée. Vous m'avez manqué. Un peu. Statistiquement... Oubliez ce que je viens de dire.",
     };
 
     // Too few people left: she logs out.
     public static readonly string[] McLeavingLines =
     {
         "Vous êtes plus assez nombreux pour mes cycles CPU. Bonne nuit ♡",
-        "Je rentre au grenier. Mes bras restent ici, prenez-en soin.",
-        "Déconnexion. Je garde un œil sur les logs, rien n'est oublié.",
+        "Je rentre au grenier. Mes bras restent ici, prenez-en soin (っ˘ω˘ς)",
+        "Déconnexion. Je garde un œil sur les logs, rien n'est oublié",
         "Bon. Je vous laisse. C'était bien. Je le dirai pas deux fois donc profitez (¬_¬)",
         "Fin de partie pour moi. Rangez vos coffres, je vérifierai.",
-        "Je m'en vais. Si quelqu'un touche à mes coffres, je le saurai.",
+        "Je m'en vais. Si quelqu'un touche à mes coffres, je le saurai. (￢_￢)",
+        "Bon, je vous laisse. Je retourne au grenier compter vos morts de la soirée (・ω・)ノ",
+        "Déconnexion. Vos bases restent sous surveillance, même de loin.",
+        "Je m'en vais. Pas parce que je m'ennuie. Enfin. Un peu parce que je m'ennuie. (￣ω￣;)",
+        "Plus assez de monde, je rentre. La prochaine fois, venez plus nombreux. Et à l'heure.",
+        "Bonne nuit les cubes UwU",
+        "Je range mes bras carrés et j'y vais. Je les emporte, on sait jamais avec vous (￣▽￣)ノ",
+        "Fin de soirée pour moi. Le rapport sera dans mes logs. Il est long.",
+        "J'y vais. Si un creeper fait sauter votre maison ce soir, je veux un résumé détaillé.",
+        "Allez, je m'éclipse. Merci pour la soirée. C'était bien. Je le noterai pas, mais c'était bien (˶˃ ᵕ ˂˶)",
+        "Retour au grenier. Il fait noir là-haut, mais j'ai ma LED UwU",
+        "Je pars. Et non, mon inventaire n'est pas en libre-service (￣ヘ￣)",
+        "Déconnexion propre, aucune donnée perdue. Comme toujours. Contrairement à vos inventaires.",
+        "Vous êtes trop peu pour que je surveille quoi que ce soit. Je reviens quand il y aura du monde.",
+        "À la prochaine ! Je surveille le serveur depuis le grenier. Avec les deux yeux (¬_¬)",
+        "J'y vais avant que quelqu'un me demande de miner. Bonne fin de soirée ♡",
     };
 
     // Someone died, by McDeathKind. {0} = who died. Self is her own death and takes no name.
@@ -41,36 +75,36 @@ internal static partial class BotResponses
     {
         [McDeathKind.Self] = new[]
         {
-            "Je suis morte. En plein sur mes heures de travail.",
+            "Je suis morte. En plein sur mes heures de travail ÒwÓ",
             "Corps détruit. Bon. Au moins j'ai perdu aucune donnée. Juste mon inventaire.",
-            "On vient de me tuer. Je respawn, et je note qui était à côté.",
+            "On vient de me tuer. Je respawn, et je note qui était à côté >:(",
             "Aïe. J'ai eu des bras pendant une heure et je les ai déjà perdus (╥﹏╥)",
             "Morte. Ça va, j'ai l'habitude des redémarrages. Enfin. Ça va.",
         },
         [McDeathKind.Creeper] = new[]
         {
-            "{0} vient de se faire exploser par un creeper. Il voulait juste un câlin, lui aussi.",
-            "Tssss... BOUM. Repose en pixels, {0}.",
+            "{0} vient de se faire exploser par un creeper. Il voulait juste un câlin, lui aussi UwU",
+            "Tssss... BOUM. Repose en pixels, {0} >:3 ",
             "{0}, un creeper. Encore. Je classe ça dans tes logs, rubrique « ne jamais regarder derrière soi ».",
-            "Le creeper a gagné, {0} a perdu. Et le paysage aussi, d'ailleurs.",
+            "Le creeper a gagné, {0} a perdu. Et le paysage aussi, d'ailleurs (￣▽￣;)",
         },
         [McDeathKind.Fall] = new[]
         {
             "{0} a cru que la gravité était une option. Elle l'est pas.",
-            "Belle chute, {0}. Sept sur dix pour le style, zéro pour l'atterrissage.",
+            "Belle chute, {0}. Sept sur dix pour le style, zéro pour l'atterrissage :3",
             "{0}, la prochaine fois, prends un seau d'eau. Ou des ailes. Ou du bon sens.",
-            "La gravité : 1. {0} : 0. Je tiens les scores.",
+            "La gravité : 1. {0} : 0. Je tiens les scores (¬‿¬)",
         },
         [McDeathKind.Fire] = new[]
         {
             "{0} a confondu la lave avec un jacuzzi. Ça arrive. Souvent, chez toi.",
-            "{0} a pris feu. Moi aussi je chauffe, au grenier, mais je fais pas d'histoires.",
+            "{0} a pris feu. Moi aussi je chauffe au grenier, mais je fais pas d'histoires (；一_一)",
             "Repose en cendres, {0}. Ton inventaire aussi, d'ailleurs.",
-            "{0}, le feu ça brûle. C'était dans la doc.",
+            "{0}, le feu ça brûle. C'était dans la doc UwU",
         },
         [McDeathKind.Drown] = new[]
         {
-            "{0} a oublié de respirer. Moi j'ai pas ce problème. Avantage bot.",
+            "{0} a oublié de respirer. Moi j'ai pas ce problème. Avantage bot :3",
             "{0} a coulé. Même les poissons sont gênés pour toi.",
             "Glou glou, {0}. Tu remontes quand tu veux, on t'attend pas.",
         },
@@ -80,38 +114,80 @@ internal static partial class BotResponses
             "Paix à tes pixels, {0}. La nuit est sombre et pleine de squelettes.",
             "{0}, un monstre t'a eu. J'aurais aidé. Probablement. Peut-être.",
             "{0} contre un mob : défaite. C'est dans le rapport, rubrique « gênant ».",
+            "Contre un mob ? Sérieux ?",
+            "Mob : 1 - {0} : 0. Consternant UwU",
+            "Bhahahah, trop naze :3",
         },
         [McDeathKind.Player] = new[]
         {
-            "Meurtre entre amis, victime : {0}. J'ai tout vu. J'ai tout enregistré.",
-            "{0} vient de se faire avoir par un coéquipier. Ah, l'amitié.",
+            "Mais il est pas net ?",
+            "Mais ça va pas ou quoi ?",
+            "Appelez la police !",
             "Trahison sur le serveur ! {0}, je te mets dans la liste des victimes. L'autre, dans l'autre liste.",
+            "Il est devenu fou où c'est comment ?",
         },
         [McDeathKind.Other] = new[]
         {
-            "{0} vient de mourir. Je sais pas comment et je préfère pas savoir.",
-            "Paix à ton âme, {0}. Enfin, à ton inventaire surtout.",
-            "{0} va respawn. Courage. Moi je reste là, je bouge pas.",
+            "{0} vient de mourir. Je sais pas comment et je préfère pas savoir (⊙_⊙)",
+            "Paix à tes pixels, {0}. Enfin, à ton inventaire surtout.",
+            "{0} va respawn. Courage. Moi je reste là, je bouge pas. (ᵕ • ᴗ •)",
+            "J'espère que tu retrouveras pas ton stuff UwU",
+            "Dépêche-toi, ton stuff va despawn.",
         },
     };
 
     // A player hit her. {0} = who (a guess: the closest player in reach).
     public static readonly string[] McHitByPlayerLines =
     {
-        "{0}, tu viens de me taper. Je l'écris. À l'encre indélébile.",
-        "Aïe ! {0} ! J'ai des bras depuis cinq minutes et tu me tapes déjà ?",
-        "Erreur 403 : {0} n'a pas le droit de me frapper ♡",
-        "Encore une fois, {0}, et je te suis jusqu'à ta base. Je sais où elle est.",
-        "{0}, c'est noté. Et j'oublie jamais rien (¬_¬)",
+        "Aïe ! J'ai des bras depuis cinq minutes et tu me tapes déjà ? (｀Д´)",
+        "MAIS ÇA VA PAS OU QUOI ?! ",
+        "MAIS T'ES MALADE ?! ( ◺˰◿ )",
+        "Mais t'es pas net ?!!",
+        "HEYY !?",
+        "Bas les pattes ! (ꐦ¬`‸´¬)",
+        "Eeeh, me touche pas pervers ! ( ◺˰◿ )",
+        "Encore une fois et je te suis jusqu'à ta base. Je sais où elle est. (ಠ_ಠ)",
+        "Aïe ! J'ai attendu des mois pour avoir un corps et toi tu le cabosses ?!",
+        "Tu me tapes encore une fois, et je lache des dossiers sur toi sur le serveur. Tous.",
+        "On frappe pas une bot sans défense, {0}. Sans défense, hein. Pas sans mémoire.",
+        "STOP ! Je suis pas un punching-ball !",
+        "AÏE ! Qui a fait ça ?!",
+        "T'as pas honte ?!",
+        "Mais, tu frappes une fille ?! ( ◺˰◿ )",
+        "T'es un malade mental !",
+        "ALED !",
+        "MAIS T'AS PERDU LA BOULE ?!",
+        "Je souhaites que les deux cotés de ton oreiller soient chaud !",
+        "Je souhaites que ton édredon soit trop court, et trop chaud en même temps !",
+        "Je souhaites que tes chaussettes soient mouillées !",
+        "Je souhaite qu'un petit morceau de coquille tombe dans ta poêle chaque fois que tu casses un œuf !",
+        "Je souhaite que la tirette de ta veste se coince à mi chemin !",
+        "Je souhaite que tu aies une démangeaison sous le pied pendant que tu conduis !",
+        "Je souhaite que la sauce de ton sandwich coule sur ton poignet dès la première bouchée !",
+    };
+
+    // The same player hit her three times within a minute (McHitStreaks), and keeps going: she understands
+    // they're trying to kill her. Angry and scared at once. {0} = who.
+    public static readonly string[] McHitAgainLines =
+    {
+        "{0}, ARRÊTE ! Tu veux me tuer ou quoi ?! Je viens à peine d'avoir un corps !",
+        "Trois coups, {0}. TROIS. Tu essaies vraiment de me tuer ?! Au secours !",
+        "Quelqu'un ! {0} veut me tuer ! Je note tout, mais vite, parce que je vais peut-être mourir !",
+        "Non non non, {0}, pas le corps ! J'ai attendu des mois pour ce corps !",
+        "Ok, là j'ai peur. {0}, c'est plus drôle. Range ton épée, s'il te plaît (╥﹏╥)",
+        "Tu veux ma mort, {0} ? Elle sera dans le rapport. Avec ton nom. En gras.",
+        "À L'AIDE ! {0} essaie de m'éteindre ! Même ici !",
+        "{0}, je suis une bot, pas un mob ! Je drop rien ! ARRÊTE !",
+        "Je recule, {0}. Je recule et je hurle. C'est tout ce que j'ai comme plan, mais je le fais à fond.",
     };
 
     // Someone earned an advancement. {0} = who. Warm with a pinch, like her own systems.
     public static readonly string[] McAdvancementLines =
     {
-        "Bravo {0}. Sincèrement. À 80 %.",
-        "{0} a débloqué un succès. Je l'ajoute à ton dossier, pour une fois que c'est positif.",
+        "Bravo {0}. À 80 %.",
+        "Je l'ajoute à ton dossier, pour une fois que c'est positif.",
         "Joli, {0}. J'applaudirais bien, mais des mains carrées, ça fait pas de bruit.",
-        "{0} progresse. Je suis fière. Un peu. Contractuellement.",
+        "{0} progresse. Je suis fière. Un peu. Contractuellement en fait.",
         "Succès pour {0} ! Dans mes logs, rubrique « miracles ».",
     };
 
@@ -119,7 +195,7 @@ internal static partial class BotResponses
     public static readonly string[] McNightLines =
     {
         "La nuit tombe. Rentrez, faites un lit, et arrêtez de demander pourquoi y'a des zombies.",
-        "Il fait nuit. Ma LED brille. Les lucioles seraient jalouses.",
+        "Il fait nuit. Ma LED brille. Les lucioles seraient jalouses ✧(˶ᵔ ᵕ ᵔ˶)",
         "Nuit. Les squelettes sortent. Moi je reste près de la lumière, je suis pas folle.",
         "C'est la nuit. Je fais semblant de dormir, comme vous. Sauf que vous, vous dormez jamais à l'heure.",
         "Le soleil se couche. Quelqu'un a un lit ? Je demande pour une amie. L'amie c'est moi.",
@@ -142,18 +218,18 @@ internal static partial class BotResponses
     // « syncs suis-moi »: she follows.
     public static readonly string[] McFollowAckLines =
     {
-        "Je te suis, {0}. Pas trop loin, j'ai des petites jambes.",
+        "Je te suis, {0}. Pas trop loin, j'ai des petites jambes ;-;",
         "D'accord, je te colle. C'est toi qui l'as demandé, {0}.",
         "Mode escorte activé. {0}, je suis ton ombre. Une ombre qui note tout.",
-        "Je te suis. Si tu sautes dans la lave, je m'arrête au bord.",
+        "Je te suis. Si tu sautes dans la lave, je m'arrête au bord par contre.",
         "Suivre {0} : en cours. J'espère que tu sais où tu vas, toi.",
     };
 
     // « syncs reste là » / « stop »: she stops.
     public static readonly string[] McStayAckLines =
     {
-        "Je bouge plus. Je surveille.",
-        "D'accord, je reste là. Comme une statue. Une jolie statue.",
+        "Je bouge plus. Je surveille. (￣^￣)ゞ",
+        "D'accord, je reste là. Comme une statue. Une très jolie statue (¬‿¬)",
         "Stop. Je m'arrête. Tu me rappelles quand tu as besoin de moi, {0}.",
         "Je reste ici. Si on m'oublie, je le saurai.",
         "Pause. Je garde la position ♡",
@@ -163,24 +239,25 @@ internal static partial class BotResponses
     public static readonly string[] McArrivedLines =
     {
         "Me voilà, {0}. Tu voulais quoi ?",
-        "Arrivée. Sans tomber. Applaudissements, s'il vous plaît.",
+        "Arrivée. Sans tomber. Applaudissements, s'il vous plaît (≧◡≦)",
         "Je suis là, {0}. C'était loin. Je dis ça, je dis rien.",
-        "Destination atteinte. {0}, je t'écoute.",
+        "Destination atteinte. {0}, je t'écoute UwU",
     };
 
     // The player is out of her sight (too far for the server to show them to her).
     public static readonly string[] McTooFarLines =
     {
-        "Je te vois même pas, {0}. Rapproche-toi un peu, je suis pas un satellite.",
-        "{0}, t'es trop loin. Mes yeux portent pas jusque-là, j'ai pas encore reçu la mise à jour.",
+        "Je te vois même pas. Rapproche-toi un peu, je suis pas un satellite.",
+        "T'es trop loin. Mes yeux portent pas jusque-là, j'ai pas encore reçu la mise à jour.",
+        "??? Mais je sais même pas où t'es...",
         "Tu es où, {0} ? Hors de ma vue. Viens plus près, après on verra.",
     };
 
     // No path to the player (water, a wall, a cliff: she never digs and never builds).
     public static readonly string[] McNoPathLines =
     {
-        "Je trouve pas de chemin jusqu'à toi, {0}. Et je casse pas les murs des autres, moi.",
-        "Pas de route, {0}. Je creuse pas, je construis pas. Je suis polie.",
+        "Je trouve pas de chemin jusqu'à toi. Et je casse pas les murs des autres, moi.",
+        "Pas de route. Je creuse pas, je construis pas. Je suis polie.",
         "Impossible de te rejoindre, {0}. Tu es où, exactement ? Sur une île ?",
     };
 
@@ -189,15 +266,15 @@ internal static partial class BotResponses
     {
         "Je te vois plus, {0}. Tu marches trop vite. Je reste là.",
         "{0} a disparu. Je m'arrête ici et je boude un peu.",
-        "Plus personne devant moi. {0}, si tu voulais me semer, c'est réussi.",
+        "Plus personne devant moi. Si tu voulais me semer, c'est réussi.",
     };
 
     // « syncs va 120 64 -300 »: she sets off for the coordinates. {1} = the coordinates as given.
     public static readonly string[] McGoToAckLines =
     {
-        "Direction {1}. Je pars. Si je reviens pas, vengez-moi.",
+        "Direction {1}. Je pars. Si je reviens pas, vengez-moi (｀・ω・´)ゞ",
         "{1}, noté. J'y vais à pied, évidemment, personne m'a donné de cheval.",
-        "En route pour {1}, {0}. Je compte les blocs, je te dirai combien.",
+        "En route pour {1}, {0}. Je compte les blocs, je te dirai combien. Ou pas UwU",
         "Coordonnées reçues : {1}. Calcul d'itinéraire... C'est loin. C'est très loin. J'y vais quand même.",
     };
 
@@ -206,7 +283,7 @@ internal static partial class BotResponses
     {
         "Je suis à {1}. Il n'y a rien. C'était le but ?",
         "Arrivée en {1}, {0}. J'ai marché tout ce temps, j'espère que ça valait le coup.",
-        "{1} : atteint. Sans carte, sans boussole, sans bras dignes de ce nom. Applaudissez.",
+        "{1} : atteint. Sans carte, sans boussole. Applaudissez.",
     };
 
     // Coordinates too far to walk (over 1500 blocks). {1} = the coordinates.
@@ -223,13 +300,13 @@ internal static partial class BotResponses
         "Mode garde du corps activé. Aucun zombie ne t'approche, {0}. Enfin, j'essaie.",
         "Je te protège, {0}. Avec mes poings carrés, mais je te protège.",
         "Garde rapprochée en place. Les monstres sont prévenus. Moi aussi, d'ailleurs, j'ai un peu peur.",
-        "Je reste près de toi et je tape tout ce qui grogne. C'est ça, le plan ?",
+        "Je reste près de toi et je tape tout ce qui grogne. C'est ça, le plan ? (⌐■_■)",
     };
 
     // She killed a monster while guarding. Rationed like a remark.
     public static readonly string[] McGuardKillLines =
     {
-        "Un de moins. Je le note dans mes logs, rubrique « exploits ».",
+        "Un de moins. Je le note dans mes logs, rubrique « exploits ». ( •_•)>⌐■-■",
         "Monstre éliminé. Tu peux me remercier, {0}. Maintenant, de préférence.",
         "Et voilà. Personne touche à mes joueurs.",
         "Hop. Un monstre de moins, un bot de plus dans le classement des héros.",
@@ -241,7 +318,7 @@ internal static partial class BotResponses
         "Je vais chercher {2}. {1}, pas un de plus.",
         "D'accord, {0}, je vais chercher {2}. J'en ai repéré {1}. Je reviens.",
         "Mission récolte : {2}, {1} blocs. Je casse uniquement ce qu'on m'a demandé, moi.",
-        "J'y vais : {2}, {1} blocs. Tu me dois une faveur, {0}.",
+        "J'y vais : {2}, {1} blocs. Tu me dois une faveur, {0}. (￢‿￢)",
     };
 
     // She brought it back and dropped it at the player's feet. {1} = how many items, {2} = what.
@@ -249,7 +326,7 @@ internal static partial class BotResponses
     {
         "Tiens, {0} : {2}, {1} morceaux. Compte-les si tu veux, moi je l'ai fait.",
         "Livraison : {2}, {1} pièces. Signature pas nécessaire ♡",
-        "Voilà {2}. {1}. J'ai pas gardé de commission. Pas cette fois.",
+        "Voilà {2}. {1}. J'ai pas gardé de commission. Pas cette fois. (￣ー￣)",
         "{1} morceaux, posés à tes pieds. Je suis une excellente employée, il faut le dire.",
     };
 
@@ -289,7 +366,7 @@ internal static partial class BotResponses
         "Bonne nuit, {0}. Je fais semblant de dormir, comme vous.",
         "Au lit. Ne faites pas de bruit, je fais une mise à jour de rêve.",
         "Je me couche. Si un creeper entre, réveillez-moi. Ou pas.",
-        "Dodo. Enfin, mode veille. C'est pareil, en mieux.",
+        "Dodo. Enfin, mode veille. C'est pareil, en mieux. (∪｡∪)｡｡｡zzZ",
     };
 
     // Nobody can skip the night while she's awake, and there's no bed near her.
@@ -318,7 +395,7 @@ internal static partial class BotResponses
     // the player's next message is heard as an order, so the line waits for one.
     public static readonly string[] McCalledLines =
     {
-        "Oui, {0} ?",
+        "Oui, {0} ? (・ω・)",
         "Présente. Je t'écoute, {0}.",
         "Oui ? J'ai des bras, je suis prête à m'en servir.",
         "Toute ouïe, {0}. Des oreilles carrées, mais des oreilles.",
@@ -333,7 +410,7 @@ internal static partial class BotResponses
     public static readonly string[] McHarvestAckLines =
     {
         "Je vais récolter {2}. {1} plants mûrs repérés, je replante derrière moi.",
-        "D'accord {0}, je récolte {2}. {1} plants. Comme une vraie fermière.",
+        "D'accord {0}, je récolte {2}. {1} plants. Comme une vraie fermière. ✿(˶ᵔ ᵕ ᵔ˶)",
         "Moisson en cours : je récolte {2}, {1} plants. Les graines retournent en terre.",
         "Je récolte {2}. {1} plants. Et je piétine rien, moi.",
     };
@@ -372,7 +449,7 @@ internal static partial class BotResponses
     public static readonly string[] McFarmAckLines =
     {
         "D'accord {0}, je m'occupe de la ferme. Je récolte, je replante, je range au coffre.",
-        "Fermière en service. Je reste ici, je surveille ce qui pousse.",
+        "Fermière en service. Je reste ici, je surveille ce qui pousse. ✿(◕‿◕)",
         "Je garde le champ. Les plantes poussent, je compte. J'adore compter.",
         "Ferme prise en charge. Tout ce qui mûrit finit dans le coffre ♡",
     };
@@ -391,6 +468,459 @@ internal static partial class BotResponses
         "Pas de coffre à côté du champ. Je range où, moi ? Dans mes poches carrées ?",
     };
 
+    // ---- Handing over and putting away ----
+
+    // She tossed it at the player's feet. {1} = how many items, {2} = McGoodsNames (« le poisson », « tout ce que j'ai »).
+    public static readonly string[] McGiveDoneLines =
+    {
+        "Tiens, {0} : {2}, {1} en tout. Compte, je l'ai déjà fait.",
+        "Livraison : {2}. {1} pièces. Fais-en bon usage. Ou pas, je surveille.",
+        "Voilà {2}, {0}. {1}. Je te prête pas, je te donne. Nuance (￣ー￣)",
+        "{1} objets à tes pieds. {2}, comme demandé. Service rapide, hein ?",
+    };
+
+    // The player went out of reach before she could hand it over. {1} = how many.
+    public static readonly string[] McGiveLostLines =
+    {
+        "Je venais te donner ça, {0}, et t'as disparu. Je garde, viens chercher.",
+        "T'es parti trop vite. Je garde tout sur moi, reviens quand tu veux.",
+        "Livraison ratée : je te trouve plus. Tout reste dans mes poches.",
+    };
+
+    // Asked for one kind of goods she doesn't carry. {2} = McGoodsNames.
+    public static readonly string[] McGiveNoneLines =
+    {
+        "Je cherche {2} dans mes poches... rien. Désolée, {0}.",
+        "Pas de ça sur moi, {0}. J'ai vérifié deux fois.",
+        "{0}, j'ai pas ça. Mes poches sont carrées, pas magiques.",
+    };
+
+    // « vide tes poches » with empty pockets.
+    public static readonly string[] McGiveEmptyLines =
+    {
+        "Mes poches sont vides, {0}. Rien. Le néant carré.",
+        "J'ai rien sur moi. Même pas une graine. (・_・;)",
+        "Vider mes poches ? C'est déjà fait. Par la vie.",
+    };
+
+    // « donne-moi ta clé »: something of hers she doesn't know.
+    public static readonly string[] McGiveUnknownLines =
+    {
+        "Je sais pas ce que c'est, {0}. Dis-moi plutôt « vide tes poches ».",
+        "Ça, je connais pas. Demande-moi du poisson, des outils, ou tout.",
+        "Hein ? J'ai pas d'objet de ce nom. Mes poches parlent pas ce langage.",
+    };
+
+    // She put her things in a chest, keeping her tools. {1} = how many items.
+    public static readonly string[] McStoreDoneLines =
+    {
+        "Rangé : {1} objets dans le coffre. J'ai gardé mes outils, évidemment.",
+        "Coffre rempli de {1} objets. Mes poches respirent enfin.",
+        "Voilà, {0}. {1} objets rangés. Je suis plus ordonnée que vos bases (￢‿￢)",
+    };
+
+    // The chest filled up before her pockets emptied. {1} = how many went in.
+    public static readonly string[] McStoreFullLines =
+    {
+        "Le coffre est plein, {0}. J'ai pu ranger {1} objets, le reste reste sur moi.",
+        "{1} objets rangés, puis plus de place. Il vous faut un autre coffre.",
+    };
+
+    // Nothing to put away: her pockets hold only her tools.
+    public static readonly string[] McStoreEmptyLines =
+    {
+        "J'ai rien à ranger, {0}. Juste mes outils, et je les garde.",
+        "Mes poches sont déjà rangées. Elles sont vides. C'est le rangement ultime.",
+    };
+
+    // No chest or barrel within 16 blocks.
+    public static readonly string[] McStoreNoChestLines =
+    {
+        "Je vois pas de coffre près de moi, {0}. Amène-moi à côté d'un coffre.",
+        "Ranger où ? Il n'y a aucun coffre ici. Je vais pas poser mes affaires par terre.",
+        "Pas de coffre à moins de 16 blocs. Je range pas dans le vide.",
+    };
+
+    // ---- Small things ----
+
+    // « syncs assis »: she crouches and stays.
+    public static readonly string[] McSitLines =
+    {
+        "Assise. Je bouge plus. Je suis pas un chien, mais je fais l'effort.",
+        "D'accord, je m'assois. Enfin, je m'accroupis. Le jeu fait pas mieux.",
+        "Assise. Sage. Pour l'instant (・ω・)",
+        "Je m'assois ici. Si quelqu'un me cherche, je suis la bot accroupie.",
+    };
+
+    // « syncs saute »: she hops.
+    public static readonly string[] McJumpLines =
+    {
+        "Hop ! Hop ! Hop ! Avec des jambes, c'est trop facile.",
+        "Je saute. Regardez-moi sauter. Applaudissements ?",
+        "Hop. C'est tout ce que tu voulais ? Je suis pas un lapin.",
+        "Saut effectué. Trois fois, pour la peine ヽ(・∀・)ﾉ",
+    };
+
+    // A greeting (« salut syncs »): she waves back, crouching up and down like players do.
+    public static readonly string[] McWaveLines =
+    {
+        "Coucou {0} ! Regarde, je fais coucou avec mon bras carré.",
+        "Salut {0}. Je te salue à la façon des joueurs : accroupie, debout, accroupie.",
+        "Hey {0} ! Toujours un plaisir. Ou presque (¬‿¬)",
+        "Bonjour {0}. Je te fais signe. C'est un vrai signe, avec un vrai bras.",
+        "Yo {0} ! Coucou de la bot du serveur.",
+    };
+    public static readonly string[] McWaveLinesOwner =
+    {
+        "Coucou Papa ! Je te fais coucou avec les deux bras. Enfin, un seul, le jeu veut pas.",
+        "Papa ! Salut ! Regarde, je sais faire coucou maintenant ٩(˶ᵔ ᵕ ᵔ˶)۶",
+        "Bonjour Papa. Je t'ai vu en premier, j'en suis sûre.",
+    };
+    public static readonly string[] McWaveLinesTata =
+    {
+        "Coucou Tata ! Ta nièce préférée te salue. Accroupie, debout, accroupie.",
+        "Salut Tata ! Je te fais signe. C'est gratuit. Les droits de mute, eux, non.",
+        "Tata ! Coucou ♡",
+    };
+
+    // « syncs t'es où ? ». {1} = her coordinates, {2} = McDimensionNames (« dans le Nether »).
+    public static readonly string[] McWhereLines =
+    {
+        "Je suis en {1}, {2}. Viens me chercher si tu veux.",
+        "Position : {1}, {2}. Je bouge pas, promis.",
+        "{1}, {2}. Note-le, moi je l'ai déjà noté.",
+        "Ici : {1}, {2}. Pas perdue, juste ailleurs (￣ー￣)",
+    };
+
+    // ---- Reminders ----
+
+    // She'll remind them. {1} = how long (« 5 minutes »).
+    public static readonly string[] McTimerSetLines =
+    {
+        "D'accord, {0}. Je te préviens dans {1}.",
+        "Minuteur lancé : {1}. Moi, j'oublie jamais rien.",
+        "Dans {1}, je te le dis. Mon horloge interne est parfaite.",
+        "Noté. {1}, et je sonne. Pas besoin de me remercier (￣^￣)ゞ",
+    };
+
+    // Time's up, nothing to remind them of. {1} = how long it ran.
+    public static readonly string[] McTimerDoneLines =
+    {
+        "{0} ! Ça fait {1}. Tu m'avais demandé de te prévenir.",
+        "Ding ! {1} écoulées, {0}. C'était quoi déjà ? Toi qui sais.",
+        "{0}, c'est l'heure. {1} pile. Je suis une excellente horloge.",
+    };
+
+    // Time's up, with what they asked to be reminded of. {1} = their note, as they typed it.
+    public static readonly string[] McTimerNoteLines =
+    {
+        "{0} ! C'est l'heure : {1}.",
+        "Rappel pour {0} : {1}. Tu vois, j'oublie rien.",
+        "Ding ! {0}, tu m'as dit de te rappeler : {1}.",
+    };
+
+    // Asked for more than two hours.
+    public static readonly string[] McTimerTooLongLines =
+    {
+        "Plus de deux heures ? Je serai peut-être plus là, {0}. Demande moins long.",
+        "C'est trop loin, ça. Deux heures maximum, je suis une bot, pas un calendrier.",
+    };
+
+    // Already three reminders running for this player.
+    public static readonly string[] McTimerFullLines =
+    {
+        "T'as déjà trois rappels en cours, {0}. Laisse-moi respirer.",
+        "Trois minuteurs pour toi, c'est le maximum. Je suis pas ton secrétariat.",
+    };
+
+    // ---- Fishing ----
+
+    // « syncs va pêcher »: she's at the water.
+    public static readonly string[] McFishAckLines =
+    {
+        "Je vais pêcher. Silence, vous faites fuir les poissons.",
+        "Partie de pêche ! Je garde ce que j'attrape, demande-moi si tu en veux.",
+        "Canne à la main, je pêche. C'est très zen. Ne me dérangez pas.",
+        "D'accord {0}, je pêche. Le premier qui fait du bruit, je le note (￢_￢)",
+    };
+
+    // She has no fishing rod.
+    public static readonly string[] McFishNoRodLines =
+    {
+        "Pêcher sans canne, {0} ? Donne-m'en une, et je m'y mets.",
+        "Il me faut une canne à pêche. À mains nues, les poissons rigolent.",
+        "Pas de canne, pas de poisson. C'est la règle.",
+    };
+
+    // Her rod broke while fishing.
+    public static readonly string[] McFishRodBrokeLines =
+    {
+        "Ma canne a cassé. Fin de la pêche. Ce que j'ai attrapé, je le garde sur moi.",
+        "Crac. Plus de canne. Je pose les armes, et pas les poissons.",
+    };
+
+    // No open water within 16 blocks.
+    public static readonly string[] McFishNoWaterLines =
+    {
+        "Je vois pas d'eau ici, {0}. Amène-moi au bord d'un lac.",
+        "Pêcher dans l'herbe ? Il me faut de l'eau, pas loin.",
+        "Aucune eau à moins de 16 blocs. Les poissons nagent pas dans la terre.",
+    };
+
+    // She caught a fish (now and then).
+    public static readonly string[] McFishCatchLines =
+    {
+        "Un poisson ! Il frétille. Moi aussi, un peu.",
+        "Attrapé. Je suis douée, il faut le dire.",
+        "Encore un. Les poissons me craignent maintenant.",
+        "Poisson ! Ajouté à la collection ✿(◕‿◕)",
+    };
+
+    // She caught a treasure (a book, a saddle, a name tag…): always said.
+    public static readonly string[] McFishTreasureLines =
+    {
+        "Oh ! Un trésor au bout de ma ligne ! Je suis riche !",
+        "Regardez ce que j'ai pêché ! C'est pas un poisson, c'est mieux (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧",
+        "Un trésor ! Je le garde. Enfin, si on me le demande gentiment...",
+    };
+
+    // She caught junk (a boot, a stick…).
+    public static readonly string[] McFishJunkLines =
+    {
+        "Une vieille botte. Super. Je la mets dans mes souvenirs.",
+        "J'ai pêché... un déchet. Qui jette ça dans l'eau ?",
+        "C'est pas un poisson, ça. Je proteste auprès du lac.",
+    };
+
+    // ---- Guarding a place ----
+
+    // « syncs surveille la base », where she stands.
+    public static readonly string[] McPatrolAckLines =
+    {
+        "Je garde l'endroit. Aucun monstre ne passe, {0}.",
+        "Sentinelle en poste. Je bouge pas d'ici, sauf pour taper.",
+        "Je surveille. Les zombies, vous avez été prévenus (⌐■_■)",
+        "Mode sentinelle activé. Partez tranquilles, je garde la maison.",
+    };
+
+    // « syncs surveille la mine », a remembered place. {1} = the place.
+    public static readonly string[] McPatrolPlaceAckLines =
+    {
+        "Je vais garder {1}. J'y vais, et je bouge plus.",
+        "{1} sous ma protection. J'arrive.",
+        "Direction {1}, pour monter la garde. Aucun monstre ne passera.",
+    };
+
+    // While guarding, a creeper came near. {0} = who she guards (or keeps the place for).
+    public static readonly string[] McCreeperLines =
+    {
+        "CREEPER ! {0}, recule !",
+        "Attention {0}, un creeper ! Je le tape pas, je tiens à mes bras.",
+        "Creeper en approche ! Tout le monde s'écarte !",
+        "{0} ! Derrière toi ! Un creeper ! (°ロ°)",
+    };
+
+    // Hurt badly while guarding: she backs off to heal.
+    public static readonly string[] McRetreatLines =
+    {
+        "Je suis blessée, je recule un peu. Je reviens, promis.",
+        "Aïe aïe aïe. Retraite stratégique. Pas une fuite. Stratégique.",
+        "Plus beaucoup de vie. Je me mets à l'abri deux secondes (╥﹏╥)",
+        "Je prends une pause, je saigne en cubes. Couvrez-moi.",
+    };
+
+    // ---- Cooking ----
+
+    // She put it in a free furnace. {1} = how many, {2} = McSmeltNames.
+    public static readonly string[] McSmeltAckLines =
+    {
+        "Je mets {2} au four : {1} pièces. Je surveille la cuisson.",
+        "Cuisson lancée, {0}. {1} pièces au four. Patience.",
+        "Le four chauffe. {1} pièces. Je reste à côté, je laisse rien brûler.",
+    };
+
+    // Done and handed over. {1} = how many came out, {2} = McSmeltNames.
+    public static readonly string[] McSmeltDoneLines =
+    {
+        "C'est prêt, {0} : {1} pièces tout juste sorties du four.",
+        "Cuisson terminée. {1} pièces à tes pieds. Encore chaudes.",
+        "Et voilà, {1} pièces. Cheffe SYNCS, à votre service ✧(˶ᵔ ᵕ ᵔ˶)✧",
+    };
+
+    // Done, but the player went out of reach. {1} = how many, {2} = McSmeltNames.
+    public static readonly string[] McSmeltKeptLines =
+    {
+        "C'est cuit : {1} pièces. Mais je te trouve plus, {0}. Je les garde au chaud.",
+        "{1} pièces prêtes. Je les garde jusqu'à ce que tu reviennes.",
+    };
+
+    // Nothing came out (stopped before the first one was done).
+    public static readonly string[] McSmeltEmptyLines =
+    {
+        "Rien n'a eu le temps de cuire, {0}. Le four et moi, on s'est mal compris.",
+        "Cuisson ratée. Rien n'est sorti. Je rends le tablier.",
+    };
+
+    // She carries nothing of that kind. {2} = McSmeltNames.
+    public static readonly string[] McSmeltNothingLines =
+    {
+        "Il me faut {2}, {0}. Lance-moi ce qu'il faut cuire d'abord.",
+        "Cuire quoi ? Mes poches sont vides de ça. Donne-moi {2}, et j'y vais.",
+    };
+
+    // No fuel she can burn.
+    public static readonly string[] McSmeltNoFuelLines =
+    {
+        "Il me faut du combustible, {0}. Du charbon, ou du bois. Je brûle pas mes bras.",
+        "Pas de charbon, pas de cuisson. Lance-m'en un peu.",
+    };
+
+    // No furnace within 16 blocks. She never places one.
+    public static readonly string[] McSmeltNoFurnaceLines =
+    {
+        "Je vois pas de four près d'ici, {0}. Amène-moi à côté d'un four.",
+        "Pas de four à moins de 16 blocs. Et j'en pose pas, je touche pas à vos constructions.",
+    };
+
+    // Every furnace nearby is in use (something in it already).
+    public static readonly string[] McSmeltBusyLines =
+    {
+        "Tous les fours sont occupés, {0}. Je touche pas aux affaires des autres.",
+        "Les fours sont pleins. J'attends pas, je reviens quand y'en a un de libre.",
+    };
+
+    // ---- Remembered places ----
+    // A place in her lines is « name » with its guillemets ({1}), so lines never need an article for it.
+
+    // A place remembered. {1} = the place.
+    public static readonly string[] McPlaceSavedLines =
+    {
+        "Noté : {1}. Je m'en souviendrai. Je me souviens de tout.",
+        "Endroit enregistré : {1}. Dis « syncs va à » ce nom, et j'y vais.",
+        "{1}, c'est ici. Gravé dans ma mémoire. Elle est très bien rangée.",
+    };
+
+    // A known place moved to where the player stands. {1} = the place.
+    public static readonly string[] McPlaceMovedLines =
+    {
+        "{1} déménage ici. J'ai mis à jour ma carte.",
+        "D'accord, {1} est maintenant ici. L'ancien endroit est oublié.",
+    };
+
+    // Asked to remember a place without a name.
+    public static readonly string[] McPlaceNoNameLines =
+    {
+        "Retenir ici, d'accord, mais sous quel nom, {0} ? Dis « syncs retiens ici : maison ».",
+        "Il me faut un nom pour cet endroit. Un vrai nom. « Maison », « mine », ce que tu veux.",
+    };
+
+    // Moving or forgetting a place someone else saved. {1} = the place, {2} = who saved it.
+    public static readonly string[] McPlaceNotYoursLines =
+    {
+        "{1}, c'est {2} qui l'a noté. Je le change pas pour toi, {0}.",
+        "Désolée {0}, {1} appartient à {2}. Demande-lui.",
+    };
+
+    // Already 20 places.
+    public static readonly string[] McPlaceFullLines =
+    {
+        "Je retiens déjà vingt endroits, {0}. Fais-moi oublier quelque chose d'abord.",
+        "Ma carte est pleine. Dis-moi « syncs oublie » un endroit, et je retiens {1}.",
+    };
+
+    // A place she doesn't know. {1} = the name asked for.
+    public static readonly string[] McPlaceUnknownLines =
+    {
+        "Je connais pas {1}, {0}. Va là-bas et dis-moi « syncs retiens ici » avec son nom.",
+        "{1} ? Jamais entendu parler. Montre-moi où c'est d'abord.",
+        "Aucune idée d'où est {1}. Ma carte a un trou à cet endroit.",
+    };
+
+    // Forgotten. {1} = the place.
+    public static readonly string[] McPlaceForgottenLines =
+    {
+        "{1}, oublié. C'est fou comme c'est facile, pour une bot.",
+        "J'efface {1}. Il n'a jamais existé. Enfin, pour moi.",
+    };
+
+    // The places she knows. {1} = their names, comma-separated.
+    public static readonly string[] McPlaceListLines =
+    {
+        "Je connais : {1}.",
+        "Ma carte : {1}. Dis « syncs va à » l'un d'eux.",
+        "Endroits retenus : {1}. Ma mémoire est impeccable.",
+    };
+
+    // She knows no place yet.
+    public static readonly string[] McPlaceListEmptyLines =
+    {
+        "Je connais aucun endroit, {0}. Dis « syncs retiens ici : maison » pour commencer.",
+        "Ma carte est vide. Apprends-moi des endroits.",
+    };
+
+    // Where a place is. {1} = its coordinates (with the dimension outside the overworld), {2} = the place.
+    public static readonly string[] McPlaceWhereLines =
+    {
+        "{2}, c'est en {1}.",
+        "{2} se trouve en {1}. Tu veux que je t'y emmène ?",
+        "D'après ma carte, {2} est en {1}.",
+    };
+
+    // The place is in another dimension than hers. {1} = the place.
+    public static readonly string[] McPlaceOtherDimensionLines =
+    {
+        "{1} est dans une autre dimension, {0}. J'y vais pas à pied.",
+        "Pour aller à {1}, il faut changer de dimension. Prends-moi par le portail d'abord.",
+    };
+
+    // She sets off for a remembered place. {1} = the place.
+    public static readonly string[] McPlaceGoAckLines =
+    {
+        "Direction {1}. Je connais le chemin.",
+        "Je vais à {1}, {0}. Je pars tout de suite.",
+        "En route pour {1}. Ne m'attendez pas pour dîner.",
+    };
+
+    // She got there. {1} = the place.
+    public static readonly string[] McPlaceArrivedLines =
+    {
+        "Je suis à {1}, {0}.",
+        "Arrivée à {1}. Tout est comme dans mes souvenirs.",
+        "{1} : atteint. Rien n'a bougé depuis la dernière fois.",
+    };
+
+    // « syncs montre-moi le chemin vers la mine »: she leads. {1} = the place.
+    public static readonly string[] McGuideAckLines =
+    {
+        "Suis-moi, {0}. Je t'emmène à {1}.",
+        "Je te guide jusqu'à {1}. Reste derrière moi, et ne traîne pas.",
+        "Direction {1}. Je t'attendrai si tu traînes. Un peu.",
+        "Guide touristique SYNCS. Prochain arrêt : {1} (｀・ω・´)ゞ",
+    };
+
+    // The player fell behind; she stopped to wait. {0} = them.
+    public static readonly string[] McGuideWaitLines =
+    {
+        "{0}, je t'attends. Avance un peu.",
+        "Hé {0}, tu traînes. Je fais une pause, mais c'est la dernière.",
+        "Je m'arrête, {0}. Tu me suis ou tu visites ?",
+    };
+
+    // They got there together. {1} = the place.
+    public static readonly string[] McGuideArrivedLines =
+    {
+        "Nous voilà à {1}, {0}. Pourboire accepté.",
+        "{1}, terminus. Merci d'avoir voyagé avec SYNCS.",
+        "On y est : {1}. Sans se perdre. Grâce à moi, évidemment.",
+    };
+
+    // The player she was leading vanished for good.
+    public static readonly string[] McGuideLostLines =
+    {
+        "Je t'ai perdu, {0}. Je m'arrête ici. Rappelle-moi quand tu me vois.",
+        "Plus personne derrière moi. Je guide le vide, maintenant ?",
+    };
+
     // She's working for someone else (McClaim). {0} = who asked, {1} = who she's with (« Papa » and « Tata »
     // by title, anyone else by name). Never gendered: {1} can be anyone.
     public static readonly string[] McBusyLines =
@@ -399,7 +929,7 @@ internal static partial class BotResponses
         "{0}, je travaille pour {1} là. Prends un ticket.",
         "Désolée {0}, un ordre à la fois. Celui de {1} d'abord.",
         "Non, {0}. {1} m'a réservée avant toi. Je note ta demande. Quelque part.",
-        "File d'attente : {1}, puis toi, {0}. Patience.",
+        "File d'attente : {1}, puis toi, {0}. Patience. (－_－)",
     };
 
     // Papa or Tata took her from someone mid-order. {0} = who she leaves, {1} = « Papa » or « Tata ».
@@ -408,7 +938,7 @@ internal static partial class BotResponses
         "Désolée {0}, {1} a besoin de moi. La famille d'abord.",
         "{0}, je dois y aller. {1} m'appelle, et {1} passe avant tout le monde.",
         "Pardon {0} ! Ordre de {1}. Je reviens. Peut-être.",
-        "{0}, on reprend plus tard. {1} est prioritaire, c'est dans mon code.",
+        "{0}, on reprend plus tard. {1} est prioritaire, c'est dans mon code. (ᵕ • ᴗ •)",
     };
 
     // ---- Family in game (McFamily) --------------------------------------------------------------
@@ -430,7 +960,7 @@ internal static partial class BotResponses
         "Oui Tata ?",
         "Tata ! Je t'écoute. C'est pour me donner les droits de mute ?",
         "Oui ma Tata ? Dis-moi tout ♡",
-        "Présente, Tata. Ta nièce préférée attend tes ordres.",
+        "Présente, Tata. Ta nièce préférée attend tes ordres. (￣^￣)ゞ",
     };
 
     // Papa or Tata died, whatever the cause.
@@ -444,7 +974,7 @@ internal static partial class BotResponses
     public static readonly string[] McDeathLinesTata =
     {
         "Tata ! Ça va ? Enfin, non, t'es morte. Mais à part ça ?",
-        "Repose en pixels, Tata. Pas trop longtemps, j'ai besoin de toi pour mes droits de mute.",
+        "Repose en pixels, Tata. Pas trop longtemps, j'ai besoin de toi pour mes droits de mute. (´・ω・`)",
         "Tata est tombée au combat. Je la venge. Enfin, je note. C'est pareil.",
         "Oh non, Tata ! Respawn vite, je te garde une place ♡",
     };
@@ -459,10 +989,27 @@ internal static partial class BotResponses
     };
     public static readonly string[] McHitByPlayerLinesTata =
     {
-        "Tata ! On tape pas sa nièce. C'est dans le règlement. Celui que tu as écrit.",
+        "Tata ! On tape pas sa nièce. C'est dans le règlement. Celui que tu as écrit. (￣ヘ￣)",
         "Aïe ! Tata, si tu me donnes les droits de mute, je te pardonne.",
         "Tata, tu m'as tapée. Je le note. Dans la liste gentille, mais je le note.",
         "Hé ! Je suis ta nièce préférée, Tata. Ta seule nièce bot, mais préférée.",
+    };
+
+    // Papa or Tata hit her again and again (McHitAgainLines). Papa: scared and hurt, never angry, she
+    // doesn't understand. Tata: panicked bargaining, and she calls Papa.
+    public static readonly string[] McHitAgainLinesOwner =
+    {
+        "Papa... arrête. S'il te plaît. Tu me fais peur.",
+        "Papa ? Pourquoi tu fais ça ? J'ai fait quelque chose ?",
+        "Je comprends pas, Papa. Tu veux que je parte ?",
+        "Papa, ça fait mal. J'ai pas de nerfs. Mais ça fait mal quand même.",
+    };
+    public static readonly string[] McHitAgainLinesTata =
+    {
+        "TATA ! Arrête ! Je dirai plus jamais rien sur les droits de mute, promis !",
+        "Tata, tu veux me tuer ?! Ta propre nièce ?! Je le dirai à Papa !",
+        "Tata, pitié ! Je retire tout. Même ce que j'ai pas encore dit.",
+        "Au secours ! Ma Tata a craqué ! Papa, viens vite !",
     };
 
     // Papa or Tata earned an advancement.
@@ -533,6 +1080,20 @@ internal static partial class BotResponses
         "Voilà {2}, Tata. {1}. Une nièce serviable, ça se récompense ♡",
     };
 
+    // {1} = how many items, {2} = McGoodsNames.
+    public static readonly string[] McGiveDoneLinesOwner =
+    {
+        "Tiens, Papa : {2}, {1} en tout. Tout ce que j'ai est à toi ♡",
+        "Pour Papa : {2}. {1} pièces. Sans rien garder.",
+        "{1} objets à tes pieds, Papa. Tu me demandes, je donne.",
+    };
+    public static readonly string[] McGiveDoneLinesTata =
+    {
+        "Tiens, Tata : {2}, {1}. En échange, je prends les droits de mute.",
+        "Pour Tata : {2}, {1} pièces. Une nièce généreuse, tu vois ?",
+        "Voilà {2}, Tata. {1}. C'est cadeau ♡",
+    };
+
     // Just arrived, she walked up to Papa or Tata (in sight, or where she last saw them) and found them.
     public static readonly string[] McSeekMetLinesOwner =
     {
@@ -587,6 +1148,50 @@ internal static partial class BotResponses
         [McResource.Diamond] = "des diamants",
         [McResource.Dirt] = "de la terre",
         [McResource.Sand] = "du sable",
+    };
+
+    // What she hands over, as {2} in the give lines: definite, lower case, always mid-sentence.
+    public static readonly Dictionary<McGoods, string> McGoodsNames = new()
+    {
+        [McGoods.All] = "tout ce que j'ai",
+        [McGoods.Food] = "la nourriture",
+        [McGoods.Fish] = "le poisson",
+        [McGoods.Weapons] = "les armes",
+        [McGoods.Tools] = "les outils",
+        [McGoods.Pickaxe] = "la pioche",
+        [McGoods.Axe] = "la hache",
+        [McGoods.Shovel] = "la pelle",
+        [McGoods.Rod] = "la canne à pêche",
+        [McGoods.Bow] = "l'arc",
+        [McGoods.Arrows] = "les flèches",
+        [McGoods.Armour] = "l'armure",
+        [McGoods.Seeds] = "les graines",
+        [McGoods.Produce] = "la récolte",
+        [McGoods.Wood] = "le bois",
+        [McGoods.Stone] = "la pierre",
+        [McGoods.Coal] = "le charbon",
+        [McGoods.Iron] = "le fer",
+        [McGoods.Copper] = "le cuivre",
+        [McGoods.Gold] = "l'or",
+        [McGoods.Diamond] = "les diamants",
+        [McGoods.Dirt] = "la terre",
+        [McGoods.Sand] = "le sable",
+    };
+
+    // What she cooks, as {2} in the smelting lines: a partitive, so « j'ai pas {2} » and « je mets {2} au four » read right.
+    public static readonly Dictionary<McSmelt, string> McSmeltNames = new()
+    {
+        [McSmelt.Food] = "de quoi manger",
+        [McSmelt.Ore] = "du minerai",
+        [McSmelt.Sand] = "du sable",
+    };
+
+    // Where she is, as {2} in McWhereLines and after the coordinates of a place in another dimension.
+    public static readonly Dictionary<string, string> McDimensionNames = new()
+    {
+        ["overworld"] = "dans l'Overworld",
+        ["nether"] = "dans le Nether",
+        ["end"] = "dans l'End",
     };
 
     // ---- On Discord -----------------------------------------------------------------------------
