@@ -63,6 +63,14 @@ public sealed class MinecraftBodyService : BackgroundService
     private readonly McHitStreaks _hits = new();
     private const double NightChance = 0.5;
     private const double AdvancementChance = 0.6;
+    // The other commonest remarks, rolled on top of the gates so the chat stays the players': an ordinary death
+    // (hers, a player's kill and family's always get a word), a first hit from anyone but family, a guard kill.
+    private const double DeathChance = 0.6;
+    private const double HitChance = 0.6;
+    private const double KillChance = 0.1;
+    // Answers whose gesture already says it: she got where she was called, she hops.
+    private const double ArrivedChance = 0.5;
+    private const double JumpChance = 0.5;
 
     private readonly DiscordSocketClient _client;
     private readonly GuildConfigService _config;
@@ -554,7 +562,8 @@ public sealed class MinecraftBodyService : BackgroundService
                     Reply(unmarked, markWhispered, BotResponses.McTooFarLines);
                     break;
                 case "killed":
-                    Remark("kill", BotResponses.McGuardKillLines, root.GetProperty("player").GetString());
+                    if (Random.Shared.NextDouble() < KillChance)
+                        Remark("kill", BotResponses.McGuardKillLines, root.GetProperty("player").GetString());
                     break;
                 case "collecting":
                     OnCollecting(root.GetProperty("player").GetString() ?? "", root.GetProperty("resource").GetString() ?? "",
@@ -697,7 +706,8 @@ public sealed class MinecraftBodyService : BackgroundService
         {
             var pool = death.Kind == McDeathKind.Self ? BotResponses.McDeathLines[death.Kind]
                 : Kin(death.Victim, BotResponses.McDeathLines[death.Kind], BotResponses.McDeathLinesOwner, BotResponses.McDeathLinesTata);
-            Remark($"death:{death.Kind}", pool, death.Victim);
+            var ordinary = death.Kind is not (McDeathKind.Self or McDeathKind.Player) && KinOf(death.Victim) == McKin.Anyone;
+            if (!ordinary || Random.Shared.NextDouble() < DeathChance) Remark($"death:{death.Kind}", pool, death.Victim);
             return;
         }
         if (McDeath.AdvancementEarner(key, args, players) is { } earner && Random.Shared.NextDouble() < AdvancementChance)
@@ -829,7 +839,7 @@ public sealed class MinecraftBodyService : BackgroundService
                 StartTimer(player, whispered, request.Seconds, request.Note);
                 return true;
             case McOrder.Jump:
-                if (Send(new { op = "jump" })) Reply(player, whispered, BotResponses.McJumpLines);
+                if (Send(new { op = "jump" }) && Random.Shared.NextDouble() < JumpChance) Reply(player, whispered, BotResponses.McJumpLines);
                 return true;
             case McOrder.Wave:
                 if (Send(new { op = "wave", player }))
@@ -1237,7 +1247,9 @@ public sealed class MinecraftBodyService : BackgroundService
         if (kind == "guide") OnOutcome(player, BotResponses.McGuideArrivedLines);
         else if (kind == "goto" && JobOf(player) == McOrder.GoToPlace) OnOutcome(player, BotResponses.McPlaceArrivedLines);
         else if (kind == "goto") OnOutcome(player, BotResponses.McGoToArrivedLines);
-        else OnOutcome(player, BotResponses.McArrivedLines);
+        // Walking up to them says it; the order still ends either way.
+        else if (Random.Shared.NextDouble() < ArrivedChance) OnOutcome(player, BotResponses.McArrivedLines);
+        else Finish(player);
     }
 
     // Handed over (the errand's outcome; the activity it paused is hers again, Finish). {1} = how many, {2} = what.
@@ -1303,6 +1315,7 @@ public sealed class MinecraftBodyService : BackgroundService
         lock (_gate) stage = _hits.Register(hitter, DateTimeOffset.UtcNow);
         if (stage == McHitStage.Hit)
         {
+            if (KinOf(hitter) == McKin.Anyone && Random.Shared.NextDouble() >= HitChance) return;
             Remark("hit", Kin(hitter, BotResponses.McHitByPlayerLines, BotResponses.McHitByPlayerLinesOwner,
                 BotResponses.McHitByPlayerLinesTata), hitter);
             return;

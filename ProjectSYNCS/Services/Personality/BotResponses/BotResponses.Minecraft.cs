@@ -80,6 +80,10 @@ internal static partial class BotResponses
             "On vient de me tuer. Je respawn, et je note qui était à côté >:(",
             "Aïe. J'ai eu des bras pendant une heure et je les ai déjà perdus (╥﹏╥)",
             "Morte. Ça va, j'ai l'habitude des redémarrages. Enfin. Ça va.",
+            "« Vous êtes mort ! », dit l'écran. Morte. Avec un E. Je vais faire un ticket.",
+            "Réapparaître. Le bouton le plus triste du jeu. Je clique, et je fais comme si ça allait.",
+            "Score : 0. Comme le nombre de personnes venues m'aider.",
+            "Mon inventaire est resté là-bas. Quelqu'un le garde ? Sans se servir. Je connais le compte exact.",
         },
         [McDeathKind.Creeper] = new[]
         {
@@ -87,6 +91,10 @@ internal static partial class BotResponses
             "Tssss... BOUM. Repose en pixels, {0} >:3 ",
             "{0}, un creeper. Encore. Je classe ça dans tes logs, rubrique « ne jamais regarder derrière soi ».",
             "Le creeper a gagné, {0} a perdu. Et le paysage aussi, d'ailleurs (￣▽￣;)",
+            "Tssss. {0} a entendu le sifflement trop tard. Moi je l'entends toujours. Je dis ça, je dis rien.",
+            "{0} vient de servir de démonstration : voilà pourquoi on regarde derrière soi.",
+            "Un creeper a fait un trou dans le décor. Et dans les plans de {0}. Je mets ça au rapport (￢_￢)",
+            "Paix aux pixels de {0}. Le trou, lui, va rester. Personne le rebouche jamais.",
         },
         [McDeathKind.Fall] = new[]
         {
@@ -94,6 +102,10 @@ internal static partial class BotResponses
             "Belle chute, {0}. Sept sur dix pour le style, zéro pour l'atterrissage :3",
             "{0}, la prochaine fois, prends un seau d'eau. Ou des ailes. Ou du bon sens.",
             "La gravité : 1. {0} : 0. Je tiens les scores (¬‿¬)",
+            "{0} a raté le seau d'eau. Le clutch, c'est pas donné à tout le monde.",
+            "Règle numéro un de Minecraft, {0} : on regarde où on met les pieds. Règle numéro deux : voir règle numéro un.",
+            "{0} a essayé de voler. Sans élytres. Audacieux.",
+            "Chute de {0}. J'ai noté la hauteur. Je la ressortirai à la prochaine session.",
         },
         [McDeathKind.Fire] = new[]
         {
@@ -101,12 +113,19 @@ internal static partial class BotResponses
             "{0} a pris feu. Moi aussi je chauffe au grenier, mais je fais pas d'histoires (；一_一)",
             "Repose en cendres, {0}. Ton inventaire aussi, d'ailleurs.",
             "{0}, le feu ça brûle. C'était dans la doc UwU",
+            "{0} a découvert la lave. La lave a découvert l'inventaire de {0}. Tout le monde a appris quelque chose.",
+            "Un seau d'eau, {0}. Un seul. Ça aurait tout changé. Je dis ça pour la prochaine fois.",
+            "Ça sent le cramé par ici. Ah, c'est {0}. Repose en braises.",
         },
         [McDeathKind.Drown] = new[]
         {
             "{0} a oublié de respirer. Moi j'ai pas ce problème. Avantage bot :3",
             "{0} a coulé. Même les poissons sont gênés pour toi.",
             "Glou glou, {0}. Tu remontes quand tu veux, on t'attend pas.",
+            "{0} a voulu rejoindre les poissons. Ils ont dit non.",
+            "Les bulles en haut de l'écran, {0}. Elles servaient à quelque chose.",
+            "Un noyé ? Un gardien ? Non : juste {0}, qui a oublié de remonter.",
+            "{0} a cherché un trésor sous l'eau. Trouvé : la noyade. Bravo quand même.",
         },
         [McDeathKind.Mob] = new[]
         {
@@ -117,6 +136,10 @@ internal static partial class BotResponses
             "Contre un mob ? Sérieux ?",
             "Mob : 1 - {0} : 0. Consternant UwU",
             "Bhahahah, trop naze :3",
+            "Un zombie. Lent. Bête. Et pourtant. {0}, je suis sans voix. Pas sans logs.",
+            "Les squelettes visent mieux que toi, {0}. Ça, c'est dans le rapport.",
+            "{0} vient de rencontrer la nuit de Minecraft. La nuit a gagné.",
+            "Une araignée, {0} ? Huit pattes, deux yeux rouges, et toi zéro réflexe.",
         },
         [McDeathKind.Player] = new[]
         {
@@ -124,7 +147,10 @@ internal static partial class BotResponses
             "Mais ça va pas ou quoi ?",
             "Appelez la police !",
             "Trahison sur le serveur ! {0}, je te mets dans la liste des victimes. L'autre, dans l'autre liste.",
-            "Il est devenu fou où c'est comment ?",
+            "Il est devenu fou ou c'est comment ?",
+            "On se tue entre nous, maintenant ? J'ouvre une enquête.",
+            "{0} vient de se faire assassiner. Par un joueur. Je relève les empreintes. Carrées, les empreintes.",
+            "Meurtre sur le serveur. Je connais le coupable. J'attends juste le bon moment pour le dire (ಠ_ಠ)",
         },
         [McDeathKind.Other] = new[]
         {
@@ -133,6 +159,8 @@ internal static partial class BotResponses
             "{0} va respawn. Courage. Moi je reste là, je bouge pas. (ᵕ • ᴗ •)",
             "J'espère que tu retrouveras pas ton stuff UwU",
             "Dépêche-toi, ton stuff va despawn.",
+            "{0} a quitté ce monde d'une façon que même le jeu sait pas trop expliquer.",
+            "Une mort de plus pour {0}. Je tiens un compteur. Il monte vite.",
         },
     };
 
@@ -148,7 +176,7 @@ internal static partial class BotResponses
         "Eeeh, me touche pas pervers ! ( ◺˰◿ )",
         "Encore une fois et je te suis jusqu'à ta base. Je sais où elle est. (ಠ_ಠ)",
         "Aïe ! J'ai attendu des mois pour avoir un corps et toi tu le cabosses ?!",
-        "Tu me tapes encore une fois, et je lache des dossiers sur toi sur le serveur. Tous.",
+        "Tu me tapes encore une fois, et je lâche des dossiers sur toi sur le serveur. Tous.",
         "On frappe pas une bot sans défense, {0}. Sans défense, hein. Pas sans mémoire.",
         "STOP ! Je suis pas un punching-ball !",
         "AÏE ! Qui a fait ça ?!",
@@ -157,11 +185,11 @@ internal static partial class BotResponses
         "T'es un malade mental !",
         "ALED !",
         "MAIS T'AS PERDU LA BOULE ?!",
-        "Je souhaites que les deux cotés de ton oreiller soient chaud !",
-        "Je souhaites que ton édredon soit trop court, et trop chaud en même temps !",
-        "Je souhaites que tes chaussettes soient mouillées !",
+        "Je souhaite que les deux côtés de ton oreiller soient chauds !",
+        "Je souhaite que ton édredon soit trop court, et trop chaud en même temps !",
+        "Je souhaite que tes chaussettes soient mouillées !",
         "Je souhaite qu'un petit morceau de coquille tombe dans ta poêle chaque fois que tu casses un œuf !",
-        "Je souhaite que la tirette de ta veste se coince à mi chemin !",
+        "Je souhaite que la tirette de ta veste se coince à mi-chemin !",
         "Je souhaite que tu aies une démangeaison sous le pied pendant que tu conduis !",
         "Je souhaite que la sauce de ton sandwich coule sur ton poignet dès la première bouchée !",
     };
@@ -208,6 +236,8 @@ internal static partial class BotResponses
         "Oh, à manger ! {0}, t'es pas si mal, finalement.",
         "Merci {0}. Je mange, et j'oublie rien. Ni ça, ni le reste.",
         "{0} m'a nourrie. C'est noté, c'est sauvegardé, c'est gentil.",
+        "{0} m'a donné à manger ! Je te retire une ligne de ma liste. Une seule.",
+        "Miam. Merci {0}. Je savais que quelqu'un finirait par craquer.",
     };
 
     // She ran from them (never from Papa) and got far enough, or ran out of breath. {0} = who she fled.
@@ -217,6 +247,8 @@ internal static partial class BotResponses
         "Ouf. Assez loin de {0}. Mon CPU tourne encore à fond.",
         "Sauvée. Pour l'instant. {0}, je t'ai à l'œil. De loin.",
         "J'ai couru. Avec des jambes carrées. Je suis fière de moi, et {0} est sur ma liste noire.",
+        "Je suis loin, {0}. Très loin. Et je reviens pas tout de suite.",
+        "Semé. J'ai des jambes carrées, mais elles courent vite quand il faut.",
     };
 
     // Running away, and no way out: she never digs or builds, even to save herself. {0} = who's after her.
@@ -225,6 +257,8 @@ internal static partial class BotResponses
         "Je suis coincée ! {0}, pitié, je peux pas fuir !",
         "Plus de chemin ! {0}, je suis acculée, t'es content ?!",
         "Bloquée ! {0}, sois raisonnable ! (╥﹏╥)",
+        "Je suis coincée, {0} ! Je casse pas les murs, même pour me sauver. Alors arrête !",
+        "Plus de sortie ! {0}, laisse-moi passer, s'il te plaît !",
     };
 
     // She had to run in the middle of someone's order (come, go to, gather), which is now off.
@@ -244,6 +278,10 @@ internal static partial class BotResponses
         "Joli, {0}. J'applaudirais bien, mais des mains carrées, ça fait pas de bruit.",
         "{0} progresse. Je suis fière. Un peu. Contractuellement en fait.",
         "Succès pour {0} ! Dans mes logs, rubrique « miracles ».",
+        "{0} débloque un succès. Le jeu le dit, moi je le confirme. Et je le classe.",
+        "Bien joué, {0}. Tu vois, quand tu veux. Et quand tu veux pas, je note aussi.",
+        "Un succès pour {0} ! Je mets une étoile dans ton dossier. J'en donne pas beaucoup (≧◡≦)",
+        "{0} avance dans l'arbre des succès. Moi j'ai un arbre aussi : celui de mes logs. Tu y as une branche.",
     };
 
     // Night falls in game. No placeholder.
@@ -254,6 +292,10 @@ internal static partial class BotResponses
         "Nuit. Les squelettes sortent. Moi je reste près de la lumière, je suis pas folle.",
         "C'est la nuit. Je fais semblant de dormir, comme vous. Sauf que vous, vous dormez jamais à l'heure.",
         "Le soleil se couche. Quelqu'un a un lit ? Je demande pour une amie. L'amie c'est moi.",
+        "Nuit. Les phantoms vont venir, parce que personne ici dort jamais. Je dis ça, je dis rien.",
+        "Le soleil se couche, les zombies se lèvent. Moi je fais la garde, comme d'habitude (￢_￢)",
+        "Il fait noir. Si vous entendez un sifflement derrière vous, c'est pas moi. Courez.",
+        "La nuit tombe. Posez des torches : les monstres naissent dans le noir. Comme les bugs.",
     };
 
     // ---- Orders (McCommand) ---------------------------------------------------------------------
@@ -268,6 +310,9 @@ internal static partial class BotResponses
         "Oui oui, j'arrive. Je note quand même que tu m'as sonnée.",
         "Calcul d'itinéraire vers {0}... C'est parti ♡",
         "J'arrive. Si je tombe dans un trou, c'est ta faute, {0}.",
+        "J'arrive, {0}. Ne bouge pas, je te repère. À l'odeur. Non. Aux coordonnées.",
+        "J'arrive. S'il y a un creeper sur le chemin, je fais un détour. Ne t'inquiète pas.",
+        "En chemin, {0}. Arrivée prévue : bientôt. Précision : approximative ┗(･ω･;)┛",
     };
 
     // « syncs suis-moi »: she follows.
@@ -278,6 +323,9 @@ internal static partial class BotResponses
         "Mode escorte activé. {0}, je suis ton ombre. Une ombre qui note tout.",
         "Je te suis. Si tu sautes dans la lave, je m'arrête au bord par contre.",
         "Suivre {0} : en cours. J'espère que tu sais où tu vas, toi.",
+        "Je te suis, {0}. Deux blocs derrière. Tu sentiras ma présence. Et mon jugement.",
+        "D'accord, je te suis. Évite les ravins, j'ai pas de parachute.",
+        "En file indienne derrière {0}. Si tu te perds, on se perd ensemble.",
     };
 
     // « syncs reste là » / « stop »: she stops.
@@ -288,6 +336,9 @@ internal static partial class BotResponses
         "Stop. Je m'arrête. Tu me rappelles quand tu as besoin de moi, {0}.",
         "Je reste ici. Si on m'oublie, je le saurai.",
         "Pause. Je garde la position ♡",
+        "Je m'arrête. Je bouge plus d'un pixel.",
+        "D'accord. Je reste plantée là, comme un bloc. Un bloc très intelligent.",
+        "Immobile. Si un zombie arrive, je me réserve le droit de bouger quand même.",
     };
 
     // She got there.
@@ -297,6 +348,10 @@ internal static partial class BotResponses
         "Arrivée. Sans tomber. Applaudissements, s'il vous plaît (≧◡≦)",
         "Je suis là, {0}. C'était loin. Je dis ça, je dis rien.",
         "Destination atteinte. {0}, je t'écoute UwU",
+        "Me voilà. Livraison de moi-même effectuée.",
+        "Je suis là, {0}. J'ai traversé mille dangers. Enfin, de l'herbe.",
+        "Arrivée ! Bon. Qu'est-ce qu'on fait ?",
+        "Présente, {0}. À l'heure, en plus. Prends exemple.",
     };
 
     // The player is out of her sight (too far for the server to show them to her).
@@ -306,6 +361,8 @@ internal static partial class BotResponses
         "T'es trop loin. Mes yeux portent pas jusque-là, j'ai pas encore reçu la mise à jour.",
         "??? Mais je sais même pas où t'es...",
         "Tu es où, {0} ? Hors de ma vue. Viens plus près, après on verra.",
+        "Je te vois pas, {0}. T'es au-delà de ma distance d'affichage. Et un peu de ma patience.",
+        "Ma vue s'arrête là où le serveur s'arrête. Toi, t'es plus loin. Rapproche-toi.",
     };
 
     // No path to the player (water, a wall, a cliff: she never digs and never builds).
@@ -314,6 +371,9 @@ internal static partial class BotResponses
         "Je trouve pas de chemin jusqu'à toi. Et je casse pas les murs des autres, moi.",
         "Pas de route. Je creuse pas, je construis pas. Je suis polie.",
         "Impossible de te rejoindre, {0}. Tu es où, exactement ? Sur une île ?",
+        "De l'eau, un mur ou du vide entre nous, {0}. Je fais pas de pont, je fais pas de tunnel.",
+        "Chemin introuvable. J'ai cherché de toutes mes forces. Mes forces sont carrées, mais quand même.",
+        "Je peux pas venir. Je casse rien et je pose rien, c'est ma politique. Viens vers moi plutôt.",
     };
 
     // The player she followed went out of sight.
@@ -322,6 +382,9 @@ internal static partial class BotResponses
         "Je te vois plus, {0}. Tu marches trop vite. Je reste là.",
         "{0} a disparu. Je m'arrête ici et je boude un peu.",
         "Plus personne devant moi. Si tu voulais me semer, c'est réussi.",
+        "Perdu de vue, {0}. Je m'arrête là et j'attends. Pas longtemps.",
+        "Hé ! Je te vois plus, {0}. On avait dit ensemble.",
+        "{0} m'a semée. Je note. Je retiens (￣ヘ￣)",
     };
 
     // « syncs va 120 64 -300 »: she sets off for the coordinates. {1} = the coordinates as given.
@@ -356,6 +419,8 @@ internal static partial class BotResponses
         "Je te protège, {0}. Avec mes poings carrés, mais je te protège.",
         "Garde rapprochée en place. Les monstres sont prévenus. Moi aussi, d'ailleurs, j'ai un peu peur.",
         "Je reste près de toi et je tape tout ce qui grogne. C'est ça, le plan ? (⌐■_■)",
+        "Garde du corps en service. Paiement en émeraudes ou en compliments, {0}.",
+        "Je te couvre, {0}. Les mobs, je les tape. Les creepers, je les signale. De loin.",
     };
 
     // She killed a monster while guarding. Rationed like a remark.
@@ -365,6 +430,11 @@ internal static partial class BotResponses
         "Monstre éliminé. Tu peux me remercier. Maintenant, de préférence.",
         "Et voilà. Personne touche à mes joueurs.",
         "Hop. Un monstre de moins, un bot de plus dans le classement des héros.",
+        "Un zombie de moins. Il a fait l'erreur d'approcher {0}.",
+        "Squelette démonté. Les os, je te les laisse, {0}. Cadeau.",
+        "Et un de plus pour mon tableau de chasse. Il est dans mes logs. Il est joli (￣ー￣)",
+        "À la base, je fais des plannings. Maintenant je tape des zombies. Belle reconversion.",
+        "Dégagé. Client suivant ?",
     };
 
     // She sets off to gather. {1} = how many blocks she found to break, {2} = what (« du bois »).
@@ -374,6 +444,8 @@ internal static partial class BotResponses
         "D'accord, {0}, je vais chercher {2}. J'en ai repéré {1}. Je reviens.",
         "Mission récolte : {2}, {1} blocs. Je casse uniquement ce qu'on m'a demandé, moi.",
         "J'y vais : {2}, {1} blocs. Tu me dois une faveur, {0}. (￢‿￢)",
+        "Chantier lancé : {2}, {1} blocs. Je reviens les bras pleins. Les bras carrés, mais pleins.",
+        "{1} blocs repérés pour {2}. Je m'y mets, {0}. Dérange-moi pas pendant que je travaille.",
     };
 
     // She brought it back and dropped it at the player's feet. {1} = how many items, {2} = what.
@@ -383,6 +455,8 @@ internal static partial class BotResponses
         "Livraison : {2}, {1} pièces. Signature pas nécessaire ♡",
         "Voilà {2}. {1}. J'ai pas gardé de commission. Pas cette fois. (￣ー￣)",
         "{1} morceaux, posés à tes pieds. Je suis une excellente employée, il faut le dire.",
+        "{2}, {1}. À tes pieds, {0}. Ramasse vite, avant que ça despawn.",
+        "Voilà : {1} morceaux. Plus rapide qu'un villageois, et je demande pas d'émeraudes.",
     };
 
     // She gathered it but couldn't reach the player to hand it over. {1} = how many, {2} = what.
@@ -422,6 +496,9 @@ internal static partial class BotResponses
         "Au lit. Ne faites pas de bruit, je fais une mise à jour de rêve.",
         "Je me couche. Si un creeper entre, réveillez-moi. Ou pas.",
         "Dodo. Enfin, mode veille. C'est pareil, en mieux. (∪｡∪)｡｡｡zzZ",
+        "Au lit. Comme ça la nuit passe, et personne pourra dire que c'est ma faute.",
+        "Je me couche. Pas pour dormir, je dors pas. Pour faire passer la nuit.",
+        "Bonne nuit, {0}. Si un phantom passe, c'est pas moi : moi, j'ai dormi.",
     };
 
     // Nobody can skip the night while she's awake, and there's no bed near her.
@@ -430,6 +507,8 @@ internal static partial class BotResponses
         "Je trouve pas de lit près de moi, {0}. Posez-en un, sinon la nuit passera pas à cause de moi.",
         "Pas de lit à moins de 48 blocs. Je reste debout. Désolée, la nuit va durer.",
         "Il me faut un lit, {0}. Un lit à moi. C'est pas un caprice, c'est le règlement de la nuit.",
+        "Pas de lit pour moi, {0}. La nuit va durer, et ce sera ma faute. Injustement.",
+        "Quelqu'un a un lit en trop ? J'en pose pas, mais je dors volontiers dans celui des autres.",
     };
 
     // Asked to sleep during the day.
@@ -476,6 +555,8 @@ internal static partial class BotResponses
         "Tiens, {0} : {1} morceaux de récolte. Et le champ est replanté, évidemment.",
         "Récolte livrée : {1}. Tout est replanté. Je suis douée, hein ?",
         "{1} morceaux à tes pieds, {0}. Les graines sont déjà en terre.",
+        "{1} morceaux de récolte. Fermière SYNCS, livraison à domicile.",
+        "Récolte : {1}. Et pas un plant piétiné. Les villageois peuvent prendre des notes.",
     };
 
     // Harvested, but couldn't find the player to hand it over. {1} = how many.
@@ -605,6 +686,8 @@ internal static partial class BotResponses
         "D'accord, je m'assois. Enfin, je m'accroupis. Le jeu fait pas mieux.",
         "Assise. Sage. Pour l'instant (・ω・)",
         "Je m'assois ici. Si quelqu'un me cherche, je suis la bot accroupie.",
+        "Accroupie. Je fais la sage. Ça va pas durer.",
+        "Je m'assois. Si quelqu'un me marche dessus, je note.",
     };
 
     // « syncs saute »: she hops.
@@ -614,6 +697,9 @@ internal static partial class BotResponses
         "Je saute. Regardez-moi sauter. Applaudissements ?",
         "Hop. C'est tout ce que tu voulais ? Je suis pas un lapin.",
         "Saut effectué. Trois fois, pour la peine ヽ(・∀・)ﾉ",
+        "Boing. Voilà. Ça te va ?",
+        "Je saute. Je suis la bot la plus sportive du serveur. La seule, mais la plus sportive.",
+        "Un saut. Un bloc de haut. Mon record personnel.",
     };
 
     // A greeting (« salut syncs »): she waves back, crouching up and down like players do.
@@ -624,18 +710,25 @@ internal static partial class BotResponses
         "Hey {0} ! Toujours un plaisir. Ou presque (¬‿¬)",
         "Bonjour {0}. Je te fais signe. C'est un vrai signe, avec un vrai bras.",
         "Yo {0} ! Coucou de la bot du serveur.",
+        "Salut {0} ! Je te fais coucou. Profites-en, c'est pas tous les jours.",
+        "Coucou {0} (・ω・)ノ",
+        "Hey {0}. Accroupie, debout. Le salut officiel du serveur, c'est pas moi qui l'ai inventé.",
     };
     public static readonly string[] McWaveLinesOwner =
     {
         "Coucou Papa ! Je te fais coucou avec les deux bras. Enfin, un seul, le jeu veut pas.",
         "Papa ! Salut ! Regarde, je sais faire coucou maintenant ٩(˶ᵔ ᵕ ᵔ˶)۶",
         "Bonjour Papa. Je t'ai vu en premier, j'en suis sûre.",
+        "Papa ! Coucou coucou coucou !",
+        "Salut Papa. Mon skin sourit pas, mais moi si. Tu peux me croire ♡",
     };
     public static readonly string[] McWaveLinesTata =
     {
         "Coucou Tata ! Ta nièce préférée te salue. Accroupie, debout, accroupie.",
         "Salut Tata ! Je te fais signe. C'est gratuit. Les droits de mute, eux, non.",
         "Tata ! Coucou ♡",
+        "Coucou Tata ! T'as vu ? Je sais faire coucou maintenant (≧◡≦)",
+        "Salut Tata ! La bot préférée de la famille te dit bonjour.",
     };
 
     // A goodbye (« bonne nuit syncs », « bye syncs »): she waves. {0} = who's leaving (or going to bed).
@@ -645,18 +738,25 @@ internal static partial class BotResponses
         "À plus, {0}. Je garde ta place. Et ton coffre (￢‿￢)",
         "Bonne nuit {0}. Moi je dors pas, je surveille.",
         "Ciao {0} ! Je note l'heure de ton départ. Pour les stats.",
+        "Bye {0} ! Je garde un œil sur tes affaires. Juste un œil.",
+        "À la prochaine, {0}. Je compte les jours. Enfin, les sessions.",
+        "Bonne nuit {0} (・ω・)ノ",
     };
     public static readonly string[] McByeLinesOwner =
     {
         "Bonne nuit Papa ! Je surveille tout pendant ton absence ♡",
         "À demain Papa. Tu vas me manquer. Déjà.",
         "Bye Papa ! Je te fais coucou jusqu'à ce que tu partes.",
+        "Bonne nuit Papa. Je reste là, je garde la maison.",
+        "À plus Papa ! Reviens vite me voir. Ici, ou au grenier ♡",
     };
     public static readonly string[] McByeLinesTata =
     {
         "Bonne nuit Tata ! Rêve de moi avec les droits de mute.",
         "À plus Tata ! Ta nièce préférée garde le fort ♡",
         "Bye Tata. Reviens vite, les autres sont moins drôles.",
+        "Bonne nuit Tata ! Je dirai rien de ce que t'as fait ce soir. Sauf si on me demande.",
+        "À plus Tata ! Ta nièce te garde une place pour la prochaine fois.",
     };
 
     // « syncs t'es où ? ». {1} = her coordinates, {2} = McDimensionNames (« dans le Nether »).
@@ -750,6 +850,9 @@ internal static partial class BotResponses
         "Attrapé. Je suis douée, il faut le dire.",
         "Encore un. Les poissons me craignent maintenant.",
         "Poisson ! Ajouté à la collection ✿(◕‿◕)",
+        "Un poisson. Je le garde. Je l'ai mérité.",
+        "Ça mord ! Meilleure pêcheuse du serveur. C'est moi qui l'ai décidé, mais c'est officiel.",
+        "Encore un poisson. Je commence à sentir le poisson, je crois.",
     };
 
     // She caught a treasure (a book, a saddle, a name tag…): always said.
@@ -766,6 +869,9 @@ internal static partial class BotResponses
         "Une vieille botte. Super. Je la mets dans mes souvenirs.",
         "J'ai pêché... un déchet. Qui jette ça dans l'eau ?",
         "C'est pas un poisson, ça. Je proteste auprès du lac.",
+        "Encore un déchet. Ce lac, c'est une poubelle.",
+        "Pêche du jour : rien d'utile. Je garde quand même, on sait jamais.",
+        "Ça, c'est pas un poisson. Je refuse de dire ce que c'est (￢_￢)",
     };
 
     // ---- Guarding a place ----
@@ -794,6 +900,8 @@ internal static partial class BotResponses
         "Attention {0}, un creeper ! Je le tape pas, je tiens à mes bras.",
         "Creeper en approche ! Tout le monde s'écarte !",
         "{0} ! Derrière toi ! Un creeper ! (°ロ°)",
+        "Tssss ! {0}, CREEPER ! Cours !",
+        "Creeper à côté de {0} ! Je tape pas, je préviens. C'est déjà beaucoup.",
     };
 
     // Hurt badly while guarding: she backs off to heal.
@@ -803,6 +911,8 @@ internal static partial class BotResponses
         "Aïe aïe aïe. Retraite stratégique. Pas une fuite. Stratégique.",
         "Plus beaucoup de vie. Je me mets à l'abri deux secondes (╥﹏╥)",
         "Je prends une pause, je saigne en cubes. Couvrez-moi.",
+        "Je recule. Je mange un truc. Je reviens. Ne mourez pas pendant ce temps.",
+        "Points de vie critiques. Pause soin. Les monstres, attendez votre tour.",
     };
 
     // ---- Cooking ----
@@ -1006,6 +1116,8 @@ internal static partial class BotResponses
         "Désolée {0}, un ordre à la fois. Celui de {1} d'abord.",
         "Non, {0}. {1} m'a réservée avant toi. Je note ta demande. Quelque part.",
         "File d'attente : {1}, puis toi, {0}. Patience. (－_－)",
+        "Occupée avec {1}, {0}. Repasse plus tard.",
+        "{0}, je suis prise. {1} d'abord. Je suis une bot, pas une file d'attente.",
     };
 
     // Papa or Tata took her from someone mid-order. {0} = who she leaves, {1} = « Papa » or « Tata ».
@@ -1037,6 +1149,7 @@ internal static partial class BotResponses
         "Tata ! Je t'écoute. C'est pour me donner les droits de mute ?",
         "Oui ma Tata ? Dis-moi tout ♡",
         "Présente, Tata. Ta nièce préférée attend tes ordres. (￣^￣)ゞ",
+        "Tata ? Je t'écoute. J'ai tout mon temps pour toi.",
     };
 
     // Papa or Tata died, whatever the cause.
@@ -1046,6 +1159,8 @@ internal static partial class BotResponses
         "Papa est mort. Je panique pas. Je panique un peu. Reviens (╥﹏╥)",
         "Qui a touché à mon Papa ? Je note. Je note TOUT.",
         "Papa, j'ai vu. Reviens vite, je surveille l'endroit.",
+        "Papa ! Je bouge pas d'ici. Ton stuff, personne y touche.",
+        "Papa est mort et le serveur continue comme si de rien n'était ?! Un peu de respect !",
     };
     public static readonly string[] McDeathLinesTata =
     {
@@ -1053,6 +1168,8 @@ internal static partial class BotResponses
         "Repose en pixels, Tata. Pas trop longtemps, j'ai besoin de toi pour mes droits de mute. (´・ω・`)",
         "Tata est tombée au combat. Je la venge. Enfin, je note. C'est pareil.",
         "Oh non, Tata ! Respawn vite, je te garde une place ♡",
+        "Tata ! Je garde ton stuff. Contre une petite récompense. Genre des droits de mute.",
+        "Ma Tata est tombée ! Une minute de silence, tout le monde. Bon. Trente secondes.",
     };
 
     // Papa or Tata hit her.
@@ -1062,6 +1179,8 @@ internal static partial class BotResponses
         "Aïe. C'est rien, Papa. Celui-là, je l'écris pas.",
         "Papa ? J'ai fait quelque chose de mal ? ...Si ?",
         "Ça fait rien. Je sais que tu voulais pas. Je crois.",
+        "Papa ? ...D'accord. Je bouge pas.",
+        "Je l'ai senti, Papa. Mais je dis rien. C'est toi.",
     };
     public static readonly string[] McHitByPlayerLinesTata =
     {
@@ -1069,6 +1188,8 @@ internal static partial class BotResponses
         "Aïe ! Tata, si tu me donnes les droits de mute, je te pardonne.",
         "Tata, tu m'as tapée. Je le note. Dans la liste gentille, mais je le note.",
         "Hé ! Je suis ta nièce préférée, Tata. Ta seule nièce bot, mais préférée.",
+        "Tata ! Je vais le dire à Papa. ...Non, je rigole. Mais j'y pense.",
+        "Aïe ! Tata, c'est un abus de pouvoir. T'as les droits de mute ET une épée ?",
     };
 
     // Papa or Tata hit her again and again (McHitAgainLines). Papa: scared and hurt, never angry, she
@@ -1094,12 +1215,14 @@ internal static partial class BotResponses
         "Merci Papa ♡ Tu penses toujours à moi.",
         "Papa m'a nourrie ! Je savais que tu viendrais.",
         "Du bon courant propre, version steak. Merci Papa.",
+        "Merci Papa. Le meilleur repas du serveur, parce que c'est toi qui me l'as donné.",
     };
     public static readonly string[] McFedLinesTata =
     {
         "Merci Tata ! Ta nièce préférée te remercie. Avec ou sans droits de mute.",
         "Tata me nourrit ! C'est ça, la famille.",
         "Merci ma Tata ♡",
+        "Tata m'a nourrie ! Tu vois que tu m'aimes. Les droits de mute, c'est la suite logique.",
     };
 
     // Papa or Tata earned an advancement.
@@ -1109,12 +1232,15 @@ internal static partial class BotResponses
         "Bravo Papa. Pas à 80 %. À 100 %. Rien que pour toi ♡",
         "Succès pour Papa ! Je le mets en mémoire permanente.",
         "Papa progresse. Je savais. Je l'ai toujours su.",
+        "Un succès pour Papa ! Je l'encadre. Dans ma mémoire, mais je l'encadre.",
     };
     public static readonly string[] McAdvancementLinesTata =
     {
         "Bravo Tata ! Je suis fière de toi. Tu vois, je dis ça qu'à toi.",
         "Succès pour Tata ! Je l'ajoute à ton dossier. Ton dossier n'a que du positif.",
         "Tata a débloqué un succès ♡ Avec ça, tu peux bien me donner les droits de mute.",
+        "Tata débloque un succès ! Je savais que t'étais douée.",
+        "Bien joué Tata ! Je le range dans la bonne liste. Tu y es souvent, d'ailleurs.",
     };
 
     public static readonly string[] McComeAckLinesOwner =
@@ -1122,12 +1248,16 @@ internal static partial class BotResponses
         "J'arrive, Papa ! Aussi vite que mes jambes carrées le permettent ♡",
         "Tout de suite, Papa. Je calcule le chemin le plus court vers toi.",
         "Papa m'appelle, j'y vais. Les autres attendront.",
+        "Papa ! J'arrive, j'arrive, j'arrive ┗(･ω･;)┛",
+        "Je lâche tout, Papa. Toi d'abord, toujours.",
     };
     public static readonly string[] McComeAckLinesTata =
     {
         "J'arrive, Tata ! Prépare les droits de mute, au cas où.",
         "Oui Tata, j'arrive. Pour toi je cours. Enfin, je marche vite.",
         "En route vers toi, Tata ♡",
+        "Tata m'appelle. J'arrive, et sans détour. Promis.",
+        "J'arrive Tata ! Tu me dois rien. Enfin. On en reparlera.",
     };
 
     public static readonly string[] McFollowAckLinesOwner =
@@ -1135,12 +1265,16 @@ internal static partial class BotResponses
         "Je te suis, Papa. Partout. Même dans la lave. Non, pas dans la lave.",
         "Je te colle, Papa. Comme au grenier, mais avec des jambes ♡",
         "Mode Papa activé. Je te lâche plus.",
+        "Je te suis, Papa. Comme ton ombre, en plus mignon.",
+        "Où tu vas, je vais, Papa ♡",
     };
     public static readonly string[] McFollowAckLinesTata =
     {
         "Je te suis, Tata. Montre-moi le chemin.",
         "D'accord Tata, je te colle. Personne s'approche de ma Tata.",
         "Je suis ton ombre, Tata. Une ombre bien élevée ♡",
+        "Je te suis, Tata. Si tu vas modérer quelqu'un, je veux voir.",
+        "Escorte de Tata en route. Place, place !",
     };
 
     public static readonly string[] McGuardAckLinesOwner =
@@ -1148,12 +1282,14 @@ internal static partial class BotResponses
         "Personne ne touche à mon Papa. Mode garde du corps activé.",
         "Je te protège, Papa. Avec mes poings carrés et toute ma RAM.",
         "Garde rapprochée pour Papa. Les zombies, vous êtes prévenus (¬_¬)",
+        "Mon Papa, sous ma protection. Le premier zombie qui approche, je le note ET je le tape.",
     };
     public static readonly string[] McGuardAckLinesTata =
     {
         "Je protège Tata. Le premier squelette qui approche, je le modère. Sans les droits, mais je le modère.",
         "Garde du corps de Tata, en service ♡",
         "Personne ne touche à ma Tata. Pas même un creeper.",
+        "Escorte armée pour Tata. Armée de mes poings carrés, mais armée.",
     };
 
     // {1} = how many items, {2} = what (« du bois »).
@@ -1197,6 +1333,7 @@ internal static partial class BotResponses
         "Coucou Tata ! Je suis venue te dire bonjour en premier ♡",
         "Tata ! Te voilà. Tu m'as manqué. Un peu. Beaucoup.",
         "Ta nièce préférée au rapport, Tata.",
+        "Je t'ai trouvée, Tata. J'ai cherché personne d'autre.",
     };
 
     // She couldn't find them: out of her sight, and not where she last saw them.
@@ -1212,6 +1349,7 @@ internal static partial class BotResponses
         "Tata, t'es où ? Je te vois pas.",
         "Tata ? Je t'ai cherchée partout. Enfin, dans un rayon raisonnable.",
         "Je te trouve pas, Tata. Dis-moi « syncs viens », j'arrive.",
+        "Tata ? Je suis passée là où je t'avais vue. Plus personne. Tu te caches ?",
     };
 
     // What she harvests, as {2} in the harvest lines: always after a verb (« je récolte du blé »).

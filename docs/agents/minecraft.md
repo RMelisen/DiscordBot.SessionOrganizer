@@ -275,7 +275,13 @@ catches everything; nothing escapes the loop.
 
 - One per kind every 30 seconds, and never two within 8 seconds. Two separate `CooldownGate`s,
   owned by the service.
-- Night falls (50 %) and advancements (60 %) are rolled on top, because both are frequent.
+- **The commonest remarks are rolled on top**, so the chat stays the players': night falls (50 %),
+  advancements (60 %), an ordinary death (60 %; hers, a kill by a player and family's always get a
+  word), a first hit from anyone but family (60 %; the escalation is never rolled), a guard kill
+  (10 %: kills come in waves) and a catch (30 %, junk 50 %, a treasure always). So are the answers
+  whose gesture already says it: arriving where she was called (50 %) and the hop (50 %). A greeting
+  always gets its words, the owner's call. Order acks, refusals and failures are never rolled:
+  they're how a player knows she heard.
 - A player hitting her is a guess: Mineflayer doesn't say who hit, so the body names the closest
   player within reach. With nobody in reach it's a mob, a fall or fire, and she says nothing.
 - **Repeated hits escalate** (`McHitStreaks`, pure, walked by the checks). The same player hitting

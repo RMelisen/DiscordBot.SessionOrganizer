@@ -3,6 +3,15 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.16.1 — 2026-10-20
+
+- Minecraft: more to say about deaths, kills, nightfall, advancements, fishing, orders and
+  goodbyes, so she repeats herself less.
+- Minecraft: she talks less in the chat: ordinary deaths, the first hits, guard kills (now rare),
+  and her answers to « saute » or arriving where she was called now sometimes go without a word.
+  Orders and greetings are still always answered.
+- Minecraft: a few typos fixed in her lines.
+
 ## 7.16.0 — 2026-10-20
 
 - Minecraft: when someone keeps hitting her she runs away, says when she's safe, and goes back to
