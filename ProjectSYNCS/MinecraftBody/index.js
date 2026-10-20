@@ -2848,8 +2848,8 @@ function attach() {
     // controls from it.
     bot.on('physicsTick', safely(waterTick));
     bot.on('physicsTick', safely(boardTick));
-    // Last, once every other tick handler has set this tick's controls.
-    bot.on('physicsTick', safely(inputTick));
+    // First, before any tick handler changes the controls: the keys this tick's move was made with.
+    bot.prependListener('physicsTick', safely(inputTick));
     emit('spawned', {});
     reportPlayers();
     wearBestArmor().catch(() => {});
@@ -3109,37 +3109,45 @@ async function pickVersion() {
 // the client sends `tick_end`, which real clients have sent after every tick since 1.21.2. Mineflayer
 // never sends it, so a 26.3 server (ViaBackwards included) kicks her for « invalid player movement »
 // on her second move, about 1.5 s after joining. The workaround from PrismarineJS/mineflayer#4189:
-// a `tick_end` after each movement packet. Drop it once Mineflayer sends the packet itself.
+// a `tick_end` after each movement packet. A physics tick that sent no move (she stood still) gets its
+// `tick_end` at the start of the next one (inputTick), so the server counts every tick as a real client's.
+// Drop it once Mineflayer sends the packet itself.
 const MovePackets = new Set(['position', 'position_look', 'look', 'flying']);
+let tickOpen = false; // a physics tick whose tick_end hasn't gone out yet
+let endTick = () => {};
 
 function sendTickEnds(client) {
   let supported = null; // known once the version is (it can be settled by Mineflayer's own ping)
   const write = client.write.bind(client);
+  endTick = () => {
+    tickOpen = false;
+    if (supported === null) {
+      const data = minecraftData(client.version);
+      supported = Boolean(data && data.protocol.play.toServer.types.packet_tick_end);
+    }
+    if (!supported) return;
+    try {
+      write('tick_end', {});
+    } catch (err) {
+      log('tick_end failed:', err && err.message ? err.message : String(err));
+    }
+  };
   client.write = (name, params) => {
     const result = write(name, params);
-    if (MovePackets.has(name)) {
-      if (supported === null) {
-        const data = minecraftData(client.version);
-        supported = Boolean(data && data.protocol.play.toServer.types.packet_tick_end);
-      }
-      if (supported) {
-        try {
-          write('tick_end', {});
-        } catch (err) {
-          log('tick_end failed:', err && err.message ? err.message : String(err));
-        }
-      }
-    }
+    if (MovePackets.has(name)) endTick();
     return result;
   };
 }
 
-// Since 1.21.2 a client tells the server which keys it holds (`player_input`) whenever they change. Mineflayer sends
-// that packet only for sneaking, with every other key off, so the server never hears her press forward or jump. On
-// the 26.3 server she walked up to one-block steps and went no further, though Mineflayer's own physics climbs them;
-// a server refusing a jump nobody pressed fits that. So her keys go out as a real client's would. Not while riding
-// (leaveBoat holds shift itself), and anything else that writes the packet (Mineflayer's sneak) counts as the last one
-// sent, so the full set follows on the next tick. The same wrapper keeps her last move sent, for the corrections' log.
+// Since 1.21.2 a client tells the server which keys it holds (`player_input`) whenever they change, in the tick that
+// uses them, before that tick's move. Mineflayer sends that packet only for sneaking, with every other key off, and
+// the 26.3 server refused every jump she made (back to the ground, hundreds of times a minute). So her keys go out as
+// a real client's would: the ones this tick's move was made with, which is why inputTick runs first in the physics
+// tick (Mineflayer moves her, then runs the tick handlers, which press and release keys for the next tick, then sends
+// the move; keys read after the handlers arrive a tick early, and « jump » comes with the tick before she rises).
+// Not while riding (leaveBoat holds shift itself), and anything else that writes the packet (Mineflayer's sneak)
+// counts as the last one sent, so the full set follows on the next tick. The same wrapper keeps her last move sent,
+// for the corrections' log.
 let inputsSent = '';
 let lastMoveSent = null;
 
@@ -3153,6 +3161,8 @@ function trackInputs(client) {
 }
 
 function inputTick() {
+  if (tickOpen) endTick();
+  tickOpen = true;
   if (!bot.supportFeature('newPlayerInputPacket') || bot.vehicle) return;
   const c = bot.controlState;
   const inputs = { forward: c.forward, backward: c.back, left: c.left, right: c.right, jump: c.jump, shift: c.sneak, sprint: c.sprint };

@@ -566,8 +566,13 @@ and check the issue before bumping Mineflayer.
 
 **Her keys go to the server (`inputTick`).** Since 1.21.2 clients send `player_input` (forward,
 jump, sprint, shift…) whenever their keys change; Mineflayer sends it only for sneaking, with every
-other key off. `inputTick` sends her whole control state, last in each physics tick, whenever it
-changes; not while riding, where `leaveBoat` holds shift itself.
+other key off. `inputTick` sends her whole control state whenever it changes; not while riding,
+where `leaveBoat` holds shift itself. **It runs first in the physics tick** (`prependListener`):
+Mineflayer moves her, then runs the tick handlers (which press and release keys for the next tick),
+then sends the move, so keys read after the handlers reach the server a tick early. The 26.3 server
+refused every jump that way, putting her back on the ground hundreds of times a minute: it wants the
+keys a move was made with, in that move's tick. The same handler sends the `tick_end` of a tick that
+sent no move, so the server counts every tick, as with a real client.
 
 **`entity_action` by name (`fixEntityActions`).** 1.21.6 moved sneaking to `player_input` and
 renumbered the other actions; Mineflayer 4.39 still sends the old numbers, so on 26.1 « start

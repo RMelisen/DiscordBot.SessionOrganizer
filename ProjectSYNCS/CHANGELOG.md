@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.21.2 — 2026-10-20
+
+- Minecraft: her keys reach the server in step with her moves, so it should stop refusing her jumps
+  and she can climb steps.
+
 ## 7.21.1 — 2026-10-20
 
 - Minecraft: the server now knows when she sprints (it was told something else), which should stop
