@@ -349,8 +349,8 @@ starts on her own gets a rare rolled remark** (the owner's call): the routine 25
   bow): a tool at **10 %** durability or less is reported once (`wornOut`), again only for a new one;
   one reported worn that disappears without being handed over, stored or lost in a death `broke`.
   She also reports what she lacks (`lacking`): a rod for her own fishing, shears for sheep, food for
-  the animals, arrows when guarding with a bow, armour 2 minutes after spawning with none on, room in
-  her pockets. The service says each once every 10 minutes at most (`_needGate`, given back when the
+  the animals, arrows when guarding with a bow, room in her pockets. Wearing no armour is not a lack
+  (the owner's call): she never asks for any. The service says each once every 10 minutes at most (`_needGate`, given back when the
   remark gates swallow the line). They're about the game, so the pools are shared.
 
 ## Body language

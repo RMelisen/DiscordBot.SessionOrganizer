@@ -1343,13 +1343,6 @@ internal static partial class BotResponses
         "Plus une flèche ! Quelqu'un peut m'en lancer ? Les creepers, je préfère les voir de loin.",
         "Un arc sans flèches, c'est un bâton avec une ficelle. Des flèches, s'il vous plaît.",
     };
-    public static readonly string[] McNeedArmourLines =
-    {
-        "Je me promène sans armure. Je suis courageuse, pas immortelle. Quelqu'un a un plastron en trop ?",
-        "Petite remarque : je porte rien. Pas d'armure, je veux dire. Un casque, des bottes, n'importe quoi.",
-        "Zéro armure sur moi. Un zombie et je repars au spawn. Je dis ça, je dis rien (・_・;)",
-        "Si quelqu'un a de l'armure qui traîne, je prends. Je la porterai mieux que le coffre.",
-    };
     public static readonly string[] McPocketsFullLines =
     {
         "Mes poches sont pleines. Je ramasse plus rien tant que j'ai pas vidé.",

@@ -199,7 +199,7 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
   owner or Tata. Any order comes first; « syncs reste » keeps her put for ten minutes. After dying
   she goes back for her things; she picks up what drops from the monsters she kills; she warns
   anyone with a creeper behind them; she says when a tool is wearing out or broke, or what she
-  lacks (a rod, shears, arrows, armour, room). She looks at whoever talks to her, turns her back on
+  lacks (a rod, shears, arrows, room). She looks at whoever talks to her, turns her back on
   whoever hits her, and crouches when the owner or Tata walks up.
 - **On Discord** she says in the bots channel when she goes to play and when she's back.
 

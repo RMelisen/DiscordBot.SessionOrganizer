@@ -16,7 +16,7 @@ the git history; versions that were skipped or only existed on a side branch are
   she kills while guarding.
 - Minecraft: she warns a player when a creeper is creeping up behind them.
 - Minecraft: she says when a tool is nearly worn out or broke, and when she lacks a fishing rod,
-  shears, food for the animals, arrows, armour or room in her pockets.
+  shears, food for the animals, arrows or room in her pockets.
 - Minecraft: body language: she looks at whoever talks to her, turns her back on whoever just hit
   her, and crouches to greet the owner and Tata when they walk up.
 - Minecraft: putting her things away now keeps her shears too.

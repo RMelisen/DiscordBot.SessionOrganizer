@@ -43,7 +43,7 @@
 //      ranching {player} · cantRanch {player,why: none|noChest}
 //      Her own (no player, no claim): routine {what: farm|fish|ranch|home} · tagAlong {player} · retrieving
 //      retrieved {count} · retrieveLost {why: otherDimension|tooFar|void|lava|noPath|despawned} · creeperBehind {player}
-//      wornOut {tool} · broke {tool} · lacking {what: rod|shears|breedFood|arrows|armour|space}
+//      wornOut {tool} · broke {tool} · lacking {what: rod|shears|breedFood|arrows|space}
 //      (tool: sword|pickaxe|axe|shovel|rod|shears|bow)
 
 'use strict';
@@ -2227,12 +2227,10 @@ function creeperWatchTick() {
 // `broke`. And what she lacks (`lacking`), at most once a minute each: C# decides what's said.
 const NeedsEvery = 10000;
 const WornAt = 0.1;
-const ArmourAfter = 120000;
 const worn = new Map();
 const lackingAt = new Map();
 let handedAt = 0;
 let diedAt = 0;
-let spawnedAt = 0;
 
 function lacking(what) {
   if ((lackingAt.get(what) || 0) > Date.now()) return;
@@ -2264,7 +2262,6 @@ function needsTick() {
     worn.set(tool, left);
   }
   if (task && (task.kind === 'guard' || task.kind === 'patrol') && items.some((i) => i.name === 'bow') && !arrows()) lacking('arrows');
-  if (spawnedAt && Date.now() - spawnedAt > ArmourAfter && wornArmour().length === 0) lacking('armour');
   if (bot.inventory.emptySlotCount() === 0) lacking('space');
 }
 
@@ -2474,9 +2471,8 @@ function attach() {
     reportPlayers();
     wearBestArmor().catch(() => {});
   });
-  // Every spawn, the first and each respawn: the armour clock, and her things to get back after a death.
+  // Every spawn, the first and each respawn: her things to get back after a death.
   bot.on('spawn', () => {
-    spawnedAt = Date.now();
     if (deathAt) setTimeout(safely(armRetrieve), 3000);
   });
 

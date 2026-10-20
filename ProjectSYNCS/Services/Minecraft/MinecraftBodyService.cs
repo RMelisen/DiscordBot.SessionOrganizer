@@ -1298,7 +1298,6 @@ public sealed class MinecraftBodyService : BackgroundService
         "shears" => BotResponses.McNeedShearsLines,
         "breedFood" => BotResponses.McNeedBreedFoodLines,
         "arrows" => BotResponses.McNeedArrowsLines,
-        "armour" => BotResponses.McNeedArmourLines,
         "space" => BotResponses.McPocketsFullLines,
         _ => null,
     };
