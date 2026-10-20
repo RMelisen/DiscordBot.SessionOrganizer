@@ -234,16 +234,42 @@ list: the owner removed it.
   fuel), smokers for food and blast furnaces for ore too, with her own fuel. She waits by it, takes
   the result as it comes, and brings it back. Whether a furnace is free is only known by opening it,
   so « all busy » is the one refusal that comes after she has dropped her task.
-- **Remembered places** (`minecraft-state.json`, up to 20, by `McCommand.PlaceKey`) are where the
-  player stood when they said « retiens ici : nom »; the body reports it (`mark`). Her lines show the
-  name as typed (`PlaceName`) in guillemets. Anyone may save one; only its saver or family may move or
-  forget it. A known place is read anywhere after a going verb, before gathering (« va à la mine de
-  fer » has « mine » and « fer »); an unknown name only after a preposition (« va à la X »), and the
-  service says it doesn't know it. « rentre » is home: « maison », else the other home words.
+- **Remembered places** (`minecraft-state.json`, up to 20 per player, by `McCommand.PlaceKey`) are
+  where the player stood when they said « retiens ici : nom »; the body reports it (`mark`). **They are
+  kept by player**: each has their own « maison ». A place named alone is looked up in the player's own
+  map, then Papa's, Tata's and everyone else's by name, so the group's map still works for someone who
+  saved nothing. « la maison de X », « d'X », « chez X » (X's home, whatever home word X used) name
+  someone else's: X is anyone with a place or on the server, or « Papa » / « Tata ». The parser takes
+  « de X » out and reads the rest as usual, keeping that reading only when the plain one is also about
+  a place, or nothing (« va chercher du bois chez X » stays wood). Her lines show the name as typed
+  (`PlaceName`) in guillemets, with whose it is when it isn't the asker's (« « maison » de Papa »).
+  Anyone may add a place to anyone's map; only the player it belongs to, its saver or family may move
+  or forget it. A known place is read anywhere after a going verb, before gathering (« va à la mine
+  de fer » has « mine » and « fer »); an unknown name only after a preposition (« va à la X »), and
+  the service says it doesn't know it. « rentre » is her home: the family's « maison », else the other
+  home words. The list (« tes lieux ») is the asker's places, then the others they can reach. A file
+  from before places were kept by player (one shared `Places` map) is split by saver on load.
   **Guide** walks ahead and waits when the player falls 12 blocks behind; 30 s out of sight and she
   gives up. A place in another dimension is refused (`otherDimension`).
-- **Answered at once, taking her from nobody**: where she is (the body reports her position), where
-  a place is, the list, forgetting, saving, hopping, waving (any greeting, read last so « salut
+- **What she carries** (« t'as quoi sur toi ? », « montre ton inventaire », « t'as combien de fer ? »,
+  « t'as du bois ? »). The body reports her inventory on spawn and after each change, at most every 2 s
+  (`inventory`): raw ids and counts, each stack tagged with the kinds of goods `give()` would hand over
+  for it, so « t'as du fer ? » counts exactly what « donne-moi ton fer » would toss. The service keeps
+  the last report and answers from it, sending nothing. The words are `McItems`, a hand-written table
+  (singular, plural, gender: « une pioche en fer », « 23 pains »), since the game's names have neither;
+  an item not in it is « un autre truc » in game and its id on Discord. Add an item when she starts
+  handling a new one. `McInventory` builds the line, biggest first, within `ListMax`, the rest
+  « et N autres trucs »; what she wears only counts when armour is asked. `/debug minecraft` →
+  « Voir son inventaire » shows it all, with full counts.
+  In the parser (`CarryQuestion`, read before stay and before handing over): « combien » is always a
+  question, so is « t'as quoi » alone or followed by « sur toi », « dans… », « comme… », and an
+  inventory word of *hers* (« ton inv », not « mes poches ») with a show verb or alone. A gathering,
+  give or store verb anywhere makes it an order instead. « t'as du fer ? » asks, because iron is
+  something she could be sent to fetch; « t'as du poisson ? » and « t'as quoi comme épée ? » stay
+  requests to hand it over, as they always were, except armour (« t'as quoi comme armure ? » can't
+  mean « take it off »).
+- **Answered at once, taking her from nobody**: where she is (the body reports her position), what
+  she carries, where a place is, the list, forgetting, saving, hopping, waving (any greeting, read last so « salut
   syncs viens » is come) and **reminders** (« préviens-moi dans 5 min », « rappelle-moi dans 10 min
   de sortir le fer »). A timer is read first, as its note can hold any word; the length comes from
   the raw text (`Duration`), the note is what follows the first « de », « pour » or « que » once the
@@ -314,7 +340,7 @@ starts on her own gets a rare rolled remark** (the owner's call): the routine 25
 20 %. Getting her things back always gets one.
 
 - **Routine (named places).** `McRoutine.Classify` (pure, in the checks) finds among the remembered
-  places a pen (an animal-pen word anywhere in the name: « ferme aux animaux »), a farm or a fishing
+  places (Papa's first, then Tata's, then anyone's, kind by kind) a pen (an animal-pen word anywhere in the name: « ferme aux animaux »), a farm or a fishing
   spot (a farm or water word first: « champ de blé », « étang »), and home (`McRoutine.HomeKeys`,
   shared with « rentre »). The service sends them (`routine`) on spawn and after every save, move or
   forget. By day (time 0–11499) she works in **6-minute turns**, taking the places in turn, each

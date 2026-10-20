@@ -1923,6 +1923,33 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     Mc("syncs tu peux me prévenir dans cinq minutes ?", McOrder.Timer, r => r.Seconds == 300);
     Mc("syncs rappelle-moi d'arrêter le four dans 1h", McOrder.Timer, r => r.Seconds == 3600 && r.Note == "arrêter le four");
     Mc("syncs dis-moi où t'es", McOrder.Where); // « dis-moi » without a length of time is no timer
+    // What she carries: asked, never fetched nor handed over.
+    Mc("syncs t'as quoi sur toi ?", McOrder.Inventory);
+    Mc("syncs t'as quoi ?", McOrder.Inventory);
+    Mc("syncs qu'est-ce que t'as dans tes poches ?", McOrder.Inventory); // not « vide tes poches »
+    Mc("syncs montre ton inventaire", McOrder.Inventory);
+    Mc("syncs montre-moi ce que tu as", McOrder.Inventory);
+    Mc("syncs ton inv ?", McOrder.Inventory);
+    Mc("syncs inventaire", McOrder.Inventory);
+    Mc("syncs y a quoi dans ton sac", McOrder.Inventory);
+    Mc("syncs t'as combien de trucs ?", McOrder.Inventory);
+    Mc("syncs what do you have", McOrder.Inventory);
+    Mc("syncs t'as combien de fer ?", McOrder.Have, r => r.Goods == McGoods.Iron);
+    Mc("syncs combien de pain t'as ?", McOrder.Have, r => r.Goods == McGoods.Food);
+    Mc("syncs t'as combien de poissons", McOrder.Have, r => r.Goods == McGoods.Fish); // « combien »: not a request
+    Mc("syncs il te reste combien de pommes de terre ?", McOrder.Have, r => r.Goods == McGoods.Produce); // not stay
+    Mc("syncs t'as du fer ?", McOrder.Have, r => r.Goods == McGoods.Iron); // not a trip to the mine
+    Mc("syncs t'aurais du bois ?", McOrder.Have, r => r.Goods == McGoods.Wood);
+    Mc("syncs t'as quoi comme bois ?", McOrder.Have, r => r.Goods == McGoods.Wood);
+    Mc("syncs t'as quoi comme armure ?", McOrder.Have, r => r.Goods == McGoods.Armour); // not « take it off »
+    Mc("syncs t'as du fer ? ramène-en 10", McOrder.Collect); // an order beats the question
+    Mc("syncs donne-moi ton inventaire", McOrder.Give, r => r.Goods == McGoods.All);
+    Mc("syncs range ton inventaire", McOrder.Store);
+    Mc("syncs t'as quoi comme épée", McOrder.Give, r => r.Goods == McGoods.Weapons); // goods she can't fetch: a request
+    Mc("syncs regarde mes poches", McOrder.Unknown); // the player's pockets, not hers
+    Mc("syncs t'as quoi contre moi", McOrder.Unknown);
+    if (McCommand.Parse("syncs qu'est-ce que t'as fait ?", mcNames).Order is McOrder.Inventory or McOrder.Have)
+        Fail("order « qu'est-ce que t'as fait ? »: read as a question about her pockets");
     // Fishing and cooking.
     Mc("syncs va pêcher", McOrder.Fish);
     Mc("syncs va à la pêche", McOrder.Fish);
@@ -1972,6 +1999,27 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     Mc("syncs va voir", McOrder.Unknown);
     if (McCommand.PlaceKey("Forêt  Noire !") != "foret noire" || McCommand.PlaceName("syncs retiens ici la Forêt", "foret") != "forêt")
         Fail("place key and name");
+    // Someone else's place: « de X » or « chez X » (X's home), X one of the players; only when it's about a place.
+    var placeOwners = new[] { "Rodhengard", "Papa", "xX_Bob_Xx" };
+    void McOf(string text, McOrder order, string? place, string? of)
+    {
+        var got = McCommand.Parse(text, mcNames, false, mcPlaces, placeOwners);
+        if (got.Order != order || got.Place != place || got.Of != of)
+            Fail($"order « {text} »: got {got.Order} place={got.Place} of={got.Of}");
+    }
+    McOf("syncs guide-moi à la maison de Rodhengard", McOrder.Guide, "maison", "Rodhengard");
+    McOf("syncs emmène-moi chez Rodhengard", McOrder.Guide, "maison", "Rodhengard");
+    McOf("syncs va chez rodhengard", McOrder.GoToPlace, "maison", "Rodhengard");
+    McOf("syncs va à la mine de Papa", McOrder.GoToPlace, "mine", "Papa");
+    McOf("syncs où est la base de xX_Bob_Xx ?", McOrder.WherePlace, "base", "xX_Bob_Xx");
+    McOf("syncs retiens ici : maison de Rodhengard", McOrder.SavePlace, "maison", "Rodhengard");
+    McOf("syncs oublie la mine de Rodhengard", McOrder.ForgetPlace, "mine", "Rodhengard");
+    McOf("syncs liste les lieux de Rodhengard", McOrder.ListPlaces, null, "Rodhengard");
+    McOf("syncs protège la maison de Rodhengard", McOrder.Patrol, "maison", "Rodhengard");
+    McOf("syncs va à la mine de fer", McOrder.GoToPlace, "mine de fer", null);
+    McOf("syncs va à la maison", McOrder.GoToPlace, "maison", null);
+    McOf("syncs va chercher du bois chez Rodhengard", McOrder.Collect, null, null); // wood, wherever it is
+    McOf("syncs donne-moi le pain de Rodhengard", McOrder.Give, null, null);
     Covers("McGoodsNames", typeof(McGoods));
     Covers("McSmeltNames", typeof(McSmelt));
 
@@ -1986,7 +2034,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         ("syncs donne tout ce que tu as", "Give:All"), ("syncs donne moi tout ce que t'as", "Give:All"),
         ("syncs file moi tout", "Give:All"), ("syncs lâche tout", "Give:All"), ("syncs drop tout", "Give:All"),
         ("syncs drop all", "Give:All"), ("syncs balance ton stuff", "Give:All"),
-        ("syncs montre ce que t'as", "Unknown"), ("syncs qu'est ce que t'as sur toi", "None"),
+        ("syncs montre ce que t'as", "Inventory"), ("syncs qu'est ce que t'as sur toi", "Inventory"),
         ("syncs rends moi mes affaires", "Give:All"), ("syncs rends moi mon stuff", "Give:All"),
         ("syncs donne ton loot", "Give:All"), ("syncs donne moi tes poissons", "Give:Fish"),
         ("syncs file moi les poissons", "Give:Fish"), ("syncs donne moi le poisson", "Give:Fish"),
@@ -2124,7 +2172,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         ("syncs la mine est dangereuse", "Unknown"), ("syncs j'ai trouvé un village", "Unknown"),
         ("syncs le four est plein", "Unknown"), ("syncs je range ma chambre", "Unknown"),
         ("syncs bonne idée", "Unknown"), ("syncs t'es drôle", "Unknown"),
-        ("syncs elle est où ta maison ?", "WherePlace:maison"), ("syncs c'est quoi ton inventaire", "Unknown"),
+        ("syncs elle est où ta maison ?", "WherePlace:maison"), ("syncs c'est quoi ton inventaire", "Inventory"),
         ("syncs j'ai pêché un poisson", "Unknown"), ("syncs tu manges quoi ?", "Unknown"),
         ("syncs je reviens dans 5 min", "Unknown"), ("syncs je pars dans 10 minutes", "Unknown"),
         ("syncs ça fait 5 min que j'attends", "None"), ("syncs t'as des poissons ?", "Give:Fish"),
@@ -2141,7 +2189,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         ("syncs salut c'est moi", "Wave"), ("syncs dis moi tout", "Unknown"),
         ("syncs dis moi ce que tu fais", "Unknown"), ("syncs dis moi t'es où", "Where"), ("syncs bonne nuit", "Bye"),
         ("syncs danse pas", "None"), ("syncs saute dans le vide", "Jump"), ("syncs le four est où ?", "Unknown"),
-        ("syncs t'as du charbon ?", "Unknown"), ("syncs mets toi là", "Unknown"), ("syncs pose toi là", "Sit"),
+        ("syncs t'as du charbon ?", "Have:Coal"), ("syncs mets toi là", "Unknown"), ("syncs pose toi là", "Sit"),
         ("syncs j'ai trop faim", "Give:Food"), ("syncs viens on rentre", "Come"),
         ("syncs on va à la mine", "GoToPlace:mine"), ("syncs je vais à la mine", "Unknown"),
         ("syncs je retourne à la base", "Unknown"), ("syncs je rentre", "Unknown"),
@@ -2157,6 +2205,32 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
                   + (r.Seconds > 0 ? ":" + r.Seconds : "");
         if (got != expected && !got.StartsWith(expected + ":")) Fail($"sweep « {text} »: got {got}, expected {expected}");
     }
+
+    // What she carries, as she says it: French names with their plural and article, the biggest first, the rest
+    // « autres trucs », and never longer than the list's room in her lines.
+    McStack S(string id, int count, params string[] goods) => new(id, count, goods);
+    var pockets = new McInventory([S("iron_helmet", 1, "armour")], null, null,
+        [S("bread", 20, "food"), S("oak_log", 64, "wood"), S("iron_pickaxe", 1, "tools", "pickaxe"), S("bread", 3, "food"),
+         S("strange_thing", 2), S("iron_ingot", 12, "iron"), S("raw_iron", 5, "iron")]);
+    void Says(string what, string? got, string? expected)
+    {
+        if (got != expected) Fail($"inventory {what}: got « {got} », expected « {expected} »");
+    }
+    Says("overview", pockets.Overview(MinecraftBodyService.ListMax),
+        "64 bûches de chêne, 23 pains, 12 lingots de fer, 5 fers bruts, une pioche en fer et un autre truc");
+    Says("iron", pockets.Of(McGoods.Iron, MinecraftBodyService.ListMax), "12 lingots de fer et 5 fers bruts");
+    Says("armour", pockets.Of(McGoods.Armour, MinecraftBodyService.ListMax), "un casque en fer"); // worn counts
+    Says("no fish", pockets.Of(McGoods.Fish, MinecraftBodyService.ListMax), null);
+    Says("empty", McInventory.Empty.Overview(MinecraftBodyService.ListMax), null);
+    Says("unnamed only", new McInventory([], null, null, [S("strange_thing", 2), S("odd_thing", 1)]).Overview(50), "2 trucs");
+    var full = new McInventory([], null, null, McItems.All.Take(36).Select((n, i) => S(n.Key, 64 - i)).ToArray());
+    if (full.Overview(MinecraftBodyService.ListMax) is not { } fullText || fullText.Length > MinecraftBodyService.ListMax
+        || !fullText.EndsWith(" autres trucs"))
+        Fail($"inventory full pockets: « {full.Overview(MinecraftBodyService.ListMax)} »");
+    // The names go in game chat: plain text Minecraft can draw.
+    foreach (var (id, name) in McItems.All)
+        if (name.One.Length == 0 || name.Many.Length == 0 || $"{name.One}{name.Many}".Any(c => c is '§' or '{' or '}' || char.IsSurrogate(c)))
+            Fail($"item name {id}: « {name.One} » / « {name.Many} »");
 
     // SRV only where the client library does it: a name, on the default port.
     if (!McAddress.NeedsLookup("play.example.net", 25565) || McAddress.NeedsLookup("play.example.net", 25566)
@@ -2225,6 +2299,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         "McTimerNoteLines", "McPlaceListLines", "McPlaceSavedLines", "McPlaceMovedLines", "McPlaceNotYoursLines", "McPlaceFullLines",
         "McPlaceUnknownLines", "McPlaceForgottenLines", "McPlaceWhereLines", "McPlaceOtherDimensionLines", "McPlaceGoAckLines",
         "McPlaceArrivedLines", "McGuideAckLines", "McGuideArrivedLines", "McPatrolPlaceAckLines", "McTripTooFarLines",
+        "McInventoryLines", "McHaveLines",
     };
     string[] McFamilyPools = { "McCalledLines", "McDeathLines", "McHitByPlayerLines", "McHitAgainLines", "McFedLines", "McAdvancementLines", "McComeAckLines",
         "McFollowAckLines", "McGuardAckLines", "McCollectDoneLines", "McWaveLines", "McGiveDoneLines", "McByeLines", "McCreeperBehindLines", "McDiveLines", "McBoardLines" };
@@ -2258,13 +2333,13 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
              "McCreeperLines", "McRetreatLines", "McSmeltAckLines", "McSmeltDoneLines", "McSmeltKeptLines", "McSmeltEmptyLines",
              "McSmeltNothingLines", "McSmeltNoFuelLines", "McSmeltNoFurnaceLines", "McSmeltBusyLines", "McPlaceSavedLines",
              "McPlaceMovedLines", "McPlaceNoNameLines", "McPlaceNotYoursLines", "McPlaceFullLines", "McPlaceUnknownLines",
-             "McPlaceForgottenLines", "McPlaceListLines", "McPlaceListEmptyLines", "McPlaceWhereLines", "McPlaceOtherDimensionLines",
+             "McPlaceForgottenLines", "McPlaceListLines", "McPlaceListEmptyLines", "McPlaceListEmptyOfLines", "McPlaceWhereLines", "McPlaceOtherDimensionLines",
              "McPlaceGoAckLines", "McPlaceArrivedLines", "McGuideAckLines", "McGuideWaitLines", "McGuideArrivedLines", "McGuideLostLines",
              "McRanchAckLines", "McRanchNoneLines", "McRanchNoChestLines", "McRoutineFarmLines", "McRoutineFishLines", "McRoutineRanchLines",
              "McRoutineHomeLines", "McTagAlongLinesOwner", "McTagAlongLinesTata", "McRetrieveLines", "McRetrievedLines", "McRetrieveEmptyLines",
              "McRetrieveLostLines", "McToolWornLines", "McToolBrokeLines", "McNeedRodLines", "McNeedShearsLines", "McNeedBreedFoodLines",
              "McNeedArrowsLines", "McPocketsFullLines", "McDiveLines", "McDiveAirLines", "McDrowningLines", "McBreathingLines", "McBoardLines",
-             "McShakeLines" }
+             "McShakeLines", "McInventoryLines", "McInventoryEmptyLines", "McHaveLines", "McHaveNoneLines" }
              .Concat(McFamilyPools.SelectMany(p => new[] { p + "Owner", p + "Tata" })))
     foreach (var (name, lines) in Pools(f))
     {

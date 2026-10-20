@@ -3,6 +3,15 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.20.0 — 2026-10-20
+
+- Minecraft: ask her what she carries (« syncs t'as quoi sur toi ? ») and she lists it, the biggest
+  stacks first; ask about one thing (« t'as combien de fer ? », « t'as du bois ? ») and she counts it.
+- `/debug minecraft` can show everything she carries, with full counts.
+- Minecraft: remembered places are now kept per player, so everyone can have their own « maison ».
+  Name someone else's to be taken there (« syncs guide-moi à la maison de … », « syncs emmène-moi
+  chez … »). Places saved before are given to whoever saved them.
+
 ## 7.19.0 — 2026-10-20
 
 - Minecraft: she no longer sinks and drowns when she stops in deep water: she treads water, and swims

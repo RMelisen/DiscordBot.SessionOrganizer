@@ -25,7 +25,9 @@ namespace ProjectSYNCS.Helpers;
 // Carrying
 //   Give        hand the player what she carries (everything, or a kind: food, tools, armour...).
 //   Store       put what she carries in the nearby chest, keeping her tools.
-// Remembered places
+//   Inventory   free: say what she carries.
+//   Have        free: say how much she carries of one kind of goods (iron, food, armour...).
+// Remembered places (each player's own; « la maison de X », « chez X » name another's: McRequest.Of)
 //   SavePlace   remember where the player stands under a name.
 //   GoToPlace   walk to a remembered place (no name: home).
 //   Guide       lead the player to a remembered place, waiting when they fall behind.
@@ -100,6 +102,10 @@ public enum McOrder
     ListPlaces,
     /// <summary>Stay where she is and keep the animals: breed, shear, cull the surplus, store the drops in the chest.</summary>
     Ranch,
+    /// <summary>Say what she carries. Takes her from nobody.</summary>
+    Inventory,
+    /// <summary>Say how much she carries of <see cref="McRequest.Goods"/>. Takes her from nobody.</summary>
+    Have,
 }
 
 /// <summary>What she can be asked to hand over. The body knows each by its lower-case name. Not stored.</summary>
@@ -172,10 +178,12 @@ public enum McResource
 }
 
 /// <summary>An order, with what it needs: the coordinates for GoTo (2 numbers: x z; 3: x y z), the resource and count
-/// for Collect, the crop for Harvest, the goods for Give, what to smelt, a place's key (<see cref="McCommand.PlaceKey"/>),
-/// a timer's length and note.</summary>
+/// for Collect, the crop for Harvest, the goods for Give, what to smelt, a place's key (<see cref="McCommand.PlaceKey"/>)
+/// and whose it is when named (<c>Of</c>: one of the parser's players, « la maison de Rodhengard »), a timer's length and
+/// note.</summary>
 public readonly record struct McRequest(McOrder Order, int[]? Coordinates = null, McResource? Resource = null, int Count = 0,
-    McCrop? Crop = null, McGoods? Goods = null, McSmelt? Smelt = null, string? Place = null, int Seconds = 0, string? Note = null)
+    McCrop? Crop = null, McGoods? Goods = null, McSmelt? Smelt = null, string? Place = null, int Seconds = 0, string? Note = null,
+    string? Of = null)
 {
     public static readonly McRequest Nothing = new(McOrder.None);
 }
@@ -447,6 +455,34 @@ public static class McCommand
         "dump",
     }).Distinct().ToArray();
 
+    // ---- Asking what she carries ----
+
+    // « t'as quoi ? »: what she carries, when nothing else follows, or « sur toi », « dans tes poches », « comme bois ».
+    // Followed by anything else it's another question (« qu'est-ce que t'as fait ? »).
+    private static readonly string[] CarryQuestions =
+    {
+        "t as quoi", "tu as quoi", "qu est ce que t as", "qu est ce que tu as", "qu as tu", "t aurais quoi", "tu portes quoi",
+        "tu transportes quoi", "qu est ce que tu portes", "qu est ce que tu transportes", "what do you have", "what have you got",
+        "what you got", "what do you carry",
+    };
+    private static readonly HashSet<string> CarryQuestionFollow = new() { "sur", "dans", "comme", "en", "on", "in" };
+    // « montre ton inventaire », « c'est quoi ton stuff », « y a quoi dans tes poches »: one of these with an inventory word.
+    private static readonly string[] ShowVerbs =
+    {
+        "montre", "montre moi", "montre nous", "fais voir", "fais moi voir", "fais nous voir", "affiche", "liste", "check", "quoi",
+        "show", "show me", "list", "what s",
+    };
+    private static readonly string[] InventoryWords =
+    {
+        "inventaire", "inv", "poches", "poche", "sac", "stuff", "affaires", "items", "ce que t as", "ce que tu as", "ce que tu portes",
+        "inventory", "pockets",
+    };
+    // Whose pockets: « mes poches » are the player's, which she can't see.
+    private static readonly HashSet<string> TheirOwn = new() { "mes", "mon", "ma", "nos", "notre", "my", "our" };
+    // Around a bare inventory word (« syncs ton inv ? »).
+    private static readonly HashSet<string> InventoryFiller = new() { "ton", "ta", "tes", "your", "le", "la", "les", "l", "the", "et", "alors" };
+    private static readonly string[] HowManyWords = { "how many", "how much" };
+
     // ---- Fishing and cooking ----
 
     private static readonly string[] FishPhrases =
@@ -539,7 +575,7 @@ public static class McCommand
 
     // ---- Remembered places ----
 
-    /// <summary>How many places she remembers at most, and how long a name may be.</summary>
+    /// <summary>How many places she remembers at most for one player, and how long a name may be.</summary>
     public const int MaxPlaces = 20;
     public const int MaxPlaceName = 24;
     private static readonly string[] SaveVerbs =
@@ -663,11 +699,27 @@ public static class McCommand
     /// <param name="names">Every name she answers to (her in-game name, « syncs »), any case.</param>
     /// <param name="called">The player called her just before (a bare « syncs »): her name isn't needed this time,
     /// and a message with nothing she understands is let go rather than read as another call.</param>
-    /// <param name="places">The keys of the places she remembers (<see cref="PlaceKey"/>), so « va à la mine » finds one.</param>
-    public static McRequest Parse(string text, IReadOnlyCollection<string> names, bool called = false, IReadOnlyCollection<string>? places = null)
+    /// <param name="places">The keys of the places she remembers (<see cref="PlaceKey"/>), anyone's, so « va à la mine » finds one.</param>
+    /// <param name="players">Whose places may be named (« la maison de Rodhengard », « chez Rodhengard »): player names, any
+    /// case. The one named comes back as given, in <see cref="McRequest.Of"/>.</param>
+    public static McRequest Parse(string text, IReadOnlyCollection<string> names, bool called = false, IReadOnlyCollection<string>? places = null,
+        IReadOnlyCollection<string>? players = null)
     {
         var words = Clean(Rating.Normalize(text));
         if (words.Length == 0) return McRequest.Nothing;
+        // Someone's place: their name taken out of the words, the place reads as usual (« chez X » as « à la maison »).
+        // Only when both readings are about a place, or the plain one is nothing: « va chercher du bois chez X » is wood.
+        var request = ParseWords(text, words, names, called, places);
+        if ((AboutPlace(request) || request.Order is McOrder.None or McOrder.Unknown)
+            && players is { Count: > 0 } && OwnerOut(words, players, names) is { } theirs
+            && ParseWords(text, theirs.Words, names, called, places) is var other && AboutPlace(other))
+            return other with { Of = theirs.Player };
+        return request;
+    }
+
+    private static McRequest ParseWords(string text, string[] words, IReadOnlyCollection<string> names, bool called,
+        IReadOnlyCollection<string>? places)
+    {
 
         // Her name, or a one-letter slip of it (« sycns », « sincs ») when it's long enough not to be another word.
         var nameWords = names.Select(Rating.Normalize).Where(n => n.Length > 0 && !n.Contains(' ')).ToHashSet();
@@ -704,6 +756,10 @@ public static class McCommand
         if (Find(rest, ForgetVerbs) is { } forget && NameAfter(rest, forget.Start + forget.Length) is { } forgotten)
             return Unless(forget, rest, new(McOrder.ForgetPlace, Place: place?.Key ?? forgotten));
         if (Find(wordsOnly, ListPlacesPhrases) is { } listing) return Unless(listing, wordsOnly, new(McOrder.ListPlaces));
+
+        // What she carries, asked: before stay (« il te reste combien de pain ? ») and before handing over
+        // (« qu'est-ce que t'as dans tes poches ? » is not « vide tes poches »).
+        if (CarryQuestion(wordsOnly) is { } carry) return carry;
 
         if (Find(wordsOnly, FollowOverStayPhrases) is not null) return When(FollowOverStayPhrases, new(McOrder.Follow)) ?? McRequest.Nothing;
         if (Find(wordsOnly, RanchAlonePhrases) is not null) return When(RanchAlonePhrases, new(McOrder.Ranch)) ?? McRequest.Nothing;
@@ -846,6 +902,35 @@ public static class McCommand
         return calledOut && rest.Length <= 6 ? new(McOrder.Unknown) : McRequest.Nothing;
     }
 
+    private static bool AboutPlace(McRequest request) =>
+        request.Order is McOrder.SavePlace or McOrder.GoToPlace or McOrder.Guide or McOrder.WherePlace or McOrder.ForgetPlace
+            or McOrder.ListPlaces
+        || request is { Order: McOrder.Patrol, Place: not null };
+
+    // « de X », « d'X », « du X » or « chez X », X a player: the words without it, and X. « chez X » becomes « à la maison »,
+    // which the service reads as X's home, whatever X named it. Never her own name.
+    private static (string[] Words, string Player)? OwnerOut(string[] words, IReadOnlyCollection<string> players, IReadOnlyCollection<string> names)
+    {
+        var hers = names.Select(PlaceKey).ToHashSet();
+        var keyed = players
+            .Select(p => (Player: p, Key: PlaceKey(p)))
+            .Where(p => p.Key.Length > 0 && !hers.Contains(p.Key) && !NameFiller.Contains(p.Key))
+            .Select(p => (p.Player, Parts: p.Key.Split(' ')))
+            .OrderByDescending(p => p.Parts.Length)
+            .ToArray();
+        for (var i = 0; i + 1 < words.Length; i++)
+        {
+            if (words[i] is not ("de" or "d" or "du" or "chez")) continue;
+            foreach (var (player, parts) in keyed)
+                if (i + 1 + parts.Length <= words.Length && parts.Select((p, k) => words[i + 1 + k] == p).All(x => x))
+                {
+                    string[] instead = words[i] == "chez" ? ["a", "la", "maison"] : [];
+                    return ([.. words[..i], .. instead, .. words[(i + 1 + parts.Length)..]], player);
+                }
+        }
+        return null;
+    }
+
     /// <summary>A place's key: its name as the parser reads it (lower case, no accents, game-chat spellings mapped).</summary>
     public static string PlaceKey(string name) => string.Join(' ', Clean(Rating.Normalize(name)));
 
@@ -937,6 +1022,76 @@ public static class McCommand
                 if (list.Contains(words[j])) return (goods, owned);
         }
         return owned ? (null, true) : null;
+    }
+
+    // A question about what she carries: the whole (Inventory) or one kind (Have). Null when it isn't one, or when a
+    // gathering, handing-over or storing verb is in the message, which makes it an order (« t'as du fer ? ramène-m'en »).
+    // A question about goods she can't fetch (« t'as du poisson ? », « t'as quoi comme épée ») stays a request to hand
+    // them over, unless it asks how many.
+    private static McRequest? CarryQuestion(string[] words)
+    {
+        if (words.Any(w => ChestWords.Contains(w))) return null;
+        foreach (var verbs in new[] { GiveAllPhrases, GiveVerbs, StorePhrases, CollectPhrases })
+            if (Find(words, verbs) is not null) return null;
+
+        // « combien »: always a question, of a kind of goods or of everything (« t'as combien de trucs ? »). Looked up as is:
+        // Find takes a word after « as » for the past tense, and « t'as combien » is not.
+        if (words.Contains("combien") || Find(words, HowManyWords) is not null)
+            return GoodsIn(words) is { } counted ? Asked(counted) : null;
+
+        // « t'as quoi ? », « t'as quoi sur toi ? », « t'as quoi comme bois ? ».
+        if (Find(words, CarryQuestions) is { } question)
+        {
+            var after = question.Start + question.Length;
+            var goods = GoodsAfter(words, after)?.Goods;
+            // Armour is the exception: « t'as quoi comme armure ? » can't mean « take it off ».
+            if (goods is { } kind && kind != McGoods.All)
+                return CarriedOnly.Contains(kind) && kind != McGoods.Armour ? null : new McRequest(McOrder.Have, Goods: kind);
+            if (after == words.Length || goods == McGoods.All || CarryQuestionFollow.Contains(words[after])) return new McRequest(McOrder.Inventory);
+            return null;
+        }
+
+        // « montre ton inventaire », « c'est quoi dans ton sac ? », « montre ce que t'as »: hers, not « mes poches ».
+        var inventoryWord = NamesHerInventory(words);
+        if (inventoryWord && Find(words, ShowVerbs) is not null) return new McRequest(McOrder.Inventory);
+        // « syncs inventaire », « syncs ton inv ? »: the word alone.
+        if (inventoryWord && words.All(w => InventoryFiller.Contains(w) || InventoryWords.Contains(w)))
+            return new McRequest(McOrder.Inventory);
+
+        // « t'as du fer ? », « t'aurais du bois ? »: goods she could fetch, so not a request to hand them over.
+        if (Find(words, HaveVerbs) is { } have && GoodsAfter(words, have.Start + have.Length) is { Goods: { } had }
+            && !CarriedOnly.Contains(had))
+            return new McRequest(McOrder.Have, Goods: had);
+        return null;
+
+        static McRequest Asked(McGoods goods) => goods == McGoods.All ? new(McOrder.Inventory) : new(McOrder.Have, Goods: goods);
+    }
+
+    // An inventory word of hers (« ton inventaire », « tes poches »), never the player's (« mes poches »).
+    private static bool NamesHerInventory(string[] words)
+    {
+        foreach (var phrase in InventoryWords)
+        {
+            var parts = phrase.Split(' ');
+            for (var i = 0; i + parts.Length <= words.Length; i++)
+                if (parts.Select((p, k) => words[i + k] == p).All(x => x) && !(i > 0 && TheirOwn.Contains(words[i - 1])))
+                    return true;
+        }
+        return false;
+    }
+
+    // The first kind of goods named anywhere in the message: « combien de fer t'as », « t'as combien de pommes de terre ».
+    private static McGoods? GoodsIn(string[] words)
+    {
+        for (var j = 0; j < words.Length; j++)
+        {
+            if (words[j] is "pomme" or "pommes" or "pom" && j + 2 < words.Length && words[j + 1] is "de" or "d" && words[j + 2] == "terre")
+                return McGoods.Produce;
+            if (CropWords.Any(c => c.Crop != McCrop.Any && c.Words.Any(w => Same(words[j], w)))) return McGoods.Produce;
+            foreach (var (goods, list) in GoodsWords)
+                if (list.Contains(words[j])) return goods;
+        }
+        return null;
     }
 
     // What a cooking order is about: the first food, ore or sand word, else what the verb implies (melting is ore,

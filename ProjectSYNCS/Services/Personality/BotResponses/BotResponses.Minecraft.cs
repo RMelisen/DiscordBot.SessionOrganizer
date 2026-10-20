@@ -732,6 +732,44 @@ internal static partial class BotResponses
         "Hein ? J'ai pas d'objet de ce nom.",
     };
 
+    // « t'as quoi sur toi ? »: what she carries. {1} = the list, the biggest first (McInventory.Overview: « 64 bûches de
+    // chêne, 23 pains et 9 autres trucs »).
+    public static readonly string[] McInventoryLines =
+    {
+        "J'ai {1}.",
+        "Dans mes poches : {1}. Tout est rangé, évidemment.",
+        "Inventaire : {1}. Rien de volé, promis.",
+        "{1}. Bien équipée, la petite bot (￣ー￣)",
+        "Alors... {1}. Je tiens mes comptes mieux que toi, {0}.",
+    };
+
+    // Asked what she carries, with empty pockets.
+    public static readonly string[] McInventoryEmptyLines =
+    {
+        "Rien. Mes poches sont vides, {0}.",
+        "Le vide. Mes poches font écho.",
+        "Rien sur moi. Je voyage léger, c'est un style.",
+    };
+
+    // « t'as combien de fer ? », « t'as du bois ? »: what she carries of that kind. {1} = the list (« 12 lingots de fer et 5
+    // fers bruts »).
+    public static readonly string[] McHaveLines =
+    {
+        "J'ai {1}.",
+        "Oui : {1}.",
+        "{1}. Compté et recompté.",
+        "Sur moi : {1}. Si t'en veux, demande gentiment (￢‿￢)",
+    };
+
+    // The same, when she has none. {1} = McGoodsNames (« le fer »).
+    public static readonly string[] McHaveNoneLines =
+    {
+        "J'ai cherché {1} dans mes poches : rien.",
+        "Non, j'en ai pas, {0}.",
+        "Zéro. Nada. Mes poches sont formelles.",
+        "Pas sur moi. Faudra aller en chercher (・・?)",
+    };
+
     // She put her things in a chest, keeping her tools. {1} = how many items.
     public static readonly string[] McStoreDoneLines =
     {
@@ -1131,6 +1169,13 @@ internal static partial class BotResponses
     {
         "Je connais aucun endroit, {0}.",
         "Ma carte est vide. Apprends-moi des endroits :D",
+    };
+
+    // Asked for someone else's places, and they have none. {1} = whose.
+    public static readonly string[] McPlaceListEmptyOfLines =
+    {
+        "{1} m'a montré aucun endroit, {0}.",
+        "J'ai rien noté pour {1}. Sa page est blanche dans ma carte.",
     };
 
     // Where a place is. {1} = its coordinates (with the dimension outside the overworld), {2} = the place.

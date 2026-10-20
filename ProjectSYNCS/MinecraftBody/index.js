@@ -46,6 +46,8 @@
 //      wornOut {tool} · broke {tool} · lacking {what: rod|shears|breedFood|arrows|space}
 //      (tool: sword|pickaxe|axe|shovel|rod|shears|bow)
 //      Water: diving {player} · surfacing {player} · drowning · breathing · boarded {player} · shook
+//      inventory {worn:[stack],held:stack|null,offhand:stack|null,pockets:[stack]} (stack: {name,count,goods:[…]}),
+//        on spawn and after her pockets change, at most every 2 s
 
 'use strict';
 
@@ -998,6 +1000,35 @@ const WornSlots = ['head', 'torso', 'legs', 'feet'];
 
 function wornArmour() {
   return WornSlots.filter((slot) => bot.inventory.slots[bot.getEquipmentDestSlot(slot)]);
+}
+
+// ---- What she carries, for the service (« t'as quoi sur toi ? », /debug minecraft) --------------------------------
+
+// A stack as the service reads it. Its kinds of goods are the ones give() would hand over for it, so « t'as du fer ? »
+// counts exactly what « donne-moi ton fer » would toss.
+function stackReport(item) {
+  if (!item) return null;
+  return { name: item.name, count: item.count, goods: Object.keys(Goods).filter((key) => key !== 'all' && Goods[key](item.name)) };
+}
+
+// Sent on spawn and after her pockets change, at most every InventoryEvery: a gathering run moves a slot per block.
+const InventoryEvery = 2000;
+let inventoryTimer = null;
+
+function reportInventory() {
+  inventoryTimer = null;
+  if (!bot) return;
+  const slots = bot.inventory.slots;
+  emit('inventory', {
+    worn: WornSlots.map((slot) => stackReport(slots[bot.getEquipmentDestSlot(slot)])).filter(Boolean),
+    held: stackReport(bot.heldItem),
+    offhand: stackReport(slots[bot.getEquipmentDestSlot('off-hand')]),
+    pockets: bot.inventory.items().map(stackReport),
+  });
+}
+
+function scheduleInventory() {
+  if (!inventoryTimer) inventoryTimer = setTimeout(safely(reportInventory), InventoryEvery);
 }
 
 // « syncs vide tes poches », « donne-moi ton poisson »: she walks up to the player and tosses it at their feet.
@@ -2820,6 +2851,7 @@ function attach() {
     emit('spawned', {});
     reportPlayers();
     wearBestArmor().catch(() => {});
+    scheduleInventory();
   });
   // Every spawn, the first and each respawn: her things to get back after a death.
   bot.on('spawn', () => {
@@ -2852,6 +2884,8 @@ function attach() {
     eatIfHungry().catch(() => {});
     reportHunger();
   });
+  bot.inventory.on('updateSlot', scheduleInventory);
+  bot.on('heldItemChanged', scheduleInventory);
   bot.on('playerCollect', (collector) => {
     if (collector !== bot.entity) return;
     setTimeout(() => {

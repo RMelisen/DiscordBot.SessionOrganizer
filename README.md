@@ -52,7 +52,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
 | `/debug quiz` | Post or close a pop quiz, or crown the week, now (tests) | owner |
 | `/debug quokka` | Make Quokka show up in the bots channel now (tests) | owner |
-| `/debug minecraft` | Her state on the Minecraft server, send her in / take her out now, or allow / forbid her joining at all | owner |
+| `/debug minecraft` | Her state on the Minecraft server or everything she carries, send her in / take her out now, or allow / forbid her joining at all | owner |
 | `/health` | Her check-up: the Pi's temperature and power, her memory, the Discord connection, storage, the outage log | everyone |
 | `/help` | In-Discord usage guide | everyone |
 
@@ -166,6 +166,9 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
   - « syncs vide tes poches », « syncs donne-moi ton poisson » (or ta pioche, tes armes, ton fer…):
     she hands you what she carries; « syncs range tes affaires » puts it in the chest nearby, keeping
     her tools;
+  - « syncs t'as quoi sur toi ? », « syncs montre ton inventaire »: she says what she carries, the
+    biggest stacks first; « syncs t'as combien de fer ? », « syncs t'as du bois ? »: how much she
+    has of that;
   - « syncs va pêcher »: she fishes in the water nearby until told otherwise (she needs a rod) and
     keeps the catch for you;
   - « syncs cuis la viande », « syncs fais fondre le fer », « syncs fais du verre »: she puts what
@@ -174,8 +177,10 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
     that come near;
   - « syncs retiens ici : maison », then « syncs va à la maison », « syncs rentre », « syncs
     montre-moi le chemin vers la mine » (she leads, and waits when you fall behind), « syncs où est
-    la mine ? », « syncs tes lieux », « syncs oublie la mine »: up to 20 places, kept across
-    restarts; only whoever saved one (or the family) can move or forget it;
+    la mine ? », « syncs tes lieux », « syncs oublie la mine »: up to 20 places each, kept across
+    restarts. Everyone has their own (« maison » is yours); « syncs emmène-moi à la maison de
+    Bob » or « syncs guide-moi chez Bob » uses someone else's. Only its player, whoever
+    saved it, or the family can move or forget a place;
   - « syncs préviens-moi dans 5 min » or « syncs rappelle-moi dans 10 min de sortir le fer »: a
     reminder, up to two hours;
   - « syncs t'es où ? », « syncs assis », « syncs saute », and « salut syncs » (she waves back).

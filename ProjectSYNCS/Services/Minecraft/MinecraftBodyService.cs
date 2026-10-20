@@ -118,6 +118,9 @@ public sealed class MinecraftBodyService : BackgroundService
     private bool _leaving;
     private DateTimeOffset? _inGameSince;
     private List<string> _players = new();
+    // What she carries, as the body last reported it (on spawn, then after each change), and when. Null until then.
+    private McInventory? _inventory;
+    private DateTimeOffset _inventoryAt;
     private DateTimeOffset? _fewSince;
     private int _failures;
     private DateTimeOffset _retryAfter = DateTimeOffset.MinValue;
@@ -139,11 +142,13 @@ public sealed class MinecraftBodyService : BackgroundService
     private string? _seeking;
     // Where she last saw Papa and Tata, by in-game name. Persisted: they log back in where they logged out.
     private readonly Dictionary<string, McSpot> _seen;
-    // The places players asked her to remember, by key (McCommand.PlaceKey). Persisted: the map doesn't change overnight.
-    private readonly Dictionary<string, McPlace> _places;
+    // The places players asked her to remember: whose they are (in-game name), then by key (McCommand.PlaceKey). Each
+    // player has their own « maison ». Persisted: the map doesn't change overnight.
+    private readonly Dictionary<string, Dictionary<string, McPlace>> _places;
     // Asked where she is / to remember a spot: the body answers with a position, and these say to whom and how.
+    // Of: whose place it will be (« retiens ici : maison de Rodhengard »), null for the player's own.
     private readonly Dictionary<string, bool> _askedWhere = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, (string Key, string Name, bool Private)> _marking = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, (string Key, string Name, string? Of, bool Private)> _marking = new(StringComparer.OrdinalIgnoreCase);
     // Reminders running, per player (McCommand Timer), for this body only: they die with it.
     private readonly Dictionary<string, int> _timers = new(StringComparer.OrdinalIgnoreCase);
     private const int MaxTimers = 3;
@@ -178,19 +183,29 @@ public sealed class MinecraftBodyService : BackgroundService
         var state = LoadState();
         _allowed = state?.Allowed ?? false;
         _seen = new Dictionary<string, McSpot>(state?.Seen ?? new Dictionary<string, McSpot>(), StringComparer.OrdinalIgnoreCase);
-        _places = new Dictionary<string, McPlace>(state?.Places ?? new Dictionary<string, McPlace>());
+        _places = new Dictionary<string, Dictionary<string, McPlace>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (player, places) in state?.PlacesByPlayer ?? new Dictionary<string, Dictionary<string, McPlace>>())
+            _places[player] = new Dictionary<string, McPlace>(places);
+        // A file from when places were one shared map: each goes to whoever saved it.
+        foreach (var (key, place) in state?.Places ?? new Dictionary<string, McPlace>())
+        {
+            if (!_places.TryGetValue(place.By, out var theirs)) _places[place.By] = theirs = new Dictionary<string, McPlace>();
+            theirs.TryAdd(key, place);
+        }
     }
 
     // What survives a restart: the owner's switch, where she last saw her family, and the places she was asked to
-    // remember. Everything else here is in memory on purpose.
-    private sealed record MinecraftState(bool Allowed, Dictionary<string, McSpot>? Seen = null, Dictionary<string, McPlace>? Places = null);
+    // remember, by player. Everything else here is in memory on purpose. Places: the old shared map, only ever read.
+    private sealed record MinecraftState(bool Allowed, Dictionary<string, McSpot>? Seen = null, Dictionary<string, McPlace>? Places = null,
+        Dictionary<string, Dictionary<string, McPlace>>? PlacesByPlayer = null);
     private sealed record McSpot(int X, int Y, int Z, string Dimension);
-    // Name: as the player wrote it (McCommand.PlaceName), for her lines. By: who saved it, the only one besides
-    // family who may move or forget it.
+    // Name: as the player wrote it (McCommand.PlaceName), for her lines. By: who saved it, who may move or forget it
+    // besides the player it belongs to and family.
     private sealed record McPlace(string Name, int X, int Y, int Z, string Dimension, string By);
 
     private MinecraftState StateLocked() =>
-        new(_allowed, new Dictionary<string, McSpot>(_seen), new Dictionary<string, McPlace>(_places));
+        new(_allowed, new Dictionary<string, McSpot>(_seen),
+            PlacesByPlayer: _places.Where(p => p.Value.Count > 0).ToDictionary(p => p.Key, p => new Dictionary<string, McPlace>(p.Value)));
 
     private MinecraftState? LoadState()
     {
@@ -346,6 +361,7 @@ public sealed class MinecraftBodyService : BackgroundService
             _spawned = false;
             _leaving = false;
             _players = new List<string>();
+            _inventory = null;
             _fewSince = null;
             _order = null;
             _pending = null;
@@ -391,6 +407,7 @@ public sealed class MinecraftBodyService : BackgroundService
             _leaving = false;
             _inGameSince = null;
             _players = new List<string>();
+            _inventory = null;
             _fewSince = null;
             _order = null;
             _pending = null;
@@ -560,6 +577,14 @@ public sealed class MinecraftBodyService : BackgroundService
                         "busy" => BotResponses.McSmeltBusyLines,
                         _ => BotResponses.McSmeltNothingLines,
                     }, "", SmeltName(root.GetProperty("what").GetString() ?? ""));
+                    break;
+                case "inventory":
+                    var inventory = ReadInventory(root);
+                    lock (_gate)
+                    {
+                        _inventory = inventory;
+                        _inventoryAt = DateTimeOffset.UtcNow;
+                    }
                     break;
                 case "position":
                     var asker = root.GetProperty("player").GetString() ?? "";
@@ -829,12 +854,15 @@ public sealed class MinecraftBodyService : BackgroundService
         if (player.Length == 0) return;
         bool called;
         string[] known;
+        Dictionary<string, string> owners;
         lock (_gate)
         {
             called = _calledAt.Remove(player, out var calledAt) && DateTimeOffset.UtcNow - calledAt <= CallWindow;
-            known = _places.Keys.ToArray();
+            known = _places.Values.SelectMany(p => p.Keys).Distinct().ToArray();
+            owners = OwnerNamesLocked();
         }
-        var request = McCommand.Parse(text, [_username, .. McCommand.HerNames], called, known);
+        var request = McCommand.Parse(text, [_username, .. McCommand.HerNames], called, known, owners.Keys);
+        if (request.Of is { } named) request = request with { Of = owners[named] };
         switch (request.Order)
         {
             case McOrder.None:
@@ -851,14 +879,15 @@ public sealed class MinecraftBodyService : BackgroundService
 
         // A remembered place becomes coordinates here: the body only walks.
         McPlace? place = null;
+        var placeOwner = player;
         if (request.Order is McOrder.GoToPlace or McOrder.Guide || (request.Order == McOrder.Patrol && request.Place is not null))
         {
-            place = FindPlace(request.Place ?? "", out var key);
-            if (place is null)
+            if (FindPlace(player, request.Place ?? "", request.Of, out var key) is not { } found)
             {
-                Reply(player, whispered, BotResponses.McPlaceUnknownLines, Label(McCommand.PlaceName(text, key)));
+                Reply(player, whispered, BotResponses.McPlaceUnknownLines, Label(McCommand.PlaceName(text, key), request.Of ?? player, player));
                 return;
             }
+            (place, placeOwner) = found;
         }
 
         object command = request.Order switch
@@ -885,7 +914,7 @@ public sealed class MinecraftBodyService : BackgroundService
             _ => new { op = "stay" },
         };
         var detail = request.Coordinates is { } coordinates ? string.Join(" ", coordinates)
-            : place is not null ? Label(place.Name)
+            : place is not null ? Label(place.Name, placeOwner, player)
             : request.Goods is { } goods ? BotResponses.McGoodsNames[goods]
             : "";
         var now = DateTimeOffset.UtcNow;
@@ -965,15 +994,20 @@ public sealed class MinecraftBodyService : BackgroundService
                 Reply(player, whispered, BotResponses.McGiveUnknownLines);
                 return true;
             case McOrder.ListPlaces:
-                ListPlaces(player, whispered);
+                ListPlaces(player, whispered, request.Of);
+                return true;
+            case McOrder.Inventory:
+            case McOrder.Have:
+                TellInventory(player, whispered, request.Goods ?? McGoods.All);
                 return true;
             case McOrder.WherePlace:
-                if (FindPlace(request.Place ?? "", out var whereKey) is { } found)
-                    Reply(player, whispered, BotResponses.McPlaceWhereLines, Spot(found.X, found.Y, found.Z, found.Dimension), Label(found.Name));
-                else Reply(player, whispered, BotResponses.McPlaceUnknownLines, Label(McCommand.PlaceName(text, whereKey)));
+                if (FindPlace(player, request.Place ?? "", request.Of, out var whereKey) is var (found, owner))
+                    Reply(player, whispered, BotResponses.McPlaceWhereLines, Spot(found.X, found.Y, found.Z, found.Dimension),
+                        Label(found.Name, owner, player));
+                else Reply(player, whispered, BotResponses.McPlaceUnknownLines, Label(McCommand.PlaceName(text, whereKey), request.Of ?? player, player));
                 return true;
             case McOrder.ForgetPlace:
-                ForgetPlace(player, whispered, text, request.Place ?? "");
+                ForgetPlace(player, whispered, text, request.Place ?? "", request.Of);
                 return true;
             case McOrder.SavePlace:
                 if (request.Place is null)
@@ -981,7 +1015,7 @@ public sealed class MinecraftBodyService : BackgroundService
                     Reply(player, whispered, BotResponses.McPlaceNoNameLines);
                     return true;
                 }
-                lock (_gate) _marking[player] = (request.Place, McCommand.PlaceName(text, request.Place), whispered);
+                lock (_gate) _marking[player] = (request.Place, McCommand.PlaceName(text, request.Place), request.Of, whispered);
                 Send(new { op = "mark", player });
                 return true;
             default:
@@ -1011,17 +1045,51 @@ public sealed class MinecraftBodyService : BackgroundService
 
     // ---- Remembered places ----------------------------------------------------------------------
 
-    // A place by key; an empty key is home (« rentre »), and a home word finds whichever home was saved. Key: what
+    // Whose places are looked through, in order, for a place named without its player: the player's own first (each
+    // has their own « maison »), then Papa's, Tata's and everyone else's by name, so the group's map still works for
+    // someone who saved nothing. Without a player (her own trips, « rentre »): the family's first.
+    private List<string> SearchOrderLocked(string? player)
+    {
+        var order = new List<string>();
+        void Add(string who)
+        {
+            if (_places.ContainsKey(who) && !order.Contains(who, StringComparer.OrdinalIgnoreCase)) order.Add(who);
+        }
+        if (player is not null) Add(player);
+        Add(_owner);
+        Add(_tata);
+        foreach (var who in _places.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase)) Add(who);
+        return order;
+    }
+
+    // Whose places may be named in chat (« la maison de Rodhengard »), by the name the parser looks for: everyone with a
+    // place or on the server, and « Papa » and « Tata », as she calls them.
+    private Dictionary<string, string> OwnerNamesLocked()
+    {
+        var owners = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var who in _places.Keys.Concat(_players).Where(w => w.Length > 0 && !Same(w, _username))) owners.TryAdd(who, who);
+        if (_owner.Length > 0) owners.TryAdd("Papa", _owner);
+        if (_tata.Length > 0) owners.TryAdd("Tata", _tata);
+        return owners;
+    }
+
+    // A place by key, and whose it is; an empty key is home (« rentre »: hers, the family's), and a home word finds
+    // whichever home that player saved. Of: the player named (« la maison de Rodhengard »), only theirs then. Key: what
     // was looked for, for the « I don't know it » line.
-    private McPlace? FindPlace(string wanted, out string key)
+    private (McPlace Place, string Owner)? FindPlace(string player, string wanted, string? of, out string key)
     {
         lock (_gate)
         {
             key = wanted.Length > 0 ? wanted : McRoutine.HomeKeys[0];
-            if (_places.TryGetValue(key, out var exact)) return exact;
-            if (wanted.Length > 0 && !McRoutine.HomeKeys.Contains(wanted)) return null;
-            foreach (var home in McRoutine.HomeKeys)
-                if (_places.TryGetValue(home, out var found)) return found;
+            var home = wanted.Length == 0 || McRoutine.HomeKeys.Contains(wanted);
+            foreach (var owner in of is not null ? [of] : SearchOrderLocked(wanted.Length > 0 ? player : null))
+            {
+                if (!_places.TryGetValue(owner, out var theirs)) continue;
+                if (theirs.TryGetValue(key, out var exact)) return (exact, owner);
+                if (home)
+                    foreach (var homeKey in McRoutine.HomeKeys)
+                        if (theirs.TryGetValue(homeKey, out var found)) return (found, owner);
+            }
             return null;
         }
     }
@@ -1035,16 +1103,33 @@ public sealed class MinecraftBodyService : BackgroundService
                 SendRoutineLocked(body);
     }
 
+    // Her own day is built on her family's map first: each kind of place is Papa's, else Tata's, else anyone's.
     private void SendRoutineLocked(MinecraftBodyProcess body)
     {
-        var (farm, fish, ranch, home) = McRoutine.Classify(_places.Keys);
-        object? At(string? key) =>
-            key is not null && _places.TryGetValue(key, out var p) ? new { x = p.X, y = p.Y, z = p.Z, dimension = p.Dimension } : null;
+        McPlace? farm = null, fish = null, ranch = null, home = null;
+        foreach (var owner in SearchOrderLocked(null))
+        {
+            var theirs = _places[owner];
+            var kinds = McRoutine.Classify(theirs.Keys);
+            farm ??= kinds.Farm is { } f ? theirs[f] : null;
+            fish ??= kinds.Fish is { } fi ? theirs[fi] : null;
+            ranch ??= kinds.Ranch is { } r ? theirs[r] : null;
+            home ??= kinds.Home is { } h ? theirs[h] : null;
+        }
+        object? At(McPlace? p) => p is null ? null : new { x = p.X, y = p.Y, z = p.Z, dimension = p.Dimension };
         body.Send(new { op = "routine", farm = At(farm), fish = At(fish), ranch = At(ranch), home = At(home) });
     }
 
     // How her lines show a place's name.
     private static string Label(string name) => $"« {name} »";
+
+    // A place in her lines to this player: with whose it is, unless it's theirs (« « maison » de Rodhengard »).
+    private string Label(string name, string owner, string player) =>
+        Same(owner, player) ? Label(name) : $"{Label(name)} {OfWhom(owner)}";
+
+    // « de Papa », « d'Ethan ».
+    private string OfWhom(string owner) =>
+        Who(owner) is var who && who.Length > 0 && "aeiouyAEIOUY".Contains(who[0]) ? $"d'{who}" : $"de {who}";
 
     // Coordinates for her lines, with the dimension when it isn't the overworld (« 12 40 -8 dans le Nether »).
     private static string Spot(int x, int y, int z, string dimension) =>
@@ -1056,25 +1141,31 @@ public sealed class MinecraftBodyService : BackgroundService
         : dimension.Contains("end", StringComparison.OrdinalIgnoreCase) ? "end"
         : "overworld";
 
-    // Only whoever saved a place, or family, may move or forget it: offline mode lets anyone take any name, but a stranger
-    // shouldn't be able to wipe the group's map.
-    private bool MayChange(McPlace place, string player) => Same(place.By, player) || KinOf(player) != McKin.Anyone;
+    // A place may be moved or forgotten by the player it belongs to, whoever saved it, or family: offline mode lets anyone
+    // take any name, but a stranger shouldn't be able to wipe the group's map. Adding a place to someone else's map is
+    // open, like any first save.
+    private bool MayChange(McPlace place, string owner, string player) =>
+        Same(owner, player) || Same(place.By, player) || KinOf(player) != McKin.Anyone;
 
     private void OnMarked(string player, int x, int y, int z, string dimension)
     {
-        (string Key, string Name, bool Private) mark;
-        McPlace? existing;
+        (string Key, string Name, string? Of, bool Private) mark;
+        McPlace? existing = null;
         MinecraftState? state = null;
         string[] pool;
+        string owner;
         lock (_gate)
         {
             if (!_marking.Remove(player, out mark)) return;
-            _places.TryGetValue(mark.Key, out existing);
-            if (existing is not null && !MayChange(existing, player)) pool = BotResponses.McPlaceNotYoursLines;
-            else if (existing is null && _places.Count >= McCommand.MaxPlaces) pool = BotResponses.McPlaceFullLines;
+            owner = mark.Of ?? player;
+            _places.TryGetValue(owner, out var theirs);
+            theirs?.TryGetValue(mark.Key, out existing);
+            if (existing is not null && !MayChange(existing, owner, player)) pool = BotResponses.McPlaceNotYoursLines;
+            else if (existing is null && theirs?.Count >= McCommand.MaxPlaces) pool = BotResponses.McPlaceFullLines;
             else
             {
-                _places[mark.Key] = new McPlace(mark.Name, x, y, z, dimension, player);
+                if (theirs is null) _places[owner] = theirs = new Dictionary<string, McPlace>();
+                theirs[mark.Key] = new McPlace(mark.Name, x, y, z, dimension, player);
                 state = StateLocked();
                 pool = existing is null ? BotResponses.McPlaceSavedLines : BotResponses.McPlaceMovedLines;
             }
@@ -1084,20 +1175,29 @@ public sealed class MinecraftBodyService : BackgroundService
             SaveState(state);
             SendRoutine();
         }
-        Reply(player, mark.Private, pool, Label(existing?.Name ?? mark.Name), existing is null ? "" : Who(existing.By));
+        Reply(player, mark.Private, pool, Label(existing?.Name ?? mark.Name, owner, player), existing is null ? "" : Who(existing.By));
     }
 
-    private void ForgetPlace(string player, bool whispered, string text, string key)
+    // Forgetting: the place by its exact name, the player's own first like any other (« oublie la mine » finds Papa's
+    // when they have none, and only family may then forget it).
+    private void ForgetPlace(string player, bool whispered, string text, string key, string? of)
     {
-        McPlace? place;
+        McPlace? place = null;
+        var owner = of ?? player;
         MinecraftState? state = null;
         lock (_gate)
         {
-            _places.TryGetValue(key, out place);
-            if (place is not null && MayChange(place, player))
+            foreach (var who in of is not null ? [of] : SearchOrderLocked(player))
             {
-                _places.Remove(key);
-                state = StateLocked();
+                if (!_places.TryGetValue(who, out var theirs) || !theirs.TryGetValue(key, out place)) continue;
+                owner = who;
+                if (MayChange(place, owner, player))
+                {
+                    theirs.Remove(key);
+                    if (theirs.Count == 0) _places.Remove(who);
+                    state = StateLocked();
+                }
+                break;
             }
         }
         if (state is not null)
@@ -1105,19 +1205,26 @@ public sealed class MinecraftBodyService : BackgroundService
             SaveState(state);
             SendRoutine();
         }
-        if (place is null) Reply(player, whispered, BotResponses.McPlaceUnknownLines, Label(McCommand.PlaceName(text, key)));
-        else if (state is null) Reply(player, whispered, BotResponses.McPlaceNotYoursLines, Label(place.Name), Who(place.By));
-        else Reply(player, whispered, BotResponses.McPlaceForgottenLines, Label(place.Name));
+        if (place is null) Reply(player, whispered, BotResponses.McPlaceUnknownLines, Label(McCommand.PlaceName(text, key), owner, player));
+        else if (state is null) Reply(player, whispered, BotResponses.McPlaceNotYoursLines, Label(place.Name, owner, player), Who(place.By));
+        else Reply(player, whispered, BotResponses.McPlaceForgottenLines, Label(place.Name, owner, player));
     }
 
-    // The places she knows, as many as fit a chat line.
-    private void ListPlaces(string player, bool whispered)
+    // The places she knows for this player, as many as fit a chat line: their own first, then the others they can send
+    // her to, with whose they are. Of: one player's only (« liste les lieux de Rodhengard »).
+    private void ListPlaces(string player, bool whispered, string? of)
     {
         List<string> names;
-        lock (_gate) names = _places.Values.Select(p => p.Name).OrderBy(n => n, StringComparer.Ordinal).ToList();
+        lock (_gate)
+            names = (of is not null ? [of] : SearchOrderLocked(player))
+                .Where(_places.ContainsKey)
+                .SelectMany(owner => _places[owner].Values.Select(p => p.Name).OrderBy(n => n, StringComparer.Ordinal)
+                    .Select(n => Same(owner, player) ? n : $"{n} {OfWhom(owner)}"))
+                .ToList();
         if (names.Count == 0)
         {
-            Reply(player, whispered, BotResponses.McPlaceListEmptyLines);
+            if (of is not null && !Same(of, player)) Reply(player, whispered, BotResponses.McPlaceListEmptyOfLines, Who(of));
+            else Reply(player, whispered, BotResponses.McPlaceListEmptyLines);
             return;
         }
         var list = new StringBuilder();
@@ -1136,6 +1243,37 @@ public sealed class MinecraftBodyService : BackgroundService
 
     // How long the list of places may be in a line, so the longest line still fits Minecraft's 256.
     public const int ListMax = 120;
+
+    // ---- What she carries -----------------------------------------------------------------------
+
+    // « t'as quoi sur toi ? », « t'as combien de fer ? »: read from the body's last report, nothing sent to it.
+    private void TellInventory(string player, bool whispered, McGoods goods)
+    {
+        McInventory? inventory;
+        lock (_gate) inventory = _inventory;
+        if (inventory is null) return; // reported on spawn: only before it, when nobody can ask yet
+        if (goods == McGoods.All)
+        {
+            if (inventory.Overview(ListMax) is { } all) Reply(player, whispered, BotResponses.McInventoryLines, all);
+            else Reply(player, whispered, BotResponses.McInventoryEmptyLines);
+            return;
+        }
+        if (inventory.Of(goods, ListMax) is { } some) Reply(player, whispered, BotResponses.McHaveLines, some);
+        else Reply(player, whispered, BotResponses.McHaveNoneLines, BotResponses.McGoodsNames[goods]);
+    }
+
+    private static McInventory ReadInventory(JsonElement root)
+    {
+        static McStack? Stack(JsonElement e) => e.ValueKind != JsonValueKind.Object ? null
+            : new McStack(e.GetProperty("name").GetString() ?? "", e.GetProperty("count").GetInt32(),
+                e.GetProperty("goods").EnumerateArray().Select(g => g.GetString() ?? "").ToArray());
+        static McStack[] Stacks(JsonElement root, string name) =>
+            root.TryGetProperty(name, out var list) && list.ValueKind == JsonValueKind.Array
+                ? list.EnumerateArray().Select(Stack).OfType<McStack>().ToArray()
+                : [];
+        return new McInventory(Stacks(root, "worn"), root.TryGetProperty("held", out var held) ? Stack(held) : null,
+            root.TryGetProperty("offhand", out var off) ? Stack(off) : null, Stacks(root, "pockets"));
+    }
 
     // ---- Reminders ------------------------------------------------------------------------------
 
@@ -1632,6 +1770,47 @@ public sealed class MinecraftBodyService : BackgroundService
         }
         return sb.ToString().TrimEnd();
     }
+
+    /// <summary>
+    /// What she carries, for the owner: what she wears, holds and has in her pockets, with full counts. An item she has
+    /// no French for shows its game id. Item ids come from the server: in code spans.
+    /// </summary>
+    public string InventoryText()
+    {
+        McInventory? inventory;
+        DateTimeOffset at;
+        lock (_gate)
+        {
+            inventory = _spawned ? _inventory : null;
+            at = _inventoryAt;
+        }
+        if (inventory is null) return "🎒 Elle n'est pas sur le serveur : pas d'inventaire à montrer.";
+
+        string Item(string id, int count) => McItems.Name(id) is { } name ? name.Count(count) : $"{count} × {Code(id)}";
+        string One(McStack? stack) => stack is null ? "rien" : Item(stack.Id, stack.Count);
+        var sb = new StringBuilder();
+        sb.AppendLine($"🎒 **Inventaire de SYNCS** (mis à jour {Stamp(at)})");
+        sb.AppendLine($"Porte : {(inventory.Worn.Count == 0 ? "rien" : string.Join(", ", inventory.Worn.Select(w => One(w))))}");
+        sb.AppendLine($"En main : {One(inventory.Held)} · Main gauche : {One(inventory.Offhand)}");
+        var pockets = McInventory.Sum(inventory.Pockets);
+        sb.AppendLine(pockets.Count == 0 ? "Poches : vides"
+            : $"Poches ({inventory.Pockets.Count}/{PocketSlots} emplacements) :");
+        foreach (var (id, count) in pockets)
+        {
+            var line = $"- {Item(id, count)}";
+            // Discord's 2000; 36 slots never get close, but a modded server's ids could.
+            if (sb.Length + line.Length > 1900)
+            {
+                sb.AppendLine("- …");
+                break;
+            }
+            sb.AppendLine(line);
+        }
+        return sb.ToString().TrimEnd();
+    }
+
+    // Her pockets and hotbar: 27 + 9.
+    private const int PocketSlots = 36;
 
     /// <summary>Allows or forbids her on the server, for good (persisted). Forbidding takes her out now.</summary>
     public string SetAllowed(bool allowed)
