@@ -10,11 +10,13 @@ namespace ProjectSYNCS.Commands;
 /// <summary>
 /// What /report and the monthly digest render: one embed per report. Static and Context-free, so the
 /// checks can measure every embed against Discord's caps (6000 per message, 1024 per field) with
-/// worst-case data. Mentions in an embed render as names without pinging.
+/// worst-case data. Mentions in an embed never ping.
 /// </summary>
 /// <remarks>
 /// <paramref name="names"/> false drops every field that names someone: absences are a count,
 /// never names, wherever the report could be read by others (docs/agents/admin.md, /report).
+/// A mention in an embed only shows a name if the reader's app already knows that member (in a DM,
+/// the digest's sleepers came out as raw ids), so each person is written out by <c>nameOf</c> too.
 /// </remarks>
 public static class ReportCards
 {
@@ -50,7 +52,7 @@ public static class ReportCards
 
     // ---- /report sessions ---------------------------------------------------------------------
 
-    public static Embed BuildSessions(Compared<SessionReportData> c, ReportWindow w, bool names)
+    public static Embed BuildSessions(Compared<SessionReportData> c, ReportWindow w, bool names, Func<ulong, string?>? nameOf = null)
     {
         var d = c.Current;
         var p = c.Previous;
@@ -96,10 +98,10 @@ public static class ReportCards
 
         if (names)
         {
-            AddPeople(embed, "Organisateurs", d.Organisers, t => $"{t.Count} {Plural(t.Count, "tenue", "tenues")} sur {t.Of}");
-            AddPeople(embed, "Les plus fiables", d.Reliable, t => $"{t.Count}/{t.Of}");
-            AddPeople(embed, "Absences", d.NoShows, t => $"{t.Count} sur {t.Of}");
-            AddPeople(embed, "Retards", d.Latecomers, t => $"{t.Count} sur {t.Of} {Plural(t.Of, "venue", "venues")}");
+            AddPeople(embed, "Organisateurs", d.Organisers, t => $"{t.Count} {Plural(t.Count, "tenue", "tenues")} sur {t.Of}", nameOf);
+            AddPeople(embed, "Les plus fiables", d.Reliable, t => $"{t.Count}/{t.Of}", nameOf);
+            AddPeople(embed, "Absences", d.NoShows, t => $"{t.Count} sur {t.Of}", nameOf);
+            AddPeople(embed, "Retards", d.Latecomers, t => $"{t.Count} sur {t.Of} {Plural(t.Of, "venue", "venues")}", nameOf);
         }
 
         return embed.WithFooter(Footer(w, "Présence : sessions de jeu et de film dont j'ai fait l'appel.")).Build();
@@ -107,7 +109,7 @@ public static class ReportCards
 
     // ---- /report polls ------------------------------------------------------------------------
 
-    public static Embed BuildPolls(Compared<PollReportData> c, ReportWindow w, bool names)
+    public static Embed BuildPolls(Compared<PollReportData> c, ReportWindow w, bool names, Func<ulong, string?>? nameOf = null)
     {
         var d = c.Current;
         var p = c.Previous;
@@ -139,8 +141,8 @@ public static class ReportCards
 
         if (names)
         {
-            AddPeople(embed, "Les plus votants", d.Voters, t => $"{t.Count} {Plural(t.Count, "sondage", "sondages")}");
-            AddPeople(embed, "Les plus chauds (/tonight)", d.Keen, t => $"{t.Count} « chaud »");
+            AddPeople(embed, "Les plus votants", d.Voters, t => $"{t.Count} {Plural(t.Count, "sondage", "sondages")}", nameOf);
+            AddPeople(embed, "Les plus chauds (/tonight)", d.Keen, t => $"{t.Count} « chaud »", nameOf);
         }
 
         return embed.WithFooter(Footer(w)).Build();
@@ -148,7 +150,7 @@ public static class ReportCards
 
     // ---- /report community --------------------------------------------------------------------
 
-    public static Embed BuildCommunity(Compared<CommunityReportData> c, ReportWindow w, bool names)
+    public static Embed BuildCommunity(Compared<CommunityReportData> c, ReportWindow w, bool names, Func<ulong, string?>? nameOf = null)
     {
         var d = c.Current;
         var p = c.Previous;
@@ -179,9 +181,9 @@ public static class ReportCards
         if (names)
         {
             AddPeople(embed, "Les plus actifs", CommunityReport.Busiest(d, p),
-                x => $"{LevelCardUi.Xp(x.Xp)} XP{TextChart.Trend(x.Xp, x.Before)}", x => x.UserId);
+                x => $"{LevelCardUi.Xp(x.Xp)} XP{TextChart.Trend(x.Xp, x.Before)}", x => x.UserId, nameOf);
             AddPeople(embed, "Ça se calme", CommunityReport.Fading(d, p),
-                x => $"rien cette fois, {LevelCardUi.Xp(x.Before)} XP avant", x => x.UserId);
+                x => $"rien cette fois, {LevelCardUi.Xp(x.Before)} XP avant", x => x.UserId, nameOf);
         }
 
         return embed.WithFooter(Footer(w,
@@ -190,7 +192,8 @@ public static class ReportCards
 
     // ---- /report syncs ------------------------------------------------------------------------
 
-    public static Embed BuildSyncs(Compared<SyncsReportData> c, ReportWindow w, (int Day, int MaxMilli)? record, bool names)
+    public static Embed BuildSyncs(Compared<SyncsReportData> c, ReportWindow w, (int Day, int MaxMilli)? record, bool names,
+        Func<ulong, string?>? nameOf = null)
     {
         var d = c.Current;
         var p = c.Previous;
@@ -226,7 +229,7 @@ public static class ReportCards
 
         var voice = $"**{Duration(d.VoiceMinutes)}** de compagnie{TextChart.Trend(d.VoiceMinutes, p?.VoiceMinutes)}";
         if (names && d.Companions.Count > 0)
-            voice += "\n" + string.Join('\n', d.Companions.Select(t => $"<@{t.UserId}> — {Duration(t.Count)}"));
+            voice += "\n" + string.Join('\n', d.Companions.Select(t => $"{Who(t.UserId, nameOf)} — {Duration(t.Count)}"));
         embed.AddField("En vocal avec moi", Cap(voice));
 
         return embed.WithFooter(Footer(w, "Disponibilité : sur les jours où j'ai relevé ma température.")).Build();
@@ -292,7 +295,7 @@ public static class ReportCards
 
     // ---- /report quiz -------------------------------------------------------------------------
 
-    public static Embed BuildQuiz(Compared<QuizReportData> c, ReportWindow w, bool names)
+    public static Embed BuildQuiz(Compared<QuizReportData> c, ReportWindow w, bool names, Func<ulong, string?>? nameOf = null)
     {
         var d = c.Current;
         var p = c.Previous;
@@ -313,9 +316,9 @@ public static class ReportCards
 
         if (names)
         {
-            AddPeople(embed, "Les meilleurs", d.Winners, t => $"{t.Count} {Plural(t.Count, "victoire", "victoires")}");
+            AddPeople(embed, "Les meilleurs", d.Winners, t => $"{t.Count} {Plural(t.Count, "victoire", "victoires")}", nameOf);
             if (d.Fastest is { } f)
-                embed.AddField("Le plus rapide", $"<@{f.UserId}> — " +
+                embed.AddField("Le plus rapide", $"{Who(f.UserId, nameOf)} — " +
                     (f.Count < 60_000 ? $"{(f.Count / 1000.0).ToString("0.0", Fr)} s" : Seconds(f.Count / 1000)), inline: true);
         }
         return embed.WithFooter(Footer(w)).Build();
@@ -328,7 +331,7 @@ public static class ReportCards
 
     // ---- /report plynlings --------------------------------------------------------------------
 
-    public static Embed BuildPlynlings(Compared<PlynlingReportData> c, ReportWindow w, bool names)
+    public static Embed BuildPlynlings(Compared<PlynlingReportData> c, ReportWindow w, bool names, Func<ulong, string?>? nameOf = null)
     {
         var d = c.Current;
         var p = c.Previous;
@@ -358,7 +361,7 @@ public static class ReportCards
 
         if (names && d.Watch.Count > 0)
             embed.AddField("À surveiller", Cap(string.Join('\n', d.Watch.Select(x =>
-                $"<@{x.OwnerId}> — {Format.Sanitize(x.Name)}{(x.Sick ? " · malade" : "")}{(x.Starving ? " · très faim" : "")}"))));
+                $"{Who(x.OwnerId, nameOf)} — {Format.Sanitize(x.Name)}{(x.Sick ? " · malade" : "")}{(x.Starving ? " · très faim" : "")}"))));
 
         return embed.WithFooter(Footer(w,
             "« Choisis seuls » : sans réponse de son maître, le Plynling a décidé. Ping-Qilin n'est pas compté.")).Build();
@@ -424,7 +427,7 @@ public static class ReportCards
 
     // ---- /report sleeping ---------------------------------------------------------------------
 
-    public static Embed BuildSleeping(SleepingReportData d)
+    public static Embed BuildSleeping(SleepingReportData d, Func<ulong, string?>? nameOf = null)
     {
         var embed = new EmbedBuilder()
             .WithTitle($"💤 Les endormis — rien depuis {d.Days} jours")
@@ -434,7 +437,7 @@ public static class ReportCards
                 : $"**{d.Sleepers.Count}** sur **{d.Members}** {Plural(d.Members, "membre", "membres")}" +
                   $" ({TextChart.Percent(d.Sleepers.Count, d.Members)}) sans XP, réaction ni vocal depuis {d.Days} jours.");
 
-        var lines = d.Sleepers.Select(s => $"<@{s.UserId}> — " + (s.LastDay is { } day
+        var lines = d.Sleepers.Select(s => $"{Who(s.UserId, nameOf)} — " + (s.LastDay is { } day
             ? $"dernier signe : {AppTime.FromDayKey(day):dd/MM/yyyy}"
             : $"jamais (depuis le {AppTime.FromDayKey(SleepingReport.ReliableSince):dd/MM/yyyy})")).ToList();
         var left = AddLineFields(embed, "Endormis", lines, maxFields: 2);
@@ -523,7 +526,7 @@ public static class ReportCards
     /// </summary>
     public static Embed BuildTataBrief(Compared<CommunityReportData> community, Compared<SessionReportData> sessions,
         ActivityReportData activity, SleepingReportData sleeping, int unusedEmotes, IReadOnlyList<DigestAlert> alerts,
-        ReportWindow w, string quietLine)
+        ReportWindow w, string quietLine, Func<ulong, string?>? nameOf = null)
     {
         var embed = Start("📬 Le mois en bref", w);
 
@@ -550,7 +553,7 @@ public static class ReportCards
 
         var top = m.XpByUser.Where(x => x.Value > 0).OrderByDescending(x => x.Value).Take(3).ToList();
         if (top.Count > 0)
-            embed.AddField("Les plus actifs", string.Join(" · ", top.Select(x => $"<@{x.Key}>")));
+            embed.AddField("Les plus actifs", Cap(string.Join(" · ", top.Select(x => Who(x.Key, nameOf)))));
 
         AddAlerts(embed, alerts, quietLine);
         return embed.WithFooter(Footer(w, "Le détail suit.")).Build();
@@ -588,14 +591,24 @@ public static class ReportCards
         return string.Join(" ", new[] { note, trend }.Where(s => s is not null));
     }
 
-    private static void AddPeople(EmbedBuilder embed, string title, IReadOnlyList<PersonTally> people, Func<PersonTally, string> detail) =>
-        AddPeople(embed, title, people, detail, t => t.UserId);
+    private static void AddPeople(EmbedBuilder embed, string title, IReadOnlyList<PersonTally> people, Func<PersonTally, string> detail,
+        Func<ulong, string?>? nameOf) =>
+        AddPeople(embed, title, people, detail, t => t.UserId, nameOf);
 
-    private static void AddPeople<T>(EmbedBuilder embed, string title, IReadOnlyList<T> people, Func<T, string> detail, Func<T, ulong> id)
+    private static void AddPeople<T>(EmbedBuilder embed, string title, IReadOnlyList<T> people, Func<T, string> detail, Func<T, ulong> id,
+        Func<ulong, string?>? nameOf)
     {
         if (people.Count == 0) return;
-        embed.AddField(title, Cap(string.Join('\n', people.Select(x => $"<@{id(x)}> — {detail(x)}"))), inline: true);
+        embed.AddField(title, Cap(string.Join('\n', people.Select(x => $"{Who(id(x), nameOf)} — {detail(x)}"))), inline: true);
     }
+
+    /// <summary>
+    /// Someone named in a report: their name written out, then the mention to click. The mention alone
+    /// shows a raw id to a reader whose app hasn't loaded that member (the digest's DMs, mostly). With
+    /// no name known (gateway down, a member long gone), the mention alone.
+    /// </summary>
+    public static string Who(ulong id, Func<ulong, string?>? nameOf) =>
+        nameOf?.Invoke(id) is { Length: > 0 } name ? $"**{Format.Sanitize(name)}** (<@{id}>)" : $"<@{id}>";
 
     private static string Category(SessionCategory category) => category switch
     {

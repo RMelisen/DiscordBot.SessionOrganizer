@@ -19,6 +19,8 @@ var intentType = asm.GetType("ProjectSYNCS.Services.ChatIntent")!;
 var readIntent = cues.GetMethod("ReadIntent", BindingFlags.Public | BindingFlags.Static)!;
 var failures = 0;
 void Fail(string m) { failures++; Console.WriteLine("FAIL " + m); }
+// The longest name a report can write out: 32 characters (Discord's cap), every one escaped by Sanitize.
+string? LongestName(ulong id) => new string('*', 32);
 
 object Field(string n) => br.GetField(n, BindingFlags.Public | BindingFlags.Static)!.GetValue(null)!;
 
@@ -1120,18 +1122,18 @@ foreach (var (text, expected) in new[]
     foreach (var names in new[] { true, false })
     foreach (var w in new[] { month, digest, ReportWindow.From(StatsPeriod.AllTime, noon) })
     {
-        Measure("sessions", ProjectSYNCS.Commands.ReportCards.BuildSessions(new(sFull, w.IsAllTime ? null : sFull), w, names), names);
-        Measure("polls", ProjectSYNCS.Commands.ReportCards.BuildPolls(new(pFull, w.IsAllTime ? null : pFull), w, names), names);
-        Measure("community", ProjectSYNCS.Commands.ReportCards.BuildCommunity(new(cFading, w.IsAllTime ? null : cFull), w, names), names);
-        Measure("community", ProjectSYNCS.Commands.ReportCards.BuildCommunity(new(cFull, w.IsAllTime ? null : cFull), w, names), names);
-        Measure("syncs", ProjectSYNCS.Commands.ReportCards.BuildSyncs(new(yFull, w.IsAllTime ? null : yFull), w, (20260801, 84_000), names), names);
+        Measure("sessions", ProjectSYNCS.Commands.ReportCards.BuildSessions(new(sFull, w.IsAllTime ? null : sFull), w, names, LongestName), names);
+        Measure("polls", ProjectSYNCS.Commands.ReportCards.BuildPolls(new(pFull, w.IsAllTime ? null : pFull), w, names, LongestName), names);
+        Measure("community", ProjectSYNCS.Commands.ReportCards.BuildCommunity(new(cFading, w.IsAllTime ? null : cFull), w, names, LongestName), names);
+        Measure("community", ProjectSYNCS.Commands.ReportCards.BuildCommunity(new(cFull, w.IsAllTime ? null : cFull), w, names, LongestName), names);
+        Measure("syncs", ProjectSYNCS.Commands.ReportCards.BuildSyncs(new(yFull, w.IsAllTime ? null : yFull), w, (20260801, 84_000), names, LongestName), names);
     }
     var widest = new[]
     {
-        ProjectSYNCS.Commands.ReportCards.BuildSessions(new(sFull, sFull), month, true).Length,
-        ProjectSYNCS.Commands.ReportCards.BuildPolls(new(pFull, pFull), month, true).Length,
-        ProjectSYNCS.Commands.ReportCards.BuildCommunity(new(cFading, cFull), month, true).Length,
-        ProjectSYNCS.Commands.ReportCards.BuildSyncs(new(yFull, yFull), month, (20260801, 84_000), true).Length,
+        ProjectSYNCS.Commands.ReportCards.BuildSessions(new(sFull, sFull), month, true, LongestName).Length,
+        ProjectSYNCS.Commands.ReportCards.BuildPolls(new(pFull, pFull), month, true, LongestName).Length,
+        ProjectSYNCS.Commands.ReportCards.BuildCommunity(new(cFading, cFull), month, true, LongestName).Length,
+        ProjectSYNCS.Commands.ReportCards.BuildSyncs(new(yFull, yFull), month, (20260801, 84_000), true, LongestName).Length,
     };
     Console.WriteLine($"report embeds at worst: {string.Join(" · ", widest)} chars (sessions, polls, community, syncs)");
 
@@ -1360,7 +1362,7 @@ var batch2Widest = new Dictionary<string, int>();
         999, new PersonTally(1_234_567_890_123_456_789, 999_999, 0),
         Enumerable.Repeat(new string('Q', 400), QuizReport.ListedPrompts).ToList(),
         Enumerable.Range(0, 5).Select(i => new PersonTally(1_234_567_890_123_456_789 + (ulong)i, 999, 999)).ToList());
-    var t7Embed = ProjectSYNCS.Commands.ReportCards.BuildQuiz(new(t7Worst, t7Worst), ReportWindow.From(StatsPeriod.Month, t7At), true);
+    var t7Embed = ProjectSYNCS.Commands.ReportCards.BuildQuiz(new(t7Worst, t7Worst), ReportWindow.From(StatsPeriod.Month, t7At), true, LongestName);
     batch2Widest["quiz"] = t7Embed.Length;
     if (t7Embed.Length > 6000 || t7Embed.Fields.Any(f => f.Value.Length is 0 or > 1024)) Fail($"quiz embed {t7Embed.Length}");
     // The community report counts the same posted rounds.
@@ -1408,7 +1410,7 @@ var batch2Widest = new Dictionary<string, int>();
         TopEvents = Enumerable.Range(0, PlynlingReport.TopEventCount).Select(i => (new string('E', 80), 999)).ToList(),
         Watch = Enumerable.Range(0, PlynlingReport.WatchCount).Select(i => new PlynlingWatch(1_234_567_890_123_456_789 + (ulong)i, "**@everyone** " + new string('N', 30), true, true)).ToList(),
     };
-    var t8Embed = ProjectSYNCS.Commands.ReportCards.BuildPlynlings(new(t8Worst, t8Worst), t8Window, true);
+    var t8Embed = ProjectSYNCS.Commands.ReportCards.BuildPlynlings(new(t8Worst, t8Worst), t8Window, true, LongestName);
     batch2Widest["plynlings"] = t8Embed.Length;
     if (t8Embed.Length > 6000 || t8Embed.Fields.Any(f => f.Value.Length is 0 or > 1024)) Fail($"plynlings embed {t8Embed.Length}");
     if (t8Embed.Fields.Any(f => f.Value.Contains("**@everyone**"))) Fail("a Plynling name was not sanitized");
@@ -1459,7 +1461,7 @@ var batch2Widest = new Dictionary<string, int>();
     if (SleepingReport.Compute(Array.Empty<MemberSnapshot>(), t10Last, 30, t10Now).Sleepers.Count != 0) Fail("guild unavailable");
 
     var t10Many = Enumerable.Range(0, 300).Select(i => new Sleeper(1_234_567_890_123_456_789 + (ulong)i, i % 2 == 0 ? null : 20260901)).ToList();
-    var t10Embed = ProjectSYNCS.Commands.ReportCards.BuildSleeping(new SleepingReportData(90, 400, t10Many));
+    var t10Embed = ProjectSYNCS.Commands.ReportCards.BuildSleeping(new SleepingReportData(90, 400, t10Many), LongestName);
     batch2Widest["sleeping"] = t10Embed.Length;
     if (t10Embed.Length > 6000 || t10Embed.Fields.Length > 2 || t10Embed.Fields.Any(f => f.Value.Length is 0 or > 1024)) Fail($"sleeping embed {t10Embed.Length}, {t10Embed.Fields.Length} fields");
     if (!t10Embed.Footer!.Value.Text.Contains("autres")) Fail("the sleepers that don't fit must be counted");
@@ -1538,13 +1540,24 @@ var batch2Widest = new Dictionary<string, int>();
     var t12Activity = ActivityReport.Compute(Array.Empty<ProjectSYNCS.Models.ActivityHourStat>(), Array.Empty<ProjectSYNCS.Models.ChannelDailyStat>(),
         Enumerable.Range(0, 60).Select(i => new ChannelInfo((ulong)i, false, false)).ToList());
     var t12TataCard = ProjectSYNCS.Commands.ReportCards.BuildTataBrief(new(T12Community(999, 999, 999), null), new(t12Sessions, null),
-        t12Activity, t12Sleeping, 99, t12Many, t12Month, "calme");
+        t12Activity, t12Sleeping, 99, t12Many, t12Month, "calme", LongestName);
     foreach (var (t12What, t12Embed) in new[] { ("owner brief", t12Owner), ("tata brief", t12TataCard) })
     {
         if (t12Embed.Length > 6000 || t12Embed.Fields.Any(f => f.Value.Length is 0 or > 1024)) Fail($"{t12What}: {t12Embed.Length} characters");
         batch2Widest[t12What] = t12Embed.Length;
     }
-    if (!t12TataCard.Fields.Any(f => f.Value.Contains("<@2> · <@3> · <@1>"))) Fail("tata brief: the most active, by XP");
+    var t12Top = string.Join(" · ", new ulong[] { 2, 3, 1 }.Select(i => ProjectSYNCS.Commands.ReportCards.Who(i, LongestName)));
+    if (!t12TataCard.Fields.Any(f => f.Value.Contains(t12Top))) Fail("tata brief: the most active, by XP");
+
+    // A person in a report: the name written out (a mention alone shows a raw id in a DM), sanitized,
+    // with the mention kept; the mention alone when no name is known.
+    if (ProjectSYNCS.Commands.ReportCards.Who(7, _ => "Bob") != "**Bob** (<@7>)") Fail("report name: name then mention");
+    if (ProjectSYNCS.Commands.ReportCards.Who(7, _ => "**@everyone**").Contains("**@everyone**")) Fail("report name: not sanitized");
+    if (ProjectSYNCS.Commands.ReportCards.Who(7, _ => null) != "<@7>" || ProjectSYNCS.Commands.ReportCards.Who(7, null) != "<@7>")
+        Fail("report name: no name known must keep the mention alone");
+    if (!ProjectSYNCS.Commands.ReportCards.BuildSleeping(new SleepingReportData(30, 20, new[] { new Sleeper(7, null) }), _ => "Bob")
+            .Fields.Any(f => f.Value.Contains("**Bob** (<@7>)")))
+        Fail("sleeping report: the sleeper's name is not written out");
     if (t12Owner.Fields.Last().Value.Contains("calme") || !ProjectSYNCS.Commands.ReportCards.BuildOwnerBrief(new(T12Cmd(), null), new(T12Syncs(0, null, 0, 0), null),
             new(T12Quiz(), null), Array.Empty<DigestAlert>(), t12Month, "calme").Fields.Last().Value.Equals("calme"))
         Fail("« À regarder » shows the alerts, or her quiet line when there are none");

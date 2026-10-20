@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.13.3 — 2026-10-20
+
+- Reports and the monthly digest write each person's name next to their mention, so nobody shows
+  up as a bare number in a DM (the sleepers list especially).
+
 ## 7.13.2 — 2026-10-19
 
 - Minecraft: she understands many more ways to give each order: familiar French (« ramène ta

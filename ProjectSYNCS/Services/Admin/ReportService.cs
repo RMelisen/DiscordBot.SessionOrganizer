@@ -79,20 +79,21 @@ public class ReportService
     public async Task<Embed> BuildAsync(ReportKind kind, ulong guildId, ReportWindow window, bool names)
     {
         var now = DateTimeOffset.UtcNow;
+        var who = NamesIn(guildId);
         return kind switch
         {
-            ReportKind.Sessions => ReportCards.BuildSessions(await _scheduling.GetSessionsAsync(guildId, window, now), window, names),
+            ReportKind.Sessions => ReportCards.BuildSessions(await _scheduling.GetSessionsAsync(guildId, window, now), window, names, who),
             // Her Wednesday poll is the one she organised herself.
             ReportKind.Polls => ReportCards.BuildPolls(
-                await _scheduling.GetPollsAsync(guildId, window, _client.CurrentUser?.Id ?? 0), window, names),
-            ReportKind.Community => ReportCards.BuildCommunity(await _community.GetAsync(guildId, window), window, names),
-            ReportKind.Syncs => ReportCards.BuildSyncs(await _syncs.GetAsync(guildId, window, now), window, await _syncs.RecordAsync(), names),
+                await _scheduling.GetPollsAsync(guildId, window, _client.CurrentUser?.Id ?? 0), window, names, who),
+            ReportKind.Community => ReportCards.BuildCommunity(await _community.GetAsync(guildId, window), window, names, who),
+            ReportKind.Syncs => ReportCards.BuildSyncs(await _syncs.GetAsync(guildId, window, now), window, await _syncs.RecordAsync(), names, who),
             ReportKind.Activity => ReportCards.BuildActivity(
                 await _activity.GetActivityAsync(guildId, window, await ChannelsAsync(guildId)), window, names),
             ReportKind.Commands => ReportCards.BuildCommands(
                 await _activity.GetCommandsAsync(guildId, window, RegisteredCommands()), window, names),
-            ReportKind.Quiz => ReportCards.BuildQuiz(await _quiz.GetAsync(guildId, window), window, names),
-            ReportKind.Plynlings => ReportCards.BuildPlynlings(await _plynlings.GetAsync(guildId, window, now), window, names),
+            ReportKind.Quiz => ReportCards.BuildQuiz(await _quiz.GetAsync(guildId, window), window, names, who),
+            ReportKind.Plynlings => ReportCards.BuildPlynlings(await _plynlings.GetAsync(guildId, window, now), window, names, who),
             ReportKind.Emotes => ReportCards.BuildEmotes(await _emotes.GetAsync(guildId, window, ServerEmotes(guildId)), window, names),
             // No window: a stray period button on it opens the default silence.
             ReportKind.Sleeping => await BuildSleepingAsync(guildId, SleepingReport.Choices[0]),
@@ -102,7 +103,7 @@ public class ReportService
 
     /// <summary>/report sleeping: no window, a silence of <paramref name="days"/> days.</summary>
     public async Task<Embed> BuildSleepingAsync(ulong guildId, int days) =>
-        ReportCards.BuildSleeping(await SleepingAsync(guildId, days));
+        ReportCards.BuildSleeping(await SleepingAsync(guildId, days), NamesIn(guildId));
 
     /// <summary>
     /// The monthly digest's first message for <paramref name="recipient"/>: the month in a few figures
@@ -126,7 +127,17 @@ public class ReportService
         var sleeping = await SleepingAsync(guildId, SleepingReport.Choices[0]);
         var emotes = await _emotes.GetAsync(guildId, window, ServerEmotes(guildId));
         return ReportCards.BuildTataBrief(community, sessions, activity.Current, sleeping, emotes.Current.UnusedOwn.Count,
-            DigestBrief.Tata(community, sleeping), window, quietLine);
+            DigestBrief.Tata(community, sleeping), window, quietLine, NamesIn(guildId));
+    }
+
+    // Who someone is, written out for ReportCards.Who: the member as the server knows them, else the
+    // user as Discord does (gone from the server), else null and the card keeps the mention alone.
+    private Func<ulong, string?> NamesIn(ulong guildId)
+    {
+        var guild = _client.GetGuild(guildId);
+        return id => guild?.GetUser(id) is { } member ? BotResponses.DisplayNameFor(member)
+            : _client.GetUser(id) is { } user ? BotResponses.DisplayNameFor(user)
+            : null;
     }
 
     private async Task<SleepingReportData> SleepingAsync(ulong guildId, int days)

@@ -58,6 +58,11 @@ same check.
   names » (scheduling, *Roll call*). Only the refusals are private. Every card still takes `names`:
   `false` drops every naming field (the checks assert no `<@` survives), for any future place that
   must not name; nothing passes `false` today.
+- **Every person goes through `ReportCards.Who`**: `**Name** (<@id>)`, never a bare mention. A
+  mention in an embed renders only for a reader whose app already has that member loaded, which in
+  the digest's DMs is rarely the case for the sleepers, so they came out as raw ids. The name comes
+  from `ReportService.NamesIn` (the guild member, else the cached user, else the mention alone),
+  is sanitized, and the checks measure every card with the longest escaped names.
 - **Her line on top of the card**, as on `/health`: `ReportCards.WithHeadline` puts it first in the
   description (left out rather than pass 4096 / 6000). `ReportCards.DutyPool` picks the pool by who
   asked or clicked: `OwnerReportDutyLines` (Papa, on duty), `TataReportLines` (warm, the mute
