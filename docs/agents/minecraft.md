@@ -564,15 +564,22 @@ clients have sent after every tick since 1.21.2. Mineflayer never sends it, so a
 `tick_end`, on versions whose protocol has one. Remove it once Mineflayer sends the packet itself,
 and check the issue before bumping Mineflayer.
 
+**A hair wider than a player (`playerHalfWidth = 0.3001`).** Mineflayer's collisions leave her
+side exactly on a block's face (the step she's jumping up, a wall she walks along), and a 26.3
+server takes that as walking into the block: it puts her back 0.01 short, every tick, with no
+warning in its console, and she never climbs a one-block step. 0.0001 off the face is enough and
+fits every gap a player fits. Found and checked on a local server (*Testing movement locally*):
+without it she's stuck at the first step; with it she climbs, sprinting or not.
+
 **Her keys go to the server (`inputTick`).** Since 1.21.2 clients send `player_input` (forward,
 jump, sprint, shift…) whenever their keys change; Mineflayer sends it only for sneaking, with every
-other key off. `inputTick` sends her whole control state whenever it changes; not while riding,
-where `leaveBoat` holds shift itself. **It runs first in the physics tick** (`prependListener`):
-Mineflayer moves her, then runs the tick handlers (which press and release keys for the next tick),
-then sends the move, so keys read after the handlers reach the server a tick early. The 26.3 server
-refused every jump that way, putting her back on the ground hundreds of times a minute: it wants the
-keys a move was made with, in that move's tick. The same handler sends the `tick_end` of a tick that
-sent no move, so the server counts every tick, as with a real client.
+other key off. `inputTick` sends her whole control state whenever it changes, as a real client
+does; not while riding, where `leaveBoat` holds shift itself. **It runs first in the physics tick**
+(`prependListener`): Mineflayer moves her, then runs the tick handlers (which press and release
+keys for the next tick), then sends the move, so keys read after the handlers would reach the server
+a tick early. The same handler sends the `tick_end` of a tick that sent no move, so the server
+counts every tick, as with a real client. Neither was what stopped her at steps (the local server
+refuses her with or without them), but both are what a client sends.
 
 **`entity_action` by name (`fixEntityActions`).** 1.21.6 moved sneaking to `player_input` and
 renumbered the other actions; Mineflayer 4.39 still sends the old numbers, so on 26.1 « start
@@ -581,10 +588,15 @@ wrapper sends the old numbers as names on versions with the new order. Check Min
 `physics.js` and `bed.js` before bumping it, and remove the wrapper once they send names.
 
 **Server teleports while she walks are logged** (`watchCorrections`, « server teleport while
-walking », every 30 s at most): what the server sent, where she was, her keys, her last move sent,
-the block ahead, and « same id again » for a teleport re-sent because she never confirmed it. On the
-26.3 server she stopped in front of one-block steps with hundreds of these, which Mineflayer's own
-physics climbs (checked offline): that line says what the server refuses.
+walking », every 30 s at most): what the server sent, where she was, her keys, her last move sent
+and the block ahead. A body stuck against the terrain looks the same from outside whatever the
+server objects to; this line says what it refused.
+
+**Testing movement locally.** A server's refusals can't be reasoned out from the client: reproduce
+them. Paper 26.3 with ViaVersion and ViaBackwards on this machine, the same pair as the group's
+server, with `online-mode=false`, `whitelist off`, RCON on, and `forceload` around spawn so `fill`
+can build the terrain before anyone joins; run the body against it (`MC_HOST`, `MC_PORT`) and send
+it ops on stdin. Accepting the Minecraft EULA for that server is the owner's call.
 
 **stdout carries events only.** The protocol libraries print their errors through `console.*`, so
 the body sends every console method to stderr before loading them, and the service logs any stdout

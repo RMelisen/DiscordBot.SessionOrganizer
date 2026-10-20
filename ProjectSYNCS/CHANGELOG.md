@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.21.3 — 2026-10-20
+
+- Minecraft: she climbs one-block steps again. The server refused any move that left her exactly
+  against a block's side, so she now keeps a hair's breadth from it.
+
 ## 7.21.2 — 2026-10-20
 
 - Minecraft: her keys reach the server in step with her moves, so it should stop refusing her jumps

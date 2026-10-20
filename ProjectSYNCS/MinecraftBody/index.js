@@ -2843,6 +2843,11 @@ function attach() {
   bot.loadPlugin(collectBlock);
 
   bot.once('spawn', () => {
+    // A hair wider than a player (0.6). Mineflayer's collisions leave her side exactly on a block's face (a step she's
+    // jumping up, a wall she walks along), and a 26.3 server takes that as walking into the block: it puts her back,
+    // every tick, and she never climbs a one-block step. 0.0001 off the face is enough (checked on a local Paper 26.3
+    // with ViaBackwards) and fits every gap a player fits.
+    bot.physics.playerHalfWidth = 0.3001;
     bot.pathfinder.setMovements(gentleMovements());
     // After the pathfinder's own tick (its plugin is injected later than attach() runs), so her swimming can take the
     // controls from it.
@@ -3140,12 +3145,10 @@ function sendTickEnds(client) {
 }
 
 // Since 1.21.2 a client tells the server which keys it holds (`player_input`) whenever they change, in the tick that
-// uses them, before that tick's move. Mineflayer sends that packet only for sneaking, with every other key off, and
-// the 26.3 server refused every jump she made (back to the ground, hundreds of times a minute). So her keys go out as
-// a real client's would: the ones this tick's move was made with, which is why inputTick runs first in the physics
-// tick (Mineflayer moves her, then runs the tick handlers, which press and release keys for the next tick, then sends
-// the move; keys read after the handlers arrive a tick early, and « jump » comes with the tick before she rises).
-// Not while riding (leaveBoat holds shift itself), and anything else that writes the packet (Mineflayer's sneak)
+// uses them, before that tick's move. Mineflayer sends that packet only for sneaking, with every other key off. So her
+// keys go out as a real client's would: the ones this tick's move was made with, which is why inputTick runs first in
+// the physics tick (Mineflayer moves her, then runs the tick handlers, which press and release keys for the next tick,
+// then sends the move; keys read after the handlers arrive a tick early). Not while riding (leaveBoat holds shift itself), and anything else that writes the packet (Mineflayer's sneak)
 // counts as the last one sent, so the full set follows on the next tick. The same wrapper keeps her last move sent,
 // for the corrections' log.
 let inputsSent = '';
@@ -3171,15 +3174,14 @@ function inputTick() {
   bot._client.write('player_input', { inputs });
 }
 
-// The server putting her somewhere (a teleport: a move it refused, or one it re-sends because she never confirmed the
-// last) while she walks. She stopped in front of one-block steps on the 26.3 server with hundreds of these, and the
-// fix depends on which: logged at most every 30 s, with what the server sent, where she was and what she held just
-// before, her last move sent, and the block ahead. The same teleport id twice means an unconfirmed teleport.
+// The server putting her somewhere while she walks: a move it refused. Logged at most every 30 s, with what the server
+// sent, where she was and what she held just before, her last move sent, and the block ahead, since a body stuck
+// against the terrain looks the same from outside whatever the server objects to. This is how the 0.0001 off a block's
+// face (playerHalfWidth) was found: hundreds a minute, each one 0.01 short of where she stood.
 const PulledBackLogEvery = 30000;
 let pulledBack = 0;
 let pulledBackRecent = 0;
 let pulledBackLoggedAt = 0;
-let lastTeleportId = null;
 
 const fmt = (v) => (v && Number.isFinite(v.x) ? `${v.x.toFixed(2)} ${v.y.toFixed(2)} ${v.z.toFixed(2)}` : '?');
 
@@ -3187,8 +3189,6 @@ function watchCorrections(client) {
   // Before Mineflayer's own handler, which moves her: her position here is still where she thought she was.
   client.prependListener('position', (packet) => {
     try {
-      const repeat = packet.teleportId === lastTeleportId;
-      lastTeleportId = packet.teleportId;
       if (!bot || !bot.entity || !bot.pathfinder || !bot.pathfinder.isMoving()) return;
       pulledBack++;
       pulledBackRecent++;
@@ -3201,7 +3201,7 @@ function watchCorrections(client) {
       const at = (dy) => (bot.blockAt(ahead.offset(0, dy, 0)) || { name: '?' }).name;
       const sent = lastMoveSent ? `${lastMoveSent.name} ${fmt(lastMoveSent)} onGround ${lastMoveSent.onGround}` : 'none';
       log(`server teleport while walking: ${pulledBackRecent} since the last report (${pulledBack} in all).` +
-        ` To ${fmt(packet)} flags ${JSON.stringify(packet.flags)} id ${packet.teleportId}${repeat ? ' (same id again)' : ''};` +
+        ` To ${fmt(packet)} flags ${JSON.stringify(packet.flags)} id ${packet.teleportId};` +
         ` she was at ${fmt(e.position)} vel ${fmt(e.velocity)} onGround ${e.onGround} keys ${keys};` +
         ` last move sent: ${sent}; ahead: ${at(0)} / ${at(1)}`);
       pulledBackRecent = 0;
@@ -3214,7 +3214,7 @@ function watchCorrections(client) {
 // 1.21.6 took sneaking out of `entity_action` (it went to `player_input`) and renumbered the rest, but Mineflayer 4.39
 // still sends the old numbers: on 26.1 its « start sprinting » (3) reaches the server as « start riding jump », and
 // getting out of bed (2) as « stop sprinting ». So the server never knew she sprinted while her physics ran her at
-// sprint speed, and she couldn't leave a bed. The old numbers go out as the names, on versions with the new order.
+// sprint speed, and leaving a bed never reached it. The old numbers go out as the names, on versions with the new order.
 // Remove it once Mineflayer sends names there itself (check physics.js and bed.js before bumping it).
 const OldEntityActions = ['start_sneaking', 'stop_sneaking', 'stop_sleeping', 'start_sprinting', 'stop_sprinting',
   'start_riding_jump', 'stop_riding_jump', 'open_inventory', 'start_fall_flying'];
