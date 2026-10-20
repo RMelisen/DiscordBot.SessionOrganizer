@@ -548,6 +548,8 @@ The fallback of both paths (a roast, or `Interrogations`), in a guild and never 
 *favoured*: `RollTataWarmth` gives her a warm pool `TataWarmthChance` (60%) of the time, her
 `PersonalComebacks` roasts otherwise. Everyone else is always roasted.
 
+- **In Minecraft** the same tiers apply through twin pools picked by in-game name (`McFamily`, see
+  `minecraft.md`), without the warmth roll: there, Tata always gets her own lines.
 - A **mean** message from Tata never qualifies for warmth.
 - `RollTataWarmth` rolls dice — call it **exactly once per message** (it sits in an `else if` on
   both paths).

@@ -1616,6 +1616,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         Fail("advancement earner: not a player");
     Covers("McDeathLines", typeof(McDeathKind));
     Covers("McResourceNames", typeof(McResource));
+    Covers("McCropNames", typeof(McCrop));
 
     // In-game orders (McCommand): her name is needed, a refusal is not an order, staying wins.
     var mcNames = new[] { "SYNCS" }.Concat(McCommand.HerNames).ToArray();
@@ -1748,6 +1749,92 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     Request("syncs va chercher de l'or", McOrder.Collect, resource: McResource.Gold);
     Request("syncs récolte du sable", McOrder.Collect, resource: McResource.Sand);
 
+    // In two steps: « syncs », then the order without her name. The service sets `called` for the caller's next
+    // message only; with nothing she understands it is let go, never read as another call.
+    foreach (var (text, expected) in new (string, McOrder)[]
+    {
+        ("suis moi", McOrder.Follow), ("viens", McOrder.Come), ("stop", McOrder.Stay), ("protège-moi", McOrder.Guard),
+        ("dodo", McOrder.Sleep), ("tu peux venir ?", McOrder.Come), ("120 64 -300", McOrder.GoTo),
+        ("va chercher du bois", McOrder.Collect), ("viens pas", McOrder.None), ("mdr t'es nulle", McOrder.None),
+        ("ok", McOrder.None), ("je suis là", McOrder.None), ("syncs ?", McOrder.Unknown), ("syncs viens", McOrder.Come),
+    })
+    {
+        var got = McCommand.Parse(text, mcNames, called: true).Order;
+        if (got != expected) Fail($"order after a call « {text} »: got {got}, expected {expected}");
+    }
+    if (McCommand.Parse("va chercher 5 fer", mcNames, called: true) is not { Order: McOrder.Collect, Resource: McResource.Iron, Count: 5 })
+        Fail("order after a call: collect with a count");
+
+    // Crops and farms: a crop word with any gathering verb, « pommes de terre » before « terre » (dirt), a farm before
+    // « reste » (stay) and « garde » (guard), and the noun « la récolte » is not an order.
+    void Crop(string text, McOrder order, McCrop? crop = null)
+    {
+        var got = McCommand.Parse(text, mcNames);
+        if (got.Order != order || (crop is not null && got.Crop != crop))
+            Fail($"crop « {text} »: got {got.Order} {got.Crop}, expected {order} {crop}");
+    }
+    Crop("syncs récolte le blé", McOrder.Harvest, McCrop.Wheat);
+    Crop("syncs va chercher des carottes", McOrder.Harvest, McCrop.Carrot);
+    Crop("syncs ramasse les pommes de terre", McOrder.Harvest, McCrop.Potato);
+    Crop("syncs il me faut des patates", McOrder.Harvest, McCrop.Potato);
+    Crop("syncs cueille les melons", McOrder.Harvest, McCrop.Melon);
+    Crop("syncs récolte les citrouilles", McOrder.Harvest, McCrop.Pumpkin);
+    Crop("syncs moissonne", McOrder.Harvest, McCrop.Any);
+    Crop("syncs récolte", McOrder.Harvest, McCrop.Any);
+    Crop("syncs fais la récolte", McOrder.Harvest, McCrop.Any);
+    Crop("syncs récolte le champ", McOrder.Harvest, McCrop.Any);
+    Crop("syncs harvest the wheat", McOrder.Harvest, McCrop.Wheat);
+    Crop("syncs récolte du sable", McOrder.Collect);
+    Crop("syncs va chercher du bois dans le champ", McOrder.Collect);
+    Crop("syncs va chercher de la terre", McOrder.Collect);
+    Crop("syncs la récolte est prête", McOrder.Unknown);
+    Crop("syncs récolte pas le blé", McOrder.None);
+    Crop("syncs occupe-toi de la ferme", McOrder.Farm);
+    Crop("syncs reste à la ferme", McOrder.Farm);
+    Crop("syncs garde le champ", McOrder.Farm);
+    Crop("syncs entretiens les cultures", McOrder.Farm);
+    Crop("syncs cultive", McOrder.Farm);
+    Crop("syncs ne t'occupe pas de la ferme", McOrder.None);
+    Crop("syncs reste là", McOrder.Stay);
+    if (McCommand.Parse("occupe toi du champ", mcNames, called: true).Order != McOrder.Farm) Fail("crop: farm after a call");
+
+    // Harvest, the way people type it: more verbs, misspelt crops, the noun « récolte » after a gathering verb.
+    foreach (var (text, crop) in new (string, McCrop)[]
+    {
+        ("syncs fauche le blé", McCrop.Wheat), ("syncs arrache les carottes", McCrop.Carrot), ("syncs déterre les patates", McCrop.Potato),
+        ("syncs farm le blé", McCrop.Wheat), ("syncs récup les betteraves", McCrop.Beetroot), ("syncs ramène des carrotes", McCrop.Carrot),
+        ("syncs va chercher des betraves", McCrop.Beetroot), ("syncs récolte les citrouiles", McCrop.Pumpkin),
+        ("syncs prends les pastèques", McCrop.Melon), ("syncs ramène la récolte", McCrop.Any), ("syncs replante le champ", McCrop.Any),
+        ("syncs replante", McCrop.Any), ("syncs vide le champ", McCrop.Any), ("syncs fais le champ", McCrop.Any),
+        ("syncs va récolter les légumes", McCrop.Any), ("syncs tu peux récolter le blé ?", McCrop.Wheat),
+        ("syncs ramasse les pom de terre", McCrop.Potato), ("syncs cueille les épis", McCrop.Wheat),
+    })
+        Crop(text, McOrder.Harvest, crop);
+
+    // Farm: a care verb and a farm word, in any wording.
+    foreach (var text in new[]
+    {
+        "syncs prends soin de mes plantations", "syncs surveille le potager", "syncs occupe-toi du jardin",
+        "syncs tu peux t'occuper de la ferme ?", "syncs tu peux garder le champ", "syncs gère la ferme",
+        "syncs reste dans les champs", "syncs bosse à la ferme", "syncs occupe-toi du blé", "syncs entretiens les carottes",
+        "syncs travaille au champ", "syncs mode fermière", "syncs jardine", "syncs keep the farm", "syncs watch the crops",
+        "syncs occupe toi de notre ferme stp",
+    })
+        Crop(text, McOrder.Farm);
+
+    // Traps: words from these lists in sentences that aren't farm orders.
+    foreach (var (text, order) in new (string, McOrder)[]
+    {
+        ("syncs reste là et ferme-la", McOrder.Stay), // « ferme » without an article is « shut »
+        ("syncs garde-moi", McOrder.Guard),
+        ("syncs garde des carottes", McOrder.Guard), // keeps some: never a farm or a harvest (« garde » alone was already guard)
+        ("syncs il reste du blé ?", McOrder.Stay), // as before: « reste » alone is stay
+        ("syncs arrache-toi", McOrder.Unknown), ("syncs prends ça", McOrder.Unknown),
+        ("syncs t'as vu mon champ ?", McOrder.Unknown), ("syncs le blé a poussé", McOrder.Unknown),
+        ("syncs ne prends pas soin de la ferme", McOrder.None), ("syncs n'arrache pas les carottes", McOrder.None),
+    })
+        Crop(text, order);
+
     // SRV only where the client library does it: a name, on the default port.
     if (!McAddress.NeedsLookup("play.example.net", 25565) || McAddress.NeedsLookup("play.example.net", 25566)
         || McAddress.NeedsLookup("192.168.1.10", 25565) || McAddress.NeedsLookup("localhost", 25565))
@@ -1759,12 +1846,51 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     if (ServerListPing.Parse("""{"version":{"name":"x"}}""") is not null || ServerListPing.Parse("not json") is not null)
         Fail("server list ping: not a status");
 
+    // Her family in game: matched by name without case, never by an unset name. Each twin exists for both.
+    if (McFamily.Of("rodhengard", "Rodhengard", "Analuz") != McKin.Papa || McFamily.Of("ANALUZ", "Rodhengard", "Analuz") != McKin.Tata
+        || McFamily.Of("Bob", "Rodhengard", "Analuz") != McKin.Anyone || McFamily.Of("", "", "") != McKin.Anyone
+        || McFamily.Of("Bob", "", "") != McKin.Anyone)
+        Fail("minecraft family: who is who");
+    // Who she works for (McClaim): the holder alone, until their claim runs out, and family outranks.
+    var claimAt = DateTimeOffset.UtcNow;
+    void Claim(string what, string? holder, McKin holderKin, TimeSpan age, string player, McKin kin, McVerdict expected)
+    {
+        var got = McClaim.Decide(holder, holderKin, claimAt - age, player, kin, claimAt);
+        if (got != expected) Fail($"minecraft claim, {what}: got {got}, expected {expected}");
+    }
+    var shortly = TimeSpan.FromMinutes(1);
+    Claim("free", null, McKin.Anyone, TimeSpan.Zero, "Bob", McKin.Anyone, McVerdict.Take);
+    Claim("same player, any case", "Bob", McKin.Anyone, shortly, "bob", McKin.Anyone, McVerdict.Take);
+    Claim("someone else", "Bob", McKin.Anyone, shortly, "Eve", McKin.Anyone, McVerdict.Busy);
+    Claim("claim ran out", "Bob", McKin.Anyone, McClaim.Expiry, "Eve", McKin.Anyone, McVerdict.Take);
+    Claim("Tata takes from anyone", "Bob", McKin.Anyone, shortly, "Ana", McKin.Tata, McVerdict.Take);
+    Claim("Papa takes from Tata", "Ana", McKin.Tata, shortly, "Rod", McKin.Papa, McVerdict.Take);
+    Claim("nobody takes from Papa", "Rod", McKin.Papa, shortly, "Ana", McKin.Tata, McVerdict.Busy);
+    Claim("anyone can't take from Tata", "Ana", McKin.Tata, shortly, "Bob", McKin.Anyone, McVerdict.Busy);
+    Claim("Papa's claim runs out too", "Rod", McKin.Papa, McClaim.Expiry, "Bob", McKin.Anyone, McVerdict.Take);
+    if (McClaim.Decide("Bob", McKin.Anyone, claimAt - TimeSpan.FromHours(2), "Eve", McKin.Anyone, claimAt, lasting: true) != McVerdict.Busy
+        || McClaim.Decide("Bob", McKin.Anyone, claimAt - TimeSpan.FromHours(2), "Ana", McKin.Tata, claimAt, lasting: true) != McVerdict.Take)
+        Fail("minecraft claim: a kept farm doesn't run out, family still outranks it");
+
+    string[] McFamilyPools = { "McCalledLines", "McDeathLines", "McHitByPlayerLines", "McAdvancementLines", "McComeAckLines",
+        "McFollowAckLines", "McGuardAckLines", "McCollectDoneLines" };
+    foreach (var p in McFamilyPools)
+    foreach (var twin in new[] { p + "Owner", p + "Tata" })
+    {
+        if (Field(twin) is not string[] { Length: > 0 } twinLines) { Fail($"{twin}: missing"); continue; }
+        // Papa and Tata by title, never by an in-game name.
+        if (twinLines.Any(l => l.Contains("{0}"))) Fail($"{twin}: uses {{0}}, they're called Papa and Tata");
+    }
+
     // In game there is no Discord markup: no custom emotes, no sticker tags, and Minecraft cuts chat at 256.
     foreach (var f in new[] { "McArrivalLines", "McLeavingLines", "McDeathLines", "McHitByPlayerLines", "McAdvancementLines", "McNightLines",
              "McComeAckLines", "McFollowAckLines", "McStayAckLines", "McArrivedLines", "McTooFarLines", "McNoPathLines", "McLostLines",
-             "McHelpLines", "McGoToAckLines", "McGoToArrivedLines", "McTripTooFarLines", "McGuardAckLines", "McGuardKillLines",
+             "McCalledLines", "McGoToAckLines", "McGoToArrivedLines", "McTripTooFarLines", "McGuardAckLines", "McGuardKillLines",
              "McCollectAckLines", "McCollectDoneLines", "McCollectKeptLines", "McCollectEmptyLines", "McCollectNoneLines",
-             "McCollectNoToolLines", "McSleepLines", "McNoBedLines", "McNotNightLines", "McBedFailedLines" })
+             "McCollectNoToolLines", "McSleepLines", "McNoBedLines", "McNotNightLines", "McBedFailedLines",
+             "McBusyLines", "McTakenLines", "McHarvestAckLines", "McHarvestDoneLines", "McHarvestKeptLines", "McHarvestEmptyLines",
+             "McHarvestNoneLines", "McFarmAckLines", "McFarmNoneLines", "McFarmNoChestLines", "McSeekMetLinesOwner", "McSeekMetLinesTata", "McSeekMissLinesOwner", "McSeekMissLinesTata" }
+             .Concat(McFamilyPools.SelectMany(p => new[] { p + "Owner", p + "Tata" })))
     foreach (var (name, lines) in Pools(f))
     {
         if (lines.Distinct().Count() != lines.Length) Fail($"{name}: duplicate lines");

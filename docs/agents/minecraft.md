@@ -30,9 +30,10 @@ victim isn't on the server, such as a named pet's (sent to its owner only), is i
 ## When she joins and leaves
 
 **Nothing happens until the owner allows it.** `/debug minecraft` → « L'autoriser à jouer » /
-« Lui interdire de jouer » flips a switch kept in `minecraft-state.json` next to the database: the
-one piece of her Minecraft state that survives a restart, because « off until I say so » must not
-turn itself back on after a crash. It starts off (no file = forbidden). While forbidden she still
+« Lui interdire de jouer » flips a switch kept in `minecraft-state.json` next to the database. It
+survives a restart, because « off until I say so » must not turn itself back on after a crash. (The
+file also keeps where she last saw Papa and Tata, see *Arriving*; everything else is in memory.)
+It starts off (no file = forbidden). While forbidden she still
 pings the server, so `/debug` shows it, but never joins, and a forced join is refused. Forbidding
 takes her out at once.
 
@@ -88,9 +89,16 @@ shorter words must be exact, because at four or five letters one slip makes anot
 **Counts** come from a number anywhere (« 20 », « x20 », « 20x »), else from a quantity in words
 right before the resource (« dix bûches », « une stack de pierre », « une dizaine de bûches »),
 else 10. Only right before: « du bois pour une maison » isn't one log. **Coordinates** accept
-F3's decimals, floored to the block (-300.7 is block -301), and labels or brackets around them. A message that only names her
-gets the list of what she can do (`McHelpLines`), but only when the name opens or closes it: a
-call, not talk about her.
+F3's decimals, floored to the block (-300.7 is block -301), and labels or brackets around them.
+
+**An order can come in two steps.** A message that only names her (« syncs », « hé syncs ? ») is a
+call, but only when the name opens or closes it; elsewhere it's talk about her. She answers with a
+short « oui ? » (`McCalledLines`), and that player's **next message within 30 seconds** is read as
+if it carried her name (`McCommand.Parse(…, called: true)`): « syncs » … « suis moi ». One message
+only, whatever it turns out to be, so a call followed by chat doesn't keep her listening; a
+follow-up she doesn't understand gets silence, not another « oui ? ». Other players still need her
+name in that window. The window lives in the service, per player, in memory. There is no help
+list: the owner removed it.
 
 - **Come** walks to where the player stood (`GoalNear`, 2 blocks). **Follow** keeps a moving goal
   on the player (`GoalFollow`). **Stay** clears the goal and cancels a gathering run.
@@ -113,24 +121,77 @@ call, not talk about her.
   When a player goes to bed at night (`entitySleep`) she looks for a bed within 48 blocks, once per
   night, and says so when there's none (`McNoBedLines`), since she is then why the night won't pass.
   « syncs dodo » does the same on demand.
+- **Harvest** (« syncs récolte le blé », McOrder.Harvest with a `McCrop`, `Any` for « syncs
+  récolte ») breaks the *ripe* crops within 24 blocks (wheat, carrots, potatoes at age 7, beetroot
+  at 3), puts a seed back on each patch of farmland left bare, and tosses the haul at the player's
+  feet like a gathering run. Melons and pumpkins count only next to an *attached* stem, so a pumpkin
+  placed as decoration is never touched, and need no replanting. In the parser a crop word is read
+  before the resources (« pommes de terre » has « terre », dirt); a generic word (« champ ») never
+  beats a resource (« du bois dans le champ »), and « récolte » after an article is the noun. A crop
+  takes any gathering verb plus a few that mean nothing alone (`CropOnlyVerbs`: « arrache »,
+  « farm », « déterre »; « arrache-toi » is not an order), and the verb must be another word than
+  the crop (« la récolte est prête » names it, doesn't ask). Crop words take one slip from six
+  letters (« citrouile »); further misspellings are listed (« carrote », « betrave »). « courge »
+  stays out: one slip from « course ».
+- **Farm** (« syncs occupe-toi de la ferme ») anchors her where she stands. Every 15 seconds she
+  harvests what ripened within 16 blocks of that spot, replants, and stores the produce in a chest
+  or barrel within 10 blocks, keeping 16 of each seed back to replant; a full chest leaves the rest
+  on her. No crops, or **no chest**, and she refuses (`McFarmNoneLines`, `McFarmNoChestLines`)
+  rather than fill her pockets all evening. The farm cue is read before stay (« reste à la ferme »)
+  and guard (« garde le champ »): a phrase that says it alone (« cultive », « mode fermière »), or
+  a **care verb with a farm word within four words after it** (`FarmCare`: « prends soin de mes
+  plantations », « surveille le potager »). The verb alone never farms: « garde-moi » is guard,
+  « il reste du blé » is stay. Only the unambiguous care verbs (`CropCareVerbs`: « occupe-toi »,
+  « entretiens ») take a crop instead of a farm word; « garde des carottes » keeps some.
+  « ferme » counts only after an article or possessive, since « et ferme-la » means shut up. Going to bed pauses the farm and waking resumes it
+  (`farmAfterSleep`); any order ends it. A farm is the one claim that doesn't run out while its
+  keeper is on the server (`McClaim.Decide(…, lasting)`); family can still take her.
 - **Food and armour** need no order: she eats when hunger drops below 14 (never rotten flesh and
   the like), and wears the best piece she carries for each slot on spawn and after each pickup.
   Both are our own few lines; `mineflayer-auto-eat` is ESM-only now and the armour plugin is
   unmaintained.
 - **She never digs and never places a block.** `canDig = false`, no scaffolding blocks, no
   pillaring: a path through someone's wall or a dirt tower in their build is not help. Where
-  walking can't get there she says so (`McNoPathLines`) instead.
+  walking can't get there she says so (`McNoPathLines`) instead. **The one exception is a seed
+  on bare farmland where she just harvested** (`harvestBlocks`): nothing else, nowhere else. Keep
+  it that narrow.
 - **She can only reach a player the server shows her** (render distance). Beyond that the body
   answers `cantReach notVisible` at once (`McTooFarLines`). A followed player who goes out of
   sight ends the follow (`lost`).
+- **An order that fails at once changes nothing.** The body checks an order can be done (in sight,
+  not too far, something to gather, a bed) *before* `stay()` drops the current one, so
+  « syncs va chercher des diamants » with none around never pulls her off someone's follow. Keep
+  that order in any new op.
 - **Orders are acknowledged when the body reports them under way** (`moving`, `collecting`,
   `sleeping`), not when they're read. « J'arrive » followed by « je te vois pas » reads as a broken
   promise. Stay is acknowledged straight away.
 - **Whispered orders get whispered answers**, outcome included. The service remembers who gave the
-  current order and how.
+  current order and how. In every line Papa and Tata are « Papa » and « Tata » (`Who`), never their
+  in-game names.
+- **She works for one player at a time** (`McClaim`, pure, walked by the checks). Whoever gave the
+  order under way holds her: only they can stop her or send her elsewhere, and anyone else gets
+  `McBusyLines` (once every 10 seconds per player). Family outranks: Papa > Tata > everyone, so
+  family can always take her and nobody takes her from them; whoever she leaves mid-order hears why
+  (`McTakenLines`). A claim runs out **10 minutes** after its order got under way, Papa's included,
+  so a forgotten « suis-moi » never locks her for the evening; family can still take her back.
+  The service keeps the order under way (`_order`) apart from the one just sent (`_pending`): the
+  pending one only becomes hers when the body confirms it, so a failed order leaves the claim where
+  it was. Going to bed (asked, or because a player did) ends any claim.
 - **Orders aren't rationed like remarks.** One gate per player ignores a second order within the
   same second (a double send), never a stop, so « viens » then « stop » always works. Another gate
-  gives each player the help list once a minute at most.
+  gives each player her « oui ? » once every 10 seconds at most (the window still opens).
+
+## Arriving
+
+Two seconds after her hello she walks up to **Papa, or else Tata**, when either is on (`seek`), and
+she's not already busy with an order. In sight, she goes straight to them. Out of sight, the server
+gives her no way to know where they are (positions only reach a client within render distance; no op,
+no map plugin), so she goes to **where she last saw them**: the body reports `seen` each time a
+player leaves her sight, including logging out next to her, and when she quits. Players log back in
+where they logged out, so that spot is a good guess. The service keeps only the family's spots, in
+`minecraft-state.json`, with the dimension: a spot in another dimension, or over 1500 blocks, is not
+tried. If they show up on her way she heads for them. Found: `McSeekMetLines…`; not found, or no
+spot known: `McSeekMissLines…` (« t'es où ? »). Any order replaces the walk; it is never a claim.
 
 Player chat reaches the body as Mineflayer's `chat` and `whisper` events. A chat plugin that
 reformats messages can hide them from Mineflayer's parser; if orders go unanswered on a server
@@ -155,6 +216,16 @@ catches everything; nothing escapes the loop.
 - In-game lines are **plain text under 256 characters**: no custom emotes, no sticker tags (the
   checks enforce it).
 - Her join and leave posts go to the bots channel (`BotsChannel`): low stakes, her own initiative.
+
+**Family in game.** `McFamily.Of` matches a player against `Minecraft:Owner` (Papa) and
+`Minecraft:Tata` without case, and the service picks a twin pool (`…Owner`, `…Tata`) for the
+lines aimed at one person: the « oui ? », their death, them hitting her, their advancement, and the
+acks for come, follow, guard and a delivery. Twins call them « Papa » and « Tata », never `{0}`
+(the checks enforce it). Same tiers as on Discord (`personality.md`, *Favouritism*): Papa is never
+roasted and, when he hits her, she's hurt and forgives; Tata gets cheeky warmth and the mute
+rights. Every other pool is shared, because it's about the game rather than the person. A new
+person-aimed pool gets its twins too, and its name goes in the checks' `McFamilyPools`. Offline
+mode lets anyone take those names, which is fine: names only pick lines here.
 
 ## Deployment
 
@@ -187,6 +258,7 @@ the body sends every console method to stderr before loading them, and the servi
 line that isn't JSON instead of parsing it.
 
 Options (`config.yaml` → `run.sh` → `Minecraft__*`): `minecraft_host` (empty: off),
-`minecraft_port`, `minecraft_username`, `minecraft_owner`. If the server has a whitelist, her name
+`minecraft_port`, `minecraft_username`, `minecraft_owner`, `minecraft_tata` (Tata's in-game name,
+for her lines only). If the server has a whitelist, her name
 must be on it. Offline mode means anyone can log in under any name, so she trusts names only to
 choose who to talk to, never for anything that matters.

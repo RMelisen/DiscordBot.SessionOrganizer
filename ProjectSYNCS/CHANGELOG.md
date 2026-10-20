@@ -3,6 +3,24 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.14.0 — 2026-10-20
+
+- Minecraft: orders in two steps. Say « syncs » alone, she answers « oui ? », and your next message
+  is heard as an order without her name (« suis-moi », « viens »…).
+- Minecraft: the list of what she understands is gone; a bare call gets that short « oui ? » instead.
+- Minecraft: her family gets their own lines in game (calls, deaths, hits, advancements, come,
+  follow, guard and deliveries). New add-on option `minecraft_tata` for Tata's in-game name.
+- Minecraft: she works for one player at a time. Others hear she's busy, and only that player can
+  stop her; Papa and Tata can always take her (and say so to whoever she leaves). A claim runs out
+  after 10 minutes.
+- Minecraft: when she arrives she walks up to Papa (or Tata): straight to them in sight, otherwise
+  to where she last saw them.
+- Minecraft: an order that can't be done (nothing to gather, too far) no longer stops what she was
+  already doing.
+- Minecraft: « syncs récolte le blé » harvests ripe crops around her, replants, and brings the haul
+  back; « syncs occupe-toi de la ferme » keeps a farm, storing the harvest in a nearby chest. Both
+  understand many wordings (« arrache les carottes », « prends soin de mes plantations »…).
+
 ## 7.13.3 — 2026-10-20
 
 - Reports and the monthly digest write each person's name next to their mention, so nobody shows

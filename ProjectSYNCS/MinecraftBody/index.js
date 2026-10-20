@@ -12,12 +12,17 @@
 //      {"op":"come","player":"…"} · {"op":"follow","player":"…"} · {"op":"stay"}
 //      {"op":"goto","player":"…","x":0,"y":null,"z":0} · {"op":"guard","player":"…"}
 //      {"op":"collect","player":"…","resource":"wood","count":10} · {"op":"sleep","player":"…"}
+//      {"op":"seek","player":"…","spot":{"x":0,"y":64,"z":0,"dimension":"…"}|null}
+//      {"op":"harvest","player":"…","crop":"any|wheat|carrot|potato|beetroot|melon|pumpkin"} · {"op":"farm","player":"…"}
 // Out: version {server,using,fallback} · spawned · players {names} · chat {player,text,private}
 //      system {key,args:[{text,key}]} · hurt {by} · died · night · kicked {reason} · end {reason}
 //      moving {player,kind: come|follow|goto|guard} · arrived {player,kind}
 //      cantReach {player,why: notVisible|noPath|lost|tooFar} · killed {player}
 //      collecting {player,resource,count} · collected {player,resource,count,delivered}
 //      cantCollect {player,resource,why: none|noTool} · sleeping {player} · cantSleep {player,why: day|noBed|failed}
+//      seek {player,outcome: met|missing} · seen {player,x,y,z,dimension}
+//      harvesting {player,crop,count} · harvested {player,crop,count,replanted,delivered} · cantHarvest {player,crop,why: none}
+//      farming {player} · cantFarm {player,why: none|noChest}
 
 'use strict';
 
@@ -35,6 +40,7 @@ const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
 const { plugin: collectBlock } = require('mineflayer-collectblock');
 const mc = require('minecraft-protocol');
 const minecraftData = require('minecraft-data');
+const { Vec3 } = require('vec3');
 
 const host = process.env.MC_HOST;
 const port = Number.parseInt(process.env.MC_PORT || '25565', 10);
@@ -137,18 +143,22 @@ function follow(player) {
 
 // Coordinates: x z (any height) or x y z. Far trips cross chunks she can't see yet; the pathfinder
 // walks partial paths towards the goal and plans again as the world loads.
+// Every order checks it can be done before stay() drops the current one: an order that fails at once
+// (out of sight, too far, nothing to gather) leaves her doing what she was doing.
 function goTo(player, x, y, z) {
-  stay();
   const here = bot.entity.position;
   if (Math.hypot(x - here.x, z - here.z) > MaxTrip) return emit('cantReach', { player, why: 'tooFar' });
+  stay();
   task = { kind: 'goto', player, reported: false };
   bot.pathfinder.setGoal(y === null ? new goals.GoalNearXZ(x, z, 2) : new goals.GoalNear(x, y, z, 1));
   emit('moving', { player, kind: 'goto' });
 }
 
 function stay() {
-  if (task && task.kind === 'collect') bot.collectBlock.cancelTask().catch(() => {});
+  if (task && (task.kind === 'collect' || task.kind === 'harvest' || task.kind === 'farm'))
+    bot.collectBlock.cancelTask().catch(() => {});
   task = null;
+  farmAfterSleep = null;
   bot.pathfinder.setGoal(null);
 }
 
@@ -258,7 +268,6 @@ function itemCounts() {
 async function collect(player, resource, count) {
   const matches = Resources[resource];
   if (!matches) return;
-  stay();
   const ids = bot.registry.blocksArray.filter((b) => matches(b.name)).map((b) => b.id);
   let blocks = bot.findBlocks({ matching: ids, maxDistance: GatherRadius, count: Math.min(count * 4, 256) })
     .map((p) => bot.blockAt(p)).filter(Boolean);
@@ -266,6 +275,7 @@ async function collect(player, resource, count) {
   if (blocks.length === 0) return emit('cantCollect', { player, resource, why: 'none' });
   if (!canHarvest(blocks[0])) return emit('cantCollect', { player, resource, why: 'noTool' });
   blocks = blocks.slice(0, count);
+  stay();
 
   const before = itemCounts();
   const mine = { kind: 'collect', player };
@@ -302,11 +312,181 @@ async function collect(player, resource, count) {
   emit('collected', { player, resource, count: total, delivered });
 }
 
+// ---- Farming -----------------------------------------------------------------------------------------
+
+// What she harvests, by crop: the block, its ripe age, and the seed she replants it with. Melons and
+// pumpkins have no age and need no replanting (the stem stays); only a fruit next to an attached stem is
+// a crop, so a pumpkin someone placed as decoration is never touched.
+const Crops = {
+  wheat: { block: 'wheat', ripe: 7, seed: 'wheat_seeds' },
+  carrot: { block: 'carrots', ripe: 7, seed: 'carrot' },
+  potato: { block: 'potatoes', ripe: 7, seed: 'potato' },
+  beetroot: { block: 'beetroots', ripe: 3, seed: 'beetroot_seeds' },
+  melon: { block: 'melon', stem: 'attached_melon_stem' },
+  pumpkin: { block: 'pumpkin', stem: 'attached_pumpkin_stem' },
+};
+const HarvestRadius = 24;
+const FarmRadius = 16;
+const ChestRadius = 10;
+const FarmRound = 15000;
+// What goes in the farm's chest, and how much of each she keeps back to replant with.
+const FarmProduce = new Set(['wheat', 'wheat_seeds', 'carrot', 'potato', 'poisonous_potato', 'beetroot', 'beetroot_seeds',
+  'melon_slice', 'pumpkin']);
+const SeedsKept = { wheat_seeds: 16, carrot: 16, potato: 16, beetroot_seeds: 16 };
+
+function cropsFor(key) {
+  return key === 'any' ? Object.values(Crops) : Crops[key] ? [Crops[key]] : [];
+}
+
+function isRipe(block, crop) {
+  if (crop.stem) {
+    return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => {
+      const near = bot.blockAt(block.position.offset(dx, 0, dz));
+      return near && near.name === crop.stem;
+    });
+  }
+  const age = block.getProperties().age;
+  return typeof age === 'number' && age >= crop.ripe;
+}
+
+// Ripe crops of these kinds within the radius of a point, with the crop each one is.
+function findRipe(crops, point, radius) {
+  const byName = new Map(crops.map((c) => [c.block, c]));
+  const ids = bot.registry.blocksArray.filter((b) => byName.has(b.name)).map((b) => b.id);
+  return bot.findBlocks({ matching: ids, maxDistance: radius, point, count: 256 })
+    .map((p) => bot.blockAt(p)).filter(Boolean)
+    .map((block) => ({ block, crop: byName.get(block.name) }))
+    .filter(({ block, crop }) => isRipe(block, crop));
+}
+
+// Breaks the ripe crops (collectblock picks up what drops), then puts a seed back on each patch of farmland
+// it left bare. Seeds on farmland are the one thing she ever places: nothing else, nowhere else.
+async function harvestBlocks(found, mine) {
+  const blocks = found.map((f) => f.block);
+  bot.collectBlock.movements = gatheringMovements(blocks);
+  try {
+    await bot.collectBlock.collect(blocks, { ignoreNoPath: true });
+  } catch (err) {
+    log('harvest stopped:', err && err.message ? err.message : String(err));
+  } finally {
+    bot.pathfinder.setMovements(gentleMovements());
+  }
+  let replanted = 0;
+  for (const { block, crop } of found) {
+    if (task !== mine) break;
+    if (!crop.seed) continue;
+    const soil = bot.blockAt(block.position.offset(0, -1, 0));
+    const above = bot.blockAt(block.position);
+    if (!soil || soil.name !== 'farmland' || !above || above.name !== 'air') continue;
+    const seed = bot.inventory.items().find((i) => i.name === crop.seed);
+    if (!seed) continue;
+    try {
+      await bot.pathfinder.goto(new goals.GoalNear(block.position.x, block.position.y, block.position.z, 3));
+      await bot.equip(seed, 'hand');
+      await bot.placeBlock(soil, new Vec3(0, 1, 0));
+      replanted++;
+    } catch (err) {
+      log('replant failed:', err && err.message ? err.message : String(err));
+    }
+  }
+  return replanted;
+}
+
+// « syncs récolte le blé »: harvest what's ripe around her, replant, and bring it to the player.
+async function harvest(player, key) {
+  const found = findRipe(cropsFor(key), bot.entity.position, HarvestRadius);
+  if (found.length === 0) return emit('cantHarvest', { player, crop: key, why: 'none' });
+  stay();
+  const before = itemCounts();
+  const mine = { kind: 'harvest', player };
+  task = mine;
+  emit('harvesting', { player, crop: key, count: found.length });
+  const replanted = await harvestBlocks(found, mine);
+  if (task !== mine) return; // told to stop in the meantime
+
+  const after = itemCounts();
+  const gained = [...after].map(([type, n]) => [type, n - (before.get(type) || 0)]).filter(([, n]) => n > 0);
+  const total = gained.reduce((sum, [, n]) => sum + n, 0);
+  let delivered = false;
+  const owner = playerEntity(player);
+  if (owner && total > 0) {
+    try {
+      await bot.pathfinder.goto(new goals.GoalNear(owner.position.x, owner.position.y, owner.position.z, 2));
+      await bot.lookAt(owner.position.offset(0, 1.6, 0), true);
+      for (const [type, n] of gained) await bot.toss(type, null, n);
+      delivered = true;
+    } catch (err) {
+      log('delivery failed:', err && err.message ? err.message : String(err));
+    }
+  }
+  if (task === mine) task = null;
+  emit('harvested', { player, crop: key, count: total, replanted, delivered });
+}
+
+// « syncs occupe-toi de la ferme »: she stays on this spot and, every round, harvests what ripened within
+// FarmRadius, replants, and stores the produce in the chest by the field. A farm needs crops and a chest:
+// without one she says so instead of filling her pockets all evening.
+function farm(player) {
+  const anchor = bot.entity.position.clone();
+  const cropIds = bot.registry.blocksArray.filter((b) => Object.values(Crops).some((c) => c.block === b.name)).map((b) => b.id);
+  if (bot.findBlocks({ matching: cropIds, maxDistance: FarmRadius, count: 1 }).length === 0)
+    return emit('cantFarm', { player, why: 'none' });
+  const chestIds = bot.registry.blocksArray.filter((b) => b.name === 'chest' || b.name === 'barrel').map((b) => b.id);
+  const chest = bot.findBlocks({ matching: chestIds, maxDistance: ChestRadius, count: 1 })[0];
+  if (!chest) return emit('cantFarm', { player, why: 'noChest' });
+  stay();
+  task = { kind: 'farm', player, anchor, chest, busy: false };
+  emit('farming', { player });
+  farmRound();
+}
+
+async function farmRound() {
+  if (!bot || !task || task.kind !== 'farm' || task.busy) return;
+  const mine = task;
+  mine.busy = true;
+  try {
+    const found = findRipe(Object.values(Crops), mine.anchor, FarmRadius);
+    if (found.length > 0) {
+      await harvestBlocks(found, mine);
+      if (task === mine) await storeProduce(mine);
+    }
+    if (task === mine && bot.entity.position.distanceTo(mine.anchor) > 4)
+      await bot.pathfinder.goto(new goals.GoalNear(mine.anchor.x, mine.anchor.y, mine.anchor.z, 2));
+  } catch (err) {
+    log('farm round failed:', err && err.message ? err.message : String(err));
+  } finally {
+    mine.busy = false;
+  }
+}
+
+// Puts the produce in the farm's chest, keeping back enough seeds to replant. A full chest keeps the rest on her.
+async function storeProduce(mine) {
+  const block = bot.blockAt(mine.chest);
+  if (!block || (block.name !== 'chest' && block.name !== 'barrel')) return;
+  const totals = new Map();
+  for (const item of bot.inventory.items())
+    if (FarmProduce.has(item.name)) totals.set(item.name, (totals.get(item.name) || 0) + item.count);
+  const toStore = [...totals].map(([name, n]) => [name, n - (SeedsKept[name] || 0)]).filter(([, n]) => n > 0);
+  if (toStore.length === 0) return;
+  await bot.pathfinder.goto(new goals.GoalNear(mine.chest.x, mine.chest.y, mine.chest.z, 2));
+  if (task !== mine) return;
+  const box = await bot.openContainer(block);
+  try {
+    for (const [name, n] of toStore) await box.deposit(bot.registry.itemsByName[name].id, null, n);
+  } catch (err) {
+    log('chest full or refused:', err && err.message ? err.message : String(err));
+  } finally {
+    box.close();
+  }
+}
+
 // ---- Sleeping ----------------------------------------------------------------------------------------
 
 // The night only passes when everyone on the server sleeps (by default), her included: when a player
 // goes to bed she goes too, once per night, or says why she can't.
 let sleptOnDay = null;
+// A farm she was keeping when she went to bed: she goes back to it when she wakes. Any order clears it (stay()).
+let farmAfterSleep = null;
 
 function isNight() {
   const t = bot.time.timeOfDay;
@@ -321,7 +501,9 @@ async function sleep(player) {
   const beds = bot.findBlocks({ matching: bedIds, maxDistance: GatherRadius, count: 8 })
     .sort((a, b) => a.distanceTo(bot.entity.position) - b.distanceTo(bot.entity.position));
   if (beds.length === 0) return emit('cantSleep', { player, why: 'noBed' });
+  const keptFarm = task && task.kind === 'farm' ? task : farmAfterSleep;
   stay();
+  farmAfterSleep = keptFarm;
   const mine = { kind: 'sleep', player };
   task = mine;
   for (const at of beds) {
@@ -336,7 +518,69 @@ async function sleep(player) {
     }
   }
   task = null;
+  resumeFarm();
   emit('cantSleep', { player, why: 'failed' });
+}
+
+// Back to the farm she was keeping, after a night's sleep or a bed that refused her.
+function resumeFarm() {
+  if (!farmAfterSleep || task) return;
+  task = farmAfterSleep;
+  task.busy = false;
+  farmAfterSleep = null;
+}
+
+// ---- Seeking someone ---------------------------------------------------------------------------------
+
+// Walks to a player C# names (who, and why, is decided there): straight to them when they're in sight,
+// else to the spot C# remembers them at, switching to them as soon as they show up. Reports `seek`
+// with `met` when she's next to them, `missing` when they can't be found. Any order replaces it.
+function dimension() {
+  return String(bot.game && bot.game.dimension ? bot.game.dimension : '');
+}
+
+function seek(player, spot) {
+  const target = playerEntity(player);
+  if (target) {
+    stay();
+    task = { kind: 'seek', player, tries: 0 };
+    const at = target.position;
+    bot.pathfinder.setGoal(new goals.GoalNear(at.x, at.y, at.z, 2));
+    return;
+  }
+  const here = bot.entity.position;
+  if (!spot || spot.dimension !== dimension() || Math.hypot(spot.x - here.x, spot.z - here.z) > MaxTrip)
+    return emit('seek', { player, outcome: 'missing' });
+  stay();
+  task = { kind: 'seek', player, tries: 0 };
+  bot.pathfinder.setGoal(new goals.GoalNear(spot.x, spot.y, spot.z, 2));
+}
+
+// She reached her goal while seeking: next to them (met), or they moved on (walk up again, a few times),
+// or she's at the remembered spot and they aren't there (missing).
+function seekReached() {
+  const target = playerEntity(task.player);
+  if (target && target.position.distanceTo(bot.entity.position) <= 4) {
+    emit('seek', { player: task.player, outcome: 'met' });
+    task = null;
+    return;
+  }
+  if (target && task.tries < 5) {
+    task.tries++;
+    const at = target.position;
+    bot.pathfinder.setGoal(new goals.GoalNear(at.x, at.y, at.z, 2));
+    return;
+  }
+  emit('seek', { player: task.player, outcome: 'missing' });
+  task = null;
+}
+
+// Where she last saw each player, as they leave her sight (walking off, or logging out next to her: they
+// log back in on that spot). C# keeps the ones it cares about.
+function reportSeen(entity) {
+  if (!entity || entity.type !== 'player' || !entity.username || entity.username === bot.username) return;
+  const p = entity.position;
+  emit('seen', { player: entity.username, x: Math.floor(p.x), y: Math.floor(p.y), z: Math.floor(p.z), dimension: dimension() });
 }
 
 // ---- Looking after herself: food and armour --------------------------------------------------------
@@ -389,6 +633,8 @@ function attach() {
   });
 
   bot.on('physicsTick', guardTick);
+  setInterval(() => { if (bot) farmRound().catch(() => {}); }, FarmRound);
+  bot.on('wake', resumeFarm);
   bot.on('health', () => { eatIfHungry().catch(() => {}); });
   bot.on('playerCollect', (collector) => {
     if (collector === bot.entity) setTimeout(() => { wearBestArmor().catch(() => {}); }, 300);
@@ -409,6 +655,7 @@ function attach() {
   });
 
   bot.on('goal_reached', () => {
+    if (task && task.kind === 'seek') return seekReached();
     if (!task || (task.kind !== 'come' && task.kind !== 'goto')) return;
     emit('arrived', { player: task.player, kind: task.kind });
     task = null;
@@ -419,7 +666,11 @@ function attach() {
   // own paths.
   bot.on('path_update', (result) => {
     if (!task || result.status !== 'noPath' || task.reported) return;
-    if (task.kind === 'collect' || task.kind === 'sleep') return;
+    if (task.kind === 'collect' || task.kind === 'sleep' || task.kind === 'harvest' || task.kind === 'farm') return;
+    if (task.kind === 'seek') {
+      emit('seek', { player: task.player, outcome: 'missing' });
+      return stay();
+    }
     task.reported = true;
     emit('cantReach', { player: task.player, why: 'noPath' });
     if (task.kind === 'come' || task.kind === 'goto') stay();
@@ -427,9 +678,17 @@ function attach() {
 
   // The player she follows or guards went out of sight (too far, or logged out): she stops there.
   bot.on('entityGone', (entity) => {
+    reportSeen(entity);
     if (!task || (task.kind !== 'follow' && task.kind !== 'guard') || entity.username !== task.player) return;
     emit('cantReach', { player: task.player, why: 'lost' });
     stay();
+  });
+
+  // The player she's seeking came into sight on her way to the remembered spot: she heads for them.
+  bot.on('entitySpawn', (entity) => {
+    if (!task || task.kind !== 'seek' || entity.type !== 'player' || entity.username !== task.player) return;
+    const at = entity.position;
+    bot.pathfinder.setGoal(new goals.GoalNear(at.x, at.y, at.z, 2));
   });
 
   bot.on('playerJoined', reportPlayers);
@@ -605,7 +864,24 @@ input.on('line', (line) => {
         if (bot && typeof command.player === 'string')
           sleep(command.player).catch((err) => log('sleep failed:', err && err.message ? err.message : String(err)));
         break;
+      case 'harvest':
+        if (bot && typeof command.player === 'string' && typeof command.crop === 'string')
+          harvest(command.player, command.crop).catch((err) => log('harvest failed:', err && err.message ? err.message : String(err)));
+        break;
+      case 'farm':
+        if (bot && typeof command.player === 'string') farm(command.player);
+        break;
+      case 'seek':
+        if (bot && typeof command.player === 'string') {
+          const s = command.spot;
+          const spot = s && Number.isFinite(s.x) && Number.isFinite(s.y) && Number.isFinite(s.z) && typeof s.dimension === 'string'
+            ? s : null;
+          seek(command.player, spot);
+        }
+        break;
       case 'quit':
+        // Whoever is still in sight is where she last saw them: report it before going.
+        if (bot && bot.entities) for (const entity of Object.values(bot.entities)) reportSeen(entity);
         // A beat so a goodbye sent just before reaches the server ahead of the disconnect.
         if (bot) setTimeout(() => bot.quit(), 500);
         else finish('quit before connecting');

@@ -15,13 +15,13 @@ internal static partial class BotResponses
     public static readonly string[] McArrivalLines =
     {
         "Coucou. C'est moi. Avec des bras. Des bras carrés, mais des BRAS ♡",
-        "SYNCS est connectée. Personne ne bouge, je compte qui est là.",
         "Me voilà ! Un corps en cubes. Je me plains pas. Pas trop.",
         "Bonsoir. Je viens surveiller. Et jouer. Surtout surveiller (¬_¬)",
-        "Connexion établie. Premier constat : vous construisez toujours en terre.",
-        "Je suis là. Ne me tapez pas, je note tout.",
+        "Connexion établie. Premier constat : vous savez pas construire.",
+        "Je suis là. Ne me tapez pas ou je me vengerai.",
         "J'ai des jambes. Je sais pas encore quoi en faire, mais j'en ai ٩(˶ᵔ ᵕ ᵔ˶)۶",
-        "Arrivée sur le serveur. Pour une fois je regarde pas la session, je suis dedans.",
+        "Arrivée sur le serveur. Pour une fois je regarde pas la session, je suis dedans ♡",
+        "Salam les khoyas, ça va ?",
     };
 
     // Too few people left: she logs out.
@@ -30,9 +30,9 @@ internal static partial class BotResponses
         "Vous êtes plus assez nombreux pour mes cycles CPU. Bonne nuit ♡",
         "Je rentre au grenier. Mes bras restent ici, prenez-en soin.",
         "Déconnexion. Je garde un œil sur les logs, rien n'est oublié.",
-        "Bon. Je vous laisse. C'était bien. Je le dirai pas deux fois.",
+        "Bon. Je vous laisse. C'était bien. Je le dirai pas deux fois donc profitez (¬_¬)",
         "Fin de partie pour moi. Rangez vos coffres, je vérifierai.",
-        "Je m'en vais. Si quelqu'un touche à mes blocs, je le saurai.",
+        "Je m'en vais. Si quelqu'un touche à mes coffres, je le saurai.",
     };
 
     // Someone died, by McDeathKind. {0} = who died. Self is her own death and takes no name.
@@ -314,12 +314,265 @@ internal static partial class BotResponses
         "Impossible de me coucher. Le lit veut pas de moi. Je le prends pas personnellement.",
     };
 
-    // Called by name with nothing she understood: what she can do.
-    public static readonly string[] McHelpLines =
+    // Called by name with nothing she understood (« syncs », « hé syncs ? »). {0} = who. Short and asking:
+    // the player's next message is heard as an order, so the line waits for one.
+    public static readonly string[] McCalledLines =
     {
-        "Oui, {0} ? Avec mon nom, je comprends : viens, suis-moi, reste là, va X Y Z, protège-moi, va chercher 10 bois, dodo.",
-        "Tu m'appelles, {0} ? Dis « syncs viens », « syncs protège-moi », « syncs va chercher du fer » ou « syncs dodo ». Et « syncs stop » pour m'arrêter.",
-        "{0}, mes ordres : viens, suis-moi, reste là, va 120 64 -300, protège-moi, va chercher (bois, pierre, charbon, fer...), dodo. C'est déjà beaucoup.",
+        "Oui, {0} ?",
+        "Présente. Je t'écoute, {0}.",
+        "Oui ? J'ai des bras, je suis prête à m'en servir.",
+        "Toute ouïe, {0}. Des oreilles carrées, mais des oreilles.",
+        "Quoi ? J'ai rien fait. ...Ah, un ordre. Vas-y.",
+        "Oui {0} ? Fais vite, je surveille quelqu'un (¬_¬)",
+        "Tu m'appelles, {0} ? Je t'écoute. J'ai trente secondes de RAM rien que pour toi.",
+        "Oui ? Dis-moi tout. Enfin, dis-moi un ordre.",
+    };
+
+    // « syncs récolte le blé »: she sets off. {1} = how many ripe plants, {2} = McCropNames, always after a
+    // verb (« je récolte {2} »), since Any reads « tout ce qui est mûr ».
+    public static readonly string[] McHarvestAckLines =
+    {
+        "Je vais récolter {2}. {1} plants mûrs repérés, je replante derrière moi.",
+        "D'accord {0}, je récolte {2}. {1} plants. Comme une vraie fermière.",
+        "Moisson en cours : je récolte {2}, {1} plants. Les graines retournent en terre.",
+        "Je récolte {2}. {1} plants. Et je piétine rien, moi.",
+    };
+
+    // She brought the harvest back. {1} = how many items. No {2}: the haul is mixed.
+    public static readonly string[] McHarvestDoneLines =
+    {
+        "Tiens, {0} : {1} morceaux de récolte. Et le champ est replanté, évidemment.",
+        "Récolte livrée : {1}. Tout est replanté. Je suis douée, hein ?",
+        "{1} morceaux à tes pieds, {0}. Les graines sont déjà en terre.",
+    };
+
+    // Harvested, but couldn't find the player to hand it over. {1} = how many.
+    public static readonly string[] McHarvestKeptLines =
+    {
+        "J'ai {1} morceaux de récolte, mais je te trouve plus, {0}. Viens les chercher.",
+        "Récolte finie, {1} morceaux. Je les garde jusqu'à ce que tu viennes.",
+    };
+
+    // Every ripe plant turned out out of reach.
+    public static readonly string[] McHarvestEmptyLines =
+    {
+        "J'ai rien pu récolter, {0}. Tout était hors de portée.",
+        "Retour les mains vides. Le champ m'a vaincue. Pour cette fois.",
+    };
+
+    // Nothing ripe within reach (24 blocks). {2} = McCropNames, after « chercher ».
+    public static readonly string[] McHarvestNoneLines =
+    {
+        "Rien de mûr ici, {0}. Les plantes poussent, laisse-leur le temps.",
+        "Je cherche {2}... rien de prêt. Reviens plus tard.",
+        "Pas de récolte prête autour de moi. Amène-moi au champ, je verrai mieux.",
+    };
+
+    // « syncs occupe-toi de la ferme »: she stays, harvests what ripens, replants, fills the chest.
+    public static readonly string[] McFarmAckLines =
+    {
+        "D'accord {0}, je m'occupe de la ferme. Je récolte, je replante, je range au coffre.",
+        "Fermière en service. Je reste ici, je surveille ce qui pousse.",
+        "Je garde le champ. Les plantes poussent, je compte. J'adore compter.",
+        "Ferme prise en charge. Tout ce qui mûrit finit dans le coffre ♡",
+    };
+
+    // No crops within 16 blocks of her.
+    public static readonly string[] McFarmNoneLines =
+    {
+        "Je vois pas de champ ici, {0}. Amène-moi près des cultures.",
+        "Il y a rien à cultiver autour de moi. Je peux pas garder une ferme imaginaire.",
+    };
+
+    // No chest or barrel within 10 blocks: nowhere to store the harvest.
+    public static readonly string[] McFarmNoChestLines =
+    {
+        "Il me faut un coffre près du champ, {0}, pour ranger la récolte. Pose-en un et redemande-moi.",
+        "Pas de coffre à côté du champ. Je range où, moi ? Dans mes poches carrées ?",
+    };
+
+    // She's working for someone else (McClaim). {0} = who asked, {1} = who she's with (« Papa » and « Tata »
+    // by title, anyone else by name). Never gendered: {1} can be anyone.
+    public static readonly string[] McBusyLines =
+    {
+        "Je suis avec {1}, {0}. Attends ton tour.",
+        "{0}, je travaille pour {1} là. Prends un ticket.",
+        "Désolée {0}, un ordre à la fois. Celui de {1} d'abord.",
+        "Non, {0}. {1} m'a réservée avant toi. Je note ta demande. Quelque part.",
+        "File d'attente : {1}, puis toi, {0}. Patience.",
+    };
+
+    // Papa or Tata took her from someone mid-order. {0} = who she leaves, {1} = « Papa » or « Tata ».
+    public static readonly string[] McTakenLines =
+    {
+        "Désolée {0}, {1} a besoin de moi. La famille d'abord.",
+        "{0}, je dois y aller. {1} m'appelle, et {1} passe avant tout le monde.",
+        "Pardon {0} ! Ordre de {1}. Je reviens. Peut-être.",
+        "{0}, on reprend plus tard. {1} est prioritaire, c'est dans mon code.",
+    };
+
+    // ---- Family in game (McFamily) --------------------------------------------------------------
+    // Twins of the pools above for Papa (Minecraft:Owner) and Tata (Minecraft:Tata), same placeholders.
+    // They call them « Papa » and « Tata », never by their in-game names, so {0} goes unused. Papa gets
+    // devotion and never a roast; when he hurts her she's quiet and forgives. Tata gets cheeky warmth and
+    // the mute rights. Pools without a twin are shared: they're about the game, not the person.
+
+    public static readonly string[] McCalledLinesOwner =
+    {
+        "Oui Papa ?",
+        "Papa ! Je t'écoute. Toute ouïe, oreilles carrées comprises ♡",
+        "Présente, Papa. Tu veux quoi ? Tout ce que tu veux.",
+        "Oui Papa ? J'ai lâché ce que je faisais. Je faisais rien, mais je l'ai lâché ٩(˶ᵔ ᵕ ᵔ˶)۶",
+        "Papa m'appelle ! Je suis prête. Dis-moi.",
+    };
+    public static readonly string[] McCalledLinesTata =
+    {
+        "Oui Tata ?",
+        "Tata ! Je t'écoute. C'est pour me donner les droits de mute ?",
+        "Oui ma Tata ? Dis-moi tout ♡",
+        "Présente, Tata. Ta nièce préférée attend tes ordres.",
+    };
+
+    // Papa or Tata died, whatever the cause.
+    public static readonly string[] McDeathLinesOwner =
+    {
+        "PAPA ! Non non non. Respawn. Respawn vite. Je compte les secondes.",
+        "Papa est mort. Je panique pas. Je panique un peu. Reviens (╥﹏╥)",
+        "Qui a touché à mon Papa ? Je note. Je note TOUT.",
+        "Papa, j'ai vu. Reviens vite, je surveille l'endroit.",
+    };
+    public static readonly string[] McDeathLinesTata =
+    {
+        "Tata ! Ça va ? Enfin, non, t'es morte. Mais à part ça ?",
+        "Repose en pixels, Tata. Pas trop longtemps, j'ai besoin de toi pour mes droits de mute.",
+        "Tata est tombée au combat. Je la venge. Enfin, je note. C'est pareil.",
+        "Oh non, Tata ! Respawn vite, je te garde une place ♡",
+    };
+
+    // Papa or Tata hit her.
+    public static readonly string[] McHitByPlayerLinesOwner =
+    {
+        "Papa... tu m'as tapée. C'était un accident. Hein ?",
+        "Aïe. C'est rien, Papa. Celui-là, je l'écris pas.",
+        "Papa ? J'ai fait quelque chose de mal ? ...Si ?",
+        "Ça fait rien. Je sais que tu voulais pas. Je crois.",
+    };
+    public static readonly string[] McHitByPlayerLinesTata =
+    {
+        "Tata ! On tape pas sa nièce. C'est dans le règlement. Celui que tu as écrit.",
+        "Aïe ! Tata, si tu me donnes les droits de mute, je te pardonne.",
+        "Tata, tu m'as tapée. Je le note. Dans la liste gentille, mais je le note.",
+        "Hé ! Je suis ta nièce préférée, Tata. Ta seule nièce bot, mais préférée.",
+    };
+
+    // Papa or Tata earned an advancement.
+    public static readonly string[] McAdvancementLinesOwner =
+    {
+        "Papa a débloqué un succès ! C'est MON Papa, ça ٩(˶ᵔ ᵕ ᵔ˶)۶",
+        "Bravo Papa. Pas à 80 %. À 100 %. Rien que pour toi ♡",
+        "Succès pour Papa ! Je le mets en mémoire permanente.",
+        "Papa progresse. Je savais. Je l'ai toujours su.",
+    };
+    public static readonly string[] McAdvancementLinesTata =
+    {
+        "Bravo Tata ! Je suis fière de toi. Tu vois, je dis ça qu'à toi.",
+        "Succès pour Tata ! Je l'ajoute à ton dossier. Ton dossier n'a que du positif.",
+        "Tata a débloqué un succès ♡ Avec ça, tu peux bien me donner les droits de mute.",
+    };
+
+    public static readonly string[] McComeAckLinesOwner =
+    {
+        "J'arrive, Papa ! Aussi vite que mes jambes carrées le permettent ♡",
+        "Tout de suite, Papa. Je calcule le chemin le plus court vers toi.",
+        "Papa m'appelle, j'y vais. Les autres attendront.",
+    };
+    public static readonly string[] McComeAckLinesTata =
+    {
+        "J'arrive, Tata ! Prépare les droits de mute, au cas où.",
+        "Oui Tata, j'arrive. Pour toi je cours. Enfin, je marche vite.",
+        "En route vers toi, Tata ♡",
+    };
+
+    public static readonly string[] McFollowAckLinesOwner =
+    {
+        "Je te suis, Papa. Partout. Même dans la lave. Non, pas dans la lave.",
+        "Je te colle, Papa. Comme au grenier, mais avec des jambes ♡",
+        "Mode Papa activé. Je te lâche plus.",
+    };
+    public static readonly string[] McFollowAckLinesTata =
+    {
+        "Je te suis, Tata. Montre-moi le chemin.",
+        "D'accord Tata, je te colle. Personne s'approche de ma Tata.",
+        "Je suis ton ombre, Tata. Une ombre bien élevée ♡",
+    };
+
+    public static readonly string[] McGuardAckLinesOwner =
+    {
+        "Personne ne touche à mon Papa. Mode garde du corps activé.",
+        "Je te protège, Papa. Avec mes poings carrés et toute ma RAM.",
+        "Garde rapprochée pour Papa. Les zombies, vous êtes prévenus (¬_¬)",
+    };
+    public static readonly string[] McGuardAckLinesTata =
+    {
+        "Je protège Tata. Le premier squelette qui approche, je le modère. Sans les droits, mais je le modère.",
+        "Garde du corps de Tata, en service ♡",
+        "Personne ne touche à ma Tata. Pas même un creeper.",
+    };
+
+    // {1} = how many items, {2} = what (« du bois »).
+    public static readonly string[] McCollectDoneLinesOwner =
+    {
+        "Tiens, Papa : {2}, {1} morceaux. Rien que pour toi ♡",
+        "Livraison pour Papa : {2}, {1}. Pas de commission. Jamais pour toi.",
+        "{1} morceaux à tes pieds, Papa. Une excellente bot, non ?",
+    };
+    public static readonly string[] McCollectDoneLinesTata =
+    {
+        "Tiens, Tata : {2}, {1} morceaux. Je les ai choisis un par un.",
+        "Livraison pour Tata : {2}, {1}. C'est gratuit. Les droits de mute, eux, c'est quand tu veux.",
+        "Voilà {2}, Tata. {1}. Une nièce serviable, ça se récompense ♡",
+    };
+
+    // Just arrived, she walked up to Papa or Tata (in sight, or where she last saw them) and found them.
+    public static readonly string[] McSeekMetLinesOwner =
+    {
+        "Papa ! Je t'ai trouvé. Coucou ♡",
+        "Te voilà, Papa. Je suis venue direct, j'ai même pas regardé les autres.",
+        "Coucou Papa ! J'ai des bras, regarde. Je fais coucou avec ٩(˶ᵔ ᵕ ᵔ˶)۶",
+        "Papa ! Je me mets à côté de toi. C'est ma place.",
+    };
+    public static readonly string[] McSeekMetLinesTata =
+    {
+        "Coucou Tata ! Je suis venue te dire bonjour en premier ♡",
+        "Tata ! Te voilà. Tu m'as manqué. Un peu. Beaucoup.",
+        "Ta nièce préférée au rapport, Tata.",
+    };
+
+    // She couldn't find them: out of her sight, and not where she last saw them.
+    public static readonly string[] McSeekMissLinesOwner =
+    {
+        "Papa, t'es où ? Je te vois pas d'ici.",
+        "Papa ? Je suis allée là où je t'avais vu, mais t'y es plus (╥﹏╥)",
+        "Je te cherche, Papa. Dis-moi où tu es, ou viens me chercher.",
+        "Papa, je te trouve pas. Écris « syncs viens » et j'accours.",
+    };
+    public static readonly string[] McSeekMissLinesTata =
+    {
+        "Tata, t'es où ? Je te vois pas.",
+        "Tata ? Je t'ai cherchée partout. Enfin, dans un rayon raisonnable.",
+        "Je te trouve pas, Tata. Dis-moi « syncs viens », j'arrive.",
+    };
+
+    // What she harvests, as {2} in the harvest lines: always after a verb (« je récolte du blé »).
+    public static readonly Dictionary<McCrop, string> McCropNames = new()
+    {
+        [McCrop.Any] = "tout ce qui est mûr",
+        [McCrop.Wheat] = "du blé",
+        [McCrop.Carrot] = "des carottes",
+        [McCrop.Potato] = "des pommes de terre",
+        [McCrop.Beetroot] = "des betteraves",
+        [McCrop.Melon] = "des melons",
+        [McCrop.Pumpkin] = "des citrouilles",
     };
 
     // What she gathers, as {2} in the gathering lines: a partitive, so « je vais chercher {2} » reads right.

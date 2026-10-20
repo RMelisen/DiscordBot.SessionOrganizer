@@ -154,21 +154,32 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
   - « syncs va chercher 10 bois » (also pierre, charbon, fer, cuivre, or, diamants, terre, sable):
     she gathers it within 48 blocks and drops it at your feet. Stone and ores need a pickaxe: give
     her one (drop it next to her);
+  - « syncs récolte le blé » (also carottes, pommes de terre, betteraves, melons, citrouilles, or
+    just « syncs récolte »): she harvests what's ripe around her, replants, and brings it to you;
+  - « syncs occupe-toi de la ferme »: she stays at the field, harvests whatever ripens, replants,
+    and stores it in the chest next to it (she needs one within 10 blocks);
   - « syncs dodo »: she goes to bed. She also goes on her own when someone does at night, since the
     night only passes when everyone sleeps.
 
   She never digs through or builds on anything on the way: when gathering, she breaks only the
-  blocks she was sent for, and takes wood only from real trees. She eats when hungry and wears the
+  blocks she was sent for, and takes wood only from real trees. The only thing she ever places is
+  a seed where she just harvested. She eats when hungry and wears the
   best armour you give her. Whisper an order (`/msg SYNCS syncs viens`) and she whispers back. Say
-  just « syncs » and she lists what she understands.
+  just « syncs » and she answers « oui ? »: your next message is heard as an order, no name needed
+  (« syncs » … « suis-moi »).
+
+  She works for one player at a time: while she's busy with your order, others are told to wait
+  and only you can stop her, for up to 10 minutes. The owner and Tata always come first. When she
+  arrives she walks up to the owner (or Tata), or to where she last saw them.
 - **On Discord** she says in the bots channel when she goes to play and when she's back.
 
 She joins nothing until the owner allows it with `/debug minecraft` (« L'autoriser à jouer »);
 the choice survives restarts, and « Lui interdire de jouer » takes her out at once.
 
 Set it up with the add-on options `minecraft_host` (empty turns it off), `minecraft_port` (leave
-25565 for an address given without a port), `minecraft_username` and `minecraft_owner` (your
-in-game name). If the server has a whitelist, add her name to it. On a Minecraft version newer than
+25565 for an address given without a port), `minecraft_username`, `minecraft_owner` (your
+in-game name) and `minecraft_tata` (Tata's in-game name). In game she talks to her family as she
+does on Discord. If the server has a whitelist, add her name to it. On a Minecraft version newer than
 the one she speaks, she connects with an older client: the server then needs the ViaBackwards
 plugin. `/debug minecraft` says so when it happens.
 
