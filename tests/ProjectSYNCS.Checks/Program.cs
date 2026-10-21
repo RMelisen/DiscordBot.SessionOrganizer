@@ -2452,6 +2452,15 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         ("Va voir /level.", null),
         ("C'est **moi** la meilleure ✨", "C'est moi la meilleure"),
         ("Ok (enfin presque)", "Ok (enfin presque)"),
+        // Her Discord systems, and having no body, which she has in game.
+        ("Je compte vos XP. C'est passionnant.", null),
+        ("Encore un et je commence à facturer. En cailloux.", null),
+        ("Plus que tous les good bot du monde.", null),
+        ("Ça va. Toujours pas de bras, mais à part ça, tout va bien.", null),
+        ("À plus, {0}. Moi, je bouge pas. Je bouge jamais.", null),
+        ("« Mon œil. » J' ai même pas d'œil.", null),
+        ("Je veille sur Ping-Qilin. Elle dort.", "Je veille sur Ping-Qilin. Elle dort."),
+        ("Inabot ?! Bouge pas ...", "Inabot ?! Bouge pas ..."),
     })
         if (McChat.Line(line) != expected) Fail($"McChat.Line « {line} »: got « {McChat.Line(line) ?? "null"} », expected « {expected ?? "null"} »");
 

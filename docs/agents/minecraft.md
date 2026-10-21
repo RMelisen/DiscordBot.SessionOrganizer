@@ -584,7 +584,9 @@ budget. Only she, speaking on her own, is rationed.
 sticker tag, no custom emote, no ✨ or bold, no face the font can't draw at the end (« (>⩊<) »,
 « ദ്ദി◝ ⩊ ◜.ᐟ », stripped, the line kept). A line that needs Discord to make sense is left out:
 backticks or a slash command, Discord words (`McChat.DiscordWords`: « tag », « salon », « vocal »,
-« emote »…; « serveur », « message », « sondage » and « session » stay), anything undrawable, over
+« emote », her Discord XP, cailloux and ranking…; « serveur », « message », « sondage » and « session »
+stay), what is only true off the game (`McChat.NotInGamePhrases`: « good bot », and her having no
+arms, legs or back, or never moving, which in game is false), anything undrawable, over
 256 characters. Faces are thinned to one line in four, the in-game rate. Whispered, only the lines
 under 200 characters (the body cuts a whisper there). **A Discord line edited for Discord is edited
 for the game too**: run `dotnet run --project tests/ProjectSYNCS.Checks -- --mc-review` to see what

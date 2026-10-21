@@ -26,6 +26,18 @@ public static partial class McChat
         "reagis", "reagir", "emote", "emotes", "emoji", "emojis", "sticker", "stickers", "dm", "dms", "mp", "mps", "vocal",
         "vocale", "vocaux", "commande", "commandes", "role", "roles", "epingle", "epingler", "notif", "notifs",
         "notification", "notifications", "scroll", "scroller", "gif", "gifs",
+        // Her Discord systems: the game has its own XP, and no cailloux, ranking, badge or avatar of hers.
+        "xp", "caillou", "cailloux", "classement", "badge", "avatar", "avatars", "slash", "reply", "clic", "clique", "cliques",
+        "cliquer", "cliquerais",
+    };
+
+    // Phrases that are only true off the game, accent-stripped and matched on whole words: Discord's feedback and other
+    // bots, and her having no body, which in game she has (square arms, legs, a back, and she moves).
+    private static readonly string[] NotInGamePhrases =
+    {
+        "good bot", "bad bot", "make it a quote", "poste ailleurs", "je dis mon age", "des tetes",
+        "pas de bras", "pas de mains", "pas de jambes", "pas de dos", "pas de corps", "pas d œil", "je bouge pas",
+        "je bouge jamais", "de la led", "avec des yeux",
     };
 
     // Discord markup that would show raw: emotes, mentions, channels, timestamps, code, strike-through, spoilers.
@@ -34,7 +46,8 @@ public static partial class McChat
     // A tag the game's font draws no glyph for, though every code point passes the check below (docs/syncs-voice.md).
     private static readonly string[] Undrawable = { "ദ്ദി◝ ⩊ ◜.ᐟ", "⩊", "👁👄👁️" };
 
-    [GeneratedRegex(@"<a?:\w+:\d+>")]
+    // With the space before it, so « plaît <:emote:1>) » becomes « plaît) ».
+    [GeneratedRegex(@"\s*<a?:\w+:\d+>")]
     private static partial Regex CustomEmote();
 
     // A slash command written without backticks: « /schedule », « /plynling feed ».
@@ -97,6 +110,8 @@ public static partial class McChat
         if (words.Where((w, i) => DiscordWords.Contains(w) && !(w == "ping" && i + 1 < words.Length && words[i + 1] == "qilin"))
                 .FirstOrDefault() is { } word)
             return $"Discord word « {word} »";
+        var padded = $" {string.Join(' ', words)} ";
+        if (NotInGamePhrases.FirstOrDefault(p => padded.Contains($" {p} ")) is { } phrase) return $"not true in game « {phrase} »";
         if (Undrawable.FirstOrDefault(clean.Contains) is { } glyph) return $"undrawable « {glyph} »";
         if (!Drawable(clean)) return "undrawable character";
         try
