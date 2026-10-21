@@ -33,8 +33,9 @@ node run.js actions          # every packet-level action, checked on the server 
 node run.js safety           # keeping a herd: named animals and babies spared, culling within its rules
 node run.js survival         # night fights, a creeper shot from range, an enderman left alone, being hit
 node run.js trip             # 250 blocks, far past the loaded chunks
-node run.js players          # following a walk, coming, guiding, losing one, seeking
-node run.js all              # all of it (about 25 minutes); exits 1 on any failure
+node run.js players          # following a walk and through the hard lanes, coming, guiding, losing one, seeking
+node run.js orders           # every order: smelting, gathering, giving, storing, every crop, a farm, a patrol
+node run.js all              # all of it (about 45 minutes); exits 1 on any failure
 ```
 
 **The Pi.** `MC_CPU_FACTOR=3.5 node run.js all` divides the pathfinder's time budgets by 3.5, about how much
@@ -50,7 +51,7 @@ Trampling and item rolls are chance: a fix for one of those passes `all` twice i
 
 - `course.js`: the lanes, one kind of terrain each, as lane-relative block commands.
 - `run.js`: building, the lanes and the other runs, the command line.
-- `actions.js`, `safety.js`, `survival.js`, `players-test.js`: the scenarios beyond the course.
+- `actions.js`, `orders.js`, `safety.js`, `survival.js`, `players-test.js`: the scenarios beyond the course.
 - `body.js` (her body as a child process), `players.js` (stand-in players), `query.js` (the world, through RCON).
 - `rcon.js`: a minimal RCON client (also usable alone: `node rcon.js "cmd" ...`).
 - `accuracy.js`: arrows needed for a creeper that can't move, at a few distances (her aim).

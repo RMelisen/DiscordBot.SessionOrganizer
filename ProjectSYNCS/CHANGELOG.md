@@ -3,6 +3,13 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.24.1 — 2026-10-21
+
+- Minecraft: gathering stone and ore: she skips blocks buried out of reach and
+  goes for the ones she can get at, and one block she can't reach no longer stops the whole order.
+- Minecraft: she no longer leaves a lump of coal or ore lying when it falls a little away from where
+  she mined.
+
 ## 7.24.0 — 2026-10-21
 
 - Minecraft: she sees a creeper coming from further off, never shoots through a player (she steps aside

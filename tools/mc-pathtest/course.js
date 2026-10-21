@@ -208,6 +208,119 @@ const lanes = [
     start: [1, 6, 0], goal: [22, 0, 0],
   },
   {
+    name: 'detour', what: 'a wall across almost the whole lane: 8 blocks sideways to its one gap',
+    build({ f }) {
+      f(3, 0, -5, 19, 2, -5, 'stone'); f(3, 0, 5, 19, 2, 5, 'stone');
+      f(10, 0, -4, 10, 2, 3, 'stone');
+    },
+    start: [1, 0, -4], goal: [22, 0, -4],
+  },
+  {
+    name: 'dead-end', what: 'a U-shaped pocket right on the straight line: around it, not into it',
+    build({ f }) {
+      f(3, 0, -5, 19, 2, -5, 'stone'); f(3, 0, 5, 19, 2, 5, 'stone');
+      f(13, 0, -3, 13, 2, 3, 'stone'); f(8, 0, -3, 13, 2, -3, 'stone'); f(8, 0, 3, 13, 2, 3, 'stone');
+    },
+    start: [1, 0, 0], goal: [22, 0, 0],
+  },
+  {
+    name: 'room', what: 'a furnished room: doors, tables, chairs, bookshelves, beds, chests, hanging lanterns',
+    build({ f, b }) {
+      f(3, 0, -4, 19, 3, 4, 'oak_planks'); f(4, 0, -3, 18, 2, 3, 'air');
+      b(3, 0, 0, 'oak_door[half=lower,facing=east]'); b(3, 1, 0, 'oak_door[half=upper,facing=east]');
+      b(19, 0, 1, 'oak_door[half=lower,facing=east]'); b(19, 1, 1, 'oak_door[half=upper,facing=east]');
+      f(4, 0, -3, 8, 1, -3, 'bookshelf');
+      b(7, 0, 0, 'oak_fence'); b(7, 1, 0, 'oak_pressure_plate'); b(8, 0, 0, 'oak_fence'); b(8, 1, 0, 'flower_pot');
+      b(6, 0, 0, 'oak_stairs[facing=east]'); b(9, 0, 0, 'oak_stairs[facing=west]');
+      b(11, 0, -2, 'red_bed[part=foot,facing=south]'); b(11, 0, -1, 'red_bed[part=head,facing=south]');
+      f(13, 0, 3, 16, 0, 3, 'chest[facing=north]'); b(14, 0, -3, 'crafting_table'); b(15, 0, -3, 'furnace[facing=south]');
+      b(12, 0, 2, 'barrel'); b(16, 0, 0, 'oak_fence'); b(16, 1, 0, 'oak_pressure_plate');
+      b(10, 2, 0, 'lantern[hanging=true]'); b(14, 2, 1, 'lantern[hanging=true]'); b(17, 2, -2, 'lantern[hanging=true]');
+      f(10, 0, 1, 12, 0, 1, 'red_carpet'); b(17, 0, 2, 'potted_fern');
+    },
+    start: [1, 0, 0], goal: [22, 0, 1],
+  },
+  {
+    name: 'holes', what: '1x1 holes to step round, then a 1-wide and a 2-wide hole across the lane to jump',
+    build({ f }) {
+      f(3, 0, -3, 19, 1, -3, 'stone'); f(3, 0, 3, 19, 1, 3, 'stone');
+      for (const dz of [-2, -1, 0, 1]) f(6, -1, dz, 6, -2, dz, 'air');
+      f(10, -1, -2, 10, -2, 2, 'air');
+      f(14, -1, -2, 15, -3, 2, 'air');
+    },
+    start: [1, 0, 0], goal: [22, 0, 0],
+  },
+  {
+    name: 'gap-up', what: 'a 1-wide path, a gap, and the far side one block higher',
+    build({ f }) {
+      f(3, -3, -5, 21, 3, 5, 'air'); f(0, -1, 0, 9, -1, 0, 'stone');
+      f(11, -1, 0, 24, 0, 0, 'stone');
+    },
+    start: [1, 0, 0], goal: [22, 1, 0],
+  },
+  {
+    name: 'slab-gap', what: 'a 1-wide path, a gap, and a half-slab landing',
+    build({ f, b }) {
+      f(3, -3, -5, 21, 3, 5, 'air'); f(0, -1, 0, 9, -1, 0, 'stone');
+      b(11, 0, 0, 'stone_slab[type=bottom]'); f(11, -1, 0, 24, -1, 0, 'stone'); f(12, 0, 0, 24, 0, 0, 'stone_slab[type=bottom]');
+    },
+    start: [1, 0, 0], goal: [22, 0, 0],
+  },
+  {
+    name: 'bridge', what: 'a 1-wide plank bridge over a 6-block drop, no rails',
+    build({ f }) {
+      f(4, -7, -5, 18, -1, 5, 'air'); f(4, -1, 0, 18, -1, 0, 'oak_planks');
+    },
+    start: [1, 0, 0], goal: [22, 0, 0],
+  },
+  {
+    name: 'ice', what: 'a 2-wide corridor of packed ice with two turns',
+    build({ f }) {
+      f(3, 0, -5, 19, 2, 5, 'stone');
+      f(3, 0, -1, 9, 1, 0, 'air'); f(8, 0, -1, 9, 1, 4, 'air'); f(8, 0, 3, 19, 1, 4, 'air');
+      f(3, -1, -1, 19, -1, 4, 'packed_ice');
+    },
+    start: [1, 0, -1], goal: [22, 0, 3],
+  },
+  {
+    name: 'stair-turns', what: 'free-standing steps up to a platform 5 high, turning twice on the way',
+    build({ f, b }) {
+      b(4, 0, 0, 'oak_stairs[facing=east]');
+      b(5, 0, 0, 'stone'); b(5, 1, 0, 'oak_stairs[facing=east]');
+      f(5, 0, -1, 5, 1, -1, 'stone'); b(5, 2, -1, 'oak_stairs[facing=north]');
+      f(5, 0, -2, 5, 2, -2, 'stone'); b(5, 3, -2, 'oak_stairs[facing=north]');
+      f(6, 0, -2, 6, 3, -2, 'stone'); b(6, 4, -2, 'oak_stairs[facing=east]');
+      f(7, 0, -3, 10, 4, -1, 'stone');
+    },
+    start: [1, 0, 0], goal: [9, 5, -2],
+  },
+  {
+    name: 'clutter', what: 'a 3-wide corridor lined with chests, pots and lanterns on alternate sides',
+    build({ f, b }) {
+      f(3, 0, -2, 19, 2, -2, 'stone'); f(3, 0, 2, 19, 2, 2, 'stone');
+      const things = ['chest[facing=south]', 'flower_pot', 'lantern', 'barrel', 'potted_cactus', 'candle[candles=2]', 'chest[facing=north]', 'lantern'];
+      things.forEach((t, i) => b(5 + 2 * i, 0, i % 2 === 0 ? -1 : 1, t));
+    },
+    start: [1, 0, 0], goal: [22, 0, 0],
+  },
+  {
+    name: 'pane-zigzag', what: 'a zigzag corridor walled with glass panes (thin walls to brush)',
+    build({ f }) {
+      f(3, 0, -3, 19, 1, 3, 'glass_pane');
+      f(3, 0, -2, 7, 1, -2, 'air'); f(7, 0, -2, 7, 1, 2, 'air'); f(7, 0, 2, 12, 1, 2, 'air'); f(12, 0, -2, 12, 1, 2, 'air');
+      f(12, 0, -2, 17, 1, -2, 'air'); f(17, 0, -2, 17, 1, 0, 'air'); f(17, 0, 0, 19, 1, 0, 'air');
+    },
+    start: [1, 0, -2], goal: [22, 0, 0],
+  },
+  {
+    name: 'fence-diagonal', what: 'fence posts on a diagonal across the lane, gaps a block wide',
+    build({ f }) {
+      f(3, 0, -4, 19, 1, -4, 'stone'); f(3, 0, 4, 19, 1, 4, 'stone');
+      for (let i = 0; i < 7; i++) if (i !== 3) f(7 + i, 0, -3 + i, 7 + i, 0, -3 + i, 'oak_fence');
+    },
+    start: [1, 0, 3], goal: [22, 0, -3],
+  },
+  {
     name: 'unreachable', what: 'the goal is on top of a 3-high pillar: she must give up, not hang',
     build({ f }) { f(12, 0, 0, 12, 2, 0, 'stone'); },
     start: [1, 0, 0], goal: [12, 3, 0], expect: 'refuse',

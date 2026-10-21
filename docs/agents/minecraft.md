@@ -141,10 +141,16 @@ list: the owner removed it.
   `gatheringMovements`: `safeToBreak` is true **only for the target blocks**, so nothing else on
   the way is ever broken. Wood is a non-stripped log with *natural* leaves within reach
   (`persistent: false`): a log in a wall has none, and placed leaves are persistent.
-  **collectblock only breaks** (`gather`): it would walk into each drop's own block and wait for it
+  **Only blocks with an open face** (`exposed`), the closest of the nearest 256: she never digs, so
+  stone under the grass is out of reach, and the closest few were all buried while a quarry face stood
+  further off. **In rounds**: what's open now, then what that opened (a trunk's top log, boxed in by
+  leaves, only opens once the logs under it are gone: she brought 12 of 16), up to the count, four
+  rounds at most, ending early on a round that broke nothing. **One block at a time** through
+  collectblock, closest first: it gave up on the whole
+  list on its 5 s search for one block it couldn't reach. **collectblock only breaks** (`gather`): it would walk into each drop's own block and wait for it
   to vanish, with no time limit, and a drop on leaves, by a fence or under something low kept her
-  there for good. The drops of what it breaks are noted instead (a patch on its `Targets`) and
-  picked up after by `pickUp`. **Blocks with no collision box** (wheat, carrots, potatoes,
+  there for good. The drops of what it breaks are noted instead, within 2 blocks of a broken block
+  (`itemDrop`; collectblock's own half-block left a lump of coal lying), and picked up after by `pickUp`. **Blocks with no collision box** (wheat, carrots, potatoes,
   beetroot) don't go to collectblock at all: it walks to where a ray from her eyes hits the block,
   a ray goes through those, and it searched for 5 s and gave up. `breakSoft` walks within 2 blocks
   of each and breaks it by hand.
@@ -702,12 +708,17 @@ server objects to; this line says what it refused.
 **Testing movement locally: `tools/mc-pathtest`.** A server's refusals and the pathfinder's mistakes
 can't be reasoned out from the code: reproduce them. The tool runs her real body against a local
 Paper with ViaVersion and ViaBackwards (the group server's pair; setup in its README): an obstacle
-course of 22 lanes (corridors, corners, stairs and slabs, fences, decorations, trapdoors, gaps, a
+course of 34 lanes (corridors, corners, stairs and slabs, fences, decorations, trapdoors, gaps, a
 low tunnel, panes, furniture, soul sand and cobwebs, a door with a turn, a ladder, leaves, water, a
-field of pillars, lava, a cliff, an unreachable goal), crossings of a ripe field, a death among
-decorations, a grove to cut, a plot to harvest, every packet-level action (`actions`), a herd to
-keep (`safety`), night fights and dangers (`survival`), a long trip, and players to follow, come to,
-guide, lose and seek (`players`). Everything is checked on the server's side, never on what she says.
+field of pillars, lava, a cliff, a long wall to go round, a dead-end pocket, a furnished room, holes
+to step round and to jump, a gap up and one onto a slab, a railless bridge, ice, turning stairs, a
+cluttered corridor, a pane zigzag, a diagonal of fence posts, an unreachable goal), crossings of a
+ripe field, a death among decorations, a grove to cut, a plot to harvest, every packet-level action
+(`actions`), every order (`orders`: smelting each kind and its refusals, gathering stone, coal,
+iron and sand, handing over by kind, a full chest, every crop, a farm, a patrol, where/mark/sit), a
+herd to keep (`safety`), night fights and dangers (`survival`), a long trip, and players to follow
+(across open ground and through the room, the holes and the zigzag), come to, guide, lose and seek
+(`players`). Everything is checked on the server's side, never on what she says.
 A lane passes only with no server correction (`MC_TRACE_MOVES` logs every one) and no damage. **Run `node run.js all` before shipping a movement change**, twice for a fix to
 something chance-driven (trampling, rolling items), and add a lane or a spot for every snag found
 in the wild. Accepting the Minecraft EULA for the test server is the owner's call.
