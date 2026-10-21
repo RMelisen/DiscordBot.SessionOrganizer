@@ -3,6 +3,17 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.31.0 — 2026-10-21
+
+- Minecraft: she defends anyone near her who gets attacked by a monster, not only her family, and
+  she leaves what she was doing to help: gathering, harvesting or a walk somewhere is picked up
+  again after the fight, with what she had already gathered still handed over.
+- Minecraft: she harvests crops by hand instead of with the axe or sword she was holding (melons
+  and pumpkins still get the axe).
+- Minecraft: she no longer gets stuck beside a ladder she walks up to from the side.
+- Minecraft: handing over a harvest with seeds left over works again; she used to give one item and
+  keep the rest.
+
 ## 7.30.0 — 2026-10-21
 
 - Minecraft: she follows you through a nether portal, and back. She tells you she's coming, finds

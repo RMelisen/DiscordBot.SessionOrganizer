@@ -8,7 +8,7 @@
 // Environment (the C# side clears everything else, so the Discord token never reaches us):
 //   MC_HOST, MC_PORT, MC_USERNAME
 //   MC_TRACE_MOVES=1: every server correction logged (tools/mc-pathtest only)
-//   MC_TRACE_PATHS=1: every slow or unfinished path search logged (tools/mc-pathtest only)
+//   MC_TRACE_PATHS=1: every slow or unfinished path search logged; =all: every path, node by node (tools/mc-pathtest only)
 //   MC_CPU_FACTOR=n: the pathfinder's time budgets divided by n, as on a CPU n times slower (tools/mc-pathtest only)
 //
 // In:  {"op":"say","text":"…"} · {"op":"whisper","player":"…","text":"…"} · {"op":"quit"}
@@ -68,6 +68,7 @@ const mineflayer = require('mineflayer');
 const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
 const { plugin: collectBlock } = require('mineflayer-collectblock');
 const { Targets: CollectTargets } = require('mineflayer-collectblock/lib/Targets');
+const Move = require('mineflayer-pathfinder/lib/move');
 const mc = require('minecraft-protocol');
 const minecraftData = require('minecraft-data');
 const { Vec3 } = require('vec3');
@@ -1056,7 +1057,9 @@ function itemCounts() {
   return counts;
 }
 
-async function collect(player, resource, count) {
+// `since`: started again after a fight (restartOrder), from the pockets as they were when the order first came, so
+// what she had gathered before still counts and is handed over; no second « collecting ».
+async function collect(player, resource, count, since = null) {
   const matches = Resources[resource];
   if (!matches) return;
   const ids = bot.registry.blocksArray.filter((b) => matches(b.name)).map((b) => b.id);
@@ -1075,13 +1078,17 @@ async function collect(player, resource, count) {
   if (!canHarvest(first.open[0])) return emit('cantCollect', { player, resource, why: 'noTool' });
   stay();
 
-  const before = itemCounts();
-  const mine = { kind: 'collect', player };
+  const before = since || itemCounts();
+  const counted = (type) => Yields[resource](bot.registry.items[type].name);
+  const mine = { kind: 'collect', player, before };
   task = mine;
-  emit('collecting', { player, resource, count: Math.min(count, first.all.length) });
+  if (!since) emit('collecting', { player, resource, count: Math.min(count, first.all.length) });
   // In rounds: what's open now, then what that opened (a trunk's top log, boxed in by leaves, only opens once the
   // logs under it are gone: she brought 12 of 16), until the count, nothing open, or a round that broke nothing.
-  let left = count;
+  // Started again, what she already has of it counts towards the count.
+  const already = [...itemCounts()].filter(([type]) => counted(type))
+    .reduce((sum, [type, n]) => sum + Math.max(0, n - (before.get(type) || 0)), 0);
+  let left = count - already;
   let open = first.open;
   for (let round = 0; round < 4 && left > 0 && open.length > 0 && task === mine; round++) {
     const batch = open.slice(0, left);
@@ -1096,7 +1103,7 @@ async function collect(player, resource, count) {
   }
   if (task !== mine) return; // told to stop in the meantime
 
-  const { total, delivered } = await deliverGains(player, before, (type) => Yields[resource](bot.registry.items[type].name));
+  const { total, delivered } = await deliverGains(player, before, counted);
   if (task === mine) task = null;
   emit('collected', { player, resource, count: total, delivered });
 }
@@ -1154,8 +1161,23 @@ async function gather(blocks, mine, what) {
   if (task === mine && drops.size > 0) await pickUp((e) => drops.has(e.id), Math.min(60000, drops.size * PickUpTry), mine);
 }
 
+// No tool in her hand: crops break at a touch, so by hand, the way a player does it (she harvested a field with the
+// axe from her last order still out). Holding seeds or bread is as good as a hand. An empty hotbar slot, else one with
+// no tool in it; only the hotbar is switched, never the pockets rearranged (unequipping with a full hotbar moved
+// things by window clicks, and her inventory went out of step with the server's: no seed to replant, none to hand
+// over). Melons and pumpkins are solid and go to collectblock, which takes the axe.
+const Cuts = /_(axe|pickaxe|shovel|hoe|sword)$|^(shears|trident|mace)$/;
+
+function emptyHand() {
+  if (!bot.heldItem || !Cuts.test(bot.heldItem.name)) return;
+  const hotbar = bot.inventory.slots.slice(bot.inventory.hotbarStart, bot.inventory.hotbarStart + 9);
+  let i = hotbar.findIndex((item) => !item);
+  if (i < 0) i = hotbar.findIndex((item) => !Cuts.test(item.name));
+  if (i >= 0) bot.setQuickBarSlot(i);
+}
+
 // The blocks with no collision box, the closest first: within 2 blocks of each (PickUpTry to get there), broken by
-// hand. What falls from them goes in `drops`.
+// hand (emptyHand). What falls from them goes in `drops`.
 async function breakSoft(blocks, mine, drops) {
   const left = [...blocks];
   const noteDrop = (entity) => {
@@ -1175,7 +1197,10 @@ async function breakSoft(blocks, mine, drops) {
           wait(PickUpTry).then(() => { throw new Error('too slow'); }),
         ]);
         const now = bot.blockAt(p);
-        if (task === mine && now && now.type === target.type) await bot.dig(now, true);
+        if (task === mine && now && now.type === target.type) {
+          emptyHand();
+          await bot.dig(now, true);
+        }
       } catch {
         if (task === mine) bot.pathfinder.setGoal(null); // out of reach, or too slow: the next one
       }
@@ -1199,7 +1224,17 @@ async function deliverGains(player, before, counts = () => true) {
     try {
       await bot.pathfinder.goto(new goals.GoalNear(owner.position.x, owner.position.y, owner.position.z, 2));
       await bot.lookAt(owner.position.offset(0, 1.6, 0), true);
-      for (const [type, n] of gained) await bot.toss(type, null, n);
+      // Whole stacks only, the smallest first: toss() with a count drops one item per click, and on 26.1 only the first
+      // landed while her inventory went out of step with the server's (1 wheat of 25 reached Papa, then the seeds
+      // were « not found »). A stack that's partly hers from before stays whole with her.
+      for (const [type, n] of gained) {
+        let left = n;
+        for (const stack of bot.inventory.items().filter((i) => i.type === type).sort((a, b) => a.count - b.count)) {
+          if (stack.count > left) continue;
+          await bot.tossStack(stack);
+          left -= stack.count;
+        }
+      }
       delivered = true;
     } catch (err) {
       log('delivery failed:', err && err.message ? err.message : String(err));
@@ -1269,10 +1304,13 @@ async function harvestBlocks(found, mine) {
     const soil = bot.blockAt(block.position.offset(0, -1, 0));
     const above = bot.blockAt(block.position);
     if (!soil || soil.name !== 'farmland' || !above || above.name !== 'air') continue;
-    const seed = bot.inventory.items().find((i) => i.name === crop.seed);
-    if (!seed) continue;
+    if (!bot.inventory.items().some((i) => i.name === crop.seed)) continue;
     try {
       await bot.pathfinder.goto(new goals.GoalNear(block.position.x, block.position.y, block.position.z, 3));
+      // The stack as it is now: picked before the walk, it had moved (what she picked up on the way), and she placed
+      // with an empty hand (« must be holding an item to place »).
+      const seed = bot.inventory.items().find((i) => i.name === crop.seed);
+      if (!seed) continue;
       await bot.equip(seed, 'hand');
       await bot.placeBlock(soil, new Vec3(0, 1, 0));
       replanted++;
@@ -1284,14 +1322,15 @@ async function harvestBlocks(found, mine) {
 }
 
 // « syncs récolte le blé »: harvest what's ripe around her, replant, and bring it to the player.
-async function harvest(player, key) {
+// `since`: as for collect.
+async function harvest(player, key, since = null) {
   const found = findRipe(cropsFor(key), bot.entity.position, HarvestRadius);
   if (found.length === 0) return emit('cantHarvest', { player, crop: key, why: 'none' });
   stay();
-  const before = itemCounts();
-  const mine = { kind: 'harvest', player };
+  const before = since || itemCounts();
+  const mine = { kind: 'harvest', player, before };
   task = mine;
-  emit('harvesting', { player, crop: key, count: found.length });
+  if (!since) emit('harvesting', { player, crop: key, count: found.length });
   const replanted = await harvestBlocks(found, mine);
   if (task !== mine) return; // told to stop in the meantime
 
@@ -1992,17 +2031,22 @@ function fleeTick() {
   resumeAfterBreak(done.resume);
 }
 
-// What running away or defending someone goes back to: an activity, or a follow or guard. Never her own: autonomy
-// picks again by itself once she's free.
+// What running away or defending someone goes back to: an activity, a follow or guard, or an order she can start again
+// (Restartable: gathering, harvesting, a walk somewhere). Never her own: autonomy picks again by itself once she's free.
 function resumeFor(previous) {
+  if (previous && previous.kind === 'back') return { again: previous.again }; // on her way back to one already
+  if (previous && !previous.own && previous.command && Restartable.has(previous.kind))
+    return { restart: previous.command, at: bot.entity.position.clone(), before: previous.before || null };
   const kept = pausedActivity(previous) || (previous && FollowsSomeone.has(previous.kind) ? previous : null);
   return kept && !kept.own ? kept : null;
 }
 
-// After running away or defending someone: back to the activity, or to the player she was following or guarding,
-// if she still sees them.
+// After running away or defending someone: back to the activity, to the player she was following or guarding if she
+// still sees them, or to the order she was given.
 function resumeAfterBreak(resume) {
   if (!resume) return;
+  if (resume.again) return resume.again();
+  if (resume.restart) return restartOrder(resume);
   if (isActivity(resume)) return resumeActivity(resume);
   const target = playerEntity(resume.player);
   if (!target) return emit('cantReach', { player: resume.player, why: 'lost' });
@@ -2010,14 +2054,39 @@ function resumeAfterBreak(resume) {
   bot.pathfinder.setGoal(new goals.GoalFollow(target, 2), true);
 }
 
-// ---- Defending her family ----------------------------------------------------------------------------
+// The orders a fight (or running away) can interrupt and start again, by the command that started them. Gathering and
+// harvesting look around where she stands, so she first walks back to where she stopped (BackFor at most), then the
+// same command runs again from the same pockets (`since`): what she had already gathered still counts.
+const Restartable = new Set(['collect', 'harvest', 'come', 'goto', 'guide']);
+const BackFor = 20000;
 
-// C# sends her family's in-game names on spawn (`family`); hits on anyone else don't concern her. A monster hitting
-// one of them, she fights it herself, saying nothing. A player hitting one of them is reported (`familyHurt`) and
-// C# decides what comes of it: a word, one hit back (`defend` with swat), then a fight. Either way she only goes
-// when she's free: no order under way, an activity, or following or guarding that very person, and she goes back
-// to it after. Busy with someone's order, she answers `cantDefend` and C# keeps to words. She never hits family or
-// a creeper, and breaks off below RetreatHealth.
+function restartOrder(r) {
+  const from = r.at;
+  const again = () => dispatch({ ...r.restart, since: r.before });
+  if (!from || bot.entity.position.distanceTo(from) <= 3 || !['collect', 'harvest'].includes(r.restart.op)) return again();
+  task = { kind: 'back', player: r.restart.player, again, until: Date.now() + BackFor };
+  bot.pathfinder.setGoal(new goals.GoalNear(from.x, from.y, from.z, 2));
+}
+
+// Every physics tick on the way back: there (or out of time, or no way), and the order starts again.
+function backTick() {
+  const t = task;
+  if (!t || t.kind !== 'back') return;
+  if (bot.pathfinder.isMoving() && Date.now() < t.until) return;
+  task = null;
+  bot.pathfinder.setGoal(null);
+  t.again();
+}
+
+// ---- Defending ---------------------------------------------------------------------------------------
+
+// A monster hitting a player within DefendRadius of her, anyone, she fights it herself, saying nothing: someone near her
+// getting hurt is hers to help, whatever she was doing. A player hitting her family (C# sends their in-game names on
+// spawn, `family`) is reported (`familyHurt`) and C# decides what comes of it: a word, one hit back (`defend` with
+// swat), then a fight. She goes when free, during an activity, following or guarding anyone, or busy with an order she
+// can start again (Restartable), and she goes back to it after (resumeFor). Only what's over in seconds or can't be
+// left (smelting at a furnace, handing over, storing, a bed, a portal, running away) keeps her, and C# keeps to words
+// (`cantDefend`). She never hits family or a creeper, and breaks off below RetreatHealth.
 let family = new Set();
 const DefendRadius = 16;
 const DefendMobFor = 20000;
@@ -2028,16 +2097,16 @@ function isFamily(name) {
   return Boolean(name) && family.has(String(name).toLowerCase());
 }
 
-function canDefend(victim) {
+function canDefend() {
   if (bot.isSleeping) return false;
-  if (isFree(task) || task.kind === 'defend' || isActivity(task)) return true;
-  return FollowsSomeone.has(task.kind) && String(task.player).toLowerCase() === String(victim).toLowerCase();
+  if (isFree(task) || ['defend', 'back'].includes(task.kind) || isActivity(task) || FollowsSomeone.has(task.kind)) return true;
+  return Boolean(task.command) && Restartable.has(task.kind);
 }
 
 // True when she takes it on.
 function defend(foe, victim, swat) {
   if (!foe || foe.isValid === false || foe.name === 'creeper' || (foe.type === 'player' && isFamily(foe.username))) return false;
-  if (!canDefend(victim) || foe.position.distanceTo(bot.entity.position) > DefendRadius || headUnder(foe)) return false;
+  if (!canDefend() || foe.position.distanceTo(bot.entity.position) > DefendRadius || headUnder(foe)) return false;
   const lasts = swat ? SwatFor : foe.type === 'player' ? DefendFightFor : DefendMobFor;
   if (task && task.kind === 'defend') {
     // Already at it: a new attacker takes over, and a fight never shrinks back to one hit.
@@ -3455,6 +3524,7 @@ function attach() {
   });
   bot.on('physicsTick', guideTick);
   bot.on('physicsTick', safely(portalTick));
+  bot.on('physicsTick', safely(backTick));
   bot.on('physicsTick', doorTick);
   bot.on('physicsTick', safely(freeTick));
   bot.on('physicsTick', safely(idleTick));
@@ -3486,9 +3556,11 @@ function attach() {
   bot.on('dismount', () => { riding = null; });
   // The path she's walking, for the doors on it; closing behind her needs none.
   bot.on('path_update', (result) => setPath(result.status === 'noPath' ? [] : result.path));
-  if (process.env.MC_TRACE_PATHS === '1')
+  if (process.env.MC_TRACE_PATHS === '1' || process.env.MC_TRACE_PATHS === 'all')
     bot.on('path_update', (r) => {
-      if (r.status !== 'success' || r.time > 200) log(`path ${r.status} in ${Math.round(r.time)} ms, ${r.visitedNodes} nodes visited`);
+      if (process.env.MC_TRACE_PATHS === 'all')
+        log(`path ${r.status}: ${r.path.map((n) => `${n.x.toFixed(1)},${n.y},${n.z.toFixed(1)}`).join(' ')}`);
+      else if (r.status !== 'success' || r.time > 200) log(`path ${r.status} in ${Math.round(r.time)} ms, ${r.visitedNodes} nodes visited`);
     });
   bot.on('goal_reached', () => setPath([]));
   bot.on('path_stop', () => setPath([]));
@@ -3549,6 +3621,7 @@ function attach() {
   // may walk somewhere reachable) but say so only once per order. Gathering and sleeping handle their
   // own paths.
   bot.on('path_update', (result) => {
+    climbFromTheFoot(result.path);
     if (result.status === 'timeout') timedOut = { goal: bot.pathfinder.goal, from: bot.entity.position.clone() };
     if (result.status === 'noPath' || (result.status === 'timeout' && stalledSearch(result))) noWay();
   });
@@ -3611,10 +3684,10 @@ function attach() {
         && e.position.distanceTo(bot.entity.position) < 4.5);
       return emit('hurt', { by: near ? near.username : null });
     }
-    if (!exact || !source || source === bot.entity || entity.type !== 'player' || !isFamily(entity.username)) return;
+    if (!exact || !source || source === bot.entity || entity.type !== 'player') return;
     if (source.type === 'player') {
-      if (!isFamily(source.username)) emit('familyHurt', { victim: entity.username, by: source.username });
-    } else if (isFoe(source)) {
+      if (isFamily(entity.username) && !isFamily(source.username)) emit('familyHurt', { victim: entity.username, by: source.username });
+    } else if (isFoe(source) && entity.position.distanceTo(bot.entity.position) <= DefendRadius) {
       defend(source, entity.username, false);
     }
   });
@@ -3925,7 +3998,7 @@ function noWay() {
   if (task.reported) return;
   // Following someone who dived: no path under water, and the dive (waterTick) goes after them instead.
   if (FollowsSomeone.has(task.kind) && headUnder(playerEntity(task.player))) return;
-  if (['collect', 'sleep', 'harvest', 'farm', 'give', 'store', 'fish', 'smelt', 'patrol', 'forage', 'ranch', 'tagAlong', 'home']
+  if (['collect', 'sleep', 'harvest', 'farm', 'give', 'store', 'fish', 'smelt', 'patrol', 'forage', 'ranch', 'tagAlong', 'home', 'back']
     .includes(task.kind)) return;
   // Her own: a place she can't walk to is left out for a while; her things, given up.
   if (task.kind === 'trip') {
@@ -4015,6 +4088,33 @@ function goto(goal) {
   });
 }
 
+// The pathfinder lifts a climb's first node to the top of the ladder's plate (getPositionOnTopOf). Walking into the plate
+// from the front, she climbs; walking along the wall into the ladder's block from its side she wasn't pushing against
+// it, the step up couldn't be simulated, and the pathfinder let go of every key and planned the same again: stuck for
+// good beside the ladder. Barring the side entry would close a corridor with a ladder on its wall, so the path gets back
+// the step into the ladder's foot instead: in it first, then up, facing the plate as from the front. In place: the
+// pathfinder walks the very array it hands out in path_update.
+const Facing = { west: [1, 0], east: [-1, 0], north: [0, 1], south: [0, -1] }; // the way into a ladder, towards its wall
+
+function climbFromTheFoot(path) {
+  for (let i = 0; i < path.length; i++) {
+    const n = path[i];
+    const prev = i > 0 ? path[i - 1] : bot.entity.position; // a new search starts where she stands
+    const foot = bot.blockAt(new Vec3(Math.floor(n.x), Math.floor(n.y) - 1, Math.floor(n.z)));
+    if (!foot || foot.name !== 'ladder' || Math.floor(prev.y) !== foot.position.y) continue;
+    const dx = foot.position.x - Math.floor(prev.x);
+    const dz = foot.position.z - Math.floor(prev.z);
+    const into = Facing[foot.getProperties().facing];
+    if (Math.abs(dx) + Math.abs(dz) !== 1 || !into || (into[0] === dx && into[1] === dz)) continue; // head-on: fine
+    // The foot's centre: at the climb's own x/z, pressed to the plate, her box overlapped it and the step failed too.
+    const step = new Move(foot.position.x, foot.position.y, foot.position.z, n.remainingBlocks, 0);
+    step.x = foot.position.x + 0.5;
+    step.z = foot.position.z + 0.5;
+    path.splice(i, 0, step);
+    i++;
+  }
+}
+
 // The ops that are a player's order (the rest are words, questions, or C#'s own business).
 const OrderOps = new Set(['come', 'follow', 'goto', 'guide', 'give', 'store', 'fish', 'patrol', 'smelt', 'guard', 'collect',
   'sleep', 'harvest', 'farm', 'ranch']);
@@ -4028,6 +4128,11 @@ input.on('line', (line) => {
     log('bad command:', line);
     return;
   }
+  dispatch(command);
+});
+
+// One command, from C# or an order she starts again after a fight (restartOrder).
+function dispatch(command) {
   try {
     switch (command.op) {
       case 'say':
@@ -4105,7 +4210,7 @@ input.on('line', (line) => {
         break;
       case 'collect':
         if (bot && typeof command.player === 'string' && typeof command.resource === 'string')
-          collect(command.player, command.resource, Math.max(1, Math.min(64, Number(command.count) || 10)))
+          collect(command.player, command.resource, Math.max(1, Math.min(64, Number(command.count) || 10)), command.since || null)
             .catch((err) => log('collect failed:', err && err.message ? err.message : String(err)));
         break;
       case 'sleep':
@@ -4114,7 +4219,7 @@ input.on('line', (line) => {
         break;
       case 'harvest':
         if (bot && typeof command.player === 'string' && typeof command.crop === 'string')
-          harvest(command.player, command.crop).catch((err) => log('harvest failed:', err && err.message ? err.message : String(err)));
+          harvest(command.player, command.crop, command.since || null).catch((err) => log('harvest failed:', err && err.message ? err.message : String(err)));
         break;
       case 'farm':
         if (bot && typeof command.player === 'string') farm(command.player);
@@ -4167,10 +4272,12 @@ input.on('line', (line) => {
     }
     // An order under way lets her go after « reste » or « assis ».
     if (bot && OrderOps.has(command.op) && isOrder(task)) heldUntil = 0;
+    // What a fight can interrupt and start again: the command that started the order now under way.
+    if (Restartable.has(command.op) && task && task.kind === command.op && !task.command) task.command = command;
   } catch (err) {
     log('command failed:', err && err.message ? err.message : String(err));
   }
-});
+}
 
 // The C# side went away (crash, restart): leave the server rather than idle in it unattended.
 input.on('close', () => {

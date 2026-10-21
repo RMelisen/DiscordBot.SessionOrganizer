@@ -325,6 +325,32 @@ const lanes = [
     build({ f }) { f(12, 0, 0, 12, 2, 0, 'stone'); },
     start: [1, 0, 0], goal: [12, 3, 0], expect: 'refuse',
   },
+  // Ladders met from the side, not head-on: a 4-high platform with a ladder on its west face. Walking along the wall
+  // into the ladder's block, the thin plate is edge-on to her; rounding the corner, it's right against the wall.
+  {
+    name: 'ladder-side', what: 'a 4-high ladder walked into from its side, along the wall',
+    build({ f }) {
+      f(10, 0, -2, 14, 3, 2, 'stone');
+      f(9, 0, 0, 9, 3, 0, 'ladder[facing=west]');
+    },
+    start: [9, 0, -4], goal: [12, 4, 0],
+  },
+  {
+    name: 'ladder-corner', what: 'the same ladder, reached round the corner of the platform',
+    build({ f }) {
+      f(10, 0, -2, 14, 3, 2, 'stone');
+      f(9, 0, 0, 9, 3, 0, 'ladder[facing=west]');
+    },
+    start: [12, 0, -4], goal: [12, 4, 0],
+  },
+  {
+    name: 'ladder-passing', what: 'a 1-wide corridor with a ladder on its wall, walked through, not climbed',
+    build({ f }) {
+      f(3, 0, -1, 19, 3, -1, 'stone'); f(3, 0, 1, 19, 3, 1, 'stone');
+      f(10, 0, 0, 10, 2, 0, 'ladder[facing=north]');
+    },
+    start: [1, 0, 0], goal: [22, 0, 0],
+  },
 ];
 
 // The whole course's block commands, lane by lane: ground and air reset first, then the lane's own blocks.

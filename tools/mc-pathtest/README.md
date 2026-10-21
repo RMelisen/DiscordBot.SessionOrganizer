@@ -78,6 +78,8 @@ between them.
 - `course.js`: the lanes, one kind of terrain each, as lane-relative block commands.
 - `run.js`: building, the lanes and the other runs, the command line.
 - `actions.js`, `orders.js`, `safety.js`, `survival.js`, `players-test.js`: the scenarios beyond the course.
+- `survival.js` also has a monster biting a stranger (`stranger`), the same bite while she harvests a field for Papa
+  (`midharvest`: she fights, goes back, finishes and hands everything over) and the harvest alone (`harvestpapa`).
 - `wild.js` (a generated world: biomes, wild orders, the Nether, a portal) and `lag.js` (the delaying relay).
 - `chat-test.js` and `../mc-chattest` (the service alone, writing every pool to `pools.json`): her chat in game.
 - `body.js` (her body as a child process), `players.js` (stand-in players), `query.js` (the world, through RCON).

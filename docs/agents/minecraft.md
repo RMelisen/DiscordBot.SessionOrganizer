@@ -139,7 +139,10 @@ list: the owner removed it.
 - **Collect** (`mineflayer-collectblock`) finds the requested blocks within 48 blocks, checks she
   can harvest them (with what she carries, or by hand; ores and stone need a pickaxe, `noTool`),
   breaks them, then walks back and tosses what she gained (an inventory diff) at the player's
-  feet. collectblock asks the pathfinder's movements before breaking anything, so it gets
+  feet, **whole stacks only** (`deliverGains`): `toss` with a count drops one item per click, and
+  on 26.1 only the first landed while her inventory went out of step with the server's (one wheat
+  of 25 reached Papa, then the seeds were « not found »). A stack partly hers from before stays with
+  her. collectblock asks the pathfinder's movements before breaking anything, so it gets
   `gatheringMovements`: `safeToBreak` is true **only for the target blocks and the tree's own
   natural leaves within 2 of a target log**, so nothing else on the way is ever broken. A log
   wrapped in leaves has an open face (its top, the far side) but none she can see from where she
@@ -161,7 +164,11 @@ list: the owner removed it.
   (`itemDrop`; collectblock's own half-block left a lump of coal lying), and picked up after by `pickUp`. **Blocks with no collision box** (wheat, carrots, potatoes,
   beetroot) don't go to collectblock at all: it walks to where a ray from her eyes hits the block,
   a ray goes through those, and it searched for 5 s and gave up. `breakSoft` walks within 2 blocks
-  of each and breaks it by hand.
+  of each and breaks it **by hand** (`emptyHand`): a tool from her last order (an axe, a sword) is
+  put away by switching the hotbar to an empty slot or one without a tool, never by moving her
+  pockets (window clicks put her inventory out of step with the server's). Melons and pumpkins are
+  solid, go to collectblock, and get the axe. Replanting picks the seed stack after the walk to the
+  patch, not before: pickups on the way moved it, and she placed with an empty hand.
 - **Picking items up** (`pickUp`, `GoalPickUp`): a player picks up what touches their box grown by a
   block sideways and half a block up and down, so the goal is « within that reach », not « within a
   block of it » (`GoalNear` in whole blocks never allowed an item on a fence post, on a pillar's
@@ -359,7 +366,14 @@ list: the owner removed it.
   on the local server (*Testing movement locally*): doors closed and open, both hinges, both ways, a
   door set across the wall, and a fence gate, each crossed and left as found.
 - **Ladders** are the pathfinder's own: it climbs up and down them, a 10-rung shaft included, and
-  she follows someone up and down one (checked on the local server).
+  she follows someone up and down one (checked on the local server). **From the side**
+  (`climbFromTheFoot`): the pathfinder lifts a climb's first node to the top of the ladder's plate,
+  which works walking into the plate; walking along the wall into the ladder's block, she wasn't,
+  the step couldn't be simulated, and it let go of every key and planned the same again, stuck
+  beside the ladder for good. Each `path_update` gets back the step into the ladder's foot (its
+  centre: at the plate her box overlapped it) before such a node, in place, since the pathfinder
+  walks the array it hands out. Barring side entry instead would close a corridor with a ladder on
+  its wall (`ladder-passing`).
 - **Trapdoors** the pathfinder takes for full blocks; `gentleMovements` corrects it. An open one is
   a panel on one edge: passable along that edge, a wall when it stands across her way (`panelSide`),
   and a route point lifted onto its panel comes back down like a door's. A closed one in the top half
@@ -715,11 +729,17 @@ catches everything; nothing escapes the loop.
   up again after; a one-off order is dropped and its player told why (`dropped` →
   `McFleeDroppedLines`), unless they're the attacker. She sprints only while her food bar is above
   6, so she runs better when she has something to eat.
-- **She defends Papa and Tata.** The service sends their names on spawn (`family`); the same
-  `damage_event` tells her who hurts them, as long as they're in her sight. Only when she's
-  **free**: no order under way, an activity, or following or guarding that very person; she goes back
-  to it after (`resumeAfterBreak`, shared with running away). She never hits family, nor a creeper.
-  - **A monster** hitting one of them within 16 blocks of her: she fights it, for up to 20 s,
+- **She defends whoever a monster hurts near her, and Papa and Tata against players.** The same
+  `damage_event` tells her who hurts whom, as long as they're in her sight. She goes when free, during
+  an activity, following or guarding anyone, or busy with an order she can start again
+  (`Restartable`: collect, harvest, come, goto, guide), and goes back to it after (`resumeFor`,
+  `resumeAfterBreak`, shared with running away). Gathering and harvesting look around where she
+  stands, so she first walks back to where she stopped (`back`, 20 s at most), then the same
+  command runs again from the pockets as they were (`since`): what she cut before the fight still
+  counts and is handed over, with no second acknowledgement. Only what's over in seconds or can't be
+  left keeps her (a furnace, handing over, storing, a bed, a portal, running away). She never hits
+  family, nor a creeper.
+  - **A monster** hitting any player within 16 blocks of her: she fights it, for up to 20 s,
     silently. Body-only, like eating.
   - **A player** hitting one of them is the owner's three steps, by that player's streak
     (`McHitStreaks.Tally`, same one-minute window, `DefendStage`, walked by the checks): the first
@@ -854,11 +874,12 @@ says what it refused.
 **Testing movement locally: `tools/mc-pathtest`.** A server's refusals and the pathfinder's mistakes
 can't be reasoned out from the code: reproduce them. The tool runs her real body against a local
 Paper with ViaVersion and ViaBackwards (the group server's pair; setup in its README): an obstacle
-course of 34 lanes (corridors, corners, stairs and slabs, fences, decorations, trapdoors, gaps, a
+course of 37 lanes (corridors, corners, stairs and slabs, fences, decorations, trapdoors, gaps, a
 low tunnel, panes, furniture, soul sand and cobwebs, a door with a turn, a ladder, leaves, water, a
 field of pillars, lava, a cliff, a long wall to go round, a dead-end pocket, a furnished room, holes
 to step round and to jump, a gap up and one onto a slab, a railless bridge, ice, turning stairs, a
-cluttered corridor, a pane zigzag, a diagonal of fence posts, an unreachable goal), crossings of a
+cluttered corridor, a pane zigzag, a diagonal of fence posts, an unreachable goal, ladders met from
+the side, round a corner and passed by in a corridor), crossings of a
 ripe field, a death among decorations, a grove to cut, a plot to harvest, every packet-level action
 (`actions`), every order (`orders`: smelting each kind and its refusals, gathering stone, coal,
 iron and sand, handing over by kind, a full chest, every crop, a farm, a patrol, where/mark/sit), a

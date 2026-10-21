@@ -20,6 +20,8 @@ const { safety, scenery, GroveScenery } = require('./safety');
 const { survival } = require('./survival');
 const { playersTest } = require('./players-test');
 const { orders } = require('./orders');
+const { standIn } = require('./players');
+const { carried } = require('./query');
 
 // ---- Building ----------------------------------------------------------------------------------------
 
@@ -249,7 +251,17 @@ async function harvestTest() {
     `kill @e[type=item,x=${x1 + 2},y=-60,z=${z1 + 2},distance=..10]`, `clear ${Name}`]);
   const body = startBody();
   await spawned(body);
-  await rcon.run([`clear ${Name}`, `tp ${Name} ${x1 - 2.5} -60 ${z1 + 2.5}`]);
+  // An axe in her hand from some earlier order: crops are broken by hand all the same. A watcher notes what she holds
+  // each time a stalk breaks.
+  await rcon.run([`clear ${Name}`, `tp ${Name} ${x1 - 2.5} -60 ${z1 + 2.5}`, `item replace entity ${Name} weapon.mainhand with iron_axe`]);
+  const watcher = await standIn('Watcher');
+  await rcon.run([`tp Watcher ${x1 + 2.5} -57 ${z2 + 3.5}`, 'gamemode spectator Watcher']);
+  const heldAtBreak = [];
+  watcher.on('blockUpdate', (old, now) => {
+    if (!old || old.name !== 'wheat' || (now && now.name === 'wheat')) return;
+    const her = watcher.players[Name] && watcher.players[Name].entity;
+    heldAtBreak.push(her && her.heldItem ? her.heldItem.name : 'hand');
+  });
   await wait(5000); // a long teleport: the plot's chunks have to reach her first
   const started = Date.now();
   body.send({ op: 'harvest', player: 'tester', crop: 'wheat' });
@@ -265,9 +277,15 @@ async function harvestTest() {
     const [where2] = await rcon.run([`execute as @e[type=item,x=${x1 + 2},y=-60,z=${z1 + 2},distance=..8] run data get entity @s Pos`]);
     console.log('      left lying at', where2.replace(/has the following entity data: /g, ''));
   }
+  const axeKept = await carried(Name, 'iron_axe');
+  await watcher.leave();
   await body.quit();
-  const ok = Boolean(done && done.ev === 'harvested') && ripe === 0 && trampled === 0 && lying === 0 && planted >= 20;
-  console.log(`${ok ? 'PASS' : 'FAIL'}  harvest: ${done ? JSON.stringify(done) : 'never finished (stuck?)'} in ${secs} s; ripe left ${ripe}, replanted ${planted}/24, trampled ${trampled}, items lying ${lying}`);
+  // Seeds in hand is the replanting after the stalk broke; anything that cuts is not a hand.
+  const tooled = heldAtBreak.filter((h) => /_(axe|pickaxe|shovel|hoe|sword)$/.test(h));
+  const ok = Boolean(done && done.ev === 'harvested') && ripe === 0 && trampled === 0 && lying === 0 && planted >= 20
+    && heldAtBreak.length > 0 && tooled.length === 0 && axeKept === 1;
+  console.log(`${ok ? 'PASS' : 'FAIL'}  harvest: ${done ? JSON.stringify(done) : 'never finished (stuck?)'} in ${secs} s; ripe left ${ripe}, replanted ${planted}/24, trampled ${trampled}, items lying ${lying}; ` +
+    `${heldAtBreak.length} stalks broken, ${tooled.length} with a tool (${[...new Set(heldAtBreak)].join(', ')}), axe kept ${axeKept}`);
   for (const l of body.logs) if (/stopped|failed/.test(l)) console.log('      ', l);
   return ok;
 }

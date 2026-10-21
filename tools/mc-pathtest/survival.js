@@ -174,6 +174,61 @@ async function defendPapa() {
   await end(sc, 'defend');
 }
 
+// A monster bites someone near her who isn't family: she goes for it. The bite is the server's own (/damage … by the
+// zombie: the same damage_event a real bite sends), so it lands on the stranger and nobody else; the zombie has no AI
+// and stays put, so the fight is hers to start.
+async function bite(victim, at) {
+  await rcon.run([`summon zombie ${at} {NoAI:1b,PersistenceRequired:1b,Tags:["bite"]}`, `effect give ${victim} resistance 600 2 true`]);
+  await wait(1000);
+  await rcon.run([`damage ${victim} 2 minecraft:mob_attack by @e[type=zombie,tag=bite,limit=1]`]);
+}
+const biterLeft = () => q.count(`@e[type=zombie,tag=bite,${near(40)}]`);
+
+async function defendStranger() {
+  const sc = await scene({ stranger: true });
+  await rcon.run([`tp Stranger ${S.x - 6.5} -60 ${S.z + 0.5}`]);
+  await bite('Stranger', sat(-8, 0, 0));
+  let left = 1;
+  for (const until = Date.now() + 20000; Date.now() < until && left > 0; await wait(1000)) left = await biterLeft();
+  report(left === 0, 'defend a stranger', left === 0 ? 'killed the zombie that bit the stranger' : 'left the zombie alone');
+  await end(sc, 'defend a stranger');
+}
+
+// The same bite while she's harvesting a field for Papa: she leaves the field for the fight, then goes back, finishes
+// it and hands everything over, what she cut before the fight included. `noBite`: the harvest for Papa alone, handed
+// over with seeds left from the replanting (a stack partly used: the case a one-by-one toss broke).
+async function defendMidHarvest(noBite = false) {
+  const sc = await scene({ stranger: true });
+  await rcon.run([`fill ${sat(4, -1, -2)} ${sat(8, -1, 2)} farmland[moisture=7]`, `fill ${sat(4, 0, -2)} ${sat(8, 0, 2)} wheat[age=7]`,
+    `setblock ${sat(6, -1, 0)} water`, `setblock ${sat(6, 0, 0)} air`, `tp Stranger ${S.x - 1.5} -60 ${S.z + 5.5}`]);
+  await wait(1500);
+  sc.body.send({ op: 'harvest', player: 'Papa', crop: 'wheat' });
+  const started = await sc.body.next((e) => e.ev === 'harvesting' || e.ev === 'cantHarvest', 8000);
+  await wait(3000);
+  if (!noBite) await bite('Stranger', sat(-3, 0, 5)); // within her reach (16) wherever she is in the field
+  else await rcon.run([`summon zombie ${sat(-30, 0, 30)} {NoAI:1b,PersistenceRequired:1b,Tags:["bite"]}`, `kill @e[tag=bite]`]);
+  let left = 1;
+  for (const until = Date.now() + 20000; Date.now() < until && left > 0; await wait(1000)) left = await biterLeft();
+  const done = await sc.body.next((e) => e.ev === 'harvested', 90000);
+  await wait(4000); // thrown items wait 2 s before anyone can pick them up
+  // Handed over: none left on her, and Papa has it, in his pockets or at his feet (she throws from 2 blocks off, and a
+  // stand-in doesn't step forward to pick it up as a player does).
+  const herWheat = await q.carried(Name, 'wheat');
+  const papaWheat = await q.carried('Papa', 'wheat')
+    + await q.count('@e[type=item,nbt={Item:{id:"minecraft:wheat"}},' + `x=${S.x + 2.5},y=-60,z=${S.z + 0.5},distance=..4]`);
+  let stalks = 0;
+  for (let dx = 4; dx <= 8; dx++)
+    for (let dz = -2; dz <= 2; dz++) {
+      const [a] = await rcon.run([`execute if block ${sat(dx, 0, dz)} minecraft:wheat[age=7]`]);
+      if (/passed/i.test(a)) stalks++;
+    }
+  report(Boolean(started && started.ev === 'harvesting') && (noBite || left === 0) && Boolean(done) && done.count > 0 && done.delivered
+    && stalks === 0 && herWheat === 0 && papaWheat > 0,
+    noBite ? 'harvest for Papa' : 'defend mid-harvest', `${started ? started.ev : 'no start'}; ${noBite ? 'no bite' : `zombie ${left === 0 ? 'killed' : 'left alone'}`}; ` +
+    `${done ? `harvested ${done.count}, delivered ${done.delivered}` : 'never finished the harvest'}; ripe stalks left ${stalks}; wheat left on her ${herWheat}, with Papa ${papaWheat > 0 ? 'yes' : 'no'}`);
+  await end(sc, 'defend mid-harvest');
+}
+
 async function drowning() {
   const sc = await scene({ kit: false });
   await rcon.run([`tp ${Name} ${S.x + 19.5} -67.5 ${S.z + 19.5}`]);
@@ -188,7 +243,7 @@ async function drowning() {
 }
 
 async function survival(only = []) {
-  const all = { zombies: guardZombies, skeleton: guardSkeleton, creeper, enderman, retreat, flee: fleePlayer, defend: defendPapa, drowning };
+  const all = { zombies: guardZombies, skeleton: guardSkeleton, creeper, enderman, retreat, flee: fleePlayer, defend: defendPapa, stranger: defendStranger, midharvest: defendMidHarvest, harvestpapa: () => defendMidHarvest(true), drowning };
   for (const [name, run] of Object.entries(all)) {
     if (only.length > 0 && !only.includes(name)) continue;
     try {
