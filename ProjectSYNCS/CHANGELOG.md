@@ -3,7 +3,7 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
-## 7.23.0 — 2026-10-21
+## 7.24.0 — 2026-10-21
 
 - Minecraft: she sees a creeper coming from further off, never shoots through a player (she steps aside
   for a clear shot), and now fights slimes, magma cubes, phantoms and hoglins; she leaves wardens and
@@ -20,6 +20,15 @@ the git history; versions that were skipped or only existed on a side branch are
 - Minecraft: going to bed no longer risks getting her kicked for sending too many packets.
 - Minecraft: she no longer thinks she has arrived somewhere she hasn't (she left drops lying next to her,
   went to bed from too far), and picks up a fresh drop instead of walking off before it can be taken.
+
+## 7.23.1 — 2026-10-21
+
+- She no longer announces on Discord when she joins or leaves the Minecraft server.
+
+## 7.23.0 — 2026-10-21
+
+- New owner-only `/debug role`: gives a member a role, refusing up front when she lacks Manage Roles
+  or the role is managed, `@everyone` or not below her top role.
 
 ## 7.22.0 — 2026-10-20
 

@@ -570,6 +570,57 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
             ephemeral: true);
     }
 
+    // Gives someone a role, with her own permissions. Refuses up front what Discord would answer with a
+    // bare 403: she lacks ManageRoles, or the role is @everyone, managed, or not below her top role.
+    [SlashCommand("role", "Donner un rôle à quelqu'un (tests)")]
+    public async Task RoleAsync(
+        [Summary("user", "Qui reçoit le rôle")] IUser user,
+        [Summary("role", "Le rôle à donner")] IRole role)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+        if (Context.Guild is null)
+        {
+            await RespondAsync("Sur un serveur, pas en message privé.", ephemeral: true);
+            return;
+        }
+
+        var me = Context.Guild.CurrentUser;
+        string? refusal = null;
+        if (!me.GuildPermissions.ManageRoles)
+            refusal = "Il me manque la permission « Gérer les rôles ».";
+        else if (role.Id == Context.Guild.Id || role.IsManaged)
+            refusal = "Ce rôle ne peut pas être donné à la main.";
+        else if (role.Position >= me.Hierarchy)
+            refusal = "Ce rôle est au même niveau que mon rôle le plus haut, ou au-dessus.";
+        else if (Context.Guild.GetUser(user.Id) is not { } member)
+            refusal = "Cette personne n'est pas sur le serveur.";
+        else if (member.Roles.Any(r => r.Id == role.Id))
+            refusal = "Cette personne a déjà ce rôle.";
+        if (refusal is not null)
+        {
+            await RespondAsync($"🔧 {refusal}", ephemeral: true);
+            return;
+        }
+
+        await DeferAsync(ephemeral: true);
+        try
+        {
+            await Context.Guild.GetUser(user.Id).AddRoleAsync(role);
+            _logger.LogInformation("Owner gave role {RoleId} to {UserId}.", role.Id, user.Id);
+            await FollowupAsync($"🔧 {Format.Sanitize(role.Name)} donné à {MentionUtils.MentionUser(user.Id)}.",
+                allowedMentions: AllowedMentions.None, ephemeral: true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to give role {RoleId} to {UserId}.", role.Id, user.Id);
+            await FollowupAsync("🔧 Discord a refusé (voir les logs).", ephemeral: true);
+        }
+    }
+
     // Any of her sticker strips, posted here as the follow-up would post it, bypassing the
     // roll: to see each strip on PC and on the phone. The glitch strip too, which no line can tag.
     [SlashCommand("sticker", "Poster ici une image de SYNCS, au choix de l'humeur (tests)")]

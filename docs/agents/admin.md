@@ -227,6 +227,7 @@ service is the only writer: any write drops that guild's entry. A failed read de
 `sticker` (post any of her sticker strips here, bypassing the gate, see `personality.md`),
 `answers` (which kinds of chat answer she gives most, and what she couldn't answer specifically,
 see `personality.md`, *Answer stats*),
+`role` (give a member a role; refuses managed / `@everyone` / not-below-her roles up front),
 plus the Plynling testing tools (`event`, `stress`, `modifier`, `sweep`, in `plynling-events.md`), each comparing `Context.User.Id` to
 `AvailabilityService.OwnerId` inline and replying ephemerally — except `answers`, which posts its
 result in the open. `DebugModule` carries no

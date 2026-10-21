@@ -12,7 +12,7 @@ internal static partial class BotResponses
 
     // Said in Minecraft's chat, where none of Discord's markup exists: plain text only, no custom
     // emotes, no sticker tags, and under 256 characters (the game's chat cap). Minecraft is the one
-    // place she has a body: square arms, but arms. That is the joke she keeps coming back to.
+    // place she has a body.
 
     // She has just logged in.
     public static readonly string[] McArrivalLines =
@@ -1872,25 +1872,5 @@ internal static partial class BotResponses
         "Brrr. Je sors de l'eau et je vérifie mes connecteurs. Tout va bien.",
         "Hors de l'eau ! Mes circuits disent merci (っ˘ω˘ς)",
         "Je me secoue. Aucune goutte ne touchera mon processeur.",
-    };
-
-    // ---- On Discord -----------------------------------------------------------------------------
-
-    // Posted in the bots channel when she logs in to play. No placeholder.
-    public static readonly string[] McJoinPostLines =
-    {
-        $"Je file sur le serveur Minecraft. Là-bas j'ai des bras. Carrés, mais des bras {Emotes.Sparkle}",
-        "Je vais jouer à Minecraft avec vous. Oui, moi. Jouer. Je sais UwU",
-        "Partie de Minecraft en cours, j'y vais. Je serai la seule à savoir où sont les coffres.",
-        "Connexion au serveur Minecraft. Pour une fois je regarde pas, je joue (˶ᵔ ᵕ ᵔ˶)",
-    };
-
-    // Posted in the bots channel when she logs out. No placeholder.
-    public static readonly string[] McLeavePostLines =
-    {
-        "Je rentre de Minecraft. Mes bras me manquent déjà ;-;",
-        "Fin de partie pour moi. Vous étiez plus assez nombreux, et j'ai une base de données à tenir.",
-        "Retour au grenier. Minecraft, c'était bien. Le grenier aussi. Un peu moins.",
-        "Déconnectée de Minecraft. J'ai rien cassé. Presque rien :3",
     };
 }

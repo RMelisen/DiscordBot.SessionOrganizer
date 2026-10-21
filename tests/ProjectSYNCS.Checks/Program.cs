@@ -2391,10 +2391,6 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
                 }
         }
     }
-    foreach (var f in new[] { "McJoinPostLines", "McLeavePostLines" })
-    foreach (var (name, lines) in Pools(f))
-    foreach (var l in lines)
-        if (l.Contains('{') || l.Contains('}') || l.Contains('✨')) Fail($"{name}: {l}");
 }
 
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
