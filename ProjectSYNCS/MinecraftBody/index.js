@@ -903,6 +903,14 @@ function isTreeLog(block) {
   return false;
 }
 
+// Whether a block has an open face (air, water, a plant: something with no collision box) to break it from.
+function exposed(block) {
+  return [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]].some(([dx, dy, dz]) => {
+    const near = bot.blockAt(block.position.offset(dx, dy, dz));
+    return near && near.boundingBox === 'empty' && near.name !== 'lava';
+  });
+}
+
 // Whether anything she carries (or her bare hand) gets a drop from this block.
 function canHarvest(block) {
   return [null, ...bot.inventory.items().map((i) => i.type)].some((type) => block.canHarvest(type));
@@ -918,19 +926,39 @@ async function collect(player, resource, count) {
   const matches = Resources[resource];
   if (!matches) return;
   const ids = bot.registry.blocksArray.filter((b) => matches(b.name)).map((b) => b.id);
-  let blocks = bot.findBlocks({ matching: ids, maxDistance: GatherRadius, count: Math.min(count * 4, 256) })
-    .map((p) => bot.blockAt(p)).filter(Boolean);
-  if (resource === 'wood') blocks = blocks.filter(isTreeLog);
-  if (blocks.length === 0) return emit('cantCollect', { player, resource, why: 'none' });
-  if (!canHarvest(blocks[0])) return emit('cantCollect', { player, resource, why: 'noTool' });
-  blocks = blocks.slice(0, count);
+  // The closest 256 of that kind (wood: in a tree), and of those, what she can get at: she never digs, so a block with
+  // no open face (stone under the grass) is out of reach (collectblock spent its 5 s search on one and stopped the
+  // order), and the closest few were all buried while a quarry face stood further off.
+  const candidates = () => {
+    let found = bot.findBlocks({ matching: ids, maxDistance: GatherRadius, count: 256 })
+      .map((p) => bot.blockAt(p)).filter(Boolean);
+    if (resource === 'wood') found = found.filter(isTreeLog);
+    return { all: found, open: found.filter(exposed) };
+  };
+  const first = candidates();
+  if (first.open.length === 0) return emit('cantCollect', { player, resource, why: 'none' });
+  if (!canHarvest(first.open[0])) return emit('cantCollect', { player, resource, why: 'noTool' });
   stay();
 
   const before = itemCounts();
   const mine = { kind: 'collect', player };
   task = mine;
-  emit('collecting', { player, resource, count: blocks.length });
-  await gather(blocks, mine, 'collect');
+  emit('collecting', { player, resource, count: Math.min(count, first.all.length) });
+  // In rounds: what's open now, then what that opened (a trunk's top log, boxed in by leaves, only opens once the
+  // logs under it are gone: she brought 12 of 16), until the count, nothing open, or a round that broke nothing.
+  let left = count;
+  let open = first.open;
+  for (let round = 0; round < 4 && left > 0 && open.length > 0 && task === mine; round++) {
+    const batch = open.slice(0, left);
+    await gather(batch, mine, 'collect');
+    const broken = batch.filter((b) => {
+      const now = bot.blockAt(b.position);
+      return !now || now.type !== b.type;
+    }).length;
+    left -= broken;
+    if (broken === 0 || task !== mine) break;
+    open = candidates().open;
+  }
   if (task !== mine) return; // told to stop in the meantime
 
   const { total, delivered } = await deliverGains(player, before);
@@ -961,12 +989,28 @@ async function gather(blocks, mine, what) {
   if (solid.length > 0) {
     bot.collectBlock.movements = gatheringMovements(solid);
     gatheredDrops = drops;
+    // collectblock only notes a drop that appears within half a block of the block's centre; a lump of coal fell
+    // further and stayed lying. Within 2, as for crops.
+    const noteDrop = (entity) => {
+      if (solid.some((b) => entity.position.distanceTo(b.position.offset(0.5, 0.5, 0.5)) <= 2)) drops.add(entity.id);
+    };
+    bot.on('itemDrop', noteDrop);
+    // One at a time, the closest first: collectblock gives up on the whole list when one block can't be reached.
+    const left = [...solid];
     try {
-      await bot.collectBlock.collect(solid, { ignoreNoPath: true });
-    } catch (err) {
-      log(`${what} stopped:`, err && err.message ? err.message : String(err));
+      while (left.length > 0 && task === mine) {
+        const me = bot.entity.position;
+        left.sort((a, b) => a.position.distanceTo(me) - b.position.distanceTo(me));
+        const block = left.shift();
+        try {
+          await bot.collectBlock.collect(block, { ignoreNoPath: true });
+        } catch (err) {
+          log(`${what}: skipped a block:`, err && err.message ? err.message : String(err));
+        }
+      }
     } finally {
       gatheredDrops = null;
+      bot.removeListener('itemDrop', noteDrop);
       bot.pathfinder.setMovements(gentleMovements());
     }
   }

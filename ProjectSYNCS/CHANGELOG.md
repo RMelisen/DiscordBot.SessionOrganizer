@@ -16,6 +16,13 @@ the git history; versions that were skipped or only existed on a side branch are
 - Ask her version (« t'es en quelle version ? », « c'est quoi ta version ? », « t'es à jour ? »),
   on Discord or in Minecraft, and she tells you.
 
+## 7.25.1 — 2026-10-21
+
+- Minecraft: gathering stone and ore: she skips blocks buried out of reach and
+  goes for the ones she can get at, and one block she can't reach no longer stops the whole order.
+- Minecraft: she no longer leaves a lump of coal or ore lying when it falls a little away from where
+  she mined.
+
 ## 7.25.0 — 2026-10-21
 
 - In Minecraft she answers when someone talks to her without giving an order, the way she does on

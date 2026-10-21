@@ -1,0 +1,273 @@
+// Her orders, each checked on the server's side: smelting (food in the smoker, sand to glass, no fuel, nothing to
+// smelt, no furnace), gathering (stone, coal, iron, sand; ore without a pickaxe; something there isn't), fishing
+// without a rod or water, handing over by kind, storing into a full chest, harvesting every crop, keeping a farm,
+// guarding a spot, and the small ones (where, sit, mark).
+const rcon = require('./rcon');
+const q = require('./query');
+const { startBody, spawned, wait, troubles, Name } = require('./body');
+const { standIn } = require('./players');
+
+const C = { x: -80, z: 70 }; // the yard, west of the workshop
+const at = (dx, dy, dz) => `${C.x + dx} ${-60 + dy} ${C.z + dz}`;
+const results = [];
+function report(ok, name, detail) {
+  results.push({ ok, name });
+  console.log(`${ok ? 'PASS' : 'FAIL'}  ${name.padEnd(18)} ${detail}`);
+}
+
+function yard() {
+  return [
+    `forceload add ${C.x - 40} ${C.z - 24} ${C.x + 24} ${C.z + 24}`,
+    `fill ${at(-14, -3, -14)} ${at(16, -2, 14)} stone`, `fill ${at(-14, -1, -14)} ${at(16, -1, 14)} grass_block`,
+    `fill ${at(-14, 0, -14)} ${at(16, 6, 14)} air`,
+    // Furnaces in a row.
+    `setblock ${at(0, 0, -6)} furnace[facing=south]`, `setblock ${at(2, 0, -6)} smoker[facing=south]`,
+    `setblock ${at(4, 0, -6)} blast_furnace[facing=south]`,
+    // A quarry face: stone with two coal and two iron in it, and sand on the ground.
+    `fill ${at(9, 0, -4)} ${at(13, 3, 4)} stone`, `setblock ${at(9, 1, -2)} coal_ore`, `setblock ${at(9, 0, -1)} coal_ore`,
+    `setblock ${at(9, 1, 1)} iron_ore`, `setblock ${at(9, 0, 2)} iron_ore`,
+    `fill ${at(4, -1, 6)} ${at(7, -1, 8)} sand`,
+    // Plots: carrots, potatoes, beetroot, with water; a melon and a pumpkin on attached stems.
+    `fill ${at(-12, -1, 4)} ${at(-6, -1, 8)} farmland[moisture=7]`, `setblock ${at(-9, -1, 6)} water`,
+    `fill ${at(-12, 0, 4)} ${at(-10, 0, 8)} carrots[age=7]`, `fill ${at(-8, 0, 4)} ${at(-6, 0, 5)} potatoes[age=7]`,
+    `fill ${at(-8, 0, 7)} ${at(-6, 0, 8)} beetroots[age=3]`, `setblock ${at(-9, 0, 6)} air`,
+    // Stems on farmland need water near, or the farmland dries to dirt and the stem pops off before the test.
+    `setblock ${at(-13, -1, -6)} water`, `setblock ${at(-13, -1, -9)} water`,
+    // The fruit first: an attached stem with no fruit beside it turns back into a plain one at once.
+    `setblock ${at(-12, -1, -6)} farmland[moisture=7]`, `setblock ${at(-11, 0, -6)} melon`,
+    `setblock ${at(-12, 0, -6)} attached_melon_stem[facing=east]`,
+    `setblock ${at(-12, -1, -9)} farmland[moisture=7]`, `setblock ${at(-11, 0, -9)} pumpkin`,
+    `setblock ${at(-12, 0, -9)} attached_pumpkin_stem[facing=east]`,
+    // A full chest.
+    `setblock ${at(0, 0, 10)} chest[facing=north]`,
+  ];
+}
+
+async function reset(body, x = 0.5, z = 0.5) {
+  body.send({ op: 'stay' });
+  // Papa parked well out of the way: a player beside the work picks up her drops (he had the sand).
+  await rcon.run([`clear ${Name}`, `effect clear ${Name}`, 'difficulty peaceful', 'time set day',
+    `tp ${Name} ${C.x + x} -60 ${C.z + z}`, `tp Papa ${C.x - 30.5} -60 ${C.z - 20.5}`, 'clear Papa',
+    `kill @e[type=item,x=${C.x},y=-60,z=${C.z},distance=..30]`]);
+  await wait(2500);
+}
+
+const ev = (body, names, ms) => body.next((e) => names.includes(e.ev), ms);
+const fmt = (e) => (e ? `${e.ev}${e.why ? ` (${e.why})` : ''}${e.count !== undefined ? ` ${e.count}` : ''}` : 'no answer');
+
+async function smeltFood(body) {
+  await reset(body, 2.5, -4.5);
+  await rcon.run([`data merge block ${at(2, 0, -6)} {Items:[]}`, `data merge block ${at(0, 0, -6)} {Items:[]}`,
+    `give ${Name} beef 3`, `give ${Name} coal 2`]);
+  await wait(1000);
+  body.send({ op: 'smelt', player: 'tester', what: 'food' });
+  const done = await ev(body, ['smelted', 'cantSmelt'], 90000);
+  await wait(1500);
+  const cooked = await q.carried(Name, 'cooked_beef');
+  report(cooked === 3, 'smelt food', `${fmt(done)}; she carries ${cooked} cooked beef`);
+}
+
+async function smeltSand(body) {
+  await reset(body, 0.5, -4.5);
+  await rcon.run([`data merge block ${at(0, 0, -6)} {Items:[]}`, `give ${Name} sand 4`, `give ${Name} coal 2`]);
+  await wait(1000);
+  body.send({ op: 'smelt', player: 'tester', what: 'sand' });
+  const done = await ev(body, ['smelted', 'cantSmelt'], 120000);
+  await wait(1500);
+  const glass = await q.carried(Name, 'glass');
+  report(glass === 4, 'smelt sand', `${fmt(done)}; she carries ${glass} glass`);
+}
+
+async function smeltRefusals(body) {
+  await reset(body, 0.5, -4.5);
+  await rcon.run([`give ${Name} raw_iron 2`]);
+  await wait(800);
+  body.send({ op: 'smelt', player: 'tester', what: 'ore' });
+  const noFuel = await ev(body, ['smelting', 'cantSmelt'], 15000);
+  await rcon.run([`clear ${Name}`, `give ${Name} coal 2`]);
+  await wait(800);
+  body.send({ op: 'smelt', player: 'tester', what: 'ore' });
+  const nothing = await ev(body, ['smelting', 'cantSmelt'], 15000);
+  await reset(body, -30.5, 0.5); // no furnace within 16
+  await rcon.run([`give ${Name} raw_iron 2`, `give ${Name} coal 2`]);
+  await wait(800);
+  body.send({ op: 'smelt', player: 'tester', what: 'ore' });
+  const far = await ev(body, ['smelting', 'cantSmelt'], 15000);
+  const ok = noFuel && noFuel.why === 'noFuel' && nothing && nothing.why === 'nothing' && far && far.why === 'noFurnace';
+  report(Boolean(ok), 'smelt refusals', `no fuel: ${fmt(noFuel)}; nothing to smelt: ${fmt(nothing)}; no furnace near: ${fmt(far)}`);
+}
+
+async function collect(body, resource, count, tool, item, name) {
+  await reset(body, 5.5, 0.5);
+  if (tool) await rcon.run([`give ${Name} ${tool} 1`]);
+  await wait(800);
+  body.send({ op: 'collect', player: 'tester', resource, count });
+  const started = Date.now();
+  const done = await ev(body, ['collected', 'cantCollect'], 120000);
+  await wait(1500);
+  const got = await q.carried(Name, item);
+  const lying = await q.count(`@e[type=item,x=${C.x},y=-60,z=${C.z},distance=..20]`);
+  report(got >= count && lying === 0, name, `${fmt(done)} in ${((Date.now() - started) / 1000).toFixed(0)} s; she carries ${got} ${item}; ${lying} items lying`);
+}
+
+async function collectRefusals(body) {
+  await reset(body, 5.5, 0.5);
+  body.send({ op: 'collect', player: 'tester', resource: 'iron', count: 2 });
+  const noTool = await ev(body, ['collecting', 'cantCollect'], 15000);
+  body.send({ op: 'collect', player: 'tester', resource: 'diamond', count: 2 });
+  const none = await ev(body, ['collecting', 'cantCollect'], 15000);
+  report(noTool && noTool.why === 'noTool' && none && none.why === 'none', 'collect refusals', `iron bare-handed: ${fmt(noTool)}; diamonds where there are none: ${fmt(none)}`);
+}
+
+async function fishRefusals(body) {
+  await reset(body, 0.5, 0.5);
+  body.send({ op: 'fish', player: 'tester' });
+  const noRod = await ev(body, ['fishing', 'cantFish'], 10000);
+  await rcon.run([`give ${Name} fishing_rod 1`, `tp ${Name} ${C.x - 30.5} -60 ${C.z + 0.5}`]);
+  await wait(2000);
+  body.send({ op: 'fish', player: 'tester' });
+  const noWater = await ev(body, ['fishing', 'cantFish'], 10000);
+  report(noRod && noRod.why === 'noRod' && noWater && noWater.why === 'noWater', 'fish refusals', `no rod: ${fmt(noRod)}; no water near: ${fmt(noWater)}`);
+}
+
+async function giveKinds(body, papa) {
+  await reset(body, 0.5, 2.5);
+  await rcon.run([`clear Papa`, `tp Papa ${C.x + 2.5} -60 ${C.z + 3.5}`, `give ${Name} oak_log 5`, `give ${Name} cobblestone 7`,
+    `give ${Name} stone_pickaxe 1`, `give ${Name} bread 3`]);
+  await wait(1500);
+  const lyingNear = async (item) => {
+    // A tossed tool flies further than a stack of logs: within 5 is « at his feet ».
+    const [a] = await rcon.run([`execute as @e[type=item,x=${C.x + 2.5},y=-60,z=${C.z + 3.5},distance=..5] run data get entity @s Item`]);
+    return (a.match(new RegExp(`minecraft:${item}`, 'g')) || []).length;
+  };
+  body.send({ op: 'give', player: 'Papa', goods: 'wood' });
+  const wood = await ev(body, ['given', 'cantGive'], 20000);
+  await wait(2500);
+  const logs = (await q.carried('Papa', 'oak_log')) + (await lyingNear('oak_log'));
+  const stillCobble = await q.carried(Name, 'cobblestone');
+  body.send({ op: 'give', player: 'Papa', goods: 'tools' });
+  const tools = await ev(body, ['given', 'cantGive'], 20000);
+  await wait(2500);
+  const pick = (await q.carried('Papa', 'stone_pickaxe')) + (await lyingNear('stone_pickaxe'));
+  body.send({ op: 'give', player: 'Papa', goods: 'fish' });
+  const fish = await ev(body, ['given', 'cantGive'], 10000);
+  const ok = logs >= 1 && stillCobble === 7 && pick >= 1 && fish && fish.ev === 'cantGive';
+  report(ok, 'give by kind', `wood: ${fmt(wood)}, Papa got the logs: ${logs >= 1}, her cobblestone kept: ${stillCobble}; tools: ${fmt(tools)}, pickaxe handed: ${pick >= 1}; fish she hasn't: ${fmt(fish)}`);
+}
+
+async function storeFull(body) {
+  await reset(body, 0.5, 8.5);
+  // 26 slots of dirt and one free: 64 cobblestone fit, the rest stays on her.
+  const items = Array.from({ length: 26 }, (_, i) => `{Slot:${i}b,id:"minecraft:dirt",count:64}`).join(',');
+  await rcon.run([`data merge block ${at(0, 0, 10)} {Items:[${items}]}`, `give ${Name} cobblestone 128`, `give ${Name} iron_sword 1`]);
+  await wait(1000);
+  body.send({ op: 'store', player: 'tester' });
+  const done = await ev(body, ['stored', 'cantStore'], 30000);
+  await wait(1000);
+  const inChest = await q.inBlock(C.x, -60, C.z + 10, 'cobblestone');
+  const onHer = await q.carried(Name, 'cobblestone');
+  report(inChest === 64 && onHer === 64 && done && done.full === true, 'store, chest full', `${fmt(done)}${done && done.full ? ' (full)' : ''}; chest took ${inChest}, she kept ${onHer}`);
+}
+
+async function harvestCrop(body, crop, item, x, z) {
+  await reset(body, x, z);
+  body.send({ op: 'harvest', player: 'tester', crop });
+  const done = await ev(body, ['harvested', 'cantHarvest'], 90000);
+  await wait(1500);
+  const got = await q.carried(Name, item);
+  report(Boolean(done && done.ev === 'harvested') && got > 0, `harvest ${crop}`, `${fmt(done)}${done && done.replanted !== undefined ? `, replanted ${done.replanted}` : ''}; she carries ${got} ${item}`);
+}
+
+async function keepFarm(body) {
+  // A small wheat plot, unripe, a chest by it: she keeps it; it ripens; the next round harvests and stores.
+  await rcon.run([`fill ${at(-4, -1, -12)} ${at(0, -1, -10)} farmland[moisture=7]`, `setblock ${at(-2, -1, -11)} water`,
+    `fill ${at(-4, 0, -12)} ${at(0, 0, -10)} wheat[age=3]`, `setblock ${at(-2, 0, -11)} air`,
+    `setblock ${at(2, 0, -11)} chest[facing=west]`, `data merge block ${at(2, 0, -11)} {Items:[]}`]);
+  await reset(body, 1.5, -9.5);
+  await rcon.run([`give ${Name} wheat_seeds 20`]);
+  body.send({ op: 'farm', player: 'tester' });
+  const going = await ev(body, ['farming', 'cantFarm'], 10000);
+  await wait(3000);
+  await rcon.run([`fill ${at(-4, 0, -12)} ${at(0, 0, -10)} wheat[age=7] replace wheat`]);
+  await wait(40000);
+  const wheat = await q.inBlock(C.x + 2, -60, C.z - 11, 'wheat');
+  const seedsOn = await q.carried(Name, 'wheat_seeds');
+  body.send({ op: 'stay' });
+  report(Boolean(going && going.ev === 'farming') && wheat > 0 && seedsOn <= 16 + 8, 'keep a farm', `${fmt(going)}; chest has ${wheat} wheat; seeds on her ${seedsOn} (keeps 16)`);
+}
+
+async function patrol(body) {
+  await reset(body, 0.5, 0.5);
+  await rcon.run([`give ${Name} iron_sword 1`, 'difficulty easy']);
+  body.send({ op: 'patrol', player: 'tester', spot: null });
+  const going = await ev(body, ['patrolling', 'cantPatrol'], 10000);
+  await rcon.run([`summon zombie ${C.x + 8} -60 ${C.z + 6} {PersistenceRequired:1b,Tags:["patrol"]}`]);
+  let left = 1;
+  const t0 = Date.now();
+  while (left && Date.now() - t0 < 30000) { await wait(1000); left = await q.count('@e[type=zombie,tag=patrol]'); }
+  await wait(6000);
+  const x = await q.entityNumber(Name, 'Pos[0]');
+  const z = await q.entityNumber(Name, 'Pos[2]');
+  const back = Math.hypot(x - (C.x + 0.5), z - (C.z + 0.5));
+  await rcon.run(['difficulty peaceful', 'kill @e[type=zombie,tag=patrol]']);
+  body.send({ op: 'stay' });
+  report(Boolean(going) && left === 0 && back < 4, 'patrol a spot', `${fmt(going)}; zombie ${left === 0 ? 'dead' : 'alive'}; back ${back.toFixed(1)} from her spot`);
+}
+
+async function small(body, papa) {
+  await reset(body, 3.5, 3.5);
+  await rcon.run([`tp Papa ${C.x + 5.5} -60 ${C.z + 5.5}`]);
+  await wait(1000);
+  body.send({ op: 'where', player: 'tester' });
+  const pos = await ev(body, ['position'], 5000);
+  const x = await q.entityNumber(Name, 'Pos[0]');
+  const z = await q.entityNumber(Name, 'Pos[2]');
+  const whereOk = pos && pos.x === Math.floor(x) && pos.z === Math.floor(z);
+  body.send({ op: 'mark', player: papa.username });
+  const marked = await ev(body, ['marked', 'cantMark'], 5000);
+  body.send({ op: 'sit' });
+  await wait(1500);
+  // Crouched, on the server: an inline predicate on her sneaking flag.
+  const [crouched] = await rcon.run([`execute as ${Name} if predicate {type:"minecraft:entity_properties",entity:"this",predicate:{flags:{is_sneaking:true}}}`]);
+  const sitting = /passed/i.test(crouched);
+  body.send({ op: 'stay' });
+  report(Boolean(whereOk) && Boolean(marked && marked.ev === 'marked') && sitting, 'where, mark, sit', `where: ${pos ? `${pos.x} ${pos.z}` : 'none'} (server ${Math.floor(x)} ${Math.floor(z)}); mark Papa's spot: ${fmt(marked)}; crouched on the server: ${sitting}`);
+}
+
+async function orders(only = []) {
+  await rcon.run(yard());
+  const body = startBody();
+  await spawned(body);
+  const papa = await standIn('Papa');
+  const all = {
+    smeltFood, smeltSand, smeltRefusals,
+    collectRefusals, // before the ores are mined
+    stone: (b) => collect(b, 'stone', 6, 'stone_pickaxe', 'cobblestone', 'collect stone'),
+    coal: (b) => collect(b, 'coal', 2, 'stone_pickaxe', 'coal', 'collect coal'),
+    iron: (b) => collect(b, 'iron', 2, 'stone_pickaxe', 'raw_iron', 'collect iron'),
+    sand: (b) => collect(b, 'sand', 4, null, 'sand', 'collect sand'),
+    fishRefusals, give: (b) => giveKinds(b, papa), storeFull,
+    carrots: (b) => harvestCrop(b, 'carrot', 'carrot', -9.5, 3.5),
+    potatoes: (b) => harvestCrop(b, 'potato', 'potato', -7.5, 3.5),
+    beetroot: (b) => harvestCrop(b, 'beetroot', 'beetroot', -7.5, 9.5),
+    melon: (b) => harvestCrop(b, 'melon', 'melon_slice', -10.5, -5.5),
+    pumpkin: (b) => harvestCrop(b, 'pumpkin', 'pumpkin', -10.5, -8.5),
+    farm: keepFarm, patrol, small: (b) => small(b, papa),
+  };
+  for (const [name, run] of Object.entries(all)) {
+    if (only.length > 0 && !only.includes(name)) continue;
+    try {
+      await run(body);
+    } catch (err) {
+      report(false, name, `threw: ${err.message}`);
+    }
+  }
+  for (const t of troubles(body)) console.log('      log:', t.slice(0, 200));
+  await papa.leave();
+  await body.quit();
+  const failed = results.filter((r) => !r.ok);
+  console.log(`\n${results.length - failed.length}/${results.length} orders passed`);
+  return failed.length === 0;
+}
+
+module.exports = { orders };

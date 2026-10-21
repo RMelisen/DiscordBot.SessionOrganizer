@@ -9,7 +9,8 @@
 //   node run.js safety                 what could hurt the world: keeping a herd (safety.js)
 //   node run.js survival [name ...]    night fights, creepers, endermen, being hit, deep water (survival.js)
 //   node run.js trip                   250 blocks, far past the loaded chunks: re-planning as she goes
-//   node run.js players [name ...]     with players around: follow a walk, come, guide, lose one, seek, gaze (players-test.js)
+//   node run.js players [name ...]     with players around: follow a walk and through the hard lanes, come, guide, lose one, seek, gaze (players-test.js)
+//   node run.js orders [name ...]      smelting, gathering, fishing, giving, storing, harvesting, farm, patrol (orders.js)
 // See README.md for the server.
 const rcon = require('./rcon');
 const course = require('./course');
@@ -18,6 +19,7 @@ const { actions } = require('./actions');
 const { safety, scenery, GroveScenery } = require('./safety');
 const { survival } = require('./survival');
 const { playersTest } = require('./players-test');
+const { orders } = require('./orders');
 
 // ---- Building ----------------------------------------------------------------------------------------
 
@@ -312,6 +314,7 @@ async function gatherTest() {
   else if (what === 'survival') ok = await survival(rest);
   else if (what === 'trip') ok = await trip();
   else if (what === 'players') ok = await playersTest(rest);
+  else if (what === 'orders') ok = await orders(rest);
   else if (what === 'all') {
     ok = (await lanes([])) && ok;
     ok = (await crops()) && ok;
@@ -323,8 +326,9 @@ async function gatherTest() {
     ok = (await survival([])) && ok;
     ok = (await trip()) && ok;
     ok = (await playersTest([])) && ok;
+    ok = (await orders([])) && ok;
   } else {
-    console.log('usage: node run.js build | lanes [name ...] | crops | items | gather | harvest | actions [name ...] | safety | survival [name ...] | trip | players [name ...] | all   [-v]');
+    console.log('usage: node run.js build | lanes [name ...] | crops | items | gather | harvest | actions [name ...] | safety | survival [name ...] | trip | players [name ...] | orders [name ...] | all   [-v]');
     process.exit(2);
   }
   process.exit(ok ? 0 : 1);

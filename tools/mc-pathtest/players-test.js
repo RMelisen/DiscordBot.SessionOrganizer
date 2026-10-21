@@ -4,6 +4,7 @@
 const rcon = require('./rcon');
 const { startBody, spawned, wait, troubles, Name } = require('./body');
 const { standIn, req } = require('./players');
+const course = require('./course');
 
 const results = [];
 function report(ok, name, detail) {
@@ -64,6 +65,45 @@ async function followWalk() {
   const last = s ? s.position.distanceTo(sc.papa.entity.position) : NaN;
   report(!lost && worst < 12 && last < 5, 'follow a walk', `at most ${worst.toFixed(1)} blocks behind on the way, ${last.toFixed(1)} at the end; lost him: ${lost}`);
   await end(sc, 'follow');
+}
+
+// Following Papa through the course's hardest lanes: the furnished room, the holes he jumps, the pane zigzag.
+async function followCourse() {
+  const results2 = [];
+  const { goals } = req('mineflayer-pathfinder');
+  const body = startBody();
+  await spawned(body);
+  const papa = await standIn('Papa', { pathfinder: true });
+  body.send({ op: 'family', names: ['Papa'] });
+  for (const name of ['room', 'holes', 'pane-zigzag']) {
+    const i = course.lanes.findIndex((l) => l.name === name);
+    const lane = course.lanes[i];
+    const s = course.world(i, lane.start);
+    const g = course.world(i, lane.goal);
+    await rcon.run([`tp Papa ${s.x} ${s.y} ${s.z}`, `tp ${Name} ${s.x - 1} ${s.y} ${s.z}`]);
+    await wait(2000);
+    body.send({ op: 'follow', player: 'Papa' });
+    await wait(500);
+    papa.pathfinder.setGoal(new goals.GoalNear(g.x, g.y, g.z, 1));
+    let worst = 0;
+    const until = Date.now() + 30000;
+    while (Date.now() < until) {
+      await wait(1000);
+      const her = papa.players[Name] && papa.players[Name].entity;
+      if (her) worst = Math.max(worst, her.position.distanceTo(papa.entity.position));
+      if (papa.entity.position.distanceTo(g) < 2 && !papa.pathfinder.isMoving()) break;
+    }
+    await wait(4000);
+    const her = papa.players[Name] && papa.players[Name].entity;
+    const last = her ? her.position.distanceTo(papa.entity.position) : NaN;
+    const papaThere = papa.entity.position.distanceTo(g) < 2.5;
+    body.send({ op: 'stay' });
+    results2.push(`${name}: ${papaThere ? '' : '(Papa never got there) '}at most ${worst.toFixed(1)} behind, ${last.toFixed(1)} at the end`);
+    report(papaThere && last < 5 && worst < 12, `follow: ${name}`, results2[results2.length - 1]);
+  }
+  for (const t of troubles(body)) console.log('      follow log:', t.slice(0, 200));
+  await papa.leave();
+  await body.quit();
 }
 
 async function comeFromAfar() {
@@ -154,7 +194,7 @@ async function gaze() {
 }
 
 async function playersTest(only = []) {
-  const all = { follow: followWalk, come: comeFromAfar, guide, lost, seek, gaze };
+  const all = { follow: followWalk, course: followCourse, come: comeFromAfar, guide, lost, seek, gaze };
   for (const [name, run] of Object.entries(all)) {
     if (only.length > 0 && !only.includes(name)) continue;
     try {
