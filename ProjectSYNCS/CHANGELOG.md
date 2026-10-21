@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.23.0 — 2026-10-21
+
+- New owner-only `/debug role`: gives a member a role, refusing up front when she lacks Manage Roles
+  or the role is managed, `@everyone` or not below her top role.
+
 ## 7.22.0 — 2026-10-20
 
 - Minecraft: she takes care of fields: she walks around them when she can, never jumps or drops onto
