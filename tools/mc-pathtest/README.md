@@ -29,8 +29,17 @@ node run.js crops            # crossing a ripe field six ways: nothing trampled
 node run.js items            # dying among decorations: everything reachable comes back
 node run.js gather           # cutting a grove whose logs fall into awkward spots
 node run.js harvest          # harvesting and replanting a plot: nothing trampled, nothing left
-node run.js all              # all of it (about 7 minutes); exits 1 on any failure
+node run.js actions          # every packet-level action, checked on the server (eat, store, sleep, boat…)
+node run.js safety           # keeping a herd: named animals and babies spared, culling within its rules
+node run.js survival         # night fights, a creeper shot from range, an enderman left alone, being hit
+node run.js trip             # 250 blocks, far past the loaded chunks
+node run.js players          # following a walk, coming, guiding, losing one, seeking
+node run.js all              # all of it (about 25 minutes); exits 1 on any failure
 ```
+
+**The Pi.** `MC_CPU_FACTOR=3.5 node run.js all` divides the pathfinder's time budgets by 3.5, about how much
+slower a Pi 5 runs JavaScript than a desktop: what only fails there (a search out of time) fails here. Run it before
+shipping anything that makes a search heavier. `MC_TRACE_PATHS=1` logs every slow or unfinished search.
 
 `-v` prints her events and logs as they come. The body runs with `MC_TRACE_MOVES=1`, so every server correction
 (the server putting her back where she was) is counted: a lane passes only with none.
@@ -40,5 +49,8 @@ Trampling and item rolls are chance: a fix for one of those passes `all` twice i
 ## Files
 
 - `course.js`: the lanes, one kind of terrain each, as lane-relative block commands.
-- `run.js`: building, the runs, the reports.
+- `run.js`: building, the lanes and the other runs, the command line.
+- `actions.js`, `safety.js`, `survival.js`, `players-test.js`: the scenarios beyond the course.
+- `body.js` (her body as a child process), `players.js` (stand-in players), `query.js` (the world, through RCON).
 - `rcon.js`: a minimal RCON client (also usable alone: `node rcon.js "cmd" ...`).
+- `accuracy.js`: arrows needed for a creeper that can't move, at a few distances (her aim).

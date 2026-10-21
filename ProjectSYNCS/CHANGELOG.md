@@ -3,7 +3,7 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
-## 7.23.2 — 2026-10-21
+## 7.24.1 — 2026-10-21
 
 - In Minecraft she repeats herself less: a line only comes back once she has used nearly every
   other line in its pool.
@@ -13,6 +13,24 @@ the git history; versions that were skipped or only existed on a side branch are
 - The same order sent again within 3 minutes gets done without the same acknowledgement.
 - When several players greet her, say goodbye, thank or praise her, or call her at once, only the
   first gets an answer in words; the others get a wave or a hop. Her family always gets words.
+
+## 7.24.0 — 2026-10-21
+
+- Minecraft: she sees a creeper coming from further off, never shoots through a player (she steps aside
+  for a clear shot), and now fights slimes, magma cubes, phantoms and hoglins; she leaves wardens and
+  creakings alone.
+- Minecraft: she gets into a boat moored a little off the bank, gets out when the player leaves it, and
+  hops off it instead of being stuck standing on it.
+- Minecraft: she keeps clear of berry bushes, wither roses, cactus, magma and campfires, and no longer
+  walks into powder snow.
+- Minecraft: keeping animals: she culls the closest ones first instead of losing a round on one she
+  can't reach, and picks up all of what drops.
+- Minecraft: she no longer stands still forever when a way is too long to work out at once (long trips
+  keep going, places out of reach get a « no way »), which mattered most on the Pi.
+- Minecraft: gathering her things after a death no longer stops at the first item she can't reach.
+- Minecraft: going to bed no longer risks getting her kicked for sending too many packets.
+- Minecraft: she no longer thinks she has arrived somewhere she hasn't (she left drops lying next to her,
+  went to bed from too far), and picks up a fresh drop instead of walking off before it can be taken.
 
 ## 7.23.1 — 2026-10-21
 

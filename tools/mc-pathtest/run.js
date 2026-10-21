@@ -5,80 +5,19 @@
 //   node run.js items                  die among decorations with things scattered around, see what she gets back
 //   node run.js gather                 cut a grove whose logs fall among fences, holes and low overhangs
 //   node run.js harvest                harvest and replant a small plot: nothing trampled, nothing left lying
+//   node run.js actions [name ...]     every packet-level action, checked on the server's side (actions.js)
+//   node run.js safety                 what could hurt the world: keeping a herd (safety.js)
+//   node run.js survival [name ...]    night fights, creepers, endermen, being hit, deep water (survival.js)
+//   node run.js trip                   250 blocks, far past the loaded chunks: re-planning as she goes
+//   node run.js players [name ...]     with players around: follow a walk, come, guide, lose one, seek (players-test.js)
 // See README.md for the server.
-const { spawn } = require('child_process');
-const path = require('path');
 const rcon = require('./rcon');
 const course = require('./course');
-
-const BodyDir = path.resolve(__dirname, '../../ProjectSYNCS/MinecraftBody');
-const Name = 'SYNCS';
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const t0 = Date.now();
-const stamp = () => ((Date.now() - t0) / 1000).toFixed(1).padStart(6);
-const verbose = process.argv.includes('-v');
-
-// ---- The body ----------------------------------------------------------------------------------------
-
-function startBody() {
-  const child = spawn(process.execPath, [path.join(BodyDir, 'index.js')], {
-    cwd: BodyDir,
-    env: { PATH: process.env.PATH, SYSTEMROOT: process.env.SYSTEMROOT, TEMP: process.env.TEMP, TMP: process.env.TMP,
-      MC_HOST: process.env.MC_HOST || '127.0.0.1', MC_PORT: process.env.MC_PORT || '25599', MC_USERNAME: Name,
-      MC_TRACE_MOVES: '1' },
-  });
-  const listeners = new Set();
-  const body = {
-    events: [],
-    corrections: 0,
-    logs: [],
-    send: (op) => child.stdin.write(JSON.stringify(op) + '\n'),
-    // The next event matching `test`, or null after `ms`.
-    next(test, ms) {
-      return new Promise((resolve) => {
-        const timer = setTimeout(() => { listeners.delete(on); resolve(null); }, ms);
-        const on = (ev) => { if (test(ev)) { clearTimeout(timer); listeners.delete(on); resolve(ev); } };
-        listeners.add(on);
-      });
-    },
-    async quit() {
-      body.send({ op: 'quit' });
-      await Promise.race([new Promise((r) => child.on('exit', r)), wait(4000)]);
-      child.kill();
-    },
-  };
-  let out = '';
-  child.stdout.on('data', (d) => {
-    out += d;
-    let i;
-    while ((i = out.indexOf('\n')) >= 0) {
-      const line = out.slice(0, i);
-      out = out.slice(i + 1);
-      let ev;
-      try { ev = JSON.parse(line); } catch { continue; }
-      if (verbose && !['inventory', 'players', 'hunger'].includes(ev.ev)) console.log(stamp(), 'EV ', line.slice(0, 200));
-      body.events.push(ev);
-      for (const on of [...listeners]) on(ev);
-    }
-  });
-  child.stderr.on('data', (d) => String(d).split('\n').filter(Boolean).forEach((l) => {
-    if (l.startsWith('server teleport while walking')) body.corrections++;
-    else if (!l.includes('MaxListeners') && !l.includes('trace-warnings')) body.logs.push(l);
-    if (verbose) console.log(stamp(), 'LOG', l.slice(0, 300));
-  }));
-  return body;
-}
-
-async function spawned(body) {
-  if (!(await body.next((e) => e.ev === 'spawned', 20000))) throw new Error('she never spawned (is the server up?)');
-  await wait(1500);
-}
-
-async function where(body) {
-  body.send({ op: 'where', player: 'tester' });
-  const ev = await body.next((e) => e.ev === 'position', 3000);
-  return ev ? `${ev.x} ${ev.y} ${ev.z}` : '?';
-}
+const { startBody, spawned, where, wait, Name } = require('./body');
+const { actions } = require('./actions');
+const { safety, scenery, GroveScenery } = require('./safety');
+const { survival } = require('./survival');
+const { playersTest } = require('./players-test');
 
 // ---- Building ----------------------------------------------------------------------------------------
 
@@ -92,7 +31,8 @@ async function build() {
   const cmds = [
     // Game rules are snake_case since 26.x.
     'whitelist off', 'gamerule keep_inventory false', 'difficulty peaceful', 'time set day', 'gamerule advance_time false',
-    'weather clear', 'gamerule advance_weather false', 'gamerule respawn_radius 0', 'setworldspawn 0 -60 0',
+    'weather clear', 'gamerule advance_weather false', 'gamerule respawn_radius 0', 'gamerule spawn_mobs false',
+    'gamerule spawn_monsters false', 'setworldspawn 0 -60 0',
     'scoreboard objectives add pathtest dummy',
     `forceload add ${a.x1} ${a.z1} ${a.x2} ${a.z2}`, `forceload add 0 -48 64 64`, `forceload add 64 32 96 64`, `forceload add -16 -80 16 -48`,
   ];
@@ -135,6 +75,7 @@ async function lanes(names) {
     await rcon.run([`tp ${Name} ${s.x} ${s.y} ${s.z} -90 0`]);
     await wait(1500);
     const before = body.corrections;
+    const firstEvent = body.events.length;
     const started = Date.now();
     body.send({ op: 'goto', player: 'tester', x: g.x, y: g.y, z: g.z });
     const end = await body.next((e) => e.ev === 'arrived' || e.ev === 'cantReach' || e.ev === 'stopped', lane.timeout || 30000);
@@ -143,15 +84,36 @@ async function lanes(names) {
     body.send({ op: 'stay' });
     const pos = await where(body);
     const corrections = body.corrections - before;
+    const hurt = body.since(firstEvent, (e) => e.ev === 'hurt').length;
     const expected = lane.expect || 'arrive';
-    const ok = outcome.split(':')[0] === expected && corrections === 0;
+    const ok = outcome.split(':')[0] === expected && corrections === 0 && hurt === 0;
     results.push({ lane: lane.name, ok, outcome, secs, corrections, pos });
-    console.log(`${ok ? 'PASS' : 'FAIL'}  ${lane.name.padEnd(13)} ${outcome.padEnd(16)} ${secs.padStart(5)} s  corrections ${String(corrections).padStart(3)}  ended at ${pos}   (${lane.what})`);
+    console.log(`${ok ? 'PASS' : 'FAIL'}  ${lane.name.padEnd(13)} ${outcome.padEnd(16)} ${secs.padStart(5)} s  corrections ${String(corrections).padStart(3)}  hurt ${hurt}  ended at ${pos}   (${lane.what})`);
   }
   await body.quit();
   const failed = results.filter((r) => !r.ok);
   console.log(`\n${results.length - failed.length}/${results.length} lanes passed`);
   return failed.length === 0;
+}
+
+// ---- A long trip ---------------------------------------------------------------------------------------
+
+// 250 blocks over open ground, far past the chunks loaded around her: searches run out of time and re-plan as she
+// goes (timeoutTick), and must not give up while she still gets somewhere.
+async function trip() {
+  const body = startBody();
+  await spawned(body);
+  await rcon.run([`tp ${Name} 0.5 -60 -70.5`]);
+  await wait(3000);
+  const started = Date.now();
+  body.send({ op: 'goto', player: 'tester', x: 250.5, y: null, z: -70.5 });
+  const end = await body.next((e) => e.ev === 'arrived' || e.ev === 'cantReach', 150000);
+  const secs = ((Date.now() - started) / 1000).toFixed(0);
+  const pos = await where(body);
+  await body.quit();
+  const ok = Boolean(end && end.ev === 'arrived');
+  console.log(`${ok ? 'PASS' : 'FAIL'}  long trip: ${end ? end.ev + (end.why ? ` (${end.why})` : '') : 'no answer in 150 s'} after ${secs} s, ended at ${pos}`);
+  return ok;
 }
 
 // ---- Crops -------------------------------------------------------------------------------------------
@@ -327,7 +289,8 @@ async function gatherTest() {
   const left = await logsLeft();
   const pos = await where(body);
   await body.quit();
-  const ok = Boolean(done) && done.count >= 16 && left === 0;
+  const intact = await scenery(GroveScenery, 'grove scenery');
+  const ok = Boolean(done) && done.count >= 16 && left === 0 && intact;
   console.log(`${ok ? 'PASS' : 'FAIL'}  gather: ${going ? going.ev : 'no answer'} -> ${done ? `collected ${done.count}` : 'never finished (stuck?)'} in ${secs} s, logs left on the ground ${left}, she ended at ${pos}`);
   for (const l of body.logs) if (/stopped|failed/.test(l)) console.log('      ', l);
   return ok;
@@ -344,14 +307,24 @@ async function gatherTest() {
   else if (what === 'items') ok = await items();
   else if (what === 'gather') ok = await gatherTest();
   else if (what === 'harvest') ok = await harvestTest();
+  else if (what === 'actions') ok = await actions(rest);
+  else if (what === 'safety') ok = await safety();
+  else if (what === 'survival') ok = await survival(rest);
+  else if (what === 'trip') ok = await trip();
+  else if (what === 'players') ok = await playersTest(rest);
   else if (what === 'all') {
     ok = (await lanes([])) && ok;
     ok = (await crops()) && ok;
     ok = (await items()) && ok;
     ok = (await gatherTest()) && ok;
     ok = (await harvestTest()) && ok;
+    ok = (await actions([])) && ok;
+    ok = (await safety()) && ok;
+    ok = (await survival([])) && ok;
+    ok = (await trip()) && ok;
+    ok = (await playersTest([])) && ok;
   } else {
-    console.log('usage: node run.js build | lanes [name ...] | crops | items | gather | harvest | all   [-v]');
+    console.log('usage: node run.js build | lanes [name ...] | crops | items | gather | harvest | actions [name ...] | safety | survival [name ...] | trip | players [name ...] | all   [-v]');
     process.exit(2);
   }
   process.exit(ok ? 0 : 1);
