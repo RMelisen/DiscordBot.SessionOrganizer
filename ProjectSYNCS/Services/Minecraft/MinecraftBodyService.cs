@@ -4,6 +4,7 @@ using System.Text.Json;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Helpers;
@@ -122,6 +123,7 @@ public sealed class MinecraftBodyService : BackgroundService
     private readonly DiscordSocketClient _client;
     private readonly ResponsePicker _picker;
     private readonly PiHealthService _health;
+    private readonly IServiceProvider _services;
     private readonly ILogger<MinecraftBodyService> _logger;
 
     private readonly string _host;
@@ -187,12 +189,14 @@ public sealed class MinecraftBodyService : BackgroundService
     private string? _lastKick;
     private DateTimeOffset? _lastKickAt;
 
-    public MinecraftBodyService(DiscordSocketClient client, ResponsePicker picker, PiHealthService health, IConfiguration configuration,
+    public MinecraftBodyService(DiscordSocketClient client, ResponsePicker picker, PiHealthService health, IServiceProvider services,
+        IConfiguration configuration,
         ILogger<MinecraftBodyService> logger)
     {
         _client = client;
         _picker = picker;
         _health = health;
+        _services = services;
         _logger = logger;
 
         _host = configuration["Minecraft:Host"]?.Trim() ?? "";
@@ -300,6 +304,13 @@ public sealed class MinecraftBodyService : BackgroundService
             {
                 _logger.LogWarning(ex, "Minecraft body tick failed.");
             }
+            var now = DateTimeOffset.UtcNow;
+            lock (_gate) CountTimeLocked(now);
+            if (now - _lastFlush >= StatsFlush)
+            {
+                _lastFlush = now;
+                await FlushStatsAsync();
+            }
             await Task.Delay(Interval, stoppingToken);
         }
     }
@@ -307,6 +318,8 @@ public sealed class MinecraftBodyService : BackgroundService
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
         await base.StopAsync(cancellationToken);
+        lock (_gate) CountTimeLocked(DateTimeOffset.UtcNow);
+        await FlushStatsAsync();
         MinecraftBodyProcess? body;
         lock (_gate) body = _body;
         if (body is null) return;
@@ -351,8 +364,10 @@ public sealed class MinecraftBodyService : BackgroundService
             // Not allowed: she still watches the server (so /debug shows it) but never goes in.
             var verdict = McPresence.Decide(status is not null && _allowed, others, othersCount, _owner, inGame, _fewSince, now);
             _fewSince = verdict.FewSince;
-            join = !inGame && verdict.InGame && now >= _retryAfter && now >= _holdUntil;
-            leave = inGame && !verdict.InGame && !_leaving;
+            // Invited (/minecraft invite): wanted in for the hour, whatever the count, as long as the server answers.
+            var wanted = verdict.InGame || (status is not null && _allowed && now < _invitedUntil);
+            join = !inGame && wanted && now >= _retryAfter && now >= _holdUntil;
+            leave = inGame && !wanted && !_leaving;
         }
 
         if (join) StartBody();
@@ -426,6 +441,7 @@ public sealed class MinecraftBodyService : BackgroundService
             if (!ReferenceEquals(_body, body)) return;
             var planned = _leaving;
             _body = null;
+            CountTimeLocked(DateTimeOffset.UtcNow);
             _spawned = false;
             _leaving = false;
             _inGameSince = null;
@@ -450,6 +466,7 @@ public sealed class MinecraftBodyService : BackgroundService
         _timers.Clear();
         _marking.Clear();
         _askedWhere.Clear();
+        _whereFromDiscord = null;
     }
 
     private void MarkFailureLocked(DateTimeOffset now)
@@ -559,6 +576,8 @@ public sealed class MinecraftBodyService : BackgroundService
                     break;
                 case "caught":
                     var catchKind = root.GetProperty("kind").GetString();
+                    if (catchKind == "fish") _tally.Add(McStats.Fish, 1);
+                    else if (catchKind == "treasure") _tally.Add(McStats.Treasure, 1);
                     if (catchKind == "treasure"
                         || Random.Shared.NextDouble() < (catchKind == "fish" ? CatchChance : JunkChance))
                         Remark("catch", catchKind switch
@@ -611,6 +630,14 @@ public sealed class MinecraftBodyService : BackgroundService
                     break;
                 case "position":
                     var asker = root.GetProperty("player").GetString() ?? "";
+                    if (asker == DiscordAsker)
+                    {
+                        TaskCompletionSource<McSpot>? waiting;
+                        lock (_gate) (waiting, _whereFromDiscord) = (_whereFromDiscord, null);
+                        waiting?.TrySetResult(new McSpot(root.GetProperty("x").GetInt32(), root.GetProperty("y").GetInt32(),
+                            root.GetProperty("z").GetInt32(), root.GetProperty("dimension").GetString() ?? ""));
+                        break;
+                    }
                     bool whereWhispered;
                     lock (_gate)
                         if (!_askedWhere.Remove(asker, out whereWhispered)) break;
@@ -634,6 +661,7 @@ public sealed class MinecraftBodyService : BackgroundService
                     Reply(unmarked, markWhispered, BotResponses.McTooFarLines);
                     break;
                 case "killed":
+                    _tally.Add(McStats.Kills, 1);
                     if (Random.Shared.NextDouble() < KillChance)
                         Remark("kill", BotResponses.McGuardKillLines, root.GetProperty("player").GetString());
                     break;
@@ -642,6 +670,7 @@ public sealed class MinecraftBodyService : BackgroundService
                         root.GetProperty("count").GetInt32());
                     break;
                 case "collected":
+                    _tally.Add(McStats.Gathered(root.GetProperty("resource").GetString() ?? ""), root.GetProperty("count").GetInt32());
                     OnCollected(root.GetProperty("player").GetString() ?? "", root.GetProperty("resource").GetString() ?? "",
                         root.GetProperty("count").GetInt32(), root.GetProperty("delivered").GetBoolean());
                     break;
@@ -672,8 +701,13 @@ public sealed class MinecraftBodyService : BackgroundService
                     Ack(root.GetProperty("player").GetString() ?? "", harvestPrivate, $"harvest:{harvesting}", BotResponses.McHarvestAckLines,
                         root.GetProperty("count").GetInt32(), CropName(harvesting));
                     break;
+                case "farmed":
+                    // A farm round's produce (ordered or her own routine): no line, only her stats.
+                    _tally.Add(McStats.Harvested, root.GetProperty("count").GetInt32());
+                    break;
                 case "harvested":
                     var harvested = root.GetProperty("count").GetInt32();
+                    _tally.Add(McStats.Harvested, harvested);
                     OnOutcome(root.GetProperty("player").GetString() ?? "",
                         harvested == 0 ? BotResponses.McHarvestEmptyLines
                         : root.GetProperty("delivered").GetBoolean() ? BotResponses.McHarvestDoneLines
@@ -845,7 +879,11 @@ public sealed class MinecraftBodyService : BackgroundService
             lock (_gate)
                 if (ReferenceEquals(_body, body) && !_leaving)
                 {
-                    var text = _picker.Pick(BotResponses.McArrivalLines, LineChoices);
+                    // Invited (/minecraft invite): she says who brought her, instead of her usual hello.
+                    var invitedBy = McInvite.Inviter(_invitedBy, _invitedUntil, DateTimeOffset.UtcNow);
+                    _invitedBy = null;
+                    var text = invitedBy is null ? _picker.Pick(BotResponses.McArrivalLines, LineChoices)
+                        : string.Format(_picker.Pick(BotResponses.McInvitedLines, LineChoices), Who(invitedBy));
                     SayLocked(body, new { op = "say", text }, text);
                 }
             await Task.Delay(SeekPause);
@@ -862,6 +900,7 @@ public sealed class MinecraftBodyService : BackgroundService
 
         if (McDeath.Classify(key, args, players, _username) is { } death)
         {
+            if (death.Kind == McDeathKind.Self) _tally.Add(McStats.Deaths, 1);
             var pool = death.Kind == McDeathKind.Self ? BotResponses.McDeathLines[death.Kind]
                 : Kin(death.Victim, BotResponses.McDeathLines[death.Kind], BotResponses.McDeathLinesOwner, BotResponses.McDeathLinesTata);
             var ordinary = death.Kind is not (McDeathKind.Self or McDeathKind.Player) && KinOf(death.Victim) == McKin.Anyone;
@@ -878,6 +917,12 @@ public sealed class MinecraftBodyService : BackgroundService
     private void OnChat(string player, string text, bool whispered)
     {
         if (player.Length == 0) return;
+        // A link code (/minecraft link), whispered: proof, not talk. A wrong one gets nothing.
+        if (whispered && McLinkCodes.ReadCode(text) is { } code)
+        {
+            if (LinkCodes.Redeem(player, code, DateTimeOffset.UtcNow) is { } userId) _ = SaveLinkAsync(userId, player);
+            return;
+        }
         bool called;
         bool answered;
         string[] known;
@@ -1403,6 +1448,8 @@ public sealed class MinecraftBodyService : BackgroundService
             if (_pending is { } pending && Same(pending.Player, player))
             {
                 _order = pending with { Since = DateTimeOffset.UtcNow, Robbed = null };
+                _tally.Add(McStats.Orders, 1);
+                _tally.Add(McStats.OrdersBy(player), 1);
                 _pending = null;
                 job = pending;
             }
@@ -1673,6 +1720,121 @@ public sealed class MinecraftBodyService : BackgroundService
                 SayLocked(body, whispered ? new { op = "whisper", player, text } : (object)new { op = "say", text }, text);
     }
 
+    // ---- Links (/minecraft link) ----------------------------------------------------------------
+
+    /// <summary>The codes members are given on Discord and whisper to her in game.</summary>
+    public McLinkCodes LinkCodes { get; } = new();
+
+    /// <summary>Her in-game name, for the whisper /minecraft link tells members to type.</summary>
+    public string Username => _username;
+
+    public bool IsSpawned
+    {
+        get { lock (_gate) return _spawned && !_leaving; }
+    }
+
+    /// <summary>Who a name is to her (Papa, Tata, anyone), by Minecraft:Owner and Minecraft:Tata.</summary>
+    public McKin KinOfPlayer(string player) => KinOf(player);
+
+    // A redeemed code: saved off the body's event thread, and confirmed to the player in a whisper. The name was checked
+    // free when the code was issued; a member who took it in the meantime wins (the unique index refuses this one). The
+    // code is spent either way, so a failure is said too: the player asks for a new one rather than wait for nothing.
+    private async Task SaveLinkAsync(ulong userId, string player)
+    {
+        try
+        {
+            await using var scope = _services.CreateAsyncScope();
+            var data = scope.ServiceProvider.GetRequiredService<MinecraftDataService>();
+            if (await data.LinkOfPlayerAsync(player) is { } taken && taken.UserId != userId)
+            {
+                Reply(player, true, BotResponses.McLinkFailedLines);
+                return;
+            }
+            await data.SaveLinkAsync(userId, player);
+            _logger.LogInformation("Minecraft: {Player} linked to Discord member {UserId}.", player, userId);
+            Reply(player, true, BotResponses.McLinkedLines);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not save the Minecraft link of {Player}.", player);
+            Reply(player, true, BotResponses.McLinkFailedLines);
+        }
+    }
+
+    // ---- Stats (/minecraft stats) ---------------------------------------------------------------
+
+    // Counted from the body's events, written every StatsFlush by the loop (never a write per event); a crash loses at
+    // most that much, a clean stop flushes. _countedUntil: how far her time in game is counted. Guarded by _gate.
+    private readonly McTally _tally = new();
+    private static readonly TimeSpan StatsFlush = TimeSpan.FromMinutes(5);
+    private DateTimeOffset _lastFlush = DateTimeOffset.UtcNow;
+    private DateTimeOffset? _countedUntil;
+
+    /// <summary>What was counted since the last write: /minecraft stats adds it to the stored totals.</summary>
+    public IReadOnlyDictionary<string, long> PendingStats() => _tally.Peek();
+
+    /// <summary>How many places she remembers, everyone's.</summary>
+    public int PlacesCount
+    {
+        get { lock (_gate) return _places.Values.Sum(p => p.Count); }
+    }
+
+    /// <summary>A gathered resource's French name (« wood » → its name in her lines), else the key as is.</summary>
+    public static string ResourceLabel(string resource) => ResourceName(resource);
+
+    // Her whole minutes in game since the last count.
+    private void CountTimeLocked(DateTimeOffset now)
+    {
+        if (!_spawned || _inGameSince is not { } since) return;
+        var from = _countedUntil is { } counted && counted > since ? counted : since;
+        var minutes = (long)(now - from).TotalMinutes;
+        if (minutes <= 0) return;
+        _tally.Add(McStats.Minutes, minutes);
+        _countedUntil = from + TimeSpan.FromMinutes(minutes);
+    }
+
+    // Writes what was counted. A failed write puts the counts back, for the next try.
+    private async Task FlushStatsAsync()
+    {
+        var counts = _tally.Drain();
+        if (counts.Count == 0) return;
+        try
+        {
+            await using var scope = _services.CreateAsyncScope();
+            await scope.ServiceProvider.GetRequiredService<MinecraftDataService>().AddStatsAsync(counts);
+        }
+        catch (Exception ex)
+        {
+            foreach (var (key, n) in counts) _tally.Add(key, n);
+            _logger.LogWarning(ex, "Could not write the Minecraft stats.");
+        }
+    }
+
+    // ---- Invites (/minecraft invite) ------------------------------------------------------------
+
+    // Until when an invite keeps her in whatever the presence rule says, and who invited her (in-game name), for her
+    // arrival line; cleared once said. Forbidding her or the owner's forced leave ends an invite. Guarded by _gate.
+    private DateTimeOffset _invitedUntil = DateTimeOffset.MinValue;
+    private string? _invitedBy;
+
+    /// <summary>A linked player asks her onto the server (McInvite: allowed, not held, not already there).</summary>
+    public McInviteVerdict Invite(string player)
+    {
+        if (!Enabled || _script is null) return McInviteVerdict.NotAllowed;
+        var now = DateTimeOffset.UtcNow;
+        lock (_gate)
+        {
+            var verdict = McInvite.Decide(_allowed, _lastStatus is not null, _body is not null, _holdUntil, _invitedUntil, now);
+            if (verdict != McInviteVerdict.Go) return verdict;
+            (_invitedUntil, _invitedBy) = (now + McInvite.Length, player);
+            _retryAfter = DateTimeOffset.MinValue;
+            _failures = 0;
+        }
+        _logger.LogInformation("Minecraft: {Player} invited her for {Minutes} minutes.", player, McInvite.Length.TotalMinutes);
+        if (!StartBody()) _logger.LogWarning("Minecraft: the invited body could not start.");
+        return McInviteVerdict.Go;
+    }
+
     // ---- Talk -----------------------------------------------------------------------------------
 
     /// <summary>
@@ -1922,6 +2084,33 @@ public sealed class MinecraftBodyService : BackgroundService
     }
 
     /// <summary>
+    /// /minecraft status: the server, who's on, and what she's doing, for anyone. Nothing of the owner's (address, kick
+    /// reasons, the allow switch): that stays in /debug. Player names are someone else's text: sanitized.
+    /// </summary>
+    public string PublicStatusText()
+    {
+        if (!Enabled || _script is null) return "Elle n'a pas de serveur Minecraft configuré.";
+        var sb = new StringBuilder();
+        lock (_gate)
+        {
+            if (_lastStatus is not { } s) return "Le serveur ne répond pas.";
+            sb.AppendLine($"Serveur : en ligne, {s.Online}/{s.Max} joueurs.");
+            if (!_spawned)
+            {
+                sb.Append(_body is null ? "Elle n'est pas sur le serveur." : "Elle se connecte…");
+                return sb.ToString();
+            }
+            sb.AppendLine($"Elle est en jeu depuis {Stamp(_inGameSince!.Value)}.");
+            sb.AppendLine(_players.Count == 0 ? "Avec elle : personne."
+                : $"Avec elle : {string.Join(", ", _players.Select(Format.Sanitize))}.");
+            var job = _order ?? _pending;
+            var doing = McDoing.ForStatus(job?.Order, job is null ? null : Who(job.Player), job?.Detail, job?.Private ?? false);
+            sb.Append($"En ce moment, {Format.Sanitize(doing)}.");
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>
     /// What she carries, for the owner: what she wears, holds and has in her pockets, with full counts. An item she has
     /// no French for shows its game id. Item ids come from the server: in code spans.
     /// </summary>
@@ -1959,6 +2148,37 @@ public sealed class MinecraftBodyService : BackgroundService
         return sb.ToString().TrimEnd();
     }
 
+    /// <summary>
+    /// /minecraft where: asks the body where she is and waits for its answer (<paramref name="timeout"/> at most). Callers
+    /// at the same time share one question. Never throws; an answer that doesn't come says so.
+    /// </summary>
+    public async Task<string> WhereAsync(TimeSpan timeout)
+    {
+        Task<McSpot> answer;
+        lock (_gate)
+        {
+            if (_body is not { } body || !_spawned || _leaving) return "Elle n'est pas sur le serveur.";
+            if (_whereFromDiscord is null)
+            {
+                _whereFromDiscord = new TaskCompletionSource<McSpot>(TaskCreationOptions.RunContinuationsAsynchronously);
+                body.Send(new { op = "where", player = DiscordAsker });
+            }
+            answer = _whereFromDiscord.Task;
+        }
+        if (await Task.WhenAny(answer, Task.Delay(timeout)) != answer)
+        {
+            lock (_gate) if (_whereFromDiscord?.Task == answer) _whereFromDiscord = null;
+            return "Pas de réponse de sa part pour l'instant.";
+        }
+        var spot = answer.Result;
+        return $"Elle est en `{spot.X} {spot.Y} {spot.Z}`, {BotResponses.McDimensionNames[DimensionOf(spot.Dimension)]}.";
+    }
+
+    // The asker of a « where » sent for Discord: no player name can hold U+0001, so the body's answer can't be mistaken
+    // for a player's. Guarded by _gate.
+    private const string DiscordAsker = "\u0001discord";
+    private TaskCompletionSource<McSpot>? _whereFromDiscord;
+
     // Her pockets and hotbar: 27 + 9.
     private const int PocketSlots = 36;
 
@@ -1971,6 +2191,7 @@ public sealed class MinecraftBodyService : BackgroundService
         lock (_gate)
         {
             _allowed = allowed;
+            if (!allowed) (_invitedUntil, _invitedBy) = (DateTimeOffset.MinValue, null);
             inGame = _body is not null;
             state = StateLocked();
         }
@@ -2002,7 +2223,11 @@ public sealed class MinecraftBodyService : BackgroundService
     /// <summary>Takes her out now and keeps her out for half an hour.</summary>
     public string ForceLeave()
     {
-        lock (_gate) _holdUntil = DateTimeOffset.UtcNow + ForcedLeaveHold;
+        lock (_gate)
+        {
+            _holdUntil = DateTimeOffset.UtcNow + ForcedLeaveHold;
+            (_invitedUntil, _invitedBy) = (DateTimeOffset.MinValue, null);
+        }
         bool inGame;
         lock (_gate) inGame = _body is not null;
         if (inGame) Leave();

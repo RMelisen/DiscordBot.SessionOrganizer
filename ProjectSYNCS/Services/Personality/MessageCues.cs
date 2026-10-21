@@ -117,6 +117,7 @@ internal enum HerTopic
     Birthday,
     Home,
     Favourite,
+    Version,
 }
 
 // What a Request asks her to do, so she can point at the command that does it
@@ -1608,6 +1609,26 @@ internal static class MessageCues
         }),
     };
 
+    // Her version: « t'es en quelle version ? », « c'est quoi ta version ? », « t'es à jour ? ».
+    // Closing the message or its question, or before _versionFollowers only: « t'es en quelle
+    // version de Minecraft ? » and « ta version des faits » are something else.
+    private static readonly string[] _versionPhrases =
+    {
+        "t es en quelle version", "tu es en quelle version", "tes en quelle version", "t es quelle version",
+        "tu es quelle version", "tes quelle version", "t es a quelle version", "tu es a quelle version",
+        "t en es a quelle version", "tu en es a quelle version", "quelle version tu es", "quelle version es tu",
+        "quelle version t es", "t es en version combien", "tu es en version combien", "tu tournes en quelle version",
+        "tu tournes sur quelle version", "t as quelle version", "tu as quelle version",
+        "c est quoi ta version", "c quoi ta version", "quelle est ta version", "ta version c est quoi",
+        "ta version actuelle", "ton numero de version", "ta derniere version", "ta derniere mise a jour",
+        "ta derniere maj", "t es a jour", "tu es a jour", "tes a jour",
+        "what version are you", "what version are you on", "what s your version", "which version are you",
+    };
+    private static readonly HashSet<string> _versionFollowers = new()
+    {
+        "syncs", "sync", "actuellement", "maintenant", "aujourd", "exactement", "deja", "la", "now", "today",
+    };
+
     // « ton jeu préféré », « ta couleur favorite »: a possessive, then « préféré » within three words.
     private static readonly HashSet<string> _yourWords = new() { "ton", "ta", "tes" };
     private static readonly HashSet<string> _favouriteWords = new()
@@ -2193,7 +2214,7 @@ internal static class MessageCues
         if (IsClosingAsk(t, _rememberMePhrases, breaks, _rememberFollowers)
             || (asks && IsClosingAsk(t, _rememberMeAskedPhrases, breaks, _rememberFollowers)))
             return ChatIntent.RememberMe;
-        if (ReadHerTopic(t) is not null) return ChatIntent.AboutHer;
+        if (ReadHerTopic(t, breaks) is not null) return ChatIntent.AboutHer;
         if (FindPhrase(t, _areYouABotPhrases, cancelAfter: false, cancelBefore: false)) return ChatIntent.AreYouABot;
         if (asks && IsClosingAsk(t, _areYouUpsetPhrases, breaks, _upsetFollowers)) return ChatIntent.AreYouUpset;
         if (FindPhrase(t, _crushPhrases, cancelAfter: false, cancelBefore: false)
@@ -2464,14 +2485,17 @@ internal static class MessageCues
         return RequestTopic.Other;
     }
 
-    /// <summary>What an AboutHer question asks (age, birthday, home, favourites), or null.</summary>
-    public static HerTopic? ReadHerTopic(string content) =>
-        string.IsNullOrWhiteSpace(content)
-            ? null
-            : ReadHerTopic(TokenizeOrdered(_link.Replace(_customEmote.Replace(_mentionMarkup.Replace(content, " "), " "), " ")));
-
-    private static HerTopic? ReadHerTopic(List<string> tokens)
+    /// <summary>What an AboutHer question asks (age, birthday, home, favourites, version), or null.</summary>
+    public static HerTopic? ReadHerTopic(string content)
     {
+        if (string.IsNullOrWhiteSpace(content)) return null;
+        var text = _link.Replace(_customEmote.Replace(_mentionMarkup.Replace(content, " "), " "), " ");
+        return ReadHerTopic(TokenizeOrdered(text), QuestionBreaks(text));
+    }
+
+    private static HerTopic? ReadHerTopic(List<string> tokens, HashSet<int> questionBreaks)
+    {
+        if (IsClosingAsk(tokens, _versionPhrases, questionBreaks, _versionFollowers)) return HerTopic.Version;
         foreach (var (topic, phrases) in _aboutHerPhrases)
             if (FindPhrase(tokens, phrases, cancelAfter: false, cancelBefore: false)) return topic;
 

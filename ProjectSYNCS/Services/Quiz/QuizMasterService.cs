@@ -25,7 +25,7 @@ public enum QuizPickResult
     Won,
 }
 
-// Her pop quiz: posts a question up to twice a day in the guild's quiz channel
+// Her pop quiz: posts a question up to three times a day in the guild's quiz channel
 // (/config quiz-channel), takes the first right answer, pays it, and reveals the answer
 // when nobody finds it within the hour. When to post is Helpers/Quiz/QuizSchedule, what to ask
 // is Helpers/Quiz/QuizBank, how a typed answer is judged is Helpers/Quiz/QuizAnswer.
@@ -57,7 +57,7 @@ public sealed class QuizMasterService : BackgroundService
     private const int SeedDepth = 20;
 
     // DailyRotation salts, keyed by the guild's round count (questions) or the round id
-    // (her lines): spent twice a day at most, so ResponsePicker's history would be wiped by
+    // (her lines): spent three times a day at most, so ResponsePicker's history would be wiped by
     // restarts long before it helped. Changing a salt reshuffles that walk.
     private const ulong QuestionSalt = 0x5359_4E43_5351_5545; // "SYNCSQUE"
     private const ulong IntroSalt = 0x5359_4E43_5351_494E;    // "SYNCSQIN"

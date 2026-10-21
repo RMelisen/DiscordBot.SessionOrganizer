@@ -12,9 +12,21 @@ public static class QuizCrown
 {
     /// <summary>
     /// Monday, this hour Paris: the crown changes hands — after the morning hello (8:00–10:00),
-    /// before the first quiz slot (11:00).
+    /// before the first quiz slot (10:30).
     /// </summary>
     public const int CrownHour = 10;
+
+    /// <summary>Cailloux paid with the crown, to each champion when the crown is shared.</summary>
+    public const long Purse = 150;
+
+    /// <summary>
+    /// The purse's line under her announcement, or nothing when none was paid. Not gendered, like
+    /// the crown lines it follows.
+    /// </summary>
+    public static string PurseText(long purse, bool shared) =>
+        purse <= 0 ? string.Empty
+        : shared ? $"\n-# Et {PebbleEconomy.Cailloux(purse)} pour chaque grosse tête, de ma part."
+        : $"\n-# Et {PebbleEconomy.Cailloux(purse)} dans ta poche, de ma part.";
 
     /// <summary>
     /// The DayKey of the Monday starting the week whose champion reigns at <paramref name="now"/>:

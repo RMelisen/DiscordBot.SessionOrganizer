@@ -8,8 +8,11 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using ProjectSYNCS.Data;
 using ProjectSYNCS.Services;
 
 var outDir = Path.GetFullPath(args.Length > 0 ? args[0] : "mc-chattest-out");
@@ -49,8 +52,16 @@ var health = (PiHealthService)RuntimeHelpers.GetUninitializedObject(typeof(PiHea
 typeof(PiHealthService).GetField("_gate", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(health, new object());
 typeof(PiHealthService).GetField("_currentMilli", BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(health, (int?)52000);
 
+// Her links and stats (/minecraft) are written to a database of the test's own, migrated as the bot's is.
+var services = new ServiceCollection()
+    .AddDbContext<AppDbContext>(o => o.UseSqlite($"Data Source={config["Database:Path"]}"), ServiceLifetime.Transient)
+    .AddTransient<MinecraftDataService>()
+    .BuildServiceProvider();
+await using (var scope = services.CreateAsyncScope())
+    await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
+
 using var logs = LoggerFactory.Create(b => b.AddSimpleConsole(o => { o.SingleLine = true; o.TimestampFormat = "HH:mm:ss "; }));
-var service = new MinecraftBodyService(new DiscordSocketClient(), new ResponsePicker(), health, config,
+var service = new MinecraftBodyService(new DiscordSocketClient(), new ResponsePicker(), health, services, config,
     logs.CreateLogger<MinecraftBodyService>());
 
 using var stop = new CancellationTokenSource();

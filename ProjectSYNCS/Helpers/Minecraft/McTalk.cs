@@ -165,6 +165,10 @@ public static class McTalkReader
                 return new(BotResponses.MorningFunFacts, kind);
             case ChatIntent.Request:
                 return new(BotResponses.McCantDoLines, kind);
+            // ChatterService.TryIntent: her version is said to Papa too, the rest is his twin's.
+            case ChatIntent.AboutHer when MessageCues.ReadHerTopic(text) == HerTopic.Version:
+                return new(kin == McKin.Papa ? BotResponses.OwnerVersionLines : BotResponses.AboutHerLines[HerTopic.Version],
+                    kind, AppInfo.Version);
             case ChatIntent.AboutHer when kin != McKin.Papa:
                 var topic = MessageCues.ReadHerTopic(text) ?? HerTopic.Favourite;
                 var days = topic == HerTopic.Age ? MorningGreeting.DaysOld(DateTimeOffset.UtcNow).ToString() : "";

@@ -28,6 +28,8 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/rate <thing>` | A score out of 10, the same every time | everyone |
 | `/ship <a> <b>` | How well two things go together, out of 100 | everyone |
 | `/blame` | Whose fault it is, among the people in voice | everyone |
+| `/minecraft help · status · where · inventory · stats` | Her Minecraft manual, and what she's doing and has done on the server | everyone |
+| `/minecraft link · invite` | Link your in-game name (a code whispered to her), then bring her onto the server for an hour | everyone (`invite`: linked) |
 | `/wouldyourather` | A two-button dilemma, revealed after 10 minutes | everyone |
 | `/tonight` | Who's up tonight — becomes a session once enough people are in | everyone |
 | `/teams` | Split a voice channel into teams | everyone |
@@ -209,7 +211,12 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
 - **She swims.** In deep water she treads, and swims up for air before it runs out. Following you,
   she dives after you, comes up to breathe and goes back down; if you sit in a boat with a free
   seat, she climbs in as your passenger and gets out when you do.
-- **On Discord** she says in the bots channel when she goes to play and when she's back.
+- **On Discord**, `/minecraft help` lists every order she understands with phrasings that work;
+  `/minecraft status`, `where`, `inventory` and `stats` show what she's doing, where she is, what she
+  carries and what she's done since the start. `/minecraft link` ties your Discord account to your
+  in-game name (you whisper her a code); once linked, `/minecraft invite` brings her onto the server
+  for an hour, whatever the player count. The owner's and Tata's names can only be linked by them,
+  and a name already linked stays its holder's.
 
 She joins nothing until the owner allows it with `/debug minecraft` (« L'autoriser à jouer »);
 the choice survives restarts, and « Lui interdire de jouer » takes her out at once.
@@ -350,14 +357,14 @@ Every counter starts at zero the day it ships and nothing can be backfilled.
 
 ### Pop quiz
 
-Up to **twice a day** she posts a question in the server's quiz channel, and the **first
-right answer wins** cailloux: 15, 25 or 40 depending on difficulty. Off until staff pick
+Up to **three times a day** she posts a question in the server's quiz channel, and the **first
+right answer wins** cailloux: 25, 40 or 60 depending on difficulty. Off until staff pick
 a channel with **`/config quiz-channel set`**.
 
-- **When:** one slot between 11:00 and 16:00 and one between 16:30 and 22:00 (Paris), each
-  kept three times in four, so 0 to 2 a day. A slot waits until someone has spoken in the
-  channel in the last 45 minutes, so she never asks an empty room, and two questions are at
-  least 3 hours apart.
+- **When:** one slot in each of 10:30–14:00, 14:00–18:00 and 18:00–22:00 (Paris), each
+  kept four times in five, so 0 to 3 a day. A slot waits until someone has spoken in the
+  channel in the last hour, so she never asks an empty room, and two questions are at
+  least 2 hours apart.
 - **Multiple choice** (A/B/C/D buttons): **one click per person**. A wrong click is told
   privately and that person is out of the round.
 - **Open questions:** type the answer in the channel. Case, accents, punctuation and small
@@ -368,9 +375,9 @@ a channel with **`/config quiz-channel set`**.
   her. Many come from her morning fun facts. Nothing repeats until the whole bank is used.
 - **`/quiz leaderboard`** — wins over 30 days, 7 days or all time (with each person's fastest
   winning answer).
-- **Grosse tête de la semaine:** every Monday at 10:00 she gives a role to last week's best
-  answerer (most wins, then the harder questions, then speed) and announces it in the quiz
-  channel. Off until staff set the role with **`/config quiz-role create`**.
+- **Grosse tête de la semaine:** every Monday at 10:00 she gives a role and 150 cailloux to last
+  week's best answerer (most wins, then the harder questions, then speed; each one gets the purse
+  on a tie) and announces it in the quiz channel. Off until staff set the role with **`/config quiz-role create`**.
 
 ### Plynlings
 

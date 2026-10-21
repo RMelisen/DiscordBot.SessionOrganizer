@@ -51,9 +51,9 @@ public static class QuizBank
 {
     public static long RewardFor(QuizDifficulty difficulty) => difficulty switch
     {
-        QuizDifficulty.Easy => 15,
-        QuizDifficulty.Medium => 25,
-        _ => 40,
+        QuizDifficulty.Easy => 25,
+        QuizDifficulty.Medium => 40,
+        _ => 60,
     };
 
     public static string Label(QuizCategory category) => category switch

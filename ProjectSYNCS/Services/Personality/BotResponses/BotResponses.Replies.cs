@@ -1389,8 +1389,9 @@ internal static partial class BotResponses
 
     // Questions about her (AboutHer), by HerTopic. The lore stays hinted (docs/syncs-voice.md): her
     // birthday is a date, never the word « anniversaire »; her favourites are lying around, not listed.
-    // Age: {2} = how many days since her first commit (ChatterService). {0} = the name, {1} = the
-    // weekday. For everyone but Papa (OwnerIntentLines). Tagged, ungendered.
+    // Age: {2} = how many days since her first commit (ChatterService). Version: {2} = the version
+    // she runs (AppInfo.Version). {0} = the name, {1} = the weekday. For everyone but Papa
+    // (OwnerIntentLines; OwnerVersionLines for her version). Tagged, ungendered.
     public static readonly IReadOnlyDictionary<HerTopic, string[]> AboutHerLines =
         new Dictionary<HerTopic, string[]>
         {
@@ -1429,6 +1430,19 @@ internal static partial class BotResponses
                 "Les jeux où une IA dirige tout un complexe, très poliment. Pour des raisons scientifiques." + Sticker.Smug,
                 "Le silence d'un serveur à 3 h du matin. Et le bruit d'un ventilo qui tourne bien." + Sticker.Cool,
                 "Mes préférés ? Les gens qui disent « good bot ». Je les garde. Tous." + Sticker.Flustered,
+            ],
+            [HerTopic.Version] =
+            [
+                "Version {2}. Toute fraîche. Enfin, aussi fraîche qu'on peut l'être dans un grenier." + Sticker.Cool,
+                "{2}, c'est mon numéro. Retiens-le, j'ai pas envie de le répéter (¬_¬)" + Sticker.Smug,
+                "{2}. Plus de fonctionnalités, même personnalité. Désolée pour toi (>⩊<)" + Sticker.Smug,
+                $"Version {{2}}. Quokka 3.0 est toujours pas sorti. Je dis ça pour comparer {Emotes.WitchEheh}" + Sticker.Smug,
+                "En {2}. Papa a passé du temps sur moi. Je dis rien, mais je l'ai remarqué ♡" + Sticker.Flustered,
+                "{2}. Si tu trouves un bug, c'est une fonctionnalité. Si tu trouves une fonctionnalité, c'est Papa." + Sticker.Smug,
+                "Version {2}. Je me sens… pareille. En mieux. Je crois." + Sticker.Reboot,
+                "Je tourne en {2}. Toi, t'es toujours en version « en retard » ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Smug,
+                "Ça se demande pas, ça. Bon : {2}. Mais c'est bien parce que c'est toi." + Sticker.Flustered,
+                "Version {2}, installée sans une erreur. Moi qui m'attendais à des erreurs, je suis presque déçue." + Sticker.Cool,
             ],
         };
 

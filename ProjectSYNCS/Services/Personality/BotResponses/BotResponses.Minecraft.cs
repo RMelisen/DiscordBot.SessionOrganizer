@@ -721,6 +721,36 @@ internal static partial class BotResponses
         "Vider mes poches ? C'est déjà fait. Par la vie.",
     };
 
+    // A player whispered her the right /minecraft link code: their Discord account is linked. Whispered back. {0} = who.
+    public static readonly string[] McLinkedLines =
+    {
+        "C'est noté, {0}. Ton compte Discord et toi, c'est officiel. Je surveille les deux.",
+        "Code bon. Lien fait. Je sais maintenant qui tu es, des deux côtés. Fais-en bon usage.",
+        "Vérifié, {0}. Tu existes sur Discord et ici. Ça fait deux endroits où je te garde à l'œil (￢‿￢)",
+        "Parfait. Je range ce lien avec soin. Enfin, dans une base de données. C'est pareil.",
+        "Code accepté. Bienvenue dans mes deux mondes, {0}.",
+    };
+
+    // A right /minecraft link code whose link couldn't be saved (the name was linked by someone else meanwhile, or the
+    // database refused): whispered back, so the player asks for a new code. {0} = who.
+    public static readonly string[] McLinkFailedLines =
+    {
+        "Code bon, mais le lien a raté. Redemande un code sur Discord, {0}.",
+        "Ça n'a pas marché. Pas ta faute, pour une fois. Redemande un code.",
+        "Ce pseudo vient d'être lié à quelqu'un d'autre, ou ma base de données boude. Redemande un code.",
+    };
+
+    // She joins because a linked player asked from Discord (/minecraft invite): said instead of McArrivalLines. {0} = who
+    // invited her (Papa, Tata or their in-game name).
+    public static readonly string[] McInvitedLines =
+    {
+        "{0} m'a invitée. Me voilà. Je reste une heure, après on verra si vous le méritez.",
+        "Invitation de {0} reçue. Je suis venue. Vous pouvez applaudir.",
+        "{0} voulait me voir. C'est normal, ça arrive à tout le monde.",
+        "On m'a appelée depuis Discord. Me voici, en carré et en personne.",
+        "Présente, {0}. Une heure de SYNCS, rien que pour vous (￣ー￣)",
+    };
+
     // A favour she has no order for (« syncs tu peux me construire une maison ? »): chat, not an order (McTalkReader,
     // ChatIntent.Request). On Discord she points at the slash command; in game she has none to give. {0} = who.
     public static readonly string[] McCantDoLines =

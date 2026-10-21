@@ -1,6 +1,6 @@
 # Pop quiz
 
-Up to twice a day SYNCS posts a question in the guild's quiz channel; the first right answer
+Up to three times a day SYNCS posts a question in the guild's quiz channel; the first right answer
 wins cailloux and a point on `/quiz leaderboard`.
 
 | Piece | Role |
@@ -21,12 +21,13 @@ wins cailloux and a point on `/quiz leaderboard`.
 - **Off by default.** `GuildSettings.QuizChannelId` (`/config quiz-channel set|clear`) has no
   hardcoded fallback: zero means no quiz. Clearing it leaves an open round to finish where it is
   (the round stores its own channel).
-- **Two slots a day**, one in 11:00–16:00 and one in 16:30–22:00 Paris, each kept at
-  `SlotChance` (75%): 0–2 a day. Drawn in memory on the first tick of the Paris day; a restart
+- **Three slots a day**, one each in 10:30–14:00, 14:00–18:00 and 18:00–22:00 Paris, each kept
+  at `SlotChance` (80%): 0–3 a day, 2.4 on average. The first window opens after the Monday
+  crown (10:00). Drawn in memory on the first tick of the Paris day; a restart
   redraws and drops past slots, so an update can cost a quiz but never doubles one.
 - **A due slot waits for people**: it posts only when a human spoke in the quiz channel within
-  `ActiveWithin` (45 min), no round is open in the guild, fewer than `MaxPerDay` were posted
-  today (counted in SQL on `QuizRound.Day`) and the last one is `MinGap` (3 h) old. Past `DayEnd`
+  `ActiveWithin` (60 min), no round is open in the guild, fewer than `MaxPerDay` (3) were posted
+  today (counted in SQL on `QuizRound.Day`) and the last one is `MinGap` (2 h) old. Past `DayEnd`
   (22:00) or at the cap, the day's slots are dropped.
 - **The quiet clock** is `_lastHumanAt`, fed by `HandleMessageAsync` for every message, seeded
   from the last 20 messages the first time a channel is needed.
@@ -89,7 +90,8 @@ send uses `AllowedMentions.None`: the winner's mention is a pill, not a ping.
 - **Anything brute-forceable is multiple choice**: years, small numbers, yes/no, single letters.
   An open question lists the spellings people will actually type.
 - Multiple choice: exactly four choices, the right one first, none arguably right too.
-- Rewards by difficulty: 15 / 25 / 40 cailloux (`RewardFor`).
+- Rewards by difficulty: 25 / 40 / 60 cailloux (`RewardFor`), stored on the round at post time,
+  so a change applies from the next question. An easy one is worth about one `/work` shift.
 - **SYNCS questions stay a small share** and leave Synthia and the breakdown out: they state lore
   outright, which the rest of her voice avoids (`docs/syncs-voice.md`).
 - The question is `DailyRotation.IndexFor(bank, guild's round count, QuestionSalt)`: nothing
@@ -98,7 +100,7 @@ send uses `AllowedMentions.None`: the winner's mention is a pill, not a ping.
 ## Lines
 
 `QuizIntroLines`, `QuizWinLines` / `QuizOwnerWinLines` (Papa wins: adoration, never a pinch) and
-`QuizTimeoutLines` go through `DailyRotation` keyed by the round id (spent twice a day at most; a
+`QuizTimeoutLines` go through `DailyRotation` keyed by the round id (spent three times a day at most; a
 restart would wipe `ResponsePicker`). The ephemeral `QuizWrongLines` / `QuizAlreadyTriedLines`
 are spent often and use `ResponsePicker`. Win lines take `{0}` mention, `{1}` answer, `{2}`
 reward; timeout lines `{0}` answer — no stray braces.
@@ -113,7 +115,13 @@ The buckets do not sum to the totals and must not be made to.
 
 Every Monday at **10:00 Paris** (`QuizCrown.CrownHour`: after the morning hello, before the first
 slot) the best answerer of the calendar week that just ended gets the `/config quiz-role` role for
-the whole week, and she announces it in the quiz channel.
+the whole week and `QuizCrown.Purse` (150) cailloux, and she announces it in the quiz channel.
+
+- **The purse** is paid right after `QuizCrownedWeek` is saved, to each champion when the crown is
+  shared, under `earn.quiz`. It is paid even when the role is broken or there is no quiz channel
+  (it rewards the week, not the announcement); a failed payment is logged and the announcement
+  then leaves it out. Its line (`QuizCrown.PurseText`) is appended after the crown line's sticker
+  tag, which `BotChat` strips wherever it sits. `/debug quiz action:Crown` never pays it.
 
 - **Off until a role is set**: `QuizRoleId == 0` means no crown, no announcement, no role work.
 - **The week**: `QuizCrown.RewardedWeekStart(now)` — last Monday-to-Sunday from Monday 10:00, the
@@ -143,5 +151,6 @@ the whole week, and she announces it in the quiz channel.
 Owner-only: `action:Post` posts now (the next question, or `key`, with autocomplete),
 ignoring slots, cap and quiet clock but never beside an open round; `action:Close` ends the open
 round as the timeout would; `action:Crown` crowns the last finished week now, announcement
-included, without reading or writing `QuizCrownedWeek`. How to test in the dev guild after
+included, without reading or writing `QuizCrownedWeek` and without the purse (every test would pay
+it again). How to test in the dev guild after
 `/config quiz-channel set` (and `/config quiz-role create` for the crown).

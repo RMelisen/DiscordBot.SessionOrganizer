@@ -103,7 +103,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/shame user:@quelqu'un`** — Dénonce quelqu'un. **Réservé au staff**, et " +
                 "**2 votes maximum par personne visée et par jour**.")
             .AddField("Quiz",
-                "Jusqu'à **deux fois par jour**, je pose une question dans le salon du quiz : " +
+                "Jusqu'à **trois fois par jour**, je pose une question dans le salon du quiz : " +
                 "le **premier** qui trouve gagne des cailloux. Question à choix : **un seul clic** " +
                 "par personne. Question libre : réponds directement dans le salon.\n" +
                 "**`/quiz leaderboard`** — Les meilleurs au quiz.")
@@ -113,6 +113,10 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/inventory view`** — Tes objets, ton garde-manger, ta collection et ta garde-robe.\n" +
                 "**`/inventory collection`** — Ton carnet. Une collection complète se **dépose** (un exemplaire " +
                 "de chaque objet) contre sa récompense et un badge : Bronze, Argent, Or, Platine, Diamant.")
+            .AddField("Commandes — Minecraft",
+                "**`/minecraft help`** — Ce que je comprends en jeu. **`status`** · **`where`** · **`inventory`** · " +
+                "**`stats`** — Où j'en suis sur le serveur.\n" +
+                "**`/minecraft link`** — Lie ton pseudo en jeu, puis **`invite`** pour me faire venir une heure.")
             .AddField("Commandes — Staff & aide",
                 "**`/admin xp add|remove`** · **`/admin pebble add|remove`** — Ajuster l'XP ou les cailloux de quelqu'un.\n" +
                 "**`/admin stats`** · **`/admin dashboard`** — L'économie du serveur, en un coup d'œil et jour après jour.\n" +

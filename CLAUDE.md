@@ -24,7 +24,7 @@ matching file before changing that subsystem**; the rules there are as binding a
 | Any picture of SYNCS (avatar, emotes, poses, moods) | `docs/syncs-appearance.md` |
 | Cailloux, inventory, items, icons, cosmetics, `/admin dashboard` | `docs/agents/economy.md` |
 | `/arcade` games, `ArcadeTables`, `ArcadeRunner`, `ArcadeService` | `docs/agents/arcade.md` |
-| Her Minecraft body, `MinecraftBodyService`, `MinecraftBody/` | `docs/agents/minecraft.md` |
+| Her Minecraft body, `MinecraftBodyService`, `MinecraftBody/`, `/minecraft` | `docs/agents/minecraft.md` |
 | `/admin`, `/config`, `/debug`, permissions | `docs/agents/admin.md` |
 | `/report`, the monthly digest, joins/leaves counting, activity counting | `docs/agents/admin.md` |
 
@@ -126,9 +126,9 @@ leans on (`AppTime`, `BotChat`, `Emotes`, `CooldownGate`, `SessionPermissions`, 
 the EF snapshot's type names. A new file goes in the subfolder of the subsystem that owns it.
 
 **Commands are grouped by whose thing it is**: `/plynling` the creature, `/inventory` the person's
-belongings, `/admin` moderation actions, `/config` settings, `/debug` the owner's tools, `/arcade` her games. Discord
+belongings, `/admin` moderation actions, `/config` settings, `/debug` the owner's tools, `/arcade` her games, `/minecraft` her life on the Minecraft server. Discord
 allows **25 subcommands per top-level command** and the 26th throws at registration on startup —
-count before adding to `/plynling` (15), `/inventory` (8) or `/arcade` (10); a new batch goes to the group that owns
+count before adding to `/plynling` (15), `/inventory` (8), `/arcade` (10) or `/minecraft` (7); a new batch goes to the group that owns
 the thing, or a new group. `/pl` is a second registration of `/plynling`'s commands (see
 `plynling.md` before touching `PlynlingModule`). Component handlers live in `Interactions/Components/`; the module keeps
 the commands and the static card builders those handlers render through.

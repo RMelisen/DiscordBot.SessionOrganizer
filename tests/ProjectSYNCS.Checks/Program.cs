@@ -40,7 +40,7 @@ var taggedPools = new[]
     "ChatFactLines", "OwnerIntentLines", "RequestLines", "OpinionLines", "PreferLines", "OwnerRequestLines",
     "HelpLines", "AboutHerLines", "ShipChatLines", "ShipBestMatchLines", "ShipWorstMatchLines",
     "SharingShrugLines", "ChoiceLines", "DoYouLoveMeGrudgeLines", "DoYouLoveMeTreasureLines", "TataIntentLines",
-    "OwnerRaspberryNameLines", "OwnerChildNameLines",
+    "OwnerRaspberryNameLines", "OwnerChildNameLines", "OwnerVersionLines",
 };
 foreach (var f in taggedPools)
 foreach (var (name, lines) in Pools(f))
@@ -424,8 +424,23 @@ ShipIs("<@999> Luca et moi, ça match ?", "Luca", "moi");
 ShipIs("syncs, la pizza et l'ananas compatibles ?", "pizza", "ananas");
 ShipIs("shippe-moi avec quelqu'un", "moi", "quelqu'un");
 var herTopic = cues.GetMethod("ReadHerTopic", BindingFlags.Public | BindingFlags.Static, new[] { typeof(string) })!;
-foreach (var (text, topic) in new[] { ("t'as quel âge ?", "Age"), ("ton anniv c'est quand", "Birthday"), ("tu vis où ?", "Home"), ("ton plat préféré ?", "Favourite") })
+foreach (var (text, topic) in new[] { ("t'as quel âge ?", "Age"), ("ton anniv c'est quand", "Birthday"), ("tu vis où ?", "Home"), ("ton plat préféré ?", "Favourite"),
+             ("t'es en quelle version ?", "Version"), ("c'est quoi ta version syncs ?", "Version"), ("t'es à jour ?", "Version"),
+             ("<@123> tu tournes sur quelle version ?", "Version"), ("t'es en quelle version là ? tu viens ce soir ?", "Version"),
+             ("quelle version tu es", "Version"), ("what version are you on?", "Version") })
     if (herTopic.Invoke(null, new object[] { text })?.ToString() != topic) Fail($"ReadHerTopic(\"{text}\") != {topic}");
+// Her version, asked; the game's version, or someone's version of the facts, is something else.
+foreach (var (text, expected) in new[]
+         {
+             ("t'es en quelle version ?", "AboutHer"), ("syncs, c'est quoi ta version ?", "AboutHer"), ("t'es à jour ?", "AboutHer"),
+             ("t'es en quelle version de Minecraft ?", "Question"), ("t'as quelle version du jeu ?", "Question"),
+             ("c'est quoi ta version des faits ?", "Question"), ("t'es à jour sur le patch ?", "Question"),
+             ("je préfère ta version", "None"),
+         })
+{
+    var got = readIntent.Invoke(null, new object[] { text })!.ToString();
+    if (got != expected) Fail($"ReadIntent(\"{text}\") = {got}, expected {expected}");
+}
 var readTopicAny = cues.GetMethod("ReadTopic", BindingFlags.Public | BindingFlags.Static)!;
 if (readTopicAny.Invoke(null, new object[] { "comment ça marche les sondages ?" })!.ToString() != "Poll") Fail("help topic: sondages");
 if (MorningGreeting.DaysOld(new DateTimeOffset(2026, 10, 16, 12, 0, 0, TimeSpan.Zero)) != 122) Fail("DaysOld on 16 Oct 2026");
@@ -2341,7 +2356,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
              "McCollectNoToolLines", "McSleepLines", "McBedtimeLines", "McNoBedLines", "McNotNightLines", "McBedFailedLines",
              "McBusyLines", "McTakenLines", "McHitAgainLines", "McFleeSafeLines", "McCorneredLines", "McFleeDroppedLines", "McFamilyHitLines", "McFamilySwatLines", "McFamilyFightLines", "McHungryLines", "McStarvingLines", "McHarvestAckLines", "McHarvestDoneLines", "McHarvestKeptLines", "McHarvestEmptyLines",
              "McHarvestNoneLines", "McFarmAckLines", "McFarmNoneLines", "McFarmNoChestLines", "McSeekMetLinesOwner", "McSeekMetLinesTata", "McSeekMissLinesOwner", "McSeekMissLinesTata",
-             "McGiveLostLines", "McGiveNoneLines", "McGiveEmptyLines", "McGiveUnknownLines", "McCantDoLines", "McStoreDoneLines", "McStoreFullLines",
+             "McGiveLostLines", "McGiveNoneLines", "McGiveEmptyLines", "McGiveUnknownLines", "McCantDoLines", "McLinkedLines", "McLinkFailedLines", "McInvitedLines", "McStoreDoneLines", "McStoreFullLines",
              "McStoreEmptyLines", "McStoreNoChestLines", "McSitLines", "McJumpLines", "McWhereLines", "McTimerSetLines", "McTimerDoneLines",
              "McTimerNoteLines", "McTimerTooLongLines", "McTimerFullLines", "McFishAckLines", "McFishNoRodLines", "McFishRodBrokeLines",
              "McFishNoWaterLines", "McFishCatchLines", "McFishTreasureLines", "McFishJunkLines", "McPatrolAckLines", "McPatrolPlaceAckLines",
@@ -2510,7 +2525,107 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
 foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesTata" })
     if (((string[])Field(f)).Any(l => l.Trim().Length == 0)) Fail($"{f}: an empty line, a call left unanswered");
 
-// The talkPicker's narrow pick (Minecraft's chat): a line comes back only once all but one of the others were said, and a
+// /minecraft (MinecraftModule and its pure pieces in Helpers/Minecraft).
+{
+    string[] herNames = ["SYNCS", .. McCommand.HerNames];
+    // help: every example parses as the order it illustrates; a talk example reads as talk; every page fits.
+    foreach (var s in McHelp.Sections)
+    foreach (var e in s.Examples)
+    {
+        var got = McCommand.Parse(e.Text, herNames, places: ["maison", "mine"]).Order;
+        if (e.Order != McOrder.None && got != e.Order) Fail($"/minecraft help « {e.Text} »: parses as {got}, shown as {e.Order}");
+        if (e.Order == McOrder.None && McTalkReader.Read(e.Text, McKin.Anyone, true, false, false, 1, null, new ResponsePicker(), new Random(1)) is null)
+            Fail($"/minecraft help « {e.Text} »: shown as talk, read as nothing");
+    }
+    for (var p = 0; p < ProjectSYNCS.Commands.MinecraftModule.HelpPages; p++)
+    {
+        var embed = ProjectSYNCS.Commands.MinecraftModule.BuildHelp(p);
+        if (embed.Length > 6000 || embed.Fields.Any(f => f.Value.Length > 1024)) Fail($"/minecraft help page {p}: over the caps");
+        Console.WriteLine($"/minecraft help page {p}: {embed.Length} chars, longest field {embed.Fields.Max(f => f.Value.Length)}");
+    }
+
+    // status: what she's doing, in a clause.
+    foreach (var (order, who, place, expected) in new (McOrder?, string?, string?, string)[]
+    {
+        (McOrder.Fish, "Bob", null, "elle pêche pour Bob"),
+        (McOrder.Follow, "Papa", null, "elle suit Papa"),
+        (McOrder.Patrol, "Bob", "la mine", "elle garde la mine pour Bob"),
+        (null, null, null, "elle ne fait rien de spécial"),
+    })
+        if (McDoing.Describe(order, who, place) != expected)
+            Fail($"McDoing.Describe({order}, {who}, {place}): « {McDoing.Describe(order, who, place)} », expected « {expected} »");
+    foreach (var order in Enum.GetValues<McOrder>())
+        if (string.IsNullOrWhiteSpace(McDoing.Describe(order, "Bob", null))) Fail($"McDoing.Describe({order}): empty");
+
+    // link: a code works once, for the player it was issued for, within 10 minutes, and only the member's latest.
+    var codes = new McLinkCodes();
+    var lt0 = DateTimeOffset.UnixEpoch;
+    var lc = codes.Issue(1, "Bob", lt0);
+    if (lc.Length != 4 || !lc.All(char.IsDigit)) Fail("link code: not 4 digits");
+    if (codes.Redeem("Alice", lc, lt0) is not null) Fail("link code: redeemed by another player");
+    if (codes.Redeem("bob", lc, lt0.AddMinutes(11)) is not null) Fail("link code: redeemed after 10 minutes");
+    var lc2 = codes.Issue(1, "Bob", lt0);
+    var lc3 = codes.Issue(1, "Bob", lt0.AddSeconds(1));
+    if (lc2 != lc3 && codes.Redeem("Bob", lc2, lt0.AddSeconds(2)) is not null) Fail("link code: an old code still works");
+    if (codes.Redeem("BOB", lc3, lt0.AddSeconds(2)) != 1) Fail("link code: the right code, any case, refused");
+    if (codes.Redeem("Bob", lc3, lt0.AddSeconds(3)) is not null) Fail("link code: used twice");
+    if (McLinkCodes.ReadCode("lien 4821") != "4821" || McLinkCodes.ReadCode("Lien : 4821") != "4821"
+        || McLinkCodes.ReadCode("syncs viens") is not null || McLinkCodes.ReadCode("lien 48211") is not null)
+        Fail("link code: ReadCode");
+    foreach (var (name, ok) in new[] { ("Bob_123", true), ("ab", false), ("Rodhengard", true), ("a b", false), ("§cBob", false),
+                 ("abcdefghijklmnopq", false) })
+        if (McLinkCodes.ValidName(name) != ok) Fail($"link: ValidName(« {name} ») should be {ok}");
+
+    // invite: not allowed, then the owner's leave hold, then already in, then the server down, then already invited, else go.
+    var inow = DateTimeOffset.UnixEpoch.AddDays(1);
+    var never = DateTimeOffset.MinValue;
+    foreach (var (allowed, up, inGame, hold, invited, expected) in new (bool, bool, bool, DateTimeOffset, DateTimeOffset, McInviteVerdict)[]
+    {
+        (false, true, false, never, never, McInviteVerdict.NotAllowed),
+        (false, true, true, inow.AddMinutes(10), inow.AddMinutes(30), McInviteVerdict.NotAllowed),
+        (true, true, false, inow.AddMinutes(10), never, McInviteVerdict.Held),
+        (true, true, true, never, never, McInviteVerdict.AlreadyIn),
+        (true, false, true, never, never, McInviteVerdict.AlreadyIn),
+        (true, false, false, never, never, McInviteVerdict.ServerDown),
+        (true, false, false, never, inow.AddMinutes(30), McInviteVerdict.ServerDown),
+        (true, true, false, never, inow.AddMinutes(30), McInviteVerdict.AlreadyInvited),
+        (true, true, false, never, inow.AddSeconds(-1), McInviteVerdict.Go),
+    })
+        if (McInvite.Decide(allowed, up, inGame, hold, invited, inow) != expected)
+            Fail($"McInvite.Decide({allowed}, up {up}, {inGame}, hold, invited): {McInvite.Decide(allowed, up, inGame, hold, invited, inow)}, expected {expected}");
+    if (McInvite.Length != TimeSpan.FromHours(1)) Fail("McInvite.Length: an hour");
+    // Her arrival credits the inviter only while the invite runs: an invite whose body never spawned is forgotten.
+    if (McInvite.Inviter("Bob", inow.AddMinutes(5), inow) != "Bob") Fail("McInvite.Inviter: a running invite");
+    if (McInvite.Inviter("Bob", inow.AddSeconds(-1), inow) is not null) Fail("McInvite.Inviter: an expired invite still credited");
+    if (McInvite.Inviter(null, inow.AddMinutes(5), inow) is not null) Fail("McInvite.Inviter: nobody invited");
+
+    // status: a whispered order's place or coordinates stay private.
+    if (McDoing.ForStatus(McOrder.GoTo, "Bob", "120 64 -300", whispered: true).Contains("120"))
+        Fail("McDoing.ForStatus: a whispered order's coordinates shown");
+    if (!McDoing.ForStatus(McOrder.Patrol, "Bob", "la mine", whispered: false).Contains("la mine"))
+        Fail("McDoing.ForStatus: a public order's place hidden");
+
+    // stats: the tally adds, peeks without emptying, drains; the embed fits, empty or with many players.
+    var tally = new McTally();
+    tally.Add(McStats.Fish, 2);
+    tally.Add(McStats.Fish, 3);
+    tally.Add(McStats.Gathered("wood"), 20);
+    if (tally.Peek().GetValueOrDefault(McStats.Fish) != 5) Fail("McTally: Add doesn't sum");
+    if (tally.Peek().Count != 2) Fail("McTally: Peek emptied it");
+    var drained = tally.Drain();
+    if (drained.GetValueOrDefault(McStats.Gathered("wood")) != 20 || tally.Peek().Count != 0) Fail("McTally: Drain");
+    if (McStats.OrdersBy("BoB") != "orders:bob") Fail("McStats.OrdersBy: lower case");
+    var emptyStats = ProjectSYNCS.Commands.MinecraftModule.BuildStats(new Dictionary<string, long>(), 0, s => s);
+    if (emptyStats.Length > 6000) Fail("/minecraft stats: empty embed over the cap");
+    var crowd = Enumerable.Range(0, 50).ToDictionary(i => McStats.OrdersBy($"Player_{i:D2}_xxxxxx"), i => (long)i);
+    foreach (var r in new[] { "wood", "stone", "iron", "coal", "gold", "diamond", "sand", "dirt" }) crowd[McStats.Gathered(r)] = 999_999;
+    var crowded = ProjectSYNCS.Commands.MinecraftModule.BuildStats(crowd, 20, s => s);
+    if (crowded.Length > 6000 || crowded.Fields.Any(f => f.Value.Length > 1024)) Fail("/minecraft stats: over the caps");
+    if (crowded.Fields.Sum(f => f.Value.Split('\n').Count(l => l.Contains("player", StringComparison.OrdinalIgnoreCase))) != 5) Fail("/minecraft stats: not the top 5 players");
+    if (!crowded.Fields.Any(f => f.Value.Contains(@"player\_49", StringComparison.OrdinalIgnoreCase))) Fail("/minecraft stats: the top player is missing");
+}
+
+// The picker's narrow pick (Minecraft's chat): a line comes back only once all but one of the others were said, and a
 // line repeated on purpose (a pool weighing its silence with empty lines) still leaves something to pick.
 {
     void Gaps(string[] pool, int minGap)

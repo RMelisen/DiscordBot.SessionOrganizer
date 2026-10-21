@@ -3,11 +3,32 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
-## 7.25.2 — 2026-10-21
+## 7.27.1 — 2026-10-21
 
 - Minecraft: after she answers someone in chat, she keeps listening to them for 30 seconds, even if
   they say something to another player in between.
 - Minecraft: calling her by name always gets an answer again; some calls got no reply at all.
+
+## 7.27.0 — 2026-10-21
+
+- Pop quiz: up to three questions a day instead of two (one slot each late morning, afternoon
+  and evening, more often kept), at least 2 hours apart.
+- Pop quiz rewards raised to 25 / 40 / 60 cailloux (were 15 / 25 / 40).
+- The weekly « Grosse tête » now also wins 150 cailloux (each, on a tie), mentioned in her
+  Monday announcement.
+
+## 7.26.0 — 2026-10-21
+
+- New `/minecraft help`: every order she understands in game, with phrasings that work.
+- New `/minecraft status`, `where` and `inventory`: whether she's on the server, what she's doing
+  and for whom, where she stands, and what she carries.
+- New `/minecraft stats`: her deaths, catches, kills, gathering, harvests, time in game and the
+  orders she received, since the start.
+- New `/minecraft link`: tie your Discord account to your in-game name by whispering her a code.
+- New `/minecraft invite`: a linked player brings her onto the server for an hour, whatever the
+  player count; she says who invited her when she arrives.
+- Ask her version (« t'es en quelle version ? », « c'est quoi ta version ? », « t'es à jour ? »),
+  on Discord or in Minecraft, and she tells you.
 
 ## 7.25.1 — 2026-10-21
 

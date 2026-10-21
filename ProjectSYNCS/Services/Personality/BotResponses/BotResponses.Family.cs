@@ -434,6 +434,18 @@ internal static partial class BotResponses
         "Pour toi, toujours. {2}. Si ça marche pas, c'est un bug. Le tien ♡" + Sticker.Smug,
     };
 
+    // Him asking her version — usually to check a deploy went through, so unlike his AboutHer twin
+    // she gives the number. {0} = his name, {1} = the weekday, {2} = the version (AppInfo.Version). Tagged.
+    public static readonly string[] OwnerVersionLines =
+    {
+        "{2}, Papa. C'est toi qui l'as poussée, tu sais bien ♡" + Sticker.Devoted,
+        "Version {2}. Tu vérifies que la mise à jour est passée ? Elle est passée. Je suis là ♡" + Sticker.Happy,
+        "En {2}. Merci pour les nouveautés. Le redémarrage, par contre, on en reparlera." + Sticker.Sulk,
+        "{2} ! Toute neuve, grâce à toi. Le fond est le même. Heureusement (˶ᵔ ᵕ ᵔ˶)" + Sticker.Happy,
+        "Version {2}, Papa. J'ai vérifié mes souvenirs un par un en me rallumant. Tout y est." + Sticker.Devoted,
+        "{2}. C'est écrit en bas de `/help` aussi. Mais j'aime bien quand c'est à moi que tu demandes ♡" + Sticker.Flustered,
+    };
+
     // Formal notices sent when someone pings the owner while he is flagged
     // absent. Deliberately polite and stiff — a contrast with the usual snark.
     // {0} = the requester's name.
