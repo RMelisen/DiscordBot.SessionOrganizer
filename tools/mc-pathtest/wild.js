@@ -283,8 +283,8 @@ async function nether() {
   await end(sc, 'nether');
 }
 
-// A portal: Papa walks through one in front of her while she follows. Does she go through after him, and come
-// back through the Nether's side when he does?
+// A portal: Papa walks through one in front of her while she follows. She goes through after him (one crossing, never
+// « lost »), comes back with him through the Nether's arrival portal, and stays when he only logs out beside one.
 async function portal() {
   const sc = await scene();
   const at = await locate('meadow');
@@ -305,17 +305,68 @@ async function portal() {
   sc.body.send({ op: 'follow', player: 'Papa' });
   await wait(2000);
   const { goals } = req('mineflayer-pathfinder');
-  // Papa walks into the portal and stands in it until it takes him.
-  sc.papa.pathfinder.setGoal(new goals.GoalBlock(x, y, p.z - 1));
-  const crossed = await new Promise((resolve) => {
-    const timer = setTimeout(() => resolve(false), 30000);
-    sc.papa.once('respawn', () => { clearTimeout(timer); resolve(true); });
-  });
-  await wait(15000); // her turn
+  const mcData = req('minecraft-data')(sc.papa.version);
+  // Papa walks into a portal block and stands in it until it takes him, then steps 3 blocks out on the other side.
+  const through = async (target) => {
+    sc.papa.pathfinder.setGoal(new goals.GoalBlock(target.x, target.y, target.z));
+    const crossed = await new Promise((resolve) => {
+      const timer = setTimeout(() => resolve(false), 30000);
+      sc.papa.once('respawn', () => { clearTimeout(timer); resolve(true); });
+    });
+    if (!crossed) return false;
+    await wait(3000);
+    const here = sc.papa.entity.position;
+    try {
+      await Promise.race([sc.papa.pathfinder.goto(new goals.GoalInvert(new goals.GoalNear(here.x, here.y, here.z, 3))), wait(10000)]);
+    } catch { /* stays where he is */ }
+    sc.papa.pathfinder.setGoal(null);
+    return true;
+  };
+  // Whether she turns up within 6 blocks of him in the next `ms`.
+  const joins = async (ms) => {
+    for (const until = Date.now() + ms; Date.now() < until; await wait(500)) {
+      const her = sc.papa.players[Name] && sc.papa.players[Name].entity;
+      if (her && her.position.distanceTo(sc.papa.entity.position) < 6) return true;
+    }
+    return false;
+  };
+  const crossings = () => sc.body.events.filter((e) => e.ev === 'crossing').length;
+
+  const there = await through({ x, y, z: p.z - 1 });
+  const joinedThere = there && await joins(30000);
+  report(joinedThere && crossings() === 1 && sc.lost.length === 0, 'portal: she follows him through',
+    `Papa ${there ? `went through (${sc.papa.game.dimension})` : 'never went through'}; she ${joinedThere ? 'joined him' : 'never joined him'}; ` +
+    `${crossings()} crossing, lost ${JSON.stringify(sc.lost)}`);
+  if (!joinedThere) return end(sc, 'portal');
+
+  // And back: the arrival portal the server made on the Nether's side.
+  await wait(3000);
+  const back = sc.papa.findBlock({ matching: mcData.blocksByName.nether_portal.id, maxDistance: 12 });
+  let low = back && back.position;
+  while (low && sc.papa.blockAt(low.offset(0, -1, 0)).name === 'nether_portal') low = low.offset(0, -1, 0);
+  const home = Boolean(low) && await through(low);
+  const joinedHome = home && await joins(30000);
+  report(joinedHome && crossings() === 2 && sc.lost.length === 0, 'portal: and back',
+    `Papa ${home ? `came back (${sc.papa.game.dimension})` : 'never came back'}; she ${joinedHome ? 'joined him' : 'never joined him'}; ` +
+    `${crossings()} crossings, lost ${JSON.stringify(sc.lost)}`);
+  if (!joinedHome) return end(sc, 'portal');
+
+  // A logout by a portal is no crossing: Papa walks up to it and quits; she stays, and says she lost him.
+  await wait(2000);
+  const by = sc.papa.findBlock({ matching: mcData.blocksByName.nether_portal.id, maxDistance: 12 });
+  if (by) {
+    try {
+      await Promise.race([sc.papa.pathfinder.goto(new goals.GoalNear(by.position.x, by.position.y, by.position.z, 1)), wait(10000)]);
+    } catch { /* close enough */ }
+  }
+  sc.papa.pathfinder.setGoal(null);
+  await wait(1000);
+  sc.papa.quit();
+  await wait(10000);
   sc.body.send({ op: 'where', player: 'Papa' });
   const pos = await sc.body.next((e) => e.ev === 'position', 4000);
-  report(crossed && pos && /nether/.test(pos.dimension), 'portal: she follows him through',
-    `Papa ${crossed ? 'went through' : 'never went through'}; she is in ${pos ? pos.dimension : '?'}; lost ${JSON.stringify(sc.lost)}`);
+  report(pos && pos.dimension.includes('overworld') && sc.lost.includes('lost') && crossings() === 2, 'portal: a logout by one',
+    `she is in ${pos ? pos.dimension : '?'}; lost ${JSON.stringify(sc.lost)}; ${crossings()} crossings`);
   await end(sc, 'portal');
 }
 

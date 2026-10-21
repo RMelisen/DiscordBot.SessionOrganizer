@@ -57,7 +57,8 @@ Trampling and item rolls are chance: a fix for one of those passes `all` twice i
 through ten real biomes while she follows (forest, dark forest, taiga, meadow, a river, a village, a mangrove swamp,
 snowy slopes, a beach…), counts the village's fields before and after, gives orders where they really happen (wood in
 a forest, stone and coal on a mountain, fish in a river, coming across a dark forest), follows him through the five
-Nether biomes with monsters on, and has him walk through a portal in front of her. Name some (`follow village orders
+Nether biomes with monsters on, and has him walk through a portal in front of her and back (she must follow both
+ways, and stay when he only logs out beside one). Name some (`follow village orders
 come nether portal`) to run only those; `WILD_BIOMES=river,forest` picks the biomes. Papa's routes are random, so a
 snag in one run may not come back: run a failing biome a few times on its own. Every server correction is a failure.
 

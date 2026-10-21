@@ -27,6 +27,7 @@
 // Out: version {server,using,fallback} · spawned · players {names} · chat {player,text,private}
 //      system {key,args:[{text,key}]} · hurt {by} · died · night · kicked {reason} · end {reason}
 //      moving {player,kind: come|follow|goto|guard|guide} · arrived {player,kind} · waiting {player}
+//      crossing {player} (going after them through a portal)
 //      cantReach {player,why: notVisible|noPath|lost|tooFar|otherDimension} · killed {player}
 //      creeper {player} · retreat {player}
 //      collecting {player,resource,count} · collected {player,resource,count,delivered}
@@ -200,6 +201,8 @@ function gentleMovements() {
   // the local course), and powder snow, which swallows her.
   for (const name of ['sweet_berry_bush', 'wither_rose', 'soul_fire', 'powder_snow'])
     if (bot.registry.blocksByName[name]) movements.blocksToAvoid.add(bot.registry.blocksByName[name].id);
+  // A portal is only walked into on purpose (crossAfter): a path cut through one took her to the Nether alone.
+  if (bot.registry.blocksByName.nether_portal) movements.blocksToAvoid.add(bot.registry.blocksByName.nether_portal.id);
   movements.exclusionAreasStep.push((block) => {
     if (!block || !block.position) return 0;
     const floor = bot.world.getBlockStateId(block.position.offset(0, -1, 0));
@@ -456,14 +459,15 @@ function come(player) {
   emit('moving', { player, kind: 'come' });
 }
 
-function follow(player) {
+// `quiet`: going on after a portal (crossAfter), the order already acknowledged.
+function follow(player, quiet = false) {
   const target = playerEntity(player);
   if (!target) return emit('cantReach', { player, why: 'notVisible' });
   stay();
   task = { kind: 'follow', player, reported: false };
   // Dynamic: the goal moves with the player.
   bot.pathfinder.setGoal(new goals.GoalFollow(target, 2), true);
-  emit('moving', { player, kind: 'follow' });
+  if (!quiet) emit('moving', { player, kind: 'follow' });
 }
 
 // Coordinates: x z (any height) or x y z. Far trips cross chunks she can't see yet; the pathfinder
@@ -536,6 +540,7 @@ function stay() {
   // An order gets her out of bed: lying there, she can't move. And out of a boat (the ride was the old task's).
   if (bot.isSleeping) Promise.resolve().then(() => bot.wake()).catch(() => {});
   if (riding) leaveBoat();
+  if (task && task.kind === 'portal') bot.pathfinder.setMovements(gentleMovements()); // portals were allowed
   task = null;
   resumeAfterSleep = null;
   sitting = false;
@@ -704,13 +709,90 @@ const RetreatFor = 20000;
 const CreeperRange = 6;
 const CreeperSight = 16;
 
-function guard(player) {
+function guard(player, quiet = false) {
   const target = playerEntity(player);
   if (!target) return emit('cantReach', { player, why: 'notVisible' });
   stay();
   task = { kind: 'guard', player, foe: null, mode: null, modeTarget: null, warned: new Set(), skipLoot: new Set(), reported: false };
   bot.pathfinder.setGoal(new goals.GoalFollow(target, 2), true);
-  emit('moving', { player, kind: 'guard' });
+  if (!quiet) emit('moving', { player, kind: 'guard' });
+}
+
+// ---- Portals -----------------------------------------------------------------------------------
+
+// The player she follows or guards steps into a nether portal: they vanish from her world, which read as « lost ». Where
+// they vanished is a portal, so she goes after them, into it, and stands there until it takes her (4 s in survival);
+// on the other side she steps out, looks for them, and goes on as she was, without a word more (the order was
+// acknowledged). Back the same way. Only when they vanished by a portal, close to her (further off, they walked out of
+// sight first) and still online: a logout by a portal isn't a crossing, and since the server drops the entity before
+// the name, that's checked every tick until she's through (the portal takes 4 s, so she never goes alone).
+const PortalNear = 2; // how close to a portal block they vanished
+const PortalReach = 24; // how far from her that portal can be
+const PortalTake = 20000; // to get to it and through
+const PortalFind = 15000; // on the other side, to see them again
+const PortalSure = 500; // still listed this long after vanishing: through, not logged out
+
+function portalId() {
+  const b = bot.registry.blocksByName.nether_portal;
+  return b ? b.id : -1;
+}
+
+// The portal block someone at `pos` is standing in, the lowest of its column (where feet go), or null.
+function portalAt(pos) {
+  const id = portalId();
+  const b = bot.findBlock({ point: pos, matching: id, maxDistance: PortalNear });
+  if (!b) return null;
+  let low = b;
+  for (let below = bot.blockAt(low.position.offset(0, -1, 0)); below && below.type === id;
+    below = bot.blockAt(low.position.offset(0, -1, 0))) low = below;
+  return low;
+}
+
+// True when the player who just vanished went through a portal and she sets off after them.
+function crossAfter(entity) {
+  if (!task || !FollowsSomeone.has(task.kind) || entity.username !== task.player || !bot.players[task.player]) return false;
+  const portal = portalAt(entity.position);
+  if (!portal || portal.position.distanceTo(bot.entity.position) > PortalReach) return false;
+  const { player, kind } = task;
+  stay();
+  task = { kind: 'portal', player, then: kind, from: dimension(), crossed: false, announced: false, at: Date.now(),
+    until: Date.now() + PortalTake };
+  const movements = gentleMovements();
+  movements.blocksToAvoid.delete(portalId());
+  bot.pathfinder.setMovements(movements);
+  bot.pathfinder.setGoal(new goals.GoalBlock(portal.position.x, portal.position.y, portal.position.z));
+  return true;
+}
+
+// Every physics tick while crossing: through (out of the arrival portal, then looking), seen again (go on), or gone.
+function portalTick() {
+  const t = task;
+  if (!t || t.kind !== 'portal') return;
+  if (!t.crossed && !bot.players[t.player]) { // logged out, not through
+    emit('cantReach', { player: t.player, why: 'lost' });
+    return stay();
+  }
+  // Said once they're surely through, not out: still listed half a second on.
+  if (!t.announced && Date.now() > t.at + PortalSure) {
+    t.announced = true;
+    emit('crossing', { player: t.player });
+  }
+  if (!t.crossed && dimension() !== t.from) {
+    t.crossed = true;
+    t.until = Date.now() + PortalFind;
+    bot.pathfinder.setMovements(gentleMovements());
+    const at = bot.entity.position;
+    bot.pathfinder.setGoal(new goals.GoalInvert(new goals.GoalNear(at.x, at.y, at.z, 2))); // out of the portal
+  }
+  if (playerEntity(t.player)) {
+    task = null;
+    bot.pathfinder.setMovements(gentleMovements());
+    return t.then === 'guard' ? guard(t.player, true) : follow(t.player, true);
+  }
+  if (Date.now() > t.until) {
+    emit('cantReach', { player: t.player, why: 'lost' });
+    stay();
+  }
 }
 
 // « syncs surveille la base »: where she stands, or the remembered spot C# sends.
@@ -3372,6 +3454,7 @@ function attach() {
     defendTick();
   });
   bot.on('physicsTick', guideTick);
+  bot.on('physicsTick', safely(portalTick));
   bot.on('physicsTick', doorTick);
   bot.on('physicsTick', safely(freeTick));
   bot.on('physicsTick', safely(idleTick));
@@ -3477,6 +3560,7 @@ function attach() {
     warnedCreepers.delete(entity.id);
     if (task && task.kind === 'tagAlong' && entity.username === task.who) return stay(); // silently
     if (!task || (task.kind !== 'follow' && task.kind !== 'guard') || entity.username !== task.player) return;
+    if (crossAfter(entity)) return; // through a portal: she goes after them
     emit('cantReach', { player: task.player, why: 'lost' });
     stay();
   });
@@ -3537,6 +3621,7 @@ function attach() {
 
   bot.on('death', () => {
     diedAt = Date.now();
+    if (task && task.kind === 'portal') stay(); // she respawns in the overworld: no crossing
     swim = null;
     drowning = false;
     wetSince = null;

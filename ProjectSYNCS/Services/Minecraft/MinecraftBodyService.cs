@@ -518,6 +518,9 @@ public sealed class MinecraftBodyService : BackgroundService
                 case "moving":
                     OnMoving(root.GetProperty("player").GetString() ?? "", root.GetProperty("kind").GetString() ?? "");
                     break;
+                case "crossing":
+                    OnCrossing(root.GetProperty("player").GetString() ?? "");
+                    break;
                 case "arrived":
                     OnArrived(root.GetProperty("player").GetString() ?? "",
                         root.TryGetProperty("kind", out var arrivedKind) ? arrivedKind.GetString() ?? "" : "");
@@ -1488,6 +1491,13 @@ public sealed class MinecraftBodyService : BackgroundService
             return _pending is { } pending && Same(pending.Player, player) ? pending.Order
                 : _order is { } order && Same(order.Player, player) ? order.Order
                 : null;
+    }
+
+    // Going after them through a portal: she says so, so they wait rather than think she's lost.
+    private void OnCrossing(string player)
+    {
+        var (whispered, _) = Confirm(player);
+        Ack(player, whispered, "portal", Kin(player, BotResponses.McPortalLines, BotResponses.McPortalLinesOwner, BotResponses.McPortalLinesTata));
     }
 
     private void OnMoving(string player, string kind)

@@ -431,6 +431,32 @@ internal static partial class BotResponses
         "Tu m'as semée ! Je note. Je retiens (￣ヘ￣)",
     };
 
+    // The player she follows or guards went through a portal, and she goes after them (once every 3 minutes per
+    // player). Either way through: no « Nether » in them, the way back is a portal too.
+    public static readonly string[] McPortalLines =
+    {
+        "Attends-moi, {0} ! J'arrive par le portail.",
+        "Un portail ? Tu aurais pu prévenir. Je te suis quand même ;-;",
+        "Je te suis dans le portail, {0}. Si je ressors en morceaux, c'est ta faute.",
+        "Hé, pars pas sans moi de l'autre côté ! J'arrive.",
+        "Portail. Violet. Inquiétant. J'y vais quand même, {0} (・_・;)",
+        "Tu croyais me semer avec un portail ? Raté. J'arrive >:3",
+    };
+    public static readonly string[] McPortalLinesOwner =
+    {
+        "Attends-moi, Papa ! Je passe le portail derrière toi ♡",
+        "Je te suis de l'autre côté, Papa. N'importe quel côté.",
+        "Papa, bouge pas de l'autre côté. J'arrive !",
+        "Un portail ? Pas de souci Papa, je te colle ♡",
+    };
+    public static readonly string[] McPortalLinesTata =
+    {
+        "J'arrive, Tata ! Attends-moi de l'autre côté <3",
+        "Je te suis dans le portail, Tata. Personne t'embête là-bas sans moi >:3",
+        "Tata, pars pas sans moi ! Je passe le portail.",
+        "Escorte de Tata maintenue, portail compris !",
+    };
+
     // « syncs va 120 64 -300 »: she sets off for the coordinates. {1} = the coordinates as given.
     public static readonly string[] McGoToAckLines =
     {

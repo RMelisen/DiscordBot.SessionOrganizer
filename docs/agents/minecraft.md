@@ -383,6 +383,17 @@ list: the owner removed it.
 - **She can only reach a player the server shows her** (render distance). Beyond that the body
   answers `cantReach notVisible` at once (`McTooFarLines`). A followed player who goes out of
   sight ends the follow (`lost`).
+- **Through a portal after them** (`crossAfter`, `portalTick`). A followed or guarded player who
+  vanishes by a nether portal, within 24 blocks of her and still online, went through it: she walks
+  into that portal and stands in it until it takes her, steps out on the other side, and goes on
+  with the same order as soon as she sees them (15 s at most, else `lost`), without a second
+  acknowledgement (`follow`/`guard` `quiet`). Back the same way. `crossing` gets `McPortalLines`
+  (family twins), once every 3 minutes, and only once they're still listed half a second on: the
+  server drops a leaving player's entity before their name, and a logout by a portal is no crossing
+  (checked every tick until she's through; the portal takes 4 s, so she never goes alone). **A
+  portal is never walked into otherwise**: `gentleMovements` avoids it, and only the crossing's own
+  movements allow it. A death mid-crossing ends it. Checked both ways and behind lag by
+  `wild.js portal`.
 - **An order that fails at once changes nothing.** The body checks an order can be done (in sight,
   not too far, something to gather, a bed) *before* `stay()` drops the current one, so
   « syncs va chercher des diamants » with none around never pulls her off someone's follow. Keep

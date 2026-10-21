@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.30.0 — 2026-10-21
+
+- Minecraft: she follows you through a nether portal, and back. She tells you she's coming, finds
+  you on the other side and carries on following or guarding you.
+- Minecraft: she no longer walks into a portal by accident on her way somewhere.
+
 ## 7.29.1 — 2026-10-21
 
 - Minecraft: she no longer gets stuck against a step or a wall the server just put her next to,
