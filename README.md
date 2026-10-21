@@ -357,14 +357,14 @@ Every counter starts at zero the day it ships and nothing can be backfilled.
 
 ### Pop quiz
 
-Up to **twice a day** she posts a question in the server's quiz channel, and the **first
-right answer wins** cailloux: 15, 25 or 40 depending on difficulty. Off until staff pick
+Up to **three times a day** she posts a question in the server's quiz channel, and the **first
+right answer wins** cailloux: 25, 40 or 60 depending on difficulty. Off until staff pick
 a channel with **`/config quiz-channel set`**.
 
-- **When:** one slot between 11:00 and 16:00 and one between 16:30 and 22:00 (Paris), each
-  kept three times in four, so 0 to 2 a day. A slot waits until someone has spoken in the
-  channel in the last 45 minutes, so she never asks an empty room, and two questions are at
-  least 3 hours apart.
+- **When:** one slot in each of 10:30–14:00, 14:00–18:00 and 18:00–22:00 (Paris), each
+  kept four times in five, so 0 to 3 a day. A slot waits until someone has spoken in the
+  channel in the last hour, so she never asks an empty room, and two questions are at
+  least 2 hours apart.
 - **Multiple choice** (A/B/C/D buttons): **one click per person**. A wrong click is told
   privately and that person is out of the round.
 - **Open questions:** type the answer in the channel. Case, accents, punctuation and small
@@ -375,9 +375,9 @@ a channel with **`/config quiz-channel set`**.
   her. Many come from her morning fun facts. Nothing repeats until the whole bank is used.
 - **`/quiz leaderboard`** — wins over 30 days, 7 days or all time (with each person's fastest
   winning answer).
-- **Grosse tête de la semaine:** every Monday at 10:00 she gives a role to last week's best
-  answerer (most wins, then the harder questions, then speed) and announces it in the quiz
-  channel. Off until staff set the role with **`/config quiz-role create`**.
+- **Grosse tête de la semaine:** every Monday at 10:00 she gives a role and 150 cailloux to last
+  week's best answerer (most wins, then the harder questions, then speed; each one gets the purse
+  on a tie) and announces it in the quiz channel. Off until staff set the role with **`/config quiz-role create`**.
 
 ### Plynlings
 

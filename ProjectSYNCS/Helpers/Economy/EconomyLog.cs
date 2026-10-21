@@ -23,7 +23,7 @@ public static class EconomyLog
     public const string EarnSale = "earn.sale";
     public const string EarnAdmin = "earn.admin";
     public const string EarnEvent = "earn.event";   // a Plynling event's reward (GiveCailloux)
-    public const string EarnQuiz = "earn.quiz";     // a pop quiz win (QuizService.RecordWinAsync)
+    public const string EarnQuiz = "earn.quiz";     // a pop quiz win (QuizService.RecordWinAsync), the weekly crown's purse (PayCrownAsync)
     public const string EarnArcade = "earn.arcade"; // net winnings from an /arcade game (ArcadeService.SettleAsync)
 
     // Cailloux spent, by sink.

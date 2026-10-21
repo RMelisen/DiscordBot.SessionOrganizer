@@ -62,7 +62,7 @@ public static class ConfigCards
                 "*aucun : le salon de jeu prend le relais*"));
 
         Section(container,
-            "**Salon du quiz** — où elle pose ses questions, jusqu'à deux fois par jour",
+            "**Salon du quiz** — où elle pose ses questions, jusqu'à trois fois par jour",
             "> " + Single(config.QuizChannelId, 0, "*aucun : pas de quiz sur ce serveur*"));
 
         if (isHomeGuild)

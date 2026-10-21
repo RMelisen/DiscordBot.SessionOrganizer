@@ -119,6 +119,23 @@ public class QuizService
     }
 
     /// <summary>
+    /// Pays the weekly crown's purse to every champion, in one save. Called once per crowned week,
+    /// after QuizCrownedWeek is saved: a crash in between loses the purse, never pays it twice.
+    /// </summary>
+    public Task PayCrownAsync(ulong guildId, IReadOnlyList<ulong> userIds, long purse, DateTimeOffset now) =>
+        EconomySave.RetryAsync(_db_context, async () =>
+        {
+            foreach (var userId in userIds)
+            {
+                var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, guildId, userId);
+                wallet.Balance += purse;
+                await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.EarnQuiz, purse, now);
+            }
+            await _db_context.SaveChangesAsync();
+            return true;
+        });
+
+    /// <summary>
     /// The won rounds of [<paramref name="fromDay"/>, <paramref name="toDay"/>], for the weekly
     /// crown (QuizCrownService). Day is an int key, so the range filters in SQL.
     /// </summary>

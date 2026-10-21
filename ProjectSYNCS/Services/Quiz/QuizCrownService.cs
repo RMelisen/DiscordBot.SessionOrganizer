@@ -7,11 +7,12 @@ using ProjectSYNCS.Helpers;
 namespace ProjectSYNCS.Services;
 
 // « Grosse tête de la semaine » (docs/agents/quiz.md): every Monday at 10:00 Paris, the best answerer
-// of the calendar week that just ended gets the configured role for the whole week, and SYNCS says so
-// in the quiz channel, pinging them. Off until staff set a role (`/config quiz-role`).
+// of the calendar week that just ended gets the configured role for the whole week and a purse of
+// cailloux, and SYNCS says so in the quiz channel, pinging them. Off until staff set a role
+// (`/config quiz-role`).
 //
 // Driven by QuizMasterService's 1-minute tick (no loop of its own): the first tick past Monday 10:00
-// saves the week as crowned, gives the role and announces; between Mondays an hourly pass keeps the
+// saves the week as crowned, pays the purse, gives the role and announces; between Mondays an hourly pass keeps the
 // role mirrored (a hand-made change, a rejoin). The role itself is applied by RoleMirror.
 //
 // Singleton: it holds the hourly gate. It scopes per unit of work and never injects a DB service.
@@ -60,7 +61,7 @@ public sealed class QuizCrownService
         {
             // Saved first: a crash or a failed post after this is logged, never announced twice.
             await _config.SetQuizCrownedWeekAsync(guild.Id, week);
-            await CrownAsync(guild, config, week);
+            await CrownAsync(guild, config, week, pay: true);
             return;
         }
 
@@ -70,7 +71,8 @@ public sealed class QuizCrownService
 
     /// <summary>
     /// <c>/debug quiz action:Crown</c>: crowns the last finished week now, announcement included,
-    /// without reading or writing the once-a-week marker. Returns a French report.
+    /// without reading or writing the once-a-week marker — so without the purse, or every test would
+    /// pay it again. Returns a French report.
     /// </summary>
     public async Task<string> CrownNowAsync(SocketGuild guild)
     {
@@ -79,11 +81,11 @@ public sealed class QuizCrownService
             return "Pas de rôle Grosse tête ici : `/config quiz-role create` d'abord.";
 
         int week = QuizCrown.RewardedWeekStart(DateTimeOffset.UtcNow);
-        var champions = await CrownAsync(guild, config, week);
+        var champions = await CrownAsync(guild, config, week, pay: false);
         var since = $"<t:{AppTime.AtWallClock(AppTime.FromDayKey(week)).ToUnixTimeSeconds()}:D>";
         return champions.Count == 0
             ? $"Aucune bonne réponse la semaine du {since}. Personne n'a le rôle."
-            : $"Couronné pour la semaine du {since} : {QuizCrown.JoinMentions(champions.Select(c => c.UserId).ToList())}.";
+            : $"Couronné pour la semaine du {since} : {QuizCrown.JoinMentions(champions.Select(c => c.UserId).ToList())} (sans la bourse).";
     }
 
     private async Task<IReadOnlyList<CrownEntry>> LoadChampionsAsync(ulong guildId, int weekStart)
@@ -94,20 +96,40 @@ public sealed class QuizCrownService
         return QuizCrown.Champions(wins);
     }
 
-    private async Task<IReadOnlyList<CrownEntry>> CrownAsync(SocketGuild guild, GuildConfig config, int week)
+    private async Task<IReadOnlyList<CrownEntry>> CrownAsync(SocketGuild guild, GuildConfig config, int week, bool pay)
     {
         var champions = await LoadChampionsAsync(guild.Id, week);
         var holders = champions.Select(c => c.UserId).ToHashSet();
+
+        // The purse is paid even when the role is broken or nobody is told: it rewards the week, not
+        // the announcement. A failed payment is logged and the announcement says nothing of it.
+        long purse = 0;
+        if (pay && champions.Count > 0)
+        {
+            try
+            {
+                await using var scope = _services.CreateAsyncScope();
+                await scope.ServiceProvider.GetRequiredService<QuizService>()
+                    .PayCrownAsync(guild.Id, holders.ToList(), QuizCrown.Purse, DateTimeOffset.UtcNow);
+                purse = QuizCrown.Purse;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to pay the quiz crown purse in guild {GuildId}.", guild.Id);
+            }
+        }
+
         await _mirror.MirrorGuildAsync(guild, RoleKind.QuizCrown, config.QuizRoleId, () => Task.FromResult(holders));
 
         // « Le rôle est à toi » would be a lie with a role she can't hand out (deleted, above hers):
         // no announcement until staff fix it — /config show and the log say why.
         bool roleWorks = RoleMirror.Problem(guild, guild.GetRole(config.QuizRoleId), adopting: false, RoleKind.QuizCrown) is null;
-        if (champions.Count > 0 && roleWorks) await AnnounceAsync(guild, config, champions, week);
+        if (champions.Count > 0 && roleWorks) await AnnounceAsync(guild, config, champions, week, purse);
         return champions;
     }
 
-    private async Task AnnounceAsync(SocketGuild guild, GuildConfig config, IReadOnlyList<CrownEntry> champions, int week)
+    private async Task AnnounceAsync(SocketGuild guild, GuildConfig config, IReadOnlyList<CrownEntry> champions, int week,
+        long purse)
     {
         // No quiz channel (or one she can't find): the role still moves, nobody is told.
         if (config.QuizChannelId == 0 || guild.GetTextChannel(config.QuizChannelId) is not { } channel) return;
@@ -125,6 +147,8 @@ public sealed class QuizCrownService
             var pool = ids[0] == AvailabilityService.OwnerId ? BotResponses.QuizCrownOwnerLines : BotResponses.QuizCrownLines;
             line = string.Format(DailyRotation.Pick(pool, weekIndex, CrownSalt), $"<@{ids[0]}>", QuizCrown.WinsText(champions[0].Wins));
         }
+        // After the line's sticker tag: BotChat strips a tag wherever it sits.
+        line += QuizCrown.PurseText(purse, shared: champions.Count > 1);
 
         // Meant to ping: the champions and nobody else — never the role, never everyone.
         await BotChat.PostWithTypingAsync(channel, line, _logger, "quiz crown", new AllowedMentions { UserIds = ids });

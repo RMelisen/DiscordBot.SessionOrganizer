@@ -3,6 +3,14 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.27.0 — 2026-10-21
+
+- Pop quiz: up to three questions a day instead of two (one slot each late morning, afternoon
+  and evening, more often kept), at least 2 hours apart.
+- Pop quiz rewards raised to 25 / 40 / 60 cailloux (were 15 / 25 / 40).
+- The weekly « Grosse tête » now also wins 150 cailloux (each, on a tie), mentioned in her
+  Monday announcement.
+
 ## 7.26.0 — 2026-10-21
 
 - New `/minecraft help`: every order she understands in game, with phrasings that work.

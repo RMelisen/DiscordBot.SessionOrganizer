@@ -103,7 +103,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/shame user:@quelqu'un`** — Dénonce quelqu'un. **Réservé au staff**, et " +
                 "**2 votes maximum par personne visée et par jour**.")
             .AddField("Quiz",
-                "Jusqu'à **deux fois par jour**, je pose une question dans le salon du quiz : " +
+                "Jusqu'à **trois fois par jour**, je pose une question dans le salon du quiz : " +
                 "le **premier** qui trouve gagne des cailloux. Question à choix : **un seul clic** " +
                 "par personne. Question libre : réponds directement dans le salon.\n" +
                 "**`/quiz leaderboard`** — Les meilleurs au quiz.")
