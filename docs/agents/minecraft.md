@@ -130,7 +130,10 @@ list: the owner removed it.
   of them (or 6 of her), chases it, and hits it on a 650 ms cooldown, with the best sword or axe she
   carries. Our own loop, not `mineflayer-pvp`, which pulls a whole Mineflayer 2.x through
   `mineflayer-utils`. Endermen and piglins are left alone: hitting them starts the fight she's
-  supposed to prevent. Kills are a rationed remark.
+  supposed to prevent; so are the warden (two hits kill her) and the creaking (nothing hurts it while
+  its heart stands). **What's a monster is `isFoe`**: minecraft-data's `hostile`, plus the few it
+  files elsewhere (slimes, magma cubes and phantoms as `mob`, hoglins as `animal`), which she
+  otherwise never fought. Kills are a rationed remark.
 - **Collect** (`mineflayer-collectblock`) finds the requested blocks within 48 blocks, checks she
   can harvest them (with what she carries, or by hand; ores and stone need a pickaxe, `noTool`),
   breaks them, then walks back and tosses what she gained (an inventory diff) at the player's
@@ -149,7 +152,17 @@ list: the owner removed it.
   block sideways and half a block up and down, so the goal is « within that reach », not « within a
   block of it » (`GoalNear` in whole blocks never allowed an item on a fence post, on a pillar's
   edge, or under a slab too low to stand under). Each item gets 8 s (`PickUpTry`), and another try
-  (three in all) only if it rolled more than a block since. The same 8 s caps an item of loot.
+  (three in all) only if it rolled more than a block since. The same 8 s caps an item of loot. **In
+  reach is not picked up**: a fresh drop waits half a second before anyone can take it, so she waits
+  up to 1.5 s for it to go before the next. A way to an item she can't find ends that item's try,
+  never the whole sweep (`noWay` leaves a sweeping `retrieve` alone).
+- **`bot.pathfinder.goto` is ours** (`goto`, set on spawn). The pathfinder's resolved on any search
+  that came back with no path, and a search's first slice (`tickTimeout`) often does: she « got
+  there » without moving, stood 2 blocks from a cull's beef and left it, again and again, and
+  everything awaiting goto (bed, replanting, collectblock) had the same lie. Ours resolves on
+  `goal_reached` or a *finished* search with nothing to walk (over farmland, 15/16 high, her floored
+  position is a block lower than the search's start and never matches the goal), and rejects as
+  before on no path, a search out of time, another goal, a stop.
 - **Sleep**: the night only passes when every player sleeps (by default), and that includes her.
   When a player goes to bed at night (`entitySleep`) she looks for a bed within 48 blocks, once per
   night, and says so when there's none (`McNoBedLines`), since she is then why the night won't pass.
@@ -195,7 +208,9 @@ list: the owner removed it.
   her where she stands, like a farm, and lasts like one. Every 15 seconds, for the cows, sheep, pigs,
   chickens and rabbits within 16 blocks: a species under 8 (adults and babies) gets two adults fed
   its food (not the same animal twice in 5 minutes), sheep are sheared, the adults over 8 are culled
-  (2 a round at most), and the drops go in the chest within 10 blocks (meat, leather, wool,
+  (2 a round at most: the closest first, 6 s to land a first hit on one before trying the next,
+  since in a crowded pen she spent whole rounds on one behind the others), and the drops (picked up
+  within 4 blocks of the kill, 20 s) go in the chest within 10 blocks (meat, leather, wool,
   feathers; 8 pieces of meat stay on her to eat, and breeding food is never stored). **Never a named
   animal, never a baby, never another species**; where the server's version doesn't name the baby
   flag (`metadataKeys`), she culls nothing at all. No animals or no chest, and she refuses
@@ -228,7 +243,11 @@ list: the owner removed it.
   blocks gets `McFedLines` (Papa and Tata their twins), said at once, and she eats.
 - **Guard and patrol never hit a creeper.** Its blast would land on the player she guards. With a
   bow and arrows she shoots it from 6 blocks or more (our own few lines, aimed a little high for the
-  drop, not `mineflayer-hawkeye`); without, she keeps out of its reach and warns once per creeper
+  drop, not `mineflayer-hawkeye`: three arrows for three hits at 8, 12 and 15 blocks on the local
+  server). She sees one from 16 blocks (`CreeperSight`): it walks 10 in about 3 s, two shots, and it
+  takes three. **Never through a player** (`playerInLine`): behind Papa she put four arrows in his
+  back while it walked up to him, so with someone in the line she steps 3 blocks aside first, and
+  if someone steps in while she draws, the arrow goes up. Without a bow she keeps out of its reach and warns once per creeper
   (`McCreeperLines`). Under 3 hearts she stops fighting and backs off, eating to heal, until she's
   at 7 hearts or 20 s have passed (`McRetreatLines`). The tick changes her goal only when what she's
   doing changes (`setMode`): a goal set on every tick is never walked.
@@ -464,8 +483,16 @@ pathfinder's own tick listener (its plugin is injected after `attach()` runs), s
   eating or greeting.
 
 **Boats.** Following someone, or tagging along with them, who sits in a boat or raft with a free
-seat (two seats, one on a chest boat), she climbs in within 3 blocks of it (`boardTick`; tagging
-along, she first walks right up to it). Three refusals and she leaves that boat alone for 30 s.
+seat (two seats, one on a chest boat), she climbs in within 5 blocks of its centre (`BoardReach`:
+the server takes an interaction within reach plus 3 of the boat's box, and at 3 she stood on the bank
+by a boat a block out, never getting in; `boardTick`; tagging along, she first walks right up to it).
+**Mineflayer only updates the passengers a vehicle still has**: whoever got out kept pointing at it,
+so she stayed in a boat Papa had left, and once out she still « rode » it with her physics off. A
+`set_passengers` listener takes out whoever the new list leaves out, her included. **Out of a boat on
+the water the server puts her on top of it**, and Mineflayer's physics knows no entity to stand on:
+she fell into it on her side, the server put her back, and she never walked off. `offBoatTick` stands
+her on its top on her side too (0.5625 above it) and hops her off, away from its centre towards
+whoever she's with, until she's clear of its box. Three refusals and she leaves that boat alone for 30 s.
 They steer and she's the passenger, so she still places nothing. **Mineflayer stops her physics
 while she rides**, so no physics tick runs then: the ride is watched by a timer (`rideTick`), and
 she gets out when they do, when the boat goes, or when her task changes. Any order gets her out
@@ -633,6 +660,40 @@ sprinting » arrived as « start riding jump » and getting out of bed as « sto
 wrapper sends the old numbers as names on versions with the new order. Check Mineflayer's
 `physics.js` and `bed.js` before bumping it, and remove the wrapper once they send names.
 
+**The packets 26.1 changed** (`attack`, now its own packet, `use_entity`, `block_place`,
+`use_item`, `arm_animation`, `client_command`; `window_click` in 1.21.5) all encode right from what
+Mineflayer 4.39 writes, and every action built on them was checked on the local server, on the
+server's side (`node run.js actions`): eating, armour, storing, handing over, smelting, sleeping and
+getting up, fishing, a boat. Two loose ends: Mineflayer waits 2.5 s for « done eating », a meal takes
+1.6 s, and a slow link eats the rest, so a timeout with the food gone is not a failure; and the
+server keeps where a sleeper lies in `sleeping_pos` on 26.x, for anyone reading player data.
+
+**Teleports are answered once** (`calmTeleports`). Lying down in a bed, the server puts her in it,
+Mineflayer answers every teleport with a confirm and a move to the same spot, and Paper, which still
+has her where she stood that tick, takes the move for a sleeper wandering and puts her back: 230 of
+each a second until the tick ended, and a kick for « too many packets » (Paper's packet limiter is on
+by default; local server). The confirm always goes; the move to the spot she was just put in goes
+once, and again only 250 ms later. **A second over 200 packets is logged** with the busiest ones
+(« sending N packets a second », every 30 s at most): a normal second is under 60, so the next
+flood is named in the add-on log before Paper's kick.
+
+**A search that runs out of time ends nothing by itself.** Out of time (`thinkTimeout`), the
+pathfinder walks her to its best point and never searches again (it only does when a path is
+reset): she stood there with her goal set, silent. And a goal out of reach, which a fast machine on a
+small world ends with `noPath`, runs out of time instead on the Pi or in a big loaded world, so it
+became a walk that never ended. `timeoutTick` searches again once she has walked a timed-out partial
+path, if it got her 2 blocks or more; got nowhere, or a timed-out search whose best point is where she
+stands (`stalledSearch`), and it's `noWay()`, the same as `noPath`. A 250-block trip on the Pi's
+budget re-planned ten times and got there; the unreachable lane says « no way » in 3 to 5 s at any
+speed. **The Pi's budget is reproduced with `MC_CPU_FACTOR=3.5`** (the time budgets divided, about
+how much slower a Pi 5 runs JavaScript than a desktop): run `all` with it before shipping anything
+that makes a search heavier. Step costs read state ids (`getBlockStateId`), never `blockAt`: a whole
+block per step slowed the search past its limit once.
+
+**What hurts is avoided.** The pathfinder avoids fire, cobwebs and lava; `gentleMovements` adds sweet
+berry bushes, wither roses, soul fire and powder snow, makes a magma or campfire floor cost 40, and a
+step beside a berry bush, cactus or wither rose cost 8 (a turn cut close clipped a bush: a heart).
+
 **Server teleports while she walks are logged** (`watchCorrections`, « server teleport while
 walking », every 30 s at most): what the server sent, where she was, her keys, her last move sent
 and the block ahead. A body stuck against the terrain looks the same from outside whatever the
@@ -641,11 +702,13 @@ server objects to; this line says what it refused.
 **Testing movement locally: `tools/mc-pathtest`.** A server's refusals and the pathfinder's mistakes
 can't be reasoned out from the code: reproduce them. The tool runs her real body against a local
 Paper with ViaVersion and ViaBackwards (the group server's pair; setup in its README): an obstacle
-course of 20 lanes (corridors, corners, stairs and slabs, fences, decorations, trapdoors, gaps, a
+course of 22 lanes (corridors, corners, stairs and slabs, fences, decorations, trapdoors, gaps, a
 low tunnel, panes, furniture, soul sand and cobwebs, a door with a turn, a ladder, leaves, water, a
-field of pillars, an unreachable goal), crossings of a ripe field, a death among decorations, a
-grove to cut and a plot to harvest. A lane passes only with no server correction (`MC_TRACE_MOVES`
-logs every one). **Run `node run.js all` before shipping a movement change**, twice for a fix to
+field of pillars, lava, a cliff, an unreachable goal), crossings of a ripe field, a death among
+decorations, a grove to cut, a plot to harvest, every packet-level action (`actions`), a herd to
+keep (`safety`), night fights and dangers (`survival`), a long trip, and players to follow, come to,
+guide, lose and seek (`players`). Everything is checked on the server's side, never on what she says.
+A lane passes only with no server correction (`MC_TRACE_MOVES` logs every one) and no damage. **Run `node run.js all` before shipping a movement change**, twice for a fix to
 something chance-driven (trampling, rolling items), and add a lane or a spot for every snag found
 in the wild. Accepting the Minecraft EULA for the test server is the owner's call.
 

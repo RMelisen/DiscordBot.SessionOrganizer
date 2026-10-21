@@ -192,6 +192,22 @@ const lanes = [
     start: [1, 0, -4], goal: [22, 0, 4],
   },
   {
+    name: 'lava', what: 'a lava pool across the lane, a 1-wide bridge over it',
+    build({ f }) {
+      f(3, 0, -3, 19, 1, -3, 'stone'); f(3, 0, 3, 19, 1, 3, 'stone');
+      f(8, -1, -2, 12, -1, 2, 'lava'); f(8, -1, 0, 12, -1, 0, 'stone');
+    },
+    start: [1, 0, 0], goal: [22, 0, 0],
+  },
+  {
+    name: 'cliff', what: 'down a 6-block cliff: too high to drop, stairs along one side',
+    build({ f }) {
+      f(0, 0, -3, 8, 5, 3, 'stone');
+      for (let i = 0; i < 6; i++) f(9 + i, 0, 3, 9 + i, 4 - i, 3, 'stone');
+    },
+    start: [1, 6, 0], goal: [22, 0, 0],
+  },
+  {
     name: 'unreachable', what: 'the goal is on top of a 3-high pillar: she must give up, not hang',
     build({ f }) { f(12, 0, 0, 12, 2, 0, 'stone'); },
     start: [1, 0, 0], goal: [12, 3, 0], expect: 'refuse',

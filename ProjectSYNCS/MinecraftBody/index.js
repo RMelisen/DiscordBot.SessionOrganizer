@@ -8,6 +8,8 @@
 // Environment (the C# side clears everything else, so the Discord token never reaches us):
 //   MC_HOST, MC_PORT, MC_USERNAME
 //   MC_TRACE_MOVES=1: every server correction logged (tools/mc-pathtest only)
+//   MC_TRACE_PATHS=1: every slow or unfinished path search logged (tools/mc-pathtest only)
+//   MC_CPU_FACTOR=n: the pathfinder's time budgets divided by n, as on a CPU n times slower (tools/mc-pathtest only)
 //
 // In:  {"op":"say","text":"…"} · {"op":"whisper","player":"…","text":"…"} · {"op":"quit"}
 //      {"op":"come","player":"…"} · {"op":"follow","player":"…"} · {"op":"stay"}
@@ -165,10 +167,19 @@ function gentleMovements() {
   // Fields cost more to cross than the grass around them (farmlandTick has why), so she walks round when it's not far.
   // Asked for every step the pathfinder weighs: the state id only (a whole block per step slowed the search past its
   // 5 s limit, and a goal out of reach read as « still looking » instead of « no way »).
+  // What hurts to walk through (the pathfinder only avoids fire, cobwebs and lava; a berry bush cost her a heart on
+  // the local course), and powder snow, which swallows her.
+  for (const name of ['sweet_berry_bush', 'wither_rose', 'soul_fire', 'powder_snow'])
+    if (bot.registry.blocksByName[name]) movements.blocksToAvoid.add(bot.registry.blocksByName[name].id);
   movements.exclusionAreasStep.push((block) => {
     if (!block || !block.position) return 0;
-    if (farmlandStates.has(bot.world.getBlockStateId(block.position.offset(0, -1, 0)))) return FarmlandStep;
-    return isFieldWater(block.position) ? FieldWaterStep : 0;
+    const floor = bot.world.getBlockStateId(block.position.offset(0, -1, 0));
+    if (farmlandStates.has(floor)) return FarmlandStep;
+    if (burningStates.has(floor)) return BurningFloor;
+    if (isFieldWater(block.position)) return FieldWaterStep;
+    // Beside what hurts to touch: she walks round it, but a turn cut close clips its block (a heart lost by a bush).
+    return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) =>
+      prickly.has(bot.world.getBlockStateId(block.position.offset(dx, 0, dz)))) ? PricklyNear : 0;
   });
   // No jump over a gap that takes off from a field or lands on one (farmlandTick would cancel the take-off and she'd
   // walk into the gap), and a drop onto one costs FieldDrop: a fall of a block tramples it one time in two.
@@ -199,6 +210,12 @@ const onField = (p) => farmlandStates.has(bot.world.getBlockStateId(new Vec3(p.x
 const isFarmland = (block) => Boolean(block && block.name === 'farmland');
 let farmlandStates = new Set(); // its state ids, filled on the first spawn, once the version is known
 let waterStates = new Set(); // the same for water
+// Floors that burn whoever stands on them: magma, a lit campfire. Not forbidden: a way across may need one.
+let burningStates = new Set();
+const BurningFloor = 40;
+// What hurts to brush against, and the cost of a step beside it.
+let prickly = new Set();
+const PricklyNear = 8;
 
 // Water with farmland beside it, at the same height.
 function isFieldWater(pos) {
@@ -621,9 +638,12 @@ async function wave(player) {
 
 // ---- Guarding --------------------------------------------------------------------------------------
 
-// Monsters she fights. Neutral ones that only turn hostile when hit (endermen, piglins) are left
-// alone: starting that fight would be the opposite of protecting anyone.
-const Peaceful = new Set(['enderman', 'zombified_piglin', 'piglin']);
+// Monsters she fights: what minecraft-data files as hostile, and the few it files elsewhere (slimes, magma cubes and
+// phantoms as « mob », hoglins as « animal »). Neutral ones that only turn hostile when hit (endermen, piglins) are
+// left alone: starting that fight would be the opposite of protecting anyone. So are the warden (two hits kill her,
+// and a fight only angers it more) and the creaking (nothing hurts it while its heart stands).
+const Peaceful = new Set(['enderman', 'zombified_piglin', 'piglin', 'warden', 'creaking']);
+const AlsoFoes = new Set(['slime', 'magma_cube', 'phantom', 'hoglin']);
 const GuardRadius = 10;
 const MeleeReach = 3.2;
 const Weapons = ['netherite_sword', 'diamond_sword', 'iron_sword', 'stone_sword', 'golden_sword', 'wooden_sword',
@@ -631,7 +651,8 @@ const Weapons = ['netherite_sword', 'diamond_sword', 'iron_sword', 'stone_sword'
 let attackReadyAt = 0;
 
 function isFoe(entity) {
-  return entity && entity.type === 'hostile' && !Peaceful.has(entity.name) && entity.isValid !== false;
+  return Boolean(entity) && (entity.type === 'hostile' || AlsoFoes.has(entity.name)) && !Peaceful.has(entity.name)
+    && entity.isValid !== false;
 }
 
 // Guarding a place rather than a player: monsters within PatrolRadius of the spot.
@@ -642,6 +663,7 @@ const RetreatFor = 20000;
 // A creeper is never hit by hand: its blast would land on the player she guards. With a bow and arrows she shoots it
 // from at least CreeperRange; without, she keeps out of its reach and lets the player deal with it.
 const CreeperRange = 6;
+const CreeperSight = 16;
 
 function guard(player) {
   const target = playerEntity(player);
@@ -686,6 +708,35 @@ function bowReady() {
 // just before letting go, since the target moves meanwhile.
 let drawing = false;
 
+// A player (not her) within a block of the line from her eyes to `target`, between the two.
+function playerInLine(target) {
+  const from = bot.entity.position.offset(0, 1.62, 0);
+  const to = target.position.offset(0, (target.height || 1.7) * 0.6, 0);
+  const line = to.minus(from);
+  const length = line.norm();
+  if (length === 0) return null;
+  const dir = line.scaled(1 / length);
+  return Object.values(bot.players).map((p) => p.entity).find((e) => {
+    if (!e || e === bot.entity) return false;
+    const mid = e.position.offset(0, 0.9, 0).minus(from);
+    const along = mid.dot(dir);
+    return along > 0.5 && along < length && mid.minus(dir.scaled(along)).norm() < 1;
+  }) || null;
+}
+
+// Three blocks to her side of the line to `target`, the side with more room: a clear shot from there.
+function sideStep(target) {
+  const me = bot.entity.position;
+  const dx = target.position.x - me.x;
+  const dz = target.position.z - me.z;
+  const n = Math.hypot(dx, dz) || 1;
+  const left = new Vec3(me.x - (dz / n) * 3, me.y, me.z + (dx / n) * 3);
+  const right = new Vec3(me.x + (dz / n) * 3, me.y, me.z - (dx / n) * 3);
+  const near = (p) => bot.nearestEntity((e) => e.type === 'player' && e !== bot.entity && e.position.distanceTo(p) < 2);
+  const spot = near(left) && !near(right) ? right : left;
+  return new goals.GoalNear(spot.x, spot.y, spot.z, 1);
+}
+
 async function shoot(target) {
   if (drawing || Date.now() < attackReadyAt) return;
   const bow = bot.inventory.items().find((i) => i.name === 'bow');
@@ -701,6 +752,12 @@ async function shoot(target) {
     bot.activateItem();
     await wait(1100);
     if (target.isValid) await bot.lookAt(aim(), true);
+    // Someone stepped into the line while she drew: a moment for them to pass, then the arrow goes up, not into them.
+    for (let i = 0; i < 10 && target.isValid && playerInLine(target); i++) {
+      await wait(100);
+      await bot.lookAt(aim(), true);
+    }
+    if (playerInLine(target)) await bot.look(bot.entity.yaw, Math.PI / 2, true);
     bot.deactivateItem();
   } catch (err) {
     log('shot failed:', err && err.message ? err.message : String(err));
@@ -778,9 +835,10 @@ function guardTick() {
     }
   }
 
-  // Creepers: warned about once each, shot from range, never hit by hand.
+  // Creepers: warned about once each, shot from range, never hit by hand. Seen from CreeperSight: one walks 10 blocks
+  // in about 3 s, two shots at most, and it takes three to kill (it blew up by Papa that way on the local server).
   const creeper = bot.nearestEntity((e) => e.name === 'creeper' && e.isValid !== false
-    && (e.position.distanceTo(center) < radius || e.position.distanceTo(me) < 8));
+    && (e.position.distanceTo(center) < CreeperSight || e.position.distanceTo(me) < CreeperSight));
   if (creeper) {
     if (!t.warned.has(creeper.id)) {
       t.warned.add(creeper.id);
@@ -789,6 +847,10 @@ function guardTick() {
     const d = creeper.position.distanceTo(me);
     if (d < CreeperRange) return setMode(t, 'flee', creeper, new goals.GoalInvert(new goals.GoalFollow(creeper, CreeperRange + 3)), true);
     if (bowReady()) {
+      // Never through a player: standing behind the one she guards, she put four arrows in his back while the
+      // creeper walked up to him. With someone in the way she steps aside first.
+      const inTheWay = playerInLine(creeper);
+      if (inTheWay) return setMode(t, 'aside', creeper, sideStep(creeper), false);
       setMode(t, 'shoot', creeper, null);
       shoot(creeper);
       return;
@@ -1907,11 +1969,14 @@ async function eatIfHungry(below = 14) {
     .sort((a, b) => bot.registry.foodsByName[b.name].foodPoints - bot.registry.foodsByName[a.name].foodPoints)[0];
   if (!food) return;
   eating = true;
+  const before = bot.inventory.count(food.type);
   try {
     await bot.equip(food, 'hand');
     await bot.consume();
   } catch (err) {
-    log('eating failed:', err && err.message ? err.message : String(err));
+    // Mineflayer waits 2.5 s for the « done eating » status, a meal takes 1.6 s, and a slow link (the Pi, ViaBackwards)
+    // eats the rest: when the food went down, she ate.
+    if (bot.inventory.count(food.type) >= before) log('eating failed:', err && err.message ? err.message : String(err));
   } finally {
     eating = false;
   }
@@ -2300,7 +2365,10 @@ const DiveHurtPause = 60000;
 // Wet for this long, she shakes herself off once back on dry land; once a minute at most.
 const ShakeAfter = 3000;
 const ShakeEvery = 60000;
-const BoardReach = 3;
+// From the boat's centre. The server takes an interaction within reach (3) plus 3 of the boat's box; she follows a
+// player to 2 of *them*, so a boat moored a block or two out keeps her 4 off it: at 3 she stood on the bank and
+// never got in (checked on the local server).
+const BoardReach = 5;
 const BoardRetry = 2000;
 const BoardTries = 3;
 const BoardGiveUp = 30000;
@@ -2591,6 +2659,38 @@ function rideTick() {
   leaveBoat();
 }
 
+// Out of a boat on the water, the server puts her on top of it, and Mineflayer's physics knows no entity to stand on:
+// on her side she fell into the boat, the server put her back on it, again and again (never « on the ground », so she
+// couldn't even jump), and she never walked off (local server). So while she's over it at its top she stands on it on
+// her side too (its top is 0.5625 above it), and hops off: jump, and run away from its centre (towards whoever she's
+// with, else straight out) until she's clear of its box. Last in the physics tick, over the pathfinder's controls.
+const BoatTop = 0.5625;
+let offBoat = null;
+
+function offBoatTick() {
+  const o = offBoat;
+  if (!o || !bot.entity) return;
+  const me = bot.entity.position;
+  if (Date.now() > o.until || Math.hypot(me.x - o.from.x, me.z - o.from.z) > 1.3 || bot.vehicle) {
+    offBoat = null;
+    for (const control of ['jump', 'forward', 'sprint']) bot.setControlState(control, false);
+    bot.jumpQueued = false;
+    return;
+  }
+  const top = o.from.y + BoatTop;
+  if (me.y < top + 0.05 && me.y > top - 0.3 && bot.entity.velocity.y <= 0) {
+    me.y = top;
+    bot.entity.velocity.y = 0;
+    bot.entity.onGround = true;
+  }
+  const who = task && (task.player || task.who) ? playerEntity(task.player || task.who) : null;
+  const towards = who ? who.position : me.offset(me.x - o.from.x || 1, 0, me.z - o.from.z);
+  bot.look(Math.atan2(-(towards.x - o.from.x), -(towards.z - o.from.z)), 0, true).catch(() => {});
+  bot.setControlState('forward', true);
+  bot.setControlState('sprint', true);
+  bot.setControlState('jump', true);
+}
+
 // Mineflayer's own dismount sends jump, which since 1.21.2 is no longer how a passenger gets out: shift is.
 function leaveBoat() {
   if (!bot.vehicle) return;
@@ -2734,6 +2834,9 @@ async function pickUp(choose, timeout, mine) {
         bot.pathfinder.goto(new GoalPickUp(at)),
         wait(Math.min(PickUpTry, Math.max(0, end - Date.now()))).then(() => { throw new Error('too slow'); }),
       ]);
+      // In reach is not picked up: a fresh drop waits half a second before anyone can take it, and she had already
+      // moved on to the next one, leaving it where it fell.
+      for (let i = 0; i < 15 && bot.entities[item.id]; i++) await wait(100);
     } catch {
       if (task === mine) bot.pathfinder.setGoal(null); // out of reach, or too slow: the next one
     }
@@ -2919,7 +3022,8 @@ async function ranchRound() {
     pruneLoot();
     for (const spot of lootSpots.filter((s) => s.pos.distanceTo(mine.anchor) <= FarmRadius + 4)) {
       if (task !== mine) break;
-      await pickUpDrops(spot.pos, 3, 10000, mine);
+      // Drops roll off the spot, and a cull's three or four stacks don't all come in 10 s (3 beef were left lying).
+      await pickUpDrops(spot.pos, 4, 20000, mine);
     }
     if (task === mine) await storeRanch(mine);
     if (task === mine && bot.entity.position.distanceTo(mine.anchor) > 4)
@@ -2970,25 +3074,34 @@ async function cull(mine, herd) {
     if (!h.aged) continue; // can't tell a baby from an adult here: never
     let surplus = h.adults.length - HerdMax;
     const victims = h.adults.filter((e) => !isNamed(e));
+    // The closest first: in a crowded pen the far ones are behind the others, and she spent the round on one.
     while (surplus > 0 && left > 0 && victims.length > 0 && task === mine) {
-      await slaughter(mine, victims.shift());
-      surplus--;
-      left--;
+      victims.sort((a, b) => a.position.distanceTo(bot.entity.position) - b.position.distanceTo(bot.entity.position));
+      if (await slaughter(mine, victims.shift())) {
+        surplus--;
+        left--;
+      }
     }
   }
 }
 
-// The same hits as defending: chase, and hit on the weapon's cooldown, until it's dead or KillFor has passed.
+// The same hits as defending: chase, and hit on the weapon's cooldown, until it's dead or KillFor has passed. One she
+// can't get a first hit on within ReachFor (the others in the way) is left for the next. Whether it died.
+const ReachFor = 6000;
+
 async function slaughter(mine, animal) {
   mine.target = animal;
   await equipWeapon();
-  bot.pathfinder.setGoal(new goals.GoalFollow(animal, 1), true);
-  const end = Date.now() + KillFor;
-  while (task === mine && animal.isValid !== false && bot.entities[animal.id] && Date.now() < end) {
+  bot.pathfinder.setGoal(new goals.GoalFollow(animal, 2), true);
+  const start = Date.now();
+  let hit = false;
+  while (task === mine && animal.isValid !== false && bot.entities[animal.id] && Date.now() < start + KillFor) {
+    if (!hit && Date.now() > start + ReachFor) break;
     if (animal.position.distanceTo(bot.entity.position) < MeleeReach && Date.now() >= attackReadyAt) {
       attackReadyAt = Date.now() + 650;
       bot.lookAt(animal.position.offset(0, (animal.height || 1) * 0.6, 0), true).catch(() => {});
       bot.attack(animal);
+      hit = true;
     }
     await wait(100);
   }
@@ -2996,6 +3109,7 @@ async function slaughter(mine, animal) {
     bot.pathfinder.setGoal(null);
     mine.target = null;
   }
+  return animal.isValid === false || !bot.entities[animal.id];
 }
 
 // Walks up to an animal and uses what `matches` on it (food, shears).
@@ -3040,11 +3154,21 @@ function attach() {
     const states = (b) => new Set(Array.from({ length: b.maxStateId - b.minStateId + 1 }, (_, i) => b.minStateId + i));
     farmlandStates = states(bot.registry.blocksByName.farmland);
     waterStates = states(bot.registry.blocksByName.water);
+    const statesOf = (names) => new Set(names.filter((n) => bot.registry.blocksByName[n])
+      .flatMap((n) => [...states(bot.registry.blocksByName[n])]));
+    burningStates = statesOf(['magma_block', 'campfire', 'soul_campfire']);
+    prickly = statesOf(['sweet_berry_bush', 'cactus', 'wither_rose']);
     // A hair wider than a player (0.6). Mineflayer's collisions leave her side exactly on a block's face (a step she's
     // jumping up, a wall she walks along), and a 26.3 server takes that as walking into the block: it puts her back,
     // every tick, and she never climbs a one-block step. 0.0001 off the face is enough (checked on a local Paper 26.3
     // with ViaBackwards) and fits every gap a player fits.
     bot.physics.playerHalfWidth = 0.3001;
+    bot.pathfinder.goto = goto; // collectblock calls it too
+    const slower = Number(process.env.MC_CPU_FACTOR);
+    if (slower > 1) {
+      bot.pathfinder.thinkTimeout /= slower;
+      bot.pathfinder.tickTimeout /= slower;
+    }
     bot.pathfinder.setMovements(gentleMovements());
     // After the pathfinder's own tick (its plugin is injected later than attach() runs), so her swimming can take the
     // controls from it.
@@ -3052,6 +3176,7 @@ function attach() {
     bot.on('physicsTick', safely(boardTick));
     // After the pathfinder too: it presses jump, this lets go of it over a field.
     bot.on('physicsTick', safely(farmlandTick));
+    bot.on('physicsTick', safely(offBoatTick));
     // First, before any tick handler changes the controls: the keys this tick's move was made with.
     bot.prependListener('physicsTick', safely(inputTick));
     emit('spawned', {});
@@ -3081,9 +3206,32 @@ function attach() {
   setInterval(() => { if (bot) safely(needsTick)(); }, NeedsEvery);
   setInterval(() => { if (bot) safely(rideTick)(); }, 500);
   bot.on('mount', safely(onMount));
+  bot.on('dismount', (vehicle) => {
+    if (vehicle && isBoat(vehicle)) offBoat = { from: vehicle.position.clone(), until: Date.now() + 4000 };
+  });
+  // Mineflayer only updates the passengers a vehicle still has: whoever got out kept pointing at it until their entity
+  // was reloaded, so she stayed in a boat Papa had left, and once she got out herself she still « rode » it (her
+  // physics stays off while she rides). Whoever the new list leaves out is out.
+  bot._client.on('set_passengers', ({ entityId, passengers }) => {
+    const vehicle = bot.entities[entityId];
+    if (!vehicle) return;
+    for (const e of Object.values(bot.entities)) {
+      if (e.vehicle !== vehicle || passengers.includes(e.id)) continue;
+      e.vehicle = null;
+      if (vehicle.passengers) vehicle.passengers = vehicle.passengers.filter((p) => p !== e);
+    }
+    if (bot.vehicle === vehicle && bot.entity && !passengers.includes(bot.entity.id)) {
+      bot.vehicle = null;
+      bot.emit('dismount', vehicle);
+    }
+  });
   bot.on('dismount', () => { riding = null; });
   // The path she's walking, for the doors on it; closing behind her needs none.
   bot.on('path_update', (result) => setPath(result.status === 'noPath' ? [] : result.path));
+  if (process.env.MC_TRACE_PATHS === '1')
+    bot.on('path_update', (r) => {
+      if (r.status !== 'success' || r.time > 200) log(`path ${r.status} in ${Math.round(r.time)} ms, ${r.visitedNodes} nodes visited`);
+    });
   bot.on('goal_reached', () => setPath([]));
   bot.on('path_stop', () => setPath([]));
   setInterval(() => { if (bot) farmRound().catch(() => {}); }, FarmRound);
@@ -3143,37 +3291,10 @@ function attach() {
   // may walk somewhere reachable) but say so only once per order. Gathering and sleeping handle their
   // own paths.
   bot.on('path_update', (result) => {
-    if (!task || result.status !== 'noPath') return;
-    if (task.mode === 'loot') return task.skipLoot.add(task.modeTarget.id); // out of reach: left where it is
-    if (task.reported) return;
-    // Following someone who dived: no path under water, and the dive (waterTick) goes after them instead.
-    if (FollowsSomeone.has(task.kind) && headUnder(playerEntity(task.player))) return;
-    if (['collect', 'sleep', 'harvest', 'farm', 'give', 'store', 'fish', 'smelt', 'patrol', 'forage', 'ranch', 'tagAlong', 'home']
-      .includes(task.kind)) return;
-    // Her own: a place she can't walk to is left out for a while; her things, given up.
-    if (task.kind === 'trip') {
-      const what = task.what;
-      stay();
-      return failSpot(what, 'no path');
-    }
-    if (task.kind === 'retrieve') {
-      stay();
-      pendingRetrieve = null;
-      return emit('retrieveLost', { why: 'noPath' });
-    }
-    if (task.kind === 'seek') {
-      emit('seek', { player: task.player, outcome: 'missing' });
-      return stay();
-    }
-    if (task.kind === 'flee') {
-      task.reported = true;
-      return emit('cornered', { player: task.player });
-    }
-    if (task.kind === 'defend') return endDefend(task); // can't get at them: back to what she was doing
-    task.reported = true;
-    emit('cantReach', { player: task.player, why: 'noPath' });
-    if (task.kind === 'come' || task.kind === 'goto' || task.kind === 'guide') stay();
+    if (result.status === 'timeout') timedOut = { goal: bot.pathfinder.goal, from: bot.entity.position.clone() };
+    if (result.status === 'noPath' || (result.status === 'timeout' && stalledSearch(result))) noWay();
   });
+  setInterval(() => { if (bot && bot.entity) safely(timeoutTick)(); }, 500);
 
   // The player she follows or guards went out of sight (too far, or logged out): she stops there.
   bot.on('entityGone', (entity) => {
@@ -3352,10 +3473,26 @@ function sendTickEnds(client) {
 // for the corrections' log.
 let inputsSent = '';
 let lastMoveSent = null;
+// Packets sent this second, by name: over PacketsLoud in a second, the busiest are logged (every 30 s at most). Paper
+// kicks a client for « too many packets » near 500 a second; a normal second is under 60, and the one loop found so far
+// (calmTeleports) ran at 480. The line names the next one before the kick does.
+const PacketsLoud = 200;
+let packetsThisSecond = {};
+let packetsLoggedAt = 0;
+setInterval(() => {
+  const counts = Object.entries(packetsThisSecond);
+  packetsThisSecond = {};
+  const total = counts.reduce((sum, [, n]) => sum + n, 0);
+  if (total <= PacketsLoud || Date.now() < packetsLoggedAt + 30000) return;
+  packetsLoggedAt = Date.now();
+  const top = counts.sort((a, b) => b[1] - a[1]).slice(0, 4).map(([name, n]) => `${name} ${n}`).join(', ');
+  log(`sending ${total} packets a second (${top})`);
+}, 1000);
 
 function trackInputs(client) {
   const write = client.write.bind(client);
   client.write = (name, params) => {
+    packetsThisSecond[name] = (packetsThisSecond[name] || 0) + 1;
     if (name === 'player_input') inputsSent = JSON.stringify((params && params.inputs) || {});
     if (name === 'position' || name === 'position_look') lastMoveSent = { name, x: params.x, y: params.y, z: params.z, onGround: params.onGround };
     return write(name, params);
@@ -3441,18 +3578,137 @@ function fixEntityActions(client) {
   };
 }
 
+// Lying down in a bed, the server puts her in it (a teleport), Mineflayer answers every teleport with a confirm and a move
+// to the same spot, and Paper, which still has her where she stood that tick, two blocks off, takes the move for a
+// sleeper wandering and puts her back: 230 of each a second until the tick ended, and once a kick for « too many
+// packets » (local server). The confirm always goes; the move to the spot she was just put in goes once, and again
+// only 250 ms later.
+function calmTeleports(client) {
+  let target = null; // where the server last put her
+  let echoedAt = 0;
+  client.prependListener('position', (packet) => { target = packet; });
+  const write = client.write.bind(client);
+  client.write = (name, params) => {
+    if (name === 'position_look' && target && params.x === target.x && params.y === target.y && params.z === target.z) {
+      if (Date.now() - echoedAt < 250) return undefined;
+      echoedAt = Date.now();
+    }
+    return write(name, params);
+  };
+}
+
 async function main() {
   const version = await pickVersion();
   if (ended) return;
   // Offline mode: no auth.
   bot = mineflayer.createBot({ host, port, username, auth: 'offline', version });
   sendTickEnds(bot._client);
+  calmTeleports(bot._client);
   fixEntityActions(bot._client);
   trackInputs(bot._client);
   watchCorrections(bot._client);
   attach();
 }
 
+
+// The goal she was walking to can't be reached (noPath, or a search with nothing more to gain): what that means for
+// what she was doing.
+function noWay() {
+  timedOut = null;
+  if (!task) return;
+  if (task.mode === 'loot') return task.skipLoot.add(task.modeTarget.id); // out of reach: left where it is
+  if (task.reported) return;
+  // Following someone who dived: no path under water, and the dive (waterTick) goes after them instead.
+  if (FollowsSomeone.has(task.kind) && headUnder(playerEntity(task.player))) return;
+  if (['collect', 'sleep', 'harvest', 'farm', 'give', 'store', 'fish', 'smelt', 'patrol', 'forage', 'ranch', 'tagAlong', 'home']
+    .includes(task.kind)) return;
+  // Her own: a place she can't walk to is left out for a while; her things, given up.
+  if (task.kind === 'trip') {
+    const what = task.what;
+    stay();
+    return failSpot(what, 'no path');
+  }
+  if (task.kind === 'retrieve') {
+    // Sweeping, it's one item out of reach, not the trip: pickUp gives each one its own time and moves on.
+    if (task.sweeping) return;
+    stay();
+    pendingRetrieve = null;
+    return emit('retrieveLost', { why: 'noPath' });
+  }
+  if (task.kind === 'seek') {
+    emit('seek', { player: task.player, outcome: 'missing' });
+    return stay();
+  }
+  if (task.kind === 'flee') {
+    task.reported = true;
+    return emit('cornered', { player: task.player });
+  }
+  if (task.kind === 'defend') return endDefend(task); // can't get at them: back to what she was doing
+  task.reported = true;
+  emit('cantReach', { player: task.player, why: 'noPath' });
+  if (task.kind === 'come' || task.kind === 'goto' || task.kind === 'guide') stay();
+}
+
+// A search that ran out of time (thinkTimeout) and whose best point is where she already stands: nothing more to gain,
+// so it counts as « no way ». A goal out of reach, which a fast machine on a small world ends with noPath, runs out of
+// time instead on a Pi's budget (MC_CPU_FACTOR 3.5 on the local server) or in a big loaded world. A long trip's
+// partial paths still go somewhere, so they go on (timeoutTick).
+function stalledSearch(result) {
+  const path = result.path;
+  if (!path || path.length === 0 || !bot.entity) return true;
+  const end = path[path.length - 1];
+  return bot.entity.position.distanceTo(new Vec3(end.x, end.y, end.z)) < 1.5;
+}
+
+// And once she has walked a timed-out search's partial path, the pathfinder doesn't search again: it only does when a
+// path is reset, so she stood there with her goal set, silent, for good. Twice a second: walked it and got somewhere,
+// a new search from here; got nowhere, no way.
+let timedOut = null; // { goal, from }: the last search for `goal` ran out of time, started from `from`
+const isDynamic = (goal) => goal instanceof goals.GoalFollow || goal instanceof goals.GoalInvert;
+
+function timeoutTick() {
+  const t = timedOut;
+  if (!t) return;
+  const goal = bot.pathfinder.goal;
+  if (!goal || goal !== t.goal) {
+    timedOut = null; // reached, dropped or replaced since
+    return;
+  }
+  if (bot.pathfinder.isMoving()) return; // still on its partial path
+  timedOut = null;
+  if (bot.entity.position.distanceTo(t.from) >= 2) bot.pathfinder.setGoal(goal, isDynamic(goal));
+  else noWay();
+}
+
+// The pathfinder's goto, except that an unfinished search is not « arrived »: it resolved on any search that came back
+// with no path, and a search's first slice (tickTimeout) often does, so she « got there » without moving, stood 2
+// blocks from a cull's beef and left it, again and again (local server). Everything awaiting goto had the same lie,
+// collectblock included. Resolves on goal_reached or a finished search with nothing to walk; rejects as before on no
+// path, a search out of time, another goal, a stop.
+function goto(goal) {
+  return new Promise((resolve, reject) => {
+    const fail = (name, message) => Object.assign(new Error(message), { name });
+    const listeners = {
+      goal_reached: () => done(),
+      path_update: (r) => {
+        if (r.status === 'noPath') done(fail('NoPath', 'No path to the goal!'));
+        else if (r.status === 'timeout') done(fail('Timeout', 'Took to long to decide path to goal!'));
+        // A finished search with nothing to walk: she's there (its start is her feet on top of what she stands on,
+        // where the floored position is inside farmland, 15/16 high, and never matches). A partial one is just the
+        // first slice of the search.
+        else if (r.path.length === 0 && r.status === 'success') done();
+      },
+      goal_updated: (g) => { if (g !== goal) done(fail('GoalChanged', 'The goal was changed before it could be completed!')); },
+      path_stop: () => done(fail('PathStopped', 'Path was stopped before it could be completed!')),
+    };
+    function done(err) {
+      for (const [ev, fn] of Object.entries(listeners)) bot.removeListener(ev, fn);
+      setTimeout(() => (err ? reject(err) : resolve()), 0); // the pathfinder's own cleanup first, as its goto does
+    }
+    for (const [ev, fn] of Object.entries(listeners)) bot.on(ev, fn);
+    bot.pathfinder.setGoal(goal);
+  });
+}
 
 // The ops that are a player's order (the rest are words, questions, or C#'s own business).
 const OrderOps = new Set(['come', 'follow', 'goto', 'guide', 'give', 'store', 'fish', 'patrol', 'smelt', 'guard', 'collect',
