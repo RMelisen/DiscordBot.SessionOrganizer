@@ -3,6 +3,17 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.23.2 — 2026-10-21
+
+- In Minecraft she repeats herself less: a line only comes back once she has used nearly every
+  other line in its pool.
+- In Minecraft she talks less: her remarks come further apart, are capped at 4 every 10 minutes,
+  and the commonest ones (nightfall, advancements, ordinary deaths, catches, arriving) come up half
+  as often.
+- The same order sent again within 3 minutes gets done without the same acknowledgement.
+- When several players greet her, say goodbye, thank or praise her, or call her at once, only the
+  first gets an answer in words; the others get a wave or a hop. Her family always gets words.
+
 ## 7.23.1 — 2026-10-21
 
 - She no longer announces on Discord when she joins or leaves the Minecraft server.

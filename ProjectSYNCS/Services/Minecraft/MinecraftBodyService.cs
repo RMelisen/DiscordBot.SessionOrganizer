@@ -37,15 +37,29 @@ public sealed class MinecraftBodyService : BackgroundService
     // /debug minecraft leave keeps her out this long, or the next tick would send her straight back.
     private static readonly TimeSpan ForcedLeaveHold = TimeSpan.FromMinutes(30);
 
-    // Her in-game remarks: one per kind every 30 s, and never two within 8 s of each other. Two gates,
+    // Her in-game remarks: one per kind every 2 minutes, and never two within 20 s of each other. Two gates,
     // two policies; neither is shared with anything else.
-    private readonly CooldownGate<string> _kindGate = new(TimeSpan.FromSeconds(30));
-    private readonly CooldownGate<int> _anyGate = new(TimeSpan.FromSeconds(8));
+    private readonly CooldownGate<string> _kindGate = new(TimeSpan.FromMinutes(2));
+    private readonly CooldownGate<int> _anyGate = new(TimeSpan.FromSeconds(20));
+    // And at most 4 of them in any 10 minutes, so the chat stays the players'. Forced remarks (a creeper
+    // behind someone, drowning) are neither counted nor held back. When each counted one was said; guarded by _gate.
+    private const int RemarkBudget = 4;
+    private static readonly TimeSpan RemarkBudgetWindow = TimeSpan.FromMinutes(10);
+    private readonly Queue<DateTimeOffset> _remarksSaid = new();
+    // Her lines come from small pools heard by the same few players in one evening: she picks among the 2 she said
+    // least recently, so a line comes back only once the pool has nearly gone round.
+    private const int LineChoices = 2;
     // Orders are answered, not rationed like remarks: only a player sending a second one within the same
     // second is ignored (a double send), never a stop, and her « oui ? » to a bare call is said to the same
     // player once every 10 seconds at most.
     private readonly CooldownGate<string> _orderGate = new(TimeSpan.FromSeconds(1), TimeSpan.FromHours(1));
     private readonly CooldownGate<string> _callGate = new(TimeSpan.FromSeconds(10), TimeSpan.FromHours(1));
+    // But the same order from the same player (and to the same place, the same resource…) is acknowledged once every
+    // 3 minutes: sent again, she does it without saying the same thing again. Refusals and outcomes are never held back.
+    private readonly CooldownGate<string> _ackGate = new(TimeSpan.FromMinutes(3), TimeSpan.FromHours(1));
+    // A hello, a goodbye, a « gg », a « merci » or a bare call from several players at once: the first gets her
+    // words, the others within 30 s only her gesture, unless they're Papa or Tata. One gate per kind, across players.
+    private readonly CooldownGate<McOrder> _burstGate = new(TimeSpan.FromSeconds(30));
     // « Je suis avec X » to a player she's refusing, once every 10 seconds at most.
     private readonly CooldownGate<string> _busyGate = new(TimeSpan.FromSeconds(10), TimeSpan.FromHours(1));
     // Asking for food when she has none: every 10 minutes at most, every 5 once she's too hungry to sprint.
@@ -66,15 +80,16 @@ public sealed class MinecraftBodyService : BackgroundService
     private readonly McHitStreaks _familyHits = new();
     private readonly Dictionary<string, (DateTimeOffset Until, bool Fighting)> _defending = new(StringComparer.OrdinalIgnoreCase);
     private static readonly TimeSpan DefendHold = TimeSpan.FromSeconds(30);
-    private const double NightChance = 0.5;
-    private const double AdvancementChance = 0.6;
+    private const double NightChance = 0.25;
+    private const double AdvancementChance = 0.3;
     // The other commonest remarks, rolled on top of the gates so the chat stays the players': an ordinary death
-    // (hers, a player's kill and family's always get a word), a first hit from anyone but family, a guard kill.
-    private const double DeathChance = 0.6;
+    // (hers, a player's kill and family's always get a word), a first hit from anyone but family (rare enough to keep
+    // its odds), a guard kill.
+    private const double DeathChance = 0.3;
     private const double HitChance = 0.6;
     private const double KillChance = 0.1;
     // Answers whose gesture already says it: she got where she was called, she hops.
-    private const double ArrivedChance = 0.5;
+    private const double ArrivedChance = 0.25;
     private const double JumpChance = 0.5;
     // What she starts on her own gets a rare word (the owner's call); getting her things back always does, and how it
     // went half the time.
@@ -155,8 +170,8 @@ public sealed class MinecraftBodyService : BackgroundService
     private static readonly TimeSpan MaxTimer = TimeSpan.FromHours(2);
     private static readonly TimeSpan MinTimer = TimeSpan.FromSeconds(10);
     // Fishing remarks, rolled on top of the kind gate: a fish is common, a treasure is not.
-    private const double CatchChance = 0.3;
-    private const double JunkChance = 0.5;
+    private const double CatchChance = 0.15;
+    private const double JunkChance = 0.25;
     private (string Server, string Using, bool Fallback)? _version;
     private string? _lastKick;
     private DateTimeOffset? _lastKickAt;
@@ -381,7 +396,7 @@ public sealed class MinecraftBodyService : BackgroundService
             if (_body is null || _leaving) return;
             body = _body;
             _leaving = true;
-            if (_spawned) body.Send(new { op = "say", text = _picker.Pick(BotResponses.McLeavingLines) });
+            if (_spawned) body.Send(new { op = "say", text = _picker.Pick(BotResponses.McLeavingLines, LineChoices) });
         }
         body.Send(new { op = "quit" });
         _ = Task.Run(async () =>
@@ -519,7 +534,7 @@ public sealed class MinecraftBodyService : BackgroundService
                     break;
                 case "fishing":
                     var fisher = root.GetProperty("player").GetString() ?? "";
-                    Reply(fisher, Confirm(fisher).Whispered, BotResponses.McFishAckLines);
+                    Ack(fisher, Confirm(fisher).Whispered, "fish", BotResponses.McFishAckLines);
                     break;
                 case "cantFish":
                     OnOutcome(root.GetProperty("player").GetString() ?? "", root.GetProperty("why").GetString() switch
@@ -543,8 +558,8 @@ public sealed class MinecraftBodyService : BackgroundService
                 case "patrolling":
                     var keeper = root.GetProperty("player").GetString() ?? "";
                     var (patrolPrivate, patrolDetail) = Confirm(keeper);
-                    Reply(keeper, patrolPrivate, patrolDetail.Length > 0 ? BotResponses.McPatrolPlaceAckLines : BotResponses.McPatrolAckLines,
-                        patrolDetail);
+                    Ack(keeper, patrolPrivate, $"patrol:{patrolDetail}",
+                        patrolDetail.Length > 0 ? BotResponses.McPatrolPlaceAckLines : BotResponses.McPatrolAckLines, patrolDetail);
                     break;
                 case "cantPatrol":
                     OnOutcome(root.GetProperty("player").GetString() ?? "",
@@ -552,8 +567,9 @@ public sealed class MinecraftBodyService : BackgroundService
                     break;
                 case "smelting":
                     var cook = root.GetProperty("player").GetString() ?? "";
-                    Reply(cook, Confirm(cook).Whispered, BotResponses.McSmeltAckLines, root.GetProperty("count").GetInt32(),
-                        SmeltName(root.GetProperty("what").GetString() ?? ""));
+                    var smelting = root.GetProperty("what").GetString() ?? "";
+                    Ack(cook, Confirm(cook).Whispered, $"smelt:{smelting}", BotResponses.McSmeltAckLines, root.GetProperty("count").GetInt32(),
+                        SmeltName(smelting));
                     break;
                 case "smelted":
                     var cooked = root.GetProperty("count").GetInt32();
@@ -639,8 +655,9 @@ public sealed class MinecraftBodyService : BackgroundService
                     break;
                 case "harvesting":
                     var (harvestPrivate, _) = Confirm(root.GetProperty("player").GetString() ?? "");
-                    Reply(root.GetProperty("player").GetString() ?? "", harvestPrivate, BotResponses.McHarvestAckLines,
-                        root.GetProperty("count").GetInt32(), CropName(root.GetProperty("crop").GetString() ?? ""));
+                    var harvesting = root.GetProperty("crop").GetString() ?? "";
+                    Ack(root.GetProperty("player").GetString() ?? "", harvestPrivate, $"harvest:{harvesting}", BotResponses.McHarvestAckLines,
+                        root.GetProperty("count").GetInt32(), CropName(harvesting));
                     break;
                 case "harvested":
                     var harvested = root.GetProperty("count").GetInt32();
@@ -656,7 +673,7 @@ public sealed class MinecraftBodyService : BackgroundService
                     break;
                 case "farming":
                     var farmer = root.GetProperty("player").GetString() ?? "";
-                    Reply(farmer, Confirm(farmer).Whispered, BotResponses.McFarmAckLines);
+                    Ack(farmer, Confirm(farmer).Whispered, "farm", BotResponses.McFarmAckLines);
                     break;
                 case "cantFarm":
                     OnOutcome(root.GetProperty("player").GetString() ?? "",
@@ -664,7 +681,7 @@ public sealed class MinecraftBodyService : BackgroundService
                     break;
                 case "ranching":
                     var rancher = root.GetProperty("player").GetString() ?? "";
-                    Reply(rancher, Confirm(rancher).Whispered, BotResponses.McRanchAckLines);
+                    Ack(rancher, Confirm(rancher).Whispered, "ranch", BotResponses.McRanchAckLines);
                     break;
                 case "cantRanch":
                     OnOutcome(root.GetProperty("player").GetString() ?? "",
@@ -815,7 +832,7 @@ public sealed class MinecraftBodyService : BackgroundService
             lock (_gate)
                 if (ReferenceEquals(_body, body) && !_leaving)
                 {
-                    var text = _picker.Pick(BotResponses.McArrivalLines);
+                    var text = _picker.Pick(BotResponses.McArrivalLines, LineChoices);
                     SayLocked(body, new { op = "say", text }, text);
                 }
             await Task.Delay(SeekPause);
@@ -865,8 +882,11 @@ public sealed class MinecraftBodyService : BackgroundService
                 return;
             case McOrder.Unknown:
                 lock (_gate) _calledAt[player] = DateTimeOffset.UtcNow;
-                if (_callGate.TryClaim(player))
+                if (!_callGate.TryClaim(player)) return;
+                // Called by several players at once: the others get a wave, so they still know she heard (the window opens).
+                if (FirstOfBurst(player, McOrder.Unknown))
                     Reply(player, whispered, Kin(player, BotResponses.McCalledLines, BotResponses.McCalledLinesOwner, BotResponses.McCalledLinesTata));
+                else Send(new { op = "wave", player });
                 return;
         }
         var stops = request.Order is McOrder.Stay or McOrder.Sit;
@@ -958,7 +978,7 @@ public sealed class MinecraftBodyService : BackgroundService
         if (stops)
         {
             if (robbed is not null) Reply(robbed.Player, robbed.Private, BotResponses.McTakenLines, Who(player));
-            Reply(player, whispered, request.Order == McOrder.Sit ? BotResponses.McSitLines : BotResponses.McStayAckLines);
+            Ack(player, whispered, request.Order.ToString(), request.Order == McOrder.Sit ? BotResponses.McSitLines : BotResponses.McStayAckLines);
         }
     }
 
@@ -975,19 +995,22 @@ public sealed class MinecraftBodyService : BackgroundService
                 if (Send(new { op = "jump" }) && Random.Shared.NextDouble() < JumpChance) Reply(player, whispered, BotResponses.McJumpLines);
                 return true;
             case McOrder.Wave:
-                if (Send(new { op = "wave", player }))
+                if (Send(new { op = "wave", player }) && FirstOfBurst(player, McOrder.Wave))
                     Reply(player, whispered, Kin(player, BotResponses.McWaveLines, BotResponses.McWaveLinesOwner, BotResponses.McWaveLinesTata));
                 return true;
             case McOrder.Bye:
-                if (Send(new { op = "wave", player }))
+                if (Send(new { op = "wave", player }) && FirstOfBurst(player, McOrder.Bye))
                     Reply(player, whispered, Kin(player, BotResponses.McByeLines, BotResponses.McByeLinesOwner, BotResponses.McByeLinesTata));
                 return true;
             case McOrder.Praise:
-                if (Send(new { op = "jump" }))
+                if (Send(new { op = "jump" }) && FirstOfBurst(player, McOrder.Praise))
                     Reply(player, whispered, Kin(player, BotResponses.McPraisedLines, BotResponses.McPraisedLinesOwner, BotResponses.McPraisedLinesTata));
                 return true;
             case McOrder.Thanks:
-                Reply(player, whispered, Kin(player, BotResponses.McThankedLines, BotResponses.McThankedLinesOwner, BotResponses.McThankedLinesTata));
+                // A thank-you has no gesture of its own: the others get the wave.
+                if (FirstOfBurst(player, McOrder.Thanks))
+                    Reply(player, whispered, Kin(player, BotResponses.McThankedLines, BotResponses.McThankedLinesOwner, BotResponses.McThankedLinesTata));
+                else Send(new { op = "wave", player });
                 return true;
             case McOrder.Where:
                 lock (_gate) _askedWhere[player] = whispered;
@@ -1407,22 +1430,22 @@ public sealed class MinecraftBodyService : BackgroundService
         switch (kind)
         {
             case "goto" when job == McOrder.GoToPlace:
-                Reply(player, whispered, BotResponses.McPlaceGoAckLines, detail);
+                Ack(player, whispered, $"place:{detail}", BotResponses.McPlaceGoAckLines, detail);
                 break;
             case "goto":
-                Reply(player, whispered, BotResponses.McGoToAckLines, detail);
+                Ack(player, whispered, $"goto:{detail}", BotResponses.McGoToAckLines, detail);
                 break;
             case "guide":
-                Reply(player, whispered, BotResponses.McGuideAckLines, detail);
+                Ack(player, whispered, $"guide:{detail}", BotResponses.McGuideAckLines, detail);
                 break;
             case "guard":
-                Reply(player, whispered, Kin(player, BotResponses.McGuardAckLines, BotResponses.McGuardAckLinesOwner, BotResponses.McGuardAckLinesTata));
+                Ack(player, whispered, "guard", Kin(player, BotResponses.McGuardAckLines, BotResponses.McGuardAckLinesOwner, BotResponses.McGuardAckLinesTata));
                 break;
             case "follow":
-                Reply(player, whispered, Kin(player, BotResponses.McFollowAckLines, BotResponses.McFollowAckLinesOwner, BotResponses.McFollowAckLinesTata));
+                Ack(player, whispered, "follow", Kin(player, BotResponses.McFollowAckLines, BotResponses.McFollowAckLinesOwner, BotResponses.McFollowAckLinesTata));
                 break;
             default:
-                Reply(player, whispered, Kin(player, BotResponses.McComeAckLines, BotResponses.McComeAckLinesOwner, BotResponses.McComeAckLinesTata));
+                Ack(player, whispered, "come", Kin(player, BotResponses.McComeAckLines, BotResponses.McComeAckLinesOwner, BotResponses.McComeAckLinesTata));
                 break;
         }
     }
@@ -1520,7 +1543,7 @@ public sealed class MinecraftBodyService : BackgroundService
         }
         var (whispered, _) = Confirm(player);
         lock (_gate) _order = activity;
-        Reply(player, whispered, BotResponses.McSleepLines);
+        Ack(player, whispered, "sleep", BotResponses.McSleepLines);
     }
 
     // After arriving she walks up to Papa, or else Tata, when either is on: in sight, or where she last saw them.
@@ -1597,7 +1620,7 @@ public sealed class MinecraftBodyService : BackgroundService
     private void OnCollecting(string player, string resource, int count)
     {
         var (whispered, _) = Confirm(player);
-        Reply(player, whispered, BotResponses.McCollectAckLines, count, ResourceName(resource));
+        Ack(player, whispered, $"collect:{resource}", BotResponses.McCollectAckLines, count, ResourceName(resource));
     }
 
     private void OnCollected(string player, string resource, int count, bool delivered)
@@ -1624,10 +1647,25 @@ public sealed class MinecraftBodyService : BackgroundService
     /// </summary>
     private void Reply(string player, bool whispered, string[] pool, params object[] extra)
     {
-        var text = string.Format(_picker.Pick(pool), [Who(player), .. extra]);
+        var text = string.Format(_picker.Pick(pool, LineChoices), [Who(player), .. extra]);
         lock (_gate)
             if (_body is { } body && _spawned && !_leaving)
                 SayLocked(body, whispered ? new { op = "whisper", player, text } : (object)new { op = "say", text }, text);
+    }
+
+    // Whether this player's hello, goodbye, « gg », « merci » or call gets her words: the first of a burst does, and
+    // Papa and Tata always do (the owner's call). Family still claims the gate, so the others after them get the gesture.
+    private bool FirstOfBurst(string player, McOrder kind)
+    {
+        var first = _burstGate.TryClaim(kind);
+        return first || KinOf(player) != McKin.Anyone;
+    }
+
+    // An order's acknowledgement (« j'arrive », « je te suis »), said once every 3 minutes for the same order from the
+    // same player: <paramref name="what"/> names the order and whatever makes it another one (the place, the resource).
+    private void Ack(string player, bool whispered, string what, string[] pool, params object[] extra)
+    {
+        if (_ackGate.TryClaim($"{player.ToLowerInvariant()}|{what}")) Reply(player, whispered, pool, extra);
     }
 
     // Her lines go out one after another, each after the time it takes to type it, as on Discord (BotChat): an
@@ -1713,9 +1751,10 @@ public sealed class MinecraftBodyService : BackgroundService
     }
 
     /// <summary>
-    /// One of her lines in Minecraft's chat, rationed per kind and overall. <paramref name="force"/> says it
-    /// anyway, for the moments that can't wait, and still starts both cooldowns so nothing piles on after.
-    /// Returns whether it was said. <paramref name="extra"/> fills {1}, {2}… as the pool documents.
+    /// One of her lines in Minecraft's chat, rationed per kind, overall and by the 10-minute budget.
+    /// <paramref name="force"/> says it anyway, for the moments that can't wait, and still starts both cooldowns so
+    /// nothing piles on after (it doesn't spend the budget). Returns whether it was said. <paramref name="extra"/>
+    /// fills {1}, {2}… as the pool documents.
     /// </summary>
     private bool Remark(string kind, string[] pool, string? name = null, bool force = false, params object[] extra)
     {
@@ -1730,14 +1769,30 @@ public sealed class MinecraftBodyService : BackgroundService
             _kindGate.Release(kind);
             return false;
         }
-        var text = string.Format(_picker.Pick(pool), [name is null ? "" : Who(name), .. extra]);
         lock (_gate)
             if (_body is { } body && _spawned && !_leaving)
             {
+                if (!force && !SpendBudgetLocked())
+                {
+                    _kindGate.Release(kind);
+                    _anyGate.Release(0);
+                    return false;
+                }
+                var text = string.Format(_picker.Pick(pool, LineChoices), [name is null ? "" : Who(name), .. extra]);
                 SayLocked(body, new { op = "say", text }, text, now: force);
                 return true;
             }
         return false;
+    }
+
+    // Whether an unforced remark still fits in the last 10 minutes' budget, counting it if so.
+    private bool SpendBudgetLocked()
+    {
+        var now = DateTimeOffset.UtcNow;
+        while (_remarksSaid.TryPeek(out var said) && now - said >= RemarkBudgetWindow) _remarksSaid.Dequeue();
+        if (_remarksSaid.Count >= RemarkBudget) return false;
+        _remarksSaid.Enqueue(now);
+        return true;
     }
 
     // ---- /debug minecraft -----------------------------------------------------------------------

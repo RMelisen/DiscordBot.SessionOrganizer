@@ -282,7 +282,8 @@ free). `AllowedMentions.None` keeps the clickable pill while silencing it. Avata
   excludes the pool's `min(50, pool.Length / 2)` most recently said lines. Its memory is **global**,
   not per channel — the same people read every channel and their DMs — and records when each line
   was last said, so busy pools (emote reactions) never crowd out rare ones. Pick the template
-  *before* `string.Format`. A pool that goes through `string.Format` throws on a stray brace. **A pool spent once a day uses
+  *before* `string.Format`. A pool that goes through `string.Format` throws on a stray brace. Minecraft's
+  small pools use `Pick(pool, choices)`, which narrows the pick to the lines said least recently (see minecraft). **A pool spent once a day uses
   `Helpers/Core/DailyRotation` instead** — a restart wipes the picker's history, which at one pick a
   day means it never helps; the rotation is computed from the date, with nothing stored.
 - **Custom emote markup lives in `Helpers/Core/Emotes` and nowhere else**, as `const string` pairs

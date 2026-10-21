@@ -33,7 +33,16 @@ public sealed class ResponsePicker
     /// A random line from <paramref name="pool"/>, avoiding the pool's
     /// <c>min(50, pool.Length / 2)</c> most recently said lines, wherever she said them.
     /// </summary>
-    public string Pick(string[] pool)
+    public string Pick(string[] pool) => Pick(pool, int.MaxValue);
+
+    /// <summary>
+    /// A random line from <paramref name="pool"/>, chosen among at most
+    /// <paramref name="choices"/> lines: the ones she said least recently (lines never said
+    /// count as the least recent). For small pools heard by the same few people in one
+    /// sitting (Minecraft's chat), where avoiding half the pool still repeats a line every
+    /// few picks. Never fewer candidates than the plain pick leaves.
+    /// </summary>
+    public string Pick(string[] pool, int choices)
     {
         if (pool.Length == 0) return string.Empty;
         if (pool.Length == 1) return pool[0];
@@ -43,8 +52,16 @@ public sealed class ResponsePicker
             // Never exclude more than half the pool. With a fixed window a small pool
             // (ReferenceComebacks has 5 lines) would have every line excluded and
             // nothing left to say; halving also keeps larger pools feeling random
-            // rather than cycling predictably through their lines.
+            // rather than cycling predictably through their lines. A caller asking for
+            // fewer choices widens the window, always leaving at least one line: counted in
+            // distinct lines, since a line repeated on purpose (McCalledLines weighs its
+            // silence that way) is excluded once for all its copies.
             int window = Math.Min(MaxExcluded, pool.Length / 2);
+            if (choices < pool.Length)
+            {
+                var distinct = pool.Distinct().Count();
+                window = Math.Min(distinct - 1, Math.Max(window, distinct - Math.Max(1, choices)));
+            }
 
             var excluded = pool
                 .Distinct()

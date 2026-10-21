@@ -371,7 +371,8 @@ list: the owner removed it.
   it was. Going to bed (asked, or because a player did) ends any claim.
 - **Orders aren't rationed like remarks.** One gate per player ignores a second order within the
   same second (a double send), never a stop, so « viens » then « stop » always works. Another gate
-  gives each player her « oui ? » once every 10 seconds at most (the window still opens).
+  gives each player her « oui ? » once every 10 seconds at most (the window still opens). Only their
+  acks are held back, when the same order comes again (*Her remarks*).
 
 ## Free time
 
@@ -519,15 +520,30 @@ catches everything; nothing escapes the loop.
 
 ## Her remarks
 
-- One per kind every 30 seconds, and never two within 8 seconds. Two separate `CooldownGate`s,
+- One per kind every 2 minutes, and never two within 20 seconds. Two separate `CooldownGate`s,
   owned by the service.
-- **The commonest remarks are rolled on top**, so the chat stays the players': night falls (50 %),
-  advancements (60 %), an ordinary death (60 %; hers, a kill by a player and family's always get a
-  word), a first hit from anyone but family (60 %; the escalation is never rolled), a guard kill
-  (10 %: kills come in waves) and a catch (30 %, junk 50 %, a treasure always). So are the answers
-  whose gesture already says it: arriving where she was called (50 %) and the hop (50 %). A greeting
-  always gets its words, the owner's call. Order acks, refusals and failures are never rolled:
-  they're how a player knows she heard.
+- **And at most 4 in any 10 minutes** (`RemarkBudget`), the owner's call: she talks less than she
+  did. A forced remark is neither held back nor counted. A remark the budget swallows gives both
+  gates back, like one the gates swallow, so the callers that release their own gate still do.
+- **The commonest remarks are rolled on top**, so the chat stays the players': night falls (25 %),
+  advancements (30 %), an ordinary death (30 %; hers, a kill by a player and family's always get a
+  word), a first hit from anyone but family (60 %, rare enough to keep its odds; the escalation is
+  never rolled), a guard kill (10 %: kills come in waves) and a catch (15 %, junk 25 %, a treasure
+  always). So are the answers whose gesture already says it: arriving where she was called (25 %)
+  and the hop (50 %). Refusals and failures are never rolled: they're how a player knows she heard.
+- **Order acks are said once every 3 minutes for the same order** from the same player (`Ack`,
+  keyed by the order plus what makes it another one: the place, the coordinates, the resource, the
+  crop). « suis-moi » sent again gets her following, not the same words. Refusals, outcomes, « je
+  suis avec X » and « je te vois pas » are never held back.
+- **A burst gets words once** (`_burstGate`, per kind, across players, 30 s): a hello, a goodbye, a
+  « gg », a « merci » or a bare call from several players at once. The first player gets the line;
+  the others only the gesture (the wave, the hop; a wave for a thank-you or a call, whose window
+  still opens). **Papa and Tata always get their words** (`FirstOfBurst`, the owner's call), and
+  still start the burst, so whoever follows them gets the gesture.
+- **Lines come from small pools** (most have 2 to 9), heard by the same few players in one evening,
+  so every pick in game is `ResponsePicker.Pick(pool, LineChoices)`: among the 2 lines said least
+  recently, not among the half of the pool not said lately. A line comes back only once the pool has
+  nearly gone round. A new send path uses it too.
 - **Who hit her is known for sure** since 1.19.4: the server's `damage_event` names the cause (the
   shooter, for an arrow), which Mineflayer passes as `entityHurt`'s second argument. A mob, a fall
   or fire is no player, and she says nothing. On older versions there's no source, and the body

@@ -2391,10 +2391,30 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
                 }
         }
     }
-    foreach (var f in new[] { "McJoinPostLines", "McLeavePostLines" })
-    foreach (var (name, lines) in Pools(f))
-    foreach (var l in lines)
-        if (l.Contains('{') || l.Contains('}') || l.Contains('✨')) Fail($"{name}: {l}");
+}
+
+// The picker's narrow pick (Minecraft's chat): a line comes back only once all but one of the others were said, and a
+// line repeated on purpose (McCalledLines weighs its silence that way) still leaves something to pick.
+{
+    void Gaps(string[] pool, int minGap)
+    {
+        var picker = new ResponsePicker();
+        var last = new Dictionary<string, int>();
+        for (var i = 0; i < 300; i++)
+        {
+            var l = picker.Pick(pool, 2);
+            if (last.TryGetValue(l, out var at) && i - at < minGap)
+            {
+                Fail($"ResponsePicker.Pick({pool.Length} lines, 2): « {l} » again after {i - at} picks");
+                return;
+            }
+            last[l] = i;
+        }
+        if (last.Count != pool.Distinct().Count()) Fail($"ResponsePicker.Pick({pool.Length} lines, 2): only {last.Count} lines ever said");
+    }
+    Gaps(["a", "b", "c", "d", "e", "f"], 5);
+    Gaps(["a", "b", "c", "", "", ""], 4);
+    Gaps(["a", "b"], 2);
 }
 
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
