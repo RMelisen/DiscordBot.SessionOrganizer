@@ -123,6 +123,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<ConversationStreak>();
         // Where she was told « chut », and until when: shared by every service that chats in a channel.
         services.AddSingleton<ChatHush>();
+        // Who she is still listening to after a call or an answer, so « syncs ? » then a question works.
+        services.AddSingleton<ChatListening>();
         // /debug answers: the counts and the messages she couldn't answer specifically (30 rolling
         // days) are both in the database, behind one transient service.
         services.AddTransient<ChatAnswerService>();

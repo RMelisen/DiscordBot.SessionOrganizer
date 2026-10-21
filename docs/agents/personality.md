@@ -195,6 +195,8 @@ From the top:
    branch**, above the breakdown roll and above the owner rescue-roast branch.
 4. **Shutdown-by-name** (ambient, see below).
 5. **Talked about** (ambient, her name; see below). After shutdown-by-name, which names her too.
+5b. **Follow-up** (`ChatListening`, see *Listening*): no tag, no reply, no name, from someone she
+   is still listening to. After the talked-about branch, so a message naming her is read there.
 6. **Quoicoubeh**, then **Tron** (ambient, last of all).
 
 Everything aimed at her returns before the two ambient branches are reached.
@@ -543,6 +545,25 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   opinion, a ship, a yes-or-no, a blame, a joke, a fun fact, the schedule, his numbers, a roll, a
   side taken and his own rating are the same for him as for anyone. Any other intent from him goes on to his usual pools; he never
   gets `Question` or `LowEffort`.
+
+### Two-step messages — `ChatListening`
+
+« syncs ? » then « t'es en quelle version ? »: the Discord twin of her Minecraft body's call and
+answered windows (`minecraft.md`, *An order can come in two steps*). One singleton, per (channel,
+person), in memory, `ChatListening.Window` (60 s).
+
+- **A call** is her name or tag and nothing else (`MessageCues.IsBareCall`, shared with
+  `McTalkReader.IsBareCall`: « syncs ? », « hé syncs », a bare tag), marked on the talked-about and
+  mention paths. That person's **next message only** is read as a reply to her, whatever it is.
+- **An answer**: every line she sends through `ReplyWithTypingAsync` keeps her listening to the
+  person she answered. Within the window, a message is heard only when it plainly asks her
+  something: a specific intent `TryIntent` answers, not mean, and not one the room shares
+  (`RoomIntents`: a laugh, « peut-être », « t'as raison », a goodbye), or a shutdown threat.
+- **Never** a message said to someone else (a reply to another message, another person, a role or
+  everyone tagged), nor while hushed (Papa excepted) or during a breakdown.
+- **Read as a reply, not a mention** (`HandleReplyToBotAsync`): the mention pools speak of being
+  tagged. With no message replied to, it reads no post context and no yes-or-no. The streak counts
+  each follow-up, so a two-step conversation still ends on its fifth message.
 
 ### Reply context — `HerMessages`
 

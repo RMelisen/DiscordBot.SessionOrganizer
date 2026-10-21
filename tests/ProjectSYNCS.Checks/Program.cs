@@ -151,6 +151,28 @@ if (streak.IsClosed(1, 2, t0 + ConversationStreak.Closed + TimeSpan.FromSeconds(
 if (streak.IsClosed(1, 3, t0)) Fail("closing leaked to another person");
 if (streak.Record(1, 2, t0 + ConversationStreak.Closed + TimeSpan.FromSeconds(1)) != 1) Fail("count does not restart after closing");
 
+// 5b. ChatListening: a call covers the next message only, an answer keeps her listening for the window.
+{
+    var listen = new ChatListening();
+    var at = DateTimeOffset.UtcNow;
+    if (listen.Take(1, 2, at) != (false, false)) Fail("listening to someone she never heard");
+    listen.Called(1, 2, at);
+    listen.Answered(1, 2, at);
+    if (listen.Take(1, 2, at.AddSeconds(10)) != (true, true)) Fail("a call then an answer isn't heard 10 s later");
+    if (listen.Take(1, 2, at.AddSeconds(20)) != (false, true)) Fail("a call covers more than one message");
+    if (listen.Take(1, 2, at + ChatListening.Window + TimeSpan.FromSeconds(1)) != (false, false)) Fail("still listening past the window");
+    listen.Called(1, 2, at);
+    if (listen.Take(3, 2, at) != (false, false) || listen.Take(1, 4, at) != (false, false)) Fail("listening leaks to another channel or person");
+    if (listen.Take(1, 2, at + ChatListening.Window + TimeSpan.FromSeconds(1)) != (false, false)) Fail("a stale call still counts");
+}
+var isBareCall = cues.GetMethod("IsBareCall", BindingFlags.Public | BindingFlags.Static)!;
+foreach (var (text, expected) in new[]
+{
+    ("syncs ?", true), ("syncs", true), ("hé syncs ?", true), ("<@999>", true), ("<@999> ?", true), ("SYNCS !", true),
+    ("syncs ça va ?", false), ("syncs a posté le sondage", false), ("<@999> t'es là ?", false), ("merci syncs", false),
+})
+    if ((bool)isBareCall.Invoke(null, new object[] { text })! != expected) Fail($"IsBareCall(\"{text}\") != {expected}");
+
 // 6. ChatFacts.
 RecapStats Stats(int missed = 0, int joined = 0, int attended = 0, long bad = 0, long good = 0, long withHer = 0,
     long quiz = 0, string? plyn = null, int graves = 0, long mean = 0, int? rank = null, long balance = 100, long xp = 500) =>

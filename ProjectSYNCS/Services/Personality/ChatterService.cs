@@ -33,6 +33,10 @@ internal sealed class ChatterService
     // The channels where she was told « chut » (ChatHush), shared with every service that chats there.
     private readonly ChatHush _hush;
 
+    // Who she is still listening to after a call or an answer (ChatListening): « syncs ? » then
+    // « t'es en quelle version ? » is one question in two messages.
+    private readonly ChatListening _listening;
+
     // Fact lines (her records, quoted): at most one per person every FactCooldown. Its own gate,
     // shared with nothing else.
     private readonly CooldownGate<ulong> _factGate = new(FactCooldown, forget: FactCooldown);
@@ -84,10 +88,12 @@ internal sealed class ChatterService
         IServiceProvider services,
         ConversationStreak streaks,
         ChatHush hush,
+        ChatListening listening,
         ILogger<ChatterService> logger)
     {
         _streaks = streaks;
         _hush = hush;
+        _listening = listening;
         _glitch = glitch;
         _client = client;
         _breakdown = breakdown;
@@ -159,6 +165,10 @@ internal sealed class ChatterService
         // which names her too and must win.
         if (await TryHandleTalkedAboutAsync(message)) return;
 
+        // Right after « syncs ? » or one of her answers, what that person says next may still be for
+        // her without her name. After the talked-about branch: a message naming her is read there.
+        if (await TryHandleFollowUpAsync(message)) return;
+
         // Told « chut » here: the eggs are her own initiative, and she is keeping quiet.
         if (_hush.IsHushed(message.Channel.Id, DateTimeOffset.UtcNow)) return;
 
@@ -196,6 +206,8 @@ internal sealed class ChatterService
         // said in passing. Papa is never kept waiting.
         if (_breakdown.IsActive(message.Channel.Id)) return true;
         if (!isOwner && _hush.IsHushed(message.Channel.Id, DateTimeOffset.UtcNow)) return true;
+        // « syncs ? », « hé syncs »: a call, so their next message is for her (ChatListening).
+        MarkCall(message);
 
         var mood = MessageCues.Analyze(content);
         var selfId = _client.CurrentUser.Id;
@@ -325,6 +337,9 @@ internal sealed class ChatterService
     // Handles a message that @mentions the bot (but isn't a reply to the bot).
     private async Task HandleMentionAsync(SocketUserMessage message)
     {
+        // A bare tag is a call: their next message is for her (ChatListening).
+        MarkCall(message);
+
         // Don't let anyone interrupt an in-progress breakdown in this channel.
         if (_breakdown.IsActive(message.Channel.Id)) return;
 
@@ -842,6 +857,61 @@ internal sealed class ChatterService
         "toi" or "tu" or "toi meme" => "SYNCS",
         _ => side,
     };
+
+    // Her name or tag and nothing else (« syncs ? », a bare tag): a call (ChatListening).
+    private void MarkCall(SocketUserMessage message)
+    {
+        if (MessageCues.IsBareCall(message.Content ?? string.Empty))
+            _listening.Called(message.Channel.Id, message.Author.Id, DateTimeOffset.UtcNow);
+    }
+
+    // A message with no tag, no reply and no name, from someone she is still listening to
+    // (ChatListening): read as a reply to her. After a call, whatever it is (« syncs ? » … « pourquoi le
+    // ciel est bleu ? »); after one of her answers, only what plainly asks her something, since they
+    // may be talking to the room. Never a message said to someone else (a reply to another message,
+    // another person tagged), and never while she is told to hush or breaking down.
+    private async Task<bool> TryHandleFollowUpAsync(SocketUserMessage message)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var (called, answered) = _listening.Take(message.Channel.Id, message.Author.Id, now);
+        if (!called && !answered) return false;
+
+        if (message.ReferencedMessage is not null || message.MentionedEveryone || message.MentionedRoles.Count > 0
+            || message.MentionedUsers.Any(u => u.Id != _client.CurrentUser.Id))
+            return false;
+        if (_breakdown.IsActive(message.Channel.Id)) return false;
+        var isOwner = message.Author.Id == OwnerId;
+        if (!isOwner && _hush.IsHushed(message.Channel.Id, now)) return false;
+
+        var content = message.Content ?? string.Empty;
+        if (!called && !MessageCues.ThreatensShutdown(content) && !AsksHer(content, message, isOwner)) return false;
+
+        _logger.LogInformation("{Name} went on talking to her without her name — {Why}.", ResolveName(message.Author),
+            called ? "after calling her" : "after her answer");
+        // As a reply to her, not a mention: the mention pools speak of being tagged, which they weren't.
+        // With no message replied to, the reply path reads no post context and no yes-or-no.
+        await HandleReplyToBotAsync(message);
+        return true;
+    }
+
+    // Specific intents that are about the room as often as about her: a laugh, « peut-être », « t'as
+    // raison » to whoever spoke last, a goodnight to everyone.
+    private static readonly HashSet<ChatIntent> RoomIntents = new()
+    {
+        ChatIntent.Laughter, ChatIntent.Maybe, ChatIntent.YouAreRight, ChatIntent.YouAreWrong, ChatIntent.Goodnight,
+        ChatIntent.Goodbye,
+    };
+
+    // Whether a message she wasn't named in still plainly asks her something: a specific intent she
+    // has an answer to (TryIntent), not mean, not one the room shares. « chut » is checked by name, as
+    // TryIntent would hush the channel before the answer goes out.
+    private bool AsksHer(string content, SocketUserMessage message, bool isOwner)
+    {
+        if (IsMean(MessageCues.Analyze(content), content)) return false;
+        var intent = MessageCues.ReadIntent(content);
+        if (RoomIntents.Contains(intent)) return false;
+        return intent == ChatIntent.ShutUp || TryIntent(intent, message, isOwner, out _);
+    }
 
     // Told « chut » in this channel (ChatHush): until it wears off, a reply or a mention gets a sulk
     // reaction and no words. Papa is never refused. True when it took the message.
@@ -1441,9 +1511,13 @@ internal sealed class ChatterService
     // kind of constant that drifts apart. `what` only labels the log line. Through
     // GlitchService, so a very rare line comes out corrupted and is quietly fixed.
 
+    // Every answer keeps her listening to that person for a moment (ChatListening).
     private Task ReplyWithTypingAsync(
-        SocketUserMessage replyTo, string line, string what, AllowedMentions? allowedMentions = null) =>
-        _glitch.ReplyWithTypingAsync(replyTo, line, _logger, what, allowedMentions);
+        SocketUserMessage replyTo, string line, string what, AllowedMentions? allowedMentions = null)
+    {
+        if (!replyTo.Author.IsBot) _listening.Answered(replyTo.Channel.Id, replyTo.Author.Id, DateTimeOffset.UtcNow);
+        return _glitch.ReplyWithTypingAsync(replyTo, line, _logger, what, allowedMentions);
+    }
 
     private Task PostWithTypingAsync(ISocketMessageChannel channel, string line, string what) =>
         _glitch.PostWithTypingAsync(channel, line, _logger, what);

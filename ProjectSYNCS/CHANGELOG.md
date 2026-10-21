@@ -3,6 +3,13 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.29.0 — 2026-10-21
+
+- Questions in two messages: call her (« syncs ? » or a bare tag), then ask without her name, and
+  she answers the next message.
+- Right after she answers you, she keeps hearing what you ask her for a minute, even without her
+  name; chat aimed at someone else (a reply to another message, someone else tagged) stays ignored.
+
 ## 7.28.0 — 2026-10-21
 
 - Ask her when the next session is, or who's coming, and she answers from the real schedule.

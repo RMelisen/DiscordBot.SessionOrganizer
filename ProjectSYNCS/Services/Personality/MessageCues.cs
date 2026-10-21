@@ -2695,6 +2695,18 @@ internal static class MessageCues
     }
 
     /// <summary>
+    /// A call and nothing else: her name or tag with at most an interjection and punctuation (« syncs ? »,
+    /// « hé syncs », a bare tag). What comes next from that person is for her (ChatListening). Shared
+    /// with her Minecraft body's call (McTalkReader.IsBareCall), mentions and emotes dropped first.
+    /// </summary>
+    public static bool IsBareCall(string content)
+    {
+        if (content is null) return false;
+        var text = _link.Replace(_customEmote.Replace(_mentionMarkup.Replace(content, " "), " "), " ");
+        return McTalkReader.IsBareCall(text);
+    }
+
+    /// <summary>
     /// Whether the message speaks to someone (« tu », « toi », « t'es »…). A sad message that does is
     /// not let through a mean reading: « j'en ai marre de toi, t'es nulle » is an insult.
     /// </summary>

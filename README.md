@@ -681,7 +681,9 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
   « 1d20 », « un nombre entre 1 et 100 »), settles « qui a raison, moi ou @X ? » the way `/rate`
   ranks people, and rates you (« note-moi », « je suis beau ? ») as `/rate` would. Ask her to
   apologise and she refuses. Tell her « chut » and she goes quiet in that channel for half an
-  hour, answering only with a sulky reaction.
+  hour, answering only with a sulky reaction. A question can come in two messages: « syncs ? »,
+  then « t'es en quelle version ? » without her name, and she answers; right after she answers
+  you, she still hears what you ask her next for a minute.
   Ask how something works and she points you to `/help`
   or the right command; ask her to organise something and she points you to the command that does it. A reply to one of her own posts (a welcome, the late call, the weekend poll, a
   level-up, a command result…) is answered about that post.
