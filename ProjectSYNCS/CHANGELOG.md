@@ -3,6 +3,19 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.26.0 — 2026-10-21
+
+- New `/minecraft help`: every order she understands in game, with phrasings that work.
+- New `/minecraft status`, `where` and `inventory`: whether she's on the server, what she's doing
+  and for whom, where she stands, and what she carries.
+- New `/minecraft stats`: her deaths, catches, kills, gathering, harvests, time in game and the
+  orders she received, since the start.
+- New `/minecraft link`: tie your Discord account to your in-game name by whispering her a code.
+- New `/minecraft invite`: a linked player brings her onto the server for an hour, whatever the
+  player count; she says who invited her when she arrives.
+- Ask her version (« t'es en quelle version ? », « c'est quoi ta version ? », « t'es à jour ? »),
+  on Discord or in Minecraft, and she tells you.
+
 ## 7.25.0 — 2026-10-21
 
 - In Minecraft she answers when someone talks to her without giving an order, the way she does on

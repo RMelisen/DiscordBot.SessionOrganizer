@@ -666,12 +666,23 @@ internal sealed class ChatterService
             return true;
         }
 
-        if (intent == ChatIntent.AboutHer && !isOwner)
+        if (intent == ChatIntent.AboutHer)
         {
             var topic = MessageCues.ReadHerTopic(message.Content ?? string.Empty) ?? HerTopic.Favourite;
-            var days = topic == HerTopic.Age ? MorningGreeting.DaysOld(DateTimeOffset.UtcNow).ToString() : string.Empty;
-            pick = new IntentPick(BotResponses.AboutHerLines[topic], days, string.Empty, null, AnswerKinds.Intent(intent));
-            return true;
+            // Her version is the one fact Papa asks for real (did the deploy go through?): he gets
+            // the number too, in his own pool. The rest of AboutHer is his twin's.
+            if (topic == HerTopic.Version)
+            {
+                pick = new IntentPick(isOwner ? BotResponses.OwnerVersionLines : BotResponses.AboutHerLines[topic],
+                    AppInfo.Version, string.Empty, null, AnswerKinds.Intent(intent));
+                return true;
+            }
+            if (!isOwner)
+            {
+                var days = topic == HerTopic.Age ? MorningGreeting.DaysOld(DateTimeOffset.UtcNow).ToString() : string.Empty;
+                pick = new IntentPick(BotResponses.AboutHerLines[topic], days, string.Empty, null, AnswerKinds.Intent(intent));
+                return true;
+            }
         }
 
         if (intent == ChatIntent.Request)

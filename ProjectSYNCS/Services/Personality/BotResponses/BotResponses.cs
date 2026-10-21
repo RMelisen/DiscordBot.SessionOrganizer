@@ -44,7 +44,7 @@ namespace ProjectSYNCS.Services;
 //     RequestCommands .......... each topic's command, as Papa's {2}
 //     OpinionLines · PreferLines « t'en penses quoi de X ? » / « tu préfères X ou Y ? » (/rate's verdict)
 //     HelpLines · HelpCommands « comment ça marche ? », pointing at /help or the topic's command
-//     AboutHerLines ............ keyed by HerTopic: her age (in days), birthday, home, favourites
+//     AboutHerLines ............ keyed by HerTopic: her age (in days), birthday, home, favourites, version
 //     ShipChatLines ............ « ship X et Y » in chat, around /ship's own answer
 //     ShipBestMatchLines · ShipWorstMatchLines « c'est qui mon âme sœur ? »: the server-wide search
 //     SharingShrugLines ........ « j'ai mangé de la soupe » — « euh… ok ? », half the time
@@ -83,6 +83,7 @@ namespace ProjectSYNCS.Services;
 //                                je m'ennuie, t'as un crush, son âge et sa maison, fais genre, sa journée,
 //                                oui, non, tu m'aimes, tu te souviens de moi, t'es fâchée)
 //     OwnerRequestLines ........ his requests, with the command as {2}
+//     OwnerVersionLines ........ him asking her version, with it as {2}
 //     OwnerAbsentNotices ....... someone pinged him while away
 //     OwnerReplyHeralds · OwnerAnnouncementHeralds ... /debug tell and dm heralds
 //     OwnerReportLines ......... /debug answers, reporting for duty

@@ -593,6 +593,47 @@ for the game too**: run `dotnet run --project tests/ProjectSYNCS.Checks -- --mc-
 the game leaves out (« - », with the reason) and every line as she says it in game (« + »). The
 checks fail when a pool she uses in game ends up empty, or a kept line isn't plain game chat.
 
+## `/minecraft`
+
+Her Minecraft life seen from Discord (`MinecraftModule`, design in
+`docs/superpowers/specs/2026-10-21-minecraft-command-design.md`). Seven subcommands, all answers
+ephemeral. Orders, chat lines and reminders sent into the game from Discord were considered and
+dropped by the owner: the only thing Discord does in game is `invite`.
+
+- **`help`** is `McHelp.Sections`, two pages (`minecraft:help:N`, `MinecraftHelpHandler`). **Every
+  example is parsed by the checks** and must read as the order it shows (talk examples, as talk): a
+  change to `McCommand` that breaks one breaks the checks, so fix the phrasing or the parser, never
+  drop the check. A new order gets an example here.
+- **`status`** (`PublicStatusText`) shows nothing of the owner's (address, kick reasons, the allow
+  switch: `/debug`), and what she's doing through `McDoing.ForStatus` from the order under way; a
+  whispered order keeps its place or coordinates private.
+  **`inventory`** is `InventoryText`, the owner's view, which holds nothing private. **`where`** sends
+  the body a `where` with the asker `DiscordAsker` (U+0001, which no player name can hold), so the
+  `position` answer goes back to Discord, not to a player; one question at a time, shared by
+  simultaneous callers, 3 s at most.
+- **`link`** (`MinecraftLink`, by member, unique on `PlayerKey`, the name in lower case): the member
+  gets a 4-digit code (`McLinkCodes`, in memory, 10 minutes, one live code per member) and whispers
+  « lien 1234 » to her from that name. A whispered code is never talk: a wrong one gets silence; a
+  right one whose save fails (taken meanwhile, or the database refused) gets `McLinkFailedLines`, since
+  the code is spent.
+  **Papa's and Tata's names only link to their own Discord ids** (offline mode lets anyone log in
+  under any name), and **a name linked to someone else is refused**: the holder frees it with
+  `remove`, the owner frees anyone's with `remove` and `player`. A link never makes anyone family:
+  `Minecraft:Owner` and `Minecraft:Tata` still decide that in game.
+- **`invite`** (linked members only, `McInvite.Decide`): refused when she isn't allowed, during the
+  owner's 30-minute leave hold, when she's in, when the server didn't answer its last ping, or while
+  another invite runs. Otherwise she joins and
+  the presence tick wants her in for `McInvite.Length` (an hour) as long as the server answers;
+  forbidding her or a forced leave ends it. Her arrival line is then `McInvitedLines` (who invited
+  her, `McInvite.Inviter`: only while the invite runs, so an invite whose body never spawned credits
+  nobody later) instead of `McArrivalLines`.
+- **`stats`** (`MinecraftStat`, totals by key, `McStats`: **stored keys, append-only**): counted in
+  memory (`McTally`) from the body's events (her deaths, fish and treasures, guard kills, gathered
+  blocks by resource, harvests, orders confirmed under way, total and per player) and her minutes in
+  game, written every 5 minutes by the loop and on a clean stop; a failed write puts the counts back.
+  The command adds what's still in memory, so it's current. Totals only, no daily buckets: nothing
+  ranks them by date.
+
 ## Failures
 
 An unplanned end (crash, kick, refused login, unsupported version) backs off 2, then 5, then

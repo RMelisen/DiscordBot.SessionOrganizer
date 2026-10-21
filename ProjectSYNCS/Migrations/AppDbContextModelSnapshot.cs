@@ -717,6 +717,43 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("MemberXps");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.MinecraftLink", b =>
+                {
+                    b.Property<long>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("LinkedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Player")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PlayerKey")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("PlayerKey")
+                        .IsUnique();
+
+                    b.ToTable("MinecraftLinks");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.MinecraftStat", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Count")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("MinecraftStats");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.Participant", b =>
                 {
                     b.Property<int>("Id")

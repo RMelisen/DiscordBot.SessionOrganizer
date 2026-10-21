@@ -360,6 +360,11 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   `AboutHerLines[topic]`;
   the age is `{2}` = days since her first commit (`MorningGreeting.DaysOld`). The lore stays hinted
   (`docs/syncs-voice.md`): a date, never « anniversaire » in her mouth; favourites lying around.
+  **Her version** (`HerTopic.Version`: « t'es en quelle version ? », « c'est quoi ta version ? »,
+  « t'es à jour ? ») has `{2}` = `AppInfo.Version`, and is the one topic Papa gets the number for too
+  (`OwnerVersionLines`: he asks to check a deploy). Read first, and only closing the message or its
+  question, or before `_versionFollowers` (« syncs », « actuellement »…): « t'es en quelle version de
+  Minecraft ? », « ta version des faits » are something else.
 - **`AreYouThere`**: « t'es là ? », « tu dors ? », « y a quelqu'un ? », closing the message or its
   question or followed by `_thereFollowers` (« t'es là ce soir ? » asks whether she'll come,
   « t'es la meilleure » is a compliment); « réveille-toi » in a short message; her name alone with a

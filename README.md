@@ -28,6 +28,8 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/rate <thing>` | A score out of 10, the same every time | everyone |
 | `/ship <a> <b>` | How well two things go together, out of 100 | everyone |
 | `/blame` | Whose fault it is, among the people in voice | everyone |
+| `/minecraft help · status · where · inventory · stats` | Her Minecraft manual, and what she's doing and has done on the server | everyone |
+| `/minecraft link · invite` | Link your in-game name (a code whispered to her), then bring her onto the server for an hour | everyone (`invite`: linked) |
 | `/wouldyourather` | A two-button dilemma, revealed after 10 minutes | everyone |
 | `/tonight` | Who's up tonight — becomes a session once enough people are in | everyone |
 | `/teams` | Split a voice channel into teams | everyone |
@@ -209,7 +211,12 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
 - **She swims.** In deep water she treads, and swims up for air before it runs out. Following you,
   she dives after you, comes up to breathe and goes back down; if you sit in a boat with a free
   seat, she climbs in as your passenger and gets out when you do.
-- **On Discord** she says in the bots channel when she goes to play and when she's back.
+- **On Discord**, `/minecraft help` lists every order she understands with phrasings that work;
+  `/minecraft status`, `where`, `inventory` and `stats` show what she's doing, where she is, what she
+  carries and what she's done since the start. `/minecraft link` ties your Discord account to your
+  in-game name (you whisper her a code); once linked, `/minecraft invite` brings her onto the server
+  for an hour, whatever the player count. The owner's and Tata's names can only be linked by them,
+  and a name already linked stays its holder's.
 
 She joins nothing until the owner allows it with `/debug minecraft` (« L'autoriser à jouer »);
 the choice survives restarts, and « Lui interdire de jouer » takes her out at once.

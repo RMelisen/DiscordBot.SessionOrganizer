@@ -76,6 +76,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<PlynlingVisitRunner>();
         services.AddTransient<TonightService>();
         services.AddTransient<PersonalReminderStore>();
+        services.AddTransient<MinecraftDataService>();
         services.AddTransient<ArcadeService>();
         services.AddTransient<RecapService>();
         services.AddTransient<SchedulingReportService>();
