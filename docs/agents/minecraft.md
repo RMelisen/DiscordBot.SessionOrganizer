@@ -561,7 +561,9 @@ budget. Only she, speaking on her own, is rationed.
 
 - **When.** McCommand found no order (`None`, or `Unknown` for a call) and the message names her,
   or it's a whisper (always for her), or it comes **within 30 s of her answering that player**:
-  every answer opens the call window again, so a conversation goes on without her name. A refused
+  every answer opens the window again, so a conversation goes on without her name. A message she
+  lets go (« mdr t'as vu ça », to someone else) doesn't close it (`_answeredAt`); only the order
+  reading is one message long (`_calledAt`), so « viens » said to a friend a bit later stays theirs. A refused
   order (« syncs viens pas », `McRequest.Refused`) is never talk. Her in-game name is turned into
   « syncs » before reading (`HerNameAsSyncs`), since the cues know only that one.
 - **The ladder**, Discord's, first match wins: « Inabot », a shutdown threat, a mean reading

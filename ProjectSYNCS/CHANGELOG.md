@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.25.2 — 2026-10-21
+
+- Minecraft: after she answers someone in chat, she keeps listening to them for 30 seconds, even if
+  they say something to another player in between.
+- Minecraft: calling her by name always gets an answer again; some calls got no reply at all.
+
 ## 7.25.1 — 2026-10-21
 
 - Minecraft: gathering stone and ore: she skips blocks buried out of reach and

@@ -74,6 +74,10 @@ public sealed class MinecraftBodyService : BackgroundService
     // her name (« suis moi »). One message only, whatever it turns out to be. Guarded by _gate.
     private static readonly TimeSpan CallWindow = TimeSpan.FromSeconds(30);
     private readonly Dictionary<string, DateTimeOffset> _calledAt = new();
+    // After she answered a player in chat, within CallWindow: what they say without her name is still heard as talk
+    // (an intent, Papa's pet name), however many messages they send meanwhile to someone else. Orders keep the
+    // one-message _calledAt above. Guarded by _gate.
+    private readonly Dictionary<string, DateTimeOffset> _answeredAt = new();
     // Each player's back-and-forth with her in chat (ConversationStreak, as on Discord): she notices the third message
     // she can only shrug at, ends it at the fifth and stays quiet with them for 10 minutes. Never Papa.
     private readonly ConversationStreak _talks = new();
@@ -875,11 +879,14 @@ public sealed class MinecraftBodyService : BackgroundService
     {
         if (player.Length == 0) return;
         bool called;
+        bool answered;
         string[] known;
         Dictionary<string, string> owners;
         lock (_gate)
         {
             called = _calledAt.Remove(player, out var calledAt) && DateTimeOffset.UtcNow - calledAt <= CallWindow;
+            answered = _answeredAt.TryGetValue(player, out var answeredAt) && DateTimeOffset.UtcNow - answeredAt <= CallWindow;
+            if (!answered) _answeredAt.Remove(player);
             known = _places.Values.SelectMany(p => p.Keys).Distinct().ToArray();
             owners = OwnerNamesLocked();
         }
@@ -889,7 +896,7 @@ public sealed class MinecraftBodyService : BackgroundService
         {
             case McOrder.None:
                 // Not an order: maybe talk (to her, about her, or right after she answered them). A refused order stays silent.
-                if (!request.Refused) Talk(player, whispered, text, call: false, listening: called);
+                if (!request.Refused) Talk(player, whispered, text, call: false, listening: called || answered);
                 return;
             case McOrder.Unknown:
                 // Her name and something she reads as talk (« syncs ça va ? »): answered as such. Otherwise a call.
@@ -1710,9 +1717,16 @@ public sealed class MinecraftBodyService : BackgroundService
         if (McChat.Game(pool, whispered) is not { Length: > 0 } game) return false;
         _logger.LogInformation("Minecraft: {Player} talked to her — {Kind}.", player, talk.Kind);
         Reply(player, whispered, game, extra);
-        // She answered: their next message is heard as said to her, unless she just ended the conversation.
-        if (!ReferenceEquals(pool, BotResponses.StreakEndLines))
-            lock (_gate) _calledAt[player] = DateTimeOffset.UtcNow;
+        // She answered, unless she just ended the conversation: their next message is read as said to her (an order
+        // needs no name), and for CallWindow what is plainly for her is answered, whatever else they say meanwhile.
+        lock (_gate)
+            if (!ReferenceEquals(pool, BotResponses.StreakEndLines))
+            {
+                var now = DateTimeOffset.UtcNow;
+                _calledAt[player] = now;
+                _answeredAt[player] = now;
+            }
+            else _answeredAt.Remove(player);
         return true;
     }
 

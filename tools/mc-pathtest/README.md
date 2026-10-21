@@ -47,11 +47,19 @@ shipping anything that makes a search heavier. `MC_TRACE_PATHS=1` logs every slo
 
 Trampling and item rolls are chance: a fix for one of those passes `all` twice in a row, not once.
 
+**Her chat.** `node chat-test.js` (about 3 minutes, not part of `all`) runs `MinecraftBodyService` itself, the real
+pools and rules with Discord left offline (`tools/mc-chattest`, built by the script), and six stand-in players talk to
+her: questions, intents with Papa's and Tata's twins, insults, Inabot, a favour, a whisper, talk about her, an order,
+the listening window, a burst of hellos, the conversation streak. Each line she says is traced back to its Discord
+pool, and every line must be plain game chat. Her answers are typed (a delay), so scenarios leave a few seconds
+between them.
+
 ## Files
 
 - `course.js`: the lanes, one kind of terrain each, as lane-relative block commands.
 - `run.js`: building, the lanes and the other runs, the command line.
 - `actions.js`, `orders.js`, `safety.js`, `survival.js`, `players-test.js`: the scenarios beyond the course.
+- `chat-test.js` and `../mc-chattest` (the service alone, writing every pool to `pools.json`): her chat in game.
 - `body.js` (her body as a child process), `players.js` (stand-in players), `query.js` (the world, through RCON).
 - `rcon.js`: a minimal RCON client (also usable alone: `node rcon.js "cmd" ...`).
 - `accuracy.js`: arrows needed for a creeper that can't move, at a few distances (her aim).

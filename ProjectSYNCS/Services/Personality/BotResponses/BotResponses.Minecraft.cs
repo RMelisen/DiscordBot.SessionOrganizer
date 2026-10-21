@@ -595,9 +595,6 @@ internal static partial class BotResponses
         "Oui {0} ? Fais vite, je surveille quelqu'un (¬_¬)",
         "Je t'écoute. J'ai trente secondes de RAM rien que pour toi.",
         "Oui ? Dis-moi tout. Enfin, presque.",
-        "",
-        "",
-        "",
     };
 
     // « syncs récolte le blé »: she sets off. {1} = how many ripe plants, {2} = McCropNames, always after a
