@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Discord;
@@ -73,6 +74,11 @@ public sealed class MinecraftBodyService : BackgroundService
     // her name (« suis moi »). One message only, whatever it turns out to be. Guarded by _gate.
     private static readonly TimeSpan CallWindow = TimeSpan.FromSeconds(30);
     private readonly Dictionary<string, DateTimeOffset> _calledAt = new();
+    // Each player's back-and-forth with her in chat (ConversationStreak, as on Discord): she notices the third message
+    // she can only shrug at, ends it at the fifth and stays quiet with them for 10 minutes. Never Papa.
+    private readonly ConversationStreak _talks = new();
+    // Talked about rather than to: a word now and then, on top of the remark gates.
+    private const double TalkedAboutChance = 0.5;
     // Each player's hits on her, for the escalation (McHitStreaks). Guarded by _gate.
     private readonly McHitStreaks _hits = new();
     // Each player's hits on Papa or Tata (a word, then one hit back, then a fight), and whom she's hitting back and
@@ -111,6 +117,7 @@ public sealed class MinecraftBodyService : BackgroundService
 
     private readonly DiscordSocketClient _client;
     private readonly ResponsePicker _picker;
+    private readonly PiHealthService _health;
     private readonly ILogger<MinecraftBodyService> _logger;
 
     private readonly string _host;
@@ -176,10 +183,12 @@ public sealed class MinecraftBodyService : BackgroundService
     private string? _lastKick;
     private DateTimeOffset? _lastKickAt;
 
-    public MinecraftBodyService(DiscordSocketClient client, ResponsePicker picker, IConfiguration configuration, ILogger<MinecraftBodyService> logger)
+    public MinecraftBodyService(DiscordSocketClient client, ResponsePicker picker, PiHealthService health, IConfiguration configuration,
+        ILogger<MinecraftBodyService> logger)
     {
         _client = client;
         _picker = picker;
+        _health = health;
         _logger = logger;
 
         _host = configuration["Minecraft:Host"]?.Trim() ?? "";
@@ -879,8 +888,12 @@ public sealed class MinecraftBodyService : BackgroundService
         switch (request.Order)
         {
             case McOrder.None:
+                // Not an order: maybe talk (to her, about her, or right after she answered them). A refused order stays silent.
+                if (!request.Refused) Talk(player, whispered, text, call: false, listening: called);
                 return;
             case McOrder.Unknown:
+                // Her name and something she reads as talk (« syncs ça va ? »): answered as such. Otherwise a call.
+                if (Talk(player, whispered, text, call: true, listening: false)) return;
                 lock (_gate) _calledAt[player] = DateTimeOffset.UtcNow;
                 if (!_callGate.TryClaim(player)) return;
                 // Called by several players at once: the others get a wave, so they still know she heard (the window opens).
@@ -1652,6 +1665,62 @@ public sealed class MinecraftBodyService : BackgroundService
             if (_body is { } body && _spawned && !_leaving)
                 SayLocked(body, whispered ? new { op = "whisper", player, text } : (object)new { op = "say", text }, text);
     }
+
+    // ---- Talk -----------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Chat that isn't an order, read the way Discord reads it (McTalkReader) and answered from her Discord pools made fit
+    /// for the game (McChat.Game). An answer to someone isn't a remark: no gate, no budget, only the conversation streak.
+    /// Talked about rather than to, she speaks on her own initiative: a remark like any other. Each answer opens the
+    /// call window again, so the next message is heard without her name. True when it was dealt with, said or not;
+    /// false when there was nothing to say (a call then gets its « oui ? »).
+    /// </summary>
+    private bool Talk(string player, bool whispered, string text, bool call, bool listening)
+    {
+        var kin = KinOf(player);
+        var read = McTalkReader.Read(HerNameAsSyncs(text), kin, call, listening, whispered, McTalkReader.AskerId(player, kin),
+            _health.CurrentMilli, _picker, Random.Shared);
+        if (read is not { } talk) return false;
+        var weekday = AppTime.Now.ToString("dddd", CultureInfo.GetCultureInfo("fr-FR"));
+
+        if (talk.Remark)
+        {
+            if (Random.Shared.NextDouble() < TalkedAboutChance && McChat.Game(talk.Pool) is { Length: > 0 } lines)
+                Remark("talkedAbout", lines, player, false, weekday, talk.A, talk.B);
+            return true;
+        }
+
+        var pool = talk.Pool;
+        object[] extra = [weekday, talk.A, talk.B];
+        if (kin != McKin.Papa)
+        {
+            var now = DateTimeOffset.UtcNow;
+            var key = McTalkReader.AskerId(player, kin);
+            if (_talks.IsClosed(0, key, now)) return true;
+            var count = _talks.Record(0, key, now);
+            if (count >= ConversationStreak.EndAt)
+            {
+                _talks.Close(0, key, now);
+                (pool, extra) = (BotResponses.StreakEndLines, [weekday, count]);
+            }
+            else if (count == ConversationStreak.NudgeAt && talk.Fallback)
+                (pool, extra) = (BotResponses.StreakNudgeLines, [weekday, count]);
+        }
+
+        if (McChat.Game(pool, whispered) is not { Length: > 0 } game) return false;
+        _logger.LogInformation("Minecraft: {Player} talked to her — {Kind}.", player, talk.Kind);
+        Reply(player, whispered, game, extra);
+        // She answered: their next message is heard as said to her, unless she just ended the conversation.
+        if (!ReferenceEquals(pool, BotResponses.StreakEndLines))
+            lock (_gate) _calledAt[player] = DateTimeOffset.UtcNow;
+        return true;
+    }
+
+    // Her in-game name read as « syncs » by the chat cues, which only know that one (« SYNCS_bot ça va ? »).
+    private string HerNameAsSyncs(string text) =>
+        McTalkReader.IsHerName(_username) ? text
+            : System.Text.RegularExpressions.Regex.Replace(text, $@"(?<![\w]){System.Text.RegularExpressions.Regex.Escape(_username)}(?![\w])", "syncs",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
     // Whether this player's hello, goodbye, « gg », « merci » or call gets her words: the first of a burst does, and
     // Papa and Tata always do (the owner's call). Family still claims the gate, so the others after them get the gesture.

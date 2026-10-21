@@ -3,6 +3,16 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.25.0 — 2026-10-21
+
+- In Minecraft she answers when someone talks to her without giving an order, the way she does on
+  Discord: « ça va ? », « je t'aime », a question, a compliment, an insult, a joke or a fun fact, her
+  opinion on something, Papa's and Tata's own answers. The conversation flows: right after she
+  answers, the next message is heard without her name. A whisper is always for her.
+- Said about her rather than to her, her name now and then gets a word, counted with her own
+  remarks.
+- A favour she has no order for gets an honest « je sais pas faire ça ».
+
 ## 7.24.2 — 2026-10-21
 
 - In Minecraft she looks around more naturally: at the player she follows or guards while standing by

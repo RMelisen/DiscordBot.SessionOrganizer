@@ -114,7 +114,9 @@ call, but only when the name opens or closes it; elsewhere it's talk about her. 
 short « oui ? » (`McCalledLines`), and that player's **next message within 30 seconds** is read as
 if it carried her name (`McCommand.Parse(…, called: true)`): « syncs » … « suis moi ». One message
 only, whatever it turns out to be, so a call followed by chat doesn't keep her listening; a
-follow-up she doesn't understand gets silence, not another « oui ? ». Other players still need her
+follow-up she doesn't understand is read as talk (*Talk*, below), never another « oui ? ». A call
+with something she reads as talk in it (« syncs ça va ? ») is answered as talk instead of « oui ? »:
+only a call with nothing to answer (`McTalkReader.IsBareCall`, or nothing read) gets it. Other players still need her
 name in that window. **A compliment or a thank-you in that same place is not a call**: « gg syncs »,
 « bravo syncs » (`Praise`, with a hop) and « merci syncs » (`Thanks`) get their own lines. An
 adjective counts only when said to her (« t'es géniale »): « syncs la base est jolie » is about the
@@ -543,6 +545,51 @@ spot known: `McSeekMissLines…` (« t'es où ? »). Any order replaces the walk
 Player chat reaches the body as Mineflayer's `chat` and `whisper` events. A chat plugin that
 reformats messages can hide them from Mineflayer's parser; if orders go unanswered on a server
 with one, that's the first thing to check.
+
+## Talk
+
+Chat that isn't an order is read the way Discord reads it (`McTalkReader`, pure, with cases in the
+checks; Discord's side is `personality.md`, *Listening*), so someone talking to her gets an answer,
+not silence. **An answer to someone is not a remark** (the owner's call): no remark gate, no
+budget. Only she, speaking on her own, is rationed.
+
+- **When.** McCommand found no order (`None`, or `Unknown` for a call) and the message names her,
+  or it's a whisper (always for her), or it comes **within 30 s of her answering that player**:
+  every answer opens the call window again, so a conversation goes on without her name. A refused
+  order (« syncs viens pas », `McRequest.Refused`) is never talk. Her in-game name is turned into
+  « syncs » before reading (`HerNameAsSyncs`), since the cues know only that one.
+- **The ladder**, Discord's, first match wins: « Inabot », a shutdown threat, a mean reading
+  (`Comebacks`; Papa `OwnerMeanReplies`), a specific intent with Papa's and Tata's twins
+  (`OwnerIntentLines`, `TataIntentLines`), Papa's pet names, a kind word (`NiceReplies`), a greeting,
+  news (`Sharing`), a question or a low-effort word, Tata's warmth roll, then a comeback
+  (`Comebacks`, Papa `OwnerComebacks`). A bare call, or a call with nothing read, gets « oui ? » as
+  before.
+- **Without her name, right after she answered**, only what is plainly for her answers: a specific
+  intent or Papa's pet name. An insult, a « ok » or a question there may be for someone else, and
+  gets silence.
+- **Talked about, not to** (« syncs a pris mon fer », « je joue avec syncs »: `AddressesHer` is
+  false) is her own initiative: a remark (`talkedAbout`, half the time, then the gates and the
+  budget), from `TalkedAboutLines`, `BackbiteRoasts` when it's mean.
+- **What only Discord has is left out**: her records (fact lines, « tu m'aimes ? » from feedback), a
+  ship and a blame (Discord people), the help list (none in game: « aide-moi » is a call), and the
+  pointers to slash commands. A favour she has no order for (`Request`) gets `McCantDoLines`, the
+  one game-only pool here. An opinion is /rate's verdict, « moi » being the player
+  (`McTalkReader.AskerId`: Papa and Tata by their Discord ids, anyone else by a stable hash of the
+  name).
+- **The conversation streak** is Discord's (`ConversationStreak`, its own instance, per player):
+  the third message answered by a comeback becomes `StreakNudgeLines`, the fifth ends it
+  (`StreakEndLines`) and she says nothing to them for 10 minutes. Never Papa.
+
+**The pools are Discord's, made fit for the game by `McChat.Game`**, computed once per pool: no
+sticker tag, no custom emote, no ✨ or bold, no face the font can't draw at the end (« (>⩊<) »,
+« ദ്ദി◝ ⩊ ◜.ᐟ », stripped, the line kept). A line that needs Discord to make sense is left out:
+backticks or a slash command, Discord words (`McChat.DiscordWords`: « tag », « salon », « vocal »,
+« emote »…; « serveur », « message », « sondage » and « session » stay), anything undrawable, over
+256 characters. Faces are thinned to one line in four, the in-game rate. Whispered, only the lines
+under 200 characters (the body cuts a whisper there). **A Discord line edited for Discord is edited
+for the game too**: run `dotnet run --project tests/ProjectSYNCS.Checks -- --mc-review` to see what
+the game leaves out (« - », with the reason) and every line as she says it in game (« + »). The
+checks fail when a pool she uses in game ends up empty, or a kept line isn't plain game chat.
 
 ## Failures
 

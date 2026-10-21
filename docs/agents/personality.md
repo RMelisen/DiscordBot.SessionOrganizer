@@ -235,6 +235,11 @@ says less). Pools: `IntentLines`, keyed by intent
 (`Opinion`, `Ship`, `Help`, `AboutHer`, `Request`, `ShouldI`, `Blame` and `FunFact` have their own, below). Since the names are
 stored keys for `/debug answers` (`intent:Thanks`), reorder freely, never rename.
 
+**Minecraft reads chat with the same cues and answers from these same pools** (`minecraft.md`,
+*Talk*), cleaned for the game by `McChat.Game`, which leaves out what only Discord can show. A line
+written about tags, salons or a slash command simply isn't said in game; check what a pool keeps
+with `dotnet run --project tests/ProjectSYNCS.Checks -- --mc-review`.
+
 **Where each is read.** A reply to her: every intent. A mention: the specific ones and `Question`
 (a bare tag is `Interrogations`). Her name said untagged: the specific ones only — she may not be
 the one asked a question — and only when `MessageCues.AddressesHer`: her name used at least once as
