@@ -9,7 +9,7 @@
 //   node run.js safety                 what could hurt the world: keeping a herd (safety.js)
 //   node run.js survival [name ...]    night fights, creepers, endermen, being hit, deep water (survival.js)
 //   node run.js trip                   250 blocks, far past the loaded chunks: re-planning as she goes
-//   node run.js players [name ...]     with players around: follow a walk, come, guide, lose one, seek (players-test.js)
+//   node run.js players [name ...]     with players around: follow a walk, come, guide, lose one, seek, gaze (players-test.js)
 // See README.md for the server.
 const rcon = require('./rcon');
 const course = require('./course');

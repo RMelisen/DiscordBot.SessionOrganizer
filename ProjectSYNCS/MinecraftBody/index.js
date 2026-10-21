@@ -2242,24 +2242,34 @@ function walkPace(sprint) {
 // ---- Body language -------------------------------------------------------------------------------------
 
 // When her gaze is free (not asleep, eating, drawing her bow or walking; nothing to do, at home, at her own farm or pen
-// between rounds, or tagging along) she looks at whoever just talked within 12 blocks, else at the closest player within
-// 6, else somewhere now and then. For 10 s after a player hits her, she turns her back on them instead. When Papa or
-// Tata walks up from afar, she looks at them and crouches twice, once every GreetEvery at most.
+// between rounds, tagging along, following someone, or guarding them between fights) she looks the way a person would:
+// at someone for a few seconds, away for a moment, then back. Who: whoever just talked within 12 blocks (no glancing
+// away while they're talking), else the one she follows or guards, else the closest player within 8. A glance goes to
+// another player close by, an animal or a monster in sight, or just somewhere, now and then down or up; guarding, she
+// glances away more often (she's watching for monsters). With nobody around she looks somewhere new every 4–9 s, mostly
+// near where she already looks rather than spinning round. Walking, the pathfinder turns her where she goes (Mineflayer
+// walks where she looks), so none of this runs then. For 10 s after a player hits her, she turns her back on them
+// instead. When Papa or Tata walks up from afar, she looks at them and crouches twice, once every GreetEvery at most.
 const TalkLook = 8000;
 const HitSulk = 10000;
 const GreetEvery = 120000;
+const PersonSight = 8;
+const Creatures = new Set(['hostile', 'mob', 'animal', 'passive', 'water_creature', 'ambient']);
 const lastChat = new Map();
 const familyAway = new Map();
 const greetedAt = new Map();
 let hitBy = null;
 let idleAt = 0;
-let glanceAt = 0;
 let greeting = false;
+// Whom she's looking at (an entity id), when she next glances away, and the glance (an entity, or a yaw and a pitch)
+// with when it ends.
+const gaze = { person: null, awayAt: 0, away: null, backAt: 0 };
 
 function lookFree() {
   if (bot.isSleeping || eating || drawing || greeting || swim || bot.pathfinder.isMoving()) return false;
   if (!task) return true;
-  if (task.kind === 'tagAlong' || task.kind === 'home') return true;
+  if (task.kind === 'tagAlong' || task.kind === 'home' || task.kind === 'follow') return true;
+  if (task.kind === 'guard') return task.mode === 'home' && !task.foe && !task.retreatUntil;
   return Boolean(task.own && (task.kind === 'farm' || task.kind === 'ranch') && !task.busy);
 }
 
@@ -2271,21 +2281,83 @@ function idleTick() {
   greetTick();
   if (!lookFree()) return;
   const me = bot.entity.position;
-  const hitter = hitBy && Date.now() < hitBy.until ? playerEntity(hitBy.name) : null;
+  const now = Date.now();
+  const hitter = hitBy && now < hitBy.until ? playerEntity(hitBy.name) : null;
   if (hitter) {
     const towards = Math.atan2(-(hitter.position.x - me.x), -(hitter.position.z - me.z));
     bot.look(towards + Math.PI, 0).catch(() => {});
     return;
   }
-  const target = talker(me) || bot.nearestEntity((e) => e.type === 'player' && e.username !== bot.username && e.position.distanceTo(me) <= 6);
-  if (target) {
-    bot.lookAt(eyes(target)).catch(() => {});
+  const speaker = talker(me);
+  const person = speaker || companion(me)
+    || bot.nearestEntity((e) => e.type === 'player' && e.username !== bot.username && e.position.distanceTo(me) <= PersonSight);
+  if (!person) {
+    gaze.person = null;
+    if (now >= gaze.backAt || !lookAtGlance()) {
+      gaze.away = glance(me, null);
+      gaze.backAt = now + 4000 + Math.random() * 5000;
+      lookAtGlance();
+    }
     return;
   }
-  if (Date.now() >= glanceAt) {
-    glanceAt = Date.now() + 5000 + Math.random() * 5000;
-    bot.look(Math.random() * 2 * Math.PI, (Math.random() - 0.5) * 0.6).catch(() => {});
+  if (gaze.person !== person.id) {
+    gaze.person = person.id;
+    gaze.backAt = 0;
+    gaze.awayAt = now + dwell();
   }
+  if (speaker) {
+    // Listening: no glancing away, and a while longer on them once they've finished.
+    gaze.backAt = 0;
+    gaze.awayAt = Math.max(gaze.awayAt, now + 2000);
+  } else if (now >= gaze.awayAt) {
+    gaze.away = glance(me, person);
+    gaze.backAt = now + 700 + Math.random() * 1800;
+    gaze.awayAt = gaze.backAt + dwell();
+  }
+  if (now < gaze.backAt && lookAtGlance()) return;
+  bot.lookAt(eyes(person)).catch(() => {});
+}
+
+// How long she keeps her eyes on someone before glancing away: shorter on guard.
+function dwell() {
+  return task && task.kind === 'guard' ? 1500 + Math.random() * 2500 : 2500 + Math.random() * 4500;
+}
+
+// The player she follows or guards, when in sight.
+function companion(me) {
+  if (!task || (task.kind !== 'follow' && task.kind !== 'guard')) return null;
+  const entity = playerEntity(task.player);
+  return entity && entity.position.distanceTo(me) <= 16 ? entity : null;
+}
+
+// Somewhere to look for a moment: another player close by, a creature, or a direction off to one side (now and then
+// down at her feet or up at the sky). Away from `person`, never back at them.
+function glance(me, person) {
+  const near = (e, d) => e !== person && e !== bot.entity && e.isValid !== false && e.position.distanceTo(me) <= d;
+  const roll = Math.random();
+  if (roll < 0.35) {
+    const other = bot.nearestEntity((e) => e.type === 'player' && e.username !== bot.username && near(e, 12));
+    if (other) return { entity: other };
+  }
+  if (roll < 0.7) {
+    const creature = bot.nearestEntity((e) => Creatures.has(e.type) && near(e, person ? 12 : 16));
+    if (creature) return { entity: creature };
+  }
+  const turn = (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * (person ? 1.5 : 2.2));
+  const r = Math.random();
+  const pitch = r < 0.2 ? -(0.5 + Math.random() * 0.5) : r < 0.3 ? 0.2 + Math.random() * 0.4 : (Math.random() - 0.5) * 0.3;
+  return { yaw: bot.entity.yaw + turn, pitch };
+}
+
+// Looks where the current glance goes; false when there's none or what she glanced at is gone.
+function lookAtGlance() {
+  const g = gaze.away;
+  if (!g) return false;
+  if (g.entity) {
+    if (!g.entity.isValid) return false;
+    bot.lookAt(eyes(g.entity)).catch(() => {});
+  } else bot.look(g.yaw, g.pitch).catch(() => {});
+  return true;
 }
 
 // Whoever chatted last, within TalkLook and 12 blocks.

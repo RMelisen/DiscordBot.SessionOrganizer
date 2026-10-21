@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.24.2 — 2026-10-21
+
+- In Minecraft she looks around more naturally: at the player she follows or guards while standing by
+  them, at nearby players for a few seconds before glancing away at someone or something else, and
+  around her now and then when nobody is near.
+
 ## 7.24.1 — 2026-10-21
 
 - In Minecraft she repeats herself less: a line only comes back once she has used nearly every

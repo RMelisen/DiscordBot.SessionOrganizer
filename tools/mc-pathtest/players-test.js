@@ -111,8 +111,50 @@ async function seek() {
   await end(sc, 'seek');
 }
 
+// How far her look is from facing `entity`, in radians (0 to π), as Papa's client sees her.
+function offFrom(s, entity) {
+  const towards = Math.atan2(-(entity.position.x - s.position.x), -(entity.position.z - s.position.z));
+  const d = Math.abs(((s.yaw - towards) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI);
+  return d;
+}
+
+// Following Papa, standing beside him: mostly looking at him, with a glance away now and then. Then, with nobody within
+// 8 blocks and no order, looking somewhere new now and then rather than staring one way.
+async function gaze() {
+  const sc = await scene();
+  sc.body.send({ op: 'follow', player: 'Papa' });
+  await wait(3000);
+  let at = 0;
+  let away = 0;
+  let samples = 0;
+  for (const until = Date.now() + 20000; Date.now() < until; await wait(250)) {
+    const s = her(sc.papa);
+    if (!s) continue;
+    samples++;
+    const off = offFrom(s, sc.papa.entity);
+    if (off < 0.35) at++;
+    else if (off > 0.6) away++;
+  }
+  report(samples > 0 && at >= samples * 0.5 && away >= 1, 'gaze follow',
+    `${samples} looks: ${at} at Papa, ${away} away`);
+
+  sc.body.send({ op: 'stay' });
+  await rcon.run([`tp Papa ${O.x + 14.5} -60 ${O.z + 0.5}`]);
+  await wait(2000);
+  let turns = 0;
+  let last = null;
+  for (const until = Date.now() + 20000; Date.now() < until; await wait(500)) {
+    const s = her(sc.papa);
+    if (!s) continue;
+    if (last !== null && Math.abs(((s.yaw - last) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI) > 0.3) turns++;
+    last = s.yaw;
+  }
+  report(turns >= 2, 'gaze alone', `${turns} turns in 20 s`);
+  await end(sc, 'gaze');
+}
+
 async function playersTest(only = []) {
-  const all = { follow: followWalk, come: comeFromAfar, guide, lost, seek };
+  const all = { follow: followWalk, come: comeFromAfar, guide, lost, seek, gaze };
   for (const [name, run] of Object.entries(all)) {
     if (only.length > 0 && !only.includes(name)) continue;
     try {

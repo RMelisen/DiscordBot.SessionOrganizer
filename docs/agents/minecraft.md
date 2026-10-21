@@ -512,9 +512,17 @@ Lines: `McDiveLines` (with twins), `McDiveAirLines`, `McDrowningLines`, `McBreat
 ## Body language
 
 Body only, no words. Her gaze is free when she isn't asleep, eating, drawing her bow or walking, and
-has nothing to do, is home, is tagging along or is between rounds at her own farm or pen (fishing,
-fights and furnaces keep it). Then she looks at whoever chatted in the last 8 s within 12 blocks,
-else at the closest player within 6, else somewhere every 5–10 s, turning smoothly (no `force`).
+has nothing to do, is home, is tagging along, **is following someone, or guarding them between
+fights** (home mode, no foe, no retreat), or is between rounds at her own farm or pen (fishing,
+fights and furnaces keep it). Then she looks **the way a person would, never a fixed stare**: at
+whoever chatted in the last 8 s within 12 blocks (no glancing away while they talk), else at the one
+she follows or guards, else at the closest player within 8, for 2.5–7 s (1.5–4 on guard: she's
+watching for monsters), then away for 0.7–2.5 s, then back. A glance goes to another player within
+12, a creature in sight, or a direction off to one side, now and then down at her feet or up. With
+nobody around she looks somewhere new every 4–9 s, mostly near where she already looks. Every turn
+is smooth (no `force`). **Walking, none of this runs**: Mineflayer walks where she looks, and the
+pathfinder turns her towards the next step every tick, so a look elsewhere would steer her off her
+path. `node run.js players gaze` checks it on the local server.
 **For 10 s after a player hits her she turns her back on them**, Papa included: she's hurt. When
 Papa or Tata walks up (back within 5 blocks after being out of sight or over 10 off) she looks at
 them and crouches twice, at most once every 2 minutes each; sitting, she stands up and back down.
