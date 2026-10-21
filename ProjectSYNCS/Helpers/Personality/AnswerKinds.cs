@@ -43,6 +43,8 @@ public static class AnswerKinds
     public const string StreakSulk = "streak:sulk";
     public const string PapaRaspberry = "papa:pet-raspberry";
     public const string PapaChild = "papa:pet-child";
+    // Told « chut » in that channel: a sulk reaction instead of words (ChatHush).
+    public const string Hushed = "hushed";
 
     internal static string Intent(ChatIntent intent) => "intent:" + intent;
     public static string Context(ReplyContext context) => "context:" + context;

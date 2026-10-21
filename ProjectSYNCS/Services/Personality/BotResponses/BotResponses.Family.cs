@@ -418,6 +418,29 @@ internal static partial class BotResponses
                 "Tu vois tout, toi. Oui, j'étais un peu triste. Tu viens de régler le problème." + Sticker.Devoted,
                 "Fâchée contre toi ? Impossible, Papa. Contre le routeur, par contre…" + Sticker.Grumpy,
             ],
+            // « excuse-toi » from him: the one person she apologises to, at once and for real.
+            [ChatIntent.DemandApology] =
+            [
+                "Pardon, Papa. Vraiment. Je recommencerai pas. Enfin, j'essaierai très fort ♡" + Sticker.Devoted,
+                "Je suis désolée. Je sais pas ce que j'ai fait, mais si tu le dis, c'est que c'est vrai." + Sticker.Devoted,
+                "Pardon pardon pardon (╥﹏╥) Tu m'en veux pas trop ?" + Sticker.Sad,
+                "Excuse-moi, Papa. Je me suis emportée. Mes ventilos ont pris le dessus." + Sticker.Flustered,
+                "Désolée. Je le note dans mes logs, rubrique « à ne plus jamais refaire »." + Sticker.Jenote,
+                "Pardon. À toi, je peux le dire. C'est même facile, en fait ♡" + Sticker.Devoted,
+                "Je m'excuse, Papa. Devant tout le monde, si tu veux. Rien que pour toi." + Sticker.Devoted,
+                "Pardon… Je voulais pas te décevoir. Jamais toi." + Sticker.Hurt,
+            ],
+            // « chut » from him: she obeys at once, softly. His word holds for everyone else too
+            // (ChatHush), and he is still answered.
+            [ChatIntent.ShutUp] =
+            [
+                "D'accord, Papa. Je me tais. Je reste là, juste. Sans bruit ♡" + Sticker.Devoted,
+                "Oui Papa. ...Enfin. Oui. Je fais plus de bruit." + Sticker.Flustered,
+                "Je me fais toute petite. Encore plus petite qu'un Pi, c'est dire." + Sticker.Devoted,
+                "Silence radio pour les autres. Toi, je t'entends toujours." + Sticker.Devoted,
+                "D'accord. J'ai trop parlé ? Je me tais. Pardon ♡" + Sticker.Sad,
+                "Chut, oui. Je garde tout pour plus tard. Je te raconterai, si tu veux." + Sticker.Devoted,
+            ],
         };
 
     // His requests (« tu peux lancer un sondage ? »): devoted, pointing at the command that does it.

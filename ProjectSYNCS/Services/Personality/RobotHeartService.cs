@@ -29,6 +29,7 @@ internal sealed class RobotHeartService
     private readonly BreakdownService _breakdown;
     private readonly StickerService _stickers;
     private readonly ConversationStreak _streaks;
+    private readonly ChatHush _hush;
     private readonly ResponsePicker _picker;
     private readonly ILogger<RobotHeartService> _logger;
 
@@ -37,10 +38,12 @@ internal sealed class RobotHeartService
         BreakdownService breakdown,
         StickerService stickers,
         ConversationStreak streaks,
+        ChatHush hush,
         ResponsePicker picker,
         ILogger<RobotHeartService> logger)
     {
         _client = client;
+        _hush = hush;
         _breakdown = breakdown;
         _stickers = stickers;
         _streaks = streaks;
@@ -57,6 +60,9 @@ internal sealed class RobotHeartService
         bool eveNeedsWallE = message.Channel.Id == EveStrictChannelId || parentId == EveStrictChannelId;
         if (CharacterNamedIn(message.Content ?? string.Empty, eveNeedsWallE) is not { } who) return false;
         if (_breakdown.IsActive(message.Channel.Id)) return false;
+        // Told « chut » here (ChatHush): ChatterService sulks for her, Papa included in its exemption.
+        if (_hush.IsHushed(message.Channel.Id, DateTimeOffset.UtcNow) && message.Author.Id != AvailabilityService.OwnerId)
+            return false;
 
         // Her name counts like a mention: « WALL-E, syncs ? » is about him, so it gets his act —
         // not, 60% of the time, ChatterService's talked-about line for her name.

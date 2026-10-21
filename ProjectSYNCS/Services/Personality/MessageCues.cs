@@ -74,21 +74,28 @@ internal enum ChatIntent
 {
     None,
     Love,
+    DemandApology,
     Apology,
+    ShutUp,
     DoYouLoveMe,
     HowAreYou,
     AreYouThere,
     WhoAreYou,
     RememberMe,
+    MyStats,
     AboutHer,
     AreYouABot,
     AreYouUpset,
     Crush,
     WhatAreYouDoing,
-    Opinion,
     Ship,
+    TakeSides,
+    Opinion,
+    RateMe,
     Blame,
+    NextSession,
     ShouldI,
+    Roll,
     Joke,
     FunFact,
     Help,
@@ -1930,6 +1937,178 @@ internal static class MessageCues
         "c est a cause de qui", "a cause de qui", "who s to blame", "whose fault",
     };
 
+    // Asking her to apologise: « excuse-toi », « dis pardon », « tu me dois des excuses ». Read before
+    // Apology, whose « pardon » and « désolé » sit inside « dis pardon » and « dis désolée ». She
+    // refuses; Papa gets her apology (OwnerIntentLines). « excuse-moi » is theirs: Apology.
+    private static readonly string[] _demandApologyPhrases =
+    {
+        "excuse toi", "excuses toi", "excusez vous", "dis pardon", "dis moi pardon", "dis nous pardon", "dis lui pardon",
+        "demande pardon", "demande moi pardon", "demande nous pardon", "dis desole", "dis desolee", "dis moi desolee",
+        "dis sorry", "say sorry", "apologize", "apologise", "tu me dois des excuses", "tu nous dois des excuses",
+        "tu dois t excuser", "faut que tu t excuses", "tu devrais t excuser", "je veux des excuses", "j attends des excuses",
+        "j exige des excuses", "on attend des excuses", "fais tes excuses", "presente tes excuses", "presente moi tes excuses",
+        "des excuses peut etre", "tu t excuses pas", "tu vas t excuser", "tu t excuses quand", "j attends tes excuses",
+        "tu peux t excuser", "tu pourrais t excuser", "tu vas pas t excuser", "je veux que tu t excuses",
+        "j aimerais que tu t excuses", "tu dois me demander pardon", "tu dois demander pardon", "dis que t es desolee",
+        "dis que tu es desolee", "j attends toujours tes excuses", "elles sont ou mes excuses", "et mes excuses",
+        "fais des excuses", "presente des excuses", "des excuses svp", "des excuses stp", "des excuses s il te plait",
+    };
+    // « tu t'excuses ? », « des excuses ? »: asked, closing.
+    private static readonly string[] _demandApologyAsked = { "tu t excuses", "tu t excuse", "tu demandes pardon", "des excuses" };
+    // Said by them or of someone else, not asked of her: « je lui dis pardon », « je demande pardon »
+    // (an apology: Apology), « il m'a demandé pardon ».
+    private static readonly HashSet<string> _notDemandAfter = new()
+    {
+        "je", "j", "lui", "leur", "il", "elle", "on", "me", "m", "te", "nous", "vous", "ils", "elles", "qu", "que",
+        "a", "as", "ai", "avait", "avais",
+    };
+
+    // Telling her to be quiet: she sulks and keeps quiet in that channel for ChatHush.Quiet. In a short
+    // message only (MaxShutUpTokens): « tais-toi » inside a long one is a quote or a story. « ta gueule »
+    // stays an insult (the mean pools); a mean message never reads an intent at all.
+    private static readonly string[] _shutUpPhrases =
+    {
+        "tais toi", "tait toi", "tes toi", "taisez vous", "arrete de parler", "arretes de parler", "arrete de repondre",
+        "arrete de nous repondre", "arrete de me repondre", "parle plus", "arrete de spammer", "arrete de spam",
+        "laisse nous tranquille", "laisse moi tranquille", "fiche nous la paix", "fous nous la paix", "laisse nous parler",
+        "on t a rien demande", "personne t a demande", "personne t a sonnee", "on t a pas sonnee", "shut up",
+        "mets toi en sourdine", "mode silencieux", "baisse d un ton", "ferme ta bouche", "arrete de causer",
+        "arrete de jacasser", "arrete de bavarder", "mute toi", "mets la en veilleuse", "mets la sourdine",
+        "un peu de silence", "moins de bruit", "personne t a sonne", "on t a pas sonne",
+    };
+    // Only closing the message: « tu parles trop » shushes her, « tu parles trop vite » doesn't.
+    private static readonly string[] _shutUpClosing =
+    {
+        "tu parles trop", "t parles trop", "tu parles beaucoup trop", "parle moins", "tu fais trop de bruit",
+    };
+    private static readonly HashSet<string> _shutUpClosingFollowers = new()
+    {
+        "syncs", "sync", "la", "toi", "hein", "franchement", "stp", "svp", "aujourd", "hui",
+    };
+    // The whole message, give or take her name and a « stp »: « chut », « silence », « la ferme ».
+    // Not inside a sentence: « chut, il dort » is said to the room, « silence radio depuis hier »,
+    // « à la ferme », « ferme la porte » and « boucle la ceinture » are something else.
+    // Compared squashed, both sides: « chuuut » is « chut », « shhh » is « sh », « laisse » is « laise ».
+    private static readonly HashSet<string> _shutUpAlone = SquashAll(
+        "chut", "silence", "la ferme", "ferme la", "ferme", "stop", "chut chut", "sh", "silence radio", "boucle la",
+        "la boucle", "laisse nous", "laisse moi", "stfu");
+    private static readonly HashSet<string> _shutUpFillers = new()
+    {
+        "syncs", "sync", "stp", "svp", "toi", "un", "peu", "maintenant", "la", "deja", "bon", "allez", "oh", "eh", "mais",
+        "please", "pls", "hein", "merci", "s", "il", "te", "plait", "plais", "vous",
+    };
+    private const int MaxShutUpTokens = 6;
+    private static readonly HashSet<int> _noBreaks = new();
+
+    // Their own numbers (/recap's), by what they ask about. Asked only: a « ? », or a question word in
+    // the phrase itself (« je suis quel niveau », « combien j'ai de cailloux »), or « montre ».
+    // « j'ai gagné 200 cailloux » and « mon plynling a faim » tell, and stay Sharing.
+    private static readonly (MyStatsTopic Topic, string[] Phrases)[] _myStatsPhrases =
+    {
+        (MyStatsTopic.Level, new[]
+        {
+            "je suis quel niveau", "je suis niveau combien", "je suis a quel niveau", "j en suis a quel niveau",
+            "j ai quel niveau", "j ai quel lvl", "je suis quel lvl", "c est quoi mon niveau", "quel est mon niveau",
+            "c est quoi mon lvl", "combien j ai d xp", "j ai combien d xp", "combien d xp j ai", "j ai combien d experience",
+            "c est quoi mon xp", "je suis combien au classement", "je suis ou au classement", "je suis quel rang",
+            "c est quoi mon rang", "quel est mon rang", "je suis classe combien", "je suis combien dans le classement",
+            "je suis level combien", "je suis lvl combien", "quel niveau je suis", "c est quoi mon level", "j ai quel level",
+            "j ai combien de niveaux", "combien j ai de niveaux", "je suis classe ou", "c est quoi ma place au classement",
+            "ma place au classement", "je suis ou dans le classement", "mon xp c est combien", "mon niveau c est combien",
+        }),
+        (MyStatsTopic.Balance, new[]
+        {
+            "combien j ai de cailloux", "j ai combien de cailloux", "combien de cailloux j ai", "c est quoi mon solde",
+            "quel est mon solde", "il me reste combien de cailloux", "combien il me reste de cailloux", "je suis riche",
+            "je suis pauvre", "j ai des cailloux", "j ai combien d argent", "combien j ai d argent", "j ai combien de sous",
+            "combien j ai de sous", "j ai combien de thunes", "combien j ai de thunes",
+        }),
+        (MyStatsTopic.Plynling, new[]
+        {
+            "comment va mon plynling", "mon plynling va bien", "il va bien mon plynling", "mon plynling va comment",
+            "des nouvelles de mon plynling", "comment il va mon plynling", "comment se porte mon plynling",
+            "mon plynling est vivant", "mon plynling est en vie", "il est vivant mon plynling", "mon plynling il va bien",
+            "il devient quoi mon plynling", "des news de mon plynling",
+        }),
+        (MyStatsTopic.All, new[]
+        {
+            "mes stats", "mes statistiques", "c est quoi mes stats", "montre moi mes stats", "mes chiffres", "mon profil",
+            "mon bilan", "donne moi mes stats", "montre moi mon profil", "mon recap",
+        }),
+    };
+    // Words that make a phrase asked without its « ? ».
+    private static readonly HashSet<string> _myStatsAskWords = new() { "quel", "combien", "comment", "quoi", "ou", "montre", "donne" };
+    // « mon niveau ? », « mes cailloux ? »: asked, short, closing.
+    private static readonly (MyStatsTopic Topic, string[] Phrases)[] _myStatsShortAsks =
+    {
+        (MyStatsTopic.Level, new[] { "mon niveau", "mon lvl", "mon level", "mon xp", "mes xp", "mon rang", "mon classement" }),
+        (MyStatsTopic.Balance, new[] { "mes cailloux", "mon solde", "mon argent", "mes sous", "ma thune", "mon porte monnaie", "ma bourse" }),
+        (MyStatsTopic.Plynling, new[] { "mon plynling" }),
+    };
+    private static readonly HashSet<string> _myStatsFollowers = new()
+    {
+        "syncs", "sync", "stp", "svp", "actuel", "actuellement", "la", "maintenant", "alors", "deja", "exactement", "s",
+    };
+    private const int MaxMyStatsShortTokens = 4;
+
+    // When the next session is, or who's coming: answered from the sessions themselves. Asked only (a
+    // « ? », or opening on « quand », « qui », « y a »…). Read before ShouldI (« on joue ce soir ou
+    // pas ? ») and Request (« tu peux me dire c'est quand la prochaine session ? »). Not « on lance une
+    // game ce soir ? » or « on joue à quoi ce soir » (proposals), not « tu viens ce soir ? » (her), not
+    // « qui est chaud pour un raid ? » (a call to the room), and never « la prochaine partie / game »:
+    // « la prochaine game tu joues support ? » is the game.
+    private static readonly string[] _nextSessionPhrases =
+    {
+        "la prochaine session", "prochaine session", "les prochaines sessions", "la prochaine soiree", "prochaine soiree",
+        "le prochain event", "prochain event", "le prochain evenement",
+        "y a une session", "il y a une session", "ya une session", "y a session", "y a des sessions", "y a pas de session",
+        "il y a pas de session", "y a une soiree", "y a quoi de prevu", "il y a quoi de prevu", "ya quoi de prevu",
+        "y a quelque chose de prevu", "y a un truc de prevu", "y a rien de prevu", "on a quoi de prevu",
+        "c est quoi le programme", "quel est le programme", "le programme de ce soir", "le programme de la semaine",
+        "qu est ce qui est prevu", "on joue quand", "quand est ce qu on joue", "quand est ce qu on fait une session",
+        "quand est ce qu on refait une session", "on joue ce soir", "on joue demain", "on joue ce week end", "on joue ce weekend",
+        "on fait une session", "qui vient ce soir", "qui vient a la session", "qui vient a la soiree", "qui est inscrit",
+        "qui s est inscrit", "y a qui ce soir", "qui joue ce soir", "on sera combien", "on est combien a la session",
+        "combien d inscrits", "la session de ce soir", "la session de demain", "la session de ce week end",
+        "c est quand la session", "quand est la session", "la session c est quand", "c est a quelle heure la session",
+        "la session commence quand", "la session est a quelle heure", "la session c est a quelle heure",
+        "c est quand la soiree", "c est quand la prochaine", "la prochaine c est quand", "y a du monde ce soir", "ya session",
+        "session ce soir", "c est prevu quand", "c est prevu pour quand", "on rejoue quand", "quand est ce qu on rejoue",
+        "on joue quel jour", "y a un event", "y a un evenement", "qui sera la ce soir", "qui sera la a la session",
+    };
+    private static readonly HashSet<string> _nextSessionOpeners = new() { "quand", "qui", "y", "ya", "il", "c", "combien", "quel" };
+
+    // « tu me notes ? », « je vaux combien ? », « tu me trouves comment ? »: /rate's verdict on them.
+    // « tu penses quoi de moi ? » is already an Opinion on « moi », and gets the same verdict.
+    private static readonly string[] _rateMePhrases =
+    {
+        "note moi", "notes moi", "tu me notes", "tu me noterais", "tu me mets combien", "tu me donnes combien",
+        "tu me donnerais combien", "je vaux combien", "je merite combien", "rate me", "tu me trouves comment",
+        "je suis a combien sur 10", "je suis combien sur 10", "sur 10 je suis a combien", "j ai quelle note",
+        "tu me mettrais combien", "evalue moi", "juge moi", "tu me donnes quelle note", "je merite quelle note",
+    };
+    // « je suis beau ? », « tu me trouves drôle ? »: one of these, up to two _downIntensifiers, then an
+    // adjective closing the message or before _rateMeFollowers. Asked only. « je suis nul » is Down,
+    // read later: comfort answers it better than a score.
+    private static readonly string[] _rateMeSubjects =
+    {
+        "je suis", "jsuis", "chui", "j suis", "tu me trouves", "tu me trouve", "t me trouves", "tu trouves que je suis",
+    };
+    private static readonly HashSet<string> _rateMeAdjectives = new()
+    {
+        "beau", "belle", "bo", "canon", "mignon", "mignonne", "moche", "drole", "marrant", "marrante", "intelligent",
+        "intelligente", "malin", "maligne", "bg", "sexy", "sympa", "gentil", "gentille", "doue", "douee", "parfait",
+        "parfaite", "genial", "geniale", "attachant", "attachante", "charmant", "charmante", "comment", "joli", "jolie",
+        "style", "stylee", "chiant", "chiante", "relou", "bizarre", "normal", "normale", "fou", "folle", "cool", "fort",
+        "forte",
+    };
+    // No « en » or « de »: « je suis fort en maths ? » and « je suis fou de joie » aren't asking for a score.
+    private static readonly HashSet<string> _rateMeFollowers = new()
+    {
+        "syncs", "sync", "hein", "franchement", "vraiment", "toi", "ou", "pas", "quand", "meme", "alors", "non", "oui",
+        "aujourd", "sur", "10", "physiquement", "comme", "personne",
+    };
+
     // Thanks. A negator before cancels (« non merci »); the short forms count only as (nearly) the
     // whole reply, since « ty » and « thx » can sit in anything.
     private static readonly string[] _thanksPhrases =
@@ -2192,10 +2371,15 @@ internal static class MessageCues
         if (t.Count == 1 && t[0] == "pardon" && asks) return ChatIntent.Question;
 
         if (FindPhrase(t, _lovePhrases, cancelAfter: true, cancelBefore: true)) return ChatIntent.Love;
+        var breaks = QuestionBreaks(stripped);
+        // Before the apology: « dis pardon » asks for one, it doesn't give one.
+        if (FindPhrase(t, _demandApologyPhrases, cancelAfter: false, cancelBefore: true, notAfter: _notDemandAfter)
+            || (asks && IsClosingAsk(t, _demandApologyAsked, breaks, _noWords)))
+            return ChatIntent.DemandApology;
         if (FindPhrase(t, _apologyPhrases, cancelAfter: false, cancelBefore: true)
             || (t.Count <= MaxShortApologyTokens && FindPhrase(t, _apologyShortWords, cancelAfter: false, cancelBefore: false)))
             return ChatIntent.Apology;
-        var breaks = QuestionBreaks(stripped);
+        if (IsShutUp(t)) return ChatIntent.ShutUp;
         if (IsClosingAsk(t, _doYouLoveMePhrases, breaks, _lovesMeFollowers)) return ChatIntent.DoYouLoveMe;
         // « comment tu vas » needs no « ? » to be a question; « cv », « tranquille »… count opening a
         // short one (« cv et toi ? »).
@@ -2214,6 +2398,8 @@ internal static class MessageCues
         if (IsClosingAsk(t, _rememberMePhrases, breaks, _rememberFollowers)
             || (asks && IsClosingAsk(t, _rememberMeAskedPhrases, breaks, _rememberFollowers)))
             return ChatIntent.RememberMe;
+        // Theirs, not hers: « mon niveau ? » before AboutHer's « ton … préféré ».
+        if (ReadMyStatsTopic(t, asks, breaks) is not null) return ChatIntent.MyStats;
         if (ReadHerTopic(t, breaks) is not null) return ChatIntent.AboutHer;
         if (FindPhrase(t, _areYouABotPhrases, cancelAfter: false, cancelBefore: false)) return ChatIntent.AreYouABot;
         if (asks && IsClosingAsk(t, _areYouUpsetPhrases, breaks, _upsetFollowers)) return ChatIntent.AreYouUpset;
@@ -2224,10 +2410,20 @@ internal static class MessageCues
         // On the raw text: « t'en penses quoi de @Luca ? » keeps its subject. Ship first: « tu penses
         // quoi de @A et @B ? » asks about a pair of people, not about the word « et ».
         if (ShipAsk.Read(content) is not null) return ChatIntent.Ship;
+        // Before the opinion: « qui a raison, moi ou Luca ? » sides with one of two people.
+        if (TakeSides.Read(content) is not null) return ChatIntent.TakeSides;
         if (Opinion.Read(content) is not null) return ChatIntent.Opinion;
+        if (IsRateMe(t, asks, breaks)) return ChatIntent.RateMe;
         if (FindPhrase(t, _blamePhrases, cancelAfter: false, cancelBefore: false) && (asks || _blamePhrases.Any(p => EndsWith(t, p))))
             return ChatIntent.Blame;
+        // Before ShouldI (« on joue ce soir ou pas ? ») and Request (« tu peux me dire c'est quand la
+        // prochaine session ? »): the schedule answers both.
+        if ((asks || (t.Count > 0 && _nextSessionOpeners.Contains(t[0])))
+            && FindPhrase(t, _nextSessionPhrases, cancelAfter: false, cancelBefore: false))
+            return ChatIntent.NextSession;
         if (IsShouldI(t, stripped, asks, breaks)) return ChatIntent.ShouldI;
+        // Before the request: « tu peux lancer un dé ? » wants the roll.
+        if (Dice.Read(stripped) is not null) return ChatIntent.Roll;
         // Before the request: « tu peux me raconter une blague ? » wants the joke, not a command.
         if (FindPhrase(t, _jokePhrases, cancelAfter: false, cancelBefore: true) || _jokeAlone.Contains(string.Join(' ', t)))
             return ChatIntent.Joke;
@@ -2438,6 +2634,64 @@ internal static class MessageCues
         // « … ou pas ? » closing a question that is about the asker.
         return t.Count is >= 3 and <= 10 && t.Any(_firstPerson.Contains)
             && (EndsWith(t, "ou pas") || breaks.Any(b => b >= 2 && t[b - 2] == "ou" && t[b - 1] == "pas"));
+    }
+
+    // « tais-toi » in a short message, or « chut » / « silence » / « la ferme » as (nearly) all of it.
+    private static bool IsShutUp(List<string> t)
+    {
+        if (t.Count is 0 or > MaxShutUpTokens) return false;
+        if (FindPhrase(t, _shutUpPhrases, cancelAfter: false, cancelBefore: true)) return true;
+        if (IsClosingAsk(t, _shutUpClosing, _noBreaks, _shutUpClosingFollowers)) return true;
+        var said = string.Join(' ', t.Where(w => !_shutUpFillers.Contains(w)).Select(Squash));
+        return _shutUpAlone.Contains(said) || _shutUpAlone.Contains(string.Join(' ', t.Select(Squash)));
+    }
+
+    /// <summary>What a MyStats question asks about (level, cailloux, Plynling, everything), or null.</summary>
+    public static MyStatsTopic? ReadMyStatsTopic(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return null;
+        var text = _link.Replace(_customEmote.Replace(_mentionMarkup.Replace(content, " "), " "), " ");
+        return ReadMyStatsTopic(TokenizeOrdered(text), text.Contains('?'), QuestionBreaks(text));
+    }
+
+    private static MyStatsTopic? ReadMyStatsTopic(List<string> t, bool asks, HashSet<int> breaks)
+    {
+        foreach (var (topic, phrases) in _myStatsPhrases)
+            foreach (var phrase in phrases)
+                if ((asks || phrase.Split(' ').Any(_myStatsAskWords.Contains))
+                    && FindPhrase(t, [phrase], cancelAfter: false, cancelBefore: false))
+                    return topic;
+
+        if (!asks || t.Count > MaxMyStatsShortTokens) return null;
+        foreach (var (topic, phrases) in _myStatsShortAsks)
+            if (IsClosingAsk(t, phrases, breaks, _myStatsFollowers)) return topic;
+        return null;
+    }
+
+    // « tu me notes ? », or « je suis beau ? » / « tu me trouves drôle ? » asked with the adjective closing.
+    private static bool IsRateMe(List<string> t, bool asks, HashSet<int> breaks)
+    {
+        if (FindPhrase(t, _rateMePhrases, cancelAfter: false, cancelBefore: true)) return true;
+        if (!asks) return false;
+
+        foreach (var subject in _rateMeSubjects)
+        {
+            var length = subject.Split(' ').Length;
+            for (var i = 0; i + length < t.Count; i++)
+            {
+                if (!PhraseStartsAt(t, i, subject)) continue;
+                var j = i + length;
+                var skipped = 0;
+                while (j < t.Count && skipped < 2 && _downIntensifiers.Contains(t[j])) (j, skipped) = (j + 1, skipped + 1);
+                if (j >= t.Count || !_rateMeAdjectives.Contains(Squash(t[j])) && !_rateMeAdjectives.Contains(t[j])) continue;
+                var end = j + 1;
+                if (end == t.Count || breaks.Contains(end) || _rateMeFollowers.Contains(t[end])) return true;
+                // « en vrai » only: « je suis beau en vrai ? » asks, « je suis fort en maths ? » doesn't.
+                if (t[end] == "en" && end + 1 < t.Count && t[end + 1] == "vrai") return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

@@ -576,9 +576,10 @@ budget. Only she, speaking on her own, is rationed.
 - **Talked about, not to** (« syncs a pris mon fer », « je joue avec syncs »: `AddressesHer` is
   false) is her own initiative: a remark (`talkedAbout`, half the time, then the gates and the
   budget), from `TalkedAboutLines`, `BackbiteRoasts` when it's mean.
-- **What only Discord has is left out**: her records (fact lines, « tu m'aimes ? » from feedback), a
-  ship and a blame (Discord people), the help list (none in game: « aide-moi » is a call), and the
-  pointers to slash commands. A favour she has no order for (`Request`) gets `McCantDoLines`, the
+- **What only Discord has is left out**: her records (fact lines, « tu m'aimes ? » from feedback,
+  the next session, someone's level or cailloux), a ship, a blame and a side taken (Discord people),
+  « chut » (the hush is per Discord channel), the help list (none in game: « aide-moi » is a call),
+  and the pointers to slash commands. Dice and « note-moi » work in game as on Discord. A favour she has no order for (`Request`) gets `McCantDoLines`, the
   one game-only pool here. An opinion is /rate's verdict, « moi » being the player
   (`McTalkReader.AskerId`: Papa and Tata by their Discord ids, anyone else by a stable hash of the
   name).

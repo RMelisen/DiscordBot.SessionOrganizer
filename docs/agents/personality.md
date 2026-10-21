@@ -200,7 +200,7 @@ From the top:
 Everything aimed at her returns before the two ambient branches are reached.
 
 **Inside the reply path** (`HandleReplyToBotAsync`), first match wins: Inabot → shutdown threat →
-breakdown roll → **streak gate** → Papa mean (`OwnerMeanReplies`) → **specific intent** → Papa's
+**hush gate** (`ChatHush`, see `ShutUp`) → breakdown roll → **streak gate** → Papa mean (`OwnerMeanReplies`) → **specific intent** → Papa's
 pet name → **reply context** → nice → greeting → **question / low effort** → reference roll → Tata warmth → fallback
 (`OwnerComebacks` for Papa; otherwise the streak nudge, a fact line, or `Comebacks`). A mean reply
 from anyone else skips intents and context and is roasted, as it always was. **The mention path**
@@ -215,13 +215,17 @@ What makes her answer the message rather than its mood alone. Four pieces, all i
 
 ### Intents — `MessageCues.ReadIntent`
 
-`ChatIntent`, read on messages aimed at her: `Love`, `Apology`, `DoYouLoveMe`, `HowAreYou`, `AreYouThere`,
-`WhoAreYou`, `RememberMe`, `AboutHer`, `AreYouABot`, `AreYouUpset`, `Crush`, `WhatAreYouDoing`, `Ship`, `Opinion`, `Blame`,
-`ShouldI`, `Joke`, `FunFact`, `Help`, `Request`, `Down`, `Bored`, `Goodnight`, `Goodbye`, `Disbelief`, `Maybe`,
+`ChatIntent`, read on messages aimed at her: `Love`, `DemandApology`, `Apology`, `ShutUp`, `DoYouLoveMe`,
+`HowAreYou`, `AreYouThere`, `WhoAreYou`, `RememberMe`, `MyStats`, `AboutHer`, `AreYouABot`, `AreYouUpset`, `Crush`,
+`WhatAreYouDoing`, `Ship`, `TakeSides`, `Opinion`, `RateMe`, `Blame`, `NextSession`, `ShouldI`, `Roll`, `Joke`,
+`FunFact`, `Help`, `Request`, `Down`, `Bored`, `Goodnight`, `Goodbye`, `Disbelief`, `Maybe`,
 `Yes`, `No`, `YouAreRight`, `YouAreWrong`,
 `Thanks`, `Laughter` (the **specific** ones, which outrank a reply's context), then `Question`,
 `Sharing` and `LowEffort` (which only catch what nothing more precise did). First match wins, in that order —
-**the order is load-bearing**: `AboutHer` before `Opinion` (« tu aimes quoi comme jeu ? » would rate
+**the order is load-bearing**: `DemandApology` before `Apology` (« dis pardon » holds « pardon »),
+`MyStats` before `AboutHer` (« mon niveau » is theirs), `TakeSides` before `Opinion`, `NextSession`
+before `ShouldI` (« on joue ce soir ou pas ? ») and `Request` (« tu peux me dire c'est quand la prochaine
+session ? »), `Roll` before `Request` (« tu peux lancer un dé ? »), `AboutHer` before `Opinion` (« tu aimes quoi comme jeu ? » would rate
 « quoi comme jeu »), `Love` before `Crush` (« t'es mon crush » declares), `Ship` before `Opinion`
 (« tu penses quoi de @A et @B ? » asks about a pair) and before `Request` (« tu peux ship X et Y ? »),
 `Love` and `Apology` before `DoYouLoveMe` (« je t'aime, tu m'aimes ? » declares, « désolé, tu m'en veux ? »
@@ -292,6 +296,44 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   never « match » or « partenaire » for the server-wide search (« mon pire match » is a bad game,
   « trouve-moi un partenaire » a teammate); « on » forms need « bien », « compatibles » or « couple »
   (« on est ensemble ce soir ? »).
+- **`NextSession`** (« c'est quand la prochaine session ? », « on joue ce soir ? », « qui vient ce soir ? »,
+  « y a quoi de prévu ? »): asked only, a `?` or opening on « quand », « qui », « y a »…. Answered from
+  the sessions themselves (`EventService.GetUpcomingOrRunningAsync`: not cancelled, not over), off the
+  gateway handler like the records: the next one in `SessionNextLines` (`{2}` = « « Titre », <t:F> (<t:R>) »,
+  `{3}` = `SessionRoster.Describe`, who said yes and how many « peut-être »), the one running in
+  `SessionRunningLines`, none in `NoSessionLines`. Titles and names sanitised, mentions off. For
+  everyone, Papa included; a DM or a failed read gets `IntentLines[NextSession]` (`/schedule list`).
+  Never « la prochaine partie / game » (the game), never a proposal (« on lance une game ce soir ? »).
+- **`MyStats`** (« je suis quel niveau ? », « j'ai combien de cailloux ? », « comment va mon plynling ? »,
+  « mes stats ? »): their /recap numbers, all-time (`RecapService`), by `MyStatsTopic`, worded by
+  `Helpers/Personality/MyStats` (`MyStatsLines[topic]`; no XP or no Plynling has its own pool). Asked only:
+  a `?`, or a question word in the phrase; « mon niveau ? » only short and closing. « j'ai gagné 200
+  cailloux » and « mon plynling a faim » tell (`Sharing`). Same read path and fallback as `NextSession`.
+- **`Roll`** (« lance un dé », « 1d20 », « un jet de d20 », « jette deux dés à 20 faces », « un nombre
+  entre 1 et 100 », « random entre 1 et 100 »):
+  `Helpers/Personality/Dice`, the same for everyone and in game. « d20 » only rolled or nearly alone
+  (« d4 » is Diablo), the die word only after a count and before nothing but a closer (« lance un dé de
+  tes sorts »), « un nombre » never « le nombre » (« le nombre de joueurs »), and nothing told in the past
+  (« j'ai lancé un dé »). Capped at 20 dice of 1000 faces; past that it's no roll.
+- **`TakeSides`** (« qui a raison, moi ou @Luca ? », « tranche entre moi et Luca », « départage-nous »,
+  « à ton avis, qui a raison ? », « dis-lui que j'ai raison »):
+  `Helpers/Personality/TakeSides`, then `Opinion.Prefers` on the two sides, so Papa wins every argument
+  and Quokka none (`TakeSidesLines`, muted). One side only: the asker against whoever is tagged or
+  replied to; nobody there, she asks against whom (`IntentLines[TakeSides]`). Not in game.
+- **`RateMe`** (« note-moi », « je vaux combien ? », « je suis beau ? », « tu me trouves comment ? »):
+  `/rate`'s verdict on « moi » (`RateMeLines`), so Papa and Tata get their fixed verdicts. The adjective
+  closing and asked only; « je suis nul ? » stays `Down`.
+- **`DemandApology`** (« excuse-toi », « dis pardon », « tu me dois des excuses », « des excuses ? »): she
+  refuses (`IntentLines`); Papa gets her apology (his twin). Never right after « je », « lui », « il »,
+  « a »… (`_notDemandAfter`): « je lui dis pardon », « il m'a demandé pardon » stay `Apology`.
+- **`ShutUp`** (« chut », « tais-toi », « silence », « la ferme », « ferme ta bouche »): in six words at
+  most; « chut », « silence », « boucle-la », « laisse-nous » only as the whole message (compared
+  squashed); « tu parles trop » only closing (« … trop vite » is something else). She answers once, then keeps quiet in that channel for
+  `ChatHush.Quiet` (30 min): **`ChatHush`** is one singleton shared by `ChatterService` (every path; a
+  reply or mention gets a `StreakSulkReactions` emote, counted `hushed`; her name and the eggs, nothing),
+  `RobotHeartService` and `RivalryService`'s mutters (the silent reaction stays). Papa is never refused,
+  and his « chut » holds for the others. Inabot and shutdown threats still come before the gate. « ta
+  gueule » stays an insult: a mean message reads no intent, so the shush words stay weak cues. Not in game.
 - **`Yes` / `No`**: a reply that is only a yes or a no (`MessageCues.ReadAnswer`: « oui », « bah non »,
   « carrément », « pas du tout », « oui merci »; fillers dropped, repeats folded, never with a `?`, never
   mixed), **under one of her messages that asked something** (a `?` in it). The one pair `ReadIntent`
@@ -494,11 +536,12 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   `Interrogations`' job.
 - **« ça va ? » quotes her real temperature** half the time on the Pi (`HowAreYouTempLines`, `{2}` =
   `PiHealth.Celsius`), only below `PiHealth.HotMilli`: those lines call the number fine.
-- **Papa has twins for twenty-two intents** (`OwnerIntentLines`: ça va, tu fais quoi, je t'aime,
+- **Papa has twins for twenty-four intents** (`OwnerIntentLines`: ça va, tu fais quoi, je t'aime,
   pardon, bonne nuit, peut-être, t'es un bot, t'as raison, t'as tort, t'es là, merci, je m'ennuie,
   t'as un crush, son âge et sa maison, fais genre, sa journée, un coup de mou, oui, non, tu m'aimes,
-  tu te souviens de moi, t'es fâchée) plus `OwnerRequestLines` (his requests and his help); an
-  opinion, a ship, a yes-or-no, a blame, a joke and a fun fact are the same for him as for anyone. Any other intent from him goes on to his usual pools; he never
+  tu te souviens de moi, t'es fâchée, excuse-toi, chut) plus `OwnerRequestLines` (his requests and his help); an
+  opinion, a ship, a yes-or-no, a blame, a joke, a fun fact, the schedule, his numbers, a roll, a
+  side taken and his own rating are the same for him as for anyone. Any other intent from him goes on to his usual pools; he never
   gets `Question` or `LowEffort`.
 
 ### Reply context — `HerMessages`

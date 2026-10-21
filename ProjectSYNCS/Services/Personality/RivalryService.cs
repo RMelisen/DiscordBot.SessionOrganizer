@@ -63,12 +63,17 @@ internal sealed class RivalryService
     private readonly CooldownGate<ulong> _reactGate = new(ReactCooldown);
     private readonly CooldownGate<ulong> _mutterGate = new(MutterCooldown);
 
+    // Told « chut » in a channel (ChatHush): the reaction is silent and stays, the line waits.
+    private readonly ChatHush _hush;
+
     public RivalryService(
         DiscordSocketClient client,
         ResponsePicker picker,
         GlitchService glitch,
+        ChatHush hush,
         ILogger<RivalryService> logger)
     {
+        _hush = hush;
         _glitch = glitch;
         _client = client;
         _picker = picker;
@@ -93,6 +98,7 @@ internal sealed class RivalryService
         }
 
         if (Random.Shared.NextDouble() < MutterChance
+            && !_hush.IsHushed(message.Channel.Id, DateTimeOffset.UtcNow)
             && _mutterGate.TryClaim(message.Channel.Id))
         {
             var line = _picker.Pick(BotResponses.RivalMutters);

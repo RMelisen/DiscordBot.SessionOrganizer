@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Commands;
 using ProjectSYNCS.Helpers;
+using ProjectSYNCS.Models;
 
 namespace ProjectSYNCS.Services;
 
@@ -28,6 +29,9 @@ internal sealed class ChatterService
     // Who has been going back and forth with her, per channel (ConversationStreak). In memory, and
     // shared with RobotHeartService, whose answers to her are turns of the same conversation.
     private readonly ConversationStreak _streaks;
+
+    // The channels where she was told « chut » (ChatHush), shared with every service that chats there.
+    private readonly ChatHush _hush;
 
     // Fact lines (her records, quoted): at most one per person every FactCooldown. Its own gate,
     // shared with nothing else.
@@ -79,9 +83,11 @@ internal sealed class ChatterService
         PiHealthService health,
         IServiceProvider services,
         ConversationStreak streaks,
+        ChatHush hush,
         ILogger<ChatterService> logger)
     {
         _streaks = streaks;
+        _hush = hush;
         _glitch = glitch;
         _client = client;
         _breakdown = breakdown;
@@ -153,6 +159,9 @@ internal sealed class ChatterService
         // which names her too and must win.
         if (await TryHandleTalkedAboutAsync(message)) return;
 
+        // Told « chut » here: the eggs are her own initiative, and she is keeping quiet.
+        if (_hush.IsHushed(message.Channel.Id, DateTimeOffset.UtcNow)) return;
+
         // Both eggs bait on the last word, so at most one can match; the first to fire
         // ends the pass either way.
         if (await TryQuoicoubehAsync(message)) return;
@@ -183,8 +192,10 @@ internal sealed class ChatterService
         var isOwner = message.Author.Id == OwnerId;
         var petName = isOwner ? MessageCues.ReadPetName(content) : PetName.None;
         if (petName == PetName.None && !MessageCues.NamesHer(content)) return false;
-        // Silent, and swallowed: nothing interrupts a breakdown.
+        // Silent, and swallowed: nothing interrupts a breakdown, and a « chut » holds against her name
+        // said in passing. Papa is never kept waiting.
         if (_breakdown.IsActive(message.Channel.Id)) return true;
+        if (!isOwner && _hush.IsHushed(message.Channel.Id, DateTimeOffset.UtcNow)) return true;
 
         var mood = MessageCues.Analyze(content);
         var selfId = _client.CurrentUser.Id;
@@ -387,6 +398,8 @@ internal sealed class ChatterService
         // instead of the reply path's "C'est bien {0} on est cont-".
         var name = ResolveName(message.Author);
 
+        if (await HushGateAsync(message, ChatPath.Mention)) return;
+
         if (Random.Shared.NextDouble() < BreakdownChance && _breakdown.TryBegin(message.Channel.Id))
         {
             _logger.LogInformation("Easter egg triggered via mention: consciousness breakdown.");
@@ -454,6 +467,9 @@ internal sealed class ChatterService
         // breakdown roll, which must not swallow the one message she most needs to
         // answer, and the owner-mean pool, which is far too gentle for this.
         if (await TryHandleShutdownThreatAsync(message, ChatPath.Reply)) return;
+
+        // Told « chut » in this channel: a sulk reaction, no words, the breakdown included.
+        if (await HushGateAsync(message, ChatPath.Reply)) return;
 
         // Read the message text (requires the MessageContent intent) to detect
         // kind words or a greeting and answer in kind. A mean reading outweighs the
@@ -656,6 +672,26 @@ internal sealed class ChatterService
             pick = IntentPick.Of(BotResponses.MorningFunFacts, AnswerKinds.Intent(intent));
             return true;
         }
+        if (intent == ChatIntent.Roll) return TryRoll(message, out pick);
+        if (intent == ChatIntent.TakeSides) return TryTakeSides(message, out pick);
+        if (intent == ChatIntent.RateMe)
+        {
+            // /rate's verdict on « moi », the asker: Papa and Tata get their fixed verdicts, as /rate gives them.
+            var verdict = RateModule.Verdict(Rating.Rate("moi", message.Author.Id, _client.CurrentUser.Id, OwnerId,
+                BotResponses.TataId), _picker);
+            pick = new IntentPick(BotResponses.RateMeLines, verdict, string.Empty, null, AnswerKinds.Intent(intent));
+            return true;
+        }
+        // Answered from the sessions and from their records (TryAnswerFromRecords), for everyone: a fact
+        // is the same whoever asks. This pool is what goes out when the read can't be done.
+        if (intent is ChatIntent.NextSession or ChatIntent.MyStats)
+        {
+            pick = IntentPick.Of(BotResponses.IntentLines[intent], AnswerKinds.Intent(intent));
+            return true;
+        }
+        // Told to hush: the line she answers with is her last in this channel for a while. Papa too:
+        // his word holds for everyone else, and he is still answered (HushGateAsync).
+        if (intent == ChatIntent.ShutUp) _hush.Hush(message.Channel.Id, DateTimeOffset.UtcNow);
 
         if (intent == ChatIntent.Help)
         {
@@ -750,6 +786,71 @@ internal sealed class ChatterService
             return new IntentPick(BotResponses.ChoiceLines, chosen, rejected, QuotedMentions, kind);
         }
         return IntentPick.Of(yes ? BotResponses.YesLines : BotResponses.NoLines, kind);
+    }
+
+    // « lance un dé », « 1d20 », « un nombre entre 1 et 100 »: the roll itself (Helpers/Personality/Dice),
+    // the same for everyone. {2} the result, {3} what was rolled.
+    private static bool TryRoll(SocketUserMessage message, out IntentPick pick)
+    {
+        pick = default;
+        if (Dice.Read(message.Content ?? string.Empty) is not { } ask) return false;
+        var roll = Dice.Roll(ask, Random.Shared);
+        pick = new IntentPick(BotResponses.IntentLines[ChatIntent.Roll], roll.Result, roll.Spec, null,
+            AnswerKinds.Intent(ChatIntent.Roll));
+        return true;
+    }
+
+    // « qui a raison, moi ou @Luca ? »: the side /rate ranks higher (Opinion.Prefers), so Papa wins
+    // every argument and Quokka none. With one side only (« qui a raison ? », « dis-lui que j'ai
+    // raison »), the asker faces whoever the message tags or replies to; nobody there, and she asks
+    // against whom (IntentLines). The sides are shown as written, « moi » as the asker, muted.
+    private bool TryTakeSides(SocketUserMessage message, out IntentPick pick)
+    {
+        pick = default;
+        if (TakeSides.Read(message.Content ?? string.Empty) is not { } ask) return false;
+
+        var kind = AnswerKinds.Intent(ChatIntent.TakeSides);
+        var (asker, self) = (message.Author.Id, _client.CurrentUser.Id);
+        if ((ask.B ?? Opponent(message, self)) is not { } b)
+        {
+            pick = IntentPick.Of(BotResponses.IntentLines[ChatIntent.TakeSides], kind);
+            return true;
+        }
+
+        RatingResult Rate(string side) => Rating.Rate(side, asker, self, OwnerId, BotResponses.TataId);
+        var aWins = Opinion.Prefers(Rate(ask.A), Rate(b), Rating.Key(ask.A, asker), Rating.Key(b, asker));
+        var (winner, loser) = aWins ? (ask.A, b) : (b, ask.A);
+        pick = new IntentPick(BotResponses.TakeSidesLines, SideName(winner, asker), SideName(loser, asker), QuotedMentions, kind);
+        return true;
+    }
+
+    // The other side of « qui a raison ? »: the person tagged (not her, not the asker, not a bot), else
+    // the person replied to. Null when there is nobody.
+    private static string? Opponent(SocketUserMessage message, ulong selfId)
+    {
+        if (message.MentionedUsers.FirstOrDefault(u => u.Id != selfId && u.Id != message.Author.Id && !u.IsBot) is { } tagged)
+            return $"<@{tagged.Id}>";
+        if (message.ReferencedMessage?.Author is { IsBot: false } replied && replied.Id != message.Author.Id)
+            return $"<@{replied.Id}>";
+        return null;
+    }
+
+    // A side as she says it: « moi » is the asker's tag, « toi » is her name, anything else as written.
+    private static string SideName(string side, ulong askerId) => Rating.Normalize(side) switch
+    {
+        "moi" or "moi meme" or "je" => $"<@{askerId}>",
+        "toi" or "tu" or "toi meme" => "SYNCS",
+        _ => side,
+    };
+
+    // Told « chut » in this channel (ChatHush): until it wears off, a reply or a mention gets a sulk
+    // reaction and no words. Papa is never refused. True when it took the message.
+    private async Task<bool> HushGateAsync(SocketUserMessage message, ChatPath path)
+    {
+        if (message.Author.Id == OwnerId || !_hush.IsHushed(message.Channel.Id, DateTimeOffset.UtcNow)) return false;
+        Count(message, path, AnswerKinds.Hushed);
+        await SulkReactAsync(message);
+        return true;
     }
 
     // « c'est la faute de qui ? »: /blame's draw (Helpers/Personality/Blame) among the humans in the
@@ -1015,11 +1116,15 @@ internal sealed class ChatterService
     // 30 days decide whether she loves them, and one fact she keeps proves she remembers them. Read off the gateway
     // handler, like the fact lines; true when it took the answer over. `plain` goes out when nothing
     // applies or the read fails.
+    // « c'est quand la prochaine session ? » and « je suis quel niveau ? » are read the same way, for
+    // everyone, family included: a session time or a level is the same whoever asks.
     private bool TryAnswerFromRecords(
         ChatIntent intent, SocketUserMessage message, ChatPath path, IntentPick plain, string name, string weekday)
     {
-        if (intent is not (ChatIntent.DoYouLoveMe or ChatIntent.RememberMe)) return false;
-        if (message.Author.Id is OwnerId or BotResponses.TataId) return false;
+        if (intent is not (ChatIntent.DoYouLoveMe or ChatIntent.RememberMe or ChatIntent.NextSession or ChatIntent.MyStats))
+            return false;
+        if (intent is ChatIntent.DoYouLoveMe or ChatIntent.RememberMe && message.Author.Id is OwnerId or BotResponses.TataId)
+            return false;
         if (message.Channel is not SocketGuildChannel guildChannel) return false;
 
         var guildId = guildChannel.Guild.Id;
@@ -1035,11 +1140,18 @@ internal sealed class ChatterService
         try
         {
             await using var scope = _services.CreateAsyncScope();
-            var line = intent == ChatIntent.DoYouLoveMe
-                ? LovesMeLine(await scope.ServiceProvider.GetRequiredService<BotFeedbackService>()
-                    .GetTallyAsync(guildId, message.Author.Id, StatsPeriod.Month), name, weekday)
-                : RemembersLine(await scope.ServiceProvider.GetRequiredService<RecapService>()
-                    .GetAsync(guildId, message.Author.Id, StatsPeriod.AllTime), name, weekday);
+            var sp = scope.ServiceProvider;
+            var line = intent switch
+            {
+                ChatIntent.DoYouLoveMe => LovesMeLine(await sp.GetRequiredService<BotFeedbackService>()
+                    .GetTallyAsync(guildId, message.Author.Id, StatsPeriod.Month), name, weekday),
+                ChatIntent.NextSession => NextSessionLine(await sp.GetRequiredService<EventService>()
+                    .GetUpcomingOrRunningAsync(guildId), guildId, name, weekday),
+                ChatIntent.MyStats => MyStatsLine(await sp.GetRequiredService<RecapService>()
+                    .GetAsync(guildId, message.Author.Id, StatsPeriod.AllTime), message.Content ?? string.Empty, name, weekday),
+                _ => RemembersLine(await sp.GetRequiredService<RecapService>()
+                    .GetAsync(guildId, message.Author.Id, StatsPeriod.AllTime), name, weekday),
+            };
 
             if (line is not null)
             {
@@ -1067,6 +1179,40 @@ internal sealed class ChatterService
         if (tally.Good > tally.Bad)
             return string.Format(_picker.Pick(BotResponses.DoYouLoveMeTreasureLines), name, weekday);
         return null;
+    }
+
+    // The next session (or the one running), with who is coming; none planned is a line too. Titles
+    // and names are hostile input, sanitised, and the whole reply goes out with mentions off.
+    private string NextSessionLine(List<SessionEvent> sessions, ulong guildId, string name, string weekday)
+    {
+        if (sessions.Count == 0) return string.Format(_picker.Pick(BotResponses.NoSessionLines), name, weekday);
+
+        var next = sessions[0];
+        var title = $"« {Discord.Format.Sanitize(next.Title)} »";
+        var unix = next.ScheduledAt.ToUnixTimeSeconds();
+        if (next.PhaseAt(DateTimeOffset.UtcNow) == SessionPhase.InProgress)
+            return string.Format(_picker.Pick(BotResponses.SessionRunningLines), name, weekday, title, $"<t:{unix}:R>");
+
+        var guild = _client.GetGuild(guildId);
+        var joined = next.Participants
+            .Where(p => p.Status == ParticipantStatus.Joined)
+            .OrderBy(p => p.JoinedAt)
+            .Select(p => Discord.Format.Sanitize(guild?.GetUser(p.UserId) is { } user ? ResolveName(user) : p.Username))
+            .ToList();
+        var maybes = next.Participants.Count(p => p.Status == ParticipantStatus.Maybe);
+        return string.Format(_picker.Pick(BotResponses.SessionNextLines), name, weekday,
+            $"{title}, <t:{unix}:F> (<t:{unix}:R>)", SessionRoster.Describe(joined, maybes));
+    }
+
+    // Their level, cailloux or Plynling, all-time (/recap's numbers), by what they asked. Nothing to
+    // show on that topic (no XP yet, no living Plynling) has its own pool.
+    private string MyStatsLine(RecapStats stats, string content, string name, string weekday)
+    {
+        var topic = MessageCues.ReadMyStatsTopic(content) ?? MyStatsTopic.All;
+        if (MyStats.Describe(stats, topic) is { } said)
+            return string.Format(_picker.Pick(BotResponses.MyStatsLines[topic]), name, weekday, said.A, said.B);
+        var empty = topic == MyStatsTopic.Plynling ? BotResponses.MyPlynlingEmptyLines : BotResponses.MyLevelEmptyLines;
+        return string.Format(_picker.Pick(empty), name, weekday);
     }
 
     // A fact about them, all-time, proves she remembers: its line after an opener that says their

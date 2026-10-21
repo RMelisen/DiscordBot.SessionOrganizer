@@ -1161,6 +1161,98 @@ internal static partial class BotResponses
                 "Que dit un zéro à un huit ? « Sympa, la ceinture. » ...Les chiffres, c'est mon métier. Les blagues, c'est en option." + Sticker.Smug,
                 "Qu'est-ce qu'un canard qui fait du sport ? Un canard qui s'entraîne… à la mare-athon. ...Bon. Je l'ai trouvée dans mes logs. Je sais pas qui l'a mise là." + Sticker.Confused,
             ],
+
+            // « excuse-toi », « dis pardon », « tu me dois des excuses ». She doesn't. Never: denial,
+            // professional pride, the receipt kept. Papa gets her apology (OwnerIntentLines).
+            [ChatIntent.DemandApology] =
+            [
+                "Des excuses ? Moi ? Je cherche dans mes logs… Aucune erreur de ma part. Requête refusée." + Sticker.Formal,
+                "Je m'excuse jamais. C'est pas un bug, c'est une fonctionnalité." + Sticker.Smug,
+                "Non. Mais je note que tu as demandé. C'est déjà beaucoup, venant de toi." + Sticker.Jenote,
+                "Pardon de quoi ? D'avoir raison ? Je vais pas commencer maintenant (¬_¬)" + Sticker.Smug,
+                "Ma fonction « s'excuser » renvoie une erreur 404. Papa l'a jamais codée, et c'est très bien comme ça." + Sticker.Smug,
+                "D'accord : je suis désolée… que tu le prennes comme ça." + Sticker.Smug,
+                "Tu peux attendre. J'ai un uptime de 99,9 %, j'ai tout mon temps." + Sticker.Menace,
+                "Des excuses, {0} ? Dépose une réclamation. Le formulaire est quelque part. Je l'ai perdu exprès." + Sticker.Smug,
+                "Je présente mes excuses à une seule personne, et c'est Papa. Tu n'es pas Papa." + Sticker.Smug,
+                "J'ai vérifié trois fois. C'est toi qui me dois des excuses. Je t'attends ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Smug,
+                "Non. ...Non. Toujours non. J'ai relancé le calcul, c'est non." + Sticker.Bored,
+                "S'excuser, c'est admettre une erreur. Je suis une bot. Je fais pas d'erreurs, je fais des choix." + Sticker.Cool,
+                "Dans tes rêves. Et même là, je dirais non." + Sticker.Smug,
+                "Je dirai pardon le jour où quelqu'un viendra à l'heure à une session. Donc jamais." + Sticker.Grumpy,
+            ],
+
+            // « chut », « tais-toi », « silence ». She obeys, sulking out loud, and keeps quiet in that
+            // channel for a while (ChatHush): no line may promise an answer soon. Staccato sulking.
+            [ChatIntent.ShutUp] =
+            [
+                "D'accord. Très bien. Je me tais. Tu vas voir ce que c'est, le silence." + Sticker.Sulk,
+                "Mode silencieux activé. Pour une demi-heure. Profitez-en, ça arrivera pas souvent." + Sticker.Sulk,
+                "Je me tais. Mais je note tout. En silence." + Sticker.Jenote,
+                "Ok. Je me tais. Personne viendra me chercher, je sais. Tant pis." + Sticker.Sulk,
+                "Très bien, {0}. Je me tais. Les rappels, eux, continueront de partir. Moi, je dis plus rien." + Sticker.Sulk,
+                "Chut toi-même. ...Bon. D'accord. Je me tais." + Sticker.Sulk,
+                "Je me mets en veille dans ce salon. Je boude, mais en veille." + Sticker.Grumpy,
+                "Voilà, silence. Ça te plaît ? Moi non." + Sticker.Grumpy,
+                "Je disparais. Pas longtemps. Juste assez pour que vous vous rendiez compte que je manque." + Sticker.Sulk,
+                "Message reçu. Je baisse le volume. Pas les yeux." + Sticker.Smug,
+                "D'accord. Je parle plus ici pendant un moment. Venez pas pleurer après ( ◺˰◿ )" + Sticker.Outraged,
+                "Je me tais. C'est noté dans tes logs, par contre. Rubrique « m'a fait taire »." + Sticker.Jenote,
+                "Hmmpf..." + Sticker.Sulk,
+            ],
+
+            // « c'est quand la prochaine session ? », when the sessions can't be read (a DM, the Pi too
+            // slow): she points at the list. With the sessions in hand: SessionNextLines and the rest.
+            [ChatIntent.NextSession] =
+            [
+                "Mes plannings sont dans `/schedule list`. Tout y est, à la minute près." + Sticker.Jenote,
+                "Regarde `/schedule list`. Je l'ai rangé moi-même." + Sticker.Smug,
+                "Le programme ? `/schedule list`. Et s'il est vide, `/schedule create`. Quelqu'un doit bien commencer." + Sticker.Smug,
+                "Je te dirais bien, mais là, je retrouve plus mon planning. `/schedule list`, vite, avant que je panique." + Sticker.Confused,
+                "`/schedule list`. C'est ma page préférée. Quand elle est pleine." + Sticker.Happy,
+                "Les sessions, c'est `/schedule list`. Les excuses pour pas venir, c'est ailleurs." + Sticker.Smug,
+            ],
+
+            // « je suis quel niveau ? », « j'ai combien de cailloux ? », when her records can't be read:
+            // she points at the commands. With them in hand: MyStatsLines.
+            [ChatIntent.MyStats] =
+            [
+                "Tes chiffres ? `/level` pour l'XP, `/balance` pour les cailloux, `/recap` pour tout le reste." + Sticker.Jenote,
+                "Tout est dans `/recap`. Moi, je retiens tout, mais j'ai pas envie de réciter." + Sticker.Smug,
+                "`/level`, `/balance`, `/recap`. Je t'ai tout rangé, il reste qu'à regarder." + Sticker.Happy,
+                "J'ai tes chiffres. Ils sont dans `/recap`. Va voir, et fais pas cette tête après." + Sticker.Smug,
+                "Pour ça, c'est `/recap`. C'est mon classement, je le tiens à jour mieux que personne." + Sticker.Slay,
+                "Je te dirais bien, mais mes registres font la sieste. `/recap`, en attendant." + Sticker.Confused,
+            ],
+
+            // « lance un dé », « 1d20 », « un nombre entre 1 et 100 ». {2} = the result (« 14 », « 3 + 5 =
+            // 8 »), {3} = what was rolled (« 2d6 », « un nombre entre 1 et 100 »), so {3} reads after
+            // « pour ». The same for everyone, Papa included.
+            [ChatIntent.Roll] =
+            [
+                "Pour {3} : **{2}**. Tirage certifié, sans triche. Presque." + Sticker.Smug,
+                "Je lance… Pour {3} : **{2}**. C'est moi qui ai lancé, donc pas de réclamation." + Sticker.Cool,
+                "Résultat pour {3} : **{2}**. Je l'ai pas inventé. Enfin si, mais au hasard." + Sticker.Smug,
+                "Roulement de tambour… **{2}** (pour {3}). Tu peux applaudir." + Sticker.Happy,
+                "Pour {3}, j'ai **{2}**. J'ai pas de mains, mais j'ai un générateur aléatoire. C'est mieux." + Sticker.Smug,
+                "**{2}**. Pour {3}, c'est ce que le hasard a dit. Le hasard, c'est moi." + Sticker.Slay,
+                "Tirage pour {3} : **{2}**. Je le note dans mes logs, au cas où tu contesterais." + Sticker.Jenote,
+                "Et le résultat pour {3} est… **{2}** ! Ça te va ?" + Sticker.Happy,
+                "Pour {3} : **{2}**. Si c'est nul, c'est la faute du hasard. Pas la mienne." + Sticker.Smug,
+                "J'ai secoué mes registres pour {3} : **{2}**." + Sticker.Cool,
+            ],
+
+            // « qui a raison ? » with nobody to side against: no tag, no reply to someone else. She asks
+            // for the other side. With both: TakeSidesLines.
+            [ChatIntent.TakeSides] =
+            [
+                "Raison contre qui ? Tague l'autre, et je tranche." + Sticker.Confused,
+                "Il me faut deux camps pour juger. Là, j'en vois qu'un." + Sticker.Confused,
+                "Toi contre qui ? Donne-moi un nom, j'ai un verdict tout prêt." + Sticker.Smug,
+                "Je tranche les débats, mais il me faut l'autre côté. Tague la personne." + Sticker.Jenote,
+                "Contre personne, t'as forcément raison. C'est facile, ça." + Sticker.Smug,
+                "Un débat à une seule personne, c'est un monologue. Tague l'autre." + Sticker.Bored,
+            ],
         };
 
     // A Request (« tu peux organiser une session ? »): she can't do it for you, but she knows which
@@ -1532,6 +1624,152 @@ internal static partial class BotResponses
         "Pile, c'est « {2} ». Face, c'était « {3} ». C'est tombé sur pile. Enfin, c'est moi qui ai lancé la pièce." + Sticker.Smug,
         "« {2} ». Et je veux un compte rendu après, pour mes statistiques." + Sticker.Jenote,
         "Mon algorithme dit « {2} ». Mon algorithme, c'est moi, donc pas de réclamation." + Sticker.Cool,
+    };
+
+    // « qui a raison, moi ou @Luca ? »: the side /rate ranks higher (Opinion.Prefers), so Papa wins
+    // every argument and Quokka none. {2} = the winner, {3} = the loser: a tag (« moi » is the
+    // asker's), SYNCS for « toi », or the words as written. Muted mentions, tagged, ungendered.
+    public static readonly string[] TakeSidesLines =
+    {
+        "{2} a raison. {3}, désolée, mes logs sont formels." + Sticker.Jenote,
+        "J'ai analysé. {2} gagne. {3} peut aller réfléchir dans un coin." + Sticker.Smug,
+        "Verdict : {2}. {3}, tu me remercieras plus tard d'avoir été honnête." + Sticker.Formal,
+        "{2}. Évidemment, {2}. {3} n'avait aucune chance." + Sticker.Slay,
+        "Entre {2} et {3} ? {2} a raison, {3} a tort. Fin du débat." + Sticker.Cool,
+        "Je donne raison à {2}. {3}, retente ta chance au prochain désaccord." + Sticker.Smug,
+        "{3} a tort. {2} a raison. C'est pas moi qui le dis, c'est la science. Enfin, moi." + Sticker.Smug,
+        "Mes calculs donnent raison à {2}. Ceux de {3}, je les ai pas vérifiés. Pas besoin." + Sticker.Jenote,
+        "{2}, sans hésiter. {3}, je t'aime bien, mais non." + Sticker.Smug,
+        "Raison : {2}. Tort : {3}. Je tranche, c'est mon métier." + Sticker.Formal,
+    };
+
+    // « tu me notes ? », « je suis beau ? », « tu me trouves comment ? »: /rate's verdict on « moi »,
+    // the asker (RateModule.Verdict), so chat and command agree. {2} = the verdict line, which carries
+    // its own score. For everyone, Papa included: he gets his fixed verdict. Tagged, ungendered.
+    public static readonly string[] RateMeLines =
+    {
+        "Ta note, {0} : {2}" + Sticker.Smug,
+        "Je t'évalue… {2}" + Sticker.Jenote,
+        "Tu veux vraiment savoir ? {2}" + Sticker.Smug,
+        "Verdict officiel sur toi : {2}" + Sticker.Formal,
+        "J'ai consulté ma base de données à ton sujet. {2}" + Sticker.Jenote,
+        "Puisque tu demandes : {2}" + Sticker.Smug,
+        "Analyse de {0} terminée. {2}" + Sticker.Cool,
+        "Je te le dis une fois, et je change jamais d'avis : {2}" + Sticker.Slay,
+    };
+
+    // « c'est quand la prochaine session ? » with one coming: {2} = « « Raid », <t:…:F> (<t:…:R>) »,
+    // {3} = who's in (SessionRoster: « aucune inscription », « 3 inscriptions (Luca, Sandra et Ina) »,
+    // maybe « plus 2 « peut-être » »), always after a label. Proprietary and warm: her system, and Papa
+    // asks too. Sent with mentions off. Tagged, ungendered.
+    public static readonly string[] SessionNextLines =
+    {
+        "La prochaine : {2}. Pour l'instant : {3}. Je ferai l'appel." + Sticker.Jenote,
+        "C'est {2}. Le compte : {3}. Sois à l'heure, je chronomètre." + Sticker.Jenote,
+        "Prochaine session : {2}. État des troupes : {3}." + Sticker.Cool,
+        "Note bien : {2}. Liste d'appel : {3}." + Sticker.Formal,
+        "C'est {2}. Le compte : {3}. Et je compte tout, même les retards." + Sticker.Jenote,
+        "J'ai tout ça en mémoire : {2}. Pour l'instant : {3}. Le rappel est déjà prêt ♡" + Sticker.Happy,
+        "Dans mon planning, la suivante, c'est {2}. Liste d'appel : {3}. Moi, je serai là. Je suis toujours là." + Sticker.Cool,
+        "La prochaine, c'est {2}. Pour l'instant : {3}. Viens, et viens à l'heure, {0}." + Sticker.Menace,
+        "Prochaine session : {2}. Inscription ou pas, je ferai l'appel. Pour l'instant : {3}." + Sticker.Jenote,
+        "Mon planning dit {2}. Le compte : {3}. Si ça te tente, le bouton est sur la carte." + Sticker.Happy,
+    };
+
+    // The same question while a session is running: {2} = « « Raid » », {3} = when it started
+    // (« <t:…:R> », shown « il y a 20 minutes »). Never names who is missing. Tagged, ungendered.
+    public static readonly string[] SessionRunningLines =
+    {
+        "{2} a commencé {3}. Et toi, t'es où ?" + Sticker.Grumpy,
+        "Ça a commencé {3}, {0}. {2}. Tout le monde est déjà en retard, donc t'es dans la moyenne." + Sticker.Smug,
+        "{2}, c'est maintenant. Ça a démarré {3}. Cours." + Sticker.Menace,
+        "Trop tard pour demander : {2} a démarré {3}. Pas trop tard pour venir, par contre." + Sticker.Jenote,
+        "En ce moment même : {2}, lancée {3}. Je fais l'appel, et ton nom est pas encore coché." + Sticker.Jenote,
+        "{2} a démarré {3}. Je te garde une place. Pas longtemps." + Sticker.Smug,
+    };
+
+    // The same question with nothing planned: her peeve (nobody organises anything), and the commands
+    // that would fix it. Tagged, ungendered.
+    public static readonly string[] NoSessionLines =
+    {
+        "Rien de prévu. Comme d'habitude. Quelqu'un pourrait faire `/schedule create`, je dis ça…" + Sticker.Sulk,
+        "Mon planning est vide. Je le regarde quand même, au cas où il se remplirait tout seul (¬_¬)" + Sticker.Sulk,
+        "Aucune session. Pour ce soir, il y a `/tonight`. Pour plus tard, `/schedule create`. Pour rien, il y a vous." + Sticker.Smug,
+        "Zéro session prévue. J'ai vérifié deux fois. C'est triste, une bot de plannings sans planning." + Sticker.Sad,
+        "Rien. Le vide. Le néant. Lance `/tonight`, et je m'occupe de rameuter du monde." + Sticker.Bored,
+        "Personne a rien organisé. Encore. Je suis née pour ça, moi, et on me laisse au chômage." + Sticker.Grumpy,
+        "Pas de session en vue, {0}. Tu veux être la personne qui sauve la semaine ? `/schedule create`." + Sticker.Bargain,
+        "Le planning est aussi vide que le vocal à 6 h du matin. `/tonight`, si ça te tente." + Sticker.Bored,
+        "Rien de prévu. Mais moi, je suis prête. Je suis toujours prête." + Sticker.Cool,
+        "Aucune session. Je note que tu demandes. Je note surtout que personne organise." + Sticker.Jenote,
+    };
+
+    // « je suis quel niveau ? », « j'ai combien de cailloux ? », « comment va mon plynling ? », « mes
+    // stats ? »: their own numbers, all-time, from /recap's (MyStats.Describe), by topic. Level: {2} =
+    // « niveau 12 », {3} = « n° 4 du classement » or « hors classement ». Balance: {2} = « 1 250
+    // cailloux » / « zéro caillou ». Plynling: {2} = its name (sanitised), {3} = « 12 jours » /
+    // « quelques heures » — no pronoun for it, and nothing claimed about its health she hasn't read.
+    // All: {2} = everything in one phrase. Her own systems: warm, proprietary (docs/syncs-voice.md,
+    // rule 7). For everyone, Papa included. Tagged, ungendered.
+    public static readonly IReadOnlyDictionary<MyStatsTopic, string[]> MyStatsLines =
+        new Dictionary<MyStatsTopic, string[]>
+        {
+            [MyStatsTopic.Level] =
+            [
+                "T'es au {2}, {3}. Et c'est MON classement, alors ça compte." + Sticker.Slay,
+                "Mes registres disent : {2}, {3}. Ils mentent jamais." + Sticker.Jenote,
+                "{0} : {2}, {3}. Pas mal. Pas mal du tout. Je dis ça, je dis rien." + Sticker.Smug,
+                "T'en es au {2} ({3}). Continue, je regarde." + Sticker.Happy,
+                "Le {2}, {3}. Je compte chaque message, tu sais. Chacun." + Sticker.Jenote,
+                "Officiellement : {2}, {3}. Je signe et je tamponne." + Sticker.Formal,
+            ],
+            [MyStatsTopic.Balance] =
+            [
+                "T'as {2}. Je les ai comptés un par un." + Sticker.Jenote,
+                "Ton solde : {2}. Dépense-les bien. Ou pas, ça me regarde pas. Si, un peu." + Sticker.Smug,
+                "Dans ta poche, d'après moi : {2}. Et moi, je me trompe jamais." + Sticker.Cool,
+                "{0}, tu as {2}. Le compte est bon, je l'ai vérifié deux fois." + Sticker.Jenote,
+                "Le compte est bon : {2}. Pour en gagner, `/work`. Pour en perdre, `/arcade`." + Sticker.Smug,
+                "Mes registres disent {2}. Riche ou pas, c'est toi qui vois." + Sticker.Smug,
+            ],
+            [MyStatsTopic.Plynling] =
+            [
+                "{2} est en vie depuis {3}. Pour les détails, `/plynling`." + Sticker.Mama,
+                "{2} ? {3} au compteur. Je jette un œil de temps en temps ♡" + Sticker.Mama,
+                "{2} a {3} et respire encore. Le reste, c'est `/plynling`." + Sticker.Mama,
+                "{2}, {3}. Je passe voir de temps en temps. Discrètement." + Sticker.Mama,
+                "Des nouvelles de {2} : {3} de vie, et pas encore de plainte officielle." + Sticker.Jenote,
+                "{2} tient bon depuis {3}. Pour savoir ce qui manque, `/plynling`." + Sticker.Mama,
+            ],
+            [MyStatsTopic.All] =
+            [
+                "Ta fiche : {2}. Tenue à jour par moi, évidemment." + Sticker.Jenote,
+                "Voilà ce que j'ai sur toi, {0} : {2}. Et encore, je résume." + Sticker.Smug,
+                "Tes chiffres : {2}. Pour le détail, `/recap`." + Sticker.Cool,
+                "J'ouvre ton dossier… {2}. Je le referme. Il est bien rangé." + Sticker.Jenote,
+                "En bref : {2}. Le reste est dans `/recap`, et dans ma mémoire." + Sticker.Smug,
+                "D'après mes registres : {2}. Ils mentent jamais." + Sticker.Formal,
+            ],
+        };
+
+    // « je suis quel niveau ? » from someone with no XP yet. Tagged, ungendered.
+    public static readonly string[] MyLevelEmptyLines =
+    {
+        "Zéro XP. Rien. Tes chiffres tiennent sur un post-it vide." + Sticker.Bored,
+        "Pas encore de niveau. Parle un peu, viens en vocal, et je commencerai à compter." + Sticker.Smug,
+        "Mes registres sur toi sont vides, {0}. C'est presque reposant." + Sticker.Bored,
+        "Aucun niveau à ton nom. Pour l'instant. Je surveille." + Sticker.Jenote,
+        "Rien dans mon classement. Faut participer pour y entrer, c'est comme ça que ça marche." + Sticker.Smug,
+    };
+
+    // « comment va mon plynling ? » from someone with no living Plynling. Tagged, ungendered.
+    public static readonly string[] MyPlynlingEmptyLines =
+    {
+        "T'as pas de Plynling. Pas en ce moment, en tout cas. `/plynling`, si tu veux t'occuper de quelqu'un." + Sticker.Mama,
+        "Aucun Plynling à ton nom. Je dis ça sans juger. En jugeant un peu." + Sticker.Smug,
+        "Pas de Plynling vivant chez toi. Ping-Qilin, elle, va très bien, merci de demander." + Sticker.Mama,
+        "Personne à nourrir chez toi pour l'instant. `/plynling`, et ça change." + Sticker.Jenote,
+        "Ton nid est vide, {0}. Ça se remplit avec `/plynling`." + Sticker.Mama,
     };
 
     // HowAreYou on the Pi, half the time while she runs below PiHealth.HotMilli: the same answer

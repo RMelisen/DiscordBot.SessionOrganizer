@@ -3,6 +3,18 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.28.0 — 2026-10-21
+
+- Ask her when the next session is, or who's coming, and she answers from the real schedule.
+- Ask her your level, your cailloux or how your Plynling is doing, and she reads your numbers.
+- She rolls dice and picks random numbers in chat (« lance un dé », « 1d20 », « un nombre entre
+  1 et 100 »).
+- « Qui a raison, moi ou @X ? »: she takes a side, the way `/rate` ranks people.
+- « Note-moi », « je suis beau ? »: she rates you, the same verdict as `/rate`.
+- Ask her to apologise and she refuses (except to her creator).
+- Tell her « chut » and she keeps quiet in that channel for 30 minutes, reacting instead of
+  talking.
+
 ## 7.27.0 — 2026-10-21
 
 - Pop quiz: up to three questions a day instead of two (one slot each late morning, afternoon

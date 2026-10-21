@@ -121,6 +121,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<HerMessages>();
         // Who is going back and forth with her: shared by ChatterService and RobotHeartService.
         services.AddSingleton<ConversationStreak>();
+        // Where she was told « chut », and until when: shared by every service that chats in a channel.
+        services.AddSingleton<ChatHush>();
         // /debug answers: the counts and the messages she couldn't answer specifically (30 rolling
         // days) are both in the database, behind one transient service.
         services.AddTransient<ChatAnswerService>();

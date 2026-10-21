@@ -75,6 +75,25 @@ public class EventService
             .ToList();
     }
 
+    /// <summary>
+    /// The sessions not over yet, the one running first: GetActiveEventsAsync plus a session still
+    /// inside its <see cref="SessionEvent.Duration"/>. What « c'est quand la prochaine session ? » is
+    /// answered from: « on joue ce soir ? » asked at 21:10 should hear that it has started.
+    /// </summary>
+    public async Task<List<SessionEvent>> GetUpcomingOrRunningAsync(ulong guildId)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var events = await _db_context.SessionEvents
+            .Include(e => e.Participants)
+            .Where(e => e.GuildId == guildId && !e.IsCancelled)
+            .ToListAsync();
+
+        return events
+            .Where(e => e.ScheduledAt + SessionEvent.Duration > now)
+            .OrderBy(e => e.ScheduledAt)
+            .ToList();
+    }
+
     public async Task<SessionEvent?> GetEventWithParticipantsAsync(int eventId)
     {
         return await _db_context.SessionEvents

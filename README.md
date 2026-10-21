@@ -675,6 +675,13 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
   whole server for your best match. Tell her you're having a bad day and she offers something
   gentle to hold on to; ask « je devrais… ? » or « X ou Y ? » and she decides, as `/yesno` would;
   ask « c'est la faute de qui ? » and she picks a culprit from your voice call, as `/blame` would.
+  Ask « c'est quand la prochaine session ? » or « qui vient ce soir ? » and she reads the real
+  schedule and who signed up; ask « je suis quel niveau ? », « j'ai combien de cailloux ? » or
+  « comment va mon plynling ? » and she reads your numbers. She rolls dice (« lance un dé »,
+  « 1d20 », « un nombre entre 1 et 100 »), settles « qui a raison, moi ou @X ? » the way `/rate`
+  ranks people, and rates you (« note-moi », « je suis beau ? ») as `/rate` would. Ask her to
+  apologise and she refuses. Tell her « chut » and she goes quiet in that channel for half an
+  hour, answering only with a sulky reaction.
   Ask how something works and she points you to `/help`
   or the right command; ask her to organise something and she points you to the command that does it. A reply to one of her own posts (a welcome, the late call, the weekend poll, a
   level-up, a command result…) is answered about that post.

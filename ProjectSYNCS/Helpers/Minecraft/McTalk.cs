@@ -138,8 +138,9 @@ public static class McTalkReader
         _ => null,
     };
 
-    // ChatterService.TryIntent, for the game: no ship, no blame (Discord people), no help list (the owner removed it in
-    // game, so « aide-moi » is a call), and a favour she can't do is said so rather than pointed at a slash command.
+    // ChatterService.TryIntent, for the game: no ship, no blame, no take-sides (Discord people), no help list (the owner
+    // removed it in game, so « aide-moi » is a call), no sessions or stats (her records are Discord's), no « chut » (the
+    // hush is per Discord channel), and a favour she can't do is said so rather than pointed at a slash command.
     private static McTalk? Intent(ChatIntent intent, string text, McKin kin, ulong askerId, int? milli, ResponsePicker picker,
         Random random)
     {
@@ -147,10 +148,20 @@ public static class McTalkReader
         switch (intent)
         {
             case ChatIntent.None or ChatIntent.Question or ChatIntent.Sharing or ChatIntent.LowEffort
-                or ChatIntent.Ship or ChatIntent.Blame or ChatIntent.Help:
+                or ChatIntent.Ship or ChatIntent.Blame or ChatIntent.Help or ChatIntent.TakeSides
+                or ChatIntent.NextSession or ChatIntent.MyStats or ChatIntent.ShutUp:
                 return null;
             case ChatIntent.Opinion:
                 return OpinionOf(text, askerId, picker);
+            // ChatterService.TryRoll: the dice are the same in game.
+            case ChatIntent.Roll:
+                if (Dice.Read(text) is not { } ask) return null;
+                var roll = Dice.Roll(ask, random);
+                return new(BotResponses.IntentLines[ChatIntent.Roll], kind, roll.Result, roll.Spec);
+            // ChatterService.TryIntent: /rate's verdict on the asker.
+            case ChatIntent.RateMe:
+                return new(BotResponses.RateMeLines, kind,
+                    McChat.Clean(RateModule.Verdict(Rating.Rate("moi", askerId, 0, AvailabilityService.OwnerId, BotResponses.TataId), picker)));
             case ChatIntent.ShouldI:
                 var yes = random.Next(2) == 0;
                 if (MessageCues.ReadChoice(text) is { } choice)
