@@ -33,7 +33,7 @@
 //      cantCollect {player,resource,why: none|noTool} · sleeping {player,auto} · cantSleep {player,why: day|noBed|failed}
 //      seek {player,outcome: met|missing} · seen {player,x,y,z,dimension}
 //      harvesting {player,crop,count} · harvested {player,crop,count,replanted,delivered} · cantHarvest {player,crop,why: none}
-//      farming {player} · cantFarm {player,why: none|noChest}
+//      farming {player} · cantFarm {player,why: none|noChest} · farmed {count} (a farm round's produce, for her stats)
 //      fleeing {player} · safe {player} · cornered {player} · dropped {player,kind,by}
 //      familyHurt {victim,by} · defending {player,victim,swat} · cantDefend {player,victim}
 //      hungry {food} · fed {by}
@@ -1151,7 +1151,11 @@ async function farmRound() {
   try {
     const found = findRipe(Object.values(Crops), mine.anchor, FarmRadius);
     if (found.length > 0) {
+      const before = itemCounts();
       await harvestBlocks(found, mine);
+      // What the round brought in, counted as a harvest order counts it (items gained, net of the seeds replanted).
+      const gained = [...itemCounts()].reduce((sum, [type, n]) => sum + Math.max(0, n - (before.get(type) || 0)), 0);
+      if (gained > 0) emit('farmed', { count: gained });
       if (task === mine) await storeProduce(mine);
     }
     if (task === mine && bot.entity.position.distanceTo(mine.anchor) > 4)

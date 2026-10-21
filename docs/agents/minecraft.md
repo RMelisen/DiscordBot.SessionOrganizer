@@ -629,7 +629,8 @@ dropped by the owner: the only thing Discord does in game is `invite`.
   nobody later) instead of `McArrivalLines`.
 - **`stats`** (`MinecraftStat`, totals by key, `McStats`: **stored keys, append-only**): counted in
   memory (`McTally`) from the body's events (her deaths, fish and treasures, guard kills, gathered
-  blocks by resource, harvests, orders confirmed under way, total and per player) and her minutes in
+  blocks by resource, harvests: an order's `harvested` and every farm round's `farmed`, ordered or her
+  own routine, both as items gained; orders confirmed under way, total and per player) and her minutes in
   game, written every 5 minutes by the loop and on a clean stop; a failed write puts the counts back.
   The command adds what's still in memory, so it's current. Totals only, no daily buckets: nothing
   ranks them by date.

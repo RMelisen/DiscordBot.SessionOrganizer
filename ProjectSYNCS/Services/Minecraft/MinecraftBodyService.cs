@@ -697,6 +697,10 @@ public sealed class MinecraftBodyService : BackgroundService
                     Ack(root.GetProperty("player").GetString() ?? "", harvestPrivate, $"harvest:{harvesting}", BotResponses.McHarvestAckLines,
                         root.GetProperty("count").GetInt32(), CropName(harvesting));
                     break;
+                case "farmed":
+                    // A farm round's produce (ordered or her own routine): no line, only her stats.
+                    _tally.Add(McStats.Harvested, root.GetProperty("count").GetInt32());
+                    break;
                 case "harvested":
                     var harvested = root.GetProperty("count").GetInt32();
                     _tally.Add(McStats.Harvested, harvested);
