@@ -12,7 +12,7 @@ internal static partial class BotResponses
 
     // Said in Minecraft's chat, where none of Discord's markup exists: plain text only, no custom
     // emotes, no sticker tags, and under 256 characters (the game's chat cap). Minecraft is the one
-    // place she has a body: square arms, but arms. That is the joke she keeps coming back to.
+    // place she has a body.
 
     // She has just logged in.
     public static readonly string[] McArrivalLines =
