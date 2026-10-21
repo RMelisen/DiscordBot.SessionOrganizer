@@ -189,9 +189,11 @@ public enum McResource
 /// note.</summary>
 public readonly record struct McRequest(McOrder Order, int[]? Coordinates = null, McResource? Resource = null, int Count = 0,
     McCrop? Crop = null, McGoods? Goods = null, McSmelt? Smelt = null, string? Place = null, int Seconds = 0, string? Note = null,
-    string? Of = null)
+    string? Of = null, bool Refused = false)
 {
     public static readonly McRequest Nothing = new(McOrder.None);
+    /// <summary>An order refused around its verb (« viens pas »): nothing to do, and nothing to answer either.</summary>
+    public static readonly McRequest Refusal = new(McOrder.None, Refused: true);
 }
 
 /// <summary>
@@ -763,7 +765,7 @@ public static class McCommand
 
         // An order whose verb was found, unless refused around it (« ne retiens pas »): then nothing at all.
         McRequest Unless((int Start, int Length) hit, string[] around, McRequest request) =>
-            Refused(around, hit) ? McRequest.Nothing : request;
+            Refused(around, hit) ? McRequest.Refusal : request;
         var known = places ?? Array.Empty<string>();
         var place = PlaceIn(rest, known);
 
@@ -783,12 +785,12 @@ public static class McCommand
         // (« qu'est-ce que t'as dans tes poches ? » is not « vide tes poches »).
         if (CarryQuestion(wordsOnly) is { } carry) return carry;
 
-        if (Find(wordsOnly, FollowOverStayPhrases) is not null) return When(FollowOverStayPhrases, new(McOrder.Follow)) ?? McRequest.Nothing;
-        if (Find(wordsOnly, RanchAlonePhrases) is not null) return When(RanchAlonePhrases, new(McOrder.Ranch)) ?? McRequest.Nothing;
+        if (Find(wordsOnly, FollowOverStayPhrases) is not null) return When(FollowOverStayPhrases, new(McOrder.Follow)) ?? McRequest.Refusal;
+        if (Find(wordsOnly, RanchAlonePhrases) is not null) return When(RanchAlonePhrases, new(McOrder.Ranch)) ?? McRequest.Refusal;
         if (CareFor(wordsOnly, RanchVerbs, (w, j) => AnimalWords.Contains(w[j])) is { } herd)
             return Unless(herd, wordsOnly, new(McOrder.Ranch));
-        if (Find(wordsOnly, FarmAlonePhrases) is not null) return When(FarmAlonePhrases, new(McOrder.Farm)) ?? McRequest.Nothing;
-        if (FarmCare(wordsOnly) is { } care) return Refused(wordsOnly, care) ? McRequest.Nothing : new(McOrder.Farm);
+        if (Find(wordsOnly, FarmAlonePhrases) is not null) return When(FarmAlonePhrases, new(McOrder.Farm)) ?? McRequest.Refusal;
+        if (FarmCare(wordsOnly) is { } care) return Refused(wordsOnly, care) ? McRequest.Refusal : new(McOrder.Farm);
 
         // Guarding a place, before stay and guard: « protège la base » is not « protège-moi ». A remembered place named
         // with it is where she guards (« surveille la mine »); otherwise, where she stands.
@@ -806,7 +808,7 @@ public static class McCommand
         foreach (var (phrases, order) in new[] { (SleepPhrases, McOrder.Sleep), (GuardPhrases, McOrder.Guard) })
         {
             var found = When(phrases, new(order));
-            if (found is null) return McRequest.Nothing;
+            if (found is null) return McRequest.Refusal;
             if (found.Value.Order != McOrder.None) return found.Value;
         }
 
@@ -853,7 +855,7 @@ public static class McCommand
         // The verb must be another word than the crop: « la récolte est prête » names the harvest, it doesn't ask for it.
         if (CropIn(wordsOnly) is { } crop && (crop.Crop != McCrop.Any || resourceAt < 0)
             && Find(wordsOnly.Select((w, i) => i == crop.At ? "" : w).ToArray(), CropVerbs) is { } verb)
-            return Refused(wordsOnly, verb) ? McRequest.Nothing : new(McOrder.Harvest, Crop: crop.Crop);
+            return Refused(wordsOnly, verb) ? McRequest.Refusal : new(McOrder.Harvest, Crop: crop.Crop);
 
         if (resourceAt >= 0)
         {
@@ -862,7 +864,7 @@ public static class McCommand
             if (count == 0) count = QuantityBefore(wordsOnly, resourceAt);
             var collect = When(CollectPhrases,
                 new(McOrder.Collect, Resource: wanted, Count: Math.Clamp(count == 0 ? DefaultCount : count, 1, MaxCount)));
-            if (collect is null) return McRequest.Nothing;
+            if (collect is null) return McRequest.Refusal;
             if (collect.Value.Order != McOrder.None) return collect.Value;
         }
         // « syncs récolte », « syncs moissonne »: whatever is ripe. Not with a resource (« récolte du sable » is
@@ -872,7 +874,7 @@ public static class McCommand
                       && wordsOnly[said.Start - 1] is "la" or "ta" or "ma" or "sa" or "une" or "les" or "des" or "tes" or "mes" or "ses" or "notre" or "votre"))
         {
             var harvest = When(HarvestPhrases, new(McOrder.Harvest, Crop: McCrop.Any));
-            if (harvest is null) return McRequest.Nothing;
+            if (harvest is null) return McRequest.Refusal;
             if (harvest.Value.Order != McOrder.None) return harvest.Value;
         }
 
@@ -882,7 +884,7 @@ public static class McCommand
             foreach (var phrases in new[] { GoToPhrases, ComePhrases })
             {
                 var goTo = When(phrases, new(McOrder.GoTo, Coordinates: numbers));
-                if (goTo is null) return McRequest.Nothing;
+                if (goTo is null) return McRequest.Refusal;
                 if (goTo.Value.Order != McOrder.None) return goTo.Value;
             }
         }
@@ -906,7 +908,7 @@ public static class McCommand
         foreach (var (phrases, order) in new[] { (FollowPhrases, McOrder.Follow), (ComePhrases, McOrder.Come) })
         {
             var found = When(phrases, new(order));
-            if (found is null) return McRequest.Nothing;
+            if (found is null) return McRequest.Refusal;
             if (found.Value.Order != McOrder.None) return found.Value;
         }
 
@@ -915,7 +917,7 @@ public static class McCommand
                  { (JumpPhrases, McOrder.Jump), (WherePhrases, McOrder.Where), (ByePhrases, McOrder.Bye), (WavePhrases, McOrder.Wave) })
         {
             var found = When(phrases, new(order));
-            if (found is null) return McRequest.Nothing;
+            if (found is null) return McRequest.Refusal;
             if (found.Value.Order != McOrder.None) return found.Value;
         }
         // « donne-moi ta clé »: something of hers she doesn't know. She says so rather than « oui ? ».
@@ -927,7 +929,7 @@ public static class McCommand
             foreach (var (phrases, order) in new[] { (ThanksPhrases, McOrder.Thanks), (PraisePhrases, McOrder.Praise) })
             {
                 var found = When(phrases, new(order));
-                if (found is null) return McRequest.Nothing;
+                if (found is null) return McRequest.Refusal;
                 if (found.Value.Order != McOrder.None) return found.Value;
             }
         return calledOut && rest.Length <= 6 ? new(McOrder.Unknown) : McRequest.Nothing;

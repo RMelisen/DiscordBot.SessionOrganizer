@@ -724,6 +724,18 @@ internal static partial class BotResponses
         "Vider mes poches ? C'est déjà fait. Par la vie.",
     };
 
+    // A favour she has no order for (« syncs tu peux me construire une maison ? »): chat, not an order (McTalkReader,
+    // ChatIntent.Request). On Discord she points at the slash command; in game she has none to give. {0} = who.
+    public static readonly string[] McCantDoLines =
+    {
+        "Ça, je sais pas faire. Pas encore. Papa bosse dessus. Enfin, j'espère.",
+        "J'ai des bras carrés, {0}, pas des miracles.",
+        "Pas dans mes compétences. Demande-moi de te suivre, je suis très forte pour ça.",
+        "Je sais pas faire ça. Je note pour la prochaine mise à jour (￣^￣)ゞ",
+        "Non. Enfin, pas non. Je sais pas. C'est pire, je sais.",
+        "Mon code a pas de case pour ça. Essaie un truc que je connais : viens, suis-moi, récolte, pêche...",
+    };
+
     // « donne-moi ta clé »: something of hers she doesn't know.
     public static readonly string[] McGiveUnknownLines =
     {

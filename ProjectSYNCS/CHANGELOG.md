@@ -3,12 +3,39 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
-## 7.24.1 — 2026-10-21
+## 7.25.1 — 2026-10-21
 
 - Minecraft: gathering stone and ore: she skips blocks buried out of reach and
   goes for the ones she can get at, and one block she can't reach no longer stops the whole order.
 - Minecraft: she no longer leaves a lump of coal or ore lying when it falls a little away from where
   she mined.
+
+## 7.25.0 — 2026-10-21
+
+- In Minecraft she answers when someone talks to her without giving an order, the way she does on
+  Discord: « ça va ? », « je t'aime », a question, a compliment, an insult, a joke or a fun fact, her
+  opinion on something, Papa's and Tata's own answers. The conversation flows: right after she
+  answers, the next message is heard without her name. A whisper is always for her.
+- Said about her rather than to her, her name now and then gets a word, counted with her own
+  remarks.
+- A favour she has no order for gets an honest « je sais pas faire ça ».
+
+## 7.24.2 — 2026-10-21
+
+- In Minecraft she looks around more naturally: at the player she follows or guards while standing by
+  them, at nearby players for a few seconds before glancing away at someone or something else, and
+  around her now and then when nobody is near.
+
+## 7.24.1 — 2026-10-21
+
+- In Minecraft she repeats herself less: a line only comes back once she has used nearly every
+  other line in its pool.
+- In Minecraft she talks less: her remarks come further apart, are capped at 4 every 10 minutes,
+  and the commonest ones (nightfall, advancements, ordinary deaths, catches, arriving) come up half
+  as often.
+- The same order sent again within 3 minutes gets done without the same acknowledgement.
+- When several players greet her, say goodbye, thank or praise her, or call her at once, only the
+  first gets an answer in words; the others get a wave or a hop. Her family always gets words.
 
 ## 7.24.0 — 2026-10-21
 

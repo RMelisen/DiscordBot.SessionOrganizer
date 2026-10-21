@@ -33,7 +33,7 @@ node run.js actions          # every packet-level action, checked on the server 
 node run.js safety           # keeping a herd: named animals and babies spared, culling within its rules
 node run.js survival         # night fights, a creeper shot from range, an enderman left alone, being hit
 node run.js trip             # 250 blocks, far past the loaded chunks
-node run.js players          # following a walk and through the hard lanes, coming, guiding, losing one, seeking
+node run.js players          # following a walk and through the hard lanes, coming, guiding, losing one, seeking, where she looks
 node run.js orders           # every order: smelting, gathering, giving, storing, every crop, a farm, a patrol
 node run.js all              # all of it (about 45 minutes); exits 1 on any failure
 ```

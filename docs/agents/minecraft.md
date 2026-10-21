@@ -114,7 +114,9 @@ call, but only when the name opens or closes it; elsewhere it's talk about her. 
 short « oui ? » (`McCalledLines`), and that player's **next message within 30 seconds** is read as
 if it carried her name (`McCommand.Parse(…, called: true)`): « syncs » … « suis moi ». One message
 only, whatever it turns out to be, so a call followed by chat doesn't keep her listening; a
-follow-up she doesn't understand gets silence, not another « oui ? ». Other players still need her
+follow-up she doesn't understand is read as talk (*Talk*, below), never another « oui ? ». A call
+with something she reads as talk in it (« syncs ça va ? ») is answered as talk instead of « oui ? »:
+only a call with nothing to answer (`McTalkReader.IsBareCall`, or nothing read) gets it. Other players still need her
 name in that window. **A compliment or a thank-you in that same place is not a call**: « gg syncs »,
 « bravo syncs » (`Praise`, with a hop) and « merci syncs » (`Thanks`) get their own lines. An
 adjective counts only when said to her (« t'es géniale »): « syncs la base est jolie » is about the
@@ -396,7 +398,8 @@ list: the owner removed it.
   it was. Going to bed (asked, or because a player did) ends any claim.
 - **Orders aren't rationed like remarks.** One gate per player ignores a second order within the
   same second (a double send), never a stop, so « viens » then « stop » always works. Another gate
-  gives each player her « oui ? » once every 10 seconds at most (the window still opens).
+  gives each player her « oui ? » once every 10 seconds at most (the window still opens). Only their
+  acks are held back, when the same order comes again (*Her remarks*).
 
 ## Free time
 
@@ -517,9 +520,17 @@ Lines: `McDiveLines` (with twins), `McDiveAirLines`, `McDrowningLines`, `McBreat
 ## Body language
 
 Body only, no words. Her gaze is free when she isn't asleep, eating, drawing her bow or walking, and
-has nothing to do, is home, is tagging along or is between rounds at her own farm or pen (fishing,
-fights and furnaces keep it). Then she looks at whoever chatted in the last 8 s within 12 blocks,
-else at the closest player within 6, else somewhere every 5–10 s, turning smoothly (no `force`).
+has nothing to do, is home, is tagging along, **is following someone, or guarding them between
+fights** (home mode, no foe, no retreat), or is between rounds at her own farm or pen (fishing,
+fights and furnaces keep it). Then she looks **the way a person would, never a fixed stare**: at
+whoever chatted in the last 8 s within 12 blocks (no glancing away while they talk), else at the one
+she follows or guards, else at the closest player within 8, for 2.5–7 s (1.5–4 on guard: she's
+watching for monsters), then away for 0.7–2.5 s, then back. A glance goes to another player within
+12, a creature in sight, or a direction off to one side, now and then down at her feet or up. With
+nobody around she looks somewhere new every 4–9 s, mostly near where she already looks. Every turn
+is smooth (no `force`). **Walking, none of this runs**: Mineflayer walks where she looks, and the
+pathfinder turns her towards the next step every tick, so a look elsewhere would steer her off her
+path. `node run.js players gaze` checks it on the local server.
 **For 10 s after a player hits her she turns her back on them**, Papa included: she's hurt. When
 Papa or Tata walks up (back within 5 blocks after being out of sight or over 10 off) she looks at
 them and crouches twice, at most once every 2 minutes each; sitting, she stands up and back down.
@@ -541,6 +552,53 @@ Player chat reaches the body as Mineflayer's `chat` and `whisper` events. A chat
 reformats messages can hide them from Mineflayer's parser; if orders go unanswered on a server
 with one, that's the first thing to check.
 
+## Talk
+
+Chat that isn't an order is read the way Discord reads it (`McTalkReader`, pure, with cases in the
+checks; Discord's side is `personality.md`, *Listening*), so someone talking to her gets an answer,
+not silence. **An answer to someone is not a remark** (the owner's call): no remark gate, no
+budget. Only she, speaking on her own, is rationed.
+
+- **When.** McCommand found no order (`None`, or `Unknown` for a call) and the message names her,
+  or it's a whisper (always for her), or it comes **within 30 s of her answering that player**:
+  every answer opens the call window again, so a conversation goes on without her name. A refused
+  order (« syncs viens pas », `McRequest.Refused`) is never talk. Her in-game name is turned into
+  « syncs » before reading (`HerNameAsSyncs`), since the cues know only that one.
+- **The ladder**, Discord's, first match wins: « Inabot », a shutdown threat, a mean reading
+  (`Comebacks`; Papa `OwnerMeanReplies`), a specific intent with Papa's and Tata's twins
+  (`OwnerIntentLines`, `TataIntentLines`), Papa's pet names, a kind word (`NiceReplies`), a greeting,
+  news (`Sharing`), a question or a low-effort word, Tata's warmth roll, then a comeback
+  (`Comebacks`, Papa `OwnerComebacks`). A bare call, or a call with nothing read, gets « oui ? » as
+  before.
+- **Without her name, right after she answered**, only what is plainly for her answers: a specific
+  intent or Papa's pet name. An insult, a « ok » or a question there may be for someone else, and
+  gets silence.
+- **Talked about, not to** (« syncs a pris mon fer », « je joue avec syncs »: `AddressesHer` is
+  false) is her own initiative: a remark (`talkedAbout`, half the time, then the gates and the
+  budget), from `TalkedAboutLines`, `BackbiteRoasts` when it's mean.
+- **What only Discord has is left out**: her records (fact lines, « tu m'aimes ? » from feedback), a
+  ship and a blame (Discord people), the help list (none in game: « aide-moi » is a call), and the
+  pointers to slash commands. A favour she has no order for (`Request`) gets `McCantDoLines`, the
+  one game-only pool here. An opinion is /rate's verdict, « moi » being the player
+  (`McTalkReader.AskerId`: Papa and Tata by their Discord ids, anyone else by a stable hash of the
+  name).
+- **The conversation streak** is Discord's (`ConversationStreak`, its own instance, per player):
+  the third message answered by a comeback becomes `StreakNudgeLines`, the fifth ends it
+  (`StreakEndLines`) and she says nothing to them for 10 minutes. Never Papa.
+
+**The pools are Discord's, made fit for the game by `McChat.Game`**, computed once per pool: no
+sticker tag, no custom emote, no ✨ or bold, no face the font can't draw at the end (« (>⩊<) »,
+« ദ്ദി◝ ⩊ ◜.ᐟ », stripped, the line kept). A line that needs Discord to make sense is left out:
+backticks or a slash command, Discord words (`McChat.DiscordWords`: « tag », « salon », « vocal »,
+« emote », her Discord XP, cailloux and ranking…; « serveur », « message », « sondage » and « session »
+stay), what is only true off the game (`McChat.NotInGamePhrases`: « good bot », and her having no
+arms, legs or back, or never moving, which in game is false), anything undrawable, over
+256 characters. Faces are thinned to one line in four, the in-game rate. Whispered, only the lines
+under 200 characters (the body cuts a whisper there). **A Discord line edited for Discord is edited
+for the game too**: run `dotnet run --project tests/ProjectSYNCS.Checks -- --mc-review` to see what
+the game leaves out (« - », with the reason) and every line as she says it in game (« + »). The
+checks fail when a pool she uses in game ends up empty, or a kept line isn't plain game chat.
+
 ## Failures
 
 An unplanned end (crash, kick, refused login, unsupported version) backs off 2, then 5, then
@@ -552,15 +610,30 @@ catches everything; nothing escapes the loop.
 
 ## Her remarks
 
-- One per kind every 30 seconds, and never two within 8 seconds. Two separate `CooldownGate`s,
+- One per kind every 2 minutes, and never two within 20 seconds. Two separate `CooldownGate`s,
   owned by the service.
-- **The commonest remarks are rolled on top**, so the chat stays the players': night falls (50 %),
-  advancements (60 %), an ordinary death (60 %; hers, a kill by a player and family's always get a
-  word), a first hit from anyone but family (60 %; the escalation is never rolled), a guard kill
-  (10 %: kills come in waves) and a catch (30 %, junk 50 %, a treasure always). So are the answers
-  whose gesture already says it: arriving where she was called (50 %) and the hop (50 %). A greeting
-  always gets its words, the owner's call. Order acks, refusals and failures are never rolled:
-  they're how a player knows she heard.
+- **And at most 4 in any 10 minutes** (`RemarkBudget`), the owner's call: she talks less than she
+  did. A forced remark is neither held back nor counted. A remark the budget swallows gives both
+  gates back, like one the gates swallow, so the callers that release their own gate still do.
+- **The commonest remarks are rolled on top**, so the chat stays the players': night falls (25 %),
+  advancements (30 %), an ordinary death (30 %; hers, a kill by a player and family's always get a
+  word), a first hit from anyone but family (60 %, rare enough to keep its odds; the escalation is
+  never rolled), a guard kill (10 %: kills come in waves) and a catch (15 %, junk 25 %, a treasure
+  always). So are the answers whose gesture already says it: arriving where she was called (25 %)
+  and the hop (50 %). Refusals and failures are never rolled: they're how a player knows she heard.
+- **Order acks are said once every 3 minutes for the same order** from the same player (`Ack`,
+  keyed by the order plus what makes it another one: the place, the coordinates, the resource, the
+  crop). « suis-moi » sent again gets her following, not the same words. Refusals, outcomes, « je
+  suis avec X » and « je te vois pas » are never held back.
+- **A burst gets words once** (`_burstGate`, per kind, across players, 30 s): a hello, a goodbye, a
+  « gg », a « merci » or a bare call from several players at once. The first player gets the line;
+  the others only the gesture (the wave, the hop; a wave for a thank-you or a call, whose window
+  still opens). **Papa and Tata always get their words** (`FirstOfBurst`, the owner's call), and
+  still start the burst, so whoever follows them gets the gesture.
+- **Lines come from small pools** (most have 2 to 9), heard by the same few players in one evening,
+  so every pick in game is `ResponsePicker.Pick(pool, LineChoices)`: among the 2 lines said least
+  recently, not among the half of the pool not said lately. A line comes back only once the pool has
+  nearly gone round. A new send path uses it too.
 - **Who hit her is known for sure** since 1.19.4: the server's `damage_event` names the cause (the
   shooter, for an arrow), which Mineflayer passes as `entityHurt`'s second argument. A mob, a fall
   or fire is no player, and she says nothing. On older versions there's no source, and the body

@@ -136,7 +136,8 @@ async function giveKinds(body, papa) {
     `give ${Name} stone_pickaxe 1`, `give ${Name} bread 3`]);
   await wait(1500);
   const lyingNear = async (item) => {
-    const [a] = await rcon.run([`execute as @e[type=item,x=${C.x + 2.5},y=-60,z=${C.z + 3.5},distance=..4] run data get entity @s Item`]);
+    // A tossed tool flies further than a stack of logs: within 5 is « at his feet ».
+    const [a] = await rcon.run([`execute as @e[type=item,x=${C.x + 2.5},y=-60,z=${C.z + 3.5},distance=..5] run data get entity @s Item`]);
     return (a.match(new RegExp(`minecraft:${item}`, 'g')) || []).length;
   };
   body.send({ op: 'give', player: 'Papa', goods: 'wood' });
