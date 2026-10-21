@@ -7,6 +7,7 @@
 //
 // Environment (the C# side clears everything else, so the Discord token never reaches us):
 //   MC_HOST, MC_PORT, MC_USERNAME
+//   MC_TRACE_MOVES=1: every server correction logged (tools/mc-pathtest only)
 //
 // In:  {"op":"say","text":"…"} · {"op":"whisper","player":"…","text":"…"} · {"op":"quit"}
 //      {"op":"come","player":"…"} · {"op":"follow","player":"…"} · {"op":"stay"}
@@ -63,6 +64,7 @@ for (const method of ['log', 'info', 'warn', 'error', 'debug', 'trace']) {
 const mineflayer = require('mineflayer');
 const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
 const { plugin: collectBlock } = require('mineflayer-collectblock');
+const { Targets: CollectTargets } = require('mineflayer-collectblock/lib/Targets');
 const mc = require('minecraft-protocol');
 const minecraftData = require('minecraft-data');
 const { Vec3 } = require('vec3');
@@ -130,27 +132,96 @@ function gentleMovements() {
   // a fence gate is a way through, whatever its state, and doorTick swings it out of the way as she comes. Not on
   // a diagonal step, where a corner catches the panel, nor one that refused to move: a wall again for a while.
   // A bubble column over magma pulls whoever swims in it to the bottom: the pathfinder takes it for air, so it's
-  // made a wall.
+  // made a wall. Trapdoors the pathfinder takes for full blocks: an open one is a thin panel on one edge, passable
+  // along that edge and a wall across her way when it faces her (it planned to stand on the panel, and she fell off it,
+  // again and again); a closed one in the top half of the block at head height leaves 1.8125 under it, and she's 1.8
+  // tall, so she walks under it.
   const getBlock = movements.getBlock.bind(movements);
+  const passable = (b) => {
+    b.safe = true;
+    b.physical = false;
+    b.replaceable = false;
+    b.openable = false;
+    b.height = b.position.y;
+  };
   movements.getBlock = (pos, dx = 0, dy = 0, dz = 0) => {
     const b = getBlock(pos, dx, dy, dz);
     if (isDragColumn(b)) {
       b.safe = false;
       return b;
     }
-    if (b && isDoor(b) && !(dx !== 0 && dz !== 0) && !stuckDoors.has(doorKey(b))) {
-      b.safe = true;
-      b.physical = false;
-      b.replaceable = false;
-      b.openable = false;
-      b.height = b.position.y;
+    if (!b || !b.position || (dx !== 0 && dz !== 0)) return b;
+    if (isDoor(b) && !stuckDoors.has(doorKey(b))) passable(b);
+    else if (isTrapdoor(b)) {
+      const p = b.getProperties();
+      const side = p.open ? panelSide(b) : null;
+      const across = (dx !== 0 && (side === 'e' || side === 'w')) || (dz !== 0 && (side === 'n' || side === 's'));
+      const underIt = dy === 1 && p.half === 'top' && getBlock(pos, dx, 0, dz).boundingBox === 'empty'
+        && getBlock(pos, dx, -1, dz).height <= pos.y; // a full floor or lower: her head stays under 1.8125
+      if ((p.open && !across) || underIt) passable(b);
     }
     return b;
   };
+  // Fields cost more to cross than the grass around them (farmlandTick has why), so she walks round when it's not far.
+  // Asked for every step the pathfinder weighs: the state id only (a whole block per step slowed the search past its
+  // 5 s limit, and a goal out of reach read as « still looking » instead of « no way »).
+  movements.exclusionAreasStep.push((block) => {
+    if (!block || !block.position) return 0;
+    if (farmlandStates.has(bot.world.getBlockStateId(block.position.offset(0, -1, 0)))) return FarmlandStep;
+    return isFieldWater(block.position) ? FieldWaterStep : 0;
+  });
+  // No jump over a gap that takes off from a field or lands on one (farmlandTick would cancel the take-off and she'd
+  // walk into the gap), and a drop onto one costs FieldDrop: a fall of a block tramples it one time in two.
+  const getNeighbors = movements.getNeighbors.bind(movements);
+  movements.getNeighbors = (node) => getNeighbors(node).filter((move) => {
+    if (move.parkour && (onField(node) || onField(move))) return false;
+    if (move.y < node.y && onField(move)) move.cost += FieldDrop;
+    return true;
+  });
   return movements;
 }
 
+// ---- Fields ---------------------------------------------------------------------------------------------
+
+// Landing on farmland from more than half a block tramples it back to dirt, crop and all; walking never does. Her
+// jumps do: the pathfinder sprint-jumps across open ground, and the field's own water hole bends a straight line into
+// one. So a field costs FarmlandStep a block to cross (round it when that's shorter), and over farmland she doesn't
+// jump unless she's climbing (a step up onto a field lands lower than it took off). Checked on a local server: 2 of
+// 120 ripe wheat lost in six crossings before, none after.
+const FarmlandStep = 4;
+// A field's water hole: walked into, she swims back out with a push that lands her on the farmland beside it, from
+// higher than a step (caught on the local server: two blocks of farmland trampled climbing out). So she keeps out.
+const FieldWaterStep = 40;
+const FieldDrop = 40;
+
+// Whether a path point (a block position, feet inside it) stands on farmland.
+const onField = (p) => farmlandStates.has(bot.world.getBlockStateId(new Vec3(p.x, p.y - 1, p.z)));
+const isFarmland = (block) => Boolean(block && block.name === 'farmland');
+let farmlandStates = new Set(); // its state ids, filled on the first spawn, once the version is known
+let waterStates = new Set(); // the same for water
+
+// Water with farmland beside it, at the same height.
+function isFieldWater(pos) {
+  if (!waterStates.has(bot.world.getBlockStateId(pos))) return false;
+  return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => farmlandStates.has(bot.world.getBlockStateId(pos.offset(dx, 0, dz))));
+}
+
+function farmlandTick() {
+  if ((!bot.controlState.jump && !bot.jumpQueued) || !bot.entity || bot.entity.isInWater) return;
+  const me = bot.entity.position;
+  // The block her feet rest on: farmland is 15/16 high, so she stands inside its block (y -60.0625 stands in -61).
+  const under = (p) => bot.blockAt(new Vec3(Math.floor(p.x), Math.floor(p.y - 0.1), Math.floor(p.z)));
+  const next = currentPath[0];
+  if (next && next.y > me.y + 0.3) return; // climbing: the landing is above the take-off
+  const ahead = me.offset(-Math.sin(bot.entity.yaw), 0, -Math.cos(bot.entity.yaw));
+  if (!isFarmland(under(me)) && !isFarmland(under(ahead)) && !(next && isFarmland(under(next)))) return;
+  bot.setControlState('jump', false);
+  bot.jumpQueued = false; // pressing jump queues one, and letting go doesn't take it back
+}
+
 // ---- Doors ---------------------------------------------------------------------------------------------
+
+const isTrapdoor = (block) => (block.name || '').endsWith('_trapdoor');
 
 // Wooden doors (copper ones too) and fence gates: what a hand opens. Never iron, which needs redstone, nor
 // trapdoors, which are as often floors as doors.
@@ -206,15 +277,19 @@ function setPath(path) {
 }
 
 // The pathfinder puts each point of its path on top of whatever stands in that block, once planned: a closed fence gate
-// lifts it 1.5 (the top of its bar), a door 1 and onto its panel. She walks through those, not over them, so such a
-// point goes back down, centred, before she walks it: otherwise she never reaches it (a block or more below it,
-// sent back towards it until the pathfinder gives up), and doorTick looks for the door a block too high. The path
-// is the pathfinder's own (path_update hands it over before it walks it), so this is the path she walks.
+// lifts it 1.5 (the top of its bar), a door or an open trapdoor 1 and onto its panel. She walks through those, not
+// over them, so such a point goes back down, centred, before she walks it: otherwise she never reaches it (a block or
+// more below it, sent back towards it until the pathfinder gives up), and doorTick looks for the door a block too
+// high. The path is the pathfinder's own (path_update hands it over before it walks it), so this is the path she walks.
 function floorDoorNode(node) {
-  // What the point stands on: a gate (nobody stands on one) or a door's lower half (the point is in its upper half).
+  // What the point stands on: a gate (nobody stands on one), a door's lower half (the point is in its upper half), or
+  // an open trapdoor (its panel, which gentleMovements walks past).
   const below = bot.blockAt(new Vec3(Math.floor(node.x), Math.floor(node.y) - 1, Math.floor(node.z)));
-  if (!below || !isDoor(below) || stuckDoors.has(doorKey(below))) return;
-  if (below.name.endsWith('_door') && below.getProperties().half !== 'lower') return; // on top of a door: a real floor
+  if (!below) return;
+  if (isTrapdoor(below)) {
+    if (!below.getProperties().open) return; // a closed one is a floor
+  } else if (!isDoor(below) || stuckDoors.has(doorKey(below))) return;
+  else if (below.name.endsWith('_door') && below.getProperties().half !== 'lower') return; // on top of a door: a real floor
   node.x = below.position.x + 0.5;
   node.y = below.position.y;
   node.z = below.position.z + 0.5;
@@ -303,7 +378,9 @@ function gatheringMovements(targets) {
   movements.canDig = true;
   const allowed = new Set(targets.map((b) => b.position.toString()));
   const safe = movements.safeToBreak.bind(movements);
-  movements.safeToBreak = (block) => allowed.has(block.position.toString()) && safe(block);
+  // A block in a chunk that isn't loaded comes as a stub with no position: not breakable (reading it threw from the
+  // physics tick and took the whole body down).
+  movements.safeToBreak = (block) => Boolean(block && block.position) && allowed.has(block.position.toString()) && safe(block);
   return movements;
 }
 
@@ -593,6 +670,7 @@ function setMode(t, mode, target, goal, dynamic) {
   if (t.mode === mode && t.modeTarget === target) return;
   t.mode = mode;
   t.modeTarget = target;
+  t.modeSince = Date.now();
   bot.pathfinder.setGoal(goal, dynamic);
 }
 
@@ -666,7 +744,11 @@ function guardTick() {
   const goHome = () => {
     // What dropped from her kills first, when it's close and inside what she guards.
     const loot = lootNear(center, radius, t.skipLoot);
-    if (loot) return setMode(t, 'loot', loot, new goals.GoalNear(loot.position.x, loot.position.y, loot.position.z, 1));
+    if (loot && t.mode === 'loot' && t.modeTarget === loot && Date.now() - t.modeSince > PickUpTry) {
+      t.skipLoot.add(loot.id); // a way there, but never close enough: left where it is
+      return goHome();
+    }
+    if (loot) return setMode(t, 'loot', loot, new GoalPickUp(loot.position));
     if (owner) return setMode(t, 'home', owner, new goals.GoalFollow(owner, 2), true);
     // Back to the spot; again if pushed off it after getting there (a reached goal is dropped).
     if (t.mode !== 'home' || (!bot.pathfinder.goal && me.distanceTo(t.anchor) > 3)) {
@@ -786,19 +868,80 @@ async function collect(player, resource, count) {
   const mine = { kind: 'collect', player };
   task = mine;
   emit('collecting', { player, resource, count: blocks.length });
-  bot.collectBlock.movements = gatheringMovements(blocks);
-  try {
-    await bot.collectBlock.collect(blocks, { ignoreNoPath: true });
-  } catch (err) {
-    log('collect stopped:', err && err.message ? err.message : String(err));
-  } finally {
-    bot.pathfinder.setMovements(gentleMovements());
-  }
+  await gather(blocks, mine, 'collect');
   if (task !== mine) return; // told to stop in the meantime
 
   const { total, delivered } = await deliverGains(player, before);
   if (task === mine) task = null;
   emit('collected', { player, resource, count: total, delivered });
+}
+
+// collectblock walks into each drop's own block (GoalFollow, range 0) and then waits for it to vanish, with no time
+// limit: a drop on leaves, against a fence or under something low kept her there for good. So it only breaks: the
+// drops of what it breaks are noted here instead of chased, and picked up after (pickUp, GoalPickUp, PickUpTry each).
+let gatheredDrops = null;
+const appendTarget = CollectTargets.prototype.appendTarget;
+CollectTargets.prototype.appendTarget = function (target) {
+  if (target && target.name === 'item') {
+    if (gatheredDrops) gatheredDrops.add(target.id);
+    return;
+  }
+  appendTarget.call(this, target);
+};
+
+// Breaks `blocks`, then picks up what they dropped. `what` names it in the log. Solid blocks go to collectblock (with
+// gatheringMovements). Blocks with no collision box (wheat, carrots, potatoes, beetroot) can't: it walks to where a
+// ray from her eyes hits the block, and a ray goes through those, so it searched for 5 s and gave up on the harvest.
+async function gather(blocks, mine, what) {
+  const drops = new Set();
+  const solid = blocks.filter((b) => b.shapes && b.shapes.length > 0);
+  const soft = blocks.filter((b) => !(b.shapes && b.shapes.length > 0));
+  if (solid.length > 0) {
+    bot.collectBlock.movements = gatheringMovements(solid);
+    gatheredDrops = drops;
+    try {
+      await bot.collectBlock.collect(solid, { ignoreNoPath: true });
+    } catch (err) {
+      log(`${what} stopped:`, err && err.message ? err.message : String(err));
+    } finally {
+      gatheredDrops = null;
+      bot.pathfinder.setMovements(gentleMovements());
+    }
+  }
+  if (soft.length > 0 && task === mine) await breakSoft(soft, mine, drops);
+  if (task === mine && drops.size > 0) await pickUp((e) => drops.has(e.id), Math.min(60000, drops.size * PickUpTry), mine);
+}
+
+// The blocks with no collision box, the closest first: within 2 blocks of each (PickUpTry to get there), broken by
+// hand. What falls from them goes in `drops`.
+async function breakSoft(blocks, mine, drops) {
+  const left = [...blocks];
+  const noteDrop = (entity) => {
+    // Within 2: the item's data can come a moment after it started rolling.
+    if (blocks.some((b) => entity.position.distanceTo(b.position.offset(0.5, 0.5, 0.5)) <= 2)) drops.add(entity.id);
+  };
+  bot.on('itemDrop', noteDrop);
+  try {
+    while (task === mine && left.length > 0) {
+      const me = bot.entity.position;
+      left.sort((a, b) => a.position.distanceTo(me) - b.position.distanceTo(me));
+      const target = left.shift();
+      const p = target.position;
+      try {
+        await Promise.race([
+          bot.pathfinder.goto(new goals.GoalNear(p.x, p.y, p.z, 2)),
+          wait(PickUpTry).then(() => { throw new Error('too slow'); }),
+        ]);
+        const now = bot.blockAt(p);
+        if (task === mine && now && now.type === target.type) await bot.dig(now, true);
+      } catch {
+        if (task === mine) bot.pathfinder.setGoal(null); // out of reach, or too slow: the next one
+      }
+    }
+    await wait(500); // the last drops land
+  } finally {
+    bot.removeListener('itemDrop', noteDrop);
+  }
 }
 
 // What she gained since `before` (an itemCounts()), brought back: she walks up to the player and tosses it at
@@ -857,8 +1000,9 @@ function isRipe(block, crop) {
       return near && near.name === crop.stem;
     });
   }
-  const age = block.getProperties().age;
-  return typeof age === 'number' && age >= crop.ripe;
+  // prismarine-block gives number states as strings on recent versions (« 7 » on 26.1), booleans as booleans.
+  const age = Number(block.getProperties().age);
+  return Number.isFinite(age) && age >= crop.ripe;
 }
 
 // Ripe crops of these kinds within the radius of a point, with the crop each one is.
@@ -871,18 +1015,10 @@ function findRipe(crops, point, radius) {
     .filter(({ block, crop }) => isRipe(block, crop));
 }
 
-// Breaks the ripe crops (collectblock picks up what drops), then puts a seed back on each patch of farmland
+// Breaks the ripe crops and picks up what drops (gather), then puts a seed back on each patch of farmland
 // it left bare. Seeds on farmland are the one thing she ever places: nothing else, nowhere else.
 async function harvestBlocks(found, mine) {
-  const blocks = found.map((f) => f.block);
-  bot.collectBlock.movements = gatheringMovements(blocks);
-  try {
-    await bot.collectBlock.collect(blocks, { ignoreNoPath: true });
-  } catch (err) {
-    log('harvest stopped:', err && err.message ? err.message : String(err));
-  } finally {
-    bot.pathfinder.setMovements(gentleMovements());
-  }
+  await gather(found.map((f) => f.block), mine, 'harvest');
   let replanted = 0;
   for (const { block, crop } of found) {
     if (task !== mine) break;
@@ -2478,6 +2614,7 @@ function leaveBoat() {
 const RetrieveFar = 500;
 const DespawnAfter = 300000;
 const RetrieveSweep = 20000;
+const RetrieveRadius = 8; // what a death scatters can land 6 blocks off and roll further
 let deathAt = null;
 let pendingRetrieve = null;
 
@@ -2537,7 +2674,7 @@ function retrieveTick(t) {
 
 async function sweepRetrieve(mine) {
   mine.sweeping = true;
-  await pickUpDrops(mine.pos, 6, RetrieveSweep, mine);
+  await pickUpDrops(mine.pos, RetrieveRadius, RetrieveSweep, mine);
   if (task !== mine) return; // an order came first: the walk is still pending
   await wait(500); // the last pickup lands
   if (task !== mine) return;
@@ -2548,20 +2685,54 @@ async function sweepRetrieve(mine) {
   emit('retrieved', { count: items + wornArmour().length });
 }
 
-// Walks onto the dropped items within `radius` of a spot, one after the other, until none is left, the time is up or
-// she's no longer doing `mine`. Each item gets one try.
+// Where she can pick an item up from. A player picks up what touches their box (0.6 wide, 1.8 tall) grown by a block
+// sideways and half a block up and down. GoalNear(item, 1) wanted her within a block of it, counted in whole blocks,
+// which an item on a fence post, on a pillar's edge or under a slab too low to stand under never allows: the
+// pathfinder found no way, or kept looking. Each item gets PickUpTry, then she leaves it.
+const PickUpTry = 8000;
+
+class GoalPickUp extends goals.Goal {
+  constructor(pos) {
+    super();
+    this.x = pos.x;
+    this.y = pos.y;
+    this.z = pos.z;
+  }
+
+  heuristic(node) {
+    return Math.hypot(this.x - (node.x + 0.5), this.z - (node.z + 0.5)) + Math.abs(this.y - node.y);
+  }
+
+  isEnd(node) {
+    const up = this.y - node.y;
+    return Math.abs(this.x - (node.x + 0.5)) <= 1.2 && Math.abs(this.z - (node.z + 0.5)) <= 1.2 && up >= -0.4 && up <= 2.2;
+  }
+}
+
+// Picks up the dropped items within `radius` of a spot (pickUp).
 async function pickUpDrops(center, radius, timeout, mine) {
+  return pickUp((e) => e.position.distanceTo(center) <= radius, timeout, mine);
+}
+
+// Walks to the dropped items `choose` accepts, the closest first, until none is left, the time is up or she's no
+// longer doing `mine`. Each item gets a try of PickUpTry, and another (three in all) if it has rolled more than a
+// block since: aimed at while still rolling, it was left lying beside where she went.
+async function pickUp(choose, timeout, mine) {
   const end = Date.now() + timeout;
-  const tried = new Set();
+  const tried = new Map(); // item id -> { at, tries }
+  const retry = (e) => {
+    const t = tried.get(e.id);
+    return !t || (t.tries < 3 && e.position.distanceTo(t.at) > 1);
+  };
   while (task === mine && Date.now() < end) {
-    const item = bot.nearestEntity((e) => e.name === 'item' && !tried.has(e.id) && e.position.distanceTo(center) <= radius);
+    const item = bot.nearestEntity((e) => e.name === 'item' && retry(e) && choose(e));
     if (!item) return;
-    tried.add(item.id);
+    tried.set(item.id, { at: item.position.clone(), tries: (tried.get(item.id) || { tries: 0 }).tries + 1 });
     const at = item.position;
     try {
       await Promise.race([
-        bot.pathfinder.goto(new goals.GoalNear(at.x, at.y, at.z, 1)),
-        wait(Math.min(8000, Math.max(0, end - Date.now()))).then(() => { throw new Error('too slow'); }),
+        bot.pathfinder.goto(new GoalPickUp(at)),
+        wait(Math.min(PickUpTry, Math.max(0, end - Date.now()))).then(() => { throw new Error('too slow'); }),
       ]);
     } catch {
       if (task === mine) bot.pathfinder.setGoal(null); // out of reach, or too slow: the next one
@@ -2866,6 +3037,9 @@ function attach() {
   bot.loadPlugin(collectBlock);
 
   bot.once('spawn', () => {
+    const states = (b) => new Set(Array.from({ length: b.maxStateId - b.minStateId + 1 }, (_, i) => b.minStateId + i));
+    farmlandStates = states(bot.registry.blocksByName.farmland);
+    waterStates = states(bot.registry.blocksByName.water);
     // A hair wider than a player (0.6). Mineflayer's collisions leave her side exactly on a block's face (a step she's
     // jumping up, a wall she walks along), and a 26.3 server takes that as walking into the block: it puts her back,
     // every tick, and she never climbs a one-block step. 0.0001 off the face is enough (checked on a local Paper 26.3
@@ -2876,6 +3050,8 @@ function attach() {
     // controls from it.
     bot.on('physicsTick', safely(waterTick));
     bot.on('physicsTick', safely(boardTick));
+    // After the pathfinder too: it presses jump, this lets go of it over a field.
+    bot.on('physicsTick', safely(farmlandTick));
     // First, before any tick handler changes the controls: the keys this tick's move was made with.
     bot.prependListener('physicsTick', safely(inputTick));
     emit('spawned', {});
@@ -3201,7 +3377,8 @@ function inputTick() {
 // sent, where she was and what she held just before, her last move sent, and the block ahead, since a body stuck
 // against the terrain looks the same from outside whatever the server objects to. This is how the 0.0001 off a block's
 // face (playerHalfWidth) was found: hundreds a minute, each one 0.01 short of where she stood.
-const PulledBackLogEvery = 30000;
+// MC_TRACE_MOVES (the movement tests in tools/mc-pathtest; never set by the service) logs every one.
+const PulledBackLogEvery = process.env.MC_TRACE_MOVES === '1' ? 0 : 30000;
 let pulledBack = 0;
 let pulledBackRecent = 0;
 let pulledBackLoggedAt = 0;

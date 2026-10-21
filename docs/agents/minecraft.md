@@ -138,6 +138,18 @@ list: the owner removed it.
   `gatheringMovements`: `safeToBreak` is true **only for the target blocks**, so nothing else on
   the way is ever broken. Wood is a non-stripped log with *natural* leaves within reach
   (`persistent: false`): a log in a wall has none, and placed leaves are persistent.
+  **collectblock only breaks** (`gather`): it would walk into each drop's own block and wait for it
+  to vanish, with no time limit, and a drop on leaves, by a fence or under something low kept her
+  there for good. The drops of what it breaks are noted instead (a patch on its `Targets`) and
+  picked up after by `pickUp`. **Blocks with no collision box** (wheat, carrots, potatoes,
+  beetroot) don't go to collectblock at all: it walks to where a ray from her eyes hits the block,
+  a ray goes through those, and it searched for 5 s and gave up. `breakSoft` walks within 2 blocks
+  of each and breaks it by hand.
+- **Picking items up** (`pickUp`, `GoalPickUp`): a player picks up what touches their box grown by a
+  block sideways and half a block up and down, so the goal is « within that reach », not « within a
+  block of it » (`GoalNear` in whole blocks never allowed an item on a fence post, on a pillar's
+  edge, or under a slab too low to stand under). Each item gets 8 s (`PickUpTry`), and another try
+  (three in all) only if it rolled more than a block since. The same 8 s caps an item of loot.
 - **Sleep**: the night only passes when every player sleeps (by default), and that includes her.
   When a player goes to bed at night (`entitySleep`) she looks for a bed within 48 blocks, once per
   night, and says so when there's none (`McNoBedLines`), since she is then why the night won't pass.
@@ -154,7 +166,9 @@ list: the owner removed it.
 - **Harvest** (« syncs récolte le blé », McOrder.Harvest with a `McCrop`, `Any` for « syncs
   récolte ») breaks the *ripe* crops within 24 blocks (wheat, carrots, potatoes at age 7, beetroot
   at 3), puts a seed back on each patch of farmland left bare, and tosses the haul at the player's
-  feet like a gathering run. Melons and pumpkins count only next to an *attached* stem, so a pumpkin
+  feet like a gathering run. **Number states come as strings on 26.1** (an age of « 7 »), booleans
+  as booleans: `isRipe` converts, and while it only took numbers she saw nothing ripe at all.
+  Melons and pumpkins count only next to an *attached* stem, so a pumpkin
   placed as decoration is never touched, and need no replanting. In the parser a crop word is read
   before the resources (« pommes de terre » has « terre », dirt); a generic word (« champ ») never
   beats a resource (« du bois dans le champ »), and « récolte » after an article is the noun. A crop
@@ -313,6 +327,26 @@ list: the owner removed it.
   door set across the wall, and a fence gate, each crossed and left as found.
 - **Ladders** are the pathfinder's own: it climbs up and down them, a 10-rung shaft included, and
   she follows someone up and down one (checked on the local server).
+- **Trapdoors** the pathfinder takes for full blocks; `gentleMovements` corrects it. An open one is
+  a panel on one edge: passable along that edge, a wall when it stands across her way (`panelSide`),
+  and a route point lifted onto its panel comes back down like a door's. A closed one in the top half
+  of the block at head height leaves 1.8125 under it, and she's 1.8: she walks under it when the
+  floor below is a full block or lower. She never clicks a trapdoor.
+- **Fields.** Walking never tramples farmland; landing on it from over half a block does, crop and
+  all. So a step onto farmland costs 4 more (`FarmlandStep`: she walks round a field when it's not
+  far), a field's water hole costs 40 (she swam back out of it with a push and landed on the
+  farmland beside it), a drop onto farmland costs 40 (a block's fall tramples it one time in two),
+  no jump over a gap takes off from or lands on farmland (`getNeighbors` filtered), and over
+  farmland she doesn't jump unless she's climbing (`farmlandTick`, which also clears Mineflayer's
+  queued jump: letting go of jump doesn't take a pressed one back). She stands *inside* a farmland
+  block (15/16 high): « the block under her » is the one at her feet minus 0.1. Harvesting and
+  hops included: no hop over a field. Checked on the local server: none trampled in two dozen
+  harvests and field crossings, against one crossing in three before.
+- **Everything the pathfinder calls into runs in the physics tick**: `getBlock`, `safeToBreak`, the
+  step costs, `getNeighbors`. A throw there takes the whole body down (`safeToBreak` did, on a block
+  in a chunk that isn't loaded, which comes as a stub with no position). Guard for the stub, and
+  keep the step costs cheap (state ids, not `blockAt`): a slow search hits the pathfinder's 5 s
+  limit, and a goal out of reach reads as « still looking » instead of « no way ».
 - **She can only reach a player the server shows her** (render distance). Beyond that the body
   answers `cantReach notVisible` at once (`McTooFarLines`). A followed player who goes out of
   sight ends the follow (`lost`).
@@ -377,7 +411,8 @@ starts on her own gets a rare rolled remark** (the owner's call): the routine 25
 - **Getting her things back.** On death the body notes where, in which dimension, and whether there
   was lava; 3 s after respawning she goes back (`retrieve`, ahead of the routine) unless they're in
   another dimension, over 500 blocks off, in the void or in lava (`retrieveLost`). At the spot she
-  sweeps the items within 6 blocks for 20 s; her armour goes back on by itself. An order comes first;
+  sweeps the items within 8 blocks for 20 s (`RetrieveRadius`: a death scatters them up to 6 off,
+  and they roll); her armour goes back on by itself. An order comes first;
   the walk waits until **5 minutes after the death**, when the items despawn. Still carrying things
   after respawning means the server keeps inventories: she doesn't go. Lines: `McRetrieveLines`
   (said at once), `McRetrieveEmptyLines` when nothing was left (always), `McRetrievedLines` and
@@ -603,11 +638,16 @@ walking », every 30 s at most): what the server sent, where she was, her keys, 
 and the block ahead. A body stuck against the terrain looks the same from outside whatever the
 server objects to; this line says what it refused.
 
-**Testing movement locally.** A server's refusals can't be reasoned out from the client: reproduce
-them. Paper 26.3 with ViaVersion and ViaBackwards on this machine, the same pair as the group's
-server, with `online-mode=false`, `whitelist off`, RCON on, and `forceload` around spawn so `fill`
-can build the terrain before anyone joins; run the body against it (`MC_HOST`, `MC_PORT`) and send
-it ops on stdin. Accepting the Minecraft EULA for that server is the owner's call.
+**Testing movement locally: `tools/mc-pathtest`.** A server's refusals and the pathfinder's mistakes
+can't be reasoned out from the code: reproduce them. The tool runs her real body against a local
+Paper with ViaVersion and ViaBackwards (the group server's pair; setup in its README): an obstacle
+course of 20 lanes (corridors, corners, stairs and slabs, fences, decorations, trapdoors, gaps, a
+low tunnel, panes, furniture, soul sand and cobwebs, a door with a turn, a ladder, leaves, water, a
+field of pillars, an unreachable goal), crossings of a ripe field, a death among decorations, a
+grove to cut and a plot to harvest. A lane passes only with no server correction (`MC_TRACE_MOVES`
+logs every one). **Run `node run.js all` before shipping a movement change**, twice for a fix to
+something chance-driven (trampling, rolling items), and add a lane or a spot for every snag found
+in the wild. Accepting the Minecraft EULA for the test server is the owner's call.
 
 **stdout carries events only.** The protocol libraries print their errors through `console.*`, so
 the body sends every console method to stderr before loading them, and the service logs any stdout

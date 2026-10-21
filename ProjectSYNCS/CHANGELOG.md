@@ -3,6 +3,18 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.22.0 — 2026-10-20
+
+- Minecraft: she takes care of fields: she walks around them when she can, never jumps or drops onto
+  farmland, and stays out of their water, so crops no longer get trampled.
+- Minecraft: harvesting works on the current server version (she saw no crop as ripe there), and she replants.
+- Minecraft: she no longer gets stuck going after a dropped item by a fence, under a low slab or
+  among decorations; she gives up on one she can't reach and moves on. Gathering wood no longer
+  freezes on a log that fell somewhere awkward.
+- Minecraft: open trapdoors no longer stop her, and she walks under high ones.
+- Minecraft: after dying she gathers her things from a little further around.
+- Minecraft: fixed a crash while gathering near unloaded ground.
+
 ## 7.21.4 — 2026-10-20
 
 - Minecraft: she goes through doors instead of opening one and shutting it again in front of herself,
