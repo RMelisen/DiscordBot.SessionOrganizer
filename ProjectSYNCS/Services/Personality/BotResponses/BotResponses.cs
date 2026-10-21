@@ -228,8 +228,6 @@ namespace ProjectSYNCS.Services;
 //       …Owner · …Tata twins ..... Papa's and Tata's versions of the person-aimed pools (McFamily)
 //       McSeekMetLines… · McSeekMissLines… (Owner/Tata only) ... walking up to them after arriving
 //       McResourceNames .......... what she gathers, as a partitive (« du bois »): data, not a pool
-//     On Discord, in the bots channel
-//       McJoinPostLines · McLeavePostLines ... she goes to play / comes back
 //
 //   [Plynlings] Plynlings — every pool is a GenderedLines (M/F halves), picked with .For(p.Gender)
 //     Care, shown on the card

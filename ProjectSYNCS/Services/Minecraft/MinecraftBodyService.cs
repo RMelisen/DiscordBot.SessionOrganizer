@@ -95,8 +95,6 @@ public sealed class MinecraftBodyService : BackgroundService
     private readonly CooldownGate<string> _needGate = new(TimeSpan.FromMinutes(10));
 
     private readonly DiscordSocketClient _client;
-    private readonly GuildConfigService _config;
-    private readonly PlynlingAnnouncer _announcer;
     private readonly ResponsePicker _picker;
     private readonly ILogger<MinecraftBodyService> _logger;
 
@@ -163,12 +161,9 @@ public sealed class MinecraftBodyService : BackgroundService
     private string? _lastKick;
     private DateTimeOffset? _lastKickAt;
 
-    public MinecraftBodyService(DiscordSocketClient client, GuildConfigService config, PlynlingAnnouncer announcer,
-        ResponsePicker picker, IConfiguration configuration, ILogger<MinecraftBodyService> logger)
+    public MinecraftBodyService(DiscordSocketClient client, ResponsePicker picker, IConfiguration configuration, ILogger<MinecraftBodyService> logger)
     {
         _client = client;
-        _config = config;
-        _announcer = announcer;
         _picker = picker;
         _logger = logger;
 
@@ -398,11 +393,9 @@ public sealed class MinecraftBodyService : BackgroundService
 
     private void OnExit(MinecraftBodyProcess body)
     {
-        bool wasSpawned;
         lock (_gate)
         {
             if (!ReferenceEquals(_body, body)) return;
-            wasSpawned = _spawned;
             var planned = _leaving;
             _body = null;
             _spawned = false;
@@ -421,7 +414,6 @@ public sealed class MinecraftBodyService : BackgroundService
             if (!planned) MarkFailureLocked(DateTimeOffset.UtcNow);
             _logger.LogInformation("Minecraft body exited ({How}).", planned ? "left" : "unplanned");
         }
-        if (wasSpawned) _ = PostAsync(BotResponses.McLeavePostLines, "Minecraft leave post");
     }
 
     // What only made sense for the body that's going: reminders, questions waiting for its answer.
@@ -831,7 +823,6 @@ public sealed class MinecraftBodyService : BackgroundService
                 if (ReferenceEquals(_body, body) && !_leaving)
                     SeekFamilyLocked(body);
         });
-        _ = PostAsync(BotResponses.McJoinPostLines, "Minecraft join post");
     }
 
     private void OnSystem(string key, IReadOnlyList<McArg> args)
@@ -1747,21 +1738,6 @@ public sealed class MinecraftBodyService : BackgroundService
                 return true;
             }
         return false;
-    }
-
-    private async Task PostAsync(string[] pool, string what)
-    {
-        try
-        {
-            if (_client.ConnectionState != ConnectionState.Connected) return;
-            var channel = await BotsChannel.ResolveAsync(_client, _config, _announcer, HomeGuild.Id);
-            if (channel is null) return;
-            await BotChat.PostWithTypingAsync(channel, _picker.Pick(pool), _logger, what, AllowedMentions.None);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to post the {What}.", what);
-        }
     }
 
     // ---- /debug minecraft -----------------------------------------------------------------------

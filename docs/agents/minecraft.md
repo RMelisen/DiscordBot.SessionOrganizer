@@ -572,7 +572,7 @@ catches everything; nothing escapes the loop.
   `✿` all draw fine. The in-game set (`syncs-voice.md`) is wider than Discord's, but used
   sparingly, the owner's call: **about one line in four** at most, none in most pools of two or
   three lines; dry lines and Papa hurting her stay bare.
-- Her join and leave posts go to the bots channel (`BotsChannel`): low stakes, her own initiative.
+- She posts nothing on Discord when she joins or leaves the server: it was noise, so keep it that way.
 
 **Family in game.** `McFamily.Of` matches a player against `Minecraft:Owner` (Papa) and
 `Minecraft:Tata` without case, and the service picks a twin pool (`…Owner`, `…Tata`) for the

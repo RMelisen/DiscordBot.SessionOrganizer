@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.23.1 — 2026-10-21
+
+- She no longer announces on Discord when she joins or leaves the Minecraft server.
+
 ## 7.23.0 — 2026-10-21
 
 - New owner-only `/debug role`: gives a member a role, refusing up front when she lacks Manage Roles
