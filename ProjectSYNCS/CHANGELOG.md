@@ -15,6 +15,12 @@ the git history; versions that were skipped or only existed on a side branch are
 - Tell her « chut » and she keeps quiet in that channel for 30 minutes, reacting instead of
   talking.
 
+## 7.27.1 — 2026-10-21
+
+- Minecraft: after she answers someone in chat, she keeps listening to them for 30 seconds, even if
+  they say something to another player in between.
+- Minecraft: calling her by name always gets an answer again; some calls got no reply at all.
+
 ## 7.27.0 — 2026-10-21
 
 - Pop quiz: up to three questions a day instead of two (one slot each late morning, afternoon

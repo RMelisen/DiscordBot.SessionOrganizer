@@ -2682,6 +2682,10 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     Console.WriteLine($"Minecraft talk: {talkKept} of {talkTotal} Discord lines usable in game.");
 }
 
+// A call always gets words: an empty line there is a call she seems not to have heard (no « oui ? », no wave).
+foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesTata" })
+    if (((string[])Field(f)).Any(l => l.Trim().Length == 0)) Fail($"{f}: an empty line, a call left unanswered");
+
 // /minecraft (MinecraftModule and its pure pieces in Helpers/Minecraft).
 {
     string[] herNames = ["SYNCS", .. McCommand.HerNames];
@@ -2783,7 +2787,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
 }
 
 // The picker's narrow pick (Minecraft's chat): a line comes back only once all but one of the others were said, and a
-// line repeated on purpose (McCalledLines weighs its silence that way) still leaves something to pick.
+// line repeated on purpose (a pool weighing its silence with empty lines) still leaves something to pick.
 {
     void Gaps(string[] pool, int minGap)
     {
