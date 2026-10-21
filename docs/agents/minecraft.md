@@ -140,12 +140,18 @@ list: the owner removed it.
   can harvest them (with what she carries, or by hand; ores and stone need a pickaxe, `noTool`),
   breaks them, then walks back and tosses what she gained (an inventory diff) at the player's
   feet. collectblock asks the pathfinder's movements before breaking anything, so it gets
-  `gatheringMovements`: `safeToBreak` is true **only for the target blocks**, so nothing else on
-  the way is ever broken. Wood is a non-stripped log with *natural* leaves within reach
-  (`persistent: false`): a log in a wall has none, and placed leaves are persistent.
-  **Only blocks with an open face** (`exposed`), the closest of the nearest 256: she never digs, so
-  stone under the grass is out of reach, and the closest few were all buried while a quarry face stood
-  further off. **In rounds**: what's open now, then what that opened (a trunk's top log, boxed in by
+  `gatheringMovements`: `safeToBreak` is true **only for the target blocks and the tree's own
+  natural leaves within 2 of a target log**, so nothing else on the way is ever broken. A log
+  wrapped in leaves has an open face (its top, the far side) but none she can see from where she
+  stands, and the search for one ran its 5 s for every log of a forest, nothing brought back; a
+  player punches through, so does she. Wood is a non-stripped log with *natural* leaves within reach
+  (`persistent: false`): a log in a wall has none, and placed leaves are persistent, never broken.
+  **Only blocks with an open face** (`exposed`), the closest 256 of those, open being part of the
+  search (`findBlocks`' `useExtraInfo`), not a filter after it: she never digs, so stone under the
+  grass is out of reach, and on a mountain the nearest 256 stone were all under her feet while a
+  cliff face stood 20 blocks off. **What she counts is what the resource drops** (`Yields`: logs,
+  cobblestone, coal, raw iron…); the saplings, sticks and apples from the leaves are handed over
+  but not counted as wood. **In rounds**: what's open now, then what that opened (a trunk's top log, boxed in by
   leaves, only opens once the logs under it are gone: she brought 12 of 16), up to the count, four
   rounds at most, ending early on a round that broke nothing. **One block at a time** through
   collectblock, closest first: it gave up on the whole
@@ -326,9 +332,9 @@ list: the owner removed it.
   stay, crouched.
 - **She never digs and never places a block.** `canDig = false`, no scaffolding blocks, no
   pillaring: a path through someone's wall or a dirt tower in their build is not help. Where
-  walking can't get there she says so (`McNoPathLines`) instead. **The one exception is a seed
-  on bare farmland where she just harvested** (`harvestBlocks`): nothing else, nowhere else. Keep
-  it that narrow.
+  walking can't get there she says so (`McNoPathLines`) instead. **The exceptions are a seed
+  on bare farmland where she just harvested** (`harvestBlocks`) **and a gathered tree's natural
+  leaves** (`gatheringMovements`): nothing else, nowhere else. Keep them that narrow.
 - **Doors.** The pathfinder sees every door as a wall (its own `canOpenDoors` is off, flagged flaky
   by its authors, and covers fence gates only), so `gentleMovements` wraps its `getBlock`: a wooden
   or copper door or a fence gate is passable whatever its state, except on a diagonal step (a corner
@@ -768,6 +774,16 @@ warning in its console, and she never climbs a one-block step. 0.0001 off the fa
 fits every gap a player fits. Found and checked on a local server (*Testing movement locally*):
 without it she's stuck at the first step; with it she climbs, sprinting or not.
 
+**The wider box has two edges to keep (`clearFaces`, the `AABB` patch).** The server places her
+(a correction, a teleport) with its own 0.3, so often flush against a face, and her 0.3001 box
+then starts 0.0001 inside that block. Mineflayer's collisions only stop a box that starts outside
+one, so she walked straight in, was put back flush, walked in again: 364 times in 20 s against a
+dark forest step, never arriving. After each placement she's moved out of any face she overlaps by
+under 0.001 (`clearFaces`, on a microtask: Mineflayer's own handler for the packet is registered
+after hers). And Mineflayer compares faces exactly, so a box rounded a hair past one
+(-127.99999999999999 for -128) lost the block in front of it the same way: its three
+`computeOffset` take the game's own 1e-7 tolerance. Each half alone still let corrections through.
+
 **Her keys go to the server (`inputTick`).** Since 1.21.2 clients send `player_input` (forward,
 jump, sprint, shift…) whenever their keys change; Mineflayer sends it only for sneaking, with every
 other key off. `inputTick` sends her whole control state whenever it changes, as a real client
@@ -820,8 +836,9 @@ step beside a berry bush, cactus or wither rose cost 8 (a turn cut close clipped
 
 **Server teleports while she walks are logged** (`watchCorrections`, « server teleport while
 walking », every 30 s at most): what the server sent, where she was, her keys, her last move sent
-and the block ahead. A body stuck against the terrain looks the same from outside whatever the
-server objects to; this line says what it refused.
+and the block ahead, and every block her box touches at her feet as her client knows them. A body
+stuck against the terrain looks the same from outside whatever the server objects to; this line
+says what it refused.
 
 **Testing movement locally: `tools/mc-pathtest`.** A server's refusals and the pathfinder's mistakes
 can't be reasoned out from the code: reproduce them. The tool runs her real body against a local
@@ -836,7 +853,10 @@ ripe field, a death among decorations, a grove to cut, a plot to harvest, every 
 iron and sand, handing over by kind, a full chest, every crop, a farm, a patrol, where/mark/sit), a
 herd to keep (`safety`), night fights and dangers (`survival`), a long trip, and players to follow
 (across open ground and through the room, the holes and the zigzag), come to, guide, lose and seek
-(`players`). Everything is checked on the server's side, never on what she says.
+(`players`). `wild.js` takes her into a generated world: ten real biomes behind a walking Papa,
+a village's fields, orders where they happen, the Nether's five biomes with monsters, a portal; and
+`lag.js` puts the road to a remote server between her and it (`--lag`). Everything is checked on
+the server's side, never on what she says.
 A lane passes only with no server correction (`MC_TRACE_MOVES` logs every one) and no damage. **Run `node run.js all` before shipping a movement change**, twice for a fix to
 something chance-driven (trampling, rolling items), and add a lane or a spot for every snag found
 in the wild. Accepting the Minecraft EULA for the test server is the owner's call.

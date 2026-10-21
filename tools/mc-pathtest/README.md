@@ -21,6 +21,12 @@ are not committed):
 
 `MC_RCON_HOST`, `MC_RCON_PORT`, `MC_RCON_PASSWORD`, `MC_HOST` and `MC_PORT` override the defaults above.
 
+**The wild** (`wild.js`) needs a generated world instead: stop the server, keep a copy of `server.properties`, set
+`level-name=natural`, `level-type=minecraft\:normal`, `level-seed=20261021`, `generate-structures=true`,
+`view-distance=8`, `simulation-distance=6`, and start it again. The flat world stays in its own folder: switching
+back is `level-name=world` with the flat settings. `run.js` builds on and expects the flat world; `wild.js` checks
+it's on a generated one.
+
 ## Running
 
 ```bash
@@ -47,6 +53,18 @@ shipping anything that makes a search heavier. `MC_TRACE_PATHS=1` logs every slo
 
 Trampling and item rolls are chance: a fix for one of those passes `all` twice in a row, not once.
 
+**The wild.** `node wild.js` (on the generated world, about 30 minutes) walks Papa, a stand-in with his own pathfinder,
+through ten real biomes while she follows (forest, dark forest, taiga, meadow, a river, a village, a mangrove swamp,
+snowy slopes, a beach…), counts the village's fields before and after, gives orders where they really happen (wood in
+a forest, stone and coal on a mountain, fish in a river, coming across a dark forest), follows him through the five
+Nether biomes with monsters on, and has him walk through a portal in front of her. Name some (`follow village orders
+come nether portal`) to run only those; `WILD_BIOMES=river,forest` picks the biomes. Papa's routes are random, so a
+snag in one run may not come back: run a failing biome a few times on its own. Every server correction is a failure.
+
+**Lag.** `--lag 120 60` (any of `wild.js`'s runs) puts her body behind `lag.js`, a relay that holds each direction
+back by 120 ms plus up to 60, in order, like the road from the Pi to the group's server; the stand-ins stay direct.
+For the course, start `node lag.js 120 60` apart and run `MC_PORT=25600 node run.js lanes` (the stand-ins then lag too).
+
 **Her chat.** `node chat-test.js` (about 3 minutes, not part of `all`) runs `MinecraftBodyService` itself, the real
 pools and rules with Discord left offline (`tools/mc-chattest`, built by the script), and six stand-in players talk to
 her: questions, intents with Papa's and Tata's twins, insults, Inabot, a favour, a whisper, talk about her, an order,
@@ -59,6 +77,7 @@ between them.
 - `course.js`: the lanes, one kind of terrain each, as lane-relative block commands.
 - `run.js`: building, the lanes and the other runs, the command line.
 - `actions.js`, `orders.js`, `safety.js`, `survival.js`, `players-test.js`: the scenarios beyond the course.
+- `wild.js` (a generated world: biomes, wild orders, the Nether, a portal) and `lag.js` (the delaying relay).
 - `chat-test.js` and `../mc-chattest` (the service alone, writing every pool to `pools.json`): her chat in game.
 - `body.js` (her body as a child process), `players.js` (stand-in players), `query.js` (the world, through RCON).
 - `rcon.js`: a minimal RCON client (also usable alone: `node rcon.js "cmd" ...`).

@@ -71,6 +71,35 @@ const mc = require('minecraft-protocol');
 const minecraftData = require('minecraft-data');
 const { Vec3 } = require('vec3');
 
+// Collisions with the game's own tolerance: a box less than 1e-7 into a block still touches its face, and on the other
+// two axes overlaps by less than that don't count (vanilla's VoxelShape epsilon). Mineflayer compares exactly, so a box
+// rounded a hair past a face (a step after being put flush against it: -127.99999999999999 for -128) no longer finds
+// the block in front of it and walks straight in, and the server puts her back, again and again.
+const AABB = require('prismarine-physics/lib/aabb');
+const Touch = 1e-7;
+const across = (a0, a1, b0, b1) => a1 > b0 + Touch && a0 < b1 - Touch;
+AABB.prototype.computeOffsetX = function computeOffsetX(other, offsetX) {
+  if (across(other.minY, other.maxY, this.minY, this.maxY) && across(other.minZ, other.maxZ, this.minZ, this.maxZ)) {
+    if (offsetX > 0 && other.maxX <= this.minX + Touch) offsetX = Math.min(this.minX - other.maxX, offsetX);
+    else if (offsetX < 0 && other.minX >= this.maxX - Touch) offsetX = Math.max(this.maxX - other.minX, offsetX);
+  }
+  return offsetX;
+};
+AABB.prototype.computeOffsetY = function computeOffsetY(other, offsetY) {
+  if (across(other.minX, other.maxX, this.minX, this.maxX) && across(other.minZ, other.maxZ, this.minZ, this.maxZ)) {
+    if (offsetY > 0 && other.maxY <= this.minY + Touch) offsetY = Math.min(this.minY - other.maxY, offsetY);
+    else if (offsetY < 0 && other.minY >= this.maxY - Touch) offsetY = Math.max(this.maxY - other.minY, offsetY);
+  }
+  return offsetY;
+};
+AABB.prototype.computeOffsetZ = function computeOffsetZ(other, offsetZ) {
+  if (across(other.minX, other.maxX, this.minX, this.maxX) && across(other.minY, other.maxY, this.minY, this.maxY)) {
+    if (offsetZ > 0 && other.maxZ <= this.minZ + Touch) offsetZ = Math.min(this.minZ - other.maxZ, offsetZ);
+    else if (offsetZ < 0 && other.minZ >= this.maxZ - Touch) offsetZ = Math.max(this.maxZ - other.minZ, offsetZ);
+  }
+  return offsetZ;
+};
+
 const host = process.env.MC_HOST;
 const port = Number.parseInt(process.env.MC_PORT || '25565', 10);
 const username = process.env.MC_USERNAME || 'SYNCS';
@@ -388,16 +417,26 @@ function clearDoor(seen) {
   bot.activateBlock(block).catch(() => {});
 }
 
-// For gathering: the same walk, except that the blocks she was sent for may be broken. collectblock
-// asks the movements before every break, so nothing else on the way can be.
+// For gathering: the same walk, except that the blocks she was sent for may be broken, and so may a tree's own leaves
+// next to its logs: a log wrapped in leaves has an open face (its top, the far side) but none she can see from where
+// she stands, and the search for one ran its 5 s for every log of a forest, twelve in a row, nothing brought back. A
+// player punches through. Leaves someone placed are persistent and stay, like everything else on the way: collectblock
+// asks the movements before every break.
+const LeavesBy = 2;
+
 function gatheringMovements(targets) {
   const movements = gentleMovements();
   movements.canDig = true;
   const allowed = new Set(targets.map((b) => b.position.toString()));
+  const logs = targets.filter((b) => b.name.endsWith('_log'));
+  const treeLeaves = (block) => block.name.endsWith('_leaves') && block.getProperties().persistent === false
+    && logs.some((l) => Math.abs(l.position.x - block.position.x) <= LeavesBy && Math.abs(l.position.y - block.position.y) <= LeavesBy
+      && Math.abs(l.position.z - block.position.z) <= LeavesBy);
   const safe = movements.safeToBreak.bind(movements);
   // A block in a chunk that isn't loaded comes as a stub with no position: not breakable (reading it threw from the
   // physics tick and took the whole body down).
-  movements.safeToBreak = (block) => Boolean(block && block.position) && allowed.has(block.position.toString()) && safe(block);
+  movements.safeToBreak = (block) => Boolean(block && block.position)
+    && (allowed.has(block.position.toString()) || treeLeaves(block)) && safe(block);
   return movements;
 }
 
@@ -892,6 +931,19 @@ const Resources = {
   sand: (n) => n === 'sand',
 };
 const GatherRadius = 48;
+// What each resource drops, by item name: what she counts as brought back. A tree's leaves drop saplings, sticks and
+// apples, handed over too but not counted as wood.
+const Yields = {
+  wood: (n) => n.endsWith('_log'),
+  stone: (n) => n === 'cobblestone' || n === 'stone',
+  coal: (n) => n === 'coal',
+  iron: (n) => n === 'raw_iron',
+  copper: (n) => n === 'raw_copper',
+  gold: (n) => n === 'raw_gold',
+  diamond: (n) => n === 'diamond',
+  dirt: (n) => n === 'dirt',
+  sand: (n) => n === 'sand',
+};
 
 function isTreeLog(block) {
   for (let dy = 0; dy <= 6; dy++)
@@ -926,15 +978,16 @@ async function collect(player, resource, count) {
   const matches = Resources[resource];
   if (!matches) return;
   const ids = bot.registry.blocksArray.filter((b) => matches(b.name)).map((b) => b.id);
-  // The closest 256 of that kind (wood: in a tree), and of those, what she can get at: she never digs, so a block with
-  // no open face (stone under the grass) is out of reach (collectblock spent its 5 s search on one and stopped the
-  // order), and the closest few were all buried while a quarry face stood further off.
-  const candidates = () => {
-    let found = bot.findBlocks({ matching: ids, maxDistance: GatherRadius, count: 256 })
-      .map((p) => bot.blockAt(p)).filter(Boolean);
-    if (resource === 'wood') found = found.filter(isTreeLog);
-    return { all: found, open: found.filter(exposed) };
-  };
+  // What she can get at, the closest 256 (wood: in a tree): she never digs, so a block with no open face (stone under
+  // the grass) is out of reach (collectblock spent its 5 s search on one and stopped the order). Open is part of the
+  // search, not a filter after it: on a mountain the closest 256 stone were all under her feet, and she said there was
+  // none with a cliff face 20 blocks off. `all`, for the count she announces, is the closest 256 of the kind.
+  const tree = (b) => resource !== 'wood' || isTreeLog(b);
+  const candidates = () => ({
+    all: bot.findBlocks({ matching: ids, maxDistance: GatherRadius, count: 256 }).map((p) => bot.blockAt(p)).filter((b) => b && tree(b)),
+    open: bot.findBlocks({ matching: ids, useExtraInfo: (b) => exposed(b) && tree(b), maxDistance: GatherRadius, count: 256 })
+      .map((p) => bot.blockAt(p)).filter(Boolean),
+  });
   const first = candidates();
   if (first.open.length === 0) return emit('cantCollect', { player, resource, why: 'none' });
   if (!canHarvest(first.open[0])) return emit('cantCollect', { player, resource, why: 'noTool' });
@@ -961,7 +1014,7 @@ async function collect(player, resource, count) {
   }
   if (task !== mine) return; // told to stop in the meantime
 
-  const { total, delivered } = await deliverGains(player, before);
+  const { total, delivered } = await deliverGains(player, before, (type) => Yields[resource](bot.registry.items[type].name));
   if (task === mine) task = null;
   emit('collected', { player, resource, count: total, delivered });
 }
@@ -1005,7 +1058,8 @@ async function gather(blocks, mine, what) {
         try {
           await bot.collectBlock.collect(block, { ignoreNoPath: true });
         } catch (err) {
-          log(`${what}: skipped a block:`, err && err.message ? err.message : String(err));
+          log(`${what}: skipped ${block.name} at ${block.position} (she was at ${bot.entity.position.floored()}):`,
+            err && err.message ? err.message : String(err));
         }
       }
     } finally {
@@ -1051,11 +1105,12 @@ async function breakSoft(blocks, mine, drops) {
 }
 
 // What she gained since `before` (an itemCounts()), brought back: she walks up to the player and tosses it at
-// their feet. Kept on her when the player is out of sight or the walk fails.
-async function deliverGains(player, before) {
+// their feet. Kept on her when the player is out of sight or the walk fails. `counts`: which item types make the
+// total (all of them by default); everything gained is handed over.
+async function deliverGains(player, before, counts = () => true) {
   const after = itemCounts();
   const gained = [...after].map(([type, n]) => [type, n - (before.get(type) || 0)]).filter(([, n]) => n > 0);
-  const total = gained.reduce((sum, [, n]) => sum + n, 0);
+  const total = gained.filter(([type]) => counts(type)).reduce((sum, [, n]) => sum + n, 0);
   let delivered = false;
   const owner = playerEntity(player);
   if (owner && total > 0) {
@@ -3657,10 +3712,18 @@ function watchCorrections(client) {
       const ahead = e.position.offset(-Math.sin(e.yaw), 0, -Math.cos(e.yaw)).floored();
       const at = (dy) => (bot.blockAt(ahead.offset(0, dy, 0)) || { name: '?' }).name;
       const sent = lastMoveSent ? `${lastMoveSent.name} ${fmt(lastMoveSent)} onGround ${lastMoveSent.onGround}` : 'none';
+      // Every block her box touches at her feet, as her client knows them: what the server collided with that she didn't.
+      const touched = [];
+      for (const dx of [-0.3, 0.3])
+        for (const dz of [-0.3, 0.3]) {
+          const b = bot.blockAt(e.position.offset(dx, 0, dz).floored());
+          const tag = b ? `${b.position.x},${b.position.y},${b.position.z} ${b.name}${b.shapes.length ? '' : '(open)'}` : 'unloaded';
+          if (!touched.includes(tag)) touched.push(tag);
+        }
       log(`server teleport while walking: ${pulledBackRecent} since the last report (${pulledBack} in all).` +
         ` To ${fmt(packet)} flags ${JSON.stringify(packet.flags)} id ${packet.teleportId};` +
         ` she was at ${fmt(e.position)} vel ${fmt(e.velocity)} onGround ${e.onGround} keys ${keys};` +
-        ` last move sent: ${sent}; ahead: ${at(0)} / ${at(1)}`);
+        ` last move sent: ${sent}; ahead: ${at(0)} / ${at(1)}; at her feet: ${touched.join(' | ')}`);
       pulledBackRecent = 0;
     } catch (err) {
       log('correction log failed:', err && err.message ? err.message : String(err));
@@ -3717,6 +3780,42 @@ function calmTeleports(client) {
   };
 }
 
+// The server places her (a correction, a teleport) with its own 0.3 half-width, so often flush against a block's face;
+// her box is 0.3001 wide (playerHalfWidth), so it starts 0.0001 inside that block, and Mineflayer's collisions only stop
+// a box that starts outside one. She walked straight into the block, was put back flush, walked in again: 364 times in
+// 20 s against a dark forest step. After each placement, once Mineflayer's own handler has run, she's moved out of any face
+// she overlaps by less than a hair, back to the 0.0001 clear of it that the wider box is for.
+const Hair = 0.001;
+
+function clearFaces(client) {
+  // A microtask: after every listener of this packet, Mineflayer's (registered later, with its plugins) included.
+  client.on('position', () => queueMicrotask(() => {
+    try {
+      if (!bot || !bot.entity) return;
+      const p = bot.entity.position;
+      const w = bot.physics.playerHalfWidth;
+      const box = () => ({ x0: p.x - w, x1: p.x + w, y0: p.y, y1: p.y + 1.8, z0: p.z - w, z1: p.z + w });
+      for (let x = Math.floor(p.x - w); x <= Math.floor(p.x + w); x++)
+        for (let y = Math.floor(p.y); y <= Math.floor(p.y + 1.8); y++)
+          for (let z = Math.floor(p.z - w); z <= Math.floor(p.z + w); z++) {
+            const block = bot.blockAt(new Vec3(x, y, z));
+            if (!block) continue;
+            for (const [sx0, sy0, sz0, sx1, sy1, sz1] of block.shapes) {
+              const b = box();
+              const ox = Math.min(b.x1, x + sx1) - Math.max(b.x0, x + sx0);
+              const oy = Math.min(b.y1, y + sy1) - Math.max(b.y0, y + sy0);
+              const oz = Math.min(b.z1, z + sz1) - Math.max(b.z0, z + sz0);
+              if (ox <= 0 || oy <= 0 || oz <= 0) continue;
+              if (ox < Hair) p.x += (x + sx0 > p.x ? -1 : 1) * (ox + 1e-6);
+              else if (oz < Hair) p.z += (z + sz0 > p.z ? -1 : 1) * (oz + 1e-6);
+            }
+          }
+    } catch (err) {
+      log('clearing faces failed:', err && err.message ? err.message : String(err));
+    }
+  }));
+}
+
 async function main() {
   const version = await pickVersion();
   if (ended) return;
@@ -3724,6 +3823,7 @@ async function main() {
   bot = mineflayer.createBot({ host, port, username, auth: 'offline', version });
   sendTickEnds(bot._client);
   calmTeleports(bot._client);
+  clearFaces(bot._client);
   fixEntityActions(bot._client);
   trackInputs(bot._client);
   watchCorrections(bot._client);

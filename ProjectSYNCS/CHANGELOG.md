@@ -3,6 +3,15 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.29.1 — 2026-10-21
+
+- Minecraft: she no longer gets stuck against a step or a wall the server just put her next to,
+  pulled back hundreds of times without getting anywhere.
+- Minecraft: cutting wood in a forest, she breaks through the tree's leaves to reach the logs
+  instead of giving up on every one of them; saplings and sticks are handed over but not counted.
+- Minecraft: gathering stone on a mountain, she finds the open faces further off instead of saying
+  there is none.
+
 ## 7.29.0 — 2026-10-21
 
 - Questions in two messages: call her (« syncs ? » or a bare tag), then ask without her name, and

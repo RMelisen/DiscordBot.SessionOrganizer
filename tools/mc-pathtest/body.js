@@ -65,7 +65,7 @@ function startBody(extraEnv = {}) {
   child.stderr.on('data', (d) => String(d).split('\n').filter(Boolean).forEach((l) => {
     if (l.startsWith('server teleport while walking')) body.corrections++;
     else if (!l.includes('MaxListeners') && !l.includes('trace-warnings')) body.logs.push(l);
-    if (verbose) console.log(stamp(), 'LOG', l.slice(0, 300));
+    if (verbose) console.log(stamp(), 'LOG', l.slice(0, 700));
   }));
   return body;
 }
