@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.33.1 — 2026-10-22
+
+- `/inventory trade`: the `give` suggestions say how many the other person already has, and the
+  `want` suggestions how many you have.
+- A trade offer shows each item's rarity and how many both people hold of it.
+
 ## 7.33.0 — 2026-10-22
 
 - Replies under a poll, vote, session, `/tonight` or giveaway card are answered about that card:

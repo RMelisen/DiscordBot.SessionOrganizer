@@ -106,8 +106,17 @@ public static class PlynlingText
     // Trades. The two sides are « N × emoji nom ».
     public static string TradeSide(ItemInfo item, int quantity) => $"**{quantity} × {item.Emoji} {ItemCatalog.ClearName(item)}**";
 
-    public static string TradeOffered(ulong fromId, ulong toId, string give, string want, DateTimeOffset expires) =>
-        $"<@{fromId}> propose un échange à <@{toId}> : {give} contre {want}.\n-# Expire <t:{expires.ToUnixTimeSeconds()}:R>.";
+    // holdings: one TradeHolding line per side, under the offer.
+    public static string TradeOffered(ulong fromId, ulong toId, string give, string want, string holdings, DateTimeOffset expires) =>
+        $"<@{fromId}> propose un échange à <@{toId}> : {give} contre {want}.\n{holdings}\n-# Expire <t:{expires.ToUnixTimeSeconds()}:R>.";
+
+    // One item of an offer: its rarity (foods and care items have none worth saying) and how many
+    // each side holds, the recipient first — they are the one deciding.
+    public static string TradeHolding(ItemInfo item, ulong toId, int toHas, ulong fromId, int fromHas)
+    {
+        var rarity = item.Kind is ItemKind.Food or ItemKind.Care ? "" : $" ({ItemCatalog.RarityLabel(item.Rarity)})";
+        return $"> {item.Emoji} {ItemCatalog.ClearName(item)}{rarity} — <@{toId}> en a **{toHas}**, <@{fromId}> **{fromHas}**";
+    }
 
     public static string TradeDone(ulong fromId, ulong toId, string give, string want) =>
         $"Échange conclu ! <@{fromId}> a donné {give} à <@{toId}> contre {want}.";

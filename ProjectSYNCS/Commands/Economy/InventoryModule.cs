@@ -109,13 +109,16 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
         [Summary("give_quantity", "Combien tu en donnes")] [MinValue(1)] [MaxValue(99)] int giveQuantity = 1,
         [Summary("want_quantity", "Combien tu en veux")] [MinValue(1)] [MaxValue(99)] int wantQuantity = 1)
     {
+        var g = Context.Guild.Id;
+        var fromGive = 0;
+        var toWant = 0;
         string? refusal =
             user.Id == Context.User.Id ? PlynlingText.TradeSelf
             : user.IsBot ? PlynlingText.GiveBot
             : ItemCatalog.ByKey(give) is null || ItemCatalog.ByKey(want) is null ? PlynlingText.UnknownItem
             : give == want ? PlynlingText.TradeSameItem
-            : await _inventory.CountAsync(Context.Guild.Id, Context.User.Id, give) < giveQuantity ? PlynlingText.NotEnoughItems
-            : await _inventory.CountAsync(Context.Guild.Id, user.Id, want) < wantQuantity ? PlynlingText.TradeTheyLack(user.Id)
+            : (fromGive = await _inventory.CountAsync(g, Context.User.Id, give)) < giveQuantity ? PlynlingText.NotEnoughItems
+            : (toWant = await _inventory.CountAsync(g, user.Id, want)) < wantQuantity ? PlynlingText.TradeTheyLack(user.Id)
             : null;
         if (refusal is not null)
         {
@@ -123,7 +126,12 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        var offer = _trades.Open(Context.Guild.Id, Context.User.Id, user.Id, give, giveQuantity, want, wantQuantity,
+        // What each side already holds of both items, as of the offer — the recipient's « do I
+        // need it, can I spare mine » at a glance.
+        var holdings = PlynlingText.TradeHolding(ItemCatalog.ByKey(give)!, user.Id, await _inventory.CountAsync(g, user.Id, give), Context.User.Id, fromGive)
+                       + "\n" + PlynlingText.TradeHolding(ItemCatalog.ByKey(want)!, user.Id, toWant, Context.User.Id, await _inventory.CountAsync(g, Context.User.Id, want));
+
+        var offer = _trades.Open(g, Context.User.Id, user.Id, give, giveQuantity, want, wantQuantity,
             DateTimeOffset.UtcNow, Random.Shared);
         var (giveText, wantText) = TradeSides(offer);
         var buttons = new ComponentBuilder()
@@ -131,7 +139,7 @@ public class InventoryModule : InteractionModuleBase<SocketInteractionContext>
             .WithButton("Refuser", $"plyn:tdec:{offer.Id}", ButtonStyle.Danger)
             .Build();
         // Public, pinging only the person being asked.
-        await RespondAsync(PlynlingText.TradeOffered(offer.FromId, offer.ToId, giveText, wantText, offer.ExpiresAt),
+        await RespondAsync(PlynlingText.TradeOffered(offer.FromId, offer.ToId, giveText, wantText, holdings, offer.ExpiresAt),
             components: buttons, allowedMentions: new AllowedMentions { UserIds = new List<ulong> { user.Id } });
     }
 
