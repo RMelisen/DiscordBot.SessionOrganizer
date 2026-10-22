@@ -13,7 +13,7 @@ matching file before changing that subsystem**; the rules there are as binding a
 |---|---|
 | Chatter, reactions, `MessageCues`, favouritism, rivals, `/yesno`, `/rate` | `docs/agents/personality.md` |
 | "good bot" / "bad bot" verdicts, `BotFeedbackTracker`, `/goodbot` | `docs/agents/bot-feedback.md` |
-| XP, `/level`, `/leaderboard`, voice XP, `/emotestats` | `docs/agents/xp.md` |
+| XP, `/level`, `/leaderboard`, voice XP, `/emotestats`, member badges, « Succès » | `docs/agents/xp.md` |
 | `/shame` | `docs/agents/shame.md` |
 | Sessions, polls, votes, giveaways, `ReminderService`, `/tonight`, `/teams`, `/remindme` | `docs/agents/scheduling.md` |
 | Pop quiz, `QuizBank`, `/quiz leaderboard` | `docs/agents/quiz.md` |

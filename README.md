@@ -19,7 +19,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/poll create · list · delete` | Vote on time slots | everyone |
 | `/vote create · list · delete` | Vote on free-text options | everyone |
 | `/giveaway create · list · delete` | Prize draws | everyone |
-| `/level [user]` | Your card: level, rank, progress, collection badges | everyone |
+| `/level [user]` | Your card: level, rank, progress, badges (« Succès » button) | everyone |
 | `/recap [user]` | Your recap over 7 days, 30 days or all time | everyone |
 | `/leaderboard` | Server ranking — four views, three windows | everyone |
 | `/emotestats` | Most-used emotes | everyone |
@@ -271,8 +271,9 @@ Vocal leaderboard stays honest about time actually spent.
 **Seeing it**
 
 - **`/level [user]`** — a card: avatar, level, rank, and a progress bar toward the
-  next level, then a badge for every collection set completed, at its tier. No filters —
-  it's a profile, not a ranking.
+  next level, then a badge for every collection set completed, at its tier. A **Succès** button
+  opens a private view of all the member's badges in four tabs (collections, tiers, moments,
+  secrets); some badges stay secret until earned. No filters — it's a profile, not a ranking.
 - **`/recap [user]`** — a personal recap over **30 days** (default), **7 days** or **all time**: XP
   (with level and rank all-time), reactions and voice time, time in voice with her, good/bad bot,
   sessions joined and attended, `/tonight` answers, quiz wins, the current Plynling and its graves,

@@ -3,6 +3,14 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.34.0 — 2026-10-22
+
+- `/level`: a new « Succès » button opens a private view of a member's badges, in four tabs:
+  collections, tiers, moments and secrets.
+- Badges now come in tiers (arcade wins, reactions, voice time, quizzes and more) and in one-off
+  moments, each shown with its progress toward the next tier.
+- Some badges are secret: they only show up once earned.
+
 ## 7.33.1 — 2026-10-22
 
 - `/inventory trade`: the `give` suggestions say how many the other person already has, and the

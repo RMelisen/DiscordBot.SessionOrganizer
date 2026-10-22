@@ -85,7 +85,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**🎉 Participer** t'inscrit, **✖️ Ne plus participer** te retire. " +
                 "À la fin, je tire au sort et j'annonce toute seule.")
             .AddField("Commandes — Niveaux & statistiques",
-                "**`/level [user]`** — Ta carte : niveau, progression, rang et badges de collection.\n" +
+                "**`/level [user]`** — Ta carte : niveau, progression, rang et succès.\n" +
                 "**`/recap [user]`** — Ton récap : XP, vocal, soirées, quiz et bêtises, sur 7 jours, 30 jours ou depuis toujours.\n" +
                 "**`/leaderboard`** — Le classement, 5 par page. Quatre vues (**Niveaux**, **Réactions**, " +
                 "**Vocal**, **Collections**) et trois filtres (**depuis toujours**, **30 jours**, **7 jours**).\n" +
