@@ -53,11 +53,13 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
 
     private readonly XpService _xp;
     private readonly InventoryService _inventory;
+    private readonly MemberBadgeService _badges;
 
-    public LevelModule(XpService xp, InventoryService inventory)
+    public LevelModule(XpService xp, InventoryService inventory, MemberBadgeService badges)
     {
         _xp = xp;
         _inventory = inventory;
+        _badges = badges;
     }
 
     [SlashCommand("level", "Ton niveau, ton XP et ta progression")]
@@ -74,12 +76,71 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         var rank = await _xp.GetRankAsync(Context.Guild.Id, target.Id);
-        var completions = await _inventory.GetCompletionsAsync(Context.Guild.Id, target.Id);
+        var (completions, standings) = await GatherBadgesAsync(target.Id);
 
         await FollowupAsync(
-            components: BuildCard(target, rank, completions),
+            components: BuildCard(target, rank, completions, standings),
             flags: MessageFlags.ComponentsV2,
             allowedMentions: AllowedMentions.None);
+    }
+
+    // The collections and the evaluated badges of one member of this guild.
+    private async Task<(IReadOnlyCollection<Models.CollectionCompletion> Completions, IReadOnlyList<BadgeStanding> Standings)>
+        GatherBadgesAsync(ulong userId)
+    {
+        var completions = await _inventory.GetCompletionsAsync(Context.Guild.Id, userId);
+        var facts = await _badges.GetFactsAsync(
+            Context.Guild.Id, userId, Context.Guild.GetUser(userId)?.JoinedAt, DateTimeOffset.UtcNow);
+        return (completions, MemberBadges.Evaluate(facts, DateTimeOffset.UtcNow));
+    }
+
+    // The « Succès » button opens the card member's badges for whoever clicked, ephemeral: the
+    // card itself is not edited. Defers first — the reads can outrun Discord's 3 s on the Pi.
+    // Its own verbs, apart from the leaderboard's (see above), and each tab its own id.
+    [ComponentInteraction("level:badges:*", ignoreGroupNames: true)]
+    public async Task OnBadgesAsync(string userId)
+    {
+        await DeferAsync(ephemeral: true);
+        if (!ulong.TryParse(userId, out var id)) return;
+
+        var (completions, standings) = await GatherBadgesAsync(id);
+        await FollowupAsync(
+            components: MemberBadgeCards.BuildView(id, await DisplayNameAsync(id), BadgeSection.Paliers, completions, standings),
+            flags: MessageFlags.ComponentsV2,
+            ephemeral: true,
+            allowedMentions: AllowedMentions.None);
+    }
+
+    [ComponentInteraction("level:badgetab:*:*", ignoreGroupNames: true)]
+    public async Task OnBadgeTabAsync(string userId, string sectionStr)
+    {
+        await DeferAsync();
+        if (!ulong.TryParse(userId, out var id)) return;
+        if (!Enum.TryParse<BadgeSection>(sectionStr, out var section)) section = BadgeSection.Paliers;
+
+        var (completions, standings) = await GatherBadgesAsync(id);
+        var view = MemberBadgeCards.BuildView(id, await DisplayNameAsync(id), section, completions, standings);
+        await ModifyOriginalResponseAsync(m =>
+        {
+            m.Components = view;
+            // Re-asserted on every edit, like the leaderboard's.
+            m.Flags = MessageFlags.ComponentsV2;
+            m.AllowedMentions = AllowedMentions.None;
+        });
+    }
+
+    private async Task<string> DisplayNameAsync(ulong id)
+    {
+        if (Context.Guild.GetUser(id) is { } member) return BotResponses.DisplayNameFor(member);
+        try
+        {
+            return await Context.Client.GetUserAsync(id) is { } user ? BotResponses.DisplayNameFor(user) : "ce membre";
+        }
+        catch (Exception)
+        {
+            // A REST failure must not leave the deferred click blank.
+            return "ce membre";
+        }
     }
 
     [SlashCommand("leaderboard", "Le classement des niveaux du serveur")]
@@ -147,9 +208,10 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
 
     // ---- /level -------------------------------------------------------------
 
-    // The collection badges ride along at the bottom — a separator and one TextDisplay, only for
-    // someone who has completed a set (≈ 10 components of the 40).
-    private MessageComponent BuildCard(IUser target, XpRank? rank, IReadOnlyCollection<Models.CollectionCompletion> completions)
+    // The badge line rides along at the bottom — a separator and one TextDisplay, only for
+    // someone who has earned something (≈ 11 components of the 40, with the « Succès » button).
+    private MessageComponent BuildCard(IUser target, XpRank? rank,
+        IReadOnlyCollection<Models.CollectionCompletion> completions, IReadOnlyList<BadgeStanding> standings)
     {
         var totalXp = rank?.TotalXp ?? 0;
         var level = rank?.Level ?? 0;
@@ -169,7 +231,7 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
             .AddComponent(new TextDisplayBuilder(
                 LevelCardUi.CardProgress(into, span, level + 1, totalXp)));
 
-        if (CardBadges(completions) is { } badges)
+        if (MemberBadgeCards.CardLine(completions, standings) is { } badges)
             container
                 .AddComponent(new SeparatorBuilder())
                 .AddComponent(new TextDisplayBuilder(badges));
@@ -178,20 +240,9 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
             .AddComponent(container)
             .AddComponent(new ActionRowBuilder()
                 .WithButton("Voir le classement",
-                    $"level:page:{LeaderboardView.Xp}:{StatsPeriod.AllTime}:0", ButtonStyle.Secondary))
+                    $"level:page:{LeaderboardView.Xp}:{StatsPeriod.AllTime}:0", ButtonStyle.Secondary)
+                .WithButton("Succès", MemberBadgeCards.OpenId(target.Id), ButtonStyle.Secondary, new Emoji("🏅")))
             .Build();
-    }
-
-    // One badge per completed set, in the catalog's order, then the total. Null with none.
-    public static string? CardBadges(IReadOnlyCollection<Models.CollectionCompletion> completions)
-    {
-        var byKey = completions.ToDictionary(c => c.SetKey, c => c.Count);
-        var badges = ItemCatalog.Sets
-            .Where(s => byKey.ContainsKey(s.Key))
-            .Select(s => CollectionTiers.Badge(s, CollectionTiers.TierFor(byKey[s.Key])))
-            .ToList();
-        if (badges.Count == 0) return null;
-        return $"**Collections** · {string.Join(" ", badges)}\n-# {LevelCardUi.Completions(byKey.Values.Sum())}";
     }
 
     // ---- /leaderboard -------------------------------------------------------

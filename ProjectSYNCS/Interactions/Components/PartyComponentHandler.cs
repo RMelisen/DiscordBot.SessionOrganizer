@@ -21,9 +21,12 @@ public class PartyComponentHandler : InteractionModuleBase<SocketInteractionCont
     private readonly PartyRunner _party;
     private readonly ArcadeService _wallets;
     private readonly ResponsePicker _picker;
+    private readonly BadgeAwarder _badges;
 
-    public PartyComponentHandler(ArcadeTables tables, ArcadeRunner arcade, PartyRunner party, ArcadeService wallets, ResponsePicker picker)
+    public PartyComponentHandler(ArcadeTables tables, ArcadeRunner arcade, PartyRunner party, ArcadeService wallets, ResponsePicker picker,
+        BadgeAwarder badges)
     {
+        _badges = badges;
         _tables = tables;
         _arcade = arcade;
         _party = party;
@@ -359,6 +362,7 @@ public class PartyComponentHandler : InteractionModuleBase<SocketInteractionCont
         }
         await DeferAsync();
         await _arcade.SettleAsync(round.GuildId, new[] { (Context.User.Id, 0L) }, p => p.ToDictionary(x => x, _ => QuoteRules.Reward));
+        _badges.Increment(round.GuildId, Context.User.Id, MemberBadges.Keys.Arcade);   // the correct guess, paid
         var result = Pick(BotResponses.QuoteWinLines, $"<@{Context.User.Id}>", $"<@{round.AuthorId}>") +
                      $"\n-# +{PebbleEconomy.Cailloux(QuoteRules.Reward)} pour <@{Context.User.Id}>.";
         await Component.ModifyOriginalResponseAsync(p =>
@@ -613,6 +617,7 @@ public class PartyComponentHandler : InteractionModuleBase<SocketInteractionCont
         }
         await DeferAsync();
         await _arcade.SettleAsync(visit.GuildId, new[] { (Context.User.Id, 0L) }, p => p.ToDictionary(x => x, _ => visit.Reward));
+        _badges.Award(visit.GuildId, Context.User.Id, MemberBadges.Keys.Quokka);   // the winning click, paid
         await Component.ModifyOriginalResponseAsync(p =>
         {
             p.Embed = PartyCards.QuokkaCard(visit, Pick(BotResponses.QuokkaHitLines, $"<@{Context.User.Id}>", PebbleEconomy.Cailloux(visit.Reward)));

@@ -40,10 +40,13 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         public List<DateTimeOffset> Slots { get; } = new();
     }
 
-    public PollModule(PollService pollService, EventService eventService)
+    private readonly CardRepost _repost;
+
+    public PollModule(PollService pollService, EventService eventService, CardRepost repost)
     {
         _pollService = pollService;
         _eventService = eventService;
+        _repost = repost;
     }
 
     // ---- Entry: ask for a title, then start adding slots ------------------
@@ -220,40 +223,13 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        var poll = await _pollService.GetPollWithVotesAsync(pollId);
-        if (poll is null || poll.GuildId != Context.Guild.Id)
+        var result = await _repost.RepostAsync(Context.Guild, Context.Channel, new CardRef(CardKind.Poll, pollId));
+        await FollowupAsync(result switch
         {
-            await FollowupAsync("Sondage introuvable.", ephemeral: true);
-            return;
-        }
-
-        if (poll.IsClosed)
-        {
-            await FollowupAsync("Ce sondage est clôturé.", ephemeral: true);
-            return;
-        }
-
-        // Remove the previous card if it still exists, to avoid duplicates.
-        if (poll.MessageId != 0)
-        {
-            var oldChannel = Context.Guild.GetTextChannel(poll.ChannelId);
-            if (oldChannel is not null)
-            {
-                try
-                {
-                    var old = await oldChannel.GetMessageAsync(poll.MessageId);
-                    if (old is not null) await old.DeleteAsync();
-                }
-                catch { /* already gone — ignore */ }
-            }
-        }
-
-        var message = await Context.Channel.SendMessageAsync(
-            embed: BuildPollEmbed(poll),
-            components: BuildPollComponents(poll));
-        await _pollService.SetMessageLocationAsync(poll.Id, Context.Channel.Id, message.Id);
-
-        await FollowupAsync($"Sondage **#{pollId}** republié ici.", ephemeral: true);
+            RepostResult.NotFound => "Sondage introuvable.",
+            RepostResult.Closed => "Ce sondage est clôturé.",
+            _ => $"Sondage **#{pollId}** republié ici.",
+        }, ephemeral: true);
     }
 
     [SlashCommand("delete", "Supprimer un sondage que tu as créé")]

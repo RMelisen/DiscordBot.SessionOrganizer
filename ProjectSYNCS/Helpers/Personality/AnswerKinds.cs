@@ -17,8 +17,8 @@ public enum ChatPath
 /// </summary>
 /// <remarks>
 /// <b>Stored keys, so append-only</b> (root CLAUDE.md, Data): renaming one orphans its rows. The
-/// builders put an enum's <i>name</i> in the key, so ChatIntent, ReplyContext and ChatFact may be
-/// reordered but never renamed.
+/// builders put an enum's <i>name</i> in the key, so ChatIntent, ReplyContext, ChatFact and
+/// CardReplyIntent may be reordered but never renamed.
 /// </remarks>
 public static class AnswerKinds
 {
@@ -49,6 +49,7 @@ public static class AnswerKinds
     internal static string Intent(ChatIntent intent) => "intent:" + intent;
     public static string Context(ReplyContext context) => "context:" + context;
     public static string Fact(ChatFact fact) => "fact:" + fact;
+    internal static string Card(CardReplyIntent intent) => "card:" + intent;
 
     public static string Key(ChatPath path) => path switch
     {

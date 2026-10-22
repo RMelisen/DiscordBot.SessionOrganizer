@@ -15,9 +15,12 @@ public partial class ShipModule : InteractionModuleBase<SocketInteractionContext
 {
     private readonly ResponsePicker _picker;
 
-    public ShipModule(ResponsePicker picker)
+    private readonly BadgeAwarder _badges;
+
+    public ShipModule(ResponsePicker picker, BadgeAwarder badges)
     {
         _picker = picker;
+        _badges = badges;
     }
 
     [SlashCommand("ship", "Je calcule si deux choses (ou deux personnes) vont bien ensemble")]
@@ -39,6 +42,10 @@ public partial class ShipModule : InteractionModuleBase<SocketInteractionContext
                 || !TryDrawRandom(ref b, a, Context.User.Id, Context.Guild.Users))
                 return RespondAsync("J'ai cherché quelqu'un à tirer au sort. Il y a personne d'autre ici.", ephemeral: true);
         }
+
+        // After the draws, with the sides as shipped; a DM is guild 0 and earns nothing.
+        if (Shipping.IsSelfWithHer(a, b, Context.User.Id, Context.Client.CurrentUser.Id, AvailabilityService.OwnerId, BotResponses.TataId))
+            _badges.Award(Context.Guild?.Id ?? 0, Context.User.Id, MemberBadges.Keys.Heart);
 
         var content = Render(a, b, Context.User.Id, Context.Client.CurrentUser.Id, _picker,
             side => NameOf(side, Context.Guild, Context.Client));

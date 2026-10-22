@@ -76,6 +76,18 @@ slot; nothing is posted after 22:00.
   so instead of creating a duplicate. Her poll's title is a question, so it doesn't pre-fill the
   session name.
 
+## Replies under a card, and reposting
+
+A reply under a poll, vote, session, `/tonight` or giveaway card is answered about the card by
+`CardReplyService` (rallying, « j'ai voté », « c'est quand ? », answers typed instead of clicked,
+« remonte-le »): see personality, *Under her cards*. It recognises a card by its buttons'
+custom-ids, so **the `poll:vote|close|tosession`, `event:*`, `tonight:*` and `giveaway:enter|leave`
+prefixes, each with the row id third, are a contract** with `Helpers/Scheduling/CardRefs`.
+
+**`CardRepost` is the one way a card moves**: the `/… list` republish menus and « remonte-le » both
+go through it (delete the old card, redraw through the static builders, store the new location,
+repoint a session's native event). A new card kind that can be republished goes there.
+
 ## The two wizards keep state differently
 
 **`ScheduleModule` threads state through custom-ids** (`schedule:min:{category}:{date}:{hour}:{minute}`):

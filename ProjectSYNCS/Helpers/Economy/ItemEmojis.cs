@@ -80,7 +80,8 @@ public static class ItemEmojis
     private static bool IsIconKey(string key) =>
         ItemCatalog.IsIconKey(key)
         || key.StartsWith("trait.", StringComparison.Ordinal) && PlynlingTraits.ByKey(key["trait.".Length..]) is not null
-        || CollectionTiers.IsBadgeKey(key);
+        || CollectionTiers.IsBadgeKey(key)
+        || MemberBadges.IsIconKey(key);
 
     private static string[] PngsIn(string dir) => Directory.Exists(dir) ? Directory.GetFiles(dir, "*.png") : Array.Empty<string>();
 

@@ -152,7 +152,7 @@ internal enum RequestTopic
 // corroboration from another cue or from emphasis. That, plus negation handling,
 // is what separates this from a plain word-list lookup: the old version read
 // "c'est pas nul" as an insult and "t'es pas gentille" as a compliment.
-internal static class MessageCues
+internal static partial class MessageCues
 {
     // The "hi_cat" waving emote counts as a greeting on its own. Matched by its
     // ID so a rename of the emote won't break detection — a message body carries the
@@ -201,7 +201,7 @@ internal static class MessageCues
     {
         "adore", "adores", "aime", "kiff", "kiffe", "kiffer",
         "casse", "claque", "degage", "deteste", "eclate", "ferme", "hais", "loupe",
-        "rate", "saoule", "saoules", "soule", "soules", "soulent", "tais",
+        "rate", "saoule", "saoules", "soule", "soules", "soulent",
     };
 
     // Words that cancel a cue that follows them. A cancelled cue scores nothing
@@ -305,7 +305,7 @@ internal static class MessageCues
         "quoka", "quokka",
         "raclure", "rate", "ratee", "ratees", "rates", "relou", "reloue", "relous", "ridicule", "ridicules", "risible", "risibles",
         "salaud", "saoulant", "saoulante", "saoule", "saoules", "soulant", "soulante", "soule", "soulent", "soules", "stupide", "stupides",
-        "tais", "teube", "tocard", "tocarde", "toxique", "toxiques", "trash",
+        "teube", "tocard", "tocarde", "toxique", "toxiques", "trash",
         "useless",
         "vantard", "vantarde", "vilain", "vilaine",
         "zero", "zinzin",

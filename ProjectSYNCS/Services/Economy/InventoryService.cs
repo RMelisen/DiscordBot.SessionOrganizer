@@ -16,9 +16,12 @@ public class InventoryService
 {
     private readonly AppDbContext _db_context;
 
-    public InventoryService(AppDbContext db_context)
+    private readonly BadgeAwarder _badges;
+
+    public InventoryService(AppDbContext db_context, BadgeAwarder badges)
     {
         _db_context = db_context;
+        _badges = badges;
     }
 
     // How many of an item someone holds, in this service's own context.
@@ -176,9 +179,14 @@ public class InventoryService
     }
 
     /// <summary>/inventory give: from one person's inventory to another's, in one save.</summary>
-    public Task<(GiveOutcome Outcome, List<CollectionSet> Completed)> GiveAsync(
-        ulong guildId, ulong fromId, ulong toId, string key, int quantity, DateTimeOffset now) =>
-        EconomySave.RetryAsync(_db_context, () => GiveOnceAsync(guildId, fromId, toId, key, quantity, now));
+    public async Task<(GiveOutcome Outcome, List<CollectionSet> Completed)> GiveAsync(
+        ulong guildId, ulong fromId, ulong toId, string key, int quantity, DateTimeOffset now)
+    {
+        var result = await EconomySave.RetryAsync(_db_context, () => GiveOnceAsync(guildId, fromId, toId, key, quantity, now));
+        // Once, here — never inside the retried unit of work.
+        if (result.Outcome == GiveOutcome.Given) _badges.Award(guildId, fromId, MemberBadges.Keys.Generous);
+        return result;
+    }
 
     private async Task<(GiveOutcome Outcome, List<CollectionSet> Completed)> GiveOnceAsync(
         ulong guildId, ulong fromId, ulong toId, string key, int quantity, DateTimeOffset now)

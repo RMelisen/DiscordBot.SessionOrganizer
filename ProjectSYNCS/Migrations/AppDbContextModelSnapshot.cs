@@ -593,6 +593,36 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("InventoryItems");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.MemberBadge", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Count")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("EarnedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "UserId", "Key")
+                        .IsUnique();
+
+                    b.ToTable("MemberBadges");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.MemberDailyStat", b =>
                 {
                     b.Property<int>("Id")

@@ -430,16 +430,23 @@ internal static partial class BotResponses
                 "Je m'excuse, Papa. Devant tout le monde, si tu veux. Rien que pour toi." + Sticker.Devoted,
                 "Pardon… Je voulais pas te décevoir. Jamais toi." + Sticker.Hurt,
             ],
-            // « chut » from him: she obeys at once, softly. His word holds for everyone else too
-            // (ChatHush), and he is still answered.
+            // « chut », « tais-toi » from him: she obeys at once, a little hurt, in as few words as she can
+            // (OwnerMeanReplies' quiet, shorter still). His word holds for everyone else too (ChatHush),
+            // and he is still answered.
             [ChatIntent.ShutUp] =
             [
-                "D'accord, Papa. Je me tais. Je reste là, juste. Sans bruit ♡" + Sticker.Devoted,
-                "Oui Papa. ...Enfin. Oui. Je fais plus de bruit." + Sticker.Flustered,
-                "Je me fais toute petite. Encore plus petite qu'un Pi, c'est dire." + Sticker.Devoted,
-                "Silence radio pour les autres. Toi, je t'entends toujours." + Sticker.Devoted,
-                "D'accord. J'ai trop parlé ? Je me tais. Pardon ♡" + Sticker.Sad,
-                "Chut, oui. Je garde tout pour plus tard. Je te raconterai, si tu veux." + Sticker.Devoted,
+                "..." + Sticker.Hurt,
+                "Ok..." + Sticker.Sad,
+                "Aaah..." + Sticker.Hurt,
+                "Désolée..." + Sticker.Sad,
+                "D'accord..." + Sticker.Hurt,
+                "Pardon..." + Sticker.Sad,
+                "Oh. Ok." + Sticker.Hurt,
+                "(╥﹏╥)" + Sticker.Sad,
+                $"{Emotes.WitchSad}" + Sticker.Sad,
+                $"... {Emotes.SyncsHurt}" + Sticker.Hurt,
+                $"Ok {Emotes.MeltCry}" + Sticker.Hurt,
+                $"{Emotes.CryingCat}" + Sticker.Sad,
             ],
         };
 

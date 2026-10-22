@@ -32,10 +32,12 @@ public sealed class QuizCrownService
     private readonly GuildConfigService _config;
     private readonly RoleMirror _mirror;
     private readonly ILogger<QuizCrownService> _logger;
+    private readonly BadgeAwarder _badges;
 
     public QuizCrownService(IServiceProvider services, GuildConfigService config, RoleMirror mirror,
-        ILogger<QuizCrownService> logger)
+        ILogger<QuizCrownService> logger, BadgeAwarder badges)
     {
+        _badges = badges;
         _services = services;
         _config = config;
         _mirror = mirror;
@@ -118,6 +120,11 @@ public sealed class QuizCrownService
                 _logger.LogWarning(ex, "Failed to pay the quiz crown purse in guild {GuildId}.", guild.Id);
             }
         }
+
+        // The real Monday crowning only (the week was saved as crowned before this): /debug's dry run
+        // (pay: false) earns nothing. Awarded even if the purse failed — the crown was still worn.
+        if (pay)
+            foreach (var id in holders) _badges.Award(guild.Id, id, MemberBadges.Keys.Crowned);
 
         await _mirror.MirrorGuildAsync(guild, RoleKind.QuizCrown, config.QuizRoleId, () => Task.FromResult(holders));
 

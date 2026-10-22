@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Reflection;
+using Microsoft.EntityFrameworkCore;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Services;
 
@@ -42,6 +43,9 @@ var taggedPools = new[]
     "SharingShrugLines", "ChoiceLines", "DoYouLoveMeGrudgeLines", "DoYouLoveMeTreasureLines", "TataIntentLines",
     "OwnerRaspberryNameLines", "OwnerChildNameLines", "OwnerVersionLines", "TakeSidesLines", "RateMeLines",
     "SessionNextLines", "SessionRunningLines", "NoSessionLines", "MyStatsLines", "MyLevelEmptyLines", "MyPlynlingEmptyLines",
+    "CardRepostLines", "CardRepostTooSoonLines", "CardClosedLines", "CardRallyLines", "CardRallyNamedLines",
+    "CardRallyAllDoneLines", "CardDoneSeenLines", "CardDoneLiarLines", "CardTextClickLines", "CardTextAnsweredLines",
+    "CardStatusLines",
 };
 foreach (var f in taggedPools)
 foreach (var (name, lines) in Pools(f))
@@ -244,6 +248,8 @@ Ask("<@123> Minecraft, ton avis ?", "Minecraft");
 Ask("t'en penses quoi de <@456> ?", "<@456>");
 Ask("ton avis sur les lesbiennes ?", "lesbiennes");
 if (Opinion.Read("tu penses quoi de ça ?") is not null) Fail("« ça » read as a subject");
+Ask("tu pense quoi de la pizza ?", "pizza");
+Ask("Minecraft, t'en pense quoi ?", "Minecraft");
 
 RatingResult R(string s) => Rating.Rate(s, 1, 2, 3, 4);
 bool P(string a, string b) => Opinion.Prefers(R(a), R(b), Rating.Key(a, 1), Rating.Key(b, 1));
@@ -271,6 +277,8 @@ var allKinds = consts
     .Concat(Enum.GetValues(intentType).Cast<object>().Where(v => v.ToString() != "None").Select(v => (string)intentKey.Invoke(null, new[] { v })!))
     .Concat(Enum.GetValues<ReplyContext>().Select(AnswerKinds.Context))
     .Concat(Enum.GetValues<ChatFact>().Select(AnswerKinds.Fact))
+    .Concat(Enum.GetValues(asm.GetType("ProjectSYNCS.Services.CardReplyIntent")!).Cast<object>().Where(v => v.ToString() != "None")
+        .Select(v => (string)kindsType.GetMethod("Card", BindingFlags.NonPublic | BindingFlags.Static)!.Invoke(null, new[] { v })!))
     .ToList();
 if (allKinds.Distinct().Count() != allKinds.Count) Fail("duplicate answer kind keys");
 if (!AnswerKinds.IsUnrecognised(AnswerKinds.Comeback) || AnswerKinds.IsUnrecognised(AnswerKinds.Nice)
@@ -448,6 +456,10 @@ ShipIs("tu me ship avec <@123> ?", "moi", "<@123>");
 ShipIs("<@999> Luca et moi, ça match ?", "Luca", "moi");
 ShipIs("syncs, la pizza et l'ananas compatibles ?", "pizza", "ananas");
 ShipIs("shippe-moi avec quelqu'un", "moi", "quelqu'un");
+// « pense » without its s, as typed in the wild.
+ShipIs("et tu pense quoi de <@111> x <@222> ?", "<@111>", "<@222>");
+ShipIs("syncs tu pense quoi de <@111> x <@222>", "<@111>", "<@222>");
+ShipIs("<@111> et <@222>, t'en pense quoi ?", "<@111>", "<@222>");
 var herTopic = cues.GetMethod("ReadHerTopic", BindingFlags.Public | BindingFlags.Static, new[] { typeof(string) })!;
 foreach (var (text, topic) in new[] { ("t'as quel âge ?", "Age"), ("ton anniv c'est quand", "Birthday"), ("tu vis où ?", "Home"), ("ton plat préféré ?", "Favourite"),
              ("t'es en quelle version ?", "Version"), ("c'est quoi ta version syncs ?", "Version"), ("t'es à jour ?", "Version"),
@@ -490,6 +502,7 @@ var cases6 = new (string Text, string Expected)[]
     ("c'est qui mon âme sœur ?", "Ship"), ("avec qui tu me ship ?", "Ship"), ("trouve-moi l'âme sœur", "Ship"),
     ("c'est qui mon pire ship ?", "Ship"), ("avec qui je suis le moins compatible ?", "Ship"), ("shipper Luca avec Sandra", "Ship"),
     ("à ton avis, Luca et Sandra ça match ?", "Ship"), ("Luca et Sandra en couple ?", "Ship"),
+    ("et tu pense quoi de <@111> x <@222> ?", "Ship"), ("syncs tu pense quoi de <@111> x <@222>", "Ship"),
     ("vendredi et samedi ensemble ?", "Question"), ("la manette et le PC c'est compatible ?", "Question"),
     ("c'était mon pire match de la saison", "None"), ("mon meilleur match c'était hier", "None"),
     ("on est ensemble ce soir ?", "Question"), ("trouve-moi quelqu'un pour jouer", "None"),
@@ -844,6 +857,10 @@ var analyze = cues.GetMethod("Analyze", BindingFlags.Public | BindingFlags.Stati
 string Mood(string s) { var m = analyze.Invoke(null, new object[] { s })!; return m.GetType().GetProperty("Emotion")!.GetValue(m)!.ToString()!; }
 if (Mood("t'es une menteuse") != "Mean") Fail("« t'es une menteuse » no longer reads mean: ChatterService.IsMean relies on it");
 if (Mood("t'es une menteuse et une idiote en plus") != "Mean") Fail("a long insult with « menteuse » no longer reads mean");
+// A hush is not an insult: a mean mood reads no intent, so « tais-toi » would be roasted, not obeyed.
+foreach (var hush in new[] { "tais-toi", "TAIS-TOI !", "tais-toi syncs", "oh tais-toi un peu", "taisez-vous", "chut !", "la ferme", "ferme-la", "ferme ta bouche" })
+    if (Mood(hush) == "Mean") Fail($"« {hush} » reads mean: it must reach the ShutUp intent");
+if (Mood("tais-toi, t'es nulle") != "Mean") Fail("« tais-toi, t'es nulle » no longer reads mean: the insult beside the hush must still count");
 if ((bool)addresses.Invoke(null, new object[] { "syncs est une menteuse", 999UL })!) Fail("« syncs est une menteuse » reads as said to her (it is a backbite)");
 
 // 19. The weakest intents widened: AreYouThere, AboutHer, Crush, Help, Disbelief, and the game talk
@@ -1415,8 +1432,10 @@ foreach (var (text, expected) in new[]
                 .Select(c => c switch { Discord.ButtonComponent b => b.CustomId, Discord.SelectMenuComponent m => m.CustomId, _ => null }).ToList();
             if (ids.Count != ids.Distinct().Count()) Fail($"collection book '{page}' repeats a custom-id");
         }
-        if (ProjectSYNCS.Commands.LevelModule.CardBadges(allDone) is not { } badgeLine || badgeLine.Length > 4000) Fail("/level badge line missing or too long");
-        if (ProjectSYNCS.Commands.LevelModule.CardBadges(new List<ProjectSYNCS.Models.CollectionCompletion>()) is not null) Fail("/level shows a badge line with no completion");
+        var noFacts = new MemberBadgeFacts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, null, new Dictionary<string, StoredBadge>());
+        var noStandings = MemberBadges.Evaluate(noFacts, new DateTimeOffset(2026, 10, 22, 12, 0, 0, TimeSpan.Zero));
+        if (ProjectSYNCS.Commands.MemberBadgeCards.CardLine(allDone, noStandings) is not { } badgeLine || badgeLine.Length > 4000) Fail("/level badge line missing or too long");
+        if (ProjectSYNCS.Commands.MemberBadgeCards.CardLine(new List<ProjectSYNCS.Models.CollectionCompletion>(), noStandings) is not null) Fail("/level shows a badge line with no completion");
         ProjectSYNCS.Helpers.ItemEmojis.Clear();
         Console.WriteLine($"collection book at worst: {widestBook} chars");
     }
@@ -2841,6 +2860,260 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     Gaps(["a", "b", "c", "d", "e", "f"], 5);
     Gaps(["a", "b", "c", "", "", ""], 4);
     Gaps(["a", "b"], 2);
+}
+
+// Replies under her cards (MessageCues.ReadCardReply): what each is doing, and what must stay ordinary
+// talk. The bool is whether the reply tags someone else, which is what makes « vote » an order.
+{
+    var readCardReply = cues.GetMethod("ReadCardReply", BindingFlags.Public | BindingFlags.Static)!;
+    foreach (var (text, tags, expected) in new (string, bool, string)[]
+    {
+        // Bringing it back.
+        ("remonte le sondage stp", false, "Repost"), ("tu peux le remonter ?", false, "Repost"), ("up", false, "Repost"),
+        ("up !", false, "Repost"), ("petit up", false, "Repost"), ("syncs, remets-le en bas", false, "Repost"),
+        ("tu peux le mettre à la fin ?", false, "Repost"), ("republie-le", false, "Repost"), ("ramène la carte", false, "Repost"),
+        ("tu peux pas le remonter ?", false, "Repost"), ("bump", false, "Repost"),
+        ("le remonte pas", false, "None"), ("je suis en bas", false, "None"),
+        ("remets-le", false, "Repost"), ("renvoie le sondage", false, "Repost"), ("tu peux le renvoyer ?", false, "Repost"),
+        ("on le voit plus", false, "Repost"), ("le sondage est tout en haut", false, "Repost"), ("reposte stp", false, "Repost"),
+        ("ramène des chips", false, "None"), ("tu ramènes quoi ?", false, "None"), ("renvoie-moi le lien", false, "None"),
+        ("remets ton vote", false, "None"), ("remets la musique", false, "None"), ("on remonte la pente", false, "None"),
+        ("je suis noyé de boulot", false, "None"), ("Luca il est perdu", false, "None"), ("tu remontes à quelle heure ?", false, "None"),
+        // Rallying the others.
+        ("votez !", false, "Rally"), ("allez votez svp", false, "Rally"), ("<@123> vote", true, "Rally"),
+        ("<@123> <@456> votez", true, "Rally"), ("vote stp <@123>", true, "Rally"), ("faut voter les gars", false, "Rally"),
+        ("oubliez pas de voter", false, "Rally"), ("<@123> tu viens ?", true, "Rally"), ("venez", false, "Rally"),
+        ("inscrivez-vous", false, "Rally"), ("<@123> clique", true, "Rally"),
+        ("<@123> a voté", true, "None"), ("le vote est nul", false, "None"), ("vote", false, "Done"),
+        ("<@123> j'ai voté", true, "Done"), ("votez pas", false, "None"),
+        ("<@123>", true, "Rally"), ("<@123> <@456> 👀", true, "Rally"), ("<@123> t'as voté ?", true, "Rally"),
+        ("<@123> et toi ?", true, "Rally"), ("<@123> chaud ?", true, "Rally"), ("et vous ?", false, "Rally"),
+        ("personne a voté", false, "Rally"), ("bougez-vous", false, "Rally"), ("allez on vote", false, "Rally"),
+        ("tout le monde clique", false, "Rally"), ("<@123> t'es chaud ce soir ?", true, "Rally"),
+        ("t'as voté ?", false, "None"), ("<@123> je suis d'accord avec toi sur ce point", true, "None"),
+        // Saying it's done.
+        ("j'ai voté", false, "Done"), ("c'est fait", false, "Done"), ("voté !", false, "Done"), ("a voté", false, "Done"),
+        ("j'ai voté pour samedi", false, "Done"), ("je me suis inscrite", false, "Done"), ("fait", false, "Done"),
+        ("j'ai pas voté", false, "None"), ("c'est voté", false, "Done"), ("c'est bon", false, "Done"),
+        ("voilà", false, "Done"), ("✅", false, "Done"), ("j'ai coché samedi", false, "Done"), ("on a tous voté", false, "Done"),
+        ("jsuis inscrit", false, "Done"), ("j'ai mis du temps à venir", false, "None"), ("<@123> c'est bon", true, "None"),
+        // Asking how it stands.
+        ("c'est quand ?", false, "Status"), ("qui vient ?", false, "Status"), ("on en est où ?", false, "Status"),
+        ("on est combien ?", false, "Status"), ("qui a gagné ?", false, "Status"), ("ça finit quand ?", false, "Status"),
+        ("pourquoi samedi ?", false, "None"),
+        ("c'est quand", false, "Status"), ("qui vient ce soir", false, "Status"), ("alors ?", false, "Status"),
+        ("y a combien de votes ?", false, "Status"), ("ça commence à quelle heure ?", false, "Status"),
+        ("qui est en tête ?", false, "Status"), ("c'est pour quand ?", false, "Status"),
+        ("il est quelle heure ?", false, "None"), ("t'as fait combien de kills ?", false, "None"),
+        ("le tournoi commence quand ?", false, "None"), ("résultat je suis mort", false, "None"),
+        ("alors t'en penses quoi ?", false, "None"),
+        // An answer typed instead of clicked.
+        ("samedi pour moi", false, "TextAnswer"), ("je peux pas", false, "TextAnswer"), ("dispo", false, "TextAnswer"),
+        ("je viens", false, "TextAnswer"), ("chaud", false, "TextAnswer"), ("moi", false, "TextAnswer"),
+        ("plutôt dimanche", false, "TextAnswer"), ("go", false, "TextAnswer"), ("je vote Minecraft", false, "TextAnswer"),
+        ("je peux voter ?", false, "None"),
+        ("ok pour samedi", false, "TextAnswer"), ("samedi ou dimanche", false, "TextAnswer"), ("samedi ça me va", false, "TextAnswer"),
+        ("ça va ce soir", false, "TextAnswer"), ("j'y serai", false, "TextAnswer"), ("compte sur moi", false, "TextAnswer"),
+        ("je suis trop chaud", false, "TextAnswer"), ("pareil", false, "TextAnswer"), ("+1", false, "TextAnswer"),
+        ("je peux pas venir samedi", false, "TextAnswer"), ("je peux voter pour deux", false, "None"),
+        ("il fait chaud ici", false, "None"), ("c'est chaud", false, "None"), ("ça va être chaud ce soir", false, "None"),
+        ("je dors chez Luca ce soir", false, "None"), ("à demain", false, "None"), ("bon weekend", false, "None"),
+        ("c'est calme ce soir", false, "None"), ("le bot a planté hier soir", false, "None"),
+        ("je te dis ça demain", false, "None"), ("ma connexion est nulle ce soir", false, "None"),
+        // Ordinary replies: the card's context line, or the usual path.
+        ("ok", false, "None"), ("merci", false, "None"), ("t'es nulle", false, "None"), ("", false, "None"),
+        ("« votez » qu'il a dit", false, "None"),
+    })
+    {
+        var got = readCardReply.Invoke(null, new object[] { text, tags })!.ToString();
+        if (got != expected) Fail($"ReadCardReply(\"{text}\", tags: {tags}) = {got}, expected {expected}");
+    }
+
+    // A card is recognised by its buttons, whatever else rides on the message.
+    void CardIs(string[] ids, CardRef? expected)
+    {
+        var got = CardRefs.Read(ids);
+        if (got != expected) Fail($"CardRefs.Read({string.Join(", ", ids)}) = {got?.ToString() ?? "null"}, expected {expected?.ToString() ?? "null"}");
+    }
+    CardIs(["poll:vote:12:40", "poll:close:12"], new CardRef(CardKind.Poll, 12));
+    CardIs(["poll:tosession:7"], new CardRef(CardKind.Poll, 7));
+    CardIs(["event:join:3", "event:sub:3"], new CardRef(CardKind.Session, 3));
+    CardIs(["tonight:in:5"], new CardRef(CardKind.Tonight, 5));
+    CardIs(["giveaway:enter:9"], new CardRef(CardKind.Giveaway, 9));
+    CardIs(["poll:republish"], null);
+    CardIs(["arcade:play:4"], null);
+    CardIs([], null);
+
+    // The everyday sweeps again, as if replied under a card: not failures (« je peux pas venir samedi »
+    // under a poll is an answer), a count to watch. Run with --card-review to read them.
+    var cardReads = neutral.Concat(slang)
+        .Select(text => (Text: text, Got: readCardReply.Invoke(null, new object[] { text, false })!.ToString()))
+        .Where(r => r.Got != "None")
+        .ToList();
+    Console.WriteLine($"card sweep: {cardReads.Count} of {neutral.Length + slang.Length} ordinary messages read as a card reply");
+    if (args.Contains("--card-review"))
+        foreach (var (text, got) in cardReads) Console.WriteLine($"  card: \"{text}\" -> {got}");
+}
+
+// 34. Member badges: the catalog, tiers at their edges, derived moments, icon keys.
+{
+    var mb = MemberBadges.All;
+    if (mb.Count(b => b.Kind == MemberBadgeKind.Palier) != 12 || mb.Count(b => b.Kind == MemberBadgeKind.Moment) != 6
+        || mb.Count(b => b.Kind == MemberBadgeKind.Secret) != 13) Fail("member badges: catalog counts");
+    if (mb.Select(b => b.Key).Distinct().Count() != mb.Count) Fail("member badges: duplicate key");
+    foreach (var b in mb)
+    {
+        if (b.Kind == MemberBadgeKind.Palier != (b.Thresholds.Count == 5)) Fail($"{b.Key}: thresholds");
+        if (b.Thresholds.Zip(b.Thresholds.Skip(1)).Any(p => p.First >= p.Second)) Fail($"{b.Key}: thresholds not ascending");
+        if (string.IsNullOrWhiteSpace(b.Name) || string.IsNullOrWhiteSpace(b.Hint) || (b.Name + b.Hint).IndexOfAny(['{', '}']) >= 0) Fail($"{b.Key}: name/hint");
+        var mbTiers = b.Kind == MemberBadgeKind.Palier ? Enum.GetValues<CollectionTier>().Skip(1).ToArray() : new[] { CollectionTier.None };
+        foreach (var t in mbTiers)
+        {
+            var key = MemberBadges.IconKey(b, t);
+            var name = ItemEmojis.EmojiName(key);
+            if (!MemberBadges.IsIconKey(key) || name is null || name.Length > 32 || !name.All(c => char.IsAsciiLetterOrDigit(c) || c == '_')) Fail($"{key}: icon key");
+            if (ItemCatalog.Sets.Any(s => Enum.GetValues<CollectionTier>().Any(ct => ItemEmojis.BadgeKey(s.Key, ct) == key))) Fail($"{key}: clashes with a collection badge");
+        }
+    }
+    var mbNow = new DateTimeOffset(2026, 10, 22, 12, 0, 0, TimeSpan.Zero);
+    MemberBadgeFacts MbFacts(long voice = 0, long bestMs = 0, DateTimeOffset? joined = null, Dictionary<string, StoredBadge>? stored = null) =>
+        new(voice, 0, 0, bestMs, 0, 0, 0, 0, 0, 0, false, joined, stored ?? new());
+    BadgeStanding MbOf(MemberBadgeFacts f, string key) => MemberBadges.Evaluate(f, mbNow).Single(s => s.Info.Key == key);
+    if (MbOf(MbFacts(voice: 599), "voice").Earned || MbOf(MbFacts(voice: 600), "voice").Tier != CollectionTier.Bronze
+        || MbOf(MbFacts(voice: 60000), "voice").Tier != CollectionTier.Diamond) Fail("voice tier edges");
+    if (MbOf(MbFacts(), "seniority").Earned) Fail("seniority null");
+    if (MbOf(MbFacts(joined: mbNow.AddDays(-90)), "seniority").Tier != CollectionTier.Bronze) Fail("seniority 90 days");
+    if (!MbOf(MbFacts(bestMs: 2999), "lightning").Earned || MbOf(MbFacts(bestMs: 3000), "lightning").Earned
+        || MbOf(MbFacts(bestMs: 0), "lightning").Earned) Fail("lightning edges");
+    var mbStored = new Dictionary<string, StoredBadge> { ["arcade"] = new(5, mbNow), ["hush"] = new(1, mbNow), ["gone_key"] = new(1, mbNow) };
+    var mbAll = MemberBadges.Evaluate(MbFacts(stored: mbStored), mbNow);
+    if (MbOf(MbFacts(stored: mbStored), "arcade").Tier != CollectionTier.Bronze || !MbOf(MbFacts(stored: mbStored), "hush").Earned) Fail("stored badges");
+    if (mbAll.Count != mb.Count || mbAll.Count(s => s.Earned) != 2) Fail("unknown stored key");
+    if (MemberBadges.IsAwardable(0, "hush") || MemberBadges.IsAwardable(1, "nope") || MemberBadges.IsAwardable(1, "voice")
+        || !MemberBadges.IsAwardable(1, "nanny") || !MemberBadges.IsAwardable(1, "crowned")) Fail("IsAwardable");
+
+    // The card line and the « Succès » view, at their widest.
+    var mbEmpty = MemberBadges.Evaluate(MbFacts(), mbNow);
+    if (ProjectSYNCS.Commands.MemberBadgeCards.CardLine(new List<ProjectSYNCS.Models.CollectionCompletion>(), mbEmpty) is not null) Fail("empty card line");
+    // Worst case: everything at Diamant, every secret found, every icon a real emoji markup.
+    var mbMax = new MemberBadgeFacts(99_999_999, 99_999_999, 99_999, 1, 99_999_999, 99_999, 99_999, 99_999, 99_999_999, 99_999, true,
+        mbNow.AddYears(-20), mb.ToDictionary(b => b.Key, _ => new StoredBadge(99_999_999, mbNow)));
+    var mbDone = ItemCatalog.Sets.Select(s => new ProjectSYNCS.Models.CollectionCompletion { SetKey = s.Key, Count = 999 }).ToList();
+    foreach (var b in mb) foreach (var t in Enum.GetValues<CollectionTier>())
+        ItemEmojis.Set(MemberBadges.IconKey(b, t), ItemEmojis.Markup("b_" + new string('x', 30), ulong.MaxValue));
+    (int Text, int Count, List<string> Ids) V2Measure(Discord.IMessageComponent c)
+    {
+        var text = 0; var count = 1; var ids = new List<string>();
+        void Add((int Text, int Count, List<string> Ids) r) { text += r.Text; count += r.Count; ids.AddRange(r.Ids); }
+        switch (c)
+        {
+            case Discord.ContainerComponent x: foreach (var k in x.Components) Add(V2Measure(k)); break;
+            case Discord.SectionComponent x:
+                foreach (var k in x.Components) Add(V2Measure(k));
+                if (x.Accessory is not null) Add(V2Measure(x.Accessory));
+                break;
+            case Discord.ActionRowComponent x: foreach (var k in x.Components) Add(V2Measure(k)); break;
+            case Discord.TextDisplayComponent x: text += x.Content.Length; break;
+            case Discord.ButtonComponent x: if (x.CustomId is not null) ids.Add(x.CustomId); break;
+        }
+        return (text, count, ids);
+    }
+    var mbWidest = 0;
+    foreach (var (facts, done, what) in new[] { (MbFacts(), new List<ProjectSYNCS.Models.CollectionCompletion>(), "empty view"), (mbMax, mbDone, "worst view") })
+    foreach (var section in Enum.GetValues<ProjectSYNCS.Commands.BadgeSection>())
+    {
+        var view = ProjectSYNCS.Commands.MemberBadgeCards.BuildView(ulong.MaxValue, new string('*', 32), section, done, MemberBadges.Evaluate(facts, mbNow));
+        var parts = view.Components.Select(V2Measure).ToList();
+        var (text, count, ids) = (parts.Sum(p => p.Text), parts.Sum(p => p.Count), parts.SelectMany(p => p.Ids).ToList());
+        mbWidest = Math.Max(mbWidest, text);
+        if (text > 4000 || count > 40 || ids.Count != ids.Distinct().Count()) Fail($"{what} {section}: {text} chars, {count} components");
+    }
+    if (ProjectSYNCS.Commands.MemberBadgeCards.CardLine(mbDone, MemberBadges.Evaluate(mbMax, mbNow)) is not { } mbLine || mbLine.Length > 4000) Fail("full card line");
+    const ulong mbSelf = 111, mbAsker = 222, mbOther = 333;
+    var mbTata = (ulong)br.GetField("TataId")!.GetValue(null)!; // BotResponses is internal: reflection, like the rest of the file
+    bool Heart(string a, string b, ulong asker = mbAsker) => Shipping.IsSelfWithHer(a, b, asker, mbSelf, AvailabilityService.OwnerId, mbTata);
+    if (!Heart("syncs", "moi") || !Heart("moi", "toi") || !Heart($"<@{mbAsker}>", "syncs")
+        || !Heart("moi", "syncs", AvailabilityService.OwnerId)) Fail("heart: self with her");
+    if (Heart("syncs", "pizza") || Heart("syncs", $"<@{mbOther}>") || Heart("moi", "pizza") || Heart("syncs", "toi")) Fail("heart: not self with her");
+    var flip = new FeedbackFlip();
+    if (flip.Record(1, FeedbackKind.Good, mbNow) || !flip.Record(1, FeedbackKind.Bad, mbNow.AddSeconds(30))) Fail("flip within a minute");
+    if (flip.Record(2, FeedbackKind.Good, mbNow) || flip.Record(2, FeedbackKind.Bad, mbNow.AddSeconds(61))) Fail("flip after a minute");
+    if (flip.Record(3, FeedbackKind.Good, mbNow) || flip.Record(3, FeedbackKind.Good, mbNow.AddSeconds(5))) Fail("same verdict twice");
+    if (flip.Record(4, FeedbackKind.Good, mbNow) || flip.Record(5, FeedbackKind.Bad, mbNow.AddSeconds(5))) Fail("two people");
+    ItemEmojis.Clear();
+
+    // GetFactsAsync against a real SQLite: the navigations, the Plynling join and the projection must
+    // translate, and the guild scoping must hold. A query that does not translate breaks /level for everyone.
+    using (var mbConn = new Microsoft.Data.Sqlite.SqliteConnection("DataSource=:memory:"))
+    {
+        mbConn.Open();
+        var mbOpts = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<ProjectSYNCS.Data.AppDbContext>().UseSqlite(mbConn).Options;
+        const ulong gA = 1000, gB = 2000, me = 42, other = 43;
+        using (var seed = new ProjectSYNCS.Data.AppDbContext(mbOpts))
+        {
+            seed.Database.EnsureCreated();
+            var at = mbNow;
+            ProjectSYNCS.Models.SessionEvent Ses(ulong guild, ulong org, DateTimeOffset when, bool cancelled = false) =>
+                new() { GuildId = guild, OrganizerId = org, Title = "s", ScheduledAt = when, IsCancelled = cancelled };
+            ProjectSYNCS.Models.Participant Part(ulong user, DateTimeOffset? seen) =>
+                new() { UserId = user, Username = "u", FirstSeenInVoiceAt = seen };
+            // Organised by me in guild A: two past (counted), one cancelled, one future; one past in guild B.
+            var sPunctual = Ses(gA, me, at.AddDays(-5)); sPunctual.Participants.Add(Part(me, at.AddDays(-5).AddMinutes(-3)));
+            var sLate = Ses(gA, me, at.AddDays(-4)); sLate.Participants.Add(Part(me, at.AddDays(-4).AddMinutes(10)));
+            var sCancelled = Ses(gA, me, at.AddDays(-3), cancelled: true); sCancelled.Participants.Add(Part(me, at.AddDays(-3).AddMinutes(-5)));
+            var sFuture = Ses(gA, me, at.AddDays(2));
+            var sOtherGuild = Ses(gB, me, at.AddDays(-2)); sOtherGuild.Participants.Add(Part(me, at.AddDays(-2).AddMinutes(-5)));
+            var sNotSeen = Ses(gA, other, at.AddDays(-1)); sNotSeen.Participants.Add(Part(me, null));
+            seed.SessionEvents.AddRange(sPunctual, sLate, sCancelled, sFuture, sOtherGuild, sNotSeen);
+
+            var gw = new ProjectSYNCS.Models.Giveaway { GuildId = gA, Prize = "p", IsClosed = true };
+            gw.Entries.Add(new() { UserId = me, IsWinner = true });
+            gw.Entries.Add(new() { UserId = other, IsWinner = true });
+            var gwLost = new ProjectSYNCS.Models.Giveaway { GuildId = gA, Prize = "p", IsClosed = true };
+            gwLost.Entries.Add(new() { UserId = me, IsWinner = false });
+            seed.Giveaways.Add(gwLost);
+            var gwB = new ProjectSYNCS.Models.Giveaway { GuildId = gB, Prize = "p", IsClosed = true };
+            gwB.Entries.Add(new() { UserId = me, IsWinner = true });
+            seed.Giveaways.AddRange(gw, gwB);
+
+            var plMine = new ProjectSYNCS.Models.Plynling { GuildId = gA, OwnerId = me, Name = "a" };
+            var plOther = new ProjectSYNCS.Models.Plynling { GuildId = gA, OwnerId = other, Name = "b" };
+            var plOtherGuild = new ProjectSYNCS.Models.Plynling { GuildId = gB, OwnerId = me, Name = "c" };
+            seed.Plynlings.AddRange(plMine, plOther, plOtherGuild);
+            seed.SaveChanges();
+            seed.PlynlingBadges.AddRange(
+                new ProjectSYNCS.Models.PlynlingBadge { PlynlingId = plMine.Id, Key = "k1", EarnedAt = at },
+                new ProjectSYNCS.Models.PlynlingBadge { PlynlingId = plMine.Id, Key = "k2", EarnedAt = at },
+                new ProjectSYNCS.Models.PlynlingBadge { PlynlingId = plOther.Id, Key = "k1", EarnedAt = at },
+                new ProjectSYNCS.Models.PlynlingBadge { PlynlingId = plOtherGuild.Id, Key = "k1", EarnedAt = at });
+
+            seed.MemberXps.Add(new() { GuildId = gA, UserId = me, VoiceMinutes = 700, ReactionsUsed = 9 });
+            seed.MemberXps.Add(new() { GuildId = gB, UserId = me, VoiceMinutes = 5, ReactionsUsed = 1 });
+            seed.VoiceCompanionStats.Add(new() { GuildId = gA, UserId = me, Minutes = 33 });
+            seed.QuizStats.Add(new() { GuildId = gA, UserId = me, Wins = 4, BestMs = 1500 });
+            seed.BotFeedbacks.Add(new() { GuildId = gA, UserId = me, GoodCount = 6 });
+            seed.MemberBadges.Add(new() { GuildId = gA, UserId = me, Key = "arcade", Count = 3, EarnedAt = at });
+            seed.MemberBadges.Add(new() { GuildId = gB, UserId = me, Key = "hush", Count = 1, EarnedAt = at });
+            seed.SaveChanges();
+        }
+        using var read = new ProjectSYNCS.Data.AppDbContext(mbOpts);
+        try
+        {
+            var f = await new MemberBadgeService(read).GetFactsAsync(gA, me, mbNow.AddDays(-100), mbNow);
+            if (f.VoiceMinutes != 700 || f.Reactions != 9) Fail($"facts sql: xp {f.VoiceMinutes}/{f.Reactions}");
+            if (f.CompanionMinutes != 33 || f.QuizWins != 4 || f.QuizBestMs != 1500 || f.GoodBot != 6) Fail("facts sql: companion/quiz/goodbot");
+            if (f.GiveawaysWon != 1) Fail($"facts sql: giveaways won {f.GiveawaysWon}");
+            if (f.PlynlingBadges != 2) Fail($"facts sql: plynling badges {f.PlynlingBadges}");
+            if (f.SessionsOrganised != 2) Fail($"facts sql: organised {f.SessionsOrganised}");
+            if (f.SessionsAttended != 2) Fail($"facts sql: attended {f.SessionsAttended}");
+            if (!f.Punctual) Fail("facts sql: punctual");
+            if (f.Stored.Count != 1 || f.Stored["arcade"].Count != 3) Fail("facts sql: stored badges");
+            var none = await new MemberBadgeService(read).GetFactsAsync(gA, 999, null, mbNow);
+            if (none.VoiceMinutes != 0 || none.SessionsAttended != 0 || none.Punctual || none.Stored.Count != 0) Fail("facts sql: stranger");
+        }
+        catch (Exception ex) { Fail("facts sql: " + ex.Message); }
+    }
+    Console.WriteLine($"succès view at worst: {mbWidest} chars");
 }
 
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");

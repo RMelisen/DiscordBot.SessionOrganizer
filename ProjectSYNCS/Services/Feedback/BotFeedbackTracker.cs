@@ -36,6 +36,8 @@ internal sealed class BotFeedbackTracker
     private readonly ResponsePicker _picker;
     private readonly RivalryService _rivalry;
     private readonly XpTracker _xp;
+    private readonly BadgeAwarder _badges;
+    private readonly FeedbackFlip _flip = new();
     private readonly ILogger<BotFeedbackTracker> _logger;
 
     // How long after she acts a bare "good bot" still reads as being about her.
@@ -175,8 +177,10 @@ internal sealed class BotFeedbackTracker
         ResponsePicker picker,
         RivalryService rivalry,
         XpTracker xp,
+        BadgeAwarder badges,
         ILogger<BotFeedbackTracker> logger)
     {
+        _badges = badges;
         _client = client;
         _services = services;
         _picker = picker;
@@ -239,6 +243,12 @@ internal sealed class BotFeedbackTracker
         }
 
         var claim = TryClaim(message.Channel.Id, message.Author.Id, unambiguous: toHer);
+
+        // Good bot, then bad bot a few seconds later: only verdicts that landed on her count.
+        // Before the early returns below, which would skip an already-judged one.
+        if (claim is Claim.Granted or Claim.AlreadyJudged
+            && _flip.Record(message.Author.Id, verdict, DateTimeOffset.UtcNow))
+            _badges.Award(guildChannel.Guild.Id, message.Author.Id, MemberBadges.Keys.Weathervane);
 
         // A bare verdict that a rival earned instead. Only praise stings: someone
         // calling a rival a bad bot is not a loss she needs consoling over.

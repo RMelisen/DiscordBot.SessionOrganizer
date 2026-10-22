@@ -80,6 +80,7 @@ internal sealed class AmbientService : BackgroundService
     private readonly PiHealthService _health;
     private readonly ResponsePicker _picker;
     private readonly HerMessages _herMessages;
+    private readonly BadgeAwarder _badges;
     private readonly ILogger<AmbientService> _logger;
     private readonly string _statePath;
     private readonly DateTimeOffset _startedAt = DateTimeOffset.UtcNow;
@@ -114,6 +115,10 @@ internal sealed class AmbientService : BackgroundService
     // A self-correcting line waiting for its edit; completed when someone speaks after it.
     private TaskCompletionSource? _pendingEdit;
 
+    // Until when the first person to speak earns "first_wake": set only once an abrupt wake
+    // line really went out, cleared by the next human message. Its own field, never _pendingEdit.
+    private DateTimeOffset? _firstWakeUntil;
+
     private int _ghostDay;
     private int _woken;
 
@@ -124,9 +129,11 @@ internal sealed class AmbientService : BackgroundService
         PiHealthService health,
         ResponsePicker picker,
         HerMessages herMessages,
+        BadgeAwarder badges,
         IConfiguration config,
         ILogger<AmbientService> logger)
     {
+        _badges = badges;
         _client = client;
         _config = guildConfig;
         _breakdown = breakdown;
@@ -206,7 +213,7 @@ internal sealed class AmbientService : BackgroundService
         // A verdict is BotFeedbackTracker's to answer, even at night.
         bool verdict = MessageCues.ReadFeedback(message.Content ?? string.Empty) != FeedbackKind.None;
 
-        bool ghost = false, scold = false;
+        bool ghost = false, scold = false, firstWake = false;
         TaskCompletionSource? caught;
         lock (_gate)
         {
@@ -216,6 +223,10 @@ internal sealed class AmbientService : BackgroundService
 
             caught = _pendingEdit;
             _pendingEdit = null;
+
+            // The first person to speak after an abrupt wake line, if it is recent enough.
+            firstWake = _firstWakeUntil is { } until && now < until;
+            _firstWakeUntil = null;
 
             // Up after her 3 a.m. line, before 5:30: once a person, a night.
             if (_nightLineAt is { } lineAt && AppTime.DayKey(lineAt) == today
@@ -236,6 +247,11 @@ internal sealed class AmbientService : BackgroundService
 
         // Someone spoke after her self-correcting line: she edits it now, caught out.
         caught?.TrySetResult();
+
+        var guildId = (message.Channel as SocketGuildChannel)?.Guild.Id ?? 0;
+        if (firstWake) _badges.Award(guildId, message.Author.Id, MemberBadges.Keys.FirstWake);
+        // They answered the line, whether or not the scolding goes out.
+        if (scold) _badges.Award(guildId, message.Author.Id, MemberBadges.Keys.NightOwl);
 
         if (_breakdown.IsActive(channelId)) return false;
 
@@ -580,7 +596,10 @@ internal sealed class AmbientService : BackgroundService
             var sent = await BotChat.PostWithTypingAsync(channel, line, _logger, "wake line", AllowedMentions.None);
             _herMessages.Remember(sent, ReplyContext.Wake);
             if (sent is not null)
+            {
                 lock (_stateLock) SaveState(LoadState() with { LastVersion = AppInfo.Version, LastWakeDay = today });
+                if (abrupt) ArmFirstWake();
+            }
         }
         catch (Exception ex)
         {
@@ -601,6 +620,7 @@ internal sealed class AmbientService : BackgroundService
         if (sent is null) return;
         _herMessages.Remember(sent, ReplyContext.Wake);
         lock (_stateLock) SaveState(LoadState() with { LastVersion = AppInfo.Version, LastWakeDay = today });
+        ArmFirstWake();
 
         var strip = Task.Run(async () =>
         {
@@ -619,6 +639,11 @@ internal sealed class AmbientService : BackgroundService
         {
             _logger.LogWarning(ex, "Ambient: could not delete the glitch wake strip.");
         }
+    }
+
+    private void ArmFirstWake()
+    {
+        lock (_gate) _firstWakeUntil = DateTimeOffset.UtcNow + Ambient.FirstWakeWindow;
     }
 
     private async Task<IMessageChannel?> WaitForChannelAsync()

@@ -21,13 +21,15 @@ namespace ProjectSYNCS.Services;
 public sealed class GlitchService
 {
     private readonly BreakdownService _breakdown;
+    private readonly BadgeAwarder _badges;
     private readonly ILogger<GlitchService> _logger;
 
     // One glitch a day at most, wherever it lands. Its own gate, shared with nobody.
     private readonly CooldownGate<int> _daily = new(Glitch.Cooldown);
 
-    public GlitchService(BreakdownService breakdown, ILogger<GlitchService> logger)
+    public GlitchService(BreakdownService breakdown, BadgeAwarder badges, ILogger<GlitchService> logger)
     {
+        _badges = badges;
         _breakdown = breakdown;
         _logger = logger;
     }
@@ -40,7 +42,13 @@ public sealed class GlitchService
         var clean = Sticker.Strip(line);
         var glitched = TryGlitch(clean, replyTo.Channel.Id);
         var sent = await BotChat.ReplyWithTypingAsync(replyTo, glitched ?? line, logger, what, allowedMentions);
-        if (sent is not null && glitched is not null) Restore(sent, clean, what);
+        if (sent is not null && glitched is not null)
+        {
+            Restore(sent, clean, what);
+            // A person's message made it happen; a rival's did not.
+            if (!replyTo.Author.IsBot && replyTo.Channel is IGuildChannel guildChannel)
+                _badges.Award(guildChannel.GuildId, replyTo.Author.Id, MemberBadges.Keys.Glitch);
+        }
         return sent;
     }
 

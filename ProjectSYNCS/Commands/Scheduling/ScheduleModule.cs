@@ -24,9 +24,12 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
     // "Corriger" button can reopen the modal pre-filled instead of losing it.
     private static readonly ConcurrentDictionary<ulong, string> _draftTitles = new();
 
-    public ScheduleModule(EventService eventService)
+    private readonly CardRepost _repost;
+
+    public ScheduleModule(EventService eventService, CardRepost repost)
     {
         _eventService = eventService;
+        _repost = repost;
     }
 
     // ---- Wizard step 1: pick a category ----------------------------------
@@ -257,45 +260,13 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        var gameEvent = await _eventService.GetEventWithParticipantsAsync(eventId);
-        if (gameEvent is null || gameEvent.GuildId != Context.Guild.Id)
+        var result = await _repost.RepostAsync(Context.Guild, Context.Channel, new CardRef(CardKind.Session, eventId));
+        await FollowupAsync(result switch
         {
-            await FollowupAsync("Session introuvable.", ephemeral: true);
-            return;
-        }
-
-        if (gameEvent.IsCancelled)
-        {
-            await FollowupAsync("Cette session est annulée.", ephemeral: true);
-            return;
-        }
-
-        // Remove the previous card if it still exists, to avoid duplicates.
-        if (gameEvent.MessageId != 0)
-        {
-            var oldChannel = Context.Guild.GetTextChannel(gameEvent.ChannelId);
-            if (oldChannel is not null)
-            {
-                try
-                {
-                    var old = await oldChannel.GetMessageAsync(gameEvent.MessageId);
-                    if (old is not null) await old.DeleteAsync();
-                }
-                catch { /* already gone — ignore */ }
-            }
-        }
-
-        var embed = BuildEventEmbed(gameEvent, Context.Guild);
-        var components = BuildEventComponents(gameEvent);
-        var message = await Context.Channel.SendMessageAsync(embed: embed, components: components);
-        await _eventService.SetMessageLocationAsync(gameEvent.Id, Context.Channel.Id, message.Id);
-
-        // The card moved, so the native event's "détails" link must point at it.
-        gameEvent.ChannelId = Context.Channel.Id;
-        gameEvent.MessageId = message.Id;
-        await SessionEventSync.UpdateAsync(Context.Guild, gameEvent);
-
-        await FollowupAsync($"Session **#{eventId}** republiée ici.", ephemeral: true);
+            RepostResult.NotFound => "Session introuvable.",
+            RepostResult.Closed => "Cette session est annulée.",
+            _ => $"Session **#{eventId}** republiée ici.",
+        }, ephemeral: true);
     }
 
     private static string CategoryEmoji(SessionCategory category) => category switch

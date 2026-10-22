@@ -75,6 +75,21 @@ public static class Shipping
         return new(ShipKind.Normal, (int)(StableRoll.Unit(hash, PercentSalt, 0) * 101));
     }
 
+    /// <summary>
+    /// One side is her and the other is the asker themselves (« moi », or their own mention): the
+    /// pair that earns the heart badge. Call it with the sides after any @random draw.
+    /// </summary>
+    public static bool IsSelfWithHer(string a, string b, ulong askerId, ulong selfId, ulong ownerId, ulong tataId)
+    {
+        var herA = Rating.Rate(a, askerId, selfId, ownerId, tataId).Kind == RatingKind.Herself;
+        var herB = Rating.Rate(b, askerId, selfId, ownerId, tataId).Kind == RatingKind.Herself;
+        return (herA && IsAsker(b, askerId)) || (herB && IsAsker(a, askerId));
+    }
+
+    // « moi » and the asker's own mention both key as the asker's id (Rating.Key). RatingResult.AboutAsker
+    // is no use here: it is only set for Papa and Tata, not for an ordinary asker.
+    private static bool IsAsker(string side, ulong askerId) => Rating.Key(side, askerId) == askerId.ToString();
+
     private static (Who, HeartCharacter?) Identify(string side, ulong askerId, ulong selfId, ulong ownerId, ulong tataId)
     {
         switch (Rating.Rate(side, askerId, selfId, ownerId, tataId).Kind)

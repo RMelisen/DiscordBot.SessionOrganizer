@@ -44,10 +44,12 @@ internal static class AnswerStatsCards
 
         AddFamily(embed, "Intentions", counts.Where(c => c.Kind.StartsWith("intent:")), "intent:");
         AddFamily(embed, "Réponse à mes messages", counts.Where(c => c.Kind.StartsWith("context:")), "context:");
+        AddFamily(embed, "Sous mes cartes", counts.Where(c => c.Kind.StartsWith("card:")), "card:");
         AddFamily(embed, "Humeur et réponses par défaut", counts.Where(c => MoodKinds.Contains(c.Kind)), "");
         AddFamily(embed, "Faits et séries", counts.Where(c => c.Kind.StartsWith("fact:") || c.Kind.StartsWith("streak:")), "");
         AddFamily(embed, "Spéciaux", counts.Where(c => !c.Kind.StartsWith("intent:") && !c.Kind.StartsWith("context:")
-            && !c.Kind.StartsWith("fact:") && !c.Kind.StartsWith("streak:") && !MoodKinds.Contains(c.Kind)), "");
+            && !c.Kind.StartsWith("card:") && !c.Kind.StartsWith("fact:") && !c.Kind.StartsWith("streak:")
+            && !MoodKinds.Contains(c.Kind)), "");
 
         embed.AddField("Pistes", Cap(Leads(counts)));
         return embed.Build();

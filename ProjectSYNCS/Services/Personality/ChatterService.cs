@@ -26,6 +26,9 @@ internal sealed class ChatterService
     private readonly IServiceProvider _services;
     private readonly ILogger<ChatterService> _logger;
 
+    // Secret badges earned through her chat; fire-and-forget, never awaited on the gateway path.
+    private readonly BadgeAwarder _badges;
+
     // Who has been going back and forth with her, per channel (ConversationStreak). In memory, and
     // shared with RobotHeartService, whose answers to her are turns of the same conversation.
     private readonly ConversationStreak _streaks;
@@ -36,6 +39,9 @@ internal sealed class ChatterService
     // Who she is still listening to after a call or an answer (ChatListening): « syncs ? » then
     // « t'es en quelle version ? » is one question in two messages.
     private readonly ChatListening _listening;
+
+    // Replies under her cards (« votez ! », « j'ai voté », « remonte-le »), answered about the card.
+    private readonly CardReplyService _cards;
 
     // Fact lines (her records, quoted): at most one per person every FactCooldown. Its own gate,
     // shared with nothing else.
@@ -89,8 +95,12 @@ internal sealed class ChatterService
         ConversationStreak streaks,
         ChatHush hush,
         ChatListening listening,
+        CardReplyService cards,
+        BadgeAwarder badges,
         ILogger<ChatterService> logger)
     {
+        _badges = badges;
+        _cards = cards;
         _streaks = streaks;
         _hush = hush;
         _listening = listening;
@@ -266,7 +276,7 @@ internal sealed class ChatterService
 
         _logger.LogInformation("{Name} said her name without addressing her — {What}.", name, what);
         Count(message, ChatPath.Name, pick.Kind);
-        await ReplyWithTypingAsync(message, Format(pick, name, CurrentWeekday()), what, pick.Mentions);
+        await SendPickAsync(message, pick, name, CurrentWeekday(), what);
         return true;
     }
 
@@ -281,7 +291,8 @@ internal sealed class ChatterService
         if (!MessageCues.EndsOnSiSound(message.Content ?? string.Empty)) return;
 
         _logger.LogInformation("Tron fired on a message ending in a 'si' sound.");
-        await ReplyWithTypingAsync(message, _picker.Pick(_tronLines) + " " + Emotes.Sparkle, "tron");
+        if (await ReplyWithTypingAsync(message, _picker.Pick(_tronLines) + " " + Emotes.Sparkle, "tron") is not null)
+            Award(message, MemberBadges.Keys.Tron);
     }
 
     // Someone finished a sentence on "quoi ?" and got caught. Ambient like the
@@ -304,7 +315,8 @@ internal sealed class ChatterService
         if (answer is null) return false;
 
         _logger.LogInformation("Quoicoubeh fired on a message ending in bait.");
-        await ReplyWithTypingAsync(message, answer, "quoicoubeh");
+        if (await ReplyWithTypingAsync(message, answer, "quoicoubeh") is not null)
+            Award(message, MemberBadges.Keys.Quoicoubeh);
         return true;
     }
 
@@ -403,8 +415,7 @@ internal sealed class ChatterService
 
             _logger.LogInformation("Owner mentioned the bot — {What}.", ownerWhat);
             Count(message, ChatPath.Mention, ownerPick.Kind);
-            await ReplyWithTypingAsync(message, Format(ownerPick, ResolveName(message.Author), weekday),
-                "owner greeting", ownerPick.Mentions);
+            await SendPickAsync(message, ownerPick, ResolveName(message.Author), weekday, "owner greeting");
             return;
         }
 
@@ -420,6 +431,7 @@ internal sealed class ChatterService
             _logger.LogInformation("Easter egg triggered via mention: consciousness breakdown.");
             var realName = BotResponses.RealNameFor(message.Author.Id, name);
             Count(message, ChatPath.Mention, AnswerKinds.Breakdown);
+            Award(message, MemberBadges.Keys.Breakdown);
             await _breakdown.PlayAsync(message, name, realName, intro: "Tu veux qu-");
             return;
         }
@@ -464,7 +476,7 @@ internal sealed class ChatterService
 
         _logger.LogInformation("{Name} mentioned the bot — {What}.", name, what);
         Count(message, ChatPath.Mention, pick.Kind);
-        await ReplyWithTypingAsync(message, Format(pick, name, weekday), what, pick.Mentions);
+        await SendPickAsync(message, pick, name, weekday, what);
     }
 
     private async Task HandleReplyToBotAsync(SocketUserMessage message)
@@ -485,6 +497,9 @@ internal sealed class ChatterService
 
         // Told « chut » in this channel: a sulk reaction, no words, the breakdown included.
         if (await HushGateAsync(message, ChatPath.Reply)) return;
+
+        // About one of her cards (« votez ! », « j'ai voté », « remonte-le »): answered about the card.
+        if (TryCardReply(message, name)) return;
 
         // Read the message text (requires the MessageContent intent) to detect
         // kind words or a greeting and answer in kind. A mean reading outweighs the
@@ -509,6 +524,7 @@ internal sealed class ChatterService
                 : nice ? BotResponses.BreakdownIntroNice
                 : BotResponses.BreakdownIntroRoast;
             Count(message, ChatPath.Reply, AnswerKinds.Breakdown);
+            Award(message, MemberBadges.Keys.Breakdown);
             await _breakdown.PlayAsync(message, name, realName, intro);
             return;
         }
@@ -603,7 +619,7 @@ internal sealed class ChatterService
         }
 
         Count(message, ChatPath.Reply, pick.Kind);
-        await ReplyWithTypingAsync(message, Format(pick, name, weekday), what, pick.Mentions);
+        await SendPickAsync(message, pick, name, weekday, what);
     }
 
     // ---- Listening: intents, reply context, streaks, facts --------------------------------
@@ -614,7 +630,7 @@ internal sealed class ChatterService
     /// own words (an opinion's subject), which may hold a mention: shown, never pinged.
     /// <see cref="Kind"/> is the AnswerKinds key `/debug answers` counts it by.
     /// </summary>
-    private readonly record struct IntentPick(string[] Pool, string A, string B, AllowedMentions? Mentions, string Kind)
+    private readonly record struct IntentPick(string[] Pool, string A, string B, AllowedMentions? Mentions, string Kind, string? Badge = null)
     {
         public static IntentPick Of(string[] pool, string kind) => new(pool, string.Empty, string.Empty, null, kind);
     }
@@ -656,6 +672,14 @@ internal sealed class ChatterService
     // The template is picked first, formatted second: {0} the name, {1} the weekday, {2}/{3} the pick's.
     private string Format(IntentPick pick, string name, string weekday) =>
         string.Format(_picker.Pick(pick.Pool), name, weekday, pick.A, pick.B);
+
+    // Sends a pick's answer; the badge a pick carries (a ship with her) is earned only once the
+    // answer is actually out, never when the pick was merely built and a later branch cut it off.
+    private async Task SendPickAsync(SocketUserMessage message, IntentPick pick, string name, string weekday, string what)
+    {
+        if (await ReplyWithTypingAsync(message, Format(pick, name, weekday), what, pick.Mentions) is not null && pick.Badge is { } badge)
+            Award(message, badge);
+    }
 
     /// <summary>
     /// The answer to a specific intent (not a generic question or a low-effort word), or false.
@@ -706,7 +730,11 @@ internal sealed class ChatterService
         }
         // Told to hush: the line she answers with is her last in this channel for a while. Papa too:
         // his word holds for everyone else, and he is still answered (HushGateAsync).
-        if (intent == ChatIntent.ShutUp) _hush.Hush(message.Channel.Id, DateTimeOffset.UtcNow);
+        if (intent == ChatIntent.ShutUp)
+        {
+            _hush.Hush(message.Channel.Id, DateTimeOffset.UtcNow);
+            Award(message, MemberBadges.Keys.Hush);
+        }
 
         if (intent == ChatIntent.Help)
         {
@@ -1029,8 +1057,13 @@ internal sealed class ChatterService
                 return false;
         }
 
+        // After the draws, with the sides as shipped: « on irait bien ensemble » with her is the asker
+        // and her.
+        // The badge rides on the pick and is earned when the answer goes out (SendPickAsync).
+        var heart = Shipping.IsSelfWithHer(a, b, asker, self, OwnerId, BotResponses.TataId) ? MemberBadges.Keys.Heart : null;
+
         var answer = ShipModule.Render(a, b, asker, self, _picker, side => ShipModule.NameOf(side, guild, _client));
-        pick = new IntentPick(pool, answer, string.Empty, QuotedMentions, AnswerKinds.Intent(ChatIntent.Ship));
+        pick = new IntentPick(pool, answer, string.Empty, QuotedMentions, AnswerKinds.Intent(ChatIntent.Ship), heart);
         return true;
     }
 
@@ -1061,15 +1094,54 @@ internal sealed class ChatterService
     }
 
     // Which of her own posts a reply answers: one she remembered sending (HerMessages), the
-    // morning hello by its text, any slash-command result by its interaction metadata.
+    // morning hello by its text, one of her cards by its buttons, any other slash-command result by
+    // its interaction metadata.
     private ReplyContext? ReadReplyContext(SocketUserMessage message)
     {
         if (message.ReferencedMessage is not { } replied) return null;
         if (_herMessages.TryGet(replied.Id, out var kind)) return kind;
         if (MorningGreetingService.IsMorningHello(replied)) return ReplyContext.MorningHello;
+        if (CardRefs.Read(CustomIds(replied)) is { } card)
+        {
+            return card.Kind switch
+            {
+                CardKind.Poll => ReplyContext.Poll,
+                CardKind.Session => ReplyContext.Session,
+                CardKind.Tonight => ReplyContext.Tonight,
+                _ => ReplyContext.Giveaway,
+            };
+        }
         if (replied.InteractionMetadata is not null) return ReplyContext.CommandResult;
         return null;
     }
+
+    // A reply under one of her cards that is about the card: rallying the others, « j'ai voté », a
+    // question about it, an answer typed instead of clicked, « remonte-le » (CardReplyService). Read
+    // before the breakdown roll and the streak: someone urging the room under her poll is not talking
+    // to her. A mean reply is roasted as before; a reply about something else goes on down the path,
+    // where the card's context line waits for what nothing else caught.
+    private bool TryCardReply(SocketUserMessage message, string name)
+    {
+        if (message.ReferencedMessage is not { } replied || CardRefs.Read(CustomIds(replied)) is not { } card) return false;
+
+        var content = message.Content ?? string.Empty;
+        if (IsMean(MessageCues.Analyze(content), content)) return false;
+
+        var selfId = _client.CurrentUser.Id;
+        var tagsSomeone = message.MentionedUsers.Any(u => !u.IsBot && u.Id != message.Author.Id && u.Id != selfId);
+        return _cards.TryAnswer(message, card, MessageCues.ReadCardReply(content, tagsSomeone), name, CurrentWeekday());
+    }
+
+    // Every custom-id on a message's buttons and selects, rows opened.
+    private static IEnumerable<string?> CustomIds(IMessage message) =>
+        message.Components
+            .SelectMany(c => c is ActionRowComponent row ? row.Components : [c])
+            .Select(c => c switch
+            {
+                ButtonComponent button => button.CustomId,
+                SelectMenuComponent select => select.CustomId,
+                _ => null,
+            });
 
     // Counts this message in the person's back-and-forth with her (ConversationStreak). Returns
     // Handled when the gate answered it itself: a reaction while the conversation is ended, or the
@@ -1485,7 +1557,8 @@ internal sealed class ChatterService
 
         var line = string.Format(_picker.Pick(pool), name, CurrentWeekday());
         Count(message, path, AnswerKinds.Shutdown);
-        await ReplyWithTypingAsync(message, line, "shutdown-threat reply");
+        if (await ReplyWithTypingAsync(message, line, "shutdown-threat reply") is not null)
+            Award(message, MemberBadges.Keys.Threat);
         return true;
     }
 
@@ -1512,12 +1585,17 @@ internal sealed class ChatterService
     // GlitchService, so a very rare line comes out corrupted and is quietly fixed.
 
     // Every answer keeps her listening to that person for a moment (ChatListening).
-    private Task ReplyWithTypingAsync(
+    // Null when the send failed (BotChat), which the secret-badge sites check.
+    private Task<IUserMessage?> ReplyWithTypingAsync(
         SocketUserMessage replyTo, string line, string what, AllowedMentions? allowedMentions = null)
     {
         if (!replyTo.Author.IsBot) _listening.Answered(replyTo.Channel.Id, replyTo.Author.Id, DateTimeOffset.UtcNow);
         return _glitch.ReplyWithTypingAsync(replyTo, line, _logger, what, allowedMentions);
     }
+
+    // One secret badge for the author of a message, in the guild it was said in (0 in a DM: no award).
+    private void Award(SocketUserMessage message, string key) =>
+        _badges.Award((message.Channel as SocketGuildChannel)?.Guild.Id ?? 0, message.Author.Id, key);
 
     private Task PostWithTypingAsync(ISocketMessageChannel channel, string line, string what) =>
         _glitch.PostWithTypingAsync(channel, line, _logger, what);

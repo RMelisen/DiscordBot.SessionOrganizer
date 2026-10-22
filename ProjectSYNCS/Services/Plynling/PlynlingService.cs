@@ -55,11 +55,14 @@ public partial class PlynlingService
     private readonly ILogger<PlynlingService> _logger;
     private readonly PlynlingCooldowns _cooldowns;   // read only, for the card's « Laver » (GetBathSoapAsync)
 
-    public PlynlingService(AppDbContext db_context, ILogger<PlynlingService> logger, PlynlingCooldowns cooldowns)
+    private readonly BadgeAwarder _badges;
+
+    public PlynlingService(AppDbContext db_context, ILogger<PlynlingService> logger, PlynlingCooldowns cooldowns, BadgeAwarder badges)
     {
         _db_context = db_context;
         _logger = logger;
         _cooldowns = cooldowns;
+        _badges = badges;
     }
 
     // The owner's living Plynling, brought up to date. If it starved since anyone last
@@ -186,6 +189,7 @@ public partial class PlynlingService
             await AddMomentAsync(plynling, JournalKind.FedByFriend, actorId.ToString(), now);
         var badges = await AwardAsync(plynling, now, wasStarving ? BadgeEvent.SavedFromStarving : BadgeEvent.None);
         await _db_context.SaveChangesAsync();          // the money, the meal and any badge land together
+        if (!isOwner) _badges.Increment(plynling.GuildId, actorId, MemberBadges.Keys.Nanny);   // after the save
         var left = fromPantry ? await InventoryService.CountAsync(_db_context, plynling.GuildId, actorId, foodKey) : 0;
         return new FeedResult(CareOutcome.Done, plynling, fromPantry ? 0 : price, wallet.Balance, badges, factor,
             fromPantry ? pantryNeeded : 0, left);

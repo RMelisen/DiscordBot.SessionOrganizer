@@ -3,7 +3,7 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
-## 7.33.0 — 2026-10-22
+## 7.35.0 — 2026-10-22
 
 - Minecraft: « monte le camp » now builds an open camp instead of a plank hut: a campfire in a
   trapdoor pit, two log-and-slab benches, a crafting table, furnace and chest, a bed and four torch
@@ -11,11 +11,40 @@ the git history; versions that were skipped or only existed on a side branch are
   camp is taken down.
 - Minecraft: with no wool for the camp's bed she makes a straw bed from hay or wheat she carries;
   with neither, she builds the camp without a bed instead of refusing.
-
 - Minecraft: while building her camp she stops to defend someone or deal with a creeper, then
   finishes the same camp.
 - Minecraft: she also deals with a creeper heading for someone near her, not only one coming at
   her.
+
+## 7.34.1 — 2026-10-22
+
+- She now understands « tu pense quoi de… » without the « s », for her opinion and for ships.
+
+## 7.34.0 — 2026-10-22
+
+- `/level`: a new « Succès » button opens a private view of a member's badges, in four tabs:
+  collections, tiers, moments and secrets.
+- Badges now come in tiers (arcade wins, reactions, voice time, quizzes and more), which show
+  their progress toward the next tier, and in one-off moments, which are earned once.
+- Some badges are secret: they only show up once earned.
+
+## 7.33.1 — 2026-10-22
+
+- `/inventory trade`: the `give` suggestions say how many the other person already has, and the
+  `want` suggestions how many you have.
+- A trade offer shows each item's rarity and how many both people hold of it.
+
+## 7.33.0 — 2026-10-22
+
+- Replies under a poll, vote, session, `/tonight` or giveaway card are answered about that card:
+  she backs up whoever tells the others to vote (naming the people tagged who haven't clicked),
+  checks « j'ai voté » against the card, says how it stands when asked, and reminds anyone
+  answering in text that only the buttons count.
+- Tagging people under a card, or asking them « t'as voté ? », gets the same backing.
+- « remonte-le », « up » under a card: she posts it again at the bottom of the channel.
+- An ordinary reply under one of these cards gets a line about that card, not a random comeback.
+- When Papa tells her to hush, she answers in as few words as she can, a little hurt.
+- « tais-toi » is read as being told to hush, not as an insult: she goes quiet instead of roasting.
 
 ## 7.32.0 — 2026-10-21
 
