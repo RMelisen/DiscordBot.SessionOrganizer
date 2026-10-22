@@ -1424,8 +1424,10 @@ foreach (var (text, expected) in new[]
                 .Select(c => c switch { Discord.ButtonComponent b => b.CustomId, Discord.SelectMenuComponent m => m.CustomId, _ => null }).ToList();
             if (ids.Count != ids.Distinct().Count()) Fail($"collection book '{page}' repeats a custom-id");
         }
-        if (ProjectSYNCS.Commands.LevelModule.CardBadges(allDone) is not { } badgeLine || badgeLine.Length > 4000) Fail("/level badge line missing or too long");
-        if (ProjectSYNCS.Commands.LevelModule.CardBadges(new List<ProjectSYNCS.Models.CollectionCompletion>()) is not null) Fail("/level shows a badge line with no completion");
+        var noFacts = new MemberBadgeFacts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, null, new Dictionary<string, StoredBadge>());
+        var noStandings = MemberBadges.Evaluate(noFacts, new DateTimeOffset(2026, 10, 22, 12, 0, 0, TimeSpan.Zero));
+        if (ProjectSYNCS.Commands.MemberBadgeCards.CardLine(allDone, noStandings) is not { } badgeLine || badgeLine.Length > 4000) Fail("/level badge line missing or too long");
+        if (ProjectSYNCS.Commands.MemberBadgeCards.CardLine(new List<ProjectSYNCS.Models.CollectionCompletion>(), noStandings) is not null) Fail("/level shows a badge line with no completion");
         ProjectSYNCS.Helpers.ItemEmojis.Clear();
         Console.WriteLine($"collection book at worst: {widestBook} chars");
     }
@@ -2981,6 +2983,46 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     if (mbAll.Count != mb.Count || mbAll.Count(s => s.Earned) != 2) Fail("unknown stored key");
     if (MemberBadges.IsAwardable(0, "hush") || MemberBadges.IsAwardable(1, "nope") || MemberBadges.IsAwardable(1, "voice")
         || !MemberBadges.IsAwardable(1, "nanny") || !MemberBadges.IsAwardable(1, "crowned")) Fail("IsAwardable");
+
+    // The card line and the « Succès » view, at their widest.
+    var mbEmpty = MemberBadges.Evaluate(MbFacts(), mbNow);
+    if (ProjectSYNCS.Commands.MemberBadgeCards.CardLine(new List<ProjectSYNCS.Models.CollectionCompletion>(), mbEmpty) is not null) Fail("empty card line");
+    // Worst case: everything at Diamant, every secret found, every icon a real emoji markup.
+    var mbMax = new MemberBadgeFacts(99_999_999, 99_999_999, 99_999, 1, 99_999_999, 99_999, 99_999, 99_999, 99_999_999, 99_999, true,
+        mbNow.AddYears(-20), mb.ToDictionary(b => b.Key, _ => new StoredBadge(99_999_999, mbNow)));
+    var mbDone = ItemCatalog.Sets.Select(s => new ProjectSYNCS.Models.CollectionCompletion { SetKey = s.Key, Count = 999 }).ToList();
+    foreach (var b in mb) foreach (var t in Enum.GetValues<CollectionTier>())
+        ItemEmojis.Set(MemberBadges.IconKey(b, t), ItemEmojis.Markup("b_" + new string('x', 30), ulong.MaxValue));
+    (int Text, int Count, List<string> Ids) V2Measure(Discord.IMessageComponent c)
+    {
+        var text = 0; var count = 1; var ids = new List<string>();
+        void Add((int Text, int Count, List<string> Ids) r) { text += r.Text; count += r.Count; ids.AddRange(r.Ids); }
+        switch (c)
+        {
+            case Discord.ContainerComponent x: foreach (var k in x.Components) Add(V2Measure(k)); break;
+            case Discord.SectionComponent x:
+                foreach (var k in x.Components) Add(V2Measure(k));
+                if (x.Accessory is not null) Add(V2Measure(x.Accessory));
+                break;
+            case Discord.ActionRowComponent x: foreach (var k in x.Components) Add(V2Measure(k)); break;
+            case Discord.TextDisplayComponent x: text += x.Content.Length; break;
+            case Discord.ButtonComponent x: if (x.CustomId is not null) ids.Add(x.CustomId); break;
+        }
+        return (text, count, ids);
+    }
+    var mbWidest = 0;
+    foreach (var (facts, done, what) in new[] { (MbFacts(), new List<ProjectSYNCS.Models.CollectionCompletion>(), "empty view"), (mbMax, mbDone, "worst view") })
+    foreach (var section in Enum.GetValues<ProjectSYNCS.Commands.BadgeSection>())
+    {
+        var view = ProjectSYNCS.Commands.MemberBadgeCards.BuildView(ulong.MaxValue, new string('*', 32), section, done, MemberBadges.Evaluate(facts, mbNow));
+        var parts = view.Components.Select(V2Measure).ToList();
+        var (text, count, ids) = (parts.Sum(p => p.Text), parts.Sum(p => p.Count), parts.SelectMany(p => p.Ids).ToList());
+        mbWidest = Math.Max(mbWidest, text);
+        if (text > 4000 || count > 40 || ids.Count != ids.Distinct().Count()) Fail($"{what} {section}: {text} chars, {count} components");
+    }
+    if (ProjectSYNCS.Commands.MemberBadgeCards.CardLine(mbDone, MemberBadges.Evaluate(mbMax, mbNow)) is not { } mbLine || mbLine.Length > 4000) Fail("full card line");
+    ItemEmojis.Clear();
+    Console.WriteLine($"succès view at worst: {mbWidest} chars");
 }
 
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
