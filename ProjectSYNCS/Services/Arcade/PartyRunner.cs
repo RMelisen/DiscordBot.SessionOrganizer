@@ -19,9 +19,11 @@ public sealed class PartyRunner
     private readonly ArcadeTables _tables;
     private readonly ArcadeRunner _arcade;
     private readonly ResponsePicker _picker;
+    private readonly BadgeAwarder _badges;
 
-    public PartyRunner(ArcadeTables tables, ArcadeRunner arcade, ResponsePicker picker)
+    public PartyRunner(ArcadeTables tables, ArcadeRunner arcade, ResponsePicker picker, BadgeAwarder badges)
     {
+        _badges = badges;
         _tables = tables;
         _arcade = arcade;
         _picker = picker;
@@ -83,6 +85,9 @@ public sealed class PartyRunner
 
             var lines = settled.Nets.Where(n => s.Bets.ContainsKey(n.Key) && n.Value > 0)
                 .Select(n => $"<@{n.Key}> +{PebbleEconomy.Cailloux(n.Value)}").ToList();
+            // Bettors who came out ahead (not the owner's bonus alone), once the settlement is saved.
+            foreach (var n in settled.Nets.Where(n => s.Bets.ContainsKey(n.Key) && n.Value > 0))
+                _badges.Increment(race.GuildId, n.Key, MemberBadges.Keys.Arcade);
             var result = Pick(BotResponses.RaceWinLines, champion.Name, $"<@{champion.OwnerId}>") + "\n\n" +
                          (lines.Count > 0 ? "**Gagnants** : " + string.Join(" · ", lines) : "-# Personne n'avait parié sur le vainqueur. La cagnotte reste chez moi.") +
                          (paysBonus ? $"\n-# <@{champion.OwnerId}> reçoit {PebbleEconomy.Cailloux(Race.OwnerBonus)} pour son champion." : "");
@@ -139,8 +144,10 @@ public sealed class PartyRunner
         if (!_tables.End(id)) return;
         var (bets, cashed) = _tables.With<CrashGame, (Dictionary<ulong, long>, Dictionary<ulong, double>)>(id, _ =>
             (new Dictionary<ulong, long>(crash.Bets), new Dictionary<ulong, double>(crash.CashedOut)));
-        await _arcade.SettleAsync(crash.GuildId, bets.Select(b => (b.Key, b.Value)).ToList(), payers =>
+        var settled = await _arcade.SettleAsync(crash.GuildId, bets.Select(b => (b.Key, b.Value)).ToList(), payers =>
             payers.ToDictionary(p => p, p => cashed.TryGetValue(p, out var mult) ? Crash.Payout(bets[p], mult) - bets[p] : -bets[p]));
+        foreach (var n in settled.Nets.Where(n => n.Value > 0))
+            _badges.Increment(crash.GuildId, n.Key, MemberBadges.Keys.Arcade);   // cashed out ahead of the crash
 
         var line = crash.CrashPoint <= 1 ? Pick(BotResponses.CrashGroundedLines) : Pick(BotResponses.CrashBoomLines, $"×{crash.CrashPoint:0.00}");
         await _arcade.EditAsync(crash, PartyCards.CrashBoom(crash, line), null);
@@ -193,6 +200,9 @@ public sealed class PartyRunner
         var net = Blackjack.Net(outcome, g.Stake);
         var settled = await _arcade.SettleAsync(g.GuildId, new[] { (g.PlayerId, g.Stake) }, p =>
             p.ToDictionary(x => x, _ => net));
+        // A natural or a win, settled (a torn-up hand settles nothing and counts for nothing).
+        if (settled.Payers.Count > 0 && outcome is Blackjack.Outcome.Natural or Blackjack.Outcome.Win)
+            _badges.Increment(g.GuildId, g.PlayerId, MemberBadges.Keys.Arcade);
 
         var pool = outcome switch
         {
@@ -255,6 +265,9 @@ public sealed class PartyRunner
         var loser = _tables.With<BombGame, ulong>(id, _ => bomb.Holder);
         var settled = await _arcade.SettleAsync(bomb.GuildId, players.Select(p => (p, Bomb.Stake)).ToList(), payers =>
             payers.Contains(loser) ? Bomb.Nets(payers, loser) : new Dictionary<ulong, long>());
+        if (settled.Payers.Contains(loser))   // settled: everyone who paid in and did not hold the bomb wins
+            foreach (var survivor in settled.Payers.Where(p => p != loser))
+                _badges.Increment(bomb.GuildId, survivor, MemberBadges.Keys.Arcade);
         var details = settled.Payers.Contains(loser)
             ? $"-# <@{loser}> perd **{PebbleEconomy.Cailloux(Bomb.Stake)}** · les autres gagnent " +
               $"**{PebbleEconomy.Cailloux(Bomb.Nets(settled.Payers, loser).Values.Max())}** chacun."
@@ -294,6 +307,8 @@ public sealed class PartyRunner
             var paying = guesses.Where(g => payers.Contains(g.Key)).ToDictionary(g => g.Key, g => g.Value);
             return paying.Count == 0 ? new Dictionary<ulong, long>() : TemperatureRules.Nets(paying, actual, out winners);
         });
+        foreach (var winner in winners.Where(settled.Payers.Contains))   // settled above
+            _badges.Increment(t.GuildId, winner, MemberBadges.Keys.Arcade);
         var line = Pick(BotResponses.TempWinLines, $"{actual:0.#} °C", Mentions(winners));
         await _arcade.EditAsync(t, PartyCards.TemperatureResult(t, line, actual, winners), null);
         await _arcade.PostAsync(t, $"🌡️ {actual:0.#} °C. {Mentions(guesses.Keys)}", guesses.Keys.ToList());
@@ -350,6 +365,7 @@ public sealed class PartyRunner
         if (reason is not null) line = $"{reason}\n{line}";
 
         var money = "";
+        var settledOk = winnerTurn != 0;   // a stake nobody could cover cancels the game below
         if (g.Stake > 0 && winnerTurn != 0)
         {
             var winner = g.PlayerFor(winnerTurn);
@@ -360,12 +376,17 @@ public sealed class PartyRunner
             var settled = await _arcade.SettleAsync(g.GuildId, players.Select(p => (p, g.Stake)).ToList(), payers =>
                 payers.Count < players.Length ? new Dictionary<ulong, long>()
                 : players.ToDictionary(p => p, p => p == winner ? gain : -g.Stake));
+            settledOk = settled.Payers.Count == players.Length;
             money = settled.Payers.Count < players.Length
                 ? "\n-# Quelqu'un n'avait plus la mise : personne ne paie."
                 : g.AgainstHer
                     ? (winner == g.Player1 ? $"\n-# <@{winner}> gagne **{PebbleEconomy.Cailloux(gain)}**." : $"\n-# <@{loser}> perd **{PebbleEconomy.Cailloux(g.Stake)}**.")
                     : $"\n-# <@{winner}> gagne **{PebbleEconomy.Cailloux(gain)}** · <@{loser}> perd **{PebbleEconomy.Cailloux(g.Stake)}**.";
         }
+
+        // The winning human, once settled (stake 0 has nothing to settle). Her own wins earn nothing.
+        if (settledOk && !(g.AgainstHer && winnerTurn == 2))
+            _badges.Increment(g.GuildId, g.PlayerFor(winnerTurn), MemberBadges.Keys.Arcade);
 
         return (PartyCards.BoardCard(g, line + money), PartyCards.BoardButtons(g, over: true));
     }

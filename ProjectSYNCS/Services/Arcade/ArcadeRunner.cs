@@ -26,10 +26,12 @@ public sealed class ArcadeRunner
     private readonly DiscordSocketClient _client;
     private readonly ResponsePicker _picker;
     private readonly ILogger<ArcadeRunner> _logger;
+    private readonly BadgeAwarder _badges;
 
     public ArcadeRunner(ArcadeTables tables, IServiceProvider services, DiscordSocketClient client,
-        ResponsePicker picker, ILogger<ArcadeRunner> logger)
+        ResponsePicker picker, ILogger<ArcadeRunner> logger, BadgeAwarder badges)
     {
+        _badges = badges;
         _tables = tables;
         _services = services;
         _client = client;
@@ -110,6 +112,7 @@ public sealed class ArcadeRunner
             }
             else
             {
+                _badges.Increment(duel.GuildId, winner, MemberBadges.Keys.Arcade);   // settled: a real duel with a winner
                 line = string.Format(_picker.Pick(BotResponses.DuelWinLines), $"<@{winner}>", $"<@{loser}>");
                 outcome = $"-# <@{winner}> gagne **{PebbleEconomy.Cailloux(gain)}** · <@{loser}> perd " +
                           $"**{PebbleEconomy.Cailloux(duel.Stake)}** · l'arbitre garde {PebbleEconomy.Cailloux(Duel.Commission(duel.Stake))}.";
@@ -225,6 +228,10 @@ public sealed class ArcadeRunner
                     return payers.ToDictionary(p => p, _ => (long)net);
                 });
             }
+
+            // Settled (saved) above: a successful heist is a win for each crew member who paid in.
+            if (success)
+                foreach (var member in settled.Payers) _badges.Increment(heist.GuildId, member, MemberBadges.Keys.Arcade);
 
             var story = new System.Text.StringBuilder();
             if (settled.Payers.Count == 0)

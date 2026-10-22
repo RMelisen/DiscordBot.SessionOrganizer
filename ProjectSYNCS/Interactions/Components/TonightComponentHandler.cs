@@ -17,9 +17,12 @@ public class TonightComponentHandler : InteractionModuleBase<SocketInteractionCo
     private readonly ResponsePicker _picker;
     private readonly ILogger<TonightComponentHandler> _logger;
 
+    private readonly BadgeAwarder _badges;
+
     public TonightComponentHandler(TonightService tonight, EventService events, ResponsePicker picker,
-        ILogger<TonightComponentHandler> logger)
+        ILogger<TonightComponentHandler> logger, BadgeAwarder badges)
     {
+        _badges = badges;
         _tonight = tonight;
         _events = events;
         _picker = picker;
@@ -68,7 +71,10 @@ public class TonightComponentHandler : InteractionModuleBase<SocketInteractionCo
         // The minimum just got reached: one ping to the « chauds », once ever (the flag is written
         // before the message, so a crash costs the line, never a second ping).
         if (TonightModule.CountIn(updated) >= updated.Minimum && await _tonight.ClaimThresholdAsync(id))
+        {
+            _badges.Award(Context.Guild.Id, updated.OrganizerId, MemberBadges.Keys.Rallier);   // the claim is saved
             await AnnounceAsync(updated);
+        }
     }
 
     private async Task AnnounceAsync(TonightCall call)
