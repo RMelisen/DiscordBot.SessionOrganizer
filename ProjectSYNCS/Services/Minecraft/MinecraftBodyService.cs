@@ -743,9 +743,11 @@ public sealed class MinecraftBodyService : BackgroundService
                     break;
                 case "camped":
                     KeepCamp(root);
+                    // Something missing first; whole but without a bed (nothing to make one from), said apart.
+                    var whole = root.TryGetProperty("complete", out var complete) && complete.ValueKind == JsonValueKind.True;
+                    var bed = !root.TryGetProperty("bed", out var hasBed) || hasBed.ValueKind == JsonValueKind.True;
                     OnOutcome(root.GetProperty("player").GetString() ?? "",
-                        root.TryGetProperty("complete", out var complete) && complete.ValueKind == JsonValueKind.True
-                            ? BotResponses.McCampDoneLines : BotResponses.McCampPartialLines);
+                        !whole ? BotResponses.McCampPartialLines : bed ? BotResponses.McCampDoneLines : BotResponses.McCampNoBedLines);
                     break;
                 case "cantCamp":
                     if (root.TryGetProperty("blocks", out var partial) && partial.GetArrayLength() > 0) KeepCamp(root);

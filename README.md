@@ -165,10 +165,11 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
   - « syncs occupe-toi des animaux » (or « nourris les vaches », « fais de l'élevage »): she stays
     at the pen, breeds the animals, shears the sheep, keeps each kind at eight (never a named animal
     or a baby) and stores the wool, leather and meat in the chest next to it;
-  - « syncs monte le camp » (Papa and Tata only): she builds a small hut of planks on flat ground
-    nearby, with a bed, a chest, a crafting table, a furnace, a campfire and torches, crafting it
-    all and gathering the wood, stone and coal she's missing (wool only by shearing: she says so
-    when she has neither); « syncs démonte le camp » takes down only what she built and keeps it;
+  - « syncs monte le camp » (Papa and Tata only): she builds a small open camp nearby, round a
+    campfire: two benches, a crafting table, a furnace, a chest, a bed and torches on posts, on
+    ground she treads into a path, crafting it all and gathering the wood, stone and coal she's
+    missing (the bed from wool, sheared if need be, else a straw bed from hay or wheat she carries,
+    else none); « syncs démonte le camp » takes down only what she built and keeps it;
   - « syncs dodo »: she goes to bed. She also goes on her own when someone does at night, since the
     night only passes when everyone sleeps;
   - « syncs vide tes poches », « syncs donne-moi ton poisson » (or ta pioche, tes armes, ton fer…):

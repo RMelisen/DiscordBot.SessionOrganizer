@@ -431,27 +431,35 @@ internal static partial class BotResponses
         "Tu m'as semée ! Je note. Je retiens (￣ヘ￣)",
     };
 
-    // The camp, for Papa and Tata only (« monte le camp »): {0} is « Papa » or « Tata ». Under way (the first line, once a
-    // site is found), done, done with something missing ({1} what), refused for want of something ({1}: « de la
-    // laine », « du bois », « de la pierre »), no room, one already up, asked by someone else ({0} their name).
+    // The camp, for Papa and Tata only (« monte le camp »): {0} is « Papa » or « Tata ». An open camp round a campfire
+    // (benches, a workstation, a bed, torch posts, a trodden floor), no walls, no roof. Under way (the first line, once a
+    // site is found), done, done with something missing, done without a bed (no wool, no hay or wheat on her), refused
+    // for want of something ({1}: « du bois », « de la pierre »), no room, one already up, asked by someone else ({0}
+    // their name).
     public static readonly string[] McCampAckLines =
     {
         "Un camp ? J'y vais, {0}. Je vais chercher ce qu'il faut et je construis tout.",
-        "Mode bâtisseuse activé ! Une cabane, un lit, un feu de camp. Laisse-moi faire, {0} ♡",
+        "Mode bâtisseuse activé ! Un feu, des bancs, un lit. Laisse-moi faire, {0} ♡",
         "D'accord {0}, je monte le camp. Si je dois couper la moitié de la forêt, c'est pour la bonne cause.",
         "Un camp, tout de suite. Enfin, le temps de tout fabriquer. Patience, {0} :3",
     };
     public static readonly string[] McCampDoneLines =
     {
         "Le camp est monté, {0} ! Lit, coffre, établi, four. Et un feu de camp, parce que j'ai du goût ♡",
-        "Voilà ta cabane, {0}. Fait main. Littéralement.",
-        "Camp terminé ! Entre, installe-toi. Les chaussures, tu les laisses dehors.",
-        "C'est fini, {0}. Petit, mais à nous. Et avec un toit, s'il vous plaît.",
+        "Voilà ton camp, {0}. Fait main. Littéralement.",
+        "Camp terminé ! Assieds-toi près du feu. Les bancs, c'est moi qui les ai faits, alors tu les respectes.",
+        "C'est fini, {0}. Petit, mais à nous. Le feu est allumé, il manque plus que les chamallows ♡",
     };
     public static readonly string[] McCampPartialLines =
     {
         "Le camp est monté, {0}, mais il manque un bout. J'ai fait avec ce que j'avais.",
         "Presque fini, {0} : il manque des morceaux. Ça tient debout quand même. Enfin, je crois.",
+    };
+    public static readonly string[] McCampNoBedLines =
+    {
+        "Le camp est monté, {0}. Sans lit : pas de laine, pas de paille. Tu dormiras près du feu, c'est très romantique.",
+        "Tout est prêt, {0}, sauf le lit. Trois laines de la même couleur, ou du foin, et je t'en fais un.",
+        "Camp terminé ! Enfin, presque : pas de quoi faire un lit. Apporte-moi de la laine ou du blé, je m'occupe du reste.",
     };
     public static readonly string[] McCampMissingLines =
     {
@@ -463,7 +471,7 @@ internal static partial class BotResponses
     {
         "Pas assez de place à plat ici pour un camp, {0}. Trouve-moi un coin dégagé.",
         "Ici ? C'est tout bosselé. Emmène-moi sur un terrain plat et je construis.",
-        "Il me faut un coin plat de cinq sur cinq, et dégagé. Ici, y en a pas, {0}.",
+        "Il me faut un coin à peu près plat, et dégagé. Ici, y en a pas, {0}.",
     };
     public static readonly string[] McCampExistsLines =
     {
@@ -474,7 +482,7 @@ internal static partial class BotResponses
     {
         "Je monte le camp que pour Papa et Tata. Désolée {0}.",
         "Le camp, c'est une affaire de famille, {0}. Demande à Papa ou à Tata.",
-        "Non, {0}. Les cabanes, c'est sur commande de Papa ou Tata uniquement.",
+        "Non, {0}. Les camps, c'est sur commande de Papa ou Tata uniquement.",
     };
     // Taking it down: under way, done, nothing to take down, too far or in another dimension.
     public static readonly string[] McUncampAckLines =
@@ -1854,7 +1862,6 @@ internal static partial class BotResponses
     // What the camp can be short of, as {1} in McCampMissingLines, by the body's names.
     public static readonly Dictionary<string, string> McCampMissingNames = new()
     {
-        ["wool"] = "de la laine (ou des cisailles et un mouton)",
         ["wood"] = "du bois",
         ["stone"] = "de la pierre",
         ["crafting_table"] = "un établi",

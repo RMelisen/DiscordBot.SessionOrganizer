@@ -79,7 +79,13 @@ between them.
 - `course.js`: the lanes, one kind of terrain each, as lane-relative block commands.
 - `run.js`: building, the lanes and the other runs, the command line.
 - `actions.js`, `orders.js`, `safety.js`, `survival.js`, `players-test.js`: the scenarios beyond the course.
-- `camp.js` (flat world): « monte le camp » from given materials, every block checked, then taken down (`node camp.js`).
+- `camp.js` (flat world): « monte le camp » from given materials over short grass, a poppy on the nearest site's floor
+  and Papa standing on its fire pit; every cell checked against the layout (the logs' lie, flat trapdoors, the bed's head north, a floor of path and
+  dirt), then taken down: her blocks gone, the floor kept, the poppy and the ground untouched (`node camp.js`;
+  `interrupt`: a creeper and a bite while she builds, and the same camp finished; `nobed`: no wool, a camp without a
+  bed; `straw`: 27 wheat, a straw bed; `holes`: taken up again at a given site with a floor cell dug out, a table gone
+  from its list and someone's diamond beside it; `charcoal`: no coal; `mixed`: three kinds of logs; `uneven`: a post's ground a block up, a floor cell's a
+  block down).
 - `survival.js` also has a monster biting a stranger (`stranger`), the same bite while she harvests a field for Papa
   (`midharvest`: she fights, goes back, finishes and hands everything over) and the harvest alone (`harvestpapa`).
 - `wild.js` (a generated world: biomes, wild orders, the Nether, a portal) and `lag.js` (the delaying relay).

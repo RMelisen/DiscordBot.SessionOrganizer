@@ -2556,7 +2556,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
              "McPlaceForgottenLines", "McPlaceListLines", "McPlaceListEmptyLines", "McPlaceListEmptyOfLines", "McPlaceWhereLines", "McPlaceOtherDimensionLines",
              "McPlaceGoAckLines", "McPlaceArrivedLines", "McGuideAckLines", "McGuideWaitLines", "McGuideArrivedLines", "McGuideLostLines",
              "McRanchAckLines", "McRanchNoneLines", "McRanchNoChestLines",
-             "McCampAckLines", "McCampDoneLines", "McCampPartialLines", "McCampMissingLines", "McCampNoRoomLines", "McCampExistsLines",
+             "McCampAckLines", "McCampDoneLines", "McCampPartialLines", "McCampNoBedLines", "McCampMissingLines", "McCampNoRoomLines", "McCampExistsLines",
              "McCampRefusedLines", "McUncampAckLines", "McUncampDoneLines", "McUncampNoneLines", "McCampFarLines", "McRoutineFarmLines", "McRoutineFishLines", "McRoutineRanchLines",
              "McRoutineHomeLines", "McTagAlongLinesOwner", "McTagAlongLinesTata", "McRetrieveLines", "McRetrievedLines", "McRetrieveEmptyLines",
              "McRetrieveLostLines", "McToolWornLines", "McToolBrokeLines", "McNeedRodLines", "McNeedShearsLines", "McNeedBreedFoodLines",

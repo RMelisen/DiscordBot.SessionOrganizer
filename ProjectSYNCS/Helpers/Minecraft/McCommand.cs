@@ -112,7 +112,7 @@ public enum McOrder
     Inventory,
     /// <summary>Say how much she carries of <see cref="McRequest.Goods"/>. Takes her from nobody.</summary>
     Have,
-    /// <summary>Build a camp where she stands: a small hut with a bed, a chest, a crafting table, a furnace. Family only.</summary>
+    /// <summary>Build a camp where she stands: an open camp round a campfire, with benches, a workstation and a bed. Family only.</summary>
     Camp,
     /// <summary>Take her camp down, only its own blocks. Family only.</summary>
     Uncamp,

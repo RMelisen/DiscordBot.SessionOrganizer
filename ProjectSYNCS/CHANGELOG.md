@@ -3,6 +3,20 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.33.0 — 2026-10-22
+
+- Minecraft: « monte le camp » now builds an open camp instead of a plank hut: a campfire in a
+  trapdoor pit, two log-and-slab benches, a crafting table, furnace and chest, a bed and four torch
+  posts, on ground she treads into a patchwork of path and dirt. The trodden ground stays when the
+  camp is taken down.
+- Minecraft: with no wool for the camp's bed she makes a straw bed from hay or wheat she carries;
+  with neither, she builds the camp without a bed instead of refusing.
+
+- Minecraft: while building her camp she stops to defend someone or deal with a creeper, then
+  finishes the same camp.
+- Minecraft: she also deals with a creeper heading for someone near her, not only one coming at
+  her.
+
 ## 7.32.0 — 2026-10-21
 
 - Minecraft: « monte le camp » (Papa and Tata): she builds a small hut with a bed, a chest, a

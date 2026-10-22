@@ -44,7 +44,7 @@ public static class McHelp
                 new("syncs t'as combien de fer ?", McOrder.Have),
             ]),
         new("Le camp",
-            "Pour Papa et Tata : elle construit une petite cabane (lit, coffre, établi, four, feu de camp), en fabriquant tout et en allant chercher ce qui manque, puis la démonte et garde tout.",
+            "Pour Papa et Tata : elle monte un petit camp autour d'un feu (bancs, établi, four, coffre, lit, torches), en fabriquant tout et en allant chercher ce qui manque, puis le démonte et garde tout.",
             [
                 new("syncs monte le camp", McOrder.Camp), new("syncs démonte le camp", McOrder.Uncamp),
             ]),

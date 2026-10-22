@@ -360,35 +360,77 @@ list: the owner removed it.
   pillaring: a path through someone's wall or a dirt tower in their build is not help. Where
   walking can't get there she says so (`McNoPathLines`) instead. **The exceptions are a seed
   on bare farmland where she just harvested** (`harvestBlocks`), **a gathered tree's natural
-  leaves** (`gatheringMovements`) **and her camp's own blocks** (below): nothing else, nowhere else.
+  leaves** (`gatheringMovements`) **and her camp's own blocks and floor** (below): nothing else, nowhere else.
   Keep them that narrow.
 - **The camp** (« monte le camp », `makeCamp`; « démonte le camp », `breakCamp`): Papa and Tata
-  only (C#: `McCampRefusedLines` for anyone else), one at a time. A 5×5 hut of planks, walls 3 high,
-  a roof, a door in the south wall; inside a bed, a chest, a crafting table, a furnace, a torch;
-  before the door a campfire and two torches. On the closest flat, clear spot within 8 blocks
-  (`campFits`: firm full ground, the hut's cells clear to the roof, the front's for two; grass is
-  replaced, nothing else) or `noRoom`. Everything crafted from what she carries, what's short
-  gathered first (`campNeeds`: wood, then stone with a wooden pickaxe she makes, coal, else charcoal
-  from logs in the camp's own furnace); a wooden axe too, so taking it down goes faster. Wool only
-  sheared (`useOn` with shears), never a sheep killed: with neither three of one colour nor shears and
-  a sheep in sight she says so (`missing: wool`) before cutting anything. **She crafts through her
+  only (C#: `McCampRefusedLines` for anyone else), one at a time. An open camp round a campfire, as
+  `CampLayout` draws it (nine strings, the back to the north; the owner's design,
+  `docs/superpowers/specs/2026-10-22-camp-design.md`): the fire in a pit of four flat trapdoors, two
+  benches (a log on its side and two bottom slabs) on two sides, the workstation (table, furnace,
+  chest) on the third, a bed in the back-right corner, four torches on fence posts, each a cell
+  clockwise from a corner, and a patchwork floor of path and plain dirt. Nothing square on purpose:
+  keep it that way. On the closest site within 12 (`campFits`): one level, firm full ground and two
+  blocks of room, **only under the fire, its pit, the benches, the workstation and the bed**; the
+  torch posts and the floor follow the ground a block up or down (`campHeight`; `campHeights`,
+  found when the site is chosen and kept on the task, since a fence set down reads as ground), and
+  the floor may have no deeper drop (she stood in a two-deep hole in it to reach a block and never
+  got out), and **nobody standing where a block goes** (centred on her, the fire came under the feet
+  of the one who asked, beside her, and the server refused it). The cells left alone aren't checked. All of it at one level was rare outside a flat
+  world: at a forest's edge, none in reach. Grass is built over (`CampOver`),
+  nothing else. Everything crafted from what she carries, what's short gathered first (`campNeeds`:
+  wood, then stone with a wooden pickaxe she makes, coal, else charcoal in the camp's own furnace;
+  wood again while trees are in reach, up to six gatherings: a pass whose drops she missed brought
+  nothing in, and stopping there left the camp a log short at a forest's edge);
+  a wooden axe (taking it down faster) and a wooden shovel (the path) too. The trapdoors, slabs,
+  fences and the benches' logs are of the wood she has most of when there's enough of it, else of
+  another kind (`craftWooden`): a recipe takes one kind of planks, and with mixed logs one wood
+  alone left a fence post short with planks to spare. **The bed** (`campBed`), best first:
+  three wool of a colour; wool sheared on the spot (shears and a sheep, never one killed); a straw
+  bed from 3 hay bales or 27 wheat **she already carries** (never fetched: the wheat near her is
+  someone's field); else **no bed**: the camp goes up anyway (`bed: false`, `McCampNoBedLines`), it
+  never refuses for want of wool. **Her 26.1 client has no straw bed**: ViaBackwards shows it to her
+  as a `yellow_bed`, in hand and set down, so that's the name it's crafted, placed and taken down by,
+  through her recipe book only (minecraft-data doesn't know the recipe). **She crafts through her
   recipe book** (`craftOne`, `bookCraft`): `craft_recipe_request` has the server fill the grid
   itself, one shift-click takes the result. Mineflayer's `bot.craft` places every ingredient by
   clicks the server checks one by one, and on 26.1 it kept failing whatever the delays (the first
   table craft of a mixed recipe always; with a count it made one and put her inventory out of step
-  with the server's): no bed, no campfire, no pickaxe, then the furnace dug by hand and lost. The
-  book (`recipeBook`, from `recipe_book_add` at login and as recipes unlock) is listened to from the
-  moment she connects; a recipe not in it yet falls back to `bot.craft`. Each craft counts only once
-  the item is in her pockets, and is tried again otherwise. She builds from the hut's middle (`CampStand`, everything inside, the walls and the
-  roof in reach), the bed from beside it (it's laid the way she looks), then walks out and sets the
-  door, the campfire and the torches. The blocks she placed go to C# (`camped`, also a half-built
-  camp's `cantCamp`), kept in the state file (`McCamp`) and sent back to take it down: only those,
-  still what she placed, in the order a hut comes apart (outside and the door from before it, then
-  from the middle what's inside, the roof, the walls from the top; nearest-first through collectblock
-  she climbed onto her own walls), then everything that fell, the chest's contents with it. She keeps
-  it all. A chest is in the pathfinder's `blocksCantBreak`; `gatheringMovements` lifts that for a
-  chest among its targets. `tools/mc-pathtest/camp.js` builds one and takes it down, block by block
-  on the server.
+  with the server's). The book (`recipeBook`, from `recipe_book_add` at login and as recipes unlock)
+  is listened to from the moment she connects; a recipe not in it yet falls back to `bot.craft`.
+  Recipes unlock through advancements, so a test that takes her recipes must revoke her
+  advancements too, or the book stays empty for good (`camp.js` does both). Each craft counts only
+  once the item is in her pockets, and is tried again otherwise. **Placing** (`campPlace`): from a
+  given stand for the bed (laid the way she looks, head to the back) and the workstation (it turns
+  to face her, so it's set from the fire's side), from wherever she reaches otherwise
+  (`GoalPlaceBlock`). A log lies along the face it's set against, so a bench's slabs go first and its
+  log against the end slab's side (`against`); a trapdoor and a slab set on the ground's top come
+  out flat and bottom-half. Two rounds: what the server refused (a sheep in its cell) is tried again
+  once the rest is down. **The floor** (`campFloor`, `campTread`), last: a pattern drawn per camp
+  (about 60% path, the way from the fire to the entrance always path), kept on the task; a cell
+  with a flower on it is left as it is. **Nothing is dug**: a path cell with the shovel on the bare
+  top (short grass dug first); a plain dirt cell the same, then a block set on it (`CampFiller`: the
+  game turns a covered path back to dirt) and taken back. Dug out and its dirt set back instead,
+  the drop popped onto the table out of reach, and a dip's hole was two deep (she stepped in for the
+  dirt and stayed down there). The block on a path is in `placed` while it's there (a fight in
+  between, it comes down with the camp); a cell someone stands on stays a path; she picks up only
+  her own block (anything else lying about may be someone's). A cell found dug out is filled
+  (earth, else cobblestone, else planks). Only grass-family ground is touched. Plain dirt grows back to grass within
+  minutes (the game's doing). **The floor is never in `placed`** and stays when the camp comes down.
+  The blocks she placed go to C# (`camped`: `complete` is every block but the bed, `bed` the bed;
+  also a half-built camp's `cantCamp`), kept in the state file (`McCamp`) and sent back to take it
+  down: only those, still what she placed: the torches first (they'd drop off their posts), then
+  the nearest from where she stands (`campDig`, collectblock for what's out of reach), then
+  everything that fell, the chest's contents with it. She keeps it all; a campfire broken without
+  silk touch gives two charcoal, not itself (the game's rule). **A camp gives way to a fight or a
+  creeper** like any restartable order (`Restartable`), and is taken up again at the same site with
+  what's already on it and the same floor (`resumeFor` carries `site`, `placed`, `floor` and
+  `heights`; `campNeeds(placed)` counts what's set down as done, `placed` cut down first to what still stands:
+  a creeper may have blown some away); a floor cell left dug is filled first, and any hole once more
+  at the end. **Nothing escapes `makeCamp`**: a throw ends it as a failed craft (`cantCamp` with
+  the blocks placed), or she'd hang on a dead task and C# would never know what to take down. A chest is in the pathfinder's `blocksCantBreak`;
+  `gatheringMovements` lifts that for a chest among its targets. `tools/mc-pathtest/camp.js` builds
+  one and checks every cell, takes it down, and has `interrupt`, `nobed`, `straw`, `holes`,
+  `charcoal`, `mixed` and `uneven` modes.
 - **Doors.** The pathfinder sees every door as a wall (its own `canOpenDoors` is off, flagged flaky
   by its authors, and covers fence gates only), so `gentleMovements` wraps its `getBlock`: a wooden
   or copper door or a fence gate is passable whatever its state, except on a diagonal step (a corner
@@ -854,7 +896,8 @@ without it she's stuck at the first step; with it she climbs, sprinting or not.
 
 **Creepers, whatever she's doing** (`creeperTick`, `dodgeTick`): guarding, a creeper was always
 `guardTick`'s; busy otherwise (a field, fishing, gathering, following) she paid it no mind and one
-blew up beside her. One closer than 10 blocks now takes her off whatever can be left and picked up
+blew up beside her. One closer than 10 blocks, or within 10 of a player near her (it blew up by the player at her
+camp: at 5, three 1.1 s draws came too late), now takes her off whatever can be left and picked up
 again (`canDefend`'s rule, `resumeFor`'s way back): shot from 6 blocks or more with a bow and
 arrows, else kept out of its reach, never hit by hand; dead, gone or 16 blocks off, she goes back to
 it. What can't be left (a furnace, handing over, a bed, a portal, running away) is over in seconds.
