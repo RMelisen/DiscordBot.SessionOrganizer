@@ -3027,6 +3027,11 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     if (!Heart("syncs", "moi") || !Heart("moi", "toi") || !Heart($"<@{mbAsker}>", "syncs")
         || !Heart("moi", "syncs", AvailabilityService.OwnerId)) Fail("heart: self with her");
     if (Heart("syncs", "pizza") || Heart("syncs", $"<@{mbOther}>") || Heart("moi", "pizza") || Heart("syncs", "toi")) Fail("heart: not self with her");
+    var flip = new FeedbackFlip();
+    if (flip.Record(1, FeedbackKind.Good, mbNow) || !flip.Record(1, FeedbackKind.Bad, mbNow.AddSeconds(30))) Fail("flip within a minute");
+    if (flip.Record(2, FeedbackKind.Good, mbNow) || flip.Record(2, FeedbackKind.Bad, mbNow.AddSeconds(61))) Fail("flip after a minute");
+    if (flip.Record(3, FeedbackKind.Good, mbNow) || flip.Record(3, FeedbackKind.Good, mbNow.AddSeconds(5))) Fail("same verdict twice");
+    if (flip.Record(4, FeedbackKind.Good, mbNow) || flip.Record(5, FeedbackKind.Bad, mbNow.AddSeconds(5))) Fail("two people");
     ItemEmojis.Clear();
     Console.WriteLine($"succès view at worst: {mbWidest} chars");
 }

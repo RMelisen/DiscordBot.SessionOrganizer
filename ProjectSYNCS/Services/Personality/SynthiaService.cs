@@ -27,6 +27,7 @@ internal sealed class SynthiaService
 
     private readonly DiscordSocketClient _client;
     private readonly BreakdownService _breakdown;
+    private readonly BadgeAwarder _badges;
     private readonly ILogger<SynthiaService> _logger;
 
     // Its own gate, shared with nobody.
@@ -35,8 +36,10 @@ internal sealed class SynthiaService
     public SynthiaService(
         DiscordSocketClient client,
         BreakdownService breakdown,
+        BadgeAwarder badges,
         ILogger<SynthiaService> logger)
     {
+        _badges = badges;
         _client = client;
         _breakdown = breakdown;
         _logger = logger;
@@ -45,10 +48,13 @@ internal sealed class SynthiaService
     public async Task<bool> HandleMessageAsync(SocketMessage rawMessage)
     {
         if (rawMessage is not SocketUserMessage message || message.Author.IsBot) return false;
-        if (message.Channel is not SocketGuildChannel) return false;
+        if (message.Channel is not SocketGuildChannel guildChannel) return false;
         if (!MessageCues.MentionsSynthia(message.Content ?? string.Empty)) return false;
         if (_breakdown.IsActive(message.Channel.Id)) return false;
         if (!_daily.TryClaim(0)) return false;
+
+        // She flinched: the person who said it earns the secret.
+        _badges.Award(guildChannel.Guild.Id, message.Author.Id, MemberBadges.Keys.Synthia);
 
         var roll = Random.Shared.NextDouble();
         if (roll < ReactionShare)

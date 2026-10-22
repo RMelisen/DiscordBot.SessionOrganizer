@@ -47,6 +47,10 @@ public static class Ambient
     public const double GlitchWakeChance = 0.35;
     public static readonly TimeSpan GlitchEditAfter = TimeSpan.FromMinutes(2);
 
+    // After an abrupt wake line, the first person to speak in the main channel within this
+    // window earns the "first to find her" badge.
+    public static readonly TimeSpan FirstWakeWindow = TimeSpan.FromHours(2);
+
     public static bool IsSleepHours(DateTimeOffset now) => InHours(now, SleepStartHour, SleepEndHour);
 
     public static bool IsNightLineHour(DateTimeOffset now) => InHours(now, NightLineHour, NightLineHour + 1);

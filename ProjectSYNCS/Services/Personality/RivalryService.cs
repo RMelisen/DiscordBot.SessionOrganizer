@@ -32,6 +32,7 @@ internal sealed class RivalryService
 {
     private readonly DiscordSocketClient _client;
     private readonly GlitchService _glitch;
+    private readonly BadgeAwarder _badges;
     private readonly ResponsePicker _picker;
     private readonly ILogger<RivalryService> _logger;
 
@@ -71,8 +72,10 @@ internal sealed class RivalryService
         ResponsePicker picker,
         GlitchService glitch,
         ChatHush hush,
+        BadgeAwarder badges,
         ILogger<RivalryService> logger)
     {
+        _badges = badges;
         _hush = hush;
         _glitch = glitch;
         _client = client;
@@ -119,6 +122,10 @@ internal sealed class RivalryService
 
         _logger.LogInformation("Praise from {Name}{Owner} went to a rival in channel {ChannelId}.",
             name, byOwner ? " (the owner)" : "", praise.Channel.Id);
+
+        // Praising a rival in front of her is the secret, humans only.
+        if (!praise.Author.IsBot && praise.Channel is SocketGuildChannel praiseChannel)
+            _badges.Award(praiseChannel.Guild.Id, praise.Author.Id, MemberBadges.Keys.Traitor);
 
         // No cooldown and no roll: this is the moment the whole thing exists for. Her
         // creator doing it is a different injury from anyone else doing it — everyone
