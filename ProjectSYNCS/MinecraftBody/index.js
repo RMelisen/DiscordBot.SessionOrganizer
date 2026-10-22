@@ -23,6 +23,7 @@
 //      {"op":"patrol","player":"…","spot":{x,y,z,dimension}|null} · {"op":"smelt","player":"…","what":"food|ore|sand"}
 //      {"op":"where","player":"…"} · {"op":"mark","player":"…"} · {"op":"sit"} · {"op":"jump"} · {"op":"wave","player":"…"}
 //      {"op":"ranch","player":"…"} · {"op":"routine","farm":spot|null,"fish":spot|null,"ranch":spot|null,"home":spot|null}
+//      {"op":"camp","player":"…"} · {"op":"uncamp","player":"…","blocks":[{x,y,z,name}],"dimension":"…","center":{x,y,z}}
 //        (a spot is {x,y,z,dimension})
 // Out: version {server,using,fallback} · spawned · players {names} · chat {player,text,private}
 //      system {key,args:[{text,key}]} · hurt {by} · died · night · kicked {reason} · end {reason}
@@ -45,6 +46,9 @@
 //      cantSmelt {player,what,why: nothing|noFuel|noFurnace|busy}
 //      position {player,x,y,z,dimension} · marked {player,x,y,z,dimension} · cantMark {player}
 //      ranching {player} · cantRanch {player,why: none|noChest}
+//      camping {player} · camped {player,blocks:[{x,y,z,name}],complete,x,y,z,dimension}
+//      cantCamp {player,why: noRoom|missing|craft|place,missing:[wool|wood|stone|…],blocks?} · uncamping {player}
+//      uncamped {player,count,left} · cantUncamp {player,why: none|otherDimension|tooFar}
 //      Her own (no player, no claim): routine {what: farm|fish|ranch|home} · tagAlong {player} · retrieving
 //      retrieved {count} · retrieveLost {why: otherDimension|tooFar|void|lava|noPath|despawned} · creeperBehind {player}
 //      wornOut {tool} · broke {tool} · lacking {what: rod|shears|breedFood|arrows|space}
@@ -181,6 +185,13 @@ function gentleMovements() {
     const b = getBlock(pos, dx, dy, dz);
     if (isDragColumn(b)) {
       b.safe = false;
+      return b;
+    }
+    // A cactus is no floor: once she cut a column down to its bottom block, the pathfinder walked her onto it and she
+    // stood there being pricked. Not to stand on nor to walk through; beside one costs more (exclusionAreasStep).
+    if (b && b.name === 'cactus') {
+      b.safe = false;
+      b.physical = false;
       return b;
     }
     if (!b || !b.position || (dx !== 0 && dz !== 0)) return b;
@@ -436,6 +447,8 @@ function gatheringMovements(targets) {
   const treeLeaves = (block) => block.name.endsWith('_leaves') && block.getProperties().persistent === false
     && logs.some((l) => Math.abs(l.position.x - block.position.x) <= LeavesBy && Math.abs(l.position.y - block.position.y) <= LeavesBy
       && Math.abs(l.position.z - block.position.z) <= LeavesBy);
+  // A chest among the targets is hers to break (her camp's): the pathfinder never breaks one otherwise.
+  if (targets.some((b) => b.name === 'chest')) movements.blocksCantBreak.delete(bot.registry.blocksByName.chest.id);
   const safe = movements.safeToBreak.bind(movements);
   // A block in a chunk that isn't loaded comes as a stub with no position: not breakable (reading it threw from the
   // physics tick and took the whole body down).
@@ -1039,10 +1052,12 @@ function isTreeLog(block) {
 }
 
 // Whether a block has an open face (air, water, a plant: something with no collision box) to break it from.
+// Not water either: coal at the bottom of a lake counted as open, she went down for it, mined it at a fifth of the
+// speed with her head under, and drowned there (the camp's coal, a local server).
 function exposed(block) {
   return [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]].some(([dx, dy, dz]) => {
     const near = bot.blockAt(block.position.offset(dx, dy, dz));
-    return near && near.boundingBox === 'empty' && near.name !== 'lava';
+    return near && near.boundingBox === 'empty' && near.name !== 'lava' && near.name !== 'water' && near.name !== 'bubble_column';
   });
 }
 
@@ -1059,37 +1074,24 @@ function itemCounts() {
 
 // `since`: started again after a fight (restartOrder), from the pockets as they were when the order first came, so
 // what she had gathered before still counts and is handed over; no second « collecting ».
-async function collect(player, resource, count, since = null) {
+// What she can get at, the closest 256 (wood: in a tree): she never digs, so a block with no open face (stone under
+// the grass) is out of reach (collectblock spent its 5 s search on one and stopped the order). Open is part of the
+// search, not a filter after it: on a mountain the closest 256 stone were all under her feet, and she said there was
+// none with a cliff face 20 blocks off. `all`, for the count she announces, is the closest 256 of the kind.
+function gatherCandidates(resource) {
   const matches = Resources[resource];
-  if (!matches) return;
   const ids = bot.registry.blocksArray.filter((b) => matches(b.name)).map((b) => b.id);
-  // What she can get at, the closest 256 (wood: in a tree): she never digs, so a block with no open face (stone under
-  // the grass) is out of reach (collectblock spent its 5 s search on one and stopped the order). Open is part of the
-  // search, not a filter after it: on a mountain the closest 256 stone were all under her feet, and she said there was
-  // none with a cliff face 20 blocks off. `all`, for the count she announces, is the closest 256 of the kind.
   const tree = (b) => resource !== 'wood' || isTreeLog(b);
-  const candidates = () => ({
+  return {
     all: bot.findBlocks({ matching: ids, maxDistance: GatherRadius, count: 256 }).map((p) => bot.blockAt(p)).filter((b) => b && tree(b)),
     open: bot.findBlocks({ matching: ids, useExtraInfo: (b) => exposed(b) && tree(b), maxDistance: GatherRadius, count: 256 })
       .map((p) => bot.blockAt(p)).filter(Boolean),
-  });
-  const first = candidates();
-  if (first.open.length === 0) return emit('cantCollect', { player, resource, why: 'none' });
-  if (!canHarvest(first.open[0])) return emit('cantCollect', { player, resource, why: 'noTool' });
-  stay();
+  };
+}
 
-  const before = since || itemCounts();
-  const counted = (type) => Yields[resource](bot.registry.items[type].name);
-  const mine = { kind: 'collect', player, before };
-  task = mine;
-  if (!since) emit('collecting', { player, resource, count: Math.min(count, first.all.length) });
-  // In rounds: what's open now, then what that opened (a trunk's top log, boxed in by leaves, only opens once the
-  // logs under it are gone: she brought 12 of 16), until the count, nothing open, or a round that broke nothing.
-  // Started again, what she already has of it counts towards the count.
-  const already = [...itemCounts()].filter(([type]) => counted(type))
-    .reduce((sum, [type, n]) => sum + Math.max(0, n - (before.get(type) || 0)), 0);
-  let left = count - already;
-  let open = first.open;
+// In rounds: what's open now, then what that opened (a trunk's top log, boxed in by leaves, only opens once the logs
+// under it are gone: she brought 12 of 16), until `left` are broken, nothing is open, or a round broke nothing.
+async function gatherRounds(resource, left, mine, open = gatherCandidates(resource).open) {
   for (let round = 0; round < 4 && left > 0 && open.length > 0 && task === mine; round++) {
     const batch = open.slice(0, left);
     await gather(batch, mine, 'collect');
@@ -1099,8 +1101,26 @@ async function collect(player, resource, count, since = null) {
     }).length;
     left -= broken;
     if (broken === 0 || task !== mine) break;
-    open = candidates().open;
+    open = gatherCandidates(resource).open;
   }
+}
+
+async function collect(player, resource, count, since = null) {
+  if (!Resources[resource]) return;
+  const first = gatherCandidates(resource);
+  if (first.open.length === 0) return emit('cantCollect', { player, resource, why: 'none' });
+  if (!canHarvest(first.open[0])) return emit('cantCollect', { player, resource, why: 'noTool' });
+  stay();
+
+  const before = since || itemCounts();
+  const counted = (type) => Yields[resource](bot.registry.items[type].name);
+  const mine = { kind: 'collect', player, before };
+  task = mine;
+  if (!since) emit('collecting', { player, resource, count: Math.min(count, first.all.length) });
+  // Started again, what she already has of it counts towards the count.
+  const already = [...itemCounts()].filter(([type]) => counted(type))
+    .reduce((sum, [type, n]) => sum + Math.max(0, n - (before.get(type) || 0)), 0);
+  await gatherRounds(resource, count - already, mine, first.open);
   if (task !== mine) return; // told to stop in the meantime
 
   const { total, delivered } = await deliverGains(player, before, counted);
@@ -1121,6 +1141,17 @@ CollectTargets.prototype.appendTarget = function (target) {
   appendTarget.call(this, target);
 };
 
+// Whether an item that just appeared fell from breaking `block`: within 2 blocks of it sideways (the item's data can
+// come a moment after it started rolling), from a block under it up to ColumnHigh above (a column's pieces drop where
+// each piece was, up to 16 high for bamboo; within 2 in all directions, they were left lying).
+const ColumnHigh = 17;
+
+function dropOf(entity, block) {
+  const p = entity.position;
+  const c = block.position.offset(0.5, 0, 0.5);
+  return Math.hypot(p.x - c.x, p.z - c.z) <= 2 && p.y >= block.position.y - 1.5 && p.y <= block.position.y + ColumnHigh;
+}
+
 // Breaks `blocks`, then picks up what they dropped. `what` names it in the log. Solid blocks go to collectblock (with
 // gatheringMovements). Blocks with no collision box (wheat, carrots, potatoes, beetroot) can't: it walks to where a
 // ray from her eyes hits the block, and a ray goes through those, so it searched for 5 s and gave up on the harvest.
@@ -1134,7 +1165,7 @@ async function gather(blocks, mine, what) {
     // collectblock only notes a drop that appears within half a block of the block's centre; a lump of coal fell
     // further and stayed lying. Within 2, as for crops.
     const noteDrop = (entity) => {
-      if (solid.some((b) => entity.position.distanceTo(b.position.offset(0.5, 0.5, 0.5)) <= 2)) drops.add(entity.id);
+      if (solid.some((b) => dropOf(entity, b))) drops.add(entity.id);
     };
     bot.on('itemDrop', noteDrop);
     // One at a time, the closest first: collectblock gives up on the whole list when one block can't be reached.
@@ -1181,8 +1212,7 @@ function emptyHand() {
 async function breakSoft(blocks, mine, drops) {
   const left = [...blocks];
   const noteDrop = (entity) => {
-    // Within 2: the item's data can come a moment after it started rolling.
-    if (blocks.some((b) => entity.position.distanceTo(b.position.offset(0.5, 0.5, 0.5)) <= 2)) drops.add(entity.id);
+    if (blocks.some((b) => dropOf(entity, b))) drops.add(entity.id);
   };
   bot.on('itemDrop', noteDrop);
   try {
@@ -1255,6 +1285,12 @@ const Crops = {
   beetroot: { block: 'beetroots', ripe: 3, seed: 'beetroot_seeds' },
   melon: { block: 'melon', stem: 'attached_melon_stem' },
   pumpkin: { block: 'pumpkin', stem: 'attached_pumpkin_stem' },
+  // Columns: what grows on top of itself. She cuts the second block of each, which brings down everything above it, and
+  // the bottom one stays to grow again: no replanting. Only when named or on a farm, never in « everything ripe »: a
+  // bamboo jungle, a desert's cacti and a river's cane are mostly wild.
+  bamboo: { block: 'bamboo', column: true },
+  sugarcane: { block: 'sugar_cane', column: true },
+  cactus: { block: 'cactus', column: true },
 };
 const HarvestRadius = 24;
 const FarmRadius = 16;
@@ -1262,16 +1298,44 @@ const ChestRadius = 10;
 const FarmRound = 15000;
 // What goes in the farm's chest, and how much of each she keeps back to replant with.
 const FarmProduce = new Set(['wheat', 'wheat_seeds', 'carrot', 'potato', 'poisonous_potato', 'beetroot', 'beetroot_seeds',
-  'melon_slice', 'pumpkin']);
+  'melon_slice', 'pumpkin', 'bamboo', 'sugar_cane', 'cactus']);
 const SeedsKept = { wheat_seeds: 16, carrot: 16, potato: 16, beetroot_seeds: 16 };
 // And what she keeps to eat: the carrots and potatoes kept as seeds are food too, so only these two are extra.
 const FoodKept = { beetroot: 8, melon_slice: 8 };
 
+// What lies in a field is the field's: produce (FarmProduce) on or beside farmland or a crop. She only ever picked up
+// the drops she saw fall from what she broke, within 2 blocks of it, so a carrot that rolled further, or one someone
+// trampled out, stayed on the ground round after round. Anything else lying about stays where it is: a player's dropped
+// things are theirs (lootSpots).
+const FieldSweep = 20000;
+
+function isFieldBlock(block) {
+  return Boolean(block) && (block.name === 'farmland' || Object.values(Crops).some((c) => c.block === block.name));
+}
+
+function fieldDrop(entity) {
+  if (entity.name !== 'item' || typeof entity.getDroppedItem !== 'function') return false;
+  const item = entity.getDroppedItem();
+  if (!item || !FarmProduce.has(item.name)) return false;
+  const at = entity.position.floored();
+  for (let dx = -1; dx <= 1; dx++)
+    for (let dz = -1; dz <= 1; dz++)
+      for (let dy = -1; dy <= 0; dy++)
+        if (isFieldBlock(bot.blockAt(at.offset(dx, dy, dz)))) return true;
+  return false;
+}
+
 function cropsFor(key) {
-  return key === 'any' ? Object.values(Crops) : Crops[key] ? [Crops[key]] : [];
+  return key === 'any' ? Object.values(Crops).filter((c) => !c.column) : Crops[key] ? [Crops[key]] : [];
 }
 
 function isRipe(block, crop) {
+  // A column's second block: the same below it, something else below that.
+  if (crop.column) {
+    const below = bot.blockAt(block.position.offset(0, -1, 0));
+    const base = bot.blockAt(block.position.offset(0, -2, 0));
+    return Boolean(below && below.name === crop.block && base && base.name !== crop.block);
+  }
   if (crop.stem) {
     return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => {
       const near = bot.blockAt(block.position.offset(dx, 0, dz));
@@ -1332,6 +1396,8 @@ async function harvest(player, key, since = null) {
   task = mine;
   if (!since) emit('harvesting', { player, crop: key, count: found.length });
   const replanted = await harvestBlocks(found, mine);
+  // And what lies in the field she cut, near what she cut.
+  if (task === mine) await pickUp((e) => fieldDrop(e) && found.some((f) => f.block.position.distanceTo(e.position) <= 4), FieldSweep, mine);
   if (task !== mine) return; // told to stop in the meantime
 
   const { total, delivered } = await deliverGains(player, before);
@@ -1370,14 +1436,14 @@ async function farmRound() {
   mine.busy = true;
   try {
     const found = findRipe(Object.values(Crops), mine.anchor, FarmRadius);
-    if (found.length > 0) {
-      const before = itemCounts();
-      await harvestBlocks(found, mine);
-      // What the round brought in, counted as a harvest order counts it (items gained, net of the seeds replanted).
-      const gained = [...itemCounts()].reduce((sum, [type, n]) => sum + Math.max(0, n - (before.get(type) || 0)), 0);
-      if (gained > 0) emit('farmed', { count: gained });
-      if (task === mine) await storeProduce(mine);
-    }
+    const before = itemCounts();
+    if (found.length > 0) await harvestBlocks(found, mine);
+    // Every round, ripe or not: what lies in the field comes in too.
+    if (task === mine) await pickUp((e) => fieldDrop(e) && e.position.distanceTo(mine.anchor) <= FarmRadius, FieldSweep, mine);
+    // What the round brought in, counted as a harvest order counts it (items gained, net of the seeds replanted).
+    const gained = [...itemCounts()].reduce((sum, [type, n]) => sum + Math.max(0, n - (before.get(type) || 0)), 0);
+    if (gained > 0) emit('farmed', { count: gained });
+    if (task === mine && gained > 0) await storeProduce(mine);
     if (task === mine && bot.entity.position.distanceTo(mine.anchor) > 4)
       await bot.pathfinder.goto(new goals.GoalNear(mine.anchor.x, mine.anchor.y, mine.anchor.z, 2));
   } catch (err) {
@@ -2076,6 +2142,496 @@ function backTick() {
   task = null;
   bot.pathfinder.setGoal(null);
   t.again();
+}
+
+// ---- The camp -----------------------------------------------------------------------------------------
+
+// « monte le camp » (Papa or Tata: C# checks): a 5x5 hut of planks, walls 3 high, a roof, a door in the south wall,
+// with a bed, a chest, a crafting table, a furnace and a torch inside, and a campfire and two torches before the door.
+// All of it crafted, one craft at a time (bot.craft with a count made one and put her inventory out of step with the
+// server's), from what she carries; what's missing she gathers: wood, stone (with a wooden pickaxe she makes), coal
+// (else charcoal from logs, in the camp's own furnace). Wool only from shearing, never a sheep killed: with neither
+// three of one colour nor shears and a sheep in sight, she says so before starting. On a flat, clear spot near her, never
+// over anything; only its own blocks are placed, and « démonte le camp » breaks only those, still what she placed: the
+// list goes to C#, which keeps it across restarts and sends it back. She keeps the tools she made (a wooden axe too,
+// so taking the camp down doesn't take minutes).
+const CampSearch = 12; // how far from her a site may be
+const CampWalls = 3; // walls' height; the roof sits on them
+const CampPlanks = 4 * 4 * CampWalls - 2 + 5 * 5; // the walls round 5x5 (16 columns) less the door, and the roof: 71
+const CampTorches = 3;
+
+// The cells, from the camp's north-west corner at her feet' level: x east, z south.
+const At = (o, dx, dy, dz) => o.offset(dx, dy, dz);
+const CampStand = [2, 0, 2]; // inside, in the middle: everything inside, the walls and the roof are in reach from here
+const CampBedStand = [3, 0, 1]; // the bed is laid towards where she looks: from here, foot (2, 1), head (1, 1)
+const CampFront = [2, 0, 5]; // outside the door
+
+// What the game lets a block be placed over (its own « replaceable »): grass, leaf litter, bushes, a snow layer. Flowers,
+// mushrooms and saplings are not, and a site with one is passed over: they may be someone's.
+const CampOver = new Set(['air', 'cave_air', 'short_grass', 'tall_grass', 'fern', 'large_fern', 'dead_bush', 'leaf_litter', 'bush',
+  'short_dry_grass', 'tall_dry_grass', 'vine', 'snow', 'glow_lichen']);
+
+function campReplaceable(block) {
+  return Boolean(block) && CampOver.has(block.name);
+}
+
+// A site: firm full ground under the hut, the row before its door and the way to the campfire; the hut's cells clear up
+// to the roof, the front's for two blocks. Only those: a flat ring around it all as well left no room on a meadow.
+const CampFrontCells = [[0, 5], [1, 5], [2, 5], [3, 5], [4, 5], [2, 6], [2, 7]];
+
+function campFits(o) {
+  const cells = [];
+  for (let dx = 0; dx <= 4; dx++) for (let dz = 0; dz <= 4; dz++) cells.push([dx, dz, CampWalls + 1]);
+  for (const [dx, dz] of CampFrontCells) cells.push([dx, dz, 2]);
+  for (const [dx, dz, high] of cells) {
+    const ground = bot.blockAt(At(o, dx, -1, dz));
+    if (!ground || ground.boundingBox !== 'block' || /leaves|farmland|ice|_log$/.test(ground.name)) return false;
+    for (let dy = 0; dy < high; dy++) if (!campReplaceable(bot.blockAt(At(o, dx, dy, dz)))) return false;
+  }
+  return true;
+}
+
+// The closest site within CampSearch, the hut's middle nearest her; null when there's none.
+function campSite() {
+  const me = bot.entity.position.floored();
+  const sites = [];
+  for (let dx = -CampSearch; dx <= CampSearch; dx++)
+    for (let dz = -CampSearch; dz <= CampSearch; dz++)
+      for (const dy of [0, -1, 1, -2, 2]) sites.push(me.offset(dx - 2, dy, dz - 2));
+  sites.sort((a, b) => a.offset(2, 0, 2).distanceTo(me) - b.offset(2, 0, 2).distanceTo(me));
+  return sites.find(campFits) || null;
+}
+
+const held = (match) => bot.inventory.items().filter((i) => match(i.name)).reduce((n, i) => n + i.count, 0);
+const isPlanks = (n) => n.endsWith('_planks');
+const isLog = (n) => n.endsWith('_log') && !n.startsWith('stripped_');
+const isCoal = (n) => n === 'coal' || n === 'charcoal';
+const hasItem = (match) => held(match) > 0;
+
+// The colour she has three wool of, if any.
+function woolColour() {
+  const by = new Map();
+  for (const i of bot.inventory.items()) if (i.name.endsWith('_wool')) by.set(i.name, (by.get(i.name) || 0) + i.count);
+  const best = [...by].sort((a, b) => b[1] - a[1])[0];
+  return best && best[1] >= 3 ? best[0].replace(/_wool$/, '') : null;
+}
+
+// What the camp still needs, from what she carries: the items to craft and the raw materials short.
+function campNeeds() {
+  const need = {
+    table: !hasItem((n) => n === 'crafting_table'),
+    chest: !hasItem((n) => n === 'chest'),
+    furnace: !hasItem((n) => n === 'furnace'),
+    door: !hasItem((n) => /^(oak|spruce|birch|jungle|acacia|dark_oak|mangrove|cherry|pale_oak|bamboo)_door$/.test(n)),
+    bed: !hasItem((n) => n.endsWith('_bed')),
+    torches: held((n) => n === 'torch') < CampTorches,
+    campfire: !hasItem((n) => n === 'campfire'),
+    pickaxe: !hasItem((n) => n.endsWith('_pickaxe')),
+    axe: !hasItem((n) => n.endsWith('_axe') && !n.endsWith('_pickaxe')),
+  };
+  const sticks = (need.torches ? 1 : 0) + (need.campfire ? 3 : 0) + (need.pickaxe ? 2 : 0) + (need.axe ? 2 : 0);
+  const stickCrafts = Math.ceil(Math.max(0, sticks - held((n) => n === 'stick')) / 4);
+  const planks = CampPlanks + (need.table ? 4 : 0) + (need.chest ? 8 : 0) + (need.door ? 6 : 0) + (need.bed ? 3 : 0)
+    + (need.pickaxe ? 3 : 0) + (need.axe ? 3 : 0) + stickCrafts * 2;
+  const coal = (need.torches ? 1 : 0) + (need.campfire ? 1 : 0);
+  const coalShort = Math.max(0, coal - held(isCoal));
+  const logs = Math.ceil(Math.max(0, planks - held(isPlanks)) / 4) + (need.campfire ? 3 : 0) + coalShort; // charcoal at worst
+  return {
+    need,
+    logs: Math.max(0, logs - held(isLog)),
+    cobble: need.furnace ? Math.max(0, 8 - held((n) => n === 'cobblestone')) : 0,
+    coalShort,
+    wool: need.bed && !woolColour(),
+  };
+}
+
+// One craft, checked: the item must show up in her pockets. Through her recipe book when the recipe is in it
+// (bookCraft): the server fills the grid itself and one shift-click takes the result. Mineflayer's bot.craft places
+// every ingredient by clicks the server checks one by one, and on 26.1 it failed again and again (the first table craft
+// of a mixed recipe always: no bed, no campfire, no pickaxe, so the furnace was dug by hand and lost; with a count it
+// made one and put her inventory out of step with the server's), whatever the delays. It stays the way for a recipe
+// not in her book yet. Each craft waits for its item, then CraftGap; one that made nothing is tried again once her
+// inventory has settled (CraftSettle).
+const CraftTries = 3;
+const CraftGap = 300;
+const CraftSettle = 1500;
+
+// Her recipe book: the display ids of the crafting recipes she knows, by the item they make. The server sends them at
+// login and as recipes unlock (as she gets their ingredients), so this listens from the start (main).
+const recipeBook = new Map();
+
+function watchRecipes(client) {
+  client.on('recipe_book_add', (packet) => {
+    if (packet.replaceAll) recipeBook.clear();
+    for (const entry of packet.entries || []) {
+      const display = entry.recipe && entry.recipe.display;
+      const id = display && display.data && display.data.result && display.data.result.data && display.data.result.data.itemId;
+      if (id == null || !/^crafting/.test(String(display.type))) continue;
+      if (!recipeBook.has(id)) recipeBook.set(id, []);
+      if (!recipeBook.get(id).includes(entry.recipe.displayId)) recipeBook.get(id).push(entry.recipe.displayId);
+    }
+  });
+  client.on('recipe_book_remove', (packet) => {
+    for (const ids of recipeBook.values())
+      for (const gone of packet.recipeIds || []) if (ids.includes(gone)) ids.splice(ids.indexOf(gone), 1);
+  });
+}
+
+async function bookCraft(item, table) {
+  const window = table ? await bot.openBlock(table) : bot.inventory;
+  try {
+    for (const displayId of recipeBook.get(item.id) || []) {
+      bot._client.write('craft_recipe_request', { windowId: window.id, recipeId: displayId, makeAll: false });
+      for (let i = 0; i < 15 && !(window.slots[0] && window.slots[0].type === item.id); i++) await wait(100);
+      if (window.slots[0] && window.slots[0].type === item.id) {
+        await bot.clickWindow(0, 0, 1); // the result, shift-clicked into her pockets
+        return;
+      }
+    }
+  } finally {
+    bot.closeWindow(window); // what's left in the grid goes back to her pockets
+  }
+}
+
+async function craftOne(name, table) {
+  const item = bot.registry.itemsByName[name];
+  if (!item) return false;
+  for (let attempt = 0; attempt < CraftTries; attempt++) {
+    const before = held((n) => n === name);
+    // The book first: the server knows its own tags (a campfire from charcoal and acacia logs), minecraft-data's
+    // recipe list didn't, and said there was no recipe.
+    const inBook = (recipeBook.get(item.id) || []).length > 0;
+    const recipe = inBook ? null : bot.recipesFor(item.id, null, 1, table || null)[0];
+    if (!inBook && !recipe) {
+      log(`camp: no recipe for ${name} with ${bot.inventory.items().map((i) => `${i.name}x${i.count}`).join(' ')}`);
+      return false;
+    }
+    try {
+      if (inBook) await bookCraft(item, table);
+      else await bot.craft(recipe, 1, table || undefined);
+    } catch (err) {
+      log(`camp: crafting ${name} failed:`, err && err.message ? err.message : String(err));
+    }
+    for (let i = 0; i < 20; i++) {
+      if (held((n) => n === name) > before) {
+        await wait(CraftGap);
+        return true;
+      }
+      await wait(100);
+    }
+    log(`camp: crafting ${name} made nothing, ${attempt + 1 < CraftTries ? 'again' : 'giving up'}`);
+    await wait(CraftSettle);
+  }
+  return false;
+}
+
+// Planks from her logs, the kind she has most of, until she has `want` (keeping `keepLogs` logs).
+async function craftPlanks(want, keepLogs, mine) {
+  while (task === mine && held(isPlanks) < want) {
+    const logs = bot.inventory.items().filter((i) => isLog(i.name)).sort((a, b) => b.count - a.count);
+    if (logs.length === 0 || held(isLog) <= keepLogs) return;
+    if (!(await craftOne(logs[0].name.replace(/_log$/, '_planks')))) return;
+  }
+}
+
+// Places `match` (an item) at `pos`, from `stand` (cells from the corner) when given: on the block under it, or beside
+// an already placed one (the roof). True when the block there is then what was placed (or already was: started again).
+async function campPlace(o, mine, cell, match, placed, stand = null) {
+  const pos = At(o, ...cell);
+  const now = bot.blockAt(pos);
+  if (now && match(now.name)) return true;
+  if (stand) {
+    const s = At(o, ...stand);
+    if (bot.entity.position.distanceTo(s.offset(0.5, 0, 0.5)) > 0.6) {
+      try {
+        await bot.pathfinder.goto(new goals.GoalBlock(s.x, s.y, s.z));
+      } catch { /* placed from where she is, if in reach */ }
+      if (task !== mine) return false;
+    }
+  }
+  const item = bot.inventory.items().find((i) => match(i.name));
+  const why = (what) => { log(`camp: nothing placed at ${cell.join(' ')}: ${what}`); return false; };
+  if (!item) return why('nothing to place');
+  const faces = [[0, -1, 0], [-1, 0, 0], [1, 0, 0], [0, 0, -1], [0, 0, 1], [0, 1, 0]];
+  const ref = faces.map(([dx, dy, dz]) => ({ block: bot.blockAt(pos.offset(dx, dy, dz)), face: new Vec3(-dx, -dy, -dz) }))
+    .find((r) => r.block && r.block.boundingBox === 'block' && !/door|bed|chest|furnace|crafting|campfire/.test(r.block.name));
+  if (!ref) return why('nothing to place it against');
+  let failed = '';
+  try {
+    await bot.equip(item, 'hand');
+    await bot.placeBlock(ref.block, ref.face);
+  } catch (err) { failed = err && err.message ? err.message : String(err); } // checked below: it often lands before its event
+  await wait(150);
+  const after = bot.blockAt(pos);
+  if (!after || !match(after.name)) return why(`${after ? after.name : '?'} there after placing ${item.name}${failed ? ` (${failed})` : ''}`);
+  placed.push({ x: pos.x, y: pos.y, z: pos.z, name: after.name });
+  return true;
+}
+
+// Charcoal from her logs in the camp's furnace, planks burning: `n` of them.
+async function campCharcoal(o, mine, n) {
+  const at = At(o, 3, 0, 2);
+  let box;
+  try {
+    box = await bot.openFurnace(bot.blockAt(at));
+    mine.window = box;
+    const logs = bot.inventory.items().find((i) => isLog(i.name));
+    const planks = bot.inventory.items().find((i) => isPlanks(i.name));
+    if (!logs || !planks) return;
+    await box.putFuel(planks.type, null, Math.min(planks.count, Math.ceil(n / 1.5)));
+    await box.putInput(logs.type, null, Math.min(logs.count, n));
+    const until = Date.now() + n * 12000 + 5000;
+    let got = 0;
+    while (task === mine && got < n && Date.now() < until) {
+      await wait(1000);
+      if (box.outputItem()) {
+        got += box.outputItem().count;
+        await box.takeOutput();
+      }
+    }
+  } catch (err) {
+    log('camp: charcoal failed:', err && err.message ? err.message : String(err));
+  } finally {
+    if (box) try { box.close(); } catch { /* closed */ }
+    mine.window = null;
+  }
+}
+
+async function makeCamp(player) {
+  const first = campNeeds();
+  if (first.wool) {
+    const sheep = bot.nearestEntity((e) => e.name === 'sheep' && !isNamed(e) && !isShorn(e)
+      && e.position.distanceTo(bot.entity.position) < 32);
+    if (!sheep || !hasItem((n) => n === 'shears')) return emit('cantCamp', { player, why: 'missing', missing: ['wool'] });
+  }
+  if (first.logs > 0 && gatherCandidates('wood').open.length === 0) return emit('cantCamp', { player, why: 'missing', missing: ['wood'] });
+  const o = campSite();
+  if (!o) return emit('cantCamp', { player, why: 'noRoom' });
+  stay();
+  const mine = { kind: 'camp', player, window: null };
+  task = mine;
+  emit('camping', { player });
+  const placed = [];
+  const fail = (why, missing = []) => {
+    if (task !== mine) return;
+    task = null;
+    emit('cantCamp', { player, why, missing, blocks: placed });
+  };
+  const back = async () => {
+    const s = At(o, ...CampStand);
+    try { await bot.pathfinder.goto(new goals.GoalBlock(s.x, s.y, s.z)); } catch { /* close enough */ }
+  };
+
+  // Wool, sheared, before anything else is cut or crafted.
+  while (task === mine && campNeeds().wool) {
+    const sheep = bot.nearestEntity((e) => e.name === 'sheep' && !isNamed(e) && !isShorn(e)
+      && e.position.distanceTo(bot.entity.position) < 32);
+    if (!sheep) return fail('missing', ['wool']);
+    await useOn(sheep, (n) => n === 'shears');
+    await wait(600);
+    await pickUp((e) => e.position.distanceTo(sheep.position) < 4, 6000, mine);
+  }
+  // Wood, all of it at once: planks for the hut and the crafting, logs for the campfire and charcoal. Some 28 logs: a
+  // plain's scattered trees take more than one gathering's four rounds, so again while each one brings some in.
+  for (let pass = 0; pass < 6 && task === mine && campNeeds().logs > 0; pass++) {
+    const short = campNeeds().logs;
+    await gatherRounds('wood', short, mine);
+    if (campNeeds().logs >= short) break;
+  }
+  if (task !== mine) return;
+  if (campNeeds().logs > 0) return fail('missing', ['wood']);
+  await back();
+  const plan = campNeeds();
+  const keepLogs = (plan.need.campfire ? 3 : 0) + plan.coalShort;
+  await craftPlanks(CampPlanks + 40, keepLogs, mine);
+  if (task !== mine) return;
+  if (plan.need.table && !(await craftOne('crafting_table'))) return fail('craft', ['crafting_table']);
+  if (!(await campPlace(o, mine, [1, 0, 2], (n) => n === 'crafting_table', placed, CampStand))) return fail('place', ['crafting_table']);
+  const table = bot.blockAt(At(o, 1, 0, 2));
+  const sticks = async (n) => { while (task === mine && held((x) => x === 'stick') < n && (await craftOne('stick'))); };
+  // Tools, then stone and coal.
+  if (campNeeds().need.pickaxe) { await sticks(2); await craftOne('wooden_pickaxe', table); }
+  if (campNeeds().need.axe) { await sticks(2); await craftOne('wooden_axe', table); }
+  if (task === mine && campNeeds().cobble > 0) await gatherRounds('stone', campNeeds().cobble, mine);
+  if (task === mine && campNeeds().coalShort > 0 && gatherCandidates('coal').open.length > 0) await gatherRounds('coal', campNeeds().coalShort, mine);
+  if (task !== mine) return;
+  if (campNeeds().cobble > 0) return fail('missing', ['stone']);
+  await back();
+  // What's crafted at the table.
+  const now = campNeeds().need;
+  if (now.chest) await craftOne('chest', table);
+  if (now.furnace) await craftOne('furnace', table);
+  if (now.door) {
+    const kind = bot.inventory.items().filter((i) => isPlanks(i.name)).sort((a, b) => b.count - a.count)[0];
+    if (!kind || !(await craftOne(kind.name.replace(/_planks$/, '_door'), table))) await craftOne('oak_door', table);
+  }
+  if (now.bed) await craftOne(`${woolColour()}_bed`, table);
+  if (task !== mine) return;
+  // Inside: the bed first (laid towards where she looks), then what goes beside it.
+  const bedOk = await campPlace(o, mine, [2, 0, 1], (n) => n.endsWith('_bed'), placed, CampBedStand);
+  await campPlace(o, mine, [3, 0, 1], (n) => n === 'chest', placed, CampStand);
+  await campPlace(o, mine, [3, 0, 2], (n) => n === 'furnace', placed, CampStand);
+  // Charcoal when there was no coal, in the furnace just set down.
+  if (task === mine && campNeeds().coalShort > 0) await campCharcoal(o, mine, campNeeds().coalShort);
+  if (task !== mine) return;
+  const lit = campNeeds().need;
+  if (lit.torches || lit.campfire) await sticks((lit.torches ? 1 : 0) + (lit.campfire ? 3 : 0));
+  if (lit.torches) await craftOne('torch', table);
+  if (lit.campfire) await craftOne('campfire', table);
+  await campPlace(o, mine, [1, 0, 3], (n) => n === 'torch', placed, CampStand);
+  // The walls, a ring at a time from the ground up, then the roof: on the walls first, then inwards.
+  const ring = [];
+  for (let x = 0; x <= 4; x++) ring.push([x, 0]);
+  for (let z = 1; z <= 4; z++) ring.push([4, z]);
+  for (let x = 3; x >= 0; x--) ring.push([x, 4]);
+  for (let z = 3; z >= 1; z--) ring.push([0, z]);
+  for (let y = 0; y < CampWalls && task === mine; y++)
+    for (const [x, z] of ring) {
+      if (x === CampDoorX && z === 4 && y < 2) continue; // the doorway
+      await campPlace(o, mine, [x, y, z], isPlanks, placed, CampStand);
+    }
+  const roof = [...ring, [1, 1], [2, 1], [3, 1], [3, 2], [3, 3], [2, 3], [1, 3], [1, 2], [2, 2]];
+  for (const [x, z] of roof) {
+    if (task !== mine) break;
+    await campPlace(o, mine, [x, CampWalls, z], isPlanks, placed, CampStand);
+  }
+  if (task !== mine) return;
+  // Out through the doorway, then the door, the campfire and the torches before it.
+  const f = At(o, ...CampFront);
+  try { await bot.pathfinder.goto(new goals.GoalBlock(f.x, f.y, f.z)); } catch { /* from where she is */ }
+  if (task !== mine) return;
+  const doorOk = await campPlace(o, mine, [CampDoorX, 0, 4], (n) => n.endsWith('_door'), placed, CampFront);
+  await campPlace(o, mine, [2, 0, 7], (n) => n === 'campfire', placed, CampFront);
+  await campPlace(o, mine, [0, 0, 5], (n) => n === 'torch', placed, CampFront);
+  await campPlace(o, mine, [4, 0, 5], (n) => n === 'torch', placed, CampFront);
+  if (task !== mine) return;
+  task = null;
+  const walls = placed.filter((b) => isPlanks(b.name)).length;
+  emit('camped', { player, blocks: placed, complete: walls === CampPlanks && bedOk && doorOk, x: o.x + 2, y: o.y, z: o.z + 2,
+    dimension: dimension() });
+}
+const CampDoorX = 2;
+
+// « démonte le camp »: the blocks C# kept, each broken only if it's still what she placed there, in the order a hut comes
+// apart, from where everything is in reach (block by block through collectblock, nearest first, she climbed onto her
+// own walls and spent 5 s searches on the roof: four minutes): from before the door, what's outside and the door; from
+// the middle of the hut (`center`, where she built from), what's inside, the roof, then the walls from the top. Then
+// what fell, the chest's contents with it. She keeps it all.
+const CampReach = 4.4;
+
+async function campDig(block, mine) {
+  if (task !== mine) return false;
+  const eyes = bot.entity.position.offset(0, 1.62, 0);
+  if (eyes.distanceTo(block.position.offset(0.5, 0.5, 0.5)) > CampReach) {
+    await gather([block], mine, 'uncamp'); // out of reach from here: collectblock finds a way
+  } else {
+    try {
+      if (bot.tool && bot.tool.equipForBlock) await bot.tool.equipForBlock(block, {});
+      await bot.dig(block, true);
+    } catch (err) {
+      log('uncamp: dig failed:', err && err.message ? err.message : String(err));
+    }
+  }
+  const now = bot.blockAt(block.position);
+  return !now || now.name !== block.name;
+}
+
+async function breakCamp(player, blocks, dim, center) {
+  if (!Array.isArray(blocks) || blocks.length === 0) return emit('cantUncamp', { player, why: 'none' });
+  if (dim && dim !== dimension()) return emit('cantUncamp', { player, why: 'otherDimension' });
+  const mid = center && Number.isFinite(center.x) ? new Vec3(center.x, center.y, center.z)
+    : new Vec3(Math.floor(blocks.reduce((a, b) => a + b.x, 0) / blocks.length), blocks[0].y, Math.floor(blocks.reduce((a, b) => a + b.z, 0) / blocks.length));
+  if (Math.hypot(mid.x - bot.entity.position.x, mid.z - bot.entity.position.z) > MaxTrip) return emit('cantUncamp', { player, why: 'tooFar' });
+  stay();
+  const mine = { kind: 'uncamp', player };
+  task = mine;
+  emit('uncamping', { player });
+  const still = () => blocks.map((b) => bot.blockAt(new Vec3(b.x, b.y, b.z))).filter((now, i) => now && now.name === blocks[i].name);
+  const was = still().length;
+  const front = mid.offset(0, 0, 3);
+  const goTo = async (p) => {
+    try {
+      await Promise.race([bot.pathfinder.goto(new goals.GoalBlock(p.x, p.y, p.z)), wait(20000).then(() => { throw new Error('too slow'); })]);
+    } catch { /* from where she is */ }
+  };
+  const inside = (b) => Math.abs(b.position.x - mid.x) <= 2 && Math.abs(b.position.z - mid.z) <= 2;
+  // Outside and the door, from before it.
+  await goTo(front);
+  for (const b of still().filter((x) => !inside(x) || x.name.endsWith('_door'))) await campDig(b, mine);
+  if (task !== mine) return;
+  // Inside, the roof, the walls from the top: from the middle.
+  await goTo(mid);
+  const walls = (b) => Math.abs(b.position.x - mid.x) === 2 || Math.abs(b.position.z - mid.z) === 2;
+  const order = still().sort((a, b) => (walls(a) - walls(b)) || (b.position.y - a.position.y));
+  for (const b of order) await campDig(b, mine);
+  // Whatever is left, any way it can be got at.
+  for (let round = 0; round < 2 && task === mine && still().length > 0; round++) await gather(still(), mine, 'uncamp');
+  if (task !== mine) return;
+  await wait(800); // the last drops land
+  await pickUp((e) => e.name === 'item' && e.position.distanceTo(mid) <= 9, FieldSweep, mine);
+  if (task !== mine) return;
+  task = null;
+  emit('uncamped', { player, count: was - still().length, left: still().length });
+}
+
+// ---- Creepers, whatever she's doing -------------------------------------------------------------------
+
+// Guarding, a creeper was always guardTick's. Busy otherwise (a field, fishing, gathering, following, her own errands)
+// she paid it no mind, and one walked up and blew up beside her (local server: a crater, 7 hearts left of 20). Now one
+// closer than CreeperNear takes her off whatever can be left and picked up again (canDefend's rule, resumeFor's way
+// back): shot from CreeperRange or more when she has a bow and arrows, else kept out of its reach, never hit by hand.
+// Dead, gone or CreeperClear off, she goes back to what she was doing. What can't be left (a furnace, handing over, a
+// bed, a portal, running away) is over in seconds.
+const CreeperNear = 10;
+const CreeperClear = 16;
+const DodgeFor = 30000;
+const CreeperDraw = 12;
+
+function creeperTick() {
+  if (!bot.entity || bot.isSleeping || !canDefend()) return;
+  if (task && ['guard', 'patrol', 'dodge'].includes(task.kind)) return;
+  const me = bot.entity.position;
+  const creeper = bot.nearestEntity((e) => e.name === 'creeper' && e.isValid !== false && e.position.distanceTo(me) < CreeperNear);
+  if (!creeper) return;
+  // Fighting for someone, the way back is that fight's.
+  const resume = task && task.kind === 'defend' ? task.resume : resumeFor(task);
+  stay();
+  task = { kind: 'dodge', player: '', creeper, resume, until: Date.now() + DodgeFor, mode: null, modeTarget: null, modeSince: 0 };
+}
+
+// Away from it to a point (8 blocks straight off, again when she gets there): an inverted follow (« further than 12 »)
+// is a goal the pathfinder often can't solve, and she stood still while the creeper walked up and blew. With a bow,
+// back off to CreeperDraw, then stand and shoot: a creeper after her closes about 4 blocks in the 1.1 s a draw takes,
+// and backing off only to 9 she fled again before every shot, for 30 s and 60 blocks away from her work.
+function dodgeTick() {
+  const t = task;
+  if (!t || t.kind !== 'dodge') return;
+  const c = t.creeper;
+  const me = bot.entity.position;
+  if (!c || c.isValid === false || !bot.entities[c.id] || c.position.distanceTo(me) > CreeperClear || Date.now() > t.until) {
+    task = null;
+    stopBow();
+    bot.pathfinder.setGoal(null);
+    return resumeAfterBreak(t.resume);
+  }
+  const d = c.position.distanceTo(me);
+  const bow = bowReady();
+  const fleeing = t.mode === 'flee';
+  if (d < CreeperRange || !bow || (fleeing && d < CreeperDraw)) {
+    if (!fleeing || !bot.pathfinder.isMoving()) {
+      const dx = me.x - c.position.x;
+      const dz = me.z - c.position.z;
+      const n = Math.hypot(dx, dz) || 1;
+      t.mode = 'flee';
+      t.modeTarget = c;
+      bot.pathfinder.setGoal(new goals.GoalNear(me.x + (dx / n) * 8, me.y, me.z + (dz / n) * 8, 2));
+    }
+    return;
+  }
+  const inTheWay = playerInLine(c);
+  if (inTheWay) return setMode(t, 'aside', c, sideStep(c), false);
+  setMode(t, 'shoot', c, null);
+  shoot(c);
 }
 
 // ---- Defending ---------------------------------------------------------------------------------------
@@ -2873,6 +3429,12 @@ function waterTick() {
     releaseSwim();
   }
   if (under && air() <= AirLow) {
+    // A dig under way lets go: it goes on under water whatever her keys say, and the pathfinder would steer her back to
+    // it. Gathering skips that block (collectblock's dig fails) and goes on with the next.
+    if (bot.targetDigBlock) {
+      bot.stopDigging();
+      bot.pathfinder.setGoal(null);
+    }
     swim = { mode: 'surface' };
     return surfaceTick(swim);
   }
@@ -3114,8 +3676,11 @@ async function sweepRetrieve(mine) {
 // Where she can pick an item up from. A player picks up what touches their box (0.6 wide, 1.8 tall) grown by a block
 // sideways and half a block up and down. GoalNear(item, 1) wanted her within a block of it, counted in whole blocks,
 // which an item on a fence post, on a pillar's edge or under a slab too low to stand under never allows: the
-// pathfinder found no way, or kept looking. Each item gets PickUpTry, then she leaves it.
+// pathfinder found no way, or kept looking. Each item gets PickUpTry, then she leaves it. A node counts within
+// PickUpReach of the item sideways: her box reaches 1.3 from where she stands, and leaning against what's in the way
+// (pickUp) takes her 0.2 further. At 1.2, coal at the back of the hole its ore left in a quarry face had no node at all.
 const PickUpTry = 8000;
+const PickUpReach = 1.5;
 
 class GoalPickUp extends goals.Goal {
   constructor(pos) {
@@ -3131,7 +3696,7 @@ class GoalPickUp extends goals.Goal {
 
   isEnd(node) {
     const up = this.y - node.y;
-    return Math.abs(this.x - (node.x + 0.5)) <= 1.2 && Math.abs(this.z - (node.z + 0.5)) <= 1.2 && up >= -0.4 && up <= 2.2;
+    return Math.abs(this.x - (node.x + 0.5)) <= PickUpReach && Math.abs(this.z - (node.z + 0.5)) <= PickUpReach && up >= -0.4 && up <= 2.2;
   }
 }
 
@@ -3163,9 +3728,19 @@ async function pickUp(choose, timeout, mine) {
       // In reach is not picked up: a fresh drop waits half a second before anyone can take it, and she had already
       // moved on to the next one, leaving it where it fell.
       for (let i = 0; i < 15 && bot.entities[item.id]; i++) await wait(100);
-    } catch {
+      // Still there, close: in a hole the ore left in a quarry face, a block up and at its back, just past the reach
+      // of where she stood. She leans in against the face, as a player does, and it comes.
+      if (bot.entities[item.id] && item.position.distanceTo(bot.entity.position) < 2.5 && task === mine) {
+        await bot.lookAt(item.position, true);
+        bot.setControlState('forward', true);
+        for (let i = 0; i < 6 && bot.entities[item.id]; i++) await wait(100);
+        bot.setControlState('forward', false);
+      }
+    } catch (err) {
       if (task === mine) bot.pathfinder.setGoal(null); // out of reach, or too slow: the next one
+      if (process.env.MC_TRACE_PATHS === 'all') log(`pickUp: ${at} out of reach: ${err && err.message}`);
     }
+    if (process.env.MC_TRACE_PATHS === 'all' && bot.entities[item.id]) log(`pickUp: ${item.position} still lying (she is at ${bot.entity.position.floored()})`);
     await wait(300);
   }
 }
@@ -3524,6 +4099,8 @@ function attach() {
   });
   bot.on('physicsTick', guideTick);
   bot.on('physicsTick', safely(portalTick));
+  bot.on('physicsTick', safely(creeperTick));
+  bot.on('physicsTick', safely(dodgeTick));
   bot.on('physicsTick', safely(backTick));
   bot.on('physicsTick', doorTick);
   bot.on('physicsTick', safely(freeTick));
@@ -3979,6 +4556,7 @@ async function main() {
   if (ended) return;
   // Offline mode: no auth.
   bot = mineflayer.createBot({ host, port, username, auth: 'offline', version });
+  watchRecipes(bot._client);
   sendTickEnds(bot._client);
   calmTeleports(bot._client);
   clearFaces(bot._client);
@@ -4116,7 +4694,7 @@ function climbFromTheFoot(path) {
 }
 
 // The ops that are a player's order (the rest are words, questions, or C#'s own business).
-const OrderOps = new Set(['come', 'follow', 'goto', 'guide', 'give', 'store', 'fish', 'patrol', 'smelt', 'guard', 'collect',
+const OrderOps = new Set(['come', 'follow', 'goto', 'guide', 'give', 'store', 'fish', 'patrol', 'smelt', 'guard', 'collect', 'camp', 'uncamp',
   'sleep', 'harvest', 'farm', 'ranch']);
 
 const input = readline.createInterface({ input: process.stdin });
@@ -4207,6 +4785,15 @@ function dispatch(command) {
         break;
       case 'guard':
         if (bot && typeof command.player === 'string') guard(command.player);
+        break;
+      case 'camp':
+        if (bot && typeof command.player === 'string')
+          makeCamp(command.player).catch((err) => log('camp failed:', err && err.message ? err.message : String(err)));
+        break;
+      case 'uncamp':
+        if (bot && typeof command.player === 'string')
+          breakCamp(command.player, command.blocks, typeof command.dimension === 'string' ? command.dimension : null, command.center)
+            .catch((err) => log('uncamp failed:', err && err.message ? err.message : String(err)));
         break;
       case 'collect':
         if (bot && typeof command.player === 'string' && typeof command.resource === 'string')

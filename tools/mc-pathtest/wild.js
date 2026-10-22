@@ -22,10 +22,13 @@ const only = (lagAt >= 0 ? args.slice(0, lagAt).concat(args.slice(lagAt + 3)) : 
 // ---- Places -------------------------------------------------------------------------------------
 
 // Where a biome or a structure is, by the server's own `locate` (x, z), or null.
-async function locate(what, dimension = 'overworld') {
+// `from`: where to look from (default the world's spawn); a run that uses up what it finds (the camp cuts the trees)
+// looks from somewhere new each time.
+async function locate(what, dimension = 'overworld', from = null) {
   const kind = what.startsWith('structure:') ? 'structure' : 'biome';
   const id = what.replace(/^structure:/, '');
-  const [a] = await rcon.run([`execute in minecraft:${dimension} run locate ${kind} minecraft:${id}`]);
+  const at = from ? `positioned ${from.x} 100 ${from.z} ` : '';
+  const [a] = await rcon.run([`execute in minecraft:${dimension} ${at}run locate ${kind} minecraft:${id}`]);
   const m = /\[(-?\d+), [^,]+, (-?\d+)\]/.exec(a);
   return m ? { x: Number(m[1]), z: Number(m[2]) } : null;
 }
@@ -370,8 +373,42 @@ async function portal() {
   await end(sc, 'portal');
 }
 
+// « monte le camp » from shears, three sheep and the furnace's stone: the wood, the coal (or charcoal) and the wool all
+// come from the world around her, then it's taken down again.
+async function camp() {
+  const sc = await scene();
+  let done = null;
+  // At a forest's edge: the plains nearest a forest, found from somewhere new each time (a run cuts the trees it uses).
+  for (const place of ['forest edge', 'forest edge', 'forest edge']) {
+    const far = () => Math.round((Math.random() < 0.5 ? -1 : 1) * (800 + Math.random() * 2000));
+    const forest = await locate('forest', 'overworld', { x: far(), z: far() });
+    const at = forest && await locate('plains', 'overworld', forest);
+    if (!at) continue;
+    await placeTogether(sc.papa, at);
+    // Stone is given: a plain shows none within reach (she says so: tested on its own), and gathering it has its tests.
+    await rcon.run([`clear ${Name}`, `give ${Name} shears`, `give ${Name} cobblestone 8`,
+      ...[1, 2, 3].map((i) => `execute at ${Name} run summon sheep ~${i * 2} ~ ~3 {Color:0b}`)]);
+    await wait(2000);
+    const started = Date.now();
+    sc.body.send({ op: 'camp', player: 'Papa' });
+    done = await sc.body.next((e) => e.ev === 'camped' || e.ev === 'cantCamp', 900000);
+    const secs = ((Date.now() - started) / 1000).toFixed(0);
+    report(Boolean(done && done.ev === 'camped' && done.complete), `camp: ${place}`, done
+      ? `${done.ev}${done.why ? ` (${done.why} ${JSON.stringify(done.missing)})` : ''}${done.complete === false ? ' (incomplete)' : ''} in ${secs} s; ${(done.blocks || []).length} blocks placed`
+      : 'never finished');
+    if (done && done.ev === 'cantCamp' && done.why === 'noRoom') continue;
+    break;
+  }
+  if (done && done.blocks && done.blocks.length > 0) {
+    sc.body.send({ op: 'uncamp', player: 'Papa', blocks: done.blocks, dimension: done.dimension, center: { x: done.x, y: done.y, z: done.z } });
+    const down = await sc.body.next((e) => e.ev === 'uncamped' || e.ev === 'cantUncamp', 600000);
+    report(Boolean(down && down.ev === 'uncamped') && down.left === 0, 'camp: taken down', down ? `${down.ev} ${down.count ?? ''}, ${down.left ?? '?'} left` : 'never finished');
+  }
+  await end(sc, 'camp');
+}
+
 (async () => {
-  const all = { follow, village, orders, come, nether, portal };
+  const all = { follow, village, orders, come, nether, portal, camp };
   const [level] = await rcon.run(['locate biome minecraft:plains']);
   if (!/nearest/i.test(level)) {
     console.log('This needs the server on a generated world (level-type=minecraft:normal): see README, « The wild ».');

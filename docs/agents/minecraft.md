@@ -149,7 +149,10 @@ list: the owner removed it.
   stands, and the search for one ran its 5 s for every log of a forest, nothing brought back; a
   player punches through, so does she. Wood is a non-stripped log with *natural* leaves within reach
   (`persistent: false`): a log in a wall has none, and placed leaves are persistent, never broken.
-  **Only blocks with an open face** (`exposed`), the closest 256 of those, open being part of the
+  **Only blocks with an open face** (`exposed`), open to air, not water (coal at the bottom of a
+  lake: she went down for it, mined at a fifth of the speed with her head under, and drowned; and
+  when she has to surface, a dig in progress is dropped, since it goes on whatever her keys say),
+  the closest 256 of those, open being part of the
   search (`findBlocks`' `useExtraInfo`), not a filter after it: she never digs, so stone under the
   grass is out of reach, and on a mountain the nearest 256 stone were all under her feet while a
   cliff face stood 20 blocks off. **What she counts is what the resource drops** (`Yields`: logs,
@@ -169,6 +172,19 @@ list: the owner removed it.
   pockets (window clicks put her inventory out of step with the server's). Melons and pumpkins are
   solid, go to collectblock, and get the axe. Replanting picks the seed stack after the walk to the
   patch, not before: pickups on the way moved it, and she placed with an empty hand.
+- **Columns** (bamboo, sugar cane, cactus: `Crops`, `column`): she cuts each one's second block,
+  which brings down everything above it, and the bottom one stays to grow again (no replanting).
+  Only when named or on a farm, never in « everything ripe »: a bamboo jungle, a desert's cacti
+  and a river's cane are mostly wild. Their pieces drop where each piece was, up to 16 high, so
+  drops are noted by where they land (`dropOf`: within 2 sideways, any height above), not within 2
+  of the broken block. **A cactus is no floor**: once a column was cut to its base the pathfinder
+  walked her onto it and she stood there being pricked; `gentleMovements` makes it neither floor
+  nor passage. « canne » alone is her fishing rod, so sugar cane is read by its « sucre ».
+- **What lies in a field is the field's** (`fieldDrop`, `FieldSweep`): produce (`FarmProduce`) on
+  or beside farmland or a crop. A farm round sweeps it every round, ripe or not; a harvest picks up
+  what lies near what it cut. A carrot that rolled further than the noted drops, or one someone
+  trampled out, stayed on the ground round after round. Anything else lying about is still left
+  where it is (a player's dropped things are theirs).
 - **Picking items up** (`pickUp`, `GoalPickUp`): a player picks up what touches their box grown by a
   block sideways and half a block up and down, so the goal is « within that reach », not « within a
   block of it » (`GoalNear` in whole blocks never allowed an item on a fence post, on a pillar's
@@ -176,7 +192,10 @@ list: the owner removed it.
   (three in all) only if it rolled more than a block since. The same 8 s caps an item of loot. **In
   reach is not picked up**: a fresh drop waits half a second before anyone can take it, so she waits
   up to 1.5 s for it to go before the next. A way to an item she can't find ends that item's try,
-  never the whole sweep (`noWay` leaves a sweeping `retrieve` alone).
+  never the whole sweep (`noWay` leaves a sweeping `retrieve` alone). A node counts within 1.5 of the
+  item sideways (`PickUpReach`: her box reaches 1.3, leaning against what's in the way 0.2 more),
+  and an item still there when she arrives gets her leaning in towards it for half a second: coal at
+  the back of the hole its ore left in a quarry face had no node within 1.2, and stayed there.
 - **`bot.pathfinder.goto` is ours** (`goto`, set on spawn). The pathfinder's resolved on any search
   that came back with no path, and a search's first slice (`tickTimeout`) often does: she « got
   there » without moving, stood 2 blocks from a cull's beef and left it, again and again, and
@@ -340,8 +359,36 @@ list: the owner removed it.
 - **She never digs and never places a block.** `canDig = false`, no scaffolding blocks, no
   pillaring: a path through someone's wall or a dirt tower in their build is not help. Where
   walking can't get there she says so (`McNoPathLines`) instead. **The exceptions are a seed
-  on bare farmland where she just harvested** (`harvestBlocks`) **and a gathered tree's natural
-  leaves** (`gatheringMovements`): nothing else, nowhere else. Keep them that narrow.
+  on bare farmland where she just harvested** (`harvestBlocks`), **a gathered tree's natural
+  leaves** (`gatheringMovements`) **and her camp's own blocks** (below): nothing else, nowhere else.
+  Keep them that narrow.
+- **The camp** (« monte le camp », `makeCamp`; « démonte le camp », `breakCamp`): Papa and Tata
+  only (C#: `McCampRefusedLines` for anyone else), one at a time. A 5×5 hut of planks, walls 3 high,
+  a roof, a door in the south wall; inside a bed, a chest, a crafting table, a furnace, a torch;
+  before the door a campfire and two torches. On the closest flat, clear spot within 8 blocks
+  (`campFits`: firm full ground, the hut's cells clear to the roof, the front's for two; grass is
+  replaced, nothing else) or `noRoom`. Everything crafted from what she carries, what's short
+  gathered first (`campNeeds`: wood, then stone with a wooden pickaxe she makes, coal, else charcoal
+  from logs in the camp's own furnace); a wooden axe too, so taking it down goes faster. Wool only
+  sheared (`useOn` with shears), never a sheep killed: with neither three of one colour nor shears and
+  a sheep in sight she says so (`missing: wool`) before cutting anything. **She crafts through her
+  recipe book** (`craftOne`, `bookCraft`): `craft_recipe_request` has the server fill the grid
+  itself, one shift-click takes the result. Mineflayer's `bot.craft` places every ingredient by
+  clicks the server checks one by one, and on 26.1 it kept failing whatever the delays (the first
+  table craft of a mixed recipe always; with a count it made one and put her inventory out of step
+  with the server's): no bed, no campfire, no pickaxe, then the furnace dug by hand and lost. The
+  book (`recipeBook`, from `recipe_book_add` at login and as recipes unlock) is listened to from the
+  moment she connects; a recipe not in it yet falls back to `bot.craft`. Each craft counts only once
+  the item is in her pockets, and is tried again otherwise. She builds from the hut's middle (`CampStand`, everything inside, the walls and the
+  roof in reach), the bed from beside it (it's laid the way she looks), then walks out and sets the
+  door, the campfire and the torches. The blocks she placed go to C# (`camped`, also a half-built
+  camp's `cantCamp`), kept in the state file (`McCamp`) and sent back to take it down: only those,
+  still what she placed, in the order a hut comes apart (outside and the door from before it, then
+  from the middle what's inside, the roof, the walls from the top; nearest-first through collectblock
+  she climbed onto her own walls), then everything that fell, the chest's contents with it. She keeps
+  it all. A chest is in the pathfinder's `blocksCantBreak`; `gatheringMovements` lifts that for a
+  chest among its targets. `tools/mc-pathtest/camp.js` builds one and takes it down, block by block
+  on the server.
 - **Doors.** The pathfinder sees every door as a wall (its own `canOpenDoors` is off, flagged flaky
   by its authors, and covers fence gates only), so `gentleMovements` wraps its `getBlock`: a wooden
   or copper door or a fence gate is passable whatever its state, except on a diagonal step (a corner
@@ -804,6 +851,13 @@ server takes that as walking into the block: it puts her back 0.01 short, every 
 warning in its console, and she never climbs a one-block step. 0.0001 off the face is enough and
 fits every gap a player fits. Found and checked on a local server (*Testing movement locally*):
 without it she's stuck at the first step; with it she climbs, sprinting or not.
+
+**Creepers, whatever she's doing** (`creeperTick`, `dodgeTick`): guarding, a creeper was always
+`guardTick`'s; busy otherwise (a field, fishing, gathering, following) she paid it no mind and one
+blew up beside her. One closer than 10 blocks now takes her off whatever can be left and picked up
+again (`canDefend`'s rule, `resumeFor`'s way back): shot from 6 blocks or more with a bow and
+arrows, else kept out of its reach, never hit by hand; dead, gone or 16 blocks off, she goes back to
+it. What can't be left (a furnace, handing over, a bed, a portal, running away) is over in seconds.
 
 **The wider box has two edges to keep (`clearFaces`, the `AABB` patch).** The server places her
 (a correction, a teleport) with its own 0.3, so often flush against a face, and her 0.3001 box

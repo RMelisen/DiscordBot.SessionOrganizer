@@ -59,7 +59,8 @@ snowy slopes, a beach…), counts the village's fields before and after, gives o
 a forest, stone and coal on a mountain, fish in a river, coming across a dark forest), follows him through the five
 Nether biomes with monsters on, and has him walk through a portal in front of her and back (she must follow both
 ways, and stay when he only logs out beside one). Name some (`follow village orders
-come nether portal`) to run only those; `WILD_BIOMES=river,forest` picks the biomes. Papa's routes are random, so a
+come nether portal camp`) to run only those (`camp`: at a forest's edge, from shears, three sheep and
+the furnace's stone, everything else gathered and crafted, then taken down); `WILD_BIOMES=river,forest` picks the biomes. Papa's routes are random, so a
 snag in one run may not come back: run a failing biome a few times on its own. Every server correction is a failure.
 
 **Lag.** `--lag 120 60` (any of `wild.js`'s runs) puts her body behind `lag.js`, a relay that holds each direction
@@ -78,6 +79,7 @@ between them.
 - `course.js`: the lanes, one kind of terrain each, as lane-relative block commands.
 - `run.js`: building, the lanes and the other runs, the command line.
 - `actions.js`, `orders.js`, `safety.js`, `survival.js`, `players-test.js`: the scenarios beyond the course.
+- `camp.js` (flat world): « monte le camp » from given materials, every block checked, then taken down (`node camp.js`).
 - `survival.js` also has a monster biting a stranger (`stranger`), the same bite while she harvests a field for Papa
   (`midharvest`: she fights, goes back, finishes and hands everything over) and the harvest alone (`harvestpapa`).
 - `wild.js` (a generated world: biomes, wild orders, the Nether, a portal) and `lag.js` (the delaying relay).

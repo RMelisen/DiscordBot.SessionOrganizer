@@ -173,6 +173,8 @@ public sealed class MinecraftBodyService : BackgroundService
     // The places players asked her to remember: whose they are (in-game name), then by key (McCommand.PlaceKey). Each
     // player has their own « maison ». Persisted: the map doesn't change overnight.
     private readonly Dictionary<string, Dictionary<string, McPlace>> _places;
+    // Her camp (McCamp), kept in the state file. Guarded by _gate.
+    private McCamp? _camp;
     // Asked where she is / to remember a spot: the body answers with a position, and these say to whom and how.
     // Of: whose place it will be (« retiens ici : maison de Rodhengard »), null for the player's own.
     private readonly Dictionary<string, bool> _askedWhere = new(StringComparer.OrdinalIgnoreCase);
@@ -211,6 +213,7 @@ public sealed class MinecraftBodyService : BackgroundService
         _statePath = Path.Combine(Path.GetDirectoryName(dbPath) ?? ".", "minecraft-state.json");
         var state = LoadState();
         _allowed = state?.Allowed ?? false;
+        _camp = state?.Camp;
         _seen = new Dictionary<string, McSpot>(state?.Seen ?? new Dictionary<string, McSpot>(), StringComparer.OrdinalIgnoreCase);
         _places = new Dictionary<string, Dictionary<string, McPlace>>(StringComparer.OrdinalIgnoreCase);
         foreach (var (player, places) in state?.PlacesByPlayer ?? new Dictionary<string, Dictionary<string, McPlace>>())
@@ -226,7 +229,11 @@ public sealed class MinecraftBodyService : BackgroundService
     // What survives a restart: the owner's switch, where she last saw her family, and the places she was asked to
     // remember, by player. Everything else here is in memory on purpose. Places: the old shared map, only ever read.
     private sealed record MinecraftState(bool Allowed, Dictionary<string, McSpot>? Seen = null, Dictionary<string, McPlace>? Places = null,
-        Dictionary<string, Dictionary<string, McPlace>>? PlacesByPlayer = null);
+        Dictionary<string, Dictionary<string, McPlace>>? PlacesByPlayer = null, McCamp? Camp = null);
+    // Her camp, the one there is: where it stands and the blocks she placed for it, which « démonte le camp » sends back
+    // to the body (it breaks only those, still what she placed). Kept across restarts.
+    private sealed record McCamp(int X, int Y, int Z, string Dimension, List<McCampBlock> Blocks);
+    private sealed record McCampBlock(int X, int Y, int Z, string Name);
     private sealed record McSpot(int X, int Y, int Z, string Dimension);
     // Name: as the player wrote it (McCommand.PlaceName), for her lines. By: who saved it, who may move or forget it
     // besides the player it belongs to and family.
@@ -234,7 +241,8 @@ public sealed class MinecraftBodyService : BackgroundService
 
     private MinecraftState StateLocked() =>
         new(_allowed, new Dictionary<string, McSpot>(_seen),
-            PlacesByPlayer: _places.Where(p => p.Value.Count > 0).ToDictionary(p => p.Key, p => new Dictionary<string, McPlace>(p.Value)));
+            PlacesByPlayer: _places.Where(p => p.Value.Count > 0).ToDictionary(p => p.Key, p => new Dictionary<string, McPlace>(p.Value)),
+            Camp: _camp);
 
     private MinecraftState? LoadState()
     {
@@ -729,6 +737,41 @@ public sealed class MinecraftBodyService : BackgroundService
                     OnOutcome(root.GetProperty("player").GetString() ?? "",
                         root.GetProperty("why").GetString() == "noChest" ? BotResponses.McFarmNoChestLines : BotResponses.McFarmNoneLines);
                     break;
+                case "camping":
+                    var camper = root.GetProperty("player").GetString() ?? "";
+                    Ack(camper, Confirm(camper).Whispered, "camp", BotResponses.McCampAckLines);
+                    break;
+                case "camped":
+                    KeepCamp(root);
+                    OnOutcome(root.GetProperty("player").GetString() ?? "",
+                        root.TryGetProperty("complete", out var complete) && complete.ValueKind == JsonValueKind.True
+                            ? BotResponses.McCampDoneLines : BotResponses.McCampPartialLines);
+                    break;
+                case "cantCamp":
+                    if (root.TryGetProperty("blocks", out var partial) && partial.GetArrayLength() > 0) KeepCamp(root);
+                    var why = root.GetProperty("why").GetString();
+                    var missing = root.TryGetProperty("missing", out var short_) && short_.GetArrayLength() > 0
+                        ? short_[0].GetString() ?? "" : "";
+                    if (why == "noRoom") OnOutcome(root.GetProperty("player").GetString() ?? "", BotResponses.McCampNoRoomLines);
+                    else OnOutcome(root.GetProperty("player").GetString() ?? "", BotResponses.McCampMissingLines, "",
+                        BotResponses.McCampMissingNames.GetValueOrDefault(missing, "de quoi construire"));
+                    break;
+                case "uncamping":
+                    var uncamper = root.GetProperty("player").GetString() ?? "";
+                    Ack(uncamper, Confirm(uncamper).Whispered, "uncamp", BotResponses.McUncampAckLines);
+                    break;
+                case "uncamped":
+                    lock (_gate)
+                    {
+                        _camp = null;
+                        SaveState(StateLocked());
+                    }
+                    OnOutcome(root.GetProperty("player").GetString() ?? "", BotResponses.McUncampDoneLines);
+                    break;
+                case "cantUncamp":
+                    OnOutcome(root.GetProperty("player").GetString() ?? "",
+                        root.GetProperty("why").GetString() == "none" ? BotResponses.McUncampNoneLines : BotResponses.McCampFarLines);
+                    break;
                 case "ranching":
                     var rancher = root.GetProperty("player").GetString() ?? "";
                     Ack(rancher, Confirm(rancher).Whispered, "ranch", BotResponses.McRanchAckLines);
@@ -974,6 +1017,28 @@ public sealed class MinecraftBodyService : BackgroundService
             (place, placeOwner) = found;
         }
 
+        // The camp is family's to order, and there's one at most.
+        if (request.Order is McOrder.Camp or McOrder.Uncamp)
+        {
+            McCamp? camp;
+            lock (_gate) camp = _camp;
+            if (KinOf(player) == McKin.Anyone)
+            {
+                Reply(player, whispered, BotResponses.McCampRefusedLines);
+                return;
+            }
+            if (request.Order == McOrder.Camp && camp is not null)
+            {
+                Reply(player, whispered, BotResponses.McCampExistsLines);
+                return;
+            }
+            if (request.Order == McOrder.Uncamp && camp is null)
+            {
+                Reply(player, whispered, BotResponses.McUncampNoneLines);
+                return;
+            }
+        }
+
         object command = request.Order switch
         {
             McOrder.Come => new { op = "come", player },
@@ -990,6 +1055,8 @@ public sealed class MinecraftBodyService : BackgroundService
             McOrder.Harvest => new { op = "harvest", player, crop = (request.Crop ?? McCrop.Any).ToString().ToLowerInvariant() },
             McOrder.Farm => new { op = "farm", player },
             McOrder.Ranch => new { op = "ranch", player },
+            McOrder.Camp => new { op = "camp", player },
+            McOrder.Uncamp => CampCommand(player),
             McOrder.Give => new { op = "give", player, goods = request.Goods!.Value.ToString().ToLowerInvariant() },
             McOrder.Store => new { op = "store", player },
             McOrder.Fish => new { op = "fish", player },
@@ -1491,6 +1558,37 @@ public sealed class MinecraftBodyService : BackgroundService
             return _pending is { } pending && Same(pending.Player, player) ? pending.Order
                 : _order is { } order && Same(order.Player, player) ? order.Order
                 : null;
+    }
+
+    // Her camp, as the body reports it (camped, or what a half-built one left): kept, so it can be taken down.
+    private void KeepCamp(JsonElement root)
+    {
+        var blocks = root.GetProperty("blocks").EnumerateArray()
+            .Select(b => new McCampBlock(b.GetProperty("x").GetInt32(), b.GetProperty("y").GetInt32(), b.GetProperty("z").GetInt32(),
+                b.GetProperty("name").GetString() ?? ""))
+            .ToList();
+        if (blocks.Count == 0) return;
+        var at = blocks[blocks.Count / 2];
+        var dimension = root.TryGetProperty("dimension", out var d) ? d.GetString() ?? "" : "";
+        lock (_gate)
+        {
+            _camp = new McCamp(root.TryGetProperty("x", out var x) ? x.GetInt32() : at.X, root.TryGetProperty("y", out var y) ? y.GetInt32() : at.Y,
+                root.TryGetProperty("z", out var z) ? z.GetInt32() : at.Z, dimension, blocks);
+            SaveState(StateLocked());
+        }
+    }
+
+    // « démonte le camp »: the blocks she placed, back to the body.
+    private object CampCommand(string player)
+    {
+        McCamp? camp;
+        lock (_gate) camp = _camp;
+        return new
+        {
+            op = "uncamp", player, dimension = camp?.Dimension ?? "",
+            center = camp is null ? null : new { x = camp.X, y = camp.Y, z = camp.Z },
+            blocks = (camp?.Blocks ?? []).Select(b => new { x = b.X, y = b.Y, z = b.Z, name = b.Name }).ToArray(),
+        };
     }
 
     // Going after them through a portal: she says so, so they wait rather than think she's lost.

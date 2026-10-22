@@ -37,6 +37,8 @@ public static class McDoing
             McOrder.Sleep => "elle dort",
             McOrder.Give => $"elle apporte quelque chose{(forWho is null ? "" : $" à {forWho}")}",
             McOrder.Store => $"elle range ses affaires{who}",
+            McOrder.Camp => $"elle monte le camp{who}",
+            McOrder.Uncamp => $"elle démonte le camp{who}",
             _ => $"elle s'occupe d'une demande{who}",
         };
     }

@@ -109,6 +109,45 @@ async function creeper() {
   await end(sc, 'creeper');
 }
 
+// A creeper walks up to her while she keeps a farm (busy, not guarding): she deals with it as when guarding (shot from
+// range with her bow, or kept out of its reach), and goes back to the farm after. Papa is out of the way, so the
+// creeper is hers alone.
+async function creeperBusy() {
+  const sc = await scene();
+  await rcon.run([`fill ${sat(-4, -1, -4)} ${sat(0, -1, 0)} farmland[moisture=7]`, `setblock ${sat(-2, -1, -2)} water`,
+    `fill ${sat(-4, 0, -4)} ${sat(0, 0, 0)} wheat[age=2]`, `setblock ${sat(-2, 0, -2)} air`, `setblock ${sat(2, 0, -2)} chest[facing=west]`,
+    `tp ${Name} ${S.x + 1.5} -60 ${S.z + 0.5}`, `tp Papa ${S.x - 20.5} -60 ${S.z - 20.5}`]);
+  await wait(1500);
+  sc.body.send({ op: 'farm', player: 'Papa' });
+  const going = await sc.body.next((e) => e.ev === 'farming' || e.ev === 'cantFarm', 8000);
+  await wait(2000);
+  await rcon.run([`summon creeper ${S.x + 10.5} -60 ${S.z + 0.5} {PersistenceRequired:1b}`]);
+  const started = Date.now();
+  const trace = process.argv.includes('-v') ? setInterval(() => {
+    sc.body.send({ op: 'where', player: 'Papa' });
+    sc.body.next((e) => e.ev === 'position', 2000).then((p) => p && console.log(`      t+${((Date.now() - started) / 1000).toFixed(0)} s: she is at ${p.x - S.x} ${p.z - S.z} from the arena`));
+  }, 3000) : null;
+  let left = 1;
+  while (Date.now() < started + 40000 && left > 0) {
+    await wait(1000);
+    left = await q.count(`@e[type=creeper,${near(30)}]`);
+  }
+  const [crater] = await rcon.run([`execute store result score #c pathtest run fill ${sat(-12, -2, -12)} ${sat(20, -1, 12)} grass_block replace air`]);
+  const holes = Number((/(\d+)/.exec(crater) || [0, 0])[1]);
+  const health = await q.entityNumber(Name, 'Health');
+  await wait(20000); // back to the farm: its next round (every 15 s) walks her back to it
+  if (trace) clearInterval(trace);
+  sc.body.send({ op: 'where', player: 'Papa' });
+  const pos = await sc.body.next((e) => e.ev === 'position', 4000);
+  const x = pos ? pos.x : NaN;
+  const z = pos ? pos.z : NaN;
+  const back = Math.hypot(x - (S.x - 2), z - (S.z - 2)) < 8;
+  report(Boolean(going && going.ev === 'farming') && left === 0 && holes === 0 && health >= 14 && back, 'creeper while busy',
+    `${going ? going.ev : 'no answer'}; ${left === 0 ? (holes === 0 ? 'shot dead' : `blew up (${holes} blocks of crater)`) : 'still around'}; ` +
+    `her health ${health}; ${back ? 'back at the farm' : `not back at the farm (at ${x.toFixed(0)} ${z.toFixed(0)})`}`);
+  await end(sc, 'creeper while busy');
+}
+
 async function enderman() {
   const sc = await scene();
   sc.body.send({ op: 'guard', player: 'Papa' });
@@ -243,7 +282,7 @@ async function drowning() {
 }
 
 async function survival(only = []) {
-  const all = { zombies: guardZombies, skeleton: guardSkeleton, creeper, enderman, retreat, flee: fleePlayer, defend: defendPapa, stranger: defendStranger, midharvest: defendMidHarvest, harvestpapa: () => defendMidHarvest(true), drowning };
+  const all = { zombies: guardZombies, skeleton: guardSkeleton, creeper, creeperbusy: creeperBusy, enderman, retreat, flee: fleePlayer, defend: defendPapa, stranger: defendStranger, midharvest: defendMidHarvest, harvestpapa: () => defendMidHarvest(true), drowning };
   for (const [name, run] of Object.entries(all)) {
     if (only.length > 0 && !only.includes(name)) continue;
     try {

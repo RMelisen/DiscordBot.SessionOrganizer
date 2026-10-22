@@ -40,7 +40,27 @@ function yard() {
     `setblock ${at(-12, 0, -9)} attached_pumpkin_stem[facing=east]`,
     // A full chest.
     `setblock ${at(0, 0, 10)} chest[facing=north]`,
+    ...columns(),
   ];
+}
+
+// Columns, in the yard's south-east corner: bamboo 6 high, sugar cane 3 high by water, cacti 3 high on sand with nothing
+// beside them (a cactus next to a block breaks).
+const Columns = {
+  bamboo: { block: 'bamboo', item: 'bamboo', at: [[12, 7], [14, 7], [12, 9]], high: 6 },
+  sugarcane: { block: 'sugar_cane', item: 'sugar_cane', at: [[14, 11], [14, 12]], high: 3 },
+  cactus: { block: 'cactus', item: 'cactus', at: [[10, 11], [10, 13]], high: 3 },
+};
+
+function columns() {
+  const cmds = [`fill ${at(9, -1, 6)} ${at(15, -1, 14)} grass_block`, `fill ${at(9, 0, 6)} ${at(15, 8, 14)} air`,
+    `fill ${at(15, -1, 11)} ${at(15, -1, 12)} water`];
+  for (const { block, at: spots, high } of Object.values(Columns))
+    for (const [dx, dz] of spots) {
+      if (block === 'cactus') cmds.push(`setblock ${at(dx, -1, dz)} sand`);
+      cmds.push(`fill ${at(dx, 0, dz)} ${at(dx, high - 1, dz)} ${block}`);
+    }
+  return cmds;
 }
 
 async function reset(body, x = 0.5, z = 0.5) {
@@ -169,13 +189,53 @@ async function storeFull(body) {
   report(inChest === 64 && onHer === 64 && done && done.full === true, 'store, chest full', `${fmt(done)}${done && done.full ? ' (full)' : ''}; chest took ${inChest}, she kept ${onHer}`);
 }
 
-async function harvestCrop(body, crop, item, x, z) {
+// Items lying at a spot in the yard, by item name.
+const lying = (item, dx, dz, r) => q.count(`@e[type=item,nbt={Item:{id:"minecraft:${item}"}},x=${C.x + dx},y=-60,z=${C.z + dz},distance=..${r}]`);
+const drop = (item, dx, dz) => `summon item ${at(dx, 0, dz)} {Item:{id:"minecraft:${item}",count:1},PickupDelay:0}`;
+
+// `strays`: produce already lying in the field (rolled off, trampled out), picked up with the rest; and a diamond
+// someone dropped 3 blocks off the field, which stays where it is (walked over, anything is picked up, by her as by
+// a player: what's tested is that she doesn't go for it).
+async function harvestCrop(body, crop, item, x, z, strays = null) {
   await reset(body, x, z);
+  if (strays) await rcon.run([...strays.map(([dx, dz]) => drop(item, dx, dz)), drop('diamond', -9, 11)]);
   body.send({ op: 'harvest', player: 'tester', crop });
   const done = await ev(body, ['harvested', 'cantHarvest'], 90000);
   await wait(1500);
   const got = await q.carried(Name, item);
-  report(Boolean(done && done.ev === 'harvested') && got > 0, `harvest ${crop}`, `${fmt(done)}${done && done.replanted !== undefined ? `, replanted ${done.replanted}` : ''}; she carries ${got} ${item}`);
+  const left = strays ? await lying(item, -9, 6, 6) : 0;
+  const diamond = strays ? await lying('diamond', -9, 11, 2) : 1;
+  report(Boolean(done && done.ev === 'harvested') && got > 0 && left === 0 && diamond === 1, `harvest ${crop}`,
+    `${fmt(done)}${done && done.replanted !== undefined ? `, replanted ${done.replanted}` : ''}; she carries ${got} ${item}` +
+    (strays ? `; ${item} left lying ${left}, the diamond ${diamond === 1 ? 'left where it was' : 'taken'}` : ''));
+}
+
+// A column crop: everything above each bottom block cut and brought along, every bottom block left to grow again, and
+// no harm done (a cactus pricks).
+async function harvestColumn(body, crop) {
+  const { block, item, at: spots, high } = Columns[crop];
+  await rcon.run(columns());
+  await reset(body, 11.5, 10.5);
+  const hurts = body.events.filter((e) => e.ev === 'hurt').length;
+  body.send({ op: 'harvest', player: 'tester', crop });
+  const done = await ev(body, ['harvested', 'cantHarvest'], 90000);
+  await wait(1500);
+  const got = await q.carried(Name, item);
+  let bases = 0;
+  let above = 0;
+  for (const [dx, dz] of spots) {
+    const [b] = await rcon.run([`execute if block ${at(dx, 0, dz)} minecraft:${block}`]);
+    if (/passed/i.test(b)) bases++;
+    const [a] = await rcon.run([`execute if block ${at(dx, 1, dz)} minecraft:${block}`]);
+    if (/passed/i.test(a)) above++;
+  }
+  const hurt = body.events.filter((e) => e.ev === 'hurt').length - hurts;
+  const expected = spots.length * (high - 1);
+  // What stands above a bottom now may have grown back while she worked (bamboo does, fast): what counts is what she
+  // carries, all of it, and every bottom still there.
+  report(Boolean(done && done.ev === 'harvested') && bases === spots.length && got >= expected - 1 && hurt === 0,
+    `harvest ${crop}`, `${fmt(done)}; she carries ${got}/${expected} ${item}; bottoms left ${bases}/${spots.length}, ` +
+    `grown back above them ${above}; hurt ${hurt}`);
 }
 
 async function keepFarm(body) {
@@ -188,12 +248,16 @@ async function keepFarm(body) {
   body.send({ op: 'farm', player: 'tester' });
   const going = await ev(body, ['farming', 'cantFarm'], 10000);
   await wait(3000);
-  await rcon.run([`fill ${at(-4, 0, -12)} ${at(0, 0, -10)} wheat[age=7] replace wheat`]);
+  // Carrots someone left lying on the field: they come in with the round.
+  await rcon.run([`fill ${at(-4, 0, -12)} ${at(0, 0, -10)} wheat[age=7] replace wheat`, drop('carrot', -4, -12), drop('carrot', 0, -10)]);
   await wait(40000);
   const wheat = await q.inBlock(C.x + 2, -60, C.z - 11, 'wheat');
+  const carrots = (await q.inBlock(C.x + 2, -60, C.z - 11, 'carrot')) + (await q.carried(Name, 'carrot'));
+  const carrotsLying = await lying('carrot', -2, -11, 5);
   const seedsOn = await q.carried(Name, 'wheat_seeds');
   body.send({ op: 'stay' });
-  report(Boolean(going && going.ev === 'farming') && wheat > 0 && seedsOn <= 16 + 8, 'keep a farm', `${fmt(going)}; chest has ${wheat} wheat; seeds on her ${seedsOn} (keeps 16)`);
+  report(Boolean(going && going.ev === 'farming') && wheat > 0 && seedsOn <= 16 + 8 && carrots === 2 && carrotsLying === 0, 'keep a farm',
+    `${fmt(going)}; chest has ${wheat} wheat; seeds on her ${seedsOn} (keeps 16); carrots picked up ${carrots}/2, left lying ${carrotsLying}`);
 }
 
 async function patrol(body) {
@@ -247,11 +311,14 @@ async function orders(only = []) {
     iron: (b) => collect(b, 'iron', 2, 'stone_pickaxe', 'raw_iron', 'collect iron'),
     sand: (b) => collect(b, 'sand', 4, null, 'sand', 'collect sand'),
     fishRefusals, give: (b) => giveKinds(b, papa), storeFull,
-    carrots: (b) => harvestCrop(b, 'carrot', 'carrot', -9.5, 3.5),
+    carrots: (b) => harvestCrop(b, 'carrot', 'carrot', -9.5, 3.5, [[-12, 4], [-10, 8], [-12, 8]]),
     potatoes: (b) => harvestCrop(b, 'potato', 'potato', -7.5, 3.5),
     beetroot: (b) => harvestCrop(b, 'beetroot', 'beetroot', -7.5, 9.5),
     melon: (b) => harvestCrop(b, 'melon', 'melon_slice', -10.5, -5.5),
     pumpkin: (b) => harvestCrop(b, 'pumpkin', 'pumpkin', -10.5, -8.5),
+    bamboo: (b) => harvestColumn(b, 'bamboo'),
+    sugarcane: (b) => harvestColumn(b, 'sugarcane'),
+    cactus: (b) => harvestColumn(b, 'cactus'),
     farm: keepFarm, patrol, small: (b) => small(b, papa),
   };
   for (const [name, run] of Object.entries(all)) {

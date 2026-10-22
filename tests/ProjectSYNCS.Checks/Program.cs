@@ -1989,6 +1989,9 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     Crop("syncs il me faut des patates", McOrder.Harvest, McCrop.Potato);
     Crop("syncs cueille les melons", McOrder.Harvest, McCrop.Melon);
     Crop("syncs récolte les citrouilles", McOrder.Harvest, McCrop.Pumpkin);
+    Crop("syncs coupe le bambou", McOrder.Harvest, McCrop.Bamboo);
+    Crop("syncs récolte la canne à sucre", McOrder.Harvest, McCrop.SugarCane);
+    Crop("syncs ramasse les cactus", McOrder.Harvest, McCrop.Cactus);
     Crop("syncs moissonne", McOrder.Harvest, McCrop.Any);
     Crop("syncs récolte", McOrder.Harvest, McCrop.Any);
     Crop("syncs fais la récolte", McOrder.Harvest, McCrop.Any);
@@ -2053,6 +2056,12 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         "syncs tu peux t'occuper des poules ?", "syncs take care of the animals", "syncs élève des cochons",
     })
         Crop(text, McOrder.Ranch);
+    // The camp: up and down, « range le camp » taking it down (not putting her things away).
+    foreach (var text in new[] { "syncs monte le camp", "syncs installe un campement", "syncs fais un camp", "monte le camp syncs" })
+        Crop(text, McOrder.Camp);
+    foreach (var text in new[] { "syncs démonte le camp", "syncs plie le camp", "syncs range le camp", "syncs lève le camp" })
+        Crop(text, McOrder.Uncamp);
+    Crop("syncs range tes affaires", McOrder.Store);
     // Guarding animals stays a patrol (it must never start a cull); a refusal is nothing.
     Crop("syncs garde les moutons", McOrder.Patrol);
     Crop("syncs surveille les vaches", McOrder.Patrol);
@@ -2546,7 +2555,9 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
              "McPlaceMovedLines", "McPlaceNoNameLines", "McPlaceNotYoursLines", "McPlaceFullLines", "McPlaceUnknownLines",
              "McPlaceForgottenLines", "McPlaceListLines", "McPlaceListEmptyLines", "McPlaceListEmptyOfLines", "McPlaceWhereLines", "McPlaceOtherDimensionLines",
              "McPlaceGoAckLines", "McPlaceArrivedLines", "McGuideAckLines", "McGuideWaitLines", "McGuideArrivedLines", "McGuideLostLines",
-             "McRanchAckLines", "McRanchNoneLines", "McRanchNoChestLines", "McRoutineFarmLines", "McRoutineFishLines", "McRoutineRanchLines",
+             "McRanchAckLines", "McRanchNoneLines", "McRanchNoChestLines",
+             "McCampAckLines", "McCampDoneLines", "McCampPartialLines", "McCampMissingLines", "McCampNoRoomLines", "McCampExistsLines",
+             "McCampRefusedLines", "McUncampAckLines", "McUncampDoneLines", "McUncampNoneLines", "McCampFarLines", "McRoutineFarmLines", "McRoutineFishLines", "McRoutineRanchLines",
              "McRoutineHomeLines", "McTagAlongLinesOwner", "McTagAlongLinesTata", "McRetrieveLines", "McRetrievedLines", "McRetrieveEmptyLines",
              "McRetrieveLostLines", "McToolWornLines", "McToolBrokeLines", "McNeedRodLines", "McNeedShearsLines", "McNeedBreedFoodLines",
              "McNeedArrowsLines", "McPocketsFullLines", "McDiveLines", "McDiveAirLines", "McDrowningLines", "McBreathingLines", "McBoardLines",

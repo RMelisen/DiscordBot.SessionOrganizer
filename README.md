@@ -157,12 +157,18 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
     she gathers it within 48 blocks and drops it at your feet. Stone and ores need a pickaxe: give
     her one (drop it next to her);
   - « syncs récolte le blé » (also carottes, pommes de terre, betteraves, melons, citrouilles, or
-    just « syncs récolte »): she harvests what's ripe around her, replants, and brings it to you;
+    just « syncs récolte »): she harvests what's ripe around her, replants, and brings it to you,
+    with what was already lying in the field; « syncs coupe le bambou » (also la canne à sucre, les
+    cactus) cuts everything above the bottom block, which grows back;
   - « syncs occupe-toi de la ferme »: she stays at the field, harvests whatever ripens, replants,
     and stores it in the chest next to it (she needs one within 10 blocks);
   - « syncs occupe-toi des animaux » (or « nourris les vaches », « fais de l'élevage »): she stays
     at the pen, breeds the animals, shears the sheep, keeps each kind at eight (never a named animal
     or a baby) and stores the wool, leather and meat in the chest next to it;
+  - « syncs monte le camp » (Papa and Tata only): she builds a small hut of planks on flat ground
+    nearby, with a bed, a chest, a crafting table, a furnace, a campfire and torches, crafting it
+    all and gathering the wood, stone and coal she's missing (wool only by shearing: she says so
+    when she has neither); « syncs démonte le camp » takes down only what she built and keeps it;
   - « syncs dodo »: she goes to bed. She also goes on her own when someone does at night, since the
     night only passes when everyone sleeps;
   - « syncs vide tes poches », « syncs donne-moi ton poisson » (or ta pioche, tes armes, ton fer…):
@@ -188,10 +194,12 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
   - « syncs t'es où ? », « syncs assis », « syncs saute », and « salut syncs » (she waves back).
 
   She never digs through or builds on anything on the way: when gathering, she breaks only the
-  blocks she was sent for, and takes wood only from real trees. The only thing she ever places is
-  a seed where she just harvested. She eats when hungry and wears the
-  best armour you give her. When guarding, she never hits a creeper: she shoots it with a bow if she
-  has one with arrows, and otherwise keeps away and warns you; badly hurt, she backs off to heal.
+  blocks she was sent for (and a tree's own leaves to reach its logs), and takes wood only from real
+  trees. She places nothing but a seed where she just harvested, and her camp. She eats when hungry
+  and wears the best armour you give her. She never hits a creeper, whatever she's doing: she shoots
+  it with a bow if she has one with arrows, and otherwise keeps away (and warns you when guarding),
+  then goes back to what she was doing. A monster attacking anyone near her gets her help, even when
+  she's busy; badly hurt, she backs off to heal.
   After handing something over or putting her things away, she goes back to the farm, the fishing
   or the guarding she was at. Whisper an order (`/msg SYNCS syncs viens`) and she whispers back. Say
   just « syncs » and she answers « oui ? »: your next message is heard as an order, no name needed

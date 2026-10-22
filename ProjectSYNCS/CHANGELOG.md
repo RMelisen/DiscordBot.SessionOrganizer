@@ -3,6 +3,20 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.32.0 — 2026-10-21
+
+- Minecraft: « monte le camp » (Papa and Tata): she builds a small hut with a bed, a chest, a
+  crafting table, a furnace, a campfire and torches, crafting everything and gathering the wood,
+  stone and coal she's missing; « démonte le camp » takes it down and she keeps it all.
+- Minecraft: she harvests bamboo, sugar cane and cacti, leaving the bottom block to grow back, and
+  no longer stands on a cut cactus.
+- Minecraft: on a farm or a harvest she also picks up the produce already lying in the field.
+- Minecraft: she deals with a creeper that comes near even when she's busy (shot with her bow, or
+  kept away from), then goes back to what she was doing.
+- Minecraft: she no longer goes after ore under water when gathering, and stops mining to come up
+  for air (she could drown there).
+- Minecraft: she picks up a lump of coal or ore left at the back of the hole it came from.
+
 ## 7.31.0 — 2026-10-21
 
 - Minecraft: she defends anyone near her who gets attacked by a monster, not only her family, and

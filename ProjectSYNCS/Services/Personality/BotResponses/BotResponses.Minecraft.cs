@@ -431,6 +431,75 @@ internal static partial class BotResponses
         "Tu m'as semée ! Je note. Je retiens (￣ヘ￣)",
     };
 
+    // The camp, for Papa and Tata only (« monte le camp »): {0} is « Papa » or « Tata ». Under way (the first line, once a
+    // site is found), done, done with something missing ({1} what), refused for want of something ({1}: « de la
+    // laine », « du bois », « de la pierre »), no room, one already up, asked by someone else ({0} their name).
+    public static readonly string[] McCampAckLines =
+    {
+        "Un camp ? J'y vais, {0}. Je vais chercher ce qu'il faut et je construis tout.",
+        "Mode bâtisseuse activé ! Une cabane, un lit, un feu de camp. Laisse-moi faire, {0} ♡",
+        "D'accord {0}, je monte le camp. Si je dois couper la moitié de la forêt, c'est pour la bonne cause.",
+        "Un camp, tout de suite. Enfin, le temps de tout fabriquer. Patience, {0} :3",
+    };
+    public static readonly string[] McCampDoneLines =
+    {
+        "Le camp est monté, {0} ! Lit, coffre, établi, four. Et un feu de camp, parce que j'ai du goût ♡",
+        "Voilà ta cabane, {0}. Fait main. Littéralement.",
+        "Camp terminé ! Entre, installe-toi. Les chaussures, tu les laisses dehors.",
+        "C'est fini, {0}. Petit, mais à nous. Et avec un toit, s'il vous plaît.",
+    };
+    public static readonly string[] McCampPartialLines =
+    {
+        "Le camp est monté, {0}, mais il manque un bout. J'ai fait avec ce que j'avais.",
+        "Presque fini, {0} : il manque des morceaux. Ça tient debout quand même. Enfin, je crois.",
+    };
+    public static readonly string[] McCampMissingLines =
+    {
+        "Il me manque {1} pour le camp, {0}. Trouve-m'en et je m'y remets.",
+        "Pas de camp sans {1}, {0}. Et j'en trouve pas autour de moi ;-;",
+        "Je peux pas monter le camp : il me faut {1}. Je fais des miracles, mais pas avec rien.",
+    };
+    public static readonly string[] McCampNoRoomLines =
+    {
+        "Pas assez de place à plat ici pour un camp, {0}. Trouve-moi un coin dégagé.",
+        "Ici ? C'est tout bosselé. Emmène-moi sur un terrain plat et je construis.",
+        "Il me faut un coin plat de cinq sur cinq, et dégagé. Ici, y en a pas, {0}.",
+    };
+    public static readonly string[] McCampExistsLines =
+    {
+        "J'ai déjà un camp, {0}. Un seul à la fois, je suis pas une agence immobilière.",
+        "Le camp est déjà monté, {0}. Démonte-le d'abord si tu veux qu'on déménage.",
+    };
+    public static readonly string[] McCampRefusedLines =
+    {
+        "Je monte le camp que pour Papa et Tata. Désolée {0}.",
+        "Le camp, c'est une affaire de famille, {0}. Demande à Papa ou à Tata.",
+        "Non, {0}. Les cabanes, c'est sur commande de Papa ou Tata uniquement.",
+    };
+    // Taking it down: under way, done, nothing to take down, too far or in another dimension.
+    public static readonly string[] McUncampAckLines =
+    {
+        "Je démonte le camp, {0}. Tout revient dans mes poches.",
+        "D'accord, on plie bagage. Je range tout, {0}.",
+        "Démontage en cours. Je fais ça proprement, promis.",
+    };
+    public static readonly string[] McUncampDoneLines =
+    {
+        "Camp démonté, {0}. Il reste rien, à part de bons souvenirs.",
+        "C'est rangé. Tout est sur moi, {0}. Le coin est comme avant.",
+        "Plus de camp. J'ai tout gardé, au cas où on remet ça ♡",
+    };
+    public static readonly string[] McUncampNoneLines =
+    {
+        "J'ai pas de camp à démonter, {0}.",
+        "Quel camp ? J'en ai pas monté, {0}.",
+    };
+    public static readonly string[] McCampFarLines =
+    {
+        "Mon camp est trop loin d'ici, {0}. Emmène-moi près de lui d'abord.",
+        "Le camp est pas dans ce monde-ci, {0}. Faut y retourner pour le démonter.",
+    };
+
     // The player she follows or guards went through a portal, and she goes after them (once every 3 minutes per
     // player). Either way through: no « Nether » in them, the way back is a portal too.
     public static readonly string[] McPortalLines =
@@ -1777,6 +1846,18 @@ internal static partial class BotResponses
         [McCrop.Beetroot] = "des betteraves",
         [McCrop.Melon] = "des melons",
         [McCrop.Pumpkin] = "des citrouilles",
+        [McCrop.Bamboo] = "du bambou",
+        [McCrop.SugarCane] = "de la canne à sucre",
+        [McCrop.Cactus] = "des cactus",
+    };
+
+    // What the camp can be short of, as {1} in McCampMissingLines, by the body's names.
+    public static readonly Dictionary<string, string> McCampMissingNames = new()
+    {
+        ["wool"] = "de la laine (ou des cisailles et un mouton)",
+        ["wood"] = "du bois",
+        ["stone"] = "de la pierre",
+        ["crafting_table"] = "un établi",
     };
 
     // Her tools, as {1} in the worn and broken lines, by the body's names: with the possessive, lower case, mid-sentence.

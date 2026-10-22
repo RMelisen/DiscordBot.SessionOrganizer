@@ -112,6 +112,10 @@ public enum McOrder
     Inventory,
     /// <summary>Say how much she carries of <see cref="McRequest.Goods"/>. Takes her from nobody.</summary>
     Have,
+    /// <summary>Build a camp where she stands: a small hut with a bed, a chest, a crafting table, a furnace. Family only.</summary>
+    Camp,
+    /// <summary>Take her camp down, only its own blocks. Family only.</summary>
+    Uncamp,
 }
 
 /// <summary>What she can be asked to hand over. The body knows each by its lower-case name. Not stored.</summary>
@@ -167,6 +171,10 @@ public enum McCrop
     Beetroot,
     Melon,
     Pumpkin,
+    // Columns: cut above the bottom block, which grows again. Only when named (or on a farm), never in Any.
+    Bamboo,
+    SugarCane,
+    Cactus,
 }
 
 /// <summary>What she can be sent to gather. The body knows each by its lower-case name. Not stored.</summary>
@@ -299,6 +307,18 @@ public static class McCommand
     // alone, or a care verb with an animal word within four words after it. « garde » and « surveille » are not among the
     // verbs: guarding animals stays a patrol, and must never start a cull. Animal words match exactly (« lapins » is one
     // slip from « sapins »); « élever » and « élèves » stay out (one slip from « enlever », « enlèves »).
+    // The camp (« monte le camp »), read before storing: « range le camp » is taking it down, not putting things away.
+    private static readonly string[] CampPhrases =
+    {
+        "monte le camp", "monte un camp", "monte ton camp", "monte le campement", "monte un campement", "installe le camp",
+        "installe un camp", "installe le campement", "installe un campement", "fais un camp", "fais le camp", "fais un campement",
+        "construis un camp", "construis le camp", "plante le camp", "dresse le camp", "monter le camp", "on campe", "set up camp",
+    };
+    private static readonly string[] UncampPhrases =
+    {
+        "demonte le camp", "demonte ton camp", "demonte le campement", "demonter le camp", "plie le camp", "replie le camp",
+        "range le camp", "leve le camp", "defais le camp", "enleve le camp", "detruis le camp", "casse le camp", "pack up camp",
+    };
     private static readonly string[] RanchAlonePhrases =
     {
         "fais de l elevage", "faire de l elevage", "mode eleveuse", "mode elevage", "fais l eleveuse", "joue a l eleveuse",
@@ -340,6 +360,10 @@ public static class McCommand
         (McCrop.Beetroot, new[] { "betterave", "betteraves", "betrave", "betraves", "beetroot", "beetroots" }),
         (McCrop.Melon, new[] { "melon", "melons", "pasteque", "pasteques", "watermelon" }),
         (McCrop.Pumpkin, new[] { "citrouille", "citrouilles", "potiron", "potirons", "pumpkin", "pumpkins" }),
+        (McCrop.Bamboo, new[] { "bambou", "bambous", "bamboo", "bamboos" }),
+        // « canne à sucre » by its « sucre »: « canne » alone is her fishing rod (« donne-moi ta canne »).
+        (McCrop.SugarCane, new[] { "sucre", "sugarcane" }),
+        (McCrop.Cactus, new[] { "cactus", "cacti", "cactuses", "cactees" }),
         // Generic: harvest whatever is ripe. Never against a resource (« du bois dans le champ » is wood).
         (McCrop.Any, new[] { "champ", "champs", "cultures", "plantations", "legumes", "potager", "recoltes", "crops" }),
     };
@@ -786,6 +810,8 @@ public static class McCommand
         if (CarryQuestion(wordsOnly) is { } carry) return carry;
 
         if (Find(wordsOnly, FollowOverStayPhrases) is not null) return When(FollowOverStayPhrases, new(McOrder.Follow)) ?? McRequest.Refusal;
+        if (Find(wordsOnly, UncampPhrases) is { } uncamp) return Unless(uncamp, wordsOnly, new(McOrder.Uncamp));
+        if (Find(wordsOnly, CampPhrases) is { } camp) return Unless(camp, wordsOnly, new(McOrder.Camp));
         if (Find(wordsOnly, RanchAlonePhrases) is not null) return When(RanchAlonePhrases, new(McOrder.Ranch)) ?? McRequest.Refusal;
         if (CareFor(wordsOnly, RanchVerbs, (w, j) => AnimalWords.Contains(w[j])) is { } herd)
             return Unless(herd, wordsOnly, new(McOrder.Ranch));
