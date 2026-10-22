@@ -98,6 +98,12 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
   Sunday at 21:00, unless a session is already planned that weekend or someone's poll is still
   open. When it closes she announces the winning evening, and anyone who voted for it can turn
   it into a session.
+- **Replying under a card** (a poll, a vote, a session, `/tonight`, a giveaway) — she answers
+  about that card: she backs up whoever tells the others to vote, naming the people they tagged
+  who still haven't clicked; checks a « j'ai voté » against the card; says how it stands when
+  asked « c'est quand ? » or « qui vient ? »; reminds anyone who answers in text that only the
+  buttons count; and on « remonte-le » or « up » she posts the card again at the bottom of the
+  channel.
 
 ### Giveaways
 
@@ -694,7 +700,7 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
   you, she still hears what you ask her next for a minute.
   Ask how something works and she points you to `/help`
   or the right command; ask her to organise something and she points you to the command that does it. A reply to one of her own posts (a welcome, the late call, the weekend poll, a
-  level-up, a command result…) is answered about that post.
+  level-up, a poll or session card, a command result…) is answered about that post.
 - **Her records** — now and then, instead of the usual roast, she quotes what she actually
   knows about you: sessions you said yes to and missed, time spent in voice with her, your
   Plynling, your quiz wins, your place on the wall of shame. Rarely, and every number is true.

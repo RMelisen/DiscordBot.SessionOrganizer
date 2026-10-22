@@ -37,6 +37,9 @@ internal sealed class ChatterService
     // « t'es en quelle version ? » is one question in two messages.
     private readonly ChatListening _listening;
 
+    // Replies under her cards (« votez ! », « j'ai voté », « remonte-le »), answered about the card.
+    private readonly CardReplyService _cards;
+
     // Fact lines (her records, quoted): at most one per person every FactCooldown. Its own gate,
     // shared with nothing else.
     private readonly CooldownGate<ulong> _factGate = new(FactCooldown, forget: FactCooldown);
@@ -89,8 +92,10 @@ internal sealed class ChatterService
         ConversationStreak streaks,
         ChatHush hush,
         ChatListening listening,
+        CardReplyService cards,
         ILogger<ChatterService> logger)
     {
+        _cards = cards;
         _streaks = streaks;
         _hush = hush;
         _listening = listening;
@@ -485,6 +490,9 @@ internal sealed class ChatterService
 
         // Told « chut » in this channel: a sulk reaction, no words, the breakdown included.
         if (await HushGateAsync(message, ChatPath.Reply)) return;
+
+        // About one of her cards (« votez ! », « j'ai voté », « remonte-le »): answered about the card.
+        if (TryCardReply(message, name)) return;
 
         // Read the message text (requires the MessageContent intent) to detect
         // kind words or a greeting and answer in kind. A mean reading outweighs the
@@ -1061,15 +1069,54 @@ internal sealed class ChatterService
     }
 
     // Which of her own posts a reply answers: one she remembered sending (HerMessages), the
-    // morning hello by its text, any slash-command result by its interaction metadata.
+    // morning hello by its text, one of her cards by its buttons, any other slash-command result by
+    // its interaction metadata.
     private ReplyContext? ReadReplyContext(SocketUserMessage message)
     {
         if (message.ReferencedMessage is not { } replied) return null;
         if (_herMessages.TryGet(replied.Id, out var kind)) return kind;
         if (MorningGreetingService.IsMorningHello(replied)) return ReplyContext.MorningHello;
+        if (CardRefs.Read(CustomIds(replied)) is { } card)
+        {
+            return card.Kind switch
+            {
+                CardKind.Poll => ReplyContext.Poll,
+                CardKind.Session => ReplyContext.Session,
+                CardKind.Tonight => ReplyContext.Tonight,
+                _ => ReplyContext.Giveaway,
+            };
+        }
         if (replied.InteractionMetadata is not null) return ReplyContext.CommandResult;
         return null;
     }
+
+    // A reply under one of her cards that is about the card: rallying the others, « j'ai voté », a
+    // question about it, an answer typed instead of clicked, « remonte-le » (CardReplyService). Read
+    // before the breakdown roll and the streak: someone urging the room under her poll is not talking
+    // to her. A mean reply is roasted as before; a reply about something else goes on down the path,
+    // where the card's context line waits for what nothing else caught.
+    private bool TryCardReply(SocketUserMessage message, string name)
+    {
+        if (message.ReferencedMessage is not { } replied || CardRefs.Read(CustomIds(replied)) is not { } card) return false;
+
+        var content = message.Content ?? string.Empty;
+        if (IsMean(MessageCues.Analyze(content), content)) return false;
+
+        var selfId = _client.CurrentUser.Id;
+        var tagsSomeone = message.MentionedUsers.Any(u => !u.IsBot && u.Id != message.Author.Id && u.Id != selfId);
+        return _cards.TryAnswer(message, card, MessageCues.ReadCardReply(content, tagsSomeone), name, CurrentWeekday());
+    }
+
+    // Every custom-id on a message's buttons and selects, rows opened.
+    private static IEnumerable<string?> CustomIds(IMessage message) =>
+        message.Components
+            .SelectMany(c => c is ActionRowComponent row ? row.Components : [c])
+            .Select(c => c switch
+            {
+                ButtonComponent button => button.CustomId,
+                SelectMenuComponent select => select.CustomId,
+                _ => null,
+            });
 
     // Counts this message in the person's back-and-forth with her (ConversationStreak). Returns
     // Handled when the gate answered it itself: a reaction while the conversation is ended, or the

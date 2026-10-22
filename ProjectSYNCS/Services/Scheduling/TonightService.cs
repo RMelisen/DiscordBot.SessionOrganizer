@@ -56,6 +56,16 @@ public class TonightService
         await _db_context.SaveChangesAsync();
     }
 
+    // Where the card lives after a repost (CardRepost).
+    public async Task SetMessageLocationAsync(int id, ulong channelId, ulong messageId)
+    {
+        var call = await _db_context.TonightCalls.FindAsync(id);
+        if (call is null) return;
+        call.ChannelId = channelId;
+        call.MessageId = messageId;
+        await _db_context.SaveChangesAsync();
+    }
+
     // Add or switch an answer, never a toggle. Returns whether anything changed.
     public async Task<bool> AnswerAsync(int id, ulong userId, TonightStatus status)
     {

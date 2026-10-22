@@ -21,10 +21,12 @@ public class GiveawayModule : InteractionModuleBase<SocketInteractionContext>
     private const int MaxEntrantsShown = 20;
 
     private readonly GiveawayService _giveaways;
+    private readonly CardRepost _repost;
 
-    public GiveawayModule(GiveawayService giveaways)
+    public GiveawayModule(GiveawayService giveaways, CardRepost repost)
     {
         _giveaways = giveaways;
+        _repost = repost;
     }
 
     // ---- Creating ---------------------------------------------------------
@@ -126,27 +128,13 @@ public class GiveawayModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        var giveaway = await _giveaways.GetAsync(giveawayId);
-        if (giveaway is null || giveaway.GuildId != Context.Guild.Id)
+        var result = await _repost.RepostAsync(Context.Guild, Context.Channel, new CardRef(CardKind.Giveaway, giveawayId));
+        await FollowupAsync(result switch
         {
-            await FollowupAsync("Tirage introuvable.", ephemeral: true);
-            return;
-        }
-
-        if (giveaway.IsClosed)
-        {
-            await FollowupAsync("Ce tirage est terminé.", ephemeral: true);
-            return;
-        }
-
-        await DeleteCardAsync(giveaway);
-
-        var message = await Context.Channel.SendMessageAsync(
-            embed: BuildEmbed(giveaway),
-            components: BuildComponents(giveaway));
-        await _giveaways.SetMessageLocationAsync(giveaway.Id, Context.Channel.Id, message.Id);
-
-        await FollowupAsync($"Tirage **#{giveawayId}** republié ici.", ephemeral: true);
+            RepostResult.NotFound => "Tirage introuvable.",
+            RepostResult.Closed => "Ce tirage est terminé.",
+            _ => $"Tirage **#{giveawayId}** republié ici.",
+        }, ephemeral: true);
     }
 
     [SlashCommand("delete", "Supprimer un tirage que tu as lancé")]
@@ -175,8 +163,7 @@ public class GiveawayModule : InteractionModuleBase<SocketInteractionContext>
         await FollowupAsync($"Tirage **#{giveawayId}** supprimé.", ephemeral: true);
     }
 
-    // Removes the published card if it is still there, so a republish doesn't leave
-    // two live cards for one giveaway and a delete doesn't leave an orphan.
+    // Removes the published card if it is still there, so a delete doesn't leave an orphan.
     private async Task DeleteCardAsync(Giveaway giveaway)
     {
         if (giveaway.MessageId == 0) return;

@@ -134,6 +134,14 @@ namespace ProjectSYNCS.Services;
 //     TonightCardLines · TonightExpiredLines ... /tonight's card, open / closed at midnight
 //     TonightThresholdLines .... /tonight reached its minimum
 //
+//   [Scheduling] Under her cards (CardReplyService)
+//     CardRepostLines · CardRepostTooSoonLines ... « remonte-le »: brought back / just was
+//     CardClosedLines .......... a card that is over
+//     CardRallyLines · CardRallyNamedLines · CardRallyAllDoneLines ... « votez ! »: to the room / the tagged who haven't / who have
+//     CardDoneSeenLines · CardDoneLiarLines ... « j'ai voté »: true / not on the card
+//     CardTextClickLines · CardTextAnsweredLines ... an answer typed: not clicked / clicked too
+//     CardStatusLines .......... « c'est quand ? », « qui vient ? »
+//
 //   [FunCommands] /rate, /ship, /blame, /recap, /wouldyourather
 //     RateBand0Lines … RateBand4Lines + RateBand(score) ... /rate, by score band
 //     RateHerselfLines · RateOwnerLines · RateOwnerSelfLines · RateTataSelfLines · RateCrushLines · RateNemesisLines · RateDevilLines

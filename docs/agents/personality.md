@@ -202,7 +202,7 @@ From the top:
 Everything aimed at her returns before the two ambient branches are reached.
 
 **Inside the reply path** (`HandleReplyToBotAsync`), first match wins: Inabot → shutdown threat →
-**hush gate** (`ChatHush`, see `ShutUp`) → breakdown roll → **streak gate** → Papa mean (`OwnerMeanReplies`) → **specific intent** → Papa's
+**hush gate** (`ChatHush`, see `ShutUp`) → **under her cards** (`CardReplyService`) → breakdown roll → **streak gate** → Papa mean (`OwnerMeanReplies`) → **specific intent** → Papa's
 pet name → **reply context** → nice → greeting → **question / low effort** → reference roll → Tata warmth → fallback
 (`OwnerComebacks` for Papa; otherwise the streak nudge, a fact line, or `Comebacks`). A mean reply
 from anyone else skips intents and context and is roasted, as it always was. **The mention path**
@@ -335,7 +335,9 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   reply or mention gets a `StreakSulkReactions` emote, counted `hushed`; her name and the eggs, nothing),
   `RobotHeartService` and `RivalryService`'s mutters (the silent reaction stays). Papa is never refused,
   and his « chut » holds for the others. Inabot and shutdown threats still come before the gate. « ta
-  gueule » stays an insult: a mean message reads no intent, so the shush words stay weak cues. Not in game.
+  gueule » stays an insult: a mean message reads no intent, so the shush words stay weak cues, and « tais »
+  is no mean cue at all (« TAIS-TOI ! » would reach the threshold on emphasis alone); an insult beside it
+  still counts. Papa's twin is barely a word, a little hurt (« ... », « Désolée... », an emote). Not in game.
 - **`Yes` / `No`**: a reply that is only a yes or a no (`MessageCues.ReadAnswer`: « oui », « bah non »,
   « carrément », « pas du tout », « oui merci »; fillers dropped, repeats folded, never with a `?`, never
   mixed), **under one of her messages that asked something** (a `?` in it). The one pair `ReadIntent`
@@ -530,8 +532,9 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   or « te » (« je pense », « je préfère », « je t'envoie le lien »), not « j'arrive », « j'y vais »,
   « j'en ai rien à faire », and never with « toi », « tu » or a question word in it (« je suis pas
   amoureux de toi » answers her, « on joue à quoi ce soir » proposes). « on s' » only as « on s'est ».
-  Like `Question`, it comes after a reply's context (« j'ai voté pour samedi » under her poll gets the
-  poll's line). She is interested half the time (`IntentLines[Sharing]`) and « euh… ok ? » the other
+  Like `Question`, it comes after a reply's context (« j'ai joué tout l'après-midi » under the late
+  call gets the late call's line; under a card, « j'ai voté pour samedi » never gets here, see
+  *Under her cards*). She is interested half the time (`IntentLines[Sharing]`) and « euh… ok ? » the other
   half (`SharingShrugLines`, `SharingInterestChance`); Papa always gets interest. Not read on her name.
 - `LowEffort` is no letters at all (emotes, « ? », « ... ») or up to three words all from a short list
   (« ok », « ah bon », « bah oui », « d'accord »). It is not read on mentions: a bare tag is
@@ -577,9 +580,73 @@ Papa, so each pool must also suit a « merci », a « bonjour » or an « ok ».
   card (`WeekendPoll`; not its result or dead line), the level-up embed (`LevelUp`), idle and
   self-correcting idle lines, the voice spectator and the kick lines (`Lonely`), the wake lines and
   the router return (`Wake`). A new proactive post that people answer gets its `Remember` line.
-- **Two kinds need no memory.** The morning hello is recognised by its text
+- **Some kinds need no memory.** The morning hello is recognised by its text
   (`MorningGreetingService.IsMorningHello`, the same first-line match its restart scan uses), so it
-  survives a restart; any slash-command result by its `InteractionMetadata` (`CommandResult`).
+  survives a restart; her cards by their buttons (`Poll`, `Session`, `Tonight`, `Giveaway`; see
+  *Under her cards*); any other slash-command result by its `InteractionMetadata` (`CommandResult`).
+  The cards are checked before `CommandResult`: `/tonight` and `/giveaway` cards carry metadata too,
+  and « le verdict est définitif » doesn't answer a « merci » under a giveaway.
+
+### Under her cards — `CardReplyService`
+
+A reply under a poll, a vote, a session, `/tonight` or a giveaway card is usually not said to her:
+people rally the room, say they voted, ask when it is, or answer in text. **The card is recognised
+by its buttons' custom-ids** (`Helpers/Scheduling/CardRefs`: `poll:vote|close|tosession:{id}`,
+`event:*:{id}`, `tonight:*:{id}`, `giveaway:enter|leave:{id}`), which carry the row's id, so it
+survives a restart and needs no lookup. A card that lost its buttons (drawn, cancelled, started,
+expired) is not recognised and reads like any reply. Renaming one of those custom-ids breaks this.
+
+`MessageCues.ReadCardReply` (`MessageCues.Cards.cs`) reads `CardReplyIntent`, first match wins:
+
+- **`Repost`**: « remonte-le », « republie », « reposte », « bump », « up » (three words at most);
+  « renvoie », « ramène », « remets » only about the card (a pronoun next to them, the card named,
+  or closing the reply: « ramène des chips », « remets la musique » are not); a place verb with a
+  place (« mets-le en bas », « remets-le à la fin »); buried (« on le voit plus », or the card named
+  as « tout en haut », « noyé »). Never right after a subject (« tu remontes à quelle heure ? »,
+  « on remonte la pente »). A negator after cancels (« le remonte pas »), not before (« tu peux pas
+  le remonter ? » asks). She replies, then `CardRepost` posts the card again at the bottom of the
+  channel, so it is the last message.
+- **`Rally`**: « votez », « faut voter », « venez », « bougez-vous », « personne a voté », « et
+  vous ? » anywhere; the singular (« vote », « viens », « clique », « et toi ») and asking whether
+  they did (« t'as voté ? », « tu viens ? », « t'es chaud ? ») only with another human tagged, and
+  the imperatives never after « j' », « a », « le »… (`_notRallyAfter`: « voté » reads « vote »,
+  « le vote » is a noun). Tags and nothing else (« @Luca @Sandra », « @Luca 👀 »), or a short
+  question to someone tagged (« @Luca chaud ? », four words at most), point people at the card too.
+  She names the tagged people who haven't answered the card (`CardRallyNamedLines`), says they all
+  have (`CardRallyAllDoneLines`), or with nobody tagged quotes the count (`CardRallyLines`). One
+  rally line per card every 5 minutes: three people urging the room get one backing, not a chorus.
+- **`Done`**: « j'ai voté », « c'est fait », « c'est voté », « j'ai coché », « je me suis inscrit·e »,
+  « on a tous voté », or bare « voté », « fait », « c'est bon », « voilà », a ✅ alone (bare only
+  when nobody is tagged: « @Luca a voté » is about Luca). Checked against the card:
+  `CardDoneSeenLines`, or `CardDoneLiarLines` while it is open.
+- **`Status`**: « c'est quand ? », « qui vient ? », « on en est où ? », « qui a gagné ? », « y a
+  combien de votes ? », « alors ? » alone; unasked only opening a reply of six words at most (« c'est
+  quand », « qui vient ce soir »). Each phrase names the card's own business: no bare « quand »,
+  « combien » or « quelle heure » (« il est quelle heure ? », « t'as fait combien de kills ? »), and
+  « résultat » never as an opener (« résultat, je suis mort »). → `CardStatusLines`, `{2}` the card
+  in words (poll: voters and the leader; session: time and `SessionRoster`; `/tonight`: chauds,
+  peut-être, time; giveaway: entries and the draw).
+- **`TextAnswer`**, not asked, ten words at most: « samedi pour moi », « je peux pas », « dispo »,
+  « j'y serai », « compte sur moi », « ça me va », « moi », « pareil », « +1 », « go ». « chaud »
+  is keen except after « fait », « est », « être » (the weather, « c'est chaud »); « je peux
+  voter / cliquer… » asks. A day counts only among the words of a choice (« plutôt dimanche »,
+  « samedi ou dimanche », « ça va ce soir »), never said in passing (« je dors chez Luca ce soir »,
+  « à demain »). `CardTextAnsweredLines` if they clicked too, else `CardTextClickLines`.
+
+**`dotnet run --project tests/ProjectSYNCS.Checks -- --card-review`** lists the everyday sweeps'
+messages that would read as a card reply; each must be one a card reply would really be.
+
+Any intent but `Status` on a card that is over gets `CardClosedLines`. **It sits right after the
+hush gate**, before the breakdown roll and the streak gate: someone rallying the room is not in a
+conversation with her. A mean reply skips it and is roasted; a reply it doesn't read goes on down
+the path, where the card's context line is the fallback. Papa gets the same as everyone (facts and
+reposts are the same whoever asks). The DB read runs off the gateway handler; titles are sanitised
+and everything goes out with mentions muted (the reply ping stays). Counted `card:<Intent>`.
+
+**`CardRepost`** (`Services/Scheduling/`) is the one repost path, shared with the `/poll list`,
+`/vote list`, `/schedule list` and `/giveaway list` menus: delete the old card, redraw it through
+the module's builders, store the new location (and point a session's native event at it). Open to
+anyone, like the menus; a repost that throws gives the 5-minute gate back.
 - **NightLines are not registered**: `AmbientService` answers a reply to the 3 a.m. line itself,
   before `ChatterService` sees it.
 - `Wake` replies are someone checking on her after a stop: one of the existential nerve's places.

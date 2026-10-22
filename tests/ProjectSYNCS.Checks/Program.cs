@@ -42,6 +42,9 @@ var taggedPools = new[]
     "SharingShrugLines", "ChoiceLines", "DoYouLoveMeGrudgeLines", "DoYouLoveMeTreasureLines", "TataIntentLines",
     "OwnerRaspberryNameLines", "OwnerChildNameLines", "OwnerVersionLines", "TakeSidesLines", "RateMeLines",
     "SessionNextLines", "SessionRunningLines", "NoSessionLines", "MyStatsLines", "MyLevelEmptyLines", "MyPlynlingEmptyLines",
+    "CardRepostLines", "CardRepostTooSoonLines", "CardClosedLines", "CardRallyLines", "CardRallyNamedLines",
+    "CardRallyAllDoneLines", "CardDoneSeenLines", "CardDoneLiarLines", "CardTextClickLines", "CardTextAnsweredLines",
+    "CardStatusLines",
 };
 foreach (var f in taggedPools)
 foreach (var (name, lines) in Pools(f))
@@ -271,6 +274,8 @@ var allKinds = consts
     .Concat(Enum.GetValues(intentType).Cast<object>().Where(v => v.ToString() != "None").Select(v => (string)intentKey.Invoke(null, new[] { v })!))
     .Concat(Enum.GetValues<ReplyContext>().Select(AnswerKinds.Context))
     .Concat(Enum.GetValues<ChatFact>().Select(AnswerKinds.Fact))
+    .Concat(Enum.GetValues(asm.GetType("ProjectSYNCS.Services.CardReplyIntent")!).Cast<object>().Where(v => v.ToString() != "None")
+        .Select(v => (string)kindsType.GetMethod("Card", BindingFlags.NonPublic | BindingFlags.Static)!.Invoke(null, new[] { v })!))
     .ToList();
 if (allKinds.Distinct().Count() != allKinds.Count) Fail("duplicate answer kind keys");
 if (!AnswerKinds.IsUnrecognised(AnswerKinds.Comeback) || AnswerKinds.IsUnrecognised(AnswerKinds.Nice)
@@ -844,6 +849,10 @@ var analyze = cues.GetMethod("Analyze", BindingFlags.Public | BindingFlags.Stati
 string Mood(string s) { var m = analyze.Invoke(null, new object[] { s })!; return m.GetType().GetProperty("Emotion")!.GetValue(m)!.ToString()!; }
 if (Mood("t'es une menteuse") != "Mean") Fail("« t'es une menteuse » no longer reads mean: ChatterService.IsMean relies on it");
 if (Mood("t'es une menteuse et une idiote en plus") != "Mean") Fail("a long insult with « menteuse » no longer reads mean");
+// A hush is not an insult: a mean mood reads no intent, so « tais-toi » would be roasted, not obeyed.
+foreach (var hush in new[] { "tais-toi", "TAIS-TOI !", "tais-toi syncs", "oh tais-toi un peu", "taisez-vous", "chut !", "la ferme", "ferme-la", "ferme ta bouche" })
+    if (Mood(hush) == "Mean") Fail($"« {hush} » reads mean: it must reach the ShutUp intent");
+if (Mood("tais-toi, t'es nulle") != "Mean") Fail("« tais-toi, t'es nulle » no longer reads mean: the insult beside the hush must still count");
 if ((bool)addresses.Invoke(null, new object[] { "syncs est une menteuse", 999UL })!) Fail("« syncs est une menteuse » reads as said to her (it is a backbite)");
 
 // 19. The weakest intents widened: AreYouThere, AboutHer, Crush, Help, Disbelief, and the game talk
@@ -2841,6 +2850,99 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     Gaps(["a", "b", "c", "d", "e", "f"], 5);
     Gaps(["a", "b", "c", "", "", ""], 4);
     Gaps(["a", "b"], 2);
+}
+
+// Replies under her cards (MessageCues.ReadCardReply): what each is doing, and what must stay ordinary
+// talk. The bool is whether the reply tags someone else, which is what makes « vote » an order.
+{
+    var readCardReply = cues.GetMethod("ReadCardReply", BindingFlags.Public | BindingFlags.Static)!;
+    foreach (var (text, tags, expected) in new (string, bool, string)[]
+    {
+        // Bringing it back.
+        ("remonte le sondage stp", false, "Repost"), ("tu peux le remonter ?", false, "Repost"), ("up", false, "Repost"),
+        ("up !", false, "Repost"), ("petit up", false, "Repost"), ("syncs, remets-le en bas", false, "Repost"),
+        ("tu peux le mettre à la fin ?", false, "Repost"), ("republie-le", false, "Repost"), ("ramène la carte", false, "Repost"),
+        ("tu peux pas le remonter ?", false, "Repost"), ("bump", false, "Repost"),
+        ("le remonte pas", false, "None"), ("je suis en bas", false, "None"),
+        ("remets-le", false, "Repost"), ("renvoie le sondage", false, "Repost"), ("tu peux le renvoyer ?", false, "Repost"),
+        ("on le voit plus", false, "Repost"), ("le sondage est tout en haut", false, "Repost"), ("reposte stp", false, "Repost"),
+        ("ramène des chips", false, "None"), ("tu ramènes quoi ?", false, "None"), ("renvoie-moi le lien", false, "None"),
+        ("remets ton vote", false, "None"), ("remets la musique", false, "None"), ("on remonte la pente", false, "None"),
+        ("je suis noyé de boulot", false, "None"), ("Luca il est perdu", false, "None"), ("tu remontes à quelle heure ?", false, "None"),
+        // Rallying the others.
+        ("votez !", false, "Rally"), ("allez votez svp", false, "Rally"), ("<@123> vote", true, "Rally"),
+        ("<@123> <@456> votez", true, "Rally"), ("vote stp <@123>", true, "Rally"), ("faut voter les gars", false, "Rally"),
+        ("oubliez pas de voter", false, "Rally"), ("<@123> tu viens ?", true, "Rally"), ("venez", false, "Rally"),
+        ("inscrivez-vous", false, "Rally"), ("<@123> clique", true, "Rally"),
+        ("<@123> a voté", true, "None"), ("le vote est nul", false, "None"), ("vote", false, "Done"),
+        ("<@123> j'ai voté", true, "Done"), ("votez pas", false, "None"),
+        ("<@123>", true, "Rally"), ("<@123> <@456> 👀", true, "Rally"), ("<@123> t'as voté ?", true, "Rally"),
+        ("<@123> et toi ?", true, "Rally"), ("<@123> chaud ?", true, "Rally"), ("et vous ?", false, "Rally"),
+        ("personne a voté", false, "Rally"), ("bougez-vous", false, "Rally"), ("allez on vote", false, "Rally"),
+        ("tout le monde clique", false, "Rally"), ("<@123> t'es chaud ce soir ?", true, "Rally"),
+        ("t'as voté ?", false, "None"), ("<@123> je suis d'accord avec toi sur ce point", true, "None"),
+        // Saying it's done.
+        ("j'ai voté", false, "Done"), ("c'est fait", false, "Done"), ("voté !", false, "Done"), ("a voté", false, "Done"),
+        ("j'ai voté pour samedi", false, "Done"), ("je me suis inscrite", false, "Done"), ("fait", false, "Done"),
+        ("j'ai pas voté", false, "None"), ("c'est voté", false, "Done"), ("c'est bon", false, "Done"),
+        ("voilà", false, "Done"), ("✅", false, "Done"), ("j'ai coché samedi", false, "Done"), ("on a tous voté", false, "Done"),
+        ("jsuis inscrit", false, "Done"), ("j'ai mis du temps à venir", false, "None"), ("<@123> c'est bon", true, "None"),
+        // Asking how it stands.
+        ("c'est quand ?", false, "Status"), ("qui vient ?", false, "Status"), ("on en est où ?", false, "Status"),
+        ("on est combien ?", false, "Status"), ("qui a gagné ?", false, "Status"), ("ça finit quand ?", false, "Status"),
+        ("pourquoi samedi ?", false, "None"),
+        ("c'est quand", false, "Status"), ("qui vient ce soir", false, "Status"), ("alors ?", false, "Status"),
+        ("y a combien de votes ?", false, "Status"), ("ça commence à quelle heure ?", false, "Status"),
+        ("qui est en tête ?", false, "Status"), ("c'est pour quand ?", false, "Status"),
+        ("il est quelle heure ?", false, "None"), ("t'as fait combien de kills ?", false, "None"),
+        ("le tournoi commence quand ?", false, "None"), ("résultat je suis mort", false, "None"),
+        ("alors t'en penses quoi ?", false, "None"),
+        // An answer typed instead of clicked.
+        ("samedi pour moi", false, "TextAnswer"), ("je peux pas", false, "TextAnswer"), ("dispo", false, "TextAnswer"),
+        ("je viens", false, "TextAnswer"), ("chaud", false, "TextAnswer"), ("moi", false, "TextAnswer"),
+        ("plutôt dimanche", false, "TextAnswer"), ("go", false, "TextAnswer"), ("je vote Minecraft", false, "TextAnswer"),
+        ("je peux voter ?", false, "None"),
+        ("ok pour samedi", false, "TextAnswer"), ("samedi ou dimanche", false, "TextAnswer"), ("samedi ça me va", false, "TextAnswer"),
+        ("ça va ce soir", false, "TextAnswer"), ("j'y serai", false, "TextAnswer"), ("compte sur moi", false, "TextAnswer"),
+        ("je suis trop chaud", false, "TextAnswer"), ("pareil", false, "TextAnswer"), ("+1", false, "TextAnswer"),
+        ("je peux pas venir samedi", false, "TextAnswer"), ("je peux voter pour deux", false, "None"),
+        ("il fait chaud ici", false, "None"), ("c'est chaud", false, "None"), ("ça va être chaud ce soir", false, "None"),
+        ("je dors chez Luca ce soir", false, "None"), ("à demain", false, "None"), ("bon weekend", false, "None"),
+        ("c'est calme ce soir", false, "None"), ("le bot a planté hier soir", false, "None"),
+        ("je te dis ça demain", false, "None"), ("ma connexion est nulle ce soir", false, "None"),
+        // Ordinary replies: the card's context line, or the usual path.
+        ("ok", false, "None"), ("merci", false, "None"), ("t'es nulle", false, "None"), ("", false, "None"),
+        ("« votez » qu'il a dit", false, "None"),
+    })
+    {
+        var got = readCardReply.Invoke(null, new object[] { text, tags })!.ToString();
+        if (got != expected) Fail($"ReadCardReply(\"{text}\", tags: {tags}) = {got}, expected {expected}");
+    }
+
+    // A card is recognised by its buttons, whatever else rides on the message.
+    void CardIs(string[] ids, CardRef? expected)
+    {
+        var got = CardRefs.Read(ids);
+        if (got != expected) Fail($"CardRefs.Read({string.Join(", ", ids)}) = {got?.ToString() ?? "null"}, expected {expected?.ToString() ?? "null"}");
+    }
+    CardIs(["poll:vote:12:40", "poll:close:12"], new CardRef(CardKind.Poll, 12));
+    CardIs(["poll:tosession:7"], new CardRef(CardKind.Poll, 7));
+    CardIs(["event:join:3", "event:sub:3"], new CardRef(CardKind.Session, 3));
+    CardIs(["tonight:in:5"], new CardRef(CardKind.Tonight, 5));
+    CardIs(["giveaway:enter:9"], new CardRef(CardKind.Giveaway, 9));
+    CardIs(["poll:republish"], null);
+    CardIs(["arcade:play:4"], null);
+    CardIs([], null);
+
+    // The everyday sweeps again, as if replied under a card: not failures (« je peux pas venir samedi »
+    // under a poll is an answer), a count to watch. Run with --card-review to read them.
+    var cardReads = neutral.Concat(slang)
+        .Select(text => (Text: text, Got: readCardReply.Invoke(null, new object[] { text, false })!.ToString()))
+        .Where(r => r.Got != "None")
+        .ToList();
+    Console.WriteLine($"card sweep: {cardReads.Count} of {neutral.Length + slang.Length} ordinary messages read as a card reply");
+    if (args.Contains("--card-review"))
+        foreach (var (text, got) in cardReads) Console.WriteLine($"  card: \"{text}\" -> {got}");
 }
 
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");

@@ -17,6 +17,11 @@ public enum ReplyContext
     Lonely,
     Wake,
     CommandResult,
+    // Her cards, recognised by their buttons (CardRefs): a reply that no card intent caught.
+    Poll,
+    Session,
+    Tonight,
+    Giveaway,
 }
 
 /// <summary>
@@ -25,10 +30,10 @@ public enum ReplyContext
 /// </summary>
 /// <remarks>
 /// <para>Singleton, in memory, bounded: a restart forgets it by design, and a reply to a forgotten
-/// message falls back to the ordinary reply path. Two kinds are never remembered here, because
+/// message falls back to the ordinary reply path. Some kinds are never remembered here, because
 /// they can be recognised without it: the morning hello by its text (MorningGreetingService
-/// .IsMorningHello, which also survives a restart), and any slash-command result by its
-/// interaction metadata (ReplyContext.CommandResult).</para>
+/// .IsMorningHello, which also survives a restart), her cards by their buttons (CardRefs), and any
+/// other slash-command result by its interaction metadata (ReplyContext.CommandResult).</para>
 /// <para>NightLines are not here: AmbientService answers a reply to the 3 a.m. line itself, before
 /// ChatterService sees it.</para>
 /// </remarks>

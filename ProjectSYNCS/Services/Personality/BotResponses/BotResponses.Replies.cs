@@ -1950,6 +1950,62 @@ internal static partial class BotResponses
                 "Je suis toujours juste. Parfois cruelle, mais toujours juste." + Sticker.Slay,
                 "Commande exécutée sans erreur. Si le résultat te plaît pas, c'est pas un bug." + Sticker.Cool,
             ],
+
+            // A poll or a vote card (« ok », « merci », « intéressant »): the buttons count, not the chat.
+            [ReplyContext.Poll] =
+            [
+                "Tu commentes mon sondage ? Commente avec un clic, c'est plus utile." + Sticker.Smug,
+                "Je lis tout. Mais ce qui compte, c'est les boutons." + Sticker.Jenote,
+                "Un message sous un sondage. Ça me fait plaisir, mais ça compte pas." + Sticker.Happy,
+                "Si t'as voté, merci. Sinon, c'est juste au-dessus (¬_¬)" + Sticker.Smug,
+                "Ce sondage a besoin de clics, pas de conversation." + Sticker.Bored,
+                "Je compte les voix, pas les messages. Désolée, c'est la démocratie." + Sticker.Cool,
+                "Tu sais que je peux le remonter, si on me le demande ? Je dis ça pour ta culture." + Sticker.Smug,
+                "Merci de faire vivre mon sondage. Il en a besoin." + Sticker.Happy,
+                "Les votes sont secrets. Enfin, pas vraiment, ils sont sur la carte." + Sticker.Smug,
+                "Un sondage, c'est comme une plante : faut cliquer dessus tous les jours. Non. Une fois suffit." + Sticker.Confused,
+            ],
+
+            // A session card: she runs it, keeps the list, counts the late.
+            [ReplyContext.Session] =
+            [
+                "Une question sur la session ? Tout est sur la carte. Je l'ai faite jolie exprès." + Sticker.Happy,
+                "Le bouton « Rejoindre » est juste au-dessus. Il attend que toi." + Sticker.Smug,
+                "Je garde la carte à jour. Toi, garde ta soirée libre." + Sticker.Jenote,
+                "Tu viens, ou tu commentes ? Les deux sont possibles. Le premier compte plus." + Sticker.Smug,
+                "J'ai noté ton message. Ta présence, je la noterai le jour J." + Sticker.Jenote,
+                "Si c'est encore un « peut-être », je fais semblant de pas l'avoir lu." + Sticker.Grumpy,
+                "Merci pour ton message. La session, elle, préfère les inscriptions." + Sticker.Smug,
+                "Je compte les inscrits, les absents et les retards. Surtout les retards." + Sticker.Menace,
+                "Une session de plus dans mes plannings. C'est mon métier préféré, en vrai ♡" + Sticker.Happy,
+                "Tout le monde parle, personne s'inscrit. Classique." + Sticker.Bored,
+            ],
+
+            // A /tonight card: tonight is decided with a button.
+            [ReplyContext.Tonight] =
+            [
+                "Ce soir, c'est oui ou c'est non ? C'est une question à boutons." + Sticker.Smug,
+                "Ce soir, ça se décide en un clic. Pas en trois messages." + Sticker.Bored,
+                "Je compte les chauds. Les commentaires, je les garde pour la déco." + Sticker.Jenote,
+                "Si c'est oui, dis-le au bouton. Il est très à l'écoute." + Sticker.Smug,
+                "Merci pour ton avis. Le vocal attend des gens, pas des avis." + Sticker.Smug,
+                "Il reste des places pour ce soir. Et des clics à faire." + Sticker.Happy,
+                "Une soirée qui se prépare, j'adore. Une soirée qui se prépare sans clics, beaucoup moins." + Sticker.Grumpy,
+                "Je regarde le compteur toutes les minutes. Fais-le monter." + Sticker.Menace,
+            ],
+
+            // A giveaway card: the draw is fair, and she is the one drawing.
+            [ReplyContext.Giveaway] =
+            [
+                "Pour participer, c'est le bouton. Pour me remercier, c'est ici. Merci reçu ♡" + Sticker.Happy,
+                "Je tire au sort, je triche jamais. Promis. Juré. Mes logs en témoignent." + Sticker.Cool,
+                "Un message te fait pas gagner. Un clic, peut-être." + Sticker.Smug,
+                "Bonne chance. Enfin, c'est le hasard qui décide, pas moi. Pour une fois." + Sticker.Smug,
+                "Les commentaires augmentent pas tes chances. J'ai vérifié le code." + Sticker.Jenote,
+                "Tu veux gagner ? Clique. Tu veux me parler ? Ça, c'est gratuit." + Sticker.Happy,
+                "J'ai hâte de tirer au sort. C'est le seul moment où tout le monde me regarde." + Sticker.Flustered,
+                "Si tu gagnes, je veux un merci. Si tu perds, c'est le hasard, pas moi (˶ᵔ ᵕ ᵔ˶)" + Sticker.Smug,
+            ],
         };
 
     // ---- Long back-and-forths ------------------------------------------------------------------

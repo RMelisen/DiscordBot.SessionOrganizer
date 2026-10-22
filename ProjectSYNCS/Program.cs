@@ -75,6 +75,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<PlynlingCareService>();
         services.AddTransient<PlynlingVisitRunner>();
         services.AddTransient<TonightService>();
+        // Brings a card back to the bottom of a channel: the /… list menus and a reply asking her to.
+        services.AddTransient<CardRepost>();
         services.AddTransient<PersonalReminderStore>();
         services.AddTransient<MinecraftDataService>();
         services.AddTransient<ArcadeService>();
@@ -148,6 +150,8 @@ var host = Host.CreateDefaultBuilder(args)
         // so its flush on stop runs after everything that feeds the counter has stopped.
         services.AddSingleton<ActivityCounter>();
         services.AddHostedService<ActivityFlushService>();
+        // Replies under her cards (« votez », « j'ai voté », « remonte-le »): its gates are in memory.
+        services.AddSingleton<CardReplyService>();
         services.AddSingleton<ChatterService>();
         services.AddSingleton<EmoteTracker>();
         services.AddSingleton<ReactionService>();

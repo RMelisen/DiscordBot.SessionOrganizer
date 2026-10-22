@@ -3,6 +3,17 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.33.0 — 2026-10-22
+
+- Replies under a poll, vote, session, `/tonight` or giveaway card are answered about that card:
+  she backs up whoever tells the others to vote (naming the people tagged who haven't clicked),
+  checks « j'ai voté » against the card, says how it stands when asked, and reminds anyone
+  answering in text that only the buttons count.
+- Tagging people under a card, or asking them « t'as voté ? », gets the same backing.
+- « remonte-le », « up » under a card: she posts it again at the bottom of the channel.
+- An ordinary reply under one of these cards gets a line about that card, not a random comeback.
+- « tais-toi » is read as being told to hush, not as an insult: she goes quiet instead of roasting.
+
 ## 7.32.0 — 2026-10-21
 
 - Minecraft: « monte le camp » (Papa and Tata): she builds a small hut with a bed, a chest, a
