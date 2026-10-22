@@ -2945,5 +2945,43 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         foreach (var (text, got) in cardReads) Console.WriteLine($"  card: \"{text}\" -> {got}");
 }
 
+// 34. Member badges: the catalog, tiers at their edges, derived moments, icon keys.
+{
+    var mb = MemberBadges.All;
+    if (mb.Count(b => b.Kind == MemberBadgeKind.Palier) != 12 || mb.Count(b => b.Kind == MemberBadgeKind.Moment) != 6
+        || mb.Count(b => b.Kind == MemberBadgeKind.Secret) != 13) Fail("member badges: catalog counts");
+    if (mb.Select(b => b.Key).Distinct().Count() != mb.Count) Fail("member badges: duplicate key");
+    foreach (var b in mb)
+    {
+        if (b.Kind == MemberBadgeKind.Palier != (b.Thresholds.Count == 5)) Fail($"{b.Key}: thresholds");
+        if (b.Thresholds.Zip(b.Thresholds.Skip(1)).Any(p => p.First >= p.Second)) Fail($"{b.Key}: thresholds not ascending");
+        if (string.IsNullOrWhiteSpace(b.Name) || string.IsNullOrWhiteSpace(b.Hint) || (b.Name + b.Hint).IndexOfAny(['{', '}']) >= 0) Fail($"{b.Key}: name/hint");
+        var mbTiers = b.Kind == MemberBadgeKind.Palier ? Enum.GetValues<CollectionTier>().Skip(1).ToArray() : new[] { CollectionTier.None };
+        foreach (var t in mbTiers)
+        {
+            var key = MemberBadges.IconKey(b, t);
+            var name = ItemEmojis.EmojiName(key);
+            if (!MemberBadges.IsIconKey(key) || name is null || name.Length > 32 || !name.All(c => char.IsAsciiLetterOrDigit(c) || c == '_')) Fail($"{key}: icon key");
+            if (ItemCatalog.Sets.Any(s => Enum.GetValues<CollectionTier>().Any(ct => ItemEmojis.BadgeKey(s.Key, ct) == key))) Fail($"{key}: clashes with a collection badge");
+        }
+    }
+    var mbNow = new DateTimeOffset(2026, 10, 22, 12, 0, 0, TimeSpan.Zero);
+    MemberBadgeFacts MbFacts(long voice = 0, long bestMs = 0, DateTimeOffset? joined = null, Dictionary<string, StoredBadge>? stored = null) =>
+        new(voice, 0, 0, bestMs, 0, 0, 0, 0, 0, 0, false, joined, stored ?? new());
+    BadgeStanding MbOf(MemberBadgeFacts f, string key) => MemberBadges.Evaluate(f, mbNow).Single(s => s.Info.Key == key);
+    if (MbOf(MbFacts(voice: 599), "voice").Earned || MbOf(MbFacts(voice: 600), "voice").Tier != CollectionTier.Bronze
+        || MbOf(MbFacts(voice: 60000), "voice").Tier != CollectionTier.Diamond) Fail("voice tier edges");
+    if (MbOf(MbFacts(), "seniority").Earned) Fail("seniority null");
+    if (MbOf(MbFacts(joined: mbNow.AddDays(-90)), "seniority").Tier != CollectionTier.Bronze) Fail("seniority 90 days");
+    if (!MbOf(MbFacts(bestMs: 2999), "lightning").Earned || MbOf(MbFacts(bestMs: 3000), "lightning").Earned
+        || MbOf(MbFacts(bestMs: 0), "lightning").Earned) Fail("lightning edges");
+    var mbStored = new Dictionary<string, StoredBadge> { ["arcade"] = new(5, mbNow), ["hush"] = new(1, mbNow), ["gone_key"] = new(1, mbNow) };
+    var mbAll = MemberBadges.Evaluate(MbFacts(stored: mbStored), mbNow);
+    if (MbOf(MbFacts(stored: mbStored), "arcade").Tier != CollectionTier.Bronze || !MbOf(MbFacts(stored: mbStored), "hush").Earned) Fail("stored badges");
+    if (mbAll.Count != mb.Count || mbAll.Count(s => s.Earned) != 2) Fail("unknown stored key");
+    if (MemberBadges.IsAwardable(0, "hush") || MemberBadges.IsAwardable(1, "nope") || MemberBadges.IsAwardable(1, "voice")
+        || !MemberBadges.IsAwardable(1, "nanny") || !MemberBadges.IsAwardable(1, "crowned")) Fail("IsAwardable");
+}
+
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;
