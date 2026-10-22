@@ -332,6 +332,10 @@ moments added earlier in the same save, and the new moment itself: a backdated o
 whole journal is dropped, not a newer memory. Both tables cascade: an abandoned Plynling takes its
 journal with it; a dead one keeps it.
 
+**Her nannying feeds the `nanny` member badge** (`PlynlingService`, `BadgeAwarder.Increment` after the
+action's save, never for the owner's own care, see `xp.md`). A new care path that another member can
+do must count there too.
+
 ## Gender
 
 **Every Plynling line exists in both genders, enforced by the type.** Each pool in `BotResponses` is

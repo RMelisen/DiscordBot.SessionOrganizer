@@ -132,7 +132,15 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
     private async Task<string> DisplayNameAsync(ulong id)
     {
         if (Context.Guild.GetUser(id) is { } member) return BotResponses.DisplayNameFor(member);
-        return await Context.Client.GetUserAsync(id) is { } user ? BotResponses.DisplayNameFor(user) : "ce membre";
+        try
+        {
+            return await Context.Client.GetUserAsync(id) is { } user ? BotResponses.DisplayNameFor(user) : "ce membre";
+        }
+        catch (Exception)
+        {
+            // A REST failure must not leave the deferred click blank.
+            return "ce membre";
+        }
     }
 
     [SlashCommand("leaderboard", "Le classement des niveaux du serveur")]

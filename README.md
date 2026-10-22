@@ -271,7 +271,7 @@ Vocal leaderboard stays honest about time actually spent.
 **Seeing it**
 
 - **`/level [user]`** — a card: avatar, level, rank, and a progress bar toward the
-  next level, then a badge for every collection set completed, at its tier. A **Succès** button
+  next level, then a line of every badge earned, at its tier. A **Succès** button
   opens a private view of all the member's badges in four tabs (collections, tiers, moments,
   secrets); some badges stay secret until earned. No filters — it's a profile, not a ranking.
 - **`/recap [user]`** — a personal recap over **30 days** (default), **7 days** or **all time**: XP

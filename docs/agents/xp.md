@@ -83,28 +83,6 @@ classé`. A **bot** gets one fixed `const` refusal (not a pool — a refusal isn
 has earned something gets one more separator + TextDisplay at the bottom plus a « Succès »
 button (the card is 11 components of the 40): see *Member badges* below.
 
-### Member badges (« Succès »)
-
-- **The catalog is `Helpers/Xp/MemberBadges`** (pure; keys stable and append-only, they are stored
-  and part of icon file names). Three kinds: paliers (five tiers over a counter), moments (earned
-  once) and secrets (earned once, hidden until found). Storage is one table, `MemberBadge`, per
-  guild and member.
-- **Paliers are derived at display time and never stored**, so thresholds can move without a
-  migration. The exceptions are the two counters `arcade` and `nanny`, stored as `MemberBadge.Count`.
-  The moments `lightning` and `punctual` are derived too and shown without a date.
-- **Every write goes through the singleton `BadgeAwarder`**, after the flow's own save,
-  fire-and-forget. It ignores guild 0 (DMs), unknown keys and her own id, and releases its in-memory
-  claim when a write fails. `MemberBadgeService.AwardAsync/IncrementAsync` rethrow anything that is
-  not a lost race so the awarder can log and release. Never write a badge from a flow directly.
-- **Arcade wins**: she never earns one; a human beating her at a board game counts; Race and Crash
-  count a positive net only.
-- **No announcement of any kind** when a badge is earned (no message, DM or reaction).
-- **« Succès » is an ephemeral view** (`MemberBadgeCards`, ids `level:badges:{userId}` and
-  `level:badgetab:{userId}:{section}`) with four tabs — Collections, Paliers, Moments, Secrets —
-  opening on Paliers.
-- **Secrets are never named** in `/help`, `README.md` or `CHANGELOG.md` (the changelog may say some
-  badges are secret, nothing more), and no member names go in the changelog.
-
 **`/recap` is a card about one person over a window** (`RecapModule`, Components V2, the
 `StatsPeriodUi` row with prefix `recap:win:{userId}`, opening on **30 days**). `RecapService` reads
 only tables other subsystems already write, so it has no migration and no table of its own.
@@ -134,6 +112,28 @@ once, so `GrantAsync` forwards both). At level **7 or 67** the description is th
 `"SIX SEVEEEN"` instead of an `XpLevelUpLines` pick — a literal level check (17, 70, 167 stay
 quiet), and `ResponsePicker` is never consulted for it. If the member doesn't resolve, skip the
 card, keep the XP. **Admin adjustments never fire it** (see `admin.md`).
+
+### Member badges (« Succès »)
+
+- **The catalog is `Helpers/Xp/MemberBadges`** (pure; keys stable and append-only, they are stored
+  and part of icon file names). Three kinds: paliers (five tiers over a counter), moments (earned
+  once) and secrets (earned once, hidden until found). Storage is one table, `MemberBadge`, per
+  guild and member.
+- **Paliers are derived at display time and never stored**, so thresholds can move without a
+  migration. The exceptions are the two counters `arcade` and `nanny`, stored as `MemberBadge.Count`.
+  The moments `lightning` and `punctual` are derived too and shown without a date.
+- **Every write goes through the singleton `BadgeAwarder`**, after the flow's own save,
+  fire-and-forget. It ignores guild 0 (DMs), unknown keys and her own id, and releases its in-memory
+  claim when a write fails. `MemberBadgeService.AwardAsync/IncrementAsync` rethrow anything that is
+  not a lost race so the awarder can log and release. Never write a badge from a flow directly.
+- **Arcade wins**: she never earns one; a human beating her at a board game counts; Race and Crash
+  count a positive net only.
+- **No announcement of any kind** when a badge is earned (no message, DM or reaction).
+- **« Succès » is an ephemeral view** (`MemberBadgeCards`, ids `level:badges:{userId}` and
+  `level:badgetab:{userId}:{section}`) with four tabs — Collections, Paliers, Moments, Secrets —
+  opening on Paliers.
+- **Secrets are never named** in `/help`, `README.md` or `CHANGELOG.md` (the changelog may say some
+  badges are secret, nothing more), and no member names go in the changelog.
 
 ## Voice XP — `VoiceXpService`
 

@@ -276,7 +276,7 @@ internal sealed class ChatterService
 
         _logger.LogInformation("{Name} said her name without addressing her — {What}.", name, what);
         Count(message, ChatPath.Name, pick.Kind);
-        await ReplyWithTypingAsync(message, Format(pick, name, CurrentWeekday()), what, pick.Mentions);
+        await SendPickAsync(message, pick, name, CurrentWeekday(), what);
         return true;
     }
 
@@ -415,8 +415,7 @@ internal sealed class ChatterService
 
             _logger.LogInformation("Owner mentioned the bot — {What}.", ownerWhat);
             Count(message, ChatPath.Mention, ownerPick.Kind);
-            await ReplyWithTypingAsync(message, Format(ownerPick, ResolveName(message.Author), weekday),
-                "owner greeting", ownerPick.Mentions);
+            await SendPickAsync(message, ownerPick, ResolveName(message.Author), weekday, "owner greeting");
             return;
         }
 
@@ -477,7 +476,7 @@ internal sealed class ChatterService
 
         _logger.LogInformation("{Name} mentioned the bot — {What}.", name, what);
         Count(message, ChatPath.Mention, pick.Kind);
-        await ReplyWithTypingAsync(message, Format(pick, name, weekday), what, pick.Mentions);
+        await SendPickAsync(message, pick, name, weekday, what);
     }
 
     private async Task HandleReplyToBotAsync(SocketUserMessage message)
@@ -620,7 +619,7 @@ internal sealed class ChatterService
         }
 
         Count(message, ChatPath.Reply, pick.Kind);
-        await ReplyWithTypingAsync(message, Format(pick, name, weekday), what, pick.Mentions);
+        await SendPickAsync(message, pick, name, weekday, what);
     }
 
     // ---- Listening: intents, reply context, streaks, facts --------------------------------
@@ -631,7 +630,7 @@ internal sealed class ChatterService
     /// own words (an opinion's subject), which may hold a mention: shown, never pinged.
     /// <see cref="Kind"/> is the AnswerKinds key `/debug answers` counts it by.
     /// </summary>
-    private readonly record struct IntentPick(string[] Pool, string A, string B, AllowedMentions? Mentions, string Kind)
+    private readonly record struct IntentPick(string[] Pool, string A, string B, AllowedMentions? Mentions, string Kind, string? Badge = null)
     {
         public static IntentPick Of(string[] pool, string kind) => new(pool, string.Empty, string.Empty, null, kind);
     }
@@ -673,6 +672,14 @@ internal sealed class ChatterService
     // The template is picked first, formatted second: {0} the name, {1} the weekday, {2}/{3} the pick's.
     private string Format(IntentPick pick, string name, string weekday) =>
         string.Format(_picker.Pick(pick.Pool), name, weekday, pick.A, pick.B);
+
+    // Sends a pick's answer; the badge a pick carries (a ship with her) is earned only once the
+    // answer is actually out, never when the pick was merely built and a later branch cut it off.
+    private async Task SendPickAsync(SocketUserMessage message, IntentPick pick, string name, string weekday, string what)
+    {
+        if (await ReplyWithTypingAsync(message, Format(pick, name, weekday), what, pick.Mentions) is not null && pick.Badge is { } badge)
+            Award(message, badge);
+    }
 
     /// <summary>
     /// The answer to a specific intent (not a generic question or a low-effort word), or false.
@@ -1052,11 +1059,11 @@ internal sealed class ChatterService
 
         // After the draws, with the sides as shipped: « on irait bien ensemble » with her is the asker
         // and her.
-        if (Shipping.IsSelfWithHer(a, b, asker, self, OwnerId, BotResponses.TataId))
-            Award(message, MemberBadges.Keys.Heart);
+        // The badge rides on the pick and is earned when the answer goes out (SendPickAsync).
+        var heart = Shipping.IsSelfWithHer(a, b, asker, self, OwnerId, BotResponses.TataId) ? MemberBadges.Keys.Heart : null;
 
         var answer = ShipModule.Render(a, b, asker, self, _picker, side => ShipModule.NameOf(side, guild, _client));
-        pick = new IntentPick(pool, answer, string.Empty, QuotedMentions, AnswerKinds.Intent(ChatIntent.Ship));
+        pick = new IntentPick(pool, answer, string.Empty, QuotedMentions, AnswerKinds.Intent(ChatIntent.Ship), heart);
         return true;
     }
 
@@ -1550,8 +1557,8 @@ internal sealed class ChatterService
 
         var line = string.Format(_picker.Pick(pool), name, CurrentWeekday());
         Count(message, path, AnswerKinds.Shutdown);
-        await ReplyWithTypingAsync(message, line, "shutdown-threat reply");
-        Award(message, MemberBadges.Keys.Threat);
+        if (await ReplyWithTypingAsync(message, line, "shutdown-threat reply") is not null)
+            Award(message, MemberBadges.Keys.Threat);
         return true;
     }
 

@@ -14,6 +14,10 @@ buttons; `ArcadeCards` the static card builders. Pure rules live in `Helpers/Arc
   (fire-and-forget tasks that catch everything), card redraws, settlement. It opens a scope around
   each settlement, like every singleton.
 - **`ArcadeService`** (transient) is the money.
+- **Every settled game feeds the `arcade` member badge** (`BadgeAwarder.Increment`, see `xp.md`): duel
+  and heist in `ArcadeRunner`, the newer games in `PartyRunner` and `PartyComponentHandler`, and the
+  Quokka click awards `quokka`. A new game adds its own call, after its settlement, for a human
+  winner only (she never earns one), or its wins silently stop counting.
 
 ## Money: settle once, at the end
 

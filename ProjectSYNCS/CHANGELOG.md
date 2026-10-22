@@ -7,8 +7,8 @@ the git history; versions that were skipped or only existed on a side branch are
 
 - `/level`: a new « Succès » button opens a private view of a member's badges, in four tabs:
   collections, tiers, moments and secrets.
-- Badges now come in tiers (arcade wins, reactions, voice time, quizzes and more) and in one-off
-  moments, each shown with its progress toward the next tier.
+- Badges now come in tiers (arcade wins, reactions, voice time, quizzes and more), which show
+  their progress toward the next tier, and in one-off moments, which are earned once.
 - Some badges are secret: they only show up once earned.
 
 ## 7.33.1 — 2026-10-22

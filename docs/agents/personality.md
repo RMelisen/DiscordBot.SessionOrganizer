@@ -211,6 +211,12 @@ runs the same streak gate, then specific intent → greeting → Tata warmth →
 name, before `OwnerGreetings`. **The talked-about path** answers a specific intent too (« syncs, ça va ? »
 addresses her), before the greeting. Answering the content outranks Tata's warmth roll.
 
+**Secret member badges ride on her answers** (see `xp.md`): `tron`, `quoicoubeh`, `hush` and the
+shutdown threat award only once the reply is actually sent (`ReplyWithTypingAsync` non-null), and a
+ship with her travels on the `IntentPick` (`Badge`) and is awarded by `SendPickAsync`, so moving or
+adding a send site must keep going through it. The breakdown, the rival praise and the glitch award
+from their own services (`ChatterService`, `RivalryService`, `GlitchService`).
+
 ## Listening — intents, reply context, streaks, facts
 
 What makes her answer the message rather than its mood alone. Four pieces, all in `ChatterService`.

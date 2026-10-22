@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Reflection;
+using Microsoft.EntityFrameworkCore;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Services;
 
@@ -3033,6 +3034,78 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     if (flip.Record(3, FeedbackKind.Good, mbNow) || flip.Record(3, FeedbackKind.Good, mbNow.AddSeconds(5))) Fail("same verdict twice");
     if (flip.Record(4, FeedbackKind.Good, mbNow) || flip.Record(5, FeedbackKind.Bad, mbNow.AddSeconds(5))) Fail("two people");
     ItemEmojis.Clear();
+
+    // GetFactsAsync against a real SQLite: the navigations, the Plynling join and the projection must
+    // translate, and the guild scoping must hold. A query that does not translate breaks /level for everyone.
+    using (var mbConn = new Microsoft.Data.Sqlite.SqliteConnection("DataSource=:memory:"))
+    {
+        mbConn.Open();
+        var mbOpts = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<ProjectSYNCS.Data.AppDbContext>().UseSqlite(mbConn).Options;
+        const ulong gA = 1000, gB = 2000, me = 42, other = 43;
+        using (var seed = new ProjectSYNCS.Data.AppDbContext(mbOpts))
+        {
+            seed.Database.EnsureCreated();
+            var at = mbNow;
+            ProjectSYNCS.Models.SessionEvent Ses(ulong guild, ulong org, DateTimeOffset when, bool cancelled = false) =>
+                new() { GuildId = guild, OrganizerId = org, Title = "s", ScheduledAt = when, IsCancelled = cancelled };
+            ProjectSYNCS.Models.Participant Part(ulong user, DateTimeOffset? seen) =>
+                new() { UserId = user, Username = "u", FirstSeenInVoiceAt = seen };
+            // Organised by me in guild A: two past (counted), one cancelled, one future; one past in guild B.
+            var sPunctual = Ses(gA, me, at.AddDays(-5)); sPunctual.Participants.Add(Part(me, at.AddDays(-5).AddMinutes(-3)));
+            var sLate = Ses(gA, me, at.AddDays(-4)); sLate.Participants.Add(Part(me, at.AddDays(-4).AddMinutes(10)));
+            var sCancelled = Ses(gA, me, at.AddDays(-3), cancelled: true); sCancelled.Participants.Add(Part(me, at.AddDays(-3).AddMinutes(-5)));
+            var sFuture = Ses(gA, me, at.AddDays(2));
+            var sOtherGuild = Ses(gB, me, at.AddDays(-2)); sOtherGuild.Participants.Add(Part(me, at.AddDays(-2).AddMinutes(-5)));
+            var sNotSeen = Ses(gA, other, at.AddDays(-1)); sNotSeen.Participants.Add(Part(me, null));
+            seed.SessionEvents.AddRange(sPunctual, sLate, sCancelled, sFuture, sOtherGuild, sNotSeen);
+
+            var gw = new ProjectSYNCS.Models.Giveaway { GuildId = gA, Prize = "p", IsClosed = true };
+            gw.Entries.Add(new() { UserId = me, IsWinner = true });
+            gw.Entries.Add(new() { UserId = other, IsWinner = true });
+            var gwLost = new ProjectSYNCS.Models.Giveaway { GuildId = gA, Prize = "p", IsClosed = true };
+            gwLost.Entries.Add(new() { UserId = me, IsWinner = false });
+            seed.Giveaways.Add(gwLost);
+            var gwB = new ProjectSYNCS.Models.Giveaway { GuildId = gB, Prize = "p", IsClosed = true };
+            gwB.Entries.Add(new() { UserId = me, IsWinner = true });
+            seed.Giveaways.AddRange(gw, gwB);
+
+            var plMine = new ProjectSYNCS.Models.Plynling { GuildId = gA, OwnerId = me, Name = "a" };
+            var plOther = new ProjectSYNCS.Models.Plynling { GuildId = gA, OwnerId = other, Name = "b" };
+            var plOtherGuild = new ProjectSYNCS.Models.Plynling { GuildId = gB, OwnerId = me, Name = "c" };
+            seed.Plynlings.AddRange(plMine, plOther, plOtherGuild);
+            seed.SaveChanges();
+            seed.PlynlingBadges.AddRange(
+                new ProjectSYNCS.Models.PlynlingBadge { PlynlingId = plMine.Id, Key = "k1", EarnedAt = at },
+                new ProjectSYNCS.Models.PlynlingBadge { PlynlingId = plMine.Id, Key = "k2", EarnedAt = at },
+                new ProjectSYNCS.Models.PlynlingBadge { PlynlingId = plOther.Id, Key = "k1", EarnedAt = at },
+                new ProjectSYNCS.Models.PlynlingBadge { PlynlingId = plOtherGuild.Id, Key = "k1", EarnedAt = at });
+
+            seed.MemberXps.Add(new() { GuildId = gA, UserId = me, VoiceMinutes = 700, ReactionsUsed = 9 });
+            seed.MemberXps.Add(new() { GuildId = gB, UserId = me, VoiceMinutes = 5, ReactionsUsed = 1 });
+            seed.VoiceCompanionStats.Add(new() { GuildId = gA, UserId = me, Minutes = 33 });
+            seed.QuizStats.Add(new() { GuildId = gA, UserId = me, Wins = 4, BestMs = 1500 });
+            seed.BotFeedbacks.Add(new() { GuildId = gA, UserId = me, GoodCount = 6 });
+            seed.MemberBadges.Add(new() { GuildId = gA, UserId = me, Key = "arcade", Count = 3, EarnedAt = at });
+            seed.MemberBadges.Add(new() { GuildId = gB, UserId = me, Key = "hush", Count = 1, EarnedAt = at });
+            seed.SaveChanges();
+        }
+        using var read = new ProjectSYNCS.Data.AppDbContext(mbOpts);
+        try
+        {
+            var f = await new MemberBadgeService(read).GetFactsAsync(gA, me, mbNow.AddDays(-100), mbNow);
+            if (f.VoiceMinutes != 700 || f.Reactions != 9) Fail($"facts sql: xp {f.VoiceMinutes}/{f.Reactions}");
+            if (f.CompanionMinutes != 33 || f.QuizWins != 4 || f.QuizBestMs != 1500 || f.GoodBot != 6) Fail("facts sql: companion/quiz/goodbot");
+            if (f.GiveawaysWon != 1) Fail($"facts sql: giveaways won {f.GiveawaysWon}");
+            if (f.PlynlingBadges != 2) Fail($"facts sql: plynling badges {f.PlynlingBadges}");
+            if (f.SessionsOrganised != 2) Fail($"facts sql: organised {f.SessionsOrganised}");
+            if (f.SessionsAttended != 2) Fail($"facts sql: attended {f.SessionsAttended}");
+            if (!f.Punctual) Fail("facts sql: punctual");
+            if (f.Stored.Count != 1 || f.Stored["arcade"].Count != 3) Fail("facts sql: stored badges");
+            var none = await new MemberBadgeService(read).GetFactsAsync(gA, 999, null, mbNow);
+            if (none.VoiceMinutes != 0 || none.SessionsAttended != 0 || none.Punctual || none.Stored.Count != 0) Fail("facts sql: stranger");
+        }
+        catch (Exception ex) { Fail("facts sql: " + ex.Message); }
+    }
     Console.WriteLine($"succès view at worst: {mbWidest} chars");
 }
 
