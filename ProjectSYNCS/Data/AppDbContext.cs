@@ -39,8 +39,8 @@ public class AppDbContext : DbContext
     public DbSet<PlynlingRelation> PlynlingRelations => Set<PlynlingRelation>();
     public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
     public DbSet<CollectionCompletion> CollectionCompletions => Set<CollectionCompletion>();
-    public DbSet<MemberBadge> MemberBadges => Set<MemberBadge>();
     public DbSet<CollectionDailyStat> CollectionDailyStats => Set<CollectionDailyStat>();
+    public DbSet<MemberBadge> MemberBadges => Set<MemberBadge>();
     public DbSet<EconomyDailyStat> EconomyDailyStats => Set<EconomyDailyStat>();
     public DbSet<QuizRound> QuizRounds => Set<QuizRound>();
     public DbSet<QuizStat> QuizStats => Set<QuizStat>();

@@ -75,8 +75,7 @@ public class MemberBadgeService
     /// <summary>Inserts the badge with Count = 1; false if the member already holds it.</summary>
     public async Task<bool> AwardAsync(ulong guildId, ulong userId, string key, DateTimeOffset now)
     {
-        if (await _db.MemberBadges.AnyAsync(b => b.GuildId == guildId && b.UserId == userId && b.Key == key))
-            return false;
+        if (await Exists(guildId, userId, key)) return false;
         _db.MemberBadges.Add(new MemberBadge { GuildId = guildId, UserId = userId, Key = key, Count = 1, EarnedAt = now });
         try
         {
@@ -85,9 +84,11 @@ public class MemberBadgeService
         }
         catch (DbUpdateException)
         {
-            // Lost the race on the unique index: someone else wrote it first.
+            // Lost the race on the unique index only if the row now exists; any other failure
+            // (SQLITE_BUSY...) rethrows so BadgeAwarder logs it and releases its claim.
             _db.ChangeTracker.Clear();
-            return false;
+            if (await Exists(guildId, userId, key)) return false;
+            throw;
         }
     }
 
@@ -102,11 +103,16 @@ public class MemberBadgeService
         }
         catch (DbUpdateException)
         {
-            // The row appeared between the update and the insert: count on top of it.
+            // Count on top of the row only if it appeared between the update and the insert;
+            // any other failure rethrows.
             _db.ChangeTracker.Clear();
+            if (!await Exists(guildId, userId, key)) throw;
             await TryIncrementAsync(guildId, userId, key);
         }
     }
+
+    private Task<bool> Exists(ulong guildId, ulong userId, string key) =>
+        _db.MemberBadges.AnyAsync(b => b.GuildId == guildId && b.UserId == userId && b.Key == key);
 
     private Task<int> TryIncrementAsync(ulong guildId, ulong userId, string key) =>
         _db.MemberBadges
