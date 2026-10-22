@@ -3021,6 +3021,12 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         if (text > 4000 || count > 40 || ids.Count != ids.Distinct().Count()) Fail($"{what} {section}: {text} chars, {count} components");
     }
     if (ProjectSYNCS.Commands.MemberBadgeCards.CardLine(mbDone, MemberBadges.Evaluate(mbMax, mbNow)) is not { } mbLine || mbLine.Length > 4000) Fail("full card line");
+    const ulong mbSelf = 111, mbAsker = 222, mbOther = 333;
+    var mbTata = (ulong)br.GetField("TataId")!.GetValue(null)!; // BotResponses is internal: reflection, like the rest of the file
+    bool Heart(string a, string b, ulong asker = mbAsker) => Shipping.IsSelfWithHer(a, b, asker, mbSelf, AvailabilityService.OwnerId, mbTata);
+    if (!Heart("syncs", "moi") || !Heart("moi", "toi") || !Heart($"<@{mbAsker}>", "syncs")
+        || !Heart("moi", "syncs", AvailabilityService.OwnerId)) Fail("heart: self with her");
+    if (Heart("syncs", "pizza") || Heart("syncs", $"<@{mbOther}>") || Heart("moi", "pizza") || Heart("syncs", "toi")) Fail("heart: not self with her");
     ItemEmojis.Clear();
     Console.WriteLine($"succès view at worst: {mbWidest} chars");
 }

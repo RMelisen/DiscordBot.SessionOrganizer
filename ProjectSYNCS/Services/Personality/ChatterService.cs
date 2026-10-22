@@ -26,6 +26,9 @@ internal sealed class ChatterService
     private readonly IServiceProvider _services;
     private readonly ILogger<ChatterService> _logger;
 
+    // Secret badges earned through her chat; fire-and-forget, never awaited on the gateway path.
+    private readonly BadgeAwarder _badges;
+
     // Who has been going back and forth with her, per channel (ConversationStreak). In memory, and
     // shared with RobotHeartService, whose answers to her are turns of the same conversation.
     private readonly ConversationStreak _streaks;
@@ -93,8 +96,10 @@ internal sealed class ChatterService
         ChatHush hush,
         ChatListening listening,
         CardReplyService cards,
+        BadgeAwarder badges,
         ILogger<ChatterService> logger)
     {
+        _badges = badges;
         _cards = cards;
         _streaks = streaks;
         _hush = hush;
@@ -286,7 +291,8 @@ internal sealed class ChatterService
         if (!MessageCues.EndsOnSiSound(message.Content ?? string.Empty)) return;
 
         _logger.LogInformation("Tron fired on a message ending in a 'si' sound.");
-        await ReplyWithTypingAsync(message, _picker.Pick(_tronLines) + " " + Emotes.Sparkle, "tron");
+        if (await ReplyWithTypingAsync(message, _picker.Pick(_tronLines) + " " + Emotes.Sparkle, "tron") is not null)
+            Award(message, MemberBadges.Keys.Tron);
     }
 
     // Someone finished a sentence on "quoi ?" and got caught. Ambient like the
@@ -309,7 +315,8 @@ internal sealed class ChatterService
         if (answer is null) return false;
 
         _logger.LogInformation("Quoicoubeh fired on a message ending in bait.");
-        await ReplyWithTypingAsync(message, answer, "quoicoubeh");
+        if (await ReplyWithTypingAsync(message, answer, "quoicoubeh") is not null)
+            Award(message, MemberBadges.Keys.Quoicoubeh);
         return true;
     }
 
@@ -425,6 +432,7 @@ internal sealed class ChatterService
             _logger.LogInformation("Easter egg triggered via mention: consciousness breakdown.");
             var realName = BotResponses.RealNameFor(message.Author.Id, name);
             Count(message, ChatPath.Mention, AnswerKinds.Breakdown);
+            Award(message, MemberBadges.Keys.Breakdown);
             await _breakdown.PlayAsync(message, name, realName, intro: "Tu veux qu-");
             return;
         }
@@ -517,6 +525,7 @@ internal sealed class ChatterService
                 : nice ? BotResponses.BreakdownIntroNice
                 : BotResponses.BreakdownIntroRoast;
             Count(message, ChatPath.Reply, AnswerKinds.Breakdown);
+            Award(message, MemberBadges.Keys.Breakdown);
             await _breakdown.PlayAsync(message, name, realName, intro);
             return;
         }
@@ -714,7 +723,11 @@ internal sealed class ChatterService
         }
         // Told to hush: the line she answers with is her last in this channel for a while. Papa too:
         // his word holds for everyone else, and he is still answered (HushGateAsync).
-        if (intent == ChatIntent.ShutUp) _hush.Hush(message.Channel.Id, DateTimeOffset.UtcNow);
+        if (intent == ChatIntent.ShutUp)
+        {
+            _hush.Hush(message.Channel.Id, DateTimeOffset.UtcNow);
+            Award(message, MemberBadges.Keys.Hush);
+        }
 
         if (intent == ChatIntent.Help)
         {
@@ -1036,6 +1049,11 @@ internal sealed class ChatterService
                 || !ShipModule.TryDrawRandom(ref b, a, asker, guild.Users))
                 return false;
         }
+
+        // After the draws, with the sides as shipped: « on irait bien ensemble » with her is the asker
+        // and her.
+        if (Shipping.IsSelfWithHer(a, b, asker, self, OwnerId, BotResponses.TataId))
+            Award(message, MemberBadges.Keys.Heart);
 
         var answer = ShipModule.Render(a, b, asker, self, _picker, side => ShipModule.NameOf(side, guild, _client));
         pick = new IntentPick(pool, answer, string.Empty, QuotedMentions, AnswerKinds.Intent(ChatIntent.Ship));
@@ -1533,6 +1551,7 @@ internal sealed class ChatterService
         var line = string.Format(_picker.Pick(pool), name, CurrentWeekday());
         Count(message, path, AnswerKinds.Shutdown);
         await ReplyWithTypingAsync(message, line, "shutdown-threat reply");
+        Award(message, MemberBadges.Keys.Threat);
         return true;
     }
 
@@ -1559,12 +1578,17 @@ internal sealed class ChatterService
     // GlitchService, so a very rare line comes out corrupted and is quietly fixed.
 
     // Every answer keeps her listening to that person for a moment (ChatListening).
-    private Task ReplyWithTypingAsync(
+    // Null when the send failed (BotChat), which the secret-badge sites check.
+    private Task<IUserMessage?> ReplyWithTypingAsync(
         SocketUserMessage replyTo, string line, string what, AllowedMentions? allowedMentions = null)
     {
         if (!replyTo.Author.IsBot) _listening.Answered(replyTo.Channel.Id, replyTo.Author.Id, DateTimeOffset.UtcNow);
         return _glitch.ReplyWithTypingAsync(replyTo, line, _logger, what, allowedMentions);
     }
+
+    // One secret badge for the author of a message, in the guild it was said in (0 in a DM: no award).
+    private void Award(SocketUserMessage message, string key) =>
+        _badges.Award((message.Channel as SocketGuildChannel)?.Guild.Id ?? 0, message.Author.Id, key);
 
     private Task PostWithTypingAsync(ISocketMessageChannel channel, string line, string what) =>
         _glitch.PostWithTypingAsync(channel, line, _logger, what);

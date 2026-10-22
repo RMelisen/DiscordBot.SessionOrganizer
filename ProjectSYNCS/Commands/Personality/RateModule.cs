@@ -13,9 +13,12 @@ public class RateModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly ResponsePicker _picker;
 
-    public RateModule(ResponsePicker picker)
+    private readonly BadgeAwarder _badges;
+
+    public RateModule(ResponsePicker picker, BadgeAwarder badges)
     {
         _picker = picker;
+        _badges = badges;
     }
 
     [SlashCommand("rate", "Je note n'importe quoi sur 10. Et je ne change jamais d'avis")]
@@ -26,6 +29,8 @@ public class RateModule : InteractionModuleBase<SocketInteractionContext>
     {
         var result = Rating.Rate(subject, Context.User.Id, Context.Client.CurrentUser.Id, AvailabilityService.OwnerId, BotResponses.TataId);
         var verdict = Verdict(result, _picker);
+        if (result.Kind == RatingKind.Herself)
+            _badges.Award(Context.Guild?.Id ?? 0, Context.User.Id, MemberBadges.Keys.Critic);
 
         // Quoted so her verdict never reads as her own words (as /yesno echoes its question), and
         // sent with mentions off: a rated @someone or :emote: keeps its look, unpinged. Not
