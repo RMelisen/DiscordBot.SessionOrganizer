@@ -248,6 +248,8 @@ Ask("<@123> Minecraft, ton avis ?", "Minecraft");
 Ask("t'en penses quoi de <@456> ?", "<@456>");
 Ask("ton avis sur les lesbiennes ?", "lesbiennes");
 if (Opinion.Read("tu penses quoi de ça ?") is not null) Fail("« ça » read as a subject");
+Ask("tu pense quoi de la pizza ?", "pizza");
+Ask("Minecraft, t'en pense quoi ?", "Minecraft");
 
 RatingResult R(string s) => Rating.Rate(s, 1, 2, 3, 4);
 bool P(string a, string b) => Opinion.Prefers(R(a), R(b), Rating.Key(a, 1), Rating.Key(b, 1));
@@ -454,6 +456,10 @@ ShipIs("tu me ship avec <@123> ?", "moi", "<@123>");
 ShipIs("<@999> Luca et moi, ça match ?", "Luca", "moi");
 ShipIs("syncs, la pizza et l'ananas compatibles ?", "pizza", "ananas");
 ShipIs("shippe-moi avec quelqu'un", "moi", "quelqu'un");
+// « pense » without its s, as typed in the wild.
+ShipIs("et tu pense quoi de <@111> x <@222> ?", "<@111>", "<@222>");
+ShipIs("syncs tu pense quoi de <@111> x <@222>", "<@111>", "<@222>");
+ShipIs("<@111> et <@222>, t'en pense quoi ?", "<@111>", "<@222>");
 var herTopic = cues.GetMethod("ReadHerTopic", BindingFlags.Public | BindingFlags.Static, new[] { typeof(string) })!;
 foreach (var (text, topic) in new[] { ("t'as quel âge ?", "Age"), ("ton anniv c'est quand", "Birthday"), ("tu vis où ?", "Home"), ("ton plat préféré ?", "Favourite"),
              ("t'es en quelle version ?", "Version"), ("c'est quoi ta version syncs ?", "Version"), ("t'es à jour ?", "Version"),
@@ -496,6 +502,7 @@ var cases6 = new (string Text, string Expected)[]
     ("c'est qui mon âme sœur ?", "Ship"), ("avec qui tu me ship ?", "Ship"), ("trouve-moi l'âme sœur", "Ship"),
     ("c'est qui mon pire ship ?", "Ship"), ("avec qui je suis le moins compatible ?", "Ship"), ("shipper Luca avec Sandra", "Ship"),
     ("à ton avis, Luca et Sandra ça match ?", "Ship"), ("Luca et Sandra en couple ?", "Ship"),
+    ("et tu pense quoi de <@111> x <@222> ?", "Ship"), ("syncs tu pense quoi de <@111> x <@222>", "Ship"),
     ("vendredi et samedi ensemble ?", "Question"), ("la manette et le PC c'est compatible ?", "Question"),
     ("c'était mon pire match de la saison", "None"), ("mon meilleur match c'était hier", "None"),
     ("on est ensemble ce soir ?", "Question"), ("trouve-moi quelqu'un pour jouer", "None"),

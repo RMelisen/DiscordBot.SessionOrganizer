@@ -50,12 +50,12 @@ public static partial class ShipAsk
     // Her opinion of two sides at once: « tu penses quoi de @A et @B ? », « @A et @B, t'en penses
     // quoi ? ». A ship only when the sides are people (OpinionPairIsShip): both tagged, or « moi » /
     // « toi » on one side, or « ensemble » / « en couple » after them. « t'en penses quoi de la pizza
-    // et des pâtes ? » stays an opinion.
-    [GeneratedRegex(@"(?<!\w)(?:t['’ ]?\s*en\s+penses\s+quoi|tu\s+en\s+penses\s+quoi|tu\s+penses\s+quoi|que\s+penses[-\s]tu|qu['’ ]?\s*est[-\s]ce\s+que\s+tu\s+penses|ton\s+avis\s+sur|tu\s+dis\s+quoi)\s+(?:(?:de|du|des|sur)\s+|d['’]\s*)?(?<a>.+?)\s+(?:et|avec|x|&|\+)\s+(?<b>.+?)(?<together>[\s,]+(?:ensemble|en\s+couple|comme\s+couple))?[\s?!.]*$",
+    // et des pâtes ? » stays an opinion. « penses? »: « tu pense quoi » is how it's often typed.
+    [GeneratedRegex(@"(?<!\w)(?:t['’ ]?\s*en\s+penses?\s+quoi|tu\s+en\s+penses?\s+quoi|tu\s+penses?\s+quoi|que\s+penses?[-\s]tu|qu['’ ]?\s*est[-\s]ce\s+que\s+tu\s+penses?|ton\s+avis\s+sur|tu\s+dis\s+quoi)\s+(?:(?:de|du|des|sur)\s+|d['’]\s*)?(?<a>.+?)\s+(?:et|avec|x|&|\+)\s+(?<b>.+?)(?<together>[\s,]+(?:ensemble|en\s+couple|comme\s+couple))?[\s?!.]*$",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Opinion.MatchTimeoutMs)]
     private static partial Regex OpinionAboutPairRegex();
 
-    [GeneratedRegex(@"^(?<a>.+?)\s+(?:et|avec|x|&|\+)\s+(?<b>.+?)(?<together>[\s,]+(?:ensemble|en\s+couple|comme\s+couple))?[\s,:]+(?:t['’ ]?\s*en\s+penses\s+quoi|tu\s+en\s+penses\s+quoi|qu['’ ]?\s*en\s+penses[-\s]tu|ton\s+avis)[\s?!.]*$",
+    [GeneratedRegex(@"^(?<a>.+?)\s+(?:et|avec|x|&|\+)\s+(?<b>.+?)(?<together>[\s,]+(?:ensemble|en\s+couple|comme\s+couple))?[\s,:]+(?:t['’ ]?\s*en\s+penses?\s+quoi|tu\s+en\s+penses?\s+quoi|qu['’ ]?\s*en\s+penses?[-\s]tu|ton\s+avis)[\s?!.]*$",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Opinion.MatchTimeoutMs)]
     private static partial Regex OpinionBeforePairRegex();
 
@@ -132,7 +132,7 @@ public static partial class ShipAsk
 
     // Her name, and what only frames the question, opening the message: « syncs, est-ce que Luca et
     // moi ça match ? », « à ton avis X et Y, compatibles ? ».
-    [GeneratedRegex(@"^(?:<@!?\d+>[\s,:]*)*(?:syncs?(?!\w)[\s,:]*)?(?:(?:est[-\s]ce\s+que|est[-\s]ce\s+qu['’]|tu\s+penses\s+que|tu\s+crois\s+que|[àa]\s+ton\s+avis|selon\s+toi|franchement|dis[-\s]moi\s+si|dis)[\s,:]*)*",
+    [GeneratedRegex(@"^(?:<@!?\d+>[\s,:]*)*(?:syncs?(?!\w)[\s,:]*)?(?:(?:est[-\s]ce\s+que|est[-\s]ce\s+qu['’]|tu\s+penses?\s+que|tu\s+crois\s+que|[àa]\s+ton\s+avis|selon\s+toi|franchement|dis[-\s]moi\s+si|dis)[\s,:]*)*",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Opinion.MatchTimeoutMs)]
     private static partial Regex LeadingRegex();
 

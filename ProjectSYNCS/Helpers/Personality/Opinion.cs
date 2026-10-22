@@ -39,13 +39,14 @@ public static partial class Opinion
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, MatchTimeoutMs)]
     private static partial Regex PreferRegex();
 
-    // « t'en penses quoi de X », « que penses-tu de X », « ton avis sur X », « tu aimes X ».
-    [GeneratedRegex(@"(?<!\w)(?:t['’ ]?en penses quoi|tu en penses quoi|tu penses quoi|que penses[- ]tu|qu['’ ]?est[- ]ce que tu penses|ton avis sur|t['’ ]?as un avis sur|tu as un avis sur|tu aimes|t['’ ]?aimes|tu kiffes|t['’ ]?kiffes)\s+(?<rest>.+)$",
+    // « t'en penses quoi de X », « que penses-tu de X », « ton avis sur X », « tu aimes X ». « penses? »:
+    // « tu pense quoi » is how it's often typed.
+    [GeneratedRegex(@"(?<!\w)(?:t['’ ]?en penses? quoi|tu en penses? quoi|tu penses? quoi|que penses?[- ]tu|qu['’ ]?est[- ]ce que tu penses?|ton avis sur|t['’ ]?as un avis sur|tu as un avis sur|tu aimes|t['’ ]?aimes|tu kiffes|t['’ ]?kiffes)\s+(?<rest>.+)$",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, MatchTimeoutMs)]
     private static partial Regex AboutRegex();
 
     // « X, t'en penses quoi ? », « X : ton avis ? ».
-    [GeneratedRegex(@"^(?<rest>.+?)[\s,:]+(?:t['’ ]?en penses quoi|tu en penses quoi|qu['’ ]?en penses[- ]tu|ton avis)[\s?!.]*$",
+    [GeneratedRegex(@"^(?<rest>.+?)[\s,:]+(?:t['’ ]?en penses? quoi|tu en penses? quoi|qu['’ ]?en penses?[- ]tu|ton avis)[\s?!.]*$",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, MatchTimeoutMs)]
     private static partial Regex BeforeRegex();
 

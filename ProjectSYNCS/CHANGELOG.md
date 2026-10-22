@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.34.1 — 2026-10-22
+
+- She now understands « tu pense quoi de… » without the « s », for her opinion and for ships.
+
 ## 7.34.0 — 2026-10-22
 
 - `/level`: a new « Succès » button opens a private view of a member's badges, in four tabs:
