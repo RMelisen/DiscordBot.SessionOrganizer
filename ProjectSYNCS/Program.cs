@@ -61,6 +61,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<EmoteStatsService>();
         services.AddTransient<BotFeedbackService>();
         services.AddTransient<XpService>();
+        services.AddTransient<MemberBadgeService>();
         services.AddTransient<GiveawayService>();
         services.AddTransient<ShameService>();
         services.AddTransient<PebbleService>();
@@ -152,6 +153,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddHostedService<ActivityFlushService>();
         // Replies under her cards (« votez », « j'ai voté », « remonte-le »): its gates are in memory.
         services.AddSingleton<CardReplyService>();
+        // Every member-badge write goes through it, fire and forget; its claim set is in memory.
+        services.AddSingleton<BadgeAwarder>();
         services.AddSingleton<ChatterService>();
         services.AddSingleton<EmoteTracker>();
         services.AddSingleton<ReactionService>();
