@@ -12,6 +12,7 @@ the git history; versions that were skipped or only existed on a side branch are
 - Tagging people under a card, or asking them « t'as voté ? », gets the same backing.
 - « remonte-le », « up » under a card: she posts it again at the bottom of the channel.
 - An ordinary reply under one of these cards gets a line about that card, not a random comeback.
+- When Papa tells her to hush, she answers in as few words as she can, a little hurt.
 - « tais-toi » is read as being told to hush, not as an insult: she goes quiet instead of roasting.
 
 ## 7.32.0 — 2026-10-21
