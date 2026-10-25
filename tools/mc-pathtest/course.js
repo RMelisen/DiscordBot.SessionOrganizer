@@ -351,6 +351,60 @@ const lanes = [
     },
     start: [1, 0, 0], goal: [22, 0, 0],
   },
+  // Water columns: a 4-high platform with a 1-wide shaft inside it (x 11), open at its foot to the west, where the
+  // water spills out into the lane. Up it to the platform's top, or dropped into it from there and down to the lane.
+  {
+    name: 'column-up', what: 'up a 4-high water column from a doorway at its foot, out onto the top',
+    build({ f }) {
+      f(10, 0, -2, 14, 3, 2, 'stone');
+      f(10, 0, 0, 10, 1, 0, 'air'); f(11, 0, 0, 11, 3, 0, 'water');
+    },
+    start: [6, 0, 0], goal: [13, 4, 0],
+  },
+  {
+    name: 'column-down', what: 'dropped into the same column from its top, sunk to its foot and out',
+    build({ f }) {
+      f(10, 0, -2, 14, 3, 2, 'stone');
+      f(10, 0, 0, 10, 1, 0, 'air'); f(11, 0, 0, 11, 3, 0, 'water');
+    },
+    start: [13, 4, 0], goal: [6, 0, 0],
+  },
+  {
+    name: 'column-lift', what: 'up a bubble column over soul sand',
+    build({ f, b }) {
+      f(10, 0, -2, 14, 3, 2, 'stone');
+      b(11, -1, 0, 'soul_sand'); f(10, 0, 0, 10, 1, 0, 'air'); f(11, 0, 0, 11, 3, 0, 'bubble_column[drag=false]');
+    },
+    start: [6, 0, 0], goal: [13, 4, 0],
+  },
+  {
+    name: 'column-drag', what: 'down a bubble column over magma, out at its foot',
+    build({ f, b }) {
+      f(10, 0, -2, 14, 3, 2, 'stone');
+      b(11, -1, 0, 'magma_block'); f(10, 0, 0, 10, 1, 0, 'air'); f(11, 0, 0, 11, 3, 0, 'bubble_column[drag=true]');
+    },
+    start: [13, 4, 0], goal: [6, 0, 0],
+  },
+  // A cave waterfall: a 4-high ledge with a spring in a 1-wide channel on top (x 11..13), running west over the edge and
+  // falling down its face at x 9 to the lane, where it spreads (walls at z ±3 keep it out of the next lanes).
+  {
+    name: 'waterfall-up', what: 'up a waterfall down a ledge face, from its puddle into the stream on top',
+    build({ f, b }) {
+      f(3, 0, -3, 19, 1, -3, 'stone'); f(3, 0, 3, 19, 1, 3, 'stone');
+      f(10, 0, -2, 14, 3, 2, 'stone'); f(10, 4, -1, 14, 4, -1, 'stone'); f(10, 4, 1, 14, 4, 1, 'stone');
+      b(14, 4, 0, 'stone'); b(13, 4, 0, 'water');
+    },
+    start: [5, 0, 0], goal: [12, 4, 0],
+  },
+  {
+    name: 'waterfall-down', what: 'down the same waterfall from the stream on top: the channel leaves no other way',
+    build({ f, b }) {
+      f(3, 0, -3, 19, 1, -3, 'stone'); f(3, 0, 3, 19, 1, 3, 'stone');
+      f(10, 0, -2, 14, 3, 2, 'stone'); f(10, 4, -1, 14, 4, -1, 'stone'); f(10, 4, 1, 14, 4, 1, 'stone');
+      b(14, 4, 0, 'stone'); b(13, 4, 0, 'water');
+    },
+    start: [12, 4, 0], goal: [5, 0, 0],
+  },
 ];
 
 // The whole course's block commands, lane by lane: ground and air reset first, then the lane's own blocks.

@@ -3,6 +3,14 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.40.0 — 2026-10-25
+
+- Minecraft: she follows you up and down water columns and waterfalls: swimming up a water shaft or a cave
+  waterfall, sinking down a short shaft or down a waterfall, riding a soul sand bubble column up or a magma one down,
+  and climbing out at the top.
+- Minecraft: her day sees to the animals twice, in the morning and before dusk, so they're bred and the sheep sheared
+  twice a day; the fields and the fishing take turns in between.
+
 ## 7.39.0 — 2026-10-25
 
 - Minecraft: she defends herself against monsters whatever she's doing (building a camp, following someone through

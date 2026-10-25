@@ -1,6 +1,6 @@
-// Her routine's turns (WorkBlock): a farm and an animal pen sent as her remembered places, the clock stopped at
-// morning, nobody giving orders. She starts at the farm, stays about 9 minutes, goes to the pen for about 3, and comes
-// back to the farm. Real time: about 13 minutes.
+// Her routine's day: a farm and an animal pen sent as her remembered places, nobody giving orders. The clock stopped in
+// the morning: she visits the pen first (2 minutes), then goes to the farm. The clock set to the afternoon: she leaves
+// the farm for the evening visit, at once, and goes back to the farm after it. Real time: about 6 minutes.
 const rcon = require('./rcon');
 const { startBody, spawned, wait, troubles, Name } = require('./body');
 const { penCommands } = require('./safety');
@@ -35,22 +35,31 @@ async function routine() {
   body.send({ op: 'routine', farm: { x: F.x + 3, y: -60, z: F.z + 3, dimension },
     ranch: { x: P.x + 1, y: -60, z: P.z + 1, dimension }, fish: null, home: null });
   const turns = [];
-  const on = (ev) => ev.ev === 'routine' && turns.push({ what: ev.what, at: (Date.now() - t0) / 1000 });
-  for (let i = 0; i < 3; i++) {
-    const ev = await body.next((e) => e.ev === 'routine', 12 * 60000);
-    if (!ev) break;
-    on(ev);
+  const next = async (within) => {
+    const ev = await body.next((e) => e.ev === 'routine', within);
+    if (!ev) return null;
+    turns.push({ what: ev.what, at: (Date.now() - t0) / 1000 });
     console.log(`      t+${turns[turns.length - 1].at.toFixed(0)} s: off to the ${ev.what}`);
-  }
+    return ev;
+  };
+  // Morning: the pen, then the farm.
+  if (await next(60000)) await next(5 * 60000);
+  // A minute into the farm, the clock set to the afternoon: the evening visit, then the farm again.
+  await wait(60000);
+  const afternoon = (Date.now() - t0) / 1000;
+  await rcon.run(['time set 9000']);
+  if (await next(30000)) await next(5 * 60000);
   await body.quit();
-  const [a, b, c] = turns;
-  const farmTurn = a && b ? b.at - a.at : NaN;
-  const penTurn = b && c ? c.at - b.at : NaN;
+  const [a, b, c, d] = turns;
   const order = turns.map((t) => t.what).join(' -> ');
-  // A turn ends at the first autonomy tick past its end, and a round under way (the farm's every 15 s) runs on a bit.
-  report(order === 'farm -> ranch -> farm', 'turn order', order || 'never started');
-  report(farmTurn >= 530 && farmTurn <= 600, 'farm turn', `${farmTurn.toFixed(0)} s (9 minutes: 540)`);
-  report(penTurn >= 170 && penTurn <= 240, 'pen turn', `${penTurn.toFixed(0)} s (3 minutes: 180)`);
+  // A visit's 2 minutes count from her arrival (the walk is about 10 s), and a round under way (the pen's every 15 s)
+  // runs on a bit.
+  report(order === 'ranch -> farm -> ranch -> farm', 'turn order', order || 'never started');
+  const morning = a && b ? b.at - a.at : NaN;
+  const evening = c && d ? d.at - c.at : NaN;
+  report(morning >= 120 && morning <= 180, 'morning visit', `${morning.toFixed(0)} s (2 minutes and the walk)`);
+  report(c && c.at - afternoon <= 10, 'evening at once', c ? `${(c.at - afternoon).toFixed(0)} s after the clock said afternoon` : 'never');
+  report(evening >= 120 && evening <= 180, 'evening visit', `${evening.toFixed(0)} s (2 minutes and the walk)`);
   for (const t of troubles(body)) console.log('      log:', t.slice(0, 200));
   await rcon.run(['kill @e[type=cow]', `fill ${fat(-6, 0, -6)} ${fat(6, 4, 6)} air`, `fill ${fat(-6, -1, -6)} ${fat(6, -1, 6)} grass_block`]);
   const failed = results.filter((r) => !r.ok);

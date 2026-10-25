@@ -40,10 +40,11 @@ node run.js safety           # keeping a herd: named animals and babies spared, 
 node run.js survival         # night fights, creepers, endermen, being hit; defending herself, falling back, a warden, orders mid-fight,
                              # edges, skeletons and the shield, fireballs, golden apples and the totem, fire and lava
 node --test fight-check.js   # sizing a fight up, weapon cooldowns, who she may hit (fight.js): no server needed
+node --test column-check.js  # up and down water and bubble columns, planned by the real pathfinder: no server needed
 node run.js trip             # 250 blocks, far past the loaded chunks
 node run.js players          # following a walk and through the hard lanes, coming, guiding, losing one, seeking, where she looks
 node run.js orders           # every order: smelting, gathering, giving, storing, every crop, a farm, a patrol
-node run.js routine          # her day's turns in real time: 9 minutes at a farm, 3 at a pen, back (about 13 minutes)
+node run.js routine          # her day in real time: the pen in the morning, the farm, the pen again before dusk (about 6 minutes)
 node run.js all              # all of it (about 45 minutes, without routine); exits 1 on any failure
 ```
 

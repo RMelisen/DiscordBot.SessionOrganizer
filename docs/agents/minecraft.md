@@ -596,10 +596,15 @@ starts on her own gets a rare rolled remark** (the owner's call): the routine 25
   places (Papa's first, then Tata's, then anyone's, kind by kind) a pen (an animal-pen word anywhere in the name: « ferme aux animaux »), a farm or a fishing
   spot (a farm or water word first: « champ de blé », « étang »), and home (`McRoutine.HomeKeys`,
   shared with « rentre »). The service sends them (`routine`) on spawn and after every save, move or
-  forget. By day (time 0–11499) she works in turns, taking the places in turn, **9 minutes in the fields, 6 fishing,
-  3 at the pen** (`WorkBlock`, the owner's call: a pen needs a few minutes now and then, the fields waited), each
-  started with the order's own checks (crops and a chest, water and a rod, animals and a chest); her
-  fishing is quiet (no catch remarks). At dusk (11500–12541) she goes home and stays there till
+  forget. By day (time 0–11499) she works in turns at the farm and the fishing spot, **9 minutes in the fields, 6
+  fishing** (`WorkBlock`), and **visits the pen twice a day** (the owner's call): in the morning (a visit may start
+  from 0 to 2999) and before dusk (from 8000), **2 minutes each, counted from her arrival** (`PenSlots`). Twice a day
+  breeds twice (an adult breeds again after 5 minutes, and yesterday's babies are grown) and shears twice. A visit's
+  hour preempts a turn at the fields; a visit under way runs to its end whatever the clock says, and counts only once
+  it has (`penDone`, by `bot.time.day`), so one an order cut short is made again while its hours last. With only a pen,
+  she's free between the visits. With the clock stopped (`advance_time` off), the pen gets the visit of the hour it
+  stopped at, once. Each turn starts with the order's own checks (crops and a chest, water and a rod, animals and a
+  chest); her fishing is quiet (no catch remarks). At dusk (11500–12541) she goes home and stays there till
   morning; the night is `autoSleepTick`'s. A spot in another dimension or over **256 blocks** away is
   left out (her own trips are far shorter than an order's 1500); one that fails (no path, not reached
   in 3 minutes, nothing to do there) is left out for 10 minutes, silently, with a log line. A
@@ -664,6 +669,30 @@ pathfinder's own tick listener (its plugin is injected after `attach()` runs), s
   times quickly, at most once a minute (`shook`, rolled). Not in a fight, on the run, sitting,
   eating or greeting.
 
+**Water columns** (`columnMoves`). The pathfinder plans no step up or down in water (none under the surface, and no jump
+out of it), so to it a shaft someone swims up to their base is a wall. In a column she gets her own
+steps beside the pathfinder's: a block up, a block down, in and out at its foot where it ends in other water (the
+puddle a waterfall spreads into, a lake it falls into), and out at the top onto a ledge a block over her feet (out into
+the shallow stream feeding a waterfall is the pathfinder's own level step). **A column is water one block wide**: one
+of its four sides at most is wet (the doorway at its foot, where it spills out), and every block of a lake has two, a
+corner too. So a cave waterfall down a wall is one, all but the block where it hits the floor. So a lake or the sea is never one: open water stays the dive's, and the
+sea's magma columns stay walls. In a column, any bubble column is water to swim (`gentleMovements` marks it a liquid),
+**never up against a drag nor down against a lift**. **The whole way under must fit in her air** (`ColumnRun`, 8 of
+the 9 s before `AirLow`), at the speeds Mineflayer's physics gives her, measured: in still water she swims up 3.3
+blocks a second but **sinks only 0.5** (Mineflayer has no crouching down); falling water with something solid beside
+it (a waterfall down a wall, a shaft of flowing water) pulls her down, so 2 up and 1.8 down; a lift carries her 10 a
+second, a drag 4. So 24 blocks up and 4 down in still water, 16 up and 14 down a waterfall, 64 up a lift, 32 down a
+drag (`columnKind`, by the block she moves into: over a waterfall's edge the water still runs level). **Down a
+waterfall with a puddle beside its foot, she usually jumps off the ledge into it** instead: the pathfinder's own drop
+into water, which breaks any fall. Going down, the pathfinder would hold jump (it
+does in any water) and she'd never sink: `columnSteer` lets go of it, and of forward once she's over the point (pushing
+on would take her out of a column in the open air, a waterfall). The pathfinder puts a path point a block lower when its
+block has no top (a bubble column, kelp: `postProcessPath`), so such a step keeps its height (`columnY`,
+`columnPoint`). No dive starts in a column (it would steer against the path, and in a drag only try to go up), and in
+a drag she doesn't go up for air while the path takes her down: the way out is at the bottom. `column-check.js` plans
+each kind with the real pathfinder, no server needed; the course's `column-*` lanes have **not been run yet** on the
+local server.
+
 **Boats.** Following someone, or tagging along with them, who sits in a boat or raft with a free
 seat (two seats, one on a chest boat), she climbs in within 5 blocks of its centre (`BoardReach`:
 the server takes an interaction within reach plus 3 of the boat's box, and at 3 she stood on the bank
@@ -685,7 +714,7 @@ rides, her own position isn't updated: « t'es où ? » answers with the boat's.
 **Out of reach.** Guarding or defending, she leaves alone a monster whose head is under water (a
 drowned at the bottom), since she can't reach it there. A bubble column over magma (`drag`) pulls
 whoever swims in it down faster than jump lifts them, and the pathfinder takes it for air, so
-`gentleMovements` makes it a wall and her own swimming avoids it.
+`gentleMovements` makes it a wall and her own swimming avoids it, except in a water column (above).
 
 Lines: `McDiveLines` (with twins), `McDiveAirLines`, `McDrowningLines`, `McBreathingLines`,
 `McBoardLines` (with twins), `McShakeLines`.
@@ -1094,8 +1123,9 @@ says what it refused.
 **Testing movement locally: `tools/mc-pathtest`.** A server's refusals and the pathfinder's mistakes
 can't be reasoned out from the code: reproduce them. The tool runs her real body against a local
 Paper with ViaVersion and ViaBackwards (the group server's pair; setup in its README): an obstacle
-course of 37 lanes (corridors, corners, stairs and slabs, fences, decorations, trapdoors, gaps, a
-low tunnel, panes, furniture, soul sand and cobwebs, a door with a turn, a ladder, leaves, water, a
+course of 43 lanes (corridors, corners, stairs and slabs, fences, decorations, trapdoors, gaps, a
+low tunnel, panes, furniture, soul sand and cobwebs, a door with a turn, a ladder, leaves, water, water columns up and
+down with both bubble kinds, a waterfall up and down, a
 field of pillars, lava, a cliff, a long wall to go round, a dead-end pocket, a furnished room, holes
 to step round and to jump, a gap up and one onto a slab, a railless bridge, ice, turning stairs, a
 cluttered corridor, a pane zigzag, a diagonal of fence posts, an unreachable goal, ladders met from
