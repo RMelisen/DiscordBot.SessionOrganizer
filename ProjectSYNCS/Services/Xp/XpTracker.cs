@@ -22,6 +22,7 @@ internal sealed class XpTracker
     // RivalryService — safe to hold directly, unlike a transient DB service.
     private readonly GuildConfigService _config;
     private readonly HerMessages _herMessages;
+    private readonly PlynlingAnnouncer _announcer;
     private readonly ILogger<XpTracker> _logger;
 
     // Tuning knobs, not load-bearing — easy to retune without touching the logic
@@ -86,8 +87,10 @@ internal sealed class XpTracker
         ResponsePicker picker,
         GuildConfigService config,
         HerMessages herMessages,
+        PlynlingAnnouncer announcer,
         ILogger<XpTracker> logger)
     {
+        _announcer = announcer;
         _client = client;
         _services = services;
         _picker = picker;
@@ -269,8 +272,8 @@ internal sealed class XpTracker
             var (oldLevel, newLevel) = await xp.AddXpAsync(guildId, userId, amount);
             await GrantPassivePebblesAsync(scope, guildId, userId);
 
-            if (newLevel > oldLevel && channel is not null)
-                await AnnounceAsync(channel, userId, oldLevel, newLevel, knownUser);
+            if (newLevel > oldLevel)
+                await AnnounceAsync(guildId, channel, userId, oldLevel, newLevel, knownUser);
         }
         catch (Exception ex)
         {
@@ -297,10 +300,16 @@ internal sealed class XpTracker
     }
 
     // The celebration itself: a card rather than a plain line, so a level-up stands
-    // out from her ordinary chatter in a busy channel.
-    private async Task AnnounceAsync(IMessageChannel channel, ulong userId, int oldLevel, int newLevel, IUser? knownUser)
+    // out from her ordinary chatter in a busy channel. It goes to the level-up channel (/config
+    // levelup-channel, else the bots channel), not where the XP was earned: a level-up matters little, and the other
+    // channels stay free of it. `earnedIn` is only the fallback if that channel can't be resolved.
+    private async Task AnnounceAsync(
+        ulong guildId, IMessageChannel? earnedIn, ulong userId, int oldLevel, int newLevel, IUser? knownUser)
     {
-        var user = ResolveUser(channel, userId, knownUser);
+        var channel = await BotsChannel.ResolveLevelUpAsync(_client, _config, _announcer, guildId) ?? earnedIn;
+        if (channel is null) return;
+
+        var user = knownUser ?? _client.GetGuild(guildId)?.GetUser(userId);
         // Couldn't resolve the member (rare cache miss) — the level is still
         // recorded, only the celebration is skipped, matching "Discord side effects
         // must never break the flow."
@@ -335,12 +344,6 @@ internal sealed class XpTracker
         $"Niveau {oldLevel} → {newLevel} !";
 
     private static bool IsSixSeven(int level) => level is 7 or 67;
-
-    // Where the caller already has an IUser (the message path), skip the lookup.
-    // Otherwise resolve through the guild the channel belongs to. Returns the user
-    // rather than just a name, since the card needs an avatar off the same object.
-    private static IUser? ResolveUser(IMessageChannel channel, ulong userId, IUser? knownUser) =>
-        knownUser ?? (channel as SocketGuildChannel)?.Guild.GetUser(userId);
 
     /// <summary>
     /// Whether nothing counts in <paramref name="channel"/> — the hardcoded spam

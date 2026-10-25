@@ -25,7 +25,7 @@ public enum QuizPickResult
     Won,
 }
 
-// Her pop quiz: posts a question up to three times a day in the guild's quiz channel
+// Her pop quiz: posts a question two or three times a week (never more than three a day) in the guild's quiz channel
 // (/config quiz-channel), takes the first right answer, pays it, and reveals the answer
 // when nobody finds it within the hour. When to post is Helpers/Quiz/QuizSchedule, what to ask
 // is Helpers/Quiz/QuizBank, how a typed answer is judged is Helpers/Quiz/QuizAnswer.

@@ -170,7 +170,10 @@ list: the owner removed it.
   of each and breaks it **by hand** (`emptyHand`): a tool from her last order (an axe, a sword) is
   put away by switching the hotbar to an empty slot or one without a tool, never by moving her
   pockets (window clicks put her inventory out of step with the server's). Melons and pumpkins are
-  solid, go to collectblock, and get the axe. Replanting picks the seed stack after the walk to the
+  solid, go to collectblock, and get the axe. **A tool only when it beats the hand** (`toolOrHand`,
+  over `bot.tool.equipForBlock`, so collectblock and the camp get it too): the tool plugin keeps
+  what she holds when nothing is faster, and she cut cacti with a pickaxe and bamboo with an axe.
+  Now a cactus is cut by hand (`emptyHand`), bamboo with a sword, by hand without one. Replanting picks the seed stack after the walk to the
   patch, not before: pickups on the way moved it, and she placed with an empty hand.
 - **Columns** (bamboo, sugar cane, cactus: `Crops`, `column`): she cuts each one's second block,
   which brings down everything above it, and the bottom one stays to grow again (no replanting).

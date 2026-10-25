@@ -3,8 +3,8 @@ namespace ProjectSYNCS.Helpers;
 // When QuizMasterService posts a question. Pure, so the rules can be checked without a
 // gateway; every wall-clock time is Paris (AppTime), so DST never moves a window.
 //
-// Three slots a day, one per window, each kept at SlotChance: 0 to 3 quizzes a day, 2.4 on
-// average. A due slot still waits until the channel has had someone in it recently
+// Three slots a day, one per window, each kept at SlotChance: 0 to 3 quizzes a day, 0.36
+// on average, so 2 to 3 a week. A due slot still waits until the channel has had someone in it recently
 // (ActiveWithin), so a question never lands in an empty room; it waits at most until
 // DayEnd, then the day is over. MinGap keeps two slots near a window edge apart.
 public static class QuizSchedule
@@ -13,7 +13,7 @@ public static class QuizSchedule
     public static readonly TimeSpan MinGap = TimeSpan.FromHours(2);
     public static readonly TimeSpan ActiveWithin = TimeSpan.FromMinutes(60);
     public const int MaxPerDay = 3;
-    public const double SlotChance = 0.8;
+    public const double SlotChance = 0.12;
 
     // The first opens after QuizCrown.CrownHour (10:00), so Monday's crown comes before any question.
     private static readonly (TimeSpan Start, TimeSpan End)[] Windows =

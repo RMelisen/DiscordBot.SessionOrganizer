@@ -22,7 +22,7 @@ wins cailloux and a point on `/quiz leaderboard`.
   hardcoded fallback: zero means no quiz. Clearing it leaves an open round to finish where it is
   (the round stores its own channel).
 - **Three slots a day**, one each in 10:30–14:00, 14:00–18:00 and 18:00–22:00 Paris, each kept
-  at `SlotChance` (80%): 0–3 a day, 2.4 on average. The first window opens after the Monday
+  at `SlotChance` (12%): 0–3 a day, 0.36 on average, so 2–3 a week. The first window opens after the Monday
   crown (10:00). Drawn in memory on the first tick of the Paris day; a restart
   redraws and drops past slots, so an update can cost a quiz but never doubles one.
 - **A due slot waits for people**: it posts only when a human spoke in the quiz channel within

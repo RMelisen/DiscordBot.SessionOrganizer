@@ -386,7 +386,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
         }
     }
 
-    [Group("bots-channel", "Le salon où elle poste ce qui compte peu (les visites de Quokka)")]
+    [Group("bots-channel", "Le salon où elle poste ce qui compte peu (Quokka, la nuit)")]
     public class BotsChannelModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly GuildConfigService _config;
@@ -396,7 +396,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
             _config = config;
         }
 
-        [SlashCommand("set", "Choisir le salon des bots : ses annonces sans importance, comme Quokka")]
+        [SlashCommand("set", "Choisir le salon des bots : ses annonces sans importance : Quokka, la nuit")]
         public async Task SetAsync(
             [Summary("channel", "Le salon des bots")]
             [ChannelTypes(ChannelType.Text, ChannelType.News)] IGuildChannel channel)
@@ -427,6 +427,43 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
                 Context.Guild.GetChannel(BotsChannel.DefaultId) is not null
                     ? $"Retour au salon par défaut, <#{BotsChannel.DefaultId}> (ᵕ • ᴗ •)"
                     : "Plus de salon des bots ici : ses annonces passeront par le salon de jeu (ᵕ • ᴗ •)");
+        }
+    }
+
+    [Group("levelup-channel", "Le salon des cartes de passage de niveau")]
+    public class LevelUpChannelModule : InteractionModuleBase<SocketInteractionContext>
+    {
+        private readonly GuildConfigService _config;
+
+        public LevelUpChannelModule(GuildConfigService config)
+        {
+            _config = config;
+        }
+
+        [SlashCommand("set", "Choisir le salon où tombent les cartes de niveau")]
+        public async Task SetAsync(
+            [Summary("channel", "Le salon des niveaux")]
+            [ChannelTypes(ChannelType.Text, ChannelType.News)] IGuildChannel channel)
+        {
+            if (!await BeginAsync(Context)) return;
+
+            if (!CanSendIn(Context.Guild, channel))
+            {
+                await SayAsync(Context, CannotSend(channel));
+                return;
+            }
+
+            await _config.SetLevelUpChannelAsync(Context.Guild.Id, channel.Id);
+            await SayAsync(Context, $"Les cartes de niveau iront dans <#{channel.Id}> {Emotes.Sparkle}");
+        }
+
+        [SlashCommand("clear", "Revenir au salon des bots pour les cartes de niveau")]
+        public async Task ClearAsync()
+        {
+            if (!await BeginAsync(Context)) return;
+
+            await _config.SetLevelUpChannelAsync(Context.Guild.Id, 0);
+            await SayAsync(Context, "Les cartes de niveau retournent dans le salon des bots (ᵕ • ᴗ •)");
         }
     }
 
@@ -494,7 +531,7 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
             _config = config;
         }
 
-        [SlashCommand("set", "Choisir le salon du quiz (jusqu'à deux questions par jour)")]
+        [SlashCommand("set", "Choisir le salon du quiz (deux ou trois questions par semaine)")]
         public async Task SetAsync(
             [Summary("channel", "Le salon du quiz")]
             [ChannelTypes(ChannelType.Text, ChannelType.News)] IGuildChannel channel)

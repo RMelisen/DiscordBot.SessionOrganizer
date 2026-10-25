@@ -172,7 +172,7 @@ A flat `/config show` (a static Components V2 card, `ConfigCards.Build`) plus on
 setting: `excluded-channels add|remove`, `idle-channels add|remove`, `shame-voters add|remove`,
 `moderator-role set|clear`, `plynling-role create|set|clear`, `quiz-role create|set|clear`,
 `game-channel set|clear`,
-`main-channel set|clear`, `quiz-channel set|clear`, `bots-channel set|clear`. Three levels is
+`main-channel set|clear`, `quiz-channel set|clear`, `bots-channel set|clear`, `levelup-channel set|clear`. Three levels is
 Discord's maximum nesting. (`/shame` is flat only because it had to stay invokable bare; nothing here
 needs that.) Every handler goes through `ConfigModule.BeginAsync` (`IsStaff`, then an ephemeral
 defer); no `[DefaultMemberPermissions]`, same reason as `/admin`.

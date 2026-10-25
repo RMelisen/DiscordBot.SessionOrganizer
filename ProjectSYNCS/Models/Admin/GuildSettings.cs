@@ -70,4 +70,10 @@ public class GuildSettings
     /// as GameChannelId.
     /// </summary>
     public ulong BotsChannelId { get; set; }
+
+    /// <summary>
+    /// Where the level-up cards go. Zero means the bots channel (see <c>BotsChannel</c>), so a
+    /// guild that never sets it keeps them wherever its bots channel is.
+    /// </summary>
+    public ulong LevelUpChannelId { get; set; }
 }

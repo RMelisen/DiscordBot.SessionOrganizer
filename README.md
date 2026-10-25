@@ -18,7 +18,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/schedule create · list · edit · cancel` | Plan and manage sessions | everyone |
 | `/poll create · list · delete` | Vote on time slots | everyone |
 | `/vote create · list · delete` | Vote on free-text options | everyone |
-| `/giveaway create · list · delete` | Prize draws | everyone |
+| `/giveaway create · list · delete` | Prize draws | staff (`delete`: organiser or staff) |
 | `/level [user]` | Your card: level, rank, progress, badges (« Succès » button) | everyone |
 | `/recap [user]` | Your recap over 7 days, 30 days or all time | everyone |
 | `/leaderboard` | Server ranking — four views, three windows | everyone |
@@ -107,7 +107,7 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 
 ### Giveaways
 
-- **`/giveaway create`** — a prize, a duration from a fixed list (10 minutes to
+- **`/giveaway create`** (staff only) — a prize, a duration from a fixed list (10 minutes to
   7 days), and optionally a description and a winner count (1 by default, 10 max).
 - The card carries **Participer / Ne plus participer** buttons and lists the
   entrants — capped at 20 names with the rest summarised, since an embed field holds
@@ -373,7 +373,7 @@ Every counter starts at zero the day it ships and nothing can be backfilled.
 
 ### Pop quiz
 
-Up to **three times a day** she posts a question in the server's quiz channel, and the **first
+Two or three times **a week** she posts a question in the server's quiz channel, and the **first
 right answer wins** cailloux: 25, 40 or 60 depending on difficulty. Off until staff pick
 a channel with **`/config quiz-channel set`**.
 
@@ -581,8 +581,9 @@ is gone).
   - `moderator-role set|clear` and `shame-voters add|remove` — who may vote with `/shame`;
   - `excluded-channels add|remove` — channels where nothing counts (no XP, ignored by the wall);
   - `game-channel set|clear` — where Plynling deaths, comebacks and event stories are announced;
-  - `bots-channel set|clear` — where her unprompted, low-stakes posts go (Quokka's visits); by
+  - `bots-channel set|clear` — where her unprompted, low-stakes posts go (Quokka's visits, the 3 a.m. line); by
     default the server's « spam-bots » channel, else the game channel;
+  - `levelup-channel set|clear` — where level-up cards go; the bots channel when unset;
   - `quiz-channel set|clear` — where her pop quiz goes; no channel, no quiz;
   - `plynling-role create|set|clear` — a role SYNCS keeps on everyone with a living Plynling and
     off everyone else (flair and a ping group); `create` makes it for you, `clear` stops managing it

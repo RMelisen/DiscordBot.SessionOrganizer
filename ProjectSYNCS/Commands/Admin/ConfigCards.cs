@@ -62,7 +62,13 @@ public static class ConfigCards
                 "*aucun : le salon de jeu prend le relais*"));
 
         Section(container,
-            "**Salon du quiz** — où elle pose ses questions, jusqu'à trois fois par jour",
+            "**Salon des niveaux** — où tombent les cartes de passage de niveau",
+            config.LevelUpChannelId == 0
+                ? "> *non configuré : le salon des bots*"
+                : $"> <#{config.LevelUpChannelId}>");
+
+        Section(container,
+            "**Salon du quiz** — où elle pose ses questions, deux ou trois fois par semaine",
             "> " + Single(config.QuizChannelId, 0, "*aucun : pas de quiz sur ce serveur*"));
 
         if (isHomeGuild)

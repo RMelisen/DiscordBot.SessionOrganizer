@@ -79,7 +79,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/poll list`** · **`/vote list`** — Les sondages et votes actifs.\n" +
                 "**`/poll delete <id>`** · **`/vote delete <id>`** — Supprime le tien.")
             .AddField("Commandes — Tirages au sort",
-                "**`/giveaway create`** — Lance un tirage : le **lot**, une **durée** (10 min à 7 jours), " +
+                "**`/giveaway create`** — **Réservé au staff.** Lance un tirage : le **lot**, une **durée** (10 min à 7 jours), " +
                 "et en option une **description** et un **nombre de gagnants** (1 par défaut, 10 max).\n" +
                 "**`/giveaway list`** · **`/giveaway delete <id>`** — Les tirages en cours, et supprimer le tien.\n" +
                 "**🎉 Participer** t'inscrit, **✖️ Ne plus participer** te retire. " +
@@ -103,7 +103,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/shame user:@quelqu'un`** — Dénonce quelqu'un. **Réservé au staff**, et " +
                 "**2 votes maximum par personne visée et par jour**.")
             .AddField("Quiz",
-                "Jusqu'à **trois fois par jour**, je pose une question dans le salon du quiz : " +
+                "Deux ou trois fois **par semaine**, je pose une question dans le salon du quiz : " +
                 "le **premier** qui trouve gagne des cailloux. Question à choix : **un seul clic** " +
                 "par personne. Question libre : réponds directement dans le salon.\n" +
                 "**`/quiz leaderboard`** — Les meilleurs au quiz.")

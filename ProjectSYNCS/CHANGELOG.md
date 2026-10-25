@@ -3,6 +3,17 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.36.0 — 2026-10-25
+
+- Level-up cards now go to their own channel, set with `/config levelup-channel set|clear`
+  (the bots channel when unset), instead of the channel where the XP was earned. Her reaction to the other bot's level-ups is unchanged.
+- The 3 a.m. line is posted in the bots channel too.
+- She no longer announces an ordinary restart or update; only a power cut or a crash gets a wake line.
+- The pop quiz now comes two or three times a week instead of almost every day.
+- `/giveaway create` and `/giveaway list` are staff only.
+- Minecraft: she cuts bamboo with a sword and cacti by hand, and in general uses a tool only when
+  it breaks the block faster than her hand, instead of whatever she was holding.
+
 ## 7.35.0 — 2026-10-22
 
 - Minecraft: « monte le camp » now builds an open camp instead of a plank hut: a campfire in a

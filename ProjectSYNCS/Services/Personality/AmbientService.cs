@@ -64,8 +64,6 @@ internal sealed class AmbientService : BackgroundService
     private const ulong IdleSalt = 0x5359_4E43_4944_4C45;       // "SYNCIDLE"
     private const ulong EditSalt = 0x5359_4E43_4544_4954;       // "SYNCEDIT"
     private const ulong SeenSalt = 0x5359_4E43_5345_454E;       // "SYNCSEEN"
-    private const ulong WakeSalt = 0x5359_4E43_5741_4B45;       // "SYNCWAKE"
-    private const ulong WakeUpdateSalt = 0x5359_4E43_5550_4454; // "SYNCUPDT"
     private const ulong PowerCutSalt = 0x5359_4E43_504F_5752;   // "SYNCPOWR"
     private const ulong CrashSalt = 0x5359_4E43_4352_5348;      // "SYNCCRSH"
     private const ulong GlitchSalt = 0x5359_4E43_474C_4954;     // "SYNCGLIT"
@@ -81,6 +79,7 @@ internal sealed class AmbientService : BackgroundService
     private readonly ResponsePicker _picker;
     private readonly HerMessages _herMessages;
     private readonly BadgeAwarder _badges;
+    private readonly PlynlingAnnouncer _announcer;
     private readonly ILogger<AmbientService> _logger;
     private readonly string _statePath;
     private readonly DateTimeOffset _startedAt = DateTimeOffset.UtcNow;
@@ -130,9 +129,11 @@ internal sealed class AmbientService : BackgroundService
         ResponsePicker picker,
         HerMessages herMessages,
         BadgeAwarder badges,
+        PlynlingAnnouncer announcer,
         IConfiguration config,
         ILogger<AmbientService> logger)
     {
+        _announcer = announcer;
         _badges = badges;
         _client = client;
         _config = guildConfig;
@@ -289,12 +290,24 @@ internal sealed class AmbientService : BackgroundService
         var recent = (await main.GetMessagesAsync(HistoryDepth).FlattenAsync()).ToList();
         var last = recent.Where(m => !m.Author.IsBot).MaxBy(m => m.Timestamp);
 
-        // Tonight's line, if a restart came between it and 5:30: the scolding still holds.
-        var tonight = recent
-            .Where(m => m.Author.Id == _client.CurrentUser.Id
-                        && AppTime.DayKey(m.Timestamp) == AppTime.DayKey(now)
-                        && NightLineSet.Contains(m.Content))
-            .MaxBy(m => m.Timestamp);
+        // Tonight's line (in the bots channel), if a restart came between it and 5:30: the
+        // scolding still holds.
+        IMessage? tonight = null;
+        if (await ResolveBotsChannelAsync() is { } bots)
+        {
+            try
+            {
+                tonight = (await bots.GetMessagesAsync(HistoryDepth).FlattenAsync())
+                    .Where(m => m.Author.Id == _client.CurrentUser.Id
+                                && AppTime.DayKey(m.Timestamp) == AppTime.DayKey(now)
+                                && NightLineSet.Contains(m.Content))
+                    .MaxBy(m => m.Timestamp);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Ambient: could not read the bots channel's history.");
+            }
+        }
 
         var latest = last?.Timestamp;
         var home = await _config.GetAsync(HomeGuild.Id);
@@ -337,7 +350,9 @@ internal sealed class AmbientService : BackgroundService
         }
     }
 
-    private async Task TryNightLineAsync(IMessageChannel channel, DateTimeOffset now)
+    // The 3 a.m. line goes to the bots channel; the quiet it waits for is the main channel's
+    // (`main`), and the scolding stays there too.
+    private async Task TryNightLineAsync(IMessageChannel main, DateTimeOffset now)
     {
         if (!Ambient.IsNightLineHour(now)) return;
 
@@ -359,7 +374,9 @@ internal sealed class AmbientService : BackgroundService
             _nightDone = true;
         }
 
-        if (_breakdown.IsActive(channel.Id)) return;
+        if (_breakdown.IsActive(main.Id)) return;
+        var channel = await ResolveBotsChannelAsync();
+        if (channel is null) return;
         // A restart inside the hour draws a new decision; this keeps her to one line a night.
         if (await SaidNightLineTodayAsync(channel, today)) return;
 
@@ -561,44 +578,32 @@ internal sealed class AmbientService : BackgroundService
         {
             var now = DateTimeOffset.UtcNow;
             var today = AppTime.DayKey(now);
-            var state = LoadState();
-            bool updated = state.LastVersion is not null && state.LastVersion != AppInfo.Version;
-
-            // The version she runs is recorded even when she stays quiet, so the next
-            // restart compares against this one.
-            lock (_stateLock) SaveState(LoadState() with { LastVersion = AppInfo.Version });
-
-            // A power cut or a crash is never a quiet wake: whatever the hour, however many
-            // times today. It takes the place of the update line too.
+            // Only a power cut or a crash gets a wake line, whatever the hour, however many
+            // times today. An ordinary restart or update is silent.
             var stop = _health.LastStop;
-            bool abrupt = PiHealth.IsAbrupt(stop);
-            if (!abrupt && (!Ambient.IsWakeHours(now) || state.LastWakeDay == today)) return;
+            if (!PiHealth.IsAbrupt(stop)) return;
 
             var channel = await WaitForChannelAsync();
             if (channel is null || _breakdown.IsActive(channel.Id)) return;
 
             var day = AppTime.DayNumber(now);
-            if (abrupt && Random.Shared.NextDouble() < Ambient.GlitchWakeChance)
+            if (Random.Shared.NextDouble() < Ambient.GlitchWakeChance)
             {
                 await GlitchWakeAsync(channel, day, today);
                 return;
             }
 
-            var line = abrupt
-                ? string.Format(stop == StopKind.PowerCut
-                        ? DailyRotation.Pick(BotResponses.PowerCutWakeLines, day, PowerCutSalt)
-                        : DailyRotation.Pick(BotResponses.CrashWakeLines, day, CrashSalt),
-                    PiHealth.Duration(_health.Downtime))
-                : updated
-                    ? string.Format(DailyRotation.Pick(BotResponses.WakeUpdateLines, day, WakeUpdateSalt), AppInfo.Version)
-                    : DailyRotation.Pick(BotResponses.WakeLines, day, WakeSalt);
+            var line = string.Format(stop == StopKind.PowerCut
+                    ? DailyRotation.Pick(BotResponses.PowerCutWakeLines, day, PowerCutSalt)
+                    : DailyRotation.Pick(BotResponses.CrashWakeLines, day, CrashSalt),
+                PiHealth.Duration(_health.Downtime));
 
             var sent = await BotChat.PostWithTypingAsync(channel, line, _logger, "wake line", AllowedMentions.None);
             _herMessages.Remember(sent, ReplyContext.Wake);
             if (sent is not null)
             {
                 lock (_stateLock) SaveState(LoadState() with { LastVersion = AppInfo.Version, LastWakeDay = today });
-                if (abrupt) ArmFirstWake();
+                ArmFirstWake();
             }
         }
         catch (Exception ex)
@@ -658,6 +663,9 @@ internal sealed class AmbientService : BackgroundService
         }
         return channel;
     }
+
+    private Task<IMessageChannel?> ResolveBotsChannelAsync() =>
+        BotsChannel.ResolveAsync(_client, _config, _announcer, HomeGuild.Id);
 
     private async Task<IMessageChannel?> ResolveChannelAsync() =>
         _client.ConnectionState == ConnectionState.Connected

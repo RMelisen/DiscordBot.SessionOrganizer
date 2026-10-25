@@ -26,4 +26,18 @@ public static class BotsChannel
             return channel;
         return await announcer.ResolveGameChannelAsync(guildId);
     }
+
+    /// <summary>
+    /// Where level-up cards go: the channel set with <c>/config levelup-channel</c>, else the bots
+    /// channel (which itself falls back to the game channel).
+    /// </summary>
+    public static async Task<IMessageChannel?> ResolveLevelUpAsync(DiscordSocketClient client, GuildConfigService config,
+        PlynlingAnnouncer announcer, ulong guildId)
+    {
+        var configured = (await config.GetAsync(guildId)).LevelUpChannelId;
+        if (configured != 0 && client.GetChannel(configured) is IMessageChannel channel
+            && channel is IGuildChannel home && home.GuildId == guildId)
+            return channel;
+        return await ResolveAsync(client, config, announcer, guildId);
+    }
 }

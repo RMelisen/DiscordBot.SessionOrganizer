@@ -191,7 +191,6 @@ namespace ProjectSYNCS.Services;
 //     NightScoldLines .......... answering it before 5:30 (ResponsePicker)
 //     IdleLines · IdleEditLines  a long daytime silence (edit = Before, then After)
 //     SeenReactions ............ a late reaction on the last message
-//     WakeLines · WakeUpdateLines ... after a restart / after an update
 //     PowerCutWakeLines · CrashWakeLines ... after a stop that wasn't one (PiHealthService)
 //     GlitchWakeLines .......... same, corrupted then edited clean (Glitched, then Recovered)
 //     RouterReturnLines · RouterReturnQuietLines ... back after a long gateway outage

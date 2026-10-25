@@ -514,6 +514,9 @@ namespace ProjectSYNCS.Migrations
                     b.Property<long>("GuildId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<long>("LevelUpChannelId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<long>("MainChannelId")
                         .HasColumnType("INTEGER");
 

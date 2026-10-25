@@ -16,6 +16,11 @@ public class GiveawayModule : InteractionModuleBase<SocketInteractionContext>
 {
     private const int MaxWinners = 10;
 
+    // No [DefaultMemberPermissions]: IsStaff also admits the owner, which a permission bit cannot
+    // express (see CLAUDE.md, Authorization). The handler check is the only gate.
+    private const string StaffOnly =
+        "Cette commande est réservée aux administrateurs et aux modérateurs. Bien tenté (˶ᵔ ᵕ ᵔ˶)";
+
     // How many entrants the card lists before summarising the rest. Bounded by the
     // 1024-character embed field limit, and by not wanting the card to be a wall.
     private const int MaxEntrantsShown = 20;
@@ -55,6 +60,12 @@ public class GiveawayModule : InteractionModuleBase<SocketInteractionContext>
         [Summary("winners", "Combien de gagnants tirer (1 par défaut)")]
         [MinValue(1)] [MaxValue(MaxWinners)] int winners = 1)
     {
+        if (!SessionPermissions.IsStaff(Context.User))
+        {
+            await RespondAsync(StaffOnly, ephemeral: true);
+            return;
+        }
+
         await DeferAsync();
 
         var giveaway = await _giveaways.CreateAsync(
@@ -79,6 +90,12 @@ public class GiveawayModule : InteractionModuleBase<SocketInteractionContext>
     [SlashCommand("list", "Lister les tirages en cours du serveur")]
     public async Task ListAsync()
     {
+        if (!SessionPermissions.IsStaff(Context.User))
+        {
+            await RespondAsync(StaffOnly, ephemeral: true);
+            return;
+        }
+
         await DeferAsync(ephemeral: true);
 
         var giveaways = await _giveaways.GetActiveAsync(Context.Guild.Id);

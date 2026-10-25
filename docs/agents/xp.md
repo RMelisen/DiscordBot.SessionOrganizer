@@ -160,8 +160,9 @@ single-step drops.
   values, `RateAt` a one-minute span. Define any new rate function that way round.
 - If counting minutes fails, **skip the payout** (fail closed).
 
-**A voice level-up is announced in the voice channel's own text chat** (`SocketVoiceChannel` is an
-`IMessageChannel`), falling back to the system channel only if the channel doesn't resolve.
+**Every level-up card, voice included, goes to the level-up channel** (`BotsChannel.ResolveLevelUpAsync`:
+`/config levelup-channel`, else the bots channel), not to where the XP was earned; the earning channel is only the fallback
+if the bots channel doesn't resolve.
 
 ## Shared ranking vocabulary — `/emotestats`, `/goodbot`, `/leaderboard`, `/shame`
 

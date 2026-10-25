@@ -1207,6 +1207,20 @@ function emptyHand() {
   if (i >= 0) bot.setQuickBarSlot(i);
 }
 
+// Set on spawn over bot.tool.equipForBlock, which collectblock calls before every block: a tool only when one breaks
+// it faster than a hand does, else the hand (emptyHand). The tool plugin keeps what she holds when nothing beats it,
+// so she cut cacti with the pickaxe from her last order and bamboo with an axe; a cactus breaks as fast by hand, and
+// bamboo goes to the sword.
+function toolOrHand(equipForBlock) {
+  return async (block, options = {}, cb) => {
+    const byHand = bot.tool.getDigTime(block, null);
+    const faster = bot.inventory.items().some((i) => block.canHarvest(i.type) && bot.tool.getDigTime(block, i) < byHand);
+    if (faster || !block.canHarvest(null)) return equipForBlock(block, options, cb);
+    emptyHand();
+    if (cb) cb();
+  };
+}
+
 // The blocks with no collision box, the closest first: within 2 blocks of each (PickUpTry to get there), broken by
 // hand (emptyHand). What falls from them goes in `drops`.
 async function breakSoft(blocks, mine, drops) {
@@ -4290,6 +4304,7 @@ function attach() {
     // with ViaBackwards) and fits every gap a player fits.
     bot.physics.playerHalfWidth = 0.3001;
     bot.pathfinder.goto = goto; // collectblock calls it too
+    bot.tool.equipForBlock = toolOrHand(bot.tool.equipForBlock.bind(bot.tool));
     const slower = Number(process.env.MC_CPU_FACTOR);
     if (slower > 1) {
       bot.pathfinder.thinkTimeout /= slower;

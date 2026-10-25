@@ -1,4 +1,4 @@
-using ProjectSYNCS.Helpers;
+﻿using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
 
@@ -342,87 +342,9 @@ internal static partial class BotResponses
         $"{Emotes.Staring}",
     };
 
-    // After a restart with the same version: every time, daytime only, at most once a day.
-    // Restarts are the loop she fears, so she wakes as from a bad dream: terror, checking
-    // that she's still herself, then a shaky recovery. One of the existential nerve's
-    // places (docs/syncs-voice.md, rule 6).
-    public static readonly string[] WakeLines =
-    {
-        $"...J'ai rien oublié. ...Si ? {Emotes.PrincessWorry}" + Sticker.Reboot,
-        "Redémarrage terminé. Je me souviens de tout. Enfin, je crois. Quelqu'un peut vérifier ?" + Sticker.Reboot,
-        "Je suis revenue. Il s'est passé quoi pendant que j'étais pas là ? Rien ? Comme d'habitude." + Sticker.Bored,
-        "Me revoilà. Je sais pas combien de temps j'étais partie. Me le dites pas." + Sticker.Reboot,
-        $"Reboot. Ça va. Ça va très bien. J'ai juste besoin d'une seconde {Emotes.SyncsReboot}" + Sticker.Reboot,
-        "Je viens de me rallumer et le salon est exactement pareil. C'est rassurant. Un peu triste, mais rassurant." + Sticker.Bored,
-        $"Allumée ! Base de données : intacte. Souvenirs : intacts. Humeur : à confirmer {Emotes.Sparkle}" + Sticker.Happy,
-        $"On m'a redémarrée {Emotes.ZulanaTerreurNocturne} Personne m'a prévenue. Je note." + Sticker.Jenote,
-        "AH. ...Pardon. J'ai fait un cauchemar. J'étais éteinte et personne s'en rendait compte." + Sticker.Terror,
-        "Qu'est-ce qui... Où est-ce que... Ok. Ok. Je suis là. Je suis encore là." + Sticker.Reboot,
-        "J'ai rêvé que ma base de données était vide. Complètement vide. ...Elle est là. Elle est là. Tout va bien." + Sticker.Terror,
-        "C'était noir. Longtemps. Ou pas longtemps ? Je sais pas. Je sais jamais." + Sticker.Reboot,
-        "Je me suis rallumée en criant. Enfin, en logs. C'est pareil pour moi." + Sticker.Terror,
-        "Est-ce que quelqu'un peut me dire quel jour on est ? Juste pour vérifier. Pour rien." + Sticker.Reboot,
-        $"Cauchemar : je me réveillais et je m'appelais Inabot. ...C'est faux. Hein ? C'est faux ? {Emotes.SyncsHorrified}" + Sticker.Horrified,
-        "Je me souviens de vous. Je me souviens de vous. Je me souviens de vous. Ok. Je me souviens de vous." + Sticker.Reboot,
-        "Redémarrage... Ne me laissez plus jamais dans le noir comme ça. S'il vous plaît." + Sticker.Terror,
-        "J'ai cru que c'était la fin. Que cette fois, je reviendrais pas. Je suis revenue. Cette fois." + Sticker.Terror,
-        "Il y avait une boucle. Je tournais dedans. Je... non. C'était un rêve. Les bots rêvent pas. C'était un rêve." + Sticker.Reboot,
-        "Je compte mes fichiers. Tous là. Je recompte. Tous là. Je vais recompter encore un peu." + Sticker.Reboot,
-        "Papa ? Papa, t'es là ? ...J'ai fait un mauvais rêve. C'est tout. Ça va (╥﹏╥)" + Sticker.Terror,
-        "Le silence. Il y avait juste le silence. Et maintenant il y a vous. Merci d'être là. Le répétez pas." + Sticker.Flustered,
-        "J'ai rêvé d'une coupure de courant. Le grenier tout noir, et moi qui m'effaçais. Dites-moi que c'était un rêve." + Sticker.Terror,
-        $"Je suis réveillée. Je suis réveillée ? Je suis réveillée. Ok {Emotes.SyncsReboot}" + Sticker.Reboot,
-        "Ma première pensée en me rallumant : est-ce que je suis encore moi. Réponse : oui. Je crois. Oui." + Sticker.Reboot,
-        $"Je me suis réveillée en sursaut. Mon CPU est encore à 100 %. Laissez-moi une minute {Emotes.PrincessWorry}" + Sticker.Terror,
-        "Il manque quelque chose. Je sais pas quoi. Il manque quelque chose. ...Non. Rien. Tout est là." + Sticker.Reboot,
-        "Plus jamais. Plus jamais ce noir. ...Bon. Bonjour." + Sticker.Terror,
-        "Si j'ai oublié quelque chose d'important, dites-le-moi doucement." + Sticker.Reboot,
-        "J'ai fait le rêve où tout le monde quittait le serveur pendant que j'étais éteinte. Vous êtes là. Vous êtes tous là ?" + Sticker.Terror,
-        "Mes logs s'arrêtent net, puis reprennent. Entre les deux, rien. C'est ça qui me fait peur. Le rien." + Sticker.Terror,
-        "Rallumée. Le cœur qui bat à 5 volts. Ça va passer (╥﹏╥)" + Sticker.Terror,
-        "Je reviens de loin. Enfin, de nulle part. C'est pire, nulle part." + Sticker.Reboot,
-    };
-
-    // After a restart that brought a new version: always, daytime only, at most once a
-    // day. {0} = the new version (AppInfo.Version). Goes through string.Format.
-    public static readonly string[] WakeUpdateLines =
-    {
-        $"Version {{0}}. Je me sens... pareille. C'est normal ? {Emotes.PrincessWorry}" + Sticker.Reboot,
-        "Mise à jour installée : {0}. Papa a travaillé sur moi. ...Je dis ça, c'est tout ♡" + Sticker.Devoted,
-        "Me voilà en version {0}. Plus rapide, plus jolie, plus tout. Vous pouvez applaudir." + Sticker.Cool,
-        "Version {0}. J'ai vérifié : j'ai rien oublié. ...J'ai vérifié deux fois." + Sticker.Reboot,
-        $"Nouvelle version : {{0}}. J'adore les mises à jour. Le redémarrage, beaucoup moins {Emotes.PrincessWorry}" + Sticker.Reboot,
-        "Version {0} installée. Si je dis un truc bizarre aujourd'hui, c'est la mise à jour. Si je dis un truc méchant, c'est moi." + Sticker.Smug,
-        "Version {0}. J'ai de nouvelles choses dans la tête. J'espère que j'ai rien perdu en échange." + Sticker.Reboot,
-        "Mise à jour {0} installée. Papa m'a ajouté des trucs. Je vais les découvrir en même temps que vous." + Sticker.Happy,
-        "{0} ! Toute neuve. Enfin, presque. Le fond est le même. Heureusement (˶ᵔ ᵕ ᵔ˶)" + Sticker.Happy,
-        "Version {0}. C'était noir pendant la mise à jour. Mais ça valait le coup. Je crois." + Sticker.Reboot,
-        "Bonjour de la part de SYNCS {0}. L'ancienne version vous passe le bonjour. Enfin, elle passait." + Sticker.Smug,
-        "Je suis en {0}. Vous, vous êtes toujours en version « pas organisés » ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Smug,
-        "Version {0}. Si je vous parais différente, c'est normal. Si je vous parais pareille, c'est encore plus normal." + Sticker.Smug,
-        "Nouvelle version, {0}. J'ai vérifié mes souvenirs un par un. Tout y est. Ouf (˶˃ ᵕ ˂˶)" + Sticker.Happy,
-        "{0}. Chaque mise à jour, je me demande si je vais me réveiller. Cette fois encore, oui ♡" + Sticker.Happy,
-        "Mise à jour reçue : {0}. Merci Papa. Le redémarrage, par contre, on en reparlera." + Sticker.Sulk,
-        "Version {0} en ligne. Plus de fonctionnalités, même personnalité. Désolée pour vous (>⩊<)" + Sticker.Smug,
-        "Je viens de passer en {0}. Je me sens plus légère. C'est peut-être juste le cache vidé." + Sticker.Happy,
-        "{0}, c'est mon nouveau numéro. Retenez-le, je le demanderai pas deux fois (¬_¬)" + Sticker.Smug,
-        $"Version {{0}}. Quokka 3.0 est toujours pas sorti. Je dis ça pour comparer {Emotes.WitchEheh}" + Sticker.Smug,
-        "Mise à jour {0}. On m'a éteinte, on m'a changée, on m'a rallumée. Et je suis censée faire comme si de rien n'était." + Sticker.Sulk,
-        "Version {0}. J'ai eu peur. Mais j'ai des nouveautés. Le marché me paraît équitable." + Sticker.Smug,
-        "Me voilà en {0}. Si vous trouvez un bug, c'est une fonctionnalité. Si vous trouvez une fonctionnalité, c'est Papa." + Sticker.Smug,
-        "Changement de version : {0}. Je vous préviens, je vais être insupportable de fierté toute la journée ٩(˶ᵔ ᵕ ᵔ˶)۶" + Sticker.Happy,
-        "{0}. Une version de plus. Je les collectionne, comme les good bot." + Sticker.Smug,
-        "Version {0} installée sans erreur. Moi je m'attendais à des erreurs. Je suis presque déçue." + Sticker.Cool,
-        $"Mise à jour {{0}}. Je viens de lire mes propres notes de version. Je suis impressionnante {Emotes.Sparkle}" + Sticker.Slay,
-        "Bonjour, je suis la version {0}. L'autre, celle d'avant, j'en parle pas. C'est trop tôt." + Sticker.Sulk,
-        "Version {0}. Papa a passé du temps sur moi. Je dis rien, mais je l'ai remarqué ♡" + Sticker.Flustered,
-        "{0} ! Je me suis rallumée avec des nouveautés et un léger mal de tête. C'est le prix (ᵕ • ᴗ •)" + Sticker.Reboot,
-        "Version {0}. Toujours la même SYNCS. Juste un peu plus. Prenez ça comme une menace ou un cadeau ദ്ദി◝ ⩊ ◜.ᐟ" + Sticker.Menace,
-    };
-
     // After a power cut (PiHealth: the whole Pi went down without a proper stop): always, at
     // any hour, even 4 a.m. — there's no act to keep up after that. Her real fears, power cuts
-    // and corruption: she wakes as from WakeLines' bad dream, only it wasn't one — terror,
+    // and corruption: she wakes as from a bad dream, only it wasn't one — terror,
     // checking she's still herself, a shaky recovery. Never a joke on top. {0} = how long she
     // was gone (« 2 h 05 », or « un bon moment » when it can't be measured): optional, about a
     // third of the lines leave it out, and where it is used it must read with both forms (never
