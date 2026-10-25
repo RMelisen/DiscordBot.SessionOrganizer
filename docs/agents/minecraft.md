@@ -138,7 +138,7 @@ list: the owner removed it.
   `bot.world.raycast`) is taken on, hit or shot; one she chases that stays out of sight 4 s (`FoeUnseen`) is let
   go. A monster in a cave under the ground is near by distance alone: she shot arrows into the ground at a creeper
   there. **What's a monster is `isFoe`**: minecraft-data's `hostile`, plus the few it
-  files elsewhere (slimes, magma cubes and phantoms as `mob`, hoglins as `animal`), which she
+  files elsewhere (slimes, magma cubes, phantoms and ghasts as `mob`, hoglins as `animal`), which she
   otherwise never fought. Kills are a rationed remark.
 - **Collect** (`mineflayer-collectblock`) finds the requested blocks within 48 blocks, checks she
   can harvest them (with what she carries, or by hand; ores and stone need a pickaxe, `noTool`),
@@ -703,8 +703,12 @@ the test tool checks them, no server needed); everything that moves her is in `i
   life comes before an errand: one that can't be started again (a furnace, handing over, storing) is dropped and
   its player told (`dropped` with no attacker → `McDangerDroppedLines`). Not asleep, in a boat, crossing a portal or
   running from a player. Guarding, patrolling or defending someone, the fight is `guardTick`'s or `defendTick`'s.
+  Putting herself out comes first: while she walks to water (`hazard`), nothing starts a fight (the two replaced
+  each other on every tick, and what she was doing was lost). A fight, a walk to water or a defence taken over hands
+  on its own way back (`resumeFor`), an order held mid-fight first.
 - **Who she never hits** (`answerTo`): a tamed animal (`owneruuid`: Papa's wolf attacks her when he hits her), an
-  iron golem, bees, goats, llamas, polar bears, wolves; the warden and the creaking. She gets clear of them instead.
+  iron golem, bees, goats, llamas, polar bears, wolves; the warden and the creaking. She gets clear of them instead,
+  mid-fight too (one hurting her turns the fight to getting clear, never a target).
   Endermen and piglins are fought once they've hurt her, never before.
 - **She sizes the fight up** (`sizeUp`, every 1.5 s at most so it doesn't flip): every monster in sight within 12
   weighs (`KindWeights`, in zombies, less with distance) against her strength (`strength`: two zombies at full
@@ -720,14 +724,17 @@ the test tool checks them, no server needed); everything that moves her is in `i
   the fight, a newer one replacing it, and C# keeps it pending until the body reports it under way.
 - **One strike path** (`strike`) for guard, patrol, defend, self-defence and the ranch's cull: her weapon's own
   cooldown (`cooldownFor`: sword 625 ms, axes 1000–1250, trident 909, mace 1667, hand 250). **A player beside the
-  target** (within 1.6): a sword's sweep would land on them, so she hits from a jump (a critical hit never
+  target** (`sweepReaches`: inside its box grown by 1 sideways and a quarter up and down; never the target itself, a
+  player she defends Papa from): a sword's sweep would land on them, so she hits from a jump (a critical hit never
   sweeps); not swinging at all let zombies hugging Papa kill him. **No hazard behind her** (`edgeBehind`,
   `hazardAt`: a drop over 3, lava, the void): off the lip as soon as a foe is close, not only when she swings (its
   hits come on its own time). **Her fight walk** (`fightMovements`): no parkour, no drop over 2, the lip of a drop
   or lava costs 40. A foe 12 from where it started is let go (`FightLeash`).
 - **Ranged foes** (`RangedKinds`, a drowned with a trident; `rangedStep`): with a bow, shot from 6 or more
   (`shoot`'s rules); without, closed in on. A ghast or a blaze she can't get at (over 3 above her): out of its
-  sight. **The shield** (`shieldTick`): up against a ranged foe out to get her (its `mob_flags` aggressive bit: the
+  sight, by the player she guards or falls back to (their far side from it), else 16 away (away from Papa, she hopped
+  60 blocks off). A spot she's sent to (a hop, cover) is set again once a second at most, and no way there is no
+  failure to tell anyone: her player out of reach, she hops instead for 10 s. **The shield** (`shieldTick`): up against a ranged foe out to get her (its `mob_flags` aggressive bit: the
   server never sends a skeleton's drawn bow) and facing her, not while she runs in at that one (it slows her to a
   crawl), and between her hits; down to hit, eat or draw. An axe disables it 5 s (`entity_status` 30).
 - **Fireballs** (`fireballTick`): her client hears where a fireball is only every few ticks (5 blocks apart), so
@@ -746,7 +753,8 @@ the test tool checks them, no server needed); everything that moves her is in `i
   layout tried, pressed against her included (`surround`).
 
 Checked by `node run.js survival`: `ravine`, `beside`, `farmzombie`, `followzombie`, `furnace`, `farmskeleton`,
-`golem`, `horde`, `alone`, `warden`, `ordered`, `skeletonshield` (three live skeletons: chance-driven, about one run
+`golem`, `golemfight`, `horde`, `hordeperch`, `alone`, `warden`, `ordered`, `takenover`, `burningzombie`,
+`ghastguard`, `ghastbow`, `skeletonshield` (three live skeletons: chance-driven, about one run
 in six below its bar), `skeletonbow`, `fireball`, `surround`, `gapple`, `totem`, `keepkit`, `burning`, `lava`.
 
 ## Body language

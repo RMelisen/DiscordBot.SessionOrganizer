@@ -653,11 +653,20 @@ async function surround() {
 async function goldenApple() {
   const sc = await scene();
   await rcon.run(['gamemode creative Papa', `give ${Name} golden_apple 2`, `damage ${Name} 13 minecraft:generic`,
-    `summon zombie ${S.x + 6.5} -60 ${S.z + 0.5} {PersistenceRequired:1b,Tags:["test"]}`]);
+    // 60 health: the fight is still on after she eats.
+    `summon zombie ${S.x + 6.5} -60 ${S.z + 0.5} {PersistenceRequired:1b,Tags:["test"],Health:60f,attributes:[{id:"minecraft:max_health",base:60.0}]}`]);
   let apples = 2;
   for (const end = Date.now() + 10000; Date.now() < end && apples > 1; await wait(500)) apples = await q.carried(Name, 'golden_apple');
   const health = await q.entityNumber(Name, 'Health');
-  report(apples === 1 && health > 0, 'golden apple', `golden apples left ${apples}/2; her health ${health}`);
+  // And her sword back in hand while the zombie's still there: she went on fighting bare-handed.
+  let swordBack = false;
+  for (const end = Date.now() + 4000; Date.now() < end && !swordBack; await wait(250))
+    // As Papa's client sees it (a player's hand isn't in its equipment data on the server: that read « nothing » always).
+    swordBack = Boolean(sc.papa.players[Name] && sc.papa.players[Name].entity && sc.papa.players[Name].entity.heldItem
+      && sc.papa.players[Name].entity.heldItem.name === 'iron_sword');
+  const zombie = await q.count('@e[type=zombie,tag=test]');
+  report(apples === 1 && health > 0 && swordBack, 'golden apple', `golden apples left ${apples}/2; her health ${health}; ` +
+    `sword back in hand within 4 s: ${swordBack} (zombie still there: ${zombie > 0})`);
   await end(sc, 'golden apple');
 }
 
@@ -755,8 +764,114 @@ async function lava() {
   await end(sc, 'in lava');
 }
 
+// ---- From the branch review -------------------------------------------------------------------------------------
+
+// Following a stranger, she's set alight with the only water 7 blocks off, and a tough zombie (no AI, 200 health) stands right
+// by her: the walk to the water and the fight must not keep replacing each other (each swap lost what she was doing,
+// and the follow was gone). The zombie is killed for her after 8 s: she ends put out and following them again.
+async function burningZombie() {
+  const sc = await scene({ stranger: true });
+  // A stranger, not Papa: lost, the follow would come back by itself as her tagging along with family.
+  await rcon.run(['gamemode creative Papa', 'gamemode creative Stranger', `tp Papa ${S.x - 30.5} -60 ${S.z + 0.5}`, `tp Stranger ${S.x + 2.5} -60 ${S.z + 0.5}`, `fill ${sat(-5, -1, -2)} ${sat(-4, -1, -1)} water`]);
+  sc.body.send({ op: 'follow', player: 'Stranger' });
+  await sc.body.next((e) => e.ev === 'moving', 5000);
+  await wait(2000);
+  const at = await pos(Name);
+  const tough = '{NoAI:1b,PersistenceRequired:1b,Tags:["test"],Health:200f,attributes:[{id:"minecraft:max_health",base:200.0}]}';
+  await rcon.run([`summon small_fireball ${at[0]} ${at[1] + 3} ${at[2]} {Motion:[0.0d,-1.0d,0.0d],acceleration_power:0.1d}`,
+    `summon zombie ${at[0]} ${at[1]} ${at[2] + 1.5} ${tough}`]);
+  await wait(8000);
+  await rcon.run(['kill @e[type=zombie,tag=test]']);
+  await wait(6000);
+  const fire = await q.entityNumber(Name, 'Fire');
+  await rcon.run([`tp Stranger ${S.x + 9.5} -60 ${S.z + 0.5}`]);
+  await wait(8000);
+  const d = await apart(Name, 'Stranger');
+  report(fire <= 0 && d <= 4, 'on fire, a zombie on her', `${fire <= 0 ? 'put out' : `still burning (${fire})`}; ${d.toFixed(1)} from the one she follows after they moved`);
+  await end(sc, 'on fire, a zombie on her');
+}
+
+// In a fight with a tough zombie (no AI, 200 health), an iron golem hurts her, then the zombie goes: she never hits the
+// golem, fight or not.
+async function golemMidFight() {
+  const sc = await scene();
+  const tough = '{NoAI:1b,PersistenceRequired:1b,Tags:["test"],Health:200f,attributes:[{id:"minecraft:max_health",base:200.0}]}';
+  await rcon.run(['gamemode creative Papa', `tp Papa ${S.x - 20.5} -60 ${S.z + 0.5}`, `summon zombie ${S.x + 1.7} -60 ${S.z + 0.5} ${tough}`,
+    `summon iron_golem ${S.x - 1.5} -60 ${S.z + 0.5} {NoAI:1b,PersistenceRequired:1b,Tags:["golem"]}`]);
+  await wait(2500);
+  await rcon.run([`damage ${Name} 2 minecraft:mob_attack by @e[type=iron_golem,tag=golem,limit=1]`]);
+  await wait(1000);
+  // The zombie gone, the golem is the closest of what's hurt her: the one she'd turn on.
+  await rcon.run(['kill @e[type=zombie,tag=test]']);
+  await wait(5000);
+  const health = await q.entityNumber('@e[type=iron_golem,tag=golem,limit=1]', 'Health');
+  report(health === 100, 'golem mid-fight', `its health ${health}/100 after it hit her during a fight`);
+  await rcon.run(['kill @e[tag=golem]', 'kill @e[type=zombie,tag=test]']);
+  await end(sc, 'golem mid-fight');
+}
+
+// « pêche » held mid-fight, then a zombie bites Papa and defending him takes the fight over: once it's all over, the
+// held order still starts (it was lost with the fight).
+async function orderTakenOver() {
+  const sc = await scene();
+  const tough = '{NoAI:1b,PersistenceRequired:1b,Tags:["test"],Health:200f,attributes:[{id:"minecraft:max_health",base:200.0}]}';
+  await rcon.run([`fill ${sat(6, -1, -3)} ${sat(8, -1, -1)} water`, `give ${Name} fishing_rod 1`,
+    ...[-1, 0, 1].map((dz) => `summon zombie ${S.x + 1.7} -60 ${S.z + 0.5 + dz} ${tough}`)]);
+  await wait(2500);
+  sc.body.send({ op: 'fish', player: 'Papa' });
+  await wait(1500);
+  await rcon.run(['damage Papa 1 minecraft:mob_attack by @e[type=zombie,tag=test,limit=1]']);
+  await wait(2000);
+  await rcon.run(['kill @e[type=zombie,tag=test]']);
+  const fishing = await sc.body.next((e) => e.ev === 'fishing', 10000);
+  report(Boolean(fishing), 'held order, fight taken over', fishing ? 'fished once the fight was over' : 'the held order was lost');
+  await end(sc, 'held order, fight taken over');
+}
+
+// No bow, guarding Papa, a blaze hanging high above (no AI): she can't get at it, and takes cover by him, not 16
+// blocks away and further each time.
+async function ghastGuard() {
+  const sc = await scene({ kit: false });
+  await rcon.run(['gamemode creative Papa', `give ${Name} iron_sword 1`, `summon blaze ${S.x + 5.5} -53 ${S.z + 0.5} {NoAI:1b,PersistenceRequired:1b,Tags:["test"]}`]);
+  await wait(1000);
+  sc.body.send({ op: 'guard', player: 'Papa' });
+  let far = 0;
+  for (const end = Date.now() + 15000; Date.now() < end; await wait(500)) far = Math.max(far, await apart(Name, 'Papa'));
+  report(far <= 8, 'blaze over a guard', `furthest she went from Papa in 15 s: ${far.toFixed(1)} blocks`);
+  await end(sc, 'blaze over a guard');
+}
+
+// A ghast (no AI) hits her from 12 blocks, and she has a bow: it's a monster to shoot down, not an animal to get away
+// from (the game files it as a « mob », and she took it for one she never hits).
+async function ghastBow() {
+  const sc = await scene();
+  await rcon.run(['gamemode creative Papa', `summon ghast ${S.x + 12.5} -58 ${S.z + 0.5} {NoAI:1b,PersistenceRequired:1b,Tags:["test"]}`]);
+  await wait(1000);
+  await rcon.run([`damage ${Name} 2 minecraft:mob_attack by @e[type=ghast,tag=test,limit=1]`]);
+  await wait(10000);
+  const arrows = await q.carried(Name, 'arrow');
+  const health = await q.entityNumber('@e[type=ghast,tag=test,limit=1]', 'Health');
+  report(arrows < 32, 'ghast, bow', `arrows left ${arrows}/32; the ghast's health ${health}/10`);
+  await end(sc, 'ghast, bow');
+}
+
+// Bare-handed under five zombies, her player up on a pillar she can't climb: falling back to him has no way, and she
+// must not say « can't reach you » to nobody (a no-path in a fight mode fell through to cantReach with no player).
+async function hordePerch() {
+  const sc = await scene({ kit: false });
+  await rcon.run(['gamemode creative Papa', `fill ${sat(-8, 0, 0)} ${sat(-8, 2, 0)} stone`, `tp Papa ${S.x - 7.5} -57 ${S.z + 0.5}`]);
+  await wait(1000);
+  const from = sc.body.events.length;
+  await rcon.run([0, 1, 2, 3, 4].map((i) => `summon zombie ${S.x + 3.5} -60 ${S.z - 1.5 + i} {PersistenceRequired:1b,Tags:["test"]}`));
+  await wait(10000);
+  const stray = sc.body.since(from, (e) => e.ev === 'cantReach' && !e.player).length;
+  await rcon.run(['kill @e[type=zombie,tag=test]', `fill ${sat(-8, 0, 0)} ${sat(-8, 2, 0)} air`]);
+  report(stray === 0, 'fall back, no way', `« can't reach » said to nobody: ${stray} times`);
+  await end(sc, 'fall back, no way');
+}
+
 async function survival(only = []) {
-  const all = { zombies: guardZombies, skeleton: guardSkeleton, creeper, creeperbusy: creeperBusy, buried: () => buried(true), buriedfree: () => buried(false), enderman, retreat, flee: fleePlayer, defend: defendPapa, stranger: defendStranger, midharvest: defendMidHarvest, harvestpapa: () => defendMidHarvest(true), drowning, ravine, beside, farmzombie: farmZombie, followzombie: followZombie, furnace: furnaceZombie, farmskeleton: farmSkeleton, golem, horde, alone, warden, ordered, skeletonshield: skeletonShield, skeletonbow: skeletonBow, fireball, surround, gapple: goldenApple, totem, keepkit: keepKit, burning, lava };
+  const all = { zombies: guardZombies, skeleton: guardSkeleton, creeper, creeperbusy: creeperBusy, buried: () => buried(true), buriedfree: () => buried(false), enderman, retreat, flee: fleePlayer, defend: defendPapa, stranger: defendStranger, midharvest: defendMidHarvest, harvestpapa: () => defendMidHarvest(true), drowning, ravine, beside, farmzombie: farmZombie, followzombie: followZombie, furnace: furnaceZombie, farmskeleton: farmSkeleton, golem, horde, alone, warden, ordered, skeletonshield: skeletonShield, skeletonbow: skeletonBow, fireball, surround, gapple: goldenApple, totem, keepkit: keepKit, burning, lava, burningzombie: burningZombie, golemfight: golemMidFight, takenover: orderTakenOver, ghastguard: ghastGuard, ghastbow: ghastBow, hordeperch: hordePerch };
   for (const [name, run] of Object.entries(all)) {
     if (only.length > 0 && !only.includes(name)) continue;
     try {

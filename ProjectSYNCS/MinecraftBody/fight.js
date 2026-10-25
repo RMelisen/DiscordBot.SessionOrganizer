@@ -87,6 +87,12 @@ function answerTo(name, { hostile, tamed }) {
   return hostile || NeutralFoes.has(name) ? 'fight' : 'getOut';
 }
 
+// A sword's sweep catches whoever's box meets the target's box grown by 1 sideways and a quarter up and down: for two
+// player-sized boxes (0.6 wide, 1.8 and 1.95 high), `d` being the other's feet minus the target's.
+function sweepReaches({ dx, dy, dz }) {
+  return Math.abs(dx) < 1.6 && Math.abs(dz) < 1.6 && dy > -2.05 && dy < 2.2;
+}
+
 const Tau = 2 * Math.PI;
 const norm = (a) => ((a % Tau) + Tau) % Tau;
 
@@ -113,5 +119,5 @@ function openSide(angles) {
 }
 
 module.exports = {
-  GetOutKinds, NeutralFoes, RangedKinds, foeWeight, strength, sizeUp, cooldownFor, answerTo, surrounded, openSide,
+  GetOutKinds, NeutralFoes, RangedKinds, foeWeight, strength, sizeUp, cooldownFor, answerTo, sweepReaches, surrounded, openSide,
 };

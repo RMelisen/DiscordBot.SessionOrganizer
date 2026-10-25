@@ -82,3 +82,11 @@ test('the open side is the middle of the widest gap', () => {
   const tau = 2 * Math.PI;
   assert.ok(Math.abs(((side % tau) + tau) % tau - 3 * Math.PI / 2) < 1e-9, `got ${side}`);
 });
+
+test('a sword sweep reaches a player beside the target: its box grown by 1, a quarter up and down', () => {
+  assert.equal(fight.sweepReaches({ dx: 1.5, dy: 0, dz: 1.5 }), true); // diagonal, 2.1 off
+  assert.equal(fight.sweepReaches({ dx: 0, dy: 1, dz: 0.5 }), true); // a block higher
+  assert.equal(fight.sweepReaches({ dx: 1.7, dy: 0, dz: 0 }), false);
+  assert.equal(fight.sweepReaches({ dx: 0, dy: 2.3, dz: 0 }), false);
+  assert.equal(fight.sweepReaches({ dx: 0, dy: -2.1, dz: 0 }), false);
+});

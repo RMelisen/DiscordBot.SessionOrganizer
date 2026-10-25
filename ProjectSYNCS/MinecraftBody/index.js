@@ -79,7 +79,7 @@ const Move = require('mineflayer-pathfinder/lib/move');
 const mc = require('minecraft-protocol');
 const minecraftData = require('minecraft-data');
 const { Vec3 } = require('vec3');
-const { cooldownFor, answerTo, sizeUp, GetOutKinds, RangedKinds } = require('./fight');
+const { cooldownFor, answerTo, sizeUp, sweepReaches, GetOutKinds, RangedKinds } = require('./fight');
 
 // Collisions with the game's own tolerance: a box less than 1e-7 into a block still touches its face, and on the other
 // two axes overlaps by less than that don't count (vanilla's VoxelShape epsilon). Mineflayer compares exactly, so a box
@@ -726,7 +726,7 @@ async function wave(player) {
 // left alone: starting that fight would be the opposite of protecting anyone. So are the warden (two hits kill her,
 // and a fight only angers it more) and the creaking (nothing hurts it while its heart stands).
 const Peaceful = new Set(['enderman', 'zombified_piglin', 'piglin', 'warden', 'creaking']);
-const AlsoFoes = new Set(['slime', 'magma_cube', 'phantom', 'hoglin']);
+const AlsoFoes = new Set(['slime', 'magma_cube', 'phantom', 'hoglin', 'ghast']);
 const GuardRadius = 10;
 const MeleeReach = 3.2;
 const Weapons = ['netherite_sword', 'diamond_sword', 'iron_sword', 'stone_sword', 'golden_sword', 'wooden_sword',
@@ -950,13 +950,17 @@ function stopBow() {
   try { bot.deactivateItem(); } catch { /* not drawing after all */ }
 }
 
+let equipping = false;
+
 async function equipWeapon() {
+  if (equipping) return;
   const items = bot.inventory.items();
   for (const name of Weapons) {
     const item = items.find((i) => i.name === name);
     if (!item) continue;
     if (bot.heldItem && bot.heldItem.name === name) return;
-    try { await bot.equip(item, 'hand'); } catch { /* keep fighting bare-handed */ }
+    equipping = true;
+    try { await bot.equip(item, 'hand'); } catch { /* keep fighting bare-handed */ } finally { equipping = false; }
     return;
   }
 }
@@ -968,10 +972,9 @@ async function equipWeapon() {
 const EdgeStep = 1000;
 // A foe this far from where it stood when the fight started has run: let go, or she's drawn deep into a cave.
 const FightLeash = 12;
-// A sword's sweep lands on whoever stands within a block of what it hits. With a player that close she hits on the way
-// down from a jump: a critical hit, which never sweeps (the game sweeps only from the ground). Not hitting at all left a
-// zombie on Papa until it killed him.
-const SweepReach = 1.6;
+// A sword's sweep lands on whoever stands within a block of what it hits (sweepReaches). With a player that close she
+// hits on the way down from a jump: a critical hit, which never sweeps (the game sweeps only from the ground). Not
+// hitting at all left a zombie on Papa until it killed him.
 
 // A drop of more than 3 blocks, lava, or the void at (x, y, z), y being the level of her feet. Unloaded is no hazard
 // (the step costs ask in the middle of a search, where a guess must not throw).
@@ -1005,10 +1008,11 @@ function edgeBehind(foe) {
   return spots.find((p) => !hazardAt(p.x, y, p.z)) || spots[0];
 }
 
+// A player (not her, not the one she hits) the sweep would catch (fight.js: its box grown by 1, a quarter up and down).
 function playerBeside(foe) {
-  return Object.values(bot.players).some((p) => p.entity && p.entity !== bot.entity
-    && Math.hypot(p.entity.position.x - foe.position.x, p.entity.position.z - foe.position.z) < SweepReach
-    && Math.abs(p.entity.position.y - foe.position.y) < 1.5);
+  return Object.values(bot.players).some((p) => p.entity && p.entity !== bot.entity && p.entity !== foe
+    && sweepReaches({ dx: p.entity.position.x - foe.position.x, dy: p.entity.position.y - foe.position.y,
+      dz: p.entity.position.z - foe.position.z }));
 }
 
 // Her walk in a fight: no jumping a gap, no drop deeper than 2, and the lip of a drop or a lava pool costs what a
@@ -1025,12 +1029,19 @@ function fightMovements() {
   return movements;
 }
 
-let fightWalk = false;
+// The fight walk in use, if it's the one: a flag went stale when something else (gather's cleanup, after a fight had
+// started) set its own movements, and her fight went on with parkour and 4-block drops.
+let fightMoves = null;
 
 function fightPace(on) {
-  if (fightWalk === on) return;
-  fightWalk = on;
-  bot.pathfinder.setMovements(on ? fightMovements() : gentleMovements());
+  const inUse = fightMoves !== null && bot.pathfinder.movements === fightMoves;
+  if (on && !inUse) {
+    fightMoves = fightMovements();
+    bot.pathfinder.setMovements(fightMoves);
+  } else if (!on && inUse) {
+    fightMoves = null;
+    bot.pathfinder.setMovements(gentleMovements());
+  }
 }
 
 // A foe with no way to it is left alone this long (noWay), then tried again.
@@ -1060,14 +1071,16 @@ function foeOnHer() {
 // After `foe`, weapon in hand, with her fight walk. Not while she steps off a lip (strike).
 function chase(t, foe) {
   if (Date.now() < (t.edgeUntil || 0)) return;
-  if (t.mode !== 'fight' || t.modeTarget !== foe) equipWeapon();
+  // Her best weapon in hand, whatever she held last: after an emergency meal she fought on with the bottle.
+  const best = bestWeapon();
+  if (!eating && best && !(bot.heldItem && bot.heldItem.name === best)) equipWeapon();
   fightPace(true);
   setMode(t, 'fight', foe, new goals.GoalFollow(foe, 1), true);
 }
 
 // One hit on `foe` when she can: in reach and in sight, her weapon ready (its own cooldown), and no hazard behind her
 // (then she steps off the lip first, when there's a task `t` to move for). With a player beside it and a sword in hand,
-// from a jump (SweepReach). True when she swung.
+// from a jump (sweepReaches). True when she swung.
 function strike(foe, t = null) {
   const me = bot.entity.position;
   if (!foe || foe.isValid === false) return false;
@@ -1175,15 +1188,31 @@ function rangedStep(t, foe) {
   }
   if ((foe.name === 'ghast' || foe.name === 'blaze') && foe.position.y - me.y > ReachAbove) {
     if (!inSight(foe)) setMode(t, 'cover', foe, null);
-    else if (t.mode !== 'cover' || !bot.pathfinder.isMoving()) {
-      const spot = awayFrom(me, foe.position, CoverAway);
+    else if ((t.mode !== 'cover' || !bot.pathfinder.isMoving()) && Date.now() >= (t.replanAt || 0)) {
+      // By the one she guards or falls back to, on their far side from it: away from them, a blaze kept her hopping
+      // off, 60 blocks from Papa. Alone, well away from it.
+      const by = coverBy(t);
+      const spot = by ? awayFrom(by, foe.position, ClearBeyond) : awayFrom(me, foe.position, CoverAway);
       t.mode = null;
+      t.replanAt = Date.now() + Replan;
       setMode(t, 'cover', foe, new goals.GoalNear(spot.x, spot.y, spot.z, 2));
     }
     return true;
   }
   return false;
 }
+
+// Where she takes cover near: the player she guards, the spot she patrols, or the player she'd fall back to.
+function coverBy(t) {
+  if (t.kind === 'guard') return (playerEntity(t.player) || {}).position || null;
+  if (t.kind === 'patrol') return t.anchor;
+  const p = t.kind === 'fight' ? herPlayer(t) : null;
+  return p ? p.position : null;
+}
+
+// A spot she's sent to (a hop away, cover) is set again at most this often: with no way there, it was set on every tick,
+// a whole search each time.
+const Replan = 1000;
 
 // Every physics tick in a fight: her shield up against a ranged foe looking her way while nothing is in reach, while
 // she closes in on one, and between her hits on what's in reach; down to hit, eat, draw, or once the fight's over.
@@ -2658,7 +2687,10 @@ function fleeTick() {
 // (Restartable: gathering, harvesting, a walk somewhere). Never her own: autonomy picks again by itself once she's free.
 function resumeFor(previous) {
   if (previous && previous.kind === 'back') return { again: previous.again }; // on her way back to one already
-  if (previous && previous.kind === 'fight') return previous.resume; // fighting for herself: that fight's way back
+  // Fighting for herself, putting herself out, defending someone: that one's own way back (an order held mid-fight
+  // first). Without it, a walk to water taking over a fight lost the follow it was going back to.
+  if (previous && previous.kind === 'fight' && previous.held) return { again: () => dispatch(previous.held) };
+  if (previous && ['fight', 'hazard', 'defend'].includes(previous.kind)) return previous.resume;
   if (previous && !previous.own && previous.command && Restartable.has(previous.kind)) {
     // A camp goes on where it stands, with what's on it and the same floor.
     const command = previous.kind === 'camp'
@@ -3457,6 +3489,7 @@ function isFamily(name) {
 
 function canDefend() {
   if (bot.isSleeping) return false;
+  if (task && task.kind === 'fight' && task.stance === 'getOut') return false; // never back towards a warden
   if (isFree(task) || ['defend', 'back', 'fight'].includes(task.kind) || isActivity(task) || FollowsSomeone.has(task.kind)) return true;
   return Boolean(task.command) && Restartable.has(task.kind);
 }
@@ -3535,13 +3568,22 @@ function canSelfDefend() {
 function selfDefend(foe, stance = 'fight') {
   if (!foe || foe.isValid === false || !canSelfDefend()) return false;
   if (task && task.kind === 'fight') {
-    task.foes.add(foe.id);
-    if (stance === 'getOut') {
+    if (stance === 'fight') task.foes.add(foe.id);
+    else {
+      // Never a target, even mid-fight (an iron golem's hit made it one): she gets clear of it.
+      task.foes.delete(foe.id);
       task.threat = foe;
       task.threatAt = Date.now();
+      task.stance = 'getOut';
+      task.stanceSince = Date.now();
+      task.mode = null;
+      task.modeTarget = null;
     }
     return true;
   }
+  // Putting herself out comes first; whatever is on her waits a few seconds (a fight and the walk to water replaced
+  // each other on every tick).
+  if (task && task.kind === 'hazard') return false;
   // Their own fight, except that getting out of a warden's way comes first: guarding, she gets clear and guards on.
   if (task && (task.kind === 'dodge' || (stance !== 'getOut' && ['defend', 'guard', 'patrol'].includes(task.kind)))) return false;
   const previous = task;
@@ -3576,7 +3618,7 @@ function comingAt(e, me) {
 // Every physics tick: a monster (not a creeper: creeperTick's) within SelfThreat, in sight and coming at her, while
 // nothing else is fighting it out.
 function threatTick() {
-  if (!canSelfDefend() || (task && ['dodge', 'fight'].includes(task.kind))) return;
+  if (!canSelfDefend() || (task && ['dodge', 'fight', 'hazard'].includes(task.kind))) return;
   const me = bot.entity.position;
   // What she never fights (a warden, a creaking), in sight: she gets clear of it, whatever she's doing.
   const danger = bot.nearestEntity((e) => GetOutKinds.has(e.name) && e.isValid !== false
@@ -3706,11 +3748,12 @@ function fightTick() {
   }
   // Falling back: to her player, else off away from them, again once there. Whatever keeps up gets hit.
   fightPace(true);
-  if (p) setMode(t, 'fallBack', p, new goals.GoalFollow(p, 2), true);
-  else if (t.mode !== 'hop' || !bot.pathfinder.isMoving()) {
+  if (p && Date.now() >= (t.noWayToPlayer || 0)) setMode(t, 'fallBack', p, new goals.GoalFollow(p, 2), true);
+  else if ((t.mode !== 'hop' || !bot.pathfinder.isMoving()) && Date.now() >= (t.replanAt || 0)) {
     const spot = awayFrom(me, t.foe.position, 8);
     t.mode = 'hop';
     t.modeTarget = null;
+    t.replanAt = Date.now() + Replan;
     bot.pathfinder.setGoal(new goals.GoalNear(spot.x, spot.y, spot.z, 2));
   }
   if (onHer) {
@@ -5476,25 +5519,23 @@ function attach() {
     if (deathAt) setTimeout(safely(armRetrieve), 3000);
   });
 
-  bot.on('physicsTick', () => {
-    guardTick();
-    fleeTick();
-    defendTick();
-  });
+  bot.on('physicsTick', safely(guardTick));
+  bot.on('physicsTick', safely(fleeTick));
+  bot.on('physicsTick', safely(defendTick));
   bot.on('physicsTick', safely(threatTick));
   bot.on('physicsTick', safely(fightTick));
   bot.on('physicsTick', safely(shieldTick));
   bot.on('physicsTick', safely(fireballTick));
   bot.on('physicsTick', safely(emergencyTick));
   // Her shield broken by an axe: no use for ShieldDisabled. Her totem popping.
-  bot._client.on('entity_status', (p) => {
+  bot._client.on('entity_status', (p) => safely(() => {
     if (bot.entity && p.entityId === bot.entity.id && p.entityStatus === 30) {
       shieldDisabledUntil = Date.now() + ShieldDisabled;
       shielding = false;
     }
     // Her totem popped: she lived through a blow that should have killed her (C# says so).
     if (bot.entity && p.entityId === bot.entity.id && p.entityStatus === 35) emit('totem', {});
-  });
+  })());
   bot.on('physicsTick', guideTick);
   bot.on('physicsTick', safely(portalTick));
   bot.on('physicsTick', safely(creeperTick));
@@ -5984,6 +6025,19 @@ function noWay() {
   if (task.mode === 'loot') return task.skipLoot.add(task.modeTarget.id); // out of reach: left where it is
   // A monster she can't get to (down a ravine, across a gap): left for a while, not her guard given up.
   if (task.mode === 'fight' && task.modeTarget && ['guard', 'patrol', 'fight'].includes(task.kind)) return setUnreachable(task, task.modeTarget);
+  // Her fight's other moves (to her player, a hop away, cover, off a lip, aside to shoot): no way is no failure to tell
+  // anyone. Her player out of reach, she hops away from what's on her instead, for a while.
+  if (task.kind === 'fight') {
+    if (task.mode === 'fallBack') task.noWayToPlayer = Date.now() + UnreachableFor;
+    task.mode = null;
+    task.modeTarget = null;
+    return;
+  }
+  if (['edge', 'cover', 'aside'].includes(task.mode) && ['guard', 'patrol', 'defend'].includes(task.kind)) {
+    task.mode = null;
+    task.modeTarget = null;
+    return;
+  }
   if (task.reported) return;
   // Following someone who dived: no path under water, and the dive (waterTick) goes after them instead.
   if (FollowsSomeone.has(task.kind) && headUnder(playerEntity(task.player))) return;
