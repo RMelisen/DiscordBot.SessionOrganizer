@@ -41,7 +41,8 @@ node run.js survival         # night fights, a creeper shot from range, an ender
 node run.js trip             # 250 blocks, far past the loaded chunks
 node run.js players          # following a walk and through the hard lanes, coming, guiding, losing one, seeking, where she looks
 node run.js orders           # every order: smelting, gathering, giving, storing, every crop, a farm, a patrol
-node run.js all              # all of it (about 45 minutes); exits 1 on any failure
+node run.js routine          # her day's turns in real time: 9 minutes at a farm, 3 at a pen, back (about 13 minutes)
+node run.js all              # all of it (about 45 minutes, without routine); exits 1 on any failure
 ```
 
 **The Pi.** `MC_CPU_FACTOR=3.5 node run.js all` divides the pathfinder's time budgets by 3.5, about how much

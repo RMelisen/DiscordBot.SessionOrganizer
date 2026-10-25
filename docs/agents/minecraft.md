@@ -133,7 +133,10 @@ list: the owner removed it.
   carries. Our own loop, not `mineflayer-pvp`, which pulls a whole Mineflayer 2.x through
   `mineflayer-utils`. Endermen and piglins are left alone: hitting them starts the fight she's
   supposed to prevent; so are the warden (two hits kill her) and the creaking (nothing hurts it while
-  its heart stands). **What's a monster is `isFoe`**: minecraft-data's `hostile`, plus the few it
+  its heart stands). **Only a monster in sight** (`inSight`: nothing solid between her eyes and its head or chest,
+  `bot.world.raycast`) is taken on, hit or shot; one she chases that stays out of sight 4 s (`FoeUnseen`) is let
+  go. A monster in a cave under the ground is near by distance alone: she shot arrows into the ground at a creeper
+  there. **What's a monster is `isFoe`**: minecraft-data's `hostile`, plus the few it
   files elsewhere (slimes, magma cubes and phantoms as `mob`, hoglins as `animal`), which she
   otherwise never fought. Kills are a rationed remark.
 - **Collect** (`mineflayer-collectblock`) finds the requested blocks within 48 blocks, checks she
@@ -235,7 +238,8 @@ list: the owner removed it.
   stays out: one slip from « course ».
 - **Farm** (« syncs occupe-toi de la ferme ») anchors her where she stands. Every 15 seconds she
   harvests what ripened within 16 blocks of that spot, replants, and stores the produce in a chest
-  or barrel within 10 blocks, keeping 16 of each seed back to replant; a full chest leaves the rest
+  or barrel within 10 blocks, keeping 16 of each seed back to replant and 16 wheat for the animals (`FeedKept`;
+  the seeds, carrots and potatoes kept already feed chickens, pigs and rabbits); a full chest leaves the rest
   on her. No crops, or **no chest**, and she refuses (`McFarmNoneLines`, `McFarmNoChestLines`)
   rather than fill her pockets all evening. The farm cue is read before stay (« reste à la ferme »)
   and guard (« garde le champ »): a phrase that says it alone (« cultive », « mode fermière »), or
@@ -254,7 +258,9 @@ list: the owner removed it.
   (2 a round at most: the closest first, 6 s to land a first hit on one before trying the next,
   since in a crowded pen she spent whole rounds on one behind the others), and the drops (picked up
   within 4 blocks of the kill, 20 s) go in the chest within 10 blocks (meat, leather, wool,
-  feathers; 8 pieces of meat stay on her to eat, and breeding food is never stored). **Never a named
+  feathers; 8 pieces of meat stay on her to eat, and breeding food is never stored). **Short of a species' food,
+  she takes some from the pen's chests** (within 10 blocks, 16 at most, `fetchFeed`): the wheat a farm stored is
+  there. Chests that had none aren't opened again for that species for 2 minutes; only then is it `lacking`. **Never a named
   animal, never a baby, never another species**; where the server's version doesn't name the baby
   flag (`metadataKeys`), she culls nothing at all. No animals or no chest, and she refuses
   (`McRanchNoneLines`, `McRanchNoChestLines`). In the parser it's a care verb with an animal word
@@ -559,7 +565,8 @@ starts on her own gets a rare rolled remark** (the owner's call): the routine 25
   places (Papa's first, then Tata's, then anyone's, kind by kind) a pen (an animal-pen word anywhere in the name: « ferme aux animaux »), a farm or a fishing
   spot (a farm or water word first: « champ de blé », « étang »), and home (`McRoutine.HomeKeys`,
   shared with « rentre »). The service sends them (`routine`) on spawn and after every save, move or
-  forget. By day (time 0–11499) she works in **6-minute turns**, taking the places in turn, each
+  forget. By day (time 0–11499) she works in turns, taking the places in turn, **9 minutes in the fields, 6 fishing,
+  3 at the pen** (`WorkBlock`, the owner's call: a pen needs a few minutes now and then, the fields waited), each
   started with the order's own checks (crops and a chest, water and a rod, animals and a chest); her
   fishing is quiet (no catch remarks). At dusk (11500–12541) she goes home and stays there till
   morning; the night is `autoSleepTick`'s. A spot in another dimension or over **256 blocks** away is
@@ -909,7 +916,10 @@ warning in its console, and she never climbs a one-block step. 0.0001 off the fa
 fits every gap a player fits. Found and checked on a local server (*Testing movement locally*):
 without it she's stuck at the first step; with it she climbs, sprinting or not.
 
-**Creepers, whatever she's doing** (`creeperTick`, `dodgeTick`): guarding, a creeper was always
+**Creepers, whatever she's doing** (`creeperTick`, `dodgeTick`), **in sight only** (hers, or that of the player it's
+near: one in a cave under them can't get at anyone). Out of everyone's sight 3 s, the dodge ends; out of hers alone,
+she waits for it to show rather than shoot the tree; and an arrow whose target went behind something while she drew
+goes up. The same goes for the creeper-behind warning, from the player's eyes. guarding, a creeper was always
 `guardTick`'s; busy otherwise (a field, fishing, gathering, following) she paid it no mind and one
 blew up beside her. One closer than 10 blocks, or within 10 of a player near her (it blew up by the player at her
 camp: at 5, three 1.1 s draws came too late), now takes her off whatever can be left and picked up
