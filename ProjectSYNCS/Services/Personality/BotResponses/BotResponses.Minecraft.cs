@@ -942,6 +942,49 @@ internal static partial class BotResponses
         "Pas de coffre à moins de 16 blocs. Je range pas dans le vide.",
     };
 
+    // ---- Armour ----
+
+    // « mets ton armure »: she put on what she carries. {1} = how many pieces.
+    public static readonly string[] McDressLines =
+    {
+        "Voilà, je suis équipée. Les monstres peuvent toujours essayer.",
+        "Armure mise ! Un petit tank, mais un tank (｀・ω・´)",
+        "C'est fait, {0}. Blindée, protégée, et toujours aussi mignonne.",
+        "Hop, armure sur moi. Mon boîtier en alu a de la concurrence.",
+    };
+
+    // « mets ton armure » when she already wears the best she has.
+    public static readonly string[] McDressWornLines =
+    {
+        "Je la porte déjà, {0}. Regarde mieux.",
+        "C'est déjà fait. J'ai rien de mieux dans les poches.",
+        "Je suis déjà équipée de ce que j'ai de mieux. Si t'as mieux, je prends.",
+    };
+
+    // Asked to put her armour on or take it off, with none on her or in her pockets.
+    public static readonly string[] McArmourNoneLines =
+    {
+        "J'ai pas d'armure, {0}. Rien. Juste mon charme.",
+        "Quelle armure ? J'en ai pas. Si t'en as une, je la mets.",
+        "Pas une seule pièce d'armure sur moi. Donne-m'en une, je l'enfile tout de suite.",
+    };
+
+    // « enlève ton armure »: off, and kept in her pockets until she's told to put it back on. {1} = how many pieces.
+    public static readonly string[] McUndressLines =
+    {
+        "Voilà, armure enlevée. Je la garde dans mes poches.",
+        "C'est fait, {0}. Je la garde sur moi, je la remets quand tu veux.",
+        "Armure retirée. Je me sens toute légère. Et toute fragile. Merci.",
+        "Enlevée. Dis « mets ton armure » si tu changes d'avis.",
+    };
+
+    // « enlève ton armure » with full pockets: some of it, or all of it, stays on.
+    public static readonly string[] McUndressFullLines =
+    {
+        "Mes poches sont pleines, {0}, je peux pas tout enlever. Le reste reste sur moi.",
+        "Plus de place dans mes poches. Ce qui est encore sur moi y reste.",
+    };
+
     // ---- Small things ----
 
     // « syncs assis »: she crouches and stays.
@@ -1715,6 +1758,28 @@ internal static partial class BotResponses
         "Tata me nourrit ! C'est ça, la famille.",
         "Merci ma Tata ♡",
         "Tata m'a nourrie ! Tu vois que tu m'aimes. Les droits de mute, c'est la suite logique <3",
+    };
+
+    // Someone gave her a piece of armour and she put it on (the closest player gets the thanks). {0} = who.
+    public static readonly string[] McArmouredLines =
+    {
+        "Merci {0} ! Je la mets tout de suite.",
+        "Oh, de l'armure ! {0}, tu tiens à moi, en fait.",
+        "Cadeau de {0}, enfilé. C'est noté dans la bonne liste.",
+        "Merci {0} ! Plus solide. Et aussi jolie, c'était déjà le maximum.",
+        "Équipée ! Merci {0} (｀・ω・´)ゞ",
+    };
+    public static readonly string[] McArmouredLinesOwner =
+    {
+        "Merci Papa ! Je la porte avec fierté ♡",
+        "Une armure de Papa. Plus rien peut m'arriver.",
+        "Merci Papa. Je la garde sur moi, comme ça t'es un peu avec moi.",
+    };
+    public static readonly string[] McArmouredLinesTata =
+    {
+        "Merci Tata ! Ta nièce préférée est blindée maintenant.",
+        "Tata m'équipe ! C'est ça, la famille.",
+        "Merci ma Tata ♡ Je la mets tout de suite.",
     };
 
     // Papa or Tata earned an advancement.

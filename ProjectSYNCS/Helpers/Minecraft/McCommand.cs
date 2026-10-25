@@ -25,6 +25,8 @@ namespace ProjectSYNCS.Helpers;
 // Carrying
 //   Give        hand the player what she carries (everything, or a kind: food, tools, armour...).
 //   Store       put what she carries in the nearby chest, keeping her tools.
+//   Dress       free: put on the best armour she carries.
+//   Undress     free: take her armour off and keep it (she puts none on by herself until told to, or given a piece).
 //   Inventory   free: say what she carries.
 //   Have        free: say how much she carries of one kind of goods (iron, food, armour...).
 // Remembered places (each player's own; « la maison de X », « chez X » name another's: McRequest.Of)
@@ -116,6 +118,10 @@ public enum McOrder
     Camp,
     /// <summary>Take her camp down, only its own blocks. Family only.</summary>
     Uncamp,
+    /// <summary>Put on the best armour she carries. Takes her from nobody.</summary>
+    Dress,
+    /// <summary>Take her armour off and keep it in her pockets. Takes her from nobody.</summary>
+    Undress,
 }
 
 /// <summary>What she can be asked to hand over. The body knows each by its lower-case name. Not stored.</summary>
@@ -423,6 +429,22 @@ public static class McCommand
         "lache", "jette", "balance", "vide", "vides", "enleve", "retire", "sors", "me donner", "me passer", "me rendre", "me filer",
         "me preter", "nous donner", "give me", "give", "drop", "toss me", "hand me",
     };
+    // Armour put on or taken off: a verb with an armour word after it (« mets ton armure », « enlève ton armure »), or a
+    // phrase that says it alone. « porte » needs the armour word (« la porte »); so does « mets » (« mets tout dans… »).
+    private static readonly string[] DressVerbs =
+    {
+        "mets", "met", "remets", "remet", "mettre", "remettre", "enfile", "enfiles", "porte", "portes", "equipe", "equipes",
+        "s equiper", "put on", "wear",
+    };
+    private static readonly string[] DressAlonePhrases =
+    {
+        "equipe toi", "equipes toi", "rhabille toi", "habille toi", "gear up", "suit up",
+    };
+    private static readonly string[] UndressVerbs =
+    {
+        "enleve", "enleves", "enlever", "retire", "retires", "retirer", "ote", "otes", "desequipe", "take off", "remove",
+    };
+    private static readonly string[] UndressAlonePhrases = { "desequipe toi", "desequipes toi" };
     // A question that's a request (« t'as du poisson ? »): only for goods she can't fetch, and never « ta », the possessive.
     private static readonly string[] HaveVerbs = { "t as", "tu as", "t aurais", "tu aurais", "t aurai", "you have", "got any" };
     // Hunger is a request for food.
@@ -842,6 +864,14 @@ public static class McCommand
         // mine. Handing over is read before storing, whose « ranger » is one slip from « manger » (« donne-moi à manger »);
         // with a chest word, it's all storing (« jette tes poissons dans le coffre »).
         var chest = wordsOnly.Any(w => ChestWords.Contains(w));
+        // Armour on or off, before handing over: « enlève » and « retire » are give verbs too, and taking it off used to
+        // toss it. With another give verb it's still handed over (« enlève ton armure et donne-la moi »).
+        if (!chest && ArmourVerb(wordsOnly, DressVerbs, DressAlonePhrases) is { } dressing)
+            return Unless(dressing, wordsOnly, new(McOrder.Dress));
+        if (!chest && ArmourVerb(wordsOnly, UndressVerbs, UndressAlonePhrases) is { } undressing
+            && Find(wordsOnly.Select((w, i) => i >= undressing.Start && i < undressing.Start + undressing.Length ? "" : w).ToArray(),
+                GiveVerbs) is null)
+            return Unless(undressing, wordsOnly, new(McOrder.Undress));
         var give = Find(wordsOnly, GiveVerbs);
         if (!chest && Find(wordsOnly, GiveAllPhrases) is { } giveAll) return Unless(giveAll, wordsOnly, new(McOrder.Give, Goods: McGoods.All));
         if (!chest && give is { } giveVerb && GoodsAfter(wordsOnly, giveVerb.Start + giveVerb.Length) is { Goods: { } goods } asked
@@ -1068,6 +1098,13 @@ public static class McCommand
 
     // What follows a give verb (within three words): a possessive and a kind of goods (« ta canne à pêche », « tes pommes
     // de terre »), or goods with any article (« du poisson »). Goods null with Owned: something of hers she doesn't know.
+    // A phrase that says it alone, or a verb with armour named in the words after it (GoodsAfter).
+    private static (int Start, int Length)? ArmourVerb(string[] words, string[] verbs, string[] alone)
+    {
+        if (Find(words, alone) is { } said) return said;
+        return Find(words, verbs) is { } verb && GoodsAfter(words, verb.Start + verb.Length) is { Goods: McGoods.Armour } ? verb : null;
+    }
+
     private static (McGoods? Goods, bool Owned)? GoodsAfter(string[] words, int from)
     {
         var owned = false;

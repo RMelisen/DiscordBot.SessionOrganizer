@@ -20,6 +20,7 @@
 //      {"op":"harvest","player":"…","crop":"any|wheat|carrot|potato|beetroot|melon|pumpkin"} · {"op":"farm","player":"…"}
 //      {"op":"goto",…,"dimension":"…"|null} · {"op":"guide","player":"…","x":0,"y":64,"z":0,"dimension":"…"}
 //      {"op":"give","player":"…","goods":"all|food|fish|…"} · {"op":"store","player":"…"} · {"op":"fish","player":"…"}
+//      {"op":"dress","player":"…"} · {"op":"undress","player":"…"}
 //      {"op":"patrol","player":"…","spot":{x,y,z,dimension}|null} · {"op":"smelt","player":"…","what":"food|ore|sand"}
 //      {"op":"where","player":"…"} · {"op":"mark","player":"…"} · {"op":"sit"} · {"op":"jump"} · {"op":"wave","player":"…"}
 //      {"op":"ranch","player":"…"} · {"op":"routine","farm":spot|null,"fish":spot|null,"ranch":spot|null,"home":spot|null}
@@ -40,6 +41,8 @@
 //      familyHurt {victim,by} · defending {player,victim,swat} · cantDefend {player,victim}
 //      hungry {food} · fed {by}
 //      given {player,goods,count,delivered} · cantGive {player,goods,why: none} · stored {player,count,full}
+//      dressed {player,count} · cantDress {player,why: none|worn} · undressed {player,count,full}
+//      cantUndress {player,why: none|full} · armoured {by} (put on a piece someone gave her)
 //      cantStore {player,why: noChest|empty} · fishing {player} · cantFish {player,why: noRod|noWater|broke}
 //      caught {player,kind: fish|treasure|junk} · patrolling {player} · cantPatrol {player,why: tooFar|otherDimension}
 //      smelting {player,what,count} · smelted {player,what,count,delivered}
@@ -1527,6 +1530,13 @@ function wornArmour() {
   return WornSlots.filter((slot) => bot.inventory.slots[bot.getEquipmentDestSlot(slot)]);
 }
 
+// What she wears that « donne-moi ton armure » and « enlève ton armure » take off: her armour, and a shield in her
+// off-hand (left on, it never reached the player).
+function wornGear() {
+  const offhand = bot.inventory.slots[bot.getEquipmentDestSlot('off-hand')];
+  return offhand && offhand.name === 'shield' ? [...wornArmour(), 'off-hand'] : wornArmour();
+}
+
 // ---- What she carries, for the service (« t'as quoi sur toi ? », /debug minecraft) --------------------------------
 
 // A stack as the service reads it. Its kinds of goods are the ones give() would hand over for it, so « t'as du fer ? »
@@ -1563,7 +1573,7 @@ async function give(player, key) {
   if (!matches) return;
   const target = playerEntity(player);
   if (!target) return emit('cantReach', { player, why: 'notVisible' });
-  const worn = key === 'armour' ? wornArmour() : [];
+  const worn = key === 'armour' ? wornGear() : [];
   if (worn.length === 0 && !bot.inventory.items().some((i) => matches(i.name)))
     return emit('cantGive', { player, goods: key, why: 'none' });
   const back = pausedActivity(task);
@@ -3065,21 +3075,82 @@ function checkFed() {
 }
 
 const ArmorSlots = { helmet: 'head', chestplate: 'torso', leggings: 'legs', boots: 'feet' };
-const ArmorTiers = ['leather', 'golden', 'chainmail', 'iron', 'turtle', 'diamond', 'netherite'];
+const ArmorTiers = ['leather', 'copper', 'golden', 'chainmail', 'iron', 'turtle', 'diamond', 'netherite'];
 
+// A tier she doesn't know still beats wearing nothing: copper armour, missing here, was never put on.
 function armorRank(item) {
-  return item ? ArmorTiers.indexOf(item.name.split('_')[0]) : -1;
+  return item ? ArmorTiers.indexOf(item.name.split('_')[0]) + 1 : -1;
 }
 
-// Puts on the best piece she carries for each slot, when it beats what she wears.
+// « enlève ton armure »: she puts nothing on by herself until told to (« mets ton armure ») or given a piece.
+let bare = false;
+
+// Puts on the best piece she carries for each slot, when it beats what she wears, and a shield in an empty off-hand.
+// How many she put on.
 async function wearBestArmor() {
+  let count = 0;
   for (const [piece, slot] of Object.entries(ArmorSlots)) {
     const worn = bot.inventory.slots[bot.getEquipmentDestSlot(slot)];
     const best = bot.inventory.items().filter((i) => i.name.endsWith('_' + piece))
       .sort((a, b) => armorRank(b) - armorRank(a))[0];
     if (!best || armorRank(best) <= armorRank(worn)) continue;
-    try { await bot.equip(best, slot); } catch { /* a slot she can't use; move on */ }
+    try {
+      await bot.equip(best, slot);
+      count++;
+    } catch { /* a slot she can't use; move on */ }
   }
+  const shield = bot.inventory.items().find((i) => i.name === 'shield');
+  if (shield && !bot.inventory.slots[bot.getEquipmentDestSlot('off-hand')]) {
+    try {
+      await bot.equip(shield, 'off-hand');
+      count++;
+    } catch { /* keep it in her pockets */ }
+  }
+  return count;
+}
+
+// Picked something up: armour is a gift, put on (even after « enlève ton armure »), and whoever stands closest gets the
+// thanks. Not her own things coming back after a death (`retrieve`), which she puts on without a word.
+async function dressAfterPickup(gift) {
+  if (gift) bare = false;
+  if (bare) return;
+  const count = await wearBestArmor();
+  if (count === 0 || !gift || (task && task.kind === 'retrieve')) return;
+  const near = bot.nearestEntity((e) => e.type === 'player' && e.username !== bot.username
+    && e.position.distanceTo(bot.entity.position) < 8);
+  if (near) emit('armoured', { by: near.username });
+}
+
+// « mets ton armure »: the best she carries, on. Nothing better to put on: `worn` when she already wears some.
+async function dress(player) {
+  bare = false;
+  const count = await wearBestArmor();
+  if (count > 0) return emit('dressed', { player, count });
+  const shielded = (bot.inventory.slots[bot.getEquipmentDestSlot('off-hand')] || {}).name === 'shield';
+  emit('cantDress', { player, why: wornArmour().length > 0 || shielded ? 'worn' : 'none' });
+}
+
+// « enlève ton armure »: what she wears (a shield in her off-hand too) goes back in her pockets, and stays there. Each
+// piece needs a free slot: with full pockets, what's left stays on (`full`).
+async function undress(player) {
+  const slots = wornGear();
+  if (slots.length === 0) return emit('cantUndress', { player, why: 'none' });
+  bare = true;
+  let count = 0;
+  for (const slot of slots) {
+    if (bot.inventory.emptySlotCount() === 0) break;
+    try {
+      await bot.unequip(slot);
+      count++;
+    } catch (err) {
+      log('undress failed:', err && err.message ? err.message : String(err));
+    }
+  }
+  if (count === 0) {
+    bare = false; // still dressed: what she picks up next may still beat it
+    return emit('cantUndress', { player, why: 'full' });
+  }
+  emit('undressed', { player, count, full: count < slots.length });
 }
 
 // ---- Routine: her day, built on the places she was asked to remember ------------------------------------
@@ -4322,7 +4393,7 @@ function attach() {
     bot.prependListener('physicsTick', safely(inputTick));
     emit('spawned', {});
     reportPlayers();
-    wearBestArmor().catch(() => {});
+    if (!bare) wearBestArmor().catch(() => {});
     // Not in attach() itself: Mineflayer creates bot.inventory with its plugins, after createBot returns.
     bot.inventory.on('updateSlot', scheduleInventory);
     scheduleInventory();
@@ -4388,10 +4459,13 @@ function attach() {
     reportHunger();
   });
   bot.on('heldItemChanged', scheduleInventory);
-  bot.on('playerCollect', (collector) => {
+  bot.on('playerCollect', (collector, collected) => {
     if (collector !== bot.entity) return;
+    // Read now: the item entity is gone once it's in her pockets.
+    const item = collected && typeof collected.getDroppedItem === 'function' ? collected.getDroppedItem() : null;
+    const gift = Boolean(item && Goods.armour(item.name) && item.name !== 'elytra');
     setTimeout(() => {
-      wearBestArmor().catch(() => {});
+      dressAfterPickup(gift).catch(() => {});
       checkFed();
     }, 300);
   });
@@ -4990,6 +5064,14 @@ function dispatch(command) {
       case 'store':
         if (bot && typeof command.player === 'string')
           store(command.player).catch((err) => log('store failed:', err && err.message ? err.message : String(err)));
+        break;
+      case 'dress':
+        if (bot && typeof command.player === 'string')
+          dress(command.player).catch((err) => log('dress failed:', err && err.message ? err.message : String(err)));
+        break;
+      case 'undress':
+        if (bot && typeof command.player === 'string')
+          undress(command.player).catch((err) => log('undress failed:', err && err.message ? err.message : String(err)));
         break;
       case 'fish':
         if (bot && typeof command.player === 'string') fish(command.player);

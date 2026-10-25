@@ -167,6 +167,29 @@ async function scenarios(p) {
   steve.chat('syncs stop');
   await wait(6000); // her ack, typed, lands well before the next scenario
 
+  // Armour: a piece given (Papa stands closest, two blocks off so he doesn't pick it up himself: his thanks), taken off,
+  // put back on, handed back. One player each, so no order waits on another's cooldown.
+  await rcon.run(['clear SYNCS', 'tp SYNCS 0.5 -60 7.5', 'tp Papa 0.5 -60 5.5']);
+  await wait(1500);
+  await rcon.run(['summon item 0.5 -59.5 7.5 {Item:{id:"minecraft:iron_helmet",count:1},PickupDelay:0s}']);
+  t = Date.now();
+  a = await answer(t, 9000);
+  report(Boolean(a) && fromAny(a, ['McArmouredLinesOwner']), 'armour given (Papa)', describe(a));
+  await wait(3000);
+  t = await say(alex, 'syncs enlève ton armure');
+  a = await answer(t, 9000);
+  report(Boolean(a) && fromAny(a, ['McUndressLines']), 'armour off', describe(a));
+  await wait(3000);
+  t = await say(max, 'syncs remets ton armure');
+  a = await answer(t, 9000);
+  report(Boolean(a) && fromAny(a, ['McDressLines']), 'armour on', describe(a));
+  await wait(3000);
+  t = await say(steve, 'syncs rends-moi ton armure');
+  a = await answer(t, 15000);
+  report(Boolean(a) && fromAny(a, ['McGiveDoneLines']), 'armour handed back', describe(a));
+  await wait(6000);
+  await rcon.run(['clear Steve', 'kill @e[type=item]', 'tp SYNCS 0.5 -60 0.5', 'tp Papa 1.5 -60 0.5']);
+
   // After an answer, without her name, only what is plainly for her answers (a specific intent): « ok » or a plain
   // question may be for someone else, and get silence.
   t = await say(max, 'syncs comment ça va ?');
