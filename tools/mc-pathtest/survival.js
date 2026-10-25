@@ -647,8 +647,101 @@ async function surround() {
   await end(sc, 'surrounded');
 }
 
+// ---- Emergencies: golden apples, potions, the totem ------------------------------------------------------------
+
+// Down to 3.5 hearts with a zombie coming and two golden apples on her: she eats one.
+async function goldenApple() {
+  const sc = await scene();
+  await rcon.run(['gamemode creative Papa', `give ${Name} golden_apple 2`, `damage ${Name} 13 minecraft:generic`,
+    `summon zombie ${S.x + 6.5} -60 ${S.z + 0.5} {PersistenceRequired:1b,Tags:["test"]}`]);
+  let apples = 2;
+  for (const end = Date.now() + 10000; Date.now() < end && apples > 1; await wait(500)) apples = await q.carried(Name, 'golden_apple');
+  const health = await q.entityNumber(Name, 'Health');
+  report(apples === 1 && health > 0, 'golden apple', `golden apples left ${apples}/2; her health ${health}`);
+  await end(sc, 'golden apple');
+}
+
+// A totem and a shield: down to 3.5 hearts, the totem goes in her off-hand; a blow that would kill her pops it (she
+// lives, and says so: `totem`); healed past 7 hearts, the shield goes back.
+async function totem() {
+  const sc = await scene();
+  await rcon.run(['gamemode creative Papa', `item replace entity ${Name} weapon.offhand with shield`, `give ${Name} totem_of_undying 1`]);
+  await wait(1500);
+  await rcon.run([`damage ${Name} 13 minecraft:generic`]);
+  let offhand = '';
+  for (const end = Date.now() + 3000; Date.now() < end && !offhand.includes('totem'); await wait(250)) offhand = await q.entityData(Name, 'equipment.offhand');
+  const held = offhand.includes('totem_of_undying');
+  const from = sc.body.events.length;
+  await rcon.run([`damage ${Name} 30 minecraft:generic`]);
+  await wait(1500);
+  const alive = (await q.entityNumber(Name, 'Health')) > 0 && !sc.body.since(from, (e) => e.ev === 'died').length;
+  const popped = sc.body.since(from, (e) => e.ev === 'totem').length;
+  await rcon.run([`effect give ${Name} regeneration 30 4 true`]);
+  let back = '';
+  for (const end = Date.now() + 20000; Date.now() < end && !back.includes('shield'); await wait(500)) back = await q.entityData(Name, 'equipment.offhand');
+  report(held && alive && popped === 1 && back.includes('shield'), 'totem', `totem in hand at 3.5 hearts: ${held}; alive after a deadly blow: ${alive}; ` +
+    `said so: ${popped === 1}; shield back once healed: ${back.includes('shield')}`);
+  await end(sc, 'totem');
+}
+
+// Putting her things away keeps her emergencies: golden apples, a totem, a healing potion stay on her; the dirt goes.
+async function keepKit() {
+  const sc = await scene({ kit: false });
+  await rcon.run([`setblock ${sat(2, 0, 0)} chest[facing=west]`, `give ${Name} golden_apple 1`, `give ${Name} totem_of_undying 1`,
+    `give ${Name} potion[potion_contents={potion:"minecraft:healing"}] 1`, `give ${Name} dirt 10`]);
+  await wait(1500);
+  sc.body.send({ op: 'store', player: 'Papa' });
+  const done = await sc.body.next((e) => e.ev === 'stored' || e.ev === 'cantStore', 20000);
+  await wait(1000);
+  const [x, y, z] = [S.x + 2, -60, S.z];
+  const chest = { dirt: await q.inBlock(x, y, z, 'dirt'), golden_apple: await q.inBlock(x, y, z, 'golden_apple'),
+    totem_of_undying: await q.inBlock(x, y, z, 'totem_of_undying'), potion: await q.inBlock(x, y, z, 'potion') };
+  report(Boolean(done) && done.ev === 'stored' && chest.dirt === 10 && chest.golden_apple + chest.totem_of_undying + chest.potion === 0,
+    'keeps her emergencies', `${done ? done.ev : 'no answer'}; in the chest: ${JSON.stringify(chest)}`);
+  await end(sc, 'keeps her emergencies');
+}
+
+// ---- Fire and lava ----------------------------------------------------------------------------------------------
+
+// Set on fire (a fire block at her feet) with a little pool 5 blocks off: she makes for the water and is out within
+// 8 s. Papa is far off, in creative.
+async function burning() {
+  const sc = await scene();
+  await rcon.run(['gamemode creative Papa', `tp Papa ${S.x - 20.5} -60 ${S.z + 0.5}`, `fill ${sat(5, -1, -1)} ${sat(6, -1, 0)} water`]);
+  await wait(1500);
+  await rcon.run([`setblock ${sat(0, 0, 0)} fire`]);
+  await wait(1000);
+  const lit = await q.entityNumber(Name, 'Fire');
+  let fire = lit;
+  for (const end = Date.now() + 8000; Date.now() < end && fire > 0; await wait(250)) fire = await q.entityNumber(Name, 'Fire');
+  const health = await q.entityNumber(Name, 'Health');
+  report(lit > 0 && fire <= 0 && health > 0, 'on fire', `${lit > 0 ? `burning (${lit} ticks)` : 'never caught fire'}; ` +
+    `${fire <= 0 ? 'put out within 8 s' : `still burning after 8 s (${fire})`}; her health ${health}`);
+  await rcon.run([`setblock ${sat(0, 0, 0)} air`]);
+  await end(sc, 'on fire');
+}
+
+// Dropped into the edge of a lava pool 1 deep: she gets out onto the ground within 5 s, alive.
+async function lava() {
+  const sc = await scene();
+  await rcon.run(['gamemode creative Papa', `tp Papa ${S.x - 20.5} -60 ${S.z + 0.5}`]);
+  await wait(1500);
+  await rcon.run([`fill ${sat(3, -1, -1)} ${sat(5, -1, 1)} lava`, `tp ${Name} ${S.x + 3.5} -61 ${S.z + 0.5}`]);
+  let inLava = true;
+  for (const end = Date.now() + 5000; Date.now() < end && inLava; await wait(250)) {
+    const p = await pos(Name);
+    if (!p) continue;
+    const [a] = await rcon.run([`execute if block ${Math.floor(p[0])} ${Math.floor(p[1])} ${Math.floor(p[2])} minecraft:lava`]);
+    inLava = /passed/i.test(a);
+  }
+  const health = await q.entityNumber(Name, 'Health');
+  report(!inLava && health > 0, 'in lava', `${inLava ? 'still in the lava after 5 s' : 'out of the lava'}; her health ${health}`);
+  await rcon.run([`fill ${sat(3, -1, -1)} ${sat(5, -1, 1)} grass_block`]);
+  await end(sc, 'in lava');
+}
+
 async function survival(only = []) {
-  const all = { zombies: guardZombies, skeleton: guardSkeleton, creeper, creeperbusy: creeperBusy, buried: () => buried(true), buriedfree: () => buried(false), enderman, retreat, flee: fleePlayer, defend: defendPapa, stranger: defendStranger, midharvest: defendMidHarvest, harvestpapa: () => defendMidHarvest(true), drowning, ravine, beside, farmzombie: farmZombie, followzombie: followZombie, furnace: furnaceZombie, farmskeleton: farmSkeleton, golem, horde, alone, warden, ordered, skeletonshield: skeletonShield, skeletonbow: skeletonBow, fireball, surround };
+  const all = { zombies: guardZombies, skeleton: guardSkeleton, creeper, creeperbusy: creeperBusy, buried: () => buried(true), buriedfree: () => buried(false), enderman, retreat, flee: fleePlayer, defend: defendPapa, stranger: defendStranger, midharvest: defendMidHarvest, harvestpapa: () => defendMidHarvest(true), drowning, ravine, beside, farmzombie: farmZombie, followzombie: followZombie, furnace: furnaceZombie, farmskeleton: farmSkeleton, golem, horde, alone, warden, ordered, skeletonshield: skeletonShield, skeletonbow: skeletonBow, fireball, surround, gapple: goldenApple, totem, keepkit: keepKit, burning, lava };
   for (const [name, run] of Object.entries(all)) {
     if (only.length > 0 && !only.includes(name)) continue;
     try {

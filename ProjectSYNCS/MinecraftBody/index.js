@@ -2154,6 +2154,9 @@ function kitSlots(items) {
   const kept = new Set(Object.values(kitTools(items)).filter(Boolean).map((i) => i.slot));
   if (items.some((i) => i.name === 'bow'))
     for (const arrow of items.filter((i) => i.name.endsWith('arrow'))) kept.add(arrow.slot);
+  // And what keeps her alive: golden apples, a totem, healing and fire resistance potions.
+  for (const i of items)
+    if (Reserved.has(i.name) || i.name === 'totem_of_undying' || isPotion(i, HealingPotions) || isPotion(i, FireResistPotions)) kept.add(i.slot);
   return kept;
 }
 
@@ -3838,7 +3841,7 @@ let eating = false;
 async function eatIfHungry(below = 14) {
   if (eating || bot.food >= below) return;
   if (task && task.kind === 'forage' && bot.food > CookAbove) return;
-  const food = bot.inventory.items().filter((i) => bot.registry.foodsByName[i.name] && !BadFood.has(i.name))
+  const food = bot.inventory.items().filter((i) => bot.registry.foodsByName[i.name] && !BadFood.has(i.name) && !Reserved.has(i.name))
     .sort((a, b) => bot.registry.foodsByName[b.name].foodPoints - bot.registry.foodsByName[a.name].foodPoints)[0];
   if (!food) return;
   eating = true;
@@ -3857,7 +3860,84 @@ async function eatIfHungry(below = 14) {
 }
 
 function hasFood() {
-  return bot.inventory.items().some((i) => bot.registry.foodsByName[i.name] && !BadFood.has(i.name));
+  return bot.inventory.items().some((i) => bot.registry.foodsByName[i.name] && !BadFood.has(i.name) && !Reserved.has(i.name));
+}
+
+// ---- Emergencies: golden apples, potions, the totem -----------------------------------------------------------
+
+// Golden apples are for when she's close to dying, never a meal (eatIfHungry, hasFood leave them be).
+const Reserved = new Set(['golden_apple', 'enchanted_golden_apple']);
+// At or under this (4 hearts): a totem in her off-hand, then a healing potion, else a golden apple.
+const EmergencyHealth = 8;
+// Over this (7 hearts), her shield goes back in place of the totem (or of the totem that popped).
+const TotemBack = 14;
+const RemedyEvery = 3000;
+// Potions by their id in the game's potion registry (as her 26.1 client gets them; checked on the local server:
+// healing 24, poison 28, fire resistance 11). Only these are drunk: a potion is never tried blind.
+const HealingPotions = new Set([24, 25, 31, 32, 33]); // healing, strong healing, regeneration (normal, long, strong)
+const FireResistPotions = new Set([11, 12]);
+let remedyAt = 0;
+let swapping = false;
+
+function potionId(item) {
+  const c = item && item.components && item.components.find((x) => x.type === 'potion_contents');
+  return c && c.data ? c.data.potionId : null;
+}
+
+const isPotion = (item, ids) => item.name === 'potion' && ids.has(potionId(item));
+
+// Every physics tick: close to dying, a totem goes in her off-hand (the shield to her pockets), and with nothing in
+// reach (her hand busy with it, the shield comes down), she drinks a healing potion, else eats a golden apple
+// (enchanted first), once every RemedyEvery. Healed past TotemBack, the shield goes back. Not asleep, eating already, or drawing her bow.
+function emergencyTick() {
+  if (!bot.entity || bot.isSleeping || eating || drawing || swapping || bot.health <= 0) return;
+  const items = bot.inventory.items();
+  const offhand = bot.inventory.slots[bot.getEquipmentDestSlot('off-hand')];
+  if (bot.health <= EmergencyHealth) {
+    const totem = items.find((i) => i.name === 'totem_of_undying');
+    if (totem && !(offhand && offhand.name === 'totem_of_undying')) return void swapOffhand(totem);
+    if (Date.now() < remedyAt) return;
+    if (bot.nearestEntity((e) => isFoe(e) && e.position.distanceTo(bot.entity.position) < MeleeReach)) return;
+    const remedy = items.find((i) => isPotion(i, HealingPotions)) || items.find((i) => i.name === 'enchanted_golden_apple')
+      || items.find((i) => i.name === 'golden_apple');
+    if (remedy) {
+      remedyAt = Date.now() + RemedyEvery;
+      consumeNow(remedy).catch(() => {});
+    }
+    return;
+  }
+  // The totem still there, or gone (it popped): the shield back, unless she was told to take her things off (bare).
+  if (bot.health > TotemBack && !bare && (!offhand || offhand.name === 'totem_of_undying')) {
+    const shield = items.find((i) => i.name === 'shield');
+    if (shield) swapOffhand(shield);
+  }
+}
+
+async function swapOffhand(item) {
+  swapping = true;
+  shieldDown();
+  try {
+    await bot.equip(item, 'off-hand');
+  } catch (err) {
+    log('off-hand swap failed:', err && err.message ? err.message : String(err));
+  } finally {
+    swapping = false;
+  }
+}
+
+// Eats or drinks `item` now, whatever her hunger (a golden apple or a potion always goes down).
+async function consumeNow(item) {
+  eating = true;
+  shieldDown();
+  const before = bot.inventory.count(item.type);
+  try {
+    await bot.equip(item, 'hand');
+    await bot.consume();
+  } catch (err) {
+    if (bot.inventory.count(item.type) >= before) log('remedy failed:', err && err.message ? err.message : String(err));
+  } finally {
+    eating = false;
+  }
 }
 
 // Hurt, she eats to heal: Minecraft heals her only while her food bar is at 18 or more, and quickly only with
@@ -5288,12 +5368,15 @@ function attach() {
   bot.on('physicsTick', safely(fightTick));
   bot.on('physicsTick', safely(shieldTick));
   bot.on('physicsTick', safely(fireballTick));
-  // Her shield broken by an axe: no use for ShieldDisabled.
+  bot.on('physicsTick', safely(emergencyTick));
+  // Her shield broken by an axe: no use for ShieldDisabled. Her totem popping.
   bot._client.on('entity_status', (p) => {
     if (bot.entity && p.entityId === bot.entity.id && p.entityStatus === 30) {
       shieldDisabledUntil = Date.now() + ShieldDisabled;
       shielding = false;
     }
+    // Her totem popped: she lived through a blow that should have killed her (C# says so).
+    if (bot.entity && p.entityId === bot.entity.id && p.entityStatus === 35) emit('totem', {});
   });
   bot.on('physicsTick', guideTick);
   bot.on('physicsTick', safely(portalTick));
