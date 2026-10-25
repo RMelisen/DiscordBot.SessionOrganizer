@@ -7,7 +7,7 @@
 //   node run.js harvest                harvest and replant a small plot: nothing trampled, nothing left lying
 //   node run.js actions [name ...]     every packet-level action, checked on the server's side (actions.js)
 //   node run.js safety                 what could hurt the world: keeping a herd (safety.js)
-//   node run.js survival [name ...]    night fights, creepers, endermen, being hit, deep water (survival.js)
+//   node run.js survival [name ...]    night fights, creepers, endermen, being hit, deep water, her own fights (survival.js)
 //   node run.js trip                   250 blocks, far past the loaded chunks: re-planning as she goes
 //   node run.js players [name ...]     with players around: follow a walk and through the hard lanes, come, guide, lose one, seek, gaze (players-test.js)
 //   node run.js orders [name ...]      smelting, gathering, fishing, giving, storing, harvesting, farm, patrol (orders.js)

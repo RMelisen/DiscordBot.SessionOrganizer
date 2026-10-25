@@ -3,6 +3,18 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.39.0 — 2026-10-25
+
+- Minecraft: she defends herself against monsters whatever she's doing (building a camp, following someone through
+  a cave, waiting at a furnace), then goes back to it; an errand she had to drop, she says so.
+- Minecraft: she sizes a fight up: outnumbered or badly hurt she falls back to the player she's with, hitting what
+  follows; a warden she gets clear of; tamed animals and iron golems she never hits.
+- Minecraft: « viens » and « suis-moi » mid-fight bring her to you at once; any other order waits for the fight.
+- Minecraft: she fights better: hits timed to her weapon, never by a drop or lava, never sweeping a player beside the
+  monster, skeletons shot with her bow or met behind her shield, ghast fireballs sent back.
+- Minecraft: close to dying she uses a totem, a healing potion or a golden apple (kept for that, never a meal); on
+  fire she runs for water, and she gets herself out of lava.
+
 ## 7.38.0 — 2026-10-25
 
 - Minecraft: asked for wood, she fells whole trees, big 2x2 ones included, climbing on a pillar she

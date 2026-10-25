@@ -19,7 +19,7 @@ FROM node:22-bookworm-slim AS body
 WORKDIR /body
 COPY MinecraftBody/package.json MinecraftBody/package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund
-COPY MinecraftBody/index.js ./
+COPY MinecraftBody/index.js MinecraftBody/fight.js ./
 
 FROM debian:bookworm-slim AS final
 RUN apt-get update \
