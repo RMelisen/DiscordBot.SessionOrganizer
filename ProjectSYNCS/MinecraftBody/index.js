@@ -79,7 +79,7 @@ const Move = require('mineflayer-pathfinder/lib/move');
 const mc = require('minecraft-protocol');
 const minecraftData = require('minecraft-data');
 const { Vec3 } = require('vec3');
-const { cooldownFor, answerTo } = require('./fight');
+const { cooldownFor, answerTo, sizeUp, GetOutKinds } = require('./fight');
 
 // Collisions with the game's own tolerance: a box less than 1e-7 into a block still touches its face, and on the other
 // two axes overlaps by less than that don't count (vanilla's VoxelShape epsilon). Mineflayer compares exactly, so a box
@@ -3383,7 +3383,8 @@ function selfDefend(foe, stance = 'fight') {
     }
     return true;
   }
-  if (task && ['defend', 'dodge', 'guard', 'patrol'].includes(task.kind)) return false;
+  // Their own fight, except that getting out of a warden's way comes first: guarding, she gets clear and guards on.
+  if (task && (task.kind === 'dodge' || (stance !== 'getOut' && ['defend', 'guard', 'patrol'].includes(task.kind)))) return false;
   const previous = task;
   const resume = resumeFor(previous);
   if (previous && !resume && isOrder(previous) && previous.kind !== 'seek' && previous.kind !== 'sleep')
@@ -3416,32 +3417,115 @@ function comingAt(e, me) {
 // Every physics tick: a monster (not a creeper: creeperTick's) within SelfThreat, in sight and coming at her, while
 // nothing else is fighting it out.
 function threatTick() {
-  if (!canSelfDefend() || (task && ['guard', 'patrol', 'defend', 'dodge', 'fight'].includes(task.kind))) return;
+  if (!canSelfDefend() || (task && ['dodge', 'fight'].includes(task.kind))) return;
   const me = bot.entity.position;
+  // What she never fights (a warden, a creaking), in sight: she gets clear of it, whatever she's doing.
+  const danger = bot.nearestEntity((e) => GetOutKinds.has(e.name) && e.isValid !== false
+    && e.position.distanceTo(me) < DangerSight && inSight(e));
+  if (danger) return void selfDefend(danger, 'getOut');
+  if (task && ['guard', 'patrol', 'defend'].includes(task.kind)) return;
   const foe = bot.nearestEntity((e) => isFoe(e) && e.name !== 'creeper' && !headUnder(e)
     && e.position.distanceTo(me) < SelfThreat && comingAt(e, me) && inSight(e));
   if (foe) selfDefend(foe);
 }
 
-// Every physics tick while defending herself: the closest of her foes still near and in sight (and any monster that
-// comes into reach), chased and hit. Over once none is left for FightQuiet.
+// ---- Sizing a fight up: fight it, fall back to her player, or get out ----------------------------------
+
+// A warden or a creaking this close and in sight: she gets clear of it.
+const DangerSight = 16;
+// How far she sizes a fight up: every monster in sight this close counts against her (fight.js weighs them).
+const SizeSight = 12;
+// A stance is held at least this long, so she doesn't flip between fighting and falling back every tick.
+const StanceHold = 1500;
+// Falling back with nobody to fall back to, this long, and she turns and fights what still chases her.
+const FallBackAlone = 20000;
+// Who she falls back to is within this, and seen; beside them (Helped) counts as help.
+const HerPlayerReach = 32;
+const Helped = 4;
+// Getting clear of a warden: this far beyond her player, on their far side from it; alone, this far from it.
+const ClearBeyond = 6;
+const ClearAlone = 16;
+// Out of her sight this long, and what she was getting clear of is behind her.
+const DangerUnseen = 3000;
+const ArmourPoints = {
+  leather: [1, 3, 2, 1], copper: [2, 4, 3, 1], golden: [2, 5, 3, 1], chainmail: [2, 5, 4, 1], iron: [2, 6, 5, 2],
+  diamond: [3, 8, 6, 3], netherite: [3, 8, 6, 3], turtle: [2, 0, 0, 0],
+};
+
+function armourPoints() {
+  return WornSlots.reduce((sum, slot, i) => {
+    const item = bot.inventory.slots[bot.getEquipmentDestSlot(slot)];
+    const m = item && /^([a-z]+)_(helmet|chestplate|leggings|boots)$/.exec(item.name);
+    return sum + ((m && ArmourPoints[m[1]] && ArmourPoints[m[1]][i]) || 0);
+  }, 0);
+}
+
+function bestWeapon() {
+  const names = new Set(bot.inventory.items().map((i) => i.name));
+  return Weapons.find((w) => names.has(w)) || null;
+}
+
+// Who she falls back to: whoever she was told to come to mid-fight, else the player of what she was doing, else Papa,
+// else Tata, else the closest player; seen, within HerPlayerReach.
+function herPlayer(t) {
+  const me = bot.entity.position;
+  const seen = (e) => (e && e !== bot.entity && e.position.distanceTo(me) <= HerPlayerReach ? e : null);
+  const named = (name) => (name ? seen(playerEntity(name)) : null);
+  const r = t.resume;
+  const byFamily = familyOrder.map((f) => Object.values(bot.players).find((p) => p.username.toLowerCase() === f))
+    .map((p) => p && seen(p.entity)).find(Boolean);
+  return named(t.toward) || named(r && (r.player || (r.restart && r.restart.player))) || byFamily
+    || bot.nearestEntity((e) => e.type === 'player' && e !== bot.entity && e.position.distanceTo(me) <= HerPlayerReach);
+}
+
+// A point `far` blocks from `from`, away from `away` (horizontally).
+function awayFrom(from, away, far) {
+  const dx = from.x - away.x;
+  const dz = from.z - away.z;
+  const n = Math.hypot(dx, dz) || 1;
+  return new Vec3(from.x + (dx / n) * far, from.y, from.z + (dz / n) * far);
+}
+
+// Every physics tick while defending herself. Sized up (fight.js) every StanceHold at most: fight the closest foe;
+// fall back to her player hitting whatever keeps up, eating when nothing is in reach; or get clear of what she never
+// fights. Over once nothing is left for FightQuiet (a warden: once it's far or out of sight).
 function fightTick() {
   const t = task;
   if (!t || t.kind !== 'fight') return;
   const me = bot.entity.position;
-  if (t.stance === 'getOut') {
-    const th = t.threat;
-    if (!th || th.isValid === false || !bot.entities[th.id] || th.position.distanceTo(me) > GetOutClear
-      || Date.now() - t.threatAt > GetOutQuiet) return endFight(t);
-    if (th.position.distanceTo(me) < MeleeReach + 1) t.threatAt = Date.now();
-    return;
-  }
   const onHer = foeOnHer();
-  if (onHer) t.foes.add(onHer.id);
+  if (onHer && t.stance !== 'getOut') t.foes.add(onHer.id);
   const foes = [...t.foes].map((id) => bot.entities[id])
     .filter((e) => e && e.isValid !== false && !headUnder(e) && reachable(t, e) && e.position.distanceTo(me) < FightSight
       && e.position.distanceTo(t.fightFrom) <= FightLeash && inSight(e))
     .sort((a, b) => a.position.distanceTo(me) - b.position.distanceTo(me));
+  const p = herPlayer(t);
+  if (t.stance !== 'getOut' && Date.now() - t.stanceSince >= StanceHold) {
+    const around = Object.values(bot.entities).filter((e) => e !== bot.entity && e.isValid !== false
+      && (t.foes.has(e.id) || (isFoe(e) && e.name !== 'creeper') || GetOutKinds.has(e.name))
+      && e.position.distanceTo(me) < SizeSight && inSight(e));
+    let next = sizeUp({ foes: around.map((e) => ({ name: e.name, distance: e.position.distanceTo(me) })), health: bot.health,
+      armour: armourPoints(), weapon: bestWeapon(), helped: Boolean(p && p.position.distanceTo(me) < Helped), previous: t.stance });
+    if (next === 'fallBack' && (t.lastStand || (!p && t.fallSince && Date.now() - t.fallSince > FallBackAlone))) {
+      next = 'fight'; // nobody to fall back to, still chased: she turns and fights it out
+      t.lastStand = true;
+    }
+    if (next === 'getOut') {
+      t.threat = around.find((e) => GetOutKinds.has(e.name));
+      t.threatAt = Date.now();
+    }
+    if (next !== t.stance) {
+      t.stance = next;
+      t.stanceSince = Date.now();
+      t.mode = null;
+      t.modeTarget = null;
+      if (next === 'fallBack') {
+        t.fallSince = Date.now();
+        emit('retreat', { player: t.toward || '' });
+      }
+    }
+  }
+  if (t.stance === 'getOut') return getOutTick(t, p);
   if (foes.length === 0) {
     if (!t.quietSince) {
       t.quietSince = Date.now();
@@ -3454,8 +3538,44 @@ function fightTick() {
   }
   t.quietSince = null;
   t.foe = foes[0];
-  chase(t, t.foe);
-  strike(t.foe, t);
+  if (t.stance === 'fight') {
+    chase(t, t.foe);
+    strike(t.foe, t);
+    return;
+  }
+  // Falling back: to her player, else off away from them, again once there. Whatever keeps up gets hit.
+  fightPace(true);
+  if (p) setMode(t, 'fallBack', p, new goals.GoalFollow(p, 2), true);
+  else if (t.mode !== 'hop' || !bot.pathfinder.isMoving()) {
+    const spot = awayFrom(me, t.foe.position, 8);
+    t.mode = 'hop';
+    t.modeTarget = null;
+    bot.pathfinder.setGoal(new goals.GoalNear(spot.x, spot.y, spot.z, 2));
+  }
+  if (onHer) {
+    if (!eating && !(bot.heldItem && Weapons.includes(bot.heldItem.name)) && bestWeapon()) equipWeapon();
+    strike(onHer);
+  } else if (!eating && bot.health < 20) eatIfHungry(20).catch(() => {});
+}
+
+// Getting clear of what she never fights: beyond her player on their far side from it, else well away from it. Over
+// once it's far, gone, or out of her sight for DangerUnseen (and, for an animal that hit her, once it leaves her alone).
+function getOutTick(t, p) {
+  const me = bot.entity.position;
+  const th = t.threat;
+  if (th && th.isValid !== false && inSight(th)) t.threatSeenAt = Date.now();
+  if (!th || th.isValid === false || !bot.entities[th.id] || th.position.distanceTo(me) > GetOutClear
+    || Date.now() - (t.threatSeenAt || t.startedAt) > DangerUnseen
+    || (!GetOutKinds.has(th.name) && Date.now() - t.threatAt > GetOutQuiet)) return endFight(t);
+  if (th.position.distanceTo(me) < MeleeReach + 1) t.threatAt = Date.now();
+  if (Date.now() < (t.clearAt || 0)) return;
+  t.clearAt = Date.now() + 1000; // her player moves: the spot moves with them
+  const near = p && p.position.distanceTo(me) < DangerSight ? p : null;
+  const spot = near ? awayFrom(near.position, th.position, ClearBeyond) : awayFrom(me, th.position, ClearAlone);
+  t.mode = 'clear';
+  t.modeTarget = th;
+  fightPace(true);
+  bot.pathfinder.setGoal(new goals.GoalNear(spot.x, spot.y, spot.z, 1));
 }
 
 function endFight(t) {

@@ -493,14 +493,16 @@ async function horde() {
   await end(sc, 'horde');
 }
 
-// Hurt (4 hearts), a wooden sword, nobody around: she backs off first, and a zombie that keeps up with her gets
-// fought, rather than chased round for ever.
+// Hurt (4 hearts), a wooden sword, nobody around: she backs off first, and a zombie that keeps up with her (a fast one)
+// gets
+// fought after FallBackAlone, rather than run from for ever.
 async function alone() {
   const sc = await scene({ kit: false });
   await rcon.run([`tp Papa ${S.x - 60.5} -60 ${S.z + 0.5}`, 'gamemode creative Papa', `give ${Name} wooden_sword 1`,
     `give ${Name} cooked_beef 4`, `damage ${Name} 12 minecraft:generic`]);
   await wait(1000);
-  await rcon.run([`summon zombie ${S.x + 3.5} -60 ${S.z + 0.5} {PersistenceRequired:1b,Tags:["test"]}`]);
+  // Fast (Speed II): it keeps up with her however she backs off, so she has to turn and fight it.
+  await rcon.run([`summon zombie ${S.x + 3.5} -60 ${S.z + 0.5} {PersistenceRequired:1b,Tags:["test"]}`, 'effect give @e[type=zombie,tag=test] speed 120 1 true']);
   const left = await until('@e[type=zombie,tag=test]', 60000);
   const health = await q.entityNumber(Name, 'Health');
   report(left === 0 && health > 0, 'alone, hurt', `${left === 0 ? 'killed it' : 'still chased after 60 s'}; her health ${health}`);
@@ -527,8 +529,38 @@ async function warden() {
   await end(sc, 'warden');
 }
 
+// ---- Orders during a fight -----------------------------------------------------------------------------------
+
+// Three tough zombies (no AI, 200 health: the fight lasts) right by her. « pêche » mid-fight waits for the fight;
+// « suis-moi » brings her to Papa at once, fighting as she goes, and replaces the waiting « pêche »: once the zombies
+// are gone, she follows him.
+async function ordered() {
+  const sc = await scene();
+  const tough = '{NoAI:1b,PersistenceRequired:1b,Tags:["test"],Health:200f,attributes:[{id:"minecraft:max_health",base:200.0}]}';
+  await rcon.run([`fill ${sat(6, -1, -3)} ${sat(8, -1, -1)} water`, `give ${Name} fishing_rod 1`, 'gamemode creative Papa',
+    `tp Papa ${S.x - 9.5} -60 ${S.z + 0.5}`,
+    ...[-1, 0, 1].map((dz) => `summon zombie ${S.x + 2} -60 ${S.z + 0.5 + dz} ${tough}`)]);
+  await wait(2500);
+  const from = sc.body.events.length;
+  sc.body.send({ op: 'fish', player: 'Papa' });
+  await wait(4000);
+  const early = sc.body.since(from, (e) => ['moving', 'fishing', 'cantFish'].includes(e.ev));
+  sc.body.send({ op: 'follow', player: 'Papa' });
+  let best = Infinity;
+  for (const end = Date.now() + 6000; Date.now() < end && best > 4; await wait(500)) best = Math.min(best, await apart(Name, 'Papa'));
+  const before = sc.body.events.length;
+  await rcon.run(['kill @e[type=zombie,tag=test]']);
+  const then = await sc.body.next((e) => ['moving', 'fishing'].includes(e.ev), 6000);
+  const fished = sc.body.since(before, (e) => e.ev === 'fishing').length;
+  const waited = early.length === 0 ? 'the fishing order waited' : `answered ${early.map((e) => e.ev).join(', ')}`;
+  report(early.length === 0 && best <= 4 && Boolean(then) && then.ev === 'moving' && then.kind === 'follow' && fished === 0, 'orders mid-fight',
+    `while fighting: ${waited}; « suis-moi » brought her within ${best.toFixed(1)} of Papa; ` +
+    `after: ${then ? `${then.ev} ${then.kind || ''}` : 'nothing'}${fished ? ', and fished' : ''}`);
+  await end(sc, 'orders mid-fight');
+}
+
 async function survival(only = []) {
-  const all = { zombies: guardZombies, skeleton: guardSkeleton, creeper, creeperbusy: creeperBusy, buried: () => buried(true), buriedfree: () => buried(false), enderman, retreat, flee: fleePlayer, defend: defendPapa, stranger: defendStranger, midharvest: defendMidHarvest, harvestpapa: () => defendMidHarvest(true), drowning, ravine, beside, farmzombie: farmZombie, followzombie: followZombie, furnace: furnaceZombie, farmskeleton: farmSkeleton, golem, horde, alone, warden };
+  const all = { zombies: guardZombies, skeleton: guardSkeleton, creeper, creeperbusy: creeperBusy, buried: () => buried(true), buriedfree: () => buried(false), enderman, retreat, flee: fleePlayer, defend: defendPapa, stranger: defendStranger, midharvest: defendMidHarvest, harvestpapa: () => defendMidHarvest(true), drowning, ravine, beside, farmzombie: farmZombie, followzombie: followZombie, furnace: furnaceZombie, farmskeleton: farmSkeleton, golem, horde, alone, warden, ordered };
   for (const [name, run] of Object.entries(all)) {
     if (only.length > 0 && !only.includes(name)) continue;
     try {
