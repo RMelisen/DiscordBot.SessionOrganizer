@@ -162,7 +162,8 @@ let task = null;
 const MaxTrip = 1500;
 
 // She walks and jumps, never digs and never places a block: a path through someone's wall or a
-// dirt pillar in the middle of their build is not help.
+// dirt pillar in the middle of their build is not help. (Felling a tree, she climbs a pillar of her own and takes it
+// down after: gatheringMovements' climb.)
 function gentleMovements() {
   const movements = new Movements(bot);
   movements.canDig = false;
@@ -442,9 +443,25 @@ function clearDoor(seen) {
 // asks the movements before every break.
 const LeavesBy = 2;
 
-function gatheringMovements(targets) {
+// `climb`, felling a tree: she may also stack a pillar under herself (allow1by1towers), from what she carries
+// (ScaffoldItems), to reach a top no reach gets to from the ground; straight up only, never a bridge over a gap. What
+// she places is noted (gather) and taken down after (unstack). Up the trunk's own column, where its logs were
+// (ClimbBeside a block anywhere else): stacked beside it, the logs she cut fell past her to the ground, out of her
+// reach until the pillar was down, and she ran out of blocks to stack halfway up a spruce. Under them, each log she
+// cuts over her head falls on her and is hers at once.
+const ClimbBeside = 10;
+
+function gatheringMovements(targets, climb = false) {
   const movements = gentleMovements();
   movements.canDig = true;
+  if (climb) {
+    movements.allow1by1towers = true;
+    movements.scafoldingBlocks = scaffoldIds();
+    const neighbors = movements.getNeighbors.bind(movements);
+    movements.getNeighbors = (node) => neighbors(node).filter((move) => move.toPlace.every((p) => p.jump));
+    const trunk = new Set(targets.map((b) => `${b.position.x},${b.position.z}`));
+    movements.exclusionAreasPlace.push((block) => (trunk.has(`${block.position.x},${block.position.z}`) ? 0 : ClimbBeside));
+  }
   const allowed = new Set(targets.map((b) => b.position.toString()));
   const logs = targets.filter((b) => b.name.endsWith('_log'));
   const treeLeaves = (block) => block.name.endsWith('_leaves') && block.getProperties().persistent === false
@@ -1045,6 +1062,7 @@ const Yields = {
 };
 
 function isTreeLog(block) {
+  if (!block) return false;
   for (let dy = 0; dy <= 6; dy++)
     for (let dx = -2; dx <= 2; dx++)
       for (let dz = -2; dz <= 2; dz++) {
@@ -1077,23 +1095,153 @@ function itemCounts() {
 
 // `since`: started again after a fight (restartOrder), from the pockets as they were when the order first came, so
 // what she had gathered before still counts and is handed over; no second « collecting ».
-// What she can get at, the closest 256 (wood: in a tree): she never digs, so a block with no open face (stone under
-// the grass) is out of reach (collectblock spent its 5 s search on one and stopped the order). Open is part of the
-// search, not a filter after it: on a mountain the closest 256 stone were all under her feet, and she said there was
-// none with a cliff face 20 blocks off. `all`, for the count she announces, is the closest 256 of the kind.
+// What she can get at, the closest 256: she never digs, so a block with no open face (stone under the grass) is out
+// of reach (collectblock spent its 5 s search on one and stopped the order). Open is part of the search, not a filter
+// after it: on a mountain the closest 256 stone were all under her feet, and she said there was none with a cliff face
+// 20 blocks off. `all`, for the count she announces, is the closest 256 of the kind. Not wood: trees are felled whole
+// (treesNear, fell).
 function gatherCandidates(resource) {
   const matches = Resources[resource];
   const ids = bot.registry.blocksArray.filter((b) => matches(b.name)).map((b) => b.id);
-  const tree = (b) => resource !== 'wood' || isTreeLog(b);
   return {
-    all: bot.findBlocks({ matching: ids, maxDistance: GatherRadius, count: 256 }).map((p) => bot.blockAt(p)).filter((b) => b && tree(b)),
-    open: bot.findBlocks({ matching: ids, useExtraInfo: (b) => exposed(b) && tree(b), maxDistance: GatherRadius, count: 256 })
+    all: bot.findBlocks({ matching: ids, maxDistance: GatherRadius, count: 256 }).map((p) => bot.blockAt(p)).filter(Boolean),
+    open: bot.findBlocks({ matching: ids, useExtraInfo: exposed, maxDistance: GatherRadius, count: 256 })
       .map((p) => bot.blockAt(p)).filter(Boolean),
   };
 }
 
-// In rounds: what's open now, then what that opened (a trunk's top log, boxed in by leaves, only opens once the logs
-// under it are gone: she brought 12 of 16), until `left` are broken, nothing is open, or a round broke nothing.
+// ---- Trees -------------------------------------------------------------------------------------------
+
+// A tree is felled whole, to its last log: cutting the closest logs anywhere left trunks floating half cut all over a
+// forest, and a 2x2 spruce's top out of any reach. A tree is the logs of one kind touching each other (corners too:
+// acacia and dark oak branches), from the bottom of its trunk, within TreeReach of it sideways and TreeHigh above, with
+// natural leaves near its top (isTreeLog on its TreeTop highest logs): a big spruce's trunk has none for its first ten
+// blocks, and a log in someone's wall has none at all.
+const TreeReach = 6;
+const TreeHigh = 40;
+const TreeMost = 400;
+const TreeTop = 8;
+const LogSearch = 512;
+const posKey = (p) => `${p.x},${p.y},${p.z}`;
+
+// The tree `block` belongs to, or null if it isn't one. Every log it reaches goes in `seen`, tree or not.
+function treeOf(block, seen) {
+  let base = block.position;
+  while (base.y > block.position.y - TreeHigh) {
+    const below = bot.blockAt(base.offset(0, -1, 0));
+    if (!below || below.name !== block.name) break;
+    base = below.position;
+  }
+  const logs = [];
+  const queue = [base];
+  const marked = new Set([posKey(base)]);
+  while (queue.length > 0 && logs.length < TreeMost) {
+    const p = queue.shift();
+    logs.push(p);
+    for (let dx = -1; dx <= 1; dx++)
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dz = -1; dz <= 1; dz++) {
+          const q = p.offset(dx, dy, dz);
+          const k = posKey(q);
+          // A few blocks under the base: the other trunks of a 2x2 on a slope go lower.
+          if (marked.has(k) || Math.abs(q.x - base.x) > TreeReach || Math.abs(q.z - base.z) > TreeReach
+            || q.y < base.y - 3 || q.y > base.y + TreeHigh) continue;
+          const near = bot.blockAt(q);
+          if (!near || near.name !== block.name) continue;
+          marked.add(k);
+          queue.push(q);
+        }
+  }
+  for (const k of marked) seen.add(k);
+  const top = [...logs].sort((a, b) => b.y - a.y).slice(0, TreeTop);
+  if (!top.some((p) => isTreeLog(bot.blockAt(p)))) return null;
+  return { name: block.name, base: logs.reduce((low, p) => (p.y < low.y ? p : low), base), logs };
+}
+
+// The trees within GatherRadius, from their closest LogSearch logs.
+function treesNear() {
+  const ids = bot.registry.blocksArray.filter((b) => Resources.wood(b.name)).map((b) => b.id);
+  const seen = new Set();
+  const trees = [];
+  for (const p of bot.findBlocks({ matching: ids, maxDistance: GatherRadius, count: LogSearch })) {
+    if (seen.has(posKey(p))) continue;
+    const block = bot.blockAt(p);
+    const tree = block && treeOf(block, seen);
+    if (tree) trees.push(tree);
+  }
+  return trees;
+}
+
+// What's left of it; not her pillar, which may stand where its trunk was (unstack takes that down, from the top).
+const standingLogs = (tree, placed = []) => tree.logs.filter((p) => !placed.some((q) => q.equals(p)))
+  .map((p) => bot.blockAt(p)).filter((b) => b && b.name === tree.name);
+
+// One tree after another, the closest to where she stands first, until `left` logs are cut. Each to its last log, so
+// she brings more than asked rather than leave a tree standing half cut.
+async function fellTrees(trees, left, mine) {
+  const todo = [...trees];
+  while (left > 0 && todo.length > 0 && task === mine) {
+    const me = bot.entity.position;
+    todo.sort((a, b) => a.base.distanceTo(me) - b.base.distanceTo(me));
+    left -= await fell(todo.shift(), mine);
+  }
+}
+
+// Bottom up, in rounds: each round cuts what she gets at, from the ground or from a pillar she stacks under herself
+// (gatheringMovements' climb: a 2x2 spruce stands 30 high), and ends at the first log she can't get to, so a tree's top
+// never costs a 5 s search per log. The next round has the logs the last one brought to stack with. The drops are
+// picked up on the ground: between rounds while there's no pillar, else once it's down (unstack). Returns how many of
+// its logs are gone.
+const FellRounds = 8;
+const ReachUp = 3; // a block this high above her feet needs a climb
+
+async function fell(tree, mine) {
+  const placed = [];
+  const drops = new Set();
+  const collectDrops = async () => {
+    if (task === mine && drops.size > 0) await pickUp((e) => drops.has(e.id), Math.min(60000, drops.size * PickUpTry), mine);
+    drops.clear();
+  };
+  let left = standingLogs(tree);
+  const start = left.length;
+  for (let round = 0; round < FellRounds && left.length > 0 && task === mine; round++) {
+    await gather(left, mine, 'fell', { placed, drops, order: 'up' });
+    const now = standingLogs(tree, placed);
+    const broke = now.length < left.length;
+    left = now;
+    if (pillar(placed).length === 0) await collectDrops();
+    if (!broke) break;
+  }
+  if (left.length > 0) log(`fell: ${left.length} of ${tree.logs.length} ${tree.name} left standing at ${tree.base}`);
+  if (pillar(placed).length > 0 && task === mine) await unstack(placed, mine, drops);
+  await collectDrops();
+  return start - standingLogs(tree, placed).length;
+}
+
+// Her pillar, from the top down: she breaks the block she stands on, drops onto the next, and so on to the ground.
+// Nothing she placed stays in the forest; what it was made of comes back to her pockets with the drops.
+async function unstack(placed, mine, drops) {
+  const blocks = pillar(placed);
+  if (blocks.length > 0) await gather(blocks, mine, 'unstack', { drops, order: 'down' });
+  const left = pillar(placed);
+  if (left.length > 0) log(`unstack: ${left.length} of her pillar's blocks left, the top at ${left[0].position}`);
+}
+
+// What stands of her pillar: `placed` is where she tried to set a block.
+const pillar = (placed) => placed.map((p) => bot.blockAt(p)).filter((b) => b && b.boundingBox === 'block');
+
+// What a pillar is stacked from, in that order: what she'd least miss first, a log last (it comes back when the pillar
+// comes down).
+const ScaffoldItems = ['dirt', 'coarse_dirt', 'cobblestone', 'cobbled_deepslate', 'netherrack', 'andesite', 'diorite', 'granite'];
+
+function scaffoldIds() {
+  const named = ScaffoldItems.map((n) => bot.registry.itemsByName[n]).filter(Boolean);
+  const logs = bot.registry.itemsArray.filter((i) => isLog(i.name));
+  return [...named, ...logs].map((i) => i.id);
+}
+
+// In rounds: what's open now, then what that opened (an ore behind the one in front), until `left` are broken,
+// nothing is open, or a round broke nothing.
 async function gatherRounds(resource, left, mine, open = gatherCandidates(resource).open) {
   for (let round = 0; round < 4 && left > 0 && open.length > 0 && task === mine; round++) {
     const batch = open.slice(0, left);
@@ -1110,20 +1258,24 @@ async function gatherRounds(resource, left, mine, open = gatherCandidates(resour
 
 async function collect(player, resource, count, since = null) {
   if (!Resources[resource]) return;
-  const first = gatherCandidates(resource);
-  if (first.open.length === 0) return emit('cantCollect', { player, resource, why: 'none' });
-  if (!canHarvest(first.open[0])) return emit('cantCollect', { player, resource, why: 'noTool' });
+  const wood = resource === 'wood';
+  const trees = wood ? treesNear() : null;
+  const first = wood ? null : gatherCandidates(resource);
+  if (wood ? trees.length === 0 : first.open.length === 0) return emit('cantCollect', { player, resource, why: 'none' });
+  if (!wood && !canHarvest(first.open[0])) return emit('cantCollect', { player, resource, why: 'noTool' });
   stay();
 
   const before = since || itemCounts();
   const counted = (type) => Yields[resource](bot.registry.items[type].name);
   const mine = { kind: 'collect', player, before };
   task = mine;
-  if (!since) emit('collecting', { player, resource, count: Math.min(count, first.all.length) });
+  const available = wood ? trees.reduce((n, t) => n + t.logs.length, 0) : first.all.length;
+  if (!since) emit('collecting', { player, resource, count: Math.min(count, available) });
   // Started again, what she already has of it counts towards the count.
   const already = [...itemCounts()].filter(([type]) => counted(type))
     .reduce((sum, [type, n]) => sum + Math.max(0, n - (before.get(type) || 0)), 0);
-  await gatherRounds(resource, count - already, mine, first.open);
+  if (wood) await fellTrees(trees, count - already, mine);
+  else await gatherRounds(resource, count - already, mine, first.open);
   if (task !== mine) return; // told to stop in the meantime
 
   const { total, delivered } = await deliverGains(player, before, counted);
@@ -1158,13 +1310,44 @@ function dropOf(entity, block) {
 // Breaks `blocks`, then picks up what they dropped. `what` names it in the log. Solid blocks go to collectblock (with
 // gatheringMovements). Blocks with no collision box (wheat, carrots, potatoes, beetroot) can't: it walks to where a
 // ray from her eyes hits the block, and a ray goes through those, so it searched for 5 s and gave up on the harvest.
-async function gather(blocks, mine, what) {
-  const drops = new Set();
+// `how`, for a tree (fell, unstack): `drops` gets the drops and the caller picks them up (she may be up a pillar);
+// `placed`, she may climb, and gets every block she places; `order` 'up' (lowest first, ending at the first she can't
+// get to) or 'down' (highest first) instead of the closest first.
+async function gather(blocks, mine, what, how = {}) {
+  const drops = how.drops || new Set();
   const solid = blocks.filter((b) => b.shapes && b.shapes.length > 0);
   const soft = blocks.filter((b) => !(b.shapes && b.shapes.length > 0));
   if (solid.length > 0) {
-    bot.collectBlock.movements = gatheringMovements(solid);
+    bot.collectBlock.movements = gatheringMovements(solid, Boolean(how.placed));
     gatheredDrops = drops;
+    // The pathfinder places through bot.placeBlock: where each block went, while it stands.
+    const placeBlock = bot.placeBlock;
+    // It leaves every node from the first block to break or place on at the block's corner (its post-processing stops
+    // there), and a step's « arrived » is within 0.35 of the node: on top of each block of her pillar she walked for the
+    // corner of the block she stood on. The middle of the block.
+    const centred = (result) => {
+      for (const node of result.path)
+        if (Number.isInteger(node.x) && Number.isInteger(node.z)) {
+          node.x += 0.5;
+          node.z += 0.5;
+        }
+    };
+    if (how.placed) bot.on('path_update', centred);
+    // A step up her pillar is a jump with the block set under her feet, and the pathfinder sets it as soon as her feet
+    // are above the block under her, inside the new block's space: the server refused it, two times in three, and
+    // each refusal cost a new search and its stuck timer. The block goes in once her feet are above it, at the top of
+    // the jump.
+    if (how.placed)
+      bot.placeBlock = async (ref, face, ...rest) => {
+        const at = ref.position.plus(face);
+        const p = bot.entity.position;
+        if (face.y === 1 && Math.floor(p.x) === at.x && Math.floor(p.z) === at.z)
+          for (let i = 0; i < 10 && bot.entity.position.y < at.y + 1.02 && bot.entity.velocity.y > 0; i++) await wait(50);
+        // Noted before it's tried: Mineflayer gives up on a block whose update comes late, which the server set all the
+        // same (unstack takes down only what stands).
+        if (!how.placed.some((q) => q.equals(at))) how.placed.push(at);
+        return placeBlock.call(bot, ref, face, ...rest);
+      };
     // collectblock only notes a drop that appears within half a block of the block's centre; a lump of coal fell
     // further and stayed lying. Within 2, as for crops.
     const noteDrop = (entity) => {
@@ -1176,23 +1359,33 @@ async function gather(blocks, mine, what) {
     try {
       while (left.length > 0 && task === mine) {
         const me = bot.entity.position;
-        left.sort((a, b) => a.position.distanceTo(me) - b.position.distanceTo(me));
+        const closer = (a, b) => a.position.distanceTo(me) - b.position.distanceTo(me);
+        left.sort(how.order === 'up' ? (a, b) => a.position.y - b.position.y || closer(a, b)
+          : how.order === 'down' ? (a, b) => b.position.y - a.position.y || closer(a, b) : closer);
         const block = left.shift();
+        // Out of reach from the ground, with drops lying there: back to the caller, who picks them up before she climbs
+        // (they'd wait for the pillar to come down, and a drop is gone after 5 minutes).
+        if (how.order === 'up' && how.placed && pillar(how.placed).length === 0 && drops.size > 0
+          && block.position.y - Math.floor(bot.entity.position.y) >= ReachUp) break;
         try {
           await bot.collectBlock.collect(block, { ignoreNoPath: true });
         } catch (err) {
           log(`${what}: skipped ${block.name} at ${block.position} (she was at ${bot.entity.position.floored()}):`,
             err && err.message ? err.message : String(err));
         }
+        const still = bot.blockAt(block.position);
+        if (how.order === 'up' && still && still.type === block.type) break;
       }
     } finally {
       gatheredDrops = null;
       bot.removeListener('itemDrop', noteDrop);
+      bot.placeBlock = placeBlock;
+      bot.removeListener('path_update', centred);
       bot.pathfinder.setMovements(gentleMovements());
     }
   }
   if (soft.length > 0 && task === mine) await breakSoft(soft, mine, drops);
-  if (task === mine && drops.size > 0) await pickUp((e) => drops.has(e.id), Math.min(60000, drops.size * PickUpTry), mine);
+  if (!how.drops && task === mine && drops.size > 0) await pickUp((e) => drops.has(e.id), Math.min(60000, drops.size * PickUpTry), mine);
 }
 
 // No tool in her hand: crops break at a touch, so by hand, the way a player does it (she harvested a field with the
@@ -1216,12 +1409,20 @@ function emptyHand() {
 // bamboo goes to the sword.
 function toolOrHand(equipForBlock) {
   return async (block, options = {}, cb) => {
+    await landed();
     const byHand = bot.tool.getDigTime(block, null);
     const faster = bot.inventory.items().some((i) => block.canHarvest(i.type) && bot.tool.getDigTime(block, i) < byHand);
     if (faster || !block.canHarvest(null)) return equipForBlock(block, options, cb);
     emptyHand();
     if (cb) cb();
   };
+}
+
+// Off the ground, a block takes five times as long to break, and Mineflayer times the dig from when it starts: right
+// after a step up her pillar, still in the jump, a log took 16 s instead of 3. She lands first.
+async function landed() {
+  bot.setControlState('jump', false);
+  for (let i = 0; i < 20 && !bot.entity.onGround; i++) await wait(50);
 }
 
 // The blocks with no collision box, the closest first: within 2 blocks of each (PickUpTry to get there), broken by
@@ -2644,7 +2845,7 @@ async function makeCamp(player, resume = null) {
   // made again (a table gone ended the camp).
   const stands = (b) => { const now = bot.blockAt(new Vec3(b.x, b.y, b.z)); return !now || now.name === b.name; };
   const placed = again && Array.isArray(resume.placed) ? resume.placed.filter(stands) : [];
-  if (!again && campNeeds(placed).logs > 0 && gatherCandidates('wood').open.length === 0) return emit('cantCamp', { player, why: 'missing', missing: ['wood'] });
+  if (!again && campNeeds(placed).logs > 0 && treesNear().length === 0) return emit('cantCamp', { player, why: 'missing', missing: ['wood'] });
   const o = again ? new Vec3(resume.site.x, resume.site.y, resume.site.z) : campSite();
   if (!o) return emit('cantCamp', { player, why: 'noRoom' });
   stay();
@@ -2678,8 +2879,9 @@ async function makeCamp(player, resume = null) {
     // there are trees in reach: a plain's trees are scattered, and a pass whose drops she missed brought nothing in, which
     // ended the camp (« missing wood ») one log short at a forest's edge.
     for (let pass = 0; pass < 6 && task === mine && campNeeds(placed).logs > 0; pass++) {
-      if (gatherCandidates('wood').open.length === 0) break;
-      await gatherRounds('wood', campNeeds(placed).logs, mine);
+      const trees = treesNear();
+      if (trees.length === 0) break;
+      await fellTrees(trees, campNeeds(placed).logs, mine);
     }
     if (task !== mine) return;
     if (campNeeds(placed).logs > 0) return fail('missing', ['wood']);
@@ -3043,6 +3245,24 @@ async function eatIfHungry(below = 14) {
 
 function hasFood() {
   return bot.inventory.items().some((i) => bot.registry.foodsByName[i.name] && !BadFood.has(i.name));
+}
+
+// Hurt, she eats to heal: Minecraft heals her only while her food bar is at 18 or more, and quickly only with
+// saturation left. So below full health she eats when the bar is under 18, or under 20 with no saturation left. Not
+// with a monster close (a fight's retreat eats for her, and the food in her hand would be her sword), and not while
+// she digs, draws her bow, stacks a block or fishes: the food in her hand would cut it off. The tick tries again.
+// With nothing to eat and a fair bit hurt, she goes to find some (startForage), as when she's hungry.
+const HealEvery = 5000;
+const HealSafe = 10;
+const HealForage = 14;
+
+function healTick() {
+  if (eating || bot.isSleeping || bot.health <= 0 || bot.health >= 20 || bot.food >= 20) return;
+  if (bot.food >= 18 && bot.foodSaturation > 0) return;
+  if (bot.targetDigBlock || drawing || bot.pathfinder.isBuilding() || (task && task.casting)) return;
+  if (bot.nearestEntity((e) => isFoe(e) && e.position.distanceTo(bot.entity.position) < HealSafe)) return;
+  if (hasFood()) eatIfHungry(20).catch(() => {});
+  else if (bot.health <= HealForage && bot.food < 18) startForage();
 }
 
 // Hungry with nothing to eat: she looks for some herself when she can (startForage); otherwise she reports it each
@@ -4457,7 +4677,10 @@ function attach() {
   bot.on('health', () => {
     eatIfHungry().catch(() => {});
     reportHunger();
+    healTick();
   });
+  // Her bar doesn't move while she waits to heal: the tick tries again after a dig or a fight.
+  setInterval(() => { if (bot && bot.entity) safely(healTick)(); }, HealEvery);
   bot.on('heldItemChanged', scheduleInventory);
   bot.on('playerCollect', (collector, collected) => {
     if (collector !== bot.entity) return;

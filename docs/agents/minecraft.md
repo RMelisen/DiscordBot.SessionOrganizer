@@ -149,6 +149,26 @@ list: the owner removed it.
   stands, and the search for one ran its 5 s for every log of a forest, nothing brought back; a
   player punches through, so does she. Wood is a non-stripped log with *natural* leaves within reach
   (`persistent: false`): a log in a wall has none, and placed leaves are persistent, never broken.
+- **Wood is felled a whole tree at a time** (`treesNear`, `fell`), the closest tree to where she
+  stands first, each to its last log, so she brings more than asked rather than leave a trunk floating
+  half cut (cutting the closest logs anywhere did that all over a forest). A tree is the logs of one
+  kind touching each other, corners included (acacia and dark oak branches), from the bottom of its
+  trunk, within 6 sideways and 40 up, with natural leaves near its 8 highest logs (`treeOf`: a big
+  spruce's trunk has none for its first ten blocks). Bottom up, in rounds; a round ends at the first
+  log she can't get to, so a tall top never costs a 5 s search per log. **Out of reach, she climbs**
+  (`gatheringMovements`' `climb`): a pillar stacked under herself (`allow1by1towers`, dirt or stone
+  first, else logs, `ScaffoldItems`), straight up only, never a bridge, **up the trunk's own column**
+  (a block placed anywhere else costs `ClimbBeside`): stacked beside it, the logs she cut fell past her
+  out of reach and she ran out of blocks halfway up a spruce; under them, each one falls on her. Before
+  she climbs, she picks up what lies on the ground (a drop is gone after 5 minutes, and a 2x2 spruce
+  takes about 6 by hand). After the tree, **the pillar comes down** from the top (`unstack`: she
+  breaks the block she stands on), then the drops are picked up. Two pathfinder snags this works
+  round, both in `gather`: every node after the first block to break or place is left at a block's
+  corner (`centred` moves them to its middle: on each step of the pillar she walked for the corner of
+  the block she stood on), and the step up sets its block while her feet are still inside it, which
+  the server refuses (the placement waits for the top of the jump). And she **lands before every dig** (`landed`, in
+  `toolOrHand`): a block takes five times as long in the air, and Mineflayer times the dig when it
+  starts (16 s instead of 3 for a log, right after a step up). The camp gets its wood the same way.
   **Only blocks with an open face** (`exposed`), open to air, not water (coal at the bottom of a
   lake: she went down for it, mined at a fifth of the speed with her head under, and drowned; and
   when she has to surface, a dig in progress is dropped, since it goes on whatever her keys say),
@@ -278,6 +298,12 @@ list: the owner removed it.
   « enlève ton armure et donne-la moi », which has another give verb. « enlève » and « retire » are
   give verbs too, so armour on or off is read just before handing over, and « mets » and « porte »
   need the armour word (« mets tout dans le coffre », « la porte »).
+- **Hurt, she eats to heal** (`healTick`, on every health update and every 5 s): Minecraft heals her
+  only while her food bar is at 18 or more, and quickly only with saturation left, so below full
+  health she eats when the bar is under 18, or under 20 with no saturation left. Not with a monster
+  within 10 blocks (a fight's retreat eats for her, and the food in her hand would be her sword), and
+  not while she digs, draws her bow, stacks a block or fishes: the food in her hand would cut it off.
+  With nothing to eat, 7 hearts or less and the bar under 18, she goes to find some (`startForage`).
 - **With nothing to eat, she feeds herself first** (`startForage`, a body-only task with no player and
   **no words**, the owner's call). Only when she's free or at an activity (paused and gone back to,
   like an errand: `pausedActivity`); never during someone's order, and not while fishing, which feeds
@@ -375,7 +401,9 @@ list: the owner removed it.
   pillaring: a path through someone's wall or a dirt tower in their build is not help. Where
   walking can't get there she says so (`McNoPathLines`) instead. **The exceptions are a seed
   on bare farmland where she just harvested** (`harvestBlocks`), **a gathered tree's natural
-  leaves** (`gatheringMovements`) **and her camp's own blocks and floor** (below): nothing else, nowhere else.
+  leaves** (`gatheringMovements`), **the pillar she climbs a tree with, taken down after**
+  (`fell`, `unstack`; an order that takes her away mid-tree leaves it standing, with a log line)
+  **and her camp's own blocks and floor** (below): nothing else, nowhere else.
   Keep them that narrow.
 - **The camp** (« monte le camp », `makeCamp`; « démonte le camp », `breakCamp`): Papa and Tata
   only (C#: `McCampRefusedLines` for anyone else), one at a time. An open camp round a campfire, as
