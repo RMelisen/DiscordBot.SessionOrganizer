@@ -79,7 +79,7 @@ const Move = require('mineflayer-pathfinder/lib/move');
 const mc = require('minecraft-protocol');
 const minecraftData = require('minecraft-data');
 const { Vec3 } = require('vec3');
-const { cooldownFor } = require('./fight');
+const { cooldownFor, answerTo } = require('./fight');
 
 // Collisions with the game's own tolerance: a box less than 1e-7 into a block still touches its face, and on the other
 // two axes overlaps by less than that don't count (vanilla's VoxelShape epsilon). Mineflayer compares exactly, so a box
@@ -2500,6 +2500,7 @@ function fleeTick() {
 // (Restartable: gathering, harvesting, a walk somewhere). Never her own: autonomy picks again by itself once she's free.
 function resumeFor(previous) {
   if (previous && previous.kind === 'back') return { again: previous.again }; // on her way back to one already
+  if (previous && previous.kind === 'fight') return previous.resume; // fighting for herself: that fight's way back
   if (previous && !previous.own && previous.command && Restartable.has(previous.kind)) {
     // A camp goes on where it stands, with what's on it and the same floor.
     const command = previous.kind === 'camp'
@@ -3298,7 +3299,7 @@ function isFamily(name) {
 
 function canDefend() {
   if (bot.isSleeping) return false;
-  if (isFree(task) || ['defend', 'back'].includes(task.kind) || isActivity(task) || FollowsSomeone.has(task.kind)) return true;
+  if (isFree(task) || ['defend', 'back', 'fight'].includes(task.kind) || isActivity(task) || FollowsSomeone.has(task.kind)) return true;
   return Boolean(task.command) && Restartable.has(task.kind);
 }
 
@@ -3342,6 +3343,127 @@ function endDefend(t) {
   task = null;
   fightPace(false);
   bot.pathfinder.setGoal(null);
+  if (bot.health <= RetreatHealth) eatIfHungry(20).catch(() => {});
+  resumeAfterBreak(t.resume);
+}
+
+// ---- Defending herself -------------------------------------------------------------------------------
+
+// Anything that hurts her, or a monster coming at her up close, is dealt with whatever she's doing: she stops, deals
+// with it, and goes back to what she was doing (resumeFor, as after defending someone). Her life comes before an
+// errand: one that can't be started again is dropped, and its player told (`dropped`, nobody to blame). Not asleep, in
+// a boat (her physics is off) or crossing a portal, and not while running from a player. Guarding, patrolling,
+// defending someone or dodging a creeper, the fight under way is already hers (guardTick takes the monster on her
+// first). The stance (fight it, or only get away from it: answerTo) is kept on the task; getting away is Task 4's
+// walk, and meanwhile she never hits what she should only get away from.
+// A monster this close and coming at her is a fight before its first hit; one further off, or standing still (a
+// skeleton on a hill), leaves her to her work.
+const SelfThreat = 4;
+// Nothing on her or near her for this long, and the fight's over.
+const FightQuiet = 2000;
+// How far a foe of the fight still counts, in sight.
+const FightSight = 8;
+// Getting away from something she never hits ends once it's this far, or hasn't come near her for GetOutQuiet.
+const GetOutClear = 20;
+const GetOutQuiet = 8000;
+
+function canSelfDefend() {
+  if (!bot.entity || bot.isSleeping || riding) return false;
+  return !(task && ['portal', 'flee'].includes(task.kind));
+}
+
+// True when she takes it on.
+function selfDefend(foe, stance = 'fight') {
+  if (!foe || foe.isValid === false || !canSelfDefend()) return false;
+  if (task && task.kind === 'fight') {
+    task.foes.add(foe.id);
+    if (stance === 'getOut') {
+      task.threat = foe;
+      task.threatAt = Date.now();
+    }
+    return true;
+  }
+  if (task && ['defend', 'dodge', 'guard', 'patrol'].includes(task.kind)) return false;
+  const previous = task;
+  const resume = resumeFor(previous);
+  if (previous && !resume && isOrder(previous) && previous.kind !== 'seek' && previous.kind !== 'sleep')
+    emit('dropped', { player: previous.player, kind: previous.kind, by: '' });
+  stay();
+  task = { kind: 'fight', player: '', foes: new Set([foe.id]), foe: null, stance, stanceSince: Date.now(),
+    threat: stance === 'getOut' ? foe : null, threatAt: Date.now(), resume, fightFrom: foe.position.clone(), quietSince: null,
+    startedAt: Date.now(), held: null, toward: null, mode: null, modeTarget: null, modeSince: 0 };
+  if (stance === 'fight') equipWeapon();
+  return true;
+}
+
+// Where each monster near her was a moment ago, to tell one coming at her from one standing about.
+const approach = new Map();
+const ApproachEvery = 500;
+
+function comingAt(e, me) {
+  const d = e.position.distanceTo(me);
+  if (d < 2) return true;
+  const seen = approach.get(e.id);
+  if (!seen || Date.now() - seen.at > ApproachEvery * 2) {
+    approach.set(e.id, { d, at: Date.now() });
+    return false;
+  }
+  if (Date.now() - seen.at < ApproachEvery) return false;
+  approach.set(e.id, { d, at: Date.now() });
+  return d < seen.d - 0.2;
+}
+
+// Every physics tick: a monster (not a creeper: creeperTick's) within SelfThreat, in sight and coming at her, while
+// nothing else is fighting it out.
+function threatTick() {
+  if (!canSelfDefend() || (task && ['guard', 'patrol', 'defend', 'dodge', 'fight'].includes(task.kind))) return;
+  const me = bot.entity.position;
+  const foe = bot.nearestEntity((e) => isFoe(e) && e.name !== 'creeper' && !headUnder(e)
+    && e.position.distanceTo(me) < SelfThreat && comingAt(e, me) && inSight(e));
+  if (foe) selfDefend(foe);
+}
+
+// Every physics tick while defending herself: the closest of her foes still near and in sight (and any monster that
+// comes into reach), chased and hit. Over once none is left for FightQuiet.
+function fightTick() {
+  const t = task;
+  if (!t || t.kind !== 'fight') return;
+  const me = bot.entity.position;
+  if (t.stance === 'getOut') {
+    const th = t.threat;
+    if (!th || th.isValid === false || !bot.entities[th.id] || th.position.distanceTo(me) > GetOutClear
+      || Date.now() - t.threatAt > GetOutQuiet) return endFight(t);
+    if (th.position.distanceTo(me) < MeleeReach + 1) t.threatAt = Date.now();
+    return;
+  }
+  const onHer = foeOnHer();
+  if (onHer) t.foes.add(onHer.id);
+  const foes = [...t.foes].map((id) => bot.entities[id])
+    .filter((e) => e && e.isValid !== false && !headUnder(e) && reachable(t, e) && e.position.distanceTo(me) < FightSight
+      && e.position.distanceTo(t.fightFrom) <= FightLeash && inSight(e))
+    .sort((a, b) => a.position.distanceTo(me) - b.position.distanceTo(me));
+  if (foes.length === 0) {
+    if (!t.quietSince) {
+      t.quietSince = Date.now();
+      t.mode = null;
+      t.modeTarget = null;
+      bot.pathfinder.setGoal(null);
+    }
+    if (Date.now() - t.quietSince > FightQuiet) endFight(t);
+    return;
+  }
+  t.quietSince = null;
+  t.foe = foes[0];
+  chase(t, t.foe);
+  strike(t.foe, t);
+}
+
+function endFight(t) {
+  if (task !== t) return;
+  task = null;
+  fightPace(false);
+  bot.pathfinder.setGoal(null);
+  approach.clear();
   if (bot.health <= RetreatHealth) eatIfHungry(20).catch(() => {});
   resumeAfterBreak(t.resume);
 }
@@ -4861,6 +4983,8 @@ function attach() {
     fleeTick();
     defendTick();
   });
+  bot.on('physicsTick', safely(threatTick));
+  bot.on('physicsTick', safely(fightTick));
   bot.on('physicsTick', guideTick);
   bot.on('physicsTick', safely(portalTick));
   bot.on('physicsTick', safely(creeperTick));
@@ -5024,7 +5148,12 @@ function attach() {
       // Any player, Papa included: she turns her back on them for a while (body language).
       if (exact && source && source.type === 'player' && source.username !== bot.username)
         hitBy = { name: source.username, until: Date.now() + HitSulk };
-      if (exact) return emit('hurt', { by: source && source.type === 'player' && source.username !== bot.username ? source.username : null });
+      // Anything else that hurts her is dealt with, whatever she's doing: fought back, or only got away from.
+      if (exact && source && source.type !== 'player' && source !== bot.entity && source.name !== 'creeper') {
+        const answer = answerTo(source.name, { hostile: isFoe(source), tamed: Boolean(meta(source, 'owneruuid')) });
+        selfDefend(source, answer);
+      }
+      if (exact) return emit('hurt',{ by: source && source.type === 'player' && source.username !== bot.username ? source.username : null });
       // No source before 1.19.4: the closest player within reach is a fair guess, and nobody in reach means a mob,
       // a fall or fire.
       const near = bot.nearestEntity((e) => e.type === 'player' && e.username !== bot.username
@@ -5344,7 +5473,7 @@ function noWay() {
   if (!task) return;
   if (task.mode === 'loot') return task.skipLoot.add(task.modeTarget.id); // out of reach: left where it is
   // A monster she can't get to (down a ravine, across a gap): left for a while, not her guard given up.
-  if (task.mode === 'fight' && task.modeTarget && ['guard', 'patrol'].includes(task.kind)) return setUnreachable(task, task.modeTarget);
+  if (task.mode === 'fight' && task.modeTarget && ['guard', 'patrol', 'fight'].includes(task.kind)) return setUnreachable(task, task.modeTarget);
   if (task.reported) return;
   // Following someone who dived: no path under water, and the dive (waterTick) goes after them instead.
   if (FollowsSomeone.has(task.kind) && headUnder(playerEntity(task.player))) return;
