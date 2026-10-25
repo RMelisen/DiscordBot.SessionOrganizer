@@ -703,21 +703,29 @@ async function keepKit() {
 
 // ---- Fire and lava ----------------------------------------------------------------------------------------------
 
-// Set on fire (a fire block at her feet) with a little pool 5 blocks off: she makes for the water and is out within
-// 8 s. Papa is far off, in creative.
+// Set alight by a blaze's fireball dropped on her (it always catches: about 5 s of fire; stepping out of fire blocks, she
+// was often out before it caught), a little pool 5 blocks off: she makes for the water and is put out within 3 s of
+// catching, sooner than it would burn out by itself. Papa is far off, in creative.
 async function burning() {
   const sc = await scene();
   await rcon.run(['gamemode creative Papa', `tp Papa ${S.x - 20.5} -60 ${S.z + 0.5}`, `fill ${sat(5, -1, -1)} ${sat(6, -1, 0)} water`]);
+  sc.body.send({ op: 'stay', player: 'Papa' }); // standing still, so the fireball can't miss
   await wait(1500);
-  await rcon.run([`setblock ${sat(0, 0, 0)} fire`]);
-  await wait(1000);
-  const lit = await q.entityNumber(Name, 'Fire');
-  let fire = lit;
-  for (const end = Date.now() + 8000; Date.now() < end && fire > 0; await wait(250)) fire = await q.entityNumber(Name, 'Fire');
+  const at = await pos(Name);
+  await rcon.run([`summon small_fireball ${at[0]} ${at[1] + 3} ${at[2]} {Motion:[0.0d,-1.0d,0.0d],acceleration_power:0.1d}`]);
+  let litAt = null;
+  let lit = 0;
+  let fire = 0;
+  for (const end = Date.now() + 8000; Date.now() < end && !(litAt && fire <= 0); await wait(200)) {
+    fire = await q.entityNumber(Name, 'Fire');
+    if (fire > 0 && !litAt) litAt = Date.now();
+    lit = Math.max(lit, fire);
+  }
+  const outIn = litAt && fire <= 0 ? Date.now() - litAt : null;
   const health = await q.entityNumber(Name, 'Health');
-  report(lit > 0 && fire <= 0 && health > 0, 'on fire', `${lit > 0 ? `burning (${lit} ticks)` : 'never caught fire'}; ` +
-    `${fire <= 0 ? 'put out within 8 s' : `still burning after 8 s (${fire})`}; her health ${health}`);
-  await rcon.run([`setblock ${sat(0, 0, 0)} air`]);
+  report(Boolean(litAt) && outIn !== null && outIn <= 3000 && health > 0, 'on fire', `${litAt ? `burning (${lit} ticks)` : 'never caught fire'}; ` +
+    `${outIn !== null ? `put out ${(outIn / 1000).toFixed(1)} s after catching` : 'still burning'}; her health ${health}`);
+  await rcon.run([`fill ${sat(-3, 0, -3)} ${sat(3, 0, 3)} air replace fire`]);
   await end(sc, 'on fire');
 }
 
@@ -726,6 +734,7 @@ async function lava() {
   const sc = await scene();
   await rcon.run(['gamemode creative Papa', `tp Papa ${S.x - 20.5} -60 ${S.z + 0.5}`]);
   await wait(1500);
+  const from = sc.body.events.length;
   await rcon.run([`fill ${sat(3, -1, -1)} ${sat(5, -1, 1)} lava`, `tp ${Name} ${S.x + 3.5} -61 ${S.z + 0.5}`]);
   let inLava = true;
   for (const end = Date.now() + 5000; Date.now() < end && inLava; await wait(250)) {
@@ -734,9 +743,15 @@ async function lava() {
     const [a] = await rcon.run([`execute if block ${Math.floor(p[0])} ${Math.floor(p[1])} ${Math.floor(p[2])} minecraft:lava`]);
     inLava = /passed/i.test(a);
   }
+  // Dead, she's out too (respawned at full health): a death is a fail whatever the rest says.
+  const died = sc.body.since(from, (e) => e.ev === 'died').length > 0;
   const health = await q.entityNumber(Name, 'Health');
-  report(!inLava && health > 0, 'in lava', `${inLava ? 'still in the lava after 5 s' : 'out of the lava'}; her health ${health}`);
-  await rcon.run([`fill ${sat(3, -1, -1)} ${sat(5, -1, 1)} grass_block`]);
+  report(!inLava && !died && health > 0, 'in lava', `${died ? 'died in it' : inLava ? 'still in the lava after 5 s' : 'out of the lava'}; her health ${health}`);
+  // Put out before she quits: still burning (no water near), she logged into the next test on fire, and its first
+  // lanes counted the burns as hers.
+  await rcon.run([`fill ${sat(3, -1, -1)} ${sat(5, -1, 1)} grass_block`, `execute at ${Name} run setblock ~ ~ ~ water`]);
+  await wait(1000);
+  await rcon.run([`execute at ${Name} run fill ~-1 ~ ~-1 ~1 ~1 ~1 air replace water`]);
   await end(sc, 'in lava');
 }
 

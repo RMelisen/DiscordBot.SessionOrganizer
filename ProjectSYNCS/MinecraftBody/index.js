@@ -3863,6 +3863,121 @@ function hasFood() {
   return bot.inventory.items().some((i) => bot.registry.foodsByName[i.name] && !BadFood.has(i.name) && !Reserved.has(i.name));
 }
 
+// ---- Fire and lava --------------------------------------------------------------------------------------------
+
+// In lava or fire she steers herself out (the pathfinder avoids both and won't plan from inside them: in a ring of fire
+// she had no way to the water), to the closest standable block within LavaExit, by her own keys, like waterTick: what
+// she was doing stays hers. On fire on dry land, she
+// makes for water within WaterFind (HazardFor at most), through resumeFor like a fight: an errand that can't wait is
+// dropped. A fire resistance potion she carries is drunk at once in either. Not asleep or in a boat.
+const LavaExit = 4;
+const WaterFind = 8;
+const HazardFor = 10000;
+const FireResistDrinkEvery = 10000;
+let lavaSteering = false;
+let fireStates = new Set();
+let fireResistAt = 0;
+
+function onFire() {
+  return (Number(meta(bot.entity, 'shared_flags')) & 0x01) !== 0;
+}
+
+function stateAt(pos, dy = 0) {
+  return bot.world.getBlockStateId(new Vec3(Math.floor(pos.x), Math.floor(pos.y) + dy, Math.floor(pos.z)));
+}
+
+function inLava() {
+  const p = bot.entity.position;
+  return lavaStates.has(stateAt(p)) || lavaStates.has(stateAt(p, 1));
+}
+
+function inFire() {
+  const p = bot.entity.position;
+  return fireStates.has(stateAt(p)) || fireStates.has(stateAt(p, 1));
+}
+
+function inWater() {
+  const p = bot.entity.position;
+  return waterStates.has(stateAt(p)) || waterStates.has(stateAt(p, 1));
+}
+
+// A fire resistance potion she carries, once (FireResistDrinkEvery), unless she has the effect already.
+function drinkFireResist() {
+  if (eating || Date.now() < fireResistAt || bot.entity.effects[11]) return;
+  const potion = bot.inventory.items().find((i) => isPotion(i, FireResistPotions));
+  if (!potion) return;
+  fireResistAt = Date.now() + FireResistDrinkEvery;
+  consumeNow(potion).catch(() => {});
+}
+
+// The closest block within LavaExit she can stand on: solid, with room above it, no lava or fire in that room.
+function lavaExit() {
+  const me = bot.entity.position;
+  let best = null;
+  for (let dx = -LavaExit; dx <= LavaExit; dx++)
+    for (let dz = -LavaExit; dz <= LavaExit; dz++)
+      for (let dy = -1; dy <= 1; dy++) {
+        const at = me.offset(dx, dy, dz).floored();
+        const floor = bot.blockAt(at.offset(0, -1, 0));
+        if (!floor || floor.boundingBox !== 'block' || lavaStates.has(floor.stateId)) continue;
+        const room = [0, 1].map((h) => bot.blockAt(at.offset(0, h, 0)));
+        if (room.some((b) => !b || b.boundingBox !== 'empty' || lavaStates.has(b.stateId) || fireStates.has(b.stateId))) continue;
+        const d = at.offset(0.5, 0, 0.5).distanceTo(me);
+        if (!best || d < best.d) best = { at, d };
+      }
+  return best && best.at;
+}
+
+function waterSpot() {
+  const water = bot.registry.blocksByName.water;
+  if (!water) return null;
+  return bot.findBlocks({ matching: water.id, point: bot.entity.position, maxDistance: WaterFind, count: 16 })
+    .map((p) => bot.blockAt(p.offset(0, 1, 0)) && bot.blockAt(p.offset(0, 1, 0)).boundingBox === 'empty' ? p : null)
+    .find(Boolean) || null;
+}
+
+// Every physics tick, after her swimming.
+function hazardTick() {
+  if (!bot.entity || bot.isSleeping || riding || bot.health <= 0) return;
+  const lava = inLava();
+  const burning = lava || onFire();
+  if (burning) drinkFireResist();
+  if (lava || inFire()) {
+    const out = lavaExit();
+    if (!out) return;
+    lavaSteering = true;
+    bot.lookAt(out.offset(0.5, 0.5, 0.5), true).catch(() => {});
+    bot.setControlState('forward', true);
+    bot.setControlState('jump', true);
+    bot.setControlState('sprint', true);
+    return;
+  }
+  if (lavaSteering) {
+    lavaSteering = false;
+    for (const key of ['forward', 'jump', 'sprint']) bot.setControlState(key, false);
+  }
+  const t = task;
+  if (t && t.kind === 'hazard') {
+    if (!burning || inWater() || Date.now() > t.until) endHazard(t);
+    return;
+  }
+  if (!burning || inWater() || !canSelfDefend() || (t && t.kind === 'dodge')) return;
+  const water = waterSpot();
+  if (!water) return;
+  const resume = resumeFor(t);
+  if (t && !resume && isOrder(t) && t.kind !== 'seek' && t.kind !== 'sleep') emit('dropped', { player: t.player, kind: t.kind, by: '' });
+  stay();
+  task = { kind: 'hazard', player: '', resume, until: Date.now() + HazardFor };
+  bot.pathfinder.setGoal(new goals.GoalNear(water.x, water.y, water.z, 0));
+}
+
+function endHazard(t) {
+  if (task !== t) return;
+  task = null;
+  bot.pathfinder.setGoal(null);
+  resumeAfterBreak(t.resume);
+}
+
 // ---- Emergencies: golden apples, potions, the totem -----------------------------------------------------------
 
 // Golden apples are for when she's close to dying, never a meal (eatIfHungry, hasFood leave them be).
@@ -5325,6 +5440,7 @@ function attach() {
     prickly = statesOf(['sweet_berry_bush', 'cactus', 'wither_rose']);
     lavaStates = statesOf(['lava']);
     airStates = statesOf(['air', 'cave_air', 'void_air']);
+    fireStates = statesOf(['fire', 'soul_fire']);
     // A hair wider than a player (0.6). Mineflayer's collisions leave her side exactly on a block's face (a step she's
     // jumping up, a wall she walks along), and a 26.3 server takes that as walking into the block: it puts her back,
     // every tick, and she never climbs a one-block step. 0.0001 off the face is enough (checked on a local Paper 26.3
@@ -5341,6 +5457,7 @@ function attach() {
     // After the pathfinder's own tick (its plugin is injected later than attach() runs), so her swimming can take the
     // controls from it.
     bot.on('physicsTick', safely(waterTick));
+    bot.on('physicsTick', safely(hazardTick)); // after her swimming: out of lava comes first
     bot.on('physicsTick', safely(boardTick));
     // After the pathfinder too: it presses jump, this lets go of it over a field.
     bot.on('physicsTick', safely(farmlandTick));
@@ -5894,6 +6011,7 @@ function noWay() {
     return emit('cornered', { player: task.player });
   }
   if (task.kind === 'defend') return endDefend(task); // can't get at them: back to what she was doing
+  if (task.kind === 'hazard') return endHazard(task); // no way to the water: she burns it out
   task.reported = true;
   emit('cantReach', { player: task.player, why: 'noPath' });
   if (task.kind === 'come' || task.kind === 'goto' || task.kind === 'guide') stay();
