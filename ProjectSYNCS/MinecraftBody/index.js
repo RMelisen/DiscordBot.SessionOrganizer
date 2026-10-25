@@ -725,6 +725,8 @@ const RetreatFor = 20000;
 // from at least CreeperRange; without, she keeps out of its reach and lets the player deal with it.
 const CreeperRange = 6;
 const CreeperSight = 16;
+// A monster she chases that stays out of sight this long (gone round a corner for good, down a hole) is let go.
+const FoeUnseen = 4000;
 
 function guard(player, quiet = false) {
   const target = playerEntity(player);
@@ -862,6 +864,20 @@ function playerInLine(target) {
   }) || null;
 }
 
+// Nothing solid between `from` (eyes) and `entity`'s head or chest: a monster she can see, and shoot or hit. A creeper
+// in a cave under her feet was « near », and she shot arrow after arrow into the ground at it.
+function inSight(entity, from = bot.entity.position.offset(0, 1.62, 0)) {
+  const h = entity.height || 1.7;
+  return [0.9, 0.6].some((k) => {
+    const line = entity.position.offset(0, h * k, 0).minus(from);
+    const length = line.norm();
+    return length < 0.01 || !bot.world.raycast(from, line.scaled(1 / length), length);
+  });
+}
+
+// What a player sees from: their eyes.
+const eyesOf = (e) => e.position.offset(0, 1.62, 0);
+
 // Three blocks to her side of the line to `target`, the side with more room: a clear shot from there.
 function sideStep(target) {
   const me = bot.entity.position;
@@ -895,7 +911,8 @@ async function shoot(target) {
       await wait(100);
       await bot.lookAt(aim(), true);
     }
-    if (playerInLine(target)) await bot.look(bot.entity.yaw, Math.PI / 2, true);
+    // And not into a wall or the ground: gone behind something while she drew, the arrow goes up too.
+    if (playerInLine(target) || target.isValid === false || !inSight(target)) await bot.look(bot.entity.yaw, Math.PI / 2, true);
     bot.deactivateItem();
   } catch (err) {
     log('shot failed:', err && err.message ? err.message : String(err));
@@ -975,8 +992,10 @@ function guardTick() {
 
   // Creepers: warned about once each, shot from range, never hit by hand. Seen from CreeperSight: one walks 10 blocks
   // in about 3 s, two shots at most, and it takes three to kill (it blew up by Papa that way on the local server).
+  // Only one in sight, hers or the guarded player's: one in a cave under them is no threat, and can't be shot.
   const creeper = bot.nearestEntity((e) => e.name === 'creeper' && e.isValid !== false
-    && (e.position.distanceTo(center) < CreeperSight || e.position.distanceTo(me) < CreeperSight));
+    && (e.position.distanceTo(center) < CreeperSight || e.position.distanceTo(me) < CreeperSight)
+    && (inSight(e) || (owner && inSight(e, eyesOf(owner)))));
   if (creeper) {
     if (!t.warned.has(creeper.id)) {
       t.warned.add(creeper.id);
@@ -984,7 +1003,7 @@ function guardTick() {
     }
     const d = creeper.position.distanceTo(me);
     if (d < CreeperRange) return setMode(t, 'flee', creeper, new goals.GoalInvert(new goals.GoalFollow(creeper, CreeperRange + 3)), true);
-    if (bowReady()) {
+    if (bowReady() && inSight(creeper)) {
       // Never through a player: standing behind the one she guards, she put four arrows in his back while the
       // creeper walked up to him. With someone in the way she steps aside first.
       const inTheWay = playerInLine(creeper);
@@ -995,19 +1014,23 @@ function guardTick() {
     }
   }
 
-  // Every other monster: chased and hit. Not one under water (a drowned at the bottom): she can't reach it there.
-  if (t.foe && (!t.foe.isValid || t.foe.position.distanceTo(center) > radius * 1.6 || headUnder(t.foe))) t.foe = null;
+  // Every other monster: chased and hit. Not one under water (a drowned at the bottom): she can't reach it there. Nor
+  // one she can't see (in a cave under the ground): taken on only in sight, and let go once out of it for FoeUnseen.
+  if (t.foe && inSight(t.foe)) t.foeSeenAt = Date.now();
+  if (t.foe && (!t.foe.isValid || t.foe.position.distanceTo(center) > radius * 1.6 || headUnder(t.foe)
+    || Date.now() - (t.foeSeenAt || 0) > FoeUnseen)) t.foe = null;
   if (!t.foe) {
     t.foe = bot.nearestEntity((e) => isFoe(e) && e.name !== 'creeper' && !headUnder(e)
-      && (e.position.distanceTo(center) < radius || e.position.distanceTo(me) < 6));
+      && (e.position.distanceTo(center) < radius || e.position.distanceTo(me) < 6) && inSight(e));
     if (!t.foe) return goHome();
+    t.foeSeenAt = Date.now();
   }
   const foe = t.foe;
   if (t.mode !== 'fight' || t.modeTarget !== foe) {
     equipWeapon();
     setMode(t, 'fight', foe, new goals.GoalFollow(foe, 1), true);
   }
-  if (foe.position.distanceTo(me) < MeleeReach && Date.now() >= attackReadyAt) {
+  if (foe.position.distanceTo(me) < MeleeReach && Date.now() >= attackReadyAt && inSight(foe)) {
     attackReadyAt = Date.now() + 650; // a sword's cooldown; close enough for anything she holds
     bot.lookAt(foe.position.offset(0, (foe.height || 1.6) * 0.8, 0), true).catch(() => {});
     bot.attack(foe);
@@ -1319,6 +1342,8 @@ const FarmProduce = new Set(['wheat', 'wheat_seeds', 'carrot', 'potato', 'poison
 const SeedsKept = { wheat_seeds: 16, carrot: 16, potato: 16, beetroot_seeds: 16 };
 // And what she keeps to eat: the carrots and potatoes kept as seeds are food too, so only these two are extra.
 const FoodKept = { beetroot: 8, melon_slice: 8 };
+// And wheat for the cows and sheep: the seeds, carrots and potatoes kept to replant already feed the rest of the pen.
+const FeedKept = { wheat: 16 };
 
 // What lies in a field is the field's: produce (FarmProduce) on or beside farmland or a crop. She only ever picked up
 // the drops she saw fall from what she broke, within 2 blocks of it, so a carrot that rolled further, or one someone
@@ -1443,8 +1468,13 @@ function cropsNear(point) {
 
 // The chest or barrel a farm (or a pen) stores into.
 function chestNear(point) {
+  return chestsNear(point, 1)[0] || null;
+}
+
+// The chests and barrels within ChestRadius of a spot, closest first.
+function chestsNear(point, count) {
   const chestIds = bot.registry.blocksArray.filter((b) => b.name === 'chest' || b.name === 'barrel').map((b) => b.id);
-  return bot.findBlocks({ matching: chestIds, maxDistance: ChestRadius, point, count: 1 })[0] || null;
+  return bot.findBlocks({ matching: chestIds, maxDistance: ChestRadius, point, count });
 }
 
 async function farmRound() {
@@ -1470,13 +1500,13 @@ async function farmRound() {
   }
 }
 
-// Puts the produce in the farm's chest, keeping back enough seeds to replant and a little to eat. A full chest
-// keeps the rest on her.
+// Puts the produce in the farm's chest, keeping back enough seeds to replant, a little to eat and wheat for the
+// animals. A full chest keeps the rest on her.
 async function storeProduce(mine) {
   const totals = new Map();
   for (const item of bot.inventory.items())
     if (FarmProduce.has(item.name)) totals.set(item.name, (totals.get(item.name) || 0) + item.count);
-  await storeIn(mine, [...totals].map(([name, n]) => [name, n - (SeedsKept[name] || FoodKept[name] || 0)]));
+  await storeIn(mine, [...totals].map(([name, n]) => [name, n - (SeedsKept[name] || FoodKept[name] || FeedKept[name] || 0)]));
 }
 
 // [name, count] pairs into the task's chest; a full chest keeps the rest on her.
@@ -2839,13 +2869,27 @@ function creeperTick() {
   // Near her, or close to someone near her: one walked past her to the player by her camp and blew up there.
   const others = Object.values(bot.players).map((p) => p.entity)
     .filter((e) => e && e !== bot.entity && e.position.distanceTo(me) < DefendRadius);
+  // And in sight, hers or theirs: one in a cave under the ground can't get at anyone, and she shot into the ground at it.
   const creeper = bot.nearestEntity((e) => e.name === 'creeper' && e.isValid !== false && e.position.distanceTo(me) < DefendRadius
-    && (e.position.distanceTo(me) < CreeperNear || others.some((o) => o.position.distanceTo(e.position) < CreeperByThem)));
+    && ((e.position.distanceTo(me) < CreeperNear && inSight(e))
+      || others.some((o) => o.position.distanceTo(e.position) < CreeperByThem && inSight(e, eyesOf(o)))));
   if (!creeper) return;
   // Fighting for someone, the way back is that fight's.
   const resume = task && task.kind === 'defend' ? task.resume : resumeFor(task);
   stay();
-  task = { kind: 'dodge', player: '', creeper, resume, until: Date.now() + DodgeFor, mode: null, modeTarget: null, modeSince: 0 };
+  task = { kind: 'dodge', player: '', creeper, resume, until: Date.now() + DodgeFor, mode: null, modeTarget: null, modeSince: 0,
+    seenAt: Date.now() };
+}
+
+// A creeper out of everyone's sight this long (gone down a hole, behind a hill) ends the dodge.
+const CreeperUnseen = 3000;
+
+function seenByAnyone(c) {
+  if (inSight(c)) return true;
+  const me = bot.entity.position;
+  return Object.values(bot.players).some((p) => p.entity && p.entity !== bot.entity
+    && p.entity.position.distanceTo(me) < DefendRadius && p.entity.position.distanceTo(c.position) < CreeperByThem
+    && inSight(c, eyesOf(p.entity)));
 }
 
 // Away from it to a point (8 blocks straight off, again when she gets there): an inverted follow (« further than 12 »)
@@ -2857,7 +2901,9 @@ function dodgeTick() {
   if (!t || t.kind !== 'dodge') return;
   const c = t.creeper;
   const me = bot.entity.position;
-  if (!c || c.isValid === false || !bot.entities[c.id] || c.position.distanceTo(me) > CreeperClear || Date.now() > t.until) {
+  if (c && c.isValid !== false && seenByAnyone(c)) t.seenAt = Date.now();
+  if (!c || c.isValid === false || !bot.entities[c.id] || c.position.distanceTo(me) > CreeperClear || Date.now() > t.until
+    || Date.now() - t.seenAt > CreeperUnseen) {
     task = null;
     stopBow();
     bot.pathfinder.setGoal(null);
@@ -2877,6 +2923,8 @@ function dodgeTick() {
     }
     return;
   }
+  // Out of her own sight (behind a tree, someone else sees it): no arrow into the bark, she waits for it to show.
+  if (!inSight(c)) return setMode(t, 'wait', c, null);
   const inTheWay = playerInLine(c);
   if (inTheWay) return setMode(t, 'aside', c, sideStep(c), false);
   setMode(t, 'shoot', c, null);
@@ -3156,12 +3204,14 @@ async function undress(player) {
 // ---- Routine: her day, built on the places she was asked to remember ------------------------------------
 
 // C# sends the farm, fishing spot, animal pen and home it found among the remembered places (`routine`). By day she
-// works in WorkBlock turns, one place after the other; at dusk she goes home and stays there till morning; the night
+// works in turns (WorkBlock, by place), one place after the other; at dusk she goes home and stays there till morning; the night
 // is autoSleepTick's. A place in another dimension, or farther than OwnTripMax, is left out; one that fails (no way
 // there, nothing to do there) is left out for SpotRetry, silently. Orders always come first.
 const routine = { farm: null, fish: null, ranch: null, home: null };
 const WorkKinds = ['farm', 'fish', 'ranch'];
-const WorkBlock = 360000;
+// How long a turn lasts at each: the fields get the most, the pen the least. A pen needs a few minutes now and then
+// (two fed, a cull, the wool), and six-minute turns there left the fields to wait.
+const WorkBlock = { farm: 540000, fish: 360000, ranch: 180000 };
 const OwnTripMax = 256;
 const TripTimeout = 180000;
 const SpotRetry = 600000;
@@ -3203,7 +3253,7 @@ function routineTick() {
     const from = WorkKinds.indexOf(lastWork);
     const next = [1, 2, 3].map((i) => WorkKinds[(from + i) % WorkKinds.length]).find((k) => kinds.includes(k));
     if (isRoutine(t) && t.what === next && t.kind !== 'trip') {
-      t.turnEnd = Date.now() + WorkBlock; // the only place: another turn of the same
+      t.turnEnd = Date.now() + WorkBlock[next]; // the only place: another turn of the same
       return true;
     }
     return startTrip(next);
@@ -3233,7 +3283,7 @@ function startTrip(what) {
   const s = routine[what];
   const spot = new Vec3(s.x, s.y, s.z);
   stay();
-  const trip = { kind: 'trip', own: true, player: '', what, spot, turnEnd: Date.now() + WorkBlock, deadline: Date.now() + TripTimeout };
+  const trip = { kind: 'trip', own: true, player: '', what, spot, turnEnd: Date.now() + (WorkBlock[what] || 0), deadline: Date.now() + TripTimeout };
   task = trip;
   if (WorkKinds.includes(what)) lastWork = what;
   emit('routine', { what });
@@ -4091,8 +4141,9 @@ function creeperWatchTick() {
   for (const player of Object.values(bot.players)) {
     const e = player.entity;
     if (!e || player.username === bot.username || player.username === guarded || e.position.distanceTo(me) > 32) continue;
+    // Not one under their floor: a creeper in a cave below is no creeper behind them.
     const creeper = bot.nearestEntity((c) => c.name === 'creeper' && c.isValid !== false && !warnedCreepers.has(c.id)
-      && c.position.distanceTo(e.position) < 4);
+      && c.position.distanceTo(e.position) < 4 && inSight(c, eyesOf(e)));
     if (!creeper) continue;
     const vx = creeper.position.x - e.position.x;
     const vz = creeper.position.z - e.position.z;
@@ -4253,7 +4304,9 @@ async function breed(mine, herd) {
     if (h.all >= HerdMax) continue;
     const ready = h.adults.filter((e) => !isNamed(e) && Date.now() - (mine.fedAt.get(e.id) || 0) > FedAgain);
     if (ready.length < 2) continue;
-    if (bot.inventory.items().filter((i) => Livestock[species](i.name)).reduce((sum, i) => sum + i.count, 0) < 2) {
+    if (feedCount(species) < 2) await fetchFeed(mine, species);
+    if (task !== mine) return;
+    if (feedCount(species) < 2) {
       lacking('breedFood');
       continue;
     }
@@ -4261,6 +4314,47 @@ async function breed(mine, herd) {
       if (task !== mine) return;
       mine.fedAt.set(animal.id, Date.now());
       await useOn(animal, (n) => Livestock[species](n));
+    }
+  }
+}
+
+function feedCount(species) {
+  return bot.inventory.items().filter((i) => Livestock[species](i.name)).reduce((sum, i) => sum + i.count, 0);
+}
+
+// Short of a species' food, she takes some from the pen's chests (within ChestRadius of it), FeedTaken at most: the
+// wheat a farm stored is there. Chests that had none aren't opened again for FeedLookAgain, or every round would.
+const FeedTaken = 16;
+const FeedLookAgain = 120000;
+
+async function fetchFeed(mine, species) {
+  if (!mine.feedLookedAt) mine.feedLookedAt = new Map(); // a copy made to resume the pen may not have it
+  if (Date.now() < (mine.feedLookedAt.get(species) || 0) + FeedLookAgain) return;
+  mine.feedLookedAt.set(species, Date.now());
+  for (const at of chestsNear(mine.anchor, 4)) {
+    let want = FeedTaken - feedCount(species);
+    if (task !== mine || want <= 0) return;
+    const block = bot.blockAt(at);
+    if (!block || (block.name !== 'chest' && block.name !== 'barrel')) continue;
+    try {
+      await bot.pathfinder.goto(new goals.GoalNear(at.x, at.y, at.z, 2));
+      if (task !== mine) return;
+      const box = await bot.openContainer(block);
+      try {
+        const there = new Map();
+        for (const i of box.containerItems())
+          if (Livestock[species](i.name)) there.set(i.type, (there.get(i.type) || 0) + i.count);
+        for (const [type, n] of there) {
+          if (want <= 0) break;
+          const take = Math.min(want, n);
+          await box.withdraw(type, null, take);
+          want -= take;
+        }
+      } finally {
+        box.close();
+      }
+    } catch (err) {
+      log('feed not taken:', err && err.message ? err.message : String(err));
     }
   }
 }

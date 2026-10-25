@@ -11,6 +11,7 @@
 //   node run.js trip                   250 blocks, far past the loaded chunks: re-planning as she goes
 //   node run.js players [name ...]     with players around: follow a walk and through the hard lanes, come, guide, lose one, seek, gaze (players-test.js)
 //   node run.js orders [name ...]      smelting, gathering, fishing, giving, storing, harvesting, farm, patrol (orders.js)
+//   node run.js routine                her day's turns: 9 minutes at a farm, 3 at a pen, back (routine.js, ~13 min)
 // See README.md for the server.
 const rcon = require('./rcon');
 const course = require('./course');
@@ -20,6 +21,7 @@ const { safety, scenery, GroveScenery } = require('./safety');
 const { survival } = require('./survival');
 const { playersTest } = require('./players-test');
 const { orders } = require('./orders');
+const { routine } = require('./routine');
 const { standIn } = require('./players');
 const { carried } = require('./query');
 
@@ -333,6 +335,7 @@ async function gatherTest() {
   else if (what === 'trip') ok = await trip();
   else if (what === 'players') ok = await playersTest(rest);
   else if (what === 'orders') ok = await orders(rest);
+  else if (what === 'routine') ok = await routine();
   else if (what === 'all') {
     ok = (await lanes([])) && ok;
     ok = (await crops()) && ok;
@@ -346,7 +349,7 @@ async function gatherTest() {
     ok = (await playersTest([])) && ok;
     ok = (await orders([])) && ok;
   } else {
-    console.log('usage: node run.js build | lanes [name ...] | crops | items | gather | harvest | actions [name ...] | safety | survival [name ...] | trip | players [name ...] | orders [name ...] | all   [-v]');
+    console.log('usage: node run.js build | lanes [name ...] | crops | items | gather | harvest | actions [name ...] | safety | survival [name ...] | trip | players [name ...] | orders [name ...] | routine | all   [-v]');
     process.exit(2);
   }
   process.exit(ok ? 0 : 1);

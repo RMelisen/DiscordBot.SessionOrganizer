@@ -148,6 +148,34 @@ async function creeperBusy() {
   await end(sc, 'creeper while busy');
 }
 
+// Monsters she can't see, shut in chambers under the arena's floor (the flat world's dirt, on its bedrock): a creeper
+// 6 blocks off and a zombie 6 the other way, with no AI so they stay put. Guarding Papa (`guard`) or free (her own
+// creeper watch), she leaves both alone: not an arrow into the ground, not a swing at the floor, and no warning.
+// Before, she shot at the creeper through the grass.
+async function buried(guarding) {
+  const sc = await scene();
+  await rcon.run([`fill ${sat(5, -3, -1)} ${sat(7, -2, 1)} air`, `fill ${sat(-7, -3, -1)} ${sat(-5, -2, 1)} air`,
+    `summon creeper ${S.x + 6.5} -63 ${S.z + 0.5} {NoAI:1b,PersistenceRequired:1b,Tags:["buried"]}`,
+    `summon zombie ${S.x - 5.5} -63 ${S.z + 0.5} {NoAI:1b,PersistenceRequired:1b,Tags:["buried"]}`]);
+  if (guarding) {
+    sc.body.send({ op: 'guard', player: 'Papa' });
+    await sc.body.next((e) => e.ev === 'moving', 5000);
+  }
+  const from = sc.body.events.length;
+  await wait(15000);
+  const arrows = await q.carried(Name, 'arrow');
+  const flying = await q.count(`@e[type=arrow,${near(30)}]`);
+  const creeperHealth = await q.entityNumber('@e[type=creeper,tag=buried,limit=1]', 'Health');
+  const zombieHealth = await q.entityNumber('@e[type=zombie,tag=buried,limit=1]', 'Health');
+  const warned = sc.body.since(from, (e) => e.ev === 'creeper').length;
+  report(arrows === 32 && flying === 0 && creeperHealth === 20 && zombieHealth === 20 && warned === 0,
+    guarding ? 'buried, guarding' : 'buried, free',
+    `arrows on her ${arrows}/32, in the world ${flying}; creeper health ${creeperHealth}, zombie ${zombieHealth} (20 untouched); ` +
+    `creeper warnings ${warned}`);
+  await rcon.run([`kill @e[tag=buried]`, `fill ${sat(-7, -3, -1)} ${sat(7, -2, 1)} dirt`]);
+  await end(sc, 'buried');
+}
+
 async function enderman() {
   const sc = await scene();
   sc.body.send({ op: 'guard', player: 'Papa' });
@@ -282,7 +310,7 @@ async function drowning() {
 }
 
 async function survival(only = []) {
-  const all = { zombies: guardZombies, skeleton: guardSkeleton, creeper, creeperbusy: creeperBusy, enderman, retreat, flee: fleePlayer, defend: defendPapa, stranger: defendStranger, midharvest: defendMidHarvest, harvestpapa: () => defendMidHarvest(true), drowning };
+  const all = { zombies: guardZombies, skeleton: guardSkeleton, creeper, creeperbusy: creeperBusy, buried: () => buried(true), buriedfree: () => buried(false), enderman, retreat, flee: fleePlayer, defend: defendPapa, stranger: defendStranger, midharvest: defendMidHarvest, harvestpapa: () => defendMidHarvest(true), drowning };
   for (const [name, run] of Object.entries(all)) {
     if (only.length > 0 && !only.includes(name)) continue;
     try {
