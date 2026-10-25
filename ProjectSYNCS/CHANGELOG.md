@@ -10,6 +10,14 @@ the git history; versions that were skipped or only existed on a side branch are
 - Minecraft: hurt, she eats to heal (Minecraft only heals a full stomach), and goes to find food if
   she has none.
 
+## 7.37.1 — 2026-10-25
+
+- Minecraft: she only fights and shoots monsters she can see, so no more arrows into the ground at a
+  creeper in a cave below.
+- Minecraft: her farm keeps 16 wheat on her for the animals, and keeping animals she takes their food
+  from the pen's chest when she runs out.
+- Minecraft: her day spends longer in the fields and less time at the animal pen.
+
 ## 7.37.0 — 2026-10-25
 
 - Minecraft: armour given to her goes on, copper armour and a shield included, and she thanks whoever

@@ -239,12 +239,13 @@ async function harvestColumn(body, crop) {
 }
 
 async function keepFarm(body) {
-  // A small wheat plot, unripe, a chest by it: she keeps it; it ripens; the next round harvests and stores.
+  // A small wheat plot, unripe, a chest by it: she keeps it; it ripens; the next round harvests and stores. She starts
+  // with 10 wheat and the plot gives 14: 16 stay on her for the animals (FeedKept), the rest goes in the chest.
   await rcon.run([`fill ${at(-4, -1, -12)} ${at(0, -1, -10)} farmland[moisture=7]`, `setblock ${at(-2, -1, -11)} water`,
     `fill ${at(-4, 0, -12)} ${at(0, 0, -10)} wheat[age=3]`, `setblock ${at(-2, 0, -11)} air`,
     `setblock ${at(2, 0, -11)} chest[facing=west]`, `data merge block ${at(2, 0, -11)} {Items:[]}`]);
   await reset(body, 1.5, -9.5);
-  await rcon.run([`give ${Name} wheat_seeds 20`]);
+  await rcon.run([`give ${Name} wheat_seeds 20`, `give ${Name} wheat 10`]);
   body.send({ op: 'farm', player: 'tester' });
   const going = await ev(body, ['farming', 'cantFarm'], 10000);
   await wait(3000);
@@ -255,9 +256,10 @@ async function keepFarm(body) {
   const carrots = (await q.inBlock(C.x + 2, -60, C.z - 11, 'carrot')) + (await q.carried(Name, 'carrot'));
   const carrotsLying = await lying('carrot', -2, -11, 5);
   const seedsOn = await q.carried(Name, 'wheat_seeds');
+  const wheatOn = await q.carried(Name, 'wheat');
   body.send({ op: 'stay' });
-  report(Boolean(going && going.ev === 'farming') && wheat > 0 && seedsOn <= 16 + 8 && carrots === 2 && carrotsLying === 0, 'keep a farm',
-    `${fmt(going)}; chest has ${wheat} wheat; seeds on her ${seedsOn} (keeps 16); carrots picked up ${carrots}/2, left lying ${carrotsLying}`);
+  report(Boolean(going && going.ev === 'farming') && wheat > 0 && wheatOn === 16 && seedsOn <= 16 + 8 && carrots === 2 && carrotsLying === 0, 'keep a farm',
+    `${fmt(going)}; chest has ${wheat} wheat, she keeps ${wheatOn} (16); seeds on her ${seedsOn} (keeps 16); carrots picked up ${carrots}/2, left lying ${carrotsLying}`);
 }
 
 async function patrol(body) {

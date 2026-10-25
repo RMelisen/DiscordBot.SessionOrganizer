@@ -93,6 +93,41 @@ async function ranch() {
   for (const t of troubles(body)) console.log('      log:', t.slice(0, 200));
 }
 
+// Breeding food from the pen's chest: four cows (under HerdMax, so two get fed), no wheat on her, 32 in the chest.
+// She takes some (FeedTaken at most) and feeds two, and never says she lacks it. With the chest empty she says so.
+async function ranchFeed(stocked) {
+  await rcon.run(['kill @e[type=cow]', 'kill @e[type=sheep]', 'kill @e[type=pig]', `kill @e[type=!player,${inPen}]`, ...penCommands()]);
+  await wait(1500);
+  await rcon.run([`kill @e[type=item,${inPen}]`,
+    ...[0, 1, 2, 3].map((i) => `summon cow ${P.x - 3 + i * 2} -60 ${P.z + 2}`)]);
+  const body = startBody();
+  await spawned(body);
+  await rcon.run([`clear ${Name}`, `give ${Name} iron_sword 1`, `tp ${Name} ${P.x + 0.5} -60 ${P.z + 0.5}`,
+    `data merge block ${pat(-1, 0, -1)} {Items:[${stocked ? '{Slot:0b,id:"minecraft:wheat",count:32}' : ''}]}`]);
+  await wait(3000);
+  const cowsBefore = await q.count(`@e[type=cow,${inPen}]`);
+  body.send({ op: 'ranch', player: 'tester' });
+  const started = await body.next((e) => e.ev === 'ranching' || e.ev === 'cantRanch', 15000);
+  await wait(25000);
+  body.send({ op: 'stay' });
+  await wait(1500);
+  const inChest = await q.inBlock(P.x - 1, -60, P.z - 1, 'wheat');
+  const onHer = await q.carried(Name, 'wheat');
+  const fed = 32 - inChest - onHer;
+  const lacked = body.events.some((e) => e.ev === 'lacking' && e.what === 'breedFood');
+  const calves = await q.count(`@e[type=cow,${inPen}]`) - cowsBefore;
+  await body.quit();
+  if (stocked) {
+    report(Boolean(started) && started.ev === 'ranching' && inChest < 32 && 32 - inChest <= 16 && fed >= 2 && !lacked, 'feed from chest',
+      `${started ? started.ev : 'no answer'}; chest wheat 32 -> ${inChest} (took ${32 - inChest}, 16 at most); on her ${onHer}; ` +
+      `fed ${fed}; calves ${calves}; said she lacked food: ${lacked}`);
+  } else {
+    report(Boolean(started) && started.ev === 'ranching' && lacked && onHer === 0, 'empty chest', `${started ? started.ev : 'no answer'}; ` +
+      `said she lacked food: ${lacked}; wheat on her ${onHer}`);
+  }
+  for (const t of troubles(body)) console.log('      log:', t.slice(0, 200));
+}
+
 // Scenery around a cut grove (run.js gather builds it): every block that isn't a log or leaves is still there.
 const GroveScenery = [
   ['69 -60 45', 'oak_fence'], ['69 -60 46', 'oak_fence'], ['69 -60 47', 'oak_fence'], ['70 -60 45', 'oak_fence'],
@@ -112,6 +147,8 @@ async function scenery(spots, what) {
 
 async function safety() {
   await ranch();
+  await ranchFeed(true);
+  await ranchFeed(false);
   const failed = results.filter((r) => !r.ok);
   console.log(`\n${results.length - failed.length}/${results.length} safety checks passed`);
   return failed.length === 0;
