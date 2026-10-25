@@ -3,6 +3,13 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.38.0 — 2026-10-25
+
+- Minecraft: asked for wood, she fells whole trees, big 2x2 ones included, climbing on a pillar she
+  takes down after, instead of leaving trunks floating half cut.
+- Minecraft: hurt, she eats to heal (Minecraft only heals a full stomach), and goes to find food if
+  she has none.
+
 ## 7.37.1 — 2026-10-25
 
 - Minecraft: she only fights and shoots monsters she can see, so no more arrows into the ground at a
