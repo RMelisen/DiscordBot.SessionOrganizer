@@ -44,7 +44,9 @@ async function scene({ stranger = false, family = true, kit = true } = {}) {
     'gamerule spawn_monsters false',
     ...(kit ? [`give ${Name} iron_sword 1`, `give ${Name} bow 1`, `give ${Name} arrow 32`, `give ${Name} cooked_beef 16`,
       `give ${Name} iron_chestplate 1`] : []),
-    'gamemode survival Papa', 'difficulty normal', 'time set 18000']);
+    // Survival for the stand-ins whatever a scene before left them in: a creative stranger can't be hurt, and every
+    // defending scene after one went quiet.
+    'gamemode survival Papa', ...(other ? ['gamemode survival Stranger'] : []), 'difficulty normal', 'time set 18000']);
   if (family) body.send({ op: 'family', names: ['Papa'] });
   await wait(2500);
   return { body, papa, other };
