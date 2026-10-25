@@ -79,6 +79,7 @@ const Move = require('mineflayer-pathfinder/lib/move');
 const mc = require('minecraft-protocol');
 const minecraftData = require('minecraft-data');
 const { Vec3 } = require('vec3');
+const { cooldownFor } = require('./fight');
 
 // Collisions with the game's own tolerance: a box less than 1e-7 into a block still touches its face, and on the other
 // two axes overlaps by less than that don't count (vanilla's VoxelShape epsilon). Mineflayer compares exactly, so a box
@@ -264,6 +265,9 @@ const BurningFloor = 40;
 // What hurts to brush against, and the cost of a step beside it.
 let prickly = new Set();
 const PricklyNear = 8;
+// Lava, and what a fall goes straight through (air): fightMovements keeps her off the lip of a drop or a lava pool.
+let lavaStates = new Set();
+let airStates = new Set();
 
 // Water with farmland beside it, at the same height.
 function isFieldWater(pos) {
@@ -586,9 +590,10 @@ function stay() {
     walkSprint = null;
     bot.pathfinder.setMovements(gentleMovements());
   }
+  fightPace(false);
 }
 
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const wait =(ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // ---- Activities: what she goes back to after a short errand or a night's sleep ----------------------
 
@@ -955,6 +960,142 @@ async function equipWeapon() {
   }
 }
 
+// ---- Striking: the one way every fight hits ----------------------------------------------------------------
+
+// A hit taken with a drop or lava behind her throws her in (knockback). Before swinging she steps off such a lip for
+// EdgeStep, towards what she fights or along the edge.
+const EdgeStep = 1000;
+// A foe this far from where it stood when the fight started has run: let go, or she's drawn deep into a cave.
+const FightLeash = 12;
+// A sword's sweep lands on whoever stands within a block of what it hits. With a player that close she hits on the way
+// down from a jump: a critical hit, which never sweeps (the game sweeps only from the ground). Not hitting at all left a
+// zombie on Papa until it killed him.
+const SweepReach = 1.6;
+
+// A drop of more than 3 blocks, lava, or the void at (x, y, z), y being the level of her feet. Unloaded is no hazard
+// (the step costs ask in the middle of a search, where a guess must not throw).
+function hazardAt(x, y, z) {
+  const at = (dy) => bot.world.getBlockStateId(new Vec3(Math.floor(x), y + dy, Math.floor(z)));
+  const here = at(0);
+  if (here == null) return false;
+  if (lavaStates.has(here)) return true;
+  for (let d = 1; d <= 4; d++) {
+    if (y - d < minY()) return true;
+    const below = at(-d);
+    if (lavaStates.has(below)) return true;
+    if (!airStates.has(below)) return false;
+  }
+  return true;
+}
+
+// Where to step before swinging at `foe`, when the block behind her (away from it) is a hazard: towards it, else
+// along the edge either way. Null when her back is safe.
+function edgeBehind(foe) {
+  const me = bot.entity.position;
+  const dx = me.x - foe.position.x;
+  const dz = me.z - foe.position.z;
+  const n = Math.hypot(dx, dz);
+  if (n < 0.01) return null;
+  const ux = dx / n;
+  const uz = dz / n;
+  const y = Math.floor(me.y + 0.01);
+  if (!hazardAt(me.x + ux, y, me.z + uz)) return null;
+  const spots = [[-ux, -uz], [-uz, ux], [uz, -ux]].map(([sx, sz]) => new Vec3(me.x + sx * 1.5, y, me.z + sz * 1.5));
+  return spots.find((p) => !hazardAt(p.x, y, p.z)) || spots[0];
+}
+
+function playerBeside(foe) {
+  return Object.values(bot.players).some((p) => p.entity && p.entity !== bot.entity
+    && Math.hypot(p.entity.position.x - foe.position.x, p.entity.position.z - foe.position.z) < SweepReach
+    && Math.abs(p.entity.position.y - foe.position.y) < 1.5);
+}
+
+// Her walk in a fight: no jumping a gap, no drop deeper than 2, and the lip of a drop or a lava pool costs what a
+// detour does, so she never chases along a ravine's edge. State ids only: it's asked for every step weighed.
+function fightMovements() {
+  const movements = gentleMovements();
+  movements.allowParkour = false;
+  movements.maxDropDown = 2;
+  movements.exclusionAreasStep.push((block) => {
+    if (!block || !block.position) return 0;
+    const p = block.position;
+    return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => hazardAt(p.x + dx, p.y, p.z + dz)) ? 40 : 0;
+  });
+  return movements;
+}
+
+let fightWalk = false;
+
+function fightPace(on) {
+  if (fightWalk === on) return;
+  fightWalk = on;
+  bot.pathfinder.setMovements(on ? fightMovements() : gentleMovements());
+}
+
+// A foe with no way to it is left alone this long (noWay), then tried again.
+const UnreachableFor = 10000;
+
+function reachable(t, foe) {
+  return !(t.unreachable && t.unreachable.get(foe.id) > Date.now());
+}
+
+function setUnreachable(t, foe) {
+  if (foe.position.distanceTo(bot.entity.position) < MeleeReach) return; // in reach: hit it where it stands
+  if (!t.unreachable) t.unreachable = new Map();
+  t.unreachable.set(foe.id, Date.now() + UnreachableFor);
+  if (t.foe === foe) t.foe = null;
+  t.mode = null;
+  t.modeTarget = null;
+}
+
+// The closest monster (not a creeper) in reach of her and in sight: the one hitting her, or about to. Never one set
+// aside as unreachable: in reach, it can be hit whatever the pathfinder found.
+function foeOnHer() {
+  const me = bot.entity.position;
+  return bot.nearestEntity((e) => isFoe(e) && e.name !== 'creeper' && !headUnder(e)
+    && e.position.distanceTo(me) < MeleeReach + 0.5 && inSight(e));
+}
+
+// After `foe`, weapon in hand, with her fight walk. Not while she steps off a lip (strike).
+function chase(t, foe) {
+  if (Date.now() < (t.edgeUntil || 0)) return;
+  if (t.mode !== 'fight' || t.modeTarget !== foe) equipWeapon();
+  fightPace(true);
+  setMode(t, 'fight', foe, new goals.GoalFollow(foe, 1), true);
+}
+
+// One hit on `foe` when she can: in reach and in sight, her weapon ready (its own cooldown), and no hazard behind her
+// (then she steps off the lip first, when there's a task `t` to move for). With a player beside it and a sword in hand,
+// from a jump (SweepReach). True when she swung.
+function strike(foe, t = null) {
+  const me = bot.entity.position;
+  if (!foe || foe.isValid === false || foe.position.distanceTo(me) >= MeleeReach || Date.now() < attackReadyAt
+    || !inSight(foe)) return false;
+  if (bot.heldItem && bot.heldItem.name.endsWith('_sword') && playerBeside(foe)) {
+    if (bot.entity.onGround) {
+      bot.setControlState('jump', true);
+      return false;
+    }
+    bot.setControlState('jump', false);
+    if (bot.entity.velocity.y >= 0) return false; // still going up: the hit lands on the way down
+  }
+  const step = edgeBehind(foe);
+  if (step) {
+    if (t && Date.now() >= (t.edgeUntil || 0)) {
+      t.edgeUntil = Date.now() + EdgeStep;
+      t.mode = 'edge';
+      t.modeTarget = foe;
+      t.modeSince = Date.now();
+      bot.pathfinder.setGoal(new goals.GoalNear(step.x, step.y, step.z, 0));
+    }
+    return false;
+  }
+  attackReadyAt = Date.now() + cooldownFor(bot.heldItem ? bot.heldItem.name : null);
+  bot.lookAt(foe.position.offset(0, (foe.height || 1.6) * 0.8, 0), true).catch(() => {});
+  bot.attack(foe);
+  return true;
+}
+
 // Every physics tick while guarding a player or a place, in this order: back off when badly hurt; deal with a
 // creeper (shoot it, or keep out of its reach); otherwise pick the closest monster near the player or the spot (or
 // near her), chase it, hit it when in reach, then go back to following or to the spot.
@@ -971,6 +1112,7 @@ function guardTick() {
   const center = owner ? owner.position : t.anchor;
   const radius = owner ? GuardRadius : PatrolRadius;
   const goHome = () => {
+    fightPace(false);
     // What dropped from her kills first, when it's close and inside what she guards.
     const loot = lootNear(center, radius, t.skipLoot);
     if (loot && t.mode === 'loot' && t.modeTarget === loot && Date.now() - t.modeSince > PickUpTry) {
@@ -1003,6 +1145,9 @@ function guardTick() {
       const threat = bot.nearestEntity((e) => isFoe(e) && e.position.distanceTo(me) < 10);
       if (threat) setMode(t, 'retreat', threat, new goals.GoalInvert(new goals.GoalFollow(threat, 12)), true);
       else goHome();
+      // Backing off, she still hits what keeps up with her: with nowhere to go (a ledge), she stood and took it.
+      const onHer = foeOnHer();
+      if (onHer) strike(onHer);
       return;
     }
   }
@@ -1033,25 +1178,24 @@ function guardTick() {
 
   // Every other monster: chased and hit. Not one under water (a drowned at the bottom): she can't reach it there. Nor
   // one she can't see (in a cave under the ground): taken on only in sight, and let go once out of it for FoeUnseen.
+  // One on her comes first, whatever she was after: chasing a zombie she couldn't reach, she let the one behind her
+  // kill her. One she found no way to is left for a while (unreachable).
   if (t.foe && inSight(t.foe)) t.foeSeenAt = Date.now();
   if (t.foe && (!t.foe.isValid || t.foe.position.distanceTo(center) > radius * 1.6 || headUnder(t.foe)
     || Date.now() - (t.foeSeenAt || 0) > FoeUnseen)) t.foe = null;
+  const onHer = foeOnHer();
+  if (onHer && onHer !== t.foe) {
+    t.foe = onHer;
+    t.foeSeenAt = Date.now();
+  }
   if (!t.foe) {
-    t.foe = bot.nearestEntity((e) => isFoe(e) && e.name !== 'creeper' && !headUnder(e)
+    t.foe = bot.nearestEntity((e) => isFoe(e) && e.name !== 'creeper' && !headUnder(e) && reachable(t, e)
       && (e.position.distanceTo(center) < radius || e.position.distanceTo(me) < 6) && inSight(e));
     if (!t.foe) return goHome();
     t.foeSeenAt = Date.now();
   }
-  const foe = t.foe;
-  if (t.mode !== 'fight' || t.modeTarget !== foe) {
-    equipWeapon();
-    setMode(t, 'fight', foe, new goals.GoalFollow(foe, 1), true);
-  }
-  if (foe.position.distanceTo(me) < MeleeReach && Date.now() >= attackReadyAt && inSight(foe)) {
-    attackReadyAt = Date.now() + 650; // a sword's cooldown; close enough for anything she holds
-    bot.lookAt(foe.position.offset(0, (foe.height || 1.6) * 0.8, 0), true).catch(() => {});
-    bot.attack(foe);
-  }
+  chase(t, t.foe);
+  strike(t.foe, t);
 }
 
 // ---- Gathering ---------------------------------------------------------------------------------------
@@ -3166,13 +3310,15 @@ function defend(foe, victim, swat) {
   if (task && task.kind === 'defend') {
     // Already at it: a new attacker takes over, and a fight never shrinks back to one hit.
     task.swat = task.swat && swat && task.foe === foe;
+    if (task.foe !== foe) task.fightFrom = foe.position.clone();
     task.foe = foe;
     task.until = Date.now() + lasts;
     return true;
   }
   const resume = resumeFor(task);
   stay();
-  task = { kind: 'defend', player: '', victim, foe, swat, resume, until: Date.now() + lasts, mode: null, modeTarget: null };
+  task = { kind: 'defend', player: '', victim, foe, swat, resume, until: Date.now() + lasts, mode: null, modeTarget: null,
+    fightFrom: foe.position.clone() };
   equipWeapon().catch(() => {});
   return true;
 }
@@ -3185,20 +3331,16 @@ function defendTick() {
   const foe = t.foe;
   const me = bot.entity.position;
   if (!foe || foe.isValid === false || !bot.entities[foe.id] || foe.position.distanceTo(me) > DefendRadius
-      || Date.now() > t.until || bot.health <= RetreatHealth || headUnder(foe))
+      || Date.now() > t.until || bot.health <= RetreatHealth || headUnder(foe) || foe.position.distanceTo(t.fightFrom) > FightLeash)
     return endDefend(t);
-  setMode(t, 'fight', foe, new goals.GoalFollow(foe, 1), true);
-  if (foe.position.distanceTo(me) < MeleeReach && Date.now() >= attackReadyAt) {
-    attackReadyAt = Date.now() + 650;
-    bot.lookAt(foe.position.offset(0, (foe.height || 1.6) * 0.8, 0), true).catch(() => {});
-    bot.attack(foe);
-    if (t.swat) endDefend(t);
-  }
+  chase(t, foe);
+  if (strike(foe, t) && t.swat) endDefend(t);
 }
 
 function endDefend(t) {
   if (task !== t) return;
   task = null;
+  fightPace(false);
   bot.pathfinder.setGoal(null);
   if (bot.health <= RetreatHealth) eatIfHungry(20).catch(() => {});
   resumeAfterBreak(t.resume);
@@ -4622,12 +4764,7 @@ async function slaughter(mine, animal) {
   let hit = false;
   while (task === mine && animal.isValid !== false && bot.entities[animal.id] && Date.now() < start + KillFor) {
     if (!hit && Date.now() > start + ReachFor) break;
-    if (animal.position.distanceTo(bot.entity.position) < MeleeReach && Date.now() >= attackReadyAt) {
-      attackReadyAt = Date.now() + 650;
-      bot.lookAt(animal.position.offset(0, (animal.height || 1) * 0.6, 0), true).catch(() => {});
-      bot.attack(animal);
-      hit = true;
-    }
+    if (strike(animal)) hit = true;
     await wait(100);
   }
   if (task === mine) {
@@ -4683,6 +4820,8 @@ function attach() {
       .flatMap((n) => [...states(bot.registry.blocksByName[n])]));
     burningStates = statesOf(['magma_block', 'campfire', 'soul_campfire']);
     prickly = statesOf(['sweet_berry_bush', 'cactus', 'wither_rose']);
+    lavaStates = statesOf(['lava']);
+    airStates = statesOf(['air', 'cave_air', 'void_air']);
     // A hair wider than a player (0.6). Mineflayer's collisions leave her side exactly on a block's face (a step she's
     // jumping up, a wall she walks along), and a 26.3 server takes that as walking into the block: it puts her back,
     // every tick, and she never climbs a one-block step. 0.0001 off the face is enough (checked on a local Paper 26.3
@@ -5204,6 +5343,8 @@ function noWay() {
   timedOut = null;
   if (!task) return;
   if (task.mode === 'loot') return task.skipLoot.add(task.modeTarget.id); // out of reach: left where it is
+  // A monster she can't get to (down a ravine, across a gap): left for a while, not her guard given up.
+  if (task.mode === 'fight' && task.modeTarget && ['guard', 'patrol'].includes(task.kind)) return setUnreachable(task, task.modeTarget);
   if (task.reported) return;
   // Following someone who dived: no path under water, and the dive (waterTick) goes after them instead.
   if (FollowsSomeone.has(task.kind) && headUnder(playerEntity(task.player))) return;
