@@ -174,9 +174,9 @@ function gentleMovements() {
   // a fence gate is a way through, whatever its state, and doorTick swings it out of the way as she comes. Not on
   // a diagonal step, where a corner catches the panel, nor one that refused to move: a wall again for a while.
   // A bubble column over magma pulls whoever swims in it to the bottom: the pathfinder takes it for air, so it's
-  // made a wall. Trapdoors the pathfinder takes for full blocks: an open one is a thin panel on one edge, passable
-  // along that edge and a wall across her way when it faces her (it planned to stand on the panel, and she fell off it,
-  // again and again); a closed one in the top half of the block at head height leaves 1.8125 under it, and she's 1.8
+  // made a wall, except in a water column (columnMoves), where any bubble column is water to swim. Trapdoors the
+  // pathfinder takes for full blocks: an open one is a thin panel on one edge, passable along that edge and a wall
+  // across her way when it faces her (it planned to stand on the panel, and she fell off it, again and again); a closed one in the top half of the block at head height leaves 1.8125 under it, and she's 1.8
   // tall, so she walks under it.
   const getBlock = movements.getBlock.bind(movements);
   const passable = (b) => {
@@ -188,8 +188,11 @@ function gentleMovements() {
   };
   movements.getBlock = (pos, dx = 0, dy = 0, dz = 0) => {
     const b = getBlock(pos, dx, dy, dz);
-    if (isDragColumn(b)) {
-      b.safe = false;
+    if (b && b.name === 'bubble_column') {
+      if (b.position && inColumn(b.position)) {
+        b.liquid = true;
+        b.safe = true;
+      } else if (isDragColumn(b)) b.safe = false;
       return b;
     }
     // A cactus is no floor: once she cut a column down to its bottom block, the pathfinder walked her onto it and she
@@ -231,11 +234,14 @@ function gentleMovements() {
       prickly.has(bot.world.getBlockStateId(block.position.offset(dx, 0, dz)))) ? PricklyNear : 0;
   });
   // No jump over a gap that takes off from a field or lands on one (farmlandTick would cancel the take-off and she'd
-  // walk into the gap), and a drop onto one costs FieldDrop: a fall of a block tramples it one time in two.
+  // walk into the gap), and a drop onto one costs FieldDrop: a fall of a block tramples it one time in two. Up and down
+  // a water column are her own steps (columnMoves); a step into a bubble column keeps its height (columnPoint).
   const getNeighbors = movements.getNeighbors.bind(movements);
-  movements.getNeighbors = (node) => getNeighbors(node).filter((move) => {
+  movements.getNeighbors = (node) => [...getNeighbors(node), ...columnMoves(movements, node)].filter((move) => {
     if (move.parkour && (onField(node) || onField(move))) return false;
     if (move.y < node.y && onField(move)) move.cost += FieldDrop;
+    const id = bot.world.getBlockStateId(move);
+    if (wetStates.has(id) && !waterStates.has(id) && inColumn(move)) move.columnY = move.y;
     return true;
   });
   return movements;
@@ -259,6 +265,11 @@ const onField = (p) => farmlandStates.has(bot.world.getBlockStateId(new Vec3(p.x
 const isFarmland = (block) => Boolean(block && block.name === 'farmland');
 let farmlandStates = new Set(); // its state ids, filled on the first spawn, once the version is known
 let waterStates = new Set(); // the same for water
+// Bubble columns (lifting over soul sand, dragging down over magma), and what else fills a column with water.
+let bubbleStates = new Set();
+let liftStates = new Set();
+let dragStates = new Set();
+let wetStates = new Set();
 // Floors that burn whoever stands on them: magma, a lit campfire. Not forbidden: a way across may need one.
 let burningStates = new Set();
 const BurningFloor = 40;
@@ -342,7 +353,10 @@ let doorTickAt = 0;
 function setPath(path) {
   currentPath = Array.isArray(path) ? path : [];
   pathIndex = 0;
-  for (const node of currentPath) floorDoorNode(node);
+  for (const node of currentPath) {
+    floorDoorNode(node);
+    columnPoint(node);
+  }
 }
 
 // The pathfinder puts each point of its path on top of whatever stands in that block, once planned: a closed fence gate
@@ -4227,14 +4241,20 @@ async function undress(player) {
 // ---- Routine: her day, built on the places she was asked to remember ------------------------------------
 
 // C# sends the farm, fishing spot, animal pen and home it found among the remembered places (`routine`). By day she
-// works in turns (WorkBlock, by place), one place after the other; at dusk she goes home and stays there till morning; the night
-// is autoSleepTick's. A place in another dimension, or farther than OwnTripMax, is left out; one that fails (no way
-// there, nothing to do there) is left out for SpotRetry, silently. Orders always come first.
+// works at the farm and the fishing spot in turns (WorkBlock, by place), and visits the pen twice: in the morning and
+// before dusk (PenSlots); at dusk she goes home and stays there till morning; the night is autoSleepTick's. A place in
+// another dimension, or farther than OwnTripMax, is left out; one that fails (no way there, nothing to do there) is left
+// out for SpotRetry, silently. Orders always come first.
 const routine = { farm: null, fish: null, ranch: null, home: null };
-const WorkKinds = ['farm', 'fish', 'ranch'];
-// How long a turn lasts at each: the fields get the most, the pen the least. A pen needs a few minutes now and then
-// (two fed, a cull, the wool), and six-minute turns there left the fields to wait.
-const WorkBlock = { farm: 540000, fish: 360000, ranch: 180000 };
+const WorkKinds = ['farm', 'fish'];
+// How long a turn lasts at each: the fields get the most. A visit to the pen (two fed per kind each round, a cull, the
+// wool) needs a couple of minutes.
+const WorkBlock = { farm: 540000, fish: 360000, ranch: 120000 };
+// The pen's two visits, by the time of day they may start in: as soon as she's up, and late enough in the afternoon to
+// fit a visit and the walk before dusk. Twice a day breeds twice (an adult can again after 5 minutes, and yesterday's
+// babies are grown: they take a day) and shears twice (the wool grows back as the sheep graze).
+const PenSlots = { morning: [0, 3000], evening: [8000, 11500] };
+const penDone = { morning: -1, evening: -1 }; // the day (bot.time.day) each visit was last made
 const OwnTripMax = 256;
 const TripTimeout = 180000;
 const SpotRetry = 600000;
@@ -4270,11 +4290,19 @@ function routineTick() {
   }
   const time = bot.time.timeOfDay;
   if (time < DuskStart) {
+    // A visit to the pen runs to its end, whatever the clock says, and counts once it has: one an order cut short is
+    // made again if its hours aren't over.
+    if (isRoutine(t) && t.what === 'ranch') {
+      if (t.kind === 'trip' || Date.now() < t.turnEnd) return true;
+      penDone[t.slot] = t.day;
+    }
+    const slot = Object.keys(PenSlots).find((s) => time >= PenSlots[s][0] && time < PenSlots[s][1]);
+    if (slot && penDone[slot] !== bot.time.day && spotUsable('ranch')) return startTrip('ranch', slot);
     const kinds = WorkKinds.filter(spotUsable);
     if (kinds.length === 0) return endRoutine();
     if (isRoutine(t) && kinds.includes(t.what) && (t.kind === 'trip' || Date.now() < t.turnEnd)) return true;
     const from = WorkKinds.indexOf(lastWork);
-    const next = [1, 2, 3].map((i) => WorkKinds[(from + i) % WorkKinds.length]).find((k) => kinds.includes(k));
+    const next = WorkKinds.map((_, i) => WorkKinds[(from + 1 + i) % WorkKinds.length]).find((k) => kinds.includes(k));
     if (isRoutine(t) && t.what === next && t.kind !== 'trip') {
       t.turnEnd = Date.now() + WorkBlock[next]; // the only place: another turn of the same
       return true;
@@ -4302,11 +4330,13 @@ function endRoutine() {
   return false;
 }
 
-function startTrip(what) {
+// `slot`: which of the pen's visits this is (PenSlots), counted on its day once it's over.
+function startTrip(what, slot = null) {
   const s = routine[what];
   const spot = new Vec3(s.x, s.y, s.z);
   stay();
-  const trip = { kind: 'trip', own: true, player: '', what, spot, turnEnd: Date.now() + (WorkBlock[what] || 0), deadline: Date.now() + TripTimeout };
+  const trip = { kind: 'trip', own: true, player: '', what, spot, turnEnd: Date.now() + (WorkBlock[what] || 0), deadline: Date.now() + TripTimeout,
+    slot, day: bot.time.day };
   task = trip;
   if (WorkKinds.includes(what)) lastWork = what;
   emit('routine', { what });
@@ -4320,7 +4350,9 @@ function startTrip(what) {
 function arriveOwn(trip) {
   if (task !== trip) return;
   bot.pathfinder.setGoal(null);
-  const base = { own: true, player: '', what: trip.what, turnEnd: trip.turnEnd };
+  // A visit to the pen is short: its minutes count from her arrival, not from setting off.
+  const turnEnd = trip.what === 'ranch' ? Date.now() + WorkBlock.ranch : trip.turnEnd;
+  const base = { own: true, player: '', what: trip.what, turnEnd, slot: trip.slot, day: trip.day };
   if (trip.what === 'home') {
     task = { ...base, kind: 'home', spot: trip.spot };
     return;
@@ -4662,6 +4694,108 @@ function isDragColumn(block) {
   return Boolean(block && block.name === 'bubble_column' && block.getProperties().drag === true);
 }
 
+// ---- Water columns ---------------------------------------------------------------------------------------
+
+// A shaft of water players swim up to their base or sink down from (a bubble column over soul sand lifts, one over
+// magma drags down). The pathfinder plans no step up or down in water (none under the surface, and no jump out of it),
+// so a column is a wall to it. In a column she gets her own steps: a block up, a block down, and out at the top onto a
+// ledge a block over her feet. A column is water one block wide: one of its four
+// sides at most is water (the doorway at its foot, where it spills out), and every block of a lake has two, a corner
+// too. So a lake or the sea never is one: open water stays the dive's, and the sea's magma columns walls.
+// The whole way under water must fit in her air, about 9 s before she goes up for more (AirLow), so 8 s of it, at the
+// speeds Mineflayer's physics gives her: in still water she swims up 3.3 blocks a second but sinks only 0.5 (no
+// crouching down in Mineflayer); falling water beside a wall (a waterfall down a cave wall, or a shaft of flowing water)
+// pulls her down, so 2 up and 1.8 down; a bubble column carries her 10 a second up or 4 down, and never the other way.
+const ColumnRun = { still: { up: 24, down: 4 }, fall: { up: 16, down: 14 }, lift: { up: 64, down: 0 }, drag: { up: 0, down: 32 } };
+const ColumnSides = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+// What a column block does to her (ColumnRun's kinds). Falling water (level 8 and up) pulls down only with something
+// solid beside it, as Mineflayer's physics has it (getFlow).
+function columnKind(pos) {
+  const id = bot.world.getBlockStateId(pos);
+  if (liftStates.has(id)) return 'lift';
+  if (dragStates.has(id)) return 'drag';
+  if (!waterStates.has(id) || id - bot.registry.blocksByName.water.minStateId < 8) return 'still';
+  return ColumnSides.some(([dx, dz]) => {
+    const side = bot.world.getBlockStateId(pos.offset(dx, 0, dz));
+    return !airStates.has(side) && !wetStates.has(side);
+  }) ? 'fall' : 'still';
+}
+
+// State ids only: asked for every step the pathfinder weighs (gentleMovements has why).
+function inColumn(pos) {
+  if (!wetStates.has(bot.world.getBlockStateId(pos))) return false;
+  return ColumnSides.filter(([dx, dz]) => wetStates.has(bot.world.getBlockStateId(pos.offset(dx, 0, dz)))).length <= 1;
+}
+
+// How many blocks of column from `pos` on, going up (dy 1) or down (-1): the way she'd swim under. Stops past `max`.
+function columnRun(pos, dy, max) {
+  let n = 0;
+  for (let p = pos; n <= max && inColumn(p); p = p.offset(0, dy, 0)) n++;
+  return n;
+}
+
+// Her steps in a column, beside the pathfinder's own. Also in and out at its foot, where it ends in other water: the
+// puddle a waterfall spreads into at the bottom (wet all round, so no column), or a lake it falls into.
+function columnMoves(movements, node) {
+  const here = new Vec3(node.x, node.y, node.z);
+  const above = here.offset(0, 1, 0);
+  const inside = inColumn(here);
+  if (!inside && !(wetStates.has(bot.world.getBlockStateId(here)) && inColumn(above))) return [];
+  const cost = 1 + movements.liquidCost;
+  const moves = [];
+  const step = (dx, dy, dz, c) => moves.push(new Move(node.x + dx, node.y + dy, node.z + dz, node.remainingBlocks, c));
+  // Each way by what the block she moves into does to her: over a waterfall's edge the water still runs level, and
+  // falls from the next block down.
+  const below = here.offset(0, -1, 0);
+  const up = inColumn(above) ? ColumnRun[columnKind(above)].up : 0;
+  if (up > 0 && movements.getBlock(node, 0, 2, 0).safe && columnRun(above, 1, up) <= up) step(0, 1, 0, cost);
+  if (!inside) return moves;
+  const down = wetStates.has(bot.world.getBlockStateId(below)) ? ColumnRun[columnKind(below)].down : 0;
+  if (down > 0 && columnRun(here, -1, down) <= down) step(0, -1, 0, cost);
+  // Out at the top: open above the surface, and a ledge beside it no higher than a block over her feet, with room to
+  // stand. She climbs out as a swimmer does, pushing against it (the pathfinder holds jump in water). Out into the
+  // shallow stream feeding a waterfall is the pathfinder's own step (into water, level).
+  if (wetStates.has(bot.world.getBlockStateId(above)) || !movements.getBlock(node, 0, 1, 0).safe
+    || !movements.getBlock(node, 0, 2, 0).safe) return moves;
+  for (const [dx, dz] of ColumnSides) {
+    const ledge = movements.getBlock(node, dx, 0, dz);
+    if (!ledge.physical || ledge.height > node.y + 1.01) continue;
+    if (movements.getBlock(node, dx, 1, dz).safe && movements.getBlock(node, dx, 2, dz).safe) step(dx, 1, dz, cost + 1);
+  }
+  return moves;
+}
+
+// The pathfinder puts a path point on top of what fills its block, or a block lower when that has no top
+// (postProcessPath): a bubble column, kelp. In a column she swims to the block itself, as it does for water.
+function columnPoint(node) {
+  if (node.columnY === undefined) return;
+  node.x = Math.floor(node.x) + 0.5;
+  node.y = node.columnY;
+  node.z = Math.floor(node.z) + 0.5;
+}
+
+// Her next point straight above or below her in a column: the pathfinder holds jump in any water, so going down she
+// lets go of it (or she'd never sink), and once over the point she lets go of forward too: pushing on past it would
+// take her out of a column in the open air (a waterfall).
+function columnSteer() {
+  const next = currentPath[0];
+  if (!next || !bot.pathfinder.isMoving()) return;
+  const me = bot.entity.position;
+  const off = Math.hypot(next.x - me.x, next.z - me.z);
+  const cell = me.floored();
+  if (off > 0.5 || Math.abs(next.y - me.y) < 0.5 || !(inColumn(cell) || inColumn(cell.offset(0, 1, 0)))) return;
+  bot.setControlState('jump', next.y > me.y);
+  bot.setControlState('sprint', false);
+  bot.setControlState('forward', off > 0.15);
+}
+
+// Down a column that drags (magma at its foot) there's no going up for air: the way out is at the bottom, where she's
+// headed.
+function dragged() {
+  return bot.pathfinder.isMoving() && dragStates.has(bot.world.getBlockStateId(bot.entity.position.floored()));
+}
+
 // Whether someone's eyes are under water: hers (she needs air), or theirs (they dived), or a drowned's (out of reach).
 function headUnder(entity) {
   return Boolean(entity && entity.position && bot.blockAt && isWater(bot.blockAt(entity.position.offset(0, (entity.height || 1.8) * 0.9, 0))));
@@ -4791,8 +4925,8 @@ function endDive(s) {
   if (target) bot.pathfinder.setGoal(new goals.GoalFollow(target, 2), true);
 }
 
-// Every physics tick, after the pathfinder's own (registered on spawn, so it overrides it): air first, then a dive,
-// then treading water, then shaking herself off on dry land.
+// Every physics tick, after the pathfinder's own (registered on spawn, so it overrides it): air first, then a dive
+// or a column, then treading water, then shaking herself off on dry land.
 function waterTick() {
   if (!bot.entity || bot.vehicle || bot.isSleeping) return;
   const me = bot.entity;
@@ -4811,7 +4945,7 @@ function waterTick() {
     swim = null;
     releaseSwim();
   }
-  if (under && air() <= AirLow) {
+  if (under && air() <= AirLow && !dragged()) {
     // A dig under way lets go: it goes on under water whatever her keys say, and the pathfinder would steer her back to
     // it. Gathering skips that block (collectblock's dig fails) and goes on with the next.
     if (bot.targetDigBlock) {
@@ -4822,10 +4956,14 @@ function waterTick() {
     return surfaceTick(swim);
   }
   const wet = me.isInWater;
-  if (wet && air() >= AirDiveAgain && Date.now() >= diveAgainAt && bot.health > RetreatHealth) {
+  // In a column the path takes her after them (columnMoves): a dive there would steer against it, and in a drag would
+  // only try to go up.
+  const column = wet && inColumn(me.position.floored());
+  if (wet && !column && air() >= AirDiveAgain && Date.now() >= diveAgainAt && bot.health > RetreatHealth) {
     const who = diveTarget();
     if (who) return startDive(who);
   }
+  if (column) columnSteer();
 
   // Treading: in water, off the bottom or with her head under, and the pathfinder not swimming her anywhere. Standing
   // in shallow water she stays put.
@@ -5479,6 +5617,14 @@ function attach() {
     waterStates = states(bot.registry.blocksByName.water);
     const statesOf = (names) => new Set(names.filter((n) => bot.registry.blocksByName[n])
       .flatMap((n) => [...states(bot.registry.blocksByName[n])]));
+    const bubble = bot.registry.blocksByName.bubble_column;
+    if (bubble) {
+      // drag=true is its first state (prismarine-physics reads it the same way: metadata 0 pulls down).
+      bubbleStates = states(bubble);
+      dragStates = new Set([bubble.minStateId]);
+      liftStates = new Set([...bubbleStates].filter((id) => !dragStates.has(id)));
+    }
+    wetStates = new Set([...waterStates, ...bubbleStates, ...statesOf(['kelp', 'kelp_plant', 'seagrass', 'tall_seagrass'])]);
     burningStates = statesOf(['magma_block', 'campfire', 'soul_campfire']);
     prickly = statesOf(['sweet_berry_bush', 'cactus', 'wither_rose']);
     lavaStates = statesOf(['lava']);

@@ -219,15 +219,17 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
   arrives she walks up to the owner (or Tata), or to where she last saw them.
 - **Between orders she lives her own life.** Save a farm, a fishing spot, an animal pen and a home
   among her places (names like « ferme », « champ de blé », « étang », « enclos », « maison »): by
-  day she works at them in turns, and at dusk she goes home. With none of them, she keeps near the
+  day she works at the farm and the fishing spot in turns, sees to the animals morning and evening
+  (bred and sheared twice a day), and at dusk she goes home. With none of them, she keeps near the
   owner or Tata. Any order comes first; « syncs reste » keeps her put for ten minutes. After dying
   she goes back for her things; she picks up what drops from the monsters she kills; she warns
   anyone with a creeper behind them; she says when a tool is wearing out or broke, or what she
   lacks (a rod, shears, arrows, room). She looks at whoever talks to her, turns her back on
   whoever hits her, and crouches when the owner or Tata walks up.
 - **She swims.** In deep water she treads, and swims up for air before it runs out. Following you,
-  she dives after you, comes up to breathe and goes back down; if you sit in a boat with a free
-  seat, she climbs in as your passenger and gets out when you do.
+  she dives after you, comes up to breathe and goes back down, and takes water columns and
+  waterfalls up or down after you (bubble columns too); if you sit in a boat with a free seat, she climbs in as your
+  passenger and gets out when you do.
 - **On Discord**, `/minecraft help` lists every order she understands with phrasings that work;
   `/minecraft status`, `where`, `inventory` and `stats` show what she's doing, where she is, what she
   carries and what she's done since the start. `/minecraft link` ties your Discord account to your

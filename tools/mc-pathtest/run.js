@@ -11,7 +11,7 @@
 //   node run.js trip                   250 blocks, far past the loaded chunks: re-planning as she goes
 //   node run.js players [name ...]     with players around: follow a walk and through the hard lanes, come, guide, lose one, seek, gaze (players-test.js)
 //   node run.js orders [name ...]      smelting, gathering, fishing, giving, storing, harvesting, farm, patrol (orders.js)
-//   node run.js routine                her day's turns: 9 minutes at a farm, 3 at a pen, back (routine.js, ~13 min)
+//   node run.js routine                her day: the pen in the morning, the farm, the pen again before dusk (routine.js, ~6 min)
 // See README.md for the server.
 const rcon = require('./rcon');
 const course = require('./course');
