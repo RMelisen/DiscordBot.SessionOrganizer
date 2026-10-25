@@ -1069,8 +1069,21 @@ function chase(t, foe) {
 // from a jump (SweepReach). True when she swung.
 function strike(foe, t = null) {
   const me = bot.entity.position;
-  if (!foe || foe.isValid === false || foe.position.distanceTo(me) >= MeleeReach || Date.now() < attackReadyAt
-    || !inSight(foe)) return false;
+  if (!foe || foe.isValid === false) return false;
+  // Off the lip as soon as it's close, not only when she swings: its hits come on its own time, while her weapon
+  // recharges (one threw her off the far end of a ledge).
+  if (t && foe.position.distanceTo(me) < MeleeReach + 1 && Date.now() >= (t.edgeUntil || 0)) {
+    const step = edgeBehind(foe);
+    if (step) {
+      t.edgeUntil = Date.now() + EdgeStep;
+      t.mode = 'edge';
+      t.modeTarget = foe;
+      t.modeSince = Date.now();
+      bot.pathfinder.setGoal(new goals.GoalNear(step.x, step.y, step.z, 0));
+      return false;
+    }
+  }
+  if (foe.position.distanceTo(me) >= MeleeReach || Date.now() < attackReadyAt || !inSight(foe)) return false;
   if (bot.heldItem && bot.heldItem.name.endsWith('_sword') && playerBeside(foe)) {
     if (bot.entity.onGround) {
       bot.setControlState('jump', true);
@@ -3506,6 +3519,7 @@ function fightTick() {
       && e.position.distanceTo(me) < SizeSight && inSight(e));
     let next = sizeUp({ foes: around.map((e) => ({ name: e.name, distance: e.position.distanceTo(me) })), health: bot.health,
       armour: armourPoints(), weapon: bestWeapon(), helped: Boolean(p && p.position.distanceTo(me) < Helped), previous: t.stance });
+    if (next === 'fight' && t.toward) next = 'fallBack'; // told to come: to them first, fighting on the way
     if (next === 'fallBack' && (t.lastStand || (!p && t.fallSince && Date.now() - t.fallSince > FallBackAlone))) {
       next = 'fight'; // nobody to fall back to, still chased: she turns and fights it out
       t.lastStand = true;
@@ -3585,7 +3599,29 @@ function endFight(t) {
   bot.pathfinder.setGoal(null);
   approach.clear();
   if (bot.health <= RetreatHealth) eatIfHungry(20).catch(() => {});
+  if (t.held) return dispatch(t.held); // an order given mid-fight replaces what she was doing
   resumeAfterBreak(t.resume);
+}
+
+// Orders while she fights for herself (Papa's call). « viens » and « suis-moi » bring her to that player at once,
+// falling back as she fights; any other order, « reste » included (she can't stand still under attack), waits for the
+// fight and then starts, a newer one replacing it. Answered at once as ever: words, where she is, a wave. C# keeps a
+// held order pending until the body reports it under way. True when the order was held.
+function holdForFight(command) {
+  const t = task;
+  if (!bot || !t || t.kind !== 'fight' || !(OrderOps.has(command.op) || command.op === 'stay' || command.op === 'sit')) return false;
+  t.held = command;
+  if ((command.op === 'come' || command.op === 'follow') && typeof command.player === 'string' && playerEntity(command.player)) {
+    t.toward = command.player;
+    if (t.stance === 'fight') {
+      t.stance = 'fallBack';
+      t.stanceSince = Date.now();
+      t.fallSince = Date.now();
+      t.mode = null;
+      t.modeTarget = null;
+    }
+  }
+  return true;
 }
 
 // Who hurt someone, for sure: since 1.19.4 the server says (damage_event, the shooter for an arrow). Before that,
@@ -5733,6 +5769,7 @@ input.on('line', (line) => {
 // One command, from C# or an order she starts again after a fight (restartOrder).
 function dispatch(command) {
   try {
+    if (holdForFight(command)) return;
     switch (command.op) {
       case 'say':
         // Minecraft's chat cap; C# keeps her lines under it, this is the backstop.

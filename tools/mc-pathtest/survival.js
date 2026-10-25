@@ -539,7 +539,7 @@ async function ordered() {
   const tough = '{NoAI:1b,PersistenceRequired:1b,Tags:["test"],Health:200f,attributes:[{id:"minecraft:max_health",base:200.0}]}';
   await rcon.run([`fill ${sat(6, -1, -3)} ${sat(8, -1, -1)} water`, `give ${Name} fishing_rod 1`, 'gamemode creative Papa',
     `tp Papa ${S.x - 9.5} -60 ${S.z + 0.5}`,
-    ...[-1, 0, 1].map((dz) => `summon zombie ${S.x + 2} -60 ${S.z + 0.5 + dz} ${tough}`)]);
+    ...[-1, 0, 1].map((dz) => `summon zombie ${S.x + 1.7} -60 ${S.z + 0.5 + dz} ${tough}`)]);
   await wait(2500);
   const from = sc.body.events.length;
   sc.body.send({ op: 'fish', player: 'Papa' });
@@ -559,8 +559,55 @@ async function ordered() {
   await end(sc, 'orders mid-fight');
 }
 
+// ---- Ranged foes, the shield, fireballs ---------------------------------------------------------------------------
+
+// Guarding Papa with a sword and a shield but no bow, a skeleton 10 blocks off: she closes in behind her shield and
+// kills it, taking little from its arrows.
+async function skeletonShield() {
+  const sc = await scene({ kit: false });
+  await rcon.run([`give ${Name} iron_sword 1`, `give ${Name} iron_chestplate 1`, `item replace entity ${Name} weapon.offhand with shield`,
+    'gamemode creative Papa']);
+  await wait(1500);
+  sc.body.send({ op: 'guard', player: 'Papa' });
+  await sc.body.next((e) => e.ev === 'moving', 5000);
+  await rcon.run([`summon skeleton ${S.x + 10.5} -60 ${S.z + 0.5} {PersistenceRequired:1b,Tags:["test"]}`]);
+  const started = Date.now();
+  const left = await until('@e[type=skeleton,tag=test]', 40000);
+  const health = await q.entityNumber(Name, 'Health');
+  report(left === 0 && health >= 10, 'skeleton, shield', `${left === 0 ? `dead in ${((Date.now() - started) / 1000).toFixed(0)} s` : 'still standing after 40 s'}; her health ${health}`);
+  await end(sc, 'skeleton, shield');
+}
+
+// A skeleton up on a 2-high block 14 blocks off shoots her (Papa in creative: she's its only target). She has a bow:
+// it's shot down, not chased round a block she can't climb.
+async function skeletonBow() {
+  const sc = await scene();
+  await rcon.run(['gamemode creative Papa', `fill ${sat(14, 0, 0)} ${sat(14, 1, 0)} stone`,
+    `summon skeleton ${S.x + 14.5} -58 ${S.z + 0.5} {PersistenceRequired:1b,Tags:["test"]}`]);
+  const started = Date.now();
+  const left = await until('@e[type=skeleton,tag=test]', 40000);
+  const arrows = await q.carried(Name, 'arrow');
+  const health = await q.entityNumber(Name, 'Health');
+  report(left === 0 && arrows < 32 && health > 0, 'skeleton, bow', `${left === 0 ? `dead in ${((Date.now() - started) / 1000).toFixed(0)} s` : 'still standing after 40 s'}; ` +
+    `arrows left ${arrows}/32; her health ${health}`);
+  await rcon.run([`fill ${sat(14, 0, 0)} ${sat(14, 1, 0)} air`]);
+  await end(sc, 'skeleton, bow');
+}
+
+// A ghast's fireball flying at her: she hits it back, and its blast never reaches her.
+async function fireball() {
+  const sc = await scene();
+  await rcon.run(['gamemode creative Papa', `tp Papa ${S.x - 12.5} -60 ${S.z + 0.5}`]);
+  await wait(1000);
+  await rcon.run([`summon fireball ${S.x + 9.5} -58.5 ${S.z + 0.5} {Motion:[-0.6d,0.0d,0.0d],acceleration_power:0.05d,ExplosionPower:1b,Tags:["test"]}`]);
+  await wait(5000);
+  const health = await q.entityNumber(Name, 'Health');
+  report(health >= 18, 'fireball', `her health ${health} 5 s after a fireball came at her`);
+  await end(sc, 'fireball');
+}
+
 async function survival(only = []) {
-  const all = { zombies: guardZombies, skeleton: guardSkeleton, creeper, creeperbusy: creeperBusy, buried: () => buried(true), buriedfree: () => buried(false), enderman, retreat, flee: fleePlayer, defend: defendPapa, stranger: defendStranger, midharvest: defendMidHarvest, harvestpapa: () => defendMidHarvest(true), drowning, ravine, beside, farmzombie: farmZombie, followzombie: followZombie, furnace: furnaceZombie, farmskeleton: farmSkeleton, golem, horde, alone, warden, ordered };
+  const all = { zombies: guardZombies, skeleton: guardSkeleton, creeper, creeperbusy: creeperBusy, buried: () => buried(true), buriedfree: () => buried(false), enderman, retreat, flee: fleePlayer, defend: defendPapa, stranger: defendStranger, midharvest: defendMidHarvest, harvestpapa: () => defendMidHarvest(true), drowning, ravine, beside, farmzombie: farmZombie, followzombie: followZombie, furnace: furnaceZombie, farmskeleton: farmSkeleton, golem, horde, alone, warden, ordered, skeletonshield: skeletonShield, skeletonbow: skeletonBow, fireball };
   for (const [name, run] of Object.entries(all)) {
     if (only.length > 0 && !only.includes(name)) continue;
     try {
