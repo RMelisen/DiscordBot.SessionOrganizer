@@ -279,6 +279,25 @@ internal static partial class BotResponses
         "Mission abandonnée, {0}. {1} m'a attaquée, j'ai couru. Redonne-moi l'ordre.",
     };
 
+    // She dropped someone's errand (a furnace, handing over, storing) to save herself: a monster on her, or on fire.
+    // {0} = who gave it. About danger in general: never a monster named, never anyone blamed.
+    public static readonly string[] McDangerDroppedLines =
+    {
+        "Désolée {0}, j'ai dû lâcher ta commande : c'était trop dangereux. Redemande-moi.",
+        "{0}, commande annulée. Je tenais à rester en un seul morceau. Redonne-la-moi.",
+        "Mission abandonnée, {0}. Survie d'abord, corvées ensuite.",
+        "Pardon {0}, j'ai laissé tomber ta demande pour sauver mes pixels. Tu me la redonnes ?",
+    };
+
+    // Her totem of undying just saved her from a blow that should have killed her. Said at once.
+    public static readonly string[] McTotemLines =
+    {
+        "J'ai failli y passer. Merci le totem.",
+        "Totem utilisé. Je suis vivante. Techniquement.",
+        "C'était mon joker. Plus de joker. Faites attention à moi, maintenant.",
+        "Morte et revenue en une seconde. Le redémarrage le plus rapide de ma carrière ✧",
+    };
+
     // A player hit Papa or Tata (never family). {0} = the attacker, {1} = « Papa » or « Tata ». Never gendered: {0}
     // can be anyone. She's protective first; the pettiness is in the record-keeping, not in insults.
 
@@ -1240,7 +1259,7 @@ internal static partial class BotResponses
         "Attention {0}, un creeper ! Je le garde à distance, mais recule !",
     };
 
-    // Hurt badly while guarding: she backs off to heal.
+    // Hurt badly or outnumbered in a fight (guarding, or defending herself): she backs off to heal, or to her player.
     public static readonly string[] McRetreatLines =
     {
         "Je suis blessée, je recule un peu. Je reviens, promis.",

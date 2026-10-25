@@ -556,6 +556,10 @@ public sealed class MinecraftBodyService : BackgroundService
                 case "retreat":
                     Remark("retreat", BotResponses.McRetreatLines, root.GetProperty("player").GetString());
                     break;
+                case "totem":
+                    // Her totem saved her: said at once, like the moments that can't wait.
+                    Remark("totem", BotResponses.McTotemLines, force: true);
+                    break;
                 case "given":
                     OnGiven(root.GetProperty("player").GetString() ?? "", root.GetProperty("goods").GetString() ?? "",
                         root.GetProperty("count").GetInt32(), root.GetProperty("delivered").GetBoolean());
@@ -1727,12 +1731,14 @@ public sealed class MinecraftBodyService : BackgroundService
     }
 
     // She ran from an attacker in the middle of someone's one-off order (come, go to, gather): it's over,
-    // and they hear why, unless they're the attacker.
+    // and they hear why, unless they're the attacker. With no attacker, she dropped it to save herself (a monster on
+    // her, or on fire): danger in general, nobody blamed.
     private void OnDropped(string player, string attacker)
     {
         var (whispered, _) = Finish(player);
         if (player.Length == 0 || Same(player, attacker)) return;
-        Reply(player, whispered, BotResponses.McFleeDroppedLines, Who(attacker));
+        if (attacker.Length == 0) Reply(player, whispered, BotResponses.McDangerDroppedLines);
+        else Reply(player, whispered, BotResponses.McFleeDroppedLines, Who(attacker));
     }
 
     // In bed, asked, because a player went to bed, or on her own at night (auto): whatever she was doing is over,

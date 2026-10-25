@@ -129,8 +129,9 @@ list: the owner removed it.
   sign survives normalisation. Over 1500 blocks she refuses (`tooFar`): the pathfinder can walk
   that far by planning partial paths as chunks load, but she'd be gone for the evening.
 - **Guard** follows the player and, every physics tick, picks the closest monster within 10 blocks
-  of them (or 6 of her), chases it, and hits it on a 650 ms cooldown, with the best sword or axe she
-  carries. Our own loop, not `mineflayer-pvp`, which pulls a whole Mineflayer 2.x through
+  of them (or 6 of her), chases it, and hits it through the shared strike path (*Fights*: her weapon's own
+  cooldown, never by an edge or through a sweep onto a player), with the best sword or axe she carries. One on
+  her comes first; one she finds no way to is set aside 10 s. Our own loop, not `mineflayer-pvp`, which pulls a whole Mineflayer 2.x through
   `mineflayer-utils`. Endermen and piglins are left alone: hitting them starts the fight she's
   supposed to prevent; so are the warden (two hits kill her) and the creaking (nothing hurts it while
   its heart stands). **Only a monster in sight** (`inSight`: nothing solid between her eyes and its head or chest,
@@ -290,7 +291,8 @@ list: the owner removed it.
   stays out (one slip from « enlever »).
 - **Food and armour** need no order: she eats when hunger drops below 14 (never rotten flesh and
   the like), and wears the best piece she carries for each slot on spawn and after each pickup,
-  and a shield in an empty off-hand (`wearBestArmor`). Both are our own few lines;
+  and a shield in an empty off-hand (`wearBestArmor`). Golden apples are never a meal (`Reserved`):
+  they're for *Fights*' emergencies. Both are our own few lines;
   `mineflayer-auto-eat` is ESM-only now and the armour plugin is unmaintained. Tiers go by
   `ArmorTiers`; **a tier missing from it still beats nothing** (copper armour, missing, was never put
   on). A piece someone gives her (an armour item picked up) gets the closest player's thanks
@@ -335,8 +337,8 @@ list: the owner removed it.
   takes three. **Never through a player** (`playerInLine`): behind Papa she put four arrows in his
   back while it walked up to him, so with someone in the line she steps 3 blocks aside first, and
   if someone steps in while she draws, the arrow goes up. Without a bow she keeps out of its reach and warns once per creeper
-  (`McCreeperLines`). Under 3 hearts she stops fighting and backs off, eating to heal, until she's
-  at 7 hearts or 20 s have passed (`McRetreatLines`). The tick changes her goal only when what she's
+  (`McCreeperLines`). Under 3 hearts she stops fighting and backs off, eating to heal and hitting what keeps
+  up with her, until she's at 7 hearts or 20 s have passed (`McRetreatLines`). The tick changes her goal only when what she's
   doing changes (`setMode`): a goal set on every tick is never walked.
 - **Patrol** (« syncs surveille la base ») is guard around a spot: where she stands, or a remembered
   place named with it. Read before stay and guard: a care verb with a place word within four words
@@ -354,7 +356,8 @@ list: the owner removed it.
   (`CarriedOnly`: food, fish, tools…) take any article. Give is read before Store, whose « ranger »
   is one slip from « manger ». **Store** (« range tes affaires », or anything put « dans le coffre »)
   fills the closest chest or barrel within 16 blocks and keeps her kit: the best sword, pickaxe, axe
-  and shovel, a rod, shears, her bow and arrows.
+  and shovel, a rod, shears, her bow and arrows, and what keeps her alive (golden apples, a totem, healing and
+  fire resistance potions).
 - **Fishing** walks to open water within 16 blocks and casts until told otherwise. No bite in 45 s
   and she reels in and casts again; only then does she click to reel in, since after any other end
   a click would cast. The catch stays on her; a remark now and then (a treasure always).
@@ -687,6 +690,65 @@ whoever swims in it down faster than jump lifts them, and the pathfinder takes i
 Lines: `McDiveLines` (with twins), `McDiveAirLines`, `McDrowningLines`, `McBreathingLines`,
 `McBoardLines` (with twins), `McShakeLines`.
 
+## Fights
+
+Papa's call (`docs/superpowers/specs/2026-10-25-combat-design.md`): she stays alive in most dangerous situations
+without anyone minding her. The decisions that need no `bot` are in `MinecraftBody/fight.js` (`fight-check.js` in
+the test tool checks them, no server needed); everything that moves her is in `index.js`.
+
+- **She defends herself, whatever she's doing** (`selfDefend`, `fightTick`, task `fight`). Hurt by a monster
+  (`entityHurt` on her), or a monster in sight within 4 blocks coming at her (`threatTick`, `comingAt`: closer by
+  0.2 over half a second, or under 2 blocks), she stops and deals with it, then goes back to what she was doing
+  (`resumeFor`, as after defending someone). One standing about (a skeleton on a hill) leaves her to her work. Her
+  life comes before an errand: one that can't be started again (a furnace, handing over, storing) is dropped and
+  its player told (`dropped` with no attacker → `McDangerDroppedLines`). Not asleep, in a boat, crossing a portal or
+  running from a player. Guarding, patrolling or defending someone, the fight is `guardTick`'s or `defendTick`'s.
+- **Who she never hits** (`answerTo`): a tamed animal (`owneruuid`: Papa's wolf attacks her when he hits her), an
+  iron golem, bees, goats, llamas, polar bears, wolves; the warden and the creaking. She gets clear of them instead.
+  Endermen and piglins are fought once they've hurt her, never before.
+- **She sizes the fight up** (`sizeUp`, every 1.5 s at most so it doesn't flip): every monster in sight within 12
+  weighs (`KindWeights`, in zombies, less with distance) against her strength (`strength`: two zombies at full
+  health bare-handed, more with armour points, her best weapon's tier, and her player beside her). **Fight**,
+  **fall back** (to her player: the one of the order she was on, else Papa, else Tata, else the closest, within 32;
+  hitting whatever keeps up, eating when nothing is in reach, `McRetreatLines`), or **get out** (a warden or a
+  creaking within 16: beside her player on their far side from it, 6 beyond them, else 16 away; never a hit). At 3
+  hearts it's always fall back. Back from falling back only at 0.75 of the odds. No weapon is no reason to run:
+  bare-handed she still takes on one or two. Alone and still chased after 20 s (`FallBackAlone`), she turns and
+  fights it out.
+- **Orders mid-fight** (Papa's call, `holdForFight`): « viens » and « suis-moi » bring her to that player at once,
+  falling back as she fights; any other order (« reste » included: she can't stand still under attack) waits for
+  the fight, a newer one replacing it, and C# keeps it pending until the body reports it under way.
+- **One strike path** (`strike`) for guard, patrol, defend, self-defence and the ranch's cull: her weapon's own
+  cooldown (`cooldownFor`: sword 625 ms, axes 1000–1250, trident 909, mace 1667, hand 250). **A player beside the
+  target** (within 1.6): a sword's sweep would land on them, so she hits from a jump (a critical hit never
+  sweeps); not swinging at all let zombies hugging Papa kill him. **No hazard behind her** (`edgeBehind`,
+  `hazardAt`: a drop over 3, lava, the void): off the lip as soon as a foe is close, not only when she swings (its
+  hits come on its own time). **Her fight walk** (`fightMovements`): no parkour, no drop over 2, the lip of a drop
+  or lava costs 40. A foe 12 from where it started is let go (`FightLeash`).
+- **Ranged foes** (`RangedKinds`, a drowned with a trident; `rangedStep`): with a bow, shot from 6 or more
+  (`shoot`'s rules); without, closed in on. A ghast or a blaze she can't get at (over 3 above her): out of its
+  sight. **The shield** (`shieldTick`): up against a ranged foe out to get her (its `mob_flags` aggressive bit: the
+  server never sends a skeleton's drawn bow) and facing her, not while she runs in at that one (it slows her to a
+  crawl), and between her hits; down to hit, eat or draw. An axe disables it 5 s (`entity_status` 30).
+- **Fireballs** (`fireballTick`): her client hears where a fireball is only every few ticks (5 blocks apart), so
+  she guesses from its last two positions and swings every tick from 7 blocks for 1 s; a landed punch sends it back
+  the way she looks, at it. From 4 blocks, the one swing in reach came too late.
+- **Emergencies** (`emergencyTick`): at 4 hearts a totem goes in her off-hand (the shield to her pockets, back past
+  7 hearts, or once the totem popped); with nothing in reach, a healing potion, else a golden apple (enchanted
+  first), every 3 s at most. Potions by their registry id as her 26.1 client gets them (healing 24, poison 28, fire
+  resistance 11 on the local server), never drunk blind. A totem popping (`entity_status` 35) is `totem` →
+  `McTotemLines`, said at once.
+- **Fire and lava** (`hazardTick`, after her swimming): in lava or fire she steers herself to the closest standable
+  block within 4 by her own keys (the pathfinder avoids both and won't plan from inside them); on fire on dry land
+  she makes for water within 8 (`hazard` task, 10 s at most, through `resumeFor`). A fire resistance potion is
+  drunk at once.
+- **Not surrounded**: no manoeuvre of its own. Her chase already took her out of a ring of four zombies in every
+  layout tried, pressed against her included (`surround`).
+
+Checked by `node run.js survival`: `ravine`, `beside`, `farmzombie`, `followzombie`, `furnace`, `farmskeleton`,
+`golem`, `horde`, `alone`, `warden`, `ordered`, `skeletonshield` (three live skeletons: chance-driven, about one run
+in six below its bar), `skeletonbow`, `fireball`, `surround`, `gapple`, `totem`, `keepkit`, `burning`, `lava`.
+
 ## Body language
 
 Body only, no words. Her gaze is free when she isn't asleep, eating, drawing her bow or walking, and
@@ -879,7 +941,7 @@ catches everything; nothing escapes the loop.
   left keeps her (a furnace, handing over, storing, a bed, a portal, running away). She never hits
   family, nor a creeper.
   - **A monster** hitting any player within 16 blocks of her: she fights it, for up to 20 s,
-    silently. Body-only, like eating.
+    silently. Body-only, like eating. A monster hitting *her* is *Fights*.
   - **A player** hitting one of them is the owner's three steps, by that player's streak
     (`McHitStreaks.Tally`, same one-minute window, `DefendStage`, walked by the checks): the first
     hit gets a warning (`McFamilyHitLines`, rationed), the second within the window she hits them
