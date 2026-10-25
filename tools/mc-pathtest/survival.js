@@ -619,13 +619,20 @@ function span(from, points) {
   return ((2 * Math.PI - gap) * 180) / Math.PI;
 }
 
-// Four zombies coming at her from the north, east, south and west: she moves so they're all on one side of her (a
-// span under 120°) before fighting them one by one. Papa is far off, in creative: the zombies are hers.
+// Four zombies pressed round her, north, east, south and west, 1.6 blocks out (all in her reach: from a looser ring
+// chasing the one that hit her took her out of it by itself; no AI: they stay spread, where live ones
+// bunch up by themselves; 40 health, so none goes down in the first seconds; no knockback, so her hits don't break the
+// ring). The east one hits her: she moves so
+// they're all on one side of her (a span under 120°) before fighting them one by one. Papa is far off, in creative.
 async function surround() {
   const sc = await scene();
   await rcon.run(['gamemode creative Papa', `tp Papa ${S.x - 20.5} -60 ${S.z + 0.5}`]);
   await wait(1000);
-  await rcon.run([[5, 0], [-5, 0], [0, 5], [0, -5]].map(([dx, dz]) => `summon zombie ${S.x + 0.5 + dx} -60 ${S.z + 0.5 + dz} {PersistenceRequired:1b,Tags:["test"]}`));
+  const ring = '{NoAI:1b,PersistenceRequired:1b,Tags:["test"],Health:40f,attributes:[{id:"minecraft:max_health",base:40.0},'
+    + '{id:"minecraft:knockback_resistance",base:1.0}]}';
+  await rcon.run([[1.6, 0], [-1.6, 0], [0, 1.6], [0, -1.6]].map(([dx, dz]) => `summon zombie ${S.x + 0.5 + dx} -60 ${S.z + 0.5 + dz} ${ring}`));
+  await wait(500);
+  await rcon.run([`damage ${Name} 2 minecraft:mob_attack by @e[type=zombie,tag=test,x=${S.x + 1.5},y=-60,z=${S.z},dx=1,dy=1,dz=1,limit=1]`]);
   let narrowest = 360;
   for (const end = Date.now() + 4000; Date.now() < end && narrowest >= 120; await wait(250)) {
     const me = await pos(Name);
