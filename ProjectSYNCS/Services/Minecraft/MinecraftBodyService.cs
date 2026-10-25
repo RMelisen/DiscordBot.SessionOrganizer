@@ -178,6 +178,8 @@ public sealed class MinecraftBodyService : BackgroundService
     // Asked where she is / to remember a spot: the body answers with a position, and these say to whom and how.
     // Of: whose place it will be (« retiens ici : maison de Rodhengard »), null for the player's own.
     private readonly Dictionary<string, bool> _askedWhere = new(StringComparer.OrdinalIgnoreCase);
+    // Asked to put her armour on or take it off: the body says how it went, and this says how they asked.
+    private readonly Dictionary<string, bool> _dressing = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, (string Key, string Name, string? Of, bool Private)> _marking = new(StringComparer.OrdinalIgnoreCase);
     // Reminders running, per player (McCommand Timer), for this body only: they die with it.
     private readonly Dictionary<string, int> _timers = new(StringComparer.OrdinalIgnoreCase);
@@ -474,6 +476,7 @@ public sealed class MinecraftBodyService : BackgroundService
         _timers.Clear();
         _marking.Clear();
         _askedWhere.Clear();
+        _dressing.Clear();
         _whereFromDiscord = null;
     }
 
@@ -562,6 +565,28 @@ public sealed class MinecraftBodyService : BackgroundService
                     OnOutcome(root.GetProperty("player").GetString() ?? "",
                         noGoods == McGoods.All ? BotResponses.McGiveEmptyLines : BotResponses.McGiveNoneLines,
                         "", noGoods is { } g ? BotResponses.McGoodsNames[g] : "");
+                    break;
+                case "dressed":
+                    OnDressing(root.GetProperty("player").GetString() ?? "", BotResponses.McDressLines, root.GetProperty("count").GetInt32());
+                    break;
+                case "cantDress":
+                    OnDressing(root.GetProperty("player").GetString() ?? "",
+                        root.GetProperty("why").GetString() == "worn" ? BotResponses.McDressWornLines : BotResponses.McArmourNoneLines);
+                    break;
+                case "undressed":
+                    OnDressing(root.GetProperty("player").GetString() ?? "",
+                        root.GetProperty("full").GetBoolean() ? BotResponses.McUndressFullLines : BotResponses.McUndressLines,
+                        root.GetProperty("count").GetInt32());
+                    break;
+                case "cantUndress":
+                    OnDressing(root.GetProperty("player").GetString() ?? "",
+                        root.GetProperty("why").GetString() == "full" ? BotResponses.McUndressFullLines : BotResponses.McArmourNoneLines);
+                    break;
+                case "armoured":
+                    var giver = root.GetProperty("by").GetString() ?? "";
+                    if (giver.Length > 0)
+                        Remark("armoured", Kin(giver, BotResponses.McArmouredLines, BotResponses.McArmouredLinesOwner,
+                            BotResponses.McArmouredLinesTata), giver, force: true);
                     break;
                 case "stored":
                     var storer = root.GetProperty("player").GetString() ?? "";
@@ -1152,6 +1177,11 @@ public sealed class MinecraftBodyService : BackgroundService
             case McOrder.Where:
                 lock (_gate) _askedWhere[player] = whispered;
                 Send(new { op = "where", player });
+                return true;
+            case McOrder.Dress:
+            case McOrder.Undress:
+                lock (_gate) _dressing[player] = whispered;
+                Send(new { op = request.Order == McOrder.Dress ? "dress" : "undress", player });
                 return true;
             case McOrder.Give when request.Goods is null:
                 Reply(player, whispered, BotResponses.McGiveUnknownLines);
@@ -1785,6 +1815,15 @@ public sealed class MinecraftBodyService : BackgroundService
             !delivered ? BotResponses.McGiveLostLines
             : Kin(player, BotResponses.McGiveDoneLines, BotResponses.McGiveDoneLinesOwner, BotResponses.McGiveDoneLinesTata),
             count, BotResponses.McGoodsNames[goods]);
+    }
+
+    // Armour put on or taken off as asked: answered to whoever asked, the way they asked. {1} = how many pieces.
+    private void OnDressing(string player, string[] pool, int count = 0)
+    {
+        bool whispered;
+        lock (_gate)
+            if (!_dressing.Remove(player, out whispered)) return;
+        Reply(player, whispered, pool, count);
     }
 
     private static McGoods? Goods(string key) => Enum.TryParse<McGoods>(key, ignoreCase: true, out var goods) ? goods : null;

@@ -181,6 +181,8 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
   - « syncs vide tes poches », « syncs donne-moi ton poisson » (or ta pioche, tes armes, ton fer…):
     she hands you what she carries; « syncs range tes affaires » puts it in the chest nearby, keeping
     her tools;
+  - armour you give her, she puts on (and thanks you); « syncs enlève ton armure » takes it off and
+    keeps it, « syncs mets ton armure » puts it back on, « syncs rends-moi ton armure » hands it over;
   - « syncs t'as quoi sur toi ? », « syncs montre ton inventaire »: she says what she carries, the
     biggest stacks first; « syncs t'as combien de fer ? », « syncs t'as du bois ? »: how much she
     has of that;

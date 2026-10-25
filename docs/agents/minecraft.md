@@ -263,9 +263,21 @@ list: the owner removed it.
   start a cull. Animal words match exactly (« lapins » is one slip from « sapins »), and « élever »
   stays out (one slip from « enlever »).
 - **Food and armour** need no order: she eats when hunger drops below 14 (never rotten flesh and
-  the like), and wears the best piece she carries for each slot on spawn and after each pickup.
-  Both are our own few lines; `mineflayer-auto-eat` is ESM-only now and the armour plugin is
-  unmaintained.
+  the like), and wears the best piece she carries for each slot on spawn and after each pickup,
+  and a shield in an empty off-hand (`wearBestArmor`). Both are our own few lines;
+  `mineflayer-auto-eat` is ESM-only now and the armour plugin is unmaintained. Tiers go by
+  `ArmorTiers`; **a tier missing from it still beats nothing** (copper armour, missing, was never put
+  on). A piece someone gives her (an armour item picked up) gets the closest player's thanks
+  (`armoured`, `McArmouredLines` and twins), but not her own things coming back after a death.
+- **Armour on and off** (`Dress`, `Undress`, free orders answered from the body's event):
+  « mets ton armure », « équipe-toi » put on the best she carries; « enlève ton armure », « retire
+  ton armure » take it off **and keep it** in her pockets (`bare`), and she puts nothing on by
+  herself until told to or **given a piece**, which is a gift and goes on (all of it). Each piece
+  needs a free slot: with full pockets what's left stays on (`McUndressFullLines`). « donne-moi ton
+  armure », « rends-moi ton armure » still hand it over, shield included (`wornGear`); so does
+  « enlève ton armure et donne-la moi », which has another give verb. « enlève » and « retire » are
+  give verbs too, so armour on or off is read just before handing over, and « mets » and « porte »
+  need the armour word (« mets tout dans le coffre », « la porte »).
 - **With nothing to eat, she feeds herself first** (`startForage`, a body-only task with no player and
   **no words**, the owner's call). Only when she's free or at an activity (paused and gone back to,
   like an errand: `pausedActivity`); never during someone's order, and not while fishing, which feeds
@@ -934,7 +946,7 @@ wrapper sends the old numbers as names on versions with the new order. Check Min
 **The packets 26.1 changed** (`attack`, now its own packet, `use_entity`, `block_place`,
 `use_item`, `arm_animation`, `client_command`; `window_click` in 1.21.5) all encode right from what
 Mineflayer 4.39 writes, and every action built on them was checked on the local server, on the
-server's side (`node run.js actions`): eating, armour, storing, handing over, smelting, sleeping and
+server's side (`node run.js actions`): eating, armour (given, off, on, handed back, full pockets), storing, handing over, smelting, sleeping and
 getting up, fishing, a boat. Two loose ends: Mineflayer waits 2.5 s for « done eating », a meal takes
 1.6 s, and a slow link eats the rest, so a timeout with the food gone is not a failure; and the
 server keeps where a sleeper lies in `sleeping_pos` on 26.x, for anyone reading player data.

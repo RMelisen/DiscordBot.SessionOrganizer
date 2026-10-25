@@ -3,6 +3,14 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.37.0 — 2026-10-25
+
+- Minecraft: armour given to her goes on, copper armour and a shield included, and she thanks whoever
+  gave it.
+- Minecraft: « syncs enlève ton armure » takes her armour off and keeps it (she leaves it off until
+  told « syncs mets ton armure » or given a new piece); « syncs rends-moi ton armure » still hands it
+  over, shield included.
+
 ## 7.36.0 — 2026-10-25
 
 - Level-up cards now go to their own channel, set with `/config levelup-channel set|clear`

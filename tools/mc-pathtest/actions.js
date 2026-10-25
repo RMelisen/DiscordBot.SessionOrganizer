@@ -64,6 +64,82 @@ async function armour(body) {
   report(ok, 'armour', ok ? 'wearing the chestplate and boots (server equipment)' : `server equipment: ${worn.slice(0, 160) || 'none'}`);
 }
 
+// Armour handed to her (copper, which she once never wore, and a shield), taken off and kept, not put back on by a
+// pickup of anything else, put on when asked, put on again when given a piece, handed back; and full pockets.
+async function armourOrders(body, papa) {
+  await reset(body);
+  await rcon.run([`clear ${papa.username}`, `tp ${papa.username} ${W.x + 2.5} -60 ${W.z + 2.5}`]);
+  const drop = (id) => `summon item ${W.x + 0.5} -59.5 ${W.z + 2.5} {Item:{id:"minecraft:${id}",count:1},PickupDelay:0s}`;
+  // Slot by slot: the server cuts `data get … equipment` short after its first slot.
+  const worn = async () => (await Promise.all(['head', 'chest', 'legs', 'feet', 'offhand']
+    .map((slot) => q.entityData(Name, `equipment.${slot}`)))).join(' ');
+  const wears = (snbt, ...ids) => ids.every((id) => snbt.includes(`minecraft:${id}`));
+  const bareOf = (snbt) => !/_(helmet|chestplate|leggings|boots)"|minecraft:shield/.test(snbt);
+  const pieces = ['copper_helmet', 'iron_leggings', 'shield'];
+
+  let from = body.events.length;
+  await rcon.run(pieces.map(drop));
+  await wait(4000);
+  let now = await worn();
+  const thanked = body.since(from, (e) => e.ev === 'armoured' && e.by === papa.username).length > 0;
+  report(wears(now, ...pieces) && thanked, 'armour gift', `wearing ${pieces.join(', ')}: ${wears(now, ...pieces)}; thanked Papa: ${thanked}`);
+
+  body.send({ op: 'undress', player: papa.username });
+  let ev = await body.next((e) => e.ev === 'undressed' || e.ev === 'cantUndress', 10000);
+  await wait(1000);
+  now = await worn();
+  const kept = (await Promise.all(pieces.map((p) => q.carried(Name, p)))).every((n) => n === 1);
+  report(ev && ev.ev === 'undressed' && ev.count === 3 && bareOf(now) && kept, 'undress',
+    `${ev ? JSON.stringify(ev) : 'no answer'}; bare on the server: ${bareOf(now)}; pieces in her pockets: ${kept}`);
+
+  await rcon.run([drop('bread')]);
+  await wait(3000);
+  now = await worn();
+  report(bareOf(now), 'stays bare', `after picking up bread, bare on the server: ${bareOf(now)}`);
+
+  body.send({ op: 'dress', player: papa.username });
+  ev = await body.next((e) => e.ev === 'dressed' || e.ev === 'cantDress', 10000);
+  await wait(1000);
+  now = await worn();
+  report(ev && ev.ev === 'dressed' && wears(now, ...pieces), 'dress', `${ev ? JSON.stringify(ev) : 'no answer'}; wearing them again: ${wears(now, ...pieces)}`);
+
+  body.send({ op: 'dress', player: papa.username });
+  ev = await body.next((e) => e.ev === 'dressed' || e.ev === 'cantDress', 10000);
+  report(ev && ev.ev === 'cantDress' && ev.why === 'worn', 'dress again', ev ? JSON.stringify(ev) : 'no answer');
+
+  body.send({ op: 'undress', player: papa.username });
+  await body.next((e) => e.ev === 'undressed' || e.ev === 'cantUndress', 10000);
+  from = body.events.length;
+  await rcon.run([drop('iron_boots')]);
+  await wait(4000);
+  now = await worn();
+  report(wears(now, ...pieces, 'iron_boots'), 'regift', `given boots after « enlève »: wearing everything again: ${wears(now, ...pieces, 'iron_boots')}`);
+
+  body.send({ op: 'give', player: papa.username, goods: 'armour' });
+  ev = await body.next((e) => e.ev === 'given' || e.ev === 'cantGive', 30000);
+  await wait(3000);
+  now = await worn();
+  const handed = (await Promise.all([...pieces, 'iron_boots'].map((p) => q.carried(papa.username, p)))).reduce((a, b) => a + b, 0);
+  const lying = await q.count(`@e[type=item,x=${W.x + 2.5},y=-60,z=${W.z + 2.5},distance=..4]`);
+  report(ev && ev.ev === 'given' && bareOf(now) && handed + lying >= 4, 'give back',
+    `${ev ? JSON.stringify(ev) : 'no answer'}; bare: ${bareOf(now)}; Papa carries ${handed} pieces, ${lying} lying at his feet`);
+  await rcon.run([`kill @e[type=item,x=${W.x + 2.5},y=-60,z=${W.z + 2.5},distance=..6]`, `clear ${papa.username}`]);
+
+  await rcon.run([`give ${Name} iron_chestplate`]);
+  await wait(1500);
+  body.send({ op: 'dress', player: papa.username });
+  await body.next((e) => e.ev === 'dressed' || e.ev === 'cantDress', 10000);
+  await rcon.run([`give ${Name} dirt ${36 * 64}`]);
+  await wait(1500);
+  body.send({ op: 'undress', player: papa.username });
+  ev = await body.next((e) => e.ev === 'undressed' || e.ev === 'cantUndress', 10000);
+  now = await worn();
+  report(ev && ev.ev === 'cantUndress' && ev.why === 'full' && wears(now, 'iron_chestplate'), 'undress full',
+    `${ev ? JSON.stringify(ev) : 'no answer'}; still wearing the chestplate: ${wears(now, 'iron_chestplate')}`);
+  body.send({ op: 'dress', player: papa.username }); // no longer bare, for the runs after
+  await body.next((e) => e.ev === 'dressed' || e.ev === 'cantDress', 10000);
+}
+
 async function store(body) {
   await reset(body);
   await rcon.run([`data merge block ${at(0, 0, 0)} {Items:[]}`, `give ${Name} cobblestone 32`, `give ${Name} dirt 16`,
@@ -175,7 +251,7 @@ async function actions(only = []) {
   const body = startBody();
   await spawned(body);
   const papa = await standIn('Papa');
-  const all = { eat, armour, store, give: (b) => give(b, papa), smelt, sleep: sleepAndWake, fish, boat: (b) => boat(b, papa) };
+  const all = { eat, armour, wardrobe: (b) => armourOrders(b, papa), store, give: (b) => give(b, papa), smelt, sleep: sleepAndWake, fish, boat: (b) => boat(b, papa) };
   for (const [name, run] of Object.entries(all)) {
     if (only.length > 0 && !only.includes(name)) continue;
     try {

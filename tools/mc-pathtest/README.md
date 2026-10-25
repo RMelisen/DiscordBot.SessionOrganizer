@@ -35,7 +35,7 @@ node run.js crops            # crossing a ripe field six ways: nothing trampled
 node run.js items            # dying among decorations: everything reachable comes back
 node run.js gather           # cutting a grove whose logs fall into awkward spots
 node run.js harvest          # harvesting and replanting a plot: nothing trampled, nothing left
-node run.js actions          # every packet-level action, checked on the server (eat, store, sleep, boat…)
+node run.js actions          # every packet-level action, checked on the server (eat, armour on and off, store, sleep, boat…)
 node run.js safety           # keeping a herd: named animals and babies spared, culling within its rules
 node run.js survival         # night fights, a creeper shot from range, an enderman left alone, being hit
 node run.js trip             # 250 blocks, far past the loaded chunks
@@ -70,6 +70,7 @@ For the course, start `node lag.js 120 60` apart and run `MC_PORT=25600 node run
 **Her chat.** `node chat-test.js` (about 3 minutes, not part of `all`) runs `MinecraftBodyService` itself, the real
 pools and rules with Discord left offline (`tools/mc-chattest`, built by the script), and six stand-in players talk to
 her: questions, intents with Papa's and Tata's twins, insults, Inabot, a favour, a whisper, talk about her, an order,
+armour given, taken off, put on and handed back,
 the listening window, a burst of hellos, the conversation streak. Each line she says is traced back to its Discord
 pool, and every line must be plain game chat. Her answers are typed (a delay), so scenarios leave a few seconds
 between them.

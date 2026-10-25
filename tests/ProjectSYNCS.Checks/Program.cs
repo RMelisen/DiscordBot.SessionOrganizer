@@ -2124,6 +2124,21 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     Mc("syncs donne-moi ta meilleure épée", McOrder.Give, r => r.Goods == McGoods.Weapons);
     Mc("syncs donne moi à manger", McOrder.Give, r => r.Goods == McGoods.Food);
     Mc("syncs donne-moi ton armure", McOrder.Give, r => r.Goods == McGoods.Armour);
+    Mc("syncs rends-moi mon armure", McOrder.Give, r => r.Goods == McGoods.Armour);
+    // Armour on and off: taken off, it stays in her pockets; with another give verb it's still handed over.
+    Mc("syncs mets ton armure", McOrder.Dress);
+    Mc("syncs remets ton armure stp", McOrder.Dress);
+    Mc("syncs équipe-toi", McOrder.Dress);
+    Mc("syncs enfile ton armure", McOrder.Dress);
+    Mc("syncs put on your armor", McOrder.Dress);
+    Mc("syncs enlève ton armure", McOrder.Undress);
+    Mc("syncs retire ton armure", McOrder.Undress);
+    Mc("syncs ôte ton armure", McOrder.Undress);
+    Mc("syncs take off your armor", McOrder.Undress);
+    Mc("syncs enlève ton armure et donne-la moi", McOrder.Give, r => r.Goods == McGoods.Armour);
+    Mc("syncs n'enlève pas ton armure", McOrder.None);
+    Mc("syncs mets ton armure dans le coffre", McOrder.Store);
+    Mc("syncs mets tout dans le coffre", McOrder.Store); // « mets » needs the armour word
     Mc("syncs donne-moi ta clé", McOrder.Give, r => r.Goods is null);
     Mc("syncs donne-moi du fer", McOrder.Collect); // a partitive is still the gathering order
     Mc("syncs file-moi du charbon", McOrder.Collect);
@@ -2282,7 +2297,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         ("syncs passe moi la pioche", "Give:Pickaxe"), ("syncs donne moi une pioche", "Give:Pickaxe"),
         ("syncs lance moi ta hache", "Give:Axe"), ("syncs donne moi tes outils", "Give:Tools"),
         ("syncs donne moi ton arc", "Give:Bow"), ("syncs donne moi tes flèches", "Give:Arrows"),
-        ("syncs donne moi ton armure", "Give:Armour"), ("syncs enlève ton armure", "Give:Armour"),
+        ("syncs donne moi ton armure", "Give:Armour"), ("syncs enlève ton armure", "Undress"),
         ("syncs donne moi à manger", "Give:Food"), ("syncs j'ai faim", "Give:Food"),
         ("syncs t'as à manger ?", "Give:Food"), ("syncs file moi de la bouffe", "Give:Food"),
         ("syncs donne moi du pain", "Give:Food"), ("syncs donne moi tes graines", "Give:Seeds"),
@@ -2541,7 +2556,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     };
     string[] McFamilyPools = { "McCalledLines", "McDeathLines", "McHitByPlayerLines", "McHitAgainLines", "McFedLines", "McAdvancementLines", "McComeAckLines",
         "McFollowAckLines", "McGuardAckLines", "McCollectDoneLines", "McWaveLines", "McGiveDoneLines", "McByeLines", "McCreeperBehindLines", "McDiveLines", "McBoardLines",
-        "McPraisedLines", "McThankedLines", "McPortalLines" };
+        "McPraisedLines", "McThankedLines", "McPortalLines", "McArmouredLines" };
     foreach (var p in McFamilyPools)
     foreach (var twin in new[] { p + "Owner", p + "Tata" })
     {
@@ -2580,7 +2595,8 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
              "McRoutineHomeLines", "McTagAlongLinesOwner", "McTagAlongLinesTata", "McRetrieveLines", "McRetrievedLines", "McRetrieveEmptyLines",
              "McRetrieveLostLines", "McToolWornLines", "McToolBrokeLines", "McNeedRodLines", "McNeedShearsLines", "McNeedBreedFoodLines",
              "McNeedArrowsLines", "McPocketsFullLines", "McDiveLines", "McDiveAirLines", "McDrowningLines", "McBreathingLines", "McBoardLines",
-             "McShakeLines", "McInventoryLines", "McInventoryEmptyLines", "McHaveLines", "McHaveNoneLines", "McPortalLines" }
+             "McShakeLines", "McInventoryLines", "McInventoryEmptyLines", "McHaveLines", "McHaveNoneLines", "McPortalLines",
+             "McDressLines", "McDressWornLines", "McArmourNoneLines", "McUndressLines", "McUndressFullLines" }
              .Concat(McFamilyPools.SelectMany(p => new[] { p + "Owner", p + "Tata" })))
     foreach (var (name, lines) in Pools(f))
     {
