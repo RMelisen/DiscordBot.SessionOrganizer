@@ -1,8 +1,42 @@
 # Her body on the Minecraft server
 
 SYNCS joins the group's Minecraft server (Java Edition, offline mode) as a real player.
-`MinecraftBodyService` (C#) decides and speaks. The body (`ProjectSYNCS/MinecraftBody/index.js`,
-Node + Mineflayer) moves and reports.
+`MinecraftBodyService` (C#) decides and speaks. The body (`ProjectSYNCS/MinecraftBody`, Node +
+Mineflayer) moves and reports.
+
+## The body's code
+
+`index.js` only connects and reads commands; the body is in `lib/`, **one ES module per part of her
+life**, named like the sections below (`gather.js`, `trees.js`, `farm.js`, `ranch.js`, `camp.js`,
+`water.js`, `columns.js`, `boats.js`, `doors.js`, `combat.js`, `strike.js`…). A new behaviour goes in
+the module of the part it belongs to, or a new one.
+
+- **`bot` and `task` live in `state.js`** and every module imports them. An imported binding is
+  read-only, and live: importers always read the current value. So a module changes another one's
+  variable through a function its owner exports that says what happens (`holdHere()`, `forgetSwim()`,
+  `shieldBroken()`, `setFamilyNames()`); a bare setter (`setTask(…)`, never `task = …`) only where
+  that is all there is to it.
+- **`wiring.js` registers every listener, in one place**, because the physics tick runs its handlers
+  in the order they were added: the swimming before the hazards, `inputTick` first of all. Keep the
+  order when adding one. **`commands.js`** turns C#'s commands into calls. An order started again
+  after a fight goes through `restart.js`'s `redo`, which `index.js` connects to `dispatch`: importing
+  `commands.js` from the modules that restart orders would make them depend on everything.
+- `family.js` has Papa's and Tata's names (`isFamily`, `familyOrder`), for whoever needs them.
+- **`compat.js` holds every workaround for Mineflayer and its libraries lagging behind the
+  server's version**, and its header lists the few that live elsewhere because they're part of
+  what they fix. **Go through that list before bumping `mineflayer`, `minecraft-protocol`,
+  `minecraft-data` or `prismarine-physics`.** A new workaround goes there, or in that list.
+- **Importing a module starts nothing**: no timer, no connection, no listener. `index.js` starts
+  them, and `tools/mc-pathtest/column-check.js` imports `movements.js` with a stand-in bot: a timer
+  started on import would keep the check from ever ending.
+- `fight.js` is the pure half of her fights (no `bot`), checked by `fight-check.js`.
+- The modules are ES modules (`"type": "module"`): the tools' CommonJS checks load them with
+  `require`, which needs Node 22.12 or later. The Dockerfile copies `index.js` and `lib/`.
+
+On the C# side, `MinecraftBodyService` is one partial class over files named for what they hold
+(`.Events`, `.Orders`, `.Places`, `.AtOnce`, `.Outcomes`, `.Talk`, `.Discord`); its fields all stay in
+`MinecraftBodyService.cs`. `McCommand` is three: the reading (`McCommand.cs`), the phrase lists
+(`.Words`) and the helpers that find things in the words (`.Reading`).
 
 ## Two processes, one voice
 
@@ -411,9 +445,23 @@ list: the owner removed it.
   walking can't get there she says so (`McNoPathLines`) instead. **The exceptions are a seed
   on bare farmland where she just harvested** (`harvestBlocks`), **a gathered tree's natural
   leaves** (`gatheringMovements`), **the pillar she climbs a tree with, taken down after**
-  (`fell`, `unstack`; an order that takes her away mid-tree leaves it standing, with a log line)
-  **and her camp's own blocks and floor** (below): nothing else, nowhere else.
-  Keep them that narrow.
+  (`fell`, `unstack`; an order that takes her away mid-tree leaves it standing, with a log line),
+  **her camp's own blocks and floor** (below) **and a bridge of two blocks at most, taken down once
+  she's across** (below): nothing else, nowhere else. Keep them that narrow.
+- **A bridge when walking can't get there** (`bridges.js`). « No way there » on a walk a player asked
+  for (come, follow, go to, guide, guard) or her walk up to family is planned once more with blocks
+  she may place: **2 at most** (the pathfinder plans with `min(what she carries, 2)`), of what she'd
+  least miss (dirt, coarse dirt, cobblestone, cobbled deepslate, netherrack; never a log), each worth
+  10 steps so any way round wins, never into or over lava, never a pillar. Only then, and still no way,
+  does she say so. That covers a ditch or a ravine's narrow end too wide to jump under a low ceiling,
+  and the step out of a two-deep trench. **Every block comes down**: once she's 1.5 blocks off them
+  she stops her walk, breaks them from where she stands (the drops fall where they fall: dirt is
+  cheap) and walks on. One someone stands on or out of her reach stays, with a log line. Not again
+  for the same walk within 30 s, and a try that placed nothing gives the plain walk back after 20 s.
+  The search can't run from inside the pathfinder's own `path_update` (it sets the path it found
+  after its listeners, and a search asked for in one never runs), so the retry waits a beat.
+  `/debug minecraft` « Voir son corps » says when she's ready to bridge and how many of her blocks
+  still stand.
 - **The camp** (« monte le camp », `makeCamp`; « démonte le camp », `breakCamp`): Papa and Tata
   only (C#: `McCampRefusedLines` for anyone else), one at a time. An open camp round a campfire, as
   `CampLayout` draws it (nine strings, the back to the north; the owner's design,
@@ -722,8 +770,9 @@ Lines: `McDiveLines` (with twins), `McDiveAirLines`, `McDrowningLines`, `McBreat
 ## Fights
 
 Papa's call (`docs/superpowers/specs/2026-10-25-combat-design.md`): she stays alive in most dangerous situations
-without anyone minding her. The decisions that need no `bot` are in `MinecraftBody/fight.js` (`fight-check.js` in
-the test tool checks them, no server needed); everything that moves her is in `index.js`.
+without anyone minding her. The decisions that need no `bot` are in `MinecraftBody/lib/fight.js` (`fight-check.js` in
+the test tool checks them, no server needed); everything that moves her is in `combat.js`, `strike.js`, `ranged.js`,
+`hazards.js` and `emergency.js`.
 
 - **She defends herself, whatever she's doing** (`selfDefend`, `fightTick`, task `fight`). Hurt by a monster
   (`entityHurt` on her), or a monster in sight within 4 blocks coming at her (`threatTick`, `comingAt`: closer by
@@ -919,6 +968,17 @@ An unplanned end (crash, kick, refused login, unsupported version) backs off 2, 
 15 minutes. Spawning resets the count. The last kick reason shows in `/debug minecraft`. The tick
 catches everything; nothing escapes the loop.
 
+**What `/debug minecraft` shows of the body.** « Voir l'état » adds how the last body ended (planned
+or not, with its connection's reason) and the body's last 8 log lines, kept across bodies so the
+ones before a crash are still there, newest first, as many as fit. « Voir son corps » asks the
+body itself (`{"op":"debug"}`, `lib/debug.js`, 3 s at most, deferred): her task, what it goes back
+to, held, sitting, swimming, riding, her path's goal, health, food and air, the process's memory,
+how late the event loop has run since the last ask (every tick handler and pathfinder search runs on
+it, so a slow Pi shows there first), and `compat.js`'s status: which workarounds the server's
+version needs, the server corrections counted while walking, and the busiest second of packets. No
+answer means the loop is stuck: the logs in « Voir l'état » are the next place to look. The text is
+built by `McBodyReport` (pure, measured by the checks).
+
 `/debug minecraft leave` keeps her out for 30 minutes, or the next tick would send her back.
 `join` clears the backoff and the hold. Once she's in, the rule applies as usual.
 
@@ -1012,8 +1072,8 @@ mode lets anyone take those names, which is fine: names only pick lines here.
 
 ## Deployment
 
-The Dockerfile has a `node:22-bookworm-slim` stage that runs `npm ci` from the lockfile. The final
-image gets the `node` binary and `/app/body`. The service looks for the body at
+The Dockerfile has a `node:22-bookworm-slim` stage that runs `npm ci` from the lockfile, then copies
+`index.js` and `lib/`. The final image gets the `node` binary and `/app/body`. The service looks for the body at
 `<app>/body/index.js`, then at `MinecraftBody/index.js` under the working directory (a dev
 `dotnet run`), or at `Minecraft:BodyScript`.
 
@@ -1027,6 +1087,10 @@ the server kicks her for an outdated client and she backs off. When Mineflayer c
 `mineflayer`, `minecraft-protocol` and `minecraft-data` together in `package.json` (exact pins) and
 the fallback goes quiet by itself. Mods that add blocks or entities can break the body; plugins that
 only add commands can't.
+
+The workarounds below are all in `lib/compat.js` (its header is the checklist for a bump, see *The
+body's code*), and « Voir son corps » in `/debug minecraft` shows which ones the server's version
+needs.
 
 **`tick_end` after every move (PrismarineJS/mineflayer#4189).** Since 26.3 the server accepts one
 position packet per client tick and resets that count only on the client's `tick_end`, which real

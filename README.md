@@ -54,7 +54,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
 | `/debug quiz` | Post or close a pop quiz, or crown the week, now (tests) | owner |
 | `/debug quokka` | Make Quokka show up in the bots channel now (tests) | owner |
-| `/debug minecraft` | Her state on the Minecraft server or everything she carries, send her in / take her out now, or allow / forbid her joining at all | owner |
+| `/debug minecraft` | Her state on the Minecraft server (with her body's last log lines), everything she carries, or what her body is doing right now and how its process copes; send her in / take her out now, or allow / forbid her joining at all | owner |
 | `/health` | Her check-up: the Pi's temperature and power, her memory, the Discord connection, storage, the outage log | everyone |
 | `/help` | In-Discord usage guide | everyone |
 

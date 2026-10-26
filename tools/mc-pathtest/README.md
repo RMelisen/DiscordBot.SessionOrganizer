@@ -39,7 +39,7 @@ node run.js actions          # every packet-level action, checked on the server 
 node run.js safety           # keeping a herd: named animals and babies spared, culling within its rules
 node run.js survival         # night fights, creepers, endermen, being hit; defending herself, falling back, a warden, orders mid-fight,
                              # edges, skeletons and the shield, fireballs, golden apples and the totem, fire and lava
-node --test fight-check.js   # sizing a fight up, weapon cooldowns, who she may hit (fight.js): no server needed
+node --test fight-check.js   # sizing a fight up, weapon cooldowns, who she may hit (lib/fight.js): no server needed
 node --test column-check.js  # up and down water and bubble columns, planned by the real pathfinder: no server needed
 node run.js trip             # 250 blocks, far past the loaded chunks
 node run.js players          # following a walk and through the hard lanes, coming, guiding, losing one, seeking, where she looks

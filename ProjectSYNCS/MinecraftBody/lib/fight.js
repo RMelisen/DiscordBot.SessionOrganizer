@@ -1,6 +1,6 @@
 // The half of her fights that needs no bot: sizing a fight up (fight it, fall back to her player, or get out), how long
 // her weapon takes between two hits, who she may hit back, and whether she's surrounded. Plain data and functions,
-// checked by tools/mc-pathtest/fight-check.js; index.js owns everything that moves her.
+// checked by tools/mc-pathtest/fight-check.js; combat.js and strike.js own everything that moves her.
 
 // Never fought, only got away from: the warden (two hits kill her, and a fight only angers it more) and the creaking
 // (nothing hurts it while its heart stands).
@@ -118,6 +118,6 @@ function openSide(angles) {
   return norm(start + size / 2);
 }
 
-module.exports = {
+export {
   GetOutKinds, NeutralFoes, RangedKinds, foeWeight, strength, sizeUp, cooldownFor, answerTo, sweepReaches, surrounded, openSide,
 };

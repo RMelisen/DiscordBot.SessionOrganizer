@@ -77,6 +77,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         [ChoiceDisplay("L'autoriser à jouer")] Allow,
         [ChoiceDisplay("Lui interdire de jouer")] Forbid,
         [ChoiceDisplay("Voir son inventaire")] Inventory,
+        [ChoiceDisplay("Voir son corps (ce qu'elle fait, la boucle Node)")] Body,
     }
 
     public enum EventMode
@@ -875,7 +876,8 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         await FollowupAsync(sent ? "📬 Rapport envoyé en DM." : "Impossible de t'écrire en DM (voir les logs).", ephemeral: true);
     }
 
-    // Her body on the Minecraft server (MinecraftBodyService): where it stands, what she carries, a join or leave past
+    // Her body on the Minecraft server (MinecraftBodyService): where it stands, what she carries, what her body is doing
+    // and how its process copes (asked of the body, so deferred), a join or leave past
     // her rule, or the switch that allows her on the server at all (kept across restarts, off until
     // allowed). A forced leave keeps her out for half an hour; a forced join still follows the rule
     // once she's in, and needs her to be allowed.
@@ -886,6 +888,14 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         if (Context.User.Id != AvailabilityService.OwnerId)
         {
             await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+
+        // The body answers through the game's event loop, up to 3 s: past Discord's own 3 s.
+        if (action == MinecraftAction.Body)
+        {
+            await DeferAsync(ephemeral: true);
+            await FollowupAsync(await _minecraft.DebugBodyAsync(TimeSpan.FromSeconds(3)), ephemeral: true);
             return;
         }
 

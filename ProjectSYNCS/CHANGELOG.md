@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.42.0 — 2026-10-26
+
+- `/debug minecraft` shows how her Minecraft body last stopped and its last log lines, and a new « Voir son corps » view shows what the body is doing right now and how its process is coping.
+- In Minecraft, when there's no way to walk where she's asked, she bridges a gap of up to two blocks with dirt or cobblestone she carries, and takes the blocks back down once she's across.
+- Under the hood, her Minecraft body's code is split into modules, with every workaround for Mineflayer in one place, and the bot's side of it into smaller files. Nothing else changes in game.
+
 ## 7.41.1 — 2026-10-26
 
 - Fifty-five pictures redrawn so they read at emoji size: seventeen collectibles (the bee, poppy, primrose, shell, ring, treasure map, chestnut, button, mosquito, cricket, rusty key, ancient coin, flint, agate, oak leaf, fly, meteorite), twenty-two cosmetics (Le Champion, L'Aventurier, Le Gourmet, Le Rêveur, Le Mystérieux, Chercheur de trésors, the beach, aurora, forest, royal and treasure-cave themes, mittens, cap, sunglasses, headphones, top hat, shell necklace, lanterns, golden aura, moonlight, pebbles, dead leaves), eight Plynling traits (Froid, Timide, Imprévoyant, Dépensier, Travailleur, Frugal, Radin, Excentrique) and eight badges (Pilier du vocal's microphone on all five tiers, Générosité and six secret ones). The dark ones (mask, sunglasses, headphones, top hat, forest, pennant, meteorite) keep their drawing and gain lit edges so they stand out on Discord's dark background.

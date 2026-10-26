@@ -2815,6 +2815,30 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     foreach (var order in Enum.GetValues<McOrder>())
         if (string.IsNullOrWhiteSpace(McDoing.Describe(order, "Bob", null))) Fail($"McDoing.Describe({order}): empty");
 
+    // /debug minecraft « Voir son corps »: every field read and shown, a body that sends nothing of it still answered,
+    // and the whole of it well inside Discord's 2000.
+    {
+        var full = System.Text.Json.JsonDocument.Parse("""
+            {"ev":"debug","pid":4242,"node":"v22.21.0","uptime":7384,"rss":143,"version":"26.1","pos":{"x":-1203,"y":64,"z":88},
+             "dimension":"the_nether","health":13.5,"food":17,"oxygen":20,
+             "task":{"kind":"fight","player":"AVeryLongPlayerName_","mode":"fallBack","own":false,"resume":"collect"},
+             "heldFor":540,"sitting":true,"eating":true,"sleeping":true,"swim":"dive","riding":true,"bridge":{"bridging":true,"standing":2},
+             "moving":true,"goal":"GoalFollow",
+             "loop":{"p50":11,"p99":148,"max":2210},
+             "compat":{"tickEnd":true,"renumberedActions":true,"corrections":1234567,"packetsPeak":482,"packetsPeakAt":1793016632919}}
+            """).RootElement;
+        var text = McBodyReport.Format(full);
+        foreach (var bit in new[] { "`-1203 64 88`", "`the_nether`", "13,5/20", "`fight` pour `AVeryLongPlayerName_`", "mode `fallBack`",
+                     "reprend ensuite `collect`", "tenue sur place encore 9 min", "nage (`dive`)", "en bateau", "prête à poser un pont",
+                     "2 blocs de pont à enlever", "en marche (`GoalFollow`)",
+                     "max 2210 ms", "tick_end envoyés", "entity_action par nom", "1234567", "482/s", "2 h 03 min" })
+            if (!text.Contains(bit)) Fail($"McBodyReport: « {bit} » missing from the full report");
+        if (text.Length > 1900) Fail($"McBodyReport: {text.Length} chars");
+        var bare = McBodyReport.Format(System.Text.Json.JsonDocument.Parse("""{"ev":"debug"}""").RootElement);
+        if (!bare.Contains("Tâche : aucune") || !bare.Contains("Position : inconnue")) Fail("McBodyReport: an empty report");
+        Console.WriteLine($"/debug minecraft body view at worst: {text.Length} chars");
+    }
+
     // link: a code works once, for the player it was issued for, within 10 minutes, and only the member's latest.
     var codes = new McLinkCodes();
     var lt0 = DateTimeOffset.UnixEpoch;
