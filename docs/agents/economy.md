@@ -145,8 +145,10 @@ they work in any server), and **the bot uploads them itself**.
   prefixes (`c_`, `s_`, `th_`, `ti_`, `ac_`, `gr_`, `tr2_`, `b_`) — Discord caps names at 32 chars. Each
   application (dev, prod) gets its own copy with no manual step.
 - **An existing emoji is reused by name, never replaced** — to change a picture, delete the emoji in
-  the developer portal and restart. To redraw a whole family, change its prefix instead: the new
-  names upload on their own and the old emojis sit unused until deleted (traits: `tr_` → `tr2_`).
+  the developer portal and restart. To redraw a few icons, add their keys to `ItemEmojis.Revisions`
+  (name + `_v2`, bumped on each redraw); to redraw a whole family, change its prefix instead (traits:
+  `tr_` → `tr2_`). Either way the new names upload on their own and the old emojis sit unused until
+  deleted in the portal. The checks verify every revised key is a shipped sprite with a valid name.
 - **Emoji properties are computed**: `ItemInfo.Emoji`, `CollectionSet.Emoji`, `CosmeticInfo.Emoji`,
   `TraitInfo.Emoji`, a thème's `Banner` and a cadre's `GraveLeft`/`GraveRight` use the uploaded
   icon, else the stored `DefaultEmoji` — so nothing breaks before or without the upload.

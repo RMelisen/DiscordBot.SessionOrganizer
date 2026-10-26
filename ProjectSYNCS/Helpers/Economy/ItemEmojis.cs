@@ -42,6 +42,34 @@ public static class ItemEmojis
         ("cos.accessory.", "ac_"), ("cos.grave.", "gr_"), ("trait.", "tr2_"), ("badge.", "b_"),
     };
 
+    // Redrawing one picture gives it a revision instead: « _v2 » after its name, so the new picture
+    // uploads under a new name without touching the family's other emojis. The old emoji is left
+    // unused, to delete in the developer portal. Bump a key's number on each redraw. A set's icon is
+    // also its five badges' subject: redrawing one means revising all six (the checks hold this).
+    private static readonly Dictionary<string, int> Revisions = new(StringComparer.Ordinal)
+    {
+        ["col.abeille"] = 2, ["col.bague"] = 2, ["col.bouton"] = 2, ["col.carte_tresor"] = 2,
+        ["col.chataigne"] = 2, ["col.coquelicot"] = 2, ["col.coquillage"] = 2, ["col.grillon"] = 2,
+        ["col.moustique"] = 2, ["col.primevere"] = 2, ["col.cle_rouillee"] = 2, ["col.piece_ancienne"] = 2,
+        ["col.silex"] = 2, ["col.agate"] = 2, ["col.feuille_chene"] = 2, ["col.mouche"] = 2,
+        ["col.meteorite"] = 2,
+        ["cos.accessory.collier_coquillages"] = 2, ["cos.accessory.moufles"] = 2, ["cos.accessory.casquette"] = 2,
+        ["cos.accessory.lunettes"] = 2, ["cos.accessory.casque_audio"] = 2, ["cos.accessory.haut_de_forme"] = 2,
+        ["cos.grave.aura_doree"] = 2, ["cos.grave.clair_de_lune"] = 2, ["cos.grave.lanternes"] = 2,
+        ["cos.grave.galets"] = 2, ["cos.theme.plage"] = 2, ["cos.theme.aurore_boreale"] = 2,
+        ["cos.theme.caverne_tresors"] = 2, ["cos.theme.foret"] = 2, ["cos.theme.royal"] = 2, ["cos.grave.feuilles"] = 2,
+        ["cos.title.aventurier"] = 2, ["cos.title.champion"] = 2, ["cos.title.gourmet"] = 2,
+        ["cos.title.chercheur_tresors"] = 2, ["cos.title.reveur"] = 2, ["cos.title.mysterieux"] = 2,
+        ["trait.callous"] = 2, ["trait.diligent"] = 2, ["trait.improvident"] = 2, ["trait.profligate"] = 2,
+        ["trait.shy"] = 2, ["trait.temperate"] = 2, ["trait.greedy"] = 2, ["trait.eccentric"] = 2,
+        ["badge.generous"] = 2, ["badge.weathervane"] = 2, ["badge.quoicoubeh"] = 2, ["badge.tron"] = 2,
+        ["badge.threat"] = 2, ["badge.night_owl"] = 2, ["badge.glitch"] = 2,
+        ["badge.voice_bronze"] = 2, ["badge.voice_silver"] = 2, ["badge.voice_gold"] = 2,
+        ["badge.voice_platinum"] = 2, ["badge.voice_diamond"] = 2,
+    };
+
+    public static IEnumerable<string> RevisedKeys => Revisions.Keys;
+
     private static readonly ConcurrentDictionary<string, string> ByKey = new();
 
     public static string? For(string itemKey) => ByKey.TryGetValue(itemKey, out var markup) ? markup : null;
@@ -56,7 +84,8 @@ public static class ItemEmojis
     public static string? EmojiName(string iconKey)
     {
         foreach (var (key, emoji) in Prefixes)
-            if (iconKey.StartsWith(key, StringComparison.Ordinal)) return emoji + iconKey[key.Length..];
+            if (iconKey.StartsWith(key, StringComparison.Ordinal))
+                return emoji + iconKey[key.Length..] + (Revisions.TryGetValue(iconKey, out var r) ? $"_v{r}" : "");
         return null;
     }
 

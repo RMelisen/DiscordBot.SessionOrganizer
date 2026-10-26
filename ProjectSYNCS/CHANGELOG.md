@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.41.1 — 2026-10-26
+
+- Fifty-five pictures redrawn so they read at emoji size: seventeen collectibles (the bee, poppy, primrose, shell, ring, treasure map, chestnut, button, mosquito, cricket, rusty key, ancient coin, flint, agate, oak leaf, fly, meteorite), twenty-two cosmetics (Le Champion, L'Aventurier, Le Gourmet, Le Rêveur, Le Mystérieux, Chercheur de trésors, the beach, aurora, forest, royal and treasure-cave themes, mittens, cap, sunglasses, headphones, top hat, shell necklace, lanterns, golden aura, moonlight, pebbles, dead leaves), eight Plynling traits (Froid, Timide, Imprévoyant, Dépensier, Travailleur, Frugal, Radin, Excentrique) and eight badges (Pilier du vocal's microphone on all five tiers, Générosité and six secret ones). The dark ones (mask, sunglasses, headphones, top hat, forest, pennant, meteorite) keep their drawing and gain lit edges so they stand out on Discord's dark background.
+- A redrawn picture now uploads under a new emoji name by itself, without touching the rest of its family.
+
 ## 7.41.0 — 2026-10-26
 
 - SYNCS notices when someone insists she answer their question (« réponds à ma question », « t'as pas répondu », « tu esquives ») and explains, in her own way, why she didn't.

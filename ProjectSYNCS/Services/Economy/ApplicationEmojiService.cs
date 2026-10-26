@@ -14,7 +14,8 @@ namespace ProjectSYNCS.Services;
 // show them in any server it is in, and each bot — dev or prod — keeps its own copy: nobody has
 // to upload anything by hand, and a dev bot that is a different application still gets them.
 // A sprite is uploaded only when no emoji of its name exists yet, so a normal start costs one
-// list request. To replace a picture, delete that emoji in the developer portal and restart.
+// list request. To replace a picture, give it a revision in ItemEmojis (a new name uploads on its
+// own), or delete that emoji in the developer portal and restart.
 //
 // Not a loop: it runs once, on the first Ready (Ready fires again on every reconnect), in the
 // background so the gateway handler returns at once — up to 186 first-time uploads take a while. A

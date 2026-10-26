@@ -3087,6 +3087,24 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     if (flip.Record(4, FeedbackKind.Good, mbNow) || flip.Record(5, FeedbackKind.Bad, mbNow.AddSeconds(5))) Fail("two people");
     ItemEmojis.Clear();
 
+    // Redrawn icons: each revision is a sprite the bot ships, uploaded under a valid new name.
+    var iconDir = Enumerable.Range(0, 8)
+        .Select(up => Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, string.Concat(Enumerable.Repeat("../", up)), "ProjectSYNCS", "Assets", "Icons")))
+        .FirstOrDefault(Directory.Exists);
+    if (iconDir is null) Fail("ProjectSYNCS/Assets/Icons not found above the checks");
+    else
+    {
+        var shipped = ItemEmojis.Sources("", iconDir).ToDictionary(s => s.Key, s => s.EmojiName);
+        foreach (var key in ItemEmojis.RevisedKeys)
+            if (!shipped.TryGetValue(key, out var name) || name is null || !name.Contains("_v") || name.Length > 32
+                || !name.All(c => char.IsAsciiLetterOrDigit(c) || c == '_')) Fail($"{key}: revised icon not shipped, or its emoji name '{name}' is invalid");
+        // A set's icon is drawn on its badges, so a redrawn set needs every badge revised with it.
+        var revised = ItemEmojis.RevisedKeys.ToHashSet();
+        foreach (var s in ItemCatalog.Sets.Where(s => revised.Contains(ItemEmojis.SetKey(s.Key))))
+        foreach (var t in Enum.GetValues<CollectionTier>().Skip(1))
+            if (!revised.Contains(ItemEmojis.BadgeKey(s.Key, t))) Fail($"{s.Key}: set redrawn but {ItemEmojis.BadgeKey(s.Key, t)} not revised");
+    }
+
     // GetFactsAsync against a real SQLite: the navigations, the Plynling join and the projection must
     // translate, and the guild scoping must hold. A query that does not translate breaks /level for everyone.
     using (var mbConn = new Microsoft.Data.Sqlite.SqliteConnection("DataSource=:memory:"))
