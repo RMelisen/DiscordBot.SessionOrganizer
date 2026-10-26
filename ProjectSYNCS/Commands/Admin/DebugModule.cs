@@ -804,8 +804,8 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     // What people say to her, to decide what she should learn next: how many of each kind of chat
     // answer she gave (ChatAnswerService, by path), or the messages she found nothing specific to
     // say to over the period (UnansweredLog: kept 30 rolling days, no authors — « depuis toujours »
-    // means those 30 days), as a file since they exceed a message. Posted in the open, under her
-    // report-for-duty line; only the refusals stay ephemeral.
+    // means those 30 days), as a file since they exceed a message. Ephemeral, under her
+    // report-for-duty line.
     [SlashCommand("answers", "Ce qu'on me dit le plus, et ce que je sais pas encore répondre")]
     public async Task AnswersAsync(
         [Summary("period", "La période comptée")] AnswersPeriod period = AnswersPeriod.Week,
@@ -826,7 +826,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         {
             // Only 30 days are kept, so « depuis toujours » is those 30 days.
             var days = period == AnswersPeriod.Week ? 7 : UnansweredLog.KeptDays;
-            await DeferAsync();
+            await DeferAsync(ephemeral: true);
             var messages = await _answers.GetUnansweredAsync(Context.Guild.Id, days);
             if (messages.Count == 0)
             {
@@ -839,12 +839,12 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
             await FollowupWithFileAsync(stream, "sans-reponse.txt",
                 $"{_picker.Pick(BotResponses.OwnerReportLines)}\n**{messages.Count}** message(s) sans réponse précise " +
                 $"sur les {days} derniers jours{olderNote}, du plus récent au plus ancien.",
-                allowedMentions: AllowedMentions.None);
+                allowedMentions: AllowedMentions.None, ephemeral: true);
             return;
         }
 
         // The database can outrun Discord's 3 s on the Pi.
-        await DeferAsync();
+        await DeferAsync(ephemeral: true);
         var statsPeriod = period switch
         {
             AnswersPeriod.Month => StatsPeriod.Month,
@@ -853,7 +853,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         };
         var counts = await _answers.GetAsync(Context.Guild.Id, statsPeriod);
         await FollowupAsync(_picker.Pick(BotResponses.OwnerReportLines),
-            embed: AnswerStatsCards.BuildTypes(counts, statsPeriod), allowedMentions: AllowedMentions.None);
+            embed: AnswerStatsCards.BuildTypes(counts, statsPeriod), allowedMentions: AllowedMentions.None, ephemeral: true);
     }
 
     // The monthly digest (MonthlyDigestService) for last month, in your DMs now: yours, or a preview of

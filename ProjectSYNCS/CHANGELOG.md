@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.40.1 — 2026-10-26
+
+- `/debug answers` is now ephemeral: only the owner sees the stats and the unanswered messages.
+
 ## 7.40.0 — 2026-10-25
 
 - Minecraft: she follows you up and down water columns and waterfalls: swimming up a water shaft or a cave
