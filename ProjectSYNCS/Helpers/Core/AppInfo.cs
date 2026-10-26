@@ -9,4 +9,7 @@ public static class AppInfo
         Assembly.GetExecutingAssembly()
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
         ?? "?";
+
+    // "7" out of "7.40.1" — for lines that brag about the generation, not the patch.
+    public static string Major { get; } = Version.Split('.')[0];
 }
