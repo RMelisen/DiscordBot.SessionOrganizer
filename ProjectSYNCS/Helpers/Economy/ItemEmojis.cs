@@ -33,10 +33,13 @@ public static class ItemEmojis
     // Every other icon is Assets/Icons/<icon key>.png, and its emoji name swaps the key's prefix for
     // a short one: Discord allows [A-Za-z0-9_] and 32 characters, and « cos.accessory. » alone would
     // eat 14 of them. The longest today is ac_collier_coquillages (22).
+    // Redrawing a whole family changes its prefix: an uploaded emoji is never replaced, so new names
+    // are what make the bot upload the new pictures. tr2_ is the 22×22 traits; the old tr_ emojis
+    // are left unused, to delete in the developer portal.
     private static readonly (string Key, string Emoji)[] Prefixes =
     {
         ("col.", "c_"), ("set.", "s_"), ("cos.theme.", "th_"), ("cos.title.", "ti_"),
-        ("cos.accessory.", "ac_"), ("cos.grave.", "gr_"), ("trait.", "tr_"), ("badge.", "b_"),
+        ("cos.accessory.", "ac_"), ("cos.grave.", "gr_"), ("trait.", "tr2_"), ("badge.", "b_"),
     };
 
     private static readonly ConcurrentDictionary<string, string> ByKey = new();

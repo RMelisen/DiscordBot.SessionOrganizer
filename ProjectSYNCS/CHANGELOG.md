@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.40.3 — 2026-10-26
+
+- Collection badges have their own pictures: each set's icon on a bronze, silver, gold, platinum or diamond shield, in place of the medal beside the set's emoji.
+- Every « Succès » badge gets its own picture on a shield in place of an emoji: the tiered ones in bronze to diamond like the collections, moments and secrets on shields of their own.
+- Plynling trait icons are redrawn larger and sharper, on the same tiles and in the same colours.
+
 ## 7.40.2 — 2026-10-26
 
 - The morning greeting that mentions her version now reads the real major version instead of a hardcoded number.

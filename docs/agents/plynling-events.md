@@ -43,8 +43,8 @@ SQLite with the real migrations.
   « nouveau trait » moments would push out its oldest memories. The mascot's traits are never journaled.
 - Descriptions are **shared by both genders**, so they never agree with the Plynling (the harness
   bans il/elle in them); names have M and F forms.
-- **Icons are CK3-style tiles** (`trait.<key>` in `tools/item-art`, uploaded as `tr_<key>`): the
-  frame's colours give the kind (enfance gold on wine, personnalité bronze on teal, coping silver on
+- **Icons are CK3-style tiles** (`trait.<key>` in `tools/item-art`, 22×22, uploaded as `tr2_<key>`):
+  the frame's colours give the kind (enfance gold on wine, personnalité bronze on teal, coping silver on
   slate). A new trait needs its tile, or it shows its `DefaultEmoji`. `TraitInfo.Emoji` is custom
   markup once uploaded: a button or select takes `EmoteMarkup.Parse`, never `new Emoji`.
 - **Ping-Qilin's traits are chosen**, not drawn (`PlynlingMascot.TraitKeys`: Adorable, Vaniteuse,
