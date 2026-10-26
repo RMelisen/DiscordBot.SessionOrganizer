@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.40.1 — 2026-10-26
+
+- Minecraft: she gathers stone like a player now, digging into one cliff face and taking everything within arm's
+  reach instead of walking from one surface block to the next: about twice as fast. She stays clear of lava, water,
+  falling gravel and caves under the ground, and never leaves a hole deeper than a step.
+
 ## 7.40.0 — 2026-10-25
 
 - Minecraft: she follows you up and down water columns and waterfalls: swimming up a water shaft or a cave

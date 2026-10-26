@@ -1,7 +1,7 @@
 // Her orders, each checked on the server's side: smelting (food in the smoker, sand to glass, no fuel, nothing to
-// smelt, no furnace), gathering (stone, coal, iron, sand; ore without a pickaxe; something there isn't), fishing
-// without a rod or water, handing over by kind, storing into a full chest, harvesting every crop, keeping a farm,
-// guarding a spot, and the small ones (where, sit, mark).
+// smelt, no furnace), gathering (stone, coal, iron, sand; a quarry, and one over lava, gravel and a cave; ore without
+// a pickaxe; something there isn't), fishing without a rod or water, handing over by kind, storing into a full chest,
+// harvesting every crop, keeping a farm, guarding a spot, and the small ones (where, sit, mark).
 const rcon = require('./rcon');
 const q = require('./query');
 const { startBody, spawned, wait, troubles, Name } = require('./body');
@@ -128,6 +128,43 @@ async function collect(body, resource, count, tool, item, name) {
   const got = await q.carried(Name, item);
   const lying = await q.count(`@e[type=item,x=${C.x},y=-60,z=${C.z},distance=..20]`);
   report(got >= count && lying === 0, name, `${fmt(done)} in ${((Date.now() - started) / 1000).toFixed(0)} s; she carries ${got} ${item}; ${lying} items lying`);
+}
+
+// A quarry where digging can go wrong, west of the yard: a stone face with lava inside it and gravel on part of its
+// top, and stone ground before it over a cave. She starts on grass out of reach of any stone. Nothing flows, nothing
+// falls, no hole opens into the cave, and she still brings the count.
+async function quarryHazards(body) {
+  const H = (dx, dy, dz) => at(dx - 24, dy, dz);
+  await rcon.run([`fill ${H(-14, -4, 0)} ${H(4, 6, 14)} air`, `fill ${H(-14, -4, 0)} ${H(4, -2, 14)} stone`,
+    `fill ${H(-14, -1, 0)} ${H(-10, -1, 14)} grass_block`, `fill ${H(-9, -1, 0)} ${H(4, -1, 14)} stone`,
+    `fill ${H(-8, -3, 6)} ${H(-7, -2, 9)} air`, // the cave under the ground
+    `fill ${H(-6, 0, 2)} ${H(-2, 3, 12)} stone`, `fill ${H(-6, 4, 2)} ${H(-2, 4, 6)} gravel`, `setblock ${H(-4, 1, 10)} lava`,
+    `kill @e[type=item,x=${C.x - 28},y=-60,z=${C.z + 7},distance=..20]`]); // past reset's reach: a failed run's leftovers
+  await reset(body, -24 - 12.5, 7.5);
+  await rcon.run([`give ${Name} stone_pickaxe 1`]);
+  await wait(800);
+  body.send({ op: 'collect', player: 'tester', resource: 'stone', count: 40 });
+  const started = Date.now();
+  const done = await ev(body, ['collected', 'cantCollect'], 180000);
+  await wait(1500);
+  const got = await q.carried(Name, 'cobblestone');
+  const is = async (dx, dy, dz, block) => /passed/i.test((await rcon.run([`execute if block ${H(dx, dy, dz)} ${block}`]))[0]);
+  const broken = async (spots, block) => {
+    let n = 0;
+    for (const [dx, dy, dz] of spots) if (!(await is(dx, dy, dz, block))) n++;
+    return n;
+  };
+  const around = [[-5, 1, 10], [-3, 1, 10], [-4, 0, 10], [-4, 2, 10], [-4, 1, 9], [-4, 1, 11]];
+  const lavaOut = (await broken(around, 'stone')) + (await broken([[-4, 1, 10]], 'lava'));
+  const gravel = [];
+  for (let dx = -6; dx <= -2; dx++) for (let dz = 2; dz <= 6; dz++) gravel.push([dx, 4, dz]);
+  const fell = await broken(gravel, 'gravel');
+  const roof = [];
+  for (let dx = -8; dx <= -7; dx++) for (let dz = 6; dz <= 9; dz++) roof.push([dx, -1, dz]);
+  const holes = await broken(roof, 'stone');
+  const lying = await q.count(`@e[type=item,x=${C.x - 28},y=-60,z=${C.z + 7},distance=..14]`);
+  report(got >= 40 && lavaOut === 0 && fell === 0 && holes === 0 && lying === 0, 'quarry hazards',
+    `${fmt(done)} in ${((Date.now() - started) / 1000).toFixed(0)} s; she carries ${got} cobblestone; lava let out ${lavaOut}, gravel fallen ${fell}, holes into the cave ${holes}, ${lying} items lying`);
 }
 
 async function collectRefusals(body) {
@@ -312,6 +349,9 @@ async function orders(only = []) {
     coal: (b) => collect(b, 'coal', 2, 'stone_pickaxe', 'coal', 'collect coal'),
     iron: (b) => collect(b, 'iron', 2, 'stone_pickaxe', 'raw_iron', 'collect iron'),
     sand: (b) => collect(b, 'sand', 4, null, 'sand', 'collect sand'),
+    // After the ores: a quarry into the face, 40 of its 180 stone, from where she stands as much as she can.
+    quarry: (b) => collect(b, 'stone', 40, 'stone_pickaxe', 'cobblestone', 'quarry stone'),
+    quarryHazards,
     fishRefusals, give: (b) => giveKinds(b, papa), storeFull,
     carrots: (b) => harvestCrop(b, 'carrot', 'carrot', -9.5, 3.5, [[-12, 4], [-10, 8], [-12, 8]]),
     potatoes: (b) => harvestCrop(b, 'potato', 'potato', -7.5, 3.5),

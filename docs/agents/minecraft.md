@@ -199,6 +199,20 @@ list: the owner removed it.
   what she holds when nothing is faster, and she cut cacti with a pickaxe and bamboo with an axe.
   Now a cactus is cut by hand (`emptyHand`), bamboo with a sword, by hand without one. Replanting picks the seed stack after the walk to the
   patch, not before: pickups on the way moved it, and she placed with an empty hand.
+- **Stone is quarried** (`quarry`, for the order and the camp's cobblestone alike): one spot dug into, the way a
+  player gets it. Block by block, each the closest open stone within 48 and a pathfinder search and a walk apiece, she
+  hopped between surface blocks all over a hillside (40 stone in 69 s on the test face; 34 s now). She starts at a face
+  she **sees** from where she stands (`quarryFace`: of the 32 closest open stone, the most stone around it for the walk;
+  none in sight, the closest): scored on stone around alone, a sealed cave's wall under the ground won, and its search
+  ran out of time. Then **everything in arm's reach** (`stoneInReach`, 4.4 from her eyes, a face she sees) is dug
+  straight with `bot.dig`, no search, what each dig opened included; she only walks (collectblock, the closest open
+  stone) when nothing is left in reach, and the drops lie in her own hole, so picking them up is a step in. Her floor's
+  level comes last (`FloorLast`): it's always closest to her eyes, and on stone ground she pocked the ground round her
+  feet before the face. **What she never digs** (`quarrySafe`): under herself; lower than one block under where the
+  quarry began (`QuarryDeep`: at two she dug a 1x1 pit two deep and spent a 5 s search getting to its bottom); a block
+  by lava or water; one under sand or gravel; and one with no solid block under it at her feet's level or lower, or at
+  the quarry's bottom wherever she stands (from inside her own pit, the ground over a cave was at her feet and she dug
+  through). The cube she scans after each dig is read by state id first (`getBlockStateId`), never a whole block per spot.
 - **Columns** (bamboo, sugar cane, cactus: `Crops`, `column`): she cuts each one's second block,
   which brings down everything above it, and the bottom one stays to grow again (no replanting).
   Only when named or on a farm, never in « everything ripe »: a bamboo jungle, a desert's cacti
@@ -1132,7 +1146,7 @@ cluttered corridor, a pane zigzag, a diagonal of fence posts, an unreachable goa
 the side, round a corner and passed by in a corridor), crossings of a
 ripe field, a death among decorations, a grove to cut, a plot to harvest, every packet-level action
 (`actions`), every order (`orders`: smelting each kind and its refusals, gathering stone, coal,
-iron and sand, handing over by kind, a full chest, every crop, a farm, a patrol, where/mark/sit), a
+iron and sand, a quarry and one over lava, gravel and a cave, handing over by kind, a full chest, every crop, a farm, a patrol, where/mark/sit), a
 herd to keep (`safety`), night fights and dangers (`survival`), a long trip, and players to follow
 (across open ground and through the room, the holes and the zigzag), come to, guide, lose and seek
 (`players`). `wild.js` takes her into a generated world: ten real biomes behind a walking Papa,
