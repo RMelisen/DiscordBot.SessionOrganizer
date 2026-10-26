@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.41.0 — 2026-10-26
+
+- SYNCS notices when someone insists she answer their question (« réponds à ma question », « t'as pas répondu », « tu esquives ») and explains, in her own way, why she didn't.
+- A word or two answering one of her questions (« Java », « 8 jours ») is taken as an answer and quoted back, instead of being roasted.
+- « Non, tais-toi » now hushes her like « tais-toi » does.
+
 ## 7.40.3 — 2026-10-26
 
 - Collection badges have their own pictures: each set's icon on a bronze, silver, gold, platinum or diamond shield, in place of the medal beside the set's emoji.

@@ -80,6 +80,7 @@ internal enum ChatIntent
     DoYouLoveMe,
     HowAreYou,
     AreYouThere,
+    AnswerMe,
     WhoAreYou,
     RememberMe,
     MyStats,
@@ -1557,7 +1558,7 @@ internal static partial class MessageCues
         "y a quelqu un", "il y a quelqu un", "ya quelqu un", "y a qqn", "ya qqn", "ohe", "eho", "ho he",
         "t es partie", "t es passee ou", "t as disparu", "t es plus la", "tu es plus la",
         // Her silence noticed: « tu m'ignores ? », « tu réponds plus ? ». Closing only, like the rest:
-        // « tu réponds pas à ma question ? » asks about the answer, « t'es morte de rire » laughs.
+        // « tu réponds pas à ma question ? » wants the answer (AnswerMe), « t'es morte de rire » laughs.
         "tu m ignores", "tu m ignore", "pourquoi tu m ignores", "tu reponds plus", "tu reponds pas",
         "tu me reponds plus", "tu me reponds pas", "reponds moi", "t es morte", "tu es morte", "t es mort",
     };
@@ -1565,6 +1566,48 @@ internal static partial class MessageCues
     {
         "syncs", "sync", "toi", "la", "encore", "ou", "quoi", "hein", "pas", "oui", "dis", "maintenant",
     };
+
+    // Wanting the answer she didn't give: « réponds à ma question », « t'as pas répondu », « tu esquives ».
+    // In a message of MaxAnswerMeTokens at most: a longer one is telling a story.
+    private static readonly string[] _answerMePhrases =
+    {
+        "reponds moi", "repond moi", "t as pas repondu", "tu as pas repondu", "t as toujours pas repondu",
+        "tu as toujours pas repondu", "tu m as pas repondu", "tu m as toujours pas repondu", "tu n as pas repondu",
+        "tu n as toujours pas repondu", "tu ne m as pas repondu", "t as jamais repondu", "tu as jamais repondu",
+        "j attends ta reponse", "j attends toujours ta reponse", "j attends une reponse", "toujours pas de reponse",
+        "toujours pas repondu", "et ma reponse", "pourquoi tu reponds pas", "pourquoi tu me reponds pas",
+        "pourquoi tu reponds jamais", "pourquoi tu me reponds jamais", "esquive pas", "esquives pas",
+        "tu esquives la question", "tu esquive la question", "tu evites la question", "tu fuis la question",
+        "tu ignores ma question", "tu ignore ma question", "t as ignore ma question", "tu as ignore ma question",
+    };
+    // Closing the message or before one of _answerMeFollowers: « tu esquives » is her dodging, « tu
+    // esquives bien ses attaques » is the game.
+    private static readonly string[] _answerMeClosing =
+    {
+        "tu esquives", "tu esquive", "tu reponds jamais", "tu me reponds jamais",
+    };
+    private static readonly HashSet<string> _answerMeFollowers = new()
+    {
+        "syncs", "sync", "hein", "encore", "toujours", "la", "quoi", "toi", "a",
+    };
+    // A form of « répondre » and « ma question » in the same message: « répond à ma question », « tu
+    // réponds pas à ma question ? », « j'ai pas eu de réponse à ma question ». Not after a subject that
+    // isn't her within AnswerSubjectWindow tokens before (« il a pas répondu à ma question »).
+    private static readonly HashSet<string> _answerWords = new()
+    {
+        "reponds", "repond", "repondre", "repondu", "reponse", "repons", "rep",
+    };
+    private static readonly string[] _myQuestion = { "ma question", "mes questions", "ma demande" };
+    private static readonly HashSet<string> _notHerAnswering = new() { "il", "elle", "ils", "elles", "on", "personne" };
+    // « j'esquive pas », « il esquive pas »: not her dodging.
+    private static readonly HashSet<string> _notAnswerMeAfter = new() { "j", "je", "il", "elle", "ils", "elles", "on" };
+    private const int AnswerSubjectWindow = 3;
+    // « réponds ! », « réponds stp »: the verb and nothing but these.
+    private static readonly HashSet<string> _answerMeFillers = new()
+    {
+        "syncs", "sync", "stp", "svp", "alors", "bah", "allez", "mais", "enfin", "oh", "eh", "hein", "moi",
+    };
+    private const int MaxAnswerMeTokens = 15;
 
     // Waking her up: anywhere, but short. « debout » alone would be « stand up » in a game.
     private static readonly string[] _wakeUpPhrases = { "reveille toi", "reveilles toi", "debout la dedans", "wake up" };
@@ -2394,6 +2437,7 @@ internal static partial class MessageCues
             || (asks && nameAlone)
             || (t.Count > 0 && Squash(t[0]) == "alo" && t.Skip(1).All(_alloFollowers.Contains)))
             return ChatIntent.AreYouThere;
+        if (IsAnswerMe(t, breaks)) return ChatIntent.AnswerMe;
         if (FindPhrase(t, _whoAreYouPhrases, cancelAfter: false, cancelBefore: false)) return ChatIntent.WhoAreYou;
         if (IsClosingAsk(t, _rememberMePhrases, breaks, _rememberFollowers)
             || (asks && IsClosingAsk(t, _rememberMeAskedPhrases, breaks, _rememberFollowers)))
@@ -2533,6 +2577,27 @@ internal static partial class MessageCues
         return null;
     }
 
+    /// <summary>
+    /// A short answer to an open question (« Java », « 8 jours », « ça s'appelle comme ça »), as written
+    /// without mentions, emotes, links, her name or closing punctuation; else null. One to
+    /// <see cref="MaxShortAnswerTokens"/> words, not asked, and not about her (« t'es nulle » speaks to
+    /// her, it doesn't answer). The caller checks there was a question and that nothing else read it.
+    /// </summary>
+    public static string? ReadShortAnswer(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content) || content.Contains('?')) return null;
+        var text = _trailingAddress.Replace(
+            _leadingAddress.Replace(_link.Replace(_customEmote.Replace(_mentionMarkup.Replace(content, " "), " "), " "), " "), "");
+        var t = TokenizeOrdered(text);
+        if (t.Count is 0 or > MaxShortAnswerTokens || t.Any(_secondPerson.Contains)) return null;
+        text = _whitespaceRun.Replace(text, " ").Trim().TrimEnd('.', '!', '…', ',', ';', ':', ' ');
+        return text.Length is 0 or > MaxShortAnswerLength ? null : text;
+    }
+
+    private const int MaxShortAnswerTokens = 5;
+    private const int MaxShortAnswerLength = 60;
+    private static readonly Regex _whitespaceRun = new(@"\s+", RegexOptions.Compiled);
+
     // A laugh anywhere: a laughter word or run (« mdr », « hahaha »), a phrase, an emoji, GigaLaugh.
     private static bool IsLaughing(List<string> t, string stripped, string content) =>
         t.Any(w => _laughterWords.Contains(w) || _laughterWords.Contains(Shorten(w))
@@ -2636,11 +2701,31 @@ internal static partial class MessageCues
             && (EndsWith(t, "ou pas") || breaks.Any(b => b >= 2 && t[b - 2] == "ou" && t[b - 1] == "pas"));
     }
 
+    // « réponds à ma question », « t'as pas répondu », « tu esquives », « réponds ! » (see _answerMePhrases).
+    private static bool IsAnswerMe(List<string> t, HashSet<int> breaks)
+    {
+        if (t.Count is 0 or > MaxAnswerMeTokens) return false;
+        if (FindPhrase(t, _answerMePhrases, cancelAfter: false, cancelBefore: false, notAfter: _notAnswerMeAfter)) return true;
+        if (IsClosingAsk(t, _answerMeClosing, breaks, _answerMeFollowers)) return true;
+        if (t.Any(w => w is "reponds" or "repond") && t.All(w => w is "reponds" or "repond" || _answerMeFillers.Contains(w)))
+            return true;
+        if (!FindPhrase(t, _myQuestion, cancelAfter: false, cancelBefore: false)) return false;
+        for (var i = 0; i < t.Count; i++)
+            if (_answerWords.Contains(t[i])
+                && !t.Skip(Math.Max(0, i - AnswerSubjectWindow)).Take(i - Math.Max(0, i - AnswerSubjectWindow)).Any(_notHerAnswering.Contains))
+                return true;
+        return false;
+    }
+
     // « tais-toi » in a short message, or « chut » / « silence » / « la ferme » as (nearly) all of it.
     private static bool IsShutUp(List<string> t)
     {
         if (t.Count is 0 or > MaxShutUpTokens) return false;
-        if (FindPhrase(t, _shutUpPhrases, cancelAfter: false, cancelBefore: true)) return true;
+        // A « non » opening the message refuses what she said, it doesn't negate the shush: « non,
+        // tais-toi », « non mais tais-toi ».
+        var lead = 0;
+        while (lead < t.Count && t[lead] == "non") lead++;
+        if (FindPhrase(t.GetRange(lead, t.Count - lead), _shutUpPhrases, cancelAfter: false, cancelBefore: true)) return true;
         if (IsClosingAsk(t, _shutUpClosing, _noBreaks, _shutUpClosingFollowers)) return true;
         var said = string.Join(' ', t.Where(w => !_shutUpFillers.Contains(w)).Select(Squash));
         return _shutUpAlone.Contains(said) || _shutUpAlone.Contains(string.Join(' ', t.Select(Squash)));

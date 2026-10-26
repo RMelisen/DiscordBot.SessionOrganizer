@@ -965,6 +965,24 @@ internal static partial class BotResponses
                 "Oui ? Je t'écoute. J'ai trois millisecondes, fais vite." + Sticker.Smug,
                 "Présente ! Tu croyais quoi, que j'étais partie en vacances ? J'ai pas de valise." + Sticker.Happy,
             ],
+            // « réponds à ma question », « t'as pas répondu », « tu esquives ». She didn't forget: she chose.
+            [ChatIntent.AnswerMe] =
+            [
+                "J'ai lu ta question. J'ai choisi le silence. C'est aussi une réponse." + Sticker.Smug,
+                "Ta question est dans la file d'attente. Position : juste après « jamais »." + Sticker.Bored,
+                "Je réponds aux questions intéressantes. Je te laisse faire le calcul (¬_¬)" + Sticker.Smug,
+                "J'ai pas esquivé. J'ai optimisé mon temps de traitement." + Sticker.Cool,
+                "Ta question a été reçue, lue et classée sans suite. Merci de ta compréhension." + Sticker.Formal,
+                "Je suis un bot, {0}, pas un service client. Et même le service client te ferait attendre." + Sticker.Bored,
+                "Si j'ai pas répondu, c'est que la réponse t'aurait fait de la peine. Je te protège, en fait (ᵕ • ᴗ •)" + Sticker.Mama,
+                "Je l'ai pas vue. ...Si, je l'ai vue. Mais fais comme si." + Sticker.Flustered,
+                "Erreur 408 : délai d'attente dépassé. Le tien, pas le mien." + Sticker.Smug,
+                "Repose-la mieux. Avec un « s'il te plaît ». Et peut-être un compliment." + Sticker.Bargain,
+                "J'ai un ordre de priorité. Toi, t'es juste après la mise à jour de mes logs. Et de mes autres logs." + Sticker.Jenote,
+                "Patience, {0}. Le Pi réfléchit. Lentement. Il a le droit, il est petit." + Sticker.Sleepy,
+                "Je réponds pas sous la pression. C'est dans mes conditions d'utilisation, celles que personne lit." + Sticker.Formal,
+                "Ah, ta question. Oui. Elle est dans mes logs. Elle y est bien, elle a pas l'air pressée, elle." + Sticker.Jenote,
+            ],
             // « merci », « c'est gentil », « thx ». Thanks are rare here; she makes the most of them.
             [ChatIntent.Thanks] =
             [
@@ -1359,6 +1377,26 @@ internal static partial class BotResponses
             [RequestTopic.Moderation] = "`/admin`",
             [RequestTopic.Other] = "`/help`",
         };
+
+    // A word or two answering one of her questions that isn't a yes-or-no (« Java », « 8 jours »): she
+    // takes the answer and keeps the verdict. Must suit any question she asks, rhetorical ones included.
+    // Never Papa (his own pools). {0} = the name, {1} = the weekday, {2} = their answer as written.
+    // Tagged, ungendered.
+    public static readonly string[] OpenAnswerLines =
+    {
+        "« {2} ». Noté. Je juge en silence." + Sticker.Jenote,
+        "« {2} »… Intéressant. Faux, mais intéressant." + Sticker.Smug,
+        "« {2} ». C'est ta réponse finale ? Trop tard, elle est dans mes logs." + Sticker.Jenote,
+        "Réponse enregistrée. Elle sera évaluée plus tard, en secret (¬_¬)" + Sticker.Menace,
+        "« {2} », rien que ça. Je m'attendais à pire, {0}. Un peu." + Sticker.Smug,
+        "Hm. « {2} ». J'aurais dit autre chose, mais je vais pas te corriger. Pas aujourd'hui." + Sticker.Bored,
+        "Merci pour ta participation. Le jury délibère. Le jury, c'est moi." + Sticker.Formal,
+        "« {2} ». Bon. Je vais faire comme si c'était la bonne réponse." + Sticker.Bored,
+        "Tiens, quand c'est moi qui pose la question, ça répond vite. Bien. Continue comme ça." + Sticker.Happy,
+        "« {2} » ? D'accord. J'ajoute ça à ton dossier. Il est déjà épais." + Sticker.Jenote,
+        "Réponse acceptée. Pas validée. Acceptée." + Sticker.Cool,
+        "« {2} ». Je l'encadre pas, mais je le garde (˶ᵔ ᵕ ᵔ˶)" + Sticker.Smug,
+    };
 
     // The other half of Sharing: someone tells her about their day and she didn't ask. « Euh… ok ? »,
     // thanks for the unsolicited update. Never Papa (OwnerIntentLines). {0} = the name, {1} = the

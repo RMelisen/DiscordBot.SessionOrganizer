@@ -595,6 +595,14 @@ internal sealed class ChatterService
         {
             (pick, what) = (IntentPick.Of(BotResponses.IntentLines[intent], AnswerKinds.Intent(intent)), $"reply intent ({intent})");
         }
+        else if (!mean && !isOwner && intent == ChatIntent.None && AskedSomething(message.ReferencedMessage)
+                 && MessageCues.ReadShortAnswer(content) is { } said)
+        {
+            // A word or two under one of her questions (« Java », « 8 jours »): an answer, not a jab.
+            // Their words are quoted back, sanitised and muted.
+            (pick, what) = (new IntentPick(BotResponses.OpenAnswerLines, Discord.Format.Sanitize(said), string.Empty,
+                QuotedMentions, AnswerKinds.OpenAnswer), "answer to her question");
+        }
         else if (Random.Shared.NextDouble() < ReferenceChance)
         {
             // Rarer easter egg: a pop-culture reference, for everyone.

@@ -45,7 +45,7 @@ var taggedPools = new[]
     "SessionNextLines", "SessionRunningLines", "NoSessionLines", "MyStatsLines", "MyLevelEmptyLines", "MyPlynlingEmptyLines",
     "CardRepostLines", "CardRepostTooSoonLines", "CardClosedLines", "CardRallyLines", "CardRallyNamedLines",
     "CardRallyAllDoneLines", "CardDoneSeenLines", "CardDoneLiarLines", "CardTextClickLines", "CardTextAnsweredLines",
-    "CardStatusLines",
+    "CardStatusLines", "OpenAnswerLines",
 };
 foreach (var f in taggedPools)
 foreach (var (name, lines) in Pools(f))
@@ -82,7 +82,7 @@ Covers("RequestCommands", topicType);
 Covers("ReplyContextLines", typeof(ReplyContext));
 Covers("ChatFactLines", typeof(ChatFact));
 var owner = (IDictionary)Field("OwnerIntentLines");
-if (owner.Count != 24) Fail($"OwnerIntentLines has {owner.Count} keys, expected 24");
+if (owner.Count != 25) Fail($"OwnerIntentLines has {owner.Count} keys, expected 25");
 
 // 3. Sulk reactions parse.
 foreach (var r in (string[])Field("StreakSulkReactions"))
@@ -716,6 +716,7 @@ var byIntent = new (string Intent, string[] Samples)[]
     ("Question", new[] { "c'est quoi le jeu de ce soir ?", "pourquoi t'as dit ça", "c'est quoi le code du lobby ?", "il est où le lien ?" }),
     ("DemandApology", new[] { "excuse-toi", "dis pardon", "tu me dois des excuses", "demande pardon", "tu t'excuses ?", "je veux des excuses" }),
     ("ShutUp", new[] { "chut", "tais-toi", "silence", "la ferme", "arrête de parler", "laisse-nous tranquille", "chuuut" }),
+    ("AnswerMe", new[] { "réponds à ma question", "t'as pas répondu", "tu esquives", "j'attends ta réponse", "pourquoi tu réponds pas à ma question ?" }),
     ("MyStats", new[] { "je suis quel niveau ?", "j'ai combien de cailloux ?", "comment va mon plynling ?", "mon niveau ?", "mes stats ?" }),
     ("TakeSides", new[] { "qui a raison, moi ou Luca ?", "qui a raison entre Luca et Sandra ?", "qui a raison ?", "dis-lui que j'ai raison" }),
     ("RateMe", new[] { "note-moi", "tu me notes ?", "je vaux combien ?", "je suis beau ?", "tu me trouves comment ?" }),
@@ -871,7 +872,7 @@ foreach (var (text, expected) in new[]
     ("tu m'ignores ?", "AreYouThere"), ("tu m'ignores maintenant ?", "AreYouThere"), ("tu réponds plus ?", "AreYouThere"),
     ("tu me réponds pas ?", "AreYouThere"), ("pourquoi tu me réponds pas ?", "AreYouThere"), ("réponds-moi", "AreYouThere"),
     ("t'es morte ?", "AreYouThere"), ("t'es morte ou quoi", "AreYouThere"), ("t'es plus là ?", "AreYouThere"),
-    ("tu réponds pas à ma question ?", "Question"), ("t'es morte de rire ?", "Laughter"),
+    ("tu réponds pas à ma question ?", "AnswerMe"), ("t'es morte de rire ?", "Laughter"),
     // AboutHer: her taste asked with « quel », hobbies and passions.
     ("t'aimes quel jeu ?", "AboutHer"), ("tu aimes quelle musique ?", "AboutHer"), ("tu kiffes quel genre de film ?", "AboutHer"),
     ("tu préfères quoi comme musique ?", "AboutHer"), ("t'as des hobbies ?", "AboutHer"), ("tu as des passions ?", "AboutHer"),
@@ -1016,6 +1017,23 @@ foreach (var (text, expected) in new[]
     if (got != expected) Fail($"ReadAnswer(\"{text}\") = {(got == "" ? "null" : got)}, expected {(expected == "" ? "null" : expected)}");
 }
 
+// A short answer to one of her open questions, quoted back as written (OpenAnswerLines).
+var readShortAnswer = cues.GetMethod("ReadShortAnswer", BindingFlags.Public | BindingFlags.Static)!;
+foreach (var (text, expected) in new[]
+{
+    ("Javascript", "Javascript"), ("Python", "Python"), ("Grattoir", "Grattoir"), ("Ça s'appelle comme ça", "Ça s'appelle comme ça"),
+    ("8 jours.", "8 jours"), ("  le   bleu !", "le bleu"), ("<@1> Minecraft", "Minecraft"), ("syncs, la pizza", "la pizza"),
+    ("Valo <:emote:123>", "Valo"),
+    ("Java ?", ""), ("t'es nulle", ""), ("toi", ""), ("<:emote:123>", ""), ("", ""),
+    ("La réponse était: 8 jours. (Au bout de 7 jours, il a atteint 7 mètres)", ""),
+})
+{
+    var got = readShortAnswer.Invoke(null, new object[] { text })?.ToString() ?? "";
+    if (got != expected) Fail($"ReadShortAnswer(\"{text}\") = {(got == "" ? "null" : got)}, expected {(expected == "" ? "null" : expected)}");
+}
+foreach (var l in (string[])Field("OpenAnswerLines"))
+    if (l.Contains("{2}") && !l.Contains("« {2} »")) Fail($"OpenAnswerLines quotes the answer outside « »: {l}");
+
 // The records pools: every plain RememberMe line and every opener says the name (the answer to
 // « comment je m'appelle ? »); the openers carry no tag, the fact line after them does; the grudge
 // quotes its count, the treasure never shows one.
@@ -1052,6 +1070,17 @@ foreach (var (text, expected) in new[]
     ("laisse-nous tranquille", "ShutUp"), ("on t'a rien demandé", "ShutUp"), ("shut up", "ShutUp"),
     ("chut il dort", "None"), ("ferme la porte", "None"), ("reste à la ferme", "None"), ("silence radio depuis hier", "None"),
     ("ta gueule", "None"),
+    // A « non » opening it refuses what she said; it doesn't cancel the hush.
+    ("Non tais toi", "ShutUp"), ("non, tais-toi", "ShutUp"), ("non mais tais-toi", "ShutUp"), ("non non tais-toi", "ShutUp"),
+    // AnswerMe: the answer she didn't give.
+    ("SYNCS pourquoi tu réponds pas à ma question?", "AnswerMe"), ("Répond à ma question pressente.", "AnswerMe"),
+    ("réponds à ma question", "AnswerMe"), ("t'as pas répondu", "AnswerMe"), ("tu m'as toujours pas répondu", "AnswerMe"),
+    ("j'attends ta réponse", "AnswerMe"), ("et ma réponse ?", "AnswerMe"), ("tu esquives", "AnswerMe"),
+    ("tu esquives la question", "AnswerMe"), ("esquive pas", "AnswerMe"), ("réponds !", "AnswerMe"), ("réponds stp", "AnswerMe"),
+    ("rep à ma question", "AnswerMe"), ("j'ai toujours pas de réponse à ma question", "AnswerMe"),
+    ("tu réponds jamais", "AnswerMe"), ("pourquoi tu réponds jamais ?", "AnswerMe"),
+    ("il a pas répondu à ma question", "None"), ("personne répond à ma question ?", "Question"), ("j'esquive pas", "Sharing"),
+    ("tu esquives bien ses attaques", "None"), ("je réponds demain", "Sharing"), ("ma question c'est quand on joue", "None"),
     // MyStats: asked.
     ("je suis quel niveau ?", "MyStats"), ("je suis quel niveau", "MyStats"), ("j'ai combien de cailloux ?", "MyStats"),
     ("combien j'ai de cailloux", "MyStats"), ("comment va mon plynling ?", "MyStats"), ("mon niveau ?", "MyStats"),

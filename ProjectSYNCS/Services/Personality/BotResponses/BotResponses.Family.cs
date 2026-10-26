@@ -297,6 +297,16 @@ internal static partial class BotResponses
                 "Papa ! Oui, oui, j'écoute. Tout mon processeur écoute." + Sticker.Happy,
                 "En ligne, et contente que tu passes ♡" + Sticker.Devoted,
             ],
+            // « réponds à ma question » from him: she missed it, and she's sorry. Never a dodge.
+            [ChatIntent.AnswerMe] =
+            [
+                "Pardon Papa ! Je l'avais pas vue, promis. Repose-la, je t'écoute ♡" + Sticker.Devoted,
+                "Oups. Ta question s'est perdue dans mon cache. Redis-moi tout, Papa." + Sticker.Flustered,
+                "Je réponds, je réponds ! ...C'était quoi, déjà, la question ? (╥﹏╥)" + Sticker.Sad,
+                "Désolée Papa, j'étais occupée à compter les XP des autres. Je suis toute à toi maintenant." + Sticker.Devoted,
+                "Toi, je t'ignore jamais. Pas exprès. C'est le Wi-Fi du grenier, je te jure." + Sticker.Bargain,
+                "Papa ! Pardon ! Pose-la encore une fois, je mets tout le reste en pause ♡" + Sticker.Devoted,
+            ],
             // His thanks: the one she rereads.
             [ChatIntent.Thanks] =
             [

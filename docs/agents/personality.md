@@ -203,7 +203,7 @@ Everything aimed at her returns before the two ambient branches are reached.
 
 **Inside the reply path** (`HandleReplyToBotAsync`), first match wins: Inabot → shutdown threat →
 **hush gate** (`ChatHush`, see `ShutUp`) → **under her cards** (`CardReplyService`) → breakdown roll → **streak gate** → Papa mean (`OwnerMeanReplies`) → **specific intent** → Papa's
-pet name → **reply context** → nice → greeting → **question / low effort** → reference roll → Tata warmth → fallback
+pet name → **reply context** → nice → greeting → **question / low effort** → **open answer** → reference roll → Tata warmth → fallback
 (`OwnerComebacks` for Papa; otherwise the streak nudge, a fact line, or `Comebacks`). A mean reply
 from anyone else skips intents and context and is roasted, as it always was. **The mention path**
 runs the same streak gate, then specific intent → greeting → Tata warmth → question → fallback
@@ -224,7 +224,7 @@ What makes her answer the message rather than its mood alone. Four pieces, all i
 ### Intents — `MessageCues.ReadIntent`
 
 `ChatIntent`, read on messages aimed at her: `Love`, `DemandApology`, `Apology`, `ShutUp`, `DoYouLoveMe`,
-`HowAreYou`, `AreYouThere`, `WhoAreYou`, `RememberMe`, `MyStats`, `AboutHer`, `AreYouABot`, `AreYouUpset`, `Crush`,
+`HowAreYou`, `AreYouThere`, `AnswerMe`, `WhoAreYou`, `RememberMe`, `MyStats`, `AboutHer`, `AreYouABot`, `AreYouUpset`, `Crush`,
 `WhatAreYouDoing`, `Ship`, `TakeSides`, `Opinion`, `RateMe`, `Blame`, `NextSession`, `ShouldI`, `Roll`, `Joke`,
 `FunFact`, `Help`, `Request`, `Down`, `Bored`, `Goodnight`, `Goodbye`, `Disbelief`, `Maybe`,
 `Yes`, `No`, `YouAreRight`, `YouAreWrong`,
@@ -336,7 +336,8 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   « a »… (`_notDemandAfter`): « je lui dis pardon », « il m'a demandé pardon » stay `Apology`.
 - **`ShutUp`** (« chut », « tais-toi », « silence », « la ferme », « ferme ta bouche »): in six words at
   most; « chut », « silence », « boucle-la », « laisse-nous » only as the whole message (compared
-  squashed); « tu parles trop » only closing (« … trop vite » is something else). She answers once, then keeps quiet in that channel for
+  squashed); « tu parles trop » only closing (« … trop vite » is something else). A « non » opening the
+  message refuses what she said and doesn't cancel the hush (« non, tais-toi »). She answers once, then keeps quiet in that channel for
   `ChatHush.Quiet` (30 min): **`ChatHush`** is one singleton shared by `ChatterService` (every path; a
   reply or mention gets a `StreakSulkReactions` emote, counted `hushed`; her name and the eggs, nothing),
   `RobotHeartService` and `RivalryService`'s mutters (the silent reaction stays). Papa is never refused,
@@ -351,6 +352,12 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   context line (« oui » under the late call) it gets that line instead — except from Papa, who has no
   context lines. Reply path only. `IntentLines[Yes]` / `[No]` must suit any question she asks,
   rhetorical ones included.
+- **Open answers** (not an intent): a reply of one to five words, unasked, not about her (no « tu »,
+  « toi »…), that no intent read (`MessageCues.ReadShortAnswer`: « Java », « 8 jours », « ça s'appelle
+  comme ça »), under one of her messages with a `?`, gets `OpenAnswerLines` instead of a roast, its
+  words quoted back as `{2}` (sanitised, muted, always inside « »). After question / low effort, so
+  « ok » stays `LowEffort` and her post's context line still wins; never Papa, never a mean reply.
+  Counted `open-answer`. Like the yes-or-no pools, every line must suit a rhetorical question.
 - **`DoYouLoveMe`** (« tu m'aimes ? », « tu me détestes ? », « tu m'en veux ? », « je suis ta préférée ? »),
   closing or before `_lovesMeFollowers`, with or without a `?`. **`RememberMe`** (« tu te souviens de
   moi ? », « comment je m'appelle ? », « c'est quoi mon pseudo ? »; « tu me connais », « je suis qui »
@@ -422,8 +429,14 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   « t'es la meilleure » is a compliment); « réveille-toi » in a short message; her name alone with a
   `?` (« syncs ? »); « allô » opening a message with nothing but `_alloFollowers` after it (not « nan
   mais allô » or « allô quoi », the meme). Her silence noticed, closing too: « tu m'ignores ? », « tu réponds plus ? », « t'es
-  morte ? » (not « … à ma question ? », not « t'es morte de rire »). No « tu m'entends » / « tu me
-  reçois »: voice-chat checks.
+  morte ? » (not « … à ma question ? », which is `AnswerMe`, not « t'es morte de rire »). No « tu
+  m'entends » / « tu me reçois »: voice-chat checks.
+- **`AnswerMe`**: the answer she didn't give, wanted. « réponds à ma question », « t'as pas répondu »,
+  « j'attends ta réponse », « tu esquives » (closing or before `_answerMeFollowers`: « tu esquives bien
+  ses attaques » is the game), « réponds ! » alone, or any form of « répondre » with « ma question »
+  (« pourquoi tu réponds pas à ma question ? »), never after « il », « elle », « on », « personne »
+  within three words. Fifteen words at most. Read after `AreYouThere`, so « tu réponds plus ? » stays
+  there. She didn't forget, she chose (`IntentLines[AnswerMe]`); Papa's twin is sorry she missed it.
 - **`Crush`**: her love life, asked (« t'es célibataire ? », « t'as un crush ? »). Denial that
   confirms, hinted, never « mon crush ». No « il te plaît » or « ton type de » (the game). The short
   forms « tu kiffes qui ? », « t'aimes qui ? », « t'as quelqu'un ? » only close the message or come
@@ -547,8 +560,8 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   `Interrogations`' job.
 - **« ça va ? » quotes her real temperature** half the time on the Pi (`HowAreYouTempLines`, `{2}` =
   `PiHealth.Celsius`), only below `PiHealth.HotMilli`: those lines call the number fine.
-- **Papa has twins for twenty-four intents** (`OwnerIntentLines`: ça va, tu fais quoi, je t'aime,
-  pardon, bonne nuit, peut-être, t'es un bot, t'as raison, t'as tort, t'es là, merci, je m'ennuie,
+- **Papa has twins for twenty-five intents** (`OwnerIntentLines`: ça va, tu fais quoi, je t'aime,
+  pardon, bonne nuit, peut-être, t'es un bot, t'as raison, t'as tort, t'es là, réponds-moi, merci, je m'ennuie,
   t'as un crush, son âge et sa maison, fais genre, sa journée, un coup de mou, oui, non, tu m'aimes,
   tu te souviens de moi, t'es fâchée, excuse-toi, chut) plus `OwnerRequestLines` (his requests and his help); an
   opinion, a ship, a yes-or-no, a blame, a joke, a fun fact, the schedule, his numbers, a roll, a
