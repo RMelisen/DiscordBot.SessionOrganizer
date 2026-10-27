@@ -3,6 +3,41 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.49.0 — 2026-10-27
+
+- Weekly sessions: `/schedule create weekly:True` repeats a session every week, same day and same time in Paris (it stays at the same hour across the changes of time). Each one is posted three days ahead as an ordinary session that can be edited or cancelled on its own, and « Arrêter la série » in « Gérer » stops it.
+- `/schedule list` shows the weekly series, and her Wednesday weekend poll stands down when a weekly session falls that weekend.
+
+## 7.48.0 — 2026-10-27
+
+- `/schedule create` in one line: with `title` and `when` (« samedi 21h », « 25/12 20:30 », « demain », « ce soir », previewed as you type) the session is posted at once. New options: `category`, `places`, `duration`, `voice` and `description`; the card and the reminder show them, and the native event uses the voice channel as its location.
+- A session has a length (15 min to 6 h, 2 h by default): the card turns « terminée », the roll call and the recap follow it. The edit form takes the length and the description, and its date and time are one « Quand » field.
+- The wizards' day lists end with « Autre date… », for any date in the next 90 days.
+- `/poll create` takes its slots typed in one go (« ven 21h, sam 21h, dim 18h »), and a slot it can't read is named back; the wizard's review step can remove a slot. `/vote create` takes its options one per line in a single form.
+- Polls and votes take a length (1 hour to 7 days), « un seul choix » and « anonyme » (counts only, never names, on the card, in `/report polls` and in her replies under the card).
+- « Gérer » on a poll can rename it, extend it, and add or remove an option (with a confirmation when it has votes).
+- Every poll and vote that closes on its own gets her reply under the card with the result, pinging its organiser only.
+- « Créer une session » on a closed poll links the two: the card then leads to the session, and a second click is told it exists.
+- Ids are autocompleted in `/schedule edit`, `/schedule cancel`, `/poll delete` and `/vote delete`.
+- The organiser gets the reminder too.
+
+## 7.47.0 — 2026-10-27
+
+- New session and poll cards (Components V2): the organiser's avatar, the date, a fill bar for places, the roster; on polls a bar, a count and a percentage per option, the leader highlighted, the voter count and when it closes. Older cards are converted the next time they change.
+- « Gérer » on a card opens a private panel for its organiser and staff: on a session Modifier, Annuler, Republier, remove the Discord event; on a poll Clôturer. The public card keeps only what everyone uses.
+- « Mes votes » on a poll shows what you picked.
+
+## 7.46.0 — 2026-10-27
+
+- Two people clicking for the last place can no longer both get it, a vote can no longer land after the close, and a double click never fails.
+- Answers close when a session starts or is cancelled, instead of up to five minutes later. Clicking the answer you already gave says so.
+- A card that can't be posted no longer leaves a session or a poll behind, and the reply names the missing permission. A double click on « Terminer » publishes once.
+- Edits: a cancelled session can't be edited, the number of places follows one rule at creation and at edit (empty or 0 for unlimited, otherwise 2 to 67) and can't drop below the people already signed up, and a moved session can't freeze on its old state.
+- Cancelling a session asks for confirmation first.
+- Reminders go out from 35 down to 5 minutes before the start, so one missed while she was down still arrives, and they link to the card.
+- Wizard drafts expire after 30 minutes untouched; the session wizard carries exact instants, so a time near a change of time can't shift.
+- Poll and vote titles and options are shown as typed, never as formatting.
+
 ## 7.45.0 — 2026-10-27
 
 - In Minecraft she gathers more: gravel, clay, redstone, lapis, emeralds, Nether quartz, granite, diorite and andesite, and red sand counts as sand. For clay, redstone and lapis she breaks just enough blocks for the count asked, not one block per piece.

@@ -66,20 +66,29 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 
 ### Sessions
 
-- **`/schedule create`** — a private 4-step wizard (type → day → hour → details)
-  that posts an interactive session card to the channel.
-- **`/schedule list`** — the server's active sessions; lets you republish a card
+- **`/schedule create`** — in one line: `title` and `when` (« samedi 21h », « 25/12 20:30 »,
+  « demain », « ce soir », previewed as you type) post the card at once; `category`, `places`,
+  `duration`, `voice` (the session's voice channel) and `description` are optional. Without a
+  title and a time, a private wizard (type → day, or « Autre date… » → hour → details) asks for
+  the rest.
+- **Weekly sessions** — `weekly:True` repeats the session every week, same day, same time (Paris
+  time, across the changes of time); each one is posted three days ahead and is an ordinary
+  session you can edit or cancel on its own. « Arrêter la série » stops it.
+- **`/schedule list`** — the server's active sessions and weekly series; lets you republish a card
   into the current channel.
-- **`/schedule edit <id>` · `/schedule cancel <id>`** — for sessions you organized.
-  Cancelling notifies signed-up participants by DM.
-- Session cards carry **Join / Maybe / Decline** buttons plus organizer-only
-  **Edit / Cancel** actions.
+- **`/schedule edit <id>` · `/schedule cancel <id>`** — for sessions you organized, with the id
+  autocompleted. Cancelling asks for confirmation and notifies signed-up participants by DM.
+- Session cards show the date, length, voice channel, description and roster with a fill bar,
+  and carry **Join / Maybe / Decline** (until the start) plus **Gérer**, a private panel for the
+  organizer and staff: edit (name, date, places, length, description), cancel, republish, remove
+  the Discord event, stop a weekly series.
 - **Native Discord events** — the organizer can link a session to a real entry in
   the server's *Events* tab; it stays in sync (time, title, location, participants)
   and is removed when the session is cancelled.
 - **Lifecycle** — at start time a card flips to **🔴 In progress** (buttons
-  disabled), then to **✅ Finished** ~2 h later.
-- **Reminders** — signed-up participants get a DM before the session starts. About an hour
+  disabled), then to **✅ Finished** at the end of its length (2 h by default).
+- **Reminders** — signed-up participants get a DM before the session starts, with the organizer,
+  the voice channel and a link to the card. About an hour
   before, whoever is still on **Maybe** gets a DM asking them to pick a side (only while the
   session has room).
 - **Waiting list** — when a capped session is full, **Maybe** is the waiting list: as soon as a
@@ -93,16 +102,21 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 
 ### Polls & votes
 
-- **`/poll create`** — propose several time slots (up to 10); everyone votes for
-  *all* the slots that work for them. The most-voted slot is highlighted on close and
-  can be turned directly into a session.
-- **`/vote create`** — same idea with free-text options (games, movies, …).
+- **`/poll create`** — propose several time slots (up to 10, typed in one go as « ven 21h, sam
+  21h » or added one by one); everyone votes for *all* the slots that work for them. The
+  most-voted slot is highlighted on close and can be turned directly into a session; the closed
+  card then links to it.
+- **`/vote create`** — same idea with free-text options (games, movies, …), one per line.
+- Both take a length (2 days by default), **single choice** and **anonymous** (counts, never
+  names). Cards show a bar and a percentage per option, and **Mes votes** shows yours. **Gérer**
+  lets the organizer close, rename, extend, or add and remove options.
 - **`/poll list` · `/vote list`** — list and republish active polls/votes.
-- **`/poll delete <id>` · `/vote delete <id>`** — delete one you created.
-- Polls and votes left open **auto-close after 2 days**.
+- **`/poll delete <id>` · `/vote delete <id>`** — delete one you created, with the id autocompleted.
+- Polls and votes **close on their own** at the time on their card, and she replies under it with
+  the result, pinging the organizer.
 - **Weekend poll** — every Wednesday evening she posts her own poll for Friday, Saturday and
-  Sunday at 21:00, unless a session is already planned that weekend or someone's poll is still
-  open. When it closes she announces the winning evening, and anyone who voted for it can turn
+  Sunday at 21:00, unless a session (or a weekly one) is already planned that weekend or someone's
+  poll is still open. When it closes she announces the winning evening, and anyone who voted for it can turn
   it into a session.
 - **Replying under a card** (a poll, a vote, a session, `/tonight`, a giveaway) — she answers
   about that card: she backs up whoever tells the others to vote, naming the people they tagged
@@ -819,7 +833,7 @@ ProjectSYNCS/
 | Service | Interval | Job |
 | --- | --- | --- |
 | `BotService` | — | Gateway connection, command registration, interaction dispatch |
-| `ReminderService` | 5 min | Reminder DMs, session lifecycle, poll auto-close, `/tonight` expiry |
+| `ReminderService` | 5 min | Weekly sessions, reminder DMs, session lifecycle, poll auto-close and results, `/tonight` expiry |
 | `PersonalReminderService` | 1 min | Delivers `/remindme` |
 | `PresenceService` | 5 min | The rotating status line |
 | `MorningGreetingService` | daily, random 8:00–10:00 | The morning hello |

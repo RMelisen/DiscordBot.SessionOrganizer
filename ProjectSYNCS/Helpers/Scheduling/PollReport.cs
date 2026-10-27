@@ -26,9 +26,9 @@ public sealed record PollReportData(
 /// <para>A poll or a call belongs to the window it was created in. A deleted poll is gone from the
 /// database (PollService hard-deletes), so it is simply not counted; an un-vote deletes the vote,
 /// so voters are the ones who stayed.</para>
-/// <para>Nothing links a poll to the session it led to: a date poll « became a session » when a
-/// session of the guild, not cancelled, sits on one of its slots, the same match PollModule uses
-/// to refuse a duplicate.</para>
+/// <para>A date poll « became a session » when its « Créer une session » made one
+/// (Poll.SessionEventId) that isn't cancelled. Polls from before that link existed fall back to a
+/// session of the guild, not cancelled, sitting on one of its slots.</para>
 /// </remarks>
 public static class PollReport
 {
@@ -40,14 +40,19 @@ public static class PollReport
         var voters = created.ToDictionary(p => p.Id,
             p => p.Options.SelectMany(o => o.Votes).Select(v => v.UserId).Distinct().ToList());
 
-        var slots = sessions.Where(s => !s.IsCancelled).Select(s => s.ScheduledAt).ToHashSet();
-        bool BecameSession(Poll p) => p.Kind == PollKind.DateSlots && p.Options.Any(o => slots.Contains(o.ScheduledAt));
+        var live = sessions.Where(s => !s.IsCancelled).ToList();
+        var slots = live.Select(s => s.ScheduledAt).ToHashSet();
+        var liveIds = live.Select(s => s.Id).ToHashSet();
+        bool BecameSession(Poll p) => p.Kind == PollKind.DateSlots
+            && (p.SessionEventId is { } id ? liveIds.Contains(id) : p.Options.Any(o => slots.Contains(o.ScheduledAt)));
 
         var weekend = created.Where(p => p.OrganizerId == botId && p.Kind == PollKind.DateSlots).ToList();
 
         var tonight = calls.Where(c => window.Contains(c.CreatedAt)).ToList();
 
+        // An anonymous poll never names its voters, here either: it counts in the totals, not in the list.
         var topVoters = created
+            .Where(p => !p.Anonymous)
             .SelectMany(p => voters[p.Id])
             .GroupBy(id => id)
             .Select(g => new PersonTally(g.Key, g.Count(), created.Count))

@@ -68,7 +68,9 @@ internal sealed class CardReplyService
     }
 
     // What the card says now: whether it is open, who answered it, its count and its standing in words.
-    private sealed record CardState(bool Open, HashSet<ulong> Answered, string Count, string Status, string Title);
+    // Anonymous: an anonymous poll, where she never says who voted, under the card or in chat.
+    private sealed record CardState(bool Open, HashSet<ulong> Answered, string Count, string Status, string Title,
+        bool Anonymous = false);
 
     private async Task AnswerAsync(SocketUserMessage message, SocketGuild guild, CardRef card, CardReplyIntent intent,
         string name, string weekday)
@@ -122,11 +124,13 @@ internal sealed class CardReplyService
                 return (BotResponses.CardStatusLines, state.Status);
 
             case CardReplyIntent.Done:
+                if (state.Anonymous) return (BotResponses.CardDoneAnonymousLines, string.Empty);
                 if (answered) return (BotResponses.CardDoneSeenLines, string.Empty);
                 return (state.Open ? BotResponses.CardDoneLiarLines : BotResponses.CardClosedLines, string.Empty);
 
             case CardReplyIntent.TextAnswer:
-                if (answered) return (BotResponses.CardTextAnsweredLines, string.Empty);
+                // « tu as déjà cliqué » would tell the room who voted.
+                if (answered && !state.Anonymous) return (BotResponses.CardTextAnsweredLines, string.Empty);
                 return (state.Open ? BotResponses.CardTextClickLines : BotResponses.CardClosedLines, string.Empty);
 
             case CardReplyIntent.Repost:
@@ -138,7 +142,8 @@ internal sealed class CardReplyService
             {
                 if (!state.Open) return (BotResponses.CardClosedLines, string.Empty);
                 var tagged = Tagged(message);
-                if (tagged.Count == 0) return (BotResponses.CardRallyLines, state.Count);
+                // Naming who hasn't voted would unmask an anonymous poll: the room gets the count.
+                if (tagged.Count == 0 || state.Anonymous) return (BotResponses.CardRallyLines, state.Count);
                 var missing = tagged.Where(id => !state.Answered.Contains(id)).ToList();
                 return missing.Count > 0
                     ? (BotResponses.CardRallyNamedLines, Tags(missing))
@@ -184,7 +189,7 @@ internal sealed class CardReplyService
                 var count = Count(voters.Count, "votant", "votants");
                 var status = voters.Count == 0 ? "personne n'a encore voté" : $"{count}, {PollLeaders(poll)}";
                 if (poll.IsClosed) status += ", et c'est clôturé";
-                return new CardState(!poll.IsClosed, voters, count, status, Sanitized(poll.Title));
+                return new CardState(PollRules.IsOpen(poll, now), voters, count, status, Sanitized(poll.Title), poll.Anonymous);
             }
             case CardKind.Session:
             {

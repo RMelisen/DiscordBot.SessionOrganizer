@@ -3,7 +3,7 @@ namespace ProjectSYNCS.Helpers;
 // The four cards people answer with a button. In memory only, never stored: free to reorder.
 public enum CardKind
 {
-    // /poll and /vote alike: both render through PollModule's builders.
+    // /poll and /vote alike: both render through PollCards.
     Poll,
     Session,
     Tonight,
@@ -20,7 +20,7 @@ public readonly record struct CardRef(CardKind Kind, int Id);
 /// recognised: there is nothing left to click, and a reply to it reads like any other.
 /// </summary>
 /// <remarks>The prefixes are a contract with the card builders (root CLAUDE.md, custom-ids):
-/// `poll:vote|close|tosession:{id}`, `event:*:{id}`, `tonight:*:{id}`, `giveaway:enter|leave:{id}`.</remarks>
+/// `poll:vote|close|tosession|manage|mine:{id}`, `event:*:{id}`, `tonight:*:{id}`, `giveaway:enter|leave:{id}`.</remarks>
 public static class CardRefs
 {
     public static CardRef? Read(IEnumerable<string?> customIds)
@@ -33,7 +33,7 @@ public static class CardRefs
 
             CardKind? kind = (parts[0], parts[1]) switch
             {
-                ("poll", "vote" or "close" or "tosession") => CardKind.Poll,
+                ("poll", "vote" or "close" or "tosession" or "manage" or "mine") => CardKind.Poll,
                 ("event", _) => CardKind.Session,
                 ("tonight", _) => CardKind.Tonight,
                 ("giveaway", "enter" or "leave") => CardKind.Giveaway,

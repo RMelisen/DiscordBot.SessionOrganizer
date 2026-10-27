@@ -154,9 +154,21 @@ public class TonightComponentHandler : InteractionModuleBase<SocketInteractionCo
         await _tonight.SetSessionAsync(id, session.Id);
 
         var full = (await _events.GetEventWithParticipantsAsync(session.Id))!;
-        var card = await Context.Channel.SendMessageAsync(
-            embed: ScheduleModule.BuildEventEmbed(full, Context.Guild),
-            components: ScheduleModule.BuildEventComponents(full));
+        IUserMessage card;
+        try
+        {
+            card = await SessionCards.SendAsync(Context.Channel, full, Context.Guild);
+        }
+        catch (Exception ex)
+        {
+            // No card, no session: the call opens again, and the reason goes to whoever clicked.
+            _logger.LogWarning(ex, "Failed to post the session card for tonight call {CallId}; removing session {EventId}.", id, session.Id);
+            await _events.DeleteEventAsync(session.Id);
+            await _tonight.SetSessionAsync(id, 0);
+            await _tonight.ReopenAsync(id);
+            await FollowupAsync(CardPostFailure.Explain(Context.Guild, Context.Channel, "la carte de la session"), ephemeral: true);
+            return;
+        }
         await _events.SetMessageIdAsync(session.Id, card.Id);
 
         call.Closed = true;

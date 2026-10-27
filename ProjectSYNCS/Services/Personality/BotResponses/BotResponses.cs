@@ -128,6 +128,7 @@ namespace ProjectSYNCS.Services;
 //     SessionRecapLines · SessionRecapFullLines ... the roll call after it, someone missing / everyone came
 //     WeekendPollLines ......... her Wednesday poll (WeekendPollService)
 //     WeekendPollResultLines · WeekendPollDeadLines ... it closed with votes / with none (ReminderService)
+//     PollClosedSlotLines · VoteClosedResultLines · PollClosedEmptyLines ... someone else's poll / vote closed on its own (ReminderService)
 //     WelcomeLines ............. someone joined (WelcomeService)
 //     WelcomeRushLines ......... too many arrivals in an hour
 //     ReminderSetLines ......... /remindme's confirmation
@@ -141,6 +142,7 @@ namespace ProjectSYNCS.Services;
 //     CardClosedLines .......... a card that is over
 //     CardRallyLines · CardRallyNamedLines · CardRallyAllDoneLines ... « votez ! »: to the room / the tagged who haven't / who have
 //     CardDoneSeenLines · CardDoneLiarLines ... « j'ai voté »: true / not on the card
+//     CardDoneAnonymousLines ... « j'ai voté » under an anonymous poll: she neither confirms nor denies
 //     CardTextClickLines · CardTextAnsweredLines ... an answer typed: not clicked / clicked too
 //     CardStatusLines .......... « c'est quand ? », « qui vient ? »
 //

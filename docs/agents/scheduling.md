@@ -1,26 +1,107 @@
 # Scheduling — sessions, polls, votes, giveaways
 
 `ScheduleModule`, `PollModule`, `VoteModule`, `GiveawayModule` are group modules (so
-`ignoreGroupNames: true` on every component/modal attribute). `PollModule`'s static card builders
-render both poll kinds, branching on `Poll.Kind`, so `/vote` cards go through them too.
+`ignoreGroupNames: true` on every component/modal attribute). `PollCards` renders both poll kinds,
+branching on `Poll.Kind`, so `/vote` cards go through it too.
+
+## The cards — Components V2
+
+`SessionCards` and `PollCards` (static, Context-free, in `Commands/Scheduling/`) build the session
+and poll cards as Components V2 (root `CLAUDE.md`: no content, no embeds, the flag on every edit,
+`AllowedMentions.None`). Every send goes through their `SendAsync`, every edit through `ApplyTo`.
+
+- **A card from before V2 is an embed card.** `ApplyTo` clears content and embeds, so an edit
+  converts it; if Discord refuses the edit anyway, `CardUpdater` reposts it through `CardRepost`.
+  `CardUpdater` is the one way a background job or a panel redraws a public card.
+- **Budgets**: 40 components in the whole tree, 4000 characters of text. The session card is about
+  15 components, the poll card 21 (ten vote buttons). Rosters cap at `SessionSeats.MaxCardNames` (20)
+  names, polls at `MaxPollVoterNames` (8) per option, a closed card's tie line at three options. The
+  checks build every card at its worst (open, closed, cancelled, anonymous, date poll): **re-run
+  them after adding anything to a card.**
+- Categories (emoji and name) live in `Helpers/Scheduling/SessionCategories`, the one table the
+  cards, the native event, the voice status and `/report` read.
+
+## The « Gérer » panel
+
+The public cards keep only what everyone uses: Rejoindre / Peut-être / Refuser and the native
+event link on a session, the vote buttons and « Mes votes » on a poll. Everything for the organiser
+(Modifier, Annuler, Republier, remove the native event, stop a weekly series; on a poll Clôturer,
+Renommer, Prolonger, add or remove an option) is behind **« Gérer »**, an ephemeral panel
+(`SessionManage`, `PollManage`). `SessionPermissions.CanManage` is checked on every panel click,
+not only on « Gérer ».
+
+- **`ManageSnapshots`** (singleton, 10 min) keeps the row « Gérer » loaded, so « Modifier » and
+  « Renommer » open their modal without a database read: a modal must be the first response.
+  Anything that changes the row forgets its snapshot.
+- Cancelling and removing an option ask for confirmation in the panel (`event:cancelyes|no`,
+  `poll:rmoptyes|no`).
+- A panel click redraws the public card through `CardUpdater`; a click on the card itself redraws
+  through `ModifyOriginalResponseAsync`. `OnEphemeral` in each handler tells them apart.
 
 ## Sessions
 
 Two stateless helpers wrap a session's outward side effects: `SessionEventSync` (create/update/delete
 the native Guild Scheduled Event — swallows and logs everything; a missing Manage Events permission
-degrades silently) and `SessionNotifier` (cancellation DMs).
+degrades silently) and `SessionNotifier` (cancellation DMs). The native event's location is the
+session's voice channel when it has one.
 
 **Lifecycle is idempotent.** `SessionEvent.RenderedPhase` records what was last drawn, so the loop
-re-renders only on an actual Scheduled → InProgress → Finished transition.
+re-renders only on an actual Scheduled → InProgress → Finished transition. An edit of the time or
+the duration resets it to Scheduled.
 
-**The card's buttons defer** (`EventComponentHandler`): every handler but « Modifier » (a modal must
-be the first response) calls `DeferAsync` before its first read, redraws through
-`ModifyOriginalResponseAsync` and refuses with ephemeral follow-ups. The same goes for the poll,
-vote and giveaway buttons and the three « publish » steps. Keep it that way for anything added.
+**A session has a length** (`DurationMinutes`, 15 min – 6 h, default 2 h; `SessionEvent.Length`).
+It sets InProgress → Finished, the native event's end, the roll call's window and the recap. Read
+it through `Length`, never a constant.
 
-**Roster fields are capped** at `SessionSeats.MaxCardNames` (20) names, then « … et N autre(s) »;
-poll and vote cards at `MaxPollVoterNames` (10) per option. Uncapped, a session passes a field's
-1024 at about 46 names (MaxPlayers allows 67). The checks build both cards at their worst.
+**The buttons defer** (`EventComponentHandler`, `PollComponentHandler`): every handler but those
+opening a modal calls `DeferAsync` before its first read and refuses with ephemeral follow-ups. The
+same goes for the giveaway buttons and the « publish » steps. Keep it that way for anything added.
+
+**Answers close at the start.** `SessionSeats.CanRespond` refuses a click once the session is
+cancelled or has started; the lifecycle pass removes the buttons up to five minutes later, and this
+closes the gap. Clicking the status you already have says so instead of rewriting it.
+
+**One rule for places**: `SessionSeats.TryParseCap` (empty or 0 unlimited, otherwise 2–67) at
+creation and at edit, and an edit below the number already joined is refused (`CapBelowJoined`):
+nobody is ever kicked out.
+
+## Locks and drafts
+
+- **`SchedulingLocks`** (singleton) holds a `KeyedLock<int>` per session and per poll: a join, a
+  vote, an edit or a cancel runs one at a time per row, so two clicks on the last place can't both
+  take it, and single-choice votes can't leave two options. Entries are pruned when released; a
+  wait over 10 s throws (the click is refused, nothing is half-written). A unique index backs the
+  vote and the participant rows anyway, and the handlers catch the `DbUpdateException`.
+- **Drafts are a `DraftBox`** (30 min, refreshed on every touch) per wizard. Finishing **takes**
+  the draft (`TryTake`), so a double click on « Terminer » publishes once; if the publish fails,
+  the draft is put back so the person can retry.
+
+## Fast creation
+
+`/schedule create` with a title and a « quand » creates and posts at once; otherwise the picker
+opens, pre-filled with whatever was given. « quand » is read by `SessionTime.Parse` (« samedi
+21h », « sam 14h », « 25/12 20:30 », « demain », « ce soir »; future only, 90 days at most; a day
+alone is 21:00) and previewed by `SessionWhenAutocompleteHandler`, whose value is the typed text.
+`/poll create` takes its slots the same way (`SessionTime.ParseList`, comma or line separated, ten
+at most); `/vote create`'s modal takes one option per line (`PollRules.ParseOptions`). The pickers'
+day lists end with « Autre date… », a modal read by the same parser.
+
+A card that fails to post deletes what was created for it (the session and its series, the poll),
+and `CardPostFailure.Explain` names the missing permission (Voir le salon, Envoyer des messages,
+Intégrer des liens).
+
+## Polls — deadline, single choice, anonymous
+
+- **`Poll.ClosesAt`** is `EndsAt`, or `CreatedAt` + 2 days for polls from before `EndsAt` existed.
+  `/poll create` and `/vote create` take a length; « Prolonger » pushes it (`PollRules.Extend`, 14
+  days from now at most). `PollRules.IsOpen` is the one test: a vote past the deadline is refused
+  even before the sweep closes it.
+- **Single choice** replaces the voter's other vote, under the poll's lock.
+- **Anonymous** hides voter names on the card, in `/report polls`' list and in her replies under the
+  card (`CardReplyService`: « j'ai voté » gets `CardDoneAnonymousLines`, a rally never names who
+  hasn't voted). The counts stay.
+- **« Créer une session »** stores the link (`Poll.SessionEventId`); the closed card then links to
+  the session, and a second click gets « existe déjà » with the link.
 
 ## The waiting list — `SessionWaitlist`
 
@@ -37,21 +118,41 @@ on « Rejoindre » takes it. **Nobody is promoted automatically**: « peut-être
 
 ## `ReminderService` — one 5-minute loop, independent jobs
 
-Reminder DMs, the « peut-être » nudge, session lifecycle re-renders, poll auto-close, `/tonight`
-expiry. Each item is guarded separately (root `CLAUDE.md`, reliability). **The timing constants
-are coupled to the 5-minute interval**:
+Weekly series, reminder DMs, the « peut-être » nudge, session lifecycle re-renders, poll
+auto-close, `/tonight` expiry. Each item is guarded separately (root `CLAUDE.md`, reliability).
+**The timing constants are coupled to the 5-minute interval**:
 
-- The reminder window in `EventService.GetEventsNeedingReminderAsync` is **25–35 minutes** before
-  start — wider than the loop so none is missed, `ReminderSent` (reset when the time is edited) so
-  none is sent twice.
+- The reminder window in `EventService.GetEventsNeedingReminderAsync` is **5–35 minutes** before
+  start (`ReminderLeadMin` / `ReminderLeadMax`) — wide enough that a session created or moved 20
+  minutes ahead still gets one. `ReminderSent` (reset when the time is edited) is set before the
+  DMs, so none is sent twice. The DM names the organiser, the voice channel and the card's link.
 - **The « peut-être » nudge** (`SessionMaybeNudgeLines`, by DM, with the card's link) goes out
   **55–70 minutes** before start (`SessionSeats.NudgeDue`), only while the session has room: on a
   full one « Peut-être » is the waiting list, and nudging it to join would be a tease.
   `MaybeNudgeSent` is set before the DMs (a crash costs the nudge, never a second one) and reset
   with `ReminderSent`. Nobody asked for it, so **silence mode holds it back**; the window then
   closes on its own.
-- `SessionEvent.Duration` (2 h) sets both InProgress → Finished and the native event's end.
-- `ReminderService.PollLifetime` (2 days) drives auto-close.
+- **Auto-close** takes the polls whose `ClosesAt` has passed (filtered in memory, root `CLAUDE.md`,
+  data). Her own polls get her weekend lines (below); everyone else's get a reply under the card
+  with the result (`PollClosedSlotLines`, `VoteClosedResultLines`, `PollClosedEmptyLines`; {0} the
+  organiser, {1} the title, {2} the result), pinging the organiser only. A command set it up, so
+  silence mode doesn't hold it back. A manual close says nothing.
+
+## Weekly series — `RecurringSession`
+
+`/schedule create weekly:True` stores a `RecurringSession` (day and minute **in Paris wall-clock
+time**, so 21:00 stays 21:00 across the changes of time) and posts its first session. Each pass,
+`ReminderService.ProcessRecurringAsync` posts the next one `LeadDays` (3) ahead
+(`Recurrence.NextOccurrence`, `DueToPost`; pure, the checks cover both DST changes).
+
+- **`LastOccurrence` is the claim**: `EventService.CreateOccurrenceAsync` creates the session and
+  advances it in one save, and a unique index on (`RecurringSessionId`, `ScheduledAt`) refuses a
+  second copy. The next occurrence is always after the last one, so a moved or cancelled occurrence
+  never comes back. If the card fails to post, `UndoOccurrenceAsync` gives the claim back.
+- Each occurrence is an ordinary session (edit, cancel, roster), linked by `RecurringSessionId`;
+  its card says « 🔁 chaque jeudi ». « Arrêter la série » in the panel stops the series and keeps
+  the sessions already posted. A series whose channel is gone stops itself; a guild that is missing
+  (disconnected) is skipped. The series runs only while the gateway is connected.
 
 ## Roll call — `SessionAttendanceService`
 
@@ -59,24 +160,24 @@ She calls the roll for **Game and Movie** sessions only (an Activity or Other ca
 Timing rules are pure, in `Helpers/Scheduling/SessionAttendance`.
 
 - **Fed by `VoiceXpService`'s sweep**, once per guild per minute, with every human connected to a
-  voice channel (AFK aside, muted included). A session has no voice channel of its own (the native
-  event is External), so "present" means any of the server's voice channels.
+  voice channel (AFK aside, muted included). A session's voice channel is optional and only shown
+  (the native event stays External), so "present" means any of the server's voice channels.
 - **What it learns is stored**: `Participant.FirstSeenInVoiceAt` (first sighting from start − 15 min
-  to start + `Duration`), `SessionEvent.LateCallSent` / `RecapSent`. Each flag is written **before**
+  to start + `Length`), `SessionEvent.LateCallSent` / `RecapSent`. Each flag is written **before**
   its message goes out: a crash costs the line, never a second ping. `UpdateEventAsync` resets all
   three when the time moves, as it does `ReminderSent`.
 - **Late call** at start + 10 min, until start + 30 (later, it's skipped, never sent stale): pings
   the Joined people not seen yet, `AllowedMentions` narrowed to them. It waits for the first
   arrival — with nobody there, the session may be happening somewhere else.
 - **Recap** once fewer than two of the people who came have been in voice for 15 min (not before
-  start + 30), or at start + `Duration` + 2 h. **Absences are a count, never names** (the owner's
+  start + 30), or at start + `Length` + 2 h (`SessionAttendance.RecapAfterEnd`). **Absences are a count, never names** (the owner's
   call; `/report sessions`, asked by staff, is the one place that names them, also his call); the people who came and who were late (first seen after start + 10) are named, inert.
   Silent when nobody came or fewer than two were Joined. Headers gender nobody (« Au
   rendez-vous », « Absences »).
 - The session list is cached and re-read every 5 minutes (recapped sessions included, until their
   window closes); the scatter clock is in memory, so a restart only delays a recap.
 - **Voice channel status**: while a session is live, the voice channel holding most of its Joined
-  people shows « 🎮 Title » (« 🎬 » for a film) under its name, cleared when the live window ends.
+  people shows « 🎮 Title » (the category's emoji) under its name, cleared when the live window ends.
   Stateless against Discord, so restart-safe: a status equal to one she would write for a cached
   session is hers to clear; anything else is someone's and is never overwritten. Needs Set Voice
   Channel Status; a channel she can't set is left alone for 30 min.
@@ -91,12 +192,15 @@ Timing rules are pure, in `Helpers/Scheduling/SessionAttendance`.
 
 Every Wednesday at a minute drawn from the week between 18:00 and 20:00 (`Helpers/Scheduling/WeekendPoll`),
 an ordinary date poll in her main channel (home guild): Friday, Saturday and Sunday at 21:00,
-organizer = her id. Posted Wednesday so `PollLifetime` closes it Friday evening, before the first
-slot; nothing is posted after 22:00.
+organizer = her id. Posted Wednesday so the default two days close it Friday evening, before the
+first slot; nothing is posted after 22:00.
 
-- **She stands down** when a session is already planned that weekend or someone's date poll is
-  still open. **Once a week**: the claim is the poll itself (one of hers in the last six days),
-  so no state file. A card that fails to post deletes its poll.
+- **Her line goes first, as its own message** (a V2 card carries no content); `HerMessages`
+  remembers that one, and the card follows.
+- **She stands down** when a session is already planned that weekend, a weekly series falls on it
+  (its occurrence may not be posted yet), or someone's date poll is still open. **Once a week**:
+  the claim is the poll itself (one of hers in the last six days), so no state file. A card that
+  fails to post deletes its poll and her line.
 - **On auto-close** `ReminderService` replies to the card with the winning evening(s)
   (`WeekendPollResultLines`) or sulks (`WeekendPollDeadLines`). A manual close says nothing.
 - **Permission exception** in `PollModule.OnToSessionAsync`: on *her* poll, anyone who voted for a
@@ -110,25 +214,31 @@ slot; nothing is posted after 22:00.
 A reply under a poll, vote, session, `/tonight` or giveaway card is answered about the card by
 `CardReplyService` (rallying, « j'ai voté », « c'est quand ? », answers typed instead of clicked,
 « remonte-le »): see personality, *Under her cards*. It recognises a card by its buttons'
-custom-ids, so **the `poll:vote|close|tosession`, `event:*`, `tonight:*` and `giveaway:enter|leave`
-prefixes, each with the row id third, are a contract** with `Helpers/Scheduling/CardRefs`.
+custom-ids, so **the `poll:vote|close|tosession|manage|mine`, `event:*`, `tonight:*` and
+`giveaway:enter|leave` prefixes, each with the row id third, are a contract** with
+`Helpers/Scheduling/CardRefs`.
 
-**`CardRepost` is the one way a card moves**: the `/… list` republish menus and « remonte-le » both
-go through it (delete the old card, redraw through the static builders, store the new location,
+**`CardRepost` is the one way a card moves**: the `/… list` republish menus, « Republier » in the
+panel, « remonte-le » and `CardUpdater`'s fallback all go through it (delete the old card, redraw through the static builders, store the new location,
 repoint a session's native event). A new card kind that can be republished goes there.
 
 ## The two wizards keep state differently
 
 **`ScheduleModule` threads state through custom-ids** (`schedule:min:{category}:{date}:{hour}:{minute}`):
-a new step means a new segment through every handler *and* the matching `Retour` handler. Only the
-title is in memory (`_draftTitles`), so a failed modal can be reopened pre-filled.
+a new step means a new segment through every handler *and* the matching `Retour` handler. From the
+details modal on, **the instant travels as unix seconds** (`schedule:finalize:{category}:{unix}`,
+`schedule:frompoll:{pollId}:{category}:{unix}`, `schedule:typed:{category}` for « Autre date… »),
+never as a wall-clock string. Only what the person typed is in the `DraftBox`, so a failed modal can
+be reopened pre-filled (`schedule:retry…`).
 
-**`PollModule` and `VoteModule` keep the whole draft in a `static ConcurrentDictionary`** keyed by
-user id (a variable-length list doesn't fit a custom-id), removed on finish or cancel.
+**`PollModule` and `VoteModule` keep the whole draft in a `DraftBox`** keyed by user id (a
+variable-length list doesn't fit a custom-id), taken on finish, removed on cancel.
 
-**`/vote create` must create its own wizard message.** The command posts "Définir le titre" and
-every later step only *updates* it; creating it from the modal response drops the first option-add
-update. That's why the `vote:begin` button exists.
+**`/vote create` must create its own wizard message.** The command posts « Définir le vote » and
+every later step only *updates* it; creating it from the modal response drops the first update.
+That's why the `vote:begin` button exists. `poll:typedslot` (the date poll's « Autre date… » modal)
+updates the wizard message from a modal the same way: if it ever drops an update, it needs the same
+fix.
 
 ## Giveaways
 
@@ -166,8 +276,8 @@ can say so. A drawn card drops its buttons entirely.
 - **« Créer la session »** (organizer or staff, `SessionPermissions.CanManage(IUser, TonightCall)`)
   claims the close first (`ClaimCloseAsync`, so a double click or the midnight sweep can't make two),
   creates a Game `SessionEvent` at the call's hour, signs up In → Joined and Maybe → Maybe, and posts
-  the session card through `ScheduleModule`'s builders. If creating the session throws, the claim is
-  given back (`ReopenAsync`). No native event: that stays the organizer's opt-in on the card.
+  the session card through `SessionCards`. If creating the session or posting its card throws, the
+  session is deleted and the claim given back (`ReopenAsync`). No native event: that stays the organizer's opt-in on the card.
 - **Expiry** is `ReminderService`'s fourth job: midnight Paris, or an hour after the start for a
   late-night call. Claimed before the card is redrawn.
 - Her line on the card is chosen by the call's id (`StableRoll`), not the picker: the card is

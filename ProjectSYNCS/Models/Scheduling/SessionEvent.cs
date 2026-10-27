@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace ProjectSYNCS.Models;
 
 public enum SessionCategory
@@ -53,17 +55,31 @@ public class SessionEvent
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
+    // How long it runs: « en cours » for this long after the start, then finished. Also the native
+    // event's end, the roll call's window and the voice channel status.
+    public int DurationMinutes { get; set; } = DefaultDurationMinutes;
+
+    // Free text from the organiser, shown on the card. Empty for none.
+    public string Description { get; set; } = string.Empty;
+
+    // The voice channel it happens in, when the organiser named one. 0 for none.
+    public ulong VoiceChannelId { get; set; }
+
+    // The weekly series it was posted for (RecurringSession), or null for a one-off.
+    public int? RecurringSessionId { get; set; }
+
     public List<Participant> Participants { get; set; } = new();
 
-    // A session is "in progress" for this long after its start time, then it is
-    // archived as finished.
-    public static readonly TimeSpan Duration = TimeSpan.FromHours(2);
+    public const int DefaultDurationMinutes = 120;
+
+    [NotMapped]
+    public TimeSpan Length => TimeSpan.FromMinutes(DurationMinutes > 0 ? DurationMinutes : DefaultDurationMinutes);
 
     /// <summary>The lifecycle phase at a given instant, ignoring cancellation.</summary>
     public SessionPhase PhaseAt(DateTimeOffset now)
     {
         if (now < ScheduledAt) return SessionPhase.Scheduled;
-        if (now < ScheduledAt + Duration) return SessionPhase.InProgress;
+        if (now < ScheduledAt + Length) return SessionPhase.InProgress;
         return SessionPhase.Finished;
     }
 }

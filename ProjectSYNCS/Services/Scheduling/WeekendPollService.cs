@@ -16,7 +16,7 @@ namespace ProjectSYNCS.Services;
 // slot may turn it into a session (PollModule.OnToSessionAsync).
 //
 // She never steps on someone else's organising: no poll when a session is already planned for
-// that weekend, or when someone's date poll is still open. Once a week at most: the claim is the
+// that weekend (a weekly series counts), or when someone's date poll is still open. Once a week at most: the claim is the
 // poll itself (a poll of hers created in the last six days), so a restart can't post a second.
 //
 // Its own 15-minute interval, like every loop here (root CLAUDE.md): the slot is drawn to the
@@ -100,22 +100,29 @@ internal sealed class WeekendPollService : BackgroundService
         _decided = wednesday;
         var poll = await polls.CreatePollAsync(guild.Id, channel.Id, botId, Title, WeekendPoll.Slots(wednesday));
         var full = await polls.GetPollWithVotesAsync(poll.Id);
+        IUserMessage? line = null;
         try
         {
-            var message = await channel.SendMessageAsync(
-                _picker.Pick(BotResponses.WeekendPollLines),
-                embed: PollModule.BuildPollEmbed(full!),
-                components: PollModule.BuildPollComponents(full!),
+            // A Components V2 card carries no content: her line goes first, on its own, and is the
+            // message replies to her are read against; the card follows it.
+            line = await channel.SendMessageAsync(_picker.Pick(BotResponses.WeekendPollLines),
                 allowedMentions: AllowedMentions.None);
-            _herMessages.Remember(message, ReplyContext.WeekendPoll);
-            await polls.SetMessageIdAsync(poll.Id, message.Id);
+            _herMessages.Remember(line, ReplyContext.WeekendPoll);
+            var card = await PollCards.SendAsync(channel, full!);
+            await polls.SetMessageIdAsync(poll.Id, card.Id);
             _logger.LogInformation("Weekend poll {PollId} posted.", poll.Id);
         }
         catch (Exception ex)
         {
-            // A poll with no card would sit in /poll list and auto-close silently; remove it.
+            // A poll with no card would sit in /poll list and auto-close silently; remove it, and
+            // the line announcing it.
             _logger.LogWarning(ex, "Failed to post the weekend poll; removing poll {PollId}.", poll.Id);
             await polls.DeletePollAsync(poll.Id);
+            if (line is not null)
+            {
+                try { await line.DeleteAsync(); }
+                catch (Exception deleteEx) { _logger.LogDebug(deleteEx, "Could not delete the weekend poll's line."); }
+            }
         }
     }
 
@@ -128,6 +135,9 @@ internal sealed class WeekendPollService : BackgroundService
         var (from, to) = WeekendPoll.Weekend(wednesday);
         if (await events.HasSessionBetweenAsync(guildId, from, to))
             return "a session is already planned that weekend";
+        // A weekly series lands that weekend even if its occurrence isn't posted yet (LeadDays).
+        if (await events.HasSeriesBetweenAsync(guildId, from, to))
+            return "a weekly session falls that weekend";
 
         var open = await polls.GetActivePollsAsync(guildId, PollKind.DateSlots);
         if (open.Any(p => p.OrganizerId != botId))

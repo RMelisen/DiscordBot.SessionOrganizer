@@ -78,6 +78,10 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<TonightService>();
         // Brings a card back to the bottom of a channel: the /… list menus and a reply asking her to.
         services.AddTransient<CardRepost>();
+        services.AddTransient<CardUpdater>();
+        // In memory: one lock per session / poll, and the Gérer panel's snapshots.
+        services.AddSingleton<SchedulingLocks>();
+        services.AddSingleton<ManageSnapshots>();
         services.AddTransient<PersonalReminderStore>();
         services.AddTransient<MinecraftDataService>();
         services.AddTransient<ArcadeService>();

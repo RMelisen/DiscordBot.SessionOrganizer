@@ -1,11 +1,12 @@
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Helpers;
+using ProjectSYNCS.Interactions.Autocomplete;
 using ProjectSYNCS.Interactions.Modals;
 using ProjectSYNCS.Models;
 using ProjectSYNCS.Services;
-using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text;
 using Poll = ProjectSYNCS.Models.Poll;
@@ -19,63 +20,154 @@ namespace ProjectSYNCS.Commands;
 [CommandContextType(InteractionContextType.Guild)]
 public class PollModule : InteractionModuleBase<SocketInteractionContext>
 {
-    private const int MaxOptions = 10;
-
     private readonly PollService _pollService;
     private readonly EventService _eventService;
+    private readonly CardRepost _repost;
+    private readonly ILogger<PollModule> _logger;
 
     // The slots a user is assembling before publishing. The wizard adds them one
     // at a time, so the in-progress poll lives here (keyed by user) rather than
-    // being carried through component custom ids.
-    private static readonly ConcurrentDictionary<ulong, PollDraft> _drafts = new();
+    // being carried through component custom ids. Thirty minutes untouched and it's gone.
+    private static readonly DraftBox<PollDraft> _drafts = new(TimeSpan.FromMinutes(30));
 
     // When converting a closed poll into a session, holds the poll title so the
     // schedule modal can be pre-filled with it (the title is too free-form to
     // carry safely through a component custom id).
-    private static readonly ConcurrentDictionary<ulong, string> _toSessionTitles = new();
+    private static readonly DraftBox<string> _toSessionTitles = new(TimeSpan.FromMinutes(30));
 
     private sealed class PollDraft
     {
-        public string Title { get; init; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
         public List<DateTimeOffset> Slots { get; } = new();
+        public PollSettings Settings { get; init; } = PollSettings.Default;
+        // The slots came typed with the command: the title modal publishes straight away.
+        public bool PublishOnTitle { get; init; }
     }
 
-    private readonly CardRepost _repost;
-
-    public PollModule(PollService pollService, EventService eventService, CardRepost repost)
+    public PollModule(PollService pollService, EventService eventService, CardRepost repost, ILogger<PollModule> logger)
     {
         _pollService = pollService;
         _eventService = eventService;
         _repost = repost;
+        _logger = logger;
     }
 
-    // ---- Entry: ask for a title, then start adding slots ------------------
+    // ---- Entry: typed slots publish at once, the wizard otherwise --------
 
     [SlashCommand("create", "Proposer plusieurs créneaux et laisser voter")]
-    public async Task PollCreateAsync()
+    public async Task PollCreateAsync(
+        [Summary("title", "Le titre du sondage"), MaxLength(InputCaps.Title)] string title = "",
+        [Summary("slots", "Les créneaux, séparés par des virgules : « ven 21h, sam 21h, dim 18h »"),
+         MaxLength(InputCaps.PollSlots)] string slots = "",
+        [Summary("ends", "Quand le sondage se termine (2 jours si rien)"),
+         Choice("dans 1 h", 1), Choice("dans 3 h", 3), Choice("dans 6 h", 6), Choice("dans 12 h", 12),
+         Choice("dans 1 jour", 24), Choice("dans 2 jours", 48), Choice("dans 3 jours", 72), Choice("dans 1 semaine", 168)] int ends = 48,
+        [Summary("single", "Un seul créneau par personne")] bool single = false,
+        [Summary("anonymous", "Montrer les comptes, jamais les noms")] bool anonymous = false)
     {
+        var settings = new PollSettings(TimeSpan.FromHours(ends), single, anonymous);
+
+        if (slots.Trim().Length > 0)
+        {
+            var (parsed, rejected) = SessionTime.ParseList(slots, DateTimeOffset.UtcNow);
+            if (parsed.Count == 0)
+            {
+                await RespondAsync($"Aucun créneau compris dans « {Format.Sanitize(slots.Trim())} ». "
+                    + "Exemple : « ven 21h, sam 21h, dim 18h » (dans les 90 jours).", ephemeral: true);
+                return;
+            }
+
+            var draft = new PollDraft { Title = title.Trim(), Settings = settings, PublishOnTitle = true };
+            draft.Slots.AddRange(parsed);
+            if (draft.Title.Length == 0)
+            {
+                _drafts.Set(Context.User.Id, draft);
+                await RespondWithModalAsync<PollModal>("poll:start");
+                return;
+            }
+
+            await DeferAsync(ephemeral: true);
+            var (poll, error) = await PublishAsync(draft);
+            await FollowupAsync(error ?? Published(poll!, rejected), ephemeral: true);
+            return;
+        }
+
+        if (title.Trim().Length > 0)
+        {
+            _drafts.Set(Context.User.Id, new PollDraft { Title = title.Trim(), Settings = settings });
+            await RespondAsync("Ajoute un créneau — **Quel jour ?**", components: BuildDayStep(), ephemeral: true);
+            return;
+        }
+
+        _drafts.Set(Context.User.Id, new PollDraft { Settings = settings });
         await RespondWithModalAsync<PollModal>("poll:start");
     }
 
     [ModalInteraction("poll:start", ignoreGroupNames: true)]
     public async Task OnPollStartAsync(PollModal modal)
     {
-        _drafts[Context.User.Id] = new PollDraft { Title = modal.PollTitle.Trim() };
+        if (!_drafts.TryGet(Context.User.Id, out var draft))
+            draft = new PollDraft();
+        draft.Title = modal.PollTitle.Trim();
+        _drafts.Set(Context.User.Id, draft);
+
+        if (draft.PublishOnTitle)
+        {
+            if (!_drafts.TryTake(Context.User.Id, out draft))
+            {
+                await RespondAsync("Ce sondage a expiré. Relance `/poll create`.", ephemeral: true);
+                return;
+            }
+            await DeferAsync(ephemeral: true);
+            var (poll, error) = await PublishAsync(draft);
+            if (poll is null) _drafts.Set(Context.User.Id, draft);
+            await FollowupAsync(error ?? Published(poll!, new List<string>()), ephemeral: true);
+            return;
+        }
+
         await RespondAsync("Ajoute un créneau — **Quel jour ?**",
             components: BuildDayStep(), ephemeral: true);
     }
 
-    // ---- Slot wizard: day -> hour -> minutes -----------------------------
+    // ---- Slot wizard: day -> hour -> minutes, or a typed date ------------
 
     [ComponentInteraction("poll:day", ignoreGroupNames: true)]
     public async Task OnDaySelectedAsync(string[] values)
     {
         var date = values[0];
+        if (date == OtherDate)
+        {
+            await RespondWithModalAsync<PollSlotModal>("poll:typedslot");
+            return;
+        }
+
         var component = (SocketMessageComponent)Context.Interaction;
         await component.UpdateAsync(msg =>
         {
             msg.Content = "**À quelle heure ?**";
             msg.Components = BuildHourStep(date);
+        });
+    }
+
+    [ModalInteraction("poll:typedslot", ignoreGroupNames: true)]
+    public async Task OnTypedSlotAsync(PollSlotModal modal)
+    {
+        if (!_drafts.TryGet(Context.User.Id, out var draft))
+        {
+            await RespondAsync("Ce sondage a expiré. Relance `/poll create`.", ephemeral: true);
+            return;
+        }
+
+        var slot = SessionTime.Parse(modal.When, DateTimeOffset.UtcNow);
+        var note = slot is null
+            ? $"⚠️ « {Format.Sanitize(modal.When.Trim())} » n'est pas une date à venir que je comprends (ex. « samedi 21h », « 25/12 20:30 »).\n"
+            : string.Empty;
+        if (slot is { } s) AddSlot(draft, s);
+
+        await ((SocketModal)Context.Interaction).UpdateAsync(msg =>
+        {
+            msg.Content = note + BuildDraftSummary(draft);
+            msg.Components = BuildReviewStep(draft);
         });
     }
 
@@ -94,19 +186,15 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
     [ComponentInteraction("poll:min:*:*:*", ignoreGroupNames: true)]
     public async Task OnMinuteSelectedAsync(string date, string hour, string minute)
     {
-        if (!_drafts.TryGetValue(Context.User.Id, out var draft))
+        if (!_drafts.TryGet(Context.User.Id, out var draft))
         {
             await RespondAsync("Ce sondage a expiré. Relance `/poll create`.", ephemeral: true);
             return;
         }
 
         if (AppTime.TryParseWallClock($"{date}T{hour}:{minute}", "yyyy-MM-ddTHH:mm", out var slot)
-            && slot > DateTimeOffset.UtcNow
-            && !draft.Slots.Contains(slot)
-            && draft.Slots.Count < MaxOptions)
-        {
-            draft.Slots.Add(slot);
-        }
+            && slot > DateTimeOffset.UtcNow)
+            AddSlot(draft, slot);
 
         var component = (SocketMessageComponent)Context.Interaction;
         await component.UpdateAsync(msg =>
@@ -116,7 +204,13 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         });
     }
 
-    // ---- Review step: add another, finish, or cancel ---------------------
+    private static void AddSlot(PollDraft draft, DateTimeOffset slot)
+    {
+        if (!draft.Slots.Contains(slot) && draft.Slots.Count < SessionTime.MaxSlots)
+            draft.Slots.Add(slot);
+    }
+
+    // ---- Review step: add another, remove one, finish, or cancel ---------
 
     [ComponentInteraction("poll:add", ignoreGroupNames: true)]
     public async Task OnAddAnotherAsync()
@@ -129,10 +223,28 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         });
     }
 
+    [ComponentInteraction("poll:rmslot", ignoreGroupNames: true)]
+    public async Task OnRemoveSlotAsync(string[] values)
+    {
+        if (!_drafts.TryGet(Context.User.Id, out var draft))
+        {
+            await RespondAsync("Ce sondage a expiré. Relance `/poll create`.", ephemeral: true);
+            return;
+        }
+        if (long.TryParse(values[0], out var unix))
+            draft.Slots.Remove(DateTimeOffset.FromUnixTimeSeconds(unix));
+
+        await ((SocketMessageComponent)Context.Interaction).UpdateAsync(msg =>
+        {
+            msg.Content = BuildDraftSummary(draft);
+            msg.Components = BuildReviewStep(draft);
+        });
+    }
+
     [ComponentInteraction("poll:canceldraft", ignoreGroupNames: true)]
     public async Task OnCancelDraftAsync()
     {
-        _drafts.TryRemove(Context.User.Id, out _);
+        _drafts.Remove(Context.User.Id);
         var component = (SocketMessageComponent)Context.Interaction;
         await component.UpdateAsync(msg =>
         {
@@ -144,8 +256,10 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
     [ComponentInteraction("poll:finish", ignoreGroupNames: true)]
     public async Task OnFinishAsync()
     {
-        if (!_drafts.TryGetValue(Context.User.Id, out var draft) || draft.Slots.Count == 0)
+        // Claimed first: of two clicks on « Terminer », one publishes.
+        if (!_drafts.TryTake(Context.User.Id, out var draft) || draft.Slots.Count == 0)
         {
+            if (draft is { Slots.Count: 0 }) _drafts.Set(Context.User.Id, draft);
             await RespondAsync("Ajoute au moins un créneau avant de terminer.", ephemeral: true);
             return;
         }
@@ -153,18 +267,43 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         // Two writes, a read and a send before the wizard can close: defer first.
         await DeferAsync();
 
-        var poll = await _pollService.CreatePollAsync(
-            Context.Guild.Id, Context.Channel.Id, Context.User.Id, draft.Title, draft.Slots);
-        var full = await _pollService.GetPollWithVotesAsync(poll.Id);
-
-        var message = await Context.Channel.SendMessageAsync(
-            embed: BuildPollEmbed(full!),
-            components: BuildPollComponents(full!));
-        await _pollService.SetMessageIdAsync(poll.Id, message.Id);
-
-        _drafts.TryRemove(Context.User.Id, out _);
+        var (poll, error) = await PublishAsync(draft);
+        if (poll is null)
+        {
+            _drafts.Set(Context.User.Id, draft);
+            await FollowupAsync(error, ephemeral: true);
+            return;
+        }
 
         await DeleteOriginalResponseAsync();
+    }
+
+    // Creates the poll and posts its card here. A card that can't be posted takes the poll with it.
+    private async Task<(Poll? Poll, string? Error)> PublishAsync(PollDraft draft)
+    {
+        var poll = await _pollService.CreatePollAsync(
+            Context.Guild.Id, Context.Channel.Id, Context.User.Id, draft.Title, draft.Slots, draft.Settings);
+        var full = (await _pollService.GetPollWithVotesAsync(poll.Id))!;
+        try
+        {
+            var message = await PollCards.SendAsync(Context.Channel, full);
+            await _pollService.SetMessageIdAsync(poll.Id, message.Id);
+            return (full, null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to post the card of poll {PollId}; removing it.", poll.Id);
+            await _pollService.DeletePollAsync(poll.Id);
+            return (null, CardPostFailure.Explain(Context.Guild, Context.Channel, "le sondage"));
+        }
+    }
+
+    private static string Published(Poll poll, List<string> rejected)
+    {
+        var line = $"Sondage **#{poll.Id}** publié, {poll.Options.Count} créneau(x), fin <t:{poll.ClosesAt.ToUnixTimeSeconds()}:R>.";
+        if (rejected.Count > 0)
+            line += $"\n⚠️ Pas compris, donc pas ajouté : {string.Join(", ", rejected.Select(r => $"« {Format.Sanitize(r)} »"))}.";
+        return line;
     }
 
     // ---- Listing + republishing active polls -----------------------------
@@ -182,11 +321,8 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         var sb = new StringBuilder();
-        foreach (var p in polls)
-        {
-            int voters = p.Options.SelectMany(o => o.Votes).Select(v => v.UserId).Distinct().Count();
-            sb.AppendLine($"**#{p.Id}** 📊 {p.Title} — {p.Options.Count} créneaux — 🗳️ {voters} votant(s)");
-        }
+        foreach (var p in polls.Take(25))
+            sb.AppendLine($"**#{p.Id}** 📊 {Format.Sanitize(p.Title)} — {p.Options.Count} créneaux — 🗳️ {PollRules.VoterCount(p)} votant(s) — fin <t:{p.ClosesAt.ToUnixTimeSeconds()}:R>");
 
         var embed = new EmbedBuilder()
             .WithTitle($"Sondages actifs ({polls.Count})")
@@ -194,7 +330,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
             .WithColor(Color.Purple)
             .Build();
 
-        // Up to 25 options in a select menu; the list embed still shows all.
+        // Up to 25 options in a select menu.
         var menu = new SelectMenuBuilder()
             .WithCustomId("poll:republish")
             .WithPlaceholder("Republier un sondage dans ce salon");
@@ -230,7 +366,8 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     [SlashCommand("delete", "Supprimer un sondage que tu as créé")]
-    public async Task PollDeleteAsync([Summary("poll-id", "L'ID affiché dans le pied du sondage")] int pollId)
+    public async Task PollDeleteAsync(
+        [Summary("poll-id", "Le sondage à supprimer"), Autocomplete(typeof(PollIdAutocompleteHandler))] int pollId)
     {
         await DeferAsync(ephemeral: true);
 
@@ -247,23 +384,21 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        // Remove the card if it still exists.
-        if (poll.MessageId != 0)
-        {
-            var channel = Context.Guild.GetTextChannel(poll.ChannelId);
-            if (channel is not null)
-            {
-                try
-                {
-                    var msg = await channel.GetMessageAsync(poll.MessageId);
-                    if (msg is not null) await msg.DeleteAsync();
-                }
-                catch { /* already gone — ignore */ }
-            }
-        }
-
+        await DeleteCardAsync(Context.Guild, poll);
         await _pollService.DeletePollAsync(pollId);
         await FollowupAsync($"Sondage **#{pollId}** supprimé.", ephemeral: true);
+    }
+
+    // Removes the card if it still exists (/poll delete, /vote delete).
+    public static async Task DeleteCardAsync(SocketGuild guild, Poll poll)
+    {
+        if (poll.MessageId == 0 || guild.GetTextChannel(poll.ChannelId) is not { } channel) return;
+        try
+        {
+            var msg = await channel.GetMessageAsync(poll.MessageId);
+            if (msg is not null) await msg.DeleteAsync();
+        }
+        catch { /* already gone — ignore */ }
     }
 
     // ---- Poll -> Session: turn the chosen slot into a real session -------
@@ -283,6 +418,14 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         if (poll is null || poll.GuildId != Context.Guild.Id)
         {
             await FollowupAsync("Sondage introuvable.", ephemeral: true);
+            return;
+        }
+
+        // A session was already made from this poll: say where, rather than make a second.
+        if (poll.SessionEventId is { } linkedId
+            && await _eventService.GetEventWithParticipantsAsync(linkedId) is { IsCancelled: false } linked)
+        {
+            await FollowupAsync($"La session de ce sondage existe déjà : {SessionCards.Link(linked)}", ephemeral: true);
             return;
         }
 
@@ -315,8 +458,8 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        // Several voters can click the same button: once one of them has planned a winning
-        // evening, the others are told instead of creating a second session.
+        // Several voters can click the same button on her poll: once one of them has planned a
+        // winning evening, the others are told instead of creating a second session.
         if (ownPoll)
         {
             var planned = await _eventService.GetActiveEventsAsync(Context.Guild.Id);
@@ -333,17 +476,16 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         // Pre-fill the future modal's title with the poll's title — not hers, which is a
         // question (« Qui est dispo ce weekend ? »), not the name of what they'll play.
         if (ownPoll)
-            _toSessionTitles.TryRemove(Context.User.Id, out _);
+            _toSessionTitles.Remove(Context.User.Id);
         else
-            _toSessionTitles[Context.User.Id] = poll.Title;
+            _toSessionTitles.Set(Context.User.Id, poll.Title);
 
         // A single clear winner skips straight to category selection.
         if (max > 0 && winners.Count == 1)
         {
-            var datetime = AppTime.ToZoned(winners[0].ScheduledAt).ToString("yyyy-MM-ddTHH:mm");
             await FollowupAsync(
                 $"Créneau retenu : <t:{winners[0].ScheduledAt.ToUnixTimeSeconds()}:F>\n**Quel type de session ?**",
-                components: BuildSessionCategoryStep(datetime), ephemeral: true);
+                components: BuildSessionCategoryStep(poll.Id, winners[0].ScheduledAt), ephemeral: true);
             return;
         }
 
@@ -352,69 +494,60 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
             max > 0
                 ? "Égalité entre plusieurs créneaux — **choisis celui à planifier** :"
                 : "Aucun vote — **choisis le créneau à planifier** :",
-            components: BuildSlotPickStep(winners), ephemeral: true);
+            components: BuildSlotPickStep(poll.Id, winners), ephemeral: true);
     }
 
-    [ComponentInteraction("poll:slotpick", ignoreGroupNames: true)]
-    public async Task OnSlotPickAsync(string[] values)
+    [ComponentInteraction("poll:slotpick:*", ignoreGroupNames: true)]
+    public async Task OnSlotPickAsync(string pollIdStr, string[] values)
     {
-        var datetime = values[0];
+        if (!int.TryParse(pollIdStr, out var pollId) || !long.TryParse(values[0], out var unix))
+        {
+            await RespondAsync("Créneau invalide.", ephemeral: true);
+            return;
+        }
         var component = (SocketMessageComponent)Context.Interaction;
         await component.UpdateAsync(msg =>
         {
             msg.Content = "**Quel type de session ?**";
-            msg.Components = BuildSessionCategoryStep(datetime);
+            msg.Components = BuildSessionCategoryStep(pollId, DateTimeOffset.FromUnixTimeSeconds(unix));
         });
     }
 
-    [ComponentInteraction("poll:catpick:*", ignoreGroupNames: true)]
-    public async Task OnCategoryPickedAsync(string datetime, string[] values)
+    [ComponentInteraction("poll:catpick:*:*", ignoreGroupNames: true)]
+    public async Task OnCategoryPickedAsync(string pollIdStr, string unix, string[] values)
     {
         var category = values[0];
-        _toSessionTitles.TryRemove(Context.User.Id, out var title);
+        _toSessionTitles.TryTake(Context.User.Id, out var title);
 
-        // Reuses the existing "schedule:finalize:*:*" modal handler, which creates
-        // the session and publishes the card in this channel.
-        var modal = new ModalBuilder()
-            .WithTitle("Planifier une session")
-            .WithCustomId($"schedule:finalize:{category}:{datetime}")
-            .AddTextInput("Nom de la session", "title", maxLength: InputCaps.Title,
-                placeholder: "ex. Among Us, Gartic, Anime ?", value: title, required: true)
-            .AddTextInput("Nombre de participants max - Optionnel", "max_players", required: false)
-            .Build();
-
-        await RespondWithModalAsync(modal);
+        // ScheduleModule's « schedule:frompoll » handler creates the session, publishes the card in
+        // this channel, and links the poll to it.
+        await RespondWithModalAsync(ScheduleModule.DetailsModal($"schedule:frompoll:{pollIdStr}:{category}:{unix}", title));
     }
 
-    private static MessageComponent BuildSlotPickStep(List<PollOption> slots)
+    private static MessageComponent BuildSlotPickStep(int pollId, List<PollOption> slots)
     {
         var menu = new SelectMenuBuilder()
-            .WithCustomId("poll:slotpick")
+            .WithCustomId($"poll:slotpick:{pollId}")
             .WithPlaceholder("Choisis le créneau");
         // 25 is the hard cap on options in a Discord select menu.
         foreach (var o in slots.Take(25))
         {
-            var datetime = AppTime.ToZoned(o.ScheduledAt).ToString("yyyy-MM-ddTHH:mm");
-            string label = ShortLabel(o.ScheduledAt);
+            string label = PollCards.ShortLabel(o.ScheduledAt);
             if (o.Votes.Count > 0) label += $" — {o.Votes.Count} vote(s)";
-            menu.AddOption(label, datetime);
+            menu.AddOption(label, o.ScheduledAt.ToUnixTimeSeconds().ToString());
         }
         return new ComponentBuilder().WithSelectMenu(menu).Build();
     }
 
-    private static MessageComponent BuildSessionCategoryStep(string datetime)
-    {
-        var menu = new SelectMenuBuilder()
-            .WithCustomId($"poll:catpick:{datetime}")
-            .WithPlaceholder("Choisis une catégorie")
-            .AddOption("Jeu", nameof(SessionCategory.Game), emote: new Emoji("🎮"))
-            .AddOption("Activité", nameof(SessionCategory.Activity), emote: new Emoji("🧑‍🤝‍🧑"))
-            .AddOption("Film", nameof(SessionCategory.Movie), emote: new Emoji("🎬"))
-            .AddOption("Autre", nameof(SessionCategory.Other), emote: new Emoji("✨"));
-        return new ComponentBuilder().WithSelectMenu(menu).Build();
-    }
+    private static MessageComponent BuildSessionCategoryStep(int pollId, DateTimeOffset slot) =>
+        new ComponentBuilder()
+            .WithSelectMenu(SessionCategories.Select($"poll:catpick:{pollId}:{slot.ToUnixTimeSeconds()}"))
+            .Build();
 
     // ---- Wizard step builders --------------------------------------------
+
+    // The day select's last option: the slot typed, past the 24 days the select holds.
+    private const string OtherDate = "other";
 
     private static MessageComponent BuildDayStep() =>
         new ComponentBuilder().WithSelectMenu(BuildDaySelect()).Build();
@@ -433,11 +566,21 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
     private static MessageComponent BuildReviewStep(PollDraft draft)
     {
         var builder = new ComponentBuilder();
-        if (draft.Slots.Count < MaxOptions)
+        if (draft.Slots.Count < SessionTime.MaxSlots)
             builder.WithButton("Ajouter un créneau", "poll:add", ButtonStyle.Secondary, new Emoji("➕"), row: 0);
         if (draft.Slots.Count > 0)
             builder.WithButton("Terminer", "poll:finish", ButtonStyle.Success, new Emoji("✅"), row: 0);
         builder.WithButton("Annuler", "poll:canceldraft", ButtonStyle.Danger, row: 0);
+
+        if (draft.Slots.Count > 0)
+        {
+            var menu = new SelectMenuBuilder()
+                .WithCustomId("poll:rmslot")
+                .WithPlaceholder("Retirer un créneau");
+            foreach (var s in draft.Slots.OrderBy(s => s))
+                menu.AddOption(PollCards.ShortLabel(s), s.ToUnixTimeSeconds().ToString(), emote: new Emoji("➖"));
+            builder.WithSelectMenu(menu, row: 1);
+        }
         return builder.Build();
     }
 
@@ -449,8 +592,8 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
             .WithPlaceholder("Choisis le jour");
 
         var today = AppTime.Now.Date;
-        // 25 is the hard cap on options in a Discord select menu.
-        for (int i = 0; i < 25; i++)
+        // 25 is the hard cap on options in a Discord select menu: 24 days, then « Autre date… ».
+        for (int i = 0; i < 24; i++)
         {
             var date = today.AddDays(i);
             string label = i switch
@@ -461,6 +604,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
             };
             menu.AddOption(label, date.ToString("yyyy-MM-dd"));
         }
+        menu.AddOption("Autre date…", OtherDate, "Tape le créneau toi-même (jusqu'à 90 jours)", new Emoji("⌨️"));
         return menu;
     }
 
@@ -487,8 +631,9 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
     private static string BuildDraftSummary(PollDraft draft)
     {
         var sb = new StringBuilder();
-        sb.AppendLine($"**Sondage : {draft.Title}**");
-        sb.AppendLine($"Créneaux proposés ({draft.Slots.Count}/{MaxOptions}) :");
+        sb.AppendLine($"**Sondage : {Format.Sanitize(draft.Title)}**");
+        sb.AppendLine($"-# {SettingsLine(draft.Settings)}");
+        sb.AppendLine($"Créneaux proposés ({draft.Slots.Count}/{SessionTime.MaxSlots}) :");
         if (draft.Slots.Count == 0)
             sb.AppendLine("_(aucun pour l'instant)_");
         else
@@ -497,92 +642,13 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         return sb.ToString();
     }
 
-    // ---- Published poll: embed + voting buttons --------------------------
-
-    public static Embed BuildPollEmbed(Poll poll)
+    // « Se termine 2 jours après la publication · plusieurs choix · noms visibles »
+    public static string SettingsLine(PollSettings settings)
     {
-        bool isText = poll.Kind == PollKind.Text;
-        var ordered = isText
-            ? poll.Options.OrderBy(o => o.Id).ToList()
-            : poll.Options.OrderBy(o => o.ScheduledAt).ToList();
-
-        // How a single option is rendered in the body / winner field.
-        string OptionText(PollOption o) =>
-            isText ? $"**{o.Label}**" : $"<t:{o.ScheduledAt.ToUnixTimeSeconds()}:F>";
-
-        var sb = new StringBuilder();
-        foreach (var o in ordered)
-        {
-            int n = o.Votes.Count;
-            sb.Append($"{(n == 0 ? "🔴" : "🟢")} {OptionText(o)} — **{n}** ");
-            // Capped per option, so ten busy options still fit the description's 4096.
-            if (n > 0)
-                sb.Append("  " + SessionSeats.Mentions(o.Votes.Select(v => v.UserId).ToList(), SessionSeats.MaxPollVoterNames, " "));
-            sb.AppendLine();
-        }
-
-        var eb = new EmbedBuilder()
-            .WithTitle($"📊 {poll.Title}")
-            .WithDescription(sb.ToString())
-            .WithColor(poll.IsClosed ? Color.DarkGrey : Color.Purple)
-            .WithFooter(poll.IsClosed
-                ? $"Sondage clôturé · ID {poll.Id}"
-                : $"Clique toutes les options qui te conviennent · ID {poll.Id}");
-
-        if (poll.IsClosed)
-        {
-            int max = ordered.Count == 0 ? 0 : ordered.Max(o => o.Votes.Count);
-            if (max > 0)
-            {
-                var winners = ordered.Where(o => o.Votes.Count == max).ToList();
-                var lines = string.Join("\n", winners.Select(OptionText));
-                eb.AddField(
-                    winners.Count > 1 ? $"Options retenues — égalité ({max} ✅)" : $"Option retenue ({max} ✅)",
-                    lines);
-            }
-        }
-
-        return eb.Build();
-    }
-
-    public static MessageComponent BuildPollComponents(Poll poll)
-    {
-        bool isText = poll.Kind == PollKind.Text;
-        var builder = new ComponentBuilder();
-        if (poll.IsClosed)
-        {
-            // Date polls can be turned into a real session, as long as at least one
-            // proposed slot is still in the future. Text polls have no such action.
-            if (!isText && poll.Options.Any(o => o.ScheduledAt > DateTimeOffset.UtcNow))
-                builder.WithButton("Créer une session", $"poll:tosession:{poll.Id}",
-                    ButtonStyle.Success, new Emoji("🗓️"));
-            return builder.Build();
-        }
-
-        var ordered = isText
-            ? poll.Options.OrderBy(o => o.Id).ToList()
-            : poll.Options.OrderBy(o => o.ScheduledAt).ToList();
-
-        // Up to 5 vote buttons per row; MaxOptions (10) fits in rows 0-1.
-        int row = 0, inRow = 0;
-        foreach (var o in ordered)
-        {
-            // Discord caps button labels at 80 characters.
-            string label = isText ? o.Label : ShortLabel(o.ScheduledAt);
-            if (label.Length > 80) label = label[..77] + "…";
-            builder.WithButton(label, $"poll:vote:{poll.Id}:{o.Id}", ButtonStyle.Secondary, row: row);
-            if (++inRow == 5) { inRow = 0; row++; }
-        }
-
-        int closeRow = inRow > 0 ? row + 1 : row;
-        builder.WithButton("Clôturer", $"poll:close:{poll.Id}", ButtonStyle.Danger, new Emoji("🔒"), row: closeRow);
-        return builder.Build();
-    }
-
-    private static string ShortLabel(DateTimeOffset slot)
-    {
-        var fr = CultureInfo.GetCultureInfo("fr-FR");
-        var zoned = AppTime.ToZoned(slot);
-        return fr.TextInfo.ToTitleCase(zoned.ToString("ddd dd/MM HH:mm", fr));
+        var hours = (int)settings.Lifetime.TotalHours;
+        var ends = hours % 24 == 0 ? $"{hours / 24} jour{(hours / 24 > 1 ? "s" : "")}" : $"{hours} h";
+        return $"Se termine {ends} après la publication · "
+            + (settings.SingleChoice ? "un seul choix" : "plusieurs choix") + " · "
+            + (settings.Anonymous ? "anonyme" : "noms visibles");
     }
 }
