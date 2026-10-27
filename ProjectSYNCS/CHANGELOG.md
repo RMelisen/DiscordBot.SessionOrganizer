@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.50.1 — 2026-10-27
+
+- Internal refactor: the largest source files are split into smaller files by theme. No change in behaviour.
+
 ## 7.50.0 — 2026-10-27
 
 - In Minecraft, « tu fais quoi ? » gets a real answer: the order she's on, or what she's doing on her own (her routine, tagging along, a fight, sleep), and `/minecraft status` shows her own life too.

@@ -87,6 +87,8 @@ never change that mapping, every stored morning depends on it.
 - **Catalog:** C# data. Event and option keys are stored — **never renamed**, append only. Every event
   needs an **ungated option with no stress cost** (deciding alone); no « il »/« elle » in event text
   (one text serves every gender pair). The harness checks both.
+- **Files:** `PlynlingEvents/` splits the catalog by wave, one method per file, concatenated in
+  order in `All`. New events go at the end of the last file; a new file adds its method to `All`.
 - **Stages and keys:** keys are prefixed `baby_`, `teen_`, `grown_` (adulte and ancien) or `elder_` (the
   `Elder` array — ancien only, so any reachability check must simulate the Elder stage). A bébé holds
   only its childhood trait, so bébé gates and stress costs use childhood traits (`bossy`, `charming`,
