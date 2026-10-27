@@ -326,7 +326,7 @@ public class PollComponentHandler : InteractionModuleBase<SocketInteractionConte
             if (slot is null)
             {
                 await FollowupAsync($"« {Format.Sanitize(slotText.Trim())} » n'est pas une date à venir que je comprends "
-                    + "(ex. « samedi 21h », « 25/12 20:30 »).", ephemeral: true);
+                    + $"(ex. {FrenchDate.Examples}).", ephemeral: true);
                 return;
             }
         }

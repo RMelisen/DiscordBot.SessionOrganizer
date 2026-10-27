@@ -768,7 +768,7 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
 
     private static string WhenRefusal(string when) =>
         $"Je n'ai pas compris « {Format.Sanitize(when)} » comme une date à venir (dans les 90 jours). "
-        + "Exemples : « samedi 21h », « demain », « 25/12 20:30 », « ce soir ».";
+        + $"Exemples : {FrenchDate.Examples}.";
 
     // ---- /schedule list ---------------------------------------------------
 

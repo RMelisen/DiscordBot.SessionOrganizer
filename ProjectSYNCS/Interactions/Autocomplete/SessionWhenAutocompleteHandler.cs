@@ -23,7 +23,7 @@ public sealed class SessionWhenAutocompleteHandler : AutocompleteHandler
         if (typed.Length == 0)
             return Task.FromResult(AutocompletionResult.FromSuccess(new[]
             {
-                new AutocompleteResult("ex. « samedi 21h », « demain », « 25/12 20:30 », « ce soir »", "ce soir"),
+                new AutocompleteResult($"ex. {FrenchDate.Examples}", "ce soir"),
             }));
 
         var at = SessionTime.Parse(typed, DateTimeOffset.UtcNow);

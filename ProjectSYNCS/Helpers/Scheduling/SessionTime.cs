@@ -5,8 +5,8 @@ namespace ProjectSYNCS.Helpers;
 
 /// <summary>
 /// Reads a session's « quand » and « durée », typed in French — pure, so the checks can pin every
-/// form. Dates go through <see cref="ReminderTime"/>'s absolute parser with session defaults: a day
-/// without a time means 21:00 (« ce soir » alone too), only the future counts, and no further than
+/// form. Dates go through <see cref="FrenchDate"/> with session defaults: a day without a time
+/// means 21:00 (« ce soir » alone too), only the future counts, and no further than
 /// <see cref="Horizon"/>.
 /// </summary>
 public static partial class SessionTime
@@ -22,10 +22,17 @@ public static partial class SessionTime
 
     private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-FR");
 
-    /// <summary>The instant (UTC), or null when it doesn't parse, is past, or is too far ahead.</summary>
+    private static readonly TimeSpan RelativeStep = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    /// The instant (UTC), or null when it doesn't parse, is past, or is too far ahead. « dans 1h »
+    /// counts too, rounded up to five minutes so the card reads 21:20 rather than 21:17.
+    /// </summary>
     public static DateTimeOffset? Parse(string text, DateTimeOffset nowUtc)
     {
-        var at = ReminderTime.ParseAbsolute(text, nowUtc, DefaultHour, DefaultHour);
+        var at = FrenchDate.Parse(text, nowUtc, DefaultHour, DefaultHour);
+        if (at is null && FrenchDate.Clean(text).StartsWith("dans ") && ReminderTime.ParseRelative(text, nowUtc) is { } due)
+            at = new DateTimeOffset((due.UtcTicks + RelativeStep.Ticks - 1) / RelativeStep.Ticks * RelativeStep.Ticks, TimeSpan.Zero);
         if (at is not { } t || t <= nowUtc || t - nowUtc > Horizon) return null;
         return t;
     }
