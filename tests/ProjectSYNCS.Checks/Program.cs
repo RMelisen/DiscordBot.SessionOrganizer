@@ -1580,7 +1580,34 @@ var batch2Widest = new Dictionary<string, int>();
     }
     var t6Quiet = ActivityReport.Compute(Array.Empty<ProjectSYNCS.Models.ActivityHourStat>(), Array.Empty<ProjectSYNCS.Models.ChannelDailyStat>(), Array.Empty<ChannelInfo>());
     T6Fits("empty activity", ProjectSYNCS.Commands.ReportCards.BuildActivity(new(t6Quiet, null), ReportWindow.From(StatsPeriod.AllTime, DateTimeOffset.UtcNow), true), true);
-    if (!ReportKinds.Digest(DigestRecipient.Owner).SequenceEqual(new[] { ReportKind.Syncs, ReportKind.Commands, ReportKind.Quiz })
+    // /report minecraft: her time in game, orders and adventures, from the daily buckets.
+    ProjectSYNCS.Models.MinecraftDailyStat T6Mc(int day, string key, long count) => new() { Day = day, Key = key, Count = count };
+    var t6McData = MinecraftReport.Compute(new[]
+    {
+        T6Mc(20261003, McStats.Minutes, 90), T6Mc(20261004, McStats.Minutes, 30), T6Mc(20261004, McStats.Orders, 7),
+        T6Mc(20261004, McStats.OrdersBy("bob"), 5), T6Mc(20261004, McStats.OrdersBy("papa"), 2),
+        T6Mc(20261004, McStats.Gathered("wood"), 40), T6Mc(20261005, McStats.Deaths, 1),
+    });
+    if (t6McData.Minutes != 120 || t6McData.DaysPlayed != 2 || t6McData.Orders != 7 || t6McData.TopPlayers[0] != new McCountLine("bob", 5)
+        || t6McData.TopPlayers.Count != 2 || t6McData.Gathered[0] != new McCountLine("wood", 40) || t6McData.Deaths != 1 || !t6McData.Played)
+        Fail($"minecraft report: {t6McData}");
+    if (MinecraftReport.Compute(Array.Empty<ProjectSYNCS.Models.MinecraftDailyStat>()).Played) Fail("minecraft report: an empty month played");
+    // At its worst: five 32-character players, every resource, 9-digit counts.
+    var t6McName = new string('w', 32);
+    var t6McWorst = new MinecraftReportData(999_999_999, 31, 999_999_999,
+        Enumerable.Range(0, MinecraftReport.ListedPlayers).Select(i => new McCountLine(t6McName[..^1] + i, 999_999_999)).ToList(),
+        999_999_999, 999_999_999, 999_999_999, 999_999_999, 999_999_999,
+        Enum.GetValues<McResource>().Select(r => new McCountLine(r.ToString().ToLowerInvariant(), 999_999_999)).ToList());
+    foreach (var t6Names in new[] { true, false })
+    {
+        var t6McCard = ProjectSYNCS.Commands.ReportCards.BuildMinecraft(new(t6McWorst, t6McWorst), t6Month, t6Names);
+        T6Fits("minecraft", t6McCard, t6Names);
+        var t6McText = t6McCard.Description + string.Concat(t6McCard.Fields.Select(f => f.Value));
+        if (t6McText.Contains(t6McName[..^1]) != t6Names) Fail($"minecraft card: player names {(t6Names ? "missing" : "shown")}");
+    }
+    var t6McEmpty = ProjectSYNCS.Commands.ReportCards.BuildMinecraft(new(MinecraftReport.Compute(Array.Empty<ProjectSYNCS.Models.MinecraftDailyStat>()), null), t6Month, true);
+    if (t6McEmpty.Description != "Elle n'a pas joué sur cette période.") Fail("minecraft card: an empty window");
+    if (!ReportKinds.Digest(DigestRecipient.Owner).SequenceEqual(new[] { ReportKind.Syncs, ReportKind.Commands, ReportKind.Quiz, ReportKind.Minecraft })
         || !ReportKinds.Digest(DigestRecipient.Tata).SequenceEqual(new[] { ReportKind.Community, ReportKind.Sessions, ReportKind.Activity, ReportKind.Sleeping }))
         Fail("digest lists");
 }
@@ -1781,6 +1808,8 @@ var batch2Widest = new Dictionary<string, int>();
     var t12Owner = ProjectSYNCS.Commands.ReportCards.BuildOwnerBrief(
         new(T12Cmd(new CommandLine("help", 999_999, 99_999)), T12Cmd()), new(T12Syncs(30, 81_234, 9_999_999, 999_999, (ProjectSYNCS.Models.UptimeEventKind.Crash, 99)), T12Syncs(30, 1, 1, 1)),
         new(T12Quiz(Enum.GetValues<QuizDifficulty>().Select(d => new QuizGroupLine(QuizBank.Label(d), 999, 999)).ToArray()), null),
+        new(new MinecraftReportData(999_999_999, 31, 999_999_999, Array.Empty<McCountLine>(), 0, 0, 0, 0, 0, Array.Empty<McCountLine>()),
+            new MinecraftReportData(1, 1, 1, Array.Empty<McCountLine>(), 0, 0, 0, 0, 0, Array.Empty<McCountLine>())),
         t12Many, t12Month, "calme");
     var t12Activity = ActivityReport.Compute(Array.Empty<ProjectSYNCS.Models.ActivityHourStat>(), Array.Empty<ProjectSYNCS.Models.ChannelDailyStat>(),
         Enumerable.Range(0, 60).Select(i => new ChannelInfo((ulong)i, false, false)).ToList());
@@ -1804,8 +1833,16 @@ var batch2Widest = new Dictionary<string, int>();
             .Fields.Any(f => f.Value.Contains("**Bob** (<@7>)")))
         Fail("sleeping report: the sleeper's name is not written out");
     if (t12Owner.Fields.Last().Value.Contains("calme") || !ProjectSYNCS.Commands.ReportCards.BuildOwnerBrief(new(T12Cmd(), null), new(T12Syncs(0, null, 0, 0), null),
-            new(T12Quiz(), null), Array.Empty<DigestAlert>(), t12Month, "calme").Fields.Last().Value.Equals("calme"))
+            new(T12Quiz(), null), new(MinecraftReport.Compute(Array.Empty<ProjectSYNCS.Models.MinecraftDailyStat>()), null),
+            Array.Empty<DigestAlert>(), t12Month, "calme").Fields.Last().Value.Equals("calme"))
         Fail("« À regarder » shows the alerts, or her quiet line when there are none");
+    // Papa's brief: her hours in game, before « À regarder », which stays last.
+    var t12NoGame = ProjectSYNCS.Commands.ReportCards.BuildOwnerBrief(new(T12Cmd(), null), new(T12Syncs(0, null, 0, 0), null), new(T12Quiz(), null),
+        new(MinecraftReport.Compute(Array.Empty<ProjectSYNCS.Models.MinecraftDailyStat>()), null), Array.Empty<DigestAlert>(), t12Month, "calme");
+    if (t12NoGame.Fields.Where(f => f.Name == "Minecraft").Select(f => f.Value).FirstOrDefault() != "Pas joué ce mois-ci." || t12NoGame.Fields.Last().Name != "À regarder")
+        Fail("owner brief: a month she didn't play");
+    if (t12Owner.Fields.Where(f => f.Name == "Minecraft").Select(f => f.Value).FirstOrDefault() is not { } t12Game || !t12Game.Contains("en jeu") || t12Owner.Fields.Last().Name != "À regarder")
+        Fail("owner brief: her hours in game");
 }
 
 Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2Widest.Select(x => $"{x.Key} {x.Value}"))} chars");
@@ -2140,6 +2177,75 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         if (got.Order != order || (also is not null && !also(got)))
             Fail($"order « {text} »: got {got.Order} goods={got.Goods} smelt={got.Smelt} place={got.Place} s={got.Seconds} note={got.Note}");
     }
+    // Not this order, whatever else it is (talk, a call, another order).
+    void NotOrder(string text, McOrder order)
+    {
+        if (McCommand.Parse(text, mcNames, false, mcPlaces).Order == order) Fail($"order « {text} »: read as {order}");
+    }
+    // Free time: back to her own life at once. A question about her evening is talk.
+    Mc("syncs t'es libre", McOrder.Free);
+    Mc("syncs quartier libre", McOrder.Free);
+    Mc("syncs fais ta vie", McOrder.Free);
+    Mc("c'est bon syncs tu peux y aller", McOrder.Free);
+    Mc("syncs repos", McOrder.Free);
+    Mc("syncs tu peux disposer", McOrder.Free);
+    Mc("syncs tu peux arrêter de me suivre", McOrder.Free);
+    NotOrder("syncs t'es libre ce soir ?", McOrder.Free);
+    NotOrder("syncs t'es libre demain ?", McOrder.Free);
+    NotOrder("syncs t'es libre samedi ?", McOrder.Free);
+    NotOrder("syncs tu es libre quand ?", McOrder.Free);
+    NotOrder("syncs vas-y", McOrder.Free);
+    NotOrder("syncs libre", McOrder.Free);
+    NotOrder("syncs t'es pas libre", McOrder.Free);
+    NotOrder("syncs je suis libre", McOrder.Free);
+    Mc("syncs bouge pas", McOrder.Stay);
+
+    // Fetching from a chest: a fetch verb with a chest word. A store verb with one stays storing; without one, gathering.
+    Mc("syncs ramène-moi du fer du coffre", McOrder.Fetch, r => r.Goods == McGoods.Iron && r.Count == 0);
+    Mc("syncs va chercher 20 pains dans le coffre", McOrder.Fetch, r => r.Goods == McGoods.Food && r.Count == 20);
+    Mc("syncs sors-moi le pain du tonneau", McOrder.Fetch, r => r.Goods == McGoods.Food);
+    Mc("syncs apporte-moi du bois du coffre", McOrder.Fetch, r => r.Goods == McGoods.Wood);
+    Mc("syncs récupère les diamants dans le coffre", McOrder.Fetch, r => r.Goods == McGoods.Diamond);
+    Mc("syncs ramène-moi un truc du coffre", McOrder.Fetch, r => r.Goods is null);
+    Mc("syncs ramène-moi tout du coffre", McOrder.Fetch, r => r.Goods is null);
+    Mc("syncs range le pain dans le coffre", McOrder.Store);
+    Mc("syncs mets tout dans le coffre", McOrder.Store);
+    NotOrder("syncs ramène le fer au coffre", McOrder.Fetch);
+    Mc("syncs ramène le fer du coffre", McOrder.Fetch, r => r.Goods == McGoods.Iron);
+    Mc("syncs va chercher du fer", McOrder.Collect);
+    NotOrder("je vais chercher du pain dans le coffre syncs", McOrder.Fetch);
+    Mc("syncs ramène pas le fer du coffre", McOrder.None);
+
+    // Crafting for a player: a craft verb and an item; « fais-moi » only with the item right after it.
+    Mc("syncs fabrique-moi une pioche en fer", McOrder.Craft, r => r.Item == "iron_pickaxe" && r.Count == 1);
+    Mc("syncs fais-moi 16 torches", McOrder.Craft, r => r.Item == "torch" && r.Count == 16);
+    Mc("syncs crafte une table", McOrder.Craft, r => r.Item == "crafting_table");
+    Mc("syncs fais-moi une épée", McOrder.Craft, r => r.Item == "sword" && r.Count == 1);
+    Mc("syncs craft un coffre", McOrder.Craft, r => r.Item == "chest");
+    Mc("syncs fabrique-moi une pioche en pierre", McOrder.Craft, r => r.Item == "stone_pickaxe");
+    Mc("syncs tu peux me faire une canne à pêche ?", McOrder.Craft, r => r.Item == "fishing_rod");
+    Mc("syncs fais-moi des échelles", McOrder.Craft, r => r.Item == "ladder" && r.Count == 3);
+    Mc("syncs fais-moi 10 pioches", McOrder.Craft, r => r.Item == "pickaxe" && r.Count == 4);
+    Mc("syncs fabrique-moi un truc", McOrder.Craft, r => r.Item is null);
+    foreach (var notCraft in new[] { "syncs fais-moi peur", "syncs fais-moi rire", "syncs fais-moi confiance", "je fabrique une pioche syncs",
+                 "syncs fais-moi du bois", "syncs fais-moi signe dans 5 min" })
+        NotOrder(notCraft, McOrder.Craft);
+    Mc("syncs fais-moi du bois", McOrder.Collect, r => r.Resource == McResource.Wood);
+    Mc("syncs va chercher du fer", McOrder.Collect, r => r.Resource == McResource.Iron);
+    // Her names for what she makes, and for each material the body may say she lacks.
+    foreach (var c in McCraft.All)
+        if (string.IsNullOrWhiteSpace(McCraft.Label(c.Key, 1)) || string.IsNullOrWhiteSpace(McCraft.Label(c.Key, 16))) Fail($"McCraft.Label({c.Key}): empty");
+    // What the body reports making (crafting/crafted `item`): a raw game id would be read out in chat.
+    foreach (var item in McCraft.All.Select(c => c.Key)
+                 .Concat(from m in new[] { "wooden", "stone", "iron", "golden", "diamond" }
+                         from t in new[] { "pickaxe", "axe", "shovel", "hoe", "sword" }
+                         select $"{m}_{t}"))
+        if (McCraft.Label(item, 1).Contains('_') || McCraft.Label(item, 8).Contains('_')) Fail($"McCraft.Label({item}): no French name");
+    if (McCraft.Label("iron_pickaxe", 1) != "une pioche en fer" || McCraft.Label("torch", 16) != "16 torches" || McCraft.Label("sword", 1) != "une épée")
+        Fail($"McCraft.Label: « {McCraft.Label("iron_pickaxe", 1)} », « {McCraft.Label("torch", 16)} », « {McCraft.Label("sword", 1)} »");
+    foreach (var material in new[] { "iron", "gold", "diamond", "coal", "string" })
+        if (!((IDictionary)Field("McCraftMaterialNames")).Contains(material)) Fail($"McCraftMaterialNames: no {material}");
+
     // Handing over: everything, or a kind of goods; a possessive turns a gathering word into her own stock.
     Mc("syncs vide tes poches", McOrder.Give, r => r.Goods == McGoods.All);
     Mc("syncs donne-moi tout", McOrder.Give, r => r.Goods == McGoods.All);
@@ -2720,11 +2826,11 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         "McTimerNoteLines", "McPlaceListLines", "McPlaceSavedLines", "McPlaceMovedLines", "McPlaceNotYoursLines", "McPlaceFullLines",
         "McPlaceUnknownLines", "McPlaceForgottenLines", "McPlaceWhereLines", "McPlaceOtherDimensionLines", "McPlaceGoAckLines",
         "McPlaceArrivedLines", "McGuideAckLines", "McGuideArrivedLines", "McPatrolPlaceAckLines", "McTripTooFarLines",
-        "McInventoryLines", "McHaveLines",
+        "McInventoryLines", "McHaveLines", "McDoingLines",
     };
     string[] McFamilyPools = { "McCalledLines", "McDeathLines", "McHitByPlayerLines", "McHitAgainLines", "McFedLines", "McAdvancementLines", "McComeAckLines",
         "McFollowAckLines", "McGuardAckLines", "McCollectDoneLines", "McWaveLines", "McGiveDoneLines", "McByeLines", "McCreeperBehindLines", "McDiveLines", "McBoardLines",
-        "McPraisedLines", "McThankedLines", "McPortalLines", "McArmouredLines" };
+        "McPraisedLines", "McThankedLines", "McPortalLines", "McArmouredLines", "McFreeLines", "McFetchDoneLines", "McCraftDoneLines" };
     foreach (var p in McFamilyPools)
     foreach (var twin in new[] { p + "Owner", p + "Tata" })
     {
@@ -2764,7 +2870,10 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
              "McRetrieveLostLines", "McToolWornLines", "McToolBrokeLines", "McNeedRodLines", "McNeedShearsLines", "McNeedBreedFoodLines",
              "McNeedArrowsLines", "McPocketsFullLines", "McDiveLines", "McDiveAirLines", "McDrowningLines", "McBreathingLines", "McBoardLines",
              "McShakeLines", "McInventoryLines", "McInventoryEmptyLines", "McHaveLines", "McHaveNoneLines", "McPortalLines",
-             "McDressLines", "McDressWornLines", "McArmourNoneLines", "McUndressLines", "McUndressFullLines" }
+             "McDressLines", "McDressWornLines", "McArmourNoneLines", "McUndressLines", "McUndressFullLines",
+             "McDoingLines", "McDoingNothingLines", "McFreeLines", "McFreeAlreadyLines", "McFetchAckLines", "McFetchDoneLines",
+             "McFetchShortLines", "McFetchNoneLines", "McFetchNoChestLines", "McFetchUnknownLines", "McCraftAckLines", "McCraftDoneLines",
+             "McCraftMissingLines", "McCraftNoWoodLines", "McCraftNoStoneLines", "McCraftUnknownLines", "McCraftFailedLines" }
              .Concat(McFamilyPools.SelectMany(p => new[] { p + "Owner", p + "Tata" })))
     foreach (var (name, lines) in Pools(f))
     {
@@ -2953,6 +3062,30 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
             Fail($"McDoing.Describe({order}, {who}, {place}): « {McDoing.Describe(order, who, place)} », expected « {expected} »");
     foreach (var order in Enum.GetValues<McOrder>())
         if (string.IsNullOrWhiteSpace(McDoing.Describe(order, "Bob", null))) Fail($"McDoing.Describe({order}): empty");
+
+    // « tu fais quoi ? » in game: her state in the first person, an order first, else her own life, else nothing.
+    foreach (var order in Enum.GetValues<McOrder>())
+        if (string.IsNullOrWhiteSpace(McDoing.FirstPerson(order, "Bob", "« mine »"))) Fail($"McDoing.FirstPerson({order}): empty");
+    foreach (var (got, expected) in new (string?, string?)[]
+    {
+        (McDoing.FirstPerson(McOrder.Follow, "Papa", null), "je suis Papa"),
+        (McDoing.FirstPerson(McOrder.Fish, "Bob", null), "je pêche pour Bob"),
+        (McDoing.FirstPerson(McOrder.Follow, "Bob", null, toAsker: true), "je te suis"),
+        (McDoing.FirstPerson(McOrder.Fish, "Bob", null, toAsker: true), "je pêche pour toi"),
+        (McDoing.OwnLife(new("routine", "", "fish"), null, true), "je pêche un peu"),
+        (McDoing.OwnLife(new("tagAlong", "papa", ""), "Papa", true), "je traîne avec Papa"),
+        (McDoing.OwnLife(new("idle", "", ""), null, true), null),
+        (McDoing.OwnLife(new("follow", "Bob", ""), "Bob", true), null),
+        (McDoing.OwnLife(null, null, true), null),
+        (McDoing.OwnLife(new("routine", "", "farm"), null, false), "elle s'occupe de la ferme (sa routine)"),
+    })
+        if (got != expected) Fail($"McDoing: « {got} », expected « {expected} »");
+    // A whispered order asked about by someone else: its place stays out (the service passes no place).
+    if (McDoing.FirstPerson(McOrder.GoToPlace, "Bob", null).Contains('«')) Fail("McDoing.FirstPerson: a place shown without one");
+    foreach (var kind in new[] { "routine", "tagAlong", "forage", "retrieve", "danger", "sleep", "held", "seek" })
+    foreach (var first in new[] { true, false })
+        if (string.IsNullOrWhiteSpace(McDoing.OwnLife(new(kind, "Bob", kind == "danger" ? "fight" : kind == "routine" ? "home" : ""), "Bob", first)))
+            Fail($"McDoing.OwnLife({kind}, {first}): empty");
 
     // /debug minecraft « Voir son corps »: every field read and shown, a body that sends nothing of it still answered,
     // and the whole of it well inside Discord's 2000.

@@ -152,6 +152,8 @@ public sealed partial class MinecraftBodyService : BackgroundService
     // What she carries, as the body last reported it (on spawn, then after each change), and when. Null until then.
     private McInventory? _inventory;
     private DateTimeOffset _inventoryAt;
+    // What the body last said she's doing (its `doing` event): her own life, which only the body knows. Null until then.
+    private McBodyDoing? _doing;
     private DateTimeOffset? _fewSince;
     private int _failures;
     private DateTimeOffset _retryAfter = DateTimeOffset.MinValue;
@@ -422,6 +424,7 @@ public sealed partial class MinecraftBodyService : BackgroundService
             _leaving = false;
             _players = new List<string>();
             _inventory = null;
+            _doing = null;
             _fewSince = null;
             _order = null;
             _pending = null;
@@ -468,6 +471,7 @@ public sealed partial class MinecraftBodyService : BackgroundService
             _inGameSince = null;
             _players = new List<string>();
             _inventory = null;
+            _doing = null;
             _fewSince = null;
             _order = null;
             _pending = null;

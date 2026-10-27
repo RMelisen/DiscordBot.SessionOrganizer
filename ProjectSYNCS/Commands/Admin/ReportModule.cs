@@ -60,6 +60,9 @@ public class ReportModule : InteractionModuleBase<SocketInteractionContext>
     [SlashCommand("emotes", "Les émotes du serveur : préférées, oubliées, tendances")]
     public Task EmotesAsync() => ShowAsync(ReportKind.Emotes);
 
+    [SlashCommand("minecraft", "Minecraft : son temps de jeu, ses ordres, ses aventures")]
+    public Task MinecraftAsync() => ShowAsync(ReportKind.Minecraft);
+
     // No period: a silence of 30, 60 or 90 days, chosen with its own buttons (report:sleep:{days}).
     [SlashCommand("sleeping", "Les membres sans signe de vie depuis 30, 60 ou 90 jours")]
     public async Task SleepingAsync()

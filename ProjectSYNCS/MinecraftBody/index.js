@@ -16,7 +16,7 @@
 //   MC_CPU_FACTOR=n: the pathfinder's time budgets divided by n, as on a CPU n times slower (tools/mc-pathtest only)
 //
 // In:  {"op":"say","text":"…"} · {"op":"whisper","player":"…","text":"…"} · {"op":"quit"}
-//      {"op":"come","player":"…"} · {"op":"follow","player":"…"} · {"op":"stay"}
+//      {"op":"come","player":"…"} · {"op":"follow","player":"…"} · {"op":"stay"} · {"op":"free","player":"…"}
 //      {"op":"goto","player":"…","x":0,"y":null,"z":0} · {"op":"guard","player":"…"}
 //      {"op":"collect","player":"…","resource":"wood","count":10} · {"op":"sleep","player":"…"}
 //      {"op":"seek","player":"…","spot":{"x":0,"y":64,"z":0,"dimension":"…"}|null}
@@ -24,6 +24,8 @@
 //      {"op":"harvest","player":"…","crop":"any|wheat|carrot|potato|beetroot|melon|pumpkin"} · {"op":"farm","player":"…"}
 //      {"op":"goto",…,"dimension":"…"|null} · {"op":"guide","player":"…","x":0,"y":64,"z":0,"dimension":"…"}
 //      {"op":"give","player":"…","goods":"all|food|fish|…"} · {"op":"store","player":"…"} · {"op":"fish","player":"…"}
+//      {"op":"fetch","player":"…","goods":"food|iron|…","count":0} (count 0: up to a stack)
+//      {"op":"craft","player":"…","item":"iron_pickaxe|pickaxe|torch|planks|…","count":1} (a bare tool: the best she affords)
 //      {"op":"dress","player":"…"} · {"op":"undress","player":"…"}
 //      {"op":"patrol","player":"…","spot":{x,y,z,dimension}|null} · {"op":"smelt","player":"…","what":"food|ore|sand"}
 //      {"op":"where","player":"…"} · {"op":"mark","player":"…"} · {"op":"sit"} · {"op":"jump"} · {"op":"wave","player":"…"}
@@ -49,6 +51,9 @@
 //      dressed {player,count} · cantDress {player,why: none|worn} · undressed {player,count,full}
 //      cantUndress {player,why: none|full} · armoured {by} (put on a piece someone gave her)
 //      cantStore {player,why: noChest|empty} · fishing {player} · cantFish {player,why: noRod|noWater|broke}
+//      fetching {player,goods} · fetched {player,goods,count,asked,delivered} · cantFetch {player,goods,why: none|noChest}
+//      crafting {player,item,count} · crafted {player,item,count,delivered}
+//      cantCraft {player,item,why: missing|noWood|noStone|unknown|failed,missing?: iron|gold|diamond|coal|string}
 //      caught {player,kind: fish|treasure|junk} · patrolling {player} · cantPatrol {player,why: tooFar|otherDimension}
 //      smelting {player,what,count} · smelted {player,what,count,delivered}
 //      cantSmelt {player,what,why: nothing|noFuel|noFurnace|busy}
@@ -62,6 +67,9 @@
 //      wornOut {tool} · broke {tool} · lacking {what: rod|shears|breedFood|arrows|space}
 //      (tool: sword|pickaxe|axe|shovel|rod|shears|bow)
 //      Water: diving {player} · surfacing {player} · drowning · breathing · boarded {player} · shook
+//      doing {kind,player,what} (what she is doing, when it changes: an order's task kind, or routine {what: farm|fish|
+//        ranch|home} · tagAlong {player} · seek {player} · forage · retrieve · danger {what: fight|flee|hazard|dodge|defend}
+//        · sleep · held {what: sitting|} · idle)
 //      inventory {worn:[stack],held:stack|null,offhand:stack|null,pockets:[stack]} (stack: {name,count,goods:[…]}),
 //        on spawn and after her pockets change, at most every 2 s
 //      debug {pid,node,uptime,rss,version,pos,dimension,health,food,oxygen,task:{kind,player,mode,own,resume}|null,

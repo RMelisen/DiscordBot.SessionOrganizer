@@ -155,6 +155,7 @@ public sealed class MonthlyDigestService : BackgroundService
             {
                 await using var scope = _services.CreateAsyncScope();
                 var reports = scope.ServiceProvider.GetRequiredService<ReportService>();
+                if (await reports.IsEmptyAsync(kind, window)) continue;
                 var embed = await reports.BuildAsync(kind, HomeGuild.Id, window, names: true);
                 await dm.SendMessageAsync(embed: embed, allowedMentions: AllowedMentions.None);
             }

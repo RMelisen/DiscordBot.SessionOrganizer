@@ -52,7 +52,7 @@ function noWay() {
   if (FollowsSomeone.has(task.kind) && headUnder(playerEntity(task.player))) return;
   // A gap of a block or two in the way of a walk someone asked for: once more, with a bridge she takes down after.
   if (tryBridge(task)) return;
-  if (['collect', 'sleep', 'harvest', 'farm', 'give', 'store', 'fish', 'smelt', 'patrol', 'forage', 'ranch', 'tagAlong', 'home', 'back']
+  if (['collect', 'sleep', 'harvest', 'farm', 'give', 'store', 'fetch', 'craft', 'fish', 'smelt', 'patrol', 'forage', 'ranch', 'tagAlong', 'home', 'back']
     .includes(task.kind)) return;
   // Her own: a place she can't walk to is left out for a while; her things, given up.
   if (task.kind === 'trip') {

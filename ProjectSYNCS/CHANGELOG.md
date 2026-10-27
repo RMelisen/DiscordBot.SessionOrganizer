@@ -3,13 +3,21 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
-## 7.50.0 — 2026-10-27
+## 7.51.0 — 2026-10-27
 
 - The `/schedule create` wizard is shorter: tonight, tomorrow or the weekend in one click (« Autre jour… » to pick any other day, « Taper une date » to type it), then the name and an optional description, then a preview showing the real card. Category, places, duration, voice channel and « Chaque semaine » are picked on the preview, « Changer l'heure » goes back to the time without losing the rest, and « Publier » posts it.
 - The preview warns when the session overlaps another one.
 - The wizard starts from your last session's category, places, duration, voice channel and hour (forgotten on restart).
 - A poll turned into a session goes through the same preview.
 - Session cards show « Durée : » instead of a clock emoji; the « Peut-être » and « +1 h » buttons lost their emoji.
+
+## 7.50.0 — 2026-10-27
+
+- In Minecraft, « tu fais quoi ? » gets a real answer: the order she's on, or what she's doing on her own (her routine, tagging along, a fight, sleep), and `/minecraft status` shows her own life too.
+- A free-time order (« quartier libre », « fais ta vie », « tu peux y aller ») ends whatever she was told to do and lets her go back to her own life at once. « t'es libre ce soir ? » is still just a question.
+- She fetches things from the chests nearby (« ramène-moi du fer du coffre », « va chercher 20 pains dans le coffre ») and hands them over.
+- She crafts on demand (« fabrique-moi une pioche en fer », « fais-moi 16 torches »): tools and weapons, a bow, a fishing rod, shears, planks, sticks, a crafting table, a chest, a furnace, torches and ladders. She cuts the wood and gathers the stone she's short of, and uses a nearby crafting table or sets down her own and takes it back after.
+- `/report minecraft`: her playing time, orders, adventures and harvests over a period, compared with the one before; the owner's monthly digest gets a Minecraft part, left out for a month she didn't play.
 
 ## 7.49.0 — 2026-10-27
 

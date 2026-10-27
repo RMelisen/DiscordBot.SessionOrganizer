@@ -425,6 +425,49 @@ public static class ReportCards
         return embed.WithFooter(Footer(w, "Écrites et en réaction.")).Build();
     }
 
+    // ---- /report minecraft --------------------------------------------------------------------
+
+    public static Embed BuildMinecraft(Compared<MinecraftReportData> c, ReportWindow w, bool names)
+    {
+        var d = c.Current;
+        var p = c.Previous;
+        var embed = Start("⛏️ Minecraft", w);
+        if (!d.Played)
+            return embed.WithDescription("Elle n'a pas joué sur cette période.").WithFooter(Footer(w, MinecraftNote)).Build();
+
+        embed.WithDescription(
+            $"**{Duration(d.Minutes)}** en jeu{TextChart.Trend(d.Minutes, p?.Minutes)}" +
+            $" sur **{d.DaysPlayed}** {Plural(d.DaysPlayed, "jour", "jours")}");
+
+        var orders = $"**{LevelCardUi.Xp(d.Orders)}** {Plural(d.Orders, "ordre", "ordres")}{TextChart.Trend(d.Orders, p?.Orders)}";
+        if (names && d.TopPlayers.Count > 0)
+            orders += "\n" + string.Join('\n', d.TopPlayers.Select(l => $"**{Format.Sanitize(l.Name)}** — {LevelCardUi.Xp(l.Count)}"));
+        embed.AddField("Ordres", Cap(orders));
+
+        embed.AddField("Aventures",
+            $"Morts : **{LevelCardUi.Xp(d.Deaths)}** · monstres tués : **{LevelCardUi.Xp(d.Kills)}**{TextChart.Trend(d.Kills, p?.Kills)}\n" +
+            $"Poissons : **{LevelCardUi.Xp(d.Fish)}** · trésors : **{LevelCardUi.Xp(d.Treasure)}**");
+
+        var gathered = d.Gathered.Select(l => $"{ResourceLabel(l.Name)} ×{LevelCardUi.Xp(l.Count)}").ToList();
+        embed.AddField("Récoltes",
+            $"Champs : **{LevelCardUi.Xp(d.Harvested)}**{TextChart.Trend(d.Harvested, p?.Harvested)}" +
+            (gathered.Count > 0 ? "\n" + Fit(gathered, " · ") : ""));
+
+        return embed.WithFooter(Footer(w, MinecraftNote)).Build();
+    }
+
+    private const string MinecraftNote = "Ordres : ceux qu'elle a lancés. Comptage par jour depuis la 7.50.0.";
+
+    // A resource as the body names it (« wood »), as she does without the partitive (« Bois »); the key itself if unknown.
+    private static string ResourceLabel(string key)
+    {
+        if (!Enum.TryParse<McResource>(key, ignoreCase: true, out var resource) || !BotResponses.McResourceNames.TryGetValue(resource, out var name))
+            return key;
+        foreach (var article in new[] { "de la ", "de l'", "du ", "des " })
+            if (name.StartsWith(article, StringComparison.Ordinal)) return Capitalise(name[article.Length..]);
+        return Capitalise(name);
+    }
+
     // ---- /report sleeping ---------------------------------------------------------------------
 
     public static Embed BuildSleeping(SleepingReportData d, Func<ulong, string?>? nameOf = null)
@@ -478,11 +521,12 @@ public static class ReportCards
     // ---- Monthly digest: « Le mois en bref » --------------------------------------------------
 
     /// <summary>
-    /// Papa's first digest message: her commands, the Pi, what she couldn't answer and the quiz, in
-    /// a few figures, then « À regarder » (DigestBrief.Owner) or her quiet line when nothing is.
+    /// Papa's first digest message: her commands, the Pi, what she couldn't answer, the quiz and her hours
+    /// in Minecraft, in a few figures, then « À regarder » (DigestBrief.Owner) or her quiet line when nothing is.
     /// </summary>
     public static Embed BuildOwnerBrief(Compared<CommandReportData> commands, Compared<SyncsReportData> syncs,
-        Compared<QuizReportData> quiz, IReadOnlyList<DigestAlert> alerts, ReportWindow w, string quietLine)
+        Compared<QuizReportData> quiz, Compared<MinecraftReportData> minecraft, IReadOnlyList<DigestAlert> alerts, ReportWindow w,
+        string quietLine)
     {
         var embed = Start("📬 Le mois en bref", w);
 
@@ -515,6 +559,12 @@ public static class ReportCards
               (q.ByDifficulty.Count > 0
                   ? "\nTrouvées par difficulté : " + string.Join(" · ", q.ByDifficulty.Select(l => $"{l.Label} {TextChart.Percent(l.Found, l.Posted)}"))
                   : ""));
+
+        var g = minecraft.Current;
+        embed.AddField("Minecraft", !g.Played
+            ? "Pas joué ce mois-ci."
+            : $"**{Duration(g.Minutes)}** en jeu{TextChart.Trend(g.Minutes, minecraft.Previous?.Minutes)}" +
+              $" · {g.DaysPlayed} {Plural(g.DaysPlayed, "jour", "jours")}");
 
         AddAlerts(embed, alerts, quietLine);
         return embed.WithFooter(Footer(w, "Le détail suit.")).Build();

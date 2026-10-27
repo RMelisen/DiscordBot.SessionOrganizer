@@ -29,6 +29,12 @@ public sealed partial class MinecraftBodyService
         var read = McTalkReader.Read(HerNameAsSyncs(text), kin, call, listening, whispered, McTalkReader.AskerId(player, kin),
             _health.CurrentMilli, _picker, Random.Shared);
         if (read is not { } talk) return false;
+        // « tu fais quoi ? » is answered from what she's really doing, not from her Discord chores.
+        if (talk.Kind == nameof(ChatIntent.WhatAreYouDoing))
+        {
+            TellDoing(player, whispered);
+            return true;
+        }
         var weekday = AppTime.Now.ToString("dddd", CultureInfo.GetCultureInfo("fr-FR"));
 
         if (talk.Remark)
@@ -69,6 +75,32 @@ public sealed partial class MinecraftBodyService
             }
             else _answeredAt.Remove(player);
         return true;
+    }
+
+    // « tu fais quoi ? »: the order under way (or just sent) first, else her own life as the body last reported it, else
+    // nothing. Asked by someone else than its player, a whispered order keeps its place to itself (McDoing.ForStatus's
+    // rule). An answer like any other: it opens the window again.
+    private void TellDoing(string player, bool whispered)
+    {
+        McJob? job;
+        McBodyDoing? doing;
+        lock (_gate) (job, doing) = (_order ?? _pending, _doing);
+        string? clause;
+        if (job is not null)
+        {
+            var theirs = Same(job.Player, player);
+            clause = McDoing.FirstPerson(job.Order, Who(job.Player), job.Private && !theirs ? null : job.Detail, toAsker: theirs);
+        }
+        else clause = McDoing.OwnLife(doing, doing is { Player.Length: > 0 } d ? Who(d.Player) : null, firstPerson: true,
+            toAsker: doing is not null && Same(doing.Player, player));
+        _logger.LogInformation("Minecraft: {Player} asked what she's doing — {Clause}.", player, clause ?? "nothing");
+        Reply(player, whispered, clause is null ? BotResponses.McDoingNothingLines : BotResponses.McDoingLines, clause ?? "");
+        lock (_gate)
+        {
+            var now = DateTimeOffset.UtcNow;
+            _calledAt[player] = now;
+            _answeredAt[player] = now;
+        }
     }
 
     // Her in-game name read as « syncs » by the chat cues, which only know that one (« SYNCS_bot ça va ? »).

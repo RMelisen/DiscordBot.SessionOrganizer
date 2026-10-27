@@ -237,6 +237,7 @@ public static class McItems
         M("crafting_table", "établi");
         M("furnace", "four");
         M("chest", "coffre");
+        F("ladder", "échelle");
         F("compass", "boussole");
         F("clock", "horloge");
         F("map", "carte");

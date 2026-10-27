@@ -17,9 +17,10 @@ export function resumeFor(previous) {
   if (previous && previous.kind === 'fight' && previous.held) return { again: () => redo(previous.held) };
   if (previous && ['fight', 'hazard', 'defend'].includes(previous.kind)) return previous.resume;
   if (previous && !previous.own && previous.command && Restartable.has(previous.kind)) {
-    // A camp goes on where it stands, with what's on it and the same floor.
+    // A camp goes on where it stands, with what's on it and the same floor; a craft at the table she set down.
     const command = previous.kind === 'camp'
-      ? { ...previous.command, site: previous.site, placed: previous.placed, floor: previous.floor, heights: previous.heights } : previous.command;
+      ? { ...previous.command, site: previous.site, placed: previous.placed, floor: previous.floor, heights: previous.heights }
+      : previous.kind === 'craft' ? { ...previous.command, table: previous.table } : previous.command;
     return { restart: command, at: bot.entity.position.clone(), before: previous.before || null };
   }
   const kept = pausedActivity(previous) || (previous && FollowsSomeone.has(previous.kind) ? previous : null);
@@ -42,7 +43,7 @@ export function resumeAfterBreak(resume) {
 // The orders a fight (or running away) can interrupt and start again, by the command that started them. Gathering and
 // harvesting look around where she stands, so she first walks back to where she stopped (BackFor at most), then the
 // same command runs again from the same pockets (`since`): what she had already gathered still counts.
-export const Restartable = new Set(['collect', 'harvest', 'come', 'goto', 'guide', 'camp', 'uncamp']);
+export const Restartable = new Set(['collect', 'harvest', 'come', 'goto', 'guide', 'camp', 'uncamp', 'craft']);
 const BackFor = 20000;
 
 function restartOrder(r) {

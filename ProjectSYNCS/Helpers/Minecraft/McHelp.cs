@@ -15,11 +15,11 @@ public static class McHelp
     public static readonly McHelpSection[] Sections =
     [
         new("Se déplacer",
-            "Mets son nom au début ou à la fin : « syncs … » ou « … syncs ». Elle vient, te suit, s'arrête ou va où tu dis.",
+            "Mets son nom au début ou à la fin : « syncs … » ou « … syncs ». Elle vient, te suit, s'arrête, va où tu dis, ou retourne à sa vie quand tu la libères.",
             [
                 new("syncs viens", McOrder.Come), new("syncs suis-moi", McOrder.Follow), new("syncs bouge pas", McOrder.Stay),
                 new("syncs assieds-toi", McOrder.Sit), new("syncs va en 120 64 -300", McOrder.GoTo), new("syncs t'es où ?", McOrder.Where),
-                new("syncs saute", McOrder.Jump),
+                new("syncs saute", McOrder.Jump), new("syncs quartier libre", McOrder.Free),
             ]),
         new("Récolter, cultiver, pêcher",
             "Elle ramasse ce que tu demandes et te le rapporte, ou s'installe à la ferme, aux enclos ou au bord de l'eau jusqu'à nouvel ordre.",
@@ -37,12 +37,12 @@ public static class McHelp
                 new("syncs oublie la mine", McOrder.ForgetPlace), new("syncs protège la maison", McOrder.Patrol),
             ]),
         new("Objets et coffres",
-            "Elle te donne ce qu'elle porte, range tout dans le coffre d'à côté, ou te dit ce qu'elle a sur elle. L'armure qu'on lui donne, elle la met.",
+            "Elle te donne ce qu'elle porte, va te chercher ce que tu veux dans les coffres d'à côté, range tout dans le coffre, te fabrique des outils, des torches ou un coffre, ou te dit ce qu'elle a sur elle. L'armure qu'on lui donne, elle la met.",
             [
                 new("syncs donne-moi du poisson", McOrder.Give), new("syncs donne moi à manger", McOrder.Give),
-                new("syncs range tes affaires", McOrder.Store), new("syncs t'as quoi ?", McOrder.Inventory),
+                new("syncs ramène-moi du pain du coffre", McOrder.Fetch), new("syncs range tes affaires", McOrder.Store), new("syncs t'as quoi ?", McOrder.Inventory),
                 new("syncs t'as combien de fer ?", McOrder.Have), new("syncs enlève ton armure", McOrder.Undress),
-                new("syncs mets ton armure", McOrder.Dress),
+                new("syncs mets ton armure", McOrder.Dress), new("syncs fabrique-moi une pioche en pierre", McOrder.Craft),
             ]),
         new("Le camp",
             "Pour Papa et Tata : elle monte un petit camp autour d'un feu (bancs, établi, four, coffre, lit, torches), en fabriquant tout et en allant chercher ce qui manque, puis le démonte et garde tout.",
