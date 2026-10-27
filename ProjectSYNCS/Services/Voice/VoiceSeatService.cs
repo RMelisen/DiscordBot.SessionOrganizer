@@ -311,6 +311,10 @@ internal sealed class VoiceSeatService
             if (sentToBed && _bedtimeLeaveAt is { } bedtime && now >= bedtime)
                 desired = null;
 
+            // Silence mode: no seat anywhere; one already taken is left at the next settled sweep.
+            if (_silence.IsSilent)
+                desired = null;
+
             // Drop the gatherings that ended, so the dictionary only holds what's going on.
             var present = channels.Where(c => c.Reading.Active > 0).Select(c => c.Reading.Channel.Id).ToHashSet();
             foreach (var id in _gatherings.Where(kv => !kv.Value.Started && !present.Contains(kv.Key) && kv.Key != holding).Select(kv => kv.Key).ToList())
@@ -320,7 +324,7 @@ internal sealed class VoiceSeatService
             }
         }
 
-        // Silence mode: she still takes her seat, but says nothing and keeps her mic shut.
+        // Silence mode: no line, no mic flicker (the seat itself is dropped above).
         bool silent = _silence.IsSilent;
         foreach (var (channelId, line, what) in said)
             if (!silent && guild.GetVoiceChannel(channelId) is { } where)

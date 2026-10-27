@@ -66,15 +66,17 @@ internal sealed class RivalryService
 
     // Told « chut » in a channel (ChatHush): the reaction is silent and stays, the line waits.
     private readonly ChatHush _hush;
-
+    private readonly SilenceService _silence;
     public RivalryService(
         DiscordSocketClient client,
         ResponsePicker picker,
         GlitchService glitch,
         ChatHush hush,
         BadgeAwarder badges,
-        ILogger<RivalryService> logger)
+        ILogger<RivalryService> logger,
+        SilenceService silence)
     {
+        _silence = silence;
         _badges = badges;
         _hush = hush;
         _glitch = glitch;
@@ -90,6 +92,8 @@ internal sealed class RivalryService
         if (!IsRival(message)) return;
 
         RecordAction(message.Channel.Id, message.Id, message.Author.Id);
+        // Silence mode: still on record (verdict attribution needs it), but no reaction, no line.
+        if (_silence.IsSilent) return;
 
         // Two independent rolls against two independent gates. Each claims its own
         // only after winning its own roll, so a losing roll never burns the other's
@@ -126,6 +130,7 @@ internal sealed class RivalryService
         // Praising a rival in front of her is the secret, humans only.
         if (!praise.Author.IsBot && praise.Channel is SocketGuildChannel praiseChannel)
             _badges.Award(praiseChannel.Guild.Id, praise.Author.Id, MemberBadges.Keys.Traitor);
+        if (_silence.IsSilent) return;
 
         // No cooldown and no roll: this is the moment the whole thing exists for. Her
         // creator doing it is a different injury from anyone else doing it — everyone

@@ -256,16 +256,20 @@ not touched either, nor is her Discord status.
 Where it is checked:
 
 - **The message fan-out** (`BotService`): the counters (activity, emotes, XP, shame, Quokka's
-  clock) still run, then it returns before rivalry, feedback, reactions, the morning wave, ambient,
-  the quiz's typed answers, Synthia, robot heart and the chatter. The welcome line and her
-  reaction pile-ons are skipped too. So « good bot » / « bad bot » verdicts and the absence relay
-  go unrecorded while she's silent.
+  clock) and the verdict pair (`RivalryService`, `BotFeedbackTracker`) still run, then it returns
+  before reactions, the morning wave, ambient, the quiz's typed answers, Synthia, robot heart and
+  the chatter. The welcome line and her reaction pile-ons are skipped too, and so is the absence
+  relay. **Verdicts keep counting** (tally, XP bonus, badges): the rivals' actions stay on record
+  so attribution holds, and her command replies are still actions to judge. Only the answers go —
+  her reaction or comeback to a verdict, the jealous line, the rival mutter and mark.
 - **Each loop at the post itself**: the morning hello, ambient (night, idle, Voyager, wake line),
   a new bot's welcome, Quokka's slots, the Wednesday poll (left undecided, so it still goes out if
   silence lifts within its window), level-up cards (the level is still recorded), pop quizzes, the
-  Monday crown announcement (purse and role still move), voice spectator and seat lines and the mic
-  flicker (she still takes her seat), the heat record and router lines, and the sweep's Plynling
-  death announcements and event stories (marked as told, never posted later).
+  Monday crown announcement (purse and role still move), voice spectator lines, the heat record and
+  router lines, and the sweep's Plynling death announcements and event stories (marked as told,
+  never posted later).
+- **Her voice seat**: she joins no call (a session she organised included), and leaves the one she
+  sits in at the next settled sweep. No seat lines, no mic flicker.
 - **`/debug quiz` and `/debug quokka` bypass it**: the owner asking is a command.
 
 `absent` toggles `AvailabilityService`'s absent flag; mentions of the owner while absent are

@@ -37,6 +37,10 @@ because a framing clause colours everything after it.
 
 ## Answering
 
+**Silence mode (`/debug silence`, see admin) counts and doesn't answer.** The tracker and
+`RivalryService` stay in the fan-out; `RespondAsync`, the jealous line and the rival's mutter and
+mark are skipped.
+
 **"Good girl" is the same verdict, different answer.** `ReadFeedback` has an overload returning a
 `VerdictForm`: the tally treats both identically, `RespondAsync` branches on it. `VerdictForm` is
 separate from `FeedbackKind` because the axes are independent.

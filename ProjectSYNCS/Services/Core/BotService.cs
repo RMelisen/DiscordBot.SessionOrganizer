@@ -171,11 +171,12 @@ internal sealed class BotService : IHostedService
         await _shame.HandleMessageAsync(rawMessage);
         // Only keeps Quokka's room-is-awake clock; answers nothing.
         await _quokka.HandleMessageAsync(rawMessage);
-        if (silent) return;
         // Before the feedback tracker: a rival's message has to be on record as the
         // most recent action before any verdict arrives that it might have earned.
+        // Both still run in silence mode, to keep counting verdicts; they skip their own answers.
         await _rivalry.HandleMessageAsync(rawMessage);
         await _feedback.HandleMessageAsync(rawMessage);
+        if (silent) return;
         await _reactions.HandleMessageAsync(rawMessage);
         // After the reactions, so a wave at a "bonjour" lands before her early hello.
         // Skips anything aimed at her, so it never doubles ChatterService's answer.

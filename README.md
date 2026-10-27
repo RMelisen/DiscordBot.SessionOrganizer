@@ -672,9 +672,10 @@ is gone).
   flags him unavailable, after which the bot answers anyone who pings him and forwards
   the mention by DM — which he can reply to, and the bot relays the answer back into the
   original channel. **`/debug silence`** mutes her: no chatter, reactions, hellos, ambient
-  lines, level-up cards, pop quizzes, Quokka or Plynling announcements, until he lifts it
-  (it survives a restart). Commands still answer, and session reminders, recaps, giveaway
-  draws and `/remindme` still go out. These are deliberately left out of `/help`.
+  lines, level-up cards, pop quizzes, Quokka or Plynling announcements, and no sitting in voice
+  calls, until he lifts it (it survives a restart). Commands still answer, session reminders,
+  recaps, giveaway draws and `/remindme` still go out, and « good bot » / « bad bot » still
+  count. These are deliberately left out of `/help`.
 
 > Staff commands are **not** hidden from Discord's command picker. Discord's own
 > permission gate understands permission bits, not user ids, so it couldn't admit the

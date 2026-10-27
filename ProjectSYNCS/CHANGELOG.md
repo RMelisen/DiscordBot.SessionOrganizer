@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.43.1 — 2026-10-27
+
+- While silenced, she no longer sits in voice calls (and leaves the one she's in), and « good bot » / « bad bot » still count — she just doesn't answer them.
+
 ## 7.43.0 — 2026-10-27
 
 - New owner-only `/debug silence`: while it's on she only answers commands — no chatter, reactions, morning hello, ambient lines, level-up cards, pop quizzes, Quokka or Plynling announcements. Session reminders, recaps, giveaway draws and `/remindme` still go out, and silence survives a restart.
