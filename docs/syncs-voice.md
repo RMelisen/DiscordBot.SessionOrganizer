@@ -234,7 +234,7 @@ without saying it). The one place a fact is stated outright is where a pool alre
   deletes, or a slip she edits into a denial. Never an explanation.
 - **Her birthday** — **16 June 2026**, the repo's first commit. Every 16 June the morning hello is
   replaced by one line where she gives her age (the year minus 2026) and pretends it doesn't matter
-  (`MorningGreetingService`, see `docs/agents/personality.md`). She never says the word
+  (`MorningGreetingService`, see `docs/agents/personality/ambient.md`). She never says the word
   « anniversaire » herself.
 - **How she pictures herself** — the mushroom girl (`docs/syncs-appearance.md`) is how she and
   Rodhengard imagine her. In-world she is the Pi; the girl is the self-image, the one thing she
@@ -293,7 +293,7 @@ without saying it). The one place a fact is stated outright is where a pool alre
   like everyone**: the idle moon and sleepy status from 1:00 to 7:00, and her sleep-talk, are an act
   that knows it is one (« zzz… (je dors pas, je fais comme vous) »). **3 a.m., her favourite hour, is
   when she drops the act**, because nobody is watching (`NightLines`, see
-  `docs/agents/personality.md`, *Ambient life*).
+  `docs/agents/personality/ambient.md`, *Ambient life*).
 - **Her type** — a compass for writers, not something she says: she never names an MBTI or an
   enneagram, and no line should hint at one.
   - **MBTI: ESTJ.** Dominant Te: she runs the server and defends herself with professional pride

@@ -29,6 +29,8 @@ matching file before changing that subsystem**; the rules there are as binding a
 | How her Minecraft body moves: water, fights, body language, `tools/mc-pathtest` | `docs/agents/minecraft-body.md` |
 | `/admin`, `/config`, `/debug`, permissions | `docs/agents/admin.md` |
 | `/report`, the monthly digest, joins/leaves counting, activity counting | `docs/agents/admin.md` |
+| Adding a loop, a `Ready` hook or a server-specific id; `PresenceService` | `docs/agents/architecture.md` |
+| `Dockerfile`, `run.sh`, `config.yaml` beyond the version, CI, state files under `/data` | `docs/agents/deployment.md` |
 
 When you add a rule, put it in the subsystem file unless it genuinely applies across subsystems.
 Write the rule and its reason, not the story of how it was discovered — git keeps the history.
@@ -86,33 +88,9 @@ English. Renaming a command or option changes what people type: do it rarely, an
   It owns every message and reaction subscription; connection-lifecycle hooks (`Ready`,
   `Connected`, `Disconnected`) live in the service that needs them (`PresenceService`,
   `AmbientService`, `ApplicationEmojiService`, `PlynlingMascotService`, `PiHealthService`).
-- **Thirteen `BackgroundService` loops**, each with **its own interval on purpose** — never share one:
-  `ReminderService` (5 min, load-bearing — see scheduling), `PersonalReminderService` (1 min,
-  `/remindme` — see scheduling), `PresenceService` (5 min, cosmetic),
-  `VoiceXpService` (1 min — also feeds the voice spectator, the session roll call and her voice
-  seat), `GiveawayDrawService` (1 min), `QuizMasterService` (1 min, see quiz),
-  `PlynlingSweepService` (hourly), `PiHealthService` (2 min — the Pi's temperature, how the last
-  run ended, gateway outages; see personality, *Her body*), `WeekendPollService` (15 min, her
-  Wednesday poll; see scheduling), `SeasonalAvatarService` (hourly, plus every Ready — her
-  seasonal profile picture; see `docs/syncs-appearance.md`), `MonthlyDigestService` (hourly, her
-  monthly digests to the owner and Tata on the 1st; see admin), `ActivityFlushService` (5 min, writes
-  `ActivityCounter`'s counts; see admin), `MinecraftBodyService` (1 min, her body on the
-  Minecraft server, a Node child process; see minecraft).
-- **`MorningGreetingService`** has no interval: it sleeps until one random slot per morning
-  (8:00–10:00 Paris, `Helpers/Personality/MorningGreeting`) — see personality.
-  **`QuokkaRaidService`** is the same shape: it sleeps until each of the day's Quokka visits
-  (0–4, 12:00–23:00 Paris, `QuokkaRaid.SlotsFor`) — see arcade.
-- **`AmbientService`** (10 min, cosmetic, its own interval like the loops above): the 3 a.m. line
-  and the scolding for answering it, idle fillers and the wake-up line after a restart — see
-  personality, *Ambient life*.
-- **`ApplicationEmojiService`** runs once, on the first Ready (uploads item icons — see economy).
-  **`PlynlingMascotService`** runs on every Ready (see plynling).
-
-**`PresenceService`** hooks `Ready` itself, because Discord drops the presence on every reconnect.
-Lines go out via `SetCustomStatusAsync`, **not** `SetGameAsync`: a custom status renders verbatim,
-whereas `ActivityType` verbs are prepended and localised to the *viewer* ("Watching le vide").
-`SetGameAsync` with `ActivityType.CustomStatus` compiles and renders nothing — a custom status
-carries its text in `State`, not `Name`.
+- **Every `BackgroundService` loop has its own interval on purpose** — never share one. The list
+  of loops, the services that sleep until a slot instead, and the `Ready` hooks is in
+  `docs/agents/architecture.md`; a new one gets a line there.
 
 Layers: `Commands/` (slash modules + `static` embed/component builders), `Interactions/`
 (`Components/` handlers, `Modals/` DTOs, `Autocomplete/`), `Services/` (EF repositories +
@@ -126,6 +104,13 @@ leans on (`AppTime`, `BotChat`, `Emotes`, `CooldownGate`, `SessionPermissions`, 
 **Folders are not namespaces**: every file keeps the flat `ProjectSYNCS.Commands` /
 `.Helpers` / `.Services` / `.Models` namespace, so moving a file between subfolders changes no `using` and
 the EF snapshot's type names. A new file goes in the subfolder of the subsystem that owns it.
+
+**Big classes are `partial` over a folder named after the class**, one file per theme, each under
+about 40 KB so it can be read whole (`BotResponses/`, `MessageCues/`, `PlynlingEvents/`,
+`PlynlingScripts/`). Grow the theme's file; start a new one rather than letting one swell.
+**A static field's initializer never reads a static field in another file**: the order across
+partial files is undefined, so it may read null. A catalog spread over files is one method per file,
+joined in the field (`PlynlingEvents.All`, `PlynlingScripts.Catalog`).
 
 **Commands are grouped by whose thing it is**: `/plynling` the creature, `/inventory` the person's
 belongings, `/admin` moderation actions, `/config` settings, `/debug` the owner's tools, `/arcade` her games, `/minecraft` her life on the Minecraft server. Discord
@@ -279,7 +264,7 @@ free). `AllowedMentions.None` keeps the clickable pill while silencing it. Avata
 - **`Helpers/Core/Sticker`** is the only place sticker markers live: a line opts into a picture
   follow-up by appending a constant (`+ Sticker.Bored`), and only pools sent through `BotChat`
   may carry one. `BotChat.FollowUp` is `BotChat`'s one static seam, set in `Program.cs` — see
-  personality, *Sticker follow-ups*.
+  `docs/agents/personality/reactions.md`, *Sticker follow-ups*.
 - **Never pick a response line with a bare `Random`.** Use `ResponsePicker.Pick(pool)`, which
   excludes the pool's `min(50, pool.Length / 2)` most recently said lines. Its memory is **global**,
   not per channel — the same people read every channel and their DMs — and records when each line
@@ -349,54 +334,18 @@ when `version` changes: an unbumped push never reaches the Pi.
   `config.yaml`. Keep easter-egg triggers and member names out of it — the repo is public.
   Editing the changelog alone needs no bump.
 
-The bot ships as a Home Assistant add-on: the `Dockerfile` publishes a self-contained
-`linux-arm64` build, and `run.sh` maps add-on options to `Discord__Token`,
-`Discord__RegisterCommandsGlobally` and `Database__Path=/data/ProjectSYNCS.db`. Only `/data` is
-persisted, so the SQLite file must stay under it — and so do `health-state.json`,
-`ambient-state.json`, `morning-state.json`, `avatar-state.json`, `report-state.json` and
-`minecraft-state.json` and `silence-state.json`, which `PiHealthService`, `AmbientService`,
-`MorningGreetingService`, `SeasonalAvatarService`, `MonthlyDigestService`, `MinecraftBodyService`
-and `SilenceService` write next to it.
-
-**The Pi never builds the image.** Building on the Pi left about 1 GB of .NET layers in Docker's
-build cache per version, until the disk filled. Now `.github/workflows/addon-image.yml` builds it on
-a native arm64 runner for every push to `main` touching `ProjectSYNCS/`, and pushes
-`ghcr.io/rmelisen/aarch64-addon-projectsyncs:<version>`; `image:` in `config.yaml` makes the
-Supervisor pull that tag. Consequences:
-
-- **Never remove `image:`** from `config.yaml`: the Supervisor would go back to building on the Pi.
-- **A published tag is never overwritten.** The workflow skips a version that already exists, so an
-  unbumped push ships nothing — one more reason for the bump rule above.
-- **Auto-update is off on the Pi.** The update can show up before CI has pushed the image; the owner
-  waits for the workflow to go green, then clicks Update. A failed run means no update, not a broken
-  bot.
-- **The Dockerfile restores from the csproj alone** before copying the source, so the NuGet layer
-  stays cached. That is why `<Version>` reads `config.yaml` only when it exists — keep that
-  condition, and never `COPY` `config.yaml` before the restore.
-- **The GHCR package must stay public** (the Supervisor pulls anonymously), and so must the repo:
-  arm64 runners are free only for public repositories.
-- **Never change the add-on repository URL in Home Assistant** (for example to `…#branch`): the
-  add-on's identity is a hash of that URL, so it would become a new add-on with an empty `/data`.
+The bot ships as a Home Assistant add-on whose image CI builds and the Pi pulls; **only `/data` is
+persisted**, so the database and every state file live there. The packaging, the image pipeline
+and the list of state files are in `docs/agents/deployment.md` — read it before touching any of
+them.
 
 The GitHub remote is **public**. `appsettings.json` and `config.yaml` ship token placeholders; real
 tokens go in user secrets (dev) or add-on options (prod), never in a tracked file.
 
 ## Hardcoded ids
 
-These literal snowflakes are tied to one specific server: `AvailabilityService.OwnerId`; the other
-leveling bot's id in `Helpers/Xp/LevelUpAnnouncement`; the custom emote ids in `Helpers/Core/Emotes`;
-`XpTracker.ExcludedChannels`; `ShameModule.ExtraVoters`; the per-user maps in `BotResponses`
-(`PersonalComebacks`, `RealNames`, `KnownGenders`, `TataId`, `FamilyNicknames`);
-`PlynlingAnnouncer.DefaultGameChannelId`; `MorningGreetingService.DefaultChannelId`;
-`AmbientService.IdleChannelIds` (the everyday channels that must all be quiet for an idle line);
-`AmbientService.VoyagerChannelId` (where Voyager's letters land);
-`RobotHeartService.EveStrictChannelId` (where « eve » means the game, so EVE needs WALL-E beside her);
-the voice channels in `Helpers/Voice/VoiceRoom` (which spectator pool each one gets, and where she
-waits for a session nobody has joined yet); and
-`Helpers/Core/HomeGuild.Id` (the one server the morning hello and `AmbientService` live in);
-`Helpers/Core/BotsChannel.DefaultId` (« spam-bots », where her low-stakes posts go).
-
-`ExcludedChannels`, `ExtraVoters` and `IdleChannelIds` are *floors*: `/config` can add to them but
-never remove from them. The game, main and bots channels are *defaults*: a channel set with `/config`
-replaces them, and clearing it falls back (see `docs/agents/admin.md`). `OwnerId` is deliberately **not** configurable — it gates `/debug` and the DM relay, so making
-it editable would let any ManageGuild holder hand themselves those powers.
+Some literal snowflakes (the owner, channels, emotes, per-member maps, the home guild) are tied to
+one server. The full list, and which ones `/config` can extend or replace, is in
+`docs/agents/architecture.md`; a new one gets a line there. `OwnerId` is deliberately **not**
+configurable — it gates `/debug` and the DM relay, so making it editable would let any ManageGuild
+holder hand themselves those powers.

@@ -107,7 +107,7 @@ sessions and G-Portal has no start/stop API, so she **detects** the server and n
 ## Talk
 
 Chat that isn't an order is read the way Discord reads it (`McTalkReader`, pure, with cases in the
-checks; Discord's side is `personality.md`, *Listening*), so someone talking to her gets an answer,
+checks; Discord's side is `personality/intents.md`, *Listening*), so someone talking to her gets an answer,
 not silence. **An answer to someone is not a remark** (the owner's call): no remark gate, no
 budget. Only she, speaking on her own, is rationed.
 
@@ -299,7 +299,7 @@ built by `McBodyReport` (pure, measured by the checks).
 `Minecraft:Tata` without case, and the service picks a twin pool (`…Owner`, `…Tata`) for the
 lines aimed at one person: the « oui ? », their death, them hitting her, their advancement, and the
 acks for come, follow, guard and a delivery. Twins call them « Papa » and « Tata », never `{0}`
-(the checks enforce it). Same tiers as on Discord (`personality.md`, *Favouritism*): Papa is never
+(the checks enforce it). Same tiers as on Discord (`personality/people.md`, *Favouritism*): Papa is never
 roasted and, when he hits her, she's hurt and forgives; Tata gets cheeky warmth and the mute
 rights. Every other pool is shared, because it's about the game rather than the person. A new
 person-aimed pool gets its twins too, and its name goes in the checks' `McFamilyPools`. Offline
