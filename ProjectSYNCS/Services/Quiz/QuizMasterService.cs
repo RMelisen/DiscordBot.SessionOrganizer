@@ -69,6 +69,7 @@ public sealed class QuizMasterService : BackgroundService
     private readonly GuildConfigService _config;
     private readonly QuizCrownService _crown;
     private readonly ILogger<QuizMasterService> _logger;
+    private readonly SilenceService _silence;
 
     // Guards everything below except _claimed (which owns its own concurrency).
     private readonly object _gate = new();
@@ -96,8 +97,9 @@ public sealed class QuizMasterService : BackgroundService
         IServiceProvider services,
         GuildConfigService config,
         QuizCrownService crown,
-        ILogger<QuizMasterService> logger)
+        ILogger<QuizMasterService> logger, SilenceService silence)
     {
+        _silence = silence;
         _client = client;
         _services = services;
         _config = config;
@@ -197,6 +199,8 @@ public sealed class QuizMasterService : BackgroundService
 
     private async Task PostIfDueAsync(SocketGuild guild, DateTimeOffset now)
     {
+        // Silence mode: no pop quiz on her own; /debug quiz still posts one.
+        if (_silence.IsSilent) return;
         var config = await _config.GetAsync(guild.Id);
         if (config.QuizChannelId == 0) return;
 

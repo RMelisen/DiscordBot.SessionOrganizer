@@ -305,6 +305,11 @@ cannot express "ManageGuild, plus the owner". The `IsStaff` check in each handle
 
 ### Where she speaks
 
+**Silence mode** (`/debug silence`, `SilenceService`, see admin) mutes everything she says on her
+own initiative. Anything new that posts unprompted checks `SilenceService.IsSilent` before
+sending; answers to commands and buttons, and the notices a command set up (reminders, recaps,
+draws), never do.
+
 A reply goes where she was used. Something she announces **on her own initiative that doesn't
 matter much** (Quokka's visits, and whatever joins them) goes to the bots channel, through
 `BotsChannel.ResolveAsync` — never hardcoded, never the main channel. Announcements that matter
@@ -347,8 +352,9 @@ The bot ships as a Home Assistant add-on: the `Dockerfile` publishes a self-cont
 `Discord__RegisterCommandsGlobally` and `Database__Path=/data/ProjectSYNCS.db`. Only `/data` is
 persisted, so the SQLite file must stay under it — and so do `health-state.json`,
 `ambient-state.json`, `morning-state.json`, `avatar-state.json`, `report-state.json` and
-`minecraft-state.json`, which `PiHealthService`, `AmbientService`, `MorningGreetingService`,
-`SeasonalAvatarService`, `MonthlyDigestService` and `MinecraftBodyService` write next to it.
+`minecraft-state.json` and `silence-state.json`, which `PiHealthService`, `AmbientService`,
+`MorningGreetingService`, `SeasonalAvatarService`, `MonthlyDigestService`, `MinecraftBodyService`
+and `SilenceService` write next to it.
 
 **The Pi never builds the image.** Building on the Pi left about 1 GB of .NET layers in Docker's
 build cache per version, until the disk filled. Now `.github/workflows/addon-image.yml` builds it on

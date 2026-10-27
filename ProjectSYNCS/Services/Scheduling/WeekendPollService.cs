@@ -33,6 +33,7 @@ internal sealed class WeekendPollService : BackgroundService
     private readonly ResponsePicker _picker;
     private readonly HerMessages _herMessages;
     private readonly ILogger<WeekendPollService> _logger;
+    private readonly SilenceService _silence;
 
     // The Wednesday already decided this run (posted or stood down), so the window isn't
     // re-checked every tick. In memory: a restart re-decides, and the poll itself is the claim.
@@ -40,8 +41,9 @@ internal sealed class WeekendPollService : BackgroundService
 
     public WeekendPollService(
         IServiceProvider services, DiscordSocketClient client, GuildConfigService config,
-        ResponsePicker picker, HerMessages herMessages, ILogger<WeekendPollService> logger)
+        ResponsePicker picker, HerMessages herMessages, ILogger<WeekendPollService> logger, SilenceService silence)
     {
+        _silence = silence;
         _services = services;
         _client = client;
         _config = config;
@@ -73,6 +75,8 @@ internal sealed class WeekendPollService : BackgroundService
     private async Task TickAsync()
     {
         if (!WeekendPoll.IsDue(DateTimeOffset.UtcNow, out var wednesday) || wednesday == _decided) return;
+        // Silence mode: not decided, so the poll still goes out if silence lifts within its window.
+        if (_silence.IsSilent) return;
 
         var guild = _client.GetGuild(HomeGuild.Id);
         var channelId = await MorningGreetingService.MainChannelIdAsync(_config);

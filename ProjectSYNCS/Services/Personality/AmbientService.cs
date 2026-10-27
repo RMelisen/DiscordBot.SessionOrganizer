@@ -81,6 +81,7 @@ internal sealed class AmbientService : BackgroundService
     private readonly BadgeAwarder _badges;
     private readonly PlynlingAnnouncer _announcer;
     private readonly ILogger<AmbientService> _logger;
+    private readonly SilenceService _silence;
     private readonly string _statePath;
     private readonly DateTimeOffset _startedAt = DateTimeOffset.UtcNow;
 
@@ -131,8 +132,9 @@ internal sealed class AmbientService : BackgroundService
         BadgeAwarder badges,
         PlynlingAnnouncer announcer,
         IConfiguration config,
-        ILogger<AmbientService> logger)
+        ILogger<AmbientService> logger, SilenceService silence)
     {
+        _silence = silence;
         _announcer = announcer;
         _badges = badges;
         _client = client;
@@ -172,6 +174,9 @@ internal sealed class AmbientService : BackgroundService
             // Each step in its own try: an exception escaping a hosted loop stops the bot.
             try { await SeedAsync(channel); }
             catch (Exception ex) { _logger.LogWarning(ex, "Ambient: could not read the channels' history."); }
+
+            // Silence mode: the clocks are seeded, nothing is said (Voyager's letter waits too).
+            if (_silence.IsSilent) continue;
 
             var now = DateTimeOffset.UtcNow;
             try { await TryNightLineAsync(channel, now); }
@@ -581,7 +586,7 @@ internal sealed class AmbientService : BackgroundService
             // Only a power cut or a crash gets a wake line, whatever the hour, however many
             // times today. An ordinary restart or update is silent.
             var stop = _health.LastStop;
-            if (!PiHealth.IsAbrupt(stop)) return;
+            if (!PiHealth.IsAbrupt(stop) || _silence.IsSilent) return;
 
             var channel = await WaitForChannelAsync();
             if (channel is null || _breakdown.IsActive(channel.Id)) return;

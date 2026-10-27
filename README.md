@@ -52,6 +52,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/admin mute · unmute` | Discord timeout, saying what's missing when it can't | staff |
 | `/admin plynling rename · resurrect · passion-reset · cure`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
 | `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
+| `/debug silence` | Silence mode: she only answers commands, nothing on her own initiative | owner |
 | `/debug quiz` | Post or close a pop quiz, or crown the week, now (tests) | owner |
 | `/debug quokka` | Make Quokka show up in the bots channel now (tests) | owner |
 | `/debug minecraft` | Her state on the Minecraft server (with her body's last log lines), everything she carries, or what her body is doing right now and how its process copes; send her in / take her out now, or allow / forbid her joining at all | owner |
@@ -670,7 +671,10 @@ is gone).
   autocompleted list of channels it can post in) and **`/debug dm`** to a person. **`/debug absent`**
   flags him unavailable, after which the bot answers anyone who pings him and forwards
   the mention by DM — which he can reply to, and the bot relays the answer back into the
-  original channel. These are deliberately left out of `/help`.
+  original channel. **`/debug silence`** mutes her: no chatter, reactions, hellos, ambient
+  lines, level-up cards, pop quizzes, Quokka or Plynling announcements, until he lifts it
+  (it survives a restart). Commands still answer, and session reminders, recaps, giveaway
+  draws and `/remindme` still go out. These are deliberately left out of `/help`.
 
 > Staff commands are **not** hidden from Discord's command picker. Discord's own
 > permission gate understands permission bits, not user ids, so it couldn't admit the

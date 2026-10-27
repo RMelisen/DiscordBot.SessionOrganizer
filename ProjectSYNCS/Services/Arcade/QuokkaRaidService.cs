@@ -26,12 +26,14 @@ public sealed class QuokkaRaidService : BackgroundService
     private readonly ResponsePicker _picker;
     private readonly IServiceProvider _services;
     private readonly ILogger<QuokkaRaidService> _logger;
+    private readonly SilenceService _silence;
 
     private long _lastActivityTicks;
 
     public QuokkaRaidService(DiscordSocketClient client, ArcadeTables tables, PartyRunner party, GuildConfigService config,
-        PlynlingAnnouncer announcer, ResponsePicker picker, IServiceProvider services, ILogger<QuokkaRaidService> logger)
+        PlynlingAnnouncer announcer, ResponsePicker picker, IServiceProvider services, ILogger<QuokkaRaidService> logger, SilenceService silence)
     {
+        _silence = silence;
         _client = client;
         _tables = tables;
         _party = party;
@@ -77,7 +79,8 @@ public sealed class QuokkaRaidService : BackgroundService
             await Task.Delay(next - now, stoppingToken);
             try
             {
-                if (_client.ConnectionState == ConnectionState.Connected && RoomAwake)
+                // Silence mode skips the slot; /debug quokka still brings him (the owner's own call).
+                if (_client.ConnectionState == ConnectionState.Connected && RoomAwake && !_silence.IsSilent)
                     await SpawnAsync(HomeGuild.Id);
             }
             catch (Exception ex)

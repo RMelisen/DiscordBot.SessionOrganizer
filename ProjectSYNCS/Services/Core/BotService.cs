@@ -37,6 +37,7 @@ internal sealed class BotService : IHostedService
     private readonly PlynlingShortcutService _shortcuts;
     private readonly MemberFlowTracker _memberFlow;
     private readonly ActivityCounter _activity;
+    private readonly SilenceService _silence;
 
     public BotService(
         DiscordSocketClient client,
@@ -60,8 +61,10 @@ internal sealed class BotService : IHostedService
         WelcomeService welcome,
         PlynlingShortcutService shortcuts,
         MemberFlowTracker memberFlow,
-        ActivityCounter activity)
+        ActivityCounter activity,
+        SilenceService silence)
     {
+        _silence = silence;
         _activity = activity;
         _shortcuts = shortcuts;
         _memberFlow = memberFlow;
@@ -145,8 +148,11 @@ internal sealed class BotService : IHostedService
     // themselves rather than being routed around here.
     private async Task HandleMessageAsync(SocketMessage rawMessage)
     {
+        // Silence mode (/debug silence): the trackers still count, but nothing that can answer runs.
+        // A shortcut is a command, so it still answers.
+        bool silent = _silence.IsSilent;
         // Discord's « X joined » line is a system message, which every handler below skips.
-        await _welcome.HandleMessageAsync(rawMessage);
+        if (!silent) await _welcome.HandleMessageAsync(rawMessage);
         // A typed shortcut (« ;pl », « ;work »…) is a command, not talk: like the slash command it
         // stands for, nothing below sees it — no XP, no cailloux, no chatter, no tracker.
         if (await _shortcuts.HandleMessageAsync(rawMessage)) return;
@@ -163,6 +169,9 @@ internal sealed class BotService : IHostedService
         // telling nobody. It has to see every message, which is exactly why it is not
         // a branch inside ChatterService.
         await _shame.HandleMessageAsync(rawMessage);
+        // Only keeps Quokka's room-is-awake clock; answers nothing.
+        await _quokka.HandleMessageAsync(rawMessage);
+        if (silent) return;
         // Before the feedback tracker: a rival's message has to be on record as the
         // most recent action before any verdict arrives that it might have earned.
         await _rivalry.HandleMessageAsync(rawMessage);
@@ -171,8 +180,6 @@ internal sealed class BotService : IHostedService
         // After the reactions, so a wave at a "bonjour" lands before her early hello.
         // Skips anything aimed at her, so it never doubles ChatterService's answer.
         await _morning.HandleMessageAsync(rawMessage);
-        // Only keeps Quokka's room-is-awake clock; answers nothing.
-        await _quokka.HandleMessageAsync(rawMessage);
         // Keeps the quiet clocks. Before the chatter: someone answering her 3 a.m. line
         // gets sent to bed, and that is their answer — no comeback on top.
         if (await _ambient.HandleMessageAsync(rawMessage)) return;
@@ -210,7 +217,7 @@ internal sealed class BotService : IHostedService
     {
         await _emotes.HandleReactionAddedAsync(message, channel, reaction);
         await _xp.HandleReactionAddedAsync(message, channel, reaction);
-        await _reactions.HandleReactionAddedAsync(message, channel, reaction);
+        if (!_silence.IsSilent) await _reactions.HandleReactionAddedAsync(message, channel, reaction);
         await _feedback.HandleReactionAddedAsync(message, channel, reaction);
     }
 

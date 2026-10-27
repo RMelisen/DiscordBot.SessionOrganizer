@@ -21,7 +21,8 @@ namespace ProjectSYNCS.Commands;
 // message. In both, the text goes out as the bot's own words by default; "announce" opts into
 // a herald line naming the owner. /debug absent flags him as absent: while absent, the bot
 // intercepts mentions of him and replies, formally, that he is unavailable (in memory only — a
-// restart clears the flag).
+// restart clears the flag). /debug silence mutes everything she says on her own initiative
+// (SilenceService); unlike absent, it survives a restart.
 //
 // No [CommandContextType]: tell, dm and absent never read Context.Guild and work from a DM;
 // /debug plynling does, and checks for a DM itself rather than hiding the whole group there.
@@ -29,6 +30,12 @@ namespace ProjectSYNCS.Commands;
 public class DebugModule : InteractionModuleBase<SocketInteractionContext>
 {
     public enum AbsenceState
+    {
+        [ChoiceDisplay("Activer")] On,
+        [ChoiceDisplay("Désactiver")] Off,
+    }
+
+    public enum SilenceState
     {
         [ChoiceDisplay("Activer")] On,
         [ChoiceDisplay("Désactiver")] Off,
@@ -89,6 +96,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
 
     private readonly ILogger<DebugModule> _logger;
     private readonly AvailabilityService _availability;
+    private readonly SilenceService _silence;
     private readonly ResponsePicker _picker;
     private readonly PlynlingService _plynlings;
     private readonly PlynlingAnnouncer _announcer;
@@ -113,8 +121,9 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings,
         PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz, QuizCrownService crown,
         StickerService stickers, QuokkaRaidService quokka, ChatAnswerService answers,
-        MonthlyDigestService digest, MinecraftBodyService minecraft)
+        MonthlyDigestService digest, MinecraftBodyService minecraft, SilenceService silence)
     {
+        _silence = silence;
         _minecraft = minecraft;
         _digest = digest;
         _answers = answers;
@@ -929,5 +938,32 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
                 ? $"Mode absent **activé**. Je préviendrai poliment quiconque te mentionne. {Emotes.Sparkle}"
                 : "Mode absent **désactivé**. Tu es de nouveau disponible (˶˃ ᵕ ˂˶)",
             ephemeral: true);
+    }
+
+    [SlashCommand("silence", "La faire taire : elle ne parle plus que pour répondre aux commandes")]
+    public async Task SetSilenceAsync(
+        [Summary("state", "Activer ou désactiver le mode silence")] SilenceState state)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+
+        bool silent = state == SilenceState.On;
+        var since = _silence.Since;
+        _silence.Set(silent);
+
+        string reply = (silent, since) switch
+        {
+            (true, { } already) => $"Je suis déjà muette, depuis le <t:{already.ToUnixTimeSeconds()}:f>. Chut.",
+            (true, null) => "Mode silence **activé**. Plus de bavardage, de réactions, de bonjour ni d'annonces : "
+                            + "je ne parle que pour répondre aux commandes. Les rappels de sessions, les tirages "
+                            + "et les `/remindme` partent toujours. Même après un redémarrage. 🤐",
+            (false, { } began) => $"Mode silence **désactivé** : j'étais muette depuis le <t:{began.ToUnixTimeSeconds()}:f>. "
+                                  + "J'ai plein de choses à dire (˶˃ ᵕ ˂˶)",
+            (false, null) => "Je n'étais pas en mode silence. Je parle, je parle.",
+        };
+        await RespondAsync(reply, ephemeral: true);
     }
 }

@@ -27,6 +27,7 @@ internal sealed class VoiceSpectatorService
     private readonly VoiceSeatService _seat;
     private readonly HerMessages _herMessages;
     private readonly ILogger<VoiceSpectatorService> _logger;
+    private readonly SilenceService _silence;
 
     // Guards both. The sweep is sequential today; the lock keeps it safe if that changes.
     private readonly object _gate = new();
@@ -35,8 +36,9 @@ internal sealed class VoiceSpectatorService
 
     public VoiceSpectatorService(
         XpTracker xp, BreakdownService breakdown, VoiceSeatService seat, HerMessages herMessages,
-        ILogger<VoiceSpectatorService> logger)
+        ILogger<VoiceSpectatorService> logger, SilenceService silence)
     {
+        _silence = silence;
         _xp = xp;
         _breakdown = breakdown;
         _seat = seat;
@@ -89,6 +91,7 @@ internal sealed class VoiceSpectatorService
             DailyRotation.Pick(pool, AppTime.DayNumber(DateTimeOffset.UtcNow), SpectatorSalt + (seated ? SeatedSalt : (ulong)room)),
             LevelCardUi.Duration((long)together.TotalMinutes));
         // A voice channel carries its own text chat: the line lands where the session was.
+        if (_silence.IsSilent) return;
         var sent = await BotChat.PostWithTypingAsync(channel, line, _logger, "voice spectator line", AllowedMentions.None);
         if (sent is null) return;
         _herMessages.Remember(sent, ReplyContext.Lonely);

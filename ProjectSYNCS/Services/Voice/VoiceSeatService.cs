@@ -61,6 +61,7 @@ internal sealed class VoiceSeatService
     private readonly ResponsePicker _picker;
     private readonly HerMessages _herMessages;
     private readonly ILogger<VoiceSeatService> _logger;
+    private readonly SilenceService _silence;
 
     private readonly object _gate = new();
     private readonly Dictionary<ulong, VoiceGathering> _gatherings = new();
@@ -94,8 +95,9 @@ internal sealed class VoiceSeatService
 
     public VoiceSeatService(
         DiscordSocketClient client, IServiceProvider services, SessionAttendanceService attendance, XpTracker xp,
-        ResponsePicker picker, HerMessages herMessages, ILogger<VoiceSeatService> logger)
+        ResponsePicker picker, HerMessages herMessages, ILogger<VoiceSeatService> logger, SilenceService silence)
     {
+        _silence = silence;
         _client = client;
         _services = services;
         _attendance = attendance;
@@ -318,10 +320,12 @@ internal sealed class VoiceSeatService
             }
         }
 
+        // Silence mode: she still takes her seat, but says nothing and keeps her mic shut.
+        bool silent = _silence.IsSilent;
         foreach (var (channelId, line, what) in said)
-            if (guild.GetVoiceChannel(channelId) is { } where)
+            if (!silent && guild.GetVoiceChannel(channelId) is { } where)
                 await BotChat.PostWithTypingAsync(where, line, _logger, what, AllowedMentions.None);
-        if (micGagNow && guild.CurrentUser?.VoiceChannel is { } gagged)
+        if (micGagNow && !silent && guild.CurrentUser?.VoiceChannel is { } gagged)
             _ = Task.Run(() => MicGagAsync(gagged));
         if (streamerChanged) await NotifyAsync();
         if (creditSeat is { } credited && guild.GetVoiceChannel(credited) is { } company)
@@ -451,7 +455,7 @@ internal sealed class VoiceSeatService
         _logger.LogInformation("Voice seat: thrown out of {ChannelId} ({Kicks}), {Reaction}.", channelId, kicks, pout ? "pouting" : "angry");
         await NotifyAsync();
 
-        if (guild.GetVoiceChannel(channelId) is not { } channel) return;
+        if (_silence.IsSilent || guild.GetVoiceChannel(channelId) is not { } channel) return;
         var line = _picker.Pick(pout ? BotResponses.VoiceKickPoutLines : BotResponses.VoiceKickAngryLines);
         _herMessages.Remember(
             await BotChat.PostWithTypingAsync(channel, line, _logger, pout ? "voice pout line" : "voice angry line", AllowedMentions.None),

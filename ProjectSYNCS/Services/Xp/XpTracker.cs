@@ -24,6 +24,7 @@ internal sealed class XpTracker
     private readonly HerMessages _herMessages;
     private readonly PlynlingAnnouncer _announcer;
     private readonly ILogger<XpTracker> _logger;
+    private readonly SilenceService _silence;
 
     // Tuning knobs, not load-bearing — easy to retune without touching the logic
     // that uses them.
@@ -88,8 +89,9 @@ internal sealed class XpTracker
         GuildConfigService config,
         HerMessages herMessages,
         PlynlingAnnouncer announcer,
-        ILogger<XpTracker> logger)
+        ILogger<XpTracker> logger, SilenceService silence)
     {
+        _silence = silence;
         _announcer = announcer;
         _client = client;
         _services = services;
@@ -306,6 +308,8 @@ internal sealed class XpTracker
     private async Task AnnounceAsync(
         ulong guildId, IMessageChannel? earnedIn, ulong userId, int oldLevel, int newLevel, IUser? knownUser)
     {
+        // Silence mode: the level is recorded, only the card is skipped.
+        if (_silence.IsSilent) return;
         var channel = await BotsChannel.ResolveLevelUpAsync(_client, _config, _announcer, guildId) ?? earnedIn;
         if (channel is null) return;
 

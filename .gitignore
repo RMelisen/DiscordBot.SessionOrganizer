@@ -48,6 +48,7 @@ ambient-state.json
 morning-state.json
 avatar-state.json
 minecraft-state.json
+silence-state.json
 
 # Secrets & config overrides
 appsettings.Development.json

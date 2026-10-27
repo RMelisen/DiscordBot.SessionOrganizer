@@ -33,14 +33,16 @@ public sealed class PlynlingSweepService : BackgroundService
     private readonly PlynlingAnnouncer _announcer;
     private readonly PlynlingRoleService _roles;
     private readonly ILogger<PlynlingSweepService> _logger;
+    private readonly SilenceService _silence;
 
     public PlynlingSweepService(
         DiscordSocketClient client,
         IServiceProvider services,
         PlynlingAnnouncer announcer,
         PlynlingRoleService roles,
-        ILogger<PlynlingSweepService> logger)
+        ILogger<PlynlingSweepService> logger, SilenceService silence)
     {
+        _silence = silence;
         _roles = roles;
         _client = client;
         _services = services;
@@ -119,7 +121,8 @@ public sealed class PlynlingSweepService : BackgroundService
                     plynling.DeathAnnounced = true;
                     await plynlings.JournalDeathAsync(plynling);
                     await plynlings.SaveAsync();
-                    await _announcer.AnnounceDeathAsync(plynling, now);
+                    // Silence mode: the death is journaled and marked, never announced later.
+                    if (!_silence.IsSilent) await _announcer.AnnounceDeathAsync(plynling, now);
                 }
                 else if (PlynlingLife.IsSick(plynling) && !plynling.SickNotified)
                 {
@@ -141,13 +144,16 @@ public sealed class PlynlingSweepService : BackgroundService
                 }
 
                 // Told after every save above; a failed post is logged by the announcer, never retried.
-                await _announcer.TellAsync(plynlings, told, plynling.GuildId, now);
+                // Silence mode drops the stories, as a failed post would.
+                bool silent = _silence.IsSilent;
+                if (!silent) await _announcer.TellAsync(plynlings, told, plynling.GuildId, now);
 
                 // Growing up, falling sick, recovering, a friend's death: their events, created after
                 // this Plynling's saves, each on its own (FlushOnActionsAsync swallows and logs). Then
                 // whatever the mascot decided at once, here or in a read earlier in this pass.
                 await plynlings.FlushOnActionsAsync(now);
-                await _announcer.TellAsync(plynlings, plynlings.TakeUntold(), plynling.GuildId, now);
+                var untold = plynlings.TakeUntold();
+                if (!silent) await _announcer.TellAsync(plynlings, untold, plynling.GuildId, now);
             }
             catch (Exception ex)
             {

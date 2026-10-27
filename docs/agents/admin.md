@@ -225,6 +225,7 @@ service is the only writer: any write drops that guild's entry. A failed read de
 `tell`, `dm`, `absent`, `plynling`, `emotes`, `digest` (last month's digest in your DMs now, yours or a preview of Tata's, see
 *`/report` and the monthly digest*), `quiz` (post or close a pop quiz now, see `quiz.md`),
 `sticker` (post any of her sticker strips here, bypassing the gate, see `personality.md`),
+`silence` (see below),
 `answers` (which kinds of chat answer she gives most, and what she couldn't answer specifically,
 see `personality.md`, *Answer stats*),
 `role` (give a member a role; refuses managed / `@everyone` / not-below-her roles up front),
@@ -241,6 +242,31 @@ registered globally). `DebugModule.ParseChannelRef` turns the text back into a c
 because a misread silently sends the owner's message to the wrong place, and a *name* is accepted
 only when exactly one channel matches. `tell` keeps its own `MaxMessageLength` (1500) with an
 explicit refusal — it truncates a body rather than rejecting a title, so it predates `InputCaps`.
+
+### `/debug silence`
+
+`SilenceService` (singleton) holds one switch, kept in `silence-state.json` beside the database so it
+**survives a restart** (unlike `absent`: the owner silences her for a reason that a power cut
+doesn't end). While it is on she says nothing on her own initiative; **answers to commands, buttons
+and `;` shortcuts still go out**, and so do the notices someone set up with a command: session
+reminders, recaps and the roll call, giveaway draws, `/remindme`, the weekend poll's result, and
+Plynling DMs to owners (warnings, sickness). The monthly digest (a DM) and her Minecraft body are
+not touched either, nor is her Discord status.
+
+Where it is checked:
+
+- **The message fan-out** (`BotService`): the counters (activity, emotes, XP, shame, Quokka's
+  clock) still run, then it returns before rivalry, feedback, reactions, the morning wave, ambient,
+  the quiz's typed answers, Synthia, robot heart and the chatter. The welcome line and her
+  reaction pile-ons are skipped too. So « good bot » / « bad bot » verdicts and the absence relay
+  go unrecorded while she's silent.
+- **Each loop at the post itself**: the morning hello, ambient (night, idle, Voyager, wake line),
+  a new bot's welcome, Quokka's slots, the Wednesday poll (left undecided, so it still goes out if
+  silence lifts within its window), level-up cards (the level is still recorded), pop quizzes, the
+  Monday crown announcement (purse and role still move), voice spectator and seat lines and the mic
+  flicker (she still takes her seat), the heat record and router lines, and the sweep's Plynling
+  death announcements and event stories (marked as told, never posted later).
+- **`/debug quiz` and `/debug quokka` bypass it**: the owner asking is a command.
 
 `absent` toggles `AvailabilityService`'s absent flag; mentions of the owner while absent are
 forwarded to him (a bounded 200-entry map, `AllowedMentions.None` since it quotes others verbatim).
