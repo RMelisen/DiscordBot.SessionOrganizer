@@ -13,14 +13,43 @@ degrades silently) and `SessionNotifier` (cancellation DMs).
 **Lifecycle is idempotent.** `SessionEvent.RenderedPhase` records what was last drawn, so the loop
 re-renders only on an actual Scheduled → InProgress → Finished transition.
 
-## `ReminderService` — one 5-minute loop, three independent jobs
+**The card's buttons defer** (`EventComponentHandler`): every handler but « Modifier » (a modal must
+be the first response) calls `DeferAsync` before its first read, redraws through
+`ModifyOriginalResponseAsync` and refuses with ephemeral follow-ups. The same goes for the poll,
+vote and giveaway buttons and the three « publish » steps. Keep it that way for anything added.
 
-Reminder DMs, session lifecycle re-renders, poll auto-close. Each item is guarded separately (root
-`CLAUDE.md`, reliability). **The timing constants are coupled to the 5-minute interval**:
+**Roster fields are capped** at `SessionSeats.MaxCardNames` (20) names, then « … et N autre(s) »;
+poll and vote cards at `MaxPollVoterNames` (10) per option. Uncapped, a session passes a field's
+1024 at about 46 names (MaxPlayers allows 67). The checks build both cards at their worst.
+
+## The waiting list — `SessionWaitlist`
+
+A full session's card says « Peut-être » is the waiting list, so it has to be one. When a place
+opens, every « peut-être » gets a DM (`SessionSpotFreedLines`) with the card's link; the first click
+on « Rejoindre » takes it. **Nobody is promoted automatically**: « peut-être » also means maybe.
+
+- **When** is pure, in `Helpers/Scheduling/SessionSeats`: `PlaceOpened` (a button took a full
+  session below its cap) and `PlaceOpenedByEdit` (the organiser raised the cap of a full session,
+  or made it unlimited). An unlimited session never fills, so it never notifies.
+- **A singleton**, for its per-session `CooldownGate` (10 min): someone leaving and rejoining in a
+  loop can't turn it into a DM cannon. Sent after the card is redrawn, so the click never waits.
+- A command set it up, so silence mode doesn't hold it back.
+
+## `ReminderService` — one 5-minute loop, independent jobs
+
+Reminder DMs, the « peut-être » nudge, session lifecycle re-renders, poll auto-close, `/tonight`
+expiry. Each item is guarded separately (root `CLAUDE.md`, reliability). **The timing constants
+are coupled to the 5-minute interval**:
 
 - The reminder window in `EventService.GetEventsNeedingReminderAsync` is **25–35 minutes** before
   start — wider than the loop so none is missed, `ReminderSent` (reset when the time is edited) so
   none is sent twice.
+- **The « peut-être » nudge** (`SessionMaybeNudgeLines`, by DM, with the card's link) goes out
+  **55–70 minutes** before start (`SessionSeats.NudgeDue`), only while the session has room: on a
+  full one « Peut-être » is the waiting list, and nudging it to join would be a tease.
+  `MaybeNudgeSent` is set before the DMs (a crash costs the nudge, never a second one) and reset
+  with `ReminderSent`. Nobody asked for it, so **silence mode holds it back**; the window then
+  closes on its own.
 - `SessionEvent.Duration` (2 h) sets both InProgress → Finished and the native event's end.
 - `ReminderService.PollLifetime` (2 days) drives auto-close.
 
@@ -155,8 +184,10 @@ snake draft — a snake draft is deterministic, so a reroll would deal the same 
 
 Its **own 1-minute loop** (five minutes late reads as broken, so it can't ride `ReminderService`).
 `ReminderTime` parses « quand » (pure): « 21h » / « 1h30 » alone are **clock times**, the way French
-says « à 21h »; a duration in hours needs « dans » or a spelled unit. The confirmation shows the
-exact time either way.
+says « à 21h »; a duration in hours needs « dans » or a spelled unit, and minutes after an hour stop
+at 59 (« 21h75 » is refused, never read as a duration). « ce soir 9h » is 21:00, « ce soir » alone
+20:00. The confirmation shows the exact time either way. The checks pin about ninety readings: add
+one for every misread found in the wild.
 
 - The row is claimed (`Sent`) before sending and deleted after: a crash costs the reminder, never a
   second copy. Per-item `try`, like every sweep.

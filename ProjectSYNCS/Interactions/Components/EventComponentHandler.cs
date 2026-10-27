@@ -9,14 +9,19 @@ using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Interactions.Components;
 
+// Every handler that reads the database before it can show anything defers first (root CLAUDE.md,
+// reliability): the card is then redrawn with ModifyOriginalResponseAsync, and refusals go out as
+// ephemeral follow-ups. « Modifier » is the exception: a modal must be the first response.
 public class EventComponentHandler : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly EventService _eventService;
+    private readonly SessionWaitlist _waitlist;
     private readonly ILogger<EventComponentHandler> _logger;
 
-    public EventComponentHandler(EventService eventService, ILogger<EventComponentHandler> logger)
+    public EventComponentHandler(EventService eventService, SessionWaitlist waitlist, ILogger<EventComponentHandler> logger)
     {
         _eventService = eventService;
+        _waitlist = waitlist;
         _logger = logger;
     }
 
@@ -41,30 +46,30 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
             return;
         }
 
+        await DeferAsync();
         var gameEvent = await _eventService.GetEventWithParticipantsAsync(eventId);
         if (gameEvent is null || gameEvent.GuildId != Context.Guild.Id)
         {
-            await RespondAsync("Session introuvable.", ephemeral: true);
+            await FollowupAsync("Session introuvable.", ephemeral: true);
             return;
         }
 
         if (!SessionPermissions.CanManage(Context.User, gameEvent))
         {
-            await RespondAsync("Seul l'organisateur ou un administrateur peut annuler cette session.", ephemeral: true);
+            await FollowupAsync("Seul l'organisateur ou un administrateur peut annuler cette session.", ephemeral: true);
             return;
         }
 
         if (gameEvent.IsCancelled)
         {
-            await RespondAsync("Cette session est déjà annulée.", ephemeral: true);
+            await FollowupAsync("Cette session est déjà annulée.", ephemeral: true);
             return;
         }
 
         await _eventService.CancelEventAsync(eventId);
         gameEvent.IsCancelled = true;
 
-        var component = (SocketMessageComponent)Context.Interaction;
-        await component.UpdateAsync(props =>
+        await ModifyOriginalResponseAsync(props =>
         {
             props.Embed = ScheduleModule.BuildEventEmbed(gameEvent, Context.Guild);
             props.Components = new ComponentBuilder().Build();
@@ -116,35 +121,36 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
             return;
         }
 
+        await DeferAsync();
         var gameEvent = await _eventService.GetEventWithParticipantsAsync(eventId);
         if (gameEvent is null || gameEvent.GuildId != Context.Guild.Id)
         {
-            await RespondAsync("Session introuvable.", ephemeral: true);
+            await FollowupAsync("Session introuvable.", ephemeral: true);
             return;
         }
 
         if (gameEvent.IsCancelled)
         {
-            await RespondAsync("Cette session est annulée.", ephemeral: true);
+            await FollowupAsync("Cette session est annulée.", ephemeral: true);
             return;
         }
 
         if (!SessionPermissions.CanManage(Context.User, gameEvent))
         {
-            await RespondAsync("Seul l'organisateur ou un administrateur peut gérer l'événement Discord.", ephemeral: true);
+            await FollowupAsync("Seul l'organisateur ou un administrateur peut gérer l'événement Discord.", ephemeral: true);
             return;
         }
 
         if (gameEvent.NativeEventId != 0)
         {
-            await RespondAsync("Un événement Discord est déjà lié à cette session.", ephemeral: true);
+            await FollowupAsync("Un événement Discord est déjà lié à cette session.", ephemeral: true);
             return;
         }
 
         // Precise feedback: most failures here are the bot missing this permission.
         if (!Context.Guild.CurrentUser.GuildPermissions.ManageEvents)
         {
-            await RespondAsync(
+            await FollowupAsync(
                 "Je n'ai pas la permission « Gérer les événements » sur ce serveur. " +
                 "Demande à un admin de me l'accorder, puis réessaie.",
                 ephemeral: true);
@@ -154,7 +160,7 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
         var nativeId = await SessionEventSync.CreateAsync(Context.Guild, gameEvent, _logger);
         if (nativeId is not ulong id)
         {
-            await RespondAsync(
+            await FollowupAsync(
                 "Impossible de créer l'événement Discord. Réessaie plus tard — le détail de l'erreur est dans mes logs.",
                 ephemeral: true);
             return;
@@ -163,8 +169,7 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
         await _eventService.SetNativeEventIdAsync(eventId, id);
         gameEvent.NativeEventId = id;
 
-        var component = (SocketMessageComponent)Context.Interaction;
-        await component.UpdateAsync(props =>
+        await ModifyOriginalResponseAsync(props =>
         {
             props.Embed = ScheduleModule.BuildEventEmbed(gameEvent, Context.Guild);
             props.Components = ScheduleModule.BuildEventComponents(gameEvent);
@@ -180,22 +185,23 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
             return;
         }
 
+        await DeferAsync();
         var gameEvent = await _eventService.GetEventWithParticipantsAsync(eventId);
         if (gameEvent is null || gameEvent.GuildId != Context.Guild.Id)
         {
-            await RespondAsync("Session introuvable.", ephemeral: true);
+            await FollowupAsync("Session introuvable.", ephemeral: true);
             return;
         }
 
         if (!SessionPermissions.CanManage(Context.User, gameEvent))
         {
-            await RespondAsync("Seul l'organisateur ou un administrateur peut gérer l'événement Discord.", ephemeral: true);
+            await FollowupAsync("Seul l'organisateur ou un administrateur peut gérer l'événement Discord.", ephemeral: true);
             return;
         }
 
         if (gameEvent.NativeEventId == 0)
         {
-            await RespondAsync("Aucun événement Discord n'est lié à cette session.", ephemeral: true);
+            await FollowupAsync("Aucun événement Discord n'est lié à cette session.", ephemeral: true);
             return;
         }
 
@@ -203,8 +209,7 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
         await _eventService.SetNativeEventIdAsync(eventId, 0);
         gameEvent.NativeEventId = 0;
 
-        var component = (SocketMessageComponent)Context.Interaction;
-        await component.UpdateAsync(props =>
+        await ModifyOriginalResponseAsync(props =>
         {
             props.Embed = ScheduleModule.BuildEventEmbed(gameEvent, Context.Guild);
             props.Components = ScheduleModule.BuildEventComponents(gameEvent);
@@ -219,30 +224,32 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
             return;
         }
 
+        // The most-clicked buttons of the bot: two reads and a write before the card can change.
+        await DeferAsync();
         var gameEvent = await _eventService.GetEventWithParticipantsAsync(eventId);
         if (gameEvent is null || gameEvent.GuildId != Context.Guild.Id)
         {
-            await RespondAsync("Session introuvable.", ephemeral: true);
+            await FollowupAsync("Session introuvable.", ephemeral: true);
             return;
         }
 
         if (gameEvent.IsCancelled)
         {
-            await RespondAsync("Cette session a été annulée.", ephemeral: true);
+            await FollowupAsync("Cette session a été annulée.", ephemeral: true);
             return;
         }
 
+        int joinedBefore = gameEvent.Participants.Count(p => p.Status == ParticipantStatus.Joined);
         if (newStatus == ParticipantStatus.Joined)
         {
-            int joinedCount = gameEvent.Participants.Count(p => p.Status == ParticipantStatus.Joined);
             bool alreadyJoined = gameEvent.Participants.Any(p => p.UserId == Context.User.Id && p.Status == ParticipantStatus.Joined);
 
             bool unlimited = gameEvent.MaxPlayers == 0;
-            if (!unlimited && !alreadyJoined && joinedCount >= gameEvent.MaxPlayers)
+            if (!unlimited && !alreadyJoined && joinedBefore >= gameEvent.MaxPlayers)
             {
-                await RespondAsync(
+                await FollowupAsync(
                     $"Cette session est complète ({gameEvent.MaxPlayers}/{gameEvent.MaxPlayers}). " +
-                    "Utilise **Peut-être** pour rejoindre la liste d'attente.",
+                    "Clique **Peut-être** : je préviens les « peut-être » par DM dès qu'une place se libère.",
                     ephemeral: true);
                 return;
             }
@@ -256,10 +263,8 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
 
         var updatedEvent = await _eventService.GetEventWithParticipantsAsync(eventId);
 
-        // The button lives on the session message, so update it in place. This
-        // acknowledges the interaction without sending a confirmation message.
-        var component = (SocketMessageComponent)Context.Interaction;
-        await component.UpdateAsync(props =>
+        // The button lives on the session message, so redraw it in place: no confirmation message.
+        await ModifyOriginalResponseAsync(props =>
         {
             props.Embed = ScheduleModule.BuildEventEmbed(updatedEvent!, Context.Guild);
             props.Components = ScheduleModule.BuildEventComponents(updatedEvent!);
@@ -268,5 +273,10 @@ public class EventComponentHandler : InteractionModuleBase<SocketInteractionCont
         // Reflect the updated participant list in the linked native event, if any.
         // Done after the card update so it never delays the interaction response.
         await SessionEventSync.UpdateAsync(Context.Guild, updatedEvent!, _logger);
+
+        // Someone left a full session: the « peut-être » are its waiting list.
+        int joinedAfter = updatedEvent!.Participants.Count(p => p.Status == ParticipantStatus.Joined);
+        if (SessionSeats.PlaceOpened(updatedEvent.MaxPlayers, joinedBefore, joinedAfter))
+            await _waitlist.NotifyPlaceOpenedAsync(updatedEvent);
     }
 }

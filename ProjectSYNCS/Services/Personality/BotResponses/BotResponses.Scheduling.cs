@@ -41,6 +41,36 @@ internal static partial class BotResponses
         "Il était {2}, j'étais en vocal. Il est maintenant plus tard, et {0} toujours pas là pour **{1}**. Je note." + Sticker.Jenote,
     };
 
+    // By DM, to every « peut-être » of a full session, when a place opens (SessionNotifier): the
+    // card told them « Peut-être » was the waiting list. Everyone on it gets the same news, so the
+    // first click wins; the line says so, never promises the place. {0} = the session's title,
+    // {1} = its start (a Discord timestamp), {2} = the card's link. Sent outside BotChat: no
+    // sticker. string.Format.
+    public static readonly string[] SessionSpotFreedLines =
+    {
+        "Une place vient de se libérer pour **{0}** ({1}). Premier clic sur **Rejoindre**, premier servi : {2}",
+        "Psst. Quelqu'un s'est désisté de **{0}**. La place est libre. Pour l'instant (¬_¬)\n{2}",
+        "Désistement détecté sur **{0}** ({1}). Je t'ai gardé l'info, pas la place. Vite : {2}",
+        "Tu disais « peut-être » pour **{0}**. Une place s'est libérée, c'est le moment de dire oui : {2}",
+        "Liste d'attente de **{0}** : ça bouge. La première personne qui clique **Rejoindre** prend la place (˶ᵔ ᵕ ᵔ˶)\n{2}",
+        "Bonne nouvelle : une place pour **{0}** ({1}). Mauvaise nouvelle : je l'ai dit à tous les « peut-être ». Cours : {2}",
+    };
+
+    // By DM, about an hour before a session, to the people still on « Peut-être » while it has room
+    // (ReminderService). A nudge to pick a side, not a reminder: the confirmed people get theirs
+    // later. {0} = the session's title, {1} = its start, relative (« dans une heure »), {2} = the
+    // card's link. Sent outside BotChat: no sticker. string.Format.
+    public static readonly string[] SessionMaybeNudgeLines =
+    {
+        "**{0}** commence {1}. Tu es toujours en « peut-être ». Je dis ça, je dis rien. Enfin si : {2}",
+        "Tu as dit « peut-être » pour **{0}**. Sur ce serveur, « peut-être » veut souvent dire non. Prouve-moi le contraire : {2}",
+        "**{0}**, {1}. Oui ou non ? « Peut-être », c'est pas une réponse, c'est une esquive (¬_¬)\n{2}",
+        "**{0}** commence {1}. Les « peut-être », je sais pas où les ranger. **Rejoindre** ou **Refuser**, que je mette mes logs à jour : {2}",
+        "Rappel aux indécis : **{0}**, {1}. Mes logs aiment pas les cases à moitié cochées ദ്ദി◝ ⩊ ◜.ᐟ\n{2}",
+        "Toujours « peut-être » pour **{0}** ? Ça commence {1}. Le doute, c'est bien en philo. Pas dans mon planning : {2}",
+        $"**{{0}}** commence {{1}}, et il reste de la place. Il manque juste ta décision {Emotes.Sparkle}\n{{2}}",
+    };
+
     // The roll call once the session's people have scattered, when some confirmed people never
     // showed: the count, never the names (the list under the line names who came, and who was
     // late). {0} = the session's title, {1} = how many confirmed people came (may be 1, so no

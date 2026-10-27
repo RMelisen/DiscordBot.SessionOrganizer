@@ -16,7 +16,7 @@ public static class PebbleEconomy
     // bonus rather than a second salary.
     public const long PassivePerGrant = 1;
 
-    // 30% x 3 shifts x the average shift (50) = 45. Derived, so tuning /work moves it.
+    // 30% x 3 shifts x the average shift (32.5) = 29. Derived, so tuning /work moves it.
     public static long PassiveDailyCap => (long)Math.Round(PassiveShare * ShiftsPerDay * (WorkMin + WorkMax) / 2.0);
 
     public static long RollWorkPay() => Random.Shared.Next(WorkMin, WorkMax + 1);

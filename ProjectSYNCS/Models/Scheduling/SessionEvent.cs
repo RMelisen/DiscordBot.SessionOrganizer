@@ -36,6 +36,10 @@ public class SessionEvent
     public bool ReminderSent { get; set; } = false;
     public bool IsCancelled { get; set; } = false;
 
+    // The DM to the people still on « Peut-être », about an hour before (ReminderService). Set
+    // before the DMs go out, reset with ReminderSent when the time moves.
+    public bool MaybeNudgeSent { get; set; } = false;
+
     // Her two lines around a voice session (SessionAttendanceService): the late call at
     // start + LateCallAfter, and the recap once the group has scattered. Each is set before
     // its message goes out, so a crash costs a missing line, never a second one. Reset with

@@ -24,6 +24,7 @@ internal sealed class ChatterService
     private readonly HerMessages _herMessages;
     private readonly PiHealthService _health;
     private readonly IServiceProvider _services;
+    private readonly ActivityCounter _activity;
     private readonly ILogger<ChatterService> _logger;
 
     // Secret badges earned through her chat; fire-and-forget, never awaited on the gateway path.
@@ -97,8 +98,10 @@ internal sealed class ChatterService
         ChatListening listening,
         CardReplyService cards,
         BadgeAwarder badges,
+        ActivityCounter activity,
         ILogger<ChatterService> logger)
     {
+        _activity = activity;
         _badges = badges;
         _cards = cards;
         _streaks = streaks;
@@ -643,27 +646,14 @@ internal sealed class ChatterService
         public static IntentPick Of(string[] pool, string kind) => new(pool, string.Empty, string.Empty, null, kind);
     }
 
-    // Counts an answer for `/debug answers` (ChatAnswerService), off the gateway handler: the
-    // fan-out awaits every handler, and a failed count must never cost an answer. A message she
-    // found nothing specific to say to is also kept, without its author, in the same save
-    // (UnansweredLog: 30 rolling days).
+    // Counts an answer for `/debug answers`, in memory (ActivityCounter, written every few minutes):
+    // never a database write per answer. A message she found nothing specific to say to is also kept,
+    // without its author (UnansweredLog: 30 rolling days).
     private void Count(SocketUserMessage message, ChatPath path, string kind)
     {
         var guildId = (message.Channel as SocketGuildChannel)?.Guild.Id ?? 0;
-        var unanswered = AnswerKinds.IsUnrecognised(kind) ? message.Content ?? string.Empty : null;
-
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await using var scope = _services.CreateAsyncScope();
-                await scope.ServiceProvider.GetRequiredService<ChatAnswerService>().AddAsync(guildId, path, kind, unanswered);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Could not count a {Kind} answer.", kind);
-            }
-        });
+        var unanswered = AnswerKinds.IsUnrecognised(kind) ? UnansweredLog.Clean(message.Content ?? string.Empty) : null;
+        _activity.CountAnswer(guildId, AnswerKinds.Key(path), kind, unanswered, DateTimeOffset.UtcNow);
     }
 
     // Papa's pet name for her, as its family's pool; null for none. The callers check it is Papa.

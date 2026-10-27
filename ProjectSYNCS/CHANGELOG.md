@@ -3,6 +3,16 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.44.0 — 2026-10-27
+
+- A full session's waiting list is real now: when a place opens (someone leaves, or the organiser raises the cap), everyone on « Peut-être » gets a DM with the card's link, and the first click takes it.
+- About an hour before a session that still has room, whoever is on « Peut-être » gets a DM asking them to pick a side (not while she's silenced).
+- Session and poll cards stay sendable with a big crowd: past 20 names per list (10 voters per poll option) the rest becomes « … et N autre(s) ».
+- The session, poll, vote and giveaway buttons, and publishing a session, poll or vote, answer at once instead of sometimes looking dead on a slow day.
+- Emotes, reactions and her chat answers are counted in memory and saved every 5 minutes, instead of one database write each.
+- `/remindme`: « ce soir 9h » means 21:00 (and « ce soir » alone 20:00), and an impossible time like « 21h75 » is refused instead of read as a duration.
+- `/help` has a third page, « Cailloux & objets », with `/work`, `/balance` and every `/inventory` command.
+
 ## 7.43.1 — 2026-10-27
 
 - While silenced, she no longer sits in voice calls (and leaves the one she's in), and « good bot » / « bad bot » still count — she just doesn't answer them.

@@ -123,6 +123,8 @@ namespace ProjectSYNCS.Services;
 //   [Scheduling] Organising
 //     SessionLateCallLines ..... ten minutes into a session, to who isn't in voice (SessionAttendanceService)
 //     SessionLateCallSeatedLines  same, when she has been in voice since before the start
+//     SessionSpotFreedLines .... DM to the « peut-être » of a full session when a place opens
+//     SessionMaybeNudgeLines ... DM to the « peut-être » about an hour before (ReminderService)
 //     SessionRecapLines · SessionRecapFullLines ... the roll call after it, someone missing / everyone came
 //     WeekendPollLines ......... her Wednesday poll (WeekendPollService)
 //     WeekendPollResultLines · WeekendPollDeadLines ... it closed with votes / with none (ReminderService)

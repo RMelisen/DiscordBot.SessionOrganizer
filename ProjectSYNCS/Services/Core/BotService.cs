@@ -160,7 +160,7 @@ internal sealed class BotService : IHostedService
         // After the shortcut return (a shortcut is a command, counted as one) and before every
         // handler that may end the fan-out early.
         _activity.CountMessage(rawMessage);
-        await _emotes.HandleMessageAsync(rawMessage);
+        _emotes.HandleMessage(rawMessage);
         // Independent of every other tracker here — reads only the raw message and
         // its own per-user cooldown gates — so its position relative to the others
         // is not load-bearing.

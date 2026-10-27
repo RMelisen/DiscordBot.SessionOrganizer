@@ -16,6 +16,7 @@ public class ReminderService : BackgroundService
     private readonly IServiceProvider _services;
     private readonly DiscordSocketClient _client;
     private readonly ResponsePicker _picker;
+    private readonly SilenceService _silence;
     private readonly ILogger<ReminderService> _logger;
 
     private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(5);
@@ -24,8 +25,10 @@ public class ReminderService : BackgroundService
         IServiceProvider services,
         DiscordSocketClient client,
         ResponsePicker picker,
+        SilenceService silence,
         ILogger<ReminderService> logger)
     {
+        _silence = silence;
         _services = services;
         _client = client;
         _picker = picker;
@@ -41,6 +44,7 @@ public class ReminderService : BackgroundService
         {
             await Task.Delay(CheckInterval, stoppingToken);
             await ProcessRemindersAsync();
+            await ProcessMaybeNudgesAsync();
             await ProcessLifecycleAsync();
             await ProcessPollAutoCloseAsync();
             await ProcessTonightExpiryAsync();
@@ -285,6 +289,70 @@ public class ReminderService : BackgroundService
                 _logger.LogError(ex, "Failed to process reminders for event {EventId}.", sessionEvent.Id);
             }
         }
+    }
+
+    // About an hour before a session with room left, a DM to whoever is still on « Peut-être »: pick
+    // a side. Nobody asked for it, so silence mode holds it back (the flag stays unset, and the window
+    // closes on its own). The flag is set before the DMs: a crash costs the nudge, never a second one.
+    private async Task ProcessMaybeNudgesAsync()
+    {
+        if (_silence.IsSilent) return;
+
+        await using var scope = _services.CreateAsyncScope();
+        var eventService = scope.ServiceProvider.GetRequiredService<EventService>();
+
+        List<SessionEvent> events;
+        try
+        {
+            events = await eventService.GetEventsNeedingMaybeNudgeAsync(DateTimeOffset.UtcNow);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to query sessions for « peut-être » nudges.");
+            return;
+        }
+
+        foreach (var sessionEvent in events)
+        {
+            try
+            {
+                await eventService.MarkMaybeNudgeSentAsync(sessionEvent.Id);
+                await NudgeMaybesAsync(sessionEvent);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to nudge the « peut-être » of event {EventId}.", sessionEvent.Id);
+            }
+        }
+    }
+
+    private async Task NudgeMaybesAsync(SessionEvent sessionEvent)
+    {
+        var maybes = sessionEvent.Participants.Where(p => p.Status == ParticipantStatus.Maybe).ToList();
+        var ts = sessionEvent.ScheduledAt.ToUnixTimeSeconds();
+        var link = $"https://discord.com/channels/{sessionEvent.GuildId}/{sessionEvent.ChannelId}/{sessionEvent.MessageId}";
+        var line = string.Format(_picker.Pick(BotResponses.SessionMaybeNudgeLines),
+            Format.Sanitize(sessionEvent.Title), $"<t:{ts}:R>", link);
+
+        foreach (var participant in maybes)
+        {
+            try
+            {
+                var user = await _client.GetUserAsync(participant.UserId);
+                if (user is null) continue;
+                var dm = await user.CreateDMChannelAsync();
+                await dm.SendMessageAsync(line, allowedMentions: AllowedMentions.None);
+            }
+            catch (HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
+            {
+                _logger.LogInformation("User {UserId} has DMs disabled; no « peut-être » nudge.", participant.UserId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "« Peut-être » nudge for event {EventId} not sent to {UserId}.", sessionEvent.Id, participant.UserId);
+            }
+        }
+        _logger.LogInformation("Nudged {Count} « peut-être » of event {EventId}.", maybes.Count, sessionEvent.Id);
     }
 
     private async Task SendRemindersForEventAsync(SessionEvent sessionEvent, EventService eventService)

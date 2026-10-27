@@ -1486,6 +1486,9 @@ namespace ProjectSYNCS.Migrations
                     b.Property<int>("MaxPlayers")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("MaybeNudgeSent")
+                        .HasColumnType("INTEGER");
+
                     b.Property<long>("MessageId")
                         .HasColumnType("INTEGER");
 

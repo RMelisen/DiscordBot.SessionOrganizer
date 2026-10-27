@@ -35,11 +35,13 @@ internal sealed class CardReplyService
     private readonly GlitchService _glitch;
     private readonly ResponsePicker _picker;
     private readonly IServiceProvider _services;
+    private readonly ActivityCounter _activity;
     private readonly ILogger<CardReplyService> _logger;
 
     public CardReplyService(DiscordSocketClient client, GlitchService glitch, ResponsePicker picker,
-        IServiceProvider services, ILogger<CardReplyService> logger)
+        IServiceProvider services, ActivityCounter activity, ILogger<CardReplyService> logger)
     {
+        _activity = activity;
         _client = client;
         _glitch = glitch;
         _picker = picker;
@@ -88,15 +90,8 @@ internal sealed class CardReplyService
 
             _logger.LogInformation("{Name} replied under card {Card} — {Intent}.", name, card, intent);
             await _glitch.ReplyWithTypingAsync(message, line, _logger, what, Muted);
-            try
-            {
-                // A failed count must never cost the answer, nor the repost.
-                await sp.GetRequiredService<ChatAnswerService>().AddAsync(guild.Id, ChatPath.Reply, AnswerKinds.Card(intent));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Could not count a {Intent} card reply.", intent);
-            }
+            // In memory (ActivityCounter): a count can never cost the answer, nor the repost.
+            _activity.CountAnswer(guild.Id, AnswerKinds.Key(ChatPath.Reply), AnswerKinds.Card(intent), null, DateTimeOffset.UtcNow);
 
             if (!repost) return;
             try

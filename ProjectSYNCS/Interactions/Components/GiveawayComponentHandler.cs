@@ -33,17 +33,19 @@ public class GiveawayComponentHandler : InteractionModuleBase<SocketInteractionC
             return;
         }
 
+        // A read and a write before the card can change: defer first (root CLAUDE.md, reliability).
+        await DeferAsync();
         var giveaway = await _giveaways.GetAsync(giveawayId);
         if (giveaway is null || giveaway.GuildId != Context.Guild.Id)
         {
-            await RespondAsync("Tirage introuvable.", ephemeral: true);
+            await FollowupAsync("Tirage introuvable.", ephemeral: true);
             return;
         }
 
         // The sweep may have drawn it between the card being rendered and this click.
         if (giveaway.IsClosed)
         {
-            await RespondAsync("Ce tirage est déjà terminé.", ephemeral: true);
+            await FollowupAsync("Ce tirage est déjà terminé.", ephemeral: true);
             return;
         }
 
@@ -55,8 +57,7 @@ public class GiveawayComponentHandler : InteractionModuleBase<SocketInteractionC
         var updated = await _giveaways.GetAsync(giveawayId);
         if (updated is null) return;
 
-        var component = (SocketMessageComponent)Context.Interaction;
-        await component.UpdateAsync(props =>
+        await ModifyOriginalResponseAsync(props =>
         {
             props.Embed = GiveawayModule.BuildEmbed(updated);
             props.Components = GiveawayModule.BuildComponents(updated);

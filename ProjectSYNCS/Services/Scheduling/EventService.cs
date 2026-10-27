@@ -1,4 +1,5 @@
 using ProjectSYNCS.Data;
+using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -134,6 +135,7 @@ public class EventService
         if (evt.ScheduledAt != scheduledAt)
         {
             evt.ReminderSent = false;
+            evt.MaybeNudgeSent = false;
             evt.LateCallSent = false;
             evt.RecapSent = false;
             await _db_context.Participants
@@ -170,6 +172,32 @@ public class EventService
         return candidates
             .Where(e => e.ScheduledAt >= windowStart && e.ScheduledAt <= windowEnd)
             .ToList();
+    }
+
+    /// <summary>
+    /// Sessions whose « peut-être » are due their nudge now (SessionSeats.NudgeDue: about an hour
+    /// before, with room left). Flags in SQL, the window in memory (SQLite and DateTimeOffset).
+    /// </summary>
+    public async Task<List<SessionEvent>> GetEventsNeedingMaybeNudgeAsync(DateTimeOffset now)
+    {
+        var candidates = await _db_context.SessionEvents
+            .Include(e => e.Participants)
+            .Where(e => !e.MaybeNudgeSent && !e.IsCancelled)
+            .ToListAsync();
+
+        return candidates
+            .Where(e => e.Participants.Any(p => p.Status == ParticipantStatus.Maybe))
+            .Where(e => SessionSeats.NudgeDue(e.ScheduledAt, now, e.MaxPlayers,
+                e.Participants.Count(p => p.Status == ParticipantStatus.Joined)))
+            .ToList();
+    }
+
+    public async Task MarkMaybeNudgeSentAsync(int eventId)
+    {
+        var evt = await _db_context.SessionEvents.FindAsync(eventId);
+        if (evt is null) return;
+        evt.MaybeNudgeSent = true;
+        await _db_context.SaveChangesAsync();
     }
 
     public async Task MarkReminderSentAsync(int eventId)

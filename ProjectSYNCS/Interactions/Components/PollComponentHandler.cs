@@ -25,16 +25,18 @@ public class PollComponentHandler : InteractionModuleBase<SocketInteractionConte
             return;
         }
 
+        // A read and a write before the card can change: defer first (root CLAUDE.md, reliability).
+        await DeferAsync();
         var poll = await _pollService.GetPollWithVotesAsync(pollId);
         if (poll is null || poll.GuildId != Context.Guild.Id)
         {
-            await RespondAsync("Sondage introuvable.", ephemeral: true);
+            await FollowupAsync("Sondage introuvable.", ephemeral: true);
             return;
         }
 
         if (poll.IsClosed)
         {
-            await RespondAsync("Ce sondage est clôturé.", ephemeral: true);
+            await FollowupAsync("Ce sondage est clôturé.", ephemeral: true);
             return;
         }
 
@@ -42,12 +44,11 @@ public class PollComponentHandler : InteractionModuleBase<SocketInteractionConte
             pollId, optionId, Context.User.Id, Context.User.Username);
         if (updated is null)
         {
-            await RespondAsync("Créneau introuvable.", ephemeral: true);
+            await FollowupAsync("Créneau introuvable.", ephemeral: true);
             return;
         }
 
-        var component = (SocketMessageComponent)Context.Interaction;
-        await component.UpdateAsync(props =>
+        await ModifyOriginalResponseAsync(props =>
         {
             props.Embed = PollModule.BuildPollEmbed(updated);
             props.Components = PollModule.BuildPollComponents(updated);
@@ -63,30 +64,31 @@ public class PollComponentHandler : InteractionModuleBase<SocketInteractionConte
             return;
         }
 
+        // A read and a write before the card can change: defer first (root CLAUDE.md, reliability).
+        await DeferAsync();
         var poll = await _pollService.GetPollWithVotesAsync(pollId);
         if (poll is null || poll.GuildId != Context.Guild.Id)
         {
-            await RespondAsync("Sondage introuvable.", ephemeral: true);
+            await FollowupAsync("Sondage introuvable.", ephemeral: true);
             return;
         }
 
         if (!SessionPermissions.CanManage(Context.User, poll))
         {
-            await RespondAsync("Seul l'organisateur ou un administrateur peut clôturer ce sondage.", ephemeral: true);
+            await FollowupAsync("Seul l'organisateur ou un administrateur peut clôturer ce sondage.", ephemeral: true);
             return;
         }
 
         if (poll.IsClosed)
         {
-            await RespondAsync("Ce sondage est déjà clôturé.", ephemeral: true);
+            await FollowupAsync("Ce sondage est déjà clôturé.", ephemeral: true);
             return;
         }
 
         await _pollService.ClosePollAsync(pollId);
         poll.IsClosed = true;
 
-        var component = (SocketMessageComponent)Context.Interaction;
-        await component.UpdateAsync(props =>
+        await ModifyOriginalResponseAsync(props =>
         {
             props.Embed = PollModule.BuildPollEmbed(poll);
             props.Components = PollModule.BuildPollComponents(poll);

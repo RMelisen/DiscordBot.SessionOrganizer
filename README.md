@@ -57,7 +57,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/debug quokka` | Make Quokka show up in the bots channel now (tests) | owner |
 | `/debug minecraft` | Her state on the Minecraft server (with her body's last log lines), everything she carries, or what her body is doing right now and how its process copes; send her in / take her out now, or allow / forbid her joining at all | owner |
 | `/health` | Her check-up: the Pi's temperature and power, her memory, the Discord connection, storage, the outage log | everyone |
-| `/help` | In-Discord usage guide | everyone |
+| `/help` | In-Discord usage guide: commands, cailloux & items, how-tos | everyone |
 
 "Staff" means Administrator or Manage Server, the bot's owner, or a configured
 moderator role. Staff-only commands are visible to everyone but refuse politely.
@@ -79,7 +79,12 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
   and is removed when the session is cancelled.
 - **Lifecycle** — at start time a card flips to **🔴 In progress** (buttons
   disabled), then to **✅ Finished** ~2 h later.
-- **Reminders** — signed-up participants get a DM before the session starts.
+- **Reminders** — signed-up participants get a DM before the session starts. About an hour
+  before, whoever is still on **Maybe** gets a DM asking them to pick a side (only while the
+  session has room).
+- **Waiting list** — when a capped session is full, **Maybe** is the waiting list: as soon as a
+  place opens (someone leaves, or the organizer raises the cap), every « peut-être » gets a DM with
+  the card's link, and the first to click **Join** takes it.
 - **Roll call** — for a *Game* or *Movie* session, she watches who turns up in voice. Ten
   minutes in, she pings the people who signed up and aren't there yet (once someone is); when
   the group scatters she posts the tally — who came, who was late, and how many never showed
@@ -129,7 +134,7 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
   teams, at random or **balanced** by level (the most even of many random deals, so a reshuffle
   still changes the teams). **Remélanger** draws again from whoever is in voice now.
 - **`/remindme when what`** — a reminder by DM, in her voice: `10m`, `dans 2h`, `dans 1h30`, `3j`,
-  `21h30`, `demain 9h`, `samedi 14h`, `25/12 10:00`… (« 21h » alone is a time; a duration in hours
+  `21h30`, `demain 9h`, `ce soir 9h` (21:00), `samedi 14h`, `25/12 10:00`… (« 21h » alone is a time; a duration in hours
   needs « dans »). Up to 60 days ahead, 15 pending at most. If your DMs are closed she pings you
   in the channel where you asked. **`/reminders`** lists yours and cancels one.
 - **`/rate thing`** — a score out of 10, hashed from the text: the same thing always gets the same

@@ -128,6 +128,9 @@ public class VoteModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
+        // Two writes, a read and a send before the wizard can close: defer first.
+        await DeferAsync();
+
         var poll = await _pollService.CreateTextPollAsync(
             Context.Guild.Id, Context.Channel.Id, Context.User.Id, draft.Title, draft.Options);
         var full = await _pollService.GetPollWithVotesAsync(poll.Id);
@@ -139,13 +142,7 @@ public class VoteModule : InteractionModuleBase<SocketInteractionContext>
 
         _drafts.TryRemove(Context.User.Id, out _);
 
-        var component = (SocketMessageComponent)Context.Interaction;
-        await component.UpdateAsync(msg =>
-        {
-            msg.Content = "Vote publié.";
-            msg.Components = new ComponentBuilder().Build();
-        });
-        await component.DeleteOriginalResponseAsync();
+        await DeleteOriginalResponseAsync();
     }
 
     // ---- Listing + republishing active text votes ------------------------

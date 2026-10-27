@@ -25,6 +25,7 @@ internal sealed class XpTracker
     private readonly PlynlingAnnouncer _announcer;
     private readonly ILogger<XpTracker> _logger;
     private readonly SilenceService _silence;
+    private readonly ActivityCounter _activity;
 
     // Tuning knobs, not load-bearing — easy to retune without touching the logic
     // that uses them.
@@ -89,8 +90,9 @@ internal sealed class XpTracker
         GuildConfigService config,
         HerMessages herMessages,
         PlynlingAnnouncer announcer,
-        ILogger<XpTracker> logger, SilenceService silence)
+        ILogger<XpTracker> logger, SilenceService silence, ActivityCounter activity)
     {
+        _activity = activity;
         _silence = silence;
         _announcer = announcer;
         _client = client;
@@ -152,7 +154,7 @@ internal sealed class XpTracker
 
         // Counted before the cooldown claim, and regardless of it: every reaction is a
         // reaction used, even the ones too soon after the last to be worth any XP.
-        await CountReactionAsync(guildChannel.GuildId, reaction.UserId, delta);
+        _activity.CountReactionUsed(guildChannel.GuildId, reaction.UserId, delta, DateTimeOffset.UtcNow);
 
         if (delta <= 0) return;
 
@@ -160,21 +162,6 @@ internal sealed class XpTracker
         if (!_reactionXp.TryClaim(key)) return;
 
         await GrantAsync(guildChannel.GuildId, reaction.UserId, ReactionXp, resolved);
-    }
-
-    private async Task CountReactionAsync(ulong guildId, ulong userId, int delta)
-    {
-        try
-        {
-            await using var scope = _services.CreateAsyncScope();
-            var xp = scope.ServiceProvider.GetRequiredService<XpService>();
-            await xp.AddReactionUsedAsync(guildId, userId, delta);
-        }
-        catch (Exception ex)
-        {
-            // A leaderboard counter is a nicety; never let it stop the XP grant below.
-            _logger.LogWarning(ex, "Failed to count a reaction for user {UserId}.", userId);
-        }
     }
 
     /// <summary>

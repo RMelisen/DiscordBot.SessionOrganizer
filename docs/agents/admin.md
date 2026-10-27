@@ -118,8 +118,9 @@ same check.
 - **Joins and leaves** (`MemberFlowDailyStat`, `MemberFlowTracker` on `UserJoined` / `UserLeft`,
   bots skipped): daily buckets with **no totals table**, counted from 7.5.0 on. Nothing needs an
   all-time figure older than the buckets, and Discord shows the member count.
-- **Activity counting** (`activity`, `commands`): the one batched counter. A database write per
-  message would be the bot's first, on a Pi with no `SQLITE_BUSY` handling, so the counts go to
+- **Activity counting** (`activity`, `commands`, and the per-message counts of other subsystems:
+  emotes, reactions used, her chat answers): the one batched counter. A database write per message
+  or reaction is what fills a Pi with no `SQLITE_BUSY` handling, so the counts go to
   `ActivityCounter` (a singleton holding its own lock, every method synchronous and cheap) and
   `ActivityFlushService` (its own 5-minute loop) writes them.
   - Fed by the message fan-out right after the shortcut return (a typed shortcut is counted as a

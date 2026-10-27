@@ -25,9 +25,11 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
     private static readonly ConcurrentDictionary<ulong, string> _draftTitles = new();
 
     private readonly CardRepost _repost;
+    private readonly SessionWaitlist _waitlist;
 
-    public ScheduleModule(EventService eventService, CardRepost repost)
+    public ScheduleModule(EventService eventService, CardRepost repost, SessionWaitlist waitlist)
     {
+        _waitlist = waitlist;
         _eventService = eventService;
         _repost = repost;
     }
@@ -393,12 +395,13 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        if (scheduledAt <= DateTimeOffset.Now)
+        if (scheduledAt <= DateTimeOffset.UtcNow)
         {
             await FollowupAsync("La session doit être planifiée dans le futur.", ephemeral: true);
             return;
         }
 
+        int oldMaxPlayers = gameEvent.MaxPlayers;
         await _eventService.UpdateEventAsync(eventId, modal.SessionTitle.Trim(), scheduledAt, maxPlayers);
         var updated = await _eventService.GetEventWithParticipantsAsync(eventId);
 
@@ -420,6 +423,11 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         await SessionEventSync.UpdateAsync(Context.Guild, updated);
 
         await FollowupAsync("Session mise à jour ✅", ephemeral: true);
+
+        // A raised cap on a full session: the « peut-être » are its waiting list.
+        int joined = updated.Participants.Count(p => p.Status == ParticipantStatus.Joined);
+        if (SessionSeats.PlaceOpenedByEdit(oldMaxPlayers, updated.MaxPlayers, joined))
+            await _waitlist.NotifyPlaceOpenedAsync(updated);
     }
 
     public static Modal BuildEditModal(SessionEvent gameEvent)
@@ -473,7 +481,7 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        if (scheduledAt <= DateTimeOffset.Now)
+        if (scheduledAt <= DateTimeOffset.UtcNow)
         {
             await modalInteraction.UpdateAsync(msg =>
             {
@@ -482,6 +490,10 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             });
             return;
         }
+
+        // A write, a send and another write before the wizard can close: defer first (root
+        // CLAUDE.md, reliability). Everything above answered from memory.
+        await modalInteraction.DeferAsync();
 
         var gameEvent = await _eventService.CreateEventAsync(
             guildId: Context.Guild.Id,
@@ -501,11 +513,6 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
 
         // Dismiss the ephemeral wizard message now that the session exists.
         _draftTitles.TryRemove(Context.User.Id, out _);
-        await modalInteraction.UpdateAsync(msg =>
-        {
-            msg.Content = "Session créée.";
-            msg.Components = new ComponentBuilder().Build();
-        });
         await modalInteraction.DeleteOriginalResponseAsync();
     }
 
@@ -579,14 +586,19 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             eb.AddField("📅 Événement Discord",
                 $"https://discord.com/events/{gameEvent.GuildId}/{gameEvent.NativeEventId}");
 
+        // Capped (SessionSeats.MaxCardNames): past about 46 mentions a field passes Discord's 1024
+        // and the whole card fails to send.
+        static string Roster(List<Participant> people) =>
+            SessionSeats.Mentions(people.Select(p => p.UserId).ToList(), SessionSeats.MaxCardNames);
+
         if (joined.Count > 0)
-            eb.AddField($"Participants ({joined.Count})", string.Join("\n", joined.Select(p => $"<@{p.UserId}>")));
+            eb.AddField($"Participants ({joined.Count})", Roster(joined));
 
         if (maybes.Count > 0)
-            eb.AddField($"Peut-être ({maybes.Count})", string.Join("\n", maybes.Select(p => $"<@{p.UserId}>")));
+            eb.AddField($"Peut-être ({maybes.Count})", Roster(maybes));
 
         if (declined.Count > 0)
-            eb.AddField($"Absents ({declined.Count})", string.Join("\n", declined.Select(p => $"<@{p.UserId}>")));
+            eb.AddField($"Absents ({declined.Count})", Roster(declined));
 
         return eb.Build();
     }

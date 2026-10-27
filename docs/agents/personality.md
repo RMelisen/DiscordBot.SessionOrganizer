@@ -52,12 +52,14 @@ from `/help` and the README.
   A new kind needs nothing else: it shows up once it's counted. A fact line that falls back is counted
   as the line it replaced.
 - **Totals + daily buckets** (`ChatAnswerStat` / `ChatAnswerDailyStat`, `ChatAnswerService`), the root
-  pattern; GuildId 0 is DMs. The write runs **off the gateway handler** (`ChatterService.Count`,
-  `Task.Run` in its own scope, caught and logged): a failed count never costs an answer.
+  pattern; GuildId 0 is DMs. **Counted in memory** (`ActivityCounter.CountAnswer`, from
+  `ChatterService.Count` and `CardReplyService`) and written by `ActivityFlushService` every 5
+  minutes (see admin): never a database write per answer, and a count can never cost one. The view
+  lags by up to 5 minutes.
 - **The examples are kept 30 rolling days** (`UnansweredExample` rows; rules in `UnansweredLog`): the
   messages whose answer `AnswerKinds.IsUnrecognised` (the plain fallbacks, and the fact and nudge
-  lines standing in for one). Written by `ChatAnswerService.AddAsync` in the same save as the count
-  (off the handler, like it), which also prunes anything older — `Day` is an int, so the delete and
+  lines standing in for one). Batched with the counts; the flush that writes them also prunes
+  anything older — `Day` is an int, so the delete and
   the window run in SQL. **No author is kept**, at the owner's request: only what was said,
   whitespace collapsed, 200 characters at most. The examples view follows `period` (7 or 30 days;
   « depuis toujours » is the 30 kept).

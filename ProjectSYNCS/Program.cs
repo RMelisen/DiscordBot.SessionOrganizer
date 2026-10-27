@@ -141,6 +141,7 @@ var host = Host.CreateDefaultBuilder(args)
         // The roll call and the voice seat keep in-memory clocks; both are fed by VoiceXpService's
         // sweep, and the seat reads the roll call's sessions (live-session tie-break).
         services.AddSingleton<SessionAttendanceService>();
+        services.AddSingleton<SessionWaitlist>();
         services.AddSingleton<VoiceSeatService>();
         services.AddSingleton<VoiceSpectatorService>();
         // In-memory hourly window against raids: a singleton.

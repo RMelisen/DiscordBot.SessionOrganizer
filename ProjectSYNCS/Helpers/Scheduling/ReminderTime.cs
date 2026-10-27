@@ -7,8 +7,8 @@ namespace ProjectSYNCS.Helpers;
 /// <list type="bullet">
 /// <item>relative: « 10m », « 2h », « 1h30 », « 3j », « 1 semaine », « dans 2 heures et 5 minutes »;</item>
 /// <item>absolute, on Paris wall clock: « 21:30 », « 21h », « demain 9h », « après-demain 18h »,
-/// « samedi 14h », « 25/12 10:00 », « 25/12/2027 8h ». A time already past today means tomorrow; a
-/// day without a time means 9:00.</item>
+/// « samedi 14h », « 25/12 10:00 », « 25/12/2027 8h », « ce soir 9h » (21:00). A time already past
+/// today means tomorrow; a day without a time means 9:00, « ce soir » alone 20:00.</item>
 /// </list>
 /// Returns the instant (UTC), or null when nothing parses. The range (<see cref="Min"/>,
 /// <see cref="Max"/>) is the caller's to check, so it can say which way the request missed.
@@ -19,6 +19,8 @@ public static partial class ReminderTime
     public static readonly TimeSpan Max = TimeSpan.FromDays(60);
 
     private const int DefaultHour = 9;
+    // « ce soir » without a time.
+    private const int EveningHour = 20;
 
     private static readonly string[] Weekdays =
         { "dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi" };
@@ -78,8 +80,9 @@ public static partial class ReminderTime
                 "h" or "heure" or "heures" => TimeSpan.FromHours(1),
                 "j" or "jour" or "jours" or "d" => TimeSpan.FromDays(1),
                 "s" or "sem" or "semaine" or "semaines" => TimeSpan.FromDays(7),
-                // « 1h30 »: a bare number right after hours is minutes.
-                "" when lastUnit == TimeSpan.FromHours(1) => TimeSpan.FromMinutes(1),
+                // « 1h30 »: a bare number right after hours is minutes, and minutes of an hour stop
+                // at 59. « 21h75 » is a clock time with bad minutes, not 21 hours and 75 minutes.
+                "" when lastUnit == TimeSpan.FromHours(1) && n < 60 => TimeSpan.FromMinutes(1),
                 _ => null,
             };
             if (step is null) return null;
@@ -98,13 +101,15 @@ public static partial class ReminderTime
         if (dayPart.Length == 0 && timePart.Length == 0) return null;
 
         var now = AppTime.ToZoned(nowUtc).DateTime;
-        int hour = DefaultHour, minute = 0;
+        int hour = dayPart == "ce soir" ? EveningHour : DefaultHour, minute = 0;
         if (timePart.Length > 0)
         {
             var bits = timePart.Replace(" ", "").Split('h', ':');
             if (!int.TryParse(bits[0], out hour)) return null;
             if (bits.Length > 1 && bits[1].Length > 0 && !int.TryParse(bits[1], out minute)) return null;
             if (hour > 23 || minute > 59) return null;
+            // « ce soir 9h » is 21:00: French counts the evening on twelve hours too.
+            if (dayPart == "ce soir" && hour < 12) hour += 12;
         }
 
         DateTime date;

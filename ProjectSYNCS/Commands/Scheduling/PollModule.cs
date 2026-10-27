@@ -101,7 +101,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         if (AppTime.TryParseWallClock($"{date}T{hour}:{minute}", "yyyy-MM-ddTHH:mm", out var slot)
-            && slot > DateTimeOffset.Now
+            && slot > DateTimeOffset.UtcNow
             && !draft.Slots.Contains(slot)
             && draft.Slots.Count < MaxOptions)
         {
@@ -150,6 +150,9 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
+        // Two writes, a read and a send before the wizard can close: defer first.
+        await DeferAsync();
+
         var poll = await _pollService.CreatePollAsync(
             Context.Guild.Id, Context.Channel.Id, Context.User.Id, draft.Title, draft.Slots);
         var full = await _pollService.GetPollWithVotesAsync(poll.Id);
@@ -161,13 +164,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
 
         _drafts.TryRemove(Context.User.Id, out _);
 
-        var component = (SocketMessageComponent)Context.Interaction;
-        await component.UpdateAsync(msg =>
-        {
-            msg.Content = "Sondage publié.";
-            msg.Components = new ComponentBuilder().Build();
-        });
-        await component.DeleteOriginalResponseAsync();
+        await DeleteOriginalResponseAsync();
     }
 
     // ---- Listing + republishing active polls -----------------------------
@@ -280,14 +277,16 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
+        // Reads (and, for her poll, the sessions) before the first step can show: defer first.
+        await DeferAsync(ephemeral: true);
         var poll = await _pollService.GetPollWithVotesAsync(pollId);
         if (poll is null || poll.GuildId != Context.Guild.Id)
         {
-            await RespondAsync("Sondage introuvable.", ephemeral: true);
+            await FollowupAsync("Sondage introuvable.", ephemeral: true);
             return;
         }
 
-        var now = DateTimeOffset.Now;
+        var now = DateTimeOffset.UtcNow;
         var futureSlots = poll.Options.Where(o => o.ScheduledAt > now).ToList();
         int max = futureSlots.Count == 0 ? 0 : futureSlots.Max(o => o.Votes.Count);
         var winners = max > 0
@@ -302,7 +301,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
             && winners.Any(o => o.Votes.Any(v => v.UserId == Context.User.Id));
         if (!SessionPermissions.CanManage(Context.User, poll) && !votedForWinner)
         {
-            await RespondAsync(
+            await FollowupAsync(
                 ownPoll
                     ? "Seul quelqu'un qui a voté pour le créneau retenu (ou un administrateur) peut créer cette session."
                     : "Seul l'organisateur ou un administrateur peut créer une session depuis ce sondage.",
@@ -312,7 +311,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
 
         if (futureSlots.Count == 0)
         {
-            await RespondAsync("Tous les créneaux de ce sondage sont déjà passés.", ephemeral: true);
+            await FollowupAsync("Tous les créneaux de ce sondage sont déjà passés.", ephemeral: true);
             return;
         }
 
@@ -324,7 +323,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
             var taken = winners.FirstOrDefault(o => planned.Any(e => e.ScheduledAt == o.ScheduledAt));
             if (taken is not null)
             {
-                await RespondAsync(
+                await FollowupAsync(
                     $"Une session est déjà prévue à ce créneau (<t:{taken.ScheduledAt.ToUnixTimeSeconds()}:F>).",
                     ephemeral: true);
                 return;
@@ -342,14 +341,14 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         if (max > 0 && winners.Count == 1)
         {
             var datetime = AppTime.ToZoned(winners[0].ScheduledAt).ToString("yyyy-MM-ddTHH:mm");
-            await RespondAsync(
+            await FollowupAsync(
                 $"Créneau retenu : <t:{winners[0].ScheduledAt.ToUnixTimeSeconds()}:F>\n**Quel type de session ?**",
                 components: BuildSessionCategoryStep(datetime), ephemeral: true);
             return;
         }
 
         // Tie (or no votes at all): let the organizer pick which slot to schedule.
-        await RespondAsync(
+        await FollowupAsync(
             max > 0
                 ? "Égalité entre plusieurs créneaux — **choisis celui à planifier** :"
                 : "Aucun vote — **choisis le créneau à planifier** :",
@@ -516,8 +515,9 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         {
             int n = o.Votes.Count;
             sb.Append($"{(n == 0 ? "🔴" : "🟢")} {OptionText(o)} — **{n}** ");
+            // Capped per option, so ten busy options still fit the description's 4096.
             if (n > 0)
-                sb.Append("  " + string.Join(" ", o.Votes.Select(v => $"<@{v.UserId}>")));
+                sb.Append("  " + SessionSeats.Mentions(o.Votes.Select(v => v.UserId).ToList(), SessionSeats.MaxPollVoterNames, " "));
             sb.AppendLine();
         }
 
@@ -553,7 +553,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         {
             // Date polls can be turned into a real session, as long as at least one
             // proposed slot is still in the future. Text polls have no such action.
-            if (!isText && poll.Options.Any(o => o.ScheduledAt > DateTimeOffset.Now))
+            if (!isText && poll.Options.Any(o => o.ScheduledAt > DateTimeOffset.UtcNow))
                 builder.WithButton("Créer une session", $"poll:tosession:{poll.Id}",
                     ButtonStyle.Success, new Emoji("🗓️"));
             return builder.Build();
