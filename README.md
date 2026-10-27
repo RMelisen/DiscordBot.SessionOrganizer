@@ -69,8 +69,9 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 - **`/schedule create`** — in one line: `title` and `when` (« samedi 21h », « 25/12 20:30 »,
   « demain », « ce soir », previewed as you type) post the card at once; `category`, `places`,
   `duration`, `voice` (the session's voice channel) and `description` are optional. Without a
-  title and a time, a private wizard (type → day, or « Autre date… » → hour → details) asks for
-  the rest.
+  title and a time, a private wizard (type → day, or « Autre date… » → hour → name, places and
+  description) asks for the rest, then shows a preview where duration, voice channel and « Chaque
+  semaine » are picked before « Publier ».
 - **Weekly sessions** — `weekly:True` repeats the session every week, same day, same time (Paris
   time, across the changes of time); each one is posted three days ahead and is an ordinary
   session you can edit or cancel on its own. « Arrêter la série » stops it.

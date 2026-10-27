@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.50.0 — 2026-10-27
+
+- The `/schedule create` wizard ends on a preview: after the name, places and a new description field, duration, voice channel and « Chaque semaine » are picked there before « Publier ». A poll turned into a session goes through the same preview.
+- Session cards show « Durée : » instead of a clock emoji; the « Peut-être » and « +1 h » buttons lost their emoji.
+
 ## 7.49.0 — 2026-10-27
 
 - Weekly sessions: `/schedule create weekly:True` repeats a session every week, same day and same time in Paris (it stays at the same hour across the changes of time). Each one is posted three days ahead as an ordinary session that can be edited or cancelled on its own, and « Arrêter la série » in « Gérer » stops it.

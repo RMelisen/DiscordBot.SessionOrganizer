@@ -180,7 +180,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "« demain », « ce soir »), et c'est publié. En option : `category`, `places`, `duration`, " +
                 "`voice` (le salon vocal), `description`, et `weekly` pour la répéter chaque semaine.\n" +
                 "**Pas à pas** : sans `title` ni `when`, un assistant privé te fait choisir le type, le jour " +
-                "(ou **Autre date…**), l'heure et les minutes, puis le nom et les places (vide = illimité). " +
+                "(ou **Autre date…**), l'heure et les minutes, puis le nom, les places (vide = illimité) et une " +
+                "description. Un aperçu règle la durée, le salon vocal et **Chaque semaine**, puis **Publier**. " +
                 "**Retour** revient à l'étape précédente.")
             .AddField("Boutons d'une session",
                 "✅ **Rejoindre** · 🤔 **Peut-être** · ✖️ **Refuser** — jusqu'au début de la session.\n" +

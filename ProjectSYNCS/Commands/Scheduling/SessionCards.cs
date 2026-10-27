@@ -56,7 +56,7 @@ public static class SessionCards
         int id = session.Id;
         builder.AddComponent(new ActionRowBuilder()
             .WithButton("Rejoindre", $"event:join:{id}", ButtonStyle.Success, new Emoji("✅"))
-            .WithButton("Peut-être", $"event:sub:{id}", ButtonStyle.Secondary, new Emoji("🤔"))
+            .WithButton("Peut-être", $"event:sub:{id}", ButtonStyle.Secondary)
             .WithButton("Refuser", $"event:decline:{id}", ButtonStyle.Danger, new Emoji("✖️")));
 
         var second = new ActionRowBuilder()
@@ -135,8 +135,8 @@ public static class SessionCards
         {
             $"📅 <t:{ts}:F> · <t:{ts}:R>",
             session.VoiceChannelId != 0
-                ? $"⏱️ {SessionTime.DurationLabel(session.DurationMinutes)} · 🔊 <#{session.VoiceChannelId}>"
-                : $"⏱️ {SessionTime.DurationLabel(session.DurationMinutes)}",
+                ? $"Durée : {SessionTime.DurationLabel(session.DurationMinutes)} · 🔊 <#{session.VoiceChannelId}>"
+                : $"Durée : {SessionTime.DurationLabel(session.DurationMinutes)}",
         };
         if (!string.IsNullOrWhiteSpace(session.Description))
             lines.Add(Format.Sanitize(session.Description.Trim()));

@@ -86,6 +86,12 @@ alone is 21:00) and previewed by `SessionWhenAutocompleteHandler`, whose value i
 at most); `/vote create`'s modal takes one option per line (`PollRules.ParseOptions`). The pickers'
 day lists end with « Autre date… », a modal read by the same parser.
 
+The session picker never publishes from its modal: a valid modal (name, places, description) lands
+on a **review step** (`schedule:rv:*`) where what a modal can't hold is picked: duration (select),
+voice channel (channel select, clearable), « Chaque semaine » (toggle), then « Publier ». « Modifier »
+reopens the modal pre-filled and comes back to the review. A poll's « Créer une session » goes
+through the same review. The one-line `/schedule create` skips it.
+
 A card that fails to post deletes what was created for it (the session and its series, the poll),
 and `CardPostFailure.Explain` names the missing permission (Voir le salon, Envoyer des messages,
 Intégrer des liens).
@@ -228,8 +234,11 @@ repoint a session's native event). A new card kind that can be republished goes 
 a new step means a new segment through every handler *and* the matching `Retour` handler. From the
 details modal on, **the instant travels as unix seconds** (`schedule:finalize:{category}:{unix}`,
 `schedule:frompoll:{pollId}:{category}:{unix}`, `schedule:typed:{category}` for « Autre date… »),
-never as a wall-clock string. Only what the person typed is in the `DraftBox`, so a failed modal can
-be reopened pre-filled (`schedule:retry…`).
+never as a wall-clock string. Until the modal is valid, only what the person typed is in the
+`DraftBox`, so a failed modal can be reopened pre-filled (`schedule:retry…`). From the review step on,
+the whole session is in the draft (category, instant, poll id) and its custom-ids carry nothing;
+« Publier » takes it. A poll's session starts from a fresh draft, so options left over from an
+earlier `/schedule create` never leak into it.
 
 **`PollModule` and `VoteModule` keep the whole draft in a `DraftBox`** keyed by user id (a
 variable-length list doesn't fit a custom-id), taken on finish, removed on cancel.
