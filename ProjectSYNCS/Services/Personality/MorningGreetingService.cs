@@ -44,6 +44,7 @@ internal sealed class MorningGreetingService : BackgroundService
     private readonly DiscordSocketClient _client;
     private readonly GuildConfigService _config;
     private readonly ILogger<MorningGreetingService> _logger;
+    private readonly SilenceService _silence;
     private readonly string _statePath;
 
     // Guards everything below: the loop and the gateway both read and claim the day.
@@ -65,8 +66,9 @@ internal sealed class MorningGreetingService : BackgroundService
         DiscordSocketClient client,
         GuildConfigService config,
         IConfiguration configuration,
-        ILogger<MorningGreetingService> logger)
+        ILogger<MorningGreetingService> logger, SilenceService silence)
     {
+        _silence = silence;
         _client = client;
         _config = config;
         _logger = logger;
@@ -208,6 +210,11 @@ internal sealed class MorningGreetingService : BackgroundService
 
     private async Task PostHelloAsync(IMessageChannel channel)
     {
+        if (_silence.IsSilent)
+        {
+            _logger.LogInformation("Morning greeting skipped: silence mode.");
+            return;
+        }
         if (await AlreadyGreetedTodayAsync(channel))
         {
             _logger.LogInformation("Morning greeting skipped: already said today.");

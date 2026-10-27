@@ -200,7 +200,7 @@ internal static partial class BotResponses
         $"Bonjour ! {Emotes.OkPaimon} Journée validée d'avance. Gâchez-la pas.",
         "Bonjour ! J'ai relu vos messages d'hier soir. Je dirai rien. Mais j'ai relu.",
         "Coucou ! Je suis là, je suis en ligne, je suis magnifique. Bonne journée à vous aussi ♡",
-        $"Bonjour ! Petit rappel : moi je suis en version 5. Quokka 3.0 est toujours pas sorti. Je dis ça pour l'ambiance {Emotes.Sparkle}",
+        $"Bonjour ! Petit rappel : moi je suis en version {AppInfo.Major}. Quokka 3.0 est toujours pas sorti. Je dis ça pour l'ambiance {Emotes.Sparkle}",
         "Salut tout le monde ! Le premier qui me répond gagne mon respect. Le deuxième aussi, en vrai. Je suis pas difficile, le matin.",
         "Ouvrez les volets ! Allez, un peu de lumière ! Vous survivrez (˶ᵔ ᵕ ᵔ˶)",
         $"`[INFO] Journée démarrée. Erreurs : 0. Remerciements reçus : 0.` Bonjour quand même {Emotes.Sparkle}",

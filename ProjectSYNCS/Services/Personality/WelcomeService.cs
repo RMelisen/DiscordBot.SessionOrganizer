@@ -28,6 +28,7 @@ internal sealed class WelcomeService
     private readonly BreakdownService _breakdown;
     private readonly HerMessages _herMessages;
     private readonly ILogger<WelcomeService> _logger;
+    private readonly SilenceService _silence;
 
     private readonly object _gate = new();
     private readonly Queue<DateTimeOffset> _recent = new();
@@ -35,8 +36,9 @@ internal sealed class WelcomeService
 
     public WelcomeService(
         GuildConfigService config, ResponsePicker picker,
-        BreakdownService breakdown, HerMessages herMessages, ILogger<WelcomeService> logger)
+        BreakdownService breakdown, HerMessages herMessages, ILogger<WelcomeService> logger, SilenceService silence)
     {
+        _silence = silence;
         _config = config;
         _picker = picker;
         _breakdown = breakdown;
@@ -82,7 +84,7 @@ internal sealed class WelcomeService
     /// <summary>A member joined: only a bot is handled here (see the class comment).</summary>
     public async Task HandleUserJoinedAsync(SocketGuildUser user)
     {
-        if (!user.IsBot || user.Id == user.Guild.CurrentUser?.Id) return;
+        if (!user.IsBot || user.Id == user.Guild.CurrentUser?.Id || _silence.IsSilent) return;
         if (user.Guild.Id != HomeGuild.Id) return;
 
         try

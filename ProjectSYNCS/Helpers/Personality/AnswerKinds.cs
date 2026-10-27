@@ -45,6 +45,8 @@ public static class AnswerKinds
     public const string PapaChild = "papa:pet-child";
     // Told « chut » in that channel: a sulk reaction instead of words (ChatHush).
     public const string Hushed = "hushed";
+    // A word or two answering one of her open questions (OpenAnswerLines).
+    public const string OpenAnswer = "open-answer";
 
     internal static string Intent(ChatIntent intent) => "intent:" + intent;
     public static string Context(ReplyContext context) => "context:" + context;

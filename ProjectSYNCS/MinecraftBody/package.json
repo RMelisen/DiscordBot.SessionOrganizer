@@ -2,6 +2,7 @@
   "name": "projectsyncs-minecraft-body",
   "private": true,
   "description": "SYNCS's body on the Minecraft server, driven by the C# bot over stdin/stdout.",
+  "type": "module",
   "main": "index.js",
   "engines": {
     "node": ">=22"

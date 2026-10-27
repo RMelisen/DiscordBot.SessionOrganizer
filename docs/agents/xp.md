@@ -19,10 +19,12 @@ a level can always be recomputed, so a column would only drift.
 
 **XP is a reward; `ReactionsUsed` and `VoiceMinutes` are facts.** Every reaction counts even when it
 earns no XP. Wipes reset the reward and keep the facts (see root `CLAUDE.md`, migrations). The two
-counters are written **only from `XpTracker`**, never from `EmoteTracker` or `VoiceXpService`: the
+counters are decided **only in `XpTracker`**, never in `EmoteTracker` or `VoiceXpService`: the
 reaction count is taken *after* the exclusion check and *before* the 60 s cooldown claim; the voice
-minute rides the same call that grants voice XP. Removal decrements (clamped at zero, never
-creating a row), otherwise add/remove loops would inflate the ranking. No XP is ever withdrawn.
+minute rides the same call that grants voice XP. The reaction count goes to `ActivityCounter` (in
+memory) and `ActivityFlushService` writes it every 5 minutes (see admin), like `EmoteTracker`'s
+counts: never a database write per reaction. Removal decrements (clamped at zero, a net removal
+never creating a row), otherwise add/remove loops would inflate the ranking. No XP is ever withdrawn.
 
 **`MemberXp` / `MemberDailyStat`** is a totals+buckets pair: all-time reads `MemberXp` and is exact;
 windows only cover data since the buckets shipped.

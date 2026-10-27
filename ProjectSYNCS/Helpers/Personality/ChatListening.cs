@@ -3,7 +3,7 @@ namespace ProjectSYNCS.Helpers;
 /// <summary>
 /// Who she is still listening to, per (channel, person), for messages that neither tag her, reply to
 /// her nor say her name: the Discord twin of her Minecraft body's call and answered windows
-/// (docs/agents/minecraft.md, *An order can come in two steps*).
+/// (docs/agents/minecraft-orders.md, *An order can come in two steps*).
 /// <list type="bullet">
 /// <item><b>Called</b>: they only called her (« syncs ? », a bare tag). Their next message within
 /// <see cref="Window"/> is read as said to her, whatever it is. One message only.</item>

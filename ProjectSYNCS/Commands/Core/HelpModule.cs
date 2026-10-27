@@ -19,9 +19,10 @@ namespace ProjectSYNCS.Commands;
 // assert both caps.
 //
 // So: keep every field short, and split a section rather than letting one grow. The guide
-// is two pages, swapped in place by the buttons (HelpComponentHandler): the 6000 counts
-// every embed of a message, so a second embed would not have bought any room — a second
-// page does. The command list is the first page; the how-tos are the second.
+// is three pages, swapped in place by the buttons (HelpComponentHandler): the 6000 counts
+// every embed of a message, so a second embed would not have bought any room — another
+// page does. The command list is the first page, cailloux and items the second, the
+// how-tos the third.
 public class HelpModule : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("help", "Comment utiliser le bot d'organisation de sessions")]
@@ -29,17 +30,25 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
 
     public const int CommandsPage = 0;
     public const int GuidePage = 1;
+    public const int EconomyPage = 2;
+    public static readonly int[] Pages = { CommandsPage, EconomyPage, GuidePage };
 
     /// <summary>
     /// One page of the guide. Static and Context-free so each page's size can be checked
     /// without a gateway connection — see the note above for why that matters.
     /// </summary>
-    public static Embed BuildEmbed(int page) => page == GuidePage ? BuildGuide() : BuildCommands();
+    public static Embed BuildEmbed(int page) => page switch
+    {
+        GuidePage => BuildGuide(),
+        EconomyPage => BuildEconomy(),
+        _ => BuildCommands(),
+    };
 
     // Read by HelpComponentHandler: each button carries its own page, so no two share an id.
     public static MessageComponent BuildButtons(int page) =>
         new ComponentBuilder()
             .WithButton("Commandes", $"help:page:{CommandsPage}", ButtonStyle.Secondary, disabled: page == CommandsPage)
+            .WithButton("Cailloux & objets", $"help:page:{EconomyPage}", ButtonStyle.Secondary, disabled: page == EconomyPage)
             .WithButton("Mode d'emploi", $"help:page:{GuidePage}", ButtonStyle.Secondary, disabled: page == GuidePage)
             .Build();
 
@@ -52,7 +61,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "et laisse les autres s'inscrire en un clic.")
             .WithColor(Color.Blue)
             .AddField("Commandes — Sessions",
-                "**`/schedule create`** — Planifie une session (assistant en 4 étapes).\n" +
+                "**`/schedule create`** — Planifie une session : en une ligne (`title` + `when`) ou pas à pas. " +
+                "`weekly` la répète chaque semaine.\n" +
                 "**`/schedule list`** — Les sessions actives. Tu peux en republier une ici.\n" +
                 "**`/schedule edit <id>`** — Modifie une session que tu as organisée.\n" +
                 "**`/schedule cancel <id>`** — Annule une session que tu as organisée.")
@@ -64,7 +74,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/rate`** — Je note n'importe quoi sur 10. Et je ne change jamais d'avis.\n" +
                 "**`/ship`** — Deux noms, un pourcentage. Je calcule si ça va ensemble. `@random` tire quelqu'un au sort.\n" +
                 "**`/blame`** — C'est la faute de qui ? Je tranche, parmi les gens en vocal.\n" +
-                "**`/wouldyourather`** — Tu préfères… ? Deux boutons, résultats dans 10 minutes.")
+                "**`/wouldyourather`** — Tu préfères… ? Deux boutons, résultats dans 10 minutes.\n" +
+                "**`/confess`** — Une confession anonyme, que je poste numérotée. Personne ne saura que c'est toi.")
             .AddField("Commandes — Arcade",
                 "**`/arcade duel`** · **`heist`** — Pierre-feuille-ciseaux contre quelqu'un ; un casse chez Quokka en équipe.\n" +
                 "**`/arcade race`** — Une course de Plynlings, avec des paris.\n" +
@@ -74,10 +85,11 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/arcade puissance4`** · **`morpion`** — Contre quelqu'un, ou contre moi.\n" +
                 "Et parfois, Quokka passe dans le salon des bots : frappe-le pour des cailloux.")
             .AddField("Commandes — Sondages & votes",
-                "**`/poll create`** — Propose des créneaux, chacun vote pour ses disponibilités.\n" +
+                "**`/when create`** — Propose des créneaux (`slots` : « ven 21h, sam 21h »), chacun vote pour ses disponibilités.\n" +
                 "**`/vote create`** — Pareil, mais avec des options en texte (jeux, films…).\n" +
-                "**`/poll list`** · **`/vote list`** — Les sondages et votes actifs.\n" +
-                "**`/poll delete <id>`** · **`/vote delete <id>`** — Supprime le tien.")
+                "En option : la durée, **un seul choix**, **anonyme**.\n" +
+                "**`/when list`** · **`/vote list`** — Les sondages et votes actifs.\n" +
+                "**`/when delete <id>`** · **`/vote delete <id>`** — Supprime le tien.")
             .AddField("Commandes — Tirages au sort",
                 "**`/giveaway create`** — **Réservé au staff.** Lance un tirage : le **lot**, une **durée** (10 min à 7 jours), " +
                 "et en option une **description** et un **nombre de gagnants** (1 par défaut, 10 max).\n" +
@@ -110,9 +122,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .AddField("Commandes — Plynlings",
                 "**`/plynling help`** — Adopte un petit champignon, nourris-le, garde-le en vie. " +
                 "Tout est expliqué là-dedans. Raccourcis : `/pl`, et `;pl` en texte.\n" +
-                "**`/inventory view`** — Tes objets, ton garde-manger, ta collection et ta garde-robe.\n" +
-                "**`/inventory collection`** — Ton carnet. Une collection complète se **dépose** (un exemplaire " +
-                "de chaque objet) contre sa récompense et un badge : Bronze, Argent, Or, Platine, Diamant.")
+                "Cailloux, objets, boutiques et échanges : page **Cailloux & objets**.")
             .AddField("Commandes — Minecraft",
                 "**`/minecraft help`** — Ce que je comprends en jeu. **`status`** · **`where`** · **`inventory`** · " +
                 "**`stats`** — Où j'en suis sur le serveur.\n" +
@@ -120,7 +130,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .AddField("Commandes — Staff & aide",
                 "**`/admin xp add|remove`** · **`/admin pebble add|remove`** — Ajuster l'XP ou les cailloux de quelqu'un.\n" +
                 "**`/admin stats`** · **`/admin dashboard`** — L'économie du serveur, en un coup d'œil et jour après jour.\n" +
-                "**`/report`** — Mes rapports : sessions, sondages, vie du serveur, activité, commandes, quiz, Plynlings, émotes, endormis, et moi.\n" +
+                "**`/report`** — Mes rapports : sessions, sondages, vie du serveur, activité, commandes, quiz, Plynlings, émotes, endormis, Minecraft, et moi.\n" +
                 "**`/admin plynling rename`** · **`/admin plynling resurrect`** — Gérer le Plynling de quelqu'un.\n" +
                 "**`/admin warn`** · **`/admin warnings`** · **`/admin unwarn`** — Avertissements, reçus en DM.\n" +
                 "**`/admin mute|unmute`** — Exclusion temporaire.\n" +
@@ -128,6 +138,30 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "le salon du quiz, le salon des bots, le salon principal et les rôles Plynling et Grosse tête. **`/config show`** affiche la configuration actuelle.\n" +
                 "**`/health`** — Mon bilan de santé : température, mémoire, connexion, pannes.\n" +
                 "**`/help`** — Affiche ce message.")
+            .WithFooter($"Project S.Y.N.C.S. v{AppInfo.Version}")
+            .Build();
+
+    // Cailloux and everything they buy: /work, /balance, /inventory.
+    private static Embed BuildEconomy() =>
+        new EmbedBuilder()
+            .WithTitle("Project S.Y.N.C.S. — Aide : cailloux & objets")
+            .WithDescription(
+                "Les **cailloux** sont ma monnaie. On en gagne en travaillant, en parlant (un peu, " +
+                "plafonné chaque jour), au quiz et à l'arcade.")
+            .WithColor(Color.Blue)
+            .AddField("Commandes — Cailloux",
+                "**`/work`** — Un petit boulot pour moi, toutes les 4 h. Raccourci : `;work` en texte.\n" +
+                "**`/balance`** — Tes cailloux, visibles par toi seul.")
+            .AddField("Commandes — Inventaire",
+                "**`/inventory view`** — Tes objets, ton garde-manger, ta collection et ta garde-robe.\n" +
+                "**`/inventory collection`** — Ton carnet. Une collection complète se **dépose** (un exemplaire " +
+                "de chaque objet) contre sa récompense et un badge : Bronze, Argent, Or, Platine, Diamant.\n" +
+                "**`/inventory shop`** — Nourriture, savon et médicaments pour ton garde-manger (−10 % dès 5).\n" +
+                "**`/inventory cosmetics`** — Des cosmétiques pour ton Plynling, nouvelle sélection chaque lundi.\n" +
+                "**`/inventory craft`** — Fabrique des cosmétiques avec tes objets de collection.\n" +
+                "**`/inventory give`** — Offre un objet à quelqu'un.\n" +
+                "**`/inventory trade`** — Propose un échange d'objets (l'offre dure 1 h).\n" +
+                "**`/inventory sell`** — Revends des objets contre des cailloux.")
             .WithFooter($"Project S.Y.N.C.S. v{AppInfo.Version}")
             .Build();
 
@@ -142,33 +176,38 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "— quelqu'un de muet ne compte pas comme de la compagnie, et le salon AFK ne rapporte rien.\n" +
                 "Le gain en vocal **diminue au fil de la journée** (plein tarif la première heure, " +
                 "puis de moins en moins) et repart à zéro chaque nuit.")
-            .AddField("Créer une session — pas à pas",
-                "Lance **`/schedule create`**. Un assistant privé te guide :\n" +
-                "**1.** *Type* — 🎮 Jeu, 🧑‍🤝‍🧑 Activité, 🎬 Film ou ✨ Autre.\n" +
-                "**2.** *Jour* — Aujourd'hui, Demain, puis les 25 prochains jours.\n" +
-                "**3.** *Heure* — de 00h à 23h. **4.** *Minutes* — :00, :15, :30 ou :45.\n" +
-                "**5.** *Détails* — le **nom** et, en option, le **nombre de participants max** " +
-                "(vide = illimité).\n" +
-                "**Retour** revient à l'étape précédente. La carte est publiée une fois validée.")
+            .AddField("Créer une session",
+                "**En une ligne** : **`/schedule create`** avec `title` et `when` (« samedi 21h », « 25/12 20:30 », " +
+                "« demain », « ce soir »), et c'est publié. En option : `category`, `places`, `duration`, " +
+                "`voice` (le salon vocal), `description`, et `weekly` pour la répéter chaque semaine.\n" +
+                "**Pas à pas** : sans `title` ni `when`, un formulaire privé demande le nom et la date " +
+                "(« samedi 21h », « demain »). L'aperçu montre la vraie " +
+                "carte : type, places, durée, salon vocal et **Chaque semaine** s'y règlent, il prévient si une " +
+                "autre session tombe en même temps, et **Publier** la poste. Il reprend tes choix de la dernière fois.")
             .AddField("Boutons d'une session",
-                "✅ **Rejoindre** · 🔄 **Peut-être** · ✖️ **Refuser**\n" +
-                "✏️ **Modifier** · 🗑️ **Annuler** — réservés à l'organisateur.\n" +
-                "📅 **Créer/Retirer l'événement Discord** — réservé à l'organisateur : ajoute ou retire " +
-                "un événement dans l'onglet **Événements**, synchronisé avec la session.\n" +
-                "**✏️ Modifier** (ou `/schedule edit <id>`) ouvre un formulaire : nom, date " +
-                "(`AAAA-MM-JJ`), heure (`HH:mm` — c'est ici qu'on fixe une heure précise) et " +
-                "participants max (0 = illimité).")
+                "✅ **Rejoindre** · 🤔 **Peut-être** · ✖️ **Refuser** — jusqu'au début de la session.\n" +
+                "Session complète ? **Peut-être** te met en liste d'attente : je préviens les « peut-être » " +
+                "en DM dès qu'une place se libère, et le premier qui clique la prend.\n" +
+                "⚙️ **Gérer** — pour l'organisateur et le staff, en privé : **Modifier** (nom, date, places, " +
+                "durée, description), **Annuler**, **Republier**, retirer l'événement Discord, arrêter une " +
+                "session hebdomadaire.\n" +
+                "📅 **Événement Discord** ajoute la session à l'onglet **Événements**, synchronisée, puis y mène.")
             .AddField("Sondages & votes — mode d'emploi",
-                "Après **`/poll create`** ou **`/vote create`**, donne un titre puis ajoute tes " +
-                "créneaux ou tes options un par un (jusqu'à 10), et termine avec **✅ Terminer**.\n" +
-                "Chacun clique ensuite **tout** ce qui lui convient — plusieurs choix possibles.\n" +
-                "L'organisateur clôture avec **🔒 Clôturer** : le plus voté est mis en avant. " +
-                "Pour un sondage, **🗓️ Créer une session** transforme le créneau retenu en session.")
+                "**`/when create`** avec `title` et `slots` (« ven 21h, sam 21h ») publie tout de suite ; sinon " +
+                "l'assistant ajoute les créneaux un par un (jusqu'à 10). **`/vote create`** avec `title` et " +
+                "`options` (« Valorant, Among Us ») publie tout de suite ; sinon les options, **une par ligne**.\n" +
+                "Chacun clique **tout** ce qui lui convient, sauf en **un seul choix**. **🗳️ Mes votes** te " +
+                "rappelle les tiens. Un sondage **anonyme** n'affiche que les comptes.\n" +
+                "⚙️ **Gérer** : **Clôturer**, **Renommer**, **Prolonger**, ajouter ou retirer une option. " +
+                "Une fois clos, **🗓️ Créer une session** transforme le créneau retenu en session, et ses " +
+                "votants y sont mis en « peut-être ».")
             .AddField("Bon à savoir",
-                "Les sondages et votes restés ouverts se **clôturent automatiquement au bout de 2 jours**.\n" +
-                "Les inscrits reçoivent un **rappel en message privé** avant le début de la session.\n" +
-                "À l'heure prévue la carte passe en **🔴 EN COURS**, puis en **✅ TERMINÉE** environ " +
-                "2 h plus tard. Une session **annulée** prévient les inscrits par message privé.\n" +
+                "Un sondage ou un vote se **clôture tout seul** à l'heure affichée sur sa carte (2 jours par " +
+                "défaut), et j'annonce le résultat à son organisateur, avec le bouton pour créer la session.\n" +
+                "Les inscrits reçoivent un **rappel en message privé** avant le début de la session, " +
+                "et les « peut-être », une heure avant, une petite relance pour choisir leur camp.\n" +
+                "À l'heure prévue la carte passe en **🔴 EN COURS**, puis en **✅ TERMINÉE** à la fin de sa " +
+                "durée (2 h par défaut). Une session **annulée** prévient les inscrits par message privé.\n" +
                 "L'**ID** d'une session est en pied de carte, pour `/schedule edit` et `/schedule cancel`.\n" +
                 "Pour un **Jeu** ou un **Film**, je fais l'appel : 10 min après le début, je relance les " +
                 "inscrits pas encore en vocal, puis je fais le bilan.\n" +

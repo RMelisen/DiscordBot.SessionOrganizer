@@ -61,6 +61,7 @@ internal sealed class VoiceSeatService
     private readonly ResponsePicker _picker;
     private readonly HerMessages _herMessages;
     private readonly ILogger<VoiceSeatService> _logger;
+    private readonly SilenceService _silence;
 
     private readonly object _gate = new();
     private readonly Dictionary<ulong, VoiceGathering> _gatherings = new();
@@ -94,8 +95,9 @@ internal sealed class VoiceSeatService
 
     public VoiceSeatService(
         DiscordSocketClient client, IServiceProvider services, SessionAttendanceService attendance, XpTracker xp,
-        ResponsePicker picker, HerMessages herMessages, ILogger<VoiceSeatService> logger)
+        ResponsePicker picker, HerMessages herMessages, ILogger<VoiceSeatService> logger, SilenceService silence)
     {
+        _silence = silence;
         _client = client;
         _services = services;
         _attendance = attendance;
@@ -309,6 +311,10 @@ internal sealed class VoiceSeatService
             if (sentToBed && _bedtimeLeaveAt is { } bedtime && now >= bedtime)
                 desired = null;
 
+            // Silence mode: no seat anywhere; one already taken is left at the next settled sweep.
+            if (_silence.IsSilent)
+                desired = null;
+
             // Drop the gatherings that ended, so the dictionary only holds what's going on.
             var present = channels.Where(c => c.Reading.Active > 0).Select(c => c.Reading.Channel.Id).ToHashSet();
             foreach (var id in _gatherings.Where(kv => !kv.Value.Started && !present.Contains(kv.Key) && kv.Key != holding).Select(kv => kv.Key).ToList())
@@ -318,10 +324,12 @@ internal sealed class VoiceSeatService
             }
         }
 
+        // Silence mode: no line, no mic flicker (the seat itself is dropped above).
+        bool silent = _silence.IsSilent;
         foreach (var (channelId, line, what) in said)
-            if (guild.GetVoiceChannel(channelId) is { } where)
+            if (!silent && guild.GetVoiceChannel(channelId) is { } where)
                 await BotChat.PostWithTypingAsync(where, line, _logger, what, AllowedMentions.None);
-        if (micGagNow && guild.CurrentUser?.VoiceChannel is { } gagged)
+        if (micGagNow && !silent && guild.CurrentUser?.VoiceChannel is { } gagged)
             _ = Task.Run(() => MicGagAsync(gagged));
         if (streamerChanged) await NotifyAsync();
         if (creditSeat is { } credited && guild.GetVoiceChannel(credited) is { } company)
@@ -451,7 +459,7 @@ internal sealed class VoiceSeatService
         _logger.LogInformation("Voice seat: thrown out of {ChannelId} ({Kicks}), {Reaction}.", channelId, kicks, pout ? "pouting" : "angry");
         await NotifyAsync();
 
-        if (guild.GetVoiceChannel(channelId) is not { } channel) return;
+        if (_silence.IsSilent || guild.GetVoiceChannel(channelId) is not { } channel) return;
         var line = _picker.Pick(pout ? BotResponses.VoiceKickPoutLines : BotResponses.VoiceKickAngryLines);
         _herMessages.Remember(
             await BotChat.PostWithTypingAsync(channel, line, _logger, pout ? "voice pout line" : "voice angry line", AllowedMentions.None),

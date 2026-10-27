@@ -100,29 +100,6 @@ public class XpService
     }
 
     /// <summary>
-    /// Adds <paramref name="delta"/> to a person's reaction count, creating the row if
-    /// they have none yet. Clamped at zero, since a removal can arrive for a reaction
-    /// added before the counter existed.
-    /// </summary>
-    public async Task AddReactionUsedAsync(ulong guildId, ulong userId, int delta)
-    {
-        // A removal for someone with no row at all — a reaction added before this
-        // counter existed, or in a guild they have since gone quiet in. Nothing to take
-        // away, and creating an all-zero row to record that would be worse than noise.
-        if (delta <= 0 && !await _db_context.MemberXps
-                .AnyAsync(x => x.GuildId == guildId && x.UserId == userId))
-            return;
-
-        var row = await GetOrCreateAsync(guildId, userId);
-        row.ReactionsUsed = Math.Max(0, row.ReactionsUsed + delta);
-
-        var bucket = await GetOrCreateDailyAsync(guildId, userId);
-        bucket.ReactionsUsed = Math.Max(0, bucket.ReactionsUsed + delta);
-
-        await _db_context.SaveChangesAsync();
-    }
-
-    /// <summary>
     /// Adds eligible voice minutes to a person's all-time total and to today's bucket,
     /// and returns how many minutes today's bucket held <em>before</em> this call.
     /// </summary>

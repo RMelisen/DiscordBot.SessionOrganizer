@@ -21,7 +21,8 @@ namespace ProjectSYNCS.Commands;
 // message. In both, the text goes out as the bot's own words by default; "announce" opts into
 // a herald line naming the owner. /debug absent flags him as absent: while absent, the bot
 // intercepts mentions of him and replies, formally, that he is unavailable (in memory only — a
-// restart clears the flag).
+// restart clears the flag). /debug silence mutes everything she says on her own initiative
+// (SilenceService); unlike absent, it survives a restart.
 //
 // No [CommandContextType]: tell, dm and absent never read Context.Guild and work from a DM;
 // /debug plynling does, and checks for a DM itself rather than hiding the whole group there.
@@ -29,6 +30,12 @@ namespace ProjectSYNCS.Commands;
 public class DebugModule : InteractionModuleBase<SocketInteractionContext>
 {
     public enum AbsenceState
+    {
+        [ChoiceDisplay("Activer")] On,
+        [ChoiceDisplay("Désactiver")] Off,
+    }
+
+    public enum SilenceState
     {
         [ChoiceDisplay("Activer")] On,
         [ChoiceDisplay("Désactiver")] Off,
@@ -77,6 +84,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         [ChoiceDisplay("L'autoriser à jouer")] Allow,
         [ChoiceDisplay("Lui interdire de jouer")] Forbid,
         [ChoiceDisplay("Voir son inventaire")] Inventory,
+        [ChoiceDisplay("Voir son corps (ce qu'elle fait, la boucle Node)")] Body,
     }
 
     public enum EventMode
@@ -88,6 +96,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
 
     private readonly ILogger<DebugModule> _logger;
     private readonly AvailabilityService _availability;
+    private readonly SilenceService _silence;
     private readonly ResponsePicker _picker;
     private readonly PlynlingService _plynlings;
     private readonly PlynlingAnnouncer _announcer;
@@ -99,6 +108,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     private readonly ChatAnswerService _answers;
     private readonly MonthlyDigestService _digest;
     private readonly MinecraftBodyService _minecraft;
+    private readonly ConfessionService _confessions;
 
     // Discord caps a message at 2000 characters; leave room for the herald line
     // and the blockquote markers.
@@ -112,8 +122,10 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings,
         PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz, QuizCrownService crown,
         StickerService stickers, QuokkaRaidService quokka, ChatAnswerService answers,
-        MonthlyDigestService digest, MinecraftBodyService minecraft)
+        MonthlyDigestService digest, MinecraftBodyService minecraft, SilenceService silence, ConfessionService confessions)
     {
+        _confessions = confessions;
+        _silence = silence;
         _minecraft = minecraft;
         _digest = digest;
         _answers = answers;
@@ -180,6 +192,80 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
 
         var receipt = await SendAsync(target, BuildContent(text, announce), repliedTo, announce);
         await FollowupAsync(receipt, ephemeral: true);
+    }
+
+    // Takes down one of her own messages — a misfire, a line that landed badly, a /debug tell typo.
+    // Only hers: deleting someone else's would make this a moderation tool, which /debug is not.
+    [SlashCommand("delete", "Supprimer un message du bot")]
+    public async Task DeleteAsync(
+        [Summary("message", "Lien du message à supprimer (clic droit → Copier le lien du message)")]
+        string message)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+
+        await DeferAsync(ephemeral: true);
+
+        var (channel, target, error) = await ResolveLinkedMessageAsync(message, null);
+        if (channel is null || target is null)
+        {
+            await FollowupAsync(error, ephemeral: true);
+            return;
+        }
+
+        if (target.Author.Id != Context.Client.CurrentUser.Id)
+        {
+            await FollowupAsync("Ce message n'est pas de moi — je ne supprime que les miens. ❌", ephemeral: true);
+            return;
+        }
+
+        try
+        {
+            await target.DeleteAsync();
+            _logger.LogInformation("Owner deleted bot message {MessageId} in channel {ChannelId}.", target.Id, channel.Id);
+            await FollowupAsync($"Message supprimé dans {channel.Mention}. 🗑️", ephemeral: true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to delete bot message {MessageId} in channel {ChannelId}.", target.Id, channel.Id);
+            await FollowupAsync($"Impossible de supprimer ce message dans {channel.Mention}. ❌", ephemeral: true);
+        }
+    }
+
+    // Who wrote confession #N. The one place a confession's author shows, and only to the owner:
+    // it's there to deal with abuse. From a DM it reads the home guild's numbers.
+    [SlashCommand("confession", "Voir qui a écrit une confession")]
+    public async Task ConfessionAsync(
+        [Summary("numero", "Le numéro de la confession")]
+        [MinValue(1)]
+        int numero)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+
+        await DeferAsync(ephemeral: true);
+
+        var guildId = Context.Guild?.Id ?? HomeGuild.Id;
+        var confession = await _confessions.FindAsync(guildId, numero);
+        if (confession is null)
+        {
+            await FollowupAsync($"Pas de confession #{numero} sur ce serveur.", ephemeral: true);
+            return;
+        }
+
+        var where = confession.MessageId == 0
+            ? ""
+            : $" · https://discord.com/channels/{confession.GuildId}/{confession.ChannelId}/{confession.MessageId}";
+        await FollowupAsync(
+            $"Confession #{numero} : <@{confession.AuthorId}>, "
+            + $"{TimestampTag.FormatFromDateTimeOffset(confession.CreatedAt, TimestampTagStyles.Relative)}{where}",
+            ephemeral: true, allowedMentions: AllowedMentions.None);
     }
 
     /// <summary>
@@ -804,8 +890,8 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     // What people say to her, to decide what she should learn next: how many of each kind of chat
     // answer she gave (ChatAnswerService, by path), or the messages she found nothing specific to
     // say to over the period (UnansweredLog: kept 30 rolling days, no authors — « depuis toujours »
-    // means those 30 days), as a file since they exceed a message. Posted in the open, under her
-    // report-for-duty line; only the refusals stay ephemeral.
+    // means those 30 days), as a file since they exceed a message. Ephemeral, under her
+    // report-for-duty line.
     [SlashCommand("answers", "Ce qu'on me dit le plus, et ce que je sais pas encore répondre")]
     public async Task AnswersAsync(
         [Summary("period", "La période comptée")] AnswersPeriod period = AnswersPeriod.Week,
@@ -826,7 +912,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         {
             // Only 30 days are kept, so « depuis toujours » is those 30 days.
             var days = period == AnswersPeriod.Week ? 7 : UnansweredLog.KeptDays;
-            await DeferAsync();
+            await DeferAsync(ephemeral: true);
             var messages = await _answers.GetUnansweredAsync(Context.Guild.Id, days);
             if (messages.Count == 0)
             {
@@ -839,12 +925,12 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
             await FollowupWithFileAsync(stream, "sans-reponse.txt",
                 $"{_picker.Pick(BotResponses.OwnerReportLines)}\n**{messages.Count}** message(s) sans réponse précise " +
                 $"sur les {days} derniers jours{olderNote}, du plus récent au plus ancien.",
-                allowedMentions: AllowedMentions.None);
+                allowedMentions: AllowedMentions.None, ephemeral: true);
             return;
         }
 
         // The database can outrun Discord's 3 s on the Pi.
-        await DeferAsync();
+        await DeferAsync(ephemeral: true);
         var statsPeriod = period switch
         {
             AnswersPeriod.Month => StatsPeriod.Month,
@@ -853,7 +939,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         };
         var counts = await _answers.GetAsync(Context.Guild.Id, statsPeriod);
         await FollowupAsync(_picker.Pick(BotResponses.OwnerReportLines),
-            embed: AnswerStatsCards.BuildTypes(counts, statsPeriod), allowedMentions: AllowedMentions.None);
+            embed: AnswerStatsCards.BuildTypes(counts, statsPeriod), allowedMentions: AllowedMentions.None, ephemeral: true);
     }
 
     // The monthly digest (MonthlyDigestService) for last month, in your DMs now: yours, or a preview of
@@ -875,7 +961,8 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         await FollowupAsync(sent ? "📬 Rapport envoyé en DM." : "Impossible de t'écrire en DM (voir les logs).", ephemeral: true);
     }
 
-    // Her body on the Minecraft server (MinecraftBodyService): where it stands, what she carries, a join or leave past
+    // Her body on the Minecraft server (MinecraftBodyService): where it stands, what she carries, what her body is doing
+    // and how its process copes (asked of the body, so deferred), a join or leave past
     // her rule, or the switch that allows her on the server at all (kept across restarts, off until
     // allowed). A forced leave keeps her out for half an hour; a forced join still follows the rule
     // once she's in, and needs her to be allowed.
@@ -886,6 +973,14 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
         if (Context.User.Id != AvailabilityService.OwnerId)
         {
             await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+
+        // The body answers through the game's event loop, up to 3 s: past Discord's own 3 s.
+        if (action == MinecraftAction.Body)
+        {
+            await DeferAsync(ephemeral: true);
+            await FollowupAsync(await _minecraft.DebugBodyAsync(TimeSpan.FromSeconds(3)), ephemeral: true);
             return;
         }
 
@@ -919,5 +1014,32 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
                 ? $"Mode absent **activé**. Je préviendrai poliment quiconque te mentionne. {Emotes.Sparkle}"
                 : "Mode absent **désactivé**. Tu es de nouveau disponible (˶˃ ᵕ ˂˶)",
             ephemeral: true);
+    }
+
+    [SlashCommand("silence", "La faire taire : elle ne parle plus que pour répondre aux commandes")]
+    public async Task SetSilenceAsync(
+        [Summary("state", "Activer ou désactiver le mode silence")] SilenceState state)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+
+        bool silent = state == SilenceState.On;
+        var since = _silence.Since;
+        _silence.Set(silent);
+
+        string reply = (silent, since) switch
+        {
+            (true, { } already) => $"Je suis déjà muette, depuis le <t:{already.ToUnixTimeSeconds()}:f>. Chut.",
+            (true, null) => "Mode silence **activé**. Plus de bavardage, de réactions, de bonjour ni d'annonces : "
+                            + "je ne parle que pour répondre aux commandes. Les rappels de sessions, les tirages "
+                            + "et les `/remindme` partent toujours. Même après un redémarrage. 🤐",
+            (false, { } began) => $"Mode silence **désactivé** : j'étais muette depuis le <t:{began.ToUnixTimeSeconds()}:f>. "
+                                  + "J'ai plein de choses à dire (˶˃ ᵕ ˂˶)",
+            (false, null) => "Je n'étais pas en mode silence. Je parle, je parle.",
+        };
+        await RespondAsync(reply, ephemeral: true);
     }
 }

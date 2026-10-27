@@ -1,15 +1,12 @@
-// Her steps in water columns (columnMoves in ProjectSYNCS/MinecraftBody/index.js), planned by the real pathfinder over
-// made-up worlds: up and down each kind of column, never the wrong way, never through a lake, within her air. No server
-// needed:
+// Her steps in water columns (columnMoves in ProjectSYNCS/MinecraftBody/lib/columns.js), planned by the real pathfinder
+// over made-up worlds: up and down each kind of column, never the wrong way, never through a lake, within her air. No
+// server needed:
 //   node --test column-check.js
-// The body runs in a vm with its connection never started (main() is not called), so its own gentleMovements does the
-// planning, with a stand-in bot that only answers block reads.
+// The body's own gentleMovements does the planning, with a stand-in bot that only answers block reads. Its modules load
+// without connecting anything (index.js does that).
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
-const { PassThrough } = require('node:stream');
 const { createRequire } = require('node:module');
 
 const BodyDir = path.join(__dirname, '../../ProjectSYNCS/MinecraftBody');
@@ -20,22 +17,10 @@ const AStar = bodyRequire('mineflayer-pathfinder/lib/astar');
 const { goals } = bodyRequire('mineflayer-pathfinder');
 const registry = bodyRequire('minecraft-data')('1.21.4');
 const Block = bodyRequire('prismarine-block')(registry);
-
-const source = fs.readFileSync(path.join(BodyDir, 'index.js'), 'utf8').replace(/\nmain\(\)\.catch\(/, '\nvoid 0 && main().catch(');
-// Defined, not assigned: process.stdin is a getter, and the body reading the real one kept the test alive.
-const proc = Object.create(process, {
-  stdin: { value: new PassThrough() },
-  env: { value: { ...process.env, MC_HOST: '127.0.0.1', MC_USERNAME: 'SYNCS' } },
-});
-// Its timers never keep the test alive.
-const unref = (start) => (...args) => {
-  const timer = start(...args);
-  if (timer && timer.unref) timer.unref();
-  return timer;
-};
-const ctx = vm.createContext({ require: bodyRequire, process: proc, console, setTimeout: unref(setTimeout),
-  setInterval: unref(setInterval), clearTimeout, clearInterval, Buffer });
-vm.runInContext(source, ctx, { filename: 'index.js' });
+// ES modules, loaded by require (Node 22.12 or later).
+const { setBot } = require(path.join(BodyDir, 'lib/state.js'));
+const { fillStates } = require(path.join(BodyDir, 'lib/blocks.js'));
+const { gentleMovements } = require(path.join(BodyDir, 'lib/movements.js'));
 
 // cells: "x,y,z" -> block name ('lift' and 'drag' for the two bubble columns); stone below y 0, air above.
 function world(cells) {
@@ -54,28 +39,13 @@ function world(cells) {
 
 // The body's spawn fills its state sets once the version is known; the same here, against the stand-in.
 function movementsFor(blockAt) {
-  ctx.standIn = {
+  setBot({
     registry, version: '1.21.4', blockAt, entities: {}, entity: { position: new Vec3(0, 0, 0) }, game: { minY: -64, height: 384 },
     world: { getBlockStateId: (p) => blockAt(p).stateId }, inventory: { items: () => [], slots: [] },
     pathfinder: { bestHarvestTool: () => null },
-  };
-  return vm.runInContext(`
-    bot = standIn;
-    {
-      const states = (b) => new Set(Array.from({ length: b.maxStateId - b.minStateId + 1 }, (_, i) => b.minStateId + i));
-      const statesOf = (names) => new Set(names.filter((n) => bot.registry.blocksByName[n]).flatMap((n) => [...states(bot.registry.blocksByName[n])]));
-      const bubble = bot.registry.blocksByName.bubble_column;
-      farmlandStates = states(bot.registry.blocksByName.farmland);
-      waterStates = states(bot.registry.blocksByName.water);
-      bubbleStates = states(bubble);
-      dragStates = new Set([bubble.minStateId]);
-      liftStates = new Set([...bubbleStates].filter((id) => !dragStates.has(id)));
-      wetStates = new Set([...waterStates, ...bubbleStates, ...statesOf(['kelp', 'kelp_plant', 'seagrass', 'tall_seagrass'])]);
-      burningStates = statesOf(['magma_block', 'campfire', 'soul_campfire']);
-      prickly = statesOf(['sweet_berry_bush', 'cactus', 'wither_rose']);
-      airStates = statesOf(['air', 'cave_air', 'void_air']);
-    }
-    gentleMovements();`, ctx);
+  });
+  fillStates(registry);
+  return gentleMovements();
 }
 
 function plan(blockAt, from, to) {

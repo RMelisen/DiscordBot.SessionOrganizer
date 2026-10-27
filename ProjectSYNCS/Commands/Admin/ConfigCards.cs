@@ -6,8 +6,8 @@ using ProjectSYNCS.Services;
 namespace ProjectSYNCS.Commands;
 
 // /config show — one Components V2 card, a section per setting. Static and Context-free, so
-// its size is checkable without a gateway: 1 container + 1 title + 10 × (separator + text)
-// = 22 of the 40 components.
+// its size is checkable without a gateway: 1 container + 1 title + 13 × (separator + text)
+// = 28 of the 40 components.
 //
 // Every list shows its hardcoded part and its configured part apart: only one of them can
 // be edited, and merging them would invite someone to remove a hardcoded entry and be
@@ -70,6 +70,14 @@ public static class ConfigCards
         Section(container,
             "**Salon du quiz** — où elle pose ses questions, deux ou trois fois par semaine",
             "> " + Single(config.QuizChannelId, 0, "*aucun : pas de quiz sur ce serveur*"));
+
+        Section(container,
+            "**Salon des confessions** — où `/confess` poste, anonymement",
+            "> " + Single(config.ConfessChannelId, 0, "*aucun : `/confess` est fermé*"));
+
+        Section(container,
+            "**Salon des jeux gratuits** — les jeux Steam gratuits à garder, dès qu'elle les voit",
+            "> " + Single(config.FreeGamesChannelId, 0, "*aucun : pas d'annonces*"));
 
         if (isHomeGuild)
         {

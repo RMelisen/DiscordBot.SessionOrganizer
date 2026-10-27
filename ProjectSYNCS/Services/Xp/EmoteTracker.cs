@@ -2,37 +2,31 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Discord;
 using Discord.WebSocket;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace ProjectSYNCS.Services;
 
 // Tallies emote usage across a guild: custom emotes and unicode emojis written
-// in messages, plus emotes added/removed as reactions. Persists counts through
-// the scoped EmoteStatsService.
+// in messages, plus emotes added/removed as reactions. Counts go to ActivityCounter
+// (in memory), which ActivityFlushService writes every few minutes: never a database
+// write per message or per reaction.
 internal sealed class EmoteTracker
 {
     private readonly DiscordSocketClient _client;
-    private readonly IServiceProvider _services;
-    private readonly ILogger<EmoteTracker> _logger;
+    private readonly ActivityCounter _counter;
 
     // Matches Discord custom-emote markup: <:name:id> or animated <a:name:id>.
     private static readonly Regex _customEmoteRegex =
         new(@"<(a?):(\w+):(\d+)>", RegexOptions.Compiled);
 
-    public EmoteTracker(
-        DiscordSocketClient client,
-        IServiceProvider services,
-        ILogger<EmoteTracker> logger)
+    public EmoteTracker(DiscordSocketClient client, ActivityCounter counter)
     {
         _client = client;
-        _services = services;
-        _logger = logger;
+        _counter = counter;
     }
 
     // Counts each emote written in a guild message — custom emotes and unicode
     // emojis alike (occurrences, so the same emote three times counts as three).
-    public async Task HandleMessageAsync(SocketMessage rawMessage)
+    public void HandleMessage(SocketMessage rawMessage)
     {
         if (rawMessage is not SocketUserMessage message) return;
         if (message.Author.IsBot) return;
@@ -59,17 +53,7 @@ internal sealed class EmoteTracker
         }
 
         if (counts.Count == 0) return;
-
-        try
-        {
-            await using var scope = _services.CreateAsyncScope();
-            var stats = scope.ServiceProvider.GetRequiredService<EmoteStatsService>();
-            await stats.AddWrittenAsync(guildChannel.Guild.Id, counts);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to count written emotes in channel {ChannelId}.", message.Channel.Id);
-        }
+        _counter.CountEmotesWritten(guildChannel.Guild.Id, counts, message.Timestamp);
     }
 
     public Task HandleReactionAddedAsync(
@@ -83,7 +67,8 @@ internal sealed class EmoteTracker
         SocketReaction reaction) => CountReactionAsync(channel, reaction, -1);
 
     // Adjusts the reacted count for an emote by delta (custom or unicode).
-    // Ignores the bot's own reactions and reactions outside a guild.
+    // Ignores the bot's own reactions and reactions outside a guild. A removal lands
+    // on the day it happens and never takes a count below zero (ActivityFlushService).
     private async Task CountReactionAsync(
         Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction, int delta)
     {
@@ -100,16 +85,7 @@ internal sealed class EmoteTracker
         var resolved = await channel.GetOrDownloadAsync();
         if (resolved is not IGuildChannel guildChannel) return;
 
-        try
-        {
-            await using var scope = _services.CreateAsyncScope();
-            var stats = scope.ServiceProvider.GetRequiredService<EmoteStatsService>();
-            await stats.AddReactedAsync(guildChannel.GuildId, emote.Value, delta);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to count reaction emote in channel {ChannelId}.", guildChannel.Id);
-        }
+        _counter.CountEmoteReacted(guildChannel.GuildId, emote.Value, delta, DateTimeOffset.UtcNow);
     }
 
     // Yields each unicode emoji in the text as a whole grapheme cluster (so

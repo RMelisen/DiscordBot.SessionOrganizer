@@ -16,6 +16,7 @@ public class ReminderService : BackgroundService
     private readonly IServiceProvider _services;
     private readonly DiscordSocketClient _client;
     private readonly ResponsePicker _picker;
+    private readonly SilenceService _silence;
     private readonly ILogger<ReminderService> _logger;
 
     private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(5);
@@ -24,8 +25,10 @@ public class ReminderService : BackgroundService
         IServiceProvider services,
         DiscordSocketClient client,
         ResponsePicker picker,
+        SilenceService silence,
         ILogger<ReminderService> logger)
     {
+        _silence = silence;
         _services = services;
         _client = client;
         _picker = picker;
@@ -41,9 +44,72 @@ public class ReminderService : BackgroundService
         {
             await Task.Delay(CheckInterval, stoppingToken);
             await ProcessRemindersAsync();
+            await ProcessMaybeNudgesAsync();
             await ProcessLifecycleAsync();
             await ProcessPollAutoCloseAsync();
             await ProcessTonightExpiryAsync();
+            await ProcessRecurringAsync();
+        }
+    }
+
+    // Weekly series: each occurrence is posted as an ordinary session, LeadDays before it, in the
+    // series' channel. A command set it up, so silence mode doesn't hold it back. The session and
+    // the series' LastOccurrence land in one save (EventService.CreateOccurrenceAsync), and a unique
+    // index on (series, slot) backs it up: a restart mid-pass can't post one twice. A card that fails
+    // to post is undone and retried next pass; a channel that is gone stops the series.
+    private async Task ProcessRecurringAsync()
+    {
+        if (_client.ConnectionState != ConnectionState.Connected) return;
+
+        await using var scope = _services.CreateAsyncScope();
+        var events = scope.ServiceProvider.GetRequiredService<EventService>();
+
+        List<RecurringSession> series;
+        try
+        {
+            series = await events.GetActiveSeriesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to query weekly series.");
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        foreach (var s in series)
+        {
+            try
+            {
+                var next = Recurrence.NextOccurrence(s, now);
+                if (!Recurrence.DueToPost(next, now, s.LeadDays)) continue;
+
+                // Not in the cache yet (a guild still loading): try again next pass.
+                if (_client.GetGuild(s.GuildId) is not { } guild) continue;
+                if (guild.GetTextChannel(s.ChannelId) is not { } channel)
+                {
+                    await events.StopSeriesAsync(s.Id);
+                    _logger.LogWarning("Weekly series {SeriesId} stopped: its channel {ChannelId} is gone.", s.Id, s.ChannelId);
+                    continue;
+                }
+
+                var previous = s.LastOccurrence;
+                if (await events.CreateOccurrenceAsync(s.Id, next) is not { } session) continue;
+                try
+                {
+                    var message = await SessionCards.SendAsync(channel, session, guild);
+                    await events.SetMessageIdAsync(session.Id, message.Id);
+                    _logger.LogInformation("Weekly series {SeriesId} posted session {EventId}.", s.Id, session.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Weekly series {SeriesId}: card not posted; retrying next pass.", s.Id);
+                    await events.UndoOccurrenceAsync(s.Id, session.Id, previous);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to process weekly series {SeriesId}.", s.Id);
+            }
         }
     }
 
@@ -88,18 +154,18 @@ public class ReminderService : BackgroundService
         }
     }
 
-    // Polls and votes auto-close after this long, even without manual closure.
-    private static readonly TimeSpan PollLifetime = TimeSpan.FromDays(2);
-
+    // Polls and votes close on their own at their deadline (Poll.ClosesAt: EndsAt, or the old
+    // two-day lifetime on rows from before deadlines existed).
     private async Task ProcessPollAutoCloseAsync()
     {
         await using var scope = _services.CreateAsyncScope();
         var pollService = scope.ServiceProvider.GetRequiredService<PollService>();
+        var cards = scope.ServiceProvider.GetRequiredService<CardUpdater>();
 
         List<Poll> polls;
         try
         {
-            polls = await pollService.GetPollsToAutoCloseAsync(PollLifetime);
+            polls = await pollService.GetPollsToAutoCloseAsync(DateTimeOffset.UtcNow);
         }
         catch (Exception ex)
         {
@@ -116,10 +182,13 @@ public class ReminderService : BackgroundService
             {
                 await pollService.ClosePollAsync(poll.Id);
                 poll.IsClosed = true;
-                await UpdatePollCardAsync(poll);
-                // Her own weekend poll (WeekendPollService) gets its result said out loud.
+                if (_client.GetGuild(poll.GuildId) is { } guild) await cards.RedrawPollAsync(guild, poll);
+                // Her own weekend poll (WeekendPollService) has its own lines, and plans its clear
+                // winner herself; everyone else's result goes to its organiser.
                 if (poll.OrganizerId == _client.CurrentUser.Id)
-                    await AnnounceOwnPollAsync(poll);
+                    await AnnounceOwnPollAsync(poll, scope.ServiceProvider);
+                else
+                    await AnnounceResultAsync(poll);
             }
             catch (Exception ex)
             {
@@ -128,36 +197,10 @@ public class ReminderService : BackgroundService
         }
     }
 
-    private async Task UpdatePollCardAsync(Poll poll)
-    {
-        if (poll.MessageId == 0) return;
-
-        try
-        {
-            var guild = _client.GetGuild(poll.GuildId);
-            var channel = guild?.GetTextChannel(poll.ChannelId);
-            if (channel is null) return;
-
-            if (await channel.GetMessageAsync(poll.MessageId) is not IUserMessage message)
-                return;
-
-            await message.ModifyAsync(props =>
-            {
-                props.Embed = PollModule.BuildPollEmbed(poll);
-                props.Components = PollModule.BuildPollComponents(poll);
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to update auto-closed poll card for poll {PollId}.", poll.Id);
-        }
-    }
-
-    // Her weekend poll just closed: she says which evening won, as a reply to the card (whose
-    // « Créer une session » button anyone who voted for that evening may use), or sulks that
-    // nobody voted. Only future slots count, like the button. Swallows its own failures: the
-    // close is already written, and a missing line is the worst case.
-    private async Task AnnounceOwnPollAsync(Poll poll)
+    // Someone's poll or vote reached its deadline: she says what won, as a reply to the card,
+    // pinging its organiser and nobody else. A command set it up, so silence mode doesn't hold
+    // it back. Swallows its own failures: the close is already written.
+    private async Task AnnounceResultAsync(Poll poll)
     {
         if (poll.MessageId == 0) return;
 
@@ -165,11 +208,69 @@ public class ReminderService : BackgroundService
         {
             if (_client.GetGuild(poll.GuildId)?.GetTextChannel(poll.ChannelId) is not { } channel) return;
 
+            var title = Format.Sanitize(poll.Title);
+            var organizer = $"<@{poll.OrganizerId}>";
+            var winners = PollRules.Leaders(poll);
+            // A date poll's slots already past can't become a session: only the future ones count.
+            if (poll.Kind == PollKind.DateSlots)
+            {
+                var now = DateTimeOffset.UtcNow;
+                winners = winners.Where(o => o.ScheduledAt > now).ToList();
+            }
+
+            string line;
+            MessageComponent? plan = null;
+            if (winners.Count == 0)
+                line = string.Format(_picker.Pick(BotResponses.PollClosedEmptyLines), organizer, title);
+            else
+            {
+                var named = winners.Select(o => PollCards.OptionText(poll, o)).ToList();
+                var result = named.Count == 1 ? named[0] : $"égalité entre {string.Join(" et ", named)}";
+                var pool = poll.Kind == PollKind.DateSlots ? BotResponses.PollClosedSlotLines : BotResponses.VoteClosedResultLines;
+                line = string.Format(_picker.Pick(pool), organizer, title, result);
+                // A date that won can become a session from right here, without scrolling back to the card.
+                if (poll.Kind == PollKind.DateSlots && poll.SessionEventId is null) plan = PollCards.PlanButton(poll.Id);
+            }
+
+            var reference = new MessageReference(poll.MessageId, poll.ChannelId, poll.GuildId, failIfNotExists: false);
+            await BotChat.PostWithTypingAsync(channel, line, _logger, "poll result",
+                new AllowedMentions { UserIds = new List<ulong> { poll.OrganizerId } }, reference, plan);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to announce the result of poll {PollId}.", poll.Id);
+        }
+    }
+
+    // Her weekend poll just closed. One evening won alone (WeekendPoll.MinVotesForSession votes at
+    // least): she creates the session herself and says so. Otherwise she says which evening(s) won,
+    // with a « Créer une session » button that anyone who voted for one may use, or sulks that
+    // nobody voted. Only future slots count, like the button. Swallows its own failures: the close
+    // is already written, and a missing line is the worst case.
+    private async Task AnnounceOwnPollAsync(Poll poll, IServiceProvider scoped)
+    {
+        if (poll.MessageId == 0) return;
+
+        try
+        {
+            if (_client.GetGuild(poll.GuildId) is not { } guild || guild.GetTextChannel(poll.ChannelId) is not { } channel) return;
+
             var now = DateTimeOffset.UtcNow;
+            var reference = new MessageReference(poll.MessageId, poll.ChannelId, poll.GuildId, failIfNotExists: false);
+
+            if (await CreateWeekendSessionAsync(poll, guild, channel, scoped, now) is { } session)
+            {
+                var slot = $"<t:{session.ScheduledAt.ToUnixTimeSeconds()}:F>";
+                var made = string.Format(_picker.Pick(BotResponses.WeekendPollSessionLines), slot, SessionCards.Link(session));
+                await BotChat.PostWithTypingAsync(channel, made, _logger, "weekend session", AllowedMentions.None, reference);
+                return;
+            }
+
             var future = poll.Options.Where(o => o.ScheduledAt > now).ToList();
             int max = future.Count == 0 ? 0 : future.Max(o => o.Votes.Count);
 
             string line;
+            MessageComponent? plan = null;
             if (max == 0)
             {
                 line = _picker.Pick(BotResponses.WeekendPollDeadLines);
@@ -181,15 +282,63 @@ public class ReminderService : BackgroundService
                     .OrderBy(o => o.ScheduledAt)
                     .Select(o => $"<t:{o.ScheduledAt.ToUnixTimeSeconds()}:F>"));
                 line = string.Format(_picker.Pick(BotResponses.WeekendPollResultLines), slots);
+                if (poll.SessionEventId is null) plan = PollCards.PlanButton(poll.Id);
             }
 
-            var reference = new MessageReference(poll.MessageId, poll.ChannelId, poll.GuildId, failIfNotExists: false);
-            await BotChat.PostWithTypingAsync(channel, line, _logger, "weekend poll result", AllowedMentions.None, reference);
+            await BotChat.PostWithTypingAsync(channel, line, _logger, "weekend poll result", AllowedMentions.None, reference, plan);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to announce the result of poll {PollId}.", poll.Id);
         }
+    }
+
+    // The session her weekend poll's clear winner becomes: hers to organise (staff manage it), a
+    // Game of the default length, unlimited places, every voter for that evening on it as
+    // « peut-être » (no DM). Null when there is no clear winner, a session was already made from the
+    // poll or sits at that slot, or the card can't be posted (the session is then removed, and the
+    // poll keeps its button). The close is written before this runs and is never retried, so a
+    // crash here costs the session, never a second one.
+    private async Task<SessionEvent?> CreateWeekendSessionAsync(
+        Poll poll, SocketGuild guild, ITextChannel channel, IServiceProvider scoped, DateTimeOffset now)
+    {
+        if (poll.SessionEventId is not null) return null;
+        if (PollRules.ClearWinner(poll, now, WeekendPoll.MinVotesForSession) is not { } winner) return null;
+
+        var events = scoped.GetRequiredService<EventService>();
+        var polls = scoped.GetRequiredService<PollService>();
+        var cards = scoped.GetRequiredService<CardUpdater>();
+
+        var at = winner.ScheduledAt;
+        if ((await events.GetActiveEventsAsync(guild.Id)).Any(e => e.ScheduledAt == at)) return null;
+
+        var session = await events.CreateEventAsync(
+            guildId: guild.Id,
+            channelId: channel.Id,
+            organizerId: _client.CurrentUser.Id,
+            title: WeekendPoll.SessionTitle(at),
+            category: SessionCategory.Game,
+            scheduledAt: at,
+            maxPlayers: 0);
+        try
+        {
+            await events.AddMaybesAsync(session, PollRules.VotersAt(poll, at));
+            var message = await SessionCards.SendAsync(channel, session, guild);
+            await events.SetMessageIdAsync(session.Id, message.Id);
+            session.MessageId = message.Id;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Weekend poll {PollId}: session not posted; removing it.", poll.Id);
+            await events.DeleteEventAsync(session.Id);
+            return null;
+        }
+
+        await polls.SetSessionAsync(poll.Id, session.Id);
+        poll.SessionEventId = session.Id;
+        await cards.RedrawPollAsync(guild, poll, SessionCards.Link(session));
+        _logger.LogInformation("Weekend poll {PollId} became session {EventId}.", poll.Id, session.Id);
+        return session;
     }
 
     // Advances session cards through their lifecycle (En cours -> Terminée) and
@@ -198,6 +347,7 @@ public class ReminderService : BackgroundService
     {
         await using var scope = _services.CreateAsyncScope();
         var eventService = scope.ServiceProvider.GetRequiredService<EventService>();
+        var cards = scope.ServiceProvider.GetRequiredService<CardUpdater>();
 
         List<SessionEvent> events;
         try
@@ -213,44 +363,20 @@ public class ReminderService : BackgroundService
         foreach (var sessionEvent in events)
         {
             // Guarded per item for the reason above. SetRenderedPhaseAsync is the write
-            // that matters here: UpdateCardAsync swallows its own Discord failures, so a
+            // that matters here: CardUpdater swallows its own Discord failures, so a
             // throw reaching this far is a database problem, and losing the host over one
             // card is worse than re-rendering it on the next pass.
             try
             {
                 var phase = sessionEvent.PhaseAt(DateTimeOffset.UtcNow);
-                await UpdateCardAsync(sessionEvent);
+                if (_client.GetGuild(sessionEvent.GuildId) is { } guild)
+                    await cards.RedrawSessionAsync(guild, sessionEvent);
                 await eventService.SetRenderedPhaseAsync(sessionEvent.Id, phase);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to advance lifecycle for event {EventId}.", sessionEvent.Id);
             }
-        }
-    }
-
-    private async Task UpdateCardAsync(SessionEvent sessionEvent)
-    {
-        if (sessionEvent.MessageId == 0) return;
-
-        try
-        {
-            var guild = _client.GetGuild(sessionEvent.GuildId);
-            var channel = guild?.GetTextChannel(sessionEvent.ChannelId);
-            if (channel is null) return;
-
-            if (await channel.GetMessageAsync(sessionEvent.MessageId) is not IUserMessage message)
-                return;
-
-            await message.ModifyAsync(props =>
-            {
-                props.Embed = ScheduleModule.BuildEventEmbed(sessionEvent, guild);
-                props.Components = ScheduleModule.BuildEventComponents(sessionEvent);
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to update lifecycle card for event {EventId}.", sessionEvent.Id);
         }
     }
 
@@ -278,7 +404,10 @@ public class ReminderService : BackgroundService
             // reminder. Same shape as GiveawayDrawService.SweepAsync.
             try
             {
-                await SendRemindersForEventAsync(sessionEvent, eventService);
+                // Claimed before the DMs (root CLAUDE.md, reliability): a crash mid-send costs
+                // a reminder, never a second round of them.
+                await eventService.MarkReminderSentAsync(sessionEvent.Id);
+                await SendRemindersForEventAsync(sessionEvent);
             }
             catch (Exception ex)
             {
@@ -287,52 +416,116 @@ public class ReminderService : BackgroundService
         }
     }
 
-    private async Task SendRemindersForEventAsync(SessionEvent sessionEvent, EventService eventService)
+    // About an hour before a session with room left, a DM to whoever is still on « Peut-être »: pick
+    // a side. Nobody asked for it, so silence mode holds it back (the flag stays unset, and the window
+    // closes on its own). The flag is set before the DMs: a crash costs the nudge, never a second one.
+    private async Task ProcessMaybeNudgesAsync()
     {
-        var participants = sessionEvent.Participants
-            .Where(p => p.Status == ParticipantStatus.Joined)
-            .ToList();
+        if (_silence.IsSilent) return;
 
-        _logger.LogInformation(
-            "Sending reminders for event {EventId} ({Title}) to {Count} participant(s).",
-            sessionEvent.Id, sessionEvent.Title, participants.Count);
+        await using var scope = _services.CreateAsyncScope();
+        var eventService = scope.ServiceProvider.GetRequiredService<EventService>();
 
-        foreach (var participant in participants)
+        List<SessionEvent> events;
+        try
+        {
+            events = await eventService.GetEventsNeedingMaybeNudgeAsync(DateTimeOffset.UtcNow);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to query sessions for « peut-être » nudges.");
+            return;
+        }
+
+        foreach (var sessionEvent in events)
+        {
+            try
+            {
+                await eventService.MarkMaybeNudgeSentAsync(sessionEvent.Id);
+                await NudgeMaybesAsync(sessionEvent);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to nudge the « peut-être » of event {EventId}.", sessionEvent.Id);
+            }
+        }
+    }
+
+    private async Task NudgeMaybesAsync(SessionEvent sessionEvent)
+    {
+        var maybes = sessionEvent.Participants.Where(p => p.Status == ParticipantStatus.Maybe).ToList();
+        var ts = sessionEvent.ScheduledAt.ToUnixTimeSeconds();
+        var line = string.Format(_picker.Pick(BotResponses.SessionMaybeNudgeLines),
+            Format.Sanitize(sessionEvent.Title), $"<t:{ts}:R>", SessionCards.Link(sessionEvent));
+
+        foreach (var participant in maybes)
         {
             try
             {
                 var user = await _client.GetUserAsync(participant.UserId);
+                if (user is null) continue;
+                var dm = await user.CreateDMChannelAsync();
+                await dm.SendMessageAsync(line, allowedMentions: AllowedMentions.None);
+            }
+            catch (HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
+            {
+                _logger.LogInformation("User {UserId} has DMs disabled; no « peut-être » nudge.", participant.UserId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "« Peut-être » nudge for event {EventId} not sent to {UserId}.", sessionEvent.Id, participant.UserId);
+            }
+        }
+        _logger.LogInformation("Nudged {Count} « peut-être » of event {EventId}.", maybes.Count, sessionEvent.Id);
+    }
+
+    // The 30-minute DM, to everyone Joined and to the organiser even if they never clicked
+    // « Rejoindre » (it's their session). Each DM links to the card. A reminder missed while she
+    // was down goes out late (the window reaches down to five minutes), which the line handles
+    // through <t:R>.
+    private async Task SendRemindersForEventAsync(SessionEvent sessionEvent)
+    {
+        var recipients = sessionEvent.Participants
+            .Where(p => p.Status == ParticipantStatus.Joined)
+            .Select(p => p.UserId)
+            .ToList();
+        if (sessionEvent.OrganizerId != _client.CurrentUser.Id && !recipients.Contains(sessionEvent.OrganizerId))
+            recipients.Add(sessionEvent.OrganizerId);
+
+        _logger.LogInformation(
+            "Sending reminders for event {EventId} ({Title}) to {Count} people.",
+            sessionEvent.Id, sessionEvent.Title, recipients.Count);
+
+        var ts = sessionEvent.ScheduledAt.ToUnixTimeSeconds();
+        var link = sessionEvent.MessageId != 0 ? $"\n{SessionCards.Link(sessionEvent)}" : string.Empty;
+        var where = sessionEvent.VoiceChannelId != 0 ? $" dans <#{sessionEvent.VoiceChannelId}>" : string.Empty;
+
+        foreach (var userId in recipients)
+        {
+            try
+            {
+                var user = await _client.GetUserAsync(userId);
                 if (user is null)
                 {
-                    _logger.LogWarning("Could not resolve user {UserId} for reminder.", participant.UserId);
+                    _logger.LogWarning("Could not resolve user {UserId} for reminder.", userId);
                     continue;
                 }
 
                 var dm = await user.CreateDMChannelAsync();
-                var ts = sessionEvent.ScheduledAt.ToUnixTimeSeconds();
-                var categoryLabel = sessionEvent.Category switch
-                {
-                    SessionCategory.Game     => "Jeu",
-                    SessionCategory.Activity => "Activité",
-                    SessionCategory.Movie    => "Film",
-                    _                        => "Autre"
-                };
-
                 await dm.SendMessageAsync(
                     $"Kilou kilou {user.Mention}! {Emotes.HiCat}{Emotes.HiCat}{Emotes.HiCat} (˶>⩊<˶)\n" +
-                    $"Rappel: **{sessionEvent.Title}** va commencer dans " +
-                    $"<t:{ts}:R> (<t:{ts}:t>). Tiens toi prêt ! UwU");
+                    $"Rappel: {SessionCategories.Emoji(sessionEvent.Category)} **{Format.Sanitize(sessionEvent.Title)}** va commencer " +
+                    $"<t:{ts}:R> (<t:{ts}:t>){where}. Tiens toi prêt ! UwU{link}",
+                    allowedMentions: AllowedMentions.None);
             }
             catch (HttpException httpEx) when (httpEx.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
             {
-                _logger.LogWarning("User {UserId} has DMs disabled; skipping reminder.", participant.UserId);
+                _logger.LogWarning("User {UserId} has DMs disabled; skipping reminder.", userId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to send reminder to user {UserId}.", participant.UserId);
+                _logger.LogError(ex, "Failed to send reminder to user {UserId}.", userId);
             }
         }
-
-        await eventService.MarkReminderSentAsync(sessionEvent.Id);
     }
 }

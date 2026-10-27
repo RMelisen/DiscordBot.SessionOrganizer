@@ -16,7 +16,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | Command | What it does | Who |
 | --- | --- | --- |
 | `/schedule create · list · edit · cancel` | Plan and manage sessions | everyone |
-| `/poll create · list · delete` | Vote on time slots | everyone |
+| `/when create · list · delete` | Vote on time slots | everyone |
 | `/vote create · list · delete` | Vote on free-text options | everyone |
 | `/giveaway create · list · delete` | Prize draws | staff (`delete`: organiser or staff) |
 | `/level [user]` | Your card: level, rank, progress, badges (« Succès » button) | everyone |
@@ -31,6 +31,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/minecraft help · status · where · inventory · stats` | Her Minecraft manual, and what she's doing and has done on the server | everyone |
 | `/minecraft link · invite` | Link your in-game name (a code whispered to her), then bring her onto the server for an hour | everyone (`invite`: linked) |
 | `/wouldyourather` | A two-button dilemma, revealed after 10 minutes | everyone |
+| `/confess <texte>` | An anonymous, numbered confession in the confessions channel | everyone |
 | `/tonight` | Who's up tonight — becomes a session once enough people are in | everyone |
 | `/teams` | Split a voice channel into teams | everyone |
 | `/remindme · /reminders` | A reminder by DM later; list or cancel yours | everyone |
@@ -47,16 +48,18 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/admin pebble add · remove` | Manual cailloux adjustment | staff |
 | `/admin stats` | The server's economy at a glance | staff |
 | `/admin dashboard` | The economy day by day: flows, activity, finds | staff |
-| `/report sessions · polls · community · syncs · activity · commands · quiz · plynlings · emotes · sleeping` | Her reports: attendance, polls and `/tonight`, the server's life, her own health, peak hours and channels, her commands, the quiz, the Plynlings, the emotes, members gone quiet | staff |
+| `/report sessions · polls · community · syncs · activity · commands · quiz · plynlings · emotes · sleeping · minecraft` | Her reports: attendance, polls and `/tonight`, the server's life, her own health, peak hours and channels, her commands, the quiz, the Plynlings, the emotes, members gone quiet, her evenings in Minecraft | staff |
 | `/admin warn · warnings · unwarn` | Formal warnings, sent to the person by DM | staff |
 | `/admin mute · unmute` | Discord timeout, saying what's missing when it can't | staff |
 | `/admin plynling rename · resurrect · passion-reset · cure`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
 | `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
+| `/debug delete · confession` | Delete one of her messages by link; see who wrote a confession | owner |
+| `/debug silence` | Silence mode: she only answers commands, nothing on her own initiative | owner |
 | `/debug quiz` | Post or close a pop quiz, or crown the week, now (tests) | owner |
 | `/debug quokka` | Make Quokka show up in the bots channel now (tests) | owner |
-| `/debug minecraft` | Her state on the Minecraft server or everything she carries, send her in / take her out now, or allow / forbid her joining at all | owner |
+| `/debug minecraft` | Her state on the Minecraft server (with her body's last log lines), everything she carries, or what her body is doing right now and how its process copes; send her in / take her out now, or allow / forbid her joining at all | owner |
 | `/health` | Her check-up: the Pi's temperature and power, her memory, the Discord connection, storage, the outage log | everyone |
-| `/help` | In-Discord usage guide | everyone |
+| `/help` | In-Discord usage guide: commands, cailloux & items, how-tos | everyone |
 
 "Staff" means Administrator or Manage Server, the bot's owner, or a configured
 moderator role. Staff-only commands are visible to everyone but refuse politely.
@@ -65,20 +68,36 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 
 ### Sessions
 
-- **`/schedule create`** — a private 4-step wizard (type → day → hour → details)
-  that posts an interactive session card to the channel.
-- **`/schedule list`** — the server's active sessions; lets you republish a card
+- **`/schedule create`** — in one line: `title` and `when` (« samedi 21h », « 25/12 20:30 »,
+  « demain », « ce soir », previewed as you type) post the card at once; `category`, `places`,
+  `duration`, `voice` (the session's voice channel) and `description` are optional. Without a
+  title and a time, a private form asks for the name and the date at once (the one-click times
+  are behind « Changer l'heure »), then shows the real card as a preview: category,
+  places, duration, voice channel and « Chaque semaine » are picked there, it warns when another
+  session overlaps, and « Publier » posts it. It starts from the person's last choices.
+- **Weekly sessions** — `weekly:True` repeats the session every week, same day, same time (Paris
+  time, across the changes of time); each one is posted three days ahead and is an ordinary
+  session you can edit or cancel on its own. « Arrêter la série » stops it.
+- **`/schedule list`** — the server's active sessions and weekly series; lets you republish a card
   into the current channel.
-- **`/schedule edit <id>` · `/schedule cancel <id>`** — for sessions you organized.
-  Cancelling notifies signed-up participants by DM.
-- Session cards carry **Join / Maybe / Decline** buttons plus organizer-only
-  **Edit / Cancel** actions.
+- **`/schedule edit <id>` · `/schedule cancel <id>`** — for sessions you organized, with the id
+  autocompleted. Cancelling asks for confirmation and notifies signed-up participants by DM.
+- Session cards show the date, length, voice channel, description and roster with a fill bar,
+  and carry **Join / Maybe / Decline** (until the start) plus **Gérer**, a private panel for the
+  organizer and staff: edit (name, date, places, length, description), cancel, republish, remove
+  the Discord event, stop a weekly series.
 - **Native Discord events** — the organizer can link a session to a real entry in
   the server's *Events* tab; it stays in sync (time, title, location, participants)
   and is removed when the session is cancelled.
 - **Lifecycle** — at start time a card flips to **🔴 In progress** (buttons
-  disabled), then to **✅ Finished** ~2 h later.
-- **Reminders** — signed-up participants get a DM before the session starts.
+  disabled), then to **✅ Finished** at the end of its length (2 h by default).
+- **Reminders** — signed-up participants get a DM before the session starts, with the organizer,
+  the voice channel and a link to the card. About an hour
+  before, whoever is still on **Maybe** gets a DM asking them to pick a side (only while the
+  session has room).
+- **Waiting list** — when a capped session is full, **Maybe** is the waiting list: as soon as a
+  place opens (someone leaves, or the organizer raises the cap), every « peut-être » gets a DM with
+  the card's link, and the first to click **Join** takes it.
 - **Roll call** — for a *Game* or *Movie* session, she watches who turns up in voice. Ten
   minutes in, she pings the people who signed up and aren't there yet (once someone is); when
   the group scatters she posts the tally — who came, who was late, and how many never showed
@@ -87,17 +106,25 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 
 ### Polls & votes
 
-- **`/poll create`** — propose several time slots (up to 10); everyone votes for
-  *all* the slots that work for them. The most-voted slot is highlighted on close and
-  can be turned directly into a session.
-- **`/vote create`** — same idea with free-text options (games, movies, …).
-- **`/poll list` · `/vote list`** — list and republish active polls/votes.
-- **`/poll delete <id>` · `/vote delete <id>`** — delete one you created.
-- Polls and votes left open **auto-close after 2 days**.
+- **`/when create`** — propose several time slots (up to 10, typed in one go as « ven 21h, sam
+  21h » or added one by one); everyone votes for *all* the slots that work for them. The
+  most-voted slot is highlighted on close and can be turned directly into a session, with everyone
+  who voted for that slot signed up as « peut-être »; the closed card then links to it.
+- **`/vote create`** — same idea with free-text options (games, movies, …), one per line, or
+  typed in one go as `title` and `options` (« Valorant, Among Us »).
+- Both take a length (2 days by default), **single choice** and **anonymous** (counts, never
+  names). Cards show a bar and a percentage per option, and **Mes votes** shows yours. **Gérer**
+  lets the organizer close, rename, extend, or add and remove options.
+- **`/when list` · `/vote list`** — list and republish active polls/votes.
+- **`/when delete <id>` · `/vote delete <id>`** — delete one you created, with the id autocompleted.
+- Polls and votes **close on their own** at the time on their card, and she replies under it with
+  the result, pinging the organizer; for a time slot, her reply carries the button that turns it
+  into a session.
 - **Weekend poll** — every Wednesday evening she posts her own poll for Friday, Saturday and
-  Sunday at 21:00, unless a session is already planned that weekend or someone's poll is still
-  open. When it closes she announces the winning evening, and anyone who voted for it can turn
-  it into a session.
+  Sunday at 21:00, unless a session (or a weekly one) is already planned that weekend or someone's
+  poll is still open. When it closes with one clear winner (at least two votes), she creates the
+  session herself (staff can edit it), with its voters as « peut-être ». Otherwise she announces
+  the winning evening(s), and anyone who voted for one can turn it into a session.
 - **Replying under a card** (a poll, a vote, a session, `/tonight`, a giveaway) — she answers
   about that card: she backs up whoever tells the others to vote, naming the people they tagged
   who still haven't clicked; checks a « j'ai voté » against the card; says how it stands when
@@ -128,7 +155,7 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
   teams, at random or **balanced** by level (the most even of many random deals, so a reshuffle
   still changes the teams). **Remélanger** draws again from whoever is in voice now.
 - **`/remindme when what`** — a reminder by DM, in her voice: `10m`, `dans 2h`, `dans 1h30`, `3j`,
-  `21h30`, `demain 9h`, `samedi 14h`, `25/12 10:00`… (« 21h » alone is a time; a duration in hours
+  `21h30`, `demain 9h`, `ce soir 9h` (21:00), `samedi 14h`, `25/12 10:00`… (« 21h » alone is a time; a duration in hours
   needs « dans »). Up to 60 days ahead, 15 pending at most. If your DMs are closed she pings you
   in the channel where you asked. **`/reminders`** lists yours and cancels one.
 - **`/rate thing`** — a score out of 10, hashed from the text: the same thing always gets the same
@@ -142,6 +169,12 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 - **`/wouldyourather [a] [b]`** — a « tu préfères… » with two buttons: one of her dilemmas, or your
   own two options. Votes stay hidden for 10 minutes, then she reveals the split, who chose what,
   and her own pick. Open dilemmas don't survive a restart.
+- **`/confess texte`** — an anonymous confession: she posts it, numbered, in the channel set with
+  `/config confess-channel`, and only you see the confirmation. One every 10 minutes per person.
+  Mentions never ping. The owner alone can look up who wrote one, to deal with abuse.
+- **Free Steam games** — every 3 hours she checks Steam for paid games at 100 % off (yours to keep,
+  not free weekends, free-to-play or DLC) and posts each new one, with its normal price and a link,
+  in the channel set with `/config freegames-channel`.
 
 ### Minecraft
 
@@ -181,6 +214,12 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
   - « syncs vide tes poches », « syncs donne-moi ton poisson » (or ta pioche, tes armes, ton fer…):
     she hands you what she carries; « syncs range tes affaires » puts it in the chest nearby, keeping
     her tools;
+  - « syncs ramène-moi du fer du coffre », « syncs va chercher 20 pains dans le coffre »: she takes
+    it from the chests nearby and brings it to you;
+  - « syncs fabrique-moi une pioche en fer », « syncs fais-moi 16 torches » (or an axe, a sword, a
+    bow, a rod, shears, planks, sticks, a crafting table, a chest, a furnace, ladders): she crafts it
+    and hands it over, cutting the wood and gathering the stone she's short of (iron, gold,
+    diamonds, coal and string she must already have); « une pioche » alone is the best she can make;
   - armour you give her, she puts on (and thanks you); « syncs enlève ton armure » takes it off and
     keeps it, « syncs mets ton armure » puts it back on, « syncs rends-moi ton armure » hands it over;
   - « syncs t'as quoi sur toi ? », « syncs montre ton inventaire »: she says what she carries, the
@@ -200,16 +239,18 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
     saved it, or the family can move or forget a place;
   - « syncs préviens-moi dans 5 min » or « syncs rappelle-moi dans 10 min de sortir le fer »: a
     reminder, up to two hours;
+  - « syncs tu fais quoi ? »: she says what she's doing, an order or her own life;
   - « syncs t'es où ? », « syncs assis », « syncs saute », and « salut syncs » (she waves back).
 
   She never digs through or builds on anything on the way: when gathering, she breaks only the
   blocks she was sent for (and a tree's own leaves to reach its logs), and takes wood only from real
-  trees. She places nothing but a seed where she just harvested, and her camp. She eats when hungry
+  trees. She places nothing but a seed where she just harvested, her camp, and a crafting table to craft
+  with when there's none nearby, which she takes back after. She eats when hungry
   and wears the best armour you give her. She never hits a creeper, whatever she's doing: she shoots
   it with a bow if she has one with arrows, and otherwise keeps away (and warns you when guarding),
   then goes back to what she was doing. A monster attacking anyone near her gets her help, even when
   she's busy; badly hurt, she backs off to heal.
-  After handing something over or putting her things away, she goes back to the farm, the fishing
+  After an errand (handing something over, putting her things away, fetching, crafting), she goes back to the farm, the fishing
   or the guarding she was at. Whisper an order (`/msg SYNCS syncs viens`) and she whispers back. Say
   just « syncs » and she answers « oui ? »: your next message is heard as an order, no name needed
   (« syncs » … « suis-moi »).
@@ -221,7 +262,8 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
   among her places (names like « ferme », « champ de blé », « étang », « enclos », « maison »): by
   day she works at the farm and the fishing spot in turns, sees to the animals morning and evening
   (bred and sheared twice a day), and at dusk she goes home. With none of them, she keeps near the
-  owner or Tata. Any order comes first; « syncs reste » keeps her put for ten minutes. After dying
+  owner or Tata. Any order comes first; « syncs reste » keeps her put for ten minutes, and « syncs quartier libre »
+  (« fais ta vie », « tu peux y aller ») sends her back to her own life at once. After dying
   she goes back for her things; she picks up what drops from the monsters she kills; she warns
   anyone with a creeper behind them; she says when a tool is wearing out or broke, or what she
   lacks (a rod, shears, arrows, room). She looks at whoever talks to her, turns her back on
@@ -589,6 +631,8 @@ is gone).
     default the server's « spam-bots » channel, else the game channel;
   - `levelup-channel set|clear` — where level-up cards go; the bots channel when unset;
   - `quiz-channel set|clear` — where her pop quiz goes; no channel, no quiz;
+  - `confess-channel set|clear` — where `/confess` posts; no channel, no confessions;
+  - `freegames-channel set|clear` — where she announces Steam games that turn free to keep; no channel, no announcements;
   - `plynling-role create|set|clear` — a role SYNCS keeps on everyone with a living Plynling and
     off everyone else (flair and a ping group); `create` makes it for you, `clear` stops managing it
     without touching anyone;
@@ -637,16 +681,19 @@ is gone).
   - **`emotes`** — the server's own emotes ranked, the ones nobody used, the rising and falling
     ones, and the share of server emotes, emotes from elsewhere and emoji;
   - **`sleeping`** — members with no XP, reaction or voice for 30, 60 or 90 days (buttons), with
-    the last day each one showed up; newcomers and bots are left out.
+    the last day each one showed up; newcomers and bots are left out;
+  - **`minecraft`** — her time on the Minecraft server and the days she played, the orders she
+    was given and by whom, her deaths, the monsters she killed, her fish and treasures, and what
+    she harvested and gathered.
 
   Messages, voice presence and command uses are counted from 7.6.0 on, so `activity` and
-  `commands` start empty.
+  `commands` start empty; her Minecraft days from 7.50.0.
 
   On the 1st of each month she sends two digests of the previous month by DM, each opening with
   « Le mois en bref » (a few figures and what deserves a look):
   - to the owner, about her running well: commands and their errors, the Pi, the messages she
-    couldn't answer precisely (with the latest ones as a file), the quiz; then `syncs`, `commands`
-    and `quiz`;
+    couldn't answer precisely (with the latest ones as a file), the quiz, her hours in Minecraft;
+    then `syncs`, `commands`, `quiz` and `minecraft` (left out for a month she didn't play);
   - to the server admin, about the server's life: members, sessions, when the server talks, silent
     channels and forgotten emotes; then `community`, `sessions`, `activity` and `sleeping`.
 - **`/admin xp add <member> <amount>` · `/admin xp remove <member> <amount>`** — manual XP
@@ -670,7 +717,11 @@ is gone).
   autocompleted list of channels it can post in) and **`/debug dm`** to a person. **`/debug absent`**
   flags him unavailable, after which the bot answers anyone who pings him and forwards
   the mention by DM — which he can reply to, and the bot relays the answer back into the
-  original channel. These are deliberately left out of `/help`.
+  original channel. **`/debug silence`** mutes her: no chatter, reactions, hellos, ambient
+  lines, level-up cards, pop quizzes, Quokka or Plynling announcements, and no sitting in voice
+  calls, until he lifts it (it survives a restart). Commands still answer, session reminders,
+  recaps, giveaway draws and `/remindme` still go out, and « good bot » / « bad bot » still
+  count. These are deliberately left out of `/help`.
 
 > Staff commands are **not** hidden from Discord's command picker. Discord's own
 > permission gate understands permission bits, not user ids, so it couldn't admit the
@@ -795,7 +846,7 @@ ProjectSYNCS/
 │                          # Commands, Services, Models and Helpers are split by
 │                          # subsystem: Core/, Personality/, Plynling/, Xp/, Voice/,
 │                          # Feedback/, Shame/, Scheduling/, Quiz/, Economy/, Arcade/,
-│                          # Admin/, Pi/, Minecraft/
+│                          # Admin/, Pi/, Minecraft/, Community/
 ├─ Data/AppDbContext.cs    # EF Core context
 ├─ Migrations/             # EF Core migrations (applied automatically on startup)
 ├─ MinecraftBody/          # Her body on the Minecraft server (Node + Mineflayer), driven by
@@ -809,7 +860,7 @@ ProjectSYNCS/
 | Service | Interval | Job |
 | --- | --- | --- |
 | `BotService` | — | Gateway connection, command registration, interaction dispatch |
-| `ReminderService` | 5 min | Reminder DMs, session lifecycle, poll auto-close, `/tonight` expiry |
+| `ReminderService` | 5 min | Weekly sessions, reminder DMs, session lifecycle, poll auto-close and results, `/tonight` expiry |
 | `PersonalReminderService` | 1 min | Delivers `/remindme` |
 | `PresenceService` | 5 min | The rotating status line |
 | `MorningGreetingService` | daily, random 8:00–10:00 | The morning hello |

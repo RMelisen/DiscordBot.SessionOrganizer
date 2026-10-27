@@ -4,7 +4,7 @@
 mood). `BotFeedbackTracker` attributes it, counts it and answers it. `/goodbot` ranks it via the
 `BotFeedback` / `BotFeedbackDailyStat` totals+buckets pair (default window **all-time** — verdicts
 are rare, so a rolling window is usually empty). `GetTallyAsync` reads one person's tally the same
-way; « tu m'aimes ? » asks it for the last 30 days (see `personality.md`).
+way; « tu m'aimes ? » asks it for the last 30 days (see `personality/intents.md`).
 
 ## A verdict short-circuits three services
 
@@ -36,6 +36,10 @@ themselves; the real bound is attribution (one verdict per person per action). W
 because a framing clause colours everything after it.
 
 ## Answering
+
+**Silence mode (`/debug silence`, see admin) counts and doesn't answer.** The tracker and
+`RivalryService` stay in the fan-out; `RespondAsync`, the jealous line and the rival's mutter and
+mark are skipped.
 
 **"Good girl" is the same verdict, different answer.** `ReadFeedback` has an overload returning a
 `VerdictForm`: the tally treats both identically, `RespondAsync` branches on it. `VerdictForm` is

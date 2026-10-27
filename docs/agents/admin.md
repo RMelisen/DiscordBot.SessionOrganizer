@@ -50,7 +50,7 @@ same check.
 ## `/report` and the monthly digest
 
 `sessions`, `polls`, `community`, `syncs`, `activity`, `commands`, `quiz`, `plynlings`, `emotes`,
-`sleeping`: her reports to the staff. Same gate as `/admin` (`IsStaff` per handler, no
+`sleeping`, `minecraft`: her reports to the staff. Same gate as `/admin` (`IsStaff` per handler, no
 `[DefaultMemberPermissions]`, guild-only).
 
 - **Posted in the open, with every name** (no-shows, latecomers, the busiest, the ones going
@@ -88,7 +88,7 @@ same check.
     calendar month for the digest, none for all time.
 - **The arithmetic is pure** (`SessionReport`, `PollReport`, `CommunityReport`, `SyncsReport`,
   `ActivityReport`, `CommandReport`, `QuizReport`, `PlynlingReport`, `EmoteReport`,
-  `SleepingReport` in `Helpers/`), the services only fetch rows, the cards (`ReportCards`) are
+  `SleepingReport`, `MinecraftReport` in `Helpers/`), the services only fetch rows, the cards (`ReportCards`) are
   static. The checks feed the helpers cases and measure every card at its worst; re-run them after
   adding a field. A list that can grow without bound (silent channels, unused emotes, never-used
   commands) goes through `ReportCards.Fit`, which keeps whole items only and counts the rest
@@ -114,12 +114,17 @@ same check.
     the last `MemberDailyStat` day with any counter above 0; « jamais » means never since
     2026-08-09, when the XP buckets became reliable (`ResetXpTotals`). Members who joined less than
     N days ago are left out, bots always. Activity in excluded channels earns nothing, so someone
-    who only talks there looks asleep (said in the footer).
+    who only talks there looks asleep (said in the footer);
+  - `minecraft` reads `MinecraftDailyStat`, the daily buckets beside her all-time `MinecraftStat`
+    (same `McStats` keys, written in the same save by `MinecraftDataService.AddStatsAsync`, from
+    7.50.0 on). Player names are her in-game ones, sanitized, shown only with `names`. A window
+    she didn't play says so (`MinecraftReportData.Played`: any minute in game, or any order).
 - **Joins and leaves** (`MemberFlowDailyStat`, `MemberFlowTracker` on `UserJoined` / `UserLeft`,
   bots skipped): daily buckets with **no totals table**, counted from 7.5.0 on. Nothing needs an
   all-time figure older than the buckets, and Discord shows the member count.
-- **Activity counting** (`activity`, `commands`): the one batched counter. A database write per
-  message would be the bot's first, on a Pi with no `SQLITE_BUSY` handling, so the counts go to
+- **Activity counting** (`activity`, `commands`, and the per-message counts of other subsystems:
+  emotes, reactions used, her chat answers): the one batched counter. A database write per message
+  or reaction is what fills a Pi with no `SQLITE_BUSY` handling, so the counts go to
   `ActivityCounter` (a singleton holding its own lock, every method synchronous and cheap) and
   `ActivityFlushService` (its own 5-minute loop) writes them.
   - Fed by the message fan-out right after the shortcut return (a typed shortcut is counted as a
@@ -141,12 +146,13 @@ same check.
   - **an opening line plus « Le mois en bref »** in one message: a few figures and « À regarder »
     (`ReportService.BuildBriefAsync`, `ReportCards.BuildOwnerBrief` / `BuildTataBrief`). Papa's
     figures are his choice: commands (uses, errors, never used), the Pi, messages without a
-    specific answer, the quiz. Tata's: members (active, joins, leaves, sleepers), sessions
+    specific answer, the quiz, her hours in Minecraft (« Pas joué ce mois-ci. » for none). Tata's: members (active, joins, leaves, sleepers), sessions
     (attendance, the best-attended weekday), when the server talks, silent channels, unused emotes,
     the three most active;
   - **then the reports of `ReportKinds.Digest(recipient)`**, one embed per message (several in one
-    could pass 6000), each in its own `try`: Papa `syncs`, `commands`, `quiz`; Tata `community`,
-    `sessions`, `activity`, `sleeping`. Papa also gets the chat-answer counts over 30 days (as
+    could pass 6000), each in its own `try`: Papa `syncs`, `commands`, `quiz`, `minecraft` (left out
+    for a month she didn't play: `ReportService.IsEmptyAsync`, the one report skipped when empty);
+    Tata `community`, `sessions`, `activity`, `sleeping`. Papa also gets the chat-answer counts over 30 days (as
     `/debug answers`: they are kept by rolling period) and the unanswered messages of the same 30
     rolling days as a file (`ChatAnswerService.GetUnansweredAsync`).
   - **« À regarder » is `Helpers/Admin/DigestBrief`**, pure thresholds (constants there): a
@@ -172,7 +178,8 @@ A flat `/config show` (a static Components V2 card, `ConfigCards.Build`) plus on
 setting: `excluded-channels add|remove`, `idle-channels add|remove`, `shame-voters add|remove`,
 `moderator-role set|clear`, `plynling-role create|set|clear`, `quiz-role create|set|clear`,
 `game-channel set|clear`,
-`main-channel set|clear`, `quiz-channel set|clear`, `bots-channel set|clear`, `levelup-channel set|clear`. Three levels is
+`main-channel set|clear`, `quiz-channel set|clear`, `bots-channel set|clear`, `levelup-channel set|clear`,
+`confess-channel set|clear`, `freegames-channel set|clear`. Three levels is
 Discord's maximum nesting. (`/shame` is flat only because it had to stay invokable bare; nothing here
 needs that.) Every handler goes through `ConfigModule.BeginAsync` (`IsStaff`, then an ephemeral
 defer); no `[DefaultMemberPermissions]`, same reason as `/admin`.
@@ -194,7 +201,8 @@ defer); no `[DefaultMemberPermissions]`, same reason as `/admin`.
   `clear` (or setting the default itself, stored as zero) falls back. `set` refuses a channel the bot
   can't view and send in — a silent destination would otherwise fail on every use with nobody told.
   **`QuizChannelId` is the exception: it has no default**, so zero means no quiz, `clear` turns it
-  off, and it is per guild (see `quiz.md`).
+  off, and it is per guild (see `quiz.md`). `ConfessChannelId` and `FreeGamesChannelId` work the same
+  way (see `community.md`).
 - **The mirrored roles are owned, not configured.** `GuildSettings.PlynlingRoleId` and `QuizRoleId`,
   zero meaning none (for the quiz role, zero also turns the weekly crown off). SYNCS decides who holds
   them (a strict mirror — see `plynling.md` and `quiz.md`; both go through `RoleMirror`), and the two
@@ -222,11 +230,13 @@ service is the only writer: any write drops that guild's entry. A failed read de
 
 ## `/debug` — owner only
 
-`tell`, `dm`, `absent`, `plynling`, `emotes`, `digest` (last month's digest in your DMs now, yours or a preview of Tata's, see
+`tell`, `delete` (one of her own messages, by link; refuses anyone else's), `confession` (who wrote
+confession #N, see `community.md`), `dm`, `absent`, `plynling`, `emotes`, `digest` (last month's digest in your DMs now, yours or a preview of Tata's, see
 *`/report` and the monthly digest*), `quiz` (post or close a pop quiz now, see `quiz.md`),
-`sticker` (post any of her sticker strips here, bypassing the gate, see `personality.md`),
+`sticker` (post any of her sticker strips here, bypassing the gate, see `personality/reactions.md`),
+`silence` (see below),
 `answers` (which kinds of chat answer she gives most, and what she couldn't answer specifically,
-see `personality.md`, *Answer stats*),
+see `personality/listening.md`, *Answer stats*),
 `role` (give a member a role; refuses managed / `@everyone` / not-below-her roles up front),
 plus the Plynling testing tools (`event`, `stress`, `modifier`, `sweep`, in `plynling-events.md`), each comparing `Context.User.Id` to
 `AvailabilityService.OwnerId` inline and replying ephemerally — except `answers`, which posts its
@@ -241,6 +251,35 @@ registered globally). `DebugModule.ParseChannelRef` turns the text back into a c
 because a misread silently sends the owner's message to the wrong place, and a *name* is accepted
 only when exactly one channel matches. `tell` keeps its own `MaxMessageLength` (1500) with an
 explicit refusal — it truncates a body rather than rejecting a title, so it predates `InputCaps`.
+
+### `/debug silence`
+
+`SilenceService` (singleton) holds one switch, kept in `silence-state.json` beside the database so it
+**survives a restart** (unlike `absent`: the owner silences her for a reason that a power cut
+doesn't end). While it is on she says nothing on her own initiative; **answers to commands, buttons
+and `;` shortcuts still go out**, and so do the notices someone set up with a command: session
+reminders, recaps and the roll call, giveaway draws, `/remindme`, the weekend poll's result, and
+Plynling DMs to owners (warnings, sickness). The monthly digest (a DM) and her Minecraft body are
+not touched either, nor is her Discord status.
+
+Where it is checked:
+
+- **The message fan-out** (`BotService`): the counters (activity, emotes, XP, shame, Quokka's
+  clock) and the verdict pair (`RivalryService`, `BotFeedbackTracker`) still run, then it returns
+  before reactions, the morning wave, ambient, the quiz's typed answers, Synthia, robot heart and
+  the chatter. The welcome line and her reaction pile-ons are skipped too, and so is the absence
+  relay. **Verdicts keep counting** (tally, XP bonus, badges): the rivals' actions stay on record
+  so attribution holds, and her command replies are still actions to judge. Only the answers go —
+  her reaction or comeback to a verdict, the jealous line, the rival mutter and mark.
+- **Each loop at the post itself**: the morning hello, ambient (night, idle, Voyager, wake line),
+  a new bot's welcome, Quokka's slots, the Wednesday poll (left undecided, so it still goes out if
+  silence lifts within its window), level-up cards (the level is still recorded), pop quizzes, the
+  Monday crown announcement (purse and role still move), voice spectator lines, the heat record and
+  router lines, and the sweep's Plynling death announcements and event stories (marked as told,
+  never posted later).
+- **Her voice seat**: she joins no call (a session she organised included), and leaves the one she
+  sits in at the next settled sweep. No seat lines, no mic flicker.
+- **`/debug quiz` and `/debug quokka` bypass it**: the owner asking is a command.
 
 `absent` toggles `AvailabilityService`'s absent flag; mentions of the owner while absent are
 forwarded to him (a bounded 200-entry map, `AllowedMentions.None` since it quotes others verbatim).

@@ -30,43 +30,6 @@ public class EmoteStatsService
         _db_context = db_context;
     }
 
-    // Adds written occurrences for a batch of emotes (a message may contain the
-    // same emote several times). counts maps each emote to how many times it
-    // appeared in the message.
-    public async Task AddWrittenAsync(ulong guildId, IReadOnlyDictionary<EmoteRef, int> counts)
-    {
-        if (counts.Count == 0) return;
-
-        var today = AppTime.TodayKey;
-        foreach (var (emote, n) in counts)
-        {
-            var row = await GetOrCreateAsync(guildId, emote);
-            row.WrittenCount += n;
-
-            var bucket = await GetOrCreateDailyAsync(guildId, emote, today);
-            bucket.WrittenCount += n;
-        }
-        await _db_context.SaveChangesAsync();
-    }
-
-    // Adjusts the reacted count for one emote by delta (+1 on add, -1 on remove).
-    // The stored count never drops below zero.
-    //
-    // A removal always lands on *today's* bucket, even when the reaction being
-    // removed was added weeks ago. Tracking the original day would mean storing a
-    // row per reaction; for a leaderboard the drift is not worth that, and the
-    // clamp keeps it from going negative.
-    public async Task AddReactedAsync(ulong guildId, EmoteRef emote, int delta)
-    {
-        var row = await GetOrCreateAsync(guildId, emote);
-        row.ReactedCount = Math.Max(0, row.ReactedCount + delta);
-
-        var bucket = await GetOrCreateDailyAsync(guildId, emote, AppTime.TodayKey);
-        bucket.ReactedCount = Math.Max(0, bucket.ReactedCount + delta);
-
-        await _db_context.SaveChangesAsync();
-    }
-
     /// <summary>
     /// The guild's emotes ranked by total usage over <paramref name="period"/>,
     /// highest first. Returns the whole ranking; callers page it themselves.
@@ -114,48 +77,4 @@ public class EmoteStatsService
             .ToList();
     }
 
-    private async Task<EmoteStat> GetOrCreateAsync(ulong guildId, EmoteRef emote)
-    {
-        var row = await _db_context.EmoteStats.FirstOrDefaultAsync(s =>
-            s.GuildId == guildId && s.EmoteId == emote.Id && s.Unicode == emote.Unicode);
-
-        if (row is null)
-        {
-            row = new EmoteStat
-            {
-                GuildId = guildId,
-                EmoteId = emote.Id,
-                Unicode = emote.Unicode,
-                Name = emote.Name,
-                IsAnimated = emote.IsAnimated
-            };
-            _db_context.EmoteStats.Add(row);
-        }
-        else
-        {
-            // Keep the latest name/animated flag in case the emote was renamed.
-            row.Name = emote.Name;
-            row.IsAnimated = emote.IsAnimated;
-        }
-        return row;
-    }
-
-    private async Task<EmoteDailyStat> GetOrCreateDailyAsync(ulong guildId, EmoteRef emote, int day)
-    {
-        var row = await _db_context.EmoteDailyStats.FirstOrDefaultAsync(b =>
-            b.GuildId == guildId && b.EmoteId == emote.Id && b.Unicode == emote.Unicode && b.Day == day);
-
-        if (row is null)
-        {
-            row = new EmoteDailyStat
-            {
-                GuildId = guildId,
-                EmoteId = emote.Id,
-                Unicode = emote.Unicode,
-                Day = day
-            };
-            _db_context.EmoteDailyStats.Add(row);
-        }
-        return row;
-    }
 }

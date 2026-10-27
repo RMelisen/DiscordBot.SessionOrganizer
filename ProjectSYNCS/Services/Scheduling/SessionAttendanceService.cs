@@ -67,7 +67,7 @@ internal sealed class SessionAttendanceService
         {
             if (!_cache.TryGetValue(guildId, out var entry)) return false;
             return entry.Sessions.Any(s =>
-                SessionAttendance.IsLive(now, s.ScheduledAt)
+                SessionAttendance.IsLive(now, s.ScheduledAt, s.Length)
                 && s.Participants.Any(p => p.UserId == userId && p.Status == ParticipantStatus.Joined));
         }
     }
@@ -142,7 +142,7 @@ internal sealed class SessionAttendanceService
         var voice = guild.VoiceChannels.Where(c => c.Id != afk).ToList();
 
         var wanted = new Dictionary<ulong, string>();
-        foreach (var session in sessions.Where(s => SessionAttendance.IsLive(now, s.ScheduledAt)).OrderBy(s => s.ScheduledAt))
+        foreach (var session in sessions.Where(s => SessionAttendance.IsLive(now, s.ScheduledAt, s.Length)).OrderBy(s => s.ScheduledAt))
         {
             var joined = session.Participants.Where(p => p.Status == ParticipantStatus.Joined).Select(p => p.UserId).ToHashSet();
             var best = voice
@@ -198,8 +198,7 @@ internal sealed class SessionAttendanceService
 
     private static string StatusText(SessionEvent session)
     {
-        var emoji = session.Category == SessionCategory.Movie ? "🎬" : "🎮";
-        var text = $"{emoji} {session.Title}";
+        var text = $"{SessionCategories.Emoji(session.Category)} {session.Title}";
         return text.Length > DiscordConfig.MaxVoiceChannelStatusLength
             ? text[..DiscordConfig.MaxVoiceChannelStatusLength]
             : text;
@@ -219,7 +218,7 @@ internal sealed class SessionAttendanceService
             await using var scope = _services.CreateAsyncScope();
             var events = scope.ServiceProvider.GetRequiredService<EventService>();
             sessions = (await events.GetEventsForAttendanceAsync(
-                    now, SessionAttendance.WatchBefore, SessionAttendance.RecapFallback))
+                    now, SessionAttendance.WatchBefore, SessionAttendance.WindowAfterStart))
                 .Where(e => e.GuildId == guildId)
                 .ToList();
         }
@@ -247,7 +246,7 @@ internal sealed class SessionAttendanceService
 
         // Joined and Maybe both count once they show up; only Joined people are owed a late call
         // and counted absent. « Peut-être », as she knows, means no.
-        if (SessionAttendance.InSightingWindow(now, start))
+        if (SessionAttendance.InSightingWindow(now, start, session.Length))
         {
             foreach (var p in session.Participants)
             {
@@ -298,7 +297,7 @@ internal sealed class SessionAttendanceService
                 scattered = apart >= SessionAttendance.ScatterToRecap;
             }
         }
-        if (!scattered && !SessionAttendance.RecapForced(now, start)) return;
+        if (!scattered && !SessionAttendance.RecapForced(now, start, session.Length)) return;
 
         // Nobody came, or too few were ever expected: nothing to say, and nothing to say later.
         if (came.Count == 0 || confirmed.Count < SessionAttendance.MinConfirmed)

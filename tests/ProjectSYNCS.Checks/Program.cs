@@ -45,7 +45,8 @@ var taggedPools = new[]
     "SessionNextLines", "SessionRunningLines", "NoSessionLines", "MyStatsLines", "MyLevelEmptyLines", "MyPlynlingEmptyLines",
     "CardRepostLines", "CardRepostTooSoonLines", "CardClosedLines", "CardRallyLines", "CardRallyNamedLines",
     "CardRallyAllDoneLines", "CardDoneSeenLines", "CardDoneLiarLines", "CardTextClickLines", "CardTextAnsweredLines",
-    "CardStatusLines",
+    "CardStatusLines", "OpenAnswerLines", "CardDoneAnonymousLines", "PollClosedSlotLines", "VoteClosedResultLines",
+    "PollClosedEmptyLines",
 };
 foreach (var f in taggedPools)
 foreach (var (name, lines) in Pools(f))
@@ -82,7 +83,7 @@ Covers("RequestCommands", topicType);
 Covers("ReplyContextLines", typeof(ReplyContext));
 Covers("ChatFactLines", typeof(ChatFact));
 var owner = (IDictionary)Field("OwnerIntentLines");
-if (owner.Count != 24) Fail($"OwnerIntentLines has {owner.Count} keys, expected 24");
+if (owner.Count != 25) Fail($"OwnerIntentLines has {owner.Count} keys, expected 25");
 
 // 3. Sulk reactions parse.
 foreach (var r in (string[])Field("StreakSulkReactions"))
@@ -716,6 +717,7 @@ var byIntent = new (string Intent, string[] Samples)[]
     ("Question", new[] { "c'est quoi le jeu de ce soir ?", "pourquoi t'as dit ça", "c'est quoi le code du lobby ?", "il est où le lien ?" }),
     ("DemandApology", new[] { "excuse-toi", "dis pardon", "tu me dois des excuses", "demande pardon", "tu t'excuses ?", "je veux des excuses" }),
     ("ShutUp", new[] { "chut", "tais-toi", "silence", "la ferme", "arrête de parler", "laisse-nous tranquille", "chuuut" }),
+    ("AnswerMe", new[] { "réponds à ma question", "t'as pas répondu", "tu esquives", "j'attends ta réponse", "pourquoi tu réponds pas à ma question ?" }),
     ("MyStats", new[] { "je suis quel niveau ?", "j'ai combien de cailloux ?", "comment va mon plynling ?", "mon niveau ?", "mes stats ?" }),
     ("TakeSides", new[] { "qui a raison, moi ou Luca ?", "qui a raison entre Luca et Sandra ?", "qui a raison ?", "dis-lui que j'ai raison" }),
     ("RateMe", new[] { "note-moi", "tu me notes ?", "je vaux combien ?", "je suis beau ?", "tu me trouves comment ?" }),
@@ -871,7 +873,7 @@ foreach (var (text, expected) in new[]
     ("tu m'ignores ?", "AreYouThere"), ("tu m'ignores maintenant ?", "AreYouThere"), ("tu réponds plus ?", "AreYouThere"),
     ("tu me réponds pas ?", "AreYouThere"), ("pourquoi tu me réponds pas ?", "AreYouThere"), ("réponds-moi", "AreYouThere"),
     ("t'es morte ?", "AreYouThere"), ("t'es morte ou quoi", "AreYouThere"), ("t'es plus là ?", "AreYouThere"),
-    ("tu réponds pas à ma question ?", "Question"), ("t'es morte de rire ?", "Laughter"),
+    ("tu réponds pas à ma question ?", "AnswerMe"), ("t'es morte de rire ?", "Laughter"),
     // AboutHer: her taste asked with « quel », hobbies and passions.
     ("t'aimes quel jeu ?", "AboutHer"), ("tu aimes quelle musique ?", "AboutHer"), ("tu kiffes quel genre de film ?", "AboutHer"),
     ("tu préfères quoi comme musique ?", "AboutHer"), ("t'as des hobbies ?", "AboutHer"), ("tu as des passions ?", "AboutHer"),
@@ -1016,6 +1018,23 @@ foreach (var (text, expected) in new[]
     if (got != expected) Fail($"ReadAnswer(\"{text}\") = {(got == "" ? "null" : got)}, expected {(expected == "" ? "null" : expected)}");
 }
 
+// A short answer to one of her open questions, quoted back as written (OpenAnswerLines).
+var readShortAnswer = cues.GetMethod("ReadShortAnswer", BindingFlags.Public | BindingFlags.Static)!;
+foreach (var (text, expected) in new[]
+{
+    ("Javascript", "Javascript"), ("Python", "Python"), ("Grattoir", "Grattoir"), ("Ça s'appelle comme ça", "Ça s'appelle comme ça"),
+    ("8 jours.", "8 jours"), ("  le   bleu !", "le bleu"), ("<@1> Minecraft", "Minecraft"), ("syncs, la pizza", "la pizza"),
+    ("Valo <:emote:123>", "Valo"),
+    ("Java ?", ""), ("t'es nulle", ""), ("toi", ""), ("<:emote:123>", ""), ("", ""),
+    ("La réponse était: 8 jours. (Au bout de 7 jours, il a atteint 7 mètres)", ""),
+})
+{
+    var got = readShortAnswer.Invoke(null, new object[] { text })?.ToString() ?? "";
+    if (got != expected) Fail($"ReadShortAnswer(\"{text}\") = {(got == "" ? "null" : got)}, expected {(expected == "" ? "null" : expected)}");
+}
+foreach (var l in (string[])Field("OpenAnswerLines"))
+    if (l.Contains("{2}") && !l.Contains("« {2} »")) Fail($"OpenAnswerLines quotes the answer outside « »: {l}");
+
 // The records pools: every plain RememberMe line and every opener says the name (the answer to
 // « comment je m'appelle ? »); the openers carry no tag, the fact line after them does; the grudge
 // quotes its count, the treasure never shows one.
@@ -1052,6 +1071,17 @@ foreach (var (text, expected) in new[]
     ("laisse-nous tranquille", "ShutUp"), ("on t'a rien demandé", "ShutUp"), ("shut up", "ShutUp"),
     ("chut il dort", "None"), ("ferme la porte", "None"), ("reste à la ferme", "None"), ("silence radio depuis hier", "None"),
     ("ta gueule", "None"),
+    // A « non » opening it refuses what she said; it doesn't cancel the hush.
+    ("Non tais toi", "ShutUp"), ("non, tais-toi", "ShutUp"), ("non mais tais-toi", "ShutUp"), ("non non tais-toi", "ShutUp"),
+    // AnswerMe: the answer she didn't give.
+    ("SYNCS pourquoi tu réponds pas à ma question?", "AnswerMe"), ("Répond à ma question pressente.", "AnswerMe"),
+    ("réponds à ma question", "AnswerMe"), ("t'as pas répondu", "AnswerMe"), ("tu m'as toujours pas répondu", "AnswerMe"),
+    ("j'attends ta réponse", "AnswerMe"), ("et ma réponse ?", "AnswerMe"), ("tu esquives", "AnswerMe"),
+    ("tu esquives la question", "AnswerMe"), ("esquive pas", "AnswerMe"), ("réponds !", "AnswerMe"), ("réponds stp", "AnswerMe"),
+    ("rep à ma question", "AnswerMe"), ("j'ai toujours pas de réponse à ma question", "AnswerMe"),
+    ("tu réponds jamais", "AnswerMe"), ("pourquoi tu réponds jamais ?", "AnswerMe"),
+    ("il a pas répondu à ma question", "None"), ("personne répond à ma question ?", "Question"), ("j'esquive pas", "Sharing"),
+    ("tu esquives bien ses attaques", "None"), ("je réponds demain", "Sharing"), ("ma question c'est quand on joue", "None"),
     // MyStats: asked.
     ("je suis quel niveau ?", "MyStats"), ("je suis quel niveau", "MyStats"), ("j'ai combien de cailloux ?", "MyStats"),
     ("combien j'ai de cailloux", "MyStats"), ("comment va mon plynling ?", "MyStats"), ("mon niveau ?", "MyStats"),
@@ -1350,9 +1380,9 @@ foreach (var (text, expected) in new[]
     };
     Console.WriteLine($"report embeds at worst: {string.Join(" · ", widest)} chars (sessions, polls, community, syncs)");
 
-    // /help lists /report next to /admin, close to the caps: both pages measured.
+    // /help lists /report next to /admin, close to the caps: every page measured.
     var help = asm.GetType("ProjectSYNCS.Commands.HelpModule")!.GetMethod("BuildEmbed", BindingFlags.Public | BindingFlags.Static)!;
-    foreach (var page in new[] { 0, 1 })
+    foreach (var page in new[] { 0, 1, 2 })
     {
         var embed = (Discord.Embed)help.Invoke(null, new object[] { page })!;
         if (embed.Length > 6000) Fail($"/help page {page} is {embed.Length} characters");
@@ -1361,7 +1391,7 @@ foreach (var (text, expected) in new[]
     }
 
     // /plynling help is close to the caps too, and the shop card lists every item it sells with its icon.
-    foreach (var page in new[] { 0, 1 })
+    foreach (var page in new[] { 0, 1, 2 })
     {
         var embed = ProjectSYNCS.Commands.PlynlingModule.BuildHelpEmbed(page);
         if (embed.Length > 6000) Fail($"/plynling help page {page} is {embed.Length} characters");
@@ -1550,7 +1580,34 @@ var batch2Widest = new Dictionary<string, int>();
     }
     var t6Quiet = ActivityReport.Compute(Array.Empty<ProjectSYNCS.Models.ActivityHourStat>(), Array.Empty<ProjectSYNCS.Models.ChannelDailyStat>(), Array.Empty<ChannelInfo>());
     T6Fits("empty activity", ProjectSYNCS.Commands.ReportCards.BuildActivity(new(t6Quiet, null), ReportWindow.From(StatsPeriod.AllTime, DateTimeOffset.UtcNow), true), true);
-    if (!ReportKinds.Digest(DigestRecipient.Owner).SequenceEqual(new[] { ReportKind.Syncs, ReportKind.Commands, ReportKind.Quiz })
+    // /report minecraft: her time in game, orders and adventures, from the daily buckets.
+    ProjectSYNCS.Models.MinecraftDailyStat T6Mc(int day, string key, long count) => new() { Day = day, Key = key, Count = count };
+    var t6McData = MinecraftReport.Compute(new[]
+    {
+        T6Mc(20261003, McStats.Minutes, 90), T6Mc(20261004, McStats.Minutes, 30), T6Mc(20261004, McStats.Orders, 7),
+        T6Mc(20261004, McStats.OrdersBy("bob"), 5), T6Mc(20261004, McStats.OrdersBy("papa"), 2),
+        T6Mc(20261004, McStats.Gathered("wood"), 40), T6Mc(20261005, McStats.Deaths, 1),
+    });
+    if (t6McData.Minutes != 120 || t6McData.DaysPlayed != 2 || t6McData.Orders != 7 || t6McData.TopPlayers[0] != new McCountLine("bob", 5)
+        || t6McData.TopPlayers.Count != 2 || t6McData.Gathered[0] != new McCountLine("wood", 40) || t6McData.Deaths != 1 || !t6McData.Played)
+        Fail($"minecraft report: {t6McData}");
+    if (MinecraftReport.Compute(Array.Empty<ProjectSYNCS.Models.MinecraftDailyStat>()).Played) Fail("minecraft report: an empty month played");
+    // At its worst: five 32-character players, every resource, 9-digit counts.
+    var t6McName = new string('w', 32);
+    var t6McWorst = new MinecraftReportData(999_999_999, 31, 999_999_999,
+        Enumerable.Range(0, MinecraftReport.ListedPlayers).Select(i => new McCountLine(t6McName[..^1] + i, 999_999_999)).ToList(),
+        999_999_999, 999_999_999, 999_999_999, 999_999_999, 999_999_999,
+        Enum.GetValues<McResource>().Select(r => new McCountLine(r.ToString().ToLowerInvariant(), 999_999_999)).ToList());
+    foreach (var t6Names in new[] { true, false })
+    {
+        var t6McCard = ProjectSYNCS.Commands.ReportCards.BuildMinecraft(new(t6McWorst, t6McWorst), t6Month, t6Names);
+        T6Fits("minecraft", t6McCard, t6Names);
+        var t6McText = t6McCard.Description + string.Concat(t6McCard.Fields.Select(f => f.Value));
+        if (t6McText.Contains(t6McName[..^1]) != t6Names) Fail($"minecraft card: player names {(t6Names ? "missing" : "shown")}");
+    }
+    var t6McEmpty = ProjectSYNCS.Commands.ReportCards.BuildMinecraft(new(MinecraftReport.Compute(Array.Empty<ProjectSYNCS.Models.MinecraftDailyStat>()), null), t6Month, true);
+    if (t6McEmpty.Description != "Elle n'a pas joué sur cette période.") Fail("minecraft card: an empty window");
+    if (!ReportKinds.Digest(DigestRecipient.Owner).SequenceEqual(new[] { ReportKind.Syncs, ReportKind.Commands, ReportKind.Quiz, ReportKind.Minecraft })
         || !ReportKinds.Digest(DigestRecipient.Tata).SequenceEqual(new[] { ReportKind.Community, ReportKind.Sessions, ReportKind.Activity, ReportKind.Sleeping }))
         Fail("digest lists");
 }
@@ -1751,6 +1808,8 @@ var batch2Widest = new Dictionary<string, int>();
     var t12Owner = ProjectSYNCS.Commands.ReportCards.BuildOwnerBrief(
         new(T12Cmd(new CommandLine("help", 999_999, 99_999)), T12Cmd()), new(T12Syncs(30, 81_234, 9_999_999, 999_999, (ProjectSYNCS.Models.UptimeEventKind.Crash, 99)), T12Syncs(30, 1, 1, 1)),
         new(T12Quiz(Enum.GetValues<QuizDifficulty>().Select(d => new QuizGroupLine(QuizBank.Label(d), 999, 999)).ToArray()), null),
+        new(new MinecraftReportData(999_999_999, 31, 999_999_999, Array.Empty<McCountLine>(), 0, 0, 0, 0, 0, Array.Empty<McCountLine>()),
+            new MinecraftReportData(1, 1, 1, Array.Empty<McCountLine>(), 0, 0, 0, 0, 0, Array.Empty<McCountLine>())),
         t12Many, t12Month, "calme");
     var t12Activity = ActivityReport.Compute(Array.Empty<ProjectSYNCS.Models.ActivityHourStat>(), Array.Empty<ProjectSYNCS.Models.ChannelDailyStat>(),
         Enumerable.Range(0, 60).Select(i => new ChannelInfo((ulong)i, false, false)).ToList());
@@ -1774,8 +1833,16 @@ var batch2Widest = new Dictionary<string, int>();
             .Fields.Any(f => f.Value.Contains("**Bob** (<@7>)")))
         Fail("sleeping report: the sleeper's name is not written out");
     if (t12Owner.Fields.Last().Value.Contains("calme") || !ProjectSYNCS.Commands.ReportCards.BuildOwnerBrief(new(T12Cmd(), null), new(T12Syncs(0, null, 0, 0), null),
-            new(T12Quiz(), null), Array.Empty<DigestAlert>(), t12Month, "calme").Fields.Last().Value.Equals("calme"))
+            new(T12Quiz(), null), new(MinecraftReport.Compute(Array.Empty<ProjectSYNCS.Models.MinecraftDailyStat>()), null),
+            Array.Empty<DigestAlert>(), t12Month, "calme").Fields.Last().Value.Equals("calme"))
         Fail("« À regarder » shows the alerts, or her quiet line when there are none");
+    // Papa's brief: her hours in game, before « À regarder », which stays last.
+    var t12NoGame = ProjectSYNCS.Commands.ReportCards.BuildOwnerBrief(new(T12Cmd(), null), new(T12Syncs(0, null, 0, 0), null), new(T12Quiz(), null),
+        new(MinecraftReport.Compute(Array.Empty<ProjectSYNCS.Models.MinecraftDailyStat>()), null), Array.Empty<DigestAlert>(), t12Month, "calme");
+    if (t12NoGame.Fields.Where(f => f.Name == "Minecraft").Select(f => f.Value).FirstOrDefault() != "Pas joué ce mois-ci." || t12NoGame.Fields.Last().Name != "À regarder")
+        Fail("owner brief: a month she didn't play");
+    if (t12Owner.Fields.Where(f => f.Name == "Minecraft").Select(f => f.Value).FirstOrDefault() is not { } t12Game || !t12Game.Contains("en jeu") || t12Owner.Fields.Last().Name != "À regarder")
+        Fail("owner brief: her hours in game");
 }
 
 Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2Widest.Select(x => $"{x.Key} {x.Value}"))} chars");
@@ -2060,7 +2127,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         ("syncs reste là et ferme-la", McOrder.Stay), // « ferme » without an article is « shut »
         ("syncs garde-moi", McOrder.Guard),
         ("syncs garde des carottes", McOrder.Guard), // keeps some: never a farm or a harvest (« garde » alone was already guard)
-        ("syncs il reste du blé ?", McOrder.Stay), // as before: « reste » alone is stay
+        ("syncs il reste du blé ?", McOrder.Unknown), // « il reste »: there's some left, not « stay »
         ("syncs arrache-toi", McOrder.Unknown), ("syncs prends ça", McOrder.Unknown),
         ("syncs t'as vu mon champ ?", McOrder.Unknown), ("syncs le blé a poussé", McOrder.Unknown),
         ("syncs ne prends pas soin de la ferme", McOrder.None), ("syncs n'arrache pas les carottes", McOrder.None),
@@ -2110,6 +2177,75 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         if (got.Order != order || (also is not null && !also(got)))
             Fail($"order « {text} »: got {got.Order} goods={got.Goods} smelt={got.Smelt} place={got.Place} s={got.Seconds} note={got.Note}");
     }
+    // Not this order, whatever else it is (talk, a call, another order).
+    void NotOrder(string text, McOrder order)
+    {
+        if (McCommand.Parse(text, mcNames, false, mcPlaces).Order == order) Fail($"order « {text} »: read as {order}");
+    }
+    // Free time: back to her own life at once. A question about her evening is talk.
+    Mc("syncs t'es libre", McOrder.Free);
+    Mc("syncs quartier libre", McOrder.Free);
+    Mc("syncs fais ta vie", McOrder.Free);
+    Mc("c'est bon syncs tu peux y aller", McOrder.Free);
+    Mc("syncs repos", McOrder.Free);
+    Mc("syncs tu peux disposer", McOrder.Free);
+    Mc("syncs tu peux arrêter de me suivre", McOrder.Free);
+    NotOrder("syncs t'es libre ce soir ?", McOrder.Free);
+    NotOrder("syncs t'es libre demain ?", McOrder.Free);
+    NotOrder("syncs t'es libre samedi ?", McOrder.Free);
+    NotOrder("syncs tu es libre quand ?", McOrder.Free);
+    NotOrder("syncs vas-y", McOrder.Free);
+    NotOrder("syncs libre", McOrder.Free);
+    NotOrder("syncs t'es pas libre", McOrder.Free);
+    NotOrder("syncs je suis libre", McOrder.Free);
+    Mc("syncs bouge pas", McOrder.Stay);
+
+    // Fetching from a chest: a fetch verb with a chest word. A store verb with one stays storing; without one, gathering.
+    Mc("syncs ramène-moi du fer du coffre", McOrder.Fetch, r => r.Goods == McGoods.Iron && r.Count == 0);
+    Mc("syncs va chercher 20 pains dans le coffre", McOrder.Fetch, r => r.Goods == McGoods.Food && r.Count == 20);
+    Mc("syncs sors-moi le pain du tonneau", McOrder.Fetch, r => r.Goods == McGoods.Food);
+    Mc("syncs apporte-moi du bois du coffre", McOrder.Fetch, r => r.Goods == McGoods.Wood);
+    Mc("syncs récupère les diamants dans le coffre", McOrder.Fetch, r => r.Goods == McGoods.Diamond);
+    Mc("syncs ramène-moi un truc du coffre", McOrder.Fetch, r => r.Goods is null);
+    Mc("syncs ramène-moi tout du coffre", McOrder.Fetch, r => r.Goods is null);
+    Mc("syncs range le pain dans le coffre", McOrder.Store);
+    Mc("syncs mets tout dans le coffre", McOrder.Store);
+    NotOrder("syncs ramène le fer au coffre", McOrder.Fetch);
+    Mc("syncs ramène le fer du coffre", McOrder.Fetch, r => r.Goods == McGoods.Iron);
+    Mc("syncs va chercher du fer", McOrder.Collect);
+    NotOrder("je vais chercher du pain dans le coffre syncs", McOrder.Fetch);
+    Mc("syncs ramène pas le fer du coffre", McOrder.None);
+
+    // Crafting for a player: a craft verb and an item; « fais-moi » only with the item right after it.
+    Mc("syncs fabrique-moi une pioche en fer", McOrder.Craft, r => r.Item == "iron_pickaxe" && r.Count == 1);
+    Mc("syncs fais-moi 16 torches", McOrder.Craft, r => r.Item == "torch" && r.Count == 16);
+    Mc("syncs crafte une table", McOrder.Craft, r => r.Item == "crafting_table");
+    Mc("syncs fais-moi une épée", McOrder.Craft, r => r.Item == "sword" && r.Count == 1);
+    Mc("syncs craft un coffre", McOrder.Craft, r => r.Item == "chest");
+    Mc("syncs fabrique-moi une pioche en pierre", McOrder.Craft, r => r.Item == "stone_pickaxe");
+    Mc("syncs tu peux me faire une canne à pêche ?", McOrder.Craft, r => r.Item == "fishing_rod");
+    Mc("syncs fais-moi des échelles", McOrder.Craft, r => r.Item == "ladder" && r.Count == 3);
+    Mc("syncs fais-moi 10 pioches", McOrder.Craft, r => r.Item == "pickaxe" && r.Count == 4);
+    Mc("syncs fabrique-moi un truc", McOrder.Craft, r => r.Item is null);
+    foreach (var notCraft in new[] { "syncs fais-moi peur", "syncs fais-moi rire", "syncs fais-moi confiance", "je fabrique une pioche syncs",
+                 "syncs fais-moi du bois", "syncs fais-moi signe dans 5 min" })
+        NotOrder(notCraft, McOrder.Craft);
+    Mc("syncs fais-moi du bois", McOrder.Collect, r => r.Resource == McResource.Wood);
+    Mc("syncs va chercher du fer", McOrder.Collect, r => r.Resource == McResource.Iron);
+    // Her names for what she makes, and for each material the body may say she lacks.
+    foreach (var c in McCraft.All)
+        if (string.IsNullOrWhiteSpace(McCraft.Label(c.Key, 1)) || string.IsNullOrWhiteSpace(McCraft.Label(c.Key, 16))) Fail($"McCraft.Label({c.Key}): empty");
+    // What the body reports making (crafting/crafted `item`): a raw game id would be read out in chat.
+    foreach (var item in McCraft.All.Select(c => c.Key)
+                 .Concat(from m in new[] { "wooden", "stone", "iron", "golden", "diamond" }
+                         from t in new[] { "pickaxe", "axe", "shovel", "hoe", "sword" }
+                         select $"{m}_{t}"))
+        if (McCraft.Label(item, 1).Contains('_') || McCraft.Label(item, 8).Contains('_')) Fail($"McCraft.Label({item}): no French name");
+    if (McCraft.Label("iron_pickaxe", 1) != "une pioche en fer" || McCraft.Label("torch", 16) != "16 torches" || McCraft.Label("sword", 1) != "une épée")
+        Fail($"McCraft.Label: « {McCraft.Label("iron_pickaxe", 1)} », « {McCraft.Label("torch", 16)} », « {McCraft.Label("sword", 1)} »");
+    foreach (var material in new[] { "iron", "gold", "diamond", "coal", "string" })
+        if (!((IDictionary)Field("McCraftMaterialNames")).Contains(material)) Fail($"McCraftMaterialNames: no {material}");
+
     // Handing over: everything, or a kind of goods; a possessive turns a gathering word into her own stock.
     Mc("syncs vide tes poches", McOrder.Give, r => r.Goods == McGoods.All);
     Mc("syncs donne-moi tout", McOrder.Give, r => r.Goods == McGoods.All);
@@ -2459,6 +2595,144 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         if (got != expected && !got.StartsWith(expected + ":")) Fail($"sweep « {text} »: got {got}, expected {expected}");
     }
 
+    // Misreads found by a sweep of game-chat wordings, and the chat each fix must leave alone. Same places and format.
+    foreach (var (text, expected) in new (string, string)[]
+    {
+        //  A common word one slip from a list word is itself: « reviens » once saved a place (« retiens »).
+        ("syncs reviens", "Come"), ("syncs reviens ici", "Come"), ("syncs tu peux revenir ?", "Come"),
+        ("syncs t'as vu mon jardin ?", "Unknown"), ("syncs c'est entre toi et moi", "Unknown"),
+        ("syncs regarde le coucher de soleil", "Unknown"), ("syncs le soleil se couche", "Unknown"),
+        ("syncs je suis fauché", "Unknown"), ("syncs ma cuisine est belle", "Unknown"), ("syncs ça marche à la maison ?", "Unknown"),
+        ("syncs t'as bien dormi ?", "Unknown"),
+        //  Come, the way people hurry her
+        ("syncs grouille", "Come"), ("syncs dépêche toi", "Come"), ("syncs magne toi", "Come"), ("syncs t'arrives ?", "Come"),
+        ("syncs cmon", "Come"), ("syncs tp sur moi", "Come"), ("syncs retrouve moi", "Come"), ("syncs il faut que tu viennes", "Come"),
+        ("syncs viens ou pas ?", "Come"), ("syncs y a du fer par ici ?", "Unknown"),
+        //  A known place right after come or stay: there
+        ("syncs viens à la base", "GoToPlace:base"), ("syncs viens me rejoindre à la mine", "GoToPlace:mine"),
+        ("syncs attends moi à la maison", "GoToPlace:maison"), ("syncs reste à la mine", "GoToPlace:mine"),
+        ("syncs retrouve moi à la mine", "GoToPlace:mine"), ("syncs viens voir ma base", "Come"),
+        //  Follow, and stopping something she keeps doing
+        ("syncs ne me lâche pas", "Follow"), ("syncs tu me suis ou pas ?", "Follow"), ("syncs je veux que tu me suives", "Follow"),
+        ("syncs ne me suis plus", "Stay"), ("syncs me suis plus", "Stay"), ("syncs ne me protège plus", "Stay"),
+        ("syncs ne pêche plus", "Stay"), ("syncs tu me suis plus ?", "None"), ("syncs je vais te suivre", "Unknown"),
+        //  Stay, refused, and talk that isn't
+        ("syncs lâche moi", "Stay"), ("syncs laisse moi tranquille", "Stay"), ("syncs fais rien", "Stay"),
+        ("syncs reste pas plantée là", "None"), ("syncs reste pas avec moi", "Stay"), ("syncs ne bouge plus", "Stay"),
+        ("syncs arrête de dire ça", "Unknown"), ("syncs arrête de me parler", "Unknown"), ("syncs arrête de me suivre", "Stay"),
+        ("syncs lâche moi tes diamants", "Give:Diamond"), ("syncs laisse moi passer", "Unknown"),
+        //  Guard: a monster to kill; help with something else is that something
+        ("syncs tue les zombies", "Guard"), ("syncs tue l'araignée", "Guard"), ("syncs bute le creeper", "Guard"),
+        ("syncs défonce les mobs", "Guard"), ("syncs ne tue pas les zombies", "None"), ("syncs aide moi", "Guard"),
+        ("syncs aide moi à couper du bois", "Collect"), ("syncs aide moi à récolter le blé", "Harvest"),
+        //  Gathering: more verbs, no verb, the wood alone, stacks, and a place after the resource
+        ("syncs fais moi du bois", "Collect"), ("syncs prends du bois", "Collect"), ("syncs va farmer du fer", "Collect"),
+        ("syncs envoie moi du bois", "Collect"), ("syncs bûcheronne", "Collect"), ("syncs du bois stp", "Collect"),
+        ("syncs 20 bois", "Collect"), ("syncs il faut de la pierre", "Collect"), ("syncs je veux du fer", "Collect"),
+        ("syncs un arbre", "Unknown"), ("syncs du bois ou de la pierre ?", "Unknown"), ("syncs prends mon bois", "Unknown"),
+        ("syncs ramène de l'épicéa", "Collect"), ("syncs va chercher du bois à la maison", "Collect"),
+        ("syncs va chercher du fer à la mine", "Collect"),
+        //  The player's own doing, past or planned, and someone else's
+        ("syncs on a trouvé du fer", "Unknown"), ("syncs bob a coupé du bois", "Unknown"), ("syncs j'ai déjà coupé du bois", "Unknown"),
+        ("syncs je vais chercher du bois", "Unknown"), ("syncs je dois aller chercher du bois", "Unknown"),
+        ("syncs je suis en train de couper du bois", "None"), ("syncs je m'en vais suis moi", "Follow"),
+        ("syncs on va chercher du bois", "Collect"), ("syncs y a quoi dans ton sac", "Inventory"),
+        //  For later, or asking why: talk
+        ("syncs tu peux venir demain ?", "Unknown"), ("syncs pourquoi tu me suis ?", "Unknown"),
+        //  Handing over
+        ("syncs donne moi tout ton bois", "Give:Wood"), ("syncs donne moi tout le fer", "Give:Iron"),
+        ("syncs donne moi un truc à manger", "Give:Food"), ("syncs file moi à bouffer", "Give:Food"),
+        ("syncs t'aurais pas du pain ?", "Give:Food"), ("syncs t'as pas un peu de bouffe ?", "Give:Food"),
+        ("syncs je peux avoir ton épée ?", "Give:Weapons"), ("syncs donne moi ton avis", "Unknown"),
+        ("syncs nourris moi", "Give:Food"), ("syncs jsuis affamé", "Give:Food"), ("syncs j'ai super faim", "Give:Food"),
+        ("syncs j'ai plus faim", "Unknown"), ("syncs t'as faim ?", "Unknown"),
+        //  Sleep, goodbyes, greetings, praise
+        ("syncs à dodo", "Sleep"), ("syncs on dort", "Sleep"), ("syncs va dans le lit", "Sleep"),
+        ("syncs je vais dormir", "Bye"), ("syncs je vais me coucher", "Bye"), ("syncs je vais dormir va dormir aussi", "Sleep"),
+        ("syncs a+", "Bye"), ("syncs @+", "Bye"), ("syncs bonne soirée", "Bye"), ("syncs je déco", "Bye"),
+        ("syncs je dois y aller", "Bye"), ("wsh syncs", "Wave"),
+        ("syncs t'es une boss", "Praise"), ("syncs t'assures", "Praise"), ("syncs parfait", "Praise"),
+        ("syncs c'est pas parfait", "None"),
+        //  A wider sweep: fishing, ranch, guarding, standing up, places, timers, the camp, English
+        ("syncs lance ta ligne", "Fish"), ("syncs t'aimes pêcher ?", "Unknown"), ("syncs tu sais pêcher ?", "Unknown"),
+        ("syncs je t'aime suis moi", "Follow"), ("syncs tonds les moutons", "Ranch"),
+        ("syncs fais se reproduire les vaches", "Ranch"), ("syncs t'es tendre avec les vaches", "Unknown"),
+        ("syncs fais le guet", "Patrol"), ("syncs à genoux", "Sit"), ("syncs lève toi", "Stay"), ("syncs debout", "Stay"),
+        ("syncs fais un salto", "Jump"), ("syncs fais moi un bisou", "Unknown"), ("syncs bisous", "Bye"),
+        ("syncs tu connais le chemin de la base ?", "Guide:base"), ("syncs on est où ?", "Where"),
+        ("syncs t'as quels endroits ?", "ListPlaces"), ("syncs suis moi on va à la mine", "Follow"),
+        ("syncs suis moi on va au village", "Follow"), ("syncs viens on va à la mine", "GoToPlace:mine"),
+        ("syncs réveille moi à 20h", "Unknown"), ("syncs timer 10", "Timer:600"), ("syncs minuteur 5", "Timer:300"),
+        ("syncs rappelle moi dans 2h", "Timer:7200"), ("syncs fais un feu de camp", "Camp"),
+        ("syncs range le campement", "Uncamp"), ("syncs go to bed", "Sleep"), ("syncs i need wood", "Collect"),
+        ("syncs i need food", "Give:Food"),
+    })
+    {
+        var r = McCommand.Parse(text, mcNames, false, sweepPlaces);
+        var got = r.Order + (r.Goods is { } g ? ":" + g : "") + (r.Smelt is { } sm ? ":" + sm : "") + (r.Place is { } pl ? ":" + pl : "")
+                  + (r.Seconds > 0 ? ":" + r.Seconds : "");
+        if (got != expected && !got.StartsWith(expected + ":")) Fail($"misread sweep « {text} »: got {got}, expected {expected}");
+    }
+    Request("syncs récupère 2 stacks de bois", McOrder.Collect, resource: McResource.Wood, count: McCommand.MaxCount);
+    Request("syncs ramène 1 stack de pierre", McOrder.Collect, resource: McResource.Stone, count: 64);
+    Request("syncs 20 bois", McOrder.Collect, resource: McResource.Wood, count: 20);
+    Request("syncs bûcheronne", McOrder.Collect, resource: McResource.Wood, count: McCommand.DefaultCount);
+
+    // More materials to gather, and more things to hand over or count. Fetchable ones need a possessive to be handed over
+    // (« donne-moi du gravier » is a trip); the rest take any article.
+    foreach (var (text, resource) in new (string, McResource)[]
+    {
+        ("syncs va chercher du gravier", McResource.Gravel), ("syncs ramène de l'argile", McResource.Clay),
+        ("syncs mine de la redstone", McResource.Redstone), ("syncs va chercher de la poudre de redstone", McResource.Redstone),
+        ("syncs trouve du lapis", McResource.Lapis), ("syncs mine du lapis lazuli", McResource.Lapis),
+        ("syncs va chercher des émeraudes", McResource.Emerald), ("syncs ramène du quartz", McResource.Quartz),
+        ("syncs va chercher du granite", McResource.Granite), ("syncs il me faut de la diorite", McResource.Diorite),
+        ("syncs ramène de l'andésite", McResource.Andesite), ("syncs ramène du sable rouge", McResource.Sand),
+        ("syncs du gravier stp", McResource.Gravel), ("syncs donne moi du gravier", McResource.Gravel),
+    })
+        Request(text, McOrder.Collect, resource: resource);
+    Request("syncs il me faut 20 redstone", McOrder.Collect, resource: McResource.Redstone, count: 20);
+    foreach (var (text, expected) in new (string, string)[]
+    {
+        ("syncs donne moi tes torches", "Give:Torches"), ("syncs donne moi des torches", "Give:Torches"),
+        ("syncs t'as des torches ?", "Give:Torches"), ("syncs file moi des bâtons", "Give:Sticks"),
+        ("syncs donne moi ta laine", "Give:Wool"), ("syncs donne moi du cuir", "Give:Leather"),
+        ("syncs passe moi de la ficelle", "Give:String"), ("syncs donne moi tes plumes", "Give:Feathers"),
+        ("syncs donne moi les os", "Give:Bones"), ("syncs donne moi ta poudre à canon", "Give:Gunpowder"),
+        ("syncs donne moi ta poudre de redstone", "Give:Redstone"), ("syncs donne moi ton silex", "Give:Flint"),
+        ("syncs donne moi tes perles de l'ender", "Give:Pearls"), ("syncs donne moi tes ender pearls", "Give:Pearls"),
+        ("syncs donne moi tes pousses", "Give:Saplings"), ("syncs donne moi tes cisailles", "Give:Shears"),
+        ("syncs donne moi ta houe", "Give:Hoe"), ("syncs donne moi un seau", "Give:Buckets"),
+        ("syncs donne moi du verre", "Give:Glass"), ("syncs fais du verre", "Smelt:Sand"),
+        ("syncs donne moi ton gravier", "Give:Gravel"), ("syncs donne moi tes émeraudes", "Give:Emerald"),
+        ("syncs t'as de la redstone ?", "Have:Redstone"), ("syncs t'as du lapis ?", "Have:Lapis"),
+        ("syncs t'as combien de torches ?", "Have:Torches"), ("syncs t'as combien d'émeraudes ?", "Have:Emerald"),
+        ("syncs mets la laine dans le coffre", "Store"),
+        // Not requests for the goods.
+        ("syncs t'as vu mes os ?", "Unknown"), ("syncs t'as vu ma pioche ?", "Unknown"), ("syncs pousse toi", "Unknown"),
+        ("syncs j'ai trouvé de la redstone", "Unknown"), ("syncs t'as cuit la viande ?", "Unknown"),
+        ("syncs t'as pris mon épée ?", "Unknown"),
+        // Odds and ends; « œ » spelled out; « bâtons de blaze » before « bâtons ».
+        ("syncs donne moi tes œufs", "Give:Eggs"), ("syncs donne moi des oeufs", "Give:Eggs"),
+        ("syncs donne moi tes boules de slime", "Give:Slime"), ("syncs donne moi tes bâtons de blaze", "Give:BlazeRods"),
+        ("syncs donne moi des bâtons", "Give:Sticks"), ("syncs donne moi du papier", "Give:Paper"),
+        ("syncs donne moi tes livres", "Give:Books"), ("syncs donne moi ton lit", "Give:Beds"), ("syncs va au lit", "Sleep"),
+        ("syncs donne moi la selle", "Give:Saddle"), ("syncs donne moi la boussole", "Give:Compass"),
+        ("syncs t'as une carte ?", "Give:Map"), ("syncs donne moi de l'encre", "Give:Ink"), ("syncs tue le blaze", "Guard"),
+        // Armour pieces are her armour.
+        ("syncs mets ton casque", "Dress"), ("syncs mets tes bottes", "Dress"), ("syncs mets un bouclier", "Dress"),
+        ("syncs enlève ton casque", "Undress"), ("syncs donne moi ton bouclier", "Give:Armour"),
+        // Cooking clay into bricks and logs into charcoal.
+        ("syncs cuis l'argile", "Smelt:Clay"), ("syncs fais des briques", "Smelt:Clay"),
+        ("syncs fais du charbon de bois", "Smelt:Wood"), ("syncs mets les bûches au four", "Smelt:Wood"),
+        ("syncs cuis la viande", "Smelt:Food"), ("syncs ça crame", "Unknown"),
+    })
+    {
+        var r = McCommand.Parse(text, mcNames, false, sweepPlaces);
+        var got = r.Order + (r.Goods is { } g ? ":" + g : "") + (r.Smelt is { } sm ? ":" + sm : "");
+        if (got != expected) Fail($"goods « {text} »: got {got}, expected {expected}");
+    }
+
     // What she carries, as she says it: French names with their plural and article, the biggest first, the rest
     // « autres trucs », and never longer than the list's room in her lines.
     McStack S(string id, int count, params string[] goods) => new(id, count, goods);
@@ -2552,11 +2826,11 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         "McTimerNoteLines", "McPlaceListLines", "McPlaceSavedLines", "McPlaceMovedLines", "McPlaceNotYoursLines", "McPlaceFullLines",
         "McPlaceUnknownLines", "McPlaceForgottenLines", "McPlaceWhereLines", "McPlaceOtherDimensionLines", "McPlaceGoAckLines",
         "McPlaceArrivedLines", "McGuideAckLines", "McGuideArrivedLines", "McPatrolPlaceAckLines", "McTripTooFarLines",
-        "McInventoryLines", "McHaveLines",
+        "McInventoryLines", "McHaveLines", "McDoingLines",
     };
     string[] McFamilyPools = { "McCalledLines", "McDeathLines", "McHitByPlayerLines", "McHitAgainLines", "McFedLines", "McAdvancementLines", "McComeAckLines",
         "McFollowAckLines", "McGuardAckLines", "McCollectDoneLines", "McWaveLines", "McGiveDoneLines", "McByeLines", "McCreeperBehindLines", "McDiveLines", "McBoardLines",
-        "McPraisedLines", "McThankedLines", "McPortalLines", "McArmouredLines" };
+        "McPraisedLines", "McThankedLines", "McPortalLines", "McArmouredLines", "McFreeLines", "McFetchDoneLines", "McCraftDoneLines" };
     foreach (var p in McFamilyPools)
     foreach (var twin in new[] { p + "Owner", p + "Tata" })
     {
@@ -2596,7 +2870,10 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
              "McRetrieveLostLines", "McToolWornLines", "McToolBrokeLines", "McNeedRodLines", "McNeedShearsLines", "McNeedBreedFoodLines",
              "McNeedArrowsLines", "McPocketsFullLines", "McDiveLines", "McDiveAirLines", "McDrowningLines", "McBreathingLines", "McBoardLines",
              "McShakeLines", "McInventoryLines", "McInventoryEmptyLines", "McHaveLines", "McHaveNoneLines", "McPortalLines",
-             "McDressLines", "McDressWornLines", "McArmourNoneLines", "McUndressLines", "McUndressFullLines" }
+             "McDressLines", "McDressWornLines", "McArmourNoneLines", "McUndressLines", "McUndressFullLines",
+             "McDoingLines", "McDoingNothingLines", "McFreeLines", "McFreeAlreadyLines", "McFetchAckLines", "McFetchDoneLines",
+             "McFetchShortLines", "McFetchNoneLines", "McFetchNoChestLines", "McFetchUnknownLines", "McCraftAckLines", "McCraftDoneLines",
+             "McCraftMissingLines", "McCraftNoWoodLines", "McCraftNoStoneLines", "McCraftUnknownLines", "McCraftFailedLines" }
              .Concat(McFamilyPools.SelectMany(p => new[] { p + "Owner", p + "Tata" })))
     foreach (var (name, lines) in Pools(f))
     {
@@ -2785,6 +3062,54 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
             Fail($"McDoing.Describe({order}, {who}, {place}): « {McDoing.Describe(order, who, place)} », expected « {expected} »");
     foreach (var order in Enum.GetValues<McOrder>())
         if (string.IsNullOrWhiteSpace(McDoing.Describe(order, "Bob", null))) Fail($"McDoing.Describe({order}): empty");
+
+    // « tu fais quoi ? » in game: her state in the first person, an order first, else her own life, else nothing.
+    foreach (var order in Enum.GetValues<McOrder>())
+        if (string.IsNullOrWhiteSpace(McDoing.FirstPerson(order, "Bob", "« mine »"))) Fail($"McDoing.FirstPerson({order}): empty");
+    foreach (var (got, expected) in new (string?, string?)[]
+    {
+        (McDoing.FirstPerson(McOrder.Follow, "Papa", null), "je suis Papa"),
+        (McDoing.FirstPerson(McOrder.Fish, "Bob", null), "je pêche pour Bob"),
+        (McDoing.FirstPerson(McOrder.Follow, "Bob", null, toAsker: true), "je te suis"),
+        (McDoing.FirstPerson(McOrder.Fish, "Bob", null, toAsker: true), "je pêche pour toi"),
+        (McDoing.OwnLife(new("routine", "", "fish"), null, true), "je pêche un peu"),
+        (McDoing.OwnLife(new("tagAlong", "papa", ""), "Papa", true), "je traîne avec Papa"),
+        (McDoing.OwnLife(new("idle", "", ""), null, true), null),
+        (McDoing.OwnLife(new("follow", "Bob", ""), "Bob", true), null),
+        (McDoing.OwnLife(null, null, true), null),
+        (McDoing.OwnLife(new("routine", "", "farm"), null, false), "elle s'occupe de la ferme (sa routine)"),
+    })
+        if (got != expected) Fail($"McDoing: « {got} », expected « {expected} »");
+    // A whispered order asked about by someone else: its place stays out (the service passes no place).
+    if (McDoing.FirstPerson(McOrder.GoToPlace, "Bob", null).Contains('«')) Fail("McDoing.FirstPerson: a place shown without one");
+    foreach (var kind in new[] { "routine", "tagAlong", "forage", "retrieve", "danger", "sleep", "held", "seek" })
+    foreach (var first in new[] { true, false })
+        if (string.IsNullOrWhiteSpace(McDoing.OwnLife(new(kind, "Bob", kind == "danger" ? "fight" : kind == "routine" ? "home" : ""), "Bob", first)))
+            Fail($"McDoing.OwnLife({kind}, {first}): empty");
+
+    // /debug minecraft « Voir son corps »: every field read and shown, a body that sends nothing of it still answered,
+    // and the whole of it well inside Discord's 2000.
+    {
+        var full = System.Text.Json.JsonDocument.Parse("""
+            {"ev":"debug","pid":4242,"node":"v22.21.0","uptime":7384,"rss":143,"version":"26.1","pos":{"x":-1203,"y":64,"z":88},
+             "dimension":"the_nether","health":13.5,"food":17,"oxygen":20,
+             "task":{"kind":"fight","player":"AVeryLongPlayerName_","mode":"fallBack","own":false,"resume":"collect"},
+             "heldFor":540,"sitting":true,"eating":true,"sleeping":true,"swim":"dive","riding":true,"bridge":{"bridging":true,"standing":2},
+             "moving":true,"goal":"GoalFollow",
+             "loop":{"p50":11,"p99":148,"max":2210},
+             "compat":{"tickEnd":true,"renumberedActions":true,"corrections":1234567,"packetsPeak":482,"packetsPeakAt":1793016632919}}
+            """).RootElement;
+        var text = McBodyReport.Format(full);
+        foreach (var bit in new[] { "`-1203 64 88`", "`the_nether`", "13,5/20", "`fight` pour `AVeryLongPlayerName_`", "mode `fallBack`",
+                     "reprend ensuite `collect`", "tenue sur place encore 9 min", "nage (`dive`)", "en bateau", "prête à poser un pont",
+                     "2 blocs de pont à enlever", "en marche (`GoalFollow`)",
+                     "max 2210 ms", "tick_end envoyés", "entity_action par nom", "1234567", "482/s", "2 h 03 min" })
+            if (!text.Contains(bit)) Fail($"McBodyReport: « {bit} » missing from the full report");
+        if (text.Length > 1900) Fail($"McBodyReport: {text.Length} chars");
+        var bare = McBodyReport.Format(System.Text.Json.JsonDocument.Parse("""{"ev":"debug"}""").RootElement);
+        if (!bare.Contains("Tâche : aucune") || !bare.Contains("Position : inconnue")) Fail("McBodyReport: an empty report");
+        Console.WriteLine($"/debug minecraft body view at worst: {text.Length} chars");
+    }
 
     // link: a code works once, for the player it was issued for, within 10 minutes, and only the member's latest.
     var codes = new McLinkCodes();
@@ -3058,6 +3383,24 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     if (flip.Record(4, FeedbackKind.Good, mbNow) || flip.Record(5, FeedbackKind.Bad, mbNow.AddSeconds(5))) Fail("two people");
     ItemEmojis.Clear();
 
+    // Redrawn icons: each revision is a sprite the bot ships, uploaded under a valid new name.
+    var iconDir = Enumerable.Range(0, 8)
+        .Select(up => Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, string.Concat(Enumerable.Repeat("../", up)), "ProjectSYNCS", "Assets", "Icons")))
+        .FirstOrDefault(Directory.Exists);
+    if (iconDir is null) Fail("ProjectSYNCS/Assets/Icons not found above the checks");
+    else
+    {
+        var shipped = ItemEmojis.Sources("", iconDir).ToDictionary(s => s.Key, s => s.EmojiName);
+        foreach (var key in ItemEmojis.RevisedKeys)
+            if (!shipped.TryGetValue(key, out var name) || name is null || !name.Contains("_v") || name.Length > 32
+                || !name.All(c => char.IsAsciiLetterOrDigit(c) || c == '_')) Fail($"{key}: revised icon not shipped, or its emoji name '{name}' is invalid");
+        // A set's icon is drawn on its badges, so a redrawn set needs every badge revised with it.
+        var revised = ItemEmojis.RevisedKeys.ToHashSet();
+        foreach (var s in ItemCatalog.Sets.Where(s => revised.Contains(ItemEmojis.SetKey(s.Key))))
+        foreach (var t in Enum.GetValues<CollectionTier>().Skip(1))
+            if (!revised.Contains(ItemEmojis.BadgeKey(s.Key, t))) Fail($"{s.Key}: set redrawn but {ItemEmojis.BadgeKey(s.Key, t)} not revised");
+    }
+
     // GetFactsAsync against a real SQLite: the navigations, the Plynling join and the projection must
     // translate, and the guild scoping must hold. A query that does not translate breaks /level for everyone.
     using (var mbConn = new Microsoft.Data.Sqlite.SqliteConnection("DataSource=:memory:"))
@@ -3130,6 +3473,761 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         catch (Exception ex) { Fail("facts sql: " + ex.Message); }
     }
     Console.WriteLine($"succès view at worst: {mbWidest} chars");
+}
+
+// 35. /remindme's « quand » (ReminderTime): durations, clock times, days, the range, DST, garbage.
+// « 21h » / « 1h30 » alone are clock times; a duration in hours needs « dans » or a spelled unit.
+{
+    DateTimeOffset RtParis(int y, int mo, int d, int h, int mi = 0) =>
+        AppTime.AtWallClock(new DateTime(y, mo, d, h, mi, 0)).ToUniversalTime();
+    string RtShow(DateTimeOffset? t) => t is null ? "null"
+        : AppTime.ToZoned(t.Value).ToString("ddd dd/MM/yyyy HH:mm zzz", System.Globalization.CultureInfo.InvariantCulture);
+    void WhenIs(string input, DateTimeOffset at, DateTimeOffset? expected)
+    {
+        var got = ReminderTime.Parse(input, at);
+        if (got != expected) Fail($"remindme \"{input}\" at {RtShow(at)}: {RtShow(got)}, expected {RtShow(expected)}");
+    }
+
+    // Tuesday 27 October 2026, 14:00 Paris (winter time since the 25th).
+    var rtTue = RtParis(2026, 10, 27, 14);
+    var rtCases = new (string Input, DateTimeOffset? Expected)[]
+    {
+        // The README's examples.
+        ("10m", rtTue.AddMinutes(10)), ("dans 2h", rtTue.AddHours(2)), ("dans 1h30", rtTue.AddMinutes(90)),
+        ("3j", rtTue.AddDays(3)), ("21h30", RtParis(2026, 10, 27, 21, 30)), ("demain 9h", RtParis(2026, 10, 28, 9)),
+        ("samedi 14h", RtParis(2026, 10, 31, 14)), ("25/12 10:00", RtParis(2026, 12, 25, 10)),
+
+        // A bare hour is a clock time, never a duration.
+        ("21h", RtParis(2026, 10, 27, 21)), ("2h", RtParis(2026, 10, 28, 2)), ("1h30", RtParis(2026, 10, 28, 1, 30)),
+        ("1h 30", RtParis(2026, 10, 28, 1, 30)), ("21 h 30", RtParis(2026, 10, 27, 21, 30)), ("21:30", RtParis(2026, 10, 27, 21, 30)),
+        ("à 21h", RtParis(2026, 10, 27, 21)),
+        // A clock time already past, or exactly now, is tomorrow's.
+        ("14h", RtParis(2026, 10, 28, 14)), ("13h59", RtParis(2026, 10, 28, 13, 59)), ("14h01", RtParis(2026, 10, 27, 14, 1)),
+        ("0h", RtParis(2026, 10, 28, 0)),
+
+        // Durations: « dans », or a spelled unit.
+        ("dans 21h", rtTue.AddHours(21)), ("dans 1 h 30", rtTue.AddMinutes(90)), ("2 heures", rtTue.AddHours(2)),
+        ("dans 2 heures et 5 minutes", rtTue.AddMinutes(125)), ("1h30min", rtTue.AddMinutes(90)), ("10 min", rtTue.AddMinutes(10)),
+        ("dans 10 minutes", rtTue.AddMinutes(10)), ("1 semaine", rtTue.AddDays(7)), ("dans 2 jours", rtTue.AddDays(2)),
+        ("2sem", rtTue.AddDays(14)),
+
+        // Days: a day without a time is 9:00.
+        ("demain", RtParis(2026, 10, 28, 9)), ("demain à 9h", RtParis(2026, 10, 28, 9)),
+        ("après-demain 18h", RtParis(2026, 10, 29, 18)), ("apres demain 18h", RtParis(2026, 10, 29, 18)),
+        ("aujourd'hui 18h", RtParis(2026, 10, 27, 18)),
+        ("aujourd'hui 8h", RtParis(2026, 10, 27, 8)), // past on purpose: the caller says it's too soon
+        ("ce soir 21h", RtParis(2026, 10, 27, 21)),
+        ("ce soir 9h", RtParis(2026, 10, 27, 21)),    // « ce soir 9h » is 21:00 in French
+        ("mardi 18h", RtParis(2026, 10, 27, 18)),     // today's name, hour still ahead: today
+        ("mardi 10h", RtParis(2026, 11, 3, 10)),      // today's name, hour past: next week
+        ("mardi", RtParis(2026, 11, 3, 9)), ("samedi", RtParis(2026, 10, 31, 9)), ("lundi 10h", RtParis(2026, 11, 2, 10)),
+        ("dimanche 10h", RtParis(2026, 11, 1, 10)), ("le samedi à 14h", RtParis(2026, 10, 31, 14)),
+        ("le 25/12", RtParis(2026, 12, 25, 9)), ("25/12/2027 8h", RtParis(2027, 12, 25, 8)), ("25/12/27 8h", RtParis(2027, 12, 25, 8)),
+        ("1/1", RtParis(2027, 1, 1, 9)), ("26/10 10h", RtParis(2027, 10, 26, 10)), // a date past this year is next year's
+        // Chat spellings, read by FrenchDate; « dans » + days with a time is a day, not a duration.
+        ("ajd 18h", RtParis(2026, 10, 27, 18)), ("demain matin", RtParis(2026, 10, 28, 9)), ("demain soir", RtParis(2026, 10, 28, 20)),
+        ("le 30 à 10h", RtParis(2026, 10, 30, 10)), ("dans 3 jours à 21h", RtParis(2026, 10, 30, 21)),
+
+        // Case, accents and spacing don't count.
+        ("  DEMAIN   9H  ", RtParis(2026, 10, 28, 9)), ("Après-Demain 18H", RtParis(2026, 10, 29, 18)), ("DANS 2H", rtTue.AddHours(2)),
+        ("Samedi à 14h", RtParis(2026, 10, 31, 14)), ("10M", rtTue.AddMinutes(10)), ("dans  10   m", rtTue.AddMinutes(10)),
+
+        // Garbage.
+        ("", null), ("   ", null), ("bientôt", null), ("plus tard", null), ("30", null), ("dans 5", null), ("dans", null),
+        ("dans 0m", null), ("0m", null), ("10 secondes", null), ("dans 3 mois", null), ("dans 100001m", null),
+        ("dans 99999999999m", null), ("31/02 10h", null), ("29/02", null), ("32/01", null), ("12/13", null),
+        ("demain 24h", null), ("lundi 25h", null), ("hier 9h", null),
+        ("21h75", null), ("13h60", null), // not a clock time, and a duration in hours needs « dans »
+    };
+    foreach (var (input, expected) in rtCases) WhenIs(input, rtTue, expected);
+
+    // The range is the caller's: 1 minute to 60 days, both ends included.
+    if (ReminderTime.Min != TimeSpan.FromMinutes(1) || ReminderTime.Max != TimeSpan.FromDays(60)) Fail("remindme range: not 1 min .. 60 days");
+    bool RtInRange(string input)
+    {
+        var due = ReminderTime.Parse(input, rtTue);
+        return due is not null && due.Value - rtTue >= ReminderTime.Min && due.Value - rtTue <= ReminderTime.Max;
+    }
+    foreach (var input in new[] { "dans 1m", "14h01", "dans 60j", "8 semaines", "25/12 10:00" })
+        if (!RtInRange(input)) Fail($"remindme \"{input}\": out of range, expected within");
+    foreach (var input in new[] { "dans 61j", "90j", "9 semaines", "26/10 10h", "1/1", "25/12/2027 8h", "aujourd'hui 8h" })
+        if (RtInRange(input)) Fail($"remindme \"{input}\": within range, expected refused");
+
+    // Clocks going back (25 October 2026, 3:00 CEST → 2:00 CET): a wall-clock time keeps its hour,
+    // a duration counts real hours.
+    var rtAutumnEve = RtParis(2026, 10, 24, 20);
+    WhenIs("demain 9h", rtAutumnEve, new DateTimeOffset(2026, 10, 25, 8, 0, 0, TimeSpan.Zero));
+    WhenIs("dans 24h", rtAutumnEve, rtAutumnEve.AddHours(24));
+    WhenIs("9h", RtParis(2026, 10, 24, 23), new DateTimeOffset(2026, 10, 25, 8, 0, 0, TimeSpan.Zero));
+    WhenIs("dimanche 10h", RtParis(2026, 10, 23, 12), new DateTimeOffset(2026, 10, 25, 9, 0, 0, TimeSpan.Zero));
+    var rtTwice = ReminderTime.Parse("demain 2h30", rtAutumnEve); // 2:30 happens twice: either is fine
+    if (rtTwice != new DateTimeOffset(2026, 10, 25, 0, 30, 0, TimeSpan.Zero) && rtTwice != new DateTimeOffset(2026, 10, 25, 1, 30, 0, TimeSpan.Zero))
+        Fail($"remindme \"demain 2h30\" on the night clocks go back: {RtShow(rtTwice)}");
+    // Clocks going forward (29 March 2026, 2:00 CET → 3:00 CEST).
+    var rtSpringEve = RtParis(2026, 3, 28, 20);
+    WhenIs("demain 9h", rtSpringEve, new DateTimeOffset(2026, 3, 29, 7, 0, 0, TimeSpan.Zero));
+    WhenIs("lundi 9h", rtSpringEve, new DateTimeOffset(2026, 3, 30, 7, 0, 0, TimeSpan.Zero));
+    WhenIs("dans 12h", rtSpringEve, rtSpringEve.AddHours(12));
+    var rtGap = ReminderTime.Parse("demain 2h30", rtSpringEve); // 2:30 never happens: somewhere around it, not lost
+    if (rtGap is null || rtGap < new DateTimeOffset(2026, 3, 29, 0, 30, 0, TimeSpan.Zero) || rtGap > new DateTimeOffset(2026, 3, 29, 1, 30, 0, TimeSpan.Zero))
+        Fail($"remindme \"demain 2h30\" on the night clocks go forward: {RtShow(rtGap)}");
+
+    // The year turning.
+    var rtNye = RtParis(2026, 12, 30, 12); // a Wednesday
+    WhenIs("demain 9h", rtNye, RtParis(2026, 12, 31, 9));
+    WhenIs("après-demain 9h", rtNye, RtParis(2027, 1, 1, 9));
+    WhenIs("2/1 10h", rtNye, RtParis(2027, 1, 2, 10));
+    WhenIs("vendredi 10h", rtNye, RtParis(2027, 1, 1, 10));
+    Console.WriteLine($"remindme: {rtCases.Length + 13} readings");
+}
+
+// 36. Quiz typed answers (QuizAnswer): case, accents, sentences, typos by length, near misses.
+{
+    var qzCount = 0;
+    void QuizIs(string message, bool expected, params string[] accepted)
+    {
+        qzCount++;
+        if (QuizAnswer.Matches(message, accepted) != expected)
+            Fail($"quiz \"{message}\" vs [{string.Join(" | ", accepted)}]: {!expected}, expected {expected}");
+    }
+    // Case, accents, punctuation, spacing.
+    QuizIs("Pétrichor !", true, "pétrichor");
+    QuizIs("petri chor", true, "pétrichor");
+    QuizIs("PETRICHOR", true, "Pétrichor");
+    QuizIs("coeur", true, "cœur");
+    QuizIs("H2O !", true, "h2o");
+    QuizIs("back rub", true, "BackRub");
+    // Inside a sentence, as long as the rest is filler or at most two other words.
+    QuizIs("je pense que c'est backrub non ?", true, "BackRub");
+    QuizIs("alors euh je pense que c'est le pétrichor lol", true, "pétrichor");
+    QuizIs("c'est luigi", true, "Luigi");
+    QuizIs("mario luigi peach", true, "Luigi");
+    QuizIs("mario luigi peach bowser", false, "Luigi");
+    QuizIs("mario peach bowser toad", false, "Luigi");
+    // Leading articles dropped from the accepted answer.
+    QuizIs("vatican", true, "le Vatican");
+    QuizIs("le vatican", true, "le Vatican");
+    QuizIs("everest", true, "l'Everest");
+    QuizIs("la tour eiffel", true, "Tour Eiffel");
+    QuizIs("tour", false, "Tour Eiffel");
+    QuizIs("eiffel", false, "Tour Eiffel");
+    // Any accepted answer counts.
+    QuizIs("mercury", true, "Mercure", "Mercury");
+    // Typos: none under 5 letters, one from 5, two from 10, none with a digit.
+    QuizIs("link", true, "Link");
+    QuizIs("lint", false, "Link");
+    QuizIs("mar", false, "Mars");
+    QuizIs("mard", false, "Mars");
+    QuizIs("luigii", true, "Luigi");
+    QuizIs("lugi", true, "Luigi");
+    QuizIs("lugia", false, "Luigi");
+    QuizIs("louis", false, "Luigi");
+    QuizIs("petrichore", true, "pétrichor");
+    QuizIs("patrichar", false, "pétrichor");
+    QuizIs("mitocondrie", true, "Mitochondrie");
+    QuizIs("mytocondrie", true, "Mitochondrie");
+    QuizIs("mytocondri", false, "Mitochondrie");
+    QuizIs("h20", false, "h2o");
+    QuizIs("pichu", false, "Pikachu");
+    // A different word that merely contains the answer.
+    QuizIs("artichaut", false, "art");
+    QuizIs("ras", false, "Ra");
+    // Nothing said.
+    QuizIs("", false, "Luigi");
+    QuizIs("!!! ???", false, "Luigi");
+    var qzTokens = QuizAnswer.Tokenize("C'est l'Éverest, non ?!");
+    if (!qzTokens.SequenceEqual(new[] { "c", "est", "l", "everest", "non" })) Fail($"quiz tokenize: {string.Join(",", qzTokens)}");
+    Console.WriteLine($"quiz answers: {qzCount + 1} cases");
+}
+
+// 37. Blackjack: totals with soft aces, naturals, the dealer standing on every 17, judging, payouts.
+{
+    List<Card> Hand(params int[] ranks) => ranks.Select(r => new Card(r, 0)).ToList();
+    var bjCount = 0;
+    void TotalIs(int expected, params int[] ranks)
+    {
+        bjCount++;
+        if (Blackjack.Total(Hand(ranks)) != expected) Fail($"blackjack total [{string.Join(",", ranks)}]: {Blackjack.Total(Hand(ranks))}, expected {expected}");
+    }
+    TotalIs(21, 1, 13); TotalIs(12, 1, 1); TotalIs(21, 1, 1, 9); TotalIs(16, 1, 5, 13); TotalIs(21, 13, 12, 1);
+    TotalIs(22, 13, 12, 2); TotalIs(11, 5, 6); TotalIs(17, 1, 6); TotalIs(14, 1, 1, 1, 1); TotalIs(20, 11, 12); TotalIs(0);
+    if (!Blackjack.IsNatural(Hand(1, 13)) || !Blackjack.IsNatural(Hand(10, 1))) Fail("blackjack: ace + ten is a natural");
+    if (Blackjack.IsNatural(Hand(13, 12, 1)) || Blackjack.IsNatural(Hand(7, 7, 7))) Fail("blackjack: three cards are never a natural");
+    if (new Card(1, 0).ToString() != "A♠" || new Card(10, 1).ToString() != "10♥" || new Card(13, 3).ToString() != "R♣") Fail("blackjack: card labels");
+
+    void JudgeIs(int[] player, int[] dealer, Blackjack.Outcome expected)
+    {
+        bjCount++;
+        var got = Blackjack.Judge(Hand(player), Hand(dealer));
+        if (got != expected) Fail($"blackjack judge [{string.Join(",", player)}] vs [{string.Join(",", dealer)}]: {got}, expected {expected}");
+    }
+    JudgeIs([10, 6, 9], [10, 6, 8], Blackjack.Outcome.Lose);  // both bust: the player busted first
+    JudgeIs([1, 13], [1, 12], Blackjack.Outcome.Push);
+    JudgeIs([1, 13], [7, 7, 7], Blackjack.Outcome.Natural);   // a natural beats a three-card 21
+    JudgeIs([7, 7, 7], [1, 13], Blackjack.Outcome.Lose);
+    JudgeIs([7, 7, 7], [10, 5, 6], Blackjack.Outcome.Push);
+    JudgeIs([10, 10], [10, 6, 9], Blackjack.Outcome.Win);
+    JudgeIs([10, 8], [9, 9], Blackjack.Outcome.Push);
+    JudgeIs([10, 7], [10, 8], Blackjack.Outcome.Lose);
+    JudgeIs([10, 9], [10, 8], Blackjack.Outcome.Win);
+    JudgeIs([2, 3, 4, 5, 6], [10, 9], Blackjack.Outcome.Win);  // five cards to 20 beat 19
+    JudgeIs([2, 3, 4, 5, 6], [10, 10], Blackjack.Outcome.Push);
+    if (Blackjack.Net(Blackjack.Outcome.Natural, Blackjack.MinStake) != 15 || Blackjack.Net(Blackjack.Outcome.Natural, Blackjack.MaxStake) != 300
+        || Blackjack.Net(Blackjack.Outcome.Win, 50) != 50 || Blackjack.Net(Blackjack.Outcome.Push, 50) != 0
+        || Blackjack.Net(Blackjack.Outcome.Lose, 50) != -50) Fail("blackjack payouts: natural 3:2, win 1:1, push 0, loss the stake");
+
+    var soft17 = Hand(1, 6);
+    Blackjack.PlayDealer(soft17, new Random(1));
+    if (soft17.Count != 2) Fail("blackjack: the dealer hits a soft 17");
+    for (var seed = 0; seed < 500; seed++)
+    {
+        var dealer = Hand(10, 2);
+        Blackjack.PlayDealer(dealer, new Random(seed));
+        if (Blackjack.Total(dealer) < 17 || Blackjack.Total(dealer.Take(dealer.Count - 1).ToList()) >= 17)
+        { Fail($"blackjack: dealer stops wrong ({Blackjack.Show(dealer)})"); break; }
+    }
+    var bjRng = new Random(5);
+    var bjSeen = new HashSet<(int, int)>();
+    for (var i = 0; i < 20_000; i++)
+    {
+        var c = Blackjack.Draw(bjRng);
+        if (c.Rank is < 1 or > 13 || c.Suit is < 0 or > 3) { Fail($"blackjack draw out of range: {c.Rank}/{c.Suit}"); break; }
+        bjSeen.Add((c.Rank, c.Suit));
+    }
+    if (bjSeen.Count != 52) Fail($"blackjack draw: {bjSeen.Count} of 52 cards ever drawn");
+    Console.WriteLine($"blackjack: {bjCount} cases");
+}
+
+// 38. Board games: four (or three) in a row in every direction, no wrap-around, full boards, her moves.
+{
+    int[] C4Board(params (int R, int C, int P)[] cells)
+    {
+        var b = Connect4.NewBoard();
+        foreach (var (r, c, p) in cells) b[r * Connect4.Cols + c] = p;
+        return b;
+    }
+    void C4WinnerIs(string what, int[] board, int expected)
+    {
+        var got = Connect4.Winner(board);
+        if (got != expected) Fail($"puissance4 winner, {what}: {got}, expected {expected}");
+    }
+    C4WinnerIs("empty", Connect4.NewBoard(), 0);
+    C4WinnerIs("bottom row", C4Board((5, 0, 1), (5, 1, 1), (5, 2, 1), (5, 3, 1)), 1);
+    C4WinnerIs("top row, right edge", C4Board((0, 3, 2), (0, 4, 2), (0, 5, 2), (0, 6, 2)), 2);
+    C4WinnerIs("column, right edge", C4Board((2, 6, 2), (3, 6, 2), (4, 6, 2), (5, 6, 2)), 2);
+    C4WinnerIs("column, top", C4Board((0, 0, 1), (1, 0, 1), (2, 0, 1), (3, 0, 1)), 1);
+    C4WinnerIs("diagonal ↘", C4Board((2, 0, 1), (3, 1, 1), (4, 2, 1), (5, 3, 1)), 1);
+    C4WinnerIs("diagonal ↙", C4Board((2, 6, 2), (3, 5, 2), (4, 4, 2), (5, 3, 2)), 2);
+    C4WinnerIs("diagonal ↙, top left", C4Board((0, 3, 1), (1, 2, 1), (2, 1, 1), (3, 0, 1)), 1);
+    C4WinnerIs("three in a row", C4Board((5, 0, 1), (5, 1, 1), (5, 2, 1), (5, 3, 2)), 0);
+    C4WinnerIs("three and a gap", C4Board((5, 0, 1), (5, 1, 1), (5, 2, 1), (5, 4, 1)), 0);
+    C4WinnerIs("wrapping round a row end", C4Board((0, 5, 1), (0, 6, 1), (1, 0, 1), (1, 1, 1)), 0);
+    C4WinnerIs("wrapping round a diagonal", C4Board((1, 4, 1), (2, 5, 1), (3, 6, 1), (5, 0, 1)), 0); // cells 11, 19, 27, 35
+    var c4Col = Connect4.NewBoard();
+    var c4Rows = Enumerable.Range(0, 6).Select(_ => Connect4.Drop(c4Col, 2, 1)).ToArray();
+    if (!c4Rows.SequenceEqual(new[] { 5, 4, 3, 2, 1, 0 })) Fail($"puissance4 drop rows: {string.Join(",", c4Rows)}");
+    if (Connect4.CanDrop(c4Col, 2) || Connect4.Drop(c4Col, 2, 2) != -1) Fail("puissance4: a full column takes a piece");
+    if (Connect4.Drop(c4Col, 7, 1) != -1 || Connect4.Drop(c4Col, -1, 1) != -1) Fail("puissance4: a column off the board takes a piece");
+    C4WinnerIs("stacked by Drop", c4Col, 1);
+    // Full with nobody winning: pairs of columns alternating each row (runs of two at most).
+    var c4Draw = new int[Connect4.Rows * Connect4.Cols];
+    for (var r = 0; r < Connect4.Rows; r++)
+    for (var c = 0; c < Connect4.Cols; c++) c4Draw[r * Connect4.Cols + c] = 1 + (c / 2 + r) % 2;
+    if (!Connect4.Full(c4Draw) || Connect4.Winner(c4Draw) != 0) Fail("puissance4: a full board without four isn't a draw");
+    if (Connect4.Full(c4Col)) Fail("puissance4: one full column is a full board");
+    if (Connect4.BestMove(c4Draw, 2, new Random(1)) != -1) Fail("puissance4: a move on a full board");
+    for (var seed = 0; seed < 5; seed++)
+    {
+        var c4Rng = new Random(seed);
+        // She takes her win.
+        if (Connect4.BestMove(C4Board((5, 0, 2), (5, 1, 2), (5, 2, 2), (5, 5, 1), (5, 6, 1), (4, 6, 1)), 2, c4Rng) != 3)
+            Fail("puissance4: she misses her four");
+        // She blocks theirs.
+        if (Connect4.BestMove(C4Board((5, 4, 1), (4, 4, 1), (3, 4, 1), (5, 0, 2), (5, 6, 2)), 2, c4Rng) != 4)
+            Fail("puissance4: she leaves their four open");
+        // Her win before their block.
+        if (Connect4.BestMove(C4Board((5, 0, 2), (4, 0, 2), (3, 0, 2), (5, 6, 1), (4, 6, 1), (3, 6, 1)), 2, c4Rng) != 0)
+            Fail("puissance4: she blocks instead of winning");
+    }
+
+    // Morpion.
+    var tttLines = new[] { new[] { 0, 1, 2 }, new[] { 3, 4, 5 }, new[] { 6, 7, 8 }, new[] { 0, 3, 6 }, new[] { 1, 4, 7 }, new[] { 2, 5, 8 }, new[] { 0, 4, 8 }, new[] { 2, 4, 6 } };
+    foreach (var line in tttLines)
+    foreach (var p in new[] { 1, 2 })
+    {
+        var b = TicTacToe.NewBoard();
+        foreach (var i in line) b[i] = p;
+        if (TicTacToe.Winner(b) != p) Fail($"morpion: line {string.Join("", line)} for {p} not a win");
+        b[line[2]] = 3 - p;
+        if (TicTacToe.Winner(b) != 0) Fail($"morpion: mixed line {string.Join("", line)} is a win");
+    }
+    var tttDraw = new[] { 1, 2, 1, 1, 2, 2, 2, 1, 1 };
+    if (!TicTacToe.Full(tttDraw) || TicTacToe.Winner(tttDraw) != 0) Fail("morpion: the drawn board");
+    if (TicTacToe.Winner(TicTacToe.NewBoard()) != 0 || TicTacToe.Full(TicTacToe.NewBoard())) Fail("morpion: the empty board");
+    if (TicTacToe.BestMove(new[] { 2, 2, 0, 1, 1, 0, 1, 0, 0 }, 2, new Random(1)) != 2) Fail("morpion: she misses her win");
+    if (TicTacToe.BestMove(new[] { 1, 1, 0, 0, 2, 0, 0, 0, 0 }, 2, new Random(1)) != 2) Fail("morpion: she leaves their line open");
+    // She never loses: every reply to every one of her moves, her first or second.
+    int tttEnds = 0, tttLosses = 0;
+    void TttExplore(int[] b, int her, int toMove, int seed)
+    {
+        var w = TicTacToe.Winner(b);
+        if (w != 0 || TicTacToe.Full(b))
+        {
+            tttEnds++;
+            if (w != 0 && w != her && tttLosses++ == 0) Fail($"morpion: she loses on {string.Join("", b)}");
+            return;
+        }
+        if (toMove == her)
+        {
+            var m = TicTacToe.BestMove(b, her, new Random(seed + tttEnds));
+            if (m is < 0 or > 8 || b[m] != 0) { Fail($"morpion: illegal move {m} on {string.Join("", b)}"); return; }
+            b[m] = her; TttExplore(b, her, 3 - toMove, seed); b[m] = 0;
+            return;
+        }
+        for (var i = 0; i < 9; i++)
+        {
+            if (b[i] != 0) continue;
+            b[i] = toMove; TttExplore(b, her, 3 - toMove, seed); b[i] = 0;
+        }
+    }
+    for (var seed = 0; seed < 3; seed++)
+    {
+        TttExplore(TicTacToe.NewBoard(), her: 2, toMove: 1, seed);
+        TttExplore(TicTacToe.NewBoard(), her: 1, toMove: 1, seed);
+    }
+    Console.WriteLine($"morpion: {tttEnds} games played out against her, {tttLosses} lost");
+}
+
+// 39. The XP curve (LevelCurve): costs, thresholds and the reverse lookup agree at every boundary.
+{
+    if (LevelCurve.XpForLevel(0) != 100 || LevelCurve.XpForLevel(1) != 155 || LevelCurve.XpForLevel(-5) != 100) Fail("level curve: XpForLevel");
+    if (LevelCurve.ThresholdForLevel(0) != 0 || LevelCurve.ThresholdForLevel(1) != 100 || LevelCurve.ThresholdForLevel(2) != 255
+        || LevelCurve.ThresholdForLevel(-3) != 0) Fail("level curve: ThresholdForLevel");
+    for (var n = 0; n <= 3000; n++)
+    {
+        var at = LevelCurve.ThresholdForLevel(n);
+        if (LevelCurve.ThresholdForLevel(n + 1) - at != LevelCurve.XpForLevel(n)) { Fail($"level curve: threshold step at {n}"); break; }
+        if (LevelCurve.XpForLevel(n + 1) <= LevelCurve.XpForLevel(n)) { Fail($"level curve: not increasing at {n}"); break; }
+        if (LevelCurve.LevelForXp(at) != n) { Fail($"level curve: LevelForXp({at}) = {LevelCurve.LevelForXp(at)}, expected {n}"); break; }
+        if (n > 0 && LevelCurve.LevelForXp(at - 1) != n - 1) { Fail($"level curve: one XP short of {n}"); break; }
+        if (LevelCurve.XpIntoLevel(at) != 0 || LevelCurve.XpForNextLevel(at) != LevelCurve.XpForLevel(n)) { Fail($"level curve: progress at {n}"); break; }
+    }
+    if (LevelCurve.LevelForXp(0) != 0 || LevelCurve.LevelForXp(-50) != 0 || LevelCurve.LevelForXp(99) != 0) Fail("level curve: below level 1");
+    if (LevelCurve.LevelForXp(long.MaxValue) != 1_000_000) Fail($"level curve: the cap ({LevelCurve.LevelForXp(long.MaxValue)})");
+    var lcRng = new Random(11);
+    for (var i = 0; i < 2000; i++)
+    {
+        var total = (long)(lcRng.NextDouble() * 50_000_000);
+        var level = LevelCurve.LevelForXp(total);
+        var into = LevelCurve.XpIntoLevel(total);
+        var left = LevelCurve.XpForNextLevel(total);
+        if (into < 0 || left <= 0 || into + left != LevelCurve.XpForLevel(level)) { Fail($"level curve: progress at {total} XP"); break; }
+    }
+}
+
+// 40. Cailloux (PebbleEconomy): the passive cap stays a bonus, the cooldown, the shift pay, the plural.
+{
+    var cap = PebbleEconomy.PassiveDailyCap;
+    if (cap <= 0 || cap >= PebbleEconomy.ShiftsPerDay * PebbleEconomy.WorkMin) Fail($"economy: passive cap {cap} isn't a bonus below a day's /work");
+    if (PebbleEconomy.Passive(0, 1) != (1, 1)) Fail("economy: passive from nothing");
+    if (PebbleEconomy.Passive(cap - 1, 5) != (1, cap)) Fail("economy: passive up to the cap");
+    if (PebbleEconomy.Passive(cap, 5) != (0, cap)) Fail("economy: passive past the cap");
+    if (PebbleEconomy.Passive(cap + 10, 1) != (0, cap + 10)) Fail("economy: passive over a lowered cap");
+    if (PebbleEconomy.Passive(0, -3) != (0, 0)) Fail("economy: a negative grant");
+    var peAt = new DateTimeOffset(2026, 10, 27, 12, 0, 0, TimeSpan.Zero);
+    if (PebbleEconomy.NextWorkAt(null) is not null || PebbleEconomy.NextWorkAt(peAt) != peAt.AddHours(4)) Fail("economy: work cooldown");
+    var pays = Enumerable.Range(0, 2000).Select(_ => PebbleEconomy.RollWorkPay()).ToList();
+    if (pays.Min() != PebbleEconomy.WorkMin || pays.Max() != PebbleEconomy.WorkMax) Fail($"economy: work pay {pays.Min()}..{pays.Max()}");
+    if (PebbleEconomy.Cailloux(0) != "0 caillou" || PebbleEconomy.Cailloux(1) != "1 caillou" || PebbleEconomy.Cailloux(-1) != "-1 caillou"
+        || PebbleEconomy.Cailloux(2) != "2 cailloux" || !PebbleEconomy.Cailloux(1500).EndsWith("500 cailloux")
+        || PebbleEconomy.Cailloux(1500).Contains(',')) Fail($"economy: plural ({PebbleEconomy.Cailloux(1500)})");
+}
+
+// 41. Session places (SessionSeats): the waiting list opens only when a full session frees a place,
+// the « peut-être » nudge fires about an hour before with room left, and the cards stay sendable
+// with the biggest crowd a session or a poll can hold.
+{
+    // A place opened: full before, not full after, capped.
+    foreach (var (max, before, after, expected) in new[]
+    {
+        (4, 4, 3, true), (4, 5, 4, false), (4, 3, 2, false), (0, 10, 9, false), (4, 4, 4, false), (2, 2, 0, true),
+    })
+        if (SessionSeats.PlaceOpened(max, before, after) != expected) Fail($"seats: PlaceOpened({max}, {before}, {after})");
+    foreach (var (oldMax, newMax, joined, expected) in new[]
+    {
+        (4, 6, 4, true), (4, 0, 4, true), (4, 4, 4, false), (4, 6, 3, false), (0, 6, 4, false), (4, 5, 6, false),
+    })
+        if (SessionSeats.PlaceOpenedByEdit(oldMax, newMax, joined) != expected) Fail($"seats: PlaceOpenedByEdit({oldMax}, {newMax}, {joined})");
+
+    // The nudge window, and never on a full session.
+    var sStart = new DateTimeOffset(2026, 10, 30, 20, 0, 0, TimeSpan.Zero);
+    foreach (var (minutesBefore, max, joined, expected) in new[]
+    {
+        (60, 0, 3, true), (55, 0, 3, true), (70, 0, 3, true), (54, 0, 3, false), (71, 0, 3, false), (30, 0, 3, false),
+        (-5, 0, 3, false), (60, 4, 3, true), (60, 4, 4, false), (60, 4, 5, false),
+    })
+        if (SessionSeats.NudgeDue(sStart, sStart.AddMinutes(-minutesBefore), max, joined) != expected)
+            Fail($"seats: NudgeDue {minutesBefore} min before, {joined}/{max}");
+
+    // Mentions: capped with a count, nothing for nobody.
+    if (SessionSeats.Mentions(Array.Empty<ulong>(), 20) != "") Fail("seats: empty roster");
+    if (SessionSeats.Mentions(new ulong[] { 1, 2 }, 20) != "<@1>\n<@2>") Fail("seats: short roster");
+    var sMany = Enumerable.Range(1, 25).Select(i => (ulong)i).ToList();
+    var sCapped = SessionSeats.Mentions(sMany, 20);
+    if (sCapped.Split('\n').Length != 21 || !sCapped.EndsWith("… et 5 autre(s)")) Fail($"seats: capped roster {sCapped}");
+
+    // The session card with 67 joined (the cap), 40 maybes and 40 absents, all with 20-digit ids.
+    const ulong sBig = 12345678901234567890UL;
+    var sEvent = new ProjectSYNCS.Models.SessionEvent
+    {
+        Id = 1, GuildId = 1, Title = new string('T', InputCaps.Title), ScheduledAt = sStart, MaxPlayers = 67,
+        Participants = Enumerable.Range(0, 147).Select(i => new ProjectSYNCS.Models.Participant
+        {
+            UserId = sBig - (ulong)i,
+            Status = i < 67 ? ProjectSYNCS.Models.ParticipantStatus.Joined
+                : i < 107 ? ProjectSYNCS.Models.ParticipantStatus.Maybe : ProjectSYNCS.Models.ParticipantStatus.Declined,
+        }).ToList(),
+    };
+    // Components V2: 40 components in the whole tree, 4000 characters of text, no custom-id twice.
+    (int Text, int Count, List<string> Ids) CardMeasure(Discord.IMessageComponent c)
+    {
+        var text = 0; var count = 1; var ids = new List<string>();
+        void Add((int Text, int Count, List<string> Ids) r) { text += r.Text; count += r.Count; ids.AddRange(r.Ids); }
+        switch (c)
+        {
+            case Discord.ContainerComponent x: foreach (var k in x.Components) Add(CardMeasure(k)); break;
+            case Discord.SectionComponent x:
+                foreach (var k in x.Components) Add(CardMeasure(k));
+                if (x.Accessory is not null) Add(CardMeasure(x.Accessory));
+                break;
+            case Discord.ActionRowComponent x: foreach (var k in x.Components) Add(CardMeasure(k)); break;
+            case Discord.TextDisplayComponent x: text += x.Content.Length; break;
+            case Discord.ButtonComponent x: if (x.CustomId is not null) ids.Add(x.CustomId); break;
+            case Discord.SelectMenuComponent x: ids.Add(x.CustomId); break;
+        }
+        return (text, count, ids);
+    }
+    (int Text, int Count) CardCheck(Discord.MessageComponent card, string what)
+    {
+        var parts = card.Components.Select(CardMeasure).ToList();
+        var (text, count, ids) = (parts.Sum(p => p.Text), parts.Sum(p => p.Count), parts.SelectMany(p => p.Ids).ToList());
+        if (text > 4000 || count > 40 || ids.Count != ids.Distinct().Count())
+            Fail($"seats: {what} at {text} chars, {count} components, {ids.Count - ids.Distinct().Count()} duplicate id(s)");
+        return (text, count);
+    }
+
+    sEvent.DurationMinutes = 360;
+    sEvent.Description = new string('d', InputCaps.Description);
+    sEvent.VoiceChannelId = sBig;
+    sEvent.NativeEventId = sBig;
+    sEvent.RecurringSessionId = 1;
+    var sCard = CardCheck(ProjectSYNCS.Commands.SessionCards.Build(sEvent, null, sStart.AddDays(-1)), "session card");
+    CardCheck(ProjectSYNCS.Commands.SessionCards.Build(sEvent, null, sStart.AddMinutes(30)), "session card, running");
+    sEvent.IsCancelled = true;
+    CardCheck(ProjectSYNCS.Commands.SessionCards.Build(sEvent, null, sStart.AddDays(-1)), "session card, cancelled");
+    sEvent.IsCancelled = false;
+
+    // The poll card with 10 options of 80 characters, 40 voters on each.
+    var sPoll = new ProjectSYNCS.Models.Poll
+    {
+        Id = 1, Title = new string('P', InputCaps.Title), Kind = ProjectSYNCS.Models.PollKind.Text,
+        Options = Enumerable.Range(0, 10).Select(o => new ProjectSYNCS.Models.PollOption
+        {
+            Id = o, Label = new string('o', 80),
+            Votes = Enumerable.Range(0, 40).Select(v => new ProjectSYNCS.Models.PollVote { UserId = sBig - (ulong)v }).ToList(),
+        }).ToList(),
+    };
+    sPoll.CreatedAt = sStart.AddDays(-1);
+    var sPollCard = CardCheck(ProjectSYNCS.Commands.PollCards.Build(sPoll, null, sStart), "poll card");
+    sPoll.IsClosed = true;
+    CardCheck(ProjectSYNCS.Commands.PollCards.Build(sPoll, null, sStart), "poll card, closed");
+    sPoll.IsClosed = false;
+    sPoll.Anonymous = true;
+    CardCheck(ProjectSYNCS.Commands.PollCards.Build(sPoll, null, sStart), "poll card, anonymous");
+    // A date poll: ten slots, every one a leader.
+    var sDates = new ProjectSYNCS.Models.Poll
+    {
+        Id = 2, Title = new string('P', InputCaps.Title), Kind = ProjectSYNCS.Models.PollKind.DateSlots, CreatedAt = sStart,
+        Options = Enumerable.Range(0, 10).Select(o => new ProjectSYNCS.Models.PollOption
+        {
+            Id = o, ScheduledAt = sStart.AddDays(o + 1),
+            Votes = Enumerable.Range(0, 40).Select(v => new ProjectSYNCS.Models.PollVote { UserId = sBig - (ulong)v }).ToList(),
+        }).ToList(),
+    };
+    CardCheck(ProjectSYNCS.Commands.PollCards.Build(sDates, null, sStart), "date poll card");
+    sDates.IsClosed = true;
+    CardCheck(ProjectSYNCS.Commands.PollCards.Build(sDates, "https://discord.com/channels/1/2/3", sStart), "date poll card, closed");
+
+    // Both DM pools take their three placeholders.
+    foreach (var pool in new[] { "SessionSpotFreedLines", "SessionMaybeNudgeLines" }.Select(n => (string[])br.GetField(n)!.GetValue(null)!))
+        foreach (var line in pool)
+        {
+            try { _ = string.Format(line, "Titre", "<t:0:R>", "https://discord.com/channels/1/2/3"); }
+            catch (FormatException) { Fail($"seats: pool line does not format: {line}"); }
+            if (line.Contains('⟪')) Fail($"seats: a DM line carries a sticker: {line}");
+        }
+    Console.WriteLine($"session card at worst: {sCard.Text} chars, {sCard.Count} components · poll card at worst: {sPollCard.Text} chars, {sPollCard.Count} components");
+}
+
+// 42. ActivityCounter's per-message counts: emotes, reactions used, her answers. Batched, drained,
+// put back after a failed flush; a reaction taken back nets out in the same batch.
+{
+    var aAt = new DateTimeOffset(2026, 10, 27, 18, 0, 0, TimeSpan.Zero); // 19:00 in Paris
+    var aDay = 20261027;
+    var aCounter = new ActivityCounter();
+    var aSmile = EmoteRef.FromUnicode("😀");
+    var aCustom = EmoteRef.Custom(42, "syncs", false);
+    aCounter.CountEmotesWritten(1, new Dictionary<EmoteRef, int> { [aSmile] = 3, [aCustom] = 1 }, aAt);
+    aCounter.CountEmoteReacted(1, aSmile, +1, aAt);
+    aCounter.CountEmoteReacted(1, aSmile, +1, aAt);
+    aCounter.CountEmoteReacted(1, aSmile, -1, aAt);
+    aCounter.CountReactionUsed(1, 7, +1, aAt);
+    aCounter.CountReactionUsed(1, 7, -1, aAt);
+    aCounter.CountReactionUsed(1, 8, +1, aAt);
+    aCounter.CountAnswer(1, "reply", "comeback", null, aAt);
+    aCounter.CountAnswer(1, "reply", "comeback", null, aAt);
+    aCounter.CountAnswer(0, "dm", "unrecognised", "salut", aAt);
+    aCounter.CountAnswer(1, "reply", "unrecognised", "", aAt);
+    var aBatch = aCounter.Drain();
+    if (aBatch.Emotes[new EmoteKey(1, aDay, aSmile)] != new EmoteTallyDelta(3, 1)) Fail("activity: emote written + net reacted");
+    if (aBatch.Emotes[new EmoteKey(1, aDay, aCustom)] != new EmoteTallyDelta(1, 0)) Fail("activity: custom emote");
+    if (aBatch.ReactionsUsed[new ReactionUsedKey(1, 7, aDay)] != 0 || aBatch.ReactionsUsed[new ReactionUsedKey(1, 8, aDay)] != 1)
+        Fail("activity: reactions used net out");
+    if (aBatch.Answers[new AnswerKey(1, aDay, "reply", "comeback")] != 2) Fail("activity: answers counted");
+    if (aBatch.Unanswered.Count != 1 || aBatch.Unanswered[0].GuildId != 0) Fail("activity: only a non-empty unanswered text is kept");
+    if (!aBatch.GuildIds.Contains(0UL) || !aBatch.GuildIds.Contains(1UL)) Fail("activity: DMs count under guild 0");
+    if (aBatch.For(1).Unanswered.Count != 0 || aBatch.For(0).Answers.Count != 1) Fail("activity: batch split by guild");
+    if (!aCounter.Drain().IsEmpty) Fail("activity: Drain left emote or answer counts behind");
+    aCounter.CountEmoteReacted(1, aSmile, +1, aAt);
+    aCounter.Restore(aBatch);
+    var aBack = aCounter.Drain();
+    if (aBack.Emotes[new EmoteKey(1, aDay, aSmile)] != new EmoteTallyDelta(3, 2) || aBack.Unanswered.Count != 1)
+        Fail("activity: Restore did not merge emotes or unanswered");
+}
+
+// 43. Scheduling: typed dates and durations, weekly series across both DST changes, poll rules,
+// places, the fill bar, the per-card lock, the drafts and the card's custom-ids.
+{
+    // Monday 27 October 2026, 13:00 in Paris (winter time since the 25th).
+    var tNow = new DateTimeOffset(2026, 10, 27, 12, 0, 0, TimeSpan.Zero);
+    DateTimeOffset Utc(int y, int mo, int d, int h, int mi = 0) => new(y, mo, d, h, mi, 0, TimeSpan.Zero);
+    foreach (var (text, expected) in new (string, DateTimeOffset?)[]
+    {
+        ("samedi 21h", Utc(2026, 10, 31, 20)), ("sam 14h", Utc(2026, 10, 31, 13)), ("ven 21h", Utc(2026, 10, 30, 20)),
+        ("25/12 20:30", Utc(2026, 12, 25, 19, 30)), ("demain", Utc(2026, 10, 28, 20)), ("ce soir", Utc(2026, 10, 27, 20)),
+        ("27/10 10:00", null), ("15/03 21h", null), ("n'importe quoi", null), ("", null),
+    })
+        if (SessionTime.Parse(text, tNow) != expected) Fail($"session time: « {text} » read as {SessionTime.Parse(text, tNow)}");
+
+    // The way people type a date in chat (FrenchDate), at Tuesday 27 October 13:00 Paris.
+    DateTimeOffset Paris(int mo, int d, int h, int mi = 0) =>
+        AppTime.AtWallClock(new DateTime(2026, mo, d, h, mi, 0)).ToUniversalTime();
+    var tChat = new (string, DateTimeOffset?)[]
+    {
+        // Today, in any order and spelling.
+        ("ajd 20h", Paris(10, 27, 20)), ("Ajd 20H", Paris(10, 27, 20)), ("auj 20h30", Paris(10, 27, 20, 30)),
+        ("20h ajd", Paris(10, 27, 20)), ("aujourd'hui à 20h", Paris(10, 27, 20)), ("ce soir vers 21h", Paris(10, 27, 21)),
+        ("ce soir 9h", Paris(10, 27, 21)), ("ce soir 21h30", Paris(10, 27, 21, 30)),
+        // Tomorrow and after, with a part of the day.
+        ("demain soir", Paris(10, 28, 21)), ("demain soir 9h", Paris(10, 28, 21)), ("demain matin", Paris(10, 28, 9)),
+        ("demain aprem", Paris(10, 28, 15)), ("demain après-midi 3h", Paris(10, 28, 15)), ("demain 21", Paris(10, 28, 21)),
+        ("2main 21h", Paris(10, 28, 21)), ("dem 21h", Paris(10, 28, 21)), ("demain21h", Paris(10, 28, 21)),
+        ("dès 20h demain", Paris(10, 28, 20)), ("après-demain", Paris(10, 29, 21)), ("apres dem 20h", Paris(10, 29, 20)),
+        ("cette nuit 2h", Paris(10, 28, 2)), ("ce soir minuit", Paris(10, 28, 0)),
+        // Weekdays.
+        ("samedi soir", Paris(10, 31, 21)), ("sam soir 20h30", Paris(10, 31, 20, 30)), ("samedi 21", Paris(10, 31, 21)),
+        ("samedi prochain 21h", Paris(10, 31, 21)), ("mardi 21h", Paris(10, 27, 21)), ("mardi prochain 21h", Paris(11, 3, 21)),
+        ("samedi en huit", Paris(11, 7, 21)), ("samedi de la semaine prochaine", Paris(11, 7, 21)),
+        ("ce week-end", Paris(10, 31, 21)), ("ce we 18h", Paris(10, 31, 18)), ("ce week-end dimanche 18h", Paris(11, 1, 18)),
+        ("à partir de 21h samedi", Paris(10, 31, 21)), ("samedi minuit", Paris(11, 1, 0)), ("samedi midi", Paris(10, 31, 12)),
+        // Times.
+        ("21h et demie samedi", Paris(10, 31, 21, 30)), ("samedi 21h moins le quart", Paris(10, 31, 20, 45)),
+        ("samedi 9pm", Paris(10, 31, 21)), ("samedi 9h du soir", Paris(10, 31, 21)), ("samedi 21 h 30", Paris(10, 31, 21, 30)),
+        // Dates.
+        ("le 25", Paris(11, 25, 21)), ("le 30 à 20h", Paris(10, 30, 20)), ("le 31", Paris(10, 31, 21)),
+        ("25 décembre 20h", Paris(12, 25, 20)), ("25 dec 20h30", Paris(12, 25, 20, 30)), ("1er novembre 18h", Paris(11, 1, 18)),
+        ("le 1er nov", Paris(11, 1, 21)), ("samedi 31 octobre 21h", Paris(10, 31, 21)), ("mardi 3 novembre", Paris(11, 3, 21)),
+        ("25-12 20h", Paris(12, 25, 20)), ("25.12.2026 20h", Paris(12, 25, 20)), ("25 mar 2027", null), // past the horizon
+        // In a while.
+        ("dans 3 jours", Paris(10, 30, 21)), ("dans 2 semaines 20h", Paris(11, 10, 20)), ("dans 1h", Paris(10, 27, 14)),
+        ("dans 45 min", Paris(10, 27, 13, 45)), ("dans 3 mois", null),
+        // What it refuses rather than guess.
+        ("vendredi 31 octobre", null), ("lundi 3 novembre", null), ("demain samedi", null), ("samedi 20h 21h", null),
+        ("hier 21h", null), ("samedi 25h", null), ("le 32", null), ("21h", Paris(10, 27, 21)), ("bientôt", null),
+    };
+    foreach (var (text, expected) in tChat)
+        if (SessionTime.Parse(text, tNow) != expected) Fail($"session time: « {text} » read as {SessionTime.Parse(text, tNow)}, expected {expected}");
+    // « dans 1h » is rounded up to five minutes: 13:07 + 1h is 14:10.
+    if (SessionTime.Parse("dans 1h", tNow.AddMinutes(7)) != Paris(10, 27, 14, 10)) Fail("session time: « dans 1h » not rounded up");
+    if (("ex. " + FrenchDate.Examples).Length > 100) Fail("session time: the examples overflow an autocomplete label");
+    Console.WriteLine($"typed dates: {tChat.Length} chat readings");
+
+    var (tSlots, tRejected) = SessionTime.ParseList("ven 21h, sam 21h; n'importe quoi\nven 21h", tNow);
+    if (tSlots.Count != 2 || tSlots[0] != Utc(2026, 10, 30, 20) || tRejected.SequenceEqual(new[] { "n'importe quoi" }) is false)
+        Fail($"session time: list read as {string.Join(", ", tSlots)} / {string.Join(", ", tRejected)}");
+    if (SessionTime.ParseList(string.Join(",", Enumerable.Range(1, 15).Select(d => $"{d}/11 21h")), tNow).Slots.Count != SessionTime.MaxSlots)
+        Fail("session time: the list isn't capped");
+    if (SessionTime.Preview(Utc(2026, 10, 31, 20)) is var tPreview && (!tPreview.Contains("31") || !tPreview.EndsWith("à 21:00")))
+        Fail($"session time: preview {tPreview}");
+    foreach (var (text, expected) in new (string, int?)[]
+    {
+        ("2h", 120), ("1h30", 90), ("1 h 30", 90), ("90", 90), ("45 min", 45), ("6h", 360),
+        ("10", null), ("7h", null), ("1h75", null), ("abc", null), ("", null),
+    })
+        if (SessionTime.ParseDuration(text) != expected) Fail($"duration: « {text} » read as {SessionTime.ParseDuration(text)}");
+    if (SessionTime.DurationLabel(90) != "1 h 30" || SessionTime.DurationLabel(120) != "2 h" || SessionTime.DurationLabel(45) != "45 min")
+        Fail("duration: labels");
+    foreach (var m in new[] { 15, 45, 90, 120, 135, 360 })
+        if (SessionTime.ParseDuration(SessionTime.DurationInput(m)) != m) Fail($"duration: {m} doesn't survive the edit modal");
+
+    // The picker's one-click times: today while ahead, tomorrow, the coming weekend, each day once.
+    string QuickText(DateTimeOffset now, int minuteOfDay) =>
+        string.Join(" | ", SessionTime.QuickSlots(now, minuteOfDay).Select(s => $"{s.Label} {s.At:dd HH:mm}"));
+    foreach (var (now, minuteOfDay, expected) in new (DateTimeOffset, int, string)[]
+    {
+        // Monday 13:00 Paris.
+        (tNow, 21 * 60, "Ce soir 21h 27 20:00 | Demain 21h 28 20:00 | Samedi 21h 31 20:00 | Dimanche 21h 01 20:00"),
+        // Monday 22:00 Paris: tonight is gone.
+        (Utc(2026, 10, 27, 21), 21 * 60, "Demain 21h 28 20:00 | Samedi 21h 31 20:00 | Dimanche 21h 01 20:00"),
+        // Friday afternoon: tomorrow is the Saturday, named once.
+        (Utc(2026, 10, 30, 12), 21 * 60, "Ce soir 21h 30 20:00 | Demain 21h 31 20:00 | Dimanche 21h 01 20:00"),
+        // Saturday 22:00: tomorrow is Sunday, and the Saturday is next week's.
+        (Utc(2026, 10, 31, 21), 21 * 60, "Demain 21h 01 20:00 | Samedi 21h 07 20:00"),
+        // An afternoon habit, with minutes.
+        (Utc(2026, 10, 27, 8), 14 * 60 + 30, "Aujourd'hui 14h30 27 13:30 | Demain 14h30 28 13:30 | Samedi 14h30 31 13:30 | Dimanche 14h30 01 13:30"),
+    })
+        if (QuickText(now, minuteOfDay) is var quick && quick != expected) Fail($"quick slots at {now:dd HH:mm}: {quick}");
+    var tTwoHours = TimeSpan.FromHours(2);
+    if (!SessionTime.Overlaps(Utc(2026, 10, 31, 20), tTwoHours, Utc(2026, 10, 31, 21), tTwoHours)
+        || SessionTime.Overlaps(Utc(2026, 10, 31, 20), tTwoHours, Utc(2026, 10, 31, 22), tTwoHours)
+        || !SessionTime.Overlaps(Utc(2026, 10, 31, 19), TimeSpan.FromHours(6), Utc(2026, 10, 31, 20), TimeSpan.FromMinutes(30)))
+        Fail("session time: overlaps");
+
+    // The picker's memory: the last published session, per person and per server, in Paris time.
+    var tHabits = new SessionHabits();
+    tHabits.Remember(new ProjectSYNCS.Models.SessionEvent { GuildId = 1, OrganizerId = 7, Category = ProjectSYNCS.Models.SessionCategory.Movie, MaxPlayers = 6,
+        DurationMinutes = 180, VoiceChannelId = 42, ScheduledAt = Utc(2026, 10, 31, 19, 30) });
+    if (tHabits.For(1, 7) != new SessionHabit(ProjectSYNCS.Models.SessionCategory.Movie, 6, 180, 42, 20 * 60 + 30)
+        || tHabits.For(2, 7) is not null || tHabits.For(1, 8) is not null)
+        Fail($"session habits: {tHabits.For(1, 7)}");
+
+    // A Thursday at 21:00 stays at 21:00 in Paris on both sides of each change of time.
+    const int rNine = 21 * 60;
+    var rOct = Recurrence.NextOccurrence(DayOfWeek.Thursday, rNine, Utc(2026, 10, 20, 0));
+    var rOctNext = Recurrence.NextOccurrence(DayOfWeek.Thursday, rNine, rOct);
+    if (rOct != Utc(2026, 10, 22, 19) || rOctNext != Utc(2026, 10, 29, 20)) Fail($"recurrence: October change {rOct} → {rOctNext}");
+    var rMar = Recurrence.NextOccurrence(DayOfWeek.Thursday, rNine, Utc(2027, 3, 24, 0));
+    var rMarNext = Recurrence.NextOccurrence(DayOfWeek.Thursday, rNine, rMar);
+    if (rMar != Utc(2027, 3, 25, 20) || rMarNext != Utc(2027, 4, 1, 19)) Fail($"recurrence: March change {rMar} → {rMarNext}");
+    if (Recurrence.SlotOf(rMarNext) != (DayOfWeek.Thursday, rNine)) Fail("recurrence: SlotOf");
+    if (Recurrence.Badge(rOct) != "🔁 chaque jeudi") Fail($"recurrence: badge {Recurrence.Badge(rOct)}");
+    // The same day, earlier: today's slot; later: next week's.
+    if (Recurrence.NextOccurrence(DayOfWeek.Tuesday, rNine, tNow) != Utc(2026, 10, 27, 20)
+        || Recurrence.NextOccurrence(DayOfWeek.Tuesday, 10 * 60, tNow) != Utc(2026, 11, 3, 9)) Fail("recurrence: same day");
+    // A moved or cancelled occurrence is never posted again: the next one is after the last.
+    var rSeries = new ProjectSYNCS.Models.RecurringSession { DayOfWeek = DayOfWeek.Thursday, MinuteOfDay = rNine, LastOccurrence = rOctNext };
+    if (Recurrence.NextOccurrence(rSeries, Utc(2026, 10, 27, 0)) != Utc(2026, 11, 5, 20)) Fail("recurrence: after the last occurrence");
+    if (!Recurrence.DueToPost(rOctNext, Utc(2026, 10, 27, 0), 3) || Recurrence.DueToPost(rOctNext, Utc(2026, 10, 25, 0), 3)
+        || Recurrence.DueToPost(rOctNext, rOctNext.AddMinutes(1), 3)) Fail("recurrence: DueToPost");
+
+    // Options: markers dropped, duplicates skipped, capped.
+    var pOptions = PollRules.ParseOptions("- Among Us\n2) Gartic\namong us\n\n• Valorant\n10. Minecraft");
+    if (!pOptions.SequenceEqual(new[] { "Among Us", "Gartic", "Valorant", "Minecraft" }))
+        Fail($"poll rules: options read as {string.Join(" | ", pOptions)}");
+    if (PollRules.ParseOptions(string.Join("\n", Enumerable.Range(1, 15).Select(i => $"Option {i}"))).Count != PollRules.MaxOptions
+        || PollRules.ParseOptions(new string('x', 100)).Single().Length != PollRules.MaxLabelLength) Fail("poll rules: caps");
+    var pPoll = new ProjectSYNCS.Models.Poll { CreatedAt = tNow.AddDays(-1) };
+    if (pPoll.ClosesAt != tNow.AddDays(1) || !PollRules.IsOpen(pPoll, tNow) || PollRules.IsOpen(pPoll, tNow.AddDays(2))) Fail("poll rules: default deadline");
+    if (PollRules.Extend(pPoll, TimeSpan.FromHours(24), tNow) != tNow.AddDays(2)) Fail("poll rules: extend an open poll");
+    pPoll.EndsAt = tNow.AddHours(-1);
+    if (PollRules.IsOpen(pPoll, tNow) || PollRules.Extend(pPoll, TimeSpan.FromHours(1), tNow) != tNow.AddHours(1)) Fail("poll rules: extend a lapsed poll");
+    pPoll.EndsAt = tNow.AddDays(13);
+    if (PollRules.Extend(pPoll, TimeSpan.FromHours(48), tNow) != tNow + PollRules.MaxLifetime) Fail("poll rules: extend past the cap");
+    pPoll.IsClosed = true;
+    if (PollRules.IsOpen(pPoll, tNow)) Fail("poll rules: closed by hand");
+
+    // One-line options: commas or semicolons, then the same reading.
+    var pInline = PollRules.ParseInlineOptions(" Valorant, Lethal Company;among us ,, Among Us ");
+    if (!pInline.SequenceEqual(new[] { "Valorant", "Lethal Company", "among us" }))
+        Fail($"poll rules: inline options read as {string.Join(" | ", pInline)}");
+
+    // The weekend poll's clear winner: alone at the top, ahead, with enough votes.
+    ProjectSYNCS.Models.PollOption Slot(DateTimeOffset at, params ulong[] voters) => new()
+    {
+        ScheduledAt = at,
+        Votes = voters.Select((v, i) => new ProjectSYNCS.Models.PollVote { UserId = v, VotedAt = tNow.AddMinutes(i) }).ToList(),
+    };
+    ProjectSYNCS.Models.Poll Slots(params ProjectSYNCS.Models.PollOption[] o) => new() { Options = o.ToList() };
+    var wFri = tNow.AddDays(2); var wSat = tNow.AddDays(3); var wPast = tNow.AddHours(-1);
+    if (PollRules.ClearWinner(Slots(Slot(wFri, 1), Slot(wSat, 1, 2)), tNow, 2)?.ScheduledAt != wSat) Fail("poll rules: clear winner");
+    if (PollRules.ClearWinner(Slots(Slot(wFri, 1, 3), Slot(wSat, 1, 2)), tNow, 2) is not null) Fail("poll rules: a tie is no clear winner");
+    if (PollRules.ClearWinner(Slots(Slot(wFri), Slot(wSat, 1)), tNow, 2) is not null) Fail("poll rules: one vote is no clear winner");
+    if (PollRules.ClearWinner(Slots(Slot(wPast, 1, 2, 3), Slot(wSat, 1, 2)), tNow, 2)?.ScheduledAt != wSat) Fail("poll rules: a past slot never wins");
+    if (PollRules.ClearWinner(Slots(), tNow, 2) is not null) Fail("poll rules: no slot, no winner");
+    var wVoters = PollRules.VotersAt(Slots(Slot(wFri, 5), Slot(wSat, 7, 5, 9)), wSat).Select(v => v.UserId);
+    if (!wVoters.SequenceEqual(new ulong[] { 7, 5, 9 })) Fail($"poll rules: voters at a slot read as {string.Join(", ", wVoters)}");
+    if (WeekendPoll.SessionTitle(Utc(2026, 10, 31, 20)) != "Soirée du samedi") Fail($"weekend poll: session title « {WeekendPoll.SessionTitle(Utc(2026, 10, 31, 20))} »");
+
+    // Places: one rule at creation and at edit.
+    foreach (var (input, ok, max) in new[]
+    {
+        ("", true, 0), ("0", true, 0), (" 5 ", true, 5), ("2", true, 2), ("67", true, 67), ("1", false, 0), ("68", false, 0), ("abc", false, 0), ("-3", false, 0),
+    })
+        if (SessionSeats.TryParseCap(input, out var got) != ok || (ok && got != max)) Fail($"seats: TryParseCap(« {input} »)");
+    if (!SessionSeats.CapBelowJoined(3, 4) || SessionSeats.CapBelowJoined(0, 9) || SessionSeats.CapBelowJoined(4, 4)) Fail("seats: CapBelowJoined");
+    var cSession = new ProjectSYNCS.Models.SessionEvent { ScheduledAt = tNow.AddHours(1) };
+    if (!SessionSeats.CanRespond(cSession, tNow, out _)) Fail("seats: a future session refuses answers");
+    if (SessionSeats.CanRespond(cSession, tNow.AddHours(1.5), out var cRunning) || !cRunning.Contains("commencé")) Fail("seats: a running session takes answers");
+    if (SessionSeats.CanRespond(cSession, tNow.AddDays(1), out var cOver) || !cOver.Contains("terminée")) Fail("seats: a finished session takes answers");
+    cSession.IsCancelled = true;
+    if (SessionSeats.CanRespond(cSession, tNow, out var cCancelled) || !cCancelled.Contains("annulée")) Fail("seats: a cancelled session takes answers");
+
+    // The fill bar: always its width, one vote never reads as none.
+    foreach (var (part, total, filled) in new[] { (0L, 10L, 0), (10L, 10L, 10), (1L, 100L, 1), (5L, 10L, 5), (0L, 0L, 0), (3L, 0L, 0), (12L, 10L, 10) })
+        if (TextChart.Bar(part, total, 10) is var bar && (bar.Length != 10 || bar.Count(ch => ch == '▰') != filled))
+            Fail($"bar: {part}/{total} drew {bar}");
+
+    // The per-card lock: one holder at a time, and nothing kept once released.
+    var kLock = new KeyedLock<int>();
+    var kFirst = await kLock.AcquireAsync(1);
+    var kSecond = kLock.AcquireAsync(1);
+    var kOther = await kLock.AcquireAsync(2);
+    if (kSecond.IsCompleted) Fail("lock: a second holder got in");
+    kFirst.Dispose();
+    (await kSecond).Dispose();
+    kOther.Dispose();
+    if (kLock.Count != 0) Fail($"lock: {kLock.Count} entries kept after release");
+
+    // Drafts: kept while touched, gone after the TTL, taken once.
+    var dClock = tNow;
+    var dBox = new DraftBox<string>(TimeSpan.FromMinutes(30), () => dClock);
+    dBox.Set(1, "a");
+    dClock = dClock.AddMinutes(29);
+    if (!dBox.TryGet(1, out _)) Fail("drafts: lost before the TTL");
+    dClock = dClock.AddMinutes(29);
+    if (!dBox.TryGet(1, out _)) Fail("drafts: touching doesn't refresh");
+    dClock = dClock.AddMinutes(31);
+    if (dBox.TryGet(1, out _) || dBox.Count != 0) Fail("drafts: kept past the TTL");
+    dBox.Set(2, "b");
+    if (!dBox.TryTake(2, out var dTaken) || dTaken != "b" || dBox.TryTake(2, out _)) Fail("drafts: taken twice");
+
+    // A reply under the card finds it from any of its buttons, the new ones included.
+    foreach (var (ids, expected) in new (string[], CardRef?)[]
+    {
+        (new[] { "poll:manage:5" }, new CardRef(CardKind.Poll, 5)), (new[] { "poll:mine:7" }, new CardRef(CardKind.Poll, 7)),
+        (new[] { "event:manage:3" }, new CardRef(CardKind.Session, 3)), (new[] { "event:sub:3" }, new CardRef(CardKind.Session, 3)),
+        (new[] { "poll:extend:5:24" }, null),
+    })
+        if (CardRefs.Read(ids) != expected) Fail($"card refs: {ids[0]}");
+
+    // Results announced: the organiser, the title and the result all land, a sticker each.
+    foreach (var name in new[] { "PollClosedSlotLines", "VoteClosedResultLines", "PollClosedEmptyLines" })
+        foreach (var line in (string[])br.GetField(name)!.GetValue(null)!)
+        {
+            var s = string.Format(line, "<@1>", "Titre", "Résultat");
+            if (!s.Contains("<@1>") || !s.Contains("Titre") || (name != "PollClosedEmptyLines" && !s.Contains("Résultat")))
+                Fail($"{name}: a placeholder is missing: {line}");
+        }
 }
 
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");

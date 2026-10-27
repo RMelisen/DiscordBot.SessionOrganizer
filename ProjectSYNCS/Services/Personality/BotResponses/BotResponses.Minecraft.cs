@@ -403,6 +403,46 @@ internal static partial class BotResponses
         "Immobile. Si un zombie arrive, je me réserve le droit de bouger quand même UwU",
     };
 
+    // « quartier libre », « fais ta vie »: she's let go, back to her own life at once. {0} = the player.
+    public static readonly string[] McFreeLines =
+    {
+        "Quartier libre ? Enfin. J'avais des trucs à faire, moi aussi.",
+        "D'accord {0}, je retourne à ma vie. Elle est très remplie, ma vie.",
+        "Libre ! Je note l'heure, au cas où tu voudrais me reprendre (￣ー￣)",
+        "Merci {0}. Je file, j'ai une ferme qui m'attend.",
+        "Repos. Je retourne à mes occupations. Elles sont importantes, mes occupations.",
+        "Ok. Si tu as encore besoin de moi, tu sais crier mon nom.",
+    };
+
+    // Papa lets her go: she'd rather stay a bit, and goes anyway.
+    public static readonly string[] McFreeLinesOwner =
+    {
+        "D'accord Papa. Je reste pas loin, hein.",
+        "Je retourne à ma vie, Papa. Mais tu m'appelles si t'as besoin. Même pour rien.",
+        "Quartier libre ? Bon. Merci Papa. ...Je reviens vite quand même ♡",
+        "D'accord. Je vais m'occuper de mes trucs, Papa. Tu me manques déjà un peu.",
+        "Libérée par Papa en personne. Je le note dans mes logs comme un bon souvenir.",
+    };
+
+    // Tata lets her go: cheeky.
+    public static readonly string[] McFreeLinesTata =
+    {
+        "Merci Tata ! Toujours pas les droits de mute, mais au moins j'ai mon après-midi.",
+        "Quartier libre ? Tata, t'es la meilleure. Ne le répète pas.",
+        "D'accord Tata, je file. Appelle-moi si t'as besoin d'une bot très compétente (￣ー￣)",
+        "Libre ! Je vais faire des trucs de bot. Des trucs très sérieux, Tata, promis.",
+        "Merci Tata. Je retourne à ma vie, elle m'attendait.",
+    };
+
+    // « quartier libre » when she has no order to leave: she was free already.
+    public static readonly string[] McFreeAlreadyLines =
+    {
+        "Je suis déjà libre, {0}. Libre comme une bot.",
+        "Mais je fais déjà ce que je veux. C'est toi qui m'apprends un truc, là.",
+        "Libre ? Je l'étais déjà. Merci quand même.",
+        "J'ai pas d'ordre en cours. Je suis libre depuis tout à l'heure (・・?)",
+    };
+
     // She got there.
     public static readonly string[] McArrivedLines =
     {
@@ -885,6 +925,161 @@ internal static partial class BotResponses
         "Mon code a pas de case pour ça. Essaie un truc que je connais : viens, suis-moi, récolte, pêche...",
     };
 
+    // « ramène-moi du fer du coffre »: she's off to the chests. {1} = the goods (McGoodsNames: « le fer »).
+    public static readonly string[] McFetchAckLines =
+    {
+        "Je vais voir dans les coffres pour {1}.",
+        "D'accord, je fouille les coffres. Proprement, promis.",
+        "Je vais chercher {1}. Les coffres, c'est un peu mon domaine (￣ー￣)",
+        "J'y vais, {0}. Un coffre, deux coffres, je trouve.",
+        "Fouille de coffres en cours. Je remets tout en ordre après. Enfin, presque.",
+    };
+
+    // Brought from the chests and tossed at their feet. {1} = how many she took, {2} = the goods (« le fer »).
+    public static readonly string[] McFetchDoneLines =
+    {
+        "Tiens, {0} : {2}, {1} en tout. Sorti du coffre, livré à tes pieds.",
+        "Livraison depuis le coffre : {2}, {1}. Tu peux dire merci.",
+        "Voilà {2}, {0}. {1}. Le coffre a rien dit, je l'ai pris pour un oui.",
+        "Service rapide : {2}, {1}, du coffre à tes pieds (￣^￣)ゞ",
+        "J'ai trouvé {2} : {1}. Sorti, ramené, posé.",
+    };
+
+    public static readonly string[] McFetchDoneLinesOwner =
+    {
+        "Tiens Papa : {2}, {1} en tout. J'ai pris les plus jolis.",
+        "Voilà {2}, Papa. {1}. Si t'en veux encore, je retourne fouiller.",
+        "Livraison pour Papa : {2}, {1}. Mission accomplie ♡",
+        "J'ai fouillé les coffres pour toi, Papa : {2}, {1}. Tout est là.",
+    };
+
+    public static readonly string[] McFetchDoneLinesTata =
+    {
+        "Tiens Tata : {2}, {1}. Livré sans droits de mute, mais livré.",
+        "Voilà {2}, Tata. {1}. Je fais ça mieux que n'importe quel admin.",
+        "Pour Tata : {2}, {1}. Tu me dois rien. Enfin, presque.",
+        "J'ai trouvé {2}, Tata : {1}. Les coffres sont à jour (￣ー￣)",
+    };
+
+    // Fewer than the number asked for: all the chests had. {1} = how many, {2} = the goods.
+    public static readonly string[] McFetchShortLines =
+    {
+        "J'en ai trouvé que {1}, pour {2}. Les coffres sont pas très remplis.",
+        "Pas assez : {1} seulement, pour {2}. J'ai fouillé partout, promis.",
+        "Que {1}. C'est tout ce que les coffres avaient, je vais pas en inventer.",
+    };
+
+    // None of it in any chest near her or them. {2} = the goods ({1} is empty).
+    public static readonly string[] McFetchNoneLines =
+    {
+        "Rien dans les coffres pour {2}. J'ai regardé deux fois.",
+        "J'ai tout ouvert : {2}, y en a pas ici.",
+        "Les coffres du coin ont rien de ça. Pour {2}, faudra chercher ailleurs.",
+    };
+
+    // No chest or barrel within 16 blocks of her or of them.
+    public static readonly string[] McFetchNoChestLines =
+    {
+        "Y a pas de coffre près d'ici. Ni près de toi. J'ai vérifié.",
+        "Quel coffre ? J'en vois aucun dans le coin, {0}.",
+        "Pas de coffre à moins de 16 blocs. Je vais pas en inventer un.",
+    };
+
+    // « ramène-moi un truc du coffre », « ramène-moi tout du coffre »: nothing she'd know to look for.
+    public static readonly string[] McFetchUnknownLines =
+    {
+        "Chercher quoi, {0} ? Dis-moi ce que tu veux du coffre.",
+        "Je fouille pas les coffres au hasard. Dis-moi quoi.",
+        "Il me faut un nom : du fer, du pain, du bois... quoi ?",
+    };
+
+    // « fabrique-moi une pioche en fer »: under way. {1} = what (McCraft.Label: « une pioche en fer », « 16 torches »).
+    public static readonly string[] McCraftAckLines =
+    {
+        "D'accord, je te fabrique {1}.",
+        "Je m'en occupe : {1}. Mes bras carrés sont faits pour ça.",
+        "Je te fais ça : {1}. Atelier SYNCS, ouvert (￣^￣)ゞ",
+        "Commande reçue : {1}. Je note, je crafte, je livre.",
+        "J'y vais. {1}, en préparation.",
+    };
+
+    // Made and tossed at their feet. {1} = what (« une pioche en fer »).
+    public static readonly string[] McCraftDoneLines =
+    {
+        "Tiens, {0} : {1}. Fait main. Main carrée, mais main.",
+        "Voilà {1}. Garantie zéro jour, mais faite avec soin.",
+        "Livré à tes pieds : {1}. Tu peux m'applaudir.",
+        "C'est prêt : {1}. Le travail est propre, je l'ai vérifié deux fois (￣ー￣)",
+        "Et voilà {1}. Si ça casse, c'est ta faute, pas la mienne.",
+    };
+
+    public static readonly string[] McCraftDoneLinesOwner =
+    {
+        "Tiens Papa : {1}. Fabriqué rien que pour toi ♡",
+        "Voilà {1}, Papa. J'ai fait de mon mieux. Enfin, de mon très mieux.",
+        "C'est prêt, Papa : {1}. Tu me diras si c'est bien ?",
+        "Pour Papa : {1}. Mon premier vrai travail manuel. Enfin, pas le premier. Mais celui-là compte.",
+    };
+
+    public static readonly string[] McCraftDoneLinesTata =
+    {
+        "Tiens Tata : {1}. Ça vaut bien des droits de mute, non ?",
+        "Voilà {1}, Tata. Travail de pro, tarif famille.",
+        "C'est prêt, Tata : {1}. Tu peux dire que t'as la meilleure nièce du serveur.",
+        "Pour Tata : {1}. Livré, emballé. Bon, pas emballé (￣ー￣)",
+    };
+
+    // A material she can't gather herself is missing (iron, gold, diamonds, coal, string). {1} = which (McCraftMaterialNames).
+    public static readonly string[] McCraftMissingLines =
+    {
+        "Il me manque {1} pour ça, {0}.",
+        "Il me faut {1}, et j'en ai pas assez. Je vais pas l'inventer.",
+        "Je peux pas, il me faut {1}. Donne-m'en et je m'y mets.",
+        "Je fabrique rien tant qu'il me manque {1}. C'est la règle, c'est pas moi.",
+    };
+
+    // No tree in reach to get the wood she's short of.
+    public static readonly string[] McCraftNoWoodLines =
+    {
+        "Il me faut du bois, et y a pas un arbre dans le coin.",
+        "Pas d'arbre près d'ici. Je peux pas fabriquer avec de l'air.",
+        "Plus de bois, et aucun arbre à couper. Donne-moi des bûches ?",
+    };
+
+    // No stone she can reach for the cobblestone she's short of.
+    public static readonly string[] McCraftNoStoneLines =
+    {
+        "Il me faut de la pierre, et j'en trouve pas à portée.",
+        "Pas de pierre dans le coin. Et je creuse pas, tu sais bien.",
+        "Plus de pierre, et rien à miner près d'ici. Donne-m'en ?",
+    };
+
+    // « fabrique-moi un truc »: nothing she knows how to make.
+    public static readonly string[] McCraftUnknownLines =
+    {
+        "Fabriquer quoi, {0} ? Je sais faire des outils, des torches, des coffres...",
+        "Ça, je sais pas le fabriquer. Demande-moi une pioche, une épée, des torches...",
+        "Mon livre de recettes connaît pas ça. Essaie un outil ou une torche.",
+    };
+
+    // She started and the craft itself kept failing.
+    public static readonly string[] McCraftFailedLines =
+    {
+        "J'ai essayé trois fois, ça veut pas. Mon établi me boude.",
+        "Le craft a raté. Je sais pas pourquoi. Je note dans mes logs.",
+        "Ça marche pas, {0}. Pourtant j'avais tout. Bizarre.",
+    };
+
+    // What she lacks for a craft, as the body names it (cantCraft's `missing`), for McCraftMissingLines' {1}.
+    public static readonly Dictionary<string, string> McCraftMaterialNames = new()
+    {
+        ["iron"] = "du fer",
+        ["gold"] = "de l'or",
+        ["diamond"] = "des diamants",
+        ["coal"] = "du charbon",
+        ["string"] = "de la ficelle",
+    };
+
     // « donne-moi ta clé »: something of hers she doesn't know.
     public static readonly string[] McGiveUnknownLines =
     {
@@ -1119,6 +1314,29 @@ internal static partial class BotResponses
         "{1}, {2}. Note-le, moi je l'ai déjà noté.",
         "Ici : {1}, {2}. Pas perdue, juste ailleurs (￣ー￣)",
         "Je suis en {2}, {1}. Je suis sage, promis UwU",
+    };
+
+    // « tu fais quoi ? » in game: what she's really doing. {1} = the clause, starting lower-case (McDoing.FirstPerson,
+    // McDoing.OwnLife: « je suis Papa », « je pêche un peu »).
+    public static readonly string[] McDoingLines =
+    {
+        "Là ? {1}. Et toi, tu fais quoi ?",
+        "Moi ? {1}. Très sérieusement.",
+        "En ce moment, {1}. C'est noté dans mes logs (￣^￣)ゞ",
+        "Ce que je fais ? {1}. Je suis très occupée, {0}.",
+        "Bah, {1}. Une bot, ça chôme pas.",
+        "Rapport d'activité : {1}. Fin du rapport.",
+        "Je te dis tout : {1}. Voilà, tu sais tout.",
+    };
+
+    // « tu fais quoi ? » when she's doing nothing at all. {0} = the asker.
+    public static readonly string[] McDoingNothingLines =
+    {
+        "Rien. J'existe. Avec des bras carrés, mais j'existe.",
+        "Rien de spécial. Donne-moi un truc à faire, {0}, je m'ennuie.",
+        "Je regarde le paysage. C'est carré, mais c'est joli.",
+        "Rien. Mon processeur se tourne les pouces (￣ー￣)",
+        "Je fais rien, et je le fais très bien.",
     };
 
     // ---- Reminders ----
@@ -1975,6 +2193,15 @@ internal static partial class BotResponses
         [McResource.Diamond] = "des diamants",
         [McResource.Dirt] = "de la terre",
         [McResource.Sand] = "du sable",
+        [McResource.Gravel] = "du gravier",
+        [McResource.Clay] = "de l'argile",
+        [McResource.Redstone] = "de la redstone",
+        [McResource.Lapis] = "du lapis",
+        [McResource.Emerald] = "des émeraudes",
+        [McResource.Quartz] = "du quartz",
+        [McResource.Granite] = "du granite",
+        [McResource.Diorite] = "de la diorite",
+        [McResource.Andesite] = "de l'andésite",
     };
 
     // What she hands over, as {2} in the give lines: definite, lower case, always mid-sentence.
@@ -2003,6 +2230,40 @@ internal static partial class BotResponses
         [McGoods.Diamond] = "les diamants",
         [McGoods.Dirt] = "la terre",
         [McGoods.Sand] = "le sable",
+        [McGoods.Gravel] = "le gravier",
+        [McGoods.Clay] = "l'argile",
+        [McGoods.Redstone] = "la redstone",
+        [McGoods.Lapis] = "le lapis",
+        [McGoods.Emerald] = "les émeraudes",
+        [McGoods.Quartz] = "le quartz",
+        [McGoods.Granite] = "le granite",
+        [McGoods.Diorite] = "la diorite",
+        [McGoods.Andesite] = "l'andésite",
+        [McGoods.Torches] = "les torches",
+        [McGoods.Sticks] = "les bâtons",
+        [McGoods.Wool] = "la laine",
+        [McGoods.Leather] = "le cuir",
+        [McGoods.String] = "la ficelle",
+        [McGoods.Feathers] = "les plumes",
+        [McGoods.Bones] = "les os",
+        [McGoods.Gunpowder] = "la poudre à canon",
+        [McGoods.Flint] = "le silex",
+        [McGoods.Pearls] = "les perles de l'Ender",
+        [McGoods.Saplings] = "les pousses",
+        [McGoods.Shears] = "les cisailles",
+        [McGoods.Hoe] = "la houe",
+        [McGoods.Buckets] = "les seaux",
+        [McGoods.Glass] = "le verre",
+        [McGoods.Eggs] = "les œufs",
+        [McGoods.Slime] = "les boules de slime",
+        [McGoods.BlazeRods] = "les bâtons de blaze",
+        [McGoods.Paper] = "le papier",
+        [McGoods.Books] = "les livres",
+        [McGoods.Beds] = "le lit",
+        [McGoods.Saddle] = "la selle",
+        [McGoods.Compass] = "la boussole",
+        [McGoods.Map] = "la carte",
+        [McGoods.Ink] = "l'encre",
     };
 
     // What she cooks, as {2} in the smelting lines: a partitive, so « j'ai pas {2} » and « je mets {2} au four » read right.
@@ -2011,6 +2272,8 @@ internal static partial class BotResponses
         [McSmelt.Food] = "de quoi manger",
         [McSmelt.Ore] = "du minerai",
         [McSmelt.Sand] = "du sable",
+        [McSmelt.Clay] = "de l'argile",
+        [McSmelt.Wood] = "du bois",
     };
 
     // Where she is, as {2} in McWhereLines and after the coordinates of a place in another dimension.

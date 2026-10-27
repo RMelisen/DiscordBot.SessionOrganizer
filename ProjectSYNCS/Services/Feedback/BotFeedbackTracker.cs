@@ -39,6 +39,7 @@ internal sealed class BotFeedbackTracker
     private readonly BadgeAwarder _badges;
     private readonly FeedbackFlip _flip = new();
     private readonly ILogger<BotFeedbackTracker> _logger;
+    private readonly SilenceService _silence;
 
     // How long after she acts a bare "good bot" still reads as being about her.
     private static readonly TimeSpan Window = TimeSpan.FromMinutes(5);
@@ -178,8 +179,10 @@ internal sealed class BotFeedbackTracker
         RivalryService rivalry,
         XpTracker xp,
         BadgeAwarder badges,
-        ILogger<BotFeedbackTracker> logger)
+        ILogger<BotFeedbackTracker> logger,
+        SilenceService silence)
     {
+        _silence = silence;
         _badges = badges;
         _client = client;
         _services = services;
@@ -261,7 +264,8 @@ internal sealed class BotFeedbackTracker
         if (claim != Claim.Granted) return;
 
         await RecordAsync(guildChannel.Guild.Id, message.Author.Id, verdict);
-        await RespondAsync(message, verdict, form);
+        // Silence mode: counted (and the XP below), never answered.
+        if (!_silence.IsSilent) await RespondAsync(message, verdict, form);
 
         // Deliberately last: her comeback must read as immediate, and a level-up line
         // (if any) is a separate follow-up that should never delay her acknowledgement

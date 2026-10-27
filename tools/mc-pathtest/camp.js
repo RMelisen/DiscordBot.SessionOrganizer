@@ -28,7 +28,7 @@ function report(ok, name, detail) {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name.padEnd(16)} ${detail}`);
 }
 
-// The body's CampLayout (index.js), the back to the north: F fire, d trapdoor, L log, S slab, T table, K furnace,
+// The body's CampLayout (lib/camp.js), the back to the north: F fire, d trapdoor, L log, S slab, T table, K furnace,
 // C chest, B bed, l torch post, p/D floor, . left alone.
 const Layout = [
   '.l.......',

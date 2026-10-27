@@ -1,8 +1,10 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace ProjectSYNCS.Models;
 
 public enum PollKind
 {
-    // Options are date/time slots, rendered as <t:...> timestamps (/poll).
+    // Options are date/time slots, rendered as <t:...> timestamps (/when).
     DateSlots,
     // Options are free-text labels, e.g. game or movie names (/vote).
     Text
@@ -23,7 +25,25 @@ public class Poll
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
+    // When it closes on its own. Null on rows from before deadlines existed: those close
+    // DefaultLifetime after they were created, as they always did.
+    public DateTimeOffset? EndsAt { get; set; }
+
+    // One option per voter: clicking another option moves the vote.
+    public bool SingleChoice { get; set; }
+
+    // The card shows counts and bars, never who voted for what.
+    public bool Anonymous { get; set; }
+
+    // The session created from this poll (« Créer une session »), or null.
+    public int? SessionEventId { get; set; }
+
     public List<PollOption> Options { get; set; } = new();
+
+    public static readonly TimeSpan DefaultLifetime = TimeSpan.FromDays(2);
+
+    [NotMapped]
+    public DateTimeOffset ClosesAt => EndsAt ?? CreatedAt + DefaultLifetime;
 }
 
 public class PollOption

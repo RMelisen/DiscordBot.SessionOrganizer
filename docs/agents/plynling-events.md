@@ -43,8 +43,8 @@ SQLite with the real migrations.
   « nouveau trait » moments would push out its oldest memories. The mascot's traits are never journaled.
 - Descriptions are **shared by both genders**, so they never agree with the Plynling (the harness
   bans il/elle in them); names have M and F forms.
-- **Icons are CK3-style tiles** (`trait.<key>` in `tools/item-art`, uploaded as `tr_<key>`): the
-  frame's colours give the kind (enfance gold on wine, personnalité bronze on teal, coping silver on
+- **Icons are CK3-style tiles** (`trait.<key>` in `tools/item-art`, 22×22, uploaded as `tr2_<key>`):
+  the frame's colours give the kind (enfance gold on wine, personnalité bronze on teal, coping silver on
   slate). A new trait needs its tile, or it shows its `DefaultEmoji`. `TraitInfo.Emoji` is custom
   markup once uploaded: a button or select takes `EmoteMarkup.Parse`, never `new Emoji`.
 - **Ping-Qilin's traits are chosen**, not drawn (`PlynlingMascot.TraitKeys`: Adorable, Vaniteuse,
@@ -87,6 +87,8 @@ never change that mapping, every stored morning depends on it.
 - **Catalog:** C# data. Event and option keys are stored — **never renamed**, append only. Every event
   needs an **ungated option with no stress cost** (deciding alone); no « il »/« elle » in event text
   (one text serves every gender pair). The harness checks both.
+- **Files:** `PlynlingEvents/` splits the catalog by wave, one method per file, concatenated in
+  order in `All`. New events go at the end of the last file; a new file adds its method to `All`.
 - **Stages and keys:** keys are prefixed `baby_`, `teen_`, `grown_` (adulte and ancien) or `elder_` (the
   `Elder` array — ancien only, so any reachability check must simulate the Elder stage). A bébé holds
   only its childhood trait, so bébé gates and stress costs use childhood traits (`bossy`, `charming`,

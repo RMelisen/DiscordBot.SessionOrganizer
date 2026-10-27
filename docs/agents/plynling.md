@@ -241,7 +241,8 @@ the generic `ForCustom` scripts, which name it as `{P}` only.
   final pair is always an exchange. Hence the **even** count (harness checks). A two-line script is
   opener + one answer that lands alone.
 - Keep each key's length mix: about a third at 2, half at 4, the rest 6 or 8.
-- `PlynlingScripts.cs` is generated from the scratch writing sheets but reads fine by hand.
+- `PlynlingScripts/` (one file per passion, plus `Custom`) is generated from the scratch writing sheets
+  but reads fine by hand. Each passion file is a method merged into `Catalog`; a new passion adds both.
 - Templates: `{A}`/`{B}` names, `{ils}`/`{Ils}` (« elles » only for two girls),
   `{a:m|f}`/`{b:m|f}`/`{p:m|f}` agreements. The harness expands every line for all four gender
   pairs and builds full stories.

@@ -33,10 +33,12 @@ public sealed class QuizCrownService
     private readonly RoleMirror _mirror;
     private readonly ILogger<QuizCrownService> _logger;
     private readonly BadgeAwarder _badges;
+    private readonly SilenceService _silence;
 
     public QuizCrownService(IServiceProvider services, GuildConfigService config, RoleMirror mirror,
-        ILogger<QuizCrownService> logger, BadgeAwarder badges)
+        ILogger<QuizCrownService> logger, BadgeAwarder badges, SilenceService silence)
     {
+        _silence = silence;
         _badges = badges;
         _services = services;
         _config = config;
@@ -131,7 +133,9 @@ public sealed class QuizCrownService
         // « Le rôle est à toi » would be a lie with a role she can't hand out (deleted, above hers):
         // no announcement until staff fix it — /config show and the log say why.
         bool roleWorks = RoleMirror.Problem(guild, guild.GetRole(config.QuizRoleId), adopting: false, RoleKind.QuizCrown) is null;
-        if (champions.Count > 0 && roleWorks) await AnnounceAsync(guild, config, champions, week, purse);
+        // Silence mode mutes the Monday crowning only (purse and role still move); /debug's dry run speaks.
+        if (champions.Count > 0 && roleWorks && !(pay && _silence.IsSilent))
+            await AnnounceAsync(guild, config, champions, week, purse);
         return champions;
     }
 

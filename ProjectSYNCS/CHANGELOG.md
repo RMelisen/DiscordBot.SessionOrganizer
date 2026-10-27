@@ -3,11 +3,157 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
-## 7.40.1 — 2026-10-26
+## 7.54.1 — 2026-10-27
 
 - Minecraft: she gathers stone like a player now, digging into one cliff face and taking everything within arm's
   reach instead of walking from one surface block to the next: about twice as fast. She stays clear of lava, water,
   falling gravel and caves under the ground, and never leaves a hole deeper than a step.
+
+## 7.54.0 — 2026-10-27
+
+- New `/confess`: an anonymous, numbered confession posted in the channel set with `/config confess-channel`. One every 10 minutes per person; only the owner can look up who wrote one (`/debug confession`).
+- New free Steam games alert: every 3 hours she checks Steam for paid games at 100 % off and posts each new one in the channel set with `/config freegames-channel`.
+- New owner-only `/debug delete`: paste a message link and she deletes that message, if it is one of hers.
+
+## 7.53.1 — 2026-10-27
+
+- The database switches to write-ahead logging, so reads no longer wait behind a write.
+
+## 7.53.0 — 2026-10-27
+
+- A session created from a poll signs up everyone who voted for its slot as « peut-être », already listed on the card. No DM.
+- When a date poll closes on its own, the reply announcing the result carries a « Créer une session » button, so nobody has to scroll back to the card.
+- `/vote create` takes `title` and `options` (« Valorant, Lethal Company, Among Us »): with both, the vote is published at once; with options alone, only the title is asked. A title given alone is now pre-filled in the form.
+- Her weekend poll creates its session by itself when one evening wins alone with at least two votes: she organises it (staff can edit or cancel it), its voters are « peut-être », and she announces it with a link. On a tie she still leaves it to the voters, with the button.
+
+## 7.52.3 — 2026-10-27
+
+- `/schedule create` without a time opens the form at once: the name and the date (« samedi 21h », « demain ») in one go. The one-click times are still behind « Changer l'heure » on the preview; « Autre jour… » is gone, any other time is typed, and « Taper une date » there asks for the date alone.
+
+## 7.52.2 — 2026-10-27
+
+- Internal refactor: the largest source files are split into smaller files by theme. No change in behaviour.
+
+## 7.52.1 — 2026-10-27
+
+- Typed dates understand the way people write them in chat, in any order: « ajd 20h », « 20h ajd », « demain soir 9h », « samedi en huit », « ce week-end », « le 25 à 21h », « 25 déc », « 1er nov », « 21h moins le quart », « 9pm », « minuit », « dans 3 jours ». A session also takes « dans 1h ». This covers sessions, date poll slots and `/remindme`; a date it can't read is refused rather than guessed, with examples.
+
+## 7.52.0 — 2026-10-27
+
+- `/poll` is renamed `/when` (`/when create`, `/when list`, `/when delete`), so it no longer reads like a twin of `/vote`: `/when` picks a time slot, `/vote` picks between options. Polls already posted keep working.
+
+## 7.51.0 — 2026-10-27
+
+- The `/schedule create` wizard is shorter: tonight, tomorrow or the weekend in one click (« Autre jour… » to pick any other day, « Taper une date » to type it), then the name and an optional description, then a preview showing the real card. Category, places, duration, voice channel and « Chaque semaine » are picked on the preview, « Changer l'heure » goes back to the time without losing the rest, and « Publier » posts it.
+- The preview warns when the session overlaps another one.
+- The wizard starts from your last session's category, places, duration, voice channel and hour (forgotten on restart).
+- A poll turned into a session goes through the same preview.
+- Session cards show « Durée : » instead of a clock emoji; the « Peut-être » and « +1 h » buttons lost their emoji.
+
+## 7.50.0 — 2026-10-27
+
+- In Minecraft, « tu fais quoi ? » gets a real answer: the order she's on, or what she's doing on her own (her routine, tagging along, a fight, sleep), and `/minecraft status` shows her own life too.
+- A free-time order (« quartier libre », « fais ta vie », « tu peux y aller ») ends whatever she was told to do and lets her go back to her own life at once. « t'es libre ce soir ? » is still just a question.
+- She fetches things from the chests nearby (« ramène-moi du fer du coffre », « va chercher 20 pains dans le coffre ») and hands them over.
+- She crafts on demand (« fabrique-moi une pioche en fer », « fais-moi 16 torches »): tools and weapons, a bow, a fishing rod, shears, planks, sticks, a crafting table, a chest, a furnace, torches and ladders. She cuts the wood and gathers the stone she's short of, and uses a nearby crafting table or sets down her own and takes it back after.
+- `/report minecraft`: her playing time, orders, adventures and harvests over a period, compared with the one before; the owner's monthly digest gets a Minecraft part, left out for a month she didn't play.
+
+## 7.49.0 — 2026-10-27
+
+- Weekly sessions: `/schedule create weekly:True` repeats a session every week, same day and same time in Paris (it stays at the same hour across the changes of time). Each one is posted three days ahead as an ordinary session that can be edited or cancelled on its own, and « Arrêter la série » in « Gérer » stops it.
+- `/schedule list` shows the weekly series, and her Wednesday weekend poll stands down when a weekly session falls that weekend.
+
+## 7.48.0 — 2026-10-27
+
+- `/schedule create` in one line: with `title` and `when` (« samedi 21h », « 25/12 20:30 », « demain », « ce soir », previewed as you type) the session is posted at once. New options: `category`, `places`, `duration`, `voice` and `description`; the card and the reminder show them, and the native event uses the voice channel as its location.
+- A session has a length (15 min to 6 h, 2 h by default): the card turns « terminée », the roll call and the recap follow it. The edit form takes the length and the description, and its date and time are one « Quand » field.
+- The wizards' day lists end with « Autre date… », for any date in the next 90 days.
+- `/poll create` takes its slots typed in one go (« ven 21h, sam 21h, dim 18h »), and a slot it can't read is named back; the wizard's review step can remove a slot. `/vote create` takes its options one per line in a single form.
+- Polls and votes take a length (1 hour to 7 days), « un seul choix » and « anonyme » (counts only, never names, on the card, in `/report polls` and in her replies under the card).
+- « Gérer » on a poll can rename it, extend it, and add or remove an option (with a confirmation when it has votes).
+- Every poll and vote that closes on its own gets her reply under the card with the result, pinging its organiser only.
+- « Créer une session » on a closed poll links the two: the card then leads to the session, and a second click is told it exists.
+- Ids are autocompleted in `/schedule edit`, `/schedule cancel`, `/poll delete` and `/vote delete`.
+- The organiser gets the reminder too.
+
+## 7.47.0 — 2026-10-27
+
+- New session and poll cards (Components V2): the organiser's avatar, the date, a fill bar for places, the roster; on polls a bar, a count and a percentage per option, the leader highlighted, the voter count and when it closes. Older cards are converted the next time they change.
+- « Gérer » on a card opens a private panel for its organiser and staff: on a session Modifier, Annuler, Republier, remove the Discord event; on a poll Clôturer. The public card keeps only what everyone uses.
+- « Mes votes » on a poll shows what you picked.
+
+## 7.46.0 — 2026-10-27
+
+- Two people clicking for the last place can no longer both get it, a vote can no longer land after the close, and a double click never fails.
+- Answers close when a session starts or is cancelled, instead of up to five minutes later. Clicking the answer you already gave says so.
+- A card that can't be posted no longer leaves a session or a poll behind, and the reply names the missing permission. A double click on « Terminer » publishes once.
+- Edits: a cancelled session can't be edited, the number of places follows one rule at creation and at edit (empty or 0 for unlimited, otherwise 2 to 67) and can't drop below the people already signed up, and a moved session can't freeze on its old state.
+- Cancelling a session asks for confirmation first.
+- Reminders go out from 35 down to 5 minutes before the start, so one missed while she was down still arrives, and they link to the card.
+- Wizard drafts expire after 30 minutes untouched; the session wizard carries exact instants, so a time near a change of time can't shift.
+- Poll and vote titles and options are shown as typed, never as formatting.
+
+## 7.45.0 — 2026-10-27
+
+- In Minecraft she gathers more: gravel, clay, redstone, lapis, emeralds, Nether quartz, granite, diorite and andesite, and red sand counts as sand. For clay, redstone and lapis she breaks just enough blocks for the count asked, not one block per piece.
+- She hands over, counts and is asked about more things: torches, sticks, wool, leather, string, feathers, bones, gunpowder, flint, ender pearls, saplings, shears, hoes, buckets, glass, eggs, slime balls, blaze rods, paper, books, beds, saddles, compasses, maps and ink, plus the new materials.
+- She cooks clay into bricks and logs into charcoal (« fais des briques », « fais du charbon de bois »).
+- Armour pieces count as her armour (« mets ton casque », « enlève tes bottes »), « lève-toi » and « debout » get her up, and she understands « tonds les moutons », « fais le guet », « lance ta ligne », « à genoux », « on est où ? », « tu connais le chemin de la base ? », « timer 10 », « fais un feu de camp », « range le campement » and « go to bed ».
+- « réveille-moi à 20h » no longer sets a 20-hour timer, « suis-moi, on va à la mine » has her follow instead of walking off alone, and « t'as vu ma pioche ? », « t'aimes pêcher ? » or « t'as cuit la viande ? » are no longer taken as orders.
+- In Minecraft, « syncs reviens » brings her back instead of saving a place, and words like « jardin », « entre » or « coucher » no longer start a farm, a walk home or a sit.
+- She reads more ways of asking: « grouille », « t'arrives ? », « viens à la base », « attends-moi à la mine », « tue les zombies », « fais-moi du bois », « syncs du bois », « 2 stacks de bois » (a full stack now, not 2 logs), « bûcheronne », « t'aurais pas du pain ? », « donne-moi un truc à manger », « a+ », « bonne soirée », « t'assures ».
+- « ne me suis plus », « ne me protège plus » or « ne pêche plus » stop her; « lâche-moi » and « laisse-moi tranquille » too.
+- She no longer takes talk for orders: « on a trouvé du fer », « je vais chercher du bois », « il reste du blé ? », « arrête de dire ça », « reste pas plantée là », « tu peux venir demain ? », « pourquoi tu me suis ? », « donne-moi ton avis ».
+- « aide-moi à couper du bois » cuts wood instead of guarding, « va chercher du bois à la maison » fetches wood instead of walking home, and « donne-moi tout ton bois » hands over the wood, not everything.
+
+## 7.44.0 — 2026-10-27
+
+- A full session's waiting list is real now: when a place opens (someone leaves, or the organiser raises the cap), everyone on « Peut-être » gets a DM with the card's link, and the first click takes it.
+- About an hour before a session that still has room, whoever is on « Peut-être » gets a DM asking them to pick a side (not while she's silenced).
+- Session and poll cards stay sendable with a big crowd: past 20 names per list (10 voters per poll option) the rest becomes « … et N autre(s) ».
+- The session, poll, vote and giveaway buttons, and publishing a session, poll or vote, answer at once instead of sometimes looking dead on a slow day.
+- Emotes, reactions and her chat answers are counted in memory and saved every 5 minutes, instead of one database write each.
+- `/remindme`: « ce soir 9h » means 21:00 (and « ce soir » alone 20:00), and an impossible time like « 21h75 » is refused instead of read as a duration.
+- `/help` has a third page, « Cailloux & objets », with `/work`, `/balance` and every `/inventory` command.
+
+## 7.43.1 — 2026-10-27
+
+- While silenced, she no longer sits in voice calls (and leaves the one she's in), and « good bot » / « bad bot » still count — she just doesn't answer them.
+
+## 7.43.0 — 2026-10-27
+
+- New owner-only `/debug silence`: while it's on she only answers commands — no chatter, reactions, morning hello, ambient lines, level-up cards, pop quizzes, Quokka or Plynling announcements. Session reminders, recaps, giveaway draws and `/remindme` still go out, and silence survives a restart.
+
+## 7.42.0 — 2026-10-26
+
+- `/debug minecraft` shows how her Minecraft body last stopped and its last log lines, and a new « Voir son corps » view shows what the body is doing right now and how its process is coping.
+- In Minecraft, when there's no way to walk where she's asked, she bridges a gap of up to two blocks with dirt or cobblestone she carries, and takes the blocks back down once she's across.
+- Under the hood, her Minecraft body's code is split into modules, with every workaround for Mineflayer in one place, and the bot's side of it into smaller files. Nothing else changes in game.
+
+## 7.41.1 — 2026-10-26
+
+- Fifty-five pictures redrawn so they read at emoji size: seventeen collectibles (the bee, poppy, primrose, shell, ring, treasure map, chestnut, button, mosquito, cricket, rusty key, ancient coin, flint, agate, oak leaf, fly, meteorite), twenty-two cosmetics (Le Champion, L'Aventurier, Le Gourmet, Le Rêveur, Le Mystérieux, Chercheur de trésors, the beach, aurora, forest, royal and treasure-cave themes, mittens, cap, sunglasses, headphones, top hat, shell necklace, lanterns, golden aura, moonlight, pebbles, dead leaves), eight Plynling traits (Froid, Timide, Imprévoyant, Dépensier, Travailleur, Frugal, Radin, Excentrique) and eight badges (Pilier du vocal's microphone on all five tiers, Générosité and six secret ones). The dark ones (mask, sunglasses, headphones, top hat, forest, pennant, meteorite) keep their drawing and gain lit edges so they stand out on Discord's dark background.
+- A redrawn picture now uploads under a new emoji name by itself, without touching the rest of its family.
+
+## 7.41.0 — 2026-10-26
+
+- SYNCS notices when someone insists she answer their question (« réponds à ma question », « t'as pas répondu », « tu esquives ») and explains, in her own way, why she didn't.
+- A word or two answering one of her questions (« Java », « 8 jours ») is taken as an answer and quoted back, instead of being roasted.
+- « Non, tais-toi » now hushes her like « tais-toi » does.
+
+## 7.40.3 — 2026-10-26
+
+- Collection badges have their own pictures: each set's icon on a bronze, silver, gold, platinum or diamond shield, in place of the medal beside the set's emoji.
+- Every « Succès » badge gets its own picture on a shield in place of an emoji: the tiered ones in bronze to diamond like the collections, moments and secrets on shields of their own.
+- Plynling trait icons are redrawn larger and sharper, on the same tiles and in the same colours.
+
+## 7.40.2 — 2026-10-26
+
+- The morning greeting that mentions her version now reads the real major version instead of a hardcoded number.
+
+## 7.40.1 — 2026-10-26
+
+- `/debug answers` is now ephemeral: only the owner sees the stats and the unanswered messages.
 
 ## 7.40.0 — 2026-10-25
 

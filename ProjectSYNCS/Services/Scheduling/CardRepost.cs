@@ -49,8 +49,7 @@ public sealed class CardRepost
                 if (poll.IsClosed) return RepostResult.Closed;
 
                 await DeleteOldAsync(guild, poll.ChannelId, poll.MessageId);
-                var message = await target.SendMessageAsync(
-                    embed: PollModule.BuildPollEmbed(poll), components: PollModule.BuildPollComponents(poll));
+                var message = await PollCards.SendAsync(target, poll);
                 await _polls.SetMessageLocationAsync(poll.Id, target.Id, message.Id);
                 return RepostResult.Reposted;
             }
@@ -61,15 +60,13 @@ public sealed class CardRepost
                 if (session.IsCancelled) return RepostResult.Closed;
 
                 await DeleteOldAsync(guild, session.ChannelId, session.MessageId);
-                var message = await target.SendMessageAsync(
-                    embed: ScheduleModule.BuildEventEmbed(session, guild),
-                    components: ScheduleModule.BuildEventComponents(session));
+                var message = await SessionCards.SendAsync(target, session, guild);
                 await _events.SetMessageLocationAsync(session.Id, target.Id, message.Id);
 
                 // The card moved, so the native event's "détails" link must point at it.
                 session.ChannelId = target.Id;
                 session.MessageId = message.Id;
-                await SessionEventSync.UpdateAsync(guild, session);
+                await SessionEventSync.UpdateAsync(guild, session, _logger);
                 return RepostResult.Reposted;
             }
             case CardKind.Giveaway:

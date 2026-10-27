@@ -78,6 +78,12 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<TonightService>();
         // Brings a card back to the bottom of a channel: the /… list menus and a reply asking her to.
         services.AddTransient<CardRepost>();
+        services.AddTransient<CardUpdater>();
+        // In memory: one lock per session / poll, the Gérer panel's snapshots, and each person's
+        // last session choices the picker starts from.
+        services.AddSingleton<SchedulingLocks>();
+        services.AddSingleton<ManageSnapshots>();
+        services.AddSingleton<SessionHabits>();
         services.AddTransient<PersonalReminderStore>();
         services.AddTransient<MinecraftDataService>();
         services.AddTransient<ArcadeService>();
@@ -115,6 +121,9 @@ var host = Host.CreateDefaultBuilder(args)
         // in-memory state like the breakdown cooldown).
         services.AddSingleton<BreakdownService>();
         services.AddSingleton<AvailabilityService>();
+        services.AddSingleton<SilenceService>();
+        // /confess: the cooldown and the numbering lock live here, so a singleton.
+        services.AddSingleton<ConfessionService>();
         services.AddSingleton<ResponsePicker>();
         // The glitch easter egg's daily cap is in-memory: a singleton, like the picker.
         services.AddSingleton<GlitchService>();
@@ -140,6 +149,7 @@ var host = Host.CreateDefaultBuilder(args)
         // The roll call and the voice seat keep in-memory clocks; both are fed by VoiceXpService's
         // sweep, and the seat reads the roll call's sessions (live-session tie-break).
         services.AddSingleton<SessionAttendanceService>();
+        services.AddSingleton<SessionWaitlist>();
         services.AddSingleton<VoiceSeatService>();
         services.AddSingleton<VoiceSpectatorService>();
         // In-memory hourly window against raids: a singleton.
@@ -207,6 +217,8 @@ var host = Host.CreateDefaultBuilder(args)
         // minecraft reads its state and forces a join or a leave. Off without Minecraft:Host.
         services.AddSingleton<MinecraftBodyService>();
         services.AddHostedService(sp => sp.GetRequiredService<MinecraftBodyService>());
+        // Steam games turned free to keep, every 3 hours, to each guild's free-games channel.
+        services.AddHostedService<SteamFreeGamesService>();
     })
     .Build();
 
@@ -217,6 +229,10 @@ var host = Host.CreateDefaultBuilder(args)
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.MigrateAsync();
+        // Write-ahead log: reads no longer wait behind a write, which the loops, the trackers and
+        // the commands all contend for on the Pi. Stored in the file, so this is a no-op after the
+        // first start. Adds ProjectSYNCS.db-wal / -shm beside the database (see deployment.md).
+        await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;");
     }
 
     await host.RunAsync();

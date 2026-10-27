@@ -38,6 +38,18 @@ public static class InputCaps
     public const int Description = 1000;
 
     /// <summary>
+    /// A vote's options typed one per line (/vote create): ten options of up to 80 characters,
+    /// with their line breaks and list markers.
+    /// </summary>
+    public const int VoteOptions = 900;
+
+    /// <summary>A date poll's slots typed in one line (« ven 21h, sam 21h, dim 18h »): ten of them, generously.</summary>
+    public const int PollSlots = 300;
+
+    /// <summary>A typed session date (« samedi 21h », « 25/12 20:30 »).</summary>
+    public const int When = 60;
+
+    /// <summary>
     /// A <c>/yesno</c> question, echoed back above the verdict in a 2000-char message.
     /// </summary>
     public const int Question = 400;
@@ -110,4 +122,10 @@ public static class InputCaps
     /// both of them, and again in her own pick on the result.
     /// </summary>
     public const int WyrOption = 80;
+
+    /// <summary>
+    /// A <c>/confess</c> text. Lands in an embed description (4096), held well below it so a
+    /// confession stays something people read.
+    /// </summary>
+    public const int Confession = 1000;
 }

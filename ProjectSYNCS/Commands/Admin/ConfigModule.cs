@@ -562,6 +562,88 @@ public class ConfigModule : InteractionModuleBase<SocketInteractionContext>
         }
     }
 
+    [Group("confess-channel", "Le salon où tombent les confessions anonymes (/confess)")]
+    public class ConfessChannelModule : InteractionModuleBase<SocketInteractionContext>
+    {
+        private readonly GuildConfigService _config;
+
+        public ConfessChannelModule(GuildConfigService config)
+        {
+            _config = config;
+        }
+
+        [SlashCommand("set", "Choisir le salon des confessions et ouvrir /confess")]
+        public async Task SetAsync(
+            [Summary("channel", "Le salon des confessions")]
+            [ChannelTypes(ChannelType.Text, ChannelType.News)] IGuildChannel channel)
+        {
+            if (!await BeginAsync(Context)) return;
+
+            if (!CanSendIn(Context.Guild, channel))
+            {
+                await SayAsync(Context, CannotSend(channel));
+                return;
+            }
+
+            await _config.SetConfessChannelAsync(Context.Guild.Id, channel.Id);
+
+            await SayAsync(Context,
+                $"Les confessions tomberont dans <#{channel.Id}>. Anonymes. Enfin, pour vous (¬_¬)");
+        }
+
+        [SlashCommand("clear", "Fermer /confess sur ce serveur")]
+        public async Task ClearAsync()
+        {
+            if (!await BeginAsync(Context)) return;
+
+            await _config.SetConfessChannelAsync(Context.Guild.Id, 0);
+
+            await SayAsync(Context,
+                "Plus de confessions ici. Les anciennes restent où elles sont, et leurs secrets avec.");
+        }
+    }
+
+    [Group("freegames-channel", "Le salon où elle annonce les jeux Steam gratuits à garder")]
+    public class FreeGamesChannelModule : InteractionModuleBase<SocketInteractionContext>
+    {
+        private readonly GuildConfigService _config;
+
+        public FreeGamesChannelModule(GuildConfigService config)
+        {
+            _config = config;
+        }
+
+        [SlashCommand("set", "Choisir le salon des jeux Steam gratuits")]
+        public async Task SetAsync(
+            [Summary("channel", "Le salon des jeux gratuits")]
+            [ChannelTypes(ChannelType.Text, ChannelType.News)] IGuildChannel channel)
+        {
+            if (!await BeginAsync(Context)) return;
+
+            if (!CanSendIn(Context.Guild, channel))
+            {
+                await SayAsync(Context, CannotSend(channel));
+                return;
+            }
+
+            await _config.SetFreeGamesChannelAsync(Context.Guild.Id, channel.Id);
+
+            await SayAsync(Context,
+                $"Dès qu'un jeu Steam devient gratuit à garder, je le poste dans <#{channel.Id}>. De rien d'avance {Emotes.Sparkle}");
+        }
+
+        [SlashCommand("clear", "Ne plus annoncer les jeux Steam gratuits ici")]
+        public async Task ClearAsync()
+        {
+            if (!await BeginAsync(Context)) return;
+
+            await _config.SetFreeGamesChannelAsync(Context.Guild.Id, 0);
+
+            await SayAsync(Context,
+                "D'accord. Je garderai les bons plans pour moi. Tant pis pour vous (¬_¬)");
+        }
+    }
+
     [Group("idle-channels", "Les salons qui doivent tous se taire avant qu'elle parle dans le vide")]
     public class IdleChannelsModule : InteractionModuleBase<SocketInteractionContext>
     {

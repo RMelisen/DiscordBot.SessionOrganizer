@@ -46,6 +46,38 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("ActivityHourStats");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.AnonymousConfession", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("AuthorId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("ChannelId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("MessageId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Number")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "Number")
+                        .IsUnique();
+
+                    b.ToTable("Confessions");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.BotFeedback", b =>
                 {
                     b.Property<int>("Id")
@@ -508,6 +540,12 @@ namespace ProjectSYNCS.Migrations
                     b.Property<long>("BotsChannelId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<long>("ConfessChannelId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("FreeGamesChannelId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<long>("GameChannelId")
                         .HasColumnType("INTEGER");
 
@@ -748,6 +786,30 @@ namespace ProjectSYNCS.Migrations
                         .IsUnique();
 
                     b.ToTable("MemberXps");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.MinecraftDailyStat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Count")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Day", "Key")
+                        .IsUnique();
+
+                    b.ToTable("MinecraftDailyStats");
                 });
 
             modelBuilder.Entity("ProjectSYNCS.Models.MinecraftLink", b =>
@@ -1270,10 +1332,16 @@ namespace ProjectSYNCS.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("Anonymous")
+                        .HasColumnType("INTEGER");
+
                     b.Property<long>("ChannelId")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset?>("EndsAt")
                         .HasColumnType("TEXT");
 
                     b.Property<long>("GuildId")
@@ -1289,6 +1357,12 @@ namespace ProjectSYNCS.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("OrganizerId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("SessionEventId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("SingleChoice")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Title")
@@ -1459,6 +1533,66 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("QuizStats");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.RecurringSession", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("ChannelId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DayOfWeek")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("LastOccurrence")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("LeadDays")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MaxPlayers")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MinuteOfDay")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("OrganizerId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("VoiceChannelId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Active", "GuildId");
+
+                    b.ToTable("RecurringSessions");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.SessionEvent", b =>
                 {
                     b.Property<int>("Id")
@@ -1474,6 +1608,17 @@ namespace ProjectSYNCS.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("");
+
+                    b.Property<int>("DurationMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(120);
+
                     b.Property<long>("GuildId")
                         .HasColumnType("INTEGER");
 
@@ -1486,6 +1631,9 @@ namespace ProjectSYNCS.Migrations
                     b.Property<int>("MaxPlayers")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("MaybeNudgeSent")
+                        .HasColumnType("INTEGER");
+
                     b.Property<long>("MessageId")
                         .HasColumnType("INTEGER");
 
@@ -1496,6 +1644,9 @@ namespace ProjectSYNCS.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("RecapSent")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("RecurringSessionId")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("ReminderSent")
@@ -1511,9 +1662,15 @@ namespace ProjectSYNCS.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<long>("VoiceChannelId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("GuildId");
+
+                    b.HasIndex("RecurringSessionId", "ScheduledAt")
+                        .IsUnique();
 
                     b.HasIndex("ScheduledAt", "ReminderSent");
 

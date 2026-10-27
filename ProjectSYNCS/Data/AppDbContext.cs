@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<Poll> Polls => Set<Poll>();
     public DbSet<PollOption> PollOptions => Set<PollOption>();
     public DbSet<PollVote> PollVotes => Set<PollVote>();
+    public DbSet<RecurringSession> RecurringSessions => Set<RecurringSession>();
     public DbSet<EmoteStat> EmoteStats => Set<EmoteStat>();
     public DbSet<EmoteDailyStat> EmoteDailyStats => Set<EmoteDailyStat>();
     public DbSet<BotFeedback> BotFeedbacks => Set<BotFeedback>();
@@ -54,10 +55,12 @@ public class AppDbContext : DbContext
     public DbSet<PersonalReminder> PersonalReminders => Set<PersonalReminder>();
     public DbSet<MinecraftLink> MinecraftLinks => Set<MinecraftLink>();
     public DbSet<MinecraftStat> MinecraftStats => Set<MinecraftStat>();
+    public DbSet<MinecraftDailyStat> MinecraftDailyStats => Set<MinecraftDailyStat>();
     public DbSet<MemberFlowDailyStat> MemberFlowDailyStats => Set<MemberFlowDailyStat>();
     public DbSet<ActivityHourStat> ActivityHourStats => Set<ActivityHourStat>();
     public DbSet<ChannelDailyStat> ChannelDailyStats => Set<ChannelDailyStat>();
     public DbSet<CommandDailyStat> CommandDailyStats => Set<CommandDailyStat>();
+    public DbSet<AnonymousConfession> Confessions => Set<AnonymousConfession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -69,9 +72,25 @@ public class AppDbContext : DbContext
             e.Property(x => x.MessageId).HasConversion<long>();
             e.Property(x => x.OrganizerId).HasConversion<long>();
             e.Property(x => x.NativeEventId).HasConversion<long>();
+            e.Property(x => x.VoiceChannelId).HasConversion<long>();
+            e.Property(x => x.DurationMinutes).HasDefaultValue(SessionEvent.DefaultDurationMinutes);
+            e.Property(x => x.Description).HasDefaultValue(string.Empty);
 
             e.HasIndex(x => x.GuildId);
             e.HasIndex(x => new { x.ScheduledAt, x.ReminderSent });
+            // One session per occurrence of a series: a second insert for the same slot fails
+            // instead of posting a duplicate. One-offs (null) never collide.
+            e.HasIndex(x => new { x.RecurringSessionId, x.ScheduledAt }).IsUnique();
+        });
+
+        modelBuilder.Entity<RecurringSession>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.ChannelId).HasConversion<long>();
+            e.Property(x => x.OrganizerId).HasConversion<long>();
+            e.Property(x => x.VoiceChannelId).HasConversion<long>();
+
+            e.HasIndex(x => new { x.Active, x.GuildId });
         });
 
         modelBuilder.Entity<Participant>(e =>
@@ -249,6 +268,8 @@ public class AppDbContext : DbContext
             e.Property(x => x.QuizRoleId).HasConversion<long>();
             e.Property(x => x.BotsChannelId).HasConversion<long>();
             e.Property(x => x.LevelUpChannelId).HasConversion<long>();
+            e.Property(x => x.ConfessChannelId).HasConversion<long>();
+            e.Property(x => x.FreeGamesChannelId).HasConversion<long>();
             // At most one settings row per guild.
             e.HasIndex(x => x.GuildId).IsUnique();
         });
@@ -279,6 +300,16 @@ public class AppDbContext : DbContext
             e.Property(x => x.UserId).HasConversion<long>();
             e.HasIndex(x => new { x.GuildId, x.UserId }).IsUnique();
             e.HasIndex(x => x.GuildId);
+        });
+
+        modelBuilder.Entity<AnonymousConfession>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.AuthorId).HasConversion<long>();
+            e.Property(x => x.ChannelId).HasConversion<long>();
+            e.Property(x => x.MessageId).HasConversion<long>();
+            // One number per guild; also what /debug confession looks up.
+            e.HasIndex(x => new { x.GuildId, x.Number }).IsUnique();
         });
 
         modelBuilder.Entity<MemberWarning>(e =>
@@ -497,5 +528,6 @@ public class AppDbContext : DbContext
         });
 
         modelBuilder.Entity<MinecraftStat>(e => e.HasKey(x => x.Key));
+        modelBuilder.Entity<MinecraftDailyStat>(e => e.HasIndex(x => new { x.Day, x.Key }).IsUnique());
     }
 }

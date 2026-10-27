@@ -52,6 +52,7 @@ public sealed class PiHealthService : BackgroundService
     private readonly IHostApplicationLifetime _lifetime;
     private readonly HerMessages _herMessages;
     private readonly ILogger<PiHealthService> _logger;
+    private readonly SilenceService _silence;
     private readonly string _dbPath;
     private readonly string _statePath;
     private readonly CooldownGate<ulong> _healthChecks = new(HealthCooldown, forget: TimeSpan.FromMinutes(10));
@@ -83,8 +84,9 @@ public sealed class PiHealthService : BackgroundService
         IHostApplicationLifetime lifetime,
         IConfiguration config,
         HerMessages herMessages,
-        ILogger<PiHealthService> logger)
+        ILogger<PiHealthService> logger, SilenceService silence)
     {
+        _silence = silence;
         _lifetime = lifetime;
         _client = client;
         _services = services;
@@ -399,7 +401,7 @@ public sealed class PiHealthService : BackgroundService
         }
 
         var channel = await ResolveMainChannelAsync();
-        if (channel is null || _breakdown.IsActive(channel.Id)) return;
+        if (channel is null || _breakdown.IsActive(channel.Id) || _silence.IsSilent) return;
 
         var line = string.Format(
             DailyRotation.Pick(BotResponses.HeatRecordLines, AppTime.DayNumber(now), RecordSalt),
@@ -460,6 +462,7 @@ public sealed class PiHealthService : BackgroundService
             lock (_gate)
                 if (_state.LastRouterDay == day) return;
 
+            if (_silence.IsSilent) return;
             var channel = await WaitForMainChannelAsync();
             if (channel is null || _breakdown.IsActive(channel.Id)) return;
 

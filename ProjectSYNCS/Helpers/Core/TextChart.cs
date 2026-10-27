@@ -40,6 +40,19 @@ public static class TextChart
     public static string Trend(long current, long? previous) =>
         Delta(current, previous) is { Length: > 0 } t ? $" ({t})" : "";
 
+    /// <summary>
+    /// A fill bar, « ▰▰▰▱▱▱ »: <paramref name="width"/> cells, <paramref name="part"/> of
+    /// <paramref name="total"/> filled, rounded. Any part above zero shows at least one cell, so a
+    /// single vote never reads as none. All empty when there is no total.
+    /// </summary>
+    public static string Bar(long part, long total, int width)
+    {
+        if (width <= 0) return string.Empty;
+        var filled = total <= 0 || part <= 0 ? 0
+            : Math.Clamp((int)Math.Round(part * (double)width / total), 1, width);
+        return new string('▰', filled) + new string('▱', width - filled);
+    }
+
     /// <summary>A whole percentage of <paramref name="part"/> in <paramref name="total"/>, « — » when there is no total.</summary>
     public static string Percent(long part, long total) =>
         total <= 0 ? "—" : $"{Math.Round(part * 100.0 / total)} %";

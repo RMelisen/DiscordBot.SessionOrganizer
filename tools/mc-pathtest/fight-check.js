@@ -1,9 +1,9 @@
-// The pure half of her fights (ProjectSYNCS/MinecraftBody/fight.js): sizing a fight up, weapon cooldowns, who she may
+// The pure half of her fights (ProjectSYNCS/MinecraftBody/lib/fight.js): sizing a fight up, weapon cooldowns, who she may
 // hit, whether she's surrounded. No server needed:
 //   node --test fight-check.js
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fight = require('../../ProjectSYNCS/MinecraftBody/fight.js');
+const fight = require('../../ProjectSYNCS/MinecraftBody/lib/fight.js'); // an ES module (Node 22.12 or later)
 
 const zombies = (n, at) => Array.from({ length: n }, () => ({ name: 'zombie', distance: at }));
 const me = (over = {}) => ({ health: 20, armour: 0, weapon: null, helped: false, previous: null, ...over });
