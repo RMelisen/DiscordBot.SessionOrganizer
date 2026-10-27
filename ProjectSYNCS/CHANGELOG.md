@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.52.3 — 2026-10-27
+
+- `/schedule create` without a time opens the form at once: the name and the date (« samedi 21h », « demain ») in one go. The one-click times are still behind « Changer l'heure » on the preview; « Autre jour… » is gone, any other time is typed, and « Taper une date » there asks for the date alone.
+
 ## 7.52.2 — 2026-10-27
 
 - Internal refactor: the largest source files are split into smaller files by theme. No change in behaviour.

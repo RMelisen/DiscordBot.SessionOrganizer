@@ -21,8 +21,8 @@ public class ScheduleEventModal : IModal
     public string Description { get; set; } = string.Empty;
 }
 
-// « Autre date… » in the picker's day select: the date typed, with the name, in one modal
-// (a modal can't open another). Field ids must match ScheduleModule.TypedModal.
+// /schedule create's first step: the date typed, with the name, in one modal.
+// Field ids must match ScheduleModule.TypedModal.
 public class ScheduleTypedModal : IModal
 {
     public string Title => "Planifier une session";
@@ -39,4 +39,14 @@ public class ScheduleTypedModal : IModal
     [ModalTextInput("description", TextInputStyle.Paragraph, maxLength: InputCaps.Description)]
     [RequiredInput(false)]
     public string Description { get; set; } = string.Empty;
+}
+
+// « Taper une date » once the name is known: the date alone. Field id must match ScheduleModule.WhenModal.
+public class ScheduleWhenModal : IModal
+{
+    public string Title => "Quand ?";
+
+    [InputLabel("Quand")]
+    [ModalTextInput("when", placeholder: "ex. samedi 21h, 25/12 20:30, demain", maxLength: InputCaps.When)]
+    public string When { get; set; } = string.Empty;
 }

@@ -98,10 +98,13 @@ day lists end with « Autre date… », a modal read by the same parser.
 
 The session picker is three steps, every one a Components V2 message:
 
-1. **When**: one-click times (`SessionTime.QuickSlots`: tonight while ahead, tomorrow, the coming
-   Saturday and Sunday, at the person's usual hour, 21:00 otherwise), « Autre jour… » for day → hour
-   → minutes, or « Taper une date » (`schedule:typedate`), the same typed modal as « Autre date… »
-   at the end of the day list.
+1. **When**: `/schedule create` opens the typed modal (`schedule:typed`, name and date together)
+   straight away. With no wizard message yet, a date it can't read answers « Corriger » as a new
+   private message. The preview's « Changer l'heure » shows one-click times instead
+   (`SessionTime.QuickSlots`: tonight while ahead, tomorrow, the coming Saturday and Sunday, at the
+   person's usual hour, 21:00 otherwise) and « Taper une date » (`schedule:typedate`), which opens
+   the date alone (`schedule:typedwhen`, its « Corriger » `schedule:retrywhen`): the name is already
+   set and « Modifier » changes it. There is no day → hour → minutes picker: any other time is typed.
 2. **Name and description**, a modal, skipped when the name is already known.
 3. **The preview** (`schedule:rv:*`): the real card (`SessionCards.Container`, the card without its
    buttons), then selects for category, places, duration and voice channel (clearable), and
@@ -258,9 +261,7 @@ repoint a session's native event). A new card kind that can be republished goes 
 ## The two wizards keep state differently
 
 **`ScheduleModule` keeps the session in a `DraftBox`** keyed by user id, from the command to
-« Publier », which takes it. Only « Autre… »'s date travels in custom-ids
-(`schedule:hour:{date}`, `schedule:min:{date}:{hour}:{minute}`, `schedule:back:hour:{date}`), so
-its `Retour` buttons can rebuild the step before; **instants travel as unix seconds**
+« Publier », which takes it. **Instants travel as unix seconds**
 (`schedule:quick:{unix}`, `schedule:frompoll:{pollId}:{category}:{unix}`), never as wall-clock
 strings. A poll's session starts from a fresh draft, so options left over from an earlier
 `/schedule create` never leak into it. A typed date that doesn't read keeps the draft, and

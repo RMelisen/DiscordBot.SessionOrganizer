@@ -70,8 +70,9 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     // ---- /schedule create: one shot with title + when, the picker otherwise ----
-    // The picker: when (one click, or day → hour → minutes) → name and description (a modal, skipped
-    // when the name is known) → the preview, where everything else is picked, then « Publier ».
+    // The picker: when and name typed in one modal (or only the name, when the time was given) → the
+    // preview, where everything else is picked, then « Publier ». « Changer l'heure » goes back to
+    // the when step (one click, day → hour → minutes, or typed).
     // Every step is a Components V2 message (root CLAUDE.md), the preview being the real card.
 
     [SlashCommand("create", "Planifier une nouvelle session")]
@@ -143,14 +144,9 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         if (voice is not null) draft.VoiceChannelId = voice.Id;
         _drafts.Set(Context.User.Id, draft);
 
-        // The time is known, the name isn't (both known went out above).
-        if (at is not null)
-        {
-            await RespondWithModalAsync(DetailsModal("schedule:details", draft));
-            return;
-        }
-        await RespondAsync(components: TimeStep(draft), flags: MessageFlags.ComponentsV2, ephemeral: true,
-            allowedMentions: AllowedMentions.None);
+        // The time is known, the name isn't (both known went out above). Otherwise the date is typed,
+        // with the name: the buttons (TimeStep) stay for « Changer l'heure » on the preview.
+        await RespondWithModalAsync(at is not null ? DetailsModal("schedule:details", draft) : TypedModal(draft));
     }
 
     private ScheduleDraft NewDraft(int? pollId = null)
@@ -178,9 +174,6 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
 
     // ---- Step 1: when -------------------------------------------------------
 
-    // The day select's last option: the date typed instead, so the picker has no 24-day wall.
-    private const string OtherDate = "other";
-
     private static MessageComponent TimeStep(ScheduleDraft draft)
     {
         var heading = draft.Title.Length > 0 ? $"**{Format.Sanitize(draft.Title)}** — quand ?" : "**Nouvelle session** — quand ?";
@@ -188,9 +181,8 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         foreach (var (label, at) in SessionTime.QuickSlots(DateTimeOffset.UtcNow, draft.MinuteOfDay))
             quick.WithButton(label, $"schedule:quick:{at.ToUnixTimeSeconds()}", ButtonStyle.Primary);
 
-        // The quick row is full (four times, five buttons a row): the other ways go below.
+        // The quick row is full (four times, five buttons a row): any other time is typed, below.
         var other = new ActionRowBuilder()
-            .WithButton("Autre jour…", "schedule:other", ButtonStyle.Secondary, new Emoji("📅"))
             .WithButton("Taper une date", "schedule:typedate", ButtonStyle.Secondary, new Emoji("⌨️"));
         // Coming back from the preview (« Changer l'heure »): a way back without changing anything.
         if (draft.At is not null)
@@ -198,12 +190,13 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         return Step(heading, quick, other);
     }
 
-    // The same modal as « Autre date… » at the end of the day list, one click away.
+    // Only the date: the name and description were set by the first modal and stay as they are
+    // (« Modifier » on the preview changes them). A draft with no name gets the full modal.
     [ComponentInteraction("schedule:typedate", ignoreGroupNames: true)]
     public async Task OnTypeDateAsync()
     {
         _drafts.TryGet(Context.User.Id, out var draft);
-        await RespondWithModalAsync(TypedModal(draft));
+        await RespondWithModalAsync(draft is { Title.Length: > 0 } ? WhenModal(draft) : TypedModal(draft));
     }
 
     [ComponentInteraction("schedule:quick:*", ignoreGroupNames: true)]
@@ -216,9 +209,6 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         }
         await TimeChosenAsync(DateTimeOffset.FromUnixTimeSeconds(seconds));
     }
-
-    [ComponentInteraction("schedule:other", ignoreGroupNames: true)]
-    public async Task OnOtherTimeAsync() => await UpdateStepAsync(DayStep());
 
     // A time is set: the name next if it's still missing, the preview otherwise.
     private async Task TimeChosenAsync(DateTimeOffset at)
@@ -237,104 +227,6 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         else
             await ShowPreviewAsync(draft);
     }
-
-    // ---- « Autre… »: day → hour → minutes, or a typed date ----------------
-    // The date travels in the custom-ids (Retour rebuilds the step before), and becomes an instant
-    // once, at the minutes: unix seconds from then on, no DST ambiguity, no ':' in a wildcard.
-
-    private static MessageComponent DayStep()
-    {
-        var fr = CultureInfo.GetCultureInfo("fr-FR");
-        var menu = new SelectMenuBuilder()
-            .WithCustomId("schedule:day")
-            .WithPlaceholder("Choisis le jour");
-        var today = AppTime.Now.Date;
-        // 25 is the hard cap on options in a Discord select menu: 24 days, then « Autre date… ».
-        for (int i = 0; i < 24; i++)
-        {
-            var date = today.AddDays(i);
-            string label = i switch
-            {
-                0 => "Aujourd'hui",
-                1 => "Demain",
-                _ => fr.TextInfo.ToTitleCase(date.ToString("dddd dd/MM", fr))
-            };
-            menu.AddOption(label, date.ToString("yyyy-MM-dd"));
-        }
-        menu.AddOption("Autre date…", OtherDate, "Tape la date toi-même (jusqu'à 90 jours)", new Emoji("⌨️"));
-
-        return Step("**Quel jour ?**",
-            new ActionRowBuilder().WithSelectMenu(menu),
-            new ActionRowBuilder().WithButton("Retour", "schedule:back:time", ButtonStyle.Secondary));
-    }
-
-    private static MessageComponent HourStep(string date)
-    {
-        var menu = new SelectMenuBuilder()
-            .WithCustomId($"schedule:hour:{date}")
-            .WithPlaceholder("Choisis l'heure");
-        // For today, hide hours already elapsed (a past minute is still refused when it's picked).
-        var now = AppTime.Now;
-        int startHour = 0;
-        if (DateTime.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture,
-                DateTimeStyles.None, out var parsed) && parsed.Date == now.Date)
-            startHour = now.Hour;
-        for (int h = startHour; h < 24; h++)
-            menu.AddOption($"{h:D2}h", $"{h:D2}");
-
-        return Step("**À quelle heure ?**",
-            new ActionRowBuilder().WithSelectMenu(menu),
-            new ActionRowBuilder().WithButton("Retour", "schedule:back:day", ButtonStyle.Secondary));
-    }
-
-    private static MessageComponent MinuteStep(string date, string hour)
-    {
-        var minutes = new ActionRowBuilder();
-        foreach (var m in new[] { "00", "15", "30", "45" })
-            minutes.WithButton($"{hour}:{m}", $"schedule:min:{date}:{hour}:{m}", ButtonStyle.Primary);
-        return Step("**À quelle heure ?**", minutes,
-            new ActionRowBuilder().WithButton("Retour", $"schedule:back:hour:{date}", ButtonStyle.Secondary));
-    }
-
-    [ComponentInteraction("schedule:day", ignoreGroupNames: true)]
-    public async Task OnDaySelectedAsync(string[] values)
-    {
-        if (values[0] == OtherDate)
-        {
-            _drafts.TryGet(Context.User.Id, out var draft);
-            await RespondWithModalAsync(TypedModal(draft));
-            return;
-        }
-        await UpdateStepAsync(HourStep(values[0]));
-    }
-
-    [ComponentInteraction("schedule:hour:*", ignoreGroupNames: true)]
-    public async Task OnHourSelectedAsync(string date, string[] values) =>
-        await UpdateStepAsync(MinuteStep(date, values[0]));
-
-    [ComponentInteraction("schedule:min:*:*:*", ignoreGroupNames: true)]
-    public async Task OnMinuteSelectedAsync(string date, string hour, string minute)
-    {
-        if (!AppTime.TryParseWallClock($"{date}T{hour}:{minute}", "yyyy-MM-ddTHH:mm", out var at))
-        {
-            await RespondAsync("Date invalide. Relance `/schedule create`.", ephemeral: true);
-            return;
-        }
-        await TimeChosenAsync(at);
-    }
-
-    [ComponentInteraction("schedule:back:time", ignoreGroupNames: true)]
-    public async Task OnBackToTimeAsync()
-    {
-        if (await DraftAsync() is not { } draft) return;
-        await UpdateStepAsync(TimeStep(draft));
-    }
-
-    [ComponentInteraction("schedule:back:day", ignoreGroupNames: true)]
-    public async Task OnBackToDayAsync() => await UpdateStepAsync(DayStep());
-
-    [ComponentInteraction("schedule:back:hour:*", ignoreGroupNames: true)]
-    public async Task OnBackToHourAsync(string date) => await UpdateStepAsync(HourStep(date));
 
     [ComponentInteraction("schedule:back:preview", ignoreGroupNames: true)]
     public async Task OnBackToPreviewAsync()
@@ -359,8 +251,8 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
     private static Modal DetailsModal(string customId, ScheduleDraft? draft) =>
         DetailsModal(customId, NullIfEmpty(draft?.Title), NullIfEmpty(draft?.Description));
 
-    // « Autre date… »: the date typed, with the name, in one modal (a modal can't open another).
-    // Field ids must match ScheduleTypedModal.
+    // /schedule create's first step: the date typed, with the name, in one modal. Field ids must
+    // match ScheduleTypedModal.
     private static Modal TypedModal(ScheduleDraft? draft) =>
         new ModalBuilder()
             .WithTitle("Planifier une session")
@@ -372,6 +264,18 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             .AddTextInput("Description (facultatif)", "description", TextInputStyle.Paragraph,
                 maxLength: InputCaps.Description, value: NullIfEmpty(draft?.Description), required: false)
             .Build();
+
+    // « Taper une date » once the name is known: the date alone. Field id must match ScheduleWhenModal.
+    private static Modal WhenModal(ScheduleDraft draft) =>
+        new ModalBuilder()
+            .WithTitle(Truncate($"Quand ? — {draft.Title}", 45))
+            .WithCustomId("schedule:typedwhen")
+            .AddTextInput("Quand", "when", maxLength: InputCaps.When,
+                placeholder: "ex. samedi 21h, 25/12 20:30, demain", value: NullIfEmpty(draft.When), required: true)
+            .Build();
+
+    // Discord caps a modal's title at 45 characters.
+    private static string Truncate(string text, int max) => text.Length <= max ? text : text[..(max - 1)] + "…";
 
     private static string? NullIfEmpty(string? text) => string.IsNullOrEmpty(text) ? null : text;
 
@@ -419,21 +323,56 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         if (at is null)
         {
             _drafts.Set(Context.User.Id, draft);
-            var retry = Step($"⚠️ {WhenRefusal(draft.When)}",
-                new ActionRowBuilder().WithButton("Corriger", "schedule:retrytyped", ButtonStyle.Primary));
-            await ((SocketModal)Context.Interaction).UpdateAsync(msg => ApplyStep(msg, retry));
+            await RefuseTypedWhenAsync(draft.When, "schedule:retrytyped");
             return;
         }
         draft.At = at;
         await ShowPreviewAsync(draft);
     }
 
-    // Reopens « Autre date… » pre-filled after a date it couldn't read.
+    [ModalInteraction("schedule:typedwhen", ignoreGroupNames: true)]
+    public async Task OnWhenModalSubmittedAsync(ScheduleWhenModal modal)
+    {
+        if (await DraftAsync() is not { } draft) return;
+        draft.When = modal.When.Trim();
+        _drafts.Set(Context.User.Id, draft);
+
+        var at = SessionTime.Parse(draft.When, DateTimeOffset.UtcNow);
+        if (at is null)
+        {
+            await RefuseTypedWhenAsync(draft.When, "schedule:retrywhen");
+            return;
+        }
+        draft.At = at;
+        await ShowPreviewAsync(draft);
+    }
+
+    // A typed date it couldn't read: why, and « Corriger » to reopen the same modal pre-filled.
+    private async Task RefuseTypedWhenAsync(string when, string retryId)
+    {
+        var retry = Step($"⚠️ {WhenRefusal(when)}",
+            new ActionRowBuilder().WithButton("Corriger", retryId, ButtonStyle.Primary));
+        // Opened straight from /schedule create there is no wizard message to edit yet.
+        var submitted = (SocketModal)Context.Interaction;
+        if (submitted.Message is null)
+            await RespondAsync(components: retry, flags: MessageFlags.ComponentsV2, ephemeral: true,
+                allowedMentions: AllowedMentions.None);
+        else
+            await submitted.UpdateAsync(msg => ApplyStep(msg, retry));
+    }
+
     [ComponentInteraction("schedule:retrytyped", ignoreGroupNames: true)]
     public async Task OnRetryTypedAsync()
     {
         _drafts.TryGet(Context.User.Id, out var draft);
         await RespondWithModalAsync(TypedModal(draft));
+    }
+
+    [ComponentInteraction("schedule:retrywhen", ignoreGroupNames: true)]
+    public async Task OnRetryWhenAsync()
+    {
+        if (await DraftAsync() is not { } draft) return;
+        await RespondWithModalAsync(WhenModal(draft));
     }
 
     // ---- The preview: the real card, everything a modal can't hold, « Publier » ----
