@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.52.0 — 2026-10-27
+
+- `/poll` is renamed `/when` (`/when create`, `/when list`, `/when delete`), so it no longer reads like a twin of `/vote`: `/when` picks a time slot, `/vote` picks between options. Polls already posted keep working.
+
 ## 7.51.0 — 2026-10-27
 
 - The `/schedule create` wizard is shorter: tonight, tomorrow or the weekend in one click (« Autre jour… » to pick any other day, « Taper une date » to type it), then the name and an optional description, then a preview showing the real card. Category, places, duration, voice channel and « Chaque semaine » are picked on the preview, « Changer l'heure » goes back to the time without losing the rest, and « Publier » posts it.

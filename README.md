@@ -16,7 +16,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | Command | What it does | Who |
 | --- | --- | --- |
 | `/schedule create · list · edit · cancel` | Plan and manage sessions | everyone |
-| `/poll create · list · delete` | Vote on time slots | everyone |
+| `/when create · list · delete` | Vote on time slots | everyone |
 | `/vote create · list · delete` | Vote on free-text options | everyone |
 | `/giveaway create · list · delete` | Prize draws | staff (`delete`: organiser or staff) |
 | `/level [user]` | Your card: level, rank, progress, badges (« Succès » button) | everyone |
@@ -104,7 +104,7 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 
 ### Polls & votes
 
-- **`/poll create`** — propose several time slots (up to 10, typed in one go as « ven 21h, sam
+- **`/when create`** — propose several time slots (up to 10, typed in one go as « ven 21h, sam
   21h » or added one by one); everyone votes for *all* the slots that work for them. The
   most-voted slot is highlighted on close and can be turned directly into a session; the closed
   card then links to it.
@@ -112,8 +112,8 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 - Both take a length (2 days by default), **single choice** and **anonymous** (counts, never
   names). Cards show a bar and a percentage per option, and **Mes votes** shows yours. **Gérer**
   lets the organizer close, rename, extend, or add and remove options.
-- **`/poll list` · `/vote list`** — list and republish active polls/votes.
-- **`/poll delete <id>` · `/vote delete <id>`** — delete one you created, with the id autocompleted.
+- **`/when list` · `/vote list`** — list and republish active polls/votes.
+- **`/when delete <id>` · `/vote delete <id>`** — delete one you created, with the id autocompleted.
 - Polls and votes **close on their own** at the time on their card, and she replies under it with
   the result, pinging the organizer.
 - **Weekend poll** — every Wednesday evening she posts her own poll for Friday, Saturday and

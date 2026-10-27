@@ -34,7 +34,7 @@ public sealed class SessionIdAutocompleteHandler : AutocompleteHandler
     }
 }
 
-/// <summary>The ids of /poll delete: the open date polls the person may manage.</summary>
+/// <summary>The ids of /when delete: the open date polls the person may manage.</summary>
 public sealed class PollIdAutocompleteHandler : AutocompleteHandler
 {
     public override Task<AutocompletionResult> GenerateSuggestionsAsync(

@@ -4,7 +4,7 @@ namespace ProjectSYNCS.Models;
 
 public enum PollKind
 {
-    // Options are date/time slots, rendered as <t:...> timestamps (/poll).
+    // Options are date/time slots, rendered as <t:...> timestamps (/when).
     DateSlots,
     // Options are free-text labels, e.g. game or movie names (/vote).
     Text
