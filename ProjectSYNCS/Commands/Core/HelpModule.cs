@@ -193,15 +193,16 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "📅 **Événement Discord** ajoute la session à l'onglet **Événements**, synchronisée, puis y mène.")
             .AddField("Sondages & votes — mode d'emploi",
                 "**`/when create`** avec `title` et `slots` (« ven 21h, sam 21h ») publie tout de suite ; sinon " +
-                "l'assistant ajoute les créneaux un par un (jusqu'à 10). **`/vote create`** : le titre et les " +
-                "options, **une par ligne**.\n" +
+                "l'assistant ajoute les créneaux un par un (jusqu'à 10). **`/vote create`** avec `title` et " +
+                "`options` (« Valorant, Among Us ») publie tout de suite ; sinon les options, **une par ligne**.\n" +
                 "Chacun clique **tout** ce qui lui convient, sauf en **un seul choix**. **🗳️ Mes votes** te " +
                 "rappelle les tiens. Un sondage **anonyme** n'affiche que les comptes.\n" +
                 "⚙️ **Gérer** : **Clôturer**, **Renommer**, **Prolonger**, ajouter ou retirer une option. " +
-                "Une fois clos, **🗓️ Créer une session** transforme le créneau retenu en session.")
+                "Une fois clos, **🗓️ Créer une session** transforme le créneau retenu en session, et ses " +
+                "votants y sont mis en « peut-être ».")
             .AddField("Bon à savoir",
                 "Un sondage ou un vote se **clôture tout seul** à l'heure affichée sur sa carte (2 jours par " +
-                "défaut), et j'annonce le résultat à son organisateur.\n" +
+                "défaut), et j'annonce le résultat à son organisateur, avec le bouton pour créer la session.\n" +
                 "Les inscrits reçoivent un **rappel en message privé** avant le début de la session, " +
                 "et les « peut-être », une heure avant, une petite relance pour choisir leur camp.\n" +
                 "À l'heure prévue la carte passe en **🔴 EN COURS**, puis en **✅ TERMINÉE** à la fin de sa " +

@@ -3,6 +3,13 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.53.0 — 2026-10-27
+
+- A session created from a poll signs up everyone who voted for its slot as « peut-être », already listed on the card. No DM.
+- When a date poll closes on its own, the reply announcing the result carries a « Créer une session » button, so nobody has to scroll back to the card.
+- `/vote create` takes `title` and `options` (« Valorant, Lethal Company, Among Us »): with both, the vote is published at once; with options alone, only the title is asked. A title given alone is now pre-filled in the form.
+- Her weekend poll creates its session by itself when one evening wins alone with at least two votes: she organises it (staff can edit or cancel it), its voters are « peut-être », and she announces it with a link. On a tie she still leaves it to the voters, with the button.
+
 ## 7.52.3 — 2026-10-27
 
 - `/schedule create` without a time opens the form at once: the name and the date (« samedi 21h », « demain ») in one go. The one-click times are still behind « Changer l'heure » on the preview; « Autre jour… » is gone, any other time is typed, and « Taper une date » there asks for the date alone.

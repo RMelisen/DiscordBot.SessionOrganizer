@@ -5,6 +5,7 @@ using ProjectSYNCS.Helpers;
 namespace ProjectSYNCS.Interactions.Modals;
 
 // The vote's title and all its options in one go (PollRules.ParseOptions reads the lines).
+// Sent by hand through VoteModule.StartModal (pre-filled title): keep ids, labels and caps in step.
 public class VoteStartModal : IModal
 {
     public string Title => "Nouveau vote";

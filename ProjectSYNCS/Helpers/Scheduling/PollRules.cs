@@ -41,6 +41,13 @@ public static class PollRules
         return options;
     }
 
+    /// <summary>
+    /// The options typed on one line (`/vote create options:`), where a slash option has no line
+    /// breaks: « Valorant, Lethal Company; Among Us », commas or semicolons, then as <see cref="ParseOptions"/>.
+    /// </summary>
+    public static List<string> ParseInlineOptions(string text) =>
+        ParseOptions(text.Replace(',', '\n').Replace(';', '\n'));
+
     /// <summary>Open: not closed by hand, and its deadline not reached.</summary>
     public static bool IsOpen(Poll poll, DateTimeOffset now) => !poll.IsClosed && now < poll.ClosesAt;
 
@@ -65,6 +72,28 @@ public static class PollRules
         var best = poll.Options.Count == 0 ? 0 : poll.Options.Max(o => o.Votes.Count);
         return best == 0 ? new List<PollOption>() : Ordered(poll).Where(o => o.Votes.Count == best).ToList();
     }
+
+    /// <summary>
+    /// A date poll's one clear winner: the only future slot with the most votes, and at least
+    /// <paramref name="minVotes"/> of them. Null on a tie, too few votes or no slot ahead.
+    /// </summary>
+    public static PollOption? ClearWinner(Poll poll, DateTimeOffset now, int minVotes)
+    {
+        var future = poll.Options.Where(o => o.ScheduledAt > now).ToList();
+        if (future.Count == 0) return null;
+        var best = future.Max(o => o.Votes.Count);
+        if (best < minVotes) return null;
+        var leaders = future.Where(o => o.Votes.Count == best).ToList();
+        return leaders.Count == 1 ? leaders[0] : null;
+    }
+
+    /// <summary>Who voted for the slot at <paramref name="slot"/>, once each, in voting order.</summary>
+    public static List<PollVote> VotersAt(Poll poll, DateTimeOffset slot) =>
+        poll.Options.Where(o => o.ScheduledAt == slot)
+            .SelectMany(o => o.Votes)
+            .OrderBy(v => v.VotedAt)
+            .DistinctBy(v => v.UserId)
+            .ToList();
 
     /// <summary>The card's order: slots by date, text options as they were entered.</summary>
     public static List<PollOption> Ordered(Poll poll) =>

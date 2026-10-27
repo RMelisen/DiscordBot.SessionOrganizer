@@ -106,20 +106,23 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 
 - **`/when create`** — propose several time slots (up to 10, typed in one go as « ven 21h, sam
   21h » or added one by one); everyone votes for *all* the slots that work for them. The
-  most-voted slot is highlighted on close and can be turned directly into a session; the closed
-  card then links to it.
-- **`/vote create`** — same idea with free-text options (games, movies, …), one per line.
+  most-voted slot is highlighted on close and can be turned directly into a session, with everyone
+  who voted for that slot signed up as « peut-être »; the closed card then links to it.
+- **`/vote create`** — same idea with free-text options (games, movies, …), one per line, or
+  typed in one go as `title` and `options` (« Valorant, Among Us »).
 - Both take a length (2 days by default), **single choice** and **anonymous** (counts, never
   names). Cards show a bar and a percentage per option, and **Mes votes** shows yours. **Gérer**
   lets the organizer close, rename, extend, or add and remove options.
 - **`/when list` · `/vote list`** — list and republish active polls/votes.
 - **`/when delete <id>` · `/vote delete <id>`** — delete one you created, with the id autocompleted.
 - Polls and votes **close on their own** at the time on their card, and she replies under it with
-  the result, pinging the organizer.
+  the result, pinging the organizer; for a time slot, her reply carries the button that turns it
+  into a session.
 - **Weekend poll** — every Wednesday evening she posts her own poll for Friday, Saturday and
   Sunday at 21:00, unless a session (or a weekly one) is already planned that weekend or someone's
-  poll is still open. When it closes she announces the winning evening, and anyone who voted for it can turn
-  it into a session.
+  poll is still open. When it closes with one clear winner (at least two votes), she creates the
+  session herself (staff can edit it), with its voters as « peut-être ». Otherwise she announces
+  the winning evening(s), and anyone who voted for one can turn it into a session.
 - **Replying under a card** (a poll, a vote, a session, `/tonight`, a giveaway) — she answers
   about that card: she backs up whoever tells the others to vote, naming the people they tagged
   who still haven't clicked; checks a « j'ai voté » against the card; says how it stands when

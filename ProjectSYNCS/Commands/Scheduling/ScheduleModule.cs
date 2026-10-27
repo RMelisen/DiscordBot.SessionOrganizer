@@ -639,6 +639,22 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         }
     }
 
+    // Whoever voted for the session's slot is on it as « peut-être » before its card goes out, so the
+    // card already lists them. A failure costs the signups, never the session.
+    private async Task SignUpVotersAsync(int pollId, SessionEvent session)
+    {
+        try
+        {
+            if (await _polls.GetPollWithVotesAsync(pollId) is not { } poll) return;
+            var voters = PollRules.VotersAt(poll, session.ScheduledAt).Where(v => v.UserId != Context.User.Id);
+            await _eventService.AddMaybesAsync(session, voters);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to sign up the voters of poll {PollId} on session {EventId}.", pollId, session.Id);
+        }
+    }
+
     /// <summary>
     /// Creates the session, posts its card here and, for a weekly one, its series. A card that
     /// can't be posted takes its row (and series) with it, and the reason comes back instead.
@@ -679,6 +695,8 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             description: draft.Description,
             voiceChannelId: draft.VoiceChannelId,
             recurringSessionId: series?.Id);
+
+        if (draft.PollId is { } pollId) await SignUpVotersAsync(pollId, session);
 
         try
         {

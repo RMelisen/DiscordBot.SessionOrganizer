@@ -65,10 +65,12 @@ public static class BotChat
     /// Returns the sent message, or null if the send failed (AmbientService edits its
     /// self-correcting lines through it). <paramref name="replyTo"/> answers a message that
     /// isn't an <see cref="IUserMessage"/> — Discord's own « X joined » line (WelcomeService).
+    /// <paramref name="components"/> puts buttons under the line (a closed poll's « Créer la session »).
     /// </summary>
     public static async Task<IUserMessage?> PostWithTypingAsync(
         IMessageChannel channel, string line, ILogger logger, string what,
-        AllowedMentions? allowedMentions = null, MessageReference? replyTo = null)
+        AllowedMentions? allowedMentions = null, MessageReference? replyTo = null,
+        MessageComponent? components = null)
     {
         var (text, sticker) = Sticker.Split(line);
         IUserMessage sent;
@@ -78,7 +80,8 @@ public static class BotChat
             {
                 await Task.Delay(TypingDelayFor(text));
             }
-            sent = await channel.SendMessageAsync(text, allowedMentions: allowedMentions, messageReference: replyTo);
+            sent = await channel.SendMessageAsync(text, allowedMentions: allowedMentions, messageReference: replyTo,
+                components: components);
         }
         catch (Exception ex)
         {

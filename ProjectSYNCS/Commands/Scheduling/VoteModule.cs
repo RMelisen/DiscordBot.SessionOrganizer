@@ -8,6 +8,7 @@ using ProjectSYNCS.Interactions.Modals;
 using ProjectSYNCS.Models;
 using ProjectSYNCS.Services;
 using System.Text;
+using Poll = ProjectSYNCS.Models.Poll;
 
 namespace ProjectSYNCS.Commands;
 
@@ -45,13 +46,44 @@ public class VoteModule : InteractionModuleBase<SocketInteractionContext>
 
     [SlashCommand("create", "Proposer plusieurs options (texte) et laisser voter")]
     public async Task VoteCreateAsync(
+        [Summary("title", "Le titre du vote"), MaxLength(InputCaps.Title)] string title = "",
+        [Summary("options", "Les options, séparées par des virgules : « Valorant, Lethal Company, Among Us »"),
+         MaxLength(InputCaps.VoteOptions)] string options = "",
         [Summary("ends", "Quand le vote se termine (2 jours si rien)"),
          Choice("dans 1 h", 1), Choice("dans 3 h", 3), Choice("dans 6 h", 6), Choice("dans 12 h", 12),
          Choice("dans 1 jour", 24), Choice("dans 2 jours", 48), Choice("dans 3 jours", 72), Choice("dans 1 semaine", 168)] int ends = 48,
         [Summary("single", "Une seule option par personne")] bool single = false,
         [Summary("anonymous", "Montrer les comptes, jamais les noms")] bool anonymous = false)
     {
-        _drafts.Set(Context.User.Id, new VoteDraft { Settings = new PollSettings(TimeSpan.FromHours(ends), single, anonymous) });
+        var settings = new PollSettings(TimeSpan.FromHours(ends), single, anonymous);
+
+        // Options typed on the command: published at once, after a title-only modal if none was given.
+        if (options.Trim().Length > 0)
+        {
+            var parsed = PollRules.ParseInlineOptions(options);
+            if (parsed.Count < 2)
+            {
+                await RespondAsync("Il faut au moins deux options, séparées par des virgules : "
+                    + "« Valorant, Lethal Company, Among Us ».", ephemeral: true);
+                return;
+            }
+
+            var typed = new VoteDraft { Title = title.Trim(), Settings = settings };
+            typed.Options.AddRange(parsed);
+            if (typed.Title.Length == 0)
+            {
+                _drafts.Set(Context.User.Id, typed);
+                await RespondWithModalAsync<VoteTitleModal>("vote:titled");
+                return;
+            }
+
+            await DeferAsync(ephemeral: true);
+            var (poll, error) = await PublishAsync(typed);
+            await FollowupAsync(error ?? Published(poll!), ephemeral: true);
+            return;
+        }
+
+        _drafts.Set(Context.User.Id, new VoteDraft { Title = title.Trim(), Settings = settings });
         await RespondAsync(
             "**Nouveau vote**\nClique sur **Définir le vote** : un titre, puis les options, une par ligne.",
             components: new ComponentBuilder()
@@ -63,7 +95,36 @@ public class VoteModule : InteractionModuleBase<SocketInteractionContext>
     [ComponentInteraction("vote:begin", ignoreGroupNames: true)]
     public async Task OnBeginAsync()
     {
-        await RespondWithModalAsync<VoteStartModal>("vote:start");
+        _drafts.TryGet(Context.User.Id, out var draft);
+        await RespondWithModalAsync(StartModal(draft?.Title));
+    }
+
+    // VoteStartModal built by hand, so a title given on the command is already filled in. Its ids,
+    // labels and caps must stay in step with the DTO (root CLAUDE.md, modals).
+    private static Modal StartModal(string? title) =>
+        new ModalBuilder()
+            .WithTitle("Nouveau vote")
+            .WithCustomId("vote:start")
+            .AddTextInput("Titre du vote", "title", placeholder: "ex. Quel jeu ce soir ?",
+                maxLength: InputCaps.Title, value: string.IsNullOrEmpty(title) ? null : title)
+            .AddTextInput("Options, une par ligne (2 à 10)", "options", TextInputStyle.Paragraph,
+                placeholder: "Among Us\nGartic Phone\nLethal Company", maxLength: InputCaps.VoteOptions)
+            .Build();
+
+    // `/vote create options:…` without a title: the options wait in the draft for this one.
+    [ModalInteraction("vote:titled", ignoreGroupNames: true)]
+    public async Task OnVoteTitledAsync(VoteTitleModal modal)
+    {
+        if (!_drafts.TryTake(Context.User.Id, out var draft) || draft.Options.Count < 2)
+        {
+            await RespondAsync("Ce vote a expiré. Relance `/vote create`.", ephemeral: true);
+            return;
+        }
+        draft.Title = modal.PollTitle.Trim();
+
+        await DeferAsync(ephemeral: true);
+        var (poll, error) = await PublishAsync(draft);
+        await FollowupAsync(error ?? Published(poll!), ephemeral: true);
     }
 
     [ModalInteraction("vote:start", ignoreGroupNames: true)]
@@ -143,6 +204,21 @@ public class VoteModule : InteractionModuleBase<SocketInteractionContext>
         // Two writes, a read and a send before the wizard can close: defer first.
         await DeferAsync();
 
+        var (_, error) = await PublishAsync(draft);
+        if (error is not null)
+        {
+            _drafts.Set(Context.User.Id, draft);
+            await FollowupAsync(error, ephemeral: true);
+            return;
+        }
+
+        await DeleteOriginalResponseAsync();
+    }
+
+    // Creates the vote and posts its card here. A card that can't be posted takes its row with it
+    // (nothing in /vote list nobody can see), and the reason comes back instead.
+    private async Task<(Poll? Poll, string? Error)> PublishAsync(VoteDraft draft)
+    {
         var poll = await _pollService.CreateTextPollAsync(
             Context.Guild.Id, Context.Channel.Id, Context.User.Id, draft.Title, draft.Options, draft.Settings);
         var full = (await _pollService.GetPollWithVotesAsync(poll.Id))!;
@@ -150,19 +226,18 @@ public class VoteModule : InteractionModuleBase<SocketInteractionContext>
         {
             var message = await PollCards.SendAsync(Context.Channel, full);
             await _pollService.SetMessageIdAsync(poll.Id, message.Id);
+            return (full, null);
         }
         catch (Exception ex)
         {
-            // No card, no vote: nothing in /vote list nobody can see.
             _logger.LogWarning(ex, "Failed to post the card of vote {PollId}; removing it.", poll.Id);
             await _pollService.DeletePollAsync(poll.Id);
-            _drafts.Set(Context.User.Id, draft);
-            await FollowupAsync(CardPostFailure.Explain(Context.Guild, Context.Channel, "le vote"), ephemeral: true);
-            return;
+            return (null, CardPostFailure.Explain(Context.Guild, Context.Channel, "le vote"));
         }
-
-        await DeleteOriginalResponseAsync();
     }
+
+    private static string Published(Poll poll) =>
+        $"Vote **#{poll.Id}** publié, {poll.Options.Count} options, fin <t:{poll.ClosesAt.ToUnixTimeSeconds()}:R>.";
 
     // ---- Listing + republishing active text votes ------------------------
 
