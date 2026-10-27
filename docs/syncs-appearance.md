@@ -145,7 +145,7 @@ laughter tears either.
   a 1000×320 transparent strip. Discord's phone app stretches every image to the screen's width,
   so a square one fills the whole screen, blurred; at 1000×320 the sticker comes out sticker-sized
   and sharp on the phone and on PC alike (800×320 was too big on PC). Never post the square file.
-  What she uses them for is in `docs/agents/personality.md`, *Sticker follow-ups*.
+  What she uses them for is in `docs/agents/personality/reactions.md`, *Sticker follow-ups*.
 - **Banner / scenes** — her attic at night (see *The banner* below for the canon scene).
 - **Animated moods** (experiment, not used yet) — a mood's sticker made into a looping GIF by
   moving its own pixels, with nothing redrawn: `sad` only so far, in `docs/assets/animated/`
@@ -161,7 +161,7 @@ laughter tears either.
 ## Moods wanted
 
 Lines that no strip fits stay **untagged** (a wrong picture is worse than none; see
-`docs/agents/personality.md`, *Sticker follow-ups*). Each need found while tagging is recorded here,
+`docs/agents/personality/reactions.md`, *Sticker follow-ups*). Each need found while tagging is recorded here,
 in the terms of *Moods mapped to her voice*. When the art exists: export it (`tools/syncs-emotes`), add
 the mood to `Helpers/Core/Sticker` (both strengths, and `Moods`), then tag the waiting lines — the
 untagged lines of a pool are listed by the owner's audit. A patch bump.
@@ -319,7 +319,7 @@ the background. No text, no letters, no logos, no watermark.
 
 **8. `syncs_glitch`**: The breakdown and the glitches only. Rare, like the existential nerve. As a
 strip, it is posted at two moments only, never after a tagged line (since 6.17.4: the breakdown's
-cut and the glitched wake; `docs/agents/personality.md`, *Sticker follow-ups*). The
+cut and the glitched wake; `docs/agents/personality/reactions.md`, *Sticker follow-ups*). The
 glitch is the subject here, so it is asked as a few big displaced slices (thin scanlines vanish at
 32 px), and its colour split is red and blue, never cyan: a cyan fringe would be keyed out with the
 background.

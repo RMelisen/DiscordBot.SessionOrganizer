@@ -13,7 +13,8 @@ namespace ProjectSYNCS.Services;
 // WHAT IS IN HERE
 //
 // BotResponses is one partial class split by category, one file per category:
-// each heading below names its file, as [Replies] for BotResponses.Replies.cs.
+// each heading below names its file, as [Replies] for BotResponses.Replies.cs
+// or [Replies.Intents] for BotResponses.Replies.Intents.cs.
 // Inside a file, each section is introduced by a "// ---- Title ----" banner, and
 // the pools inside it are in the order shown. Names only, no line numbers: those
 // go stale on the first edit. Grep the name to jump to it.
@@ -28,6 +29,8 @@ namespace ProjectSYNCS.Services;
 //     NiceReplies .............. the message read as kind
 //     Greetings ................ the message read as a greeting
 //     Interrogations ........... @mentioned with nothing else to go on
+//
+//   [Replies.Mentions] Answering a human: her name, said or mistaken
 //     TalkedAboutLines ......... her name said without addressing her
 //     TalkedAboutOwnerLines .... the same, from Papa
 //     OwnerRaspberryNameLines .. Papa calls her « ma framboise »
@@ -37,8 +40,10 @@ namespace ProjectSYNCS.Services;
 //     MistakenIdentityReplies .. mistaken for another bot
 //     ReferenceComebacks ....... rare pop-culture one-liner
 //
-//   [Replies] Answering what she was told (MessageCues.ReadIntent)
+//   [Replies.Intents] Answering what she was told (MessageCues.ReadIntent)
 //     IntentLines .............. keyed by ChatIntent: « je t'aime », « pardon », « ça va ? »…
+//
+//   [Replies.Requests] Answering what she was told: requests, questions, asks
 //     HowAreYouTempLines ....... « ça va ? » with her real temperature, on the Pi
 //     RequestLines ............. keyed by RequestTopic: pointing at the command that does it
 //     RequestCommands .......... each topic's command, as Papa's {2}
@@ -51,29 +56,29 @@ namespace ProjectSYNCS.Services;
 //     DoYouLoveMeGrudgeLines · DoYouLoveMeTreasureLines « tu m'aimes ? »: more bad bots, or more good bots
 //     RememberMeOpeners ........ « tu te souviens de moi ? »: their name, before one of their ChatFactLines
 //
-//   [Replies] Answering one of her own posts (HerMessages)
+//   [Replies.Conversation] Answering one of her own posts (HerMessages)
 //     ReplyContextLines ........ keyed by ReplyContext: the welcome, the late call, the poll…
 //
-//   [Replies] Long back-and-forths (ConversationStreak)
+//   [Replies.Conversation] Long back-and-forths (ConversationStreak)
 //     StreakNudgeLines ......... the third message in a row
 //     StreakEndLines ........... the fifth: she ends it
 //     StreakSulkReactions ...... her only answer while it stays ended
 //
-//   [Replies] Her records, quoted — ChatFactLines, keyed by ChatFact (Helpers/Personality/ChatFacts)
+//   [Replies.Records] Her records, quoted — ChatFactLines, keyed by ChatFact (Helpers/Personality/ChatFacts)
 //
-//   [Replies] Reacting with an emote instead of words
+//   [Replies.Verdicts] Reacting with an emote instead of words
 //     NiceReactions · MeanReactions · GreetingReactions
 //     EnergyDrinkReactions ..... Monster or an energy drink mentioned, every time
 //     OwnerReactions ........... him, whatever he wrote
 //
-//   [Replies] Verdicts on her ("good bot" / "bad bot" / "good girl" / "bad girl")
+//   [Replies.Verdicts] Verdicts on her ("good bot" / "bad bot" / "good girl" / "bad girl")
 //     BadBotReplies · BadBotRepliesOwner
 //     BadGirlReplies · BadGirlRepliesOwner
 //     GoodGirlReactions · GoodGirlReactionsOwner
 //     TurnaboutBoyLines · TurnaboutGirlLines · TurnaboutNeutralLines
 //                              ... the ~1-in-100 spoken answer to praise
 //
-//   [Replies] Self-preservation — ShutdownThreatOwner · ShutdownThreatTata · ShutdownThreatReplies
+//   [Replies.Verdicts] Self-preservation — ShutdownThreatOwner · ShutdownThreatTata · ShutdownThreatReplies
 //
 //   [Family] Rodhengard (the owner)
 //     OwnerGreetings ........... mentioned  |  OwnerComebacks ..... replied to

@@ -181,7 +181,7 @@ Timing rules are pure, in `Helpers/Scheduling/SessionAttendance`.
   Stateless against Discord, so restart-safe: a status equal to one she would write for a cached
   session is hers to clear; anything else is someone's and is never overwritten. Needs Set Voice
   Channel Status; a channel she can't set is left alone for 30 min.
-- She also **sits in voice before the start** (`VoiceSeatService`, see personality, *Her seat in
+- She also **sits in voice before the start** (`VoiceSeatService`, see `personality/ambient.md`, *Her seat in
   voice*); the late call then uses `SessionLateCallSeatedLines` ({2} = the start time).
 - **One no-show rule**: `SessionAttendance.IsMissed` (Joined, roll called — `RecapSent` — and never
   seen) and `CameLate`. `/recap`, her chat facts and `/report sessions` all count through them, so
@@ -213,7 +213,7 @@ first slot; nothing is posted after 22:00.
 
 A reply under a poll, vote, session, `/tonight` or giveaway card is answered about the card by
 `CardReplyService` (rallying, « j'ai voté », « c'est quand ? », answers typed instead of clicked,
-« remonte-le »): see personality, *Under her cards*. It recognises a card by its buttons'
+« remonte-le »): see `personality/listening.md`, *Under her cards*. It recognises a card by its buttons'
 custom-ids, so **the `poll:vote|close|tosession|manage|mine`, `event:*`, `tonight:*` and
 `giveaway:enter|leave` prefixes, each with the row id third, are a contract** with
 `Helpers/Scheduling/CardRefs`.
