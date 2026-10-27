@@ -54,6 +54,7 @@ public class AppDbContext : DbContext
     public DbSet<PersonalReminder> PersonalReminders => Set<PersonalReminder>();
     public DbSet<MinecraftLink> MinecraftLinks => Set<MinecraftLink>();
     public DbSet<MinecraftStat> MinecraftStats => Set<MinecraftStat>();
+    public DbSet<MinecraftDailyStat> MinecraftDailyStats => Set<MinecraftDailyStat>();
     public DbSet<MemberFlowDailyStat> MemberFlowDailyStats => Set<MemberFlowDailyStat>();
     public DbSet<ActivityHourStat> ActivityHourStats => Set<ActivityHourStat>();
     public DbSet<ChannelDailyStat> ChannelDailyStats => Set<ChannelDailyStat>();
@@ -497,5 +498,6 @@ public class AppDbContext : DbContext
         });
 
         modelBuilder.Entity<MinecraftStat>(e => e.HasKey(x => x.Key));
+        modelBuilder.Entity<MinecraftDailyStat>(e => e.HasIndex(x => new { x.Day, x.Key }).IsUnique());
     }
 }

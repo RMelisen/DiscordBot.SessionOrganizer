@@ -23,7 +23,7 @@ const { goals } = pathfinderPackage;
 const { Vec3 } = vec3;
 
 // The ops that are a player's order (the rest are words, questions, or C#'s own business).
-export const OrderOps = new Set(['come', 'follow', 'goto', 'guide', 'give', 'store', 'fish', 'patrol', 'smelt', 'guard', 'collect', 'camp', 'uncamp',
+export const OrderOps = new Set(['come', 'follow', 'goto', 'guide', 'give', 'store', 'fetch', 'fish', 'patrol', 'smelt', 'guard', 'collect', 'camp', 'uncamp',
   'sleep', 'harvest', 'farm', 'ranch']);
 
 // The farthest she agrees to walk to coordinates: past this she would be gone for the evening.
@@ -193,6 +193,12 @@ export function letGo() {
 let freeSince = 0;
 let wasOrder = false;
 let autonomyAt = 0;
+
+// « quartier libre »: her own life starts on the next autonomy tick, with no grace after the order she was on.
+export function skipGrace() {
+  wasOrder = false;
+  freeSince = 0;
+}
 
 export function freeTick() {
   const order = isOrder(task);

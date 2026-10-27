@@ -189,6 +189,31 @@ async function storeFull(body) {
   report(inChest === 64 && onHer === 64 && done && done.full === true, 'store, chest full', `${fmt(done)}${done && done.full ? ' (full)' : ''}; chest took ${inChest}, she kept ${onHer}`);
 }
 
+// From the yard's chest to Papa: 20 bread in it, all of it handed over (carried, or lying at his feet); an empty chest
+// is « none ».
+async function fetchBread(body) {
+  await reset(body, 0.5, 6.5);
+  await rcon.run([`clear Papa`, `tp Papa ${C.x + 3.5} -60 ${C.z + 5.5}`,
+    `data merge block ${at(0, 0, 10)} {Items:[{Slot:0b,id:"minecraft:bread",count:20}]}`]);
+  await wait(1500);
+  body.send({ op: 'fetch', player: 'Papa', goods: 'food', count: 0 });
+  const done = await ev(body, ['fetched', 'cantFetch', 'cantReach'], 30000);
+  await wait(2500);
+  const bread = (await q.carried('Papa', 'bread')) + (await lying('bread', 3, 5, 5));
+  const left = await q.inBlock(C.x, -60, C.z + 10, 'bread');
+  report(Boolean(done && done.ev === 'fetched') && bread >= 20 && left === 0, 'fetch from a chest',
+    `${fmt(done)}; Papa got ${bread}/20 bread, ${left} left in the chest`);
+}
+
+async function fetchNone(body) {
+  await reset(body, 0.5, 6.5);
+  await rcon.run([`tp Papa ${C.x + 3.5} -60 ${C.z + 5.5}`, `data merge block ${at(0, 0, 10)} {Items:[]}`]);
+  await wait(1500);
+  body.send({ op: 'fetch', player: 'Papa', goods: 'iron', count: 0 });
+  const done = await ev(body, ['fetched', 'cantFetch', 'cantReach'], 30000);
+  report(Boolean(done && done.ev === 'cantFetch' && done.why === 'none'), 'fetch, nothing there', fmt(done));
+}
+
 // Items lying at a spot in the yard, by item name.
 const lying = (item, dx, dz, r) => q.count(`@e[type=item,nbt={Item:{id:"minecraft:${item}"}},x=${C.x + dx},y=-60,z=${C.z + dz},distance=..${r}]`);
 const drop = (item, dx, dz) => `summon item ${at(dx, 0, dz)} {Item:{id:"minecraft:${item}",count:1},PickupDelay:0}`;
@@ -312,7 +337,7 @@ async function orders(only = []) {
     coal: (b) => collect(b, 'coal', 2, 'stone_pickaxe', 'coal', 'collect coal'),
     iron: (b) => collect(b, 'iron', 2, 'stone_pickaxe', 'raw_iron', 'collect iron'),
     sand: (b) => collect(b, 'sand', 4, null, 'sand', 'collect sand'),
-    fishRefusals, give: (b) => giveKinds(b, papa), storeFull,
+    fishRefusals, give: (b) => giveKinds(b, papa), storeFull, fetch: fetchBread, fetchNone,
     carrots: (b) => harvestCrop(b, 'carrot', 'carrot', -9.5, 3.5, [[-12, 4], [-10, 8], [-12, 8]]),
     potatoes: (b) => harvestCrop(b, 'potato', 'potato', -7.5, 3.5),
     beetroot: (b) => harvestCrop(b, 'beetroot', 'beetroot', -7.5, 9.5),

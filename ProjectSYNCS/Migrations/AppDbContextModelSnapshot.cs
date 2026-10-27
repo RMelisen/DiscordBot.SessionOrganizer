@@ -750,6 +750,30 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("MemberXps");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.MinecraftDailyStat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Count")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Day", "Key")
+                        .IsUnique();
+
+                    b.ToTable("MinecraftDailyStats");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.MinecraftLink", b =>
                 {
                     b.Property<long>("UserId")

@@ -306,6 +306,20 @@ public sealed partial class MinecraftBodyService
             count, BotResponses.McGoodsNames[goods]);
     }
 
+    // Brought from the chests (the errand's outcome, like a delivery). {1} = how many she took from the chests, {2} = what.
+    // Fewer than a number asked for, she says so.
+    private void OnFetched(string player, string goodsKey, int count, int asked, bool delivered)
+    {
+        Confirm(player);
+        OnOutcome(player,
+            !delivered ? BotResponses.McGiveLostLines
+            : asked > 0 && count < asked ? BotResponses.McFetchShortLines
+            : Kin(player, BotResponses.McFetchDoneLines, BotResponses.McFetchDoneLinesOwner, BotResponses.McFetchDoneLinesTata),
+            count, GoodsName(goodsKey));
+    }
+
+    private static string GoodsName(string key) => BotResponses.McGoodsNames[Goods(key) ?? McGoods.All];
+
     // Armour put on or taken off as asked: answered to whoever asked, the way they asked. {1} = how many pieces.
     private void OnDressing(string player, string[] pool, int count = 0)
     {

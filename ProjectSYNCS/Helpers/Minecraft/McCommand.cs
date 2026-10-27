@@ -11,6 +11,7 @@ namespace ProjectSYNCS.Helpers;
 //   Stay        stop and stay put (also cancels whatever she was doing).
 //   GoTo        walk to coordinates (x z, or x y z).
 //   Sit         crouch and stay put.
+//   Free        back to her own life at once (ends the order, lifts « reste », skips the grace).
 // Fighting and guarding
 //   Guard       follow the player and fight the monsters around them.
 //   Patrol      guard a spot (where she stands, or a remembered place) instead of a player.
@@ -25,6 +26,8 @@ namespace ProjectSYNCS.Helpers;
 // Carrying
 //   Give        hand the player what she carries (everything, or a kind: food, tools, armour...).
 //   Store       put what she carries in the nearby chest, keeping her tools.
+//   Fetch       bring the player goods from the chests near her (up to a stack).
+//   Craft       make the player an item (McCraft: tools, weapons, everyday things), gathering wood and stone if short.
 //   Dress       free: put on the best armour she carries.
 //   Undress     free: take her armour off and keep it (she puts none on by herself until told to, or given a piece).
 //   Inventory   free: say what she carries.
@@ -122,6 +125,14 @@ public enum McOrder
     Dress,
     /// <summary>Take her armour off and keep it in her pockets. Takes her from nobody.</summary>
     Undress,
+    /// <summary>Back to her own life at once: whatever she was doing ends, a « reste » hold included, with no grace after.</summary>
+    Free,
+    /// <summary>Bring the player <see cref="McRequest.Goods"/> from the chests near her (<see cref="McRequest.Count"/>, 0: up
+    /// to a stack; null goods: something she won't look for).</summary>
+    Fetch,
+    /// <summary>Craft <see cref="McRequest.Count"/> of <see cref="McRequest.Item"/> for the player (McCraft; null item:
+    /// something she doesn't make, asked back).</summary>
+    Craft,
 }
 
 /// <summary>What she can be asked to hand over. The body knows each by its lower-case name. Not stored.</summary>
@@ -251,7 +262,7 @@ public enum McResource
 /// note.</summary>
 public readonly record struct McRequest(McOrder Order, int[]? Coordinates = null, McResource? Resource = null, int Count = 0,
     McCrop? Crop = null, McGoods? Goods = null, McSmelt? Smelt = null, string? Place = null, int Seconds = 0, string? Note = null,
-    string? Of = null, bool Refused = false)
+    string? Of = null, bool Refused = false, string? Item = null)
 {
     public static readonly McRequest Nothing = new(McOrder.None);
     /// <summary>An order refused around its verb (« viens pas »): nothing to do, and nothing to answer either.</summary>
@@ -378,6 +389,10 @@ public static partial class McCommand
         if (Find(wordsOnly, StayHerePhrases) is not null && CareFor(wordsOnly, PatrolVerbs, (_, _) => true, skipMe: true, window: 0) is { } stayGuard)
             return Unless(stayGuard, wordsOnly, new(McOrder.Patrol, Place: place?.Key));
 
+        // Free time, before sitting and staying: « tu peux arrêter de me suivre » lets her go rather than holding her. Not a
+        // question about her evening (« t'es libre ce soir ? »).
+        if (Find(wordsOnly, FreePhrases) is { } free && !wordsOnly.Skip(free.Start + free.Length).Any(FreeLaterWords.Contains))
+            return Unless(free, wordsOnly, new(McOrder.Free));
         if (Find(wordsOnly, SitPhrases) is { } sit) return Unless(sit, wordsOnly, new(McOrder.Sit));
         // « lève-toi », « debout »: out of a crouch or out of bed, which staying does.
         if (Find(wordsOnly, StandUpPhrases) is { } standUp) return Unless(standUp, wordsOnly, new(McOrder.Stay));
@@ -411,6 +426,15 @@ public static partial class McCommand
         if (guard is null) return McRequest.Refusal;
         if (guard.Value.Order != McOrder.None) return guard.Value;
 
+        // Crafting for them, before the chest word (« craft un coffre » makes one): a craft verb takes any item, or none
+        // (asked back); « fais-moi » only an item right after it (« fais-moi peur », « fais-moi du bois »).
+        if (Find(wordsOnly, CraftVerbs) is { } craft)
+            return Unless(craft, wordsOnly, McCraft.Read(wordsOnly, craft.Start + craft.Length, counts) is { } wanted
+                ? new(McOrder.Craft, Item: wanted.Item, Count: wanted.Count)
+                : new(McOrder.Craft));
+        if (Find(wordsOnly, CraftMakeVerbs) is { } make && McCraft.Read(wordsOnly, make.Start + make.Length, counts) is { } made)
+            return Unless(make, wordsOnly, new(McOrder.Craft, Item: made.Item, Count: made.Count));
+
         // What she carries: handed over, or put in a chest. Before gathering, so « donne-moi ton fer » isn't a trip to the
         // mine. Handing over is read before storing, whose « ranger » is one slip from « manger » (« donne-moi à manger »);
         // with a chest word, it's all storing (« jette tes poissons dans le coffre »).
@@ -436,6 +460,13 @@ public static partial class McCommand
             && CarriedOnly.Contains(had))
             return new(McOrder.Give, Goods: had);
         if (Hungry(wordsOnly) || Find(wordsOnly, HungerPhrases) is not null) return new(McOrder.Give, Goods: McGoods.Food);
+        // From a chest to the player, before storing: « ramène-moi du fer du coffre », « va chercher du pain dans le
+        // coffre ». A bare carrying verb only from the chest (« ramène le fer du coffre », not « au coffre »). Everything,
+        // or nothing named, comes back with no goods: she won't empty the chests for nobody knows what.
+        if (chest && (Find(wordsOnly, FetchVerbs) ?? (FromChest(wordsOnly) ? Find(wordsOnly, FetchFromVerbs) : null)) is { } fetch)
+            return Unless(fetch, wordsOnly, new(McOrder.Fetch,
+                Goods: GoodsAfter(wordsOnly, fetch.Start + fetch.Length)?.Goods is { } fetched and not McGoods.All ? fetched : null,
+                Count: counts.FirstOrDefault(n => n > 0)));
         if (Find(wordsOnly, StorePhrases) is { } stored) return Unless(stored, wordsOnly, new(McOrder.Store));
         if (chest && Find(wordsOnly, IntoChestVerbs) is { } intoChest) return Unless(intoChest, wordsOnly, new(McOrder.Store));
         if (Find(wordsOnly, LeaveMePhrases) is { } leave && leave.Start + leave.Length == wordsOnly.Length)

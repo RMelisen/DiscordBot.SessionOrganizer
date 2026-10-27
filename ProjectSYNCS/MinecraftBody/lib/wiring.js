@@ -13,6 +13,7 @@ import { exactHits, fightTick, selfDefend, threatTick } from './combat.js';
 import { inputTick, onSpawn as compatOnSpawn } from './compat.js';
 import { creeperTick, creeperWatchTick, dodgeTick, warnedCreepers } from './creepers.js';
 import { defend, DefendRadius, defendTick } from './defend.js';
+import { doingTick, forgetDoing } from './doing.js';
 import { isFamily } from './family.js';
 import { doorTick, setPath } from './doors.js';
 import { emergencyTick } from './emergency.js';
@@ -80,6 +81,7 @@ export function attach() {
   });
   // Every spawn, the first and each respawn: her things to get back after a death.
   bot.on('spawn', () => {
+    forgetDoing();
     if (deathAt) setTimeout(safely(armRetrieve), 3000);
   });
 
@@ -106,6 +108,7 @@ export function attach() {
   bot.on('physicsTick', safely(freeTick));
   bot.on('physicsTick', safely(idleTick));
   bot.on('physicsTick', safely(autonomyTick));
+  bot.on('physicsTick', safely(doingTick)); // after autonomy, so what it just started is reported
   bot.on('physicsTick', safely(creeperWatchTick));
   bot.on('physicsTick', safely(bridgeTick));
   setInterval(() => { if (bot) ranchRound().catch(() => {}); }, RanchRound);

@@ -96,7 +96,7 @@ public sealed partial class MinecraftBodyService
         try
         {
             await using var scope = _services.CreateAsyncScope();
-            await scope.ServiceProvider.GetRequiredService<MinecraftDataService>().AddStatsAsync(counts);
+            await scope.ServiceProvider.GetRequiredService<MinecraftDataService>().AddStatsAsync(counts, AppTime.DayKey(DateTimeOffset.UtcNow));
         }
         catch (Exception ex)
         {
@@ -209,7 +209,10 @@ public sealed partial class MinecraftBodyService
             sb.AppendLine(_players.Count == 0 ? "Avec elle : personne."
                 : $"Avec elle : {string.Join(", ", _players.Select(Format.Sanitize))}.");
             var job = _order ?? _pending;
-            var doing = McDoing.ForStatus(job?.Order, job is null ? null : Who(job.Player), job?.Detail, job?.Private ?? false);
+            // On nobody's order, what she does on her own (« elle pêche (sa routine) »), as the body last said.
+            var doing = job is null && McDoing.OwnLife(_doing, _doing is { Player.Length: > 0 } d ? Who(d.Player) : null, firstPerson: false) is { } own
+                ? own
+                : McDoing.ForStatus(job?.Order, job is null ? null : Who(job.Player), job?.Detail, job?.Private ?? false);
             sb.Append($"En ce moment, {Format.Sanitize(doing)}.");
         }
         return sb.ToString();

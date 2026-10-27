@@ -19,15 +19,17 @@ public enum ReportKind
     Plynlings,
     Emotes,
     Sleeping,
+    Minecraft,
 }
 
 /// <summary>
 /// Which reports each monthly digest sends after its « Le mois en bref », in order. Papa's is about
-/// her running well, Tata's about the server's life; the others stay on demand.
+/// her running well (and her evenings in Minecraft, left out for a month she didn't play), Tata's about the server's
+/// life; the others stay on demand.
 /// </summary>
 public static class ReportKinds
 {
-    public static readonly IReadOnlyList<ReportKind> OwnerDigest = new[] { ReportKind.Syncs, ReportKind.Commands, ReportKind.Quiz };
+    public static readonly IReadOnlyList<ReportKind> OwnerDigest = new[] { ReportKind.Syncs, ReportKind.Commands, ReportKind.Quiz, ReportKind.Minecraft };
 
     public static readonly IReadOnlyList<ReportKind> TataDigest = new[]
     {
@@ -56,12 +58,14 @@ public class ReportService
     private readonly QuizReportService _quiz;
     private readonly PlynlingReportService _plynlings;
     private readonly EmoteReportService _emotes;
+    private readonly MinecraftDataService _minecraft;
     private readonly DiscordSocketClient _client;
     private readonly InteractionService _interactions;
     private readonly GuildConfigService _config;
 
     public ReportService(SchedulingReportService scheduling, CommunityReportService community, SyncsReportService syncs,
         ActivityReportService activity, QuizReportService quiz, PlynlingReportService plynlings, EmoteReportService emotes,
+        MinecraftDataService minecraft,
         DiscordSocketClient client, InteractionService interactions, GuildConfigService config)
     {
         _scheduling = scheduling;
@@ -71,6 +75,7 @@ public class ReportService
         _quiz = quiz;
         _plynlings = plynlings;
         _emotes = emotes;
+        _minecraft = minecraft;
         _client = client;
         _interactions = interactions;
         _config = config;
@@ -95,11 +100,19 @@ public class ReportService
             ReportKind.Quiz => ReportCards.BuildQuiz(await _quiz.GetAsync(guildId, window), window, names, who),
             ReportKind.Plynlings => ReportCards.BuildPlynlings(await _plynlings.GetAsync(guildId, window, now), window, names, who),
             ReportKind.Emotes => ReportCards.BuildEmotes(await _emotes.GetAsync(guildId, window, ServerEmotes(guildId)), window, names),
+            ReportKind.Minecraft => ReportCards.BuildMinecraft(await _minecraft.ReportAsync(window), window, names),
             // No window: a stray period button on it opens the default silence.
             ReportKind.Sleeping => await BuildSleepingAsync(guildId, SleepingReport.Choices[0]),
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "No report for this kind."),
         };
     }
+
+    /// <summary>
+    /// A report with nothing worth a digest message: only Minecraft, for a month she didn't play. Everything else is
+    /// sent even when quiet, since a quiet month says something too.
+    /// </summary>
+    public async Task<bool> IsEmptyAsync(ReportKind kind, ReportWindow window) =>
+        kind == ReportKind.Minecraft && !(await _minecraft.ReportAsync(window)).Current.Played;
 
     /// <summary>/report sleeping: no window, a silence of <paramref name="days"/> days.</summary>
     public async Task<Embed> BuildSleepingAsync(ulong guildId, int days) =>
@@ -117,8 +130,9 @@ public class ReportService
             var commands = await _activity.GetCommandsAsync(guildId, window, RegisteredCommands());
             var syncs = await _syncs.GetAsync(guildId, window, now);
             var quiz = await _quiz.GetAsync(guildId, window);
+            var minecraft = await _minecraft.ReportAsync(window);
             var alerts = DigestBrief.Owner(commands, syncs, await _syncs.RecordAsync(), quiz, window);
-            return ReportCards.BuildOwnerBrief(commands, syncs, quiz, alerts, window, quietLine);
+            return ReportCards.BuildOwnerBrief(commands, syncs, quiz, minecraft, alerts, window, quietLine);
         }
 
         var community = await _community.GetAsync(guildId, window);

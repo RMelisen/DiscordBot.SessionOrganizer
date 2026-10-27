@@ -164,7 +164,7 @@ restart **by design**.
   SQL), both written in the same call. Instances: `EmoteStat`/`EmoteDailyStat`,
   `BotFeedback`/`BotFeedbackDailyStat`, `MemberXp`/`MemberDailyStat`,
   `ShameRecord`/`ShameDailyStat`, `QuizStat`/`QuizDailyStat`, `ChatAnswerStat`/`ChatAnswerDailyStat`,
-  `CollectionCompletion.Count`/`CollectionDailyStat`. **The buckets do not sum to the totals and must not be made
+  `CollectionCompletion.Count`/`CollectionDailyStat`, `MinecraftStat`/`MinecraftDailyStat`. **The buckets do not sum to the totals and must not be made
   to** — everything before the buckets existed lives only in the totals. A removal always
   decrements *today's* bucket. Follow this shape for any new dated leaderboard.
   `MemberFlowDailyStat` (joins/leaves), `ActivityHourStat`, `ChannelDailyStat` and

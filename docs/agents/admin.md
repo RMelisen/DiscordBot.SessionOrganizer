@@ -50,7 +50,7 @@ same check.
 ## `/report` and the monthly digest
 
 `sessions`, `polls`, `community`, `syncs`, `activity`, `commands`, `quiz`, `plynlings`, `emotes`,
-`sleeping`: her reports to the staff. Same gate as `/admin` (`IsStaff` per handler, no
+`sleeping`, `minecraft`: her reports to the staff. Same gate as `/admin` (`IsStaff` per handler, no
 `[DefaultMemberPermissions]`, guild-only).
 
 - **Posted in the open, with every name** (no-shows, latecomers, the busiest, the ones going
@@ -88,7 +88,7 @@ same check.
     calendar month for the digest, none for all time.
 - **The arithmetic is pure** (`SessionReport`, `PollReport`, `CommunityReport`, `SyncsReport`,
   `ActivityReport`, `CommandReport`, `QuizReport`, `PlynlingReport`, `EmoteReport`,
-  `SleepingReport` in `Helpers/`), the services only fetch rows, the cards (`ReportCards`) are
+  `SleepingReport`, `MinecraftReport` in `Helpers/`), the services only fetch rows, the cards (`ReportCards`) are
   static. The checks feed the helpers cases and measure every card at its worst; re-run them after
   adding a field. A list that can grow without bound (silent channels, unused emotes, never-used
   commands) goes through `ReportCards.Fit`, which keeps whole items only and counts the rest
@@ -114,7 +114,11 @@ same check.
     the last `MemberDailyStat` day with any counter above 0; « jamais » means never since
     2026-08-09, when the XP buckets became reliable (`ResetXpTotals`). Members who joined less than
     N days ago are left out, bots always. Activity in excluded channels earns nothing, so someone
-    who only talks there looks asleep (said in the footer).
+    who only talks there looks asleep (said in the footer);
+  - `minecraft` reads `MinecraftDailyStat`, the daily buckets beside her all-time `MinecraftStat`
+    (same `McStats` keys, written in the same save by `MinecraftDataService.AddStatsAsync`, from
+    7.46.0 on). Player names are her in-game ones, sanitized, shown only with `names`. A window
+    she didn't play says so (`MinecraftReportData.Played`: any minute in game, or any order).
 - **Joins and leaves** (`MemberFlowDailyStat`, `MemberFlowTracker` on `UserJoined` / `UserLeft`,
   bots skipped): daily buckets with **no totals table**, counted from 7.5.0 on. Nothing needs an
   all-time figure older than the buckets, and Discord shows the member count.
@@ -142,12 +146,13 @@ same check.
   - **an opening line plus « Le mois en bref »** in one message: a few figures and « À regarder »
     (`ReportService.BuildBriefAsync`, `ReportCards.BuildOwnerBrief` / `BuildTataBrief`). Papa's
     figures are his choice: commands (uses, errors, never used), the Pi, messages without a
-    specific answer, the quiz. Tata's: members (active, joins, leaves, sleepers), sessions
+    specific answer, the quiz, her hours in Minecraft (« Pas joué ce mois-ci. » for none). Tata's: members (active, joins, leaves, sleepers), sessions
     (attendance, the best-attended weekday), when the server talks, silent channels, unused emotes,
     the three most active;
   - **then the reports of `ReportKinds.Digest(recipient)`**, one embed per message (several in one
-    could pass 6000), each in its own `try`: Papa `syncs`, `commands`, `quiz`; Tata `community`,
-    `sessions`, `activity`, `sleeping`. Papa also gets the chat-answer counts over 30 days (as
+    could pass 6000), each in its own `try`: Papa `syncs`, `commands`, `quiz`, `minecraft` (left out
+    for a month she didn't play: `ReportService.IsEmptyAsync`, the one report skipped when empty);
+    Tata `community`, `sessions`, `activity`, `sleeping`. Papa also gets the chat-answer counts over 30 days (as
     `/debug answers`: they are kept by rolling period) and the unanswered messages of the same 30
     rolling days as a file (`ChatAnswerService.GetUnansweredAsync`).
   - **« À regarder » is `Helpers/Admin/DigestBrief`**, pure thresholds (constants there): a
