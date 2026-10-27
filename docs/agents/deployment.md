@@ -26,6 +26,11 @@ written next to it:
 
 A new state file goes next to the database too, and gets a row here.
 
+The database runs in **WAL mode** (`PRAGMA journal_mode=WAL` after `MigrateAsync()` in `Program.cs`), so
+`ProjectSYNCS.db-wal` and `ProjectSYNCS.db-shm` sit beside it. They are part of the database: while
+the bot runs, the `.db` file alone can miss the latest writes. To copy the database out, stop the
+bot first or take all three files. WAL needs a local filesystem; never move `/data` to a network share.
+
 ## The image is built by CI, never on the Pi
 
 Building on the Pi left about 1 GB of .NET layers in Docker's build cache per version, until the

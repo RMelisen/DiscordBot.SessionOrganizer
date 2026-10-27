@@ -225,6 +225,10 @@ var host = Host.CreateDefaultBuilder(args)
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.MigrateAsync();
+        // Write-ahead log: reads no longer wait behind a write, which the loops, the trackers and
+        // the commands all contend for on the Pi. Stored in the file, so this is a no-op after the
+        // first start. Adds ProjectSYNCS.db-wal / -shm beside the database (see deployment.md).
+        await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;");
     }
 
     await host.RunAsync();

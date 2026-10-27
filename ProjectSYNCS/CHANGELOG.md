@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.53.1 — 2026-10-27
+
+- The database switches to write-ahead logging, so reads no longer wait behind a write.
+
 ## 7.53.0 — 2026-10-27
 
 - A session created from a poll signs up everyone who voted for its slot as « peut-être », already listed on the card. No DM.
