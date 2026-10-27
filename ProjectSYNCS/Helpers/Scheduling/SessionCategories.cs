@@ -27,14 +27,17 @@ public static class SessionCategories
     /// <summary>« 🎮 Jeu ».</summary>
     public static string Label(SessionCategory category) => $"{Emoji(category)} {Name(category)}";
 
-    /// <summary>The category select of both wizards (/schedule create, a poll turned into a session).</summary>
-    public static SelectMenuBuilder Select(string customId)
+    /// <summary>
+    /// The category select: a poll turned into a session, and the session preview, where
+    /// <paramref name="current"/> shows as picked.
+    /// </summary>
+    public static SelectMenuBuilder Select(string customId, SessionCategory? current = null)
     {
         var menu = new SelectMenuBuilder()
             .WithCustomId(customId)
             .WithPlaceholder("Choisis une catégorie");
         foreach (var (category, emoji, name) in Table)
-            menu.AddOption(name, category.ToString(), emote: new Emoji(emoji));
+            menu.AddOption(name, category.ToString(), emote: new Emoji(emoji), isDefault: category == current);
         return menu;
     }
 

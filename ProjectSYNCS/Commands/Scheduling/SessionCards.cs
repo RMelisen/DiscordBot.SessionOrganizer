@@ -29,27 +29,8 @@ public static class SessionCards
     public static MessageComponent Build(SessionEvent session, IUser? organizer, DateTimeOffset? at = null)
     {
         var now = at ?? DateTimeOffset.UtcNow;
-        var joined = session.Participants.Where(p => p.Status == ParticipantStatus.Joined).OrderBy(p => p.JoinedAt).ToList();
-        var maybes = session.Participants.Where(p => p.Status == ParticipantStatus.Maybe).OrderBy(p => p.JoinedAt).ToList();
-        var declined = session.Participants.Where(p => p.Status == ParticipantStatus.Declined).OrderBy(p => p.JoinedAt).ToList();
-
-        bool unlimited = session.MaxPlayers == 0;
-        bool full = !unlimited && joined.Count >= session.MaxPlayers;
-        var phase = session.PhaseAt(now);
-        bool open = !session.IsCancelled && phase == SessionPhase.Scheduled;
-
-        var container = new ContainerBuilder()
-            .WithAccentColor(Accent(session, phase, full))
-            .AddComponent(new SectionBuilder()
-                .WithAccessory(AvatarUi.Thumbnail(organizer))
-                .AddComponent(new TextDisplayBuilder(Heading(session, phase))))
-            .AddComponent(new SeparatorBuilder())
-            .AddComponent(new TextDisplayBuilder(Details(session)))
-            .AddComponent(new SeparatorBuilder())
-            .AddComponent(new TextDisplayBuilder(Roster(session, joined, maybes, declined, open, full)));
-
-        var builder = new ComponentBuilderV2().AddComponent(container);
-        if (!open) return builder.Build();
+        var builder = new ComponentBuilderV2().AddComponent(Container(session, organizer, now));
+        if (session.IsCancelled || session.PhaseAt(now) != SessionPhase.Scheduled) return builder.Build();
 
         // Every row has its own verbs (root CLAUDE.md, custom-ids), and the row id stays third:
         // CardRefs recognises the card by it.
@@ -73,6 +54,32 @@ public static class SessionCards
         builder.AddComponent(second);
 
         return builder.Build();
+    }
+
+    /// <summary>
+    /// The card without its buttons (8 components): <see cref="Build"/>'s top, and the session
+    /// wizard's preview, which draws a session not saved yet.
+    /// </summary>
+    public static ContainerBuilder Container(SessionEvent session, IUser? organizer, DateTimeOffset now)
+    {
+        var joined = session.Participants.Where(p => p.Status == ParticipantStatus.Joined).OrderBy(p => p.JoinedAt).ToList();
+        var maybes = session.Participants.Where(p => p.Status == ParticipantStatus.Maybe).OrderBy(p => p.JoinedAt).ToList();
+        var declined = session.Participants.Where(p => p.Status == ParticipantStatus.Declined).OrderBy(p => p.JoinedAt).ToList();
+
+        bool unlimited = session.MaxPlayers == 0;
+        bool full = !unlimited && joined.Count >= session.MaxPlayers;
+        var phase = session.PhaseAt(now);
+        bool open = !session.IsCancelled && phase == SessionPhase.Scheduled;
+
+        return new ContainerBuilder()
+            .WithAccentColor(Accent(session, phase, full))
+            .AddComponent(new SectionBuilder()
+                .WithAccessory(AvatarUi.Thumbnail(organizer))
+                .AddComponent(new TextDisplayBuilder(Heading(session, phase))))
+            .AddComponent(new SeparatorBuilder())
+            .AddComponent(new TextDisplayBuilder(Details(session)))
+            .AddComponent(new SeparatorBuilder())
+            .AddComponent(new TextDisplayBuilder(Roster(session, joined, maybes, declined, open, full)));
     }
 
     /// <summary>The organiser as a gateway user, when the guild still has them.</summary>

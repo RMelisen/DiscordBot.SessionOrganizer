@@ -86,11 +86,28 @@ alone is 21:00) and previewed by `SessionWhenAutocompleteHandler`, whose value i
 at most); `/vote create`'s modal takes one option per line (`PollRules.ParseOptions`). The pickers'
 day lists end with « Autre date… », a modal read by the same parser.
 
-The session picker never publishes from its modal: a valid modal (name, places, description) lands
-on a **review step** (`schedule:rv:*`) where what a modal can't hold is picked: duration (select),
-voice channel (channel select, clearable), « Chaque semaine » (toggle), then « Publier ». « Modifier »
-reopens the modal pre-filled and comes back to the review. A poll's « Créer une session » goes
-through the same review. The one-line `/schedule create` skips it.
+The session picker is three steps, every one a Components V2 message:
+
+1. **When**: one-click times (`SessionTime.QuickSlots`: tonight while ahead, tomorrow, the coming
+   Saturday and Sunday, at the person's usual hour, 21:00 otherwise), « Autre jour… » for day → hour
+   → minutes, or « Taper une date » (`schedule:typedate`), the same typed modal as « Autre date… »
+   at the end of the day list.
+2. **Name and description**, a modal, skipped when the name is already known.
+3. **The preview** (`schedule:rv:*`): the real card (`SessionCards.Container`, the card without its
+   buttons), then selects for category, places, duration and voice channel (clearable), and
+   « Publier », « Chaque semaine », « Changer l'heure » (back to step 1, everything else kept),
+   « Modifier » (the modal again), « Annuler ». Above the card, the sessions it overlaps
+   (`SessionTime.Overlaps` against `GetUpcomingOrRunningAsync`), so every redraw defers first.
+   Places are picked, never typed: there's nothing to refuse.
+
+A poll's « Créer une session » lands on the same preview. **`SessionHabits`** (singleton, in
+memory) holds each person's last published session per server: category, places, duration, voice
+channel and hour seed the next picker; what the command was given wins, and « Chaque semaine »
+is never remembered. The one-line `/schedule create` uses exactly what was typed (nothing would
+show a remembered choice before the card is out), but still records its habits.
+
+If the wizard message can't be edited into the preview (a poll's steps are not V2, and Discord may
+refuse to switch a message to V2), the preview goes out as a new private message.
 
 A card that fails to post deletes what was created for it (the session and its series, the poll),
 and `CardPostFailure.Explain` names the missing permission (Voir le salon, Envoyer des messages,
@@ -230,15 +247,14 @@ repoint a session's native event). A new card kind that can be republished goes 
 
 ## The two wizards keep state differently
 
-**`ScheduleModule` threads state through custom-ids** (`schedule:min:{category}:{date}:{hour}:{minute}`):
-a new step means a new segment through every handler *and* the matching `Retour` handler. From the
-details modal on, **the instant travels as unix seconds** (`schedule:finalize:{category}:{unix}`,
-`schedule:frompoll:{pollId}:{category}:{unix}`, `schedule:typed:{category}` for « Autre date… »),
-never as a wall-clock string. Until the modal is valid, only what the person typed is in the
-`DraftBox`, so a failed modal can be reopened pre-filled (`schedule:retry…`). From the review step on,
-the whole session is in the draft (category, instant, poll id) and its custom-ids carry nothing;
-« Publier » takes it. A poll's session starts from a fresh draft, so options left over from an
-earlier `/schedule create` never leak into it.
+**`ScheduleModule` keeps the session in a `DraftBox`** keyed by user id, from the command to
+« Publier », which takes it. Only « Autre… »'s date travels in custom-ids
+(`schedule:hour:{date}`, `schedule:min:{date}:{hour}:{minute}`, `schedule:back:hour:{date}`), so
+its `Retour` buttons can rebuild the step before; **instants travel as unix seconds**
+(`schedule:quick:{unix}`, `schedule:frompoll:{pollId}:{category}:{unix}`), never as wall-clock
+strings. A poll's session starts from a fresh draft, so options left over from an earlier
+`/schedule create` never leak into it. A typed date that doesn't read keeps the draft, and
+« Corriger » (`schedule:retrytyped`) reopens the modal pre-filled.
 
 **`PollModule` and `VoteModule` keep the whole draft in a `DraftBox`** keyed by user id (a
 variable-length list doesn't fit a custom-id), taken on finish, removed on cancel.

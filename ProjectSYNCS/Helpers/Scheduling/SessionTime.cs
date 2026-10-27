@@ -54,6 +54,50 @@ public static partial class SessionTime
         return $"{zoned.ToString("ddd d MMM", Fr)} à {zoned:HH:mm}";
     }
 
+    /// <summary>The most one-click times the session picker offers: a row of five, « Autre… » last.</summary>
+    public const int MaxQuickSlots = 4;
+
+    /// <summary>
+    /// The session picker's one-click times, at <paramref name="minuteOfDay"/> Paris time: today
+    /// while it's still ahead, tomorrow, then the coming Saturday and Sunday. Each day once, in order,
+    /// at most <see cref="MaxQuickSlots"/>. Labels: « Ce soir 21h », « Demain 21h », « Samedi 21h ».
+    /// </summary>
+    public static List<(string Label, DateTimeOffset At)> QuickSlots(DateTimeOffset nowUtc, int minuteOfDay)
+    {
+        var today = AppTime.ToZoned(nowUtc).Date;
+        DateTimeOffset At(DateTime day) => AppTime.AtWallClock(day.AddMinutes(minuteOfDay)).ToUniversalTime();
+
+        var days = new SortedSet<DateTime> { today, today.AddDays(1) };
+        // The coming Saturday and Sunday: a week on when today is that day and the time is past.
+        foreach (var weekend in new[] { DayOfWeek.Saturday, DayOfWeek.Sunday })
+        {
+            var day = today.AddDays(((int)weekend - (int)today.DayOfWeek + 7) % 7);
+            days.Add(At(day) > nowUtc ? day : day.AddDays(7));
+        }
+
+        var time = HourLabel(minuteOfDay);
+        var slots = new List<(string, DateTimeOffset)>();
+        foreach (var day in days)
+        {
+            var at = At(day);
+            if (at <= nowUtc) continue;
+            var name = day == today ? (minuteOfDay >= 18 * 60 ? "Ce soir" : "Aujourd'hui")
+                : day == today.AddDays(1) ? "Demain"
+                : Fr.TextInfo.ToTitleCase(Recurrence.DayName(day.DayOfWeek));
+            slots.Add(($"{name} {time}", at));
+            if (slots.Count == MaxQuickSlots) break;
+        }
+        return slots;
+    }
+
+    /// <summary>« 21h », « 20h30 ».</summary>
+    public static string HourLabel(int minuteOfDay) =>
+        minuteOfDay % 60 == 0 ? $"{minuteOfDay / 60}h" : $"{minuteOfDay / 60}h{minuteOfDay % 60:D2}";
+
+    /// <summary>Whether two sessions share any minute (one ending as the other starts doesn't count).</summary>
+    public static bool Overlaps(DateTimeOffset aStart, TimeSpan aLength, DateTimeOffset bStart, TimeSpan bLength) =>
+        aStart < bStart + bLength && bStart < aStart + aLength;
+
     [GeneratedRegex(@"^(?<h>\d{1,2})\s*h\s*(?<m>\d{1,2})?\s*(?:min|mn|m)?$")]
     private static partial Regex HoursRegex();
 

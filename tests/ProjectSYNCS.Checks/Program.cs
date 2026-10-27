@@ -3900,6 +3900,37 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     foreach (var m in new[] { 15, 45, 90, 120, 135, 360 })
         if (SessionTime.ParseDuration(SessionTime.DurationInput(m)) != m) Fail($"duration: {m} doesn't survive the edit modal");
 
+    // The picker's one-click times: today while ahead, tomorrow, the coming weekend, each day once.
+    string QuickText(DateTimeOffset now, int minuteOfDay) =>
+        string.Join(" | ", SessionTime.QuickSlots(now, minuteOfDay).Select(s => $"{s.Label} {s.At:dd HH:mm}"));
+    foreach (var (now, minuteOfDay, expected) in new (DateTimeOffset, int, string)[]
+    {
+        // Monday 13:00 Paris.
+        (tNow, 21 * 60, "Ce soir 21h 27 20:00 | Demain 21h 28 20:00 | Samedi 21h 31 20:00 | Dimanche 21h 01 20:00"),
+        // Monday 22:00 Paris: tonight is gone.
+        (Utc(2026, 10, 27, 21), 21 * 60, "Demain 21h 28 20:00 | Samedi 21h 31 20:00 | Dimanche 21h 01 20:00"),
+        // Friday afternoon: tomorrow is the Saturday, named once.
+        (Utc(2026, 10, 30, 12), 21 * 60, "Ce soir 21h 30 20:00 | Demain 21h 31 20:00 | Dimanche 21h 01 20:00"),
+        // Saturday 22:00: tomorrow is Sunday, and the Saturday is next week's.
+        (Utc(2026, 10, 31, 21), 21 * 60, "Demain 21h 01 20:00 | Samedi 21h 07 20:00"),
+        // An afternoon habit, with minutes.
+        (Utc(2026, 10, 27, 8), 14 * 60 + 30, "Aujourd'hui 14h30 27 13:30 | Demain 14h30 28 13:30 | Samedi 14h30 31 13:30 | Dimanche 14h30 01 13:30"),
+    })
+        if (QuickText(now, minuteOfDay) is var quick && quick != expected) Fail($"quick slots at {now:dd HH:mm}: {quick}");
+    var tTwoHours = TimeSpan.FromHours(2);
+    if (!SessionTime.Overlaps(Utc(2026, 10, 31, 20), tTwoHours, Utc(2026, 10, 31, 21), tTwoHours)
+        || SessionTime.Overlaps(Utc(2026, 10, 31, 20), tTwoHours, Utc(2026, 10, 31, 22), tTwoHours)
+        || !SessionTime.Overlaps(Utc(2026, 10, 31, 19), TimeSpan.FromHours(6), Utc(2026, 10, 31, 20), TimeSpan.FromMinutes(30)))
+        Fail("session time: overlaps");
+
+    // The picker's memory: the last published session, per person and per server, in Paris time.
+    var tHabits = new SessionHabits();
+    tHabits.Remember(new ProjectSYNCS.Models.SessionEvent { GuildId = 1, OrganizerId = 7, Category = ProjectSYNCS.Models.SessionCategory.Movie, MaxPlayers = 6,
+        DurationMinutes = 180, VoiceChannelId = 42, ScheduledAt = Utc(2026, 10, 31, 19, 30) });
+    if (tHabits.For(1, 7) != new SessionHabit(ProjectSYNCS.Models.SessionCategory.Movie, 6, 180, 42, 20 * 60 + 30)
+        || tHabits.For(2, 7) is not null || tHabits.For(1, 8) is not null)
+        Fail($"session habits: {tHabits.For(1, 7)}");
+
     // A Thursday at 21:00 stays at 21:00 in Paris on both sides of each change of time.
     const int rNine = 21 * 60;
     var rOct = Recurrence.NextOccurrence(DayOfWeek.Thursday, rNine, Utc(2026, 10, 20, 0));

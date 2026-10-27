@@ -5,7 +5,10 @@ the git history; versions that were skipped or only existed on a side branch are
 
 ## 7.50.0 — 2026-10-27
 
-- The `/schedule create` wizard ends on a preview: after the name, places and a new description field, duration, voice channel and « Chaque semaine » are picked there before « Publier ». A poll turned into a session goes through the same preview.
+- The `/schedule create` wizard is shorter: tonight, tomorrow or the weekend in one click (« Autre jour… » to pick any other day, « Taper une date » to type it), then the name and an optional description, then a preview showing the real card. Category, places, duration, voice channel and « Chaque semaine » are picked on the preview, « Changer l'heure » goes back to the time without losing the rest, and « Publier » posts it.
+- The preview warns when the session overlaps another one.
+- The wizard starts from your last session's category, places, duration, voice channel and hour (forgotten on restart).
+- A poll turned into a session goes through the same preview.
 - Session cards show « Durée : » instead of a clock emoji; the « Peut-être » and « +1 h » buttons lost their emoji.
 
 ## 7.49.0 — 2026-10-27
