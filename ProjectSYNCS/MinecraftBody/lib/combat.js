@@ -277,7 +277,7 @@ function endFight(t) {
 // held order pending until the body reports it under way. True when the order was held.
 export function holdForFight(command) {
   const t = task;
-  if (!bot || !t || t.kind !== 'fight' || !(OrderOps.has(command.op) || command.op === 'stay' || command.op === 'sit')) return false;
+  if (!bot || !t || t.kind !== 'fight' || !(OrderOps.has(command.op) || command.op === 'stay' || command.op === 'sit' || command.op === 'free')) return false;
   t.held = command;
   if ((command.op === 'come' || command.op === 'follow') && typeof command.player === 'string' && playerEntity(command.player)) {
     t.toward = command.player;

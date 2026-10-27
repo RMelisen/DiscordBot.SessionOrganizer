@@ -124,6 +124,11 @@ public static partial class McCommand
         return Find(words, verbs) is { } verb && GoodsAfter(words, verb.Start + verb.Length) is { Goods: McGoods.Armour } ? verb : null;
     }
 
+    // A chest named as where things come from: « du coffre », « des tonneaux », « de ton coffre », « d'un coffre ».
+    private static bool FromChest(string[] words) =>
+        Enumerable.Range(1, Math.Max(0, words.Length - 1)).Any(i => ChestWords.Contains(words[i])
+            && (words[i - 1] is "du" or "des" || (i > 1 && words[i - 2] is "de" or "d")));
+
     private static (McGoods? Goods, bool Owned)? GoodsAfter(string[] words, int from)
     {
         var owned = false;

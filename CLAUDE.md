@@ -25,6 +25,8 @@ matching file before changing that subsystem**; the rules there are as binding a
 | Cailloux, inventory, items, icons, cosmetics, `/admin dashboard` | `docs/agents/economy.md` |
 | `/arcade` games, `ArcadeTables`, `ArcadeRunner`, `ArcadeService` | `docs/agents/arcade.md` |
 | Her Minecraft body, `MinecraftBodyService`, `MinecraftBody/`, `/minecraft` | `docs/agents/minecraft.md` |
+| Her Minecraft orders (`McCommand`, gathering, errands, crafting, the camp) and free time | `docs/agents/minecraft-orders.md` |
+| How her Minecraft body moves: water, fights, body language, `tools/mc-pathtest` | `docs/agents/minecraft-body.md` |
 | `/admin`, `/config`, `/debug`, permissions | `docs/agents/admin.md` |
 | `/report`, the monthly digest, joins/leaves counting, activity counting | `docs/agents/admin.md` |
 
@@ -164,7 +166,7 @@ restart **by design**.
   SQL), both written in the same call. Instances: `EmoteStat`/`EmoteDailyStat`,
   `BotFeedback`/`BotFeedbackDailyStat`, `MemberXp`/`MemberDailyStat`,
   `ShameRecord`/`ShameDailyStat`, `QuizStat`/`QuizDailyStat`, `ChatAnswerStat`/`ChatAnswerDailyStat`,
-  `CollectionCompletion.Count`/`CollectionDailyStat`. **The buckets do not sum to the totals and must not be made
+  `CollectionCompletion.Count`/`CollectionDailyStat`, `MinecraftStat`/`MinecraftDailyStat`. **The buckets do not sum to the totals and must not be made
   to** — everything before the buckets existed lives only in the totals. A removal always
   decrements *today's* bucket. Follow this shape for any new dated leaderboard.
   `MemberFlowDailyStat` (joins/leaves), `ActivityHourStat`, `ChannelDailyStat` and

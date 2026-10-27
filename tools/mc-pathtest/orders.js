@@ -189,6 +189,84 @@ async function storeFull(body) {
   report(inChest === 64 && onHer === 64 && done && done.full === true, 'store, chest full', `${fmt(done)}${done && done.full ? ' (full)' : ''}; chest took ${inChest}, she kept ${onHer}`);
 }
 
+// From the yard's chest to Papa: 20 bread in it, all of it handed over (carried, or lying at his feet); an empty chest
+// is « none ».
+async function fetchBread(body) {
+  await reset(body, 0.5, 6.5);
+  await rcon.run([`clear Papa`, `tp Papa ${C.x + 3.5} -60 ${C.z + 5.5}`,
+    `data merge block ${at(0, 0, 10)} {Items:[{Slot:0b,id:"minecraft:bread",count:20}]}`]);
+  await wait(1500);
+  body.send({ op: 'fetch', player: 'Papa', goods: 'food', count: 0 });
+  const done = await ev(body, ['fetched', 'cantFetch', 'cantReach'], 30000);
+  await wait(2500);
+  const bread = (await q.carried('Papa', 'bread')) + (await lying('bread', 3, 5, 5));
+  const left = await q.inBlock(C.x, -60, C.z + 10, 'bread');
+  report(Boolean(done && done.ev === 'fetched') && bread >= 20 && left === 0, 'fetch from a chest',
+    `${fmt(done)}; Papa got ${bread}/20 bread, ${left} left in the chest`);
+}
+
+async function fetchNone(body) {
+  await reset(body, 0.5, 6.5);
+  await rcon.run([`tp Papa ${C.x + 3.5} -60 ${C.z + 5.5}`, `data merge block ${at(0, 0, 10)} {Items:[]}`]);
+  await wait(1500);
+  body.send({ op: 'fetch', player: 'Papa', goods: 'iron', count: 0 });
+  const done = await ev(body, ['fetched', 'cantFetch', 'cantReach'], 30000);
+  report(Boolean(done && done.ev === 'cantFetch' && done.why === 'none'), 'fetch, nothing there', fmt(done));
+}
+
+// The crafting tables standing in the yard, removed as they're counted (each scenario sets its own).
+async function tablesTaken() {
+  const [a] = await rcon.run([`fill ${at(-16, -1, -16)} ${at(16, 4, 16)} air replace crafting_table`]);
+  const m = /filled (\d+)/i.exec(a);
+  return m ? Number(m[1]) : 0;
+}
+
+// At the yard's table: the pickaxe made there and handed over, nothing of hers left standing.
+async function craftTable(body) {
+  await reset(body, 0.5, 0.5);
+  await tablesTaken();
+  await rcon.run([`clear Papa`, `tp Papa ${C.x + 3.5} -60 ${C.z + 5.5}`, `setblock ${at(3, 0, 3)} crafting_table`,
+    `give ${Name} iron_ingot 3`, `give ${Name} stick 2`]);
+  await wait(1500);
+  body.send({ op: 'craft', player: 'Papa', item: 'iron_pickaxe', count: 1 });
+  const done = await ev(body, ['crafted', 'cantCraft', 'cantReach'], 60000);
+  await wait(2500);
+  const pickaxe = (await q.carried('Papa', 'iron_pickaxe')) + (await lying('iron_pickaxe', 3, 5, 5));
+  const tables = await tablesTaken();
+  report(Boolean(done && done.ev === 'crafted') && pickaxe === 1 && tables === 1, 'craft at a table',
+    `${fmt(done)}; Papa got ${pickaxe} iron pickaxe; ${tables} table(s) in the yard (1: the yard's)`);
+}
+
+// No table near: sticks need none (2x2), so none is set down; logs become planks, planks sticks.
+async function craftOwnTable(body) {
+  await reset(body, 0.5, 0.5);
+  await tablesTaken();
+  await rcon.run([`clear Papa`, `tp Papa ${C.x + 3.5} -60 ${C.z + 5.5}`, `give ${Name} oak_log 4`]);
+  await wait(1500);
+  body.send({ op: 'craft', player: 'Papa', item: 'stick', count: 8 });
+  const sticks = await ev(body, ['crafted', 'cantCraft', 'cantReach'], 60000);
+  await wait(2500);
+  const got = (await q.carried('Papa', 'stick')) + (await lying('stick', 3, 5, 5));
+  // A ladder takes a table: hers, set down and taken back.
+  body.send({ op: 'craft', player: 'Papa', item: 'ladder', count: 3 });
+  const ladder = await ev(body, ['crafted', 'cantCraft', 'cantReach'], 90000);
+  await wait(2500);
+  const ladders = (await q.carried('Papa', 'ladder')) + (await lying('ladder', 3, 5, 5));
+  const tables = await tablesTaken();
+  report(Boolean(sticks && sticks.ev === 'crafted' && ladder && ladder.ev === 'crafted') && got >= 8 && ladders >= 3 && tables === 0,
+    'craft with her own table', `${fmt(sticks)}, Papa got ${got}/8 sticks; ${fmt(ladder)}, ${ladders}/3 ladders; ${tables} table(s) left standing`);
+}
+
+async function craftMissing(body) {
+  await reset(body, 0.5, 0.5);
+  await rcon.run([`tp Papa ${C.x + 3.5} -60 ${C.z + 5.5}`]);
+  await wait(1500);
+  body.send({ op: 'craft', player: 'Papa', item: 'iron_pickaxe', count: 1 });
+  const done = await ev(body, ['crafting', 'crafted', 'cantCraft', 'cantReach'], 20000);
+  report(Boolean(done && done.ev === 'cantCraft' && done.why === 'missing' && done.missing === 'iron'), 'craft, no iron',
+    `${fmt(done)}${done && done.missing ? ` (${done.missing})` : ''}`);
+}
+
 // Items lying at a spot in the yard, by item name.
 const lying = (item, dx, dz, r) => q.count(`@e[type=item,nbt={Item:{id:"minecraft:${item}"}},x=${C.x + dx},y=-60,z=${C.z + dz},distance=..${r}]`);
 const drop = (item, dx, dz) => `summon item ${at(dx, 0, dz)} {Item:{id:"minecraft:${item}",count:1},PickupDelay:0}`;
@@ -312,7 +390,7 @@ async function orders(only = []) {
     coal: (b) => collect(b, 'coal', 2, 'stone_pickaxe', 'coal', 'collect coal'),
     iron: (b) => collect(b, 'iron', 2, 'stone_pickaxe', 'raw_iron', 'collect iron'),
     sand: (b) => collect(b, 'sand', 4, null, 'sand', 'collect sand'),
-    fishRefusals, give: (b) => giveKinds(b, papa), storeFull,
+    fishRefusals, give: (b) => giveKinds(b, papa), storeFull, fetch: fetchBread, fetchNone, craftTable, craftOwnTable, craftMissing,
     carrots: (b) => harvestCrop(b, 'carrot', 'carrot', -9.5, 3.5, [[-12, 4], [-10, 8], [-12, 8]]),
     potatoes: (b) => harvestCrop(b, 'potato', 'potato', -7.5, 3.5),
     beetroot: (b) => harvestCrop(b, 'beetroot', 'beetroot', -7.5, 9.5),

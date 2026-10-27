@@ -55,6 +55,20 @@ public static partial class McCommand
         "go to bed", "go to sleep",
     };
     // Standing up from a crouch, or out of bed: stay, which lets go of the crouch and wakes her.
+    // Free time: back to her own life. Not « vas-y » or « libre » alone, which mean too many other things.
+    private static readonly string[] FreePhrases =
+    {
+        "t es libre", "tu es libre", "t es libre maintenant", "quartier libre", "fais ta vie", "vis ta vie", "va vivre ta vie",
+        "c est bon tu peux y aller", "tu peux y aller", "tu peux disposer", "repos", "rompez", "dismissed", "go play",
+        "tu peux arreter de me suivre",
+        "fin de service", "t as fini ton service", "tu as fini ton service",
+    };
+    // After a free-time phrase, a question about later (« t'es libre ce soir ? »): talk, not an order.
+    private static readonly HashSet<string> FreeLaterWords = new()
+    {
+        "ce", "cet", "cette", "demain", "soir", "aprem", "apres", "samedi", "dimanche", "lundi", "mardi", "mercredi",
+        "jeudi", "vendredi", "weekend", "week", "we", "quand", "bientot", "tantot", "plus", "pour", "a",
+    };
     private static readonly string[] StandUpPhrases = { "leve toi", "releve toi", "debout", "stand up", "get up", "wake up" };
     private static readonly string[] GuardPhrases =
     {
@@ -396,7 +410,28 @@ public static partial class McCommand
     };
     // With a chest word, putting anything away is storing it (« vide tes poches dans le coffre »).
     private static readonly string[] ChestWords = { "coffre", "coffres", "tonneau", "tonneaux", "baril", "barils", "chest", "chests", "barrel", "barrels" };
-    private static readonly string[] IntoChestVerbs = GiveVerbs.Concat(new[]
+    // Crafting for a player: these say it alone (the item after them, or none: asked back).
+    private static readonly string[] CraftVerbs =
+    {
+        "fabrique", "fabrique moi", "fabrique nous", "fabriques moi", "fabriquer", "crafte", "crafte moi", "craft", "crafter",
+        "craft moi", "tu peux me fabriquer", "tu peux me crafter", "tu me fabriques", "tu me craftes",
+    };
+    // These only with an item McCraft knows right after them: « fais-moi peur » is not an order.
+    private static readonly string[] CraftMakeVerbs =
+    {
+        "fais moi", "fait moi", "fais nous", "tu peux me faire", "tu me fais", "me faire", "construis moi", "construit moi",
+    };
+    // Fetching from a chest (with a chest word): what says « bring it to me » alone. Not the give verbs (« file-moi »):
+    // with a chest word those put things away.
+    private static readonly string[] FetchVerbs =
+    {
+        "ramene moi", "ramene nous", "rapporte moi", "apporte moi", "amene moi", "va chercher", "vas chercher", "va me chercher",
+        "aller chercher", "aller me chercher", "sors moi", "sors nous", "recupere", "recupere moi", "recuperer", "bring", "bring me",
+        "fetch", "get me",
+    };
+    // A carrying verb alone fetches only from the chest (« ramène le fer du coffre »): « au coffre » puts it away.
+    private static readonly string[] FetchFromVerbs = { "ramene", "rapporte", "apporte", "amene" };
+    private static readonly string[] IntoChestVerbs =GiveVerbs.Concat(new[]
     {
         "mets", "met", "mettre", "vide", "vides", "jette", "balance", "fous", "fourre", "range", "depose", "pose", "poser", "put",
         "dump",

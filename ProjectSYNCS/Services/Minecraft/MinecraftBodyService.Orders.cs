@@ -56,7 +56,7 @@ public sealed partial class MinecraftBodyService
                 else Send(new { op = "wave", player });
                 return;
         }
-        var stops = request.Order is McOrder.Stay or McOrder.Sit;
+        var stops = request.Order is McOrder.Stay or McOrder.Sit or McOrder.Free;
         if (!stops && !_orderGate.TryClaim(player)) return;
         if (AnswerAtOnce(player, whispered, text, request)) return;
 
@@ -114,33 +114,40 @@ public sealed partial class MinecraftBodyService
             McOrder.Camp => new { op = "camp", player },
             McOrder.Uncamp => CampCommand(player),
             McOrder.Give => new { op = "give", player, goods = request.Goods!.Value.ToString().ToLowerInvariant() },
+            McOrder.Fetch => new { op = "fetch", player, goods = request.Goods!.Value.ToString().ToLowerInvariant(), count = request.Count },
+            McOrder.Craft => new { op = "craft", player, item = request.Item!, count = request.Count },
             McOrder.Store => new { op = "store", player },
             McOrder.Fish => new { op = "fish", player },
             McOrder.Smelt => new { op = "smelt", player, what = (request.Smelt ?? McSmelt.Food).ToString().ToLowerInvariant() },
             McOrder.Sit => new { op = "sit" },
+            McOrder.Free => new { op = "free", player },
             _ => new { op = "stay" },
         };
         var detail = request.Coordinates is { } coordinates ? string.Join(" ", coordinates)
             : place is not null ? Label(place.Name, placeOwner, player)
             : request.Goods is { } goods ? BotResponses.McGoodsNames[goods]
+            : request.Item is { } item ? McCraft.Label(item, request.Count)
             : "";
         var now = DateTimeOffset.UtcNow;
         string? busyWith = null;
         McJob? robbed = null;
+        var alreadyFree = false;
         lock (_gate)
         {
             if (_body is not { } body || !_spawned || _leaving) return;
+            // « quartier libre » with no order and no « reste » to lift: nothing to let go of.
+            if (request.Order == McOrder.Free && _order is null && _pending is null && _doing?.Kind != "held") alreadyFree = true;
             // She works for whoever gave the order under way: only they can stop her or send her elsewhere,
             // unless their claim ran out or family outranks them (McClaim).
-            if (_order is { } holder
+            else if (_order is { } holder
                 && McClaim.Decide(holder.Player, KinOf(holder.Player), holder.Since, player, KinOf(player), now, LastingLocked(holder))
                 == McVerdict.Busy)
                 busyWith = holder.Player;
             else
             {
-                // An errand (handing over, putting away) pauses an activity, which the body goes back to after: it
-                // holds her again then, and its keeper isn't told she left.
-                var resume = request.Order is McOrder.Give or McOrder.Store && _order is { } current && IsActivity(current.Order)
+                // An errand (handing over, putting away, fetching from a chest, crafting) pauses an activity, which the body goes back
+                // to after: it holds her again then, and its keeper isn't told she left.
+                var resume = IsErrand(request.Order) && _order is { } current && IsActivity(current.Order)
                     ? current
                     : null;
                 // Taken from someone before their order was done: they hear why, once the new one is under way.
@@ -158,6 +165,11 @@ public sealed partial class MinecraftBodyService
                 body.Send(command);
             }
         }
+        if (alreadyFree)
+        {
+            Reply(player, whispered, BotResponses.McFreeAlreadyLines);
+            return;
+        }
         if (busyWith is not null)
         {
             if (_busyGate.TryClaim(player)) Reply(player, whispered, BotResponses.McBusyLines, Who(busyWith));
@@ -169,7 +181,12 @@ public sealed partial class MinecraftBodyService
         if (stops)
         {
             if (robbed is not null) Reply(robbed.Player, robbed.Private, BotResponses.McTakenLines, Who(player));
-            Ack(player, whispered, request.Order.ToString(), request.Order == McOrder.Sit ? BotResponses.McSitLines : BotResponses.McStayAckLines);
+            Ack(player, whispered, request.Order.ToString(), request.Order switch
+            {
+                McOrder.Sit => BotResponses.McSitLines,
+                McOrder.Free => Kin(player, BotResponses.McFreeLines, BotResponses.McFreeLinesOwner, BotResponses.McFreeLinesTata),
+                _ => BotResponses.McStayAckLines,
+            });
         }
     }
 
@@ -211,6 +228,12 @@ public sealed partial class MinecraftBodyService
             case McOrder.Undress:
                 lock (_gate) _dressing[player] = whispered;
                 Send(new { op = request.Order == McOrder.Dress ? "dress" : "undress", player });
+                return true;
+            case McOrder.Fetch when request.Goods is null:
+                Reply(player, whispered, BotResponses.McFetchUnknownLines);
+                return true;
+            case McOrder.Craft when request.Item is null:
+                Reply(player, whispered, BotResponses.McCraftUnknownLines);
                 return true;
             case McOrder.Give when request.Goods is null:
                 Reply(player, whispered, BotResponses.McGiveUnknownLines);
@@ -259,6 +282,10 @@ public sealed partial class MinecraftBodyService
     // Farming, fishing, keeping animals and guarding a place last until someone says otherwise; errands and sleep only
     // pause them.
     private static bool IsActivity(McOrder? order) => order is McOrder.Farm or McOrder.Fish or McOrder.Patrol or McOrder.Ranch;
+
+    // Errands: over in a moment (a craft in a few), they pause an activity rather than end it (the body goes back to it
+    // after).
+    private static bool IsErrand(McOrder order) => order is McOrder.Give or McOrder.Store or McOrder.Fetch or McOrder.Craft;
 
     // A farm, a pen or a guarded place holds her while its keeper is on the server; every other claim runs out
     // (McClaim.Expiry).

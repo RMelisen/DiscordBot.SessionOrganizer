@@ -47,7 +47,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/admin pebble add · remove` | Manual cailloux adjustment | staff |
 | `/admin stats` | The server's economy at a glance | staff |
 | `/admin dashboard` | The economy day by day: flows, activity, finds | staff |
-| `/report sessions · polls · community · syncs · activity · commands · quiz · plynlings · emotes · sleeping` | Her reports: attendance, polls and `/tonight`, the server's life, her own health, peak hours and channels, her commands, the quiz, the Plynlings, the emotes, members gone quiet | staff |
+| `/report sessions · polls · community · syncs · activity · commands · quiz · plynlings · emotes · sleeping · minecraft` | Her reports: attendance, polls and `/tonight`, the server's life, her own health, peak hours and channels, her commands, the quiz, the Plynlings, the emotes, members gone quiet, her evenings in Minecraft | staff |
 | `/admin warn · warnings · unwarn` | Formal warnings, sent to the person by DM | staff |
 | `/admin mute · unmute` | Discord timeout, saying what's missing when it can't | staff |
 | `/admin plynling rename · resurrect · passion-reset · cure`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
@@ -201,6 +201,12 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
   - « syncs vide tes poches », « syncs donne-moi ton poisson » (or ta pioche, tes armes, ton fer…):
     she hands you what she carries; « syncs range tes affaires » puts it in the chest nearby, keeping
     her tools;
+  - « syncs ramène-moi du fer du coffre », « syncs va chercher 20 pains dans le coffre »: she takes
+    it from the chests nearby and brings it to you;
+  - « syncs fabrique-moi une pioche en fer », « syncs fais-moi 16 torches » (or an axe, a sword, a
+    bow, a rod, shears, planks, sticks, a crafting table, a chest, a furnace, ladders): she crafts it
+    and hands it over, cutting the wood and gathering the stone she's short of (iron, gold,
+    diamonds, coal and string she must already have); « une pioche » alone is the best she can make;
   - armour you give her, she puts on (and thanks you); « syncs enlève ton armure » takes it off and
     keeps it, « syncs mets ton armure » puts it back on, « syncs rends-moi ton armure » hands it over;
   - « syncs t'as quoi sur toi ? », « syncs montre ton inventaire »: she says what she carries, the
@@ -220,16 +226,18 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
     saved it, or the family can move or forget a place;
   - « syncs préviens-moi dans 5 min » or « syncs rappelle-moi dans 10 min de sortir le fer »: a
     reminder, up to two hours;
+  - « syncs tu fais quoi ? »: she says what she's doing, an order or her own life;
   - « syncs t'es où ? », « syncs assis », « syncs saute », and « salut syncs » (she waves back).
 
   She never digs through or builds on anything on the way: when gathering, she breaks only the
   blocks she was sent for (and a tree's own leaves to reach its logs), and takes wood only from real
-  trees. She places nothing but a seed where she just harvested, and her camp. She eats when hungry
+  trees. She places nothing but a seed where she just harvested, her camp, and a crafting table to craft
+  with when there's none nearby, which she takes back after. She eats when hungry
   and wears the best armour you give her. She never hits a creeper, whatever she's doing: she shoots
   it with a bow if she has one with arrows, and otherwise keeps away (and warns you when guarding),
   then goes back to what she was doing. A monster attacking anyone near her gets her help, even when
   she's busy; badly hurt, she backs off to heal.
-  After handing something over or putting her things away, she goes back to the farm, the fishing
+  After an errand (handing something over, putting her things away, fetching, crafting), she goes back to the farm, the fishing
   or the guarding she was at. Whisper an order (`/msg SYNCS syncs viens`) and she whispers back. Say
   just « syncs » and she answers « oui ? »: your next message is heard as an order, no name needed
   (« syncs » … « suis-moi »).
@@ -241,7 +249,8 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
   among her places (names like « ferme », « champ de blé », « étang », « enclos », « maison »): by
   day she works at the farm and the fishing spot in turns, sees to the animals morning and evening
   (bred and sheared twice a day), and at dusk she goes home. With none of them, she keeps near the
-  owner or Tata. Any order comes first; « syncs reste » keeps her put for ten minutes. After dying
+  owner or Tata. Any order comes first; « syncs reste » keeps her put for ten minutes, and « syncs quartier libre »
+  (« fais ta vie », « tu peux y aller ») sends her back to her own life at once. After dying
   she goes back for her things; she picks up what drops from the monsters she kills; she warns
   anyone with a creeper behind them; she says when a tool is wearing out or broke, or what she
   lacks (a rod, shears, arrows, room). She looks at whoever talks to her, turns her back on
@@ -657,16 +666,19 @@ is gone).
   - **`emotes`** — the server's own emotes ranked, the ones nobody used, the rising and falling
     ones, and the share of server emotes, emotes from elsewhere and emoji;
   - **`sleeping`** — members with no XP, reaction or voice for 30, 60 or 90 days (buttons), with
-    the last day each one showed up; newcomers and bots are left out.
+    the last day each one showed up; newcomers and bots are left out;
+  - **`minecraft`** — her time on the Minecraft server and the days she played, the orders she
+    was given and by whom, her deaths, the monsters she killed, her fish and treasures, and what
+    she harvested and gathered.
 
   Messages, voice presence and command uses are counted from 7.6.0 on, so `activity` and
-  `commands` start empty.
+  `commands` start empty; her Minecraft days from 7.50.0.
 
   On the 1st of each month she sends two digests of the previous month by DM, each opening with
   « Le mois en bref » (a few figures and what deserves a look):
   - to the owner, about her running well: commands and their errors, the Pi, the messages she
-    couldn't answer precisely (with the latest ones as a file), the quiz; then `syncs`, `commands`
-    and `quiz`;
+    couldn't answer precisely (with the latest ones as a file), the quiz, her hours in Minecraft;
+    then `syncs`, `commands`, `quiz` and `minecraft` (left out for a month she didn't play);
   - to the server admin, about the server's life: members, sessions, when the server talks, silent
     channels and forgotten emotes; then `community`, `sessions`, `activity` and `sleeping`.
 - **`/admin xp add <member> <amount>` · `/admin xp remove <member> <amount>`** — manual XP

@@ -5,8 +5,10 @@ import { dress, undress } from './armour.js';
 import { breakCamp, makeCamp } from './camp.js';
 import { holdForFight } from './combat.js';
 import { smelt } from './cooking.js';
+import { craftFor } from './craftorder.js';
 import { snapshot } from './debug.js';
 import { defend } from './defend.js';
+import { fetchFromChests } from './fetch.js';
 import { setFamilyNames } from './family.js';
 import { farm, harvest } from './farm.js';
 import { fish } from './fishing.js';
@@ -15,7 +17,7 @@ import { collect } from './gather.js';
 import { hop, mark, sit, wave, where } from './gestures.js';
 import { guard, patrol } from './guard.js';
 import { give, store } from './inventory.js';
-import { come, follow, goTo, guide, holdHere, isOrder, letGo, OrderOps, playerEntity, stay } from './orders.js';
+import { come, follow, goTo, guide, holdHere, isOrder, letGo, OrderOps, playerEntity, skipGrace, stay } from './orders.js';
 import { ranch } from './ranch.js';
 import { Restartable } from './resume.js';
 import { failedSpots, routine } from './routine.js';
@@ -48,6 +50,14 @@ export function dispatch(command) {
           holdHere();
         }
         break;
+      case 'free':
+        // Back to her own life at once: the order (or activity) ends, a « reste » hold too, and no grace before autonomy.
+        if (bot) {
+          stay();
+          letGo();
+          skipGrace();
+        }
+        break;
       case 'goto':
         if (bot && typeof command.player === 'string' && Number.isFinite(command.x) && Number.isFinite(command.z))
           goTo(command.player, command.x, Number.isFinite(command.y) ? command.y : null, command.z,
@@ -60,6 +70,18 @@ export function dispatch(command) {
       case 'give':
         if (bot && typeof command.player === 'string' && typeof command.goods === 'string')
           give(command.player, command.goods).catch((err) => log('give failed:', err && err.message ? err.message : String(err)));
+        break;
+      case 'fetch':
+        if (bot && typeof command.player === 'string' && typeof command.goods === 'string')
+          fetchFromChests(command.player, command.goods, Math.max(0, Math.min(64, Number(command.count) || 0)))
+            .catch((err) => log('fetch failed:', err && err.message ? err.message : String(err)));
+        break;
+      case 'craft':
+        // Started again after a fight (resume.js): her pockets at the start (`since`) and the table she had set down.
+        if (bot && typeof command.player === 'string' && typeof command.item === 'string')
+          craftFor(command.player, command.item, Math.max(1, Math.min(64, Number(command.count) || 1)),
+            command.since ? { before: command.since, table: command.table || null } : null)
+            .catch((err) => log('craft failed:', err && err.message ? err.message : String(err)));
         break;
       case 'store':
         if (bot && typeof command.player === 'string')

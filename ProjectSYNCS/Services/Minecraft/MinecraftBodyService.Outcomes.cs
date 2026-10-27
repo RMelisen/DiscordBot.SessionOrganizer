@@ -306,6 +306,48 @@ public sealed partial class MinecraftBodyService
             count, BotResponses.McGoodsNames[goods]);
     }
 
+    // Brought from the chests (the errand's outcome, like a delivery). {1} = how many she took from the chests, {2} = what.
+    // Fewer than a number asked for, she says so.
+    private void OnFetched(string player, string goodsKey, int count, int asked, bool delivered)
+    {
+        Confirm(player);
+        OnOutcome(player,
+            !delivered ? BotResponses.McGiveLostLines
+            : asked > 0 && count < asked ? BotResponses.McFetchShortLines
+            : Kin(player, BotResponses.McFetchDoneLines, BotResponses.McFetchDoneLinesOwner, BotResponses.McFetchDoneLinesTata),
+            count, GoodsName(goodsKey));
+    }
+
+    // Made and handed over (the errand's outcome). {1} = what, as many as she made (« une pioche en fer », « 8 bâtons »).
+    private void OnCrafted(string player, string item, int count, bool delivered)
+    {
+        Confirm(player);
+        OnOutcome(player,
+            !delivered ? BotResponses.McGiveLostLines
+            : Kin(player, BotResponses.McCraftDoneLines, BotResponses.McCraftDoneLinesOwner, BotResponses.McCraftDoneLinesTata),
+            McCraft.Label(item, count));
+    }
+
+    // A craft that can't be done, or stopped short. `missing` names the material for McCraftMissingLines.
+    private void OnCantCraft(string player, string why, string missing)
+    {
+        if (why == "missing")
+        {
+            OnOutcome(player, BotResponses.McCraftMissingLines,
+                BotResponses.McCraftMaterialNames.TryGetValue(missing, out var material) ? material : missing);
+            return;
+        }
+        OnOutcome(player, why switch
+        {
+            "noWood" => BotResponses.McCraftNoWoodLines,
+            "noStone" => BotResponses.McCraftNoStoneLines,
+            "unknown" => BotResponses.McCraftUnknownLines,
+            _ => BotResponses.McCraftFailedLines,
+        });
+    }
+
+    private static string GoodsName(string key) => BotResponses.McGoodsNames[Goods(key) ?? McGoods.All];
+
     // Armour put on or taken off as asked: answered to whoever asked, the way they asked. {1} = how many pieces.
     private void OnDressing(string player, string[] pool, int count = 0)
     {
