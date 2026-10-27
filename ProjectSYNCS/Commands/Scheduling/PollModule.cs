@@ -403,6 +403,11 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
 
     // ---- Poll -> Session: turn the chosen slot into a real session -------
 
+    // The same steps from the button on her auto-close reply (ReminderService). Its own verb: the
+    // reply must not read as the card (CardRefs), and a message never carries an id twice.
+    [ComponentInteraction("poll:plan:*", ignoreGroupNames: true)]
+    public Task OnPlanFromResultAsync(string pollIdStr) => OnToSessionAsync(pollIdStr);
+
     [ComponentInteraction("poll:tosession:*", ignoreGroupNames: true)]
     public async Task OnToSessionAsync(string pollIdStr)
     {

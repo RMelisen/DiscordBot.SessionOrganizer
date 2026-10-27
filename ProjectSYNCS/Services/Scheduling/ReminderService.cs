@@ -183,10 +183,10 @@ public class ReminderService : BackgroundService
                 await pollService.ClosePollAsync(poll.Id);
                 poll.IsClosed = true;
                 if (_client.GetGuild(poll.GuildId) is { } guild) await cards.RedrawPollAsync(guild, poll);
-                // Her own weekend poll (WeekendPollService) has its own lines; everyone else's
-                // result goes to its organiser.
+                // Her own weekend poll (WeekendPollService) has its own lines, and plans its clear
+                // winner herself; everyone else's result goes to its organiser.
                 if (poll.OrganizerId == _client.CurrentUser.Id)
-                    await AnnounceOwnPollAsync(poll);
+                    await AnnounceOwnPollAsync(poll, scope.ServiceProvider);
                 else
                     await AnnounceResultAsync(poll);
             }
@@ -219,6 +219,7 @@ public class ReminderService : BackgroundService
             }
 
             string line;
+            MessageComponent? plan = null;
             if (winners.Count == 0)
                 line = string.Format(_picker.Pick(BotResponses.PollClosedEmptyLines), organizer, title);
             else
@@ -227,11 +228,13 @@ public class ReminderService : BackgroundService
                 var result = named.Count == 1 ? named[0] : $"égalité entre {string.Join(" et ", named)}";
                 var pool = poll.Kind == PollKind.DateSlots ? BotResponses.PollClosedSlotLines : BotResponses.VoteClosedResultLines;
                 line = string.Format(_picker.Pick(pool), organizer, title, result);
+                // A date that won can become a session from right here, without scrolling back to the card.
+                if (poll.Kind == PollKind.DateSlots && poll.SessionEventId is null) plan = PollCards.PlanButton(poll.Id);
             }
 
             var reference = new MessageReference(poll.MessageId, poll.ChannelId, poll.GuildId, failIfNotExists: false);
             await BotChat.PostWithTypingAsync(channel, line, _logger, "poll result",
-                new AllowedMentions { UserIds = new List<ulong> { poll.OrganizerId } }, reference);
+                new AllowedMentions { UserIds = new List<ulong> { poll.OrganizerId } }, reference, plan);
         }
         catch (Exception ex)
         {
@@ -239,23 +242,35 @@ public class ReminderService : BackgroundService
         }
     }
 
-    // Her weekend poll just closed: she says which evening won, as a reply to the card (whose
-    // « Créer une session » button anyone who voted for that evening may use), or sulks that
-    // nobody voted. Only future slots count, like the button. Swallows its own failures: the
-    // close is already written, and a missing line is the worst case.
-    private async Task AnnounceOwnPollAsync(Poll poll)
+    // Her weekend poll just closed. One evening won alone (WeekendPoll.MinVotesForSession votes at
+    // least): she creates the session herself and says so. Otherwise she says which evening(s) won,
+    // with a « Créer une session » button that anyone who voted for one may use, or sulks that
+    // nobody voted. Only future slots count, like the button. Swallows its own failures: the close
+    // is already written, and a missing line is the worst case.
+    private async Task AnnounceOwnPollAsync(Poll poll, IServiceProvider scoped)
     {
         if (poll.MessageId == 0) return;
 
         try
         {
-            if (_client.GetGuild(poll.GuildId)?.GetTextChannel(poll.ChannelId) is not { } channel) return;
+            if (_client.GetGuild(poll.GuildId) is not { } guild || guild.GetTextChannel(poll.ChannelId) is not { } channel) return;
 
             var now = DateTimeOffset.UtcNow;
+            var reference = new MessageReference(poll.MessageId, poll.ChannelId, poll.GuildId, failIfNotExists: false);
+
+            if (await CreateWeekendSessionAsync(poll, guild, channel, scoped, now) is { } session)
+            {
+                var slot = $"<t:{session.ScheduledAt.ToUnixTimeSeconds()}:F>";
+                var made = string.Format(_picker.Pick(BotResponses.WeekendPollSessionLines), slot, SessionCards.Link(session));
+                await BotChat.PostWithTypingAsync(channel, made, _logger, "weekend session", AllowedMentions.None, reference);
+                return;
+            }
+
             var future = poll.Options.Where(o => o.ScheduledAt > now).ToList();
             int max = future.Count == 0 ? 0 : future.Max(o => o.Votes.Count);
 
             string line;
+            MessageComponent? plan = null;
             if (max == 0)
             {
                 line = _picker.Pick(BotResponses.WeekendPollDeadLines);
@@ -267,15 +282,63 @@ public class ReminderService : BackgroundService
                     .OrderBy(o => o.ScheduledAt)
                     .Select(o => $"<t:{o.ScheduledAt.ToUnixTimeSeconds()}:F>"));
                 line = string.Format(_picker.Pick(BotResponses.WeekendPollResultLines), slots);
+                if (poll.SessionEventId is null) plan = PollCards.PlanButton(poll.Id);
             }
 
-            var reference = new MessageReference(poll.MessageId, poll.ChannelId, poll.GuildId, failIfNotExists: false);
-            await BotChat.PostWithTypingAsync(channel, line, _logger, "weekend poll result", AllowedMentions.None, reference);
+            await BotChat.PostWithTypingAsync(channel, line, _logger, "weekend poll result", AllowedMentions.None, reference, plan);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to announce the result of poll {PollId}.", poll.Id);
         }
+    }
+
+    // The session her weekend poll's clear winner becomes: hers to organise (staff manage it), a
+    // Game of the default length, unlimited places, every voter for that evening on it as
+    // « peut-être » (no DM). Null when there is no clear winner, a session was already made from the
+    // poll or sits at that slot, or the card can't be posted (the session is then removed, and the
+    // poll keeps its button). The close is written before this runs and is never retried, so a
+    // crash here costs the session, never a second one.
+    private async Task<SessionEvent?> CreateWeekendSessionAsync(
+        Poll poll, SocketGuild guild, ITextChannel channel, IServiceProvider scoped, DateTimeOffset now)
+    {
+        if (poll.SessionEventId is not null) return null;
+        if (PollRules.ClearWinner(poll, now, WeekendPoll.MinVotesForSession) is not { } winner) return null;
+
+        var events = scoped.GetRequiredService<EventService>();
+        var polls = scoped.GetRequiredService<PollService>();
+        var cards = scoped.GetRequiredService<CardUpdater>();
+
+        var at = winner.ScheduledAt;
+        if ((await events.GetActiveEventsAsync(guild.Id)).Any(e => e.ScheduledAt == at)) return null;
+
+        var session = await events.CreateEventAsync(
+            guildId: guild.Id,
+            channelId: channel.Id,
+            organizerId: _client.CurrentUser.Id,
+            title: WeekendPoll.SessionTitle(at),
+            category: SessionCategory.Game,
+            scheduledAt: at,
+            maxPlayers: 0);
+        try
+        {
+            await events.AddMaybesAsync(session, PollRules.VotersAt(poll, at));
+            var message = await SessionCards.SendAsync(channel, session, guild);
+            await events.SetMessageIdAsync(session.Id, message.Id);
+            session.MessageId = message.Id;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Weekend poll {PollId}: session not posted; removing it.", poll.Id);
+            await events.DeleteEventAsync(session.Id);
+            return null;
+        }
+
+        await polls.SetSessionAsync(poll.Id, session.Id);
+        poll.SessionEventId = session.Id;
+        await cards.RedrawPollAsync(guild, poll, SessionCards.Link(session));
+        _logger.LogInformation("Weekend poll {PollId} became session {EventId}.", poll.Id, session.Id);
+        return session;
     }
 
     // Advances session cards through their lifecycle (En cours -> Terminée) and

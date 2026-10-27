@@ -20,6 +20,14 @@ public static class WeekendPoll
 
     private const int SlotSalt = 0x5745_454B; // "WEEK"
 
+    // On auto-close she creates the session herself when one evening wins alone with at least this
+    // many votes (PollRules.ClearWinner); a single vote is one person, not an evening.
+    public const int MinVotesForSession = 2;
+
+    /// <summary>The session she creates for the winning evening: « Soirée du samedi ».</summary>
+    public static string SessionTitle(DateTimeOffset slot) =>
+        $"Soirée du {Recurrence.DayName(AppTime.ToZoned(slot).DayOfWeek)}";
+
     /// <summary>The posting slot for the Wednesday <paramref name="wednesday"/> (a date, midnight).</summary>
     public static DateTimeOffset PostingSlot(DateTime wednesday)
     {

@@ -93,7 +93,11 @@ the 31st is a Saturday) give null, and the reply quotes `FrenchDate.Examples`. A
 day is an hour (« demain 21 »), never a day of the month — that needs « le 25 ». The checks pin about
 seventy chat readings: add one for every misread found in the wild.
 `/when create` takes its slots the same way (`SessionTime.ParseList`, comma or line separated, ten
-at most); `/vote create`'s modal takes one option per line (`PollRules.ParseOptions`). The pickers'
+at most); `/vote create`'s modal takes one option per line (`PollRules.ParseOptions`), and its
+`options` field takes them on one line, commas or semicolons (`PollRules.ParseInlineOptions`): with
+`title` too it publishes at once, without it a title-only modal (`vote:titled`) publishes. A title
+given alone pre-fills « Définir le vote » (`VoteModule.StartModal`, hand-built: keep it in step with
+`VoteStartModal`). The pickers'
 day lists end with « Autre date… », a modal read by the same parser.
 
 The session picker is three steps, every one a Components V2 message:
@@ -138,6 +142,11 @@ Intégrer des liens).
   hasn't voted). The counts stay.
 - **« Créer une session »** stores the link (`Poll.SessionEventId`); the closed card then links to
   the session, and a second click gets « existe déjà » with the link.
+- **Its voters come along as « peut-être »**: whoever voted for the session's slot
+  (`PollRules.VotersAt`, the organiser aside) is signed up through `EventService.AddMaybesAsync`
+  before the card goes out, so the card lists them. **No DM** (the owner's call): they asked for
+  nothing. The usual « peut-être » nudge before the start still reaches them. A failure costs the
+  signups, never the session.
 
 ## The waiting list — `SessionWaitlist`
 
@@ -173,6 +182,10 @@ auto-close, `/tonight` expiry. Each item is guarded separately (root `CLAUDE.md`
   with the result (`PollClosedSlotLines`, `VoteClosedResultLines`, `PollClosedEmptyLines`; {0} the
   organiser, {1} the title, {2} the result), pinging the organiser only. A command set it up, so
   silence mode doesn't hold it back. A manual close says nothing.
+- **A date poll's result reply carries « Créer une session »** (`PollCards.PlanButton`,
+  `poll:plan:{id}`) while a winning slot is ahead and no session is linked: the same steps and
+  permission as the card's button. Its own verb on purpose: it is **not** in `CardRefs`, so a reply
+  under her result line never reads as a reply to the card.
 
 ## Weekly series — `RecurringSession`
 
@@ -237,8 +250,18 @@ first slot; nothing is posted after 22:00.
   (its occurrence may not be posted yet), or someone's date poll is still open. **Once a week**:
   the claim is the poll itself (one of hers in the last six days), so no state file. A card that
   fails to post deletes its poll and her line.
-- **On auto-close** `ReminderService` replies to the card with the winning evening(s)
-  (`WeekendPollResultLines`) or sulks (`WeekendPollDeadLines`). A manual close says nothing.
+- **On auto-close, a clear winner becomes a session by itself** (`ReminderService.CreateWeekendSessionAsync`):
+  one future evening alone at the top with at least `WeekendPoll.MinVotesForSession` (2) votes
+  (`PollRules.ClearWinner`). She is its organiser, so only staff manage it (`CanManage`); a Game
+  of the default length, unlimited places, no voice channel, titled « Soirée du samedi »
+  (`WeekendPoll.SessionTitle`), its voters « peut-être » (no DM). The poll is linked to it, and she
+  replies with `WeekendPollSessionLines` ({0} the slot, {1} the card's link). She stands down when a
+  session is already linked or sits at that slot; a card that fails to post deletes the session and
+  falls back to the line below. The close is written first and never retried, so a crash costs the
+  session, never a second one.
+- **Otherwise** (a tie, a single vote) she replies with the winning evening(s)
+  (`WeekendPollResultLines`, with the « Créer une session » button) or sulks
+  (`WeekendPollDeadLines`). A manual close says nothing.
 - **Permission exception** in `PollModule.OnToSessionAsync`: on *her* poll, anyone who voted for a
   winning slot may create the session (and becomes its organizer); everyone else's polls stay with
   their organizer and staff. A second voter clicking after a session exists at that time is told

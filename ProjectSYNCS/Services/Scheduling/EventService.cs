@@ -142,6 +142,26 @@ public class EventService
         await _db_context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Signs up the people who voted for a session's slot as « peut-être », before its card goes
+    /// out. Someone already on the session keeps their answer. No DM: they asked for nothing.
+    /// </summary>
+    public async Task AddMaybesAsync(SessionEvent sessionEvent, IEnumerable<PollVote> voters)
+    {
+        foreach (var v in voters)
+        {
+            if (sessionEvent.Participants.Any(p => p.UserId == v.UserId)) continue;
+            sessionEvent.Participants.Add(new Participant
+            {
+                SessionEventId = sessionEvent.Id,
+                UserId = v.UserId,
+                Username = v.Username,
+                Status = ParticipantStatus.Maybe,
+            });
+        }
+        await _db_context.SaveChangesAsync();
+    }
+
     public async Task UpdateEventAsync(
         int eventId, string title, DateTimeOffset scheduledAt, int maxPlayers,
         int durationMinutes, string description)

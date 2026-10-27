@@ -12,8 +12,8 @@ namespace ProjectSYNCS.Services;
 // She starts things herself: every Wednesday evening, a « qui est dispo ce weekend ? » poll in
 // her main channel (home guild), with Friday, Saturday and Sunday at 21:00 (Helpers/Scheduling/WeekendPoll).
 // It is an ordinary /when — same card, same buttons, same two-day auto-close — whose organizer
-// is her; ReminderService announces the result when it closes, and whoever voted for the winning
-// slot may turn it into a session (PollModule.OnToSessionAsync).
+// is her; when it closes ReminderService creates the session itself for a clear winner, or announces
+// the result, and whoever voted for a winning slot may turn it into a session (PollModule.OnToSessionAsync).
 //
 // She never steps on someone else's organising: no poll when a session is already planned for
 // that weekend (a weekly series counts), or when someone's date poll is still open. Once a week at most: the claim is the

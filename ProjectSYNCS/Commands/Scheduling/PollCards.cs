@@ -105,6 +105,15 @@ public static class PollCards
         channel.SendMessageAsync(components: Build(poll), flags: MessageFlags.ComponentsV2,
             allowedMentions: AllowedMentions.None);
 
+    /// <summary>
+    /// The button under her reply to a closed date poll: the card's « Créer une session », under its
+    /// own verb (<c>poll:plan</c>) so the reply never reads as the card (<see cref="CardRefs"/>).
+    /// </summary>
+    public static MessageComponent PlanButton(int pollId) =>
+        new ComponentBuilder()
+            .WithButton("Créer une session", $"poll:plan:{pollId}", ButtonStyle.Success, new Emoji("🗓️"))
+            .Build();
+
     /// <summary>How one option reads on the card and in her lines: a date as a timestamp, a label sanitised.</summary>
     public static string OptionText(Poll poll, PollOption option) =>
         poll.Kind == PollKind.Text

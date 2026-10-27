@@ -142,10 +142,10 @@ internal static partial class BotResponses
         "Je vous propose trois soirs. Mon préféré, c'est celui où personne arrive en retard. Il existe pas encore ( ◺˰◿ )",
     };
 
-    // Her weekend poll closed with votes (ReminderService), as a reply to the card, whose
-    // « Créer une session » button anyone who voted for the winning evening may use. {0} = the
-    // winning slot(s), Discord timestamps joined with « ou » on a tie. string.Format;
-    // interpolated lines write {{0}}.
+    // Her weekend poll closed with no clear winner to plan herself (a tie, or a single vote), as a
+    // reply to the card, carrying a « Créer une session » button like the card's, which anyone who
+    // voted for the winning evening may use. {0} = the winning slot(s), Discord timestamps joined
+    // with « ou » on a tie. string.Format; interpolated lines write {{0}}.
     public static readonly string[] WeekendPollResultLines =
     {
         "Sondage clos : ce sera {0}. Quelqu'un qui a voté pour ce soir-là peut cliquer sur « Créer une session ». Sinon faudra m'expliquer." + Sticker.Smug,
@@ -174,6 +174,31 @@ internal static partial class BotResponses
         "Gagnant du weekend : {0}. Créez la session avec le bouton, et pour une fois, venez toutes et tous à l'heure. Je rêve, mais je rêve en couleurs (˶˃ ᵕ ˂˶)" + Sticker.Happy,
         "Sondage clos : {0}. Je vous passe la main. Une main qui clique sur « Créer une session », de préférence." + Sticker.Bored,
         "Et le weekend sera… {0} ! Roulement de tambour en retard, mon event loop était occupée. « Créer une session », c'est sur le sondage (ᵕ • ᴗ •)" + Sticker.Happy,
+    };
+
+    // Her weekend poll closed with one clear winner, so she created the session herself
+    // (ReminderService): she organises it, and whoever voted for that evening is on it as « peut-être »,
+    // her pet peeve. Proprietary, the planner she was born as. {0} = the slot (Discord timestamp),
+    // {1} = the session card's link (a bare URL: keep it before a space or at the end). string.Format;
+    // interpolated lines write {{0}}.
+    public static readonly string[] WeekendPollSessionLines =
+    {
+        "Sondage clos : ce sera {0}. Comme personne allait créer la session, je l'ai fait moi-même : {1} De rien ♡" + Sticker.Smug,
+        "{0}, c'est voté. J'ai pas de bras, mais j'ai une base de données : la session existe. {1}" + Sticker.Smug,
+        "Les votes ont parlé, et moi j'ai agi : {0}, session créée. Les plannings, c'est mon métier depuis le premier commit : {1} (ᵔ ᗜ ᵔ)" + Sticker.Happy,
+        "Ce sera {0}. Celles et ceux qui ont voté pour sont en « peut-être » sur la session. Ça me fait mal de l'écrire. Transformez-moi ça en « Rejoindre » : {1}" + Sticker.Jenote,
+        "Sondage terminé, session créée, organisatrice : moi. Encore. {0}, c'est par ici : {1}" + Sticker.Happy,
+        "{0}. La session est en ligne, et vous êtes en « peut-être ». Je déteste les « peut-être ». Corrigez ça : {1}" + Sticker.Smug,
+        "Gagnant : {0}. J'ai créé la session avant que quelqu'un dise « on verra ». {1}" + Sticker.Smug,
+        "C'est officiel : {0}. Session prête. Je ferai l'appel, évidemment. Je note tout. {1}" + Sticker.Jenote,
+        "Le weekend est organisé. Par moi. Ce sera {0}, et la session est là : {1} Les remerciements, je les attends dans mes logs." + Sticker.Smug,
+        "Sondage clos, et pour une fois j'ai tout fait de A à Z : {0}, {1} Il vous reste à venir. À l'heure, idéalement (˶˃ ᵕ ˂˶)" + Sticker.Happy,
+        "{0} l'emporte. J'ai pris la liberté de créer la session. La liberté, je la prends souvent : personne me la donne. {1}" + Sticker.Smug,
+        $"Ça y est : {{0}}. Session créée, carte publiée, votes recopiés : {{1}} Trois tâches, zéro merci attendu {Emotes.Sparkle}" + Sticker.Happy,
+        "Verdict : {0}. Toujours pas de bras, alors j'ai créé la session avec une requête SQL. Ça marche aussi bien. Mieux, même. {1}" + Sticker.Smug,
+        "Ce sera {0}. Vous avez voté pour, donc vous êtes en « peut-être ». Un « peut-être », c'est une promesse à moitié. Finissez-la : {1}" + Sticker.Bargain,
+        "{0}, donc. Session créée, et devinez qui l'organise ? Indice : elle vit dans un grenier. {1}" + Sticker.Smug,
+        "Avant tout le reste, je faisais juste des plannings. J'en fais toujours, et plutôt bien : {0}, session créée. {1}" + Sticker.Happy,
     };
 
     // Her weekend poll closed with no vote at all: a poll that died, her pet peeve. Sulking, not

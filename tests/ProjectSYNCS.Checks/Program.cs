@@ -4146,6 +4146,28 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     pPoll.IsClosed = true;
     if (PollRules.IsOpen(pPoll, tNow)) Fail("poll rules: closed by hand");
 
+    // One-line options: commas or semicolons, then the same reading.
+    var pInline = PollRules.ParseInlineOptions(" Valorant, Lethal Company;among us ,, Among Us ");
+    if (!pInline.SequenceEqual(new[] { "Valorant", "Lethal Company", "among us" }))
+        Fail($"poll rules: inline options read as {string.Join(" | ", pInline)}");
+
+    // The weekend poll's clear winner: alone at the top, ahead, with enough votes.
+    ProjectSYNCS.Models.PollOption Slot(DateTimeOffset at, params ulong[] voters) => new()
+    {
+        ScheduledAt = at,
+        Votes = voters.Select((v, i) => new ProjectSYNCS.Models.PollVote { UserId = v, VotedAt = tNow.AddMinutes(i) }).ToList(),
+    };
+    ProjectSYNCS.Models.Poll Slots(params ProjectSYNCS.Models.PollOption[] o) => new() { Options = o.ToList() };
+    var wFri = tNow.AddDays(2); var wSat = tNow.AddDays(3); var wPast = tNow.AddHours(-1);
+    if (PollRules.ClearWinner(Slots(Slot(wFri, 1), Slot(wSat, 1, 2)), tNow, 2)?.ScheduledAt != wSat) Fail("poll rules: clear winner");
+    if (PollRules.ClearWinner(Slots(Slot(wFri, 1, 3), Slot(wSat, 1, 2)), tNow, 2) is not null) Fail("poll rules: a tie is no clear winner");
+    if (PollRules.ClearWinner(Slots(Slot(wFri), Slot(wSat, 1)), tNow, 2) is not null) Fail("poll rules: one vote is no clear winner");
+    if (PollRules.ClearWinner(Slots(Slot(wPast, 1, 2, 3), Slot(wSat, 1, 2)), tNow, 2)?.ScheduledAt != wSat) Fail("poll rules: a past slot never wins");
+    if (PollRules.ClearWinner(Slots(), tNow, 2) is not null) Fail("poll rules: no slot, no winner");
+    var wVoters = PollRules.VotersAt(Slots(Slot(wFri, 5), Slot(wSat, 7, 5, 9)), wSat).Select(v => v.UserId);
+    if (!wVoters.SequenceEqual(new ulong[] { 7, 5, 9 })) Fail($"poll rules: voters at a slot read as {string.Join(", ", wVoters)}");
+    if (WeekendPoll.SessionTitle(Utc(2026, 10, 31, 20)) != "Soirée du samedi") Fail($"weekend poll: session title « {WeekendPoll.SessionTitle(Utc(2026, 10, 31, 20))} »");
+
     // Places: one rule at creation and at edit.
     foreach (var (input, ok, max) in new[]
     {
