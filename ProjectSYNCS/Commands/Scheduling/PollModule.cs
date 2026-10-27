@@ -13,7 +13,7 @@ using Poll = ProjectSYNCS.Models.Poll;
 
 namespace ProjectSYNCS.Commands;
 
-[Group("poll", "Sondages pour choisir un créneau")]
+[Group("when", "Sondages pour choisir un créneau")]
 // Guild-only: this module reads Context.Guild, which is null in a DM, and
 // config.yaml ships register_globally: true (a global command is DM-enabled by
 // default). Without this it is reachable somewhere it can only throw.
@@ -115,7 +115,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         {
             if (!_drafts.TryTake(Context.User.Id, out draft))
             {
-                await RespondAsync("Ce sondage a expiré. Relance `/poll create`.", ephemeral: true);
+                await RespondAsync("Ce sondage a expiré. Relance `/when create`.", ephemeral: true);
                 return;
             }
             await DeferAsync(ephemeral: true);
@@ -154,7 +154,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
     {
         if (!_drafts.TryGet(Context.User.Id, out var draft))
         {
-            await RespondAsync("Ce sondage a expiré. Relance `/poll create`.", ephemeral: true);
+            await RespondAsync("Ce sondage a expiré. Relance `/when create`.", ephemeral: true);
             return;
         }
 
@@ -188,7 +188,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
     {
         if (!_drafts.TryGet(Context.User.Id, out var draft))
         {
-            await RespondAsync("Ce sondage a expiré. Relance `/poll create`.", ephemeral: true);
+            await RespondAsync("Ce sondage a expiré. Relance `/when create`.", ephemeral: true);
             return;
         }
 
@@ -228,7 +228,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
     {
         if (!_drafts.TryGet(Context.User.Id, out var draft))
         {
-            await RespondAsync("Ce sondage a expiré. Relance `/poll create`.", ephemeral: true);
+            await RespondAsync("Ce sondage a expiré. Relance `/when create`.", ephemeral: true);
             return;
         }
         if (long.TryParse(values[0], out var unix))
@@ -389,7 +389,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
         await FollowupAsync($"Sondage **#{pollId}** supprimé.", ephemeral: true);
     }
 
-    // Removes the card if it still exists (/poll delete, /vote delete).
+    // Removes the card if it still exists (/when delete, /vote delete).
     public static async Task DeleteCardAsync(SocketGuild guild, Poll poll)
     {
         if (poll.MessageId == 0 || guild.GetTextChannel(poll.ChannelId) is not { } channel) return;

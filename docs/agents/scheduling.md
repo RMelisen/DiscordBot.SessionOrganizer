@@ -82,7 +82,7 @@ nobody is ever kicked out.
 opens, pre-filled with whatever was given. « quand » is read by `SessionTime.Parse` (« samedi
 21h », « sam 14h », « 25/12 20:30 », « demain », « ce soir »; future only, 90 days at most; a day
 alone is 21:00) and previewed by `SessionWhenAutocompleteHandler`, whose value is the typed text.
-`/poll create` takes its slots the same way (`SessionTime.ParseList`, comma or line separated, ten
+`/when create` takes its slots the same way (`SessionTime.ParseList`, comma or line separated, ten
 at most); `/vote create`'s modal takes one option per line (`PollRules.ParseOptions`). The pickers'
 day lists end with « Autre date… », a modal read by the same parser.
 
@@ -116,7 +116,7 @@ Intégrer des liens).
 ## Polls — deadline, single choice, anonymous
 
 - **`Poll.ClosesAt`** is `EndsAt`, or `CreatedAt` + 2 days for polls from before `EndsAt` existed.
-  `/poll create` and `/vote create` take a length; « Prolonger » pushes it (`PollRules.Extend`, 14
+  `/when create` and `/vote create` take a length; « Prolonger » pushes it (`PollRules.Extend`, 14
   days from now at most). `PollRules.IsOpen` is the one test: a vote past the deadline is refused
   even before the sweep closes it.
 - **Single choice** replaces the voter's other vote, under the poll's lock.
