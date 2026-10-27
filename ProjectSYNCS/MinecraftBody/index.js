@@ -25,6 +25,7 @@
 //      {"op":"goto",…,"dimension":"…"|null} · {"op":"guide","player":"…","x":0,"y":64,"z":0,"dimension":"…"}
 //      {"op":"give","player":"…","goods":"all|food|fish|…"} · {"op":"store","player":"…"} · {"op":"fish","player":"…"}
 //      {"op":"fetch","player":"…","goods":"food|iron|…","count":0} (count 0: up to a stack)
+//      {"op":"craft","player":"…","item":"iron_pickaxe|pickaxe|torch|planks|…","count":1} (a bare tool: the best she affords)
 //      {"op":"dress","player":"…"} · {"op":"undress","player":"…"}
 //      {"op":"patrol","player":"…","spot":{x,y,z,dimension}|null} · {"op":"smelt","player":"…","what":"food|ore|sand"}
 //      {"op":"where","player":"…"} · {"op":"mark","player":"…"} · {"op":"sit"} · {"op":"jump"} · {"op":"wave","player":"…"}
@@ -51,6 +52,8 @@
 //      cantUndress {player,why: none|full} · armoured {by} (put on a piece someone gave her)
 //      cantStore {player,why: noChest|empty} · fishing {player} · cantFish {player,why: noRod|noWater|broke}
 //      fetching {player,goods} · fetched {player,goods,count,asked,delivered} · cantFetch {player,goods,why: none|noChest}
+//      crafting {player,item,count} · crafted {player,item,count,delivered}
+//      cantCraft {player,item,why: missing|noWood|noStone|unknown|failed,missing?: iron|gold|diamond|coal|string}
 //      caught {player,kind: fish|treasure|junk} · patrolling {player} · cantPatrol {player,why: tooFar|otherDimension}
 //      smelting {player,what,count} · smelted {player,what,count,delivered}
 //      cantSmelt {player,what,why: nothing|noFuel|noFurnace|busy}

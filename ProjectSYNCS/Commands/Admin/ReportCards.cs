@@ -456,7 +456,7 @@ public static class ReportCards
         return embed.WithFooter(Footer(w, MinecraftNote)).Build();
     }
 
-    private const string MinecraftNote = "Ordres : ceux qu'elle a lancés. Comptage par jour depuis la 7.46.0.";
+    private const string MinecraftNote = "Ordres : ceux qu'elle a lancés. Comptage par jour depuis la 7.50.0.";
 
     // A resource as the body names it (« wood »), as she does without the partitive (« Bois »); the key itself if unknown.
     private static string ResourceLabel(string key)

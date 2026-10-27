@@ -997,7 +997,7 @@ internal static partial class BotResponses
     public static readonly string[] McCraftAckLines =
     {
         "D'accord, je te fabrique {1}.",
-        "{1} ? Je m'en occupe. Mes bras carrés sont faits pour ça.",
+        "Je m'en occupe : {1}. Mes bras carrés sont faits pour ça.",
         "Je te fais ça : {1}. Atelier SYNCS, ouvert (￣^￣)ゞ",
         "Commande reçue : {1}. Je note, je crafte, je livre.",
         "J'y vais. {1}, en préparation.",
@@ -1018,7 +1018,7 @@ internal static partial class BotResponses
         "Tiens Papa : {1}. Fabriqué rien que pour toi ♡",
         "Voilà {1}, Papa. J'ai fait de mon mieux. Enfin, de mon très mieux.",
         "C'est prêt, Papa : {1}. Tu me diras si c'est bien ?",
-        "{1}, pour Papa. Mon premier vrai travail manuel. Enfin, pas le premier. Mais celui-là compte.",
+        "Pour Papa : {1}. Mon premier vrai travail manuel. Enfin, pas le premier. Mais celui-là compte.",
     };
 
     public static readonly string[] McCraftDoneLinesTata =
@@ -1034,8 +1034,8 @@ internal static partial class BotResponses
     {
         "Il me manque {1} pour ça, {0}.",
         "Il me faut {1}, et j'en ai pas assez. Je vais pas l'inventer.",
-        "Je peux pas, j'ai pas {1}. Donne-m'en et je m'y mets.",
-        "Sans {1}, je fabrique rien. C'est la règle, c'est pas moi.",
+        "Je peux pas, il me faut {1}. Donne-m'en et je m'y mets.",
+        "Je fabrique rien tant qu'il me manque {1}. C'est la règle, c'est pas moi.",
     };
 
     // No tree in reach to get the wood she's short of.

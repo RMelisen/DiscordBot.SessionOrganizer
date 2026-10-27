@@ -2234,6 +2234,12 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     // Her names for what she makes, and for each material the body may say she lacks.
     foreach (var c in McCraft.All)
         if (string.IsNullOrWhiteSpace(McCraft.Label(c.Key, 1)) || string.IsNullOrWhiteSpace(McCraft.Label(c.Key, 16))) Fail($"McCraft.Label({c.Key}): empty");
+    // What the body reports making (crafting/crafted `item`): a raw game id would be read out in chat.
+    foreach (var item in McCraft.All.Select(c => c.Key)
+                 .Concat(from m in new[] { "wooden", "stone", "iron", "golden", "diamond" }
+                         from t in new[] { "pickaxe", "axe", "shovel", "hoe", "sword" }
+                         select $"{m}_{t}"))
+        if (McCraft.Label(item, 1).Contains('_') || McCraft.Label(item, 8).Contains('_')) Fail($"McCraft.Label({item}): no French name");
     if (McCraft.Label("iron_pickaxe", 1) != "une pioche en fer" || McCraft.Label("torch", 16) != "16 torches" || McCraft.Label("sword", 1) != "une épée")
         Fail($"McCraft.Label: « {McCraft.Label("iron_pickaxe", 1)} », « {McCraft.Label("torch", 16)} », « {McCraft.Label("sword", 1)} »");
     foreach (var material in new[] { "iron", "gold", "diamond", "coal", "string" })
@@ -2823,7 +2829,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     };
     string[] McFamilyPools = { "McCalledLines", "McDeathLines", "McHitByPlayerLines", "McHitAgainLines", "McFedLines", "McAdvancementLines", "McComeAckLines",
         "McFollowAckLines", "McGuardAckLines", "McCollectDoneLines", "McWaveLines", "McGiveDoneLines", "McByeLines", "McCreeperBehindLines", "McDiveLines", "McBoardLines",
-        "McPraisedLines", "McThankedLines", "McPortalLines", "McArmouredLines", "McFreeLines", "McFetchDoneLines" };
+        "McPraisedLines", "McThankedLines", "McPortalLines", "McArmouredLines", "McFreeLines", "McFetchDoneLines", "McCraftDoneLines" };
     foreach (var p in McFamilyPools)
     foreach (var twin in new[] { p + "Owner", p + "Tata" })
     {
@@ -2865,7 +2871,8 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
              "McShakeLines", "McInventoryLines", "McInventoryEmptyLines", "McHaveLines", "McHaveNoneLines", "McPortalLines",
              "McDressLines", "McDressWornLines", "McArmourNoneLines", "McUndressLines", "McUndressFullLines",
              "McDoingLines", "McDoingNothingLines", "McFreeLines", "McFreeAlreadyLines", "McFetchAckLines", "McFetchDoneLines",
-             "McFetchShortLines", "McFetchNoneLines", "McFetchNoChestLines", "McFetchUnknownLines" }
+             "McFetchShortLines", "McFetchNoneLines", "McFetchNoChestLines", "McFetchUnknownLines", "McCraftAckLines", "McCraftDoneLines",
+             "McCraftMissingLines", "McCraftNoWoodLines", "McCraftNoStoneLines", "McCraftUnknownLines", "McCraftFailedLines" }
              .Concat(McFamilyPools.SelectMany(p => new[] { p + "Owner", p + "Tata" })))
     foreach (var (name, lines) in Pools(f))
     {

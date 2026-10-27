@@ -187,6 +187,12 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
   - « syncs vide tes poches », « syncs donne-moi ton poisson » (or ta pioche, tes armes, ton fer…):
     she hands you what she carries; « syncs range tes affaires » puts it in the chest nearby, keeping
     her tools;
+  - « syncs ramène-moi du fer du coffre », « syncs va chercher 20 pains dans le coffre »: she takes
+    it from the chests nearby and brings it to you;
+  - « syncs fabrique-moi une pioche en fer », « syncs fais-moi 16 torches » (or an axe, a sword, a
+    bow, a rod, shears, planks, sticks, a crafting table, a chest, a furnace, ladders): she crafts it
+    and hands it over, cutting the wood and gathering the stone she's short of (iron, gold,
+    diamonds, coal and string she must already have); « une pioche » alone is the best she can make;
   - armour you give her, she puts on (and thanks you); « syncs enlève ton armure » takes it off and
     keeps it, « syncs mets ton armure » puts it back on, « syncs rends-moi ton armure » hands it over;
   - « syncs t'as quoi sur toi ? », « syncs montre ton inventaire »: she says what she carries, the
@@ -206,16 +212,18 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
     saved it, or the family can move or forget a place;
   - « syncs préviens-moi dans 5 min » or « syncs rappelle-moi dans 10 min de sortir le fer »: a
     reminder, up to two hours;
+  - « syncs tu fais quoi ? »: she says what she's doing, an order or her own life;
   - « syncs t'es où ? », « syncs assis », « syncs saute », and « salut syncs » (she waves back).
 
   She never digs through or builds on anything on the way: when gathering, she breaks only the
   blocks she was sent for (and a tree's own leaves to reach its logs), and takes wood only from real
-  trees. She places nothing but a seed where she just harvested, and her camp. She eats when hungry
+  trees. She places nothing but a seed where she just harvested, her camp, and a crafting table to craft
+  with when there's none nearby, which she takes back after. She eats when hungry
   and wears the best armour you give her. She never hits a creeper, whatever she's doing: she shoots
   it with a bow if she has one with arrows, and otherwise keeps away (and warns you when guarding),
   then goes back to what she was doing. A monster attacking anyone near her gets her help, even when
   she's busy; badly hurt, she backs off to heal.
-  After handing something over or putting her things away, she goes back to the farm, the fishing
+  After an errand (handing something over, putting her things away, fetching, crafting), she goes back to the farm, the fishing
   or the guarding she was at. Whisper an order (`/msg SYNCS syncs viens`) and she whispers back. Say
   just « syncs » and she answers « oui ? »: your next message is heard as an order, no name needed
   (« syncs » … « suis-moi »).
@@ -227,7 +235,8 @@ She plays Minecraft with you: a real player on the server (Java Edition, offline
   among her places (names like « ferme », « champ de blé », « étang », « enclos », « maison »): by
   day she works at the farm and the fishing spot in turns, sees to the animals morning and evening
   (bred and sheared twice a day), and at dusk she goes home. With none of them, she keeps near the
-  owner or Tata. Any order comes first; « syncs reste » keeps her put for ten minutes. After dying
+  owner or Tata. Any order comes first; « syncs reste » keeps her put for ten minutes, and « syncs quartier libre »
+  (« fais ta vie », « tu peux y aller ») sends her back to her own life at once. After dying
   she goes back for her things; she picks up what drops from the monsters she kills; she warns
   anyone with a creeper behind them; she says when a tool is wearing out or broke, or what she
   lacks (a rod, shears, arrows, room). She looks at whoever talks to her, turns her back on
@@ -649,7 +658,7 @@ is gone).
     she harvested and gathered.
 
   Messages, voice presence and command uses are counted from 7.6.0 on, so `activity` and
-  `commands` start empty; her Minecraft days from 7.46.0.
+  `commands` start empty; her Minecraft days from 7.50.0.
 
   On the 1st of each month she sends two digests of the previous month by DM, each opening with
   « Le mois en bref » (a few figures and what deserves a look):

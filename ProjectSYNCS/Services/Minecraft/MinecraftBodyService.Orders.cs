@@ -115,6 +115,7 @@ public sealed partial class MinecraftBodyService
             McOrder.Uncamp => CampCommand(player),
             McOrder.Give => new { op = "give", player, goods = request.Goods!.Value.ToString().ToLowerInvariant() },
             McOrder.Fetch => new { op = "fetch", player, goods = request.Goods!.Value.ToString().ToLowerInvariant(), count = request.Count },
+            McOrder.Craft => new { op = "craft", player, item = request.Item!, count = request.Count },
             McOrder.Store => new { op = "store", player },
             McOrder.Fish => new { op = "fish", player },
             McOrder.Smelt => new { op = "smelt", player, what = (request.Smelt ?? McSmelt.Food).ToString().ToLowerInvariant() },
@@ -125,6 +126,7 @@ public sealed partial class MinecraftBodyService
         var detail = request.Coordinates is { } coordinates ? string.Join(" ", coordinates)
             : place is not null ? Label(place.Name, placeOwner, player)
             : request.Goods is { } goods ? BotResponses.McGoodsNames[goods]
+            : request.Item is { } item ? McCraft.Label(item, request.Count)
             : "";
         var now = DateTimeOffset.UtcNow;
         string? busyWith = null;
@@ -143,7 +145,7 @@ public sealed partial class MinecraftBodyService
                 busyWith = holder.Player;
             else
             {
-                // An errand (handing over, putting away, fetching from a chest) pauses an activity, which the body goes back
+                // An errand (handing over, putting away, fetching from a chest, crafting) pauses an activity, which the body goes back
                 // to after: it holds her again then, and its keeper isn't told she left.
                 var resume = IsErrand(request.Order) && _order is { } current && IsActivity(current.Order)
                     ? current
@@ -230,6 +232,9 @@ public sealed partial class MinecraftBodyService
             case McOrder.Fetch when request.Goods is null:
                 Reply(player, whispered, BotResponses.McFetchUnknownLines);
                 return true;
+            case McOrder.Craft when request.Item is null:
+                Reply(player, whispered, BotResponses.McCraftUnknownLines);
+                return true;
             case McOrder.Give when request.Goods is null:
                 Reply(player, whispered, BotResponses.McGiveUnknownLines);
                 return true;
@@ -278,8 +283,9 @@ public sealed partial class MinecraftBodyService
     // pause them.
     private static bool IsActivity(McOrder? order) => order is McOrder.Farm or McOrder.Fish or McOrder.Patrol or McOrder.Ranch;
 
-    // Errands: over in a moment, they pause an activity rather than end it (the body goes back to it after).
-    private static bool IsErrand(McOrder order) => order is McOrder.Give or McOrder.Store or McOrder.Fetch;
+    // Errands: over in a moment (a craft in a few), they pause an activity rather than end it (the body goes back to it
+    // after).
+    private static bool IsErrand(McOrder order) => order is McOrder.Give or McOrder.Store or McOrder.Fetch or McOrder.Craft;
 
     // A farm, a pen or a guarded place holds her while its keeper is on the server; every other claim runs out
     // (McClaim.Expiry).

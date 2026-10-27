@@ -31,7 +31,7 @@ export function lacking(what) {
 export function needsTick() {
   if (!bot.entity || !bot.isAlive) return;
   const items = bot.inventory.items();
-  const handing = (task && (task.kind === 'give' || task.kind === 'store')) || Date.now() - handedAt < 15000 || Date.now() - diedAt < 30000;
+  const handing = (task && ['give', 'store', 'fetch', 'craft'].includes(task.kind)) || Date.now() - handedAt < 15000 || Date.now() - diedAt < 30000;
   for (const [tool, item] of Object.entries(kitTools(items))) {
     const was = worn.get(tool);
     if (!item) {

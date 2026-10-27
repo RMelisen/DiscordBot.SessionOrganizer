@@ -113,6 +113,20 @@ public sealed partial class MinecraftBodyService
                         root.GetProperty("why").GetString() == "noChest" ? BotResponses.McFetchNoChestLines : BotResponses.McFetchNoneLines,
                         "", GoodsName(unfetched));
                     break;
+                case "crafting":
+                    var crafter = root.GetProperty("player").GetString() ?? "";
+                    var crafting = root.GetProperty("item").GetString() ?? "";
+                    Ack(crafter, Confirm(crafter).Whispered, $"craft:{crafting}", BotResponses.McCraftAckLines,
+                        McCraft.Label(crafting, root.GetProperty("count").GetInt32()));
+                    break;
+                case "crafted":
+                    OnCrafted(root.GetProperty("player").GetString() ?? "", root.GetProperty("item").GetString() ?? "",
+                        root.GetProperty("count").GetInt32(), root.GetProperty("delivered").GetBoolean());
+                    break;
+                case "cantCraft":
+                    OnCantCraft(root.GetProperty("player").GetString() ?? "", root.GetProperty("why").GetString() ?? "",
+                        root.TryGetProperty("missing", out var lacking) ? lacking.GetString() ?? "" : "");
+                    break;
                 case "dressed":
                     OnDressing(root.GetProperty("player").GetString() ?? "", BotResponses.McDressLines, root.GetProperty("count").GetInt32());
                     break;

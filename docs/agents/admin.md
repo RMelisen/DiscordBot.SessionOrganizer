@@ -117,7 +117,7 @@ same check.
     who only talks there looks asleep (said in the footer);
   - `minecraft` reads `MinecraftDailyStat`, the daily buckets beside her all-time `MinecraftStat`
     (same `McStats` keys, written in the same save by `MinecraftDataService.AddStatsAsync`, from
-    7.46.0 on). Player names are her in-game ones, sanitized, shown only with `names`. A window
+    7.50.0 on). Player names are her in-game ones, sanitized, shown only with `names`. A window
     she didn't play says so (`MinecraftReportData.Played`: any minute in game, or any order).
 - **Joins and leaves** (`MemberFlowDailyStat`, `MemberFlowTracker` on `UserJoined` / `UserLeft`,
   bots skipped): daily buckets with **no totals table**, counted from 7.5.0 on. Nothing needs an

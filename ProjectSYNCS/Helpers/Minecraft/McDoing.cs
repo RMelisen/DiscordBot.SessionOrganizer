@@ -49,6 +49,7 @@ public static class McDoing
             McOrder.Uncamp => $"elle démonte le camp{who}",
             McOrder.Free => "elle reprend sa vie",
             McOrder.Fetch => $"elle va chercher quelque chose dans un coffre{who}",
+            McOrder.Craft => $"elle fabrique quelque chose{who}",
             _ => $"elle s'occupe d'une demande{who}",
         };
     }
@@ -86,6 +87,7 @@ public static class McDoing
             McOrder.Uncamp => $"je démonte le camp{who}",
             McOrder.Free => "je reprends ma vie",
             McOrder.Fetch => $"je vais chercher un truc dans un coffre{who}",
+            McOrder.Craft => $"je fabrique un truc{who}",
             _ => $"je m'occupe d'une demande{who}",
         };
     }

@@ -5,6 +5,7 @@ import { dress, undress } from './armour.js';
 import { breakCamp, makeCamp } from './camp.js';
 import { holdForFight } from './combat.js';
 import { smelt } from './cooking.js';
+import { craftFor } from './craftorder.js';
 import { snapshot } from './debug.js';
 import { defend } from './defend.js';
 import { fetchFromChests } from './fetch.js';
@@ -74,6 +75,13 @@ export function dispatch(command) {
         if (bot && typeof command.player === 'string' && typeof command.goods === 'string')
           fetchFromChests(command.player, command.goods, Math.max(0, Math.min(64, Number(command.count) || 0)))
             .catch((err) => log('fetch failed:', err && err.message ? err.message : String(err)));
+        break;
+      case 'craft':
+        // Started again after a fight (resume.js): her pockets at the start (`since`) and the table she had set down.
+        if (bot && typeof command.player === 'string' && typeof command.item === 'string')
+          craftFor(command.player, command.item, Math.max(1, Math.min(64, Number(command.count) || 1)),
+            command.since ? { before: command.since, table: command.table || null } : null)
+            .catch((err) => log('craft failed:', err && err.message ? err.message : String(err)));
         break;
       case 'store':
         if (bot && typeof command.player === 'string')

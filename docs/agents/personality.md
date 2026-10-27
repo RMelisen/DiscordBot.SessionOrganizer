@@ -573,7 +573,7 @@ text to read; it is answered as `LowEffort`, like an emote alone.
 ### Two-step messages — `ChatListening`
 
 « syncs ? » then « t'es en quelle version ? »: the Discord twin of her Minecraft body's call and
-answered windows (`minecraft.md`, *An order can come in two steps*). One singleton, per (channel,
+answered windows (`minecraft-orders.md`, *An order can come in two steps*). One singleton, per (channel,
 person), in memory, `ChatListening.Window` (60 s).
 
 - **A call** is her name or tag and nothing else (`MessageCues.IsBareCall`, shared with

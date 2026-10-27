@@ -128,7 +128,8 @@ Read `docs/agents/minecraft.md` first: every rule there holds unless this docume
 - **What she can make** (the owner: « tools too »): pickaxe, axe, shovel, hoe and sword in wood,
   stone, iron, gold and diamond; a bow, a fishing rod, shears; planks, sticks, a crafting table, a
   chest, a furnace, torches, a ladder. A bare tool word (« une pioche ») means the best material
-  she has enough of; a material named is that one or a refusal.
+  she has enough of; a material named is that one or a refusal. *(Changed while building: never gold
+  for a bare tool, which wears out faster than stone and would spend the player's gold unasked.)*
 - **Count.** Tools: 1 (at most 4). Everything else: a number of items (« 16 torches »), crafted in
   whole recipes, at most 64; no number means one recipe's worth (4 torches, 4 planks, 3 ladders).
 - **Materials.** From her pockets. **Short of wood or cobblestone, she gathers it first**, the
@@ -192,6 +193,7 @@ The CLAUDE.md table points at all three. Content moves as is; only the new secti
 - **Base**: branch `minecraft-orders-stats`, in its own worktree, from `main` at `f8c4e7f` (the
   `7.44.0` batch, committed). Numbered **`7.45.0`** (minor: new orders and a migration), one
   CHANGELOG entry, in English, no member names. Its migration stacks after `AddMaybeNudgeSent`.
+  *(Changed while building: `main` shipped 7.45.0 to 7.49.0 meanwhile, so this batch is `7.50.0`.)*
 - `/minecraft help` gains an example for free time, fetch and craft (the checks parse every
   example); measure its pages. `/help` and `README.md` get `/report minecraft` and the new orders.
 - Every new phrase gets cases in `tests/ProjectSYNCS.Checks`, misreadings included (« t'es libre
