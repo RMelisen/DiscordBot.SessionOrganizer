@@ -3,6 +3,19 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.45.0 — 2026-10-27
+
+- In Minecraft she gathers more: gravel, clay, redstone, lapis, emeralds, Nether quartz, granite, diorite and andesite, and red sand counts as sand. For clay, redstone and lapis she breaks just enough blocks for the count asked, not one block per piece.
+- She hands over, counts and is asked about more things: torches, sticks, wool, leather, string, feathers, bones, gunpowder, flint, ender pearls, saplings, shears, hoes, buckets, glass, eggs, slime balls, blaze rods, paper, books, beds, saddles, compasses, maps and ink, plus the new materials.
+- She cooks clay into bricks and logs into charcoal (« fais des briques », « fais du charbon de bois »).
+- Armour pieces count as her armour (« mets ton casque », « enlève tes bottes »), « lève-toi » and « debout » get her up, and she understands « tonds les moutons », « fais le guet », « lance ta ligne », « à genoux », « on est où ? », « tu connais le chemin de la base ? », « timer 10 », « fais un feu de camp », « range le campement » and « go to bed ».
+- « réveille-moi à 20h » no longer sets a 20-hour timer, « suis-moi, on va à la mine » has her follow instead of walking off alone, and « t'as vu ma pioche ? », « t'aimes pêcher ? » or « t'as cuit la viande ? » are no longer taken as orders.
+- In Minecraft, « syncs reviens » brings her back instead of saving a place, and words like « jardin », « entre » or « coucher » no longer start a farm, a walk home or a sit.
+- She reads more ways of asking: « grouille », « t'arrives ? », « viens à la base », « attends-moi à la mine », « tue les zombies », « fais-moi du bois », « syncs du bois », « 2 stacks de bois » (a full stack now, not 2 logs), « bûcheronne », « t'aurais pas du pain ? », « donne-moi un truc à manger », « a+ », « bonne soirée », « t'assures ».
+- « ne me suis plus », « ne me protège plus » or « ne pêche plus » stop her; « lâche-moi » and « laisse-moi tranquille » too.
+- She no longer takes talk for orders: « on a trouvé du fer », « je vais chercher du bois », « il reste du blé ? », « arrête de dire ça », « reste pas plantée là », « tu peux venir demain ? », « pourquoi tu me suis ? », « donne-moi ton avis ».
+- « aide-moi à couper du bois » cuts wood instead of guarding, « va chercher du bois à la maison » fetches wood instead of walking home, and « donne-moi tout ton bois » hands over the wood, not everything.
+
 ## 7.44.0 — 2026-10-27
 
 - A full session's waiting list is real now: when a place opens (someone leaves, or the organiser raises the cap), everyone on « Peut-être » gets a DM with the card's link, and the first click takes it.

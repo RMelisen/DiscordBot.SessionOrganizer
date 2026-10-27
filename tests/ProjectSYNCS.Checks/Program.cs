@@ -2089,7 +2089,7 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         ("syncs reste là et ferme-la", McOrder.Stay), // « ferme » without an article is « shut »
         ("syncs garde-moi", McOrder.Guard),
         ("syncs garde des carottes", McOrder.Guard), // keeps some: never a farm or a harvest (« garde » alone was already guard)
-        ("syncs il reste du blé ?", McOrder.Stay), // as before: « reste » alone is stay
+        ("syncs il reste du blé ?", McOrder.Unknown), // « il reste »: there's some left, not « stay »
         ("syncs arrache-toi", McOrder.Unknown), ("syncs prends ça", McOrder.Unknown),
         ("syncs t'as vu mon champ ?", McOrder.Unknown), ("syncs le blé a poussé", McOrder.Unknown),
         ("syncs ne prends pas soin de la ferme", McOrder.None), ("syncs n'arrache pas les carottes", McOrder.None),
@@ -2486,6 +2486,144 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
         var got = r.Order + (r.Goods is { } g ? ":" + g : "") + (r.Smelt is { } sm ? ":" + sm : "") + (r.Place is { } pl ? ":" + pl : "")
                   + (r.Seconds > 0 ? ":" + r.Seconds : "");
         if (got != expected && !got.StartsWith(expected + ":")) Fail($"sweep « {text} »: got {got}, expected {expected}");
+    }
+
+    // Misreads found by a sweep of game-chat wordings, and the chat each fix must leave alone. Same places and format.
+    foreach (var (text, expected) in new (string, string)[]
+    {
+        //  A common word one slip from a list word is itself: « reviens » once saved a place (« retiens »).
+        ("syncs reviens", "Come"), ("syncs reviens ici", "Come"), ("syncs tu peux revenir ?", "Come"),
+        ("syncs t'as vu mon jardin ?", "Unknown"), ("syncs c'est entre toi et moi", "Unknown"),
+        ("syncs regarde le coucher de soleil", "Unknown"), ("syncs le soleil se couche", "Unknown"),
+        ("syncs je suis fauché", "Unknown"), ("syncs ma cuisine est belle", "Unknown"), ("syncs ça marche à la maison ?", "Unknown"),
+        ("syncs t'as bien dormi ?", "Unknown"),
+        //  Come, the way people hurry her
+        ("syncs grouille", "Come"), ("syncs dépêche toi", "Come"), ("syncs magne toi", "Come"), ("syncs t'arrives ?", "Come"),
+        ("syncs cmon", "Come"), ("syncs tp sur moi", "Come"), ("syncs retrouve moi", "Come"), ("syncs il faut que tu viennes", "Come"),
+        ("syncs viens ou pas ?", "Come"), ("syncs y a du fer par ici ?", "Unknown"),
+        //  A known place right after come or stay: there
+        ("syncs viens à la base", "GoToPlace:base"), ("syncs viens me rejoindre à la mine", "GoToPlace:mine"),
+        ("syncs attends moi à la maison", "GoToPlace:maison"), ("syncs reste à la mine", "GoToPlace:mine"),
+        ("syncs retrouve moi à la mine", "GoToPlace:mine"), ("syncs viens voir ma base", "Come"),
+        //  Follow, and stopping something she keeps doing
+        ("syncs ne me lâche pas", "Follow"), ("syncs tu me suis ou pas ?", "Follow"), ("syncs je veux que tu me suives", "Follow"),
+        ("syncs ne me suis plus", "Stay"), ("syncs me suis plus", "Stay"), ("syncs ne me protège plus", "Stay"),
+        ("syncs ne pêche plus", "Stay"), ("syncs tu me suis plus ?", "None"), ("syncs je vais te suivre", "Unknown"),
+        //  Stay, refused, and talk that isn't
+        ("syncs lâche moi", "Stay"), ("syncs laisse moi tranquille", "Stay"), ("syncs fais rien", "Stay"),
+        ("syncs reste pas plantée là", "None"), ("syncs reste pas avec moi", "Stay"), ("syncs ne bouge plus", "Stay"),
+        ("syncs arrête de dire ça", "Unknown"), ("syncs arrête de me parler", "Unknown"), ("syncs arrête de me suivre", "Stay"),
+        ("syncs lâche moi tes diamants", "Give:Diamond"), ("syncs laisse moi passer", "Unknown"),
+        //  Guard: a monster to kill; help with something else is that something
+        ("syncs tue les zombies", "Guard"), ("syncs tue l'araignée", "Guard"), ("syncs bute le creeper", "Guard"),
+        ("syncs défonce les mobs", "Guard"), ("syncs ne tue pas les zombies", "None"), ("syncs aide moi", "Guard"),
+        ("syncs aide moi à couper du bois", "Collect"), ("syncs aide moi à récolter le blé", "Harvest"),
+        //  Gathering: more verbs, no verb, the wood alone, stacks, and a place after the resource
+        ("syncs fais moi du bois", "Collect"), ("syncs prends du bois", "Collect"), ("syncs va farmer du fer", "Collect"),
+        ("syncs envoie moi du bois", "Collect"), ("syncs bûcheronne", "Collect"), ("syncs du bois stp", "Collect"),
+        ("syncs 20 bois", "Collect"), ("syncs il faut de la pierre", "Collect"), ("syncs je veux du fer", "Collect"),
+        ("syncs un arbre", "Unknown"), ("syncs du bois ou de la pierre ?", "Unknown"), ("syncs prends mon bois", "Unknown"),
+        ("syncs ramène de l'épicéa", "Collect"), ("syncs va chercher du bois à la maison", "Collect"),
+        ("syncs va chercher du fer à la mine", "Collect"),
+        //  The player's own doing, past or planned, and someone else's
+        ("syncs on a trouvé du fer", "Unknown"), ("syncs bob a coupé du bois", "Unknown"), ("syncs j'ai déjà coupé du bois", "Unknown"),
+        ("syncs je vais chercher du bois", "Unknown"), ("syncs je dois aller chercher du bois", "Unknown"),
+        ("syncs je suis en train de couper du bois", "None"), ("syncs je m'en vais suis moi", "Follow"),
+        ("syncs on va chercher du bois", "Collect"), ("syncs y a quoi dans ton sac", "Inventory"),
+        //  For later, or asking why: talk
+        ("syncs tu peux venir demain ?", "Unknown"), ("syncs pourquoi tu me suis ?", "Unknown"),
+        //  Handing over
+        ("syncs donne moi tout ton bois", "Give:Wood"), ("syncs donne moi tout le fer", "Give:Iron"),
+        ("syncs donne moi un truc à manger", "Give:Food"), ("syncs file moi à bouffer", "Give:Food"),
+        ("syncs t'aurais pas du pain ?", "Give:Food"), ("syncs t'as pas un peu de bouffe ?", "Give:Food"),
+        ("syncs je peux avoir ton épée ?", "Give:Weapons"), ("syncs donne moi ton avis", "Unknown"),
+        ("syncs nourris moi", "Give:Food"), ("syncs jsuis affamé", "Give:Food"), ("syncs j'ai super faim", "Give:Food"),
+        ("syncs j'ai plus faim", "Unknown"), ("syncs t'as faim ?", "Unknown"),
+        //  Sleep, goodbyes, greetings, praise
+        ("syncs à dodo", "Sleep"), ("syncs on dort", "Sleep"), ("syncs va dans le lit", "Sleep"),
+        ("syncs je vais dormir", "Bye"), ("syncs je vais me coucher", "Bye"), ("syncs je vais dormir va dormir aussi", "Sleep"),
+        ("syncs a+", "Bye"), ("syncs @+", "Bye"), ("syncs bonne soirée", "Bye"), ("syncs je déco", "Bye"),
+        ("syncs je dois y aller", "Bye"), ("wsh syncs", "Wave"),
+        ("syncs t'es une boss", "Praise"), ("syncs t'assures", "Praise"), ("syncs parfait", "Praise"),
+        ("syncs c'est pas parfait", "None"),
+        //  A wider sweep: fishing, ranch, guarding, standing up, places, timers, the camp, English
+        ("syncs lance ta ligne", "Fish"), ("syncs t'aimes pêcher ?", "Unknown"), ("syncs tu sais pêcher ?", "Unknown"),
+        ("syncs je t'aime suis moi", "Follow"), ("syncs tonds les moutons", "Ranch"),
+        ("syncs fais se reproduire les vaches", "Ranch"), ("syncs t'es tendre avec les vaches", "Unknown"),
+        ("syncs fais le guet", "Patrol"), ("syncs à genoux", "Sit"), ("syncs lève toi", "Stay"), ("syncs debout", "Stay"),
+        ("syncs fais un salto", "Jump"), ("syncs fais moi un bisou", "Unknown"), ("syncs bisous", "Bye"),
+        ("syncs tu connais le chemin de la base ?", "Guide:base"), ("syncs on est où ?", "Where"),
+        ("syncs t'as quels endroits ?", "ListPlaces"), ("syncs suis moi on va à la mine", "Follow"),
+        ("syncs suis moi on va au village", "Follow"), ("syncs viens on va à la mine", "GoToPlace:mine"),
+        ("syncs réveille moi à 20h", "Unknown"), ("syncs timer 10", "Timer:600"), ("syncs minuteur 5", "Timer:300"),
+        ("syncs rappelle moi dans 2h", "Timer:7200"), ("syncs fais un feu de camp", "Camp"),
+        ("syncs range le campement", "Uncamp"), ("syncs go to bed", "Sleep"), ("syncs i need wood", "Collect"),
+        ("syncs i need food", "Give:Food"),
+    })
+    {
+        var r = McCommand.Parse(text, mcNames, false, sweepPlaces);
+        var got = r.Order + (r.Goods is { } g ? ":" + g : "") + (r.Smelt is { } sm ? ":" + sm : "") + (r.Place is { } pl ? ":" + pl : "")
+                  + (r.Seconds > 0 ? ":" + r.Seconds : "");
+        if (got != expected && !got.StartsWith(expected + ":")) Fail($"misread sweep « {text} »: got {got}, expected {expected}");
+    }
+    Request("syncs récupère 2 stacks de bois", McOrder.Collect, resource: McResource.Wood, count: McCommand.MaxCount);
+    Request("syncs ramène 1 stack de pierre", McOrder.Collect, resource: McResource.Stone, count: 64);
+    Request("syncs 20 bois", McOrder.Collect, resource: McResource.Wood, count: 20);
+    Request("syncs bûcheronne", McOrder.Collect, resource: McResource.Wood, count: McCommand.DefaultCount);
+
+    // More materials to gather, and more things to hand over or count. Fetchable ones need a possessive to be handed over
+    // (« donne-moi du gravier » is a trip); the rest take any article.
+    foreach (var (text, resource) in new (string, McResource)[]
+    {
+        ("syncs va chercher du gravier", McResource.Gravel), ("syncs ramène de l'argile", McResource.Clay),
+        ("syncs mine de la redstone", McResource.Redstone), ("syncs va chercher de la poudre de redstone", McResource.Redstone),
+        ("syncs trouve du lapis", McResource.Lapis), ("syncs mine du lapis lazuli", McResource.Lapis),
+        ("syncs va chercher des émeraudes", McResource.Emerald), ("syncs ramène du quartz", McResource.Quartz),
+        ("syncs va chercher du granite", McResource.Granite), ("syncs il me faut de la diorite", McResource.Diorite),
+        ("syncs ramène de l'andésite", McResource.Andesite), ("syncs ramène du sable rouge", McResource.Sand),
+        ("syncs du gravier stp", McResource.Gravel), ("syncs donne moi du gravier", McResource.Gravel),
+    })
+        Request(text, McOrder.Collect, resource: resource);
+    Request("syncs il me faut 20 redstone", McOrder.Collect, resource: McResource.Redstone, count: 20);
+    foreach (var (text, expected) in new (string, string)[]
+    {
+        ("syncs donne moi tes torches", "Give:Torches"), ("syncs donne moi des torches", "Give:Torches"),
+        ("syncs t'as des torches ?", "Give:Torches"), ("syncs file moi des bâtons", "Give:Sticks"),
+        ("syncs donne moi ta laine", "Give:Wool"), ("syncs donne moi du cuir", "Give:Leather"),
+        ("syncs passe moi de la ficelle", "Give:String"), ("syncs donne moi tes plumes", "Give:Feathers"),
+        ("syncs donne moi les os", "Give:Bones"), ("syncs donne moi ta poudre à canon", "Give:Gunpowder"),
+        ("syncs donne moi ta poudre de redstone", "Give:Redstone"), ("syncs donne moi ton silex", "Give:Flint"),
+        ("syncs donne moi tes perles de l'ender", "Give:Pearls"), ("syncs donne moi tes ender pearls", "Give:Pearls"),
+        ("syncs donne moi tes pousses", "Give:Saplings"), ("syncs donne moi tes cisailles", "Give:Shears"),
+        ("syncs donne moi ta houe", "Give:Hoe"), ("syncs donne moi un seau", "Give:Buckets"),
+        ("syncs donne moi du verre", "Give:Glass"), ("syncs fais du verre", "Smelt:Sand"),
+        ("syncs donne moi ton gravier", "Give:Gravel"), ("syncs donne moi tes émeraudes", "Give:Emerald"),
+        ("syncs t'as de la redstone ?", "Have:Redstone"), ("syncs t'as du lapis ?", "Have:Lapis"),
+        ("syncs t'as combien de torches ?", "Have:Torches"), ("syncs t'as combien d'émeraudes ?", "Have:Emerald"),
+        ("syncs mets la laine dans le coffre", "Store"),
+        // Not requests for the goods.
+        ("syncs t'as vu mes os ?", "Unknown"), ("syncs t'as vu ma pioche ?", "Unknown"), ("syncs pousse toi", "Unknown"),
+        ("syncs j'ai trouvé de la redstone", "Unknown"), ("syncs t'as cuit la viande ?", "Unknown"),
+        ("syncs t'as pris mon épée ?", "Unknown"),
+        // Odds and ends; « œ » spelled out; « bâtons de blaze » before « bâtons ».
+        ("syncs donne moi tes œufs", "Give:Eggs"), ("syncs donne moi des oeufs", "Give:Eggs"),
+        ("syncs donne moi tes boules de slime", "Give:Slime"), ("syncs donne moi tes bâtons de blaze", "Give:BlazeRods"),
+        ("syncs donne moi des bâtons", "Give:Sticks"), ("syncs donne moi du papier", "Give:Paper"),
+        ("syncs donne moi tes livres", "Give:Books"), ("syncs donne moi ton lit", "Give:Beds"), ("syncs va au lit", "Sleep"),
+        ("syncs donne moi la selle", "Give:Saddle"), ("syncs donne moi la boussole", "Give:Compass"),
+        ("syncs t'as une carte ?", "Give:Map"), ("syncs donne moi de l'encre", "Give:Ink"), ("syncs tue le blaze", "Guard"),
+        // Armour pieces are her armour.
+        ("syncs mets ton casque", "Dress"), ("syncs mets tes bottes", "Dress"), ("syncs mets un bouclier", "Dress"),
+        ("syncs enlève ton casque", "Undress"), ("syncs donne moi ton bouclier", "Give:Armour"),
+        // Cooking clay into bricks and logs into charcoal.
+        ("syncs cuis l'argile", "Smelt:Clay"), ("syncs fais des briques", "Smelt:Clay"),
+        ("syncs fais du charbon de bois", "Smelt:Wood"), ("syncs mets les bûches au four", "Smelt:Wood"),
+        ("syncs cuis la viande", "Smelt:Food"), ("syncs ça crame", "Unknown"),
+    })
+    {
+        var r = McCommand.Parse(text, mcNames, false, sweepPlaces);
+        var got = r.Order + (r.Goods is { } g ? ":" + g : "") + (r.Smelt is { } sm ? ":" + sm : "");
+        if (got != expected) Fail($"goods « {text} »: got {got}, expected {expected}");
     }
 
     // What she carries, as she says it: French names with their plural and article, the biggest first, the rest

@@ -15,7 +15,7 @@ namespace ProjectSYNCS.Helpers;
 //   Guard       follow the player and fight the monsters around them.
 //   Patrol      guard a spot (where she stands, or a remembered place) instead of a player.
 // Working
-//   Collect     gather N of a resource (wood, stone, coal, iron, copper, gold, diamond, dirt, sand) and bring it back.
+//   Collect     gather N of a resource (wood, stone, ores, dirt, sand, gravel, clay, granite...) and bring it back.
 //   Harvest     harvest the ripe crops around her, replant, bring them back.
 //   Farm        stay and keep the farm: harvest, replant, store in the chest.
 //   Ranch       stay and keep the animals: breed, shear, cull the surplus, store the drops.
@@ -153,6 +153,41 @@ public enum McGoods
     Diamond,
     Dirt,
     Sand,
+    Gravel,
+    Clay,
+    Redstone,
+    Lapis,
+    Emerald,
+    Quartz,
+    Granite,
+    Diorite,
+    Andesite,
+    // What she doesn't fetch, only hands over or counts (CarriedOnly).
+    Torches,
+    Sticks,
+    Wool,
+    Leather,
+    String,
+    Feathers,
+    Bones,
+    Gunpowder,
+    Flint,
+    Pearls,
+    Saplings,
+    Shears,
+    Hoe,
+    Buckets,
+    Glass,
+    Eggs,
+    Slime,
+    BlazeRods,
+    Paper,
+    Books,
+    Beds,
+    Saddle,
+    Compass,
+    Map,
+    Ink,
 }
 
 /// <summary>What she can be asked to put in a furnace. The body knows each by its lower-case name. Not stored.</summary>
@@ -164,6 +199,10 @@ public enum McSmelt
     Ore,
     /// <summary>Sand, for glass.</summary>
     Sand,
+    /// <summary>Clay, for bricks.</summary>
+    Clay,
+    /// <summary>Logs, for charcoal.</summary>
+    Wood,
 }
 
 /// <summary>What she can be sent to harvest. The body knows each by its lower-case name. Not stored.</summary>
@@ -195,6 +234,15 @@ public enum McResource
     Diamond,
     Dirt,
     Sand,
+    Gravel,
+    Clay,
+    Redstone,
+    Lapis,
+    Emerald,
+    Quartz,
+    Granite,
+    Diorite,
+    Andesite,
 }
 
 /// <summary>An order, with what it needs: the coordinates for GoTo (2 numbers: x z; 3: x y z), the resource and count
@@ -245,7 +293,7 @@ public static partial class McCommand
     public static McRequest Parse(string text, IReadOnlyCollection<string> names, bool called = false, IReadOnlyCollection<string>? places = null,
         IReadOnlyCollection<string>? players = null)
     {
-        var words = Clean(Rating.Normalize(text));
+        var words = Clean(Rating.Normalize(Ligatures(SeeYou.Replace(text, " a plus "))));
         if (words.Length == 0) return McRequest.Nothing;
         // Someone's place: their name taken out of the words, the place reads as usual (« chez X » as « à la maison »).
         // Only when both readings are about a place, or the plain one is nothing: « va chercher du bois chez X » is wood.
@@ -269,21 +317,28 @@ public static partial class McCommand
         var calledOut = at >= 0 && (at == 0 || at == words.Length - 1);
         var numbers = Coordinate.Matches(text)
             .Select(m => (int)Math.Floor(double.Parse(m.Value, CultureInfo.InvariantCulture))).ToArray();
-        var counts = Count.Matches(text).Select(m => int.Parse(m.Groups[1].Value)).ToArray();
+        var counts = StackCount.Match(text) is { Success: true } stacks
+            ? [int.Parse(stacks.Groups[1].Value) * 64]
+            : Count.Matches(text).Select(m => int.Parse(m.Groups[1].Value)).ToArray();
         // Words other than numbers: « syncs 120 64 -300 » is coordinates and nothing else.
         var wordsOnly = rest.Where(w => !w.All(char.IsDigit) && !IsCountToken(w)).ToArray();
 
-        // An order, unless refused around its verb (null: refused, so she says nothing at all).
-        McRequest? When(string[] phrases, McRequest request) =>
-            Find(wordsOnly, phrases) is not { } hit ? McRequest.Nothing
-            : Refused(wordsOnly, hit) ? null
+        // An order, unless refused around its verb (null: refused, so she says nothing at all). Something she keeps doing,
+        // refused with « plus », is a stop (« ne me suis plus »).
+        McRequest? When(string[] phrases, McRequest request, string[]? among = null) =>
+            Find(among ?? wordsOnly, phrases) is not { } hit ? McRequest.Nothing
+            : Refused(among ?? wordsOnly, hit) ? Ongoing(request.Order) && NoLonger(among ?? wordsOnly, hit) ? new(McOrder.Stay) : null
             : request;
 
         // An order whose verb was found, unless refused around it (« ne retiens pas »): then nothing at all.
         McRequest Unless((int Start, int Length) hit, string[] around, McRequest request) =>
-            Refused(around, hit) ? McRequest.Refusal : request;
+            !Refused(around, hit) ? request
+            : Ongoing(request.Order) && NoLonger(around, hit) ? new(McOrder.Stay)
+            : McRequest.Refusal;
         var known = places ?? Array.Empty<string>();
         var place = PlaceIn(rest, known);
+        // « suis-moi, on va à la mine »: the player leads, so a place after a follow is where they're going, not her walk.
+        var leading = Find(rest, FollowPhrases) is { } followFirst && (place is not { } led || followFirst.Start < led.At);
 
         // A timer first: its note can say anything (« rappelle-moi d'arrêter le four » is not stay).
         if (Find(wordsOnly, TimerVerbs) is { } timerVerb && DurationIn(text) is { } seconds)
@@ -301,6 +356,9 @@ public static partial class McCommand
         // (« qu'est-ce que t'as dans tes poches ? » is not « vide tes poches »).
         if (CarryQuestion(wordsOnly) is { } carry) return carry;
 
+        // For later, or asking why: talk, never an order (« tu peux venir demain ? », « pourquoi tu me suis ? »).
+        if (wordsOnly.Any(NotNowWords.Contains)) return calledOut && rest.Length <= 6 ? new(McOrder.Unknown) : McRequest.Nothing;
+
         if (Find(wordsOnly, FollowOverStayPhrases) is not null) return When(FollowOverStayPhrases, new(McOrder.Follow)) ?? McRequest.Refusal;
         if (Find(wordsOnly, UncampPhrases) is { } uncamp) return Unless(uncamp, wordsOnly, new(McOrder.Uncamp));
         if (Find(wordsOnly, CampPhrases) is { } camp) return Unless(camp, wordsOnly, new(McOrder.Camp));
@@ -308,7 +366,7 @@ public static partial class McCommand
         if (CareFor(wordsOnly, RanchVerbs, (w, j) => AnimalWords.Contains(w[j])) is { } herd)
             return Unless(herd, wordsOnly, new(McOrder.Ranch));
         if (Find(wordsOnly, FarmAlonePhrases) is not null) return When(FarmAlonePhrases, new(McOrder.Farm)) ?? McRequest.Refusal;
-        if (FarmCare(wordsOnly) is { } care) return Refused(wordsOnly, care) ? McRequest.Refusal : new(McOrder.Farm);
+        if (FarmCare(wordsOnly) is { } care) return Unless(care, wordsOnly, new(McOrder.Farm));
 
         // Guarding a place, before stay and guard: « protège la base » is not « protège-moi ». A remembered place named
         // with it is where she guards (« surveille la mine »); otherwise, where she stands.
@@ -321,14 +379,37 @@ public static partial class McCommand
             return Unless(stayGuard, wordsOnly, new(McOrder.Patrol, Place: place?.Key));
 
         if (Find(wordsOnly, SitPhrases) is { } sit) return Unless(sit, wordsOnly, new(McOrder.Sit));
-        if (Find(wordsOnly, StayPhrases) is not null) return new(McOrder.Stay);
-
-        foreach (var (phrases, order) in new[] { (SleepPhrases, McOrder.Sleep), (GuardPhrases, McOrder.Guard) })
+        // « lève-toi », « debout »: out of a crouch or out of bed, which staying does.
+        if (Find(wordsOnly, StandUpPhrases) is { } standUp) return Unless(standUp, wordsOnly, new(McOrder.Stay));
+        // Stay. Not refused (« reste pas plantée là », « attends pas »), except when it stops a follow (« reste pas avec
+        // moi »); a phrase that says no itself stays (« bouge pas »). Not about her talk (« arrête de dire ça »). With a
+        // known place right after, it's going there to stay (« attends-moi à la mine »).
+        if (Find(wordsOnly, StayPhrases) is { } stay && !StopsTalking(wordsOnly, stay))
         {
-            var found = When(phrases, new(order));
-            if (found is null) return McRequest.Refusal;
-            if (found.Value.Order != McOrder.None) return found.Value;
+            var said = wordsOnly.Skip(stay.Start).Take(stay.Length).ToArray();
+            var after = stay.Start + stay.Length;
+            if (!said.Any(w => w is "pas" or "plus" or "pu") && Refused(wordsOnly, stay)
+                && !wordsOnly.Skip(after).Take(3).Any(w => w is "avec" or "pres" or "cote" or "derriere" or "colle" or "collee"))
+                return McRequest.Refusal;
+            if (place is { } stayAt && Find(rest, StayPhrases) is { } stayVerb && PlaceRightAfter(rest, stayVerb, stayAt))
+                return new(McOrder.GoToPlace, Place: stayAt.Key);
+            return new(McOrder.Stay);
         }
+
+        var sleep = When(SleepPhrases, new(McOrder.Sleep));
+        if (sleep is null) return McRequest.Refusal;
+        if (sleep.Value.Order != McOrder.None) return sleep.Value;
+        // A monster to kill (« tue les zombies »): guard. A killing verb within three words before a monster word.
+        if (CareFor(wordsOnly, KillVerbs, (w, j) => FoeWords.Contains(w[j]), window: 3) is { } kill)
+            return Unless(kill, wordsOnly, new(McOrder.Guard));
+        // « aide-moi à couper du bois » is help with something else: read on without the « aide-moi ».
+        var guardIn = Find(wordsOnly, HelpPhrases) is { } help && help.Start + help.Length < wordsOnly.Length
+                      && HelpWithWords.Contains(wordsOnly[help.Start + help.Length])
+            ? wordsOnly.Select((w, i) => i >= help.Start && i < help.Start + help.Length ? "" : w).ToArray()
+            : wordsOnly;
+        var guard = When(GuardPhrases, new(McOrder.Guard), guardIn);
+        if (guard is null) return McRequest.Refusal;
+        if (guard.Value.Order != McOrder.None) return guard.Value;
 
         // What she carries: handed over, or put in a chest. Before gathering, so « donne-moi ton fer » isn't a trip to the
         // mine. Handing over is read before storing, whose « ranger » is one slip from « manger » (« donne-moi à manger »);
@@ -343,16 +424,22 @@ public static partial class McCommand
                 GiveVerbs) is null)
             return Unless(undressing, wordsOnly, new(McOrder.Undress));
         var give = Find(wordsOnly, GiveVerbs);
-        if (!chest && Find(wordsOnly, GiveAllPhrases) is { } giveAll) return Unless(giveAll, wordsOnly, new(McOrder.Give, Goods: McGoods.All));
+        // « donne-moi tout ton bois » is the wood, not everything.
+        if (!chest && Find(wordsOnly, GiveAllPhrases) is { } giveAll)
+            return Unless(giveAll, wordsOnly, new(McOrder.Give,
+                Goods: GoodsAfter(wordsOnly, giveAll.Start + giveAll.Length) is { Goods: { } only } ? only : McGoods.All));
         if (!chest && give is { } giveVerb && GoodsAfter(wordsOnly, giveVerb.Start + giveVerb.Length) is { Goods: { } goods } asked
             && (asked.Owned || CarriedOnly.Contains(goods)))
             return Unless(giveVerb, wordsOnly, new(McOrder.Give, Goods: goods));
+        // « t'as du pain ? », and « t'aurais pas du pain ? », which asks just the same.
         if (!chest && Find(wordsOnly, HaveVerbs) is { } have && GoodsAfter(wordsOnly, have.Start + have.Length) is { Goods: { } had }
             && CarriedOnly.Contains(had))
-            return Unless(have, wordsOnly, new(McOrder.Give, Goods: had));
-        if (Find(wordsOnly, HungerPhrases) is not null) return new(McOrder.Give, Goods: McGoods.Food);
+            return new(McOrder.Give, Goods: had);
+        if (Hungry(wordsOnly) || Find(wordsOnly, HungerPhrases) is not null) return new(McOrder.Give, Goods: McGoods.Food);
         if (Find(wordsOnly, StorePhrases) is { } stored) return Unless(stored, wordsOnly, new(McOrder.Store));
         if (chest && Find(wordsOnly, IntoChestVerbs) is { } intoChest) return Unless(intoChest, wordsOnly, new(McOrder.Store));
+        if (Find(wordsOnly, LeaveMePhrases) is { } leave && leave.Start + leave.Length == wordsOnly.Length)
+            return Unless(leave, wordsOnly, new(McOrder.Stay));
 
         // Fishing: « va pêcher », or fish asked for with a gathering verb (« ramène du poisson »).
         if (Find(wordsOnly, FishPhrases) is { } fishing) return Unless(fishing, wordsOnly, new(McOrder.Fish));
@@ -368,9 +455,18 @@ public static partial class McCommand
         // Or the question with the place first (« la mine c'est où ? »), or the place alone after « à » (« syncs à la maison »).
         if (place is { } knownPlace)
         {
+            // Not with something to fetch between the verb and the place: « va chercher du bois à la maison » is wood. Not
+            // after a follow either (leading).
+            bool Fetching((int Start, int Length) verb) =>
+                rest.Skip(verb.Start + verb.Length).Take(knownPlace.At - verb.Start - verb.Length)
+                    .Any(w => ResourceWords.Any(r => r.Words.Contains(w)) || FishWords.Contains(w) || CropWords.Any(c => c.Words.Contains(w)));
             foreach (var (verbs, order) in new[] { (WherePlaceVerbs, McOrder.WherePlace), (GuideVerbs, McOrder.Guide), (GoToPlaceVerbs, McOrder.GoToPlace) })
-                if (Find(rest, verbs) is { } placeVerb && placeVerb.Start + placeVerb.Length <= knownPlace.At)
+                if (Find(rest, verbs) is { } placeVerb && placeVerb.Start + placeVerb.Length <= knownPlace.At && !Fetching(placeVerb)
+                    && !(leading && order == McOrder.GoToPlace))
                     return Unless(placeVerb, rest, new(order, Place: knownPlace.Key));
+            // « viens à la base », « viens me rejoindre à la mine »: there, not to the player.
+            if (Find(rest, ComePhrases) is { } comeTo && PlaceRightAfter(rest, comeTo, knownPlace))
+                return Unless(comeTo, rest, new(McOrder.GoToPlace, Place: knownPlace.Key));
             if (Find(rest, WhereIsAnywhere) is { } whereAnywhere) return Unless(whereAnywhere, rest, new(McOrder.WherePlace, Place: knownPlace.Key));
             if (rest.Length > 0 && Prepositions.Contains(rest[0]) && rest.Skip(1).Take(knownPlace.At - 1).All(w => Articles.Contains(w)))
                 return new(McOrder.GoToPlace, Place: knownPlace.Key);
@@ -383,15 +479,23 @@ public static partial class McCommand
             && Find(wordsOnly.Select((w, i) => i == crop.At ? "" : w).ToArray(), CropVerbs) is { } verb)
             return Refused(wordsOnly, verb) ? McRequest.Refusal : new(McOrder.Harvest, Crop: crop.Crop);
 
-        if (resourceAt >= 0)
+        // Felling trees without a wood word: « syncs bûcheronne ».
+        var lumber = resourceAt < 0 ? Find(wordsOnly, LumberPhrases) : null;
+        if (resourceAt >= 0 || lumber is not null)
         {
-            var wanted = ResourceWords.First(r => r.Words.Contains(wordsOnly[resourceAt])).Resource;
+            var wanted = resourceAt >= 0 ? ResourceWords.First(r => r.Words.Contains(wordsOnly[resourceAt])).Resource : McResource.Wood;
             var count = counts.FirstOrDefault(n => n > 0);
-            if (count == 0) count = QuantityBefore(wordsOnly, resourceAt);
-            var collect = When(CollectPhrases,
-                new(McOrder.Collect, Resource: wanted, Count: Math.Clamp(count == 0 ? DefaultCount : count, 1, MaxCount)));
+            if (count == 0 && resourceAt >= 0) count = QuantityBefore(wordsOnly, resourceAt);
+            McRequest gathering = new(McOrder.Collect, Resource: wanted, Count: Math.Clamp(count == 0 ? DefaultCount : count, 1, MaxCount));
+            if (lumber is { } felling) return Unless(felling, wordsOnly, gathering);
+            // « prends mon bois » offers hers: not a trip to the forest.
+            var offered = wordsOnly.Select((w, i) => w is "prends" or "prend" or "prendre" && i + 1 < wordsOnly.Length
+                                                     && TheirOwn.Contains(wordsOnly[i + 1]) ? "" : w).ToArray();
+            var collect = When(CollectPhrases, gathering, offered);
             if (collect is null) return McRequest.Refusal;
             if (collect.Value.Order != McOrder.None) return collect.Value;
+            // No verb at all: « syncs du bois », « syncs 20 bois », « il faut de la pierre ».
+            if (BareAsk(wordsOnly, counts.Length > 0)) return gathering;
         }
         // « syncs récolte », « syncs moissonne »: whatever is ripe. Not with a resource (« récolte du sable » is
         // sand), and not « récolte » after an article, which is the noun (« la récolte est prête »).
@@ -421,7 +525,7 @@ public static partial class McCommand
             return Unless(whereIs, rest, new(McOrder.WherePlace, Place: asked1));
         if (Find(rest, GuideVerbs) is { } guide && PlaceAfter(rest, guide, place, needsPreposition: true) is { } asked2)
             return Unless(guide, rest, new(McOrder.Guide, Place: asked2));
-        if (Find(rest, GoToPlaceVerbs) is { } goPlace)
+        if (!leading && Find(rest, GoToPlaceVerbs) is { } goPlace)
         {
             if (PlaceAfter(rest, goPlace, place, needsPreposition: true) is { } asked3)
                 return Unless(goPlace, rest, new(McOrder.GoToPlace, Place: asked3));
@@ -431,9 +535,11 @@ public static partial class McCommand
                 return Unless(home, rest, new(McOrder.GoToPlace, Place: ""));
         }
 
+        // « y a du fer par ici ? » says what's here, it doesn't call her over.
+        var comeIn = ThereIs(wordsOnly) ? wordsOnly.Select(w => w is "ici" or "la" or "here" ? "" : w).ToArray() : wordsOnly;
         foreach (var (phrases, order) in new[] { (FollowPhrases, McOrder.Follow), (ComePhrases, McOrder.Come) })
         {
-            var found = When(phrases, new(order));
+            var found = When(phrases, new(order), order == McOrder.Come ? comeIn : null);
             if (found is null) return McRequest.Refusal;
             if (found.Value.Order != McOrder.None) return found.Value;
         }

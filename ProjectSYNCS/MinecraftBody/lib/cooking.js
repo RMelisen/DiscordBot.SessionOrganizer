@@ -15,9 +15,14 @@ export const SmeltInputs = {
   ore: (n) => ['raw_iron', 'raw_gold', 'raw_copper', 'iron_ore', 'deepslate_iron_ore', 'gold_ore', 'deepslate_gold_ore',
     'copper_ore', 'deepslate_copper_ore'].includes(n),
   sand: (n) => n === 'sand' || n === 'red_sand',
+  clay: (n) => n === 'clay_ball',
+  // Logs and wood blocks give charcoal; the Nether's stems don't. Never burnt as fuel while they're the input.
+  wood: (n) => (n.endsWith('_log') || n.endsWith('_wood')) && !n.startsWith('crimson') && !n.startsWith('warped'),
 };
 // Which blocks cook what: smokers only food, blast furnaces only ore, both twice as fast as a furnace.
-export const SmeltBlocks = { food: ['furnace', 'smoker'], ore: ['furnace', 'blast_furnace'], sand: ['furnace'] };
+export const SmeltBlocks = {
+  food: ['furnace', 'smoker'], ore: ['furnace', 'blast_furnace'], sand: ['furnace'], clay: ['furnace'], wood: ['furnace'],
+};
 export const SmeltRadius = 16;
 
 // How many items one of these burns for.

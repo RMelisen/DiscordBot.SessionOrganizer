@@ -37,7 +37,10 @@ public static partial class McCommand
     }
 
     /// <summary>A place's key: its name as the parser reads it (lower case, no accents, game-chat spellings mapped).</summary>
-    public static string PlaceKey(string name) => string.Join(' ', Clean(Rating.Normalize(name)));
+    public static string PlaceKey(string name) => string.Join(' ', Clean(Rating.Normalize(Ligatures(name))));
+
+    // « œuf », « cœur »: Normalize drops the joined letters, so they're spelled out first.
+    private static string Ligatures(string text) => text.Replace("œ", "oe").Replace("Œ", "Oe").Replace("æ", "ae").Replace("Æ", "Ae");
 
     /// <summary>
     /// A place's name as the player wrote it, accents kept, for her lines: the words of <paramref name="text"/> that
@@ -124,16 +127,33 @@ public static partial class McCommand
     private static (McGoods? Goods, bool Owned)? GoodsAfter(string[] words, int from)
     {
         var owned = false;
-        for (var j = from; j < Math.Min(words.Length, from + 4); j++)
+        for (int j = from, looked = 0; j < words.Length && looked < 4; j++)
         {
+            if (GoodsFiller.Contains(words[j])) continue;
+            looked++;
+            if (NotGoods.Contains(words[j])) return null;
             if (Possessives.Contains(words[j])) { owned = true; continue; }
-            if (words[j] is "pomme" or "pommes" or "pom" && j + 2 < words.Length && words[j + 1] is "de" or "d" && words[j + 2] == "terre")
-                return (McGoods.Produce, owned);
-            if (CropWords.Any(c => c.Crop != McCrop.Any && c.Words.Any(w => Same(words[j], w)))) return (McGoods.Produce, owned);
-            foreach (var (goods, list) in GoodsWords)
-                if (list.Contains(words[j])) return (goods, owned);
+            // « un truc à manger », « quelque chose à bouffer »: food, not everything.
+            if (words[j] is "truc" or "trucs" or "chose" && j + 2 < words.Length && words[j + 1] == "a"
+                && GoodsWords.First(g => g.Goods == McGoods.Food).Words.Contains(words[j + 2]))
+                return (McGoods.Food, owned);
+            if (GoodsAt(words, j) is { } goods) return (goods, owned);
         }
         return owned ? (null, true) : null;
+    }
+
+    // The kind of goods a word names, with the words after it: « pommes de terre » is produce, not apples and dirt;
+    // « poudre de redstone » is redstone, not gunpowder.
+    private static McGoods? GoodsAt(string[] words, int j)
+    {
+        if (words[j] is "pomme" or "pommes" or "pom" && j + 2 < words.Length && words[j + 1] is "de" or "d" && words[j + 2] == "terre")
+            return McGoods.Produce;
+        if (words[j] == "poudre" && words.Skip(j + 1).Take(2).Contains("redstone")) return McGoods.Redstone;
+        if (words[j] is "baton" or "batons" && words.Skip(j + 1).Take(2).Contains("blaze")) return McGoods.BlazeRods;
+        if (CropWords.Any(c => c.Crop != McCrop.Any && c.Words.Any(w => Same(words[j], w)))) return McGoods.Produce;
+        foreach (var (goods, list) in GoodsWords)
+            if (list.Contains(words[j])) return goods;
+        return null;
     }
 
     // A question about what she carries: the whole (Inventory) or one kind (Have). Null when it isn't one, or when a
@@ -196,13 +216,7 @@ public static partial class McCommand
     private static McGoods? GoodsIn(string[] words)
     {
         for (var j = 0; j < words.Length; j++)
-        {
-            if (words[j] is "pomme" or "pommes" or "pom" && j + 2 < words.Length && words[j + 1] is "de" or "d" && words[j + 2] == "terre")
-                return McGoods.Produce;
-            if (CropWords.Any(c => c.Crop != McCrop.Any && c.Words.Any(w => Same(words[j], w)))) return McGoods.Produce;
-            foreach (var (goods, list) in GoodsWords)
-                if (list.Contains(words[j])) return goods;
-        }
+            if (GoodsAt(words, j) is { } goods) return goods;
         return null;
     }
 
@@ -243,6 +257,7 @@ public static partial class McCommand
     /// <summary>How long a timer runs, in seconds, from the raw text; null when no length of time is given.</summary>
     public static int? DurationIn(string text)
     {
+        if (ClockTime.IsMatch(text)) return null;
         if (HoursMinutes.Match(text) is { Success: true } hm)
             return int.Parse(hm.Groups["h"].Value) * 3600 + int.Parse(hm.Groups["m"].Value) * 60;
         var m = Duration.Match(text);
@@ -285,14 +300,47 @@ public static partial class McCommand
             {
                 if (!parts.Select((p, k) => Same(words[i + k], p)).All(x => x)) continue;
                 if (i > 0 && words[i - 1] is "je" or "j" && parts[0] is not ("je" or "j")) continue;
-                // Past tense (« je t'ai donné ma pioche », « j'ai vidé mes poches ») reports, it doesn't ask.
-                if (i > 0 && words[i - 1] is "ai" or "as" && parts[0] is not ("je" or "j" or "t" or "tu")) continue;
+                // The player's own plans (« je vais chercher du bois »), and someone else's doing (« il reste du blé »).
+                if (OwnPlan(words, i) && parts[0] is not ("je" or "j")) continue;
+                if (i > 0 && ThirdPersons.Contains(words[i - 1]) && !ThirdPersons.Contains(parts[0])) continue;
+                if (i > 1 && LikeVerbs.Contains(words[i - 1]) && words[i - 2] is "t" or "tu") continue;
+                // « en train de couper du bois »: what someone is doing, not what she should do.
+                if (i > 1 && words[i - 1] is "de" or "d" && words[i - 2] == "train") continue;
+                // Past tense (« je t'ai donné ma pioche », « j'ai déjà vidé mes poches ») reports, it doesn't ask.
+                if (parts[0] is not ("je" or "j" or "t" or "tu" or "a") && Past(words, i)) continue;
                 // By the word as typed: « pêché » matches « pêcher » with one slip, and is still past tense.
                 if (parts.Length == 1 && i > 0 && NounAfter.TryGetValue(words[i], out var nounAfter) && nounAfter.Contains(words[i - 1])) continue;
                 return (i, parts.Length);
             }
         }
         return null;
+    }
+
+    // A word after an auxiliary, maybe past an adverb (« j'ai vidé », « t'as bien dormi », « j'ai déjà coupé »), or after
+    // « a » when it's a participle as typed (« on a coupé du bois », « Bob a miné du fer »): « à » comes before an
+    // infinitive (« aide-moi à couper »), never before an order. The caller leaves out phrases that open with the subject,
+    // which are questions (« t'as du fer ? »).
+    private static bool Past(string[] words, int i)
+    {
+        var k = i - 1;
+        while (k >= 0 && k >= i - 2 && PastAdverbs.Contains(words[k])) k--;
+        if (k < 0) return false;
+        if (Auxiliaries.Contains(words[k])) return true;
+        // « y a quoi dans ton sac » is « il y a », not a past tense.
+        var typed = words[i];
+        return words[k] == "a" && !(k > 0 && words[k - 1] == "y")
+               && typed[^1] is 'e' or 'i' or 'u' or 's' or 't' && !typed.EndsWith("re") && !typed.EndsWith("er") && !typed.EndsWith("ir");
+    }
+
+    // « je » two words back at most, past a modal and what goes with it (« je vais chercher », « je dois aller chercher »,
+    // « je vais y aller »). No further: the commas are gone, and « je m'en vais, suis-moi » is an order.
+    private static bool OwnPlan(string[] words, int i)
+    {
+        var k = i - 1;
+        var modal = false;
+        while (k >= 0 && k >= i - 2 && (SelfModals.Contains(words[k]) || words[k] is "aller" or "y" or "me" or "m" or "en"))
+            modal |= SelfModals.Contains(words[k--]);
+        return modal && k >= 0 && words[k] is "je" or "j";
     }
 
     // One-word verbs that are something else after these words: « la pêche », « j'ai pêché », « c'est cuit », « au fond ».
@@ -307,11 +355,20 @@ public static partial class McCommand
         ["protege"] = new() { "est", "es", "bien", "sont", "pas", "trop" },
         ["gardee"] = new() { "est", "es", "bien", "sont", "pas", "trop" },
         ["surveillee"] = new() { "est", "es", "bien", "sont", "pas", "trop" },
+        // « je suis fauché » is broke; « la cuisine » the room; « ça marche » works; « je vais te suivre » follows her.
+        ["fauche"] = new() { "suis", "es", "est", "t", "trop", "grave", "completement", "sommes", "etes", "sont" },
+        ["fauchee"] = new() { "suis", "es", "est", "t", "trop", "grave", "completement", "sommes", "etes", "sont" },
+        ["cuisine"] = new() { "la", "ma", "ta", "sa", "une", "de", "en", "notre", "cette" },
+        ["marche"] = new() { "ca", "c", "le", "au", "du", "un", "ce", "en" },
+        ["suivre"] = new() { "te" },
+        ["suit"] = new() { "te" },
     };
 
     // A word of a phrase: exact, or one slip away for long verbs (« protge », « chercer », « rapplque »).
     // Short words must be exact: at four or five letters, one slip makes another word (« viens » / « liens »).
-    private static bool Same(string word, string part) => word == part || (part.Length >= 6 && word.Length >= 5 && Close(word, part));
+    // A common word typed as itself (NoSlip: « reviens », « jardin ») is never another one.
+    private static bool Same(string word, string part) =>
+        word == part || (part.Length >= 6 && word.Length >= 5 && !NoSlip.Contains(word) && Close(word, part));
 
     // At most one edit apart: a letter added, dropped, changed, or two neighbours swapped.
     private static bool Close(string a, string b)
@@ -413,9 +470,89 @@ public static partial class McCommand
         var after = hit.Start + hit.Length;
         for (var i = after; i < Math.Min(words.Length, after + 2); i++)
         {
+            // « tu viens ou pas ? » is impatience, not a refusal.
+            if (words[i] == "pas" && words[i - 1] == "ou") continue;
             if (words[i] is "pas" or "jamais") return true;
             if (words[i] == "plus" && (i + 1 >= words.Length || words[i + 1] is not ("de" or "d"))) return true;
         }
         return false;
     }
+
+    // An order she keeps doing refused with « plus » (« ne me suis plus », « me protège plus », « ne pêche plus »): stop
+    // doing it, which is staying. Not with « tu » just before, a complaint (« tu me suis plus ? »).
+    private static bool NoLonger(string[] words, (int Start, int Length) hit)
+    {
+        for (var i = Math.Max(0, hit.Start - 3); i < hit.Start; i++)
+            if (words[i] is "tu" or "t") return false;
+        var after = hit.Start + hit.Length;
+        for (var i = after; i < Math.Min(words.Length, after + 2); i++)
+            if (words[i] == "plus" && (i + 1 >= words.Length || words[i + 1] is not ("de" or "d"))) return true;
+        return false;
+    }
+
+    private static bool Ongoing(McOrder order) =>
+        order is McOrder.Follow or McOrder.Guard or McOrder.Patrol or McOrder.Farm or McOrder.Ranch or McOrder.Fish;
+
+    // « j'ai faim », « j'ai trop faim », « j'ai super faim »: « j'ai », up to two words, « faim »; not « j'ai plus faim ».
+    private static bool Hungry(string[] words)
+    {
+        for (var i = 2; i < words.Length; i++)
+        {
+            if (words[i] != "faim") continue;
+            for (var k = i - 1; k >= Math.Max(1, i - 3); k--)
+            {
+                if (words[k] is "pas" or "plus" or "jamais") break;
+                if (words[k] == "ai" && words[k - 1] is "j" or "je") return true;
+            }
+        }
+        return false;
+    }
+
+    // A known place named right after a verb, past a preposition (« viens à la base », « attends-moi à la mine »), with only
+    // « moi », « me rejoindre » and the like between.
+    private static bool PlaceRightAfter(string[] words, (int Start, int Length) verb, (string Key, int At) place)
+    {
+        var i = place.At - 1;
+        while (i >= 0 && Articles.Contains(words[i])) i--;
+        var after = verb.Start + verb.Length;
+        if (i < after || !Prepositions.Contains(words[i])) return false;
+        for (var j = after; j < i; j++)
+            if (words[j] is not ("moi" or "nous" or "me" or "m" or "rejoindre" or "retrouver")) return false;
+        return true;
+    }
+
+    // « arrête de dire ça »: a stop word, « de », maybe « me », and a talking word. Her talk, not her task.
+    private static bool StopsTalking(string[] words, (int Start, int Length) hit)
+    {
+        if (!StopWords.Contains(string.Join(' ', words.Skip(hit.Start).Take(hit.Length)))) return false;
+        var j = hit.Start + hit.Length;
+        if (j >= words.Length || words[j] is not ("de" or "d")) return false;
+        j++;
+        if (j < words.Length && words[j] is "me" or "m" or "nous" or "te" or "t" or "se" or "s") j++;
+        return j < words.Length && StopTalking.Contains(words[j]);
+    }
+
+    // A resource asked for with no verb: « syncs du bois », « syncs 20 bois », « il faut de la pierre ». Every word a resource
+    // word, a quantity or BareAskFiller, with at least one partitive, quantity or number; « un » alone isn't one (« syncs un
+    // arbre ! » points at it).
+    private static bool BareAsk(string[] words, bool counted)
+    {
+        var resource = false;
+        var amount = counted;
+        foreach (var w in words)
+        {
+            if (ResourceWords.Any(r => r.Words.Contains(w))) { resource = true; continue; }
+            if (w is not ("un" or "une") && QuantityWords.ContainsKey(w) || w is "du" or "de" or "d" or "des" or "dizaine" or "douzaine" or "vingtaine")
+            {
+                amount = true;
+                continue;
+            }
+            if (!BareAskFiller.Contains(w)) return false;
+        }
+        return resource && amount;
+    }
+
+    // « il y a », « y a »: what's there, not a call (« y a du fer par ici ? »).
+    private static bool ThereIs(string[] words) =>
+        words.Contains("ya") || words.Select((w, i) => w == "y" && i + 1 < words.Length && words[i + 1] is "a" or "avait").Any(x => x);
 }

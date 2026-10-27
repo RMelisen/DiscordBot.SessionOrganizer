@@ -110,7 +110,14 @@ is read before stay, because it means follow.
 
 **Refusals are read next to the verb only**: « ne » up to two words before, « pas » just before or
 up to two words after, « jamais » after, « plus » after unless it means more (« plus de bois »).
-A « pas » further away belongs to another sentence (« c'est pas grave, syncs viens »).
+A « pas » further away belongs to another sentence (« c'est pas grave, syncs viens »), and « ou pas »
+is impatience (« tu viens ou pas ? »). **Something she keeps doing refused with « plus »** (follow,
+guard, patrol, farm, ranch, fishing: « ne me suis plus », « ne pêche plus ») is a stop, so Stay;
+not with « tu » just before, a complaint (« tu me suis plus ? »). Stay itself can be refused
+(« reste pas plantée là » is nothing) unless the phrase says no itself (« bouge pas ») or it stops
+a follow (« reste pas avec moi »); « arrête de dire ça » is about her talk, not her task. A
+message with « demain », « hier » or « pourquoi » is never an order (« tu peux venir demain ? »):
+it goes to talk.
 
 **The phrase lists are written the way people type in game chat**: familiar French (« ramène ta
 fraise », « fais du bois », « il me faut »), shortcuts (« vien », « vi1 », « diams »), a little
@@ -128,20 +135,44 @@ shorter words must be exact, because at four or five letters one slip makes anot
 
 **The slip cuts both ways at six letters too**: « ranger » / « manger », « ranges » / « manges »,
 « préviens » / « reviens », « pêches » / « poches ». Such a word stays out of a list alone and only
-comes in a longer phrase (« ranger tes affaires », « préviens-moi »). Check any new six-letter
-word against the common words one slip away.
+comes in a longer phrase (« ranger tes affaires », « préviens-moi »). When the list word must stay,
+the common word goes in `NoSlip` instead, and is then only ever itself: « reviens » read as
+« retiens » saved a place instead of coming, « jardin » farmed, « entre » walked her home,
+« coucher » sat her down. Check any new six-letter word against the common words one slip away.
 
 **Talk about oneself is not an order.** A phrase right after « je » doesn't count (« je range ma
-chambre », « ça fait 5 min que j'attends »), unless it starts with it (« j'ai faim »); nor does one
-right after « ai » or « as », the past tense (« je t'ai donné ma pioche », « j'ai vidé mes
-poches »). A few one-word verbs are nouns or participles after certain words (`NounAfter`: « la
+chambre », « ça fait 5 min que j'attends »), unless it starts with it (« j'ai faim »), nor one after
+« je » and a modal, two words back at most (`OwnPlan`: « je vais chercher du bois », « je dois aller
+chercher »; further back the lost comma may have ended the sentence: « je m'en vais, suis-moi »);
+nor one right after « il » or « elle » (« il reste du blé »), or « en train de »; nor one after an
+auxiliary, maybe past an adverb, the past tense (« je t'ai donné ma pioche », « j'ai déjà vidé mes
+poches », « t'as bien dormi »), or after « a » when the word as typed is a participle (« on a
+trouvé du fer », « Bob a coupé du bois »: « à » comes before an infinitive, « aide-moi à couper »,
+and « y a » is « il y a »). A few one-word verbs are nouns or participles after certain words (`NounAfter`: « la
 pêche », « j'ai pêché », « c'est cuit », « au fond », « la base est protégée ? »), looked up by the
 word as typed, since the slip lets « pêché » match « pêcher ».
 
 **Counts** come from a number anywhere (« 20 », « x20 », « 20x »), else from a quantity in words
 right before the resource (« dix bûches », « une stack de pierre », « une dizaine de bûches »),
-else 10. Only right before: « du bois pour une maison » isn't one log. **Coordinates** accept
+else 10. Only right before: « du bois pour une maison » isn't one log. A number before « stack(s) »
+is 64 each (« 2 stacks » was 2 logs). **A resource with no verb** is gathered when every other word
+is filler and there's a partitive, a quantity or a number (`BareAsk`: « syncs du bois », « syncs 20
+bois », « il faut de la pierre », « je veux du fer »); « syncs un arbre » points at one, and « syncs
+bois » alone is « drink ». A resource between a going verb and a known place is the errand, not the
+place (« va chercher du bois à la maison » is wood). **Coordinates** accept
 F3's decimals, floored to the block (-300.7 is block -301), and labels or brackets around them.
+
+A few readings sit between orders. **Come or stay with a known place right after**, past a
+preposition (`PlaceRightAfter`: « viens à la base », « attends-moi à la mine », « reste à la
+maison »), is going there; « viens voir ma base » is still come. **A killing verb with a monster
+within three words** is guard (« tue les zombies », `KillVerbs`, `FoeWords`), and **« aide-moi à
+… »** is help with what follows, read without the « aide-moi » (« aide-moi à couper du bois » is
+wood). « lâche-moi » and « laisse-moi » are stay only as the whole message (« lâche-moi tes
+diamants » hands them over). « y a du fer par ici ? » says what's here and doesn't call her. **A
+follow before a going verb** is the player leading (« suis-moi, on va à la mine »: follow, not her
+walk alone). After « tu » / « t' », a liking or knowing verb asks about her (`LikeVerbs`: « t'aimes
+pêcher ? », « tu sais pêcher ? »); not « aime », or « je t'aime, suis-moi » would lose its order.
+« œ » is spelled « oe » before reading (Normalize drops it: « œufs » read as « ufs »).
 
 **An order can come in two steps.** A message that only names her (« syncs », « hé syncs ? ») is a
 call, but only when the name opens or closes it; elsewhere it's talk about her. She answers with a
@@ -215,7 +246,11 @@ list: the owner removed it.
   grass is out of reach, and on a mountain the nearest 256 stone were all under her feet while a
   cliff face stood 20 blocks off. **What she counts is what the resource drops** (`Yields`: logs,
   cobblestone, coal, raw iron…); the saplings, sticks and apples from the leaves are handed over
-  but not counted as wood. **In rounds**: what's open now, then what that opened (a trunk's top log, boxed in by
+  but not counted as wood, and gravel's flint counts as gravel. **A block that drops several**
+  (`PerBlock`: clay, redstone, lapis, 4 at the least) is broken the count divided by that, or
+  « 20 redstone » was 20 ores and about 90 dust. Granite, diorite and andesite drop themselves; quartz
+  is only in the Nether, red sand is sand. A new resource is a `McResource`, its words, its name in
+  `McResourceNames`, and `Resources` and `Yields` in the body. **In rounds**: what's open now, then what that opened (a trunk's top log, boxed in by
   leaves, only opens once the logs under it are gone: she brought 12 of 16), up to the count, four
   rounds at most, ending early on a round that broke nothing. **One block at a time** through
   collectblock, closest first: it gave up on the whole
@@ -332,7 +367,8 @@ list: the owner removed it.
   on). A piece someone gives her (an armour item picked up) gets the closest player's thanks
   (`armoured`, `McArmouredLines` and twins), but not her own things coming back after a death.
 - **Armour on and off** (`Dress`, `Undress`, free orders answered from the body's event):
-  « mets ton armure », « équipe-toi » put on the best she carries; « enlève ton armure », « retire
+  « mets ton armure », « équipe-toi » put on the best she carries (any piece named is all of it: « mets
+  ton casque », « donne-moi ton bouclier »); « enlève ton armure », « retire
   ton armure » take it off **and keep it** in her pockets (`bare`), and she puts nothing on by
   herself until told to or **given a piece**, which is a gift and goes on (all of it). Each piece
   needs a free slot: with full pockets what's left stays on (`McUndressFullLines`). « donne-moi ton
@@ -387,7 +423,10 @@ list: the owner removed it.
 - **Give** (« vide tes poches », « donne-moi ton poisson ») tosses what she carries at the player's
   feet; armour includes what she wears. A gathering word only becomes Give with a possessive
   (« donne-moi ton fer »): « donne-moi du fer » stays the gathering order. Goods she can't fetch
-  (`CarriedOnly`: food, fish, tools…) take any article. Give is read before Store, whose « ranger »
+  (`CarriedOnly`: food, fish, tools, torches, wool, string, pearls…) take any article. « poudre »
+  is gunpowder unless « redstone » follows (`GoodsAt`); « t'as vu ma pioche ? » asks about something
+  else (`NotGoods`). A new kind is a `McGoods`, its words, `McGoodsNames`, and `Goods` in the body,
+  whose key is the enum's name in lower case. Give is read before Store, whose « ranger »
   is one slip from « manger ». **Store** (« range tes affaires », or anything put « dans le coffre »)
   fills the closest chest or barrel within 16 blocks and keeps her kit: the best sword, pickaxe, axe
   and shovel, a rod, shears, her bow and arrows, and what keeps her alive (golden apples, a totem, healing and
@@ -398,7 +437,9 @@ list: the owner removed it.
 - **Smelt** uses only a furnace someone else isn't using (nothing in its input or output, no other
   fuel), smokers for food and blast furnaces for ore too, with her own fuel. She waits by it, takes
   the result as it comes, and brings it back. Whether a furnace is free is only known by opening it,
-  so « all busy » is the one refusal that comes after she has dropped her task.
+  so « all busy » is the one refusal that comes after she has dropped her task. Clay makes bricks and
+  logs make charcoal (`McSmelt.Clay`, `Wood`; « fais du charbon de bois »), in a furnace only; the logs
+  going in are never her fuel. « fais du charbon » alone stays a trip for coal, like « fais du bois ».
 - **Remembered places** (`minecraft-state.json`, up to 20 per player, by `McCommand.PlaceKey`) are
   where the player stood when they said « retiens ici : nom »; the body reports it (`mark`). **They are
   kept by player**: each has their own « maison ». A place named alone is looked up in the player's own
@@ -438,8 +479,10 @@ list: the owner removed it.
   syncs viens » is come), compliments and thanks and **reminders** (« préviens-moi dans 5 min », « rappelle-moi dans 10 min
   de sortir le fer »). A timer is read first, as its note can hold any word; the length comes from
   the raw text (`Duration`), the note is what follows the first « de », « pour » or « que » once the
-  length is out. Three per player, two hours at most, in memory, gone with the body. Sitting is
-  stay, crouched.
+  length is out. Three per player, two hours at most, in memory, gone with the body. Only a delay:
+  « réveille-moi à 20h » is a time of day (`ClockTime`) and sets nothing, where it once set twenty
+  hours. A bare number after « timer » or « minuteur » is minutes. Sitting is stay, crouched, and
+  standing up (« lève-toi », « debout ») is stay, which lets go of the crouch and gets her out of bed.
 - **She never digs and never places a block.** `canDig = false`, no scaffolding blocks, no
   pillaring: a path through someone's wall or a dirt tower in their build is not help. Where
   walking can't get there she says so (`McNoPathLines`) instead. **The exceptions are a seed

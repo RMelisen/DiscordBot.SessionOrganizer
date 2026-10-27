@@ -65,6 +65,7 @@ public static class McItems
         M("sand", "bloc de sable", "blocs de sable");
         M("red_sand", "bloc de sable rouge", "blocs de sable rouge");
         M("glass", "bloc de verre", "blocs de verre");
+        F("glass_pane", "vitre");
         F("clay_ball", "motte d'argile", "mottes d'argile");
         F("brick", "brique");
         F("obsidian", "obsidienne");
@@ -207,7 +208,11 @@ public static class McItems
                      ("cyan", "cyan", "cyan"), ("purple", "violette", "violettes"), ("blue", "bleue", "bleues"),
                      ("brown", "marron", "marron"), ("green", "verte", "vertes"), ("red", "rouge", "rouges"), ("black", "noire", "noires"),
                  })
+        {
             F($"{colour}_wool", $"laine {one}", $"laines {many}");
+            // Any colour is « un lit »: the adjective would need its masculine.
+            M($"{colour}_bed", "lit");
+        }
 
         // Fishing's treasure and junk, and the odd things in a pocket.
         M("bowl", "bol");
@@ -228,6 +233,7 @@ public static class McItems
         M("lava_bucket", "seau de lave", "seaux de lave");
         M("milk_bucket", "seau de lait", "seaux de lait");
         F("torch", "torche");
+        F("soul_torch", "torche des âmes", "torches des âmes");
         M("crafting_table", "établi");
         M("furnace", "four");
         M("chest", "coffre");

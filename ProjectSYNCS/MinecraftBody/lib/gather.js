@@ -64,9 +64,21 @@ export const Resources = {
   gold: (n) => n === 'gold_ore' || n === 'deepslate_gold_ore',
   diamond: (n) => n === 'diamond_ore' || n === 'deepslate_diamond_ore',
   dirt: (n) => n === 'dirt' || n === 'grass_block',
-  sand: (n) => n === 'sand',
+  sand: (n) => n === 'sand' || n === 'red_sand',
+  gravel: (n) => n === 'gravel',
+  clay: (n) => n === 'clay',
+  redstone: (n) => n === 'redstone_ore' || n === 'deepslate_redstone_ore',
+  lapis: (n) => n === 'lapis_ore' || n === 'deepslate_lapis_ore',
+  emerald: (n) => n === 'emerald_ore' || n === 'deepslate_emerald_ore',
+  quartz: (n) => n === 'nether_quartz_ore',
+  granite: (n) => n === 'granite',
+  diorite: (n) => n === 'diorite',
+  andesite: (n) => n === 'andesite',
 };
 export const GatherRadius = 48;
+// Blocks that drop several of what she counts: she breaks the count divided by this (rounded up), not the count, or
+// « 20 redstone » would be 20 ores and about 90 dust. The lowest drop, so she never comes back short.
+const PerBlock = { clay: 4, redstone: 4, lapis: 4 };
 // What each resource drops, by item name: what she counts as brought back. A tree's leaves drop saplings, sticks and
 // apples, handed over too but not counted as wood.
 const Yields = {
@@ -78,7 +90,18 @@ const Yields = {
   gold: (n) => n === 'raw_gold',
   diamond: (n) => n === 'diamond',
   dirt: (n) => n === 'dirt',
-  sand: (n) => n === 'sand',
+  sand: (n) => n === 'sand' || n === 'red_sand',
+  // Gravel drops gravel or, one time in ten, flint: either way one block's worth.
+  gravel: (n) => n === 'gravel' || n === 'flint',
+  clay: (n) => n === 'clay_ball',
+  redstone: (n) => n === 'redstone',
+  lapis: (n) => n === 'lapis_lazuli',
+  emerald: (n) => n === 'emerald',
+  quartz: (n) => n === 'quartz',
+  // Unlike stone, these drop themselves.
+  granite: (n) => n === 'granite',
+  diorite: (n) => n === 'diorite',
+  andesite: (n) => n === 'andesite',
 };
 
 export function isTreeLog(block) {
@@ -159,13 +182,13 @@ export async function collect(player, resource, count, since = null) {
   const counted = (type) => Yields[resource](bot.registry.items[type].name);
   const mine = { kind: 'collect', player, before };
   setTask(mine);
-  const available = wood ? trees.reduce((n, t) => n + t.logs.length, 0) : first.all.length;
+  const available = wood ? trees.reduce((n, t) => n + t.logs.length, 0) : first.all.length * (PerBlock[resource] || 1);
   if (!since) emit('collecting', { player, resource, count: Math.min(count, available) });
   // Started again, what she already has of it counts towards the count.
   const already = [...itemCounts()].filter(([type]) => counted(type))
     .reduce((sum, [type, n]) => sum + Math.max(0, n - (before.get(type) || 0)), 0);
   if (wood) await fellTrees(trees, count - already, mine);
-  else await gatherRounds(resource, count - already, mine, first.open);
+  else await gatherRounds(resource, Math.ceil((count - already) / (PerBlock[resource] || 1)), mine, first.open);
   if (task !== mine) return; // told to stop in the meantime
 
   const { total, delivered } = await deliverGains(player, before, counted);
