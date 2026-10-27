@@ -74,7 +74,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/rate`** — Je note n'importe quoi sur 10. Et je ne change jamais d'avis.\n" +
                 "**`/ship`** — Deux noms, un pourcentage. Je calcule si ça va ensemble. `@random` tire quelqu'un au sort.\n" +
                 "**`/blame`** — C'est la faute de qui ? Je tranche, parmi les gens en vocal.\n" +
-                "**`/wouldyourather`** — Tu préfères… ? Deux boutons, résultats dans 10 minutes.")
+                "**`/wouldyourather`** — Tu préfères… ? Deux boutons, résultats dans 10 minutes.\n" +
+                "**`/confess`** — Une confession anonyme, que je poste numérotée. Personne ne saura que c'est toi.")
             .AddField("Commandes — Arcade",
                 "**`/arcade duel`** · **`heist`** — Pierre-feuille-ciseaux contre quelqu'un ; un casse chez Quokka en équipe.\n" +
                 "**`/arcade race`** — Une course de Plynlings, avec des paris.\n" +

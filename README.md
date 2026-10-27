@@ -31,6 +31,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/minecraft help · status · where · inventory · stats` | Her Minecraft manual, and what she's doing and has done on the server | everyone |
 | `/minecraft link · invite` | Link your in-game name (a code whispered to her), then bring her onto the server for an hour | everyone (`invite`: linked) |
 | `/wouldyourather` | A two-button dilemma, revealed after 10 minutes | everyone |
+| `/confess <texte>` | An anonymous, numbered confession in the confessions channel | everyone |
 | `/tonight` | Who's up tonight — becomes a session once enough people are in | everyone |
 | `/teams` | Split a voice channel into teams | everyone |
 | `/remindme · /reminders` | A reminder by DM later; list or cancel yours | everyone |
@@ -52,6 +53,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/admin mute · unmute` | Discord timeout, saying what's missing when it can't | staff |
 | `/admin plynling rename · resurrect · passion-reset · cure`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
 | `/debug tell · dm · absent` | Speak through the bot; flag yourself away | owner |
+| `/debug delete · confession` | Delete one of her messages by link; see who wrote a confession | owner |
 | `/debug silence` | Silence mode: she only answers commands, nothing on her own initiative | owner |
 | `/debug quiz` | Post or close a pop quiz, or crown the week, now (tests) | owner |
 | `/debug quokka` | Make Quokka show up in the bots channel now (tests) | owner |
@@ -167,6 +169,12 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 - **`/wouldyourather [a] [b]`** — a « tu préfères… » with two buttons: one of her dilemmas, or your
   own two options. Votes stay hidden for 10 minutes, then she reveals the split, who chose what,
   and her own pick. Open dilemmas don't survive a restart.
+- **`/confess texte`** — an anonymous confession: she posts it, numbered, in the channel set with
+  `/config confess-channel`, and only you see the confirmation. One every 10 minutes per person.
+  Mentions never ping. The owner alone can look up who wrote one, to deal with abuse.
+- **Free Steam games** — every 3 hours she checks Steam for paid games at 100 % off (yours to keep,
+  not free weekends, free-to-play or DLC) and posts each new one, with its normal price and a link,
+  in the channel set with `/config freegames-channel`.
 
 ### Minecraft
 
@@ -623,6 +631,8 @@ is gone).
     default the server's « spam-bots » channel, else the game channel;
   - `levelup-channel set|clear` — where level-up cards go; the bots channel when unset;
   - `quiz-channel set|clear` — where her pop quiz goes; no channel, no quiz;
+  - `confess-channel set|clear` — where `/confess` posts; no channel, no confessions;
+  - `freegames-channel set|clear` — where she announces Steam games that turn free to keep; no channel, no announcements;
   - `plynling-role create|set|clear` — a role SYNCS keeps on everyone with a living Plynling and
     off everyone else (flair and a ping group); `create` makes it for you, `clear` stops managing it
     without touching anyone;
@@ -836,7 +846,7 @@ ProjectSYNCS/
 │                          # Commands, Services, Models and Helpers are split by
 │                          # subsystem: Core/, Personality/, Plynling/, Xp/, Voice/,
 │                          # Feedback/, Shame/, Scheduling/, Quiz/, Economy/, Arcade/,
-│                          # Admin/, Pi/, Minecraft/
+│                          # Admin/, Pi/, Minecraft/, Community/
 ├─ Data/AppDbContext.cs    # EF Core context
 ├─ Migrations/             # EF Core migrations (applied automatically on startup)
 ├─ MinecraftBody/          # Her body on the Minecraft server (Node + Mineflayer), driven by

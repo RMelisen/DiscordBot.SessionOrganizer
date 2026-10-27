@@ -164,6 +164,9 @@ namespace ProjectSYNCS.Services;
 //     WouldYouRatherDilemmas · WyrIntroLines · WyrUnanimousLines · WyrTieLines · WyrLandslideLines
 //     · WyrCloseLines · WyrNobodyLines · WyrHerPickLines ... /wouldyourather
 //
+//   [Community] Free Steam games
+//     FreeGameLines ............ above the card of a Steam game turned free to keep (SteamFreeGamesService)
+//
 //   [Arcade] /arcade games and Quokka's visits
 //     DuelChallengeLines · DuelOwnerWarningLines · DuelHerAcceptLines · DuelAcceptedLines
 //     DuelDeclinedLines · DuelWithdrawnLines · DuelTieLines · DuelDrawLines

@@ -76,4 +76,16 @@ public class GuildSettings
     /// guild that never sets it keeps them wherever its bots channel is.
     /// </summary>
     public ulong LevelUpChannelId { get; set; }
+
+    /// <summary>
+    /// Where /confess posts. Zero means off, like the quiz channel: no default, so a server only
+    /// gets confessions once staff picks a channel.
+    /// </summary>
+    public ulong ConfessChannelId { get; set; }
+
+    /// <summary>
+    /// Where she announces Steam games that are free to keep (SteamFreeGamesService). Zero means
+    /// off: no default.
+    /// </summary>
+    public ulong FreeGamesChannelId { get; set; }
 }

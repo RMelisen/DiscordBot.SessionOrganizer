@@ -122,4 +122,10 @@ public static class InputCaps
     /// both of them, and again in her own pick on the result.
     /// </summary>
     public const int WyrOption = 80;
+
+    /// <summary>
+    /// A <c>/confess</c> text. Lands in an embed description (4096), held well below it so a
+    /// confession stays something people read.
+    /// </summary>
+    public const int Confession = 1000;
 }

@@ -6,7 +6,7 @@ sweeps) stay in the root `CLAUDE.md`. This file lists what exists. Read it befor
 
 ## Background loops
 
-Thirteen `BackgroundService` loops, each with **its own interval on purpose** — never share one:
+Fourteen `BackgroundService` loops, each with **its own interval on purpose** — never share one:
 
 - `ReminderService` (5 min, load-bearing — see scheduling).
 - `PersonalReminderService` (1 min, `/remindme` — see scheduling).
@@ -25,6 +25,8 @@ Thirteen `BackgroundService` loops, each with **its own interval on purpose** �
 - `ActivityFlushService` (5 min, writes `ActivityCounter`'s counts; see admin).
 - `MinecraftBodyService` (1 min, her body on the Minecraft server, a Node child process; see
   minecraft).
+- `SteamFreeGamesService` (3 h, first pass 5 min after start — Steam games turned free to keep;
+  see community).
 
 Services with another shape:
 

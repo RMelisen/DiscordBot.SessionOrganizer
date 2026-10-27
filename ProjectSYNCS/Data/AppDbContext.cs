@@ -60,6 +60,7 @@ public class AppDbContext : DbContext
     public DbSet<ActivityHourStat> ActivityHourStats => Set<ActivityHourStat>();
     public DbSet<ChannelDailyStat> ChannelDailyStats => Set<ChannelDailyStat>();
     public DbSet<CommandDailyStat> CommandDailyStats => Set<CommandDailyStat>();
+    public DbSet<AnonymousConfession> Confessions => Set<AnonymousConfession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -267,6 +268,8 @@ public class AppDbContext : DbContext
             e.Property(x => x.QuizRoleId).HasConversion<long>();
             e.Property(x => x.BotsChannelId).HasConversion<long>();
             e.Property(x => x.LevelUpChannelId).HasConversion<long>();
+            e.Property(x => x.ConfessChannelId).HasConversion<long>();
+            e.Property(x => x.FreeGamesChannelId).HasConversion<long>();
             // At most one settings row per guild.
             e.HasIndex(x => x.GuildId).IsUnique();
         });
@@ -297,6 +300,16 @@ public class AppDbContext : DbContext
             e.Property(x => x.UserId).HasConversion<long>();
             e.HasIndex(x => new { x.GuildId, x.UserId }).IsUnique();
             e.HasIndex(x => x.GuildId);
+        });
+
+        modelBuilder.Entity<AnonymousConfession>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.AuthorId).HasConversion<long>();
+            e.Property(x => x.ChannelId).HasConversion<long>();
+            e.Property(x => x.MessageId).HasConversion<long>();
+            // One number per guild; also what /debug confession looks up.
+            e.HasIndex(x => new { x.GuildId, x.Number }).IsUnique();
         });
 
         modelBuilder.Entity<MemberWarning>(e =>

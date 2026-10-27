@@ -14,7 +14,7 @@ namespace ProjectSYNCS.Services;
 /// several threads, so it has to be immutable.
 ///
 /// Ids of zero mean "not configured": the single-channel settings then fall back to their
-/// hardcoded default — except the quiz channel, which has none (zero means no quiz). The
+/// hardcoded default — except the quiz, confess and free-games channels, which have none (zero means off). The
 /// sets hold only what an admin added on top of the hardcoded floor.
 /// </remarks>
 public sealed record GuildConfig(
@@ -29,11 +29,13 @@ public sealed record GuildConfig(
     ulong QuizRoleId,
     int QuizCrownedWeek,
     ulong BotsChannelId,
-    ulong LevelUpChannelId)
+    ulong LevelUpChannelId,
+    ulong ConfessChannelId,
+    ulong FreeGamesChannelId)
 {
     /// <summary>What an unconfigured guild looks like — nothing set, nothing added.</summary>
     public static readonly GuildConfig Empty = new(0, 0, 0,
-        new HashSet<ulong>(), new HashSet<ulong>(), new HashSet<ulong>(), 0, 0, 0, 0, 0, 0);
+        new HashSet<ulong>(), new HashSet<ulong>(), new HashSet<ulong>(), 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
 // Per-guild settings an admin can change at runtime, and the cache that makes them
@@ -113,7 +115,9 @@ public sealed class GuildConfigService
                 settings?.QuizRoleId ?? 0,
                 settings?.QuizCrownedWeek ?? 0,
                 settings?.BotsChannelId ?? 0,
-                settings?.LevelUpChannelId ?? 0);
+                settings?.LevelUpChannelId ?? 0,
+                settings?.ConfessChannelId ?? 0,
+                settings?.FreeGamesChannelId ?? 0);
         }
         catch (Exception ex)
         {
@@ -195,6 +199,14 @@ public sealed class GuildConfigService
     /// <summary>Sets the level-up channel, or goes back to the bots channel with zero.</summary>
     public Task SetLevelUpChannelAsync(ulong guildId, ulong channelId) =>
         UpdateSettingsAsync(guildId, s => s.LevelUpChannelId = channelId);
+
+    /// <summary>Sets the /confess channel, or turns confessions off with zero.</summary>
+    public Task SetConfessChannelAsync(ulong guildId, ulong channelId) =>
+        UpdateSettingsAsync(guildId, s => s.ConfessChannelId = channelId);
+
+    /// <summary>Sets the free Steam games channel, or turns the alerts off with zero.</summary>
+    public Task SetFreeGamesChannelAsync(ulong guildId, ulong channelId) =>
+        UpdateSettingsAsync(guildId, s => s.FreeGamesChannelId = channelId);
 
     /// <summary>Sets the pop quiz channel, or turns the quiz off with zero.</summary>
     public Task SetQuizChannelAsync(ulong guildId, ulong channelId) =>

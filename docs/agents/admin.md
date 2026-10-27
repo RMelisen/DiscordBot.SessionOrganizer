@@ -178,7 +178,8 @@ A flat `/config show` (a static Components V2 card, `ConfigCards.Build`) plus on
 setting: `excluded-channels add|remove`, `idle-channels add|remove`, `shame-voters add|remove`,
 `moderator-role set|clear`, `plynling-role create|set|clear`, `quiz-role create|set|clear`,
 `game-channel set|clear`,
-`main-channel set|clear`, `quiz-channel set|clear`, `bots-channel set|clear`, `levelup-channel set|clear`. Three levels is
+`main-channel set|clear`, `quiz-channel set|clear`, `bots-channel set|clear`, `levelup-channel set|clear`,
+`confess-channel set|clear`, `freegames-channel set|clear`. Three levels is
 Discord's maximum nesting. (`/shame` is flat only because it had to stay invokable bare; nothing here
 needs that.) Every handler goes through `ConfigModule.BeginAsync` (`IsStaff`, then an ephemeral
 defer); no `[DefaultMemberPermissions]`, same reason as `/admin`.
@@ -200,7 +201,8 @@ defer); no `[DefaultMemberPermissions]`, same reason as `/admin`.
   `clear` (or setting the default itself, stored as zero) falls back. `set` refuses a channel the bot
   can't view and send in — a silent destination would otherwise fail on every use with nobody told.
   **`QuizChannelId` is the exception: it has no default**, so zero means no quiz, `clear` turns it
-  off, and it is per guild (see `quiz.md`).
+  off, and it is per guild (see `quiz.md`). `ConfessChannelId` and `FreeGamesChannelId` work the same
+  way (see `community.md`).
 - **The mirrored roles are owned, not configured.** `GuildSettings.PlynlingRoleId` and `QuizRoleId`,
   zero meaning none (for the quiz role, zero also turns the weekly crown off). SYNCS decides who holds
   them (a strict mirror — see `plynling.md` and `quiz.md`; both go through `RoleMirror`), and the two
@@ -228,7 +230,8 @@ service is the only writer: any write drops that guild's entry. A failed read de
 
 ## `/debug` — owner only
 
-`tell`, `dm`, `absent`, `plynling`, `emotes`, `digest` (last month's digest in your DMs now, yours or a preview of Tata's, see
+`tell`, `delete` (one of her own messages, by link; refuses anyone else's), `confession` (who wrote
+confession #N, see `community.md`), `dm`, `absent`, `plynling`, `emotes`, `digest` (last month's digest in your DMs now, yours or a preview of Tata's, see
 *`/report` and the monthly digest*), `quiz` (post or close a pop quiz now, see `quiz.md`),
 `sticker` (post any of her sticker strips here, bypassing the gate, see `personality/reactions.md`),
 `silence` (see below),

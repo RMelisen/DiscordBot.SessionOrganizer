@@ -46,6 +46,38 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("ActivityHourStats");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.AnonymousConfession", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("AuthorId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("ChannelId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("MessageId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Number")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "Number")
+                        .IsUnique();
+
+                    b.ToTable("Confessions");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.BotFeedback", b =>
                 {
                     b.Property<int>("Id")
@@ -506,6 +538,12 @@ namespace ProjectSYNCS.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("BotsChannelId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("ConfessChannelId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("FreeGamesChannelId")
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("GameChannelId")

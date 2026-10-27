@@ -108,6 +108,7 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     private readonly ChatAnswerService _answers;
     private readonly MonthlyDigestService _digest;
     private readonly MinecraftBodyService _minecraft;
+    private readonly ConfessionService _confessions;
 
     // Discord caps a message at 2000 characters; leave room for the herald line
     // and the blockquote markers.
@@ -121,8 +122,9 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
     public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings,
         PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz, QuizCrownService crown,
         StickerService stickers, QuokkaRaidService quokka, ChatAnswerService answers,
-        MonthlyDigestService digest, MinecraftBodyService minecraft, SilenceService silence)
+        MonthlyDigestService digest, MinecraftBodyService minecraft, SilenceService silence, ConfessionService confessions)
     {
+        _confessions = confessions;
         _silence = silence;
         _minecraft = minecraft;
         _digest = digest;
@@ -190,6 +192,80 @@ public class DebugModule : InteractionModuleBase<SocketInteractionContext>
 
         var receipt = await SendAsync(target, BuildContent(text, announce), repliedTo, announce);
         await FollowupAsync(receipt, ephemeral: true);
+    }
+
+    // Takes down one of her own messages — a misfire, a line that landed badly, a /debug tell typo.
+    // Only hers: deleting someone else's would make this a moderation tool, which /debug is not.
+    [SlashCommand("delete", "Supprimer un message du bot")]
+    public async Task DeleteAsync(
+        [Summary("message", "Lien du message à supprimer (clic droit → Copier le lien du message)")]
+        string message)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+
+        await DeferAsync(ephemeral: true);
+
+        var (channel, target, error) = await ResolveLinkedMessageAsync(message, null);
+        if (channel is null || target is null)
+        {
+            await FollowupAsync(error, ephemeral: true);
+            return;
+        }
+
+        if (target.Author.Id != Context.Client.CurrentUser.Id)
+        {
+            await FollowupAsync("Ce message n'est pas de moi — je ne supprime que les miens. ❌", ephemeral: true);
+            return;
+        }
+
+        try
+        {
+            await target.DeleteAsync();
+            _logger.LogInformation("Owner deleted bot message {MessageId} in channel {ChannelId}.", target.Id, channel.Id);
+            await FollowupAsync($"Message supprimé dans {channel.Mention}. 🗑️", ephemeral: true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to delete bot message {MessageId} in channel {ChannelId}.", target.Id, channel.Id);
+            await FollowupAsync($"Impossible de supprimer ce message dans {channel.Mention}. ❌", ephemeral: true);
+        }
+    }
+
+    // Who wrote confession #N. The one place a confession's author shows, and only to the owner:
+    // it's there to deal with abuse. From a DM it reads the home guild's numbers.
+    [SlashCommand("confession", "Voir qui a écrit une confession")]
+    public async Task ConfessionAsync(
+        [Summary("numero", "Le numéro de la confession")]
+        [MinValue(1)]
+        int numero)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+
+        await DeferAsync(ephemeral: true);
+
+        var guildId = Context.Guild?.Id ?? HomeGuild.Id;
+        var confession = await _confessions.FindAsync(guildId, numero);
+        if (confession is null)
+        {
+            await FollowupAsync($"Pas de confession #{numero} sur ce serveur.", ephemeral: true);
+            return;
+        }
+
+        var where = confession.MessageId == 0
+            ? ""
+            : $" · https://discord.com/channels/{confession.GuildId}/{confession.ChannelId}/{confession.MessageId}";
+        await FollowupAsync(
+            $"Confession #{numero} : <@{confession.AuthorId}>, "
+            + $"{TimestampTag.FormatFromDateTimeOffset(confession.CreatedAt, TimestampTagStyles.Relative)}{where}",
+            ephemeral: true, allowedMentions: AllowedMentions.None);
     }
 
     /// <summary>

@@ -27,6 +27,7 @@ matching file before changing that subsystem**; the rules there are as binding a
 | Her Minecraft body, `MinecraftBodyService`, `MinecraftBody/`, `/minecraft` | `docs/agents/minecraft.md` |
 | Her Minecraft orders (`McCommand`, gathering, errands, crafting, the camp) and free time | `docs/agents/minecraft-orders.md` |
 | How her Minecraft body moves: water, fights, body language, `tools/mc-pathtest` | `docs/agents/minecraft-body.md` |
+| `/confess`, the free Steam games alert | `docs/agents/community.md` |
 | `/admin`, `/config`, `/debug`, permissions | `docs/agents/admin.md` |
 | `/report`, the monthly digest, joins/leaves counting, activity counting | `docs/agents/admin.md` |
 | Adding a loop, a `Ready` hook or a server-specific id; `PresenceService` | `docs/agents/architecture.md` |
@@ -99,7 +100,7 @@ be checkable without a gateway here).
 
 `Commands/`, `Helpers/`, `Services/` and `Models/` are split into **subsystem subfolders** named after
 `docs/agents/` (`Plynling/`, `Xp/`, `Voice/`, `Personality/`, `Feedback/`, `Shame/`,
-`Scheduling/`, `Quiz/`, `Economy/`, `Arcade/`, `Admin/`, `Pi/`, `Minecraft/`), plus `Core/` for what every subsystem
+`Scheduling/`, `Quiz/`, `Economy/`, `Arcade/`, `Admin/`, `Pi/`, `Minecraft/`, `Community/`), plus `Core/` for what every subsystem
 leans on (`AppTime`, `BotChat`, `Emotes`, `CooldownGate`, `SessionPermissions`, `BotService`…).
 **Folders are not namespaces**: every file keeps the flat `ProjectSYNCS.Commands` /
 `.Helpers` / `.Services` / `.Models` namespace, so moving a file between subfolders changes no `using` and

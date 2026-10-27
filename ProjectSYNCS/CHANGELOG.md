@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.54.0 — 2026-10-27
+
+- New `/confess`: an anonymous, numbered confession posted in the channel set with `/config confess-channel`. One every 10 minutes per person; only the owner can look up who wrote one (`/debug confession`).
+- New free Steam games alert: every 3 hours she checks Steam for paid games at 100 % off and posts each new one in the channel set with `/config freegames-channel`.
+- New owner-only `/debug delete`: paste a message link and she deletes that message, if it is one of hers.
+
 ## 7.53.1 — 2026-10-27
 
 - The database switches to write-ahead logging, so reads no longer wait behind a write.

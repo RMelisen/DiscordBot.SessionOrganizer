@@ -23,6 +23,7 @@ written next to it:
 | `report-state.json` | `MonthlyDigestService` |
 | `minecraft-state.json` | `MinecraftBodyService` |
 | `silence-state.json` | `SilenceService` |
+| `freegames-state.json` | `SteamFreeGamesService` |
 
 A new state file goes next to the database too, and gets a row here.
 

@@ -122,6 +122,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<BreakdownService>();
         services.AddSingleton<AvailabilityService>();
         services.AddSingleton<SilenceService>();
+        // /confess: the cooldown and the numbering lock live here, so a singleton.
+        services.AddSingleton<ConfessionService>();
         services.AddSingleton<ResponsePicker>();
         // The glitch easter egg's daily cap is in-memory: a singleton, like the picker.
         services.AddSingleton<GlitchService>();
@@ -215,6 +217,8 @@ var host = Host.CreateDefaultBuilder(args)
         // minecraft reads its state and forces a join or a leave. Off without Minecraft:Host.
         services.AddSingleton<MinecraftBodyService>();
         services.AddHostedService(sp => sp.GetRequiredService<MinecraftBodyService>());
+        // Steam games turned free to keep, every 3 hours, to each guild's free-games channel.
+        services.AddHostedService<SteamFreeGamesService>();
     })
     .Build();
 
