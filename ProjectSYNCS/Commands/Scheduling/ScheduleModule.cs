@@ -1,11 +1,12 @@
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Helpers;
+using ProjectSYNCS.Interactions.Autocomplete;
 using ProjectSYNCS.Interactions.Modals;
 using ProjectSYNCS.Models;
 using ProjectSYNCS.Services;
-using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text;
 
@@ -19,28 +20,129 @@ namespace ProjectSYNCS.Commands;
 public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly EventService _eventService;
-
-    // Holds the title a user typed when their modal failed validation, so the
-    // "Corriger" button can reopen the modal pre-filled instead of losing it.
-    private static readonly ConcurrentDictionary<ulong, string> _draftTitles = new();
-
+    private readonly PollService _polls;
     private readonly CardRepost _repost;
+    private readonly CardUpdater _cards;
     private readonly SessionWaitlist _waitlist;
+    private readonly SchedulingLocks _locks;
+    private readonly ManageSnapshots _snapshots;
+    private readonly ILogger<ScheduleModule> _logger;
 
-    public ScheduleModule(EventService eventService, CardRepost repost, SessionWaitlist waitlist)
+    // What /schedule create was given before the picker or a modal took over (title, places,
+    // duration, voice, description, weekly), and what a failed modal held so « Corriger » can
+    // reopen it pre-filled. Keyed by user; thirty minutes without a touch and it's gone.
+    private static readonly DraftBox<ScheduleDraft> _drafts = new(TimeSpan.FromMinutes(30));
+
+    private sealed class ScheduleDraft
     {
-        _waitlist = waitlist;
-        _eventService = eventService;
-        _repost = repost;
+        public string Title { get; set; } = string.Empty;
+        // As typed, so a modal can show it back.
+        public string Places { get; set; } = string.Empty;
+        public string When { get; set; } = string.Empty;
+        public int DurationMinutes { get; set; } = SessionEvent.DefaultDurationMinutes;
+        public ulong VoiceChannelId { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public bool Weekly { get; set; }
     }
 
-    // ---- Wizard step 1: pick a category ----------------------------------
+    public ScheduleModule(EventService eventService, PollService polls, CardRepost repost, CardUpdater cards,
+        SessionWaitlist waitlist, SchedulingLocks locks, ManageSnapshots snapshots, ILogger<ScheduleModule> logger)
+    {
+        _eventService = eventService;
+        _polls = polls;
+        _repost = repost;
+        _cards = cards;
+        _waitlist = waitlist;
+        _locks = locks;
+        _snapshots = snapshots;
+        _logger = logger;
+    }
+
+    // ---- /schedule create: one shot with title + when, the picker otherwise ----
 
     [SlashCommand("create", "Planifier une nouvelle session")]
-    public async Task ScheduleCreateAsync()
+    public async Task ScheduleCreateAsync(
+        [Summary("title", "Le nom de la session"), MaxLength(InputCaps.Title)] string title = "",
+        [Summary("when", "Quand : « samedi 21h », « demain », « 25/12 20:30 », « ce soir »"), MaxLength(InputCaps.When),
+         Autocomplete(typeof(SessionWhenAutocompleteHandler))] string when = "",
+        [Summary("category", "Le type de session"),
+         Choice("🎮 Jeu", nameof(SessionCategory.Game)), Choice("🧑‍🤝‍🧑 Activité", nameof(SessionCategory.Activity)),
+         Choice("🎬 Film", nameof(SessionCategory.Movie)), Choice("✨ Autre", nameof(SessionCategory.Other))] string category = "",
+        [Summary("places", "Places : 0 = illimité, sinon 2 à 67"), MinValue(0), MaxValue(SessionSeats.MaxPlayers)] int places = -1,
+        [Summary("duration", "Durée (2 h si rien)"),
+         Choice("30 min", 30), Choice("1 h", 60), Choice("1 h 30", 90), Choice("2 h", 120),
+         Choice("3 h", 180), Choice("4 h", 240), Choice("6 h", 360)] int duration = SessionEvent.DefaultDurationMinutes,
+        [Summary("voice", "Le salon vocal de la session"), ChannelTypes(ChannelType.Voice, ChannelType.Stage)] IGuildChannel? voice = null,
+        [Summary("description", "Un mot sur la session, affiché sur la carte"), MaxLength(InputCaps.Description)] string description = "",
+        [Summary("weekly", "La reposter chaque semaine, même jour, même heure")] bool weekly = false)
     {
-        await RespondAsync("**1/4** — Quel type de session ?",
-            components: BuildCategoryStep(), ephemeral: true);
+        if (places >= 0 && !SessionSeats.IsValidCap(places))
+        {
+            await RespondAsync(SessionSeats.CapRule, ephemeral: true);
+            return;
+        }
+
+        var draft = new ScheduleDraft
+        {
+            Title = title.Trim(),
+            Places = places > 0 ? places.ToString() : string.Empty,
+            When = when.Trim(),
+            DurationMinutes = duration,
+            VoiceChannelId = voice?.Id ?? 0,
+            Description = description.Trim(),
+            Weekly = weekly,
+        };
+
+        DateTimeOffset? at = null;
+        if (draft.When.Length > 0)
+        {
+            at = SessionTime.Parse(draft.When, DateTimeOffset.UtcNow);
+            if (at is null)
+            {
+                await RespondAsync(WhenRefusal(draft.When), ephemeral: true);
+                return;
+            }
+        }
+        SessionCategory? picked = Enum.TryParse<SessionCategory>(category, out var c) ? c : null;
+
+        // Everything needed: the session exists in one command.
+        if (draft.Title.Length > 0 && at is { } start)
+        {
+            await DeferAsync(ephemeral: true);
+            var (session, error) = await CreateAndPostAsync(picked ?? SessionCategory.Game, start, draft, Math.Max(places, 0));
+            await FollowupAsync(error ?? Created(session!), ephemeral: true);
+            return;
+        }
+
+        // Something missing: the picker opens on the first step it still needs.
+        _drafts.Set(Context.User.Id, draft);
+        if (at is { } known)
+        {
+            if (picked is { } cat)
+            {
+                await RespondWithModalAsync(DetailsModal($"schedule:finalize:{cat}:{known.ToUnixTimeSeconds()}", draft));
+                return;
+            }
+            await RespondAsync($"Session le **{SessionTime.Preview(known)}** — **Quel type de session ?**",
+                components: new ComponentBuilder()
+                    .WithSelectMenu(SessionCategories.Select($"schedule:catat:{known.ToUnixTimeSeconds()}")).Build(),
+                ephemeral: true);
+            return;
+        }
+        if (picked is { } only)
+        {
+            await RespondAsync("**2/4** — Quel jour ?", components: BuildDayStep(only.ToString()), ephemeral: true);
+            return;
+        }
+        await RespondAsync("**1/4** — Quel type de session ?", components: BuildCategoryStep(), ephemeral: true);
+    }
+
+    // The date was given, the category wasn't: straight to the details.
+    [ComponentInteraction("schedule:catat:*", ignoreGroupNames: true)]
+    public async Task OnCategoryForKnownDateAsync(string unix, string[] values)
+    {
+        _drafts.TryGet(Context.User.Id, out var draft);
+        await RespondWithModalAsync(DetailsModal($"schedule:finalize:{values[0]}:{unix}", draft));
     }
 
     // ---- Wizard step 2: pick a day ---------------------------------------
@@ -58,14 +160,20 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         });
     }
 
-    // ---- Wizard step 3: pick an hour -------------------------------------
+    // ---- Wizard step 3: pick an hour, or type the date -------------------
 
     [ComponentInteraction("schedule:day:*", ignoreGroupNames: true)]
     public async Task OnDaySelectedAsync(string category, string[] values)
     {
         var date = values[0];
-        var component = (SocketMessageComponent)Context.Interaction;
+        if (date == OtherDate)
+        {
+            _drafts.TryGet(Context.User.Id, out var draft);
+            await RespondWithModalAsync(TypedModal(category, draft));
+            return;
+        }
 
+        var component = (SocketMessageComponent)Context.Interaction;
         await component.UpdateAsync(msg =>
         {
             msg.Content = "**3/4** — À quelle heure ?";
@@ -128,14 +236,24 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
     [ComponentInteraction("schedule:min:*:*:*:*", ignoreGroupNames: true)]
     public async Task OnMinuteSelectedAsync(string category, string date, string hour, string minute)
     {
-        // Carry category + chosen datetime through the modal's custom id.
-        await RespondWithModalAsync<ScheduleEventModal>($"schedule:finalize:{category}:{date}T{hour}:{minute}");
+        // The wall clock becomes an instant here, once: from now on the custom-ids carry unix
+        // seconds, which have no DST ambiguity and no ':' to trip a wildcard.
+        if (!AppTime.TryParseWallClock($"{date}T{hour}:{minute}", "yyyy-MM-ddTHH:mm", out var at))
+        {
+            await RespondAsync("Date invalide. Relance `/schedule create`.", ephemeral: true);
+            return;
+        }
+        _drafts.TryGet(Context.User.Id, out var draft);
+        await RespondWithModalAsync(DetailsModal($"schedule:finalize:{category}:{at.ToUnixTimeSeconds()}", draft));
     }
 
     // ---- Step component builders (shared by forward + "Retour" paths) -----
 
+    // The day select's last option: the date typed instead, so the picker has no 24-day wall.
+    private const string OtherDate = "other";
+
     private static MessageComponent BuildCategoryStep() =>
-        new ComponentBuilder().WithSelectMenu(BuildCategorySelect()).Build();
+        new ComponentBuilder().WithSelectMenu(SessionCategories.Select("schedule:cat")).Build();
 
     private static MessageComponent BuildDayStep(string category) =>
         new ComponentBuilder()
@@ -158,15 +276,6 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         return builder.Build();
     }
 
-    private static SelectMenuBuilder BuildCategorySelect() =>
-        new SelectMenuBuilder()
-            .WithCustomId("schedule:cat")
-            .WithPlaceholder("Choisis une catégorie")
-            .AddOption("Jeu", nameof(SessionCategory.Game), emote: new Emoji("🎮"))
-            .AddOption("Activité", nameof(SessionCategory.Activity), emote: new Emoji("🧑‍🤝‍🧑"))
-            .AddOption("Film", nameof(SessionCategory.Movie), emote: new Emoji("🎬"))
-            .AddOption("Autre", nameof(SessionCategory.Other), emote: new Emoji("✨"));
-
     private static SelectMenuBuilder BuildDaySelect(string category)
     {
         var fr = CultureInfo.GetCultureInfo("fr-FR");
@@ -175,8 +284,8 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             .WithPlaceholder("Choisis le jour");
 
         var today = AppTime.Now.Date;
-        // 25 is the hard cap on options in a Discord select menu.
-        for (int i = 0; i < 25; i++)
+        // 25 is the hard cap on options in a Discord select menu: 24 days, then « Autre date… ».
+        for (int i = 0; i < 24; i++)
         {
             var date = today.AddDays(i);
             string label = i switch
@@ -187,6 +296,7 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             };
             menu.AddOption(label, date.ToString("yyyy-MM-dd"));
         }
+        menu.AddOption("Autre date…", OtherDate, "Tape la date toi-même (jusqu'à 90 jours)", new Emoji("⌨️"));
         return menu;
     }
 
@@ -210,24 +320,276 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         return menu;
     }
 
+    // ---- The details modals, built by hand to pre-fill them --------------
+
+    // Field ids must match ScheduleEventModal.
+    public static Modal DetailsModal(string customId, string? title = null, string? places = null) =>
+        new ModalBuilder()
+            .WithTitle("Planifier une session")
+            .WithCustomId(customId)
+            .AddTextInput("Nom de la session", "title", maxLength: InputCaps.Title,
+                placeholder: "ex. Among Us, Gartic, Anime ?", value: title, required: true)
+            .AddTextInput("Places (vide = illimité, sinon 2 à 67)", "max_players", maxLength: 3,
+                value: places, required: false)
+            .Build();
+
+    private static Modal DetailsModal(string customId, ScheduleDraft? draft) =>
+        DetailsModal(customId, NullIfEmpty(draft?.Title), NullIfEmpty(draft?.Places));
+
+    // Field ids must match ScheduleTypedModal.
+    private static Modal TypedModal(string category, ScheduleDraft? draft) =>
+        new ModalBuilder()
+            .WithTitle("Planifier une session")
+            .WithCustomId($"schedule:typed:{category}")
+            .AddTextInput("Nom de la session", "title", maxLength: InputCaps.Title,
+                placeholder: "ex. Among Us, Gartic, Anime ?", value: NullIfEmpty(draft?.Title), required: true)
+            .AddTextInput("Quand", "when", maxLength: InputCaps.When,
+                placeholder: "ex. samedi 21h, 25/12 20:30, demain", value: NullIfEmpty(draft?.When), required: true)
+            .AddTextInput("Places (vide = illimité, sinon 2 à 67)", "max_players", maxLength: 3,
+                value: NullIfEmpty(draft?.Places), required: false)
+            .Build();
+
+    private static string? NullIfEmpty(string? text) => string.IsNullOrEmpty(text) ? null : text;
+
+    // ---- Modal submits: create the session --------------------------------
+
+    [ModalInteraction("schedule:finalize:*:*", ignoreGroupNames: true)]
+    public Task OnScheduleModalSubmittedAsync(string categoryStr, string unixStr, ScheduleEventModal modal) =>
+        FinishAsync(categoryStr, unixStr, modal.SessionTitle, modal.MaxPlayers, pollId: null);
+
+    // A closed poll turned into a session (PollModule.OnCategoryPickedAsync builds this modal).
+    [ModalInteraction("schedule:frompoll:*:*:*", ignoreGroupNames: true)]
+    public Task OnFromPollSubmittedAsync(string pollIdStr, string categoryStr, string unixStr, ScheduleEventModal modal) =>
+        FinishAsync(categoryStr, unixStr, modal.SessionTitle, modal.MaxPlayers,
+            int.TryParse(pollIdStr, out var pollId) ? pollId : null);
+
+    [ModalInteraction("schedule:typed:*", ignoreGroupNames: true)]
+    public async Task OnTypedModalSubmittedAsync(string categoryStr, ScheduleTypedModal modal)
+    {
+        var at = SessionTime.Parse(modal.When, DateTimeOffset.UtcNow);
+        if (at is null)
+        {
+            Remember(modal.SessionTitle, modal.MaxPlayers, modal.When);
+            await ReplyInWizardAsync($"⚠️ {WhenRefusal(modal.When.Trim())}",
+                new ComponentBuilder().WithButton("Corriger", $"schedule:retrytyped:{categoryStr}", ButtonStyle.Primary).Build());
+            return;
+        }
+        await FinishAsync(categoryStr, at.Value.ToUnixTimeSeconds().ToString(), modal.SessionTitle, modal.MaxPlayers, pollId: null);
+    }
+
+    // Reopens the details modal (pre-filled) after a validation error, without
+    // posting anything to the channel.
+    [ComponentInteraction("schedule:retry:*:*", ignoreGroupNames: true)]
+    public async Task OnRetryAsync(string category, string unix)
+    {
+        _drafts.TryGet(Context.User.Id, out var draft);
+        await RespondWithModalAsync(DetailsModal($"schedule:finalize:{category}:{unix}", draft));
+    }
+
+    [ComponentInteraction("schedule:retrytyped:*", ignoreGroupNames: true)]
+    public async Task OnRetryTypedAsync(string category)
+    {
+        _drafts.TryGet(Context.User.Id, out var draft);
+        await RespondWithModalAsync(TypedModal(category, draft));
+    }
+
+    private async Task FinishAsync(string categoryStr, string unixStr, string title, string placesInput, int? pollId)
+    {
+        if (!SessionSeats.TryParseCap(placesInput, out var maxPlayers))
+        {
+            Remember(title, placesInput, null);
+            var retry = pollId is null
+                ? new ComponentBuilder().WithButton("Corriger", $"schedule:retry:{categoryStr}:{unixStr}", ButtonStyle.Primary).Build()
+                : new ComponentBuilder().Build();
+            await ReplyInWizardAsync($"⚠️ {SessionSeats.CapRule}", retry);
+            return;
+        }
+
+        if (!Enum.TryParse<SessionCategory>(categoryStr, out var category))
+            category = SessionCategory.Other;
+
+        if (!long.TryParse(unixStr, out var unix))
+        {
+            await ReplyInWizardAsync("⚠️ Date invalide. Relance `/schedule create`.", new ComponentBuilder().Build());
+            return;
+        }
+        var scheduledAt = DateTimeOffset.FromUnixTimeSeconds(unix);
+        if (scheduledAt <= DateTimeOffset.UtcNow)
+        {
+            await ReplyInWizardAsync("⚠️ La session doit être planifiée dans le futur. Relance `/schedule create`.",
+                new ComponentBuilder().Build());
+            return;
+        }
+
+        // A write, a send and another write before the wizard can close: defer first (root
+        // CLAUDE.md, reliability). Everything above answered from memory.
+        var modal = (SocketModal)Context.Interaction;
+        bool fromWizard = modal.Message is not null;
+        await modal.DeferAsync(ephemeral: !fromWizard);
+
+        // Claimed first: of two submits, one publishes.
+        _drafts.TryTake(Context.User.Id, out var draft);
+        draft ??= new ScheduleDraft();
+        draft.Title = title.Trim();
+        draft.Places = placesInput;
+
+        var (session, error) = await CreateAndPostAsync(category, scheduledAt, draft, maxPlayers);
+        if (session is null)
+        {
+            _drafts.Set(Context.User.Id, draft);
+            await FollowupAsync(error, ephemeral: true);
+            return;
+        }
+
+        if (pollId is { } id) await LinkPollAsync(id, session);
+
+        // Dismiss the ephemeral wizard message now that the session exists.
+        if (fromWizard) await modal.DeleteOriginalResponseAsync();
+        else await FollowupAsync(Created(session), ephemeral: true);
+    }
+
+    // A poll's « Créer une session » made this one: the poll remembers it, and its card links to it.
+    private async Task LinkPollAsync(int pollId, SessionEvent session)
+    {
+        try
+        {
+            await _polls.SetSessionAsync(pollId, session.Id);
+            if (await _polls.GetPollWithVotesAsync(pollId) is { } poll)
+                await _cards.RedrawPollAsync(Context.Guild, poll, SessionCards.Link(session));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to link poll {PollId} to session {EventId}.", pollId, session.Id);
+        }
+    }
+
+    /// <summary>
+    /// Creates the session, posts its card here and, for a weekly one, its series. A card that
+    /// can't be posted takes its row (and series) with it, and the reason comes back instead.
+    /// </summary>
+    private async Task<(SessionEvent? Session, string? Error)> CreateAndPostAsync(
+        SessionCategory category, DateTimeOffset scheduledAt, ScheduleDraft draft, int maxPlayers)
+    {
+        RecurringSession? series = null;
+        if (draft.Weekly)
+        {
+            var (day, minute) = Recurrence.SlotOf(scheduledAt);
+            series = await _eventService.CreateSeriesAsync(new RecurringSession
+            {
+                GuildId = Context.Guild.Id,
+                ChannelId = Context.Channel.Id,
+                OrganizerId = Context.User.Id,
+                Title = draft.Title,
+                Category = category,
+                DayOfWeek = day,
+                MinuteOfDay = minute,
+                MaxPlayers = maxPlayers,
+                DurationMinutes = draft.DurationMinutes,
+                VoiceChannelId = draft.VoiceChannelId,
+                Description = draft.Description,
+                LastOccurrence = scheduledAt,
+            });
+        }
+
+        var session = await _eventService.CreateEventAsync(
+            guildId: Context.Guild.Id,
+            channelId: Context.Channel.Id,
+            organizerId: Context.User.Id,
+            title: draft.Title,
+            category: category,
+            scheduledAt: scheduledAt,
+            maxPlayers: maxPlayers,
+            durationMinutes: draft.DurationMinutes,
+            description: draft.Description,
+            voiceChannelId: draft.VoiceChannelId,
+            recurringSessionId: series?.Id);
+
+        try
+        {
+            var message = await SessionCards.SendAsync(Context.Channel, session, Context.Guild);
+            await _eventService.SetMessageIdAsync(session.Id, message.Id);
+            session.MessageId = message.Id;
+            return (session, null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to post the card of session {EventId}; removing it.", session.Id);
+            await _eventService.DeleteEventAsync(session.Id);
+            if (series is not null) await _eventService.DeleteSeriesAsync(series.Id);
+            return (null, CardPostFailure.Explain(Context.Guild, Context.Channel, "la carte de la session"));
+        }
+    }
+
+    private static string Created(SessionEvent session)
+    {
+        var line = $"Session **#{session.Id}** créée : {SessionCards.Link(session)}";
+        if (session.RecurringSessionId is not null)
+            line += $"\n🔁 Elle reviendra chaque {Recurrence.DayName(AppTime.ToZoned(session.ScheduledAt).DayOfWeek)}, "
+                + $"postée {RecurringSession.DefaultLeadDays} jours avant. « ⚙️ Gérer » sur la carte pour arrêter la série.";
+        return line;
+    }
+
+    private static string WhenRefusal(string when) =>
+        $"Je n'ai pas compris « {Format.Sanitize(when)} » comme une date à venir (dans les 90 jours). "
+        + "Exemples : « samedi 21h », « demain », « 25/12 20:30 », « ce soir ».";
+
+    private void Remember(string title, string places, string? when)
+    {
+        _drafts.TryGet(Context.User.Id, out var draft);
+        draft ??= new ScheduleDraft();
+        draft.Title = title;
+        draft.Places = places;
+        if (when is not null) draft.When = when;
+        _drafts.Set(Context.User.Id, draft);
+    }
+
+    // A modal opened from the wizard updates the wizard; one opened straight from the command has
+    // no message to update, so it answers on its own.
+    private async Task ReplyInWizardAsync(string content, MessageComponent components)
+    {
+        var modal = (SocketModal)Context.Interaction;
+        if (modal.Message is not null)
+            await modal.UpdateAsync(msg =>
+            {
+                msg.Content = content;
+                msg.Components = components;
+            });
+        else
+            await RespondAsync(content, components: components, ephemeral: true);
+    }
+
+    // ---- /schedule list ---------------------------------------------------
+
     [SlashCommand("list", "Lister les sessions actives du serveur")]
     public async Task ScheduleListAsync()
     {
         await DeferAsync(ephemeral: true);
 
         var events = await _eventService.GetActiveEventsAsync(Context.Guild.Id);
-        if (events.Count == 0)
+        var series = await _eventService.GetActiveSeriesAsync(Context.Guild.Id);
+        if (events.Count == 0 && series.Count == 0)
         {
             await FollowupAsync("Aucune session active pour le moment.", ephemeral: true);
             return;
         }
 
         var sb = new StringBuilder();
-        foreach (var e in events)
+        // Capped like the select below: the list must stay inside one embed description.
+        foreach (var e in events.Take(25))
         {
             int joined = e.Participants.Count(p => p.Status == ParticipantStatus.Joined);
             string places = e.MaxPlayers == 0 ? $"{joined}" : $"{joined}/{e.MaxPlayers}";
-            sb.AppendLine($"**#{e.Id}** {CategoryEmoji(e.Category)} {e.Title} — <t:{e.ScheduledAt.ToUnixTimeSeconds()}:F> — 👥 {places}");
+            var weekly = e.RecurringSessionId is null ? "" : " 🔁";
+            sb.AppendLine($"**#{e.Id}** {SessionCategories.Emoji(e.Category)} {Format.Sanitize(e.Title)}{weekly} — <t:{e.ScheduledAt.ToUnixTimeSeconds()}:F> — 👥 {places}");
+        }
+        if (events.Count > 25) sb.AppendLine($"… et {events.Count - 25} autre(s).");
+
+        if (series.Count > 0)
+        {
+            sb.AppendLine().AppendLine("**Séries hebdomadaires**");
+            foreach (var s in series.Take(10))
+                sb.AppendLine($"🔁 {SessionCategories.Emoji(s.Category)} {Format.Sanitize(s.Title)} — chaque {Recurrence.DayName(s.DayOfWeek)} "
+                    + $"à {s.MinuteOfDay / 60:D2}:{s.MinuteOfDay % 60:D2} — par <@{s.OrganizerId}>");
         }
 
         var embed = new EmbedBuilder()
@@ -236,7 +598,13 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             .WithColor(Color.Blue)
             .Build();
 
-        // Up to 25 options in a select menu; the list embed still shows all.
+        if (events.Count == 0)
+        {
+            await FollowupAsync(embed: embed, ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+
+        // Up to 25 options in a select menu.
         var menu = new SelectMenuBuilder()
             .WithCustomId("schedule:republish")
             .WithPlaceholder("Republier une carte dans ce salon");
@@ -248,7 +616,7 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         var components = new ComponentBuilder().WithSelectMenu(menu).Build();
-        await FollowupAsync(embed: embed, components: components, ephemeral: true);
+        await FollowupAsync(embed: embed, components: components, ephemeral: true, allowedMentions: AllowedMentions.None);
     }
 
     [ComponentInteraction("schedule:republish", ignoreGroupNames: true)]
@@ -271,16 +639,11 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         }, ephemeral: true);
     }
 
-    private static string CategoryEmoji(SessionCategory category) => category switch
-    {
-        SessionCategory.Game     => "🎮",
-        SessionCategory.Activity => "🧑‍🤝‍🧑",
-        SessionCategory.Movie    => "🎬",
-        _                        => "✨"
-    };
+    // ---- /schedule cancel and /schedule edit ------------------------------
 
     [SlashCommand("cancel", "Annuler une session que tu as organisée")]
-    public async Task ScheduleCancelAsync([Summary("event-id", "L'ID affiché dans le pied de page de la session")] int eventId)
+    public async Task ScheduleCancelAsync(
+        [Summary("event-id", "La session à annuler"), Autocomplete(typeof(SessionIdAutocompleteHandler))] int eventId)
     {
         await DeferAsync(ephemeral: true);
 
@@ -303,36 +666,14 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        await _eventService.CancelEventAsync(eventId);
-        gameEvent.IsCancelled = true;
-
-        if (gameEvent.MessageId != 0)
-        {
-            var channel = Context.Guild.GetTextChannel(gameEvent.ChannelId);
-            if (channel is not null)
-            {
-                var message = await channel.GetMessageAsync(gameEvent.MessageId) as IUserMessage;
-                if (message is not null)
-                {
-                    await message.ModifyAsync(props =>
-                    {
-                        props.Embed = BuildEventEmbed(gameEvent, Context.Guild);
-                        props.Components = new ComponentBuilder().Build();
-                    });
-                }
-            }
-        }
-
-        // Remove the linked native Discord event, if any.
-        await SessionEventSync.DeleteAsync(Context.Guild, gameEvent.NativeEventId);
-
-        await SessionNotifier.NotifyCancelledAsync(Context.Client, gameEvent);
-
-        await FollowupAsync("La session a été annulée. Les participants ont été prévenus.", ephemeral: true);
+        // The same confirmation as the card's « Annuler » (EventComponentHandler does the rest).
+        await FollowupAsync(SessionManage.CancelPrompt(gameEvent), components: SessionManage.CancelConfirm(gameEvent.Id),
+            ephemeral: true);
     }
 
     [SlashCommand("edit", "Modifier une session que tu as organisée")]
-    public async Task ScheduleEditAsync([Summary("event-id", "L'ID affiché dans le pied de page de la session")] int eventId)
+    public async Task ScheduleEditAsync(
+        [Summary("event-id", "La session à modifier"), Autocomplete(typeof(SessionIdAutocompleteHandler))] int eventId)
     {
         var gameEvent = await _eventService.GetEventWithParticipantsAsync(eventId);
         if (gameEvent is null || gameEvent.GuildId != Context.Guild.Id)
@@ -367,265 +708,104 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        var gameEvent = await _eventService.GetEventWithParticipantsAsync(eventId);
-        if (gameEvent is null || gameEvent.GuildId != Context.Guild.Id)
+        if (!SessionSeats.TryParseCap(modal.MaxPlayers, out var maxPlayers))
         {
-            await FollowupAsync("Session introuvable.", ephemeral: true);
+            await FollowupAsync(SessionSeats.CapRule, ephemeral: true);
             return;
         }
 
-        if (!SessionPermissions.CanManage(Context.User, gameEvent))
+        var durationInput = modal.Duration.Trim();
+        int? duration = durationInput.Length == 0 ? null : SessionTime.ParseDuration(durationInput);
+        if (durationInput.Length > 0 && duration is null)
         {
-            await FollowupAsync("Seul l'organisateur ou un administrateur peut modifier cette session.", ephemeral: true);
+            await FollowupAsync("Durée invalide : « 2h », « 1h30 » ou « 45 min », entre 15 minutes et 6 heures.", ephemeral: true);
             return;
         }
 
-        int maxPlayers = 0;
-        var maxPlayersInput = modal.MaxPlayers.Trim();
-        if (maxPlayersInput.Length > 0 &&
-            (!int.TryParse(maxPlayersInput, out maxPlayers) || (maxPlayers != 0 && (maxPlayers < 2 || maxPlayers > 67))))
+        SessionEvent updated;
+        int oldMaxPlayers;
+        // Under the session's lock: a join landing during the edit can't slip past the new cap.
+        using (await _locks.Sessions.AcquireAsync(eventId))
         {
-            await FollowupAsync("Le nombre de participants doit être 0 (illimité) ou un nombre entre 2 et 67.", ephemeral: true);
-            return;
-        }
-
-        if (!AppTime.TryParseWallClock($"{modal.Date.Trim()}T{modal.Time.Trim()}", "yyyy-MM-ddTHH:mm", out var scheduledAt))
-        {
-            await FollowupAsync("Date ou heure invalide. Utilise les formats `AAAA-MM-JJ` et `HH:mm`.", ephemeral: true);
-            return;
-        }
-
-        if (scheduledAt <= DateTimeOffset.UtcNow)
-        {
-            await FollowupAsync("La session doit être planifiée dans le futur.", ephemeral: true);
-            return;
-        }
-
-        int oldMaxPlayers = gameEvent.MaxPlayers;
-        await _eventService.UpdateEventAsync(eventId, modal.SessionTitle.Trim(), scheduledAt, maxPlayers);
-        var updated = await _eventService.GetEventWithParticipantsAsync(eventId);
-
-        if (updated!.MessageId != 0)
-        {
-            var channel = Context.Guild.GetTextChannel(updated.ChannelId);
-            if (channel is not null &&
-                await channel.GetMessageAsync(updated.MessageId) is IUserMessage message)
+            var gameEvent = await _eventService.GetEventWithParticipantsAsync(eventId);
+            if (gameEvent is null || gameEvent.GuildId != Context.Guild.Id)
             {
-                await message.ModifyAsync(props =>
-                {
-                    props.Embed = BuildEventEmbed(updated, Context.Guild);
-                    props.Components = BuildEventComponents(updated);
-                });
+                await FollowupAsync("Session introuvable.", ephemeral: true);
+                return;
             }
+
+            if (!SessionPermissions.CanManage(Context.User, gameEvent))
+            {
+                await FollowupAsync("Seul l'organisateur ou un administrateur peut modifier cette session.", ephemeral: true);
+                return;
+            }
+
+            // Cancelled while the form was open.
+            if (gameEvent.IsCancelled)
+            {
+                await FollowupAsync("Cette session a été annulée entre-temps : rien n'a été modifié.", ephemeral: true);
+                return;
+            }
+
+            // The field left as it was keeps the time as it was, even for a session already under
+            // way (read again, « 01/11 21:00 » once past would mean next year).
+            var whenInput = modal.When.Trim();
+            DateTimeOffset scheduledAt;
+            if (whenInput == WhenInput(gameEvent.ScheduledAt))
+                scheduledAt = gameEvent.ScheduledAt;
+            else if (SessionTime.Parse(whenInput, DateTimeOffset.UtcNow) is { } at)
+                scheduledAt = at;
+            else
+            {
+                await FollowupAsync(WhenRefusal(whenInput), ephemeral: true);
+                return;
+            }
+
+            int joined = gameEvent.Participants.Count(p => p.Status == ParticipantStatus.Joined);
+            if (SessionSeats.CapBelowJoined(maxPlayers, joined))
+            {
+                await FollowupAsync(
+                    $"Il y a déjà **{joined}** inscrits : la limite ne peut pas descendre en dessous. Personne n'est mis dehors.",
+                    ephemeral: true);
+                return;
+            }
+
+            oldMaxPlayers = gameEvent.MaxPlayers;
+            await _eventService.UpdateEventAsync(eventId, modal.SessionTitle.Trim(), scheduledAt, maxPlayers,
+                duration ?? gameEvent.DurationMinutes, modal.Description.Trim());
+            updated = (await _eventService.GetEventWithParticipantsAsync(eventId))!;
+            _snapshots.Forget(eventId);
+            await _cards.RedrawSessionAsync(Context.Guild, updated);
         }
 
         // Keep the linked native Discord event in sync with the new details.
-        await SessionEventSync.UpdateAsync(Context.Guild, updated);
+        await SessionEventSync.UpdateAsync(Context.Guild, updated, _logger);
 
         await FollowupAsync("Session mise à jour ✅", ephemeral: true);
 
         // A raised cap on a full session: the « peut-être » are its waiting list.
-        int joined = updated.Participants.Count(p => p.Status == ParticipantStatus.Joined);
-        if (SessionSeats.PlaceOpenedByEdit(oldMaxPlayers, updated.MaxPlayers, joined))
+        int joinedNow = updated.Participants.Count(p => p.Status == ParticipantStatus.Joined);
+        if (SessionSeats.PlaceOpenedByEdit(oldMaxPlayers, updated.MaxPlayers, joinedNow))
             await _waitlist.NotifyPlaceOpenedAsync(updated);
     }
 
-    public static Modal BuildEditModal(SessionEvent gameEvent)
-    {
-        var zoned = AppTime.ToZoned(gameEvent.ScheduledAt);
-        return new ModalBuilder()
+    // The « Quand » field as the edit modal shows it, and reads back: « 01/11 21:00 ».
+    public static string WhenInput(DateTimeOffset at) => AppTime.ToZoned(at).ToString("dd/MM HH:mm", CultureInfo.InvariantCulture);
+
+    // Field ids must match EditSessionModal.
+    public static Modal BuildEditModal(SessionEvent gameEvent) =>
+        new ModalBuilder()
             .WithTitle("Modifier la session")
             .WithCustomId($"event:editmodal:{gameEvent.Id}")
             .AddTextInput("Nom de la session", "title", maxLength: InputCaps.Title,
                 value: gameEvent.Title, required: true)
-            .AddTextInput("Date (AAAA-MM-JJ)", "date",
-                value: zoned.ToString("yyyy-MM-dd"), placeholder: "ex. 2026-06-20", required: true)
-            .AddTextInput("Heure (HH:mm)", "time",
-                value: zoned.ToString("HH:mm"), placeholder: "ex. 20:30", required: true)
-            .AddTextInput("Participants max (0 = illimité)", "max_players",
+            .AddTextInput("Quand", "when", maxLength: InputCaps.When,
+                value: WhenInput(gameEvent.ScheduledAt), placeholder: "ex. samedi 21h, 25/12 20:30", required: true)
+            .AddTextInput("Places (vide ou 0 = illimité)", "max_players", maxLength: 3,
                 value: gameEvent.MaxPlayers.ToString(), required: false)
+            .AddTextInput("Durée", "duration", maxLength: 12,
+                value: SessionTime.DurationInput(gameEvent.DurationMinutes), placeholder: "ex. 2h, 1h30, 45 min", required: false)
+            .AddTextInput("Description", "description", TextInputStyle.Paragraph, maxLength: InputCaps.Description,
+                value: string.IsNullOrEmpty(gameEvent.Description) ? null : gameEvent.Description, required: false)
             .Build();
-    }
-
-    [ModalInteraction("schedule:finalize:*:*", ignoreGroupNames: true)]
-    public async Task OnScheduleModalSubmittedAsync(string categoryStr, string dateTimeStr, ScheduleEventModal modal)
-    {
-        var modalInteraction = (SocketModal)Context.Interaction;
-
-        int maxPlayers = 0;
-        var maxPlayersInput = modal.MaxPlayers.Trim();
-        if (maxPlayersInput.Length > 0 &&
-            (!int.TryParse(maxPlayersInput, out maxPlayers) || maxPlayers < 2 || maxPlayers > 67))
-        {
-            _draftTitles[Context.User.Id] = modal.SessionTitle;
-            await modalInteraction.UpdateAsync(msg =>
-            {
-                msg.Content = "⚠️ Le nombre de participants doit être un nombre entre **2** et **67**.";
-                msg.Components = new ComponentBuilder()
-                    .WithButton("Corriger", $"schedule:retry:{categoryStr}:{dateTimeStr}", ButtonStyle.Primary)
-                    .Build();
-            });
-            return;
-        }
-
-        if (!Enum.TryParse<SessionCategory>(categoryStr, out var category))
-            category = SessionCategory.Other;
-
-        if (!AppTime.TryParseWallClock(dateTimeStr, "yyyy-MM-ddTHH:mm", out var scheduledAt))
-        {
-            await modalInteraction.UpdateAsync(msg =>
-            {
-                msg.Content = "⚠️ Date invalide. Relance `/schedule create`.";
-                msg.Components = new ComponentBuilder().Build();
-            });
-            return;
-        }
-
-        if (scheduledAt <= DateTimeOffset.UtcNow)
-        {
-            await modalInteraction.UpdateAsync(msg =>
-            {
-                msg.Content = "⚠️ La session doit être planifiée dans le futur. Relance `/schedule create`.";
-                msg.Components = new ComponentBuilder().Build();
-            });
-            return;
-        }
-
-        // A write, a send and another write before the wizard can close: defer first (root
-        // CLAUDE.md, reliability). Everything above answered from memory.
-        await modalInteraction.DeferAsync();
-
-        var gameEvent = await _eventService.CreateEventAsync(
-            guildId: Context.Guild.Id,
-            channelId: Context.Channel.Id,
-            organizerId: Context.User.Id,
-            title: modal.SessionTitle.Trim(),
-            category: category,
-            scheduledAt: scheduledAt,
-            maxPlayers: maxPlayers);
-
-        var embed = BuildEventEmbed(gameEvent, Context.Guild);
-        var components = BuildEventComponents(gameEvent);
-
-        var message = await Context.Channel.SendMessageAsync(embed: embed, components: components);
-
-        await _eventService.SetMessageIdAsync(gameEvent.Id, message.Id);
-
-        // Dismiss the ephemeral wizard message now that the session exists.
-        _draftTitles.TryRemove(Context.User.Id, out _);
-        await modalInteraction.DeleteOriginalResponseAsync();
-    }
-
-    // Reopens the details modal (pre-filled) after a validation error, without
-    // posting anything to the channel.
-    [ComponentInteraction("schedule:retry:*:*", ignoreGroupNames: true)]
-    public async Task OnRetryAsync(string category, string dateTime)
-    {
-        _draftTitles.TryGetValue(Context.User.Id, out var title);
-
-        var modal = new ModalBuilder()
-            .WithTitle("Planifier une session")
-            .WithCustomId($"schedule:finalize:{category}:{dateTime}")
-            .AddTextInput("Nom de la session", "title", maxLength: InputCaps.Title,
-                placeholder: "ex. Among Us, Gartic, Anime ?", value: title, required: true)
-            .AddTextInput("Nombre de participants max - Optionnel", "max_players", required: false)
-            .Build();
-
-        await RespondWithModalAsync(modal);
-    }
-
-    public static Embed BuildEventEmbed(SessionEvent gameEvent, IGuild? guild)
-    {
-        var joined = gameEvent.Participants.Where(p => p.Status == ParticipantStatus.Joined).ToList();
-        var maybes = gameEvent.Participants.Where(p => p.Status == ParticipantStatus.Maybe).ToList();
-        var declined = gameEvent.Participants.Where(p => p.Status == ParticipantStatus.Declined).ToList();
-
-        bool unlimited = gameEvent.MaxPlayers == 0;
-        bool hasFreeSlot = unlimited || joined.Count < gameEvent.MaxPlayers;
-        var ts = gameEvent.ScheduledAt.ToUnixTimeSeconds();
-        var categoryLabel = gameEvent.Category switch
-        {
-            SessionCategory.Game     => "🎮 Jeu",
-            SessionCategory.Activity => "🧑‍🤝‍🧑 Activité",
-            SessionCategory.Movie    => "🎬 Film",
-            _                        => "✨ Autre"
-        };
-
-        string title;
-        Color color;
-        if (gameEvent.IsCancelled)
-        {
-            title = $"~~{gameEvent.Title}~~ — ANNULÉ";
-            color = Color.DarkRed;
-        }
-        else
-        {
-            var phase = gameEvent.PhaseAt(DateTimeOffset.UtcNow);
-            title = phase switch
-            {
-                SessionPhase.InProgress => $"🔴 EN COURS — {categoryLabel} : {gameEvent.Title}",
-                SessionPhase.Finished   => $"✅ TERMINÉE — {categoryLabel} : {gameEvent.Title}",
-                _                       => $"{categoryLabel} : {gameEvent.Title}"
-            };
-            color = phase switch
-            {
-                SessionPhase.InProgress => Color.Gold,
-                SessionPhase.Finished   => Color.DarkGrey,
-                _                       => hasFreeSlot ? Color.Green : Color.Orange
-            };
-        }
-
-        var eb = new EmbedBuilder()
-            .WithTitle(title)
-            .WithColor(color)
-            .AddField("Quand", $"<t:{ts}:F>", inline: true)
-            .AddField("Participants", unlimited ? $"{joined.Count}" : $"{joined.Count} / {gameEvent.MaxPlayers}", inline: true)
-            .WithFooter($"ID de la session : {gameEvent.Id}");
-
-        if (gameEvent.NativeEventId != 0)
-            eb.AddField("📅 Événement Discord",
-                $"https://discord.com/events/{gameEvent.GuildId}/{gameEvent.NativeEventId}");
-
-        // Capped (SessionSeats.MaxCardNames): past about 46 mentions a field passes Discord's 1024
-        // and the whole card fails to send.
-        static string Roster(List<Participant> people) =>
-            SessionSeats.Mentions(people.Select(p => p.UserId).ToList(), SessionSeats.MaxCardNames);
-
-        if (joined.Count > 0)
-            eb.AddField($"Participants ({joined.Count})", Roster(joined));
-
-        if (maybes.Count > 0)
-            eb.AddField($"Peut-être ({maybes.Count})", Roster(maybes));
-
-        if (declined.Count > 0)
-            eb.AddField($"Absents ({declined.Count})", Roster(declined));
-
-        return eb.Build();
-    }
-
-    public static MessageComponent BuildEventComponents(SessionEvent gameEvent)
-    {
-        // No actions once the session is cancelled or has already started.
-        if (gameEvent.IsCancelled || gameEvent.PhaseAt(DateTimeOffset.UtcNow) != SessionPhase.Scheduled)
-            return new ComponentBuilder().Build();
-
-        int eventId = gameEvent.Id;
-        var builder = new ComponentBuilder()
-            .WithButton("Rejoindre", $"event:join:{eventId}",    ButtonStyle.Success, new Emoji("✅"), row: 0)
-            .WithButton("Peut-être", $"event:sub:{eventId}",     ButtonStyle.Primary, new Emoji("🔄"), row: 0)
-            .WithButton("Refuser",   $"event:decline:{eventId}", ButtonStyle.Danger,  new Emoji("✖️"), row: 0)
-            .WithButton("Modifier",  $"event:edit:{eventId}",    ButtonStyle.Secondary, new Emoji("✏️"), row: 1)
-            .WithButton("Annuler",   $"event:cancel:{eventId}",  ButtonStyle.Secondary, new Emoji("🗑️"), row: 1);
-
-        // Organizer-only toggle for the native Discord event (handlers re-check
-        // permission). Label reflects whether one is currently linked.
-        if (gameEvent.NativeEventId == 0)
-            builder.WithButton("Créer l'événement Discord", $"event:createnative:{eventId}",
-                ButtonStyle.Secondary, new Emoji("📅"), row: 2);
-        else
-            builder.WithButton("Retirer l'événement Discord", $"event:removenative:{eventId}",
-                ButtonStyle.Secondary, new Emoji("🗑️"), row: 2);
-
-        return builder.Build();
-    }
 }

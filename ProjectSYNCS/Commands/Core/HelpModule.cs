@@ -61,7 +61,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "et laisse les autres s'inscrire en un clic.")
             .WithColor(Color.Blue)
             .AddField("Commandes — Sessions",
-                "**`/schedule create`** — Planifie une session (assistant en 4 étapes).\n" +
+                "**`/schedule create`** — Planifie une session : en une ligne (`title` + `when`) ou pas à pas. " +
+                "`weekly` la répète chaque semaine.\n" +
                 "**`/schedule list`** — Les sessions actives. Tu peux en republier une ici.\n" +
                 "**`/schedule edit <id>`** — Modifie une session que tu as organisée.\n" +
                 "**`/schedule cancel <id>`** — Annule une session que tu as organisée.")
@@ -83,8 +84,9 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/arcade puissance4`** · **`morpion`** — Contre quelqu'un, ou contre moi.\n" +
                 "Et parfois, Quokka passe dans le salon des bots : frappe-le pour des cailloux.")
             .AddField("Commandes — Sondages & votes",
-                "**`/poll create`** — Propose des créneaux, chacun vote pour ses disponibilités.\n" +
+                "**`/poll create`** — Propose des créneaux (`slots` : « ven 21h, sam 21h »), chacun vote pour ses disponibilités.\n" +
                 "**`/vote create`** — Pareil, mais avec des options en texte (jeux, films…).\n" +
+                "En option : la durée, **un seul choix**, **anonyme**.\n" +
                 "**`/poll list`** · **`/vote list`** — Les sondages et votes actifs.\n" +
                 "**`/poll delete <id>`** · **`/vote delete <id>`** — Supprime le tien.")
             .AddField("Commandes — Tirages au sort",
@@ -173,36 +175,36 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "— quelqu'un de muet ne compte pas comme de la compagnie, et le salon AFK ne rapporte rien.\n" +
                 "Le gain en vocal **diminue au fil de la journée** (plein tarif la première heure, " +
                 "puis de moins en moins) et repart à zéro chaque nuit.")
-            .AddField("Créer une session — pas à pas",
-                "Lance **`/schedule create`**. Un assistant privé te guide :\n" +
-                "**1.** *Type* — 🎮 Jeu, 🧑‍🤝‍🧑 Activité, 🎬 Film ou ✨ Autre.\n" +
-                "**2.** *Jour* — Aujourd'hui, Demain, puis les 25 prochains jours.\n" +
-                "**3.** *Heure* — de 00h à 23h. **4.** *Minutes* — :00, :15, :30 ou :45.\n" +
-                "**5.** *Détails* — le **nom** et, en option, le **nombre de participants max** " +
-                "(vide = illimité).\n" +
-                "**Retour** revient à l'étape précédente. La carte est publiée une fois validée.")
+            .AddField("Créer une session",
+                "**En une ligne** : **`/schedule create`** avec `title` et `when` (« samedi 21h », « 25/12 20:30 », " +
+                "« demain », « ce soir »), et c'est publié. En option : `category`, `places`, `duration`, " +
+                "`voice` (le salon vocal), `description`, et `weekly` pour la répéter chaque semaine.\n" +
+                "**Pas à pas** : sans `title` ni `when`, un assistant privé te fait choisir le type, le jour " +
+                "(ou **Autre date…**), l'heure et les minutes, puis le nom et les places (vide = illimité). " +
+                "**Retour** revient à l'étape précédente.")
             .AddField("Boutons d'une session",
-                "✅ **Rejoindre** · 🔄 **Peut-être** · ✖️ **Refuser**\n" +
+                "✅ **Rejoindre** · 🤔 **Peut-être** · ✖️ **Refuser** — jusqu'au début de la session.\n" +
                 "Session complète ? **Peut-être** te met en liste d'attente : je préviens les « peut-être » " +
                 "en DM dès qu'une place se libère, et le premier qui clique la prend.\n" +
-                "✏️ **Modifier** · 🗑️ **Annuler** — réservés à l'organisateur.\n" +
-                "📅 **Créer/Retirer l'événement Discord** — réservé à l'organisateur : ajoute ou retire " +
-                "un événement dans l'onglet **Événements**, synchronisé avec la session.\n" +
-                "**✏️ Modifier** (ou `/schedule edit <id>`) ouvre un formulaire : nom, date " +
-                "(`AAAA-MM-JJ`), heure (`HH:mm` — c'est ici qu'on fixe une heure précise) et " +
-                "participants max (0 = illimité).")
+                "⚙️ **Gérer** — pour l'organisateur et le staff, en privé : **Modifier** (nom, date, places, " +
+                "durée, description), **Annuler**, **Republier**, retirer l'événement Discord, arrêter une " +
+                "session hebdomadaire.\n" +
+                "📅 **Événement Discord** ajoute la session à l'onglet **Événements**, synchronisée, puis y mène.")
             .AddField("Sondages & votes — mode d'emploi",
-                "Après **`/poll create`** ou **`/vote create`**, donne un titre puis ajoute tes " +
-                "créneaux ou tes options un par un (jusqu'à 10), et termine avec **✅ Terminer**.\n" +
-                "Chacun clique ensuite **tout** ce qui lui convient — plusieurs choix possibles.\n" +
-                "L'organisateur clôture avec **🔒 Clôturer** : le plus voté est mis en avant. " +
-                "Pour un sondage, **🗓️ Créer une session** transforme le créneau retenu en session.")
+                "**`/poll create`** avec `title` et `slots` (« ven 21h, sam 21h ») publie tout de suite ; sinon " +
+                "l'assistant ajoute les créneaux un par un (jusqu'à 10). **`/vote create`** : le titre et les " +
+                "options, **une par ligne**.\n" +
+                "Chacun clique **tout** ce qui lui convient, sauf en **un seul choix**. **🗳️ Mes votes** te " +
+                "rappelle les tiens. Un sondage **anonyme** n'affiche que les comptes.\n" +
+                "⚙️ **Gérer** : **Clôturer**, **Renommer**, **Prolonger**, ajouter ou retirer une option. " +
+                "Une fois clos, **🗓️ Créer une session** transforme le créneau retenu en session.")
             .AddField("Bon à savoir",
-                "Les sondages et votes restés ouverts se **clôturent automatiquement au bout de 2 jours**.\n" +
+                "Un sondage ou un vote se **clôture tout seul** à l'heure affichée sur sa carte (2 jours par " +
+                "défaut), et j'annonce le résultat à son organisateur.\n" +
                 "Les inscrits reçoivent un **rappel en message privé** avant le début de la session, " +
                 "et les « peut-être », une heure avant, une petite relance pour choisir leur camp.\n" +
-                "À l'heure prévue la carte passe en **🔴 EN COURS**, puis en **✅ TERMINÉE** environ " +
-                "2 h plus tard. Une session **annulée** prévient les inscrits par message privé.\n" +
+                "À l'heure prévue la carte passe en **🔴 EN COURS**, puis en **✅ TERMINÉE** à la fin de sa " +
+                "durée (2 h par défaut). Une session **annulée** prévient les inscrits par message privé.\n" +
                 "L'**ID** d'une session est en pied de carte, pour `/schedule edit` et `/schedule cancel`.\n" +
                 "Pour un **Jeu** ou un **Film**, je fais l'appel : 10 min après le début, je relance les " +
                 "inscrits pas encore en vocal, puis je fais le bilan.\n" +

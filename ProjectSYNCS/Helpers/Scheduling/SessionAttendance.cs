@@ -23,15 +23,18 @@ public static class SessionAttendance
     // scattered, and the recap goes out.
     public static readonly TimeSpan ScatterToRecap = TimeSpan.FromMinutes(15);
 
-    // The recap goes out by then at the latest, scattered or not.
-    public static readonly TimeSpan RecapFallback = SessionEvent.Duration + TimeSpan.FromHours(2);
+    // The recap goes out this long after the session's end at the latest, scattered or not.
+    public static readonly TimeSpan RecapAfterEnd = TimeSpan.FromHours(2);
+
+    // How far past its start a session can still need her: the longest session, then the recap.
+    public static readonly TimeSpan WindowAfterStart = SessionTime.MaxDuration + RecapAfterEnd;
 
     // A session needs this many confirmed people for her to call the roll at all.
     public const int MinConfirmed = 2;
 
     /// <summary>Whether a sighting at <paramref name="now"/> still counts for the session.</summary>
-    public static bool InSightingWindow(DateTimeOffset now, DateTimeOffset start) =>
-        now >= start - WatchBefore && now <= start + SessionEvent.Duration;
+    public static bool InSightingWindow(DateTimeOffset now, DateTimeOffset start, TimeSpan length) =>
+        now >= start - WatchBefore && now <= start + length;
 
     public static bool IsLate(DateTimeOffset firstSeen, DateTimeOffset start) =>
         firstSeen > start + LateAfter;
@@ -58,10 +61,10 @@ public static class SessionAttendance
     public static bool RecapAllowed(DateTimeOffset now, DateTimeOffset start) =>
         now >= start + RecapMinElapsed;
 
-    public static bool RecapForced(DateTimeOffset now, DateTimeOffset start) =>
-        now >= start + RecapFallback;
+    public static bool RecapForced(DateTimeOffset now, DateTimeOffset start, TimeSpan length) =>
+        now >= start + length + RecapAfterEnd;
 
     /// <summary>Whether the session is under way: what the seat's tie-break calls "live".</summary>
-    public static bool IsLive(DateTimeOffset now, DateTimeOffset start) =>
-        now >= start && now <= start + SessionEvent.Duration;
+    public static bool IsLive(DateTimeOffset now, DateTimeOffset start, TimeSpan length) =>
+        now >= start && now <= start + length;
 }

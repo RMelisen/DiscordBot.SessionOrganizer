@@ -7,7 +7,7 @@ namespace ProjectSYNCS.Helpers;
 /// <list type="bullet">
 /// <item>relative: « 10m », « 2h », « 1h30 », « 3j », « 1 semaine », « dans 2 heures et 5 minutes »;</item>
 /// <item>absolute, on Paris wall clock: « 21:30 », « 21h », « demain 9h », « après-demain 18h »,
-/// « samedi 14h », « 25/12 10:00 », « 25/12/2027 8h », « ce soir 9h » (21:00). A time already past
+/// « samedi 14h » (or « sam 14h »), « 25/12 10:00 », « 25/12/2027 8h », « ce soir 9h » (21:00). A time already past
 /// today means tomorrow; a day without a time means 9:00, « ce soir » alone 20:00.</item>
 /// </list>
 /// Returns the instant (UTC), or null when nothing parses. The range (<see cref="Min"/>,
@@ -25,13 +25,17 @@ public static partial class ReminderTime
     private static readonly string[] Weekdays =
         { "dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi" };
 
+    // « ven 21h, sam 21h »: how a list of slots gets typed.
+    private static readonly string[] ShortWeekdays =
+        { "dim", "lun", "mar", "mer", "jeu", "ven", "sam" };
+
     [GeneratedRegex(@"^(?:dans\s+)?(?<parts>(?:\d+\s*[a-z]*\s*(?:et\s+)?)+)$")]
     private static partial Regex RelativeRegex();
 
     [GeneratedRegex(@"(?<n>\d+)\s*(?<unit>[a-z]*)")]
     private static partial Regex RelativePartRegex();
 
-    [GeneratedRegex(@"^(?:le\s+)?(?<day>demain|apres demain|aujourd hui|ce soir|ce matin|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|\d{1,2}/\d{1,2}(?:/\d{2,4})?)?\s*(?:a\s+)?(?<time>\d{1,2}\s*(?:h|:)\s*\d{0,2})?$")]
+    [GeneratedRegex(@"^(?:le\s+)?(?<day>demain|apres demain|aujourd hui|ce soir|ce matin|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|lun|mar|mer|jeu|ven|sam|dim|\d{1,2}/\d{1,2}(?:/\d{2,4})?)?\s*(?:a\s+)?(?<time>\d{1,2}\s*(?:h|:)\s*\d{0,2})?$")]
     private static partial Regex AbsoluteRegex();
 
     /// <remarks>
@@ -45,7 +49,18 @@ public static partial class ReminderTime
         var text = Clean(input);
         if (text.Length == 0) return null;
         if (text.StartsWith("dans ")) return ParseRelative(text, nowUtc);
-        return ParseAbsolute(text, nowUtc) ?? ParseRelative(text, nowUtc);
+        return ParseCleanAbsolute(text, nowUtc, DefaultHour, EveningHour) ?? ParseRelative(text, nowUtc);
+    }
+
+    /// <summary>
+    /// The absolute shapes alone, with the caller's hours for a day typed without a time
+    /// (<paramref name="defaultHour"/>) and for « ce soir » alone (<paramref name="eveningHour"/>).
+    /// What a session's date is read with (SessionTime): a session is never « dans 2h ».
+    /// </summary>
+    public static DateTimeOffset? ParseAbsolute(string input, DateTimeOffset nowUtc, int defaultHour, int eveningHour)
+    {
+        var text = Clean(input);
+        return text.Length == 0 ? null : ParseCleanAbsolute(text, nowUtc, defaultHour, eveningHour);
     }
 
     // Lower case, accents off (« après » = « apres »), every separator but ':' and '/' to a
@@ -92,7 +107,7 @@ public static partial class ReminderTime
         return total > TimeSpan.Zero ? nowUtc + total : null;
     }
 
-    private static DateTimeOffset? ParseAbsolute(string text, DateTimeOffset nowUtc)
+    private static DateTimeOffset? ParseCleanAbsolute(string text, DateTimeOffset nowUtc, int defaultHour, int eveningHour)
     {
         var m = AbsoluteRegex().Match(text);
         if (!m.Success) return null;
@@ -101,7 +116,7 @@ public static partial class ReminderTime
         if (dayPart.Length == 0 && timePart.Length == 0) return null;
 
         var now = AppTime.ToZoned(nowUtc).DateTime;
-        int hour = dayPart == "ce soir" ? EveningHour : DefaultHour, minute = 0;
+        int hour = dayPart == "ce soir" ? eveningHour : defaultHour, minute = 0;
         if (timePart.Length > 0)
         {
             var bits = timePart.Replace(" ", "").Split('h', ':');
@@ -131,6 +146,7 @@ public static partial class ReminderTime
                 break;
             default:
                 var weekday = Array.IndexOf(Weekdays, dayPart);
+                if (weekday < 0) weekday = Array.IndexOf(ShortWeekdays, dayPart);
                 if (weekday >= 0)
                 {
                     // The next such day; today's name means next week only once its hour is past.

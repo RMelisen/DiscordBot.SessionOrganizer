@@ -1,6 +1,8 @@
 using System.Text;
 using Discord;
 using Discord.Net;
+using Discord.WebSocket;
+using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Models;
 using Microsoft.Extensions.Logging;
 
@@ -13,20 +15,18 @@ namespace ProjectSYNCS.Services;
 // errors so a missing permission or API hiccup never breaks the session flow.
 public static class SessionEventSync
 {
-    // External events need a location string; we don't bind to a real channel.
+    // External events need a location string: the session's voice channel by name when it has
+    // one, a plain label otherwise. Still External either way, so the end time stays ours.
     private const string LocationText = "Salon vocal";
 
-    // External events run from the session start until start + Duration (2h).
-    private static DateTimeOffset EndOf(SessionEvent session) =>
-        session.ScheduledAt + SessionEvent.Duration;
+    private static string LocationOf(IGuild guild, SessionEvent session) =>
+        session.VoiceChannelId != 0 && guild is SocketGuild g && g.GetVoiceChannel(session.VoiceChannelId) is { } voice
+            ? $"🔊 {voice.Name}"
+            : LocationText;
 
-    private static string CategoryLabel(SessionCategory category) => category switch
-    {
-        SessionCategory.Game     => "🎮 Jeu",
-        SessionCategory.Activity => "🧑‍🤝‍🧑 Activité",
-        SessionCategory.Movie    => "🎬 Film",
-        _                        => "✨ Autre"
-    };
+    // External events run from the session start until start + its length.
+    private static DateTimeOffset EndOf(SessionEvent session) =>
+        session.ScheduledAt + session.Length;
 
     // Discord caps a scheduled-event description at 1000 characters.
     private const int MaxDescriptionLength = 1000;
@@ -40,7 +40,8 @@ public static class SessionEventSync
         var maybes = session.Participants.Where(p => p.Status == ParticipantStatus.Maybe).Select(p => p.Username).ToList();
 
         var sb = new StringBuilder();
-        sb.AppendLine(CategoryLabel(session.Category));
+        sb.AppendLine(SessionCategories.Label(session.Category));
+        if (!string.IsNullOrWhiteSpace(session.Description)) sb.AppendLine(session.Description.Trim());
         sb.AppendLine($"Détails et inscriptions : {jumpUrl}");
         sb.AppendLine();
         sb.AppendLine(joined.Count == 0
@@ -69,7 +70,7 @@ public static class SessionEventSync
                 privacyLevel: GuildScheduledEventPrivacyLevel.Private,
                 description: BuildDescription(session),
                 endTime: EndOf(session),
-                location: LocationText);
+                location: LocationOf(guild, session));
             return ev.Id;
         }
         catch (HttpException ex)
@@ -107,6 +108,7 @@ public static class SessionEventSync
                 props.StartTime = session.ScheduledAt;
                 props.EndTime = EndOf(session);
                 props.Description = BuildDescription(session);
+                props.Location = LocationOf(guild, session);
             });
         }
         catch (Exception ex)

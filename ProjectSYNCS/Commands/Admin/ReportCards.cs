@@ -610,13 +610,7 @@ public static class ReportCards
     public static string Who(ulong id, Func<ulong, string?>? nameOf) =>
         nameOf?.Invoke(id) is { Length: > 0 } name ? $"**{Format.Sanitize(name)}** (<@{id}>)" : $"<@{id}>";
 
-    private static string Category(SessionCategory category) => category switch
-    {
-        SessionCategory.Game => "🎮 Jeu",
-        SessionCategory.Activity => "🧑‍🤝‍🧑 Activité",
-        SessionCategory.Movie => "🎬 Film",
-        _ => "✨ Autre",
-    };
+    private static string Category(SessionCategory category) => SessionCategories.Label(category);
 
     // DayOfWeek numbering: Sunday is 0.
     private static string Weekday(int dayOfWeek) => Capitalise(Fr.DateTimeFormat.GetDayName((DayOfWeek)dayOfWeek));

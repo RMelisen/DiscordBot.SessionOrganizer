@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<Poll> Polls => Set<Poll>();
     public DbSet<PollOption> PollOptions => Set<PollOption>();
     public DbSet<PollVote> PollVotes => Set<PollVote>();
+    public DbSet<RecurringSession> RecurringSessions => Set<RecurringSession>();
     public DbSet<EmoteStat> EmoteStats => Set<EmoteStat>();
     public DbSet<EmoteDailyStat> EmoteDailyStats => Set<EmoteDailyStat>();
     public DbSet<BotFeedback> BotFeedbacks => Set<BotFeedback>();
@@ -69,9 +70,25 @@ public class AppDbContext : DbContext
             e.Property(x => x.MessageId).HasConversion<long>();
             e.Property(x => x.OrganizerId).HasConversion<long>();
             e.Property(x => x.NativeEventId).HasConversion<long>();
+            e.Property(x => x.VoiceChannelId).HasConversion<long>();
+            e.Property(x => x.DurationMinutes).HasDefaultValue(SessionEvent.DefaultDurationMinutes);
+            e.Property(x => x.Description).HasDefaultValue(string.Empty);
 
             e.HasIndex(x => x.GuildId);
             e.HasIndex(x => new { x.ScheduledAt, x.ReminderSent });
+            // One session per occurrence of a series: a second insert for the same slot fails
+            // instead of posting a duplicate. One-offs (null) never collide.
+            e.HasIndex(x => new { x.RecurringSessionId, x.ScheduledAt }).IsUnique();
+        });
+
+        modelBuilder.Entity<RecurringSession>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.ChannelId).HasConversion<long>();
+            e.Property(x => x.OrganizerId).HasConversion<long>();
+            e.Property(x => x.VoiceChannelId).HasConversion<long>();
+
+            e.HasIndex(x => new { x.Active, x.GuildId });
         });
 
         modelBuilder.Entity<Participant>(e =>
