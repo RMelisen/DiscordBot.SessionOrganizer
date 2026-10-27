@@ -34,12 +34,12 @@ internal static partial class BotResponses
             ],
             [RequestTopic.Poll] =
             [
-                "Un sondage ? `/poll create` pour des créneaux, `/vote create` pour des options. Et que personne vote « peut-être »." + Sticker.Smug,
-                "Mes sondages, c'est `/poll create`. Je compte les votes, je ferme à l'heure, je juge en silence." + Sticker.Jenote,
-                "`/poll create` ou `/vote create`. Je te laisse choisir. Pour une fois que quelqu'un choisit." + Sticker.Smug,
-                "Je lance pas de sondage à ta place. Mais je le surveillerai comme si c'était le mien. `/poll create` ♡" + Sticker.Happy,
-                "Un sondage ! J'adore les sondages. Quand on y répond. `/poll create`." + Sticker.Happy,
-                "`/vote create` pour un vote, `/poll create` pour des créneaux. Ensuite, c'est moi qui compte." + Sticker.Cool,
+                "Un sondage ? `/when create` pour des créneaux, `/vote create` pour des options. Et que personne vote « peut-être »." + Sticker.Smug,
+                "Mes sondages, c'est `/when create`. Je compte les votes, je ferme à l'heure, je juge en silence." + Sticker.Jenote,
+                "`/when create` ou `/vote create`. Je te laisse choisir. Pour une fois que quelqu'un choisit." + Sticker.Smug,
+                "Je lance pas de sondage à ta place. Mais je le surveillerai comme si c'était le mien. `/when create` ♡" + Sticker.Happy,
+                "Un sondage ! J'adore les sondages. Quand on y répond. `/when create`." + Sticker.Happy,
+                "`/vote create` pour un vote, `/when create` pour des créneaux. Ensuite, c'est moi qui compte." + Sticker.Cool,
             ],
             [RequestTopic.Reminder] =
             [
@@ -103,7 +103,7 @@ internal static partial class BotResponses
         {
             [RequestTopic.Session] = "`/schedule create`",
             [RequestTopic.Tonight] = "`/tonight`",
-            [RequestTopic.Poll] = "`/poll create`",
+            [RequestTopic.Poll] = "`/when create`",
             [RequestTopic.Reminder] = "`/remindme`",
             [RequestTopic.Teams] = "`/teams`",
             [RequestTopic.Giveaway] = "`/giveaway create`",
@@ -242,7 +242,7 @@ internal static partial class BotResponses
         {
             [RequestTopic.Session] = "`/schedule create`",
             [RequestTopic.Tonight] = "`/tonight`",
-            [RequestTopic.Poll] = "`/poll create`",
+            [RequestTopic.Poll] = "`/when create`",
             [RequestTopic.Reminder] = "`/remindme`",
             [RequestTopic.Teams] = "`/teams`",
             [RequestTopic.Giveaway] = "`/giveaway create`",

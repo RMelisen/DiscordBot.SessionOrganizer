@@ -16,7 +16,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | Command | What it does | Who |
 | --- | --- | --- |
 | `/schedule create · list · edit · cancel` | Plan and manage sessions | everyone |
-| `/poll create · list · delete` | Vote on time slots | everyone |
+| `/when create · list · delete` | Vote on time slots | everyone |
 | `/vote create · list · delete` | Vote on free-text options | everyone |
 | `/giveaway create · list · delete` | Prize draws | staff (`delete`: organiser or staff) |
 | `/level [user]` | Your card: level, rank, progress, badges (« Succès » button) | everyone |
@@ -69,8 +69,10 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 - **`/schedule create`** — in one line: `title` and `when` (« samedi 21h », « 25/12 20:30 »,
   « demain », « ce soir », previewed as you type) post the card at once; `category`, `places`,
   `duration`, `voice` (the session's voice channel) and `description` are optional. Without a
-  title and a time, a private wizard (type → day, or « Autre date… » → hour → details) asks for
-  the rest.
+  title and a time, a private wizard offers tonight, tomorrow or the weekend in one click (or
+  « Autre jour… » to pick any day, or « Taper une date »), asks for the name, then shows the real card as a preview: category,
+  places, duration, voice channel and « Chaque semaine » are picked there, it warns when another
+  session overlaps, and « Publier » posts it. It starts from the person's last choices.
 - **Weekly sessions** — `weekly:True` repeats the session every week, same day, same time (Paris
   time, across the changes of time); each one is posted three days ahead and is an ordinary
   session you can edit or cancel on its own. « Arrêter la série » stops it.
@@ -102,7 +104,7 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 
 ### Polls & votes
 
-- **`/poll create`** — propose several time slots (up to 10, typed in one go as « ven 21h, sam
+- **`/when create`** — propose several time slots (up to 10, typed in one go as « ven 21h, sam
   21h » or added one by one); everyone votes for *all* the slots that work for them. The
   most-voted slot is highlighted on close and can be turned directly into a session; the closed
   card then links to it.
@@ -110,8 +112,8 @@ moderator role. Staff-only commands are visible to everyone but refuse politely.
 - Both take a length (2 days by default), **single choice** and **anonymous** (counts, never
   names). Cards show a bar and a percentage per option, and **Mes votes** shows yours. **Gérer**
   lets the organizer close, rename, extend, or add and remove options.
-- **`/poll list` · `/vote list`** — list and republish active polls/votes.
-- **`/poll delete <id>` · `/vote delete <id>`** — delete one you created, with the id autocompleted.
+- **`/when list` · `/vote list`** — list and republish active polls/votes.
+- **`/when delete <id>` · `/vote delete <id>`** — delete one you created, with the id autocompleted.
 - Polls and votes **close on their own** at the time on their card, and she replies under it with
   the result, pinging the organizer.
 - **Weekend poll** — every Wednesday evening she posts her own poll for Friday, Saturday and

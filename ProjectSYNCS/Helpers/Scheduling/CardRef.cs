@@ -3,7 +3,7 @@ namespace ProjectSYNCS.Helpers;
 // The four cards people answer with a button. In memory only, never stored: free to reorder.
 public enum CardKind
 {
-    // /poll and /vote alike: both render through PollCards.
+    // /when and /vote alike: both render through PollCards.
     Poll,
     Session,
     Tonight,

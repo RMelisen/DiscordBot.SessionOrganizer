@@ -1,5 +1,6 @@
 using Discord;
 using Discord.Interactions;
+using Discord.Net;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Helpers;
@@ -26,27 +27,36 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
     private readonly SessionWaitlist _waitlist;
     private readonly SchedulingLocks _locks;
     private readonly ManageSnapshots _snapshots;
+    private readonly SessionHabits _habits;
     private readonly ILogger<ScheduleModule> _logger;
 
-    // What /schedule create was given before the picker or a modal took over (title, places,
-    // duration, voice, description, weekly), and what a failed modal held so « Corriger » can
-    // reopen it pre-filled. Keyed by user; thirty minutes without a touch and it's gone.
+    // The session being set up, keyed by user: what /schedule create was given, the person's last
+    // choices (SessionHabits) for the rest, then whatever the picker and the preview set. Thirty
+    // minutes without a touch and it's gone.
     private static readonly DraftBox<ScheduleDraft> _drafts = new(TimeSpan.FromMinutes(30));
 
     private sealed class ScheduleDraft
     {
         public string Title { get; set; } = string.Empty;
-        // As typed, so a modal can show it back.
-        public string Places { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        // As typed in « Autre date… », so « Corriger » can show it back.
         public string When { get; set; } = string.Empty;
+        public SessionCategory Category { get; set; } = SessionCategory.Game;
+        public int MaxPlayers { get; set; }
         public int DurationMinutes { get; set; } = SessionEvent.DefaultDurationMinutes;
         public ulong VoiceChannelId { get; set; }
-        public string Description { get; set; } = string.Empty;
         public bool Weekly { get; set; }
+        // The quick times' hour: the person's usual one, 21:00 otherwise.
+        public int MinuteOfDay { get; set; } = SessionTime.DefaultHour * 60;
+        // Null until a time is picked; the preview needs one.
+        public DateTimeOffset? At { get; set; }
+        // The closed poll this session comes from (« Créer une session »), linked on publish.
+        public int? PollId { get; set; }
     }
 
     public ScheduleModule(EventService eventService, PollService polls, CardRepost repost, CardUpdater cards,
-        SessionWaitlist waitlist, SchedulingLocks locks, ManageSnapshots snapshots, ILogger<ScheduleModule> logger)
+        SessionWaitlist waitlist, SchedulingLocks locks, ManageSnapshots snapshots, SessionHabits habits,
+        ILogger<ScheduleModule> logger)
     {
         _eventService = eventService;
         _polls = polls;
@@ -55,10 +65,14 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
         _waitlist = waitlist;
         _locks = locks;
         _snapshots = snapshots;
+        _habits = habits;
         _logger = logger;
     }
 
     // ---- /schedule create: one shot with title + when, the picker otherwise ----
+    // The picker: when (one click, or day → hour → minutes) → name and description (a modal, skipped
+    // when the name is known) → the preview, where everything else is picked, then « Publier ».
+    // Every step is a Components V2 message (root CLAUDE.md), the preview being the real card.
 
     [SlashCommand("create", "Planifier une nouvelle session")]
     public async Task ScheduleCreateAsync(
@@ -69,9 +83,10 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
          Choice("🎮 Jeu", nameof(SessionCategory.Game)), Choice("🧑‍🤝‍🧑 Activité", nameof(SessionCategory.Activity)),
          Choice("🎬 Film", nameof(SessionCategory.Movie)), Choice("✨ Autre", nameof(SessionCategory.Other))] string category = "",
         [Summary("places", "Places : 0 = illimité, sinon 2 à 67"), MinValue(0), MaxValue(SessionSeats.MaxPlayers)] int places = -1,
+        // 0 = not given: the one-line path takes 2 h, the picker the person's last duration.
         [Summary("duration", "Durée (2 h si rien)"),
          Choice("30 min", 30), Choice("1 h", 60), Choice("1 h 30", 90), Choice("2 h", 120),
-         Choice("3 h", 180), Choice("4 h", 240), Choice("6 h", 360)] int duration = SessionEvent.DefaultDurationMinutes,
+         Choice("3 h", 180), Choice("4 h", 240), Choice("6 h", 360)] int duration = 0,
         [Summary("voice", "Le salon vocal de la session"), ChannelTypes(ChannelType.Voice, ChannelType.Stage)] IGuildChannel? voice = null,
         [Summary("description", "Un mot sur la session, affiché sur la carte"), MaxLength(InputCaps.Description)] string description = "",
         [Summary("weekly", "La reposter chaque semaine, même jour, même heure")] bool weekly = false)
@@ -82,207 +97,157 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        var draft = new ScheduleDraft
-        {
-            Title = title.Trim(),
-            Places = places > 0 ? places.ToString() : string.Empty,
-            When = when.Trim(),
-            DurationMinutes = duration,
-            VoiceChannelId = voice?.Id ?? 0,
-            Description = description.Trim(),
-            Weekly = weekly,
-        };
-
         DateTimeOffset? at = null;
-        if (draft.When.Length > 0)
+        if (when.Trim().Length > 0)
         {
-            at = SessionTime.Parse(draft.When, DateTimeOffset.UtcNow);
+            at = SessionTime.Parse(when.Trim(), DateTimeOffset.UtcNow);
             if (at is null)
             {
-                await RespondAsync(WhenRefusal(draft.When), ephemeral: true);
+                await RespondAsync(WhenRefusal(when.Trim()), ephemeral: true);
                 return;
             }
         }
         SessionCategory? picked = Enum.TryParse<SessionCategory>(category, out var c) ? c : null;
 
-        // Everything needed: the session exists in one command.
-        if (draft.Title.Length > 0 && at is { } start)
+        // Everything needed: the session exists in one command, with exactly what was typed (no
+        // remembered choices: nothing shows them before the card is out).
+        if (title.Trim().Length > 0 && at is { } start)
         {
             await DeferAsync(ephemeral: true);
-            var (session, error) = await CreateAndPostAsync(picked ?? SessionCategory.Game, start, draft, Math.Max(places, 0));
+            var oneShot = new ScheduleDraft
+            {
+                Title = title.Trim(),
+                Description = description.Trim(),
+                Category = picked ?? SessionCategory.Game,
+                MaxPlayers = Math.Max(places, 0),
+                DurationMinutes = duration > 0 ? duration : SessionEvent.DefaultDurationMinutes,
+                VoiceChannelId = voice?.Id ?? 0,
+                Weekly = weekly,
+                At = start,
+            };
+            var (session, error) = await CreateAndPostAsync(oneShot);
+            if (session is not null) _habits.Remember(session);
             await FollowupAsync(error ?? Created(session!), ephemeral: true);
             return;
         }
 
-        // Something missing: the picker opens on the first step it still needs.
+        // The picker starts from the person's last choices; what the command was given wins.
+        var draft = NewDraft();
+        draft.Title = title.Trim();
+        draft.Description = description.Trim();
+        draft.Weekly = weekly;
+        draft.At = at;
+        if (picked is { } cat) draft.Category = cat;
+        if (places >= 0) draft.MaxPlayers = places;
+        if (duration > 0) draft.DurationMinutes = duration;
+        if (voice is not null) draft.VoiceChannelId = voice.Id;
         _drafts.Set(Context.User.Id, draft);
-        if (at is { } known)
+
+        // The time is known, the name isn't (both known went out above).
+        if (at is not null)
         {
-            if (picked is { } cat)
-            {
-                await RespondWithModalAsync(DetailsModal($"schedule:finalize:{cat}:{known.ToUnixTimeSeconds()}", draft));
-                return;
-            }
-            await RespondAsync($"Session le **{SessionTime.Preview(known)}** — **Quel type de session ?**",
-                components: new ComponentBuilder()
-                    .WithSelectMenu(SessionCategories.Select($"schedule:catat:{known.ToUnixTimeSeconds()}")).Build(),
-                ephemeral: true);
+            await RespondWithModalAsync(DetailsModal("schedule:details", draft));
             return;
         }
-        if (picked is { } only)
+        await RespondAsync(components: TimeStep(draft), flags: MessageFlags.ComponentsV2, ephemeral: true,
+            allowedMentions: AllowedMentions.None);
+    }
+
+    private ScheduleDraft NewDraft(int? pollId = null)
+    {
+        var draft = new ScheduleDraft { PollId = pollId };
+        if (_habits.For(Context.Guild.Id, Context.User.Id) is { } habit)
         {
-            await RespondAsync("**2/4** — Quel jour ?", components: BuildDayStep(only.ToString()), ephemeral: true);
-            return;
+            draft.Category = habit.Category;
+            draft.MaxPlayers = habit.MaxPlayers;
+            draft.DurationMinutes = habit.DurationMinutes;
+            // A channel deleted since is forgotten rather than shown as « #inconnu ».
+            draft.VoiceChannelId = Context.Guild.GetChannel(habit.VoiceChannelId) is not null ? habit.VoiceChannelId : 0;
+            draft.MinuteOfDay = habit.MinuteOfDay;
         }
-        await RespondAsync("**1/4** — Quel type de session ?", components: BuildCategoryStep(), ephemeral: true);
+        return draft;
     }
 
-    // The date was given, the category wasn't: straight to the details.
-    [ComponentInteraction("schedule:catat:*", ignoreGroupNames: true)]
-    public async Task OnCategoryForKnownDateAsync(string unix, string[] values)
+    // The draft a step works on, or an answer saying it's gone.
+    private async Task<ScheduleDraft?> DraftAsync()
     {
-        _drafts.TryGet(Context.User.Id, out var draft);
-        await RespondWithModalAsync(DetailsModal($"schedule:finalize:{values[0]}:{unix}", draft));
+        if (_drafts.TryGet(Context.User.Id, out var draft)) return draft;
+        await RespondAsync("Cette session en préparation a expiré. Relance `/schedule create`.", ephemeral: true);
+        return null;
     }
 
-    // ---- Wizard step 2: pick a day ---------------------------------------
-
-    [ComponentInteraction("schedule:cat", ignoreGroupNames: true)]
-    public async Task OnCategorySelectedAsync(string[] values)
-    {
-        var category = values[0];
-        var component = (SocketMessageComponent)Context.Interaction;
-
-        await component.UpdateAsync(msg =>
-        {
-            msg.Content = "**2/4** — Quel jour ?";
-            msg.Components = BuildDayStep(category);
-        });
-    }
-
-    // ---- Wizard step 3: pick an hour, or type the date -------------------
-
-    [ComponentInteraction("schedule:day:*", ignoreGroupNames: true)]
-    public async Task OnDaySelectedAsync(string category, string[] values)
-    {
-        var date = values[0];
-        if (date == OtherDate)
-        {
-            _drafts.TryGet(Context.User.Id, out var draft);
-            await RespondWithModalAsync(TypedModal(category, draft));
-            return;
-        }
-
-        var component = (SocketMessageComponent)Context.Interaction;
-        await component.UpdateAsync(msg =>
-        {
-            msg.Content = "**3/4** — À quelle heure ?";
-            msg.Components = BuildHourStep(category, date);
-        });
-    }
-
-    // ---- Wizard step 4: pick minutes (optional, defaults to :00) ----------
-
-    [ComponentInteraction("schedule:hour:*:*", ignoreGroupNames: true)]
-    public async Task OnHourSelectedAsync(string category, string date, string[] values)
-    {
-        var hour = values[0];
-        var component = (SocketMessageComponent)Context.Interaction;
-
-        await component.UpdateAsync(msg =>
-        {
-            msg.Content = "**4/4** — À quelle heure ?";
-            msg.Components = BuildMinuteStep(category, date, hour);
-        });
-    }
-
-    // ---- "Retour" navigation: rebuild the previous step ------------------
-
-    [ComponentInteraction("schedule:back:cat", ignoreGroupNames: true)]
-    public async Task OnBackToCategoryAsync()
-    {
-        var component = (SocketMessageComponent)Context.Interaction;
-        await component.UpdateAsync(msg =>
-        {
-            msg.Content = "**1/4** — Quel type de session ?";
-            msg.Components = BuildCategoryStep();
-        });
-    }
-
-    [ComponentInteraction("schedule:back:day:*", ignoreGroupNames: true)]
-    public async Task OnBackToDayAsync(string category)
-    {
-        var component = (SocketMessageComponent)Context.Interaction;
-        await component.UpdateAsync(msg =>
-        {
-            msg.Content = "**2/4** — Quel jour ?";
-            msg.Components = BuildDayStep(category);
-        });
-    }
-
-    [ComponentInteraction("schedule:back:hour:*:*", ignoreGroupNames: true)]
-    public async Task OnBackToHourAsync(string category, string date)
-    {
-        var component = (SocketMessageComponent)Context.Interaction;
-        await component.UpdateAsync(msg =>
-        {
-            msg.Content = "**3/4** — À quelle heure ?";
-            msg.Components = BuildHourStep(category, date);
-        });
-    }
-
-    // ---- Final step: open the modal for the free-text details -------------
-
-    [ComponentInteraction("schedule:min:*:*:*:*", ignoreGroupNames: true)]
-    public async Task OnMinuteSelectedAsync(string category, string date, string hour, string minute)
-    {
-        // The wall clock becomes an instant here, once: from now on the custom-ids carry unix
-        // seconds, which have no DST ambiguity and no ':' to trip a wildcard.
-        if (!AppTime.TryParseWallClock($"{date}T{hour}:{minute}", "yyyy-MM-ddTHH:mm", out var at))
-        {
-            await RespondAsync("Date invalide. Relance `/schedule create`.", ephemeral: true);
-            return;
-        }
-        _drafts.TryGet(Context.User.Id, out var draft);
-        await RespondWithModalAsync(DetailsModal($"schedule:finalize:{category}:{at.ToUnixTimeSeconds()}", draft));
-    }
-
-    // ---- Step component builders (shared by forward + "Retour" paths) -----
+    // ---- Step 1: when -------------------------------------------------------
 
     // The day select's last option: the date typed instead, so the picker has no 24-day wall.
     private const string OtherDate = "other";
 
-    private static MessageComponent BuildCategoryStep() =>
-        new ComponentBuilder().WithSelectMenu(SessionCategories.Select("schedule:cat")).Build();
-
-    private static MessageComponent BuildDayStep(string category) =>
-        new ComponentBuilder()
-            .WithSelectMenu(BuildDaySelect(category), row: 0)
-            .WithButton("Retour", "schedule:back:cat", ButtonStyle.Secondary, row: 1)
-            .Build();
-
-    private static MessageComponent BuildHourStep(string category, string date) =>
-        new ComponentBuilder()
-            .WithSelectMenu(BuildHourSelect(category, date), row: 0)
-            .WithButton("Retour", $"schedule:back:day:{category}", ButtonStyle.Secondary, row: 1)
-            .Build();
-
-    private static MessageComponent BuildMinuteStep(string category, string date, string hour)
+    private static MessageComponent TimeStep(ScheduleDraft draft)
     {
-        var builder = new ComponentBuilder();
-        foreach (var m in new[] { "00", "15", "30", "45" })
-            builder.WithButton($"{hour}:{m}", $"schedule:min:{category}:{date}:{hour}:{m}", ButtonStyle.Primary, row: 0);
-        builder.WithButton("Retour", $"schedule:back:hour:{category}:{date}", ButtonStyle.Secondary, row: 1);
-        return builder.Build();
+        var heading = draft.Title.Length > 0 ? $"**{Format.Sanitize(draft.Title)}** — quand ?" : "**Nouvelle session** — quand ?";
+        var quick = new ActionRowBuilder();
+        foreach (var (label, at) in SessionTime.QuickSlots(DateTimeOffset.UtcNow, draft.MinuteOfDay))
+            quick.WithButton(label, $"schedule:quick:{at.ToUnixTimeSeconds()}", ButtonStyle.Primary);
+
+        // The quick row is full (four times, five buttons a row): the other ways go below.
+        var other = new ActionRowBuilder()
+            .WithButton("Autre jour…", "schedule:other", ButtonStyle.Secondary, new Emoji("📅"))
+            .WithButton("Taper une date", "schedule:typedate", ButtonStyle.Secondary, new Emoji("⌨️"));
+        // Coming back from the preview (« Changer l'heure »): a way back without changing anything.
+        if (draft.At is not null)
+            other.WithButton("Retour à l'aperçu", "schedule:back:preview", ButtonStyle.Secondary);
+        return Step(heading, quick, other);
     }
 
-    private static SelectMenuBuilder BuildDaySelect(string category)
+    // The same modal as « Autre date… » at the end of the day list, one click away.
+    [ComponentInteraction("schedule:typedate", ignoreGroupNames: true)]
+    public async Task OnTypeDateAsync()
+    {
+        _drafts.TryGet(Context.User.Id, out var draft);
+        await RespondWithModalAsync(TypedModal(draft));
+    }
+
+    [ComponentInteraction("schedule:quick:*", ignoreGroupNames: true)]
+    public async Task OnQuickTimeAsync(string unix)
+    {
+        if (!long.TryParse(unix, out var seconds))
+        {
+            await RespondAsync("Créneau invalide. Relance `/schedule create`.", ephemeral: true);
+            return;
+        }
+        await TimeChosenAsync(DateTimeOffset.FromUnixTimeSeconds(seconds));
+    }
+
+    [ComponentInteraction("schedule:other", ignoreGroupNames: true)]
+    public async Task OnOtherTimeAsync() => await UpdateStepAsync(DayStep());
+
+    // A time is set: the name next if it's still missing, the preview otherwise.
+    private async Task TimeChosenAsync(DateTimeOffset at)
+    {
+        if (await DraftAsync() is not { } draft) return;
+        // A quick time can go stale on a wizard left open across it.
+        if (at <= DateTimeOffset.UtcNow)
+        {
+            await RespondAsync("Ce moment est déjà passé : choisis-en un autre.", ephemeral: true);
+            return;
+        }
+        draft.At = at;
+        _drafts.Set(Context.User.Id, draft);
+        if (draft.Title.Length == 0)
+            await RespondWithModalAsync(DetailsModal("schedule:details", draft));
+        else
+            await ShowPreviewAsync(draft);
+    }
+
+    // ---- « Autre… »: day → hour → minutes, or a typed date ----------------
+    // The date travels in the custom-ids (Retour rebuilds the step before), and becomes an instant
+    // once, at the minutes: unix seconds from then on, no DST ambiguity, no ':' in a wildcard.
+
+    private static MessageComponent DayStep()
     {
         var fr = CultureInfo.GetCultureInfo("fr-FR");
         var menu = new SelectMenuBuilder()
-            .WithCustomId($"schedule:day:{category}")
+            .WithCustomId("schedule:day")
             .WithPlaceholder("Choisis le jour");
-
         var today = AppTime.Now.Date;
         // 25 is the hard cap on options in a Discord select menu: 24 days, then « Autre date… ».
         for (int i = 0; i < 24; i++)
@@ -297,143 +262,358 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             menu.AddOption(label, date.ToString("yyyy-MM-dd"));
         }
         menu.AddOption("Autre date…", OtherDate, "Tape la date toi-même (jusqu'à 90 jours)", new Emoji("⌨️"));
-        return menu;
+
+        return Step("**Quel jour ?**",
+            new ActionRowBuilder().WithSelectMenu(menu),
+            new ActionRowBuilder().WithButton("Retour", "schedule:back:time", ButtonStyle.Secondary));
     }
 
-    private static SelectMenuBuilder BuildHourSelect(string category, string date)
+    private static MessageComponent HourStep(string date)
     {
         var menu = new SelectMenuBuilder()
-            .WithCustomId($"schedule:hour:{category}:{date}")
+            .WithCustomId($"schedule:hour:{date}")
             .WithPlaceholder("Choisis l'heure");
-
-        // For today, hide hours already elapsed (past minutes are still guarded
-        // when the session is finalized).
+        // For today, hide hours already elapsed (a past minute is still refused when it's picked).
         var now = AppTime.Now;
         int startHour = 0;
         if (DateTime.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture,
                 DateTimeStyles.None, out var parsed) && parsed.Date == now.Date)
             startHour = now.Hour;
-
         for (int h = startHour; h < 24; h++)
             menu.AddOption($"{h:D2}h", $"{h:D2}");
 
-        return menu;
+        return Step("**À quelle heure ?**",
+            new ActionRowBuilder().WithSelectMenu(menu),
+            new ActionRowBuilder().WithButton("Retour", "schedule:back:day", ButtonStyle.Secondary));
     }
 
-    // ---- The details modals, built by hand to pre-fill them --------------
+    private static MessageComponent MinuteStep(string date, string hour)
+    {
+        var minutes = new ActionRowBuilder();
+        foreach (var m in new[] { "00", "15", "30", "45" })
+            minutes.WithButton($"{hour}:{m}", $"schedule:min:{date}:{hour}:{m}", ButtonStyle.Primary);
+        return Step("**À quelle heure ?**", minutes,
+            new ActionRowBuilder().WithButton("Retour", $"schedule:back:hour:{date}", ButtonStyle.Secondary));
+    }
 
-    // Field ids must match ScheduleEventModal.
-    public static Modal DetailsModal(string customId, string? title = null, string? places = null) =>
+    [ComponentInteraction("schedule:day", ignoreGroupNames: true)]
+    public async Task OnDaySelectedAsync(string[] values)
+    {
+        if (values[0] == OtherDate)
+        {
+            _drafts.TryGet(Context.User.Id, out var draft);
+            await RespondWithModalAsync(TypedModal(draft));
+            return;
+        }
+        await UpdateStepAsync(HourStep(values[0]));
+    }
+
+    [ComponentInteraction("schedule:hour:*", ignoreGroupNames: true)]
+    public async Task OnHourSelectedAsync(string date, string[] values) =>
+        await UpdateStepAsync(MinuteStep(date, values[0]));
+
+    [ComponentInteraction("schedule:min:*:*:*", ignoreGroupNames: true)]
+    public async Task OnMinuteSelectedAsync(string date, string hour, string minute)
+    {
+        if (!AppTime.TryParseWallClock($"{date}T{hour}:{minute}", "yyyy-MM-ddTHH:mm", out var at))
+        {
+            await RespondAsync("Date invalide. Relance `/schedule create`.", ephemeral: true);
+            return;
+        }
+        await TimeChosenAsync(at);
+    }
+
+    [ComponentInteraction("schedule:back:time", ignoreGroupNames: true)]
+    public async Task OnBackToTimeAsync()
+    {
+        if (await DraftAsync() is not { } draft) return;
+        await UpdateStepAsync(TimeStep(draft));
+    }
+
+    [ComponentInteraction("schedule:back:day", ignoreGroupNames: true)]
+    public async Task OnBackToDayAsync() => await UpdateStepAsync(DayStep());
+
+    [ComponentInteraction("schedule:back:hour:*", ignoreGroupNames: true)]
+    public async Task OnBackToHourAsync(string date) => await UpdateStepAsync(HourStep(date));
+
+    [ComponentInteraction("schedule:back:preview", ignoreGroupNames: true)]
+    public async Task OnBackToPreviewAsync()
+    {
+        if (await DraftAsync() is not { } draft) return;
+        await ShowPreviewAsync(draft);
+    }
+
+    // ---- The modals: name and description, built by hand to pre-fill them ----
+
+    // Field ids must match ScheduleEventModal. A poll's « Créer une session » builds it too.
+    public static Modal DetailsModal(string customId, string? title = null, string? description = null) =>
         new ModalBuilder()
             .WithTitle("Planifier une session")
             .WithCustomId(customId)
             .AddTextInput("Nom de la session", "title", maxLength: InputCaps.Title,
                 placeholder: "ex. Among Us, Gartic, Anime ?", value: title, required: true)
-            .AddTextInput("Places (vide = illimité, sinon 2 à 67)", "max_players", maxLength: 3,
-                value: places, required: false)
+            .AddTextInput("Description (facultatif)", "description", TextInputStyle.Paragraph,
+                maxLength: InputCaps.Description, value: description, required: false)
             .Build();
 
     private static Modal DetailsModal(string customId, ScheduleDraft? draft) =>
-        DetailsModal(customId, NullIfEmpty(draft?.Title), NullIfEmpty(draft?.Places));
+        DetailsModal(customId, NullIfEmpty(draft?.Title), NullIfEmpty(draft?.Description));
 
+    // « Autre date… »: the date typed, with the name, in one modal (a modal can't open another).
     // Field ids must match ScheduleTypedModal.
-    private static Modal TypedModal(string category, ScheduleDraft? draft) =>
+    private static Modal TypedModal(ScheduleDraft? draft) =>
         new ModalBuilder()
             .WithTitle("Planifier une session")
-            .WithCustomId($"schedule:typed:{category}")
+            .WithCustomId("schedule:typed")
             .AddTextInput("Nom de la session", "title", maxLength: InputCaps.Title,
                 placeholder: "ex. Among Us, Gartic, Anime ?", value: NullIfEmpty(draft?.Title), required: true)
             .AddTextInput("Quand", "when", maxLength: InputCaps.When,
                 placeholder: "ex. samedi 21h, 25/12 20:30, demain", value: NullIfEmpty(draft?.When), required: true)
-            .AddTextInput("Places (vide = illimité, sinon 2 à 67)", "max_players", maxLength: 3,
-                value: NullIfEmpty(draft?.Places), required: false)
+            .AddTextInput("Description (facultatif)", "description", TextInputStyle.Paragraph,
+                maxLength: InputCaps.Description, value: NullIfEmpty(draft?.Description), required: false)
             .Build();
 
     private static string? NullIfEmpty(string? text) => string.IsNullOrEmpty(text) ? null : text;
 
-    // ---- Modal submits: create the session --------------------------------
-
-    [ModalInteraction("schedule:finalize:*:*", ignoreGroupNames: true)]
-    public Task OnScheduleModalSubmittedAsync(string categoryStr, string unixStr, ScheduleEventModal modal) =>
-        FinishAsync(categoryStr, unixStr, modal.SessionTitle, modal.MaxPlayers, pollId: null);
-
-    // A closed poll turned into a session (PollModule.OnCategoryPickedAsync builds this modal).
-    [ModalInteraction("schedule:frompoll:*:*:*", ignoreGroupNames: true)]
-    public Task OnFromPollSubmittedAsync(string pollIdStr, string categoryStr, string unixStr, ScheduleEventModal modal) =>
-        FinishAsync(categoryStr, unixStr, modal.SessionTitle, modal.MaxPlayers,
-            int.TryParse(pollIdStr, out var pollId) ? pollId : null);
-
-    [ModalInteraction("schedule:typed:*", ignoreGroupNames: true)]
-    public async Task OnTypedModalSubmittedAsync(string categoryStr, ScheduleTypedModal modal)
+    [ModalInteraction("schedule:details", ignoreGroupNames: true)]
+    public async Task OnDetailsSubmittedAsync(ScheduleEventModal modal)
     {
-        var at = SessionTime.Parse(modal.When, DateTimeOffset.UtcNow);
+        if (!_drafts.TryGet(Context.User.Id, out var draft) || draft.At is null)
+        {
+            await RespondAsync("Cette session en préparation a expiré. Relance `/schedule create`.", ephemeral: true);
+            return;
+        }
+        draft.Title = modal.SessionTitle.Trim();
+        draft.Description = modal.Description.Trim();
+        await ShowPreviewAsync(draft);
+    }
+
+    // A closed poll turned into a session (PollModule.OnCategoryPickedAsync builds this modal): a
+    // fresh draft, so options left from an earlier /schedule create never leak into it.
+    [ModalInteraction("schedule:frompoll:*:*:*", ignoreGroupNames: true)]
+    public async Task OnFromPollSubmittedAsync(string pollIdStr, string categoryStr, string unixStr, ScheduleEventModal modal)
+    {
+        if (!int.TryParse(pollIdStr, out var pollId) || !long.TryParse(unixStr, out var unix))
+        {
+            await RespondAsync("Créneau invalide.", ephemeral: true);
+            return;
+        }
+        var draft = NewDraft(pollId);
+        if (Enum.TryParse<SessionCategory>(categoryStr, out var category)) draft.Category = category;
+        draft.At = DateTimeOffset.FromUnixTimeSeconds(unix);
+        draft.Title = modal.SessionTitle.Trim();
+        draft.Description = modal.Description.Trim();
+        await ShowPreviewAsync(draft);
+    }
+
+    [ModalInteraction("schedule:typed", ignoreGroupNames: true)]
+    public async Task OnTypedModalSubmittedAsync(ScheduleTypedModal modal)
+    {
+        _drafts.TryGet(Context.User.Id, out var draft);
+        draft ??= NewDraft();
+        draft.Title = modal.SessionTitle.Trim();
+        draft.Description = modal.Description.Trim();
+        draft.When = modal.When.Trim();
+
+        var at = SessionTime.Parse(draft.When, DateTimeOffset.UtcNow);
         if (at is null)
         {
-            Remember(modal.SessionTitle, modal.MaxPlayers, modal.When);
-            await ReplyInWizardAsync($"⚠️ {WhenRefusal(modal.When.Trim())}",
-                new ComponentBuilder().WithButton("Corriger", $"schedule:retrytyped:{categoryStr}", ButtonStyle.Primary).Build());
+            _drafts.Set(Context.User.Id, draft);
+            var retry = Step($"⚠️ {WhenRefusal(draft.When)}",
+                new ActionRowBuilder().WithButton("Corriger", "schedule:retrytyped", ButtonStyle.Primary));
+            await ((SocketModal)Context.Interaction).UpdateAsync(msg => ApplyStep(msg, retry));
             return;
         }
-        await FinishAsync(categoryStr, at.Value.ToUnixTimeSeconds().ToString(), modal.SessionTitle, modal.MaxPlayers, pollId: null);
+        draft.At = at;
+        await ShowPreviewAsync(draft);
     }
 
-    // Reopens the details modal (pre-filled) after a validation error, without
-    // posting anything to the channel.
-    [ComponentInteraction("schedule:retry:*:*", ignoreGroupNames: true)]
-    public async Task OnRetryAsync(string category, string unix)
+    // Reopens « Autre date… » pre-filled after a date it couldn't read.
+    [ComponentInteraction("schedule:retrytyped", ignoreGroupNames: true)]
+    public async Task OnRetryTypedAsync()
     {
         _drafts.TryGet(Context.User.Id, out var draft);
-        await RespondWithModalAsync(DetailsModal($"schedule:finalize:{category}:{unix}", draft));
+        await RespondWithModalAsync(TypedModal(draft));
     }
 
-    [ComponentInteraction("schedule:retrytyped:*", ignoreGroupNames: true)]
-    public async Task OnRetryTypedAsync(string category)
+    // ---- The preview: the real card, everything a modal can't hold, « Publier » ----
+    // Everything lives in the draft, so the custom-ids carry nothing.
+
+    private static readonly int[] PlacesChoices = { 0, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20 };
+    private static readonly int[] DurationChoices = { 30, 60, 90, 120, 180, 240, 360 };
+
+    // Most sessions it shares time with that the preview names.
+    private const int MaxClashesShown = 2;
+
+    /// <remarks>
+    /// Budget: the line 1 + the card without buttons 8 + four select rows 8 + the button row 6 = 23 of
+    /// 40. Text: the card's (about 1500 with no one signed up) and two clash lines.
+    /// </remarks>
+    private MessageComponent Preview(ScheduleDraft draft, IReadOnlyList<SessionEvent> clashes)
     {
-        _drafts.TryGet(Context.User.Id, out var draft);
-        await RespondWithModalAsync(TypedModal(category, draft));
+        var head = new StringBuilder("**Aperçu** — rien n'est publié avant **Publier**.");
+        foreach (var other in clashes.Take(MaxClashesShown))
+        {
+            var start = other.ScheduledAt.ToUnixTimeSeconds();
+            var end = (other.ScheduledAt + other.Length).ToUnixTimeSeconds();
+            head.Append($"\n⚠️ En même temps que **{Format.Sanitize(other.Title)}** (<t:{start}:t>–<t:{end}:t>, <t:{start}:D>).");
+        }
+        if (clashes.Count > MaxClashesShown)
+            head.Append($"\n⚠️ Et {clashes.Count - MaxClashesShown} autre(s) session(s) au même moment.");
+
+        var places = new SelectMenuBuilder().WithCustomId("schedule:rv:places");
+        foreach (var n in PlacesChoices.Append(draft.MaxPlayers).Distinct().Order())
+            places.AddOption(n == 0 ? "Places illimitées" : $"{n} places", n.ToString(), isDefault: n == draft.MaxPlayers);
+
+        var duration = new SelectMenuBuilder().WithCustomId("schedule:rv:duration");
+        foreach (var minutes in DurationChoices.Append(draft.DurationMinutes).Distinct().Order())
+            duration.AddOption($"Durée : {SessionTime.DurationLabel(minutes)}", minutes.ToString(),
+                isDefault: minutes == draft.DurationMinutes);
+
+        var voice = new SelectMenuBuilder()
+            .WithType(ComponentType.ChannelSelect)
+            .WithCustomId("schedule:rv:voice")
+            .WithPlaceholder("Salon vocal (facultatif)")
+            .WithChannelTypes(ChannelType.Voice, ChannelType.Stage)
+            .WithMinValues(0)
+            .WithMaxValues(1);
+        if (draft.VoiceChannelId != 0)
+            voice.WithDefaultValues(new SelectMenuDefaultValue(draft.VoiceChannelId, SelectDefaultValueType.Channel));
+
+        return new ComponentBuilderV2()
+            .AddComponent(new TextDisplayBuilder(head.ToString()))
+            .AddComponent(SessionCards.Container(PreviewSession(draft), Context.User, DateTimeOffset.UtcNow))
+            .AddComponent(new ActionRowBuilder().WithSelectMenu(SessionCategories.Select("schedule:rv:category", draft.Category)))
+            .AddComponent(new ActionRowBuilder().WithSelectMenu(places))
+            .AddComponent(new ActionRowBuilder().WithSelectMenu(duration))
+            .AddComponent(new ActionRowBuilder().WithSelectMenu(voice))
+            .AddComponent(new ActionRowBuilder()
+                .WithButton("Publier", "schedule:rv:publish", ButtonStyle.Success, new Emoji("✅"))
+                .WithButton("Chaque semaine", "schedule:rv:weekly",
+                    draft.Weekly ? ButtonStyle.Primary : ButtonStyle.Secondary, new Emoji("🔁"))
+                .WithButton("Changer l'heure", "schedule:rv:time", ButtonStyle.Secondary)
+                .WithButton("Modifier", "schedule:rv:edit", ButtonStyle.Secondary)
+                .WithButton("Annuler", "schedule:rv:cancel", ButtonStyle.Danger))
+            .Build();
     }
 
-    private async Task FinishAsync(string categoryStr, string unixStr, string title, string placesInput, int? pollId)
+    // The session as it would be published; never saved (id 0, no one signed up). A weekly one
+    // gets a series id so the card shows its « chaque samedi » badge.
+    private SessionEvent PreviewSession(ScheduleDraft draft) => new()
     {
-        if (!SessionSeats.TryParseCap(placesInput, out var maxPlayers))
+        GuildId = Context.Guild.Id,
+        ChannelId = Context.Channel.Id,
+        OrganizerId = Context.User.Id,
+        Title = draft.Title,
+        Category = draft.Category,
+        ScheduledAt = draft.At!.Value,
+        MaxPlayers = draft.MaxPlayers,
+        DurationMinutes = draft.DurationMinutes,
+        Description = draft.Description,
+        VoiceChannelId = draft.VoiceChannelId,
+        RecurringSessionId = draft.Weekly ? 0 : null,
+    };
+
+    // Shows (or redraws) the preview. The clash line reads the sessions before anything can show:
+    // defer first (root CLAUDE.md, reliability).
+    private async Task ShowPreviewAsync(ScheduleDraft draft)
+    {
+        _drafts.Set(Context.User.Id, draft);
+        await DeferAsync(ephemeral: true);
+
+        var at = draft.At!.Value;
+        var length = TimeSpan.FromMinutes(draft.DurationMinutes);
+        var clashes = (await _eventService.GetUpcomingOrRunningAsync(Context.Guild.Id))
+            .Where(e => SessionTime.Overlaps(at, length, e.ScheduledAt, e.Length))
+            .ToList();
+        await ShowDeferredAsync(Preview(draft, clashes));
+    }
+
+    [ComponentInteraction("schedule:rv:category", ignoreGroupNames: true)]
+    public async Task OnPreviewCategoryAsync(string[] values)
+    {
+        if (await PreviewDraftAsync() is not { } draft) return;
+        if (values.Length > 0 && Enum.TryParse<SessionCategory>(values[0], out var category)) draft.Category = category;
+        await ShowPreviewAsync(draft);
+    }
+
+    [ComponentInteraction("schedule:rv:places", ignoreGroupNames: true)]
+    public async Task OnPreviewPlacesAsync(string[] values)
+    {
+        if (await PreviewDraftAsync() is not { } draft) return;
+        if (values.Length > 0 && int.TryParse(values[0], out var places) && (places == 0 || SessionSeats.IsValidCap(places)))
+            draft.MaxPlayers = places;
+        await ShowPreviewAsync(draft);
+    }
+
+    [ComponentInteraction("schedule:rv:duration", ignoreGroupNames: true)]
+    public async Task OnPreviewDurationAsync(string[] values)
+    {
+        if (await PreviewDraftAsync() is not { } draft) return;
+        if (values.Length > 0 && int.TryParse(values[0], out var minutes)) draft.DurationMinutes = minutes;
+        await ShowPreviewAsync(draft);
+    }
+
+    // A channel select's values are the picked ids; none when it was cleared.
+    [ComponentInteraction("schedule:rv:voice", ignoreGroupNames: true)]
+    public async Task OnPreviewVoiceAsync()
+    {
+        if (await PreviewDraftAsync() is not { } draft) return;
+        var values = ((SocketMessageComponent)Context.Interaction).Data.Values;
+        draft.VoiceChannelId = values?.FirstOrDefault() is { } id && ulong.TryParse(id, out var channelId) ? channelId : 0;
+        await ShowPreviewAsync(draft);
+    }
+
+    [ComponentInteraction("schedule:rv:weekly", ignoreGroupNames: true)]
+    public async Task OnPreviewWeeklyAsync()
+    {
+        if (await PreviewDraftAsync() is not { } draft) return;
+        draft.Weekly = !draft.Weekly;
+        await ShowPreviewAsync(draft);
+    }
+
+    // Back to step 1, the rest kept; a time picked there comes straight back here.
+    [ComponentInteraction("schedule:rv:time", ignoreGroupNames: true)]
+    public async Task OnPreviewTimeAsync()
+    {
+        if (await PreviewDraftAsync() is not { } draft) return;
+        await UpdateStepAsync(TimeStep(draft));
+    }
+
+    // Back to the modal, pre-filled; its submit lands on the preview again.
+    [ComponentInteraction("schedule:rv:edit", ignoreGroupNames: true)]
+    public async Task OnPreviewEditAsync()
+    {
+        if (await PreviewDraftAsync() is not { } draft) return;
+        await RespondWithModalAsync(DetailsModal("schedule:details", draft));
+    }
+
+    [ComponentInteraction("schedule:rv:cancel", ignoreGroupNames: true)]
+    public async Task OnPreviewCancelAsync()
+    {
+        _drafts.Remove(Context.User.Id);
+        await UpdateStepAsync(Step("Session abandonnée, rien n'a été publié."));
+    }
+
+    [ComponentInteraction("schedule:rv:publish", ignoreGroupNames: true)]
+    public async Task OnPreviewPublishAsync()
+    {
+        // Claimed first: of two clicks on « Publier », one publishes.
+        if (!_drafts.TryTake(Context.User.Id, out var draft) || draft.At is null || draft.Title.Length == 0)
         {
-            Remember(title, placesInput, null);
-            var retry = pollId is null
-                ? new ComponentBuilder().WithButton("Corriger", $"schedule:retry:{categoryStr}:{unixStr}", ButtonStyle.Primary).Build()
-                : new ComponentBuilder().Build();
-            await ReplyInWizardAsync($"⚠️ {SessionSeats.CapRule}", retry);
+            await RespondAsync("Cette session en préparation a expiré. Relance `/schedule create`.", ephemeral: true);
+            return;
+        }
+        if (draft.At <= DateTimeOffset.UtcNow)
+        {
+            _drafts.Set(Context.User.Id, draft);
+            await RespondAsync("⚠️ Ce moment est passé : **Changer l'heure** avant de publier.", ephemeral: true);
             return;
         }
 
-        if (!Enum.TryParse<SessionCategory>(categoryStr, out var category))
-            category = SessionCategory.Other;
-
-        if (!long.TryParse(unixStr, out var unix))
-        {
-            await ReplyInWizardAsync("⚠️ Date invalide. Relance `/schedule create`.", new ComponentBuilder().Build());
-            return;
-        }
-        var scheduledAt = DateTimeOffset.FromUnixTimeSeconds(unix);
-        if (scheduledAt <= DateTimeOffset.UtcNow)
-        {
-            await ReplyInWizardAsync("⚠️ La session doit être planifiée dans le futur. Relance `/schedule create`.",
-                new ComponentBuilder().Build());
-            return;
-        }
-
-        // A write, a send and another write before the wizard can close: defer first (root
-        // CLAUDE.md, reliability). Everything above answered from memory.
-        var modal = (SocketModal)Context.Interaction;
-        bool fromWizard = modal.Message is not null;
-        await modal.DeferAsync(ephemeral: !fromWizard);
-
-        // Claimed first: of two submits, one publishes.
-        _drafts.TryTake(Context.User.Id, out var draft);
-        draft ??= new ScheduleDraft();
-        draft.Title = title.Trim();
-        draft.Places = placesInput;
-
-        var (session, error) = await CreateAndPostAsync(category, scheduledAt, draft, maxPlayers);
+        // A write, a send and another write before the preview can close: defer first.
+        await DeferAsync(ephemeral: true);
+        var (session, error) = await CreateAndPostAsync(draft);
         if (session is null)
         {
             _drafts.Set(Context.User.Id, draft);
@@ -441,11 +621,68 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        if (pollId is { } id) await LinkPollAsync(id, session);
+        _habits.Remember(session);
+        if (draft.PollId is { } id) await LinkPollAsync(id, session);
+        await ShowDeferredAsync(Step(Created(session)));
+    }
 
-        // Dismiss the ephemeral wizard message now that the session exists.
-        if (fromWizard) await modal.DeleteOriginalResponseAsync();
-        else await FollowupAsync(Created(session), ephemeral: true);
+    // The draft behind the preview, or an answer saying it's gone.
+    private async Task<ScheduleDraft?> PreviewDraftAsync()
+    {
+        if (_drafts.TryGet(Context.User.Id, out var draft) && draft.At is not null && draft.Title.Length > 0) return draft;
+        await RespondAsync("Cette session en préparation a expiré. Relance `/schedule create`.", ephemeral: true);
+        return null;
+    }
+
+    // ---- Showing a step --------------------------------------------------------
+
+    // A text and its rows, as a Components V2 message.
+    private static MessageComponent Step(string text, params ActionRowBuilder[] rows)
+    {
+        var builder = new ComponentBuilderV2().AddComponent(new TextDisplayBuilder(text));
+        foreach (var row in rows) builder.AddComponent(row);
+        return builder.Build();
+    }
+
+    // V2 on every edit (root CLAUDE.md): the flag re-asserted, no content, no embeds, no pings.
+    private static void ApplyStep(MessageProperties msg, MessageComponent components)
+    {
+        msg.Content = string.Empty;
+        msg.Embeds = Array.Empty<Embed>();
+        msg.Components = components;
+        msg.Flags = MessageFlags.ComponentsV2;
+        msg.AllowedMentions = AllowedMentions.None;
+    }
+
+    // A button or select on the wizard message: that message becomes the next step.
+    private async Task UpdateStepAsync(MessageComponent components) =>
+        await ((SocketMessageComponent)Context.Interaction).UpdateAsync(msg => ApplyStep(msg, components));
+
+    // After a defer: the wizard message edited in place. A modal opened straight from the command
+    // has no message, and a poll's « Créer une session » steps are not V2 (a message may refuse
+    // the switch): a new private message then.
+    private async Task ShowDeferredAsync(MessageComponent components)
+    {
+        var hasMessage = Context.Interaction switch
+        {
+            SocketMessageComponent => true,
+            SocketModal modal => modal.Message is not null,
+            _ => false,
+        };
+        if (hasMessage)
+        {
+            try
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(msg => ApplyStep(msg, components));
+                return;
+            }
+            catch (HttpException ex)
+            {
+                _logger.LogDebug(ex, "The wizard message refused the session preview; sending a new one.");
+            }
+        }
+        await FollowupAsync(components: components, flags: MessageFlags.ComponentsV2, ephemeral: true,
+            allowedMentions: AllowedMentions.None);
     }
 
     // A poll's « Créer une session » made this one: the poll remembers it, and its card links to it.
@@ -467,9 +704,9 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
     /// Creates the session, posts its card here and, for a weekly one, its series. A card that
     /// can't be posted takes its row (and series) with it, and the reason comes back instead.
     /// </summary>
-    private async Task<(SessionEvent? Session, string? Error)> CreateAndPostAsync(
-        SessionCategory category, DateTimeOffset scheduledAt, ScheduleDraft draft, int maxPlayers)
+    private async Task<(SessionEvent? Session, string? Error)> CreateAndPostAsync(ScheduleDraft draft)
     {
+        var scheduledAt = draft.At!.Value;
         RecurringSession? series = null;
         if (draft.Weekly)
         {
@@ -480,10 +717,10 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
                 ChannelId = Context.Channel.Id,
                 OrganizerId = Context.User.Id,
                 Title = draft.Title,
-                Category = category,
+                Category = draft.Category,
                 DayOfWeek = day,
                 MinuteOfDay = minute,
-                MaxPlayers = maxPlayers,
+                MaxPlayers = draft.MaxPlayers,
                 DurationMinutes = draft.DurationMinutes,
                 VoiceChannelId = draft.VoiceChannelId,
                 Description = draft.Description,
@@ -496,9 +733,9 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
             channelId: Context.Channel.Id,
             organizerId: Context.User.Id,
             title: draft.Title,
-            category: category,
+            category: draft.Category,
             scheduledAt: scheduledAt,
-            maxPlayers: maxPlayers,
+            maxPlayers: draft.MaxPlayers,
             durationMinutes: draft.DurationMinutes,
             description: draft.Description,
             voiceChannelId: draft.VoiceChannelId,
@@ -531,32 +768,7 @@ public class ScheduleModule : InteractionModuleBase<SocketInteractionContext>
 
     private static string WhenRefusal(string when) =>
         $"Je n'ai pas compris « {Format.Sanitize(when)} » comme une date à venir (dans les 90 jours). "
-        + "Exemples : « samedi 21h », « demain », « 25/12 20:30 », « ce soir ».";
-
-    private void Remember(string title, string places, string? when)
-    {
-        _drafts.TryGet(Context.User.Id, out var draft);
-        draft ??= new ScheduleDraft();
-        draft.Title = title;
-        draft.Places = places;
-        if (when is not null) draft.When = when;
-        _drafts.Set(Context.User.Id, draft);
-    }
-
-    // A modal opened from the wizard updates the wizard; one opened straight from the command has
-    // no message to update, so it answers on its own.
-    private async Task ReplyInWizardAsync(string content, MessageComponent components)
-    {
-        var modal = (SocketModal)Context.Interaction;
-        if (modal.Message is not null)
-            await modal.UpdateAsync(msg =>
-            {
-                msg.Content = content;
-                msg.Components = components;
-            });
-        else
-            await RespondAsync(content, components: components, ephemeral: true);
-    }
+        + $"Exemples : {FrenchDate.Examples}.";
 
     // ---- /schedule list ---------------------------------------------------
 

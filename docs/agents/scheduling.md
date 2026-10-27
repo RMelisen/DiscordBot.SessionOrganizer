@@ -79,12 +79,45 @@ nobody is ever kicked out.
 ## Fast creation
 
 `/schedule create` with a title and a « quand » creates and posts at once; otherwise the picker
-opens, pre-filled with whatever was given. « quand » is read by `SessionTime.Parse` (« samedi
-21h », « sam 14h », « 25/12 20:30 », « demain », « ce soir »; future only, 90 days at most; a day
-alone is 21:00) and previewed by `SessionWhenAutocompleteHandler`, whose value is the typed text.
-`/poll create` takes its slots the same way (`SessionTime.ParseList`, comma or line separated, ten
+opens, pre-filled with whatever was given. « quand » is read by `SessionTime.Parse` (future only,
+90 days at most; a day alone is 21:00; « dans 1h » rounded up to five minutes) and previewed by
+`SessionWhenAutocompleteHandler`, whose value is the typed text.
+
+**`Helpers/Scheduling/FrenchDate` is the one reader of a typed day and time**, for sessions, date
+poll slots and `/remindme` alike: any new place where people type a date goes through it (through
+`SessionTime.Parse` for anything session-shaped), never a parser of its own. It takes chat
+spellings in any order (« ajd 20h », « 20h ajd », « demain soir 9h », « samedi en huit », « le 25
+à 21h », « 25 déc », « 21h moins le quart », « dans 3 jours »), and **refuses rather than guesses**:
+an unknown word, two times, or a weekday that disagrees with the date (« vendredi 31 octobre » when
+the 31st is a Saturday) give null, and the reply quotes `FrenchDate.Examples`. A bare number after a
+day is an hour (« demain 21 »), never a day of the month — that needs « le 25 ». The checks pin about
+seventy chat readings: add one for every misread found in the wild.
+`/when create` takes its slots the same way (`SessionTime.ParseList`, comma or line separated, ten
 at most); `/vote create`'s modal takes one option per line (`PollRules.ParseOptions`). The pickers'
 day lists end with « Autre date… », a modal read by the same parser.
+
+The session picker is three steps, every one a Components V2 message:
+
+1. **When**: one-click times (`SessionTime.QuickSlots`: tonight while ahead, tomorrow, the coming
+   Saturday and Sunday, at the person's usual hour, 21:00 otherwise), « Autre jour… » for day → hour
+   → minutes, or « Taper une date » (`schedule:typedate`), the same typed modal as « Autre date… »
+   at the end of the day list.
+2. **Name and description**, a modal, skipped when the name is already known.
+3. **The preview** (`schedule:rv:*`): the real card (`SessionCards.Container`, the card without its
+   buttons), then selects for category, places, duration and voice channel (clearable), and
+   « Publier », « Chaque semaine », « Changer l'heure » (back to step 1, everything else kept),
+   « Modifier » (the modal again), « Annuler ». Above the card, the sessions it overlaps
+   (`SessionTime.Overlaps` against `GetUpcomingOrRunningAsync`), so every redraw defers first.
+   Places are picked, never typed: there's nothing to refuse.
+
+A poll's « Créer une session » lands on the same preview. **`SessionHabits`** (singleton, in
+memory) holds each person's last published session per server: category, places, duration, voice
+channel and hour seed the next picker; what the command was given wins, and « Chaque semaine »
+is never remembered. The one-line `/schedule create` uses exactly what was typed (nothing would
+show a remembered choice before the card is out), but still records its habits.
+
+If the wizard message can't be edited into the preview (a poll's steps are not V2, and Discord may
+refuse to switch a message to V2), the preview goes out as a new private message.
 
 A card that fails to post deletes what was created for it (the session and its series, the poll),
 and `CardPostFailure.Explain` names the missing permission (Voir le salon, Envoyer des messages,
@@ -93,7 +126,7 @@ Intégrer des liens).
 ## Polls — deadline, single choice, anonymous
 
 - **`Poll.ClosesAt`** is `EndsAt`, or `CreatedAt` + 2 days for polls from before `EndsAt` existed.
-  `/poll create` and `/vote create` take a length; « Prolonger » pushes it (`PollRules.Extend`, 14
+  `/when create` and `/vote create` take a length; « Prolonger » pushes it (`PollRules.Extend`, 14
   days from now at most). `PollRules.IsOpen` is the one test: a vote past the deadline is refused
   even before the sweep closes it.
 - **Single choice** replaces the voter's other vote, under the poll's lock.
@@ -224,12 +257,14 @@ repoint a session's native event). A new card kind that can be republished goes 
 
 ## The two wizards keep state differently
 
-**`ScheduleModule` threads state through custom-ids** (`schedule:min:{category}:{date}:{hour}:{minute}`):
-a new step means a new segment through every handler *and* the matching `Retour` handler. From the
-details modal on, **the instant travels as unix seconds** (`schedule:finalize:{category}:{unix}`,
-`schedule:frompoll:{pollId}:{category}:{unix}`, `schedule:typed:{category}` for « Autre date… »),
-never as a wall-clock string. Only what the person typed is in the `DraftBox`, so a failed modal can
-be reopened pre-filled (`schedule:retry…`).
+**`ScheduleModule` keeps the session in a `DraftBox`** keyed by user id, from the command to
+« Publier », which takes it. Only « Autre… »'s date travels in custom-ids
+(`schedule:hour:{date}`, `schedule:min:{date}:{hour}:{minute}`, `schedule:back:hour:{date}`), so
+its `Retour` buttons can rebuild the step before; **instants travel as unix seconds**
+(`schedule:quick:{unix}`, `schedule:frompoll:{pollId}:{category}:{unix}`), never as wall-clock
+strings. A poll's session starts from a fresh draft, so options left over from an earlier
+`/schedule create` never leak into it. A typed date that doesn't read keeps the draft, and
+« Corriger » (`schedule:retrytyped`) reopens the modal pre-filled.
 
 **`PollModule` and `VoteModule` keep the whole draft in a `DraftBox`** keyed by user id (a
 variable-length list doesn't fit a custom-id), taken on finish, removed on cancel.
@@ -293,7 +328,8 @@ snake draft — a snake draft is deterministic, so a reroll would deal the same 
 ## `/remindme` and `/reminders` — `PersonalReminderService`
 
 Its **own 1-minute loop** (five minutes late reads as broken, so it can't ride `ReminderService`).
-`ReminderTime` parses « quand » (pure): « 21h » / « 1h30 » alone are **clock times**, the way French
+`ReminderTime` parses « quand » (pure), its durations itself and its days and times through
+`FrenchDate`: « 21h » / « 1h30 » alone are **clock times**, the way French
 says « à 21h »; a duration in hours needs « dans » or a spelled unit, and minutes after an hour stop
 at 59 (« 21h75 » is refused, never read as a duration). « ce soir 9h » is 21:00, « ce soir » alone
 20:00. The confirmation shows the exact time either way. The checks pin about ninety readings: add

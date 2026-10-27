@@ -11,7 +11,7 @@ namespace ProjectSYNCS.Services;
 
 // She starts things herself: every Wednesday evening, a « qui est dispo ce weekend ? » poll in
 // her main channel (home guild), with Friday, Saturday and Sunday at 21:00 (Helpers/Scheduling/WeekendPoll).
-// It is an ordinary /poll — same card, same buttons, same two-day auto-close — whose organizer
+// It is an ordinary /when — same card, same buttons, same two-day auto-close — whose organizer
 // is her; ReminderService announces the result when it closes, and whoever voted for the winning
 // slot may turn it into a session (PollModule.OnToSessionAsync).
 //
@@ -114,7 +114,7 @@ internal sealed class WeekendPollService : BackgroundService
         }
         catch (Exception ex)
         {
-            // A poll with no card would sit in /poll list and auto-close silently; remove it, and
+            // A poll with no card would sit in /when list and auto-close silently; remove it, and
             // the line announcing it.
             _logger.LogWarning(ex, "Failed to post the weekend poll; removing poll {PollId}.", poll.Id);
             await polls.DeletePollAsync(poll.Id);

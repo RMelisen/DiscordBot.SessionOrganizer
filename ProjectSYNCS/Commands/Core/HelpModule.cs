@@ -84,11 +84,11 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/arcade puissance4`** · **`morpion`** — Contre quelqu'un, ou contre moi.\n" +
                 "Et parfois, Quokka passe dans le salon des bots : frappe-le pour des cailloux.")
             .AddField("Commandes — Sondages & votes",
-                "**`/poll create`** — Propose des créneaux (`slots` : « ven 21h, sam 21h »), chacun vote pour ses disponibilités.\n" +
+                "**`/when create`** — Propose des créneaux (`slots` : « ven 21h, sam 21h »), chacun vote pour ses disponibilités.\n" +
                 "**`/vote create`** — Pareil, mais avec des options en texte (jeux, films…).\n" +
                 "En option : la durée, **un seul choix**, **anonyme**.\n" +
-                "**`/poll list`** · **`/vote list`** — Les sondages et votes actifs.\n" +
-                "**`/poll delete <id>`** · **`/vote delete <id>`** — Supprime le tien.")
+                "**`/when list`** · **`/vote list`** — Les sondages et votes actifs.\n" +
+                "**`/when delete <id>`** · **`/vote delete <id>`** — Supprime le tien.")
             .AddField("Commandes — Tirages au sort",
                 "**`/giveaway create`** — **Réservé au staff.** Lance un tirage : le **lot**, une **durée** (10 min à 7 jours), " +
                 "et en option une **description** et un **nombre de gagnants** (1 par défaut, 10 max).\n" +
@@ -179,9 +179,10 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**En une ligne** : **`/schedule create`** avec `title` et `when` (« samedi 21h », « 25/12 20:30 », " +
                 "« demain », « ce soir »), et c'est publié. En option : `category`, `places`, `duration`, " +
                 "`voice` (le salon vocal), `description`, et `weekly` pour la répéter chaque semaine.\n" +
-                "**Pas à pas** : sans `title` ni `when`, un assistant privé te fait choisir le type, le jour " +
-                "(ou **Autre date…**), l'heure et les minutes, puis le nom et les places (vide = illimité). " +
-                "**Retour** revient à l'étape précédente.")
+                "**Pas à pas** : sans `title` ni `when`, un assistant privé propose **Ce soir**, **Demain** ou le " +
+                "week-end en un clic (ou **Autre jour…**, ou **Taper une date**), puis le nom. L'aperçu montre la vraie " +
+                "carte : type, places, durée, salon vocal et **Chaque semaine** s'y règlent, il prévient si une " +
+                "autre session tombe en même temps, et **Publier** la poste. Il reprend tes choix de la dernière fois.")
             .AddField("Boutons d'une session",
                 "✅ **Rejoindre** · 🤔 **Peut-être** · ✖️ **Refuser** — jusqu'au début de la session.\n" +
                 "Session complète ? **Peut-être** te met en liste d'attente : je préviens les « peut-être » " +
@@ -191,7 +192,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "session hebdomadaire.\n" +
                 "📅 **Événement Discord** ajoute la session à l'onglet **Événements**, synchronisée, puis y mène.")
             .AddField("Sondages & votes — mode d'emploi",
-                "**`/poll create`** avec `title` et `slots` (« ven 21h, sam 21h ») publie tout de suite ; sinon " +
+                "**`/when create`** avec `title` et `slots` (« ven 21h, sam 21h ») publie tout de suite ; sinon " +
                 "l'assistant ajoute les créneaux un par un (jusqu'à 10). **`/vote create`** : le titre et les " +
                 "options, **une par ligne**.\n" +
                 "Chacun clique **tout** ce qui lui convient, sauf en **un seul choix**. **🗳️ Mes votes** te " +

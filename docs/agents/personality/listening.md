@@ -97,7 +97,7 @@ the path, where the card's context line is the fallback. Papa gets the same as e
 reposts are the same whoever asks). The DB read runs off the gateway handler; titles are sanitised
 and everything goes out with mentions muted (the reply ping stays). Counted `card:<Intent>`.
 
-**`CardRepost`** (`Services/Scheduling/`) is the one repost path, shared with the `/poll list`,
+**`CardRepost`** (`Services/Scheduling/`) is the one repost path, shared with the `/when list`,
 `/vote list`, `/schedule list` and `/giveaway list` menus: delete the old card, redraw it through
 the module's builders, store the new location (and point a session's native event at it). Open to
 anyone, like the menus; a repost that throws gives the 5-minute gate back.

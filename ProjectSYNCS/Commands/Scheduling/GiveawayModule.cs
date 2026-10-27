@@ -36,7 +36,7 @@ public class GiveawayModule : InteractionModuleBase<SocketInteractionContext>
 
     // ---- Creating ---------------------------------------------------------
 
-    // One shot rather than a wizard: unlike /poll and /vote there is no
+    // One shot rather than a wizard: unlike /when and /vote there is no
     // variable-length list to assemble, so there is no draft to keep anywhere.
     //
     // The duration is a fixed choice list rather than free text — nothing to parse,
