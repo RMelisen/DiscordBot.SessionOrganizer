@@ -3524,6 +3524,9 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         ("dimanche 10h", RtParis(2026, 11, 1, 10)), ("le samedi à 14h", RtParis(2026, 10, 31, 14)),
         ("le 25/12", RtParis(2026, 12, 25, 9)), ("25/12/2027 8h", RtParis(2027, 12, 25, 8)), ("25/12/27 8h", RtParis(2027, 12, 25, 8)),
         ("1/1", RtParis(2027, 1, 1, 9)), ("26/10 10h", RtParis(2027, 10, 26, 10)), // a date past this year is next year's
+        // Chat spellings, read by FrenchDate; « dans » + days with a time is a day, not a duration.
+        ("ajd 18h", RtParis(2026, 10, 27, 18)), ("demain matin", RtParis(2026, 10, 28, 9)), ("demain soir", RtParis(2026, 10, 28, 20)),
+        ("le 30 à 10h", RtParis(2026, 10, 30, 10)), ("dans 3 jours à 21h", RtParis(2026, 10, 30, 21)),
 
         // Case, accents and spacing don't count.
         ("  DEMAIN   9H  ", RtParis(2026, 10, 28, 9)), ("Après-Demain 18H", RtParis(2026, 10, 29, 18)), ("DANS 2H", rtTue.AddHours(2)),
@@ -4015,6 +4018,50 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         ("27/10 10:00", null), ("15/03 21h", null), ("n'importe quoi", null), ("", null),
     })
         if (SessionTime.Parse(text, tNow) != expected) Fail($"session time: « {text} » read as {SessionTime.Parse(text, tNow)}");
+
+    // The way people type a date in chat (FrenchDate), at Tuesday 27 October 13:00 Paris.
+    DateTimeOffset Paris(int mo, int d, int h, int mi = 0) =>
+        AppTime.AtWallClock(new DateTime(2026, mo, d, h, mi, 0)).ToUniversalTime();
+    var tChat = new (string, DateTimeOffset?)[]
+    {
+        // Today, in any order and spelling.
+        ("ajd 20h", Paris(10, 27, 20)), ("Ajd 20H", Paris(10, 27, 20)), ("auj 20h30", Paris(10, 27, 20, 30)),
+        ("20h ajd", Paris(10, 27, 20)), ("aujourd'hui à 20h", Paris(10, 27, 20)), ("ce soir vers 21h", Paris(10, 27, 21)),
+        ("ce soir 9h", Paris(10, 27, 21)), ("ce soir 21h30", Paris(10, 27, 21, 30)),
+        // Tomorrow and after, with a part of the day.
+        ("demain soir", Paris(10, 28, 21)), ("demain soir 9h", Paris(10, 28, 21)), ("demain matin", Paris(10, 28, 9)),
+        ("demain aprem", Paris(10, 28, 15)), ("demain après-midi 3h", Paris(10, 28, 15)), ("demain 21", Paris(10, 28, 21)),
+        ("2main 21h", Paris(10, 28, 21)), ("dem 21h", Paris(10, 28, 21)), ("demain21h", Paris(10, 28, 21)),
+        ("dès 20h demain", Paris(10, 28, 20)), ("après-demain", Paris(10, 29, 21)), ("apres dem 20h", Paris(10, 29, 20)),
+        ("cette nuit 2h", Paris(10, 28, 2)), ("ce soir minuit", Paris(10, 28, 0)),
+        // Weekdays.
+        ("samedi soir", Paris(10, 31, 21)), ("sam soir 20h30", Paris(10, 31, 20, 30)), ("samedi 21", Paris(10, 31, 21)),
+        ("samedi prochain 21h", Paris(10, 31, 21)), ("mardi 21h", Paris(10, 27, 21)), ("mardi prochain 21h", Paris(11, 3, 21)),
+        ("samedi en huit", Paris(11, 7, 21)), ("samedi de la semaine prochaine", Paris(11, 7, 21)),
+        ("ce week-end", Paris(10, 31, 21)), ("ce we 18h", Paris(10, 31, 18)), ("ce week-end dimanche 18h", Paris(11, 1, 18)),
+        ("à partir de 21h samedi", Paris(10, 31, 21)), ("samedi minuit", Paris(11, 1, 0)), ("samedi midi", Paris(10, 31, 12)),
+        // Times.
+        ("21h et demie samedi", Paris(10, 31, 21, 30)), ("samedi 21h moins le quart", Paris(10, 31, 20, 45)),
+        ("samedi 9pm", Paris(10, 31, 21)), ("samedi 9h du soir", Paris(10, 31, 21)), ("samedi 21 h 30", Paris(10, 31, 21, 30)),
+        // Dates.
+        ("le 25", Paris(11, 25, 21)), ("le 30 à 20h", Paris(10, 30, 20)), ("le 31", Paris(10, 31, 21)),
+        ("25 décembre 20h", Paris(12, 25, 20)), ("25 dec 20h30", Paris(12, 25, 20, 30)), ("1er novembre 18h", Paris(11, 1, 18)),
+        ("le 1er nov", Paris(11, 1, 21)), ("samedi 31 octobre 21h", Paris(10, 31, 21)), ("mardi 3 novembre", Paris(11, 3, 21)),
+        ("25-12 20h", Paris(12, 25, 20)), ("25.12.2026 20h", Paris(12, 25, 20)), ("25 mar 2027", null), // past the horizon
+        // In a while.
+        ("dans 3 jours", Paris(10, 30, 21)), ("dans 2 semaines 20h", Paris(11, 10, 20)), ("dans 1h", Paris(10, 27, 14)),
+        ("dans 45 min", Paris(10, 27, 13, 45)), ("dans 3 mois", null),
+        // What it refuses rather than guess.
+        ("vendredi 31 octobre", null), ("lundi 3 novembre", null), ("demain samedi", null), ("samedi 20h 21h", null),
+        ("hier 21h", null), ("samedi 25h", null), ("le 32", null), ("21h", Paris(10, 27, 21)), ("bientôt", null),
+    };
+    foreach (var (text, expected) in tChat)
+        if (SessionTime.Parse(text, tNow) != expected) Fail($"session time: « {text} » read as {SessionTime.Parse(text, tNow)}, expected {expected}");
+    // « dans 1h » is rounded up to five minutes: 13:07 + 1h is 14:10.
+    if (SessionTime.Parse("dans 1h", tNow.AddMinutes(7)) != Paris(10, 27, 14, 10)) Fail("session time: « dans 1h » not rounded up");
+    if (("ex. " + FrenchDate.Examples).Length > 100) Fail("session time: the examples overflow an autocomplete label");
+    Console.WriteLine($"typed dates: {tChat.Length} chat readings");
+
     var (tSlots, tRejected) = SessionTime.ParseList("ven 21h, sam 21h; n'importe quoi\nven 21h", tNow);
     if (tSlots.Count != 2 || tSlots[0] != Utc(2026, 10, 30, 20) || tRejected.SequenceEqual(new[] { "n'importe quoi" }) is false)
         Fail($"session time: list read as {string.Join(", ", tSlots)} / {string.Join(", ", tRejected)}");

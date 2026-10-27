@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.52.1 — 2026-10-27
+
+- Typed dates understand the way people write them in chat, in any order: « ajd 20h », « 20h ajd », « demain soir 9h », « samedi en huit », « ce week-end », « le 25 à 21h », « 25 déc », « 1er nov », « 21h moins le quart », « 9pm », « minuit », « dans 3 jours ». A session also takes « dans 1h ». This covers sessions, date poll slots and `/remindme`; a date it can't read is refused rather than guessed, with examples.
+
 ## 7.52.0 — 2026-10-27
 
 - `/poll` is renamed `/when` (`/when create`, `/when list`, `/when delete`), so it no longer reads like a twin of `/vote`: `/when` picks a time slot, `/vote` picks between options. Polls already posted keep working.

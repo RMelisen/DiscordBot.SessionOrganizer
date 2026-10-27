@@ -79,9 +79,19 @@ nobody is ever kicked out.
 ## Fast creation
 
 `/schedule create` with a title and a « quand » creates and posts at once; otherwise the picker
-opens, pre-filled with whatever was given. « quand » is read by `SessionTime.Parse` (« samedi
-21h », « sam 14h », « 25/12 20:30 », « demain », « ce soir »; future only, 90 days at most; a day
-alone is 21:00) and previewed by `SessionWhenAutocompleteHandler`, whose value is the typed text.
+opens, pre-filled with whatever was given. « quand » is read by `SessionTime.Parse` (future only,
+90 days at most; a day alone is 21:00; « dans 1h » rounded up to five minutes) and previewed by
+`SessionWhenAutocompleteHandler`, whose value is the typed text.
+
+**`Helpers/Scheduling/FrenchDate` is the one reader of a typed day and time**, for sessions, date
+poll slots and `/remindme` alike: any new place where people type a date goes through it (through
+`SessionTime.Parse` for anything session-shaped), never a parser of its own. It takes chat
+spellings in any order (« ajd 20h », « 20h ajd », « demain soir 9h », « samedi en huit », « le 25
+à 21h », « 25 déc », « 21h moins le quart », « dans 3 jours »), and **refuses rather than guesses**:
+an unknown word, two times, or a weekday that disagrees with the date (« vendredi 31 octobre » when
+the 31st is a Saturday) give null, and the reply quotes `FrenchDate.Examples`. A bare number after a
+day is an hour (« demain 21 »), never a day of the month — that needs « le 25 ». The checks pin about
+seventy chat readings: add one for every misread found in the wild.
 `/when create` takes its slots the same way (`SessionTime.ParseList`, comma or line separated, ten
 at most); `/vote create`'s modal takes one option per line (`PollRules.ParseOptions`). The pickers'
 day lists end with « Autre date… », a modal read by the same parser.
@@ -318,7 +328,8 @@ snake draft — a snake draft is deterministic, so a reroll would deal the same 
 ## `/remindme` and `/reminders` — `PersonalReminderService`
 
 Its **own 1-minute loop** (five minutes late reads as broken, so it can't ride `ReminderService`).
-`ReminderTime` parses « quand » (pure): « 21h » / « 1h30 » alone are **clock times**, the way French
+`ReminderTime` parses « quand » (pure), its durations itself and its days and times through
+`FrenchDate`: « 21h » / « 1h30 » alone are **clock times**, the way French
 says « à 21h »; a duration in hours needs « dans » or a spelled unit, and minutes after an hour stop
 at 59 (« 21h75 » is refused, never read as a duration). « ce soir 9h » is 21:00, « ce soir » alone
 20:00. The confirmation shows the exact time either way. The checks pin about ninety readings: add

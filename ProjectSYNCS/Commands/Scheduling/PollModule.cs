@@ -160,7 +160,7 @@ public class PollModule : InteractionModuleBase<SocketInteractionContext>
 
         var slot = SessionTime.Parse(modal.When, DateTimeOffset.UtcNow);
         var note = slot is null
-            ? $"⚠️ « {Format.Sanitize(modal.When.Trim())} » n'est pas une date à venir que je comprends (ex. « samedi 21h », « 25/12 20:30 »).\n"
+            ? $"⚠️ « {Format.Sanitize(modal.When.Trim())} » n'est pas une date à venir que je comprends (ex. {FrenchDate.Examples}).\n"
             : string.Empty;
         if (slot is { } s) AddSlot(draft, s);
 
