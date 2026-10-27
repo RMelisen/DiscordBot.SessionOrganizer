@@ -3,6 +3,14 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.51.0 — 2026-10-27
+
+- The `/schedule create` wizard is shorter: tonight, tomorrow or the weekend in one click (« Autre jour… » to pick any other day, « Taper une date » to type it), then the name and an optional description, then a preview showing the real card. Category, places, duration, voice channel and « Chaque semaine » are picked on the preview, « Changer l'heure » goes back to the time without losing the rest, and « Publier » posts it.
+- The preview warns when the session overlaps another one.
+- The wizard starts from your last session's category, places, duration, voice channel and hour (forgotten on restart).
+- A poll turned into a session goes through the same preview.
+- Session cards show « Durée : » instead of a clock emoji; the « Peut-être » and « +1 h » buttons lost their emoji.
+
 ## 7.50.0 — 2026-10-27
 
 - In Minecraft, « tu fais quoi ? » gets a real answer: the order she's on, or what she's doing on her own (her routine, tagging along, a fight, sleep), and `/minecraft status` shows her own life too.

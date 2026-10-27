@@ -179,9 +179,10 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**En une ligne** : **`/schedule create`** avec `title` et `when` (« samedi 21h », « 25/12 20:30 », " +
                 "« demain », « ce soir »), et c'est publié. En option : `category`, `places`, `duration`, " +
                 "`voice` (le salon vocal), `description`, et `weekly` pour la répéter chaque semaine.\n" +
-                "**Pas à pas** : sans `title` ni `when`, un assistant privé te fait choisir le type, le jour " +
-                "(ou **Autre date…**), l'heure et les minutes, puis le nom et les places (vide = illimité). " +
-                "**Retour** revient à l'étape précédente.")
+                "**Pas à pas** : sans `title` ni `when`, un assistant privé propose **Ce soir**, **Demain** ou le " +
+                "week-end en un clic (ou **Autre jour…**, ou **Taper une date**), puis le nom. L'aperçu montre la vraie " +
+                "carte : type, places, durée, salon vocal et **Chaque semaine** s'y règlent, il prévient si une " +
+                "autre session tombe en même temps, et **Publier** la poste. Il reprend tes choix de la dernière fois.")
             .AddField("Boutons d'une session",
                 "✅ **Rejoindre** · 🤔 **Peut-être** · ✖️ **Refuser** — jusqu'au début de la session.\n" +
                 "Session complète ? **Peut-être** te met en liste d'attente : je préviens les « peut-être » " +

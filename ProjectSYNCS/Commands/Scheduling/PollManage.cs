@@ -31,7 +31,7 @@ public static class PollManage
             .WithButton("Clôturer", $"poll:close:{id}", ButtonStyle.Danger, new Emoji("🔒"), row: 0)
             .WithButton("Renommer", $"poll:rename:{id}", ButtonStyle.Secondary, new Emoji("✏️"), row: 0)
             .WithButton("Republier ici", $"poll:repost:{id}", ButtonStyle.Secondary, new Emoji("📌"), row: 0)
-            .WithButton("+1 h", $"poll:extend:{id}:1", ButtonStyle.Secondary, new Emoji("⏳"), row: 1)
+            .WithButton("+1 h", $"poll:extend:{id}:1", ButtonStyle.Secondary, row: 1)
             .WithButton("+1 jour", $"poll:extend:{id}:24", ButtonStyle.Secondary, row: 1)
             .WithButton("+2 jours", $"poll:extend:{id}:48", ButtonStyle.Secondary, row: 1);
         if (poll.Options.Count < PollRules.MaxOptions)
