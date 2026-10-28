@@ -84,8 +84,9 @@ fragment doit s'accorder avec ce qui suit.*
   C'est rare, coûteux, et cela l'épuise.
 - **Il y avait d'autres Souches.** Une, au moins, au cœur du Bois Sourd. Le vieux seigneur a fait
   abattre les grands arbres du Bois pour bâtir et chauffer Roncebelle. Cette Souche-là en est morte.
-  **L'Étrangère** (fiche 11) est sa dernière pousse, sortie seule et partie droit devant jusqu'à
-  trouver une autre Souche. Elle n'a pas de veilleur : en mourant, sa Souche a versé en elle tout ce
+  **L'Étrangère** (fiche 11) est sa dernière pousse, sortie seule. Elle est restée des années
+  auprès de sa Souche morte, sans pouvoir la quitter, et n'est partie, droit devant, que quand sa
+  lumière a commencé à pâlir, jusqu'à trouver une autre Souche. Elle n'a pas de veilleur : en mourant, sa Souche a versé en elle tout ce
   qui lui restait, et c'est de cela qu'elle vit. Cette lumière s'use. La croyance du village reste
   vraie (une pousse ne survit pas seule) : l'Étrangère ne survit pas, elle dure.
 - **Ce que le Fou a vu** (fiche 13) : une nuit de pluie, il y a des années, le sol de la Lisière
@@ -266,6 +267,9 @@ arc (un béguin, une attente, un chagrin), mais cela reste à sens unique : le v
   charge.
 - **Allure** : grise et verte, plate contre les pierres où elle s'assoit, si immobile qu'on la prend
   pour un rocher.
+- **Les pierres des morts** : un tas de galets de la Sommeille devant sa porte, un par mort qu'elle a
+  couché à la Souche. Le Pré des Retours n'a ni pierre ni nom ; son tas, si. Pas un nom n'y est
+  écrit, mais elle sait laquelle est qui. Elle en ajoute une après chaque mort, sans un mot.
 - **Voix** : très peu de mots, de longs silences. Compte en hivers, jamais en jours. Ne pose pas de
   questions, elle attend qu'on parle. Ne dit jamais « je ne sais pas » : elle dit « pas encore ».
   > « Assieds-toi. La Souche n'est pas pressée. Toi non plus. »
@@ -280,12 +284,19 @@ arc (un béguin, une attente, un chagrin), mais cela reste à sens unique : le v
   protégé, lui et la Souche. Cela lui a aussi coûté douze ans de moqueries. Elle ne le regrette pas,
   et elle n'a jamais pu le regarder en face.
 - **Liens** : le Fou (elle l'a protégé en le sacrifiant, et ne se le pardonne qu'à moitié), le Tilleul (un très vieil attachement,
-  peut-être plus), la Bruyère (à qui elle confie les pousses, et qui les élève trop durement à son
+  peut-être plus : **aucun arc ne tranche**, ni ne confirme ni ne dément ; les scènes montrent la
+  chaleur, jamais ce qu'elle cache), la Bruyère (à qui elle confie les pousses, et qui les élève trop durement à son
   goût), la Sauge (elles se partagent les mourants et ne sont d'accord sur rien ; elle sait l'erreur
   de l'hiver des fièvres et la tait), l'intendant (la
   menace, depuis qu'il parle de cartes).
 - **Les Plynlings, les veilleurs** : les Plynlings sont « les siens », tous, même devenus adultes.
   Des veilleurs, elle ne parle jamais. Elle salue parfois le vide, au-dessus d'une pousse.
+- **L'arrivée** : quand une pousse sort de la Souche, elle s'assoit à quelques pas, ne dit rien, et
+  attend que la pousse vienne à elle d'elle-même. Elle ne l'appelle pas, ne lui tend pas la main.
+  Ces premiers pas sont le premier choix de la pousse.
+- **Son prénom** : seul le Tilleul l'appelle encore Ysaure. Un Plynling qui l'entend surprend
+  quelque chose d'intime. Après la mort du Tilleul, personne ne le dit plus, jusqu'à ce qu'elle le
+  donne elle-même à qui veillera après elle.
 - **La gardienne des secrets.** Elle couche tous les morts à la Souche, et entend ce qu'on dit aux
   mourants. Elle sait ce que le Fou a vu, l'erreur de la Sauge, et sans doute plus encore. Elle n'en
   dit jamais rien.
@@ -293,7 +304,7 @@ arc (un béguin, une attente, un chagrin), mais cela reste à sens unique : le v
   une question : ses secrets meurent-ils avec elle, ou passent-ils à qui veillera après elle ? Le
   Plynling qui lui succède **hérite de ce qu'elle savait**, ou d'une partie.
 
-### 2. Eudes, qu'on appelle Maître Frêne — le syndic
+### 2. François, qu'on appelle Maître Frêne — le syndic
 
 - **Espèce, âge** : frêne. La cinquantaine, droit et mince.
 - **Foyer, rôle** : chef d'un feu modeste, syndic du conseil depuis huit printemps. Sait lire et
@@ -320,7 +331,7 @@ arc (un béguin, une attente, un chagrin), mais cela reste à sens unique : le v
 
 ### 3. Gauvain, qu'on appelle l'Intendant (ou le Houx, derrière son dos) — l'homme du seigneur
 
-- **Espèce, âge** : houx. La quarantaine.
+- **Espèce, âge** : houx. Une trentaine d'années : il en avait huit pendant l'hiver des fièvres.
 - **Foyer, rôle** : vit à Roncebelle, descend au hameau pour collecter, annoncer, mesurer.
 - **Allure** : vert sombre, raide, des feuilles piquantes qu'il garde bien rangées. Les couleurs de
   Roncebelle à la ceinture.
@@ -346,7 +357,7 @@ arc (un béguin, une attente, un chagrin), mais cela reste à sens unique : le v
   seigneur », il le devient. Les deux branches s'écrivent ; la chronique choisit.
 - **Sortie** : renvoyé par la nouvelle dame, ou passé dans son camp pour de bon.
 
-### 4. Thibaud, qu'on appelle le Chardon — le meunier
+### 4. Chamberlain, qu'on appelle le Chardon — le meunier
 
 - **Espèce, âge** : chardon. La soixantaine, épineux et massif.
 - **Foyer, rôle** : tient le moulin du seigneur. Vit seul au moulin avec son apprenti. Prête à
@@ -357,7 +368,7 @@ arc (un béguin, une attente, un chagrin), mais cela reste à sens unique : le v
   > « Je ne suis pas méchant. Je suis exact. Ce n'est pas la même chose, mais personne ne fait la
   > différence. »
 - **Passé** : la crue a déplacé le pré de la Sommeille, et sa famille y a perdu ses bornes. **Il sait
-  que les bornes ont été déplacées**, et il le dit depuis vingt ans. Personne ne le croit : c'est sa
+  que les bornes ont été déplacées**, et il le dit depuis toujours. Personne ne le croit : c'est sa
   parole contre celle du Noyer, et la sienne ne vaut rien. C'est ce qui l'a rendu dur, et exact.
 - **Défaut** : l'avarice, et la solitude qu'elle lui a value.
 - **Désir** : le respect. Il rêve d'être syndic, et sait que personne ne votera pour lui.
@@ -372,7 +383,8 @@ arc (un béguin, une attente, un chagrin), mais cela reste à sens unique : le v
 
 ### 5. Aliénor, qu'on appelle la Sauge — la guérisseuse
 
-- **Espèce, âge** : sauge. La quarantaine.
+- **Espèce, âge** : sauge. Pas tout à fait quarante ans : elle en avait seize pendant l'hiver des
+  fièvres.
 - **Foyer, rôle** : seule à la Maison aux Simples. Seule guérisseuse à des jours de marche.
 - **Allure** : gris-vert argenté, des feuilles douces, une odeur forte qui la précède. Les mains
   toujours tachées.
@@ -398,7 +410,7 @@ arc (un béguin, une attente, un chagrin), mais cela reste à sens unique : le v
 ### 6. Mahaut, qu'on appelle la Courge — l'aubergiste
 
 - **Espèce, âge** : courge. La cinquantaine, ronde et chaude.
-- **Foyer, rôle** : tient l'auberge du Pont-Vieux, avec ses trois grands enfants.
+- **Foyer, rôle** : veuve. Tient l'auberge du Pont-Vieux, avec ses trois grands enfants.
 - **Allure** : orange et ronde, des vrilles partout qui attrapent les chopes et les ragots.
 - **Voix** : forte, chaleureuse, curieuse de tout. Appelle tout le monde « mon chou ». Pose une
   question, n'attend pas la réponse, en pose une autre.
@@ -515,7 +527,7 @@ arc (un béguin, une attente, un chagrin), mais cela reste à sens unique : le v
 - **Sortie** : la dette qui l'emporte, le départ du feu au-delà de la Côte. Ou une redevance enfin
   payée.
 
-### 11. Oriane, qu'on appelle l'Étrangère (ou la Luisante) — la nouvelle venue
+### 11. Asha, qu'on appelle l'Étrangère (ou la Luisante) — la nouvelle venue
 
 - **Espèce, âge** : un champignon que personne au village n'a jamais vu, qui luit faiblement la
   nuit. Âge inconnu ; elle paraît jeune et parle comme une vieille.
@@ -527,7 +539,9 @@ arc (un béguin, une attente, un chagrin), mais cela reste à sens unique : le v
 - **Voix** : peu de mots, des tournures d'ailleurs, une politesse qui tient les gens à distance.
   Répond à une question par une autre.
   > « Chez moi, on ne demande pas d'où l'on vient. On demande où l'on va. »
-- **Passé** : sortie du Bois Sourd l'an dernier, seule, à pied.
+- **Passé** : sortie du Bois Sourd l'an dernier, seule, à pied. Avant cela, une dizaine d'années
+  au cœur du Bois, auprès de sa Souche morte, parmi les souches des grands arbres abattus. Elle n'est
+  partie que quand sa lumière a commencé à pâlir.
 - **Défaut** : la méfiance. Elle fuit tout attachement.
 - **Désir** : qu'on la laisse rester.
 - **Secret** : elle est la dernière pousse de la Souche du Bois Sourd, morte quand le vieux seigneur
@@ -557,7 +571,8 @@ arc (un béguin, une attente, un chagrin), mais cela reste à sens unique : le v
 - **Défaut** : il oublie, et vit dans le passé.
 - **Désir** : confier ses ruches à quelqu'un avant de mourir.
 - **Secret** : il « dit tout aux abeilles », comme le veut la vieille coutume, les naissances et les
-  morts. Il leur a dit ce que la Mère Lichen lui a confié un soir, sur les lumières. Les abeilles
+  morts. Il leur a dit ce que la Mère Lichen lui a confié un soir : elle a vu les lumières, elle
+  aussi. Rien de plus ; la rumeur sur le Fou, il ne la connaît pas. Les abeilles
   sont les seules à savoir. **C'est une coutume, pas une magie** : les abeilles ne répètent rien.
   Mais il est à moitié sourd, et il leur parle à voix haute. Quiconque se cache dans le verger peut
   entendre.
@@ -567,7 +582,7 @@ arc (un béguin, une attente, un chagrin), mais cela reste à sens unique : le v
   c'est peut-être moins une erreur qu'on ne croit.
 - **Sortie** : mort de vieillesse, pendant une Longue Nuit. Les ruches, à qui ?
 
-### 13. Gilles, qu'on appelle Pissenlit — le fou du village
+### 13. Gilles, qu'on appelle le Fou (ou Pissenlit, pour se moquer) — le fou du village
 
 - **Espèce, âge** : pissenlit. La quarantaine.
 - **Foyer, rôle** : vit où il peut. Fait des petits travaux, compte des choses, dort souvent dans la
@@ -577,14 +592,18 @@ arc (un béguin, une attente, un chagrin), mais cela reste à sens unique : le v
 - **Voix** : chantonnante, il parle aux objets, compte à voix haute, mélange les jours. Puis, sans
   prévenir, une phrase très claire, que personne ne veut entendre.
   > « Trois, quatre, cinq pierres. Cinq. C'est une de trop. Quelqu'un a déplacé une pierre. »
-- **Passé** : la nuit des lumières, il y a douze ans. Il l'a racontée à tout le monde. On a ri. Son
-  surnom vient des enfants du Noyer, et le village l'a gardé.
+- **Passé** : la nuit des lumières, il y a douze ans. Il l'a racontée à tout le monde. On a ri, et il
+  est devenu « le Fou ». « Pissenlit » est venu après, des fils du Noyer : un nom pour se moquer, que
+  les méchants disent encore.
 - **Défaut** : on ne sait jamais s'il ment, s'il se trompe ou s'il voit plus loin. Lui non plus.
 - **Désir** : qu'on le croie, une seule fois.
 - **Secret** : il n'en a pas. Il a tout dit, et personne n'a écouté. **Il compte les bornes du pré
-  depuis qu'il est enfant**, et sait laquelle a bougé : il est le seul témoin du Chardon, qui s'est
-  toujours moqué de lui. Personne ne le lui a jamais demandé. Il sait, lui, que la Mère Lichen
-  a vu les lumières, et il ne lui en a jamais voulu. **Il ne sait pas que c'est elle qui l'a fait
+  depuis qu'il est enfant.** Il n'a pas vu le déplacement, qui date d'avant sa naissance, mais à
+  force de compter il a trouvé la preuve : le pied de la vraie borne, encore en terre sous l'herbe,
+  là où aucune borne ne se dresse plus, et le sillon qui tourne pour l'éviter. Il est le seul témoin
+  du Chardon, qui s'est toujours moqué de lui. Personne ne le lui a jamais demandé. Il sait, lui, que la Mère Lichen
+  a vu les lumières : cette nuit-là, il l'a vue debout devant sa cabane, qui regardait le sol
+  s'allumer. Il ne lui en a jamais voulu de se taire. **Il ne sait pas que c'est elle qui l'a fait
   passer pour fou.** Le jour où il l'apprendra est un arc.
 - **Liens** : la Mère Lichen (elle a vu, il sait qu'elle a vu ; il ignore le reste), la Courge (qui le nourrit), le Tilleul
   (qui lui parle normalement), l'Étrangère (« ta lumière »), les enfants du Noyer (la moquerie).
