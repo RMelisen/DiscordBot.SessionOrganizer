@@ -20,7 +20,9 @@ public sealed class PlynlingCooldowns
     // never rolls a new one.
     public CooldownGate<int> Play { get; } = new(PlynlingLife.PlayCooldown, forget: TimeSpan.FromHours(2));
 
-    // One visit a (Paris) day per pair of owners, whichever of the two knocked.
+    // One visit a (Paris) day per pair of owners, whichever of the two knocked. Only the fast half of
+    // the rule: a visit finds items and moves the bond, so the day is also stored on the pair's
+    // relation (PlynlingRelation.LastVisitDay), which a restart cannot clear.
     private readonly ConcurrentDictionary<(ulong Low, ulong High, int Day), byte> _visits = new();
 
     public bool TryClaimVisit(ulong a, ulong b, int day)

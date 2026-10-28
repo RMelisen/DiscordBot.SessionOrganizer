@@ -7,6 +7,31 @@ public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
+    // Both SaveChanges overloads without a flag route here.
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        BumpVersions();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        BumpVersions();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    // The Plynling and relation rows' Version tokens: SQLite has no rowversion, so every update of
+    // one moves it here, and EF's WHERE carries the version it read. A failed save leaves the bump
+    // in memory only, never in the WHERE (that uses the original value), so a retried or reset unit
+    // of work is unaffected.
+    private void BumpVersions()
+    {
+        foreach (var entry in ChangeTracker.Entries<Plynling>())
+            if (entry.State == EntityState.Modified) entry.Entity.Version++;
+        foreach (var entry in ChangeTracker.Entries<PlynlingRelation>())
+            if (entry.State == EntityState.Modified) entry.Entity.Version++;
+    }
+
     public DbSet<SessionEvent> SessionEvents => Set<SessionEvent>();
     public DbSet<Participant> Participants => Set<Participant>();
     public DbSet<Poll> Polls => Set<Poll>();
@@ -38,6 +63,7 @@ public class AppDbContext : DbContext
     public DbSet<PlynlingEventInstance> PlynlingEventInstances => Set<PlynlingEventInstance>();
     public DbSet<PlynlingJournalEntry> PlynlingJournalEntries => Set<PlynlingJournalEntry>();
     public DbSet<PlynlingRelation> PlynlingRelations => Set<PlynlingRelation>();
+    public DbSet<VisitStoryRecord> VisitStoryRecords => Set<VisitStoryRecord>();
     public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
     public DbSet<CollectionCompletion> CollectionCompletions => Set<CollectionCompletion>();
     public DbSet<CollectionDailyStat> CollectionDailyStats => Set<CollectionDailyStat>();
@@ -333,6 +359,8 @@ public class AppDbContext : DbContext
             // land. Dead rows are excluded, which is what lets the graveyard hold any number.
             e.HasIndex(x => new { x.GuildId, x.OwnerId }).IsUnique().HasFilter("\"DiedAt\" IS NULL");
             e.HasIndex(x => x.GuildId);
+            // Bumped by BumpVersions on every save: the UPDATE lands only on the version it read.
+            e.Property(x => x.Version).IsConcurrencyToken();
         });
 
         // A Plynling's badges and journal belong to it: deleted with it (abandoned), kept when it
@@ -377,6 +405,13 @@ public class AppDbContext : DbContext
             e.HasOne<Plynling>().WithMany().HasForeignKey(x => x.PlynlingBId).OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => new { x.PlynlingAId, x.PlynlingBId }).IsUnique();
             e.HasIndex(x => x.PlynlingBId);
+            e.Property(x => x.Version).IsConcurrencyToken();
+        });
+
+        modelBuilder.Entity<VisitStoryRecord>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.Day);
         });
 
         modelBuilder.Entity<InventoryItem>(e =>

@@ -3,6 +3,13 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.55.0 — 2026-10-28
+
+- Plynlings: two things changing the same Plynling at once (two people feeding it, a meal during the hourly check)
+  no longer lose one of them; the slower one is redone on fresh values. A meal paid for is always a meal eaten.
+- Plynlings: `/plynling list` and the graveyard only read now, so they answer faster and never write.
+- Plynlings: the once-a-day visit rule and the visit stories' ◀ ▶ survive an update; stories page back for 30 days.
+
 ## 7.54.1 — 2026-10-27
 
 - Minecraft: she gathers stone like a player now, digging into one cliff face and taking everything within arm's

@@ -37,6 +37,12 @@ public class Plynling
 {
     public int Id { get; set; }
 
+    // Concurrency token, bumped on every save of the row (AppDbContext). Every transition rewrites
+    // the needs as a whole, so of two saves that read the row at once — the sweep and a meal, two
+    // meals — the slower would silently undo the faster; with the token it throws, and
+    // PlynlingService runs its unit of work again on fresh values.
+    public int Version { get; set; }
+
     public ulong GuildId { get; set; }
     public ulong OwnerId { get; set; }
 

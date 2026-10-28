@@ -213,6 +213,9 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
         var mine = await plynlings.GetCurrentAsync(guildId, visitorId, now);
         // Bots have no Plynling — except her, whose Ping-Qilin can be visited.
         var theirs = host.IsBot && host.Id != PlynlingMascot.OwnerId ? null : await plynlings.GetCurrentAsync(guildId, host.Id, now);
+        // In memory for a knock a moment ago, stored on their relation for a visit before a restart.
+        var visitedToday = mine is not null && theirs is not null
+            && (cooldowns.VisitedToday(visitorId, host.Id, AppTime.DayKey(now)) || await plynlings.VisitedTodayAsync(mine.Id, theirs.Id, now));
         string? refusal =
             mine is null ? PlynlingText.NoPlynling
             : mine.DiedAt is not null ? PlynlingText.Dead(mine.Gender)
@@ -221,7 +224,7 @@ public abstract class PlynlingModule : InteractionModuleBase<SocketInteractionCo
             : PlynlingLife.IsAsleep(now) ? PlynlingText.Asleep(mine.Gender)
             : PlynlingLife.IsSick(mine) ? PlynlingText.VisitSick(PlynlingCardUi.SafeName(mine.Name))
             : PlynlingLife.IsSick(theirs) ? PlynlingText.VisitSick(PlynlingCardUi.SafeName(theirs.Name))
-            : cooldowns.VisitedToday(visitorId, host.Id, AppTime.DayKey(now)) ? PlynlingText.VisitedToday(host.Id)
+            : visitedToday ? PlynlingText.VisitedToday(host.Id)
             : null;
         if (refusal is not null || mine is null || theirs is null)
             return new VisitOpening(refusal ?? PlynlingText.NoPlynling);

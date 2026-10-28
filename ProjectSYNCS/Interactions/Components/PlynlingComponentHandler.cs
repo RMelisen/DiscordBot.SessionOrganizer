@@ -284,7 +284,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
 
     private async Task PageStoryAsync(string id, string beatStr, int step, Func<VisitStory, int>? to = null)
     {
-        var story = _stories.Get(id);
+        var story = await _stories.GetAsync(id);
         if (story is null || !int.TryParse(beatStr, out var beat))
         {
             await RespondAsync(PlynlingText.StoryGone, ephemeral: true);

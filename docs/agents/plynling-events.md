@@ -117,7 +117,9 @@ never change that mapping, every stored morning depends on it.
   (`ShiftAffinityAsync`, shared with visits through `ApplyBondChangeAsync`), badges and the journal
   land in one save. Events never make a couple.
 - **Never applied twice:** `ResolvedAt` is a concurrency token. When the sweep and a click resolve the
-  same event, the second save throws and rolls back; `PickEventAsync` answers « déjà décidé ».
+  same event, the second save throws and rolls back; `PickEventAsync`'s unit runs again, finds it
+  resolved and answers « déjà décidé ». (A conflict on the Plynling's own `Version` reruns it the same
+  way, and the pick lands — see *Concurrency* in `plynling.md`.)
   **The sweep opens a scope per Plynling** (ids first, then `GetForSweepAsync`): a context shared by
   the pass served rows read early to every later Plynling, stale after any click made meanwhile,
   and kept a refused unit of work tracked for every later save to retry. Keep it per item.

@@ -67,16 +67,16 @@ public partial class PlynlingService
 
     // The owner's living Plynling, brought up to date. If it starved since anyone last
     // looked it comes back dead (and is saved dead), so the caller can say so.
-    public async Task<Plynling?> GetCurrentAsync(ulong guildId, ulong ownerId, DateTimeOffset now) =>
-        await SettledAsync(await _db_context.Plynlings
-            .FirstOrDefaultAsync(x => x.GuildId == guildId && x.OwnerId == ownerId && x.DiedAt == null), now);
+    public Task<Plynling?> GetCurrentAsync(ulong guildId, ulong ownerId, DateTimeOffset now) =>
+        UnitAsync(async () => await SettledAsync(await _db_context.Plynlings
+            .FirstOrDefaultAsync(x => x.GuildId == guildId && x.OwnerId == ownerId && x.DiedAt == null), now));
 
     // What /plynling view shows: the living one, or else their most recent grave.
-    public async Task<Plynling?> GetShownAsync(ulong guildId, ulong ownerId, DateTimeOffset now) =>
-        await GetCurrentAsync(guildId, ownerId, now) ?? await GetLatestDeadAsync(guildId, ownerId);
+    public Task<Plynling?> GetShownAsync(ulong guildId, ulong ownerId, DateTimeOffset now) =>
+        UnitAsync(async () => await GetCurrentAsync(guildId, ownerId, now) ?? await GetLatestDeadAsync(guildId, ownerId));
 
-    public async Task<Plynling?> GetByIdAsync(int id, DateTimeOffset now) =>
-        await SettledAsync(await _db_context.Plynlings.FirstOrDefaultAsync(x => x.Id == id), now);
+    public Task<Plynling?> GetByIdAsync(int id, DateTimeOffset now) =>
+        UnitAsync(async () => await SettledAsync(await _db_context.Plynlings.FirstOrDefaultAsync(x => x.Id == id), now));
 
     public async Task<Plynling?> GetLatestDeadAsync(ulong guildId, ulong ownerId)
     {
@@ -87,9 +87,14 @@ public partial class PlynlingService
         return dead.OrderByDescending(x => x.DiedAt).FirstOrDefault();
     }
 
-    public async Task<(AdoptOutcome Outcome, Plynling? Plynling)> AdoptAsync(
+    public Task<(AdoptOutcome Outcome, Plynling? Plynling)> AdoptAsync(
         ulong guildId, ulong ownerId, string name, PlynlingSpecies species, DateTimeOffset now,
-        PlynlingGender? gender = null, PlynlingPassion? passion = null)
+        PlynlingGender? gender = null, PlynlingPassion? passion = null) =>
+        UnitAsync(() => AdoptOnceAsync(guildId, ownerId, name, species, now, gender, passion));
+
+    private async Task<(AdoptOutcome Outcome, Plynling? Plynling)> AdoptOnceAsync(
+        ulong guildId, ulong ownerId, string name, PlynlingSpecies species, DateTimeOffset now,
+        PlynlingGender? gender, PlynlingPassion? passion)
     {
         var current = await GetCurrentAsync(guildId, ownerId, now);
         if (current is { DiedAt: null }) return (AdoptOutcome.AlreadyHasOne, current);
@@ -103,7 +108,7 @@ public partial class PlynlingService
         {
             await _db_context.SaveChangesAsync();
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex) when (ex is not DbUpdateConcurrencyException)
         {
             // Two adoptions raced; the partial unique index let exactly one through.
             return (AdoptOutcome.AlreadyHasOne, null);
@@ -120,7 +125,10 @@ public partial class PlynlingService
     // there, alive or not, counts. Safe to call on every Ready and every join; a raced second
     // insert is turned away by the one-living-per-owner index. A living one that lacks any of her
     // chosen traits gets them here too, at once, rather than at the first hourly sweep.
-    public async Task<Plynling?> EnsureMascotAsync(ulong guildId, DateTimeOffset now)
+    public Task<Plynling?> EnsureMascotAsync(ulong guildId, DateTimeOffset now) =>
+        UnitAsync(() => EnsureMascotOnceAsync(guildId, now));
+
+    private async Task<Plynling?> EnsureMascotOnceAsync(ulong guildId, DateTimeOffset now)
     {
         if (PlynlingMascot.OwnerId == 0) return null;
         var owner = PlynlingMascot.OwnerId;
@@ -139,7 +147,7 @@ public partial class PlynlingService
         {
             await _db_context.SaveChangesAsync();
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex) when (ex is not DbUpdateConcurrencyException)
         {
             return null;
         }
@@ -149,7 +157,10 @@ public partial class PlynlingService
         return plynling;
     }
 
-    public async Task<FeedResult> FeedAsync(int plynlingId, ulong actorId, PlynlingFood food, DateTimeOffset now)
+    public Task<FeedResult> FeedAsync(int plynlingId, ulong actorId, PlynlingFood food, DateTimeOffset now) =>
+        UnitAsync(() => FeedOnceAsync(plynlingId, actorId, food, now));
+
+    private async Task<FeedResult> FeedOnceAsync(int plynlingId, ulong actorId, PlynlingFood food, DateTimeOffset now)
     {
         var info = PlynlingCatalog.Info(food);
         var plynling = await GetByIdAsync(plynlingId, now);
@@ -195,7 +206,10 @@ public partial class PlynlingService
             fromPantry ? pantryNeeded : 0, left);
     }
 
-    public async Task<(CareOutcome Outcome, Plynling? Plynling, IReadOnlyList<BadgeInfo> Badges)> PetAsync(int plynlingId, DateTimeOffset now)
+    public Task<(CareOutcome Outcome, Plynling? Plynling, IReadOnlyList<BadgeInfo> Badges)> PetAsync(int plynlingId, DateTimeOffset now) =>
+        UnitAsync(() => PetOnceAsync(plynlingId, now));
+
+    private async Task<(CareOutcome Outcome, Plynling? Plynling, IReadOnlyList<BadgeInfo> Badges)> PetOnceAsync(int plynlingId, DateTimeOffset now)
     {
         var plynling = await GetByIdAsync(plynlingId, now);
         if (plynling is null) return (CareOutcome.NoPlynling, null, NoBadges);
@@ -216,7 +230,11 @@ public partial class PlynlingService
     // claimed the bath cooldown (`free`); otherwise it takes one soap from the owner's pantry, but
     // only if the button said so (`soapOffered`) — a plain « Laver » never spends one unannounced,
     // it answers TooSoon with the soap count instead. Soap is what the owner holds after the bath.
-    public async Task<(CareOutcome Outcome, Plynling? Plynling, int Soap, bool UsedSoap)> BathAsync(
+    public Task<(CareOutcome Outcome, Plynling? Plynling, int Soap, bool UsedSoap)> BathAsync(
+        int plynlingId, ulong actorId, DateTimeOffset now, bool free, bool soapOffered) =>
+        UnitAsync(() => BathOnceAsync(plynlingId, actorId, now, free, soapOffered));
+
+    private async Task<(CareOutcome Outcome, Plynling? Plynling, int Soap, bool UsedSoap)> BathOnceAsync(
         int plynlingId, ulong actorId, DateTimeOffset now, bool free, bool soapOffered)
     {
         var plynling = await GetByIdAsync(plynlingId, now);
@@ -257,7 +275,11 @@ public partial class PlynlingService
 
     // « Soigner »: owner only, once between two mornings. A dose from the owner's pantry, else
     // MedicinePrice from the wallet — the feeding rule — in one save.
-    public async Task<(CareOutcome Outcome, Plynling? Plynling, bool FromPantry, long Price, long Balance)> MedicateAsync(
+    public Task<(CareOutcome Outcome, Plynling? Plynling, bool FromPantry, long Price, long Balance)> MedicateAsync(
+        int plynlingId, ulong actorId, DateTimeOffset now) =>
+        UnitAsync(() => MedicateOnceAsync(plynlingId, actorId, now));
+
+    private async Task<(CareOutcome Outcome, Plynling? Plynling, bool FromPantry, long Price, long Balance)> MedicateOnceAsync(
         int plynlingId, ulong actorId, DateTimeOffset now)
     {
         var plynling = await GetByIdAsync(plynlingId, now);
@@ -289,7 +311,10 @@ public partial class PlynlingService
     }
 
     // /admin plynling cure: cured at once, silently — no DM; the owner sees it on the card.
-    public async Task<(CureOutcome Outcome, Plynling? Plynling)> CureAsync(ulong guildId, ulong ownerId, DateTimeOffset now)
+    public Task<(CureOutcome Outcome, Plynling? Plynling)> CureAsync(ulong guildId, ulong ownerId, DateTimeOffset now) =>
+        UnitAsync(() => CureOnceAsync(guildId, ownerId, now));
+
+    private async Task<(CureOutcome Outcome, Plynling? Plynling)> CureOnceAsync(ulong guildId, ulong ownerId, DateTimeOffset now)
     {
         var p = await GetCurrentAsync(guildId, ownerId, now);
         if (p is null) return (CureOutcome.NoPlynling, null);
@@ -302,7 +327,10 @@ public partial class PlynlingService
     }
 
     // /debug plynling, on the owner's own living Plynling.
-    public async Task<Plynling?> DebugSetAsync(ulong guildId, ulong ownerId, double? hygiene, bool? sick, DateTimeOffset now)
+    public Task<Plynling?> DebugSetAsync(ulong guildId, ulong ownerId, double? hygiene, bool? sick, DateTimeOffset now) =>
+        UnitAsync(() => DebugSetOnceAsync(guildId, ownerId, hygiene, sick, now));
+
+    private async Task<Plynling?> DebugSetOnceAsync(ulong guildId, ulong ownerId, double? hygiene, bool? sick, DateTimeOffset now)
     {
         var p = await GetCurrentAsync(guildId, ownerId, now);
         if (p is null || p.DiedAt is not null) return null;
@@ -311,7 +339,11 @@ public partial class PlynlingService
         return p;
     }
 
-    public async Task<(FreezeOutcome Outcome, Plynling? Plynling)> FreezeAsync(
+    public Task<(FreezeOutcome Outcome, Plynling? Plynling)> FreezeAsync(
+        ulong guildId, ulong ownerId, bool byStaff, DateTimeOffset now) =>
+        UnitAsync(() => FreezeOnceAsync(guildId, ownerId, byStaff, now));
+
+    private async Task<(FreezeOutcome Outcome, Plynling? Plynling)> FreezeOnceAsync(
         ulong guildId, ulong ownerId, bool byStaff, DateTimeOffset now)
     {
         var plynling = await GetCurrentAsync(guildId, ownerId, now);
@@ -331,7 +363,11 @@ public partial class PlynlingService
         return (FreezeOutcome.Frozen, plynling);
     }
 
-    public async Task<(ThawOutcome Outcome, Plynling? Plynling)> ThawAsync(
+    public Task<(ThawOutcome Outcome, Plynling? Plynling)> ThawAsync(
+        ulong guildId, ulong ownerId, bool byStaff, DateTimeOffset now) =>
+        UnitAsync(() => ThawOnceAsync(guildId, ownerId, byStaff, now));
+
+    private async Task<(ThawOutcome Outcome, Plynling? Plynling)> ThawOnceAsync(
         ulong guildId, ulong ownerId, bool byStaff, DateTimeOffset now)
     {
         var plynling = await GetCurrentAsync(guildId, ownerId, now);
@@ -353,8 +389,12 @@ public partial class PlynlingService
     // player's cailloux land in one save. Null when the Plynling can no longer be played
     // with (it died, was frozen or abandoned mid-game): then nothing is paid.
     // A win may also find an item (ItemCatalog.PlayFindChance), in the same save.
-    public async Task<(Plynling? Plynling, long Balance, IReadOnlyList<BadgeInfo> Badges, ItemFind? Find)> FinishPlayAsync(
-        int plynlingId, ulong ownerId, bool won, long pebbles, DateTimeOffset now, Random? rng = null)
+    public Task<(Plynling? Plynling, long Balance, IReadOnlyList<BadgeInfo> Badges, ItemFind? Find)> FinishPlayAsync(
+        int plynlingId, ulong ownerId, bool won, long pebbles, DateTimeOffset now, Random? rng = null) =>
+        UnitAsync(() => FinishPlayOnceAsync(plynlingId, ownerId, won, pebbles, now, rng));
+
+    private async Task<(Plynling? Plynling, long Balance, IReadOnlyList<BadgeInfo> Badges, ItemFind? Find)> FinishPlayOnceAsync(
+        int plynlingId, ulong ownerId, bool won, long pebbles, DateTimeOffset now, Random? rng)
     {
         rng ??= Random.Shared;
         var plynling = await GetByIdAsync(plynlingId, now);
@@ -383,10 +423,15 @@ public partial class PlynlingService
     // confession perhaps — and both are cheered (or not) by what they are to each other, all in
     // one save. Null when either can no longer take part. A good scene may also turn up an item
     // for each owner, drawn from `findRng` — kept apart from the scene's own draws.
-    public async Task<VisitOutcome?> VisitAsync(int visitorId, int hostId, DateTimeOffset now, Random? rng = null, Random? findRng = null)
+    public Task<VisitOutcome?> VisitAsync(int visitorId, int hostId, DateTimeOffset now, Random? rng = null, Random? findRng = null) =>
+        UnitAsync(() => VisitOnceAsync(visitorId, hostId, now, rng ?? Random.Shared, findRng ?? Random.Shared));
+
+    // Whether the pair already met today (Paris day), as stored — the claim a restart cannot reopen.
+    public async Task<bool> VisitedTodayAsync(int a, int b, DateTimeOffset now) =>
+        (await FindRelationAsync(a, b))?.LastVisitDay == AppTime.DayKey(now);
+
+    private async Task<VisitOutcome?> VisitOnceAsync(int visitorId, int hostId, DateTimeOffset now, Random rng, Random findRng)
     {
-        rng ??= Random.Shared;
-        findRng ??= Random.Shared;
         var visitor = await GetByIdAsync(visitorId, now);
         var host = await GetByIdAsync(hostId, now);
         if (visitor is null || host is null || visitor.Id == host.Id) return null;
@@ -396,6 +441,11 @@ public partial class PlynlingService
 
         var (lo, hi) = Pair(visitor.Id, host.Id);
         var relation = await RelationForAsync(visitor.Id, host.Id, now);
+        // The callers check VisitedTodayAsync first; this is the backstop for two visits racing past
+        // it (the relation's token makes the slower one re-read and stop here).
+        var day = AppTime.DayKey(now);
+        if (relation.LastVisitDay == day) return null;
+        relation.LastVisitDay = day;
 
         var before = relation.Bond;
         var compatibility = PlynlingBonds.Compatibility(lo, hi);
@@ -633,7 +683,10 @@ public partial class PlynlingService
     // /plynling abandon: the owner's living Plynling leaves for good — the row is deleted,
     // so it never reaches the graveyard and cannot be resurrected. Returns what was removed
     // (for the announcement), or null when there was nothing of theirs to abandon.
-    public async Task<Plynling?> AbandonAsync(int plynlingId, ulong ownerId, DateTimeOffset now)
+    public Task<Plynling?> AbandonAsync(int plynlingId, ulong ownerId, DateTimeOffset now) =>
+        UnitAsync(() => AbandonOnceAsync(plynlingId, ownerId, now));
+
+    private async Task<Plynling?> AbandonOnceAsync(int plynlingId, ulong ownerId, DateTimeOffset now)
     {
         var plynling = await GetByIdAsync(plynlingId, now);
         if (plynling is null || plynling.OwnerId != ownerId || plynling.DiedAt is not null) return null;
@@ -644,7 +697,11 @@ public partial class PlynlingService
         return plynling;
     }
 
-    public async Task<(Plynling? Plynling, string OldName)> RenameAsync(
+    public Task<(Plynling? Plynling, string OldName)> RenameAsync(
+        ulong guildId, ulong ownerId, string name, DateTimeOffset now) =>
+        UnitAsync(() => RenameOnceAsync(guildId, ownerId, name, now));
+
+    private async Task<(Plynling? Plynling, string OldName)> RenameOnceAsync(
         ulong guildId, ulong ownerId, string name, DateTimeOffset now)
     {
         var plynling = await GetShownAsync(guildId, ownerId, now);
@@ -658,7 +715,11 @@ public partial class PlynlingService
 
     // /plynling passion: set (or clear, when text is null) what its owner taught it. The cooldown
     // runs from the last change either way, so set/clear cannot be toggled for spam.
-    public async Task<(TeachOutcome Outcome, Plynling? Plynling, DateTimeOffset? ReadyAt)> TeachPassionAsync(
+    public Task<(TeachOutcome Outcome, Plynling? Plynling, DateTimeOffset? ReadyAt)> TeachPassionAsync(
+        int plynlingId, ulong ownerId, string? text, DateTimeOffset now) =>
+        UnitAsync(() => TeachPassionOnceAsync(plynlingId, ownerId, text, now));
+
+    private async Task<(TeachOutcome Outcome, Plynling? Plynling, DateTimeOffset? ReadyAt)> TeachPassionOnceAsync(
         int plynlingId, ulong ownerId, string? text, DateTimeOffset now)
     {
         var plynling = await GetByIdAsync(plynlingId, now);
@@ -675,7 +736,10 @@ public partial class PlynlingService
     }
 
     // Staff moderation, like RenameAsync: reaches the latest grave too, since its card shows it.
-    public async Task<Plynling?> ResetPassionAsync(ulong guildId, ulong ownerId, DateTimeOffset now)
+    public Task<Plynling?> ResetPassionAsync(ulong guildId, ulong ownerId, DateTimeOffset now) =>
+        UnitAsync(() => ResetPassionOnceAsync(guildId, ownerId, now));
+
+    private async Task<Plynling?> ResetPassionOnceAsync(ulong guildId, ulong ownerId, DateTimeOffset now)
     {
         var plynling = await GetShownAsync(guildId, ownerId, now);
         if (plynling is null) return null;
@@ -685,7 +749,11 @@ public partial class PlynlingService
         return plynling;
     }
 
-    public async Task<(ResurrectOutcome Outcome, Plynling? Plynling)> ResurrectAsync(
+    public Task<(ResurrectOutcome Outcome, Plynling? Plynling)> ResurrectAsync(
+        ulong guildId, ulong ownerId, DateTimeOffset now) =>
+        UnitAsync(() => ResurrectOnceAsync(guildId, ownerId, now));
+
+    private async Task<(ResurrectOutcome Outcome, Plynling? Plynling)> ResurrectOnceAsync(
         ulong guildId, ulong ownerId, DateTimeOffset now)
     {
         var current = await GetCurrentAsync(guildId, ownerId, now);
@@ -702,52 +770,40 @@ public partial class PlynlingService
         {
             await _db_context.SaveChangesAsync();
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex) when (ex is not DbUpdateConcurrencyException)
         {
             return (ResurrectOutcome.AlreadyHasOne, null);   // an adoption won the race
         }
         return (ResurrectOutcome.Resurrected, grave);
     }
 
+    // The graveyard, with any living one that starved since the last sweep already in the ground.
+    // Read-only, like GetLivingAsync: the starved are settled in memory and the sweep stamps them.
     public async Task<List<Plynling>> GetGraveyardAsync(ulong guildId, ulong? ownerId, DateTimeOffset now)
     {
-        // Settle the living first, so anything that starved since the last sweep is
-        // already in the ground when someone opens the graveyard.
-        var living = await _db_context.Plynlings.Where(x => x.GuildId == guildId && x.DiedAt == null).ToListAsync();
-        var changed = false;
-        foreach (var plynling in living)
+        var starved = (await GetSettledLivingAsync(guildId, now)).Where(x => x.DiedAt is not null);
+        var query = _db_context.Plynlings.AsNoTracking().Where(x => x.GuildId == guildId && x.DiedAt != null);
+        if (ownerId is { } owner)
         {
-            changed |= PlynlingLife.Settle(plynling, now);
-            await FlushMomentsAsync(plynling);
+            query = query.Where(x => x.OwnerId == owner);
+            starved = starved.Where(x => x.OwnerId == owner);
         }
-        if (changed)
-        {
-            await _db_context.SaveChangesAsync();
-            await FlushOnActionsAsync(now);
-        }
-
-        var query = _db_context.Plynlings.Where(x => x.GuildId == guildId && x.DiedAt != null);
-        if (ownerId is { } owner) query = query.Where(x => x.OwnerId == owner);
-        return await query.ToListAsync();
+        return (await query.ToListAsync()).Concat(starved).ToList();
     }
 
-    // /plynling list: every living Plynling in the guild, settled first, so one that starved
-    // since the last sweep is not listed as alive.
-    public async Task<List<Plynling>> GetLivingAsync(ulong guildId, DateTimeOffset now)
+    // /plynling list, the race: every living Plynling in the guild, settled to now so one that starved
+    // since the last sweep is not listed as alive. Read-only — loaded untracked and settled in memory,
+    // never saved: a list must not write a row per Plynling on the Pi, and what it would write (a
+    // death, a morning) Settle reproduces identically for the sweep or the next action to store.
+    // Display only: never hand these to a writer.
+    public async Task<List<Plynling>> GetLivingAsync(ulong guildId, DateTimeOffset now) =>
+        (await GetSettledLivingAsync(guildId, now)).Where(x => x.DiedAt is null).ToList();
+
+    private async Task<List<Plynling>> GetSettledLivingAsync(ulong guildId, DateTimeOffset now)
     {
-        var living = await _db_context.Plynlings.Where(x => x.GuildId == guildId && x.DiedAt == null).ToListAsync();
-        var changed = false;
-        foreach (var plynling in living)
-        {
-            changed |= PlynlingLife.Settle(plynling, now);
-            await FlushMomentsAsync(plynling);
-        }
-        if (changed)
-        {
-            await _db_context.SaveChangesAsync();
-            await FlushOnActionsAsync(now);
-        }
-        return living.Where(x => x.DiedAt is null).ToList();
+        var living = await _db_context.Plynlings.AsNoTracking().Where(x => x.GuildId == guildId && x.DiedAt == null).ToListAsync();
+        foreach (var p in living) PlynlingLife.Settle(p, now);   // in memory only: AsNoTracking, never saved
+        return living;
     }
 
     // Who owns a living Plynling here, for the Plynling role. Read-only on purpose: loaded untracked
@@ -772,52 +828,31 @@ public partial class PlynlingService
         return p.DiedAt is null;
     }
 
-    // Every Plynling the hourly sweep has to look at: the living, and deaths not yet announced. Ids
-    // only: the sweep loads each one in its own scope (GetForSweepAsync).
-    public async Task<List<int>> GetSweepIdsAsync() =>
-        await _db_context.Plynlings.Where(x => x.DiedAt == null || !x.DeathAnnounced).Select(x => x.Id).ToListAsync();
-
-    // One Plynling for the sweep, as stored — the sweep settles it itself. Null if it was abandoned,
-    // or its death announced, since the ids were read.
-    public Task<Plynling?> GetForSweepAsync(int id) =>
-        _db_context.Plynlings.FirstOrDefaultAsync(x => x.Id == id && (x.DiedAt == null || !x.DeathAnnounced));
-
     public Task SaveAsync() => _db_context.SaveChangesAsync();
-
-    // After a refused save (PickEventAsync: the sweep decided it first), forgets every change it held,
-    // so no later save on this context retries it. The on-actions and the mascot's ask that unit queued
-    // go too: they belong to work that was never saved.
-    private void DiscardChanges()
-    {
-        ResetTracked();
-        _onActions.Clear();
-        _askedMascot = false;
-    }
-
-    // Forgets every unsaved change the context holds, and nothing else.
-    private void ResetTracked()
-    {
-        foreach (var entry in _db_context.ChangeTracker.Entries().ToList())
-        {
-            switch (entry.State)
-            {
-                case EntityState.Added:
-                    entry.State = EntityState.Detached;
-                    break;
-                case EntityState.Modified:
-                case EntityState.Deleted:
-                    entry.CurrentValues.SetValues(entry.OriginalValues);
-                    entry.State = EntityState.Unchanged;
-                    break;
-            }
-        }
-    }
 
     // The happy gift, when its owner looks: the day's single draw, spent win or lose and saved
     // with what it found — cailloux, or on half the wins an item instead.
+    //
+    // It works on the Plynling the caller holds, so it cannot be run again: a conflict (or one left
+    // detached by an earlier unit's retry, whose save would drop LastGiftDay but keep the gift) leaves
+    // the draw unspent for the next look instead.
     public async Task<GiftResult> TryGiftAsync(Plynling p, ulong viewerId, DateTimeOffset now, Random rng)
     {
         if (viewerId != p.OwnerId || !PlynlingLife.CanDrawGift(p, now)) return GiftResult.None;
+        if (_db_context.Entry(p).State == EntityState.Detached) return GiftResult.None;
+        try
+        {
+            return await DrawGiftAsync(p, now, rng);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            DiscardChanges();
+            return GiftResult.None;
+        }
+    }
+
+    private async Task<GiftResult> DrawGiftAsync(Plynling p, DateTimeOffset now, Random rng)
+    {
         p.LastGiftDay = AppTime.DayKey(now);
         var found = PlynlingLife.GiftDraw(rng, PlynlingModifiers.GiftFactor(p));
         var result = GiftResult.None;
@@ -839,7 +874,10 @@ public partial class PlynlingService
     // /plynling forage: the owner's living Plynling goes out and always brings something back —
     // a collectible, or a food for the pantry. Once every ItemCatalog.ForageCooldown per person
     // (on the wallet row, so a new Plynling does not reset it); never asleep, frozen or sulking.
-    public async Task<ForageResult> ForageAsync(ulong guildId, ulong ownerId, DateTimeOffset now, Random rng)
+    public Task<ForageResult> ForageAsync(ulong guildId, ulong ownerId, DateTimeOffset now, Random rng) =>
+        UnitAsync(() => ForageOnceAsync(guildId, ownerId, now, rng));
+
+    private async Task<ForageResult> ForageOnceAsync(ulong guildId, ulong ownerId, DateTimeOffset now, Random rng)
     {
         var p = await GetCurrentAsync(guildId, ownerId, now);
         if (p is null) return new ForageResult(CareOutcome.NoPlynling, null);

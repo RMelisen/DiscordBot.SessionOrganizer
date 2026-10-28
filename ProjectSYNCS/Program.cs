@@ -75,6 +75,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<VoiceCompanionService>();
         services.AddTransient<PlynlingCareService>();
         services.AddTransient<PlynlingVisitRunner>();
+        services.AddTransient<VisitStories>();
         services.AddTransient<TonightService>();
         // Brings a card back to the bottom of a channel: the /… list menus and a reply asking her to.
         services.AddTransient<CardRepost>();
@@ -102,7 +103,6 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<PartyRunner>();
         services.AddSingleton<PlynlingCooldowns>();
         services.AddSingleton<TradeOffers>();
-        services.AddSingleton<VisitStories>();
         services.AddSingleton<PlynlingPlayService>();
         services.AddSingleton<PlynlingAnnouncer>();
         services.AddSingleton<PlynlingShortcutService>();

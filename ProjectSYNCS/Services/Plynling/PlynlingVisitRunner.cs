@@ -4,9 +4,9 @@ using ProjectSYNCS.Models;
 
 namespace ProjectSYNCS.Services;
 
-// Plays an accepted visit and writes its story: the once-a-day claim, the scene itself (decided and
-// saved by PlynlingService.VisitAsync), the claim released if the scene could not happen, and the
-// story kept in VisitStories for paging. Shared by the two ways a visit is accepted — « Accueillir »
+// Plays an accepted visit and writes its story: the once-a-day claim (in memory, and the day stored on
+// the relation), the scene itself (decided and saved by PlynlingService.VisitAsync), the memory claim
+// released if the scene could not happen, and the story stored by VisitStories for paging. Shared by the two ways a visit is accepted — « Accueillir »
 // on a knock, and her own Plynling, whose door she opens herself — so they cannot drift apart.
 // Transient: it wraps PlynlingService. Everything the two callers check *before* this (dead, frozen,
 // asleep, sick) stays with them, since each words its refusals for how it was reached.
@@ -30,8 +30,11 @@ public class PlynlingVisitRunner
     // own story; this service is its own PlynlingService instance, so only it can hand them over.
     public async Task<(VisitStory? Story, string? Refusal, IReadOnlyList<int> Untold)> RunAsync(Plynling visitor, Plynling host, DateTimeOffset now)
     {
+        // The stored day is what survives a restart; the memory claim, taken after it (so a failed
+        // read holds nothing), turns a double click away before the database is asked.
         var day = AppTime.DayKey(now);
-        if (!_cooldowns.TryClaimVisit(visitor.OwnerId, host.OwnerId, day))
+        if (await _plynlings.VisitedTodayAsync(visitor.Id, host.Id, now)
+            || !_cooldowns.TryClaimVisit(visitor.OwnerId, host.OwnerId, day))
             return (null, PlynlingText.VisitedToday(visitor.OwnerId), Array.Empty<int>());
 
         // A throw here means nothing was saved (the save is VisitAsync's last step), so the claim
@@ -52,9 +55,9 @@ public class PlynlingVisitRunner
             return (null, PlynlingText.Unknown, _plynlings.TakeUntold());
         }
 
-        var story = _stories.Add(
+        var story = await _stories.AddAsync(
             PlynlingVisitStory.Build(pair, PlynlingPlayCards.VisitOutcomeLines(pair), now, Random.Shared, pool => _picker.Pick(pool)),
-            Random.Shared);
+            now, Random.Shared);
         return (story, null, _plynlings.TakeUntold());
     }
 }

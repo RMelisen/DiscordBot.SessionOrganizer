@@ -1128,6 +1128,10 @@ namespace ProjectSYNCS.Migrations
                     b.Property<string>("TitleKey")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
                     b.Property<long>("Visits")
                         .HasColumnType("INTEGER");
 
@@ -1277,6 +1281,9 @@ namespace ProjectSYNCS.Migrations
                     b.Property<int>("Bond")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("LastVisitDay")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Meetings")
                         .HasColumnType("INTEGER");
 
@@ -1288,6 +1295,10 @@ namespace ProjectSYNCS.Migrations
 
                     b.Property<DateTimeOffset>("Since")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
@@ -1884,6 +1895,25 @@ namespace ProjectSYNCS.Migrations
                     b.HasIndex("Kind");
 
                     b.ToTable("UptimeEvents");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.VisitStoryRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Story")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Day");
+
+                    b.ToTable("VisitStoryRecords");
                 });
 
             modelBuilder.Entity("ProjectSYNCS.Models.VoiceCompanionDailyStat", b =>

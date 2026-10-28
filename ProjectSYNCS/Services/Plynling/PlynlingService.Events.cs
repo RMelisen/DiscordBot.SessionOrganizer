@@ -84,8 +84,14 @@ public partial class PlynlingService
         _db_context.PlynlingEventInstances.FirstOrDefaultAsync(i => i.Id == instanceId);
 
     // The owner's pick. Re-checks everything inside this unit of work: a sweep may have decided it
-    // a moment ago, or the option may no longer be shown (a forged or stale click).
-    public async Task<EventPick> PickEventAsync(int instanceId, string optionKey, ulong actorId, DateTimeOffset now)
+    // a moment ago, or the option may no longer be shown (a forged or stale click). When the sweep
+    // resolves it between our read and our save, ResolvedAt's token refuses the save and the unit runs
+    // again, which then finds it resolved and answers Gone (« déjà décidé »); a conflict on the
+    // Plynling's own row reruns it the same way and the pick lands.
+    public Task<EventPick> PickEventAsync(int instanceId, string optionKey, ulong actorId, DateTimeOffset now) =>
+        UnitAsync(() => PickEventOnceAsync(instanceId, optionKey, actorId, now));
+
+    private async Task<EventPick> PickEventOnceAsync(int instanceId, string optionKey, ulong actorId, DateTimeOffset now)
     {
         var inst = await GetEventInstanceAsync(instanceId);
         if (inst is null) return new(EventPickOutcome.Unknown);
@@ -111,15 +117,7 @@ public partial class PlynlingService
 
         await ApplyEventAsync(p, inst, def, option, ctx, decidedAlone: false, now);
         await FlushMomentsAsync(p);
-        try
-        {
-            await _db_context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            DiscardChanges();
-            return new(EventPickOutcome.Gone);
-        }
+        await _db_context.SaveChangesAsync();
         var told = new List<int> { instanceId };
         told.AddRange(await AnswerForMascotAsync(told, now));
         told.AddRange(TakeUntold());     // anything the reads above flushed for her
@@ -455,7 +453,10 @@ public partial class PlynlingService
 
     // /debug stress: set it, and queue the breaks for any level climbed, as play would. Null without a
     // living Plynling.
-    public async Task<string?> DebugStressAsync(ulong guildId, ulong ownerId, int value, DateTimeOffset now)
+    public Task<string?> DebugStressAsync(ulong guildId, ulong ownerId, int value, DateTimeOffset now) =>
+        UnitAsync(() => DebugStressOnceAsync(guildId, ownerId, value, now));
+
+    private async Task<string?> DebugStressOnceAsync(ulong guildId, ulong ownerId, int value, DateTimeOffset now)
     {
         var p = await GetCurrentAsync(guildId, ownerId, now);
         if (p is null || p.DiedAt is not null) return null;
@@ -468,7 +469,10 @@ public partial class PlynlingService
     }
 
     // /debug modifier: apply (or refresh) or remove one. False without a living Plynling.
-    public async Task<bool> DebugModifierAsync(ulong guildId, ulong ownerId, ModifierInfo mod, bool remove, DateTimeOffset now)
+    public Task<bool> DebugModifierAsync(ulong guildId, ulong ownerId, ModifierInfo mod, bool remove, DateTimeOffset now) =>
+        UnitAsync(() => DebugModifierOnceAsync(guildId, ownerId, mod, remove, now));
+
+    private async Task<bool> DebugModifierOnceAsync(ulong guildId, ulong ownerId, ModifierInfo mod, bool remove, DateTimeOffset now)
     {
         var p = await GetCurrentAsync(guildId, ownerId, now);
         if (p is null || p.DiedAt is not null) return false;
@@ -525,8 +529,12 @@ public partial class PlynlingService
     // must never be what breaks an adoption, a visit or a sweep. TraitText is the {T} of a trait reveal.
     private readonly List<(OnAction Kind, int PlynlingId, int? TargetId, string? TraitText)> _onActions = new();
 
-    private void QueueOnAction(OnAction kind, Plynling p, int? targetId = null, string? traitText = null) =>
-        _onActions.Add((kind, p.Id, targetId, traitText));
+    // Once each: a unit run again after a conflict may queue what its first attempt already did.
+    private void QueueOnAction(OnAction kind, Plynling p, int? targetId = null, string? traitText = null)
+    {
+        var item = (kind, p.Id, targetId, traitText);
+        if (!_onActions.Contains(item)) _onActions.Add(item);
+    }
 
     // Saved events the mascot decided at once from an on-action, not told yet. Kept here rather than
     // returned, because a flush also runs deep inside any read that settles (SettledAsync), where nobody
@@ -544,8 +552,12 @@ public partial class PlynlingService
     /// Creates the queued on-actions' events, each in its own save and its own try: one that throws is
     /// logged and its half-made changes dropped, never the caller's (which saved before calling). Call
     /// only right after a save. What the mascot decides at once waits in <see cref="TakeUntold"/>.
+    /// A unit of its own, so the reads inside never retry on their own and clear the context under it;
+    /// a conflict lands in the item's catch like any other failure.
     /// </summary>
-    public async Task FlushOnActionsAsync(DateTimeOffset now)
+    public Task FlushOnActionsAsync(DateTimeOffset now) => UnitAsync(() => FlushOnActionsOnceAsync(now));
+
+    private async Task FlushOnActionsOnceAsync(DateTimeOffset now)
     {
         while (_onActions.Count > 0)
         {

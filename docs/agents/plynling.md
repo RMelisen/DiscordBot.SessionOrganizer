@@ -46,7 +46,33 @@ hygiene.
 it**: an expired self-freeze thaws at the moment it was due, then a starved one dies at the moment it
 starved, so a death found by a command and one found by the sweep are identical (same instant, age,
 memorial). Age is `AgeBankedSeconds` + the live stretch since `LiveSince`; frozen and dead time is
-never banked.
+never banked. A single-row read saves what it settled (so a sickness's on-action appears when its
+owner looks); **the lists — `GetLivingAsync` (`/plynling list`, the race) and `GetGraveyardAsync` —
+load untracked and settle in memory only**, like the role's owner list: a list must not write a row per
+Plynling, and Settle reproduces the same death for the sweep or the next action to store. Their rows
+are for display; never hand one to a writer.
+
+### Concurrency — `Version` and units of work
+
+**`Plynling` and `PlynlingRelation` carry a `Version` concurrency token**, bumped for every modified
+row in `AppDbContext.SaveChanges` (SQLite has no rowversion). Every transition rewrites the needs
+whole, so without it the slower of two saves that read the same row (the sweep and a meal; two people
+feeding one Plynling) silently undid the faster — and a paid meal vanished. Now it throws.
+
+- **Every public `PlynlingService` entry point that may save runs through `UnitAsync`**, which on a
+  conflict clears the context and runs the unit again from its start (the `EconomySave` shape): it
+  re-reads and re-checks everything. Nested calls pass straight through, so only the outermost unit
+  retries. Write the public method as `UnitAsync(() => XOnceAsync(…))`.
+- **A unit may run more than once**: nothing outside the database before its last save (DMs, posts,
+  `BadgeAwarder` come after), and act on the Plynling a unit *returns* — one held from an earlier unit
+  may be detached by a retry. `TryGiftAsync` works on the caller's Plynling, so it is not retried: a
+  conflict, or a detached Plynling, leaves the day's draw unspent.
+- Queued on-actions survive a retry (an attempt may have saved the fact behind one before the
+  conflict); `QueueOnAction` and the flush's open-event check keep one queued twice from landing twice.
+- **A `catch (DbUpdateException)` meant for a unique index must exclude
+  `DbUpdateConcurrencyException`** (it derives from it), or a conflict reads as « déjà un Plynling ».
+- The sweep's per-Plynling work is one unit (`SweepOneAsync`), which also sets the notice's flag; the
+  sweep sends the notice after.
 
 **One living Plynling per person is enforced by a partial unique index**
 (`HasFilter("\"DiedAt\" IS NULL")`), so racing adoptions or resurrections can't both land. Services
@@ -56,8 +82,8 @@ still check first; the index makes the check safe.
 `/debug sweep` runs one on demand, never alongside a running one) is a safety net** for what nobody
 else triggers: announcing deaths
 (`DeathAnnounced`), the single warning DM (`WarningSent`, re-armed by feeding), thawing expired
-self-freezes, time-earned badges and moments. It saves the flag **before** the side effect, so a
-failed announcement is logged once rather than retried hourly. Deaths and resurrections are
+self-freezes, time-earned badges and moments. It saves the flag **before** the side effect (in
+`SweepOneAsync`'s unit), so a failed announcement is logged once rather than retried hourly. Deaths and resurrections are
 announced in the guild's game channel (`PlynlingAnnouncer.ResolveGameChannelAsync`: the one set with
 `/config game-channel`, else `DefaultGameChannelId` when it belongs to that guild). A guild with
 neither is logged and skipped, never cross-posted.
@@ -201,10 +227,13 @@ claimed at **start**, so abandoning never rerolls. A restart ends games in progr
 
 **An invitation, with a knock meant to ping** — `AllowedMentions` with the invited owner's id only.
 « Accueillir » carries the visitor's Plynling, the host and the expiry in its custom-id (nothing
-secret); only the host may press it, within the hour. **Once a day per pair of owners, either
-direction**, in memory in `PlynlingCooldowns`, released if the visit fails **or `VisitAsync` throws**
-(its save is its last step, so a throw means nothing happened — a held claim would answer « déjà
-vus » for a visit that never took place). **« Accueillir » defers before any database work**: on the
+secret); only the host may press it, within the hour. **Once a day per pair, either direction**, in
+two halves: **stored** as `PlynlingRelation.LastVisitDay` (set in the visit's own save, re-checked
+there as the backstop when two visits race), because a visit finds items and moves the bond and a
+restart must not reopen the day; and **in memory** in `PlynlingCooldowns`, which turns a double click
+away before the database is asked — taken after the stored check, released if the visit fails **or
+`VisitAsync` throws** (its save is its last step, so a throw means nothing happened — a held claim
+would answer « déjà vus » for a visit that never took place). **« Accueillir » defers before any database work**: on the
 Pi the reads and the save outran Discord's 3 s, leaving the visit claimed with the knock never
 closed. Its refusals are therefore ephemeral follow-ups, and the knock closes through
 `ModifyOriginalResponseAsync`. **A visit pays no
@@ -261,9 +290,14 @@ disabled at the ends). « Accueillir » closes the knock in place and posts step
 « ⏭ Fin » (`vis:last:…`); on the last, ▶ becomes « ↺ Début » (`vis:first:…`) and « Fin » goes —
 every button its own verb. A gallery of two spans the width, so the sprite is shrunk inside its
 picture: `PlynlingArt.VisitSprite` links the `_visit` files (larger transparent canvas,
-`VISIT_CANVAS` in `tools/plynling-art/export.py`, 80%). Stories live in the `VisitStories` singleton
-(last 300) with a snapshot of both Plynlings (name, species, stage, passions), so paging needs no
-database; the picture URL is rebuilt per step.
+`VISIT_CANVAS` in `tools/plynling-art/export.py`, 80%). **Stories are stored whole** by `VisitStories`
+(transient, `VisitStoryRecord`: the story as JSON with enums by name, kept `KeepDays` = 30, pruned by
+`Day` in SQL) with a snapshot of both Plynlings (name, species, stage, passions), so paging survives
+a restart and reads no Plynling; the picture URL is rebuilt per step. They cannot be rebuilt the way
+event stories are: their words come from the `ResponsePicker`'s history and pools that change between
+versions. A failed store is logged and the story still told — only its arrows say it is gone. A
+story whose shapes changed since it was stored also reads as gone, so renaming a `VisitStory` field
+or a face/stage enum name orphans the stored ones (harmless, but know it).
 
 ### Passions
 
@@ -397,8 +431,9 @@ purpose. `PlynlingSpecies` is **append-only**; the family is `SpeciesInfo.Family
 
 `/plynling graveyard` is Components V2 with two button rows and two verbs (`grave:sort:` newest /
 longest life, `grave:page:`). Budget 24 of 40 (container, heading, five picture rows × 3, footer, two
-rows of two). Changing the sort resets to page 0. It settles every living Plynling in the guild
-before listing. Ties break on id.
+rows of two). Changing the sort resets to page 0. It settles every living Plynling in the guild in
+memory before listing (one that starved unseen is already in the ground), and writes nothing. Ties
+break on id.
 
 ## `/plynling help`
 

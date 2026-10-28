@@ -130,7 +130,7 @@ forget every line, `ReactionService` would react to every message).
 `CreateAsyncScope()` around each unit of work; injecting a transient would pin one `AppDbContext`
 for the process lifetime. Match this in any new background or gateway-driven work.
 
-All in-memory state (drafts, cooldowns, line history, trade offers, visit stories…) resets on
+All in-memory state (drafts, cooldowns, line history, trade offers…) resets on
 restart **by design**.
 
 ## Conventions that will bite you

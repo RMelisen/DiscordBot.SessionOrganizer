@@ -107,46 +107,30 @@ public sealed class PlynlingSweepService : BackgroundService
             {
                 await using var scope = _services.CreateAsyncScope();
                 var plynlings = scope.ServiceProvider.GetRequiredService<PlynlingService>();
-                if (await plynlings.GetForSweepAsync(id) is not { } plynling) continue;   // abandoned meanwhile
-
-                PlynlingLife.Settle(plynling, now);
-                await plynlings.FlushMomentsAsync(plynling);        // fell sick / recovered, if a morning did it
-                await plynlings.ProgressAsync(plynling, now);      // time's badges and stage moments
-                var told = await plynlings.TickEventsAsync(plynling, now);   // cancels, decides alone, pulses — saves
-
-                if (plynling.DiedAt is not null && !plynling.DeathAnnounced)
-                {
-                    // Marked and saved *before* posting: at most one attempt. A failed post
-                    // is logged, never retried every hour into the game channel.
-                    plynling.DeathAnnounced = true;
-                    await plynlings.JournalDeathAsync(plynling);
-                    await plynlings.SaveAsync();
-                    // Silence mode: the death is journaled and marked, never announced later.
-                    if (!_silence.IsSilent) await _announcer.AnnounceDeathAsync(plynling, now);
-                }
-                else if (PlynlingLife.IsSick(plynling) && !plynling.SickNotified)
-                {
-                    // Flag saved before the DM, like DeathAnnounced: one attempt, never a repeat.
-                    // An onset is always at 05:00, so this never lands in the night.
-                    plynling.SickNotified = true;
-                    await plynlings.SaveAsync();
-                    await _announcer.WarnSickAsync(plynling);
-                }
-                else if (PlynlingLife.ShouldWarn(plynling, now))
-                {
-                    plynling.WarningSent = true;
-                    await plynlings.SaveAsync();
-                    await _announcer.WarnOwnerAsync(plynling);
-                }
-                else
-                {
-                    await plynlings.SaveAsync();
-                }
-
-                // Told after every save above; a failed post is logged by the announcer, never retried.
-                // Silence mode drops the stories, as a failed post would.
+                // Everything stored first, as one unit (run again if a click changed the row meanwhile),
+                // with the notice's flag: at most one attempt at each, a failed post logged, never
+                // retried every hour.
+                if (await plynlings.SweepOneAsync(id, now) is not { } item) continue;   // abandoned meanwhile
+                var plynling = item.Plynling;
                 bool silent = _silence.IsSilent;
-                if (!silent) await _announcer.TellAsync(plynlings, told, plynling.GuildId, now);
+
+                switch (item.Notice)
+                {
+                    // Silence mode: the death is journaled and marked, never announced later.
+                    case SweepNotice.Death when !silent:
+                        await _announcer.AnnounceDeathAsync(plynling, now);
+                        break;
+                    case SweepNotice.Sick:
+                        await _announcer.WarnSickAsync(plynling);
+                        break;
+                    case SweepNotice.Warning:
+                        await _announcer.WarnOwnerAsync(plynling);
+                        break;
+                }
+
+                // Told after the save; a failed post is logged by the announcer, never retried.
+                // Silence mode drops the stories, as a failed post would.
+                if (!silent) await _announcer.TellAsync(plynlings, item.Told, plynling.GuildId, now);
 
                 // Growing up, falling sick, recovering, a friend's death: their events, created after
                 // this Plynling's saves, each on its own (FlushOnActionsAsync swallows and logs). Then

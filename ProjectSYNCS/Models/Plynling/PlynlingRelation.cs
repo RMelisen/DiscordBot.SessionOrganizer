@@ -19,4 +19,12 @@ public class PlynlingRelation
 
     // When the current bond began.
     public DateTimeOffset Since { get; set; }
+
+    // The Paris day (AppTime.DayKey) of the pair's last visit, 0 for never: the once-a-day rule,
+    // stored so a restart does not reopen it (PlynlingCooldowns only answers a double click faster).
+    public int LastVisitDay { get; set; }
+
+    // Concurrency token, bumped on every save of the row (AppDbContext): a visit and an event moving
+    // the same pair at once must not overwrite each other's affinity.
+    public int Version { get; set; }
 }
