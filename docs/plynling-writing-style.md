@@ -69,8 +69,12 @@ make the world feel lived-in: the old tortoise who serves at the café, the owl 
 station master, the old bear at the ice-cream stand, the sparrow who judges contests, the snail
 who is the only customer. Money is **cailloux**; food is berries, nuts, acorns, honey, bread, jam.
 
-Never name a cap, petals or spores, and nothing about a Plynling's family: they are written
-family-neutral.
+Plynlings are all mushrooms, so a cap, a stem or gills may be named. Nothing about a Plynling's
+family: they are written family-neutral.
+
+These figures are the **old layer**, kept in visit conversations and the old events until their
+rework. The storylines' village is **`docs/village-lore.md`** (Humeval): a storyline follows it
+and never mentions the old figures.
 
 ## Mechanics (enforced by the harness)
 

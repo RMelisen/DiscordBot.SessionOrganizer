@@ -4,6 +4,10 @@ Design agreed with the owner on 2026-10-28 (brainstorm, then a grilling pass). N
 Decisions are the owner's unless marked *builder's call* (proposed during the session, not
 contested, but never explicitly chosen).
 
+**Since the storylines design (`2026-10-28-plynling-storylines-design.md`):** expeditions run on the
+scene engine, story file format and memory store that storylines lay down first. Storylines are
+built first; this engine becomes their second runner (scenes back to back, in one sitting).
+
 ## Intent
 
 The events design (`2026-10-06-plynling-events-design.md`) left room for "a later adventure/RPG

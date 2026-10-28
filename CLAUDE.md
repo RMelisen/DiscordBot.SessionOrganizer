@@ -20,6 +20,7 @@ matching file before changing that subsystem**; the rules there are as binding a
 | Plynlings (life, care, visits, relations, art) | `docs/agents/plynling.md` |
 | Plynling traits, stats, personality, events | `docs/agents/plynling-events.md` |
 | Writing any Plynling line | `docs/plynling-writing-style.md` |
+| Plynling storylines, or anything set in the village (Humeval) | `docs/village-lore.md` |
 | Writing any line SYNCS says in her own voice | `docs/syncs-voice.md` |
 | Any picture of SYNCS (avatar, emotes, poses, moods) | `docs/syncs-appearance.md` |
 | Cailloux, inventory, items, icons, cosmetics, `/admin dashboard` | `docs/agents/economy.md` |
