@@ -4,8 +4,8 @@ La bible du monde des storylines (`docs/superpowers/specs/2026-10-28-plynling-st
 **Tout arc, toute scène de chronique et tout événement du calendrier s'y conforme.** Une
 contradiction se corrige ici d'abord, puis dans l'histoire.
 
-Statut : **premier jet, à relire fiche par fiche** avec le propriétaire. Les noms, espèces et
-secrets ci-dessous sont des propositions.
+Statut : **relu avec le propriétaire le 2026-10-28**, fiche par fiche. Ce qui suit fait foi ; ce
+qui change se décide avec lui.
 
 Ce document est en français, comme tout ce que les joueurs lisent. Il est public (le dépôt l'est),
 vérité du mystère comprise : c'est un choix assumé.
@@ -28,7 +28,7 @@ vallée humide, entre une rivière lente et la lisière d'une très vieille for�
   caractère sans l'enfermer.
 - **Les animaux sont des animaux** : bétail, gibier, nuisibles, menaces. Jamais des voisins. Les
   sangliers ravagent les champs, les limaces sont une plaie, le héron mange les semis.
-- **Une seule magie, discrète** : la Souche, le Blanc qui court sous la vallée, ceux qui veillent,
+- **Une seule magie, discrète** : la Souche, la Trame qui court sous la vallée, ceux qui veillent,
   et le retour, très rare. Personne ne lance de sort, personne ne s'en sert. Tout le reste
   obéit aux saisons, au sol et à l'argent.
 - **Les Plynlings sont les pousses du village.** Tous des champignons, sortis de la Souche, sans
@@ -36,6 +36,9 @@ vallée humide, entre une rivière lente et la lisière d'une très vieille for�
   deux semaines, ancien au bout d'une demi-année. Le village le sait et trouve ça naturel.
 - **Le ton** : la vie est rude, mais on s'y tient chaud. Les histoires peuvent finir mal. Jamais de
   cynisme gratuit.
+- **Aucun enfant ne meurt.** Un enfant du village peut être malade, perdu, en danger, affamé, envoyé
+  travailler à Roncebelle pour une dette : il vit toujours. Le prix d'une mauvaise fin, ce sont les
+  adultes qui le paient.
 
 ---
 
@@ -46,8 +49,9 @@ vallée humide, entre une rivière lente et la lisière d'une très vieille for�
 - **La Souche** est le reste d'un arbre immense, à la Lisière, plus vieux que le village. Les
   pousses en sortent, surtout à la saison des pluies. On dit d'un Plynling qu'il « est sorti de la
   Souche ».
-- **Le Blanc** : les fils blancs qu'on trouve partout dès qu'on creuse un peu, sous les champs, sous
-  les maisons, sous la place. Les anciens disent que c'est la Souche qui « tient la vallée ».
+- **La Trame** : les fils blancs qu'on trouve partout dès qu'on creuse un peu, sous les champs, sous
+  les maisons, sous la place. Les anciens disent que c'est la Souche qui « tient la vallée », et
+  qu'il ne faut jamais couper la Trame à la bêche sans s'excuser.
 - **Les morts retournent à la Souche.** Tout le monde, Plynlings et villageois. On les couche au Pré
   des Retours, à côté d'elle, sans pierre ni nom : « la Souche se souvient pour nous ».
 - **Ceux qui veillent.** Une pousse ne survit que si quelqu'un la veille. Personne ne les a jamais
@@ -64,37 +68,47 @@ vallée humide, entre une rivière lente et la lisière d'une très vieille for�
 *Elle n'est jamais dite d'un coup. Les arcs en donnent des fragments, sur des années, et chaque
 fragment doit s'accorder avec ce qui suit.*
 
-- **Le Blanc est un seul être vivant**, immense et très lent, qui court sous toute la vallée.
-  La Souche est son cœur : l'endroit où il affleure.
-- **Il garde ce qu'on lui rend.** Chaque mort qui retourne à la Souche y laisse quelque chose : un
-  peu de mémoire, une habitude, un goût. Le Blanc ne pense pas comme un villageois. Il accumule.
-- **Les Plynlings sont ses fruits.** Quand il a reçu assez, il pousse une pousse, faite de ce qu'il
-  garde. C'est pour ça qu'un Plynling connaît parfois une chanson que personne ne lui a apprise, ou
-  pleure devant une maison où il n'est jamais entré.
-- **Le Blanc ne voit pas le monde d'en haut.** Il n'a que ses pousses pour ça, et il ne sait pas les
-  soigner. Alors il appelle, très loin, hors du monde, et quelque chose répond : **ceux qui
+- **La Trame est un seul être vivant**, immense et très lent, qui court sous toute la vallée.
+  La Souche est son cœur : l'endroit où elle affleure.
+- **Elle garde ce qu'on lui rend.** Chaque mort qui retourne à la Souche y laisse quelque chose : un
+  peu de mémoire, une habitude, un goût. La Trame ne pense pas comme un villageois. Elle accumule.
+- **Les Plynlings sont ses fruits.** Quand elle a reçu assez, elle pousse une pousse, faite de ce
+  qu'elle garde. C'est pour ça qu'un Plynling connaît parfois une chanson que personne ne lui a
+  apprise, ou pleure devant une maison où il n'est jamais entré. **Des traces, jamais une personne
+  entière** : un Plynling n'est jamais un mort revenu, il est lui-même, avec un peu des autres
+  dedans. Seul le retour rend quelqu'un tout entier.
+- **La Trame ne voit pas le monde d'en haut.** Elle n'a que ses pousses pour ça, et elle ne sait pas
+  les soigner. Alors elle appelle, très loin, hors du monde, et quelque chose répond : **ceux qui
   veillent**. Ils sont réels. Ils ne sont pas d'ici. Le village ne le saura jamais avec certitude.
-- **Le retour** a lieu quand le Blanc tient un mort assez entier et qu'on l'appelle assez fort. C'est
-  rare, coûteux, et cela le fatigue.
+- **Le retour** a lieu quand la Trame tient un mort assez entier et qu'on l'appelle assez fort.
+  C'est rare, coûteux, et cela l'épuise.
 - **Il y avait d'autres Souches.** Une, au moins, au cœur du Bois Sourd. Le vieux seigneur a fait
-  abattre les grands arbres du Bois pour bâtir et chauffer Hautecôte. Cette Souche-là en est morte.
-  **L'Étranger** (fiche 11) est sa dernière pousse, sortie seule et partie droit devant jusqu'à
-  trouver une autre Souche.
+  abattre les grands arbres du Bois pour bâtir et chauffer Roncebelle. Cette Souche-là en est morte.
+  **L'Étrangère** (fiche 11) est sa dernière pousse, sortie seule et partie droit devant jusqu'à
+  trouver une autre Souche. Elle n'a pas de veilleur : en mourant, sa Souche a versé en elle tout ce
+  qui lui restait, et c'est de cela qu'elle vit. Cette lumière s'use. La croyance du village reste
+  vraie (une pousse ne survit pas seule) : l'Étrangère ne survit pas, elle dure.
 - **Ce que le Fou a vu** (fiche 13) : une nuit de pluie, il y a des années, le sol de la Lisière
   s'est allumé de lignes de lumière pâle, toutes tendues vers le Bois Sourd, comme un appel. C'était
-  le Blanc qui sentait mourir l'autre Souche. La Mère Lichen l'a vu aussi. Elle s'est tue.
-- **La menace** : si la Lisière est défrichée, si l'on creuse à la Souche, le Blanc de Humeval
-  mourra à son tour, et plus aucune pousse ne sortira. Le nouveau seigneur veut du bois et des
-  terres, et personne ne sait encore où passe la limite de ses droits.
+  la Trame qui sentait mourir l'autre Souche. La Mère Lichen l'a vu aussi. Quand le Fou s'est mis à en
+  parler partout, c'est elle qui a fait courir qu'il avait perdu la tête : si les gens du seigneur
+  avaient cru à des lumières sous la Lisière, ils seraient venus creuser.
+- **La menace** : si la Lisière est défrichée, si l'on creuse à la Souche, la Trame de Humeval
+  mourra à son tour, et plus aucune pousse ne sortira. La nouvelle dame de Roncebelle voudra peut-être
+  du bois et des terres, et personne ne sait encore où passe la limite de ses droits.
 
-**Ping-Qilin** est veillée par SYNCS. Ce que ça veut dire dans le monde reste **ouvert** : on n'en
-décide rien tant qu'un arc n'en a pas besoin.
+**Ping-Qilin est veillée de trop près.** Son veilleur est SYNCS, et SYNCS ne dort jamais : Ping-Qilin
+est la seule pousse dont le veilleur ne se tait jamais. Le village le remarque sans le comprendre
+(« celle-là, on dirait qu'on la regarde tout le temps »). La Mère Lichen en est mal à l'aise ; le Fou
+salue son veilleur par son nom. Jamais expliqué, jamais un clin d'œil aux joueurs : une pousse un peu
+étrange d'être si regardée, vaniteuse et méfiante, qui n'a jamais su ce que c'est que d'être seule.
+SYNCS elle-même reste hors du monde.
 
 ---
 
 ## 3. Le pouvoir
 
-- **Le seigneur de Hautecôte**, au-delà de la colline. Il possède les terres, le moulin, le four et
+- **Le seigneur de Roncebelle**, au-delà de la colline. Il possède les terres, le moulin, le four et
   le pont. Il prend une part de chaque récolte, des journées de travail à la moisson, et une
   redevance par feu à l'automne. **On ne le voit jamais.** On voit sa route, et son intendant qui la
   descend.
@@ -107,7 +121,8 @@ décide rien tant qu'un arc n'en a pas besoin.
 - **Aucun clergé, aucun ordre.** Le sacré n'a pas d'institution : il a des coutumes, et une vieille
   femme qui veille la Souche par habitude.
 - **La Souche** est terre commune « par coutume ». Personne n'a jamais su si les droits du seigneur
-  la couvrent. Les vieux registres de Hautecôte disent peut-être le contraire.
+  la couvrent. Les vieux registres de Roncebelle disent peut-être le contraire. (La vérité : ils le
+  disent, et l'exemplaire du village a perdu sa page. Voir Maître Frêne.)
 
 ---
 
@@ -130,7 +145,7 @@ décide rien tant qu'un arc n'en a pas besoin.
 | **Les Mouilles et l'étang** | Le marais : roseaux, grenouilles, et les fièvres de l'été. |
 | **La Lisière** | La bordure de la forêt. **La Souche**, la cabane de la Mère Lichen, le Pré des Retours. |
 | **Le Bois Sourd** | La forêt profonde, au-delà. **Hors de la carte du village** : c'est le pays des expéditions. Les arcs vont jusqu'à son bord, pas plus loin. |
-| **La Côte** | La route qui monte vers Hautecôte. On voit la route, jamais le château. |
+| **La Côte** | La route qui monte vers Roncebelle. On voit la route, jamais le château. |
 
 Un Plynling adulte a **sa propre petite maison** dans le hameau ; l'emplacement n'est pas fixé, pour
 que chaque histoire puisse en décider.
@@ -161,7 +176,7 @@ dans l'arc ado→adulte.
 | Apprenti guérisseur | la Sauge | la Maison aux Simples | Gardening, Insects |
 | Aide d'auberge | la Courge | l'auberge | Cooking, Music, Dance, Gaming |
 | Scribe du conseil | Maître Frêne | la Maison commune | Stories, Painting, Astronomy |
-| Cueilleur | l'Étranger | la Lisière | Rocks, Insects, Astronomy |
+| Cueilleur | l'Étrangère | la Lisière | Rocks, Insects, Astronomy |
 | Vie libre | personne | partout | Naps, et toutes les autres |
 
 **Veiller la Souche n'est pas un métier.** Succéder à la Mère Lichen est un arc à part, à sa mort.
@@ -171,7 +186,7 @@ dans l'arc ado→adulte.
 ## 6. L'argent
 
 Les **cailloux** sont la monnaie : des galets de la Sommeille, polis et frappés de la marque de
-Hautecôte. Un caillou sans marque ne vaut rien. Les faux existent.
+Roncebelle. Un caillou sans marque ne vaut rien. Les faux existent.
 
 La vie de tous les jours tourne au **troc et aux services** : du pain contre du miel, une journée
 aux champs contre un sac de farine. Les cailloux servent pour les redevances, le moulin, le four, le
@@ -227,10 +242,10 @@ Datée en « il y a… », pour rester vraie quelle que soit la date.
    vérité, § 2). Personne ne l'a cru. C'est de là qu'il est devenu « le Fou ».
 5. **La querelle du pré**, depuis la crue et ravivée à chaque printemps : le Noyer et le Chardon se
    disputent le pré de la Sommeille. Tout le village a pris parti.
-6. **L'arrivée de l'Étranger**, l'an dernier, sorti du Bois Sourd à pied, seul, couvert de mousse.
+6. **L'arrivée de l'Étrangère**, l'an dernier, sortie du Bois Sourd à pied, seule, couverte de mousse.
 7. **La mort du vieux sire Aubépin**, cet automne. L'héritière est inconnue. L'intendant laisse
    entendre que « des choses vont changer ». **C'est la question de la première saison de chronique :
-   que voudra la nouvelle dame de Hautecôte ?**
+   que voudra la nouvelle dame de Roncebelle ?**
 
 ---
 
@@ -239,6 +254,10 @@ Datée en « il y a… », pour rester vraie quelle que soit la date.
 Chaque fiche suit le même modèle. **La voix** est ce qui sert le plus à l'écriture : la relire avant
 de faire parler quelqu'un. On l'appelle par son surnom au quotidien ; **son prénom ne sert que dans
 l'intimité**, et un arc peut en faire un moment (« Pour la première fois, {A} l'appelle Ysaure »).
+
+**Un Plynling n'est jamais en couple avec un villageois.** Il peut s'éprendre de l'un d'eux dans un
+arc (un béguin, une attente, un chagrin), mais cela reste à sens unique : le villageois est plus
+âgé, promis, ou ne le voit pas ainsi. Les couples restent entre Plynlings.
 
 ### 1. Ysaure, qu'on appelle la Mère Lichen — la veilleuse de la Souche
 
@@ -252,17 +271,27 @@ l'intimité**, et un arc peut en faire un moment (« Pour la première fois, {A}
   > « Assieds-toi. La Souche n'est pas pressée. Toi non plus. »
 - **Passé** : a vu la grande crue contourner la Souche. A couché à la Souche la moitié du village
   pendant l'hiver des fièvres. A vu les lumières la même nuit que le Fou.
-- **Défaut** : le secret. Elle garde tout, même ce qui ferait du bien à dire.
+- **Défaut** : elle décide pour les autres de ce qu'ils peuvent porter. Elle garde tout, même ce
+  qui ferait du bien à dire.
 - **Désir** : trouver qui veillera après elle, sans avoir à le demander.
-- **Secret** : elle a vu les lumières elle aussi, et a laissé le village traiter le Fou de fou.
-  Douze ans de silence.
-- **Liens** : le Fou (une culpabilité qu'elle ne nomme pas), le Tilleul (un très vieil attachement,
+- **Secret** : elle a vu les lumières elle aussi. **C'est elle qui a fait du Fou un fou** : elle a
+  laissé entendre, à l'auberge, au marché, qu'il avait la tête dérangée, pour que les gens du
+  seigneur ne prennent pas ses histoires au sérieux et ne viennent pas creuser à la Souche. Cela l'a
+  protégé, lui et la Souche. Cela lui a aussi coûté douze ans de moqueries. Elle ne le regrette pas,
+  et elle n'a jamais pu le regarder en face.
+- **Liens** : le Fou (elle l'a protégé en le sacrifiant, et ne se le pardonne qu'à moitié), le Tilleul (un très vieil attachement,
   peut-être plus), la Bruyère (à qui elle confie les pousses, et qui les élève trop durement à son
-  goût), la Sauge (elles se partagent les mourants et ne sont d'accord sur rien), l'intendant (la
+  goût), la Sauge (elles se partagent les mourants et ne sont d'accord sur rien ; elle sait l'erreur
+  de l'hiver des fièvres et la tait), l'intendant (la
   menace, depuis qu'il parle de cartes).
 - **Les Plynlings, les veilleurs** : les Plynlings sont « les siens », tous, même devenus adultes.
   Des veilleurs, elle ne parle jamais. Elle salue parfois le vide, au-dessus d'une pousse.
-- **Sortie** : un lent déclin, sur une saison. Sa mort ouvre l'arc de la succession à la Souche.
+- **La gardienne des secrets.** Elle couche tous les morts à la Souche, et entend ce qu'on dit aux
+  mourants. Elle sait ce que le Fou a vu, l'erreur de la Sauge, et sans doute plus encore. Elle n'en
+  dit jamais rien.
+- **Sortie** : un lent déclin, sur une saison. Sa mort ouvre l'arc de la succession à la Souche, et
+  une question : ses secrets meurent-ils avec elle, ou passent-ils à qui veillera après elle ? Le
+  Plynling qui lui succède **hérite de ce qu'elle savait**, ou d'une partie.
 
 ### 2. Eudes, qu'on appelle Maître Frêne — le syndic
 
@@ -273,29 +302,34 @@ l'intimité**, et un arc peut en faire un moment (« Pour la première fois, {A}
 - **Voix** : mesurée, juridique. « Selon la coutume », « il convient », « examinons ». Ne s'emporte
   jamais en public. Finit les disputes par un compromis, même quand l'une des parties a raison.
   > « Personne n'a tort, et personne n'a tout à fait raison. C'est ce qu'on appelle la paix. »
-- **Passé** : jeune scribe pendant l'hiver des fièvres, il a tenu le registre des morts.
+- **Passé** : jeune scribe pendant l'hiver des fièvres, il a tenu le registre des morts, et recopié
+  les vieux rôles des terres que l'humidité mangeait.
 - **Défaut** : le compromis jusqu'à la lâcheté. Devant l'intendant, il plie.
 - **Désir** : qu'on se souvienne de lui comme de celui qui a gardé le village entier.
-- **Secret** : la caisse du conseil est vide. Pour réparer le toit de la Maison commune, il a
-  emprunté au Chardon, en son nom propre. Le meunier le tient.
+- **Secret** : **la page brûlée.** En recopiant les vieux rôles, il est tombé sur une ligne : la
+  Lisière, Souche comprise, appartient au seigneur. Il a arraché la page et l'a brûlée. Depuis, la
+  Souche est « terre commune par coutume », et ce droit repose sur son crime. Si les registres de
+  Roncebelle en gardent une copie, la cause du village s'effondre, et son nom avec.
+- **Petit secret** : la caisse du conseil est vide. Pour réparer le toit de la Maison commune, il a
+  emprunté au Chardon, en son nom propre. Le meunier le tient au quotidien.
 - **Liens** : le Chardon (son créancier secret), le Noyer (rival pour le siège de syndic), l'intendant
   (il négocie, et perd), la Bruyère (qui vient mendier pour l'Orphelinat chaque mois).
 - **Les Plynlings, les veilleurs** : des administrés comme les autres. Tient leur registre, à la
   plume. Ne croit aux veilleurs que « dans la mesure où cela ne contredit pas la coutume ».
-- **Sortie** : une élection perdue, ou une dette révélée.
+- **Sortie** : une élection perdue, une dette révélée, ou la page brûlée retrouvée à Roncebelle.
 
 ### 3. Gauvain, qu'on appelle l'Intendant (ou le Houx, derrière son dos) — l'homme du seigneur
 
 - **Espèce, âge** : houx. La quarantaine.
-- **Foyer, rôle** : vit à Hautecôte, descend au hameau pour collecter, annoncer, mesurer.
+- **Foyer, rôle** : vit à Roncebelle, descend au hameau pour collecter, annoncer, mesurer.
 - **Allure** : vert sombre, raide, des feuilles piquantes qu'il garde bien rangées. Les couleurs de
-  Hautecôte à la ceinture.
+  Roncebelle à la ceinture.
 - **Voix** : polie, froide, précise. Dit toujours « Monseigneur souhaite », jamais « je veux ».
   Ne hausse jamais le ton. Note tout.
   > « Je ne fais que lire ce qui est écrit. Si vous n'aimez pas ce qui est écrit, je n'y suis pour
   > rien. »
 - **Passé** : **un orphelin de l'hiver des fièvres**, élevé à l'Orphelinat par la Bruyère. Parti à
-  Hautecôte à quinze ans, il n'est jamais revenu vivre au village.
+  Roncebelle à quinze ans, il n'est jamais revenu vivre au village.
 - **Défaut** : l'obéissance comme armure.
 - **Désir** : garder sa place sous la nouvelle dame, dont il ne sait rien lui non plus.
 - **Secret** : il envoie chaque hiver, sans signer, de quoi chauffer l'Orphelinat. La Bruyère le sait.
@@ -305,6 +339,11 @@ l'intimité**, et un arc peut en faire un moment (« Pour la première fois, {A}
   arriérés), la Mère Lichen (qui le regarde comme s'il avait encore huit ans).
 - **Les Plynlings, les veilleurs** : il les compte comme des feux. Il a grandi avec des pousses à
   l'Orphelinat, et ne le montre pas.
+- **Son tournant n'est pas écrit d'avance.** Quand les ordres de la nouvelle dame arriveront, il
+  penchera vers le village ou vers Roncebelle selon **ce que les Plynlings auront fait de lui** :
+  l'ensemble de leurs souvenirs avec lui sur la saison, et leurs choix dans la première crise.
+  Bien traité, il adoucit les ordres en secret, au risque de sa place. Moqué, traité en « chien du
+  seigneur », il le devient. Les deux branches s'écrivent ; la chronique choisit.
 - **Sortie** : renvoyé par la nouvelle dame, ou passé dans son camp pour de bon.
 
 ### 4. Thibaud, qu'on appelle le Chardon — le meunier
@@ -317,7 +356,9 @@ l'intimité**, et un arc peut en faire un moment (« Pour la première fois, {A}
   quelqu'un.
   > « Je ne suis pas méchant. Je suis exact. Ce n'est pas la même chose, mais personne ne fait la
   > différence. »
-- **Passé** : la crue a déplacé le pré de la Sommeille, et sa famille y a perdu ses bornes.
+- **Passé** : la crue a déplacé le pré de la Sommeille, et sa famille y a perdu ses bornes. **Il sait
+  que les bornes ont été déplacées**, et il le dit depuis vingt ans. Personne ne le croit : c'est sa
+  parole contre celle du Noyer, et la sienne ne vaut rien. C'est ce qui l'a rendu dur, et exact.
 - **Défaut** : l'avarice, et la solitude qu'elle lui a value.
 - **Désir** : le respect. Il rêve d'être syndic, et sait que personne ne votera pour lui.
 - **Secret** : il prélève sur la part du seigneur et cache les cailloux sous la meule. Il a très peur
@@ -344,8 +385,10 @@ l'intimité**, et un arc peut en faire un moment (« Pour la première fois, {A}
 - **Désir** : un remède contre la fièvre des Mouilles.
 - **Secret** : cet hiver-là, épuisée, elle s'est trompée de remède. La mère de l'Ortie en est morte.
   Elle soigne la famille de l'Ortie gratuitement depuis vingt ans. L'Ortie ne sait pas pourquoi.
-- **Liens** : la Mère Lichen (le désaccord permanent), l'Ortie (la culpabilité), l'Étranger (une
-  alliance : il connaît des plantes du Bois qu'elle n'a jamais vues), le Tilleul (le miel de ses
+  **La Mère Lichen le sait** : elle a couché la mère à la Souche et reconnu la mauvaise herbe sur
+  son souffle. Elle n'a rien dit, et ne dira rien. La Sauge ignore qu'elle sait.
+- **Liens** : la Mère Lichen (le désaccord permanent, et un silence dont elle ne sait rien), l'Ortie (la culpabilité), l'Étrangère (une
+  alliance : elle connaît des plantes du Bois qu'elle n'a jamais vues), le Tilleul (le miel de ses
   remèdes).
 - **Les Plynlings, les veilleurs** : ils tombent malades comme tout le monde, donc elle les soigne.
   Les veilleurs sont pour elle une superstition, et pourtant, elle n'a jamais vu guérir une pousse
@@ -365,10 +408,14 @@ l'intimité**, et un arc peut en faire un moment (« Pour la première fois, {A}
   n'ont jamais été payées, et elle a cessé de les réclamer.
 - **Défaut** : elle ne sait pas garder un secret… sauf un.
 - **Désir** : que tout ce qui compte se passe chez elle.
-- **Secret** : un soir d'ivresse, l'Étranger lui a raconté d'où il venait. Elle ne l'a jamais
+- **Le ragot passe par elle.** Ce qu'un seul villageois sait d'un Plynling peut devenir l'affaire de
+  tout le hameau, mais seulement dans une scène écrite pour ça, à l'auberge : elle laisse échapper
+  quelque chose, ou un Plynling la paie, la charme ou la supplie de se taire. Un Plynling qu'elle
+  aime voit ses secrets gardés. Son amitié vaut cher.
+- **Secret** : un soir d'ivresse, l'Étrangère lui a raconté d'où elle venait. Elle ne l'a jamais
   répété. C'est le seul secret qu'elle ait gardé de sa vie, et il lui pèse.
 - **Liens** : Pain-Blond (sa meilleure amie, et rival pour savoir qui nourrit le village), le Fou (elle
-  le nourrit gratis et le défend), l'Étranger (son secret), le Noyer (son meilleur client, qui ne
+  le nourrit gratis et le défend), l'Étrangère (son secret), le Noyer (son meilleur client, qui ne
   paie jamais comptant).
 - **Les Plynlings, les veilleurs** : elle adore les pousses, les gave, et leur fait raconter leur
   veilleur. Elle y croit dur comme fer.
@@ -393,6 +440,11 @@ l'intimité**, et un arc peut en faire un moment (« Pour la première fois, {A}
   chère), l'intendant (la peur).
 - **Les Plynlings, les veilleurs** : il garde la croûte du premier pain de chaque fournée pour « les
   veillés ». Personne ne lui a appris ça. Il l'a toujours fait.
+- **Le dénoncer** : un Plynling qui apprend le secret peut le porter à l'intendant. Il y gagne
+  quelques cailloux et l'estime de l'intendant, et un souvenir chez Pain-Blond, s'il apprend un
+  jour qui l'a trahi. **Un seul ne suffit pas à le perdre** : le four n'est découvert que quand
+  assez de Plynlings l'ont dénoncé, quand l'intendant penche vers Roncebelle, ou quand la chronique
+  le décide.
 - **Sortie** : le four de la cave découvert.
 
 ### 8. Guillemette, qu'on appelle la Bruyère — la tenancière de l'Orphelinat
@@ -415,6 +467,12 @@ l'intimité**, et un arc peut en faire un moment (« Pour la première fois, {A}
 - **Les Plynlings, les veilleurs** : tous les Plynlings du serveur sont passés par ses mains à
   l'adolescence. Elle se souvient de chacun. Des veilleurs : « S'ils veillent si bien, qu'ils
   viennent laver le linge. »
+- **L'Orphelinat suit l'état du village.** Il vit des restes de la caisse du conseil et du bois de
+  l'intendant. Bien pourvu, il est chaud, strict et aimant. Caisse vide (la dette de Maître Frêne),
+  la soupe s'éclaircit. Si l'intendant passe du côté de Roncebelle et que le bois cesse, les hivers
+  deviennent cruels, et la Bruyère se fait plus dure pour que tout tienne. Les arcs d'ado lisent cet
+  état (phrases conditionnelles, parfois des branches) : chaque nouvelle pousse grandit dans
+  l'Orphelinat que le serveur a laissé.
 - **Sortie** : l'Orphelinat fermé faute d'argent, ou la fatigue, un hiver de trop.
 
 ### 9. Hugues, qu'on appelle le Noyer — le feu aisé
@@ -428,11 +486,12 @@ l'intimité**, et un arc peut en faire un moment (« Pour la première fois, {A}
   > « Le Noyer n'oublie jamais qui l'a aidé. Ni qui ne l'a pas fait. »
 - **Passé** : son père a récupéré le pré de la Sommeille après la crue.
 - **Défaut** : l'orgueil, et le besoin de tout tenir.
-- **Désir** : être syndic, et marier sa fille Aude à quelqu'un de Hautecôte.
+- **Désir** : être syndic, et marier sa fille Aude à quelqu'un de Roncebelle. Il ne sait pas
+  qu'elle aime l'apprenti de son pire ennemi.
 - **Secret** : **c'est son père qui a déplacé les bornes du pré** après la crue, et il le sait. Le pré
   revient de droit au Chardon.
 - **Liens** : le Chardon (la querelle), Maître Frêne (le rival), l'Ortie (qu'il emploie et paie mal),
-  l'Étranger (qu'il veut voir partir), la Courge (son ardoise).
+  l'Étrangère (qu'il veut voir partir), la Courge (son ardoise).
 - **Les Plynlings, les veilleurs** : une main-d'œuvre, et une réputation à soigner. Croit aux
   veilleurs comme on croit à la chance : pour soi.
 - **Sortie** : le secret des bornes, révélé.
@@ -456,28 +515,33 @@ l'intimité**, et un arc peut en faire un moment (« Pour la première fois, {A}
 - **Sortie** : la dette qui l'emporte, le départ du feu au-delà de la Côte. Ou une redevance enfin
   payée.
 
-### 11. Aymeric, qu'on appelle l'Étranger (ou le Luisant) — le nouveau venu
+### 11. Oriane, qu'on appelle l'Étrangère (ou la Luisante) — la nouvelle venue
 
 - **Espèce, âge** : un champignon que personne au village n'a jamais vu, qui luit faiblement la
-  nuit. Âge inconnu ; il paraît jeune et parle comme un vieux.
-- **Foyer, rôle** : une cabane au bord du Communal, accordée de mauvaise grâce par le conseil. Le
-  maître des cueilleurs : il connaît la Lisière mieux que quiconque, et un peu le Bois.
+  nuit. Âge inconnu ; elle paraît jeune et parle comme une vieille.
+- **Foyer, rôle** : une cabane au bord du Communal, accordée de mauvaise grâce par le conseil. La
+  maîtresse des cueilleurs : elle connaît la Lisière mieux que quiconque, et un peu le Bois.
 - **Allure** : pâle, mince, la peau couverte d'une fine mousse. Dans le noir, un halo vert très
-  doux, qu'il cache sous une capuche.
+  doux, qu'elle cache sous une capuche. **Le halo pâlit**, de saison en saison. Elle seule le
+  remarque, pour l'instant.
 - **Voix** : peu de mots, des tournures d'ailleurs, une politesse qui tient les gens à distance.
   Répond à une question par une autre.
   > « Chez moi, on ne demande pas d'où l'on vient. On demande où l'on va. »
-- **Passé** : sorti du Bois Sourd l'an dernier, seul, à pied.
-- **Défaut** : la méfiance. Il fuit tout attachement.
-- **Désir** : qu'on le laisse rester.
-- **Secret** : il est la dernière pousse de la Souche du Bois Sourd, morte quand le vieux seigneur a
-  fait abattre les grands arbres. Il n'a pas de veilleur. Il ne devrait pas avoir survécu.
-- **Liens** : la Courge (qui sait), la Sauge (l'alliance des plantes), le Noyer (qui veut le chasser),
-  le Fou (qui l'a reconnu : « J'ai vu ta lumière, il y a longtemps »), la Mère Lichen (qui l'observe
-  et ne dit rien).
-- **Les Plynlings, les veilleurs** : les Plynlings sont ce qu'il était. Il les regarde avec une
-  tendresse qu'il ne s'explique pas. Les veilleurs : il est le seul à n'en avoir jamais eu.
-- **Sortie** : chassé par le conseil, ou reparti dans le Bois. Ou enfin chez lui.
+- **Passé** : sortie du Bois Sourd l'an dernier, seule, à pied.
+- **Défaut** : la méfiance. Elle fuit tout attachement.
+- **Désir** : qu'on la laisse rester.
+- **Secret** : elle est la dernière pousse de la Souche du Bois Sourd, morte quand le vieux seigneur
+  a fait abattre les grands arbres. Elle n'a pas de veilleur. **En mourant, sa Souche a versé en
+  elle tout ce qui lui restait** : c'est de cela qu'elle vit, et c'est cela qui luit. La lumière
+  s'use. Elle ne sait pas pourquoi elle faiblit, ni combien de temps il lui reste.
+- **Liens** : la Courge (qui sait), la Sauge (l'alliance des plantes), le Noyer (qui veut la
+  chasser), le Fou (qui l'a reconnue : « J'ai vu ta lumière, il y a longtemps »), la Mère Lichen
+  (qui l'observe et ne dit rien).
+- **Les Plynlings, les veilleurs** : les Plynlings sont ce qu'elle était. Elle les regarde avec une
+  tendresse qu'elle ne s'explique pas. Les veilleurs : elle est la seule à n'en avoir jamais eu.
+- **Sortie** : chassée par le conseil, ou repartie dans le Bois. Ou éteinte, quand la lumière sera
+  usée. **Ou recueillie par la Souche de Humeval**, ce que personne n'a jamais vu : le grand arc
+  possible de sa vie.
 
 ### 12. Barnabé, qu'on appelle le Tilleul — le gardien du verger
 
@@ -494,7 +558,9 @@ l'intimité**, et un arc peut en faire un moment (« Pour la première fois, {A}
 - **Désir** : confier ses ruches à quelqu'un avant de mourir.
 - **Secret** : il « dit tout aux abeilles », comme le veut la vieille coutume, les naissances et les
   morts. Il leur a dit ce que la Mère Lichen lui a confié un soir, sur les lumières. Les abeilles
-  sont les seules à savoir.
+  sont les seules à savoir. **C'est une coutume, pas une magie** : les abeilles ne répètent rien.
+  Mais il est à moitié sourd, et il leur parle à voix haute. Quiconque se cache dans le verger peut
+  entendre.
 - **Liens** : la Mère Lichen (le très vieil attachement), la Sauge (son miel), le Fou (il est le seul
   à lui parler comme à n'importe qui), Maître Frêne (qu'il a connu enfant).
 - **Les Plynlings, les veilleurs** : il les confond parfois avec des gens morts depuis longtemps, et
@@ -515,17 +581,22 @@ l'intimité**, et un arc peut en faire un moment (« Pour la première fois, {A}
   surnom vient des enfants du Noyer, et le village l'a gardé.
 - **Défaut** : on ne sait jamais s'il ment, s'il se trompe ou s'il voit plus loin. Lui non plus.
 - **Désir** : qu'on le croie, une seule fois.
-- **Secret** : il n'en a pas. Il a tout dit, et personne n'a écouté. Il sait, lui, que la Mère Lichen
-  a vu les lumières, et il ne lui en a jamais voulu.
-- **Liens** : la Mère Lichen (elle sait, il sait qu'elle sait), la Courge (qui le nourrit), le Tilleul
-  (qui lui parle normalement), l'Étranger (« ta lumière »), les enfants du Noyer (la moquerie).
+- **Secret** : il n'en a pas. Il a tout dit, et personne n'a écouté. **Il compte les bornes du pré
+  depuis qu'il est enfant**, et sait laquelle a bougé : il est le seul témoin du Chardon, qui s'est
+  toujours moqué de lui. Personne ne le lui a jamais demandé. Il sait, lui, que la Mère Lichen
+  a vu les lumières, et il ne lui en a jamais voulu. **Il ne sait pas que c'est elle qui l'a fait
+  passer pour fou.** Le jour où il l'apprendra est un arc.
+- **Liens** : la Mère Lichen (elle a vu, il sait qu'elle a vu ; il ignore le reste), la Courge (qui le nourrit), le Tilleul
+  (qui lui parle normalement), l'Étrangère (« ta lumière »), les enfants du Noyer (la moquerie).
 - **Les Plynlings, les veilleurs** : il parle aux veilleurs à voix haute, comme à des gens
   présents. Les pousses trouvent ça drôle, jusqu'au jour où il dit à l'une d'elles une chose sur
   son veilleur qu'il ne pouvait pas savoir.
 - **Sortie** : disparu dans le Bois, une nuit de pluie, en suivant une lumière.
 
 **Règle d'écriture** : le Fou n'est jamais la blague. La moquerie appartient au village, l'histoire
-regarde la personne. Un Plynling qui se joint aux moqueries le paie un jour, dans un autre arc.
+regarde la personne. Un Plynling qui se joint aux moqueries le paie un jour, dans un autre arc. **La
+narration dit « le Fou » ou « Gilles », jamais « Pissenlit »** : le surnom n'existe que dans la
+bouche des autres personnages, et jamais pour faire rire.
 
 ---
 
@@ -536,17 +607,21 @@ Les liens les plus chargés, ceux qu'un arc peut faire basculer :
 | Entre | Ce qui les lie |
 |---|---|
 | Le Noyer ↔ le Chardon | la querelle du pré, et des bornes que le Noyer sait fausses |
+| Le Chardon ↔ le Fou | le seul témoin des bornes est celui dont le meunier s'est toujours moqué |
 | Maître Frêne ↔ le Chardon | la dette secrète du syndic |
+| Maître Frêne ↔ la Souche | la page brûlée, sur laquelle repose le droit du village |
 | Maître Frêne ↔ le Noyer | la rivalité pour le siège de syndic |
 | La Sauge ↔ l'Ortie | une mère morte d'une erreur, et vingt ans de soins gratuits |
+| La Mère Lichen ↔ la Sauge | l'erreur que la vieille a reconnue, et tait |
 | Pain-Blond ↔ l'Ortie | le pain de la cave, cuit sans payer le seigneur |
 | L'intendant ↔ la Bruyère | l'orphelin et celle qui l'a élevé, le bois de chaque hiver, la lettre jamais postée |
-| La Mère Lichen ↔ le Fou | les lumières, et douze ans de silence |
+| La Mère Lichen ↔ le Fou | les lumières, et la rumeur qu'elle a lancée pour le protéger |
 | La Mère Lichen ↔ le Tilleul | un très vieil attachement, et un secret confié aux abeilles |
-| La Courge ↔ l'Étranger | la seule chose que la Courge n'a jamais répétée |
-| Le Fou ↔ l'Étranger | « J'ai vu ta lumière » |
+| La Courge ↔ l'Étrangère | la seule chose que la Courge n'a jamais répétée |
+| Le Fou ↔ l'Étrangère | « J'ai vu ta lumière » |
 | L'intendant ↔ le Chardon | les deux hommes du seigneur, et les comptes du moulin |
-| Le Noyer ↔ l'Étranger | celui qui veut voir partir celui qui veut rester |
+| Le Noyer ↔ l'Étrangère | celui qui veut voir partir celle qui veut rester |
+| Aude ↔ Mathurin | la fille du Noyer et l'apprenti du Chardon, la querelle au milieu |
 
 Chaque secret est une crise qui attend : la chronique décide quand, et lequel.
 
@@ -559,12 +634,12 @@ quand un personnage principal disparaît.
 
 | Qui | Ce qu'il faut savoir |
 |---|---|
-| **Aude**, fille du Noyer | Promise à Hautecôte par son père. Amoureuse de quelqu'un d'autre, on ne sait pas encore de qui. |
+| **Aude**, fille du Noyer | Promise à Roncebelle par son père. Amoureuse en secret de Mathurin, l'apprenti du Chardon : l'amour d'un bord à l'autre de la querelle. |
 | **Clément et Gaspard**, fils du Noyer | Ce sont eux qui ont surnommé le Fou. Gaspard le regrette. Pas Clément. |
 | **Jacquet**, aîné de l'Ortie | Quatorze ans, vole la nuit dans les raies du Noyer. Fier comme sa mère. |
 | **Guérin**, mari de l'Ortie | Le dos brisé, au lit depuis deux ans. Taille des cuillères en bois et les vend au marché. |
 | **Bertille**, mère de Pain-Blond | Aveugle, elle reconnaît chaque villageois à l'odeur de son pain. |
-| **Mathurin**, apprenti du Chardon | Sombre, silencieux, a vu les cailloux sous la meule. |
+| **Mathurin**, apprenti du Chardon | Sombre, silencieux, a vu les cailloux sous la meule. Aime Aude, la fille du Noyer, et le lui rend en silence : ils se voient au gué, quand le passeur ne regarde pas. Ce qu'il sait du moulin pourrait servir au Noyer, et le perdre, lui. |
 | **Les trois enfants de la Courge** | Font tourner l'auberge, et rêvent tous les trois de partir. |
 | **Dame Ermengarde**, conseillère | Une vieille pivoine, deuxième voix du conseil, qui vote toujours comme le Noyer. |
 | **Renaud**, conseiller | Un jeune poirier, qui vote toujours contre. |
@@ -572,20 +647,5 @@ quand un personnage principal disparaît.
 | **La colporteuse** | Une belladone qui passe deux fois l'an avec des rubans, du sel et les nouvelles d'ailleurs. Ne dit jamais son nom. |
 | **La tisserande** | Une vieille ronce qui file au bord de la place et voit tout passer. |
 | **Le passeur de la Sommeille** | Un saule, qui fait traverser à gué quand le pont est fermé, et connaît la rivière par cœur. |
-| **Les jumelles du Communal** | Deux petites pâquerettes qui volent les pommes du Tilleul. Il fait semblant de ne pas voir. |
-| **La dame de Hautecôte** | L'héritière. Personne ne l'a vue. Elle n'apparaît qu'à travers ses lettres, son sceau et son intendant. |
-
----
-
-## À relire
-
-Les points qui méritent une décision, ou un petit interrogatoire, avant que le premier arc ne
-s'appuie dessus :
-
-1. **Les noms qui restent** : la Souche, le Blanc et Hautecôte (Humeval, la Sommeille et le Bois Sourd
-   sont choisis).
-2. **La vérité** (§ 2) : Le Blanc qui accumule, les veilleurs venus d'ailleurs, l'autre Souche morte.
-3. **L'Étranger sans veilleur** : un fil fort, et qui contredit « une pousse ne survit que si on la veille ». C'est voulu, mais cela engage la vérité.
-4. **Le surnom du Fou**, « Pissenlit », volontairement cruel.
-5. **Chaque fiche**, surtout les secrets : ce sont eux que les crises vont révéler.
-6. **Ping-Qilin et SYNCS**, laissées ouvertes.
+| **Les jumelles du Communal** | Deux petites pâquerettes qui volent les pommes du Tilleul. Il fait semblant de ne pas voir. Perchées dans ses arbres, elles l'ont entendu parler aux abeilles, et répètent sur la place des choses qu'elles ne comprennent pas. Personne ne croit les enfants. |
+| **La dame de Roncebelle** | L'héritière. Personne ne l'a vue. Elle n'apparaît qu'à travers ses lettres, son sceau et son intendant. |

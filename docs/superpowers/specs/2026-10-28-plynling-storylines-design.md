@@ -35,7 +35,9 @@ Stories may **end badly**; the only remaining guard is no cynicism for its own s
   winter, a lost harvest, a flood), choices between two losses.
 - **Never:** gore or graphic violence; abuse; cruelty played for laughs; sexual content; self-harm or
   suicide, even hinted; addiction; real-world references (war, politics); a Plynling's family
-  (Plynlings stay family-neutral — villagers may have families).
+  (Plynlings stay family-neutral — villagers may have families); **a child's death** — villager
+  children may be sick, lost, endangered, hungry or sent away, but they always live; the cost of a
+  bad ending falls on adults.
 
 `docs/plynling-writing-style.md` will need a section for the new register when the first arc is
 written.
@@ -206,8 +208,20 @@ conversations keep their mentions until their own rework.
   with the sandbags", "lied to the owl at the exam", "owes the badger 40 cailloux"). Arcs check them
   in conditions and gates.
 - **Each memory shifts a score** with the character concerned, which sets the general tone.
+- **Private or public, marked by the author.** A private memory is held by one character; a public
+  one is known to the whole village and shifts every character's attitude a little.
+- **Gossip only in written scenes.** A private memory becomes public only through a scene written for
+  it — at the inn, through the innkeeper (her goodwill keeps a Plynling's secrets) — never by a
+  hidden automatic spread.
 - **A « Village » view** on the card shows each character's attitude and the memories they hold, as
   the village tells it.
+- **A chronicle beat may branch on the guild's standing with a character** — every living
+  Plynling's memories of them, taken together — as well as on crisis outcomes. The Intendant's turn in
+  season one is the first case: written both ways, picked by how the server treated him.
+- **A queued chronicle beat may fire on a count**: when enough Plynlings of the guild hold a given
+  memory (the baker reported to the steward), or on another beat's outcome, or by the owner's hand.
+  This is how a betrayal stays a real individual choice without one player ruining the village: each
+  report is remembered, and only the sum acts.
 - Standing belongs to the **Plynling**: it dies, the village forgets — except a line or two naming the
   previous Plynling of the same owner (« … a connu ton prédécesseur »), with no standing carried over.
 
@@ -240,6 +254,9 @@ wherever the owner pushes back). The frame it was drafted to:
   watcher's succession is an arc of its own.
 - **The village fool** is sometimes a holy fool, sometimes a jester, and the story never settles
   which. Written from the inside: the mockery is the village's, never the story's.
+- **Plynlings never couple with villagers.** Couples stay between players' Plynlings (the existing
+  bond rules). A Plynling may fall for a villager in an arc — a crush, a longing, a heartbreak — but
+  it stays one-sided: the villager is older, promised, or does not see it that way.
 - **Names:** a given name plus a byname; daily speech uses the byname, intimacy the given name.
 - **Money:** cailloux are the village coin, daily life runs on barter; a fixed price scale (a loaf ≈ 1,
   a day's labour ≈ 5, a tool ≈ 30, a season's dues ≈ 100); the wallet goes unexplained.
@@ -309,8 +326,8 @@ The old catalog stays in the code, unplayable, so stories and journals that refe
 
 Each in its own deep session, in this order:
 
-1. **The village bible** — framed (above); the draft in `docs/village-lore.md` awaits the owner's
-   sheet-by-sheet review.
+1. **The village bible** — done: `docs/village-lore.md`, reviewed sheet by sheet with the owner on
+   2026-10-28.
 2. **The story file format** in detail, with the engine's data model.
 3. Every arc, one by one.
 
