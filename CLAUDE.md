@@ -109,7 +109,8 @@ the EF snapshot's type names. A new file goes in the subfolder of the subsystem 
 
 **Big classes are `partial` over a folder named after the class**, one file per theme, each under
 about 40 KB so it can be read whole (`BotResponses/`, `MessageCues/`, `PlynlingEvents/`,
-`PlynlingScripts/`). Grow the theme's file; start a new one rather than letting one swell.
+`PlynlingScripts/`, `ChatterService/`, `PlynlingVisitStory/`, `QuizBank/`, the big modules). Grow the
+theme's file; start a new one rather than letting one swell.
 **A static field's initializer never reads a static field in another file**: the order across
 partial files is undefined, so it may read null. A catalog spread over files is one method per file,
 joined in the field (`PlynlingEvents.All`, `PlynlingScripts.Catalog`).
@@ -309,6 +310,15 @@ matter much** (Quokka's visits, and whatever joins them) goes to the bots channe
 `/help` (`HelpModule`) and `README.md` are hand-maintained. A new user-facing command means
 updating both — except owner-only commands, deliberately absent from `/help`. Easter eggs
 (breakdown, quoicoubeh, the glitch) stay out of both.
+
+**A notes file under `docs/` stays under about 40 KB, like the code**, so it can be read whole.
+Past that it becomes an index (what binds the whole topic, plus a table of where each section
+went) and topic files in a folder of the same name: `docs/agents/personality/`,
+`docs/agents/minecraft-orders/`, `docs/syncs-appearance/`. Read the index, then only the topic
+file you need.
+
+**Search skips generated and spent files** (`.ignore`, read by ripgrep only): the migration
+`*.Designer.cs` and the executed plans in `docs/superpowers/plans/`. Pass their path to search them.
 
 ## Version and deployment
 

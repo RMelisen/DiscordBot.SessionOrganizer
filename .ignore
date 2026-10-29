@@ -1,0 +1,10 @@
+# Read by ripgrep (Claude Code's Grep and Glob), not by git: generated or spent files that flood
+# search results. Still readable, and searchable by passing their path explicitly.
+
+# EF migration designers: a full model copy per migration (~2.4 MB, 3/4 of any column-name hit).
+ProjectSYNCS/Migrations/*.Designer.cs
+
+# Executed implementation plans: code copies that go stale once shipped. Specs stay searchable.
+docs/superpowers/plans/
+
+ProjectSYNCS/MinecraftBody/package-lock.json

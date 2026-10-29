@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.55.1 — 2026-10-29
+
+- Internal: the remaining source files over 40 KB are split into smaller files by theme. No change in behaviour.
+
 ## 7.55.0 — 2026-10-28
 
 - Plynlings: two things changing the same Plynling at once (two people feeding it, a meal during the hourly check)

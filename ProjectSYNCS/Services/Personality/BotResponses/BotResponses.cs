@@ -12,9 +12,11 @@ namespace ProjectSYNCS.Services;
 // ---------------------------------------------------------------------------
 // WHAT IS IN HERE
 //
-// BotResponses is one partial class split by category, one file per category:
-// each heading below names its file, as [Replies] for BotResponses.Replies.cs
-// or [Replies.Intents] for BotResponses.Replies.Intents.cs.
+// BotResponses is one partial class split by category, one or more files per category, each
+// under about 40 KB so it can be read whole. Each heading below names its files, as
+// [Replies] for BotResponses.Replies.cs
+// or [Replies.Intents] for BotResponses.Replies.Intents.cs. A heading naming several files
+// spreads its pools over them in the order listed.
 // Inside a file, each section is introduced by a "// ---- Title ----" banner, and
 // the pools inside it are in the order shown. Names only, no line numbers: those
 // go stale on the first edit. Grep the name to jump to it.
@@ -40,7 +42,7 @@ namespace ProjectSYNCS.Services;
 //     MistakenIdentityReplies .. mistaken for another bot
 //     ReferenceComebacks ....... rare pop-culture one-liner
 //
-//   [Replies.Intents] Answering what she was told (MessageCues.ReadIntent)
+//   [Replies.Intents, Replies.Intents.BackAndForth] Answering what she was told (MessageCues.ReadIntent)
 //     IntentLines .............. keyed by ChatIntent: « je t'aime », « pardon », « ça va ? »…
 //
 //   [Replies.Requests] Answering what she was told: requests, questions, asks
@@ -80,7 +82,7 @@ namespace ProjectSYNCS.Services;
 //
 //   [Replies.Verdicts] Self-preservation — ShutdownThreatOwner · ShutdownThreatTata · ShutdownThreatReplies
 //
-//   [Family] Rodhengard (the owner)
+//   [Family, Family.OwnerIntents] Rodhengard (the owner)
 //     OwnerGreetings ........... mentioned  |  OwnerComebacks ..... replied to
 //     OwnerMeanReplies ......... him being mean to her
 //     OwnerIntentLines ......... his twins of IntentLines (ça va, tu fais quoi, je t'aime, pardon, bonne nuit,
@@ -96,7 +98,7 @@ namespace ProjectSYNCS.Services;
 //     DigestQuietLines ......... a digest's « À regarder » with nothing to look at (his or Tata's)
 //     OwnerReportDutyLines ..... /report asked by him, on top of the card
 //
-//   [Family] Tata (Analuz)
+//   [Family.Tata] Tata (Analuz)
 //     TataId ................... her id, the single source of truth
 //     TataGreetings (mentioned) · TataReplies (replied to)
 //     TataIntentLines .......... « tu m'aimes ? », « tu te souviens de moi ? » from her
@@ -109,7 +111,7 @@ namespace ProjectSYNCS.Services;
 //     RivalLevelUpLines ........ a level-up on the rival's XP system
 //     RivalJoinLines ........... a new bot joined the server (WelcomeService)
 //
-//   [Commands] Commands
+//   [Commands, Commands.Work, Commands.Quiz] Commands
 //     XpLevelUpLines ........... /level
 //     StaffReportLines ......... /report asked by other staff: suspicious, on top of the card
 //     YesLines · NoLines ....... /yesno
@@ -125,7 +127,7 @@ namespace ProjectSYNCS.Services;
 //     QuizCrownLines · QuizCrownSharedLines · QuizCrownOwnerLines  Monday's Grosse tête (QuizCrownService)
 //     QuizWrongLines · QuizAlreadyTriedLines ......... a wrong / second button click (ephemeral)
 //
-//   [Scheduling] Organising
+//   [Scheduling, Scheduling.Commands] Organising
 //     SessionLateCallLines ..... ten minutes into a session, to who isn't in voice (SessionAttendanceService)
 //     SessionLateCallSeatedLines  same, when she has been in voice since before the start
 //     SessionSpotFreedLines .... DM to the « peut-être » of a full session when a place opens
@@ -142,7 +144,7 @@ namespace ProjectSYNCS.Services;
 //     TonightCardLines · TonightExpiredLines ... /tonight's card, open / closed at midnight
 //     TonightThresholdLines .... /tonight reached its minimum
 //
-//   [Scheduling] Under her cards (CardReplyService)
+//   [Scheduling.Cards] Under her cards (CardReplyService)
 //     CardRepostLines · CardRepostTooSoonLines ... « remonte-le »: brought back / just was
 //     CardClosedLines .......... a card that is over
 //     CardRallyLines · CardRallyNamedLines · CardRallyAllDoneLines ... « votez ! »: to the room / the tagged who haven't / who have
@@ -151,7 +153,7 @@ namespace ProjectSYNCS.Services;
 //     CardTextClickLines · CardTextAnsweredLines ... an answer typed: not clicked / clicked too
 //     CardStatusLines .......... « c'est quand ? », « qui vient ? »
 //
-//   [FunCommands] /rate, /ship, /blame, /recap, /wouldyourather
+//   [FunCommands, FunCommands.Ship, FunCommands.ShipCharacters, FunCommands.BlameRecapWyr] /rate, /ship, /blame, /recap, /wouldyourather
 //     RateBand0Lines … RateBand4Lines + RateBand(score) ... /rate, by score band
 //     RateHerselfLines · RateOwnerLines · RateOwnerSelfLines · RateTataSelfLines · RateCrushLines · RateNemesisLines · RateDevilLines
 //     · RateGodLines · RateTataLines · RateRoutierLines · RateMitrailletteLines ... /rate's fixed verdicts
@@ -167,7 +169,7 @@ namespace ProjectSYNCS.Services;
 //   [Community] Free Steam games
 //     FreeGameLines ............ above the card of a Steam game turned free to keep (SteamFreeGamesService)
 //
-//   [Arcade] /arcade games and Quokka's visits
+//   [Arcade, Arcade.MoreGames] /arcade games and Quokka's visits
 //     DuelChallengeLines · DuelOwnerWarningLines · DuelHerAcceptLines · DuelAcceptedLines
 //     DuelDeclinedLines · DuelWithdrawnLines · DuelTieLines · DuelDrawLines
 //     DuelWinLines · DuelHerWinLines · DuelBrokeLines · DuelExpiredLines · DuelAbandonedLines ... /arcade duel
@@ -185,7 +187,7 @@ namespace ProjectSYNCS.Services;
 //     · BoardExpiredLines · BoardDeclinedLines ... /arcade puissance4 · morpion
 //     QuokkaRaidLines · QuokkaHitLines · QuokkaFledLines · QuokkaTooLateLines ... Quokka's visits (QuokkaRaidService)
 //
-//   [Elsewhere] Elsewhere
+//   [Elsewhere, Elsewhere.FunFacts] Elsewhere
 //     PresenceFillers .......... the rotating status line
 //     MorningGreetings ......... the daily hello (MorningGreetingService)
 //     MorningFunFacts .......... added under it
@@ -194,7 +196,7 @@ namespace ProjectSYNCS.Services;
 //                              ... the line it cuts off mid-word
 //     Breakdown ................ the easter egg
 //
-//   [Ambient] Ambient — AmbientService, PiHealthService, and PresenceService at night
+//   [Ambient, Ambient.Wake, Ambient.Voice] Ambient — AmbientService, PiHealthService, and PresenceService at night
 //     NightPresenceFillers ..... her status from 1:00 to 7:00
 //     HotPresenceFillers ....... her status when the Pi runs hot
 //     SeatPresenceLines · SeatPresenceOwnerLines ... her status while she sits in voice / with Papa there
@@ -216,14 +218,14 @@ namespace ProjectSYNCS.Services;
 //     VoiceRivalRefuseLines · VoiceRivalSeatedLines ... another bot in the call: she refuses / grumbles
 //     OwnerBedtimeLines ........ Papa still in voice at night: she sends him to bed
 //
-//   [Lore] Synthia, her robot heart, Voyager
+//   [Lore, Lore.HeartVanish, Lore.Voyager] Synthia, her robot heart, Voyager
 //     SynthiaReactions · SynthiaVanishLines · SynthiaEditLines ... « Synthia » said (SynthiaService)
 //     HeartReactions · HeartLines · HeartVanishLines · HeartEditLines ... one of her robot heart
 //                              named (RobotHeartService), keyed by HeartCharacter
 //     VoyagerLetterLines · VoyagerAnswerLines · VoyagerCrossingLine ... Voyager 1 writes to her
 //                              (AmbientService; light time from Helpers/Personality/Voyager)
 //
-//   [Minecraft] Her body on the Minecraft server (MinecraftBodyService)
+//   [Minecraft, Minecraft.Orders, Minecraft.Errands, Minecraft.Activities, Minecraft.FreeTime] Her body on the Minecraft server (MinecraftBodyService)
 //     In game, said in Minecraft's chat: plain text, ≤ 256 characters, no emotes or stickers
 //       McArrivalLines · McLeavingLines ... she logs in / out
 //       McDeathLines ............. keyed by McDeathKind, {0} = who died (Self: her own death)
@@ -249,7 +251,7 @@ namespace ProjectSYNCS.Services;
 //       McSeekMetLines… · McSeekMissLines… (Owner/Tata only) ... walking up to them after arriving
 //       McResourceNames .......... what she gathers, as a partitive (« du bois »): data, not a pool
 //
-//   [Plynlings] Plynlings — every pool is a GenderedLines (M/F halves), picked with .For(p.Gender)
+//   [Plynlings, Plynlings.Play, Plynlings.Death, Plynlings.Mascot] Plynlings — every pool is a GenderedLines (M/F halves), picked with .For(p.Gender)
 //     Care, shown on the card
 //       PlynlingAdoptLines ..... a new Plynling
 //       PlynlingFeedLines · PlynlingPetLines · PlynlingBathLines · PlynlingMedicineLines

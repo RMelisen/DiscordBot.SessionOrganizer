@@ -1,0 +1,537 @@
+using System.Text;
+using System.Text.RegularExpressions;
+using Discord;
+using Discord.Interactions;
+using Discord.Net;
+using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
+using ProjectSYNCS.Helpers;
+using ProjectSYNCS.Interactions.Autocomplete;
+using ProjectSYNCS.Services;
+
+namespace ProjectSYNCS.Commands;
+
+// /debug — the owner's own tools, grouped so everyone else sees one entry in the command picker
+// instead of three (there is no Discord permission for "this one user", so they stay visible).
+// Every handler compares Context.User.Id with AvailabilityService.OwnerId itself.
+//
+// /debug tell and /debug dm let the owner speak through the bot on his own initiative — as
+// opposed to ChatterService's relay, which answers a mention he received while absent. tell
+// posts into a channel (optionally as a reply to a linked message), dm sends someone a private
+// message. In both, the text goes out as the bot's own words by default; "announce" opts into
+// a herald line naming the owner. /debug absent flags him as absent: while absent, the bot
+// intercepts mentions of him and replies, formally, that he is unavailable (in memory only — a
+// restart clears the flag). /debug silence mutes everything she says on her own initiative
+// (SilenceService); unlike absent, it survives a restart.
+//
+// No [CommandContextType]: tell, dm and absent never read Context.Guild and work from a DM;
+// /debug plynling does, and checks for a DM itself rather than hiding the whole group there.
+[Group("debug", "Outils du propriétaire du bot")]
+public partial class DebugModule : InteractionModuleBase<SocketInteractionContext>
+{
+    public enum AbsenceState
+    {
+        [ChoiceDisplay("Activer")] On,
+        [ChoiceDisplay("Désactiver")] Off,
+    }
+
+    public enum SilenceState
+    {
+        [ChoiceDisplay("Activer")] On,
+        [ChoiceDisplay("Désactiver")] Off,
+    }
+
+    public enum SickState
+    {
+        [ChoiceDisplay("Inchangé")] Unchanged,
+        [ChoiceDisplay("Malade")] Sick,
+        [ChoiceDisplay("Guéri")] Healthy,
+    }
+
+    public enum QuizAction
+    {
+        [ChoiceDisplay("Poser une question")] Post,
+        [ChoiceDisplay("Fermer le quiz en cours")] Close,
+        [ChoiceDisplay("Couronner la grosse tête")] Crown,
+    }
+
+    public enum VoyagerPost
+    {
+        [ChoiceDisplay("Rien, juste l'état")] None,
+        [ChoiceDisplay("La prochaine lettre")] Letter,
+        [ChoiceDisplay("Sa réponse à la prochaine lettre")] Answer,
+        [ChoiceDisplay("La ligne du jour-lumière")] Crossing,
+    }
+
+    public enum AnswersPeriod
+    {
+        [ChoiceDisplay("7 derniers jours")] Week,
+        [ChoiceDisplay("30 derniers jours")] Month,
+        [ChoiceDisplay("Depuis toujours")] AllTime,
+    }
+
+    public enum AnswersView
+    {
+        [ChoiceDisplay("Types de réponses")] Types,
+        [ChoiceDisplay("Exemples sans réponse précise")] Examples,
+    }
+
+    public enum MinecraftAction
+    {
+        [ChoiceDisplay("Voir l'état")] Status,
+        [ChoiceDisplay("La faire rejoindre maintenant")] Join,
+        [ChoiceDisplay("La faire partir (30 min)")] Leave,
+        [ChoiceDisplay("L'autoriser à jouer")] Allow,
+        [ChoiceDisplay("Lui interdire de jouer")] Forbid,
+        [ChoiceDisplay("Voir son inventaire")] Inventory,
+        [ChoiceDisplay("Voir son corps (ce qu'elle fait, la boucle Node)")] Body,
+    }
+
+    public enum EventMode
+    {
+        [ChoiceDisplay("En attente")] Pending,
+        [ChoiceDisplay("Expiré (décidé au prochain passage)")] Expired,
+        [ChoiceDisplay("Décidé tout de suite, raconté ici")] Now,
+    }
+
+    private readonly ILogger<DebugModule> _logger;
+    private readonly AvailabilityService _availability;
+    private readonly SilenceService _silence;
+    private readonly ResponsePicker _picker;
+    private readonly PlynlingService _plynlings;
+    private readonly PlynlingAnnouncer _announcer;
+    private readonly PlynlingSweepService _sweep;
+    private readonly QuizMasterService _quiz;
+    private readonly QuizCrownService _crown;
+    private readonly StickerService _stickers;
+    private readonly QuokkaRaidService _quokka;
+    private readonly ChatAnswerService _answers;
+    private readonly MonthlyDigestService _digest;
+    private readonly MinecraftBodyService _minecraft;
+    private readonly ConfessionService _confessions;
+
+    // Discord caps a message at 2000 characters; leave room for the herald line
+    // and the blockquote markers.
+    private const int MaxMessageLength = 1500;
+
+    // The tail of a Discord message link, whatever the host (discord.com,
+    // canary/ptb subdomains, the old discordapp.com): .../channels/{guild}/{channel}/{message}
+    private static readonly Regex _messageLinkRegex =
+        new(@"channels/(\d+)/(\d+)/(\d+)", RegexOptions.Compiled);
+
+    public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings,
+        PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz, QuizCrownService crown,
+        StickerService stickers, QuokkaRaidService quokka, ChatAnswerService answers,
+        MonthlyDigestService digest, MinecraftBodyService minecraft, SilenceService silence, ConfessionService confessions)
+    {
+        _confessions = confessions;
+        _silence = silence;
+        _minecraft = minecraft;
+        _digest = digest;
+        _answers = answers;
+        _stickers = stickers;
+        _quokka = quokka;
+        _quiz = quiz;
+        _crown = crown;
+        _plynlings = plynlings;
+        _announcer = announcer;
+        _sweep = sweep;
+        _availability = availability;
+        _logger = logger;
+        _picker = picker;
+    }
+
+    [SlashCommand("tell", "Faire dire un message au bot")]
+    public async Task SpeakAsync(
+        [Summary("message", "Le message à faire dire au bot")]
+        string message,
+        // A string with autocomplete rather than a native channel option, so the
+        // command works from a DM: Discord's channel picker resolves against the guild
+        // the command was invoked in, and a DM has none — the option would render with
+        // nothing to choose. See ChannelAutocompleteHandler.
+        [Summary("channel", "Salon de destination (par défaut : le salon actuel)")]
+        [Autocomplete(typeof(ChannelAutocompleteHandler))]
+        string? channel = null,
+        [Summary("announce", "Faire une annonce")]
+        bool announce = false,
+        [Summary("respond_to", "Lien du message auquel répondre (clic droit → Copier le lien du message)")]
+        string? respond_to = null)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+
+        // Resolving the link and posting are several round-trips; defer so the
+        // interaction can't time out. Every answer below is a followup.
+        await DeferAsync(ephemeral: true);
+
+        var (text, textError) = PrepareText(message);
+        if (text is null)
+        {
+            await FollowupAsync(textError, ephemeral: true);
+            return;
+        }
+
+        // The option arrives as text — normally the id the autocomplete supplied, but
+        // it can be typed by hand, so a mention or a name is accepted too.
+        var (requested, channelError) = ResolveChannel(channel);
+        if (channelError is not null)
+        {
+            await FollowupAsync(channelError, ephemeral: true);
+            return;
+        }
+
+        var (target, repliedTo, destinationError) = await ResolveDestinationAsync(respond_to, requested);
+        if (target is null)
+        {
+            await FollowupAsync(destinationError, ephemeral: true);
+            return;
+        }
+
+        var receipt = await SendAsync(target, BuildContent(text, announce), repliedTo, announce);
+        await FollowupAsync(receipt, ephemeral: true);
+    }
+
+    // Takes down one of her own messages — a misfire, a line that landed badly, a /debug tell typo.
+    // Only hers: deleting someone else's would make this a moderation tool, which /debug is not.
+    [SlashCommand("delete", "Supprimer un message du bot")]
+    public async Task DeleteAsync(
+        [Summary("message", "Lien du message à supprimer (clic droit → Copier le lien du message)")]
+        string message)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+
+        await DeferAsync(ephemeral: true);
+
+        var (channel, target, error) = await ResolveLinkedMessageAsync(message, null);
+        if (channel is null || target is null)
+        {
+            await FollowupAsync(error, ephemeral: true);
+            return;
+        }
+
+        if (target.Author.Id != Context.Client.CurrentUser.Id)
+        {
+            await FollowupAsync("Ce message n'est pas de moi — je ne supprime que les miens. ❌", ephemeral: true);
+            return;
+        }
+
+        try
+        {
+            await target.DeleteAsync();
+            _logger.LogInformation("Owner deleted bot message {MessageId} in channel {ChannelId}.", target.Id, channel.Id);
+            await FollowupAsync($"Message supprimé dans {channel.Mention}. 🗑️", ephemeral: true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to delete bot message {MessageId} in channel {ChannelId}.", target.Id, channel.Id);
+            await FollowupAsync($"Impossible de supprimer ce message dans {channel.Mention}. ❌", ephemeral: true);
+        }
+    }
+
+    // Who wrote confession #N. The one place a confession's author shows, and only to the owner:
+    // it's there to deal with abuse. From a DM it reads the home guild's numbers.
+    [SlashCommand("confession", "Voir qui a écrit une confession")]
+    public async Task ConfessionAsync(
+        [Summary("numero", "Le numéro de la confession")]
+        [MinValue(1)]
+        int numero)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+
+        await DeferAsync(ephemeral: true);
+
+        var guildId = Context.Guild?.Id ?? HomeGuild.Id;
+        var confession = await _confessions.FindAsync(guildId, numero);
+        if (confession is null)
+        {
+            await FollowupAsync($"Pas de confession #{numero} sur ce serveur.", ephemeral: true);
+            return;
+        }
+
+        var where = confession.MessageId == 0
+            ? ""
+            : $" · https://discord.com/channels/{confession.GuildId}/{confession.ChannelId}/{confession.MessageId}";
+        await FollowupAsync(
+            $"Confession #{numero} : <@{confession.AuthorId}>, "
+            + $"{TimestampTag.FormatFromDateTimeOffset(confession.CreatedAt, TimestampTagStyles.Relative)}{where}",
+            ephemeral: true, allowedMentions: AllowedMentions.None);
+    }
+
+    /// <summary>
+    /// Where the message goes, and what (if anything) it replies to.
+    /// </summary>
+    /// <remarks>
+    /// A pasted link decides the destination by itself, since it carries the channel —
+    /// so <paramref name="requested"/> is only consulted when there is no link, and
+    /// <see cref="ResolveLinkedMessageAsync"/> owns the "the link says one channel but
+    /// you picked another" conflict.
+    /// </remarks>
+    private async Task<(ITextChannel? Channel, IMessage? RepliedTo, string? Error)> ResolveDestinationAsync(
+        string? respondTo, ITextChannel? requested)
+    {
+        if (!string.IsNullOrWhiteSpace(respondTo))
+        {
+            var resolved = await ResolveLinkedMessageAsync(respondTo, requested);
+            return resolved.Error is not null
+                ? (null, null, resolved.Error)
+                : (resolved.Channel, resolved.Message, null);
+        }
+
+        if ((requested ?? Context.Channel as ITextChannel) is { } target) return (target, null, null);
+
+        // In a DM there is no current channel to fall back to, so the option stops
+        // being optional — said plainly rather than as "only works in a text channel",
+        // which would read as the command being unavailable here.
+        return (null, null, Context.Channel is IDMChannel
+            ? "Depuis nos messages privés je ne sais pas où envoyer ça — choisis un salon "
+              + "avec l'option **channel**. ✍️"
+            : "Cette commande ne fonctionne que dans un salon textuel.");
+    }
+
+    /// <summary>
+    /// Posts the line and returns the ephemeral receipt the owner gets back, whether it
+    /// worked or not — a failure here is a missing permission, not a bug to surface.
+    /// </summary>
+    private async Task<string> SendAsync(
+        ITextChannel target, string content, IMessage? repliedTo, bool announce)
+    {
+        try
+        {
+            await target.SendMessageAsync(
+                content,
+                // Honour users the owner mentioned, but never @everyone/@here or a
+                // role — the bot must not become a way to mass-ping. When replying,
+                // ping the person being answered.
+                allowedMentions: new AllowedMentions(AllowedMentionTypes.Users)
+                {
+                    MentionRepliedUser = repliedTo is not null
+                },
+                messageReference: repliedTo is null
+                    ? null
+                    : new MessageReference(
+                        messageId: repliedTo.Id,
+                        channelId: target.Id,
+                        guildId: target.GuildId));
+
+            _logger.LogInformation(
+                "Owner spoke through the bot in channel {ChannelId} (heralded: {Heralded}, replying: {Replying}).",
+                target.Id, announce, repliedTo is not null);
+
+            return repliedTo is null
+                ? $"Envoyé dans {target.Mention}. ✅"
+                : $"Réponse envoyée à **{repliedTo.Author.Username}** dans {target.Mention}. ✅";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to speak through the bot in channel {ChannelId}.", target.Id);
+            return $"Impossible d'écrire dans {target.Mention} — je n'ai peut-être pas la permission. ❌";
+        }
+    }
+
+    [SlashCommand("dm", "Faire envoyer un message privé par le bot")]
+    public async Task DirectMessageAsync(
+        [Summary("user", "La personne à qui envoyer le message")]
+        IUser user,
+        [Summary("message", "Le message à faire envoyer au bot")]
+        string message,
+        [Summary("announce", "Faire une annonce")]
+        bool announce = false)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+
+        await DeferAsync(ephemeral: true);
+
+        var (text, textError) = PrepareText(message);
+        if (text is null)
+        {
+            await FollowupAsync(textError, ephemeral: true);
+            return;
+        }
+
+        if (user.IsBot)
+        {
+            await FollowupAsync("Je ne peux pas envoyer de message privé à un bot. 🤖", ephemeral: true);
+            return;
+        }
+
+        try
+        {
+            var dm = await user.CreateDMChannelAsync();
+            await dm.SendMessageAsync(
+                BuildContent(text, announce),
+                // Same policy as everywhere else: no @everyone/@here, no roles.
+                allowedMentions: new AllowedMentions(AllowedMentionTypes.Users));
+
+            _logger.LogInformation("Owner sent a DM through the bot to {UserId} (heralded: {Heralded}).",
+                user.Id, announce);
+
+            await FollowupAsync($"Envoyé en privé à **{user.Username}**. ✅", ephemeral: true);
+        }
+        catch (HttpException ex) when (ex.DiscordCode == DiscordErrorCode.CannotSendMessageToUser)
+        {
+            await FollowupAsync(
+                $"**{user.Username}** n'accepte pas les messages privés du serveur. ❌", ephemeral: true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send a DM through the bot to {UserId}.", user.Id);
+            await FollowupAsync($"Impossible d'envoyer le message à **{user.Username}**. ❌", ephemeral: true);
+        }
+    }
+
+    // Normalises the owner's raw input, or explains why it can't be sent.
+    // Slash-command input is single-line, so a literal \n stands for a break.
+    private static (string? Text, string? Error) PrepareText(string message)
+    {
+        var text = message.Replace("\\n", "\n").Trim();
+
+        if (text.Length == 0)
+            return (null, "Ton message est vide, je n'ai rien à dire. ✍️");
+
+        if (text.Length > MaxMessageLength)
+            return (null, $"Ton message fait {text.Length} caractères, le maximum est {MaxMessageLength}. ✂️");
+
+        return (text, null);
+    }
+
+    // Either a herald line naming the owner, or — by default — pure
+    // ventriloquism: the bot's own voice, nothing pointing back to him.
+    private string BuildContent(string text, bool announce)
+    {
+        if (!announce) return text;
+
+        var ownerName = (Context.User as SocketGuildUser)?.Nickname
+            ?? Context.User.GlobalName
+            ?? Context.User.Username;
+        var herald = string.Format(
+            _picker.Pick(BotResponses.OwnerAnnouncementHeralds),
+            ownerName);
+
+        return $"{herald}\n{MessageFormat.Quote(text, MaxMessageLength)}";
+    }
+
+    /// <summary>
+    /// What the <c>channel</c> option's text refers to: a channel id, or a name.
+    /// </summary>
+    /// <remarks>
+    /// Pure and free of gateway types so the parsing can be checked without a
+    /// connection — the same split <c>RivalryService.IsRivalAuthor</c> and
+    /// <c>BotFeedbackTracker.ReadTarget</c> use. Worth isolating because getting it
+    /// wrong sends the owner's message to the wrong place, silently.
+    /// <para>Exactly one of the two is ever set. An empty or whitespace input yields
+    /// neither, which the caller reads as "no channel was asked for".</para>
+    /// </remarks>
+    internal static (ulong? Id, string? Name) ParseChannelRef(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return (null, null);
+
+        var text = input.Trim();
+
+        // A pasted mention, <#123…>. Stripped before the digit test so it lands on the
+        // id path rather than being looked up as a name that cannot exist.
+        if (text.StartsWith("<#") && text.EndsWith('>'))
+            text = text[2..^1];
+
+        if (ulong.TryParse(text, out var id)) return (id, null);
+
+        // "#général" and "général" are the same request; the hash is decoration.
+        var name = text.TrimStart('#').Trim();
+        return name.Length == 0 ? (null, null) : (null, name);
+    }
+
+    /// <summary>
+    /// Turns the <c>channel</c> option's text into a channel, or explains why it can't.
+    /// </summary>
+    /// <remarks>
+    /// Autocomplete supplies the raw id, which is the normal path and the exact one.
+    /// The other two forms exist because the option is a plain string and can be typed
+    /// or pasted: a channel mention (<c>&lt;#id&gt;</c>) and a bare name. A name is only
+    /// accepted when it matches exactly one channel — silently picking the first of
+    /// several "général"s across guilds would send the message somewhere unintended,
+    /// which is the one mistake this command must not make quietly.
+    /// </remarks>
+    private (ITextChannel? Channel, string? Error) ResolveChannel(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return (null, null);
+
+        var client = Context.Client;
+        var (id, name) = ParseChannelRef(input);
+
+        if (id is { } channelId)
+        {
+            if (client.GetChannel(channelId) is ITextChannel byId) return (byId, null);
+            return (null, "Je ne vois pas ce salon — je n'y suis peut-être pas. ❌");
+        }
+
+        var matches = client.Guilds
+            .SelectMany(g => g.TextChannels)
+            .Where(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        return matches.Count switch
+        {
+            1 => (matches[0], null),
+            0 => (null, $"Je ne trouve aucun salon nommé **{name}**. "
+                        + "Choisis-le dans la liste plutôt que de le taper. ❌"),
+            _ => (null, $"Plusieurs salons s'appellent **{name}**. "
+                        + "Choisis-le dans la liste pour que je sache lequel. ❌"),
+        };
+    }
+
+    // Turns a pasted message link into the channel and message it points at.
+    // Returns a ready-to-send French error instead of throwing, so the caller can
+    // just forward it to the owner.
+    private async Task<(ITextChannel? Channel, IMessage? Message, string? Error)> ResolveLinkedMessageAsync(
+        string link, ITextChannel? requestedChannel)
+    {
+        var match = _messageLinkRegex.Match(link);
+        if (!match.Success)
+        {
+            return (null, null,
+                "Je n'ai pas reconnu ce lien. Fais un clic droit sur le message → " +
+                "**Copier le lien du message**. ❌");
+        }
+
+        var guildId = ulong.Parse(match.Groups[1].Value);
+        var channelId = ulong.Parse(match.Groups[2].Value);
+        var messageId = ulong.Parse(match.Groups[3].Value);
+
+        var guild = Context.Client.GetGuild(guildId);
+        if (guild is null)
+            return (null, null, "Ce lien pointe vers un serveur où je ne suis pas. ❌");
+
+        var channel = guild.GetTextChannel(channelId);
+        if (channel is null)
+            return (null, null, "Ce lien pointe vers un salon que je ne vois pas. ❌");
+
+        // The link already names a channel; a conflicting "channel" argument is a
+        // mistake worth surfacing rather than silently resolving one way.
+        if (requestedChannel is not null && requestedChannel.Id != channel.Id)
+        {
+            return (null, null,
+                $"Le lien pointe vers {channel.Mention}, mais tu as choisi {requestedChannel.Mention}. " +
+                "Enlève l'un des deux. ❌");
+        }
+
+        var original = await channel.GetMessageAsync(messageId);
+        if (original is null)
+            return (null, null, "Je ne retrouve pas ce message — il a peut-être été supprimé. ❌");
+
+        return (channel, original, null);
+    }
+}

@@ -49,7 +49,7 @@ go in on stdin, events come out on stdout, and logs go to stderr, which the serv
 
 **The body holds no words and no policy.** It never decides to speak, to join or to leave, and it
 has no French in it. Every line she says in game comes from the `Mc*` pools in
-`BotResponses.Minecraft.cs`, through `ResponsePicker`, so `docs/syncs-voice.md` and the checks
+`BotResponses.Minecraft*.cs`, through `ResponsePicker`, so `docs/syncs-voice.md` and the checks
 cover them like any other pool. A new reaction is a new event in the body plus a pool and a branch
 in the service, never a string in JS.
 
