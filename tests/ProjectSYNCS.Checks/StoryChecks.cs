@@ -169,7 +169,9 @@ public static class StoryChecks
     }
 
     // A small arc that passes every check. The checks below and the walk checks each change one spot of it.
-    private const string Valid = """
+    // A raw string takes this file's line endings, CRLF after a Windows checkout: normalised to LF, so
+    // the "\n" in the checks' Replace calls always match.
+    private static readonly string Valid = """
         # arc: v
         title: V
         family: milestone
@@ -240,7 +242,7 @@ public static class StoryChecks
         ## ending: interrupted
         title: Interrompu
         La Souche reprend {A}.
-        """;
+        """.ReplaceLineEndings("\n");
 
     private const string Cast = "# cast\nlichen | Ysaure | la Mère Lichen\n";
 
@@ -293,7 +295,7 @@ public static class StoryChecks
     }
 
     // The spec's sample arc, with an ending.
-    private const string Sample = """
+    private static readonly string Sample = """
         # arc: arrival
         title: L'arrivée
         family: milestone
@@ -340,7 +342,7 @@ public static class StoryChecks
         title: Le premier soir
         La vieille femme pose un galet près de {A}, sans un mot.
         [keepsake lichen_pebble] [cailloux 50]
-        """;
+        """.ReplaceLineEndings("\n");
 
     // 34c. Scenes, prose, options, rolls, narration, retired scenes, endings.
     private static void ParserScenes()
