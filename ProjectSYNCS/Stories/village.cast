@@ -1,0 +1,17 @@
+# cast
+// The villagers of Humeval that stories refer to: key | given name | byname. The bible is
+// docs/village-lore.md; a character it adds gets a line here. Keys are stored (memories, standing):
+// never rename one.
+lichen     | Ysaure      | la Mère Lichen
+frene      | François    | Maître Frêne
+intendant  | Gauvain     | l'Intendant
+chardon    | Chamberlain | le Chardon
+sauge      | Aliénor     | la Sauge
+courge     | Mahaut      | la Courge
+pain_blond | Colin       | Pain-Blond
+bruyere    | Guillemette | la Bruyère
+noyer      | Hugues      | le Noyer
+ortie      | Jehanne     | l'Ortie
+etrangere  | Asha        | l'Étrangère
+tilleul    | Barnabé     | le Tilleul
+fou        | Gilles      | le Fou

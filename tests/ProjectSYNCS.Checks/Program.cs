@@ -4230,5 +4230,8 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         }
 }
 
+// 34. Story files: StoryChecks.cs.
+StoryChecks.Run(Fail, args);
+
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

@@ -19,6 +19,7 @@ matching file before changing that subsystem**; the rules there are as binding a
 | Pop quiz, `QuizBank`, `/quiz leaderboard` | `docs/agents/quiz.md` |
 | Plynlings (life, care, visits, relations, art) | `docs/agents/plynling.md` |
 | Plynling traits, stats, personality, events | `docs/agents/plynling-events.md` |
+| Plynling storylines: story files, `StoryParser`, `StoryValidator`, the walk checks, the path report | `docs/agents/plynling-storylines.md` |
 | Writing any Plynling line | `docs/plynling-writing-style.md` |
 | Plynling storylines, or anything set in the village (Humeval) | `docs/village-lore.md` |
 | Writing any line SYNCS says in her own voice | `docs/syncs-voice.md` |
@@ -68,7 +69,8 @@ dotnet run --project tests/ProjectSYNCS.Checks   # prints failures + a few summa
 ```
 
 Run it before shipping a change to the cues or the pools, and add a case for every misfire found
-in the wild. It is a plain console (no test framework), outside `ProjectSYNCS/` because the bot's
+in the wild. It also parses, validates and walks every Plynling story file; `-- story <arc>` (or
+`all`) writes an arc's path report to `tests/ProjectSYNCS.Checks/out/`. It is a plain console (no test framework), outside `ProjectSYNCS/` because the bot's
 project compiles every `.cs` under its folder; it is not in the add-on image and needs no version
 bump. CI only builds the add-on image (see *Version and deployment*). Everything else: verify by
 building and, when it matters, running against the dev guild. Notes elsewhere that mention "the
