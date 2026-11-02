@@ -113,7 +113,8 @@ same check.
     all XP, `CommunityReport.ChatXp` and voice minutes. Chat XP is derived per day, the day's XP minus
     what `VoiceXpCurve` pays for its minutes, so it needs no column and covers past months. It relies
     on `VoiceXpCurve` staying as it is: **a change to the tiers misreads every earlier day** unless
-    the old rates are kept for them. It also holds reactions, verdict bonuses and `/admin xp`;
+    the old rates are kept for them. It also holds reactions, verdict bonuses and `/admin xp`. Each
+    person's share is of that list's own total, never of the server's XP;
   - uptime is measured from the first day of the window the Pi recorded its temperature, and always
     shows that span (« sur 23 jours, depuis le 09/10 »): a percentage alone hides a short measure;
   - `commands` leaves `/debug` out of the totals, the ranking and the never-used lists (the owner testing

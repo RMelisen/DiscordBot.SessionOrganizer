@@ -185,11 +185,12 @@ public static partial class ReportCards
         if (names)
         {
             AddPeople(embed, "Les plus actifs, tout compris", CommunityReport.Busiest(d, p),
-                x => $"{LevelCardUi.Xp(x.Value)} XP{TextChart.Trend(x.Value, x.Before, pace)}", x => x.UserId, nameOf);
+                x => $"{LevelCardUi.Xp(x.Value)} XP{TextChart.Trend(x.Value, x.Before, pace)} · {TextChart.Percent(x.Value, d.Xp)} du total", x => x.UserId, nameOf);
+            var chatTotal = d.ChatXpByUser.Values.Sum();
             AddPeople(embed, "💬 À l'écrit", CommunityReport.BusiestInChat(d, p),
-                x => $"{LevelCardUi.Xp(x.Value)} XP{TextChart.Trend(x.Value, x.Before, pace)}", x => x.UserId, nameOf);
+                x => $"{LevelCardUi.Xp(x.Value)} XP{TextChart.Trend(x.Value, x.Before, pace)} · {TextChart.Percent(x.Value, chatTotal)} du total", x => x.UserId, nameOf);
             AddPeople(embed, "🎙️ En vocal", CommunityReport.BusiestInVoice(d, p),
-                x => $"{Duration(x.Value)}{TextChart.Trend(x.Value, x.Before, pace)}", x => x.UserId, nameOf);
+                x => $"{Duration(x.Value)}{TextChart.Trend(x.Value, x.Before, pace)} · {TextChart.Percent(x.Value, d.VoiceMinutes)} du total", x => x.UserId, nameOf);
             AddPeople(embed, "Ça se calme", CommunityReport.Fading(d, p),
                 x => $"rien cette fois, {LevelCardUi.Xp(x.Before)} XP avant", x => x.UserId, nameOf);
         }

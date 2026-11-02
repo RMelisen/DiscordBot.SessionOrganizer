@@ -1832,6 +1832,9 @@ var batch2Widest = new Dictionary<string, int>();
     if (!t10Card.Fields.Any(f => f.Name.Contains("À l'écrit")) || !t10Card.Fields.Any(f => f.Name.Contains("En vocal"))) Fail("community card must rank chat and voice apart");
     var t10Anonymous = ProjectSYNCS.Commands.ReportCards.BuildCommunity(new(t10Split, null), t10Window, false, _ => "Bob");
     if (t10Anonymous.Fields.Any(f => f.Value.Contains("<@"))) Fail("community card without names must name nobody");
+    // Each share is of its own list's total: 1200 of 2500 XP, 500 of 600 chat XP, 120 of 240 minutes.
+    bool T10Share(string field, string share) => t10Card.Fields.Single(f => f.Name.Contains(field)).Value.Split('\n')[0].EndsWith($"{share} du total");
+    if (!T10Share("tout compris", "48 %") || !T10Share("À l'écrit", "83 %") || !T10Share("En vocal", "50 %")) Fail("community shares");
 }
 
 // 32. /report's line on top of the card: whose pool, untagged, and never past the caps.
@@ -1918,14 +1921,18 @@ var batch2Widest = new Dictionary<string, int>();
         t12Many, t12Month, "calme");
     var t12Activity = ActivityReport.Compute(Array.Empty<ProjectSYNCS.Models.ActivityHourStat>(), Array.Empty<ProjectSYNCS.Models.ChannelDailyStat>(),
         Enumerable.Range(0, 60).Select(i => new ChannelInfo((ulong)i, false, false)).ToList());
-    var t12TataCard = ProjectSYNCS.Commands.ReportCards.BuildTataBrief(new(T12Community(999, 999, 999), null), new(t12Sessions, null),
+    var t12TataCard = ProjectSYNCS.Commands.ReportCards.BuildTataBrief(new(T12Community(999, 999, 999) with { Xp = 65 }, null), new(t12Sessions, null),
         t12Activity, t12Sleeping, 99, t12Many, t12Month, "calme", LongestName);
+    var t12Shares = ProjectSYNCS.Commands.ReportCards.BuildTataBrief(new(T12Community(9, 0, 0, 60) with { Xp = 65 }, null), new(t12Sessions, null),
+        t12Activity, t12Sleeping, 0, Array.Empty<DigestAlert>(), t12Month, "calme", _ => "Bob").Fields.Single(f => f.Name == "Les plus actifs").Value;
+    if (!t12Shares.Contains("— 46 %") || !t12Shares.Contains("À l'écrit") || !t12Shares.Contains("— 100 %") || !t12Shares.Contains("— 50 %")) Fail($"tata brief shares: {t12Shares}");
     foreach (var (t12What, t12Embed) in new[] { ("owner brief", t12Owner), ("tata brief", t12TataCard) })
     {
         if (t12Embed.Length > 6000 || t12Embed.Fields.Any(f => f.Value.Length is 0 or > 1024)) Fail($"{t12What}: {t12Embed.Length} characters");
         batch2Widest[t12What] = t12Embed.Length;
     }
-    var t12Top = string.Join(" · ", new ulong[] { 2, 3, 1 }.Select(i => ProjectSYNCS.Commands.ReportCards.Who(i, LongestName)));
+    var t12Top = string.Join(" · ", new (ulong Id, string Share)[] { (2, "46 %"), (3, "31 %"), (1, "15 %") }
+        .Select(t => $"{ProjectSYNCS.Commands.ReportCards.Who(t.Id, LongestName)} — {t.Share}"));
     if (!t12TataCard.Fields.Any(f => f.Value.Contains(t12Top))) Fail("tata brief: the most active, by XP");
 
     // A person in a report: the name written out (a mention alone shows a raw id in a DM), sanitized,

@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.57.4 — 2026-11-02
+
+- `/report community` and the server admin's digest now show each of the most active's share of the total, overall, in writing and in voice.
+
 ## 7.57.3 — 2026-11-02
 
 - `/report community` now ranks the most active three ways: all XP, in writing and in voice, so a very active writer no longer hides behind long calls. Works on past months too. The server admin's digest names who leads in each.

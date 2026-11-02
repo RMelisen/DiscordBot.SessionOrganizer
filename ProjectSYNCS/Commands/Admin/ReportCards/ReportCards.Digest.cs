@@ -107,9 +107,11 @@ public static partial class ReportCards
         var top = m.XpByUser.Where(x => x.Value > 0).OrderByDescending(x => x.Value).Take(3).ToList();
         if (top.Count > 0)
         {
-            var lines = new List<string> { string.Join(" · ", top.Select(x => Who(x.Key, nameOf))) };
-            if (CommunityReport.BusiestInChat(m, null) is [var chat, ..]) lines.Add($"💬 À l'écrit : {Who(chat.UserId, nameOf)}");
-            if (CommunityReport.BusiestInVoice(m, null) is [var voice, ..]) lines.Add($"🎙️ En vocal : {Who(voice.UserId, nameOf)}");
+            var lines = new List<string> { string.Join(" · ", top.Select(x => $"{Who(x.Key, nameOf)} — {TextChart.Percent(x.Value, m.Xp)}")) };
+            if (CommunityReport.BusiestInChat(m, null) is [var chat, ..])
+                lines.Add($"💬 À l'écrit : {Who(chat.UserId, nameOf)} — {TextChart.Percent(chat.Value, m.ChatXpByUser.Values.Sum())}");
+            if (CommunityReport.BusiestInVoice(m, null) is [var voice, ..])
+                lines.Add($"🎙️ En vocal : {Who(voice.UserId, nameOf)} — {TextChart.Percent(voice.Value, m.VoiceMinutes)}");
             embed.AddField("Les plus actifs", Cap(string.Join('\n', lines)));
         }
 
