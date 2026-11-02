@@ -29,6 +29,9 @@ public static class CommunityReport
 {
     public const int EmoteCount = 5;
 
+    // « Ça se calme » only lists who earned this much the window before: a few messages isn't going quiet.
+    public const int FadingMinXp = 200;
+
     public static CommunityReportData Compute(
         IReadOnlyList<MemberDailyStat> members,
         IReadOnlyList<MemberFlowDailyStat> flow,
@@ -83,7 +86,7 @@ public static class CommunityReport
     public static IReadOnlyList<(ulong UserId, long Before)> Fading(CommunityReportData current, CommunityReportData? previous) =>
         previous is null ? Array.Empty<(ulong, long)>()
             : previous.XpByUser
-                .Where(x => x.Value > 0 && current.XpByUser.GetValueOrDefault(x.Key) == 0)
+                .Where(x => x.Value >= FadingMinXp && current.XpByUser.GetValueOrDefault(x.Key) == 0)
                 .OrderByDescending(x => x.Value)
                 .Take(SessionReport.ListSize)
                 .Select(x => (x.Key, x.Value))

@@ -1584,6 +1584,19 @@ var batch2Widest = new Dictionary<string, int>();
     if (t5.Messages != 65 || t5.VoiceMinutes != 30) Fail($"activity totals {t5.Messages}/{t5.VoiceMinutes}");
     if (t5.MessagesByHour.Count != 24 || t5.MessagesByHour[21] != 60 || t5.BusiestHours[0] != 21) Fail("hour profile");
     if (t5.BusiestWeekday != DayOfWeek.Monday) Fail($"busiest weekday {t5.BusiestWeekday}");
+    // Two Mondays of 30 against one Sunday of 40: Sunday talks more, per Sunday.
+    var t5Week = ActivityReport.Compute(new[] { T5Hour(20261019, 21, 30, 0), T5Hour(20261025, 21, 40, 0), T5Hour(20261026, 21, 30, 0) },
+        Array.Empty<ProjectSYNCS.Models.ChannelDailyStat>(), Array.Empty<ChannelInfo>());
+    if (t5Week.BusiestWeekday != DayOfWeek.Sunday) Fail($"busiest weekday per occurrence {t5Week.BusiestWeekday}");
+    // A channel nobody could write in or join isn't silent, it's closed.
+    var t5Closed = ActivityReport.Compute(Array.Empty<ProjectSYNCS.Models.ActivityHourStat>(), Array.Empty<ProjectSYNCS.Models.ChannelDailyStat>(),
+        new[] { new ChannelInfo(30, false, false, Open: false), new ChannelInfo(31, true, false, Open: false), new ChannelInfo(32, false, false) });
+    if (t5Closed.SilentText.Single().ChannelId != 32 || t5Closed.EmptyVoice.Count != 0) Fail("closed channels listed as silent or unused");
+    // A 31-day month keeps one bar per day; a longer series averages, so uneven buckets draw no surge.
+    var t5Spark = Enumerable.Repeat(1L, 31).ToList();
+    t5Spark[29] = 7;
+    if (TextChart.Sparkline(t5Spark) is var t5Line && (t5Line.Length != 31 || t5Line[29] != '█' || t5Line[30] != '▂')) Fail($"sparkline over 31 days: {t5Line}");
+    if (TextChart.Sparkline(Enumerable.Repeat(5L, 40).ToList()).Distinct().Count() != 1) Fail("sparkline over 40 flat days isn't flat");
     if (t5.TopText[0].ChannelId != 10 || !t5.TopText.Single(l => l.ChannelId == 11).Excluded) Fail("text ranking or excluded mark");
     if (!t5.TopText.Any(l => l.ChannelId == 99)) Fail("a deleted channel with counts must still be listed");
     if (t5.SilentText.Single().ChannelId != 12) Fail("silent channels");
@@ -1779,15 +1792,24 @@ var batch2Widest = new Dictionary<string, int>();
     var t10Last = new Dictionary<ulong, int> { [1] = AppTime.DayKey(t10Now.AddDays(-5)), [2] = AppTime.DayKey(t10Now.AddDays(-40)) };
     var t10 = SleepingReport.Compute(t10Members, t10Last, 30, t10Now);
     if (t10.Members != 5) Fail($"members {t10.Members} (bots excluded)");
-    if (!t10.Sleepers.Select(s => s.UserId).SequenceEqual(new ulong[] { 3, 5, 2 })) Fail($"sleepers {string.Join(",", t10.Sleepers.Select(s => s.UserId))} (never-active first)");
+    if (!t10.Sleepers.Select(s => s.UserId).SequenceEqual(new ulong[] { 2, 3, 5 })) Fail($"sleepers {string.Join(",", t10.Sleepers.Select(s => s.UserId))} (never-active last)");
     if (SleepingReport.Compute(t10Members, t10Last, 60, t10Now).Sleepers.Any(s => s.UserId == 2)) Fail("40 days silent is not asleep at 60");
     if (SleepingReport.Compute(Array.Empty<MemberSnapshot>(), t10Last, 30, t10Now).Sleepers.Count != 0) Fail("guild unavailable");
 
     var t10Many = Enumerable.Range(0, 300).Select(i => new Sleeper(1_234_567_890_123_456_789 + (ulong)i, i % 2 == 0 ? null : 20260901)).ToList();
     var t10Embed = ProjectSYNCS.Commands.ReportCards.BuildSleeping(new SleepingReportData(90, 400, t10Many), LongestName);
     batch2Widest["sleeping"] = t10Embed.Length;
-    if (t10Embed.Length > 6000 || t10Embed.Fields.Length > 2 || t10Embed.Fields.Any(f => f.Value.Length is 0 or > 1024)) Fail($"sleeping embed {t10Embed.Length}, {t10Embed.Fields.Length} fields");
-    if (!t10Embed.Footer!.Value.Text.Contains("autres")) Fail("the sleepers that don't fit must be counted");
+    if (t10Embed.Length > 6000 || t10Embed.Fields.Length > 3 || t10Embed.Fields.Any(f => f.Value.Length is 0 or > 1024)) Fail($"sleeping embed {t10Embed.Length}, {t10Embed.Fields.Length} fields");
+    if (!t10Embed.Footer!.Value.Text.Contains("autres") || !t10Embed.Fields.Last().Value.Contains("autres")) Fail("the sleepers that don't fit must be counted");
+    var t10Mixed = ProjectSYNCS.Commands.ReportCards.BuildSleeping(new SleepingReportData(30, 20, new[] { new Sleeper(7, 20260901), new Sleeper(8, null), new Sleeper(9, null) }), _ => "Bob");
+    if (t10Mixed.Fields.Length != 2 || !t10Mixed.Fields[0].Value.Contains("dernier signe") || t10Mixed.Fields[1].Value.Contains("dernier signe") || !t10Mixed.Fields[1].Name.Contains("(2)"))
+        Fail("sleeping report: recent silences first, the never-active apart");
+
+    // Who earned a few messages' worth isn't going quiet; who was busy is.
+    var t10Before = new CommunityReportData(2, new List<long>(), 0, 0, 0, 0, 0, Array.Empty<(string, long)>(), 0, 0, 0,
+        new Dictionary<ulong, long> { [1] = 20, [2] = CommunityReport.FadingMinXp });
+    var t10Fading = CommunityReport.Fading(t10Before with { XpByUser = new Dictionary<ulong, long>() }, t10Before);
+    if (t10Fading.Single().UserId != 2) Fail($"fading: {string.Join(",", t10Fading.Select(x => x.UserId))}");
 }
 
 // 32. /report's line on top of the card: whose pool, untagged, and never past the caps.
@@ -1838,20 +1860,29 @@ var batch2Widest = new Dictionary<string, int>();
         new(T12Quiz(), null), t12Month);
     if (t12First.Count != 0) Fail($"first month raised {string.Join(", ", t12First.Select(a => a.Kind))}");
 
-    // Tata: active members down 30 %, more leaves than joins, 3 sleepers of 20.
-    CommunityReportData T12Community(int active, int joins, int leaves) => new(active, new List<long>(), 0, 0, 0, joins, leaves,
-        Array.Empty<(string, long)>(), 0, 0, 0, new Dictionary<ulong, long> { [1] = 10, [2] = 30, [3] = 20, [4] = 5 });
-    var t12Sleeping = new SleepingReportData(30, 20, Enumerable.Range(0, 3).Select(i => new Sleeper((ulong)i, null)).ToList());
-    var t12Tata = DigestBrief.Tata(new(T12Community(7, 1, 2), T12Community(10, 0, 0)), t12Sleeping);
-    if (!t12Tata.Select(a => a.Kind).SequenceEqual(new[] { DigestAlertKind.ActiveDrop, DigestAlertKind.MoreLeaves, DigestAlertKind.ManySleepers }))
-        Fail($"tata alerts: {string.Join(", ", t12Tata.Select(a => a.Kind))}");
-    if (DigestBrief.Tata(new(T12Community(7, 2, 1), T12Community(8, 0, 0)), t12Sleeping with { Sleepers = new[] { new Sleeper(1, null) } }).Count != 0)
-        Fail("a calm month for Tata raised something");
-
     var t12Slots = new[] { new SlotTally(1, 3, 10, 6), new SlotTally(5, 2, 10, 9), new SlotTally(6, 1, 5, 5) };
     var t12Sessions = new SessionReportData(6, 0, Array.Empty<(ProjectSYNCS.Models.SessionCategory, int)>(), 0, 0, null, 6, 25, 20, 5, 0, null,
         t12Slots, Array.Empty<SlotTally>(), Array.Empty<PersonTally>(), Array.Empty<PersonTally>(), Array.Empty<PersonTally>(), Array.Empty<PersonTally>());
     if (DigestBrief.BestSessionDay(t12Sessions)?.Slot != 5) Fail("best session day (a single session doesn't count)");
+
+    // Tata: active members down 30 %, more leaves than joins, 3 members last seen the month before,
+    // and 20 hours in voice with no session.
+    CommunityReportData T12Community(int active, int joins, int leaves, long voice = 0) => new(active, new List<long>(), 0, voice, 0, joins, leaves,
+        Array.Empty<(string, long)>(), 0, 0, 0, new Dictionary<ulong, long> { [1] = 10, [2] = 30, [3] = 20, [4] = 5 });
+    var t12Sleeping = new SleepingReportData(30, 20, Enumerable.Range(0, 3).Select(i => new Sleeper((ulong)i, 20261015)).ToList());
+    var t12NoSession = t12Sessions with { Held = 0 };
+    var t12Tata = DigestBrief.Tata(new(T12Community(7, 1, 2, 1200), T12Community(10, 0, 0)), new(t12NoSession, null), t12Sleeping, t12Month);
+    if (!t12Tata.Select(a => a.Kind).SequenceEqual(new[] { DigestAlertKind.ActiveDrop, DigestAlertKind.MoreLeaves, DigestAlertKind.NewSleepers, DigestAlertKind.VoiceWithoutSessions }))
+        Fail($"tata alerts: {string.Join(", ", t12Tata.Select(a => a.Kind))}");
+    if (t12Tata.Last().Value != 20) Fail($"voice without sessions: {t12Tata.Last().Value} h");
+    // Calm: one departure, members who were never active or went quiet long ago, voice with sessions, or too little voice to matter.
+    var t12Old = new SleepingReportData(30, 20, Enumerable.Range(0, 18).Select(i => new Sleeper((ulong)i, i % 2 == 0 ? null : 20260901)).ToList());
+    foreach (var (t12What, t12Calm) in new[]
+    {
+        ("sessions held", DigestBrief.Tata(new(T12Community(7, 0, 1, 1200), T12Community(8, 0, 0)), new(t12Sessions, null), t12Old, t12Month)),
+        ("little voice", DigestBrief.Tata(new(T12Community(7, 0, 1, 60), T12Community(8, 0, 0)), new(t12NoSession, null), t12Old, t12Month)),
+    })
+        if (t12Calm.Count != 0) Fail($"a calm month for Tata ({t12What}) raised {string.Join(", ", t12Calm.Select(a => a.Kind))}");
 
     // Both cards at their worst: every alert at once, the longest command keys.
     var t12Many = Enumerable.Range(0, DigestBrief.FailingListed).Select(i => new DigestAlert(DigestAlertKind.FailingCommand, 99_999, 999_999, $"config some-long-group sub-command-{i}"))
@@ -1939,7 +1970,7 @@ var batch2Widest = new Dictionary<string, int>();
     var dCard = ProjectSYNCS.Commands.ReportCards.BuildCommands(new(dCmd, null, dStart), dOct, true);
     if (!dCard.Description.Contains("Mois partiel") || !dCard.Description.Contains("13 jours sur 31") || !dCard.Description.Contains("47 fois")) Fail($"commands card: {dCard.Description}");
     var dFields = dCard.Fields.Select(f => f.Name).ToList();
-    if (dFields.FindIndex(f => f.StartsWith("Jamais utilisées (")) >= dFields.FindIndex(f => f.Contains("côté staff"))) Fail("the members' never-used must come first");
+    if (dFields.FindIndex(f => f.StartsWith("Pas utilisées (")) >= dFields.FindIndex(f => f.Contains("côté staff"))) Fail("the members' never-used must come first");
     if (ProjectSYNCS.Commands.ReportCards.BuildCommands(new(dCmd, null, dStart), dNov, true).Description.Contains("partiel")) Fail("a whole month called partial");
 
     // The counter: a shortcut is the command it stands for, /debug is nobody, a person counts once a day.
@@ -2086,7 +2117,7 @@ var batch2Widest = new Dictionary<string, int>();
     if (ProjectSYNCS.Commands.ReportCards.BuildIncidents(new(IncidentReport.Compute(Array.Empty<ProjectSYNCS.Models.IncidentDailyStat>()), null), dOct, true).Fields.Length != 0)
         Fail("incidents card: nothing counted yet");
     foreach (var dAlert in dAlerts)
-        if (ProjectSYNCS.Commands.ReportCards.AlertLine(dAlert).Contains("sans signe de vie") != (dAlert.Kind == DigestAlertKind.ManySleepers)) Fail($"alert line for {dAlert.Kind} fell through");
+        if (ProjectSYNCS.Commands.ReportCards.AlertLine(dAlert).Contains("sans signe de vie") != (dAlert.Kind == DigestAlertKind.NewSleepers)) Fail($"alert line for {dAlert.Kind} fell through");
 }
 
 Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2Widest.Select(x => $"{x.Key} {x.Value}"))} chars");

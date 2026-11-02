@@ -67,12 +67,13 @@ internal sealed class EmoteTracker
         SocketReaction reaction) => CountReactionAsync(channel, reaction, -1);
 
     // Adjusts the reacted count for an emote by delta (custom or unicode).
-    // Ignores the bot's own reactions and reactions outside a guild. A removal lands
-    // on the day it happens and never takes a count below zero (ActivityFlushService).
+    // Ignores bots' reactions, like bots' messages above, and reactions outside a guild. A removal
+    // lands on the day it happens and never takes a count below zero (ActivityFlushService).
     private async Task CountReactionAsync(
         Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction, int delta)
     {
         if (reaction.UserId == _client.CurrentUser.Id) return;
+        if (reaction.User.IsSpecified && reaction.User.Value.IsBot) return;
 
         var emote = reaction.Emote switch
         {

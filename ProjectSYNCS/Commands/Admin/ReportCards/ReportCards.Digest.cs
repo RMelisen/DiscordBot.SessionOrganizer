@@ -25,7 +25,7 @@ public static partial class ReportCards
             : $"**{LevelCardUi.Xp(c.Uses)}** {Plural(c.Uses, "utilisation", "utilisations")}{TextChart.Trend(c.Uses, commands.Previous?.Uses, w.Pace(commands.FirstDay))}{DaysCounted(w, commands.FirstDay)}" +
               (c.People.Count > 0 ? $" · par **{c.People.Count}** {Plural(c.People.Count, "personne", "personnes")}" : "") +
               $" · en erreur : **{c.Failures}** ({TextChart.Percent(c.Failures, c.Uses)})\n" +
-              $"Jamais utilisées : **{c.NeverUsed.Count}** · côté staff : **{c.NeverUsedStaff.Count}**");
+              $"Pas utilisées : **{c.NeverUsed.Count}** · côté staff : **{c.NeverUsedStaff.Count}**");
 
         if (incidents is not null)
         {
@@ -82,15 +82,17 @@ public static partial class ReportCards
         var embed = Start("📬 Le mois en bref", w);
 
         var m = community.Current;
+        var never = sleeping.Sleepers.Count(s => s.LastDay is null);
         embed.AddField("Les membres",
             $"**{m.ActiveMembers}** {Plural(m.ActiveMembers, "membre actif", "membres actifs")}{TextChart.Trend(m.ActiveMembers, community.Previous?.ActiveMembers)}" +
             $" · arrivées : **{m.Joins}** · départs : **{m.Leaves}**\n" +
-            $"Sans signe de vie depuis {sleeping.Days} jours : **{sleeping.Sleepers.Count}**");
+            $"Sans signe de vie depuis {sleeping.Days} jours : **{sleeping.Sleepers.Count}**" +
+            (never > 0 ? $" (dont {never} {Plural(never, "jamais actif", "jamais actifs")})" : ""));
 
         var d = sessions.Current;
         var best = DigestBrief.BestSessionDay(d);
         embed.AddField("Les sessions", d.Held == 0
-            ? "Aucune session ce mois-ci."
+            ? "Aucune session ce mois-ci" + (sessions.Previous is { Held: > 0 } before ? $", contre **{before.Held}** le mois d'avant." : ".")
             : $"**{d.Held}** {Plural(d.Held, "session tenue", "sessions tenues")}{TextChart.Trend(d.Held, sessions.Previous?.Held, w.Pace(sessions.FirstDay))}" +
               (d.Expected > 0 ? $" · présence : **{TextChart.Percent(d.Came, d.Expected)}**" : "") +
               (best is { } b ? $"\nLe jour qui marche le mieux : **{Weekday(b.Slot)}** ({TextChart.Percent(b.Came, b.Expected)} présents)" : ""));
@@ -100,7 +102,7 @@ public static partial class ReportCards
         if (activity.BusiestHours.Count > 0) when.Add($"heures de pointe : {string.Join(" · ", activity.BusiestHours.Select(h => $"{h} h"))}");
         embed.AddField("Le serveur",
             (when.Count > 0 ? Capitalise(string.Join(" · ", when)) + "\n" : "") +
-            $"Salons silencieux : **{activity.SilentText.Count}** · émotes du serveur jamais utilisées : **{unusedEmotes}**");
+            $"Salons silencieux : **{activity.SilentText.Count}** · émotes du serveur pas utilisées ce mois-ci : **{unusedEmotes}**");
 
         var top = m.XpByUser.Where(x => x.Value > 0).OrderByDescending(x => x.Value).Take(3).ToList();
         if (top.Count > 0)
@@ -132,6 +134,7 @@ public static partial class ReportCards
         DigestAlertKind.DiskLow => $"💾 Disque libre : **{a.Value} %**" + (a.Of > 0 ? $", plein dans {a.Of} jours à ce rythme" : ""),
         DigestAlertKind.MemoryLow => $"🧠 Mémoire libre tombée à **{a.Value} %**",
         DigestAlertKind.UnderVoltage => $"🔋 **{a.Value} min** en sous-tension : l'alimentation ?",
-        _ => $"💤 **{a.Value}** membres sur {a.Of} sans signe de vie depuis {SleepingReport.Choices[0]} jours",
+        DigestAlertKind.VoiceWithoutSessions => $"🎧 **{a.Value} h** de vocal, mais aucune session tenue",
+        _ => $"💤 **{a.Value}** membres actifs le mois d'avant, sans signe de vie depuis",
     };
 }

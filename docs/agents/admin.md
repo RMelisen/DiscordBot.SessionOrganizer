@@ -113,7 +113,7 @@ same check.
     shows that span (« sur 23 jours, depuis le 09/10 »): a percentage alone hides a short measure;
   - `commands` leaves `/debug` out of the totals, the ranking and the never-used lists (the owner testing
     isn't the server's use; its count is a line apart), but a failing `/debug` still reaches « À regarder ».
-    « Jamais utilisées » lists the members' commands first, then the staff's (`CommandPath.IsStaff`:
+    « Pas utilisées » (over the window, not ever) lists the members' commands first, then the staff's (`CommandPath.IsStaff`:
     `/admin`, `/config`, `/report`), so the real signal isn't buried alphabetically under theirs;
   - **Reach** in `commands` is different people, never names (`CommandMemberDailyStat`, one row per
     guild, day, command and person, written through `ActivityCounter`, from 7.56.0 on). A shortcut is
@@ -125,13 +125,19 @@ same check.
     abandoned Plynling is hard-deleted with its history. Needs are settled in memory
     (`AsNoTracking`, never saved), as `/admin stats` does;
   - `emotes`: an emote is the server's own when its id is in the live guild's list; the others
-    were counted from other servers (`EmoteTracker` counts them too);
+    were counted from other servers (`EmoteTracker` counts them too). « Pas utilisées » is over the
+    window, not ever. Bots' messages and reactions aren't counted;
+  - `activity`: « silencieux » and « inutilisés » only list open channels (`ChannelInfo.Open`,
+    `ReportService.ChannelsAsync`): she can see it and a non-staff member may write in or join it. A
+    read-only rules channel, a bot's own channel or a staff room staying quiet says nothing. The busiest
+    weekday is messages per occurrence of that weekday, since a period can hold more of some;
   - `sleeping` has no window: a silence of 30, 60 or 90 days, on its own buttons
     (`report:sleep:{days}`, its own verb so it never collides with a period row). « Last seen » is
     the last `MemberDailyStat` day with any counter above 0; « jamais » means never since
     2026-08-09, when the XP buckets became reliable (`ResetXpTotals`). Members who joined less than
     N days ago are left out, bots always. Activity in excluded channels earns nothing, so someone
-    who only talks there looks asleep (said in the footer);
+    who only talks there looks asleep (said in the footer). The most recent silences are listed first,
+    one per line; the never-active share one field, so they can't push the others out;
   - `minecraft` reads `MinecraftDailyStat`, the daily buckets beside her all-time `MinecraftStat`
     (same `McStats` keys, written in the same save by `MinecraftDataService.AddStatsAsync`, from
     7.50.0 on). Player names are her in-game ones, sanitized, shown only with `names`. A window
@@ -195,7 +201,7 @@ same check.
     command failing ≥ 2 times and > 5 % of its uses, power cuts, crashes, a heat record, the
     unanswered share up ≥ 5 points, « difficile » found ≥ 80 % or « facile » < 30 % (≥ 5
     questions), ≥ 3 failed clicks or forms, ≥ 5 late answers, ≥ 20 logged errors, any `SQLITE_BUSY`, the
-    disk under 15 % or full within 90 days, memory under 10 %, any under-voltage; for Tata, active members down ≥ 20 %, more leaves than joins, sleepers > 10 %. **A
+    disk under 15 % or full within 90 days, memory under 10 %, any under-voltage; for Tata, active members down ≥ 20 %, more leaves than joins (from 2 leaves), ≥ 3 members last seen the month before the report (new silences only: the never-active would raise it every month), no session held with ≥ 10 h in voice. **A
     comparison is only made when the month before has data**, so a new counter's first month
     raises nothing. Nothing to flag shows a `DigestQuietLines` line.
   - Lines: `OwnerDigestLines`, `TataDigestLines` ({0} the month), `DigestQuietLines`, all picked by

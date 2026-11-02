@@ -21,7 +21,7 @@ public enum DigestAlertKind
     QuizTooHard,
     ActiveDrop,
     MoreLeaves,
-    ManySleepers,
+    NewSleepers,
     InteractionFailures,
     LateAnswers,
     LogErrors,
@@ -29,6 +29,7 @@ public enum DigestAlertKind
     DiskLow,
     MemoryLow,
     UnderVoltage,
+    VoiceWithoutSessions,
 }
 
 /// <summary>
@@ -66,9 +67,15 @@ public static class DigestBrief
     public const double ActiveDropRate = 0.20;
     public const int ActiveMin = 5;
 
-    // Sleepers: more than this share of at least SleepersMinMembers members.
-    public const double SleepersRate = 0.10;
-    public const int SleepersMinMembers = 10;
+    // More leaves than joins, from this many leaves: one person going isn't a trend.
+    public const int LeavesMin = 2;
+
+    // This many members active the month before the report, with nothing since. Only new silences:
+    // the members who were never active would raise it every month, with nothing to do about it.
+    public const int NewSleepersMin = 3;
+
+    // No session held in a month with this many hours in voice: people gather without the session tools.
+    public const int IdleVoiceMinHours = 10;
 
     // Incidents worth a look in a month: a few clicks failing, or slow answers, is one bad evening;
     // a locked database is worth a look at once. Log lines come in bursts, so the bar is higher.
@@ -145,16 +152,20 @@ public static class DigestBrief
         return alerts;
     }
 
-    public static IReadOnlyList<DigestAlert> Tata(Compared<CommunityReportData> community, SleepingReportData sleeping)
+    public static IReadOnlyList<DigestAlert> Tata(Compared<CommunityReportData> community, Compared<SessionReportData> sessions,
+        SleepingReportData sleeping, ReportWindow window)
     {
         var alerts = new List<DigestAlert>();
         var c = community.Current;
         if (community.Previous is { ActiveMembers: >= ActiveMin } p && c.ActiveMembers <= p.ActiveMembers * (1 - ActiveDropRate))
             alerts.Add(new DigestAlert(DigestAlertKind.ActiveDrop, c.ActiveMembers, p.ActiveMembers));
-        if (c.Leaves > c.Joins)
+        if (c.Leaves >= LeavesMin && c.Leaves > c.Joins)
             alerts.Add(new DigestAlert(DigestAlertKind.MoreLeaves, c.Leaves, c.Joins));
-        if (sleeping.Members >= SleepersMinMembers && sleeping.Sleepers.Count > sleeping.Members * SleepersRate)
-            alerts.Add(new DigestAlert(DigestAlertKind.ManySleepers, sleeping.Sleepers.Count, sleeping.Members));
+        var newSleepers = sleeping.Sleepers.Count(s => s.LastDay is { } day && window.Previous?.Contains(day) == true);
+        if (newSleepers >= NewSleepersMin)
+            alerts.Add(new DigestAlert(DigestAlertKind.NewSleepers, newSleepers));
+        if (sessions.Current.Held == 0 && c.VoiceMinutes >= IdleVoiceMinHours * 60)
+            alerts.Add(new DigestAlert(DigestAlertKind.VoiceWithoutSessions, c.VoiceMinutes / 60));
         return alerts;
     }
 

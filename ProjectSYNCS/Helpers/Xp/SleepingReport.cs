@@ -13,7 +13,8 @@ public sealed record SleepingReportData(int Days, int Members, IReadOnlyList<Sle
 /// people on the server for longer than N days are listed (an unknown join date counts as old);
 /// bots never are. XP buckets are reliable from <see cref="ReliableSince"/> (the ResetXpTotals
 /// migration), so « never » means never since then. Activity in excluded channels earns nothing and
-/// so is invisible here. Pure.
+/// so is invisible here. The most recent silences come first and the never-active last: someone who
+/// just went quiet can still be asked why. Pure.
 /// </summary>
 public static class SleepingReport
 {
@@ -30,7 +31,7 @@ public static class SleepingReport
             .Where(m => m.JoinedAt is null || m.JoinedAt <= since)
             .Select(m => new Sleeper(m.UserId, lastActiveDay.TryGetValue(m.UserId, out var day) ? day : null))
             .Where(s => s.LastDay is null || s.LastDay < threshold)
-            .OrderBy(s => s.LastDay ?? 0).ThenBy(s => s.UserId)
+            .OrderByDescending(s => s.LastDay ?? 0).ThenBy(s => s.UserId)
             .ToList();
         return new SleepingReportData(days, people.Count, sleepers);
     }

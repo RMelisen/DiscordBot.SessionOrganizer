@@ -3,6 +3,14 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.57.2 — 2026-11-02
+
+- Reports: the daily charts no longer add the last two days of a 31-day month together, which drew a surge that never happened.
+- Reports: emotes and commands nobody used in the period now read « Pas utilisées », not « Jamais utilisées ». The busiest weekday is now per occurrence of that weekday. Other bots' reactions no longer count as emote use.
+- Silent channels and unused voice rooms now only list channels that members can use, so read-only and staff channels stay out.
+- `/report sleeping` lists the most recent silences first and groups the members who were never active.
+- The server admin's digest: the sleeper alert now counts only new silences, the departures alert needs at least two, and a month with hours in voice but no session is now flagged. « Ça se calme » ignores people who barely posted.
+
 ## 7.57.1 — 2026-11-02
 
 - Plynlings: the first storyline, a new Plynling's arrival at the edge of the village, is written. Not played yet.

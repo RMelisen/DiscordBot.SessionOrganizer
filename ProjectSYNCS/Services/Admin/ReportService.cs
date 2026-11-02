@@ -149,7 +149,7 @@ public class ReportService
         var sleeping = await SleepingAsync(guildId, SleepingReport.Choices[0]);
         var emotes = await _emotes.GetAsync(guildId, window, ServerEmotes(guildId));
         return ReportCards.BuildTataBrief(community, sessions, activity.Current, sleeping, emotes.Current.UnusedOwn.Count,
-            DigestBrief.Tata(community, sleeping), window, quietLine, NamesIn(guildId));
+            DigestBrief.Tata(community, sessions, sleeping, window), window, quietLine, NamesIn(guildId));
     }
 
     // Who someone is, written out for ReportCards.Who: the member as the server knows them, else the
@@ -171,18 +171,24 @@ public class ReportService
     }
 
     // The guild's text and voice channels as plain data, with the excluded ones marked (the hardcoded
-    // floor plus /config's additions). Threads, voice-room chats and the AFK room are left out.
+    // floor plus /config's additions). Threads, voice-room chats and the AFK room are left out. A channel
+    // is open when she can see it and a member who isn't staff may use it: a read-only rules channel, a
+    // bot's own channel or a staff room staying quiet says nothing about the server.
     private async Task<IReadOnlyList<ChannelInfo>> ChannelsAsync(ulong guildId)
     {
         if (_client.GetGuild(guildId) is not { } guild) return Array.Empty<ChannelInfo>();
         var added = (await _config.GetAsync(guildId)).ExcludedChannels;
         bool Excluded(ulong id) => XpTracker.HardcodedExcludedChannels.Contains(id) || added.Contains(id);
+        var members = guild.Users.Where(u => !u.IsBot && !SessionPermissions.IsStaff(u)).ToList();
+        bool Open(IGuildChannel c, Func<ChannelPermissions, bool> use) =>
+            guild.CurrentUser?.GetPermissions(c).ViewChannel == true
+            && members.Any(u => u.GetPermissions(c) is var p && p.ViewChannel && use(p));
         var text = guild.TextChannels
             .Where(c => c is not SocketVoiceChannel && c is not SocketThreadChannel)
-            .Select(c => new ChannelInfo(c.Id, false, Excluded(c.Id)));
+            .Select(c => new ChannelInfo(c.Id, false, Excluded(c.Id), Open(c, p => p.SendMessages)));
         var voice = guild.VoiceChannels
             .Where(c => c.Id != guild.AFKChannel?.Id)
-            .Select(c => new ChannelInfo(c.Id, true, Excluded(c.Id)));
+            .Select(c => new ChannelInfo(c.Id, true, Excluded(c.Id), Open(c, p => p.Connect)));
         return text.Concat(voice).ToList();
     }
 

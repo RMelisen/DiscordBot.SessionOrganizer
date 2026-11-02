@@ -60,7 +60,7 @@ public static partial class ReportCards
         var embed = Start("📋 Les sessions", w);
 
         if (d.Held == 0 && d.Cancelled == 0)
-            return embed.WithDescription("Aucune session sur cette période.").WithFooter(Footer(w)).Build();
+            return embed.WithDescription("Aucune session sur cette période" + (p is { Held: > 0 } ? $", contre **{p.Held}** la période d'avant." : ".")).Build();
 
         var categories = string.Join(" · ", d.ByCategory.Select(x => $"{Category(x.Category)} {x.Count}"));
         embed.WithDescription(
@@ -119,7 +119,7 @@ public static partial class ReportCards
         var total = d.DatePolls + d.TextPolls;
 
         if (total == 0 && d.TonightCalls == 0)
-            return embed.WithDescription("Rien de lancé sur cette période.").WithFooter(Footer(w)).Build();
+            return embed.WithDescription("Rien de lancé sur cette période.").Build();
 
         embed.WithDescription(
             $"**{total}** {Plural(total, "sondage lancé", "sondages lancés")}{TextChart.Trend(total, p is null ? null : p.DatePolls + p.TextPolls, pace)}" +
@@ -191,7 +191,8 @@ public static partial class ReportCards
         }
 
         return embed.WithFooter(Footer(w,
-            "Actif : de l'XP, des réactions ou du vocal ce jour-là. Arrivées et départs comptés depuis la 7.5.0.")).Build();
+            "Actif : de l'XP, des réactions ou du vocal ce jour-là. Vocal : le temps qui rapporte de l'XP, à deux ou plus, micro ouvert. " +
+            "Arrivées et départs comptés depuis le 19/10/2026.")).Build();
     }
 
     // ---- /report syncs ------------------------------------------------------------------------
@@ -274,7 +275,7 @@ public static partial class ReportCards
         var pace = w.Pace(c.FirstDay);
         var embed = Start("📈 L'activité", w);
         if (d.Messages == 0 && d.VoiceMinutes == 0)
-            return embed.WithDescription("Rien de compté sur cette période (comptage depuis la 7.6.0).").WithFooter(Footer(w)).Build();
+            return embed.WithDescription("Rien de compté sur cette période.").Build();
 
         embed.WithDescription(
             $"**{LevelCardUi.Xp(d.Messages)}** messages{TextChart.Trend(d.Messages, p?.Messages, pace)}" +
@@ -297,8 +298,9 @@ public static partial class ReportCards
         if (d.EmptyVoice.Count > 0)
             embed.AddField($"Vocaux inutilisés ({d.EmptyVoice.Count})", Fit(d.EmptyVoice.Select(l => $"{Mark(l)}<#{l.ChannelId}>").ToList(), " · "));
 
+        var marked = d.TopText.Concat(d.SilentText).Concat(d.TopVoice).Concat(d.EmptyVoice).Any(l => l.Excluded);
         return embed.WithFooter(Footer(w,
-            "🚫 : salon exclu (rien n'y rapporte d'XP). Vocal cumulé : minutes × personnes présentes. Comptage depuis la 7.6.0.")).Build();
+            (marked ? "🚫 : salon exclu (rien n'y rapporte d'XP). " : "") + "Vocal cumulé : minutes × personnes présentes, micro coupé compris.")).Build();
     }
 
     // ---- /report commands ---------------------------------------------------------------------
@@ -328,9 +330,9 @@ public static partial class ReportCards
         if (d.Shortcuts.Count > 0)
             embed.AddField("Raccourcis tapés", Fit(d.Shortcuts.Select(l => $"`{l.Command}` {LevelCardUi.Xp(l.Uses)}").ToList(), " · "));
         if (d.NeverUsed.Count > 0)
-            embed.AddField($"Jamais utilisées ({d.NeverUsed.Count})", Fit(d.NeverUsed.Select(x => $"`/{x}`").ToList(), " · "));
+            embed.AddField($"Pas utilisées ({d.NeverUsed.Count})", Fit(d.NeverUsed.Select(x => $"`/{x}`").ToList(), " · "));
         if (d.NeverUsedStaff.Count > 0)
-            embed.AddField($"Jamais utilisées, côté staff ({d.NeverUsedStaff.Count})", Fit(d.NeverUsedStaff.Select(x => $"`/{x}`").ToList(), " · "));
+            embed.AddField($"Pas utilisées, côté staff ({d.NeverUsedStaff.Count})", Fit(d.NeverUsedStaff.Select(x => $"`/{x}`").ToList(), " · "));
 
         return embed.WithFooter(Footer(w, "Les commandes en message privé ne comptent pas ici. Comptage depuis la 7.6.0.")).Build();
     }
@@ -347,7 +349,7 @@ public static partial class ReportCards
         var pace = w.Pace(c.FirstDay);
         var embed = Start("❓ Le quiz", w);
         if (d.Posted == 0)
-            return embed.WithDescription("Aucune question posée sur cette période.").WithFooter(Footer(w)).Build();
+            return embed.WithDescription("Aucune question posée sur cette période.").Build();
 
         embed.WithDescription(
             $"**{d.Posted}** {Plural(d.Posted, "question posée", "questions posées")}{TextChart.Trend(d.Posted, p?.Posted, pace)}" +
@@ -467,7 +469,7 @@ public static partial class ReportCards
                     (down.Count > 0 ? "En baisse : " + string.Join(" · ", down.Select(e => $"{e.Markup} −{-e.Count}")) : ""));
         }
         if (d.UnusedOwn.Count > 0)
-            embed.AddField($"Jamais utilisées ({d.UnusedOwn.Count})", Fit(d.UnusedOwn, " "));
+            embed.AddField($"Pas utilisées ({d.UnusedOwn.Count})", Fit(d.UnusedOwn, " "));
         if (d.TopForeign.Count > 0)
             embed.AddField("Venues d'autres serveurs", Fit(d.TopForeign.Select(e => $"{e.Markup} ×{LevelCardUi.Xp(e.Count)}").ToList(), " · "));
 
@@ -522,22 +524,28 @@ public static partial class ReportCards
 
     public static Embed BuildSleeping(SleepingReportData d, Func<ulong, string?>? nameOf = null)
     {
+        var never = d.Sleepers.Where(s => s.LastDay is null).ToList();
         var embed = new EmbedBuilder()
             .WithTitle($"💤 Les endormis — rien depuis {d.Days} jours")
             .WithColor(Color.Purple)
             .WithDescription(d.Sleepers.Count == 0
                 ? "Tout le monde a donné signe de vie. Pour l'instant."
                 : $"**{d.Sleepers.Count}** sur **{d.Members}** {Plural(d.Members, "membre", "membres")}" +
-                  $" ({TextChart.Percent(d.Sleepers.Count, d.Members)}) sans XP, réaction ni vocal depuis {d.Days} jours.");
+                  $" ({TextChart.Percent(d.Sleepers.Count, d.Members)}) sans XP, réaction ni vocal depuis {d.Days} jours" +
+                  (never.Count > 0 ? $", dont **{never.Count}** {Plural(never.Count, "jamais actif", "jamais actifs")}." : "."));
 
-        var lines = d.Sleepers.Select(s => $"{Who(s.UserId, nameOf)} — " + (s.LastDay is { } day
-            ? $"dernier signe : {AppTime.FromDayKey(day):dd/MM/yyyy}"
-            : $"jamais (depuis le {AppTime.FromDayKey(SleepingReport.ReliableSince):dd/MM/yyyy})")).ToList();
+        var lines = d.Sleepers.Where(s => s.LastDay is not null)
+            .Select(s => $"{Who(s.UserId, nameOf)} — dernier signe : {AppTime.FromDayKey(s.LastDay!.Value):dd/MM/yyyy}").ToList();
         var left = AddLineFields(embed, "Endormis", lines, maxFields: 2);
+
+        // On one line: they all say the same thing, and would push out the ones who just went quiet.
+        if (never.Count > 0)
+            embed.AddField($"Jamais actifs depuis le {AppTime.FromDayKey(SleepingReport.ReliableSince):dd/MM/yyyy} ({never.Count})",
+                Fit(never.Select(s => Who(s.UserId, nameOf)).ToList(), " · "));
 
         var footer = $"Arrivés depuis moins de {d.Days} jours : pas comptés. L'activité dans les salons exclus ne compte pas : " +
                      "qui ne parle que là semble endormi.";
-        if (left > 0) footer = $"… et {left} autres. " + footer;
+        if (left > 0) footer = $"{AndMore(left)}. " + footer;
         return embed.WithFooter(footer).Build();
     }
 
@@ -662,7 +670,9 @@ public static partial class ReportCards
             sb.Append(add);
             shown++;
         }
-        if (shown < items.Count) sb.Append($" … et {items.Count - shown} autres");
+        if (shown < items.Count) sb.Append(' ').Append(AndMore(items.Count - shown));
         return sb.Length == 0 ? "—" : sb.ToString();
     }
+
+    private static string AndMore(int n) => $"… et {n} {Plural(n, "autre", "autres")}";
 }

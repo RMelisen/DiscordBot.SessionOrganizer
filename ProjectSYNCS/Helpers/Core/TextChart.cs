@@ -8,22 +8,28 @@ namespace ProjectSYNCS.Helpers;
 public static class TextChart
 {
     private const string Bars = "▁▂▃▄▅▆▇█";
-    public const int SparklineMax = 30;
+    public const int SparklineMax = 31;
 
     /// <summary>
     /// One character per day, scaled to the series' own maximum; past <see cref="SparklineMax"/> days
-    /// the days are summed into that many buckets, so « Tout » stays one line.
+    /// the days are averaged into that many buckets, so « Tout » stays one line. Averaged, not summed:
+    /// buckets can hold different numbers of days, and a sum would draw the longer ones as surges.
     /// </summary>
     public static string Sparkline(IReadOnlyList<long> values)
     {
         var n = values.Count;
         var buckets = Math.Min(SparklineMax, n);
-        var sums = new long[buckets];
+        var means = new double[buckets];
         for (var b = 0; b < buckets; b++)
-            for (var i = b * n / buckets; i < (b + 1) * n / buckets; i++)
-                sums[b] += values[i];
-        var max = sums.Length == 0 ? 0 : sums.Max();
-        return new string(sums.Select(v => max <= 0 ? Bars[0]
+        {
+            var from = b * n / buckets;
+            var to = (b + 1) * n / buckets;
+            for (var i = from; i < to; i++)
+                means[b] += values[i];
+            means[b] /= to - from;
+        }
+        var max = means.Length == 0 ? 0 : means.Max();
+        return new string(means.Select(v => max <= 0 ? Bars[0]
             : Bars[(int)Math.Round(v * 7.0 / max, MidpointRounding.ToZero)]).ToArray());
     }
 

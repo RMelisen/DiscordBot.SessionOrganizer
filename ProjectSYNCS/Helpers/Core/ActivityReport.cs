@@ -2,8 +2,11 @@ using ProjectSYNCS.Models;
 
 namespace ProjectSYNCS.Helpers;
 
-/// <summary>A channel of the guild as the report sees it: plain data, so the arithmetic stays pure.</summary>
-public sealed record ChannelInfo(ulong Id, bool IsVoice, bool Excluded);
+/// <summary>
+/// A channel of the guild as the report sees it: plain data, so the arithmetic stays pure.
+/// <paramref name="Open"/>: she can count it and members may use it, so its silence says something.
+/// </summary>
+public sealed record ChannelInfo(ulong Id, bool IsVoice, bool Excluded, bool Open = true);
 
 /// <summary>One channel in a list: messages (text) or person-minutes (voice), and the voice peak.</summary>
 public sealed record ChannelLine(ulong ChannelId, long Value, int Peak, bool Excluded);
@@ -25,7 +28,7 @@ public sealed record ActivityReportData(
 /// <summary>
 /// When and where the server talks, over one window, from ActivityHourStat and ChannelDailyStat rows
 /// (filtered on Day in SQL by the caller) and a snapshot of the guild's channels. A channel with
-/// counts that is no longer in the guild is still ranked; channels the snapshot lists with nothing
+/// counts that is no longer in the guild is still ranked; open channels the snapshot lists with nothing
 /// counted are « silencieux » (text) or « inutilisés » (voice). Pure, so the checks can feed it cases.
 /// </summary>
 public static class ActivityReport
@@ -44,12 +47,7 @@ public static class ActivityReport
         }
         var busiest = Enumerable.Range(0, 24).Where(h => byHour[h] > 0)
             .OrderByDescending(h => byHour[h]).ThenBy(h => h).Take(3).ToList();
-        var weekday = hours.Where(h => h.Messages > 0)
-            .GroupBy(h => AppTime.FromDayKey(h.Day).DayOfWeek)
-            .Select(g => (Day: g.Key, Messages: g.Sum(h => h.Messages)))
-            .OrderByDescending(x => x.Messages)
-            .Select(x => (DayOfWeek?)x.Day)
-            .FirstOrDefault();
+        var weekday = BusiestWeekday(hours);
 
         var info = guildChannels.ToDictionary(c => c.Id);
         bool Excluded(ulong id) => info.TryGetValue(id, out var c) && c.Excluded;
@@ -61,19 +59,36 @@ public static class ActivityReport
             .OrderByDescending(c => c.Messages).Take(TopChannels)
             .Select(c => new ChannelLine(c.Id, c.Messages, 0, Excluded(c.Id))).ToList();
         var written = perChannel.Where(c => c.Messages > 0).Select(c => c.Id).ToHashSet();
-        var silent = guildChannels.Where(c => !c.IsVoice && !written.Contains(c.Id))
+        var silent = guildChannels.Where(c => !c.IsVoice && c.Open && !written.Contains(c.Id))
             .Select(c => new ChannelLine(c.Id, 0, 0, c.Excluded)).ToList();
 
         var topVoice = perChannel.Where(c => c.Voice > 0)
             .OrderByDescending(c => c.Voice).Take(TopChannels)
             .Select(c => new ChannelLine(c.Id, c.Voice, c.Peak, Excluded(c.Id))).ToList();
         var occupied = perChannel.Where(c => c.Voice > 0).Select(c => c.Id).ToHashSet();
-        var emptyVoice = guildChannels.Where(c => c.IsVoice && !occupied.Contains(c.Id))
+        var emptyVoice = guildChannels.Where(c => c.IsVoice && c.Open && !occupied.Contains(c.Id))
             .Select(c => new ChannelLine(c.Id, 0, 0, c.Excluded)).ToList();
 
         return new ActivityReportData(
             byHour.Sum(), voiceByHour.Sum(), byHour, voiceByHour, busiest, weekday,
             topText, silent, topVoice, emptyVoice,
             perChannel.ToDictionary(c => c.Id, c => c.Messages));
+    }
+
+    // Messages per occurrence of each weekday between the first and last day counted: a raw total would
+    // favour whichever weekdays the period holds more of.
+    private static DayOfWeek? BusiestWeekday(IReadOnlyList<ActivityHourStat> hours)
+    {
+        var counted = hours.Where(h => h.Messages > 0).ToList();
+        if (counted.Count == 0) return null;
+
+        var occurrences = new int[7];
+        var last = DateOnly.FromDateTime(AppTime.FromDayKey(counted.Max(h => h.Day)));
+        for (var d = DateOnly.FromDateTime(AppTime.FromDayKey(counted.Min(h => h.Day))); d <= last; d = d.AddDays(1))
+            occurrences[(int)d.DayOfWeek]++;
+
+        return counted.GroupBy(h => AppTime.FromDayKey(h.Day).DayOfWeek)
+            .OrderByDescending(g => g.Sum(h => h.Messages) / (double)occurrences[(int)g.Key])
+            .First().Key;
     }
 }
