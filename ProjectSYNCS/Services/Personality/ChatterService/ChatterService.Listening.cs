@@ -204,13 +204,15 @@ internal sealed partial class ChatterService
                 _ => null,
             });
 
-    // Counts this message in the person's back-and-forth with her (ConversationStreak). Returns
-    // Handled when the gate answered it itself: a reaction while the conversation is ended, or the
-    // line that ends it. Papa is never counted: he is never told to stop.
-    private async Task<(bool Handled, int Count)> StreakGateAsync(
-        SocketUserMessage message, ChatPath path, string name, string weekday)
+    // Counts this message against her patience when it wears it (ConversationStreak.Wears). True when
+    // the gate answered it itself: a reaction while the conversation is ended, her remark on the third,
+    // or the line that ends it on the fifth. The remark is here and not with the fallback, so every
+    // ending has had its warning, whichever pool the third would have got. Papa is never counted: he
+    // is never told to stop.
+    private async Task<bool> StreakGateAsync(
+        SocketUserMessage message, ChatPath path, string name, string weekday, bool wears)
     {
-        if (message.Author.Id == OwnerId) return (false, 0);
+        if (message.Author.Id == OwnerId) return false;
 
         var now = DateTimeOffset.UtcNow;
         var (channelId, userId) = (message.Channel.Id, message.Author.Id);
@@ -218,18 +220,27 @@ internal sealed partial class ChatterService
         {
             Count(message, path, AnswerKinds.StreakSulk);
             await SulkReactAsync(message);
-            return (true, 0);
+            return true;
         }
 
+        if (!wears) return false;
+
         var count = _streaks.Record(channelId, userId, now);
-        if (count < ConversationStreak.EndAt) return (false, count);
+        if (count == ConversationStreak.NudgeAt)
+        {
+            var nudge = string.Format(_picker.Pick(BotResponses.StreakNudgeLines), name, weekday, count);
+            Count(message, path, AnswerKinds.StreakNudge);
+            await ReplyWithTypingAsync(message, nudge, "streak nudge");
+            return true;
+        }
+        if (count < ConversationStreak.EndAt) return false;
 
         _streaks.Close(channelId, userId, now);
-        _logger.LogInformation("{Name} replied {Count} times in a row — she ends the conversation.", name, count);
+        _logger.LogInformation("{Name} wore her patience {Count} times — she ends the conversation.", name, count);
         var line = string.Format(_picker.Pick(BotResponses.StreakEndLines), name, weekday, count);
         Count(message, path, AnswerKinds.StreakEnd);
         await ReplyWithTypingAsync(message, line, "streak end");
-        return (true, count);
+        return true;
     }
 
     // The ended conversation's only answer: a reaction, no words. Swallowed on failure.
@@ -246,22 +257,13 @@ internal sealed partial class ChatterService
         }
     }
 
-    // The last resort of both paths (a roast, or « tagged for nothing »): on the streak's third
-    // message she remarks on it instead; otherwise, now and then, one of her records replaces it.
-    // The records are read off the gateway handler — the fan-out awaits every handler in turn, and
-    // RecapService is several queries on the Pi — and the claim is given back if nothing applies.
+    // The last resort of both paths (a roast, or « tagged for nothing »): now and then, one of her
+    // records replaces it. The records are read off the gateway handler — the fan-out awaits every
+    // handler in turn, and RecapService is several queries on the Pi — and the claim is given back if
+    // nothing applies.
     private async Task SendFallbackAsync(
-        SocketUserMessage message, ChatPath path, string kind, int streak, string[] pool, string name, string weekday,
-        string what)
+        SocketUserMessage message, ChatPath path, string kind, string[] pool, string name, string weekday, string what)
     {
-        if (streak == ConversationStreak.NudgeAt)
-        {
-            var nudge = string.Format(_picker.Pick(BotResponses.StreakNudgeLines), name, weekday, streak);
-            Count(message, path, AnswerKinds.StreakNudge);
-            await ReplyWithTypingAsync(message, nudge, "streak nudge");
-            return;
-        }
-
         var line = string.Format(_picker.Pick(pool), name, weekday);
         if (message.Channel is SocketGuildChannel guildChannel
             && Random.Shared.NextDouble() < FactChance

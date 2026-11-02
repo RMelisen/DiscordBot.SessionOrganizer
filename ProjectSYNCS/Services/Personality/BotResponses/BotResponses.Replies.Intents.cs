@@ -12,11 +12,11 @@ internal static partial class BotResponses
     // line is tagged: they go out through BotChat and format a name. Never gendered.
 
     public static readonly IReadOnlyDictionary<ChatIntent, string[]> IntentLines =
-        new[] { SmallTalkIntentLines(), BackAndForthIntentLines() }
+        new[] { SmallTalkIntentLines(), BackAndForthIntentLines(), RetortIntentLines() }
             .SelectMany(part => part).ToDictionary(kv => kv.Key, kv => kv.Value);
 
-    // « je t'aime » to « t'es un bot ? ». The rest, « t'as raison » onwards, is in
-    // Replies.Intents.BackAndForth.cs. An intent appears in one half only: the join throws on a twin.
+    // « je t'aime » to « t'es un bot ? ». « t'as raison » onwards is in Replies.Intents.BackAndForth.cs,
+    // the answers back in Replies.Conversation.cs. An intent appears in one part only: the join throws on a twin.
     private static Dictionary<ChatIntent, string[]> SmallTalkIntentLines() =>
         new()
         {

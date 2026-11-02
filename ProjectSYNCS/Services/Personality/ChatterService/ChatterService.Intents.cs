@@ -304,7 +304,7 @@ internal sealed partial class ChatterService
     private static readonly HashSet<ChatIntent> RoomIntents = new()
     {
         ChatIntent.Laughter, ChatIntent.Maybe, ChatIntent.YouAreRight, ChatIntent.YouAreWrong, ChatIntent.Goodnight,
-        ChatIntent.Goodbye,
+        ChatIntent.Goodbye, ChatIntent.WhatsYourProblem, ChatIntent.YouDontKnowMe, ChatIntent.BackAtYou,
     };
 
     // Whether a message she wasn't named in still plainly asks her something: a specific intent she

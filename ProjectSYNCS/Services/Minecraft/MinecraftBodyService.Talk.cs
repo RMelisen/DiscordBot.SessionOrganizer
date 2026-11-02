@@ -51,14 +51,17 @@ public sealed partial class MinecraftBodyService
             var now = DateTimeOffset.UtcNow;
             var key = McTalkReader.AskerId(player, kin);
             if (_talks.IsClosed(0, key, now)) return true;
-            var count = _talks.Record(0, key, now);
-            if (count >= ConversationStreak.EndAt)
+            if (talk.Wears)
             {
-                _talks.Close(0, key, now);
-                (pool, extra) = (BotResponses.StreakEndLines, [weekday, count]);
+                var count = _talks.Record(0, key, now);
+                if (count >= ConversationStreak.EndAt)
+                {
+                    _talks.Close(0, key, now);
+                    (pool, extra) = (BotResponses.StreakEndLines, [weekday, count]);
+                }
+                else if (count == ConversationStreak.NudgeAt)
+                    (pool, extra) = (BotResponses.StreakNudgeLines, [weekday, count]);
             }
-            else if (count == ConversationStreak.NudgeAt && talk.Fallback)
-                (pool, extra) = (BotResponses.StreakNudgeLines, [weekday, count]);
         }
 
         if (McChat.Game(pool, whispered) is not { Length: > 0 } game) return false;

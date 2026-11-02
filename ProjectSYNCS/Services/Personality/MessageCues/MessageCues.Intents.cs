@@ -72,6 +72,7 @@ internal static partial class MessageCues
         if (ReadHerTopic(t, breaks) is not null) return ChatIntent.AboutHer;
         if (FindPhrase(t, _areYouABotPhrases, cancelAfter: false, cancelBefore: false)) return ChatIntent.AreYouABot;
         if (asks && IsClosingAsk(t, _areYouUpsetPhrases, breaks, _upsetFollowers)) return ChatIntent.AreYouUpset;
+        if (IsClosingAsk(t, _whatsYourProblemPhrases, breaks, _whatsYourProblemFollowers)) return ChatIntent.WhatsYourProblem;
         if (FindPhrase(t, _crushPhrases, cancelAfter: false, cancelBefore: false)
             || IsClosingAsk(t, _crushClosingPhrases, breaks, _crushFollowers))
             return ChatIntent.Crush;
@@ -142,6 +143,14 @@ internal static partial class MessageCues
             && (FindPhrase(t, _maybePhrases, cancelAfter: false, cancelBefore: false)
                 || FindPhrase(t, _maybeNegatablePhrases, cancelAfter: false, cancelBefore: true)))
             return ChatIntent.Maybe;
+
+        // Unasked: « tu me connais pas ? » is RememberMe, read above.
+        if (t.Count <= MaxRetortTokens && FindPhrase(t, _youDontKnowMePhrases, cancelAfter: false, cancelBefore: false))
+            return ChatIntent.YouDontKnowMe;
+        if (t.Count <= MaxRetortTokens
+            && (FindPhrase(t, _backAtYouPhrases, cancelAfter: false, cancelBefore: false)
+                || IsClosingAsk(t, _backAtYouClosing, sentenceBreaks, _backAtYouFollowers)))
+            return ChatIntent.BackAtYou;
 
         if ((t.Count <= MaxDisagreementTokens && FindPhrase(t, _youAreRightPhrases, cancelAfter: false, cancelBefore: false))
             || (!asks && t.Count <= MaxDisagreementTokens && FindPhrase(t, _cestVrai, cancelAfter: false, cancelBefore: false))

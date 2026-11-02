@@ -400,6 +400,7 @@ internal static partial class MessageCues
     private static readonly string[] _doubtPhrases =
     {
         "ca m etonnerait", "ca m etonnerais", "sa m etonnerait", "j en doute", "jen doute", "permets moi d en douter",
+        "j y crois pas", "jy crois pas", "j y crois moyen",
     };
     private static readonly HashSet<string> _doubtFollowers = new()
     {

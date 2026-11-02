@@ -19,8 +19,8 @@ person), in memory, `ChatListening.Window` (60 s).
 - **Never** a message said to someone else (a reply to another message, another person, a role or
   everyone tagged), nor while hushed (Papa excepted) or during a breakdown.
 - **Read as a reply, not a mention** (`HandleReplyToBotAsync`): the mention pools speak of being
-  tagged. With no message replied to, it reads no post context and no yes-or-no. The streak counts
-  each follow-up, so a two-step conversation still ends on its fifth message.
+  tagged. With no message replied to, it reads no post context and no yes-or-no. The streak treats a
+  follow-up like any reply: it counts only if it wears her patience.
 
 ### Reply context — `HerMessages`
 
@@ -107,15 +107,22 @@ anyone, like the menus; a repost that throws gives the 5-minute gate back.
 
 ### Conversation streaks — `ConversationStreak`
 
-Per (channel, person), pure, self-locking like `CooldownGate`, in memory. A gap of more than
-`Gap` (3 min) starts the count again; replies and mentions share one count. **One singleton,
-shared with `RobotHeartService`**: a reply or mention naming one of her characters is answered
-there, before `ChatterService` sees it, and still records its turn — otherwise her « 5 messages »
-lands on the sixth.
+Per (channel, person), pure, self-locking like `CooldownGate`, in memory. It counts **what wears her
+patience, not how much someone talks**: replies and mentions that are mean, or read as nothing or as
+a low-effort word with nothing else to answer them (`ConversationStreak.Wears`). Real talk is free,
+because a real question or a thanks shouldn't end in « conversation over »: a specific intent, a
+generic question, news, a kind word, a greeting, a line about her own post, an answer to her question,
+a character from her robot heart. A free message neither adds to the count nor keeps it alive. A gap
+of more than `Gap` (3 min) between counted messages starts it again. Her name said untagged isn't
+counted either (that path answers once and listens; see `people.md`).
 
-- The **3rd** message in a row turns the fallback into `StreakNudgeLines` (`{2}` = the count). The
-  **5th** gets `StreakEndLines` and closes the conversation for `Closed` (10 min): until then that
-  person, in that channel, only gets a `StreakSulkReactions` emote, no words.
+- The **3rd** gets `StreakNudgeLines` whatever it would have got, **in the gate**, so every ending
+  has had its warning. The **5th** gets `StreakEndLines` and closes the conversation for `Closed`
+  (10 min): until then that person, in that channel, only gets a `StreakSulkReactions` emote, no
+  words, free messages included.
+- **`{2}` is how many of those messages, not how many messages**, so a line never says « d'affilée »
+  or « de suite » (the Checks project pins it): they may have said something else in between, and
+  people do count. **At most one nudge in four quotes the number**; the rest pout or hold the grudge.
 - **Papa is never counted**, never nudged, never refused. Shutdown threats and « Inabot » are still
   answered while a conversation is closed: they come before the gate.
 

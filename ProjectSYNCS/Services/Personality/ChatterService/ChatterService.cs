@@ -30,8 +30,7 @@ internal sealed partial class ChatterService
     // Secret badges earned through her chat; fire-and-forget, never awaited on the gateway path.
     private readonly BadgeAwarder _badges;
 
-    // Who has been going back and forth with her, per channel (ConversationStreak). In memory, and
-    // shared with RobotHeartService, whose answers to her are turns of the same conversation.
+    // Who has been wearing her patience, per channel (ConversationStreak). In memory.
     private readonly ConversationStreak _streaks;
 
     // The channels where she was told « chut » (ChatHush), shared with every service that chats there.
@@ -439,9 +438,6 @@ internal sealed partial class ChatterService
             return;
         }
 
-        var (ended, streak) = await StreakGateAsync(message, ChatPath.Mention, name, weekday);
-        if (ended) return;
-
         // What the mention says comes first: a specific intent, then a greeting (greeted back, a
         // second entry point beside replying), Tata's warmth, a real question. A mean reading
         // cancels all of them. Otherwise the bot just answers with a confused one-liner — no
@@ -449,6 +445,11 @@ internal sealed partial class ChatterService
         var mood = MessageCues.Analyze(content);
         var mean = IsMean(mood, content);
         var intent = mean ? ChatIntent.None : MessageCues.ReadIntent(content);
+
+        // Only an insult or a message with nothing in it wears her patience (ConversationStreak.Wears).
+        if (await StreakGateAsync(message, ChatPath.Mention, name, weekday,
+                ConversationStreak.Wears(mean, intent, answeredAnyway: mood.IsGreeting)))
+            return;
 
         IntentPick pick;
         string what = "mention reply";
@@ -472,7 +473,7 @@ internal sealed partial class ChatterService
         else
         {
             _logger.LogInformation("{Name} mentioned the bot.", name);
-            await SendFallbackAsync(message, ChatPath.Mention, AnswerKinds.Interrogation, streak, BotResponses.Interrogations,
+            await SendFallbackAsync(message, ChatPath.Mention, AnswerKinds.Interrogation, BotResponses.Interrogations,
                 name, weekday, "mention reply");
             return;
         }
@@ -536,10 +537,6 @@ internal sealed partial class ChatterService
         var isOwner = message.Author.Id == OwnerId;
         var mean = IsMean(mood, content);
 
-        // Five replies in a row and she ends it; while ended, only a reaction. Never Papa.
-        var (ended, streak) = await StreakGateAsync(message, ChatPath.Reply, name, weekday);
-        if (ended) return;
-
         // What the reply says, then what it answers, then its mood. A mean reply skips the first
         // two: it gets roasted (or, from Papa, lands), whatever it was about.
         var intent = mean ? ChatIntent.None : MessageCues.ReadIntent(content);
@@ -552,6 +549,13 @@ internal sealed partial class ChatterService
         if (!mean && MessageCues.ReadAnswer(content) is { } answer && AskedSomething(message.ReferencedMessage)
             && (isOwner || ReadReplyContext(message) is null))
             intent = answer;
+
+        // Five insults or empty replies and she ends it; while ended, only a reaction. Never Papa. What
+        // she has something to say to costs nothing (ConversationStreak.Wears).
+        var answeredAnyway = nice || greeting || ReadReplyContext(message) is not null
+                             || (AskedSomething(message.ReferencedMessage) && MessageCues.ReadShortAnswer(content) is not null);
+        if (await StreakGateAsync(message, ChatPath.Reply, name, weekday, ConversationStreak.Wears(mean, intent, answeredAnyway)))
+            return;
 
         IntentPick pick;
         string what = "reply comeback";
@@ -625,7 +629,7 @@ internal sealed partial class ChatterService
             // Fold in this person's custom lines twice, so each has double weight.
             if (BotResponses.PersonalComebacks.TryGetValue(message.Author.Id, out var personal))
                 pool = pool.Concat(personal).Concat(personal).ToArray();
-            await SendFallbackAsync(message, ChatPath.Reply, AnswerKinds.Comeback, streak, pool, name, weekday, what);
+            await SendFallbackAsync(message, ChatPath.Reply, AnswerKinds.Comeback, pool, name, weekday, what);
             return;
         }
 

@@ -55,7 +55,8 @@ to a few moments only (see below). It works because it's rare.
 | Someone asks her opinion, or a favour | Opinion: /rate's verdict, never changes her mind. Favour: she can't, but names the command that can | `OpinionLines`, `PreferLines`, `RequestLines` — "Une session ? Avec plaisir. Enfin, avec `/schedule create`." |
 | Papa asks her the same | Devoted, the intent's twin | `OwnerIntentLines` — "Moi aussi je t'aime, Papa. Plus que le bon courant propre. C'est dire ♡" |
 | Someone answers one of her own posts (welcome, late call, poll, level-up, wake…) | About that post: she knows what she said | `ReplyContextLines` — "« J'arrive », c'est ce que tout le monde dit. Prouve-le." |
-| The same person, reply after reply | Notices on the 3rd, ends it herself on the 5th, then sulks in emotes | `StreakNudgeLines`, `StreakEndLines` |
+| The same person, insult after insult or empty message after empty message | Pouts or holds the grudge on the 3rd (rarely quoting the count), ends it herself on the 5th, then sulks in emotes | `StreakNudgeLines`, `StreakEndLines` |
+| Someone answers her back (« c'est quoi ton problème », « c'est mal me connaître », « toi-même ») | Unbothered, proprietary: she has the logs, and she grades the riposte | `IntentLines` — "Belle riposte. Je la note : 4 sur 10." |
 | Now and then, instead of a roast | Her records, quoted as they are: the grudge list made real | `ChatFactLines` — "{2} manquées, {0}. J'oublie pas. J'oublie jamais." |
 
 **Tone shifts by who's speaking, not by her mood.** Don't write a warm line into a roast pool, or a

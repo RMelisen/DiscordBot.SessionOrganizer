@@ -135,6 +135,25 @@ var cases = new (string Text, string Expected)[]
     ("nan", "LowEffort"), ("oui mais demain", "None"), ("je t'aime plus que tout", "Love"), ("je t'aime plus", "None"),
     ("pourquoi t'as dit ça", "Question"), ("est-ce que tu viens ce soir", "Question"), ("quand est-ce qu'on joue", "NextSession"),
     ("quand tu veux", "None"), ("quel plaisir", "None"), ("comment ça", "None"),
+
+    // Misses from /debug answers: told to hush while being called something.
+    ("Chut vil amas de chrome et de micropuces", "ShutUp"), ("chuuut espèce de machine", "ShutUp"),
+    ("chut, il dort", "None"), ("chut je regarde le stream", "None"),
+    // Doubt.
+    ("j'y crois pas", "Disbelief"), ("j'y crois pas syncs", "Disbelief"), ("j'y crois pas trop à ce build", "None"),
+    // Asked what's wrong with her, with or without a « ? ».
+    ("Nononononon mais c'est quoi ton problème SYNCS", "WhatsYourProblem"), ("c'est quoi ton problème ?", "WhatsYourProblem"),
+    ("t'as un problème avec moi ?", "WhatsYourProblem"), ("t'as un problème de ping ?", "Question"),
+    ("c'est quoi ton problème avec ce boss ?", "Question"),
+    // Answering her back.
+    ("C'est mal me connaître", "YouDontKnowMe"), ("tu me connais pas", "YouDontKnowMe"), ("tu sais rien de moi", "YouDontKnowMe"),
+    ("tu me connais pas ?", "RememberMe"), ("il me connaît pas", "None"),
+    ("Je te retourne le compliment", "BackAtYou"), ("toi-même", "BackAtYou"), ("pareil pour toi", "BackAtYou"),
+    ("c'est celui qui dit qui est", "BackAtYou"), ("fais-le toi-même demain", "None"),
+    ("Cest a dire rien", "YouAreWrong"), ("ça veut rien dire", "YouAreWrong"),
+    // Told she's only a machine.
+    ("Tu le fais tourner parce que tu es programmé pour ça, nous on l'aliment pour te donner du travail, sinon t'existerais pas, n'oublie jamais ça", "AreYouABot"),
+    ("t'es programmée pour ça", "AreYouABot"), ("t'es qu'un tas de ferraille", "AreYouABot"), ("ce mech est un tas de ferraille", "None"),
 };
 foreach (var (text, expected) in cases)
 {
@@ -155,6 +174,34 @@ if (!streak.IsClosed(1, 2, t0.AddMinutes(5))) Fail("closed conversation reads op
 if (streak.IsClosed(1, 2, t0 + ConversationStreak.Closed + TimeSpan.FromSeconds(1))) Fail("conversation stays closed past the window");
 if (streak.IsClosed(1, 3, t0)) Fail("closing leaked to another person");
 if (streak.Record(1, 2, t0 + ConversationStreak.Closed + TimeSpan.FromSeconds(1)) != 1) Fail("count does not restart after closing");
+// What wears her patience: an insult, or a message she has nothing else for. Real talk is free.
+var wears = typeof(ConversationStreak).GetMethod("Wears", BindingFlags.NonPublic | BindingFlags.Static)!;
+foreach (var (mean, intent, answered, expected) in new[]
+{
+    (true, "None", false, true), (true, "None", true, true),
+    (false, "None", false, true), (false, "LowEffort", false, true),
+    (false, "None", true, false), (false, "LowEffort", true, false),
+    (false, "Question", false, false), (false, "Thanks", false, false), (false, "Ship", false, false),
+    (false, "Sharing", false, false), (false, "Yes", false, false), (false, "ShutUp", false, false),
+})
+    if ((bool)wears.Invoke(null, new[] { mean, Enum.Parse(intentType, intent), answered })! != expected)
+        Fail($"ConversationStreak.Wears(mean: {mean}, {intent}, answered: {answered}) isn't {expected}");
+// The number counts pointless messages, not messages: no line may claim they came in a row, and most don't quote it.
+var nudges = (string[])Field("StreakNudgeLines");
+foreach (var l in nudges.Concat((string[])Field("StreakEndLines")))
+    if (l.Contains("d'affilée") || l.Contains("de suite")) Fail($"streak line claims a run: {l}");
+if (nudges.Count(l => l.Contains("{2}")) * 4 > nudges.Length) Fail("StreakNudgeLines: more than one line in four quotes the count");
+// A compliment claimed is a kind word, for the reply path's NiceReplies.
+var analyzeClaim = cues.GetMethod("Analyze", BindingFlags.Public | BindingFlags.Static)!;
+foreach (var (text, expected) in new[]
+{
+    ("Je te fais un compliment", "Nice"), ("c'était un compliment", "Nice"), ("c'est pas un compliment", "None"),
+})
+{
+    var mood = analyzeClaim.Invoke(null, new object[] { text })!;
+    var got = mood.GetType().GetProperty("Emotion")!.GetValue(mood)!.ToString();
+    if (got != expected) Fail($"Analyze(\"{text}\") = {got}, expected {expected}");
+}
 
 // 5b. ChatListening: a call covers the next message only, an answer keeps her listening for the window.
 {
@@ -733,6 +780,9 @@ var byIntent = new (string Intent, string[] Samples)[]
     ("DoYouLoveMe", new[] { "tu m'aimes ?", "tu m'aimes bien ?", "tu me détestes ?", "tu m'en veux ?", "je suis ton préféré ?" }),
     ("RememberMe", new[] { "tu te souviens de moi ?", "comment je m'appelle ?", "tu me connais ?", "tu sais qui je suis ?", "c'est quoi mon pseudo ?" }),
     ("AreYouUpset", new[] { "t'es fâchée ?", "tu boudes ?", "t'es triste ?", "t'es jalouse ?", "tu me fais la tête ?" }),
+    ("WhatsYourProblem", new[] { "c'est quoi ton problème", "c quoi ton problème", "quel est ton problème", "t'as un problème avec moi" }),
+    ("YouDontKnowMe", new[] { "c'est mal me connaître", "tu me connais pas", "tu sais rien de moi", "tu sais pas qui je suis" }),
+    ("BackAtYou", new[] { "je te retourne le compliment", "toi-même", "pareil pour toi", "c'est celui qui dit qui est" }),
 };
 
 string WithTrailingName(string s) =>
@@ -3137,6 +3187,14 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     SaysInGame("syncs tu penses quoi de minecraft ?", McKin.Anyone, "Opinion", TalkPool("OpinionLines"), call: true);
     SaysInGame("syncs tu peux me construire une maison ?", McKin.Anyone, "Request", TalkPool("McCantDoLines"));
     SaysInGame("syncs t'es un bot ?", McKin.Anyone, "AreYouABot", call: true);
+    // What wears her patience in game, as on Discord.
+    foreach (var (said, costs) in new[]
+    {
+        ("syncs t'es nulle", true), ("syncs ok", true), ("syncs le boss a raté son attaque hier", true),
+        ("syncs ça va ?", false), ("syncs merci", false), ("syncs tu viens quand ?", false),
+    })
+        if (McTalkReader.Read(said, McKin.Anyone, false, false, true, 1, null, talkPicker, talkRandom) is not { } read || read.Wears != costs)
+            Fail($"talk « {said} » wears her patience: expected {costs}");
     SaysInGame("inabot viens voir, syncs", McKin.Anyone, "inabot");
     // About her, not to her: a remark, rationed by the service.
     SaysInGame("syncs a pris mon fer", McKin.Anyone, "talked about", TalkPool("TalkedAboutLines"), remark: true);

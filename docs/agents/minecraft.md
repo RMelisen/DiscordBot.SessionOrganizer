@@ -137,9 +137,10 @@ budget. Only she, speaking on her own, is rationed.
   one game-only pool here. An opinion is /rate's verdict, « moi » being the player
   (`McTalkReader.AskerId`: Papa and Tata by their Discord ids, anyone else by a stable hash of the
   name).
-- **The conversation streak** is Discord's (`ConversationStreak`, its own instance, per player):
-  the third message answered by a comeback becomes `StreakNudgeLines`, the fifth ends it
-  (`StreakEndLines`) and she says nothing to them for 10 minutes. Never Papa.
+- **The conversation streak** is Discord's (`ConversationStreak`, its own instance, per player): only
+  what wears her patience counts (`McTalk.Wears`: an insult, a low-effort word, nothing understood). The
+  third becomes `StreakNudgeLines`, the fifth ends it (`StreakEndLines`) and she says nothing to them
+  for 10 minutes. Never Papa.
 
 **The pools are Discord's, made fit for the game by `McChat.Game`**, computed once per pool: no
 sticker tag, no custom emote, no ✨ or bold, no face the font can't draw at the end (« (>⩊<) »,

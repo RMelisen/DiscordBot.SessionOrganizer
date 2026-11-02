@@ -189,6 +189,11 @@ internal static partial class MessageCues
         "t existes vraiment", "tu as une ame", "t as une ame", "tu as un coeur", "t as un coeur",
         "c est qui qui ecrit", "c est toi qui ecris", "qui ecrit derriere", "qui tape derriere",
         "are you a bot", "are you human", "are you real", "r u a bot", "you re a bot", "ur a bot",
+        // Told she's only a machine: « t'es programmée pour ça », « sans nous t'existerais pas ».
+        "tu es programme", "t es programme", "tu es programmee", "t es programmee", "t existerais pas",
+        "tu existerais pas", "sans nous t existes pas", "sans nous tu existes pas", "t es qu une machine",
+        "t es juste une machine", "t es qu un robot", "t es qu un programme", "t es qu un script", "t es qu un tas",
+        "espece de machine", "espece de robot", "espece de bot", "espece de tas",
     };
 
     // Agreeing with her. The phrases count in a reply of MaxDisagreementTokens at most (« j'ai bien vu
@@ -228,6 +233,38 @@ internal static partial class MessageCues
         "tu racontes des betises", "tu racontes des conneries", "n imp", "c est pas ca",
         "jamais de la vie", "que nenni", "dans tes reves",
         "tu te plantes", "tu t es plantee", "tu t es trompe", "you re wrong", "youre wrong",
+        "ca veut rien dire", "sa veut rien dire", "ca a aucun sens", "ca n a aucun sens", "c est a dire rien", "cest a dire rien",
+    };
+
+    // Answering her back: not what she said, but who she is to say it. Both in a short reply, like the
+    // agreements; the room says these to each other too, so a follow-up never reads them (RoomIntents).
+    private const int MaxRetortTokens = 10;
+    private static readonly string[] _youDontKnowMePhrases =
+    {
+        "c est mal me connaitre", "cest mal me connaitre", "c mal me connaitre", "tu me connais pas", "tu ne me connais pas",
+        "t me connais pas", "tu me connais mal", "tu connais rien de moi", "tu sais rien de moi",
+        "tu sais pas qui je suis",
+    };
+    private static readonly string[] _backAtYouPhrases =
+    {
+        "je te retourne le compliment", "je te retourne la politesse", "je te le retourne", "retour a l envoyeur",
+        "c est celui qui dit qui est", "celui qui dit qui est", "je peux en dire autant", "je pourrais en dire autant",
+    };
+    // Closing a sentence only: « toi-même », but not « fais-le toi-même demain ».
+    private static readonly string[] _backAtYouClosing = { "toi meme", "pareil pour toi", "ca vaut pour toi" };
+    private static readonly HashSet<string> _backAtYouFollowers = new() { "syncs", "sync", "hein", "aussi" };
+
+    // « c'est quoi ton problème », with or without a « ? ». Closing only: « t'as un problème de ping ? »,
+    // « c'est quoi ton problème avec ce boss ? » are something else. Said to the room too (RoomIntents).
+    private static readonly string[] _whatsYourProblemPhrases =
+    {
+        "c est quoi ton probleme", "cest quoi ton probleme", "c quoi ton probleme", "quel est ton probleme",
+        "c est quoi ton souci", "c est quoi ton soucis", "c est quoi ton probleme avec moi", "t as un probleme avec moi",
+        "tu as un probleme avec moi", "t as un probleme", "tu as un probleme", "t as un souci", "t as un soucis",
+    };
+    private static readonly HashSet<string> _whatsYourProblemFollowers = new()
+    {
+        "syncs", "sync", "hein", "encore", "la", "exactement", "au", "juste", "franchement", "aujourd",
     };
     private static readonly string[] _youAreWrongWords = { "faux", "fake", "nope", "nimp", "wrong", "erreur" };
     private const int MaxDisagreementTokens = 8;

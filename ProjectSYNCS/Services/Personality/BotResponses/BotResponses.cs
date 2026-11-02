@@ -62,7 +62,7 @@ namespace ProjectSYNCS.Services;
 //     ReplyContextLines ........ keyed by ReplyContext: the welcome, the late call, the poll…
 //
 //   [Replies.Conversation] Long back-and-forths (ConversationStreak)
-//     StreakNudgeLines ......... the third message in a row
+//     StreakNudgeLines ......... the third insult or empty message
 //     StreakEndLines ........... the fifth: she ends it
 //     StreakSulkReactions ...... her only answer while it stays ended
 //

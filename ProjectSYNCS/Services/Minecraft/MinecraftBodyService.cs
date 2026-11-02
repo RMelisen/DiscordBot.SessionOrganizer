@@ -82,8 +82,8 @@ public sealed partial class MinecraftBodyService : BackgroundService
     // (an intent, Papa's pet name), however many messages they send meanwhile to someone else. Orders keep the
     // one-message _calledAt above. Guarded by _gate.
     private readonly Dictionary<string, DateTimeOffset> _answeredAt = new();
-    // Each player's back-and-forth with her in chat (ConversationStreak, as on Discord): she notices the third message
-    // she can only shrug at, ends it at the fifth and stays quiet with them for 10 minutes. Never Papa.
+    // How much each player has worn her patience in chat (ConversationStreak, as on Discord): she notices the third insult
+    // or empty message, ends it at the fifth and stays quiet with them for 10 minutes. Never Papa.
     private readonly ConversationStreak _talks = new();
     // Talked about rather than to: a word now and then, on top of the remark gates.
     private const double TalkedAboutChance = 0.5;

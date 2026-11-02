@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.57.0 — 2026-11-02
+
+- Chat: only insults and empty messages wear SYNCS's patience now. Real questions and thanks no longer end a conversation, and she always warns before ending one.
+- Chat: she pouts and holds a grudge more often, and quotes the count less.
+- Chat: she answers more of what she's told: « c'est quoi ton problème », « c'est mal me connaître », « je te retourne le compliment », being called a machine, and a few more.
+
 ## 7.56.0 — 2026-11-02
 
 - New `/report incidents` for staff, also in the owner's monthly digest: failed buttons and forms, answers later than Discord's 3 seconds, logged errors, a locked database, lost connections and restarts.

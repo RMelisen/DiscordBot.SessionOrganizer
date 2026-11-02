@@ -7,11 +7,14 @@ namespace ProjectSYNCS.Helpers;
 /// An answer to something said to her in game that isn't an order: a pool from Discord (made fit for the game by the
 /// service, <see cref="McChat.Game"/>), and what its {2} and {3} stand for. <see cref="Remark"/>: she was talked about,
 /// not to, so answering is her own initiative, rationed like her remarks. <see cref="Fallback"/>: nothing in the message
-/// was understood, only that it was said to her (the streak's nudge replaces it on the third message, as on Discord).
-/// <see cref="Kind"/> names the answer for the log.
+/// was understood, only that it was said to her. <see cref="Kind"/> names the answer for the log.
 /// </summary>
 public readonly record struct McTalk(string[] Pool, string Kind, string A = "", string B = "", bool Remark = false,
-    bool Fallback = false);
+    bool Fallback = false)
+{
+    /// <summary>Whether this message wears her patience, as on Discord (<see cref="ConversationStreak"/>): an insult, a low-effort word, or nothing understood.</summary>
+    public bool Wears => Fallback || Kind is "comeback" or "LowEffort";
+}
 
 /// <summary>
 /// Reads chat that names her (or comes right after she spoke with that player) the way Discord does

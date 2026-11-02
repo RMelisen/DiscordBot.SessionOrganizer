@@ -1,10 +1,14 @@
+using ProjectSYNCS.Services;
+
 namespace ProjectSYNCS.Helpers;
 
 /// <summary>
-/// How long someone has been going back and forth with her in one channel, and whether she has
-/// ended that conversation. ChatterService records every reply and mention aimed at her; a gap of
-/// more than <see cref="Gap"/> starts the count again. At <see cref="NudgeAt"/> she remarks on it,
-/// at <see cref="EndAt"/> she ends it herself and only reacts for <see cref="Closed"/>.
+/// How much someone has been wearing her patience in one channel, and whether she has ended that
+/// conversation. ChatterService records only what <see cref="Wears"/> says costs her something: an
+/// insult, or a message she has nothing specific to say to. A real question or a thanks is free: it
+/// neither adds to the count nor keeps it alive. A gap of more than <see cref="Gap"/> starts the count
+/// again. At <see cref="NudgeAt"/> she remarks on it, at <see cref="EndAt"/> she ends it herself and
+/// only reacts for <see cref="Closed"/>.
 /// </summary>
 /// <remarks>
 /// In memory only, reset on restart by design. Self-locking like <see cref="CooldownGate{TKey}"/>:
@@ -30,6 +34,14 @@ public sealed class ConversationStreak
         public DateTimeOffset Last;
         public DateTimeOffset? ClosedUntil;
     }
+
+    /// <summary>
+    /// Whether a message wears her patience: it is mean, or it read as nothing or as a low-effort word and
+    /// she had nothing else to answer it with. <paramref name="answeredAnyway"/>: a kind word, a greeting,
+    /// a line about her own post or an answer to her question, which are worth her time.
+    /// </summary>
+    internal static bool Wears(bool mean, ChatIntent intent, bool answeredAnyway) =>
+        mean || (intent is ChatIntent.None or ChatIntent.LowEffort && !answeredAnyway);
 
     /// <summary>
     /// Counts one more message from this person in this channel and returns the running count:

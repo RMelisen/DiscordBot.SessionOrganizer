@@ -62,12 +62,12 @@ From the top:
 Everything aimed at her returns before the two ambient branches are reached.
 
 **Inside the reply path** (`HandleReplyToBotAsync`), first match wins: Inabot → shutdown threat →
-**hush gate** (`ChatHush`, see `ShutUp`) → **under her cards** (`CardReplyService`) → breakdown roll → **streak gate** → Papa mean (`OwnerMeanReplies`) → **specific intent** → Papa's
+**hush gate** (`ChatHush`, see `ShutUp`) → **under her cards** (`CardReplyService`) → breakdown roll → **streak gate** (the sulk, the nudge, the ending; `listening.md`) → Papa mean (`OwnerMeanReplies`) → **specific intent** → Papa's
 pet name → **reply context** → nice → greeting → **question / low effort** → **open answer** → reference roll → Tata warmth → fallback
-(`OwnerComebacks` for Papa; otherwise the streak nudge, a fact line, or `Comebacks`). A mean reply
+(`OwnerComebacks` for Papa; otherwise a fact line, or `Comebacks`). A mean reply
 from anyone else skips intents and context and is roasted, as it always was. **The mention path**
 runs the same streak gate, then specific intent → greeting → Tata warmth → question → fallback
-(`Interrogations`, or a nudge or a fact line); Papa's mentions try his intent twin, then his pet
+(`Interrogations`, or a fact line); Papa's mentions try his intent twin, then his pet
 name, before `OwnerGreetings`. **The talked-about path** answers a specific intent too (« syncs, ça va ? »
 addresses her), before the greeting. Answering the content outranks Tata's warmth roll.
 

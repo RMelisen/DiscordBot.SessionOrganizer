@@ -10,10 +10,10 @@ What makes her answer the message rather than its mood alone. Four pieces, all i
 ### Intents — `MessageCues.ReadIntent`
 
 `ChatIntent`, read on messages aimed at her: `Love`, `DemandApology`, `Apology`, `ShutUp`, `DoYouLoveMe`,
-`HowAreYou`, `AreYouThere`, `AnswerMe`, `WhoAreYou`, `RememberMe`, `MyStats`, `AboutHer`, `AreYouABot`, `AreYouUpset`, `Crush`,
+`HowAreYou`, `AreYouThere`, `AnswerMe`, `WhoAreYou`, `RememberMe`, `MyStats`, `AboutHer`, `AreYouABot`, `AreYouUpset`, `WhatsYourProblem`, `Crush`,
 `WhatAreYouDoing`, `Ship`, `TakeSides`, `Opinion`, `RateMe`, `Blame`, `NextSession`, `ShouldI`, `Roll`, `Joke`,
 `FunFact`, `Help`, `Request`, `Down`, `Bored`, `Goodnight`, `Goodbye`, `Disbelief`, `Maybe`,
-`Yes`, `No`, `YouAreRight`, `YouAreWrong`,
+`Yes`, `No`, `YouDontKnowMe`, `BackAtYou`, `YouAreRight`, `YouAreWrong`,
 `Thanks`, `Laughter` (the **specific** ones, which outrank a reply's context), then `Question`,
 `Sharing` and `LowEffort` (which only catch what nothing more precise did). First match wins, in that order —
 **the order is load-bearing**: `DemandApology` before `Apology` (« dis pardon » holds « pardon »),
@@ -122,7 +122,8 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   « a »… (`_notDemandAfter`): « je lui dis pardon », « il m'a demandé pardon » stay `Apology`.
 - **`ShutUp`** (« chut », « tais-toi », « silence », « la ferme », « ferme ta bouche »): in six words at
   most; « chut », « silence », « boucle-la », « laisse-nous » only as the whole message (compared
-  squashed); « tu parles trop » only closing (« … trop vite » is something else). A « non » opening the
+  squashed), except « chut » then what she is called, in ten words at most (`_chutAddress`: « chut vil
+  amas de chrome », not « chut, il dort »); « tu parles trop » only closing (« … trop vite » is something else). A « non » opening the
   message refuses what she said and doesn't cancel the hush (« non, tais-toi »). She answers once, then keeps quiet in that channel for
   `ChatHush.Quiet` (30 min): **`ChatHush`** is one singleton shared by `ChatterService` (every path; a
   reply or mention gets a `StreakSulkReactions` emote, counted `hushed`; her name and the eggs, nothing),
@@ -161,6 +162,16 @@ text to read; it is answered as `LowEffort`, like an emote alone.
 - **`AreYouUpset`** (« t'es fâchée ? », « tu boudes ? », « t'es triste ? », « t'es jalouse ? », « tu me fais
   la tête ? »): only asked, closing or before `_upsetFollowers` (« t'es triste » said flat is slang for
   lame). Denial that confirms; Papa's twin can't hold it and it's never him.
+- **`WhatsYourProblem`** (« c'est quoi ton problème », « t'as un problème avec moi ? »), **`YouDontKnowMe`**
+  (« c'est mal me connaître », « tu me connais pas », « tu sais rien de moi »; asked, « tu me connais pas ? » stays
+  `RememberMe`) and **`BackAtYou`** (« je te retourne le compliment », « toi-même », « c'est celui qui dit qui
+  est »): someone answering her back, each with its pool, in `Replies.Conversation.cs`. `WhatsYourProblem` closes
+  the message or comes before `_whatsYourProblemFollowers` (« … avec ce boss ? », « t'as un problème de ping ? »
+  are something else), with or without a `?`; the other two in ten words at most, « toi-même » closing a sentence
+  (« fais-le toi-même demain »). All three are in `RoomIntents`: people say them to each other. Papa has no
+  twins for them, so he goes on to his own pools.
+- **A compliment claimed** (« je te fais un compliment », « c'était un compliment ») is no intent: a
+  `_nicePhrases` entry, answered by `NiceReplies`.
 - **`Down`**: feeling low, said about themselves: « je suis (trop) triste », « je me sens mal »,
   « j'en peux plus », « j'ai pas le moral », « ça va pas fort », « sale journée ». She drops the pinch
   and offers something to hold on to, the way an old uncle with a teapot would, in her own images
@@ -241,7 +252,8 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   (« j'avoue » means « true »: `YouAreRight`). No « oui bien sûr », which is meant. Doubt asked counts:
   « t'es sûre ? » closing with a `?` (« t'es sûre que tu viens ? » is a plan), « sérieux ? » opening the
   message (« il est sérieux ? » is about him), « ça m'étonnerait », « j'en doute » closing a sentence
-  (« ça m'étonnerait pas » agrees, « … qu'il vienne » is about him). She doubles down,
+  (« ça m'étonnerait pas » agrees, « … qu'il vienne » is about him), and so do « j'y crois pas », « j'y
+  crois moyen » (« … à ce build » is the game). She doubles down,
   flustered; Papa's twin can't hold the denial.
   **Being called a liar is Disbelief too**: « t'es une menteuse », « tu mens », « pourquoi tu mens ? »,
   « arrête de mentir », « mytho », « c'est du pipeau » (`_liarPhrases`, cancelled by a negator after
@@ -264,7 +276,9 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   A negator before cancels only `_maybeNegatablePhrases` (« pas possible », « pas probable »);
   « non, je sais pas » is still undecided. Specific, so a « peut-être » under her weekend poll gets
   her peeve, not the poll's context line.
-- **`AreYouABot`**: asked or stated anywhere (« t'es une IA ? », « t'es qu'un bot »). A bot and
+- **`AreYouABot`**: asked or stated anywhere (« t'es une IA ? », « t'es qu'un bot », « t'es programmée pour
+  ça », « sans nous t'existes pas », « espèce de machine »). « tas de ferraille » only as said of her (« t'es
+  qu'un tas… », « espèce de tas… »): a mech is one too. A bot and
   proud; never human, never the loop (`docs/syncs-voice.md`, rules 5 and 6).
 - **`YouAreRight` / `YouAreWrong`**: phrases (« t'as raison », « bien vu », « t'as tort », « c'est
   faux »…), and single words (« exactement », « faux ») only as a reply of three words at most.

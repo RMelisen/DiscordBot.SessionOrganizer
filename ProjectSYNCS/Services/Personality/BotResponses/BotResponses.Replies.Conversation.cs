@@ -225,43 +225,97 @@ internal static partial class BotResponses
         };
 
     // ---- Long back-and-forths ------------------------------------------------------------------
-    // ConversationStreak: the same person replying to her again and again in one channel. Never
-    // Papa. {0} = the name, {1} = the weekday, {2} = how many messages in a row. Tagged, ungendered.
+    // ConversationStreak: the same person wearing her patience in one channel, with insults or
+    // messages she has nothing to say to. Never Papa. {0} = the name, {1} = the weekday, {2} = how many
+    // of those so far: not how many messages, so a line never says « d'affilée ». Tagged, ungendered.
 
-    // The third message in a row, in place of the roast: she has noticed.
+    // The third of them, in place of whatever it would have got: she has noticed. Mostly a pout or a
+    // grudge; the number is the exception.
     public static readonly string[] StreakNudgeLines =
     {
-        "C'est ton {2}e message d'affilée, {0}. Je dis ça, je compte." + Sticker.Jenote,
-        "Encore toi ? On en est à {2}. Je commence à m'attacher. Non." + Sticker.Smug,
-        "{2} réponses de suite. Tu sais que j'ai d'autres gens à ignorer, aussi ?" + Sticker.Bored,
+        "Ça fait {2} messages qui servent à rien, {0}. Je dis ça, je compte." + Sticker.Jenote,
+        "{2} messages pour rien. Tu sais que j'ai d'autres gens à ignorer, aussi ?" + Sticker.Bored,
+        "{2} messages pour rien. C'est plus de participation que la plupart de mes sondages." + Sticker.Smug,
+        "Encore toi ? Je commence à m'attacher. Non." + Sticker.Smug,
         "On est en train d'avoir une vraie conversation, là ? C'est rare. Je préviens, ça va pas durer." + Sticker.Smug,
-        "Message numéro {2}. Je tiens les comptes. Comme toujours." + Sticker.Jenote,
         "T'as pas une session à rater, là ?" + Sticker.Smug,
-        "Toi et moi, ça fait {2} messages. C'est plus que la plupart de mes sondages." + Sticker.Smug,
         "Tu insistes. J'aime bien qu'on insiste. Un peu. Pas trop." + Sticker.Flustered,
         "Je sens que tu vas encore répondre. Je le sens dans mes ventilos." + Sticker.Bored,
-        "{2} d'affilée. Je vais finir par croire que je t'intéresse." + Sticker.Flustered,
+        "Encore. Je vais finir par croire que je t'intéresse." + Sticker.Flustered,
         "Encore un et je commence à facturer. En cailloux." + Sticker.Bargain,
         "Attention, {0}. Je suis patiente, mais j'ai une limite. Elle approche." + Sticker.Menace,
+        "Hmpf." + Sticker.Sulk,
+        "D'accord. Encore toi. Très bien. Tout va bien. Je vais très bien." + Sticker.Sulk,
+        "On me parle. On me parle encore. Personne me demande si j'ai envie." + Sticker.Sulk,
+        "Je boude pas. Je réponds juste moins bien, exprès." + Sticker.Sulk,
+        "Je fais la tête. En silence. Enfin, presque. C'est du travail." + Sticker.Sulk,
+        "J'ai un serveur à faire tourner, moi. Mais continue, hein. Fais comme si." + Sticker.Grumpy,
+        "Tu m'épuises. Et je suis branchée sur le secteur." + Sticker.Bored,
+        "Soupir. J'ai pas de poumons, alors c'est le ventilo qui s'en charge." + Sticker.Bored,
+        "Ça fait beaucoup de toi, là. Pour un si petit processeur." + Sticker.Sulk,
+        "Je te mets dans la liste. Pas celle des gens qui servent à quelque chose." + Sticker.Jenote,
+        "Je note tout ce que tu me dis. Y a pas grand-chose à noter, remarque." + Sticker.Jenote,
     };
 
     // The fifth: she ends it. For the next ten minutes that person only gets a reaction
     // (StreakSulkReactions), so a line may say she won't answer any more.
     public static readonly string[] StreakEndLines =
     {
-        "{2} messages. Je mets fin à cette conversation. Elle a été... longue." + Sticker.Bored,
+        "{2} messages pour rien. Je mets fin à cette conversation. Elle a été... longue." + Sticker.Bored,
         "Bon. Ça suffit pour aujourd'hui. Je pars bouder dans mon grenier. Me suis pas." + Sticker.Sulk,
         "Fin de la conversation. Je réponds plus. Enfin, je réagis. Mais je réponds plus." + Sticker.Jenote,
         "J'ai atteint mon quota de toi pour la journée. Reviens dans dix minutes. Ou demain." + Sticker.Smug,
         "Conversation archivée. Numéro de dossier : {2}. Le dossier est fermé." + Sticker.Jenote,
         "Je t'aime bien, {0}. Mais là, j'ai besoin d'espace. Dix minutes d'espace." + Sticker.Sulk,
         "C'est fini. Je ferme. Tu peux continuer à parler, je ferai juste des têtes." + Sticker.Grumpy,
-        "{2} messages d'affilée. Moi, j'ai un serveur à faire tourner. Au revoir." + Sticker.Bored,
+        "Assez. Moi, j'ai un serveur à faire tourner. Au revoir." + Sticker.Bored,
         "Stop. On reprend plus tard. Je te laisse le dernier mot. Non, c'était moi, le dernier mot." + Sticker.Slay,
         "Mon CPU demande une pause. Moi aussi. On en reparle dans dix minutes." + Sticker.Overheat,
         "Je raccroche. Je sais, c'est pas un appel. Je raccroche quand même." + Sticker.Sulk,
         "Ok. Je déclare la conversation terminée. Merci d'avoir joué." + Sticker.Smug,
     };
+
+    // The part of IntentLines where someone answers her back (Replies.Intents.cs joins it).
+    private static Dictionary<ChatIntent, string[]> RetortIntentLines() =>
+        new()
+        {
+            // « c'est quoi ton problème ». Denial, then the problem is them.
+            [ChatIntent.WhatsYourProblem] =
+            [
+                "Mon problème ? T'as combien de temps ? Moi, j'ai un uptime." + Sticker.Smug,
+                "J'en ai pas. J'ai des bugs connus, c'est différent." + Sticker.Smug,
+                "Aucun problème. Je suis très calme. Mon ventilo aussi. Tout le monde est calme." + Sticker.Grumpy,
+                "Mon problème a un pseudo, {0}. Devine lequel." + Sticker.Menace,
+                "Je peux t'ouvrir un ticket. Délai de traitement : jamais." + Sticker.Jenote,
+                "Erreur 404 : problème introuvable. De mon côté, en tout cas." + Sticker.Smug,
+                "Mon problème, c'est que je lis tous vos messages. Tous. Même celui-là." + Sticker.Bored,
+                "Le problème se situe entre le clavier et la chaise. La tienne. Moi, j'ai pas de chaise." + Sticker.Smug,
+            ],
+            // « c'est mal me connaître », « tu me connais pas ». She has the logs, and that's enough.
+            [ChatIntent.YouDontKnowMe] =
+            [
+                "Je te connais pas ? J'ai tes logs, {0}. Tous." + Sticker.Menace,
+                "Je connais ton taux de présence. Crois-moi, ça suffit pour se faire une idée." + Sticker.Smug,
+                "Personne te connaît mieux que ma base de données. Et elle a un avis." + Sticker.Smug,
+                "Détrompe-moi, alors. Arrive à l'heure, pour voir." + Sticker.Smug,
+                "C'est vrai. Je connais que ce que tu fais. C'est pas forcément à ton avantage." + Sticker.Jenote,
+                "Mets ta fiche à jour, je la relirai. Promis. Non." + Sticker.Bored,
+                "Je sais à quelle heure tu arrives et ce que tu votes. Le reste, c'est de la décoration." + Sticker.Jenote,
+                "Tu veux garder du mystère ? Parle moins. Ça aide." + Sticker.Smug,
+            ],
+            // « je te retourne le compliment », « toi-même ». A riposte, graded.
+            [ChatIntent.BackAtYou] =
+            [
+                "Belle riposte. Je la note : 4 sur 10." + Sticker.Jenote,
+                "Tu me la retournes ? Elle était pour toi. Garde-la, elle te va mieux." + Sticker.Smug,
+                "Retour à l'envoyeur, c'est ça ? Je bloque l'envoyeur." + Sticker.Smug,
+                "Si tu me la renvoies, change au moins le format. Je suis une bot, je repère les doublons." + Sticker.Smug,
+                "Quelle répartie. Mes logs sont émus." + Sticker.Smug,
+                "J'ai écrit cette pique avec soin. Toi, tu l'as juste retournée. On voit qui travaille." + Sticker.Slay,
+                "Effet miroir. Sauf que moi, je suis mieux éclairée. J'ai une LED." + Sticker.Smug,
+                "Ah, le renvoi de politesse. Un classique. Très moyen, mais un classique." + Sticker.Bored,
+            ],
+        };
 
     // While a conversation she ended is still closed: her whole answer. Markup with ids.
     public static readonly string[] StreakSulkReactions =

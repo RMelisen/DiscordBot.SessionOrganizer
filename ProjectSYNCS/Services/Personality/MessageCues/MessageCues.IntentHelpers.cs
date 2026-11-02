@@ -72,9 +72,18 @@ internal static partial class MessageCues
         return false;
     }
 
+    // « chut » then what she is called: « chut vil amas de chrome », « chut espèce de machine ». Said to
+    // her, however long; « chut, il dort » stays said to the room.
+    private const int MaxChutAddressTokens = 10;
+    private static readonly HashSet<string> _chutAddress = new()
+    {
+        "vil", "vile", "espece", "machine", "robot", "bot", "boite", "tas", "amas", "sale",
+    };
+
     // « tais-toi » in a short message, or « chut » / « silence » / « la ferme » as (nearly) all of it.
     private static bool IsShutUp(List<string> t)
     {
+        if (t.Count is >= 2 and <= MaxChutAddressTokens && Squash(t[0]) == "chut" && _chutAddress.Contains(t[1])) return true;
         if (t.Count is 0 or > MaxShutUpTokens) return false;
         // A « non » opening the message refuses what she said, it doesn't negate the shush: « non,
         // tais-toi », « non mais tais-toi ».
