@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.57.1 — 2026-11-02
+
+- Plynlings: the first storyline, a new Plynling's arrival at the edge of the village, is written. Not played yet.
+
 ## 7.57.0 — 2026-11-02
 
 - Chat: only insults and empty messages wear SYNCS's patience now. Real questions and thanks no longer end a conversation, and she always warns before ending one.

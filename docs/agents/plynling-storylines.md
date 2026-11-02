@@ -20,6 +20,12 @@ story reaches a player yet, and the old event catalog (`plynling-events.md`) run
   `StoryLibrary` (loads a folder). Pure: no gateway, no database. The walks and the report live in the
   checks project (`StoryWalker`, `StoryReport`).
 
+## Arcs written
+
+| Arc | File | State |
+|---|---|---|
+| L'arrivée | `Stories/Milestone/arrival.story` | first draft, awaiting the owner's review; its premise and branch map head the file |
+
 ## Rules that bite
 
 - **Keys are forever** once the engine ships: arc, scene, option, ending, memory, epithet, keepsake,
