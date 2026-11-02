@@ -60,7 +60,7 @@ public class MinecraftDataService
             await _db.MinecraftDailyStats.AsNoTracking().Where(s => s.Day >= w.FromDay && s.Day <= w.ToDay).ToListAsync());
         var current = await ComputeAsync(window);
         var previous = window.Previous is { } p ? await ComputeAsync(p) : null;
-        return new(current, previous);
+        return new(current, previous, await _db.MinecraftDailyStats.MinAsync(s => (int?)s.Day));
     }
 
     public Task<Dictionary<string, long>> StatsAsync() => _db.MinecraftStats.ToDictionaryAsync(s => s.Key, s => s.Count);

@@ -20,6 +20,7 @@ public enum ReportKind
     Emotes,
     Sleeping,
     Minecraft,
+    Incidents,
 }
 
 /// <summary>
@@ -29,7 +30,10 @@ public enum ReportKind
 /// </summary>
 public static class ReportKinds
 {
-    public static readonly IReadOnlyList<ReportKind> OwnerDigest = new[] { ReportKind.Syncs, ReportKind.Commands, ReportKind.Quiz, ReportKind.Minecraft };
+    public static readonly IReadOnlyList<ReportKind> OwnerDigest = new[]
+    {
+        ReportKind.Syncs, ReportKind.Commands, ReportKind.Incidents, ReportKind.Quiz, ReportKind.Minecraft,
+    };
 
     public static readonly IReadOnlyList<ReportKind> TataDigest = new[]
     {
@@ -59,15 +63,17 @@ public class ReportService
     private readonly PlynlingReportService _plynlings;
     private readonly EmoteReportService _emotes;
     private readonly MinecraftDataService _minecraft;
+    private readonly IncidentReportService _incidents;
     private readonly DiscordSocketClient _client;
     private readonly InteractionService _interactions;
     private readonly GuildConfigService _config;
 
     public ReportService(SchedulingReportService scheduling, CommunityReportService community, SyncsReportService syncs,
         ActivityReportService activity, QuizReportService quiz, PlynlingReportService plynlings, EmoteReportService emotes,
-        MinecraftDataService minecraft,
+        MinecraftDataService minecraft, IncidentReportService incidents,
         DiscordSocketClient client, InteractionService interactions, GuildConfigService config)
     {
+        _incidents = incidents;
         _scheduling = scheduling;
         _community = community;
         _syncs = syncs;
@@ -101,6 +107,7 @@ public class ReportService
             ReportKind.Plynlings => ReportCards.BuildPlynlings(await _plynlings.GetAsync(guildId, window, now), window, names, who),
             ReportKind.Emotes => ReportCards.BuildEmotes(await _emotes.GetAsync(guildId, window, ServerEmotes(guildId)), window, names),
             ReportKind.Minecraft => ReportCards.BuildMinecraft(await _minecraft.ReportAsync(window), window, names),
+            ReportKind.Incidents => ReportCards.BuildIncidents(await _incidents.GetAsync(window), window, names),
             // No window: a stray period button on it opens the default silence.
             ReportKind.Sleeping => await BuildSleepingAsync(guildId, SleepingReport.Choices[0]),
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "No report for this kind."),
@@ -131,8 +138,9 @@ public class ReportService
             var syncs = await _syncs.GetAsync(guildId, window, now);
             var quiz = await _quiz.GetAsync(guildId, window);
             var minecraft = await _minecraft.ReportAsync(window);
-            var alerts = DigestBrief.Owner(commands, syncs, await _syncs.RecordAsync(), quiz, window);
-            return ReportCards.BuildOwnerBrief(commands, syncs, quiz, minecraft, alerts, window, quietLine);
+            var incidents = await _incidents.GetAsync(window);
+            var alerts = DigestBrief.Owner(commands, syncs, await _syncs.RecordAsync(), quiz, window, incidents.Current);
+            return ReportCards.BuildOwnerBrief(commands, syncs, quiz, minecraft, alerts, window, quietLine, incidents);
         }
 
         var community = await _community.GetAsync(guildId, window);

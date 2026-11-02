@@ -29,6 +29,6 @@ public class EmoteReportService
             server, markup);
         var current = await ComputeAsync(window);
         var previous = window.Previous is { } p ? await ComputeAsync(p) : null;
-        return new(current, previous);
+        return new(current, previous, await _db.EmoteDailyStats.Where(x => x.GuildId == guildId).MinAsync(x => (int?)x.Day));
     }
 }

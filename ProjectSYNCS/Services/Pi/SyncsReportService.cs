@@ -24,9 +24,14 @@ public class SyncsReportService
     {
         var thermal = await _db.PiThermalDays.AsNoTracking().ToListAsync();
         var uptime = await _db.UptimeEvents.AsNoTracking().ToListAsync();
+        var answersSince = await _db.ChatAnswerDailyStats.Where(x => x.GuildId == guildId).MinAsync(x => (int?)x.Day);
+        var voiceSince = await _db.VoiceCompanionDailyStats.Where(x => x.GuildId == guildId).MinAsync(x => (int?)x.Day);
         var current = await ComputeAsync(guildId, window, thermal, uptime, now);
         var previous = window.Previous is { } p ? await ComputeAsync(guildId, p, thermal, uptime, now) : null;
-        return new(current, previous);
+        return new(
+            current with { AnswersSince = answersSince, VoiceSince = voiceSince },
+            previous is null ? null : previous with { AnswersSince = answersSince, VoiceSince = voiceSince },
+            thermal.Count == 0 ? null : thermal.Min(t => t.Day));
     }
 
     /// <summary>The hottest day she has ever recorded, for the « record » line: (day key, thousandths of a degree).</summary>
@@ -47,6 +52,7 @@ public class SyncsReportService
             .Where(x => x.GuildId == guildId && x.Day >= w.FromDay && x.Day <= w.ToDay).ToListAsync();
         var companions = await _db.VoiceCompanionDailyStats.AsNoTracking()
             .Where(x => x.GuildId == guildId && x.Day >= w.FromDay && x.Day <= w.ToDay).ToListAsync();
-        return SyncsReport.Compute(thermal, uptime, answers, feedback, companions, w, now);
+        var body = await _db.PiBodyDays.AsNoTracking().Where(x => x.Day >= w.FromDay && x.Day <= w.ToDay).ToListAsync();
+        return SyncsReport.Compute(thermal, uptime, answers, feedback, companions, w, now) with { Body = PiBodyReport.Compute(body) };
     }
 }

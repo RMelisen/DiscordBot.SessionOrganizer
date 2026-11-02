@@ -22,6 +22,6 @@ public class QuizReportService
                 .Where(r => r.GuildId == guildId && r.Day >= w.FromDay && r.Day <= w.ToDay).ToListAsync());
         var current = await ComputeAsync(window);
         var previous = window.Previous is { } p ? await ComputeAsync(p) : null;
-        return new(current, previous);
+        return new(current, previous, await _db.QuizRounds.Where(r => r.GuildId == guildId).MinAsync(r => (int?)r.Day));
     }
 }

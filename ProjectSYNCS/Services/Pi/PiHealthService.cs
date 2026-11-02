@@ -53,6 +53,7 @@ public sealed class PiHealthService : BackgroundService
     private readonly HerMessages _herMessages;
     private readonly ILogger<PiHealthService> _logger;
     private readonly SilenceService _silence;
+    private readonly ActivityCounter _activity;
     private readonly string _dbPath;
     private readonly string _statePath;
     private readonly CooldownGate<ulong> _healthChecks = new(HealthCooldown, forget: TimeSpan.FromMinutes(10));
@@ -84,9 +85,10 @@ public sealed class PiHealthService : BackgroundService
         IHostApplicationLifetime lifetime,
         IConfiguration config,
         HerMessages herMessages,
-        ILogger<PiHealthService> logger, SilenceService silence)
+        ILogger<PiHealthService> logger, SilenceService silence, ActivityCounter activity)
     {
         _silence = silence;
+        _activity = activity;
         _lifetime = lifetime;
         _client = client;
         _services = services;
@@ -159,6 +161,8 @@ public sealed class PiHealthService : BackgroundService
         // The stop found on start goes on record for the monthly report.
         try { await RecordAbruptStopAsync(); }
         catch (Exception ex) { _logger.LogWarning(ex, "Pi health: could not record the last stop."); }
+        // Every start, an update's included, for /report incidents: each one wipes her in-memory state.
+        _activity.CountIncident(IncidentKinds.Restart, LastStop.ToString(), DateTimeOffset.UtcNow);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -168,6 +172,9 @@ public sealed class PiHealthService : BackgroundService
 
             try { await SampleAsync(); }
             catch (Exception ex) { _logger.LogWarning(ex, "Pi health: temperature sample failed."); }
+
+            try { await SampleBodyAsync(); }
+            catch (Exception ex) { _logger.LogWarning(ex, "Pi health: body sample failed."); }
 
             await Task.Delay(TickInterval, stoppingToken);
         }
@@ -386,6 +393,30 @@ public sealed class PiHealthService : BackgroundService
         await TryHeatRecordAsync(now, day, todayMax);
     }
 
+    // Her disk, memory and power into today's PiBodyDay, for /report syncs: what /health reads live,
+    // kept. Unlike the temperature, most of it reads off a Pi too, so it doesn't depend on it.
+    private async Task SampleBodyAsync()
+    {
+        var storage = ReadStorage();
+        var power = PiHardware.TryReadPower();
+        using var process = System.Diagnostics.Process.GetCurrentProcess();
+        var sample = new PiBodySample(storage.DatabaseBytes, storage.WalBytes, storage.FreeBytes, storage.TotalBytes,
+            process.WorkingSet64, PiHardware.TryReadMemory(), power?.UnderVoltageNow == true, power?.SlowedNow == true,
+            (int)TickInterval.TotalMinutes);
+
+        var day = AppTime.DayKey(DateTimeOffset.UtcNow);
+        await using var scope = _services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var row = await db.PiBodyDays.FindAsync(day);
+        if (row is null)
+        {
+            row = new PiBodyDay { Day = day };
+            db.PiBodyDays.Add(row);
+        }
+        PiBodyReport.Add(row, sample);
+        await db.SaveChangesAsync();
+    }
+
     // A new all-time high, once there is history enough for it to mean something: one line in
     // the main channel, daytime, once a day (the day is kept in the state file, so a restart
     // doesn't announce the same record twice).
@@ -420,6 +451,7 @@ public sealed class PiHealthService : BackgroundService
             _outageStart ??= DateTimeOffset.UtcNow;
             _disconnects++;
         }
+        _activity.CountIncident(IncidentKinds.Disconnect, "", DateTimeOffset.UtcNow);
         return Task.CompletedTask;
     }
 

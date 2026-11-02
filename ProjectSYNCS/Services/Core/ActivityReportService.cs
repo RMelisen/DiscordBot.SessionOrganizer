@@ -30,17 +30,20 @@ public class ActivityReportService
         }
         var current = await ComputeAsync(window);
         var previous = window.Previous is { } p ? await ComputeAsync(p) : null;
-        return new(current, previous);
+        return new(current, previous, await _db.ActivityHourStats.Where(x => x.GuildId == guildId).MinAsync(x => (int?)x.Day));
     }
 
     public async Task<Compared<CommandReportData>> GetCommandsAsync(ulong guildId, ReportWindow window, IReadOnlyCollection<string> registered)
     {
+        var peopleSince = await _db.CommandMemberDailyStats.Where(x => x.GuildId == guildId).MinAsync(x => (int?)x.Day);
         async Task<CommandReportData> ComputeAsync(ReportWindow w) => CommandReport.Compute(
             await _db.CommandDailyStats.AsNoTracking()
                 .Where(x => x.GuildId == guildId && x.Day >= w.FromDay && x.Day <= w.ToDay).ToListAsync(),
-            registered);
+            registered,
+            await _db.CommandMemberDailyStats.AsNoTracking()
+                .Where(x => x.GuildId == guildId && x.Day >= w.FromDay && x.Day <= w.ToDay).ToListAsync()) with { PeopleSince = peopleSince };
         var current = await ComputeAsync(window);
         var previous = window.Previous is { } p ? await ComputeAsync(p) : null;
-        return new(current, previous);
+        return new(current, previous, await _db.CommandDailyStats.Where(x => x.GuildId == guildId).MinAsync(x => (int?)x.Day));
     }
 }

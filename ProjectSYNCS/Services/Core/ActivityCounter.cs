@@ -9,6 +9,8 @@ public readonly record struct CommandKey(ulong GuildId, int Day, string Command)
 public readonly record struct EmoteKey(ulong GuildId, int Day, EmoteRef Emote);
 public readonly record struct ReactionUsedKey(ulong GuildId, ulong UserId, int Day);
 public readonly record struct AnswerKey(ulong GuildId, int Day, string Path, string Kind);
+public readonly record struct CommandPersonKey(ulong GuildId, int Day, string Command, ulong UserId);
+public readonly record struct IncidentKey(int Day, string Kind, string Key);
 
 public sealed record HourTally(long Messages, long VoiceMinutes);
 public sealed record ChannelTally(long Messages, long VoiceMinutes, int VoicePeak);
@@ -26,10 +28,11 @@ public sealed record ActivityBatch(
     IReadOnlyDictionary<EmoteKey, EmoteTallyDelta> Emotes,
     IReadOnlyDictionary<ReactionUsedKey, long> ReactionsUsed,
     IReadOnlyDictionary<AnswerKey, long> Answers,
-    IReadOnlyList<UnansweredEntry> Unanswered)
+    IReadOnlyList<UnansweredEntry> Unanswered,
+    IReadOnlySet<CommandPersonKey> People)
 {
     public bool IsEmpty => Hours.Count == 0 && Channels.Count == 0 && Commands.Count == 0
-        && Emotes.Count == 0 && ReactionsUsed.Count == 0 && Answers.Count == 0 && Unanswered.Count == 0;
+        && Emotes.Count == 0 && ReactionsUsed.Count == 0 && Answers.Count == 0 && Unanswered.Count == 0 && People.Count == 0;
 
     public IReadOnlyList<ulong> GuildIds => Hours.Keys.Select(k => k.GuildId)
         .Concat(Channels.Keys.Select(k => k.GuildId))
@@ -38,6 +41,7 @@ public sealed record ActivityBatch(
         .Concat(ReactionsUsed.Keys.Select(k => k.GuildId))
         .Concat(Answers.Keys.Select(k => k.GuildId))
         .Concat(Unanswered.Select(u => u.GuildId))
+        .Concat(People.Select(k => k.GuildId))
         .Distinct().ToList();
 
     public ActivityBatch For(ulong guildId) => new(
@@ -47,7 +51,8 @@ public sealed record ActivityBatch(
         Emotes.Where(x => x.Key.GuildId == guildId).ToDictionary(x => x.Key, x => x.Value),
         ReactionsUsed.Where(x => x.Key.GuildId == guildId).ToDictionary(x => x.Key, x => x.Value),
         Answers.Where(x => x.Key.GuildId == guildId).ToDictionary(x => x.Key, x => x.Value),
-        Unanswered.Where(u => u.GuildId == guildId).ToList());
+        Unanswered.Where(u => u.GuildId == guildId).ToList(),
+        People.Where(k => k.GuildId == guildId).ToHashSet());
 }
 
 /// <summary>
@@ -71,6 +76,9 @@ public sealed class ActivityCounter
     private Dictionary<ReactionUsedKey, long> _reactionsUsed = new();
     private Dictionary<AnswerKey, long> _answers = new();
     private List<UnansweredEntry> _unanswered = new();
+    private HashSet<CommandPersonKey> _people = new();
+    // Not per guild, so kept out of ActivityBatch: there is one bot, and most incidents have no guild.
+    private Dictionary<IncidentKey, long> _incidents = new();
 
     /// <summary>
     /// A message in a guild, by a person: bots, webhooks, system messages and DMs are skipped. A
@@ -107,10 +115,45 @@ public sealed class ActivityCounter
         }
     }
 
-    public void CountCommand(ulong guildId, string command, bool success, DateTimeOffset at)
+    /// <summary>
+    /// One use of a command, and who it was (<paramref name="userId"/>, for the reach in /report
+    /// commands: a shortcut counts as the command it stands for, /debug as nobody).
+    /// </summary>
+    public void CountCommand(ulong guildId, string command, bool success, DateTimeOffset at, ulong userId = 0)
     {
         var day = ActivityKeys.DayHour(at).Day;
-        lock (_lock) AddCommand(new CommandKey(guildId, day, command), new CommandTally(1, success ? 0 : 1));
+        lock (_lock)
+        {
+            AddCommand(new CommandKey(guildId, day, command), new CommandTally(1, success ? 0 : 1));
+            if (userId != 0 && !CommandPath.IsDebug(command))
+                _people.Add(new CommandPersonKey(guildId, day, CommandPath.Reached(command), userId));
+        }
+    }
+
+    /// <summary>One thing gone wrong, of an IncidentKinds kind, counted under <paramref name="key"/>.</summary>
+    public void CountIncident(string kind, string key, DateTimeOffset at)
+    {
+        var incident = new IncidentKey(ActivityKeys.DayHour(at).Day, kind, key);
+        lock (_lock) _incidents[incident] = _incidents.GetValueOrDefault(incident) + 1;
+    }
+
+    /// <summary>Takes the incidents counted so far and starts afresh.</summary>
+    public IReadOnlyDictionary<IncidentKey, long> DrainIncidents()
+    {
+        lock (_lock)
+        {
+            var incidents = _incidents;
+            _incidents = new();
+            return incidents;
+        }
+    }
+
+    /// <summary>Puts incidents that could not be written back, to be written with the next ones.</summary>
+    public void RestoreIncidents(IReadOnlyDictionary<IncidentKey, long> incidents)
+    {
+        lock (_lock)
+            foreach (var (key, n) in incidents)
+                _incidents[key] = _incidents.GetValueOrDefault(key) + n;
     }
 
     /// <summary>Emotes written in one message, each with how many times it appeared (EmoteTracker).</summary>
@@ -159,7 +202,7 @@ public sealed class ActivityCounter
     {
         lock (_lock)
         {
-            var batch = new ActivityBatch(_hours, _channels, _commands, _emotes, _reactionsUsed, _answers, _unanswered);
+            var batch = new ActivityBatch(_hours, _channels, _commands, _emotes, _reactionsUsed, _answers, _unanswered, _people);
             _hours = new();
             _channels = new();
             _commands = new();
@@ -167,6 +210,7 @@ public sealed class ActivityCounter
             _reactionsUsed = new();
             _answers = new();
             _unanswered = new();
+            _people = new();
             return batch;
         }
     }
@@ -183,6 +227,7 @@ public sealed class ActivityCounter
             foreach (var (key, delta) in batch.ReactionsUsed) AddReactionUsed(key, delta);
             foreach (var (key, n) in batch.Answers) AddAnswer(key, n);
             _unanswered.AddRange(batch.Unanswered);
+            _people.UnionWith(batch.People);
         }
     }
 

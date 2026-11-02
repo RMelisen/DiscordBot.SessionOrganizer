@@ -7,7 +7,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Services;
+
+// Built here, not by the container: logging exists before it, and IncidentLogProvider counts into it.
+var activityCounter = new ActivityCounter();
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((ctx, config) =>
@@ -17,6 +21,7 @@ var host = Host.CreateDefaultBuilder(args)
         config.AddJsonFile($"appsettings.{ctx.HostingEnvironment.EnvironmentName}.json", optional: true);
         config.AddEnvironmentVariables();
     })
+    .ConfigureLogging(logging => logging.AddProvider(new IncidentLogProvider(activityCounter)))
     .ConfigureServices((ctx, services) =>
     {
         var config = ctx.Configuration;
@@ -92,6 +97,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<SchedulingReportService>();
         services.AddTransient<CommunityReportService>();
         services.AddTransient<SyncsReportService>();
+        services.AddTransient<IncidentReportService>();
         services.AddTransient<ActivityReportService>();
         services.AddTransient<QuizReportService>();
         services.AddTransient<PlynlingReportService>();
@@ -159,7 +165,7 @@ var host = Host.CreateDefaultBuilder(args)
         // Counts messages, voice presence and commands in memory; ActivityFlushService writes them.
         // Registered before BotService and VoiceXpService on purpose: hosts stop in reverse order,
         // so its flush on stop runs after everything that feeds the counter has stopped.
-        services.AddSingleton<ActivityCounter>();
+        services.AddSingleton(activityCounter);
         services.AddHostedService<ActivityFlushService>();
         // Replies under her cards (« votez », « j'ai voté », « remonte-le »): its gates are in memory.
         services.AddSingleton<CardReplyService>();

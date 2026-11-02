@@ -33,6 +33,9 @@ public class ReportModule : InteractionModuleBase<SocketInteractionContext>
         _picker = picker;
     }
 
+    [SlashCommand("incidents", "Ce qui a coincé : échecs, réponses trop lentes, journal, redémarrages")]
+    public Task IncidentsAsync() => ShowAsync(ReportKind.Incidents);
+
     [SlashCommand("sessions", "Les sessions : présence, retards, absences, meilleurs créneaux")]
     public Task SessionsAsync() => ShowAsync(ReportKind.Sessions);
 

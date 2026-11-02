@@ -3,6 +3,16 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.56.0 — 2026-11-02
+
+- New `/report incidents` for staff, also in the owner's monthly digest: failed buttons and forms, answers later than Discord's 3 seconds, logged errors, a locked database, lost connections and restarts.
+- `/report commands` now shows how many different people use each command, and how many were already there the period before. No names.
+- `/report syncs` now keeps her database size, free disk, memory and power problems day by day, and warns when the disk is filling.
+- Reports mark a month that was only partly counted, and compare trends per counted day, so a short first month no longer makes the next one look like growth.
+- The uptime now says how many days it covers.
+- `/report commands` leaves `/debug` out of the rankings and lists the members' unused commands before the staff's.
+- `/report minecraft`: « Champs » is now « Cultures récoltées », which is what it counts.
+
 ## 7.55.2 — 2026-10-29
 
 - Plynlings: groundwork for the coming storylines (story files and their checks). Nothing changes in play yet.

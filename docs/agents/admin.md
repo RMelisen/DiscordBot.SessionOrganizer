@@ -49,8 +49,8 @@ same check.
 
 ## `/report` and the monthly digest
 
-`sessions`, `polls`, `community`, `syncs`, `activity`, `commands`, `quiz`, `plynlings`, `emotes`,
-`sleeping`, `minecraft`: her reports to the staff. Same gate as `/admin` (`IsStaff` per handler, no
+`sessions`, `polls`, `community`, `syncs`, `activity`, `commands`, `incidents`, `quiz`, `plynlings`,
+`emotes`, `sleeping`, `minecraft`: her reports to the staff. Same gate as `/admin` (`IsStaff` per handler, no
 `[DefaultMemberPermissions]`, guild-only).
 
 - **Posted in the open, with every name** (no-shows, latecomers, the busiest, the ones going
@@ -86,6 +86,14 @@ same check.
     relevés ».
   - Trends compare against `ReportWindow.Previous`: the same number of days before, the previous
     calendar month for the digest, none for all time.
+  - **A trend is per counted day, and a partial window says so.** A counter that started inside a
+    window would otherwise make the next one look like growth (13 days of commands in October
+    against 30 in November reads +130 %). `Compared.FirstDay` is the counter's first row, read by each
+    service (null for the reports not read from daily buckets, which then only even out 30 against 31
+    days); `ReportWindow.Pace` turns it into the days on each side, for `TextChart.Trend`, and
+    `ReportCards.PartialNote` / `DaysCounted` print it. A quiet day after the first row counts: nothing
+    happening is a real zero. **Distinct counts stay raw** (active members, people), since they don't
+    grow with the days. A report over several counters carries each one's first day (`SyncsReportData`).
 - **The arithmetic is pure** (`SessionReport`, `PollReport`, `CommunityReport`, `SyncsReport`,
   `ActivityReport`, `CommandReport`, `QuizReport`, `PlynlingReport`, `EmoteReport`,
   `SleepingReport`, `MinecraftReport` in `Helpers/`), the services only fetch rows, the cards (`ReportCards`) are
@@ -101,7 +109,16 @@ same check.
     links them, it is the match `PollModule` uses against duplicates;
   - « active » is any XP, reaction or voice minute that day (messages are counted per channel and
     hour, never per person);
-  - uptime is measured over the days the Pi recorded its temperature;
+  - uptime is measured from the first day of the window the Pi recorded its temperature, and always
+    shows that span (« sur 23 jours, depuis le 09/10 »): a percentage alone hides a short measure;
+  - `commands` leaves `/debug` out of the totals, the ranking and the never-used lists (the owner testing
+    isn't the server's use; its count is a line apart), but a failing `/debug` still reaches « À regarder ».
+    « Jamais utilisées » lists the members' commands first, then the staff's (`CommandPath.IsStaff`:
+    `/admin`, `/config`, `/report`), so the real signal isn't buried alphabetically under theirs;
+  - **Reach** in `commands` is different people, never names (`CommandMemberDailyStat`, one row per
+    guild, day, command and person, written through `ActivityCounter`, from 7.56.0 on). A shortcut is
+    folded into the command it stands for (`CommandPath.Reached`, so a new `ShortcutKind` needs a line
+    there); `/debug` is never written;
   - a quiz round counts only if its card went out (`MessageId != 0`), in `quiz` and `community`
     alike;
   - `plynlings` never counts the mascot (`PlynlingMascot.Is`), and cannot report abandons: an
@@ -119,6 +136,25 @@ same check.
     (same `McStats` keys, written in the same save by `MinecraftDataService.AddStatsAsync`, from
     7.50.0 on). Player names are her in-game ones, sanitized, shown only with `names`. A window
     she didn't play says so (`MinecraftReportData.Played`: any minute in game, or any order).
+- **Incidents** (`incidents`, `IncidentDailyStat`, `IncidentReport`): what `commands`' error count can't
+  see. Buckets only, not per guild, from 7.56.0 on; `IncidentKinds` keys are stored, so append-only.
+  - **Failed clicks and forms**: `BotService` on `ComponentCommandExecuted` / `ModalCommandExecuted`,
+    under the custom-id's verb (`CommandPath.Verb`). Uses aren't counted, only failures; a click nothing
+    handles any more (a button on an old message) is one.
+  - **Late answers**: `BotService.WatchAnswerAsync` looks at `HasResponded` 3 s after every interaction
+    but autocompletes. It catches what a handler's own success hides: the work saved while the click
+    looks dead.
+  - **Log lines**: `IncidentLogProvider` counts every warning and error by logger. It wraps the one
+    `ActivityCounter`, so `Program.cs` builds that counter before the container: logging exists first.
+    Lines are not faults, one failure can write several, so its alert's bar is high. `SQLITE_BUSY` is
+    counted once per failed command, from EF's `Database.*` loggers only.
+  - **Restarts and lost connections**: `PiHealthService`. A restart is counted under how the run before
+    it stopped, updates included, since each wipes her in-memory state.
+  - The flush writes them apart from the guild batch, in its own `try` (`DrainIncidents`).
+- **Her disk, memory and power** (`PiBodyDay`, `PiBodyReport`, a field in `syncs`): what `/health` reads
+  live, kept per day by `PiHealthService`'s tick, so a slow leak or a filling disk shows before it
+  breaks anything (only `/data` persists). Sizes keep the day's last reading, peaks the worst. The disk's
+  pace needs `MinDaysForPace` days and is shown within `DiskFullShownDays`.
 - **Joins and leaves** (`MemberFlowDailyStat`, `MemberFlowTracker` on `UserJoined` / `UserLeft`,
   bots skipped): daily buckets with **no totals table**, counted from 7.5.0 on. Nothing needs an
   all-time figure older than the buckets, and Discord shows the member count.
@@ -145,12 +181,12 @@ same check.
   (`BotResponses.TataId`, the server admin, not technical). Each is:
   - **an opening line plus « Le mois en bref »** in one message: a few figures and « À regarder »
     (`ReportService.BuildBriefAsync`, `ReportCards.BuildOwnerBrief` / `BuildTataBrief`). Papa's
-    figures are his choice: commands (uses, errors, never used), the Pi, messages without a
+    figures are his choice: commands (uses, people, errors, never used), incidents, the Pi (with the base and the disk), messages without a
     specific answer, the quiz, her hours in Minecraft (« Pas joué ce mois-ci. » for none). Tata's: members (active, joins, leaves, sleepers), sessions
     (attendance, the best-attended weekday), when the server talks, silent channels, unused emotes,
     the three most active;
   - **then the reports of `ReportKinds.Digest(recipient)`**, one embed per message (several in one
-    could pass 6000), each in its own `try`: Papa `syncs`, `commands`, `quiz`, `minecraft` (left out
+    could pass 6000), each in its own `try`: Papa `syncs`, `commands`, `incidents`, `quiz`, `minecraft` (left out
     for a month she didn't play: `ReportService.IsEmptyAsync`, the one report skipped when empty);
     Tata `community`, `sessions`, `activity`, `sleeping`. Papa also gets the chat-answer counts over 30 days (as
     `/debug answers`: they are kept by rolling period) and the unanswered messages of the same 30
@@ -158,7 +194,8 @@ same check.
   - **« À regarder » is `Helpers/Admin/DigestBrief`**, pure thresholds (constants there): a
     command failing ≥ 2 times and > 5 % of its uses, power cuts, crashes, a heat record, the
     unanswered share up ≥ 5 points, « difficile » found ≥ 80 % or « facile » < 30 % (≥ 5
-    questions); for Tata, active members down ≥ 20 %, more leaves than joins, sleepers > 10 %. **A
+    questions), ≥ 3 failed clicks or forms, ≥ 5 late answers, ≥ 20 logged errors, any `SQLITE_BUSY`, the
+    disk under 15 % or full within 90 days, memory under 10 %, any under-voltage; for Tata, active members down ≥ 20 %, more leaves than joins, sleepers > 10 %. **A
     comparison is only made when the month before has data**, so a new counter's first month
     raises nothing. Nothing to flag shows a `DigestQuietLines` line.
   - Lines: `OwnerDigestLines`, `TataDigestLines` ({0} the month), `DigestQuietLines`, all picked by

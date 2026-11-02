@@ -48,7 +48,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/admin pebble add · remove` | Manual cailloux adjustment | staff |
 | `/admin stats` | The server's economy at a glance | staff |
 | `/admin dashboard` | The economy day by day: flows, activity, finds | staff |
-| `/report sessions · polls · community · syncs · activity · commands · quiz · plynlings · emotes · sleeping · minecraft` | Her reports: attendance, polls and `/tonight`, the server's life, her own health, peak hours and channels, her commands, the quiz, the Plynlings, the emotes, members gone quiet, her evenings in Minecraft | staff |
+| `/report sessions · polls · community · syncs · activity · commands · incidents · quiz · plynlings · emotes · sleeping · minecraft` | Her reports: attendance, polls and `/tonight`, the server's life, her own health, peak hours and channels, her commands and who uses them, what went wrong, the quiz, the Plynlings, the emotes, members gone quiet, her evenings in Minecraft | staff |
 | `/admin warn · warnings · unwarn` | Formal warnings, sent to the person by DM | staff |
 | `/admin mute · unmute` | Discord timeout, saying what's missing when it can't | staff |
 | `/admin plynling rename · resurrect · passion-reset · cure`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
@@ -671,8 +671,11 @@ is gone).
   - **`activity`** — messages and voice time hour by hour, the peak hours and the busiest
     weekday, the busiest text channels and the silent ones, the voice rooms with their peak
     attendance and the ones nobody used (excluded channels marked 🚫);
-  - **`commands`** — how often her commands were used, the most used with their errors, the
-    typed shortcuts, and the commands nobody used;
+  - **`commands`** — how often her commands were used and by how many different people (no names),
+    the most used with their errors, the typed shortcuts, and the commands nobody used, the members'
+    before the staff's; `/debug` stays out of the rankings;
+  - **`incidents`** — what went wrong: failed commands, buttons and forms, answers later than
+    Discord's 3 seconds, errors in her logs, a locked database, lost connections and restarts;
   - **`quiz`** — questions posted, found and left unanswered, the found rate by category and by
     difficulty, the median answer time, the questions nobody found, the best and the fastest;
   - **`plynlings`** — adoptions and deaths (by cause, with the average lifespan), the living's
@@ -687,13 +690,16 @@ is gone).
     she harvested and gathered.
 
   Messages, voice presence and command uses are counted from 7.6.0 on, so `activity` and
-  `commands` start empty; her Minecraft days from 7.50.0.
+  `commands` start empty; her Minecraft days from 7.50.0; incidents, her disk and memory, and the
+  people behind each command from 7.56.0. A period a counter only partly covers says so, and trends
+  compare per counted day.
 
   On the 1st of each month she sends two digests of the previous month by DM, each opening with
   « Le mois en bref » (a few figures and what deserves a look):
-  - to the owner, about her running well: commands and their errors, the Pi, the messages she
-    couldn't answer precisely (with the latest ones as a file), the quiz, her hours in Minecraft;
-    then `syncs`, `commands`, `quiz` and `minecraft` (left out for a month she didn't play);
+  - to the owner, about her running well: commands and their errors, incidents, the Pi and its disk,
+    the messages she couldn't answer precisely (with the latest ones as a file), the quiz, her hours in
+    Minecraft; then `syncs`, `commands`, `incidents`, `quiz` and `minecraft` (left out for a month she
+    didn't play);
   - to the server admin, about the server's life: members, sessions, when the server talks, silent
     channels and forgotten emotes; then `community`, `sessions`, `activity` and `sleeping`.
 - **`/admin xp add <member> <amount>` · `/admin xp remove <member> <amount>`** — manual XP

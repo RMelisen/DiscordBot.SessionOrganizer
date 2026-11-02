@@ -22,6 +22,13 @@ public enum DigestAlertKind
     ActiveDrop,
     MoreLeaves,
     ManySleepers,
+    InteractionFailures,
+    LateAnswers,
+    LogErrors,
+    SqliteBusy,
+    DiskLow,
+    MemoryLow,
+    UnderVoltage,
 }
 
 /// <summary>
@@ -63,9 +70,24 @@ public static class DigestBrief
     public const double SleepersRate = 0.10;
     public const int SleepersMinMembers = 10;
 
+    // Incidents worth a look in a month: a few clicks failing, or slow answers, is one bad evening;
+    // a locked database is worth a look at once. Log lines come in bursts, so the bar is higher.
+    public const int InteractionFailuresMin = 3;
+    public const int LateAnswersMin = 5;
+    public const int LogErrorsMin = 20;
+
+    // The disk: under this share free, or filling within this many days at the month's pace. The card
+    // shows the pace from further out, as information.
+    public const int DiskLowPercent = 15;
+    public const int DiskFullSoonDays = 90;
+    public const int DiskFullShownDays = 365;
+
+    // Memory: the machine's available memory fell under this share of its total.
+    public const int MemoryLowPercent = 10;
+
     public static IReadOnlyList<DigestAlert> Owner(
         Compared<CommandReportData> commands, Compared<SyncsReportData> syncs, (int Day, int MaxMilli)? heatRecord,
-        Compared<QuizReportData> quiz, ReportWindow window)
+        Compared<QuizReportData> quiz, ReportWindow window, IncidentReportData? incidents = null)
     {
         var alerts = new List<DigestAlert>();
 
@@ -99,6 +121,26 @@ public static class DigestBrief
         var easy = q.ByDifficulty.FirstOrDefault(l => l.Label == QuizBank.Label(QuizDifficulty.Easy));
         if (easy is { Posted: >= QuizMinPosted } && easy.Found < easy.Posted * QuizEasyTooHard)
             alerts.Add(new DigestAlert(DigestAlertKind.QuizTooHard, Percent(easy.Found, easy.Posted)));
+
+        if (incidents is { } i)
+        {
+            if (i.Buttons + i.Modals >= InteractionFailuresMin)
+                alerts.Add(new DigestAlert(DigestAlertKind.InteractionFailures, i.Buttons + i.Modals));
+            if (i.Late >= LateAnswersMin) alerts.Add(new DigestAlert(DigestAlertKind.LateAnswers, i.Late));
+            if (i.LogErrors >= LogErrorsMin) alerts.Add(new DigestAlert(DigestAlertKind.LogErrors, i.LogErrors));
+            if (i.SqliteBusy > 0) alerts.Add(new DigestAlert(DigestAlertKind.SqliteBusy, i.SqliteBusy));
+        }
+
+        if (s.Body is { } body)
+        {
+            var freePercent = body.DiskFree is { } free && body.DiskTotal is { } total ? Percent(free, total) : (long?)null;
+            var soon = body.DaysUntilFull is <= DiskFullSoonDays;
+            if (freePercent is { } percent && (percent < DiskLowPercent || soon))
+                alerts.Add(new DigestAlert(DigestAlertKind.DiskLow, percent, soon ? body.DaysUntilFull!.Value : 0));
+            if (body.MemoryMinAvailable is { } low && body.MemoryTotal is { } all && Percent(low, all) < MemoryLowPercent)
+                alerts.Add(new DigestAlert(DigestAlertKind.MemoryLow, Percent(low, all)));
+            if (body.UnderVoltageMinutes > 0) alerts.Add(new DigestAlert(DigestAlertKind.UnderVoltage, body.UnderVoltageMinutes));
+        }
 
         return alerts;
     }

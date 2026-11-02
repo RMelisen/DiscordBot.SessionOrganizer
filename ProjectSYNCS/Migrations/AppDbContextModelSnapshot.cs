@@ -315,6 +315,33 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("CommandDailyStats");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.CommandMemberDailyStat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Command")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "Day", "Command", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("CommandMemberDailyStats");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.EconomyDailyStat", b =>
                 {
                     b.Property<int>("Id")
@@ -601,6 +628,34 @@ namespace ProjectSYNCS.Migrations
                         .IsUnique();
 
                     b.ToTable("GuildShameVoters");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.IncidentDailyStat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Count")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Day")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Day", "Kind", "Key")
+                        .IsUnique();
+
+                    b.ToTable("IncidentDailyStats");
                 });
 
             modelBuilder.Entity("ProjectSYNCS.Models.InventoryItem", b =>
@@ -953,6 +1008,43 @@ namespace ProjectSYNCS.Migrations
                     b.HasIndex("UserId", "Sent");
 
                     b.ToTable("PersonalReminders");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.PiBodyDay", b =>
+                {
+                    b.Property<int>("Day")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("DatabaseBytes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("DiskFreeBytes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("DiskTotalBytes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("MemoryMinAvailableBytes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("MemoryTotalBytes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("ProcessPeakBytes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SlowedMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UnderVoltageMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("WalPeakBytes")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Day");
+
+                    b.ToTable("PiBodyDays");
                 });
 
             modelBuilder.Entity("ProjectSYNCS.Models.PiThermalDay", b =>

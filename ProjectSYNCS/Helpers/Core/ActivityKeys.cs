@@ -46,4 +46,39 @@ public static class CommandPath
         ShortcutKind.Visit => ";pl visit",
         _ => ";pl ?",
     };
+
+    /// <summary>The owner's own tools: left out of the rankings, the totals and the reach.</summary>
+    public static bool IsDebug(string key) => Feature(key) == "debug";
+
+    /// <summary>A command only staff can use, listed after the members' in « Jamais utilisées ».</summary>
+    public static bool IsStaff(string key) => Feature(key) is "admin" or "config" or "report";
+
+    /// <summary>The top-level command a key belongs to: « plynling forage » is « plynling ».</summary>
+    public static string Feature(string key)
+    {
+        var space = key.IndexOf(' ');
+        return space < 0 ? key : key[..space];
+    }
+
+    /// <summary>
+    /// The key someone reached a command under, for counting people: a typed shortcut folds into the
+    /// command it stands for, so using both is one person on one command.
+    /// </summary>
+    public static string Reached(string key) => key switch
+    {
+        ";pl" => "plynling view",
+        ";work" => "work",
+        ";forage" => "plynling forage",
+        ";pl visit" => "plynling visit",
+        ";pl ?" => "plynling help",
+        _ => key,
+    };
+
+    /// <summary>A custom-id's first two parts (« poll:republish:42 » is « poll:republish »): the rest is state.</summary>
+    public static string Verb(string customId)
+    {
+        var first = customId.IndexOf(':');
+        var second = first < 0 ? -1 : customId.IndexOf(':', first + 1);
+        return second < 0 ? customId : customId[..second];
+    }
 }

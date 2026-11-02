@@ -86,6 +86,9 @@ public class AppDbContext : DbContext
     public DbSet<ActivityHourStat> ActivityHourStats => Set<ActivityHourStat>();
     public DbSet<ChannelDailyStat> ChannelDailyStats => Set<ChannelDailyStat>();
     public DbSet<CommandDailyStat> CommandDailyStats => Set<CommandDailyStat>();
+    public DbSet<CommandMemberDailyStat> CommandMemberDailyStats => Set<CommandMemberDailyStat>();
+    public DbSet<IncidentDailyStat> IncidentDailyStats => Set<IncidentDailyStat>();
+    public DbSet<PiBodyDay> PiBodyDays => Set<PiBodyDay>();
     public DbSet<AnonymousConfession> Confessions => Set<AnonymousConfession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -478,6 +481,24 @@ public class AppDbContext : DbContext
         {
             e.Property(x => x.GuildId).HasConversion<long>();
             e.HasIndex(x => new { x.GuildId, x.Day, x.Command }).IsUnique();
+        });
+
+        modelBuilder.Entity<CommandMemberDailyStat>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.Day, x.Command, x.UserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<IncidentDailyStat>(e =>
+        {
+            e.HasIndex(x => new { x.Day, x.Kind, x.Key }).IsUnique();
+        });
+
+        modelBuilder.Entity<PiBodyDay>(e =>
+        {
+            e.HasKey(x => x.Day);
+            e.Property(x => x.Day).ValueGeneratedNever();
         });
 
         modelBuilder.Entity<PebbleWallet>(e =>

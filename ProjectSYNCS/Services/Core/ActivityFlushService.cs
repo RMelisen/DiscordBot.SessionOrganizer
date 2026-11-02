@@ -9,7 +9,7 @@ using ProjectSYNCS.Models;
 namespace ProjectSYNCS.Services;
 
 // Writes ActivityCounter's counts: activity (ActivityHourStat, ChannelDailyStat, CommandDailyStat), emotes,
-// reactions used and her chat answers. Its own 5-minute loop (root CLAUDE.md: every loop keeps its
+// reactions used, her chat answers, who used which command and the incidents. Its own 5-minute loop (root CLAUDE.md: every loop keeps its
 // own interval). One scope per guild, each in its own try: a guild whose write fails gets its counts
 // put back (ActivityCounter.Restore) for the next pass, and the others are written anyway. StopAsync
 // flushes once more, so a clean restart loses nothing.
@@ -52,6 +52,8 @@ public sealed class ActivityFlushService : BackgroundService
 
     public async Task FlushAsync()
     {
+        await FlushIncidentsAsync();
+
         var batch = _counter.Drain();
         if (batch.IsEmpty) return;
         foreach (var guildId in batch.GuildIds)
@@ -69,6 +71,37 @@ public sealed class ActivityFlushService : BackgroundService
                 _counter.Restore(part);
                 _logger.LogWarning(ex, "Activity counts for guild {GuildId} not saved; kept for the next flush.", guildId);
             }
+        }
+    }
+
+    // IncidentDailyStat (/report incidents): not per guild, so apart from the batch, in its own try. A
+    // failed write logs a warning, which is itself counted and written next time.
+    private async Task FlushIncidentsAsync()
+    {
+        var incidents = _counter.DrainIncidents();
+        if (incidents.Count == 0) return;
+        try
+        {
+            await using var scope = _services.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var days = incidents.Keys.Select(k => k.Day).Distinct().ToList();
+            var rows = (await db.IncidentDailyStats.Where(x => days.Contains(x.Day)).ToListAsync())
+                .ToDictionary(x => (x.Day, x.Kind, x.Key));
+            foreach (var (key, n) in incidents)
+            {
+                if (!rows.TryGetValue((key.Day, key.Kind, key.Key), out var row))
+                {
+                    row = new IncidentDailyStat { Day = key.Day, Kind = key.Kind, Key = key.Key };
+                    db.IncidentDailyStats.Add(row);
+                }
+                row.Count += n;
+            }
+            await db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _counter.RestoreIncidents(incidents);
+            _logger.LogWarning(ex, "Incident counts not saved; kept for the next flush.");
         }
     }
 
@@ -126,6 +159,21 @@ public sealed class ActivityFlushService : BackgroundService
         await WriteEmotesAsync(db, guildId, part.Emotes);
         await WriteReactionsUsedAsync(db, guildId, part.ReactionsUsed);
         await WriteAnswersAsync(db, guildId, part);
+        await WritePeopleAsync(db, guildId, part.People);
+    }
+
+    // CommandMemberDailyStat (the reach in /report commands): a row exists or it doesn't, so a person
+    // already written today adds nothing.
+    private static async Task WritePeopleAsync(AppDbContext db, ulong guildId, IReadOnlySet<CommandPersonKey> people)
+    {
+        if (people.Count == 0) return;
+        var days = people.Select(k => k.Day).Distinct().ToList();
+        var known = (await db.CommandMemberDailyStats.Where(x => x.GuildId == guildId && days.Contains(x.Day))
+                .Select(x => new { x.Day, x.Command, x.UserId }).ToListAsync())
+            .Select(x => (x.Day, x.Command, x.UserId)).ToHashSet();
+        foreach (var key in people)
+            if (known.Add((key.Day, key.Command, key.UserId)))
+                db.CommandMemberDailyStats.Add(new CommandMemberDailyStat { GuildId = guildId, Day = key.Day, Command = key.Command, UserId = key.UserId });
     }
 
     // EmoteStat / EmoteDailyStat (/emotestats): totals + buckets, written together. A reaction taken

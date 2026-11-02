@@ -163,7 +163,7 @@ public static class HealthCards
     private static string Capitalise(string text) => char.ToUpper(text[0], Fr) + text[1..];
 
     // French units: Mo up to a gigabyte, Go beyond, one decimal under ten.
-    private static string Bytes(long bytes)
+    public static string Bytes(long bytes)
     {
         const double mega = 1024 * 1024, giga = mega * 1024;
         return bytes >= giga

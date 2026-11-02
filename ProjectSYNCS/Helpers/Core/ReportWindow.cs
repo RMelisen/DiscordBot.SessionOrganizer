@@ -3,8 +3,15 @@ using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Helpers;
 
-/// <summary>A report for its window, and the same report for the window before (null for « depuis toujours »).</summary>
-public sealed record Compared<T>(T Current, T? Previous) where T : class;
+/// <summary>
+/// A report for its window, and the same report for the window before (null for « depuis toujours »).
+/// <paramref name="FirstDay"/> is the first day its counter has a row at all, so a window reaching back
+/// before it was counted can say so; null for a report that isn't read from daily buckets.
+/// </summary>
+public sealed record Compared<T>(T Current, T? Previous, int? FirstDay = null) where T : class;
+
+/// <summary>How many days each side of a trend really counted (<see cref="ReportWindow.Pace"/>).</summary>
+public readonly record struct ReportPace(int Days, int PreviousDays);
 
 /// <summary>
 /// The days one /report (or the monthly digest) covers: inclusive Paris day keys
@@ -22,6 +29,25 @@ public sealed record ReportWindow(int FromDay, int ToDay, string Label, StatsPer
     private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
 
     public bool IsAllTime => FromDay == 0;
+
+    /// <summary>How long the window is, in days; 0 for « depuis toujours », which has no first day.</summary>
+    public int TotalDays => IsAllTime ? 0 : ToDate.DayNumber - FromDate.DayNumber + 1;
+
+    /// <summary>
+    /// How many of the window's days a counter covers, when its first row is <paramref name="firstDay"/>
+    /// (null: all of them). A quiet day after that counts: nothing happening is a real zero.
+    /// </summary>
+    public int CountedDays(int? firstDay)
+    {
+        if (firstDay is not { } first || first <= FromDay) return TotalDays;
+        return first > ToDay ? 0 : ToDate.DayNumber - DateOnly.FromDateTime(AppTime.FromDayKey(first)).DayNumber + 1;
+    }
+
+    /// <summary>The counter started inside this window, so its figures don't cover the whole of it.</summary>
+    public bool IsPartial(int? firstDay) => !IsAllTime && CountedDays(firstDay) < TotalDays;
+
+    /// <summary>The days behind a trend: a month of 13 counted days against one of 31 is compared per day.</summary>
+    public ReportPace Pace(int? firstDay) => new(CountedDays(firstDay), Previous?.CountedDays(firstDay) ?? 0);
 
     /// <summary>The rolling window a /report period names, ending today (Paris).</summary>
     public static ReportWindow From(StatsPeriod period, DateTimeOffset now)

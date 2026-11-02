@@ -67,7 +67,7 @@ public sealed class PlynlingShortcutService
             _logger.LogWarning(ex, "Shortcut {Kind} from {UserId} failed.", shortcut.Kind, message.Author.Id);
         }
         // Counted like the slash command it stands for (/report commands), under its own « ; » key.
-        _activity.CountCommand(channel.Guild.Id, CommandPath.Shortcut(shortcut.Kind), success, message.Timestamp);
+        _activity.CountCommand(channel.Guild.Id, CommandPath.Shortcut(shortcut.Kind), success, message.Timestamp, message.Author.Id);
         return true;
     }
 

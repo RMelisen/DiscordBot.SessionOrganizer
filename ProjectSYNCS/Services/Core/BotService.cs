@@ -95,6 +95,8 @@ internal sealed class BotService : IHostedService
         _interactions.Log += LogAsync;
         // Handlers run RunMode.Async: success or failure only arrives through this event.
         _interactions.SlashCommandExecuted += OnSlashCommandExecutedAsync;
+        _interactions.ComponentCommandExecuted += OnComponentCommandExecutedAsync;
+        _interactions.ModalCommandExecuted += OnModalCommandExecutedAsync;
 
         await _interactions.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
 
@@ -223,16 +225,73 @@ internal sealed class BotService : IHostedService
     }
 
     // Every slash command, for /report commands (in memory, never slows a command). Buttons and
-    // modals are not counted: they belong to a command already counted. DMs count under guild 0.
+    // modals are not counted as uses: they belong to a command already counted. DMs count under guild 0.
     private Task OnSlashCommandExecutedAsync(SlashCommandInfo? command, IInteractionContext context, IResult result)
     {
-        if (command is not null)
-            _activity.CountCommand(context.Guild?.Id ?? 0, CommandPath.Of(command), result.IsSuccess, DateTimeOffset.UtcNow);
+        if (command is null) return Task.CompletedTask;
+        var now = DateTimeOffset.UtcNow;
+        var path = CommandPath.Of(command);
+        _activity.CountCommand(context.Guild?.Id ?? 0, path, result.IsSuccess, now, context.User.Id);
+        if (!result.IsSuccess) _activity.CountIncident(IncidentKinds.Slash, path, now);
         return Task.CompletedTask;
+    }
+
+    // A click or a form that failed, for /report incidents. The command is null when nothing handles
+    // the custom-id any more (a button on an old message): that click failed too.
+    private Task OnComponentCommandExecutedAsync(ComponentCommandInfo? command, IInteractionContext context, IResult result) =>
+        CountFailureAsync(IncidentKinds.Button, context, result);
+
+    private Task OnModalCommandExecutedAsync(ModalCommandInfo? command, IInteractionContext context, IResult result) =>
+        CountFailureAsync(IncidentKinds.Modal, context, result);
+
+    private Task CountFailureAsync(string kind, IInteractionContext context, IResult result)
+    {
+        if (!result.IsSuccess) _activity.CountIncident(kind, InteractionLabel(context.Interaction), DateTimeOffset.UtcNow);
+        return Task.CompletedTask;
+    }
+
+    // Discord gives an interaction 3 s for a first answer, or a defer; after that the person sees it
+    // fail, whatever the handler goes on to do (root CLAUDE.md, Reliability). Handlers run RunMode.Async,
+    // so nothing else sees this.
+    private static readonly TimeSpan AnswerDeadline = TimeSpan.FromSeconds(3);
+
+    private async Task WatchAnswerAsync(SocketInteraction interaction)
+    {
+        await Task.Delay(AnswerDeadline);
+        if (!interaction.HasResponded)
+            _activity.CountIncident(IncidentKinds.Late, InteractionLabel(interaction), DateTimeOffset.UtcNow);
+    }
+
+    // What an interaction is counted under: the command's path, or the custom-id's verb.
+    private static string InteractionLabel(IDiscordInteraction interaction)
+    {
+        switch (interaction)
+        {
+            case SocketMessageComponent component:
+                return CommandPath.Verb(component.Data.CustomId);
+            case SocketModal modal:
+                return CommandPath.Verb(modal.Data.CustomId);
+            case SocketSlashCommand slash:
+                var groups = new List<string>();
+                var name = slash.Data.Name;
+                IEnumerable<SocketSlashCommandDataOption> options = slash.Data.Options;
+                while (options.FirstOrDefault(o => o.Type is ApplicationCommandOptionType.SubCommand or ApplicationCommandOptionType.SubCommandGroup) is { } sub)
+                {
+                    groups.Add(name);
+                    name = sub.Name;
+                    options = sub.Options;
+                }
+                return CommandPath.Join(groups, name);
+            default:
+                return interaction.Type.ToString();
+        }
     }
 
     private async Task HandleInteractionAsync(SocketInteraction interaction)
     {
+        // An autocomplete has its own, shorter life, and nobody sees it fail.
+        if (interaction is not SocketAutocompleteInteraction) _ = WatchAnswerAsync(interaction);
+
         var ctx = new SocketInteractionContext(_client, interaction);
         var result = await _interactions.ExecuteCommandAsync(ctx, _services);
 

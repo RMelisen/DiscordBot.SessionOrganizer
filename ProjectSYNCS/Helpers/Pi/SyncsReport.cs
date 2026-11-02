@@ -18,7 +18,19 @@ public sealed record SyncsReportData(
     long GoodBot,
     long BadBot,
     long VoiceMinutes,
-    IReadOnlyList<PersonTally> Companions);
+    IReadOnlyList<PersonTally> Companions)
+{
+    /// <summary>How many days the uptime covers, and the first of them.</summary>
+    public int UptimeDays { get; init; }
+    public int? UptimeFromDay { get; init; }
+
+    /// <summary>The first day her chat answers and her company in voice were counted at all.</summary>
+    public int? AnswersSince { get; init; }
+    public int? VoiceSince { get; init; }
+
+    /// <summary>Her disk, memory and power; null when none was measured in the window.</summary>
+    public PiBodyReportData? Body { get; init; }
+}
 
 /// <summary>
 /// How she has been over one window: her body (temperature, outages), her chatter, what people said
@@ -52,6 +64,7 @@ public static class SyncsReport
         var events = uptime.Where(e => window.Contains(e.EndedAt)).ToList();
         var downtime = TimeSpan.FromTicks(events.Sum(e => Math.Max(0, (e.EndedAt - e.StartedAt).Ticks)));
         double? uptimeShare = null;
+        var uptimeDays = 0;
         if (days.Count > 0)
         {
             // The measured span: from the first recorded day's midnight (Paris) to now or the window's end.
@@ -60,7 +73,11 @@ public static class SyncsReport
             if (end > now) end = now;
             var span = end - start;
             if (span > TimeSpan.Zero)
+            {
                 uptimeShare = Math.Clamp(1 - downtime / span, 0, 1);
+                // Rounded, not rounded up: a daylight-saving hour must not read as one more day.
+                uptimeDays = Math.Max(1, (int)Math.Round(span.TotalDays));
+            }
         }
 
         var people = companions
@@ -87,6 +104,10 @@ public static class SyncsReport
             // Minutes she shared, not minutes per person: the busiest call counts once per sweep per
             // person, so the sum reads as « minutes of company ».
             companions.Sum(c => c.Minutes),
-            people);
+            people)
+        {
+            UptimeDays = uptimeDays,
+            UptimeFromDay = days.Count > 0 ? days[0].Day : null,
+        };
     }
 }

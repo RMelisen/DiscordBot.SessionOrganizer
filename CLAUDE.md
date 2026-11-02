@@ -159,8 +159,9 @@ restart **by design**.
   `CollectionCompletion.Count`/`CollectionDailyStat`, `MinecraftStat`/`MinecraftDailyStat`. **The buckets do not sum to the totals and must not be made
   to** — everything before the buckets existed lives only in the totals. A removal always
   decrements *today's* bucket. Follow this shape for any new dated leaderboard.
-  `MemberFlowDailyStat` (joins/leaves), `ActivityHourStat`, `ChannelDailyStat` and
-  `CommandDailyStat` (activity counting) are buckets alone, with no totals, on purpose (see admin).
+  `MemberFlowDailyStat` (joins/leaves), `ActivityHourStat`, `ChannelDailyStat`, `CommandDailyStat`,
+  `CommandMemberDailyStat` and `IncidentDailyStat` (activity counting) are buckets alone, with no
+  totals, on purpose (see admin).
 - **No `HasMaxLength`**: SQLite doesn't enforce it. Cap at the input instead (below).
 - **Migrations are schema-only, except five deliberate data migrations** riding apply-on-startup:
   `ResetMemberXp` and `ResetXpTotals` (XP wipes), `AddPlynlingPassions` (backfill),

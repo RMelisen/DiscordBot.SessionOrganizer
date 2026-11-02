@@ -41,6 +41,24 @@ public static class TextChart
         Delta(current, previous) is { Length: > 0 } t ? $" ({t})" : "";
 
     /// <summary>
+    /// <see cref="Delta(long, long?)"/> per counted day: the previous figure is scaled to the current
+    /// window's days first, so a month counted for 13 days doesn't make the next one look like growth.
+    /// </summary>
+    public static string Delta(long current, long? previous, ReportPace pace)
+    {
+        if (previous is not { } p) return "";
+        if (p == 0 || pace.PreviousDays <= 0) return current > 0 ? "nouveau" : "";
+        if (pace.Days <= 0) return "";
+        var before = p * (double)pace.Days / pace.PreviousDays;
+        var pct = (long)Math.Round((current - before) * 100.0 / before);
+        return pct == 0 ? "=" : pct > 0 ? $"+{pct} %" : $"−{-pct} %";
+    }
+
+    /// <summary><see cref="Delta(long, long?, ReportPace)"/> in brackets after a figure, or nothing when there is no trend.</summary>
+    public static string Trend(long current, long? previous, ReportPace pace) =>
+        Delta(current, previous, pace) is { Length: > 0 } t ? $" ({t})" : "";
+
+    /// <summary>
     /// A fill bar, « ▰▰▰▱▱▱ »: <paramref name="width"/> cells, <paramref name="part"/> of
     /// <paramref name="total"/> filled, rounded. Any part above zero shows at least one cell, so a
     /// single vote never reads as none. All empty when there is no total.

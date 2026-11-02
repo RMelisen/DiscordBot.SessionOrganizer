@@ -1549,7 +1549,8 @@ var batch2Widest = new Dictionary<string, int>();
     if (t5c.Uses != 19 || t5c.Failures != 1) Fail("command totals");
     if (t5c.Top[0].Command != "help" || t5c.Top.Single(l => l.Command == "report sessions").Uses != 5) Fail("command ranking");
     if (t5c.Shortcuts.Single().Command != ";work" || t5c.Top.Any(l => l.Command.StartsWith(';'))) Fail("shortcuts kept apart");
-    if (!t5c.NeverUsed.SequenceEqual(new[] { "plynling feed", "report polls" })) Fail($"never used: {string.Join(",", t5c.NeverUsed)}");
+    if (!t5c.NeverUsed.SequenceEqual(new[] { "plynling feed" }) || !t5c.NeverUsedStaff.SequenceEqual(new[] { "report polls" }))
+        Fail($"never used: {string.Join(",", t5c.NeverUsed)} / staff: {string.Join(",", t5c.NeverUsedStaff)}");
     if (!t5c.Top.Any(l => l.Command == "old name")) Fail("a renamed command keeps its old rows");
 }
 
@@ -1607,7 +1608,7 @@ var batch2Widest = new Dictionary<string, int>();
     }
     var t6McEmpty = ProjectSYNCS.Commands.ReportCards.BuildMinecraft(new(MinecraftReport.Compute(Array.Empty<ProjectSYNCS.Models.MinecraftDailyStat>()), null), t6Month, true);
     if (t6McEmpty.Description != "Elle n'a pas joué sur cette période.") Fail("minecraft card: an empty window");
-    if (!ReportKinds.Digest(DigestRecipient.Owner).SequenceEqual(new[] { ReportKind.Syncs, ReportKind.Commands, ReportKind.Quiz, ReportKind.Minecraft })
+    if (!ReportKinds.Digest(DigestRecipient.Owner).SequenceEqual(new[] { ReportKind.Syncs, ReportKind.Commands, ReportKind.Incidents, ReportKind.Quiz, ReportKind.Minecraft })
         || !ReportKinds.Digest(DigestRecipient.Tata).SequenceEqual(new[] { ReportKind.Community, ReportKind.Sessions, ReportKind.Activity, ReportKind.Sleeping }))
         Fail("digest lists");
 }
@@ -1843,6 +1844,199 @@ var batch2Widest = new Dictionary<string, int>();
         Fail("owner brief: a month she didn't play");
     if (t12Owner.Fields.Where(f => f.Name == "Minecraft").Select(f => f.Value).FirstOrDefault() is not { } t12Game || !t12Game.Contains("en jeu") || t12Owner.Fields.Last().Name != "À regarder")
         Fail("owner brief: her hours in game");
+}
+
+// 34. The digest's honesty: partial months, trends per counted day, /debug apart, reach, incidents, her disk.
+{
+    var dOct = ReportWindow.CalendarMonth(2026, 10);
+    var dNov = ReportWindow.CalendarMonth(2026, 11);
+    const int dStart = 20261019;
+
+    // A counter started on 19 October covers 13 of October's 31 days, and all of November's.
+    if (dOct.TotalDays != 31 || dOct.CountedDays(dStart) != 13 || !dOct.IsPartial(dStart)) Fail("partial month: October from the 19th");
+    if (dOct.CountedDays(null) != 31 || dOct.IsPartial(null) || dOct.CountedDays(20260801) != 31 || dOct.IsPartial(20260801)) Fail("partial month: a counter older than the window");
+    if (dOct.CountedDays(20261201) != 0) Fail("partial month: a counter newer than the window");
+    if (dNov.Pace(dStart) != new ReportPace(30, 13)) Fail($"pace {dNov.Pace(dStart)}");
+    if (ReportWindow.From(StatsPeriod.AllTime, DateTimeOffset.UtcNow).IsPartial(dStart)) Fail("all time is never partial");
+
+    // The same pace over a 13-day month and a whole one is no change; raw totals would say +130 %.
+    if (TextChart.Delta(1490, 646, new ReportPace(30, 13)) != "=") Fail($"per-day trend: {TextChart.Delta(1490, 646, new ReportPace(30, 13))}");
+    if (TextChart.Delta(2980, 646, new ReportPace(30, 13)) != "+100 %") Fail($"per-day growth: {TextChart.Delta(2980, 646, new ReportPace(30, 13))}");
+    if (TextChart.Delta(5, 0, new ReportPace(30, 0)) != "nouveau" || TextChart.Delta(0, 0, new ReportPace(30, 13)) != "" || TextChart.Delta(5, null, new ReportPace(30, 13)) != "")
+        Fail("per-day trend: nothing to compare with");
+
+    // /debug: out of the totals, the ranking and the never-used lists, its failures still flagged.
+    ProjectSYNCS.Models.CommandDailyStat DCmd(string command, long uses, long failures = 0) =>
+        new() { GuildId = 1, Day = dStart, Command = command, Uses = uses, Failures = failures };
+    ProjectSYNCS.Models.CommandMemberDailyStat DWho(string command, ulong user, int day = dStart) =>
+        new() { GuildId = 1, Day = day, Command = command, UserId = user };
+    var dCmd = CommandReport.Compute(
+        new[] { DCmd("work", 10), DCmd("debug minecraft", 47, 3), DCmd(";work", 2) },
+        new[] { "work", "debug minecraft", "debug answers", "arcade duel", "config main-channel set", "admin warn" },
+        new[] { DWho("work", 1), DWho("work", 2), DWho("work", 1, dStart + 1), DWho("plynling view", 2), DWho("debug minecraft", 9) });
+    if (dCmd.Uses != 12 || dCmd.DebugUses != 47 || dCmd.Failures != 0) Fail($"debug in the totals: {dCmd.Uses}/{dCmd.DebugUses}/{dCmd.Failures}");
+    if (dCmd.Top.Any(l => CommandPath.IsDebug(l.Command)) || dCmd.UsesByCommand.Keys.Any(CommandPath.IsDebug)) Fail("debug in the ranking");
+    if (dCmd.Failing.SingleOrDefault()?.Command != "debug minecraft") Fail("a failing /debug must still be flagged");
+    if (!dCmd.NeverUsed.SequenceEqual(new[] { "arcade duel" }) || !dCmd.NeverUsedStaff.SequenceEqual(new[] { "admin warn", "config main-channel set" }))
+        Fail($"never used split: {string.Join(",", dCmd.NeverUsed)} / {string.Join(",", dCmd.NeverUsedStaff)}");
+
+    // Reach: different people, not uses; /debug is nobody.
+    if (dCmd.People.Count != 2 || dCmd.PeopleByCommand["work"] != 2 || dCmd.Features[0] != ("plynling", 1) && dCmd.Features[0] != ("work", 2)) Fail("reach counts");
+    if (dCmd.Features.Any(f => f.Feature == "debug") || dCmd.People.Contains(9)) Fail("debug in the reach");
+    var dBefore = CommandReport.Compute(Array.Empty<ProjectSYNCS.Models.CommandDailyStat>(), Array.Empty<string>(), new[] { DWho("work", 2), DWho("work", 3) });
+    if (CommandReport.Returning(new(dCmd, dBefore)) != 1 || CommandReport.Returning(new(dCmd, null)) is not null) Fail("people already there before");
+
+    var dCard = ProjectSYNCS.Commands.ReportCards.BuildCommands(new(dCmd, null, dStart), dOct, true);
+    if (!dCard.Description.Contains("Mois partiel") || !dCard.Description.Contains("13 jours sur 31") || !dCard.Description.Contains("47 fois")) Fail($"commands card: {dCard.Description}");
+    var dFields = dCard.Fields.Select(f => f.Name).ToList();
+    if (dFields.FindIndex(f => f.StartsWith("Jamais utilisées (")) >= dFields.FindIndex(f => f.Contains("côté staff"))) Fail("the members' never-used must come first");
+    if (ProjectSYNCS.Commands.ReportCards.BuildCommands(new(dCmd, null, dStart), dNov, true).Description.Contains("partiel")) Fail("a whole month called partial");
+
+    // The counter: a shortcut is the command it stands for, /debug is nobody, a person counts once a day.
+    var dAt = new DateTimeOffset(2026, 11, 2, 20, 0, 0, TimeSpan.Zero);
+    var dCounter = new ActivityCounter();
+    dCounter.CountCommand(1, ";work", true, dAt, 7);
+    dCounter.CountCommand(1, "work", true, dAt, 7);
+    dCounter.CountCommand(1, "debug minecraft", true, dAt, 7);
+    dCounter.CountCommand(1, "help", true, dAt);
+    var dBatch = dCounter.Drain();
+    if (dBatch.People.Count != 1 || !dBatch.People.Contains(new CommandPersonKey(1, 20261102, "work", 7))) Fail($"people counted: {string.Join(",", dBatch.People)}");
+    if (dBatch.For(2).People.Count != 0 || dBatch.For(1).People.Count != 1) Fail("people split by guild");
+    dCounter.Restore(dBatch);
+    if (dCounter.Drain().People.Count != 1) Fail("Restore lost the people");
+    foreach (var (dKey, dWanted) in new[] { (";pl", "plynling view"), (";forage", "plynling forage"), (";pl visit", "plynling visit"), (";pl ?", "plynling help"), ("work", "work") })
+        if (CommandPath.Reached(dKey) != dWanted) Fail($"reached {dKey}");
+    if (CommandPath.Verb("poll:republish:42") != "poll:republish" || CommandPath.Verb("poll:republish") != "poll:republish" || CommandPath.Verb("x") != "x") Fail("custom-id verb");
+    if (!CommandPath.IsStaff("config main-channel set") || !CommandPath.IsStaff("report quiz") || CommandPath.IsStaff("arcade duel") || !CommandPath.IsDebug("debug") || CommandPath.IsDebug("debugger")) Fail("command groups");
+
+    // Incidents: counted, drained apart from the batch, put back when a write fails.
+    dCounter.CountIncident(IncidentKinds.Button, "poll:vote", dAt);
+    dCounter.CountIncident(IncidentKinds.Button, "poll:vote", dAt);
+    if (!dCounter.Drain().IsEmpty) Fail("incidents leaked into the batch");
+    var dDrained = dCounter.DrainIncidents();
+    if (dDrained[new IncidentKey(20261102, IncidentKinds.Button, "poll:vote")] != 2 || dCounter.DrainIncidents().Count != 0) Fail("incident drain");
+    dCounter.RestoreIncidents(dDrained);
+    if (dCounter.DrainIncidents().Values.Single() != 2) Fail("incident restore");
+
+    // The log provider counts warnings and up, by logger, and a locked database once.
+    var dLogged = new ActivityCounter();
+    var dProvider = new IncidentLogProvider(dLogged);
+    var dService = dProvider.CreateLogger("ProjectSYNCS.Services.MonthlyDigestService");
+    var dEf = dProvider.CreateLogger("Microsoft.EntityFrameworkCore.Database.Command");
+    var dEfUpdate = dProvider.CreateLogger("Microsoft.EntityFrameworkCore.Update");
+    var dBusy = new InvalidOperationException("wrapped", new Microsoft.Data.Sqlite.SqliteException("locked", 5));
+    string DFormat(string s, Exception? e) => s;
+    dService.Log(Microsoft.Extensions.Logging.LogLevel.Information, default, "x", null, DFormat);
+    dService.Log(Microsoft.Extensions.Logging.LogLevel.Warning, default, "x", null, DFormat);
+    dService.Log(Microsoft.Extensions.Logging.LogLevel.Error, default, "x", null, DFormat);
+    dEf.Log(Microsoft.Extensions.Logging.LogLevel.Error, default, "x", dBusy, DFormat);
+    dEfUpdate.Log(Microsoft.Extensions.Logging.LogLevel.Error, default, "x", dBusy, DFormat);
+    dEf.Log(Microsoft.Extensions.Logging.LogLevel.Error, default, "x", new InvalidOperationException("other"), DFormat);
+    var dLogs = dLogged.DrainIncidents().ToDictionary(x => (x.Key.Kind, x.Key.Key), x => x.Value);
+    if (dLogs.GetValueOrDefault((IncidentKinds.LogWarning, "MonthlyDigestService")) != 1 || dLogs.GetValueOrDefault((IncidentKinds.LogError, "MonthlyDigestService")) != 1
+        || dLogs.GetValueOrDefault((IncidentKinds.LogError, "EF Core")) != 3 || dLogs.GetValueOrDefault((IncidentKinds.SqliteBusy, "")) != 1 || dLogs.Count != 4)
+        Fail($"log counts: {string.Join(", ", dLogs)}");
+
+    // The incident report's arithmetic, and the alerts it raises.
+    ProjectSYNCS.Models.IncidentDailyStat DInc(string kind, string key, long count) => new() { Day = dStart, Kind = kind, Key = key, Count = count };
+    var dInc = IncidentReport.Compute(new[]
+    {
+        DInc(IncidentKinds.Slash, "work", 1), DInc(IncidentKinds.Button, "poll:vote", 4), DInc(IncidentKinds.Modal, "event:editmodal", 1),
+        DInc(IncidentKinds.Late, "plynling view", 6), DInc(IncidentKinds.LogError, "EF Core", 25), DInc(IncidentKinds.LogWarning, "BotService", 2),
+        DInc(IncidentKinds.SqliteBusy, "", 1), DInc(IncidentKinds.Disconnect, "", 3), DInc(IncidentKinds.Restart, "Clean", 5), DInc(IncidentKinds.Restart, "Crash", 1),
+    });
+    if (dInc.Failed != 6 || dInc.Buttons != 4 || dInc.Late != 6 || dInc.TopFailed[0].Key != "poll:vote" || dInc.TopLogs[0].Key != "EF Core"
+        || dInc.Restarts[0] != ("Clean", 5) || dInc.Disconnects != 3)
+        Fail($"incident report: {dInc}");
+
+    // Her disk: sizes keep the last reading, peaks the worst, and the pace needs a week of days.
+    ProjectSYNCS.Models.PiBodyDay DBody(int day, long database, long free, long process, long available) =>
+        new() { Day = day, DatabaseBytes = database, DiskFreeBytes = free, DiskTotalBytes = 1000, ProcessPeakBytes = process, MemoryMinAvailableBytes = available, MemoryTotalBytes = 100 };
+    var dRow = new ProjectSYNCS.Models.PiBodyDay { Day = dStart };
+    PiBodyReport.Add(dRow, new PiBodySample(100, 7, 500, 1000, 50, (100L, 40L), true, false, 2));
+    PiBodyReport.Add(dRow, new PiBodySample(null, 3, 490, 1000, 30, (100L, 60L), true, true, 2));
+    if (dRow.DatabaseBytes != 100 || dRow.DiskFreeBytes != 490 || dRow.WalPeakBytes != 7 || dRow.ProcessPeakBytes != 50 || dRow.MemoryMinAvailableBytes != 40
+        || dRow.UnderVoltageMinutes != 4 || dRow.SlowedMinutes != 2)
+        Fail("body sample folded wrong");
+    var dWeek = Enumerable.Range(0, 11).Select(i => DBody(20261101 + i, 100 + i, 500 - 10 * i, 50 + i, 40 - i)).ToList();
+    var dBody = PiBodyReport.Compute(dWeek)!;
+    if (dBody.Database != 110 || dBody.DatabaseGrowth != 10 || dBody.DiskFree != 400 || dBody.DaysUntilFull != 40 || dBody.ProcessPeak != 60 || dBody.MemoryMinAvailable != 30 || dBody.FirstDay != 20261101)
+        Fail($"body report: {dBody}");
+    if (PiBodyReport.Compute(dWeek.Take(3).ToList())!.DaysUntilFull is not null) Fail("a disk's pace from three days");
+    if (PiBodyReport.Compute(Array.Empty<ProjectSYNCS.Models.PiBodyDay>()) is not null) Fail("no body rows must be nothing");
+
+    // The uptime says what it covers: from the first reading of the window, 9 October.
+    var dThermal = Enumerable.Range(9, 23).Select(i => new ProjectSYNCS.Models.PiThermalDay { Day = 20261000 + i, MinMilli = 40_000, MaxMilli = 50_000, SumMilli = 45_000, Samples = 1 }).ToList();
+    var dSyncs = SyncsReport.Compute(dThermal, Array.Empty<ProjectSYNCS.Models.UptimeEvent>(), Array.Empty<ProjectSYNCS.Models.ChatAnswerDailyStat>(),
+        Array.Empty<ProjectSYNCS.Models.BotFeedbackDailyStat>(), Array.Empty<ProjectSYNCS.Models.VoiceCompanionDailyStat>(), dOct, new DateTimeOffset(2026, 11, 2, 12, 0, 0, TimeSpan.Zero));
+    if (dSyncs.UptimeDays != 23 || dSyncs.UptimeFromDay != 20261009) Fail($"uptime span {dSyncs.UptimeDays} from {dSyncs.UptimeFromDay}");
+    var dSyncsCard = ProjectSYNCS.Commands.ReportCards.BuildSyncs(new(dSyncs with { Body = dBody }, null, 20261009), dOct, null, true);
+    if (!dSyncsCard.Fields.Any(f => f.Value.Contains("sur 23 jours (depuis le 09/10)"))) Fail("syncs card: the uptime's span");
+    if (!dSyncsCard.Fields.Any(f => f.Name.StartsWith("Disque") && f.Value.Contains("plein dans 40 jours"))) Fail("syncs card: the disk's pace");
+
+    // « Champs » counted produce, not fields.
+    var dMc = ProjectSYNCS.Commands.ReportCards.BuildMinecraft(new(new MinecraftReportData(9, 1, 0, Array.Empty<McCountLine>(), 0, 0, 0, 0, 167, Array.Empty<McCountLine>()), null, 20261027), dOct, true);
+    if (!dMc.Fields.Any(f => f.Value.Contains("Cultures récoltées : **167**")) || !dMc.Description.Contains("5 jours sur 31")) Fail($"minecraft card: {dMc.Description}");
+
+    // Alerts: every new one raised at once, and a quiet month raising none.
+    var dQuiet = new CommandReportData(0, 0, Array.Empty<CommandLine>(), Array.Empty<CommandLine>(), Array.Empty<string>(), new Dictionary<string, long>(), Array.Empty<CommandLine>());
+    var dQuiz = new QuizReportData(0, 0, 0, Array.Empty<QuizGroupLine>(), Array.Empty<QuizGroupLine>(), null, null, Array.Empty<string>(), Array.Empty<PersonTally>());
+    var dHeavy = dBody with { DiskFree = 100, DaysUntilFull = 40, MemoryMinAvailable = 5, UnderVoltageMinutes = 2 };
+    var dKinds = DigestBrief.Owner(new(dQuiet, null), new(dSyncs with { Body = dHeavy }, null), null, new(dQuiz, null), dOct, dInc).Select(a => a.Kind).ToList();
+    if (!dKinds.SequenceEqual(new[] { DigestAlertKind.InteractionFailures, DigestAlertKind.LateAnswers, DigestAlertKind.LogErrors, DigestAlertKind.SqliteBusy,
+            DigestAlertKind.DiskLow, DigestAlertKind.MemoryLow, DigestAlertKind.UnderVoltage }))
+        Fail($"incident alerts: {string.Join(", ", dKinds)}");
+    var dCalm = IncidentReport.Compute(new[] { DInc(IncidentKinds.Button, "x", 2), DInc(IncidentKinds.Late, "x", 4), DInc(IncidentKinds.LogError, "x", 19), DInc(IncidentKinds.Restart, "Clean", 9) });
+    if (DigestBrief.Owner(new(dQuiet, null), new(dSyncs with { Body = dBody with { DiskFree = 900, DaysUntilFull = null } }, null), null, new(dQuiz, null), dOct, dCalm).Count != 0)
+        Fail("a calm month's incidents raised something");
+
+    // Every card at its worst: the longest keys, 9-digit counts, every field present.
+    IncidentLine DLong(string kind, int i) => new(kind, $"some-long-custom-id-verb:or-a-very-long-logger-name-{i}", 999_999_999);
+    var dWorstInc = new IncidentReportData(999_999_999, 999_999_999, 999_999_999, 999_999_999, 999_999_999, 999_999_999, 999_999_999, 999_999_999,
+        new[] { ("Clean", 99_999L), ("PowerCut", 99_999L), ("Crash", 99_999L), ("Unknown", 99_999L) },
+        Enumerable.Range(0, IncidentReport.Listed).Select(i => DLong(IncidentKinds.Button, i)).ToList(),
+        Enumerable.Range(0, IncidentReport.Listed).Select(i => DLong(IncidentKinds.Late, i)).ToList(),
+        Enumerable.Range(0, IncidentReport.Listed).Select(i => DLong(IncidentKinds.LogError, i)).ToList());
+    var dWorstCmd = new CommandReportData(9_999_999, 99_999,
+        Enumerable.Range(0, CommandReport.TopCommands).Select(i => new CommandLine($"plynling some-long-subcommand-{i}", 999_999, 999)).ToList(),
+        new[] { new CommandLine(";pl", 9999, 0), new CommandLine(";work", 9999, 0), new CommandLine(";pl visit", 9999, 0) },
+        Enumerable.Range(0, 150).Select(i => $"plynling some-group-name sub-{i}").ToList(),
+        new Dictionary<string, long>(), Array.Empty<CommandLine>())
+    {
+        NeverUsedStaff = Enumerable.Range(0, 150).Select(i => $"config some-group-name sub-{i}").ToList(),
+        DebugUses = 999_999,
+        People = Enumerable.Range(0, 400).Select(i => (ulong)i).ToHashSet(),
+        PeopleByCommand = Enumerable.Range(0, CommandReport.TopCommands).ToDictionary(i => $"plynling some-long-subcommand-{i}", i => 400),
+        Features = Enumerable.Range(0, 60).Select(i => ($"some-long-feature-{i}", 400)).ToList(),
+        PeopleSince = dStart,
+    };
+    var dWorstBody = new PiBodyReportData(20261101, long.MaxValue / 4, long.MaxValue / 8, long.MaxValue / 4, long.MaxValue / 4, long.MaxValue / 2, 30, long.MaxValue / 4, long.MaxValue / 4, long.MaxValue / 2, 99_999, 99_999);
+    var dWorstSyncs = new SyncsReportData(31, 65_432, 81_234, 20261015, 9999, Enumerable.Repeat(70_000L, 30).ToList(),
+        new[] { (ProjectSYNCS.Models.UptimeEventKind.PowerCut, 99), (ProjectSYNCS.Models.UptimeEventKind.Crash, 99), (ProjectSYNCS.Models.UptimeEventKind.NetworkOutage, 99) },
+        TimeSpan.FromDays(9), 0.99, 9_999_999, 999_999, 999_999, 999_999, 999_999,
+        Enumerable.Range(0, SessionReport.ListSize).Select(i => new PersonTally((ulong)i + 1_234_567_890_123_456_789, 99_999, 0)).ToList())
+    {
+        UptimeDays = 31, UptimeFromDay = 20261002, AnswersSince = dStart, VoiceSince = dStart, Body = dWorstBody,
+    };
+    var dAlerts = Enum.GetValues<DigestAlertKind>().Select(k => new DigestAlert(k, 99_999, 999_999, "x")).ToList();
+    foreach (var (dWhat, dEmbed) in new[]
+    {
+        ("incidents", ProjectSYNCS.Commands.ReportCards.BuildIncidents(new(dWorstInc, dWorstInc, dStart), dOct, true)),
+        ("commands with reach", ProjectSYNCS.Commands.ReportCards.BuildCommands(new(dWorstCmd, dWorstCmd, dStart), dOct, true)),
+        ("syncs with body", ProjectSYNCS.Commands.ReportCards.BuildSyncs(new(dWorstSyncs, dWorstSyncs, dStart), dOct, (20260801, 84_000), true, LongestName)),
+        ("owner brief with incidents", ProjectSYNCS.Commands.ReportCards.BuildOwnerBrief(new(dWorstCmd, dWorstCmd, dStart), new(dWorstSyncs, dWorstSyncs, dStart), new(dQuiz, null),
+            new(MinecraftReport.Compute(Array.Empty<ProjectSYNCS.Models.MinecraftDailyStat>()), null), dAlerts, dOct, "calme", new(dWorstInc, dWorstInc, dStart))),
+    })
+    {
+        batch2Widest[dWhat] = dEmbed.Length;
+        if (dEmbed.Length > 6000) Fail($"{dWhat}: {dEmbed.Length} characters");
+        if (dEmbed.Fields.Length > 25 || dEmbed.Fields.Any(f => f.Value.Length is 0 or > 1024)) Fail($"{dWhat}: an empty, oversized or 26th field");
+        if (dEmbed.Description is { Length: > 4096 }) Fail($"{dWhat}: description too long");
+    }
+    if (ProjectSYNCS.Commands.ReportCards.BuildIncidents(new(IncidentReport.Compute(Array.Empty<ProjectSYNCS.Models.IncidentDailyStat>()), null), dOct, true).Fields.Length != 0)
+        Fail("incidents card: nothing counted yet");
+    foreach (var dAlert in dAlerts)
+        if (ProjectSYNCS.Commands.ReportCards.AlertLine(dAlert).Contains("sans signe de vie") != (dAlert.Kind == DigestAlertKind.ManySleepers)) Fail($"alert line for {dAlert.Kind} fell through");
 }
 
 Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2Widest.Select(x => $"{x.Key} {x.Value}"))} chars");

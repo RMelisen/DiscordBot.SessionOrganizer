@@ -18,7 +18,7 @@ namespace ProjectSYNCS.Commands;
 /// A mention in an embed only shows a name if the reader's app already knows that member (in a DM,
 /// the digest's sleepers came out as raw ids), so each person is written out by <c>nameOf</c> too.
 /// </remarks>
-public static class ReportCards
+public static partial class ReportCards
 {
     private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-FR");
 
@@ -56,6 +56,7 @@ public static class ReportCards
     {
         var d = c.Current;
         var p = c.Previous;
+        var pace = w.Pace(c.FirstDay);
         var embed = Start("📋 Les sessions", w);
 
         if (d.Held == 0 && d.Cancelled == 0)
@@ -63,7 +64,7 @@ public static class ReportCards
 
         var categories = string.Join(" · ", d.ByCategory.Select(x => $"{Category(x.Category)} {x.Count}"));
         embed.WithDescription(
-            $"**{d.Held}** {Plural(d.Held, "session tenue", "sessions tenues")}{TextChart.Trend(d.Held, p?.Held)}" +
+            $"**{d.Held}** {Plural(d.Held, "session tenue", "sessions tenues")}{TextChart.Trend(d.Held, p?.Held, pace)}" +
             $" · **{d.Cancelled}** {Plural(d.Cancelled, "annulée", "annulées")}" +
             (categories.Length > 0 ? $"\n{categories}" : ""));
 
@@ -113,6 +114,7 @@ public static class ReportCards
     {
         var d = c.Current;
         var p = c.Previous;
+        var pace = w.Pace(c.FirstDay);
         var embed = Start("🗳️ Les sondages et /tonight", w);
         var total = d.DatePolls + d.TextPolls;
 
@@ -120,7 +122,7 @@ public static class ReportCards
             return embed.WithDescription("Rien de lancé sur cette période.").WithFooter(Footer(w)).Build();
 
         embed.WithDescription(
-            $"**{total}** {Plural(total, "sondage lancé", "sondages lancés")}{TextChart.Trend(total, p is null ? null : p.DatePolls + p.TextPolls)}" +
+            $"**{total}** {Plural(total, "sondage lancé", "sondages lancés")}{TextChart.Trend(total, p is null ? null : p.DatePolls + p.TextPolls, pace)}" +
             $" ({d.DatePolls} de dates · {d.TextPolls} de votes) · {d.Open} encore {Plural(d.Open, "ouvert", "ouverts")}");
 
         if (total > 0)
@@ -135,7 +137,7 @@ public static class ReportCards
 
         embed.AddField("/tonight", d.TonightCalls == 0
             ? "Aucun appel."
-            : $"Appels : **{d.TonightCalls}**{TextChart.Trend(d.TonightCalls, p?.TonightCalls)}" +
+            : $"Appels : **{d.TonightCalls}**{TextChart.Trend(d.TonightCalls, p?.TonightCalls, pace)}" +
               $" · seuil atteint : **{d.TonightReached}** · {Plural(d.TonightBecameSession, "devenu session", "devenus sessions")} : **{d.TonightBecameSession}**\n" +
               $"« Chaud » en moyenne : **{Num(d.AverageTonightIn ?? 0)}** par appel");
 
@@ -154,16 +156,18 @@ public static class ReportCards
     {
         var d = c.Current;
         var p = c.Previous;
+        var pace = w.Pace(c.FirstDay);
         var embed = Start("👥 La communauté", w);
 
         embed.WithDescription(
             $"**{d.ActiveMembers}** {Plural(d.ActiveMembers, "membre actif", "membres actifs")}{TextChart.Trend(d.ActiveMembers, p?.ActiveMembers)}" +
-            (d.DailyActive.Count > 1 ? $"\n`{TextChart.Sparkline(d.DailyActive)}`" : ""));
+            (d.DailyActive.Count > 1 ? $"\n`{TextChart.Sparkline(d.DailyActive)}`" : "") +
+            PartialNote(w, c.FirstDay));
 
         embed.AddField("Activité",
-            $"XP gagnée : **{LevelCardUi.Xp(d.Xp)}**{TextChart.Trend(d.Xp, p?.Xp)}\n" +
-            $"Vocal : **{Duration(d.VoiceMinutes)}**{TextChart.Trend(d.VoiceMinutes, p?.VoiceMinutes)}\n" +
-            $"Réactions : **{LevelCardUi.Xp(d.Reactions)}**{TextChart.Trend(d.Reactions, p?.Reactions)}");
+            $"XP gagnée : **{LevelCardUi.Xp(d.Xp)}**{TextChart.Trend(d.Xp, p?.Xp, pace)}\n" +
+            $"Vocal : **{Duration(d.VoiceMinutes)}**{TextChart.Trend(d.VoiceMinutes, p?.VoiceMinutes, pace)}\n" +
+            $"Réactions : **{LevelCardUi.Xp(d.Reactions)}**{TextChart.Trend(d.Reactions, p?.Reactions, pace)}");
 
         var net = d.Joins - d.Leaves;
         embed.AddField("Arrivées et départs",
@@ -181,7 +185,7 @@ public static class ReportCards
         if (names)
         {
             AddPeople(embed, "Les plus actifs", CommunityReport.Busiest(d, p),
-                x => $"{LevelCardUi.Xp(x.Xp)} XP{TextChart.Trend(x.Xp, x.Before)}", x => x.UserId, nameOf);
+                x => $"{LevelCardUi.Xp(x.Xp)} XP{TextChart.Trend(x.Xp, x.Before, pace)}", x => x.UserId, nameOf);
             AddPeople(embed, "Ça se calme", CommunityReport.Fading(d, p),
                 x => $"rien cette fois, {LevelCardUi.Xp(x.Before)} XP avant", x => x.UserId, nameOf);
         }
@@ -213,12 +217,15 @@ public static class ReportCards
             ? "Aucune panne."
             : string.Join('\n', d.Outages.Select(o => $"{OutageLabel(o.Kind, o.Count)} : **{o.Count}**"));
         outages += $"\nHors ligne : **{Duration((long)d.Downtime.TotalMinutes)}**" +
-                   (d.Uptime is { } up ? $" · disponibilité **{(up * 100).ToString("0.0", Fr)} %**" : "");
+                   (d.Uptime is { } up ? $" · disponibilité **{(up * 100).ToString("0.0", Fr)} %**{UptimeSpan(d, w)}" : "");
         embed.AddField("Pannes", outages);
+
+        if (d.Body is { } b)
+            embed.AddField("Disque, mémoire et courant", BodyLines(b, w));
 
         embed.AddField("Bavardage", d.Answers == 0
             ? "Personne ne m'a parlé."
-            : $"Réponses données : **{LevelCardUi.Xp(d.Answers)}**{TextChart.Trend(d.Answers, p?.Answers)}\n" +
+            : $"Réponses données : **{LevelCardUi.Xp(d.Answers)}**{TextChart.Trend(d.Answers, p?.Answers, w.Pace(d.AnswersSince))}{DaysCounted(w, d.AnswersSince)}\n" +
               $"Sans réponse précise : **{TextChart.Percent(d.Unrecognised, d.Answers)}**" +
               (p is { Answers: > 0 } ? $" · avant : {TextChart.Percent(p.Unrecognised, p.Answers)}" : ""));
 
@@ -227,12 +234,35 @@ public static class ReportCards
             ? "Ni good bot, ni bad bot."
             : $"Good bot : **{d.GoodBot}** · bad bot : **{d.BadBot}** ({TextChart.Percent(d.GoodBot, verdicts)} de gentils)");
 
-        var voice = $"**{Duration(d.VoiceMinutes)}** de compagnie{TextChart.Trend(d.VoiceMinutes, p?.VoiceMinutes)}";
+        var voice = $"**{Duration(d.VoiceMinutes)}** de compagnie{TextChart.Trend(d.VoiceMinutes, p?.VoiceMinutes, w.Pace(d.VoiceSince))}{DaysCounted(w, d.VoiceSince)}";
         if (names && d.Companions.Count > 0)
             voice += "\n" + string.Join('\n', d.Companions.Select(t => $"{Who(t.UserId, nameOf)} — {Duration(t.Count)}"));
         embed.AddField("En vocal avec moi", Cap(voice));
 
-        return embed.WithFooter(Footer(w, "Disponibilité : sur les jours où j'ai relevé ma température.")).Build();
+        return embed.WithFooter(Footer(w, "Disponibilité : depuis mon premier relevé de température de la période.")).Build();
+    }
+
+    // « sur 23 jours (depuis le 09/10) »: an uptime means little without what it was measured over.
+    private static string UptimeSpan(SyncsReportData d, ReportWindow w) =>
+        d.UptimeDays <= 0 ? ""
+        : $" sur {d.UptimeDays} {Plural(d.UptimeDays, "jour", "jours")}" +
+          (d.UptimeFromDay is { } from && from > w.FromDay ? $" (depuis le {AppTime.FromDayKey(from):dd/MM})" : "");
+
+    private static string BodyLines(PiBodyReportData b, ReportWindow w)
+    {
+        var lines = new List<string>();
+        if (b.Database is { } database)
+            lines.Add($"Base : **{HealthCards.Bytes(database)}**" +
+                (b.DatabaseGrowth is { } growth ? $" ({(growth < 0 ? "−" : "+")}{HealthCards.Bytes(Math.Abs(growth))})" : "") +
+                $" · journal au plus haut : {HealthCards.Bytes(b.WalPeak)}");
+        if (b.DiskFree is { } free && b.DiskTotal is { } total)
+            lines.Add($"Disque libre : **{TextChart.Percent(free, total)}** ({HealthCards.Bytes(free)} sur {HealthCards.Bytes(total)})" +
+                (b.DaysUntilFull is { } days && days <= DigestBrief.DiskFullShownDays ? $" · plein dans {days} {Plural(days, "jour", "jours")} à ce rythme" : ""));
+        lines.Add($"Mémoire : pic à **{HealthCards.Bytes(b.ProcessPeak)}** pour moi" +
+            (b.MemoryMinAvailable is { } low && b.MemoryTotal is { } all ? $" · {HealthCards.Bytes(low)} libres au plus bas sur {HealthCards.Bytes(all)}" : ""));
+        lines.Add($"Sous-tension : **{Duration(b.UnderVoltageMinutes)}** · au ralenti : **{Duration(b.SlowedMinutes)}**");
+        if (b.FirstDay > w.FromDay) lines.Add($"-# Mesuré depuis le {AppTime.FromDayKey(b.FirstDay):dd/MM}.");
+        return string.Join('\n', lines);
     }
 
     // ---- /report activity ---------------------------------------------------------------------
@@ -241,13 +271,15 @@ public static class ReportCards
     {
         var d = c.Current;
         var p = c.Previous;
+        var pace = w.Pace(c.FirstDay);
         var embed = Start("📈 L'activité", w);
         if (d.Messages == 0 && d.VoiceMinutes == 0)
             return embed.WithDescription("Rien de compté sur cette période (comptage depuis la 7.6.0).").WithFooter(Footer(w)).Build();
 
         embed.WithDescription(
-            $"**{LevelCardUi.Xp(d.Messages)}** messages{TextChart.Trend(d.Messages, p?.Messages)}" +
-            $" · **{Duration(d.VoiceMinutes)}** de vocal cumulé{TextChart.Trend(d.VoiceMinutes, p?.VoiceMinutes)}");
+            $"**{LevelCardUi.Xp(d.Messages)}** messages{TextChart.Trend(d.Messages, p?.Messages, pace)}" +
+            $" · **{Duration(d.VoiceMinutes)}** de vocal cumulé{TextChart.Trend(d.VoiceMinutes, p?.VoiceMinutes, pace)}" +
+            PartialNote(w, c.FirstDay));
 
         var peak = $"Messages `0h {TextChart.Sparkline(d.MessagesByHour)} 23h`\n" +
                    $"Vocal       `0h {TextChart.Sparkline(d.VoiceByHour)} 23h`";
@@ -256,7 +288,7 @@ public static class ReportCards
         embed.AddField("Heures de pointe", peak);
 
         embed.AddField("Salons écrits", d.TopText.Count == 0 ? "—" : Cap(string.Join('\n', d.TopText.Select(l =>
-            $"{Mark(l)}<#{l.ChannelId}> — {LevelCardUi.Xp(l.Value)}{TextChart.Trend(l.Value, p?.MessagesByChannel.GetValueOrDefault(l.ChannelId))}"))));
+            $"{Mark(l)}<#{l.ChannelId}> — {LevelCardUi.Xp(l.Value)}{TextChart.Trend(l.Value, p?.MessagesByChannel.GetValueOrDefault(l.ChannelId), pace)}"))));
         if (d.SilentText.Count > 0)
             embed.AddField($"Salons silencieux ({d.SilentText.Count})", Fit(d.SilentText.Select(l => $"{Mark(l)}<#{l.ChannelId}>").ToList(), " · "));
 
@@ -275,23 +307,36 @@ public static class ReportCards
     {
         var d = c.Current;
         var p = c.Previous;
+        var pace = w.Pace(c.FirstDay);
         var embed = Start("⌨️ Mes commandes", w);
         embed.WithDescription(d.Uses == 0
-            ? "Aucune commande utilisée sur cette période (comptage depuis la 7.6.0)."
-            : $"**{LevelCardUi.Xp(d.Uses)}** {Plural(d.Uses, "utilisation", "utilisations")}{TextChart.Trend(d.Uses, p?.Uses)}" +
-              (d.Failures > 0 ? $" · **{d.Failures}** en erreur ({TextChart.Percent(d.Failures, d.Uses)})" : ""));
+            ? "Aucune commande utilisée sur cette période (comptage depuis la 7.6.0)." + DebugNote(d)
+            : $"**{LevelCardUi.Xp(d.Uses)}** {Plural(d.Uses, "utilisation", "utilisations")}{TextChart.Trend(d.Uses, p?.Uses, pace)}" +
+              (d.People.Count > 0 ? $" · par **{d.People.Count}** {Plural(d.People.Count, "personne", "personnes")}" : "") +
+              (d.Failures > 0 ? $" · **{d.Failures}** en erreur ({TextChart.Percent(d.Failures, d.Uses)})" : "") +
+              (CommandReport.Returning(c) is { } back ? $"\nDéjà là avant : **{back}** sur {d.People.Count}" : "") +
+              PartialNote(w, c.FirstDay) + DebugNote(d));
 
         if (d.Top.Count > 0)
             embed.AddField("Les plus utilisées", Cap(string.Join('\n', d.Top.Select(l =>
-                $"`/{l.Command}` — {LevelCardUi.Xp(l.Uses)}{TextChart.Trend(l.Uses, p?.UsesByCommand.GetValueOrDefault(l.Command))}" +
+                $"`/{l.Command}` — {LevelCardUi.Xp(l.Uses)}{TextChart.Trend(l.Uses, p?.UsesByCommand.GetValueOrDefault(l.Command), pace)}" +
+                (d.PeopleByCommand.GetValueOrDefault(l.Command) is > 0 and var who ? $" · {who} {Plural(who, "personne", "personnes")}" : "") +
                 (l.Failures > 0 ? $" · ⚠️ {l.Failures}" : "")))));
+        if (d.Features.Count > 0)
+            embed.AddField("Portée", Fit(d.Features.Select(f => $"`/{f.Feature}` {f.People}").ToList(), " · ") +
+                (w.IsPartial(d.PeopleSince) && d.PeopleSince is { } since ? $"\n-# Personnes différentes, comptées depuis le {AppTime.FromDayKey(since):dd/MM}." : "\n-# Personnes différentes."));
         if (d.Shortcuts.Count > 0)
             embed.AddField("Raccourcis tapés", Fit(d.Shortcuts.Select(l => $"`{l.Command}` {LevelCardUi.Xp(l.Uses)}").ToList(), " · "));
         if (d.NeverUsed.Count > 0)
             embed.AddField($"Jamais utilisées ({d.NeverUsed.Count})", Fit(d.NeverUsed.Select(x => $"`/{x}`").ToList(), " · "));
+        if (d.NeverUsedStaff.Count > 0)
+            embed.AddField($"Jamais utilisées, côté staff ({d.NeverUsedStaff.Count})", Fit(d.NeverUsedStaff.Select(x => $"`/{x}`").ToList(), " · "));
 
         return embed.WithFooter(Footer(w, "Les commandes en message privé ne comptent pas ici. Comptage depuis la 7.6.0.")).Build();
     }
+
+    private static string DebugNote(CommandReportData d) =>
+        d.DebugUses > 0 ? $"\n-# Hors classement : `/debug`, {LevelCardUi.Xp(d.DebugUses)} fois." : "";
 
     // ---- /report quiz -------------------------------------------------------------------------
 
@@ -299,16 +344,18 @@ public static class ReportCards
     {
         var d = c.Current;
         var p = c.Previous;
+        var pace = w.Pace(c.FirstDay);
         var embed = Start("❓ Le quiz", w);
         if (d.Posted == 0)
             return embed.WithDescription("Aucune question posée sur cette période.").WithFooter(Footer(w)).Build();
 
         embed.WithDescription(
-            $"**{d.Posted}** {Plural(d.Posted, "question posée", "questions posées")}{TextChart.Trend(d.Posted, p?.Posted)}" +
+            $"**{d.Posted}** {Plural(d.Posted, "question posée", "questions posées")}{TextChart.Trend(d.Posted, p?.Posted, pace)}" +
             $" · trouvées : **{d.Found}** ({TextChart.Percent(d.Found, d.Posted)})" +
             (p is { Posted: > 0 } ? $" · avant : {TextChart.Percent(p.Found, p.Posted)}" : "") +
             $" · sans réponse : **{d.Unanswered}**" +
-            (d.MedianSeconds is { } s ? $"\nTemps de réponse médian : **{Seconds(s)}**" : ""));
+            (d.MedianSeconds is { } s ? $"\nTemps de réponse médian : **{Seconds(s)}**" : "") +
+            PartialNote(w, c.FirstDay));
         embed.AddField("Par catégorie", Cap(Groups(d.ByCategory)), inline: true);
         embed.AddField("Par difficulté", Cap(Groups(d.ByDifficulty)), inline: true);
         if (d.UnfoundPrompts.Count > 0)
@@ -335,10 +382,11 @@ public static class ReportCards
     {
         var d = c.Current;
         var p = c.Previous;
+        var pace = w.Pace(c.FirstDay);
         var embed = Start("🌱 Les Plynlings", w);
         var deaths = d.Deaths.Sum(x => x.Count);
         embed.WithDescription(
-            $"**{d.Living}** en vie · **{d.Born}** {Plural(d.Born, "adoption", "adoptions")}{TextChart.Trend(d.Born, p?.Born)}" +
+            $"**{d.Living}** en vie · **{d.Born}** {Plural(d.Born, "adoption", "adoptions")}{TextChart.Trend(d.Born, p?.Born, pace)}" +
             $" · **{deaths}** {Plural(deaths, "décès", "décès")}" +
             (deaths > 0 ? $" ({string.Join(", ", d.Deaths.Select(x => $"{DeathLabel(x.Cause)} : {x.Count}"))})" : "") +
             (d.AverageLifespan is { } life ? $"\nDurée de vie moyenne des disparus : **{Math.Max(1, (int)Math.Round(life.TotalDays))} jours**" : ""));
@@ -350,7 +398,7 @@ public static class ReportCards
 
         embed.AddField("Événements", d.EventsResolved == 0
             ? "Aucun événement résolu."
-            : Cap($"Résolus : **{d.EventsResolved}**{TextChart.Trend(d.EventsResolved, p?.EventsResolved)}" +
+            : Cap($"Résolus : **{d.EventsResolved}**{TextChart.Trend(d.EventsResolved, p?.EventsResolved, pace)}" +
                   $" · choisis seuls : **{d.DecidedAlone}** ({TextChart.Percent(d.DecidedAlone, d.EventsResolved)})\n" +
                   (d.Challenges > 0 ? $"Défis réussis : **{d.ChallengesWon}/{d.Challenges}**\n" : "") +
                   string.Join('\n', d.TopEvents.Select(e => $"• {e.Title} ×{e.Count}"))));
@@ -397,13 +445,14 @@ public static class ReportCards
     {
         var d = c.Current;
         var p = c.Previous;
+        var pace = w.Pace(c.FirstDay);
         var embed = Start("Les émotes", w);
         var total = d.Own + d.Foreign + d.Unicode;
         embed.WithDescription(total == 0
             ? "Aucune émote utilisée sur cette période."
-            : $"**{LevelCardUi.Xp(total)}** émotes{TextChart.Trend(total, p is null ? null : p.Own + p.Foreign + p.Unicode)}" +
+            : $"**{LevelCardUi.Xp(total)}** émotes{TextChart.Trend(total, p is null ? null : p.Own + p.Foreign + p.Unicode, pace)}" +
               $" · du serveur : **{TextChart.Percent(d.Own, total)}** · d'ailleurs : **{TextChart.Percent(d.Foreign, total)}**" +
-              $" · emoji : **{TextChart.Percent(d.Unicode, total)}**");
+              $" · emoji : **{TextChart.Percent(d.Unicode, total)}**" + PartialNote(w, c.FirstDay));
 
         if (d.TopOwn.Count > 0)
             embed.AddField("Les préférées du serveur", Fit(d.TopOwn.Select(e => $"{e.Markup} ×{LevelCardUi.Xp(e.Count)}").ToList(), " · "));
@@ -431,26 +480,27 @@ public static class ReportCards
     {
         var d = c.Current;
         var p = c.Previous;
+        var pace = w.Pace(c.FirstDay);
         var embed = Start("⛏️ Minecraft", w);
         if (!d.Played)
             return embed.WithDescription("Elle n'a pas joué sur cette période.").WithFooter(Footer(w, MinecraftNote)).Build();
 
         embed.WithDescription(
-            $"**{Duration(d.Minutes)}** en jeu{TextChart.Trend(d.Minutes, p?.Minutes)}" +
-            $" sur **{d.DaysPlayed}** {Plural(d.DaysPlayed, "jour", "jours")}");
+            $"**{Duration(d.Minutes)}** en jeu{TextChart.Trend(d.Minutes, p?.Minutes, pace)}" +
+            $" sur **{d.DaysPlayed}** {Plural(d.DaysPlayed, "jour", "jours")}" + PartialNote(w, c.FirstDay));
 
-        var orders = $"**{LevelCardUi.Xp(d.Orders)}** {Plural(d.Orders, "ordre", "ordres")}{TextChart.Trend(d.Orders, p?.Orders)}";
+        var orders = $"**{LevelCardUi.Xp(d.Orders)}** {Plural(d.Orders, "ordre", "ordres")}{TextChart.Trend(d.Orders, p?.Orders, pace)}";
         if (names && d.TopPlayers.Count > 0)
             orders += "\n" + string.Join('\n', d.TopPlayers.Select(l => $"**{Format.Sanitize(l.Name)}** — {LevelCardUi.Xp(l.Count)}"));
         embed.AddField("Ordres", Cap(orders));
 
         embed.AddField("Aventures",
-            $"Morts : **{LevelCardUi.Xp(d.Deaths)}** · monstres tués : **{LevelCardUi.Xp(d.Kills)}**{TextChart.Trend(d.Kills, p?.Kills)}\n" +
+            $"Morts : **{LevelCardUi.Xp(d.Deaths)}** · monstres tués : **{LevelCardUi.Xp(d.Kills)}**{TextChart.Trend(d.Kills, p?.Kills, pace)}\n" +
             $"Poissons : **{LevelCardUi.Xp(d.Fish)}** · trésors : **{LevelCardUi.Xp(d.Treasure)}**");
 
         var gathered = d.Gathered.Select(l => $"{ResourceLabel(l.Name)} ×{LevelCardUi.Xp(l.Count)}").ToList();
         embed.AddField("Récoltes",
-            $"Champs : **{LevelCardUi.Xp(d.Harvested)}**{TextChart.Trend(d.Harvested, p?.Harvested)}" +
+            $"Cultures récoltées : **{LevelCardUi.Xp(d.Harvested)}**{TextChart.Trend(d.Harvested, p?.Harvested, pace)}" +
             (gathered.Count > 0 ? "\n" + Fit(gathered, " · ") : ""));
 
         return embed.WithFooter(Footer(w, MinecraftNote)).Build();
@@ -518,126 +568,32 @@ public static class ReportCards
         return lines.Count - index;
     }
 
-    // ---- Monthly digest: « Le mois en bref » --------------------------------------------------
-
-    /// <summary>
-    /// Papa's first digest message: her commands, the Pi, what she couldn't answer, the quiz and her hours
-    /// in Minecraft, in a few figures, then « À regarder » (DigestBrief.Owner) or her quiet line when nothing is.
-    /// </summary>
-    public static Embed BuildOwnerBrief(Compared<CommandReportData> commands, Compared<SyncsReportData> syncs,
-        Compared<QuizReportData> quiz, Compared<MinecraftReportData> minecraft, IReadOnlyList<DigestAlert> alerts, ReportWindow w,
-        string quietLine)
-    {
-        var embed = Start("📬 Le mois en bref", w);
-
-        var c = commands.Current;
-        embed.AddField("Commandes", c.Uses == 0
-            ? "Aucune commande comptée."
-            : $"**{LevelCardUi.Xp(c.Uses)}** {Plural(c.Uses, "utilisation", "utilisations")}{TextChart.Trend(c.Uses, commands.Previous?.Uses)}" +
-              $" · en erreur : **{c.Failures}** ({TextChart.Percent(c.Failures, c.Uses)})\n" +
-              $"Jamais utilisées : **{c.NeverUsed.Count}**");
-
-        var s = syncs.Current;
-        var outages = s.Outages.Sum(o => o.Count);
-        embed.AddField("Le Pi", s.DaysMeasured == 0
-            ? "Aucune mesure ce mois-ci."
-            : (s.Uptime is { } up ? $"Disponibilité **{(up * 100).ToString("0.0", Fr)} %**" : "Disponibilité —") +
-              $" · {Plural(outages, "panne", "pannes")} : **{outages}**" +
-              (s.MaxMilli is { } max ? $"\nTempérature max : **{Temp(max)}** · {s.HotMinutes} min à {Temp(PiHealth.ThrottleMilli)} ou plus" : ""));
-
-        var p = syncs.Previous;
-        embed.AddField("Messages sans réponse précise", s.Answers == 0
-            ? "Personne ne m'a parlé."
-            : $"**{TextChart.Percent(s.Unrecognised, s.Answers)}** de mes réponses ({LevelCardUi.Xp(s.Unrecognised)} sur {LevelCardUi.Xp(s.Answers)})" +
-              (p is { Answers: > 0 } ? $" · avant : {TextChart.Percent(p.Unrecognised, p.Answers)}" : ""));
-
-        var q = quiz.Current;
-        embed.AddField("Le quiz", q.Posted == 0
-            ? "Aucune question posée."
-            : $"**{q.Posted}** {Plural(q.Posted, "question", "questions")}{TextChart.Trend(q.Posted, quiz.Previous?.Posted)}" +
-              $" · trouvées : **{TextChart.Percent(q.Found, q.Posted)}** · sans réponse : **{q.Unanswered}**" +
-              (q.ByDifficulty.Count > 0
-                  ? "\nTrouvées par difficulté : " + string.Join(" · ", q.ByDifficulty.Select(l => $"{l.Label} {TextChart.Percent(l.Found, l.Posted)}"))
-                  : ""));
-
-        var g = minecraft.Current;
-        embed.AddField("Minecraft", !g.Played
-            ? "Pas joué ce mois-ci."
-            : $"**{Duration(g.Minutes)}** en jeu{TextChart.Trend(g.Minutes, minecraft.Previous?.Minutes)}" +
-              $" · {g.DaysPlayed} {Plural(g.DaysPlayed, "jour", "jours")}");
-
-        AddAlerts(embed, alerts, quietLine);
-        return embed.WithFooter(Footer(w, "Le détail suit.")).Build();
-    }
-
-    /// <summary>
-    /// Tata's first digest message: the members, the sessions, when the server talks, the most active
-    /// and the forgotten emotes, then « À regarder » (DigestBrief.Tata) or the quiet line.
-    /// </summary>
-    public static Embed BuildTataBrief(Compared<CommunityReportData> community, Compared<SessionReportData> sessions,
-        ActivityReportData activity, SleepingReportData sleeping, int unusedEmotes, IReadOnlyList<DigestAlert> alerts,
-        ReportWindow w, string quietLine, Func<ulong, string?>? nameOf = null)
-    {
-        var embed = Start("📬 Le mois en bref", w);
-
-        var m = community.Current;
-        embed.AddField("Les membres",
-            $"**{m.ActiveMembers}** {Plural(m.ActiveMembers, "membre actif", "membres actifs")}{TextChart.Trend(m.ActiveMembers, community.Previous?.ActiveMembers)}" +
-            $" · arrivées : **{m.Joins}** · départs : **{m.Leaves}**\n" +
-            $"Sans signe de vie depuis {sleeping.Days} jours : **{sleeping.Sleepers.Count}**");
-
-        var d = sessions.Current;
-        var best = DigestBrief.BestSessionDay(d);
-        embed.AddField("Les sessions", d.Held == 0
-            ? "Aucune session ce mois-ci."
-            : $"**{d.Held}** {Plural(d.Held, "session tenue", "sessions tenues")}{TextChart.Trend(d.Held, sessions.Previous?.Held)}" +
-              (d.Expected > 0 ? $" · présence : **{TextChart.Percent(d.Came, d.Expected)}**" : "") +
-              (best is { } b ? $"\nLe jour qui marche le mieux : **{Weekday(b.Slot)}** ({TextChart.Percent(b.Came, b.Expected)} présents)" : ""));
-
-        var when = new List<string>();
-        if (activity.BusiestWeekday is { } day) when.Add($"Jour le plus bavard : **{Weekday((int)day)}**");
-        if (activity.BusiestHours.Count > 0) when.Add($"heures de pointe : {string.Join(" · ", activity.BusiestHours.Select(h => $"{h} h"))}");
-        embed.AddField("Le serveur",
-            (when.Count > 0 ? Capitalise(string.Join(" · ", when)) + "\n" : "") +
-            $"Salons silencieux : **{activity.SilentText.Count}** · émotes du serveur jamais utilisées : **{unusedEmotes}**");
-
-        var top = m.XpByUser.Where(x => x.Value > 0).OrderByDescending(x => x.Value).Take(3).ToList();
-        if (top.Count > 0)
-            embed.AddField("Les plus actifs", Cap(string.Join(" · ", top.Select(x => Who(x.Key, nameOf)))));
-
-        AddAlerts(embed, alerts, quietLine);
-        return embed.WithFooter(Footer(w, "Le détail suit.")).Build();
-    }
-
-    private static void AddAlerts(EmbedBuilder embed, IReadOnlyList<DigestAlert> alerts, string quietLine) =>
-        embed.AddField("À regarder", alerts.Count == 0 ? quietLine : Cap(string.Join('\n', alerts.Select(AlertLine))));
-
-    public static string AlertLine(DigestAlert a) => a.Kind switch
-    {
-        DigestAlertKind.FailingCommand =>
-            $"⚠️ `/{a.Subject}` a échoué **{a.Value}** fois sur {a.Of} ({TextChart.Percent(a.Value, a.Of)})",
-        DigestAlertKind.PowerCuts => $"🔌 **{a.Value}** {Plural(a.Value, "coupure de courant", "coupures de courant")}",
-        DigestAlertKind.Crashes => $"💥 **{a.Value}** {Plural(a.Value, "plantage", "plantages")}",
-        DigestAlertKind.HeatRecord => $"🔥 Nouveau record de température : **{Temp((int)a.Value)}**",
-        DigestAlertKind.UnansweredRising => $"💬 Plus de messages sans réponse précise : **{a.Value} %**, contre {a.Of} % le mois d'avant",
-        DigestAlertKind.QuizTooEasy => $"❓ Les questions difficiles ont été trouvées à **{a.Value} %** : trop faciles ?",
-        DigestAlertKind.QuizTooHard => $"❓ Les questions faciles n'ont été trouvées qu'à **{a.Value} %** : trop dures ?",
-        DigestAlertKind.ActiveDrop => $"📉 **{a.Value}** membres actifs, contre {a.Of} le mois d'avant",
-        DigestAlertKind.MoreLeaves => $"🚪 Plus de départs (**{a.Value}**) que d'arrivées (**{a.Of}**)",
-        _ => $"💤 **{a.Value}** membres sur {a.Of} sans signe de vie depuis {SleepingReport.Choices[0]} jours",
-    };
-
     // ---- Shared -------------------------------------------------------------------------------
 
     private static EmbedBuilder Start(string title, ReportWindow w) => new EmbedBuilder()
         .WithTitle($"{title} — {w.Label}")
         .WithColor(Color.Purple);
 
+    // A line under the figures when a counter started inside the window, so a partial month can't pass
+    // for a whole one. Nothing otherwise.
+    private static string PartialNote(ReportWindow w, int? firstDay) =>
+        w.IsPartial(firstDay) && firstDay is { } first
+            ? $"\n-# {(w.Period is null ? "Mois partiel : compté" : "Compté")} depuis le {AppTime.FromDayKey(first):dd/MM}{DaysCounted(w, firstDay)}."
+            : "";
+
+    // The same, short enough to follow a figure: « (13 jours sur 31) ».
+    private static string DaysCounted(ReportWindow w, int? firstDay)
+    {
+        if (!w.IsPartial(firstDay)) return "";
+        var days = w.CountedDays(firstDay);
+        return $" ({days} {Plural(days, "jour", "jours")} sur {w.TotalDays})";
+    }
+
     private static string Footer(ReportWindow w, string? note = null)
     {
         var trend = w.IsAllTime ? null
-            : w.Period is null ? "Tendances : comparées au mois d'avant."
-            : "Tendances : comparées à la période d'avant, de même durée.";
+            : w.Period is null ? "Tendances : par jour compté, comparées au mois d'avant."
+            : "Tendances : par jour compté, comparées à la période d'avant, de même durée.";
         return string.Join(" ", new[] { note, trend }.Where(s => s is not null));
     }
 

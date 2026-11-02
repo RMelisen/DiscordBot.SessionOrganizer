@@ -26,7 +26,7 @@ public class CommunityReportService
             .ToDictionaryAsync(s => (s.EmoteId, s.Unicode), s => s.Markup);
         var current = await ComputeAsync(guildId, window, markup);
         var previous = window.Previous is { } p ? await ComputeAsync(guildId, p, markup) : null;
-        return new(current, previous);
+        return new(current, previous, await _db.MemberDailyStats.Where(x => x.GuildId == guildId).MinAsync(x => (int?)x.Day));
     }
 
     private async Task<CommunityReportData> ComputeAsync(
