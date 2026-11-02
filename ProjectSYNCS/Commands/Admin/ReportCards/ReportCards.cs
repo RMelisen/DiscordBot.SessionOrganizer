@@ -22,7 +22,7 @@ public static partial class ReportCards
 {
     private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-FR");
 
-    // Under 1024 per field; seven fields at most per embed keeps each one far below 6000.
+    // Under 1024 per field; eight fields at most per embed keeps each one far below 6000.
     private const int MaxFieldLength = 900;
 
     /// <summary>
@@ -184,14 +184,19 @@ public static partial class ReportCards
 
         if (names)
         {
-            AddPeople(embed, "Les plus actifs", CommunityReport.Busiest(d, p),
-                x => $"{LevelCardUi.Xp(x.Xp)} XP{TextChart.Trend(x.Xp, x.Before, pace)}", x => x.UserId, nameOf);
+            AddPeople(embed, "Les plus actifs, tout compris", CommunityReport.Busiest(d, p),
+                x => $"{LevelCardUi.Xp(x.Value)} XP{TextChart.Trend(x.Value, x.Before, pace)}", x => x.UserId, nameOf);
+            AddPeople(embed, "💬 À l'écrit", CommunityReport.BusiestInChat(d, p),
+                x => $"{LevelCardUi.Xp(x.Value)} XP{TextChart.Trend(x.Value, x.Before, pace)}", x => x.UserId, nameOf);
+            AddPeople(embed, "🎙️ En vocal", CommunityReport.BusiestInVoice(d, p),
+                x => $"{Duration(x.Value)}{TextChart.Trend(x.Value, x.Before, pace)}", x => x.UserId, nameOf);
             AddPeople(embed, "Ça se calme", CommunityReport.Fading(d, p),
                 x => $"rien cette fois, {LevelCardUi.Xp(x.Before)} XP avant", x => x.UserId, nameOf);
         }
 
         return embed.WithFooter(Footer(w,
             "Actif : de l'XP, des réactions ou du vocal ce jour-là. Vocal : le temps qui rapporte de l'XP, à deux ou plus, micro ouvert. " +
+            "À l'écrit : l'XP hors vocal, surtout les messages, comptés une fois par minute au plus. " +
             "Arrivées et départs comptés depuis le 19/10/2026.")).Build();
     }
 

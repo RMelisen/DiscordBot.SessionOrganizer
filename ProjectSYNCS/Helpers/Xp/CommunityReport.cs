@@ -15,7 +15,9 @@ public sealed record CommunityReportData(
     int QuizRounds,
     int QuizWon,
     int QuizWinners,
-    IReadOnlyDictionary<ulong, long> XpByUser);
+    IReadOnlyDictionary<ulong, long> XpByUser,
+    IReadOnlyDictionary<ulong, long> ChatXpByUser,
+    IReadOnlyDictionary<ulong, long> VoiceByUser);
 
 /// <summary>
 /// The server's life over one window, from daily buckets only (each filtered on <c>Day</c> in SQL by
@@ -23,7 +25,7 @@ public sealed record CommunityReportData(
 /// </summary>
 /// <remarks>
 /// Active means anything counted that day: XP (messages, reactions, voice), reactions or voice
-/// minutes. There is no message count anywhere; XP is the closest thing.
+/// minutes. There is no message count per person; XP is the closest thing, see <see cref="ChatXp"/>.
 /// </remarks>
 public static class CommunityReport
 {
@@ -67,16 +69,38 @@ public static class CommunityReport
             rounds.Count(r => r.MessageId != 0),   // a round whose card never went out is not a question
             rounds.Count(r => r.WinnerId != 0),
             rounds.Where(r => r.WinnerId != 0).Select(r => r.WinnerId).Distinct().Count(),
-            members.GroupBy(m => m.UserId).ToDictionary(g => g.Key, g => g.Sum(m => m.XpEarned)));
+            members.GroupBy(m => m.UserId).ToDictionary(g => g.Key, g => g.Sum(m => m.XpEarned)),
+            members.GroupBy(m => m.UserId).ToDictionary(g => g.Key, g => g.Sum(ChatXp)),
+            members.GroupBy(m => m.UserId).ToDictionary(g => g.Key, g => g.Sum(m => m.VoiceMinutes)));
     }
 
+    /// <summary>
+    /// One day's XP not earned in voice: messages, reactions, verdicts and staff adjustments. Voice XP
+    /// isn't stored apart, but it is exactly what the curve pays for the day's minutes. Per day, never
+    /// over a window: the taper restarts each day, so summing the minutes first would pay them less.
+    /// </summary>
+    public static long ChatXp(MemberDailyStat day) =>
+        Math.Max(0, day.XpEarned - VoiceXpCurve.TotalForMinutes(day.VoiceMinutes));
+
     /// <summary>The most active people of the window: XP earned, and what they earned the window before.</summary>
-    public static IReadOnlyList<(ulong UserId, long Xp, long? Before)> Busiest(CommunityReportData current, CommunityReportData? previous) =>
-        current.XpByUser
+    public static IReadOnlyList<(ulong UserId, long Value, long? Before)> Busiest(CommunityReportData current, CommunityReportData? previous) =>
+        Ranked(current.XpByUser, previous?.XpByUser);
+
+    /// <summary>The same ranking on XP earned outside voice.</summary>
+    public static IReadOnlyList<(ulong UserId, long Value, long? Before)> BusiestInChat(CommunityReportData current, CommunityReportData? previous) =>
+        Ranked(current.ChatXpByUser, previous?.ChatXpByUser);
+
+    /// <summary>The same ranking on minutes in voice.</summary>
+    public static IReadOnlyList<(ulong UserId, long Value, long? Before)> BusiestInVoice(CommunityReportData current, CommunityReportData? previous) =>
+        Ranked(current.VoiceByUser, previous?.VoiceByUser);
+
+    private static IReadOnlyList<(ulong UserId, long Value, long? Before)> Ranked(
+        IReadOnlyDictionary<ulong, long> current, IReadOnlyDictionary<ulong, long>? previous) =>
+        current
             .Where(x => x.Value > 0)
             .OrderByDescending(x => x.Value)
             .Take(SessionReport.ListSize)
-            .Select(x => (x.Key, x.Value, previous is null ? (long?)null : previous.XpByUser.GetValueOrDefault(x.Key)))
+            .Select(x => (x.Key, x.Value, previous is null ? (long?)null : previous.GetValueOrDefault(x.Key)))
             .ToList();
 
     /// <summary>

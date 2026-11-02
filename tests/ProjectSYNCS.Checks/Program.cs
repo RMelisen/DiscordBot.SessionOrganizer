@@ -1398,7 +1398,7 @@ foreach (var (text, expected) in new[]
     var emotes = Enumerable.Range(0, CommunityReport.EmoteCount)
         .Select(i => ($"<a:a_very_long_custom_emote_name_{i}:{big}>", 9_999_999L)).ToList();
     var cFull = new CommunityReportData(999, Enumerable.Repeat(50L, 30).ToList(), 99_999_999, 9_999_999, 9_999_999, 999, 999,
-        emotes, 99, 99, 99, xpBy);
+        emotes, 99, 99, 99, xpBy, xpBy, xpBy);
     var cFading = cFull with { XpByUser = new Dictionary<ulong, long>() };
     var outageKinds = Enum.GetValues<ProjectSYNCS.Models.UptimeEventKind>().Select(k => (k, 999)).ToList();
     var yFull = new SyncsReportData(30, 65_432, 81_234, 20261015, 9999, Enumerable.Repeat(70_000L, 30).ToList(), outageKinds,
@@ -1807,9 +1807,31 @@ var batch2Widest = new Dictionary<string, int>();
 
     // Who earned a few messages' worth isn't going quiet; who was busy is.
     var t10Before = new CommunityReportData(2, new List<long>(), 0, 0, 0, 0, 0, Array.Empty<(string, long)>(), 0, 0, 0,
-        new Dictionary<ulong, long> { [1] = 20, [2] = CommunityReport.FadingMinXp });
+        new Dictionary<ulong, long> { [1] = 20, [2] = CommunityReport.FadingMinXp }, new Dictionary<ulong, long>(), new Dictionary<ulong, long>());
     var t10Fading = CommunityReport.Fading(t10Before with { XpByUser = new Dictionary<ulong, long>() }, t10Before);
     if (t10Fading.Single().UserId != 2) Fail($"fading: {string.Join(",", t10Fading.Select(x => x.UserId))}");
+
+    // Chat and voice ranked apart. 1 sits in calls (60 min pay 600 XP) and barely writes; 2 only writes;
+    // 3's two 60-minute days pay the full rate twice, which one 120-minute total would not.
+    var t10Window = ReportWindow.From(StatsPeriod.Month, DateTimeOffset.UtcNow);
+    ProjectSYNCS.Models.MemberDailyStat T10Day(ulong user, int day, long xp, long voice) =>
+        new() { UserId = user, Day = day, XpEarned = xp, VoiceMinutes = voice };
+    var t10Split = CommunityReport.Compute(new[]
+        {
+            T10Day(1, t10Window.ToDay, 700, 60),
+            T10Day(2, t10Window.ToDay, 500, 0),
+            T10Day(3, t10Window.FromDay, 600, 60),
+            T10Day(3, t10Window.ToDay, 600, 60),
+            T10Day(4, t10Window.ToDay, 100, 60),   // staff took XP back: never below zero
+        }, Array.Empty<ProjectSYNCS.Models.MemberFlowDailyStat>(), Array.Empty<ProjectSYNCS.Models.EmoteDailyStat>(),
+        new Dictionary<(ulong, string), string>(), Array.Empty<ProjectSYNCS.Models.QuizRound>(), t10Window);
+    if (string.Join(",", CommunityReport.Busiest(t10Split, null).Select(x => x.UserId)) != "3,1,2,4") Fail("busiest overall");
+    if (string.Join(",", CommunityReport.BusiestInChat(t10Split, null).Select(x => $"{x.UserId}:{x.Value}")) != "2:500,1:100") Fail("busiest in chat");
+    if (string.Join(",", CommunityReport.BusiestInVoice(t10Split, null).Select(x => $"{x.UserId}:{x.Value}")) is not ("3:120,1:60,4:60" or "3:120,4:60,1:60")) Fail("busiest in voice");
+    var t10Card = ProjectSYNCS.Commands.ReportCards.BuildCommunity(new(t10Split, null), t10Window, true, _ => "Bob");
+    if (!t10Card.Fields.Any(f => f.Name.Contains("À l'écrit")) || !t10Card.Fields.Any(f => f.Name.Contains("En vocal"))) Fail("community card must rank chat and voice apart");
+    var t10Anonymous = ProjectSYNCS.Commands.ReportCards.BuildCommunity(new(t10Split, null), t10Window, false, _ => "Bob");
+    if (t10Anonymous.Fields.Any(f => f.Value.Contains("<@"))) Fail("community card without names must name nobody");
 }
 
 // 32. /report's line on top of the card: whose pool, untagged, and never past the caps.
@@ -1868,7 +1890,8 @@ var batch2Widest = new Dictionary<string, int>();
     // Tata: active members down 30 %, more leaves than joins, 3 members last seen the month before,
     // and 20 hours in voice with no session.
     CommunityReportData T12Community(int active, int joins, int leaves, long voice = 0) => new(active, new List<long>(), 0, voice, 0, joins, leaves,
-        Array.Empty<(string, long)>(), 0, 0, 0, new Dictionary<ulong, long> { [1] = 10, [2] = 30, [3] = 20, [4] = 5 });
+        Array.Empty<(string, long)>(), 0, 0, 0, new Dictionary<ulong, long> { [1] = 10, [2] = 30, [3] = 20, [4] = 5 },
+        new Dictionary<ulong, long> { [1] = 10 }, new Dictionary<ulong, long> { [2] = 30 });
     var t12Sleeping = new SleepingReportData(30, 20, Enumerable.Range(0, 3).Select(i => new Sleeper((ulong)i, 20261015)).ToList());
     var t12NoSession = t12Sessions with { Held = 0 };
     var t12Tata = DigestBrief.Tata(new(T12Community(7, 1, 2, 1200), T12Community(10, 0, 0)), new(t12NoSession, null), t12Sleeping, t12Month);

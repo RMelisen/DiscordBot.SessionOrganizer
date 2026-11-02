@@ -161,6 +161,8 @@ single-step drops.
 - **`TotalForMinutes` is the single source of truth**: `XpForSpan` is a difference of two of its
   values, `RateAt` a one-minute span. Define any new rate function that way round.
 - If counting minutes fails, **skip the payout** (fail closed).
+- `/report community` subtracts the curve from each day's XP to rank chat apart from voice
+  (`CommunityReport.ChatXp`), so changing the tiers shifts past months' rankings (see `admin.md`).
 
 **Every level-up card, voice included, goes to the level-up channel** (`BotsChannel.ResolveLevelUpAsync`:
 `/config levelup-channel`, else the bots channel), not to where the XP was earned; the earning channel is only the fallback

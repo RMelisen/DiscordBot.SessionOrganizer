@@ -109,6 +109,11 @@ same check.
     links them, it is the match `PollModule` uses against duplicates;
   - « active » is any XP, reaction or voice minute that day (messages are counted per channel and
     hour, never per person);
+  - `community` ranks the busiest three ways, since long calls can outweigh a lot of writing in XP:
+    all XP, `CommunityReport.ChatXp` and voice minutes. Chat XP is derived per day, the day's XP minus
+    what `VoiceXpCurve` pays for its minutes, so it needs no column and covers past months. It relies
+    on `VoiceXpCurve` staying as it is: **a change to the tiers misreads every earlier day** unless
+    the old rates are kept for them. It also holds reactions, verdict bonuses and `/admin xp`;
   - uptime is measured from the first day of the window the Pi recorded its temperature, and always
     shows that span (« sur 23 jours, depuis le 09/10 »): a percentage alone hides a short measure;
   - `commands` leaves `/debug` out of the totals, the ranking and the never-used lists (the owner testing
@@ -190,7 +195,7 @@ same check.
     figures are his choice: commands (uses, people, errors, never used), incidents, the Pi (with the base and the disk), messages without a
     specific answer, the quiz, her hours in Minecraft (« Pas joué ce mois-ci. » for none). Tata's: members (active, joins, leaves, sleepers), sessions
     (attendance, the best-attended weekday), when the server talks, silent channels, unused emotes,
-    the three most active;
+    the three most active, then who leads in chat and in voice;
   - **then the reports of `ReportKinds.Digest(recipient)`**, one embed per message (several in one
     could pass 6000), each in its own `try`: Papa `syncs`, `commands`, `incidents`, `quiz`, `minecraft` (left out
     for a month she didn't play: `ReportService.IsEmptyAsync`, the one report skipped when empty);

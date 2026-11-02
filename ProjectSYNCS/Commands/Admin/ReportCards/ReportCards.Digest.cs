@@ -106,7 +106,12 @@ public static partial class ReportCards
 
         var top = m.XpByUser.Where(x => x.Value > 0).OrderByDescending(x => x.Value).Take(3).ToList();
         if (top.Count > 0)
-            embed.AddField("Les plus actifs", Cap(string.Join(" · ", top.Select(x => Who(x.Key, nameOf)))));
+        {
+            var lines = new List<string> { string.Join(" · ", top.Select(x => Who(x.Key, nameOf))) };
+            if (CommunityReport.BusiestInChat(m, null) is [var chat, ..]) lines.Add($"💬 À l'écrit : {Who(chat.UserId, nameOf)}");
+            if (CommunityReport.BusiestInVoice(m, null) is [var voice, ..]) lines.Add($"🎙️ En vocal : {Who(voice.UserId, nameOf)}");
+            embed.AddField("Les plus actifs", Cap(string.Join('\n', lines)));
+        }
 
         AddAlerts(embed, alerts, quietLine);
         return embed.WithFooter(Footer(w, "Le détail suit.")).Build();

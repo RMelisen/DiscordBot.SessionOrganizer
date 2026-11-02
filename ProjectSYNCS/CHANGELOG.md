@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.57.3 — 2026-11-02
+
+- `/report community` now ranks the most active three ways: all XP, in writing and in voice, so a very active writer no longer hides behind long calls. Works on past months too. The server admin's digest names who leads in each.
+
 ## 7.57.2 — 2026-11-02
 
 - Reports: the daily charts no longer add the last two days of a 31-day month together, which drew a surge that never happened.
