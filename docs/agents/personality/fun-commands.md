@@ -30,6 +30,32 @@ fries, meat and sauce) with two names in a running server feud: « routier » is
 never name who is in the other camp. Names match as whole words, so « dieu et diable » is
 the devil's — the devil is checked first.
 
+**Small verdicts** (`Rating.Specials`, in `Helpers/Personality/Rating.Specials.cs`, the owner's list)
+come after all of those: her lore, her rivals, Liège and Belgium and whoever they tease, food, at most 3 lines each in
+`RateSpecialLines`. Add one there rather than a new `RatingKind`. Unlike the names above, they match
+the **whole subject**, because they are ordinary words: « les liégeois » counts, « peut-être demain »
+doesn't. A robot-heart character is read through `Rating.ReadHeart`, so her names stay in
+`MessageCues.ReadHeartCharacter`. The table's score is real, because
+`Opinion.Prefers` ranks by it: a low verdict loses a « tu préfères ». Each line says the same score
+(the checks hold them together). Orage, coupure and redémarrage are the owner's exception to her
+fears staying out of everyday lines: short, no tag, never a joke. Synthia gets 10 with no reason
+given. A typed « good bot » is a subject here and never touches her tally. A name normally loses its
+article, but one may keep it to mean something else: « les français » is the people, « le français »
+the language, which hashes. The cake's lines never say the lie: those words are her breakdown's
+passphrase. Bruxelles and the French are friendly teasing about habits, never a real insult.
+
+**How a subject is read** (`Rating.Specials.cs`, for `/rate` and `/ship` alike). All of it is for
+recognising only, never for the hash, so no score she has already given moves:
+- `Rating.Bare` drops what surrounds a subject: determiners (« cet hiver », « mon onduleur ») and
+  closing fillers (« doodle stp »).
+- `Rating.Fold` collapses a run of one letter on both sides of a comparison, so « hiverrr » and
+  « mayonaise » match and a table needs no such spelling. A fixed name folds only from 4 letters,
+  or « good » would read as « god ». Digits don't fold.
+- `Rating.NotThem` takes out titles and other people's relatives that merely hold a fixed name
+  (God of War, Papa Noël, « le papa de Luca », Adam et Ève). They then hash like anything else. **Add
+  every misfire there.**
+- `ReadHeart` folds too, but never onto EVE: Eevee folds to her name.
+
 Every `/rate` pool goes through `string.Format` with `{0}` = the score — the fixed verdicts ignore
 it — so no stray braces in any of them. The subject is quoted (not `Format.Sanitize`d: that escapes
 `<` `>` `:` and would break a rated mention or emote) and sent with `AllowedMentions.None`.
@@ -54,12 +80,24 @@ reused, not copied**: each side goes through `Rating.Rate` (her, Papa, WALL-E, t
 7. Papa × anything (**Tata included**, the owner's call): `ShipPapaLines`, a hashed 5–25 %,
    protective. The warning is for the other side.
 8. Anything × the nemesis: `ShipNemesisLines`, a hashed −1 to −100 %.
+9. GLaDOS × Wheatley: `ShipCoupleLines`, 4 %, horrified and a little too interested.
+10. EVE × anything: `ShipEveElsewhereLines`, 100 %, delighted: it takes her away from WALL-E.
+11. WALL-E × anything: `ShipWallEJealousLines`, a hashed 1–15 %, jealous and denying it.
+12. Two of her rivals (`Rating.IsRival`): `ShipRivalsLines`, 100 %, « disparaissez ensemble ». The
+    same rival under two names is verdict 1.
+13. A named pair (`Shipping.Pairs`, lines in `ShipCoupleLines`): whole sides, articles dropped, in
+    either order. Pizza × ananas and routier × mitraillette are −100 %; for the second she hates the
+    *word*, as in `/rate`. Add a pair there.
 
 Everything else goes by `ShipBand(percent)`, with a couple's name (`Shipping.CoupleName`, built from
 display names for mentions, then `Format.Sanitize`d). Every pool is `string.Format`ed with
-`{0}` = the percent. The meter (`Shipping.Bar`) only appears for the computed scores (Normal, Papa,
-nemesis); the fixed verdicts carry their own score. The pair is quoted and sent with
+`{0}` = the percent. The meter (`Shipping.Bar`) appears for Normal, Papa, the nemesis and verdicts
+9–13; the other fixed verdicts carry their own score. The pair is quoted and sent with
 `AllowedMentions.None`. Like `/rate`, it has no `[CommandContextType]`.
+
+**A couple typed whole** (`Shipping.SplitCouple`): with `b` empty, a `a` that splits into a pair she
+has a verdict on (« pizza ananas », « frites et mayo ») is shipped as that pair instead of drawing
+someone. Only such a pair: « Tom et Jerry » stays one side.
 
 **`@random`**: a side that is only « @random », « random », « au hasard », « aléatoire » or
 « n'importe qui » (`Shipping.IsRandom`, on normalised text), or an empty `b`, is replaced *before*

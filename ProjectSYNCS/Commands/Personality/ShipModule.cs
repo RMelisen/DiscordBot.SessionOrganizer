@@ -32,7 +32,10 @@ public partial class ShipModule : InteractionModuleBase<SocketInteractionContext
         [MaxLength(InputCaps.Ship)]
         string? b = null)
     {
-        // No second side means « at random ».
+        // No second side means « at random », unless the first holds a couple she knows whole.
+        if (string.IsNullOrWhiteSpace(b)
+            && Shipping.SplitCouple(a, Context.User.Id, Context.Client.CurrentUser.Id, AvailabilityService.OwnerId, BotResponses.TataId) is { } couple)
+            (a, b) = couple;
         b = string.IsNullOrWhiteSpace(b) ? "@random" : b;
         if (Shipping.IsRandom(a) || Shipping.IsRandom(b))
         {
@@ -73,6 +76,10 @@ public partial class ShipModule : InteractionModuleBase<SocketInteractionContext
             ShipKind.WallEEve => BotResponses.ShipWallEEveLines,
             ShipKind.Papa => BotResponses.ShipPapaLines,
             ShipKind.Nemesis => BotResponses.ShipNemesisLines,
+            ShipKind.EveElsewhere => BotResponses.ShipEveElsewhereLines,
+            ShipKind.WallEJealous => BotResponses.ShipWallEJealousLines,
+            ShipKind.Pair => BotResponses.ShipCoupleLines[result.Pair!.Value],
+            ShipKind.Rivals => BotResponses.ShipRivalsLines,
             _ => BotResponses.ShipBand(result.Percent),
         };
 
@@ -80,8 +87,9 @@ public partial class ShipModule : InteractionModuleBase<SocketInteractionContext
         // own score and ignore it.
         var verdict = string.Format(picker.Pick(pool), result.Percent);
 
-        // The meter only where the score is a computed one; the fixed verdicts say theirs.
+        // The meter wherever the percent is a real one; the other fixed verdicts say theirs.
         var meter = result.Kind is ShipKind.Normal or ShipKind.Papa or ShipKind.Nemesis
+            or ShipKind.EveElsewhere or ShipKind.WallEJealous or ShipKind.Pair or ShipKind.Rivals
             ? $"{Shipping.Bar(result.Percent)} **{result.Percent} %**"
             : null;
         if (meter is not null && result.Kind == ShipKind.Normal

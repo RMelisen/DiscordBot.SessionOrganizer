@@ -18,13 +18,17 @@ public enum RatingKind
     Tata,
     Routier,
     Mitraillette,
+    // One of the small verdicts (Rating.Specials): RatingResult.Special says which.
+    Special,
 }
 
-/// <param name="Score">0–10 for <see cref="RatingKind.Normal"/>, −10 to −1 for the nemesis, and
-/// unused by the other fixed verdicts, whose lines carry their own score.</param>
+/// <param name="Score">0–10 for <see cref="RatingKind.Normal"/>, −10 to −1 for the nemesis, the
+/// table's own for <see cref="RatingKind.Special"/>, and unused by the other fixed verdicts, whose
+/// lines carry their own score.</param>
 /// <param name="AboutAsker">The asker rated themselves (« moi », or their own mention) — so Papa or
 /// Tata rating themselves is answered to their face rather than about them.</param>
-public sealed record RatingResult(RatingKind Kind, int Score, bool AboutAsker = false);
+/// <param name="Special">Which small verdict, for <see cref="RatingKind.Special"/>.</param>
+public sealed record RatingResult(RatingKind Kind, int Score, bool AboutAsker = false, RateSpecial? Special = null);
 
 /// <summary>
 /// /rate's verdict, pure. The score is a hash of the normalised text, so the same thing gets the
@@ -38,7 +42,9 @@ public static partial class Rating
 
     // Checked in this order, first match wins (the devil before God: « dieu et diable » is the
     // devil's). Each entry is a set of whole words or word sequences, matched on the normalised
-    // text. Herself is checked separately: « toi » only counts when it is the whole subject.
+    // text, without the titles that merely hold one (NotThem) and through doubled or stretched
+    // letters (Fold: « quoka »). Herself is checked separately: « toi » only counts when it is the
+    // whole subject.
     private static readonly (RatingKind Kind, string[] Names)[] Fixed =
     {
         (RatingKind.Herself, new[] { "syncs", "s y n c s" }),
@@ -48,7 +54,7 @@ public static partial class Rating
         (RatingKind.Devil, new[] { "diable", "satan", "lucifer", "demon", "belzebuth" }),
         (RatingKind.God, new[] { "dieu", "god", "jehovah", "yahve", "yahwe", "yahweh", "jah", "jesus" }),
         (RatingKind.Tata, new[] { "tata", "analuz", "zulana" }),
-        (RatingKind.Routier, new[] { "routier", "routiers" }),
+        (RatingKind.Routier, new[] { "routier", "routiers", "routie" }),
         (RatingKind.Mitraillette, new[] { "mitraillette", "mitraillettes" }),
     };
 
@@ -90,17 +96,19 @@ public static partial class Rating
         if (NemesisAlone.Contains(text) || NemesisAlone.Contains(raw))
             return new(RatingKind.Nemesis, NemesisScore(hash));
 
+        var scrubbed = Scrub(padded);
+        var folded = Fold(scrubbed);
         foreach (var (kind, names) in Fixed)
         {
             // The mention check for Tata comes in order, after the crush and the nemesis words.
             if (kind == RatingKind.Tata && mentioned.Contains(tataId)) return new(kind, 10, askerId == tataId);
-            if (names.Any(n => padded.Contains($" {n} ")))
+            if (names.Any(n => Names(scrubbed, folded, n)))
                 return new(kind, kind == RatingKind.Nemesis ? NemesisScore(hash) : 10,
                     // Papa typing « papa », Tata typing « tata »: still themselves.
                     (kind == RatingKind.Owner && askerId == ownerId) || (kind == RatingKind.Tata && askerId == tataId));
         }
 
-        return new(RatingKind.Normal, (int)(StableRoll.Unit(hash, ScoreSalt, 0) * 11));
+        return ReadSpecial(subject, text) ?? new(RatingKind.Normal, (int)(StableRoll.Unit(hash, ScoreSalt, 0) * 11));
     }
 
     /// <summary>

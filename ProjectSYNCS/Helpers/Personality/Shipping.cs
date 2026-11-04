@@ -3,8 +3,9 @@ using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Helpers;
 
-// What /ship recognised. Normal, Papa and Nemesis carry a hashed percent; every other kind is a
-// fixed verdict whose lines carry their own score (BotResponses.Ship*Lines).
+// What /ship recognised. Normal, Papa, Nemesis and WallEJealous carry a hashed percent, Pair and
+// EveElsewhere a fixed one; every other kind is a fixed verdict whose lines carry their own score
+// (BotResponses.Ship*Lines).
 public enum ShipKind
 {
     Normal,
@@ -18,11 +19,22 @@ public enum ShipKind
     WallEEve,
     Papa,
     Nemesis,
+    // EVE with anyone but WALL-E: it takes her away from him.
+    EveElsewhere,
+    // WALL-E with anyone but EVE.
+    WallEJealous,
+    // A pair with its own verdict: ShipResult.Pair says which.
+    Pair,
+    // Two of her rivals (Rating.IsRival).
+    Rivals,
 }
 
-/// <param name="Percent">0–100 for Normal, 5–25 for Papa, −100 to −1 for Nemesis; unused by the
-/// fixed verdicts.</param>
-public sealed record ShipResult(ShipKind Kind, int Percent, HeartCharacter? Heart = null);
+// The pairs she has an opinion on (Shipping.Pairs, BotResponses.ShipCoupleLines). Not stored anywhere.
+public enum ShipCouple { PizzaPineapple, RoutierMitraillette, GladosWheatley, FritesMayo, FritesKetchup, SiropHerve, SessionMaybe, MaybeNo, UpdateRestart }
+
+/// <param name="Percent">0–100 for Normal, 5–25 for Papa, −100 to −1 for Nemesis, 100 for
+/// EveElsewhere, 1–15 for WallEJealous, the table's for Pair; unused by the other fixed verdicts.</param>
+public sealed record ShipResult(ShipKind Kind, int Percent, HeartCharacter? Heart = null, ShipCouple? Pair = null);
 
 /// <summary>
 /// /ship's verdict, pure. Each side is recognised the way /rate recognises a subject (her, Papa,
@@ -35,6 +47,53 @@ public static class Shipping
     private const int PercentSalt = 9101;
     private const int PapaSalt = 9102;
     private const int NemesisSalt = 9103;
+    private const int WallESalt = 9104;
+
+    private const int GladosWheatleyPercent = 4;
+
+    // A pair matches on whole sides, read as /rate reads a subject (Rating.Bare, Rating.Fold), in
+    // either order: « la pizza » × « l'ananas » counts, « pizza sans ananas » × « burger » doesn't, and
+    // no name here needs a stretched or double-letter spelling. GLaDOS × Wheatley goes by the heart
+    // reading instead, so her names stay in MessageCues.
+    private static readonly string[] MaybeNames = { "peut etre", "peutetre", "ptet", "p tet", "ptetre", "pt etre", "maybe", "vote peut etre", "votes peut etre" };
+
+    public static readonly (ShipCouple Pair, int Percent, string[] A, string[] B)[] Pairs =
+    {
+        (ShipCouple.MaybeNo, 100, MaybeNames, new[] { "non", "nan", "no", "vote non" }),
+        (ShipCouple.UpdateRestart, 100, new[] { "mise a jour", "mises a jour", "maj", "update", "updates" }, new[] { "redemarrage", "redemarrages", "redemarrer", "reboot", "reboots", "restart", "restarts" }),
+        (ShipCouple.PizzaPineapple, -100, new[] { "pizza", "pizzas" }, new[] { "ananas" }),
+        (ShipCouple.RoutierMitraillette, -100, new[] { "routier", "routiers", "routie" }, new[] { "mitraillette", "mitraillettes" }),
+        (ShipCouple.FritesMayo, 100, new[] { "frites", "frite", "cornet de frites", "paquet de frites" }, new[] { "mayo", "mayonnaise", "sauce mayo", "sauce mayonnaise" }),
+        (ShipCouple.FritesKetchup, 12, new[] { "frites", "frite", "cornet de frites", "paquet de frites" }, new[] { "ketchup", "catchup", "sauce ketchup" }),
+        (ShipCouple.SiropHerve, 100, new[] { "sirop de liege", "sirop liege", "sirop liegeois" }, new[] { "herve", "fromage de herve", "fromage herve" }),
+        (ShipCouple.SessionMaybe, 0, new[] { "session", "sessions" }, MaybeNames),
+    };
+
+    // After Pairs, in this file: a field's initializer runs in textual order.
+    private static readonly (ShipCouple Pair, int Percent, HashSet<string> A, HashSet<string> B)[] FoldedPairs = Pairs
+        .Select(p => (p.Pair, p.Percent, p.A.Select(Rating.Fold).ToHashSet(), p.B.Select(Rating.Fold).ToHashSet()))
+        .ToArray();
+
+    private static readonly HashSet<string> Joiners = new() { "et", "x", "avec", "and", "vs" };
+
+    /// <summary>
+    /// A known couple typed whole in the first option (« pizza ananas », « frites et mayo ») with
+    /// the second left empty, which would otherwise draw someone at random. Only a couple she has a
+    /// verdict on: « Tom et Jerry » stays one side, as typed. Null when the text isn't one.
+    /// </summary>
+    public static (string A, string B)? SplitCouple(string side, ulong askerId, ulong selfId, ulong ownerId, ulong tataId)
+    {
+        var words = Rating.Normalize(side).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        for (var i = 1; i < words.Length; i++)
+        {
+            var left = string.Join(' ', words[..i]);
+            var right = string.Join(' ', words[(Joiners.Contains(words[i]) ? i + 1 : i)..]);
+            if (right.Length == 0) continue;
+            if (Ship(left, right, askerId, selfId, ownerId, tataId).Kind is ShipKind.Pair or ShipKind.WallEEve or ShipKind.Rivals)
+                return (left, right);
+        }
+        return null;
+    }
 
     // Who a side is. Herself and Owner also stand for their own identity, so « syncs × toi » is the
     // same thing twice even though the texts differ.
@@ -72,6 +131,24 @@ public static class Shipping
         if (whoA == Who.Nemesis || whoB == Who.Nemesis)
             return new(ShipKind.Nemesis, -1 - (int)(StableRoll.Unit(hash, NemesisSalt, 0) * 100));
 
+        // After Papa and the nemesis, whose rules cover anything at all. WALL-E × EVE was settled above.
+        if ((heartA, heartB) is (HeartCharacter.Glados, HeartCharacter.Wheatley) or (HeartCharacter.Wheatley, HeartCharacter.Glados))
+            return new(ShipKind.Pair, GladosWheatleyPercent, Pair: ShipCouple.GladosWheatley);
+        if (heartA == HeartCharacter.Eve || heartB == HeartCharacter.Eve)
+            return new(ShipKind.EveElsewhere, 100);
+        if (heartA == HeartCharacter.WallE || heartB == HeartCharacter.WallE)
+            return new(ShipKind.WallEJealous, 1 + (int)(StableRoll.Unit(hash, WallESalt, 0) * 15));
+
+        var (specialA, specialB) = (Rating.Rate(a, askerId, selfId, ownerId, tataId).Special, Rating.Rate(b, askerId, selfId, ownerId, tataId).Special);
+        if (Rating.IsRival(specialA) && Rating.IsRival(specialB))
+            // « doodle » × « doodle.com » is one thing twice, as the keys can't tell.
+            return specialA == specialB ? new(ShipKind.Self, 100) : new(ShipKind.Rivals, 100);
+
+        var (bareA, bareB) = (Rating.Fold(Rating.Bare(keyA)), Rating.Fold(Rating.Bare(keyB)));
+        foreach (var (pair, percent, sideA, sideB) in FoldedPairs)
+            if ((sideA.Contains(bareA) && sideB.Contains(bareB)) || (sideA.Contains(bareB) && sideB.Contains(bareA)))
+                return new(ShipKind.Pair, percent, Pair: pair);
+
         return new(ShipKind.Normal, (int)(StableRoll.Unit(hash, PercentSalt, 0) * 101));
     }
 
@@ -100,7 +177,7 @@ public static class Shipping
             case RatingKind.Crush: return (Who.Heart, HeartCharacter.WallE);
         }
         // ReadHeartCharacter turns « WALL-E et EVE » into EVE; one side naming both is just EVE.
-        return MessageCues.ReadHeartCharacter(side) is { } heart ? (Who.Heart, heart) : (Who.Plain, null);
+        return Rating.ReadHeart(side) is { } heart ? (Who.Heart, heart) : (Who.Plain, null);
     }
 
     private static string IdentityKey(Who who, HeartCharacter? heart, string key) => who switch

@@ -56,6 +56,7 @@ public class RateModule : InteractionModuleBase<SocketInteractionContext>
             RatingKind.Tata => (result.AboutAsker ? BotResponses.RateTataSelfLines : BotResponses.RateTataLines, ""),
             RatingKind.Routier => (BotResponses.RateRoutierLines, ""),
             RatingKind.Mitraillette => (BotResponses.RateMitrailletteLines, ""),
+            RatingKind.Special => (BotResponses.RateSpecialLines[result.Special!.Value], ""),
             _ => (BotResponses.RateBand(result.Score), $"{result.Score}/10"),
         };
 

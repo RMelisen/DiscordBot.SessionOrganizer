@@ -305,6 +305,144 @@ if (!P("routier", "mitraillette") || P("mitraillette", "routier")) Fail("routier
 if (!P("syncs", "quokka")) Fail("herself must beat the nemesis");
 if (P("pizza", "burger") == P("burger", "pizza")) Fail("a preference flips with the order");
 
+// /rate's small verdicts: every name reaches its verdict, and every line says the table's score.
+var rateLines = (IDictionary)Field("RateSpecialLines");
+foreach (var kind in Enum.GetValues<RateSpecial>())
+    if (!rateLines.Contains(kind)) Fail($"RateSpecialLines misses {kind}");
+foreach (var (kind, score, names, heart) in Rating.Specials)
+{
+    foreach (var name in names)
+        if (R(name) is not { Kind: RatingKind.Special } got || got.Special != kind || got.Score != score) Fail($"/rate {name}: {R(name)}, expected {kind}");
+    if (names.Length == 0 && heart is null) Fail($"{kind}: nothing leads to it");
+    var shown = kind == RateSpecial.SixSeven ? "6.7/10" : $"{score}/10";
+    foreach (var line in (string[])rateLines[kind]!)
+    {
+        if (!string.Format(line, "").Contains(shown)) Fail($"{kind}: line doesn't say {shown}: {line}");
+        if (line.Contains("✨") || line.Contains("(｡•́︿•̀｡)")) Fail($"{kind}: banned tag: {line}");
+    }
+}
+void RateIs(string subject, RateSpecial want)
+{
+    if (R(subject).Special != want) Fail($"/rate {subject}: {R(subject)}, expected {want}");
+}
+RateIs("les liégeois", RateSpecial.Liege);
+RateIs("Liège", RateSpecial.Liege);
+RateIs("l'hiver", RateSpecial.Winter);
+RateIs("L'ÉTÉ !", RateSpecial.Heatwave);
+RateIs("la gaufre de Liège", RateSpecial.LiegeWaffle);
+RateIs("une coupure de courant", RateSpecial.PowerCut);
+RateIs("peut-être", RateSpecial.Maybe);
+RateIs("GLaDOS", RateSpecial.Glados);
+RateIs("Voyager 1", RateSpecial.Voyager);
+RateIs("J.A.R.V.I.S.", RateSpecial.Jarvis);
+// The whole subject only, and the rest of the world keeps its hash.
+foreach (var (subject, want) in new[]
+{
+    ("la mise à jour", RateSpecial.Update), ("MAJ", RateSpecial.Update), ("un reboot", RateSpecial.Restart), ("mon routeur", RateSpecial.Router),
+    ("good bot", RateSpecial.GoodBot), ("Gooood bot", RateSpecial.GoodBot), ("bad bot", RateSpecial.BadBot), ("les sondages", RateSpecial.Poll), ("le retard", RateSpecial.Lateness),
+    ("en retard", RateSpecial.Lateness), ("les lucioles", RateSpecial.Fireflies), ("Monika", RateSpecial.Monika), ("2B", RateSpecial.TwoB), ("NieR Automata", RateSpecial.TwoB),
+    ("Roomba", RateSpecial.Vacuum), ("aspirateur robot", RateSpecial.Vacuum), ("Linux", RateSpecial.Linux), ("le gâteau", RateSpecial.Cake), ("the cake", RateSpecial.Cake),
+    ("les frites", RateSpecial.Fries), ("la Belgique", RateSpecial.Belgium), ("les belges", RateSpecial.Belgium), ("Bruxelles", RateSpecial.Brussels), ("les bruxellois", RateSpecial.Brussels),
+    ("les Français", RateSpecial.TheFrench), ("la France", RateSpecial.TheFrench), ("pizza ananas", RateSpecial.PineapplePizza), ("la pizza à l'ananas", RateSpecial.PineapplePizza),
+    ("Pizza ANANAS !!", RateSpecial.PineapplePizza), ("pizza hawaïenne", RateSpecial.PineapplePizza), ("de l'ananas sur une pizza", RateSpecial.PineapplePizza),
+}) RateIs(subject, want);
+foreach (var s in new[] { "peut-être demain", "gaufre", "voyager", "voyager 2", "eve online", "le pizza", "le français", "pizza sans ananas", "gâteau au chocolat", "une frite molle" })
+    if (R(s).Kind != RatingKind.Normal) Fail($"/rate {s}: {R(s)}, expected a hashed score");
+if (R("pizza").Score != 9 || R("les liegeois sont nuls").Kind != RatingKind.Normal) Fail("a hashed score moved");
+if (R("quokka et glados").Kind != RatingKind.Nemesis || R("Wall-E et EVE").Kind != RatingKind.Crush) Fail("a fixed verdict lost to a small one");
+// Spelling: determiners, doubled and stretched letters, chat spellings, on small and fixed verdicts.
+foreach (var (subject, want) in new[]
+{
+    ("cet hiver", RateSpecial.Winter), ("en été", RateSpecial.Heatwave), ("hiverrr", RateSpecial.Winter), ("mon onduleur", RateSpecial.Ups),
+    ("ma Ping-Qilin", RateSpecial.PingQilin), ("doooodle", RateSpecial.Doodle), ("doodle stp", RateSpecial.Doodle), ("doodle.com", RateSpecial.Doodle),
+    ("ptet", RateSpecial.Maybe), ("p'tet", RateSpecial.Maybe), ("le vote peut-être", RateSpecial.Maybe), ("SIX SEVEEEEN", RateSpecial.SixSeven),
+    ("6-7", RateSpecial.SixSeven), ("chat j'ai pété", RateSpecial.ChatGpt), ("calendrier google", RateSpecial.GoogleCalendar), ("un tableur", RateSpecial.Excel),
+    ("hey siri", RateSpecial.Siri), ("arduino uno", RateSpecial.Arduino), ("la cité ardente", RateSpecial.Liege), ("les gens de Liège", RateSpecial.Liege),
+    ("liegois", RateSpecial.Liege), ("gaufre liège", RateSpecial.LiegeWaffle), ("boulets de liège", RateSpecial.Boulets), ("tue-mouches", RateSpecial.FlyAgaric),
+    ("chargeur à 3€", RateSpecial.CheapCharger), ("chargeur à 3 balles", RateSpecial.CheapCharger), ("une tempête", RateSpecial.Storm), ("coupure elec", RateSpecial.PowerCut),
+    ("blackout", RateSpecial.PowerCut), ("vague de chaleur", RateSpecial.Heatwave), ("quatre-vingt-dix", RateSpecial.QuatreVingtDix),
+    ("Wheatly", RateSpecial.Wheatley), ("Glaaados", RateSpecial.Glados),
+}) RateIs(subject, want);
+foreach (var (subject, want) in new[]
+{
+    ("quoka", RatingKind.Nemesis), ("inabott", RatingKind.Nemesis), ("quokka 3.0", RatingKind.Nemesis), ("mitrailette", RatingKind.Mitraillette),
+    ("routié", RatingKind.Routier), ("Papaaa", RatingKind.Owner), ("le papa de SYNCS", RatingKind.Owner), ("mon dieu", RatingKind.God), ("la tata de SYNCS", RatingKind.Tata),
+    ("God", RatingKind.God), ("le demon", RatingKind.Devil), ("Wall-E", RatingKind.Crush), ("papa noel et quokka", RatingKind.Nemesis),
+})
+    if (R(subject).Kind != want) Fail($"/rate {subject}: {R(subject)}, expected {want}");
+// Titles and other people's relatives that merely hold a name, and folds that must not land on one.
+foreach (var s in new[]
+{
+    "God of War", "Demon Slayer", "Demon's Souls", "Papa Noël", "Papa Roach", "Papa's Freezeria", "le papa de Luca", "empire romain", "Tata Motors", "tata yoyo",
+    "la tata de Luca", "resto routier", "relais routier", "Adam et Ève", "Adam et Eve", "Le diable s'habille en Prada", "good game", "good", "Eevee", "évoli", "677", "la", "wall street",
+})
+    if (R(s).Kind != RatingKind.Normal) Fail($"/rate {s}: {R(s)}, expected a hashed score");
+if (R("God of War").Score != (int)(StableRoll.Unit(Rating.Hash("god of war"), 9001, 0) * 11)) Fail("a scrubbed subject hashes as typed");
+if (R("cet hiver").Score != 10 || R("doodle").Score != 0) Fail("small verdict score");
+// Preferences rank by the table's real score, low ones included.
+if (!P("hiver", "canicule") || !P("glados", "wheatley")) Fail("small verdict: preference");
+if (P("doodle", "pizza") || P("orage", "pizza")) Fail("a 0/10 small verdict beat a 9/10");
+
+// /ship's small verdicts, in either order and through articles; Papa, the nemesis and her win first.
+ShipResult Sh(string a, string b) => Shipping.Ship(a, b, 1, 2, 3, 4);
+void PairIs(string a, string b, ShipCouple want, int percent)
+{
+    foreach (var r in new[] { Sh(a, b), Sh(b, a) })
+        if (r.Kind != ShipKind.Pair || r.Pair != want || r.Percent != percent) Fail($"/ship {a} × {b}: {r}, expected {want} {percent}");
+}
+PairIs("pizza", "ananas", ShipCouple.PizzaPineapple, -100);
+PairIs("la pizza", "l'ananas", ShipCouple.PizzaPineapple, -100);
+PairIs("routier", "mitraillette", ShipCouple.RoutierMitraillette, -100);
+PairIs("GLaDOS", "Wheatley", ShipCouple.GladosWheatley, 4);
+PairIs("les frites", "la mayo", ShipCouple.FritesMayo, 100);
+PairIs("frites", "mayonnaise", ShipCouple.FritesMayo, 100);
+PairIs("frites", "ketchup", ShipCouple.FritesKetchup, 12);
+PairIs("sirop de Liège", "fromage de Herve", ShipCouple.SiropHerve, 100);
+PairIs("une session", "peut-être", ShipCouple.SessionMaybe, 0);
+PairIs("frittes", "mayonaise", ShipCouple.FritesMayo, 100);
+PairIs("pizzaaa", "ananaaas", ShipCouple.PizzaPineapple, -100);
+PairIs("routier", "mitrailette", ShipCouple.RoutierMitraillette, -100);
+PairIs("Wheatly", "Glaaados", ShipCouple.GladosWheatley, 4);
+PairIs("ta session", "ptet", ShipCouple.SessionMaybe, 0);
+PairIs("peut-être", "non", ShipCouple.MaybeNo, 100);
+PairIs("ptet", "nan", ShipCouple.MaybeNo, 100);
+PairIs("la mise à jour", "le redémarrage", ShipCouple.UpdateRestart, 100);
+PairIs("maj", "reboot", ShipCouple.UpdateRestart, 100);
+foreach (var (a, b) in new[] { ("Doodle", "Excel"), ("Siri", "Alexa"), ("ChatGPT", "un tableur"), ("Arduino", "google agenda") })
+    if (Sh(a, b) is not { Kind: ShipKind.Rivals, Percent: 100 } || Sh(b, a).Kind != ShipKind.Rivals) Fail($"/ship {a} × {b}: {Sh(a, b)}");
+if (Sh("doodle", "doodle.com").Kind != ShipKind.Self) Fail("one rival twice is the same thing twice");
+if (Sh("doodle", "pizza").Kind != ShipKind.Normal) Fail("one rival alone isn't a couple of rivals");
+if (Sh("doodle", "quokka").Kind != ShipKind.Nemesis || Sh("doodle", "<@3>").Kind != ShipKind.Papa || Sh("doodle", "syncs").Kind != ShipKind.HerselfOther) Fail("a rival outranked a fixed verdict");
+if (Shipping.SplitCouple("doodle et excel", 1, 2, 3, 4) is null) Fail("SplitCouple: two rivals");
+if (Sh("Adam et Ève", "pizza").Kind != ShipKind.Normal || Sh("Eevee", "pizza").Kind != ShipKind.Normal) Fail("a word of something else read as EVE");
+if (Sh("God of War", "pizza").Kind != ShipKind.Normal || Sh("Papa Noël", "pizza").Kind != ShipKind.Normal) Fail("a title read as a fixed verdict in /ship");
+// A couple typed whole in the first option.
+foreach (var (typed, a, b) in new[]
+{
+    ("pizza ananas", "pizza", "ananas"), ("pizza à l'ananas", "pizza", "a l ananas"), ("Pizza et ananas !", "pizza", "ananas"), ("frites x mayo", "frites", "mayo"),
+    ("ananas & pizza", "ananas", "pizza"), ("sirop de Liège et fromage de Herve", "sirop de liege", "fromage de herve"), ("GLaDOS et Wheatley", "glados", "wheatley"),
+    ("wall-e et eve", "wall e", "eve"),
+})
+    if (Shipping.SplitCouple(typed, 1, 2, 3, 4) is not { } split || split.A != a || split.B != b) Fail($"SplitCouple {typed}: {Shipping.SplitCouple(typed, 1, 2, 3, 4)}");
+foreach (var typed in new[] { "pizza", "Tom et Jerry", "pizza sans ananas", "pizza et", "EVE et pizza", "moi et Luca" })
+    if (Shipping.SplitCouple(typed, 1, 2, 3, 4) is not null) Fail($"SplitCouple {typed}: {Shipping.SplitCouple(typed, 1, 2, 3, 4)}, expected none");
+var pairLines = (IDictionary)Field("ShipCoupleLines");
+foreach (var pair in Enum.GetValues<ShipCouple>())
+    if (!pairLines.Contains(pair)) Fail($"ShipCoupleLines misses {pair}");
+foreach (var (name, lines) in Pools("ShipCoupleLines").Concat(Pools("ShipEveElsewhereLines")).Concat(Pools("ShipWallEJealousLines")).Concat(Pools("ShipRivalsLines")))
+foreach (var line in lines)
+    if (!string.Format(line, 42).StartsWith("42 %")) Fail($"{name}: line doesn't open on the percent: {line}");
+foreach (var (a, b) in new[] { ("EVE", "pizza"), ("pizza", "EVE"), ("EVE", "moi"), ("EVE", "GLaDOS"), ("JARVIS", "EVE") })
+    if (Sh(a, b) is not { Kind: ShipKind.EveElsewhere, Percent: 100 }) Fail($"/ship {a} × {b}: {Sh(a, b)}");
+foreach (var (a, b) in new[] { ("WALL-E", "pizza"), ("pizza", "WALL-E"), ("WALL-E", "moi"), ("WALL-E", "Wheatley") })
+    if (Sh(a, b) is not { Kind: ShipKind.WallEJealous, Percent: >= 1 and <= 15 }) Fail($"/ship {a} × {b}: {Sh(a, b)}");
+if (Sh("WALL-E", "pizza").Percent != Sh("pizza", "wall-e").Percent) Fail("WALL-E's percent flips with the order");
+if (Sh("WALL-E", "EVE").Kind != ShipKind.WallEEve) Fail("WALL-E × EVE lost its own verdict");
+if (Sh("EVE", "<@3>").Kind != ShipKind.Papa || Sh("WALL-E", "<@3>").Kind != ShipKind.Papa) Fail("Papa's rule must come first");
+if (Sh("EVE", "quokka").Kind != ShipKind.Nemesis || Sh("WALL-E", "quokka").Kind != ShipKind.Nemesis) Fail("the nemesis's rule must come first");
+if (Sh("EVE", "syncs").Kind != ShipKind.HerselfHeart || Sh("WALL-E", "syncs").Kind != ShipKind.HerselfHeart) Fail("her own verdicts must come first");
+if (Sh("pizza", "burger").Kind != ShipKind.Normal || Sh("pizza sans ananas", "ananas").Kind != ShipKind.Normal) Fail("a plain pair got a verdict");
+
 var readTopic = cues.GetMethod("ReadRequestTopic", BindingFlags.Public | BindingFlags.Static, new[] { typeof(string) })!;
 foreach (var (text, topic) in new[]
 {

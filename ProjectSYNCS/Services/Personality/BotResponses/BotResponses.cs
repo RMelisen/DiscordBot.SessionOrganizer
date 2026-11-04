@@ -153,13 +153,15 @@ namespace ProjectSYNCS.Services;
 //     CardTextClickLines · CardTextAnsweredLines ... an answer typed: not clicked / clicked too
 //     CardStatusLines .......... « c'est quand ? », « qui vient ? »
 //
-//   [FunCommands, FunCommands.Ship, FunCommands.ShipCharacters, FunCommands.BlameRecapWyr] /rate, /ship, /blame, /recap, /wouldyourather
+//   [FunCommands, FunCommands.Ship, FunCommands.ShipCharacters, FunCommands.Specials, FunCommands.BlameRecapWyr] /rate, /ship, /blame, /recap, /wouldyourather
 //     RateBand0Lines … RateBand4Lines + RateBand(score) ... /rate, by score band
 //     RateHerselfLines · RateOwnerLines · RateOwnerSelfLines · RateTataSelfLines · RateCrushLines · RateNemesisLines · RateDevilLines
 //     · RateGodLines · RateTataLines · RateRoutierLines · RateMitrailletteLines ... /rate's fixed verdicts
+//     RateSpecialLines (per RateSpecial) ... /rate's small verdicts, a few lines each
 //     ShipBand0Lines … ShipBand5Lines + ShipBand(percent) ... /ship, by percent band
 //     ShipSelfLines · ShipHerselfPapaLines · ShipHerselfQuokkaLines · ShipHerselfOtherLines
 //     · ShipHeartLines (per robot-heart character) · ShipWallEEveLines · ShipPapaLines · ShipNemesisLines ... /ship's fixed verdicts
+//     ShipCoupleLines (per ShipCouple) · ShipRivalsLines · ShipEveElsewhereLines · ShipWallEJealousLines ... /ship's small verdicts
 //     BlameLines · BlameSelfLines · BlameQuokkaLines · BlameNobodyLines ... /blame
 //     BlameOnPapaLines → BlamePapaDodgeLines · BlamePapaDodgeQuokkaLines ... /blame's slip on Papa, then its edit
 //     RecapLines (per RecapProfileKind) · RecapOwnerLines · RecapHerselfLines ... /recap's last line

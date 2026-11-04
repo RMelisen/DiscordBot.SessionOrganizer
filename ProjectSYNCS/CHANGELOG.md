@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.57.5 — 2026-11-04
+
+- `/rate` now has a real opinion on about fifty more things instead of a computed score, and it counts when she's asked to choose between two things.
+- `/ship` now has its own verdicts for a few famous pairs and characters, with a meter that matches. A known pair typed whole in the first option is read as that pair.
+- `/rate` and `/ship` read subjects better: typos, stretched letters and « cet », « mon »… no longer hide a name, and game or film titles that merely contain one no longer get its verdict.
+
 ## 7.57.4 — 2026-11-02
 
 - `/report community` and the server admin's digest now show each of the most active's share of the total, overall, in writing and in voice.

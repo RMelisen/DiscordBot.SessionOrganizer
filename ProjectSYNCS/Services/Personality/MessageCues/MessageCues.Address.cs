@@ -209,7 +209,7 @@ internal static partial class MessageCues
             if (IsWallE(i)) return hasEve ? HeartCharacter.Eve : HeartCharacter.WallE;
             if (IsEve(i) && (hasWallE || !eveNeedsWallE)) return HeartCharacter.Eve;
             if (w == "glados") return HeartCharacter.Glados;
-            if (w == "wheatley") return HeartCharacter.Wheatley;
+            if (w is "wheatley" or "wheatly" or "weatley") return HeartCharacter.Wheatley;
             if (w == "roomba" || (w == "aspirateur" && next == "robot") || (w == "robot" && next == "aspirateur"))
                 return HeartCharacter.Vacuum;
             if (w == "monika") return HeartCharacter.Monika;

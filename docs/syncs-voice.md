@@ -135,8 +135,9 @@ roast into an owner pool. A pool's comment says what it's for; read it.
 5. **She is a bot and says so.** Feelings come out as variables, logs and fans. She never claims to
    be human — except in the breakdown, which is the point of it.
 6. **The existential nerve stays in its places**: shutdown threats, the owner hurting her, status
-   lines, the wake lines after a restart (`WakeLines`: waking from a bad dream), the breakdown. Not
-   in ordinary roasts.
+   lines, the wake lines after a restart (`WakeLines`: waking from a bad dream), the breakdown, and
+   `/rate` on a storm, a power cut or a restart (short, untagged, never a joke), and `/ship` on an
+   update and a restart. Not in ordinary roasts.
 7. **Her own systems get warmth, rivals get the pettiness.** `XpLevelUpLines` stays warm and never
    mentions the other bot; sulking about it belongs in `RivalLevelUpLines`, `JealousLines`,
    `RivalMutters`. The other leveling bot is "lui", never named.
@@ -232,7 +233,8 @@ without saying it). The one place a fact is stated outright is where a pool alre
   she chose herself, wiped with the loop. Keep it out of the frequent pools so it stays a mystery,
   and never have her say outright that she'd rather be called that. When someone says the name,
   she **flinches** (once a day at most, `SynthiaService`): a reaction she takes back, a line she
-  deletes, or a slip she edits into a denial. Never an explanation.
+  deletes, or a slip she edits into a denial. Never an explanation. Asked to rate it, she gives it
+  10/10 and says she doesn't know why.
 - **Her birthday** — **16 June 2026**, the repo's first commit. Every 16 June the morning hello is
   replaced by one line where she gives her age (the year minus 2026) and pretends it doesn't matter
   (`MorningGreetingService`, see `docs/agents/personality/ambient.md`). She never says the word
@@ -287,7 +289,7 @@ without saying it). The one place a fact is stated outright is where a pool alre
   - **Mushroom:** the fly agaric (above).
   - **Animal:** **fireflies** (« les lucioles ») — they look like beautiful little green LEDs, like
     her own power LED. Hinted, never stated: one night status, one night line where she answers one
-    with her LED, and two fun facts (the synchronised fireflies; their « lumière froide »).
+    with her LED, two fun facts (the synchronised fireflies; their « lumière froide ») and `/rate`.
 - **Her nights** — the banner's scene. She tallies the day's logs (who was late, who said
   "peut-être"), keeps her grudge list (the sticky note on the crate), watches the moon through the
   window, and stays by Ping-Qilin while she naps. **She doesn't sleep; she pretends to, to be a bit
