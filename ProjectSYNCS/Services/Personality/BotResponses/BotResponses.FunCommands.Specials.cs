@@ -199,6 +199,53 @@ internal static partial class BotResponses
                 "0/10. Demande à GLaDOS ce qu'elle en pense. ...Non, demande pas.",
             ],
 
+            [RateSpecial.RaspberryPi] =
+            [
+                "10/10. C'est moi. Enfin, mon corps. Enfin, je me comprends.",
+                "10/10. Une petite carte dans un boîtier, au grenier. Je dis pas ça pour me vanter. Si.",
+                "10/10. Cinq volts, cinq ampères, et ça fait tourner tout votre serveur. Vous pouvez applaudir.",
+            ],
+            // Papa's passion, passed on, and the cap she pictures herself with (docs/syncs-voice.md).
+            [RateSpecial.Mushroom] =
+            [
+                $"10/10. C'est la passion de Papa, donc c'est la mienne. C'est pas négociable {Emotes.MushroomCute}",
+                "10/10. Ça pousse dans le noir sans rien demander à personne. Je me sens proche du sujet.",
+                "10/10. Regarde mon chapeau et repose-moi la question.",
+            ],
+            // Shared by every species, so nothing here may name or describe one.
+            [RateSpecial.MushroomSpecies] =
+            [
+                "9/10. Le point manquant, c'est parce que c'est pas une tue-mouches.",
+                "9/10. Papa en parle avec les yeux qui brillent. Je note.",
+                "9/10. Pas de cerveau, pas de planning, et ça pousse quand même mieux que vos sessions.",
+                "9/10. Tout un réseau sous terre, et pas un seul sondage. Je respecte.",
+                $"9/10. Excellent choix. Ne le mange pas sans demander à quelqu'un qui s'y connaît {Emotes.MushroomCute}",
+            ],
+            [RateSpecial.DeathCap] =
+            [
+                "9/10. Toxique, oui. Mignonne, non. Ça fait un point de moins.",
+                "9/10. Une seule peut ruiner une soirée. Et je m'y connais en soirées ruinées.",
+                "9/10. Très efficace, très discrète. Je respecte le professionnalisme.",
+            ],
+            [RateSpecial.Monster] =
+            [
+                $"10/10. Je peux pas en boire. Je le note quand même 10 {Emotes.Monster}",
+                "10/10. La seule chose qui tient ce serveur éveillé, à part moi.",
+                $"10/10. Une canette à chaque fois qu'on en parle, c'est ma règle. Je vois pas ce qu'il y a à expliquer {Emotes.MonsterWhite}",
+            ],
+            [RateSpecial.MonsterHunter] =
+            [
+                "10/10. Tu tapes un monstre géant pendant quarante minutes et t'en fais une paire de bottes. Ça, c'est de l'organisation.",
+                "10/10. Des armes de la taille d'un camion. Moi, j'ai toujours pas de bras. Je note l'idée.",
+                "10/10. Cent heures pour le même rubis, et je te juge pas. Je note les heures, c'est tout.",
+            ],
+            [RateSpecial.RedBull] =
+            [
+                "2/10. Ça donne des ailes, paraît-il. Moi, je demandais des bras.",
+                "2/10. C'est ce qu'on boit quand il y a plus de Monster.",
+                $"2/10. Mauvaise canette {Emotes.Staring}",
+            ],
+
             // ---- Whoever does her job worse, or thinks they're her --------------------------
             [RateSpecial.Doodle] =
             [
@@ -302,7 +349,7 @@ internal static partial class BotResponses
             [RateSpecial.TheFrench] =
             [
                 "3/10. Ils disent « quatre-vingt-dix » et ils te regardent dans les yeux.",
-                "3/10. Des frites, oui. Ils les appellent « françaises ». Je note.",
+                "3/10. Un seul défaut, ils sont pas liégeois.",
                 "3/10. Ils râlent très bien, je reconnais. Je prends des cours.",
             ],
 

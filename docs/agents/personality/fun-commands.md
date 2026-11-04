@@ -42,12 +42,19 @@ fears staying out of everyday lines: short, no tag, never a joke. Synthia gets 1
 given. A typed « good bot » is a subject here and never touches her tally. A name normally loses its
 article, but one may keep it to mean something else: « les français » is the people, « le français »
 the language, which hashes. The cake's lines never say the lie: those words are her breakdown's
-passphrase. Bruxelles and the French are friendly teasing about habits, never a real insult.
+passphrase. Bruxelles and the French are friendly teasing about habits, never a real insult. The
+mushroom species share one pool at 9, under the fly agaric and mushrooms in general at 10, so she
+keeps a favourite; those lines may not describe any one species. « Framboise » stays out of the Pi's
+names: it is Papa's name for her. Monster and Monster Hunter are split as her can reaction splits them.
 
 **How a subject is read** (`Rating.Specials.cs`, for `/rate` and `/ship` alike). All of it is for
 recognising only, never for the hash, so no score she has already given moves:
 - `Rating.Bare` drops what surrounds a subject: determiners (« cet hiver », « mon onduleur ») and
   closing fillers (« doodle stp »).
+- `Rating.Readings` is what gets looked up: the text as typed, then bare, then without a qualifier
+  (« un petit cèpe », « une bonne Monster »), so « bon bot » stays one name.
+- `Rating.FamilyTitles` takes any title after its name (« Monster Hunter Stories »), on trust: only a
+  name that can't start anything else belongs there.
 - `Rating.Fold` collapses a run of one letter on both sides of a comparison, so « hiverrr » and
   « mayonaise » match and a table needs no such spelling. A fixed name folds only from 4 letters,
   or « good » would read as « god ». Digits don't fold.

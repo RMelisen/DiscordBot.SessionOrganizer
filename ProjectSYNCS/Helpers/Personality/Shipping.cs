@@ -144,9 +144,9 @@ public static class Shipping
             // « doodle » × « doodle.com » is one thing twice, as the keys can't tell.
             return specialA == specialB ? new(ShipKind.Self, 100) : new(ShipKind.Rivals, 100);
 
-        var (bareA, bareB) = (Rating.Fold(Rating.Bare(keyA)), Rating.Fold(Rating.Bare(keyB)));
+        var (readA, readB) = (Rating.Readings(keyA).ToArray(), Rating.Readings(keyB).ToArray());
         foreach (var (pair, percent, sideA, sideB) in FoldedPairs)
-            if ((sideA.Contains(bareA) && sideB.Contains(bareB)) || (sideA.Contains(bareB) && sideB.Contains(bareA)))
+            if ((sideA.Overlaps(readA) && sideB.Overlaps(readB)) || (sideA.Overlaps(readB) && sideB.Overlaps(readA)))
                 return new(ShipKind.Pair, percent, Pair: pair);
 
         return new(ShipKind.Normal, (int)(StableRoll.Unit(hash, PercentSalt, 0) * 101));

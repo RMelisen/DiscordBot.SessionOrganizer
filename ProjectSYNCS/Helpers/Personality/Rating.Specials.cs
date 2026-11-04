@@ -10,6 +10,7 @@ public enum RateSpecial
     PingQilin, Glados, Wheatley, Eve, Voyager, Jarvis, Minecraft, FlyAgaric, Ups, CheapCharger,
     Maybe, Heatwave, Winter, SixSeven, Synthia, Storm, PowerCut,
     Monika, TwoB, Vacuum, Update, Restart, Router, GoodBot, BadBot, Poll, Lateness, Fireflies, Linux, Cake,
+    RaspberryPi, Mushroom, MushroomSpecies, DeathCap, Monster, MonsterHunter, RedBull,
     // Whoever does her job worse, or thinks they're her.
     Doodle, GoogleCalendar, Excel, ChatGpt, Siri, Alexa, Arduino,
     // Liège and Belgium, and whoever is teased from there.
@@ -39,7 +40,7 @@ public static partial class Rating
         (RateSpecial.Voyager, 7, Array.Empty<string>(), HeartCharacter.Voyager),
         (RateSpecial.Jarvis, 6, Array.Empty<string>(), HeartCharacter.Jarvis),
         (RateSpecial.Minecraft, 10, new[] { "minecraft", "mine craft", "minecraf", "mc" }, null),
-        (RateSpecial.FlyAgaric, 10, new[] { "amanite", "amanites", "amanite tue mouches", "amanite tue mouche", "tue mouches", "tue mouche", "amanite muscaria", "amanita muscaria", "fly agaric" }, null),
+        (RateSpecial.FlyAgaric, 10, new[] { "amanite", "amanites", "amanite tue mouches", "amanite tue mouche", "tue mouches", "tue mouche", "amanites tue mouches", "amanites tue mouche", "amanite muscaria", "amanita", "amanitas", "amanita muscaria", "muscaria", "amanite rouge", "fly agaric", "fausse oronge" }, null),
         (RateSpecial.Ups, 10, new[] { "onduleur", "onduleurs", "ups", "alimentation de secours", "batterie de secours" }, null),
         (RateSpecial.CheapCharger, 0, new[] { "chargeur a 3 euros", "chargeur de 3 euros", "chargeur 3 euros", "chargeur a 3", "chargeur a 3 balles", "chargeur 3 balles", "chargeur pas cher", "chargeur chinois", "chargeur pourri" }, null),
         // The spellings MessageCues._maybePhrases knows for the word itself, not its neighbours.
@@ -64,6 +65,34 @@ public static partial class Rating
         (RateSpecial.Fireflies, 10, new[] { "luciole", "lucioles", "firefly", "fireflies" }, null),
         (RateSpecial.Linux, 10, new[] { "linux", "gnu linux", "debian", "ubuntu" }, null),
         (RateSpecial.Cake, 0, new[] { "gateau", "gateaux", "cake", "cakes", "the cake", "the cake is a lie", "gateau est un mensonge" }, null),
+        // Not « framboise »: that's Papa's name for her, and it isn't anyone else's to rate.
+        (RateSpecial.RaspberryPi, 10, new[] { "pi", "pi 5", "pi5", "raspberry", "raspberry pi", "raspberry pi 5", "raspberry pi5", "raspberrypi", "raspberrypi5", "raspi", "ras pi", "rpi", "rpi 5", "rpi5" }, null),
+        (RateSpecial.Mushroom, 10, new[] { "champignon", "champignons", "champi", "champis", "mushroom", "mushrooms", "shroom", "shrooms", "mycologie", "mycologue", "mycologues", "mycelium", "fungi", "fungus", "fongus", "champignon sauvage", "champignons sauvages", "champignon comestible", "champignons comestibles", "champignon toxique", "champignons toxiques", "champignon venimeux", "champignons venimeux", "cueillette de champignons", "cueillette des champignons" }, null),
+        // 9, under the family and the fly agaric at 10: she has a favourite, and the species' lines lean on it.
+        (RateSpecial.MushroomSpecies, 9, WithPlurals(
+            "cepe", "cepe de bordeaux", "bolet", "girolle", "chanterelle", "morille", "truffe", "pleurote", "shiitake", "portobello",
+            "enoki", "maitake", "reishi", "champignon de paris", "rose des pres", "trompette de la mort", "pied de mouton", "pied bleu",
+            "coulemelle", "lepiote", "russule", "lactaire", "coprin", "vesse de loup", "mousseron", "armillaire", "cortinaire",
+            "tricholome", "clitocybe", "polypore", "agaric", "oronge", "amanite des cesars", "psalliote", "nameko", "porcini", "morel",
+            "truffe noire", "truffe blanche", "truffe d ete", "truffe du perigord", "lepiote elevee", "cepe d ete", "bolet bai")
+            // WithPlurals only reaches the first word: these adjectives agree too.
+            .Concat(new[] { "truffes noires", "truffes blanches", "lepiotes elevees", "pieds bleus" }).ToArray(), null),
+        (RateSpecial.DeathCap, 9, WithPlurals("amanite phalloide", "phalloide", "amanite vireuse", "amanite printaniere", "ange destructeur", "death cap", "destroying angel"), null),
+        // The drink and the game, split as MessageCues.MentionsEnergyDrink splits them for her can.
+        (RateSpecial.Monster, 10, new[]
+        {
+            "monster", "monsters", "monster energy", "monster energie", "monster energy drink", "monster energy drinks", "monster blanc", "monster blanche", "monster white",
+            "monster vert", "monster verte", "monster noir", "monster noire", "monster ultra", "monster ultra white", "monster zero", "monster zero sugar",
+            "monster mango", "monster mango loco", "monster pipeline", "monster juice", "monster rehab",
+            "canette de monster", "canettes de monster", "canette monster", "canettes monster", "boisson monster",
+        }, null),
+        // Any title after « monster hunter » counts too: FamilyTitles.
+        (RateSpecial.MonsterHunter, 10, new[]
+        {
+            "monster hunter", "monster hunters", "monhun", "mon hun", "mh", "mhw", "mhwi", "mhr", "mhs", "mh1", "mh3", "mh4", "mh4u", "mhfu", "mhgu", "mhworld", "mhrise", "mhwilds",
+            "mh world", "mh rise", "mh wilds", "mh iceborne", "mh sunbreak",
+        }, null),
+        (RateSpecial.RedBull, 2, new[] { "red bull", "redbull", "redbulls", "red bull energy", "red bull energy drink", "red bull zero", "red bull sans sucre", "canette de red bull", "canettes de red bull", "canette de redbull", "canettes de redbull", "canette red bull", "canettes red bull", "canette redbull", "canettes redbull" }, null),
 
         (RateSpecial.Doodle, 0, new[] { "doodle", "doodle com", "doodles" }, null),
         (RateSpecial.GoogleCalendar, 0, new[] { "google agenda", "agenda google", "google calendar", "google calendrier", "calendrier google", "google cal", "gcal" }, null),
@@ -88,6 +117,11 @@ public static partial class Rating
         (RateSpecial.PineapplePizza, -10, new[] { "pizza ananas", "pizzas ananas", "pizza a l ananas", "pizzas a l ananas", "pizza a ananas", "pizza avec ananas", "pizza avec de l ananas", "pizza hawaienne", "pizzas hawaiennes", "pizza hawaii", "ananas pizza", "ananas sur pizza", "ananas sur la pizza", "ananas sur une pizza" }, null),
     };
 
+    // Each name and its French plural, on the first word: « pieds de mouton ».
+    private static string[] WithPlurals(params string[] names) => names
+        .SelectMany(n => new[] { n, n.Contains(' ') ? n.Insert(n.IndexOf(' '), "s") : n + "s" })
+        .ToArray();
+
     private static readonly HashSet<RateSpecial> Rivals = new()
     {
         RateSpecial.Doodle, RateSpecial.GoogleCalendar, RateSpecial.Excel, RateSpecial.ChatGpt, RateSpecial.Siri, RateSpecial.Alexa, RateSpecial.Arduino,
@@ -109,10 +143,22 @@ public static partial class Rating
     // What may open a subject without being it: « l'hiver », « cet hiver », « en hiver », « mon onduleur ».
     private static readonly HashSet<string> LeadingWords = new()
     {
-        "le", "la", "les", "l", "un", "une", "des", "du", "de", "d", "a", "au", "aux", "en",
+        "le", "la", "les", "l", "un", "une", "des", "du", "de", "d", "a", "au", "aux", "en", "the",
         "ce", "cet", "cette", "ces", "mon", "ma", "mes", "ton", "ta", "tes", "son", "sa", "ses",
-        "notre", "nos", "votre", "vos", "leur", "leurs",
+        "notre", "nos", "votre", "vos", "leur", "leurs", "quelques", "plusieurs",
     };
+
+    // What may stand before the subject without changing it: « un petit cèpe », « une bonne Monster ».
+    // Tried after the names themselves (Readings), so « bon bot » stays one name.
+    private static readonly HashSet<string> Qualifiers = new()
+    {
+        "bon", "bons", "bonne", "bonnes", "petit", "petits", "petite", "petites", "gros", "grosse", "grosses",
+        "vrai", "vrais", "vraie", "vraies",
+    };
+
+    // A title whose every edition is the same subject: « Monster Hunter Stories ». Takes what
+    // follows on trust, so only a name that can't be the start of anything else belongs here.
+    private static readonly string[] FamilyTitles = { "monster hunter" };
 
     // What may close one: « doodle franchement », « orage stp ».
     private static readonly string[] TrailingWords =
@@ -145,6 +191,27 @@ public static partial class Rating
                 }
         }
         return normalized;
+    }
+
+    /// <summary>
+    /// The keys a subject may be looked up under, most literal first, all folded: as typed (a few
+    /// names keep their article: « les francais »), then <see cref="Bare"/>, then without its
+    /// qualifiers. The tables hold folded names, so these compare directly.
+    /// </summary>
+    public static IEnumerable<string> Readings(string normalized)
+    {
+        yield return Fold(normalized);
+        var bare = Bare(normalized);
+        yield return Fold(bare);
+
+        var plain = bare;
+        var space = plain.IndexOf(' ');
+        while (space > 0 && Qualifiers.Contains(plain[..space]))
+        {
+            plain = plain[(space + 1)..];
+            space = plain.IndexOf(' ');
+        }
+        if (plain != bare) yield return Fold(plain);
     }
 
     /// <summary>
@@ -206,9 +273,12 @@ public static partial class Rating
 
     private static RatingResult? ReadSpecial(string subject, string text)
     {
-        // As typed first: a few names keep their article (« les francais »).
-        if (SpecialByName.TryGetValue(Fold(text), out var typed)) return typed;
-        if (SpecialByName.TryGetValue(Fold(Bare(text)), out var named)) return named;
+        foreach (var reading in Readings(text))
+        {
+            if (SpecialByName.TryGetValue(reading, out var named)) return named;
+            foreach (var title in FamilyTitles)
+                if (reading.StartsWith($"{Fold(title)} ", StringComparison.Ordinal)) return SpecialByName[Fold(title)];
+        }
         return ReadHeart(subject) is { } heart && SpecialByHeart.TryGetValue(heart, out var found) ? found : null;
     }
 }

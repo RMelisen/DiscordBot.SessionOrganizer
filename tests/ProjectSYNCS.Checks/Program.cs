@@ -346,7 +346,33 @@ foreach (var (subject, want) in new[]
     ("les Français", RateSpecial.TheFrench), ("la France", RateSpecial.TheFrench), ("pizza ananas", RateSpecial.PineapplePizza), ("la pizza à l'ananas", RateSpecial.PineapplePizza),
     ("Pizza ANANAS !!", RateSpecial.PineapplePizza), ("pizza hawaïenne", RateSpecial.PineapplePizza), ("de l'ananas sur une pizza", RateSpecial.PineapplePizza),
 }) RateIs(subject, want);
-foreach (var s in new[] { "peut-être demain", "gaufre", "voyager", "voyager 2", "eve online", "le pizza", "le français", "pizza sans ananas", "gâteau au chocolat", "une frite molle" })
+foreach (var (subject, want) in new[]
+{
+    ("le Pi", RateSpecial.RaspberryPi), ("Raspberry Pi 5", RateSpecial.RaspberryPi), ("mon raspi", RateSpecial.RaspberryPi),
+    ("les champignons", RateSpecial.Mushroom), ("Champiii", RateSpecial.Mushroom), ("la mycologie", RateSpecial.Mushroom),
+    ("un cèpe", RateSpecial.MushroomSpecies), ("les girolles", RateSpecial.MushroomSpecies), ("la morille", RateSpecial.MushroomSpecies),
+    ("champignon de Paris", RateSpecial.MushroomSpecies), ("trompettes de la mort", RateSpecial.MushroomSpecies), ("pieds de mouton", RateSpecial.MushroomSpecies),
+    ("amanite phalloïde", RateSpecial.DeathCap), ("amanite tue-mouches", RateSpecial.FlyAgaric), ("amanite", RateSpecial.FlyAgaric),
+    ("Monster", RateSpecial.Monster), ("une canette de Monster", RateSpecial.Monster), ("monster energy", RateSpecial.Monster),
+    ("Monster Hunter", RateSpecial.MonsterHunter), ("monster hunter wilds", RateSpecial.MonsterHunter), ("MHW", RateSpecial.MonsterHunter),
+    ("Red Bull", RateSpecial.RedBull), ("redbull", RateSpecial.RedBull),
+}) RateIs(subject, want);
+foreach (var (subject, want) in new[]
+{
+    ("amanita muscaria", RateSpecial.FlyAgaric), ("Amanita Muscaria !", RateSpecial.FlyAgaric), ("amanita", RateSpecial.FlyAgaric), ("les amanites tue-mouches", RateSpecial.FlyAgaric),
+    ("une petite amanite", RateSpecial.FlyAgaric), ("shitake", RateSpecial.MushroomSpecies), ("pleurotte", RateSpecial.MushroomSpecies), ("un bon cèpe", RateSpecial.MushroomSpecies),
+    ("truffe noire", RateSpecial.MushroomSpecies), ("les truffes noires", RateSpecial.MushroomSpecies), ("porcini", RateSpecial.MushroomSpecies), ("les petits champignons", RateSpecial.Mushroom),
+    ("champignons sauvages", RateSpecial.Mushroom), ("la cueillette des champignons", RateSpecial.Mushroom), ("ange destructeur", RateSpecial.DeathCap), ("death cap", RateSpecial.DeathCap),
+    ("rpi5", RateSpecial.RaspberryPi), ("ton petit Pi", RateSpecial.RaspberryPi), ("raspberry-pi", RateSpecial.RaspberryPi), ("une bonne Monster", RateSpecial.Monster),
+    ("monsteeer", RateSpecial.Monster), ("monster blanche", RateSpecial.Monster), ("une cannette de monster", RateSpecial.Monster),
+    ("Monster Hunter Stories", RateSpecial.MonsterHunter), ("monster hunter 4 ultimate", RateSpecial.MonsterHunter), ("monhun", RateSpecial.MonsterHunter),
+    ("mh4u", RateSpecial.MonsterHunter), ("redbul", RateSpecial.RedBull), ("Red-Bull", RateSpecial.RedBull), ("une canette de redbull", RateSpecial.RedBull), ("le bon bot", RateSpecial.GoodBot),
+}) RateIs(subject, want);
+foreach (var s in new[] { "Monster Inc", "Monster High", "Monster Munch", "Red Bull Racing", "petit robot", "bon" })
+    if (R(s).Kind != RatingKind.Normal) Fail($"/rate {s}: {R(s)}, expected a hashed score");
+if (Sh("une bonne pizza", "un petit ananas").Pair != ShipCouple.PizzaPineapple) Fail("a qualifier hid a /ship pair");
+if (!P("Monster", "Red Bull") || !P("Monster Hunter", "Red Bull") || !P("amanite tue-mouches", "cèpe") || !P("cèpe", "Red Bull")) Fail("mushrooms and cans: preference");
+foreach (var s in new[] { "framboise", "monster munch", "monstre", "pi 4", "champignon magique", "peut-être demain", "gaufre", "voyager", "voyager 2", "eve online", "le pizza", "le français", "pizza sans ananas", "gâteau au chocolat", "une frite molle" })
     if (R(s).Kind != RatingKind.Normal) Fail($"/rate {s}: {R(s)}, expected a hashed score");
 if (R("pizza").Score != 9 || R("les liegeois sont nuls").Kind != RatingKind.Normal) Fail("a hashed score moved");
 if (R("quokka et glados").Kind != RatingKind.Nemesis || R("Wall-E et EVE").Kind != RatingKind.Crush) Fail("a fixed verdict lost to a small one");
