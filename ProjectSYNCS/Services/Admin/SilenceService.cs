@@ -6,9 +6,9 @@ namespace ProjectSYNCS.Services;
 
 /// <summary>
 /// The owner's silence switch (<c>/debug silence</c>): while it is on, she says nothing on her own
-/// initiative — no chatter, reactions, hellos, ambient lines, level-up cards, pop quizzes, Quokka,
-/// Plynling announcements… Answers to commands and buttons still go out, and so do the notices a
-/// command set up (session reminders and recaps, giveaway draws, <c>/remindme</c>).
+/// initiative — no chatter, reactions, hellos, ambient lines, pop quizzes, Quokka, Plynling
+/// announcements… Answers to commands and buttons still go out, and so do level-up cards and the
+/// notices a command set up (session reminders and recaps, giveaway draws, <c>/remindme</c>).
 /// </summary>
 /// <remarks>Singleton. Unlike the absent flag it survives a restart: silence-state.json, next to the
 /// database (so under /data in production). A read or write failure is logged and treated as « not

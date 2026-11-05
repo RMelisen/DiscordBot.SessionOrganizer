@@ -308,8 +308,9 @@ explicit refusal — it truncates a body rather than rejecting a title, so it pr
 doesn't end). While it is on she says nothing on her own initiative; **answers to commands, buttons
 and `;` shortcuts still go out**, and so do the notices someone set up with a command: session
 reminders, recaps and the roll call, giveaway draws, `/remindme`, the weekend poll's result, and
-Plynling DMs to owners (warnings, sickness). The monthly digest (a DM) and her Minecraft body are
-not touched either, nor is her Discord status.
+Plynling DMs to owners (warnings, sickness). **Level-up cards go out too**, the one exception that
+nobody set up: the card reports something the member earned, it isn't her chatter. The monthly
+digest (a DM) and her Minecraft body are not touched either, nor is her Discord status.
 
 Where it is checked:
 
@@ -322,7 +323,7 @@ Where it is checked:
   her reaction or comeback to a verdict, the jealous line, the rival mutter and mark.
 - **Each loop at the post itself**: the morning hello, ambient (night, idle, Voyager, wake line),
   a new bot's welcome, Quokka's slots, the Wednesday poll (left undecided, so it still goes out if
-  silence lifts within its window), level-up cards (the level is still recorded), pop quizzes, the
+  silence lifts within its window), pop quizzes, the
   Monday crown announcement (purse and role still move), voice spectator lines, the heat record and
   router lines, and the sweep's Plynling death announcements and event stories (marked as told,
   never posted later).

@@ -24,7 +24,6 @@ internal sealed class XpTracker
     private readonly HerMessages _herMessages;
     private readonly PlynlingAnnouncer _announcer;
     private readonly ILogger<XpTracker> _logger;
-    private readonly SilenceService _silence;
     private readonly ActivityCounter _activity;
 
     // Tuning knobs, not load-bearing — easy to retune without touching the logic
@@ -90,10 +89,9 @@ internal sealed class XpTracker
         GuildConfigService config,
         HerMessages herMessages,
         PlynlingAnnouncer announcer,
-        ILogger<XpTracker> logger, SilenceService silence, ActivityCounter activity)
+        ILogger<XpTracker> logger, ActivityCounter activity)
     {
         _activity = activity;
-        _silence = silence;
         _announcer = announcer;
         _client = client;
         _services = services;
@@ -292,11 +290,10 @@ internal sealed class XpTracker
     // out from her ordinary chatter in a busy channel. It goes to the level-up channel (/config
     // levelup-channel, else the bots channel), not where the XP was earned: a level-up matters little, and the other
     // channels stay free of it. `earnedIn` is only the fallback if that channel can't be resolved.
+    // Silence mode lets it through on purpose: the card reports something the member earned, it isn't her chatter.
     private async Task AnnounceAsync(
         ulong guildId, IMessageChannel? earnedIn, ulong userId, int oldLevel, int newLevel, IUser? knownUser)
     {
-        // Silence mode: the level is recorded, only the card is skipped.
-        if (_silence.IsSilent) return;
         var channel = await BotsChannel.ResolveLevelUpAsync(_client, _config, _announcer, guildId) ?? earnedIn;
         if (channel is null) return;
 
