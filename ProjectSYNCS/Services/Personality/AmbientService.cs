@@ -108,8 +108,10 @@ internal sealed class AmbientService : BackgroundService
     private int? _nightMinute;
     private bool _nightDone;
 
-    // When tonight's line went out, and who has already been sent to bed for answering it.
+    // When and where tonight's line went out, and who has already been sent to bed for answering it.
     private DateTimeOffset? _nightLineAt;
+    private ulong _nightLineId;
+    private ulong _nightChannelId;
     private readonly HashSet<ulong> _scolded = new();
 
     // A self-correcting line waiting for its edit; completed when someone speaks after it.
@@ -210,14 +212,32 @@ internal sealed class AmbientService : BackgroundService
         if (IsIdleChannel(channelId, home, mainId) || parentId is { } p && IsIdleChannel(p, home, mainId))
             lock (_gate) _lastActivityAt = now;
 
-        if (channelId != mainId) return false;
-
         var today = AppTime.DayKey(now);
+        // A verdict is BotFeedbackTracker's to answer, even at night.
+        bool verdict = MessageCues.ReadFeedback(message.Content ?? string.Empty) != FeedbackKind.None;
+        var guildId = (message.Channel as SocketGuildChannel)?.Guild.Id ?? 0;
+
+        // Answering her 3 a.m. line: a reply to it, or a message in the channel it sits in,
+        // unless that is the main channel, where people talk to each other at night too.
+        bool answersLine;
+        lock (_gate)
+        {
+            answersLine = _nightLineAt is { } lineAt && AppTime.DayKey(lineAt) == today
+                          && (message.Reference?.MessageId.GetValueOrDefault() == _nightLineId
+                              || channelId == _nightChannelId && channelId != mainId);
+        }
+
+        if (channelId != mainId)
+        {
+            bool scoldHere;
+            lock (_gate) scoldHere = answersLine && Ambient.IsBeforeScoldEnd(now) && !verdict
+                                     && _scolded.Add(message.Author.Id);
+            return scoldHere && await ScoldAsync(message, guildId);
+        }
+
         // Aimed at her, ChatterService answers it with real typing; a ghost would be lost under it.
         bool aimedAtHer = message.MentionedUsers.Any(u => u.Id == _client.CurrentUser.Id)
                           || message.ReferencedMessage?.Author.Id == _client.CurrentUser.Id;
-        // A verdict is BotFeedbackTracker's to answer, even at night.
-        bool verdict = MessageCues.ReadFeedback(message.Content ?? string.Empty) != FeedbackKind.None;
 
         bool ghost = false, scold = false, firstWake = false;
         TaskCompletionSource? caught;
@@ -234,9 +254,8 @@ internal sealed class AmbientService : BackgroundService
             firstWake = _firstWakeUntil is { } until && now < until;
             _firstWakeUntil = null;
 
-            // Up after her 3 a.m. line, before 5:30: once a person, a night.
-            if (_nightLineAt is { } lineAt && AppTime.DayKey(lineAt) == today
-                && Ambient.IsBeforeScoldEnd(now) && !verdict
+            // Up after her 3 a.m. line, before 5:30, and answering it: once a person, a night.
+            if (answersLine && Ambient.IsBeforeScoldEnd(now) && !verdict
                 && _scolded.Add(message.Author.Id))
             {
                 scold = true;
@@ -254,23 +273,10 @@ internal sealed class AmbientService : BackgroundService
         // Someone spoke after her self-correcting line: she edits it now, caught out.
         caught?.TrySetResult();
 
-        var guildId = (message.Channel as SocketGuildChannel)?.Guild.Id ?? 0;
         if (firstWake) _badges.Award(guildId, message.Author.Id, MemberBadges.Keys.FirstWake);
-        // They answered the line, whether or not the scolding goes out.
-        if (scold) _badges.Award(guildId, message.Author.Id, MemberBadges.Keys.NightOwl);
+        if (scold) return await ScoldAsync(message, guildId);
 
-        if (_breakdown.IsActive(channelId)) return false;
-
-        if (scold)
-        {
-            var line = string.Format(_picker.Pick(BotResponses.NightScoldLines),
-                BotResponses.DisplayNameFor(message.Author));
-            await BotChat.ReplyWithTypingAsync(message, line, _logger, "night scolding");
-            _logger.LogInformation("Ambient: sent {UserId} to bed.", message.Author.Id);
-            return true;
-        }
-
-        if (!ghost) return false;
+        if (!ghost || _breakdown.IsActive(channelId)) return false;
 
         try
         {
@@ -283,6 +289,20 @@ internal sealed class AmbientService : BackgroundService
             _logger.LogWarning(ex, "Ambient: ghost typing failed.");
         }
         return false;
+    }
+
+    // Sends to bed someone who answered the 3 a.m. line. Returns whether she answered.
+    private async Task<bool> ScoldAsync(SocketUserMessage message, ulong guildId)
+    {
+        // They answered the line, whether or not the scolding goes out.
+        _badges.Award(guildId, message.Author.Id, MemberBadges.Keys.NightOwl);
+        if (_breakdown.IsActive(message.Channel.Id)) return false;
+
+        var line = string.Format(_picker.Pick(BotResponses.NightScoldLines),
+            BotResponses.DisplayNameFor(message.Author));
+        await BotChat.ReplyWithTypingAsync(message, line, _logger, "night scolding");
+        _logger.LogInformation("Ambient: sent {UserId} to bed.", message.Author.Id);
+        return true;
     }
 
     // Once per process: the clocks start from the channels' history, not from nowhere.
@@ -349,6 +369,8 @@ internal sealed class AmbientService : BackgroundService
             if (tonight is not null && Ambient.IsBeforeScoldEnd(now))
             {
                 _nightLineAt = tonight.Timestamp;
+                _nightLineId = tonight.Id;
+                _nightChannelId = tonight.Channel.Id;
                 _nightDay = AppTime.DayKey(now);
                 _nightDone = true;
             }
@@ -356,7 +378,7 @@ internal sealed class AmbientService : BackgroundService
     }
 
     // The 3 a.m. line goes to the bots channel; the quiet it waits for is the main channel's
-    // (`main`), and the scolding stays there too.
+    // (`main`). The scolding answers whoever answers the line, there or by replying to it.
     private async Task TryNightLineAsync(IMessageChannel main, DateTimeOffset now)
     {
         if (!Ambient.IsNightLineHour(now)) return;
@@ -392,6 +414,8 @@ internal sealed class AmbientService : BackgroundService
         lock (_gate)
         {
             _nightLineAt = sent.Timestamp;
+            _nightLineId = sent.Id;
+            _nightChannelId = channel.Id;
             _scolded.Clear();
         }
         _logger.LogInformation("Ambient: night line posted.");

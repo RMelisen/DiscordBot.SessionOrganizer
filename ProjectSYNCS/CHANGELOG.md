@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.57.8 — 2026-11-07
+
+- Her 3 a.m. bedtime scolding now only answers people who reply to her night line, not anyone
+  chatting in the main channel at night.
+
 ## 7.57.7 — 2026-11-05
 
 - Level-up cards now go out while she's silenced.
