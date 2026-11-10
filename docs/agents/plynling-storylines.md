@@ -4,6 +4,13 @@ The event rework into fewer, deeper arcs (design: `docs/superpowers/specs/2026-1
 the file format in full: `docs/superpowers/specs/2026-10-29-plynling-story-file-format-design.md`). The world
 every arc lives in is `docs/village-lore.md`; the prose follows `docs/plynling-writing-style.md`.
 
+**The direction changed on 2026-11-10.** The owner found the first bible too dark and wants the
+village as a common base for standalone events, not one long plot. `docs/village-lore.md` is
+rewritten that way (fully cosy; no hidden truth, chronicle, crises or character exits) and is what
+binds. The storylines design spec still describes the old direction (deep arcs, chronicle, crises,
+loss endings): treat it as out of date until it is revised with the owner. The format, parser,
+validator and checks below are unchanged.
+
 **Built so far: the format, its parser, its validator and the checks.** The engine (runs, steps, the
 living message, the card entry, `/debug` tools), its tables and the startup load are not built: no
 story reaches a player yet, and the old event catalog (`plynling-events.md`) runs as before.
@@ -24,7 +31,7 @@ story reaches a player yet, and the old event catalog (`plynling-events.md`) run
 
 | Arc | File | State |
 |---|---|---|
-| L'arrivée | `Stories/Milestone/arrival.story` | first draft, awaiting the owner's review; its premise and branch map head the file |
+| L'arrivée | `Stories/Milestone/arrival.story` | second draft (rewritten 2026-11-10), third draft (2026-11-10), written to the cosy bible: a three-day welcome, three choices, three endings; awaiting the owner's review; its premise and map head the file |
 
 ## Rules that bite
 

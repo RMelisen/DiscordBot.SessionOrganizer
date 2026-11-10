@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.57.8 — 2026-11-10
+
+- Plynlings: the arrival storyline is rewritten as a short, cosy three-day welcome. Still not played.
+
 ## 7.57.7 — 2026-11-05
 
 - Level-up cards now go out while she's silenced.
