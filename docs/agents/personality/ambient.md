@@ -58,7 +58,7 @@ thresholds live in `Helpers/Personality/Ambient` (pure, Paris wall-clock hours, 
 |---|---|---|
 | Idle moon + `NightPresenceFillers` | `PresenceService` | 1:00–7:00 |
 | 3 a.m. line (`NightLines`) | `AmbientService` tick | decided once a night (25%, random minute 3:00–3:49), main channel quiet ≥ 1 h; posted in the bots channel (`/config bots-channel`) |
-| Night scolding (`NightScoldLines`) | `AmbientService.HandleMessageAsync` | any human message in the main channel after tonight's line and before 5:30, once a person a night, verdicts excepted; a reply, and `ChatterService` is skipped for that message |
+| Night scolding (`NightScoldLines`) | `AmbientService.HandleMessageAsync` | a human message **answering** tonight's line before 5:30 — a Discord reply to it, or any message in the channel it sits in unless that is the main channel — once a person a night, verdicts excepted; a reply, and `ChatterService` is skipped for that message. Chatting in the main channel at night is not answering: people talk to each other there |
 | Idle turn | `AmbientService` tick | 10:00–23:00, **all idle channels** (`IdleChannelIds`, plus `/config idle-channels`, plus the main channel) quiet ≥ 6 h (threads count for their parent), one 50% roll per silence, max 1/day, posted in the main channel: 30% late `SeenReactions` on the main channel's last human message, else an `IdleLines` line, a quarter of the time an `IdleEditLines` pair (edited 5 min later, or 2 s after someone speaks in the main channel after it) |
 | Ghost typing | `AmbientService.HandleMessageAsync` | a human message after ≥ 1 h quiet, not aimed at her, 3%, max 1/day |
 | Hesitant reaction | `ReactionService` | 3% of mood reactions are removed 2–4 s later |
@@ -77,7 +77,8 @@ thresholds live in `Helpers/Personality/Ambient` (pure, Paris wall-clock hours, 
   together) and the host runs its 10-minute tick. The first tick seeds both from history (50
   messages in the main channel, 10 in each other one; a forum is skipped), or from the start time
   when none is human, so a restart is never followed straight away by an idle line. It also finds
-  tonight's line there, so a restart before 5:30 keeps the scolding on.
+  tonight's line in the bots channel (its id and channel, for the scolding), so a restart
+  before 5:30 keeps the scolding on.
 - **`HandleMessageAsync` returns whether she answered** (the scolding); `BotService` then skips
   `ChatterService`, so a reply to her 3 a.m. line gets sent to bed instead of roasted.
 - **The pending edit runs off the tick** (`Task.Run`), waiting on whichever comes first: 5 minutes,

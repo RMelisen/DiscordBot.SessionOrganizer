@@ -3,9 +3,14 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
-## 7.57.8 — 2026-11-10
+## 7.57.9 — 2026-11-10
 
 - Plynlings: the arrival storyline is rewritten as a short, cosy three-day welcome. Still not played.
+
+## 7.57.8 — 2026-11-07
+
+- Her 3 a.m. bedtime scolding now only answers people who reply to her night line, not anyone
+  chatting in the main channel at night.
 
 ## 7.57.7 — 2026-11-05
 
