@@ -52,6 +52,11 @@ public class MemberBadgeService
                 && !p.SessionEvent.IsCancelled && p.SessionEvent.GuildId == guildId
             select new { Seen = p.FirstSeenInVoiceAt!.Value, p.SessionEvent.ScheduledAt }).ToListAsync();
 
+        var dailyBest = await _db.PebbleWallets.AsNoTracking()
+            .Where(x => x.GuildId == guildId && x.UserId == userId)
+            .Select(x => x.DailyBest)
+            .FirstOrDefaultAsync();
+
         var stored = await _db.MemberBadges.AsNoTracking()
             .Where(b => b.GuildId == guildId && b.UserId == userId)
             .ToListAsync();
@@ -69,7 +74,8 @@ public class MemberBadgeService
             PlynlingBadges: plynlingBadges,
             Punctual: seen.Any(s => s.Seen < s.ScheduledAt),
             JoinedAt: joinedAt,
-            Stored: stored.ToDictionary(b => b.Key, b => new StoredBadge(b.Count, b.EarnedAt)));
+            Stored: stored.ToDictionary(b => b.Key, b => new StoredBadge(b.Count, b.EarnedAt)),
+            DailyBest: dailyBest);
     }
 
     /// <summary>Inserts the badge with Count = 1; false if the member already holds it.</summary>

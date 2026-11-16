@@ -44,6 +44,7 @@ public static class CommandPath
         ShortcutKind.Work => ";work",
         ShortcutKind.Forage => ";forage",
         ShortcutKind.Visit => ";pl visit",
+        ShortcutKind.Daily => ";daily",
         _ => ";pl ?",
     };
 
@@ -70,6 +71,7 @@ public static class CommandPath
         ";work" => "work",
         ";forage" => "plynling forage",
         ";pl visit" => "plynling visit",
+        ";daily" => "daily",
         ";pl ?" => "plynling help",
         _ => key,
     };

@@ -30,4 +30,12 @@ public class PebbleWallet
     // hasn't had its DM yet (PebbleEconomy.WorkReminderDue).
     public bool WorkReminder { get; set; }
     public DateTimeOffset? WorkRemindedAt { get; set; }
+
+    // /daily (Helpers/Economy/DailyStreak). On the wallet so the claim, its cailloux and the streak
+    // save together, and so Balance's concurrency token makes a double claim lose the race and be
+    // refused on retry. DailyDay is the Paris yyyymmdd of the last claim, 0 if never. DailyBest is
+    // the longest streak ever: the « Assiduité » badge reads it, so a reset never takes a tier away.
+    public int DailyDay { get; set; }
+    public int DailyStreak { get; set; }
+    public int DailyBest { get; set; }
 }

@@ -25,6 +25,7 @@ public static class EconomyLog
     public const string EarnEvent = "earn.event";   // a Plynling event's reward (GiveCailloux)
     public const string EarnQuiz = "earn.quiz";     // a pop quiz win (QuizService.RecordWinAsync), the weekly crown's purse (PayCrownAsync)
     public const string EarnArcade = "earn.arcade"; // net winnings from an /arcade game (ArcadeService.SettleAsync)
+    public const string EarnDaily = "earn.daily";   // a /daily claim (PebbleService.ClaimDailyAsync)
 
     // Cailloux spent, by sink.
     public const string SpendShop = "spend.shop";
@@ -53,7 +54,7 @@ public static class EconomyLog
     public const string CosBought = "cos.bought";
     public const string CosCrafted = "cos.crafted";
 
-    public static readonly IReadOnlyList<string> Earnings = new[] { EarnWork, EarnPassive, EarnGame, EarnGift, EarnBadge, EarnCollection, EarnSale, EarnAdmin, EarnEvent, EarnQuiz, EarnArcade };
+    public static readonly IReadOnlyList<string> Earnings = new[] { EarnWork, EarnPassive, EarnGame, EarnGift, EarnBadge, EarnCollection, EarnSale, EarnAdmin, EarnEvent, EarnQuiz, EarnArcade, EarnDaily };
     public static readonly IReadOnlyList<string> Spendings = new[] { SpendShop, SpendMeal, SpendMealOther, SpendCosmetic, SpendCraft, SpendAdmin, SpendMedicine, SpendArcade };
     public static readonly IReadOnlyList<string> Activities = new[] { ActMeal, ActPet, ActGame, ActVisit, ActForage, ActTrade, ActGive, ActBath, ActMedicine };
     public static readonly IReadOnlyList<string> Findings = new[] { ItemFound, ItemSet, CosBought, CosCrafted };

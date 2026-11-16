@@ -8,6 +8,9 @@ namespace ProjectSYNCS.Services;
 // WorkReminder: whether they get a DM when the next shift is ready (the footer hints at it when off).
 public sealed record WorkResult(bool Paid, long Amount, long Balance, DateTimeOffset NextWorkAt, bool WorkReminder);
 
+// Claimed false: today was already claimed, Streak is the stored one. NextClaimAt: the next Paris midnight.
+public sealed record DailyResult(bool Claimed, int Streak, long Amount, ItemFind? Find, DateTimeOffset NextClaimAt);
+
 public sealed record PebbleBalance(long Balance, DateTimeOffset? NextWorkAt, long PassiveToday, bool WorkReminder);
 
 // EF access for cailloux — transient, like every service wrapping AppDbContext.
@@ -36,6 +39,56 @@ public class PebbleService
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.EarnWork, pay, now);
         await _db_context.SaveChangesAsync();
         return new WorkResult(true, pay, wallet.Balance, now + PebbleEconomy.WorkCooldown, wallet.WorkReminder);
+    }
+
+    // /daily: once per Paris day, through EconomySave so two claims at once pay once (Balance is a
+    // concurrency token: the loser retries, re-reads DailyDay and is refused). The cailloux, the
+    // streak and any find land in one save; GrantAsync logs the find and pays a completed set into
+    // this same wallet. Rolled inside the work, so a retry simply rolls again.
+    public Task<DailyResult> ClaimDailyAsync(ulong guildId, ulong userId, DateTimeOffset now, Random rng) =>
+        EconomySave.RetryAsync(_db_context, () => ClaimDailyOnceAsync(guildId, userId, now, rng));
+
+    private async Task<DailyResult> ClaimDailyOnceAsync(ulong guildId, ulong userId, DateTimeOffset now, Random rng)
+    {
+        var wallet = await GetOrCreateWalletAsync(_db_context, guildId, userId);
+        var today = AppTime.DayKey(now);
+        var nextAt = DailyStreak.NextClaimAt(now);
+        var excused = await ExcusedDaysAsync(wallet.DailyDay, today);
+        if (DailyStreak.NextStreak(wallet.DailyDay, wallet.DailyStreak, today, excused) is not { } streak)
+            return new DailyResult(false, wallet.DailyStreak, 0, null, nextAt);
+
+        var amount = DailyStreak.RollCailloux(streak, rng);
+        wallet.Balance += amount;
+        wallet.DailyDay = today;
+        wallet.DailyStreak = streak;
+        wallet.DailyBest = Math.Max(wallet.DailyBest, streak);
+        await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.EarnDaily, amount, now);
+
+        ItemFind? find = null;
+        if (rng.NextDouble() < DailyStreak.ItemChance(streak))
+            find = await InventoryService.GrantAsync(_db_context, guildId, userId, ItemCatalog.DrawForage(rng, now), now);
+
+        await _db_context.SaveChangesAsync();
+        return new DailyResult(true, streak, amount, find, nextAt);
+    }
+
+    // The days between the last claim and today that she was offline long enough to excuse. Only read
+    // when there is a gap; every incident and clean stop is loaded and its dates compared in memory
+    // (SQLite cannot translate DateTimeOffset comparisons) — a handful of rows a month.
+    private async Task<IReadOnlySet<int>> ExcusedDaysAsync(int lastDay, int today)
+    {
+        if (lastDay == 0 || lastDay >= today) return new HashSet<int>();
+        var from = AppTime.FromDayKey(lastDay).AddDays(1);
+        var to = AppTime.FromDayKey(today);
+        if (from >= to) return new HashSet<int>();
+
+        var windowStart = AppTime.AtWallClock(from);
+        var windowEnd = AppTime.AtWallClock(to);
+        var incidents = await _db_context.UptimeEvents.AsNoTracking().Select(x => new { x.StartedAt, x.EndedAt }).ToListAsync();
+        var stops = await _db_context.CleanStops.AsNoTracking().Select(x => new { x.StartedAt, x.EndedAt }).ToListAsync();
+        return DailyStreak.ExcusedDays(incidents.Concat(stops)
+            .Where(x => x.EndedAt > windowStart && x.StartedAt < windowEnd)
+            .Select(x => (x.StartedAt, x.EndedAt)));
     }
 
     // Returns how much was actually granted — zero once today's cap is reached.

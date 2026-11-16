@@ -123,7 +123,8 @@ card, keep the XP. **Admin adjustments never fire it** (see `admin.md`).
   guild and member.
 - **Paliers are derived at display time and never stored**, so thresholds can move without a
   migration. The exceptions are the two counters `arcade` and `nanny`, stored as `MemberBadge.Count`.
-  The moments `lightning` and `punctual` are derived too and shown without a date.
+  The moments `lightning` and `punctual` are derived too and shown without a date. `daily`
+  (« Assiduité ») reads `PebbleWallet.DailyBest`, the best `/daily` streak (see `economy.md`).
 - **Every write goes through the singleton `BadgeAwarder`**, after the flow's own save,
   fire-and-forget. It ignores guild 0 (DMs), unknown keys and her own id, and releases its in-memory
   claim when a write fails. `MemberBadgeService.AwardAsync/IncrementAsync` rethrow anything that is

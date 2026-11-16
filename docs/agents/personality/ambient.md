@@ -205,7 +205,9 @@ reads — the first thing to run after a deploy if the status never mentions the
   after the last heartbeat, is a **power cut** (the whole Pi went down — a hard reset looks the
   same); the uptime test needs no clock, since a Pi without an RTC battery may start with the
   wrong time until NTP syncs. Unclean on a machine that stayed up is a **crash** (killed, OOM,
-  a native fault). Both are recorded as `UptimeEvent`s.
+  a native fault). Both are recorded as `UptimeEvent`s. A clean stop is recorded too, as a
+  `CleanStop` (last heartbeat → start), **never** an `UptimeEvent`: it is no incident, and its one
+  reader is `/daily`, which excuses a day she was away 3 h or more (see `economy.md`).
   `PiHealth.Classify` is pure; the state is read once, before the file is overwritten, on first
   use — `AmbientService` may ask before `StartAsync` runs.
 - **Outages**: the first `Disconnected` starts the clock, the next `Connected` stops it; ten

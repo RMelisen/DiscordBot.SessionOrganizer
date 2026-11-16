@@ -3,6 +3,13 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.59.0 — 2026-11-16
+
+- New `/daily` (and `;daily`): a daily reward that grows with each day in a row, up to 100
+  cailloux, with a growing chance of an item; missing a day starts the streak over, unless the
+  bot was offline for 3 hours or more that day.
+- New « Assiduité » badge for your best streak: 7, 30, 100, 200 and 365 days.
+
 ## 7.58.3 — 2026-11-16
 
 - Dates in the reports, `/tonight` and a few staff cards always read dd/mm, whatever the

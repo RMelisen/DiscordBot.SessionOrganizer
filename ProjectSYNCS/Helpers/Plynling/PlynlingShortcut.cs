@@ -8,6 +8,7 @@ public enum ShortcutKind
     Work,
     Forage,
     Visit,
+    Daily,
     // Starts with ;pl but is not one of the above: answered with the list of what works.
     Unknown,
 }
@@ -17,18 +18,18 @@ public readonly record struct Shortcut(ShortcutKind Kind, ulong? UserId = null);
 
 /// <summary>
 /// The typed shortcuts for the game's routine commands: <c>;pl</c>, <c>;pl @x</c>,
-/// <c>;pl visit @x</c>, <c>;forage</c> and <c>;work</c> (also under <c>;pl</c>). Pure, so the
+/// <c>;pl visit @x</c>, <c>;forage</c>, <c>;work</c> and <c>;daily</c> (also under <c>;pl</c>). Pure, so the
 /// grammar is checkable without a gateway; <c>PlynlingShortcutService</c> runs them.
 /// </summary>
 /// <remarks>
 /// Only the first word decides whether a message is a shortcut at all, and it must be exactly
-/// one of the three heads — so <c>;-;</c>, <c>;)</c> or <c>;plop</c> stay ordinary chatter.
+/// one of the four heads — so <c>;-;</c>, <c>;)</c> or <c>;plop</c> stay ordinary chatter.
 /// </remarks>
 public static class PlynlingShortcut
 {
     // Shown for Unknown and under PlynlingShortcutService's refusals; kept short, it is a reminder.
     public const string Usage =
-        "En texte : `;pl` (ta carte), `;pl @quelqu'un`, `;pl visit @quelqu'un`, `;forage` et `;work`. Le reste passe par `/pl`.";
+        "En texte : `;pl` (ta carte), `;pl @quelqu'un`, `;pl visit @quelqu'un`, `;forage`, `;work` et `;daily`. Le reste passe par `/pl`.";
 
     public const string VisitWho = "Chez qui ? `;pl visit @quelqu'un`";
 
@@ -43,6 +44,7 @@ public static class PlynlingShortcut
         {
             ";work" => rest.IsEmpty ? new Shortcut(ShortcutKind.Work) : new Shortcut(ShortcutKind.Unknown),
             ";forage" => rest.IsEmpty ? new Shortcut(ShortcutKind.Forage) : new Shortcut(ShortcutKind.Unknown),
+            ";daily" => rest.IsEmpty ? new Shortcut(ShortcutKind.Daily) : new Shortcut(ShortcutKind.Unknown),
             ";pl" => ParsePl(rest),
             _ => null,
         };
@@ -62,6 +64,7 @@ public static class PlynlingShortcut
             "view" or "v" when args.Length == 1 && MentionUtils.TryParseUser(args[0], out var id) => new Shortcut(ShortcutKind.View, id),
             "work" when args.IsEmpty => new Shortcut(ShortcutKind.Work),
             "forage" when args.IsEmpty => new Shortcut(ShortcutKind.Forage),
+            "daily" when args.IsEmpty => new Shortcut(ShortcutKind.Daily),
             // A visit without anyone is still a visit: it is answered with who to name.
             "visit" when args.IsEmpty => new Shortcut(ShortcutKind.Visit),
             "visit" when args.Length == 1 && MentionUtils.TryParseUser(args[0], out var host) => new Shortcut(ShortcutKind.Visit, host),

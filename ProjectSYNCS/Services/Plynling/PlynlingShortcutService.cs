@@ -7,9 +7,9 @@ using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Services;
 
-// The typed shortcuts (Helpers/Plynling/PlynlingShortcut): ;pl, ;pl @x, ;pl visit @x, ;forage and
-// ;work. Each runs the code its slash command runs (PlynlingModule.ViewLineAsync, BuildCardAsync,
-// ForageReply and OpenVisitAsync, EconomyModule.WorkReply) and posts the same answer as a reply,
+// The typed shortcuts (Helpers/Plynling/PlynlingShortcut): ;pl, ;pl @x, ;pl visit @x, ;forage,
+// ;work and ;daily. Each runs the code its slash command runs (PlynlingModule.ViewLineAsync, BuildCardAsync,
+// ForageReply and OpenVisitAsync, EconomyModule.WorkReply and DailyReply) and posts the same answer as a reply,
 // so the two entry points cannot drift.
 //
 // A message cannot be answered privately, so a refusal is a reply that deletes itself after
@@ -85,6 +85,13 @@ public sealed class PlynlingShortcutService
                 var pebbles = scope.ServiceProvider.GetRequiredService<PebbleService>();
                 var result = await pebbles.WorkAsync(guild.Id, authorId, PebbleEconomy.RollWorkPay(), now);
                 await AnswerAsync(message, EconomyModule.WorkReply(result, _picker));
+                return;
+            }
+            case ShortcutKind.Daily:
+            {
+                var pebbles = scope.ServiceProvider.GetRequiredService<PebbleService>();
+                var result = await pebbles.ClaimDailyAsync(guild.Id, authorId, now, Random.Shared);
+                await AnswerAsync(message, EconomyModule.DailyReply(result, authorId));
                 return;
             }
             case ShortcutKind.Forage:

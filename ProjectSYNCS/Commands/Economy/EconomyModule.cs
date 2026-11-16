@@ -46,6 +46,41 @@ public class EconomyModule : InteractionModuleBase<SocketInteractionContext>
             false);
     }
 
+    // Public, like /work: the streak is something to show. Deferred, since the claim writes before
+    // anything shows; a refusal stays private (the deferred reply is deleted, then a private follow-up).
+    [SlashCommand("daily", "Ta récompense du jour, qui grandit avec ta série")]
+    public async Task DailyAsync()
+    {
+        await DeferAsync();
+        var result = await _pebbles.ClaimDailyAsync(Context.Guild.Id, Context.User.Id, DateTimeOffset.UtcNow, Random.Shared);
+        var (text, refused) = DailyReply(result, Context.User.Id);
+        if (refused)
+        {
+            await DeleteOriginalResponseAsync();
+            await FollowupAsync(text, ephemeral: true, allowedMentions: AllowedMentions.None);
+        }
+        else
+        {
+            await ModifyOriginalResponseAsync(m =>
+            {
+                m.Content = text;
+                m.AllowedMentions = AllowedMentions.None;
+            });
+        }
+    }
+
+    // What /daily answers, shared with the ;daily shortcut. « trouvé : » rather than an agreed
+    // participle, because items carry no grammatical gender.
+    public static (string Text, bool Refused) DailyReply(DailyResult result, ulong userId)
+    {
+        if (!result.Claimed)
+            return ($"Déjà réclamé aujourd'hui. Prochain `/daily` <t:{result.NextClaimAt.ToUnixTimeSeconds()}:R> · série : {DailyStreak.Days(result.Streak)}", true);
+
+        var text = $"Série : {DailyStreak.Days(result.Streak)}\n+{PebbleEconomy.Cailloux(result.Amount)}";
+        if (result.Find is not { } find) return (text, false);
+        return (PlynlingText.FindLines($"{text}  ·  trouvé : {PlynlingText.ItemLabel(find.Item)}", find, userId), false);
+    }
+
     // Private: balances are nobody else's business, and nothing in v1 needs a rich list.
     // The passive line makes the cap visible rather than mysterious. Ephemeral, so whoever clicks
     // its reminder button (EconomyComponentHandler) is its owner.

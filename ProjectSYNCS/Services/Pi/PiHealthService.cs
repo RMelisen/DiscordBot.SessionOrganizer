@@ -63,6 +63,8 @@ public sealed class PiHealthService : BackgroundService
     private bool _classified;
     private StopKind _lastStop;
     private DateTimeOffset? _wentDarkAt;
+    // The last heartbeat before a clean stop: only /daily's excused days read it (CleanStop).
+    private DateTimeOffset? _stoppedCleanlyAt;
     private DateTimeOffset _startedAt;
     private HealthState _state = new(false, DateTimeOffset.UtcNow);
 
@@ -161,6 +163,8 @@ public sealed class PiHealthService : BackgroundService
         // The stop found on start goes on record for the monthly report.
         try { await RecordAbruptStopAsync(); }
         catch (Exception ex) { _logger.LogWarning(ex, "Pi health: could not record the last stop."); }
+        try { await RecordCleanStopAsync(); }
+        catch (Exception ex) { _logger.LogWarning(ex, "Pi health: could not record the clean stop."); }
         // Every start, an update's included, for /report incidents: each one wipes her in-memory state.
         _activity.CountIncident(IncidentKinds.Restart, LastStop.ToString(), DateTimeOffset.UtcNow);
 
@@ -307,6 +311,7 @@ public sealed class PiHealthService : BackgroundService
             var previous = LoadState();
             _lastStop = PiHealth.Classify(previous, now, PiHardware.TryReadHostUptime());
             _wentDarkAt = PiHealth.IsAbrupt(_lastStop) ? previous?.LastAliveAt : null;
+            _stoppedCleanlyAt = _lastStop == StopKind.Clean ? previous?.LastAliveAt : null;
             _startedAt = now;
             _state = new HealthState(false, now, previous?.LastRecordDay ?? 0, previous?.LastRouterDay ?? 0);
             SaveState(_state);
@@ -335,6 +340,24 @@ public sealed class PiHealthService : BackgroundService
             StartedAt = start,
             EndedAt = end,
         });
+        await db.SaveChangesAsync();
+    }
+
+    // A clean stop goes in its own table, not UptimeEvents: it is no incident for /health or the
+    // report, but /daily still excuses a day she spent stopped (DailyStreak.ExcusedDays).
+    private async Task RecordCleanStopAsync()
+    {
+        DateTimeOffset start, end;
+        lock (_gate)
+        {
+            if (_stoppedCleanlyAt is not { } stopped || stopped >= _startedAt) return;
+            start = stopped;
+            end = _startedAt;
+        }
+
+        await using var scope = _services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.CleanStops.Add(new CleanStop { StartedAt = start, EndedAt = end });
         await db.SaveChangesAsync();
     }
 

@@ -228,6 +228,23 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("ChatAnswerStats");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.CleanStop", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("EndedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CleanStops");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.CollectionCompletion", b =>
                 {
                     b.Property<int>("Id")
@@ -945,6 +962,15 @@ namespace ProjectSYNCS.Migrations
 
                     b.Property<long>("Balance")
                         .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DailyBest")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DailyDay")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DailyStreak")
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("GuildId")

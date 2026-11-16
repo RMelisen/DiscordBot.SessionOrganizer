@@ -59,7 +59,7 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
         new EmbedBuilder()
             .WithTitle("🍄 Plynlings — mode d'emploi")
             .WithDescription("Un Plynling est un petit champignon qui vit avec toi. Nourris-le, caresse-le, " +
-                             "et surtout… ne l'oublie pas.\n-# Raccourcis : `/pl` au lieu de `/plynling` ; en texte, `;pl`, `;pl @…`, `;pl visit @…`, `;forage`, `;work`.")
+                             "et surtout… ne l'oublie pas.\n-# Raccourcis : `/pl` au lieu de `/plynling` ; en texte, `;pl`, `;pl @…`, `;pl visit @…`, `;forage`, `;work`, `;daily`.")
             .WithColor(new Color(0xCE323A))
             .AddField("Adopter & regarder",
                 "**`/plynling adopt name:`** — Gratuit, un seul à la fois. L'espèce est tirée au sort : " +

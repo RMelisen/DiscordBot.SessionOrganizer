@@ -3776,7 +3776,7 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
 // 34. Member badges: the catalog, tiers at their edges, derived moments, icon keys.
 {
     var mb = MemberBadges.All;
-    if (mb.Count(b => b.Kind == MemberBadgeKind.Palier) != 12 || mb.Count(b => b.Kind == MemberBadgeKind.Moment) != 6
+    if (mb.Count(b => b.Kind == MemberBadgeKind.Palier) != 13 || mb.Count(b => b.Kind == MemberBadgeKind.Moment) != 6
         || mb.Count(b => b.Kind == MemberBadgeKind.Secret) != 13) Fail("member badges: catalog counts");
     if (mb.Select(b => b.Key).Distinct().Count() != mb.Count) Fail("member badges: duplicate key");
     foreach (var b in mb)
@@ -3794,8 +3794,8 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         }
     }
     var mbNow = new DateTimeOffset(2026, 10, 22, 12, 0, 0, TimeSpan.Zero);
-    MemberBadgeFacts MbFacts(long voice = 0, long bestMs = 0, DateTimeOffset? joined = null, Dictionary<string, StoredBadge>? stored = null) =>
-        new(voice, 0, 0, bestMs, 0, 0, 0, 0, 0, 0, false, joined, stored ?? new());
+    MemberBadgeFacts MbFacts(long voice = 0, long bestMs = 0, DateTimeOffset? joined = null, Dictionary<string, StoredBadge>? stored = null, long daily = 0) =>
+        new(voice, 0, 0, bestMs, 0, 0, 0, 0, 0, 0, false, joined, stored ?? new(), DailyBest: daily);
     BadgeStanding MbOf(MemberBadgeFacts f, string key) => MemberBadges.Evaluate(f, mbNow).Single(s => s.Info.Key == key);
     if (MbOf(MbFacts(voice: 599), "voice").Earned || MbOf(MbFacts(voice: 600), "voice").Tier != CollectionTier.Bronze
         || MbOf(MbFacts(voice: 60000), "voice").Tier != CollectionTier.Diamond) Fail("voice tier edges");
@@ -3803,6 +3803,9 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     if (MbOf(MbFacts(joined: mbNow.AddDays(-90)), "seniority").Tier != CollectionTier.Bronze) Fail("seniority 90 days");
     if (!MbOf(MbFacts(bestMs: 2999), "lightning").Earned || MbOf(MbFacts(bestMs: 3000), "lightning").Earned
         || MbOf(MbFacts(bestMs: 0), "lightning").Earned) Fail("lightning edges");
+    // « Assiduité »: the best /daily streak, so a reset never takes a tier away.
+    if (MbOf(MbFacts(daily: 6), "daily").Earned || MbOf(MbFacts(daily: 7), "daily").Tier != CollectionTier.Bronze
+        || MbOf(MbFacts(daily: 30), "daily").Tier != CollectionTier.Silver || MbOf(MbFacts(daily: 365), "daily").Tier != CollectionTier.Diamond) Fail("daily badge tiers");
     var mbStored = new Dictionary<string, StoredBadge> { ["arcade"] = new(5, mbNow), ["hush"] = new(1, mbNow), ["gone_key"] = new(1, mbNow) };
     var mbAll = MemberBadges.Evaluate(MbFacts(stored: mbStored), mbNow);
     if (MbOf(MbFacts(stored: mbStored), "arcade").Tier != CollectionTier.Bronze || !MbOf(MbFacts(stored: mbStored), "hush").Earned) Fail("stored badges");
@@ -3815,7 +3818,7 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     if (ProjectSYNCS.Commands.MemberBadgeCards.CardLine(new List<ProjectSYNCS.Models.CollectionCompletion>(), mbEmpty) is not null) Fail("empty card line");
     // Worst case: everything at Diamant, every secret found, every icon a real emoji markup.
     var mbMax = new MemberBadgeFacts(99_999_999, 99_999_999, 99_999, 1, 99_999_999, 99_999, 99_999, 99_999, 99_999_999, 99_999, true,
-        mbNow.AddYears(-20), mb.ToDictionary(b => b.Key, _ => new StoredBadge(99_999_999, mbNow)));
+        mbNow.AddYears(-20), mb.ToDictionary(b => b.Key, _ => new StoredBadge(99_999_999, mbNow)), DailyBest: 99_999);
     var mbDone = ItemCatalog.Sets.Select(s => new ProjectSYNCS.Models.CollectionCompletion { SetKey = s.Key, Count = 999 }).ToList();
     foreach (var b in mb) foreach (var t in Enum.GetValues<CollectionTier>())
         ItemEmojis.Set(MemberBadges.IconKey(b, t), ItemEmojis.Markup("b_" + new string('x', 30), ulong.MaxValue));
@@ -4329,6 +4332,76 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     if (PebbleEconomy.Cailloux(0) != "0 caillou" || PebbleEconomy.Cailloux(1) != "1 caillou" || PebbleEconomy.Cailloux(-1) != "-1 caillou"
         || PebbleEconomy.Cailloux(2) != "2 cailloux" || !PebbleEconomy.Cailloux(1500).EndsWith("500 cailloux")
         || PebbleEconomy.Cailloux(1500).Contains(',')) Fail($"economy: plural ({PebbleEconomy.Cailloux(1500)})");
+}
+
+// 44. Daily streak (DailyStreak): one claim per Paris day, a missed day resets, the pay and the
+// item chance grow and stay capped.
+{
+    if (DailyStreak.NextStreak(0, 0, 20261116) != 1) Fail("daily: first claim ever");
+    if (DailyStreak.NextStreak(20261116, 4, 20261116) is not null) Fail("daily: twice in a day");
+    if (DailyStreak.NextStreak(20261117, 4, 20261116) is not null) Fail("daily: a stamp from the future pays");
+    if (DailyStreak.NextStreak(20261115, 4, 20261116) != 5) Fail("daily: yesterday continues");
+    if (DailyStreak.NextStreak(20261114, 40, 20261116) != 1) Fail("daily: a missed day resets");
+    foreach (var (last, today) in new[] { (20261130, 20261201), (20261231, 20270101), (20260228, 20260301),
+                                          (20261025, 20261026), (20261024, 20261025), (20260329, 20260330), (20260328, 20260329) })
+        if (DailyStreak.NextStreak(last, 3, today) != 4) Fail($"daily: {last} -> {today} is not consecutive");
+
+    if (DailyStreak.Base(1) != 10 || DailyStreak.Base(2) != 15 || DailyStreak.Base(19) != 100 || DailyStreak.Base(10_000) != 100) Fail("daily: base");
+    if (DailyStreak.Spread(5) != 5 || DailyStreak.Spread(6) != 10 || DailyStreak.Spread(14) != 10 || DailyStreak.Spread(15) != 15) Fail("daily: spread");
+    var dRng = new Random(44);
+    foreach (var (dStreak, lo, hi) in new[] { (1, 5L, 15L), (6, 25L, 45L), (19, 85L, 100L), (10_000, 85L, 100L) })
+    {
+        var rolls = Enumerable.Range(0, 3000).Select(_ => DailyStreak.RollCailloux(dStreak, dRng)).ToList();
+        if (rolls.Min() != lo || rolls.Max() != hi) Fail($"daily: streak {dStreak} rolls {rolls.Min()}..{rolls.Max()}, want {lo}..{hi}");
+    }
+    if (Math.Abs(DailyStreak.ItemChance(1) - 0.10) > 1e-9 || Math.Abs(DailyStreak.ItemChance(26) - 0.60) > 1e-9
+        || Math.Abs(DailyStreak.ItemChance(10_000) - 0.60) > 1e-9) Fail("daily: item chance");
+
+    var dEvening = new DateTimeOffset(2026, 11, 16, 22, 30, 0, TimeSpan.Zero);          // 23:30 Paris (CET)
+    if (DailyStreak.NextClaimAt(dEvening) != new DateTimeOffset(2026, 11, 16, 23, 0, 0, TimeSpan.Zero)) Fail("daily: next claim in winter");
+    var dSummer = new DateTimeOffset(2026, 3, 29, 12, 0, 0, TimeSpan.Zero);             // first CEST day
+    if (DailyStreak.NextClaimAt(dSummer) != new DateTimeOffset(2026, 3, 29, 22, 0, 0, TimeSpan.Zero)) Fail("daily: next claim in summer");
+    if (DailyStreak.Days(1) != "1 jour" || DailyStreak.Days(12) != "12 jours") Fail("daily: plural");
+
+    // Days she was offline 3 h or more are excused; overlapping records count once (Paris = UTC+1 in November).
+    DateTimeOffset Paris(int day, int hour, int minute = 0) => new DateTimeOffset(2026, 11, day, hour, minute, 0, TimeSpan.FromHours(1));
+    string Excused(params (DateTimeOffset, DateTimeOffset)[] spans) => string.Join(",", DailyStreak.ExcusedDays(spans).OrderBy(d => d));
+    foreach (var (what, got, want) in new[]
+    {
+        ("an evening outage", Excused((Paris(10, 19), Paris(10, 23))), "20261110"),
+        ("just under 3 h", Excused((Paris(10, 19), Paris(10, 21, 59))), ""),
+        ("across midnight, 2 h + 1 h", Excused((Paris(10, 22), Paris(11, 1))), ""),
+        ("evening to next morning", Excused((Paris(10, 18), Paris(11, 10))), "20261110,20261111"),
+        ("two stretches adding up", Excused((Paris(10, 8), Paris(10, 9, 30)), (Paris(10, 20), Paris(10, 21, 30))), "20261110"),
+        ("overlapping records count once", Excused((Paris(10, 19), Paris(10, 21)), (Paris(10, 19, 30), Paris(10, 20, 30))), ""),
+        ("overlapping records merged", Excused((Paris(10, 19), Paris(10, 21)), (Paris(10, 20), Paris(10, 22))), "20261110"),
+        ("three days down", Excused((Paris(10, 12), Paris(13, 12))), "20261110,20261111,20261112,20261113"),
+        ("a reversed record", Excused((Paris(10, 23), Paris(10, 19))), ""),
+    })
+        if (got != want) Fail($"daily: excused days, {what}: {got}, want {want}");
+    var dExcused = new HashSet<int> { 20261109, 20261110 };
+    if (DailyStreak.NextStreak(20261108, 7, 20261111, dExcused) != 8) Fail("daily: an excused gap continues");
+    if (DailyStreak.NextStreak(20261108, 7, 20261111, new HashSet<int> { 20261110 }) != 1) Fail("daily: a partly excused gap doesn't reset");
+    if (DailyStreak.NextStreak(20261110, 7, 20261111, dExcused) != 8) Fail("daily: yesterday with excuses");
+    if (DailyStreak.NextStreak(20261111, 7, 20261111, dExcused) is not null) Fail("daily: excuses pay twice in a day");
+    if (DailyStreak.NextStreak(0, 0, 20261111, dExcused) != 1) Fail("daily: excuses before the first claim");
+
+    // The reply, shared by /daily and ;daily: two lines, a find appended, completed sets after it.
+    var dAt = new DateTimeOffset(2026, 11, 16, 12, 0, 0, TimeSpan.Zero);
+    var (dText, dRefused) = ProjectSYNCS.Commands.EconomyModule.DailyReply(new DailyResult(true, 12, 62, null, dAt), 1);
+    if (dRefused || dText != "Série : 12 jours\n+62 cailloux") Fail($"daily reply: {dText}");
+    var dItem = ItemCatalog.All.First(i => i.Kind == ItemKind.Collectible);
+    var dAllSets = new ItemFind(dItem, ItemCatalog.Sets.ToList());
+    var (dFound, _) = ProjectSYNCS.Commands.EconomyModule.DailyReply(new DailyResult(true, 365, 100, dAllSets, dAt), ulong.MaxValue);
+    if (!dFound.StartsWith("Série : 365 jours\n+100 cailloux  ·  trouvé : ") || dFound.Length > 2000) Fail($"daily reply with a find ({dFound.Length})");
+    var (dNo, dNoRefused) = ProjectSYNCS.Commands.EconomyModule.DailyReply(new DailyResult(false, 3, 0, null, dAt), 1);
+    if (!dNoRefused || !dNo.Contains($"<t:{dAt.ToUnixTimeSeconds()}:R>")) Fail("daily reply: refusal");
+    if (PlynlingShortcut.Parse(";daily") != new Shortcut(ShortcutKind.Daily) || PlynlingShortcut.Parse(";pl daily") != new Shortcut(ShortcutKind.Daily)
+        || PlynlingShortcut.Parse(";daily x") != new Shortcut(ShortcutKind.Unknown) || PlynlingShortcut.Parse(";dailyx") is not null) Fail("daily shortcut");
+    if (CommandPath.Shortcut(ShortcutKind.Daily) != ";daily" || CommandPath.Reached(";daily") != "daily") Fail("daily shortcut key");
+    // Each help names every shortcut (plynling.md).
+    if (!new[] { 0, 1, 2 }.Any(p => ProjectSYNCS.Commands.PlynlingModule.BuildHelpEmbed(p).Description?.Contains("`;daily`") == true))
+        Fail("daily: /plynling help doesn't name ;daily");
 }
 
 // 41. Session places (SessionSeats): the waiting list opens only when a full session frees a place,

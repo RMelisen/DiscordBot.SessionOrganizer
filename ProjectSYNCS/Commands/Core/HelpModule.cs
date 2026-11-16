@@ -146,11 +146,13 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
         new EmbedBuilder()
             .WithTitle("Project S.Y.N.C.S. — Aide : cailloux & objets")
             .WithDescription(
-                "Les **cailloux** sont ma monnaie. On en gagne en travaillant, en parlant (un peu, " +
+                "Les **cailloux** sont ma monnaie. On en gagne en travaillant, en passant chaque jour, en parlant (un peu, " +
                 "plafonné chaque jour), au quiz et à l'arcade.")
             .WithColor(Color.Blue)
             .AddField("Commandes — Cailloux",
                 "**`/work`** — Un petit boulot pour moi, toutes les 4 h. Raccourci : `;work` en texte.\n" +
+                "**`/daily`** — Ta récompense du jour : elle grandit chaque jour d'affilée (jusqu'à 100 cailloux, " +
+                "parfois un objet) et repart de zéro si tu en sautes un. Raccourci : `;daily`.\n" +
                 "**`/balance`** — Tes cailloux, visibles par toi seul ; son bouton 🔔 te prévient en MP quand `/work` est prêt.")
             .AddField("Commandes — Inventaire",
                 "**`/inventory view`** — Tes objets, ton garde-manger, ta collection et ta garde-robe.\n" +

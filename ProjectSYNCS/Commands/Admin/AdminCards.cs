@@ -43,7 +43,7 @@ public static class AdminCards
         (EconomyLog.EarnWork, "/work"), (EconomyLog.EarnPassive, "discussion"), (EconomyLog.EarnGame, "jeux"),
         (EconomyLog.EarnGift, "cadeaux"), (EconomyLog.EarnBadge, "badges"), (EconomyLog.EarnCollection, "collections"),
         (EconomyLog.EarnSale, "ventes"), (EconomyLog.EarnAdmin, "staff"), (EconomyLog.EarnEvent, "événements"), (EconomyLog.EarnQuiz, "quiz"),
-        (EconomyLog.EarnArcade, "arcade"),
+        (EconomyLog.EarnArcade, "arcade"), (EconomyLog.EarnDaily, "/daily"),
     };
 
     private static readonly (string Metric, string Label)[] SpendLabels =

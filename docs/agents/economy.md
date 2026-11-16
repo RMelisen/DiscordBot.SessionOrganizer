@@ -49,6 +49,35 @@ records the time it *started*, and an older stamp landing after it would hide th
 member asked). The paid `/work` footer hints at `/balance` while the reminder is off. The checks pin
 the rule (section 40).
 
+## `/daily` — the streak
+
+Once per **Paris calendar day**, a claim pays cailloux and sometimes an item, both growing with the
+streak of consecutive days; a missed day sends it back to 1. The numbers are all in
+`Helpers/Economy/DailyStreak` (pure, pinned by the checks, section 44): base `10 + 5 per day`, a
+spread of ±5 / ±10 / ±15 as the streak grows, clamped to 5–100; an item chance of 10 % rising by 2 %
+a day to 60 %. **Only the chance grows, never the rarity**: the find is `ItemCatalog.DrawForage`
+unchanged.
+
+- **Days are compared as dates** (`AppTime.FromDayKey`), never as « 24 h ago »: on the 25-hour day
+  23:30 minus 24 h is still the same day, and a claim then would break the streak.
+- **A day she was offline is excused** (`DailyStreak.ExcusedDays`): 3 h or more of downtime that
+  Paris day, overlapping records merged so time counts once. A gap made only of excused days
+  continues the streak (+1); one unexcused day still resets it. Downtime is every `UptimeEvent`
+  plus every `CleanStop` (updates, the add-on stopped — recorded by `PiHealthService` on the next
+  start, in their own table so `/health` and the report don't count them as incidents). Read only
+  when there is a gap, dates compared in memory.
+- **The state is on the wallet** (`DailyDay`, `DailyStreak`, `DailyBest`) and the claim runs through
+  `EconomySave` (`PebbleService.ClaimDailyAsync`): `Balance`'s token makes a double claim lose the
+  race and be refused on retry, and the cailloux, the streak and the find land in one save
+  (`InventoryService.GrantAsync` logs `item.found` and pays a completed set into the same wallet).
+  The roll happens inside the work, so a retry rolls again.
+- **`DailyBest` is the badge's counter** (« Assiduité », see `xp.md`): the best streak, never the
+  current one, so a reset takes no tier away.
+- Cailloux log under `earn.daily` (« /daily »).
+- The reply is built once, `EconomyModule.DailyReply`, and shared with `;daily`: public, two lines,
+  « trouvé : » before the item because items carry no grammatical gender. A refusal is private.
+  It's a command answer, so silence mode doesn't apply. No reminder, on purpose.
+
 ## `/admin dashboard` — `EconomyDailyStat`
 
 One row per (guild, Paris day, metric), `Day` an int `yyyymmdd` so windows filter in SQL.

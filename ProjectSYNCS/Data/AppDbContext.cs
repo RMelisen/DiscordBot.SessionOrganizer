@@ -74,6 +74,7 @@ public class AppDbContext : DbContext
     public DbSet<QuizDailyStat> QuizDailyStats => Set<QuizDailyStat>();
     public DbSet<PiThermalDay> PiThermalDays => Set<PiThermalDay>();
     public DbSet<UptimeEvent> UptimeEvents => Set<UptimeEvent>();
+    public DbSet<CleanStop> CleanStops => Set<CleanStop>();
     public DbSet<VoiceCompanionStat> VoiceCompanionStats => Set<VoiceCompanionStat>();
     public DbSet<VoiceCompanionDailyStat> VoiceCompanionDailyStats => Set<VoiceCompanionDailyStat>();
     public DbSet<TonightCall> TonightCalls => Set<TonightCall>();
