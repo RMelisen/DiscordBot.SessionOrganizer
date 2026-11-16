@@ -452,7 +452,7 @@ her with `/plynling view user:@SYNCS`, pet and feed her from her card, and take 
 to visit with `/plynling visit user:@SYNCS` — she opens the door herself. She never dies: SYNCS
 looks after her.
 
-- **Hunger** empties in 2 days and **happiness** in 36 hours. At 0% hunger it **dies** — really.
+- **Hunger** empties in 3 days and **happiness** in 36 hours. At 0% hunger it **dies** — really.
   Both are looked after from its card (`/plynling view [user]`): **Nourrir** (Champignon,
   Shiitake, Morille, Truffe) costs **cailloux** — anyone can feed anyone's, but someone else's
   costs double; **Caresser** is free, every 4 hours, and anyone can pet anyone's.

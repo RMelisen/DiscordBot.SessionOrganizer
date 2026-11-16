@@ -15,7 +15,7 @@ public static class PlynlingLife
     // Needs are computed from elapsed time since NeedsAsOf, so changing either of these
     // applies retroactively to every living Plynling's current stretch — shortening
     // HungerLife moves deaths earlier, and one already past fires on the next settle.
-    public static readonly TimeSpan HungerLife = TimeSpan.FromDays(2);
+    public static readonly TimeSpan HungerLife = TimeSpan.FromDays(3);
     public static readonly TimeSpan HappinessLife = TimeSpan.FromHours(36);
     public static readonly TimeSpan HygieneLife = TimeSpan.FromDays(3);
     public static readonly TimeSpan SelfFreezeMax = TimeSpan.FromDays(14);
