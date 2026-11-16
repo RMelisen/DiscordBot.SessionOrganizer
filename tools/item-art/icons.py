@@ -2952,6 +2952,20 @@ MEMBER_BADGE_SUBJECTS = {
         "..wwwwwwss..",
         "..wGwwwsss..",
         "..sssssGGG.."),
+    # Assiduité: a flame, a smaller tongue licking up on its right — the streak that mustn't go out.
+    "daily": (
+        "....E......",
+        "....EE.....",
+        "...fEE...E.",
+        "...fEEc..E.",
+        "..fEEEc.EE.",
+        "..fEEyEcEc.",
+        ".fEEyyEEEcc",
+        ".fEyyyyEEcc",
+        "fEyywyyaEcc",
+        "fEyywwyaacr",
+        ".EEyyyaacr.",
+        "..ccEEcrr.."),
     # Ancienneté: an old round tree.
     "seniority": (
         "....YllL....",
@@ -3226,7 +3240,7 @@ MEMBER_PALIERS = (("voice", "Pilier du vocal", "🎙️"), ("companion", "Compag
                   ("attended", "Toujours là", "🎮"), ("organised", "Chef d'orchestre", "📅"),
                   ("giveaways", "Main chanceuse", "🎁"), ("goodbot", "Chouchou", "💖"),
                   ("breeder", "Famille Plynling", "🐾"), ("arcade", "Pilier d'arcade", "🕹️"),
-                  ("nanny", "Nounou", "🤲"), ("seniority", "Ancienneté", "🎂"))
+                  ("nanny", "Nounou", "🤲"), ("daily", "Assiduité", "🔥"), ("seniority", "Ancienneté", "🎂"))
 
 for badge_key, name, emoji in MEMBER_PALIERS:
     for tier, label, _ in BADGE_TIERS:
