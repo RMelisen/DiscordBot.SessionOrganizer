@@ -133,7 +133,7 @@ public class TonightComponentHandler : InteractionModuleBase<SocketInteractionCo
         try
         {
             var title = string.IsNullOrEmpty(call.Game)
-                ? $"Soirée du {AppTime.ToZoned(call.StartsAt):dd/MM}"
+                ? $"Soirée du {AppTime.ToZoned(call.StartsAt):dd'/'MM}"
                 : call.Game;
             session = await _events.CreateEventAsync(call.GuildId, call.ChannelId, call.OrganizerId,
                 title, SessionCategory.Game, call.StartsAt, 0);

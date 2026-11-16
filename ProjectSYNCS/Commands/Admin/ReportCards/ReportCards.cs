@@ -213,11 +213,11 @@ public static partial class ReportCards
         var body = d.DaysMeasured == 0
             ? "Aucun relevé de température sur cette période."
             : $"Moyenne **{Temp(d.AverageMilli ?? 0)}** · max **{Temp(d.MaxMilli ?? 0)}**" +
-              (d.MaxDay is { } day ? $" le {AppTime.FromDayKey(day):dd/MM}" : "") +
+              (d.MaxDay is { } day ? $" le {AppTime.FromDayKey(day):dd'/'MM}" : "") +
               $" · **{d.HotMinutes}** min à {Temp(PiHealth.ThrottleMilli)} ou plus" +
               (d.DailyMax.Count > 1 ? $"\n`{TextChart.Sparkline(d.DailyMax)}`" : "");
         if (record is { } r)
-            body += $"\n-# Record absolu : {Temp(r.MaxMilli)} le {AppTime.FromDayKey(r.Day):dd/MM/yyyy}";
+            body += $"\n-# Record absolu : {Temp(r.MaxMilli)} le {AppTime.FromDayKey(r.Day):dd'/'MM'/'yyyy}";
         embed.WithDescription(body);
 
         var outages = d.Outages.Count == 0
@@ -253,7 +253,7 @@ public static partial class ReportCards
     private static string UptimeSpan(SyncsReportData d, ReportWindow w) =>
         d.UptimeDays <= 0 ? ""
         : $" sur {d.UptimeDays} {Plural(d.UptimeDays, "jour", "jours")}" +
-          (d.UptimeFromDay is { } from && from > w.FromDay ? $" (depuis le {AppTime.FromDayKey(from):dd/MM})" : "");
+          (d.UptimeFromDay is { } from && from > w.FromDay ? $" (depuis le {AppTime.FromDayKey(from):dd'/'MM})" : "");
 
     private static string BodyLines(PiBodyReportData b, ReportWindow w)
     {
@@ -268,7 +268,7 @@ public static partial class ReportCards
         lines.Add($"Mémoire : pic à **{HealthCards.Bytes(b.ProcessPeak)}** pour moi" +
             (b.MemoryMinAvailable is { } low && b.MemoryTotal is { } all ? $" · {HealthCards.Bytes(low)} libres au plus bas sur {HealthCards.Bytes(all)}" : ""));
         lines.Add($"Sous-tension : **{Duration(b.UnderVoltageMinutes)}** · au ralenti : **{Duration(b.SlowedMinutes)}**");
-        if (b.FirstDay > w.FromDay) lines.Add($"-# Mesuré depuis le {AppTime.FromDayKey(b.FirstDay):dd/MM}.");
+        if (b.FirstDay > w.FromDay) lines.Add($"-# Mesuré depuis le {AppTime.FromDayKey(b.FirstDay):dd'/'MM}.");
         return string.Join('\n', lines);
     }
 
@@ -332,7 +332,7 @@ public static partial class ReportCards
                 (l.Failures > 0 ? $" · ⚠️ {l.Failures}" : "")))));
         if (d.Features.Count > 0)
             embed.AddField("Portée", Fit(d.Features.Select(f => $"`/{f.Feature}` {f.People}").ToList(), " · ") +
-                (w.IsPartial(d.PeopleSince) && d.PeopleSince is { } since ? $"\n-# Personnes différentes, comptées depuis le {AppTime.FromDayKey(since):dd/MM}." : "\n-# Personnes différentes."));
+                (w.IsPartial(d.PeopleSince) && d.PeopleSince is { } since ? $"\n-# Personnes différentes, comptées depuis le {AppTime.FromDayKey(since):dd'/'MM}." : "\n-# Personnes différentes."));
         if (d.Shortcuts.Count > 0)
             embed.AddField("Raccourcis tapés", Fit(d.Shortcuts.Select(l => $"`{l.Command}` {LevelCardUi.Xp(l.Uses)}").ToList(), " · "));
         if (d.NeverUsed.Count > 0)
@@ -541,12 +541,12 @@ public static partial class ReportCards
                   (never.Count > 0 ? $", dont **{never.Count}** {Plural(never.Count, "jamais actif", "jamais actifs")}." : "."));
 
         var lines = d.Sleepers.Where(s => s.LastDay is not null)
-            .Select(s => $"{Who(s.UserId, nameOf)} — dernier signe : {AppTime.FromDayKey(s.LastDay!.Value):dd/MM/yyyy}").ToList();
+            .Select(s => $"{Who(s.UserId, nameOf)} — dernier signe : {AppTime.FromDayKey(s.LastDay!.Value):dd'/'MM'/'yyyy}").ToList();
         var left = AddLineFields(embed, "Endormis", lines, maxFields: 2);
 
         // On one line: they all say the same thing, and would push out the ones who just went quiet.
         if (never.Count > 0)
-            embed.AddField($"Jamais actifs depuis le {AppTime.FromDayKey(SleepingReport.ReliableSince):dd/MM/yyyy} ({never.Count})",
+            embed.AddField($"Jamais actifs depuis le {AppTime.FromDayKey(SleepingReport.ReliableSince):dd'/'MM'/'yyyy} ({never.Count})",
                 Fit(never.Select(s => Who(s.UserId, nameOf)).ToList(), " · "));
 
         var footer = $"Arrivés depuis moins de {d.Days} jours : pas comptés. L'activité dans les salons exclus ne compte pas : " +
@@ -592,7 +592,7 @@ public static partial class ReportCards
     // for a whole one. Nothing otherwise.
     private static string PartialNote(ReportWindow w, int? firstDay) =>
         w.IsPartial(firstDay) && firstDay is { } first
-            ? $"\n-# {(w.Period is null ? "Mois partiel : compté" : "Compté")} depuis le {AppTime.FromDayKey(first):dd/MM}{DaysCounted(w, firstDay)}."
+            ? $"\n-# {(w.Period is null ? "Mois partiel : compté" : "Compté")} depuis le {AppTime.FromDayKey(first):dd'/'MM}{DaysCounted(w, firstDay)}."
             : "";
 
     // The same, short enough to follow a figure: « (13 jours sur 31) ».

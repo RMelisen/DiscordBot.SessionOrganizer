@@ -98,7 +98,7 @@ public class RemindModule : InteractionModuleBase<SocketInteractionContext>
             .WithPlaceholder("Annuler un rappel…");
         foreach (var r in shown)
             menu.AddOption(Shorten(r.Text, 100), r.Id.ToString(),
-                description: AppTime.ToZoned(r.DueAt).ToString("dd/MM HH:mm"));
+                description: AppTime.ToZoned(r.DueAt).ToString("dd'/'MM HH:mm"));
         return (embed.Build(), new ComponentBuilder().WithSelectMenu(menu).Build());
     }
 

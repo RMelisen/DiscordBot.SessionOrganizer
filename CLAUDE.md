@@ -179,6 +179,9 @@ restart **by design**.
 `DateTimeOffset`, show them as Discord `<t:unix:…>` timestamps. **Globalization must stay on**:
 `InvariantGlobalization` is `false` and the Dockerfile installs `libicu72`, for `Europe/Paris` and
 `fr-FR` formatting.
+**A `/` or `:` in a date format is the culture's separator, not a character**, and the bot sets no
+culture: a format without `Fr` or `InvariantCulture` quotes it (`{d:dd'/'MM}`), or it prints `09-10`
+on a machine whose separator is `-`.
 
 ### Interactions and custom-ids
 

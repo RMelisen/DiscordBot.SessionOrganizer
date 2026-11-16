@@ -233,9 +233,9 @@ public partial class DebugModule : InteractionModuleBase<SocketInteractionContex
         var light = Voyager.LightTime(now);
         var state =
             $"Temps-lumière : **{light.TotalMinutes:0.0} min** (« {Voyager.Format(light)} »)\n" +
-            $"Prochaine lettre : n° {number}, le {DateOnly.FromDayNumber(next):dd/MM/yyyy} à {slot.ToString(@"hh\:mm")}" +
+            $"Prochaine lettre : n° {number}, le {DateOnly.FromDayNumber(next):dd'/'MM'/'yyyy} à {slot.ToString(@"hh\:mm")}" +
             (Voyager.AnswerSlot(next) is { } a ? $", réponse à {a.ToString(@"hh\:mm")}" : ", sans réponse") + "\n" +
-            $"Jour-lumière : {Voyager.CrossingDay:dd/MM/yyyy}";
+            $"Jour-lumière : {Voyager.CrossingDay:dd'/'MM'/'yyyy}";
 
         if (post == VoyagerPost.None)
         {

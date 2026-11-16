@@ -123,7 +123,7 @@ internal static class AnswerStatsCards
         sb.AppendLine("Date · chemin · réponse donnée — message");
         sb.AppendLine();
         foreach (var m in messages)
-            sb.AppendLine($"[{AppTime.ToZoned(m.At):dd/MM HH:mm}] {m.Path} · {m.Kind} — « {m.Text} »");
+            sb.AppendLine($"[{AppTime.ToZoned(m.At):dd'/'MM HH:mm}] {m.Path} · {m.Kind} — « {m.Text} »");
         return sb.ToString();
     }
 }

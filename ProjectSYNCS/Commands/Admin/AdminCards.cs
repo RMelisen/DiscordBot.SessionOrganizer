@@ -108,7 +108,7 @@ public static class AdminCards
             _ => "Tableau de bord — depuis le début",
         };
         var footer = d.FirstDay is { } first
-            ? $"Données depuis le {EconomyDashboardService.FromKey(first):dd/MM/yyyy}" +
+            ? $"Données depuis le {EconomyDashboardService.FromKey(first):dd'/'MM'/'yyyy}" +
               (d.Window == DashboardWindow.All ? "." : " · tendance comparée à la période d'avant, de même durée.")
             : "Rien n'a encore été enregistré.";
 

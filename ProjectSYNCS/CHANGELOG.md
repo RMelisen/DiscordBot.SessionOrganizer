@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.58.3 — 2026-11-16
+
+- Dates in the reports, `/tonight` and a few staff cards always read dd/mm, whatever the
+  machine's regional settings.
+
 ## 7.58.2 — 2026-11-16
 
 - Plynlings fall in love sooner: good visits bring them a little closer, and a refused confession
