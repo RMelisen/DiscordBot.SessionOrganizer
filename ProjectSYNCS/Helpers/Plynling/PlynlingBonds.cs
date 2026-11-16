@@ -22,7 +22,7 @@ public static class PlynlingBonds
     public const int BestFriendsFrom = 60;
     public const int ConfessFrom = 80;
     public const int BreakUpBelow = 40;
-    public const int HeartbreakLoss = 40;
+    public const int HeartbreakLoss = 25;
     public const double HeartbreakSadness = 0.20;
     public const double ConfessionChance = 0.25;
     public const double GriefCeiling = 0.20;
@@ -46,9 +46,10 @@ public static class PlynlingBonds
         }
     }
 
-    // Tuned by simulation (see CLAUDE.md): BaseSceneChance sits just above the 55 % at which good
-    // and bad scenes cancel out, and AffinityPull draws a pair back toward the middle, so where a
-    // pair settles is set by its compatibility — about +2 + 4 × compatibility — with wide scatter,
+    // Tuned by simulation (see docs/agents/plynling.md): BaseSceneChance sits a little above the
+    // ~51 % at which good (+12…17) and bad (−12…18) scenes cancel out, and AffinityPull draws a pair
+    // back toward the middle, so where a pair settles is set by its compatibility — about
+    // +17 + 4 × compatibility — with wide scatter,
     // rather than every pair ending as best friends. The pull is also what keeps enemies from
     // being a dead end.
     public const double BaseSceneChance = 0.55;
@@ -72,7 +73,7 @@ public static class PlynlingBonds
     /// <summary>One visit's scene: whether it went well, and what it did to their affinity.</summary>
     public static (bool Good, int Delta) RollScene(int compatibility, PlynlingBond bond, int affinity, Random rng) =>
         rng.NextDouble() < GoodSceneChance(compatibility, bond, affinity)
-            ? (true, rng.Next(10, 16))
+            ? (true, rng.Next(12, 18))
             : (false, -rng.Next(12, 19));
 
     /// <summary>

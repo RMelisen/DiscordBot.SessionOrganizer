@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.58.2 — 2026-11-16
+
+- Plynlings fall in love sooner: good visits bring them a little closer, and a refused confession
+  hurts less (−25 affinity instead of −40).
+
 ## 7.58.1 — 2026-11-16
 
 - A Plynling's hunger now takes 3 days to empty instead of 2, so an unfed one lives a day longer.

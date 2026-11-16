@@ -337,9 +337,12 @@ survives a death. Hidden compatibility is **derived from the two ids**, never st
 is an int, **append-only**.
 
 **Where a pair ends up is decided by compatibility, with wide scatter — not by how often it visits.**
-`BaseSceneChance` (55%) sits near break-even; `AffinityPull` draws affinity toward about +2 + 4 ×
-compatibility (compatibility −20…+20, so −78…+82). Over 100 visits bonds spread roughly 18% enemies /
-20% rivals / 22% acquaintances / 19% friends / 10% best friends / 11% couples. Changing the range
+`BaseSceneChance` (55%) sits a little above break-even (~51%, good scenes +12…17, bad −12…18);
+`AffinityPull` draws affinity toward about +17 + 4 × compatibility (compatibility −20…+20, so
+−63…+97). Over 100 visits bonds spread roughly 12% enemies / 18% rivals / 21% acquaintances / 19%
+friends / 13% best friends / 16% couples; a boy and a girl are a couple within 60 visits 30% of the
+time (median 51 visits at compatibility +10, 24 at +20). A refused confession costs
+`HeartbreakLoss` (25), which leaves the pair friends or better. Changing the range
 reshuffles every existing pair. A couple feels no pull and gets `LoversBonus` instead. `BondMargin`
 (10) stops a pair on a band edge flipping (and being announced) every visit. **Retune by re-running
 the simulation, never by feel.**
