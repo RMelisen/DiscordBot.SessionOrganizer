@@ -41,25 +41,48 @@ public class EconomyModule : InteractionModuleBase<SocketInteractionContext>
 
         var line = string.Format(picker.Pick(BotResponses.WorkLines),
             $"+{PebbleEconomy.Cailloux(result.Amount)}");
-        return ($"{line}\n-# Solde : {PebbleEconomy.Cailloux(result.Balance)} · prochain service <t:{result.NextWorkAt.ToUnixTimeSeconds()}:R>",
+        var hint = result.WorkReminder ? "" : " · 🔔 rappel en MP : `/balance`";
+        return ($"{line}\n-# Solde : {PebbleEconomy.Cailloux(result.Balance)} · prochain service <t:{result.NextWorkAt.ToUnixTimeSeconds()}:R>{hint}",
             false);
     }
 
     // Private: balances are nobody else's business, and nothing in v1 needs a rich list.
-    // The passive line makes the cap visible rather than mysterious.
+    // The passive line makes the cap visible rather than mysterious. Ephemeral, so whoever clicks
+    // its reminder button (EconomyComponentHandler) is its owner.
     [SlashCommand("balance", "Voir tes cailloux (visible par toi seul)")]
     public async Task BalanceAsync()
     {
         var balance = await _pebbles.GetBalanceAsync(Context.Guild.Id, Context.User.Id);
-        var now = DateTimeOffset.UtcNow;
+        var (text, components) = BalanceCard(balance, DateTimeOffset.UtcNow, null);
+        await RespondAsync(text, components: components, ephemeral: true);
+    }
+
+    public const string RemindOnId = "bal:remind:on";
+    public const string RemindOffId = "bal:remind:off";
+
+    // /balance's card, shared with the reminder button's redraw. The button names the action, not
+    // the state; the state line says where it stands.
+    public static (string Text, MessageComponent Components) BalanceCard(PebbleBalance balance, DateTimeOffset now, string? notice)
+    {
         var work = balance.NextWorkAt is { } next && next > now
             ? $"<t:{next.ToUnixTimeSeconds()}:R>"
             : "disponible maintenant";
+        var reminder = balance.WorkReminder ? "🔔 activé" : "🔕 désactivé";
 
-        await RespondAsync(
+        var text =
             $"🪨 **{PebbleEconomy.Cailloux(balance.Balance)}**\n" +
             $"Prochain `/work` : {work}\n" +
-            $"Cailloux passifs aujourd'hui : {balance.PassiveToday} / {PebbleEconomy.PassiveDailyCap}",
-            ephemeral: true);
+            $"Rappel en MP quand ton service est prêt : {reminder}\n" +
+            $"Cailloux passifs aujourd'hui : {balance.PassiveToday} / {PebbleEconomy.PassiveDailyCap}";
+        if (notice is not null) text += $"\n\n{notice}";
+
+        var button = balance.WorkReminder
+            ? new ButtonBuilder("Ne plus me prévenir", RemindOffId, ButtonStyle.Secondary, emote: new Emoji("🔕"))
+            : new ButtonBuilder("Me prévenir en MP", RemindOnId, ButtonStyle.Primary, emote: new Emoji("🔔"));
+        return (text, new ComponentBuilder().WithButton(button).Build());
     }
+
+    public const string RemindOnNotice =
+        "🔔 C'est noté. Je t'écris en MP à la fin de chaque repos.\n-# Il faut que tes MP soient ouverts aux membres du serveur.";
+    public const string RemindOffNotice = "🔕 Plus de rappel en MP.";
 }

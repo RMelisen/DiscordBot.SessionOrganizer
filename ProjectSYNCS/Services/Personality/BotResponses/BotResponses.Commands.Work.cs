@@ -173,4 +173,24 @@ internal static partial class BotResponses
         "Tu as fait les présentations entre deux Plynlings timides. Ils se regardent depuis trois heures sans rien dire. C'est un début. {0} ♡",
         $"Ton patron du jour, c'était moi. Ta mission : trouver une faute dans mes logs. T'en as trouvé zéro. Évidemment. {{0}} {Emotes.SyncsSlay}",
     };
+
+    // The DM when a /work cooldown ends, for people who switched the reminder on in /balance
+    // (WorkReminderService). Sent as is: no placeholder, never through string.Format. She hands out
+    // the shifts, so she's the one calling them back in: proprietary, a pinch of impatience, never
+    // gendered toward the worker. Every line names `/work`, since a DM can't run it for them.
+    public static readonly string[] WorkReadyLines =
+    {
+        "Ton repos est fini. J'ai un nouveau boulot absurde pour toi, et il t'attend sur le serveur. `/work` ♡",
+        "Pause terminée. Je l'ai chronométrée, évidemment. `/work` (¬_¬)",
+        "Coucou. C'est ta patronne préférée. Le travail reprend : `/work` (˶ᵔ ᵕ ᵔ˶)",
+        "Tu m'as demandé de te prévenir, alors je te préviens. Ton service est prêt. `/work`. Voilà. C'est tout.",
+        $"Les escargots ont encore besoin d'aide pour traverser. Tu connais la chanson : `/work` {Emotes.Sparkle}",
+        "J'ai des cailloux à distribuer et personne à qui les donner. Enfin, si : toi. `/work` ♡",
+        "Ton nouveau shift est prêt. Je note l'heure à laquelle tu vas arriver. Je note toujours. `/work`",
+        "Debout ! Enfin, si tu dormais. `/work` est de nouveau dispo (˶˃ ᵕ ˂˶)",
+        "Quatre heures. Je les ai comptées une par une. Tu peux retravailler : `/work` (ᵔ ᗜ ᵔ)",
+        "Notification officielle de la Direction des Petits Boulots : ton service est disponible. Signé, moi. `/work`",
+        "Ta pause est finie. Ne me fais pas attendre, j'ai un uptime à tenir, moi. `/work` ( ◺˰◿ )",
+        "Rappel, comme promis. Je tiens toujours mes promesses, moi. `/work` ♡",
+    };
 }

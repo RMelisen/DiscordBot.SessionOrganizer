@@ -6,10 +6,11 @@ sweeps) stay in the root `CLAUDE.md`. This file lists what exists. Read it befor
 
 ## Background loops
 
-Fourteen `BackgroundService` loops, each with **its own interval on purpose** — never share one:
+Fifteen `BackgroundService` loops, each with **its own interval on purpose** — never share one:
 
 - `ReminderService` (5 min, load-bearing — see scheduling).
 - `PersonalReminderService` (1 min, `/remindme` — see scheduling).
+- `WorkReminderService` (2 min, the `/work` DM reminder — see economy).
 - `PresenceService` (5 min, cosmetic — see below).
 - `VoiceXpService` (1 min — also feeds the voice spectator, the session roll call and her voice
   seat).

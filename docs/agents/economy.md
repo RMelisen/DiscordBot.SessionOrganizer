@@ -33,6 +33,22 @@ grant no XP** — the link runs one way, or money and levels would feed each oth
 **The passive cap lives on the wallet row** (`PassiveDay` + `PassiveToday`), not in a daily-bucket
 table: nothing ranks cailloux by date, so a buckets table would have no reader.
 
+## The `/work` DM reminder
+
+Switched on and off with `/balance`'s button (`bal:remind:on` / `bal:remind:off`,
+`EconomyComponentHandler`; the card is ephemeral, so the clicker is its owner). Stored on the wallet:
+`WorkReminder` and `WorkRemindedAt`. **`PebbleEconomy.WorkReminderDue` is the one rule**: the
+cooldown has ended and no DM went out since `LastWorkAt`, so each shift gets one DM, from `/work` or
+`;work` alike. **Switching on stamps `WorkRemindedAt` only when `/work` is already available**
+(`ReminderStampOnEnable`): a cooldown that ended before opting in never DMs, while switching on
+mid-shift still gets this shift's. `WorkReminderService` (own 2-minute loop) filters the flag in SQL
+and the dates in memory, then claims each wallet (`ClaimWorkReminderAsync`, re-checks and stamps,
+through `EconomySave` since `Balance` is a token) before the DM, so a crash costs the DM, never a
+second one. **Both stamps read the clock at the save, never earlier**: a `/work` running meanwhile
+records the time it *started*, and an older stamp landing after it would hide that shift's DM. A closed DM is dropped, with no channel fallback; silence mode doesn't mute it (the
+member asked). The paid `/work` footer hints at `/balance` while the reminder is off. The checks pin
+the rule (section 40).
+
 ## `/admin dashboard` — `EconomyDailyStat`
 
 One row per (guild, Paris day, metric), `Day` an int `yyyymmdd` so windows filter in SQL.

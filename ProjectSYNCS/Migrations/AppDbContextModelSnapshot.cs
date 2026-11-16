@@ -965,6 +965,12 @@ namespace ProjectSYNCS.Migrations
                     b.Property<long>("UserId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTimeOffset?>("WorkRemindedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("WorkReminder")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("GuildId", "UserId")

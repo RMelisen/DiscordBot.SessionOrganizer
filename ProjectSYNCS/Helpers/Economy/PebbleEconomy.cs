@@ -24,6 +24,17 @@ public static class PebbleEconomy
     // Null when they have never worked, i.e. available now.
     public static DateTimeOffset? NextWorkAt(DateTimeOffset? lastWorkAt) => lastWorkAt + WorkCooldown;
 
+    // The /work DM reminder (WorkReminderService): due once the cooldown has ended, and only if no
+    // reminder went out since that shift started — so each shift gets exactly one DM.
+    public static bool WorkReminderDue(DateTimeOffset? lastWorkAt, DateTimeOffset? remindedAt, DateTimeOffset now) =>
+        NextWorkAt(lastWorkAt) is { } next && next <= now && (remindedAt is null || remindedAt < lastWorkAt);
+
+    // What WorkRemindedAt becomes when the reminder is switched on. With /work already available
+    // the stamp is now, so a cooldown that ended before opting in never DMs; mid-cooldown it is left
+    // alone, so this shift's DM still goes out.
+    public static DateTimeOffset? ReminderStampOnEnable(DateTimeOffset? lastWorkAt, DateTimeOffset? remindedAt, DateTimeOffset now) =>
+        NextWorkAt(lastWorkAt) is { } next && next > now ? remindedAt : now;
+
     public static (long Granted, long NewTotal) Passive(long earnedToday, long amount)
     {
         var room = Math.Max(0, PassiveDailyCap - earnedToday);

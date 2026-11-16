@@ -24,4 +24,10 @@ public class PebbleWallet
     // When their Plynling last went foraging (/plynling forage, every 4 h per person). Stored, so
     // a restart cannot hand out an extra find.
     public DateTimeOffset? LastForageAt { get; set; }
+
+    // The /work DM reminder, switched from /balance. WorkRemindedAt is when the last DM went out (or
+    // when it was switched on with /work already available): a shift whose LastWorkAt is later
+    // hasn't had its DM yet (PebbleEconomy.WorkReminderDue).
+    public bool WorkReminder { get; set; }
+    public DateTimeOffset? WorkRemindedAt { get; set; }
 }

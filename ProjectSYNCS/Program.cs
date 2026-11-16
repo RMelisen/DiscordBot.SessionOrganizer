@@ -190,6 +190,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddHostedService<ReminderService>();
         // /remindme's delivery: its own 1-minute loop.
         services.AddHostedService<PersonalReminderService>();
+        // The /work DM reminder (/balance's button): its own 2-minute loop.
+        services.AddHostedService<WorkReminderService>();
         services.AddHostedService<PresenceService>();
         // One instance for both roles: the host runs its loop, BotService feeds it
         // messages so a greeting can bring the hello forward.

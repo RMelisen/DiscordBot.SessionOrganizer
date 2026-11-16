@@ -4313,6 +4313,17 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     if (PebbleEconomy.Passive(0, -3) != (0, 0)) Fail("economy: a negative grant");
     var peAt = new DateTimeOffset(2026, 10, 27, 12, 0, 0, TimeSpan.Zero);
     if (PebbleEconomy.NextWorkAt(null) is not null || PebbleEconomy.NextWorkAt(peAt) != peAt.AddHours(4)) Fail("economy: work cooldown");
+    // The /work DM reminder: once per finished cooldown, never for one that ended before opting in.
+    if (!PebbleEconomy.WorkReminderDue(peAt, null, peAt.AddHours(4))) Fail("work reminder: due when the cooldown ends");
+    if (PebbleEconomy.WorkReminderDue(peAt, null, peAt.AddHours(4).AddSeconds(-1))) Fail("work reminder: due before the cooldown ends");
+    if (PebbleEconomy.WorkReminderDue(null, null, peAt)) Fail("work reminder: due without ever working");
+    if (PebbleEconomy.WorkReminderDue(peAt, peAt.AddHours(5), peAt.AddHours(6))) Fail("work reminder: due twice for one shift");
+    if (!PebbleEconomy.WorkReminderDue(peAt, peAt.AddHours(-1), peAt.AddHours(4))) Fail("work reminder: not due after an earlier shift's reminder");
+    var midShift = PebbleEconomy.ReminderStampOnEnable(peAt, null, peAt.AddHours(1));
+    if (!PebbleEconomy.WorkReminderDue(peAt, midShift, peAt.AddHours(4))) Fail("work reminder: switched on mid-cooldown, this shift's DM is lost");
+    var lateOn = PebbleEconomy.ReminderStampOnEnable(peAt, null, peAt.AddHours(5));
+    if (PebbleEconomy.WorkReminderDue(peAt, lateOn, peAt.AddHours(6))) Fail("work reminder: switched on after the cooldown ended, still DMs");
+    if (PebbleEconomy.WorkReminderDue(null, PebbleEconomy.ReminderStampOnEnable(null, null, peAt), peAt.AddHours(5))) Fail("work reminder: never worked, still DMs");
     var pays = Enumerable.Range(0, 2000).Select(_ => PebbleEconomy.RollWorkPay()).ToList();
     if (pays.Min() != PebbleEconomy.WorkMin || pays.Max() != PebbleEconomy.WorkMax) Fail($"economy: work pay {pays.Min()}..{pays.Max()}");
     if (PebbleEconomy.Cailloux(0) != "0 caillou" || PebbleEconomy.Cailloux(1) != "1 caillou" || PebbleEconomy.Cailloux(-1) != "-1 caillou"

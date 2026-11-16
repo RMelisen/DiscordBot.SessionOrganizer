@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.58.0 — 2026-11-16
+
+- `/balance` has a 🔔 button that switches on a DM telling you when your next `/work` is ready
+  (once per shift); the `/work` reply points to it while it's off.
+
 ## 7.57.9 — 2026-11-10
 
 - Plynlings: the arrival storyline is rewritten as a short, cosy three-day welcome. Still not played.

@@ -151,7 +151,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .WithColor(Color.Blue)
             .AddField("Commandes — Cailloux",
                 "**`/work`** — Un petit boulot pour moi, toutes les 4 h. Raccourci : `;work` en texte.\n" +
-                "**`/balance`** — Tes cailloux, visibles par toi seul.")
+                "**`/balance`** — Tes cailloux, visibles par toi seul ; son bouton 🔔 te prévient en MP quand `/work` est prêt.")
             .AddField("Commandes — Inventaire",
                 "**`/inventory view`** — Tes objets, ton garde-manger, ta collection et ta garde-robe.\n" +
                 "**`/inventory collection`** — Ton carnet. Une collection complète se **dépose** (un exemplaire " +
