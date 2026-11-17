@@ -3,6 +3,14 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.63.0 — 2026-11-17
+
+- SYNCS counts every text channel's messages, history included, and celebrates the 1 000th,
+  10 000th, 100 000th, then every 100 000th message by replying to it. Deleted messages are taken
+  off the count. Only milestones reached from now on are announced.
+- `/debug milestones` (owner): the current channel's count, the milestones it reached and who
+  reached them, 20 a page with buttons to browse the older ones.
+
 ## 7.62.0 — 2026-11-17
 
 - Edit or delete a message SYNCS just answered and she notices: she strikes her reply through and

@@ -97,6 +97,7 @@ public partial class DebugModule : InteractionModuleBase<SocketInteractionContex
     private readonly ILogger<DebugModule> _logger;
     private readonly AvailabilityService _availability;
     private readonly SilenceService _silence;
+    private readonly ChannelMilestoneService _milestones;
     private readonly ResponsePicker _picker;
     private readonly PlynlingService _plynlings;
     private readonly PlynlingAnnouncer _announcer;
@@ -122,9 +123,11 @@ public partial class DebugModule : InteractionModuleBase<SocketInteractionContex
     public DebugModule(ILogger<DebugModule> logger, ResponsePicker picker, AvailabilityService availability, PlynlingService plynlings,
         PlynlingAnnouncer announcer, PlynlingSweepService sweep, QuizMasterService quiz, QuizCrownService crown,
         StickerService stickers, QuokkaRaidService quokka, ChatAnswerService answers,
-        MonthlyDigestService digest, MinecraftBodyService minecraft, SilenceService silence, ConfessionService confessions)
+        MonthlyDigestService digest, MinecraftBodyService minecraft, SilenceService silence, ConfessionService confessions,
+        ChannelMilestoneService milestones)
     {
         _confessions = confessions;
+        _milestones = milestones;
         _silence = silence;
         _minecraft = minecraft;
         _digest = digest;

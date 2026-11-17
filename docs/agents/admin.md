@@ -287,6 +287,7 @@ confession #N, see `community.md`), `dm`, `absent`, `plynling`, `emotes`, `diges
 `answers` (which kinds of chat answer she gives most, and what she couldn't answer specifically,
 see `personality/listening.md`, *Answer stats*),
 `role` (give a member a role; refuses managed / `@everyone` / not-below-her roles up front),
+`milestones` (this channel's message count and milestones, see *Channel message milestones*),
 plus the Plynling testing tools (`event`, `stress`, `modifier`, `sweep`, in `plynling-events.md`), each comparing `Context.User.Id` to
 `AvailabilityService.OwnerId` inline and replying ephemerally — except `answers`, which posts its
 result in the open. `DebugModule` carries no
@@ -333,3 +334,42 @@ Where it is checked:
 
 `absent` toggles `AvailabilityService`'s absent flag; mentions of the owner while absent are
 forwarded to him (a bounded 200-entry map, `AllowedMentions.None` since it quotes others verbatim).
+
+## Channel message milestones — `ChannelMilestoneService`
+
+Every text channel's message count, history included, and the milestones it reaches
+(`Helpers/Admin/ChannelMilestones`: **1 000, 10 000, 100 000, then every 100 000**, the owner's
+numbers). Design: `docs/superpowers/specs/2026-11-17-channel-milestones-design.md`.
+
+- **Which channels**: every guild's text channels she can view and read the history of (not threads,
+  not voice or stage chats), minus the XP-excluded ones (`XpTracker.HardcodedExcludedChannels` +
+  `/config`). Every guild, not only the home one, so the dev guild can be checked. Every message
+  counts, bots' and hers included, shortcuts too: `BotService` feeds it **first** in the fan-out,
+  before the shortcut return.
+- **Catching up**: Discord gives no total, so each channel's history is read once, oldest first
+  (REST, 100 a page, one channel at a time, each in its own `try`), from its saved `Cursor` (the last
+  message counted) or its creation. **A milestone crossed while reading history is recorded, never
+  announced** (the owner's rule). Live messages arriving meanwhile are held; when a page comes back
+  empty the channel is marked caught up under the lock and the held ones past the cursor are
+  counted, so the hand-over neither loses nor doubles one.
+- **Live**: a caught-up channel counts in memory; a milestone reached is written at once (rare) and
+  announced by replying to that message (`MilestoneLines`, `MilestoneBotLines` for another bot,
+  `MilestoneSelfLines` for hers), pinging only its author, never a bot. Not in silence mode, under
+  a « chut », during a breakdown, in a channel excluded since, or on a system message: recorded
+  with `Announced = false` then.
+- **Deletions are uncounted** (`MessageDeleted`, `MessagesBulkDeleted`): a message at or before the
+  cursor (already counted) takes one off, never below zero. Deletions while she is offline are
+  missed. A milestone is reached once per channel (`ChannelMilestone` unique on channel and number):
+  dropping back under it and crossing it again announces nothing.
+- **Saving**: `ChannelMessageCount` (count + cursor) every 30 minutes, the changed channels only,
+  as each channel finishes catching up, and on a clean stop; never a write per message. After a crash
+  the catch-up reads on from the saved
+  cursor, so nothing counted is lost (deletions in that window are).
+- **`/debug milestones`** (owner, ephemeral, deferred): the current channel's count (« je lis encore
+  l'historique » while catching up), each milestone reached (author, date, link, announced or not),
+  and the next one still to reach (`ChannelMilestones.NextUnreached`). **Paged**, `MilestoneCards.PageSize`
+  = 20 a page (a line runs to ~175 characters, so a page stays under the 4096 cap; the checks
+  measure it): page 0 is the newest, « Plus anciens » / « Plus récents » step back and forth
+  (`MilestoneComponentHandler`, custom-ids `milestones:older:{channel}:{page}` and
+  `milestones:newer:{channel}:{page}`, one verb per button; owner only, deferred, re-read each click).
+  No buttons when everything fits on one page.

@@ -86,6 +86,8 @@ public class AppDbContext : DbContext
     public DbSet<MemberFlowDailyStat> MemberFlowDailyStats => Set<MemberFlowDailyStat>();
     public DbSet<ActivityHourStat> ActivityHourStats => Set<ActivityHourStat>();
     public DbSet<ChannelDailyStat> ChannelDailyStats => Set<ChannelDailyStat>();
+    public DbSet<ChannelMessageCount> ChannelMessageCounts => Set<ChannelMessageCount>();
+    public DbSet<ChannelMilestone> ChannelMilestones => Set<ChannelMilestone>();
     public DbSet<CommandDailyStat> CommandDailyStats => Set<CommandDailyStat>();
     public DbSet<CommandMemberDailyStat> CommandMemberDailyStats => Set<CommandMemberDailyStat>();
     public DbSet<IncidentDailyStat> IncidentDailyStats => Set<IncidentDailyStat>();
@@ -476,6 +478,26 @@ public class AppDbContext : DbContext
             e.Property(x => x.ChannelId).HasConversion<long>();
             e.HasIndex(x => new { x.GuildId, x.ChannelId, x.Day }).IsUnique();
             e.HasIndex(x => new { x.GuildId, x.Day });
+        });
+
+        // ChannelMilestoneService: a channel's count and where it stopped reading, and the
+        // milestones reached (one per channel and number).
+        modelBuilder.Entity<ChannelMessageCount>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.ChannelId).HasConversion<long>();
+            e.Property(x => x.Cursor).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.ChannelId }).IsUnique();
+        });
+
+        modelBuilder.Entity<ChannelMilestone>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.ChannelId).HasConversion<long>();
+            e.Property(x => x.MessageId).HasConversion<long>();
+            e.Property(x => x.AuthorId).HasConversion<long>();
+            e.HasIndex(x => new { x.ChannelId, x.Milestone }).IsUnique();
+            e.HasIndex(x => x.GuildId);
         });
 
         modelBuilder.Entity<CommandDailyStat>(e =>

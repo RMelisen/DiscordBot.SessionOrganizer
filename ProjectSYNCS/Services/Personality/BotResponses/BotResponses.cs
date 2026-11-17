@@ -235,6 +235,9 @@ namespace ProjectSYNCS.Services;
 //     VoiceRivalRefuseLines · VoiceRivalSeatedLines ... another bot in the call: she refuses / grumbles
 //     OwnerBedtimeLines ........ Papa still in voice at night: she sends him to bed
 //
+//   [Milestones] A channel's 1 000th, 10 000th… message, reached live (ChannelMilestoneService)
+//     MilestoneLines ........... a person reached it  |  MilestoneBotLines .. another bot  |  MilestoneSelfLines .. her
+//
 //   [Lore, Lore.HeartVanish, Lore.Voyager] Synthia, her robot heart, Voyager
 //     SynthiaReactions · SynthiaVanishLines · SynthiaEditLines ... « Synthia » said (SynthiaService)
 //     HeartReactions · HeartLines · HeartVanishLines · HeartEditLines ... one of her robot heart

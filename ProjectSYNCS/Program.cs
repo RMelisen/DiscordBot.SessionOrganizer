@@ -169,6 +169,9 @@ var host = Host.CreateDefaultBuilder(args)
         // so its flush on stop runs after everything that feeds the counter has stopped.
         services.AddSingleton(activityCounter);
         services.AddHostedService<ActivityFlushService>();
+        // Every text channel's message count and milestones: one instance for BotService, /debug and the loop.
+        services.AddSingleton<ChannelMilestoneService>();
+        services.AddHostedService(sp => sp.GetRequiredService<ChannelMilestoneService>());
         // Replies under her cards (« votez », « j'ai voté », « remonte-le »): its gates are in memory.
         services.AddSingleton<CardReplyService>();
         // Every member-badge write goes through it, fire and forget; its claim set is in memory.

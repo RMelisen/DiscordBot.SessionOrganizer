@@ -169,6 +169,69 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("ChannelDailyStats");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.ChannelMessageCount", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("ChannelId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Count")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Cursor")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "ChannelId")
+                        .IsUnique();
+
+                    b.ToTable("ChannelMessageCounts");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.ChannelMilestone", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Announced")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("AuthorId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("ChannelId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("MessageId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Milestone")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("ReachedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId");
+
+                    b.HasIndex("ChannelId", "Milestone")
+                        .IsUnique();
+
+                    b.ToTable("ChannelMilestones");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.ChatAnswerDailyStat", b =>
                 {
                     b.Property<int>("Id")

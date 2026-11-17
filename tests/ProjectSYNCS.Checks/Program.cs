@@ -59,7 +59,8 @@ var taggedPools = new[]
     "PollClosedEmptyLines", "GoodbyeLines", "OwnerGoodbyeLines", "DaytimeGoodnightLines", "OwnerDaytimeGoodnightLines",
     "WeekGreetingLines", "WeekGoodbyeLines", "OwnerWeekGreetingLines", "OwnerWeekGoodbyeLines", "ReturningGreetings",
     "OwnerReturningGreetings", "LateReplyLines", "OwnerLateReplyLines", "EditRewrittenLines", "EditDeletedLines",
-    "EditTurnedMeanLines", "EditCoveredUpLines", "OwnerEditLines", "OwnerEditMeanLines",
+    "EditTurnedMeanLines", "EditCoveredUpLines", "OwnerEditLines", "OwnerEditMeanLines", "MilestoneLines",
+    "MilestoneBotLines", "MilestoneSelfLines",
 };
 foreach (var f in taggedPools)
 foreach (var (name, lines) in Pools(f))
@@ -5015,6 +5016,73 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
                  "OwnerEditLines", "OwnerEditMeanLines" })
         foreach (var l in (string[])Field(field))
             if (l.Contains("{1}") || l.Contains("{2}")) Fail($"{field}: only {{0}} is given: {l}");
+}
+
+// 49. Channel milestones (ChannelMilestones): 1 000, 10 000, 100 000, then every 100 000; the next
+// one after any count; the number written the French way.
+{
+    foreach (var n in new long[] { 1000, 10000, 100000, 200000, 1300000 })
+        if (!ChannelMilestones.IsMilestone(n)) Fail($"milestones: {n} is one");
+    foreach (var n in new long[] { 0, 999, 5000, 50000, 150000, 100001, -1000 })
+        if (ChannelMilestones.IsMilestone(n)) Fail($"milestones: {n} is not one");
+    foreach (var (count, next) in new (long, long)[]
+    {
+        (0, 1000), (999, 1000), (1000, 10000), (9999, 10000), (10000, 100000), (100000, 200000), (250000, 300000),
+    })
+        if (ChannelMilestones.NextAfter(count) != next) Fail($"milestones: after {count} comes {ChannelMilestones.NextAfter(count)}, expected {next}");
+    if (ChannelMilestones.NextUnreached(9990, new HashSet<long> { 1000, 10000 }) != 100000
+        || ChannelMilestones.NextUnreached(500, new HashSet<long>()) != 1000)
+        Fail("milestones: the next unreached one");
+    var tenK = ChannelMilestones.Format(10000);
+    if (tenK != 10000.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")) || tenK.Contains(',') || tenK.Contains('.'))
+        Fail($"milestones: 10000 written « {tenK} »");
+    // /debug milestones at its worst: a 100-character channel name, 45 milestones (three pages),
+    // 20-digit ids: every page under the embed caps, page 0 the newest, the last page the oldest,
+    // and buttons only when there is more than a page, each with its own custom-id.
+    var milestoneCards = asm.GetType("ProjectSYNCS.Commands.MilestoneCards")!;
+    var milestoneCard = milestoneCards.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)!;
+    var milestoneButtons = milestoneCards.GetMethod("BuildButtons", BindingFlags.Public | BindingFlags.Static)!;
+    const ulong bigId = 12345678901234567890UL;
+    var manyReached = Enumerable.Range(1, 45).Select(i => new ProjectSYNCS.Models.ChannelMilestone
+    {
+        GuildId = bigId, ChannelId = bigId, Milestone = i * 100_000L, MessageId = bigId - (ulong)i, AuthorId = bigId - (ulong)i,
+        ReachedAt = DateTimeOffset.UtcNow, Announced = i % 2 == 0,
+    }).ToList();
+    Discord.Embed Card(List<ProjectSYNCS.Models.ChannelMilestone> list, bool caughtUp, int page) =>
+        (Discord.Embed)milestoneCard.Invoke(null,
+            [bigId, new string('n', 100), new MilestoneView(4_523_456, caughtUp, list, 4_600_000), page])!;
+    foreach (var page in new[] { -1, 0, 1, 2, 3 })
+    {
+        var embed = Card(manyReached, false, page);
+        if (embed.Description.Length > 4096 || embed.Title.Length > 256 || embed.Length > 6000)
+            Fail($"milestones: /debug card page {page} is {embed.Description.Length} / {embed.Length} chars");
+    }
+    string Shown(int page) => Card(manyReached, true, page).Description;
+    if (!Shown(0).Contains($"**{ChannelMilestones.Format(4_500_000)}**")
+        || Shown(0).Contains($"**{ChannelMilestones.Format(2_500_000)}**")
+        || !Shown(2).Contains($"**{ChannelMilestones.Format(100_000)}**")
+        || Shown(2).Contains($"**{ChannelMilestones.Format(600_000)}**")
+        || Card(manyReached, true, 1).Footer?.Text != "Paliers 6 à 25 sur 45")
+        Fail("milestones: the pages don't slice newest first");
+    var emptyCard = Card([], true, 0);
+    if (!emptyCard.Description.Contains("Aucun") || emptyCard.Footer is not null) Fail("milestones: the empty card");
+
+    Discord.MessageComponent? Buttons(int reached, int page) => (Discord.MessageComponent?)milestoneButtons.Invoke(null, [bigId, reached, page]);
+    if (Buttons(20, 0) is not null || Buttons(0, 0) is not null) Fail("milestones: buttons on a single page");
+    foreach (var page in new[] { 0, 1, 2 })
+    {
+        var row = Buttons(45, page)!.Components.OfType<Discord.ActionRowComponent>().Single().Components
+            .OfType<Discord.ButtonComponent>().ToList();
+        if (row.Count != 2 || row[0].CustomId == row[1].CustomId) Fail($"milestones: buttons page {page} collide");
+        if (row[0].IsDisabled != (page == 2) || row[1].IsDisabled != (page == 0)) Fail($"milestones: buttons page {page} ends");
+        if (row[0].CustomId != $"milestones:older:{bigId}:{page + 1}" || row[1].CustomId != $"milestones:newer:{bigId}:{page - 1}")
+            Fail($"milestones: buttons page {page} lead nowhere: {row[0].CustomId} / {row[1].CustomId}");
+    }
+
+    // Every announcement says the number.
+    foreach (var field in new[] { "MilestoneLines", "MilestoneBotLines", "MilestoneSelfLines" })
+        foreach (var l in (string[])Field(field))
+            if (!l.Contains("{1}")) Fail($"{field}: doesn't say the number: {l}");
 }
 
 // 34. Story files: StoryChecks.cs.

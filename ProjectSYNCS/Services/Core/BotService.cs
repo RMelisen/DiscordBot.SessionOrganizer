@@ -39,6 +39,7 @@ internal sealed class BotService : IHostedService
     private readonly ActivityCounter _activity;
     private readonly SilenceService _silence;
     private readonly ReplyWatchService _replyWatch;
+    private readonly ChannelMilestoneService _milestones;
 
     public BotService(
         DiscordSocketClient client,
@@ -64,10 +65,12 @@ internal sealed class BotService : IHostedService
         MemberFlowTracker memberFlow,
         ActivityCounter activity,
         SilenceService silence,
-        ReplyWatchService replyWatch)
+        ReplyWatchService replyWatch,
+        ChannelMilestoneService milestones)
     {
         _silence = silence;
         _replyWatch = replyWatch;
+        _milestones = milestones;
         _activity = activity;
         _shortcuts = shortcuts;
         _memberFlow = memberFlow;
@@ -110,6 +113,9 @@ internal sealed class BotService : IHostedService
         // A message she answered, edited for real or deleted: she rewrites her reply (ReplyWatchService).
         _client.MessageUpdated += _replyWatch.HandleUpdatedAsync;
         _client.MessageDeleted += _replyWatch.HandleDeletedAsync;
+        // Deletions come off the channel counts (ChannelMilestoneService), purges included.
+        _client.MessageDeleted += _milestones.HandleDeletedAsync;
+        _client.MessagesBulkDeleted += _milestones.HandleBulkDeletedAsync;
         // Only a new bot is handled there; a person is welcomed through Discord's join line,
         // which arrives as a message (see WelcomeService).
         _client.UserJoined += _welcome.HandleUserJoinedAsync;
@@ -159,6 +165,9 @@ internal sealed class BotService : IHostedService
         // Silence mode (/debug silence): the trackers still count, but nothing that can answer runs.
         // A shortcut is a command, so it still answers.
         bool silent = _silence.IsSilent;
+        // Every message counts towards its channel's milestones, hers, bots' and shortcuts included:
+        // first, before anything below can end the fan-out (ChannelMilestoneService).
+        await _milestones.HandleMessageAsync(rawMessage);
         // Discord's « X joined » line is a system message, which every handler below skips.
         if (!silent) await _welcome.HandleMessageAsync(rawMessage);
         // A typed shortcut (« ;pl », « ;work »…) is a command, not talk: like the slash command it

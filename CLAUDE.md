@@ -87,7 +87,7 @@ English. Renaming a command or option changes what people type: do it rarely, an
 `Program.cs` is the composition root: DI wiring, `MigrateAsync()`, then the hosted services.
 
 - **`BotService`** — gateway login, command registration, interaction dispatch, and the gateway
-  fan-out (`MessageReceived`, `MessageUpdated`, `MessageDeleted`, `ReactionAdded`, `ReactionRemoved`, `UserJoined` to the trackers and
+  fan-out (`MessageReceived`, `MessageUpdated`, `MessageDeleted`, `MessagesBulkDeleted`, `ReactionAdded`, `ReactionRemoved`, `UserJoined` to the trackers and
   services).
   It owns every message and reaction subscription; connection-lifecycle hooks (`Ready`,
   `Connected`, `Disconnected`) live in the service that needs them (`PresenceService`,
