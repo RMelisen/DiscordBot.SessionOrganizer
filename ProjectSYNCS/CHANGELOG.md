@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.65.1 — 2026-11-17
+
+- Reminders asked in chat keep a negation: « rappelle-moi de pas … » no longer drops the « pas ».
+
 ## 7.65.0 — 2026-11-17
 
 - `/report help` and `/debug help`: private guides for the staff, saying what each report shows and

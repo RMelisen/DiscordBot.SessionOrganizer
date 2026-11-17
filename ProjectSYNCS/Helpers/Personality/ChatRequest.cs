@@ -129,7 +129,7 @@ public static partial class ChatRequest
     {
         var (text, words) = Words(content);
         var when = FindWhen(text, words, w => ReminderTime.Parse(w, nowUtc));
-        return new ReminderAsk(Rest(text, words, when, ReminderStrip, InputCaps.Reminder), when?.At);
+        return new ReminderAsk(Rest(text, words, when, ReminderStrip, InputCaps.Reminder, keepNegation: true), when?.At);
     }
 
     public static VoteAsk ReadVote(string content)
@@ -258,10 +258,14 @@ public static partial class ChatRequest
 
     // What's left once the date and the request's own words at both ends are gone, rebuilt from the
     // original text: each stretch between the date and the edges as written, joined by a space.
-    private static string Rest(string text, List<Word> words, When? when, HashSet<string> strip, int cap)
+    // With keepNegation, a « pas » right after the link « de » / « d' » is what's asked, not the asking:
+    // « rappelle-moi de pas écouter Ina » is « pas écouter Ina » (« tu peux pas me rappeler » still strips).
+    private static string Rest(string text, List<Word> words, When? when, HashSet<string> strip, int cap, bool keepNegation = false)
     {
         var kept = Enumerable.Range(0, words.Count).Where(i => when is not { } w || i < w.First || i > w.Last).ToList();
-        while (kept.Count > 0 && strip.Contains(words[kept[0]].Norm)) kept.RemoveAt(0);
+        while (kept.Count > 0 && strip.Contains(words[kept[0]].Norm)
+               && !(keepNegation && words[kept[0]].Norm == "pas" && kept[0] > 0 && words[kept[0] - 1].Norm is "de" or "d"))
+            kept.RemoveAt(0);
         while (kept.Count > 0 && strip.Contains(words[kept[^1]].Norm)) kept.RemoveAt(kept.Count - 1);
         if (kept.Count == 0) return string.Empty;
 

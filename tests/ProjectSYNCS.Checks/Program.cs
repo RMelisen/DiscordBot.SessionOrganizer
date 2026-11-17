@@ -5147,6 +5147,9 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         ("rappelle moi à 18h la lessive stp", "la lessive", Paris(11, 17, 18)),
         ("fais-moi penser à appeler le garage vendredi", "appeler le garage", Paris(11, 20, 9)),
         ("rappelle-moi de manger", "manger", null),
+        ("Syncs, rappelle moi de pas écouter Ina dans 10 minutes", "pas écouter Ina", crNow.AddMinutes(10)),
+        ("rappelle-moi de ne pas oublier le pain", "ne pas oublier le pain", null),
+        ("tu peux pas me rappeler de manger ?", "manger", null),
     })
     {
         var got = ChatRequest.ReadReminder(text, crNow);
