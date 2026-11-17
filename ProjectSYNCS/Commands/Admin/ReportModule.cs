@@ -33,7 +33,13 @@ public class ReportModule : InteractionModuleBase<SocketInteractionContext>
         _picker = picker;
     }
 
-    [SlashCommand("incidents", "Ce qui a coincé : échecs, réponses trop lentes, journal, redémarrages")]
+    // What each report shows (StaffHelpCards). Private, unlike the reports themselves.
+    [SlashCommand("help", "Ce que montre chacun de mes rapports")]
+    public Task HelpAsync() => SessionPermissions.IsStaff(Context.User)
+        ? RespondAsync(embed: StaffHelpCards.BuildReportHelp(), ephemeral: true)
+        : RespondAsync(Refusal, ephemeral: true);
+
+    [SlashCommand("incidents","Ce qui a coincé : échecs, réponses trop lentes, journal, redémarrages")]
     public Task IncidentsAsync() => ShowAsync(ReportKind.Incidents);
 
     [SlashCommand("sessions", "Les sessions : présence, retards, absences, meilleurs créneaux")]

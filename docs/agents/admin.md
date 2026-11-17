@@ -53,6 +53,12 @@ same check.
 `emotes`, `sleeping`, `minecraft`: her reports to the staff. Same gate as `/admin` (`IsStaff` per handler, no
 `[DefaultMemberPermissions]`, guild-only).
 
+**`/report help` and `/debug help`** are the staff's guides (`StaffHelpCards`, static, measured by the
+checks): what each report shows, what each owner tool does. Both are private and gated on `IsStaff`,
+`/debug help` included — the one `/debug` entry that isn't owner-only, because staff see the group in
+the picker and should know what it can do on their server. **A new `/report` or `/debug` subcommand
+gets a line in its guide.**
+
 - **Posted in the open, with every name** (no-shows, latecomers, the busiest, the ones going
   quiet, the sleepers): the owner's call, and the one exception to « absences are a count, never
   names » (scheduling, *Roll call*). Only the refusals are private. Every card still takes `names`:
@@ -278,6 +284,8 @@ service is the only writer: any write drops that guild's entry. A failed read de
 `GuildConfig.Empty` and is **not cached**, so a transient fault can't pin a guild as unconfigured.
 
 ## `/debug` — owner only
+
+(Except `help`, readable by staff: see *`/report` and the monthly digest*.)
 
 `tell`, `delete` (one of her own messages, by link; refuses anyone else's), `confession` (who wrote
 confession #N, see `community.md`), `dm`, `absent`, `plynling`, `emotes`, `digest` (last month's digest in your DMs now, yours or a preview of Tata's, see

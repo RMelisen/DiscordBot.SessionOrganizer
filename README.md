@@ -50,6 +50,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/admin stats` | The server's economy at a glance | staff |
 | `/admin dashboard` | The economy day by day: flows, activity, finds | staff |
 | `/report sessions · polls · community · syncs · activity · commands · incidents · quiz · plynlings · emotes · sleeping · minecraft` | Her reports: attendance, polls and `/tonight`, the server's life, her own health, peak hours and channels, her commands and who uses them, what went wrong, the quiz, the Plynlings, the emotes, members gone quiet, her evenings in Minecraft | staff |
+| `/report help` · `/debug help` | What each report shows; what each owner tool does (staff can read it, not run the tools) | staff |
 | `/admin warn · warnings · unwarn` | Formal warnings, sent to the person by DM | staff |
 | `/admin mute · unmute` | Discord timeout, saying what's missing when it can't | staff |
 | `/admin plynling rename · resurrect · passion-reset · cure`, `/plynling freeze/thaw user:` | Manage someone's Plynling | staff |
@@ -660,6 +661,9 @@ is gone).
   trades, gifts) and items and cosmetics found, bought or crafted — each with its trend against
   the previous period and a small day-by-day bar line. 7 days, 30 days or everything since
   recording began; the counters started at zero the day it shipped.
+- **`/report help`** · **`/debug help`** — two private guides for the staff: what each report
+  shows, and what each of the owner's `/debug` tools does (staff see `/debug` in the picker
+  but can't run it).
 - **`/report`** — her reports, posted in the channel under a line of hers (on duty for the owner,
   warm for Tata, suspicious for anyone else on the staff), over 7 days, 30 days or all time, each
   figure with its trend against the previous period:

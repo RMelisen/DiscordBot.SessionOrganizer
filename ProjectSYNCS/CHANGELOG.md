@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.65.0 — 2026-11-17
+
+- `/report help` and `/debug help`: private guides for the staff, saying what each report shows and
+  what each owner tool does.
+
 ## 7.64.0 — 2026-11-17
 
 - Asking SYNCS to set something up now does it instead of pointing at the command. « syncs, organise un

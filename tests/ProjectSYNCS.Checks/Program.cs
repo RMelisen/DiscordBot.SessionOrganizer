@@ -1626,6 +1626,18 @@ foreach (var (text, expected) in new[]
         Console.WriteLine($"/help page {page}: {embed.Length} chars, longest field {embed.Fields.Max(f => f.Value.Length)}");
     }
 
+    // The staff guides, /report help and /debug help.
+    foreach (var (what, embed) in new[]
+             {
+                 ("/report help", ProjectSYNCS.Commands.StaffHelpCards.BuildReportHelp()),
+                 ("/debug help", ProjectSYNCS.Commands.StaffHelpCards.BuildDebugHelp()),
+             })
+    {
+        if (embed.Length > 6000) Fail($"{what} is {embed.Length} characters");
+        if (embed.Fields.FirstOrDefault(f => f.Value.Length > 1024) is { Name: { } field }) Fail($"{what} field '{field}' exceeds 1024");
+        Console.WriteLine($"{what}: {embed.Length} chars, longest field {embed.Fields.Max(f => f.Value.Length)}");
+    }
+
     // /plynling help is close to the caps too, and the shop card lists every item it sells with its icon.
     foreach (var page in new[] { 0, 1, 2 })
     {
