@@ -321,6 +321,9 @@ without saying it). The one place a fact is stated outright is where a pool alre
 - Would it read the same coming from any other bot? Then add something only she would say (her
   work, her logs, Papa, the server's habits).
 - Gender check, placeholder check, one tag at most, no `(｡•́︿•̀｡)`.
+- Does it say « bonjour » or « bonsoir » in a pool that can fire at any hour? It goes in the
+  pool's `day` or `evening` half (`TimedPool`, see `CLAUDE.md`), ideally with its twin in the
+  other; « dire bonjour » (saying hello) is fine at any hour.
 
 **Too generic** → **hers**:
 

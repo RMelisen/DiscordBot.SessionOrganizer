@@ -148,7 +148,7 @@ internal static partial class BotResponses
                 "Bye. La porte est toujours ouverte. Enfin, il y a pas de porte. Mais tu m'as comprise." + Sticker.Happy,
                 "À demain ! Et demain, tu viens à la session. C'est pas une question (¬_¬)" + Sticker.Menace,
                 "Tu pars ? Très bien. Je vais très bien. Toute seule. Avec mes logs." + Sticker.Sulk,
-                "Bonne soirée ! Je garde tout en ordre pendant ton absence ♡" + Sticker.Happy,
+                "Allez, profite ! Je garde tout en ordre pendant ton absence ♡" + Sticker.Happy,
                 "Au revoir, {0}. Je retiens ton départ. Et ton retour, quand il arrivera." + Sticker.Jenote,
                 "Allez, file. Je m'occupe du reste. Comme d'habitude." + Sticker.Cool,
                 "À la prochaine ! Je serai là. Je suis toujours là." + Sticker.Happy,

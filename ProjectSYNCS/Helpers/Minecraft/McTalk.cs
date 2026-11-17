@@ -82,7 +82,7 @@ public static class McTalkReader
         if (maybeForOthers) return null;
 
         if (mood.Emotion == EmotionKind.Nice) return new(BotResponses.NiceReplies, "nice");
-        if (mood.IsGreeting && !mean) return new(papa ? BotResponses.OwnerGreetings : BotResponses.Greetings, "greeting");
+        if (mood.IsGreeting && !mean) return new(papa ? BotResponses.OwnerGreetings.Now : BotResponses.Greetings.Now, "greeting");
         if (intent == ChatIntent.Sharing)
             return new(papa ? BotResponses.OwnerIntentLines[ChatIntent.Sharing]
                 : random.NextDouble() < SharingInterestChance ? BotResponses.IntentLines[ChatIntent.Sharing]

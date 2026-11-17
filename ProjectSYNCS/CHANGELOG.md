@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.59.4 — 2026-11-17
+
+- SYNCS now says « bonjour » by day and « bonsoir » in the evening (Paris time) when she greets
+  people, logs into Minecraft, waves there, answers for an absent owner or wakes after a power cut.
+
 ## 7.59.3 — 2026-11-17
 
 - `/daily` (and `;daily`) now opens with a short line from SYNCS above the streak and the reward.

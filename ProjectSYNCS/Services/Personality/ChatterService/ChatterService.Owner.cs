@@ -24,7 +24,7 @@ internal sealed partial class ChatterService
         var name = ResolveName(message.Author);
         _logger.LogInformation("{Name} pinged the absent owner — sending unavailability notice.", name);
         var notice = string.Format(
-            _picker.Pick(BotResponses.OwnerAbsentNotices),
+            _picker.Pick(BotResponses.OwnerAbsentNotices.Now),
             name, CurrentWeekday());
         await ReplyWithTypingAsync(message, notice, "owner-absence notice");
 

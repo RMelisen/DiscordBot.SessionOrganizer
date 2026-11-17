@@ -33,7 +33,7 @@ internal static partial class BotResponses
         "C'est toi, {0}. J'adore quand les gens se dénoncent tout seuls.",
         "Tu voulais un coupable ? Regarde dans ton écran. C'est {0} (ᵕ • ᴗ •)",
         "{0}. L'honnêteté de demander, je la note. La défaite aussi.",
-        "Coupable : la personne qui a lancé la commande. Bonjour {0}.",
+        "Coupable : la personne qui a lancé la commande. Coucou {0}.",
         "Tu as posé la question, tu as la réponse. C'est toi, {0}. Aucun remboursement.",
     };
 

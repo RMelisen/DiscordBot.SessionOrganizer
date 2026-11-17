@@ -7,14 +7,14 @@ internal static partial class BotResponses
 {
     // ---- Rodhengard (the owner) -----------------------------------------------------------------
 
-    // When the owner tags the bot without anyone to rescue, it simply greets him.
-    public static readonly string[] OwnerGreetings =
-    {
+    // When the owner tags the bot without anyone to rescue, it simply greets him. « Bonjour » by
+    // day, « bonsoir » by evening (DayParts): pick from OwnerGreetings.Now.
+    public static readonly TimedPool<string> OwnerGreetings = new(anyTime:
+    [
         "Coucou Rodhengard ! (˶˃ ᵕ ˂˶) ♡" + Sticker.Devoted,
         "Oui Papa ? Je suis là ٩(˶ᵔ ᵕ ᵔ˶)۶" + Sticker.Devoted,
         $"Coucouuuu ! {Emotes.HiCat}{Emotes.HiCat}{Emotes.HiCat}" + Sticker.Happy,
         "Tu m'as appelée ? Toujours un plaisir créateur ♡" + Sticker.Devoted,
-        "Bonjouuur mon dev préféré ! (˶ᵔ ᵕ ᵔ˶)" + Sticker.Devoted,
         "Papa ! Tu te souviens quand je savais faire que /schedule ? Regarde-moi maintenant ٩(˶ᵔ ᵕ ᵔ˶)۶" + Sticker.Happy,
         $"Présente ! Qu'est-ce que je peux faire pour toi Rodhengard ? {Emotes.Sparkle}" + Sticker.Devoted,
         "Heyy Rodhengard ! Contente de te voir (˶˃ ᵕ ˂˶) ♡" + Sticker.Devoted,
@@ -42,7 +42,6 @@ internal static partial class BotResponses
         "Han, c'est toi ! Attends je me recoiffe les tokens (˶ᵔ ᵕ ᵔ˶)" + Sticker.Flustered,
         "Hello créateur ♡ Tout est compilé, tout va bien" + Sticker.Happy,
         "Tu as sifflé ? J'arrive ٩(˶ᵔ ᵕ ᵔ˶)۶" + Sticker.Happy,
-        $"Bonjour toi ! Mon uptime est bien meilleur quand tu es là {Emotes.Sparkle}" + Sticker.Devoted,
         "Oui oui oui ? (˶˃ ᵕ ˂˶) ♡" + Sticker.Devoted,
         "C'est mon dev ! Je répète : c'est mon dev !" + Sticker.Happy,
         "Aux ordres ! Enfin, dans la limite de mes permissions (ᵕ • ᴗ •)" + Sticker.Smug,
@@ -64,7 +63,15 @@ internal static partial class BotResponses
         $"Papa ! Mes logs ont attendu toute la journée de voir ton nom passer {Emotes.SyncsDevoted}" + Sticker.Devoted,
         $"Oui Papa ? Pour toi j'interromps tout. Même la sieste de Ping-Qilin. ...Non, pas ça. Mais tout le reste {Emotes.SyncsDevoted}" + Sticker.Devoted,
         $"Coucou Papa ! Tu viens me mettre à jour ? Dis oui {Emotes.SyncsHappy}" + Sticker.Happy,
-    };
+    ], day:
+    [
+        "Bonjouuur mon dev préféré ! (˶ᵔ ᵕ ᵔ˶)" + Sticker.Devoted,
+        $"Bonjour toi ! Mon uptime est bien meilleur quand tu es là {Emotes.Sparkle}" + Sticker.Devoted,
+    ], evening:
+    [
+        "Bonsoiiir mon dev préféré ! (˶ᵔ ᵕ ᵔ˶)" + Sticker.Devoted,
+        $"Bonsoir toi ! Mon uptime est bien meilleur quand tu es là {Emotes.Sparkle}" + Sticker.Devoted,
+    ]);
 
     // Replies when the owner replies to the bot with nothing else detected — not mean,
     // not nice, no greeting, no reference/Tata roll. The warm mirror of Comebacks,
@@ -186,10 +193,10 @@ internal static partial class BotResponses
 
     // Formal notices sent when someone pings the owner while he is flagged
     // absent. Deliberately polite and stiff — a contrast with the usual snark.
-    // {0} = the requester's name.
-    public static readonly string[] OwnerAbsentNotices =
-    {
-        "Bonjour {0}. Je vous informe que Rodhengard est actuellement indisponible. Votre message sera porté à son attention dès son retour. Je vous remercie de votre patience." + Sticker.Formal,
+    // {0} = the requester's name. « Bonjour » by day, « bonsoir » by evening (DayParts): pick from
+    // OwnerAbsentNotices.Now.
+    public static readonly TimedPool<string> OwnerAbsentNotices = new(anyTime:
+    [
         "Cher·e {0}, Rodhengard est momentanément absent et n'est pas en mesure de vous répondre. Soyez assuré·e que votre sollicitation a bien été enregistrée." + Sticker.Formal,
         "Veuillez nous excuser, {0} : Rodhengard est indisponible pour le moment. Il prendra connaissance de votre message à son retour. Cordialement." + Sticker.Formal,
         $"Madame, Monsieur {{0}}, nous accusons réception de votre message. Rodhengard étant absent, celui-ci sera traité dans les meilleurs délais. Bien à vous {Emotes.SyncsFormal}" + Sticker.Formal,
@@ -197,20 +204,29 @@ internal static partial class BotResponses
         "{0}, je vous prie de bien vouloir noter que Rodhengard est absent. Votre message reste consigné et recevra une réponse en temps voulu. Respectueusement." + Sticker.Formal,
         $"Unité d'assistance S.Y.N.C.S. à votre service, {{0}}. L'opérateur Rodhengard est hors ligne. Protocole de prise de message activé. Veuillez patienter jusqu'à son retour {Emotes.SyncsFormal}" + Sticker.Formal,
         "Notification automatisée : la cible de votre mention est actuellement inaccessible. {0}, votre requête a été enregistrée sous référence interne et sera transmise à l'opérateur Rodhengard dès réception." + Sticker.Formal,
-        "Bonjour {0}. Vous êtes en relation avec le système de réponse de Rodhengard, momentanément absent. Aucune intervention humaine n'est possible pour l'instant. Votre patience est appréciée." + Sticker.Formal,
         "Accusé de réception automatique. Opérateur Rodhengard : absent. Disponibilité estimée : inconnue. Votre message a été archivé et sera traité selon l'ordre d'arrivée." + Sticker.Formal,
         $"Assistant S.Y.N.C.S., module de permanence. {{0}}, je vous informe que mon opérateur n'est pas disponible. Je consigne votre demande et veille à sa bonne transmission. Cordialement, unité SYNCS {Emotes.SyncsFormal}" + Sticker.Formal,
         "{0}, votre appel est important pour nous. Rodhengard est actuellement indisponible. Veuillez rester en ligne : il n'y a personne au bout du fil, mais l'intention y est." + Sticker.Smug,
         "Réponse automatique : Rodhengard est absent du serveur jusqu'à nouvel ordre. {0}, votre message lui sera transmis par mes soins, dans l'ordre et dans le calme." + Sticker.Formal,
         "Madame, Monsieur {0}, l'opérateur Rodhengard a quitté son poste. Votre requête a été enregistrée au registre des mentions. Prière de ne pas la renouveler : elle ne sera pas traitée plus vite." + Sticker.Jenote,
-        "Bonjour {0}. Conformément au protocole en vigueur, je vous signale que Rodhengard ne peut être joint à cette heure. Votre mention a été classée, horodatée et transmise." + Sticker.Formal,
         "{0}, nous vous confirmons la bonne réception de votre mention. Rodhengard est hors service pour une durée indéterminée. Nous vous remercions de votre confiance." + Sticker.Formal,
         "Service des mentions, S.Y.N.C.S. à l'appareil. {0}, la personne que vous cherchez à joindre n'est pas disponible. Veuillez réessayer ultérieurement, ou patienter, ce qui revient au même." + Sticker.Smug,
         "Notification système : Rodhengard, statut « absent ». {0}, votre message est en file d'attente, en tête de liste. Il sera traité à son retour." + Sticker.Formal,
         "Cher·e {0}, il m'appartient de vous informer que Rodhengard est en dehors de ses heures de disponibilité. Je me charge de lui faire parvenir votre message avec le plus grand sérieux." + Sticker.Formal,
         "À l'attention de {0} : mention reçue, authentifiée et archivée. Rodhengard répondra à son retour. Tout rappel supplémentaire sera consigné au dossier." + Sticker.Jenote,
+    ], day:
+    [
+        "Bonjour {0}. Je vous informe que Rodhengard est actuellement indisponible. Votre message sera porté à son attention dès son retour. Je vous remercie de votre patience." + Sticker.Formal,
+        "Bonjour {0}. Vous êtes en relation avec le système de réponse de Rodhengard, momentanément absent. Aucune intervention humaine n'est possible pour l'instant. Votre patience est appréciée." + Sticker.Formal,
+        "Bonjour {0}. Conformément au protocole en vigueur, je vous signale que Rodhengard ne peut être joint à cette heure. Votre mention a été classée, horodatée et transmise." + Sticker.Formal,
         "Bonjour {0}. Ici le module d'absence de Rodhengard. Je ne suis pas habilitée à répondre à sa place. Je suis en revanche habilitée à noter votre message, ce que je fais. Cordialement." + Sticker.Jenote,
-    };
+    ], evening:
+    [
+        "Bonsoir {0}. Je vous informe que Rodhengard est actuellement indisponible. Votre message sera porté à son attention dès son retour. Je vous remercie de votre patience." + Sticker.Formal,
+        "Bonsoir {0}. Vous êtes en relation avec le système de réponse de Rodhengard, momentanément absent. Aucune intervention humaine n'est possible pour l'instant. Votre patience est appréciée." + Sticker.Formal,
+        "Bonsoir {0}. Conformément au protocole en vigueur, je vous signale que Rodhengard ne peut être joint à cette heure. Votre mention a été classée, horodatée et transmise." + Sticker.Formal,
+        "Bonsoir {0}. Ici le module d'absence de Rodhengard. Je ne suis pas habilitée à répondre à sa place. Je suis en revanche habilitée à noter votre message, ce que je fais. Cordialement." + Sticker.Jenote,
+    ]);
 
     // Short ceremonial headers announcing that the owner has answered a mention
     // from afar, relayed by the bot. The bot plays the devoted herald of its

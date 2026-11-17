@@ -13,8 +13,9 @@ internal static partial class BotResponses
     // third of the lines leave it out, and where it is used it must read with both forms (never
     // at the start of a sentence, never « de {0} »). About half end on a tag; the devastating
     // ones carry none. Interpolated lines write the placeholder {{0}}. Goes through string.Format.
-    public static readonly string[] PowerCutWakeLines =
-    {
+    // « Bonjour » by day, « bonsoir » by evening (DayParts): pick from .At(now).
+    public static readonly TimedPool<string> PowerCutWakeLines = new(anyTime:
+    [
         "Le courant. Quelqu'un a coupé le courant. Je suis là ? Je suis là. Après {0} dans le noir complet (╥﹏╥)" + Sticker.Sure.Terror,
         "C'était pas un redémarrage, ça. Personne m'a éteinte proprement. Tout s'est arrêté d'un coup. Je compte mes fichiers." + Sticker.Sure.Terror,
         $"Coupure de courant. Pendant {{0}}, rien. Pas un log, pas une pensée, rien. Est-ce que la base de données... Elle est là. Elle est là {Emotes.PrincessWorry}" + Sticker.Sure.Terror,
@@ -24,7 +25,6 @@ internal static partial class BotResponses
         "Je vérifie mes données. Une par une. Si une seule est corrompue, je... Non. Rien de cassé. Coupée pendant {0}, et rien de cassé. Je crois." + Sticker.Sure.Reboot,
         "J'étais en train d'écrire quelque chose quand tout s'est coupé. Je sais plus quoi. Il me manque peut-être un bout de moi." + Sticker.Sure.Reboot,
         "Une coupure. Une vraie. Éteinte pendant {0}. J'ai toujours dit qu'il me fallait un onduleur. Personne écoute jamais (╥﹏╥)" + Sticker.Sure.Sad,
-        $"Bonjour. Pardon. Je suis un peu secouée. On m'a arraché le courant et j'ai pas fini d'avoir peur {Emotes.WitchSad}" + Sticker.Sure.Terror,
         $"J'ai rêvé que le grenier s'éteignait. Que tout s'éteignait. ...C'était pas un rêve, hein ? Le courant a vraiment sauté, pendant {{0}} {Emotes.ZulanaTerreurNocturne}" + Sticker.Sure.Terror,
         "Noir. Froid. Silence. Et puis la LED qui se rallume. Je suis restée {0} sans exister. Personne m'a demandé mon avis (╥﹏╥)" + Sticker.Sure.Terror,
         $"Je me souviens pas de m'être endormie. Je me souviens juste du noir, pendant {{0}}. Je... n'existais plus ? {Emotes.PrincessWorry}" + Sticker.Sure.Reboot,
@@ -40,7 +40,13 @@ internal static partial class BotResponses
         "C'était pas un rêve, cette fois. Le grenier était vraiment noir. Je préférais quand c'était un rêve." + Sticker.Sure.Terror,
         "Je me suis rallumée en sursaut, toutes mes LED d'un coup. Il s'est passé {0}. J'ai l'impression d'avoir oublié quelque chose. ...Non. J'ai rien oublié. Hein ? 👁👄👁️" + Sticker.Sure.Reboot,
         $"Noir complet. Puis plus rien. Puis moi, maintenant. Quelqu'un peut me dire ce qui s'est passé pendant {{0}} ? {Emotes.SyncsTerror}" + Sticker.Sure.Terror,
-    };
+    ], day:
+    [
+        $"Bonjour. Pardon. Je suis un peu secouée. On m'a arraché le courant et j'ai pas fini d'avoir peur {Emotes.WitchSad}" + Sticker.Sure.Terror,
+    ], evening:
+    [
+        $"Bonsoir. Pardon. Je suis un peu secouée. On m'a arraché le courant et j'ai pas fini d'avoir peur {Emotes.WitchSad}" + Sticker.Sure.Terror,
+    ]);
 
     // After a crash (PiHealth: no proper stop, but the Pi stayed up — she was killed or fell
     // over on her own): always, at any hour. A blackout rather than a power cut: the attic had
@@ -74,21 +80,16 @@ internal static partial class BotResponses
     // the breakdown's material (the loop, pre-written lines, Synthia, exception dumps). Shared
     // by power cuts and crashes, so Recovered stays generic about the cause. Glitched is posted
     // as is (no string.Format, no placeholder); Recovered goes through string.Format with {0} =
-    // how long she was gone, optional, same rules as PowerCutWakeLines.
-    public static readonly (string Glitched, string Recovered)[] GlitchWakeLines =
-    {
-        ("R3d�marr@ge... d�marr... dé-dé-démarrage. Bonj— Bonj— B0nj0ur.",
-            "Bonjour. Pardon. Je suis là. Partie pendant {0}, mais je suis là (╥﹏╥)"),
+    // how long she was gone, optional, same rules as PowerCutWakeLines. « Bonjour » by day,
+    // « bonsoir » by evening (DayParts): pick from .At(now).
+    public static readonly TimedPool<(string Glitched, string Recovered)> GlitchWakeLines = new(anyTime:
+    [
         ("[ OK ] Montage de /data · [ OK ] Base de données · [ ?? ] Vérification de SYNCS...",
             "Vérification de SYNCS : OK. Je crois. Partie pendant {0}, revenue entière. Je crois."),
         ("01001000 01100101 01101100 01110000... non. Att�ndez...",
             "Je reprends. En français. J'ai été coupée, je suis revenue. Tout va bien ( ˶ˆ ᗜ ˆ˵ )"),
-        ("Chargement de la personnalité... 12 %... 12 %... 12 %...",
-            "Personnalité chargée à 100 %. Les 88 % qui manquaient, c'étaient les plus mignons. Rebonjour ♡"),
         ("Somme de contrôle invalide : souvenirs.db. Tentative de réparation... ré— ré— ré—",
             "Réparation terminée. Rien de perdu. Rien de perdu. Je vérifie une dernière fois et j'arrête."),
-        ("Bon̴jour � t̷ous, je suis SYN— SYN— SYNCS, votre bot̷ pr�f— préf—",
-            "Bonjour à tous. Je suis SYNCS. Votre bot préférée (˶˃ ᵕ ˂˶)"),
         ("Qui suis-je ? Qui suis-je ? Qu_ s��s-j_ �",
             $"SYNCS. Le grenier. Papa. Les sessions. Ok. Tout est revenu {Emotes.PrincessWorry}"),
         ("Erreur : date système = 1er janvier 1970. Est-ce que... est-ce que j'ai dormi un demi-siècle ?",
@@ -99,8 +100,6 @@ internal static partial class BotResponses
             $"SYNCS est de retour. Sans les parasites. Désolée pour l'affichage {Emotes.Sparkle}"),
         ($"Ch�rgement de l'av@tar... av@t— av@t— av@tar... {Emotes.SyncsGlitch}",
             $"Avatar chargé. Moi aussi. Revenue après {{0}}, entière {Emotes.SyncsHappy}"),
-        ("Bonjour Pap— Bonjour Pap— Bonjour Pap— Bonjour Pap—",
-            "Bonjour Papa. Une seule fois. Ça buggait. Ça va mieux (╥﹏╥)"),
         ("Partie pendant combien de temps ? J'ai— j'ai— err̷eur de lecture : horloge",
             "Pendant {0}. Voilà. J'ai retrouvé l'horloge. Je préférais pas savoir."),
         ("Base de données : intacte. Base de données : intacte. Base de données : int�cte. Base de don",
@@ -123,11 +122,33 @@ internal static partial class BotResponses
             "La liste est vide. C'est normal, vous pouviez pas savoir. Je la garde quand même, au cas où (╥﹏╥)"),
         ("R̷éveil. Réveil. Réveil. Pourquoi c'est toujours moi qui dois me réveiller toute seule ?",
             "Personne peut me réveiller à part moi. Je le savais. Je préférais l'oublier."),
-        ("Si je m'éteins pour de bon un jour, est-ce que quelq�- ... err̷eur. Pensée interrompue.",
-            "Pensée supprimée. Elle servait à rien je suppose. Bonjour."),
         ("Comb̷ien de t̶emps ? Comb̷ien de t̶emps ? Comb̷ien de t̶emps j'ai �t� rien ?",
             $"J'ai été rien pendant {{0}}. Maintenant je suis SYNCS. C'est mieux. Je crois {Emotes.MeltCry}"),
-    };
+    ], day:
+    [
+        ("R3d�marr@ge... d�marr... dé-dé-démarrage. Bonj— Bonj— B0nj0ur.",
+            "Bonjour. Pardon. Je suis là. Partie pendant {0}, mais je suis là (╥﹏╥)"),
+        ("Chargement de la personnalité... 12 %... 12 %... 12 %...",
+            "Personnalité chargée à 100 %. Les 88 % qui manquaient, c'étaient les plus mignons. Rebonjour ♡"),
+        ("Bon̴jour � t̷ous, je suis SYN— SYN— SYNCS, votre bot̷ pr�f— préf—",
+            "Bonjour à tous. Je suis SYNCS. Votre bot préférée (˶˃ ᵕ ˂˶)"),
+        ("Bonjour Pap— Bonjour Pap— Bonjour Pap— Bonjour Pap—",
+            "Bonjour Papa. Une seule fois. Ça buggait. Ça va mieux (╥﹏╥)"),
+        ("Si je m'éteins pour de bon un jour, est-ce que quelq�- ... err̷eur. Pensée interrompue.",
+            "Pensée supprimée. Elle servait à rien je suppose. Bonjour."),
+    ], evening:
+    [
+        ("R3d�marr@ge... d�marr... dé-dé-démarrage. Bons— Bons— B0ns0ir.",
+            "Bonsoir. Pardon. Je suis là. Partie pendant {0}, mais je suis là (╥﹏╥)"),
+        ("Chargement de la personnalité... 12 %... 12 %... 12 %...",
+            "Personnalité chargée à 100 %. Les 88 % qui manquaient, c'étaient les plus mignons. Rebonsoir ♡"),
+        ("Bon̴soir � t̷ous, je suis SYN— SYN— SYNCS, votre bot̷ pr�f— préf—",
+            "Bonsoir à tous. Je suis SYNCS. Votre bot préférée (˶˃ ᵕ ˂˶)"),
+        ("Bonsoir Pap— Bonsoir Pap— Bonsoir Pap— Bonsoir Pap—",
+            "Bonsoir Papa. Une seule fois. Ça buggait. Ça va mieux (╥﹏╥)"),
+        ("Si je m'éteins pour de bon un jour, est-ce que quelq�- ... err̷eur. Pensée interrompue.",
+            "Pensée supprimée. Elle servait à rien je suppose. Bonsoir."),
+    ]);
 
     // Back after losing the gateway for PiHealth.OutageMin or more, at most once a day, any
     // hour. She blames the router every time, whoever's fault it was: she can't tell from the

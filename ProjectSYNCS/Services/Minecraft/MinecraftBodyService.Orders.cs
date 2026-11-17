@@ -204,7 +204,7 @@ public sealed partial class MinecraftBodyService
                 return true;
             case McOrder.Wave:
                 if (Send(new { op = "wave", player }) && FirstOfBurst(player, McOrder.Wave))
-                    Reply(player, whispered, Kin(player, BotResponses.McWaveLines, BotResponses.McWaveLinesOwner, BotResponses.McWaveLinesTata));
+                    Reply(player, whispered, Kin(player, BotResponses.McWaveLines.Now, BotResponses.McWaveLinesOwner.Now, BotResponses.McWaveLinesTata));
                 return true;
             case McOrder.Bye:
                 if (Send(new { op = "wave", player }) && FirstOfBurst(player, McOrder.Bye))

@@ -282,6 +282,11 @@ free). `AllowedMentions.None` keeps the clickable pill while silencing it. Avata
   small pools use `Pick(pool, choices)`, which narrows the pick to the lines said least recently (see minecraft). **A pool spent once a day uses
   `Helpers/Core/DailyRotation` instead** — a restart wipes the picker's history, which at one pick a
   day means it never helps; the rotation is computed from the date, with nothing stored.
+- **A line that greets for a time of day goes in a `Helpers/Core/TimedPool`** (`DayPart.cs`):
+  « bonjour » / « bonne journée » in its `day` half, « bonsoir » / « bonne soirée » in `evening`
+  (Paris time, 3 h–18 h is day), everything else in `anyTime`; callers pick from `.Now` or
+  `.At(instant)`. A pool that only ever runs at one time (the morning hello, the 3 a.m. line) stays
+  a plain array. Checks section 45 holds every `TimedPool` on `BotResponses` to its halves.
 - **Custom emote markup lives in `Helpers/Core/Emotes` and nowhere else**, as `const string` pairs
   (`XId` + `X`), so lines stay constant expressions. Never paste raw `<:name:id>` into a pool.
 - **`BotResponses.DisplayNameFor(IUser)`** is the only place the

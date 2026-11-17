@@ -29,6 +29,16 @@ IEnumerable<(string Name, string[] Lines)> Pools(string field)
 {
     var v = Field(field);
     if (v is string[] arr) yield return (field, arr);
+    else if (v is TimedPool<string> t)
+    {
+        // Each part alone, and each joined pool as she picks it: rules on size and duplicates
+        // hold for what she actually picks from.
+        yield return ($"{field}.AnyTime", t.AnyTime);
+        yield return ($"{field}.Day", t.Day);
+        yield return ($"{field}.Evening", t.Evening);
+        yield return ($"{field}@day", t.At(AppTime.AtWallClock(new DateTime(2026, 6, 1, 12, 0, 0))));
+        yield return ($"{field}@evening", t.At(AppTime.AtWallClock(new DateTime(2026, 6, 1, 21, 0, 0))));
+    }
     else if (v is IDictionary d)
         foreach (DictionaryEntry e in d) yield return ($"{field}[{e.Key}]", (string[])e.Value!);
 }
@@ -3303,7 +3313,8 @@ Console.WriteLine($"batch 2 report embeds at worst: {string.Join(" · ", batch2W
     foreach (var p in McFamilyPools)
     foreach (var twin in new[] { p + "Owner", p + "Tata" })
     {
-        if (Field(twin) is not string[] { Length: > 0 } twinLines) { Fail($"{twin}: missing"); continue; }
+        var twinLines = Pools(twin).SelectMany(p => p.Lines).ToArray();
+        if (twinLines.Length == 0) { Fail($"{twin}: missing"); continue; }
         // Papa and Tata by title, never by an in-game name.
         if (twinLines.Any(l => l.Contains("{0}"))) Fail($"{twin}: uses {{0}}, they're called Papa and Tata");
     }
@@ -4409,6 +4420,61 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     // Each help names every shortcut (plynling.md).
     if (!new[] { 0, 1, 2 }.Any(p => ProjectSYNCS.Commands.PlynlingModule.BuildHelpEmbed(p).Description?.Contains("`;daily`") == true))
         Fail("daily: /plynling help doesn't name ;daily");
+}
+
+// 45. Bonjour or bonsoir (DayParts, TimedPool): the switch hours in Paris time across both DST
+// changes, and every time-aware pool keeps its greetings on the right side of them.
+{
+    DayPart PartAt(int y, int mo, int d, int h, int mi) => DayParts.At(AppTime.AtWallClock(new DateTime(y, mo, d, h, mi, 0)));
+    // 30 March, not the 29th: on the night clocks go forward, 02:59 doesn't exist in Paris.
+    foreach (var (mo, d) in new[] { (1, 15), (3, 30), (7, 1), (10, 25) })
+    {
+        if (PartAt(2026, mo, d, 2, 59) != DayPart.Evening) Fail($"dayparts {mo}/{d} 02:59: not evening");
+        if (PartAt(2026, mo, d, 3, 0) != DayPart.Day) Fail($"dayparts {mo}/{d} 03:00: not day");
+        if (PartAt(2026, mo, d, 17, 59) != DayPart.Day) Fail($"dayparts {mo}/{d} 17:59: not day");
+        if (PartAt(2026, mo, d, 18, 0) != DayPart.Evening) Fail($"dayparts {mo}/{d} 18:00: not evening");
+        if (PartAt(2026, mo, d, 0, 30) != DayPart.Evening) Fail($"dayparts {mo}/{d} 00:30: not evening");
+    }
+    // A UTC instant reads in Paris time: 16:30 UTC is 18:30 in summer, 17:30 in winter.
+    if (DayParts.At(new DateTimeOffset(2026, 7, 1, 16, 30, 0, TimeSpan.Zero)) != DayPart.Evening) Fail("dayparts: summer UTC");
+    if (DayParts.At(new DateTimeOffset(2026, 1, 15, 16, 30, 0, TimeSpan.Zero)) != DayPart.Day) Fail("dayparts: winter UTC");
+
+    var tp = new TimedPool<string>(["a"], ["d"], ["e"]);
+    var tpNoon = tp.At(AppTime.AtWallClock(new DateTime(2026, 6, 1, 12, 0, 0)));
+    var tpNight = tp.At(AppTime.AtWallClock(new DateTime(2026, 6, 1, 23, 0, 0)));
+    if (!tpNoon.SequenceEqual(["a", "d"]) || !tpNight.SequenceEqual(["a", "e"])) Fail("TimedPool: wrong half");
+
+    // Every TimedPool on BotResponses: day lines say bonjour (or « journée »), evening lines
+    // bonsoir (or « soirée »), never the other one; any-time lines greet with neither, or both
+    // as a joke. « dire bonjour » is saying hello, at any hour. Pairs are read as one text, and
+    // stretched letters fold back (« Bonjouuur »).
+    var stretched = new System.Text.RegularExpressions.Regex(@"(\p{L})\1{2,}");
+    string Text(object line) => stretched.Replace(line is System.Runtime.CompilerServices.ITuple t
+        ? string.Join(" | ", Enumerable.Range(0, t.Length).Select(i => t[i]))
+        : (string)line, "$1");
+    var saysHello = new System.Text.RegularExpressions.Regex(@"\b(dire|dis|dit) bonjour\b");
+    var timedFields = br.GetFields(BindingFlags.Public | BindingFlags.Static)
+        .Where(f => f.FieldType.IsGenericType && f.FieldType.GetGenericTypeDefinition() == typeof(TimedPool<>)).ToList();
+    if (timedFields.Count < 7) Fail($"TimedPool: only {timedFields.Count} pools found");
+    foreach (var f in timedFields)
+    {
+        var pool = f.GetValue(null)!;
+        string[] Part(string name) => ((IEnumerable)f.FieldType.GetProperty(name)!.GetValue(pool)!).Cast<object>().Select(Text).ToArray();
+        var (any, day, eve) = (Part("AnyTime"), Part("Day"), Part("Evening"));
+        if (day.Length == 0 || eve.Length == 0) Fail($"{f.Name}: a time-aware pool with an empty half");
+        foreach (var l in day.Select(l => l.ToLowerInvariant()))
+            if (!(l.Contains("bonjour") || l.Contains("journée")) || l.Contains("bonsoir") || l.Contains("soirée"))
+                Fail($"{f.Name}.Day: not a daytime line: {l}");
+        foreach (var l in eve.Select(l => l.ToLowerInvariant()))
+            if (!(l.Contains("bonsoir") || l.Contains("soirée")) || l.Contains("bonjour") || l.Contains("journée"))
+                Fail($"{f.Name}.Evening: not an evening line: {l}");
+        foreach (var l in any.Select(l => l.ToLowerInvariant()))
+        {
+            var jour = saysHello.Replace(l, "").Contains("bonjour");
+            if (jour != l.Contains("bonsoir") || l.Contains("bonne journée") || l.Contains("bonne soirée"))
+                Fail($"{f.Name}.AnyTime: greets for one time of day: {l}");
+        }
+    }
 }
 
 // 41. Session places (SessionSeats): the waiting list opens only when a full session frees a place,

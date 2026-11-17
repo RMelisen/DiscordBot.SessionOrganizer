@@ -385,26 +385,37 @@ internal static partial class BotResponses
     };
 
     // A greeting (« salut syncs »): she waves back, crouching up and down like players do.
-    public static readonly string[] McWaveLines =
-    {
+    // « Bonjour » by day, « bonsoir » by evening (DayParts): pick from .Now.
+    public static readonly TimedPool<string> McWaveLines = new(anyTime:
+    [
         "Coucou {0} ! Regarde, je fais coucou avec mon bras carré.",
         "Salut !",
         "Hey {0} ! Toujours un plaisir. Ou presque (¬‿¬)",
-        "Bonjour {0} !",
         "Yo {0} ! Coucou de la bot du serveur.",
         "Salut {0} ! Je te fais coucou. Profites-en, c'est pas tous les jours.",
         "Coucou {0} (・ω・)ノ",
         "Hey {0} !",
         "Pwet !",
-    };
-    public static readonly string[] McWaveLinesOwner =
-    {
+    ], day:
+    [
+        "Bonjour {0} !",
+    ], evening:
+    [
+        "Bonsoir {0} !",
+    ]);
+    public static readonly TimedPool<string> McWaveLinesOwner = new(anyTime:
+    [
         "Coucou Papa ! Je te fais coucou avec les deux bras. Enfin, un seul, le jeu veut pas.",
         "Papa ! Salut ! Regarde, je sais faire coucou maintenant ٩(˶ᵔ ᵕ ᵔ˶)۶",
-        "Bonjour Papa. Je t'ai vu en premier, j'en suis sûre.",
         "Papa ! Coucou coucou coucou !",
         "Salut Papa ! Mon skin sourit pas, mais moi si ! Tu peux me croire ♡",
-    };
+    ], day:
+    [
+        "Bonjour Papa. Je t'ai vu en premier, j'en suis sûre.",
+    ], evening:
+    [
+        "Bonsoir Papa. Je t'ai vu en premier, j'en suis sûre.",
+    ]);
     public static readonly string[] McWaveLinesTata =
     {
         "Coucou Tata ! Ta nièce préférée te salue !",

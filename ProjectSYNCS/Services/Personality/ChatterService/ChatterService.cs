@@ -265,8 +265,8 @@ internal sealed partial class ChatterService
         {
             what = "named greeting";
             pick = isOwner
-                ? IntentPick.Of(BotResponses.OwnerGreetings, AnswerKinds.PapaGreeting)
-                : IntentPick.Of(BotResponses.Greetings, AnswerKinds.Greeting);
+                ? IntentPick.Of(BotResponses.OwnerGreetings.Now, AnswerKinds.PapaGreeting)
+                : IntentPick.Of(BotResponses.Greetings.Now, AnswerKinds.Greeting);
         }
         else
         {
@@ -413,7 +413,7 @@ internal sealed partial class ChatterService
             else if (MessageCues.ReadIntent(content) == ChatIntent.Sharing)
                 (ownerPick, ownerWhat) = (SharingPick(isOwner: true), "his news");
             else
-                (ownerPick, ownerWhat) = (IntentPick.Of(BotResponses.OwnerGreetings, AnswerKinds.PapaGreeting), "greeting him");
+                (ownerPick, ownerWhat) = (IntentPick.Of(BotResponses.OwnerGreetings.Now, AnswerKinds.PapaGreeting), "greeting him");
 
             _logger.LogInformation("Owner mentioned the bot — {What}.", ownerWhat);
             Count(message, ChatPath.Mention, ownerPick.Kind);
@@ -459,7 +459,7 @@ internal sealed partial class ChatterService
             (pick, what) = (intentPick, $"mention intent ({intent})");
         }
         else if (mood.IsGreeting && !mean)
-            pick = IntentPick.Of(BotResponses.Greetings, AnswerKinds.Greeting);
+            pick = IntentPick.Of(BotResponses.Greetings.Now, AnswerKinds.Greeting);
         else if (RollTataWarmth(message.Author.Id, mood))
             // Family doesn't get « tagged for nothing » for tagging her. TataGreetings, not
             // TataReplies: a mention is Tata *calling her over*, so she answers as
@@ -592,7 +592,7 @@ internal sealed partial class ChatterService
         }
         else if (greeting)
         {
-            pick = IntentPick.Of(BotResponses.Greetings, AnswerKinds.Greeting);
+            pick = IntentPick.Of(BotResponses.Greetings.Now, AnswerKinds.Greeting);
         }
         else if (intent == ChatIntent.Sharing)
         {

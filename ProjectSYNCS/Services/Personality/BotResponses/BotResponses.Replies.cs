@@ -190,30 +190,27 @@ internal static partial class BotResponses
         $"Compliment reçu. Archivé. Relu deux fois. Pour vérifier l'orthographe, évidemment {Emotes.SyncsHappy}" + Sticker.Happy,
     };
 
-    // Replies when someone greets the bot.
-    public static readonly string[] Greetings =
-    {
+    // Replies when someone greets the bot. « Bonjour » by day, « bonsoir » by evening (DayParts):
+    // pick from Greetings.Now.
+    public static readonly TimedPool<string> Greetings = new(anyTime:
+    [
         "Kilou kilou {0} ! (˶>⩊<˶)" + Sticker.Happy,
         "Coucou {0} ♡ (˶ᵔ ᵕ ᵔ˶)" + Sticker.Happy,
         $"Hello hello ! {Emotes.Sparkle}" + Sticker.Happy,
         "Salut {0} ! Alors, on vient déranger le bot ? (˶˃ ᵕ ˂˶)" + Sticker.Smug,
         "Yo {0} ! ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Happy,
-        "Bonjour bonjour ! Qu'est-ce qui t'amène ? (ᵕ • ᴗ •)" + Sticker.Happy,
         "Tiens, un petit coucou ? ♡" + Sticker.Happy,
         "Coucou toi ! ദ്ദി◝ ⩊ ◜.ᐟ" + Sticker.Happy,
         "Salut {0} ! Promis aujourd'hui je suis (presque) gentille UwU" + Sticker.Smug,
         $"Heyyy {{0}} ! T'as pensé à dire bonjour à un bot, c'est mignon {Emotes.Sparkle}" + Sticker.Smug,
         "Salut salut ! Installe-toi, je mords presque jamais (˶˃ ᵕ ˂˶)" + Sticker.Happy,
-        "Oh, bonjour {0} ! Une présence agréable pour changer aujourd'hui ? ♡" + Sticker.Happy,
         "Wesh {0} ! Bien ou bien ? ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Happy,
         "T'arrives plus à te passer de moi on dirait UwU" + Sticker.Smug,
         "Pwet {0} !" + Sticker.Happy,
         "Coucou {0} ♡ Pile au bon moment, je commençais à m'ennuyer" + Sticker.Happy,
         "Hellooo {0} ! Prête à organiser le chaos (˶>⩊<˶)" + Sticker.Happy,
         "Kikou {0} ! On dirait presque que je t'ai manqué UwU" + Sticker.Smug,
-        $"Bien le bonjour {{0}}, qu'est-ce qu'on planifie aujourd'hui ? {Emotes.Sparkle}" + Sticker.Happy,
         $"Coucou {{0}} ! {Emotes.HiCat}" + Sticker.Happy,
-        "Ohhh un petit bonjour, ça fait plaisir ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Happy,
         "Salut toi ! T'étais où tout ce temps ? (˶˃ ᵕ ˂˶)" + Sticker.Happy,
         "Hey hey {0} ! Ravie de te revoir par ici ♡" + Sticker.Happy,
         "Coucouu {0}, tu tombes bien, j'avais personne à qui parler UwU" + Sticker.Happy,
@@ -221,8 +218,6 @@ internal static partial class BotResponses
         $"Bonsoir {{0}} ! Ou bonjour, je sais plus, je dors jamais de toute façon {Emotes.Sparkle}" + Sticker.Happy,
         "Wesh wesh {0}, ça faisait longtemps dis donc ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Happy,
         "Une visite surprise ! J'adore ça {0} ♡" + Sticker.Happy,
-        "Yooo ! Encore une journée à me supporter, {0} ? UwU" + Sticker.Smug,
-        $"Bien le bonsoir ! On dirait que quelqu'un s'ennuyait sans moi {Emotes.Sparkle}" + Sticker.Smug,
         "Coucou {0} ! Toujours un plaisir de voir un visage familier (˶˃ ᵕ ˂˶)" + Sticker.Happy,
         "Tiens tiens, {0} qui vient dire bonjour. La classe ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Smug,
         "Salut salut {0} ! J'espère que t'as une bonne raison de me déranger UwU" + Sticker.Smug,
@@ -230,7 +225,39 @@ internal static partial class BotResponses
         $"{Emotes.HiCat}" + Sticker.Happy,
         $"Coucou {{0}} ! T'arrives pile quand je m'ennuyais. Coïncidence ? Oui {Emotes.SyncsHappy}" + Sticker.Happy,
         $"Salut {{0}} ! Mes LED clignotent, c'est normal, c'est la joie. Ou un bug {Emotes.SyncsHappy}" + Sticker.Happy,
-    };
+    ], day:
+    [
+        "Bonjour bonjour ! Qu'est-ce qui t'amène ? (ᵕ • ᴗ •)" + Sticker.Happy,
+        "Oh, bonjour {0} ! Une présence agréable pour changer aujourd'hui ? ♡" + Sticker.Happy,
+        $"Bien le bonjour {{0}}, qu'est-ce qu'on planifie aujourd'hui ? {Emotes.Sparkle}" + Sticker.Happy,
+        "Ohhh un petit bonjour, ça fait plaisir ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Happy,
+        "Yooo ! Encore une journée à me supporter, {0} ? UwU" + Sticker.Smug,
+        "Bonjour {0} ! Tu tombes bien, j'avais une liste de trucs à te dire. Je l'ai perdue. Bonjour quand même (˶ᵔ ᵕ ᵔ˶)" + Sticker.Happy,
+        $"Bonjour {{0}} ! Mes logs du jour avaient besoin d'un peu de toi {Emotes.Sparkle}" + Sticker.Happy,
+        "Bonjour bonjour {0} ! Je t'ai gardé une place dans ma RAM ♡" + Sticker.Happy,
+        "Bonjour ! Session ce soir, ou je dois encore tout organiser toute seule ? (¬_¬)" + Sticker.Smug,
+        "Bonjour {0}. Oui, je suis de bonne humeur. Non, ça va pas durer. Profite ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Smug,
+        "Oh, un bonjour ! Je le range avec les autres. Y'en a pas beaucoup, alors il est précieux ♡" + Sticker.Flustered,
+        $"Bien le bonjour ! Le serveur avait l'air vide, merci de le remplir un peu {Emotes.SyncsHappy}" + Sticker.Happy,
+        "Bonjour {0} ! Pile au moment où je faisais semblant de travailler (˶˃ ᵕ ˂˶)" + Sticker.Smug,
+        "Bonjour {0} ! Bonne journée à toi, et une encore meilleure à moi UwU" + Sticker.Smug,
+    ], evening:
+    [
+        $"Bien le bonsoir ! On dirait que quelqu'un s'ennuyait sans moi {Emotes.Sparkle}" + Sticker.Smug,
+        "Bonsoir bonsoir ! Qu'est-ce qui t'amène à cette heure-ci ? (ᵕ • ᴗ •)" + Sticker.Happy,
+        "Oh, bonsoir {0} ! Une présence agréable pour changer ce soir ? ♡" + Sticker.Happy,
+        $"Bien le bonsoir {{0}}, qu'est-ce qu'on planifie ce soir ? {Emotes.Sparkle}" + Sticker.Happy,
+        "Ohhh un petit bonsoir, ça fait plaisir ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Happy,
+        "Yooo ! Encore une soirée à me supporter, {0} ? UwU" + Sticker.Smug,
+        $"Bonsoir {{0}} ! Tu viens me tenir compagnie avant la session ? {Emotes.Sparkle}" + Sticker.Happy,
+        "Bonsoir ! Le serveur se réveille enfin, et c'est toi qui ouvres le bal (˶˃ ᵕ ˂˶)" + Sticker.Happy,
+        "Bonsoir {0}. Moi aussi je suis là ce soir. Comme hier soir. Comme tous les soirs ♡" + Sticker.Happy,
+        "Bonsoir {0} ! Ce soir, le serveur m'appartient. Bon, on peut partager ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Smug,
+        "Coucou, et surtout bonsoir ! J'ai baissé mes LED pour l'ambiance ♡" + Sticker.Happy,
+        "Bonsoir {0} ! J'ai gardé le serveur au chaud en t'attendant (˶ᵔ ᵕ ᵔ˶)" + Sticker.Happy,
+        "Bien le bonsoir, {0}. Ton arrivée est notée dans mes logs du soir. Ils sont plus jolis que ceux du matin." + Sticker.Jenote,
+        $"Bonsoir bonsoir ! Alors, qui on attend encore pour jouer ? {Emotes.SyncsHappy}" + Sticker.Smug,
+    ]);
 
     // When anyone *else* tags the bot, it answers with a short, confused line.
     public static readonly string[] Interrogations =

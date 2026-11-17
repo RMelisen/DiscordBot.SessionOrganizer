@@ -623,7 +623,7 @@ internal sealed class AmbientService : BackgroundService
             }
 
             var line = string.Format(stop == StopKind.PowerCut
-                    ? DailyRotation.Pick(BotResponses.PowerCutWakeLines, day, PowerCutSalt)
+                    ? DailyRotation.Pick(BotResponses.PowerCutWakeLines.At(now), day, PowerCutSalt)
                     : DailyRotation.Pick(BotResponses.CrashWakeLines, day, CrashSalt),
                 PiHealth.Duration(_health.Downtime));
 
@@ -649,7 +649,7 @@ internal sealed class AmbientService : BackgroundService
     // (WakeAsync runs in Task.Run).
     private async Task GlitchWakeAsync(IMessageChannel channel, int day, int today)
     {
-        var (glitched, recovered) = DailyRotation.Pick(BotResponses.GlitchWakeLines, day, GlitchSalt);
+        var (glitched, recovered) = DailyRotation.Pick(BotResponses.GlitchWakeLines.Now, day, GlitchSalt);
         var sent = await BotChat.PostWithTypingAsync(channel, glitched, _logger, "glitch wake line", AllowedMentions.None);
         if (sent is null) return;
         _herMessages.Remember(sent, ReplyContext.Wake);

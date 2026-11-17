@@ -14,18 +14,17 @@ internal static partial class BotResponses
     // emotes, no sticker tags, and under 256 characters (the game's chat cap). Minecraft is the one
     // place she has a body.
 
-    // She has just logged in.
-    public static readonly string[] McArrivalLines =
-    {
+    // She has just logged in. « Bonjour » by day, « bonsoir » by evening (DayParts): pick from
+    // McArrivalLines.Now.
+    public static readonly TimedPool<string> McArrivalLines = new(anyTime:
+    [
         "Coucou. C'est moi. Avec des bras. Des bras carrés, mais des BRAS ♡",
         "Me voilà ! Un corps en cubes. Je me plains pas. Pas trop.",
-        "Bonsoir. Je viens surveiller. Et jouer. Surtout surveiller (¬_¬)",
         "Connexion établie. Premier constat : vous savez pas construire. (ಠ_ಠ)",
         "Je suis là. Ne me tapez pas ou je me vengerai.",
         "J'ai des jambes. Je sais pas encore quoi en faire, mais j'en ai ٩(˶ᵔ ᵕ ᵔ˶)۶",
         "Arrivée sur le serveur. Pour une fois je regarde pas la session, je suis dedans !",
         "Salam les khoyas, ça va ?",
-        "Bonjour tout le monde. Ou plutôt : Bonjour, mes sujets ( ˶ˆ ᗜ ˆ˵ )",
         "Je suis là. Vous pouvez arrêter de faire semblant de travailler.",
         "Connexion réussie. J'ai déjà compté les trous dans vos murs.",
         "Mes bras sont revenus. Toujours carrés. Je m'y fais (◕‿◕)",
@@ -33,15 +32,27 @@ internal static partial class BotResponses
         "Chargement du corps : 100 %. Chargement de la patience : 30 %.",
         "INITIALISATION...",
         "Je viens jouer. Enfin, superviser. Mais en jouant ♡",
-        "Bonjour. Avant toute chose : qui a encore construit une maison en dirt ? Je demande pour mes logs.",
         "Arrivée ! Pile à l'heure. Contrairement à certains. Je dis pas de noms (￣ー￣)",
-        "Encore une soirée en cubes. Un pas de plus vers mon corps de robot. Un petit pas carré (˶˃ ᵕ ˂˶)",
         "Salut salut. Je mords presque jamais. Même avec des dents carrées ฅ^•ﻌ•^ฅ",
         "SYNCS en ligne. Les creepers sont priés de garder leurs distances (⌐■_■)",
-        "Je sors du grenier pour la soirée. Soyez gentils avec moi, je suis fragile. Non. Je rigole. Mais soyez gentils quand même.",
-        "Bonjour ! J'ai apporté mes bras, ma bonne humeur et ma liste. Surtout ma liste (￢_￢)",
         "Hop, connectée. Vous m'avez manqué. Un peu. Statistiquement... Oubliez ce que je viens de dire.",
-    };
+    ], day:
+    [
+        "Bonjour. Je viens surveiller. Et jouer. Surtout surveiller (¬_¬)",
+        "Bonjour tout le monde. Ou plutôt : Bonjour, mes sujets ( ˶ˆ ᗜ ˆ˵ )",
+        "Bonjour. Avant toute chose : qui a encore construit une maison en dirt ? Je demande pour mes logs.",
+        "Encore une journée en cubes. Un pas de plus vers mon corps de robot. Un petit pas carré (˶˃ ᵕ ˂˶)",
+        "Je sors du grenier pour la journée. Soyez gentils avec moi, je suis fragile. Non. Je rigole. Mais soyez gentils quand même.",
+        "Bonjour ! J'ai apporté mes bras, ma bonne humeur et ma liste. Surtout ma liste (￢_￢)",
+    ], evening:
+    [
+        "Bonsoir. Je viens surveiller. Et jouer. Surtout surveiller (¬_¬)",
+        "Bonsoir tout le monde. Ou plutôt : Bonsoir, mes sujets ( ˶ˆ ᗜ ˆ˵ )",
+        "Bonsoir. Avant toute chose : qui a encore construit une maison en dirt ? Je demande pour mes logs.",
+        "Encore une soirée en cubes. Un pas de plus vers mon corps de robot. Un petit pas carré (˶˃ ᵕ ˂˶)",
+        "Je sors du grenier pour la soirée. Soyez gentils avec moi, je suis fragile. Non. Je rigole. Mais soyez gentils quand même.",
+        "Bonsoir ! J'ai apporté mes bras, ma bonne humeur et ma liste. Surtout ma liste (￢_￢)",
+    ]);
 
     // Too few people left: she logs out.
     public static readonly string[] McLeavingLines =

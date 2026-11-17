@@ -529,7 +529,7 @@ public sealed partial class MinecraftBodyService
                     // Invited (/minecraft invite): she says who brought her, instead of her usual hello.
                     var invitedBy = McInvite.Inviter(_invitedBy, _invitedUntil, DateTimeOffset.UtcNow);
                     _invitedBy = null;
-                    var text = invitedBy is null ? _picker.Pick(BotResponses.McArrivalLines, LineChoices)
+                    var text = invitedBy is null ? _picker.Pick(BotResponses.McArrivalLines.Now, LineChoices)
                         : string.Format(_picker.Pick(BotResponses.McInvitedLines, LineChoices), Who(invitedBy));
                     SayLocked(body, new { op = "say", text }, text);
                 }
