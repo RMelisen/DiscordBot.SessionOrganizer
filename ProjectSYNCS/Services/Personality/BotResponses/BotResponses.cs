@@ -65,6 +65,12 @@ namespace ProjectSYNCS.Services;
 //     HelpLines · HelpCommands « comment ça marche ? », pointing at /help or the topic's command
 //     AboutHerLines ............ keyed by HerTopic: her age (in days), birthday, home, favourites, version
 //     ShipChatLines ............ « ship X et Y » in chat, around /ship's own answer
+//
+//   [Replies.RequestActions] Requests she acts on (ChatterService.Requests)
+//     RequestActionLines ....... keyed by RequestTopic (Session, Tonight, Poll): her offer, {2} what she read
+//     OwnerRequestActionLines .. his twin, any topic
+//     RequestNotYoursLines ..... someone else pressing the asker's button (private, untagged)
+//     TeamsNoVoiceLines ........ « fais des équipes » from someone in no voice channel
 //     ShipBestMatchLines · ShipWorstMatchLines « c'est qui mon âme sœur ? »: the server-wide search
 //     SharingShrugLines ........ « j'ai mangé de la soupe » — « euh… ok ? », half the time
 //     DoYouLoveMeGrudgeLines · DoYouLoveMeTreasureLines « tu m'aimes ? »: more bad bots, or more good bots

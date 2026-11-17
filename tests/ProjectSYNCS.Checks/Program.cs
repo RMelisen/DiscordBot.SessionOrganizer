@@ -60,7 +60,7 @@ var taggedPools = new[]
     "WeekGreetingLines", "WeekGoodbyeLines", "OwnerWeekGreetingLines", "OwnerWeekGoodbyeLines", "ReturningGreetings",
     "OwnerReturningGreetings", "LateReplyLines", "OwnerLateReplyLines", "EditRewrittenLines", "EditDeletedLines",
     "EditTurnedMeanLines", "EditCoveredUpLines", "OwnerEditLines", "OwnerEditMeanLines", "MilestoneLines",
-    "MilestoneBotLines", "MilestoneSelfLines",
+    "MilestoneBotLines", "MilestoneSelfLines", "RequestActionLines", "OwnerRequestActionLines", "TeamsNoVoiceLines",
 };
 foreach (var f in taggedPools)
 foreach (var (name, lines) in Pools(f))
@@ -619,6 +619,13 @@ foreach (var (text, expected) in new[]
     ("Syncs, tu penses quoi de <@555> ?", true), ("syncs tu préfères <@555> ou <@666> ?", true),
     ("syncs, <@555> et <@666> ça match ?", true), ("<@555> tu penses quoi de syncs ?", false),
     ("<@555> syncs, tu penses quoi de la pizza ?", false),
+    // An order by name, no comma: « organise » and « lance » are an order when a request follows, a
+    // fact about her when it's a habit, a question or a generic object.
+    ("syncs organise un valo samedi 21h", true), ("syncs lance un sondage pizza ou sushi", true),
+    ("hey syncs organise un among us demain", true), ("syncs lance un tonight pour Minecraft", true),
+    ("syncs organise les sessions", false), ("syncs organise les sessions le samedi", false),
+    ("syncs lance un sondage chaque mercredi", false), ("syncs organise un truc samedi ?", false),
+    ("syncs lance encore un sondage", false), ("syncs organise tout ici", false),
 })
 {
     var got = (bool)addresses.Invoke(null, new object[] { text, 999UL })!;
@@ -5083,6 +5090,119 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     foreach (var field in new[] { "MilestoneLines", "MilestoneBotLines", "MilestoneSelfLines" })
         foreach (var l in (string[])Field(field))
             if (!l.Contains("{1}")) Fail($"{field}: doesn't say the number: {l}");
+}
+
+// 50. Requests made to her in chat (ChatRequest): the date found inside the sentence, the title as
+// written, vote options, team counts; and the cues that make them requests in the first place.
+{
+    var crNow = AppTime.AtWallClock(new DateTime(2026, 11, 17, 15, 0, 0)); // a Tuesday afternoon
+    DateTimeOffset Paris(int month, int day, int hour, int minute = 0) => AppTime.AtWallClock(new DateTime(2026, month, day, hour, minute, 0));
+
+    foreach (var (text, title, at) in new (string, string, DateTimeOffset?)[]
+    {
+        ("syncs organise un Valorant samedi 21h", "Valorant", Paris(11, 21, 21)),
+        ("tu peux créer une session de Among Us demain soir stp ?", "Among Us", Paris(11, 18, 21)),
+        ("on se fait un lol 5v5 vendredi à 20h30 ?", "lol 5v5", Paris(11, 20, 20, 30)),
+        ("organise une session pour samedi", "", Paris(11, 21, 21)),
+        ("organise une session", "", null),
+        ("organise un raid", "raid", null),
+        ("organise un jeu de société", "jeu de société", null),
+        ("lance une partie de Minecraft le 25/12 à 20:30", "Minecraft", Paris(12, 25, 20, 30)),
+        ("<@123> programme un Gartic Phone dimanche 18h", "Gartic Phone", Paris(11, 22, 18)),
+    })
+    {
+        var got = ChatRequest.ReadSession(text, crNow);
+        if (got.Title != title || got.At != at) Fail($"ReadSession(« {text} ») = (« {got.Title} », {got.At}), expected (« {title} », {at})");
+    }
+
+    foreach (var (text, game, at) in new (string, string, DateTimeOffset?)[]
+    {
+        ("lance un tonight pour Minecraft à 22h", "Minecraft", Paris(11, 17, 22)),
+        ("qui est chaud ce soir ?", "", Paris(11, 17, 21)),
+        ("qui est chaud pour du Valorant ce soir", "Valorant", Paris(11, 17, 21)),
+        ("lance un appel pour ce soir samedi", "", null),
+    })
+    {
+        var got = ChatRequest.ReadTonight(text, crNow);
+        if (got.Game != game || got.At != at) Fail($"ReadTonight(« {text} ») = (« {got.Game} », {got.At}), expected (« {game} », {at})");
+    }
+
+    foreach (var (text, what, due) in new (string, string, DateTimeOffset?)[]
+    {
+        ("rappelle-moi demain 9h de sortir les poubelles", "sortir les poubelles", Paris(11, 18, 9)),
+        ("rappelle-moi de sortir les poubelles demain 9h", "sortir les poubelles", Paris(11, 18, 9)),
+        ("tu peux me rappeler dans 2h d'appeler maman ?", "appeler maman", crNow.AddHours(2)),
+        ("rappelle moi à 18h la lessive stp", "la lessive", Paris(11, 17, 18)),
+        ("fais-moi penser à appeler le garage vendredi", "appeler le garage", Paris(11, 20, 9)),
+        ("rappelle-moi de manger", "manger", null),
+    })
+    {
+        var got = ChatRequest.ReadReminder(text, crNow);
+        if (got.Text != what || got.Due != due) Fail($"ReadReminder(« {text} ») = (« {got.Text} », {got.Due}), expected (« {what} », {due})");
+    }
+
+    foreach (var (text, title, options) in new (string, string, string[])[]
+    {
+        ("fais un sondage : pizza, sushi ou kebab", "pizza ou sushi ou kebab ?", ["pizza", "sushi", "kebab"]),
+        ("lance un vote pizza ou sushi", "pizza ou sushi ?", ["pizza", "sushi"]),
+        ("lance un sondage pour ce soir : Valorant, LoL", "ce soir", ["Valorant", "LoL"]),
+        ("tu peux faire un sondage entre Among Us et Gartic stp ?", "Among Us ou Gartic ?", ["Among Us", "Gartic"]),
+        ("lance un sondage", "", []),
+        ("lance un vote pizza", "", []),
+    })
+    {
+        var got = ChatRequest.ReadVote(text);
+        if (got.Title != title || !got.Options.SequenceEqual(options))
+            Fail($"ReadVote(« {text} ») = (« {got.Title} », [{string.Join(", ", got.Options)}])");
+    }
+
+    foreach (var (text, count, balanced) in new (string, int, bool)[]
+    {
+        ("fais 3 équipes équilibrées", 3, true), ("fais des équipes", 2, false), ("fais les teams en quatre", 4, false),
+        ("tu peux faire deux équipes équitables ?", 2, true), ("fais 12 équipes", 2, false),
+    })
+    {
+        var got = ChatRequest.ReadTeams(text);
+        if (got.Count != count || got.Balanced != balanced) Fail($"ReadTeams(« {text} ») = {got}");
+    }
+
+    foreach (var (text, expected) in new[]
+    {
+        ("organise un valo samedi 21h", "Request"), ("lance un among us demain", "Request"),
+        ("on se fait un valo samedi 21h ?", "Request"), ("tu peux organiser un lol vendredi ?", "Request"),
+        ("fais-moi penser à appeler maman", "Request"), ("ça vous dit un Gartic dimanche 18h ?", "Request"),
+        ("on fait une session samedi ?", "NextSession"), ("organise un jeu", "None"),
+        ("syncs organise un valo samedi 21h", "Request"), ("syncs lance un sondage pizza ou sushi", "Request"),
+    })
+    {
+        var got = readIntent.Invoke(null, new object[] { text })!.ToString();
+        if (got != expected) Fail($"ReadIntent(\"{text}\") = {got}, expected {expected}");
+    }
+    foreach (var (text, topic) in new[]
+    {
+        ("organise un valo ce soir", "Tonight"), ("organise un valo samedi 21h", "Session"),
+        ("fais-moi penser à appeler maman", "Reminder"), ("on se fait un valo samedi 21h ?", "Session"),
+        ("lance un among us demain", "Session"), ("fais gaffe demain", null), ("on se fait un valo ?", null),
+        ("tu peux organiser un truc ?", "Other"), ("syncs, organise un valo samedi 21h", "Session"),
+        ("syncs organise les sessions le samedi", null), ("syncs organise un valo samedi 21h", "Session"),
+        ("syncs lance un sondage pizza ou sushi", "Poll"),
+        ("syncs, fais 3 équipes", "Teams"), ("rappelle-moi demain 9h de manger syncs", "Reminder"),
+    })
+    {
+        var got = readTopic.Invoke(null, new object[] { text })?.ToString();
+        if (got != topic) Fail($"ReadRequestTopic(\"{text}\") = {got}, expected {topic}");
+    }
+
+    // Her offers say what she read ({2}), and never open on it: « une session » or « ce soir 21:00 »
+    // would start the sentence in lower case. Every topic she acts on with a button has its pool.
+    foreach (var (name, lines) in Pools("RequestActionLines").Concat(Pools("OwnerRequestActionLines")))
+        foreach (var l in lines)
+            if (!l.Contains("{2}") || l.StartsWith("{2}")) Fail($"{name}: {{2}} missing or first: {l}");
+    var actionTopics = ((IDictionary)Field("RequestActionLines")).Keys.Cast<object>().Select(k => k.ToString()).ToHashSet();
+    foreach (var t in new[] { "Session", "Tonight", "Poll" })
+        if (!actionTopics.Contains(t)) Fail($"RequestActionLines: no pool for {t}");
+    foreach (var l in (string[])Field("RequestNotYoursLines"))
+        if (Sticker.Strip(l) != l || l.Contains('{')) Fail($"RequestNotYoursLines: tagged or formatted: {l}");
 }
 
 // 34. Story files: StoryChecks.cs.

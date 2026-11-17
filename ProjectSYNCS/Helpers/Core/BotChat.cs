@@ -98,10 +98,13 @@ public static class BotChat
     /// nothing here is sent as message text. The caller splits its own line (the tag
     /// would otherwise show inside the embed) and passes the tag as <paramref name="sticker"/>.
     /// Returns the sent message, or null if the send failed, like its two siblings.
+    /// <paramref name="components"/> and <paramref name="replyTo"/> as in <see cref="PostWithTypingAsync"/>
+    /// (teams dealt from a chat request: the card's « Remélanger », under the message that asked).
     /// </summary>
     public static async Task<IUserMessage?> PostEmbedWithTypingAsync(
         IMessageChannel channel, Embed embed, string delayText, ILogger logger, string what,
-        StickerTag? sticker = null)
+        StickerTag? sticker = null, MessageComponent? components = null, MessageReference? replyTo = null,
+        AllowedMentions? allowedMentions = null)
     {
         IUserMessage sent;
         try
@@ -110,7 +113,8 @@ public static class BotChat
             {
                 await Task.Delay(TypingDelayFor(delayText));
             }
-            sent = await channel.SendMessageAsync(embed: embed);
+            sent = await channel.SendMessageAsync(embed: embed, components: components, messageReference: replyTo,
+                allowedMentions: allowedMentions);
         }
         catch (Exception ex)
         {

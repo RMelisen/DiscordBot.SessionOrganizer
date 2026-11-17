@@ -326,6 +326,8 @@ internal sealed partial class ChatterService
     private bool TryAnswerFromRecords(
         ChatIntent intent, SocketUserMessage message, ChatPath path, IntentPick plain, string name, string weekday)
     {
+        // A request she can act on is answered with the action (ChatterService.Requests).
+        if (intent == ChatIntent.Request) return TryActOnRequest(message, path, plain, name, weekday);
         if (intent is not (ChatIntent.DoYouLoveMe or ChatIntent.RememberMe or ChatIntent.NextSession or ChatIntent.MyStats))
             return false;
         if (intent is ChatIntent.DoYouLoveMe or ChatIntent.RememberMe && message.Author.Id is OwnerId or BotResponses.TataId)

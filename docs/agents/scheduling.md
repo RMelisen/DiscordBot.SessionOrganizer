@@ -117,7 +117,10 @@ The session picker is three steps, every one a Components V2 message:
    (`SessionTime.Overlaps` against `GetUpcomingOrRunningAsync`), so every redraw defers first.
    Places are picked, never typed: there's nothing to refuse.
 
-A poll's « Créer une session » lands on the same preview. **`SessionHabits`** (singleton, in
+A poll's « Créer une session » lands on the same preview, and so does « Préparer la session » under her
+answer to a chat request (`chatreq:session:*`, `ScheduleModule.FromChat`; see personality,
+*Requests she acts on*): her answer is public, so that click always opens a new private message and
+never lets a step edit hers. **`SessionHabits`** (singleton, in
 memory) holds each person's last published session per server: category, places, duration, voice
 channel and hour seed the next picker; what the command was given wins, and « Chaque semaine »
 is never remembered. The one-line `/schedule create` uses exactly what was typed (nothing would

@@ -171,17 +171,36 @@ internal static partial class MessageCues
     public static RequestTopic? ReadRequestTopic(string content)
     {
         if (string.IsNullOrWhiteSpace(content)) return null;
-        return ReadRequestTopic(TokenizeOrdered(_link.Replace(_customEmote.Replace(_mentionMarkup.Replace(content, " "), " "), " ")));
+        var text = _link.Replace(_customEmote.Replace(_mentionMarkup.Replace(content, " "), " "), " ");
+        // Her name as an address dropped, as ReadIntent does: « syncs, organise… » and « syncs organise
+        // un valo samedi » open on « organise ».
+        text = StripAddress(text);
+        return ReadRequestTopic(TokenizeOrdered(text), text);
     }
 
-    private static RequestTopic? ReadRequestTopic(List<string> tokens)
+    // Without a topic word, a session verb with a day or a time is still a session (« organise un
+    // valo samedi 21h »), and so is a proposal said to her with one (« on se fait un lol demain ? »).
+    // « fais gaffe demain » is neither: « fais » alone is no session verb. The date is read by the
+    // same readers as /schedule create's (ChatRequest.HasWhen), so what counts as one never drifts.
+    private static RequestTopic? ReadRequestTopic(List<string> tokens, string text)
     {
         var marker = FindPhrase(tokens, _requestMarkers, cancelAfter: true, cancelBefore: false, notAfter: _notRequestAfter);
         var imperative = tokens.Count > 0 && _requestImperatives.Contains(tokens[0]);
-        if (!marker && !imperative) return null;
-
         var topic = FindTopic(tokens);
-        return topic != RequestTopic.Other ? topic : marker ? RequestTopic.Other : null;
+        if (marker || imperative)
+        {
+            if (topic != RequestTopic.Other) return topic;
+            var sessionVerb = imperative ? _sessionVerbs.Contains(tokens[0]) : tokens.Any(_sessionVerbs.Contains);
+            if (sessionVerb && ChatRequest.HasWhen(text)) return RequestTopic.Session;
+            return marker ? RequestTopic.Other : null;
+        }
+        // Not for tonight: « on lance une game ce soir ? » is an invitation to the room, not an
+        // order (a Question). Not a « quoi » or an « ou » either: « on fait quoi samedi ? » asks, and
+        // « on se fait un valo ou un lol samedi ? » is a choice to make.
+        if (topic is not RequestTopic.Tonight && !tokens.Contains("quoi") && !tokens.Contains("ou")
+            && FindPhrase(tokens, _sessionProposals, cancelAfter: false, cancelBefore: false) && ChatRequest.HasWhen(text))
+            return topic != RequestTopic.Other ? topic : RequestTopic.Session;
+        return null;
     }
 
     /// <summary>

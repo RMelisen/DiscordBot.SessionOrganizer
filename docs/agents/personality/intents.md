@@ -266,7 +266,15 @@ text to read; it is answered as `LowEffort`, like an emote alone.
 - **`Request`**: a marker (« tu peux », « stp »…, not followed by a negator) or an imperative
   opening the message (« organise », « lance »…), then `MessageCues.ReadRequestTopic` names what for
   (`RequestTopic`: session, tonight, poll, reminder, teams, giveaway, quiz, moderation, other).
-  `RequestLines[topic]` points at the command; « ce soir » wins over « session » (`/tonight`'s job);
+  **Without a topic word**, a session verb (`_sessionVerbs`: « organise », « lance », « programme »…,
+  never « fais ») with a day or a time is a Session (« lance un valo samedi »), and so is a proposal said
+  to her (`_sessionProposals`: « on se fait », « ça vous dit »…) with one, except for tonight (« on lance
+  une game ce soir ? » is an invitation, a Question), with « quoi » (« on fait quoi samedi ? ») or with
+  « ou » (a choice). « Une date » is `ChatRequest.HasWhen`: the same readers as `/schedule create`.
+  « fais-moi penser à » is a Reminder. **Session, Tonight, Poll, Reminder and Teams are acted on**
+  (`personality/listening.md`, *Requests she acts on*); the others get
+  `RequestLines[topic]`, which points at the command, and so does an action that can't be done (no
+  readable reminder time, too late for tonight); « ce soir » wins over « session » (`/tonight`'s job);
   moderation is her mute-rights grievance. Papa gets `OwnerRequestLines` with the command as `{2}`
   (`RequestCommands`). An imperative without a topic is no request (« fais gaffe »). Markers that
   carry their own « pas » are listed whole (« tu veux pas… », « tu pourrais pas… »), since the
@@ -297,7 +305,10 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   lines) when something is said outside it: « il a écrit « je t'aime » à sa copine » declares nothing.
   Her name as an address at either end (`_leadingAddress` / `_trailingAddress`: « syncs, organise une
   session », « merci syncs »), so the rules on the first or last word see the message — not when the
-  name is the subject (« syncs a raison »), and « syncs » alone stays nothing (the talked-about line)
+  name is the subject (« syncs a raison »), except an order by name without a comma
+  (`IsNameLedOrder`: « syncs organise un valo samedi 21h », « syncs lance un sondage… », a request
+  after it, no « ? », no habit like « chaque » or « le samedi », no generic « les sessions »), which
+  `AddressesHer` too; and « syncs » alone stays nothing (the talked-about line)
   while « syncs ? » is `AreYouThere`. `Opinion` and `ShipAsk` trim trailing emoji, emotes and
   « syncs » (`Opinion.TrimTail`), their patterns being anchored to the end; an opinion subject is
   never a bare joiner (« <@1> et <@2> » minus its edge tags is not « et »), nor one opening on a

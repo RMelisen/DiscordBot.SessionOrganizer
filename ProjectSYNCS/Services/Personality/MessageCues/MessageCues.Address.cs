@@ -112,6 +112,8 @@ internal static partial class MessageCues
     public static bool AddressesHer(string content, ulong selfId)
     {
         if (string.IsNullOrWhiteSpace(content) || TagsSomeoneElse(content, selfId)) return false;
+        // « syncs organise un valo samedi 21h »: her third person in form, an order in fact.
+        if (IsNameLedOrder(content)) return true;
 
         var words = AddressWords(content);
         if (!words.Any(_selfNames.Contains)) words = GlueSpelledOutRuns(words);
@@ -234,4 +236,57 @@ internal static partial class MessageCues
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     private static readonly Regex _trailingAddress = new(@"[\s,]+syncs?(?![\w.])(?=[\s?!.…]*$)",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    // « syncs organise un valo samedi 21h », without a comma: « organise » and « lance » are both her
+    // third person (« syncs organise les sessions ») and an order to her. An order when what follows
+    // is a request (IsNameLedOrder); _leadingOrder is only the name in front of it.
+    private static readonly Regex _leadingOrder = new(
+        @"^\s*(?:(?:dis|hey|eh|oh|yo|allez|bon|alors|ok|ah|wesh)[\s,]+)?syncs?\s+(?=(?:organise|lance)(?!\w))",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    // What makes « syncs organise… » a fact about her rather than an order: a habit (« chaque samedi »,
+    // « toujours », « le samedi »), or a generic object (« les sessions »).
+    private static readonly HashSet<string> _habitWords = new()
+    {
+        "chaque", "tous", "toutes", "toujours", "souvent", "parfois", "jamais", "habitude", "deja", "encore",
+        "quand", "depuis", "elle",
+    };
+    private static readonly HashSet<string> _habitWeekdays = new()
+    {
+        "lundi", "lundis", "mardi", "mardis", "mercredi", "mercredis", "jeudi", "jeudis", "vendredi", "vendredis",
+        "samedi", "samedis", "dimanche", "dimanches", "soir", "soirs", "weekend", "weekends",
+    };
+    private static readonly HashSet<string> _genericObjects = new() { "les", "nos", "vos", "ses", "leurs" };
+
+    /// <summary>
+    /// Whether the message is an order given by her name without a comma: « syncs organise un valo
+    /// samedi 21h », « syncs lance un sondage pizza ou sushi ». Not a question (« syncs organise un
+    /// truc samedi ? » asks whether she does), not a habit (« syncs lance un sondage chaque mercredi »,
+    /// « le samedi »), not a generic object (« syncs organise les sessions »; teams excepted, « les
+    /// équipes » are this game's), and only when the rest is a request with a topic or a date.
+    /// </summary>
+    public static bool IsNameLedOrder(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content) || content.Contains('?')) return false;
+        var text = _link.Replace(_customEmote.Replace(_mentionMarkup.Replace(content, " "), " "), " ");
+        var m = _leadingOrder.Match(text);
+        if (!m.Success) return false;
+
+        var rest = text[m.Length..];
+        var t = TokenizeOrdered(rest);
+        if (t.Any(_habitWords.Contains)) return false;
+        for (var i = 0; i + 1 < t.Count; i++)
+            if (t[i] is "le" or "les" && _habitWeekdays.Contains(t[i + 1])) return false;
+        if (ReadRequestTopic(t, rest) is not { } topic || topic == RequestTopic.Other) return false;
+        return topic == RequestTopic.Teams || t.Count < 2 || !_genericObjects.Contains(t[1]);
+    }
+
+    // Her name dropped where it addresses her, at either end; and in front of an order given by name
+    // (IsNameLedOrder), so the order's verb opens what the cues read.
+    private static string StripAddress(string text)
+    {
+        text = _leadingAddress.Replace(text, " ");
+        if (IsNameLedOrder(text)) text = _leadingOrder.Replace(text, " ");
+        return _trailingAddress.Replace(text, "");
+    }
 }

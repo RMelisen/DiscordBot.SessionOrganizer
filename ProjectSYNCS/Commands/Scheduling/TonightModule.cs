@@ -14,7 +14,8 @@ namespace ProjectSYNCS.Commands;
 public partial class TonightModule : InteractionModuleBase<SocketInteractionContext>
 {
     public const int DefaultMinimum = 4;
-    private const string DefaultHour = "21:00";
+    // Also the hour of a call asked for in chat without one (ChatterService.Requests).
+    public const string DefaultHour = "21:00";
 
     // How many names a field lists before « … et N autre(s) » — the giveaway's cap, same reason.
     private const int MaxNamesShown = 20;
@@ -86,7 +87,7 @@ public partial class TonightModule : InteractionModuleBase<SocketInteractionCont
     }
 
     // Midnight Paris after the call, or an hour after the start for a late-night one.
-    private static DateTimeOffset ExpiryFor(DateTimeOffset startsAt)
+    public static DateTimeOffset ExpiryFor(DateTimeOffset startsAt)
     {
         var midnight = AppTime.AtWallClock(AppTime.ToZoned(DateTimeOffset.UtcNow).Date.AddDays(1));
         var afterStart = startsAt + TimeSpan.FromHours(1);

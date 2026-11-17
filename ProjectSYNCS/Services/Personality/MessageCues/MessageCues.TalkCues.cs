@@ -300,6 +300,22 @@ internal static partial class MessageCues
         "ouvre", "ajoute", "mets", "trouve", "choisis", "genere", "envoie", "donne", "annule", "decale", "reporte",
         "modifie", "previens", "melange",
     };
+    // The imperatives that set something up: with a day or a time and no topic word, a session
+    // (« lance un valo samedi »). Not « fais », « mets », « donne »: « fais gaffe demain » plans nothing.
+    private static readonly HashSet<string> _sessionVerbs = new()
+    {
+        "organise", "organiser", "lance", "lancer", "relance", "relancer", "cree", "creer", "prepare", "preparer",
+        "programme", "programmer", "planifie", "planifier",
+    };
+
+    // A proposal said to her, which with a day or a time is a session (« on se fait un valo samedi
+    // 21h ? »). Asking what is planned (« on fait une session samedi ? ») is NextSession, read first.
+    private static readonly string[] _sessionProposals =
+    {
+        "on se fait", "on fait", "on se refait", "on refait", "on organise", "on lance", "on se lance",
+        "et si on faisait", "et si on se faisait", "et si on organisait", "ca te dit", "ca vous dit", "ca vous dirait",
+    };
+
     private static readonly (RequestTopic Topic, string[] Words)[] _requestTopics =
     {
         // Tonight before Session: « organise une partie ce soir » is /tonight's job.
@@ -308,7 +324,7 @@ internal static partial class MessageCues
             "timeout", "warn", "punis", "punir", "exclus", "exclure" }),
         (RequestTopic.Poll, new[] { "sondage", "sondages", "vote", "voter", "votes", "poll", "strawpoll" }),
         (RequestTopic.Reminder, new[] { "rappel", "rappels", "rappelle", "rappelles", "rappeler", "remind", "remindme",
-            "previens", "prevenir", "reveiller" }),
+            "previens", "prevenir", "reveiller", "fais moi penser", "fait moi penser" }),
         (RequestTopic.Teams, new[] { "equipe", "equipes", "team", "teams", "groupes" }),
         (RequestTopic.Giveaway, new[] { "giveaway", "giveaways", "tirage", "concours", "loterie", "tombola" }),
         (RequestTopic.Quiz, new[] { "quiz", "interro", "questionnaire", "trivia", "culture generale", "culture g" }),

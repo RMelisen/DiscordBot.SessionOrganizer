@@ -3,6 +3,20 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.64.0 — 2026-11-17
+
+- Asking SYNCS to set something up now does it instead of pointing at the command. « syncs, organise un
+  Valorant samedi 21h » gets a « Préparer la session » button that opens the private preview with the
+  name and time filled in; a call for tonight gets « Lancer l'appel »; « fais un sondage : pizza, sushi
+  ou kebab » gets « Préparer le vote » with the options filled in. Only whoever asked can press them,
+  for an hour.
+- « rappelle-moi demain 9h de… » saves the reminder at once, with an « Annuler » button; « fais 3
+  équipes équilibrées » deals the teams in your voice channel.
+- She understands more ways of asking: « lance un among us demain », « on se fait un lol vendredi 21h ? »,
+  « fais-moi penser à… », and her name without a comma (« syncs organise un valo samedi 21h »), while
+  « syncs organise les sessions » is still just something said about her.
+- The vote wizard's « Tout reprendre » now keeps the options already typed.
+
 ## 7.63.0 — 2026-11-17
 
 - SYNCS counts every text channel's messages, history included, and celebrates the 1 000th,

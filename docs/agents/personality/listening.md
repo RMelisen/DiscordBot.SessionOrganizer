@@ -183,6 +183,39 @@ The fallback of both paths (a roast, or `Interrogations`), in a guild and never 
 - Sent with `AllowedMentions.None` (a Plynling name is hostile input). Nothing applies, or the read
   throws: the claim is released and the line it would have replaced goes out instead.
 
+### Requests she acts on — `ChatterService.Requests`, `ChatRequest`, `ChatOffers`
+
+A `Request` for a session, a `/tonight` call, a vote, a reminder or teams (`personality/intents.md`,
+*Request*) is answered with the thing, not a pointer to the command. It hooks into
+`TryAnswerFromRecords`, so all three paths (reply, mention, name) get it, off the gateway handler.
+
+- **`Helpers/Personality/ChatRequest` reads the details, pure** (checks section 50). The time is the
+  run of words `SessionTime.Parse` / `ReminderTime.Parse` accept that says the most (date words, a
+  number breaking ties, then the tightest); a run never ends on a filler (« à 18h la lessive » keeps
+  « la »), needs a letter, `:` or `/` (« 3 équipes » is no hour), and a lone chat word FrenchDate also
+  reads as a day (« jeu », « sam », « mer »…) isn't one. The title is what's left once the request's
+  own words are stripped from both ends, rebuilt from the original spans. Never a date parser of its
+  own: a misread is fixed in `FrenchDate`, with its check.
+- **What would show in public is offered, never done**: her line (`RequestActionLines[topic]`, Papa
+  `OwnerRequestActionLines`, `{2}` what she read) and one button, `chatreq:session:{id}`,
+  `chatreq:vote:{id}` or `chatreq:tonight:{id}`. The offer is in `ChatOffers` (singleton, in memory,
+  an hour, gone on restart: the click then says so and names the command). **Only the asker may
+  press** (`RequestNotYoursLines`, private).
+- **Her answer is public, so no flow may edit it.** A component's `DeferAsync` is an *update* of the
+  message it sits on, and a modal opened from it updates that message on submit. So the session click
+  answers with a new private message (`DeferLoadingAsync` then the preview, or the time step, or a
+  « Lui donner un nom » step whose modal opens from that private message), and the vote click with
+  the vote's own private wizard message (the review step straight away when she read a title and two
+  options). `/tonight`'s card is posted in the channel; her button then greys out (« Appel lancé »).
+- **What stays private is done at once**: a reminder is saved (`/remindme`'s range and its 15-pending
+  cap; « rappelle-moi demain 9h » with nothing to remind quotes the message's link) and her answer
+  carries « Annuler » (`chatreq:remundo:{id}:{asker}`); teams are dealt in the asker's voice channel
+  (`TeamsModule.DrawAsync`, same card and « Remélanger »), or `TeamsNoVoiceLines`.
+- **Anything she can't do falls back to the pointer line** (`RequestLines`): no time she can read for a
+  reminder, one out of range, too late for tonight, or a read that throws.
+- These answers don't go through her reply watch (an edit of the request would strike through a line
+  whose button still works) and count under `request:{topic}` in `/debug answers`.
+
 ### Answer stats — `/debug answers`
 
 What people say to her, so the owner can see which intents to add or widen. Owner only, so absent

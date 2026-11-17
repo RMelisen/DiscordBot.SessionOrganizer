@@ -20,6 +20,8 @@ namespace ProjectSYNCS.Commands;
 public class VoteModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly PollService _pollService;
+    private readonly ChatOffers _offers;
+    private readonly ResponsePicker _picker;
     private readonly ILogger<VoteModule> _logger;
 
     // Options being assembled before publishing, keyed by user (same approach as
@@ -33,9 +35,11 @@ public class VoteModule : InteractionModuleBase<SocketInteractionContext>
         public PollSettings Settings { get; init; } = PollSettings.Default;
     }
 
-    public VoteModule(PollService pollService, ILogger<VoteModule> logger)
+    public VoteModule(PollService pollService, ChatOffers offers, ResponsePicker picker, ILogger<VoteModule> logger)
     {
         _pollService = pollService;
+        _offers = offers;
+        _picker = picker;
         _logger = logger;
     }
 
@@ -96,20 +100,60 @@ public class VoteModule : InteractionModuleBase<SocketInteractionContext>
     public async Task OnBeginAsync()
     {
         _drafts.TryGet(Context.User.Id, out var draft);
-        await RespondWithModalAsync(StartModal(draft?.Title));
+        await RespondWithModalAsync(StartModal(draft?.Title, draft?.Options));
     }
 
-    // VoteStartModal built by hand, so a title given on the command is already filled in. Its ids,
-    // labels and caps must stay in step with the DTO (root CLAUDE.md, modals).
-    private static Modal StartModal(string? title) =>
-        new ModalBuilder()
+    // VoteStartModal built by hand, so a title given on the command (or options read from a chat
+    // request) are already filled in. Its ids, labels and caps must stay in step with the DTO (root
+    // CLAUDE.md, modals).
+    private static Modal StartModal(string? title, IReadOnlyList<string>? options = null)
+    {
+        var lines = options is { Count: > 0 } ? string.Join('\n', options) : null;
+        if (lines is { Length: > InputCaps.VoteOptions }) lines = lines[..InputCaps.VoteOptions];
+        return new ModalBuilder()
             .WithTitle("Nouveau vote")
             .WithCustomId("vote:start")
             .AddTextInput("Titre du vote", "title", placeholder: "ex. Quel jeu ce soir ?",
                 maxLength: InputCaps.Title, value: string.IsNullOrEmpty(title) ? null : title)
             .AddTextInput("Options, une par ligne (2 à 10)", "options", TextInputStyle.Paragraph,
-                placeholder: "Among Us\nGartic Phone\nLethal Company", maxLength: InputCaps.VoteOptions)
+                placeholder: "Among Us\nGartic Phone\nLethal Company", maxLength: InputCaps.VoteOptions, value: lines)
             .Build();
+    }
+
+    // « Préparer le vote », under her answer to a chat request (ChatterService, ChatOffers): the vote's
+    // wizard, as a new private message, with what she read from the message. Her answer is public, so
+    // the wizard never starts on it: the modal opens from the private message (« Définir le vote »).
+    // With a title and two options or more, it goes straight to the review step.
+    [ComponentInteraction("chatreq:vote:*", ignoreGroupNames: true)]
+    public async Task OnChatVoteAsync(string idText)
+    {
+        if (!int.TryParse(idText, out var id) || !_offers.TryGet(id, out var offer))
+        {
+            await RespondAsync(ChatOfferText.Expired("`/vote create`"), ephemeral: true);
+            return;
+        }
+        if (offer.AskerId != Context.User.Id)
+        {
+            await RespondAsync(_picker.Pick(BotResponses.RequestNotYoursLines), ephemeral: true);
+            return;
+        }
+
+        var draft = new VoteDraft { Title = offer.Title };
+        draft.Options.AddRange(offer.Options);
+        _drafts.Set(Context.User.Id, draft);
+        if (draft.Title.Length > 0 && draft.Options.Count >= 2)
+        {
+            await RespondAsync(BuildDraftSummary(draft), components: BuildReviewStep(draft), ephemeral: true,
+                allowedMentions: AllowedMentions.None);
+            return;
+        }
+        await RespondAsync(
+            "**Nouveau vote**\nClique sur **Définir le vote** : un titre, puis les options, une par ligne.",
+            components: new ComponentBuilder()
+                .WithButton("Définir le vote", "vote:begin", ButtonStyle.Primary, new Emoji("📝"))
+                .Build(),
+            ephemeral: true);
+    }
 
     // `/vote create options:…` without a title: the options wait in the draft for this one.
     [ModalInteraction("vote:titled", ignoreGroupNames: true)]

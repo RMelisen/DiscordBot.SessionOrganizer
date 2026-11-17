@@ -99,7 +99,12 @@ public partial class ScheduleModule : InteractionModuleBase<SocketInteractionCon
     {
         _drafts.Set(Context.User.Id, draft);
         await DeferAsync(ephemeral: true);
+        await DrawPreviewAsync(draft);
+    }
 
+    // After the defer: the sessions it overlaps read, the preview drawn.
+    private async Task DrawPreviewAsync(ScheduleDraft draft)
+    {
         var at = draft.At!.Value;
         var length = TimeSpan.FromMinutes(draft.DurationMinutes);
         var clashes = (await _eventService.GetUpcomingOrRunningAsync(Context.Guild.Id))

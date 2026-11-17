@@ -27,7 +27,7 @@ internal static partial class MessageCues
         var nameAlone = TokenizeOrdered(unaddressed) is { Count: > 0 } named && named.All(w => _selfNames.Contains(Squash(w)));
         // Her name as an address (« syncs, organise une session », « merci syncs ») is dropped, so the
         // rules that look at the first or last word see the message itself.
-        var stripped = _trailingAddress.Replace(_leadingAddress.Replace(unaddressed, " "), "");
+        var stripped = StripAddress(unaddressed);
         // Her name alone, unasked, with nothing else (not even « 😂 »), is her name said: the
         // talked-about line, not a reply to read.
         if (nameAlone && !unaddressed.Contains('?') && stripped.Trim(' ', ',', '.', '!', ':').Length == 0)
@@ -102,7 +102,7 @@ internal static partial class MessageCues
             return ChatIntent.FunFact;
         // A request naming a topic is a request (« tu peux m'aider à lancer un sondage ? »); without
         // one, asking for help is Help (« tu peux m'aider ? »), and anything else asked is a request.
-        var topic = ReadRequestTopic(t);
+        var topic = ReadRequestTopic(t, stripped);
         if (topic is not null and not RequestTopic.Other) return ChatIntent.Request;
         if (FindPhrase(t, _helpPhrases, cancelAfter: true, cancelBefore: true)
             || (t.Count <= MaxHelpClosingTokens && _helpClosingPhrases.Any(p => EndsWith(t, p)))

@@ -28,6 +28,8 @@ public partial class ScheduleModule : InteractionModuleBase<SocketInteractionCon
     private readonly SchedulingLocks _locks;
     private readonly ManageSnapshots _snapshots;
     private readonly SessionHabits _habits;
+    private readonly ChatOffers _offers;
+    private readonly ResponsePicker _picker;
     private readonly ILogger<ScheduleModule> _logger;
 
     // The session being set up, keyed by user: what /schedule create was given, the person's last
@@ -56,8 +58,10 @@ public partial class ScheduleModule : InteractionModuleBase<SocketInteractionCon
 
     public ScheduleModule(EventService eventService, PollService polls, CardRepost repost, CardUpdater cards,
         SessionWaitlist waitlist, SchedulingLocks locks, ManageSnapshots snapshots, SessionHabits habits,
-        ILogger<ScheduleModule> logger)
+        ChatOffers offers, ResponsePicker picker, ILogger<ScheduleModule> logger)
     {
+        _offers = offers;
+        _picker = picker;
         _eventService = eventService;
         _polls = polls;
         _repost = repost;

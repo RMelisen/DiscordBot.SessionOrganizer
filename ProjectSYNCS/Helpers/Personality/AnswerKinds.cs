@@ -55,6 +55,9 @@ public static class AnswerKinds
     public const string PapaLateReply = "papa:late-reply";
 
     internal static string Intent(ChatIntent intent) => "intent:" + intent;
+    // A request she acted on (a session or vote offered, a reminder saved, teams dealt), apart from
+    // the requests she only pointed at a command for (intent:Request).
+    internal static string Request(RequestTopic topic) => "request:" + topic;
     public static string Context(ReplyContext context) => "context:" + context;
     public static string Fact(ChatFact fact) => "fact:" + fact;
     internal static string Card(CardReplyIntent intent) => "card:" + intent;

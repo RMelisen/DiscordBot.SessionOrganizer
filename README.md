@@ -767,7 +767,15 @@ The bot is more than a scheduler: it answers when spoken to and reacts to the ro
   then « t'es en quelle version ? » without her name, and she answers; right after she answers
   you, she still hears what you ask her next for a minute.
   Ask how something works and she points you to `/help`
-  or the right command; ask her to organise something and she points you to the command that does it. A reply to one of her own posts (a welcome, the late call, the weekend poll, a
+  or the right command. Ask her to set something up and she reads what you asked for and does it,
+  or gets it ready for you to confirm:
+  « syncs, organise un Valorant samedi 21h » (or « on se fait un lol demain 21h ? ») gets a « Préparer la
+  session » button that opens the private preview, name and time filled in; « qui est chaud ce soir pour
+  du Valo ? » a « Lancer l'appel » button for `/tonight`; « fais un sondage : pizza, sushi ou kebab » a
+  « Préparer le vote » button with the options filled in. Only whoever asked can press them, for an hour.
+  « rappelle-moi demain 9h de sortir les poubelles » is saved at once, with an « Annuler » button, and
+  « fais 3 équipes équilibrées » deals the teams in your voice channel. Giveaways, the quiz and
+  moderation still get pointed at their command. A reply to one of her own posts (a welcome, the late call, the weekend poll, a
   level-up, a poll or session card, a command result…) is answered about that post.
 - **Her records** — now and then, instead of the usual roast, she quotes what she actually
   knows about you: sessions you said yes to and missed, time spent in voice with her, your

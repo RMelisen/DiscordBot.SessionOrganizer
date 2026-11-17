@@ -176,6 +176,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<CardReplyService>();
         // Every member-badge write goes through it, fire and forget; its claim set is in memory.
         services.AddSingleton<BadgeAwarder>();
+        // What she offered to set up from a chat request, waiting for its asker's click: in memory.
+        services.AddSingleton<ChatOffers>();
         services.AddSingleton<ChatterService>();
         services.AddSingleton<EmoteTracker>();
         services.AddSingleton<ReactionService>();

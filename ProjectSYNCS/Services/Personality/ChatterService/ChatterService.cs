@@ -26,6 +26,7 @@ internal sealed partial class ChatterService
     private readonly IServiceProvider _services;
     private readonly ActivityCounter _activity;
     private readonly ReplyWatchService _watch;
+    private readonly ChatOffers _offers;
     private readonly ILogger<ChatterService> _logger;
 
     // Secret badges earned through her chat; fire-and-forget, never awaited on the gateway path.
@@ -105,8 +106,10 @@ internal sealed partial class ChatterService
         BadgeAwarder badges,
         ActivityCounter activity,
         ReplyWatchService watch,
+        ChatOffers offers,
         ILogger<ChatterService> logger)
     {
+        _offers = offers;
         _activity = activity;
         _watch = watch;
         _badges = badges;
