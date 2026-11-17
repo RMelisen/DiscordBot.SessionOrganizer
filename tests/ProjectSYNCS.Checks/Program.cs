@@ -58,7 +58,8 @@ var taggedPools = new[]
     "CardStatusLines", "OpenAnswerLines", "CardDoneAnonymousLines", "PollClosedSlotLines", "VoteClosedResultLines",
     "PollClosedEmptyLines", "GoodbyeLines", "OwnerGoodbyeLines", "DaytimeGoodnightLines", "OwnerDaytimeGoodnightLines",
     "WeekGreetingLines", "WeekGoodbyeLines", "OwnerWeekGreetingLines", "OwnerWeekGoodbyeLines", "ReturningGreetings",
-    "OwnerReturningGreetings", "LateReplyLines", "OwnerLateReplyLines",
+    "OwnerReturningGreetings", "LateReplyLines", "OwnerLateReplyLines", "EditRewrittenLines", "EditDeletedLines",
+    "EditTurnedMeanLines", "EditCoveredUpLines", "OwnerEditLines", "OwnerEditMeanLines",
 };
 foreach (var f in taggedPools)
 foreach (var (name, lines) in Pools(f))
@@ -4978,6 +4979,42 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         foreach (var l in ((string[])Field(field)).Select(l => l.ToLowerInvariant()))
             if (l.Contains("enfin") || l.Contains("t'étais où") || l.Contains("en retard"))
                 Fail($"{field}: blames their timing: {l}");
+}
+
+// 48. Edits of a message she answered (EditReading): a typo, a case change or a link preview is
+// nothing; a rewrite, a flipped yes or no, a negation added, is real; the mean reading turning
+// either way wins. Her rewritten reply strikes her old words line by line and fits one message.
+{
+    foreach (var (before, after, expected) in new[]
+    {
+        ("slaut", "salut", false), ("merci", "merci !", false), ("Merci beaucoup", "merci   beaucoup", false),
+        ("ça va ?", "ça va ? 😄", false), ("je suis la", "je suis là", false), ("oui", "non", true),
+        ("je viens ce soir", "je viens pas ce soir", true), ("ouais grave", "nan grave", true),
+        ("ça va ?", "ok", true), ("t'as vu le match hier ?", "qui vient ce soir en session ?", true),
+        ("Tu sais ce qu'on fait ce soir pour la session, on joue à quoi finalement ?",
+            "Tu sais ce qu'on fait ce soir pour la session, on joue à quoi finalement ??", false),
+        (new string('a', 3000), new string('b', 3000), true), (new string('a', 3000), new string('a', 2990), false),
+    })
+        if (EditReading.IsRealChange(before, after) != expected)
+            Fail($"edits: « {before[..Math.Min(40, before.Length)]} » → « {after[..Math.Min(40, after.Length)]} » real change is {!expected}");
+
+    if (EditReading.Read("merci", "merci", wasMean: false, isMean: true) != EditKind.TurnedMean
+        || EditReading.Read("t'es nulle", "t'es cool", wasMean: true, isMean: false) != EditKind.CoveredUp
+        || EditReading.Read("slaut", "salut", false, false) != EditKind.None
+        || EditReading.Read("oui", "non", true, true) != EditKind.Rewritten)
+        Fail("edits: Read misjudges the mean reading");
+
+    if (EditReading.Struck("Coucou ♡", "Hmm.") != "~~Coucou ♡~~\nHmm.") Fail("edits: Struck, one line");
+    if (EditReading.Struck("Un\n\nDeux ~~barré~~", "Hmm.") != "~~Un~~\n~~Deux barré~~\nHmm.") Fail("edits: Struck, lines");
+    if (EditReading.Struck(new string('x', 1995), "Hmm.") != "Hmm." || EditReading.Struck(new string('x', 1990), "Hmm.").Length != 1999)
+        Fail("edits: Struck at 2000");
+    if (EditReading.Struck("", "Hmm.") != "Hmm.") Fail("edits: Struck, nothing of hers");
+
+    // Her new lines only take a name, and every pool reads as an edit, not a fresh answer.
+    foreach (var field in new[] { "EditRewrittenLines", "EditDeletedLines", "EditTurnedMeanLines", "EditCoveredUpLines",
+                 "OwnerEditLines", "OwnerEditMeanLines" })
+        foreach (var l in (string[])Field(field))
+            if (l.Contains("{1}") || l.Contains("{2}")) Fail($"{field}: only {{0}} is given: {l}");
 }
 
 // 34. Story files: StoryChecks.cs.

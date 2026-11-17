@@ -34,6 +34,10 @@ namespace ProjectSYNCS.Services;
 //     LateReplyLines ........... a reply to one of her messages hours or days old (Papa: OwnerLateReplyLines)
 //     Interrogations ........... @mentioned with nothing else to go on
 //
+//   [Replies.Edits] A message she answered, edited or deleted (ReplyWatchService)
+//     EditRewrittenLines · EditDeletedLines · EditTurnedMeanLines · EditCoveredUpLines
+//     OwnerEditLines · OwnerEditMeanLines .... Papa's
+//
 //   [Replies.Mentions] Answering a human: her name, said or mistaken
 //     TalkedAboutLines ......... her name said without addressing her
 //     TalkedAboutOwnerLines .... the same, from Papa

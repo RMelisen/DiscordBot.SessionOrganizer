@@ -137,6 +137,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<StickerService>();
         // What her own recent posts were, so a reply to one is answered about it: in memory.
         services.AddSingleton<HerMessages>();
+        // Her replies, watched for an hour in case what they answer is edited or deleted: in memory.
+        services.AddSingleton<ReplyWatchService>();
         // Who is going back and forth with her: shared by ChatterService and RobotHeartService.
         services.AddSingleton<ConversationStreak>();
         // Where she was told « chut », and until when: shared by every service that chats in a channel.

@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.62.0 — 2026-11-17
+
+- Edit or delete a message SYNCS just answered and she notices: she strikes her reply through and
+  gets suspicious, sulks if it was made mean, or says she already read the first version. Typo
+  fixes don't count.
+
 ## 7.61.0 — 2026-11-17
 
 - Replying to one of SYNCS's messages hours or days later: now and then she notices, and remembers

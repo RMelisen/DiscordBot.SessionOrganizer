@@ -25,6 +25,7 @@ internal sealed partial class ChatterService
     private readonly PiHealthService _health;
     private readonly IServiceProvider _services;
     private readonly ActivityCounter _activity;
+    private readonly ReplyWatchService _watch;
     private readonly ILogger<ChatterService> _logger;
 
     // Secret badges earned through her chat; fire-and-forget, never awaited on the gateway path.
@@ -103,9 +104,11 @@ internal sealed partial class ChatterService
         CardReplyService cards,
         BadgeAwarder badges,
         ActivityCounter activity,
+        ReplyWatchService watch,
         ILogger<ChatterService> logger)
     {
         _activity = activity;
+        _watch = watch;
         _badges = badges;
         _cards = cards;
         _streaks = streaks;
@@ -655,13 +658,18 @@ internal sealed partial class ChatterService
     // kind of constant that drifts apart. `what` only labels the log line. Through
     // GlitchService, so a very rare line comes out corrupted and is quietly fixed.
 
-    // Every answer keeps her listening to that person for a moment (ChatListening).
+    // Every answer keeps her listening to that person for a moment (ChatListening), and is
+    // watched for an hour in case the message it answers is edited or deleted (ReplyWatchService).
     // Null when the send failed (BotChat), which the secret-badge sites check.
-    private Task<IUserMessage?> ReplyWithTypingAsync(
+    private async Task<IUserMessage?> ReplyWithTypingAsync(
         SocketUserMessage replyTo, string line, string what, AllowedMentions? allowedMentions = null)
     {
         if (!replyTo.Author.IsBot) _listening.Answered(replyTo.Channel.Id, replyTo.Author.Id, DateTimeOffset.UtcNow);
-        return _glitch.ReplyWithTypingAsync(replyTo, line, _logger, what, allowedMentions);
+        var sent = await _glitch.ReplyWithTypingAsync(replyTo, line, _logger, what, allowedMentions);
+        if (sent is not null)
+            _watch.Watch(replyTo, sent, Sticker.Strip(line), ResolveName(replyTo.Author), IsMean(replyTo.Content ?? string.Empty),
+                replyTo.Author.Id == OwnerId);
+        return sent;
     }
 
     // One secret badge for the author of a message, in the guild it was said in (0 in a DM: no award).

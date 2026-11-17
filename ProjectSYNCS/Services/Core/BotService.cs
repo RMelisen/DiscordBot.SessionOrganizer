@@ -38,6 +38,7 @@ internal sealed class BotService : IHostedService
     private readonly MemberFlowTracker _memberFlow;
     private readonly ActivityCounter _activity;
     private readonly SilenceService _silence;
+    private readonly ReplyWatchService _replyWatch;
 
     public BotService(
         DiscordSocketClient client,
@@ -62,9 +63,11 @@ internal sealed class BotService : IHostedService
         PlynlingShortcutService shortcuts,
         MemberFlowTracker memberFlow,
         ActivityCounter activity,
-        SilenceService silence)
+        SilenceService silence,
+        ReplyWatchService replyWatch)
     {
         _silence = silence;
+        _replyWatch = replyWatch;
         _activity = activity;
         _shortcuts = shortcuts;
         _memberFlow = memberFlow;
@@ -104,6 +107,9 @@ internal sealed class BotService : IHostedService
         _client.MessageReceived += HandleMessageAsync;
         _client.ReactionAdded += HandleReactionAddedAsync;
         _client.ReactionRemoved += HandleReactionRemovedAsync;
+        // A message she answered, edited for real or deleted: she rewrites her reply (ReplyWatchService).
+        _client.MessageUpdated += _replyWatch.HandleUpdatedAsync;
+        _client.MessageDeleted += _replyWatch.HandleDeletedAsync;
         // Only a new bot is handled there; a person is welcomed through Discord's join line,
         // which arrives as a message (see WelcomeService).
         _client.UserJoined += _welcome.HandleUserJoinedAsync;

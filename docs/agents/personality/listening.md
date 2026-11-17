@@ -56,6 +56,31 @@ semaine dernière », « il y a 2 semaines », « il y a des mois »). Counted a
 - Every `{2}` reads with all the phrasings (« J'ai dit ça {2} », « C'était {2} », « commencée {2} »):
   never « de {2} » (« de hier »).
 
+### Edited or deleted after she answered — `ReplyWatchService`
+
+Every reply `ChatterService` sends (its `ReplyWithTypingAsync`) is watched for an hour
+(`ReplyWatchService.Window`, in memory, 300 at most), with the text she answered and whether she read
+it as mean (`ChatterService.IsMean`). `BotService` feeds it `MessageUpdated` and `MessageDeleted`.
+She then rewrites her reply after 1.5–3.5 s: her old words struck through, line by line, and under
+them one line (`EditReading.Struck`; just the new line past 2000 characters), mentions off.
+
+| What happened (`EditReading.Read`) | Everyone | Papa |
+|---|---|---|
+| Deleted | `EditDeletedLines`: she read it, now she answers nothing | `OwnerEditLines` |
+| Rewritten | `EditRewrittenLines`: suspicious | `OwnerEditLines` |
+| Turned mean | `EditTurnedMeanLines`: pout or anger | `OwnerEditMeanLines`: hurt |
+| Was mean, softened | `EditCoveredUpLines`: too late, she read it | `OwnerEditLines` |
+
+- **Only a real change** (`EditReading.IsRealChange`, checks section 48): case, accents and spacing
+  aside, a third of the text moved and at least 3 characters, or a negation or a yes/no appearing or
+  going (« je viens » → « je viens pas »). A typo or a link preview loading (Discord reports it as an
+  edit, same text) keeps the watch for the next edit. The mean reading turning either way always counts.
+- **One rewrite per reply**: the watch is taken under the lock before anything is sent.
+- Her old words are the line she meant (sticker marker stripped), not what a glitch made of it. The
+  glitch's own restore could overwrite a rewrite landing in its few seconds: accepted, both are rare.
+- Not during a breakdown in that channel. Only replies through `ChatterService`: the other services'
+  answers (verdicts, cards, the 3 a.m. scolding) are not watched.
+
 ### Under her cards — `CardReplyService`
 
 A reply under a poll, a vote, a session, `/tonight` or a giveaway card is usually not said to her:

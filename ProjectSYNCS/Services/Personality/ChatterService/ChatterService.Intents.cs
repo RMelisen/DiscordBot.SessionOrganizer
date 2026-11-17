@@ -200,6 +200,10 @@ internal sealed partial class ChatterService
         return intent != ChatIntent.Disbelief && !(intent == ChatIntent.Down && !MessageCues.SpeaksToSomeone(content));
     }
 
+    // The same reading from the text alone, for ReplyWatchService: an edit is judged as she judged
+    // the message she answered.
+    internal static bool IsMean(string content) => IsMean(MessageCues.Analyze(content), content);
+
     // « je devrais y aller ? »: /yesno's coin flip and its pools, so chat and the command agree.
     // « Valo ou LoL ? », « je joue ou je dors ? »: the same flip between the two sides, quoted as
     // written (ChoiceLines, {2} chosen, {3} not).
