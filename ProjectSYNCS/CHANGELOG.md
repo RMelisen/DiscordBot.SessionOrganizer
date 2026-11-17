@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.59.5 — 2026-11-17
+
+- A Plynling visit invitation now stays open for two hours instead of one.
+
 ## 7.59.4 — 2026-11-17
 
 - SYNCS now says « bonjour » by day and « bonsoir » in the evening (Paris time) when she greets

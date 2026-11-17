@@ -478,7 +478,7 @@ looks after her.
   two) or plus ou moins (a number from 1 to 100 in seven guesses, with every earlier guess listed). Once an hour; it always
   cheers it up (+15 % happiness), and a win adds +10 % and a few cailloux.
 - **Visits:** `/plynling visit user:` sends your Plynling knocking at someone's door. If they
-  press *Accueillir* within the hour, the knock closes and the visit is told below it, as a new
+  press *Accueillir* within two hours, the knock closes and the visit is told below it, as a new
   message, in six or seven steps you page through with ◀ ▶: arriving somewhere (the park, the
   pond, the bakery, the host's home, or at night the rooftop under the stars…); one of them
   bringing up a passion, and a real little conversation about it — both of them talking on each

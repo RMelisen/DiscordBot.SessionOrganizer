@@ -166,7 +166,7 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
     }
 
     // An invitation, not a visit: it only happens if the other owner presses « Accueillir »
-    // (PlynlingComponentHandler), within the hour. This message is the one line that pings —
+    // (PlynlingComponentHandler), within two hours. This message is the one line that pings —
     // the invited owner only, since it is addressed to them.
     [SlashCommand("visit", "Emmener ton Plynling rendre visite à celui de quelqu'un")]
     public async Task VisitAsync([Summary("user", "Chez qui aller")] IUser user)

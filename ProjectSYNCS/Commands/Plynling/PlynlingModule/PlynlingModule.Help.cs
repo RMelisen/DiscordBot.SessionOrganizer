@@ -90,7 +90,7 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
             .AddField("Jouer & rendre visite",
                 "**`/plynling play`** — Un mini-jeu au hasard avec ton Plynling : cache-cache, pierre-papier-ciseaux " +
                 "ou plus ou moins. Une fois par heure : +15 % de bonheur, +25 % et quelques cailloux si tu gagnes.\n" +
-                "**`/plynling visit user:`** — Ton Plynling toque chez quelqu'un. S'il l'accueille dans l'heure, une petite " +
+                "**`/plynling visit user:`** — Ton Plynling toque chez quelqu'un. S'il l'accueille dans les 2 h, une petite " +
                 "histoire se joue, selon leur relation, et les deux gagnent du bonheur. Une visite par jour entre deux personnes.\n" +
                 "À force de se voir, ils deviennent **amis**, **meilleurs amis**… ou **rivaux** et **ennemis**. " +
                 "Un garçon et une fille très proches peuvent tomber **amoureux**. Plus ils s'aiment, plus leurs visites " +

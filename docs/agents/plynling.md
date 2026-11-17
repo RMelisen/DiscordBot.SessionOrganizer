@@ -227,7 +227,7 @@ claimed at **start**, so abandoning never rerolls. A restart ends games in progr
 
 **An invitation, with a knock meant to ping** — `AllowedMentions` with the invited owner's id only.
 « Accueillir » carries the visitor's Plynling, the host and the expiry in its custom-id (nothing
-secret); only the host may press it, within the hour. **Once a day per pair, either direction**, in
+secret); only the host may press it, within two hours (`VisitInviteLife`). **Once a day per pair, either direction**, in
 two halves: **stored** as `PlynlingRelation.LastVisitDay` (set in the visit's own save, re-checked
 there as the backstop when two visits race), because a visit finds items and moves the bond and a
 restart must not reopen the day; and **in memory** in `PlynlingCooldowns`, which turns a double click

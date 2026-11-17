@@ -183,7 +183,7 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         });
     }
 
-    // ---- /plynling visit: « Accueillir », pressed by the invited owner within the hour.
+    // ---- /plynling visit: « Accueillir », pressed by the invited owner within two hours.
     [ComponentInteraction("plyn:visit:*:*:*", ignoreGroupNames: true)]
     public async Task OnVisitAcceptedAsync(string visitorStr, string hostStr, string expiresStr)
     {
