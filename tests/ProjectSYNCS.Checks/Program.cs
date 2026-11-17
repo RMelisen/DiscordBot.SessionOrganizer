@@ -82,8 +82,9 @@ void Covers(string field, Type enumType, params string[] except)
     foreach (var v in Enum.GetValues(enumType))
         if (!except.Contains(v.ToString()) && !d.Contains(v)) Fail($"{field} misses {v}");
 }
+// Goodbye follows the clock (GoodbyeLines, through ClockIntentLines; section 45).
 Covers("IntentLines", intentType, "None", "Opinion", "Request", "Ship", "Help", "AboutHer", "ShouldI", "FunFact", "Blame",
-    "RateMe");
+    "RateMe", "Goodbye");
 Covers("MyStatsLines", typeof(MyStatsTopic));
 Covers("HelpCommands", asm.GetType("ProjectSYNCS.Services.RequestTopic")!);
 Covers("AboutHerLines", asm.GetType("ProjectSYNCS.Services.HerTopic")!);
@@ -4443,6 +4444,31 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     var tpNoon = tp.At(AppTime.AtWallClock(new DateTime(2026, 6, 1, 12, 0, 0)));
     var tpNight = tp.At(AppTime.AtWallClock(new DateTime(2026, 6, 1, 23, 0, 0)));
     if (!tpNoon.SequenceEqual(["a", "d"]) || !tpNight.SequenceEqual(["a", "e"])) Fail("TimedPool: wrong half");
+
+    // Broad daylight (a « bonne nuit » is a nap): 8:00 to the evening, Paris time.
+    bool DaylightAt(int h, int mi) => DayParts.IsDaylight(AppTime.AtWallClock(new DateTime(2026, 7, 1, h, mi, 0)));
+    if (DaylightAt(7, 59) || !DaylightAt(8, 0) || !DaylightAt(17, 59) || DaylightAt(18, 0) || DaylightAt(3, 0))
+        Fail("dayparts: daylight window");
+
+    // The clock intents: a goodbye by the hour (his twin for Papa), a goodnight teased only by day.
+    var clock = br.GetMethod("ClockIntentLines")!;
+    string[]? Clocked(string intent, bool owner, int h) => (string[]?)clock.Invoke(null,
+        [Enum.Parse(intentType, intent), owner, AppTime.AtWallClock(new DateTime(2026, 7, 1, h, 0, 0))]);
+    var noonBye = Clocked("Goodbye", false, 12)!;
+    var nightBye = Clocked("Goodbye", false, 22)!;
+    if (!noonBye.Any(l => l.Contains("journée")) || noonBye.Any(l => l.Contains("soirée")))
+        Fail("clock intents: a noon goodbye without its day lines");
+    if (!nightBye.Any(l => l.Contains("soirée")) || nightBye.Any(l => l.Contains("journée")))
+        Fail("clock intents: an evening goodbye without its evening lines");
+    var ownerBye = (TimedPool<string>)Field("OwnerGoodbyeLines");
+    if (!Clocked("Goodbye", true, 12)!.SequenceEqual(ownerBye.At(AppTime.AtWallClock(new DateTime(2026, 7, 1, 12, 0, 0)))))
+        Fail("clock intents: Papa's goodbye is not his twin");
+    if (Clocked("Goodnight", false, 14) != (string[])Field("DaytimeGoodnightLines")
+        || Clocked("Goodnight", true, 14) != (string[])Field("OwnerDaytimeGoodnightLines"))
+        Fail("clock intents: a daytime goodnight isn't teased");
+    if (Clocked("Goodnight", false, 23) is not null || Clocked("Goodnight", false, 5) is not null
+        || Clocked("Love", false, 12) is not null)
+        Fail("clock intents: an intent off the clock got a clock pool");
 
     // Every TimedPool on BotResponses: day lines say bonjour (or « journée »), evening lines
     // bonsoir (or « soirée »), never the other one; any-time lines greet with neither, or both

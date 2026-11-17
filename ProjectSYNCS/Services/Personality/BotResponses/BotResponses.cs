@@ -44,6 +44,8 @@ namespace ProjectSYNCS.Services;
 //
 //   [Replies.Intents, Replies.Intents.BackAndForth] Answering what she was told (MessageCues.ReadIntent)
 //     IntentLines .............. keyed by ChatIntent: « je t'aime », « pardon », « ça va ? »…
+//     GoodbyeLines ............. « à plus », by the clock (ClockIntentLines, not in IntentLines)
+//     DaytimeGoodnightLines .... « bonne nuit » in broad daylight: a nap
 //
 //   [Replies.Requests] Answering what she was told: requests, questions, asks
 //     HowAreYouTempLines ....... « ça va ? » with her real temperature, on the Pi
@@ -89,6 +91,7 @@ namespace ProjectSYNCS.Services;
 //                                peut-être, t'es un bot, t'as raison, t'as tort, t'es là, merci,
 //                                je m'ennuie, t'as un crush, son âge et sa maison, fais genre, sa journée,
 //                                oui, non, tu m'aimes, tu te souviens de moi, t'es fâchée)
+//     OwnerGoodbyeLines ........ his goodbye, by the clock  |  OwnerDaytimeGoodnightLines .. his nap
 //     OwnerRequestLines ........ his requests, with the command as {2}
 //     OwnerVersionLines ........ him asking her version, with it as {2}
 //     OwnerAbsentNotices ....... someone pinged him while away

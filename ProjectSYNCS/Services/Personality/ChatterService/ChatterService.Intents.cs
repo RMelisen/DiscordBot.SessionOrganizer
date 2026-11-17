@@ -159,6 +159,13 @@ internal sealed partial class ChatterService
             return true;
         }
 
+        // A goodbye by the clock, and a « bonne nuit » in broad daylight: Papa has his own.
+        if (BotResponses.ClockIntentLines(intent, isOwner, DateTimeOffset.UtcNow) is { } clocked)
+        {
+            pick = IntentPick.Of(clocked, AnswerKinds.Intent(intent));
+            return true;
+        }
+
         if (isOwner)
         {
             if (!BotResponses.OwnerIntentLines.TryGetValue(intent, out var twin)) return false;

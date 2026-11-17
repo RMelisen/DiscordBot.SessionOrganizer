@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.59.6 — 2026-11-17
+
+- SYNCS's goodbyes follow the clock too: « bonne journée » by day, « bonne soirée » and « à demain »
+  in the evening, on Discord and in Minecraft.
+- A « bonne nuit » in broad daylight (8:00–18:00) gets teased as a nap.
+
 ## 7.59.5 — 2026-11-17
 
 - A Plynling visit invitation now stays open for two hours instead of one.

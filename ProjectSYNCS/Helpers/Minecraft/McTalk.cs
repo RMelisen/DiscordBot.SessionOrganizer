@@ -190,6 +190,7 @@ public static class McTalkReader
         }
 
         if (kin == McKin.Tata && BotResponses.TataIntentLines.TryGetValue(intent, out var tata)) return new(tata, kind);
+        if (BotResponses.ClockIntentLines(intent, kin == McKin.Papa, DateTimeOffset.UtcNow) is { } clocked) return new(clocked, kind);
         if (kin == McKin.Papa)
             return BotResponses.OwnerIntentLines.TryGetValue(intent, out var twin) ? new(twin, kind) : null;
         if (intent == ChatIntent.HowAreYou && milli is { } m && m < PiHealth.HotMilli && random.NextDouble() < TemperatureChance)

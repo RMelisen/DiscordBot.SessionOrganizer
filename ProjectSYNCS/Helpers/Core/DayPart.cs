@@ -26,6 +26,16 @@ public static class DayParts
     }
 
     public static DayPart Now => At(DateTimeOffset.UtcNow);
+
+    /// <summary>From here until <see cref="EveningStart"/> it is broad daylight: a « bonne nuit »
+    /// then is a nap. Earlier than this, someone going to bed at 5 a.m. is just very late.</summary>
+    public static readonly TimeSpan DaylightStart = TimeSpan.FromHours(8);
+
+    public static bool IsDaylight(DateTimeOffset instant)
+    {
+        var time = AppTime.ToZoned(instant).TimeOfDay;
+        return time >= DaylightStart && time < EveningStart;
+    }
 }
 
 /// <summary>

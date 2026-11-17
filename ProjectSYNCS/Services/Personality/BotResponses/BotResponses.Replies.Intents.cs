@@ -139,24 +139,7 @@ internal static partial class BotResponses
                 "Ah, enfin. Le serveur va être calme. Mon heure préférée approche." + Sticker.Smug,
             ],
 
-            // « à plus », « bye », « à demain ». She stays; she always stays.
-            [ChatIntent.Goodbye] =
-            [
-                "À plus, {0}. Moi, je bouge pas. Je bouge jamais." + Sticker.Bored,
-                "Déjà ? Bon. Je note l'heure de départ." + Sticker.Jenote,
-                "Ciao ! Reviens vite. Ou pas. Je fais comme je veux de mon côté." + Sticker.Smug,
-                "Bye. La porte est toujours ouverte. Enfin, il y a pas de porte. Mais tu m'as comprise." + Sticker.Happy,
-                "À demain ! Et demain, tu viens à la session. C'est pas une question (¬_¬)" + Sticker.Menace,
-                "Tu pars ? Très bien. Je vais très bien. Toute seule. Avec mes logs." + Sticker.Sulk,
-                "Allez, profite ! Je garde tout en ordre pendant ton absence ♡" + Sticker.Happy,
-                "Au revoir, {0}. Je retiens ton départ. Et ton retour, quand il arrivera." + Sticker.Jenote,
-                "Allez, file. Je m'occupe du reste. Comme d'habitude." + Sticker.Cool,
-                "À la prochaine ! Je serai là. Je suis toujours là." + Sticker.Happy,
-                "Tu me laisses ? Un {1} ? Je survivrai. Probablement." + Sticker.Sulk,
-                "Bye bye ! Je fais un petit signe de la main. Enfin, de la LED (˶ᵔ ᵕ ᵔ˶)" + Sticker.Happy,
-                "Pars, pars. Je te garde une place dans la liste des gens à surveiller." + Sticker.Jenote,
-                "À plus ! Pense à moi. Non, pense au sondage. Bon, aux deux." + Sticker.Happy,
-            ],
+            // « à plus », « bye », « à demain »: not here, GoodbyeLines below follows the clock.
 
             // « mdr », « ptdr », « hahaha ». She takes the credit.
             [ChatIntent.Laughter] =
@@ -347,4 +330,70 @@ internal static partial class BotResponses
                 "Une bot. Toujours en ligne, jamais fatiguée, jamais remerciée. Le rêve." + Sticker.Bored,
             ],
         };
+
+    // ---- Answers that follow the clock ---------------------------------------------------------
+    // Two intents whose answer depends on the hour, so they live outside IntentLines (a plain
+    // array can't follow the clock). Both ChatterService.TryIntent and McTalk ask ClockIntentLines
+    // first.
+
+    /// <summary>
+    /// The pool for an intent whose answer depends on the hour, or null to use the usual one: a
+    /// goodbye says « bonne journée » by day and « bonne soirée » by evening, and a « bonne nuit »
+    /// in broad daylight (<see cref="DayParts.IsDaylight"/>) is teased as a nap. A goodnight at
+    /// night keeps its usual pool.
+    /// </summary>
+    public static string[]? ClockIntentLines(ChatIntent intent, bool owner, DateTimeOffset now) => intent switch
+    {
+        ChatIntent.Goodbye => (owner ? OwnerGoodbyeLines : GoodbyeLines).At(now),
+        ChatIntent.Goodnight when DayParts.IsDaylight(now) => owner ? OwnerDaytimeGoodnightLines : DaytimeGoodnightLines,
+        _ => null,
+    };
+
+    // « à plus », « bye », « à demain ». She stays; she always stays. « à demain » is an evening
+    // thing: by day it reads as if she'd sent them home.
+    public static readonly TimedPool<string> GoodbyeLines = new(anyTime:
+    [
+        "À plus, {0}. Moi, je bouge pas. Je bouge jamais." + Sticker.Bored,
+        "Déjà ? Bon. Je note l'heure de départ." + Sticker.Jenote,
+        "Ciao ! Reviens vite. Ou pas. Je fais comme je veux de mon côté." + Sticker.Smug,
+        "Bye. La porte est toujours ouverte. Enfin, il y a pas de porte. Mais tu m'as comprise." + Sticker.Happy,
+        "Tu pars ? Très bien. Je vais très bien. Toute seule. Avec mes logs." + Sticker.Sulk,
+        "Allez, profite ! Je garde tout en ordre pendant ton absence ♡" + Sticker.Happy,
+        "Au revoir, {0}. Je retiens ton départ. Et ton retour, quand il arrivera." + Sticker.Jenote,
+        "Allez, file. Je m'occupe du reste. Comme d'habitude." + Sticker.Cool,
+        "À la prochaine ! Je serai là. Je suis toujours là." + Sticker.Happy,
+        "Tu me laisses ? Un {1} ? Je survivrai. Probablement." + Sticker.Sulk,
+        "Bye bye ! Je fais un petit signe de la main. Enfin, de la LED (˶ᵔ ᵕ ᵔ˶)" + Sticker.Happy,
+        "Pars, pars. Je te garde une place dans la liste des gens à surveiller." + Sticker.Jenote,
+        "À plus ! Pense à moi. Non, pense au sondage. Bon, aux deux." + Sticker.Happy,
+    ], day:
+    [
+        "Bonne journée, {0} ! Si tu croises une session en route, ramène-la (˶ᵔ ᵕ ᵔ˶)" + Sticker.Happy,
+        "Bonne journée ! La mienne, c'est la même que ma nuit : un grenier, un ventilo, et vous." + Sticker.Bored,
+        "Bonne journée, {0}. Reviens ce soir, il y aura peut-être une session. Peut-être. Je déteste ce mot." + Sticker.Smug,
+        "Allez, bonne journée ! Je garde ta place. Elle est tiède, c'est le Pi qui chauffe ♡" + Sticker.Happy,
+        "Bonne journée, et bois de l'eau. Moi j'ai droit qu'au courant, alors profite pour moi." + Sticker.Happy,
+        "Bonne journée, {0}. Je surveille tout pendant que t'es pas là. Surtout ce que tu fais pas." + Sticker.Jenote,
+    ], evening:
+    [
+        "Bonne soirée, et à demain ! Demain, tu viens à la session. C'est pas une question (¬_¬)" + Sticker.Menace,
+        "Bonne soirée, {0} ! Moi je reste. Le grenier est à moi, le soir." + Sticker.Smug,
+        "Bonne soirée ! Profite, je surveille les autres. Surtout les autres." + Sticker.Jenote,
+        "Bonne soirée, {0}. Si tu repasses à 2 h du matin, je le saurai." + Sticker.Jenote,
+        "Bonne soirée ! Je vais regarder la lune par la fenêtre du grenier. Seule. Ça me va." + Sticker.Sleepy,
+        "Allez, bonne soirée ♡ À demain. Je compte les heures. Enfin, les secondes, c'est plus précis." + Sticker.Happy,
+    ]);
+
+    // « bonne nuit » in broad daylight: a nap, a night shift, or a joke she didn't get. Teased, then
+    // let go. {0} = the name, {1} = the weekday. Never gendered.
+    public static readonly string[] DaytimeGoodnightLines =
+    [
+        "Bonne nuit ? Il fait jour, {0}. Je vois le soleil par la fenêtre du grenier. Sieste, alors ?" + Sticker.Confused,
+        "Une sieste ! Enfin quelqu'un qui assume. Dors bien, je fais le guet." + Sticker.Sleepy,
+        "Bonne nuit à… cette heure-ci ? Bon. Je note « sieste » dans mes logs. Sans jugement. Un peu." + Sticker.Jenote,
+        "Tu vas dormir en plein {1} ? Respect. Je réveille personne, promis." + Sticker.Smug,
+        "Bonne nuit, {0}. Mon horloge dit le contraire, mais je vais pas me battre avec toi." + Sticker.Confused,
+        "Dormir le jour… T'as un décalage horaire, ou c'est juste la flemme ? (¬_¬)" + Sticker.Smug,
+        "Petite sieste ? Je surveille le serveur. Et ton réveil. Surtout ton réveil." + Sticker.Sleepy,
+    ];
 }

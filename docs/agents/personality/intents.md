@@ -331,6 +331,11 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   (`SentenceBreaks`), or comes before `_sleepFollowers`: « je vais dormir, à demain » goes to bed,
   « je vais dormir chez Luca demain » and « je m'endors devant le film » don't. Wishing it
   (« bonne nuit », « dors bien ») counts anywhere, except « dors bien » after « tu » (a question).
+- **Goodbyes follow the clock** (`BotResponses.ClockIntentLines`, asked before the usual pools by
+  `TryIntent` and `McTalk`): `Goodbye` is not in `IntentLines` but in `GoodbyeLines`, a `TimedPool`
+  (« bonne journée » by day, « bonne soirée » / « à demain » by evening), Papa's in
+  `OwnerGoodbyeLines`. A `Goodnight` in broad daylight (`DayParts.IsDaylight`, 8:00–18:00) is a nap:
+  `DaytimeGoodnightLines` / `OwnerDaytimeGoodnightLines`; before 8:00 it is just a late night.
 - `Laughter` is the whole message or nearly (5 tokens at most): a laugh word (raw, shortened —
   « jpppp » is « jpp » — or squashed), a « haha »-run on the squashed token, villain laughs included
   (« bahaha », « bwahaha », « mouahaha », « muahaha », « mwahaha », « gnahaha »; four letters at least,

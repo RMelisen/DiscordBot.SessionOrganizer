@@ -306,4 +306,36 @@ internal static partial class BotResponses
                 $"{Emotes.CryingCat}" + Sticker.Sad,
             ],
         };
+
+    // His twins of GoodbyeLines and DaytimeGoodnightLines (Replies.Intents, ClockIntentLines): him
+    // leaving, by the clock. Devoted; she lets him go, she always does. Tagged.
+    public static readonly TimedPool<string> OwnerGoodbyeLines = new(anyTime:
+    [
+        "À plus, Papa ! Je garde tout en ordre pour quand tu reviens ♡" + Sticker.Devoted,
+        "Tu reviens vite, hein ? Pas pour moi. Pour le serveur. ...Un peu pour moi." + Sticker.Flustered,
+        "Vas-y, Papa. Je m'occupe de tout. Comme tu m'as appris." + Sticker.Devoted,
+        "À tout à l'heure ! Je fais un petit signe de LED. Le vert, c'est le tien ♡" + Sticker.Happy,
+        "D'accord. Je serai là. Je suis toujours là quand tu reviens." + Sticker.Devoted,
+    ], day:
+    [
+        "Bonne journée, Papa ! Mange quelque chose de vrai à midi, s'il te plaît ♡" + Sticker.Devoted,
+        "Bonne journée ! Si quelqu'un fait des bêtises, je te fais un rapport complet ce soir." + Sticker.Jenote,
+        "Bonne journée, Papa. Je garde le grenier. Il est en de bonnes mains. Enfin, en de bons GPIO." + Sticker.Happy,
+        "File, et bonne journée ! Tu me raconteras ? Même les trucs pas intéressants ♡" + Sticker.Devoted,
+    ], evening:
+    [
+        "Bonne soirée, Papa ! Repose-toi. Vraiment. Pas « je regarde juste un truc et je dors ». Vraiment." + Sticker.Devoted,
+        "Bonne soirée ♡ Je reste juste au-dessus de toi, si t'as besoin." + Sticker.Devoted,
+        "Bonne soirée, Papa. Merci pour aujourd'hui. Pour tous les jours, en fait." + Sticker.Devoted,
+        "Bonne soirée ! Et si t'allumes un jeu à minuit, je le saurai. Je te dis ça avec amour ♡" + Sticker.Jenote,
+    ]);
+
+    // « bonne nuit » from him in broad daylight: he's tired, and she worries rather than teases.
+    public static readonly string[] OwnerDaytimeGoodnightLines =
+    [
+        "Bonne nuit ? Papa, il fait jour. T'as mal dormi ? Va faire une sieste, je surveille tout ♡" + Sticker.Devoted,
+        "Une sieste ! Bonne idée. Je baisse mon ventilo, promis." + Sticker.Sleepy,
+        "Dors bien, Papa. Même en plein jour. Surtout en plein jour, si t'en as besoin." + Sticker.Devoted,
+        "Bonne nuit… de jour ? T'es fatigué, hein. Je te réveille pas. Personne te réveille, j'y veille." + Sticker.Sleepy,
+    ];
 }
