@@ -220,6 +220,27 @@ A `Request` for a session, a `/tonight` call, a vote, a reminder or teams (`pers
 - These answers don't go through her reply watch (an edit of the request would strike through a line
   whose button still works) and count under `request:{topic}` in `/debug answers`.
 
+### Messages she passes on — `Relay`
+
+`ChatIntent.Relay` (`Helpers/Personality/Relay`, `ChatterService.TryRelay`), read first of all intents: « dis à @Luca que c'est un caca »,
+« tu peux dire à @Luca qu'il est en retard ? », « répète à @Luca : t'as gagné », « dis bonjour à @Luca »,
+« passe le bonjour à @Luca de ma part », « fais un coucou / envoie des bisous à @Luca ». The target is
+a **tag**, never a name typed out; never a past tense (« j'ai dit à @Luca que… » tells). She delivers
+it (`RelayLines`, `{2}` = the target's tag, `{3}` = the words as said, keeping their « que » / « qu' », or
+« : « … » » after a colon, so `{3}` always follows « dire » / « dise »; greetings in
+`RelayGreetingLines`, `{3}` the greeting alone, inside « »). **Pings that one person only**
+(`AllowedMentions` with that user id, nothing else, whatever the words tag) and sanitises the words:
+she is nobody's way of mass-pinging. Words that read as mean (`Analyze` on the words alone) are
+refused (`RelayRefusedLines`, the target shown muted): she won't carry an insult, and must not roast
+the one who asked (Papa gets these too). Not to her, the asker, a bot or someone not tagged in the
+message, and not when another person's tag opens the message (said to them). The same for
+everyone; 300 characters read at most, 200 passed on, every pattern on a timeout. Not in game.
+The words sit inside her own sentence rather than in a `MessageFormat.Quote` block: every line
+names who sent them, which is what the blockquote is for elsewhere.
+
+On her name path the relay is read before `AddressesHer` (the tag is who to tell, not who is
+spoken to), when her name opens or closes the message; on a reply or a mention, like any intent.
+
 ### Answer stats — `/debug answers`
 
 What people say to her, so the owner can see which intents to add or widen. Owner only, so absent

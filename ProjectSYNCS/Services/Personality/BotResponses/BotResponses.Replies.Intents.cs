@@ -12,7 +12,7 @@ internal static partial class BotResponses
     // line is tagged: they go out through BotChat and format a name. Never gendered.
 
     public static readonly IReadOnlyDictionary<ChatIntent, string[]> IntentLines =
-        new[] { SmallTalkIntentLines(), BackAndForthIntentLines(), RetortIntentLines() }
+        new[] { SmallTalkIntentLines(), BackAndForthIntentLines(), RetortIntentLines(), InviteIntentLines() }
             .SelectMany(part => part).ToDictionary(kv => kv.Key, kv => kv.Value);
 
     // « je t'aime » to « t'es un bot ? ». « t'as raison » onwards is in Replies.Intents.BackAndForth.cs,

@@ -17,6 +17,10 @@ internal static partial class MessageCues
     {
         if (string.IsNullOrWhiteSpace(content)) return ChatIntent.None;
 
+        // « dis à @Luca que je l'aime »: what is passed on is someone else's words, like a quote, so
+        // nothing in it is read. On the raw text: the target is a tag, and the words may be quoted.
+        if (Relay.Read(content) is not null) return ChatIntent.Relay;
+
         // Reported speech is someone else's words (« il a écrit « je t'aime » à sa copine »): quotes are
         // dropped when something is said outside them. A message that is only a quote keeps it.
         var unquoted = _quotedSpeech.Replace(content, " ");
@@ -100,6 +104,8 @@ internal static partial class MessageCues
         if (FindPhrase(t, _funFactPhrases, cancelAfter: false, cancelBefore: true)
             || IsClosingAsk(t, _funFactClosingPhrases, breaks, _funFactFollowers))
             return ChatIntent.FunFact;
+        // Before the request: « tu peux venir jouer avec nous ? » invites her, it asks no command.
+        if (ReadInvite(t) is { } invite) return invite;
         // A request naming a topic is a request (« tu peux m'aider à lancer un sondage ? »); without
         // one, asking for help is Help (« tu peux m'aider ? »), and anything else asked is a request.
         var topic = ReadRequestTopic(t, stripped);

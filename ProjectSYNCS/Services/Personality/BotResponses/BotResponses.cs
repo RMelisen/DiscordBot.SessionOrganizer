@@ -53,6 +53,15 @@ namespace ProjectSYNCS.Services;
 //     GoodbyeLines ............. « à plus », by the clock (ClockIntentLines, not in IntentLines)
 //     DaytimeGoodnightLines .... « bonne nuit » in broad daylight: a nap
 //
+//   [Replies.Messages] Invitations, messages to pass on, what is said about her
+//     IntentLines[Invite · Uninvite] « je t'invite » / « on t'invite pas » (InviteIntentLines)
+//     RelayLines · RelayGreetingLines « dis à @Luca que… » / « dis bonjour à @Luca » (ChatterService.TryRelay)
+//     RelayRefusedLines ........ the words were an insult: not carried
+//     DefendedLines · OwnerDefendedLines « laissez syncs tranquille », her name untagged
+//     OwnerWorksOnHerLines ..... Papa announcing tests or an update on her
+//     TalkedAboutShipLines ..... ship talk about her, untagged
+//     TalkedAboutDigLines ...... a dig behind her back that isn't an insult
+//
 //   [Replies.Week] The week in her greetings and goodbyes (GreetingLines, ClockIntentLines)
 //     WeekGreetingLines · WeekGoodbyeLines .......... keyed by WeekMoment: Monday morning, Friday evening…
 //     OwnerWeekGreetingLines · OwnerWeekGoodbyeLines  his twins
@@ -106,7 +115,8 @@ namespace ProjectSYNCS.Services;
 //     OwnerIntentLines ......... his twins of IntentLines (ça va, tu fais quoi, je t'aime, pardon, bonne nuit,
 //                                peut-être, t'es un bot, t'as raison, t'as tort, t'es là, merci,
 //                                je m'ennuie, t'as un crush, son âge et sa maison, fais genre, sa journée,
-//                                oui, non, tu m'aimes, tu te souviens de moi, t'es fâchée)
+//                                oui, non, tu m'aimes, tu te souviens de moi, t'es fâchée,
+//                                je t'invite, on t'invite pas)
 //     OwnerGoodbyeLines ........ his goodbye, by the clock  |  OwnerDaytimeGoodnightLines .. his nap
 //     OwnerRequestLines ........ his requests, with the command as {2}
 //     OwnerVersionLines ........ him asking her version, with it as {2}

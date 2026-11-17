@@ -73,6 +73,8 @@ public enum VerdictForm
 internal enum ChatIntent
 {
     None,
+    // « dis à @Luca que… »: read first, since what is passed on is someone else's words (Relay).
+    Relay,
     Love,
     DemandApology,
     Apology,
@@ -100,6 +102,9 @@ internal enum ChatIntent
     Roll,
     Joke,
     FunFact,
+    // « je t'invite », « viens jouer avec nous » / « on t'invite pas », « t'es pas invitée ».
+    Uninvite,
+    Invite,
     Help,
     Request,
     Down,
@@ -396,10 +401,15 @@ internal static partial class MessageCues
     private static readonly string[] _nicePhrases =
     {
         "avec plaisir",
-        "beau travail", "bien dit", "bien joue", "bien ouej", "bien vise", "bien vu", "bon courage", "bonne idee",
+        "beau travail", "belle reponse", "bien dit", "bien joue", "bien ouej", "bien repondu", "bien trouve", "bien vise",
+        "bien vu", "bon courage", "bonne idee",
         "c est un compliment", "c etait un compliment", "courage a toi",
         "de rien",
         "force a toi",
+        // English praise for a line, as common here as « bien trouvé ». Not « good bot »: that is a verdict.
+        "good bit", "good one", "great one", "nice one", "well played",
+        // Approval of what she just answered. Not « bonne réponse »: that is the quiz's word.
+        "j aime cette reponse", "j aime bien cette reponse", "je prefere cette reponse",
         "je te complimente", "je te fais un compliment", "je valide",
         "lache pas",
         "pas de souci",

@@ -53,6 +53,14 @@ public static class AnswerKinds
     // A reply to one of her messages hours or days old (LateReplyLines, LateReply).
     public const string LateReply = "late-reply";
     public const string PapaLateReply = "papa:late-reply";
+    // Her name said untagged, in what was said about her (MessageCues.ReadNameTalk): someone defending
+    // her, Papa working on her, ship talk.
+    public const string Defended = "talked-about:defended";
+    public const string PapaDefended = "papa:defended";
+    public const string PapaWorksOnHer = "papa:works-on-her";
+    public const string ShipTalk = "talked-about:ship";
+    public const string Dig = "talked-about:dig";
+    public const string PapaDig = "papa:dig";
 
     internal static string Intent(ChatIntent intent) => "intent:" + intent;
     // A request she acted on (a session or vote offered, a reminder saved, teams dealt), apart from

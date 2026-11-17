@@ -141,7 +141,8 @@ public static class McTalkReader
         _ => null,
     };
 
-    // ChatterService.TryIntent, for the game: no ship, no blame, no take-sides (Discord people), no help list (the owner
+    // ChatterService.TryIntent, for the game: no ship, no blame, no take-sides, no relay (Discord people), no invitation,
+    // no help list (the owner
     // removed it in game, so « aide-moi » is a call), no sessions or stats (her records are Discord's), no « chut » (the
     // hush is per Discord channel), and a favour she can't do is said so rather than pointed at a slash command.
     private static McTalk? Intent(ChatIntent intent, string text, McKin kin, ulong askerId, int? milli, ResponsePicker picker,
@@ -152,7 +153,10 @@ public static class McTalkReader
         {
             case ChatIntent.None or ChatIntent.Question or ChatIntent.Sharing or ChatIntent.LowEffort
                 or ChatIntent.Ship or ChatIntent.Blame or ChatIntent.Help or ChatIntent.TakeSides
-                or ChatIntent.NextSession or ChatIntent.MyStats or ChatIntent.ShutUp:
+                or ChatIntent.NextSession or ChatIntent.MyStats or ChatIntent.ShutUp
+                // No tags to pass a message to in game, and an invitation there is her own world: her invite
+                // lines are about having no arms and living in an attic.
+                or ChatIntent.Relay or ChatIntent.Invite or ChatIntent.Uninvite:
                 return null;
             case ChatIntent.Opinion:
                 return OpinionOf(text, askerId, picker);

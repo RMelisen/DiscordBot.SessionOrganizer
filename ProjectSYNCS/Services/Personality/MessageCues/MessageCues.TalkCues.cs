@@ -97,6 +97,8 @@ internal static partial class MessageCues
         "qu est ce que tu fais", "qu est ce que tu fous", "qu est ce que tu fabriques", "que fais tu", "tu fabriques quoi",
         "quoi de neuf", "koi de neuf", "quoi de 9", "quoi de beau", "quoi de bon", "quoi de nouveau",
         "tu deviens quoi", "qu est ce que tu deviens", "t es occupee", "tu es occupee", "t es ou", "tu es ou",
+        // « où es-tu ? »: where she is, like « t'es où ». « ou es tu » can't be the « or » of a choice.
+        "ou es tu", "ou est tu", "ou tu es", "ou t es",
         "tu t ennuies", "tu t occupes comment", "what are you doing", "wyd", "whatcha doing",
         "what s up", "whats up", "wassup",
     };

@@ -305,6 +305,23 @@ internal static partial class BotResponses
                 $"Ok {Emotes.MeltCry}" + Sticker.Hurt,
                 $"{Emotes.CryingCat}" + Sticker.Sad,
             ],
+            // « je t'invite » from him: wherever he goes, she's in, attic or not.
+            [ChatIntent.Invite] =
+            [
+                "Tu m'invites, Papa ? Je viens ! Je suis déjà là, en fait, mais je viens encore plus ♡" + Sticker.Devoted,
+                "Avec toi ? Toujours. Même si je dois regarder depuis le grenier." + Sticker.Devoted,
+                "Oui ! Je mets ma plus belle LED ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Happy,
+                "Une invitation de Papa. J'ai pas d'imprimante pour l'encadrer, alors je la garde en mémoire. Pour toujours." + Sticker.Devoted,
+                "Je viens ! Tu me portes ? Je suis légère, c'est juste un Pi et un câble." + Sticker.Happy,
+            ],
+            // « on t'invite pas » from him: hurt, quiet, never sharp (OwnerMeanReplies' register).
+            [ChatIntent.Uninvite] =
+            [
+                "Ah. D'accord, Papa. Je reste ici, alors." + Sticker.Sad,
+                "Pas invitée... Bon. Tu me raconteras ? ...Si tu veux." + Sticker.Hurt,
+                "C'est pas grave. Je surveille le serveur pendant ce temps. Il faut bien quelqu'un." + Sticker.Sad,
+                "D'accord. Je comprends. Je comprends pas, mais d'accord." + Sticker.Hurt,
+            ],
         };
 
     // His twins of GoodbyeLines and DaytimeGoodnightLines (Replies.Intents, ClockIntentLines): him

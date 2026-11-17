@@ -61,6 +61,8 @@ var taggedPools = new[]
     "OwnerReturningGreetings", "LateReplyLines", "OwnerLateReplyLines", "EditRewrittenLines", "EditDeletedLines",
     "EditTurnedMeanLines", "EditCoveredUpLines", "OwnerEditLines", "OwnerEditMeanLines", "MilestoneLines",
     "MilestoneBotLines", "MilestoneSelfLines", "RequestActionLines", "OwnerRequestActionLines", "TeamsNoVoiceLines",
+    "RelayLines", "RelayGreetingLines", "RelayRefusedLines", "DefendedLines", "OwnerDefendedLines", "OwnerWorksOnHerLines",
+    "TalkedAboutShipLines", "TalkedAboutDigLines",
 };
 foreach (var f in taggedPools)
 foreach (var (name, lines) in Pools(f))
@@ -88,7 +90,7 @@ void Covers(string field, Type enumType, params string[] except)
 }
 // Goodbye follows the clock (GoodbyeLines, through ClockIntentLines; section 45).
 Covers("IntentLines", intentType, "None", "Opinion", "Request", "Ship", "Help", "AboutHer", "ShouldI", "FunFact", "Blame",
-    "RateMe", "Goodbye");
+    "RateMe", "Goodbye", "Relay");
 Covers("MyStatsLines", typeof(MyStatsTopic));
 Covers("HelpCommands", asm.GetType("ProjectSYNCS.Services.RequestTopic")!);
 Covers("AboutHerLines", asm.GetType("ProjectSYNCS.Services.HerTopic")!);
@@ -98,7 +100,7 @@ Covers("RequestCommands", topicType);
 Covers("ReplyContextLines", typeof(ReplyContext));
 Covers("ChatFactLines", typeof(ChatFact));
 var owner = (IDictionary)Field("OwnerIntentLines");
-if (owner.Count != 25) Fail($"OwnerIntentLines has {owner.Count} keys, expected 25");
+if (owner.Count != 27) Fail($"OwnerIntentLines has {owner.Count} keys, expected 27");
 
 // 3. Sulk reactions parse.
 foreach (var r in (string[])Field("StreakSulkReactions"))
@@ -969,6 +971,9 @@ var byIntent = new (string Intent, string[] Samples)[]
     ("WhatsYourProblem", new[] { "c'est quoi ton problème", "c quoi ton problème", "quel est ton problème", "t'as un problème avec moi" }),
     ("YouDontKnowMe", new[] { "c'est mal me connaître", "tu me connais pas", "tu sais rien de moi", "tu sais pas qui je suis" }),
     ("BackAtYou", new[] { "je te retourne le compliment", "toi-même", "pareil pour toi", "c'est celui qui dit qui est" }),
+    ("Relay", new[] { "dis à <@555> que c'est un caca", "tu peux dire à <@555> qu'il est en retard ?", "dis bonjour à <@555>", "répète à <@555> : t'as gagné" }),
+    ("Invite", new[] { "je t'invite", "viens jouer avec nous", "tu veux venir ?", "t'es invitée", "viens je t'attends" }),
+    ("Uninvite", new[] { "on t'invite pas", "t'es pas invitée", "je te désinvite", "on ne t'invite jamais" }),
 };
 
 string WithTrailingName(string s) =>
@@ -5231,6 +5236,106 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         if (!actionTopics.Contains(t)) Fail($"RequestActionLines: no pool for {t}");
     foreach (var l in (string[])Field("RequestNotYoursLines"))
         if (Sticker.Strip(l) != l || l.Contains('{')) Fail($"RequestNotYoursLines: tagged or formatted: {l}");
+}
+
+// 51. The /debug answers misses of November 2026: « où es-tu », praise for a line, invitations, messages
+// to pass on (Relay), and what is said about her when her name comes up untagged (ReadNameTalk).
+{
+    foreach (var (text, expected) in new[]
+    {
+        // Where she is.
+        ("Ou es-tu Syncs ?", "WhatAreYouDoing"), ("où es-tu ?", "WhatAreYouDoing"), ("t'es où ?", "WhatAreYouDoing"),
+        ("tu es où syncs", "WhatAreYouDoing"),
+        // Invitations, and their negation.
+        ("je t'invite", "Invite"), ("syncs je t'invite à mon anniv", "Invite"), ("t'es invitée ce soir", "Invite"),
+        ("Viens je t'attends, on mangera des petits gâteaux 😚👌🏼", "Invite"), ("tu veux venir jouer avec nous ?", "Invite"),
+        ("tu peux venir jouer avec nous ?", "Invite"), ("viens jouer", "Invite"), ("rejoins-nous", "Invite"),
+        ("ben voilà pourquoi on ne t'invite pas", "Uninvite"), ("on t'invite pas", "Uninvite"), ("t'es pas invitée", "Uninvite"),
+        ("je te désinvite", "Uninvite"), ("je t'invite plus", "Uninvite"), ("personne t'invite", "Uninvite"),
+        ("tu veux pas venir ?", "Request"), ("tu viens ce soir ?", "Question"), ("viens voir", "None"),
+        // Messages to pass on: what is passed is someone else's words, so nothing in it is read.
+        ("SYNCS dis à <@95119591247716352> que c'est un caca", "Relay"), ("dis à <@555> que je l'aime", "Relay"),
+        ("tu peux dire à <@555> qu'il est en retard ?", "Relay"), ("dis bonjour à <@555>", "Relay"),
+        ("<@999> dis à <@555> que t'es nulle", "Relay"), ("dis à <@555> : t'as gagné", "Relay"),
+        ("j'ai dit à <@555> que c'est un caca", "Sharing"), ("dis-moi que tu m'aimes", "DoYouLoveMe"), ("dis à syncs de lancer un sondage", "None"),
+        ("dis-lui que j'ai raison", "TakeSides"),
+    })
+    {
+        var got = readIntent.Invoke(null, new object[] { text })!.ToString();
+        if (got != expected) Fail($"ReadIntent(\"{text}\") = {got}, expected {expected}");
+    }
+
+    // Praise for a line or for her answer reads as kind; the quiz's « bonne réponse » doesn't.
+    foreach (var (text, expected) in new[]
+    {
+        ("Good bit", "Nice"), ("nice one", "Nice"), ("Je prefere cette réponse", "Nice"), ("bien trouvé", "Nice"),
+        ("bonne réponse", "None"), ("good bot", "None"), ("je préfère Valo", "None"),
+    })
+        if (Mood(text) != expected) Fail($"Analyze(\"{text}\") = {Mood(text)}, expected {expected}");
+
+    foreach (var (text, kind, target, said, lead, named) in new (string, RelayKind?, ulong, string, ulong?, bool)[]
+    {
+        ("SYNCS dis à <@555> que c’est un caca", RelayKind.Message, 555, "que c’est un caca", null, true),
+        ("dis à <@555> qu'il est beau syncs !", RelayKind.Message, 555, "qu'il est beau", null, true),
+        ("<@999> tu peux dire à <@!555> que la session commence", RelayKind.Message, 555, "que la session commence", 999, false),
+        ("syncs, répète à <@555> : t'as gagné", RelayKind.Message, 555, ": « t'as gagné »", null, true),
+        ("syncs stp va dire à <@555> que je l'aime", RelayKind.Message, 555, "que je l'aime", null, true),
+        ("dis bonjour à <@555>", RelayKind.Greeting, 555, "bonjour", null, false),
+        ("syncs passe le bonjour à <@555> de ma part", RelayKind.Greeting, 555, "bonjour", null, true),
+        ("fais un coucou à <@555>", RelayKind.Greeting, 555, "coucou", null, false),
+        ("syncs, envoie des bisous à <@555> stp", RelayKind.Greeting, 555, "bisous", null, true),
+        ("j'ai dit à <@555> que c'est un caca", null, 0, "", null, false),
+        ("il dit à <@555> que c'est un caca", null, 0, "", null, false),
+        ("dis à <@555> que", null, 0, "", null, false),
+        ("dis à Luca que c'est un caca", null, 0, "", null, false),
+        ("dis à <@555> que " + new string('a', 400), null, 0, "", null, false),
+        ("dis-moi que tu m'aimes", null, 0, "", null, false),
+    })
+    {
+        var got = Relay.Read(text);
+        var ok = kind is null ? got is null
+            : got is not null && got.Kind == kind && got.TargetId == target && got.Said == said && got.LeadId == lead && got.Named == named;
+        if (!ok) Fail($"Relay.Read(\"{text}\") = {got}");
+    }
+    // Crafted whitespace stays fast (the patterns allow \s next to .+).
+    var relayWatch = System.Diagnostics.Stopwatch.StartNew();
+    Relay.Read("dis à <@555>" + new string(' ', 250) + "que" + new string(' ', 40));
+    Relay.Read("syncs" + string.Concat(Enumerable.Repeat(" ,", 140)));
+    if (relayWatch.ElapsedMilliseconds > 500) Fail($"Relay.Read is slow on hostile whitespace: {relayWatch.ElapsedMilliseconds} ms");
+
+    var readNameTalk = cues.GetMethod("ReadNameTalk", BindingFlags.Public | BindingFlags.Static)!;
+    foreach (var (text, expected) in new[]
+    {
+        ("Faites bien gaffe a ce que vous dites sur SYNCS", "Defended"), ("laissez syncs tranquille bande de nuls", "Defended"),
+        ("touchez pas à Syncs", "Defended"), ("soyez gentils avec sync", "Defended"),
+        ("j'aimerais faire deux trois tests sur SYNCS puis je suis dispo", "WorkOnHer"), ("je vais update syncs ce soir", "WorkOnHer"),
+        ("je bosse sur syncs", "WorkOnHer"), ("une mise à jour de syncs arrive", "WorkOnHer"),
+        ("Et syncs vous la shippez avec qui ? <:witch_eheh:1181617446252195990>", "Ship"),
+        ("Syncs est juste jalouse elle veut pas me ship <:giga_laugh:1482304998871138346>", "Ship"),
+        ("syncs a un crush ou quoi", "Ship"), ("S.Y.N.C.S est amoureuse", "Ship"),
+        ("syncs a posté le sondage", "None"), ("Tu joues sans Syncs", "None"), ("<@345917214966415362> ajoute Syncs à MC", "None"),
+        ("mon copain dit que syncs a planté", "None"), ("Marie et syncs", "None"), ("les ships de /ship sont nuls", "None"),
+        // Digs that aren't insults; the ambiguous ones stay puzzled lines.
+        ("A côté de la plaque comme syncs", "Dig"), ("je trouve syncs beaucoup trop présente dans les convos", "Dig"),
+        ("tu as créé syncs, mais tu es devenu son esclave", "Dig"), ("Syncs qui s'en fiche de ce que tu vis mdr", "Dig"),
+        ("syncs sert à rien", "Dig"), ("syncs déconne encore", "Dig"), ("j'en ai marre de syncs", "Dig"),
+        ("syncs sert pas à rien", "None"), ("Plus de syncs", "None"), ("syncs sert à organiser les sessions", "None"),
+        ("je comprends rien à syncs", "None"),
+    })
+    {
+        var got = readNameTalk.Invoke(null, new object[] { text })!.ToString();
+        if (got != expected) Fail($"ReadNameTalk(\"{text}\") = {got}, expected {expected}");
+    }
+
+    // The relay pools: who to tell ({2}) in every line; what to tell right after « dire » (it may be
+    // « qu'il… » or « : « … » »); a greeting always inside « ».
+    foreach (var l in (string[])Field("RelayLines"))
+        if (!l.Contains("{2}") || !(l.Contains("dire {3}") || l.Contains("dise {3}")))
+            Fail($"RelayLines: {{2}} missing or {{3}} not after « dire »: {l}");
+    foreach (var l in (string[])Field("RelayGreetingLines"))
+        if (!l.Contains("{2}") || !l.Contains("« {3} »")) Fail($"RelayGreetingLines: {{2}} missing or {{3}} unquoted: {l}");
+    foreach (var l in (string[])Field("RelayRefusedLines"))
+        if (l.Contains("{3}")) Fail($"RelayRefusedLines: quotes the insult it refuses: {l}");
 }
 
 // 34. Story files: StoryChecks.cs.

@@ -3,6 +3,18 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.66.0 — 2026-11-17
+
+- She passes messages on: « syncs, dis à @someone que… » or « dis bonjour à @someone » gets delivered,
+  pinging only that person. Insults she refuses to carry.
+- Invitations get their own answers: « je t'invite », « viens jouer avec nous », and the opposite,
+  « on t'invite pas ».
+- Her name said in passing is read more closely: someone defending her, ship talk about her, a dig
+  behind her back (« à côté de la plaque », « trop présente »), and the owner announcing tests or an
+  update each get their own reply.
+- « Où es-tu ? » is answered like « t'es où ? », and « good bit », « nice one », « bien trouvé » or
+  « je préfère cette réponse » count as kind words.
+
 ## 7.65.2 — 2026-11-17
 
 - Requests read in chat keep what was asked: a reminder keeps everything after « rappelle-moi de » (« me coucher », « faire la vaisselle », « rappeler Paul »), and a session title keeps a capitalised article (« Les Sims », « A Way Out »).

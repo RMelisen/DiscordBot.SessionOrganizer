@@ -69,6 +69,7 @@ internal sealed partial class ChatterService
         pick = default;
         if (intent is ChatIntent.None or ChatIntent.Question or ChatIntent.Sharing or ChatIntent.LowEffort) return false;
 
+        if (intent == ChatIntent.Relay) return TryRelay(message, out pick);
         if (intent == ChatIntent.Opinion) return TryOpinion(message, out pick);
         if (intent == ChatIntent.Ship) return TryShip(message, out pick);
         if (intent == ChatIntent.Blame) return TryBlame(message, out pick);
@@ -193,11 +194,43 @@ internal sealed partial class ChatterService
     // (Disbelief is six words at most).
     // Feeling down is let through the same way when it speaks to nobody: « journée de merde » swears
     // at the day, not at her, while « j'en ai marre de toi » stays an insult.
+    // A relay is never mean in itself: the words are someone else's, and TryRelay refuses to carry an
+    // insult rather than roasting the one who asked.
     private static bool IsMean(MessageMood mood, string content)
     {
         if (mood.Emotion != EmotionKind.Mean) return false;
         var intent = MessageCues.ReadIntent(content);
-        return intent != ChatIntent.Disbelief && !(intent == ChatIntent.Down && !MessageCues.SpeaksToSomeone(content));
+        return intent is not (ChatIntent.Disbelief or ChatIntent.Relay)
+               && !(intent == ChatIntent.Down && !MessageCues.SpeaksToSomeone(content));
+    }
+
+    // « dis à @Luca que c'est un caca », « dis bonjour à @Luca »: she passes it on, pinging that one
+    // person and nobody else (whatever the words tag), the words sanitised and quoted as theirs. The
+    // same for everyone, Papa included. An insult she refuses to carry (RelayRefusedLines): she is
+    // nobody's way of pinging someone with one. No relay to herself, to the asker, to a bot, to
+    // someone not tagged in this message, or when another person's tag opens the message (it was
+    // said to them).
+    private bool TryRelay(SocketUserMessage message, out IntentPick pick)
+    {
+        pick = default;
+        var selfId = _client.CurrentUser.Id;
+        if (Relay.Read(message.Content ?? string.Empty) is not { } ask) return false;
+        if (ask.LeadId is { } lead && lead != selfId) return false;
+        if (ask.TargetId == selfId || ask.TargetId == message.Author.Id) return false;
+        if (message.MentionedUsers.FirstOrDefault(u => u.Id == ask.TargetId) is not { IsBot: false }) return false;
+
+        var kind = AnswerKinds.Intent(ChatIntent.Relay);
+        var said = ask.Said.Replace($"<@{selfId}>", "").Replace($"<@!{selfId}>", "").Trim();
+        if (MessageCues.Analyze(said).Emotion == EmotionKind.Mean)
+        {
+            pick = new IntentPick(BotResponses.RelayRefusedLines, $"<@{ask.TargetId}>", string.Empty, QuotedMentions, kind);
+            return true;
+        }
+
+        var only = new AllowedMentions(AllowedMentionTypes.None) { UserIds = [ask.TargetId], MentionRepliedUser = true };
+        var pool = ask.Kind == RelayKind.Greeting ? BotResponses.RelayGreetingLines : BotResponses.RelayLines;
+        pick = new IntentPick(pool, $"<@{ask.TargetId}>", Discord.Format.Sanitize(said), only, kind);
+        return true;
     }
 
     // The same reading from the text alone, for ReplyWatchService: an edit is judged as she judged
@@ -316,6 +349,8 @@ internal sealed partial class ChatterService
     {
         ChatIntent.Laughter, ChatIntent.Maybe, ChatIntent.YouAreRight, ChatIntent.YouAreWrong, ChatIntent.Goodnight,
         ChatIntent.Goodbye, ChatIntent.WhatsYourProblem, ChatIntent.YouDontKnowMe, ChatIntent.BackAtYou,
+        // « je t'invite », « on t'invite pas »: people invite each other too.
+        ChatIntent.Invite, ChatIntent.Uninvite,
     };
 
     // Whether a message she wasn't named in still plainly asks her something: a specific intent she

@@ -68,8 +68,26 @@ tagging or replying to her. She heard her name and has no idea why.
 |---|---|
 | `Mean` | `BackbiteRoasts` (+ `PersonalComebacks` twice), Papa `OwnerMeanReplies` |
 | Greeting | `Greetings`, Papa `OwnerGreetings` |
+| A message to pass on, her name opening or closing it (« syncs, dis à @Luca que… ») | the `Relay` intent, first of all: the tag is who to tell, so `AddressesHer` can't see it |
+| Someone defending her (« laissez syncs tranquille », « faites gaffe à ce que vous dites sur SYNCS ») | `DefendedLines`, Papa `OwnerDefendedLines`, ahead of the mean reading: a defence is often rude to the others |
 | Papa's pet name (not mean, no specific intent) | « ma framboise », « petite framboise »: `OwnerRaspberryNameLines`; « ma fille », « mon enfant »: `OwnerChildNameLines` |
+| Papa announcing tests or an update (« deux trois tests sur SYNCS », « update syncs ») | `OwnerWorksOnHerLines`: the updates side of her dilemma; from anyone else, the row below |
+| A dig that isn't an insult (« à côté de la plaque comme syncs », « je trouve syncs trop présente », « syncs sert à rien ») | `TalkedAboutDigLines`: wounded pride, softer than a backbite; Papa's lands (`OwnerMeanReplies`) |
+| Ship talk (« vous la shippez avec qui ? », « syncs est jalouse ») | `TalkedAboutShipLines`, the same for Papa |
 | Anything else | `TalkedAboutLines`, Papa `TalkedAboutOwnerLines` |
+
+**What is said about her** is `MessageCues.ReadNameTalk`, read only when the message isn't said to her
+(« syncs, t'es jalouse ? » is `AreYouUpset`). Phrases with every spelling of her name as « syncs »;
+ship talk is one of `_shipTalkWords` within four words of her name, either side — no « copain » or
+« chéri » (« mon copain dit que syncs a planté »), no « mariée » (it squashes onto Marie). Counted as
+`talked-about:defended`, `papa:defended`, `papa:works-on-her`, `talked-about:ship`,
+`talked-about:dig` and `papa:dig`, none of them unrecognised.
+
+**Digs stay out of the mood cues on purpose** (`_digPhrases`): as mean cues they would score on
+`/shame` and draw her reactions on every message nobody aimed at her. They are read only here, on a
+message that names her and isn't said to her, below the mean reading (a real insult is still a
+backbite). A negator before cancels (« syncs sert pas à rien »). The ambiguous ones are left out:
+« osef syncs » is said to her as often as not, « plus de syncs » means more or no more.
 
 - **Spellings are `_selfNames`** (« syncs », « sync »), shared with the shutdown phrases, squashed
   (« synccs ») or spelled out (« S.Y.N.C.S »). Bare « sync » counts at the owner's request, so

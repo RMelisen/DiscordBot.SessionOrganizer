@@ -36,7 +36,8 @@ scored over the whole message.
 - Nice side: `clean`, `efficace`, `malin`, `utile` are weak (they describe builds and routes).
 - **Short warm replies are nice; short agreements are not.** `avec plaisir`, `de rien`, `pas de
   souci`, `tant mieux`, `trop cool`, `bien dit`, `bonne idee`, `beau travail`, `bon courage`,
-  `je valide` are `_nicePhrases`. `ça marche`, `ça roule`, `ça me va`, `tout à fait`, `c'est
+  `je valide` are `_nicePhrases`, and so is praise for a line or her answer (`bien trouvé`, `good bit`,
+  `nice one`, `je préfère cette réponse`; never `bonne réponse`, the quiz's word). `ça marche`, `ça roule`, `ça me va`, `tout à fait`, `c'est
   clair` are deliberately **not** — ordinary coordination must stay silent. Both halves are pinned.
 - **It's a gaming server.** `boss` and `monstre` are absent from `_niceCues` ("il est fort ce
   boss"); `heros`, `roi`, `reine`, `royal`, `divin`, `toxique`, `manchot` are weak ("dégâts

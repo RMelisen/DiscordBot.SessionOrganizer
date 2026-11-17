@@ -238,11 +238,28 @@ internal sealed partial class ChatterService
                         || petName != PetName.None && MessageCues.AddressesHerByPetName(content, selfId);
         var name = ResolveName(message.Author);
         var intent = ChatIntent.None;
+        // What is said about her, when it isn't said to her (MessageCues.ReadNameTalk).
+        var talk = addressed ? NameTalk.None : MessageCues.ReadNameTalk(content);
         IntentPick pick;
         string what;
 
+        // « syncs, dis à @Luca que… »: the tag is who to tell, not who is spoken to, so AddressesHer
+        // can't see it; her name opening or closing the message is the address.
+        if (Relay.Read(content) is { Named: true, LeadId: null } && TryRelay(message, out var relayPick))
+        {
+            what = "named relay";
+            pick = relayPick;
+        }
+        // Someone defending her (« laissez syncs tranquille »), even rudely to the others: never a backbite.
+        else if (talk == NameTalk.Defended)
+        {
+            what = "defended";
+            pick = isOwner
+                ? IntentPick.Of(BotResponses.OwnerDefendedLines, AnswerKinds.PapaDefended)
+                : IntentPick.Of(BotResponses.DefendedLines, AnswerKinds.Defended);
+        }
         // Called a liar to her face is teasing (Disbelief, below); behind her back it stays a backbite.
-        if (mood.Emotion == EmotionKind.Mean && (IsMean(mood, content) || !addressed))
+        else if (mood.Emotion == EmotionKind.Mean && (IsMean(mood, content) || !addressed))
         {
             what = "backbite roast";
             if (isOwner)
@@ -271,6 +288,27 @@ internal sealed partial class ChatterService
         {
             what = "pet name";
             pick = petPick;
+        }
+        // Papa about to test or update her: she can't wait (the updates side of her dilemma).
+        else if (talk == NameTalk.WorkOnHer && isOwner)
+        {
+            what = "Papa working on her";
+            pick = IntentPick.Of(BotResponses.OwnerWorksOnHerLines, AnswerKinds.PapaWorksOnHer);
+        }
+        // « à côté de la plaque comme syncs »: wounded pride, not a roast; she was dug at, not insulted.
+        // From Papa it lands, quietly (his mean pool).
+        else if (talk == NameTalk.Dig)
+        {
+            what = "dig behind her back";
+            pick = isOwner
+                ? IntentPick.Of(BotResponses.OwnerMeanReplies, AnswerKinds.PapaDig)
+                : IntentPick.Of(BotResponses.TalkedAboutDigLines, AnswerKinds.Dig);
+        }
+        // « vous la shippez avec qui ? », « syncs est jalouse »: denial that confirms, Papa included.
+        else if (talk == NameTalk.Ship)
+        {
+            what = "ship talk";
+            pick = IntentPick.Of(BotResponses.TalkedAboutShipLines, AnswerKinds.ShipTalk);
         }
         else if (mood.IsGreeting)
         {
