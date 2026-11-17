@@ -238,8 +238,10 @@ internal sealed partial class ChatterService
                         || petName != PetName.None && MessageCues.AddressesHerByPetName(content, selfId);
         var name = ResolveName(message.Author);
         var intent = ChatIntent.None;
-        // What is said about her, when it isn't said to her (MessageCues.ReadNameTalk).
-        var talk = addressed ? NameTalk.None : MessageCues.ReadNameTalk(content);
+        // What is said about her (MessageCues.ReadNameTalk). Read even when AddressesHer says it is said
+        // to her: « syncs m'agace », « syncs comprend rien » look like an address and aren't one. A
+        // specific intent still comes first (below).
+        var talk = MessageCues.ReadNameTalk(content);
         IntentPick pick;
         string what;
 

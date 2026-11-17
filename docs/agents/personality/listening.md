@@ -223,10 +223,13 @@ A `Request` for a session, a `/tonight` call, a vote, a reminder or teams (`pers
 ### Messages she passes on — `Relay`
 
 `ChatIntent.Relay` (`Helpers/Personality/Relay`, `ChatterService.TryRelay`), read first of all intents: « dis à @Luca que c'est un caca »,
-« tu peux dire à @Luca qu'il est en retard ? », « répète à @Luca : t'as gagné », « dis bonjour à @Luca »,
-« passe le bonjour à @Luca de ma part », « fais un coucou / envoie des bisous à @Luca ». The target is
+« tu peux dire à @Luca qu'il est en retard ? », « répète à @Luca : t'as gagné », « dis à @Luca de venir »,
+« préviens @Luca que… », « rappelle à @Luca que… » (with « à » only: « rappelle @Luca demain » is a reminder),
+« dis bonjour à @Luca », « passe le bonjour à @Luca de ma part », « fais un coucou / envoie des bisous à
+@Luca », « souhaite bonne nuit / un bon anniversaire à @Luca », « dis merci à @Luca ». « dit » counts as
+« dis » (how it's typed); one target only (« à @A et @B » would need « vous dire »). The target is
 a **tag**, never a name typed out; never a past tense (« j'ai dit à @Luca que… » tells). She delivers
-it (`RelayLines`, `{2}` = the target's tag, `{3}` = the words as said, keeping their « que » / « qu' », or
+it (`RelayLines`, `{2}` = the target's tag, `{3}` = the words as said, keeping their « que » / « qu' » / « de » / « d' », or
 « : « … » » after a colon, so `{3}` always follows « dire » / « dise »; greetings in
 `RelayGreetingLines`, `{3}` the greeting alone, inside « »). **Pings that one person only**
 (`AllowedMentions` with that user id, nothing else, whatever the words tag) and sanitises the words:

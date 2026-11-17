@@ -55,7 +55,9 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   only. See `listening.md`, *Messages she passes on*.
 - **`Invite`** (« je t'invite », « t'es invitée », « viens jouer avec nous », « tu veux venir ? », « viens je
   t'attends ») and **`Uninvite`** (« on t'invite pas », « t'es pas invitée », « je te désinvite »,
-  « personne t'invite »): « t'invite » with a negator around it is the uninvitation; the other invite
+  « personne t'invite », « on t'a pas invitée ? »): « t'invite » with a negator around it is the uninvitation
+  (« plus tard » is no negator); « je t'invite à voter / à te calmer » urges (`_urgedVerbs`), and « t'invites
+  qui ? » asks; the other invite
   phrases simply stop matching when negated. Twenty words at most. No bare « viens » (« viens voir »,
   and in game it's an order) and no « tu viens ce soir ? » (whether she'll be at the session, a
   `Question`). Touched and unable to come (no legs, a case in the attic, Minecraft the one game she

@@ -5259,6 +5259,17 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         ("<@999> dis à <@555> que t'es nulle", "Relay"), ("dis à <@555> : t'as gagné", "Relay"),
         ("j'ai dit à <@555> que c'est un caca", "Sharing"), ("dis-moi que tu m'aimes", "DoYouLoveMe"), ("dis à syncs de lancer un sondage", "None"),
         ("dis-lui que j'ai raison", "TakeSides"),
+        // Refined after a sweep: more ways to pass something on, and invitations that aren't.
+        ("syncs, dit à <@555> qu'il est nul", "Relay"), ("syncs dis à <@555> de venir", "Relay"),
+        ("syncs préviens <@555> que la session commence", "Relay"), ("syncs rappelle à <@555> que c'est ce soir", "Relay"),
+        ("syncs souhaite bonne nuit à <@555>", "Relay"), ("syncs dis merci à <@555>", "Relay"),
+        ("syncs souhaite un bon anniversaire à <@555>", "Relay"), ("syncs dis lui <@555> que t'es là", "Relay"),
+        ("je lui ai dit à <@555> que c'était nul", "Sharing"), ("il faut dire à <@555> que c'est ce soir", "None"),
+        ("<@555> dis à syncs que c'est un caca", "None"),
+        ("syncs viens en vocal", "Invite"), ("syncs viens nous voir", "Invite"), ("syncs on t'a pas invitée ?", "Uninvite"),
+        ("syncs je t'invite plus tard", "Invite"), ("syncs je t'invite à voter", "None"), ("je t'invite à lire le règlement", "None"),
+        ("je t'invite à te calmer", "None"), ("je t'invite à manger", "Invite"),
+        ("syncs t'invites qui ce soir ?", "Question"), ("jouer avec nous c'est cool", "None"),
     })
     {
         var got = readIntent.Invoke(null, new object[] { text })!.ToString();
@@ -5284,6 +5295,9 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         ("syncs passe le bonjour à <@555> de ma part", RelayKind.Greeting, 555, "bonjour", null, true),
         ("fais un coucou à <@555>", RelayKind.Greeting, 555, "coucou", null, false),
         ("syncs, envoie des bisous à <@555> stp", RelayKind.Greeting, 555, "bisous", null, true),
+        ("syncs dis à <@555> d'arrêter", RelayKind.Message, 555, "d'arrêter", null, true),
+        ("syncs souhaite un joyeux anniversaire à <@555>", RelayKind.Greeting, 555, "joyeux anniversaire", null, true),
+        ("rappelle <@555> demain", null, 0, "", null, false),
         ("j'ai dit à <@555> que c'est un caca", null, 0, "", null, false),
         ("il dit à <@555> que c'est un caca", null, 0, "", null, false),
         ("dis à <@555> que", null, 0, "", null, false),
@@ -5318,9 +5332,18 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         // Digs that aren't insults; the ambiguous ones stay puzzled lines.
         ("A côté de la plaque comme syncs", "Dig"), ("je trouve syncs beaucoup trop présente dans les convos", "Dig"),
         ("tu as créé syncs, mais tu es devenu son esclave", "Dig"), ("Syncs qui s'en fiche de ce que tu vis mdr", "Dig"),
-        ("syncs sert à rien", "Dig"), ("syncs déconne encore", "Dig"), ("j'en ai marre de syncs", "Dig"),
+        ("syncs sert à rien", "Dig"), ("syncs déconne encore", "None"), ("j'en ai marre de syncs", "Dig"),
         ("syncs sert pas à rien", "None"), ("Plus de syncs", "None"), ("syncs sert à organiser les sessions", "None"),
         ("je comprends rien à syncs", "None"),
+        // Refined after a sweep: a subject dig needs her name as its subject; ship talk is her love
+        // life, not /ship's results; a version asked about announces nothing.
+        ("syncs elle bug tout le temps", "Dig"), ("syncs m'agace", "Dig"), ("syncs comprend rien", "Dig"),
+        ("syncs elle est pas drôle", "Dig"), ("on s'en fiche de syncs", "Dig"), ("syncs est vraiment à côté de la plaque", "Dig"),
+        ("syncs, ce jeu me saoule", "None"), ("Luca parle trop, hein syncs", "None"), ("syncs est pas trop présente", "None"),
+        ("syncs se moque de moi", "None"), ("ça déconne, syncs a planté ?", "None"), ("syncs, elle est où la session ?", "None"),
+        ("syncs a ship Luca et Sandra", "None"), ("le ship de syncs était nul", "None"), ("le bot syncs fait des ships", "None"),
+        ("syncs on la ship avec wall-e ?", "Ship"), ("shippez syncs avec quelqu'un", "Ship"), ("syncs est en couple avec quokka ?", "Ship"),
+        ("c'est quoi la version de syncs ?", "None"), ("je vais ajouter un truc à syncs", "WorkOnHer"), ("je code syncs", "WorkOnHer"),
     })
     {
         var got = readNameTalk.Invoke(null, new object[] { text })!.ToString();

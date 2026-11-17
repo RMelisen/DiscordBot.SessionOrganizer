@@ -14,7 +14,8 @@ public enum RelayKind
 /// whose tag opened the message if one did (<see cref="LeadId"/>: hers on the mention path, anyone
 /// else's means it was said to them), and whether her name addressed it (<see cref="Named"/>: « syncs,
 /// dis à… », « …syncs »). A message's <see cref="Said"/> keeps its « que » / « qu' » (« qu'il est
-/// beau »), or is « : « … » » when the words came after a colon, so it always follows « te dire ».
+/// beau ») or « de » / « d' » (« de venir »), or is « : « … » » when the words came after a colon, so it
+/// always follows « te dire ».
 /// </summary>
 public sealed record RelayAsk(RelayKind Kind, ulong TargetId, string Said, ulong? LeadId, bool Named);
 
@@ -43,15 +44,18 @@ public static partial class Relay
     [GeneratedRegex(@"[\s,]+syncs?(?![\w.])[\s!?.…]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Opinion.MatchTimeoutMs)]
     private static partial Regex TrailingNameRegex();
 
-    // « dis à @Luca que… », « tu peux dire à @Luca qu'… », « répète à @Luca : … », « va dire à @Luca que… ».
-    // The words before the verb are the ways of asking; the verb is never in the past (« j'ai dit à @Luca
-    // que… » tells, it doesn't ask).
-    [GeneratedRegex(@"^(?:(?:stp|steuplait|s['’ ]?il te pla[iî]t)[\s,]+)?(?:(?:est[- ]ce que\s+)?(?:tu peux|tu pourrais|tu veux bien|tu voudrais bien|peux[- ]tu|pourrais[- ]tu)\s+)?(?:(?:va|vas|aller)\s+)?(?:dire|dis|di|dites|r[ée]p[èée]te|r[ée]p[ée]ter|transmets|transmettre)\s+(?:(?:à|a)\s+)?<@!?(?<target>\d+)>[\s,]*(?:(?<said>(?:que|qu['’ ])\s*\S.*)|:\s*(?<quoted>\S.*))$",
+    // « dis à @Luca que… », « tu peux dire à @Luca qu'… », « répète à @Luca : … », « va dire à @Luca que… »,
+    // « préviens @Luca que… », « rappelle à @Luca que… », « dis à @Luca de venir ». The words before the
+    // verb are the ways of asking; the verb is never in the past (« j'ai dit à @Luca que… » tells, it
+    // doesn't ask), but « dit » is how « dis » is often typed. « rappelle » only with « à »: « rappelle
+    // @Luca demain » is a reminder.
+    [GeneratedRegex(@"^(?:(?:stp|steuplait|s['’ ]?il te pla[iî]t)[\s,]+)?(?:(?:est[- ]ce que\s+)?(?:tu peux|tu pourrais|tu veux bien|tu voudrais bien|peux[- ]tu|pourrais[- ]tu)\s+)?(?:(?:va|vas|aller)\s+)?(?:(?:dire|dis|dit|di|dites|r[ée]p[èée]te|r[ée]p[ée]ter|transmets|transmettre|pr[ée]viens|pr[ée]venir)\s+(?:lui\s+)?(?:(?:à|a)\s+)?|rappelle[rz]?\s+(?:à|a)\s+)<@!?(?<target>\d+)>[\s,]*(?:(?<said>(?:que|qu['’ ]|de\s|d['’ ])\s*\S.*)|:\s*(?<quoted>\S.*))$",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline, Opinion.MatchTimeoutMs)]
     private static partial Regex MessageRegex();
 
-    // « dis bonjour à @Luca », « passe le bonjour à @Luca de ma part », « fais un coucou à @Luca ».
-    [GeneratedRegex(@"^(?:(?:stp|steuplait|s['’ ]?il te pla[iî]t)[\s,]+)?(?:(?:est[- ]ce que\s+)?(?:tu peux|tu pourrais|tu veux bien|peux[- ]tu|pourrais[- ]tu)\s+)?(?:dire|dis|di|passe|passer|fais|faire|envoie|envoyer)\s+(?<greet>bonjour|bonsoir|salut|coucou|hello|bonne nuit|un coucou|le bonjour|un bisou|des bisous|un câlin|un calin|des câlins|des calins)\s+(?:(?:à|a)\s+)?<@!?(?<target>\d+)>(?:\s+de ma part)?(?:[\s,]+(?:stp|s['’ ]?il te pla[iî]t))?[\s!.…]*$",
+    // « dis bonjour à @Luca », « passe le bonjour à @Luca de ma part », « fais un coucou à @Luca »,
+    // « souhaite bonne nuit à @Luca », « dis merci à @Luca ».
+    [GeneratedRegex(@"^(?:(?:stp|steuplait|s['’ ]?il te pla[iî]t)[\s,]+)?(?:(?:est[- ]ce que\s+)?(?:tu peux|tu pourrais|tu veux bien|peux[- ]tu|pourrais[- ]tu)\s+)?(?:dire|dis|dit|di|passe|passer|fais|faire|envoie|envoyer|souhaite|souhaiter)\s+(?<greet>bonjour|bonsoir|salut|coucou|hello|bonne nuit|bonne journ[ée]e|bonne soir[ée]e|un coucou|le bonjour|un bisou|des bisous|un câlin|un calin|des câlins|des calins|merci|bravo|f[ée]licitations|bienvenue|bonne chance|bon courage|bon anniversaire|joyeux anniversaire|un bon anniversaire|un joyeux anniversaire)\s+(?:(?:à|a)\s+)?<@!?(?<target>\d+)>(?:\s+de ma part)?(?:[\s,]+(?:stp|s['’ ]?il te pla[iî]t))?[\s!.…]*$",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Opinion.MatchTimeoutMs)]
     private static partial Regex GreetingRegex();
 
@@ -61,6 +65,8 @@ public static partial class Relay
         "un coucou" => "coucou",
         "le bonjour" => "bonjour",
         "un bisou" or "des bisous" => "bisous",
+        "un bon anniversaire" => "bon anniversaire",
+        "un joyeux anniversaire" => "joyeux anniversaire",
         "un câlin" or "un calin" or "des câlins" or "des calins" => "câlin",
         var g => g,
     };

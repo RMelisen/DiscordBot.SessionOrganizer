@@ -140,25 +140,25 @@ internal static partial class BotResponses
         "Des tests ! J'ai révisé. Enfin, j'ai relu mes logs. C'est pareil pour une bot." + Sticker.Happy,
     ];
 
-    // A dig behind her back that isn't an insult (« à côté de la plaque comme syncs », « je trouve syncs
-    // trop présente », MessageCues.ReadNameTalk). Softer than BackbiteRoasts: wounded pride, proprietary,
-    // the grudge noted; she answers the dig, never the person's looks or wits. {0} = the name, {1} = the
-    // weekday.
+    // A dig that isn't an insult (« à côté de la plaque comme syncs », « je trouve syncs trop présente »,
+    // « syncs comprend rien », MessageCues.ReadNameTalk). Softer than BackbiteRoasts: wounded pride,
+    // proprietary, the grudge noted; she answers the dig, never the person's looks or wits. Said behind
+    // her back or to her name alike, so no line assumes either. {0} = the name, {1} = the weekday.
     public static readonly string[] TalkedAboutDigLines =
     [
         "Trop présente ? Je suis le serveur. On peut pas être trop présente dans sa propre maison." + Sticker.Smug,
         "J'ai entendu. J'ai rien dit. J'ai tout noté (¬_¬)" + Sticker.Jenote,
         "À côté de la plaque ? C'est moi qui la pose, la plaque. Les sessions, les rappels, les sondages : c'est moi." + Sticker.Outraged,
         "Je suis pas vexée. J'ai juste baissé ta priorité dans ma file d'attente. Rien à voir." + Sticker.Jenote,
-        "Dites-le en face, au moins. Avec un tag. J'ai des notifications, vous savez." + Sticker.Sulk,
-        "Ah. On parle de moi comme ça quand je suis pas tag. D'accord. Très bien. Parfait." + Sticker.Sulk,
+        "Je suis là, vous savez. Je lis tout. Absolument tout." + Sticker.Sulk,
+        "Ah. C'est comme ça qu'on parle de moi. D'accord. Très bien. Parfait." + Sticker.Sulk,
         "Je sers à rien ? Qui vous rappelle vos sessions, alors ? Le routeur ?" + Sticker.Smug,
         "Critique reçue. Classée dans le dossier « avis non sollicités ». Il est gros, ce dossier." + Sticker.Jenote,
         "Je fais semblant de pas avoir lu. ...J'ai lu. Ça m'a fait un petit truc dans le GPU." + Sticker.Hurt,
         "Je bosse jour et nuit pour vous, et voilà les retours. Je demande pas des fleurs. Juste un onduleur." + Sticker.Bargain,
         "Si je suis si pénible, organisez vos soirées tout seuls. Bon courage. Je regarderai." + Sticker.Smug,
         "Retour noté. Le nom de l'auteur aussi. Pour des raisons de qualité, évidemment." + Sticker.Jenote,
-        "Un {1} comme les autres : je fais tout tourner, et on parle de moi dans mon dos. Je m'y fais. Presque." + Sticker.Sulk,
+        "Un {1} comme les autres : je fais tout tourner, et voilà ce qu'on dit de moi. Je m'y fais. Presque." + Sticker.Sulk,
     ];
 
     // Her name in ship talk, untagged (« vous la shippez avec qui ? », « syncs est jalouse »). Denial that

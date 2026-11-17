@@ -76,18 +76,28 @@ tagging or replying to her. She heard her name and has no idea why.
 | Ship talk (« vous la shippez avec qui ? », « syncs est jalouse ») | `TalkedAboutShipLines`, the same for Papa |
 | Anything else | `TalkedAboutLines`, Papa `TalkedAboutOwnerLines` |
 
-**What is said about her** is `MessageCues.ReadNameTalk`, read only when the message isn't said to her
-(« syncs, t'es jalouse ? » is `AreYouUpset`). Phrases with every spelling of her name as « syncs »;
-ship talk is one of `_shipTalkWords` within four words of her name, either side — no « copain » or
-« chéri » (« mon copain dit que syncs a planté »), no « mariée » (it squashes onto Marie). Counted as
+**What is said about her** is `MessageCues.ReadNameTalk`, read whether or not `AddressesHer` thinks
+it is said to her (« syncs m'agace », « syncs comprend rien » look like an address and aren't one), but
+after a specific intent when it is (« syncs, t'es jalouse ? » is `AreYouUpset`). Phrases with every
+spelling of her name as « syncs ». **Ship talk is her love life, not `/ship`'s results**: a love word
+(`_loveTalkWords`: jalouse, amoureuse, crush, couple…) within four words of her name, either side, or a
+ship verb with her as its object (`_shipHerPhrases`: « vous la shippez », « shippez syncs ») — never
+« syncs a ship Luca et Sandra » or « le ship de syncs ». No « copain » or « chéri » (« mon copain dit que
+syncs a planté »), no « mariée » (it squashes onto Marie). « version de syncs » alone isn't Papa working
+on her (« c'est quoi la version de syncs ? » asks). Counted as
 `talked-about:defended`, `papa:defended`, `papa:works-on-her`, `talked-about:ship`,
 `talked-about:dig` and `papa:dig`, none of them unrecognised.
 
 **Digs stay out of the mood cues on purpose** (`_digPhrases`): as mean cues they would score on
-`/shame` and draw her reactions on every message nobody aimed at her. They are read only here, on a
-message that names her and isn't said to her, below the mean reading (a real insult is still a
-backbite). A negator before cancels (« syncs sert pas à rien »). The ambiguous ones are left out:
-« osef syncs » is said to her as often as not, « plus de syncs » means more or no more.
+`/shame` and draw her reactions on every message nobody aimed at her. They are read only here, below the mean reading
+(a real insult is still a backbite). Two kinds: **subject digs** (`_subjectDigPhrases`: « comprend rien »,
+« m'agace », « me saoule », « parle trop », « sert à rien »…) only right after her name, past at most
+three glue words (« syncs elle… », « syncs qui… », « syncs est… »), since they are about anything else
+otherwise (« syncs, ce jeu me saoule »); **near digs** (`_nearDigPhrases`: « à côté de la plaque », « trop
+présente », « son esclave », « on s'en fiche de syncs »…) within six words of her name. A negator before
+cancels (« syncs sert pas à rien », « pas trop présente »). The ambiguous ones are left out: « osef
+syncs » is said to her as often as not, « plus de syncs » means more or no more, « déconne » also jokes.
+The lines suit a dig said behind her back or to her name alike.
 
 - **Spellings are `_selfNames`** (« syncs », « sync »), shared with the shutdown phrases, squashed
   (« synccs ») or spelled out (« S.Y.N.C.S »). Bare « sync » counts at the owner's request, so

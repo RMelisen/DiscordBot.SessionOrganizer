@@ -3,6 +3,15 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.66.1 — 2026-11-17
+
+- Messages to pass on read more ways: « préviens @someone que… », « rappelle à @someone que… », « dis à
+  @someone de venir », « souhaite bonne nuit / un bon anniversaire à @someone », « dis merci à @someone ».
+- Invitations misfire less: « je t'invite à voter » urges, « t'invites qui ? » asks. « viens en vocal »
+  and « on t'a pas invitée ? » are read.
+- What is said about her misfires less: talk about her ship results is no longer taken for her love
+  life, and a dig needs to be about her, not about a game that annoys someone.
+
 ## 7.66.0 — 2026-11-17
 
 - She passes messages on: « syncs, dis à @someone que… » or « dis bonjour à @someone » gets delivered,
