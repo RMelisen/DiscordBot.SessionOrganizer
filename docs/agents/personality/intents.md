@@ -344,6 +344,17 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   `ClockIntentLines`; never pick `Greetings.Now` directly. A share, not all: every Friday greeting
   saying « week-end » would read as a script. Each moment sits in one `DayPart`, so its lines greet
   like that half (checks section 45).
+- **« Ça faisait longtemps »** (`ChatterService.GreetingPickAsync`, Discord only): every greeting she
+  answers first asks whether that person was away three weeks or more (`Helpers/Personality/LongAbsence`,
+  from their last `MemberDailyStat` day before today with XP, a reaction or a voice minute;
+  `XpService.LastActiveDayBeforeAsync`). If so, `ReturningGreetings` (Papa: `OwnerReturningGreetings`)
+  counted as `returning`. **Glad only, never how long or where they were**: nobody knows why someone
+  was away, and a hard stretch is a reason too. She is happy, or pretends not to be and fails; Papa
+  gets pure joy. Checks section 46 refuses a duration in those lines. Someone never seen is not back. The read is
+  gated once a person a day (`ReturnCheckEvery`), so it never fires twice on the day they come
+  back, and by the next look their last active day is that one. A restart can let it fire a
+  second time that day; accepted. Someone active earlier today without greeting her still gets
+  it on their first greeting: true enough.
 - `Laughter` is the whole message or nearly (5 tokens at most): a laugh word (raw, shortened —
   « jpppp » is « jpp » — or squashed), a « haha »-run on the squashed token, villain laughs included
   (« bahaha », « bwahaha », « mouahaha », « muahaha », « mwahaha », « gnahaha »; four letters at least,

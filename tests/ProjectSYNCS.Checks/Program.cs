@@ -57,7 +57,8 @@ var taggedPools = new[]
     "CardRallyAllDoneLines", "CardDoneSeenLines", "CardDoneLiarLines", "CardTextClickLines", "CardTextAnsweredLines",
     "CardStatusLines", "OpenAnswerLines", "CardDoneAnonymousLines", "PollClosedSlotLines", "VoteClosedResultLines",
     "PollClosedEmptyLines", "GoodbyeLines", "OwnerGoodbyeLines", "DaytimeGoodnightLines", "OwnerDaytimeGoodnightLines",
-    "WeekGreetingLines", "WeekGoodbyeLines", "OwnerWeekGreetingLines", "OwnerWeekGoodbyeLines",
+    "WeekGreetingLines", "WeekGoodbyeLines", "OwnerWeekGreetingLines", "OwnerWeekGoodbyeLines", "ReturningGreetings",
+    "OwnerReturningGreetings",
 };
 foreach (var f in taggedPools)
 foreach (var (name, lines) in Pools(f))
@@ -4933,6 +4934,25 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
             var s = string.Format(line, "<@1>", "Titre", "Résultat");
             if (!s.Contains("<@1>") || !s.Contains("Titre") || (name != "PollClosedEmptyLines" && !s.Contains("Résultat")))
                 Fail($"{name}: a placeholder is missing: {line}");
+        }
+}
+
+// 46. « Ça faisait longtemps » (LongAbsence): three weeks from the last active day, across months and
+// years; nobody seen before is not back from anywhere. No returning line says how long: nobody knows why they were away.
+{
+    foreach (var (today, last, expected) in new (int, int?, int?)[]
+    {
+        (20261117, null, null), (20261117, 20261116, null), (20261117, 20261028, null), (20261117, 20261027, 21),
+        (20260105, 20251201, 35), (20260301, 20260201, 28), (20260301, 20260208, 21), (20260301, 20260209, null),
+    })
+        if (LongAbsence.DaysAway(today, last) != expected)
+            Fail($"long absence: {last} → {today} is {LongAbsence.DaysAway(today, last)}, expected {expected}");
+    foreach (var field in new[] { "ReturningGreetings", "OwnerReturningGreetings" })
+        foreach (var l in (string[])Field(field))
+        {
+            var low = l.ToLowerInvariant();
+            if (l.Contains("{2}") || low.Contains("jours") || low.Contains("semaines")) Fail($"{field}: says how long they were away: {l}");
+            if (low.Contains("bonjour") || low.Contains("bonsoir")) Fail($"{field}: greets for one time of day: {l}");
         }
 }
 

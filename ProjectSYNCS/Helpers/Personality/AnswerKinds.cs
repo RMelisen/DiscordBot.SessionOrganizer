@@ -47,6 +47,9 @@ public static class AnswerKinds
     public const string Hushed = "hushed";
     // A word or two answering one of her open questions (OpenAnswerLines).
     public const string OpenAnswer = "open-answer";
+    // A greeting from someone back after three weeks or more (ReturningGreetings, LongAbsence).
+    public const string Returning = "returning";
+    public const string PapaReturning = "papa:returning";
 
     internal static string Intent(ChatIntent intent) => "intent:" + intent;
     public static string Context(ReplyContext context) => "context:" + context;

@@ -56,6 +56,17 @@ public class XpService
     }
 
     /// <summary>
+    /// The last day before <paramref name="beforeDay"/> (an <c>AppTime.DayKey</c>) on which they did
+    /// anything that leaves a trace: XP, a reaction, a voice minute. Null when there is none.
+    /// For « ça faisait longtemps » (<see cref="LongAbsence"/>). Days are ints, so it filters in SQL.
+    /// </summary>
+    public Task<int?> LastActiveDayBeforeAsync(ulong guildId, ulong userId, int beforeDay) =>
+        _db_context.MemberDailyStats.AsNoTracking()
+            .Where(x => x.GuildId == guildId && x.UserId == userId && x.Day < beforeDay
+                        && (x.XpEarned > 0 || x.ReactionsUsed > 0 || x.VoiceMinutes > 0))
+            .MaxAsync(x => (int?)x.Day);
+
+    /// <summary>
     /// Adds XP to the (guild, user) row, creating it if needed. Returns the level
     /// before and after the grant, so the caller can detect a crossed threshold
     /// without a second read.

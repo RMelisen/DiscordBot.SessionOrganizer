@@ -52,6 +52,11 @@ internal sealed partial class ChatterService
     private const double FactChance = 0.15;
     private static readonly TimeSpan FactCooldown = TimeSpan.FromHours(6);
 
+    // « Ça faisait longtemps » (GreetingPickAsync): one look at someone's last active day per
+    // ReturnCheckEvery. Its own gate, shared with nothing else.
+    private static readonly TimeSpan ReturnCheckEvery = TimeSpan.FromHours(24);
+    private readonly CooldownGate<(ulong Guild, ulong User)> _returnGate = new(ReturnCheckEvery, forget: ReturnCheckEvery);
+
     // On the Pi, half of her « ça va ? » answers quote her real temperature.
     private const double TemperatureChance = 0.5;
 
@@ -264,9 +269,7 @@ internal sealed partial class ChatterService
         else if (mood.IsGreeting)
         {
             what = "named greeting";
-            pick = isOwner
-                ? IntentPick.Of(GreetingPool(owner: true), AnswerKinds.PapaGreeting)
-                : IntentPick.Of(GreetingPool(owner: false), AnswerKinds.Greeting);
+            pick = await GreetingPickAsync(message, isOwner);
         }
         else
         {
@@ -413,7 +416,7 @@ internal sealed partial class ChatterService
             else if (MessageCues.ReadIntent(content) == ChatIntent.Sharing)
                 (ownerPick, ownerWhat) = (SharingPick(isOwner: true), "his news");
             else
-                (ownerPick, ownerWhat) = (IntentPick.Of(GreetingPool(owner: true), AnswerKinds.PapaGreeting), "greeting him");
+                (ownerPick, ownerWhat) = (await GreetingPickAsync(message, isOwner: true), "greeting him");
 
             _logger.LogInformation("Owner mentioned the bot — {What}.", ownerWhat);
             Count(message, ChatPath.Mention, ownerPick.Kind);
@@ -459,7 +462,7 @@ internal sealed partial class ChatterService
             (pick, what) = (intentPick, $"mention intent ({intent})");
         }
         else if (mood.IsGreeting && !mean)
-            pick = IntentPick.Of(GreetingPool(owner: false), AnswerKinds.Greeting);
+            pick = await GreetingPickAsync(message, isOwner: false);
         else if (RollTataWarmth(message.Author.Id, mood))
             // Family doesn't get « tagged for nothing » for tagging her. TataGreetings, not
             // TataReplies: a mention is Tata *calling her over*, so she answers as
@@ -592,7 +595,7 @@ internal sealed partial class ChatterService
         }
         else if (greeting)
         {
-            pick = IntentPick.Of(GreetingPool(owner: false), AnswerKinds.Greeting);
+            pick = await GreetingPickAsync(message, isOwner: false);
         }
         else if (intent == ChatIntent.Sharing)
         {
@@ -664,6 +667,35 @@ internal sealed partial class ChatterService
     // Her greetings for right now: bonjour or bonsoir, or now and then the week moment's (Replies.Week).
     private static string[] GreetingPool(bool owner) =>
         BotResponses.GreetingLines(owner, DateTimeOffset.UtcNow, Random.Shared.NextDouble());
+
+    // A greeting back. Someone away three weeks or more (LongAbsence) gets « ça faisait longtemps »
+    // (glad, never how long); everyone else GreetingPool. The look is a database read, so each person gets
+    // one per ReturnCheckEvery (a day, so never twice on the day they come back; by the next look
+    // their last active day is that day, and it stays quiet).
+    // A failed read greets as usual and frees the claim.
+    private async Task<IntentPick> GreetingPickAsync(SocketUserMessage message, bool isOwner)
+    {
+        if (message.Channel is SocketGuildChannel channel && _returnGate.TryClaim((channel.Guild.Id, message.Author.Id)))
+        {
+            try
+            {
+                var today = AppTime.TodayKey;
+                await using var scope = _services.CreateAsyncScope();
+                var last = await scope.ServiceProvider.GetRequiredService<XpService>()
+                    .LastActiveDayBeforeAsync(channel.Guild.Id, message.Author.Id, today);
+                if (LongAbsence.DaysAway(today, last) is not null)
+                    return isOwner
+                        ? IntentPick.Of(BotResponses.OwnerReturningGreetings, AnswerKinds.PapaReturning)
+                        : IntentPick.Of(BotResponses.ReturningGreetings, AnswerKinds.Returning);
+            }
+            catch (Exception ex)
+            {
+                _returnGate.Release((channel.Guild.Id, message.Author.Id));
+                _logger.LogWarning(ex, "Could not read when {UserId} was last active; greeting as usual.", message.Author.Id);
+            }
+        }
+        return IntentPick.Of(GreetingPool(isOwner), isOwner ? AnswerKinds.PapaGreeting : AnswerKinds.Greeting);
+    }
 
     // The current weekday name in French, for the {1} format placeholder.
     private static string CurrentWeekday() =>

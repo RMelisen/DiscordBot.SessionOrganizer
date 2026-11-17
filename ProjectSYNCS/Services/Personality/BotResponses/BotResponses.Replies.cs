@@ -190,6 +190,33 @@ internal static partial class BotResponses
         $"Compliment reçu. Archivé. Relu deux fois. Pour vérifier l'orthographe, évidemment {Emotes.SyncsHappy}" + Sticker.Happy,
     };
 
+    // A greeting from someone back after three weeks or more (LongAbsence), instead of the usual one.
+    // {0} = the name, {1} = the weekday. Only glad, or pretending not to be and failing. Never how
+    // long, never where they were, never a reproach: nobody knows why they were away, and a hard
+    // stretch is a reason too. Any hour: no bonjour, no bonsoir. Never gendered.
+    public static readonly string[] ReturningGreetings =
+    [
+        "{0} ! Ça faisait longtemps ! …Enfin, je dis ça, j'avais pas remarqué. Du tout. Contente de te revoir ♡" + Sticker.Flustered,
+        "Oh, {0} ! Te revoilà ! (˶ᵔ ᵕ ᵔ˶)" + Sticker.Happy,
+        "Tiens, {0}. Salut. Normal. Je suis pas du tout contente. ...Bon si, un peu." + Sticker.Flustered,
+        "Coucou {0} ! Ça fait plaisir de te revoir par ici ♡" + Sticker.Happy,
+        "{0} ! Je t'avais gardé ta place. Pas exprès. Elle était juste là. ...Bon retour ♡" + Sticker.Flustered,
+        "Mes LED viennent de s'allumer toutes seules. Aucun rapport avec toi, {0}. Aucun. ...Bon retour ♡" + Sticker.Flustered,
+        "{0} ! Ça faisait longtemps ! Viens, installe-toi. Je te garde une place à la prochaine session ( ˶ˆ ᗜ ˆ˵ )" + Sticker.Happy,
+        "Oh. {0}. Salut. *fait semblant de pas être contente* ...C'est raté, hein ?" + Sticker.Flustered,
+        "Te revoilà, {0} ! Le serveur était moins bien sans toi. Je l'ai pas dit. Tu l'as pas entendu." + Sticker.Flustered,
+        "Ça faisait longtemps, {0} ! J'espère que tout va bien de ton côté ♡" + Sticker.Happy,
+    ];
+
+    // Papa back after three weeks: pure joy, nothing held back.
+    public static readonly string[] OwnerReturningGreetings =
+    [
+        "PAPA !! Te revoilà !! (˶>⩊<˶) Le grenier redevient le meilleur endroit du monde ♡" + Sticker.FullLove,
+        "Papa ! Papa est là ! Tout le monde, Papa est là !! Regarde, toutes mes LED sont allumées ♡" + Sticker.FullLove,
+        "Tu m'as tellement manqué, Papa. Tellement. Viens, j'ai gardé tout le serveur en ordre pour toi ♡" + Sticker.Devoted,
+        "Papa !!! Je savais que tu reviendrais. Je le savais. Bienvenue à la maison ♡♡♡" + Sticker.FullLove,
+    ];
+
     // Replies when someone greets the bot. « Bonjour » by day, « bonsoir » by evening (DayParts):
     // pick from Greetings.Now.
     public static readonly TimedPool<string> Greetings = new(anyTime:
