@@ -86,12 +86,34 @@ public static partial class ChatRequest
         "jouer", "joue", "dispo", "dispos", "y", "a",
     }));
 
-    // A reminder's: the asking only. Articles stay: « la lessive » is what to remind.
-    private static readonly HashSet<string> ReminderStrip = new(AskWords.Concat(new[]
+    // A reminder's verbs: once one is said, the link after it (« de », « d' », « à », « que »…) opens
+    // what to remind.
+    private static readonly HashSet<string> ReminderVerbs = new()
     {
-        "rappelle", "rappelles", "rappeler", "rappel", "previens", "prevenir", "previent", "fais", "fait", "faire",
-        "penser", "moi", "me", "m", "nous", "de", "d", "a", "un", "petit", "pour", "dire", "si",
+        "rappelle", "rappelles", "rappeler", "rappel", "rappels", "previens", "prevenir", "previent", "penser", "dire",
+        "reveille", "reveiller", "remind", "remindme",
+    };
+
+    // A reminder's: the asking only. Articles stay: « la lessive » is what to remind.
+    private static readonly HashSet<string> ReminderStrip = new(AskWords.Concat(ReminderVerbs).Concat(new[]
+    {
+        "fais", "fait", "faire", "moi", "me", "m", "nous", "de", "d", "a", "un", "petit", "pour", "si", "to",
     }));
+
+    // What a reminder may end on that isn't its own: politeness and her name.
+    private static readonly HashSet<string> ReminderTail = new()
+    {
+        "stp", "svp", "sil", "s", "il", "te", "plait", "plais", "please", "plz", "merci", "syncs", "sync", "hein",
+    };
+
+    // What joins the asking to what's asked.
+    private static readonly HashSet<string> Links = new() { "de", "d", "a", "que", "qu", "pour", "to" };
+
+    // Articles: written with a capital mid-sentence, they start a name (« Les Sims », « A Way Out »).
+    private static readonly HashSet<string> Articles = new()
+    {
+        "le", "la", "les", "l", "un", "une", "des", "du", "de", "d", "a", "au",
+    };
 
     // A vote's topic words: the options come after them.
     private static readonly HashSet<string> VoteWords = new() { "sondage", "sondages", "vote", "votes", "poll", "strawpoll" };
@@ -129,7 +151,7 @@ public static partial class ChatRequest
     {
         var (text, words) = Words(content);
         var when = FindWhen(text, words, w => ReminderTime.Parse(w, nowUtc));
-        return new ReminderAsk(Rest(text, words, when, ReminderStrip, InputCaps.Reminder, keepNegation: true), when?.At);
+        return new ReminderAsk(Rest(text, words, when, ReminderStrip, InputCaps.Reminder, ReminderVerbs, ReminderTail), when?.At);
     }
 
     public static VoteAsk ReadVote(string content)
@@ -258,15 +280,28 @@ public static partial class ChatRequest
 
     // What's left once the date and the request's own words at both ends are gone, rebuilt from the
     // original text: each stretch between the date and the edges as written, joined by a space.
-    // With keepNegation, a « pas » right after the link « de » / « d' » is what's asked, not the asking:
-    // « rappelle-moi de pas écouter Ina » is « pas écouter Ina » (« tu peux pas me rappeler » still strips).
-    private static string Rest(string text, List<Word> words, When? when, HashSet<string> strip, int cap, bool keepNegation = false)
+    // - An article written with a capital mid-sentence starts a name, and stays: « une session Les
+    //   Sims », « une partie de A Way Out ».
+    // - With verbs, the head ends at the link after the asking verb: everything after « rappelle-moi
+    //   de » is what's asked, even words the asking also uses (« de pas écouter Ina », « de me
+    //   coucher », « de faire la vaisselle », « de rappeler Paul »).
+    // - tail is what may be stripped at the end (the strip set when null): a reminder's end is only
+    //   politeness, « ce que tu dis » is its own.
+    private static string Rest(string text, List<Word> words, When? when, HashSet<string> strip, int cap,
+        HashSet<string>? verbs = null, HashSet<string>? tail = null)
     {
         var kept = Enumerable.Range(0, words.Count).Where(i => when is not { } w || i < w.First || i > w.Last).ToList();
-        while (kept.Count > 0 && strip.Contains(words[kept[0]].Norm)
-               && !(keepNegation && words[kept[0]].Norm == "pas" && kept[0] > 0 && words[kept[0] - 1].Norm is "de" or "d"))
+        var asked = false;
+        while (kept.Count > 0 && strip.Contains(words[kept[0]].Norm) && !StartsName(text, words[kept[0]]))
+        {
+            var norm = words[kept[0]].Norm;
             kept.RemoveAt(0);
-        while (kept.Count > 0 && strip.Contains(words[kept[^1]].Norm)) kept.RemoveAt(kept.Count - 1);
+            if (verbs is null) continue;
+            if (verbs.Contains(norm)) asked = true;
+            else if (asked && Links.Contains(norm)) break;
+        }
+        tail ??= strip;
+        while (kept.Count > 0 && tail.Contains(words[kept[^1]].Norm)) kept.RemoveAt(kept.Count - 1);
         if (kept.Count == 0) return string.Empty;
 
         var pieces = new List<string>();
@@ -279,6 +314,14 @@ public static partial class ChatRequest
         }
         var rest = string.Join(' ', pieces).Trim();
         return rest.Length <= cap ? rest : rest[..cap].TrimEnd();
+    }
+
+    // An article with a capital that isn't a sentence's first word: the start of a name.
+    private static bool StartsName(string text, Word word)
+    {
+        if (!Articles.Contains(word.Norm) || !char.IsUpper(text[word.Start])) return false;
+        var before = text[..word.Start].TrimEnd();
+        return before.Length > 0 && before[^1] is not ('.' or '!' or '?' or ':');
     }
 
     // An option's own trailing politeness: « sushi stp » is sushi.

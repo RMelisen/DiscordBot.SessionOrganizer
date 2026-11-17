@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.65.2 — 2026-11-17
+
+- Requests read in chat keep what was asked: a reminder keeps everything after « rappelle-moi de » (« me coucher », « faire la vaisselle », « rappeler Paul »), and a session title keeps a capitalised article (« Les Sims », « A Way Out »).
+
 ## 7.65.1 — 2026-11-17
 
 - Reminders asked in chat keep a negation: « rappelle-moi de pas … » no longer drops the « pas ».

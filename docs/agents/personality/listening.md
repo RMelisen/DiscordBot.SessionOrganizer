@@ -196,6 +196,10 @@ A `Request` for a session, a `/tonight` call, a vote, a reminder or teams (`pers
   reads as a day (« jeu », « sam », « mer »…) isn't one. The title is what's left once the request's
   own words are stripped from both ends, rebuilt from the original spans. Never a date parser of its
   own: a misread is fixed in `FrenchDate`, with its check.
+- **Stripping never eats what was asked.** An article with a capital mid-sentence starts a name and
+  stays (« Les Sims », « A Way Out »). A reminder's head ends at the link after its verb (« de »,
+  « d' », « à », « que »): what follows is theirs even when it reuses the asking's words (« de pas
+  écouter Ina », « de me coucher », « de rappeler Paul »), and its end strips only politeness.
 - **What would show in public is offered, never done**: her line (`RequestActionLines[topic]`, Papa
   `OwnerRequestActionLines`, `{2}` what she read) and one button, `chatreq:session:{id}`,
   `chatreq:vote:{id}` or `chatreq:tonight:{id}`. The offer is in `ChatOffers` (singleton, in memory,

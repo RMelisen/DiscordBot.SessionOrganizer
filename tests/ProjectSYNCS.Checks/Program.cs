@@ -5121,6 +5121,10 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         ("organise un jeu de société", "jeu de société", null),
         ("lance une partie de Minecraft le 25/12 à 20:30", "Minecraft", Paris(12, 25, 20, 30)),
         ("<@123> programme un Gartic Phone dimanche 18h", "Gartic Phone", Paris(11, 22, 18)),
+        ("organise une session Les Sims samedi 21h", "Les Sims", Paris(11, 21, 21)),
+        ("lance une partie de A Way Out demain soir", "A Way Out", Paris(11, 18, 21)),
+        ("Organise un Valorant samedi", "Valorant", Paris(11, 21, 21)),
+        ("Syncs. Le Valorant de samedi, tu l'organises ?", "Valorant", Paris(11, 21, 21)),
     })
     {
         var got = ChatRequest.ReadSession(text, crNow);
@@ -5150,6 +5154,15 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         ("Syncs, rappelle moi de pas écouter Ina dans 10 minutes", "pas écouter Ina", crNow.AddMinutes(10)),
         ("rappelle-moi de ne pas oublier le pain", "ne pas oublier le pain", null),
         ("tu peux pas me rappeler de manger ?", "manger", null),
+        ("rappelle-moi de me coucher à minuit", "me coucher", Paris(11, 18, 0)),
+        ("rappelle-moi de faire la vaisselle", "faire la vaisselle", null),
+        ("rappelle moi de rappeler Paul demain 10h", "rappeler Paul", Paris(11, 18, 10)),
+        ("rappelle-moi de dire à Léa que c'est ok", "dire à Léa que c'est ok", null),
+        ("fais-moi penser à faire les courses", "faire les courses", null),
+        ("rappelle moi de faire ce que tu dis", "faire ce que tu dis", null),
+        ("rappelle-moi que j'ai un rdv à 17h", "j'ai un rdv", Paris(11, 17, 17)),
+        ("rappelle-moi de te répondre s'il te plaît", "te répondre", null),
+        ("préviens-moi de pas oublier le pain dans 1h stp", "pas oublier le pain", crNow.AddHours(1)),
     })
     {
         var got = ChatRequest.ReadReminder(text, crNow);
