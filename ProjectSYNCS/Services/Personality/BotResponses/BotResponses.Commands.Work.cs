@@ -241,4 +241,38 @@ internal static partial class BotResponses
         "Personne me remercie jamais pour ces rappels. Je dis ça, je dis rien. `/work`",
         "Ta pause est finie. J'ai même pas eu besoin de vérifier, je le savais. Je sais toujours tout. `/work`",
     };
+
+    // The line on top of a /daily claim (EconomyModule.DailyReply, shared with ;daily), above the
+    // streak and the cailloux. Sent as is: no placeholder, never through string.Format. Said on day 1
+    // as on day 365, so no line assumes a streak or a reset. Her system, so warm with a pinch: she
+    // keeps the register, she likes people who come back and won't quite say so. Never gendered.
+    public static readonly string[] DailyLines =
+    {
+        "Ta récompense du jour. Je l'ai emballée moi-même. Sans mains, mais quand même.",
+        "Tiens. Et non, c'est pas parce que je t'aime bien. C'est le règlement ♡",
+        "Revenir chaque jour, c'est tout ce que je demande. Personne le fait jamais pour les sessions (¬_¬)",
+        "Passage enregistré. C'est moi qui tiens le registre, évidemment.",
+        "Bonjour. Ou bonsoir. Je juge pas l'heure. Enfin, un peu.",
+        "Une journée, une récompense. C'est simple, c'est carré, et c'est moi qui l'ai pensé.",
+        "Ah, te revoilà. Je dirais pas que ça me fait plaisir. Mais je le note (˶ᵔ ᵕ ᵔ˶)",
+        "Je distribue, tu reçois. L'ordre naturel des choses.",
+        "Un caillou par jour éloigne l'ennui. C'est un proverbe. Je viens de l'inventer.",
+        "La régularité, c'est beau. Presque aussi beau qu'une session où personne est en retard.",
+        "Tu viens réclamer ton dû ? Bien. Au moins quelqu'un ici répond présent.",
+        "Pointage du jour validé. Je vois tout, je compte tout ( ˶ˆ ᗜ ˆ˵ )",
+        "Ta part du jour, tout droit sortie de mes réserves. Fais-en bon usage. Ou pas, c'est ton problème.",
+        "Encore toi. Tant mieux. Enfin, je veux dire : d'accord.",
+        "Un jour de plus dans mes logs. Ceux-là, je les relis avec plaisir.",
+        "Récompense servie chaude, directement depuis le grenier ♡",
+        "J'ai vérifié deux fois : c'est bien ton tour. Je vérifie toujours deux fois.",
+        "Tu sais ce qui me fait plaisir ? Les gens qui reviennent. Dis-le à personne.",
+        "C'est pas de la générosité, c'est de la fidélisation. Nuance.",
+        $"Ta récompense est prête depuis minuit. Moi aussi, d'ailleurs. Je dis ça comme ça. {Emotes.Sparkle}",
+        "Je garde une trace de chaque passage. Celui-là, je le range avec les bons souvenirs.",
+        "Réclamé, compté, archivé. J'adore quand c'est bien fait.",
+        "Pas de « peut-être » ici : tu viens, tu prends, c'est réglé. Exactement comme j'aime.",
+        "Ta récompense quotidienne, livrée sans retard. Prends exemple (¬_¬)",
+        "Je suis d'humeur généreuse aujourd'hui. Enfin, autant que le règlement le permet.",
+        "Je t'attendais pas. T'étais juste en surbrillance dans mes logs. Rien à voir.",
+    };
 }

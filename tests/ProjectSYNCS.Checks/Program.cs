@@ -4386,15 +4386,22 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     if (DailyStreak.NextStreak(20261111, 7, 20261111, dExcused) is not null) Fail("daily: excuses pay twice in a day");
     if (DailyStreak.NextStreak(0, 0, 20261111, dExcused) != 1) Fail("daily: excuses before the first claim");
 
-    // The reply, shared by /daily and ;daily: two lines, a find appended, completed sets after it.
+    // The reply, shared by /daily and ;daily: one of her lines on top, then the streak and the
+    // cailloux, a find appended, completed sets after it. A refusal carries no line.
     var dAt = new DateTimeOffset(2026, 11, 16, 12, 0, 0, TimeSpan.Zero);
-    var (dText, dRefused) = ProjectSYNCS.Commands.EconomyModule.DailyReply(new DailyResult(true, 12, 62, null, dAt), 1);
-    if (dRefused || dText != "Série : 12 jours\n+62 cailloux") Fail($"daily reply: {dText}");
+    var dPicker = new ResponsePicker();
+    for (var i = 0; i < 60; i++)
+    {
+        var (dText, dRefused) = ProjectSYNCS.Commands.EconomyModule.DailyReply(new DailyResult(true, 12, 62, null, dAt), 1, dPicker);
+        var dLines = dText.Split('\n');
+        if (dRefused || dLines.Length != 3 || dLines[0].Trim().Length == 0 || dLines[1] != "Série : 12 jours" || dLines[2] != "+62 cailloux")
+            Fail($"daily reply: {dText}");
+    }
     var dItem = ItemCatalog.All.First(i => i.Kind == ItemKind.Collectible);
     var dAllSets = new ItemFind(dItem, ItemCatalog.Sets.ToList());
-    var (dFound, _) = ProjectSYNCS.Commands.EconomyModule.DailyReply(new DailyResult(true, 365, 100, dAllSets, dAt), ulong.MaxValue);
-    if (!dFound.StartsWith("Série : 365 jours\n+100 cailloux  ·  trouvé : ") || dFound.Length > 2000) Fail($"daily reply with a find ({dFound.Length})");
-    var (dNo, dNoRefused) = ProjectSYNCS.Commands.EconomyModule.DailyReply(new DailyResult(false, 3, 0, null, dAt), 1);
+    var (dFound, _) = ProjectSYNCS.Commands.EconomyModule.DailyReply(new DailyResult(true, 365, 100, dAllSets, dAt), ulong.MaxValue, dPicker);
+    if (!dFound.Split('\n', 2)[1].StartsWith("Série : 365 jours\n+100 cailloux  ·  trouvé : ") || dFound.Length > 2000) Fail($"daily reply with a find ({dFound.Length})");
+    var (dNo, dNoRefused) = ProjectSYNCS.Commands.EconomyModule.DailyReply(new DailyResult(false, 3, 0, null, dAt), 1, dPicker);
     if (!dNoRefused || !dNo.Contains($"<t:{dAt.ToUnixTimeSeconds()}:R>")) Fail("daily reply: refusal");
     if (PlynlingShortcut.Parse(";daily") != new Shortcut(ShortcutKind.Daily) || PlynlingShortcut.Parse(";pl daily") != new Shortcut(ShortcutKind.Daily)
         || PlynlingShortcut.Parse(";daily x") != new Shortcut(ShortcutKind.Unknown) || PlynlingShortcut.Parse(";dailyx") is not null) Fail("daily shortcut");

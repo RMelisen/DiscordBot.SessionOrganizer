@@ -91,7 +91,7 @@ public sealed class PlynlingShortcutService
             {
                 var pebbles = scope.ServiceProvider.GetRequiredService<PebbleService>();
                 var result = await pebbles.ClaimDailyAsync(guild.Id, authorId, now, Random.Shared);
-                await AnswerAsync(message, EconomyModule.DailyReply(result, authorId));
+                await AnswerAsync(message, EconomyModule.DailyReply(result, authorId, _picker));
                 return;
             }
             case ShortcutKind.Forage:

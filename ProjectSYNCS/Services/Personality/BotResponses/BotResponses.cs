@@ -122,6 +122,7 @@ namespace ProjectSYNCS.Services;
 //     WarnDmLines .............. /admin warn, the DM to the person warned
 //     WorkLines ................ /work
 //     WorkReadyLines ........... the DM when /work is ready again (WorkReminderService)
+//     DailyLines ............... on top of a /daily claim
 //     QuizIntroLines ........... on the card of her pop quiz (QuizMasterService)
 //     QuizWinLines · QuizOwnerWinLines ............... someone found it / Papa found it
 //     QuizTimeoutLines ......... nobody found it in an hour

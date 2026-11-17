@@ -53,7 +53,7 @@ public class EconomyModule : InteractionModuleBase<SocketInteractionContext>
     {
         await DeferAsync();
         var result = await _pebbles.ClaimDailyAsync(Context.Guild.Id, Context.User.Id, DateTimeOffset.UtcNow, Random.Shared);
-        var (text, refused) = DailyReply(result, Context.User.Id);
+        var (text, refused) = DailyReply(result, Context.User.Id, _picker);
         if (refused)
         {
             await DeleteOriginalResponseAsync();
@@ -70,13 +70,14 @@ public class EconomyModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     // What /daily answers, shared with the ;daily shortcut. « trouvé : » rather than an agreed
-    // participle, because items carry no grammatical gender.
-    public static (string Text, bool Refused) DailyReply(DailyResult result, ulong userId)
+    // participle, because items carry no grammatical gender. A claim opens on one of her lines; a
+    // refusal stays bare.
+    public static (string Text, bool Refused) DailyReply(DailyResult result, ulong userId, ResponsePicker picker)
     {
         if (!result.Claimed)
             return ($"Déjà réclamé aujourd'hui. Prochain `/daily` <t:{result.NextClaimAt.ToUnixTimeSeconds()}:R> · série : {DailyStreak.Days(result.Streak)}", true);
 
-        var text = $"Série : {DailyStreak.Days(result.Streak)}\n+{PebbleEconomy.Cailloux(result.Amount)}";
+        var text = $"{picker.Pick(BotResponses.DailyLines)}\nSérie : {DailyStreak.Days(result.Streak)}\n+{PebbleEconomy.Cailloux(result.Amount)}";
         if (result.Find is not { } find) return (text, false);
         return (PlynlingText.FindLines($"{text}  ·  trouvé : {PlynlingText.ItemLabel(find.Item)}", find, userId), false);
     }
