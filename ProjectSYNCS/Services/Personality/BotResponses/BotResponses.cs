@@ -119,7 +119,7 @@ namespace ProjectSYNCS.Services;
 //     RivalLevelUpLines ........ a level-up on the rival's XP system
 //     RivalJoinLines ........... a new bot joined the server (WelcomeService)
 //
-//   [Commands, Commands.Work, Commands.Quiz] Commands
+//   [Commands, Commands.Work, Commands.Economy, Commands.Quiz] Commands
 //     XpLevelUpLines ........... /level
 //     StaffReportLines ......... /report asked by other staff: suspicious, on top of the card
 //     YesLines · NoLines ....... /yesno
