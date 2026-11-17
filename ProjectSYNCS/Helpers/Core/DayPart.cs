@@ -39,6 +39,47 @@ public static class DayParts
 }
 
 /// <summary>
+/// The moments of the week that have a flavour of their own: the Monday morning groan, Friday
+/// evening's « bon week-end », the weekend, Saturday night, Sunday evening's « demain c'est lundi ».
+/// Each sits wholly inside one <see cref="DayPart"/>, so its lines greet like that half.
+/// </summary>
+public enum WeekMoment
+{
+    None,
+    MondayMorning,
+    FridayEvening,
+    WeekendDay,
+    SaturdayEvening,
+    SundayEvening,
+}
+
+public static class WeekMoments
+{
+    /// <summary>Monday morning ends at noon; the afternoon is just a weekday.</summary>
+    public static readonly TimeSpan MondayMorningEnd = TimeSpan.FromHours(12);
+
+    /// <summary>
+    /// The moment of the week at <paramref name="instant"/>, in Paris time. The small hours belong
+    /// to the evening before, as « bonsoir » does: 1 a.m. on Saturday is still Friday evening.
+    /// </summary>
+    public static WeekMoment At(DateTimeOffset instant)
+    {
+        var zoned = AppTime.ToZoned(instant);
+        var day = (zoned - DayParts.DayStart).DayOfWeek;
+        var evening = DayParts.At(instant) == DayPart.Evening;
+        return (day, evening) switch
+        {
+            (DayOfWeek.Monday, false) when zoned.TimeOfDay < MondayMorningEnd => WeekMoment.MondayMorning,
+            (DayOfWeek.Friday, true) => WeekMoment.FridayEvening,
+            (DayOfWeek.Saturday or DayOfWeek.Sunday, false) => WeekMoment.WeekendDay,
+            (DayOfWeek.Saturday, true) => WeekMoment.SaturdayEvening,
+            (DayOfWeek.Sunday, true) => WeekMoment.SundayEvening,
+            _ => WeekMoment.None,
+        };
+    }
+}
+
+/// <summary>
 /// A pool whose greetings follow the clock: the lines that fit any hour, plus the « bonjour »
 /// lines by day or the « bonsoir » ones by evening (<see cref="DayParts"/>). Both joined arrays
 /// are built once, so a pick costs nothing more than a plain pool's, and

@@ -336,6 +336,14 @@ text to read; it is answered as `LowEffort`, like an emote alone.
   (« bonne journée » by day, « bonne soirée » / « à demain » by evening), Papa's in
   `OwnerGoodbyeLines`. A `Goodnight` in broad daylight (`DayParts.IsDaylight`, 8:00–18:00) is a nap:
   `DaytimeGoodnightLines` / `OwnerDaytimeGoodnightLines`; before 8:00 it is just a late night.
+- **Greetings and goodbyes know the week** (`BotResponses.Replies.Week`): at a `WeekMoment`
+  (`Helpers/Core/DayPart.cs`: Monday morning until noon, Friday, Saturday and Sunday evenings, the
+  weekend days; the small hours belong to the evening before) `WeekMomentChance` (25%) of them come
+  from that moment's pool (`WeekGreetingLines`, `WeekGoodbyeLines`, Papa's `OwnerWeek…` twins). Every
+  greeting goes through `BotResponses.GreetingLines` (Discord and `McTalk`), every goodbye through
+  `ClockIntentLines`; never pick `Greetings.Now` directly. A share, not all: every Friday greeting
+  saying « week-end » would read as a script. Each moment sits in one `DayPart`, so its lines greet
+  like that half (checks section 45).
 - `Laughter` is the whole message or nearly (5 tokens at most): a laugh word (raw, shortened —
   « jpppp » is « jpp » — or squashed), a « haha »-run on the squashed token, villain laughs included
   (« bahaha », « bwahaha », « mouahaha », « muahaha », « mwahaha », « gnahaha »; four letters at least,

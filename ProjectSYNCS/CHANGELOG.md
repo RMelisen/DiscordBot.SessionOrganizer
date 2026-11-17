@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.59.7 — 2026-11-17
+
+- SYNCS's greetings and goodbyes now know the week: now and then a Monday-morning groan, a
+  « bon week-end » on Friday evening, weekend and Saturday-night lines, and « demain c'est lundi »
+  on Sunday evening.
+
 ## 7.59.6 — 2026-11-17
 
 - SYNCS's goodbyes follow the clock too: « bonne journée » by day, « bonne soirée » and « à demain »

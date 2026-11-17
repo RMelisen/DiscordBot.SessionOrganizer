@@ -265,8 +265,8 @@ internal sealed partial class ChatterService
         {
             what = "named greeting";
             pick = isOwner
-                ? IntentPick.Of(BotResponses.OwnerGreetings.Now, AnswerKinds.PapaGreeting)
-                : IntentPick.Of(BotResponses.Greetings.Now, AnswerKinds.Greeting);
+                ? IntentPick.Of(GreetingPool(owner: true), AnswerKinds.PapaGreeting)
+                : IntentPick.Of(GreetingPool(owner: false), AnswerKinds.Greeting);
         }
         else
         {
@@ -413,7 +413,7 @@ internal sealed partial class ChatterService
             else if (MessageCues.ReadIntent(content) == ChatIntent.Sharing)
                 (ownerPick, ownerWhat) = (SharingPick(isOwner: true), "his news");
             else
-                (ownerPick, ownerWhat) = (IntentPick.Of(BotResponses.OwnerGreetings.Now, AnswerKinds.PapaGreeting), "greeting him");
+                (ownerPick, ownerWhat) = (IntentPick.Of(GreetingPool(owner: true), AnswerKinds.PapaGreeting), "greeting him");
 
             _logger.LogInformation("Owner mentioned the bot — {What}.", ownerWhat);
             Count(message, ChatPath.Mention, ownerPick.Kind);
@@ -459,7 +459,7 @@ internal sealed partial class ChatterService
             (pick, what) = (intentPick, $"mention intent ({intent})");
         }
         else if (mood.IsGreeting && !mean)
-            pick = IntentPick.Of(BotResponses.Greetings.Now, AnswerKinds.Greeting);
+            pick = IntentPick.Of(GreetingPool(owner: false), AnswerKinds.Greeting);
         else if (RollTataWarmth(message.Author.Id, mood))
             // Family doesn't get « tagged for nothing » for tagging her. TataGreetings, not
             // TataReplies: a mention is Tata *calling her over*, so she answers as
@@ -592,7 +592,7 @@ internal sealed partial class ChatterService
         }
         else if (greeting)
         {
-            pick = IntentPick.Of(BotResponses.Greetings.Now, AnswerKinds.Greeting);
+            pick = IntentPick.Of(GreetingPool(owner: false), AnswerKinds.Greeting);
         }
         else if (intent == ChatIntent.Sharing)
         {
@@ -660,6 +660,10 @@ internal sealed partial class ChatterService
 
     private Task PostWithTypingAsync(ISocketMessageChannel channel, string line, string what) =>
         _glitch.PostWithTypingAsync(channel, line, _logger, what);
+
+    // Her greetings for right now: bonjour or bonsoir, or now and then the week moment's (Replies.Week).
+    private static string[] GreetingPool(bool owner) =>
+        BotResponses.GreetingLines(owner, DateTimeOffset.UtcNow, Random.Shared.NextDouble());
 
     // The current weekday name in French, for the {1} format placeholder.
     private static string CurrentWeekday() =>

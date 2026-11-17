@@ -47,6 +47,10 @@ namespace ProjectSYNCS.Services;
 //     GoodbyeLines ............. « à plus », by the clock (ClockIntentLines, not in IntentLines)
 //     DaytimeGoodnightLines .... « bonne nuit » in broad daylight: a nap
 //
+//   [Replies.Week] The week in her greetings and goodbyes (GreetingLines, ClockIntentLines)
+//     WeekGreetingLines · WeekGoodbyeLines .......... keyed by WeekMoment: Monday morning, Friday evening…
+//     OwnerWeekGreetingLines · OwnerWeekGoodbyeLines  his twins
+//
 //   [Replies.Requests] Answering what she was told: requests, questions, asks
 //     HowAreYouTempLines ....... « ça va ? » with her real temperature, on the Pi
 //     RequestLines ............. keyed by RequestTopic: pointing at the command that does it

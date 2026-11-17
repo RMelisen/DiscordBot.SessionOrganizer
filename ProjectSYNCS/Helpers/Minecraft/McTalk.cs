@@ -82,7 +82,7 @@ public static class McTalkReader
         if (maybeForOthers) return null;
 
         if (mood.Emotion == EmotionKind.Nice) return new(BotResponses.NiceReplies, "nice");
-        if (mood.IsGreeting && !mean) return new(papa ? BotResponses.OwnerGreetings.Now : BotResponses.Greetings.Now, "greeting");
+        if (mood.IsGreeting && !mean) return new(BotResponses.GreetingLines(papa, DateTimeOffset.UtcNow, random.NextDouble()), "greeting");
         if (intent == ChatIntent.Sharing)
             return new(papa ? BotResponses.OwnerIntentLines[ChatIntent.Sharing]
                 : random.NextDouble() < SharingInterestChance ? BotResponses.IntentLines[ChatIntent.Sharing]
@@ -190,7 +190,8 @@ public static class McTalkReader
         }
 
         if (kin == McKin.Tata && BotResponses.TataIntentLines.TryGetValue(intent, out var tata)) return new(tata, kind);
-        if (BotResponses.ClockIntentLines(intent, kin == McKin.Papa, DateTimeOffset.UtcNow) is { } clocked) return new(clocked, kind);
+        if (BotResponses.ClockIntentLines(intent, kin == McKin.Papa, DateTimeOffset.UtcNow, random.NextDouble()) is { } clocked)
+            return new(clocked, kind);
         if (kin == McKin.Papa)
             return BotResponses.OwnerIntentLines.TryGetValue(intent, out var twin) ? new(twin, kind) : null;
         if (intent == ChatIntent.HowAreYou && milli is { } m && m < PiHealth.HotMilli && random.NextDouble() < TemperatureChance)

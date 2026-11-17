@@ -56,7 +56,8 @@ var taggedPools = new[]
     "CardRepostLines", "CardRepostTooSoonLines", "CardClosedLines", "CardRallyLines", "CardRallyNamedLines",
     "CardRallyAllDoneLines", "CardDoneSeenLines", "CardDoneLiarLines", "CardTextClickLines", "CardTextAnsweredLines",
     "CardStatusLines", "OpenAnswerLines", "CardDoneAnonymousLines", "PollClosedSlotLines", "VoteClosedResultLines",
-    "PollClosedEmptyLines",
+    "PollClosedEmptyLines", "GoodbyeLines", "OwnerGoodbyeLines", "DaytimeGoodnightLines", "OwnerDaytimeGoodnightLines",
+    "WeekGreetingLines", "WeekGoodbyeLines", "OwnerWeekGreetingLines", "OwnerWeekGoodbyeLines",
 };
 foreach (var f in taggedPools)
 foreach (var (name, lines) in Pools(f))
@@ -4452,8 +4453,9 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
 
     // The clock intents: a goodbye by the hour (his twin for Papa), a goodnight teased only by day.
     var clock = br.GetMethod("ClockIntentLines")!;
+    // A Wednesday, no week moment; roll 0 would take one if there were.
     string[]? Clocked(string intent, bool owner, int h) => (string[]?)clock.Invoke(null,
-        [Enum.Parse(intentType, intent), owner, AppTime.AtWallClock(new DateTime(2026, 7, 1, h, 0, 0))]);
+        [Enum.Parse(intentType, intent), owner, AppTime.AtWallClock(new DateTime(2026, 7, 1, h, 0, 0)), 0.0]);
     var noonBye = Clocked("Goodbye", false, 12)!;
     var nightBye = Clocked("Goodbye", false, 22)!;
     if (!noonBye.Any(l => l.Contains("journée")) || noonBye.Any(l => l.Contains("soirée")))
@@ -4469,6 +4471,50 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     if (Clocked("Goodnight", false, 23) is not null || Clocked("Goodnight", false, 5) is not null
         || Clocked("Love", false, 12) is not null)
         Fail("clock intents: an intent off the clock got a clock pool");
+
+    // Week moments (WeekMoments): Paris time, the small hours belonging to the evening before.
+    // 16 Nov 2026 is a Monday.
+    WeekMoment MomentAt(int d, int h, int mi = 0) => WeekMoments.At(AppTime.AtWallClock(new DateTime(2026, 11, d, h, mi, 0)));
+    foreach (var (d, h, mi, expected) in new[]
+    {
+        (16, 3, 0, WeekMoment.MondayMorning), (16, 11, 59, WeekMoment.MondayMorning), (16, 12, 0, WeekMoment.None),
+        (16, 2, 59, WeekMoment.SundayEvening), (18, 10, 0, WeekMoment.None), (18, 21, 0, WeekMoment.None),
+        (20, 17, 59, WeekMoment.None), (20, 18, 0, WeekMoment.FridayEvening), (21, 2, 59, WeekMoment.FridayEvening),
+        (21, 3, 0, WeekMoment.WeekendDay), (21, 20, 0, WeekMoment.SaturdayEvening), (22, 1, 0, WeekMoment.SaturdayEvening),
+        (22, 12, 0, WeekMoment.WeekendDay), (22, 18, 0, WeekMoment.SundayEvening), (23, 2, 59, WeekMoment.SundayEvening),
+        (23, 3, 0, WeekMoment.MondayMorning),
+    })
+        if (MomentAt(d, h, mi) != expected) Fail($"week moments: {d}/11 {h}:{mi:00} is {MomentAt(d, h, mi)}, expected {expected}");
+    // Across the October DST change too (25 Oct 2026, a Sunday).
+    if (WeekMoments.At(AppTime.AtWallClock(new DateTime(2026, 10, 25, 19, 0, 0))) != WeekMoment.SundayEvening)
+        Fail("week moments: Sunday evening on the DST night");
+
+    // Every moment has its four pools, and each greets like the half of the day it sits in.
+    var weekPools = new[] { "WeekGreetingLines", "WeekGoodbyeLines", "OwnerWeekGreetingLines", "OwnerWeekGoodbyeLines" };
+    foreach (var field in weekPools)
+    {
+        var pools = (IReadOnlyDictionary<WeekMoment, string[]>)Field(field);
+        foreach (var moment in Enum.GetValues<WeekMoment>().Where(m => m != WeekMoment.None))
+        {
+            if (!pools.TryGetValue(moment, out var lines) || lines.Length == 0) { Fail($"{field} misses {moment}"); continue; }
+            var evening = moment is WeekMoment.FridayEvening or WeekMoment.SaturdayEvening or WeekMoment.SundayEvening;
+            foreach (var l in lines.Select(l => l.ToLowerInvariant()))
+                if (evening ? l.Contains("bonjour") || l.Contains("journée") : l.Contains("bonsoir") || l.Contains("soir"))
+                    Fail($"{field}[{moment}]: greets for the wrong half: {l}");
+        }
+    }
+
+    // The roll decides: under the chance a Friday-evening goodbye or greeting is the moment's, over it the clock's.
+    var friday = AppTime.AtWallClock(new DateTime(2026, 11, 20, 19, 0, 0));
+    var greet = br.GetMethod("GreetingLines")!;
+    var weekGreets = (IReadOnlyDictionary<WeekMoment, string[]>)Field("WeekGreetingLines");
+    if (greet.Invoke(null, [false, friday, 0.0]) != weekGreets[WeekMoment.FridayEvening]
+        || !((string[])greet.Invoke(null, [false, friday, 0.99])!).SequenceEqual(((TimedPool<string>)Field("Greetings")).At(friday)))
+        Fail("week moments: the greeting roll");
+    var weekByes = (IReadOnlyDictionary<WeekMoment, string[]>)Field("WeekGoodbyeLines");
+    if (clock.Invoke(null, [Enum.Parse(intentType, "Goodbye"), false, friday, 0.0]) != weekByes[WeekMoment.FridayEvening]
+        || clock.Invoke(null, [Enum.Parse(intentType, "Goodbye"), false, friday, 0.99]) == weekByes[WeekMoment.FridayEvening])
+        Fail("week moments: the goodbye roll");
 
     // Every TimedPool on BotResponses: day lines say bonjour (or « journée »), evening lines
     // bonsoir (or « soirée »), never the other one; any-time lines greet with neither, or both

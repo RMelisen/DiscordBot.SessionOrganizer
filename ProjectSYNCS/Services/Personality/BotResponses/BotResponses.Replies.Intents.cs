@@ -340,11 +340,13 @@ internal static partial class BotResponses
     /// The pool for an intent whose answer depends on the hour, or null to use the usual one: a
     /// goodbye says « bonne journée » by day and « bonne soirée » by evening, and a « bonne nuit »
     /// in broad daylight (<see cref="DayParts.IsDaylight"/>) is teased as a nap. A goodnight at
-    /// night keeps its usual pool.
+    /// night keeps its usual pool. A goodbye at a <see cref="WeekMoment"/> is that moment's when
+    /// <paramref name="roll"/> (0 to 1) falls under <see cref="WeekMomentChance"/> (Replies.Week).
     /// </summary>
-    public static string[]? ClockIntentLines(ChatIntent intent, bool owner, DateTimeOffset now) => intent switch
+    public static string[]? ClockIntentLines(ChatIntent intent, bool owner, DateTimeOffset now, double roll) => intent switch
     {
-        ChatIntent.Goodbye => (owner ? OwnerGoodbyeLines : GoodbyeLines).At(now),
+        ChatIntent.Goodbye => WeekLines(owner ? OwnerWeekGoodbyeLines : WeekGoodbyeLines, now, roll)
+                              ?? (owner ? OwnerGoodbyeLines : GoodbyeLines).At(now),
         ChatIntent.Goodnight when DayParts.IsDaylight(now) => owner ? OwnerDaytimeGoodnightLines : DaytimeGoodnightLines,
         _ => null,
     };
