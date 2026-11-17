@@ -50,6 +50,9 @@ public static class AnswerKinds
     // A greeting from someone back after three weeks or more (ReturningGreetings, LongAbsence).
     public const string Returning = "returning";
     public const string PapaReturning = "papa:returning";
+    // A reply to one of her messages hours or days old (LateReplyLines, LateReply).
+    public const string LateReply = "late-reply";
+    public const string PapaLateReply = "papa:late-reply";
 
     internal static string Intent(ChatIntent intent) => "intent:" + intent;
     public static string Context(ReplyContext context) => "context:" + context;

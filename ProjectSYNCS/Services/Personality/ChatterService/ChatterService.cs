@@ -613,6 +613,13 @@ internal sealed partial class ChatterService
             (pick, what) = (new IntentPick(BotResponses.OpenAnswerLines, Discord.Format.Sanitize(said), string.Empty,
                 QuotedMentions, AnswerKinds.OpenAnswer), "answer to her question");
         }
+        else if (!mean && LateReplyPick(message, isOwner) is { } latePick)
+        {
+            // Answering something she said hours or days ago: now and then she notices, instead of
+            // a stock comeback. Never in place of a real answer (every branch above), never on an
+            // insult (roasted below).
+            (pick, what) = (latePick, "late reply");
+        }
         else if (Random.Shared.NextDouble() < ReferenceChance)
         {
             // Rarer easter egg: a pop-culture reference, for everyone.
@@ -663,6 +670,17 @@ internal sealed partial class ChatterService
 
     private Task PostWithTypingAsync(ISocketMessageChannel channel, string line, string what) =>
         _glitch.PostWithTypingAsync(channel, line, _logger, what);
+
+    // The late-reply remark (LateReply), when the message replied to is old enough and the roll wins;
+    // {2} is when she wrote it. Rolls the dice, so call it once per message.
+    private static IntentPick? LateReplyPick(SocketUserMessage message, bool isOwner)
+    {
+        if (message.ReferencedMessage is not { } hers
+            || LateReply.Ago(hers.Timestamp, DateTimeOffset.UtcNow) is not { } ago
+            || Random.Shared.NextDouble() >= LateReply.Chance) return null;
+        return new IntentPick(isOwner ? BotResponses.OwnerLateReplyLines : BotResponses.LateReplyLines, ago, string.Empty,
+            null, isOwner ? AnswerKinds.PapaLateReply : AnswerKinds.LateReply);
+    }
 
     // Her greetings for right now: bonjour or bonsoir, or now and then the week moment's (Replies.Week).
     private static string[] GreetingPool(bool owner) =>

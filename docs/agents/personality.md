@@ -17,7 +17,7 @@ of that name in the file below.
 |---|---|---|
 | How chat is read, and in what order | *`MessageCues`*, *Vocabulary rules*, *`ChatterService.HandleMessageAsync` — branch order* | `personality/cues.md` |
 | What a message aimed at her is asking | *Listening*, *Intents — `MessageCues.ReadIntent`* | `personality/intents.md` |
-| The rest of listening, and its stats | *Two-step messages*, *Reply context*, *Under her cards*, *Conversation streaks*, *Her records, quoted*, *Answer stats — `/debug answers`* | `personality/listening.md` |
+| The rest of listening, and its stats | *Two-step messages*, *Reply context*, *Late replies*, *Under her cards*, *Conversation streaks*, *Her records, quoted*, *Answer stats — `/debug answers`* | `personality/listening.md` |
 | Emote reactions and pictures | *Reactions and emotes*, *Sticker follow-ups* | `personality/reactions.md` |
 | Who she likes, fears and names | *Favouritism*, *Shutdown threats*, *Talked about*, *`RivalryService`* | `personality/people.md` |
 | Easter eggs (keep out of `/help`, README, changelog) | *Quoicoubeh*, *Tron / Trouille*, *Glitch* | `personality/easter-eggs.md` |

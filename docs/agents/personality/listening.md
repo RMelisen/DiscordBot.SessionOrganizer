@@ -41,6 +41,21 @@ Papa, so each pool must also suit a « merci », a « bonjour » or an « ok ».
   The cards are checked before `CommandResult`: `/tonight` and `/giveaway` cards carry metadata too,
   and « le verdict est définitif » doesn't answer a « merci » under a giveaway.
 
+### Late replies — `LateReply`
+
+A reply to one of her messages written 6 h or more ago (`Helpers/Personality/LateReply.MinAge`)
+gets, half the time (`LateReply.Chance`), `LateReplyLines` (Papa: `OwnerLateReplyLines`) with `{2}`
+saying when she wrote it (« il y a 7 heures » the same Paris day, « hier », « il y a 3 jours », « la
+semaine dernière », « il y a 2 semaines », « il y a des mois »). Counted as `late-reply`.
+
+- **Only in place of a stock comeback**: it sits after every branch that answers something (intents,
+  context, nice, greeting, sharing, questions, open answers) and before the reference roll, Tata's
+  warmth and the comebacks. Never on an insult, which is roasted.
+- **About her own old words, never the person's timing**: no « enfin », no « en retard » (checks
+  section 47). Why they answer late is theirs, as with « ça faisait longtemps ».
+- Every `{2}` reads with all the phrasings (« J'ai dit ça {2} », « C'était {2} », « commencée {2} »):
+  never « de {2} » (« de hier »).
+
 ### Under her cards — `CardReplyService`
 
 A reply under a poll, a vote, a session, `/tonight` or a giveaway card is usually not said to her:

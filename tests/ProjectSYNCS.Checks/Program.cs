@@ -58,7 +58,7 @@ var taggedPools = new[]
     "CardStatusLines", "OpenAnswerLines", "CardDoneAnonymousLines", "PollClosedSlotLines", "VoteClosedResultLines",
     "PollClosedEmptyLines", "GoodbyeLines", "OwnerGoodbyeLines", "DaytimeGoodnightLines", "OwnerDaytimeGoodnightLines",
     "WeekGreetingLines", "WeekGoodbyeLines", "OwnerWeekGreetingLines", "OwnerWeekGoodbyeLines", "ReturningGreetings",
-    "OwnerReturningGreetings",
+    "OwnerReturningGreetings", "LateReplyLines", "OwnerLateReplyLines",
 };
 foreach (var f in taggedPools)
 foreach (var (name, lines) in Pools(f))
@@ -4954,6 +4954,30 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
             if (l.Contains("{2}") || low.Contains("jours") || low.Contains("semaines")) Fail($"{field}: says how long they were away: {l}");
             if (low.Contains("bonjour") || low.Contains("bonsoir")) Fail($"{field}: greets for one time of day: {l}");
         }
+}
+
+// 47. Late replies (LateReply): her message's age in words, by Paris calendar day past six hours.
+{
+    DateTimeOffset At(int d, int h, int mi = 0) => AppTime.AtWallClock(new DateTime(2026, 11, d, h, mi, 0));
+    var written = At(17, 8);
+    foreach (var (now, expected) in new (DateTimeOffset, string?)[]
+    {
+        (At(17, 13, 59), null), (At(17, 14), "il y a 6 heures"), (At(17, 23, 30), "il y a 15 heures"),
+        (At(18, 1), "hier"), (At(18, 7, 59), "hier"), (At(20, 9), "il y a 3 jours"), (At(23, 9), "il y a 6 jours"),
+        (At(24, 9), "la semaine dernière"), (At(30, 9), "la semaine dernière"),
+        (AppTime.AtWallClock(new DateTime(2026, 12, 7, 9, 0, 0)), "il y a 2 semaines"),
+        (AppTime.AtWallClock(new DateTime(2027, 1, 14, 9, 0, 0)), "il y a 8 semaines"),
+        (AppTime.AtWallClock(new DateTime(2027, 3, 1, 9, 0, 0)), "il y a des mois"),
+    })
+        if (LateReply.Ago(written, now) != expected)
+            Fail($"late reply: {now:yyyy'-'MM'-'dd HH':'mm} reads « {LateReply.Ago(written, now)} », expected « {expected} »");
+    // Across midnight but under six hours: still just a reply.
+    if (LateReply.Ago(At(17, 22), At(18, 2)) is not null) Fail("late reply: four hours across midnight");
+    // Amused at her own words, never at the person's timing.
+    foreach (var field in new[] { "LateReplyLines", "OwnerLateReplyLines" })
+        foreach (var l in ((string[])Field(field)).Select(l => l.ToLowerInvariant()))
+            if (l.Contains("enfin") || l.Contains("t'étais où") || l.Contains("en retard"))
+                Fail($"{field}: blames their timing: {l}");
 }
 
 // 34. Story files: StoryChecks.cs.

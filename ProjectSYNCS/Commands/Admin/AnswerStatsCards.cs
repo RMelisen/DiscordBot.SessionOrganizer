@@ -21,7 +21,7 @@ internal static class AnswerStatsCards
         AnswerKinds.Nice, AnswerKinds.Greeting, AnswerKinds.Reference, AnswerKinds.Tata, AnswerKinds.Comeback,
         AnswerKinds.PapaComeback, AnswerKinds.PapaGreeting, AnswerKinds.Interrogation, AnswerKinds.TalkedAbout,
         AnswerKinds.PapaTalkedAbout, AnswerKinds.Backbite, AnswerKinds.PapaRaspberry, AnswerKinds.PapaChild,
-        AnswerKinds.Returning, AnswerKinds.PapaReturning,
+        AnswerKinds.Returning, AnswerKinds.PapaReturning, AnswerKinds.LateReply, AnswerKinds.PapaLateReply,
     };
 
     public static string PeriodLabel(StatsPeriod period) => period switch

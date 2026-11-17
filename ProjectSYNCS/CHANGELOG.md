@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.61.0 — 2026-11-17
+
+- Replying to one of SYNCS's messages hours or days later: now and then she notices, and remembers
+  when she wrote it (« hier », « il y a 3 jours »…).
+- 52 new `/work` jobs.
+
 ## 7.60.0 — 2026-11-17
 
 - Someone greeting SYNCS after three weeks or more away is welcomed back: she's glad to see them,

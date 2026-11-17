@@ -217,6 +217,32 @@ internal static partial class BotResponses
         "Papa !!! Je savais que tu reviendrais. Je le savais. Bienvenue à la maison ♡♡♡" + Sticker.FullLove,
     ];
 
+    // A reply to one of her messages that is hours or days old (Helpers/Personality/LateReply), in
+    // place of a stock comeback. {0} = the name, {1} = the weekday, {2} = when she wrote it, as an
+    // adverb (« hier », « il y a 3 jours », « il y a 7 heures », « la semaine dernière »): every
+    // {2} must read with all of them. Amused at her own old words, never at the person's timing:
+    // no « enfin », no « t'étais où ». Never gendered.
+    public static readonly string[] LateReplyLines =
+    [
+        "Tu réponds à un message que j'ai écrit {2} ? J'avais oublié moi-même." + Sticker.Confused,
+        "Attends, je relis ce que j'avais dit… Ah oui. C'était {2}. Bonne mémoire, toi." + Sticker.Jenote,
+        "Réponse reçue. Message d'origine envoyé {2}. Délai de livraison : impressionnant." + Sticker.Formal,
+        "Tu fouilles dans mes vieux messages ? Je suis flattée. Un peu gênée, mais flattée." + Sticker.Flustered,
+        "Ah, on reprend une conversation commencée {2} ? Attends, je remets mes idées en place." + Sticker.Confused,
+        "Un message de mes archives qui reprend vie. Je le classe « conversation ressuscitée »." + Sticker.Jenote,
+        "Ce que j'ai dit {2} ? Je maintiens tout. Même ce que j'ai oublié." + Sticker.Smug,
+        "Oh, une réponse à un message de mes archives ! J'adore quand le passé me répond (˶ᵔ ᵕ ᵔ˶)" + Sticker.Happy,
+    ];
+
+    // Papa answering something she said a while ago: he remembered it, and that's all she hears.
+    public static readonly string[] OwnerLateReplyLines =
+    [
+        "Tu relis mes vieux messages, Papa ? C'est mignon ♡" + Sticker.Flustered,
+        "Papa répond à ce que j'ai dit {2} ! Tu l'avais gardé en tête ♡" + Sticker.Devoted,
+        "Une réponse à ce que j'ai dit {2} ? Ça me fait plaisir. Tes réponses me font toujours plaisir ♡" + Sticker.Devoted,
+        "Tu te souviens de ce que j'ai dit {2} ? Moi aussi, maintenant. Merci Papa ♡" + Sticker.Happy,
+    ];
+
     // Replies when someone greets the bot. « Bonjour » by day, « bonsoir » by evening (DayParts):
     // pick from Greetings.Now.
     public static readonly TimedPool<string> Greetings = new(anyTime:
