@@ -78,6 +78,7 @@ public class EconomyModule : InteractionModuleBase<SocketInteractionContext>
             return ($"Déjà réclamé aujourd'hui. Prochain `/daily` <t:{result.NextClaimAt.ToUnixTimeSeconds()}:R> · série : {DailyStreak.Days(result.Streak)}", true);
 
         var text = $"{picker.Pick(BotResponses.DailyLines)}\nSérie : {DailyStreak.Days(result.Streak)}\n+{PebbleEconomy.Cailloux(result.Amount)}";
+        if (result.Doubled) text += "\n🫙 Journée double, grâce au bocal !";
         if (result.Find is not { } find) return (text, false);
         return (PlynlingText.FindLines($"{text}  ·  trouvé : {PlynlingText.ItemLabel(find.Item)}", find, userId), false);
     }

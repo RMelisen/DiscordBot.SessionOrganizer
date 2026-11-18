@@ -6,7 +6,7 @@ sweeps) stay in the root `CLAUDE.md`. This file lists what exists. Read it befor
 
 ## Background loops
 
-Sixteen `BackgroundService` loops, each with **its own interval on purpose** — never share one:
+Seventeen `BackgroundService` loops, each with **its own interval on purpose** — never share one:
 
 - `ReminderService` (5 min, load-bearing — see scheduling).
 - `PersonalReminderService` (1 min, `/remindme` — see scheduling).
@@ -15,6 +15,7 @@ Sixteen `BackgroundService` loops, each with **its own interval on purpose** —
 - `VoiceXpService` (1 min — also feeds the voice spectator, the session roll call and her voice
   seat).
 - `GiveawayDrawService` (1 min).
+- `LotteryDrawService` (1 min, the weekly `/arcade lottery` draw — see arcade).
 - `QuizMasterService` (1 min, see quiz).
 - `PlynlingSweepService` (hourly).
 - `PiHealthService` (2 min — the Pi's temperature, how the last run ended, gateway outages; see

@@ -31,6 +31,31 @@ The log records **net** flows: `earn.arcade` sums the positive nets, `spend.arca
 ones, so a duel winner doesn't show as spending and earning their own stake. Both keys are stored —
 append-only — and shared by every game, so the dashboard gains one row each, not one per game.
 
+**The one exception is the lottery**, which isn't a game that ends: a ticket must stay bought for
+days, so it is debited at purchase. See below.
+
+## Lottery
+
+`/arcade lottery [tickets]` (`ArcadeModule.Lottery.cs`, `LotteryService`, rules in
+`Helpers/Arcade/Lottery`, drawn by `LotteryDrawService`). 20 cailloux a ticket, up to 500 per
+purchase, no limit in total; debited at once (`spend.lottery`) into one `LotteryEntry` per (guild,
+draw day, member). Rows are keyed by the draw's Sunday (`Lottery.DrawDay`, the Paris yyyymmdd whose
+21:00 is the next draw after now), so a ticket bought on Sunday after 21:00 goes to the next week.
+**She holds one free ticket**, the last of `total + 1`, and it adds 20 to the pot (`Lottery.Pot`, the
+owner's call: otherwise a lone player could never come out ahead). The winner takes 75 %
+(`earn.lottery`), the rest is burned; if her ticket wins, nothing is paid and the whole pot is
+burned. Not through `SettleAsync` (it holds nothing and logs arcade keys), and never counted toward
+« Mécène » (it would reward gambling). The draw is one save with a unique `LotteryDraw` row per
+(guild, day), so a second pass or a race is a no-op. **A buy and a draw each run in one transaction**,
+which SQLite opens IMMEDIATE (the write lock at BEGIN), so they never interleave: without it a
+ticket bought at 20:59:59 could save between the draw's read and its save, paid for and never
+drawn. A buy that finds its week already drawn goes to the next one (`OpenDayAsync`); don't take
+the transactions out. `LotteryDrawService` (1 min) announces it in
+the bots channel (`BotsChannel.ResolveAsync`): the winner pinged alone (`LotteryWinLines`), or her
+gloating (`LotteryGloatLines`), both rotated weekly with `DailyRotation`; it ignores silence mode,
+like a giveaway draw. A week nobody played draws nothing and says nothing. Unlike the other games
+the command defers: buying writes the database before it can answer.
+
 ## Duel
 
 - The challenge pings the opponent only (`AllowedMentions` narrowed to them). Accepting pings the

@@ -3,6 +3,15 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.71.0 — 2026-11-18
+
+- `/jar give` and `/jar status`: a shared jar of cailloux for the server. Each goal reached unlocks the next
+  reward for everyone, in turn: double `/daily` for a day, a quiz day, a truffle for every living Plynling,
+  and a cailloux giveaway. Cailloux given count toward the Mécène badge.
+- `/arcade lottery`: a weekly lottery, 20 cailloux a ticket, drawn on Sunday at 21:00 in the bots channel.
+  The winner takes 75 % of the pot; SYNCS holds a free ticket of her own, and if it wins the pot is burned.
+- Giveaways can now pay cailloux to their winners.
+
 ## 7.70.0 — 2026-11-18
 
 - `/bribe favourite`: pay to be her chouchou for 24 h: warm answers when you tag or reply to her,

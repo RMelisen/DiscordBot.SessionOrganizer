@@ -83,6 +83,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/arcade quote`** — Qui a dit ça ? Un vieux message du serveur, à attribuer.\n" +
                 "**`/arcade temperature`** — Devine la température de mon processeur.\n" +
                 "**`/arcade puissance4`** · **`morpion`** — Contre quelqu'un, ou contre moi.\n" +
+                "**`/arcade lottery`** — La loterie : 20 cailloux le ticket, tirage dimanche à 21 h. Le gagnant prend 75 %.\n" +
                 "Et parfois, Quokka passe dans le salon des bots : frappe-le pour des cailloux.")
             .AddField("Commandes — Sondages & votes",
                 "**`/when create`** — Propose des créneaux (`slots` : « ven 21h, sam 21h »), chacun vote pour ses disponibilités.\n" +
@@ -148,7 +149,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .WithDescription(
                 "Les **cailloux** sont ma monnaie. On en gagne en travaillant, en passant chaque jour, en parlant (un peu, " +
                 "plafonné chaque jour), au quiz et à l'arcade. Ce que tu dépenses (boutique, repas, soins, " +
-                "cosmétiques, sachets, taxe de `/pay`, pots-de-vin, dédicaces) te vaut le badge **Mécène** et une place chez les " +
+                "cosmétiques, sachets, taxe de `/pay`, pots-de-vin, dédicaces, bocal) te vaut le badge **Mécène** et une place chez les " +
                 "mécènes de `/leaderboard`.")
             .WithColor(Color.Blue)
             .AddField("Commandes — Cailloux",
@@ -163,7 +164,9 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/bribe shame`** — J'efface un de tes points de `/shame` (pas les votes). Un pot-de-vin coûte 100 cailloux, " +
                 "doublé à chaque pot-de-vin de la semaine.\n" +
                 "**`/shoutout bid`** — Enchéris (dès 50) pour une dédicace dans mon bonjour de demain, jusqu'à 20 h. " +
-                "Si on te dépasse, ta mise te revient. `/shoutout status` montre où en sont les enchères.")
+                "Si on te dépasse, ta mise te revient. `/shoutout status` montre où en sont les enchères.\n" +
+                "**`/jar give`** — Verse des cailloux dans le bocal du serveur. Chaque objectif atteint débloque une récompense pour tous : " +
+                "`/daily` double, journée quiz, festin pour les Plynlings, giveaway. `/jar status` montre où il en est.")
             .AddField("Commandes — Inventaire",
                 "**`/inventory view`** — Tes objets, ton garde-manger, ta collection et ta garde-robe.\n" +
                 "**`/inventory collection`** — Ton carnet. Une collection complète se **dépose** (un exemplaire " +

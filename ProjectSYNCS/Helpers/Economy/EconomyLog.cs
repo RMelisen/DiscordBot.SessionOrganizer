@@ -26,6 +26,8 @@ public static class EconomyLog
     public const string EarnQuiz = "earn.quiz";     // a pop quiz win (QuizService.RecordWinAsync), the weekly crown's purse (PayCrownAsync)
     public const string EarnArcade = "earn.arcade"; // net winnings from an /arcade game (ArcadeService.SettleAsync)
     public const string EarnDaily = "earn.daily";   // a /daily claim (PebbleService.ClaimDailyAsync)
+    public const string EarnLottery = "earn.lottery";   // the weekly lottery's payout to its winner (LotteryService.DrawAsync)
+    public const string EarnGiveaway = "earn.giveaway"; // a giveaway paying cailloux, the jar's (GiveawayService.TryDrawAsync)
 
     // Cailloux spent, by sink.
     public const string SpendShop = "spend.shop";
@@ -40,6 +42,8 @@ public static class EconomyLog
     public const string SpendPack = "spend.pack";     // collection packs from /inventory shop (InventoryService.OpenPackAsync)
     public const string SpendBribe = "spend.bribe";   // /bribe, both kinds (BribeService)
     public const string SpendShoutout = "spend.shoutout"; // a dedication, once posted (ShoutoutService.MarkShownAsync)
+    public const string SpendJar = "spend.jar";           // cailloux poured into the jar (JarService.GiveAsync)
+    public const string SpendLottery = "spend.lottery";   // lottery tickets, debited at purchase (LotteryService.BuyAsync)
 
     // What people did.
     public const string ActMeal = "act.meal";
@@ -58,8 +62,8 @@ public static class EconomyLog
     public const string CosBought = "cos.bought";
     public const string CosCrafted = "cos.crafted";
 
-    public static readonly IReadOnlyList<string> Earnings = new[] { EarnWork, EarnPassive, EarnGame, EarnGift, EarnBadge, EarnCollection, EarnSale, EarnAdmin, EarnEvent, EarnQuiz, EarnArcade, EarnDaily };
-    public static readonly IReadOnlyList<string> Spendings = new[] { SpendShop, SpendMeal, SpendMealOther, SpendCosmetic, SpendCraft, SpendAdmin, SpendMedicine, SpendArcade, SpendTax, SpendPack, SpendBribe, SpendShoutout };
+    public static readonly IReadOnlyList<string> Earnings = new[] { EarnWork, EarnPassive, EarnGame, EarnGift, EarnBadge, EarnCollection, EarnSale, EarnAdmin, EarnEvent, EarnQuiz, EarnArcade, EarnDaily, EarnLottery, EarnGiveaway };
+    public static readonly IReadOnlyList<string> Spendings = new[] { SpendShop, SpendMeal, SpendMealOther, SpendCosmetic, SpendCraft, SpendAdmin, SpendMedicine, SpendArcade, SpendTax, SpendPack, SpendBribe, SpendShoutout, SpendJar, SpendLottery };
     public static readonly IReadOnlyList<string> Activities = new[] { ActMeal, ActPet, ActGame, ActVisit, ActForage, ActTrade, ActGive, ActBath, ActMedicine };
     public static readonly IReadOnlyList<string> Findings = new[] { ItemFound, ItemSet, CosBought, CosCrafted };
 

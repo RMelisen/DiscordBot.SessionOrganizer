@@ -35,7 +35,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/tonight` | Who's up tonight — becomes a session once enough people are in | everyone |
 | `/teams` | Split a voice channel into teams | everyone |
 | `/remindme · /reminders` | A reminder by DM later; list or cancel yours | everyone |
-| `/arcade duel · heist · race · crash · blackjack · bomb · quote · temperature · puissance4 · morpion` | Her games, mostly for cailloux | everyone |
+| `/arcade duel · heist · race · crash · blackjack · bomb · quote · temperature · puissance4 · morpion · lottery` | Her games, mostly for cailloux | everyone |
 | `/shame` | The wall of shame | everyone |
 | `/quiz leaderboard` | Who wins her pop quiz | everyone |
 | `/plynling adopt · view · list · journal · relations · play · visit · passion · forage · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card). `/pl` is a shortcut for every one of them | everyone |
@@ -44,6 +44,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/daily` | A daily reward that grows with each day in a row (up to 100 cailloux, sometimes an item); a missed day starts over | everyone |
 | `/bribe favourite · shame` | Pay her off: 24 h as her favourite, or one `/shame` hit erased (100 cailloux, doubling with each bribe in the same week) | everyone |
 | `/shoutout bid · status` | Bid for a dedication in tomorrow's morning hello (bids close at 20:00; an outbid bid is refunded) | everyone |
+| `/jar give · status` | Pour cailloux into the server's jar; each goal reached unlocks a reward for everyone | everyone |
 | `;pl · ;pl @someone · ;pl visit @someone · ;forage · ;work · ;daily` | Typed shortcuts, sent as a plain message: your card (or someone's), a visit, a forage, a shift, the daily reward. `;pl forage`, `;pl work` and `;pl daily` work too | everyone |
 | `/shame user:@someone` | Put someone on it | staff |
 | `/config` | Per-server settings, no redeploy | staff |
@@ -590,8 +591,8 @@ looks after her.
   that tells you when your next `/work` is ready.
 - **Giving and spending:** `/pay member amount` gives someone 10 to 2 000 cailloux a day; a 10 %
   tax is added on top, paid by the giver, and simply disappears. Everything spent on things that
-  leave the economy (the shop, packs, meals, medicine, cosmetics, crafting, the `/pay` tax, bribes and
-  dedications — not the arcade) counts toward the « Mécène » badge and `/leaderboard`'s **Mécènes** view.
+  leave the economy (the shop, packs, meals, medicine, cosmetics, crafting, the `/pay` tax, bribes,
+  dedications and the jar — not the arcade or the lottery) counts toward the « Mécène » badge and `/leaderboard`'s **Mécènes** view.
 - **Bribes:** `/bribe favourite` makes you her chouchou for 24 h (warm answers when you tag or reply to
   her, warm reactions; an insult still gets roasted); `/bribe shame` erases one of your `/shame` hits
   (not ban votes). A bribe costs 100 cailloux, doubled by every bribe you already paid this week.
@@ -599,6 +600,11 @@ looks after her.
   50, each bid at least 10 more; bids close at 20:00, and later ones go to the day after). The winner gets a ping and a big-up:
   either a dedication line instead of the usual greeting, or the usual greeting ending on a credit to them; outbid bids are refunded at once. On her birthday or a quiet
   day the dedication waits for the next morning.
+- **The jar:** `/jar give amount` pours 10 to 100 000 cailloux into the server's jar; `/jar status`
+  shows how full it is, the next reward and the top givers. Each goal reached (1 500, then 500 more
+  each time up to 5 000) unlocks the next reward for everyone, in turn: `/daily` pays double for a
+  day, a quiz day (every quiz slot of the day is kept), a truffle for every living Plynling, then a
+  giveaway of 150 cailloux for three winners. Double `/daily` and quiz days start the next day.
 
 `/plynling help` explains it all in Discord.
 
@@ -638,6 +644,11 @@ is gone).
   accepts first) or against her. Five minutes per move, or you lose. At morpion she never loses.
   At Puissance 4 she's beatable — though one game in five she might drop two pieces at once, and
   she'll deny it.
+- **`/arcade lottery [tickets]`** — the weekly lottery: 20 cailloux a ticket (up to 500 at a time,
+  as many as you like), paid when you buy. The draw is on Sunday at 9 p.m. (Paris), in the bots
+  channel; the more tickets, the better your odds. She holds one free ticket that adds 20 to the
+  pot. The winner takes 75 % of the pot and the rest disappears; if her ticket wins, all of it
+  does. Without `tickets`, it shows the pot, your tickets and your odds.
 - **Quokka's visits** — up to four times a day, between noon and 11 p.m., when someone has spoken
   in the last half hour, Quokka sneaks into the bots channel. The first to hit him wins 10 to 30
   cailloux; after two minutes he's gone.

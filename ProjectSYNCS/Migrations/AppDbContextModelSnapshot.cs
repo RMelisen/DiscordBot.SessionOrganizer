@@ -135,6 +135,49 @@ namespace ProjectSYNCS.Migrations
                     b.ToTable("BotFeedbackDailyStats");
                 });
 
+            modelBuilder.Entity("ProjectSYNCS.Models.CaillouxJar", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DoubleDailyFrom")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DoubleDailyUntil")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Filled")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Given")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("QuizDayFrom")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("QuizDayUntil")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RewardsDone")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId")
+                        .IsUnique();
+
+                    b.ToTable("CaillouxJars");
+                });
+
             modelBuilder.Entity("ProjectSYNCS.Models.ChannelDailyStat", b =>
                 {
                     b.Property<int>("Id")
@@ -552,6 +595,9 @@ namespace ProjectSYNCS.Migrations
                     b.Property<long>("OrganizerId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<long>("PebblePrize")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Prize")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -767,6 +813,90 @@ namespace ProjectSYNCS.Migrations
                         .IsUnique();
 
                     b.ToTable("InventoryItems");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.JarGift", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Total")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("JarGifts");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.LotteryDraw", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DrawDay")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("DrawnAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Paid")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Pot")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Tickets")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("WinnerId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "DrawDay")
+                        .IsUnique();
+
+                    b.ToTable("LotteryDraws");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.LotteryEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DrawDay")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Tickets")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "DrawDay", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("LotteryEntries");
                 });
 
             modelBuilder.Entity("ProjectSYNCS.Models.MemberBadge", b =>

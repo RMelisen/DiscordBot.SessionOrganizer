@@ -138,8 +138,15 @@ public class GiveawayService
     /// sweep can die between drawing and announcing, or be restarted mid-pass, and the
     /// worst case is an announcement that never goes out — never a second draw, and
     /// never a different set of winners than the card shows.
+    /// A giveaway with a <see cref="Giveaway.PebblePrize"/> (the jar's) pays each winner in the same
+    /// save, so the payment and the close land together: through <see cref="EconomySave"/>, since a
+    /// winner's wallet may be written at the same moment; a retry draws again, and only the saved
+    /// run counts.
     /// </remarks>
-    public async Task<List<ulong>?> TryDrawAsync(int giveawayId)
+    public Task<List<ulong>?> TryDrawAsync(int giveawayId) =>
+        EconomySave.RetryAsync(_db_context, () => TryDrawOnceAsync(giveawayId));
+
+    private async Task<List<ulong>?> TryDrawOnceAsync(int giveawayId)
     {
         var giveaway = await _db_context.Giveaways
             .Include(g => g.Entries)
@@ -149,6 +156,14 @@ public class GiveawayService
 
         var drawn = Draw(giveaway.Entries, giveaway.WinnerCount);
         foreach (var entry in drawn) entry.IsWinner = true;
+
+        if (giveaway.PebblePrize > 0 && drawn.Count > 0)
+        {
+            foreach (var entry in drawn)
+                (await PebbleService.GetOrCreateWalletAsync(_db_context, giveaway.GuildId, entry.UserId)).Balance += giveaway.PebblePrize;
+            await Helpers.EconomyLog.AddAsync(_db_context, giveaway.GuildId, Helpers.EconomyLog.EarnGiveaway,
+                giveaway.PebblePrize * drawn.Count, DateTimeOffset.UtcNow);
+        }
 
         giveaway.IsClosed = true;
         await _db_context.SaveChangesAsync();

@@ -32,6 +32,10 @@ public class Giveaway
     // Set once the draw has happened — and the guard that stops it happening twice.
     public bool IsClosed { get; set; } = false;
 
+    // Cailloux paid to each winner at the draw, in the draw's save; 0 for a member's giveaway, whose
+    // prize is only the text above. The jar's giveaways set it (JarService).
+    public long PebblePrize { get; set; }
+
     public List<GiveawayEntry> Entries { get; set; } = new();
 }
 

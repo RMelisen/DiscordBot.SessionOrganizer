@@ -5367,6 +5367,9 @@ await EconomySinkChecks.Run(Fail);
 // 53. Bribes and the dedication auction: BribeChecks.cs.
 await BribeChecks.Run(Fail);
 
+// 54. The jar and the weekly lottery: JarLotteryChecks.cs.
+await JarLotteryChecks.Run(Fail);
+
 // 34. Story files: StoryChecks.cs.
 StoryChecks.Run(Fail, args);
 

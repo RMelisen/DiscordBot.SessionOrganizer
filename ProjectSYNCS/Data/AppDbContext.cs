@@ -59,6 +59,10 @@ public class AppDbContext : DbContext
     public DbSet<Plynling> Plynlings => Set<Plynling>();
     public DbSet<PebbleWallet> PebbleWallets => Set<PebbleWallet>();
     public DbSet<ShoutoutBid> ShoutoutBids => Set<ShoutoutBid>();
+    public DbSet<CaillouxJar> CaillouxJars => Set<CaillouxJar>();
+    public DbSet<JarGift> JarGifts => Set<JarGift>();
+    public DbSet<LotteryEntry> LotteryEntries => Set<LotteryEntry>();
+    public DbSet<LotteryDraw> LotteryDraws => Set<LotteryDraw>();
     public DbSet<PlynlingBadge> PlynlingBadges => Set<PlynlingBadge>();
     public DbSet<PlynlingTrait> PlynlingTraits => Set<PlynlingTrait>();
     public DbSet<PlynlingEventInstance> PlynlingEventInstances => Set<PlynlingEventInstance>();
@@ -543,6 +547,36 @@ public class AppDbContext : DbContext
             // One leading bid per hello: a new leader overwrites the row.
             e.HasIndex(x => new { x.GuildId, x.ForDay }).IsUnique();
             e.Property(x => x.Amount).IsConcurrencyToken();
+        });
+
+        modelBuilder.Entity<CaillouxJar>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.HasIndex(x => x.GuildId).IsUnique();
+            e.Property(x => x.Filled).IsConcurrencyToken();
+            e.Property(x => x.RewardsDone).IsConcurrencyToken();
+        });
+
+        modelBuilder.Entity<JarGift>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.UserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<LotteryEntry>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            e.HasIndex(x => new { x.GuildId, x.DrawDay, x.UserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<LotteryDraw>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.WinnerId).HasConversion<long>();
+            // A draw happens once: the second insert fails and its retry finds this row.
+            e.HasIndex(x => new { x.GuildId, x.DrawDay }).IsUnique();
         });
 
         modelBuilder.Entity<QuizRound>(e =>

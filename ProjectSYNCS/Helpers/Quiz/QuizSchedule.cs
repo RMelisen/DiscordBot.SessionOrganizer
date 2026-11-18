@@ -30,14 +30,16 @@ public static class QuizSchedule
     /// Today's slots as UTC instants, earliest first. A slot already in the past is
     /// dropped, so a restart mid-day doesn't fire a backlog: after an update she may skip a
     /// quiz, never double one (the daily count and MinGap guard that too).
+    /// <paramref name="everyWindow"/>: a jar quiz day (JarService.IsQuizDayAsync), every window
+    /// keeps its slot — each still waits for someone in the channel.
     /// </summary>
-    public static List<DateTimeOffset> DrawSlots(DateTimeOffset now, Random random)
+    public static List<DateTimeOffset> DrawSlots(DateTimeOffset now, Random random, bool everyWindow = false)
     {
         var day = AppTime.ToZoned(now).Date;
         var slots = new List<DateTimeOffset>();
         foreach (var (start, end) in Windows)
         {
-            if (random.NextDouble() >= SlotChance) continue;
+            if (!everyWindow && random.NextDouble() >= SlotChance) continue;
             var minutes = random.Next((int)(end - start).TotalMinutes);
             var slot = AppTime.AtWallClock(day + start + TimeSpan.FromMinutes(minutes)).ToUniversalTime();
             if (slot > now) slots.Add(slot);

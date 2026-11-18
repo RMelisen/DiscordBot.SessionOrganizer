@@ -37,7 +37,7 @@ table: nothing ranks cailloux by date, so a buckets table would have no reader.
 
 **Spending is counted (`Helpers/Economy/Patronage`) for the « Mécène » badge and `/leaderboard`'s
 « Mécènes » view** (see `xp.md`). Only what *leaves the economy* counts: the shop, packs, meals (own
-and others'), medicine, cosmetics, crafting, the `/pay` tax, bribes, a dedication once posted. **Not** `/arcade` (it moves cailloux
+and others'), medicine, cosmetics, crafting, the `/pay` tax, bribes, a dedication once posted, the jar. **Not** `/arcade` or the lottery (they move cailloux
 between players, and rewarding it would reward gambling), not admin debits, not the amount sent with
 `/pay`. `Patronage.AddAsync` sits beside the spend's `EconomyLog` line, like it never saves and looks
 in `Local` first, and writes `CaillouxSpent` on `MemberXp` and today's `MemberDailyStat` (the totals +
@@ -76,6 +76,25 @@ It is logged `spend.shoutout` and counted toward « Mécène » only when the de
 winner is posted on that day; a dedication carried over a missed hello waits for a morning nobody
 won (`NextDueAsync`). `BidResult.Cost` is what the bid takes, so a refusal names the difference when
 raising your own lead.
+
+**`/jar give amount` and `/jar status`** (`JarService`, `JarModule`, rules in `Helpers/Economy/Jar`):
+one `CaillouxJar` row per guild. Goals rise, `Jar.GoalFor(level)` = 1 500 + 500 per goal reached,
+capped at 5 000; the overflow carries over, so one gift can reach several. A gift is one
+`EconomySave` unit (wallet, jar, the giver's all-time `JarGift` total, `spend.jar`, `Patronage`);
+`Filled` is a concurrency token, so racing gifts land one on top of the other. **A gift only fills
+the jar; the rewards are carried out after it**: a reached goal leaves `Level > RewardsDone`, and
+`JarModule` calls `ResolveNextRewardAsync` in a loop, one reward per save with `RewardsDone++`
+(also a token, so two resolvers can't run one reward twice). A failure leaves the rest pending for
+the next gift, never lost. The rotation (`Jar.RewardFor`, by goal index): double `/daily`, quiz day,
+feast, giveaway. The two timed ones apply **from tomorrow** (today's quiz slots are drawn, today's
+`/daily` maybe claimed) and are day ranges on the jar (`DoubleDaily*`, `QuizDay*`); a second unlock
+while one is pending adds the day after (`Jar.Extend`). `PebbleService.ClaimDailyAsync` doubles the
+rolled amount (`DailyResult.Doubled`); `QuizMasterService` asks `IsQuizDayAsync` once, when it
+draws the day's plan. The feast feeds every living, unfrozen Plynling a truffle, free and unlogged.
+The giveaway is a `Giveaway` row organised by the bot, with `PebblePrize` 150 for 3 winners, paid
+in the draw's save (`earn.giveaway`, see `scheduling.md`). Each unlock is a line in the main channel
+(`/config main-channel`, else her default when it is in the guild, else where `/jar give` was used),
+mentions off, and ignores silence mode: a gift set it off.
 
 ## The `/work` DM reminder
 
@@ -143,6 +162,9 @@ be lost.
 - The `/pay` tax logs under `spend.tax` (« taxe »), collection packs under `spend.pack` (« sachets »), bribes under `spend.bribe`
   (« pots-de-vin »), posted dedications under `spend.shoutout` (« dédicaces »);
   a pack's finds count as `item.found`, its completed sets as `item.set` + `earn.collection`.
+- The jar logs under `spend.jar` (« bocal »), lottery tickets under `spend.lottery` and the
+  lottery's payout under `earn.lottery` (both « loterie »), a giveaway's cailloux under
+  `earn.giveaway` (« giveaways »).
 - No totals row: the stored balances already are the totals (`/admin stats` reads those). Nothing
   was backfilled.
 - Window buttons `dash:win:{Week|Month|All}` in `AdminComponentHandler`, which re-checks `IsStaff`.

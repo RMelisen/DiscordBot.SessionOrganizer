@@ -313,6 +313,12 @@ Worst case after a crash is a missing announcement — never a second draw. Any 
 button must go through that call. Winners are `GiveawayEntry.IsWinner` (a winner is an entrant). The
 pick is a partial Fisher-Yates over a copy, **not** `OrderBy(_ => Random)`.
 
+**A giveaway can pay cailloux**: `Giveaway.PebblePrize` (0 for a member's giveaway, whose prize is
+only its text) is credited to each winner inside `TryDrawAsync`'s save, logged `earn.giveaway`. The
+jar creates such giveaways (organised by the bot; see `economy.md`). `TryDrawAsync` runs through
+`EconomySave`, since a winner's wallet may be written at the same moment; a retry draws again, and
+only the saved run counts.
+
 **`GiveawayDrawService` ticks every minute** (five minutes late reads as broken on a 10-minute
 giveaway). `EndsAt` is absolute, so a restart simply resumes. `GiveawayService` = transient DB
 wrapper, `GiveawayDrawService` = hosted sweep.

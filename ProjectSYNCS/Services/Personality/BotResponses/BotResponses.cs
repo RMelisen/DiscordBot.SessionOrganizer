@@ -140,6 +140,15 @@ namespace ProjectSYNCS.Services;
 //     DedicationLines .......... the morning hello on a /shoutout winner's day, {0} = their mention
 //     DedicationCredits ........ or the classic hello, ending on a big-up to the winner (60 % of those days)
 //
+//   [Jar] The jar's goals reached (/jar give), said in the main channel
+//     JarDoubleDailyLines · JarQuizDayLines ... a bonus day unlocked, {0} = the giver, {1} = the date
+//     JarFeastLines ............ every Plynling fed a truffle, {1} = how many
+//     JarGiveawayLines ......... her cailloux giveaway, the card follows
+//
+//   [Lottery] The Sunday draw (/arcade lottery), said in the bots channel
+//     LotteryWinLines .......... a player won, {0} = their mention (pinged), {1} = what they take
+//     LotteryGloatLines ........ her own free ticket won, {0} = the burned pot
+//
 //   [Rivals] Other bots
 //     JealousLines · JealousLinesOwner ... praise went to a rival
 //     RivalMutters ............. a rival posted

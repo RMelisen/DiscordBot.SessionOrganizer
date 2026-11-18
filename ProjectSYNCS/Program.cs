@@ -74,6 +74,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<InventoryService>();
         services.AddTransient<BribeService>();
         services.AddTransient<ShoutoutService>();
+        services.AddTransient<JarService>();
+        services.AddTransient<LotteryService>();
         services.AddTransient<CosmeticService>();
         services.AddTransient<AdminStatsService>();
         services.AddTransient<WarningService>();
@@ -215,6 +217,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddHostedService(sp => sp.GetRequiredService<AmbientService>());
         services.AddHostedService<VoiceXpService>();
         services.AddHostedService<GiveawayDrawService>();
+        services.AddHostedService<LotteryDrawService>();
         services.AddHostedService<WeekendPollService>();
         // Same shape: the host runs its 1-minute loop, BotService feeds it messages (typed
         // answers, the quiet clock), the quiz buttons and /debug quiz call into it.

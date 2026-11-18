@@ -25,6 +25,9 @@ wins cailloux and a point on `/quiz leaderboard`.
   at `SlotChance` (12%): 0–3 a day, 0.36 on average, so 2–3 a week. The first window opens after the Monday
   crown (10:00). Drawn in memory on the first tick of the Paris day; a restart
   redraws and drops past slots, so an update can cost a quiz but never doubles one.
+- **A jar quiz day keeps every window** (`DrawSlots(…, everyWindow: true)`): three slots, each still
+  waiting for people like any other. `QuizMasterService` asks `JarService.IsQuizDayAsync` only when
+  today's plan is still to be drawn, so once a day; a failure means an ordinary day (see `economy.md`).
 - **A due slot waits for people**: it posts only when a human spoke in the quiz channel within
   `ActiveWithin` (60 min), no round is open in the guild, fewer than `MaxPerDay` (3) were posted
   today (counted in SQL on `QuizRound.Day`) and the last one is `MinGap` (2 h) old. Past `DayEnd`

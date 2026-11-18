@@ -9,7 +9,8 @@ namespace ProjectSYNCS.Services;
 public sealed record WorkResult(bool Paid, long Amount, long Balance, DateTimeOffset NextWorkAt, bool WorkReminder);
 
 // Claimed false: today was already claimed, Streak is the stored one. NextClaimAt: the next Paris midnight.
-public sealed record DailyResult(bool Claimed, int Streak, long Amount, ItemFind? Find, DateTimeOffset NextClaimAt);
+// Doubled: a jar bonus day (JarService.IsDoubleDailyAsync), Amount already doubled.
+public sealed record DailyResult(bool Claimed, int Streak, long Amount, ItemFind? Find, DateTimeOffset NextClaimAt, bool Doubled = false);
 
 public sealed record PebbleBalance(long Balance, DateTimeOffset? NextWorkAt, long PassiveToday, bool WorkReminder);
 
@@ -66,6 +67,8 @@ public class PebbleService
             return new DailyResult(false, wallet.DailyStreak, 0, null, nextAt);
 
         var amount = DailyStreak.RollCailloux(streak, rng);
+        var doubled = await JarService.IsDoubleDailyAsync(_db_context, guildId, today);
+        if (doubled) amount *= 2;
         wallet.Balance += amount;
         wallet.DailyDay = today;
         wallet.DailyStreak = streak;
@@ -77,7 +80,7 @@ public class PebbleService
             find = await InventoryService.GrantAsync(_db_context, guildId, userId, ItemCatalog.DrawForage(rng, now), now);
 
         await _db_context.SaveChangesAsync();
-        return new DailyResult(true, streak, amount, find, nextAt);
+        return new DailyResult(true, streak, amount, find, nextAt, doubled);
     }
 
     // The days between the last claim and today that she was offline long enough to excuse. Only read
