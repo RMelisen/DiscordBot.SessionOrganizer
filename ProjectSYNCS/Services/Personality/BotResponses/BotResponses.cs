@@ -165,6 +165,7 @@ namespace ProjectSYNCS.Services;
 //     GiveawayDrawLines · GiveawayEmptyLines ......... /giveaway
 //     WarnDmLines .............. /admin warn, the DM to the person warned
 //     WorkLines ................ /work
+//     WorkGraceLines ........... on top of a /work paid a few minutes early (the once-a-day grace)
 //     WorkReadyLines ........... the DM when /work is ready again (WorkReminderService)
 //     DailyLines ............... on top of a /daily claim
 //     QuizIntroLines ........... on the card of her pop quiz (QuizMasterService)

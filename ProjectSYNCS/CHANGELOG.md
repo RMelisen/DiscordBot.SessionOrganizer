@@ -3,6 +3,11 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.72.0 — 2026-11-18
+
+- `/work` grace: once a day, a shift asked for up to 5 minutes before the cooldown ends is paid anyway,
+  with a pout from SYNCS.
+
 ## 7.71.0 — 2026-11-18
 
 - `/jar give` and `/jar status`: a shared jar of cailloux for the server. Each goal reached unlocks the next

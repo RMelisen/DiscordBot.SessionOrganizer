@@ -96,6 +96,17 @@ in the draw's save (`earn.giveaway`, see `scheduling.md`). Each unlock is a line
 (`/config main-channel`, else her default when it is in the guild, else where `/jar give` was used),
 mentions off, and ignores silence mode: a gift set it off.
 
+## The `/work` grace
+
+A `/work` (or `;work`) asked for within `PebbleEconomy.WorkGrace` (5 minutes) of the cooldown's end
+is paid anyway, once per Paris day per person, opening on a `WorkGraceLines` pout above the usual
+shift line. **`PebbleEconomy.WorkGraceApplies` is the one rule.** The day is stored on the wallet
+(`WorkGraceDay`, Paris `yyyymmdd`) and stamped in the same save as the pay, under `Balance`'s
+concurrency token, so two early `/work` at once grace once and a restart hands out no second one.
+`LastWorkAt` becomes the graced time: the next cooldown counts from there, so the grace pays no
+extra shift, it only moves the clock a few minutes earlier. Outside the window, or with today's grace
+spent, the refusal is the plain one. The checks pin the rule (section 40).
+
 ## The `/work` DM reminder
 
 Switched on and off with `/balance`'s button (`bal:remind:on` / `bal:remind:off`,

@@ -1205,6 +1205,9 @@ namespace ProjectSYNCS.Migrations
                     b.Property<long>("UserId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("WorkGraceDay")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTimeOffset?>("WorkRemindedAt")
                         .HasColumnType("TEXT");
 

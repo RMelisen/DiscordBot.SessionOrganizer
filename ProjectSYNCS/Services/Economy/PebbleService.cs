@@ -6,7 +6,8 @@ using ProjectSYNCS.Models;
 namespace ProjectSYNCS.Services;
 
 // WorkReminder: whether they get a DM when the next shift is ready (the footer hints at it when off).
-public sealed record WorkResult(bool Paid, long Amount, long Balance, DateTimeOffset NextWorkAt, bool WorkReminder);
+// Graced: paid a few minutes early, through the once-a-day grace.
+public sealed record WorkResult(bool Paid, long Amount, long Balance, DateTimeOffset NextWorkAt, bool WorkReminder, bool Graced = false);
 
 // Claimed false: today was already claimed, Streak is the stored one. NextClaimAt: the next Paris midnight.
 // Doubled: a jar bonus day (JarService.IsDoubleDailyAsync), Amount already doubled.
@@ -40,14 +41,22 @@ public class PebbleService
     private async Task<WorkResult> WorkOnceAsync(ulong guildId, ulong userId, long pay, DateTimeOffset now)
     {
         var wallet = await GetOrCreateWalletAsync(_db_context, guildId, userId);
+        var graced = false;
         if (PebbleEconomy.NextWorkAt(wallet.LastWorkAt) is { } next && next > now)
-            return new WorkResult(false, 0, wallet.Balance, next, wallet.WorkReminder);
+        {
+            // The grace is stamped in the same save as the pay, so two early /work at once grace once.
+            var today = AppTime.DayKey(now);
+            if (!PebbleEconomy.WorkGraceApplies(next, now, wallet.WorkGraceDay, today))
+                return new WorkResult(false, 0, wallet.Balance, next, wallet.WorkReminder);
+            wallet.WorkGraceDay = today;
+            graced = true;
+        }
 
         wallet.Balance += pay;
         wallet.LastWorkAt = now;
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.EarnWork, pay, now);
         await _db_context.SaveChangesAsync();
-        return new WorkResult(true, pay, wallet.Balance, now + PebbleEconomy.WorkCooldown, wallet.WorkReminder);
+        return new WorkResult(true, pay, wallet.Balance, now + PebbleEconomy.WorkCooldown, wallet.WorkReminder, graced);
     }
 
     // /daily: once per Paris day, through EconomySave so two claims at once pay once (Balance is a

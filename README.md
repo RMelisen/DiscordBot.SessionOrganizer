@@ -584,7 +584,8 @@ looks after her.
   `/plynling wardrobe` dresses your Plynling. Cosmetics belong to you, not the Plynling: they
   stay yours when it dies (its grave keeps what it wore) and dress the next one; they can be
   given and traded, but not sold.
-- **Cailloux** come from `/work` (every 4 hours), from `/daily` (once a day: 10 on the first
+- **Cailloux** come from `/work` (every 4 hours; once a day she lets a shift through up to
+  5 minutes early, with a pout), from `/daily` (once a day: 10 on the first
   day, more each day in a row up to 100, with a growing chance of an item; missing a day starts
   the streak over, and your best streak earns the « Assiduité » badge) and, as a small bonus, from chatting,
   reacting and voice (45 a day at most). `/balance` is private; its 🔔 button switches on a DM

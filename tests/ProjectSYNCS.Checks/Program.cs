@@ -4367,6 +4367,13 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     var lateOn = PebbleEconomy.ReminderStampOnEnable(peAt, null, peAt.AddHours(5));
     if (PebbleEconomy.WorkReminderDue(peAt, lateOn, peAt.AddHours(6))) Fail("work reminder: switched on after the cooldown ended, still DMs");
     if (PebbleEconomy.WorkReminderDue(null, PebbleEconomy.ReminderStampOnEnable(null, null, peAt), peAt.AddHours(5))) Fail("work reminder: never worked, still DMs");
+    // The /work grace: the last minutes of the cooldown only, once per Paris day.
+    var peNext = peAt.AddHours(4);
+    if (!PebbleEconomy.WorkGraceApplies(peNext, peNext - PebbleEconomy.WorkGrace, 0, 20261027)) Fail("work grace: refused at the window's edge");
+    if (!PebbleEconomy.WorkGraceApplies(peNext, peNext.AddSeconds(-30), 20261026, 20261027)) Fail("work grace: yesterday's grace blocks today's");
+    if (PebbleEconomy.WorkGraceApplies(peNext, peNext - PebbleEconomy.WorkGrace - TimeSpan.FromSeconds(1), 0, 20261027)) Fail("work grace: granted before the window");
+    if (PebbleEconomy.WorkGraceApplies(peNext, peNext.AddSeconds(-30), 20261027, 20261027)) Fail("work grace: granted twice in a day");
+    if (PebbleEconomy.WorkGraceApplies(peNext, peNext, 0, 20261027)) Fail("work grace: spent on a shift that was already available");
     var pays = Enumerable.Range(0, 2000).Select(_ => PebbleEconomy.RollWorkPay()).ToList();
     if (pays.Min() != PebbleEconomy.WorkMin || pays.Max() != PebbleEconomy.WorkMax) Fail($"economy: work pay {pays.Min()}..{pays.Max()}");
     if (PebbleEconomy.Cailloux(0) != "0 caillou" || PebbleEconomy.Cailloux(1) != "1 caillou" || PebbleEconomy.Cailloux(-1) != "-1 caillou"

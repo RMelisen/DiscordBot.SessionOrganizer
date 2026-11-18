@@ -24,6 +24,14 @@ public static class PebbleEconomy
     // Null when they have never worked, i.e. available now.
     public static DateTimeOffset? NextWorkAt(DateTimeOffset? lastWorkAt) => lastWorkAt + WorkCooldown;
 
+    // /work's grace: a shift asked for in the last minutes of the cooldown is paid anyway, with a
+    // pout, once per Paris day per person (PebbleWallet.WorkGraceDay). The next shift counts from the
+    // graced one, so the grace moves the cooldown a few minutes earlier and pays nothing extra.
+    public static readonly TimeSpan WorkGrace = TimeSpan.FromMinutes(5);
+
+    public static bool WorkGraceApplies(DateTimeOffset next, DateTimeOffset now, int graceDay, int today) =>
+        next > now && next - now <= WorkGrace && graceDay != today;
+
     // The /work DM reminder (WorkReminderService): due once the cooldown has ended, and only if no
     // reminder went out since that shift started — so each shift gets exactly one DM.
     public static bool WorkReminderDue(DateTimeOffset? lastWorkAt, DateTimeOffset? remindedAt, DateTimeOffset now) =>

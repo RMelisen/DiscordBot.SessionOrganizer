@@ -34,13 +34,14 @@ public class EconomyModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     // What /work answers, shared with the ;work shortcut (PlynlingShortcutService). A refusal is
-    // shown privately — or as a passing reply, from the shortcut.
+    // shown privately — or as a passing reply, from the shortcut. A graced shift opens on her pout.
     public static (string Text, bool Refused) WorkReply(WorkResult result, ResponsePicker picker)
     {
         if (!result.Paid) return (PlynlingText.WorkCooldown(result.NextWorkAt), true);
 
         var line = string.Format(picker.Pick(BotResponses.WorkLines),
             $"+{PebbleEconomy.Cailloux(result.Amount)}");
+        if (result.Graced) line = $"{picker.Pick(BotResponses.WorkGraceLines)}\n{line}";
         var hint = result.WorkReminder ? "" : " · 🔔 rappel en MP : `/balance`";
         return ($"{line}\n-# Solde : {PebbleEconomy.Cailloux(result.Balance)} · prochain service <t:{result.NextWorkAt.ToUnixTimeSeconds()}:R>{hint}",
             false);

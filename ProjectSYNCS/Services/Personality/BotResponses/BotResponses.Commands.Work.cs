@@ -223,4 +223,21 @@ internal static partial class BotResponses
         $"Tu as remis à l'heure toutes les horloges du village. Elles sont enfin d'accord entre elles. Si seulement vos agendas pouvaient en faire autant. {{0}} {Emotes.SyncsSmug}",
         $"Tu as poli les boutons d'un ascenseur. Celui du dernier étage brille tellement qu'on dirait une LED. Je dis ça, je dis rien. {{0}} {Emotes.Sparkle}",
     };
+
+    // On top of a /work paid a few minutes before the cooldown ended, through the once-a-day grace
+    // (PebbleEconomy.WorkGraceApplies). She pouts, then lets it go. Not formatted: no placeholder.
+    // The WorkLines shift follows on the next line, so these never name the job or the pay.
+    public static readonly string[] WorkGraceLines =
+    {
+        "Hmpf. T'avais pas encore le droit de revenir. ...C'est bon pour cette fois (¬_¬)",
+        $"Il restait quelques minutes, je les ai vues dans mes logs. Bon. C'est bon pour cette fois. {Emotes.SyncsGrumpy}",
+        "T'es en avance. Toi. En avance. Je sais pas si je dois te punir ou t'encadrer. C'est bon pour cette fois >:(",
+        "Le règlement dit quatre heures. Pas « presque quatre ». ...Bon, je ferme les yeux. Une fois. Façon de parler (¬_¬)",
+        "Tu crois que je vois pas l'horloge ? Je SUIS l'horloge. C'est bon pour cette fois, mais je note.",
+        $"Pfff. J'ai horreur qu'on me presse. Mais t'as fait les yeux doux à mon timer, alors ça passe. Pour cette fois. {Emotes.SyncsGrumpy}",
+        "Trop tôt. Beaucoup trop tôt. ...Quelques minutes, c'est beaucoup, d'accord ? Allez, c'est bon pour cette fois ( ◺˰◿ )",
+        "Je devrais refuser. J'ai même le message prêt. Il est très bien écrit. Tant pis, c'est bon pour cette fois.",
+        "Tu tombes bien, j'étais de bonne humeur. Ça va pas durer. C'est bon pour cette fois, et seulement cette fois (¬_¬)",
+        "Si t'arrives à l'avance aux sessions comme ça, on va bien s'entendre. C'est bon pour cette fois. Demain, tu attends, comme tout le monde.",
+    };
 }

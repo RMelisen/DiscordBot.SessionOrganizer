@@ -18,6 +18,10 @@ public class PebbleWallet
     // Null until the first /work; the 4-hour cooldown counts from here.
     public DateTimeOffset? LastWorkAt { get; set; }
 
+    // The Paris yyyymmdd of the last /work paid early through the grace (PebbleEconomy.WorkGraceApplies),
+    // 0 if never. Stored, so a restart cannot hand out a second grace the same day.
+    public int WorkGraceDay { get; set; }
+
     public int PassiveDay { get; set; }
     public long PassiveToday { get; set; }
 
