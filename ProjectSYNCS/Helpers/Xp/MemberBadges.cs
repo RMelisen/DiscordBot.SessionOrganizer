@@ -20,7 +20,7 @@ public sealed record StoredBadge(long Count, DateTimeOffset EarnedAt);
 public sealed record MemberBadgeFacts(long VoiceMinutes, long CompanionMinutes, long QuizWins, long QuizBestMs,
     long Reactions, long SessionsAttended, long SessionsOrganised, long GiveawaysWon, long GoodBot,
     long PlynlingBadges, bool Punctual, DateTimeOffset? JoinedAt, IReadOnlyDictionary<string, StoredBadge> Stored,
-    long DailyBest = 0);
+    long DailyBest = 0, long CaillouxSpent = 0);
 
 /// <summary>A member's standing on one badge. EarnedAt is null for paliers and derived moments.</summary>
 public sealed record BadgeStanding(MemberBadgeInfo Info, CollectionTier Tier, long Value, bool Earned, DateTimeOffset? EarnedAt);
@@ -49,6 +49,7 @@ public static class MemberBadges
         public const string Nanny = "nanny";
         public const string Seniority = "seniority";
         public const string Daily = "daily";
+        public const string Patron = "mecene";
         // Moments.
         public const string Crowned = "crowned";
         public const string Lightning = "lightning";
@@ -101,6 +102,7 @@ public static class MemberBadges
         Palier(Keys.Arcade, "🕹️", "Pilier d'arcade", "La partie ne va pas se gagner toute seule.", new long[] { 5, 25, 75, 200, 500 }),
         Palier(Keys.Nanny, "🤲", "Nounou", "Un repas offert n'est jamais perdu.", new long[] { 5, 25, 75, 200, 500 }),
         Palier(Keys.Daily, "🔥", "Assiduité", "Un jour après l'autre, sans en sauter un.", new long[] { 7, 30, 100, 200, 365 }, BadgeUnit.Days),
+        Palier(Keys.Patron, "🪙", "Mécène", "Ce qu'on dépense ici ne revient pas. On s'en souvient quand même.", new long[] { 500, 2500, 10000, 25000, 60000 }),
         Palier(Keys.Seniority, "🎂", "Ancienneté", "Le temps fait son œuvre.", new long[] { 90, 180, 365, 730, 1095 }, BadgeUnit.Days),
 
         Moment(Keys.Crowned, "👑", "Couronne", "Une semaine, une seule tête."),
@@ -178,6 +180,7 @@ public static class MemberBadges
         Keys.Breeder => f.PlynlingBadges,
         Keys.Arcade or Keys.Nanny => stored?.Count ?? 0,
         Keys.Daily => f.DailyBest,
+        Keys.Patron => f.CaillouxSpent,
         Keys.Seniority => f.JoinedAt is { } joined ? Math.Max(0, (long)(now - joined).TotalDays) : 0,
         _ => 0,
     };

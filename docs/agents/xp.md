@@ -58,15 +58,18 @@ grant no XP.
 `/goodbot` stay paged embeds — they rank things with no avatar or level.
 
 **`PageSize` is 5 because of the 40-component cap.** A row with an avatar costs three (Section +
-TextDisplay + Thumbnail). A page of 5 with all three button rows uses 31 of 40; 10 would be 46. At 5
-rows there is room for one more row of five buttons and no more.
+TextDisplay + Thumbnail), and every button counts too. A page of 5 with the three button rows (five
+views, three periods, two arrows) uses 33 of 40; 10 rows would be 48. Row 0 (the views) is full at
+five: a sixth view needs a second row, which would bring the card to 35 or more. `LevelModule.BuildPage`
+is static so checks section 52 builds every view and window at its fullest and holds it to the cap.
 
-**`/leaderboard` is four views** (`LeaderboardView`: XP, reactions, voice, collections) — only the
-ordering and each row's second line change. The first three read `MemberXp`/`MemberDailyStat`;
+**`/leaderboard` is five views** (`LeaderboardView`: XP, reactions, voice, collections, mécènes) — only
+the ordering and each row's second line change. XP, reactions, voice and **Mécènes** (`CaillouxSpent`,
+cailloux spent on what leaves the economy, see `economy.md` *Patronage*) read `MemberXp`/`MemberDailyStat`;
 **Collections** reads `InventoryService.GetCollectorRankingAsync` (sets completed: the
 `CollectionCompletion.Count` totals all-time, `CollectionDailyStat` buckets in a window — see
 `economy.md`), shaped into the same `MemberTally` (`Completions`) by `LevelModule.RankingAsync`, so
-the page, rows and footer stay one path. Its button joins row 0; the component count doesn't move. Custom-id: **`level:{verb}:{view}:{period}:{page}`**,
+the page, rows and footer stay one path. Each view adds one button to row 0, and one component to the count. Custom-id: **`level:{verb}:{view}:{period}:{page}`**,
 view before period on purpose, so the period row is built by `StatsPeriodUi` with `level:win:{view}`
 as its prefix. Verbs: `level:view:` (metric row), `level:win:` (period row), `level:page:`
 (paging) — see the root rule on one verb per row; the active view button and active period button
@@ -125,6 +128,8 @@ card, keep the XP. **Admin adjustments never fire it** (see `admin.md`).
   migration. The exceptions are the two counters `arcade` and `nanny`, stored as `MemberBadge.Count`.
   The moments `lightning` and `punctual` are derived too and shown without a date. `daily`
   (« Assiduité ») reads `PebbleWallet.DailyBest`, the best `/daily` streak (see `economy.md`).
+  `mecene` (« Mécène », 500 / 2 500 / 10 000 / 25 000 / 60 000) reads `MemberXp.CaillouxSpent`, the
+  cailloux spent on what leaves the economy (see `economy.md`, *Patronage*).
 - **Every write goes through the singleton `BadgeAwarder`**, after the flow's own save,
   fire-and-forget. It ignores guild 0 (DMs), unknown keys and her own id, and releases its in-memory
   claim when a write fails. `MemberBadgeService.AwardAsync/IncrementAsync` rethrow anything that is

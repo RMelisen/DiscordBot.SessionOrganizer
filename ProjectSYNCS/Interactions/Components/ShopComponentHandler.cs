@@ -34,6 +34,16 @@ public class ShopComponentHandler : InteractionModuleBase<SocketInteractionConte
         await RedrawAsync(key, ShopCards.Notice(outcome, ItemCatalog.ByKey(key), quantity, price, balance));
     }
 
+    // A collection pack, opened at once; the redraw keeps the pack picked so another is one click away.
+    [ComponentInteraction("shop:pack:*", ignoreGroupNames: true)]
+    public async Task OnPackAsync(string quantityStr)
+    {
+        await DeferAsync();
+        var quantity = int.TryParse(quantityStr, out var q) && ItemCatalog.PackQuantities.Contains(q) ? q : 0;
+        var result = await _inventory.OpenPackAsync(Context.Guild.Id, Context.User.Id, quantity, DateTimeOffset.UtcNow, Random.Shared);
+        await RedrawAsync(ItemCatalog.PackKey, ShopCards.PackNotice(result));
+    }
+
     private async Task RedrawAsync(string? picked, string? notice)
     {
         var held = (await _inventory.GetAllAsync(Context.Guild.Id, Context.User.Id)).ToDictionary(i => i.Key, i => i.Quantity);

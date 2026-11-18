@@ -38,4 +38,9 @@ public class MemberXp
     // self-muted and self-deafened. Incremented by the same call that grants voice XP,
     // so the two can never disagree about which minutes counted.
     public long VoiceMinutes { get; set; }
+
+    // Cailloux this person spent on things that take them out of the economy (Helpers/Economy/
+    // Patronage): the « Mécène » badge and the « Mécènes » leaderboard tab read it. Not activity:
+    // spending creates this row for someone with no XP, which is why GetRankAsync calls 0 XP unranked.
+    public long CaillouxSpent { get; set; }
 }

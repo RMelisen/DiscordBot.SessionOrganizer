@@ -13,6 +13,14 @@ public sealed record DailyResult(bool Claimed, int Streak, long Amount, ItemFind
 
 public sealed record PebbleBalance(long Balance, DateTimeOffset? NextWorkAt, long PassiveToday, bool WorkReminder);
 
+// Self is also refused by /pay itself; the service refuses it too, so no other caller can burn a tax on
+// nothing and count it toward « Mécène ».
+public enum PayOutcome { Paid, TooSmall, TooPoor, OverCap, Self }
+
+// Amount and Tax are what was asked, even when refused (TooPoor names Amount + Tax). Balance is the
+// sender's after the pay; RoomLeft what they may still send today.
+public sealed record PayResult(PayOutcome Outcome, long Amount, long Tax, long Balance, long RoomLeft);
+
 // EF access for cailloux — transient, like every service wrapping AppDbContext.
 public class PebbleService
 {
@@ -166,6 +174,37 @@ public class PebbleService
         wallet.WorkRemindedAt = now;
         await _db_context.SaveChangesAsync();
         return true;
+    }
+
+    // /pay: from one wallet to another, the tax burned, in one save. Through EconomySave: Balance is a
+    // concurrency token, so two pays racing on one wallet cannot both spend the same cailloux, and the
+    // retry re-reads the cap. The caller refuses self and bots.
+    public Task<PayResult> PayAsync(ulong guildId, ulong fromId, ulong toId, long amount, DateTimeOffset now) =>
+        EconomySave.RetryAsync(_db_context, () => PayOnceAsync(guildId, fromId, toId, amount, now));
+
+    private async Task<PayResult> PayOnceAsync(ulong guildId, ulong fromId, ulong toId, long amount, DateTimeOffset now)
+    {
+        var from = await GetOrCreateWalletAsync(_db_context, guildId, fromId);
+        var today = AppTime.DayKey(now);
+        var tax = PebbleEconomy.PayTax(amount);
+        var room = PebbleEconomy.PayRoom(from.PayDay, from.PaidToday, today);
+        PayOutcome? refusal =
+            fromId == toId ? PayOutcome.Self
+            : amount < PebbleEconomy.PayMin ? PayOutcome.TooSmall
+            : amount > room ? PayOutcome.OverCap
+            : from.Balance < amount + tax ? PayOutcome.TooPoor
+            : null;
+        if (refusal is { } r) return new PayResult(r, amount, tax, from.Balance, room);
+
+        var to = await GetOrCreateWalletAsync(_db_context, guildId, toId);
+        from.Balance -= amount + tax;
+        to.Balance += amount;
+        from.PaidToday = (from.PayDay == today ? from.PaidToday : 0) + amount;
+        from.PayDay = today;
+        await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.SpendTax, tax, now);
+        await Patronage.AddAsync(_db_context, guildId, fromId, tax, now);
+        await _db_context.SaveChangesAsync();
+        return new PayResult(PayOutcome.Paid, amount, tax, from.Balance, room - amount);
     }
 
     // /admin pebble: a staff correction, clamped at 0 so « remove » never leaves a debt. One save.

@@ -121,4 +121,64 @@ public class EconomyModule : InteractionModuleBase<SocketInteractionContext>
     public const string RemindOnNotice =
         "🔔 C'est noté. Je t'écris en MP à la fin de chaque repos.\n-# Il faut que tes MP soient ouverts aux membres du serveur.";
     public const string RemindOffNotice = "🔕 Plus de rappel en MP.";
+
+    // Public when it goes through, so the gift is seen; both people as pills, never pinged. The amount
+    // and the tax are capped at the option too, so Discord refuses them before anything runs. Deferred,
+    // since the save comes before anything shows; a refusal stays private, like /daily's.
+    [SlashCommand("pay", "Donner des cailloux à quelqu'un (taxe de 10 %)")]
+    public async Task PayAsync(
+        [Summary("member", "Qui reçoit les cailloux")] IUser member,
+        [Summary("amount", "Combien (la taxe de 10 % s'ajoute, à ta charge)"), MinValue(PebbleEconomy.PayMin), MaxValue(PebbleEconomy.PayDailyCap)] long amount)
+    {
+        if (member.Id == Context.User.Id)
+        {
+            await RespondAsync(PaySelfRefusal, ephemeral: true);
+            return;
+        }
+        if (member.IsBot)
+        {
+            await RespondAsync(PayBotRefusal, ephemeral: true);
+            return;
+        }
+
+        await DeferAsync();
+        var result = await _pebbles.PayAsync(Context.Guild.Id, Context.User.Id, member.Id, amount, DateTimeOffset.UtcNow);
+        var (text, refused) = PayReply(result, Context.User.Id, member.Id);
+        if (refused)
+        {
+            await DeleteOriginalResponseAsync();
+            await FollowupAsync(text, ephemeral: true, allowedMentions: AllowedMentions.None);
+        }
+        else
+        {
+            await ModifyOriginalResponseAsync(m =>
+            {
+                m.Content = text;
+                m.AllowedMentions = AllowedMentions.None;
+            });
+        }
+    }
+
+    public const string PaySelfRefusal = "Te payer toi-même ? Ça s'appelle garder ses cailloux.";
+    public const string PayBotRefusal = "Les bots n'ont pas de porte-monnaie. Moi non plus, d'ailleurs.";
+
+    // What /pay answers. The refusals name the number that settles it: the total with the tax, or
+    // what is left of today's cap.
+    public static (string Text, bool Refused) PayReply(PayResult result, ulong fromId, ulong toId) => result.Outcome switch
+    {
+        PayOutcome.Paid =>
+            ($"💸 <@{fromId}> a donné **{PebbleEconomy.Cailloux(result.Amount)}** à <@{toId}> · taxe : {PebbleEconomy.Cailloux(result.Tax)}", false),
+        PayOutcome.Self => (PaySelfRefusal, true),
+        PayOutcome.TooSmall =>
+            ($"Le minimum, c'est {PebbleEconomy.Cailloux(PebbleEconomy.PayMin)}.", true),
+        PayOutcome.TooPoor =>
+            ($"Il te faut {PebbleEconomy.Cailloux(result.Amount + result.Tax)} (dont {PebbleEconomy.Cailloux(result.Tax)} de taxe), et tu en as {PebbleEconomy.Cailloux(result.Balance)}.", true),
+        _ when result.RoomLeft == 0 =>
+            ($"Tu as déjà donné {PebbleEconomy.Cailloux(PebbleEconomy.PayDailyCap)} aujourd'hui, le maximum. Reviens après minuit.", true),
+        // Room left, but less than the minimum: suggesting it would only earn a second refusal.
+        _ when result.RoomLeft < PebbleEconomy.PayMin =>
+            ($"Il te reste {PebbleEconomy.Cailloux(result.RoomLeft)} à donner aujourd'hui, sous le minimum de {PebbleEconomy.Cailloux(PebbleEconomy.PayMin)}. Reviens après minuit.", true),
+        _ =>
+            ($"Tu ne peux plus donner que {PebbleEconomy.Cailloux(result.RoomLeft)} aujourd'hui (maximum {PebbleEconomy.Cailloux(PebbleEconomy.PayDailyCap)} par jour).", true),
+    };
 }

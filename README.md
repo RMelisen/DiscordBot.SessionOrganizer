@@ -21,7 +21,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/giveaway create · list · delete` | Prize draws | staff (`delete`: organiser or staff) |
 | `/level [user]` | Your card: level, rank, progress, badges (« Succès » button) | everyone |
 | `/recap [user]` | Your recap over 7 days, 30 days or all time | everyone |
-| `/leaderboard` | Server ranking — four views, three windows | everyone |
+| `/leaderboard` | Server ranking — five views, three windows | everyone |
 | `/emotestats` | Most-used emotes | everyone |
 | `/goodbot` | Who praised or scolded the bot | everyone |
 | `/yesno [question]` | A coin flip, delivered with conviction | everyone |
@@ -40,7 +40,7 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/quiz leaderboard` | Who wins her pop quiz | everyone |
 | `/plynling adopt · view · list · journal · relations · play · visit · passion · forage · wardrobe · freeze · thaw · abandon · graveyard · help` | Adopt and look after a Plynling (feed and pet it from its card). `/pl` is a shortcut for every one of them | everyone |
 | `/inventory view · collection · shop · cosmetics · craft · give · trade · sell` | Your items: pantry, collection, cosmetics, swaps | everyone |
-| `/work · /balance` | Earn cailloux; see your balance (and switch on a DM for when `/work` is ready) | everyone |
+| `/work · /balance · /pay` | Earn cailloux; see your balance (and switch on a DM for when `/work` is ready); give cailloux to someone (10 % tax) | everyone |
 | `/daily` | A daily reward that grows with each day in a row (up to 100 cailloux, sometimes an item); a missed day starts over | everyone |
 | `;pl · ;pl @someone · ;pl visit @someone · ;forage · ;work · ;daily` | Typed shortcuts, sent as a plain message: your card (or someone's), a visit, a forage, a shift, the daily reward. `;pl forage`, `;pl work` and `;pl daily` work too | everyone |
 | `/shame user:@someone` | Put someone on it | staff |
@@ -328,9 +328,9 @@ Vocal leaderboard stays honest about time actually spent.
   sessions joined and attended, `/tonight` answers, quiz wins, the current Plynling and its graves,
   cailloux, and the wall of shame — then one line from her about what the numbers say.
 - **`/leaderboard`** — the ranked list, five per page, every row carrying that
-  person's real avatar. Four buttons switch what it ranks — **Niveaux** (XP),
+  person's real avatar. Five buttons switch what it ranks — **Niveaux** (XP),
   **Réactions** (reactions added), **Vocal** (eligible time in voice), **Collections** (sets
-  completed, turn-ins included) — and three more
+  completed, turn-ins included), **Mécènes** (cailloux spent) — and three more
   switch the window: **all time** (default), **30 days**, **7 days**. In a window the
   XP view ranks by XP earned in that window and drops the level, which is a lifetime
   figure and can't be recomputed for a week. A `/level` card's "Voir le classement"
@@ -567,6 +567,9 @@ looks after her.
   menu and bought 1, 5 or 10 at a time (10 % off from five). Feeding serves from
   the feeder's pantry first — one of that food for their own Plynling, two for someone
   else's — and only charges cailloux when there isn't enough.
+- **Packs:** the shop also sells **sachets de collection**, 60 cailloux for three random
+  collectibles, opened on the spot (one or five at a time, no discount). A pack can complete a set,
+  which pays the set at once.
 - **Swapping:** `/inventory give` hands items to someone, `/inventory trade` posts an offer the
   other person can accept for an hour (both sides are checked again at the moment of the
   swap), and `/inventory sell` turns items into cailloux (2, 5, 15 or 50 by rarity).
@@ -583,6 +586,10 @@ looks after her.
   the streak over, and your best streak earns the « Assiduité » badge) and, as a small bonus, from chatting,
   reacting and voice (45 a day at most). `/balance` is private; its 🔔 button switches on a DM
   that tells you when your next `/work` is ready.
+- **Giving and spending:** `/pay member amount` gives someone 10 to 2 000 cailloux a day; a 10 %
+  tax is added on top, paid by the giver, and simply disappears. Everything spent on things that
+  leave the economy (the shop, packs, meals, medicine, cosmetics, crafting, the `/pay` tax — not the
+  arcade) counts toward the « Mécène » badge and `/leaderboard`'s **Mécènes** view.
 
 `/plynling help` explains it all in Discord.
 

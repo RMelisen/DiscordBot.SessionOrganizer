@@ -50,7 +50,7 @@ public static class AdminCards
     {
         (EconomyLog.SpendShop, "boutique"), (EconomyLog.SpendMeal, "repas"), (EconomyLog.SpendMealOther, "repas offerts"),
         (EconomyLog.SpendCosmetic, "cosmétiques"), (EconomyLog.SpendCraft, "fabrication"), (EconomyLog.SpendAdmin, "staff"),
-        (EconomyLog.SpendMedicine, "médicaments"), (EconomyLog.SpendArcade, "arcade"),
+        (EconomyLog.SpendMedicine, "médicaments"), (EconomyLog.SpendArcade, "arcade"), (EconomyLog.SpendTax, "taxe"), (EconomyLog.SpendPack, "sachets"),
     };
 
     private static readonly (string Metric, string Label)[] ActivityLabels =

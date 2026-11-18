@@ -8,6 +8,11 @@ namespace ProjectSYNCS.Services;
 // One item found — by foraging, a gift, a game or a visit — and any collection it completed.
 public sealed record ItemFind(ItemInfo Item, IReadOnlyList<CollectionSet> Completed);
 
+public enum PackOutcome { Opened, TooPoor, BadQuantity }
+
+// Price is what was asked, even when refused; Balance the wallet after; Finds empty unless opened.
+public sealed record PackResult(PackOutcome Outcome, long Price, long Balance, IReadOnlyList<ItemFind> Finds);
+
 // The inventory — transient, it wraps AppDbContext. The static helpers take a context so other
 // services (feeding, the gift, games, visits) add and take items in **their own** unit of work:
 // an action and the items it moves land in one save, the same reason PebbleService's wallet
@@ -174,8 +179,34 @@ public class InventoryService
         wallet.Balance -= price;
         await AddAsync(_db_context, guildId, userId, key, quantity, now);
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.SpendShop, price, now);
+        await Patronage.AddAsync(_db_context, guildId, userId, price, now);
         await _db_context.SaveChangesAsync();
         return (ShopOutcome.Bought, price, wallet.Balance);
+    }
+
+    /// <summary>
+    /// A collection pack from /inventory shop, opened at once: the cailloux and every find land in one
+    /// save, and a find that completes a set pays it in that same save (GrantAsync). Rolled inside the
+    /// work, so a retry simply rolls again. No bulk discount.
+    /// </summary>
+    public Task<PackResult> OpenPackAsync(ulong guildId, ulong userId, int quantity, DateTimeOffset now, Random rng) =>
+        EconomySave.RetryAsync(_db_context, () => OpenPackOnceAsync(guildId, userId, quantity, now, rng));
+
+    private async Task<PackResult> OpenPackOnceAsync(ulong guildId, ulong userId, int quantity, DateTimeOffset now, Random rng)
+    {
+        var wallet = await PebbleService.GetOrCreateWalletAsync(_db_context, guildId, userId);
+        var price = ItemCatalog.PackPrice * quantity;
+        if (!ItemCatalog.PackQuantities.Contains(quantity)) return new PackResult(PackOutcome.BadQuantity, 0, wallet.Balance, Array.Empty<ItemFind>());
+        if (wallet.Balance < price) return new PackResult(PackOutcome.TooPoor, price, wallet.Balance, Array.Empty<ItemFind>());
+
+        wallet.Balance -= price;
+        var finds = new List<ItemFind>();
+        for (var i = 0; i < quantity * ItemCatalog.PackSize; i++)
+            finds.Add(await GrantAsync(_db_context, guildId, userId, ItemCatalog.DrawCollectible(rng, now), now));
+        await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.SpendPack, price, now);
+        await Patronage.AddAsync(_db_context, guildId, userId, price, now);
+        await _db_context.SaveChangesAsync();
+        return new PackResult(PackOutcome.Opened, price, wallet.Balance, finds);
     }
 
     /// <summary>/inventory give: from one person's inventory to another's, in one save.</summary>

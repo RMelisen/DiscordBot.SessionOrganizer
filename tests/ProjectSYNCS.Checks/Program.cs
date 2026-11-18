@@ -3816,7 +3816,7 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
 // 34. Member badges: the catalog, tiers at their edges, derived moments, icon keys.
 {
     var mb = MemberBadges.All;
-    if (mb.Count(b => b.Kind == MemberBadgeKind.Palier) != 13 || mb.Count(b => b.Kind == MemberBadgeKind.Moment) != 6
+    if (mb.Count(b => b.Kind == MemberBadgeKind.Palier) != 14 || mb.Count(b => b.Kind == MemberBadgeKind.Moment) != 6
         || mb.Count(b => b.Kind == MemberBadgeKind.Secret) != 13) Fail("member badges: catalog counts");
     if (mb.Select(b => b.Key).Distinct().Count() != mb.Count) Fail("member badges: duplicate key");
     foreach (var b in mb)
@@ -3858,7 +3858,7 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     if (ProjectSYNCS.Commands.MemberBadgeCards.CardLine(new List<ProjectSYNCS.Models.CollectionCompletion>(), mbEmpty) is not null) Fail("empty card line");
     // Worst case: everything at Diamant, every secret found, every icon a real emoji markup.
     var mbMax = new MemberBadgeFacts(99_999_999, 99_999_999, 99_999, 1, 99_999_999, 99_999, 99_999, 99_999, 99_999_999, 99_999, true,
-        mbNow.AddYears(-20), mb.ToDictionary(b => b.Key, _ => new StoredBadge(99_999_999, mbNow)), DailyBest: 99_999);
+        mbNow.AddYears(-20), mb.ToDictionary(b => b.Key, _ => new StoredBadge(99_999_999, mbNow)), DailyBest: 99_999, CaillouxSpent: 99_999_999);
     var mbDone = ItemCatalog.Sets.Select(s => new ProjectSYNCS.Models.CollectionCompletion { SetKey = s.Key, Count = 999 }).ToList();
     foreach (var b in mb) foreach (var t in Enum.GetValues<CollectionTier>())
         ItemEmojis.Set(MemberBadges.IconKey(b, t), ItemEmojis.Markup("b_" + new string('x', 30), ulong.MaxValue));
@@ -5360,6 +5360,9 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     foreach (var l in (string[])Field("RelayRefusedLines"))
         if (l.Contains("{3}")) Fail($"RelayRefusedLines: quotes the insult it refuses: {l}");
 }
+
+// 52. Cailloux spent (Patronage), the Mécène badge and tab, /pay, packs: EconomySinkChecks.cs.
+await EconomySinkChecks.Run(Fail);
 
 // 34. Story files: StoryChecks.cs.
 StoryChecks.Run(Fail, args);

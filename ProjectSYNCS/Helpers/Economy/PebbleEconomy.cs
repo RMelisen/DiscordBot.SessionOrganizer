@@ -42,6 +42,18 @@ public static class PebbleEconomy
         return (granted, earnedToday + granted);
     }
 
+    // /pay: the tax is burned and paid by the sender on top of the amount, so the recipient gets exactly
+    // what was typed. The cap is per sender and per Paris day; it blunts funnelling from alt accounts.
+    public const long PayMin = 10;
+    public const long PayDailyCap = 2000;
+    public const double PayTaxRate = 0.10;
+
+    // 10 %, rounded up: every pay costs at least one caillou.
+    public static long PayTax(long amount) => (long)Math.Ceiling(amount * PayTaxRate);
+
+    // What they may still send today. PaidToday counts only while PayDay is today.
+    public static long PayRoom(int payDay, long paidToday, int today) => Math.Max(0, PayDailyCap - (payDay == today ? paidToday : 0));
+
     // "0 caillou", "1 caillou", "47 cailloux": the French plural is irregular (-oux), and 0
     // and 1 are singular, so every amount goes through here instead of appending an "s".
     public static string Cailloux(long n) => $"{LevelCardUi.Xp(n)} {(Math.Abs(n) <= 1 ? "caillou" : "cailloux")}";

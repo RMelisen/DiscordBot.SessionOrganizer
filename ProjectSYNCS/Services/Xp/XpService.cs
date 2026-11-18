@@ -7,8 +7,9 @@ namespace ProjectSYNCS.Services;
 
 /// <summary>Which metric the leaderboard is ranking by.</summary>
 /// <remarks>
-/// Three views over one row rather than three leaderboards: the numbers all live on
-/// MemberXp, so switching view is a re-order, not a different query shape.
+/// Several views over one row rather than several leaderboards: the numbers all live
+/// on MemberXp (Collections excepted, ranked from the inventory's tables), so switching
+/// view is a re-order, not a different query shape.
 /// </remarks>
 public enum LeaderboardView
 {
@@ -20,10 +21,12 @@ public enum LeaderboardView
     Voice,
     /// <summary>Collection sets completed (discoveries and turn-ins) — read from InventoryService, not here.</summary>
     Collections,
+    /// <summary>Cailloux spent on what leaves the economy (Helpers/Economy/Patronage).</summary>
+    Patrons,
 }
 
 /// <summary>One person's standing, carrying every metric the views rank by.</summary>
-public readonly record struct MemberTally(ulong UserId, long TotalXp, long ReactionsUsed, long VoiceMinutes, long Completions = 0)
+public readonly record struct MemberTally(ulong UserId, long TotalXp, long ReactionsUsed, long VoiceMinutes, long Completions = 0, long CaillouxSpent = 0)
 {
     public int Level => LevelCurve.LevelForXp(TotalXp);
 
@@ -33,6 +36,7 @@ public readonly record struct MemberTally(ulong UserId, long TotalXp, long React
         LeaderboardView.Reactions => ReactionsUsed,
         LeaderboardView.Voice => VoiceMinutes,
         LeaderboardView.Collections => Completions,
+        LeaderboardView.Patrons => CaillouxSpent,
         _ => TotalXp,
     };
 }
@@ -141,8 +145,8 @@ public class XpService
     /// Ordering is applied in memory because the metric is chosen at runtime and the
     /// row count is one per member who has ever earned anything — far below the size
     /// where that matters, and the same shape EmoteStatsService already uses. Rows
-    /// scoring zero on the chosen metric are dropped: everyone in this table has XP by
-    /// definition, but most of them have never touched a voice channel.
+    /// scoring zero on the chosen metric are dropped: a row exists for anyone who earned XP,
+    /// reacted or spent cailloux, and most of them have never touched a voice channel.
     ///
     /// All-time reads the totals; a window sums the daily buckets. The two are not
     /// interchangeable — see MemberDailyStat — and a windowed tally deliberately
@@ -170,7 +174,7 @@ public class XpService
             .Where(x => x.GuildId == guildId)
             .ToListAsync();
 
-        return rows.Select(x => new MemberTally(x.UserId, x.TotalXp, x.ReactionsUsed, x.VoiceMinutes));
+        return rows.Select(x => new MemberTally(x.UserId, x.TotalXp, x.ReactionsUsed, x.VoiceMinutes, CaillouxSpent: x.CaillouxSpent));
     }
 
     private async Task<IEnumerable<MemberTally>> WindowTalliesAsync(ulong guildId, StatsPeriod period)
@@ -190,7 +194,8 @@ public class XpService
                 g.Key,
                 g.Sum(b => b.XpEarned),
                 g.Sum(b => b.ReactionsUsed),
-                g.Sum(b => b.VoiceMinutes)));
+                g.Sum(b => b.VoiceMinutes),
+                CaillouxSpent: g.Sum(b => b.CaillouxSpent)));
     }
 
     private async Task<MemberXp> GetOrCreateAsync(ulong guildId, ulong userId)
@@ -234,7 +239,9 @@ public class XpService
     {
         var row = await _db_context.MemberXps
             .FirstOrDefaultAsync(x => x.GuildId == guildId && x.UserId == userId);
-        if (row is null) return null;
+        // 0 XP is unranked, as the XP leaderboard leaves it out: spending (Patronage) or a reaction
+        // creates this row without earning anything.
+        if (row is null || row.TotalXp == 0) return null;
 
         var ahead = await _db_context.MemberXps.CountAsync(x =>
             x.GuildId == guildId

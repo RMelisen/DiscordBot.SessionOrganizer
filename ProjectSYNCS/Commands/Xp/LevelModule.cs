@@ -255,10 +255,15 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
                 .Select(t => new MemberTally(t.UserId, 0, 0, 0, t.Completions)).ToList()
             : await _xp.GetRankingAsync(Context.Guild.Id, view, period);
 
-    private async Task<MessageComponent> BuildPageAsync(LeaderboardView view, StatsPeriod period, int page)
-    {
-        var ranking = await RankingAsync(view, period);
+    private async Task<MessageComponent> BuildPageAsync(LeaderboardView view, StatsPeriod period, int page) =>
+        BuildPage(await RankingAsync(view, period), view, period, page, Context.User.Id, id => Context.Guild.GetUser(id));
 
+    // Static and Context-free so the checks can measure the page at its fullest against the
+    // 40-component cap. viewerId is whoever is reading (the footer's standing); userOf resolves
+    // the avatars.
+    public static MessageComponent BuildPage(IReadOnlyList<MemberTally> ranking, LeaderboardView view,
+        StatsPeriod period, int page, ulong viewerId, Func<ulong, IUser?> userOf)
+    {
         var totalPages = Math.Max(1, (int)Math.Ceiling(ranking.Count / (double)PageSize));
         page = Math.Clamp(page, 0, totalPages - 1);
 
@@ -278,7 +283,7 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
                 var rank = page * PageSize + index + 1;
 
                 container.AddComponent(new SectionBuilder()
-                    .WithAccessory(Avatar(Context.Guild.GetUser(tally.UserId)))
+                    .WithAccessory(Avatar(userOf(tally.UserId)))
                     .AddComponent(new TextDisplayBuilder(
                         LevelCardUi.Row(rank, tally.UserId, view, period, tally))));
             }
@@ -286,7 +291,7 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
 
         container
             .AddComponent(new SeparatorBuilder())
-            .AddComponent(new TextDisplayBuilder(Footer(ranking, view, period, page, totalPages)));
+            .AddComponent(new TextDisplayBuilder(Footer(ranking, viewerId, view, period, page, totalPages)));
 
         // Row 0: what is being ranked. Changing it keeps the period.
         var views = new ActionRowBuilder();
@@ -315,17 +320,17 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     // The *viewer's* standing, not the original caller's: on a component interaction
-    // Context.User is whoever clicked, so this stays correct for everyone reading the
+    // Context.User (viewerId) is whoever clicked, so this stays correct for everyone reading the
     // same public message, with nothing threaded through the custom-id.
     //
     // Read off the ranking already in hand rather than queried separately — it is the
     // list this page was cut from, so the rank shown cannot disagree with the rows
     // above it, and it follows whichever view is on screen for free. Someone absent
     // from the current ranking (no reactions, no voice) simply gets no standing line.
-    private string Footer(
-        List<MemberTally> ranking, LeaderboardView view, StatsPeriod period, int page, int totalPages)
+    private static string Footer(IReadOnlyList<MemberTally> ranking, ulong viewerId,
+        LeaderboardView view, StatsPeriod period, int page, int totalPages)
     {
-        var index = ranking.FindIndex(t => t.UserId == Context.User.Id);
+        var index = ranking.ToList().FindIndex(t => t.UserId == viewerId);
         if (index < 0) return $"-# Page {page + 1}/{totalPages}";
 
         var mine = ranking[index];
@@ -334,6 +339,7 @@ public class LevelModule : InteractionModuleBase<SocketInteractionContext>
             LeaderboardView.Reactions => $"{LevelCardUi.Xp(mine.ReactionsUsed)} réaction(s)",
             LeaderboardView.Voice => LevelCardUi.Duration(mine.VoiceMinutes),
             LeaderboardView.Collections => LevelCardUi.Completions(mine.Completions),
+            LeaderboardView.Patrons => LevelCardUi.Spent(mine.CaillouxSpent),
             // Same reason the rows drop the level in a window: it is a lifetime figure.
             _ when period != StatsPeriod.AllTime => $"{LevelCardUi.Xp(mine.TotalXp)} XP gagnés",
             _ => $"niveau {mine.Level} ({LevelCardUi.Xp(mine.TotalXp)} XP)",

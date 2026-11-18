@@ -109,6 +109,7 @@ public static class LevelCardUi
         LeaderboardView.Reactions => $"{Xp(tally.ReactionsUsed)} réaction(s)",
         LeaderboardView.Voice => Duration(tally.VoiceMinutes),
         LeaderboardView.Collections => Completions(tally.Completions),
+        LeaderboardView.Patrons => Spent(tally.CaillouxSpent),
         _ when period != StatsPeriod.AllTime => $"{Xp(tally.TotalXp)} XP gagnés",
         _ => $"Niveau {tally.Level} · {Xp(tally.TotalXp)} XP",
     };
@@ -119,6 +120,7 @@ public static class LevelCardUi
         LeaderboardView.Reactions => "## Classement des réactions",
         LeaderboardView.Voice => "## Classement du vocal",
         LeaderboardView.Collections => "## Classement des collectionneurs",
+        LeaderboardView.Patrons => "## Classement des mécènes",
         _ => "## Classement",
     };
 
@@ -128,11 +130,15 @@ public static class LevelCardUi
         LeaderboardView.Reactions => "Réactions",
         LeaderboardView.Voice => "Vocal",
         LeaderboardView.Collections => "Collections",
+        LeaderboardView.Patrons => "Mécènes",
         _ => "Niveaux",
     };
 
     // Sets completed — a discovery and every turn-in each count one.
     public static string Completions(long n) => $"{Xp(n)} collection{(n > 1 ? "s" : "")} complétée{(n > 1 ? "s" : "")}";
+
+    // Cailloux spent on what leaves the economy (Patronage) — the Mécènes view.
+    public static string Spent(long n) => $"{PebbleEconomy.Cailloux(n)} {(Math.Abs(n) <= 1 ? "dépensé" : "dépensés")}";
 
     /// <summary>
     /// What an empty board says. A window being empty is ordinary — nobody did this
@@ -152,6 +158,8 @@ public static class LevelCardUi
                 "Personne n'a encore passé de temps en vocal. Je compte depuis peu, laissez-moi le temps (ᵕ • ᴗ •)",
             LeaderboardView.Collections =>
                 "Personne n'a encore complété de collection. Les carnets sont là, les objets aussi (ᵕ • ᴗ •)",
+            LeaderboardView.Patrons =>
+                "Personne n'a encore rien dépensé. Les cailloux, ça ne se garde pas sous le matelas (ᵕ • ᴗ •)",
             _ => "Personne n'a encore gagné d'XP. Parlez, réagissez, faites du bruit ദ്ദി◝ ⩊ ◜.ᐟ",
         };
     }

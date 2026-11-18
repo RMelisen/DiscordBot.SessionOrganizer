@@ -3,6 +3,16 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.68.0 — 2026-11-18
+
+- `/pay`: give cailloux to someone, up to 2 000 a day. A 10 % tax is added on top, paid by the giver,
+  and disappears.
+- Collection packs in `/inventory shop`: three random collectibles for 60 cailloux, opened on the spot.
+- New « Mécène » badge, for cailloux spent in the shop, on packs, meals, medicine, cosmetics,
+  crafting and the `/pay` tax (not the arcade).
+- `/leaderboard` has a fifth view, « Mécènes », ranking who spent the most (all time, 30 or 7 days).
+- A member with no XP yet shows as « non classé » on `/level` instead of last.
+
 ## 7.67.0 — 2026-11-18
 
 - `/debug heal`: puts a living Plynling back on its feet in one go (needs full, cured, no stress),

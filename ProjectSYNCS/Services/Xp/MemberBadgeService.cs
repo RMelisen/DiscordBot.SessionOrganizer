@@ -19,7 +19,7 @@ public class MemberBadgeService
     {
         var xp = await _db.MemberXps.AsNoTracking()
             .Where(x => x.GuildId == guildId && x.UserId == userId)
-            .Select(x => new { x.VoiceMinutes, x.ReactionsUsed })
+            .Select(x => new { x.VoiceMinutes, x.ReactionsUsed, x.CaillouxSpent })
             .FirstOrDefaultAsync();
         var companion = await _db.VoiceCompanionStats.AsNoTracking()
             .Where(x => x.GuildId == guildId && x.UserId == userId)
@@ -75,7 +75,8 @@ public class MemberBadgeService
             Punctual: seen.Any(s => s.Seen < s.ScheduledAt),
             JoinedAt: joinedAt,
             Stored: stored.ToDictionary(b => b.Key, b => new StoredBadge(b.Count, b.EarnedAt)),
-            DailyBest: dailyBest);
+            DailyBest: dailyBest,
+            CaillouxSpent: xp?.CaillouxSpent ?? 0);
     }
 
     /// <summary>Inserts the badge with Count = 1; false if the member already holds it.</summary>

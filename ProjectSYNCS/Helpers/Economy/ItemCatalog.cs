@@ -47,6 +47,14 @@ public static class ItemCatalog
     // How often a person may send their Plynling foraging (kept on their wallet row).
     public static readonly TimeSpan ForageCooldown = TimeSpan.FromHours(4);
 
+    // /inventory shop's collection packs: PackSize collectibles from DrawCollectible, opened at once.
+    // PackKey is the shop select's value, never an item: nothing called a pack is ever held. The price
+    // comes from the checks' simulation (section 52): set rewards make a find worth more than it sells for.
+    public const string PackKey = "pack.collection";
+    public const int PackSize = 3;
+    public const long PackPrice = 60;
+    public static readonly int[] PackQuantities = { 1, 5 };
+
     public static readonly IReadOnlyList<CollectionSet> Sets = new[]
     {
         new CollectionSet("cailloux", "🪨", "Cailloux", 100),

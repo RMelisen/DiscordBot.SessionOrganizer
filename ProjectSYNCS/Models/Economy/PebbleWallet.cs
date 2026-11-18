@@ -38,4 +38,10 @@ public class PebbleWallet
     public int DailyDay { get; set; }
     public int DailyStreak { get; set; }
     public int DailyBest { get; set; }
+
+    // /pay's daily cap (PebbleEconomy.PayRoom), kept like PassiveDay/PassiveToday: PaidToday counts
+    // only while PayDay is today's Paris yyyymmdd. On the wallet so the cap check and the transfer
+    // save together under Balance's concurrency token.
+    public int PayDay { get; set; }
+    public long PaidToday { get; set; }
 }

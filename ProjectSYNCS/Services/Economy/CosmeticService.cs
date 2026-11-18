@@ -37,6 +37,7 @@ public class CosmeticService
         wallet.Balance -= cosmetic.Price;
         await InventoryService.AddAsync(_db_context, guildId, userId, key, 1, now);
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.SpendCosmetic, cosmetic.Price, now);
+        await Patronage.AddAsync(_db_context, guildId, userId, cosmetic.Price, now);
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.CosBought, 1, now);
         await _db_context.SaveChangesAsync();
         return (CosmeticOutcome.Done, wallet.Balance);
@@ -61,6 +62,7 @@ public class CosmeticService
         wallet.Balance -= cosmetic.Price;
         await InventoryService.AddAsync(_db_context, guildId, userId, key, 1, now);
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.SpendCraft, cosmetic.Price, now);
+        await Patronage.AddAsync(_db_context, guildId, userId, cosmetic.Price, now);
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.CosCrafted, 1, now);
         await _db_context.SaveChangesAsync();
         return (CosmeticOutcome.Done, wallet.Balance);

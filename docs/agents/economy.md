@@ -19,7 +19,9 @@ Now the slower save throws `DbUpdateConcurrencyException` and its whole unit of 
 The player-facing entry points (`PebbleService`, `InventoryService`, `CosmeticService`,
 `ArcadeService.SettleAsync`, `QuizService.RecordWinAsync`) go through `EconomySave.RetryAsync`,
 which clears the context and runs the work again, so the loser re-checks and gets « pas assez »
-instead of an error. Its work may run more than once: database work only, all reads inside.
+instead of an error. It also retries a unique-index collision (two first spends of the day each
+inserting today's `MemberDailyStat` or metric row): the re-run finds the row the other save committed.
+Its work may run more than once: database work only, all reads inside.
 `PlynlingService`'s feeding, care, play and gift paths are not wrapped: there a conflict fails that
 one action with nothing saved. Never write a wallet or an item count any other way (no
 `ExecuteUpdate` on them, no attaching a detached row), or the token stops guarding it.
@@ -32,6 +34,25 @@ grant no XP** — the link runs one way, or money and levels would feed each oth
 
 **The passive cap lives on the wallet row** (`PassiveDay` + `PassiveToday`), not in a daily-bucket
 table: nothing ranks cailloux by date, so a buckets table would have no reader.
+
+**Spending is counted (`Helpers/Economy/Patronage`) for the « Mécène » badge and `/leaderboard`'s
+« Mécènes » view** (see `xp.md`). Only what *leaves the economy* counts: the shop, packs, meals (own
+and others'), medicine, cosmetics, crafting, the `/pay` tax. **Not** `/arcade` (it moves cailloux
+between players, and rewarding it would reward gambling), not admin debits, not the amount sent with
+`/pay`. `Patronage.AddAsync` sits beside the spend's `EconomyLog` line, like it never saves and looks
+in `Local` first, and writes `CaillouxSpent` on `MemberXp` and today's `MemberDailyStat` (the totals +
+buckets pair behind `/leaderboard`). **A new sink that destroys cailloux gets a `Patronage` call; one
+that only moves them between people doesn't.** Spending creates a `MemberXp` row for someone with no
+XP: `XpService.GetRankAsync` calls 0 XP unranked, and the activity readers (`/report`, « ça faisait
+longtemps ») filter on XP, reactions and voice, never on `CaillouxSpent`.
+
+**`/pay member amount`** (`PebbleService.PayAsync`, top-level in `EconomyModule`): 10 to 2 000; a 10 %
+tax rounded up (`PebbleEconomy.PayTax`) is added on top, paid by the sender and burned, so the
+recipient gets exactly what was typed. **Cap: 2 000 sent per sender per Paris day**, on the wallet
+(`PayDay` + `PaidToday`, like the passive cap, `PebbleEconomy.PayRoom`) so the check and the transfer
+save together under `Balance`'s token; it blunts funnelling from alt accounts. Checks run TooSmall →
+OverCap → TooPoor. Self and bots are refused before the service runs. Logged as `spend.tax`; the
+amount moved is not an economy flow and logs nothing.
 
 ## The `/work` DM reminder
 
@@ -96,6 +117,8 @@ be lost.
 - Admin adjustments record what actually moved (after the clamp), not what was asked.
 - `/arcade` games log net flows under `earn.arcade` / `spend.arcade` (« arcade »), through
   `ArcadeService.SettleAsync` only — see `arcade.md`.
+- The `/pay` tax logs under `spend.tax` (« taxe »), collection packs under `spend.pack` (« sachets »);
+  a pack's finds count as `item.found`, its completed sets as `item.set` + `earn.collection`.
 - No totals row: the stored balances already are the totals (`/admin stats` reads those). Nothing
   was backfilled.
 - Window buttons `dash:win:{Week|Month|All}` in `AdminComponentHandler`, which re-checks `IsStaff`.
@@ -122,6 +145,16 @@ redraws it with ×1/×5/×10 buttons `shop:buy:{key}:{qty}`, disabled when unaff
 purchase redraws it with a notice. `InventoryService.BuyAsync(key, qty)` refuses any key not in
 `Shop`, so a forged custom-id can't buy a collectible. A new buyable item is a line in `Shop`, not
 a new subcommand.
+
+**Collection packs** are the shop card's other line: `ItemCatalog.PackKey` is the select's value
+and **never an item** (nothing called a pack is ever held). Picking it shows ×1/×5 buttons
+`shop:pack:{qty}` (their own verb); `InventoryService.OpenPackAsync` takes `PackPrice` × qty (no
+bulk discount) and grants `PackSize` (3) `DrawCollectible` finds each through `GrantAsync`, in one
+save, so a pack that completes a set pays it at once. Rolled inside the work, so a retry rolls
+again. **`PackPrice` (60) is set by the checks' simulation, not by feel**: a find sells for ~4.5,
+but set rewards (100 to 1 000, paid again on every turn-in) make it worth more; section 52 plays
+5 000 packs with the best possible player and fails if a pack returns more than 70 % of its price
+(today ~35 %). Re-run it after changing a set's reward, the rarity split or the catalog.
 
 **Feeding serves from the pantry first** — one of that food for your own Plynling, two for someone
 else's (the pantry's version of the double price) — and charges cailloux only when there isn't

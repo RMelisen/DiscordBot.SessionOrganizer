@@ -805,6 +805,9 @@ namespace ProjectSYNCS.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<long>("CaillouxSpent")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Day")
                         .HasColumnType("INTEGER");
 
@@ -898,6 +901,9 @@ namespace ProjectSYNCS.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("CaillouxSpent")
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("GuildId")
@@ -1045,10 +1051,16 @@ namespace ProjectSYNCS.Migrations
                     b.Property<DateTimeOffset?>("LastWorkAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<long>("PaidToday")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("PassiveDay")
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("PassiveToday")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PayDay")
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("UserId")

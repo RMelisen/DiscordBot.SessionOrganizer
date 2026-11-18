@@ -99,8 +99,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .AddField("Commandes — Niveaux & statistiques",
                 "**`/level [user]`** — Ta carte : niveau, progression, rang et succès.\n" +
                 "**`/recap [user]`** — Ton récap : XP, vocal, soirées, quiz et bêtises, sur 7 jours, 30 jours ou depuis toujours.\n" +
-                "**`/leaderboard`** — Le classement, 5 par page. Quatre vues (**Niveaux**, **Réactions**, " +
-                "**Vocal**, **Collections**) et trois filtres (**depuis toujours**, **30 jours**, **7 jours**).\n" +
+                "**`/leaderboard`** — Le classement, 5 par page. Cinq vues (**Niveaux**, **Réactions**, " +
+                "**Vocal**, **Collections**, **Mécènes**) et trois filtres (**depuis toujours**, **30 jours**, **7 jours**).\n" +
                 "**`/emotestats`** — Les emotes les plus utilisées, écrites et en réaction.\n" +
                 "**`/yesno [question]`** — Tu hésites ? Je tranche. Pile ou face, mais avec du caractère.\n" +
                 "**`/goodbot`** — Qui m'a dit *good bot* (ou l'inverse). Réagir à un de mes " +
@@ -147,18 +147,22 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .WithTitle("Project S.Y.N.C.S. — Aide : cailloux & objets")
             .WithDescription(
                 "Les **cailloux** sont ma monnaie. On en gagne en travaillant, en passant chaque jour, en parlant (un peu, " +
-                "plafonné chaque jour), au quiz et à l'arcade.")
+                "plafonné chaque jour), au quiz et à l'arcade. Ce que tu dépenses (boutique, repas, soins, " +
+                "cosmétiques, sachets, taxe de `/pay`) te vaut le badge **Mécène** et une place chez les mécènes de `/leaderboard`.")
             .WithColor(Color.Blue)
             .AddField("Commandes — Cailloux",
                 "**`/work`** — Un petit boulot pour moi, toutes les 4 h. Raccourci : `;work` en texte.\n" +
                 "**`/daily`** — Ta récompense du jour : elle grandit chaque jour d'affilée (jusqu'à 100 cailloux, " +
                 "parfois un objet) et repart de zéro si tu en sautes un. Raccourci : `;daily`.\n" +
-                "**`/balance`** — Tes cailloux, visibles par toi seul ; son bouton 🔔 te prévient en MP quand `/work` est prêt.")
+                "**`/balance`** — Tes cailloux, visibles par toi seul ; son bouton 🔔 te prévient en MP quand `/work` est prêt.\n" +
+                "**`/pay`** — Donne des cailloux à quelqu'un (jusqu'à 2 000 par jour). Une taxe de 10 % s'ajoute, à ta charge : " +
+                "elle disparaît, personne ne la touche.")
             .AddField("Commandes — Inventaire",
                 "**`/inventory view`** — Tes objets, ton garde-manger, ta collection et ta garde-robe.\n" +
                 "**`/inventory collection`** — Ton carnet. Une collection complète se **dépose** (un exemplaire " +
                 "de chaque objet) contre sa récompense et un badge : Bronze, Argent, Or, Platine, Diamant.\n" +
-                "**`/inventory shop`** — Nourriture, savon et médicaments pour ton garde-manger (−10 % dès 5).\n" +
+                "**`/inventory shop`** — Nourriture, savon et médicaments pour ton garde-manger (−10 % dès 5), et des " +
+                "**sachets** de 3 objets de collection au hasard, ouverts tout de suite.\n" +
                 "**`/inventory cosmetics`** — Des cosmétiques pour ton Plynling, nouvelle sélection chaque lundi.\n" +
                 "**`/inventory craft`** — Fabrique des cosmétiques avec tes objets de collection.\n" +
                 "**`/inventory give`** — Offre un objet à quelqu'un.\n" +
