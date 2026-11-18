@@ -63,8 +63,145 @@ internal sealed class CardReplyService
             return true;
         }
 
-        _ = Task.Run(() => AnswerAsync(message, guild, card, intent, name, weekday));
+        _ = Task.Run(() => AnswerAsync(message, guild, card, intent, name, weekday, ChatPath.Reply));
         return true;
+    }
+
+    /// <summary>
+    /// « syncs remonte le sondage », with no card replied to (<see cref="MessageCues.ReadNamedRepost"/>):
+    /// she brings back the newest open card of that kind in this channel, as if the ask had been a
+    /// reply under it, or says there is none here. « remonte tous les sondages » brings back every
+    /// open one, oldest first, so they land in the order they were posted. Only this channel: moving
+    /// the weekend poll out of the main channel because someone asked elsewhere is the `/… list` menus' job.
+    /// </summary>
+    public bool TryRepostNamed(SocketUserMessage message, NamedRepost named, string name, string weekday, ChatPath path)
+    {
+        if (named.Card == NamedCard.None || message.Channel is not SocketGuildChannel { Guild: var guild }) return false;
+        _ = Task.Run(() => RepostNamedAsync(message, guild, named, name, weekday, path));
+        return true;
+    }
+
+    private async Task RepostNamedAsync(SocketUserMessage message, SocketGuild guild, NamedRepost named, string name,
+        string weekday, ChatPath path)
+    {
+        try
+        {
+            List<CardRef> cards;
+            await using (var scope = _services.CreateAsyncScope())
+            {
+                cards = await FindOpenAsync(scope.ServiceProvider, guild.Id, message.Channel.Id, named.Card);
+                if (named.All && cards.Count > 1)
+                {
+                    // A session already running is not one to bring back; the single ask says so, this one skips it.
+                    var open = new List<CardRef>();
+                    foreach (var card in cards)
+                        if (await LoadAsync(scope.ServiceProvider, guild, card) is { Open: true })
+                            open.Add(card);
+                    // None still open: the newest answers « c'est fermé », as asked alone.
+                    cards = open.Count > 0 ? open : [cards[^1]];
+                }
+            }
+
+            if (cards.Count == 0)
+            {
+                _logger.LogInformation("{Name} asked her to bring back a card ({Named}) — none open here.", name, named);
+                await ReplyAsync(message, guild, BotResponses.CardRepostNoneLines, name, weekday, string.Empty, path,
+                    "named repost, nothing here");
+                return;
+            }
+
+            // One card, or the newest: the same answer as a reply under it.
+            if (!named.All || cards.Count == 1)
+            {
+                await AnswerAsync(message, guild, cards[^1], CardReplyIntent.Repost, name, weekday, path);
+                return;
+            }
+
+            await RepostAllAsync(message, guild, cards, named, name, weekday, path);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not answer a named repost ({Named}).", named);
+        }
+    }
+
+    // Every card the gate lets through, oldest first, after one line for all of them.
+    private async Task RepostAllAsync(SocketUserMessage message, SocketGuild guild, List<CardRef> cards, NamedRepost named,
+        string name, string weekday, ChatPath path)
+    {
+        var claimed = cards.Where(_repostGate.TryClaim).ToList();
+        if (claimed.Count == 0)
+        {
+            await ReplyAsync(message, guild, BotResponses.CardRepostTooSoonLines, name, weekday, string.Empty, path,
+                "repost all, too soon");
+            return;
+        }
+
+        _logger.LogInformation("{Name} asked her to bring back every card ({Named}) — {Count} of {Open}.", name, named,
+            claimed.Count, cards.Count);
+        await ReplyAsync(message, guild, BotResponses.CardRepostAllLines, name, weekday, claimed.Count.ToString(), path,
+            "repost all");
+
+        await using var scope = _services.CreateAsyncScope();
+        var repost = scope.ServiceProvider.GetRequiredService<CardRepost>();
+        foreach (var card in claimed)
+        {
+            try
+            {
+                await repost.RepostAsync(guild, message.Channel, card);
+            }
+            catch (Exception ex)
+            {
+                // Not brought back, so the next ask may try again; the others still go.
+                _repostGate.Release(card);
+                _logger.LogWarning(ex, "Could not bring back card {Card} with the others.", card);
+            }
+        }
+    }
+
+    private async Task ReplyAsync(SocketUserMessage message, SocketGuild guild, string[] pool, string name, string weekday,
+        string a, ChatPath path, string what)
+    {
+        var line = string.Format(_picker.Pick(pool), name, weekday, a);
+        await _glitch.ReplyWithTypingAsync(message, line, _logger, what, Muted);
+        _activity.CountAnswer(guild.Id, AnswerKinds.Key(path), AnswerKinds.Card(CardReplyIntent.Repost), null,
+            DateTimeOffset.UtcNow);
+    }
+
+    // The open cards of that kind in this channel, oldest first by message id (snowflakes grow with
+    // time, so the last one is the newest across kinds). Open as LoadAsync reads it for polls; a
+    // session is listed while active, and LoadAsync says whether it still takes answers.
+    private static async Task<List<CardRef>> FindOpenAsync(IServiceProvider sp, ulong guildId, ulong channelId, NamedCard named)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var found = new List<(ulong MessageId, CardRef Card)>();
+        bool Here(ulong channel, ulong messageId) => channel == channelId && messageId != 0;
+
+        if (named is NamedCard.Any or NamedCard.Poll)
+        {
+            var polls = sp.GetRequiredService<PollService>();
+            foreach (var kind in Enum.GetValues<PollKind>())
+                foreach (var poll in await polls.GetActivePollsAsync(guildId, kind))
+                    if (Here(poll.ChannelId, poll.MessageId) && PollRules.IsOpen(poll, now))
+                        found.Add((poll.MessageId, new CardRef(CardKind.Poll, poll.Id)));
+        }
+        if (named is NamedCard.Any or NamedCard.Session)
+        {
+            foreach (var session in await sp.GetRequiredService<EventService>().GetActiveEventsAsync(guildId))
+                if (Here(session.ChannelId, session.MessageId))
+                    found.Add((session.MessageId, new CardRef(CardKind.Session, session.Id)));
+            if (await sp.GetRequiredService<TonightService>().GetOpenAsync(guildId) is { SessionEventId: 0 } call
+                && Here(call.ChannelId, call.MessageId))
+                found.Add((call.MessageId, new CardRef(CardKind.Tonight, call.Id)));
+        }
+        if (named is NamedCard.Any or NamedCard.Giveaway)
+        {
+            foreach (var giveaway in await sp.GetRequiredService<GiveawayService>().GetActiveAsync(guildId))
+                if (Here(giveaway.ChannelId, giveaway.MessageId))
+                    found.Add((giveaway.MessageId, new CardRef(CardKind.Giveaway, giveaway.Id)));
+        }
+
+        return found.OrderBy(f => f.MessageId).Select(f => f.Card).Distinct().ToList();
     }
 
     // What the card says now: whether it is open, who answered it, its count and its standing in words.
@@ -73,7 +210,7 @@ internal sealed class CardReplyService
         bool Anonymous = false);
 
     private async Task AnswerAsync(SocketUserMessage message, SocketGuild guild, CardRef card, CardReplyIntent intent,
-        string name, string weekday)
+        string name, string weekday, ChatPath path)
     {
         var what = $"card reply ({intent}, {card.Kind} #{card.Id})";
         try
@@ -93,7 +230,7 @@ internal sealed class CardReplyService
             _logger.LogInformation("{Name} replied under card {Card} — {Intent}.", name, card, intent);
             await _glitch.ReplyWithTypingAsync(message, line, _logger, what, Muted);
             // In memory (ActivityCounter): a count can never cost the answer, nor the repost.
-            _activity.CountAnswer(guild.Id, AnswerKinds.Key(ChatPath.Reply), AnswerKinds.Card(intent), null, DateTimeOffset.UtcNow);
+            _activity.CountAnswer(guild.Id, AnswerKinds.Key(path), AnswerKinds.Card(intent), null, DateTimeOffset.UtcNow);
 
             if (!repost) return;
             try

@@ -57,7 +57,7 @@ var taggedPools = new[]
     "SharingShrugLines", "ChoiceLines", "DoYouLoveMeGrudgeLines", "DoYouLoveMeTreasureLines", "TataIntentLines",
     "OwnerRaspberryNameLines", "OwnerChildNameLines", "OwnerVersionLines", "TakeSidesLines", "RateMeLines",
     "SessionNextLines", "SessionRunningLines", "NoSessionLines", "MyStatsLines", "MyLevelEmptyLines", "MyPlynlingEmptyLines",
-    "CardRepostLines", "CardRepostTooSoonLines", "CardClosedLines", "CardRallyLines", "CardRallyNamedLines",
+    "CardRepostLines", "CardRepostTooSoonLines", "CardRepostNoneLines", "CardRepostAllLines", "CardClosedLines", "CardRallyLines", "CardRallyNamedLines",
     "CardRallyAllDoneLines", "CardDoneSeenLines", "CardDoneLiarLines", "CardTextClickLines", "CardTextAnsweredLines",
     "CardStatusLines", "OpenAnswerLines", "CardDoneAnonymousLines", "PollClosedSlotLines", "VoteClosedResultLines",
     "PollClosedEmptyLines", "GoodbyeLines", "OwnerGoodbyeLines", "DaytimeGoodnightLines", "OwnerDaytimeGoodnightLines",
@@ -3740,6 +3740,7 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         ("on le voit plus", false, "Repost"), ("le sondage est tout en haut", false, "Repost"), ("reposte stp", false, "Repost"),
         ("ramène des chips", false, "None"), ("tu ramènes quoi ?", false, "None"), ("renvoie-moi le lien", false, "None"),
         ("remets ton vote", false, "None"), ("remets la musique", false, "None"), ("on remonte la pente", false, "None"),
+        ("je l'ai remonté", false, "None"), ("elle a déjà remonté le sondage", false, "None"),
         ("je suis noyé de boulot", false, "None"), ("Luca il est perdu", false, "None"), ("tu remontes à quelle heure ?", false, "None"),
         // Rallying the others.
         ("votez !", false, "Rally"), ("allez votez svp", false, "Rally"), ("<@123> vote", true, "Rally"),
@@ -3789,6 +3790,41 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     {
         var got = readCardReply.Invoke(null, new object[] { text, tags })!.ToString();
         if (got != expected) Fail($"ReadCardReply(\"{text}\", tags: {tags}) = {got}, expected {expected}");
+    }
+
+    // The same ask with no card replied to (MessageCues.ReadNamedRepost): only with the card named.
+    // « Poll all »: every open poll in the channel, not only the newest.
+    var readNamedRepost = cues.GetMethod("ReadNamedRepost", BindingFlags.Public | BindingFlags.Static)!;
+    foreach (var (text, expected) in new (string, string)[]
+    {
+        ("syncs remonte le sondage", "Poll"), ("syncs, tu peux remonter le sondage ?", "Poll"),
+        ("<@999> remonte le sondage stp", "Poll"), ("remonte le vote syncs", "Poll"), ("syncs remets la session en bas", "Session"),
+        ("syncs republie le tirage", "Giveaway"), ("syncs renvoie la carte", "Any"), ("syncs le sondage est tout en haut", "Poll"),
+        ("syncs remonte-le", "None"), ("syncs up", "None"), ("syncs a remonté le sondage", "None"),
+        ("on remonte le sondage", "None"), ("syncs remets la musique", "None"), ("syncs le sondage est nul", "None"),
+        ("syncs t'as vu le sondage ?", "None"),
+        // Every one of them.
+        ("syncs remonte tous les sondages", "Poll all"), ("syncs remonte les sondages", "Poll all"),
+        ("syncs tu peux remonter les deux sondages ?", "Poll all"), ("syncs remets toutes les cartes en bas", "Any all"),
+        ("syncs remonte les sessions", "Session all"), ("syncs remonte tout", "Any all"), ("syncs remonte-les tous", "Any all"),
+        ("syncs tu peux tout remonter ?", "Any all"), ("syncs remonte tout ça stp", "Any all"),
+        ("syncs remonte le sondage pour tous", "Poll"), ("syncs remonte tout le monde", "None"),
+        ("syncs remets-le tout en bas", "None"), ("syncs remonte le tout", "Any all"),
+        // Refined: more verbs and nouns, and no past or person.
+        ("syncs remets le vote", "Poll"), ("syncs rebalance le sondage", "Poll"), ("syncs re-poste le sondage", "Poll"),
+        ("syncs redescends le sondage", "Poll"), ("syncs renvoi le sondage", "Poll"), ("syncs remonte le tonight", "Session"),
+        ("syncs remonte le poll", "Poll"), ("syncs reup le sondage", "Poll"), ("syncs j'ai perdu le sondage", "Poll"),
+        ("syncs le sondage s'est perdu tout en haut", "Poll"),
+        ("syncs le sondage a été remonté", "None"), ("syncs le sondage est remonté", "None"),
+        ("syncs remonte pas le sondage", "None"), ("syncs je suis perdu avec le sondage", "None"),
+        ("syncs t'es perdue avec les sondages", "None"), ("syncs remets ton vote en bas", "None"), ("syncs on remonte tous les sondages", "None"),
+    })
+    {
+        var result = readNamedRepost.Invoke(null, new object[] { text })!;
+        var card = result.GetType().GetProperty("Card")!.GetValue(result)!.ToString();
+        var all = (bool)result.GetType().GetProperty("All")!.GetValue(result)!;
+        var got = card + (all ? " all" : "");
+        if (got != expected) Fail($"ReadNamedRepost(\"{text}\") = {got}, expected {expected}");
     }
 
     // A card is recognised by its buttons, whatever else rides on the message.

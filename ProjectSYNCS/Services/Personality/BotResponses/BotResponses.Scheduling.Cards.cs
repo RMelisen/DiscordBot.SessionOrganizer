@@ -40,6 +40,30 @@ internal static partial class BotResponses
         "Remonter une carte qu'on vient de remonter, c'est pas utile. C'est du spam, en plus joli." + Sticker.Jenote,
     };
 
+    // « syncs remonte tous les sondages »: said just before every open one comes back below, oldest
+    // first. {0} = the name, {1} = the weekday, {2} = how many (two or more), as a number.
+    public static readonly string[] CardRepostAllLines =
+    {
+        "Et hop, les {2} d'un coup. Je fais ça en gros, maintenant." + Sticker.Cool,
+        "{2} cartes remontées, dans l'ordre. Plus personne a d'excuse, même pas toi, {0}." + Sticker.Smug,
+        "Tout le stock redescend en bas. {2} cartes, zéro clic pour l'instant (¬_¬)" + Sticker.Bored,
+        "Livraison groupée : {2} cartes, juste en dessous. Servez-vous." + Sticker.Cool,
+        "Je remonte tout. Si vous cliquez pas sur au moins une des {2}, je le prends personnellement." + Sticker.Menace,
+        "Grand ménage : les {2} cartes ouvertes sont en bas. Je suis une fée du logis numérique." + Sticker.Slay,
+    };
+
+    // « syncs remonte le sondage » with no card replied to, and none of that kind open in this channel.
+    // {0} = the name, {1} = the weekday.
+    public static readonly string[] CardRepostNoneLines =
+    {
+        "Remonter quoi ? Y'a rien d'ouvert dans ce salon. Je peux pas remonter du vide (¬_¬)" + Sticker.Bored,
+        "J'ai cherché partout ici. Rien d'ouvert. Mes logs sont formels." + Sticker.Jenote,
+        "Rien à remonter ici, {0}. Soit c'est fermé, soit c'est dans un autre salon." + Sticker.Cool,
+        "Je remonte volontiers, mais faut qu'il y ait quelque chose en bas. Là, y'a que vous." + Sticker.Smug,
+        "Aucune carte ouverte dans ce salon. Si tu veux en lancer une, `/when`, `/vote` et `/schedule` t'attendent." + Sticker.Cool,
+        "Tu me demandes de remonter un truc qui existe pas ici. Je suis forte, mais pas à ce point." + Sticker.Smug,
+    };
+
     // A rally, a typed answer or a repost under a card that is closed, cancelled, drawn or expired.
     public static readonly string[] CardClosedLines =
     {

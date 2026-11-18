@@ -193,6 +193,7 @@ namespace ProjectSYNCS.Services;
 //
 //   [Scheduling.Cards] Under her cards (CardReplyService)
 //     CardRepostLines · CardRepostTooSoonLines ... « remonte-le »: brought back / just was
+//     CardRepostAllLines · CardRepostNoneLines ... « syncs remonte tous les sondages » / nothing open here
 //     CardClosedLines .......... a card that is over
 //     CardRallyLines · CardRallyNamedLines · CardRallyAllDoneLines ... « votez ! »: to the room / the tagged who haven't / who have
 //     CardDoneSeenLines · CardDoneLiarLines ... « j'ai voté »: true / not on the card

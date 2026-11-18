@@ -278,6 +278,9 @@ internal sealed partial class ChatterService
                 pick = IntentPick.Of(pool, AnswerKinds.Backbite);
             }
         }
+        // « syncs remonte le sondage »: an order about one of her cards, which she carries out.
+        else if (addressed && TryNamedRepost(message, name, ChatPath.Name))
+            return true;
         // « syncs, ça va ? » is addressing her even without a tag: a specific intent is answered
         // as such. Not a generic question or a low-effort word: she may not be the one asked. Nor
         // when her name is only mentioned (« @Luca, discute avec Syncs quand tu peux »): that
@@ -445,6 +448,11 @@ internal sealed partial class ChatterService
         // rescue branch above, so a mean @mention aimed at *someone else* is already
         // handled and never mistaken for an insult to her.
         var content = message.Content ?? string.Empty;
+
+        // « @SYNCS remonte le sondage »: Papa too (reposts are the same whoever asks), not through a « chut ».
+        if ((message.Author.Id == OwnerId || !_hush.IsHushed(message.Channel.Id, DateTimeOffset.UtcNow))
+            && TryNamedRepost(message, ResolveName(message.Author), ChatPath.Mention))
+            return;
 
         if (message.Author.Id == OwnerId)
         {

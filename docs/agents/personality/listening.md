@@ -92,12 +92,15 @@ expired) is not recognised and reads like any reply. Renaming one of those custo
 
 `MessageCues.ReadCardReply` (`MessageCues/MessageCues.Cards.cs`) reads `CardReplyIntent`, first match wins:
 
-- **`Repost`**: « remonte-le », « republie », « reposte », « bump », « up » (three words at most);
-  « renvoie », « ramène », « remets » only about the card (a pronoun next to them, the card named,
-  or closing the reply: « ramène des chips », « remets la musique » are not); a place verb with a
-  place (« mets-le en bas », « remets-le à la fin »); buried (« on le voit plus », or the card named
-  as « tout en haut », « noyé »). Never right after a subject (« tu remontes à quelle heure ? »,
-  « on remonte la pente »). A negator after cancels (« le remonte pas »), not before (« tu peux pas
+- **`Repost`**: « remonte-le », « republie », « re-poste », « bump », « reup », « up » (three words at
+  most); « renvoie », « ramène », « remets », « rebalance », « redescends » only about the card (a
+  pronoun next to them, the card named, or closing the reply: « ramène des chips », « remets la
+  musique » are not; a noun after a possessive is someone's own, « remets ton vote »); a place verb
+  with a place (« mets-le en bas », « remets-le à la fin »); buried (« on le voit plus », or the card
+  named as « tout en haut », « noyé », « perdu », but not of a person: « je suis perdu avec ce
+  sondage »). Never right after a subject (« tu remontes à quelle heure ? », « on remonte la pente »)
+  or an auxiliary (« je l'ai remonté », « il a été remonté »: « remonté » reads « remonte »). A
+  negator after cancels (« le remonte pas »), not before (« tu peux pas
   le remonter ? » asks). She replies, then `CardRepost` posts the card again at the bottom of the
   channel, so it is the last message.
 - **`Rally`**: « votez », « faut voter », « venez », « bougez-vous », « personne a voté », « et
@@ -126,6 +129,22 @@ expired) is not recognised and reads like any reply. Renaming one of those custo
   voter / cliquer… » asks. A day counts only among the words of a choice (« plutôt dimanche »,
   « samedi ou dimanche », « ça va ce soir »), never said in passing (« je dors chez Luca ce soir »,
   « à demain »). `CardTextAnsweredLines` if they clicked too, else `CardTextClickLines`.
+
+**The same repost asked with no card replied to** (« syncs remonte le sondage », « @SYNCS remets la
+session en bas », or under one of her other posts) goes through `MessageCues.ReadNamedRepost`: a
+`Repost` as above **with the card named** (`sondage`/`vote`/`poll` → a poll, `session`/`tonight`/
+`event` → a session or `/tonight`, `tirage`/`giveaway`/`concours`, `carte` → any). « remonte-le » or
+« up » alone points at nothing outside a reply. `CardReplyService.TryRepostNamed` takes the newest
+open card of that kind **in this channel only** (by message id) and answers as if it were a reply
+under it; none there → `CardRepostNoneLines`. **Asked for every one** (`NamedRepost.All`: the noun
+in the plural, « remonte les sondages », or « tout » / « tous » / « toutes » within two words of
+the verb, « remonte tous les sondages », « remonte-les tous », « tu peux tout remonter », which alone
+means any card), she brings back every open one there, oldest first so they keep their order,
+after one `CardRepostAllLines` line (`{2}` the count); each card keeps its own 5-minute gate, and all
+of them fresh → `CardRepostTooSoonLines`. « tout » as a determiner or adverb doesn't count
+(« remonte tout le monde », « remets-le tout en bas »), nor « pour tous » far from the verb. Never from another channel: moving the weekend poll is the `/… list` menus'
+job. On the name path it needs `AddressesHer` (« syncs a remonté le sondage » is news); on the
+mention path it runs before Papa's branch and respects a « chut » for everyone else.
 
 **`dotnet run --project tests/ProjectSYNCS.Checks -- --card-review`** lists the everyday sweeps'
 messages that would read as a card reply; each must be one a card reply would really be.

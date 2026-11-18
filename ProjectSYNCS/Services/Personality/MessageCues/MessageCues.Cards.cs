@@ -17,8 +17,92 @@ internal enum CardReplyIntent
     TextAnswer,
 }
 
+// Which card « syncs remonte le sondage » names, said with no card replied to (MessageCues.ReadNamedRepost).
+internal enum NamedCard
+{
+    None,
+    // « la carte », « remonte tout »: whatever is open.
+    Any,
+    // « le sondage », « le vote »: /when and /vote alike.
+    Poll,
+    // « la session », « le tonight »: a session or /tonight.
+    Session,
+    // « le tirage », « le giveaway ».
+    Giveaway,
+}
+
+// The card named, and whether she brings back every open one of it (« remonte tous les sondages »)
+// or only the newest (« remonte le sondage »).
+internal readonly record struct NamedRepost(NamedCard Card, bool All)
+{
+    public static readonly NamedRepost None = new(NamedCard.None, false);
+}
+
 internal static partial class MessageCues
 {
+    // The card named outside a reply. Only nouns that say which card: once no reply points at it,
+    // « remets le message » or « remonte le truc » could be anything.
+    private static readonly Dictionary<string, NamedCard> _namedCards = new()
+    {
+        ["sondage"] = NamedCard.Poll, ["sondages"] = NamedCard.Poll, ["vote"] = NamedCard.Poll, ["votes"] = NamedCard.Poll,
+        ["poll"] = NamedCard.Poll, ["polls"] = NamedCard.Poll,
+        ["session"] = NamedCard.Session, ["sessions"] = NamedCard.Session, ["tonight"] = NamedCard.Session,
+        ["event"] = NamedCard.Session, ["events"] = NamedCard.Session, ["evenement"] = NamedCard.Session,
+        ["evenements"] = NamedCard.Session,
+        ["tirage"] = NamedCard.Giveaway, ["tirages"] = NamedCard.Giveaway, ["giveaway"] = NamedCard.Giveaway,
+        ["giveaways"] = NamedCard.Giveaway, ["concours"] = NamedCard.Giveaway,
+        ["carte"] = NamedCard.Any, ["cartes"] = NamedCard.Any,
+    };
+
+    // The plural says every one of them: « remonte les sondages ». « concours » is both, so read singular.
+    private static readonly HashSet<string> _pluralCardNouns = new()
+    {
+        "sondages", "votes", "polls", "sessions", "events", "evenements", "tirages", "giveaways", "cartes",
+    };
+
+    // « remonte tout », « remonte-les tous », « tu peux tout remonter »: next to the verb.
+    private static readonly HashSet<string> _allWords = new() { "tout", "tous", "toutes" };
+
+    // … but not as a determiner or an adverb: « remonte tout le monde », « remets-le tout en bas ».
+    private static readonly HashSet<string> _notAllBefore = new()
+    {
+        "le", "la", "les", "l", "un", "une", "de", "du", "des", "d", "en", "au", "aux", "a", "droit", "suite", "seul",
+        "seule", "pres", "haut", "bas", "mon", "ton", "son", "ma", "ta", "sa", "mes", "tes", "ses", "nos", "vos",
+    };
+
+    /// <summary>
+    /// « syncs remonte le sondage », with no card replied to: a repost as <see cref="ReadCardReply"/>
+    /// reads one, with the card named, so she knows which to look for; <see cref="NamedRepost.All"/>
+    /// when it asks for every one (« tous les sondages », « les sessions », « remonte tout »).
+    /// <see cref="NamedRepost.None"/> otherwise: « remonte-le » points at nothing outside a reply.
+    /// </summary>
+    public static NamedRepost ReadNamedRepost(string content)
+    {
+        if (ReadCardReply(content, tagsSomeone: false) != CardReplyIntent.Repost) return NamedRepost.None;
+        var t = TokenizeOrdered(_mentionMarkup.Replace(content, " "));
+
+        var all = SaysAll(t);
+        for (var i = 0; i < t.Count; i++)
+            if (_namedCards.TryGetValue(t[i], out var named) && (i == 0 || !_possessives.Contains(t[i - 1])))
+                return new NamedRepost(named, all || _pluralCardNouns.Contains(t[i]));
+        return all ? new NamedRepost(NamedCard.Any, true) : NamedRepost.None;
+    }
+
+    // « tout » / « tous » / « toutes » within two words of a repost verb, as its object.
+    private static bool SaysAll(List<string> t)
+    {
+        for (var i = 0; i < t.Count; i++)
+        {
+            if (!_allWords.Contains(t[i]) || (i + 1 < t.Count && _notAllBefore.Contains(t[i + 1]))) continue;
+            for (var j = Math.Max(0, i - 2); j <= Math.Min(t.Count - 1, i + 2); j++)
+                if (j != i && IsRepostVerb(t[j])) return true;
+        }
+        return false;
+    }
+
+    private static bool IsRepostVerb(string w) =>
+        _repostVerbs.Contains(w) || _repostObjectVerbs.Contains(w) || _placeVerbs.Contains(w);
+
     // A card reply is short: past this it is a conversation, read the usual way.
     private const int MaxCardReplyTokens = 16;
     private const int MaxTextAnswerTokens = 10;
@@ -27,10 +111,13 @@ internal static partial class MessageCues
     private const int MaxTaggedAskTokens = 4;
     private const int MaxStatusOpenerTokens = 6;
 
-    // The card itself, named: « remets le sondage », « renvoie la carte ».
-    private static readonly HashSet<string> _cardNouns = new()
+    // The card itself, named: « remets le sondage », « renvoie la carte », « remets le vote ». Every
+    // named noun, plus the vague ones a reply makes clear. _namedCards is above, in this file.
+    private static readonly HashSet<string> _cardNouns = new(_namedCards.Keys.Concat(["message", "post", "truc"]));
+
+    private static readonly HashSet<string> _possessives = new()
     {
-        "sondage", "sondages", "carte", "session", "tirage", "giveaway", "message", "post", "truc",
+        "mon", "ton", "son", "ma", "ta", "sa", "mes", "tes", "ses", "notre", "votre", "nos", "vos", "leur", "leurs",
     };
 
     // An object pronoun: « remets-le », « tu peux le renvoyer ».
@@ -42,15 +129,18 @@ internal static partial class MessageCues
     private static readonly string[] _repostVerbs =
     {
         "remonte", "remonter", "remontes", "remontez", "republie", "republier", "republies", "republiez",
-        "reposte", "reposter", "repostes", "repostez", "repost", "bump", "bumper",
+        "reposte", "reposter", "repostes", "repostez", "repost", "bump", "bumper", "reup",
+        // « re-poste » splits in two.
+        "re poste", "re poster", "re publie", "re publier",
     };
 
     // The same, only about the card (a pronoun next to them, the card named, or closing the reply):
     // « ramène des chips », « renvoie-moi le lien » are something else.
     private static readonly string[] _repostObjectVerbs =
     {
-        "renvoie", "renvoyer", "renvoies", "renvoyez", "ramene", "ramener", "ramenes", "ramenez", "remets", "remet",
-        "remettre", "remettez",
+        "renvoie", "renvoi", "renvoyer", "renvoies", "renvoyez", "ramene", "ramener", "ramenes", "ramenez", "remets",
+        "remet", "remettre", "remettez", "rebalance", "rebalancer", "rebalances", "rebalancez", "redescends",
+        "redescend", "redescendre", "redescendez",
     };
 
     private static readonly HashSet<string> _repostSubjects = new() { "je", "j", "on", "il", "elle", "ils", "elles", "nous" };
@@ -75,10 +165,19 @@ internal static partial class MessageCues
         "perdu", "perdue", "noye", "noyee", "enterre", "enterree", "tout en haut", "trop haut", "on le voit plus",
     };
 
-    // A softer repost verb right after its subject is someone doing it (« tu ramènes des chips ? »).
+    // … said of the card, not of someone: « je suis perdu avec ce sondage » asks for help.
+    private static readonly HashSet<string> _notBuriedAfter = new()
+    {
+        "suis", "jsuis", "chui", "es", "etes", "sommes", "me", "m", "te", "se",
+    };
+
+    // A repost verb right after its subject is someone doing it (« tu ramènes des chips ? »), and
+    // after an auxiliary it is done already (« je l'ai remonté », « syncs a remonté le sondage »,
+    // « le sondage a été remonté »: « remonté » reads « remonte »).
     private static readonly HashSet<string> _repostObjectSubjects = new()
     {
         "je", "j", "on", "il", "elle", "ils", "elles", "nous", "tu", "t",
+        "ai", "jai", "a", "as", "avez", "avons", "ont", "deja", "ete", "est", "sont", "etait",
     };
 
     // Rallying everyone, said to the room: anywhere in the reply.
@@ -253,7 +352,8 @@ internal static partial class MessageCues
         // After its subject it is someone doing it (« tu remontes à quelle heure ? »); « tu le remontes ? » asks.
         if (FindPhrase(t, _repostVerbs, cancelAfter: true, cancelBefore: false, notAfter: _repostObjectSubjects)) return true;
 
-        var named = t.Any(_cardNouns.Contains);
+        // Not someone's own: « remets ton vote » is changing it.
+        var named = t.Where((w, i) => _cardNouns.Contains(w) && (i == 0 || !_possessives.Contains(t[i - 1]))).Any();
         for (var i = 0; i < t.Count; i++)
         {
             if (!_repostObjectVerbs.Contains(t[i]) || (i > 0 && _repostObjectSubjects.Contains(t[i - 1]))) continue;
@@ -269,7 +369,8 @@ internal static partial class MessageCues
         // Buried: « on le voit plus », or the card named as lost up there.
         return t.Count <= 8
                && (FindPhrase(t, _buriedPhrases, cancelAfter: false, cancelBefore: false)
-                   || (named && FindPhrase(t, _buriedNamedPhrases, cancelAfter: false, cancelBefore: false)));
+                   || (named && FindPhrase(t, _buriedNamedPhrases, cancelAfter: false, cancelBefore: false,
+                       notAfter: _notBuriedAfter)));
     }
 
     private static bool IsTextAnswer(List<string> t, string whole)

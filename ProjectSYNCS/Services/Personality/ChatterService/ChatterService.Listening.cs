@@ -183,7 +183,9 @@ internal sealed partial class ChatterService
     // where the card's context line waits for what nothing else caught.
     private bool TryCardReply(SocketUserMessage message, string name)
     {
-        if (message.ReferencedMessage is not { } replied || CardRefs.Read(CustomIds(replied)) is not { } card) return false;
+        if (message.ReferencedMessage is not { } replied) return false;
+        // Under one of her other posts (« tu parles de moi ? »), « remonte le sondage » still names it.
+        if (CardRefs.Read(CustomIds(replied)) is not { } card) return TryNamedRepost(message, name, ChatPath.Reply);
 
         var content = message.Content ?? string.Empty;
         if (IsMean(MessageCues.Analyze(content), content)) return false;
@@ -191,6 +193,18 @@ internal sealed partial class ChatterService
         var selfId = _client.CurrentUser.Id;
         var tagsSomeone = message.MentionedUsers.Any(u => !u.IsBot && u.Id != message.Author.Id && u.Id != selfId);
         return _cards.TryAnswer(message, card, MessageCues.ReadCardReply(content, tagsSomeone), name, CurrentWeekday());
+    }
+
+    // « syncs remonte le sondage », « @SYNCS remets la session en bas »: a repost asked with no card
+    // replied to, the card named (MessageCues.ReadNamedRepost). She brings back the newest open one of
+    // that kind in this channel, every one for « remonte tous les sondages », or says there is none
+    // (CardReplyService). A mean one is roasted.
+    private bool TryNamedRepost(SocketUserMessage message, string name, ChatPath path)
+    {
+        var content = message.Content ?? string.Empty;
+        var named = MessageCues.ReadNamedRepost(content);
+        if (named.Card == NamedCard.None || IsMean(MessageCues.Analyze(content), content)) return false;
+        return _cards.TryRepostNamed(message, named, name, CurrentWeekday(), path);
     }
 
     // Every custom-id on a message's buttons and selects, rows opened.

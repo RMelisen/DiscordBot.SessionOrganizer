@@ -3,6 +3,16 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.74.1 — 2026-11-18
+
+- Asking SYNCS by name or by tag to bring back a poll, a session or a giveaway (« syncs remonte le
+  sondage ») now reposts the newest open one in that channel, as replying under the card already did.
+- « syncs remonte tous les sondages » (or « les sessions », « remonte tout ») brings back every open
+  one in that channel, in their original order.
+- She reads a few more ways of asking for a repost (« re-poste », « rebalance », « redescends »,
+  « reup », « remets le vote »), and no longer mistakes « remets ton vote » or « je suis perdu avec
+  ce sondage » for one.
+
 ## 7.74.0 — 2026-11-18
 
 - Plynling events can now be written as story files: short events with real choices, and rarer long
