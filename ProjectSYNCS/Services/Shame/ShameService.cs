@@ -52,13 +52,7 @@ public class ShameService
     {
         if (hits <= 0) return;
 
-        var row = await GetOrCreateRecordAsync(guildId, userId);
-        var bucket = await GetOrCreateDailyAsync(guildId, userId, AppTime.TodayKey);
-
-        row.MeanHits += hits;
-        bucket.MeanHits += hits;
-
-        await _db_context.SaveChangesAsync();
+        await AddHitsAsync(guildId, userId, ShameCategory.Mean, hits);
     }
 
     /// <summary>
@@ -68,13 +62,7 @@ public class ShameService
     /// </summary>
     public async Task AddPerfidyHitAsync(ulong guildId, ulong userId)
     {
-        var row = await GetOrCreateRecordAsync(guildId, userId);
-        var bucket = await GetOrCreateDailyAsync(guildId, userId, AppTime.TodayKey);
-
-        row.PerfidyHits++;
-        bucket.PerfidyHits++;
-
-        await _db_context.SaveChangesAsync();
+        await AddHitsAsync(guildId, userId, ShameCategory.Perfidy, 1);
     }
 
     /// <summary>
@@ -83,25 +71,94 @@ public class ShameService
     /// </summary>
     public async Task AddShoutHitAsync(ulong guildId, ulong userId)
     {
-        var row = await GetOrCreateRecordAsync(guildId, userId);
-        var bucket = await GetOrCreateDailyAsync(guildId, userId, AppTime.TodayKey);
-
-        row.ShoutHits++;
-        bucket.ShoutHits++;
-
-        await _db_context.SaveChangesAsync();
+        await AddHitsAsync(guildId, userId, ShameCategory.Shout, 1);
     }
 
     /// <summary>Records one abandoned Plynling. Always one hit, never rationed.</summary>
     public async Task AddAbandonHitAsync(ulong guildId, ulong userId)
     {
-        var row = await GetOrCreateRecordAsync(guildId, userId);
-        var bucket = await GetOrCreateDailyAsync(guildId, userId, AppTime.TodayKey);
+        await AddHitsAsync(guildId, userId, ShameCategory.Abandon, 1);
+    }
 
-        row.AbandonHits++;
-        bucket.AbandonHits++;
-
+    // The record and today's bucket, created if missing, then incremented in SQL: a count read into
+    // memory and written back would overwrite a /bribe shame erasing a hit in between (ForgiveOneAsync),
+    // and the member would have paid for nothing. Both increments in one transaction.
+    private async Task AddHitsAsync(ulong guildId, ulong userId, ShameCategory category, long hits)
+    {
+        var today = AppTime.TodayKey;
+        await using var tx = await _db_context.Database.BeginTransactionAsync();
+        await GetOrCreateRecordAsync(guildId, userId);
+        await GetOrCreateDailyAsync(guildId, userId, today);
         await _db_context.SaveChangesAsync();
+
+        var record = _db_context.ShameRecords.Where(r => r.GuildId == guildId && r.UserId == userId);
+        var bucket = _db_context.ShameDailyStats.Where(b => b.GuildId == guildId && b.UserId == userId && b.Day == today);
+        switch (category)
+        {
+            case ShameCategory.Mean:
+                await record.ExecuteUpdateAsync(s => s.SetProperty(r => r.MeanHits, r => r.MeanHits + hits));
+                await bucket.ExecuteUpdateAsync(s => s.SetProperty(b => b.MeanHits, b => b.MeanHits + hits));
+                break;
+            case ShameCategory.Perfidy:
+                await record.ExecuteUpdateAsync(s => s.SetProperty(r => r.PerfidyHits, r => r.PerfidyHits + hits));
+                await bucket.ExecuteUpdateAsync(s => s.SetProperty(b => b.PerfidyHits, b => b.PerfidyHits + hits));
+                break;
+            case ShameCategory.Shout:
+                await record.ExecuteUpdateAsync(s => s.SetProperty(r => r.ShoutHits, r => r.ShoutHits + hits));
+                await bucket.ExecuteUpdateAsync(s => s.SetProperty(b => b.ShoutHits, b => b.ShoutHits + hits));
+                break;
+            case ShameCategory.Abandon:
+                await record.ExecuteUpdateAsync(s => s.SetProperty(r => r.AbandonHits, r => r.AbandonHits + hits));
+                await bucket.ExecuteUpdateAsync(s => s.SetProperty(b => b.AbandonHits, b => b.AbandonHits + hits));
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(category));
+        }
+        await tx.CommitAsync();
+    }
+
+    /// <summary>
+    /// Erases one hit in <paramref name="category"/> (/bribe shame): from the record, and from the most
+    /// recent day holding one, so the wall's windows move too (today is usually empty). Hits from
+    /// before the buckets existed come off the record alone. False, and nothing touched, when there
+    /// is no hit to erase.
+    /// </summary>
+    /// <remarks>
+    /// Runs its SQL at once (ExecuteUpdate): call it inside the caller's transaction, which also holds
+    /// the payment, and never saves. A hit added meanwhile cannot undo it, because the adders
+    /// (<see cref="AddHitsAsync"/>) increment in SQL too rather than writing back a count read earlier.
+    /// </remarks>
+    public static async Task<bool> ForgiveOneAsync(AppDbContext db, ulong guildId, ulong userId, ShameCategory category)
+    {
+        var records = db.ShameRecords.Where(r => r.GuildId == guildId && r.UserId == userId);
+        var buckets = db.ShameDailyStats.Where(s => s.GuildId == guildId && s.UserId == userId);
+        int erased;
+        switch (category)
+        {
+            case ShameCategory.Mean:
+                erased = await records.Where(r => r.MeanHits > 0).ExecuteUpdateAsync(s => s.SetProperty(r => r.MeanHits, r => r.MeanHits - 1));
+                if (erased > 0 && await buckets.Where(b => b.MeanHits > 0).OrderByDescending(b => b.Day).Select(b => (int?)b.Id).FirstOrDefaultAsync() is { } mean)
+                    await buckets.Where(b => b.Id == mean).ExecuteUpdateAsync(s => s.SetProperty(b => b.MeanHits, b => b.MeanHits - 1));
+                break;
+            case ShameCategory.Perfidy:
+                erased = await records.Where(r => r.PerfidyHits > 0).ExecuteUpdateAsync(s => s.SetProperty(r => r.PerfidyHits, r => r.PerfidyHits - 1));
+                if (erased > 0 && await buckets.Where(b => b.PerfidyHits > 0).OrderByDescending(b => b.Day).Select(b => (int?)b.Id).FirstOrDefaultAsync() is { } perfidy)
+                    await buckets.Where(b => b.Id == perfidy).ExecuteUpdateAsync(s => s.SetProperty(b => b.PerfidyHits, b => b.PerfidyHits - 1));
+                break;
+            case ShameCategory.Shout:
+                erased = await records.Where(r => r.ShoutHits > 0).ExecuteUpdateAsync(s => s.SetProperty(r => r.ShoutHits, r => r.ShoutHits - 1));
+                if (erased > 0 && await buckets.Where(b => b.ShoutHits > 0).OrderByDescending(b => b.Day).Select(b => (int?)b.Id).FirstOrDefaultAsync() is { } shout)
+                    await buckets.Where(b => b.Id == shout).ExecuteUpdateAsync(s => s.SetProperty(b => b.ShoutHits, b => b.ShoutHits - 1));
+                break;
+            case ShameCategory.Abandon:
+                erased = await records.Where(r => r.AbandonHits > 0).ExecuteUpdateAsync(s => s.SetProperty(r => r.AbandonHits, r => r.AbandonHits - 1));
+                if (erased > 0 && await buckets.Where(b => b.AbandonHits > 0).OrderByDescending(b => b.Day).Select(b => (int?)b.Id).FirstOrDefaultAsync() is { } abandon)
+                    await buckets.Where(b => b.Id == abandon).ExecuteUpdateAsync(s => s.SetProperty(b => b.AbandonHits, b => b.AbandonHits - 1));
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(category));
+        }
+        return erased > 0;
     }
 
     /// <summary>How many votes one person can take in a single day, from everyone.</summary>

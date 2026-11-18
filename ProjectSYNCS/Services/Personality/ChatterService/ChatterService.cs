@@ -27,6 +27,7 @@ internal sealed partial class ChatterService
     private readonly ActivityCounter _activity;
     private readonly ReplyWatchService _watch;
     private readonly ChatOffers _offers;
+    private readonly ChouchouBook _chouchous;
     private readonly ILogger<ChatterService> _logger;
 
     // Secret badges earned through her chat; fire-and-forget, never awaited on the gateway path.
@@ -107,8 +108,10 @@ internal sealed partial class ChatterService
         ActivityCounter activity,
         ReplyWatchService watch,
         ChatOffers offers,
+        ChouchouBook chouchous,
         ILogger<ChatterService> logger)
     {
+        _chouchous = chouchous;
         _offers = offers;
         _activity = activity;
         _watch = watch;
@@ -493,6 +496,7 @@ internal sealed partial class ChatterService
         // low-effort reading here: a bare tag *is* her « tagged for nothing » pool.
         var mood = MessageCues.Analyze(content);
         var mean = IsMean(mood, content);
+        var chouchou = !mean && await IsChouchouAsync(message);
         var intent = mean ? ChatIntent.None : MessageCues.ReadIntent(content);
 
         // Only an insult or a message with nothing in it wears her patience (ConversationStreak.Wears).
@@ -514,6 +518,9 @@ internal sealed partial class ChatterService
             // TataReplies: a mention is Tata *calling her over*, so she answers as
             // summoned rather than as mid-conversation — the same split Papa has.
             pick = IntentPick.Of(BotResponses.TataGreetings, AnswerKinds.Tata);
+        else if (chouchou)
+            // A /bribe chouchou: paid warmth instead of « tagged for nothing », as summoned.
+            pick = IntentPick.Of(BotResponses.ChouchouGreetings, AnswerKinds.Chouchou);
         else if (intent == ChatIntent.Sharing)
             (pick, what) = (SharingPick(isOwner: false), "mention sharing");
         else if (intent == ChatIntent.Question)
@@ -585,6 +592,7 @@ internal sealed partial class ChatterService
         var weekday = CurrentWeekday();
         var isOwner = message.Author.Id == OwnerId;
         var mean = IsMean(mood, content);
+        var chouchou = !mean && await IsChouchouAsync(message);
 
         // What the reply says, then what it answers, then its mood. A mean reply skips the first
         // two: it gets roasted (or, from Papa, lands), whatever it was about.
@@ -674,6 +682,11 @@ internal sealed partial class ChatterService
         else if (RollTataWarmth(message.Author.Id, mood))
         {
             pick = IntentPick.Of(BotResponses.TataReplies, AnswerKinds.Tata);
+        }
+        else if (chouchou)
+        {
+            // A /bribe chouchou: paid warmth instead of a roast (an insult never gets here).
+            pick = IntentPick.Of(BotResponses.ChouchouReplies, AnswerKinds.Chouchou);
         }
         else if (isOwner)
         {
@@ -769,6 +782,13 @@ internal sealed partial class ChatterService
     // The current weekday name in French, for the {1} format placeholder.
     private static string CurrentWeekday() =>
         AppTime.Now.ToString("dddd", CultureInfo.GetCultureInfo("fr-FR"));
+
+    // Whether the author paid to be her chouchou (/bribe favourite): every message gets the warm pool,
+    // no dice, since they paid (the owner's call, above Tata's 60 %). From ChouchouBook's memory,
+    // never a database read per message. A DM has no guild, so no chouchou.
+    private async Task<bool> IsChouchouAsync(SocketUserMessage message) =>
+        message.Channel is SocketGuildChannel channel
+        && await _chouchous.IsFavouriteAsync(channel.Guild.Id, message.Author.Id, DateTimeOffset.UtcNow);
 
     // Whether this message should get Tata's warm pool instead of the usual roast or
     // brush-off. **Rolls the dice**, so call it exactly once per message.

@@ -2,6 +2,7 @@ using System.Text.Json;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Helpers;
@@ -28,12 +29,9 @@ internal sealed class MorningGreetingService : BackgroundService
     // How far back to look for a hello she already said today.
     private const int HistoryDepth = 50;
 
-    // Both pools go through Helpers/Core/DailyRotation, not ResponsePicker: at one line a
-    // day, an in-memory history would be wiped by every restart long before it helped.
-    // Each pool has its own salt so the two orders are unrelated; changing a salt
-    // reshuffles that pool's rotation.
-    private const ulong GreetingSalt = 0x5359_4E43_5348_454C; // "SYNCSHEL"
-    private const ulong FunFactSalt = 0x5359_4E43_5346_4143;  // "SYNCSFAC"
+    // The pools go through Helpers/Core/DailyRotation, not ResponsePicker: at one line a day,
+    // an in-memory history would be wiped by every restart long before it helped. Their salts
+    // and the composition live in Helpers/Personality/MorningGreeting.ComposeHello.
 
     // Odds that someone else's greeting draws her hello out before its slot. Rolled
     // once per person per morning, so a chorus of "bonjour" doesn't make it a certainty.
@@ -45,6 +43,7 @@ internal sealed class MorningGreetingService : BackgroundService
     private readonly GuildConfigService _config;
     private readonly ILogger<MorningGreetingService> _logger;
     private readonly SilenceService _silence;
+    private readonly IServiceProvider _services;
     private readonly string _statePath;
 
     // Guards everything below: the loop and the gateway both read and claim the day.
@@ -66,8 +65,10 @@ internal sealed class MorningGreetingService : BackgroundService
         DiscordSocketClient client,
         GuildConfigService config,
         IConfiguration configuration,
-        ILogger<MorningGreetingService> logger, SilenceService silence)
+        ILogger<MorningGreetingService> logger, SilenceService silence,
+        IServiceProvider services)
     {
+        _services = services;
         _silence = silence;
         _client = client;
         _config = config;
@@ -224,15 +225,48 @@ internal sealed class MorningGreetingService : BackgroundService
         // The hello comes first, alone on its line, and the fun fact under it:
         // AlreadyGreetedTodayAsync recognises the hello by that first line.
         // Today's lines, so a restart or an early hello says what the slot would have.
-        var now = DateTimeOffset.UtcNow;
-        var day = AppTime.DayNumber(now);
         // On her birthday the hello is her age alone, no fun fact: the age is the fact.
-        var line = MorningGreeting.IsBirthday(now)
-            ? BotResponses.BirthdayGreeting(MorningGreeting.Age(now))
-            : DailyRotation.Pick(BotResponses.MorningGreetings, day, GreetingSalt)
-              + "\n" + DailyRotation.Pick(BotResponses.MorningFunFacts, day, FunFactSalt);
+        // A won /shoutout replaces the hello line, or ends the message on a credit line (by date, see
+        // MorningGreeting.UsesCredit), and pings its winner alone; it is settled only
+        // once posted, so a birthday, a silenced day (returned above) or a failed send carries it on.
+        var now = DateTimeOffset.UtcNow;
+        var due = await NextDedicationAsync(now);
+        var (line, mentions, usesDedication) = MorningGreeting.ComposeHello(now, due?.UserId);
 
-        await BotChat.PostWithTypingAsync(channel, line, _logger, "morning greeting", AllowedMentions.None);
+        var posted = await BotChat.PostWithTypingAsync(channel, line, _logger, "morning greeting", mentions);
+        if (posted is not null && usesDedication && due is not null)
+            await SettleDedicationAsync(due.Id, now);
+    }
+
+    // The won dedication this hello should carry, if any. A database hiccup costs the dedication
+    // today (it stays due), never the hello.
+    private async Task<Models.ShoutoutBid?> NextDedicationAsync(DateTimeOffset now)
+    {
+        try
+        {
+            await using var scope = _services.CreateAsyncScope();
+            return await scope.ServiceProvider.GetRequiredService<ShoutoutService>().NextDueAsync(HomeGuild.Id, now);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Morning greeting: could not read the dedication; saying the plain hello.");
+            return null;
+        }
+    }
+
+    // Posted: stamp it, log it, count it toward « Mécène ». A failure here is logged; the dedication
+    // stays due, and would be posted again the next morning (better twice than paid for and lost).
+    private async Task SettleDedicationAsync(int bidId, DateTimeOffset now)
+    {
+        try
+        {
+            await using var scope = _services.CreateAsyncScope();
+            await scope.ServiceProvider.GetRequiredService<ShoutoutService>().MarkShownAsync(bidId, now);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Morning greeting: dedication {BidId} posted but not settled.", bidId);
+        }
     }
 
     private async Task<IMessageChannel?> ResolveChannelAsync() =>
@@ -241,13 +275,17 @@ internal sealed class MorningGreetingService : BackgroundService
             : null;
 
     /// <summary>
-    /// Whether one of her messages is a morning hello: its first line is a pool line, or it is the
-    /// birthday hello for its day's age. By text, so it holds across a restart — ChatterService
+    /// Whether one of her messages is a morning hello: its first line is a pool line or a /shoutout
+    /// dedication, or it is the birthday hello for its day's age. By text, so it holds across a restart — ChatterService
     /// uses it to answer a reply to the hello as one (ReplyContext.MorningHello).
     /// </summary>
     public static bool IsMorningHello(IMessage message) =>
-        Lines.Contains(message.Content.Split('\n')[0])
+        IsHelloLine(message.Content.Split('\n')[0])
         || message.Content == BotResponses.BirthdayGreeting(MorningGreeting.Age(message.Timestamp));
+
+    // A pool hello, or a /shoutout dedication in its place.
+    private static bool IsHelloLine(string firstLine) =>
+        Lines.Contains(firstLine) || MorningGreeting.IsDedicationLine(firstLine);
 
     // A restart inside the window draws a fresh slot for today; this keeps it from
     // saying hello twice. Matching a first line against the pool's exact text tells her
@@ -265,7 +303,7 @@ internal sealed class MorningGreetingService : BackgroundService
             var recent = await channel.GetMessagesAsync(HistoryDepth).FlattenAsync();
             return recent.Any(m => m.Author.Id == _client.CurrentUser.Id
                                    && AppTime.DayKey(m.Timestamp) == today
-                                   && (Lines.Contains(m.Content.Split('\n')[0]) || m.Content == birthday));
+                                   && (IsHelloLine(m.Content.Split('\n')[0]) || m.Content == birthday));
         }
         catch (Exception ex)
         {

@@ -26,6 +26,8 @@ public static class AnswerKinds
     public const string Greeting = "greeting";
     public const string Reference = "reference";
     public const string Tata = "tata";
+    // A /bribe chouchou's warm line (ChouchouGreetings / ChouchouReplies), like Tata's a stand-in.
+    public const string Chouchou = "chouchou";
     public const string Comeback = "comeback";
     public const string PapaComeback = "papa:comeback";
     public const string PapaMean = "papa:mean";
@@ -83,7 +85,7 @@ public static class AnswerKinds
     /// what she should learn next (UnansweredLog).
     /// </summary>
     public static bool IsUnrecognised(string kind) =>
-        kind is Reference or Tata or Comeback or PapaComeback or Interrogation or TalkedAbout or PapaTalkedAbout
+        kind is Reference or Tata or Chouchou or Comeback or PapaComeback or Interrogation or TalkedAbout or PapaTalkedAbout
             or StreakNudge
         || kind.StartsWith("fact:", StringComparison.Ordinal);
 }

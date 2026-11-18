@@ -1033,6 +1033,15 @@ namespace ProjectSYNCS.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("BribeWeek")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("BribesThisWeek")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset?>("ChouchouUntil")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("DailyBest")
                         .HasColumnType("INTEGER");
 
@@ -1960,6 +1969,39 @@ namespace ProjectSYNCS.Migrations
                         .IsUnique();
 
                     b.ToTable("ShameRecords");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.ShoutoutBid", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Amount")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ForDay")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("PlacedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ShownDay")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId", "ForDay")
+                        .IsUnique();
+
+                    b.ToTable("ShoutoutBids");
                 });
 
             modelBuilder.Entity("ProjectSYNCS.Models.TonightCall", b =>

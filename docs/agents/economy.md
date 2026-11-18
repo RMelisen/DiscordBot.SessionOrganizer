@@ -37,7 +37,7 @@ table: nothing ranks cailloux by date, so a buckets table would have no reader.
 
 **Spending is counted (`Helpers/Economy/Patronage`) for the « Mécène » badge and `/leaderboard`'s
 « Mécènes » view** (see `xp.md`). Only what *leaves the economy* counts: the shop, packs, meals (own
-and others'), medicine, cosmetics, crafting, the `/pay` tax. **Not** `/arcade` (it moves cailloux
+and others'), medicine, cosmetics, crafting, the `/pay` tax, bribes, a dedication once posted. **Not** `/arcade` (it moves cailloux
 between players, and rewarding it would reward gambling), not admin debits, not the amount sent with
 `/pay`. `Patronage.AddAsync` sits beside the spend's `EconomyLog` line, like it never saves and looks
 in `Local` first, and writes `CaillouxSpent` on `MemberXp` and today's `MemberDailyStat` (the totals +
@@ -53,6 +53,29 @@ recipient gets exactly what was typed. **Cap: 2 000 sent per sender per Paris da
 save together under `Balance`'s token; it blunts funnelling from alt accounts. Checks run TooSmall →
 OverCap → TooPoor. Self and bots are refused before the service runs. Logged as `spend.tax`; the
 amount moved is not an economy flow and logs nothing.
+
+**`/bribe favourite` and `/bribe shame category`** (`BribeService`, `BribeModule`): one price for both,
+`Bribes.Price`: 100, doubled by every bribe the same person paid this Paris ISO week
+(`CosmeticCatalog.WeekKey`; `BribeWeek` + `BribesThisWeek` on the wallet, like `PayDay`). Logged
+`spend.bribe`, counted toward « Mécène ». The chouchou lasts 24 h (`PebbleWallet.ChouchouUntil`,
+extended from its end when bought again); Papa and Tata are refused before any price. **`ChouchouBook`**
+(singleton) caches who is chouchou for `ChatterService` and `ReactionService`, which must never read
+the database per message: it loads every `ChouchouUntil` once, lazily, and `BribeService` calls `Set`
+after each purchase; a failed load answers « no » and retries on the next message. Erasing a shame hit
+is `ShameService.ForgiveOneAsync` (see `shame.md`), run with `ExecuteUpdate` inside the bribe's
+transaction, so each bribe is `BeginTransaction` … `SaveChanges` … `Commit` inside `EconomySave`.
+
+**`/shoutout bid amount` and `/shoutout status`** (`ShoutoutService`, `ShoutoutModule`, home guild only:
+the hello is only said there): an auction for a dedication in the morning hello. `Shoutouts.OpenDay`:
+before 20:00 Paris a bid is for tomorrow, from 20:00 for the day after. Opening 50, each raise +10,
+so no ties. One `ShoutoutBid` row per (guild, day), overwritten by each new leader; `Amount` is a
+concurrency token, so two racing bids re-check. **The bid is held, not spent**: debited at once (the
+difference when raising your own lead), the outbid leader refunded in the same save, nothing logged.
+It is logged `spend.shoutout` and counted toward « Mécène » only when the dedication is posted
+(`MarkShownAsync`, called by `MorningGreetingService`; see `personality/ambient.md`). A day's
+winner is posted on that day; a dedication carried over a missed hello waits for a morning nobody
+won (`NextDueAsync`). `BidResult.Cost` is what the bid takes, so a refusal names the difference when
+raising your own lead.
 
 ## The `/work` DM reminder
 
@@ -117,7 +140,8 @@ be lost.
 - Admin adjustments record what actually moved (after the clamp), not what was asked.
 - `/arcade` games log net flows under `earn.arcade` / `spend.arcade` (« arcade »), through
   `ArcadeService.SettleAsync` only — see `arcade.md`.
-- The `/pay` tax logs under `spend.tax` (« taxe »), collection packs under `spend.pack` (« sachets »);
+- The `/pay` tax logs under `spend.tax` (« taxe »), collection packs under `spend.pack` (« sachets »), bribes under `spend.bribe`
+  (« pots-de-vin »), posted dedications under `spend.shoutout` (« dédicaces »);
   a pack's finds count as `item.found`, its completed sets as `item.set` + `earn.collection`.
 - No totals row: the stored balances already are the totals (`/admin stats` reads those). Nothing
   was backfilled.

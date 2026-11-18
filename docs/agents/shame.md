@@ -53,6 +53,16 @@ short-circuited by `ReadFeedback`: nothing else records *how* a message was deli
 
 **L'Indigne** — `AbandonHits`, from `/plynling abandon` (see `plynling.md`).
 
+**`/bribe shame` erases one hit** in a category the payer picks (`ShameCategory`: Malfaisant, Perfide,
+Hystérique, Indigne). **Ban votes are not for sale**: staff cast them, and buying them back would empty
+them. `ShameService.ForgiveOneAsync` decrements the record and **the most recent bucket holding a hit
+in that category**, not today's: today is usually empty, and the default 30-day wall must move for
+the money. Hits from before the buckets came off the record alone. Nothing to erase: refused, not
+charged. It runs `ExecuteUpdate` (`col = col - 1 WHERE col > 0`) inside the bribe's transaction (see
+`economy.md`). **The hit adders increment in SQL too** (`AddHitsAsync`: rows created if missing, then
+`col = col + n`, one transaction): a count read into memory and saved back would overwrite an erase
+landing in between, and the member would have paid for nothing. Keep any new adder on that path.
+
 The spam-channel exclusion is asked of `XpTracker.IsChannelExcludedAsync` (the list stays there).
 
 ## The card

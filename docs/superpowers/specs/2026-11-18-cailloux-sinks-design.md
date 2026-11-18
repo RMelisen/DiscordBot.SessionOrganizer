@@ -112,3 +112,7 @@ Not arcade, not lottery (would reward gambling), not admin debits.
   line in `architecture.md`). Winner gets 75 %, 25 % burned. SYNCS holds one free ticket (adds
   nothing to the pot); if she wins, the whole pot is burned and she gloats. Metrics
   `spend.lottery` / `earn.lottery`; settles through `ArcadeService.SettleAsync`.
+  **The draw is announced in the bots channel** (owner, 2026-11-18), resolved through
+  `BotsChannel.ResolveAsync`, never the main channel: the winner (pinged alone, mentions narrowed to
+  that user) or her gloating when her ticket wins. A draw is a notice the command set up, so it
+  ignores silence mode like giveaway draws.

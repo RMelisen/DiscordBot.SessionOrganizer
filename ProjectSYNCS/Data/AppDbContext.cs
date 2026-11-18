@@ -58,6 +58,7 @@ public class AppDbContext : DbContext
     public DbSet<ShameDailyStat> ShameDailyStats => Set<ShameDailyStat>();
     public DbSet<Plynling> Plynlings => Set<Plynling>();
     public DbSet<PebbleWallet> PebbleWallets => Set<PebbleWallet>();
+    public DbSet<ShoutoutBid> ShoutoutBids => Set<ShoutoutBid>();
     public DbSet<PlynlingBadge> PlynlingBadges => Set<PlynlingBadge>();
     public DbSet<PlynlingTrait> PlynlingTraits => Set<PlynlingTrait>();
     public DbSet<PlynlingEventInstance> PlynlingEventInstances => Set<PlynlingEventInstance>();
@@ -533,6 +534,15 @@ public class AppDbContext : DbContext
             // concurrent save of the same wallet must fail rather than overwrite (a spent stake
             // coming back, a payment counted once for two purchases).
             e.Property(x => x.Balance).IsConcurrencyToken();
+        });
+
+        modelBuilder.Entity<ShoutoutBid>(e =>
+        {
+            e.Property(x => x.GuildId).HasConversion<long>();
+            e.Property(x => x.UserId).HasConversion<long>();
+            // One leading bid per hello: a new leader overwrites the row.
+            e.HasIndex(x => new { x.GuildId, x.ForDay }).IsUnique();
+            e.Property(x => x.Amount).IsConcurrencyToken();
         });
 
         modelBuilder.Entity<QuizRound>(e =>

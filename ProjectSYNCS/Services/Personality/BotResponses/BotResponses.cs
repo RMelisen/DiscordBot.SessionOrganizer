@@ -134,6 +134,12 @@ namespace ProjectSYNCS.Services;
 //     TataReportLines .......... /report asked by her, on top of the card
 //     TataDigestLines .......... the monthly digest in her DMs, {0} = the month
 //
+//   [Bribes] What cailloux buy from her
+//     ChouchouGreetings (mentioned) · ChouchouReplies (replied to) ... a /bribe chouchou, paid warmth
+//     ChouchouReactions ........ her reactions to a chouchou's messages
+//     DedicationLines .......... the morning hello on a /shoutout winner's day, {0} = their mention
+//     DedicationCredits ........ or the classic hello, ending on a big-up to the winner (60 % of those days)
+//
 //   [Rivals] Other bots
 //     JealousLines · JealousLinesOwner ... praise went to a rival
 //     RivalMutters ............. a rival posted

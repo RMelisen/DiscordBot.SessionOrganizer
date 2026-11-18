@@ -44,4 +44,14 @@ public class PebbleWallet
     // save together under Balance's concurrency token.
     public int PayDay { get; set; }
     public long PaidToday { get; set; }
+
+    // /bribe: until when she treats this person as her chouchou (null: never bought, or long over).
+    // Stored, not in memory: it was paid for, so a restart must not take it back. ChouchouBook
+    // caches it for the gateway paths.
+    public DateTimeOffset? ChouchouUntil { get; set; }
+
+    // /bribe's doubling price (Bribes.Price), kept like PayDay/PaidToday: BribesThisWeek counts only
+    // while BribeWeek is this Paris ISO week (CosmeticCatalog.WeekKey).
+    public int BribeWeek { get; set; }
+    public int BribesThisWeek { get; set; }
 }

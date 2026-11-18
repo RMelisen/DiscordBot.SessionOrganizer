@@ -34,6 +34,16 @@ else is still a rescue roast). **This does not extend to `ReactionService`**, wh
 `OwnerReactions` for him unconditionally: ambiently it can't tell "t'es nulle" from "ce boss est
 nul", and ambient devotion misfiring is harmless where ambient sadness is not.
 
+**A fourth tier, bought: the `/bribe` chouchou** (`ChouchouBook`, 24 h, see `economy.md`). Below Tata
+and not family: her warmth is paid for and she says so (`ChouchouGreetings` on a mention,
+`ChouchouReplies` on a reply, both openly transactional, never papa, tata or famille words). On both
+paths an `else if (chouchou)` sits right **after** Tata's branch, with **no dice**: they paid, so
+every message gets the warm pool, even though Tata's warmth is a 60 % roll (the owner's call: the
+tier is below Tata in standing, not in odds). A mean
+message is still roasted (`chouchou` is computed `!mean && …`), like Tata's. Papa and Tata cannot buy
+it: their tiers stay as above. Counted as `chouchou` (`AnswerKinds.Chouchou`, a stand-in like `tata`).
+Its reactions are in `reactions.md`.
+
 ## Shutdown threats — favouritism inverts
 
 Being able to carry the threat out makes her reaction *worse*:

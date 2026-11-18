@@ -62,7 +62,7 @@ var taggedPools = new[]
     "EditTurnedMeanLines", "EditCoveredUpLines", "OwnerEditLines", "OwnerEditMeanLines", "MilestoneLines",
     "MilestoneBotLines", "MilestoneSelfLines", "RequestActionLines", "OwnerRequestActionLines", "TeamsNoVoiceLines",
     "RelayLines", "RelayGreetingLines", "RelayRefusedLines", "DefendedLines", "OwnerDefendedLines", "OwnerWorksOnHerLines",
-    "TalkedAboutShipLines", "TalkedAboutDigLines",
+    "TalkedAboutShipLines", "TalkedAboutDigLines", "ChouchouGreetings", "ChouchouReplies",
 };
 foreach (var f in taggedPools)
 foreach (var (name, lines) in Pools(f))
@@ -5363,6 +5363,9 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
 
 // 52. Cailloux spent (Patronage), the Mécène badge and tab, /pay, packs: EconomySinkChecks.cs.
 await EconomySinkChecks.Run(Fail);
+
+// 53. Bribes and the dedication auction: BribeChecks.cs.
+await BribeChecks.Run(Fail);
 
 // 34. Story files: StoryChecks.cs.
 StoryChecks.Run(Fail, args);

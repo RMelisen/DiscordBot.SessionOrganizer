@@ -3,6 +3,17 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.70.0 — 2026-11-18
+
+- `/bribe favourite`: pay to be her chouchou for 24 h: warm answers when you tag or reply to her,
+  and warm reactions (an insult still gets roasted).
+- `/bribe shame`: erase one of your `/shame` hits (not ban votes). A bribe costs 100 cailloux, doubled
+  by each bribe already paid that week.
+- `/shoutout bid` and `/shoutout status`: an auction for a dedication in tomorrow's morning hello; bids
+  close at 20:00 and an outbid bid is refunded at once. The dedication either replaces the hello line
+  or follows the usual hello as a closing big-up.
+- Bribes and posted dedications count toward the « Mécène » badge and `/leaderboard`'s Mécènes view.
+
 ## 7.69.0 — 2026-11-18
 
 - `/debug react`: makes her react to any message, by link, or take her reaction back.

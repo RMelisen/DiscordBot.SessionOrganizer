@@ -20,6 +20,10 @@ that apply to all of it) first.
   reads hostile, and the definition of "hostile" used to decide what she refuses to pile onto on
   the owner's messages. Membership is tested on the parsed `IEmote`, so a renamed emote still
   matches.
+- **A `/bribe` chouchou gets `ChouchouReactions`** on anything that isn't mean
+  (`ReactionService.ChooseReactionPool(content, authorId, chouchou)`: Papa first, then mean, then the
+  chouchou), under the usual `ReactChance` and channel cooldown. Who is chouchou comes from
+  `ChouchouBook`'s memory, never a database read per message (see `economy.md`).
 
 ## Sticker follow-ups
 

@@ -158,7 +158,8 @@ restart **by design**.
   `ShameRecord`/`ShameDailyStat`, `QuizStat`/`QuizDailyStat`, `ChatAnswerStat`/`ChatAnswerDailyStat`,
   `CollectionCompletion.Count`/`CollectionDailyStat`, `MinecraftStat`/`MinecraftDailyStat`. **The buckets do not sum to the totals and must not be made
   to** — everything before the buckets existed lives only in the totals. A removal always
-  decrements *today's* bucket. Follow this shape for any new dated leaderboard.
+  decrements *today's* bucket, except a bought `/bribe shame`, which takes the most recent day holding
+  a hit, so the windows move (see shame). Follow this shape for any new dated leaderboard.
   `MemberFlowDailyStat` (joins/leaves), `ActivityHourStat`, `ChannelDailyStat`, `CommandDailyStat`,
   `CommandMemberDailyStat` and `IncidentDailyStat` (activity counting) are buckets alone, with no
   totals, on purpose (see admin).

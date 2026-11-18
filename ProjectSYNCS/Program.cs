@@ -72,6 +72,8 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddTransient<PebbleService>();
         services.AddTransient<PlynlingService>();
         services.AddTransient<InventoryService>();
+        services.AddTransient<BribeService>();
+        services.AddTransient<ShoutoutService>();
         services.AddTransient<CosmeticService>();
         services.AddTransient<AdminStatsService>();
         services.AddTransient<WarningService>();
@@ -131,6 +133,7 @@ var host = Host.CreateDefaultBuilder(args)
         // /confess: the cooldown and the numbering lock live here, so a singleton.
         services.AddSingleton<ConfessionService>();
         services.AddSingleton<ResponsePicker>();
+        services.AddSingleton<ChouchouBook>();
         // The glitch easter egg's daily cap is in-memory: a singleton, like the picker.
         services.AddSingleton<GlitchService>();
         // The sticker follow-ups: one instance, reached from BotChat's static hook.

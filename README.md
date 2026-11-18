@@ -42,6 +42,8 @@ wall of shame, and a pop quiz. The bot's user-facing language is French.
 | `/inventory view · collection · shop · cosmetics · craft · give · trade · sell` | Your items: pantry, collection, cosmetics, swaps | everyone |
 | `/work · /balance · /pay` | Earn cailloux; see your balance (and switch on a DM for when `/work` is ready); give cailloux to someone (10 % tax) | everyone |
 | `/daily` | A daily reward that grows with each day in a row (up to 100 cailloux, sometimes an item); a missed day starts over | everyone |
+| `/bribe favourite · shame` | Pay her off: 24 h as her favourite, or one `/shame` hit erased (100 cailloux, doubling with each bribe in the same week) | everyone |
+| `/shoutout bid · status` | Bid for a dedication in tomorrow's morning hello (bids close at 20:00; an outbid bid is refunded) | everyone |
 | `;pl · ;pl @someone · ;pl visit @someone · ;forage · ;work · ;daily` | Typed shortcuts, sent as a plain message: your card (or someone's), a visit, a forage, a shift, the daily reward. `;pl forage`, `;pl work` and `;pl daily` work too | everyone |
 | `/shame user:@someone` | Put someone on it | staff |
 | `/config` | Per-server settings, no redeploy | staff |
@@ -588,8 +590,15 @@ looks after her.
   that tells you when your next `/work` is ready.
 - **Giving and spending:** `/pay member amount` gives someone 10 to 2 000 cailloux a day; a 10 %
   tax is added on top, paid by the giver, and simply disappears. Everything spent on things that
-  leave the economy (the shop, packs, meals, medicine, cosmetics, crafting, the `/pay` tax — not the
-  arcade) counts toward the « Mécène » badge and `/leaderboard`'s **Mécènes** view.
+  leave the economy (the shop, packs, meals, medicine, cosmetics, crafting, the `/pay` tax, bribes and
+  dedications — not the arcade) counts toward the « Mécène » badge and `/leaderboard`'s **Mécènes** view.
+- **Bribes:** `/bribe favourite` makes you her chouchou for 24 h (warm answers when you tag or reply to
+  her, warm reactions; an insult still gets roasted); `/bribe shame` erases one of your `/shame` hits
+  (not ban votes). A bribe costs 100 cailloux, doubled by every bribe you already paid this week.
+- **Dedications:** `/shoutout bid amount` bids for a dedication in tomorrow's morning hello (from
+  50, each bid at least 10 more; bids close at 20:00, and later ones go to the day after). The winner gets a ping and a big-up:
+  either a dedication line instead of the usual greeting, or the usual greeting ending on a credit to them; outbid bids are refunded at once. On her birthday or a quiet
+  day the dedication waits for the next morning.
 
 `/plynling help` explains it all in Discord.
 

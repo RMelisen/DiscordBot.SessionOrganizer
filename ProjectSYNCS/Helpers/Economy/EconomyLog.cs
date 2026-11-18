@@ -38,6 +38,8 @@ public static class EconomyLog
     public const string SpendArcade = "spend.arcade"; // net losses at an /arcade game
     public const string SpendTax = "spend.tax";       // the /pay tax, burned (PebbleService.PayAsync)
     public const string SpendPack = "spend.pack";     // collection packs from /inventory shop (InventoryService.OpenPackAsync)
+    public const string SpendBribe = "spend.bribe";   // /bribe, both kinds (BribeService)
+    public const string SpendShoutout = "spend.shoutout"; // a dedication, once posted (ShoutoutService.MarkShownAsync)
 
     // What people did.
     public const string ActMeal = "act.meal";
@@ -57,7 +59,7 @@ public static class EconomyLog
     public const string CosCrafted = "cos.crafted";
 
     public static readonly IReadOnlyList<string> Earnings = new[] { EarnWork, EarnPassive, EarnGame, EarnGift, EarnBadge, EarnCollection, EarnSale, EarnAdmin, EarnEvent, EarnQuiz, EarnArcade, EarnDaily };
-    public static readonly IReadOnlyList<string> Spendings = new[] { SpendShop, SpendMeal, SpendMealOther, SpendCosmetic, SpendCraft, SpendAdmin, SpendMedicine, SpendArcade, SpendTax, SpendPack };
+    public static readonly IReadOnlyList<string> Spendings = new[] { SpendShop, SpendMeal, SpendMealOther, SpendCosmetic, SpendCraft, SpendAdmin, SpendMedicine, SpendArcade, SpendTax, SpendPack, SpendBribe, SpendShoutout };
     public static readonly IReadOnlyList<string> Activities = new[] { ActMeal, ActPet, ActGame, ActVisit, ActForage, ActTrade, ActGive, ActBath, ActMedicine };
     public static readonly IReadOnlyList<string> Findings = new[] { ItemFound, ItemSet, CosBought, CosCrafted };
 

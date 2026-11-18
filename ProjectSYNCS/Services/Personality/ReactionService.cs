@@ -30,6 +30,7 @@ internal sealed class ReactionService
     private readonly DiscordSocketClient _client;
     private readonly ResponsePicker _picker;
     private readonly BreakdownService _breakdown;
+    private readonly ChouchouBook _chouchous;
     private readonly ILogger<ReactionService> _logger;
 
     // At most one reaction per channel per cooldown, and only this often among the
@@ -55,8 +56,10 @@ internal sealed class ReactionService
         DiscordSocketClient client,
         ResponsePicker picker,
         BreakdownService breakdown,
+        ChouchouBook chouchous,
         ILogger<ReactionService> logger)
     {
+        _chouchous = chouchous;
         _client = client;
         _picker = picker;
         _breakdown = breakdown;
@@ -93,7 +96,10 @@ internal sealed class ReactionService
         // scores Nice — and both services would otherwise reach for NiceReactions.
         if (MessageCues.ReadFeedback(message.Content ?? string.Empty) != FeedbackKind.None) return;
 
-        var pool = ChooseReactionPool(message);
+        // A /bribe chouchou: answered from memory (ChouchouBook), never a database read per message.
+        var guildId = ((SocketGuildChannel)message.Channel).Guild.Id;
+        var chouchou = await _chouchous.IsFavouriteAsync(guildId, message.Author.Id, DateTimeOffset.UtcNow);
+        var pool = ChooseReactionPool(message.Content ?? string.Empty, message.Author.Id, chouchou);
         if (pool is null) return;
 
         if (Random.Shared.NextDouble() >= ReactChance) return;
@@ -254,17 +260,20 @@ internal sealed class ReactionService
 
     // Which curated pool fits the message, or null to leave it alone. The emotion
     // takes precedence over the greeting for the same reason ChatterService does it:
-    // a hostile "salut" is not a greeting worth waving back at.
-    private static string[]? ChooseReactionPool(SocketUserMessage message)
+    // a hostile "salut" is not a greeting worth waving back at. A /bribe chouchou gets her paid
+    // warmth on anything that isn't mean (an insult still bounces, as on the chat paths). Static
+    // and Context-free so the checks can call it.
+    internal static string[]? ChooseReactionPool(string content, ulong authorId, bool chouchou)
     {
-        if (message.Author.Id == AvailabilityService.OwnerId)
+        if (authorId == AvailabilityService.OwnerId)
             return BotResponses.OwnerReactions;
 
-        var mood = MessageCues.Analyze(message.Content ?? string.Empty);
+        var mood = MessageCues.Analyze(content);
 
         return mood.Emotion switch
         {
             EmotionKind.Mean => BotResponses.MeanReactions,
+            _ when chouchou => BotResponses.ChouchouReactions,
             EmotionKind.Nice => BotResponses.NiceReactions,
             _ => mood.IsGreeting ? BotResponses.GreetingReactions : null,
         };

@@ -22,6 +22,22 @@ her commentary or the fact's uselessness, never an invented fact.
   fact** under it. It replaces the rotation for the day; the rotation is date-based, so nothing
   shifts. It is one line without a newline, and the restart scan below matches it by its exact
   text for today's age.
+- **A won `/shoutout` takes one of two shapes** (`MorningGreeting.ComposeHello`), pinging the winner
+  alone either way: a `DedicationLines` line with the winner's mention in place of the hello line, the
+  fun fact under it; or, on a `UsesCredit` day, the classic hello and fun fact, then a
+  `DedicationCredits` line naming the winner as the last line. `UsesCredit` is picked from the date
+  (`DailyRotation.IndexFor(100, day, StyleSalt) < CreditPercent`), so a restart says the same thing,
+  and exactly 60 days in every 100 are credit days (the owner's call). `PostHelloAsync` reads
+  `ShoutoutService.NextDueAsync` (today's winner first, else the oldest won, unposted bid) in its own
+  scope, and settles it (`MarkShownAsync`: stamped, logged `spend.shoutout`, counted toward « Mécène »)
+  only once the post went out. So her birthday (its own line wins), a silenced day (returns before) or
+  a failed send carries the dedication on, to the next morning nobody won, oldest first: today's
+  winner always keeps the day the lead reply promised. A database error reading
+  it gives the plain hello; one settling it leaves it due (better posted twice than paid and lost).
+  `IsMorningHello` and the restart scan accept a dedication first line (`IsDedicationLine`, the
+  template with `<@id>` for `{0}`), so `DedicationLines` keeps one `{0}`, no newline, no two alike;
+  the credit shape's first line is a pool hello, recognised as it always was. The salts
+  (`GreetingSalt`, `FunFactSalt`, `DedicationSalt`, `CreditSalt`, `StyleSalt`) live in `MorningGreeting`.
 - **The claimed day is saved to `morning-state.json`** next to the database (under `/data` in
   prod), on every claim, early or on the slot. A restart between an early hello and the slot (a
   deploy at 8:30) otherwise forgets the claim and says hello twice; the history scan below misses
