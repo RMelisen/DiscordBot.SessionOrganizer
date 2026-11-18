@@ -5,10 +5,10 @@ using ProjectSYNCS.Models;
 namespace ProjectSYNCS.Helpers;
 
 /// <summary>
-/// Counts the cailloux someone spent, for the « Mécène » badge and the « Mécènes » leaderboard tab.
-/// Only what leaves the economy counts: the shop, meals (own and others'), medicine, cosmetics,
-/// crafting, packs, the /pay tax. Not /arcade (it moves cailloux between players), not admin
-/// debits, not the amount sent with /pay. Call it beside the spend's <see cref="EconomyLog"/> line.
+/// Counts the cailloux someone gave to the jar (<c>/jar give</c>), for the « Mécène » badge and the
+/// « Mécènes » leaderboard tab. The jar is its only caller, on purpose (owner's call): being a patron
+/// means giving to everyone, not buying for yourself. Before 7.73.0 every sink that leaves the
+/// economy counted too; what it added then stays in the totals.
 /// </summary>
 /// <remarks>
 /// Writes the totals + buckets pair behind /leaderboard (<see cref="MemberXp"/> and today's

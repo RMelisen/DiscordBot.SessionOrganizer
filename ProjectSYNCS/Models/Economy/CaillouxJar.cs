@@ -25,12 +25,10 @@ public class CaillouxJar
     // resolvers racing for the same reward, the slower one retries and finds the next (or none).
     public int RewardsDone { get; set; }
 
-    // The days (Paris yyyymmdd, inclusive, 0 = none) on which /daily pays double, and on which every
-    // quiz window keeps its slot. A second unlock while one is pending adds the day after Until.
+    // The days (Paris yyyymmdd, inclusive, 0 = none) on which /daily pays double. A second unlock
+    // while one is pending adds the day after Until.
     public int DoubleDailyFrom { get; set; }
     public int DoubleDailyUntil { get; set; }
-    public int QuizDayFrom { get; set; }
-    public int QuizDayUntil { get; set; }
 }
 
 // One member's all-time total poured into their guild's jar: the card's top contributors.

@@ -52,7 +52,7 @@ public static class ItemCatalog
     // comes from the checks' simulation (section 52): set rewards make a find worth more than it sells for.
     public const string PackKey = "pack.collection";
     public const int PackSize = 3;
-    public const long PackPrice = 60;
+    public const long PackPrice = 150;
     public static readonly int[] PackQuantities = { 1, 5 };
 
     public static readonly IReadOnlyList<CollectionSet> Sets = new[]

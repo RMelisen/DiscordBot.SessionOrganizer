@@ -179,7 +179,6 @@ public class InventoryService
         wallet.Balance -= price;
         await AddAsync(_db_context, guildId, userId, key, quantity, now);
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.SpendShop, price, now);
-        await Patronage.AddAsync(_db_context, guildId, userId, price, now);
         await _db_context.SaveChangesAsync();
         return (ShopOutcome.Bought, price, wallet.Balance);
     }
@@ -204,7 +203,6 @@ public class InventoryService
         for (var i = 0; i < quantity * ItemCatalog.PackSize; i++)
             finds.Add(await GrantAsync(_db_context, guildId, userId, ItemCatalog.DrawCollectible(rng, now), now));
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.SpendPack, price, now);
-        await Patronage.AddAsync(_db_context, guildId, userId, price, now);
         await _db_context.SaveChangesAsync();
         return new PackResult(PackOutcome.Opened, price, wallet.Balance, finds);
     }

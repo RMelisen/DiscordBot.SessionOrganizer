@@ -204,11 +204,10 @@ public sealed class QuizMasterService : BackgroundService
         var config = await _config.GetAsync(guild.Id);
         if (config.QuizChannelId == 0) return;
 
-        var quizDay = await IsQuizDayIfUnplannedAsync(guild.Id, now);
         DateTimeOffset? slot;
         lock (_gate)
         {
-            slot = PlanFor(guild.Id, now, quizDay).Slots.Where(s => s <= now).Cast<DateTimeOffset?>().FirstOrDefault();
+            slot = PlanFor(guild.Id, now).Slots.Where(s => s <= now).Cast<DateTimeOffset?>().FirstOrDefault();
         }
         if (slot is null || IsRoundOpen(guild.Id)) return;
 
@@ -238,45 +237,24 @@ public sealed class QuizMasterService : BackgroundService
 
         lock (_gate)
         {
-            PlanFor(guild.Id, now, quizDay).Slots.Remove(slot.Value);
+            PlanFor(guild.Id, now).Slots.Remove(slot.Value);
         }
         await PostRoundAsync(guild.Id, channel, forced: null, now);
     }
 
-    // Under _gate. quizDay only matters when today's plan is drawn.
-    private (int Day, List<DateTimeOffset> Slots) PlanFor(ulong guildId, DateTimeOffset now, bool quizDay)
+    // Under _gate.
+    private (int Day, List<DateTimeOffset> Slots) PlanFor(ulong guildId, DateTimeOffset now)
     {
         var day = AppTime.DayKey(now);
         if (_plans.TryGetValue(guildId, out var plan) && plan.Day == day) return plan;
 
-        plan = (day, QuizSchedule.DrawSlots(now, Random.Shared, everyWindow: quizDay));
+        plan = (day, QuizSchedule.DrawSlots(now, Random.Shared));
         _plans[guildId] = plan;
         _logger.LogInformation("Quiz slots for guild {GuildId} today: {Slots}.", guildId,
             plan.Slots.Count == 0
                 ? "none"
                 : string.Join(", ", plan.Slots.Select(s => AppTime.ToZoned(s).ToString("HH:mm"))));
         return plan;
-    }
-
-    // A jar quiz day keeps every window (JarService). Read only when today's plan is still to be
-    // drawn, so once a day, not every tick; a failure means an ordinary day.
-    private async Task<bool> IsQuizDayIfUnplannedAsync(ulong guildId, DateTimeOffset now)
-    {
-        var day = AppTime.DayKey(now);
-        lock (_gate)
-        {
-            if (_plans.TryGetValue(guildId, out var plan) && plan.Day == day) return false;
-        }
-        try
-        {
-            await using var scope = _services.CreateAsyncScope();
-            return await scope.ServiceProvider.GetRequiredService<JarService>().IsQuizDayAsync(guildId, day);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to read the jar's quiz day for guild {GuildId}.", guildId);
-            return false;
-        }
     }
 
     private void DropSlots(ulong guildId)

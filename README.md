@@ -333,7 +333,7 @@ Vocal leaderboard stays honest about time actually spent.
 - **`/leaderboard`** — the ranked list, five per page, every row carrying that
   person's real avatar. Five buttons switch what it ranks — **Niveaux** (XP),
   **Réactions** (reactions added), **Vocal** (eligible time in voice), **Collections** (sets
-  completed, turn-ins included), **Mécènes** (cailloux spent) — and three more
+  completed, turn-ins included), **Mécènes** (cailloux given to the jar) — and three more
   switch the window: **all time** (default), **30 days**, **7 days**. In a window the
   XP view ranks by XP earned in that window and drops the level, which is a lifetime
   figure and can't be recomputed for a week. A `/level` card's "Voir le classement"
@@ -570,7 +570,7 @@ looks after her.
   menu and bought 1, 5 or 10 at a time (10 % off from five). Feeding serves from
   the feeder's pantry first — one of that food for their own Plynling, two for someone
   else's — and only charges cailloux when there isn't enough.
-- **Packs:** the shop also sells **sachets de collection**, 60 cailloux for three random
+- **Packs:** the shop also sells **sachets de collection**, 150 cailloux for three random
   collectibles, opened on the spot (one or five at a time, no discount). A pack can complete a set,
   which pays the set at once.
 - **Swapping:** `/inventory give` hands items to someone, `/inventory trade` posts an offer the
@@ -591,9 +591,8 @@ looks after her.
   reacting and voice (45 a day at most). `/balance` is private; its 🔔 button switches on a DM
   that tells you when your next `/work` is ready.
 - **Giving and spending:** `/pay member amount` gives someone 10 to 2 000 cailloux a day; a 10 %
-  tax is added on top, paid by the giver, and simply disappears. Everything spent on things that
-  leave the economy (the shop, packs, meals, medicine, cosmetics, crafting, the `/pay` tax, bribes,
-  dedications and the jar — not the arcade or the lottery) counts toward the « Mécène » badge and `/leaderboard`'s **Mécènes** view.
+  tax is added on top, paid by the giver, and simply disappears. Cailloux given to the jar (and nothing
+  else) count toward the « Mécène » badge and `/leaderboard`'s **Mécènes** view.
 - **Bribes:** `/bribe favourite` makes you her chouchou for 24 h (warm answers when you tag or reply to
   her, warm reactions; an insult still gets roasted); `/bribe shame` erases one of your `/shame` hits
   (not ban votes). A bribe costs 100 cailloux, doubled by every bribe you already paid this week.
@@ -604,8 +603,8 @@ looks after her.
 - **The jar:** `/jar give amount` pours 10 to 100 000 cailloux into the server's jar; `/jar status`
   shows how full it is, the next reward and the top givers. Each goal reached (1 500, then 500 more
   each time up to 5 000) unlocks the next reward for everyone, in turn: `/daily` pays double for a
-  day, a quiz day (every quiz slot of the day is kept), a truffle for every living Plynling, then a
-  giveaway of 150 cailloux for three winners. Double `/daily` and quiz days start the next day.
+  day, a truffle for every living Plynling, then a giveaway of 150 cailloux for three winners.
+  Double `/daily` starts the next day. Each unlock is announced in the bots channel.
 
 `/plynling help` explains it all in Discord.
 

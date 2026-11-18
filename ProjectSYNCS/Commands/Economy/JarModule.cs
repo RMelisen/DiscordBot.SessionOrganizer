@@ -10,8 +10,8 @@ namespace ProjectSYNCS.Commands;
 
 // /jar: the guild's jar (JarService, Jar). A gift is public; every goal it reaches unlocks the next
 // reward, carried out right after the gift (ResolveNextRewardAsync, one per save) and announced in
-// the main channel. A gift set the unlocks off, so they ignore silence mode like any notice a
-// command set up. Deferred, since every answer reads the database first.
+// the bots channel, with the giveaway's card. A gift set the unlocks off, so they ignore silence mode
+// like any notice a command set up. Deferred, since every answer reads the database first.
 [Group("jar", "Le bocal à cailloux du serveur")]
 [CommandContextType(InteractionContextType.Guild)]
 public class JarModule : InteractionModuleBase<SocketInteractionContext>
@@ -21,15 +21,17 @@ public class JarModule : InteractionModuleBase<SocketInteractionContext>
     private readonly JarService _jar;
     private readonly IServiceProvider _services;
     private readonly GuildConfigService _config;
+    private readonly PlynlingAnnouncer _announcer;
     private readonly ResponsePicker _picker;
     private readonly ILogger<JarModule> _logger;
 
-    public JarModule(JarService jar, IServiceProvider services, GuildConfigService config, ResponsePicker picker,
-        ILogger<JarModule> logger)
+    public JarModule(JarService jar, IServiceProvider services, GuildConfigService config, PlynlingAnnouncer announcer,
+        ResponsePicker picker, ILogger<JarModule> logger)
     {
         _jar = jar;
         _services = services;
         _config = config;
+        _announcer = announcer;
         _picker = picker;
         _logger = logger;
     }
@@ -118,16 +120,9 @@ public class JarModule : InteractionModuleBase<SocketInteractionContext>
         }
     }
 
-    // The guild's main channel when /config main-channel set one, else her default main channel when
-    // it is in this guild, else where /jar give was used.
-    private async Task<IMessageChannel> AnnounceChannelAsync()
-    {
-        var configured = (await _config.GetAsync(Context.Guild.Id)).MainChannelId;
-        foreach (var id in new[] { configured, MorningGreetingService.DefaultChannelId })
-            if (id != 0 && Context.Guild.GetTextChannel(id) is { } channel)
-                return channel;
-        return Context.Channel;
-    }
+    // The bots channel (BotsChannel, which falls back to the game channel), else where /jar give was used.
+    private async Task<IMessageChannel> AnnounceChannelAsync() =>
+        await BotsChannel.ResolveAsync(Context.Client, _config, _announcer, Context.Guild.Id) ?? Context.Channel;
 
     public static Embed BuildCard(JarStatus s, DateTimeOffset now)
     {
@@ -137,7 +132,6 @@ public class JarModule : InteractionModuleBase<SocketInteractionContext>
 
         var today = AppTime.DayKey(now);
         AppendDays(text, "Double `/daily`", s.DoubleDailyFrom, s.DoubleDailyUntil, today);
-        AppendDays(text, "Journée quiz", s.QuizDayFrom, s.QuizDayUntil, today);
 
         var embed = new EmbedBuilder()
             .WithTitle("🫙 Le bocal")
@@ -168,7 +162,6 @@ public class JarModule : InteractionModuleBase<SocketInteractionContext>
     public static string RewardTitle(JarReward reward) => reward switch
     {
         JarReward.DoubleDaily => "Double `/daily` pour une journée",
-        JarReward.QuizDay => "Journée quiz",
         JarReward.Feast => "Festin pour tous les Plynlings",
         _ => "Un giveaway de cailloux",
     };
@@ -179,7 +172,6 @@ public class JarModule : InteractionModuleBase<SocketInteractionContext>
         return unlock.Reward switch
         {
             JarReward.DoubleDaily => string.Format(picker.Pick(BotResponses.JarDoubleDailyLines), giver, Date(unlock.Day)),
-            JarReward.QuizDay => string.Format(picker.Pick(BotResponses.JarQuizDayLines), giver, Date(unlock.Day)),
             JarReward.Feast => string.Format(picker.Pick(BotResponses.JarFeastLines), giver, unlock.Fed),
             _ => string.Format(picker.Pick(BotResponses.JarGiveawayLines), giver),
         };

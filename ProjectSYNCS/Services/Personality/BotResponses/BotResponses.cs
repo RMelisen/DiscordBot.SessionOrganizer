@@ -140,8 +140,8 @@ namespace ProjectSYNCS.Services;
 //     DedicationLines .......... the morning hello on a /shoutout winner's day, {0} = their mention
 //     DedicationCredits ........ or the classic hello, ending on a big-up to the winner (60 % of those days)
 //
-//   [Jar] The jar's goals reached (/jar give), said in the main channel
-//     JarDoubleDailyLines · JarQuizDayLines ... a bonus day unlocked, {0} = the giver, {1} = the date
+//   [Jar] The jar's goals reached (/jar give), said in the bots channel
+//     JarDoubleDailyLines ...... a double /daily day unlocked, {0} = the giver, {1} = the date
 //     JarFeastLines ............ every Plynling fed a truffle, {1} = how many
 //     JarGiveawayLines ......... her cailloux giveaway, the card follows
 //

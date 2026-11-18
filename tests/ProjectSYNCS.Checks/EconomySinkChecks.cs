@@ -4,7 +4,7 @@ using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Models;
 using ProjectSYNCS.Services;
 
-// 52. Cailloux spent (Patronage), the « Mécène » badge and tab, /pay, packs: what counts as spent, the
+// 52. Mécène (Patronage: jar gifts only), the badge and tab, /pay, packs: what counts toward it, the
 // pay rules and cap, the packs' price against what they return. Against a real in-memory SQLite, so
 // every query must translate.
 public static class EconomySinkChecks
@@ -90,10 +90,10 @@ public static class EconomySinkChecks
         }
         Expect(LevelCardUi.ViewLabel(LeaderboardView.Patrons) == "Mécènes", "mécènes tab label");
         Expect(LevelCardUi.Title(LeaderboardView.Patrons) == "## Classement des mécènes", "mécènes title");
-        Expect(LevelCardUi.Spent(2500) == PebbleEconomy.Cailloux(2500) + " dépensés", "Spent(2500): " + LevelCardUi.Spent(2500));
-        Expect(LevelCardUi.Spent(1) == "1 caillou dépensé", "Spent(1): " + LevelCardUi.Spent(1));
+        Expect(LevelCardUi.Spent(2500) == PebbleEconomy.Cailloux(2500) + " versés au bocal", "Spent(2500): " + LevelCardUi.Spent(2500));
+        Expect(LevelCardUi.Spent(1) == "1 caillou versé au bocal", "Spent(1): " + LevelCardUi.Spent(1));
         Expect(LevelCardUi.Row(1, a, LeaderboardView.Patrons, StatsPeriod.AllTime, new MemberTally(a, 0, 0, 0, 0, 900)).EndsWith(LevelCardUi.Spent(900)), "mécènes row");
-        Expect(LevelCardUi.EmptyLine(LeaderboardView.Patrons, StatsPeriod.AllTime).StartsWith("Personne n'a encore rien dépensé"), "mécènes empty line");
+        Expect(LevelCardUi.EmptyLine(LeaderboardView.Patrons, StatsPeriod.AllTime).StartsWith("Personne n'a encore rien versé au bocal"), "mécènes empty line");
         Expect(Enum.GetValues<LeaderboardView>().Length <= 5, "more than 5 leaderboard tabs on one row");
     }
 
@@ -121,9 +121,7 @@ public static class EconomySinkChecks
             using var c2 = db.New();
             var tax = c2.EconomyDailyStats.SingleOrDefault(s => s.Metric == EconomyLog.SpendTax && s.Day == today)?.Value;
             Expect(tax == 50, $"spend.tax today: {tax}");
-            Expect(c2.MemberXps.Single(x => x.UserId == Me).CaillouxSpent == 50, "the tax is not counted as spent");
-            Expect(!c2.MemberXps.Any(x => x.UserId == You && x.CaillouxSpent > 0), "the recipient counted as spending");
-            Expect(c2.MemberXps.Single(x => x.UserId == Me).CaillouxSpent != 550, "the amount sent counted as spent");
+            Expect(!c2.MemberXps.Any(x => x.CaillouxSpent > 0), "the /pay tax or the amount sent counted toward Mécène");
         }
 
         using (var db = new Db())
@@ -249,7 +247,7 @@ public static class EconomySinkChecks
             using var c2 = db.New();
             Expect(Metric(c2, EconomyLog.SpendPack) == ItemCatalog.PackPrice, "spend.pack today: " + Metric(c2, EconomyLog.SpendPack));
             Expect(Metric(c2, EconomyLog.ItemFound) == 3, "item.found today: " + Metric(c2, EconomyLog.ItemFound));
-            Expect(c2.MemberXps.Single(x => x.UserId == Me).CaillouxSpent == ItemCatalog.PackPrice, "a pack is not counted as spent");
+            Expect(!c2.MemberXps.Any(x => x.UserId == Me && x.CaillouxSpent > 0), "a pack counted toward Mécène");
             Expect(c2.InventoryItems.Where(i => i.UserId == Me).Sum(i => i.Quantity) == 3, "the pack's finds are not in the inventory");
             Expect(!c2.InventoryItems.Any(i => i.Key == ItemCatalog.PackKey), "a pack was stored as an item");
             Expect(ProjectSYNCS.Commands.ShopCards.PackNotice(r).Contains(r.Finds[0].Item.Name), "the pack notice does not list its finds");
@@ -304,10 +302,10 @@ public static class EconomySinkChecks
         var now = DateTimeOffset.UtcNow;
         MemberBadgeFacts Facts(long spent) => new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, null, new Dictionary<string, StoredBadge>(), CaillouxSpent: spent);
         BadgeStanding Mecene(long spent) => MemberBadges.Evaluate(Facts(spent), now).Single(s => s.Info.Key == "mecene");
-        var silver = Mecene(2_500);
-        Expect(silver.Tier == CollectionTier.Silver && silver.Value == 2500, $"mécène at 2 500: {silver.Tier} {silver.Value}");
+        var silver = Mecene(5_000);
+        Expect(silver.Tier == CollectionTier.Silver && silver.Value == 5000, $"mécène at 5 000: {silver.Tier} {silver.Value}");
         Expect(Mecene(499).Tier == CollectionTier.None, "mécène at 499 has a tier");
-        Expect(Mecene(60_000).Tier == CollectionTier.Diamond, "mécène at 60 000 is not Diamant");
+        Expect(Mecene(99_999).Tier == CollectionTier.Platinum && Mecene(100_000).Tier == CollectionTier.Diamond, "mécène: Diamant is 100 000");
         Expect(!MemberBadges.IsAwardable(G, "mecene"), "mécène is awardable (it is derived, never stored)");
     }
 
@@ -318,32 +316,37 @@ public static class EconomySinkChecks
         using var db = new Db();
         db.Wallet(Me, 1000);
 
+        // Only the jar counts: the shop spends without touching Mécène.
         using (var c = db.New())
         {
             var (outcome, price, _) = await new InventoryService(c, null!).BuyAsync(G, Me, ItemCatalog.SoapKey, 5, now);
             Expect(outcome == InventoryService.ShopOutcome.Bought && price == 90, $"soap ×5: {outcome} {price}");
         }
         using (var c = db.New())
+            Expect(!await c.MemberXps.AnyAsync(x => x.UserId == Me && x.CaillouxSpent > 0), "the shop counted toward Mécène");
+
+        using (var c = db.New()) await new JarService(c).GiveAsync(G, Me, 90, now);
+        using (var c = db.New())
         {
             var xp = await c.MemberXps.SingleAsync(x => x.GuildId == G && x.UserId == Me);
             var day = await c.MemberDailyStats.SingleAsync(x => x.GuildId == G && x.UserId == Me && x.Day == today);
-            Expect(xp.CaillouxSpent == 90 && day.CaillouxSpent == 90, $"shop counted: total {xp.CaillouxSpent}, today {day.CaillouxSpent}");
-            Expect(xp.TotalXp == 0 && day.XpEarned == 0, "spending grants no XP");
+            Expect(xp.CaillouxSpent == 90 && day.CaillouxSpent == 90, $"jar gift counted: total {xp.CaillouxSpent}, today {day.CaillouxSpent}");
+            Expect(xp.TotalXp == 0 && day.XpEarned == 0, "a jar gift grants XP");
         }
 
-        using (var c = db.New()) await new InventoryService(c, null!).BuyAsync(G, Me, ItemCatalog.SoapKey, 1, now);
+        using (var c = db.New()) await new JarService(c).GiveAsync(G, Me, 20, now);
         using (var c = db.New())
         {
-            Expect(await c.MemberXps.CountAsync(x => x.UserId == Me) == 1, "a second buy makes a second MemberXp row");
-            Expect(await c.MemberDailyStats.CountAsync(x => x.UserId == Me) == 1, "a second buy makes a second bucket");
-            Expect((await c.MemberXps.SingleAsync(x => x.UserId == Me)).CaillouxSpent == 110, "a second buy does not add up");
+            Expect(await c.MemberXps.CountAsync(x => x.UserId == Me) == 1, "a second gift makes a second MemberXp row");
+            Expect(await c.MemberDailyStats.CountAsync(x => x.UserId == Me) == 1, "a second gift makes a second bucket");
+            Expect((await c.MemberXps.SingleAsync(x => x.UserId == Me)).CaillouxSpent == 110, "a second gift does not add up");
         }
 
         using (var c = db.New()) await new PebbleService(c).AdjustAsync(G, Me, -100);
         using (var c = db.New())
-            Expect((await c.MemberXps.SingleAsync(x => x.UserId == Me)).CaillouxSpent == 110, "an admin debit counts as spent");
+            Expect((await c.MemberXps.SingleAsync(x => x.UserId == Me)).CaillouxSpent == 110, "an admin debit counts toward Mécène");
 
-        // A member whose only row comes from spending is unranked, and not active.
+        // A member whose only row comes from a jar gift is unranked, and not active.
         using (var c = db.New())
         {
             Expect(await new XpService(c).GetRankAsync(G, Me) is null, "0 XP spender gets a rank");

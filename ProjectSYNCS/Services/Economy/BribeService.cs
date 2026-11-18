@@ -11,7 +11,7 @@ public sealed record BribeResult(BribeOutcome Outcome, long Price, long Balance,
 
 /// <summary>
 /// /bribe: paying her off. Both kinds share one doubling weekly price (Helpers/Economy/Bribes), are
-/// logged <c>spend.bribe</c> and count toward « Mécène ». Each is one unit of work through
+/// logged <c>spend.bribe</c> (not « Mécène »: only the jar counts). Each is one unit of work through
 /// <see cref="EconomySave"/>, inside a transaction because erasing a shame hit runs its SQL at once.
 /// </summary>
 public class BribeService
@@ -49,7 +49,7 @@ public class BribeService
                 ? (BribeOutcome.Done, null)
                 : (BribeOutcome.NothingToForgive, (DateTimeOffset?)null)));
 
-    // The shared half: price, balance check, the thing bought, payment, log, Patronage, one save, one
+    // The shared half: price, balance check, the thing bought, payment, log, one save, one
     // commit. `buy` runs only once the bribe is affordable, and returns Done or why it was refused;
     // a refusal rolls back whatever it did.
     private async Task<BribeResult> PayOnceAsync(ulong guildId, ulong userId, DateTimeOffset now,
@@ -68,7 +68,6 @@ public class BribeService
         wallet.BribesThisWeek = (wallet.BribeWeek == week ? wallet.BribesThisWeek : 0) + 1;
         wallet.BribeWeek = week;
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.SpendBribe, price, now);
-        await Patronage.AddAsync(_db_context, guildId, userId, price, now);
         await _db_context.SaveChangesAsync();
         await tx.CommitAsync();
         return new BribeResult(BribeOutcome.Done, price, wallet.Balance,

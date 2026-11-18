@@ -148,8 +148,8 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
             .WithTitle("Project S.Y.N.C.S. — Aide : cailloux & objets")
             .WithDescription(
                 "Les **cailloux** sont ma monnaie. On en gagne en travaillant, en passant chaque jour, en parlant (un peu, " +
-                "plafonné chaque jour), au quiz et à l'arcade. Ce que tu dépenses (boutique, repas, soins, " +
-                "cosmétiques, sachets, taxe de `/pay`, pots-de-vin, dédicaces, bocal) te vaut le badge **Mécène** et une place chez les " +
+                "plafonné chaque jour), au quiz et à l'arcade. Ce que tu verses au bocal (`/jar give`) te vaut le badge " +
+                "**Mécène** et une place chez les " +
                 "mécènes de `/leaderboard`.")
             .WithColor(Color.Blue)
             .AddField("Commandes — Cailloux",
@@ -166,7 +166,7 @@ public class HelpModule : InteractionModuleBase<SocketInteractionContext>
                 "**`/shoutout bid`** — Enchéris (dès 50) pour une dédicace dans mon bonjour de demain, jusqu'à 20 h. " +
                 "Si on te dépasse, ta mise te revient. `/shoutout status` montre où en sont les enchères.\n" +
                 "**`/jar give`** — Verse des cailloux dans le bocal du serveur. Chaque objectif atteint débloque une récompense pour tous : " +
-                "`/daily` double, journée quiz, festin pour les Plynlings, giveaway. `/jar status` montre où il en est.")
+                "`/daily` double, festin pour les Plynlings, giveaway. `/jar status` montre où il en est.")
             .AddField("Commandes — Inventaire",
                 "**`/inventory view`** — Tes objets, ton garde-manger, ta collection et ta garde-robe.\n" +
                 "**`/inventory collection`** — Ton carnet. Une collection complète se **dépose** (un exemplaire " +

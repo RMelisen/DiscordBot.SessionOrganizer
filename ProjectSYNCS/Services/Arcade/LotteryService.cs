@@ -85,10 +85,14 @@ public class LotteryService
         return new LotteryStatus(day, Lottery.DrawAt(day), Lottery.Pot(total), total, mine, entries.Count(e => e.Tickets > 0));
     }
 
-    /// <summary>Every (guild, draw day) with tickets, not drawn yet, whose draw time has passed.</summary>
+    /// <summary>
+    /// Every (guild, draw day) with tickets, not drawn yet, whose draw time has passed. A week nobody
+    /// bought into is never due, so it is never drawn or announced.
+    /// </summary>
     public async Task<List<(ulong GuildId, int DrawDay)>> DueAsync(DateTimeOffset now)
     {
         var pending = await _db.LotteryEntries.AsNoTracking()
+            .Where(e => e.Tickets > 0)
             .Where(e => !_db.LotteryDraws.Any(d => d.GuildId == e.GuildId && d.DrawDay == e.DrawDay))
             .Select(e => new { e.GuildId, e.DrawDay })
             .Distinct()
@@ -117,6 +121,8 @@ public class LotteryService
                 .ToListAsync())
             .OrderBy(e => e.UserId).ToList();
         var total = entries.Sum(e => e.Tickets);
+        // Nobody played: no draw, nothing posted. Her free ticket alone would win every empty week.
+        if (total == 0) return null;
         var pot = Lottery.Pot(total);
         var index = Lottery.Pick(entries.Select(e => e.Tickets).ToList(), rng.Next(total + 1));
         ulong? winner = index >= 0 ? entries[index].UserId : null;

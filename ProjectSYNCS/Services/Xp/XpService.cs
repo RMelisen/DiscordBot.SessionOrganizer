@@ -21,7 +21,7 @@ public enum LeaderboardView
     Voice,
     /// <summary>Collection sets completed (discoveries and turn-ins) — read from InventoryService, not here.</summary>
     Collections,
-    /// <summary>Cailloux spent on what leaves the economy (Helpers/Economy/Patronage).</summary>
+    /// <summary>Cailloux given to the jar (Helpers/Economy/Patronage).</summary>
     Patrons,
 }
 
@@ -239,7 +239,7 @@ public class XpService
     {
         var row = await _db_context.MemberXps
             .FirstOrDefaultAsync(x => x.GuildId == guildId && x.UserId == userId);
-        // 0 XP is unranked, as the XP leaderboard leaves it out: spending (Patronage) or a reaction
+        // 0 XP is unranked, as the XP leaderboard leaves it out: a jar gift (Patronage) or a reaction
         // creates this row without earning anything.
         if (row is null || row.TotalXp == 0) return null;
 

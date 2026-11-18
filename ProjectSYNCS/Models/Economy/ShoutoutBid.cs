@@ -3,7 +3,7 @@ namespace ProjectSYNCS.Models;
 // The leading bid for one morning hello's dedication (/shoutout bid). One row per (guild, day): a
 // new leader overwrites it, and the one it replaces is refunded in the same save, so the row is
 // always the winner-so-far. The cailloux are held from the bid (debited, not logged); they are
-// logged as spent, and counted toward « Mécène », only when the dedication is posted
+// logged as spent only when the dedication is posted
 // (ShoutoutService.MarkShownAsync). Stored so a restart keeps the auction and the money.
 public class ShoutoutBid
 {

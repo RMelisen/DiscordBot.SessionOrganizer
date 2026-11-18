@@ -254,7 +254,7 @@ internal sealed class MorningGreetingService : BackgroundService
         }
     }
 
-    // Posted: stamp it, log it, count it toward « Mécène ». A failure here is logged; the dedication
+    // Posted: stamp it and log it. A failure here is logged; the dedication
     // stays due, and would be posted again the next morning (better twice than paid for and lost).
     private async Task SettleDedicationAsync(int bidId, DateTimeOffset now)
     {

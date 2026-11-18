@@ -76,7 +76,7 @@ public static class JarLotteryChecks
         await Guard("gifts", GiftsAsync);
         await Guard("gift race", GiftRaceAsync);
         await Guard("double daily", DoubleDailyAsync);
-        QuizDay();
+
         await Guard("rewards", RewardsAsync);
         await Guard("two timed rewards", TwoTimedAsync);
         await Guard("feast", FeastAsync);
@@ -88,6 +88,7 @@ public static class JarLotteryChecks
         await Guard("lottery buy", LotteryBuyAsync);
         await Guard("lottery draw", LotteryDrawAsync);
         await Guard("lottery: her ticket", LotteryHerTicketAsync);
+        await Guard("lottery: an empty week", LotteryEmptyWeekAsync);
         LotteryTexts();
         // The plan's five risk cases, each pinned down (the scenarios above cover the plain paths).
         await Guard("risk 2: one gift, two goals", OneGiftTwoGoalsAsync);
@@ -110,7 +111,7 @@ public static class JarLotteryChecks
         var first = await ResolveAsync(db);
         var second = await ResolveAsync(db);
         var third = await ResolveAsync(db);
-        Expect(first?.Reward == JarReward.DoubleDaily && second?.Reward == JarReward.QuizDay && third is null,
+        Expect(first?.Reward == JarReward.DoubleDaily && second?.Reward == JarReward.Feast && third is null,
             $"one gift, two goals: {first?.Reward} then {second?.Reward} then {third?.Reward}");
         var jar = db.Jar();
         Expect(jar.Level == 2 && jar.RewardsDone == 2 && jar.Filled == 100 && db.Balance(A) + jar.Given == 4000,
@@ -344,6 +345,30 @@ public static class JarLotteryChecks
         Expect(c2.LotteryDraws.Single().WinnerId == 0, "her win isn't recorded as WinnerId 0");
     }
 
+    // Nobody played: never due, and a draw forced anyway does nothing. Her free ticket would win every
+    // empty week otherwise, and she'd gloat over a pot of 20 she put in herself.
+    private static async Task LotteryEmptyWeekAsync()
+    {
+        using var db = new Db();
+        using (var c = db.New())
+        {
+            c.LotteryEntries.Add(new LotteryEntry { GuildId = G, DrawDay = 20261122, UserId = A, Tickets = 0 });
+            c.SaveChanges();
+        }
+        var after = Utc(2026, 11, 22, 20, 1);
+        using (var c = db.New())
+        {
+            Expect((await new LotteryService(c).DueAsync(after)).Count == 0, "a week with no tickets is due");
+            Expect(await new LotteryService(c).DrawAsync(G, 20261122, new FixedRandom(0, next: 0), after) is null,
+                "a week with no tickets was drawn");
+        }
+        using (var c = db.New())
+            Expect(await new LotteryService(c).DrawAsync(G, 20261129, new FixedRandom(0, next: 0), after) is null,
+                "a week with no entries was drawn");
+        using var c2 = db.New();
+        Expect(!c2.LotteryDraws.Any(), "an empty week left a draw row");
+    }
+
     // BotResponses is internal: its pools are read by reflection, like the rest of the checks.
     private static readonly Type Br = typeof(ChatFacts).Assembly.GetType("ProjectSYNCS.Services.BotResponses")!;
     private static string[] Pool(string name) =>
@@ -351,21 +376,21 @@ public static class JarLotteryChecks
 
     private static void JarCard()
     {
-        var status = new JarStatus(1, 500, 2000, JarReward.QuizDay, new List<(ulong, long)> { (A, 1000), (B, 600) }, 1000,
-            0, 0, 20261119, 20261119);
+        var status = new JarStatus(1, 500, 2000, JarReward.Feast, new List<(ulong, long)> { (A, 1000), (B, 600) }, 1000,
+            20261119, 20261119);
         var card = JarModule.BuildCard(status, Now);
         var all = card.Title + card.Description + string.Concat(card.Fields.Select(f => f.Name + f.Value)) + card.Footer?.Text;
         Expect(all.Contains(PebbleEconomy.Cailloux(500).Split(' ')[0]) && all.Contains(PebbleEconomy.Cailloux(2000)),
             "jar card: the fill and the goal");
         Expect(all.Contains($"<@{A}>") && all.Contains($"<@{B}>"), "jar card: the donors' pills");
-        Expect(all.Contains(JarModule.RewardTitle(JarReward.QuizDay)), "jar card: the next reward");
-        Expect(all.Contains("<t:"), "jar card: the pending quiz day's date");
+        Expect(all.Contains(JarModule.RewardTitle(JarReward.Feast)), "jar card: the next reward");
+        Expect(all.Contains("<t:"), "jar card: the pending double day's date");
         Expect(all.Length < 6000 && card.Fields.All(f => f.Value.Length <= 1024), "jar card: over Discord's caps");
 
         var picker = new ResponsePicker();
         foreach (var reward in Enum.GetValues<JarReward>())
         {
-            var u = new JarUnlock(reward, 0, reward is JarReward.DoubleDaily or JarReward.QuizDay ? 20261119 : 0,
+            var u = new JarUnlock(reward, 0, reward == JarReward.DoubleDaily ? 20261119 : 0,
                 reward == JarReward.Feast ? 7 : 0, null);
             var line = JarModule.UnlockLine(u, A, picker);
             Expect(line.Contains($"<@{A}>"), $"unlock {reward}: no giver pill: {line}");
@@ -398,7 +423,6 @@ public static class JarLotteryChecks
     private static void JarPools()
     {
         CheckPool("JarDoubleDailyLines", 6, "<@1>", "<t:1:D>");
-        CheckPool("JarQuizDayLines", 6, "<@1>", "<t:1:D>");
         CheckPool("JarFeastLines", 6, "<@1>", 7);
         CheckPool("JarGiveawayLines", 6, "<@1>");
     }
@@ -426,18 +450,16 @@ public static class JarLotteryChecks
     private static async Task RewardsAsync()
     {
         using var db = new Db();
-        SeedJar(db, level: 4, rewardsDone: 0);
+        SeedJar(db, level: 3, rewardsDone: 0);
         var unlocks = new List<JarUnlock?>();
-        for (var i = 0; i < 5; i++) unlocks.Add(await ResolveAsync(db));
+        for (var i = 0; i < 4; i++) unlocks.Add(await ResolveAsync(db));
         Expect(unlocks[0] is { Reward: JarReward.DoubleDaily, Day: 20261119 }, $"reward 1: {unlocks[0]}");
-        Expect(unlocks[1] is { Reward: JarReward.QuizDay, Day: 20261119 }, $"reward 2: {unlocks[1]}");
-        Expect(unlocks[2] is { Reward: JarReward.Feast }, $"reward 3: {unlocks[2]}");
-        Expect(unlocks[3] is { Reward: JarReward.Giveaway, Giveaway: not null }, $"reward 4: {unlocks[3]}");
-        Expect(unlocks[4] is null, $"reward 5 should be none: {unlocks[4]}");
+        Expect(unlocks[1] is { Reward: JarReward.Feast }, $"reward 2: {unlocks[1]}");
+        Expect(unlocks[2] is { Reward: JarReward.Giveaway, Giveaway: not null }, $"reward 3: {unlocks[2]}");
+        Expect(unlocks[3] is null, $"reward 4 should be none: {unlocks[3]}");
         var jar = db.Jar();
-        Expect(jar.DoubleDailyFrom == 20261119 && jar.DoubleDailyUntil == 20261119
-               && jar.QuizDayFrom == 20261119 && jar.QuizDayUntil == 20261119 && jar.RewardsDone == 4,
-            $"jar after rewards: double {jar.DoubleDailyFrom}-{jar.DoubleDailyUntil} quiz {jar.QuizDayFrom}-{jar.QuizDayUntil} done {jar.RewardsDone}");
+        Expect(jar.DoubleDailyFrom == 20261119 && jar.DoubleDailyUntil == 20261119 && jar.RewardsDone == 3,
+            $"jar after rewards: double {jar.DoubleDailyFrom}-{jar.DoubleDailyUntil} done {jar.RewardsDone}");
         using var c = db.New();
         var g = c.Giveaways.SingleOrDefault(x => x.GuildId == G);
         Expect(g is not null && g.PebblePrize == Jar.GiveawayPrize && g.OrganizerId == Bot && g.ChannelId == 555
@@ -448,7 +470,7 @@ public static class JarLotteryChecks
     private static async Task TwoTimedAsync()
     {
         using var db = new Db();
-        SeedJar(db, level: 5, rewardsDone: 4, doubleUntil: 20261119);
+        SeedJar(db, level: 4, rewardsDone: 3, doubleUntil: 20261119);
         var u = await ResolveAsync(db);
         var jar = db.Jar();
         Expect(u is { Reward: JarReward.DoubleDaily, Day: 20261120 }, $"second double day: {u}");
@@ -465,7 +487,7 @@ public static class JarLotteryChecks
     private static async Task FeastAsync()
     {
         using var db = new Db();
-        SeedJar(db, level: 3, rewardsDone: 2);
+        SeedJar(db, level: 2, rewardsDone: 1);
         using (var c = db.New())
         {
             c.Plynlings.Add(Pet(A, 0.1));
@@ -538,8 +560,8 @@ public static class JarLotteryChecks
     {
         Expect(Jar.GoalFor(0) == 1500 && Jar.GoalFor(1) == 2000 && Jar.GoalFor(7) == 5000 && Jar.GoalFor(50) == 5000,
             $"GoalFor: {Jar.GoalFor(0)} {Jar.GoalFor(1)} {Jar.GoalFor(7)} {Jar.GoalFor(50)}");
-        Expect(Jar.RewardFor(0) == JarReward.DoubleDaily && Jar.RewardFor(3) == JarReward.Giveaway
-               && Jar.RewardFor(4) == JarReward.DoubleDaily, "RewardFor order");
+        Expect(Jar.RewardFor(0) == JarReward.DoubleDaily && Jar.RewardFor(1) == JarReward.Feast && Jar.RewardFor(2) == JarReward.Giveaway
+               && Jar.RewardFor(3) == JarReward.DoubleDaily, "RewardFor order");
         Expect(Jar.Fill(0, 1400, 100) == (1, 0), $"Fill(0,1400,100) = {Jar.Fill(0, 1400, 100)}");
         Expect(Jar.Fill(0, 0, 3600) == (2, 100), $"Fill(0,0,3600) = {Jar.Fill(0, 0, 3600)}");
         Expect(Jar.Fill(0, 0, 10) == (0, 10), $"Fill(0,0,10) = {Jar.Fill(0, 0, 10)}");
@@ -592,7 +614,7 @@ public static class JarLotteryChecks
             Expect(gifts.GetValueOrDefault(A) == 1000 && gifts.GetValueOrDefault(B) == 600, "JarGift totals");
             var s = await new JarService(c).StatusAsync(G, A, Now);
             Expect(s.Top.Count == 2 && s.Top[0] == (A, 1000) && s.Top[1] == (B, 600), "status top");
-            Expect(s.Mine == 1000 && s.Goal == 2000 && s.Next == JarReward.QuizDay && s.Filled == 100,
+            Expect(s.Mine == 1000 && s.Goal == 2000 && s.Next == JarReward.Feast && s.Filled == 100,
                 $"status: mine {s.Mine} goal {s.Goal} next {s.Next} filled {s.Filled}");
         }
     }
@@ -649,14 +671,5 @@ public static class JarLotteryChecks
         public override double NextDouble() => value;
         public override int Next(int maxValue) => Math.Min(next, maxValue - 1);
         public override int Next(int minValue, int maxValue) => Math.Clamp(next, minValue, maxValue - 1);
-    }
-
-    private static void QuizDay()
-    {
-        var morning = new DateTimeOffset(2026, 11, 18, 7, 0, 0, TimeSpan.Zero);   // 08:00 Paris
-        var every = QuizSchedule.DrawSlots(morning, new Random(1), everyWindow: true);
-        Expect(every.Count == 3, $"quiz day: {every.Count} slots");
-        Expect(QuizSchedule.DrawSlots(morning, new FixedRandom(0.5)).Count == 0, "quiz: 0.5 ≥ SlotChance still kept a slot");
-        Expect(QuizSchedule.DrawSlots(morning, new FixedRandom(0.5), everyWindow: true).Count == 3, "quiz day: a window was skipped");
     }
 }

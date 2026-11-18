@@ -36,7 +36,7 @@ public class MemberDailyStat
 
     public long VoiceMinutes { get; set; }
 
-    // Cailloux spent that day (Helpers/Economy/Patronage). Not activity: a bucket holding only this
+    // Cailloux given to the jar that day (Helpers/Economy/Patronage). Not activity: a bucket holding only this
     // must not make someone look active to /report or « ça faisait longtemps », whose readers filter
     // on the three counters above.
     public long CaillouxSpent { get; set; }

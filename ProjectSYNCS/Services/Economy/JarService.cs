@@ -12,7 +12,7 @@ public sealed record JarGiveResult(JarGiveOutcome Outcome, long Amount, long Bal
 
 public sealed record JarStatus(int Level, long Filled, long Goal, JarReward Next,
     IReadOnlyList<(ulong UserId, long Total)> Top, long Mine,
-    int DoubleDailyFrom, int DoubleDailyUntil, int QuizDayFrom, int QuizDayUntil);
+    int DoubleDailyFrom, int DoubleDailyUntil);
 
 /// <param name="Level">Which goal (0-based) this reward was for.</param>
 /// <param name="Day">The bonus day a timed reward added (Paris yyyymmdd), 0 otherwise.</param>
@@ -80,7 +80,7 @@ public class JarService
             .Where(g => g.GuildId == guildId && g.UserId == userId)
             .Select(g => g.Total).FirstOrDefaultAsync();
         return new JarStatus(jar.Level, jar.Filled, Jar.GoalFor(jar.Level), Jar.RewardFor(jar.Level), top, mine,
-            jar.DoubleDailyFrom, jar.DoubleDailyUntil, jar.QuizDayFrom, jar.QuizDayUntil);
+            jar.DoubleDailyFrom, jar.DoubleDailyUntil);
     }
 
     /// <summary>Whether <c>/daily</c> pays double on <paramref name="day"/>. Read inside the claim's own unit.</summary>
@@ -91,16 +91,6 @@ public class JarService
             .Select(j => new { j.DoubleDailyFrom, j.DoubleDailyUntil })
             .FirstOrDefaultAsync();
         return range is not null && Jar.Covers(range.DoubleDailyFrom, range.DoubleDailyUntil, day);
-    }
-
-    /// <summary>Whether every quiz window keeps its slot on <paramref name="day"/>.</summary>
-    public async Task<bool> IsQuizDayAsync(ulong guildId, int day)
-    {
-        var range = await _db.CaillouxJars.AsNoTracking()
-            .Where(j => j.GuildId == guildId)
-            .Select(j => new { j.QuizDayFrom, j.QuizDayUntil })
-            .FirstOrDefaultAsync();
-        return range is not null && Jar.Covers(range.QuizDayFrom, range.QuizDayUntil, day);
     }
 
     /// <summary>
@@ -131,10 +121,6 @@ public class JarService
             case JarReward.DoubleDaily:
                 (jar.DoubleDailyFrom, jar.DoubleDailyUntil) = Jar.Extend(jar.DoubleDailyFrom, jar.DoubleDailyUntil, tomorrow);
                 day = jar.DoubleDailyUntil;
-                break;
-            case JarReward.QuizDay:
-                (jar.QuizDayFrom, jar.QuizDayUntil) = Jar.Extend(jar.QuizDayFrom, jar.QuizDayUntil, tomorrow);
-                day = jar.QuizDayUntil;
                 break;
             case JarReward.Feast:
                 var food = PlynlingCatalog.Info(Jar.FeastFood);

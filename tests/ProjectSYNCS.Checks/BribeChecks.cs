@@ -107,7 +107,7 @@ public static class BribeChecks
             using var c2 = db.New();
             var logged = c2.EconomyDailyStats.SingleOrDefault(s => s.Metric == EconomyLog.SpendBribe && s.Day == AppTime.DayKey(Now))?.Value;
             Expect(logged == 700, "spend.bribe today: " + logged);
-            Expect(c2.MemberXps.Single(x => x.UserId == A).CaillouxSpent == 700, "bribes not counted as spent");
+            Expect(!c2.MemberXps.Any(x => x.UserId == A && x.CaillouxSpent > 0), "bribes counted toward Mécène");
         }
 
         // The week turns at Monday 00:00 Paris: Sunday 23:30 and Monday 00:30 both cost 100.
@@ -396,7 +396,7 @@ public static class BribeChecks
         {
             var logged = c.EconomyDailyStats.SingleOrDefault(s => s.Metric == EconomyLog.SpendShoutout && s.Day == d)?.Value;
             Expect(logged == 60, "spend.shoutout after two marks: " + logged);
-            Expect(c.MemberXps.Single(x => x.UserId == C).CaillouxSpent == 60, "the dedication not counted as spent");
+            Expect(!c.MemberXps.Any(x => x.UserId == C && x.CaillouxSpent > 0), "the dedication counted toward Mécène");
             Expect(c.ShoutoutBids.Single(s => s.UserId == C && s.ForDay == d).ShownDay == d, "ShownDay not stamped");
             var status = await new ShoutoutService(c).StatusAsync(G, Now);
             Expect(status.Queued == 2, $"queued: {status.Queued}");

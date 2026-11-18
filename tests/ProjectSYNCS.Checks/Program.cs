@@ -5368,7 +5368,7 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         if (l.Contains("{3}")) Fail($"RelayRefusedLines: quotes the insult it refuses: {l}");
 }
 
-// 52. Cailloux spent (Patronage), the Mécène badge and tab, /pay, packs: EconomySinkChecks.cs.
+// 52. Mécène (jar gifts, Patronage), the badge and tab, /pay, packs: EconomySinkChecks.cs.
 await EconomySinkChecks.Run(Fail);
 
 // 53. Bribes and the dedication auction: BribeChecks.cs.

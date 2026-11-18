@@ -35,15 +35,15 @@ grant no XP** — the link runs one way, or money and levels would feed each oth
 **The passive cap lives on the wallet row** (`PassiveDay` + `PassiveToday`), not in a daily-bucket
 table: nothing ranks cailloux by date, so a buckets table would have no reader.
 
-**Spending is counted (`Helpers/Economy/Patronage`) for the « Mécène » badge and `/leaderboard`'s
-« Mécènes » view** (see `xp.md`). Only what *leaves the economy* counts: the shop, packs, meals (own
-and others'), medicine, cosmetics, crafting, the `/pay` tax, bribes, a dedication once posted, the jar. **Not** `/arcade` or the lottery (they move cailloux
-between players, and rewarding it would reward gambling), not admin debits, not the amount sent with
-`/pay`. `Patronage.AddAsync` sits beside the spend's `EconomyLog` line, like it never saves and looks
-in `Local` first, and writes `CaillouxSpent` on `MemberXp` and today's `MemberDailyStat` (the totals +
-buckets pair behind `/leaderboard`). **A new sink that destroys cailloux gets a `Patronage` call; one
-that only moves them between people doesn't.** Spending creates a `MemberXp` row for someone with no
-XP: `XpService.GetRankAsync` calls 0 XP unranked, and the activity readers (`/report`, « ça faisait
+**Only the jar counts (`Helpers/Economy/Patronage`) for the « Mécène » badge and `/leaderboard`'s
+« Mécènes » view** (see `xp.md`; owner's call, 7.73.0: a patron gives to everyone, not to
+themselves). `JarService` is `Patronage.AddAsync`'s only caller, beside its `spend.jar` line; like
+`EconomyLog` it never saves and looks in `Local` first, and writes `CaillouxSpent` on `MemberXp` and
+today's `MemberDailyStat` (the totals + buckets pair behind `/leaderboard`). **A new sink gets no
+`Patronage` call** unless the owner says so. Before 7.73.0 every sink that leaves the economy
+counted (shop, packs, meals, medicine, cosmetics, crafting, the `/pay` tax, bribes, dedications);
+what they added stays in the totals, by the owner's choice. A jar gift creates a `MemberXp` row for
+someone with no XP: `XpService.GetRankAsync` calls 0 XP unranked, and the activity readers (`/report`, « ça faisait
 longtemps ») filter on XP, reactions and voice, never on `CaillouxSpent`.
 
 **`/pay member amount`** (`PebbleService.PayAsync`, top-level in `EconomyModule`): 10 to 2 000; a 10 %
@@ -57,7 +57,7 @@ amount moved is not an economy flow and logs nothing.
 **`/bribe favourite` and `/bribe shame category`** (`BribeService`, `BribeModule`): one price for both,
 `Bribes.Price`: 100, doubled by every bribe the same person paid this Paris ISO week
 (`CosmeticCatalog.WeekKey`; `BribeWeek` + `BribesThisWeek` on the wallet, like `PayDay`). Logged
-`spend.bribe`, counted toward « Mécène ». The chouchou lasts 24 h (`PebbleWallet.ChouchouUntil`,
+`spend.bribe` (not « Mécène »). The chouchou lasts 24 h (`PebbleWallet.ChouchouUntil`,
 extended from its end when bought again); Papa and Tata are refused before any price. **`ChouchouBook`**
 (singleton) caches who is chouchou for `ChatterService` and `ReactionService`, which must never read
 the database per message: it loads every `ChouchouUntil` once, lazily, and `BribeService` calls `Set`
@@ -71,7 +71,7 @@ before 20:00 Paris a bid is for tomorrow, from 20:00 for the day after. Opening 
 so no ties. One `ShoutoutBid` row per (guild, day), overwritten by each new leader; `Amount` is a
 concurrency token, so two racing bids re-check. **The bid is held, not spent**: debited at once (the
 difference when raising your own lead), the outbid leader refunded in the same save, nothing logged.
-It is logged `spend.shoutout` and counted toward « Mécène » only when the dedication is posted
+It is logged `spend.shoutout` only when the dedication is posted
 (`MarkShownAsync`, called by `MorningGreetingService`; see `personality/ambient.md`). A day's
 winner is posted on that day; a dedication carried over a missed hello waits for a morning nobody
 won (`NextDueAsync`). `BidResult.Cost` is what the bid takes, so a refusal names the difference when
@@ -85,16 +85,16 @@ capped at 5 000; the overflow carries over, so one gift can reach several. A gif
 the jar; the rewards are carried out after it**: a reached goal leaves `Level > RewardsDone`, and
 `JarModule` calls `ResolveNextRewardAsync` in a loop, one reward per save with `RewardsDone++`
 (also a token, so two resolvers can't run one reward twice). A failure leaves the rest pending for
-the next gift, never lost. The rotation (`Jar.RewardFor`, by goal index): double `/daily`, quiz day,
-feast, giveaway. The two timed ones apply **from tomorrow** (today's quiz slots are drawn, today's
-`/daily` maybe claimed) and are day ranges on the jar (`DoubleDaily*`, `QuizDay*`); a second unlock
-while one is pending adds the day after (`Jar.Extend`). `PebbleService.ClaimDailyAsync` doubles the
-rolled amount (`DailyResult.Doubled`); `QuizMasterService` asks `IsQuizDayAsync` once, when it
-draws the day's plan. The feast feeds every living, unfrozen Plynling a truffle, free and unlogged.
-The giveaway is a `Giveaway` row organised by the bot, with `PebblePrize` 150 for 3 winners, paid
-in the draw's save (`earn.giveaway`, see `scheduling.md`). Each unlock is a line in the main channel
-(`/config main-channel`, else her default when it is in the guild, else where `/jar give` was used),
-mentions off, and ignores silence mode: a gift set it off.
+the next gift, never lost. The rotation (`Jar.RewardFor`, by goal index, modulo the enum's size):
+double `/daily`, feast, giveaway. `JarReward` is never stored, so the rotation can change; the quiz
+day it once held was dropped (owner's call, 7.73.0). Double `/daily` applies **from tomorrow**
+(today's `/daily` may be claimed) as a day range on the jar (`DoubleDaily*`); a second unlock while
+one is pending adds the day after (`Jar.Extend`). `PebbleService.ClaimDailyAsync` doubles the
+rolled amount (`DailyResult.Doubled`). The feast feeds every living, unfrozen Plynling a truffle,
+free and unlogged. The giveaway is a `Giveaway` row organised by the bot, with `PebblePrize` 150 for
+3 winners, paid in the draw's save (`earn.giveaway`, see `scheduling.md`). Each unlock is a line in
+the bots channel (`BotsChannel.ResolveAsync`, else where `/jar give` was used), followed there by the
+giveaway's card; mentions off, and it ignores silence mode: a gift set it off.
 
 ## The `/work` grace
 
@@ -208,10 +208,10 @@ and **never an item** (nothing called a pack is ever held). Picking it shows ×1
 `shop:pack:{qty}` (their own verb); `InventoryService.OpenPackAsync` takes `PackPrice` × qty (no
 bulk discount) and grants `PackSize` (3) `DrawCollectible` finds each through `GrantAsync`, in one
 save, so a pack that completes a set pays it at once. Rolled inside the work, so a retry rolls
-again. **`PackPrice` (60) is set by the checks' simulation, not by feel**: a find sells for ~4.5,
+again. **`PackPrice` (150) is set by the checks' simulation, not by feel**: a find sells for ~4.5,
 but set rewards (100 to 1 000, paid again on every turn-in) make it worth more; section 52 plays
 5 000 packs with the best possible player and fails if a pack returns more than 70 % of its price
-(today ~35 %). Re-run it after changing a set's reward, the rarity split or the catalog.
+(today ~14 %). Re-run it after changing a set's reward, the rarity split or the catalog.
 
 **Feeding serves from the pantry first** — one of that food for your own Plynling, two for someone
 else's (the pantry's version of the double price) — and charges cailloux only when there isn't

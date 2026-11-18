@@ -24,18 +24,6 @@ internal static partial class BotResponses
         "Merci {0} ! Le {1}, votre `/daily` est multiplié par deux. Je fais pas ça souvent. Profitez ( ˶ˆ ᗜ ˆ˵ )",
     };
 
-    // A quiz day: every quiz window keeps its slot. {1} = the day, as <t:…:D>.
-    public static readonly string[] JarQuizDayLines =
-    {
-        "Le bocal est plein, merci {0} ! Le {1}, c'est journée quiz : trois questions au lieu d'une si j'ai la flemme. Révisez (˶˃ ᵕ ˂˶)",
-        $"{{0}} a rempli le bocal, alors le {{1}} je pose toutes mes questions. Toutes. J'ai hâte de voir vos réponses {Emotes.Sparkle}",
-        "Objectif atteint ! Journée quiz le {1}, grâce à {0}. J'ai déjà préparé des questions. Certaines sont méchantes.",
-        "Bocal plein, merci {0} ♡ Le {1}, je vous quizze matin, midi et soir. Enfin, quand quelqu'un sera là pour répondre.",
-        "Le {1}, journée quiz ! Remerciez {0}. Ou maudissez {0}, selon votre niveau en culture générale (¬_¬)",
-        "{0} vient de m'offrir une excuse pour vous poser plein de questions le {1}. Je la prends. Merci ♡",
-        "Ding ! Journée quiz le {1}, gracieuseté de {0}. Mes questions sont prêtes. Vous, je sais pas.",
-    };
-
     // A feast: every living Plynling ate a truffle. {1} = how many ate.
     public static readonly string[] JarFeastLines =
     {

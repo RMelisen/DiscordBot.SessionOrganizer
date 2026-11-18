@@ -102,7 +102,7 @@ public static class MemberBadges
         Palier(Keys.Arcade, "🕹️", "Pilier d'arcade", "La partie ne va pas se gagner toute seule.", new long[] { 5, 25, 75, 200, 500 }),
         Palier(Keys.Nanny, "🤲", "Nounou", "Un repas offert n'est jamais perdu.", new long[] { 5, 25, 75, 200, 500 }),
         Palier(Keys.Daily, "🔥", "Assiduité", "Un jour après l'autre, sans en sauter un.", new long[] { 7, 30, 100, 200, 365 }, BadgeUnit.Days),
-        Palier(Keys.Patron, "🪙", "Mécène", "Ce qu'on dépense ici ne revient pas. On s'en souvient quand même.", new long[] { 500, 2500, 10000, 25000, 60000 }),
+        Palier(Keys.Patron, "🪙", "Mécène", "Ce qu'on verse au bocal ne revient pas. On s'en souvient quand même.", new long[] { 500, 5000, 15000, 50000, 100000 }),
         Palier(Keys.Seniority, "🎂", "Ancienneté", "Le temps fait son œuvre.", new long[] { 90, 180, 365, 730, 1095 }, BadgeUnit.Days),
 
         Moment(Keys.Crowned, "👑", "Couronne", "Une semaine, une seule tête."),

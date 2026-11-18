@@ -137,8 +137,8 @@ public static class LevelCardUi
     // Sets completed — a discovery and every turn-in each count one.
     public static string Completions(long n) => $"{Xp(n)} collection{(n > 1 ? "s" : "")} complétée{(n > 1 ? "s" : "")}";
 
-    // Cailloux spent on what leaves the economy (Patronage) — the Mécènes view.
-    public static string Spent(long n) => $"{PebbleEconomy.Cailloux(n)} {(Math.Abs(n) <= 1 ? "dépensé" : "dépensés")}";
+    // Cailloux given to the jar (Patronage) — the Mécènes view.
+    public static string Spent(long n) => $"{PebbleEconomy.Cailloux(n)} {(Math.Abs(n) <= 1 ? "versé" : "versés")} au bocal";
 
     /// <summary>
     /// What an empty board says. A window being empty is ordinary — nobody did this
@@ -159,7 +159,7 @@ public static class LevelCardUi
             LeaderboardView.Collections =>
                 "Personne n'a encore complété de collection. Les carnets sont là, les objets aussi (ᵕ • ᴗ •)",
             LeaderboardView.Patrons =>
-                "Personne n'a encore rien dépensé. Les cailloux, ça ne se garde pas sous le matelas (ᵕ • ᴗ •)",
+                "Personne n'a encore rien versé au bocal. Les cailloux, ça ne se garde pas sous le matelas (ᵕ • ᴗ •)",
             _ => "Personne n'a encore gagné d'XP. Parlez, réagissez, faites du bruit ദ്ദി◝ ⩊ ◜.ᐟ",
         };
     }

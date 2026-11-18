@@ -160,12 +160,6 @@ namespace ProjectSYNCS.Migrations
                     b.Property<int>("Level")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("QuizDayFrom")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("QuizDayUntil")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("RewardsDone")
                         .IsConcurrencyToken()
                         .HasColumnType("INTEGER");

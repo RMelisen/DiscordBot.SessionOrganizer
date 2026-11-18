@@ -3,6 +3,16 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.73.0 — 2026-11-18
+
+- Collection packs in `/inventory shop` now cost 150 cailloux (was 60).
+- A lottery week nobody bought a ticket for is never drawn and posts nothing.
+- The jar's rewards are now double `/daily`, a feast for the Plynlings and a giveaway: the quiz day is gone.
+- The jar's unlocks, and its giveaway, are announced in the bots channel instead of the main channel.
+- Only cailloux given to the jar count toward the Mécène badge and the Mécènes leaderboard now; what
+  was already counted stays.
+- New Mécène tiers: 500, 5 000, 15 000, 50 000 and 100 000 cailloux.
+
 ## 7.72.0 — 2026-11-18
 
 - `/work` grace: once a day, a shift asked for up to 5 minutes before the cooldown ends is paid anyway,

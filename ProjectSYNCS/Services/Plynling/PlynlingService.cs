@@ -190,7 +190,6 @@ public partial class PlynlingService
         {
             wallet.Balance -= price;
             await EconomyLog.AddAsync(_db_context, plynling.GuildId, isOwner ? EconomyLog.SpendMeal : EconomyLog.SpendMealOther, price, now);
-            await Patronage.AddAsync(_db_context, plynling.GuildId, actorId, price, now);
         }
         await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActMeal, 1, now);
         PlynlingLife.Feed(plynling, info, now);
@@ -304,7 +303,6 @@ public partial class PlynlingService
         {
             wallet.Balance -= ItemCatalog.MedicinePrice;
             await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.SpendMedicine, ItemCatalog.MedicinePrice, now);
-            await Patronage.AddAsync(_db_context, plynling.GuildId, actorId, ItemCatalog.MedicinePrice, now);
         }
         plynling.LastMedicineAt = now;
         await EconomyLog.AddAsync(_db_context, plynling.GuildId, EconomyLog.ActMedicine, 1, now);

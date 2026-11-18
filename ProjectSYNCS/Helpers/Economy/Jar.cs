@@ -3,16 +3,16 @@ using System.Globalization;
 namespace ProjectSYNCS.Helpers;
 
 /// <summary>What a goal reached unlocks, in rotation. Not stored: the order only decides the next one.</summary>
-public enum JarReward { DoubleDaily, QuizDay, Feast, Giveaway }
+public enum JarReward { DoubleDaily, Feast, Giveaway }
 
 /// <summary>
 /// The jar's rules (/jar): rising goals, the rotation of rewards, and the bonus days. Pure, so they
 /// are checkable without a database.
 /// </summary>
 /// <remarks>
-/// Timed rewards (double <c>/daily</c>, quiz day) start tomorrow, Paris time: today's quiz slots are
-/// already drawn, and a <c>/daily</c> already claimed today couldn't be doubled. Each kind keeps a range
-/// of days, so two unlocks of one kind make two days rather than overwriting one.
+/// The timed reward (double <c>/daily</c>) starts tomorrow, Paris time: a <c>/daily</c> already
+/// claimed today couldn't be doubled. It keeps a range of days, so two unlocks make two days rather
+/// than overwriting one.
 /// </remarks>
 public static class Jar
 {
@@ -30,7 +30,7 @@ public static class Jar
     public static long GoalFor(int level) => Math.Min(1500 + 500L * level, 5000);
 
     /// <summary>The reward for reaching goal number <paramref name="level"/> (0-based).</summary>
-    public static JarReward RewardFor(int level) => (JarReward)(level % 4);
+    public static JarReward RewardFor(int level) => (JarReward)(level % Enum.GetValues<JarReward>().Length);
 
     /// <summary>Pours <paramref name="amount"/> in: the overflow carries into the next goal, so one gift can reach several.</summary>
     public static (int Level, long Filled) Fill(int level, long filled, long amount)

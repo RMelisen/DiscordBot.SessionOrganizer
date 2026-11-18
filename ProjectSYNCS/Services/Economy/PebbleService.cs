@@ -16,7 +16,7 @@ public sealed record DailyResult(bool Claimed, int Streak, long Amount, ItemFind
 public sealed record PebbleBalance(long Balance, DateTimeOffset? NextWorkAt, long PassiveToday, bool WorkReminder);
 
 // Self is also refused by /pay itself; the service refuses it too, so no other caller can burn a tax on
-// nothing and count it toward « Mécène ».
+// nothing.
 public enum PayOutcome { Paid, TooSmall, TooPoor, OverCap, Self }
 
 // Amount and Tax are what was asked, even when refused (TooPoor names Amount + Tax). Balance is the
@@ -214,7 +214,6 @@ public class PebbleService
         from.PaidToday = (from.PayDay == today ? from.PaidToday : 0) + amount;
         from.PayDay = today;
         await EconomyLog.AddAsync(_db_context, guildId, EconomyLog.SpendTax, tax, now);
-        await Patronage.AddAsync(_db_context, guildId, fromId, tax, now);
         await _db_context.SaveChangesAsync();
         return new PayResult(PayOutcome.Paid, amount, tax, from.Balance, room - amount);
     }

@@ -39,8 +39,9 @@ public class MemberXp
     // so the two can never disagree about which minutes counted.
     public long VoiceMinutes { get; set; }
 
-    // Cailloux this person spent on things that take them out of the economy (Helpers/Economy/
-    // Patronage): the « Mécène » badge and the « Mécènes » leaderboard tab read it. Not activity:
-    // spending creates this row for someone with no XP, which is why GetRankAsync calls 0 XP unranked.
+    // Cailloux this person gave to the jar (/jar give, through Helpers/Economy/
+    // Patronage): the « Mécène » badge and the « Mécènes » leaderboard tab read it. Before 7.73.0 the
+    // other sinks counted too, and what they added stays. Not activity: a gift creates this row for
+    // someone with no XP, which is why GetRankAsync calls 0 XP unranked.
     public long CaillouxSpent { get; set; }
 }

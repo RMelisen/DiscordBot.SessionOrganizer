@@ -18,7 +18,7 @@ public sealed record ShoutoutStatus(int ForDay, DateTimeOffset ClosesAt, ulong? 
 /// <summary>
 /// /shoutout: the auction for a dedication in her morning hello (Helpers/Economy/Shoutouts), and the
 /// two calls MorningGreetingService makes to post the winner. A bid is held, not spent: debited at
-/// once, refunded at once when outbid, logged <c>spend.shoutout</c> and counted toward « Mécène » only
+/// once, refunded at once when outbid, and logged <c>spend.shoutout</c> only
 /// when the dedication is posted (<see cref="MarkShownAsync"/>).
 /// </summary>
 public class ShoutoutService
@@ -96,8 +96,8 @@ public class ShoutoutService
     }
 
     /// <summary>
-    /// The dedication was posted: stamp it, log the held cailloux as spent and count them toward
-    /// « Mécène », in one save. A bid already posted is left alone, so a second call settles nothing twice.
+    /// The dedication was posted: stamp it and log the held cailloux as spent,
+    /// in one save. A bid already posted is left alone, so a second call settles nothing twice.
     /// </summary>
     public Task MarkShownAsync(int bidId, DateTimeOffset now) =>
         EconomySave.RetryAsync(_db_context, async () =>
@@ -106,7 +106,6 @@ public class ShoutoutService
             if (row is null || row.ShownDay != 0) return false;
             row.ShownDay = AppTime.DayKey(now);
             await EconomyLog.AddAsync(_db_context, row.GuildId, EconomyLog.SpendShoutout, row.Amount, now);
-            await Patronage.AddAsync(_db_context, row.GuildId, row.UserId, row.Amount, now);
             await _db_context.SaveChangesAsync();
             return true;
         });

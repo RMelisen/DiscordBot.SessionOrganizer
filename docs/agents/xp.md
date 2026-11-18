@@ -65,7 +65,7 @@ is static so checks section 52 builds every view and window at its fullest and h
 
 **`/leaderboard` is five views** (`LeaderboardView`: XP, reactions, voice, collections, mécènes) — only
 the ordering and each row's second line change. XP, reactions, voice and **Mécènes** (`CaillouxSpent`,
-cailloux spent on what leaves the economy, see `economy.md` *Patronage*) read `MemberXp`/`MemberDailyStat`;
+cailloux given to the jar, see `economy.md` *Patronage*) read `MemberXp`/`MemberDailyStat`;
 **Collections** reads `InventoryService.GetCollectorRankingAsync` (sets completed: the
 `CollectionCompletion.Count` totals all-time, `CollectionDailyStat` buckets in a window — see
 `economy.md`), shaped into the same `MemberTally` (`Completions`) by `LevelModule.RankingAsync`, so
@@ -128,8 +128,8 @@ card, keep the XP. **Admin adjustments never fire it** (see `admin.md`).
   migration. The exceptions are the two counters `arcade` and `nanny`, stored as `MemberBadge.Count`.
   The moments `lightning` and `punctual` are derived too and shown without a date. `daily`
   (« Assiduité ») reads `PebbleWallet.DailyBest`, the best `/daily` streak (see `economy.md`).
-  `mecene` (« Mécène », 500 / 2 500 / 10 000 / 25 000 / 60 000) reads `MemberXp.CaillouxSpent`, the
-  cailloux spent on what leaves the economy (see `economy.md`, *Patronage*).
+  `mecene` (« Mécène », 500 / 5 000 / 15 000 / 50 000 / 100 000) reads `MemberXp.CaillouxSpent`, the
+  cailloux given to the jar (see `economy.md`, *Patronage*).
 - **Every write goes through the singleton `BadgeAwarder`**, after the flow's own save,
   fire-and-forget. It ignores guild 0 (DMs), unknown keys and her own id, and releases its in-memory
   claim when a write fails. `MemberBadgeService.AwardAsync/IncrementAsync` rethrow anything that is
