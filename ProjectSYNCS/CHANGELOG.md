@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.69.0 — 2026-11-18
+
+- `/debug react`: makes her react to any message, by link, or take her reaction back.
+
 ## 7.68.0 — 2026-11-18
 
 - `/pay`: give cailloux to someone, up to 2 000 a day. A 10 % tax is added on top, paid by the giver,

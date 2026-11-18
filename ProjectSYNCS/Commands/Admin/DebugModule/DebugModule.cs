@@ -244,6 +244,62 @@ public partial class DebugModule : InteractionModuleBase<SocketInteractionContex
         }
     }
 
+    // Makes her react to any message, by link — or take her reaction back with `remove`. The emoji
+    // arrives as the client typed it: a unicode emoji, or `<:name:id>` for a custom one (picked
+    // from the emoji menu). She can only use custom emotes from servers she's in, or her own.
+    [SlashCommand("react", "Faire réagir le bot à un message")]
+    public async Task ReactAsync(
+        [Summary("message", "Lien du message (clic droit → Copier le lien du message)")]
+        string message,
+        [Summary("emoji", "L'émoji ou l'émote à mettre")]
+        [MaxLength(100)]
+        string emoji,
+        [Summary("remove", "Retirer ma réaction au lieu de l'ajouter")]
+        bool remove = false)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+
+        var reaction = EmoteMarkup.Parse(emoji.Trim());
+        if (reaction is null)
+        {
+            await RespondAsync("Il me faut un émoji. ❌", ephemeral: true);
+            return;
+        }
+
+        await DeferAsync(ephemeral: true);
+
+        var (channel, target, error) = await ResolveLinkedMessageAsync(message, null);
+        if (channel is null || target is null)
+        {
+            await FollowupAsync(error, ephemeral: true);
+            return;
+        }
+
+        try
+        {
+            if (remove) await target.RemoveReactionAsync(reaction, Context.Client.CurrentUser);
+            else await target.AddReactionAsync(reaction);
+            _logger.LogInformation("Owner {Action} reaction {Emoji} on message {MessageId} in channel {ChannelId}.",
+                remove ? "removed" : "added", emoji, target.Id, channel.Id);
+            await FollowupAsync(
+                remove ? $"Réaction {emoji} retirée dans {channel.Mention}. ✅" : $"Réaction {emoji} ajoutée dans {channel.Mention}. ✅",
+                ephemeral: true);
+        }
+        catch (Exception ex)
+        {
+            // Usually an emoji Discord doesn't know (plain text, a custom emote from a server she's
+            // not in) or a missing Add Reactions permission.
+            _logger.LogWarning(ex, "Failed to react {Emoji} on message {MessageId} in channel {ChannelId}.", emoji, target.Id, channel.Id);
+            await FollowupAsync(
+                $"Discord a refusé : soit ce n'est pas un émoji que je peux utiliser, soit je n'ai pas le droit de réagir dans {channel.Mention}. ❌",
+                ephemeral: true);
+        }
+    }
+
     // Who wrote confession #N. The one place a confession's author shows, and only to the owner:
     // it's there to deal with abuse. From a DM it reads the home guild's numbers.
     [SlashCommand("confession", "Voir qui a écrit une confession")]

@@ -287,7 +287,7 @@ service is the only writer: any write drops that guild's entry. A failed read de
 
 (Except `help`, readable by staff: see *`/report` and the monthly digest*.)
 
-`tell`, `delete` (one of her own messages, by link; refuses anyone else's), `confession` (who wrote
+`tell`, `delete` (one of her own messages, by link; refuses anyone else's), `react` (adds — or with `remove` takes back — her reaction on any message, by link; the emoji goes through `EmoteMarkup.Parse`, and Discord refusing it is reported, not thrown), `confession` (who wrote
 confession #N, see `community.md`), `dm`, `absent`, `plynling`, `emotes`, `digest` (last month's digest in your DMs now, yours or a preview of Tata's, see
 *`/report` and the monthly digest*), `quiz` (post or close a pop quiz now, see `quiz.md`),
 `sticker` (post any of her sticker strips here, bypassing the gate, see `personality/reactions.md`),

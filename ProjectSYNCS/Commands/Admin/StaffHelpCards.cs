@@ -61,6 +61,7 @@ public static class StaffHelpCards
                 "Avec `announce`, je précise que c'est de ta part.\n" +
                 "**`dm`** — M'envoie dire un message privé à quelqu'un.\n" +
                 "**`delete`** — Supprime un de mes messages, par son lien. Jamais celui de quelqu'un d'autre.\n" +
+                "**`react`** — Me fait réagir à un message avec l'émoji de ton choix, par son lien (ou retirer ma réaction).\n" +
                 "**`sticker`** — Poste ici une de mes images, au choix de l'humeur.")
             .AddField("Mon comportement",
                 "**`silence`** — Je ne parle plus que pour répondre aux commandes et aux boutons. Les rappels, " +
