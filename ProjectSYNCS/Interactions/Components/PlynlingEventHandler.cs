@@ -75,7 +75,7 @@ public class PlynlingEventHandler : InteractionModuleBase<SocketInteractionConte
             return;
         }
         var target = inst.TargetPlynlingId is { } tid ? await _plynlings.GetByIdAsync(tid, now) : null;
-        var card = PlynlingEventCards.BuildChoice(inst, def, await _plynlings.GetEventContextAsync(p, now, target),
+        var card = PlynlingEventCards.BuildChoice(inst, def, await _plynlings.GetEventContextAsync(p, now, target, inst),
             EventCast.Of(p, now), target is null ? null : EventCast.Of(target, now), cardId);
         await FollowupAsync(components: card, ephemeral: true, flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
     }

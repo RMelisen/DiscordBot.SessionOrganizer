@@ -138,7 +138,11 @@ public static partial class StoryParser
 
     private static StoryHeader ParseHeader(List<Src> lines, Src arcLine, Func<Src, StoryPos> at, Action<Src, string> error)
     {
-        string? title = null, publicLine = null;
+        string? title = null;
+        StorySize? size = null;
+        var once = false;
+        TimeSpan? cooldown = null;
+        var locked = false;
         StoryFamily? family = null;
         List<PlynlingStage>? stages = null;
         StoryTrigger? trigger = null;
@@ -152,6 +156,12 @@ public static partial class StoryParser
 
         foreach (var l in lines.Where(l => l.Text.Length > 0))
         {
+            if (l.Text == "locked")
+            {
+                if (!seen.Add("locked")) error(l, "'locked' given twice");
+                else locked = true;
+                continue;
+            }
             var m = FieldLine.Match(l.Text);
             if (!m.Success)
             {
@@ -164,7 +174,19 @@ public static partial class StoryParser
             switch (field)
             {
                 case "title": title = NonEmpty(l, field, value, error); break;
-                case "public": publicLine = NonEmpty(l, field, value, error); break;
+                case "public": error(l, "'public:' was removed from the format; delete the line"); break;
+                case "size":
+                    if (StoryVocabulary.TryEnum<StorySize>(value, out var sz)) size = sz;
+                    else error(l, $"size '{value}': expected one of {StoryVocabulary.Choices<StorySize>()}");
+                    break;
+                case "once":
+                    if (value == "life") once = true;
+                    else error(l, $"once '{value}': the only value is 'life'");
+                    break;
+                case "cooldown":
+                    cooldown = StoryVocabulary.Duration(value);
+                    if (cooldown is null || !value.EndsWith('d') || cooldown <= TimeSpan.Zero) { error(l, $"cooldown '{value}': write a number of days such as 30d"); cooldown = null; }
+                    break;
                 case "family":
                     if (StoryVocabulary.TryEnum<StoryFamily>(value, out var f)) family = f;
                     else error(l, $"family '{value}': expected one of {StoryVocabulary.Choices<StoryFamily>()}");
@@ -217,11 +239,12 @@ public static partial class StoryParser
         }
         foreach (var e in errs) error(lines.First(l => l.No == e.Pos.Line), e.Message);
 
-        foreach (var (name, value) in new (string, object?)[] { ("title", title), ("family", family), ("stage", stages), ("trigger", trigger), ("public", publicLine) })
+        foreach (var (name, value) in new (string, object?)[] { ("title", title), ("family", family), ("stage", stages), ("trigger", trigger), ("size", size) })
             if (value is null && !seen.Contains(name)) error(arcLine, $"missing header field '{name}'");
 
         return new StoryHeader(title ?? "", family ?? StoryFamily.Milestone, stages ?? new List<PlynlingStage>(),
-            trigger ?? new StoryTrigger(TriggerKind.Draw, null), shelf, weight ?? 0, bonuses, requires, other, publicLine ?? "");
+            trigger ?? new StoryTrigger(TriggerKind.Draw, null), shelf, weight ?? 0, bonuses, requires, other, size ?? StorySize.Short,
+            once || size == StorySize.Long, cooldown, locked);
     }
 
     private static string? NonEmpty(Src l, string field, string value, Action<Src, string> error)

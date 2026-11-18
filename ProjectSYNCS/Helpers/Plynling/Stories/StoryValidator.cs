@@ -18,7 +18,10 @@ public static class StoryValidator
     public const int RollRoom = 20;          // what the button adds for a roll (« · Sagesse · 95 % »)
     public const int TitleCap = 100;
     public const int ProseCap = 3000;        // one scene's, outcome's or ending's prose, every line included
-    public const int PublicCap = 300;
+
+    /// <summary>What the parser reads but the engine does not run yet: the validator refuses each with "not supported yet".</summary>
+    public static readonly IReadOnlySet<string> NotYetSupported = new HashSet<string>
+        { "handover", "trigger relation", "trigger death", "trigger sick", "trigger break", "trigger oldage", "condition chain" };
 
     private static readonly Regex Token = new(@"\{(?:A|B|T|[abp]:[^|{}]*\|[^{}]*)\}", RegexOptions.Compiled);
     private static readonly Regex Choice = new(@"\{[abp]:([^|{}]*)\|([^{}]*)\}", RegexOptions.Compiled);
@@ -51,6 +54,13 @@ public static class StoryValidator
 
         foreach (var arc in arcs)
             ValidateArc(arc, arcsByKey, flagsSet, memories, epithets, keepsakes, castKeys, Error);
+
+        // Unlocks: a locked arc is unlocked somewhere, and an [unlock] names a locked arc.
+        var unlocked = arcs.SelectMany(Effects).Where(e => e.Kind == EffectKind.Unlock).Select(e => e.Key).ToHashSet();
+        foreach (var a in arcs.Where(a => a.Header.Locked && !unlocked.Contains(a.Key)))
+            Error(a.Pos, $"arc '{a.Key}' is locked but never unlocked: no ending says [unlock {a.Key}]");
+        foreach (var e in arcs.SelectMany(Effects).Where(e => e.Kind == EffectKind.Unlock && arcsByKey.TryGetValue(e.Key, out var target) && !target.Header.Locked))
+            Error(e.Pos, $"[unlock {e.Key}]: arc '{e.Key}' is not locked (add 'locked' to its header)");
         return errors;
     }
 
@@ -80,16 +90,27 @@ public static class StoryValidator
             if (next is not null && !targets.ContainsKey(next)) error(at, $"[-> {next}]: no scene or ending '{next}' in this arc");
         }
 
-        // Required endings and the other Plynling.
-        if (arc.Endings.All(e => e.Key != "interrupted")) error(arc.Pos, "every arc needs an '## ending: interrupted' (its Plynling died mid-arc)");
-        if (h.Family is StoryFamily.Love or StoryFamily.Friendship && !targets.ContainsKey("loss"))
-            error(arc.Pos, $"a {h.Family.ToString().ToLowerInvariant()} arc needs a 'loss' scene or ending (the other Plynling died or left)");
+        // Size, triggers and the other Plynling.
+        var isShort = h.Size == StorySize.Short;
+        if (h.Trigger.Kind is TriggerKind.Relation or TriggerKind.Death or TriggerKind.Sick or TriggerKind.Break or TriggerKind.OldAge)
+            error(arc.Pos, $"trigger '{h.Trigger.Kind.ToString().ToLowerInvariant()}' is not supported yet (use draw, adoption or stage teen|adult)");
+        else if (h.Trigger is { Kind: TriggerKind.Stage, Arg: not ("teen" or "adult") })
+            error(arc.Pos, $"trigger 'stage {h.Trigger.Arg}' is not supported yet (stage teen or adult only)");
+        // {T}: the trait a moment reveals, said in the first scene of an arc brought by adoption or a stage.
+        var firstScene = arc.Scenes.Count > 0 ? SceneTexts(arc.Scenes[0]).ToHashSet() : new HashSet<(string, StoryPos, string)>();
+        var tOk = h.Trigger.Kind is TriggerKind.Adoption or TriggerKind.Stage;
+        foreach (var t in Texts(arc).Where(t => t.Text.Contains("{T}") && !(tOk && firstScene.Contains(t))))
+            error(t.Pos, $"{t.What}: {{T}} is only for the first scene of an arc whose trigger is adoption or stage");
         if (!hasOther && (h.Family is StoryFamily.Friendship or StoryFamily.Love or StoryFamily.Rivalry || h.Trigger.Kind is TriggerKind.Relation or TriggerKind.Death))
             error(arc.Pos, "this arc is about another Plynling: add 'other: <bond>' to the header");
 
         foreach (var scene in arc.Scenes)
         {
+            // The first scene is the arc's opener, found by position: retiring it would leave the arc without one.
+            if (scene.RetiredTo is not null && scene == arc.Scenes[0])
+                error(scene.Pos, $"scene '{scene.Key}' is the first scene of the arc: it cannot be retired");
             if (scene.RetiredTo is not null) { Target(scene.RetiredTo, scene.Pos); continue; }
+            if (scene.Handover) error(scene.Pos, $"scene '{scene.Key}': 'handover' is not supported yet");
             if (scene.Handover && !hasOther) error(scene.Pos, $"scene '{scene.Key}' is handed over, but the arc has no 'other'");
             var optionKeys = new HashSet<string>();
             foreach (var o in scene.Options)
@@ -126,8 +147,14 @@ public static class StoryValidator
                     error(e.Pos, $"[other remember {e.Key}]: only in a handed-over scene (mark the scene 'handover')");
                 if (WorstCase(Join(outcome.Prose)).Length > ProseCap) error(outcome.Pos, $"outcome prose over {ProseCap} characters at worst");
                 foreach (var e in outcome.Effects.Where(e => e.Kind is EffectKind.Epithet or EffectKind.Keepsake or EffectKind.Trait or EffectKind.Unlock))
-                    error(e.Pos, $"[{e.Kind.ToString().ToLowerInvariant()} {e.Key}]: marks (epithet, keepsake, trait, unlock) are given only in an ending");
+                    error(e.Pos, isShort
+                        ? $"[{e.Kind.ToString().ToLowerInvariant()} {e.Key}]: a short event gives no mark (epithet, keepsake, trait, unlock)"
+                        : $"[{e.Kind.ToString().ToLowerInvariant()} {e.Key}]: marks (epithet, keepsake, trait, unlock) are given only in an ending");
+                if (outcome.End && !isShort)
+                    error(outcome.Pos, "[end] closes a short event; a long event ends on an '## ending:'");
             }
+            if (live.Count(o => o.Mystery) > 1)
+                error(scene.Pos, $"scene '{scene.Key}': at most one [mystery] option per scene");
         }
 
         foreach (var ending in arc.Endings)
@@ -135,16 +162,18 @@ public static class StoryValidator
             if (WorstCase(Join(ending.Prose)).Length > ProseCap) error(ending.Pos, $"ending '{ending.Key}': prose over {ProseCap} characters at worst");
             foreach (var e in ending.Marks.Where(e => e.Other))
                 error(e.Pos, $"[other remember {e.Key}]: only in a handed-over scene, never in an ending");
-            var traits = ending.Marks.Where(e => e.Kind == EffectKind.Trait).ToList();
-            if (traits.Count > 1) error(traits[1].Pos, $"ending '{ending.Key}': one trait change at most");
-            foreach (var t in traits)
+            var marks = ending.Marks.Where(e => e.Kind is EffectKind.Epithet or EffectKind.Keepsake or EffectKind.Trait).ToList();
+            if (isShort && (marks.Count > 0 || ending.Marks.Any(e => e.Kind == EffectKind.Unlock)))
+                error(ending.Pos, $"ending '{ending.Key}': a short event gives no mark (epithet, keepsake, trait, unlock)");
+            else if (marks.Count > 1) error(marks[1].Pos, $"ending '{ending.Key}': one mark at most (epithet, keepsake or trait)");
+            foreach (var t in marks.Where(e => e.Kind == EffectKind.Trait))
             {
                 var from = PlynlingTraits.ByKey(t.Key);
+                if (h.Stages.Any(s => s is PlynlingStage.Baby or PlynlingStage.Teen))
+                    error(t.Pos, $"[trait {t.Key}]: a trait changes only in an adult or elder arc (stage: adult, elder)");
                 if (from is null) continue;   // reported with the other trait keys
                 if (t.To is null)
-                {
-                    if (from.Kind != TraitKind.Personality) error(t.Pos, $"[trait {t.Key}]: only a personality trait can be gained");
-                }
+                    error(t.Pos, $"[trait {t.Key}]: a trait change is a swap, [trait <from> -> <to>], never a gain");
                 else if (PlynlingTraits.ByKey(t.To) is { } to && (from.Kind != TraitKind.Personality || to.Kind != TraitKind.Personality || from.Group != to.Group || from.Key == to.Key))
                     error(t.Pos, $"[trait {t.Key} -> {t.To}]: a swap trades a personality trait for another of the same group");
             }
@@ -155,6 +184,8 @@ public static class StoryValidator
         {
             switch (c.Kind)
             {
+                case ConditionKind.Chain:
+                    error(c.Pos, "condition 'chain' is not supported yet (it can never hold)"); break;
                 case ConditionKind.Trait or ConditionKind.OtherTrait when PlynlingTraits.ByKey(c.Key) is null:
                     error(c.Pos, $"no trait '{c.Key}'"); break;
                 case ConditionKind.Memory when !memories.ContainsKey(c.Key):
@@ -229,7 +260,7 @@ public static class StoryValidator
                 error(pos, $"{what}: '{bad.Value}' is not a template token ({{A}}, {{B}}, {{T}}, {{a:…|…}}, {{b:…|…}}, {{p:…|…}})");
             if (!hasOther && Token.Matches(text).Any(m => m.Value == "{B}" || m.Value.StartsWith("{b:") || m.Value.StartsWith("{p:")))
                 error(pos, $"{what}: {{B}}, {{b:…}} and {{p:…}} name the other Plynling, but the arc has no 'other'");
-            var cap = what.EndsWith("title") ? TitleCap : what.StartsWith("public") ? PublicCap : int.MaxValue;
+            var cap = what.EndsWith("title") ? TitleCap : int.MaxValue;
             if (WorstCase(text).Length > cap) error(pos, $"{what} over {cap} characters at worst");
         }
     }
@@ -284,7 +315,6 @@ public static class StoryValidator
     public static IEnumerable<(string Text, StoryPos Pos, string What)> Texts(StoryArc arc)
     {
         yield return (arc.Header.Title, arc.Pos, "arc title");
-        yield return (arc.Header.Public, arc.Pos, "public line");
         foreach (var m in arc.Memories) yield return (m.Wording, m.Pos, $"memory '{m.Key}'");
         foreach (var e in arc.Epithets) yield return (e.Title, e.Pos, $"epithet '{e.Key}' title");
         foreach (var k in arc.Keepsakes)
@@ -293,22 +323,24 @@ public static class StoryValidator
             yield return (k.Story, k.Pos, $"keepsake '{k.Key}'");
         }
         foreach (var s in arc.Scenes)
-        {
-            yield return (s.Title, s.Pos, $"scene '{s.Key}' title");
-            if (s.Public is not null) yield return (s.Public, s.Pos, $"public line of '{s.Key}'");
-            foreach (var l in s.Prose.SelectMany(p => p.Lines)) yield return (l.Text, l.Pos, "prose");
-            foreach (var o in s.Options)
-            {
-                yield return (o.Label, o.Pos, $"option '{o.Key}' label");
-                if (o.LockText is not null) yield return (o.LockText, o.Pos, $"option '{o.Key}' lock");
-                if (o.Public is not null) yield return (o.Public, o.Pos, $"public line of '{o.Key}'");
-            }
-            foreach (var l in Outcomes(s).SelectMany(o => o.Prose).SelectMany(p => p.Lines)) yield return (l.Text, l.Pos, "prose");
-        }
+            foreach (var t in SceneTexts(s)) yield return t;
         foreach (var e in arc.Endings)
         {
             yield return (e.Title, e.Pos, $"ending '{e.Key}' title");
             foreach (var l in e.Prose.SelectMany(p => p.Lines)) yield return (l.Text, l.Pos, "prose");
         }
+    }
+
+    /// <summary>The texts of one scene: its title, prose, options and outcomes.</summary>
+    public static IEnumerable<(string Text, StoryPos Pos, string What)> SceneTexts(StoryScene s)
+    {
+        yield return (s.Title, s.Pos, $"scene '{s.Key}' title");
+        foreach (var l in s.Prose.SelectMany(p => p.Lines)) yield return (l.Text, l.Pos, "prose");
+        foreach (var o in s.Options)
+        {
+            yield return (o.Label, o.Pos, $"option '{o.Key}' label");
+            if (o.LockText is not null) yield return (o.LockText, o.Pos, $"option '{o.Key}' lock");
+        }
+        foreach (var l in Outcomes(s).SelectMany(o => o.Prose).SelectMany(p => p.Lines)) yield return (l.Text, l.Pos, "prose");
     }
 }

@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using ProjectSYNCS.Helpers;
+using ProjectSYNCS.Models;
 
 /// <summary>
 /// The path report the owner reads before a playthrough, in French: which endings can be reached and
@@ -14,8 +15,11 @@ public static class StoryReport
     public static string Write(StoryArc arc, WalkResult walk)
     {
         var sb = new StringBuilder();
+        // The arc as the engine compiles it, to read each option's stakes line as the card renders it.
+        var defs = StoryCompiler.Compile(new StoryLoad([arc], [], [])).ToDictionary(d => d.Key);
         var liveScenes = arc.Scenes.Count(s => s.RetiredTo is null);
-        var endings = arc.Endings.Where(e => e.Key != "interrupted").ToList();
+        var endings = arc.Endings.ToList();
+        if (walk.Paths.Any(p => p.Ending.Key == StoryWalker.EndKey && endings.All(e => e.Key != StoryWalker.EndKey))) endings.Add(walk.Paths.First(p => p.Ending.Key == StoryWalker.EndKey).Ending);   // [end] closes a short event
         sb.AppendLine($"{arc.Header.Title} ({arc.Key}) — {liveScenes} scènes, {endings.Count} fins, {walk.Paths.Count} chemins");
         if (walk.Problems.Count > 0)
         {
@@ -32,14 +36,13 @@ public static class StoryReport
             var to = walk.Paths.Where(p => p.Ending.Key == e.Key).ToList();
             if (to.Count == 0) { sb.AppendLine($"  ⚠ {e.Key.PadRight(width)}0 chemin — jamais atteinte"); continue; }
             var line = $"  {e.Key.PadRight(width)}{Count(to.Count, "chemin")}   le plus court : {Count(to.Min(p => p.Steps.Count), "étape")}";
-            if (to.All(p => p.FromLoss)) line += "   après la perte";
             if (Only(to) is { } via) line += "   seulement via " + via;
             sb.AppendLine(line);
         }
 
         sb.AppendLine();
         sb.AppendLine("Décidé seul (sans le propriétaire)");
-        var alone = walk.Paths.Where(p => p.Alone && !p.FromLoss).OrderBy(p => p.Steps.Count).FirstOrDefault();
+        var alone = walk.Paths.Where(p => p.Alone).OrderBy(p => p.Steps.Count).FirstOrDefault();
         sb.AppendLine(alone is null
             ? "  ⚠ aucun chemin ne se décide seul"
             : $"  {alone.Ending.Key} : {string.Join(" → ", alone.Steps.Select(s => s.Option is null ? s.Scene.Key : $"{s.Scene.Key}/{s.Option.Key}"))} (stress 0) ✓");
@@ -55,7 +58,7 @@ public static class StoryReport
         {
             var path = walk.Paths[i];
             sb.AppendLine();
-            sb.AppendLine($"Chemin {i + 1} / {walk.Paths.Count} → {path.Ending.Key}{(path.FromLoss ? " (après la perte)" : "")}");
+            sb.AppendLine($"Chemin {i + 1} / {walk.Paths.Count} → {path.Ending.Key}");
             for (var k = 0; k < path.Steps.Count; k++)
             {
                 var step = path.Steps[k];
@@ -67,7 +70,8 @@ public static class StoryReport
                     if (o.Needs.Count > 0) tags.Add("🔒 " + Lock(o));
                     if (o.OwnerOnly) tags.Add("propriétaire seulement");
                     tags.AddRange(o.StressCosts.Select(kv => $"stress {kv.Key} +{kv.Value}"));
-                    sb.AppendLine($"  {k + 1}. {Variants(step.Scene.Title)} — « {Variants(o.Label)} »{(tags.Count > 0 ? "   " + string.Join(" · ", tags) : "")}");
+                    sb.AppendLine($"  {k + 1}. {Variants(step.Scene.Title)} — « {Variants(o.Label)} »{(o.Mystery ? " (mystère)" : "")}{(tags.Count > 0 ? "   " + string.Join(" · ", tags) : "")}");
+                    if (Stakes(arc, defs, step.Scene, o) is { Length: > 0 } stakes) sb.AppendLine("       " + stakes);
                 }
                 // What it read before choosing, then what came of the choice.
                 Prose(sb, step.Scene.Prose, "     ");
@@ -79,6 +83,17 @@ public static class StoryReport
             sb.AppendLine("  Mémoires : " + Memories(arc, path));
         }
         return sb.ToString();
+    }
+
+    // The line under the option on its card, for a neutral Plynling: no trait, no flag, no memory, a fixed date.
+    private static string Stakes(StoryArc arc, Dictionary<string, EventDef> defs, StoryScene scene, StoryOption o)
+    {
+        if (!defs.TryGetValue(StoryCompiler.Key(arc.Key, scene.Key), out var def) || def.Options.FirstOrDefault(x => x.Key == o.Key) is not { } option) return "";
+        var self = new Plynling { Gender = PlynlingGender.Female, Passion = PlynlingPassion.Cooking };
+        var none = new List<TraitInfo>();
+        var ctx = new EventContext(self, none, PlynlingStats.Compute(self, none), arc.Header.Stages.FirstOrDefault(),
+            Story: StoryKnowledge.Empty(new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero)));
+        return PlynlingEventStakes.Line(option, def, ctx, PlynlingGender.Female, "l'autre");
     }
 
     private static string Count(int n, string word) => $"{n} {word}{(n > 1 ? "s" : "")}";

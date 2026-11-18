@@ -272,12 +272,16 @@ public partial class PlynlingService
     // The keys it holds, stored first, then any added in this unit of work and not saved yet: two
     // mental breaks decided in one sweep must see each other's coping trait, or the second can add the
     // same one again (the unique index refuses the save, and every later sweep makes the same rolls).
+    // One removed in this unit (a story's trait swap) is no longer held.
     private async Task<List<string>> HeldTraitKeysAsync(int plynlingId)
     {
         var keys = await _db_context.PlynlingTraits.Where(t => t.PlynlingId == plynlingId).OrderBy(t => t.Id).Select(t => t.Key).ToListAsync();
         foreach (var entry in _db_context.ChangeTracker.Entries<PlynlingTrait>())
-            if (entry.State == EntityState.Added && entry.Entity.PlynlingId == plynlingId && !keys.Contains(entry.Entity.Key))
-                keys.Add(entry.Entity.Key);
+        {
+            if (entry.Entity.PlynlingId != plynlingId) continue;
+            if (entry.State == EntityState.Added && !keys.Contains(entry.Entity.Key)) keys.Add(entry.Entity.Key);
+            else if (entry.State == EntityState.Deleted) keys.Remove(entry.Entity.Key);
+        }
         return keys;
     }
 

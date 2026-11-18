@@ -31,7 +31,7 @@ public class PlynlingPersonalityHandler : InteractionModuleBase<SocketInteractio
             return;
         }
         var traits = await _plynlings.GetTraitsAsync(plynling);
-        await FollowupAsync(embed: PlynlingPersonality.DetailEmbed(plynling, traits), ephemeral: true,
+        await FollowupAsync(embed: PlynlingPersonality.DetailEmbed(plynling, traits, await _plynlings.GetStoryRecordAsync(plynling)), ephemeral: true,
             allowedMentions: AllowedMentions.None);
     }
 }

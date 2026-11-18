@@ -16,7 +16,7 @@ public static partial class StoryParser
     // start « Silence : … » (a space before the colon, a capital), which stays prose.
     private static readonly Regex LooksLikeField = new(@"^([a-z_]+\s*:|[A-Za-z_]+:|[a-z_-]+$|retired\s*->)", RegexOptions.Compiled);
 
-    private static readonly HashSet<string> AttributeWords = new() { "needs", "roll", "lean", "owner-only", "secret", "public", "retired" };
+    private static readonly HashSet<string> AttributeWords = new() { "needs", "roll", "lean", "owner-only", "secret", "mystery", "public", "retired" };
 
     // "[stress rowdy 10]" is a cost (an attribute); "[stress 10]" is an effect.
     private static bool IsAttribute(IReadOnlyList<StoryWord> words) =>
@@ -27,9 +27,9 @@ public static partial class StoryParser
         StoryPos At(Src l) => new(file, l.No);
         void Error(Src l, string message) => errors.Add(new StoryError(At(l), message));
 
-        string? title = null, publicLine = null, retired = null;
+        string? title = null, retired = null;
         StoryPace? pace = null;
-        bool bump = false, handover = false;
+        var handover = false;
         var seen = new HashSet<string>();
         var i = 0;
         for (; i < body.Count; i++)
@@ -41,14 +41,14 @@ public static partial class StoryParser
             var field = t is "bump" or "handover" ? t : rm.Success ? "retired" : fm.Success ? fm.Groups[1].Value : null;
             if (field is not ("bump" or "handover" or "retired" or "title" or "pace" or "public")) break;
             if (!seen.Add(field)) { Error(body[i], $"'{field}' given twice"); continue; }
-            if (t == "bump") { bump = true; continue; }
+            if (t == "bump") { Error(body[i], "'bump' was removed from the format; delete the line"); continue; }
             if (t == "handover") { handover = true; continue; }
             if (rm.Success) { retired = rm.Groups[1].Value; continue; }
             var value = fm.Groups[2].Value.Trim();
             switch (fm.Groups[1].Value)
             {
                 case "title": title = NonEmpty(body[i], "title", value, Error); break;
-                case "public": publicLine = NonEmpty(body[i], "public", value, Error); break;
+                case "public": Error(body[i], "'public:' was removed from the format; delete the line"); break;
                 case "pace":
                     pace = value switch
                     {
@@ -67,7 +67,7 @@ public static partial class StoryParser
         if (retired is not null)
         {
             foreach (var l in rest.Where(l => l.Text.Length > 0)) Error(l, "a retired scene holds only its 'retired -> <key>' line");
-            return new StoryScene(key, title ?? "", pace ?? new StoryPace(PaceKind.NextDay, 0), publicLine, bump, handover, retired,
+            return new StoryScene(key, title ?? "", pace ?? new StoryPace(PaceKind.NextDay, 0), handover, retired,
                 Array.Empty<StoryParagraph>(), Array.Empty<StoryOption>(), null, At(head));
         }
         if (title is null) Error(head, $"scene '{key}' has no 'title:'");
@@ -76,17 +76,17 @@ public static partial class StoryParser
         // The scene's own prose runs until the first option.
         var firstOption = rest.FindIndex(l => l.Text.StartsWith('*'));
         var proseLines = firstOption < 0 ? rest : rest.Take(firstOption).ToList();
-        var (prose, effects, next) = ParseBlock(proseLines, file, errors, allowNext: true);
+        var (prose, effects, next, ends) = ParseBlock(proseLines, file, errors, allowNext: true);
         StoryOutcome? narration = null;
         var options = new List<StoryOption>();
         if (firstOption < 0)
         {
-            if (next is null) Error(head, $"scene '{key}' has no options and no final [-> …]");
-            else narration = new StoryOutcome(Array.Empty<StoryParagraph>(), effects, next, At(proseLines.Last(l => l.Text.Length > 0)));
+            if (next is null && !ends) Error(head, $"scene '{key}' has no options and no final [-> …]");
+            else narration = new StoryOutcome(Array.Empty<StoryParagraph>(), effects, next, ends, At(proseLines.Last(l => l.Text.Length > 0)));
         }
         else
         {
-            if (effects.Count > 0 || next is not null)
+            if (effects.Count > 0 || next is not null || ends)
                 Error(rest[firstOption], "effects and [-> …] belong to an option or an ending, not to the scene's text");
             var chunks = new List<List<Src>>();
             foreach (var l in rest.Skip(firstOption))
@@ -95,7 +95,7 @@ public static partial class StoryParser
             foreach (var chunk in chunks)
                 if (ParseOption(chunk, file, errors) is { } o) options.Add(o);
         }
-        return new StoryScene(key, title ?? "", pace ?? new StoryPace(PaceKind.NextDay, 0), publicLine, bump, handover, null,
+        return new StoryScene(key, title ?? "", pace ?? new StoryPace(PaceKind.NextDay, 0), handover, null,
             prose, options, narration, At(head));
     }
 
@@ -115,11 +115,11 @@ public static partial class StoryParser
         if (label.Length == 0) Error(head, $"option '{key}' has no label");
 
         var needs = new List<StoryCondition>();
-        string? lockText = null, publicLine = null;
+        string? lockText = null;
         StoryRoll? roll = null;
         var lean = new Dictionary<AiAxis, int>();
         var stress = new Dictionary<string, int>();
-        bool ownerOnly = false, secret = false, retired = false;
+        bool ownerOnly = false, secret = false, retired = false, mystery = false;
 
         void Attribute(Src l, string tag)
         {
@@ -157,10 +157,8 @@ public static partial class StoryParser
                     }
                     else Bad("write [stress <trait> n]");
                     break;
-                case "public":
-                    if (w.Count == 2 && w[1].Quoted && w[1].Text.Length > 0) publicLine = w[1].Text;
-                    else Bad("write [public \"…\"]");
-                    break;
+                case "public": Bad("[public \"…\"] was removed from the format; delete it"); break;
+                case "mystery" when t.Count == 1: mystery = true; break;
                 case "owner-only" when t.Count == 1: ownerOnly = true; break;
                 case "secret" when t.Count == 1: secret = true; break;
                 case "retired" when t.Count == 1: retired = true; break;
@@ -171,7 +169,7 @@ public static partial class StoryParser
         foreach (var tag in parts.Trailing)
         {
             if (IsAttribute(StoryTags.Words(tag))) Attribute(head, tag);
-            else Error(head, $"[{tag}]: only attributes go on the option line (needs, roll, lean, stress, owner-only, secret, public, retired)");
+            else Error(head, $"[{tag}]: only attributes go on the option line (needs, roll, lean, stress, owner-only, secret, mystery, retired)");
         }
 
         // Attribute lines, then the outcome: plain, or split by '? success' / '? failure'.
@@ -196,10 +194,10 @@ public static partial class StoryParser
 
         StoryOutcome? Outcome(List<Src> lines, Src fallback)
         {
-            var (prose, effects, next) = ParseBlock(lines, file, errors, allowNext: true);
+            var (prose, effects, next, ends) = ParseBlock(lines, file, errors, allowNext: true);
             var start = lines.FirstOrDefault(l => l.Text.Length > 0) ?? fallback;
-            if (next is null && !retired) Error(start, $"option '{key}': this outcome has no [-> …]");
-            return new StoryOutcome(prose, effects, next, At(start));
+            if (next is null && !ends && !retired) Error(start, $"option '{key}': this outcome has no [-> …] or [end]");
+            return new StoryOutcome(prose, effects, next, ends, At(start));
         }
 
         StoryOutcome? plain = null, onSuccess = null, onFailure = null;
@@ -219,7 +217,7 @@ public static partial class StoryParser
             if (success >= 0) onSuccess = Outcome(Part(success), rest[success]);
             if (failure >= 0) onFailure = Outcome(Part(failure), rest[failure]);
         }
-        return new StoryOption(key, label, needs, lockText, secret, roll, lean, stress, ownerOnly, retired, publicLine,
+        return new StoryOption(key, label, needs, lockText, secret, roll, lean, stress, ownerOnly, retired, mystery,
             plain, onSuccess, onFailure, At(head));
     }
 
@@ -235,18 +233,19 @@ public static partial class StoryParser
             title = NonEmpty(body[i], "title", fm.Groups[2].Value.Trim(), (l, m) => errors.Add(new(new(file, l.No), m)));
         }
         if (title is null) errors.Add(new(new(file, head.No), $"ending '{key}' has no 'title:'"));
-        var (prose, marks, next) = ParseBlock(body.Skip(i).ToList(), file, errors, allowNext: false);
+        var (prose, marks, _, _) = ParseBlock(body.Skip(i).ToList(), file, errors, allowNext: false);
         return new StoryEnding(key, title ?? "", prose, marks, new(file, head.No));
     }
 
     // Prose then tag-only lines: paragraphs (a blank line closes one), effects, and the [-> …].
-    private static (List<StoryParagraph> Prose, List<StoryEffect> Effects, string? Next) ParseBlock(List<Src> lines, string file,
+    private static (List<StoryParagraph> Prose, List<StoryEffect> Effects, string? Next, bool End) ParseBlock(List<Src> lines, string file,
         List<StoryError> errors, bool allowNext)
     {
         var paragraphs = new List<StoryParagraph>();
         var current = new List<StoryLine>();
         var effects = new List<StoryEffect>();
         string? next = null;
+        var end = false;
         var inEffects = false;
         void Close() { if (current.Count > 0) { paragraphs.Add(new StoryParagraph(current)); current = new List<StoryLine>(); } }
 
@@ -264,11 +263,19 @@ public static partial class StoryParser
                 foreach (var tag in p.Leading)
                 {
                     var w = StoryTags.Words(tag);
-                    if (w.Count > 0 && w[0].Text == "->")
+                    if (w.Count == 1 && w[0].Text == "end")
+                    {
+                        if (!allowNext) Error("[end]: an ending already ends the event");
+                        else if (end) Error("[end] given twice");
+                        else if (next is not null) Error("[end] and [-> …] in one outcome: an outcome either goes on or ends");
+                        else end = true;
+                    }
+                    else if (w.Count > 0 && w[0].Text == "->")
                     {
                         if (!allowNext) Error($"[{tag}]: an ending leads nowhere");
                         else if (w.Count != 2 || !StoryVocabulary.IsKey(w[1].Text) || w[1].Text.Contains('.')) Error($"[{tag}]: write [-> <scene or ending>]");
                         else if (next is not null) Error($"[{tag}]: one [-> …] per outcome");
+                        else if (end) Error("[end] and [-> …] in one outcome: an outcome either goes on or ends");
                         else next = w[1].Text;
                     }
                     else if (IsAttribute(w)) Error($"[{tag}]: an option's attributes go before its text");
@@ -290,6 +297,6 @@ public static partial class StoryParser
             current.Add(new StoryLine(p.Text, when, at));
         }
         Close();
-        return (paragraphs, effects, next);
+        return (paragraphs, effects, next, end);
     }
 }

@@ -19,13 +19,20 @@ public partial class PlynlingService
 {
     // With `other`, the context also knows the pair: their relation, hidden compatibility, whether
     // either is taken and whether the visit rules would let them couple, and the other's stats (for a
-    // duel).
-    public async Task<EventContext> GetEventContextAsync(Plynling p, DateTimeOffset now, Plynling? other = null)
+    // duel) and traits. `inst` is the event being decided or shown: a story reads its run's flags (none
+    // for a draw). Plain reads, no settle.
+    public async Task<EventContext> GetEventContextAsync(Plynling p, DateTimeOffset now, Plynling? other = null, PlynlingEventInstance? inst = null)
     {
         var traits = await GetTraitsAsync(p);
-        var ctx = new EventContext(p, traits, PlynlingStats.Compute(p, traits), PlynlingLife.Stage(p, now));
+        var ctx = new EventContext(p, traits, PlynlingStats.Compute(p, traits), PlynlingLife.Stage(p, now),
+            Story: await StoryKnowledgeAsync(p, inst, now));
         if (other is null) return ctx;
-        return ctx with { Other = await TargetInfoAsync(p, other), OtherStats = PlynlingStats.Compute(other, await GetTraitsAsync(other)) };
+        var otherTraits = await GetTraitsAsync(other);
+        return ctx with
+        {
+            Other = await TargetInfoAsync(p, other), OtherStats = PlynlingStats.Compute(other, otherTraits),
+            OtherTraitKeys = otherTraits.Select(t => t.Key).ToList(),
+        };
     }
 
     // Who `other` is to `p`: their relation, hidden compatibility, whether either is taken, and whether
@@ -111,7 +118,7 @@ public partial class PlynlingService
             return new(EventPickOutcome.Gone);
         }
 
-        var ctx = await GetEventContextAsync(p, now, target);
+        var ctx = await GetEventContextAsync(p, now, target, inst);
         var option = def.Options.FirstOrDefault(o => o.Key == optionKey);
         if (option is null || !PlynlingEventEngine.Visible(option, ctx)) return new(EventPickOutcome.NotAvailable);
 
@@ -163,9 +170,14 @@ public partial class PlynlingService
         if (p.LastPulseDay != day && now >= PlynlingEventEngine.PulseAt(p.Id, day))
         {
             p.LastPulseDay = day;    // drawn or skipped, today's pulse is spent
-            var pendingPulses = open.Count(i => i.ResolvedAt is null && i.CancelledAt is null && i.AvailableAt <= now
-                                                && PlynlingEvents.ByKey(i.EventKey)?.Type == EventType.Pulse);
-            if (pendingPulses < PlynlingEventEngine.MaxPendingPulses)
+            // What still waits, with what this unit queued (a long step decided alone above queues its next).
+            var waitingNow = open.Concat(_db_context.ChangeTracker.Entries<PlynlingEventInstance>()
+                    .Where(e => e.State == EntityState.Added && e.Entity.PlynlingId == p.Id).Select(e => e.Entity))
+                .Where(i => i.ResolvedAt is null && i.CancelledAt is null).ToList();
+            var pendingPulses = waitingNow.Count(i => i.AvailableAt <= now && PlynlingEvents.ByKey(i.EventKey)?.Type == EventType.Pulse);
+            // A long story running is the day's event: no pulse beside it, the day spent all the same.
+            if (pendingPulses < PlynlingEventEngine.MaxPendingPulses
+                && !PlynlingEventEngine.BlocksPulse(waitingNow.Select(i => PlynlingEvents.ByKey(i.EventKey)).OfType<EventDef>()))
             {
                 var ctx = await GetEventContextAsync(p, now);
                 var targets = await TargetCandidatesAsync(p, now);
@@ -174,7 +186,7 @@ public partial class PlynlingService
                     .OrderByDescending(i => i.Id).Take(PlynlingEventEngine.RecentWindow)
                     .Select(i => i.EventKey).ToListAsync();
                 // Never the same event twice in the queue: what still waits is out of the draw.
-                var waiting = open.Where(i => i.ResolvedAt is null && i.CancelledAt is null).Select(i => i.EventKey).ToHashSet();
+                var waiting = waitingNow.Select(i => i.EventKey).ToHashSet();
                 var defs = PlynlingEvents.All.Where(d => !waiting.Contains(d.Key));
                 // Who each candidate is to it, so a social event is drawn only when a candidate meets
                 // its target condition (a declaration needs someone it could couple with).
@@ -184,7 +196,9 @@ public partial class PlynlingService
                         infos[id] = await TargetInfoAsync(p, t);
                 IReadOnlyList<int> CandidatesFor(EventDef d) =>
                     targets[d.Target].Where(id => infos.TryGetValue(id, out var info) && (d.TargetCondition?.Invoke(info) ?? true)).ToList();
-                if (PlynlingEventEngine.PickPulse(p.Id, day, defs, ctx, recent, d => CandidatesFor(d).Count > 0) is { } def)
+                // A long story starts only on a day when nothing waits at all, a follow-up not yet due included.
+                if (PlynlingEventEngine.PickPulse(p.Id, day, defs, ctx, recent, d => CandidatesFor(d).Count > 0,
+                        allowLong: waitingNow.Count == 0) is { } def)
                 {
                     var targetId = def.Target == TargetKind.None ? null : PlynlingEventEngine.PickTarget(p.Id, day, CandidatesFor(def));
                     var inst = await CreateEventAsync(p, def, targetId, now);
@@ -258,7 +272,7 @@ public partial class PlynlingService
     public async Task ResolveAloneAsync(Plynling p, PlynlingEventInstance inst, DateTimeOffset now)
     {
         var def = PlynlingEvents.ByKey(inst.EventKey)!;
-        var ctx = await GetEventContextAsync(p, now, await TargetOfAsync(inst, now));
+        var ctx = await GetEventContextAsync(p, now, await TargetOfAsync(inst, now), inst);
         var option = def.Type == EventType.Response
             ? PlynlingEventEngine.DecideResponse(def, ctx, inst.Id)
             : PlynlingEventEngine.DecideAlone(def, ctx, inst.Id);
@@ -313,9 +327,11 @@ public partial class PlynlingService
             success = PlynlingEventEngine.Succeeds(inst.Id, inst.ChancePercent.Value);
             inst.ChallengeSucceeded = success;
         }
-        foreach (var effect in success ? option.OnSuccess : option.OnFailure)
+        var applied = (success ? option.OnSuccess : option.OnFailure).Where(e => PlynlingEventEngine.Applies(e, def, decidedAlone)).ToList();
+        // A story run's flags after this step: carried to its next scene, or kept by its ending.
+        var flags = StoryRuns.WriteFlags(StoryRuns.NextFlags(inst.Flags, applied));
+        foreach (var effect in applied)
         {
-            if (!PlynlingEventEngine.Applies(effect, def, decidedAlone)) continue;
             switch (effect)
             {
                 case GrowStat g:
@@ -363,6 +379,26 @@ public partial class PlynlingService
                     later.AvailableAt = PlynlingEventEngine.FollowUpAt(inst.Id, f, now);
                     later.ExpiresAt = later.AvailableAt + PlynlingEventEngine.Lifetime;
                     later.ParentInstanceId = inst.Id;
+                    if (next.Story is not null) later.Flags = flags;
+                    break;
+                case EndStory end:
+                    inst.EndingKey = end.EndingKey;
+                    inst.Flags = flags;
+                    break;
+                case Remember r:
+                    await RememberAsync(p, inst, r.MemoryKey, now);
+                    break;
+                case Forget f:
+                    await ForgetAsync(p, f.MemoryKey);
+                    break;
+                case RevealMemory rv:
+                    await RevealAsync(p, rv.MemoryKey, now);
+                    break;
+                case GiveMark mark:
+                    await GiveMarkAsync(p, inst, mark, now);
+                    break;
+                case SwapTrait swap:
+                    await SwapTraitAsync(p, inst, swap, now);
                     break;
                 case AskTarget ask when target is { DiedAt: null, FrozenAt: null } && PlynlingEvents.ByKey(ask.ResponseKey) is { } reply:
                     // Queued on the other Plynling, pointing back at this one; its owner answers.
@@ -443,7 +479,9 @@ public partial class PlynlingService
         var reply = replies.Any(i => i.ResolvedAt is not null) ? ReplyState.Answered
             : replies.Any(i => i.CancelledAt is null) ? ReplyState.Waiting
             : ReplyState.Lost;
-        return PlynlingEventStory.Build(inst, EventCast.Of(self, now), target is null ? null : EventCast.Of(target, now), parentTitle, reply);
+        // What its story prose reads: the run's stored flags, the rest as the Plynling stands now.
+        var ctx = await GetEventContextAsync(self, now, target, inst);
+        return PlynlingEventStory.Build(inst, EventCast.Of(self, now), target is null ? null : EventCast.Of(target, now), parentTitle, reply, ctx);
     }
 
     // /debug event only: any other living Plynling of the guild, for a forced social event.

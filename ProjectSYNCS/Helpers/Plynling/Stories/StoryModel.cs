@@ -23,6 +23,9 @@ public enum TriggerKind { Adoption, Stage, Draw, Relation, Death, Sick, Break, O
 // Arg: the stage for Stage, the bond for Relation and Death, the level for Break.
 public sealed record StoryTrigger(TriggerKind Kind, string? Arg);
 
+// short: a one- or two-scene event; long: an arc with endings (and so once per life).
+public enum StorySize { Short, Long }
+
 public enum PaceKind { NextDay, Now, Hours }
 
 // Hours is 1..48 when Kind is Hours, 0 otherwise.
@@ -50,16 +53,16 @@ public sealed record StoryParagraph(IReadOnlyList<StoryLine> Lines);
 
 public sealed record StoryRoll(PlynlingStat Stat, int Difficulty);
 
-// Next is the scene or ending it leads to; null only on a parse error.
-public sealed record StoryOutcome(IReadOnlyList<StoryParagraph> Prose, IReadOnlyList<StoryEffect> Effects, string? Next, StoryPos Pos);
+// Next is the scene or ending it leads to; End is [end] (the event stops here, Next is null). Both null/false only on a parse error.
+public sealed record StoryOutcome(IReadOnlyList<StoryParagraph> Prose, IReadOnlyList<StoryEffect> Effects, string? Next, bool End, StoryPos Pos);
 
 // A plain option has Outcome; an option with a Roll has Success and Failure instead.
 public sealed record StoryOption(string Key, string Label, IReadOnlyList<StoryCondition> Needs, string? LockText, bool Secret,
     StoryRoll? Roll, IReadOnlyDictionary<AiAxis, int> Lean, IReadOnlyDictionary<string, int> StressCosts, bool OwnerOnly,
-    bool Retired, string? Public, StoryOutcome? Outcome, StoryOutcome? Success, StoryOutcome? Failure, StoryPos Pos);
+    bool Retired, bool Mystery, StoryOutcome? Outcome, StoryOutcome? Success, StoryOutcome? Failure, StoryPos Pos);
 
 // A retired scene carries only RetiredTo. A narration scene has no options and a Narration outcome.
-public sealed record StoryScene(string Key, string Title, StoryPace Pace, string? Public, bool Bump, bool Handover,
+public sealed record StoryScene(string Key, string Title, StoryPace Pace, bool Handover,
     string? RetiredTo, IReadOnlyList<StoryParagraph> Prose, IReadOnlyList<StoryOption> Options, StoryOutcome? Narration, StoryPos Pos);
 
 public sealed record StoryEnding(string Key, string Title, IReadOnlyList<StoryParagraph> Prose, IReadOnlyList<StoryEffect> Marks, StoryPos Pos);
@@ -74,7 +77,7 @@ public sealed record StoryWeightBonus(int Bonus, IReadOnlyList<StoryCondition> W
 
 public sealed record StoryHeader(string Title, StoryFamily Family, IReadOnlyList<PlynlingStage> Stages, StoryTrigger Trigger,
     TimeSpan? Shelf, int Weight, IReadOnlyList<StoryWeightBonus> WeightBonuses, IReadOnlyList<StoryCondition> Requires,
-    PlynlingBond? Other, string Public);
+    PlynlingBond? Other, StorySize Size, bool Once, TimeSpan? Cooldown, bool Locked);
 
 /// <summary>One arc. It opens on <c>Scenes[0]</c>.</summary>
 public sealed record StoryArc(string Key, StoryPos Pos, StoryHeader Header, IReadOnlyList<MemoryDecl> Memories,

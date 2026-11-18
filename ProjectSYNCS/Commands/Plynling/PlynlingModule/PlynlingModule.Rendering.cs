@@ -45,7 +45,8 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
             pantry: await plynlings.GetPantryAsync(plynling),
             traits: await plynlings.GetTraitsAsync(plynling),
             pendingEvents: await plynlings.CountPendingEventsAsync(plynling, now),
-            bathSoap: await plynlings.GetBathSoapAsync(plynling, now));
+            bathSoap: await plynlings.GetBathSoapAsync(plynling, now),
+            title: await plynlings.GetLatestTitleAsync(plynling));
 
 
     /// <summary>
@@ -113,7 +114,7 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
     public static MessageComponent BuildCard(
         Plynling plynling, DateTimeOffset now, string? lastAction, string? lastActionImage = null, string? partnerName = null,
         IReadOnlyDictionary<PlynlingFood, int>? pantry = null, IReadOnlyList<TraitInfo>? traits = null, int pendingEvents = 0,
-        int bathSoap = 0)
+        int bathSoap = 0, string? title = null)
     {
         var info = PlynlingCatalog.Info(plynling.Species);
         var alive = plynling.DiedAt is null;
@@ -133,7 +134,7 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
                 .WithAccessory(new ThumbnailBuilder()
                     .WithMedia(new UnfurledMediaItemProperties(picture))
                     .WithDescription(info.Name))
-                .AddComponent(new TextDisplayBuilder(PlynlingCardUi.Heading(plynling, now, partnerName))))
+                .AddComponent(new TextDisplayBuilder(PlynlingCardUi.Heading(plynling, now, partnerName, title))))
             .AddComponent(new SeparatorBuilder())
             .AddComponent(new TextDisplayBuilder(PlynlingCardUi.Status(plynling, now)));
         // Its personality under the status: the title, the trait emojis, then its stress level and its

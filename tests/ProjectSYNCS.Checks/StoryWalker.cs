@@ -5,7 +5,7 @@ using ProjectSYNCS.Models;
 public sealed record WalkStep(StoryScene Scene, StoryOption? Option, bool? Success);
 
 public sealed record WalkPath(IReadOnlyList<WalkStep> Steps, StoryEnding Ending, bool Alone, int Cailloux, int TraitChanges,
-    IReadOnlyDictionary<string, int> StressCosts, bool FromLoss);
+    IReadOnlyDictionary<string, int> StressCosts);
 
 public sealed record WalkResult(IReadOnlyList<WalkPath> Paths, IReadOnlyList<string> Problems,
     IReadOnlyList<(string Profile, IReadOnlyDictionary<string, double> EndingShare)> InCharacter);
@@ -21,6 +21,11 @@ public static class StoryWalker
     public const int MaxPaths = 20_000;
     private const string Neutral = "neutre";
 
+    /// <summary>The key of the pseudo-ending an <c>[end]</c> outcome reaches (a short event has no ending section).</summary>
+    public const string EndKey = "end";
+
+    private static StoryEnding EndEnding(StoryOutcome o) => new(EndKey, "(fin de l'événement)", Array.Empty<StoryParagraph>(), Array.Empty<StoryEffect>(), o.Pos);
+
     public static WalkResult Walk(StoryArc arc, IReadOnlyList<StoryArc> all)
     {
         var problems = new List<string>();
@@ -28,21 +33,25 @@ public static class StoryWalker
         var endings = arc.Endings.GroupBy(e => e.Key).ToDictionary(g => g.Key, g => g.First());
         var paths = new List<WalkPath>();
         var reached = new HashSet<string>();
-        var reachedFromLoss = new HashSet<string>();
         var tooMany = false;
 
-        void Visit(string key, HashSet<string> flags, List<WalkStep> steps, HashSet<string> onPath, bool fromLoss)
+        void Add(WalkPath p)
+        {
+            paths.Add(p);
+            if (paths.Count > MaxPaths) { tooMany = true; problems.Add($"too many paths (over {MaxPaths})"); }
+        }
+
+        void Visit(string key, HashSet<string> flags, List<WalkStep> steps, HashSet<string> onPath)
         {
             if (tooMany) return;
-            (fromLoss ? reachedFromLoss : reached).Add(key);
+            reached.Add(key);
             if (endings.TryGetValue(key, out var ending))
             {
-                paths.Add(MakePath(steps, ending, fromLoss));
-                if (paths.Count > MaxPaths) { tooMany = true; problems.Add($"too many paths (over {MaxPaths})"); }
+                Add(MakePath(steps, ending));
                 return;
             }
             if (!scenes.TryGetValue(key, out var scene)) return;   // a dangling [-> …], reported by the validator
-            if (scene.RetiredTo is not null) { Visit(scene.RetiredTo, flags, steps, onPath, fromLoss); return; }
+            if (scene.RetiredTo is not null) { Visit(scene.RetiredTo, flags, steps, onPath); return; }
             if (!onPath.Add(key)) { problems.Add($"loop through {key}"); return; }
             if (scene.Narration is { } n)
                 Follow(new WalkStep(scene, null, null), n);
@@ -56,27 +65,33 @@ public static class StoryWalker
 
             void Follow(WalkStep step, StoryOutcome outcome)
             {
+                if (outcome.End)
+                {
+                    steps.Add(step);
+                    Add(MakePath(steps, EndEnding(outcome)));
+                    steps.RemoveAt(steps.Count - 1);
+                    return;
+                }
                 if (outcome.Next is null) return;
                 var after = new HashSet<string>(flags);
                 foreach (var e in outcome.Effects)
                     if (e.Kind == EffectKind.Flag) after.Add(e.Key);
                     else if (e.Kind == EffectKind.Unflag) after.Remove(e.Key);
                 steps.Add(step);
-                Visit(outcome.Next, after, steps, onPath, fromLoss);
+                Visit(outcome.Next, after, steps, onPath);
                 steps.RemoveAt(steps.Count - 1);
             }
         }
 
-        if (arc.Scenes.Count > 0) Visit(arc.Scenes[0].Key, new(), new(), new(), false);
-        if (scenes.ContainsKey("loss")) Visit("loss", new(), new(), new(), true);
+        if (arc.Scenes.Count > 0) Visit(arc.Scenes[0].Key, new(), new(), new());
 
-        // Reachability: what only the loss branch reaches is reached by the engine's jump.
-        foreach (var s in arc.Scenes.Where(s => s.RetiredTo is null && s.Key != "loss" && !reached.Contains(s.Key) && !reachedFromLoss.Contains(s.Key)))
+        // Reachability, and the number of endings a long event holds (a short one has none to count).
+        foreach (var s in arc.Scenes.Where(s => s.RetiredTo is null && !reached.Contains(s.Key)))
             problems.Add($"unreachable {s.Key}");
-        foreach (var e in arc.Endings.Where(e => e.Key is not ("interrupted" or "loss") && !reached.Contains(e.Key) && !reachedFromLoss.Contains(e.Key)))
+        foreach (var e in arc.Endings.Where(e => !reached.Contains(e.Key)))
             problems.Add($"unreachable {e.Key}");
-        var main = arc.Endings.Count(e => e.Key is not ("interrupted" or "loss") && !(reachedFromLoss.Contains(e.Key) && !reached.Contains(e.Key)));
-        if (main is < 3 or > 5) problems.Add($"endings: {main} (an arc has 3 to 5, besides interrupted and loss)");
+        var isShort = arc.Header.Size == StorySize.Short;
+        if (!isShort && arc.Endings.Count is < 2 or > 5) problems.Add($"endings: {arc.Endings.Count} (a long event has 2 to 5)");
 
         // Flags: each one set is tested, here or by another arc; each one tested is set.
         var set = StoryValidator.Effects(arc).Where(e => e.Kind == EffectKind.Flag).Select(e => e.Key).ToHashSet();
@@ -102,11 +117,14 @@ public static class StoryWalker
             onPath.Remove(key);
         }
         if (arc.Scenes.Count > 0) Alone(arc.Scenes[0].Key, new());
-        if (scenes.ContainsKey("loss")) Alone("loss", new());
 
         foreach (var p in paths)
         {
-            if (p.Cailloux > 100) problems.Add($"cailloux {p.Cailloux} on a path to {p.Ending.Key}");
+            var decisions = p.Steps.Count(s => s.Option is not null);
+            if (isShort ? decisions is < 1 or > 2 : decisions is < 3 or > 5)
+                problems.Add($"decisions {decisions} on a path to {p.Ending.Key} ({(isShort ? "a short event has 1 to 2" : "a long event has 3 to 5")})");
+            var cap = isShort ? 30 : 100;
+            if (p.Cailloux > cap) problems.Add($"cailloux {p.Cailloux} on a path to {p.Ending.Key} (over {cap})");
             if (p.TraitChanges > 1) problems.Add($"two trait changes on a path to {p.Ending.Key}");
         }
 
@@ -126,14 +144,14 @@ public static class StoryWalker
     private static bool Satisfiable(StoryCondition c, HashSet<string> flags) =>
         c.Kind == ConditionKind.Flag && !c.Key.Contains('.') ? flags.Contains(c.Key) != c.Negated : true;
 
-    private static WalkPath MakePath(List<WalkStep> steps, StoryEnding ending, bool fromLoss)
+    private static WalkPath MakePath(List<WalkStep> steps, StoryEnding ending)
     {
         var effects = steps.Select(Outcome).OfType<StoryOutcome>().SelectMany(o => o.Effects).Concat(ending.Marks).ToList();
         var stress = new Dictionary<string, int>();
         foreach (var (trait, cost) in steps.Where(s => s.Option is not null).SelectMany(s => s.Option!.StressCosts))
             stress[trait] = stress.GetValueOrDefault(trait) + cost;
         return new WalkPath(steps.ToList(), ending, steps.All(s => s.Option is null || StoryValidator.IsFree(s.Option)),
-            (int)effects.Where(e => e.Kind == EffectKind.Cailloux).Sum(e => e.Amount), effects.Count(e => e.Kind == EffectKind.Trait), stress, fromLoss);
+            (int)effects.Where(e => e.Kind == EffectKind.Cailloux).Sum(e => e.Amount), effects.Count(e => e.Kind == EffectKind.Trait), stress);
     }
 
     public static StoryOutcome? Outcome(WalkStep step) => step.Option is null
@@ -187,6 +205,7 @@ public static class StoryWalker
 
                 void Go(StoryOutcome outcome, double q)
                 {
+                    if (outcome.End) { shares[EndKey] = shares.GetValueOrDefault(EndKey) + q; return; }
                     if (outcome.Next is null) return;
                     var after = new HashSet<string>(flags);
                     foreach (var e in outcome.Effects)

@@ -1,58 +1,200 @@
-# Plynling storylines — story files
+# Plynling storylines — the story engine
 
-The event rework into fewer, deeper arcs (design: `docs/superpowers/specs/2026-10-28-plynling-storylines-design.md`;
-the file format in full: `docs/superpowers/specs/2026-10-29-plynling-story-file-format-design.md`). The world
-every arc lives in is `docs/village-lore.md`; the prose follows `docs/plynling-writing-style.md`.
+Events written as story files and played by the one event engine (`plynling-events.md`). Design:
+`docs/superpowers/specs/2026-11-17-plynling-village-events-design.md`; the file format:
+`docs/superpowers/specs/2026-10-29-plynling-story-file-format-design.md` (binds, except where the 2026-11-17
+design changes it). The world every arc lives in is `docs/village-lore.md`: fully cosy, every event
+stands alone, the village never changes. The prose follows `docs/plynling-writing-style.md`.
 
-**The direction changed on 2026-11-10.** The owner found the first bible too dark and wants the
-village as a common base for standalone events, not one long plot. `docs/village-lore.md` is
-rewritten that way (fully cosy; no hidden truth, chronicle, crises or character exits) and is what
-binds. The storylines design spec still describes the old direction (deep arcs, chronicle, crises,
-loss endings): treat it as out of date until it is revised with the owner. The format, parser,
-validator and checks below are unchanged.
+**Approach:** at startup each arc is compiled into `EventDef`s and registered next to the C# catalog.
+There is no second engine: draw, deciding alone, stress, cards, freezes and cancellation are the
+existing ones. A story event differs only by what the compiled def carries (`EventDef.Story`,
+`EventOption.Source`) and by the knowledge the context holds.
 
-**Built so far: the format, its parser, its validator and the checks.** The engine (runs, steps, the
-living message, the card entry, `/debug` tools), its tables and the startup load are not built: no
-story reaches a player yet, and the old event catalog (`plynling-events.md`) runs as before.
+## Files and loading
 
-## Files
+- **One arc per file** under `ProjectSYNCS/Stories/<Family>/<key>.story`, UTF-8; CRLF, LF and a BOM
+  read the same. `Stories/village.cast` lists the villagers stories may name (`key | given name | byname`).
+  The folder is copied to the build **and** publish output (csproj `None Include`), so the image carries
+  it; `StoryCatalog` reads `AppContext.BaseDirectory/Stories`.
+- **Fixtures** `tests/ProjectSYNCS.Checks/Stories/test_everything.story` (every tag, condition and effect
+  once) and `test_short.story` are never shipped. A new word in the format gets a line there, or the checks fail.
+- **Code**, `Helpers/Plynling/Stories/`: `StoryModel`, `StoryTags`, `StoryVocabulary`, `StoryParser`
+  (+ `.Scenes`), `StoryValidator`, `StoryLibrary` (parse + validate a folder), `StoryCompiler`,
+  `StoryCatalog` (the lazy, process-wide result), `StoryKnowledge` / `StoryStanding`, `StoryConditions`
+  (conditions and prose rendering), `StoryRuns` (flags and history, pure). Beside the engine:
+  `PlynlingEventStakes`, `PlynlingEventStory`. The DB half is `PlynlingService.Stories.cs`.
+  The walks and the report live in the checks project (`StoryWalker`, `StoryReport`).
+- **A load error stops the bot.** `Program.cs` touches `StoryCatalog.Compiled` right after `Build()`,
+  before `MigrateAsync`; a `StoryLoadException` logs every error (`file:line: message`) at `Critical`, one per
+  line, and rethrows. Why: a half-loaded catalog would silently drop events and strand instances whose
+  keys no longer exist. `PlynlingEvents.All` and everything derived from it (`ByKey`, `PulseKeys`…) read
+  `StoryCatalog.Compiled`, so **nothing may read the catalog before that load**, and a static initializer
+  must not copy the catalog earlier than the catalog itself.
+- The validator is the gate: unknown keys, dangling `[-> …]`, a scene without a free option (no needs, not
+  owner-only, not secret, no stress cost), ranges, template tokens, and Discord's caps measured with
+  32-character names and each agreement at its longer form. **Every problem is reported**, with file and
+  line. Parser and validator errors are in English; the path report is in French (the owner reads it as content).
 
-- **One arc per file** under `ProjectSYNCS/Stories/<Family>/<key>.story`, UTF-8; CRLF, LF and a BOM all
-  read the same. `ProjectSYNCS/Stories/village.cast` lists the villagers stories may name
-  (`key | given name | byname`), from the bible. The folder is copied to the build and publish output.
-- **The fixture** `tests/ProjectSYNCS.Checks/Stories/test_everything.story` uses every tag, condition and
-  effect once. It is never shipped. A new word in the format gets a line there, or the checks fail.
-- **Code:** `Helpers/Plynling/Stories/` — `StoryModel` (records), `StoryTags` (brackets, quotes, words),
-  `StoryVocabulary` (conditions and effects), `StoryParser` (+ `.Scenes`), `StoryValidator`,
-  `StoryLibrary` (loads a folder). Pure: no gateway, no database. The walks and the report live in the
-  checks project (`StoryWalker`, `StoryReport`).
+## Keys are forever
 
-## Arcs written
+Arc, scene, option, ending, memory, epithet, keepsake and flag keys are stored or compared with stored
+rows: never rename or remove one. Memory, epithet and keepsake keys are global across files.
 
-| Arc | File | State |
+- **Event key** = `<arc>.<scene>` (`StoryCompiler.Key`). Old C# keys never contain a dot, so they cannot
+  collide, and `StoryRuns.ArcOf` tells them apart. Option keys are kept as written.
+- **The first scene is positional**: it never moves and never retires (the opener and the arc's start key
+  hang on it; the validator refuses `retired` on it).
+- **A retired scene** stays in the file as `## scene: <key>` + `retired -> <other>`. It gets **no def**:
+  `StoryCompiler.Aliases` maps its key to the live scene it leads to (following chains), and `PlynlingEvents.ByKey`
+  resolves the old key to that def. An instance saved under the old key therefore opens as the successor.
+  A retirement leading to an ending or nowhere is left out of the map.
+- **A retired option** (`* <key> | <label> [retired]`) compiles to a `RetiredGate`: never shown, never picked,
+  never counted toward the 2–4 live options; the stored pick still renders. Ado-stage pools drop retired options
+  and any def left with none.
+- **Narration scenes** (no options, one `[-> next]`) compile to one option, key `continue` (stored),
+  label « Continuer ». A scene later given real options keeps `continue` as a `[retired]` option.
+
+## Scene to `EventDef`
+
+- **First scene** = the arc's opener. `trigger: draw` is a `Pulse`; `adoption` is `Triggered` on
+  `OnAction.Adopted`; `stage teen|adult` on `BecameTeen|BecameAdult`. **Every later scene is a `FollowUp`**
+  whose delay comes from the *target* scene's `pace:` — `now` 0 h (shown through « Événement suivant »),
+  `next_day` 20–28 h (hashed, like every follow-up), `+Nh` exactly N. A story with the same on-action as a C#
+  moment replaces it: `PickTriggered` keeps only story defs when any is in the pool.
+  Other triggers and `handover` are refused by the validator, with « not supported yet ».
+- **Weight:** an unwritten `weight:` parses as 0 and **compiles to 100**, for every arc, drawn or triggered —
+  and so does an explicit `weight: 0`. Never read an unwritten weight as 0 in the engine. `weight: +n [if …]`
+  lines become `EventDef.WeightBonus`, added before the factors; they hold only on the opener.
+- **Targets** (`other: <bond>`): `rivals` and `enemies` target a **Hostile** Plynling, every other bond one the
+  Plynling **Knows**; the bond itself then filters candidates.
+- **Opening conditions** (opener only, one predicate): `requires:`; `once` (a long event is `once: life` by default);
+  `cooldown: Nd` since the arc last started; `locked` until the Plynling holds the `unlock` mark;
+  for a **long drawn** arc, no long arc started in the last **21 days**.
+  Cooldowns and « once » are computed from the instance history (`StoryKnowledge.LastStarted`), never stored.
+- **`LastLongStart` counts every long arc the Plynling started, triggered ones included** (a milestone
+  postpones the next drawn long event), though only drawn ones are gated by it.
+- **Options:** `[needs …]` → `StoryGate` (conditions + lock text + `secret`); `[roll stat n]` → `EventChallenge`;
+  `[lean …]` → `Ai`; `[stress trait n]` → `StressCosts`; `[owner-only]` → `OwnerOnly`; `[mystery]` → `Mystery`.
+- **Effects** map in order: `grow`, `affinity`, `stress`, `modifier`, `cailloux`, `item`, `lift` to their existing
+  effects; `flag`/`unflag` → `SetFlag`/`ClearFlag`; `remember`/`forget`/`reveal`; marks → `GiveMark`;
+  `trait a -> b` → `SwapTrait`; `[-> scene]` → `FollowUp`; `[-> ending]` → `EndStory` then the ending's marks and
+  other effects; `[end]` adds nothing (short events only). `[other …]` effects are refused until handed-over scenes exist.
+- **Deciding alone** uses the existing in-character pick. It never picks a locked, secret, owner-only or
+  stress-costing option. `[mystery]` changes nothing for it.
+
+## Flags: carried by the instance
+
+A flag lives within one run. `PlynlingEventInstance.Flags` stores `key;key` (sorted, distinct; **none is
+`null`, never `""`**, `StoryRuns.WriteFlags`). A follow-up is created with its parent's flags **plus the chosen
+option's `[flag]`/`[unflag]`** applied in order (set then clear leaves it absent; clear then set, present). Only
+effects that *applied* count: a decision alone still sets flags, but never an effect `AppliesWhenAlone` refuses.
+The first scene starts empty. Conditional prose renders from the instance's stored flags; past steps re-render
+from the current text, and from the instance's flags, so a story page never needs the run in memory. A past step's page is re-rendered
+with the flags, memories and marks as they stand after the step, so a page can differ from the card the
+player saw when the final option changes a flag that scene's prose tests.
+
+A step that reaches an ending sets `EndingKey` on that instance and rewrites its `Flags` with the final set
+(its own option's included). What later events read about a finished run is exactly that:
+`[if ended <arc>.<ending>]` and `[if flag <arc>.<f>]` come from instances that carry an `EndingKey`
+(`StoryRuns.Finished`). A run that was cancelled leaves nothing readable; there are **no « interrupted » or
+« loss » endings** — a cancelled long event just stops.
+
+## Knowledge: memories, marks, standing
+
+`EventContext.Knowledge` (`StoryKnowledge`) is always filled by `PlynlingService.GetEventContextAsync`: the run's flags,
+the Plynling's memories and marks, `Ended`/`ArcFlags` from finished runs, `Standing`, `LastStarted`,
+`LastLongStart`, the season (`ItemCatalog.SeasonAt`) and the clock.
+
+- **Memories** (`PlynlingMemory`, unique per Plynling + key) are one villager's recollection of one Plynling, declared
+  in a file with a holder and a shift. A later event reads them (`[if memory …]`, `[needs memory …]`) — **this is how a
+  choice comes back** while the village never changes. They belong to the Plynling and go with it. `reveal` makes a
+  private memory public (only a private one may be revealed).
+- **Marks** (`PlynlingMark`, kind int, **append-only**: epithet, keepsake, unlock; unique per Plynling + kind + key).
+  Epithets are titles (the card heading shows the latest, « Personnalité » all of them), keepsakes are named objects
+  with a story, not tradable (a `hurts` keepsake is a scar), `unlock` lets a `locked` arc join the draw.
+- **Standing** is computed, never stored: the holder of a memory gets its shift; a public or revealed memory gives **every
+  cast member** except the holder ±1. `StoryStanding.Compute` takes the whole cast (`StoryCatalog.Cast.Keys`), including
+  villagers who hold no memory, or a public memory would reach only the holders.
+- **Reads go through the change tracker's `Local` view**, so rows added or removed earlier in the same unit of work
+  count; every write is idempotent (a re-run after a concurrency conflict finds the row and adds nothing; `Forget`
+  then `Remember` revives the deleted entry). Two units writing the same memory or mark at once (a click and
+  the sweep, on two open events) cannot both win: EF inserts the row before it updates the Plynling, so the loser
+  fails on the unique index (a plain `DbUpdateException`, not a concurrency retry). That costs one failed attempt
+  (logged per item in the sweep; on a click the pick fails after the defer and the person clicks again), and the
+  next attempt finds the row. Nothing is poisoned.
+- **The mascot** gets titles, keepsakes and memories; never trait changes, cailloux or items.
+
+## Rules of the marks and endings
+
+- **Marks only in endings.** Short events give none; a long event gives **at most one** of epithet, keepsake or
+  trait per ending. `[unlock]` is not a mark for this count.
+- **A trait change is a swap**, `[trait <from> -> <to>]`, never a gain (the trait draw counts held personality
+  traits, so a gain would eat a slot or make a fourth). Same exclusion group (`PlynlingTraits.Group`); adulte and
+  ancien arcs only; at most one per ending. `SwapTrait` skips the mascot, a Plynling that does not hold `from`,
+  and one that already holds `to`.
+- **Every `locked` arc is unlocked by some `[unlock <arc>]`, and every `[unlock]` names a `locked` arc.**
+- A title earned is posted as a short line in the game channel, and in the story page.
+
+## Per size (validator and walks)
+
+| | short | long |
 |---|---|---|
-| L'arrivée | `Stories/Milestone/arrival.story` | second draft (rewritten 2026-11-10), third draft (2026-11-10), written to the cosy bible: a three-day welcome, three choices, three endings; awaiting the owner's review; its premise and map head the file |
+| Decisions on every path | 1–2 | 3–5 |
+| Endings | `[end]` straight from an option (the walker's pseudo-ending `end`) | `## ending:` blocks, 2–5; `[end]` refused |
+| Marks | none | one per ending |
+| Cailloux per path | ≤ 30 | ≤ 100 |
+| Once | per its header | `once: life` by default |
 
-## Rules that bite
+Both: 2–4 live options per scene, at least one free; at most one `[mystery]` per scene; every flag set is tested and
+every flag tested is set (`flag <arc>.<f>` in another arc counts); every scene and ending reachable, no loop; deciding
+alone never dead-ends; no template left in any of the four gender pairs. `{T}` (the trait a moment reveals) is only for
+the first scene of an adoption or stage arc; the engine fills it from `GainedTraitKey`. The walks follow the arc's own
+flags exactly and count every other condition as possible.
 
-- **Keys are forever** once the engine ships: arc, scene, option, ending, memory, epithet, keepsake,
-  flag. Never rename or remove one. A scene taken out stays as `## scene: <key>` + `retired -> <other>`;
-  an option as `* <key> | <label> [retired]`. Memory, epithet and keepsake keys are global across files.
-- **Every problem is reported**, with file and line, never just the first. Parser and validator errors
-  are in English; the path report is in French (the owner reads it as content).
-- **The validator is the gate the engine will use at startup**: unknown keys, dangling `[-> …]`, a
-  missing `interrupted` ending (or `loss` for love and friendship arcs), a scene without a free option
-  (no needs, not owner-only, not secret, no stress cost), ranges, template tokens, and Discord's caps
-  measured with 32-character names and each agreement at its longer form.
-- **The walks** (checks only): every scene and ending reachable (the `loss` branch counts, since the
-  engine jumps there), no loop, 3–5 endings besides `interrupted` and loss-only ones, every flag set is
-  tested and every flag tested is set (`flag <arc>.<f>` in another arc counts), deciding alone never
-  dead-ends, at most 100 cailloux and one trait change per path, no template left in any of the four
-  gender pairs. The arc's own flags are followed exactly; every other condition counts as possible.
-- **Marks** (epithet, keepsake, trait, unlock) only in endings; a trait swap stays within one
-  personality group.
+## What the player sees
 
-## Checking an arc
+- **The stakes line** (`PlynlingEventStakes.Line`) goes under each option's label, for **every** event, C# ones
+  included: the trait or stat needed, `😣 +n stress (trait)`, then what it gives — `🪙` cailloux, `🎁` item, `❤️ <byname> s'en
+  souviendra` (plain name for a negative memory), a modifier, a stat lesson, and at an ending `🏷️ un titre`, `🎁 un souvenir à
+  garder` or `✨ un trait change`. A roll reads `🎲 Stat 55 % : win · sinon lose`. Costs and odds are the real ones for
+  this Plynling (traits scale stress). Buttons are plain labels; only an option needing a trait keeps that trait's icon.
+- **Mystery options** (`[mystery]`) show « ❔ on verra bien » in place of the rewards **and still show costs and odds**,
+  so nobody walks into a penalty blind. Use one only when a surprise makes sense or it leads to a follow-up.
+- **Locked options.** A story option behind a non-secret `[needs …]` is **shown locked**: disabled button, `🔒` and the
+  requirement (the author's lock text, else the missing needs said plainly). A `[secret]` one shows only once its needs
+  hold. C# events keep hiding their gated options.
+- **`Shown` vs `Visible`** (`PlynlingEventEngine`): `Shown` is what the card lists; `Visible` is what may be picked
+  (by a click or alone). They differ only for a locked story option: shown, not visible. A click on a stale card for an
+  option no longer visible answers « Ce choix n'est plus possible. » and applies nothing. Never use `Shown` to decide what an option
+  may do, nor `Visible` to decide what to print.
+- The card heading shows `Name, la Title` (the latest epithet, article lower-cased); « Personnalité » has an
+  « Histoire » field (titles, keepsakes, memories prefixed by their holder). An ending's title, keepsake or swap shows
+  as a last line of the outcome, only when it applied.
+
+## Pacing
+
+Short events use the daily pulse unchanged. A long event runs one step a day inside the same 24 h window.
+`BlocksPulse`: **while a long event is open for a Plynling, no pulse is drawn**, and a long drawn arc starts only on a
+day when **nothing waits** (`allowLong` on `PickPulse`; open instances plus those added in the same unit count, or a step
+decided alone a moment earlier would let a pulse in beside it). The day is still spent, so a long run ending in the
+afternoon does not let a second event in. Old follow-ups, echoes, on-action moments, responses and breaks still come,
+and a triggered long arc (a milestone) starts whatever waits. The mascot decides at once. Freezes pause the clock and
+deaths cancel what waits, as for every event.
+
+## « Not playing is free » for stories
+
+`PlynlingEventEngine.AppliesWhenAlone` is the one rule, and story effects obey it. Alone, an event never gains stress,
+applies a negative modifier or a coping trait; additionally `SwapTrait` and a `GiveMark { Hurts: true }` never apply.
+Titles, plain keepsakes, memories, flags, cailloux and items always do. A new story effect that costs or changes the
+Plynling for the worse gets an `AppliesWhenAlone` case in the same change.
+
+## Debug and checks
+
+- **`/debug event <key>`** forces any event; its unknown-key reply lists the C# events and each arc's **first scene
+  only**. A later scene can be typed by key; it then starts **without any story flag**, and the reply says so. Use
+  `mode:Pending` to click through, `mode:Expired` then `/debug sweep` to decide alone.
+- **Checks:**
 
 ```bash
 dotnet run --project tests/ProjectSYNCS.Checks                      # every check, story files included
@@ -60,11 +202,23 @@ dotnet run --project tests/ProjectSYNCS.Checks -- story <arc>       # also write
 dotnet run --project tests/ProjectSYNCS.Checks -- story all
 ```
 
-The report (`tests/ProjectSYNCS.Checks/out/`, gitignored) lists the reachable endings and what each needs,
-the shortest path decided alone, where an in-character Plynling ends (each childhood trait for a bébé
-arc, else each trait the arc names; rolls at 50 %, other conditions false), then every path as
-reading: the scene's text, the choice, its roll, lock and stress, the outcome, the ending, its marks and
-memories. Agreements show both forms (« sorti/sortie », « seul(e) »), conditional lines as `[si …]`.
+The report (`tests/ProjectSYNCS.Checks/out/`, gitignored) lists the reachable endings and what each needs, the shortest
+path decided alone, where an in-character Plynling ends, then every path as reading: the scene's text, the choice with
+its **stakes line as the card renders it for a neutral context** (female, no traits), `(mystère)` after a mystery
+option, its roll, lock and stress, the outcome, the ending, its marks and memories. Agreements show both forms
+(« sorti/sortie », « seul(e) »), conditional lines as `[si …]`. The checks also measure every def's choice card (worst
+case 40-character names, all flags on: characters, 40 components, 80-char labels, unique ids) and the « Personnalité »
+embed with every declared title, keepsake and memory.
 
-Per-arc workflow (from the storylines spec): premise → branch diagram → owner review → the story file →
-owner review → checks and report → playthrough on the dev guild once the engine exists.
+The checks' catalog sweeps (« il »/« elle », free option) over `PlynlingEvents.All` must skip `d.Story is not null`
+where they do not apply: unconditional story prose may say « Il a plu » of the weather.
+
+## Writing and review
+
+Per arc: premise → branch map → owner review → the story file → owner review → checks and report → playthrough on the
+dev guild with `/debug`. A scene is 2–3 sentences, an outcome 1–3 lines; every option brings a different *kind* of
+result; a memory only when a later event will plausibly read it. Built on a villager's « accroches » from the lore.
+
+| Arc | File | State |
+|---|---|---|
+| L'arrivée | `Stories/Milestone/arrival.story` | long milestone, triggered by adoption; replaces the C# adoption moment; names the childhood trait with `{T}`; awaiting the owner's review |

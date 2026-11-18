@@ -28,9 +28,9 @@ public static class StoryChecks
     private static void HandEdits()
     {
         // Scene and ending fields: a typo, or a field after the blank line, is not prose.
-        ExpectError(Valid.Replace("public: {A} hésite.", "publik: {A} hésite."), "field");
-        ExpectError(Valid.Replace("public: Et maintenant ?\n", "public: Et maintenant ?\nhandvoer\n"), "handvoer");
-        ExpectError(Valid.Replace("pace: next_day\npublic: {A} hésite.", "pace: next_day\n\npublic: {A} hésite."), "field");
+        ExpectError(Valid.Replace("pace: next_day\n", "pace: next_day\nhandling: {A} hésite.\n"), "field");
+        ExpectError(Valid.Replace("pace: now\n", "pace: now\nhandvoer\n"), "handvoer");
+        ExpectError(Valid.Replace("title: Un\npace: next_day\n", "title: Un\n\npace: next_day\n"), "field");
         ExpectError(Valid.Replace("title: Un\n", "title: Un\ntitle: Une\n"), "twice");
         ExpectError(Valid.Replace("title: Le galet\n", "title: Le galet\npace: now\n"), "field");
         Parse(Valid, out var pe);
@@ -38,15 +38,15 @@ public static class StoryChecks
         Parse(Valid.Replace("Elle se tait.", "Silence : elle se tait."), out pe);
         Expect(pe.Count == 0, "French « Silence : … » stays prose: " + string.Join("; ", pe));
         // [other remember] lands on the other Plynling: only in a handed-over scene.
-        var withOther = Valid.Replace("public: Une pousse.", "public: Une pousse.\nother: friends");
+        var withOther = Valid.Replace("size: long", "size: long\nother: friends");
         ExpectInvalid("handed-over", withOther.Replace("[flag met] [remember lichen.x]", "[flag met] [other remember lichen.x]"));
-        var handed = Validate(withOther.Replace("[flag met] [remember lichen.x]", "[flag met] [other remember lichen.x]").Replace("public: {A} hésite.", "public: {A} hésite.\nhandover"));
+        var handed = Validate(withOther.Replace("[flag met] [remember lichen.x]", "[flag met] [other remember lichen.x]").Replace("title: Un\npace: next_day\n", "title: Un\npace: next_day\nhandover\n"));
         Expect(!handed.Any(e => e.Message.Contains("handed-over")), "[other remember] in a handover scene is fine: " + string.Join("; ", handed));
         ExpectInvalid("handed-over", withOther.Replace("[keepsake pebble] [cailloux 20]", "[keepsake pebble] [cailloux 20] [other remember lichen.x]"));
         // A // note at the end of a line never reaches players.
         ExpectError(Valid.Replace("Elle se tait.", "Elle se tait. // à revoir"), "own line");
         ExpectError(Valid.Replace("title: Un\n", "title: Un // provisoire\n"), "own line");
-        ExpectError(Valid.Replace("[flag met] [remember lichen.x] [-> two]", "[flag met] [remember lichen.x] [-> two] // vers deux"), "own line");
+        ExpectError(Valid.Replace("[flag met] [remember lichen.x] [-> mid]","[flag met] [remember lichen.x] [-> mid] // vers deux"), "own line");
         // A file under a story folder that is not exactly *.story is reported, not left out.
         var probe = Path.Combine(RepoRoot(), "tests", "ProjectSYNCS.Checks", "out", "probe-stories");
         if (Directory.Exists(probe)) Directory.Delete(probe, true);
@@ -67,8 +67,13 @@ public static class StoryChecks
         Expect(rep.StartsWith(t.Header.Title + " (test_everything)"), "report title line");
         foreach (var head in new[] { "Fins atteignables", "Décidé seul", "En personnage", "Chemin 1 / ", "Marques :", "Mémoires :", "jet Diplomatie 7", "🔒", "[si " })
             Expect(rep.Contains(head), "report has " + head);
-        Expect(t.Endings.Where(x => x.Key is not ("interrupted" or "loss")).All(x => rep.Contains(x.Key)), "report names every ending");
+        Expect(t.Endings.All(x => rep.Contains(x.Key)), "report names every ending");
         Expect(rep.Contains("« Le Fidèle »") && !rep.Contains("{a:"), "epithets in the masculine, no agreement left");
+        Expect(rep.Contains(" (mystère)") || !t.Scenes.SelectMany(s => s.Options).Any(o => o.Mystery), "a mystery option is marked in the report");
+        // Under each option, the stakes line as its card renders it.
+        if (_shipped.Arcs.SingleOrDefault(x => x.Key == "arrival") is { } arrival)
+            Expect(StoryReport.Write(arrival, StoryWalker.Walk(arrival, _shipped.Arcs)).Contains("🎁 un souvenir à garder"), "Arrival's report shows the keepsake stakes line");
+        else _fail("story: the shipped arrival arc is missing");
 
         if (args.Length < 2 || args[0] != "story") return;
         var arcs = _shipped.Arcs.Select(a => (a, _shipped)).Concat(_fixture.Arcs.Select(a => (a, _fixture)))
@@ -103,7 +108,7 @@ public static class StoryChecks
         var valid = ParseOne(Valid);
         var ok = StoryWalker.Walk(valid, new[] { valid });
         Expect(ok.Problems.Count == 0, "valid arc walks clean: " + string.Join("; ", ok.Problems));
-        Expect(ok.Paths.Count == 8, $"valid arc has 8 paths (2 × 4), got {ok.Paths.Count}");
+        Expect(ok.Paths.Count == 16, $"valid arc has 16 paths (2 × 2 × 4), got {ok.Paths.Count}");
         Expect(ok.Paths.Any(p => p.Alone) && ok.Paths.Any(p => !p.Alone), "alone and owner-only paths");
         Expect(ok.Paths.Where(p => p.Ending.Key == "e1").All(p => p.Cailloux == 40), "cailloux summed with the ending's");
         Expect(ok.Paths.Any(p => p.StressCosts.GetValueOrDefault("rowdy") == 10), "stress costs on a path");
@@ -113,7 +118,25 @@ public static class StoryChecks
         ExpectProblem(Valid.Replace("[flag met]", "[flag mett]"), "mett never tested");
         ExpectProblem(Valid.Replace("[cailloux 20]", "[cailloux 90]"), "cailloux 180");
         ExpectProblem(Valid.Replace("{a:sorti|sortie}", "{a:sorti|sortie"), "template");
-        ExpectProblem(Valid.Replace("[-> e3]", "[-> e2]").Replace("## ending: e3\ntitle: L'attente\nFin trois.\n[cailloux 10]\n", ""), "endings: 2");
+        ExpectProblem(Valid.Replace("[-> e3]", "[-> e1]").Replace("[-> e2]", "[-> e1]")
+            .Replace("\n\n## ending: e2\ntitle: Le départ\nFin deux.\n[cailloux 10]", "").Replace("\n\n## ending: e3\ntitle: L'attente\nFin trois.\n[cailloux 10]", ""), "endings: 1");
+        // Two endings are enough for a long event.
+        var twoEnds = ParseOne(Valid.Replace("[-> e3]", "[-> e2]").Replace("\n\n## ending: e3\ntitle: L'attente\nFin trois.\n[cailloux 10]", ""));
+        Expect(StoryWalker.Walk(twoEnds, new[] { twoEnds }).Problems.Count == 0, "a long event with two endings walks clean");
+        // Decisions per path: a long event has 3 to 5, a short one 1 to 2.
+        ExpectProblem(Valid.Replace("[-> mid]", "[-> two]"), "decisions 2");
+        ExpectProblem(Valid.Replace("[-> e1]", "[-> more]").Replace("## ending: e1", "## scene: more\ntitle: Encore\npace: now\nPlus.\n\n* x | X\n  Oui.\n  [-> more2]\n\n* y | Y\n  Non.\n  [-> more2]\n\n"
+            + "## scene: more2\ntitle: Encore deux\npace: now\nPlus.\n\n* x | X\n  Oui.\n  [-> more3]\n\n* y | Y\n  Non.\n  [-> more3]\n\n"
+            + "## scene: more3\ntitle: Encore trois\npace: now\nPlus.\n\n* x | X\n  Oui.\n  [-> e1]\n\n* y | Y\n  Non.\n  [-> e1]\n\n## ending: e1"), "decisions 6");
+        var shortArc = ParseOne(Short);
+        var shortWalk = StoryWalker.Walk(shortArc, new[] { shortArc });
+        Expect(shortWalk.Problems.Count == 0, "a short event walks clean: " + string.Join("; ", shortWalk.Problems));
+        Expect(shortWalk.Paths.Count == 2 && shortWalk.Paths.All(p => p.Ending.Key == "end" && p.Steps.Count == 1), "[end] reaches the pseudo-ending 'end'");
+        Expect(shortWalk.InCharacter.All(x => Math.Abs(x.EndingShare.GetValueOrDefault("end") - 1) < 1e-9), "in character, a short event ends on 'end'");
+        ExpectProblem(Short.Replace("[end]\n\n* toss", "[-> two]\n\n* toss")
+            + "\n\n## scene: two\ntitle: D\npace: now\nSuite.\n\n* a | A\n  Oui.\n  [-> three]\n\n* b | B\n  Non.\n  [-> three]\n\n"
+            + "## scene: three\ntitle: T\npace: now\nSuite.\n\n* a | A\n  Oui.\n  [end]\n\n* b | B\n  Non.\n  [end]", "decisions 3");
+        ExpectProblem(Short.Replace("[cailloux 10]", "[cailloux 40]"), "cailloux 40");
         ExpectProblem(Valid.Replace("* leave | Partir", "* leave | Partir [owner-only]").Replace("* gift | Prendre le galet", "* gift | Prendre le galet [needs trait curious]")
             .Replace("* wait | Attendre  [roll learning 7]", "* wait | Attendre  [roll learning 7] [secret]"), "alone dead end at two");
         // The flag's own gate reads it exactly: with 'met' unset, 'stay' cannot see an option gated on it.
@@ -155,12 +178,16 @@ public static class StoryChecks
         var effects = StoryValidator.Effects(t).Select(x => x.Kind).ToHashSet();
         foreach (var k in Enum.GetValues<EffectKind>()) Expect(effects.Contains(k), $"fixture uses effect {k}");
         var conditions = StoryValidator.Conditions(t).Select(x => x.Kind).ToHashSet();
-        foreach (var k in Enum.GetValues<ConditionKind>()) Expect(conditions.Contains(k), $"fixture uses condition {k}");
+        foreach (var k in Enum.GetValues<ConditionKind>().Where(k => k != ConditionKind.Chain)) Expect(conditions.Contains(k), $"fixture uses condition {k}");
         var options = t.Scenes.SelectMany(s => s.Options).ToList();
         Expect(options.Any(o => o.Roll is not null) && options.Any(o => o.OwnerOnly) && options.Any(o => o.Secret) && options.Any(o => o.Retired)
-            && options.Any(o => o.Public is not null) && options.Any(o => o.LockText is not null) && options.Any(o => o.StressCosts.Count > 0), "fixture uses every option attribute");
-        Expect(t.Scenes.Any(s => s.Narration is not null) && t.Scenes.Any(s => s.RetiredTo is not null) && t.Scenes.Any(s => s.Handover)
-            && t.Scenes.Any(s => s.Bump) && t.Scenes.Any(s => s.Key == "loss"), "fixture has narration, retired, handover, bump and loss scenes");
+            && options.Any(o => o.Mystery) && options.Any(o => o.LockText is not null) && options.Any(o => o.StressCosts.Count > 0), "fixture uses every option attribute");
+        Expect(t.Scenes.Any(s => s.Narration is not null) && t.Scenes.Any(s => s.RetiredTo is not null), "fixture has narration and retired scenes");
+        // What the engine does not run yet (StoryValidator.NotYetSupported) stays out of the fixture; its refusal is pinned by inline snippets in the validator checks.
+        Expect(!t.Scenes.Any(s => s.Handover) && t.Header.Trigger.Kind is TriggerKind.Draw or TriggerKind.Adoption or TriggerKind.Stage, "fixture uses nothing the validator refuses");
+        Expect(t.Header is { Size: StorySize.Long, Once: true, Cooldown: { } cd, Locked: true } && cd == TimeSpan.FromDays(30), "fixture header uses size, cooldown and locked");
+        var sh = _fixture.Arcs.SingleOrDefault(x => x.Key == "test_short");
+        Expect(sh is { Header.Size: StorySize.Short, Header.Once: false } && sh.Scenes.SelectMany(s => s.Options).Any(o => o.Outcome is { End: true, Next: null }), "fixture test_short uses size short and [end]");
         var lines = t.Scenes.SelectMany(s => s.Prose).SelectMany(p => p.Lines).ToList();
         Expect(lines.Any(l => l.When.Any(c => !c.Negated)) && lines.Any(l => l.When.Any(c => c.Negated)), "fixture has [if] and [unless] lines");
         var texts = string.Join("\n", StoryValidator.Texts(t).Select(x => x.Text));
@@ -177,7 +204,7 @@ public static class StoryChecks
         family: milestone
         stage: baby
         trigger: adoption
-        public: Une pousse.
+        size: long
 
         ## memories
         lichen.x | lichen | private | +2 | Est venue.
@@ -188,23 +215,34 @@ public static class StoryChecks
         ## scene: one
         title: Un
         pace: next_day
-        public: {A} hésite.
         {A} est {a:sorti|sortie} de la Souche.
 
         * go | Y aller
           [lean sociability +1]
           {A} y va.
-          [flag met] [remember lichen.x] [-> two]
+          [flag met] [remember lichen.x] [-> mid]
 
         * stay | Rester  [needs trait curious]
           [stress rowdy 10]
           {A} attend.
+          [-> mid]
+
+        ## scene: mid
+        title: Milieu
+        pace: next_day
+        Le jour passe.
+
+        * walk | Marcher
+          {A} marche.
+          [-> two]
+
+        * rest | Se reposer
+          {A} se repose.
           [-> two]
 
         ## scene: two
         title: Deux
         pace: now
-        public: Et maintenant ?
         [if flag met] Elle sourit.
         Elle se tait.
 
@@ -238,10 +276,29 @@ public static class StoryChecks
         title: L'attente
         Fin trois.
         [cailloux 10]
+        """.ReplaceLineEndings("\n");
 
-        ## ending: interrupted
-        title: Interrompu
-        La Souche reprend {A}.
+    // A short event: one scene, closed by [end], no ending section.
+    private static readonly string Short = """
+        # arc: s
+        title: S
+        family: village
+        stage: teen, adult
+        trigger: draw
+        size: short
+
+        ## scene: only
+        title: Un
+        pace: now
+        {A} trouve un caillou.
+
+        * keep | Le garder
+          {A} le garde.
+          [cailloux 10] [end]
+
+        * toss | Le lancer
+          {A} le lance.
+          [end]
         """.ReplaceLineEndings("\n");
 
     private const string Cast = "# cast\nlichen | Ysaure | la Mère Lichen\n";
@@ -268,8 +325,9 @@ public static class StoryChecks
         var clean = Validate(Valid);
         Expect(clean.Count == 0, "valid arc: " + string.Join("; ", clean));
         ExpectInvalid("nowhere", Valid.Replace("[-> two]", "[-> nowhere]"));
-        ExpectInvalid("interrupted", Valid.Replace("## ending: interrupted", "## ending: cut"));
-        ExpectInvalid("loss", Valid.Replace("family: milestone", "family: love\nother: lovers"));
+        // No 'interrupted' ending and no 'loss' for a love arc: both fine now (Valid has neither).
+        var love = Validate(Valid.Replace("family: milestone", "family: love\nother: lovers"));
+        Expect(love.Count == 0, "a love arc needs no loss: " + string.Join("; ", love));
         ExpectInvalid("other", Valid.Replace("family: milestone", "family: rivalry"));
         ExpectInvalid("lichen.y", Valid.Replace("[remember lichen.x]", "[remember lichen.y]"));
         ExpectInvalid("holder", Valid.Replace("lichen.x | lichen |", "lichen.x | sauge |"));
@@ -292,6 +350,76 @@ public static class StoryChecks
         var two = Validate(Valid.Replace("[-> two]", "[-> nowhere]").Replace("trait curious", "trait curiouss"));
         Expect(two.Count >= 2, "every error reported, not the first only: " + string.Join("; ", two));
         Expect(two.All(e => e.Pos.File == "t0.story" && e.Pos.Line > 0), "errors carry file and line");
+        SizeRules();
+        NotYetSupportedRules();
+    }
+
+    private static void ExpectClean(string what, string text)
+    {
+        var errors = Validate(text);
+        Expect(errors.Count == 0, $"{what}: expected valid, got: {string.Join("; ", errors)}");
+    }
+
+    // 34d2. Rules per size, marks, mystery, unlocks and {T}.
+    private static void SizeRules()
+    {
+        ExpectClean("a short event closed by [end]", Short);
+        var shortMark = Short.Replace("[cailloux 10] [end]", "[cailloux 10] @@ [end]");
+        ExpectInvalid("short", shortMark.Replace("@@", "[epithet shy_one]"));
+        ExpectInvalid("short", shortMark.Replace("@@", "[keepsake pebble]"));
+        ExpectInvalid("short", shortMark.Replace("@@", "[trait brave -> craven]"));
+        ExpectInvalid("short", shortMark.Replace("@@", "[unlock s]"));
+        ExpectInvalid("short", Short.Replace("{A} le lance.\n  [end]", "{A} le lance.\n  [end]\n\n## ending: e\ntitle: E\nFin.\n[keepsake pebble]"));
+        ExpectInvalid("long", Valid.Replace("[cailloux 20] [-> e1]", "[cailloux 20] [end]"));
+
+        var withEpithet = Valid.Replace("## keepsakes", "## epithets\nshy_one | {a:Le Timide|La Timide}\n\n## keepsakes");
+        ExpectInvalid("one mark", withEpithet.Replace("[keepsake pebble] [cailloux 20]", "[keepsake pebble] [epithet shy_one] [cailloux 20]"));
+        ExpectClean("one mark", withEpithet.Replace("[keepsake pebble] [cailloux 20]", "[epithet shy_one] [cailloux 20]"));
+
+        var adult = Valid.Replace("stage: baby", "stage: adult");
+        ExpectClean("a swap in an adult arc", adult.Replace("Fin deux.\n[cailloux 10]", "Fin deux.\n[trait brave -> craven]"));
+        ExpectInvalid("adult", Valid.Replace("Fin deux.\n[cailloux 10]", "Fin deux.\n[trait brave -> craven]"));
+        ExpectInvalid("adult", Valid.Replace("stage: baby", "stage: teen, adult").Replace("Fin deux.\n[cailloux 10]", "Fin deux.\n[trait brave -> craven]"));
+        ExpectInvalid("swap", adult.Replace("Fin deux.\n[cailloux 10]", "Fin deux.\n[trait brave]"));
+        ExpectInvalid("group", adult.Replace("Fin deux.\n[cailloux 10]", "Fin deux.\n[trait brave -> shy]"));
+
+        ExpectInvalid("mystery", Valid.Replace("* gift | Prendre le galet", "* gift | Prendre le galet [mystery]").Replace("* leave | Partir", "* leave | Partir [mystery]"));
+        ExpectClean("one mystery", Valid.Replace("* gift | Prendre le galet", "* gift | Prendre le galet [mystery]"));
+
+        var locked = Valid.Replace("size: long", "size: long\nlocked");
+        ExpectInvalid("never unlocked", locked);
+        ExpectClean("a locked arc unlocked by an ending", locked.Replace("Fin deux.\n[cailloux 10]", "Fin deux.\n[cailloux 10] [unlock v]"));
+        ExpectInvalid("not locked", Valid.Replace("Fin deux.\n[cailloux 10]", "Fin deux.\n[cailloux 10] [unlock v]"));
+
+        ExpectClean("{T} in the first scene of an adoption arc", Valid.Replace("{A} est {a:sorti|sortie} de la Souche.", "{A} est {a:sorti|sortie}, {T}."));
+        ExpectInvalid("{T}", Valid.Replace("Elle se tait.", "Elle se tait, {T}."));
+        ExpectInvalid("{T}", Valid.Replace("Fin un.", "Fin un, {T}."));
+        ExpectInvalid("{T}", Valid.Replace("trigger: adoption", "trigger: draw").Replace("{A} est {a:sorti|sortie} de la Souche.", "{A} est {a:sorti|sortie}, {T}."));
+    }
+
+    // 34d3. What the parser reads but the engine does not run yet is refused, word by word.
+    private static void NotYetSupportedRules()
+    {
+        var other = Valid.Replace("size: long", "size: long\nother: lovers");
+        var snippets = new Dictionary<string, string>
+        {
+            ["handover"] = other.Replace("title: Un\npace: next_day\n", "title: Un\npace: next_day\nhandover\n"),
+            ["trigger relation"] = other.Replace("trigger: adoption", "trigger: relation lovers"),
+            ["trigger death"] = other.Replace("trigger: adoption", "trigger: death lovers"),
+            ["trigger sick"] = Valid.Replace("trigger: adoption", "trigger: sick"),
+            ["trigger break"] = Valid.Replace("trigger: adoption", "trigger: break 1"),
+            ["trigger oldage"] = Valid.Replace("trigger: adoption", "trigger: old_age"),
+            ["condition chain"] = Valid.Replace("{A} est {a:sorti|sortie} de la Souche.", "[if chain old_door] Une porte.\n{A} est {a:sorti|sortie} de la Souche."),
+        };
+        foreach (var word in StoryValidator.NotYetSupported)
+            if (!snippets.TryGetValue(word, out var text)) Expect(false, $"a refusal snippet for '{word}'");
+            else ExpectInvalid("not supported yet", text);
+        foreach (var word in snippets.Keys) Expect(StoryValidator.NotYetSupported.Contains(word), $"'{word}' is listed in NotYetSupported");
+        ExpectInvalid("not supported yet", Valid.Replace("trigger: adoption", "trigger: stage baby"));
+        // The first scene is positional: retiring it would silently disable the arc.
+        ExpectInvalid("cannot be retired", Valid.Replace("## scene: one\n", "## scene: old\nretired -> one\n\n## scene: one\n"));
+        ExpectClean("trigger stage teen", Valid.Replace("trigger: adoption", "trigger: stage teen"));
+        ExpectClean("trigger draw", Valid.Replace("trigger: adoption", "trigger: draw"));
     }
 
     // The spec's sample arc, with an ending.
@@ -301,7 +429,7 @@ public static class StoryChecks
         family: milestone
         stage: baby
         trigger: adoption
-        public: Une pousse vient de sortir de la Souche.
+        size: long
 
         ## memories
         lichen.came_first    | lichen  | private | +5 | Est venue à elle d'elle-même, le premier matin.
@@ -313,7 +441,6 @@ public static class StoryChecks
         ## scene: first_steps
         title: Les premiers pas
         pace: next_day
-        public: {A} hésite au bord de la Souche.
 
         La pluie s'est arrêtée dans la nuit. {A} est {a:sorti|sortie} de la Souche avant l'aube, et reste là, collé{a:|e} à l'écorce.
         [if trait curious] {A} a déjà goûté une feuille, puis une deuxième.
@@ -351,7 +478,7 @@ public static class StoryChecks
         Expect(pe.Count == 0, "sample parses: " + string.Join("; ", pe));
         var s = a?.Scenes.SingleOrDefault();
         if (s is null) { Expect(false, "sample has one scene"); return; }
-        Expect(s is { Key: "first_steps", Title: "Les premiers pas", Pace.Kind: PaceKind.NextDay } && s.Public!.Contains("hésite"), "scene header");
+        Expect(s is { Key: "first_steps", Title: "Les premiers pas", Pace.Kind: PaceKind.NextDay }, "scene header");
         Expect(s.Prose.Count == 1 && s.Prose[0].Lines.Count == 3 && s.Prose[0].Lines[1].When.SingleOrDefault() is { Kind: ConditionKind.Trait, Key: "curious" }
             && s.Prose[0].Lines[1].Text.StartsWith("{A} a déjà"), "conditional line");
         Expect(s.Options.Select(o => o.Key).SequenceEqual(new[] { "to_her", "stay", "wood" }), "options in order");
@@ -365,7 +492,7 @@ public static class StoryChecks
             && s.Options[0].Outcome?.Effects.Count == 2 && s.Options[0].Outcome!.Next == "the_cabin", "stress cost vs effects");
         Expect(a!.Endings.SingleOrDefault()?.Marks.Select(m => m.Kind).SequenceEqual(new[] { EffectKind.Keepsake, EffectKind.Cailloux }) == true
             && a.Endings[0].Title == "Le premier soir" && a.Endings[0].Prose.Count == 1, "ending");
-        Expect(s.Options[0].Pos.Line == 24 && wood.Failure!.Pos.Line > wood.Success!.Pos.Line, "option positions");
+        Expect(s.Options[0].Pos.Line == 23 && wood.Failure!.Pos.Line > wood.Success!.Pos.Line, "option positions");
         // Indentation is ignored.
         Parse(Sample.Replace("\n  ", "\n\t").Replace("\n    ", "\n"), out pe);
         Expect(pe.Count == 0, "tabs or no indent: " + string.Join("; ", pe));
@@ -384,13 +511,25 @@ public static class StoryChecks
         var n = Parse(Head + "## scene: beat\ntitle: B\npace: now\nUne ligne.\n[flag seen] [-> end]\n## ending: end\ntitle: E\nFin.\n", out pe);
         Expect(pe.Count == 0 && n!.Scenes[0].Options.Count == 0 && n.Scenes[0].Narration?.Next == "end"
             && n.Scenes[0].Narration!.Effects.Single().Kind == EffectKind.Flag && n.Scenes[0].Pace.Kind == PaceKind.Now, "narration scene: " + string.Join("; ", pe));
-        var h = Parse(Head + "## scene: later\ntitle: B\npace: +6h\nbump\nhandover\nTexte.\n* a | A\n  Oui.\n  [-> end]\n* b | B [owner-only] [secret]\n  [retired]\n## ending: end\ntitle: E\nFin.\n", out pe);
-        Expect(pe.Count == 0 && h!.Scenes[0] is { Bump: true, Handover: true, Pace: { Kind: PaceKind.Hours, Hours: 6 } }
-            && h.Scenes[0].Options[1] is { OwnerOnly: true, Secret: true, Retired: true, Outcome: null }, "pace in hours, bump, handover, retired option: " + string.Join("; ", pe));
+        var h = Parse(Head + "## scene: later\ntitle: B\npace: +6h\nhandover\nTexte.\n* a | A\n  Oui.\n  [-> end]\n* b | B [owner-only] [secret]\n  [retired]\n## ending: end\ntitle: E\nFin.\n", out pe);
+        Expect(pe.Count == 0 && h!.Scenes[0] is { Handover: true, Pace: { Kind: PaceKind.Hours, Hours: 6 } }
+            && h.Scenes[0].Options[1] is { OwnerOnly: true, Secret: true, Retired: true, Outcome: null }, "pace in hours, handover, retired option: " + string.Join("; ", pe));
         var r = Parse(Head + "## scene: old\nretired -> beat\n", out pe);
         Expect(pe.Count == 0 && r!.Scenes[0].RetiredTo == "beat", "retired scene: " + string.Join("; ", pe));
-        var lk = Parse(Head + "## scene: x\ntitle: X\npace: now\nTexte.\n* a | A [needs flag owes \"La pie vous doit une faveur\"] [public \"{A} file.\"]\n  Oui.\n  [-> end]\n", out pe);
-        Expect(lk?.Scenes[0].Options[0] is { LockText: "La pie vous doit une faveur", Public: "{A} file." }, "lock text and public line: " + string.Join("; ", pe));
+        var lk = Parse(Head + "## scene: x\ntitle: X\npace: now\nTexte.\n* a | A [needs flag owes \"La pie vous doit une faveur\"] [mystery]\n  Oui.\n  [-> end]\n", out pe);
+        Expect(lk?.Scenes[0].Options[0] is { LockText: "La pie vous doit une faveur", Mystery: true }, "lock text and mystery: " + string.Join("; ", pe));
+        // [end] closes a short event from an option, with no ending section; with a [-> …] it is a mistake.
+        var en = Parse(Head.Replace("size: long", "size: short") + "## scene: x\ntitle: X\npace: now\nTexte.\n* a | A\n  Oui.\n  [flag seen] [end]\n* b | B  [roll learning 7]\n  ? success\n    Bien.\n    [end]\n  ? failure\n    Mal.\n    [end]\n", out pe);
+        Expect(pe.Count == 0 && en!.Scenes[0].Options[0].Outcome is { End: true, Next: null } o1 && o1.Effects.Count == 1
+            && en.Scenes[0].Options[1] is { Success: { End: true, Next: null }, Failure: { End: true, Next: null } }, "[end] outcomes: " + string.Join("; ", pe));
+        Expect(en!.Scenes[0].Options.All(o => !o.Mystery), "no mystery unless written");
+        ExpectError(Head + "## scene: x\ntitle: X\npace: now\nTexte.\n* a | A\n  Oui.\n  [end] [-> x]\n", "in one outcome");
+        ExpectError(Head + "## scene: x\ntitle: X\npace: now\nTexte.\n* a | A\n  Oui.\n  [end]\n  [-> x]\n", "in one outcome");
+        ExpectError(Head + "## ending: z\ntitle: Z\nFin.\n[end]\n", "an ending already ends the event");
+        // The living message's words are gone.
+        ExpectError(Sample.Replace("pace: next_day\n", "pace: next_day\npublic: {A} hésite.\n"), "removed");
+        ExpectError(Sample.Replace("pace: next_day\n", "pace: next_day\nbump\n"), "removed");
+        ExpectError(Sample.Replace("[lean sociability +2]", "[lean sociability +2] [public \"{A} avance.\"]"), "removed");
     }
 
     private static StoryArc? Parse(string text, out List<StoryError> errors)
@@ -406,7 +545,7 @@ public static class StoryChecks
         Expect(errors.Any(e => e.Message.Contains(fragment)), $"expected an error with '{fragment}', got: {string.Join("; ", errors)}");
     }
 
-    private const string Head = "# arc: t\ntitle: T\nfamily: milestone\nstage: baby\ntrigger: adoption\npublic: P\n";
+    private const string Head = "# arc: t\ntitle: T\nfamily: milestone\nstage: baby\ntrigger: adoption\nsize: long\n";
 
     // 34b. The header, the declarations, the cast.
     private static void ParserHeader()
@@ -415,7 +554,7 @@ public static class StoryChecks
             + "## keepsakes\npebble | Le galet | Un galet tiède. | hurts\n", out var pe);
         Expect(pe.Count == 0, "valid header: " + string.Join("; ", pe));
         Expect(a is { Key: "t", Header.Family: StoryFamily.Milestone, Header.Trigger.Kind: TriggerKind.Adoption }
-            && a.Header.Stages.SequenceEqual(new[] { PlynlingStage.Baby }) && a.Header.Title == "T" && a.Header.Public == "P", "header fields");
+            && a.Header.Stages.SequenceEqual(new[] { PlynlingStage.Baby }) && a.Header.Title == "T" && a.Header is { Size: StorySize.Long, Once: true, Cooldown: null, Locked: false }, "header fields");
         Expect(a?.Memories.SingleOrDefault() is { Key: "lichen.x", Holder: "lichen", Public: false, Shift: 5, Wording: "Est venue." }, "memory");
         Expect(a?.Keepsakes.SingleOrDefault() is { Hurts: true, Name: "Le galet" } && a.Epithets.Single().Title == "{a:Le Timide|La Timide}", "keepsake, epithet");
         a = Parse(Head.Replace("trigger: adoption", "trigger: draw\nweight: 10\nweight: +5 [if passion gardening] [if season autumn]\nshelf: 7d\nother: friends\nrequires: [stage adult] [not trait shy]")
@@ -429,7 +568,18 @@ public static class StoryChecks
         // CRLF and a BOM read like LF, with the right line numbers.
         Parse("﻿" + (Head + "colour: blue\n").Replace("\n", "\r\n"), out pe);
         Expect(pe.Any(x => x.Pos.Line == 7 && x.Message.Contains("colour")), "CRLF+BOM: unknown field on line 7, got: " + string.Join("; ", pe));
-        ExpectError(Head.Replace("public: P\n", ""), "public");
+        ExpectError(Head.Replace("size: long\n", ""), "size");
+        ExpectError(Head.Replace("size: long", "size: medium"), "size");
+        ExpectError(Head + "public: P\n", "removed");
+        var sz = Parse(Head.Replace("size: long", "size: short"), out pe);
+        Expect(pe.Count == 0 && sz!.Header is { Size: StorySize.Short, Once: false, Cooldown: null, Locked: false }, "size short: " + string.Join("; ", pe));
+        sz = Parse(Head.Replace("size: long", "size: short\nonce: life\ncooldown: 30d\nlocked"), out pe);
+        Expect(pe.Count == 0 && sz!.Header is { Size: StorySize.Short, Once: true, Locked: true } && sz.Header.Cooldown == TimeSpan.FromDays(30), "once, cooldown, locked: " + string.Join("; ", pe));
+        ExpectError(Head.Replace("size: long", "size: short\ncooldown: 3h"), "cooldown");
+        ExpectError(Head.Replace("size: long", "size: short\nonce: never"), "once");
+        ExpectError(Head.Replace("size: long", "size: short\ncooldown: 0d"), "cooldown");
+        ExpectError(Head.Replace("size: long", "size: short\ncooldown: -5d"), "cooldown");
+        ExpectError(Head + "locked\nlocked\n", "twice");
         ExpectError(Head.Replace("stage: baby", "stage: toddler"), "toddler");
         ExpectError(Head.Replace("family: milestone", "family: drama"), "drama");
         ExpectError(Head.Replace("trigger: adoption", "trigger: break 7"), "break");

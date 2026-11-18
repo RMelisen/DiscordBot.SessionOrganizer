@@ -404,7 +404,7 @@ public static class EconomySinkChecks
         Console.WriteLine($"leaderboard page at worst: {worst} components");
     }
 
-    private static (int Text, int Count, List<string> Ids) Measure(Discord.IMessageComponent c)
+    internal static (int Text, int Count, List<string> Ids) Measure(Discord.IMessageComponent c)
     {
         var text = 0; var count = 1; var ids = new List<string>();
         void Add((int Text, int Count, List<string> Ids) r) { text += r.Text; count += r.Count; ids.AddRange(r.Ids); }

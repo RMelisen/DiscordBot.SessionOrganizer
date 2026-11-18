@@ -1538,11 +1538,17 @@ namespace ProjectSYNCS.Migrations
                     b.Property<bool>("DecidedAlone")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("EndingKey")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("EventKey")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Flags")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("GainedTraitKey")
@@ -1602,6 +1608,66 @@ namespace ProjectSYNCS.Migrations
                     b.HasIndex("PlynlingId");
 
                     b.ToTable("PlynlingJournalEntries");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.PlynlingMark", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("AcquiredAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("InstanceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PlynlingId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlynlingId", "Kind", "Key")
+                        .IsUnique();
+
+                    b.ToTable("PlynlingMarks");
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.PlynlingMemory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("AcquiredAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("InstanceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("MemoryKey")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PlynlingId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset?>("RevealedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlynlingId", "MemoryKey")
+                        .IsUnique();
+
+                    b.ToTable("PlynlingMemories");
                 });
 
             modelBuilder.Entity("ProjectSYNCS.Models.PlynlingRelation", b =>
@@ -2381,6 +2447,24 @@ namespace ProjectSYNCS.Migrations
                 });
 
             modelBuilder.Entity("ProjectSYNCS.Models.PlynlingJournalEntry", b =>
+                {
+                    b.HasOne("ProjectSYNCS.Models.Plynling", null)
+                        .WithMany()
+                        .HasForeignKey("PlynlingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.PlynlingMark", b =>
+                {
+                    b.HasOne("ProjectSYNCS.Models.Plynling", null)
+                        .WithMany()
+                        .HasForeignKey("PlynlingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ProjectSYNCS.Models.PlynlingMemory", b =>
                 {
                     b.HasOne("ProjectSYNCS.Models.Plynling", null)
                         .WithMany()

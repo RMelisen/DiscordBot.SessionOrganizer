@@ -3,6 +3,17 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.74.0 — 2026-11-18
+
+- Plynling events can now be written as story files: short events with real choices, and rarer long
+  ones over several days that end with a title or a keepsake.
+- Under each choice, a stakes line shows what it costs and what it brings; some choices keep a surprise,
+  and a choice the Plynling cannot take yet shows greyed out with what it needs. Buttons carry only a
+  trait icon, on the choices that need that trait.
+- A title earned shows after the Plynling's name on its card and is announced next to the story;
+  « Personnalité » gains an « Histoire » field with titles, keepsakes and memories.
+- The welcome of a newly adopted Plynling is the first story: three days of arriving in the village.
+
 ## 7.73.0 — 2026-11-18
 
 - Collection packs in `/inventory shop` now cost 150 cailloux (was 60).

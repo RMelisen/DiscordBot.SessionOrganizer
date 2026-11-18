@@ -110,7 +110,7 @@ event.
   shows locked, `[secret]` hides).
 - *Builder's call:* old C# events keep hiding their gated options as today — they are retiring, and
   showing them would crowd their cards.
-- A scene shows at most **5 options counting the locked ones** (one button row; validator).
+- A scene offers **2 to 4 options, locked ones counting** (one button row; validator).
 
 ### Stress for acting against character
 

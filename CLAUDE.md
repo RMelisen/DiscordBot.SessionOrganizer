@@ -19,7 +19,7 @@ matching file before changing that subsystem**; the rules there are as binding a
 | Pop quiz, `QuizBank`, `/quiz leaderboard` | `docs/agents/quiz.md` |
 | Plynlings (life, care, visits, relations, art) | `docs/agents/plynling.md` |
 | Plynling traits, stats, personality, events | `docs/agents/plynling-events.md` |
-| Plynling storylines: story files, `StoryParser`, `StoryValidator`, the walk checks, the path report | `docs/agents/plynling-storylines.md` |
+| Plynling storylines: the story engine, story files, `StoryParser`, `StoryValidator`, the walk checks, the path report | `docs/agents/plynling-storylines.md` |
 | Writing any Plynling line | `docs/plynling-writing-style.md` |
 | Plynling storylines, or anything set in the village (Humeval) | `docs/village-lore.md` |
 | Writing any line SYNCS says in her own voice | `docs/syncs-voice.md` |

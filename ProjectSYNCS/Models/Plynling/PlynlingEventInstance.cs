@@ -41,4 +41,9 @@ public class PlynlingEventInstance
     // resolved before lessons became a few days' Practice, when every +1 was permanent: the story tells
     // those as they happened.
     public bool? GrewForGood { get; set; }
+
+    // Story events: the flags this event's choices set, as "key;key" (null when none), and the key of
+    // the ending it reached. Stored so the story is told from this row alone, after any restart.
+    public string? Flags { get; set; }
+    public string? EndingKey { get; set; }
 }

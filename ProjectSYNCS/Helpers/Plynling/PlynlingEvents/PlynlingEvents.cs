@@ -43,17 +43,23 @@ public static partial class PlynlingEvents
         Dictionary<AiAxis, int> ai) =>
         new(key, label, outcome, null, null, null, effects, Nothing, NoStress, ai, Stance: stance);
 
-    // The catalog, one method per file in PlynlingEvents/, concatenated in catalog order. Each part is a
-    // method rather than a field: static field order across partial files is undefined.
+    // The catalog, one method per file in PlynlingEvents/, concatenated in catalog order, then the
+    // compiled story files (StoryCatalog, loaded here on first access; a broken file throws). Each part
+    // is a method rather than a field: static field order across partial files is undefined.
     public static readonly IReadOnlyList<EventDef> All = new[]
     {
         Basics(), Breaks(), Moments(), Wave1(), Wave2(), Wave3(),
         Wave4(), Wave5Young(), Wave5Grown(), Wave7Young(), Wave7Grown(), Wave8(),
         Wave8Stories(), Wave8Echoes(), Wave8Batch2Young(), Wave8Batch2Grown(), Wave8Batch2Late(), ShortBaby(),
-        ShortTeen(), ShortGrown(), ShortElder(),
+        ShortTeen(), ShortGrown(), ShortElder(), StoryCatalog.Compiled,
     }.SelectMany(part => part).ToArray();
 
-    private static readonly Dictionary<string, EventDef> ByKeyMap = All.ToDictionary(e => e.Key);
+    // Every def by key, plus each retired story scene's key → its successor's def (a run waiting on the
+    // old key is offered the new scene).
+    private static readonly Dictionary<string, EventDef> ByKeyMap = KeyMap(All, StoryCatalog.Aliases);
+
+    public static Dictionary<string, EventDef> KeyMap(IEnumerable<EventDef> defs, IReadOnlyDictionary<string, EventDef> aliases) =>
+        defs.Select(e => KeyValuePair.Create(e.Key, e)).Concat(aliases).ToDictionary();
 
     public static EventDef? ByKey(string key) => ByKeyMap.GetValueOrDefault(key);
 

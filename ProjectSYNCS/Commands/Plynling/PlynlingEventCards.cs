@@ -15,26 +15,31 @@ public static class PlynlingEventCards
 
     public static string NextId(int plynlingId, ulong cardId) => $"plyn:evnext:{plynlingId}:{cardId}";
 
-    // The choice, ephemeral: the scene, one line per option it can see (what it needs, its odds), and
-    // one button each. Hidden options are simply absent.
+    // The choice, ephemeral: the scene, one line per option the card lists (its stakes), and one plain
+    // button each. A story option that is shown but locked has a disabled button; hidden ones are absent.
     public static MessageComponent BuildChoice(PlynlingEventInstance inst, EventDef def, EventContext ctx, EventCast self, EventCast? target,
         ulong cardId)
     {
         var X = PlynlingEventStory.Expander(inst, def, self, target);
-        var options = def.Options.Where(o => PlynlingEventEngine.Visible(o, ctx)).ToList();
+        var options = def.Options.Where(o => PlynlingEventEngine.Shown(o, ctx)).ToList();
         // Labels may name the other ({B}): expanded, plain (they sit in bold or on a button), and a
         // button's cut to Discord's 80 characters — a long name could pass it.
-        var lines = options.Select(o => $"**{PlynlingEventStory.Label(o, X)}**{Details(o, ctx, self.Gender, target)}");
+        var lines = options.Select(o =>
+        {
+            var stakes = PlynlingEventStakes.Line(o, def, ctx, self.Gender, target?.Name);
+            return $"**{PlynlingEventStory.Label(o, X)}**{(stakes.Length == 0 ? "" : " · " + stakes)}";
+        });
         var row = new ActionRowBuilder();
         foreach (var o in options)
-            row.WithButton(Clip(PlynlingEventStory.Label(o, X), 80), PickId(inst.Id, o.Key, cardId), ButtonStyle.Primary, ButtonEmoji(o));
+            row.WithButton(Clip(PlynlingEventStory.Label(o, X), 80), PickId(inst.Id, o.Key, cardId), ButtonStyle.Primary, ButtonEmoji(o),
+                disabled: !PlynlingEventEngine.Visible(o, ctx));
         return new ComponentBuilderV2()
             .AddComponent(new ContainerBuilder()
                 .WithAccentColor(new Color(PlynlingCatalog.Info(self.Species).Accent))
                 .AddComponent(new SectionBuilder()
                     .WithAccessory(new ThumbnailBuilder().WithMedia(new UnfurledMediaItemProperties(
                         PlynlingArt.Sprite(self.Species, self.Stage, PlynlingMood.Content))))
-                    .AddComponent(new TextDisplayBuilder($"## ✨ {def.Title}\n{X(def.Scene)}")))
+                    .AddComponent(new TextDisplayBuilder($"## ✨ {def.Title}\n{X(PlynlingEventStory.SceneText(def, ctx))}")))
                 .AddComponent(new SeparatorBuilder())
                 .AddComponent(new TextDisplayBuilder(string.Join("\n", lines) +
                     $"\n-# Sans choix de ta part, **{self.Name}** décidera {self.Gender.Agree("seul", "seule")} <t:{PlynlingEventEngine.DueAt(inst, ctx.Self).ToUnixTimeSeconds()}:R>.")))
@@ -44,25 +49,17 @@ public static class PlynlingEventCards
 
     private static string Clip(string text, int max) => text.Length <= max ? text : text[..(max - 1)] + "…";
 
-    private static string Details(EventOption o, EventContext ctx, PlynlingGender g, EventCast? target)
+    // Buttons stay plain: the icon of the trait an option needs, nothing else (never the dice).
+    private static IEmote? ButtonEmoji(EventOption o)
     {
-        var parts = new List<string>();
-        if (o.Gate is TraitGate tg && PlynlingTraits.ByKey(tg.TraitKey) is { } trait) parts.Add($"{trait.Emoji} {trait.Name(g)}");
-        if (o.Gate is StatGate sg) parts.Add($"{PlynlingStats.Emoji(sg.Stat)} {PlynlingStats.Name(sg.Stat)} {sg.AtLeast}+");
-        if (o.Challenge is { } c)
-            parts.Add($"🎲 {PlynlingStats.Name(c.Stat)} : {PlynlingEventEngine.Chance(c, ctx)} %{(c.VsTarget && target is not null ? $" contre **{target.Name}**" : "")}");
-        // What choosing it against its nature costs, after its traits' multipliers, and which traits object.
-        var cost = PlynlingStress.Scaled(PlynlingEventEngine.StressCost(o, ctx), ctx.Traits);
-        if (cost > 0)
-            parts.Add($"😣 +{cost} stress ({string.Join(", ", o.StressCosts.Keys.Where(ctx.Has).Select(k => PlynlingTraits.ByKey(k)!.Name(g)))})");
-        return parts.Count == 0 ? "" : " · " + string.Join(" · ", parts);
+        var key = o.Gate switch
+        {
+            TraitGate tg => tg.TraitKey,
+            StoryGate sg => sg.Needs.FirstOrDefault(c => c is { Kind: ConditionKind.Trait, Negated: false })?.Key,
+            _ => null,
+        };
+        return key is not null && PlynlingTraits.ByKey(key) is { } t ? EmoteMarkup.Parse(t.Emoji) : null;
     }
-
-    private static IEmote? ButtonEmoji(EventOption o) =>
-        o.Gate is TraitGate tg && PlynlingTraits.ByKey(tg.TraitKey) is { } t ? EmoteMarkup.Parse(t.Emoji)
-        : o.Challenge is not null ? new Emoji("🎲")
-        : null;
-
     // After a pick, in place of the choice: the outcome, where the story is told, and the next
     // event if one waits — still pointing at the same card.
     public static MessageComponent BuildResult(string outcome, int pendingLeft, int plynlingId, ulong cardId)

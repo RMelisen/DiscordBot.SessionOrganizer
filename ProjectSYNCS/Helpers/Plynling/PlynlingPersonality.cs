@@ -73,7 +73,7 @@ public static class PlynlingPersonality
 
     // « 📜 Personnalité », answered privately: the title, each trait with what it does, and each stat
     // with where it comes from — CK3's tooltip, in an embed. The name is hostile input.
-    public static Embed DetailEmbed(Plynling p, IReadOnlyList<TraitInfo> traits)
+    public static Embed DetailEmbed(Plynling p, IReadOnlyList<TraitInfo> traits, StoryRecord? story = null)
     {
         var text = new StringBuilder();
         if (Title(traits, p.Gender) is { } title) text.AppendLine($"*« {title} »*").AppendLine();
@@ -94,8 +94,31 @@ public static class PlynlingPersonality
         foreach (var (info, ends) in PlynlingModifiers.Active(p))
             state.Add($"{info.Emoji} **{info.Name(p.Gender)}** — {info.Description} *(jusqu'à <t:{ends.ToUnixTimeSeconds()}:R>)*");
         if (state.Count > 0) embed.AddField("État", FieldText(state));
+        // What its stories left: titles, keepsakes, memories — cut like « État » is.
+        if (story is { IsEmpty: false }) embed.AddField("Histoire", FieldText(story.Lines()));
         return embed.Build();
     }
+
+    /// <summary>
+    /// What its stories left: titles (oldest first), keepsakes and the memories the village holds of it,
+    /// worded for its gender. Pure: the rows come from the service.
+    /// </summary>
+    public static StoryRecord StoryRecordOf(Plynling p, IEnumerable<PlynlingMark> marks, IEnumerable<PlynlingMemory> memories)
+    {
+        string Say(string template) => PlynlingEvents.Expand(template, PlynlingCardUi.SafeName(p.Name), p.Gender).Replace("**", "");
+        var ordered = marks.OrderBy(m => m.AcquiredAt).ThenBy(m => m.Id).ToList();
+        var titles = ordered.Where(m => m.Kind == MarkKind.Epithet && StoryCatalog.Epithets.ContainsKey(m.Key))
+            .Select(m => Say(StoryCatalog.Epithets[m.Key].Title)).ToList();
+        var keepsakes = ordered.Where(m => m.Kind == MarkKind.Keepsake && StoryCatalog.Keepsakes.ContainsKey(m.Key))
+            .Select(m => (Say(StoryCatalog.Keepsakes[m.Key].Name), Say(StoryCatalog.Keepsakes[m.Key].Story))).ToList();
+        var words = memories.OrderBy(m => m.AcquiredAt).ThenBy(m => m.Id)
+            .Where(m => StoryCatalog.Memories.ContainsKey(m.MemoryKey)).Select(m => HolderPrefix(StoryCatalog.Memories[m.MemoryKey]) + Say(StoryCatalog.Memories[m.MemoryKey].Wording)).ToList();
+        return new StoryRecord(titles, keepsakes, words);
+    }
+
+    // Who remembers, said before the memory: « la Mère Lichen : … ».
+    private static string HolderPrefix(MemoryDecl m) =>
+        StoryCatalog.Cast.TryGetValue(m.Holder, out var who) ? $"{who.Byname} : " : "";
 
     // Lines for one embed field, cut before Discord's 1024-character cap (every modifier at once
     // would pass it). The cut lines are counted, not lost silently.
@@ -106,7 +129,12 @@ public static class PlynlingPersonality
         var length = 0;
         foreach (var line in lines)
         {
-            if (length + line.Length + 1 > cap) break;
+            if (length + line.Length + 1 > cap)
+            {
+                // The first line alone is too long: cut that line rather than show only the count.
+                if (kept.Count == 0) { kept.Add(line[..(cap - 1)].TrimEnd() + "…"); length = cap; }
+                break;
+            }
             kept.Add(line);
             length += line.Length + 1;
         }
@@ -141,4 +169,16 @@ public static class PlynlingPersonality
         if (l.State != 0) parts.Add($"état {Signed(l.State)}");
         return $"{PlynlingStats.Emoji(l.Stat)} **{PlynlingStats.Name(l.Stat)} {l.Total}** · {string.Join(" · ", parts)}";
     }
+}
+
+/// <summary>The titles, keepsakes and memories its stories left on a Plynling, already worded.</summary>
+public sealed record StoryRecord(IReadOnlyList<string> Titles, IReadOnlyList<(string Name, string Story)> Keepsakes, IReadOnlyList<string> Memories)
+{
+    public bool IsEmpty => Titles.Count == 0 && Keepsakes.Count == 0 && Memories.Count == 0;
+
+    /// <summary>One line per title, keepsake and memory, for an embed field (the caller cuts it).</summary>
+    public IReadOnlyList<string> Lines() =>
+        Titles.Select(t => $"🏷️ *{t}*")
+            .Concat(Keepsakes.Select(k => $"🎁 **{k.Name}** — {k.Story}"))
+            .Concat(Memories.Select(m => $"💭 {m}")).ToList();
 }

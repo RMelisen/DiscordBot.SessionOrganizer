@@ -66,6 +66,8 @@ public class AppDbContext : DbContext
     public DbSet<PlynlingBadge> PlynlingBadges => Set<PlynlingBadge>();
     public DbSet<PlynlingTrait> PlynlingTraits => Set<PlynlingTrait>();
     public DbSet<PlynlingEventInstance> PlynlingEventInstances => Set<PlynlingEventInstance>();
+    public DbSet<PlynlingMemory> PlynlingMemories => Set<PlynlingMemory>();
+    public DbSet<PlynlingMark> PlynlingMarks => Set<PlynlingMark>();
     public DbSet<PlynlingJournalEntry> PlynlingJournalEntries => Set<PlynlingJournalEntry>();
     public DbSet<PlynlingRelation> PlynlingRelations => Set<PlynlingRelation>();
     public DbSet<VisitStoryRecord> VisitStoryRecords => Set<VisitStoryRecord>();
@@ -401,6 +403,21 @@ public class AppDbContext : DbContext
             // lands while ResolvedAt is still null, so the second save throws and its whole unit of
             // work (growth, relation, journal) rolls back — an event is never applied twice.
             e.Property(x => x.ResolvedAt).IsConcurrencyToken();
+        });
+
+        // What a story left her: a memory (revealed or not yet) and marks (epithets, keepsakes,
+        // unlocks). One row per key per Plynling; gone with an abandoned one. InstanceId is a plain
+        // column, not a foreign key: instances are history and are never deleted on their own.
+        modelBuilder.Entity<PlynlingMemory>(e =>
+        {
+            e.HasOne<Plynling>().WithMany().HasForeignKey(x => x.PlynlingId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.PlynlingId, x.MemoryKey }).IsUnique();
+        });
+
+        modelBuilder.Entity<PlynlingMark>(e =>
+        {
+            e.HasOne<Plynling>().WithMany().HasForeignKey(x => x.PlynlingId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.PlynlingId, x.Kind, x.Key }).IsUnique();
         });
 
         modelBuilder.Entity<PlynlingJournalEntry>(e =>

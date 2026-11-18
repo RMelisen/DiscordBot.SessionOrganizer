@@ -23,8 +23,19 @@ public static class PlynlingCardUi
 
     public static string Bar(double value) => LevelCardUi.ProgressBar((long)Math.Round(value * 1000), 1000);
 
+    // A title that follows a name or a verb loses its capital article (« La Nez-en-l'air » → « la Nez-en-l'air »);
+    // one that stands alone keeps it.
+    public static string LowerArticle(string title)
+    {
+        foreach (var article in new[] { "Les ", "Le ", "La ", "L'" })
+            if (title.StartsWith(article, StringComparison.Ordinal))
+                return char.ToLowerInvariant(title[0]) + title[1..];
+        return title;
+    }
+
     // partnerName: its living partner, if it has one (one at most), already known by the caller.
-    public static string Heading(Plynling p, DateTimeOffset now, string? partnerName = null)
+    // epithet: its latest story title (« la Nez-en-l'air »), shown after the name.
+    public static string Heading(Plynling p, DateTimeOffset now, string? partnerName = null, string? epithet = null)
     {
         var info = PlynlingCatalog.Info(p.Species);
         var age = LevelCardUi.Duration((long)PlynlingLife.Age(p, now).TotalMinutes);
@@ -32,7 +43,7 @@ public static class PlynlingCardUi
         // ♂/♀ at heading size, far too big beside the name.
         var title = CosmeticSlots.Worn(p, CosmeticSlot.Title) is { } t ? $"*« {CosmeticCatalog.TitleFor(t, p.Gender)} »*\n" : "";
         var accessory = CosmeticSlots.Worn(p, CosmeticSlot.Accessory) is { } a ? $"\nPorte {a.Emoji} {a.Name}" : "";
-        return $"## {SafeName(p.Name)}\n" + title +
+        return $"## {SafeName(p.Name)}{(epithet is null ? "" : ", " + LowerArticle(epithet))}\n" + title +
                $"{p.Gender.Symbol()} {info.Name}\n" +
                $"À <@{p.OwnerId}> · {StageLabel(PlynlingLife.Stage(p, now), p.Gender)} · {p.Gender.Agree("âgé", "âgée")} de {age}" +
                accessory +

@@ -134,6 +134,17 @@ never change that mapping, every stored morning depends on it.
   may match across colons, so the old pattern could catch the longer id. `plev:pick:*:*` stays for choices
   opened before; card id 0 means no refresh. A sweep's decision refreshes nothing.
 - `/plynling help` is two pages (`plyn:help:0|1`); measure each after editing.
+- **Story events** (compiled from `ProjectSYNCS/Stories/`) are `EventDef`s in `PlynlingEvents.All`, keyed
+  `<arc>.<scene>`, played by this same engine. Their loading, flags, memories, marks, long events and the
+  rules specific to them are in `plynling-storylines.md`; read it before touching the draw, the card or
+  `ApplyEventAsync`.
+- **`Shown` vs `Visible`** (`PlynlingEventEngine`): `Shown` is what the card lists, `Visible` what may be picked, by
+  a click or alone (`AloneOptions` uses `Visible`). They differ only for a locked story option (listed, disabled).
+  Old C# events keep hiding gated options, so for them the two agree. A new check on "can this be chosen" uses `Visible`.
+- **The stakes line** (`PlynlingEventStakes.Line`) is under every option of every event, C# ones too; buttons are
+  plain labels (only a trait-gated option keeps the trait icon, the 🎲 lives in the line).
+- **`AppliesWhenAlone`** is the single "not playing is free" rule, story effects included (`SwapTrait` and a hurting
+  keepsake never apply alone). A new effect that hurts gets a case there.
 
 ## Stress and modifiers — `Helpers/Plynling/PlynlingStress`, `Helpers/Plynling/PlynlingModifiers`
 

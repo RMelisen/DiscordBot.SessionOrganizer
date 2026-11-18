@@ -89,7 +89,9 @@ public partial class DebugModule : InteractionModuleBase<SocketInteractionContex
         }
         if (PlynlingEvents.ByKey(key) is not { } def)
         {
-            await RespondAsync("Clés : " + string.Join(", ", PlynlingEvents.All.Select(e => $"`{e.Key}`")), ephemeral: true);
+            // C# events and each story's first scene only: a later scene is a follow-up, forced with empty flags.
+            var keys = PlynlingEvents.All.Where(e => e.Story is null || ReferenceEquals(e.Story.Scene, e.Story.Arc.Scenes[0])).Select(e => $"`{e.Key}`");
+            await RespondAsync(EventKeysReply(keys), ephemeral: true);
             return;
         }
         await DeferAsync(ephemeral: true);
@@ -114,7 +116,26 @@ public partial class DebugModule : InteractionModuleBase<SocketInteractionContex
             await _plynlings.SaveAsync();
             await _announcer.TellAsync(_plynlings, new[] { inst.Id }, Context.Guild.Id, now, Context.Channel);
         }
-        await FollowupAsync($"🔧 `{def.Key}` créé (#{inst.Id}, {mode}).", ephemeral: true);
+        var later = def.Story is { } link && !ReferenceEquals(link.Scene, link.Arc.Scenes[0])
+            ? " Scène suivante forcée : elle démarre sans aucun drapeau d'histoire." : "";
+        await FollowupAsync($"🔧 `{def.Key}` créé (#{inst.Id}, {mode}).{later}", ephemeral: true);
+    }
+
+    // The key list, cut with « … » so the whole reply stays under Discord's 2000 characters.
+    private static string EventKeysReply(IEnumerable<string> keys)
+    {
+        const string head = "Clés (premières scènes des histoires et événements classiques) : ";
+        const int limit = 1900;
+        var sb = new System.Text.StringBuilder(head);
+        var first = true;
+        foreach (var k in keys)
+        {
+            var piece = (first ? "" : ", ") + k;
+            if (sb.Length + piece.Length > limit) { sb.Append(" …"); break; }
+            sb.Append(piece);
+            first = false;
+        }
+        return sb.ToString();
     }
 
     // The hourly Plynling sweep, now, for every guild: settle, traits owed, due events, today's pulse,

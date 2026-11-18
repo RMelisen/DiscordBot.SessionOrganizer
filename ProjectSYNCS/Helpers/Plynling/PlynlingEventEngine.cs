@@ -39,7 +39,7 @@ public static class PlynlingEventEngine
 
     private static double WeightOf(EventDef def, EventContext ctx)
     {
-        double w = def.Weight;
+        double w = def.Weight + (def.WeightBonus?.Invoke(ctx) ?? 0);
         if (def.WeightByTrait is { } byTrait)
             foreach (var (trait, factor) in byTrait)
                 if (ctx.Has(trait)) w *= factor;
@@ -59,10 +59,10 @@ public static class PlynlingEventEngine
     // nothing new gets resolved and the window never moves. Then the least recently seen comes back.
     // `hasTarget` says whether a social event has a candidate meeting its target condition.
     public static EventDef? PickPulse(int plynlingId, int dayKey, IEnumerable<EventDef> defs, EventContext ctx,
-        IReadOnlyList<string> recent, Func<EventDef, bool> hasTarget)
+        IReadOnlyList<string> recent, Func<EventDef, bool> hasTarget, bool allowLong)
     {
         var eligible = defs
-            .Where(d => d.Type == EventType.Pulse && d.BreakLevel == 0 && Eligible(d, ctx))
+            .Where(d => d.Type == EventType.Pulse && d.BreakLevel == 0 && (allowLong || !IsLong(d)) && Eligible(d, ctx))
             .Where(d => d.Target == TargetKind.None || hasTarget(d))
             .Select(d => (Def: d, W: WeightOf(d, ctx)))
             .Where(x => x.W > 0)
@@ -87,12 +87,28 @@ public static class PlynlingEventEngine
     public static int? PickTarget(int plynlingId, int dayKey, IReadOnlyList<int> candidateIds) =>
         candidateIds.Count == 0 ? null : StableRoll.Pick(candidateIds.OrderBy(i => i).ToList(), plynlingId, dayKey, TargetSalt);
 
+    // Whether the card lists the option: a story option behind a non-secret gate shows locked (its LockText)
+    // while its needs are unmet; a secret one shows only once they hold. Visible below is what may be picked.
+    public static bool Shown(EventOption option, EventContext ctx) => option.Gate switch
+    {
+        StoryGate { Secret: true } g => StoryConditions.All(g.Needs, ctx),
+        StoryGate => true,
+        _ => Visible(option, ctx),
+    };
+
+    // A long story event: while one is open, no other pulse is drawn.
+    public static bool IsLong(EventDef d) => d.Story?.Arc.Header.Size == StorySize.Long;
+
+    public static bool BlocksPulse(IEnumerable<EventDef> openDefs) => openDefs.Any(IsLong);
+
+    // Whether the option may be picked (by a click or alone): shown and, for a story gate, its needs hold.
     public static bool Visible(EventOption option, EventContext ctx) => option.Gate switch
     {
         null => true,
         TraitGate t => ctx.Has(t.TraitKey),
         StatGate s => ctx.Stat(s.Stat) >= s.AtLeast,
-        _ => false,
+        StoryGate g => StoryConditions.All(g.Needs, ctx),
+        _ => false,   // RetiredGate: never picked
     };
 
     public static int StressCost(EventOption option, EventContext ctx) =>
@@ -132,6 +148,8 @@ public static class PlynlingEventEngine
             StressChange s => s.Amount < 0,
             ApplyModifier m => PlynlingModifiers.ByKey(m.Key) is { Negative: false },
             GainCoping => false,
+            SwapTrait => false,                  // a trait changes only by its owner's choice
+            GiveMark { Hurts: true } => false,   // a keepsake that hurts is the owner's to take
             Heartbreak => def.Type == EventType.Response,
             _ => true,
         };
@@ -167,10 +185,12 @@ public static class PlynlingEventEngine
     public static DateTimeOffset FollowUpAt(int instanceId, FollowUp f, DateTimeOffset now) =>
         now.AddHours(f.MinHours + StableRoll.Unit(instanceId, FollowUpSalt, 0) * (f.MaxHours - f.MinHours));
 
-    // The event an on-action brings: among those triggered by it and eligible for this Plynling.
+    // The event an on-action brings: among those triggered by it and eligible for this Plynling. A story
+    // replaces the C# moment: when one is in the pool, only stories are (Arrival, never on_welcome).
     public static EventDef? PickTriggered(OnAction trigger, int plynlingId, int salt, IEnumerable<EventDef> defs, EventContext ctx)
     {
         var pool = defs.Where(d => d.Trigger == trigger && Eligible(d, ctx)).Select(d => (Def: d, W: WeightOf(d, ctx))).Where(x => x.W > 0).ToList();
+        if (pool.Any(x => x.Def.Story is not null)) pool = pool.Where(x => x.Def.Story is not null).ToList();
         return pool.Count == 0 ? null : StableRoll.Weighted(pool, plynlingId, salt, TriggeredSalt);
     }
 
@@ -195,8 +215,14 @@ public static class PlynlingEventEngine
     // won), the mean of each event's options, averaged over every event the ado years can meet. The
     // catalog leans kind and sociable and grows Diplomacy most, so a history is read as its distance from
     // `count` average choices — otherwise even an owner who clicks at random raises a kind, talkative adulte.
-    private static readonly EventDef[] AdoEvents = PlynlingEvents.All
-        .Where(d => d.Stages.Contains(PlynlingStage.Teen) && d.BreakLevel == 0 && d.Options.Count > 0).ToArray();
+    // Retired options can never be chosen, so they stay out of the averages.
+    private static readonly EventDef[] AdoEvents = AdoPool(PlynlingEvents.All);
+
+    // The ado years' events, each cut to the options that can be chosen; one left with none is dropped.
+    public static EventDef[] AdoPool(IEnumerable<EventDef> defs) => defs
+        .Where(d => d.Stages.Contains(PlynlingStage.Teen) && d.BreakLevel == 0)
+        .Select(d => d with { Options = d.Options.Where(o => o.Gate is not RetiredGate).ToList() })
+        .Where(d => d.Options.Count > 0).ToArray();
 
     private static readonly IReadOnlyDictionary<AiAxis, double> AdoLeaningBaseline = Enum.GetValues<AiAxis>().ToDictionary(a => a,
         a => AdoEvents.Length == 0 ? 0 : AdoEvents.Average(d => d.Options.Average(o => (double)o.Ai.GetValueOrDefault(a))));

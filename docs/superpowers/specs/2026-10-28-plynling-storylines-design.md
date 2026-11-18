@@ -1,3 +1,5 @@
+> **Superseded by `2026-11-17-plynling-village-events-design.md`.** Kept for history only.
+
 # Plynling Storylines — the event rework
 
 Design agreed with the owner on 2026-10-28 (grilling pass). Not implemented yet. Decisions are the

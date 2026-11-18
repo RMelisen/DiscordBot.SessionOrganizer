@@ -243,6 +243,21 @@ var host = Host.CreateDefaultBuilder(args)
     })
     .Build();
 
+    // The story files compile on first touch; a broken one must stop the bot here, naming every
+    // error, not surface as a TypeInitializationException on the first Plynling event.
+    try
+    {
+        _ = StoryCatalog.Compiled;
+    }
+    catch (StoryLoadException ex)
+    {
+        var storyLog = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("StoryCatalog");
+        foreach (var error in ex.Errors) storyLog.LogCritical("Story file error: {Error}", error);
+        // The console logger writes from a background queue; disposing the host flushes it before the crash.
+        host.Dispose();
+        throw;
+    }
+
     // BotChat is static; the one thing it needs from DI is the sticker gate.
     BotChat.FollowUp = host.Services.GetRequiredService<StickerService>().TryFollowUp;
 

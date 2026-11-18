@@ -86,7 +86,13 @@ public sealed class PlynlingAnnouncer
     {
         foreach (var id in instanceIds)
             if (await plynlings.GetEventStoryAsync(id, now) is { } story)
+            {
                 await PostEventStoryAsync(guildId, PlynlingEventCards.BuildStory(story, 0), fallback);
+                // A title earned is also said out loud, next to the story.
+                foreach (var key in await plynlings.GetTitlesEarnedAsync(id))
+                    if (PlynlingEventStory.TitleLine(story.Self, key) is { } line)
+                        await PostEventStoryAsync(guildId, new ComponentBuilderV2().WithTextDisplay(line).Build(), fallback);
+            }
     }
 
     public async Task PostEventStoryAsync(ulong guildId, MessageComponent story, IMessageChannel? fallback = null)
