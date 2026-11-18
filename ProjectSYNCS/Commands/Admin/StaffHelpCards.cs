@@ -3,9 +3,8 @@ using ProjectSYNCS.Helpers;
 
 namespace ProjectSYNCS.Commands;
 
-// The two staff guides: /report help (what each report shows) and /debug help (what each owner tool
-// does). Both are read by staff and the owner (SessionPermissions.IsStaff): staff can't run /debug,
-// but they see it in the picker and should know what it can do on their server.
+// The two guides: /report help (what each report shows, read by staff and the owner —
+// SessionPermissions.IsStaff) and /debug help (what each owner tool does, owner-only like the tools).
 //
 // Hand-maintained like /help: a new /report or /debug subcommand gets a line here. Static and
 // Context-free so the checks can measure both against the embed caps (1024 a field, 6000 in all),
@@ -55,33 +54,34 @@ public static class StaffHelpCards
             .WithTitle("🔧 /debug — mode d'emploi")
             .WithColor(Color.DarkGrey)
             .WithDescription(
-                "Les outils de Rodhengard. **Lui seul peut s'en servir** : tout le monde voit `/debug` dans la liste, " +
-                "mais chaque outil refuse les autres. Voici ce qu'ils font, pour que le staff sache ce qui peut se passer sur le serveur.")
+                "Tes outils de développement, Papa. **Toi seul peux t'en servir** : tout le monde voit `/debug` dans la liste, " +
+                "mais chaque outil refuse les autres.")
             .AddField("Parler à ma place",
                 "**`tell`** — Me fait dire un message dans un salon, éventuellement en réponse à un message. " +
-                "Avec `announce`, je précise que c'est de sa part.\n" +
+                "Avec `announce`, je précise que c'est de ta part.\n" +
                 "**`dm`** — M'envoie dire un message privé à quelqu'un.\n" +
                 "**`delete`** — Supprime un de mes messages, par son lien. Jamais celui de quelqu'un d'autre.\n" +
                 "**`sticker`** — Poste ici une de mes images, au choix de l'humeur.")
             .AddField("Mon comportement",
                 "**`silence`** — Je ne parle plus que pour répondre aux commandes et aux boutons. Les rappels, " +
                 "récaps et tirages programmés partent quand même. Tient après un redémarrage.\n" +
-                "**`absent`** — Quand on le mentionne, je réponds qu'il n'est pas disponible et je lui transmets le message. " +
+                "**`absent`** — Quand on te mentionne, je réponds que tu n'es pas disponible et je te transmets le message. " +
                 "S'efface au redémarrage.\n" +
                 "**`minecraft`** — Mon état sur le serveur Minecraft, mon inventaire ; me faire venir, partir, ou m'interdire de jouer.")
             .AddField("Consulter",
-                "**`confession`** — Qui a écrit la confession n°N. L'anonymat de `/confess` s'arrête à lui.\n" +
+                "**`confession`** — Qui a écrit la confession n°N. L'anonymat de `/confess` s'arrête à toi.\n" +
                 "**`answers`** — Ce qu'on me dit le plus, et les messages auxquels je n'ai pas su répondre précisément (posté dans le salon).\n" +
                 "**`milestones`** — Le compte de messages de ce salon, ses paliers et qui les a atteints.\n" +
-                "**`digest`** — Le résumé du mois dernier tout de suite en DM, le sien ou un aperçu de celui de Tata.\n" +
+                "**`digest`** — Le résumé du mois dernier tout de suite en DM, le tien ou un aperçu de celui de Tata.\n" +
                 "**`voyager`** — Où en est Voyager, ou poster une ligne de sa correspondance.\n" +
                 "**`emotes`** — Génère le code des émotes du serveur que je ne connais pas encore.")
             .AddField("Coups de pouce et tests",
                 "**`role`** — Donne un rôle à quelqu'un, avec mes permissions (jamais un rôle au-dessus du mien).\n" +
                 "**`quiz`** — Pose une question tout de suite, ferme celle en cours, ou couronne la grosse tête de la semaine.\n" +
                 "**`quokka`** — Fait venir Quokka tout de suite dans le salon des bots.\n" +
-                "**`plynling`** · **`stress`** · **`modifier`** · **`event`** — Règlent son propre Plynling pour tester " +
+                "**`plynling`** · **`stress`** · **`modifier`** · **`event`** — Règlent ton propre Plynling pour tester " +
                 "(hygiène, maladie, stress, modificateurs, événements).\n" +
+                "**`heal`** — Remet un Plynling vivant en pleine forme : besoins au max, guéri, sans stress.\n" +
                 "**`sweep`** — Lance tout de suite le passage horaire des Plynlings.")
             .WithFooter($"Project S.Y.N.C.S. v{AppInfo.Version}")
             .Build();

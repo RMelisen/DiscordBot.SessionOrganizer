@@ -339,6 +339,21 @@ public partial class PlynlingService
         return p;
     }
 
+    // /debug heal, on someone's living Plynling. A sickness it ends goes in the journal, as a cure would.
+    public Task<Plynling?> DebugHealAsync(ulong guildId, ulong ownerId, DateTimeOffset now) =>
+        UnitAsync(() => DebugHealOnceAsync(guildId, ownerId, now));
+
+    private async Task<Plynling?> DebugHealOnceAsync(ulong guildId, ulong ownerId, DateTimeOffset now)
+    {
+        var p = await GetCurrentAsync(guildId, ownerId, now);
+        if (p is null || p.DiedAt is not null) return null;
+        var wasSick = PlynlingLife.IsSick(p);
+        PlynlingLife.DebugHeal(p, now);
+        if (wasSick) await AddMomentAsync(p, JournalKind.Recovered, null, now);
+        await _db_context.SaveChangesAsync();
+        return p;
+    }
+
     public Task<(FreezeOutcome Outcome, Plynling? Plynling)> FreezeAsync(
         ulong guildId, ulong ownerId, bool byStaff, DateTimeOffset now) =>
         UnitAsync(() => FreezeOnceAsync(guildId, ownerId, byStaff, now));

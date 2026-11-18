@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.67.0 — 2026-11-18
+
+- `/debug heal`: puts a living Plynling back on its feet in one go (needs full, cured, no stress),
+  for testing or to undo a bug.
+- `/debug help` is now owner-only, like the tools it describes; it left `/help`.
+
 ## 7.66.1 — 2026-11-17
 
 - Messages to pass on read more ways: « préviens @someone que… », « rappelle à @someone que… », « dis à

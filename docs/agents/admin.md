@@ -53,11 +53,11 @@ same check.
 `emotes`, `sleeping`, `minecraft`: her reports to the staff. Same gate as `/admin` (`IsStaff` per handler, no
 `[DefaultMemberPermissions]`, guild-only).
 
-**`/report help` and `/debug help`** are the staff's guides (`StaffHelpCards`, static, measured by the
-checks): what each report shows, what each owner tool does. Both are private and gated on `IsStaff`,
-`/debug help` included — the one `/debug` entry that isn't owner-only, because staff see the group in
-the picker and should know what it can do on their server. **A new `/report` or `/debug` subcommand
-gets a line in its guide.**
+**`/report help` and `/debug help`** are the guides (`StaffHelpCards`, static, measured by the
+checks): what each report shows, what each owner tool does. Both are private. `/report help` is gated
+on `IsStaff`; `/debug help` is owner-only like every other `/debug` entry — they're dev tools, so it
+stays out of `/help` and `README.md`. **A new `/report` or `/debug` subcommand gets a line in its
+guide.**
 
 - **Posted in the open, with every name** (no-shows, latecomers, the busiest, the ones going
   quiet, the sleepers): the owner's call, and the one exception to « absences are a count, never
@@ -296,7 +296,9 @@ confession #N, see `community.md`), `dm`, `absent`, `plynling`, `emotes`, `diges
 see `personality/listening.md`, *Answer stats*),
 `role` (give a member a role; refuses managed / `@everyone` / not-below-her roles up front),
 `milestones` (this channel's message count and milestones, see *Channel message milestones*),
-plus the Plynling testing tools (`event`, `stress`, `modifier`, `sweep`, in `plynling-events.md`), each comparing `Context.User.Id` to
+plus the Plynling testing tools (`event`, `stress`, `modifier`, `sweep`, in `plynling-events.md`), and
+`heal` (any member's living Plynling, yours by default: needs to 100 %, cured — journalled as a
+recovery, like `/admin plynling cure` — stress 0, the death warning re-armed), each comparing `Context.User.Id` to
 `AvailabilityService.OwnerId` inline and replying ephemerally — except `answers`, which posts its
 result in the open. `DebugModule` carries no
 `[CommandContextType]` (it never reads `Context.Guild`); `/debug plynling` checks for a DM itself.

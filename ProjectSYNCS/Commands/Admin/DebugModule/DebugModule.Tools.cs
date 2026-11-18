@@ -43,6 +43,30 @@ public partial class DebugModule : InteractionModuleBase<SocketInteractionContex
             ephemeral: true, allowedMentions: AllowedMentions.None);
     }
 
+    // Puts a living Plynling back on its feet in one go — needs full, cured, no stress — to test from a
+    // clean state, or to undo what a bug did to someone's. The owner's own by default.
+    [SlashCommand("heal", "Soigner complètement un Plynling : besoins au max, guéri, sans stress (tests)")]
+    public async Task HealAsync([Summary("user", "À qui est le Plynling (par défaut : toi)")] IUser? user = null)
+    {
+        if (Context.User.Id != AvailabilityService.OwnerId)
+        {
+            await RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
+            return;
+        }
+        if (Context.Guild is null)
+        {
+            await RespondAsync("Sur un serveur, pas en message privé.", ephemeral: true);
+            return;
+        }
+        await DeferAsync(ephemeral: true);
+        var p = await _plynlings.DebugHealAsync(Context.Guild.Id, (user ?? Context.User).Id, DateTimeOffset.UtcNow);
+        await FollowupAsync(p is null
+                ? "🔧 Pas de Plynling vivant à soigner."
+                : $"🔧 **{PlynlingCardUi.SafeName(p.Name)}** est en pleine forme : faim, bonheur et hygiène à 100 %, " +
+                  "guéri, sans stress.",
+            ephemeral: true, allowedMentions: AllowedMentions.None);
+    }
+
     // Events come once a day: the owner forces one on his own living Plynling — waiting, already
     // expired (the next sweep decides it alone), or decided at once with its story posted here.
     // Ignores the pulse, the cap, the stage and target conditions; a social event takes the chosen

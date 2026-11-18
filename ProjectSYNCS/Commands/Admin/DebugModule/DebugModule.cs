@@ -144,12 +144,11 @@ public partial class DebugModule : InteractionModuleBase<SocketInteractionContex
         _picker = picker;
     }
 
-    // The one /debug entry staff may use: what each tool does (StaffHelpCards), since they see the
-    // group in the picker. IsStaff includes the owner.
-    [SlashCommand("help", "Ce que fait chacun de ces outils (lisible par le staff)")]
-    public Task HelpAsync() => SessionPermissions.IsStaff(Context.User)
+    // What each tool does (StaffHelpCards). Owner-only like the tools themselves: they're dev tools.
+    [SlashCommand("help", "Ce que fait chacun de ces outils")]
+    public Task HelpAsync() => Context.User.Id == AvailabilityService.OwnerId
         ? RespondAsync(embed: StaffHelpCards.BuildDebugHelp(), ephemeral: true)
-        : RespondAsync(StaffHelpCards.Refusal, ephemeral: true);
+        : RespondAsync("Seul Rodhengard peut utiliser cette commande.", ephemeral: true);
 
     [SlashCommand("tell", "Faire dire un message au bot")]
     public async Task SpeakAsync(

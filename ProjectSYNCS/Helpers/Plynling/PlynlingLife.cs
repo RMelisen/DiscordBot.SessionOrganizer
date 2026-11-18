@@ -104,6 +104,19 @@ public static class PlynlingLife
         if (sick == false) Cure(p);
     }
 
+    // /debug heal: every need full, cured, no stress, the death warning re-armed. A frozen one keeps
+    // its stored values as they are, so they are simply overwritten.
+    public static void DebugHeal(Plynling p, DateTimeOffset now)
+    {
+        RebaseIfLive(p, now);
+        p.Hunger = 1.0;
+        p.Happiness = 1.0;
+        p.Hygiene = 1.0;
+        p.Stress = 0;
+        p.WarningSent = false;
+        Cure(p);
+    }
+
     public static Plynling Create(ulong guildId, ulong ownerId, string name, PlynlingSpecies species, PlynlingGender gender, DateTimeOffset now) => new()
     {
         GuildId = guildId,
