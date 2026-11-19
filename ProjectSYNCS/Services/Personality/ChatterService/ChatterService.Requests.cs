@@ -68,7 +68,13 @@ internal sealed partial class ChatterService
             (false, { } at) => $"une session <t:{at.ToUnixTimeSeconds()}:F>",
             _ => "une session",
         };
-        var id = _offers.Add(new ChatOffer(message.Author.Id, ask.Title, ask.At, Array.Empty<string>()));
+        // What else she read, so they see it before the click: « (5 places, 3 h, chaque semaine) ».
+        var extras = new List<string>();
+        if (ask.Places is { } places) extras.Add($"{places} places");
+        if (ask.Minutes is { } minutes) extras.Add(SessionTime.DurationLabel(minutes));
+        if (ask.Weekly) extras.Add("chaque semaine");
+        if (extras.Count > 0) summary += $" ({string.Join(", ", extras)})";
+        var id = _offers.Add(new ChatOffer(message.Author.Id, ask.Title, ask.At, Array.Empty<string>(), ask));
         return await OfferAsync(message, path, RequestTopic.Session, name, weekday, summary,
             new ButtonBuilder("Préparer la session", $"chatreq:session:{id}", ButtonStyle.Primary));
     }

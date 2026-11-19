@@ -219,12 +219,26 @@ A `Request` for a session, a `/tonight` call, a vote, a reminder or teams (`pers
   voudrait participer au défi créatif » is the title « Qui voudrait participer au défi créatif ? »
   with Participe / Ne participe pas, from the verb (`WhoAnswers`: participer, venir, jouer, dispo,
   chaud, partant, présent, inscrit); a wish with none of those (« qui veut une pizza ») is Moi / Pas
-  moi; any other « qui » question gets no options (« qui est le meilleur ? » needs names). « si … »
-  turns direct with Oui / Non (« On joue samedi ? »), with no options when an « ou » makes it a
-  choice; « quel / quand / où / comment… » and « ce que » (→ « Qu'est-ce que ») give the title
-  only. Without a colon the question needs an asking word before it (« savoir », « demander »,
+  moi; « qui sera là » is Présent / Absent; any other « qui » question gets no options (« qui est le
+  meilleur ? » needs names). « si … » and « est-ce que … » turn direct with Oui / Non (« On joue
+  samedi ? »), or, when an « ou » makes it a choice, with what it chooses between (`IfOptions`:
+  « on joue à Valo ou à LoL ce soir » → Valo / LoL, the trailing date dropped); « ou pas » stays
+  Oui / Non. « quel / quand / où / comment / à quoi… » and « ce que » (→ « Qu'est-ce que ») give the
+  title only. After a colon, any question closed on « ? » is the title as written, unless it's a
+  short list (« : Valorant, LoL ? »); a question before the colon titles the options after it.
+  « oui ou non pour X » is Oui / Non titled X; « pour X » with no options titles the wizard.
+  Without a colon the question needs an asking word before it (« savoir », « demander »,
   « sur »…): straight after the vote word « qui » is a relative (« un sondage qui dure 2 jours »).
   Her offer then names it (« le vote **…** »).
+- **A session reads more than its name and time** (`Helpers/Personality/SessionDetails`, run before
+  the date and title, blanking what it reads): places next to their noun or « max » (« à 5
+  joueurs », « 6 max », a closing « pour 4 » — never a bare « à 5 », which may be an hour), a
+  length after « pendant » / « durée » or as a range (« de 21h à 23h30 »: the start stays for the
+  date), « pour / sur / de Nh » only up to 6 h (« pour 21h » is a time), every week (« chaque
+  samedi », « tous les samedis », « hebdo »), and its kind by a word (film → Movie, resto, bowling…
+  → Activity; a game is the default, never read). The name is capitalised, and its tail keeps the
+  generic nouns (« escape game »). Her offer lists what she read (« (5 places, 3 h, chaque
+  semaine) ») and the click puts it in the draft over the person's last choices.
 - **Stripping never eats what was asked.** An article with a capital mid-sentence starts a name and
   stays (« Les Sims », « A Way Out »). A reminder's head ends at the link after its verb (« de »,
   « d' », « à », « que »): what follows is theirs even when it reuses the asking's words (« de pas

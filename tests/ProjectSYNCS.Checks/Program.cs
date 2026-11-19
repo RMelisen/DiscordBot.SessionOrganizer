@@ -5166,11 +5166,14 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     {
         ("syncs organise un Valorant samedi 21h", "Valorant", Paris(11, 21, 21)),
         ("tu peux créer une session de Among Us demain soir stp ?", "Among Us", Paris(11, 18, 21)),
-        ("on se fait un lol 5v5 vendredi à 20h30 ?", "lol 5v5", Paris(11, 20, 20, 30)),
+        ("on se fait un lol 5v5 vendredi à 20h30 ?", "Lol 5v5", Paris(11, 20, 20, 30)),
         ("organise une session pour samedi", "", Paris(11, 21, 21)),
         ("organise une session", "", null),
-        ("organise un raid", "raid", null),
-        ("organise un jeu de société", "jeu de société", null),
+        ("organise un raid", "Raid", null),
+        ("organise un jeu de société", "Jeu de société", null),
+        ("Syncs, organise une session pour le défi créatif samedi 21h", "Défi créatif", Paris(11, 21, 21)),
+        ("organise une session pour jouer à Valo samedi 21h", "Valo", Paris(11, 21, 21)),
+        ("organise un escape game samedi 14h", "Escape game", Paris(11, 21, 14)),
         ("lance une partie de Minecraft le 25/12 à 20:30", "Minecraft", Paris(12, 25, 20, 30)),
         ("<@123> programme un Gartic Phone dimanche 18h", "Gartic Phone", Paris(11, 22, 18)),
         ("organise une session Les Sims samedi 21h", "Les Sims", Paris(11, 21, 21)),
@@ -5181,6 +5184,33 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     {
         var got = ChatRequest.ReadSession(text, crNow);
         if (got.Title != title || got.At != at) Fail($"ReadSession(« {text} ») = (« {got.Title} », {got.At}), expected (« {title} », {at})");
+    }
+
+    // What else a session request says: places, length, every week, kind; read out of the title and date.
+    foreach (var (text, title, at, places, minutes, weekly, category) in new (string, string, DateTimeOffset?, int?, int?, bool, ProjectSYNCS.Models.SessionCategory?)[]
+    {
+        ("syncs organise un valo samedi 21h à 5 joueurs", "Valo", Paris(11, 21, 21), 5, null, false, null),
+        ("organise une session Valorant samedi 21h, 5 places max", "Valorant", Paris(11, 21, 21), 5, null, false, null),
+        ("organise un raid samedi 21h avec 6 personnes max", "Raid", Paris(11, 21, 21), 6, null, false, null),
+        ("organise un among us demain soir jusqu'à 8 joueurs", "Among us", Paris(11, 18, 21), 8, null, false, null),
+        ("lance une partie de Minecraft le 25/12 à 20:30 pour 4", "Minecraft", Paris(12, 25, 20, 30), 4, null, false, null),
+        ("organise un lol samedi 21h pendant 3h", "Lol", Paris(11, 21, 21), null, 180, false, null),
+        ("organise un lol samedi de 21h à 23h30", "Lol", Paris(11, 21, 21), null, 150, false, null),
+        ("organise un valo samedi 21h pour 2h", "Valo", Paris(11, 21, 21), null, 120, false, null),
+        ("organise une session de 90 minutes samedi 21h", "", Paris(11, 21, 21), null, 90, false, null),
+        ("organise un valo samedi pour 21h", "Valo", Paris(11, 21, 21), null, null, false, null),
+        ("organise un valo tous les samedis à 21h", "Valo", Paris(11, 21, 21), null, null, true, null),
+        ("organise un valo chaque samedi 21h", "Valo", Paris(11, 21, 21), null, null, true, null),
+        ("organise une session hebdo de valo le mercredi à 20h", "Valo", Paris(11, 18, 20), null, null, true, null),
+        ("organise une soirée film vendredi 21h", "Film", Paris(11, 20, 21), null, null, false, ProjectSYNCS.Models.SessionCategory.Movie),
+        ("organise un resto samedi 20h", "Resto", Paris(11, 21, 20), null, null, false, ProjectSYNCS.Models.SessionCategory.Activity),
+        ("organise une session jeux de société vendredi 20h pour 6 personnes", "Jeux de société", Paris(11, 20, 20), 6, null, false, null),
+        ("organise un valo samedi à 5", "Valo", Paris(11, 21, 5), null, null, false, null),
+    })
+    {
+        var got = ChatRequest.ReadSession(text, crNow);
+        if (got.Title != title || got.At != at || got.Places != places || got.Minutes != minutes || got.Weekly != weekly || got.Category != category)
+            Fail($"ReadSession(« {text} ») = {got}, expected (« {title} », {at}, {places}, {minutes}, {weekly}, {category})");
     }
 
     foreach (var (text, game, at) in new (string, string, DateTimeOffset?)[]
@@ -5225,7 +5255,7 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
     {
         ("fais un sondage : pizza, sushi ou kebab", "pizza ou sushi ou kebab ?", ["pizza", "sushi", "kebab"]),
         ("lance un vote pizza ou sushi", "pizza ou sushi ?", ["pizza", "sushi"]),
-        ("lance un sondage pour ce soir : Valorant, LoL", "ce soir", ["Valorant", "LoL"]),
+        ("lance un sondage pour ce soir : Valorant, LoL", "Ce soir", ["Valorant", "LoL"]),
         ("tu peux faire un sondage entre Among Us et Gartic stp ?", "Among Us ou Gartic ?", ["Among Us", "Gartic"]),
         ("lance un sondage", "", []),
         ("lance un vote pizza", "", []),
@@ -5238,11 +5268,27 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         ("fais un sondage pour savoir qui est le meilleur joueur", "Qui est le meilleur joueur ?", []),
         ("lance un sondage pour savoir si on joue samedi", "On joue samedi ?", ["Oui", "Non"]),
         ("fais un sondage pour savoir s'il faut changer de jeu", "Il faut changer de jeu ?", ["Oui", "Non"]),
-        ("fais un sondage pour savoir si on joue à Valo ou LoL", "On joue à Valo ou LoL ?", []),
+        ("fais un sondage pour savoir si on joue à Valo ou LoL", "On joue à Valo ou LoL ?", ["Valo", "LoL"]),
+        ("fais un sondage pour savoir si on joue à Among Us ou à Gartic", "On joue à Among Us ou à Gartic ?", ["Among Us", "Gartic"]),
+        ("fais un sondage pour savoir si on mange des pizzas ou des sushis", "On mange des pizzas ou des sushis ?", ["pizzas", "sushis"]),
+        ("fais un sondage pour savoir si on joue samedi ou dimanche", "On joue samedi ou dimanche ?", ["samedi", "dimanche"]),
+        ("fais un sondage pour savoir si on reste ou on part", "On reste ou on part ?", ["On reste", "on part"]),
+        ("fais un sondage pour savoir si on joue à Valo, LoL ou CS", "On joue à Valo, LoL ou CS ?", ["Valo", "LoL", "CS"]),
+        ("fais un sondage pour savoir si on joue ce soir ou pas", "On joue ce soir ou pas ?", ["Oui", "Non"]),
         ("fais un sondage pour savoir quel jeu on fait vendredi", "Quel jeu on fait vendredi ?", []),
         ("fais un sondage pour savoir où on mange", "Où on mange ?", []),
         ("fais un sondage pour savoir ce qu'on mange ce soir", "Qu'est-ce qu'on mange ce soir ?", []),
         ("fais un sondage sur qui participe au tournoi", "Qui participe au tournoi ?", ["Participe", "Ne participe pas"]),
+        ("fais un sondage pour savoir si on joue à Valo ou à LoL ce soir", "On joue à Valo ou à LoL ce soir ?", ["Valo", "LoL"]),
+        ("fais un sondage pour savoir qui sera là vendredi", "Qui sera là vendredi ?", ["Présent", "Absent"]),
+        ("fais un sondage pour savoir à quoi on joue ce soir", "À quoi on joue ce soir ?", []),
+        ("fais un sondage: on joue à quoi ce soir ?", "On joue à quoi ce soir ?", []),
+        ("fais un sondage : on garde le même jeu ?", "On garde le même jeu ?", ["Oui", "Non"]),
+        ("fais un sondage pour savoir est-ce que vous venez samedi", "Vous venez samedi ?", ["Oui", "Non"]),
+        ("fais un sondage pour savoir qui vient : Valo ou LoL", "Qui vient ?", ["Valo", "LoL"]),
+        ("fais un sondage oui ou non pour le défi créatif", "Défi créatif", ["Oui", "Non"]),
+        ("lance un sondage pour le défi créatif", "Défi créatif", []),
+        ("lance un sondage : Valorant, LoL ?", "Valorant ou LoL ?", ["Valorant", "LoL"]),
         // Straight after the vote word, « qui » is a relative and « ou » joins options.
         ("lance un sondage qui dure deux jours", "", []),
         ("lance un vote pizza ou sushi stp", "pizza ou sushi ?", ["pizza", "sushi"]),

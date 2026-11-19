@@ -1,9 +1,16 @@
 using System.Text.RegularExpressions;
+using ProjectSYNCS.Models;
 
 namespace ProjectSYNCS.Helpers;
 
-/// <summary>A session asked for in chat: what it is, as written, and when. Either may be missing.</summary>
-public sealed record SessionAsk(string Title, DateTimeOffset? At);
+/// <summary>
+/// A session asked for in chat: what it is, as written, and when. Either may be missing. The rest is
+/// what the message said, null (or false) when it said nothing: places (« à 5 joueurs »), length in
+/// minutes (« pendant 2h », « de 21h à 23h »), every week (« tous les samedis »), and its kind
+/// (« soirée film » is a Movie, « un resto » an Activity; a game is never read, it's the default).
+/// </summary>
+public sealed record SessionAsk(string Title, DateTimeOffset? At, int? Places = null, int? Minutes = null,
+    bool Weekly = false, SessionCategory? Category = null);
 
 /// <summary>A `/tonight` call asked for in chat: the game, as written, and the hour if one was said for tonight.</summary>
 public sealed record TonightAsk(string Game, DateTimeOffset? At);
@@ -79,7 +86,15 @@ public static partial class ChatRequest
         "cree", "creer", "creez", "prepare", "preparer", "programme", "programmer", "planifie", "planifier", "et", "si", "me",
         "m", "moi", "un", "une", "des", "du", "la", "le", "les", "l", "petite", "petit", "nouvelle", "nouveau", "session",
         "sessions", "soiree", "soirees", "partie", "parties", "game", "games", "event", "evenement", "rdv", "seance",
-        "planning", "de", "d", "sur", "a", "au", "pour", "avec", "entre", "potes", "copains", "ensemble",
+        "planning", "de", "d", "sur", "a", "au", "pour", "avec", "entre", "potes", "copains", "ensemble", "jouer",
+    }));
+
+    // What a session's name may end on: the session's own words, less its generic nouns, which can
+    // close a name (« escape game »).
+    private static readonly HashSet<string> SessionTail = new(SessionStrip.Except(new[]
+    {
+        "game", "games", "partie", "parties", "session", "sessions", "soiree", "soirees", "event", "evenement", "seance",
+        "rdv", "planning",
     }));
 
     // A /tonight call's: the session's, and the call to the room.
@@ -123,6 +138,13 @@ public static partial class ChatRequest
 
     private static readonly HashSet<string> VoteLeadStrip = new() { "pour", "sur", "de", "d", "a", "au", "du", "rapide", "entre" };
 
+    // A vote's topic, as its title: its leads, articles, the asking and her name. Not « ce », which
+    // opens a topic (« pour ce soir »).
+    private static readonly HashSet<string> VoteTitleStrip = new(VoteLeadStrip.Concat(Articles).Concat(AskWords).Concat(new[]
+    {
+        "concernant", "propos", "sujet", "savoir", "demander", "voir", "petit", "vite", "fait",
+    }).Where(w => w != "ce"));
+
     private static readonly HashSet<string> TeamWords = new() { "equipe", "equipes", "team", "teams", "groupe", "groupes" };
 
     private static readonly HashSet<string> BalancedWords = new()
@@ -136,9 +158,14 @@ public static partial class ChatRequest
 
     public static SessionAsk ReadSession(string content, DateTimeOffset nowUtc)
     {
-        var (text, words) = Words(content);
+        // Places, length and « every week » are read first and blanked out, so neither the date nor
+        // the title sees them (« pendant 2h » is no hour, « 5 joueurs » no part of the name).
+        var details = SessionDetails.Read(content.Length > MaxLength ? content[..MaxLength] : content);
+        var (text, words) = Words(details.Masked);
         var when = FindWhen(text, words, w => SessionTime.Parse(w, nowUtc));
-        return new SessionAsk(Rest(text, words, when, SessionStrip, InputCaps.Title), when?.At);
+        var title = Rest(text, words, when, SessionStrip, InputCaps.Title, tail: SessionTail);
+        if (title.Length > 0) title = char.ToUpperInvariant(title[0]) + title[1..];
+        return new SessionAsk(title, when?.At, details.Places, details.Minutes, details.Weekly, details.Category);
     }
 
     public static TonightAsk ReadTonight(string content, DateTimeOffset nowUtc)
@@ -169,15 +196,32 @@ public static partial class ChatRequest
         // A colon inside a time (« 21:30 ») has no space after it, and is not this one.
         var hasColon = colon >= 0 && (colon + 1 == after.Length || !char.IsDigit(after[colon + 1]));
 
+        // « un sondage oui ou non pour le défi créatif »: the answers said, the rest is what it's about.
+        var (leadText, leadWords) = Words(after);
+        if (leadWords.Count >= 2 && leadWords[0].Norm == "oui"
+            && (leadWords[1].Norm == "non" || leadWords.Count >= 3 && leadWords[1].Norm is "ou" or "or" && leadWords[2].Norm == "non"))
+        {
+            var skip = leadWords[1].Norm == "non" ? 2 : 3;
+            var about = Topic(skip < leadWords.Count ? leadText[leadWords[skip].Start..] : string.Empty);
+            return new VoteAsk(about, ["Oui", "Non"], Asked: about.Length > 0);
+        }
+
         // « un sondage pour savoir qui vient samedi », « un sondage : qui est chaud ? »: a question,
         // read before the options, since « si on joue à valo ou lol » would split into two.
         if (ReadQuestion(hasColon ? after[(colon + 1)..] : after, needsLead: !hasColon) is { } question) return question;
 
-        // « un sondage pour ce soir : valo, lol »: the title before the colon, the options after.
+        // « un sondage pour ce soir : valo, lol »: the title before the colon, the options after. A
+        // question there is the title (« pour savoir qui vient : Valo ou LoL » → « Qui vient ? »).
+        var askedTitle = false;
         if (hasColon)
         {
-            var (titleText, titleWords) = Words(after[..colon]);
-            title = Rest(titleText, titleWords, null, VoteLeadStrip, InputCaps.Title);
+            var before = after[..colon];
+            if (ReadQuestion(before, needsLead: true) is { } asked)
+            {
+                title = asked.Title;
+                askedTitle = true;
+            }
+            else title = Topic(before);
             after = after[(colon + 1)..];
         }
 
@@ -189,14 +233,27 @@ public static partial class ChatRequest
             .Select(p => TrimTail(p.Trim().TrimEnd('?', '!', '.', ' ')))
             .Where(p => p.Length > 0);
         var options = PollRules.ParseOptions(string.Join('\n', pieces));
-        if (options.Count < 2) return new VoteAsk(title, Array.Empty<string>());
+        if (options.Count < 2)
+        {
+            // « un sondage pour le défi créatif »: no options, but what it's for is its title.
+            if (!hasColon && optWords.Count > 0 && optWords[0].Norm is "pour" or "sur" or "concernant") title = Topic(after);
+            return new VoteAsk(title, Array.Empty<string>(), askedTitle);
+        }
 
         if (title.Length == 0)
         {
-            var asked = string.Join(" ou ", options) + " ?";
-            if (asked.Length <= InputCaps.Title) title = asked;
+            var built = string.Join(" ou ", options) + " ?";
+            if (built.Length <= InputCaps.Title) title = built;
         }
-        return new VoteAsk(title, options);
+        return new VoteAsk(title, options, askedTitle);
+    }
+
+    // What a vote is about, as its title: « pour le défi créatif » → « Défi créatif ».
+    private static string Topic(string source)
+    {
+        var (text, words) = Words(source);
+        var rest = TrimTail(Rest(text, words, null, VoteTitleStrip, InputCaps.Title).TrimEnd('?', '!', '.', ' '));
+        return rest.Length == 0 ? rest : char.ToUpperInvariant(rest[0]) + rest[1..];
     }
 
     // The question a vote is for, from the words after the vote word (or after its colon):
@@ -205,7 +262,11 @@ public static partial class ChatRequest
     //   (« qui veut une pizza »), none otherwise (« qui est le meilleur ? » needs names).
     // - « si … » turns direct, Oui / Non: « si on joue samedi » → « On joue samedi ? ». With an « ou »
     //   inside it's a choice, so it keeps the title and leaves the options to them.
-    // - « quel / quand / où / comment… » and « ce que » (→ « Qu'est-ce que ») give the title only.
+    // - « est-ce que … » reads like « si … » (« Vous venez samedi ? »).
+    // - « quel / quand / où / comment / à quoi… » and « ce que » (→ « Qu'est-ce que ») give the title only.
+    // - After a colon, any question closed on « ? » is its title as written (« : on joue à quoi ce
+    //   soir ? »), read like « si … » unless a question word leaves the answers open. A short list
+    //   with a « ? » (« : Valorant, LoL ? ») stays a list.
     // Straight after the vote word, « qui » is a relative (« un sondage qui dure 2 jours »): without a
     // colon, the question needs an asking word before it (« pour savoir », « demander », « sur »).
     private static VoteAsk? ReadQuestion(string source, bool needsLead)
@@ -228,25 +289,58 @@ public static partial class ChatRequest
         {
             case "qui":
                 title = Question(text, words, i);
-                options = WhoOptions(words, body);
+                options = WhoOptions(text, words, body);
                 break;
             case "si" or "s":
                 // « s'il », « s'ils »: the pronoun opens the direct question.
                 if (head.Norm == "s" && words[body].Norm is not ("il" or "ils")) return null;
                 title = Question(text, words, body);
-                if (title is not null && !words.Skip(body).Any(w => w.Norm is "ou" or "or")) options = ["Oui", "Non"];
+                if (title is not null) options = DirectOptions(title);
+                break;
+            case "est" when body + 1 < words.Count && words[body].Norm == "ce" && words[body + 1].Norm is "que" or "qu":
+                title = Question(text, words, body + 2);
+                if (title is not null) options = DirectOptions(title);
                 break;
             case "ce" when words[body].Norm is "que" or "qu":
                 title = Question(text, words, body) is { } rest ? "Qu'est-ce " + char.ToLowerInvariant(rest[0]) + rest[1..] : null;
                 break;
+            case "quoi":
+                // « à quoi on joue » keeps its « à », which the lead skipped.
+                title = Question(text, words, i > 0 && words[i - 1].Norm is "a" or "de" or "en" or "sur" or "avec" ? i - 1 : i);
+                break;
             default:
-                // « où » is « ou » once cleaned, which is also the options' « ou »: the accent decides.
-                var where = head.Norm == "ou" && text[head.Start..head.End].Contains('ù');
-                if (!where && !QuestionWords.Contains(head.Norm)) return null;
-                title = Question(text, words, i);
+                if (IsQuestionWord(text, head)) title = Question(text, words, i);
+                else if (!needsLead && IsDirectQuestion(source)) title = Question(text, words, 0);
+                else return null;
+                if (title is not null && !IsQuestionWord(text, head)) options = DirectOptions(title);
                 break;
         }
         return title is null || title.Length > InputCaps.Title ? null : new VoteAsk(title, options, Asked: true);
+    }
+
+    // « quel », « quand », « où »… opening a question. « où » is « ou » once cleaned, which is also the
+    // options' « ou »: the accent decides.
+    private static bool IsQuestionWord(string text, Word word) =>
+        QuestionWords.Contains(word.Norm) || word.Norm == "ou" && text[word.Start..word.End].Contains('ù');
+
+    // After a colon: a question closed on « ? », not a short list (« Valorant, LoL ? »): a list's first
+    // piece is a name, a question's first piece says something (three words or more).
+    private static bool IsDirectQuestion(string source)
+    {
+        var trimmed = source.TrimEnd();
+        if (!trimmed.EndsWith('?')) return false;
+        var pieces = OptionSplitRegex().Split(trimmed.TrimEnd('?', ' ')).Where(p => p.Trim().Length > 0).ToList();
+        return pieces.Count < 2 || Words(pieces[0]).Words.Count >= 3;
+    }
+
+    // The answers to a yes-or-no question as a title (« On joue samedi ? »): none when a question word
+    // leaves them open (« on joue à quoi »), otherwise IfOptions.
+    private static IReadOnlyList<string> DirectOptions(string title)
+    {
+        var clause = title.EndsWith(" ?") ? title[..^2] : title;
+        var (text, words) = Words(clause);
+        if (words.Any(w => w.Norm is "quoi" or "qui" || IsQuestionWord(text, w))) return Array.Empty<string>();
+        return IfOptions(clause);
     }
 
     // The words from `from` to the end, as written, capitalised, closed on « ? »: trailing politeness,
@@ -259,13 +353,79 @@ public static partial class ChatRequest
         return char.ToUpperInvariant(rest[0]) + rest[1..] + " ?";
     }
 
+    // « si … »: Oui / Non, unless an « ou » (or a comma list) makes it a choice, whose options are
+    // what it chooses between: « on joue à Valo ou LoL » → Valo, LoL. Each option after the first is
+    // its piece, less a leading link (« ou à Gartic », « ou des sushis »). The first is the end of the
+    // piece before: after its last link (« on joue à Among Us » → Among Us), or as many words as the
+    // second has (« on joue samedi ou dimanche » → samedi; « on reste ou on part » → on reste).
+    // « ou pas », « ou non » keep it a yes-or-no.
+    private static IReadOnlyList<string> IfOptions(string clause)
+    {
+        var pieces = OptionSplitRegex().Split(clause).Select(p => p.Trim()).Where(p => p.Length > 0).ToList();
+        if (pieces.Count < 2) return ["Oui", "Non"];
+
+        var others = pieces.Skip(1).Select(StripLinks).Where(p => p.Length > 0).ToList();
+        if (others.Count == 0 || others.Any(o => Words(o).Words.All(w => w.Norm is "pas" or "non" or "du" or "tout" or "not")))
+            return ["Oui", "Non"];
+
+        var (leftText, leftWords) = Words(pieces[0]);
+        if (leftWords.Count == 0) return Array.Empty<string>();
+        var link = leftWords.FindLastIndex(w => ChoiceLinks.Contains(w.Norm));
+        var start = link >= 0 && link < leftWords.Count - 1
+            ? link + 1
+            : Math.Max(0, leftWords.Count - Words(others[0]).Words.Count);
+        var first = leftText[leftWords[start].Start..].Trim();
+        // « ou à LoL ce soir »: the date after the last option belongs to the question.
+        others[^1] = TrimTrailingWhen(others[^1]);
+
+        var options = PollRules.ParseOptions(string.Join('\n', others.Prepend(first)));
+        return options.Count >= 2 ? options : Array.Empty<string>();
+    }
+
+    // An option less the date it ends on: « LoL ce soir » is LoL. The longest such tail, never the
+    // whole option, never a lone chat word FrenchDate also reads as a day (« un jeu »).
+    private static string TrimTrailingWhen(string option)
+    {
+        var (text, words) = Words(option);
+        var now = DateTimeOffset.UtcNow;
+        for (var k = 1; k < words.Count; k++)
+        {
+            if (words.Count - k == 1 && AmbiguousAlone.Contains(words[k].Norm)) continue;
+            var tail = text[words[k].Start..];
+            if (FrenchDate.Parse(tail, now, SessionTime.DefaultHour, SessionTime.DefaultHour) is not null
+                || ReminderTime.ParseRelative(tail, now) is not null)
+                return text[..words[k].Start].Trim();
+        }
+        return option;
+    }
+
+    // An option less the link or article it opens on: « à Gartic » is Gartic, « des sushis » sushis.
+    private static string StripLinks(string piece)
+    {
+        var (text, words) = Words(piece);
+        var k = 0;
+        while (k < words.Count && ChoiceLinks.Contains(words[k].Norm) && !StartsName(text, words[k])) k++;
+        return k < words.Count ? text[words[k].Start..].Trim() : string.Empty;
+    }
+
+    // What sits before a choice's option: « on joue à X », « on mange des X », « on part sur X ».
+    private static readonly HashSet<string> ChoiceLinks = new()
+    {
+        "a", "au", "aux", "de", "du", "des", "d", "le", "la", "les", "l", "un", "une", "sur", "en", "avec", "pour",
+        "plutot", "entre",
+    };
+
     // « qui … »: the first verb or state in the next few words that says how to answer; a wish only
     // when none does (« qui voudrait participer » is Participe, not Moi).
-    private static IReadOnlyList<string> WhoOptions(List<Word> words, int from)
+    private static IReadOnlyList<string> WhoOptions(string text, List<Word> words, int from)
     {
         var window = words.Skip(from).Take(6).ToList();
         foreach (var w in window)
+        {
             if (WhoAnswers.TryGetValue(w.Norm, out var pair)) return [pair.Yes, pair.No];
+            // « qui sera là » — « là », not the article « la ».
+            if (w.Norm == "la" && text[w.Start..w.End].Contains('à')) return ["Présent", "Absent"];
+        }
         return window.Any(w => Wishes.Contains(w.Norm)) ? ["Moi", "Pas moi"] : Array.Empty<string>();
     }
 

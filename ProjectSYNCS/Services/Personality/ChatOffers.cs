@@ -4,9 +4,11 @@ namespace ProjectSYNCS.Services;
 
 /// <summary>
 /// What she offered to set up in chat, waiting for its asker's click: a session, a `/tonight` call or
-/// a vote, read from their message (ChatRequest). <see cref="Options"/> is the vote's, empty otherwise.
+/// a vote, read from their message (ChatRequest). <see cref="Options"/> is the vote's, empty otherwise;
+/// <see cref="Session"/> is the whole session read (places, length, weekly, kind), null otherwise.
 /// </summary>
-public sealed record ChatOffer(ulong AskerId, string Title, DateTimeOffset? At, IReadOnlyList<string> Options);
+public sealed record ChatOffer(ulong AskerId, string Title, DateTimeOffset? At, IReadOnlyList<string> Options,
+    SessionAsk? Session = null);
 
 /// <summary>What a click on a forgotten offer is told: it expired (or she restarted), and the command that does it.</summary>
 public static class ChatOfferText

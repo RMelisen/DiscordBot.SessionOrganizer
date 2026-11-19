@@ -3,6 +3,12 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.1.0 — 2026-11-19
+
+- A session asked for in chat now reads its places (« à 5 joueurs »), its length (« pendant 3h », « de 21h à 23h »), « every week » (« tous les samedis ») and its kind (film, outing), and her offer says what she read.
+- Session names read from chat are cleaner (« pour jouer à Valo » → « Valo », « escape game » stays whole) and start with a capital.
+- Polls asked in chat read more questions: a choice (« si on joue à Valo ou LoL » → Valo / LoL), « est-ce que », « à quoi », « qui sera là » (Présent / Absent), a question after a colon, and « oui ou non ».
+
 ## 8.0.1 — 2026-11-19
 
 - Asking her in chat for a poll « pour savoir qui… / si… » now fills in the question as its title and, when the question says how to answer, its options (« Participe » / « Ne participe pas », « Oui » / « Non »…).

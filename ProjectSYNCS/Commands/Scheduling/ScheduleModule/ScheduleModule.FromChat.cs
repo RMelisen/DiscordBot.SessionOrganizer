@@ -31,6 +31,14 @@ public partial class ScheduleModule : InteractionModuleBase<SocketInteractionCon
         draft.Title = offer.Title;
         // A time read an hour ago may have gone by since.
         draft.At = offer.At is { } at && at > DateTimeOffset.UtcNow ? at : null;
+        // What the message said beats the person's last choices (NewDraft); what it didn't say keeps them.
+        if (offer.Session is { } said)
+        {
+            if (said.Places is { } places) draft.MaxPlayers = places;
+            if (said.Minutes is { } minutes) draft.DurationMinutes = minutes;
+            if (said.Weekly) draft.Weekly = true;
+            if (said.Category is { } category) draft.Category = category;
+        }
         _drafts.Set(Context.User.Id, draft);
 
         if (draft.At is not null && draft.Title.Length > 0)
