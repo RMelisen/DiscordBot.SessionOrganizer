@@ -42,6 +42,10 @@ public class PlynlingVisitRunner
     public async Task<(VisitOutcome? Outcome, string? Refusal, IReadOnlyList<int> Untold)> RunAsync(
         Plynling visitor, Plynling host, VisitScene scene, VisitChoice option, VisitChoice reaction, DateTimeOffset now)
     {
+        // OpenVisitAsync refuses a visit to oneself; a custom-id is the client's to send, so the
+        // play refuses it too rather than trust the id it was handed.
+        if (visitor.OwnerId == host.OwnerId) return (null, PlynlingText.VisitSelf, Array.Empty<int>());
+
         // The stored day is what survives a restart; the memory claim, taken after it (so a failed
         // read holds nothing), turns a double click away before the database is asked.
         var day = AppTime.DayKey(now);

@@ -233,27 +233,31 @@ message**, edited from the first pick to the ending. No pager.
    and both stages (`VisitCatalog.Eligible`), through `ResponsePicker` over `visit-scene:<key>` so the
    same scene doesn't come twice running. `BuildChoice` posts the place, the visitor, the intro and its
    2–4 options for the visitor's owner, plus « 💌 Lui avouer ses sentiments » when
-   `ConfessionOpenAsync` says so. **This first send is the one that pings**, the invited owner only
+   `VisitTermsAsync` says so (one read of the relation gives « met today », the bond and the offer: the
+   start answers without a defer). **This first send is the one that pings**, the invited owner only
    (`AllowedMentions` with that id); not from `;pl visit` (the person's own message already did), not
    at her home. Every edit after it sends `AllowedMentions.None`.
 2. **`pvc:`, the visitor's option** → the message becomes **the knock** (`BuildKnock`): what the visitor
    chose, and the host's 2–4 reactions for the invited owner. It defers and reads both Plynlings (the
    knock names the host, and the visitor's owner is not in the id).
 3. **`pvx:`, « 💌 »** → the same message becomes the confession scene's choice: its options are ways of
-   confessing, with no « 💌 ».
+   confessing, with no « 💌 ». It asks `MayConfessNowAsync` first (offer day aside): a pair that stopped
+   qualifying since step 1 is told privately (`ConfessionGone`) and the message goes back to the scene's
+   own options, rather than finding out after the host's reaction.
 4. **`pvr:`, the host's reaction — that is accepting the visit.** Within two hours (`VisitInviteLife`,
    counted from step 1; the expiry rides in every id). It defers, runs the refusal chain (gone, frozen,
    asleep, sick: ephemeral follow-ups, message unchanged), then `PlynlingVisitRunner.RunAsync`, and
    `BuildEnding` replaces the message. The visit is saved by then, so `ShowEndingAsync` never lets a
    refused edit swallow it: it falls back to a closed card with the outcome lines, and logs.
 
-- **Ids**: `pvc:{visitor}:{hostOwner}:{expiry}:{scene}:{option}`, `pvx:{visitor}:{hostOwner}:{expiry}`,
+- **Ids**: `pvc:{visitor}:{hostOwner}:{expiry}:{scene}:{option}`, `pvx:{visitor}:{hostOwner}:{expiry}:{scene}`,
   `pvr:…:{scene}:{option}:{reaction}` — everything the handler needs, nothing secret, each step its own
   verb. The validator caps scene keys at 20 and choice keys at 12 so `pvr:` stays under Discord's 100. A
   scene or choice key no longer in `VisitCatalog`, or a past expiry, closes the message as expired.
 - **The wrong person** gets a private refusal and the message stays as it was: `NotYourChoice` on the
   visitor's buttons, `NotYourInvite` on the host's. The host's check comes **before** the expiry's, so a
-  stranger never closes someone's knock.
+  stranger never closes someone's knock. `RunAsync` refuses two Plynlings of one owner (`VisitSelf`)
+  whatever the id says.
 - **Old messages**: a knock from before 8.2.0 (`plyn:visit:*:*:*`, « Accueillir ») closes as expired, no
   visit. Told stories keep paging (`vis:*`, `VisitStories`, `VisitStoryRecord`, the `VisitStory` /
   `VisitCast` / `VisitBeat` records) until `KeepDays` (30) after 8.2.0; **then remove all of it in a later
@@ -279,8 +283,9 @@ both together move it 15 points at most and luck always stays; `GoodChance` and 
 to 5–95 %. Buttons say nothing of it. The leans sit in a public repo — the owner accepts that.
 
 **Confessions happen only by choice** — no roll after a good scene. « 💌 » is offered when the pair
-`CanConfess` (below), no refusal between them in the last `RefusalCooldown` (3 days, either direction,
-stored as `PlynlingRelation.LastRefusalAt` so a restart does not lift it), **and** today is one of the
+`MayConfess`: it `CanConfess` (below) and no refusal between them in the last `RefusalCooldown` (3 days,
+either direction, a refused visit or a refused village declaration alike — that event goes by the same
+rule — stored as `PlynlingRelation.LastRefusalAt` so a restart does not lift it), **and** today is one of the
 pair's offer days: `PlynlingBonds.ConfessionOffered` hashes the pair and the Paris day, true on
 `ConfessionOfferChance` (25 %) of them, so restarting the visit cannot reroll it. **The 25 % is the
 owner's choice and departs from the design**, which offered it on every eligible visit: an owner

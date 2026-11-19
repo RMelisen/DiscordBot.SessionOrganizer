@@ -131,6 +131,21 @@ public static class VisitChecks
         }
         using (var db = new Db())
         {
+            // A forged id naming the clicker as the host: two Plynlings of one owner never visit.
+            var (boy, girl) = await PairAsync(db, PlynlingBond.Friends, 30);
+            var cooldowns = new ProjectSYNCS.Services.PlynlingCooldowns();
+            await using var c = db.New();
+            var s = db.Service(c, cooldowns);
+            var visitor = (await s.GetByIdAsync(boy, T0))!;
+            var host = (await s.GetByIdAsync(girl, T0))!;
+            host.OwnerId = visitor.OwnerId;
+            var runner = new ProjectSYNCS.Services.PlynlingVisitRunner(s, cooldowns);
+            var (o, refusal, _) = await runner.RunAsync(visitor, host, scene, scene.Options[0], scene.Reactions[0], T0);
+            Expect(o is null && refusal == PlynlingText.VisitSelf, $"one owner's two Plynlings: refused, {refusal}");
+            Expect(!cooldowns.VisitedToday(visitor.OwnerId, visitor.OwnerId, AppTime.DayKey(T0)), "…and nothing claimed");
+        }
+        using (var db = new Db())
+        {
             var (boy, girl) = await PairAsync(db, PlynlingBond.Friends, 30);   // friends: may not confess
             var cooldowns = new ProjectSYNCS.Services.PlynlingCooldowns();
             await using var c = db.New();
@@ -162,6 +177,11 @@ public static class VisitChecks
 
     // The worst names: 32 characters, every one escaped by Sanitize.
     private static readonly string LongName = new('*', 32);
+
+    // Her welcome above an ending at her home: the longest line, with the worst name and mention.
+    private static readonly string WorstWelcome = ((string[])typeof(PlynlingText).Assembly.GetType("ProjectSYNCS.Services.BotResponses")!
+        .GetField("MascotWelcomeLines")!.GetValue(null)!)   // internal: reflection, like Program.cs
+        .Select(l => string.Format(l, PlynlingCardUi.SafeName(LongName), $"<@{ulong.MaxValue}>")).MaxBy(l => l.Length)!;
 
     private static ProjectSYNCS.Models.Plynling Plyn(int id, ulong owner, ProjectSYNCS.Models.PlynlingGender gender) => new()
     {
@@ -214,10 +234,10 @@ public static class VisitChecks
             new string('s', 20), new string('o', 12), new string('r', 12));
         Expect(longest.Length <= 100, $"the longest reaction id is {longest.Length} characters");
         Expect(ProjectSYNCS.Commands.PlynlingVisitCards.ChoiceId(int.MaxValue, ulong.MaxValue, 9_999_999_999, new string('s', 20), new string('o', 12)).Length <= 100
-               && ProjectSYNCS.Commands.PlynlingVisitCards.ConfessId(int.MaxValue, ulong.MaxValue, 9_999_999_999).Length <= 100, "choice and confession ids within 100");
+               && ProjectSYNCS.Commands.PlynlingVisitCards.ConfessId(int.MaxValue, ulong.MaxValue, 9_999_999_999, new string('s', 20)).Length <= 100, "choice and confession ids within 100");
         var ids = new[]
         {
-            ProjectSYNCS.Commands.PlynlingVisitCards.ChoiceId(1, 2, 3, "s", "o"), ProjectSYNCS.Commands.PlynlingVisitCards.ConfessId(1, 2, 3),
+            ProjectSYNCS.Commands.PlynlingVisitCards.ChoiceId(1, 2, 3, "s", "o"), ProjectSYNCS.Commands.PlynlingVisitCards.ConfessId(1, 2, 3, "s"),
             ProjectSYNCS.Commands.PlynlingVisitCards.ReactionId(1, 2, 3, "s", "o", "r"),
         };
         Expect(ids.Select(i => i.Split(':')[0]).Distinct().Count() == 3, "each step its own verb");
@@ -247,7 +267,7 @@ public static class VisitChecks
                                     : s.Bonds.First();
                                 var outcome = new ProjectSYNCS.Services.VisitOutcome(visitor, host, [], [], good || s.Confession,
                                     s.Confession ? PlynlingBond.BestFriends : s.Bonds.First(), after, confession, 0.25);
-                                var ending = ProjectSYNCS.Commands.PlynlingVisitCards.BuildEnding(s, o, r, outcome, T0);
+                                var ending = ProjectSYNCS.Commands.PlynlingVisitCards.BuildEnding(s, o, r, outcome, T0, WorstWelcome);
                                 MeasureCard($"{pair} ending {o.Key}/{r.Key}/{(good ? "good" : "bad")}", ending);
                                 Expect(!Buttons(ending).Any(), $"{pair} ending: no buttons");
                             }
@@ -291,6 +311,13 @@ public static class VisitChecks
         Expect(PlynlingBonds.ConfessionCoolingDown(now - TimeSpan.FromHours(71), now), "71 h after a refusal: still cooling down");
         Expect(!PlynlingBonds.ConfessionCoolingDown(now - TimeSpan.FromHours(73), now), "73 h after: open again");
         Expect(!PlynlingBonds.ConfessionCoolingDown(null, now), "never refused: open");
+        // One rule for the 💌 button and the village declaration: CanConfess, and no refusal in the last three days.
+        var boyM = Plyn(1, 10, ProjectSYNCS.Models.PlynlingGender.Male);
+        var girlF = Plyn(2, 20, ProjectSYNCS.Models.PlynlingGender.Female);
+        Expect(PlynlingBonds.MayConfess(PlynlingBond.BestFriends, 85, boyM, girlF, false, null, now), "may confess: eligible, never refused");
+        Expect(!PlynlingBonds.MayConfess(PlynlingBond.BestFriends, 85, boyM, girlF, false, now - TimeSpan.FromHours(71), now), "may not: refused 71 h ago");
+        Expect(PlynlingBonds.MayConfess(PlynlingBond.BestFriends, 85, boyM, girlF, false, now - TimeSpan.FromHours(73), now), "may again: refused 73 h ago");
+        Expect(!PlynlingBonds.MayConfess(PlynlingBond.Friends, 85, boyM, girlF, false, null, now), "may not: only friends");
 
         // « 💌 » on a quarter of a pair's days: hashed, symmetric, and spread over days and pairs.
         var offered = 0;
@@ -374,8 +401,19 @@ public static class VisitChecks
             var s = db.Service(c);
             var boyP = await s.GetByIdAsync(boy, T0);
             var girlP = await s.GetByIdAsync(girl, T0);
-            Expect(await s.ConfessionOpenAsync(boyP!, girlP!, T0) == PlynlingBonds.ConfessionOffered(boy, girl, AppTime.DayKey(T0)),
-                "an eligible boy/girl pair is offered « 💌 » on its offer days");            var o = await s.VisitAsync(boy, girl, T0, play, new Fixed(0.0), noFinds);
+            // On a day the hash offers this pair (the check fails, rather than passing vacuously, if
+            // none of the next 60 does), then on one it does not.
+            var offerDay = Enumerable.Range(0, 60).Select(d => T0 + TimeSpan.FromDays(d))
+                .FirstOrDefault(d => PlynlingBonds.ConfessionOffered(boy, girl, AppTime.DayKey(d)));
+            var quietDay = Enumerable.Range(0, 60).Select(d => T0 + TimeSpan.FromDays(d))
+                .FirstOrDefault(d => !PlynlingBonds.ConfessionOffered(boy, girl, AppTime.DayKey(d)));
+            Expect(offerDay != default && quietDay != default, "the pair has offer days and quiet days within 60 days");
+            var terms = await s.VisitTermsAsync(boyP!, girlP!, offerDay);
+            Expect(terms is { ConfessionOpen: true, VisitedToday: false, Bond: PlynlingBond.BestFriends },
+                $"an eligible boy/girl pair is offered « 💌 » on its offer days: {terms}");
+            Expect(!(await s.VisitTermsAsync(boyP!, girlP!, quietDay)).ConfessionOpen, "…and not on its other days");
+            Expect(await s.MayConfessNowAsync(boyP!, girlP!, quietDay), "…though a « 💌 » already shown may still be pressed");
+            var o = await s.VisitAsync(boy, girl, T0, play, new Fixed(0.0), noFinds);
             Expect(o is { TooLate: false, Confession: Confession.Accepted, After: PlynlingBond.Lovers, GoodScene: true }, $"a forced acceptance makes a couple: {o}");
         }
         using (var db = new Db())
@@ -392,7 +430,7 @@ public static class VisitChecks
             await using var c2 = db.New();
             var s2 = db.Service(c2);
             var next = T0 + TimeSpan.FromHours(11.5);   // 00:30 Paris: the next Paris day, before the 05:00 morning roll
-            Expect(!await s2.ConfessionOpenAsync((await s2.GetByIdAsync(girl, next))!, (await s2.GetByIdAsync(boy, next))!, next), "the other way round, still cooling down");
+            Expect(!await s2.MayConfessNowAsync((await s2.GetByIdAsync(girl, next))!, (await s2.GetByIdAsync(boy, next))!, next), "the other way round, still cooling down");
             var late = await s2.VisitAsync(girl, boy, next, play, new Fixed(0.0), noFinds);
             Expect(late is { TooLate: true }, $"a confession right after a refusal is too late: {late}");
             Expect((await RelationAsync(db, boy, girl)).LastVisitDay == AppTime.DayKey(T0), "too late saves nothing: the visit day is unchanged");

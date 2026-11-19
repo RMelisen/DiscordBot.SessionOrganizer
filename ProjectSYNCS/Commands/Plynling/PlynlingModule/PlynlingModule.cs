@@ -198,9 +198,11 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
         var mine = await plynlings.GetCurrentAsync(guildId, visitorId, now);
         // Bots have no Plynling — except her, whose Ping-Qilin can be visited.
         var theirs = host.IsBot && host.Id != PlynlingMascot.OwnerId ? null : await plynlings.GetCurrentAsync(guildId, host.Id, now);
-        // In memory for a knock a moment ago, stored on their relation for a visit before a restart.
-        var visitedToday = mine is not null && theirs is not null
-            && (cooldowns.VisitedToday(visitorId, host.Id, AppTime.DayKey(now)) || await plynlings.VisitedTodayAsync(mine.Id, theirs.Id, now));
+        // The pair's relation, read once (this answers without a defer): met today, as stored, the bond
+        // before the visit, and « 💌 ». « Today » also counts the in-memory claim of a visit a moment ago.
+        var terms = mine is not null && theirs is not null ? await plynlings.VisitTermsAsync(mine, theirs, now) : null;
+        var visitedToday = terms is not null
+            && (cooldowns.VisitedToday(visitorId, host.Id, AppTime.DayKey(now)) || terms.VisitedToday);
         string? refusal =
             mine is null ? PlynlingText.NoPlynling
             : mine.DiedAt is not null ? PlynlingText.Dead(mine.Gender)
@@ -211,16 +213,15 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
             : PlynlingLife.IsSick(theirs) ? PlynlingText.VisitSick(PlynlingCardUi.SafeName(theirs.Name))
             : visitedToday ? PlynlingText.VisitedToday(host.Id)
             : null;
-        if (refusal is not null || mine is null || theirs is null)
+        if (refusal is not null || mine is null || theirs is null || terms is null)
             return new VisitOpening(refusal ?? PlynlingText.NoPlynling);
 
         // The scene, drawn on the bond before the visit, the Paris hour and both stages, and « 💌 » when
         // the pair may confess today. At her home too: her visitor still picks (she reacts herself, on
         // the visitor's click), but nobody is invited, so nobody is pinged.
-        var scene = PlynlingVisitRunner.DrawScene(await plynlings.BondAsync(mine.Id, theirs.Id), now,
+        var scene = PlynlingVisitRunner.DrawScene(terms.Bond, now,
             PlynlingLife.Stage(mine, now), PlynlingLife.Stage(theirs, now), picker);
-        var offer = await plynlings.ConfessionOpenAsync(mine, theirs, now);
-        var card = PlynlingVisitCards.BuildChoice(scene, mine, theirs, host.Id, now + PlynlingLife.VisitInviteLife, offer, now);
+        var card = PlynlingVisitCards.BuildChoice(scene, mine, theirs, host.Id, now + PlynlingLife.VisitInviteLife, terms.ConfessionOpen, now);
         return new VisitOpening(null, card, Pings: !PlynlingMascot.Is(theirs));
     }
 

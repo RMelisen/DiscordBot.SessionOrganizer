@@ -53,21 +53,28 @@ public partial class PlynlingService
     public Task<VisitOutcome?> VisitAsync(int visitorId, int hostId, DateTimeOffset now, VisitPlay play, Random? rng = null, Random? findRng = null) =>
         UnitAsync(() => VisitOnceAsync(visitorId, hostId, now, play, rng ?? Random.Shared, findRng ?? Random.Shared));
 
-    // Whether the visit the visitor is starting offers « 💌 »: the pair may confess (MayConfessAsync)
-    // and today is one of its offer days (PlynlingBonds.ConfessionOffered). The visit's own save checks
-    // again whether the pair may confess, but not the offer day: a knock answered after midnight keeps
-    // the confession its visitor chose.
-    public async Task<bool> ConfessionOpenAsync(Plynling visitor, Plynling host, DateTimeOffset now) =>
-        PlynlingBonds.ConfessionOffered(visitor.Id, host.Id, AppTime.DayKey(now))
-        && await FindRelationAsync(visitor.Id, host.Id) is { } relation && await MayConfessAsync(relation, visitor, host, now);
+    // What starting a visit needs to know about the pair, from one read of their relation (the start
+    // answers without a defer, so it reads as little as it can): whether they already met today, as
+    // stored; their bond before the visit; and whether it offers « 💌 » — the pair may confess
+    // (MayConfessAsync) and today is one of its offer days (PlynlingBonds.ConfessionOffered). The
+    // visit's own save checks again whether the pair may confess, but not the offer day: a knock
+    // answered after midnight keeps the confession its visitor chose.
+    public async Task<VisitTerms> VisitTermsAsync(Plynling visitor, Plynling host, DateTimeOffset now)
+    {
+        var relation = await FindRelationAsync(visitor.Id, host.Id);
+        var offered = relation is not null && PlynlingBonds.ConfessionOffered(visitor.Id, host.Id, AppTime.DayKey(now))
+            && await MayConfessAsync(relation, visitor, host, now);
+        return new VisitTerms(relation?.LastVisitDay == AppTime.DayKey(now), relation?.Bond ?? PlynlingBond.Acquaintances, offered);
+    }
+
+    // Whether the pair may confess right now, the offer day aside: « 💌 » asks again when pressed, so a
+    // pair that stopped qualifying since the visit started is told at once, not after the host's reaction.
+    public async Task<bool> MayConfessNowAsync(Plynling visitor, Plynling host, DateTimeOffset now) =>
+        await FindRelationAsync(visitor.Id, host.Id) is { } relation && await MayConfessAsync(relation, visitor, host, now);
 
     private async Task<bool> MayConfessAsync(PlynlingRelation relation, Plynling visitor, Plynling host, DateTimeOffset now) =>
-        !PlynlingBonds.ConfessionCoolingDown(relation.LastRefusalAt, now)
-        && PlynlingBonds.CanConfess(relation.Bond, relation.Affinity, visitor, host,
-            await InCoupleAsync(visitor.Id, host.Id) || await InCoupleAsync(host.Id, visitor.Id));
-
-    // What the two are to each other before a visit: their stored bond, or acquaintances if they never met.
-    public async Task<PlynlingBond> BondAsync(int a, int b) => (await FindRelationAsync(a, b))?.Bond ?? PlynlingBond.Acquaintances;
+        PlynlingBonds.MayConfess(relation.Bond, relation.Affinity, visitor, host,
+            await InCoupleAsync(visitor.Id, host.Id) || await InCoupleAsync(host.Id, visitor.Id), relation.LastRefusalAt, now);
 
     // A Plynling's personality axes, as a visit's choices are judged by them (VisitOdds.Shift).
     public async Task<IReadOnlyDictionary<AiAxis, int>> AxesAsync(Plynling p) => PlynlingPersonality.Axes(await GetTraitsAsync(p));

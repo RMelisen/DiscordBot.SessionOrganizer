@@ -30,14 +30,15 @@ public partial class PlynlingService
         var otherTraits = await GetTraitsAsync(other);
         return ctx with
         {
-            Other = await TargetInfoAsync(p, other), OtherStats = PlynlingStats.Compute(other, otherTraits),
+            Other = await TargetInfoAsync(p, other, now), OtherStats = PlynlingStats.Compute(other, otherTraits),
             OtherTraitKeys = otherTraits.Select(t => t.Key).ToList(),
         };
     }
 
     // Who `other` is to `p`: their relation, hidden compatibility, whether either is taken, and whether
-    // the visit rules would let them couple. Enough for a target condition, without either's traits.
-    private async Task<TargetInfo> TargetInfoAsync(Plynling p, Plynling other)
+    // the visit rules would let them couple (PlynlingBonds.MayConfess: the refusal cooldown included,
+    // so a refused 💌 holds the declaration off too). Enough for a target condition, without traits.
+    private async Task<TargetInfo> TargetInfoAsync(Plynling p, Plynling other, DateTimeOffset now)
     {
         var relation = await FindRelationAsync(p.Id, other.Id);
         var bond = relation?.Bond ?? PlynlingBond.Acquaintances;
@@ -45,7 +46,7 @@ public partial class PlynlingService
         var taken = await InCoupleAsync(p.Id, other.Id) || await InCoupleAsync(other.Id, p.Id);
         var (lo, hi) = Pair(p.Id, other.Id);
         return new TargetInfo(other, bond, affinity, PlynlingBonds.Compatibility(lo, hi), taken,
-            PlynlingBonds.CanConfess(bond, affinity, p, other, taken));
+            PlynlingBonds.MayConfess(bond, affinity, p, other, taken, relation?.LastRefusalAt, now));
     }
 
     // The other Plynling of an instance, if it has one (settled; may be dead or frozen).
@@ -195,7 +196,7 @@ public partial class PlynlingService
                 var infos = new Dictionary<int, TargetInfo>();
                 foreach (var id in targets.Values.SelectMany(v => v).Distinct())
                     if (await GetByIdAsync(id, now) is { DiedAt: null, FrozenAt: null } t)
-                        infos[id] = await TargetInfoAsync(p, t);
+                        infos[id] = await TargetInfoAsync(p, t, now);
                 IReadOnlyList<int> CandidatesFor(EventDef d) =>
                     targets[d.Target].Where(id => infos.TryGetValue(id, out var info) && (d.TargetCondition?.Invoke(info) ?? true)).ToList();
                 // A long story starts only on a day when nothing waits at all, a follow-up not yet due included.
@@ -423,6 +424,8 @@ public partial class PlynlingService
                     PlynlingLife.Sadden(target, now, PlynlingBonds.HeartbreakSadness);
                     await AddMomentAsync(target, JournalKind.Heartbroken, p.Name, now);
                     RecordBond(inst, await ShiftAffinityAsync(p, target, -PlynlingBonds.HeartbreakLoss, now));
+                    // A refusal, like a refused 💌: no confession between the two for RefusalCooldown.
+                    (await RelationForAsync(p.Id, target.Id, now)).LastRefusalAt = now;
                     break;
             }
         }

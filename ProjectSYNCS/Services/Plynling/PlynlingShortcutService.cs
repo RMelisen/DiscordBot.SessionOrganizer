@@ -26,7 +26,6 @@ public sealed class PlynlingShortcutService
     private readonly IServiceProvider _services;
     private readonly ResponsePicker _picker;
     private readonly PlynlingCooldowns _cooldowns;
-    private readonly PlynlingAnnouncer _announcer;
     private readonly ILogger<PlynlingShortcutService> _logger;
     private readonly ActivityCounter _activity;
 
@@ -36,13 +35,12 @@ public sealed class PlynlingShortcutService
         new(TimeSpan.FromSeconds(3), forget: TimeSpan.FromMinutes(10));
 
     public PlynlingShortcutService(IServiceProvider services, ResponsePicker picker, PlynlingCooldowns cooldowns,
-        PlynlingAnnouncer announcer, ILogger<PlynlingShortcutService> logger, ActivityCounter activity)
+        ILogger<PlynlingShortcutService> logger, ActivityCounter activity)
     {
         _activity = activity;
         _services = services;
         _picker = picker;
         _cooldowns = cooldowns;
-        _announcer = announcer;
         _logger = logger;
     }
 

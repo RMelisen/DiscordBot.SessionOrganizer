@@ -116,7 +116,8 @@ public sealed record EventDef(
     StoryLink? Story = null, Func<EventContext, int>? WeightBonus = null);
 
 // Who the other Plynling is to this one, for target conditions and acceptance. CanCouple is the visit
-// rule (PlynlingBonds.CanConfess: best friends, close enough, a boy and a girl, neither taken) — the
+// rule (PlynlingBonds.MayConfess: best friends, close enough, a boy and a girl, neither taken, no refusal
+// in the last three days) — the
 // one fact a condition on the target alone could not tell.
 public sealed record TargetInfo(Plynling Target, PlynlingBond Bond, int Affinity, int Compatibility, bool EitherInCouple,
     bool CanCouple = false);

@@ -40,6 +40,10 @@ public sealed record VisitOutcome(
 // (VisitOdds.Shift, summed), and whether the visitor came to confess.
 public sealed record VisitPlay(double Shift, bool Confess);
 
+// What starting a visit reads about the pair (PlynlingService.VisitTermsAsync): met today already, the
+// bond before the visit, and whether « 💌 » is offered.
+public sealed record VisitTerms(bool VisitedToday, PlynlingBond Bond, bool ConfessionOpen);
+
 // PantryUsed: how many of that food came out of the feeder's pantry instead of cailloux (0 when
 // they paid), and PantryLeft what remains of it.
 public sealed record FeedResult(CareOutcome Outcome, Plynling? Plynling, long Price, long Balance,

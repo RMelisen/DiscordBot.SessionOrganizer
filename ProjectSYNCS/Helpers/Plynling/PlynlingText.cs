@@ -174,6 +174,11 @@ public static class PlynlingText
     public const string VisitTooLate =
         "Trop tard : entre-temps, les choses ont changé et l'aveu n'est plus possible. La visite n'a pas eu lieu, vous pouvez encore vous voir aujourd'hui.";
 
+    // « 💌 » pressed when the pair no longer may confess (a couple formed elsewhere, a refusal since):
+    // private, and the message goes back to the scene's own options.
+    public const string ConfessionGone =
+        "Trop tard : entre-temps, les choses ont changé et l'aveu n'est plus possible. La visite peut quand même avoir lieu.";
+
     public static string PassionCooldown(DateTimeOffset ready) =>
         $"Tu lui as appris une passion il y a peu. Tu pourras en changer <t:{ready.ToUnixTimeSeconds()}:R>.";
     public const string PassionTooShort = "Une passion d'une seule lettre ? Essaie avec au moins deux.";

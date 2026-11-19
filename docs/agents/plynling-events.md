@@ -227,9 +227,11 @@ never change that mapping, every stored morning depends on it.
   relation. The one exception, `Heartbreak`, saddens the one who *declared* — declaring is
   `OwnerOnly`, so it is always that owner's choice (never while frozen). **`OwnerOnly` options are
   never picked alone.**
-- **Couples** reuse the visit rules: `TargetInfo.CanCouple` is `PlynlingBonds.CanConfess` (gender
-  included — a condition on the target alone cannot see it), checked when asked (target condition)
-  and again when answered; a couple formed meanwhile makes the story say « trop tard ».
+- **Couples** reuse the visit rules: `TargetInfo.CanCouple` is `PlynlingBonds.MayConfess` (gender
+  included — a condition on the target alone cannot see it — and the 3-day `RefusalCooldown` shared
+  with the visit's « 💌 »; `[heartbreak]` sets `PlynlingRelation.LastRefusalAt`, so a refused
+  declaration starts the same wait), checked when asked (target condition) and again when answered;
+  a couple formed meanwhile makes the story say « trop tard ».
 - **Affinity lifts** (`SetAffinityAtLeast`) must clear `BondFor`'s `BondMargin` to change the bond:
   the pact lifts to `BestFriendsFrom + BondMargin` (harness).
 - **Follow-ups** are instances with a future `AvailableAt`; "open" includes them, so a death cancels them.

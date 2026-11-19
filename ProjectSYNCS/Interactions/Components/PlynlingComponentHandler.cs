@@ -19,7 +19,6 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
     private readonly PlynlingService _plynlings;
     private readonly PlynlingPlayService _play;
     private readonly ResponsePicker _picker;
-    private readonly PlynlingCooldowns _cooldowns;
     private readonly TradeOffers _trades;
     private readonly InventoryService _inventory;
     private readonly VisitStories _stories;
@@ -27,11 +26,8 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
     private readonly PlynlingAnnouncer _announcer;
     private readonly ILogger<PlynlingComponentHandler> _logger;
 
-    // The pause between two beats of a visit's story — long enough to read one, short enough
-    // that nobody wonders whether it is stuck.
-
     public PlynlingComponentHandler(PlynlingCareService care, PlynlingService plynlings, PlynlingPlayService play,
-        ResponsePicker picker, PlynlingCooldowns cooldowns, TradeOffers trades, InventoryService inventory,
+        ResponsePicker picker, TradeOffers trades, InventoryService inventory,
         VisitStories stories, PlynlingVisitRunner visits, PlynlingAnnouncer announcer, ILogger<PlynlingComponentHandler> logger)
     {
         _stories = stories;
@@ -40,7 +36,6 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         _logger = logger;
         _trades = trades;
         _inventory = inventory;
-        _cooldowns = cooldowns;
         _care = care;
         _plynlings = plynlings;
         _play = play;
@@ -237,9 +232,11 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
     }
 
     // « 💌 Lui avouer ses sentiments », pressed by the visitor's owner: the visit switches to the
-    // confession scene, whose options are ways of confessing. Eligibility is checked again by the save.
-    [ComponentInteraction("pvx:*:*:*", ignoreGroupNames: true)]
-    public async Task OnVisitConfessAsync(string visitorStr, string hostStr, string expiresStr)
+    // confession scene, whose options are ways of confessing. Whether the pair may still confess is
+    // asked again here (offer day aside) — a pair that stopped qualifying is told now and goes back
+    // to the scene it was offered, rather than after the host's reaction — and again by the save.
+    [ComponentInteraction("pvx:*:*:*:*", ignoreGroupNames: true)]
+    public async Task OnVisitConfessAsync(string visitorStr, string hostStr, string expiresStr, string sceneKey)
     {
         if (!TryVisitIds(visitorStr, hostStr, expiresStr, out var visitorId, out var hostOwnerId, out var expires))
         {
@@ -247,7 +244,8 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             return;
         }
         var now = DateTimeOffset.UtcNow;
-        if (now > expires)
+        var scene = VisitCatalog.ByKey(sceneKey);
+        if (now > expires || scene is null || scene.Confession)
         {
             await CloseVisitAsync(PlynlingText.InviteExpired);
             return;
@@ -263,6 +261,12 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         if (host is null || host.DiedAt is not null)
         {
             await FollowupAsync(PlynlingText.NoneFor(hostOwnerId), ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+        if (!await _plynlings.MayConfessNowAsync(visitor, host, now))
+        {
+            await FollowupAsync(PlynlingText.ConfessionGone, ephemeral: true, allowedMentions: AllowedMentions.None);
+            await EditVisitAsync(PlynlingVisitCards.BuildChoice(scene, visitor, host, hostOwnerId, expires, false, now));
             return;
         }
         await EditVisitAsync(PlynlingVisitCards.BuildChoice(VisitCatalog.Confession, visitor, host, hostOwnerId, expires, false, now));

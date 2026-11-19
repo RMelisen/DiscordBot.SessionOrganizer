@@ -21,8 +21,8 @@ public static class PlynlingVisitCards
     public static string ChoiceId(int visitorId, ulong hostOwnerId, long expiresUnix, string scene, string option) =>
         $"pvc:{visitorId}:{hostOwnerId}:{expiresUnix}:{scene}:{option}";
 
-    public static string ConfessId(int visitorId, ulong hostOwnerId, long expiresUnix) =>
-        $"pvx:{visitorId}:{hostOwnerId}:{expiresUnix}";
+    public static string ConfessId(int visitorId, ulong hostOwnerId, long expiresUnix, string scene) =>
+        $"pvx:{visitorId}:{hostOwnerId}:{expiresUnix}:{scene}";
 
     public static string ReactionId(int visitorId, ulong hostOwnerId, long expiresUnix, string scene, string option, string reaction) =>
         $"pvr:{visitorId}:{hostOwnerId}:{expiresUnix}:{scene}:{option}:{reaction}";
@@ -68,7 +68,7 @@ public static class PlynlingVisitCards
         var row = new ActionRowBuilder();
         foreach (var o in scene.Options)
             row.WithButton(Label(o.Label, visitor, host), ChoiceId(visitor.Id, hostOwnerId, at, scene.Key, o.Key), ButtonStyle.Secondary);
-        if (offerConfession) row.WithButton(ConfessLabel, ConfessId(visitor.Id, hostOwnerId, at), ButtonStyle.Primary);
+        if (offerConfession) row.WithButton(ConfessLabel, ConfessId(visitor.Id, hostOwnerId, at, scene.Key), ButtonStyle.Primary);
         return new ComponentBuilderV2()
             .AddComponent(Frame(visitor, scene, visitor, host)
                 .AddComponent(WithVisitor(visitor, now, $"**{a}** part rendre visite à <@{hostOwnerId}>.\n\n{Say(scene.Intro, visitor, host)}"))

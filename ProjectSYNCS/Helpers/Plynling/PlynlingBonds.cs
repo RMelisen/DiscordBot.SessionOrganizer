@@ -141,10 +141,17 @@ public static class PlynlingBonds
     };
 
     // Whether a pair may confess: best friends, a boy and a girl, close enough, and neither already
-    // in a couple (one partner at a time). A visit offers the confession on it (VisitOdds.AcceptChance
-    // decides the answer); the declaration event targets with it.
+    // in a couple (one partner at a time). MayConfess adds the refusal cooldown: that is the rule the
+    // visit's « 💌 » and the declaration event both go by.
     public static bool CanConfess(PlynlingBond bond, int affinity, Plynling a, Plynling b, bool eitherInCouple) =>
         bond == PlynlingBond.BestFriends && affinity >= ConfessFrom && a.Gender != b.Gender && !eitherInCouple;
+
+    // CanConfess, and no refusal between the two in the last RefusalCooldown (either way, whether the
+    // refusal came from a visit or from the village declaration): « 💌 » is offered on it and the
+    // declaration event targets with it, so neither is a way round the other's wait.
+    public static bool MayConfess(PlynlingBond bond, int affinity, Plynling a, Plynling b, bool eitherInCouple,
+        DateTimeOffset? lastRefusalAt, DateTimeOffset now) =>
+        !ConfessionCoolingDown(lastRefusalAt, now) && CanConfess(bond, affinity, a, b, eitherInCouple);
 
     // What a visit does to both Plynlings' happiness, by the bond it ends on.
     public static double VisitHappiness(PlynlingBond bond) => bond switch
