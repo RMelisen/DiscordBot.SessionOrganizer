@@ -30,6 +30,7 @@ public static class StoryEngineChecks
         Runs();
         Stakes();
         ChoiceCaps();
+        Reachability();
         Probes();  // last: it swaps StoryCatalog.Folder and puts it back
     }
 
@@ -43,6 +44,46 @@ public static class StoryEngineChecks
 
     private static string Stake(EventOption o, EventContext? ctx = null, EventDef? def = null) =>
         PlynlingEventStakes.Line(o, def ?? StakesDef(o), ctx ?? Ctx(), PlynlingGender.Female, null);
+
+    // The old C# catalog holds only what can still happen: every event is a pulse, a moment or a break,
+    // or is reached from one through follow-ups and asks; a C# moment a story replaces (on_welcome) is
+    // deleted. Removed keys keep their titles and are never reused. Every pulse that hands a decision to
+    // the other owner is still drawn: no story file can do it yet.
+    private static void Reachability()
+    {
+        bool Replaced(EventDef d) => d.Type == EventType.Triggered && d.BreakLevel == 0
+            && PlynlingEvents.All.Any(s => s.Story is not null && s.Trigger == d.Trigger);
+        var old = PlynlingEvents.All.Where(d => d.Story is null).ToList();
+        var reached = new HashSet<string>();
+        var todo = new Stack<EventDef>(old.Where(d => d.Type == EventType.Pulse || d.Type == EventType.Triggered && !Replaced(d)));
+        while (todo.TryPop(out var d))
+        {
+            if (!reached.Add(d.Key)) continue;
+            foreach (var e in d.Options.SelectMany(o => o.OnSuccess.Concat(o.OnFailure)))
+                if ((e is FollowUp f ? f.EventKey : e is AskTarget a ? a.ResponseKey : null) is { } k)
+                {
+                    if (PlynlingEvents.ByKey(k) is { } n) todo.Push(n);
+                    else _fail($"reachability: {d.Key} brings {k}, which is not in the catalog");
+                }
+        }
+        var dead = old.Where(d => !reached.Contains(d.Key)).Select(d => d.Key).ToList();
+        Expect(dead.Count == 0, "reachability: old events nothing can bring any more (delete them, title in Removed): " + string.Join(", ", dead));
+        var reused = PlynlingEvents.All.Where(d => PlynlingEvents.Removed.ContainsKey(d.Key)).Select(d => d.Key).ToList();
+        Expect(reused.Count == 0, "reachability: a removed key is back in the catalog: " + string.Join(", ", reused));
+        Expect(PlynlingEvents.TitleOf("baby_puddle") == "La première flaque" && PlynlingEvents.TitleOf("social_pact") == "Le pacte"
+               && PlynlingEvents.TitleOf("nope") is null, "reachability: TitleOf reads the catalog, then the removed titles");
+        var asking = old.Where(d => d.Type == EventType.Pulse && d.Options.Any(o => o.OnSuccess.Any(e => e is AskTarget))).ToList();
+        Expect(asking.Count >= 6, $"reachability: the asking pulses are still drawn ({asking.Count})");
+        foreach (var stage in Enum.GetValues<PlynlingStage>())
+        {
+            var ctx = Ctx(StoryKnowledge.Empty(Now), stage: stage);
+            var seen = new HashSet<string>();
+            for (var id = 1; id <= 400; id++)
+                if (PlynlingEventEngine.PickPulse(id, 20261119 + id % 30, PlynlingEvents.All, ctx, [], _ => false, allowLong: false) is { } d) seen.Add(d.Key);
+            Expect(seen.Count >= 10, $"reachability: a {stage} draw meets enough events ({seen.Count})");
+            Console.WriteLine($"draw: {stage} met {seen.Count} distinct events in 400 draws");
+        }
+    }
 
     // 50l. The stakes line: costs, then gains; a padlock for a locked option; « on verra bien » for a mystery.
     private static void Stakes()
@@ -91,6 +132,13 @@ public static class StoryEngineChecks
         var stat = Stake(Fx("g", [new GrowStat(PlynlingStat.Courage), new ApplyModifier("inspired")]));
         Expect(stat.Contains(PlynlingStats.Emoji(PlynlingStat.Courage)) && stat.Contains(" · "), "stakes: a lesson and a modifier: " + stat);
         Expect(Stake(Fx("x", [new SetFlag("f")])) == "", "stakes: nothing to say, nothing said");
+        Expect(Stake(Fx("r", [new StressChange(-20)])) == "😌 −20 stress" && Stake(Fx("r", [new StressChange(20)])) == "",
+            "stakes: relief shows, a gain does not: " + Stake(Fx("r", [new StressChange(-20)])));
+        var spiral = PlynlingEvents.ByKey("break_spiral")!;
+        var journal = Stake(spiral.Options.Single(o => o.Key == "journal"), def: spiral);
+        Expect(journal.Contains("😌 −75 stress") && journal.Contains(PlynlingTraits.ByKey("journaller")!.Emoji)
+               && Stake(PlynlingEvents.ByKey("break_cloud")!.Options.Single(o => o.Key == "tell")).Contains("🌀 une nouvelle manie"),
+            "stakes: a break shows its relief and its coping trait: " + journal);
 
         var village = PlynlingEvents.ByKey("arrival.the_village")!;
         Expect(PlynlingEventStory.SceneText(village, Ctx(K(flags: ["came_to_her"]))).Contains("tient un coin de son châle"),
@@ -98,7 +146,7 @@ public static class StoryEngineChecks
         Expect(!PlynlingEventStory.SceneText(village, Ctx()).Contains("tient un coin de son châle"), "scene: without the flag, no line");
         Expect(!PlynlingEventStory.SceneText(village, null).Contains("tient un coin de son châle")
                && PlynlingEventStory.SceneText(village, null).Contains("Sur le Pont-Vieux"), "scene: no context, unconditional lines only");
-        var plain = PlynlingEvents.ByKey("on_welcome")!;
+        var plain = PlynlingEvents.ByKey("on_teen")!;
         Expect(PlynlingEventStory.SceneText(plain, Ctx()) == plain.Scene, "scene: a C# def keeps its text");
         var nod = keep.Options.Single(o => o.Key == "nod_up");
         var told = PlynlingEventStory.OutcomeProse(keep, nod, true, Ctx());
@@ -395,10 +443,10 @@ public static class StoryEngineChecks
         Expect(!Opens(req, KT()) && Opens(req, KT() with { ArcFlags = new HashSet<string> { "x.y" } }), "requires");
     }
 
-    // 50g. A story replaces the C# moment for its on-action: Arrival, never on_welcome.
+    // 50g. A story replaces the C# moment for its on-action: Arrival (on_welcome, deleted, was the C# one).
     private static void Triggered()
     {
-        Expect(PlynlingEvents.ByKey("on_welcome") is { Trigger: OnAction.Adopted }, "on_welcome still in the catalog");
+        Expect(PlynlingEvents.ByKey("on_welcome") is null && PlynlingEvents.TitleOf("on_welcome") == "Bienvenue", "on_welcome deleted, its title kept");
         for (var id = 1; id <= 40; id++)
         {
             var got = PlynlingEventEngine.PickTriggered(OnAction.Adopted, id, id * 7919 % 1_000_000, PlynlingEvents.All, Ctx());
@@ -541,7 +589,8 @@ public static class StoryEngineChecks
         Expect(ReferenceEquals(map.GetValueOrDefault("a.retired"), live) && ReferenceEquals(map.GetValueOrDefault("a.live"), live)
                && !map.ContainsKey("a.gone"), "KeyMap: a retired scene's key resolves to its successor's def");
 
-        var mixed = D("c.mixed", Opt("old", new RetiredGate()), Opt("new", null));
+        // A follow-up: a hand-made teen pulse with no story would be an old pulse of a retired stage.
+        var mixed = D("c.mixed", Opt("old", new RetiredGate()), Opt("new", null)) with { Type = EventType.FollowUp };
         var onlyRetired = D("c.dead", Opt("old", new RetiredGate()));
         var adult = D("c.adult", Opt("o", null)) with { Stages = [PlynlingStage.Adult] };
         var pool = PlynlingEventEngine.AdoPool([mixed, onlyRetired, adult]);

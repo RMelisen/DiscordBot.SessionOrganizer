@@ -72,8 +72,8 @@ who is the only customer. Money is **cailloux**; food is berries, nuts, acorns, 
 Plynlings are all mushrooms, so a cap, a stem or gills may be named. Nothing about a Plynling's
 family: they are written family-neutral.
 
-These figures are the **old layer**, kept in visit conversations and the old events until their
-rework. The storylines' village is **`docs/village-lore.md`** (Humeval): a storyline follows it
+These figures are the **old layer**, kept in visit conversations only (every event is set in the village since
+7.74.2). The storylines' village is **`docs/village-lore.md`** (Humeval): a storyline follows it
 and never mentions the old figures.
 
 ## Mechanics (enforced by the harness)

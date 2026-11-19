@@ -3,6 +3,27 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 7.74.2 — 2026-11-19
+
+- 30 new Plynling events set in the village of Humeval: 15 for bébés, at the Lisière and on their
+  first trips to the hamlet, and 15 for ados, at the Maison des Pousses. They replace the old bébé and
+  ado events, which are no longer drawn (two stay, whose stories carry on into adulthood).
+- 54 new village events for adultes and anciens: 30 for both, 10 for adultes only, 10 for anciens
+  only, and 4 that only come in their season (the spring fair, the harvest, the autumn count, the
+  longest night). Anciens also meet the adulte events. They replace the old adulte and ancien events;
+  the ones where a Plynling asks another (a declaration, a challenge, a pact, making peace, becoming
+  friends, sharing a secret) stay, at every age. The events nothing could bring any more are gone
+  for good; old journal lines keep their titles.
+- Choices that go against a Plynling's nature cost stress again in the village events (a shy one
+  singing at the inn, a lazy one at the harvest), and a few restful ones take some away. The choice
+  line now shows the relief (😌 −20 stress), and a mental break shows the habit a choice would leave.
+- The mental breaks, the life moments (growing up, falling sick, after a visit) and the events where
+  a Plynling asks another now all happen in the village too, with its people.
+- Some of them remember what a Plynling did as a child: an extra line, or a choice that only
+  appears for those who did it.
+- Some choices are remembered by a villager, a few events come back for a second step the next day,
+  and two can only happen once in a Plynling's life.
+
 ## 7.74.1 — 2026-11-18
 
 - Asking SYNCS by name or by tag to bring back a poll, a session or a giveaway (« syncs remonte le

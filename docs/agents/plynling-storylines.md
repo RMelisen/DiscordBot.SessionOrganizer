@@ -219,6 +219,23 @@ Per arc: premise → branch map → owner review → the story file → owner re
 dev guild with `/debug`. A scene is 2–3 sentences, an outcome 1–3 lines; every option brings a different *kind* of
 result; a memory only when a later event will plausibly read it. Built on a villager's « accroches » from the lore.
 
+- **`lift` and `affinity` never show on the stakes line.** An option whose only effects are those reads as a blank
+  line under its label: give it a shown effect too (a modifier, a lesson, a memory) or make it the scene's `[mystery]`.
+  Stress relief (`[stress -n]`) shows (`😌 −20 stress`); a stress gain never does, its cost is said first.
+- **Stress is what makes the breaks happen**, and only events raise it: keep about one option in five with a
+  `[stress trait n]` (10–20) on a choice against that trait (a shy one at the inn, a lazy one at the harvest, an
+  honest one fibbing), and about one in twenty restful options with `[stress -10]`–`[stress -20]` (a nap, a tisane,
+  sitting with the Mère Lichen). Bébé costs use childhood traits only (`bossy`, `charming`, `curious`, `pensive`,
+  `rowdy`). The village arcs held 57 costs and 13 reliefs in 264 options in 7.74.2.
+- **A roll's difficulty is 3 for bébé and ado** (`50 + 5 × (stat − difficulty)`, a young stat is about 3–4): around
+  50–55 % for an average Plynling. The report's neutral context reads lower.
+- **A label that names `{B}` is measured with a 40-character name**: with a roll or a lock beside it, keep `{B}` out of
+  the label (« Aller lui parler »).
+- **Animals in village prose are plain animals** (a duck, a fox, bees), never the old layer's figures (no heron,
+  owl, tortoise…), even as a passing animal.
+
 | Arc | File | State |
 |---|---|---|
 | L'arrivée | `Stories/Milestone/arrival.story` | long milestone, triggered by adoption; replaces the C# adoption moment; names the childhood trait with `{T}`; awaiting the owner's review |
+| Wave 1, bébé and ado (30 arcs) | `Stories/Village/*.story` | short drawn events; shortlist in `docs/superpowers/content/2026-11-19-village-events-wave-1-shortlist.md`; bébé and ado retired their old pulses in 7.74.2 (`plynling-events.md`); dev-guild playthrough not done |
+| Wave 2, adulte and ancien (54 arcs) | `Stories/Village/*.story` | short drawn events: 30 `stage: adult, elder` (an ancien also draws the adulte events, owner's rule), 10 adulte only, 10 ancien only, 4 seasonal (`requires: [season …]`); shortlist in `docs/superpowers/content/2026-11-19-village-events-wave-2-shortlist.md`; old adulte/ancien pulses still drawn; dev-guild playthrough not done |

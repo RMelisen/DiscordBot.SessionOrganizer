@@ -2,7 +2,8 @@ using ProjectSYNCS.Models;
 
 namespace ProjectSYNCS.Helpers;
 
-// The four big moments (the ask and its answer), and the on-actions life brings.
+// The four big moments (the ask and its answer), and the on-actions life brings. Set in Humeval
+// (docs/village-lore.md) since 7.74.2; keys and options unchanged.
 public static partial class PlynlingEvents
 {
     private static EventDef[] Moments() => new[]
@@ -26,7 +27,7 @@ public static partial class PlynlingEvents
             new[]
             {
                 Answer("yes", "Dire oui",
-                    "{A} dit oui. {B} en oublie de respirer, puis rit, puis respire. Tout le village est au courant avant le soir.",
+                    "{A} dit oui. {B} en oublie de respirer, puis rit, puis respire. Tout le hameau est au courant avant le soir : la Courge y a veillé.",
                     Stance.Accept, E(new Couple()), Ai((AiAxis.Sociability, 1), (AiAxis.Compassion, 1))),
                 Answer("no", "Dire non, doucement",
                     "{A} dit non, avec beaucoup de douceur. {B} hoche la tête et rentre par le chemin le plus long.",
@@ -34,10 +35,10 @@ public static partial class PlynlingEvents
             }),
 
         new EventDef("social_rival", EventType.Pulse, Grown, "Le défi",
-            "{B} s'est encore vanté{b:|e} d'être {b:le plus rapide|la plus rapide} du village. Devant tout le monde. Devant {A}.",
+            "{B} s'est encore vanté{b:|e} d'être {b:le plus rapide|la plus rapide} du hameau. Devant tout le monde. Devant {A}.",
             new[]
             {
-                Ask("challenge", "{b:Le|La} défier à la course jusqu'au vieux pont", "{A} lance le défi, et {B} relève le menton.", "reply_rival",
+                Ask("challenge", "{b:Le|La} défier à la course jusqu'au Pont-Vieux", "{A} lance le défi, et {B} relève le menton.", "reply_rival",
                     Ai((AiAxis.Boldness, 2), (AiAxis.Vengefulness, 1))),
                 Plain("ignore", "Hausser les épaules",
                     "{A} hausse les épaules si haut que ça devient un exercice. Personne n'a gagné, mais personne n'a perdu.",
@@ -46,11 +47,11 @@ public static partial class PlynlingEvents
             Target: TargetKind.Hostile),
 
         new EventDef("reply_rival", EventType.Response, Grown, "Le défi relevé",
-            "{B} défie {A} à la course jusqu'au vieux pont. Le héron fait semblant de ne pas regarder.",
+            "{B} défie {A} à la course jusqu'au Pont-Vieux. Sur le parapet, le Fou compte déjà les foulées.",
             new[]
             {
-                new EventOption("race", "Courir", "{A} gagne d'une moustache. Le héron, qui ne regardait pas, applaudit.",
-                    "{B} gagne d'une moustache. {A} réclame une revanche avant même d'avoir repris son souffle.",
+                new EventOption("race", "Courir", "{A} gagne d'un chapeau. Le Fou annonce le compte : trois foulées d'avance, et une de trop pour {B}.",
+                    "{B} gagne d'un chapeau. {A} réclame une revanche avant même d'avoir repris son souffle.",
                     null, new EventChallenge(PlynlingStat.Courage, 0, VsTarget: true),
                     E(new GrowStat(PlynlingStat.Courage), new AffinityShift(-5)), E(new AffinityShift(-10)),
                     NoStress, Ai((AiAxis.Boldness, 2)), Stance: Stance.Accept),
@@ -76,20 +77,20 @@ public static partial class PlynlingEvents
             "{B} tend le petit doigt à {A} : un pacte de meilleurs amis, pour la vie, ou au moins jusqu'à jeudi.",
             new[]
             {
-                Answer("yes", "Serrer le petit doigt", "Les deux petits doigts se serrent. C'est officiel, et le moineau sert de témoin.",
+                Answer("yes", "Serrer le petit doigt", "Les deux petits doigts se serrent. C'est officiel : le Fou, qui passait, sert de témoin, et l'écrit sur sa main.",
                     Stance.Accept, E(new SetAffinityAtLeast(PlynlingBonds.BestFriendsFrom + PlynlingBonds.BondMargin)), Ai((AiAxis.Sociability, 2))),
                 Answer("later", "Dire « pas encore »", "{A} replie le doigt de {B}, gentiment. « Pas encore. Mais garde-le tendu. »",
                     Stance.Refuse, E(new AffinityShift(-5)), Ai((AiAxis.Rationality, 1))),
             }),
 
         new EventDef("social_mend", EventType.Pulse, Grown, "Le rameau d'olivier",
-            "{A} croise {B} au marché. Les deux font semblant de ne pas se voir, avec beaucoup d'application.",
+            "{A} croise {B} au marché de la place. Les deux font semblant de ne pas se voir, avec beaucoup d'application.",
             new[]
             {
                 Ask("mend", "Proposer de faire la paix", "{A} tend un rameau, un vrai, cueilli exprès.", "reply_mend",
                     Ai((AiAxis.Compassion, 2), (AiAxis.Vengefulness, -2)), ownerOnly: false),
                 Plain("snub", "Continuer à faire semblant",
-                    "{A} fait semblant si bien que {B} y croit presque. Le marchand de baies, lui, n'y croit pas du tout.",
+                    "{A} fait semblant si bien que {B} y croit presque. La Courge, elle, n'y croit pas du tout, et le raconte déjà.",
                     E(new GrowStat(PlynlingStat.Intrigue)), Ai((AiAxis.Vengefulness, 1))),
             },
             Target: TargetKind.Hostile),
@@ -104,34 +105,22 @@ public static partial class PlynlingEvents
                     Stance.Refuse, E(new AffinityShift(-5)), Ai((AiAxis.Vengefulness, 2))),
             }),
 
-        // ---- on-actions: what life brings ({T} = the trait(s) just revealed)
-        new EventDef("on_welcome", EventType.Triggered, Baby, "Bienvenue",
-            "{A} ouvre les yeux sur sa nouvelle maison. Tout est grand, tout sent bon. Déjà, on devine un petit caractère : {T}.",
-            new[]
-            {
-                Plain("explore", "Explorer chaque coin", "{A} inspecte chaque coin, renifle chaque meuble, et adopte officiellement le coussin du fond.",
-                    E(new GrowStat(PlynlingStat.Courage)), Ai((AiAxis.Boldness, 1))),
-                Plain("nap", "Faire une première sieste", "{A} choisit un rayon de soleil et s'y endort, comme si l'endroit avait toujours été là pour ça.",
-                    E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Energy, -1))),
-            },
-            Trigger: OnAction.Adopted),
-
         new EventDef("on_teen", EventType.Triggered, Teen, "Plus tout à fait bébé",
-            "Un matin, {A} ne tient plus dans son ancien coin préféré. Quelque chose a changé : {T}, voilà ce que devient {A}.",
+            "Un matin, {A} ne tient plus dans son coin de la cabane, chez la Mère Lichen. Quelque chose a changé : {T}, voilà ce que devient {A}. Ce soir, la Bruyère attend {A} à la Maison des Pousses.",
             new[]
             {
-                Plain("proud", "Bomber le torse", "{A} se mesure contre la porte et grave un trait, très haut, en trichant un peu.",
+                Plain("proud", "Bomber le torse", "{A} se mesure contre la porte de la cabane, où la Mère Lichen garde la marque de chaque pousse, et grave un trait, très haut, en trichant un peu.",
                     E(new GrowStat(PlynlingStat.Courage)), Ai((AiAxis.Boldness, 1))),
-                Plain("shy", "Faire comme si de rien n'était", "{A} garde ses anciennes habitudes encore un peu. Grandir, ça peut attendre l'après-midi.",
+                Plain("shy", "Faire comme si de rien n'était", "{A} reste encore un peu sur la pierre, à côté de la Mère Lichen. La Bruyère attendra l'après-midi. Grandir aussi.",
                     E(new GrowStat(PlynlingStat.Learning)), Ai((AiAxis.Boldness, -1))),
             },
             Trigger: OnAction.BecameTeen),
 
         new EventDef("on_adult", EventType.Triggered, Grown, "Adulte, maintenant",
-            "{A} a fini de grandir. Sur ses traits se lit maintenant un dernier trait de caractère : {T}.",
+            "{A} a fini de grandir, et quitte la Maison des Pousses pour une petite maison à soi. Sur ses traits se lit maintenant un dernier trait de caractère : {T}.",
             new[]
             {
-                Plain("party", "Fêter ça au café", "La tortue du café offre une part de gâteau, et dit « déjà ? » trois fois.",
+                Plain("party", "Fêter ça à l'auberge", "La Courge offre une part de tarte, dit « déjà, mon chou ? » trois fois, et le raconte à toute la salle.",
                     E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Sociability, 1))),
                 Plain("plan", "Faire des projets", "{A} sort un carnet et y écrit « projets ». Puis, en dessous : « à voir ».",
                     E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Rationality, 1))),
@@ -161,12 +150,12 @@ public static partial class PlynlingEvents
             Target: TargetKind.Anyone),
 
         new EventDef("on_bereaved", EventType.Triggered, AnyStage, "Une place vide",
-            "La place de {B} est vide, et le village est un peu plus grand sans. {A} ne sait pas trop quoi faire de ses pattes.",
+            "La place de {B} est vide, et le hameau est un peu plus grand sans. {A} ne sait pas trop quoi faire de ses mains.",
             new[]
             {
-                Plain("remember", "Se souvenir des bons moments", "{A} raconte à voix haute leurs meilleures bêtises. Le héron écoute, pour une fois sans faire semblant.",
+                Plain("remember", "Se souvenir des bons moments", "{A} raconte à voix haute leurs meilleures bêtises. La Mère Lichen écoute, sans rien dire, et pose sa main sur celle de {A}.",
                     E(new StressChange(-10)), Ai((AiAxis.Sociability, 1))),
-                Plain("plant", "Planter une graine en sa mémoire", "{A} plante une graine près du vieux pont. Au printemps, quelque chose poussera.",
+                Plain("plant", "Planter une graine en sa mémoire", "{A} plante une graine près du Pont-Vieux. Au printemps, quelque chose poussera.",
                     E(new GrowStat(PlynlingStat.Stewardship)), Ai((AiAxis.Rationality, 1))),
             },
             Target: TargetKind.Anyone, Trigger: OnAction.Bereaved),
@@ -175,20 +164,20 @@ public static partial class PlynlingEvents
             "{A} éternue, renifle, et décide que le monde est injuste.",
             new[]
             {
-                Plain("tea", "Réclamer une tisane", "La tortue du café envoie une tisane au miel, avec un mot : « Bois-la chaude. »",
+                Plain("tea", "Réclamer une tisane", "La Sauge envoie une tisane, imbuvable comme toujours, avec un mot : « Bois-la chaude. Et ne fais pas cette tête. »",
                     E(new StressChange(-5)), Ai((AiAxis.Sociability, 1))),
                 Plain("brave", "Faire comme si de rien n'était", "{A} fait comme si de rien n'était, entre deux éternuements spectaculaires.",
                     E(new GrowStat(PlynlingStat.Courage)), Ai((AiAxis.Boldness, 1))),
             },
             Trigger: OnAction.FellSick),
 
-        new EventDef("on_recovered", EventType.Triggered, AnyStage, "De nouveau sur pattes",
+        new EventDef("on_recovered", EventType.Triggered, AnyStage, "De nouveau sur pied",
             "{A} se réveille, respire par le nez — par les deux narines — et se sent {a:neuf|neuve}.",
             new[]
             {
-                Plain("run", "Faire le tour du village en courant", "{A} court partout, juste pour vérifier que tout marche encore. Tout marche.",
+                Plain("run", "Faire le tour du hameau en courant", "{A} court partout, juste pour vérifier que tout marche encore. Tout marche.",
                     E(new ApplyModifier("fired_up")), Ai((AiAxis.Energy, 2))),
-                Plain("thank", "Remercier ceux qui ont aidé", "{A} distribue des remerciements, et une tisane à la tortue, pour changer.",
+                Plain("thank", "Remercier ceux qui ont aidé", "{A} distribue des remerciements, et un pot de miel à la Sauge, pour changer.",
                     E(new GrowStat(PlynlingStat.Diplomacy)), Ai((AiAxis.Compassion, 1))),
             },
             Trigger: OnAction.Recovered),

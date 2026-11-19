@@ -13,7 +13,6 @@ public static partial class PlynlingEvents
     private static readonly PlynlingStage[] Baby = { PlynlingStage.Baby };
     private static readonly PlynlingStage[] Teen = { PlynlingStage.Teen };
     private static readonly PlynlingStage[] Grown = { PlynlingStage.Adult, PlynlingStage.Elder };
-    private static readonly PlynlingStage[] Elder = { PlynlingStage.Elder };
     private static readonly PlynlingStage[] AnyStage = Enum.GetValues<PlynlingStage>();
 
     private static readonly IReadOnlyList<EventEffect> Nothing = Array.Empty<EventEffect>();
@@ -46,13 +45,19 @@ public static partial class PlynlingEvents
     // The catalog, one method per file in PlynlingEvents/, concatenated in catalog order, then the
     // compiled story files (StoryCatalog, loaded here on first access; a broken file throws). Each part
     // is a method rather than a field: static field order across partial files is undefined.
+    // The old C# events left are the ones the village story files cannot replace yet: mental breaks,
+    // life's moments, asking the other owner, and the two growing-up chains. Every one stays reachable
+    // (the checks hold it); one nothing can bring any more is deleted, its title kept in Removed.
     public static readonly IReadOnlyList<EventDef> All = new[]
     {
-        Basics(), Breaks(), Moments(), Wave1(), Wave2(), Wave3(),
-        Wave4(), Wave5Young(), Wave5Grown(), Wave7Young(), Wave7Grown(), Wave8(),
-        Wave8Stories(), Wave8Echoes(), Wave8Batch2Young(), Wave8Batch2Grown(), Wave8Batch2Late(), ShortBaby(),
-        ShortTeen(), ShortGrown(), ShortElder(), StoryCatalog.Compiled,
+        Breaks(), Moments(), Asks(), GrowingUp(), StoryCatalog.Compiled,
     }.SelectMany(part => part).ToArray();
+
+    // Deleted events' titles, by key: a journal line or an owner report still names them. A removed key
+    // is never reused (the checks hold it), so an old instance can never open as something else.
+    public static readonly IReadOnlyDictionary<string, string> Removed = RemovedTitles();
+
+    public static string? TitleOf(string key) => ByKey(key)?.Title ?? Removed.GetValueOrDefault(key);
 
     // Every def by key, plus each retired story scene's key → its successor's def (a run waiting on the
     // old key is offered the new scene).

@@ -67,7 +67,7 @@ public static class PlynlingReport
             resolved.Count(e => e.ChallengeSucceeded is not null),
             resolved.Count(e => e.ChallengeSucceeded == true),
             resolved.GroupBy(e => e.EventKey)
-                .Select(g => (PlynlingEvents.ByKey(g.Key)?.Title ?? g.Key, g.Count()))
+                .Select(g => (PlynlingEvents.TitleOf(g.Key) ?? g.Key, g.Count()))
                 .OrderByDescending(x => x.Item2).Take(TopEventCount).ToList(),
             relations.Where(r => ids.Contains(r.PlynlingAId) && r.Bond != PlynlingBond.Acquaintances && window.Contains(r.Since))
                 .GroupBy(r => r.Bond).OrderBy(g => g.Key).Select(g => (g.Key, g.Count())).ToList(),

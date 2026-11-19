@@ -59,6 +59,11 @@ public static class PlynlingEventStakes
                 Remember r => Remembers(r.MemoryKey),
                 ApplyModifier m when PlynlingModifiers.ByKey(m.Key) is { } mod => $"{mod.Emoji} {mod.Name(g)}",
                 GrowStat s => $"{PlynlingStats.Emoji(s.Stat)} {PlynlingStats.Name(s.Stat)}",
+                // Relief only: a gain is a cost, and costs are said before (an owner's choice or a break).
+                StressChange { Amount: < 0 } s => $"😌 −{-s.Amount} stress",
+                // A break's malus, said like a modifier: nobody walks into a coping trait blind.
+                GainCoping { TraitKey: { } k } when PlynlingTraits.ByKey(k) is { } t => $"{t.Emoji} {t.Name(g)}",
+                GainCoping => "🌀 une nouvelle manie",
                 GiveMark { Kind: MarkKind.Epithet } when ends => "🏷️ un titre",
                 GiveMark { Kind: MarkKind.Keepsake } when ends => "🎁 un souvenir à garder",
                 SwapTrait when ends => "✨ un trait change",

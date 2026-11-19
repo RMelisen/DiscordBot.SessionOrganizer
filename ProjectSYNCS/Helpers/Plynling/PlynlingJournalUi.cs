@@ -52,7 +52,7 @@ public static class PlynlingJournalUi
         JournalKind.TraitGained => PlynlingTraits.ByKey(detail ?? "") is { } trait
             ? $"{trait.Emoji} Un nouveau trait : **{trait.Name(g)}**."
             : "🎭 Un nouveau trait.",
-        JournalKind.EventStory => PlynlingEvents.ByKey(detail ?? "") is { } evt ? $"📜 {evt.Title}." : "📜 Une petite aventure.",
+        JournalKind.EventStory => PlynlingEvents.TitleOf(detail ?? "") is { } title ? $"📜 {title}." : "📜 Une petite aventure.",
         JournalKind.BecameFriends => $"🤝 Une nouvelle amitié avec **{Other(detail)}**.",
         JournalKind.BecameBestFriends => $"💛 Meilleurs amis avec **{Other(detail)}**.",
         JournalKind.BecameLovers => $"💞 {g.Agree("Amoureux", "Amoureuse")} de **{Other(detail)}**.",
