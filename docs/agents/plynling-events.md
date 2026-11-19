@@ -84,18 +84,20 @@ never change that mapping, every stored morning depends on it.
 
 ## Events — `Helpers/Plynling/PlynlingEvents`, `PlynlingEventEngine`, `PlynlingService.Events.cs`
 
-- **Catalog:** C# data. Event and option keys are stored — **never renamed**, append only. Every event
-  needs an **ungated option with no stress cost** (deciding alone); no « il »/« elle » in event text
-  (one text serves every gender pair). The harness checks both.
-- **Files:** `PlynlingEvents/` holds what the village story files cannot do yet, one method per theme,
-  concatenated in `All`: `Breaks` (mental breaks), `Moments` (on-action moments and the four big asks),
-  `Asks` (the other asking pulses and their chains), `GrowingUp` (the bébé dream and the ado
-  apprenticeship, whose follow-ups land in adulte). New short events are story files
-  (`docs/agents/plynling-storylines.md`), not C#.
-- **Stages and keys:** keys are prefixed `baby_`, `teen_`, `grown_` (adulte and ancien) or `elder_`
-  (ancien only, so any reachability check must simulate the Elder stage). A bébé holds
-  only its childhood trait, so bébé gates and stress costs use childhood traits (`bossy`, `charming`,
-  `curious`, `pensive`, `rowdy`); a personality trait there never applies.
+- **Catalog:** story files only (`ProjectSYNCS/Stories/`, `docs/agents/plynling-storylines.md`):
+  `PlynlingEvents.All` is `StoryCatalog.Compiled`. **There is no C# catalog any more** (since 8.0.0); every
+  event, the asks, moments, breaks and growing-up chains included, is a `.story` file. Event and option keys are
+  stored — **never renamed**, append only. Every event needs an **ungated option with no stress cost** (deciding
+  alone); the validator checks it.
+- **Files:** `PlynlingEvents/` holds `PlynlingEvents.cs` (`All`, `ByKey`, `StoredKeys`, `Current`, `TitleOf`,
+  `Expand`) and `PlynlingEvents.Removed.cs`: **`Removed` holds the titles of deleted events**, by key, for old
+  journal lines and owner reports. The 50 keys moved to story files in 8.0.0 are not there: they still resolve,
+  through their scene's `was:`.
+- **Stored keys:** an instance saved before 8.0.0 may carry an old C# key (`social_declare`, `break_cloud`…).
+  Compare stored keys through `ByKey`, `StoredKeys` or `Current`, never raw (`plynling-storylines.md`, *Keys are forever*).
+- **Stages:** a bébé holds only its childhood trait, so bébé gates and stress costs use childhood traits (`bossy`,
+  `charming`, `curious`, `pensive`, `rowdy`); a personality trait there never applies. An ancien-only arc means
+  any reachability check must simulate the Elder stage.
 - **Every rule is pure and hashed** (`StableRoll`): pulse time (08:00–20:00 Paris), which event,
   the target, the challenge roll (from the instance id), the in-character choice. Never a `Random`.
 - **Pacing:** one pulse a day, skipped when 3 pulse events wait; 24 h to choose; a death cancels what
@@ -114,19 +116,16 @@ never change that mapping, every stored morning depends on it.
   for good — nothing new resolves, so the window never moves.
 - **A key gone from the catalog** is cancelled by the next sweep, waiting or not, and never offered:
   it would sit first in the queue, unopenable, in front of the real ones.
-- **Every old C# event is reachable, or deleted.** Since 7.74.2 the daily draws are the village story files;
-  what stays in C# is a pulse still drawn, an on-action moment, a break, or what one of those brings through
-  follow-ups and asks (the checks fail otherwise). An event nothing can bring any more is **deleted**, and its
-  title goes to `PlynlingEvents.Removed` (`PlynlingEvents.Removed.cs`), which `TitleOf` reads for journal lines and
-  owner reports. A removed key is never reused (checked). What a deletion costs: a waiting instance is cancelled
-  (the rule above), an old posted story's page turn reads « Les détails se sont perdus en route », and the
-  adulte trait no longer counts the ado choices made on deleted events (`AdultWeightAsync`).
-  The old pulses still drawn are the ones that **hand a decision to the other owner** (`AskTarget`, directly or
-  down their chain: `social_*`, `grown_campfire`, `grown_letters`, `teen_secret`, `teen_befriend`), the only way an
-  event forms a couple, a rivalry, a pact or a friendship until story files can hand a scene over, and
-  `baby_grow_up` / `teen_apprentice`, whose follow-ups land in adulte, until growing-up arcs replace them.
-  Every C# event left was rewritten in the village in the same release (same keys, options and effects); the old
-  keys `owl`, `hedgehog`, `magpie`, `cafe`, `heron`, `train` now name villagers and places, since keys are stored.
+- **A deleted event** (nothing can bring it any more) has its title in `PlynlingEvents.Removed`
+  (`PlynlingEvents.Removed.cs`), which `TitleOf` reads for journal lines and owner reports. A removed key is never
+  reused (checked), not even as a `was:`. What a deletion costs: a waiting instance is cancelled (the rule above),
+  an old posted story's page turn reads « Les détails se sont perdus en route », and the adulte trait no longer
+  counts the ado choices made on deleted events (`AdultWeightAsync`). A **moved** event costs none of that: its old
+  key resolves to its scene (`was:`), with its old option keys.
+- The events that **hand a decision to the other owner** (`AskTarget`) are the only way an event forms a couple,
+  a rivalry, a pact or a friendship: since 8.0.0 they are story arcs with a `handover` scene (`plynling-storylines.md`,
+  *Handover*). Old option keys `owl`, `hedgehog`, `magpie`, `cafe`, `heron`, `train` now name villagers and places,
+  since keys are stored.
 - **Deciding alone** never picks a hidden option or one with a stress cost for a held trait — the
   code enforces the "no penalty for not playing" rule, not just the content.
 - **One context:** event logic lives in the `PlynlingService` partial, so growth, the relation change
@@ -156,8 +155,8 @@ never change that mapping, every stored morning depends on it.
   `ApplyEventAsync`.
 - **`Shown` vs `Visible`** (`PlynlingEventEngine`): `Shown` is what the card lists, `Visible` what may be picked, by
   a click or alone (`AloneOptions` uses `Visible`). They differ only for a locked story option (listed, disabled).
-  Old C# events keep hiding gated options, so for them the two agree. A new check on "can this be chosen" uses `Visible`.
-- **The stakes line** (`PlynlingEventStakes.Line`) is under every option of every event, C# ones too; buttons are
+  A secret one (`[needs …] [secret]`, the old hidden trait gates) is neither shown nor picked while its needs fail. A new check on "can this be chosen" uses `Visible`.
+- **The stakes line** (`PlynlingEventStakes.Line`) is under every option of every event; buttons are
   plain labels (only a trait-gated option keeps the trait icon, the 🎲 lives in the line).
 - **`AppliesWhenAlone`** is the single "not playing is free" rule, story effects included (`SwapTrait` and a hurting
   keepsake never apply alone). A new effect that hurts gets a case there.
@@ -235,9 +234,9 @@ never change that mapping, every stored morning depends on it.
   the pact lifts to `BestFriendsFrom + BondMargin` (harness).
 - **Follow-ups** are instances with a future `AvailableAt`; "open" includes them, so a death cancels them.
 - **Echoes** are follow-ups long enough to cross a stage: bébé and ado last 7 days each, so a bébé
-  event's `FollowUp(…, 336, 384)` and an ado event's `FollowUp(…, 168, 240)` always land in adulte
-  (`baby_grow_up` → `grown_dream_*`, the apprentice endings → `grown_master_*`). Their text is written
-  for an adulte. Shorten those hours and the echo can land mid-childhood.
+  event's `pace: 14d-16d` and an ado event's `pace: 7d-10d` always land in adulte
+  (`dream.dream` → `dream.explore`…, the apprentice lessons → `apprentice.master_*`). Their text is written
+  for an adulte. Shorten those delays and the echo can land mid-childhood.
 - **A chain's ending can depend on a roll** by sending `OnSuccess` and `OnFailure` to different
   follow-up keys (`grown_exam_paper` → laureate / honest / hollow / caught). That is the only way a
   later step knows how an earlier one went.

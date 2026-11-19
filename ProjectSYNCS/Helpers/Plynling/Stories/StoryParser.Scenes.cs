@@ -11,12 +11,49 @@ public static partial class StoryParser
     private static readonly Regex RetiredLine = new(@"^retired\s*->\s*(\S+)$", RegexOptions.Compiled);
     private static readonly Regex OptionLine = new(@"^\*\s*([^|]*?)\s*\|\s*(.*)$", RegexOptions.Compiled);
     private static readonly Regex HoursPace = new(@"^\+(\d+)h$", RegexOptions.Compiled);
+    // A delay drawn in a range (hashed, like every follow-up): `2d`, `24h-72h`, `14d-16d`. One unit for both ends.
+    private static readonly Regex RangePace = new(@"^(\d+)([hd])(?:-(\d+)([hd]))?$", RegexOptions.Compiled);
+
+    /// <summary>The longest delay a `pace:` range may ask for: 30 days.</summary>
+    public const int MaxRangeHours = 720;
 
     // "publik: …", "Pace: now", a bare "handvoer": prose never starts like that. French prose may
     // start « Silence : … » (a space before the colon, a capital), which stays prose.
     private static readonly Regex LooksLikeField = new(@"^([a-z_]+\s*:|[A-Za-z_]+:|[a-z_-]+$|retired\s*->)", RegexOptions.Compiled);
 
-    private static readonly HashSet<string> AttributeWords = new() { "needs", "roll", "lean", "owner-only", "secret", "mystery", "public", "retired" };
+    private static readonly HashSet<string> AttributeWords = new() { "needs", "roll", "lean", "owner-only", "secret", "mystery", "public", "retired", "accept", "refuse" };
+
+    // `pace:` values: next_day, now, +Nh (exact, 1–48), or a range in one unit (1 h to 720 h). Null and a
+    // problem when it is none of them.
+    private static StoryPace? ParsePace(string value, out string? problem)
+    {
+        problem = null;
+        if (value == "next_day") return new StoryPace(PaceKind.NextDay, 0);
+        if (value == "now") return new StoryPace(PaceKind.Now, 0);
+        if (HoursPace.Match(value) is { Success: true } hm)
+        {
+            if (int.TryParse(hm.Groups[1].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var h) && h is >= 1 and <= 48)
+                return new StoryPace(PaceKind.Hours, h);
+            problem = "+Nh takes N from 1 to 48";
+            return null;
+        }
+        if (RangePace.Match(value) is not { Success: true } rm)
+        {
+            problem = "write next_day, now, +Nh (N from 1 to 48), or a delay such as 2d, or a range such as 24h-72h or 14d-16d";
+            return null;
+        }
+        if (rm.Groups[4].Success && rm.Groups[4].Value != rm.Groups[2].Value) { problem = "both ends of a range take the same unit (14d-16d, 24h-72h)"; return null; }
+        var scale = rm.Groups[2].Value == "d" ? 24 : 1;
+        if (!int.TryParse(rm.Groups[1].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var lo)
+            || !int.TryParse(rm.Groups[3].Success ? rm.Groups[3].Value : rm.Groups[1].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var hi)
+            || (long)hi * scale > MaxRangeHours || lo < 1)
+        {
+            problem = $"a delay runs from 1 h to {MaxRangeHours} h (30 days)";
+            return null;
+        }
+        if (hi < lo) { problem = "the range runs backwards; write the shorter delay first"; return null; }
+        return new StoryPace(PaceKind.Range, lo * scale, hi * scale);
+    }
 
     // "[stress rowdy 10]" is a cost (an attribute); "[stress 10]" is an effect.
     private static bool IsAttribute(IReadOnlyList<StoryWord> words) =>
@@ -27,7 +64,7 @@ public static partial class StoryParser
         StoryPos At(Src l) => new(file, l.No);
         void Error(Src l, string message) => errors.Add(new StoryError(At(l), message));
 
-        string? title = null, retired = null;
+        string? title = null, retired = null, was = null;
         StoryPace? pace = null;
         var handover = false;
         var seen = new HashSet<string>();
@@ -39,7 +76,7 @@ public static partial class StoryParser
             var rm = RetiredLine.Match(t);
             var fm = FieldLine.Match(t);
             var field = t is "bump" or "handover" ? t : rm.Success ? "retired" : fm.Success ? fm.Groups[1].Value : null;
-            if (field is not ("bump" or "handover" or "retired" or "title" or "pace" or "public")) break;
+            if (field is not ("bump" or "handover" or "retired" or "title" or "pace" or "public" or "was")) break;
             if (!seen.Add(field)) { Error(body[i], $"'{field}' given twice"); continue; }
             if (t == "bump") { Error(body[i], "'bump' was removed from the format; delete the line"); continue; }
             if (t == "handover") { handover = true; continue; }
@@ -48,17 +85,11 @@ public static partial class StoryParser
             switch (fm.Groups[1].Value)
             {
                 case "title": title = NonEmpty(body[i], "title", value, Error); break;
+                case "was": was = NonEmpty(body[i], "was", value, Error); break;
                 case "public": Error(body[i], "'public:' was removed from the format; delete the line"); break;
                 case "pace":
-                    pace = value switch
-                    {
-                        "next_day" => new StoryPace(PaceKind.NextDay, 0),
-                        "now" => new StoryPace(PaceKind.Now, 0),
-                        _ when HoursPace.Match(value) is { Success: true } hm && int.Parse(hm.Groups[1].Value, CultureInfo.InvariantCulture) is >= 1 and <= 48 =>
-                            new StoryPace(PaceKind.Hours, int.Parse(hm.Groups[1].Value, CultureInfo.InvariantCulture)),
-                        _ => null,
-                    };
-                    if (pace is null) Error(body[i], $"pace '{value}': write next_day, now, or +Nh with N from 1 to 48");
+                    pace = ParsePace(value, out var problem);
+                    if (pace is null) Error(body[i], $"pace '{value}': {problem}");
                     break;
             }
         }
@@ -68,7 +99,7 @@ public static partial class StoryParser
         {
             foreach (var l in rest.Where(l => l.Text.Length > 0)) Error(l, "a retired scene holds only its 'retired -> <key>' line");
             return new StoryScene(key, title ?? "", pace ?? new StoryPace(PaceKind.NextDay, 0), handover, retired,
-                Array.Empty<StoryParagraph>(), Array.Empty<StoryOption>(), null, At(head));
+                Array.Empty<StoryParagraph>(), Array.Empty<StoryOption>(), null, At(head), was);
         }
         if (title is null) Error(head, $"scene '{key}' has no 'title:'");
         if (pace is null) Error(head, $"scene '{key}' has no 'pace:'");
@@ -96,7 +127,7 @@ public static partial class StoryParser
                 if (ParseOption(chunk, file, errors) is { } o) options.Add(o);
         }
         return new StoryScene(key, title ?? "", pace ?? new StoryPace(PaceKind.NextDay, 0), handover, null,
-            prose, options, narration, At(head));
+            prose, options, narration, At(head), was);
     }
 
     private static StoryOption? ParseOption(List<Src> chunk, string file, List<StoryError> errors)
@@ -120,6 +151,7 @@ public static partial class StoryParser
         var lean = new Dictionary<AiAxis, int>();
         var stress = new Dictionary<string, int>();
         bool ownerOnly = false, secret = false, retired = false, mystery = false;
+        Stance? stance = null;
 
         void Attribute(Src l, string tag)
         {
@@ -137,10 +169,12 @@ public static partial class StoryParser
                 }
                 case "roll":
                     if (roll is not null) Bad("one roll per option");
-                    else if (t.Count == 3 && StoryVocabulary.TryEnum<PlynlingStat>(t[1], out var stat)
+                    else if (t.Count == 3 && StoryVocabulary.TryEnum<PlynlingStat>(t[1], out var stat) && t[2] == "vs")
+                        roll = new StoryRoll(stat, 0, Vs: true);
+                    else if (t.Count == 3 && StoryVocabulary.TryEnum<PlynlingStat>(t[1], out stat)
                              && int.TryParse(t[2], NumberStyles.None, CultureInfo.InvariantCulture, out var diff))
                         roll = new StoryRoll(stat, diff);
-                    else Bad($"write [roll <stat> <difficulty>], stat one of {StoryVocabulary.Choices<PlynlingStat>()}");
+                    else Bad($"write [roll <stat> <difficulty>] or [roll <stat> vs], stat one of {StoryVocabulary.Choices<PlynlingStat>()}");
                     break;
                 case "lean":
                     if (t.Count == 3 && StoryVocabulary.TryEnum<AiAxis>(t[1], out var axis)
@@ -162,6 +196,10 @@ public static partial class StoryParser
                 case "owner-only" when t.Count == 1: ownerOnly = true; break;
                 case "secret" when t.Count == 1: secret = true; break;
                 case "retired" when t.Count == 1: retired = true; break;
+                case "accept" or "refuse" when t.Count == 1:
+                    if (stance is not null) Bad("one stance per option: [accept] or [refuse]");
+                    else stance = t[0] == "accept" ? Stance.Accept : Stance.Refuse;
+                    break;
                 default: Bad("takes no words after it"); break;
             }
         }
@@ -169,7 +207,7 @@ public static partial class StoryParser
         foreach (var tag in parts.Trailing)
         {
             if (IsAttribute(StoryTags.Words(tag))) Attribute(head, tag);
-            else Error(head, $"[{tag}]: only attributes go on the option line (needs, roll, lean, stress, owner-only, secret, mystery, retired)");
+            else Error(head, $"[{tag}]: only attributes go on the option line (needs, roll, lean, stress, owner-only, secret, mystery, retired, accept, refuse)");
         }
 
         // Attribute lines, then the outcome: plain, or split by '? success' / '? failure'.
@@ -218,7 +256,7 @@ public static partial class StoryParser
             if (failure >= 0) onFailure = Outcome(Part(failure), rest[failure]);
         }
         return new StoryOption(key, label, needs, lockText, secret, roll, lean, stress, ownerOnly, retired, mystery,
-            plain, onSuccess, onFailure, At(head));
+            plain, onSuccess, onFailure, At(head), stance ?? Stance.Neutral);
     }
 
     private static StoryEnding? ParseEnding(string key, Src head, List<Src> body, string file, List<StoryError> errors)

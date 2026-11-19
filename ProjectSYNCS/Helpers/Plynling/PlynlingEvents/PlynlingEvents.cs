@@ -3,55 +3,16 @@ using ProjectSYNCS.Models;
 namespace ProjectSYNCS.Helpers;
 
 /// <summary>
-/// The event catalog. Keys (events and options) are stored: **never rename one**; append new events
-/// at the end. Situations are inspired by Crusader Kings III and rewritten for the village — see
-/// docs/plynling-writing-style.md. No « il »/« elle » in event text: the harness bans them, because
-/// one text serves every gender pair.
+/// The event catalog: every event is a story file (ProjectSYNCS/Stories/, docs/agents/plynling-storylines.md),
+/// compiled by StoryCatalog. There are no hand-written events. Keys (events and options) are stored:
+/// **never rename one**. An old C# event's key resolves to the scene that claims it (`was:`), through
+/// <see cref="ByKey"/>; compare stored keys through ByKey, StoredKeys or Current, never raw.
 /// </summary>
 public static partial class PlynlingEvents
 {
-    private static readonly PlynlingStage[] Baby = { PlynlingStage.Baby };
-    private static readonly PlynlingStage[] Teen = { PlynlingStage.Teen };
-    private static readonly PlynlingStage[] Grown = { PlynlingStage.Adult, PlynlingStage.Elder };
-    private static readonly PlynlingStage[] AnyStage = Enum.GetValues<PlynlingStage>();
-
-    private static readonly IReadOnlyList<EventEffect> Nothing = Array.Empty<EventEffect>();
-    private static IReadOnlyList<EventEffect> E(params EventEffect[] effects) => effects;
-    private static Dictionary<string, int> Stress(params (string Trait, int Amount)[] costs) => costs.ToDictionary(c => c.Trait, c => c.Amount);
-    private static Dictionary<AiAxis, int> Ai(params (AiAxis Axis, int W)[] w) => w.ToDictionary(x => x.Axis, x => x.W);
-    private static readonly Dictionary<string, int> NoStress = new();
-
-    // A plain option (no challenge): the same outcome whatever happens.
-    private static EventOption Plain(string key, string label, string outcome, IReadOnlyList<EventEffect> effects,
-        Dictionary<AiAxis, int> ai, Dictionary<string, int>? stress = null, EventGate? gate = null) =>
-        new(key, label, outcome, null, gate, null, effects, Nothing, stress ?? NoStress, ai);
-
-    private static EventOption Try(string key, string label, EventChallenge challenge, string success, string failure,
-        IReadOnlyList<EventEffect> onSuccess, IReadOnlyList<EventEffect> onFailure, Dictionary<AiAxis, int> ai,
-        Dictionary<string, int>? stress = null, EventGate? gate = null) =>
-        new(key, label, success, failure, gate, challenge, onSuccess, onFailure, stress ?? NoStress, ai);
-
-    // An option that asks the other Plynling's owner (AskTarget). Owner-only unless said otherwise:
-    // deciding alone never risks a refusal.
-    private static EventOption Ask(string key, string label, string outcome, string responseKey, Dictionary<AiAxis, int> ai,
-        bool ownerOnly = true) =>
-        new(key, label, outcome, null, null, null, E(new AskTarget(responseKey)), Nothing, NoStress, ai, OwnerOnly: ownerOnly);
-
-    // A response's answer: Stance leans it when the responder decides alone.
-    private static EventOption Answer(string key, string label, string outcome, Stance stance, IReadOnlyList<EventEffect> effects,
-        Dictionary<AiAxis, int> ai) =>
-        new(key, label, outcome, null, null, null, effects, Nothing, NoStress, ai, Stance: stance);
-
-    // The catalog, one method per file in PlynlingEvents/, concatenated in catalog order, then the
-    // compiled story files (StoryCatalog, loaded here on first access; a broken file throws). Each part
-    // is a method rather than a field: static field order across partial files is undefined.
-    // The old C# events left are the ones the village story files cannot replace yet: mental breaks,
-    // life's moments, asking the other owner, and the two growing-up chains. Every one stays reachable
-    // (the checks hold it); one nothing can bring any more is deleted, its title kept in Removed.
-    public static readonly IReadOnlyList<EventDef> All = new[]
-    {
-        Breaks(), Moments(), Asks(), GrowingUp(), StoryCatalog.Compiled,
-    }.SelectMany(part => part).ToArray();
+    // The compiled story files, loaded on first access (a broken file throws). StoryCatalog.Compiled is a
+    // lazy property, so reading it from this initializer is safe whatever the order of partial files.
+    public static readonly IReadOnlyList<EventDef> All = StoryCatalog.Compiled;
 
     // Deleted events' titles, by key: a journal line or an owner report still names them. A removed key
     // is never reused (the checks hold it), so an old instance can never open as something else.
@@ -67,6 +28,18 @@ public static partial class PlynlingEvents
         defs.Select(e => KeyValuePair.Create(e.Key, e)).Concat(aliases).ToDictionary();
 
     public static EventDef? ByKey(string key) => ByKeyMap.GetValueOrDefault(key);
+
+    /// <summary>Each alias key (a retired scene's, an old C# event's `was:`) → the live def it resolves to.</summary>
+    public static IReadOnlyDictionary<string, EventDef> Aliases => StoryCatalog.Aliases;
+
+    /// <summary>
+    /// Every key a stored instance may carry for a def `which` matches: live keys, old keys (`was:`) and
+    /// retired scenes' keys. What a SQL filter on <c>EventKey</c> must list, or it misses rows saved before a move.
+    /// </summary>
+    public static string[] StoredKeys(Func<EventDef, bool> which) => ByKeyMap.Where(kv => which(kv.Value)).Select(kv => kv.Key).ToArray();
+
+    /// <summary>The live key a stored key now plays as (an unknown key is returned as it is): compare this with def keys, never the stored one.</summary>
+    public static string Current(string storedKey) => ByKey(storedKey)?.Key ?? storedKey;
 
     // Event text, expanded: names in bold, agreements resolved, {T} the new trait(s) in bold. Names must
     // already be safe (PlynlingCardUi.SafeName). Without a target, {B} never appears in the text. {T} is

@@ -16,8 +16,9 @@ namespace ProjectSYNCS.Services;
 // refuse that save and every later attempt's identical one.
 public partial class PlynlingService
 {
-    // Each arc's first scene key → its arc, for LastStarted (read from PlynlingEvents.All, another class).
-    private static readonly IReadOnlyDictionary<string, StoryArc> StoryOpeners = StoryRuns.Openers(PlynlingEvents.All);
+    // Each arc's first scene key → its arc, for LastStarted (read from PlynlingEvents.All, another class), its
+    // old keys (`was:`) included: an arc started before it moved to a story file counts as started.
+    private static readonly IReadOnlyDictionary<string, StoryArc> StoryOpeners = StoryRuns.Openers(PlynlingEvents.All, PlynlingEvents.Aliases);
     private static readonly string[] StoryOpenerKeys = StoryOpeners.Keys.ToArray();
 
     // Everything a story's conditions read about `p`, with `inst`'s run flags (none for a draw). Plain

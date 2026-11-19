@@ -23,6 +23,7 @@ public static class StoryEngineChecks
         Render();
         Arrival();
         Fixtures();
+        Compile();
         Openings();
         Triggered();
         Rules();
@@ -45,34 +46,19 @@ public static class StoryEngineChecks
     private static string Stake(EventOption o, EventContext? ctx = null, EventDef? def = null) =>
         PlynlingEventStakes.Line(o, def ?? StakesDef(o), ctx ?? Ctx(), PlynlingGender.Female, null);
 
-    // The old C# catalog holds only what can still happen: every event is a pulse, a moment or a break,
-    // or is reached from one through follow-ups and asks; a C# moment a story replaces (on_welcome) is
-    // deleted. Removed keys keep their titles and are never reused. Every pulse that hands a decision to
-    // the other owner is still drawn: no story file can do it yet.
+    // The catalog is story files only. Removed keys keep their titles and are never reused; the old keys
+    // the files claim (was:) still find their titles. The pulses that hand a decision to the other owner
+    // are still drawn, and every stage meets enough events.
     private static void Reachability()
     {
-        bool Replaced(EventDef d) => d.Type == EventType.Triggered && d.BreakLevel == 0
-            && PlynlingEvents.All.Any(s => s.Story is not null && s.Trigger == d.Trigger);
-        var old = PlynlingEvents.All.Where(d => d.Story is null).ToList();
-        var reached = new HashSet<string>();
-        var todo = new Stack<EventDef>(old.Where(d => d.Type == EventType.Pulse || d.Type == EventType.Triggered && !Replaced(d)));
-        while (todo.TryPop(out var d))
-        {
-            if (!reached.Add(d.Key)) continue;
-            foreach (var e in d.Options.SelectMany(o => o.OnSuccess.Concat(o.OnFailure)))
-                if ((e is FollowUp f ? f.EventKey : e is AskTarget a ? a.ResponseKey : null) is { } k)
-                {
-                    if (PlynlingEvents.ByKey(k) is { } n) todo.Push(n);
-                    else _fail($"reachability: {d.Key} brings {k}, which is not in the catalog");
-                }
-        }
-        var dead = old.Where(d => !reached.Contains(d.Key)).Select(d => d.Key).ToList();
-        Expect(dead.Count == 0, "reachability: old events nothing can bring any more (delete them, title in Removed): " + string.Join(", ", dead));
+        // Every event is a story file now; the story walker holds what each arc can reach.
+        var hand = PlynlingEvents.All.Where(d => d.Story is null).Select(d => d.Key).ToList();
+        Expect(hand.Count == 0, "reachability: every event is a story file, none is hand-written: " + string.Join(", ", hand));
         var reused = PlynlingEvents.All.Where(d => PlynlingEvents.Removed.ContainsKey(d.Key)).Select(d => d.Key).ToList();
         Expect(reused.Count == 0, "reachability: a removed key is back in the catalog: " + string.Join(", ", reused));
         Expect(PlynlingEvents.TitleOf("baby_puddle") == "La première flaque" && PlynlingEvents.TitleOf("social_pact") == "Le pacte"
                && PlynlingEvents.TitleOf("nope") is null, "reachability: TitleOf reads the catalog, then the removed titles");
-        var asking = old.Where(d => d.Type == EventType.Pulse && d.Options.Any(o => o.OnSuccess.Any(e => e is AskTarget))).ToList();
+        var asking = PlynlingEvents.All.Where(d => d.Type == EventType.Pulse && d.Options.Any(o => o.OnSuccess.Any(e => e is AskTarget))).ToList();
         Expect(asking.Count >= 6, $"reachability: the asking pulses are still drawn ({asking.Count})");
         foreach (var stage in Enum.GetValues<PlynlingStage>())
         {
@@ -146,7 +132,8 @@ public static class StoryEngineChecks
         Expect(!PlynlingEventStory.SceneText(village, Ctx()).Contains("tient un coin de son châle"), "scene: without the flag, no line");
         Expect(!PlynlingEventStory.SceneText(village, null).Contains("tient un coin de son châle")
                && PlynlingEventStory.SceneText(village, null).Contains("Sur le Pont-Vieux"), "scene: no context, unconditional lines only");
-        var plain = PlynlingEvents.ByKey("on_teen")!;
+        var plain = new EventDef("t.plain", EventType.Pulse, [PlynlingStage.Baby], "T", "Une scène écrite à la main.",
+            [new EventOption("o", "O", "Sa suite.", null, null, null, [], [], new Dictionary<string, int>(), new Dictionary<AiAxis, int>())]);
         Expect(PlynlingEventStory.SceneText(plain, Ctx()) == plain.Scene, "scene: a C# def keeps its text");
         var nod = keep.Options.Single(o => o.Key == "nod_up");
         var told = PlynlingEventStory.OutcomeProse(keep, nod, true, Ctx());
@@ -394,7 +381,7 @@ public static class StoryEngineChecks
         var walk = Def(defs, a + ".walk");
         Expect(StoryCompiler.NarrationOption == "continue", "the narration option's stored key is « continue »");
         Expect(walk?.Options is [{ Key: "continue", Label: "Continuer", Gate: null, Source: not null } n]
-               && n.OnSuccess.SequenceEqual(new EventEffect[] { new RevealMemory("lichen.secret"), new FollowUp(a + ".bridge", 0, 0) }),
+               && n.OnSuccess.SequenceEqual(new EventEffect[] { new RevealMemory("lichen.secret"), new FollowUp(a + ".bridge", 48, 72) }),
             "a narration scene: one free option carrying its effects");
         var apart = Def(defs, a + ".apart")?.Options.ToDictionary(o => o.Key) ?? new();
         Expect(apart.GetValueOrDefault("wait")?.OnSuccess.SequenceEqual(new EventEffect[]
@@ -443,6 +430,65 @@ public static class StoryEngineChecks
         Expect(!Opens(req, KT()) && Opens(req, KT() with { ArcFlags = new HashSet<string> { "x.y" } }), "requires");
     }
 
+    // 50f2. The words the moved events need, compiled: a handover scene is a Response asked by AskTarget, a
+    // break opens at its level, the new triggers bring their on-action, other_if filters the candidates.
+    private static void Compile()
+    {
+        if (_fixture is null || _fixture.Errors.Count > 0) return;   // reported by Fixtures
+        var defs = StoryCompiler.Compile(_fixture);
+        const string h = "test_handover";
+        var answer = Def(defs, h + ".answer");
+        Expect(answer is { Type: EventType.Response, Target: TargetKind.None, TargetCondition: null, Condition: null, Trigger: null, BreakLevel: 0 },
+            "a handover scene compiles to a Response with no target, condition or trigger");
+        var ask = Def(defs, h + ".ask");
+        var opts = ask?.Options.ToDictionary(o => o.Key) ?? new();
+        Expect(opts.GetValueOrDefault("ask") is { OwnerOnly: true } a && a.OnSuccess.SequenceEqual([new AskTarget(h + ".answer")]),
+            "the asking option asks the handover scene, and nothing else");
+        var yes = answer?.Options.SingleOrDefault(o => o.Key == "yes");
+        var no = answer?.Options.SingleOrDefault(o => o.Key == "no");
+        Expect(yes is { Stance: Stance.Accept } && yes.OnSuccess.SequenceEqual([new Couple()])
+               && no is { Stance: Stance.Refuse } && no.OnSuccess.SequenceEqual([new Heartbreak()]), "[accept] [couple], [refuse] [heartbreak]");
+        Expect(opts.GetValueOrDefault("race")?.Challenge == new EventChallenge(PlynlingStat.Courage, 0, VsTarget: true), "[roll courage vs] is a challenge against the other");
+        Expect(opts.GetValueOrDefault("race")?.OnSuccess.Contains(new SetAffinityAtLeast(PlynlingBonds.FriendsFrom + PlynlingBonds.BondMargin)) == true
+               && PlynlingBonds.FriendsFrom + PlynlingBonds.BondMargin == 30, "[bond friends] lifts affinity to 30");
+        Expect(opts.GetValueOrDefault("later")?.OnSuccess.SequenceEqual([new FollowUp(h + ".more", 24, 72)]) == true, "pace: 24h-72h is a follow-up in that range");
+        Expect(Def(defs, h + ".more")?.Options.Single(o => o.Key == "stay").OnSuccess.SequenceEqual([new SetAffinityAtLeast(0)]) == true, "[bond peace] lifts affinity to 0");
+        TargetInfo T(PlynlingBond bond, int affinity, bool couple) => new(new Plynling(), bond, affinity, 0, false, couple);
+        Expect(ask is { Target: TargetKind.Known, TargetCondition: { } tc } && !tc(T(PlynlingBond.Acquaintances, 0, false))
+               && tc(T(PlynlingBond.Acquaintances, 0, true)) && !tc(T(PlynlingBond.Acquaintances, -1, true)),
+            "other: known + other_if: [can_couple] [affinity >= 0] filters the candidates");
+        Expect(Def(defs, h + ".more") is { Type: EventType.FollowUp, Target: TargetKind.Known }, "a later scene keeps the arc's target");
+
+        Expect(Def(defs, "test_break.break") is { Type: EventType.Triggered, BreakLevel: 2, Trigger: null } brk
+               && brk.Options.Single(o => o.Key == "talk").OnSuccess.Contains(new GainCoping(null))
+               && brk.Options.Single(o => o.Key == "write").OnSuccess.Contains(new GainCoping("journaller")), "trigger: break 2, [coping], [coping journaller]");
+        Expect(StoryCompiler.Aliases(_fixture).GetValueOrDefault("test_everything_old") == "test_everything.answer", "was: maps the old key to its scene");
+
+        // The other triggers, one inline arc each.
+        foreach (var (word, action) in new (string, OnAction)[]
+                 { ("sick", OnAction.FellSick), ("recovered", OnAction.Recovered), ("visit", OnAction.AfterVisit), ("death", OnAction.Bereaved) })
+        {
+            var text = $"# arc: t_{word}\ntitle: T\nfamily: personal\nstage: baby\ntrigger: {word}\nsize: short\nother: anyone\n\n"
+                       + "## scene: only\ntitle: U\npace: now\n{A} est là.\n\n* a | A\n  Oui.\n  [end]\n\n* b | B\n  Non.\n  [end]\n";
+            var errors = new List<StoryError>();
+            var arc = StoryParser.Parse("t.story", text, errors);
+            var compiled = arc is null || errors.Count > 0 ? null : StoryCompiler.Compile(new StoryLoad([arc], _fixture.Cast, [])).Single();
+            Expect(compiled is { Type: EventType.Triggered, Target: TargetKind.Anyone } && compiled.Trigger == action, $"trigger: {word} brings {action}");
+        }
+
+        // Review Focus 5: the asker's page never walks into the answer, and the answer's page is the answer alone.
+        var ctx = Ctx(K(), stage: PlynlingStage.Adult);
+        if (ask is not null && answer is not null && opts.GetValueOrDefault("ask") is { } askOpt)
+        {
+            var told = PlynlingEventStory.OutcomeProse(ask, askOpt, true, ctx);
+            Expect(told == "{A} se lève et va poser la question à {B}.", "the asking option's prose is its own: " + told);
+            var answerLines = answer.Story!.Scene.Prose.Concat(answer.Story.Scene.Options.SelectMany(o => o.Outcome?.Prose ?? []))
+                .SelectMany(p => p.Lines).Select(l => l.Text);
+            Expect(answerLines.All(l => !told.Contains(l)), "the asker's page holds no line of the answer");
+            Expect(PlynlingEventStory.SceneText(answer, ctx) == "{B} est venu{b:|e} poser une question à {A}.", "the answer's page opens on the answer's prose alone");
+        }
+    }
+
     // 50g. A story replaces the C# moment for its on-action: Arrival (on_welcome, deleted, was the C# one).
     private static void Triggered()
     {
@@ -455,7 +501,7 @@ public static class StoryEngineChecks
             break;
         }
         var teen = PlynlingEventEngine.PickTriggered(OnAction.BecameTeen, 1, 1, PlynlingEvents.All, Ctx(stage: PlynlingStage.Teen));
-        Expect(teen is null || teen.Story is null, "no story for becoming teen yet: the C# moment stays");
+        Expect(teen?.Key == "teen.grown", $"becoming teen brings the story moment ({teen?.Key ?? "nothing"})");
         var gate = new EventOption("o", "O", "", null, new StoryGate([C(ConditionKind.Flag, "f")], null, false), null, [], [],
             new Dictionary<string, int>(), new Dictionary<AiAxis, int>());
         Expect(!PlynlingEventEngine.Visible(gate, Ctx()) && PlynlingEventEngine.Visible(gate, Ctx(K(flags: ["f"]))), "Visible reads a StoryGate's needs");
@@ -601,6 +647,27 @@ public static class StoryEngineChecks
         var header = File.ReadAllLines(Path.Combine(Root, "tests", "ProjectSYNCS.Checks", "Stories", "test_everything.story"))
             .TakeWhile(l => !l.StartsWith("## ")).ToList();
         Expect(header.Any(l => l.StartsWith("size: long")) && !header.Any(l => l.StartsWith("once:")), "test_everything writes size: long and no once:");
+
+        // Stored keys from before the move (was:) are compared through ByKey, StoredKeys and Current, never raw.
+        // Review Focus 3: a break or moment waiting under its old key stops a second copy under the new one.
+        var breaks = PlynlingEvents.StoredKeys(d => d.BreakLevel > 0);
+        Expect(breaks.Contains("break_cloud") && breaks.Contains("break_cloud.break"), "StoredKeys: a break's old and new keys");
+        var pulses = PlynlingEvents.StoredKeys(d => d.Type == EventType.Pulse && d.BreakLevel == 0);
+        Expect(pulses.Contains("grown_campfire") && pulses.Contains("campfire.fire") && !pulses.Contains("reply_declare") && !pulses.Contains("declare.answer"),
+            "StoredKeys: a pulse's old and new keys, no response");
+        // Review Focus 2: the recent window and the waiting set read old keys as the new event.
+        Expect(PlynlingEvents.Current("grown_campfire") == "campfire.fire" && PlynlingEvents.Current("nope") == "nope", "Current: an old key reads as its scene's key");
+        // Review Focus 1: an instance waiting under an old key opens, resolves under its old option keys, and goes on to the new scene.
+        var more = PlynlingEvents.ByKey("grown_letters_more");
+        Expect(more is not null && more.Options.Select(o => o.Key).SequenceEqual(["meet", "riddle"])
+               && more.Options.SelectMany(o => o.OnSuccess.Concat(o.OnFailure)).OfType<FollowUp>()
+                   .All(f => PlynlingEvents.ByKey(f.EventKey)?.Story?.Scene.Was == "grown_letters_bridge"), "grown_letters_more: its options, and its chain to the bridge");
+        Expect(PlynlingEvents.ByKey("reply_declare") is { Type: EventType.Response } reply && reply.Options.Select(o => o.Key).SequenceEqual(["yes", "no"]),
+            "reply_declare: a Response with yes and no");
+        // Review Focus 4: history read through old keys counts the same event.
+        Expect(PlynlingEventEngine.AdoHistory([(PlynlingEvents.ByKey("teen_apprentice")!.Options.Single(o => o.Key == "magpie"), true)]).Count == 1,
+            "ado history: an old choice still counts");
+        Expect(PlynlingEvents.TitleOf("on_teen") == "Plus tout à fait bébé", "TitleOf: an old key names its scene");
     }
 
     // 50k. A run's flags, and what finished and started runs leave (StoryRuns): the service's pure half.
@@ -625,6 +692,11 @@ public static class StoryEngineChecks
         var shipped = StoryRuns.Openers(PlynlingEvents.All);
         Expect(shipped.ContainsKey("arrival.first_steps") && !shipped.ContainsKey("arrival.the_village") && shipped.Keys.All(k => k.Contains('.')),
             "openers: each arc's first scene, no C# key");
+        // An arc started under its old key (on_teen) counts as started.
+        var withOld = StoryRuns.Openers(PlynlingEvents.All, PlynlingEvents.Aliases);
+        Expect(withOld.GetValueOrDefault("on_teen")?.Key == "teen" && !withOld.ContainsKey("grown_letters_more"), "openers: an old opener key, not an old follow-up's");
+        var started = Now.AddDays(-3);
+        Expect(StoryRuns.Starts([("on_teen", started)], withOld).LastStarted.GetValueOrDefault("teen") == started, "LastStarted: read through an old key");
         if (_fixture is null || _fixture.Errors.Count > 0) return;
         var openers = StoryRuns.Openers(StoryCompiler.Compile(_fixture));
         var t0 = Now.AddDays(-40);

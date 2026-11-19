@@ -39,7 +39,10 @@ public static class StoryCompiler
         return load.Arcs.SelectMany(a => new ArcCompiler(a, keepsakes).Defs()).ToList();
     }
 
-    /// <summary>Every retired scene's key, mapped to the live scene it leads to (through a chain of retirements). One leading to an ending, or nowhere, is left out.</summary>
+    /// <summary>
+    /// Every retired scene's key, mapped to the live scene it leads to (through a chain of retirements; one
+    /// leading to an ending, or nowhere, is left out), and every live scene's old key (`was:`) to that scene.
+    /// </summary>
     public static IReadOnlyDictionary<string, string> Aliases(StoryLoad load)
     {
         var map = new Dictionary<string, string>();
@@ -48,6 +51,8 @@ public static class StoryCompiler
             var c = new ArcCompiler(arc, new Dictionary<string, KeepsakeDecl>());
             foreach (var s in arc.Scenes.Where(s => s.RetiredTo is not null))
                 if (c.Resolve(s.Key) is StoryScene live) map[Key(arc.Key, s.Key)] = Key(arc.Key, live.Key);
+            foreach (var s in arc.Scenes.Where(s => s.RetiredTo is null && s.Was is not null))
+                map[s.Was!] = Key(arc.Key, s.Key);
         }
         return map;
     }
@@ -70,21 +75,39 @@ public static class StoryCompiler
             var target = h.Other switch
             {
                 null => TargetKind.None,
-                PlynlingBond.Rivals or PlynlingBond.Enemies => TargetKind.Hostile,
-                _ => TargetKind.Known,
+                { Kind: OtherKind.Bonds } o => o.Bonds.All(PlynlingBonds.IsHostile) ? TargetKind.Hostile : TargetKind.Known,
+                { Kind: OtherKind.Known } => TargetKind.Known,
+                { Kind: OtherKind.Hostile } => TargetKind.Hostile,
+                _ => TargetKind.Anyone,
             };
-            Func<TargetInfo, bool>? targetCondition = h.Other is { } bond ? t => t.Bond == bond : null;
+            // other_if: filters the candidates too (relation, affinity, can_couple).
+            var otherIf = h.OtherIf;
+            Func<TargetInfo, bool>? targetCondition = h.Other switch
+            {
+                { Kind: OtherKind.Bonds } other => t => other.Bonds.Contains(t.Bond) && StoryConditions.OnTarget(otherIf, t),
+                not null when otherIf.Count > 0 => t => StoryConditions.OnTarget(otherIf, t),
+                _ => null,
+            };
             // `weight:` is the arc's draw weight; unwritten (0), whatever the trigger, it weighs the ordinary 100.
             var weight = h.Weight > 0 ? h.Weight : OrdinaryWeight;
             for (var i = 0; i < arc.Scenes.Count; i++)
             {
                 var scene = arc.Scenes[i];
                 if (scene.RetiredTo is not null) continue;   // an alias (Aliases), not a def
+                // A handover scene is the other owner's answer: a Response queued on the other Plynling by the
+                // asking option's AskTarget, as today's replies (no target, condition or trigger of its own).
+                if (scene.Handover)
+                {
+                    yield return new EventDef(Key(arc.Key, scene.Key), EventType.Response, h.Stages, scene.Title, Plain(scene.Prose), Options(scene),
+                        Weight: weight, Story: new StoryLink(arc, scene));
+                    continue;
+                }
                 var opens = i == 0;
                 var (type, trigger) = opens ? Opening(h.Trigger) : (EventType.FollowUp, (OnAction?)null);
                 yield return new EventDef(Key(arc.Key, scene.Key), type, h.Stages, scene.Title, Plain(scene.Prose), Options(scene),
                     Weight: weight, Target: target, Condition: opens ? Opens() : null, Trigger: trigger, TargetCondition: targetCondition,
-                    Story: new StoryLink(arc, scene), WeightBonus: opens && h.WeightBonuses.Count > 0 ? Bonus() : null);
+                    Story: new StoryLink(arc, scene), WeightBonus: opens && h.WeightBonuses.Count > 0 ? Bonus() : null,
+                    BreakLevel: opens && h.Trigger is { Kind: TriggerKind.Break, Arg: { } level } ? int.Parse(level, System.Globalization.CultureInfo.InvariantCulture) : 0);
             }
         }
 
@@ -94,6 +117,12 @@ public static class StoryCompiler
             { Kind: TriggerKind.Adoption } => (EventType.Triggered, OnAction.Adopted),
             { Kind: TriggerKind.Stage, Arg: "teen" } => (EventType.Triggered, OnAction.BecameTeen),
             { Kind: TriggerKind.Stage, Arg: "adult" } => (EventType.Triggered, OnAction.BecameAdult),
+            { Kind: TriggerKind.Sick } => (EventType.Triggered, OnAction.FellSick),
+            { Kind: TriggerKind.Recovered } => (EventType.Triggered, OnAction.Recovered),
+            { Kind: TriggerKind.Visit } => (EventType.Triggered, OnAction.AfterVisit),
+            { Kind: TriggerKind.Death, Arg: null } => (EventType.Triggered, OnAction.Bereaved),
+            // A break has no on-action: QueueBreaksAsync picks one by its BreakLevel when stress climbs past a level.
+            { Kind: TriggerKind.Break } => (EventType.Triggered, null),
             _ => throw new InvalidOperationException($"trigger {t.Kind} {t.Arg}: the validator should have refused it"),
         };
 
@@ -135,8 +164,8 @@ public static class StoryCompiler
                 var failure = o.Roll is null ? null : o.Failure;
                 EventGate? gate = o.Retired ? new RetiredGate() : o.Needs.Count > 0 ? new StoryGate(o.Needs, o.LockText, o.Secret) : null;
                 return new EventOption(o.Key, o.Label, Plain(success?.Prose), failure is null ? null : Plain(failure.Prose), gate,
-                    o.Roll is { } r ? new EventChallenge(r.Stat, r.Difficulty) : null, Effects(success), Effects(failure),
-                    o.StressCosts, o.Lean, OwnerOnly: o.OwnerOnly, Source: o, Mystery: o.Mystery);
+                    o.Roll is { } r ? new EventChallenge(r.Stat, r.Vs ? 0 : r.Difficulty, VsTarget: r.Vs) : null, Effects(success), Effects(failure),
+                    o.StressCosts, o.Lean, OwnerOnly: o.OwnerOnly, Stance: o.Stance, Source: o, Mystery: o.Mystery);
             }).ToList();
         }
 
@@ -148,6 +177,10 @@ public static class StoryCompiler
             var list = outcome.Effects.Select(Effect).ToList();
             switch (outcome.Next is { } next ? Resolve(next) : null)
             {
+                // Handing the scene over asks the other owner (a Response on their card) instead of following up.
+                case StoryScene { Handover: true } s:
+                    list.Add(new AskTarget(Key(arc.Key, s.Key)));
+                    break;
                 case StoryScene s:
                     var (min, max) = Hours(s.Pace);
                     list.Add(new FollowUp(Key(arc.Key, s.Key), min, max));
@@ -178,6 +211,7 @@ public static class StoryCompiler
         {
             PaceKind.Now => (0, 0),
             PaceKind.NextDay => (NextDayMinHours, NextDayMaxHours),
+            PaceKind.Range => (pace.Hours, pace.MaxHours),
             _ => (pace.Hours, pace.Hours),
         };
 
@@ -201,6 +235,17 @@ public static class StoryCompiler
             EffectKind.Keepsake => new GiveMark(MarkKind.Keepsake, e.Key, keepsakes.GetValueOrDefault(e.Key)?.Hurts ?? false),
             EffectKind.Unlock => new GiveMark(MarkKind.Unlock, e.Key),
             EffectKind.Trait when e.To is { } to => new SwapTrait(e.Key, to),
+            EffectKind.Coping => new GainCoping(e.Key == "" ? null : e.Key),
+            EffectKind.Couple => new Couple(),
+            EffectKind.Heartbreak => new Heartbreak(),
+            // A bond is reached only past BondFor's margin.
+            EffectKind.Bond => new SetAffinityAtLeast(e.Key switch
+            {
+                "peace" => 0,
+                "friends" => PlynlingBonds.FriendsFrom + PlynlingBonds.BondMargin,
+                "bestfriends" => PlynlingBonds.BestFriendsFrom + PlynlingBonds.BondMargin,
+                _ => throw new InvalidOperationException($"{e.Pos}: [bond {e.Key}]: the vocabulary should have refused it"),
+            }),
             _ => throw new InvalidOperationException($"{e.Pos}: [{e.Kind} {e.Key}] cannot be compiled; the validator should have refused it"),
         };
 

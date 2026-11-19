@@ -1,0 +1,2200 @@
+== baby_grow_up
+title Plus tard, je serai…
+type Pulse
+scene {A} surgit d'un buisson de la Lisière, une brindille à la main, et la pointe vers la Mère Lichen : « Quand je serai {a:grand|grande}, je serai… » La Mère Lichen attend la suite, immobile comme un rocher, très intéressée.
+weight 100
+target None
+break 0
+trigger -
+stages Baby
+who any
+option explore | « …partir explorer le monde entier ! »
+  success « Commence par le fond de la Lisière », dit la Mère Lichen. {A} part aussitôt, et revient avec une carte, un ver de terre et de grandes ambitions.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Courage, Amount = 1 }
+    follow grown_dream_explore 336-384
+  on-failure
+  stress -
+  lean Boldness=2
+  owner-only False stance Neutral mystery False
+option cafe | « …tenir l'auberge, comme la Courge ! »
+  success « Alors entraîne-toi », dit la Mère Lichen, en tendant un bol vide. {A} sert une soupe imaginaire, rend une monnaie imaginaire, et réclame un pourboire bien réel.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Stewardship, Amount = 1 }
+    follow grown_dream_cafe 336-384
+  on-failure
+  stress -
+  lean Greed=1,Sociability=1
+  owner-only False stance Neutral mystery False
+option owl | « …tout savoir, comme Maître Frêne ! »
+  success « Alors compte mes galets », dit la Mère Lichen, d'un signe vers le tas devant la porte. {A} commence à compter. Le soleil se couche au galet trois cent quatre.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Learning, Amount = 1 }
+    follow grown_dream_owl 336-384
+  on-failure
+  stress -
+  lean Rationality=2
+  owner-only False stance Neutral mystery False
+option chief | « …chef du village, et de tout le monde ! »
+  success « Très bien, chef », dit la Mère Lichen, sans bouger d'un poil de mousse. {A} donne trois ordres à la Mère Lichen, deux au Fou qui passait et un à la Sommeille. Seul le Fou obéit, mais le Fou allait déjà dans ce sens.
+  failure -
+  gate trait bossy hidden
+  challenge -
+  on-success
+    GrowStat { Stat = Diplomacy, Amount = 1 }
+    follow grown_dream_chief 336-384
+  on-failure
+  stress -
+  lean Boldness=1,Sociability=1
+  owner-only False stance Neutral mystery False
+== break_biscuits
+title La boîte à biscuits
+type Triggered
+scene Rien ne va depuis trois jours, et {A} se retrouve à minuit devant la boîte à biscuits de Pain-Blond, sans trop savoir comment. La boîte est pleine. Pour l'instant.
+weight 100
+target None
+break 1
+trigger -
+stages Baby,Teen,Adult,Elder
+who any
+option eat | Tout manger, jusqu'au dernier biscuit
+  success {A} mange les biscuits un par un, puis deux par deux. Au fond de la boîte, plus que des miettes, et un grand calme. Depuis ce soir-là, la boîte à biscuits est devenue une amie très proche.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -80 }
+    GainCoping { TraitKey = comfort_eater }
+  on-failure
+  stress -
+  lean Greed=1,Rationality=-1
+  owner-only False stance Neutral mystery False
+option shut | Refermer la boîte, et ne plus rien avaler
+  success {A} referme la boîte d'un geste sec, puis ne mange plus rien de la journée, ni du lendemain. Le ventre proteste. La tête, curieusement, se tait. L'habitude aussi s'installe.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -75 }
+    GainCoping { TraitKey = inappetetic }
+  on-failure
+  stress -
+  lean Greed=-1,Zeal=1
+  owner-only False stance Neutral mystery False
+option one | Un seul biscuit, et retour au lit
+  success {A} prend un seul biscuit, le mange très lentement, et retourne se coucher. Ce n'est pas grand-chose. C'est déjà ça.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -45 }
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Neutral mystery False
+== break_cloud
+title Le petit nuage gris
+type Triggered
+scene Depuis ce matin, {A} traîne un petit nuage gris au-dessus du chapeau. Ce n'est pas un vrai nuage. Ça y ressemble beaucoup, et ça pleut un peu dessus quand personne ne regarde.
+weight 100
+target None
+break 1
+trigger -
+stages Baby,Teen,Adult,Elder
+who any
+option shout | Crier un bon coup à la Lisière
+  success {A} crie si fort que trois corbeaux changent d'arbre. La Mère Lichen ne lève même pas la tête. Le nuage s'en va. Reste une petite humeur de chien.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -80 }
+    ApplyModifier { Key = grumpy }
+  on-failure
+  stress -
+  lean Boldness=2,Vengefulness=1
+  owner-only False stance Neutral mystery False
+option tell | Aller tout raconter à quelqu'un
+  success {A} parle longtemps à la Courge, qui écoute, pour une fois, sans rien répéter. Le nuage s'éloigne. Quelque chose a changé dans sa façon de faire face.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -70 }
+    GainCoping { TraitKey =  }
+  on-failure
+  stress -
+  lean Sociability=2
+  owner-only False stance Neutral mystery False
+option curl | Se rouler en boule sous une feuille de bardane
+  success {A} reste sous la feuille jusqu'au soir. Le nuage finit par s'ennuyer, et va pleuvoir sur les semis du Noyer, qui en avaient besoin.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -60 }
+  on-failure
+  stress -
+  lean Energy=-1,Sociability=-1
+  owner-only False stance Neutral mystery False
+== break_drop
+title La goutte d'eau
+type Triggered
+scene Une miette de travers, et c'est la goutte d'eau. {A} sent quelque chose monter, monter…
+weight 100
+target None
+break 2
+trigger -
+stages Baby,Teen,Adult,Elder
+who any
+option smash | Tout casser (un peu)
+  success Un pot de confiture n'a pas survécu, ni le tabouret. {A} se sent mieux, et un peu {a:honteux|honteuse}.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -90 }
+    ApplyModifier { Key = grumpy }
+    GainCoping { TraitKey =  }
+  on-failure
+  stress -
+  lean Rationality=-2,Vengefulness=2
+  owner-only False stance Neutral mystery False
+option walk | Partir marcher très loin
+  success {A} marche jusqu'aux Mouilles, et revient à la nuit tombée, {a:couvert|couverte} de boue jusqu'au chapeau, l'air plus léger.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -80 }
+    ApplyModifier { Key = muddy_paws }
+  on-failure
+  stress -
+  lean Energy=2
+  owner-only False stance Neutral mystery False
+option cry | Pleurer un bon coup
+  success {A} pleure contre l'épaule de la Courge, qui sent la soupe et a toujours un torchon propre. « Là, mon chou. Là. »
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -70 }
+  on-failure
+  stress -
+  lean Compassion=1,Sociability=1
+  owner-only False stance Neutral mystery False
+== break_empty
+title Plus rien n'a de goût
+type Triggered
+scene Le miel n'a plus de goût. Le soleil n'a plus de chaleur. Même le pain de Pain-Blond, ce matin, avait un goût de rien. {A} reste {a:assis|assise} sur le lit, à regarder le mur, et le mur n'a rien à dire non plus.
+weight 100
+target None
+break 3
+trigger -
+stages Baby,Teen,Adult,Elder
+who any
+option door | Fermer la porte, et ne plus voir personne
+  success {A} ferme la porte et colle un mot dessus : « Plus tard. » Les jours passent derrière la porte. Le vide s'use, lentement, comme une semelle. Quand la porte se rouvre, quelque chose a changé pour de bon.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -110 }
+    GainCoping { TraitKey = reclusive }
+  on-failure
+  stress -
+  lean Sociability=-2
+  owner-only False stance Neutral mystery False
+option give | Tout donner, puisque plus rien ne compte
+  success {A} distribue son écharpe, ses plus beaux glands et sa tasse préférée au premier venu. Le premier venu, très gêné, rapporte la tasse le lendemain. Le reste ne revient pas. Un poids est parti, et une drôle d'habitude est née.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -110 }
+    GainCoping { TraitKey = improvident }
+  on-failure
+  stress -
+  lean Greed=-2
+  owner-only False stance Neutral mystery False
+option window | Rester là, et laisser le temps faire
+  success {A} reste là. Le soir, le Fou passe sous la fenêtre en comptant tout bas, puis repasse le lendemain matin. Le troisième jour, {A} ouvre la fenêtre pour demander ce qu'il compte. « Les jours où tu n'as pas ouvert. Trois. On s'arrête là ? » C'est peu. C'est quelque chose.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -70 }
+  on-failure
+  stress -
+  lean Energy=-2
+  owner-only False stance Neutral mystery False
+== break_flee
+title Partir loin
+type Triggered
+scene Un matin, {A} se réveille avec une seule idée : partir. N'importe où, mais loin d'ici, loin de tout ce qui pèse. Le baluchon est à moitié fait avant même que {A} ait décidé quoi que ce soit.
+weight 100
+target None
+break 3
+trigger -
+stages Baby,Teen,Adult,Elder
+who any
+option go | Partir sans prévenir personne
+  success {A} monte la Côte à l'aube, marche jusqu'au soir sans se retourner, et dort sous une haie. Au retour, le lendemain, tout le hameau guettait sur la place. {A} revient plus calme, mais {a:secoué|secouée}, et sursaute au moindre craquement de branche.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -120 }
+    ApplyModifier { Key = shaken }
+  on-failure
+  stress -
+  lean Boldness=2,Sociability=-1
+  owner-only False stance Neutral mystery False
+option train | Monter dans la carriole du colporteur, sans billet de retour
+  success Le colporteur fait de la place sans poser de question, mais en levant un sourcil. {A} descend au premier tournant de la Côte, lui achète un bocal de confiture inconnue, une lanterne et un chapeau, et rentre à pied. Le voyage a tout réglé. Les achats, eux, ne font que commencer.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -110 }
+    GainCoping { TraitKey = profligate }
+  on-failure
+  stress -
+  lean Boldness=1,Greed=1
+  owner-only False stance Neutral mystery False
+option garden | Partir… jusqu'au bout du jardin
+  success {A} prend le baluchon, marche jusqu'au bout du jardin, s'assoit sous le pommier et mange les tartines du voyage. Le grand départ attendra. Le pommier, lui, a passé une très bonne journée.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -70 }
+  on-failure
+  stress -
+  lean Energy=-1,Rationality=1
+  owner-only False stance Neutral mystery False
+== break_impostor
+title Pas à la hauteur
+type Triggered
+scene Ce matin, {A} a croisé son reflet dans l'eau du Puits sans le reconnaître. Depuis, une petite voix répète que {A} fait tout de travers, que tout le hameau le sait, et que ce n'est qu'une question de temps avant que quelqu'un le dise tout haut.
+weight 100
+target None
+break 2
+trigger -
+stages Baby,Teen,Adult,Elder
+who any
+option sorry | S'excuser auprès de tout le monde, pour tout
+  success {A} fait le tour du hameau et s'excuse : auprès de la Courge pour une chope cassée, auprès du Pont-Vieux pour rien de précis. Tout le monde est très surpris, le pont aussi. La petite voix se tait enfin, mais {A} a pris l'habitude de s'excuser.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -90 }
+    GainCoping { TraitKey = contrite }
+  on-failure
+  stress -
+  lean Honor=2
+  owner-only False stance Neutral mystery False
+option hide | Ne plus sortir, pour que personne ne remarque rien
+  success {A} reste chez soi trois jours, rideaux tirés : on ne juge pas ce qu'on ne voit pas. Au quatrième jour, la petite voix s'est lassée. Mais dehors, chaque bruit fait sursauter {A}.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -90 }
+    ApplyModifier { Key = shaken }
+  on-failure
+  stress -
+  lean Sociability=-2
+  owner-only False stance Neutral mystery False
+option ask | Demander au Tilleul : « Je fais tout de travers ? »
+  success Le Tilleul réfléchit très longtemps, une abeille sur l'épaule. « Tu as renversé mon miel, l'hiver dernier. Ou alors c'était un autre. À part ça, non. » Ce n'est pas tout à fait suffisant. Mais c'est un début.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -60 }
+  on-failure
+  stress -
+  lean Rationality=1,Sociability=1
+  owner-only False stance Neutral mystery False
+== break_list
+title La liste sans fin
+type Triggered
+scene La liste de {A} fait maintenant trois pages : réparer la barrière, rendre son panier à la Sauge, arroser, écrire, ranger, répondre. Chaque fois qu'une ligne est barrée, deux nouvelles apparaissent. Ce matin, {A} regarde la liste, et la liste regarde {A}.
+weight 100
+target None
+break 2
+trigger -
+stages Baby,Teen,Adult,Elder
+who any
+option burn | Brûler la liste dans le feu
+  success La liste brûle très bien. Pendant une heure, {A} se sent {a:léger|légère} comme une aigrette de pissenlit. Puis la barrière, le panier et l'arrosage reviennent, dans le désordre, et sans liste pour s'y retrouver.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -90 }
+    ApplyModifier { Key = tense }
+  on-failure
+  stress -
+  lean Boldness=1,Rationality=-2
+  owner-only False stance Neutral mystery False
+option shop | Tout laisser, et filer au marché de la place
+  success {A} laisse tout en plan et file au marché. Une écharpe, deux bocaux, un chapeau à plume et une lanterne dont personne n'a besoin. En rentrant, la liste est toujours là, mais {A} a un nouveau chapeau, et une nouvelle manie.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -90 }
+    GainCoping { TraitKey = profligate }
+  on-failure
+  stress -
+  lean Greed=1
+  owner-only False stance Neutral mystery False
+option one_line | Barrer une seule ligne, et s'arrêter là
+  success {A} choisit la ligne la plus courte, « rendre le panier », et la barre. Puis range la liste dans un tiroir. Le reste attendra. Le reste attend toujours.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -60 }
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Neutral mystery False
+== break_nightmares
+title Le même rêve
+type Triggered
+scene Depuis une semaine, {A} dort mal. Toutes les nuits, le même rêve : une charrette qui monte la Côte sans {A}, une porte qui ne s'ouvre pas, et l'Intendant qui dit « trop tard », très lentement, en le notant. Ce soir, {A} n'ose plus fermer les yeux.
+weight 100
+target None
+break 2
+trigger -
+stages Baby,Teen,Adult,Elder
+who any
+option lantern | Rester debout toute la nuit, lanterne allumée
+  success {A} reste {a:assis|assise} jusqu'à l'aube, la lanterne allumée, devant un livre dont les pages ne tournent pas. Pas de rêve, pas de charrette. Mais au matin, les yeux piquent, et les nuits suivantes ne valent guère mieux.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -90 }
+    ApplyModifier { Key = sleepless }
+  on-failure
+  stress -
+  lean Boldness=1
+  owner-only False stance Neutral mystery False
+option heron | Tout raconter au Fou, à l'aube
+  success {A} raconte le rêve au Fou, sur le Pont-Vieux. Le Fou écoute sans rien dire, puis : « Moi, c'est une pierre qui me demande l'heure. Je lui réponds toujours. » Ça fait du bien de ne pas être {a:seul|seule}. Depuis, {A} raconte tout à quelqu'un.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -90 }
+    GainCoping { TraitKey = confider }
+  on-failure
+  stress -
+  lean Sociability=2
+  owner-only False stance Neutral mystery False
+option pillow | Changer d'oreiller, et réessayer
+  success {A} change d'oreiller, de côté, de couverture, puis de coin pour dormir. La nuit est courte, mais le rêve ne revient qu'une fois. On progresse.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -60 }
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Neutral mystery False
+== break_snap
+title La moutarde au nez
+type Triggered
+scene Maître Frêne fait remarquer à {A}, très poliment, qu'un lacet est défait. C'est la remarque de trop. {A} sent la moutarde monter, monter, et la moutarde ne demande qu'à sortir.
+weight 100
+target None
+break 1
+trigger -
+stages Baby,Teen,Adult,Elder
+who any
+option slam | Répondre sèchement, et claquer la porte de l'auberge
+  success {A} répond quelque chose de très sec et claque la porte de l'auberge si fort que la clochette tombe. Maître Frêne, interdit, refait son propre lacet par réflexe. La colère est sortie. La gêne arrive juste derrière, et reste quelques jours.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -80 }
+    ApplyModifier { Key = on_edge }
+  on-failure
+  stress -
+  lean Vengefulness=2
+  owner-only False stance Neutral mystery False
+option leaves | Taper du pied dans tous les tas de feuilles du hameau
+  success {A} tape du pied dans le premier tas de feuilles, puis dans le deuxième, puis dans tous les tas du hameau. Ça fait un bruit très satisfaisant. Depuis, au moindre agacement, {A} cherche un tas de feuilles, et gare à qui se trouve à côté.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -75 }
+    GainCoping { TraitKey = irritable }
+  on-failure
+  stress -
+  lean Energy=1,Vengefulness=1
+  owner-only False stance Neutral mystery False
+option count | Compter jusqu'à dix, puis jusqu'à cent
+  success {A} compte jusqu'à dix. Puis jusqu'à cent. À quatre-vingt-sept, Maître Frêne est reparti vers la Maison commune, et le lacet est toujours défait. La moutarde redescend, lentement, sans tout à fait disparaître.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -45 }
+  on-failure
+  stress -
+  lean Rationality=2
+  owner-only False stance Neutral mystery False
+== break_spiral
+title Les pensées qui tournent
+type Triggered
+scene Dans la tête de {A}, les pensées tournent comme des feuilles dans le vent : la confiture à finir, la lettre à écrire, la fenêtre restée ouverte, la confiture encore. Impossible d'en attraper une seule. {A} essaie, et la feuille suivante passe déjà.
+weight 100
+target None
+break 1
+trigger -
+stages Baby,Teen,Adult,Elder
+who any
+option journal | Tout écrire dans un carnet, pour vider sa tête
+  success {A} écrit, page après page, jusqu'à ce que la tête soit vide et le carnet plein. Ça marche si bien que, depuis, le carnet ne quitte plus sa poche.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -75 }
+    GainCoping { TraitKey = journaller }
+  on-failure
+  stress -
+  lean Rationality=2
+  owner-only False stance Neutral mystery False
+option run | Courir jusqu'à ne plus penser à rien
+  success {A} court jusqu'au Pont-Vieux, puis jusqu'au moulin, puis revient par la place du Puits. Les pensées sont restées en route. Depuis, au moindre souci, {A} part en courant.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -80 }
+    GainCoping { TraitKey = athletic }
+  on-failure
+  stress -
+  lean Energy=2
+  owner-only False stance Neutral mystery False
+option tea | Attendre que ça passe, une tisane entre les mains
+  success {A} s'assoit avec une tisane et laisse les pensées tourner. Au bout de la deuxième tasse, les pensées ralentissent. Pas toutes. Assez.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -45 }
+  on-failure
+  stress -
+  lean Energy=-1
+  owner-only False stance Neutral mystery False
+== break_storm
+title La tempête
+type Triggered
+scene Tout le monde, aujourd'hui, est insupportable. La Courge est trop bavarde, la Mère Lichen trop silencieuse, l'Intendant trop exact, le soleil trop jaune. {A} sent monter une tempête, une vraie, avec des éclairs.
+weight 100
+target None
+break 3
+trigger -
+stages Baby,Teen,Adult,Elder
+who any
+option burst | Laisser éclater la tempête, sur tout le monde
+  success {A} dit ses quatre vérités à la Courge, à l'Intendant, au coq du Noyer, et même au soleil. Le hameau se tait. Le soir, {A} va beaucoup mieux, et le hameau beaucoup moins. Le lendemain, il faut faire le tour des excuses, et la Courge en a déjà fait une histoire.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -120 }
+    ApplyModifier { Key = on_edge }
+  on-failure
+  stress -
+  lean Vengefulness=2
+  owner-only False stance Neutral mystery False
+option weeds | Arracher toutes les mauvaises herbes du hameau
+  success {A} arrache les mauvaises herbes du jardin, puis celles du voisin, puis celles de la place du Puits. Le hameau n'a jamais été aussi propre. La tempête s'épuise dans les racines, mais les mains en tremblent encore trois jours.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -110 }
+    ApplyModifier { Key = tense }
+  on-failure
+  stress -
+  lean Energy=2
+  owner-only False stance Neutral mystery False
+option hole | Crier dans un trou, au fond du jardin
+  success {A} creuse un trou au fond du jardin, crie dedans tout ce qui doit sortir, et rebouche le trou. En passant, {A} dit « pardon » à un fil de la Trame. Personne n'a rien entendu. Une partie de la tempête dort maintenant sous les fraisiers.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -70 }
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Neutral mystery False
+== break_toomuch
+title Trop, c'est trop
+type Triggered
+scene {A} n'a plus envie de rien. Même le miel du Tilleul a un goût de rien.
+weight 100
+target None
+break 3
+trigger -
+stages Baby,Teen,Adult,Elder
+who any
+option hide | Se terrer chez soi
+  success {A} tire les rideaux deux jours entiers. À la réouverture, quelque chose a changé.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -100 }
+    GainCoping { TraitKey =  }
+  on-failure
+  stress -
+  lean Sociability=-2
+  owner-only False stance Neutral mystery False
+option help | Accepter l'aide de la Sauge
+  success La Sauge apporte une couverture, une soupe et une tisane imbuvable. « Bois ça, et ne fais pas cette tête. » Ça va un peu mieux. Surtout grâce à la soupe.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -65 }
+  on-failure
+  stress -
+  lean Rationality=1,Sociability=1
+  owner-only False stance Neutral mystery False
+option drift | Se laisser porter
+  success {A} se laisse flotter quelques jours, comme une feuille sur la Sommeille. Les choses glissent, puis reviennent doucement à leur place.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -100 }
+    ApplyModifier { Key = distracted }
+  on-failure
+  stress -
+  lean Energy=-2
+  owner-only False stance Neutral mystery False
+== follow_forgot
+title Le mouchoir brodé
+type FollowUp
+scene Le mouchoir de {B} attend toujours sur l'étagère de {A}. Le mouchoir commence à sentir la maison.
+weight 100
+target Anyone
+break 0
+trigger -
+option bring | Le rendre, enfin
+  success {A} rend le mouchoir, plié avec soin, et une fleur glissée dedans. {B} fait comme si c'était prévu.
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = 10 }
+    GrowStat { Stat = Diplomacy, Amount = 1 }
+  on-failure
+  stress -
+  lean Honor=1
+  owner-only False stance Neutral mystery False
+option adopt | Garder le mouchoir pour de bon
+  success {A} adopte le mouchoir. {B} le reconnaîtra un jour, mais ce jour n'est pas aujourd'hui.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Intrigue, Amount = 1 }
+    AffinityShift { Delta = -5 }
+  on-failure
+  stress -
+  lean Greed=1
+  owner-only False stance Neutral mystery False
+== grown_campfire
+title Autour du feu
+type Pulse
+scene Le soir, au bord de la Sommeille, le hameau fait griller du miel sur des bâtons. {A} se retrouve à côté de {B}, qu'on ne connaît que de vue. Le miel de {B} vient de tomber dans le feu.
+weight 100
+target Anyone
+break 0
+trigger -
+stages Adult,Elder
+who 001111000000000000000000000000000000
+option share | Partager son bâton avec {B}
+  success {A} tend son bâton. {B} croque, {A} croque, le miel coule partout. Ça colle aux doigts, et ça colle un peu les gens ensemble aussi.
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = 15 }
+    ApplyModifier { Key = hearty }
+  on-failure
+  stress -
+  lean Compassion=1,Sociability=1
+  owner-only False stance Neutral mystery False
+option ask | Demander à {B} : « Tu veux qu'on soit amis ? »
+  success {A} prend une grande inspiration et pose la question, comme ça, au-dessus du feu.
+  failure -
+  gate -
+  challenge -
+  on-success
+    ask {
+      title Une question au-dessus du feu
+      type Response
+      scene Entre deux bouchées de miel, {B} a demandé à {A} : « Tu veux qu'on soit amis ? »
+      weight 100
+      target None
+      break 0
+      trigger -
+      option yes | Dire oui, la bouche pleine de miel
+        success {A} dit oui, ou quelque chose d'approchant, la bouche pleine de miel. {B} comprend très bien.
+        failure -
+        gate -
+        challenge -
+        on-success
+          SetAffinityAtLeast { Value = 30 }
+        on-failure
+        stress -
+        lean Sociability=2
+        owner-only False stance Accept mystery False
+      option later | « Reviens au prochain feu, on verra. »
+        success {A} sourit : « Reviens au prochain feu, on verra. » {B} promet d'apporter son propre miel, cette fois.
+        failure -
+        gate -
+        challenge -
+        on-success
+          AffinityShift { Delta = 5 }
+        on-failure
+        stress -
+        lean Rationality=1
+        owner-only False stance Refuse mystery False
+    }
+  on-failure
+  stress -
+  lean Boldness=1,Sociability=2
+  owner-only True stance Neutral mystery False
+option sparks | Regarder les étincelles monter, sans rien dire
+  success Les étincelles montent, montent, et deviennent des étoiles. Ou alors c'étaient déjà des étoiles. {B} regarde aussi.
+  failure -
+  gate -
+  challenge -
+  on-success
+    ApplyModifier { Key = soothed }
+    AffinityShift { Delta = 5 }
+  on-failure
+  stress -
+  lean Energy=-1,Rationality=1
+  owner-only False stance Neutral mystery False
+== grown_dream_cafe
+title Le bol ébréché
+type FollowUp
+scene À l'auberge, la Courge sort de sous le comptoir un petit bol ébréché. « Tu te souviens, mon chou ? Tu servais des soupes imaginaires à la Mère Lichen, et tu réclamais un pourboire. Elle me l'a raconté. Une fois. » La Courge pose le bol devant {A}. « Mes enfants veulent leur samedi. L'auberge aurait bien besoin d'aide. »
+weight 100
+target None
+break 0
+trigger -
+option apron | Prendre le tablier, ce samedi
+  success Samedi, {A} sert quarante bols, rend la monnaie juste, et prépare la chope du Noyer avant même que le Noyer n'ouvre la bouche. Le soir, la Courge verse dans le bol ébréché les pourboires de la journée.
+  failure Samedi, {A} renverse trois bols, confond le sel et le sucre, et sert le Noyer deux fois. Le soir, la Courge rit si fort qu'on l'entend du moulin. « Moi, le premier jour, j'ai mis le feu au rideau. »
+  gate -
+  challenge Stewardship 8
+  on-success
+    GrowStat { Stat = Stewardship, Amount = 1 }
+    GiveCailloux { Amount = 20 }
+  on-failure
+    LiftNeed { Need = Happiness, Amount = 0.2 }
+  stress -
+  lean Energy=1,Sociability=1
+  owner-only False stance Neutral mystery False
+option regular | Garder le bol, et venir en client
+  success {A} garde le bol et promet de venir chaque samedi, comme client. Un très bon client, qui laisse toujours un pourboire dans le bol ébréché, posé au bout du comptoir. La Courge fait semblant de ne pas comprendre, et le raconte à tout le monde.
+  failure -
+  gate -
+  challenge -
+  on-success
+    ApplyModifier { Key = cherished }
+  on-failure
+  stress -
+  lean Compassion=1
+  owner-only False stance Neutral mystery False
+option secret | Demander d'abord le secret de sa soupe
+  success La Courge regarde à droite, à gauche, puis chuchote le secret à l'oreille de {A}. C'est très simple, et très surprenant. {A} jure de ne jamais le répéter. La Courge, pour une fois, non plus.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Learning, Amount = 1 }
+    ApplyModifier { Key = hearty }
+  on-failure
+  stress -
+  lean Greed=1,Rationality=1
+  owner-only False stance Neutral mystery False
+== grown_dream_chief
+title Le chef du banquet
+type FollowUp
+scene Maître Frêne cherche quelqu'un pour organiser le banquet de moisson. Personne ne se propose. Puis le Fou lève la main : « Quand {A} était {a:petit|petite}, {A} m'a donné un ordre, à la Lisière. J'ai obéi. Je propose {A}. » Le conseil, à la surprise générale, approuve.
+weight 100
+target None
+break 0
+trigger -
+option lead | Accepter, et tout diriger
+  success {A} donne des ordres à tout le monde, avec tact, cette fois. Le banquet est le plus beau depuis des années. Au premier rang, le Fou porte un ruban : « Premier à avoir obéi ».
+  failure {A} donne trop d'ordres, trop vite. Le banquet finit en désordre, mais en joyeux désordre, et seul le Fou a suivi chaque consigne à la lettre. Ça compte.
+  gate -
+  challenge Diplomacy 8
+  on-success
+    GrowStat { Stat = Diplomacy, Amount = 1 }
+    ApplyModifier { Key = well_spoken }
+  on-failure
+    LiftNeed { Need = Happiness, Amount = 0.15 }
+  stress -
+  lean Boldness=1,Sociability=1
+  owner-only False stance Neutral mystery False
+option deputy | Accepter, à condition que le Fou soit adjoint
+  success Le Fou, ému, prend son rôle très au sérieux, et compte chaque lampion, deux fois, à voix haute. Les préparatifs prennent deux fois plus de temps, et sont deux fois plus soignés.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Stewardship, Amount = 1 }
+    ApplyModifier { Key = cherished }
+  on-failure
+  stress -
+  lean Compassion=1,Rationality=1
+  owner-only False stance Neutral mystery False
+option decline | Refuser poliment : c'était un rêve d'enfant
+  success {A} refuse, avec un sourire. Le conseil insiste un peu, pour la forme, puis se tourne vers le Noyer, ravi. Le soir, le Fou passe chez {A} pour dire : « Tu aurais fait un très bon chef. » {A} garde la phrase pour les mauvais jours.
+  failure -
+  gate -
+  challenge -
+  on-success
+    ApplyModifier { Key = soothed }
+  on-failure
+  stress -
+  lean Boldness=-1,Rationality=1
+  owner-only False stance Neutral mystery False
+== grown_dream_explore
+title Le fond de la Lisière
+type FollowUp
+scene En rangeant, {A} retrouve une vieille carte dessinée au crayon : le fond de la Lisière, un ver de terre, une flèche, et en lettres énormes, « LE MONDE ENTIER ». La Mère Lichen avait dit, ce jour-là : « Commence par le fond de la Lisière. » La Lisière est faite depuis longtemps. Le reste du monde, pas encore.
+weight 100
+target None
+break 0
+trigger -
+option hills | Partir enfin, au-delà de la colline
+  success {A} part à l'aube, passe la colline derrière les Mouilles, puis la suivante, et découvre un vallon que personne au hameau n'a jamais dessiné. {A} revient le surlendemain, avec une boussole trouvée sur un rocher, et de nouvelles flèches à dessiner.
+  failure {A} part à l'aube, se perd derrière la deuxième colline, et tourne en rond jusqu'au soir. Au retour, la Mère Lichen lève les yeux : « Le monde est grand. Recommence par le fond de la Lisière. » {A} rit, pour la première fois depuis des jours.
+  gate -
+  challenge Courage 8
+  on-success
+    GrowStat { Stat = Courage, Amount = 1 }
+    GiveItem { ItemKey = col.boussole }
+  on-failure
+    LiftNeed { Need = Happiness, Amount = 0.15 }
+  stress -
+  lean Boldness=2
+  owner-only False stance Neutral mystery False
+option map | Compléter la carte d'enfance, au crayon
+  success {A} reprend la carte d'enfant et y ajoute, un à un, tous les chemins connus : le Pont-Vieux, le moulin, les Longues Raies, la Côte qui monte vers Roncebelle. Le ver de terre reste au centre, par respect.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Learning, Amount = 1 }
+    ApplyModifier { Key = inspired }
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Neutral mystery False
+option heron | Aller montrer la carte à la Mère Lichen
+  success {A} déplie la carte devant la cabane. La Mère Lichen la regarde très longtemps, puis pose le doigt sur un endroit vide, tout au bord. « Là. Je n'y suis jamais allée. Pas encore. » Depuis, les deux en parlent parfois, assises sur la même pierre.
+  failure -
+  gate -
+  challenge -
+  on-success
+    ApplyModifier { Key = cherished }
+  on-failure
+  stress -
+  lean Compassion=1,Sociability=1
+  owner-only False stance Neutral mystery False
+== grown_dream_owl
+title Trois cent cinq
+type FollowUp
+scene Un soir, on frappe chez {A}. C'est la Mère Lichen, qui ne quitte jamais la Lisière. « Trois cent cinq », dit-elle. {A} met une seconde à comprendre : le soir où {A} comptait ses galets, le soleil s'était couché au trois cent quatre. La Mère Lichen a attendu tout ce temps pour donner la suite.
+weight 100
+target None
+break 0
+trigger -
+option count | Aller reprendre le compte, à partir de trois cent six
+  success {A} suit la Mère Lichen jusqu'au tas et reprend le compte à voix haute. La Mère Lichen s'assoit, très patiente. À la nuit tombée, le compte est fini : sept cent douze. La Mère Lichen hoche la tête, une fois. Le grand mystère d'enfance est résolu, et c'était beau.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Learning, Amount = 1 }
+    ApplyModifier { Key = inspired }
+  on-failure
+  stress -
+  lean Rationality=2
+  owner-only False stance Neutral mystery False
+option keep | Garder la plume qu'elle a posée sur la table
+  success En partant, la Mère Lichen a laissé une plume de geai sur la table, sans un mot. {A} la glisse dans le livre de chevet, comme marque-page. Chaque soir, en l'ouvrant, {A} lit une page de plus. La Mère Lichen n'en parle jamais.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GiveItem { ItemKey = col.plume }
+    ApplyModifier { Key = cherished }
+  on-failure
+  stress -
+  lean Compassion=1
+  owner-only False stance Neutral mystery False
+option riddle | Lui répondre par une énigme
+  success « Et toi, combien d'hivers ? » La Mère Lichen ouvre la bouche, la referme, et repart, l'air soucieux. Trois jours plus tard, un galet attend sur le rebord, avec un mot du Fou, qui écrit pour elle : « Pas encore compté. »
+  failure « Combien de pierres compte le Pont-Vieux ? » La Mère Lichen répond aussitôt : « Mille quarante et une. » Le Fou les a comptées pour elle, il y a longtemps.
+  gate -
+  challenge Learning 8
+  on-success
+    GrowStat { Stat = Learning, Amount = 1 }
+  on-failure
+    LiftNeed { Need = Happiness, Amount = 0.1 }
+  stress -
+  lean Boldness=1,Rationality=1
+  owner-only False stance Neutral mystery False
+== grown_letters
+title Les lettres du Fou
+type Pulse
+scene Depuis des semaines, {A} pense à {B}. Le matin, le soir, et beaucoup entre les deux. Le dire en face semble impossible. Mais le Fou porte les mots de tout le hameau, à pied, et sans signature si on préfère. Le Fou ne les lit jamais. Le Fou compte les mots, c'est tout.
+weight 100
+target Known
+break 0
+trigger -
+stages Adult,Elder
+who 010101010101010101010101010101010101
+option poem | Écrire un poème, le plus beau possible
+  success {A} écrit douze vers sur les yeux de {B}, le vent, et la soupe de la Courge. Le Fou part avec, en comptant. Le lendemain, le Fou rapporte une réponse : « Encore ? » « Un mot », précise le Fou.
+  failure {A} écrit, rature, recommence, et finit par confier au Fou une lettre qui ne parle que du temps qu'il fait. Le lendemain, la réponse arrive : « Oui, très beau temps. Et toi ? » « Six mots », dit le Fou, l'air déçu.
+  gate -
+  challenge Learning 8
+  on-success
+    GrowStat { Stat = Learning, Amount = 1 }
+    AffinityShift { Delta = 10 }
+    follow grown_letters_more 24-72
+  on-failure
+    AffinityShift { Delta = 5 }
+    follow grown_letters_more 24-72
+  stress -
+  lean Compassion=1,Rationality=1
+  owner-only False stance Neutral mystery False
+option simple | Écrire simplement : « Je pense à toi. »
+  success {A} écrit trois mots, sans signature, et les confie au Fou, pour {B}. Trois jours passent. Puis le Fou revient : « Moi aussi, je pense à quelqu'un. » Ce n'est pas un oui. Ce n'est pas un non. « Six mots », dit le Fou. « C'est bon signe, six. »
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = 5 }
+    follow grown_letters_more 24-72
+  on-failure
+  stress -
+  lean Honor=1
+  owner-only False stance Neutral mystery False
+option drawer | Garder ça pour soi, encore un peu
+  success {A} prend une feuille, la regarde longtemps, puis la range dans un tiroir. Certaines lettres ont besoin de mûrir. Sous la fenêtre, le Fou ralentit, puis repart : le Fou a l'habitude.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Learning, Amount = 1 }
+  on-failure
+  stress -
+  lean Boldness=-1,Rationality=1
+  owner-only False stance Neutral mystery False
+== grown_letters_bridge
+title Sur le Pont-Vieux
+type FollowUp
+scene Le soleil se lève sur le Pont-Vieux. {A} et {B} sont là, côte à côte, la main sur la pierre, à regarder la Sommeille. Toutes les lettres sont dans la poche de {A}, et une bonne partie dans celle de {B}. Le moment est venu de dire tout haut ce qui a été écrit tout bas.
+weight 100
+target Known
+break 0
+trigger -
+option declare | Tout avouer à {B}, tout haut
+  success {A} prend une grande inspiration, se tourne vers {B}, et dit enfin, à voix haute, tout ce que les lettres disaient.
+  failure -
+  gate -
+  challenge -
+  on-success
+    ask {
+      title Une déclaration
+      type Response
+      scene {B} est venu{b:|e} tout avouer à {A}, les joues rouges et la voix qui tremble.
+      weight 100
+      target None
+      break 0
+      trigger -
+      option yes | Dire oui
+        success {A} dit oui. {B} en oublie de respirer, puis rit, puis respire. Tout le hameau est au courant avant le soir : la Courge y a veillé.
+        failure -
+        gate -
+        challenge -
+        on-success
+          Couple { }
+        on-failure
+        stress -
+        lean Compassion=1,Sociability=1
+        owner-only False stance Accept mystery False
+      option no | Dire non, doucement
+        success {A} dit non, avec beaucoup de douceur. {B} hoche la tête et rentre par le chemin le plus long.
+        failure -
+        gate -
+        challenge -
+        on-success
+          Heartbreak { }
+        on-failure
+        stress -
+        lean Honor=1
+        owner-only False stance Refuse mystery False
+    }
+  on-failure
+  stress -
+  lean Boldness=2,Sociability=1
+  owner-only True stance Neutral mystery False
+option keep | Proposer de garder les lettres, et rester amis
+  success {A} sort les lettres et propose de les garder dans une boîte, à deux, en souvenir. {B} sourit, un peu {b:surpris|surprise}, et accepte. Certaines histoires sont plus belles à mi-chemin.
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = 10 }
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Neutral mystery False
+== grown_letters_more
+title La correspondance
+type FollowUp
+scene Depuis deux semaines, les lettres vont et viennent dans les poches du Fou. On s'y raconte la journée, les nuages, une chanson entendue à l'auberge. {B} signe toujours d'un petit dessin de feuille. Ce matin, la dernière lettre se termine par une question : « Qui es-tu ? »
+weight 100
+target Known
+break 0
+trigger -
+option meet | Répondre : « Demain, au Pont-Vieux, à l'aube. »
+  success {A} écrit l'heure et le lieu, et ajoute un petit dessin de feuille, en réponse. Le lendemain à l'aube, {B} est sur le pont, une écharpe autour du cou, et sourit en voyant arriver {A}. Le Fou, très discret, compte les pierres du parapet avec une grande concentration.
+  failure La pluie mouille l'encre de l'invitation. Le lendemain, {B} attend au pont… à midi. {A}, à l'aube. Les deux se ratent de six heures, et le comprennent le soir, en riant chacun de son côté.
+  gate -
+  challenge Diplomacy 8
+  on-success
+    GrowStat { Stat = Diplomacy, Amount = 1 }
+    AffinityShift { Delta = 15 }
+    follow grown_letters_bridge 24-48
+  on-failure
+    AffinityShift { Delta = 5 }
+    follow grown_letters_bridge 24-48
+  stress -
+  lean Boldness=1,Sociability=1
+  owner-only False stance Neutral mystery False
+option riddle | Répondre par une devinette
+  success {A} répond par une devinette : « Je prends ma soupe avec trois croûtons et je déteste les lundis. » Le lendemain, {B} a trouvé. La réponse que rapporte le Fou dit seulement : « Je savais. »
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = 10 }
+    follow grown_letters_bridge 24-48
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Neutral mystery False
+== grown_master_market
+title Le grand sac du Fou
+type FollowUp
+scene Le Fou vide son grenier, sous le toit de l'auberge. Il en sort un grand sac. « Tout ce que j'ai trouvé sans jamais trouver à qui c'était. Trente ans. Avant l'hiver, je veux que tout soit rentré à la maison. Tu m'aides ? » Le sac fait un bruit de cuillères.
+weight 100
+target None
+break 0
+trigger -
+option night | Tout rendre en une nuit, sans être {a:vu|vue}
+  success Toute la nuit, {A} et le Fou déposent sur les rebords les cuillères, les boutons, les dés à coudre et une paire de lunettes que Maître Frêne cherchait depuis le grand hiver. Au matin, le hameau retrouve trente ans d'objets perdus. Le Fou laisse à {A} une bague. « Celle-là, elle était dans un nid de geai. Elle est à toi. »
+  failure {A} et le Fou se font surprendre par le Noyer, au moment de remettre sa propre pipe sur son propre rebord. Long silence. Puis le Noyer éclate de rire, et aide à rendre le reste.
+  gate -
+  challenge Intrigue 8
+  on-success
+    GrowStat { Stat = Intrigue, Amount = 1 }
+    GiveItem { ItemKey = col.bague }
+  on-failure
+    LiftNeed { Need = Happiness, Amount = 0.15 }
+  stress -
+  lean Boldness=1,Honor=1
+  owner-only False stance Neutral mystery False
+option stall | Tout rendre au grand jour, au marché de la place
+  success {A} étale tout sur une table, au milieu du marché, avec une pancarte : « Retrouvé par le Fou ». Le hameau vient chercher ses affaires en riant. Le Fou, très gêné, reçoit en échange tant de cadeaux que son grenier déborde à nouveau. Même le Chardon dit merci, après avoir grogné.
+  failure -
+  gate -
+  challenge -
+  on-success
+    ApplyModifier { Key = clear_conscience }
+    ApplyModifier { Key = cherished }
+  on-failure
+  stress -
+  lean Honor=2,Sociability=1
+  owner-only False stance Neutral mystery False
+== grown_master_owl
+title Le coffre aux registres
+type FollowUp
+scene Maître Frêne frappe chez {A}, un rouleau sous le bras. « Je monte trois jours à Roncebelle, comparer nos registres avec ceux de l'Intendant. La Maison commune a besoin de quelqu'un qui sache dire « examinons ». » Maître Frêne tend la clé du vieux coffre, celui que personne n'ouvre. « Il ne convient pas de te demander de ne pas l'ouvrir. »
+weight 100
+target None
+break 0
+trigger -
+option guard | Garder la Maison commune, sans ouvrir le coffre
+  success {A} garde la Maison commune trois jours, règle deux querelles de bancs, et ne touche pas au coffre. Au retour, Maître Frêne vérifie la poussière sur la serrure, intacte, et sourit. « Tu as retenu la leçon d'autrefois. »
+  failure -
+  gate -
+  challenge -
+  on-success
+    ApplyModifier { Key = clear_conscience }
+  on-failure
+  stress -
+  lean Honor=2
+  owner-only False stance Neutral mystery False
+option read | Ouvrir le coffre, et lire un seul registre
+  success {A} ouvre le coffre et prend le registre du dessus : c'est le premier de Maître Frêne, écrit à l'âge de {A}, avec un règlement pour l'ordre des goûters. {A} le lit d'une traite, et le remet exactement à sa place. Au retour, Maître Frêne regarde {A} et dit seulement : « Alors, tu sais. »
+  failure {A} ouvre le coffre. Un nuage de poussière en sort, avec une phalène très âgée et très vexée, qui suit {A} pendant trois jours. Au retour, Maître Frêne l'inscrit au registre, à la colonne des visiteurs.
+  gate -
+  challenge Learning 8
+  on-success
+    GrowStat { Stat = Learning, Amount = 1 }
+    ApplyModifier { Key = inspired }
+  on-failure
+    LiftNeed { Need = Happiness, Amount = 0.1 }
+  stress -
+  lean Honor=-1,Rationality=1
+  owner-only False stance Neutral mystery False
+== grown_master_station
+title Le moulin enrhumé
+type FollowUp
+scene Le Chardon a attrapé un rhume, le premier de sa carrière. Couché, une tisane de la Sauge à côté et la mine outrée, le Chardon tend à {A} la balance, le carnet et la clé du moulin. « La grande mouture de l'année. Tu te souviens de la leçon un ? » {A} s'en souvient : un sac pèse ce qu'il pèse.
+weight 100
+target None
+break 0
+trigger -
+option station | Tenir le moulin toute la journée, comme le Chardon
+  success {A} ouvre le moulin à l'aube, pèse chaque sac, chasse un canard du bief, et rend la farine juste à tout le hameau. Le soir, {A} rapporte le carnet au Chardon, qui le relit, regarde {A}, et éternue de fierté.
+  failure {A} se trompe d'une poignée sur le sac de Pain-Blond. Personne ne remarque rien. Mais au lit, le Chardon a relu le carnet, et a compté. Le Chardon n'en dira jamais rien. Mais le Chardon sait.
+  gate -
+  challenge Stewardship 8
+  on-success
+    GrowStat { Stat = Stewardship, Amount = 1 }
+    GiveCailloux { Amount = 15 }
+  on-failure
+  stress -
+  lean Energy=1,Rationality=1
+  owner-only False stance Neutral mystery False
+option soup | Tenir le moulin, et porter la soupe entre deux sacs
+  success Entre chaque sac, {A} monte porter une soupe, une tisane, des nouvelles du bief. Le Chardon finit par guérir, surtout pour pouvoir grogner tranquille. La mouture est finie à temps. À peu près.
+  failure -
+  gate -
+  challenge -
+  on-success
+    ApplyModifier { Key = cherished }
+  on-failure
+  stress -
+  lean Compassion=2
+  owner-only False stance Neutral mystery False
+== on_adult
+title Adulte, maintenant
+type Triggered
+scene {A} a fini de grandir, et quitte la Maison des Pousses pour une petite maison à soi. Sur ses traits se lit maintenant un dernier trait de caractère : {T}.
+weight 100
+target None
+break 0
+trigger BecameAdult
+stages Adult,Elder
+who any
+option party | Fêter ça à l'auberge
+  success La Courge offre une part de tarte, dit « déjà, mon chou ? » trois fois, et le raconte à toute la salle.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Diplomacy, Amount = 1 }
+  on-failure
+  stress -
+  lean Sociability=1
+  owner-only False stance Neutral mystery False
+option plan | Faire des projets
+  success {A} sort un carnet et y écrit « projets ». Puis, en dessous : « à voir ».
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Stewardship, Amount = 1 }
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Neutral mystery False
+== on_bereaved
+title Une place vide
+type Triggered
+scene La place de {B} est vide, et le hameau est un peu plus grand sans. {A} ne sait pas trop quoi faire de ses mains.
+weight 100
+target Anyone
+break 0
+trigger Bereaved
+stages Baby,Teen,Adult,Elder
+who any
+option remember | Se souvenir des bons moments
+  success {A} raconte à voix haute leurs meilleures bêtises. La Mère Lichen écoute, sans rien dire, et pose sa main sur celle de {A}.
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -10 }
+  on-failure
+  stress -
+  lean Sociability=1
+  owner-only False stance Neutral mystery False
+option plant | Planter une graine en sa mémoire
+  success {A} plante une graine près du Pont-Vieux. Au printemps, quelque chose poussera.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Stewardship, Amount = 1 }
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Neutral mystery False
+== on_recovered
+title De nouveau sur pied
+type Triggered
+scene {A} se réveille, respire par le nez — par les deux narines — et se sent {a:neuf|neuve}.
+weight 100
+target None
+break 0
+trigger Recovered
+stages Baby,Teen,Adult,Elder
+who any
+option run | Faire le tour du hameau en courant
+  success {A} court partout, juste pour vérifier que tout marche encore. Tout marche.
+  failure -
+  gate -
+  challenge -
+  on-success
+    ApplyModifier { Key = fired_up }
+  on-failure
+  stress -
+  lean Energy=2
+  owner-only False stance Neutral mystery False
+option thank | Remercier ceux qui ont aidé
+  success {A} distribue des remerciements, et un pot de miel à la Sauge, pour changer.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Diplomacy, Amount = 1 }
+  on-failure
+  stress -
+  lean Compassion=1
+  owner-only False stance Neutral mystery False
+== on_sick
+title Le nez qui coule
+type Triggered
+scene {A} éternue, renifle, et décide que le monde est injuste.
+weight 100
+target None
+break 0
+trigger FellSick
+stages Baby,Teen,Adult,Elder
+who any
+option tea | Réclamer une tisane
+  success La Sauge envoie une tisane, imbuvable comme toujours, avec un mot : « Bois-la chaude. Et ne fais pas cette tête. »
+  failure -
+  gate -
+  challenge -
+  on-success
+    StressChange { Amount = -5 }
+  on-failure
+  stress -
+  lean Sociability=1
+  owner-only False stance Neutral mystery False
+option brave | Faire comme si de rien n'était
+  success {A} fait comme si de rien n'était, entre deux éternuements spectaculaires.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Courage, Amount = 1 }
+  on-failure
+  stress -
+  lean Boldness=1
+  owner-only False stance Neutral mystery False
+== on_teen
+title Plus tout à fait bébé
+type Triggered
+scene Un matin, {A} ne tient plus dans son coin de la cabane, chez la Mère Lichen. Quelque chose a changé : {T}, voilà ce que devient {A}. Ce soir, la Bruyère attend {A} à la Maison des Pousses.
+weight 100
+target None
+break 0
+trigger BecameTeen
+stages Teen
+who any
+option proud | Bomber le torse
+  success {A} se mesure contre la porte de la cabane, où la Mère Lichen garde la marque de chaque pousse, et grave un trait, très haut, en trichant un peu.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Courage, Amount = 1 }
+  on-failure
+  stress -
+  lean Boldness=1
+  owner-only False stance Neutral mystery False
+option shy | Faire comme si de rien n'était
+  success {A} reste encore un peu sur la pierre, à côté de la Mère Lichen. La Bruyère attendra l'après-midi. Grandir aussi.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Learning, Amount = 1 }
+  on-failure
+  stress -
+  lean Boldness=-1
+  owner-only False stance Neutral mystery False
+== on_visit_forgot
+title L'objet oublié
+type Triggered
+scene Après la visite, {A} trouve un petit mouchoir brodé sous un coussin. C'est celui de {B}.
+weight 100
+target Anyone
+break 0
+trigger AfterVisit
+stages Baby,Teen,Adult,Elder
+who any
+option return | Le rapporter tout de suite
+  success {A} court le rapporter. {B} ne s'était même pas rendu compte de l'oubli, et en est {b:touché|touchée}.
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = 5 }
+  on-failure
+  stress -
+  lean Energy=1,Honor=1
+  owner-only False stance Neutral mystery False
+option keep | Le garder pour la prochaine fois
+  success {A} plie le mouchoir et le pose bien en vue. Une prochaine fois viendra bien.
+  failure -
+  gate -
+  challenge -
+  on-success
+    follow follow_forgot 24-72
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Neutral mystery False
+== reply_befriend
+title Une question au bord de l'étang
+type Response
+scene Au bord de l'étang, {B} s'est {b:approché|approchée} de {A}, un papier froissé à la main, et a demandé : « On est amis, maintenant ? »
+weight 100
+target None
+break 0
+trigger -
+option yes | Dire oui, et partager le pain
+  success {A} dit oui, et tend un morceau de pain. {B} le donne aux canards, puis lit le papier à voix haute, étape par étape. Les deux rient jusqu'à la nuit tombée.
+  failure -
+  gate -
+  challenge -
+  on-success
+    SetAffinityAtLeast { Value = 30 }
+  on-failure
+  stress -
+  lean Sociability=2
+  owner-only False stance Accept mystery False
+option soon | « Presque. Encore un goûter ou deux. »
+  success {A} sourit : « Presque. Encore un goûter ou deux. » {B} sort un crayon et ajoute une étape quatre au plan : « Goûters. »
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = 5 }
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Refuse mystery False
+== reply_campfire
+title Une question au-dessus du feu
+type Response
+scene Entre deux bouchées de miel, {B} a demandé à {A} : « Tu veux qu'on soit amis ? »
+weight 100
+target None
+break 0
+trigger -
+option yes | Dire oui, la bouche pleine de miel
+  success {A} dit oui, ou quelque chose d'approchant, la bouche pleine de miel. {B} comprend très bien.
+  failure -
+  gate -
+  challenge -
+  on-success
+    SetAffinityAtLeast { Value = 30 }
+  on-failure
+  stress -
+  lean Sociability=2
+  owner-only False stance Accept mystery False
+option later | « Reviens au prochain feu, on verra. »
+  success {A} sourit : « Reviens au prochain feu, on verra. » {B} promet d'apporter son propre miel, cette fois.
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = 5 }
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Refuse mystery False
+== reply_declare
+title Une déclaration
+type Response
+scene {B} est venu{b:|e} tout avouer à {A}, les joues rouges et la voix qui tremble.
+weight 100
+target None
+break 0
+trigger -
+option yes | Dire oui
+  success {A} dit oui. {B} en oublie de respirer, puis rit, puis respire. Tout le hameau est au courant avant le soir : la Courge y a veillé.
+  failure -
+  gate -
+  challenge -
+  on-success
+    Couple { }
+  on-failure
+  stress -
+  lean Compassion=1,Sociability=1
+  owner-only False stance Accept mystery False
+option no | Dire non, doucement
+  success {A} dit non, avec beaucoup de douceur. {B} hoche la tête et rentre par le chemin le plus long.
+  failure -
+  gate -
+  challenge -
+  on-success
+    Heartbreak { }
+  on-failure
+  stress -
+  lean Honor=1
+  owner-only False stance Refuse mystery False
+== reply_mend
+title La paix ?
+type Response
+scene {B} tend un rameau à {A}, cueilli exprès. Le marché entier retient son souffle.
+weight 100
+target None
+break 0
+trigger -
+option yes | Accepter le rameau
+  success {A} prend le rameau. On ne devient pas amis en un jour, mais on peut arrêter de se fâcher.
+  failure -
+  gate -
+  challenge -
+  on-success
+    SetAffinityAtLeast { Value = 0 }
+  on-failure
+  stress -
+  lean Compassion=2
+  owner-only False stance Accept mystery False
+option no | Le laisser tomber
+  success Le rameau tombe dans la poussière. {B} le ramasse et repart avec, l'air digne.
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = -5 }
+  on-failure
+  stress -
+  lean Vengefulness=2
+  owner-only False stance Refuse mystery False
+== reply_pact
+title Le petit doigt
+type Response
+scene {B} tend le petit doigt à {A} : un pacte de meilleurs amis, pour la vie, ou au moins jusqu'à jeudi.
+weight 100
+target None
+break 0
+trigger -
+option yes | Serrer le petit doigt
+  success Les deux petits doigts se serrent. C'est officiel : le Fou, qui passait, sert de témoin, et l'écrit sur sa main.
+  failure -
+  gate -
+  challenge -
+  on-success
+    SetAffinityAtLeast { Value = 70 }
+  on-failure
+  stress -
+  lean Sociability=2
+  owner-only False stance Accept mystery False
+option later | Dire « pas encore »
+  success {A} replie le doigt de {B}, gentiment. « Pas encore. Mais garde-le tendu. »
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = -5 }
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Refuse mystery False
+== reply_rival
+title Le défi relevé
+type Response
+scene {B} défie {A} à la course jusqu'au Pont-Vieux. Sur le parapet, le Fou compte déjà les foulées.
+weight 100
+target None
+break 0
+trigger -
+option race | Courir
+  success {A} gagne d'un chapeau. Le Fou annonce le compte : trois foulées d'avance, et une de trop pour {B}.
+  failure {B} gagne d'un chapeau. {A} réclame une revanche avant même d'avoir repris son souffle.
+  gate -
+  challenge Courage 0 vs
+  on-success
+    GrowStat { Stat = Courage, Amount = 1 }
+    AffinityShift { Delta = -5 }
+  on-failure
+    AffinityShift { Delta = -10 }
+  stress -
+  lean Boldness=2
+  owner-only False stance Accept mystery False
+option decline | Refuser, avec un sourire en coin
+  success {A} refuse, et sourit en coin. {B} ne sait plus si c'est une victoire ou une défaite.
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = -5 }
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Refuse mystery False
+== reply_secret
+title Un secret confié
+type Response
+scene Sous le Pont-Vieux, {B} a chuchoté un secret à {A}, d'une traite, sans respirer.
+weight 100
+target None
+break 0
+trigger -
+option promise | Promettre de ne jamais le répéter
+  success {A} promet, la main sur le cœur. {B} respire enfin. Le secret dort maintenant chez deux personnes, et dort beaucoup mieux.
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = 15 }
+  on-failure
+  stress -
+  lean Honor=2
+  owner-only False stance Accept mystery False
+option swap | Confier un secret en retour
+  success {A} se penche et chuchote à son tour. {B} écarquille les yeux. Les deux secrets se ressemblent comme deux glands.
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = 20 }
+  on-failure
+  stress -
+  lean Sociability=2
+  owner-only False stance Accept mystery False
+option laugh | Éclater de rire : ce n'est vraiment pas grave
+  success « C'est tout ? » {B} rougit, puis rit aussi, un peu {b:vexé|vexée}. D'un coup, le secret ne pèse plus rien.
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = 5 }
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Refuse mystery False
+== social_declare
+title Le cœur qui bat
+type Pulse
+scene Depuis quelque temps, {A} rougit chaque fois que {B} passe. Même de loin. Même de dos.
+weight 100
+target Known
+break 0
+trigger -
+stages Adult,Elder
+who 010101010101010101010101010101010101
+option declare | Tout avouer à {B}
+  success {A} prend son courage à deux mains et va tout dire à {B}.
+  failure -
+  gate -
+  challenge -
+  on-success
+    ask {
+      title Une déclaration
+      type Response
+      scene {B} est venu{b:|e} tout avouer à {A}, les joues rouges et la voix qui tremble.
+      weight 100
+      target None
+      break 0
+      trigger -
+      option yes | Dire oui
+        success {A} dit oui. {B} en oublie de respirer, puis rit, puis respire. Tout le hameau est au courant avant le soir : la Courge y a veillé.
+        failure -
+        gate -
+        challenge -
+        on-success
+          Couple { }
+        on-failure
+        stress -
+        lean Compassion=1,Sociability=1
+        owner-only False stance Accept mystery False
+      option no | Dire non, doucement
+        success {A} dit non, avec beaucoup de douceur. {B} hoche la tête et rentre par le chemin le plus long.
+        failure -
+        gate -
+        challenge -
+        on-success
+          Heartbreak { }
+        on-failure
+        stress -
+        lean Honor=1
+        owner-only False stance Refuse mystery False
+    }
+  on-failure
+  stress -
+  lean Boldness=2,Sociability=1
+  owner-only True stance Neutral mystery False
+option wait | Garder ça pour soi encore un peu
+  success {A} garde le secret, bien au chaud. Certaines choses mûrissent mieux à l'ombre.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Learning, Amount = 1 }
+  on-failure
+  stress -
+  lean Boldness=-1
+  owner-only False stance Neutral mystery False
+== social_mend
+title Le rameau d'olivier
+type Pulse
+scene {A} croise {B} au marché de la place. Les deux font semblant de ne pas se voir, avec beaucoup d'application.
+weight 100
+target Hostile
+break 0
+trigger -
+stages Adult,Elder
+who any
+option mend | Proposer de faire la paix
+  success {A} tend un rameau, un vrai, cueilli exprès.
+  failure -
+  gate -
+  challenge -
+  on-success
+    ask {
+      title La paix ?
+      type Response
+      scene {B} tend un rameau à {A}, cueilli exprès. Le marché entier retient son souffle.
+      weight 100
+      target None
+      break 0
+      trigger -
+      option yes | Accepter le rameau
+        success {A} prend le rameau. On ne devient pas amis en un jour, mais on peut arrêter de se fâcher.
+        failure -
+        gate -
+        challenge -
+        on-success
+          SetAffinityAtLeast { Value = 0 }
+        on-failure
+        stress -
+        lean Compassion=2
+        owner-only False stance Accept mystery False
+      option no | Le laisser tomber
+        success Le rameau tombe dans la poussière. {B} le ramasse et repart avec, l'air digne.
+        failure -
+        gate -
+        challenge -
+        on-success
+          AffinityShift { Delta = -5 }
+        on-failure
+        stress -
+        lean Vengefulness=2
+        owner-only False stance Refuse mystery False
+    }
+  on-failure
+  stress -
+  lean Compassion=2,Vengefulness=-2
+  owner-only False stance Neutral mystery False
+option snub | Continuer à faire semblant
+  success {A} fait semblant si bien que {B} y croit presque. La Courge, elle, n'y croit pas du tout, et le raconte déjà.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Intrigue, Amount = 1 }
+  on-failure
+  stress -
+  lean Vengefulness=1
+  owner-only False stance Neutral mystery False
+== social_pact
+title Le pacte
+type Pulse
+scene {A} et {B} ont partagé leur dernier gâteau, leur dernier secret et une averse entière sous la même feuille.
+weight 100
+target Known
+break 0
+trigger -
+stages Adult,Elder
+who 000000111111000000000000000000000000
+option pact | Proposer un pacte de meilleurs amis
+  success {A} propose un pacte, le petit doigt tendu.
+  failure -
+  gate -
+  challenge -
+  on-success
+    ask {
+      title Le petit doigt
+      type Response
+      scene {B} tend le petit doigt à {A} : un pacte de meilleurs amis, pour la vie, ou au moins jusqu'à jeudi.
+      weight 100
+      target None
+      break 0
+      trigger -
+      option yes | Serrer le petit doigt
+        success Les deux petits doigts se serrent. C'est officiel : le Fou, qui passait, sert de témoin, et l'écrit sur sa main.
+        failure -
+        gate -
+        challenge -
+        on-success
+          SetAffinityAtLeast { Value = 70 }
+        on-failure
+        stress -
+        lean Sociability=2
+        owner-only False stance Accept mystery False
+      option later | Dire « pas encore »
+        success {A} replie le doigt de {B}, gentiment. « Pas encore. Mais garde-le tendu. »
+        failure -
+        gate -
+        challenge -
+        on-success
+          AffinityShift { Delta = -5 }
+        on-failure
+        stress -
+        lean Rationality=1
+        owner-only False stance Refuse mystery False
+    }
+  on-failure
+  stress -
+  lean Honor=1,Sociability=2
+  owner-only False stance Neutral mystery False
+option enjoy | Profiter de l'amitié telle quelle
+  success {A} ne propose rien. Ce qui marche n'a pas besoin de contrat.
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = 5 }
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Neutral mystery False
+== social_rival
+title Le défi
+type Pulse
+scene {B} s'est encore vanté{b:|e} d'être {b:le plus rapide|la plus rapide} du hameau. Devant tout le monde. Devant {A}.
+weight 100
+target Hostile
+break 0
+trigger -
+stages Adult,Elder
+who any
+option challenge | {b:Le|La} défier à la course jusqu'au Pont-Vieux
+  success {A} lance le défi, et {B} relève le menton.
+  failure -
+  gate -
+  challenge -
+  on-success
+    ask {
+      title Le défi relevé
+      type Response
+      scene {B} défie {A} à la course jusqu'au Pont-Vieux. Sur le parapet, le Fou compte déjà les foulées.
+      weight 100
+      target None
+      break 0
+      trigger -
+      option race | Courir
+        success {A} gagne d'un chapeau. Le Fou annonce le compte : trois foulées d'avance, et une de trop pour {B}.
+        failure {B} gagne d'un chapeau. {A} réclame une revanche avant même d'avoir repris son souffle.
+        gate -
+        challenge Courage 0 vs
+        on-success
+          GrowStat { Stat = Courage, Amount = 1 }
+          AffinityShift { Delta = -5 }
+        on-failure
+          AffinityShift { Delta = -10 }
+        stress -
+        lean Boldness=2
+        owner-only False stance Accept mystery False
+      option decline | Refuser, avec un sourire en coin
+        success {A} refuse, et sourit en coin. {B} ne sait plus si c'est une victoire ou une défaite.
+        failure -
+        gate -
+        challenge -
+        on-success
+          AffinityShift { Delta = -5 }
+        on-failure
+        stress -
+        lean Rationality=1
+        owner-only False stance Refuse mystery False
+    }
+  on-failure
+  stress -
+  lean Boldness=2,Vengefulness=1
+  owner-only True stance Neutral mystery False
+option ignore | Hausser les épaules
+  success {A} hausse les épaules si haut que ça devient un exercice. Personne n'a gagné, mais personne n'a perdu.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Learning, Amount = 1 }
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Neutral mystery False
+== teen_apprentice
+title Le grand apprentissage
+type Pulse
+scene C'est la coutume : à la Maison des Pousses, chaque pousse choisit un maître pour la saison. Trois portes sont ouvertes à {A}. Maître Frêne, à la Maison commune, qui sait lire, écrire et tout mettre en règlement. Le Chardon, au moulin, qui pèse tout, compliments compris. Et le Fou, qui retrouve tout ce qui est perdu, sauf ses chaussures.
+weight 100
+target None
+break 0
+trigger -
+stages Teen
+who any
+option owl | Suivre Maître Frêne
+  success {A} pousse la porte de la Maison commune. Maître Frêne pose devant {A} une pile de registres plus haute que {A}. « Examinons d'abord le premier. Ensuite, selon la coutume, nous en parlerons. »
+  failure -
+  gate -
+  challenge -
+  on-success
+    follow teen_apprentice_owl 48-96
+  on-failure
+  stress -
+  lean Rationality=2
+  owner-only False stance Neutral mystery False
+option hedgehog | Suivre le Chardon
+  success {A} se présente au moulin. Le Chardon tend une balance, un carnet et un crayon, sans un mot, puis grogne : « Leçon un : un sac pèse ce qu'il pèse. Pas à peu près. » {A} note tout.
+  failure -
+  gate -
+  challenge -
+  on-success
+    follow teen_apprentice_station 48-96
+  on-failure
+  stress -
+  lean Honor=1,Rationality=1
+  owner-only False stance Neutral mystery False
+option magpie | Suivre le Fou
+  success {A} rejoint le Fou sous l'auvent de l'auberge. Le Fou examine {A} du chapeau aux pieds, rend un bouton que {A} n'avait pas vu partir, et chantonne : « Un bouton. Un. Tu as tout à apprendre. »
+  failure -
+  gate -
+  challenge -
+  on-success
+    follow teen_apprentice_market 48-96
+  on-failure
+  stress honest=10
+  lean Boldness=1,Honor=-1
+  owner-only False stance Neutral mystery False
+== teen_apprentice_market
+title La leçon du Fou
+type FollowUp
+scene Pour la dernière leçon, le Fou emmène {A} sur la place du Puits, le jour du marché. Ses poches sont pleines de choses trouvées. « Aujourd'hui, on rend. Trois choses, à leurs trois maisons. Mais personne ne doit te voir. Sinon ce n'est plus un cadeau, c'est une conversation. »
+weight 100
+target None
+break 0
+trigger -
+option borrow | Tout rendre sans être {a:vu|vue}
+  success {A} glisse une cuillère sur le rebord de la Courge, un ruban sous la porte de la Bruyère et une pipe dans la poche du Noyer, sans que personne ne remarque rien. Le Fou fait la révérence, pour la première fois de sa vie, et offre à {A} une bague trouvée « on ne sait où ».
+  failure Le Noyer sent une main dans sa poche au moment où {A} y glisse la pipe. Explications. Excuses. Un après-midi aux Longues Raies pour se faire pardonner. Sous l'auvent, le Fou rit à s'en faire envoler une touffe.
+  gate -
+  challenge Intrigue 7
+  on-success
+    GrowStat { Stat = Intrigue, Amount = 1 }
+    GiveItem { ItemKey = col.bague }
+    follow grown_master_market 168-240
+  on-failure
+    follow grown_master_market 168-240
+  stress honest=30,just=20
+  lean Honor=-2
+  owner-only False stance Neutral mystery False
+option refuse | Refuser : rendre, oui, mais en frappant à la porte
+  success Le Fou penche la tête. « Bien. C'est l'autre leçon. Tout le monde sait se cacher ; les meilleurs savent quand frapper. » Puis le Fou rend à {A}, l'air de rien, trois boutons perdus depuis le début de la saison.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GiveItem { ItemKey = col.bouton }
+    ApplyModifier { Key = clear_conscience }
+    follow grown_master_market 168-240
+  on-failure
+  stress -
+  lean Honor=2
+  owner-only False stance Neutral mystery False
+option notes | Regarder le Fou faire, et prendre des notes
+  success {A} suit le Fou toute la journée. Le soir, le carnet contient trois pages de croquis, deux de théories et une liste intitulée « Comment ne plus jamais rien perdre ». Le Fou lit la liste, et ajoute une ligne à la fin : « Sauf ses chaussures. »
+  failure -
+  gate -
+  challenge -
+  on-success
+    ApplyModifier { Key = sly }
+    follow grown_master_market 168-240
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Neutral mystery False
+== teen_apprentice_owl
+title L'examen de Maître Frêne
+type FollowUp
+scene La saison touche à sa fin. Maître Frêne a préparé un examen : une seule question, écrite à la plume en haut d'une page blanche. « Que sais-tu, maintenant, que tu ne savais pas avant ? » Maître Frêne attend. La Maison commune attend aussi.
+weight 100
+target None
+break 0
+trigger -
+option recite | Réciter tout ce qui a été appris, dans l'ordre
+  success {A} récite les raies et leurs feux, les fêtes et leurs bancs, les règlements du four et l'année où la Sommeille a changé de lit. Maître Frêne écoute jusqu'au bout, puis hoche la tête, une seule fois. Venant de Maître Frêne, c'est une médaille.
+  failure {A} commence par les raies et se perd dans les règlements. Maître Frêne lève la main : « Tu en sais plus que tu ne crois. Il convient de revenir l'an prochain. Nous vérifierons. »
+  gate -
+  challenge Learning 7
+  on-success
+    GrowStat { Stat = Learning, Amount = 1 }
+    ApplyModifier { Key = inspired }
+    follow grown_master_owl 168-240
+  on-failure
+    follow grown_master_owl 168-240
+  stress -
+  lean Rationality=2
+  owner-only False stance Neutral mystery False
+option humble | Répondre : « Que je ne sais presque rien. »
+  success Maître Frêne se tait un long moment. Puis sort de sa poche une petite clé rouillée et la tend à {A} : la clé du vieux coffre aux registres, ceux que personne n'ouvre plus. « Maintenant, tu peux commencer. »
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Learning, Amount = 1 }
+    GiveItem { ItemKey = col.cle_rouillee }
+    follow grown_master_owl 168-240
+  on-failure
+  stress arrogant=20
+  lean Honor=1,Rationality=1
+  owner-only False stance Neutral mystery False
+== teen_apprentice_station
+title La tournée des sacs
+type FollowUp
+scene Dernier jour d'apprentissage. Le Chardon confie à {A} la grande tournée : peser chaque sac de farine livré dans la semaine, du four de Pain-Blond jusqu'à l'auberge, et revenir au moulin avant que la roue s'arrête. Le Chardon ne regarde pas {A} partir. Le Chardon regarde la roue.
+weight 100
+target None
+break 0
+trigger -
+option run | Faire la tournée au pas de course
+  success {A} pèse onze sacs, en trouve trois trop légers d'une poignée, et pousse la porte du moulin au dernier tour de roue. Le Chardon range la balance et tend à {A} un vieux caillou, frappé d'une marque que plus personne n'utilise. « Pour ton premier compte juste. »
+  failure La Courge refuse qu'on pèse sa farine, par principe. {A} discute, perd du temps, et arrive quand la roue est déjà arrêtée. Le Chardon ne dit rien. Le silence est pire qu'un sermon.
+  gate -
+  challenge Stewardship 7
+  on-success
+    GrowStat { Stat = Stewardship, Amount = 1 }
+    GiveItem { ItemKey = col.piece_ancienne }
+    follow grown_master_station 168-240
+  on-failure
+    follow grown_master_station 168-240
+  stress lazy=20
+  lean Energy=2
+  owner-only False stance Neutral mystery False
+option plan | Tracer d'abord le chemin le plus court sur une carte
+  success {A} passe une heure à tracer l'itinéraire, puis fait la tournée en marchant, sans jamais courir, et arrive au dernier tour de roue, pile. Le Chardon regarde le plan, longtemps. Le plan est cloué depuis à la poutre du moulin, et le Chardon prétend que c'est pour ses comptes.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Stewardship, Amount = 1 }
+    ApplyModifier { Key = trade_sense }
+    follow grown_master_station 168-240
+  on-failure
+  stress -
+  lean Rationality=2
+  owner-only False stance Neutral mystery False
+== teen_befriend
+title L'amitié en trois étapes
+type Pulse
+scene Depuis quelque temps, {A} aimerait bien devenir {a:ami|amie} avec {B}. Le problème, c'est que {A} ne sait pas du tout comment on fait. Maître Frêne a sûrement un règlement là-dessus. En attendant, {A} a écrit un plan en trois étapes sur un bout de papier. L'étape un est soulignée deux fois.
+weight 100
+target Anyone
+break 0
+trigger -
+stages Teen
+who 001111000000000000000000000000000000
+option hello | Suivre le plan : étape un, dire bonjour
+  success {A} attend {B} au coin de la place du Puits et dit bonjour. {B} répond bonjour. Fin de l'étape un. {A} rentre le cœur battant, et coche la case avec un soin particulier.
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = 5 }
+    follow teen_befriend_rain 24-48
+  on-failure
+  stress -
+  lean Rationality=1,Sociability=1
+  owner-only False stance Neutral mystery False
+option jam | Commencer par un petit cadeau anonyme
+  success {A} laisse devant la porte de {B} un pot de confiture, avec un mot : « De la part de quelqu'un. » {B} goûte, et passe la journée à chercher qui. {A} passe la journée à faire semblant de ne pas savoir.
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = 10 }
+    follow teen_befriend_rain 24-48
+  on-failure
+  stress -
+  lean Compassion=1
+  owner-only False stance Neutral mystery False
+option blunt | Aller droit au but : « Tu veux être mon {b:ami|amie} ? »
+  success {B} cligne des yeux, {b:surpris|surprise}, puis rit. « On peut commencer par un goûter. » C'est une réponse. C'est même une très bonne réponse.
+  failure {B} répond poliment « peut-être » et s'éclipse. {A} range le plan dans sa poche. Retour à l'étape un, mais en plus discret.
+  gate -
+  challenge Diplomacy 6
+  on-success
+    AffinityShift { Delta = 15 }
+    follow teen_befriend_rain 24-48
+  on-failure
+    AffinityShift { Delta = 5 }
+    follow teen_befriend_rain 24-48
+  stress shy=20
+  lean Boldness=2
+  owner-only False stance Neutral mystery False
+== teen_befriend_ask
+title L'étape trois
+type FollowUp
+scene L'étape trois du plan est écrite en tout petit, en bas de la page : « Demander. » {A} relit le mot une dizaine de fois. Ça paraît simple, sur le papier. {B} est là, à quelques pas, en train de donner du pain aux canards.
+weight 100
+target Anyone
+break 0
+trigger -
+option ask | Demander à {B} : « On est amis, maintenant ? »
+  success {A} prend une grande inspiration, s'approche, et pose la question, le papier serré dans la main.
+  failure -
+  gate -
+  challenge -
+  on-success
+    ask {
+      title Une question au bord de l'étang
+      type Response
+      scene Au bord de l'étang, {B} s'est {b:approché|approchée} de {A}, un papier froissé à la main, et a demandé : « On est amis, maintenant ? »
+      weight 100
+      target None
+      break 0
+      trigger -
+      option yes | Dire oui, et partager le pain
+        success {A} dit oui, et tend un morceau de pain. {B} le donne aux canards, puis lit le papier à voix haute, étape par étape. Les deux rient jusqu'à la nuit tombée.
+        failure -
+        gate -
+        challenge -
+        on-success
+          SetAffinityAtLeast { Value = 30 }
+        on-failure
+        stress -
+        lean Sociability=2
+        owner-only False stance Accept mystery False
+      option soon | « Presque. Encore un goûter ou deux. »
+        success {A} sourit : « Presque. Encore un goûter ou deux. » {B} sort un crayon et ajoute une étape quatre au plan : « Goûters. »
+        failure -
+        gate -
+        challenge -
+        on-success
+          AffinityShift { Delta = 5 }
+        on-failure
+        stress -
+        lean Rationality=1
+        owner-only False stance Refuse mystery False
+    }
+  on-failure
+  stress -
+  lean Boldness=1,Sociability=2
+  owner-only True stance Neutral mystery False
+option ducks | Jeter le plan, et donner du pain aux canards avec {B}
+  success {A} froisse le plan et le fourre au fond de sa poche. Puis s'approche, prend un morceau de pain et le donne aux canards, à côté de {B}. Personne ne demande rien. Pas besoin, finalement.
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = 10 }
+  on-failure
+  stress -
+  lean Rationality=1
+  owner-only False stance Neutral mystery False
+== teen_befriend_rain
+title L'étape deux
+type FollowUp
+scene L'étape deux du plan dit : « Faire quelque chose ensemble. » {A} avait tout prévu : la pêche, les cerfs-volants, le concours de grimaces. Mais ce matin, la pluie tombe à verse, et {B} est {b:coincé|coincée} sous le même auvent que {A}, devant le four de Pain-Blond, fermé ce jour-là.
+weight 100
+target Anyone
+break 0
+trigger -
+option cards | Sortir le jeu de cartes de sa poche
+  success {A} sort le jeu de cartes. {A} et {B} jouent sous l'auvent jusqu'à ce que la pluie s'arrête, puis encore un peu après. {B} triche très mal, et {A} fait semblant de ne rien voir. C'est le début de quelque chose.
+  failure -
+  gate -
+  challenge -
+  on-success
+    AffinityShift { Delta = 10 }
+    follow teen_befriend_ask 24-48
+  on-failure
+  stress -
+  lean Sociability=1
+  owner-only False stance Neutral mystery False
+option race | Proposer une course sous la pluie jusqu'à l'auberge
+  success {A} et {B} courent sous la pluie, sautent dans toutes les flaques, et arrivent à l'auberge en dégoulinant, riant si fort que la Courge sert deux bols de soupe sans rien demander, et pose dix questions sans attendre les réponses.
+  failure {A} glisse dans la première flaque et s'assoit dedans. {B} hésite, puis s'assoit à côté, dans la flaque, par solidarité. Les deux restent là un moment, sous la pluie, à rire comme des idiots.
+  gate -
+  challenge Courage 6
+  on-success
+    GrowStat { Stat = Courage, Amount = 1 }
+    AffinityShift { Delta = 15 }
+    follow teen_befriend_ask 24-48
+  on-failure
+    AffinityShift { Delta = 10 }
+    follow teen_befriend_ask 24-48
+  stress -
+  lean Boldness=2
+  owner-only False stance Neutral mystery False
+option talk | Parler, simplement
+  success Sous l'auvent, {A} et {B} parlent de tout : des nuages, du moulin, d'un rêve bizarre. Au bout d'une heure, {A} se rend compte que l'étape deux est en train de se faire toute seule, sans plan.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Diplomacy, Amount = 1 }
+    AffinityShift { Delta = 10 }
+    follow teen_befriend_ask 24-48
+  on-failure
+  stress -
+  lean Sociability=2
+  owner-only False stance Neutral mystery False
+== teen_secret
+title Un secret trop lourd
+type Pulse
+scene Depuis des jours, {A} porte un secret. Un petit secret, mais lourd, comme un gland qui serait en plomb. {B} est {b:le seul|la seule} à qui {A} pourrait le dire.
+weight 100
+target Known
+break 0
+trigger -
+stages Teen
+who 000000111111111111000000000000000000
+option tell | Tout raconter à {B}
+  success {A} entraîne {B} sous le Pont-Vieux et chuchote tout, d'une traite.
+  failure -
+  gate -
+  challenge -
+  on-success
+    ask {
+      title Un secret confié
+      type Response
+      scene Sous le Pont-Vieux, {B} a chuchoté un secret à {A}, d'une traite, sans respirer.
+      weight 100
+      target None
+      break 0
+      trigger -
+      option promise | Promettre de ne jamais le répéter
+        success {A} promet, la main sur le cœur. {B} respire enfin. Le secret dort maintenant chez deux personnes, et dort beaucoup mieux.
+        failure -
+        gate -
+        challenge -
+        on-success
+          AffinityShift { Delta = 15 }
+        on-failure
+        stress -
+        lean Honor=2
+        owner-only False stance Accept mystery False
+      option swap | Confier un secret en retour
+        success {A} se penche et chuchote à son tour. {B} écarquille les yeux. Les deux secrets se ressemblent comme deux glands.
+        failure -
+        gate -
+        challenge -
+        on-success
+          AffinityShift { Delta = 20 }
+        on-failure
+        stress -
+        lean Sociability=2
+        owner-only False stance Accept mystery False
+      option laugh | Éclater de rire : ce n'est vraiment pas grave
+        success « C'est tout ? » {B} rougit, puis rit aussi, un peu {b:vexé|vexée}. D'un coup, le secret ne pèse plus rien.
+        failure -
+        gate -
+        challenge -
+        on-success
+          AffinityShift { Delta = 5 }
+        on-failure
+        stress -
+        lean Rationality=1
+        owner-only False stance Refuse mystery False
+    }
+  on-failure
+  stress -
+  lean Sociability=2
+  owner-only False stance Neutral mystery False
+option journal | L'écrire dans un carnet, puis cacher le carnet
+  success {A} écrit le secret, ferme le carnet et le glisse sous une latte du plancher. Le secret pèse beaucoup moins. Le plancher grince un peu plus.
+  failure -
+  gate -
+  challenge -
+  on-success
+    ApplyModifier { Key = soothed }
+  on-failure
+  stress -
+  lean Rationality=1,Sociability=-1
+  owner-only False stance Neutral mystery False
+option keep | Le garder pour soi
+  success {A} garde le secret. Certains jours, ça pèse. D'autres jours, ça tient chaud.
+  failure -
+  gate -
+  challenge -
+  on-success
+    GrowStat { Stat = Intrigue, Amount = 1 }
+  on-failure
+  stress gregarious=10
+  lean Rationality=1
+  owner-only False stance Neutral mystery False
+ado Boldness 0.2659
+ado Compassion 0.1687
+ado Greed 0.0456
+ado Energy 0.0635
+ado Honor 0.2103
+ado Rationality 0.3492
+ado Sociability 0.2976
+ado Vengefulness 0.0000
+ado Zeal 0.0516
+ado-grow Diplomacy 0.0575
+ado-grow Stewardship 0.0714
+ado-grow Learning 0.0714
+ado-grow Intrigue 0.0377
+ado-grow Courage 0.0437

@@ -49,6 +49,14 @@ public static class StoryVocabulary
             return IsKey(w[2]) ? new(ConditionKind.OtherTrait, w[2], negated, CompareOp.None, 0, pos) : Fail($"bad key '{w[2]}'");
         }
         StoryCondition Make(ConditionKind kind, string key) => new(kind, key, negated, CompareOp.None, 0, pos);
+        // On the other Plynling, in `other_if:` only (the validator holds where).
+        if (w[0] == "can_couple") return w.Count == 1 ? Make(ConditionKind.CanCouple, "") : Fail("'can_couple' takes no words after it");
+        if (w[0] == "affinity")
+        {
+            if (w.Count != 3 || (w[1] != ">=" && w[1] != "<") || !int.TryParse(w[2], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var a))
+                return Fail("'affinity' expects 'affinity >= n' or 'affinity < n'");
+            return new(ConditionKind.Affinity, "", negated, w[1] == ">=" ? CompareOp.AtLeast : CompareOp.Below, a, pos);
+        }
         switch (w[0])
         {
             case "stat":
@@ -109,6 +117,13 @@ public static class StoryVocabulary
                 if (!TryEnum<Need>(w[1], out _)) return Fail($"'lift' expects one of: {Choices<Need>()}");
                 return double.TryParse(w[2], NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var x)
                     ? Make(EffectKind.Lift, w[1], x) : Fail($"bad amount '{w[2]}' (write 0.3)");
+            // One-word effects, and a coping trait with or without its key.
+            case "couple" or "heartbreak":
+                return w.Count == 1 ? Make(w[0] == "couple" ? EffectKind.Couple : EffectKind.Heartbreak, "") : Fail($"'{w[0]}' takes no words after it");
+            case "coping":
+                if (w.Count == 1) return Make(EffectKind.Coping, "");
+                if (w.Count == 2) return IsKey(w[1]) ? Make(EffectKind.Coping, w[1]) : Fail($"bad key '{w[1]}'");
+                return Fail("'coping' expects 'coping' or 'coping <trait>'");
         }
         if (w.Count != 2) return Fail($"'{w[0]}' expects one word after it");
         var arg = w[1];
@@ -131,6 +146,7 @@ public static class StoryVocabulary
             "affinity" => Number(EffectKind.Affinity),
             "cailloux" => Number(EffectKind.Cailloux),
             "grow" => TryEnum<PlynlingStat>(arg, out _) ? Make(EffectKind.Grow, arg) : Fail($"'grow' expects one of: {Choices<PlynlingStat>()}"),
+            "bond" => arg is "peace" or "friends" or "bestfriends" ? Make(EffectKind.Bond, arg) : Fail("'bond' expects peace, friends or bestfriends"),
             _ => Fail($"unknown effect '{w[0]}'"),
         };
     }

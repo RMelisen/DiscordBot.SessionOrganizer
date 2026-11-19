@@ -138,6 +138,8 @@ later build.
 | `other` | For a social arc: who the other Plynling is (`other: friend`, `other: rival`…). |
 | `public` | The line that opens the living public message. |
 
+> Changed by `2026-11-19-plynling-every-event-a-story-design.md`: the triggers `sick`, `recovered`, `visit`, `death` and `break n`, and `other:` / `other_if:`.
+
 ### Declarations
 
 Declared once in the arc that introduces them; scenes refer to them by key. Keys are **global**
@@ -179,6 +181,8 @@ handover                  (optional: this decision goes to the other Plynling's 
   effect lands on the arc's owner, except those prefixed `other`: `[other remember <memory>]` and
   `[affinity ±n]`, which already touches both. Anti-griefing stays: outside a handed-over moment,
   nothing lands on the other Plynling but the relation.
+
+> Changed by `2026-11-19-plynling-every-event-a-story-design.md`: a handover scene is the last of its run, and its effects land on the decider.
 
 ### Conditional prose
 

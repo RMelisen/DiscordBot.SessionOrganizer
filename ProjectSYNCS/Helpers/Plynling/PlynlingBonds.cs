@@ -133,6 +133,9 @@ public static class PlynlingBonds
     // The grief bonds: losing one of these (death, abandonment) hurts.
     public static bool IsClose(PlynlingBond bond) => bond is PlynlingBond.BestFriends or PlynlingBond.Lovers;
 
+    // The bonds a hostile event (TargetKind.Hostile) is with.
+    public static bool IsHostile(PlynlingBond bond) => bond is PlynlingBond.Rivals or PlynlingBond.Enemies;
+
     // How close a bond is, for sorting a Plynling's relations: partner first, enemies last.
     public static int Closeness(PlynlingBond bond) => bond switch
     {

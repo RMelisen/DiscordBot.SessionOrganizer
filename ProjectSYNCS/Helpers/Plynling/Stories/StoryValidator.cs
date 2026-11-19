@@ -21,7 +21,10 @@ public static class StoryValidator
 
     /// <summary>What the parser reads but the engine does not run yet: the validator refuses each with "not supported yet".</summary>
     public static readonly IReadOnlySet<string> NotYetSupported = new HashSet<string>
-        { "handover", "trigger relation", "trigger death", "trigger sick", "trigger break", "trigger oldage", "condition chain" };
+        { "trigger relation", "trigger death <bond>", "trigger oldage", "condition chain", "effect other" };
+
+    /// <summary>A break may relieve more than any other event: down to this.</summary>
+    public const int BreakStressFloor = -150;
 
     private static readonly Regex Token = new(@"\{(?:A|B|T|[abp]:[^|{}]*\|[^{}]*)\}", RegexOptions.Compiled);
     private static readonly Regex Choice = new(@"\{[abp]:([^|{}]*)\|([^{}]*)\}", RegexOptions.Compiled);
@@ -54,6 +57,20 @@ public static class StoryValidator
 
         foreach (var arc in arcs)
             ValidateArc(arc, arcsByKey, flagsSet, memories, epithets, keepsakes, castKeys, Error);
+
+        // Old keys (`was:`): an old C# event's key, claimed by one live scene in the whole catalog.
+        var claimed = new Dictionary<string, (string Scene, StoryPos Pos)>();
+        foreach (var arc in arcs)
+            foreach (var s in arc.Scenes.Where(s => s.Was is not null))
+            {
+                var key = StoryCompiler.Key(arc.Key, s.Key);
+                if (!StoryVocabulary.IsKey(s.Was!) || s.Was!.Contains('.'))
+                    Error(s.Pos, $"was: '{s.Was}' is not an old event key (lowercase, digits and '_', no dot)");
+                else if (s.RetiredTo is not null)
+                    Error(s.Pos, $"was: scene '{s.Key}' is retired; an old key is claimed by the live scene that replaces it");
+                else if (!claimed.TryAdd(s.Was, (key, s.Pos)))
+                    Error(s.Pos, $"was: '{s.Was}' is claimed by both {claimed[s.Was].Scene} ({claimed[s.Was].Pos}) and {key}");
+            }
 
         // Unlocks: a locked arc is unlocked somewhere, and an [unlock] names a locked arc.
         var unlocked = arcs.SelectMany(Effects).Where(e => e.Kind == EffectKind.Unlock).Select(e => e.Key).ToHashSet();
@@ -92,8 +109,10 @@ public static class StoryValidator
 
         // Size, triggers and the other Plynling.
         var isShort = h.Size == StorySize.Short;
-        if (h.Trigger.Kind is TriggerKind.Relation or TriggerKind.Death or TriggerKind.Sick or TriggerKind.Break or TriggerKind.OldAge)
-            error(arc.Pos, $"trigger '{h.Trigger.Kind.ToString().ToLowerInvariant()}' is not supported yet (use draw, adoption or stage teen|adult)");
+        var isBreak = h.Trigger.Kind == TriggerKind.Break;
+        if (h.Trigger.Kind is TriggerKind.Relation or TriggerKind.OldAge || h.Trigger is { Kind: TriggerKind.Death, Arg: not null })
+            error(arc.Pos, $"trigger '{h.Trigger.Kind.ToString().ToLowerInvariant()}{(h.Trigger.Arg is { } targ ? " " + targ : "")}' is not supported yet "
+                + "(use draw, adoption, stage teen|adult, sick, recovered, visit, death or break 1-3)");
         else if (h.Trigger is { Kind: TriggerKind.Stage, Arg: not ("teen" or "adult") })
             error(arc.Pos, $"trigger 'stage {h.Trigger.Arg}' is not supported yet (stage teen or adult only)");
         // {T}: the trait a moment reveals, said in the first scene of an arc brought by adoption or a stage.
@@ -101,8 +120,35 @@ public static class StoryValidator
         var tOk = h.Trigger.Kind is TriggerKind.Adoption or TriggerKind.Stage;
         foreach (var t in Texts(arc).Where(t => t.Text.Contains("{T}") && !(tOk && firstScene.Contains(t))))
             error(t.Pos, $"{t.What}: {{T}} is only for the first scene of an arc whose trigger is adoption or stage");
-        if (!hasOther && (h.Family is StoryFamily.Friendship or StoryFamily.Love or StoryFamily.Rivalry || h.Trigger.Kind is TriggerKind.Relation or TriggerKind.Death))
+        var bringsNobody = h.Trigger.Kind is TriggerKind.Sick or TriggerKind.Recovered or TriggerKind.Break
+            or TriggerKind.Adoption or TriggerKind.Stage;
+        var aboutAnother = h.Family is StoryFamily.Friendship or StoryFamily.Love or StoryFamily.Rivalry;
+        if (!hasOther && ((aboutAnother && !bringsNobody)
+                          || h.Trigger.Kind is TriggerKind.Relation or TriggerKind.Death or TriggerKind.Visit))
             error(arc.Pos, "this arc is about another Plynling: add 'other: <bond>' to the header");
+        // A trigger arc's other Plynling comes with the trigger (the visitor, the departed) or not at all: the
+        // engine never filters it, so a bond list or other_if: there would be silently ignored.
+        if (h.Trigger.Kind is TriggerKind.Visit or TriggerKind.Death
+            && (h.Other is { Kind: not OtherKind.Anyone } || h.OtherIf.Count > 0))
+            error(arc.Pos, $"trigger {h.Trigger.Kind.ToString().ToLowerInvariant()}: the other Plynling comes with the trigger, "
+                + "so write 'other: anyone' and no 'other_if:'");
+        else if (bringsNobody && (hasOther || aboutAnother))
+            error(arc.Pos, $"trigger {h.Trigger.Kind.ToString().ToLowerInvariant()} brings no other Plynling: "
+                + (hasOther ? "remove 'other:'" : "a friendship, love or rivalry arc needs trigger draw, visit or death"));
+        // A target is hostile or known, never both.
+        if (h.Other is { Kind: OtherKind.Bonds, Bonds: var bonds } && bonds.Any(PlynlingBonds.IsHostile) && !bonds.All(PlynlingBonds.IsHostile))
+            error(arc.Pos, "other: hostile bonds (rivals, enemies) and the others cannot be mixed: the other Plynling is hostile or known");
+        if (h.OtherIf.Count > 0 && !hasOther) error(arc.Pos, "'other_if' filters the other Plynling: add 'other:' to the header");
+        foreach (var c in h.OtherIf)
+        {
+            if (c.Kind is not (ConditionKind.Relation or ConditionKind.Affinity or ConditionKind.CanCouple))
+                error(c.Pos, $"[{c.Kind.ToString().ToLowerInvariant()} {c.Key}]: other_if takes only relation, affinity and can_couple");
+            if (c.Kind == ConditionKind.Affinity && c.Number is < -100 or > 100)
+                error(c.Pos, $"[affinity {c.Number}]: write -100 to 100");
+        }
+        var inOtherIf = new HashSet<StoryCondition>(h.OtherIf, ReferenceEqualityComparer.Instance);
+        foreach (var c in Conditions(arc).Where(c => c.Kind is ConditionKind.Affinity or ConditionKind.CanCouple && !inOtherIf.Contains(c)))
+            error(c.Pos, $"[{(c.Kind == ConditionKind.Affinity ? "affinity" : "can_couple")}]: reads the other Plynling as a candidate, so it goes only in other_if:");
 
         foreach (var scene in arc.Scenes)
         {
@@ -110,8 +156,9 @@ public static class StoryValidator
             if (scene.RetiredTo is not null && scene == arc.Scenes[0])
                 error(scene.Pos, $"scene '{scene.Key}' is the first scene of the arc: it cannot be retired");
             if (scene.RetiredTo is not null) { Target(scene.RetiredTo, scene.Pos); continue; }
-            if (scene.Handover) error(scene.Pos, $"scene '{scene.Key}': 'handover' is not supported yet");
-            if (scene.Handover && !hasOther) error(scene.Pos, $"scene '{scene.Key}' is handed over, but the arc has no 'other'");
+            if (scene.Handover) Handover(arc, scene, hasOther, error);
+            foreach (var o in scene.Options.Where(o => o.Stance != Stance.Neutral && !scene.Handover))
+                error(o.Pos, $"option '{o.Key}': [accept] and [refuse] go only in a handover scene (the answer's side)");
             var optionKeys = new HashSet<string>();
             foreach (var o in scene.Options)
                 if (!optionKeys.Add(o.Key)) error(o.Pos, $"option '{o.Key}' twice in scene '{scene.Key}'");
@@ -128,7 +175,9 @@ public static class StoryValidator
                     if (PlynlingTraits.ByKey(trait) is null) error(o.Pos, $"[stress {trait} {cost}]: no trait '{trait}'");
                     if (cost is < 1 or > 60) error(o.Pos, $"[stress {trait} {cost}]: a stress cost is 1 to 60");
                 }
-                if (o.Roll is { Difficulty: < 1 or > 20 } r) error(o.Pos, $"roll difficulty {r.Difficulty}: write 1 to 20");
+                if (o.Roll is { Vs: false, Difficulty: < 1 or > 20 } r) error(o.Pos, $"roll difficulty {r.Difficulty}: write 1 to 20");
+                if (o.Roll is { Vs: true } && !hasOther)
+                    error(o.Pos, $"option '{o.Key}': [roll … vs] rolls against the other Plynling, but the arc has no 'other'");
                 foreach (var (axis, n) in o.Lean)
                     if (n is < -5 or > 5) error(o.Pos, $"[lean {axis.ToString().ToLowerInvariant()} {n}]: a lean is -5 to 5");
                 if (o.Needs.Any(c => c.Kind == ConditionKind.Flag) && o.LockText is null)
@@ -145,6 +194,10 @@ public static class StoryValidator
                 // Anti-griefing: the other Plynling is touched outside the relation only in a moment its owner decides.
                 foreach (var e in outcome.Effects.Where(e => e.Other && !scene.Handover))
                     error(e.Pos, $"[other remember {e.Key}]: only in a handed-over scene (mark the scene 'handover')");
+                foreach (var e in outcome.Effects.Where(e => e.Other && scene.Handover))
+                    error(e.Pos, $"[other remember {e.Key}]: [other …] effects are not supported yet");
+                foreach (var e in outcome.Effects.Where(e => e.Kind is EffectKind.Couple or EffectKind.Heartbreak && !scene.Handover))
+                    error(e.Pos, $"[{e.Kind.ToString().ToLowerInvariant()}]: only in a handover scene (the other owner's answer)");
                 if (WorstCase(Join(outcome.Prose)).Length > ProseCap) error(outcome.Pos, $"outcome prose over {ProseCap} characters at worst");
                 foreach (var e in outcome.Effects.Where(e => e.Kind is EffectKind.Epithet or EffectKind.Keepsake or EffectKind.Trait or EffectKind.Unlock))
                     error(e.Pos, isShort
@@ -239,8 +292,13 @@ public static class StoryValidator
                     foreach (var k in new[] { e.Key, e.To }.OfType<string>())
                         if (PlynlingTraits.ByKey(k) is null) error(e.Pos, $"[trait …]: no trait '{k}'");
                     break;
-                case EffectKind.Stress when e.Amount is < -100 or > 60:
-                    error(e.Pos, $"[stress {e.Amount}]: write -100 to 60"); break;
+                case EffectKind.Stress when e.Amount < (isBreak ? BreakStressFloor : -100) || e.Amount > 60:
+                    error(e.Pos, $"[stress {e.Amount}]: write {(isBreak ? BreakStressFloor : -100)} to 60"); break;
+                // A coping trait comes only from a mental break (CK3 ties each to its choice).
+                case EffectKind.Coping when !isBreak:
+                    error(e.Pos, "[coping …]: only in a mental break (trigger: break 1-3)"); break;
+                case EffectKind.Coping when e.Key != "" && PlynlingTraits.ByKey(e.Key) is not { Kind: TraitKind.Coping }:
+                    error(e.Pos, $"[coping {e.Key}]: no coping trait '{e.Key}'"); break;
                 case EffectKind.Cailloux when e.Amount is < 1 or > 100:
                     error(e.Pos, $"[cailloux {e.Amount}]: write 1 to 100"); break;
                 case EffectKind.Affinity when e.Amount is < -50 or > 50:
@@ -248,7 +306,7 @@ public static class StoryValidator
                 case EffectKind.Lift when e.Amount is <= 0 or > 0.3:
                     error(e.Pos, $"[lift {e.Key} {e.Amount}]: write more than 0 and at most 0.3"); break;
             }
-            if (!hasOther && (e.Other || e.Kind == EffectKind.Affinity))
+            if (!hasOther && (e.Other || e.Kind is EffectKind.Affinity or EffectKind.Bond))
                 error(e.Pos, $"{said} touches the other Plynling, but the arc has no 'other'");
         }
 
@@ -263,6 +321,30 @@ public static class StoryValidator
             var cap = what.EndsWith("title") ? TitleCap : int.MaxValue;
             if (WorstCase(text).Length > cap) error(pos, $"{what} over {cap} characters at worst");
         }
+    }
+
+    // A handover scene is the other owner's answer, played by the Response engine on their card: never the
+    // opener, real options that all end the run there, no run flags read or set (the reply is a new instance
+    // on another Plynling), queued at once.
+    private static void Handover(StoryArc arc, StoryScene scene, bool hasOther, Action<StoryPos, string> error)
+    {
+        var said = $"scene '{scene.Key}'";
+        if (!hasOther) error(scene.Pos, $"{said} is handed over, but the arc has no 'other'");
+        if (arc.Scenes.Count > 0 && scene == arc.Scenes[0]) error(scene.Pos, $"{said}: a handover scene is never the first scene (the opener is the asker's)");
+        if (scene.Narration is not null) error(scene.Pos, $"{said}: a handover scene gives the other owner options; it cannot be a narration");
+        if (scene.Pace.Kind != PaceKind.Now) error(scene.Pos, $"{said}: a handover scene is written 'pace: now' (the answer is queued at once)");
+        foreach (var o in scene.Options.Where(o => !o.Retired))
+        {
+            foreach (var outcome in new[] { o.Outcome, o.Success, o.Failure }.OfType<StoryOutcome>().Where(x => !x.End))
+                error(outcome.Pos, $"option '{o.Key}': a handover scene's outcomes end with [end] (the run stops at the answer)");
+            if (o.Needs.Any(c => c.Kind == ConditionKind.Flag))
+                error(o.Pos, $"option '{o.Key}': a handover scene reads no run flags (the answer is a new event on the other Plynling)");
+        }
+        var lines = scene.Prose.Concat(Outcomes(scene).SelectMany(x => x.Prose)).SelectMany(p => p.Lines);
+        foreach (var l in lines.Where(l => l.When.Any(c => c.Kind == ConditionKind.Flag)))
+            error(l.Pos, $"{said}: a handover scene reads no run flags (the answer is a new event on the other Plynling)");
+        foreach (var e in Outcomes(scene).SelectMany(x => x.Effects).Where(e => e.Kind is EffectKind.Flag or EffectKind.Unflag))
+            error(e.Pos, $"[{e.Kind.ToString().ToLowerInvariant()} {e.Key}]: a handover scene sets no flags (the run ends at the answer)");
     }
 
     private static (string Arc, string Key) Split(string dotted)
@@ -296,12 +378,13 @@ public static class StoryValidator
     public static IEnumerable<StoryOutcome> Outcomes(StoryScene scene) =>
         scene.Options.SelectMany(o => new[] { o.Outcome, o.Success, o.Failure }).Append(scene.Narration).OfType<StoryOutcome>();
 
-    /// <summary>Every condition the arc holds: requires, weight bonuses, gates, conditional lines.</summary>
+    /// <summary>Every condition the arc holds: other_if, requires, weight bonuses, gates, conditional lines.</summary>
     public static IEnumerable<StoryCondition> Conditions(StoryArc arc)
     {
         var lines = arc.Scenes.SelectMany(s => s.Prose.Concat(Outcomes(s).SelectMany(o => o.Prose)))
             .Concat(arc.Endings.SelectMany(e => e.Prose)).SelectMany(p => p.Lines);
-        return arc.Header.Requires
+        return arc.Header.OtherIf
+            .Concat(arc.Header.Requires)
             .Concat(arc.Header.WeightBonuses.SelectMany(b => b.When))
             .Concat(arc.Scenes.SelectMany(s => s.Options).SelectMany(o => o.Needs))
             .Concat(lines.SelectMany(l => l.When));

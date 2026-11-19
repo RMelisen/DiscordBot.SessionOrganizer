@@ -37,6 +37,18 @@ public static class StoryConditions
         }
     }
 
+    /// <summary>
+    /// `other_if:` against one candidate, before an event is drawn: relation (its bond), affinity (the pair's)
+    /// and can_couple (the visit rule). Nothing else is read there (the validator holds it).
+    /// </summary>
+    public static bool OnTarget(IReadOnlyList<StoryCondition> conditions, TargetInfo t) => conditions.All(c => c.Kind switch
+    {
+        ConditionKind.Relation => Word(t.Bond) == c.Key,
+        ConditionKind.Affinity => Compare(t.Affinity, c),
+        ConditionKind.CanCouple => t.CanCouple,
+        _ => false,
+    } != c.Negated);
+
     private static string Word<T>(T value) where T : struct, Enum => value.ToString().ToLowerInvariant();
 
     private static bool Compare(int value, StoryCondition c) => c.Op == CompareOp.Below ? value < c.Number : value >= c.Number;

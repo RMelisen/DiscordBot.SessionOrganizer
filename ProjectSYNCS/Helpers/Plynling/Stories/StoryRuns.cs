@@ -51,9 +51,21 @@ public static class StoryRuns
     }
 
     /// <summary>Each story arc's first scene key → its arc. Built from the arc, not the defs' types, so a stored key always counts.</summary>
-    public static IReadOnlyDictionary<string, StoryArc> Openers(IEnumerable<EventDef> defs) => defs
-        .Select(d => d.Story?.Arc).OfType<StoryArc>().Where(a => a.Scenes.Count > 0).Distinct()
-        .ToDictionary(a => StoryCompiler.Key(a.Key, a.Scenes[0].Key));
+    public static IReadOnlyDictionary<string, StoryArc> Openers(IEnumerable<EventDef> defs) =>
+        Openers(defs, new Dictionary<string, EventDef>());
+
+    /// <summary>
+    /// Each story arc's first scene key → its arc, plus every alias (an old C# key, `was:`) of a first scene:
+    /// an arc started under its old key counts as started.
+    /// </summary>
+    public static IReadOnlyDictionary<string, StoryArc> Openers(IEnumerable<EventDef> defs, IReadOnlyDictionary<string, EventDef> aliases)
+    {
+        var map = defs.Select(d => d.Story?.Arc).OfType<StoryArc>().Where(a => a.Scenes.Count > 0).Distinct()
+            .ToDictionary(a => StoryCompiler.Key(a.Key, a.Scenes[0].Key));
+        foreach (var (key, def) in aliases)
+            if (def.Story is { } link && link.Arc.Scenes.Count > 0 && ReferenceEquals(link.Scene, link.Arc.Scenes[0])) map.TryAdd(key, link.Arc);
+        return map;
+    }
 
     /// <summary>
     /// When each arc last started (its first scene's instance, by <c>CreatedAt</c>), and the latest start

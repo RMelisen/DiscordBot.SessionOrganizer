@@ -89,8 +89,8 @@ public partial class DebugModule : InteractionModuleBase<SocketInteractionContex
         }
         if (PlynlingEvents.ByKey(key) is not { } def)
         {
-            // C# events and each story's first scene only: a later scene is a follow-up, forced with empty flags.
-            var keys = PlynlingEvents.All.Where(e => e.Story is null || ReferenceEquals(e.Story.Scene, e.Story.Arc.Scenes[0])).Select(e => $"`{e.Key}`");
+            // Each story's first scene only: a later scene is a follow-up, forced with empty flags. An old key (was:) resolves above.
+            var keys = PlynlingEvents.All.Where(e => e.Story is { } s && ReferenceEquals(s.Scene, s.Arc.Scenes[0])).Select(e => $"`{e.Key}`");
             await RespondAsync(EventKeysReply(keys), ephemeral: true);
             return;
         }
@@ -124,7 +124,7 @@ public partial class DebugModule : InteractionModuleBase<SocketInteractionContex
     // The key list, cut with « … » so the whole reply stays under Discord's 2000 characters.
     private static string EventKeysReply(IEnumerable<string> keys)
     {
-        const string head = "Clés (premières scènes des histoires et événements classiques) : ";
+        const string head = "Clés (premières scènes des histoires) : ";
         const int limit = 1900;
         var sb = new System.Text.StringBuilder(head);
         var first = true;

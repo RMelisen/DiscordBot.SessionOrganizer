@@ -120,9 +120,10 @@ public static class StoryWalker
 
         foreach (var p in paths)
         {
-            var decisions = p.Steps.Count(s => s.Option is not null);
-            if (isShort ? decisions is < 1 or > 2 : decisions is < 3 or > 5)
-                problems.Add($"decisions {decisions} on a path to {p.Ending.Key} ({(isShort ? "a short event has 1 to 2" : "a long event has 3 to 5")})");
+            // A handed-over step is the other owner's decision, not this one's.
+            var decisions = p.Steps.Count(s => s.Option is not null && !s.Scene.Handover);
+            if (isShort ? decisions is < 1 or > 3 : decisions is < 3 or > 5)
+                problems.Add($"decisions {decisions} on a path to {p.Ending.Key} ({(isShort ? "a short event has 1 to 3" : "a long event has 3 to 5")})");
             var cap = isShort ? 30 : 100;
             if (p.Cailloux > cap) problems.Add($"cailloux {p.Cailloux} on a path to {p.Ending.Key} (over {cap})");
             if (p.TraitChanges > 1) problems.Add($"two trait changes on a path to {p.Ending.Key}");

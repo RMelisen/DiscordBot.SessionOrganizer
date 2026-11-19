@@ -133,9 +133,20 @@ public static class StoryChecks
         Expect(shortWalk.Problems.Count == 0, "a short event walks clean: " + string.Join("; ", shortWalk.Problems));
         Expect(shortWalk.Paths.Count == 2 && shortWalk.Paths.All(p => p.Ending.Key == "end" && p.Steps.Count == 1), "[end] reaches the pseudo-ending 'end'");
         Expect(shortWalk.InCharacter.All(x => Math.Abs(x.EndingShare.GetValueOrDefault("end") - 1) < 1e-9), "in character, a short event ends on 'end'");
-        ExpectProblem(Short.Replace("[end]\n\n* toss", "[-> two]\n\n* toss")
+        // A short event: 1 to 3 decisions (the apprenticeship, the letters and befriend have three).
+        var three = Short.Replace("[end]\n\n* toss", "[-> two]\n\n* toss")
             + "\n\n## scene: two\ntitle: D\npace: now\nSuite.\n\n* a | A\n  Oui.\n  [-> three]\n\n* b | B\n  Non.\n  [-> three]\n\n"
-            + "## scene: three\ntitle: T\npace: now\nSuite.\n\n* a | A\n  Oui.\n  [end]\n\n* b | B\n  Non.\n  [end]", "decisions 3");
+            + "## scene: three\ntitle: T\npace: now\nSuite.\n\n* a | A\n  Oui.\n  [end]\n\n* b | B\n  Non.\n  [end]";
+        var threeArc = ParseOne(three);
+        Expect(StoryWalker.Walk(threeArc, new[] { threeArc }).Problems.Count == 0, "a short event with three decisions walks clean");
+        ExpectProblem(three.Replace("* a | A\n  Oui.\n  [end]", "* a | A\n  Oui.\n  [-> four]")
+            + "\n\n## scene: four\ntitle: Q\npace: now\nSuite.\n\n* a | A\n  Oui.\n  [end]\n\n* b | B\n  Non.\n  [end]", "decisions 4");
+        // A handed-over decision is the other owner's: it does not count.
+        var handed = three.Replace("## scene: three\ntitle: T\npace: now\n", "## scene: three\ntitle: T\npace: now\nhandover\n")
+            .Replace("size: short", "size: short\nother: known");
+        var handedArc = ParseOne(handed.Replace("[-> three]", "[-> four]") + "\n\n## scene: four\ntitle: Q\npace: now\nSuite.\n\n* a | A\n  Oui.\n  [-> three]\n\n* b | B\n  Non.\n  [-> three]");
+        Expect(StoryWalker.Walk(handedArc, new[] { handedArc }).Problems.All(p => !p.Contains("decisions")), "a handed-over step is not a decision: "
+            + string.Join("; ", StoryWalker.Walk(handedArc, new[] { handedArc }).Problems));
         ExpectProblem(Short.Replace("[cailloux 10]", "[cailloux 40]"), "cailloux 40");
         ExpectProblem(Valid.Replace("* leave | Partir", "* leave | Partir [owner-only]").Replace("* gift | Prendre le galet", "* gift | Prendre le galet [needs trait curious]")
             .Replace("* wait | Attendre  [roll learning 7]", "* wait | Attendre  [roll learning 7] [secret]"), "alone dead end at two");
@@ -175,13 +186,21 @@ public static class StoryChecks
         foreach (var err in _fixture.Errors) _fail("fixture: " + err);
         var t = _fixture.Arcs.SingleOrDefault(x => x.Key == "test_everything");
         if (t is null) { Expect(false, "fixture arc test_everything loads"); return; }
-        var effects = StoryValidator.Effects(t).Select(x => x.Kind).ToHashSet();
+        // Every word appears in some fixture: test_everything holds what a long arc can; the handover words
+        // (which end on [end]) are in test_handover, the break words in test_break.
+        var effects = _fixture.Arcs.SelectMany(StoryValidator.Effects).Select(x => x.Kind).ToHashSet();
         foreach (var k in Enum.GetValues<EffectKind>()) Expect(effects.Contains(k), $"fixture uses effect {k}");
-        var conditions = StoryValidator.Conditions(t).Select(x => x.Kind).ToHashSet();
+        var conditions = _fixture.Arcs.SelectMany(StoryValidator.Conditions).Select(x => x.Kind).ToHashSet();
         foreach (var k in Enum.GetValues<ConditionKind>().Where(k => k != ConditionKind.Chain)) Expect(conditions.Contains(k), $"fixture uses condition {k}");
         var options = t.Scenes.SelectMany(s => s.Options).ToList();
         Expect(options.Any(o => o.Roll is not null) && options.Any(o => o.OwnerOnly) && options.Any(o => o.Secret) && options.Any(o => o.Retired)
             && options.Any(o => o.Mystery) && options.Any(o => o.LockText is not null) && options.Any(o => o.StressCosts.Count > 0), "fixture uses every option attribute");
+        Expect(t.Scenes.Any(s => s.Was is not null) && t.Scenes.Any(s => s.Pace.Kind == PaceKind.Range), "test_everything uses was: and a pace range");
+        var ho = _fixture.Arcs.SingleOrDefault(x => x.Key == "test_handover");
+        Expect(ho is { Header.Other.Kind: OtherKind.Known, Header.OtherIf.Count: 2 } && ho.Scenes.Any(s => s.Handover)
+               && ho.Scenes.SelectMany(s => s.Options).Any(o => o.Roll is { Vs: true })
+               && ho.Scenes.SelectMany(s => s.Options).Select(o => o.Stance).Distinct().Count() == 3, "test_handover: other_if, a handover scene, a vs roll, both stances");
+        Expect(_fixture.Arcs.SingleOrDefault(x => x.Key == "test_break") is { Header.Trigger: { Kind: TriggerKind.Break, Arg: "2" } }, "test_break: trigger break 2");
         Expect(t.Scenes.Any(s => s.Narration is not null) && t.Scenes.Any(s => s.RetiredTo is not null), "fixture has narration and retired scenes");
         // What the engine does not run yet (StoryValidator.NotYetSupported) stays out of the fixture; its refusal is pinned by inline snippets in the validator checks.
         Expect(!t.Scenes.Any(s => s.Handover) && t.Header.Trigger.Kind is TriggerKind.Draw or TriggerKind.Adoption or TriggerKind.Stage, "fixture uses nothing the validator refuses");
@@ -326,7 +345,7 @@ public static class StoryChecks
         Expect(clean.Count == 0, "valid arc: " + string.Join("; ", clean));
         ExpectInvalid("nowhere", Valid.Replace("[-> two]", "[-> nowhere]"));
         // No 'interrupted' ending and no 'loss' for a love arc: both fine now (Valid has neither).
-        var love = Validate(Valid.Replace("family: milestone", "family: love\nother: lovers"));
+        var love = Validate(Valid.Replace("family: milestone", "family: love\nother: lovers").Replace("trigger: adoption", "trigger: draw"));
         Expect(love.Count == 0, "a love arc needs no loss: " + string.Join("; ", love));
         ExpectInvalid("other", Valid.Replace("family: milestone", "family: rivalry"));
         ExpectInvalid("lichen.y", Valid.Replace("[remember lichen.x]", "[remember lichen.y]"));
@@ -352,6 +371,119 @@ public static class StoryChecks
         Expect(two.All(e => e.Pos.File == "t0.story" && e.Pos.Line > 0), "errors carry file and line");
         SizeRules();
         NotYetSupportedRules();
+        NewWordsRules();
+    }
+
+    // A short arc whose answer is handed to the other owner.
+    private static readonly string Handover = """
+        # arc: h
+        title: H
+        family: love
+        stage: adult
+        trigger: draw
+        size: short
+        other: known
+
+        ## scene: ask
+        title: A
+        pace: now
+        {A} regarde {B}.
+
+        * ask | Demander  [owner-only]
+          {A} demande.
+          [-> answer]
+
+        * wait | Attendre
+          {A} attend.
+          [end]
+
+        ## scene: answer
+        title: R
+        pace: now
+        handover
+        {B} demande à {A}.
+
+        * yes | Oui  [accept]
+          {A} dit oui.
+          [couple] [end]
+
+        * no | Non  [refuse]
+          {A} dit non.
+          [heartbreak] [end]
+        """.ReplaceLineEndings("\n");
+
+    // 34d4. The words the moved events need: handover, other:/other_if:, the new triggers, coping, bond,
+    // a roll against the other, stances, was:, a break's deeper relief.
+    private static void NewWordsRules()
+    {
+        ExpectClean("a handover arc", Handover);
+        ExpectInvalid("first scene", Handover.Replace("pace: now\n{A} regarde", "pace: now\nhandover\n{A} regarde"));
+        ExpectInvalid("narration", Handover.Replace("* yes | Oui  [accept]\n  {A} dit oui.\n  [couple] [end]\n\n* no | Non  [refuse]\n  {A} dit non.\n  [heartbreak] [end]", "[end]"));
+        ExpectInvalid("[end]", Handover.Replace("[couple] [end]", "[couple] [-> ask]"));
+        ExpectInvalid("no run flags", Handover.Replace("{B} demande à {A}.", "[if flag x] {B} demande à {A}."));
+        ExpectInvalid("no run flags", Handover.Replace("* yes | Oui  [accept]", "* yes | Oui  [accept] [needs flag x \"X\"]"));
+        ExpectInvalid("sets no flags", Handover.Replace("[couple] [end]", "[couple] [flag x] [end]"));
+        ExpectInvalid("pace: now", Handover.Replace("pace: now\nhandover", "pace: next_day\nhandover"));
+        ExpectInvalid("only in a handover scene", Handover.Replace("* wait | Attendre", "* wait | Attendre  [accept]"));
+        ExpectInvalid("only in a handover scene", Handover.Replace("{A} attend.\n  [end]", "{A} attend.\n  [couple] [end]"));
+        ExpectInvalid("only in a handover scene", Handover.Replace("{A} attend.\n  [end]", "{A} attend.\n  [heartbreak] [end]"));
+        ExpectInvalid("no 'other'", Handover.Replace("family: love\n", "family: village\n").Replace("other: known\n", ""));
+
+        // other: and other_if:
+        var withOther = Short.Replace("size: short", "size: short\nother: known");
+        ExpectInvalid("mixed", Short.Replace("size: short", "size: short\nother: friends, rivals"));
+        ExpectClean("other: rivals, enemies", Short.Replace("size: short", "size: short\nother: rivals, enemies"));
+        ExpectInvalid("add 'other:'", Short.Replace("size: short", "size: short\nother_if: [can_couple]"));
+        ExpectInvalid("other_if takes only", withOther.Replace("other: known", "other: known\nother_if: [stage adult]"));
+        ExpectClean("other_if: relation, affinity, can_couple", withOther.Replace("other: known", "other: anyone\nother_if: [relation acquaintances] [affinity >= 0] [can_couple]"));
+        ExpectInvalid("-100 to 100", withOther.Replace("other: known", "other: known\nother_if: [affinity >= 120]"));
+        ExpectInvalid("only in other_if", withOther.Replace("* keep | Le garder", "* keep | Le garder  [needs affinity >= 0]"));
+        ExpectInvalid("only in other_if", withOther.Replace("{A} trouve un caillou.", "[if can_couple] {A} trouve un caillou."));
+
+        // A roll against the other, a bond reached: both need the other Plynling.
+        var vs = Short.Replace("* toss | Le lancer\n  {A} le lance.\n  [end]",
+            "* toss | Le lancer  [roll courage vs]\n  ? success\n    {A} gagne.\n    [end]\n  ? failure\n    {A} perd.\n    [end]");
+        ExpectInvalid("against the other", vs);
+        ExpectClean("[roll courage vs] with other:", vs.Replace("size: short", "size: short\nother: known"));
+        ExpectInvalid("touches the other Plynling", Short.Replace("[cailloux 10] [end]", "[bond friends] [end]"));
+        ExpectClean("[bond friends] with other:", withOther.Replace("[cailloux 10] [end]", "[bond friends] [end]"));
+
+        // The triggers: sick, recovered, visit, death and break run; death <bond>, relation and old_age do not yet.
+        foreach (var trigger in new[] { "sick", "recovered", "break 2" })
+            ExpectClean("trigger " + trigger, Short.Replace("trigger: draw", "trigger: " + trigger));
+        foreach (var trigger in new[] { "visit", "death" })
+        {
+            ExpectClean("trigger " + trigger, Short.Replace("trigger: draw", "trigger: " + trigger + "\nother: anyone"));
+            ExpectInvalid("other", Short.Replace("trigger: draw", "trigger: " + trigger));
+            // The visitor or the departed comes with the trigger: no filter would be applied, so none is written.
+            ExpectInvalid("comes with the trigger", Short.Replace("trigger: draw", "trigger: " + trigger + "\nother: lovers"));
+            ExpectInvalid("comes with the trigger", Short.Replace("trigger: draw", "trigger: " + trigger + "\nother: known"));
+            ExpectInvalid("comes with the trigger", Short.Replace("trigger: draw", "trigger: " + trigger + "\nother: anyone\nother_if: [relation lovers]"));
+        }
+        // Nobody comes with these triggers: {B} would be nobody.
+        foreach (var trigger in new[] { "sick", "recovered", "break 2", "adoption", "stage teen" })
+            ExpectInvalid("no other Plynling", Short.Replace("trigger: draw", "trigger: " + trigger + "\nother: anyone"));
+        // A friendship arc needs another Plynling, which a sick trigger cannot bring: one error, not "add" and "remove".
+        var sickFriend = Validate(Short.Replace("family: village", "family: friendship").Replace("trigger: draw", "trigger: sick"));
+        Expect(sickFriend.Count == 1 && sickFriend[0].Message.Contains("brings no other Plynling"),
+            "a friendship arc on trigger sick should get one 'brings no other Plynling' error, got: " + string.Join("; ", sickFriend));
+
+        // A break: its coping traits and its deeper relief.
+        var brk = Short.Replace("trigger: draw", "trigger: break 1");
+        ExpectInvalid("break", Short.Replace("[cailloux 10] [end]", "[coping] [end]"));
+        ExpectClean("[coping] in a break", brk.Replace("[cailloux 10] [end]", "[coping] [end]"));
+        ExpectClean("[coping journaller] in a break", brk.Replace("[cailloux 10] [end]", "[coping journaller] [end]"));
+        ExpectInvalid("coping trait", brk.Replace("[cailloux 10] [end]", "[coping shy] [end]"));
+        ExpectInvalid("-100 to 60", Short.Replace("[cailloux 10] [end]", "[stress -120] [end]"));
+        ExpectClean("[stress -120] in a break", brk.Replace("[cailloux 10] [end]", "[stress -120] [end]"));
+        ExpectInvalid("-150 to 60", brk.Replace("[cailloux 10] [end]", "[stress -160] [end]"));
+
+        // was: an old key, without a dot, claimed once in the whole catalog, never by a retired scene.
+        var was = Short.Replace("title: Un\n", "title: Un\nwas: old_key\n");
+        ExpectClean("was: old_key", was);
+        ExpectInvalid("old event key", Short.Replace("title: Un\n", "title: Un\nwas: old.key\n"));
+        ExpectInvalid("s2.only", was, was.Replace("# arc: s", "# arc: s2"));
+        ExpectInvalid("retired", Short + "\n\n## scene: gone\nwas: old_key\nretired -> only\n");
     }
 
     private static void ExpectClean(string what, string text)
@@ -403,13 +535,11 @@ public static class StoryChecks
         var other = Valid.Replace("size: long", "size: long\nother: lovers");
         var snippets = new Dictionary<string, string>
         {
-            ["handover"] = other.Replace("title: Un\npace: next_day\n", "title: Un\npace: next_day\nhandover\n"),
             ["trigger relation"] = other.Replace("trigger: adoption", "trigger: relation lovers"),
-            ["trigger death"] = other.Replace("trigger: adoption", "trigger: death lovers"),
-            ["trigger sick"] = Valid.Replace("trigger: adoption", "trigger: sick"),
-            ["trigger break"] = Valid.Replace("trigger: adoption", "trigger: break 1"),
+            ["trigger death <bond>"] = other.Replace("trigger: adoption", "trigger: death lovers"),
             ["trigger oldage"] = Valid.Replace("trigger: adoption", "trigger: old_age"),
             ["condition chain"] = Valid.Replace("{A} est {a:sorti|sortie} de la Souche.", "[if chain old_door] Une porte.\n{A} est {a:sorti|sortie} de la Souche."),
+            ["effect other"] = Handover.Replace("[couple] [end]", "[couple] [other remember lichen.x] [end]"),
         };
         foreach (var word in StoryValidator.NotYetSupported)
             if (!snippets.TryGetValue(word, out var text)) Expect(false, $"a refusal snippet for '{word}'");
@@ -530,6 +660,27 @@ public static class StoryChecks
         ExpectError(Sample.Replace("pace: next_day\n", "pace: next_day\npublic: {A} hésite.\n"), "removed");
         ExpectError(Sample.Replace("pace: next_day\n", "pace: next_day\nbump\n"), "removed");
         ExpectError(Sample.Replace("[lean sociability +2]", "[lean sociability +2] [public \"{A} avance.\"]"), "removed");
+
+        // The words the moved events need: pace ranges, was:, a roll against the other, the answer's stance.
+        const string Opts = "Texte.\n* a | A\n  Oui.\n  [end]\n* b | B\n  Non.\n  [end]\n";
+        StoryScene? Scene(string fields, string options = Opts)
+        {
+            var arc = Parse(Head + "## scene: x\ntitle: X\n" + fields + options, out var errs);
+            Expect(errs.Count == 0, $"scene '{fields.Trim()}' parses: " + string.Join("; ", errs));
+            return arc?.Scenes.SingleOrDefault();
+        }
+        Expect(Scene("pace: 14d-16d\n")?.Pace == new StoryPace(PaceKind.Range, 336, 384), "pace: 14d-16d");
+        Expect(Scene("pace: 24h-72h\n")?.Pace == new StoryPace(PaceKind.Range, 24, 72), "pace: 24h-72h");
+        Expect(Scene("pace: 2d\n")?.Pace == new StoryPace(PaceKind.Range, 48, 48), "pace: 2d");
+        Expect(Scene("pace: +12h\n")?.Pace == new StoryPace(PaceKind.Hours, 12), "pace: +12h");
+        foreach (var bad in new[] { "14d-16h", "3d-2d", "31d", "0h" })
+            ExpectError(Head + "## scene: x\ntitle: X\npace: " + bad + "\n" + Opts, "pace");
+        Expect(Scene("was: social_declare\npace: now\n")?.Was == "social_declare", "was: sets the old key");
+        ExpectError(Head + "## scene: x\ntitle: X\nwas: a\nwas: b\npace: now\n" + Opts, "given twice");
+        var vs = Scene("pace: now\n", "Texte.\n* a | A  [roll courage vs]\n  ? success\n    Oui.\n    [end]\n  ? failure\n    Non.\n    [end]\n* b | B\n  Non.\n  [end]\n");
+        Expect(vs?.Options[0].Roll == new StoryRoll(PlynlingStat.Courage, 0, true), "[roll courage vs]");
+        var st = Scene("pace: now\nhandover\n", "Texte.\n* yes | Oui  [accept]\n  Oui.\n  [end]\n* no | Non\n  [refuse]\n  Non.\n  [end]\n* meh | Bof\n  Bof.\n  [end]\n");
+        Expect(st?.Options.Select(o => o.Stance).SequenceEqual(new[] { Stance.Accept, Stance.Refuse, Stance.Neutral }) == true, "[accept] and [refuse]");
     }
 
     private static StoryArc? Parse(string text, out List<StoryError> errors)
@@ -560,7 +711,7 @@ public static class StoryChecks
         a = Parse(Head.Replace("trigger: adoption", "trigger: draw\nweight: 10\nweight: +5 [if passion gardening] [if season autumn]\nshelf: 7d\nother: friends\nrequires: [stage adult] [not trait shy]")
             .Replace("stage: baby", "stage: adult, elder"), out pe);
         Expect(pe.Count == 0, "valid drawn header: " + string.Join("; ", pe));
-        Expect(a is { Header.Weight: 10, Header.Other: PlynlingBond.Friends } && a.Header.Shelf == TimeSpan.FromDays(7)
+        Expect(a is { Header.Weight: 10, Header.Other: { Kind: OtherKind.Bonds, Bonds: [PlynlingBond.Friends] } } && a.Header.Shelf == TimeSpan.FromDays(7)
             && a.Header.WeightBonuses.Single() is { Bonus: 5, When.Count: 2 } && a.Header.Requires.Count == 2
             && a.Header.Stages.SequenceEqual(new[] { PlynlingStage.Adult, PlynlingStage.Elder }), "weight, shelf, other, requires, stages");
         a = Parse(Head.Replace("trigger: adoption", "trigger: death lovers"), out pe);
@@ -594,6 +745,29 @@ public static class StoryChecks
         Expect(castErrors.Count == 0 && cast.SingleOrDefault() is { Key: "lichen", GivenName: "Ysaure", Byname: "la Mère Lichen" }, "cast");
         StoryParser.ParseCast("c", "# cast\nlichen | Ysaure\n", castErrors);
         Expect(castErrors.Count == 1, "cast line with two columns");
+
+        // Who the other Plynling is: a bond list, or one word; other_if: holds conditions on the candidate.
+        StoryHeader? H(string lines)
+        {
+            var arc = Parse(Head + lines, out var errs);
+            Expect(errs.Count == 0, $"header '{lines.Trim()}' parses: " + string.Join("; ", errs));
+            return arc?.Header;
+        }
+        Expect(H("other: friends, bestfriends\n")?.Other is { Kind: OtherKind.Bonds } o2
+               && o2.Bonds.SequenceEqual(new[] { PlynlingBond.Friends, PlynlingBond.BestFriends }), "other: a bond list");
+        Expect(H("other: anyone\n")?.Other is { Kind: OtherKind.Anyone, Bonds.Count: 0 }, "other: anyone");
+        Expect(H("other: known\n")?.Other is { Kind: OtherKind.Known }, "other: known");
+        Expect(H("other: hostile\n")?.Other is { Kind: OtherKind.Hostile }, "other: hostile");
+        Expect(H("other: lovers\n")?.Other is { Kind: OtherKind.Bonds, Bonds: [PlynlingBond.Lovers] }, "other: one bond");
+        Expect(H("other: anyone\nother_if: [relation acquaintances] [affinity >= 0]\n")?.OtherIf is
+               [{ Kind: ConditionKind.Relation, Key: "acquaintances" }, { Kind: ConditionKind.Affinity, Op: CompareOp.AtLeast, Number: 0 }], "other_if: two conditions");
+        Expect(H("other: known\nother_if: [can_couple]\n")?.OtherIf is [{ Kind: ConditionKind.CanCouple, Key: "" }], "other_if: can_couple");
+        ExpectError(Head + "other: friends, anyone\n", "other");
+        // The triggers the moved events need.
+        foreach (var (word, kind, arg) in new (string, TriggerKind, string?)[]
+                 { ("recovered", TriggerKind.Recovered, null), ("visit", TriggerKind.Visit, null), ("death", TriggerKind.Death, null),
+                   ("break 2", TriggerKind.Break, "2"), ("sick", TriggerKind.Sick, null) })
+            Expect(Parse(Head.Replace("trigger: adoption", "trigger: " + word), out _)?.Header.Trigger == new StoryTrigger(kind, arg), $"trigger: {word}");
     }
 
     // 34a. Splitting a line into tags and text, and reading the words of a tag.
@@ -639,12 +813,27 @@ public static class StoryChecks
         Expect(e is { Kind: EffectKind.Affinity, Amount: 10 }, "affinity");
         e = StoryVocabulary.Effect(StoryTags.Words("grow learning"), at, errs);
         Expect(e is { Kind: EffectKind.Grow, Key: "learning" }, "grow");
+        e = StoryVocabulary.Effect(StoryTags.Words("coping"), at, errs);
+        Expect(e is { Kind: EffectKind.Coping, Key: "" }, "coping, any");
+        e = StoryVocabulary.Effect(StoryTags.Words("coping journaller"), at, errs);
+        Expect(e is { Kind: EffectKind.Coping, Key: "journaller" }, "coping journaller");
+        e = StoryVocabulary.Effect(StoryTags.Words("couple"), at, errs);
+        Expect(e is { Kind: EffectKind.Couple }, "couple");
+        e = StoryVocabulary.Effect(StoryTags.Words("heartbreak"), at, errs);
+        Expect(e is { Kind: EffectKind.Heartbreak }, "heartbreak");
+        e = StoryVocabulary.Effect(StoryTags.Words("bond friends"), at, errs);
+        Expect(e is { Kind: EffectKind.Bond, Key: "friends" }, "bond friends");
+        c = StoryVocabulary.Condition(StoryTags.Words("affinity < -5"), false, at, errs);
+        Expect(c is { Kind: ConditionKind.Affinity, Key: "", Op: CompareOp.Below, Number: -5 }, "affinity condition");
+        c = StoryVocabulary.Condition(StoryTags.Words("can_couple"), false, at, errs);
+        Expect(c is { Kind: ConditionKind.CanCouple, Key: "" }, "can_couple condition");
         Expect(errs.Count == 0, "no errors on valid words: " + string.Join("; ", errs));
 
         Expect(StoryVocabulary.Effect(StoryTags.Words("remeber lichen.x"), at, errs) is null && errs.Any(x => x.Message.Contains("remeber")), "typo named");
         Expect(StoryVocabulary.Condition(StoryTags.Words("stage toddler"), false, at, errs) is null && errs.Any(x => x.Message.Contains("baby")), "bad stage lists the choices");
         Expect(StoryVocabulary.Effect(StoryTags.Words("cailloux beaucoup"), at, errs) is null, "bad number");
         Expect(StoryVocabulary.Effect(StoryTags.Words("flag"), at, errs) is null, "missing word");
+        Expect(StoryVocabulary.Effect(StoryTags.Words("bond lovers"), at, errs) is null && errs.Any(x => x.Message.Contains("bond lovers")), "[bond lovers] is refused");
         Expect(StoryVocabulary.Condition(StoryTags.Words("stat learning 6"), false, at, errs) is null, "stat without a comparison");
         Expect(StoryVocabulary.Duration("7d") == TimeSpan.FromDays(7) && StoryVocabulary.Duration("36h") == TimeSpan.FromHours(36)
             && StoryVocabulary.Duration("7") is null, "durations");

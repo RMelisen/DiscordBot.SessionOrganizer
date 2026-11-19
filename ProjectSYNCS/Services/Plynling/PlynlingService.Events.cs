@@ -133,8 +133,8 @@ public partial class PlynlingService
 
     // The recent-events window counts the daily draws only: follow-ups, responses, breaks and
     // on-actions would otherwise fill its slots and let the same pulses come back sooner.
-    private static readonly string[] PulseKeys =
-        PlynlingEvents.All.Where(d => d.Type == EventType.Pulse && d.BreakLevel == 0).Select(d => d.Key).ToArray();
+    // Old keys included (`was:`): a pulse resolved before it moved to a story file still takes its slot.
+    private static readonly string[] PulseKeys = PlynlingEvents.StoredKeys(d => d.Type == EventType.Pulse && d.BreakLevel == 0);
 
     // The sweep's turn, per Plynling: cancel what a death, the catalog or a gone asker left pending,
     // decide what is due (for the mascot, everything available: a follow-up or a break never waits on
@@ -185,8 +185,10 @@ public partial class PlynlingService
                     .Where(i => i.PlynlingId == p.Id && i.ResolvedAt != null && PulseKeys.Contains(i.EventKey))
                     .OrderByDescending(i => i.Id).Take(PlynlingEventEngine.RecentWindow)
                     .Select(i => i.EventKey).ToListAsync();
+                // Stored keys read as the event they now play (an old key as its scene's key).
+                recent = recent.Select(PlynlingEvents.Current).ToList();
                 // Never the same event twice in the queue: what still waits is out of the draw.
-                var waiting = waitingNow.Select(i => i.EventKey).ToHashSet();
+                var waiting = waitingNow.Select(i => PlynlingEvents.Current(i.EventKey)).ToHashSet();
                 var defs = PlynlingEvents.All.Where(d => !waiting.Contains(d.Key));
                 // Who each candidate is to it, so a social event is drawn only when a candidate meets
                 // its target condition (a declaration needs someone it could couple with).
@@ -237,7 +239,8 @@ public partial class PlynlingService
         return inst;
     }
 
-    private static readonly string[] BreakKeys = PlynlingEvents.All.Where(d => d.BreakLevel > 0).Select(d => d.Key).ToArray();
+    // Old keys included (`was:`): a break waiting under its old key still holds its level.
+    private static readonly string[] BreakKeys = PlynlingEvents.StoredKeys(d => d.BreakLevel > 0);
 
     // The mental break for each stress level above `fromLevel` up to its current one, whatever the
     // pulse cap says — but never a second one for a level whose break still waits: stress can dip
@@ -615,7 +618,8 @@ public partial class PlynlingService
                     if (PlynlingEventEngine.PickTriggered(kind, p.Id, (int)(now.ToUnixTimeSeconds() % 1_000_000), PlynlingEvents.All, ctx) is not { } def)
                         continue;
                     // Never the same event twice in the queue (several visits on a lucky day).
-                    if ((await OpenEventsAsync(p.Id)).Any(i => i.EventKey == def.Key)) continue;
+                    // Compared through ByKey: one waiting under its old key (`was:`) is the same event.
+                    if ((await OpenEventsAsync(p.Id)).Any(i => ReferenceEquals(PlynlingEvents.ByKey(i.EventKey), def))) continue;
                     var inst = QueueEvent(p, def, def.Target == TargetKind.None ? null : targetId, now);
                     inst.GainedTraitKey = traitText;
                     await _db_context.SaveChangesAsync();

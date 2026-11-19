@@ -3,13 +3,14 @@
 Events written as story files and played by the one event engine (`plynling-events.md`). Design:
 `docs/superpowers/specs/2026-11-17-plynling-village-events-design.md`; the file format:
 `docs/superpowers/specs/2026-10-29-plynling-story-file-format-design.md` (binds, except where the 2026-11-17
-design changes it). The world every arc lives in is `docs/village-lore.md`: fully cosy, every event
-stands alone, the village never changes. The prose follows `docs/plynling-writing-style.md`.
+design and `2026-11-19-plynling-every-event-a-story-design.md` change it). The world every arc lives in is
+`docs/village-lore.md`: fully cosy, every event stands alone, the village never changes. The prose follows
+`docs/plynling-writing-style.md`.
 
-**Approach:** at startup each arc is compiled into `EventDef`s and registered next to the C# catalog.
-There is no second engine: draw, deciding alone, stress, cards, freezes and cancellation are the
-existing ones. A story event differs only by what the compiled def carries (`EventDef.Story`,
-`EventOption.Source`) and by the knowledge the context holds.
+**Approach:** at startup each arc is compiled into `EventDef`s; **they are the whole catalog** (since 8.0.0 no
+event is hand-written in C#). There is no second engine: draw, deciding alone, stress, cards, freezes, asks,
+breaks and cancellation are the existing ones. A story event differs only by what the compiled def carries
+(`EventDef.Story`, `EventOption.Source`) and by the knowledge the context holds.
 
 ## Files and loading
 
@@ -17,8 +18,10 @@ existing ones. A story event differs only by what the compiled def carries (`Eve
   read the same. `Stories/village.cast` lists the villagers stories may name (`key | given name | byname`).
   The folder is copied to the build **and** publish output (csproj `None Include`), so the image carries
   it; `StoryCatalog` reads `AppContext.BaseDirectory/Stories`.
-- **Fixtures** `tests/ProjectSYNCS.Checks/Stories/test_everything.story` (every tag, condition and effect
-  once) and `test_short.story` are never shipped. A new word in the format gets a line there, or the checks fail.
+- **Fixtures** under `tests/ProjectSYNCS.Checks/Stories/` are never shipped: `test_everything.story` (what a long
+  arc can hold), `test_short.story`, `test_handover.story` (the handover words, which end on `[end]`, so a long arc
+  cannot hold them) and `test_break.story` (the break words). **Every effect and condition kind appears in some
+  fixture**, or the checks fail: a new word in the format gets a line there.
 - **Code**, `Helpers/Plynling/Stories/`: `StoryModel`, `StoryTags`, `StoryVocabulary`, `StoryParser`
   (+ `.Scenes`), `StoryValidator`, `StoryLibrary` (parse + validate a folder), `StoryCompiler`,
   `StoryCatalog` (the lazy, process-wide result), `StoryKnowledge` / `StoryStanding`, `StoryConditions`
@@ -43,6 +46,20 @@ rows: never rename or remove one. Memory, epithet and keepsake keys are global a
 
 - **Event key** = `<arc>.<scene>` (`StoryCompiler.Key`). Old C# keys never contain a dot, so they cannot
   collide, and `StoryRuns.ArcOf` tells them apart. Option keys are kept as written.
+- **`was: <old key>`** (one per scene, under `title:`) claims an old C# event's key for the scene that replaced
+  it: `StoryCompiler.Aliases` maps it to the scene, so `PlynlingEvents.ByKey` opens an instance saved under it as
+  that scene, with its old option keys. Why: instances, journals and ado choices stored under the 50 keys moved
+  in 8.0.0 must keep resolving. The key has no dot, is claimed by one live scene in the whole catalog (the
+  validator names both), never by a retired scene, and never one from `PlynlingEvents.Removed` (checked).
+- **Compare stored keys through `ByKey`, `StoredKeys` or `Current`, never raw.** A stored `EventKey` may be an old
+  key: a SQL filter lists `PlynlingEvents.StoredKeys(which)` (live, `was:` and retired keys), anything compared with
+  a def's key goes through `PlynlingEvents.Current(stored)` or `ReferenceEquals(ByKey(stored), def)`, and the story
+  openers include the aliases of first scenes (`StoryRuns.Openers(All, Aliases)`). A raw comparison lets a
+  moved event come back as new, or queue a second break of a level.
+- **The frozen check** (`tests/ProjectSYNCS.Checks/OldEvents.txt`, written once from the C# before it moved, never
+  edited) holds what a player could tell of each of the 50 moved events; `OldEventChecks` fails if a file drifts
+  from it. A mismatch is fixed in the `.story` file. The one approved change (a label over the cap) is listed in
+  `OldEventChecks.Reworded`.
 - **The first scene is positional**: it never moves and never retires (the opener and the arc's start key
   hang on it; the validator refuses `retired` on it).
 - **A retired scene** stays in the file as `## scene: <key>` + `retired -> <other>`. It gets **no def**:
@@ -57,31 +74,73 @@ rows: never rename or remove one. Memory, epithet and keepsake keys are global a
 
 ## Scene to `EventDef`
 
-- **First scene** = the arc's opener. `trigger: draw` is a `Pulse`; `adoption` is `Triggered` on
-  `OnAction.Adopted`; `stage teen|adult` on `BecameTeen|BecameAdult`. **Every later scene is a `FollowUp`**
-  whose delay comes from the *target* scene's `pace:` — `now` 0 h (shown through « Événement suivant »),
-  `next_day` 20–28 h (hashed, like every follow-up), `+Nh` exactly N. A story with the same on-action as a C#
-  moment replaces it: `PickTriggered` keeps only story defs when any is in the pool.
-  Other triggers and `handover` are refused by the validator, with « not supported yet ».
+- **First scene** = the arc's opener. `trigger: draw` is a `Pulse`; every other trigger is `Triggered`:
+  `adoption` on `OnAction.Adopted`, `stage teen|adult` on `BecameTeen|BecameAdult`, `sick` on `FellSick`,
+  `recovered` on `Recovered`, `visit` on `AfterVisit` (the visitor is `{B}`), bare `death` on `Bereaved` (any
+  mourner; the one who died is `{B}`), and `break 1|2|3` on no on-action, with `BreakLevel` n (the break
+  `QueueBreaksAsync` picks when stress climbs past a level). `visit` and `death` need `other: anyone` and
+  take no `other_if:`: the other Plynling comes with the trigger and the engine never filters it, so a bond
+  list or a filter there would be silently ignored. `adoption`, `stage`, `sick`, `recovered` and `break`
+  bring no other Plynling: they take no `other:`, and a friendship, love or rivalry arc cannot use them.
+  `death <bond>`, `relation` and `old_age` are refused « not supported yet ».
+- **Every later scene is a `FollowUp`** whose delay comes from the *target* scene's `pace:` — `now` 0 h (shown
+  through « Événement suivant »), `next_day` 20–28 h, `+Nh` exactly N (1–48), and a range `Nh`, `Nd`, `Nh-Mh`
+  or `Nd-Md` (one unit, 1 h to 720 h) drawn between its ends: every follow-up's delay is hashed. Why ranges: the
+  echoes that cross a stage (14d-16d, 7d-10d) must land in adulte whatever the hash.
+- **A handover scene** is a `Response` (see *Handover* below): an option leading to it compiles to
+  `AskTarget("<arc>.<scene>")` instead of a follow-up.
 - **Weight:** an unwritten `weight:` parses as 0 and **compiles to 100**, for every arc, drawn or triggered —
   and so does an explicit `weight: 0`. Never read an unwritten weight as 0 in the engine. `weight: +n [if …]`
   lines become `EventDef.WeightBonus`, added before the factors; they hold only on the opener.
-- **Targets** (`other: <bond>`): `rivals` and `enemies` target a **Hostile** Plynling, every other bond one the
-  Plynling **Knows**; the bond itself then filters candidates.
+- **Targets** (`other:`): a bond list (`other: friends, bestfriends`) targets a **Hostile** Plynling when every
+  bond is rivals or enemies, else one it **Knows**, and the list filters candidates (mixing hostile and other
+  bonds is refused); `other: known` is any non-hostile one it has met, `hostile` a rival or enemy, `anyone`
+  any living Plynling of the guild. **`other_if:`** (tags only: `[relation <bond>]`, `[affinity >= n]` or
+  `< n`, -100 to 100, and `[can_couple]`, the visit rule) adds conditions on the candidate, compiled into
+  `TargetCondition` (`StoryConditions.OnTarget`). `affinity` and `can_couple` read a candidate, so they are
+  refused anywhere else.
 - **Opening conditions** (opener only, one predicate): `requires:`; `once` (a long event is `once: life` by default);
   `cooldown: Nd` since the arc last started; `locked` until the Plynling holds the `unlock` mark;
   for a **long drawn** arc, no long arc started in the last **21 days**.
   Cooldowns and « once » are computed from the instance history (`StoryKnowledge.LastStarted`), never stored.
 - **`LastLongStart` counts every long arc the Plynling started, triggered ones included** (a milestone
   postpones the next drawn long event), though only drawn ones are gated by it.
-- **Options:** `[needs …]` → `StoryGate` (conditions + lock text + `secret`); `[roll stat n]` → `EventChallenge`;
-  `[lean …]` → `Ai`; `[stress trait n]` → `StressCosts`; `[owner-only]` → `OwnerOnly`; `[mystery]` → `Mystery`.
+- **Options:** `[needs …]` → `StoryGate` (conditions + lock text + `secret`; `[needs trait k] [secret]` is the old
+  hidden trait gate); `[roll stat n]` → `EventChallenge`; `[roll stat vs]` → a challenge against the other's same
+  stat (`VsTarget`, difficulty 0 when no other is known; needs `other:`); `[lean …]` → `Ai`; `[stress trait n]` →
+  `StressCosts`; `[owner-only]` → `OwnerOnly`; `[mystery]` → `Mystery`; `[accept]`/`[refuse]` → `Stance`
+  (handover scenes only).
 - **Effects** map in order: `grow`, `affinity`, `stress`, `modifier`, `cailloux`, `item`, `lift` to their existing
   effects; `flag`/`unflag` → `SetFlag`/`ClearFlag`; `remember`/`forget`/`reveal`; marks → `GiveMark`;
-  `trait a -> b` → `SwapTrait`; `[-> scene]` → `FollowUp`; `[-> ending]` → `EndStory` then the ending's marks and
-  other effects; `[end]` adds nothing (short events only). `[other …]` effects are refused until handed-over scenes exist.
+  `trait a -> b` → `SwapTrait`; `[coping]`/`[coping k]` → `GainCoping` (break arcs only, k a coping trait);
+  `[couple]` → `Couple` and `[heartbreak]` → `Heartbreak` (handover scenes only); `[bond peace|friends|bestfriends]`
+  → `SetAffinityAtLeast` 0, `FriendsFrom + BondMargin`, `BestFriendsFrom + BondMargin` (past `BondFor`'s margin, or
+  the bond would not change; needs `other:`); `[-> scene]` → `FollowUp` (or `AskTarget` for a handover scene);
+  `[-> ending]` → `EndStory` then the ending's marks and other effects; `[end]` adds nothing (short events only).
+  `[other …]` effects are refused « not supported yet ».
 - **Deciding alone** uses the existing in-character pick. It never picks a locked, secret, owner-only or
   stress-costing option. `[mystery]` changes nothing for it.
+
+## Handover: asking the other owner
+
+A `handover` scene is the other owner's answer, played by the existing `Response` engine on their card
+(queued on the other Plynling with `ParentInstanceId`, frozen and dead targets, deciding alone by stance). The
+compiled def is a `Response` with no target, condition or trigger, as the old replies were. Rules (validator):
+
+- **Never the first scene, never a narration, `pace: now`** (the answer is queued at once), and the arc has `other:`.
+- **The run stops at the answer:** every outcome of every live option is `[end]`. Continuing the asker's arc after
+  the answer is not supported.
+- **No run flags:** no `[needs flag …]`/`[if flag …]` and no `[flag]`/`[unflag]` in it, cross-arc ones included.
+  The answer is a new instance on another Plynling, so the asker's run flags are not there.
+- **On its card `{A}` is the one deciding (the other owner's Plynling) and `{B}` the one who asked**; its gates,
+  rolls, leans and stress read the decider, and **its effects land on the decider**, as the old replies' did
+  (`reply_rival` grows the decider's Courage). `[couple]`, `[heartbreak]`, `[accept]` and `[refuse]` go only here.
+- `[accept]`/`[refuse]` lean the answer decided alone; an option with neither is neutral.
+- **An asking option is written `[owner-only]`** unless the Plynling may ask alone (the old `tell` in the secret,
+  `pact`, `mend` may): deciding alone then never risks a refusal, and the file says so.
+- A handed-over decision is the other's: the walker does not count it, and reads it without the profile's traits.
+- The asker's story page shows its own option's prose only; the answer's page opens on the answer's prose
+  (pinned by the engine checks).
 
 ## Flags: carried by the instance
 
@@ -140,7 +199,7 @@ the Plynling's memories and marks, `Ended`/`ArcFlags` from finished runs, `Stand
 
 | | short | long |
 |---|---|---|
-| Decisions on every path | 1–2 | 3–5 |
+| Decisions on every path (a handed-over one not counted) | 1–3 | 3–5 |
 | Endings | `[end]` straight from an option (the walker's pseudo-ending `end`) | `## ending:` blocks, 2–5; `[end]` refused |
 | Marks | none | one per ending |
 | Cailloux per path | ≤ 30 | ≤ 100 |
@@ -163,7 +222,7 @@ flags exactly and count every other condition as possible.
   so nobody walks into a penalty blind. Use one only when a surprise makes sense or it leads to a follow-up.
 - **Locked options.** A story option behind a non-secret `[needs …]` is **shown locked**: disabled button, `🔒` and the
   requirement (the author's lock text, else the missing needs said plainly). A `[secret]` one shows only once its needs
-  hold. C# events keep hiding their gated options.
+  hold (`[needs trait k] [secret]` is how the old hidden trait gates are written).
 - **`Shown` vs `Visible`** (`PlynlingEventEngine`): `Shown` is what the card lists; `Visible` is what may be picked
   (by a click or alone). They differ only for a locked story option: shown, not visible. A click on a stale card for an
   option no longer visible answers « Ce choix n'est plus possible. » and applies nothing. Never use `Shown` to decide what an option
@@ -187,11 +246,13 @@ deaths cancel what waits, as for every event.
 `PlynlingEventEngine.AppliesWhenAlone` is the one rule, and story effects obey it. Alone, an event never gains stress,
 applies a negative modifier or a coping trait; additionally `SwapTrait` and a `GiveMark { Hurts: true }` never apply.
 Titles, plain keepsakes, memories, flags, cailloux and items always do. A new story effect that costs or changes the
-Plynling for the worse gets an `AppliesWhenAlone` case in the same change.
+Plynling for the worse gets an `AppliesWhenAlone` case in the same change. **Inside a mental break the rule does not
+apply** (only the owner's own choices raise stress that far): a break arc may give a coping trait or a negative
+modifier alone, and its `[stress n]` relief goes down to -150 (-100 elsewhere).
 
 ## Debug and checks
 
-- **`/debug event <key>`** forces any event; its unknown-key reply lists the C# events and each arc's **first scene
+- **`/debug event <key>`** forces any event; an old key (`was:`) works too. Its unknown-key reply lists each arc's **first scene
   only**. A later scene can be typed by key; it then starts **without any story flag**, and the reply says so. Use
   `mode:Pending` to click through, `mode:Expired` then `/debug sweep` to decide alone.
 - **Checks:**
@@ -239,3 +300,4 @@ result; a memory only when a later event will plausibly read it. Built on a vill
 | L'arrivée | `Stories/Milestone/arrival.story` | long milestone, triggered by adoption; replaces the C# adoption moment; names the childhood trait with `{T}`; awaiting the owner's review |
 | Wave 1, bébé and ado (30 arcs) | `Stories/Village/*.story` | short drawn events; shortlist in `docs/superpowers/content/2026-11-19-village-events-wave-1-shortlist.md`; bébé and ado retired their old pulses in 7.74.2 (`plynling-events.md`); dev-guild playthrough not done |
 | Wave 2, adulte and ancien (54 arcs) | `Stories/Village/*.story` | short drawn events: 30 `stage: adult, elder` (an ancien also draws the adulte events, owner's rule), 10 adulte only, 10 ancien only, 4 seasonal (`requires: [season …]`); shortlist in `docs/superpowers/content/2026-11-19-village-events-wave-2-shortlist.md`; old adulte/ancien pulses still drawn; dev-guild playthrough not done |
+| The old C# events (50 keys, 28 arcs) | `Stories/{Friendship,Love,Rivalry,Milestone,Personal,Hardship}/*.story` | moved in 8.0.0, same texts, options and effects, each scene with its `was:`: the asks and their handover answers (campfire, secret, befriend, pact, declare, letters, rival, mend), the moments (teen, adult, forgot, sick, recovered, bereaved), the bébé dream and the ado apprenticeship (echoes in adulte), and the 12 breaks (`Hardship/break_*`); dev-guild playthrough not done |

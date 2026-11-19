@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.0.0 — 2026-11-19
+
+- The last hand-written Plynling events (asks, moments, growing up, mental breaks) now live in story files; nothing changes in play.
+
 ## 7.74.2 — 2026-11-19
 
 - 30 new Plynling events set in the village of Humeval: 15 for bébés, at the Lisière and on their

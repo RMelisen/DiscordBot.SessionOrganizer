@@ -148,9 +148,10 @@ public static partial class StoryParser
         StoryTrigger? trigger = null;
         TimeSpan? shelf = null;
         int? weight = null;
-        PlynlingBond? other = null;
+        StoryOther? other = null;
         var bonuses = new List<StoryWeightBonus>();
         var requires = new List<StoryCondition>();
+        var otherIf = new List<StoryCondition>();
         var seen = new HashSet<string>();
         var errs = new List<StoryError>();
 
@@ -203,10 +204,16 @@ public static partial class StoryParser
                     shelf = StoryVocabulary.Duration(value);
                     if (shelf is null) error(l, $"shelf '{value}': write a duration such as 7d or 36h");
                     break;
-                case "other":
-                    if (StoryVocabulary.TryEnum<PlynlingBond>(value, out var b)) other = b;
-                    else error(l, $"other '{value}': expected one of {StoryVocabulary.Choices<PlynlingBond>()}");
+                case "other": other = ParseOther(l, value, error); break;
+                case "other_if":
+                {
+                    var parts = StoryTags.Split(value);
+                    if (parts.Problem is not null || parts.Text.Length > 0 || parts.Leading.Count == 0)
+                    { error(l, "'other_if' takes only tags: [relation acquaintances] [affinity >= 0] [can_couple]"); break; }
+                    foreach (var tag in parts.Leading)
+                        if (StoryVocabulary.Condition(StoryTags.Words(tag), false, at(l), errs) is { } c) otherIf.Add(c);
                     break;
+                }
                 case "weight":
                 {
                     var parts = StoryTags.Split(value);
@@ -244,7 +251,26 @@ public static partial class StoryParser
 
         return new StoryHeader(title ?? "", family ?? StoryFamily.Milestone, stages ?? new List<PlynlingStage>(),
             trigger ?? new StoryTrigger(TriggerKind.Draw, null), shelf, weight ?? 0, bonuses, requires, other, size ?? StorySize.Short,
-            once || size == StorySize.Long, cooldown, locked);
+            once || size == StorySize.Long, cooldown, locked, otherIf);
+    }
+
+    // `other:` is one word (anyone, known, hostile) or a comma list of bonds.
+    private static StoryOther? ParseOther(Src l, string value, Action<Src, string> error)
+    {
+        var words = value.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries);
+        StoryOther? Bad()
+        {
+            error(l, $"other '{value}': write anyone, known, hostile, or bonds from {StoryVocabulary.Choices<PlynlingBond>()} (friends, bestfriends)");
+            return null;
+        }
+        if (words.Length == 1 && words[0] is "anyone" or "known" or "hostile")
+            return new StoryOther(words[0] switch { "anyone" => OtherKind.Anyone, "known" => OtherKind.Known, _ => OtherKind.Hostile }, []);
+        if (words.Length == 0) return Bad();
+        var bonds = new List<PlynlingBond>();
+        foreach (var w in words)
+            if (StoryVocabulary.TryEnum<PlynlingBond>(w, out var b) && !bonds.Contains(b)) bonds.Add(b);
+            else return Bad();
+        return new StoryOther(OtherKind.Bonds, bonds);
     }
 
     private static string? NonEmpty(Src l, string field, string value, Action<Src, string> error)
@@ -257,13 +283,20 @@ public static partial class StoryParser
     private static StoryTrigger? ParseTrigger(Src l, string value, Action<Src, string> error)
     {
         var w = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        StoryTrigger? Bad() { error(l, $"trigger '{value}': expected adoption, draw, sick, old_age, stage <stage>, relation <bond>, death <bond> or break <1-3>"); return null; }
+        StoryTrigger? Bad()
+        {
+            error(l, $"trigger '{value}': expected adoption, draw, sick, recovered, visit, death, old_age, stage <stage>, relation <bond>, death <bond> or break <1-3>");
+            return null;
+        }
         if (w.Length == 1)
             return w[0] switch
             {
                 "adoption" => new(TriggerKind.Adoption, null),
                 "draw" => new(TriggerKind.Draw, null),
                 "sick" => new(TriggerKind.Sick, null),
+                "recovered" => new(TriggerKind.Recovered, null),
+                "visit" => new(TriggerKind.Visit, null),
+                "death" => new(TriggerKind.Death, null),
                 "old_age" => new(TriggerKind.OldAge, null),
                 _ => Bad(),
             };

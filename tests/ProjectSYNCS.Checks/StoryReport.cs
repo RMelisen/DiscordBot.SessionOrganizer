@@ -66,7 +66,8 @@ public static class StoryReport
                 else
                 {
                     var tags = new List<string>();
-                    if (o.Roll is { } r) tags.Add($"jet {PlynlingStats.Name(r.Stat)} {r.Difficulty} · {(step.Success == true ? "réussi" : "raté")}");
+                    if (step.Scene.Handover) tags.Add("réponse de l'autre propriétaire");
+                    if (o.Roll is { } r) tags.Add($"jet {PlynlingStats.Name(r.Stat)} {(r.Vs ? "contre l'autre" : r.Difficulty.ToString())} · {(step.Success == true ? "réussi" : "raté")}");
                     if (o.Needs.Count > 0) tags.Add("🔒 " + Lock(o));
                     if (o.OwnerOnly) tags.Add("propriétaire seulement");
                     tags.AddRange(o.StressCosts.Select(kv => $"stress {kv.Key} +{kv.Value}"));

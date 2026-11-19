@@ -5423,5 +5423,8 @@ StoryChecks.Run(Fail, args);
 // 50. Story engine: StoryEngineChecks.cs.
 StoryEngineChecks.Run(Fail);
 
+// 55. The 50 old C# events, frozen before they moved to story files: OldEventChecks.cs.
+OldEventChecks.Run(Fail);
+
 Console.WriteLine(failures == 0 ? "ALL CHECKS PASSED" : $"{failures} FAILURE(S)");
 return failures == 0 ? 0 : 1;

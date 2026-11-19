@@ -52,6 +52,7 @@ pace: next_day
 
 ## scene: answer
 title: La réponse
+was: test_everything_old
 pace: +6h
 
 [if flag read] {B} attend une réponse.
@@ -89,7 +90,7 @@ pace: now
 
 ## scene: bridge
 title: Le pont
-pace: now
+pace: 2d-3d
 {A} et {B} arrivent au pont.
 
 * cross | Traverser

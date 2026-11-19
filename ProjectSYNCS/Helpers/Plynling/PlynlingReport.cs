@@ -66,7 +66,8 @@ public static class PlynlingReport
             resolved.Count(e => e.DecidedAlone),
             resolved.Count(e => e.ChallengeSucceeded is not null),
             resolved.Count(e => e.ChallengeSucceeded == true),
-            resolved.GroupBy(e => e.EventKey)
+            // An old key (was:) counts with the scene that claims it.
+            resolved.GroupBy(e => PlynlingEvents.Current(e.EventKey))
                 .Select(g => (PlynlingEvents.TitleOf(g.Key) ?? g.Key, g.Count()))
                 .OrderByDescending(x => x.Item2).Take(TopEventCount).ToList(),
             relations.Where(r => ids.Contains(r.PlynlingAId) && r.Bond != PlynlingBond.Acquaintances && window.Contains(r.Since))
