@@ -1,0 +1,43 @@
+# visit: grimace_contest
+title: Le remède de la Sauge
+place: 🌿 À la Maison aux Simples
+bonds: friends bestfriends rivals enemies
+hours: 8-19
+
+La Sauge a un nouveau remède contre le rhume, et il lui faut deux goûteurs. Elle remplit deux petits verres d'un liquide vert foncé. « Il ne soigne rien si on ne le boit pas. Et ne faites pas cette tête. » Tout le monde fait cette tête.
+
+* gulp | Le boire d'un trait  [lean boldness +2]
+  ? good
+  {A} boit d'un trait, sans une grimace, ce que la Sauge n'a jamais vu. Elle note quelque chose dans son carnet. C'est illisible, mais ça a l'air élogieux.
+  ? bad
+  {A} boit d'un trait, et fait la grimace la plus longue de l'histoire de la Maison aux Simples. La Sauge la note dans son carnet, avec la date.
+
+* honey | Demander du miel du Tilleul  [lean rationality +1] [lean sociability +1]
+  ? good
+  {A} demande s'il y aurait du miel du Tilleul. Il y en a, il y en a toujours. Le remède devient presque bon, et la Sauge, vexée, en reprend pour vérifier.
+  ? bad
+  {A} demande du miel. La Sauge répond qu'un remède avec du miel, c'est de la confiture, et double la dose. Pour la science.
+
+* sniff | Le sentir d'abord, prudemment  [lean boldness -2]
+  ? good
+  {A} sent le verre, longuement, et déclare que ça sent l'herbe après la pluie. La Sauge rosit : c'était exactement l'idée. Elle permet de n'en boire que la moitié.
+  ? bad
+  {A} sent le verre et éternue. Le rhume est guéri d'avance, dit la Sauge, alors autant boire quand même.
+
+> faster | Boire plus vite, pour gagner  [lean boldness +1] [lean energy +1]
+  ? good
+  {B} boit plus vite, pour gagner, et gagne. La Sauge déclare un vainqueur, ce qu'elle ne fait jamais, et lui donne un pot de baume « en trop ».
+  ? bad
+  {B} boit plus vite, pour gagner, et avale de travers. Il faut taper dans le dos, longtemps. La Sauge prend des notes tout le temps que ça dure.
+
+> face | Faire la grimace exprès  [lean sociability +1] [lean rationality -1]
+  ? good
+  {B} fait la grimace exprès, la plus belle possible, et le concours de grimaces commence, celui qui ne dit pas son nom. Au bout d'un moment, la Sauge en fait une aussi. Elle gagne.
+  ? bad
+  {B} fait la grimace exprès, puis le remède agit, et ce n'est plus exprès du tout. La grimace reste un bon moment.
+
+> thank | Remercier, poliment  [lean honor +1] [lean compassion +1]
+  ? good
+  {B} remercie poliment, comme pour une tisane d'auberge. La Sauge n'a pas l'habitude. Elle ne sait pas quoi répondre, et sert un deuxième verre, de bon cœur.
+  ? bad
+  {B} remercie poliment, et la Sauge, touchée, ressert un deuxième verre. Puis un troisième. Il faut s'enfuir.

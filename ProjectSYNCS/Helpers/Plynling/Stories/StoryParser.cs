@@ -11,18 +11,18 @@ namespace ProjectSYNCS.Helpers;
 /// </summary>
 public static partial class StoryParser
 {
-    private sealed record Src(int No, string Text);
+    internal sealed record Src(int No, string Text);
 
-    private static readonly Regex KindLine = new(@"^#\s*([a-z_]+)\s*(?::\s*(\S*))?\s*$", RegexOptions.Compiled);
+    internal static readonly Regex KindLine = new(@"^#\s*([a-z_]+)\s*(?::\s*(\S*))?\s*$", RegexOptions.Compiled);
     private static readonly Regex SectionLine = new(@"^##\s*([a-z_]+)\s*(?::\s*(\S*))?\s*$", RegexOptions.Compiled);
-    private static readonly Regex FieldLine = new(@"^([a-z_]+)\s*:\s*(.*)$", RegexOptions.Compiled);
+    internal static readonly Regex FieldLine = new(@"^([a-z_]+)\s*:\s*(.*)$", RegexOptions.Compiled);
 
     private static readonly Regex TrailingNote = new(@"(^|\s)//", RegexOptions.Compiled);
 
     // Lines that mean something: BOM stripped, CRLF or LF, trailing spaces trimmed, blank lines kept
     // (they close paragraphs), // author notes dropped. A note at the end of a line is an error (and
     // cut off), or it would reach players as text.
-    private static List<Src> Read(string file, string text, List<StoryError> errors)
+    internal static List<Src> Read(string file, string text, List<StoryError> errors)
     {
         if (text.Length > 0 && text[0] == '﻿') text = text[1..];
         var raw = text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');

@@ -17,6 +17,7 @@ using ProjectSYNCS.Services;
 // First: the story files the catalog compiles are the repo's, not a copy in bin. Many sections touch
 // PlynlingEvents.All, whose first read loads them.
 StoryCatalog.Folder = Path.Combine(StoryChecks.RepoRoot(), "ProjectSYNCS", "Stories");
+VisitCatalog.Folder = VisitChecks.ShippedFolder;
 var asm = typeof(ChatFacts).Assembly;
 var br = asm.GetType("ProjectSYNCS.Services.BotResponses")!;
 var cues = asm.GetType("ProjectSYNCS.Services.MessageCues")!;
@@ -5484,6 +5485,12 @@ await JarLotteryChecks.Run(Fail);
 
 // 34. Story files: StoryChecks.cs.
 StoryChecks.Run(Fail, args);
+
+// 56. Visit scenes: VisitChecks.cs.
+await VisitChecks.Run(Fail, args);
+
+// 57. The bond simulation for visits with choices: VisitSimulation.cs (`-- visit-sim` prints its table).
+VisitSimulation.Run(Fail, args);
 
 // 50. Story engine: StoryEngineChecks.cs.
 StoryEngineChecks.Run(Fail);

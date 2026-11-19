@@ -1,0 +1,42 @@
+# visit: goat_follows
+title: La chèvre commune
+place: 🐐 Au Communal
+bonds: acquaintances friends bestfriends lovers rivals enemies
+
+La chèvre commune a décidé de suivre {B}. Partout. Elle ne mange rien, elle ne bêle pas : elle suit, à un pas exactement, et s'arrête quand {B} s'arrête.
+
+* lure | L'attirer avec une poignée d'herbe  [lean rationality +1] [lean compassion +1]
+  ? good
+  {A} tend une poignée d'herbe tendre. La chèvre réfléchit, longtemps, puis choisit de suivre {A} à la place. {B} est libre. {A}, beaucoup moins.
+  ? bad
+  {A} tend une poignée d'herbe. La chèvre la mange, puis mange la manche de {A}, puis se remet à suivre {B}, à un pas exactement.
+
+* lead | La ramener à son enclos  [lean energy +1] [lean honor +1]
+  ? good
+  {A} ramène la chèvre à son enclos, en lui parlant tout du long comme à une personne raisonnable. Elle se laisse faire. Elle a eu sa journée.
+  ? bad
+  {A} ramène la chèvre à son enclos. Le temps de refermer la barrière, elle est de nouveau derrière {B}. Personne ne l'a vue sortir.
+
+* walk | Faire une promenade à trois  [lean sociability +2]
+  ? good
+  {A} décide qu'on se promènera à trois, voilà tout. La chèvre marche au milieu, très digne, et tout le Communal salue le cortège.
+  ? bad
+  {A} décide qu'on se promènera à trois. La chèvre choisit le chemin, et le chemin passe par les Mouilles. Tout le monde rentre crotté jusqu'aux genoux, sauf la chèvre.
+
+> run | Essayer de la semer  [lean energy +2]
+  ? good
+  {B} part en courant, fait trois fois le tour du Communal et s'arrête, essoufflé{b:|e}. La chèvre est là, à un pas exactement, pas essoufflée du tout. On en rit jusqu'au soir.
+  ? bad
+  {B} essaie de la semer en courant, et la chèvre trouve ce jeu formidable. Elle bêle pour la première fois de la journée, et on l'entend jusqu'à la place.
+
+> sign | Décider que c'est un signe  [lean zeal +2]
+  ? good
+  {B} décide que c'est un signe, et un bon. La chèvre a l'air d'accord. Elle porte bonheur pour le reste de la visite, ou du moins, elle n'en porte pas de mauvais.
+  ? bad
+  {B} décide que c'est un signe, et passe la visite à se demander de quoi. La chèvre aussi, à en juger par sa tête.
+
+> ask | Lui demander poliment ce qu'elle veut  [lean honor +1] [lean sociability +1]
+  ? good
+  {B} se retourne et demande poliment à la chèvre ce qu'elle veut. Elle ne répond pas, mais s'en va, satisfaite. Elle voulait qu'on lui demande.
+  ? bad
+  {B} se retourne et demande poliment à la chèvre ce qu'elle veut. Elle veut l'écharpe de {B}. Elle l'a.

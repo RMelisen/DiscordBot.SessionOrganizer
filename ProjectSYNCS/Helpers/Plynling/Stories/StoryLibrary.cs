@@ -29,7 +29,8 @@ public static class StoryLibrary
                 // "x.story.txt" from Notepad must not vanish without a word.
                 if (!file.EndsWith(".story", StringComparison.Ordinal))
                 {
-                    if (Path.GetFileName(file) != CastFile)
+                    // Visit scenes live under Stories/Visits and are VisitLibrary's.
+                    if (Path.GetFileName(file) != CastFile && !file.EndsWith(VisitLibrary.Extension, StringComparison.Ordinal))
                         errors.Add(new(new(Label(folder, file), 0), "not a .story file (the name must end in lowercase .story), so it is not loaded"));
                     continue;
                 }

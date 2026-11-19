@@ -165,39 +165,24 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
             flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
     }
 
-    // An invitation, not a visit: it only happens if the other owner presses « Accueillir »
-    // (PlynlingComponentHandler), within two hours. This message is the one line that pings —
+    // An invitation, not a visit: the visitor picks what its Plynling does, then the other owner picks
+    // how theirs reacts, within two hours (PlynlingComponentHandler). This message is the one send that pings —
     // the invited owner only, since it is addressed to them.
     [SlashCommand("visit", "Emmener ton Plynling rendre visite à celui de quelqu'un")]
     public async Task VisitAsync([Summary("user", "Chez qui aller")] IUser user)
     {
         var now = DateTimeOffset.UtcNow;
-        var opening = await OpenVisitAsync(_plynlings, _cooldowns, _visits, _picker, Context.Guild.Id, Context.User.Id, user, now);
+        var opening = await OpenVisitAsync(_plynlings, _cooldowns, _picker, Context.Guild.Id, Context.User.Id, user, now);
         if (opening.Refusal is not null || opening.Card is null)
         {
             await RespondAsync(opening.Refusal, ephemeral: true, allowedMentions: AllowedMentions.None);
             return;
         }
 
-        if (opening.Story is { } story)
-        {
-            await RespondAsync(components: opening.Card, flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
-            try
-            {
-                await FollowupAsync(components: PlynlingPlayCards.BuildVisitStory(story, 0),
-                    flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Visit story {Story}: could not be posted", story.Id);
-            }
-            // What the visit left behind at her home, decided by her at once — after the visit's story.
-            await _announcer.TellAsync(_plynlings, opening.Untold ?? [], Context.Guild.Id, now, Context.Channel);
-            return;
-        }
-
-        await RespondAsync(components: opening.Card,
-            flags: MessageFlags.ComponentsV2, allowedMentions: new AllowedMentions { UserIds = new List<ulong> { user.Id } });
+        // The one message of the visit, and the one send that pings: the invited owner only. At her home
+        // nobody is invited, so nobody is pinged.
+        await RespondAsync(components: opening.Card, flags: MessageFlags.ComponentsV2,
+            allowedMentions: opening.Pings ? new AllowedMentions { UserIds = new List<ulong> { user.Id } } : AllowedMentions.None);
     }
 
     /// <summary>
@@ -206,7 +191,7 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
     /// cannot drift. Each caller only sends what it returns, with its own mention rules.
     /// </summary>
     public static async Task<VisitOpening> OpenVisitAsync(PlynlingService plynlings, PlynlingCooldowns cooldowns,
-        PlynlingVisitRunner visits, ResponsePicker picker, ulong guildId, ulong visitorId, IUser host, DateTimeOffset now)
+        ResponsePicker picker, ulong guildId, ulong visitorId, IUser host, DateTimeOffset now)
     {
         if (host.Id == visitorId) return new VisitOpening(PlynlingText.VisitSelf);
 
@@ -229,23 +214,14 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
         if (refusal is not null || mine is null || theirs is null)
             return new VisitOpening(refusal ?? PlynlingText.NoPlynling);
 
-        // At her home nobody could press « Accueillir », so she opens the door herself: no knock, no
-        // ping, straight to the story — the same way « Accueillir » tells it.
-        if (PlynlingMascot.Is(theirs))
-        {
-            var (story, visitRefusal, untold) = await visits.RunAsync(mine, theirs, now);
-            if (story is null) return new VisitOpening(visitRefusal ?? PlynlingText.Unknown);
-            var welcome = string.Format(picker.Pick(BotResponses.MascotWelcomeLines),
-                PlynlingCardUi.SafeName(mine.Name), $"<@{visitorId}>");
-            return new VisitOpening(null, PlynlingPlayCards.BuildKnockClosed($"{welcome}\n-# L'histoire est juste en dessous ↓"),
-                story, untold);
-        }
-
-        var expires = now + PlynlingLife.VisitInviteLife;
-        var (knockPool, typed) = PlynlingPassions.PickLines(BotResponses.PlynlingVisitKnockLines, BotResponses.PlynlingVisitKnockTypedLines, mine, Random.Shared);
-        var line = string.Format(picker.Pick(knockPool),
-            PlynlingCardUi.SafeName(mine.Name), $"<@{host.Id}>", typed);
-        return new VisitOpening(null, PlynlingPlayCards.BuildKnock(mine, host.Id, expires, line, now));
+        // The scene, drawn on the bond before the visit, the Paris hour and both stages, and « 💌 » when
+        // the pair may confess today. At her home too: her visitor still picks (she reacts herself, on
+        // the visitor's click), but nobody is invited, so nobody is pinged.
+        var scene = PlynlingVisitRunner.DrawScene(await plynlings.BondAsync(mine.Id, theirs.Id), now,
+            PlynlingLife.Stage(mine, now), PlynlingLife.Stage(theirs, now), picker);
+        var offer = await plynlings.ConfessionOpenAsync(mine, theirs, now);
+        var card = PlynlingVisitCards.BuildChoice(scene, mine, theirs, host.Id, now + PlynlingLife.VisitInviteLife, offer, now);
+        return new VisitOpening(null, card, Pings: !PlynlingMascot.Is(theirs));
     }
 
     // Its stats, badges and moments — the living one, or else the latest grave, like view.
@@ -523,9 +499,8 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
 }
 
 /// <summary>
-/// What <see cref="PlynlingModule.OpenVisitAsync"/> decided: a refusal; or a card to post — the knock,
-/// or at her home the closed knock with the visit's <see cref="Story"/> and the event stories it left
-/// <see cref="Untold"/>.
+/// What <see cref="PlynlingModule.OpenVisitAsync"/> decided: a refusal, or the visit's message to post —
+/// the scene and the visitor's options. <see cref="Pings"/>: whether its first send may ping the invited
+/// owner (never at her home; <c>;pl visit</c> never pings anyway).
 /// </summary>
-public sealed record VisitOpening(string? Refusal, MessageComponent? Card = null, VisitStory? Story = null,
-    IReadOnlyList<int>? Untold = null);
+public sealed record VisitOpening(string? Refusal, MessageComponent? Card = null, bool Pings = true);

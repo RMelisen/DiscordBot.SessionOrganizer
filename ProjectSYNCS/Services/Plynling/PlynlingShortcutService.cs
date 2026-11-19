@@ -143,31 +143,17 @@ public sealed class PlynlingShortcutService
             return;
         }
 
-        var opening = await PlynlingModule.OpenVisitAsync(plynlings, _cooldowns,
-            services.GetRequiredService<PlynlingVisitRunner>(), _picker, guild.Id, message.Author.Id, host, now);
+        var opening = await PlynlingModule.OpenVisitAsync(plynlings, _cooldowns, _picker, guild.Id, message.Author.Id, host, now);
         if (opening.Refusal is not null || opening.Card is null)
         {
             await RefuseAsync(message, opening.Refusal ?? PlynlingText.Unknown);
             return;
         }
 
-        // Mentions off even on the knock, unlike /plynling visit: the person's own « ;pl visit @x »
-        // already pinged the host, and a second ping for one knock is one too many.
+        // Mentions off, unlike /plynling visit: the person's own « ;pl visit @x » already pinged the
+        // host, and a second ping for one visit is one too many.
         await message.Channel.SendMessageAsync(components: opening.Card, flags: MessageFlags.ComponentsV2,
             allowedMentions: AllowedMentions.None, messageReference: ReplyTo(message));
-        if (opening.Story is not { } story) return;
-
-        try
-        {
-            await message.Channel.SendMessageAsync(components: PlynlingPlayCards.BuildVisitStory(story, 0),
-                flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Visit story {Story}: could not be posted", story.Id);
-        }
-        // What the visit left behind at her home, decided by her at once — after the visit's story.
-        await _announcer.TellAsync(plynlings, opening.Untold ?? [], guild.Id, now, message.Channel);
     }
 
     private Task AnswerAsync(SocketUserMessage message, (string Text, bool Refused) reply) =>

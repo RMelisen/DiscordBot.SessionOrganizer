@@ -1682,6 +1682,9 @@ namespace ProjectSYNCS.Migrations
                     b.Property<int>("Bond")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTimeOffset?>("LastRefusalAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("LastVisitDay")
                         .HasColumnType("INTEGER");
 

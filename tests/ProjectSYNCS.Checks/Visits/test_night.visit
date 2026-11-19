@@ -1,0 +1,32 @@
+// Fixture: a scene open across midnight, for one bond, with no stages line (all four).
+# visit: test_night
+title: La nuit
+place: 🌙 Sous les étoiles
+bonds: friends
+hours: 20-1
+
+Il fait nuit, et {A} montre une étoile à {B}.
+
+* point | Montrer l'étoile  [lean zeal +1]
+  ? good
+  {A} montre l'étoile.
+  ? bad
+  {A} montre un nuage.
+
+* name | Lui donner un nom  [lean sociability -2]
+  ? good
+  {A} lui donne un nom.
+  ? bad
+  {A} oublie le nom aussitôt.
+
+> look | Regarder  [lean honor +1]
+  ? good
+  {B} regarde, émerveillé{b:|e}.
+  ? bad
+  {B} regarde ailleurs.
+
+> yawn | Bâiller  [lean energy -1]
+  ? good
+  {B} bâille, content{b:|e}.
+  ? bad
+  {B} s'endort.

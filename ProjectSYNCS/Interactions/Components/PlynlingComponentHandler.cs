@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using ProjectSYNCS.Commands;
 using ProjectSYNCS.Helpers;
 using ProjectSYNCS.Interactions.Modals;
+using ProjectSYNCS.Models;
 using ProjectSYNCS.Services;
 
 namespace ProjectSYNCS.Interactions.Components;
@@ -183,12 +184,95 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         });
     }
 
-    // ---- /plynling visit: « Accueillir », pressed by the invited owner within two hours.
+    // ---- /plynling visit, one message from the first pick to the ending (PlynlingVisitCards). The ids
+    // carry the visitor's Plynling, the invited owner and the expiry, then the scene and the choices: a
+    // key no longer in VisitCatalog reads as expired. Every click after the first defers before any
+    // database work, so its refusals are ephemeral follow-ups and the message moves through
+    // ModifyOriginalResponseAsync.
+
+    // An old knock (« Accueillir », before 8.2.0): closed as expired, no visit played the old way.
     [ComponentInteraction("plyn:visit:*:*:*", ignoreGroupNames: true)]
-    public async Task OnVisitAcceptedAsync(string visitorStr, string hostStr, string expiresStr)
+    public Task OnOldKnockAsync(string visitorStr, string hostStr, string expiresStr) => CloseVisitAsync(PlynlingText.InviteExpired);
+
+    // The visitor's option, pressed by the visitor's owner. At her home she reacts at once and the
+    // visit plays; elsewhere the message becomes the knock, the host's reactions for the invited owner.
+    [ComponentInteraction("pvc:*:*:*:*:*", ignoreGroupNames: true)]
+    public async Task OnVisitOptionAsync(string visitorStr, string hostStr, string expiresStr, string sceneKey, string optionKey)
     {
-        if (!int.TryParse(visitorStr, out var visitorId) || !ulong.TryParse(hostStr, out var hostOwnerId)
-            || !long.TryParse(expiresStr, out var expiresUnix))
+        if (!TryVisitIds(visitorStr, hostStr, expiresStr, out var visitorId, out var hostOwnerId, out var expires))
+        {
+            await RespondAsync(PlynlingText.Unknown, ephemeral: true);
+            return;
+        }
+        var now = DateTimeOffset.UtcNow;
+        var scene = VisitCatalog.ByKey(sceneKey);
+        if (now > expires || scene?.Option(optionKey) is not { } option)
+        {
+            await CloseVisitAsync(PlynlingText.InviteExpired);
+            return;
+        }
+
+        await DeferAsync();
+        var (visitor, host) = await VisitPairAsync(visitorId, hostOwnerId, now);
+        if (visitor is null || visitor.OwnerId != Context.User.Id)
+        {
+            await FollowupAsync(visitor is null ? PlynlingText.VisitorGone : PlynlingText.NotYourChoice, ephemeral: true);
+            return;
+        }
+        if (host is null || host.DiedAt is not null)
+        {
+            await FollowupAsync(PlynlingText.NoneFor(hostOwnerId), ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+        if (!PlynlingMascot.Is(host))
+        {
+            await EditVisitAsync(PlynlingVisitCards.BuildKnock(scene, option, visitor, host, hostOwnerId, expires, now));
+            return;
+        }
+
+        // Her own Plynling: she picks its reaction from its traits, and the visit plays at once.
+        var reaction = VisitOdds.MascotReaction(scene, await _plynlings.AxesAsync(host));
+        var welcome = string.Format(_picker.Pick(BotResponses.MascotWelcomeLines), PlynlingCardUi.SafeName(visitor.Name), $"<@{visitor.OwnerId}>");
+        await PlayVisitAsync(visitor, host, scene, option, reaction, now, welcome);
+    }
+
+    // « 💌 Lui avouer ses sentiments », pressed by the visitor's owner: the visit switches to the
+    // confession scene, whose options are ways of confessing. Eligibility is checked again by the save.
+    [ComponentInteraction("pvx:*:*:*", ignoreGroupNames: true)]
+    public async Task OnVisitConfessAsync(string visitorStr, string hostStr, string expiresStr)
+    {
+        if (!TryVisitIds(visitorStr, hostStr, expiresStr, out var visitorId, out var hostOwnerId, out var expires))
+        {
+            await RespondAsync(PlynlingText.Unknown, ephemeral: true);
+            return;
+        }
+        var now = DateTimeOffset.UtcNow;
+        if (now > expires)
+        {
+            await CloseVisitAsync(PlynlingText.InviteExpired);
+            return;
+        }
+
+        await DeferAsync();
+        var (visitor, host) = await VisitPairAsync(visitorId, hostOwnerId, now);
+        if (visitor is null || visitor.OwnerId != Context.User.Id)
+        {
+            await FollowupAsync(visitor is null ? PlynlingText.VisitorGone : PlynlingText.NotYourChoice, ephemeral: true);
+            return;
+        }
+        if (host is null || host.DiedAt is not null)
+        {
+            await FollowupAsync(PlynlingText.NoneFor(hostOwnerId), ephemeral: true, allowedMentions: AllowedMentions.None);
+            return;
+        }
+        await EditVisitAsync(PlynlingVisitCards.BuildChoice(VisitCatalog.Confession, visitor, host, hostOwnerId, expires, false, now));
+    }
+
+    // The host's reaction, pressed by the invited owner within two hours: that is accepting the visit.
+    [ComponentInteraction("pvr:*:*:*:*:*:*", ignoreGroupNames: true)]
+    public async Task OnVisitReactionAsync(string visitorStr, string hostStr, string expiresStr, string sceneKey, string optionKey, string reactionKey)
+    {
+        if (!TryVisitIds(visitorStr, hostStr, expiresStr, out var visitorId, out var hostOwnerId, out var expires))
         {
             await RespondAsync(PlynlingText.Unknown, ephemeral: true);
             return;
@@ -198,17 +282,11 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             await RespondAsync(PlynlingText.NotYourInvite, ephemeral: true);
             return;
         }
-
         var now = DateTimeOffset.UtcNow;
-        var component = (SocketMessageComponent)Context.Interaction;
-        if (now > DateTimeOffset.FromUnixTimeSeconds(expiresUnix))
+        var scene = VisitCatalog.ByKey(sceneKey);
+        if (now > expires || scene?.Option(optionKey) is not { } option || scene.Reaction(reactionKey) is not { } reaction)
         {
-            await component.UpdateAsync(m =>
-            {
-                m.Components = PlynlingPlayCards.BuildKnockClosed(PlynlingText.InviteExpired);
-                m.Flags = MessageFlags.ComponentsV2;
-                m.AllowedMentions = AllowedMentions.None;
-            });
+            await CloseVisitAsync(PlynlingText.InviteExpired);
             return;
         }
 
@@ -217,9 +295,16 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
         // host was told « déjà vus » on the next click. Deferring first buys the 15 minutes a
         // follow-up allows; refusals therefore go out as ephemeral follow-ups.
         await DeferAsync();
+        var (visitor, host) = await VisitPairAsync(visitorId, hostOwnerId, now);
+        await PlayVisitAsync(visitor, host, scene, option, reaction, now, lead: null);
+    }
 
-        var visitor = await _plynlings.GetByIdAsync(visitorId, now);
-        var host = await _plynlings.GetCurrentAsync(Context.Guild.Id, hostOwnerId, now);
+    // The checks before a visit plays, the visit, and the ending in place of the message. A refusal is
+    // private and leaves the message as it was, except « trop tard », which closes it: that visit can
+    // no longer happen, and the pair may still meet today.
+    private async Task PlayVisitAsync(Plynling? visitor, Plynling? host, VisitScene scene, VisitChoice option, VisitChoice reaction,
+        DateTimeOffset now, string? lead)
+    {
         string? refusal =
             host is null || host.DiedAt is not null ? PlynlingText.NoPlynling
             : visitor is null || visitor.DiedAt is not null ? PlynlingText.VisitorGone
@@ -230,39 +315,59 @@ public class PlynlingComponentHandler : InteractionModuleBase<SocketInteractionC
             : null;
         if (refusal is not null || visitor is null || host is null)
         {
-            await FollowupAsync(refusal, ephemeral: true);
+            await FollowupAsync(refusal, ephemeral: true, allowedMentions: AllowedMentions.None);
             return;
         }
 
-        var (story, visitRefusal, untold) = await _visits.RunAsync(visitor, host, now);
-        if (story is null)
+        var (outcome, visitRefusal, untold) = await _visits.RunAsync(visitor, host, scene, option, reaction, now);
+        if (outcome is not { TooLate: false } played)
         {
             await FollowupAsync(visitRefusal, ephemeral: true, allowedMentions: AllowedMentions.None);
+            if (outcome is { TooLate: true }) await EditVisitAsync(PlynlingVisitCards.BuildClosed(PlynlingText.VisitTooLate));
             return;
         }
+        // The visit is saved: from here on, a refused edit must not swallow it (the knock left live,
+        // nobody told, « déjà vus » on the next click). ShowEndingAsync falls back to a closed card.
+        var ending = PlynlingVisitCards.BuildEnding(scene, option, reaction, played, now, lead);
+        await PlynlingVisitRunner.ShowEndingAsync(EditVisitAsync, ending, PlynlingPlayCards.VisitOutcomeLines(played),
+            ex => _logger.LogWarning(ex, "Visit {VisitorId} → {HostId} ({Scene}) was saved, but its ending could not be shown.",
+                played.Visitor.Id, played.Host.Id, scene.Key));
+        // An after-visit event the mascot already decided, if she was in it — after the ending.
+        await _announcer.TellAsync(_plynlings, untold, Context.Guild.Id, now, Context.Channel);
+    }
 
-        // The visit is decided and saved; what follows is only its telling. The knock closes in
-        // place, and the story is a follow-up — a new message at the bottom of the channel — opened
-        // on its first step with ◀ ▶ already there: the reader pages through at their own pace,
-        // nothing moves on its own.
-        await component.ModifyOriginalResponseAsync(m =>
+    private static bool TryVisitIds(string visitorStr, string hostStr, string expiresStr,
+        out int visitorId, out ulong hostOwnerId, out DateTimeOffset expires)
+    {
+        expires = default;
+        hostOwnerId = 0;
+        if (!int.TryParse(visitorStr, out visitorId) || !ulong.TryParse(hostStr, out hostOwnerId)
+            || !long.TryParse(expiresStr, out var unix)) return false;
+        expires = DateTimeOffset.FromUnixTimeSeconds(unix);
+        return true;
+    }
+
+    // The visitor by its id, the host as the invited owner's current Plynling.
+    private async Task<(Plynling? Visitor, Plynling? Host)> VisitPairAsync(int visitorId, ulong hostOwnerId, DateTimeOffset now) =>
+        (await _plynlings.GetByIdAsync(visitorId, now), await _plynlings.GetCurrentAsync(Context.Guild.Id, hostOwnerId, now));
+
+    // A visit message closed without a visit, answering the click itself (no defer: no database work).
+    private Task CloseVisitAsync(string text) =>
+        ((SocketMessageComponent)Context.Interaction).UpdateAsync(m =>
         {
-            m.Components = PlynlingPlayCards.BuildKnockClosed(PlynlingText.VisitAccepted(story.Visitor.Name, story.Host.Name));
+            m.Components = PlynlingVisitCards.BuildClosed(text);
             m.Flags = MessageFlags.ComponentsV2;
             m.AllowedMentions = AllowedMentions.None;
         });
-        try
+
+    // The visit message's next state, after a defer. An edit never pings.
+    private Task EditVisitAsync(MessageComponent card) =>
+        ((SocketMessageComponent)Context.Interaction).ModifyOriginalResponseAsync(m =>
         {
-            await component.FollowupAsync(components: PlynlingPlayCards.BuildVisitStory(story, 0),
-                flags: MessageFlags.ComponentsV2, allowedMentions: AllowedMentions.None);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Visit story {Story}: could not be posted", story.Id);
-        }
-        // An after-visit event the mascot already decided, if she was in it — after the visit's story.
-        await _announcer.TellAsync(_plynlings, untold, Context.Guild.Id, now, Context.Channel);
-    }
+            m.Components = card;
+            m.Flags = MessageFlags.ComponentsV2;
+            m.AllowedMentions = AllowedMentions.None;
+        });
 
     // ◀ ▶ on a told story. Anyone may page — the card is public, like the story. After a restart
     // the story is gone: the card stays on its last beat and the one who clicked is told privately.

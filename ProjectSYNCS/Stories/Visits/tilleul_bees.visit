@@ -1,0 +1,43 @@
+# visit: tilleul_bees
+title: Ce qu'on dit aux abeilles
+place: 🍯 Au clos du Tilleul
+bonds: acquaintances friends bestfriends lovers
+hours: 8-19
+
+Le Tilleul les voit arriver par le chemin, se tourne vers ses ruches et leur annonce, très fort, que {A} est venu{a:|e} voir {B}. Puis il se retourne. « Et qu'est-ce que je leur dis d'autre ? Il faut tout leur dire, sinon elles boudent. »
+
+* truth | Lui dicter la vérité, mot pour mot  [lean honor +2]
+  ? good
+  {A} dicte une phrase simple et vraie, et le Tilleul la crie aux ruches mot pour mot. Les abeilles bourdonnent plus fort. Il dit que c'est oui.
+  ? bad
+  {A} dicte une phrase simple et vraie. Le Tilleul, un peu sourd, la crie aux ruches toute de travers. Les jumelles du Communal la répéteront ce soir, encore plus de travers.
+
+* tale | Inventer une grande histoire  [lean honor -1] [lean boldness +1]
+  ? good
+  {A} invente une traversée de la Lisière, un orage, un sanglier. Le Tilleul ajoute un deuxième sanglier. Les abeilles n'ont jamais entendu une si belle visite.
+  ? bad
+  {A} invente une grande histoire, et le Tilleul s'arrête au milieu pour la raconter à sa façon, puis la recommence depuis le début. Ça dure jusqu'au goûter.
+
+* honey | Demander des nouvelles des ruches  [lean compassion +1] [lean sociability +1]
+  ? good
+  {A} demande comment vont les ruches. Le Tilleul en oublie les nouvelles et fait le tour des ruches, une par une. Il a enfin quelqu'un qui écoute jusqu'au bout.
+  ? bad
+  {A} demande comment vont les ruches, et le Tilleul répond pour la ruche numéro un, puis la deux, puis la trois. Il y en a onze.
+
+> blush | Rougir de la tête aux pieds  [lean sociability -1] [lean compassion +1]
+  ? good
+  {B} rougit de la tête aux pieds. Une abeille vient s'y poser, comme sur une fleur, et {B} n'ose plus bouger. C'est très joli.
+  ? bad
+  {B} rougit de la tête aux pieds, et trois abeilles viennent s'y poser, comme sur une fleur. {B} passe le reste de la visite immobile, à loucher dessus.
+
+> correct | Corriger le Tilleul, poliment  [lean rationality +1] [lean honor +1]
+  ? good
+  {B} corrige un mot, poliment. Le Tilleul remercie, corrige auprès des ruches, et offre un rayon de miel « pour l'exactitude ».
+  ? bad
+  {B} corrige un mot, poliment. Le Tilleul entend un autre mot, encore plus faux, et l'annonce aux ruches avec beaucoup de joie.
+
+> add | Ajouter sa propre nouvelle  [lean sociability +2]
+  ? good
+  {B} ajoute sa propre nouvelle, et le Tilleul la crie aux ruches avec la première. Le soir, tout le hameau en parle, et gentiment.
+  ? bad
+  {B} ajoute sa propre nouvelle, très fort, pour être entendu{b:|e}. Les abeilles décident qu'on a assez crié et rentrent toutes ensemble.

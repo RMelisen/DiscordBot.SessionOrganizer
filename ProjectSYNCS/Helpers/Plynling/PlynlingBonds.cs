@@ -24,7 +24,40 @@ public static class PlynlingBonds
     public const int BreakUpBelow = 40;
     public const int HeartbreakLoss = 25;
     public const double HeartbreakSadness = 0.20;
-    public const double ConfessionChance = 0.25;
+
+    /// <summary>
+    /// After a refused confession, the pair may not confess again, in either direction, for this long:
+    /// the brake that keeps couples near the old pace now that an owner may confess on every eligible
+    /// visit (VisitOdds; the simulation counts it). Read from <see cref="PlynlingRelation.LastRefusalAt"/>.
+    /// </summary>
+    public static readonly TimeSpan RefusalCooldown = TimeSpan.FromDays(3);
+
+    public static bool ConfessionCoolingDown(DateTimeOffset? lastRefusalAt, DateTimeOffset now) =>
+        lastRefusalAt is { } at && now - at < RefusalCooldown;
+
+    /// <summary>
+    /// The share of a pair's eligible days on which a visit offers « 💌 » (the owner's choice, by
+    /// simulation): offered on every one, an owner confessing at the first chance made couples twice as
+    /// fast as before. The old automatic confession came about as rarely.
+    /// </summary>
+    public const double ConfessionOfferChance = 0.25;
+
+    /// <summary>
+    /// Whether this pair's visits offer the confession on this Paris day. Hashed from the pair and the
+    /// day, never a <see cref="Random"/>: starting the visit again the same day cannot reroll it.
+    /// </summary>
+    public static bool ConfessionOffered(int a, int b, int dayKey)
+    {
+        var (lo, hi) = a < b ? (a, b) : (b, a);
+        unchecked
+        {
+            var h = (uint)(lo * 73856093) ^ (uint)(hi * 19349663) ^ (uint)(dayKey * 83492791);
+            h ^= h >> 13;
+            h *= 0x5bd1e995;
+            h ^= h >> 15;
+            return h % 1000 < ConfessionOfferChance * 1000;
+        }
+    }
     public const double GriefCeiling = 0.20;
 
     /// <summary>
@@ -107,17 +140,11 @@ public static class PlynlingBonds
         _ => 4,
     };
 
-    // Whether a good visit can turn into a confession: best friends, a boy and a girl, close
-    // enough, and neither already in a couple (one partner at a time).
+    // Whether a pair may confess: best friends, a boy and a girl, close enough, and neither already
+    // in a couple (one partner at a time). A visit offers the confession on it (VisitOdds.AcceptChance
+    // decides the answer); the declaration event targets with it.
     public static bool CanConfess(PlynlingBond bond, int affinity, Plynling a, Plynling b, bool eitherInCouple) =>
         bond == PlynlingBond.BestFriends && affinity >= ConfessFrom && a.Gender != b.Gender && !eitherInCouple;
-
-    public static Confession RollConfession(int compatibility, Random rng)
-    {
-        if (rng.NextDouble() >= ConfessionChance) return Confession.None;
-        // 50 % for an average pair, 85 % at the maximum compatibility and 15 % at the minimum.
-        return rng.NextDouble() < 0.5 + 0.35 * compatibility / MaxCompatibility ? Confession.Accepted : Confession.Refused;
-    }
 
     // What a visit does to both Plynlings' happiness, by the bond it ends on.
     public static double VisitHappiness(PlynlingBond bond) => bond switch

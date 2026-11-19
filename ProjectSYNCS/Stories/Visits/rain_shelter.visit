@@ -1,0 +1,42 @@
+# visit: rain_shelter
+title: L'averse
+place: ☔ Sous l'auvent de la Maison commune
+bonds: acquaintances friends bestfriends lovers rivals enemies
+
+Une averse tombe d'un coup sur la place du Puits. {A} et {B} se retrouvent sous l'auvent de la Maison commune, qui n'a été bâti que pour une personne et demie. La pluie n'a pas l'air pressée.
+
+* room | Se serrer pour faire de la place  [lean compassion +1] [lean sociability +1]
+  ? good
+  {A} se serre contre le mur pour laisser de la place. Ça suffit : l'auvent tient deux, finalement, si on ne respire pas trop fort.
+  ? bad
+  {A} se serre contre le mur pour laisser de la place, et la gouttière, juste au-dessus, choisit cet instant pour déborder.
+
+* dash | Courir jusqu'à l'auberge  [lean boldness +1] [lean energy +1]
+  ? good
+  {A} lance : « À l'auberge ! », et on court. On arrive comme si on avait traversé la Sommeille, mais il y a le feu, la Courge, et du lait chaud au miel.
+  ? bad
+  {A} part en courant vers l'auberge, glisse dans la première flaque, et revient sous l'auvent, beaucoup plus mouillé{a:|e} qu'avant.
+
+* drops | Compter les gouttes  [lean rationality +1] [lean energy -1]
+  ? good
+  {A} se met à compter les gouttes qui tombent de l'auvent. À cent, on rit. À deux cents, on parie sur la suivante. La pluie s'arrête à trois cent douze, et c'est presque dommage.
+  ? bad
+  {A} compte les gouttes, à voix haute. À quatre cents, la pluie redouble. {A} recommence à zéro, par honnêteté.
+
+> scarf | Prêter son écharpe  [lean compassion +2]
+  ? good
+  {B} prête son écharpe, sans rien dire. Elle est sèche, chaude, et sent le feu de bois. On ne se dit pas grand-chose, mais on se le dit bien.
+  ? bad
+  {B} prête son écharpe, qui est déjà trempée. On la tord à deux. Il en sort un plein bol de pluie.
+
+> sing | Chanter pour couvrir la pluie  [lean sociability +1] [lean boldness +1]
+  ? good
+  {B} chante pour couvrir le bruit de la pluie. Une fenêtre s'ouvre, puis une autre, et toute la place finit par chanter le refrain. La pluie, vexée, s'arrête.
+  ? bad
+  {B} chante pour couvrir la pluie, et la pluie redouble, comme pour couvrir la chanson. Ça devient une question d'honneur, des deux côtés.
+
+> sulk | Bouder la pluie  [lean vengefulness +1] [lean sociability -1]
+  ? good
+  {B} boude la pluie, les bras croisés, avec tant de conviction que c'en est drôle. On se met à bouder à deux. La pluie finit par céder.
+  ? bad
+  {B} boude la pluie, puis l'auvent, puis la place entière. Tout le monde attend que ça passe. La pluie passe avant.

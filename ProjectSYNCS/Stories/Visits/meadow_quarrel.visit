@@ -1,0 +1,43 @@
+# visit: meadow_quarrel
+title: La querelle du pré
+place: 🌾 Au pré de la Sommeille
+bonds: acquaintances rivals enemies
+hours: 6-21
+
+Le Noyer est planté à un bout du pré, le Chardon à l'autre, et chacun jure que tout ce qui se trouve entre eux est à lui. En voyant arriver {A} et {B}, ils crient en même temps : « Vous, là ! Dites-lui à qui est ce pré ! »
+
+* noyer | Donner raison au Noyer  [lean boldness +1] [lean greed +1]
+  ? good
+  {A} donne raison au Noyer, qui en parle de lui à la troisième personne pendant dix minutes. Le Chardon pèse l'argument, le trouve trop léger, et rit quand même, une fois.
+  ? bad
+  {A} donne raison au Noyer. Le Chardon grogne si fort que les canards du bief s'envolent. Il reprendra la querelle demain, et le Noyer aussi.
+
+* chardon | Donner raison au Chardon  [lean honor +1] [lean rationality +1]
+  ? good
+  {A} donne raison au Chardon, preuves à l'appui : la rivière, la borne, le vieux saule. Le Chardon en devient presque aimable, et le Noyer applaudit le raisonnement, beau joueur.
+  ? bad
+  {A} donne raison au Chardon, qui en profite pour réclamer aussi le bief, le saule et le bout du chemin. Même le Chardon trouve qu'il exagère.
+
+* fou | Aller chercher le Fou pour compter les bornes  [lean vengefulness -1] [lean energy +1]
+  ? good
+  {A} va chercher le Fou, qui compte les bornes : cinq. « C'est une de trop. » Le Noyer et le Chardon arrachent chacun la sienne, en même temps, et rentrent chez eux contents.
+  ? bad
+  {A} va chercher le Fou, qui compte les bornes et en trouve neuf. Personne n'en a planté neuf. Le Noyer et le Chardon s'accusent l'un l'autre, ravis.
+
+> other | Prendre l'autre camp  [lean vengefulness +1] [lean boldness +1]
+  ? good
+  {B} prend aussitôt l'autre camp, par principe. Le pré a maintenant quatre avocats, et le Noyer et le Chardon s'assoient dans l'herbe pour écouter, enchantés. On se quitte bons perdants, de tous les côtés.
+  ? bad
+  {B} prend aussitôt l'autre camp, par principe, et {ils} se disputent le pré plus fort que ses deux propriétaires. Le Noyer et le Chardon finissent par les séparer.
+
+> peace | Proposer de partager le pré  [lean compassion +1] [lean rationality +1]
+  ? good
+  {B} propose de partager le pré en deux, à la ficelle. Personne n'est d'accord, et tout le monde trouve que {B} a bien parlé. Maître Frêne, qui passait, prend des notes.
+  ? bad
+  {B} propose de partager le pré. Le Noyer et le Chardon, pour une fois d'accord, trouvent l'idée scandaleuse et le disent en même temps, très longtemps.
+
+> sit | S'asseoir dans l'herbe et attendre  [lean energy -2]
+  ? good
+  {B} s'assoit dans l'herbe du pré, qui n'est à personne, et attend. La dispute s'épuise toute seule. Au bout d'un moment, on se retrouve à quatre dans l'herbe, et plus personne ne se rappelle de quoi on parlait.
+  ? bad
+  {B} s'assoit dans l'herbe et attend. La dispute, elle, n'attend pas : elle fait trois fois le tour du pré, et repasse à chaque fois au-dessus de la tête de {B}.

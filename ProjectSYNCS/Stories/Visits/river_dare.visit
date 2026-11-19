@@ -1,0 +1,43 @@
+# visit: river_dare
+title: L'eau froide
+place: 💦 À la baignade de la Sommeille
+bonds: friends bestfriends lovers rivals
+hours: 10-20
+
+L'eau de la Sommeille est si claire qu'on voit les galets du fond, et si froide que même les poissons ont l'air pressés. {A} et {B} sont au bord, les pieds au sec. Quelqu'un doit y aller le premier.
+
+* jump | Sauter d'un coup  [lean boldness +2]
+  ? good
+  {A} saute d'un coup, ressort aussitôt, et crie que l'eau est délicieuse. Elle ne l'est pas. Mais c'est dit avec tant de cœur qu'on y croirait.
+  ? bad
+  {A} saute d'un coup et ressort aussitôt, bleu{a:|e} de froid, en jurant que ce n'est pas si froid. Personne n'y croit, pas même {A}.
+
+* toe | Tremper le bout du pied d'abord  [lean rationality +1] [lean boldness -1]
+  ? good
+  {A} trempe le bout du pied, puis la cheville, puis tout le reste, très lentement. Ça prend une demi-heure, mais une fois dans l'eau, {A} y reste plus longtemps que tout le monde.
+  ? bad
+  {A} trempe le bout du pied, le ressort, le retrempe, le ressort. Au bout d'une heure, le pied est très propre, et c'est tout.
+
+* stone | Plonger chercher un galet au fond  [lean energy +1] [lean greed +1]
+  ? good
+  {A} plonge chercher le plus beau galet du fond et remonte avec un galet blanc, rond comme une lune. On se le passe de main en main, sans rien dire.
+  ? bad
+  {A} plonge chercher le plus beau galet du fond et remonte avec une vieille sandale. De loin, le passeur crie que c'est la sienne, perdue au printemps.
+
+> follow | Sauter derrière  [lean boldness +1] [lean sociability +1]
+  ? good
+  {B} saute derrière, sans réfléchir, et d'un coup l'eau est beaucoup moins froide. {Ils} nagent jusqu'au Pont-Vieux et reviennent en riant.
+  ? bad
+  {B} saute derrière, sans réfléchir, et en ressort plus vite encore. {Ils} passent la fin de la visite enroulé{p:s|es} dans la même couverture, à claquer des dents.
+
+> judge | Noter le plongeon, très sévèrement  [lean honor +1] [lean compassion -1]
+  ? good
+  {B} reste au bord et note, très sévèrement, sur dix. Sept. Puis huit, après réflexion. Puis neuf, pour le courage. {B} finit par se jeter à l'eau pour remettre le dix en main propre.
+  ? bad
+  {B} reste au bord et note, très sévèrement : quatre sur dix. Puis {B} glisse en se levant, et tombe à l'eau avec une note bien pire.
+
+> fire | Préparer un feu sur la rive  [lean compassion +1] [lean rationality +1]
+  ? good
+  {B} ramasse du bois flotté et allume un petit feu sur la rive. À la sortie de l'eau, il y a de la chaleur, des noisettes grillées, et un bon silence.
+  ? bad
+  {B} prépare un feu sur la rive, mais le bois flotté est encore mouillé. Ça fait beaucoup de fumée et très peu de feu. {Ils} sèchent quand même, un peu fumé{p:s|es}.

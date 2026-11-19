@@ -309,11 +309,10 @@ namespace ProjectSYNCS.Services;
 //       PlynlingAdoptLines ..... a new Plynling
 //       PlynlingFeedLines · PlynlingPetLines · PlynlingBathLines · PlynlingMedicineLines
 //       PlynlingPassionTaughtLines ..... /plynling passion
-//     Play and visits
+//     Play
 //       PlynlingPlayPlayerWonLines · PlynlingPlayPlayerLostLines ... end of a /plynling play game
-//       PlynlingVisitKnockLines ...... /plynling visit's knock (the story is Helpers/Plynling/PlynlingVisitStory)
 //     Typed passion — the twins for a Plynling with a typed passion (PlynlingPassions.PickLines)
-//       PlynlingPetTypedLines · PlynlingFeedTypedLines · PlynlingVisitKnockTypedLines
+//       PlynlingPetTypedLines · PlynlingFeedTypedLines
 //       PlynlingThoughtTypedLines · PlynlingDreamTypedLines ... /plynling view's thought bubble, awake / asleep
 //     Sickness and death
 //       PlynlingSickWarningLines ...... DM when it falls sick

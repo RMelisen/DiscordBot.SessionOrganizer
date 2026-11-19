@@ -1,0 +1,43 @@
+# visit: missing_rule
+title: La règle qui manque
+place: 🏠 À la Maison des Pousses
+bonds: acquaintances friends bestfriends rivals
+stages: teen
+
+Les règles de la Bruyère sont affichées dans l'entrée, numérotées de un à quarante. {A} et {B} remarquent en même temps qu'il n'y a pas de règle vingt-trois. La Bruyère est au potager. Elle revient dans un quart d'heure.
+
+* write | Écrire une règle vingt-trois  [lean boldness +2]
+  ? good
+  {A} écrit à la craie : « Règle 23 : le goûter peut être pris deux fois. » La Bruyère la lit en rentrant, ne dit rien, et la laisse. Le goûter est pris deux fois.
+  ? bad
+  {A} écrit une règle vingt-trois. La Bruyère la lit en rentrant, dit le nom complet de {A} à voix haute, et ajoute une règle quarante et un. Elle parle des règles vingt-trois.
+
+* tell | Prévenir la Bruyère  [lean honor +2]
+  ? good
+  {A} va prévenir la Bruyère au potager. Elle fronce les sourcils, puis dit : « Mange. » Un gâteau apparaît sur la table du goûter.
+  ? bad
+  {A} va prévenir la Bruyère, qui le savait déjà, et depuis toujours. Elle tend un panier de haricots à équeuter, pour l'avoir dérangée.
+
+* search | Chercher la règle perdue  [lean energy +1] [lean rationality +1]
+  ? good
+  {A} trouve la règle vingt-trois glissée dans l'armoire de l'entrée : « On n'ouvre pas l'armoire. » Dans l'armoire, il y a une pile d'écharpes. {Ils} n'en parleront à personne.
+  ? bad
+  {A} cherche la règle perdue partout, et renverse la boîte à boutons de la Bruyère. Il y en a des centaines. {Ils} les ramassent jusqu'au soir.
+
+> secret | Garder le secret  [lean sociability -1] [lean compassion +1]
+  ? good
+  {B} promet de garder le secret, et le garde, ce qui est rare dans cette maison. Les autres pousses ne sauront jamais rien, et c'est ce qui rend la chose si bonne.
+  ? bad
+  {B} promet de garder le secret, et le dit à une pousse, qui le dit à une autre. Au dîner, toute la Maison le sait, sauf la Bruyère. Enfin, c'est ce qu'on croit.
+
+> dare | En rajouter une  [lean boldness +1] [lean energy +1]
+  ? good
+  {B} en rajoute une, à la craie, juste en dessous : « Règle 23 bis : la Bruyère a toujours raison. » La Bruyère la lit et file au potager, très vite, pour qu'on ne la voie pas sourire.
+  ? bad
+  {B} en rajoute une, puis une autre, et bientôt il n'y a plus de place sur le mur de l'entrée. La Bruyère rentre. Elle ne dit rien. Elle sort la brosse et le seau.
+
+> giggle | Rire sous cape  [lean sociability +1] [lean honor -1]
+  ? good
+  {B} rit sous cape, et le fou rire gagne toute la Maison, une pousse après l'autre, sans que personne sache pourquoi. Même la Bruyère, au potager, s'arrête un instant.
+  ? bad
+  {B} rit sous cape, puis plus du tout sous cape. La Bruyère passe la tête par la fenêtre, et le rire s'arrête net, partout à la fois.

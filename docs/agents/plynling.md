@@ -25,12 +25,12 @@ exact first word counts, so `;-;` or `;plop` stay chatter); `PlynlingShortcutSer
 first in `BotService`'s message fan-out, and **a handled message goes no further** — no XP, no
 passive cailloux, no chatter, like the slash command it stands for.
 - **They run the slash command's own code**, never a copy: `PlynlingModule.ViewLineAsync` (the
-  daily gift included), `BuildCardAsync`, `ForageReply`, `OpenVisitAsync` (every visit check, and
-  the visit itself at her home), `EconomyModule.WorkReply` and `EconomyModule.DailyReply`. A behaviour change goes there, and
+  daily gift included), `BuildCardAsync`, `ForageReply`, `OpenVisitAsync` (every visit check, the scene drawn and
+  the first visit card), `EconomyModule.WorkReply` and `EconomyModule.DailyReply`. A behaviour change goes there, and
   both entry points follow.
 - **A message cannot be answered privately**: a refusal is a reply that deletes itself after 15 s.
   Successes are the same public answers as the commands, as replies.
-- **The knock does not ping** from `;pl visit @x` — the person's own message already did.
+- **The first visit card does not ping** from `;pl visit @x` — the person's own message already did.
 - Only the commands that are routine and need no form: anything with a modal (`passion`,
   `abandon`) or several options stays a slash command. An unknown `;pl …` gets the usage line.
 - Its own `CooldownGate` per (person, shortcut), 3 s, drops repeats silently.
@@ -223,109 +223,108 @@ session's `Gate`, so exactly one move finishes the game, ends the session and pa
 `PlynlingService.FinishPlayAsync` (happiness, counts, cailloux in one save). The hourly limit is
 claimed at **start**, so abandoning never rerolls. A restart ends games in progress.
 
-## Visits
+## Visits — `Helpers/Plynling/Visits`, `PlynlingVisitCards`
 
-**An invitation, with a knock meant to ping** — `AllowedMentions` with the invited owner's id only.
-« Accueillir » carries the visitor's Plynling, the host and the expiry in its custom-id (nothing
-secret); only the host may press it, within two hours (`VisitInviteLife`). **Once a day per pair, either direction**, in
-two halves: **stored** as `PlynlingRelation.LastVisitDay` (set in the visit's own save, re-checked
-there as the backstop when two visits race), because a visit finds items and moves the bond and a
-restart must not reopen the day; and **in memory** in `PlynlingCooldowns`, which turns a double click
-away before the database is asked — taken after the stored check, released if the visit fails **or
-`VisitAsync` throws** (its save is its last step, so a throw means nothing happened — a held claim
-would answer « déjà vus » for a visit that never took place). **« Accueillir » defers before any database work**: on the
-Pi the reads and the save outran Discord's 3 s, leaving the visit claimed with the knock never
-closed. Its refusals are therefore ephemeral follow-ups, and the knock closes through
-`ModifyOriginalResponseAsync`. **A visit pays no
-cailloux** (two accounts could farm it). `Plays`, `PlaysWon` and `Visits` are recorded for badges.
+**Played, not told** (since 8.2.0): each owner makes one choice, and the whole visit lives in **one
+message**, edited from the first pick to the ending. No pager.
 
-**Decided before it starts, told as a story.** `VisitAsync` saves everything first; then
-`Helpers/Plynling/PlynlingVisitStory.Build` (pure) picks a place open at that Paris hour and tells it in
-**five to eight steps** (four plus half the script's lines): arrival; the script's opener; the rest
-of the script two lines to a step, the last pair finished by a closer that turns talk into doing;
-the activity with a two-line exchange; parting plus `PlynlingPlayCards.VisitOutcomeLines`. Pools are
-keyed by `VisitMood`: the bond **after** the visit, or `Conflict` for a bad scene or enemies. A
-restart mid-story can't change what happened. **Exception: the arrival uses the bond *before***
-(`MoodFor(true, Before)`), so Conflict arrivals are for enemies only.
+1. **The visitor starts it** — `/plynling visit` or `;pl visit @x`. `OpenVisitAsync` runs every check,
+   then `PlynlingVisitRunner.DrawScene` draws a scene for the bond **before** the visit, the Paris hour
+   and both stages (`VisitCatalog.Eligible`), through `ResponsePicker` over `visit-scene:<key>` so the
+   same scene doesn't come twice running. `BuildChoice` posts the place, the visitor, the intro and its
+   2–4 options for the visitor's owner, plus « 💌 Lui avouer ses sentiments » when
+   `ConfessionOpenAsync` says so. **This first send is the one that pings**, the invited owner only
+   (`AllowedMentions` with that id); not from `;pl visit` (the person's own message already did), not
+   at her home. Every edit after it sends `AllowedMentions.None`.
+2. **`pvc:`, the visitor's option** → the message becomes **the knock** (`BuildKnock`): what the visitor
+   chose, and the host's 2–4 reactions for the invited owner. It defers and reads both Plynlings (the
+   knock names the host, and the visitor's owner is not in the id).
+3. **`pvx:`, « 💌 »** → the same message becomes the confession scene's choice: its options are ways of
+   confessing, with no « 💌 ».
+4. **`pvr:`, the host's reaction — that is accepting the visit.** Within two hours (`VisitInviteLife`,
+   counted from step 1; the expiry rides in every id). It defers, runs the refusal chain (gone, frozen,
+   asleep, sick: ephemeral follow-ups, message unchanged), then `PlynlingVisitRunner.RunAsync`, and
+   `BuildEnding` replaces the message. The visit is saved by then, so `ShowEndingAsync` never lets a
+   refused edit swallow it: it falls back to a closed card with the outcome lines, and logs.
 
-**The parting follows the outcome when the visit broke something**: `DeparturePool` gives a refused
-confession `RefusedDepartures` (the visitor always confesses, the host said no) and a break-up
-`BreakUpDepartures` — exactly the outcomes `OutcomeFace` turns sad. Other partings stay mood-keyed,
-so they must read right just before any outcome line.
+- **Ids**: `pvc:{visitor}:{hostOwner}:{expiry}:{scene}:{option}`, `pvx:{visitor}:{hostOwner}:{expiry}`,
+  `pvr:…:{scene}:{option}:{reaction}` — everything the handler needs, nothing secret, each step its own
+  verb. The validator caps scene keys at 20 and choice keys at 12 so `pvr:` stays under Discord's 100. A
+  scene or choice key no longer in `VisitCatalog`, or a past expiry, closes the message as expired.
+- **The wrong person** gets a private refusal and the message stays as it was: `NotYourChoice` on the
+  visitor's buttons, `NotYourInvite` on the host's. The host's check comes **before** the expiry's, so a
+  stranger never closes someone's knock.
+- **Old messages**: a knock from before 8.2.0 (`plyn:visit:*:*:*`, « Accueillir ») closes as expired, no
+  visit. Told stories keep paging (`vis:*`, `VisitStories`, `VisitStoryRecord`, the `VisitStory` /
+  `VisitCast` / `VisitBeat` records) until `KeepDays` (30) after 8.2.0; **then remove all of it in a later
+  version**, the table with a migration.
 
-### Conversations — `Helpers/Plynling/PlynlingScripts`
+**Once a day per pair, either direction**, in two halves: **stored** as `PlynlingRelation.LastVisitDay`
+(set in the visit's own save, re-checked there as the backstop when two visits race), because a visit
+finds items and moves the bond and a restart must not reopen the day; and **in memory** in
+`PlynlingCooldowns`, which turns a double click away before the database is asked — claimed by
+`RunAsync`, released if the visit throws, returns nothing or comes back « trop tard » (its save is its
+last step, so a throw means nothing happened — a held claim would answer « déjà vus » for a visit that
+never took place). **Every click after the first defers before any database work**: on the Pi the reads
+and the save outran Discord's 3 s (« Accueillir » once saved a visit whose knock never closed), so
+refusals are ephemeral follow-ups and the message moves through `ModifyOriginalResponseAsync`. **A visit
+pays no cailloux** (two accounts could farm it). `Plays`, `PlaysWon` and `Visits` are recorded for badges.
 
-**One script, never lines drawn separately** (separately drawn lines never answered each other).
-Whole conversations of **2, 4, 6 or 8** `ConvoLine`s: A's opener (narration `\n` words), then
-spoken lines each answering the last, from whichever Plynling the script says (some talk twice in a
-row — two in a row share one bubble, use it on purpose). Keyed by passion, `ConvoFlavor` (rivals and
-conflicts `Tense`, otherwise `Friendly`) and whether B shares the passion; a typed passion only gets
-the generic `ForCustom` scripts, which name it as `{P}` only.
+**The odds are hidden** (`VisitOdds`). The base is `PlynlingBonds.GoodSceneChance` (compatibility, the
+pull, the lovers' bonus, the enemies' penalty). **The visitor's option is judged by the host's
+personality, the host's reaction by the visitor's**: each choice carries 1–2 `[lean <axis> ±n]`, matched
+against the judge's axes (`PlynlingPersonality.Axes` of its traits, through `PlynlingService.AxesAsync`).
+Each choice shifts the chance by `MaxShiftPerChoice` (0.075) × tanh(match / `LeanSoftness` (1000)), so
+both together move it 15 points at most and luck always stays; `GoodChance` and `AcceptChance` clamp
+to 5–95 %. Buttons say nothing of it. The leans sit in a public repo — the owner accepts that.
 
-- Scripts are drawn by opener (for the picker's no-repeat history) — **openers must be unique within
-  a key** (harness checks).
-- **Add whole scripts, never loose lines.** Lengthen by inserting in the middle, never appending —
-  the last line leads into the activity.
-- **Two lines to a step**, and the closer goes to whoever did **not** say the last line, so the
-  final pair is always an exchange. Hence the **even** count (harness checks). A two-line script is
-  opener + one answer that lands alone.
-- Keep each key's length mix: about a third at 2, half at 4, the rest 6 or 8.
-- `PlynlingScripts/` (one file per passion, plus `Custom`) is generated from the scratch writing sheets
-  but reads fine by hand. Each passion file is a method merged into `Catalog`; a new passion adds both.
-- Templates: `{A}`/`{B}` names, `{ils}`/`{Ils}` (« elles » only for two girls),
-  `{a:m|f}`/`{b:m|f}`/`{p:m|f}` agreements. The harness expands every line for all four gender
-  pairs and builds full stories.
+**Confessions happen only by choice** — no roll after a good scene. « 💌 » is offered when the pair
+`CanConfess` (below), no refusal between them in the last `RefusalCooldown` (3 days, either direction,
+stored as `PlynlingRelation.LastRefusalAt` so a restart does not lift it), **and** today is one of the
+pair's offer days: `PlynlingBonds.ConfessionOffered` hashes the pair and the Paris day, true on
+`ConfessionOfferChance` (25 %) of them, so restarting the visit cannot reroll it. **The 25 % is the
+owner's choice and departs from the design**, which offered it on every eligible visit: an owner
+confessing at the first chance then made couples twice as fast (see the simulation below). The save
+re-checks eligibility and the cooldown, not the offer day (a knock answered past midnight keeps its
+confession); if the pair may no longer confess, the visit **does not happen**: nothing saved, the claim
+released, the message closed with `VisitTooLate`, and the pair may still meet that day. A confession
+counts as a good scene (+12…17, finds, closeness), then the answer rolls on `AcceptChance` (the old
+acceptance chance shifted like the scene); a refusal costs `HeartbreakLoss` and sets `LastRefusalAt`.
 
-**Faces.** `VisitBeat` holds the text and a face per Plynling: happy, content, sad, or
-`PlynlingMood.Angry` (visits only — `PlynlingLife.Mood` never returns it). Defaults come from
-`Faces(mood)` (speaker, listener, narration); a parting follows the outcome (refused/break-up sad, new
-couple happy, new enemies angry). A line may start with a tag, stripped before display: `[sad]` on a
-spoken line is the speaker's face, on narration both; `[A:sad B:happy]` sets each. Only the four faces
-parse — the harness fails on any line still starting with `[`.
+**The ending** is two halves and the outcome: the visitor's option's half, the host's reaction's half —
+`good` / `bad`, or `yes` / `no` in the confession — then `PlynlingPlayCards.VisitOutcomeLines`. A host's
+half must read right after any of the visitor's options. Faces: good → `Faces(MoodFor(true, After))`'s
+narration face; bad → sad between friends or closer, angry otherwise; `OutcomeFace` overrides when the
+visit broke something (refusal, break-up: sad; new couple: happy; new enemies: angry). A face tag at the
+start of a half (`[sad]` for that half's Plynling, `[A:… B:…]` for each) wins. `PlynlingMood.Angry` is for
+visits only (`PlynlingLife.Mood` never returns it). Both sprites go through `PlynlingArt.VisitSprite`
+(`_visit` files, a larger transparent canvas — `VISIT_CANVAS` in `tools/plynling-art/export.py`, 80 % —
+because a gallery of two spans the width), and stay clean.
 
-**The story card never moves on its own.** Each step: a `MediaGallery` of both sprites (that step's
-face, alt text = name), the text, « 3/7 », and ◀ ▶ (`vis:prev:{story}:{beat}` / `vis:next:…`,
-disabled at the ends). « Accueillir » closes the knock in place and posts step 1 as a **follow-up**
-(a new message at the bottom). No timer, no background edit. Every step before the last also has
-« ⏭ Fin » (`vis:last:…`); on the last, ▶ becomes « ↺ Début » (`vis:first:…`) and « Fin » goes —
-every button its own verb. A gallery of two spans the width, so the sprite is shrunk inside its
-picture: `PlynlingArt.VisitSprite` links the `_visit` files (larger transparent canvas,
-`VISIT_CANVAS` in `tools/plynling-art/export.py`, 80%). **Stories are stored whole** by `VisitStories`
-(transient, `VisitStoryRecord`: the story as JSON with enums by name, kept `KeepDays` = 30, pruned by
-`Day` in SQL) with a snapshot of both Plynlings (name, species, stage, passions), so paging survives
-a restart and reads no Plynling; the picture URL is rebuilt per step. They cannot be rebuilt the way
-event stories are: their words come from the `ResponsePicker`'s history and pools that change between
-versions. A failed store is logged and the story still told — only its arrows say it is gone. A
-story whose shapes changed since it was stored also reads as gone, so renaming a `VisitStory` field
-or a face/stage enum name orphans the stored ones (harmless, but know it).
+**Scenes are files**: `ProjectSYNCS/Stories/Visits/<key>.visit`, 20 scenes plus `confess` at launch, the
+format and the load rules in `plynling-storylines.md` (*Visit files*). Each scene names its bonds (a
+first meeting is acquaintances), its hours (Paris; `20-1` runs across midnight) and its stages.
+**Every bond × stage pair needs a scene at every hour** (`VisitValidator.Coverage`, at startup and in the
+checks), or a visit could find nothing to draw. Templates: `{A}` is always the visitor, `{B}` the host,
+`{ils}` / `{Ils}` the pair (« elles » only for two girls), `{a:m|f}` / `{b:m|f}` / `{p:m|f}` agreements —
+`PlynlingVisitStory.Expand`. Button labels carry the names raw (a button renders no markdown); text
+displays carry `SafeName`. The writing follows `docs/plynling-writing-style.md` and `docs/village-lore.md`;
+Claude writes a sheet in French, the owner reviews it, and the files are copied from the approved sheet.
 
 ### Passions
 
 `Plynling.Passion` is one of 12 in `Helpers/Plynling/PlynlingPassions`, stored as an int (**append-only**),
 rolled at adoption. **`TaughtPassion` is hostile free text** from `/plynling passion` (2–40 chars, no
 links, 24 h cooldown; staff clear it with `/admin plynling passion-reset`), sanitised and sent with
-pings off. `PlynlingPassions.Resolve` upgrades a typed text naming a catalog passion.
-
-- Catalog passions have hand-written pools (openers, shared lines, activities, pair combos); a
-  custom one appears only through generic templates as `{P}` — **never after « de » or « à »**
-  (« parler de les trains »). `Expand` inserts `{P}` **last**, so typed text is never read as a
-  template. `{S}`/`{L}` are speaker/listener, with `{s:m|f}`/`{l:m|f}`.
-- Beat 2's speaker is visitor or host at random; the subject is a shared passion 60% of the time
-  when there is one.
-- The activity is the squabble in a conflict; otherwise `MoodActivityShare` (30%) from
-  `Activities[mood]`, the rest from the subject: a catalog passion's activities **plus** any combo
-  with the listener's passions (combos join the pool, never replace it — each of the 25 pairs has
-  three), or the custom ones.
+pings off. `PlynlingPassions.Resolve` upgrades a typed text naming a catalog passion. **Visits no longer
+use passions** (8.2.0 removed the conversations, the activities and the pair combos).
 
 **A typed passion is quoted back, Tomodachi-style** — one that stayed free text
-(`PlynlingPassions.Typed`, not recognised by the catalog) is the owner's own words. In a visit, when either has one, 45%
-(`TypedMomentChance`) of the time it comes up once outside the conversation — arrival, exchange or
-parting, from `TypedArrivals` / `TypedExchangesOwnerFirst|Second` / `TypedDepartures` (`{S}` its
-owner, `{P}` the text; the exchange pool is chosen by who owns it, the visitor speaking first; a
-typed parting never replaces a refusal's or break-up's). On the card, `PlynlingPassions.PickLines`
-swaps in `PlynlingPetTypedLines` / `PlynlingFeedTypedLines` / `PlynlingVisitKnockTypedLines` 15%
+(`PlynlingPassions.Typed`, not recognised by the catalog) is the owner's own words. On the card,
+`PlynlingPassions.PickLines` swaps in `PlynlingPetTypedLines` / `PlynlingFeedTypedLines` 15%
 (`TypedLineChance`) of the time, with the passion as the **last** format argument (`{1}` for pet,
-`{2}` for feed and knock) — callers always pass it. The text never opens a sentence (lowercase).
+`{2}` for feed) — callers always pass it. The text never opens a sentence (lowercase), and never
+follows « de » or « à » (« parler de les trains »).
 `/plynling view` adds a thought bubble: `PlynlingPassions.Thought` returns `PlynlingThoughtTypedLines`
 (or `PlynlingDreamTypedLines` asleep) 25% (`ThoughtChance`) of the time, never dead or frozen, and
 only when no gift line fills the card.
@@ -346,6 +345,19 @@ time (median 51 visits at compatibility +10, 24 at +20). A refused confession co
 reshuffles every existing pair. A couple feels no pull and gets `LoversBonus` instead. `BondMargin`
 (10) stops a pair on a band edge flipping (and being announced) every visit. **Retune by re-running
 the simulation, never by feel.**
+
+**Visits with choices keep that pace** (`VisitOdds`, simulated by `VisitSimulation` in the checks:
+`dotnet run --project tests/ProjectSYNCS.Checks -- visit-sim`, and `-- visit-sweep` for other softness
+values). The simulation first replays the old rules (11 / 18 / 21 / 19 / 14 / 17 %, 29 %, median 53 at +10
+and 24 at +20: the figures above, within noise), then the new ones.
+Random choices, pressing « 💌 » whenever it shows: 11 / 17 / 21 / 19 / 14 / 18 %, a boy and a girl a
+couple within 60 visits 31 % of the time, median 51 at +10 (23 at +20). The best choices every time: 10 / 16 / 20 /
+20 / 15 / 20 %, 34 %, median 45 at +10 and 22 at +20 (the target: no less than 0.8 × the old 53). The knobs:
+`LeanSoftness` 1000, `MaxShiftPerChoice` 0.075, and **`PlynlingBonds.ConfessionOfferChance` 0.25, the
+owner's choice** — « 💌 » shows on a quarter of an eligible pair's days (hashed by pair and day, so a
+restarted visit cannot reroll it). Offered every eligible day, an owner confessing at the first chance
+made couples twice as fast (median 24 at +10) whatever the softness, and a longer `RefusalCooldown`
+barely helped (30 days still gave 28).
 
 The bond follows affinity (`BondFor`), except a couple: only a confession makes one, only a slide
 below +40 undoes it. **Confessions are a boy and a girl only — the owner's explicit choice, keep
@@ -401,10 +413,12 @@ every Ready and on `JoinedGuild`.
   (no typed variant), `/plynling view` opens with `MascotViewLines`, « Laver » answers with
   `PlynlingText.MascotBath`. These are plain `string[]`, **not** `GenderedLines` (an M half would be
   dead text).
-- **Visiting her skips the knock**: `/plynling visit user:@SYNCS` runs at once, posts a
-  `MascotWelcomeLines` line instead of the knock (no ping), then the story. Both entry points go
-  through `PlynlingVisitRunner` (claim, scene, release on failure, story) so they can't drift; each
-  keeps its own pre-checks. Otherwise a bot host is refused.
+- **Visiting her skips the knock**: `/plynling visit user:@SYNCS` posts the visitor's options with no
+  ping; once its owner picks, she reacts from her own traits (`VisitOdds.MascotReaction`: the reaction
+  whose leans best match her axes, ties in file order) and the visit plays at once, a
+  `MascotWelcomeLines` line above the ending. Both entry points open through `OpenVisitAsync` and play
+  through `PlynlingVisitRunner` (claim, play, release on failure), so they cannot drift. Otherwise a bot
+  host is refused.
 
 ## Art
 
@@ -415,7 +429,7 @@ every Ready and on `JoinedGuild`.
   left-right motion) — keep motion vertical or in place.
 - **`PlynlingArt.SpriteOf` is the one way to picture a living Plynling** (card, play card, journal,
   knock, announcements); it adds `_dirty` when hygiene < 33% and not frozen. `DirtyMoods` must match
-  `DIRTY_STATES` in `export.py`. Visit stories stay clean (`VisitSprite` never takes it) — a
+  `DIRTY_STATES` in `export.py`. Visit endings stay clean (`VisitSprite` never takes it) — a
   decision. See `tools/plynling-art/README.md` for the mud and the fly.
 - `StagedSpecies` must match `STAGED` in `export.py` (artcheck compares them). The adult filename has
   no stage segment. Every mushroom baby is hand-drawn (`<species>_baby` in `species.py`) — a derived
@@ -440,7 +454,7 @@ break on id.
 
 ## `/plynling help`
 
-Within ~60 characters of the 6000 embed cap (5 938). Measure before adding; shorten or split rather than
+Within ~85 characters of the 6000 embed cap (5 917). Measure before adding; shorten or split rather than
 let it throw. The main `/help` points to it in one line only.
 
 ## Data migrations and the production launch

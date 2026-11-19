@@ -1,0 +1,30 @@
+// Fixture: the confession scene. No bonds line; its halves are '? yes' and '? no'.
+# confession: test_confess
+title: L'aveu
+place: 🌉 Sur le pont
+
+{A} est venu{a:|e} avouer ses sentiments à {B}.
+
+* straight | Le dire d'un trait  [lean boldness +2]
+  ? yes
+  {A} le dit d'un trait.
+  ? no
+  [sad] {A} le dit d'un trait, et le silence est long.
+
+* pebble | L'écrire sur un galet  [lean rationality +1] [lean sociability -1]
+  ? yes
+  {A} tend un galet.
+  ? no
+  {A} tend un galet, qui tombe.
+
+> answer | Répondre tout de suite  [lean boldness +1]
+  ? yes
+  {B} répond oui, ravi{b:|e}.
+  ? no
+  {B} répond non, doucement.
+
+> blush | Rougir  [lean compassion +1]
+  ? yes
+  {B} rougit et dit oui.
+  ? no
+  {B} rougit et dit non.

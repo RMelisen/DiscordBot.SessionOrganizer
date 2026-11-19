@@ -1,0 +1,44 @@
+# visit: card_partners
+title: Les partenaires
+place: 🃏 À l'auberge du Pont-Vieux
+bonds: friends rivals enemies
+hours: 17-1
+stages: teen adult elder
+
+Il manque deux joueurs à la table du coin, et la Courge a décidé : {A} et {B} joueront ensemble, contre le Noyer et le Fou. « Ensemble, mes choux. C'est ma table, c'est ma règle. » Le Noyer bat déjà les cartes, très sûr de lui.
+
+* signs | Inventer des signes secrets  [lean honor -1] [lean rationality +1]
+  ? good
+  {A} invente des signes : un sourcil pour les cœurs, une toux pour les piques. Ça marche si bien que le Noyer demande à voir les manches de tout le monde.
+  ? bad
+  {A} invente des signes secrets, mais la fumée du feu fait tousser pour de bon. On joue pique toute la soirée.
+
+* bold | Jouer gros dès la première main  [lean boldness +2]
+  ? good
+  {A} joue gros dès la première main, et gagne. Le Noyer parle de lui à la troisième personne pour se consoler.
+  ? bad
+  {A} joue gros dès la première main et perd tout ce qu'il y avait à perdre, c'est-à-dire trois noisettes. La Courge les note sur l'ardoise.
+
+* fair | Jouer franc jeu, carte après carte  [lean honor +2]
+  ? good
+  {A} joue franc jeu, carte après carte. {Ils} perdent la première partie, gagnent la deuxième, et le Fou déclare que c'est l'égalité la plus juste qu'il ait jamais vue.
+  ? bad
+  {A} joue franc jeu, et le dit à chaque carte : « Je n'ai pas de cœur. » Le Noyer, qui écoute, gagne toutes les mains.
+
+> follow | Suivre sans discuter  [lean honor +1] [lean vengefulness -1]
+  ? good
+  {B} suit sans discuter, et pour une soirée, {ils} jouent comme une seule main. La Courge raconte déjà à la table d'à côté qu'on ne peut plus les séparer.
+  ? bad
+  {B} suit sans discuter, même quand il aurait fallu discuter. Le Fou gagne, et s'excuse auprès de chaque carte.
+
+> argue | Discuter chaque coup  [lean boldness +1] [lean vengefulness +1]
+  ? good
+  {B} discute chaque coup, à voix basse puis à voix haute. Le Noyer et le Fou, fascinés, oublient de jouer. La partie est gagnée par forfait.
+  ? bad
+  {B} discute chaque coup, si fort que la Courge confisque les cartes et sert la soupe. La partie reprendra demain. Elle ne reprendra pas.
+
+> bluff | Bluffer avec aplomb  [lean honor -2]
+  ? good
+  {B} bluffe avec un aplomb parfait, sans un battement de cils. Le Noyer se couche, puis demande à voir. Il n'y avait rien. Il rit plus fort que tout le monde.
+  ? bad
+  {B} bluffe avec aplomb, mais la main qui tient les cartes tremble un peu. Le Fou le voit, le dit tout haut, et compte les tremblements.

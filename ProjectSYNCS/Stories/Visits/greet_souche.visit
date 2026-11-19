@@ -1,0 +1,42 @@
+# visit: greet_souche
+title: Le salut à la Souche
+place: 🍄 À la Lisière, devant la Souche
+bonds: acquaintances friends bestfriends lovers
+
+Le chemin passe devant la Souche, et la coutume veut qu'on la salue. Personne ne sait plus très bien comment. À quelques pas, la Mère Lichen est assise sur sa pierre, si immobile qu'on la prend pour une autre pierre.
+
+* bow | Saluer bien bas  [lean zeal +2]
+  ? good
+  {A} salue bien bas, la tête jusqu'à l'herbe. La Mère Lichen fait un tout petit signe de tête. Pour elle, c'est un grand discours.
+  ? bad
+  {A} salue si bas qu'il faut ensuite un bon moment pour se relever. La Mère Lichen regarde faire, sans aider. Elle dit que la Souche n'est pas pressée.
+
+* sit | S'asseoir à côté de la Mère Lichen  [lean energy -1] [lean compassion +1]
+  ? good
+  {A} s'assoit à côté de la Mère Lichen, sans rien demander. Elle ne dit rien. Au bout d'un long moment, elle pose une main sur la sienne.
+  ? bad
+  {A} s'assoit à côté de la Mère Lichen, puis pose une question. Puis une autre. Elle répond « pas encore » aux deux, et sort sa tisane.
+
+* touch | Poser la main sur l'écorce  [lean boldness +1] [lean energy +1]
+  ? good
+  {A} pose la main sur l'écorce. Elle est tiède, comme une joue. Sous la mousse, un fil blanc de la Trame luit un instant, puis plus rien.
+  ? bad
+  {A} pose la main sur l'écorce et la retire aussitôt : une fourmi. Puis deux. La Souche a des habitants, et eux sont pressés.
+
+> copy | Faire exactement pareil  [lean sociability +1] [lean zeal +1]
+  ? good
+  {B} fait exactement pareil, geste pour geste, et la Mère Lichen dit : « Tous les deux. Bien. » Elle n'avait pas dit autant de mots depuis l'hiver.
+  ? bad
+  {B} fait exactement pareil, mais un temps trop tard, comme un écho. La Mère Lichen ferme les yeux. On ne sait pas si elle rit.
+
+> why | Demander pourquoi on la salue  [lean rationality +2]
+  ? good
+  {B} demande pourquoi on salue la Souche. La Mère Lichen réfléchit très longtemps, puis répond : « Parce qu'elle est là. » {B} trouve que c'est la meilleure réponse possible.
+  ? bad
+  {B} demande pourquoi on salue la Souche. La Mère Lichen répond « pas encore », ce qui ne répond à rien, et pour toujours.
+
+> pebble | Laisser un petit galet  [lean compassion +1] [lean honor +1]
+  ? good
+  {B} laisse un petit galet au pied de la Souche. La Mère Lichen le ramasse, le regarde, et le met dans sa poche. Pour son tas, sans doute.
+  ? bad
+  {B} cherche un petit galet et n'en trouve que des gros. {B} en pose un, énorme. La Mère Lichen regarde le galet, puis {B}, et ne dit rien du tout.

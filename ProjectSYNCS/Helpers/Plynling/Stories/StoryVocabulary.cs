@@ -36,6 +36,20 @@ public static class StoryVocabulary
 
     public static bool IsKey(string word) => KeyShape.IsMatch(word);
 
+    /// <summary>
+    /// A <c>[lean &lt;axis&gt; ±n]</c> tag's words (["lean", axis, ±n]), shared by story options and
+    /// visit choices. Only the shape: the range of n is each validator's.
+    /// </summary>
+    public static bool TryLean(IReadOnlyList<string> words, out AiAxis axis, out int amount)
+    {
+        axis = default;
+        amount = 0;
+        return words.Count == 3 && words[0] == "lean" && TryEnum(words[1], out axis)
+            && int.TryParse(words[2], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out amount);
+    }
+
+    public static string LeanShape => $"write [lean <axis> ±n], axis one of {Choices<AiAxis>()}";
+
     public static StoryCondition? Condition(IReadOnlyList<StoryWord> words, bool negated, StoryPos pos, List<StoryError> errors)
     {
         var w = words.Select(x => x.Text).ToList();

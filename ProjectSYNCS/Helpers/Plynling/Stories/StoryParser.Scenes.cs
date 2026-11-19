@@ -19,7 +19,7 @@ public static partial class StoryParser
 
     // "publik: …", "Pace: now", a bare "handvoer": prose never starts like that. French prose may
     // start « Silence : … » (a space before the colon, a capital), which stays prose.
-    private static readonly Regex LooksLikeField = new(@"^([a-z_]+\s*:|[A-Za-z_]+:|[a-z_-]+$|retired\s*->)", RegexOptions.Compiled);
+    internal static readonly Regex LooksLikeField = new(@"^([a-z_]+\s*:|[A-Za-z_]+:|[a-z_-]+$|retired\s*->)", RegexOptions.Compiled);
 
     private static readonly HashSet<string> AttributeWords = new() { "needs", "roll", "lean", "owner-only", "secret", "mystery", "public", "retired", "accept", "refuse" };
 
@@ -177,12 +177,11 @@ public static partial class StoryParser
                     else Bad($"write [roll <stat> <difficulty>] or [roll <stat> vs], stat one of {StoryVocabulary.Choices<PlynlingStat>()}");
                     break;
                 case "lean":
-                    if (t.Count == 3 && StoryVocabulary.TryEnum<AiAxis>(t[1], out var axis)
-                        && int.TryParse(t[2], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var n))
+                    if (StoryVocabulary.TryLean(t, out var axis, out var n))
                     {
                         if (!lean.TryAdd(axis, n)) Bad($"'{t[1]}' leaned twice");
                     }
-                    else Bad($"write [lean <axis> ±n], axis one of {StoryVocabulary.Choices<AiAxis>()}");
+                    else Bad(StoryVocabulary.LeanShape);
                     break;
                 case "stress":
                     if (StoryVocabulary.IsKey(t[1]) && int.TryParse(t[2], NumberStyles.None, CultureInfo.InvariantCulture, out var cost))

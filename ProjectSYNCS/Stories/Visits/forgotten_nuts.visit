@@ -1,0 +1,42 @@
+# visit: forgotten_nuts
+title: Le panier oublié
+place: 🌰 Sur le chemin du Noyer
+bonds: rivals enemies
+
+Au bord du chemin, il y a un panier de noix « oublié ». Tout le monde sait que le Noyer l'oublie exprès, et tout le monde fait semblant de ne pas le savoir. {A} et {B} arrivent devant en même temps. Il n'y a qu'un panier.
+
+* half | Partager à la noix près  [lean honor +2]
+  ? good
+  {A} compte les noix et fait deux tas parfaitement égaux. Il en reste une. {A} la pose sur le muret, pour le Noyer. C'est le geste le plus juste de la semaine.
+  ? bad
+  {A} compte les noix pour partager à la noix près. Il en reste une. La dernière noix occupe tout le reste de la visite.
+
+* grab | Prendre le panier et filer  [lean greed +2]
+  ? good
+  {A} prend le panier et file, puis s'arrête au tournant et attend, en riant. On finit les noix ensemble, assis{p:|es} sur le muret, à se disputer les plus grosses.
+  ? bad
+  {A} prend le panier et file, droit sur le Noyer, qui revenait le chercher. « Ah ! Le Noyer l'avait oublié ! » Il reprend le panier, ravi, et donne une noix à chacun. Une.
+
+* proud | Ne pas y toucher, par fierté  [lean greed -2]
+  ? good
+  {A} ne touche pas au panier, par fierté, et c'est si digne que la colère s'en va toute seule. Ce soir, Jacquet viendra prendre les noix, comme chaque soir, et tout sera à sa place.
+  ? bad
+  {A} ne touche pas au panier, par fierté, et attend qu'on en fasse autant en face. On reste là, longtemps, à ne pas toucher au panier. Un écureuil passe et prend la plus grosse.
+
+> crack | Casser une noix, l'air de rien  [lean boldness +1] [lean vengefulness -1]
+  ? good
+  {B} casse une noix, l'air de rien, et en tend la moitié. On ne se dit rien. On mange chacun sa moitié. C'est une trêve, et elle a bon goût.
+  ? bad
+  {B} casse une noix, l'air de rien, et elle est vide. Les suivantes aussi. Le Noyer, qui guettait derrière la haie, a l'air très gêné.
+
+> contest | En faire un concours  [lean energy +1] [lean vengefulness +1]
+  ? good
+  {B} propose un concours : qui casse le plus de noix sans outil. Personne ne gagne, ce qui arrange tout le monde. Le chemin est couvert de coquilles.
+  ? bad
+  {B} propose un concours, et le concours tourne à la dispute, puis à la bataille de coquilles. Jacquet, caché dans la haie, compte les points.
+
+> report | Aller le dire au Noyer  [lean honor +1] [lean vengefulness +1]
+  ? good
+  {B} va dire au Noyer qu'il a oublié son panier. Le Noyer, enchanté qu'on lui en parle, l'offre aux deux, et racontera pendant un mois qu'il l'a offert.
+  ? bad
+  {B} va dire au Noyer qu'il a oublié son panier. Le Noyer est très vexé : on n'était pas censé le savoir. Il repart avec le panier, et revient l'oublier un peu plus loin.

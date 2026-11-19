@@ -1,0 +1,43 @@
+# visit: house_call
+title: La petite maison
+place: 🏡 Chez {B}
+bonds: acquaintances friends bestfriends lovers
+stages: adult elder
+
+{B} a une petite maison au bout du hameau, avec une chaise qui boite et une marmite qui chante toujours un peu sur le feu. {A} frappe, et la porte s'ouvre toute seule. Elle fait ça, paraît-il.
+
+* fix | Réparer la chaise qui boite  [lean energy +1] [lean compassion +1]
+  ? good
+  {A} cale la chaise avec un bout d'écorce plié en quatre. Elle ne boite plus, et ne grince même pas. C'est presque dommage.
+  ? bad
+  {A} répare la chaise qui boite. Maintenant, elle boite de l'autre côté.
+
+* cook | Goûter ce qui mijote  [lean greed +1] [lean boldness +1]
+  ? good
+  {A} soulève le couvercle de la marmite et goûte. C'est une soupe aux noix, et elle a le goût d'un dimanche, même un mardi.
+  ? bad
+  {A} soulève le couvercle, goûte, et se brûle la langue. Pendant toute la visite, {A} parle la langue dehors, pour la refroidir. On ne comprend pas grand-chose.
+
+* tidy | Ranger un peu, sans demander  [lean rationality +1] [lean sociability -1]
+  ? good
+  {A} range un peu, sans rien demander : les cuillères par taille, les bocaux par couleur. La maison a l'air d'avoir respiré.
+  ? bad
+  {A} range un peu, sans demander, et range si bien qu'on ne retrouve plus le sel. Ni la marmite. La marmite était sur le feu.
+
+> jam | Sortir la bonne confiture  [lean greed -1] [lean sociability +1]
+  ? good
+  {B} sort la bonne confiture, celle des grandes occasions, et décide que c'en est une. Le pot est fini avant la fin de la visite.
+  ? bad
+  {B} sort la bonne confiture, celle des grandes occasions, et le couvercle refuse de s'ouvrir. {Ils} essaient chacun leur tour. Il est toujours fermé.
+
+> sorry | S'excuser pour le désordre  [lean honor +1] [lean boldness -1]
+  ? good
+  {B} s'excuse pour le désordre, alors qu'il n'y en a pas. On en rit, puis on oublie de s'excuser du reste, et la visite dure jusqu'au soir.
+  ? bad
+  {B} s'excuse pour le désordre, puis pour la chaise, pour la marmite, pour le temps qu'il fait. {A} finit par s'excuser aussi, pour ne pas être en reste.
+
+> tour | Faire visiter la maison  [lean sociability +1] [lean energy +1]
+  ? good
+  {B} fait visiter la maison. Il n'y a qu'une pièce, mais elle se visite dans le détail : le coin où le soleil arrive à midi, le clou qui ne tient rien, la fenêtre d'où l'on voit la Souche.
+  ? bad
+  {B} fait visiter la maison. Il n'y a qu'une pièce, et la visite dure quand même une heure. {A} connaît maintenant l'histoire de chaque clou.

@@ -166,9 +166,13 @@ public static class PlynlingText
         $"Ce n'est pas ton Plynling : c'est à son propriétaire de choisir pour {g.Agree("lui", "elle")}.";
     public const string InviteExpired = "Personne n'a ouvert : l'invitation a expiré.";
 
-    // The knock once accepted: the story itself is posted as a new message under it.
-    public static string VisitAccepted(string visitor, string host) =>
-        $"✅ **{host}** a accueilli **{visitor}** — l'histoire est juste en dessous ↓";
+    // A visit's options belong to the visitor's owner (the host's reactions answer NotYourInvite).
+    public const string NotYourChoice = "Ce choix ne t'appartient pas : c'est au propriétaire du visiteur de décider.";
+
+    // The confession chosen can no longer be made (a couple formed elsewhere, a refusal the other way):
+    // no visit, and the day stays open.
+    public const string VisitTooLate =
+        "Trop tard : entre-temps, les choses ont changé et l'aveu n'est plus possible. La visite n'a pas eu lieu, vous pouvez encore vous voir aujourd'hui.";
 
     public static string PassionCooldown(DateTimeOffset ready) =>
         $"Tu lui as appris une passion il y a peu. Tu pourras en changer <t:{ready.ToUnixTimeSeconds()}:R>.";

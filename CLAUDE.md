@@ -111,11 +111,11 @@ the EF snapshot's type names. A new file goes in the subfolder of the subsystem 
 
 **Big classes are `partial` over a folder named after the class**, one file per theme, each under
 about 40 KB so it can be read whole (`BotResponses/`, `MessageCues/`, `PlynlingEvents/`,
-`PlynlingScripts/`, `ChatterService/`, `PlynlingVisitStory/`, `QuizBank/`, the big modules). Grow the
+`ChatterService/`, `QuizBank/`, the big modules). Grow the
 theme's file; start a new one rather than letting one swell.
 **A static field's initializer never reads a static field in another file**: the order across
 partial files is undefined, so it may read null. A catalog spread over files is one method per file,
-joined in the field (`PlynlingEvents.All`, `PlynlingScripts.Catalog`).
+joined in the field (`PlynlingEvents.All`).
 
 **Commands are grouped by whose thing it is**: `/plynling` the creature, `/inventory` the person's
 belongings, `/admin` moderation actions, `/config` settings, `/debug` the owner's tools, `/arcade` her games, `/minecraft` her life on the Minecraft server. Discord
@@ -238,7 +238,7 @@ free). `AllowedMentions.None` keeps the clickable pill while silencing it. Avata
   `new AllowedMentions(AllowedMentionTypes.Users)` and quotes through `MessageFormat.Quote`. The
   absence notice forwarded to the owner uses `AllowedMentions.None`.
 - The few messages **meant** to ping narrow to users (giveaway winners) or to one id (the Plynling
-  visit knock) — never roles or `@everyone`. `BotChat.PostWithTypingAsync` takes an optional
+  visit's first card) — never roles or `@everyone`. `BotChat.PostWithTypingAsync` takes an optional
   `AllowedMentions` for this.
 - **User-chosen names and texts are hostile input** (Plynling names, taught passions): render
   through `Format.Sanitize` and send with mentions off.
@@ -250,7 +250,7 @@ free). `AllowedMentions.None` keeps the clickable pill while silencing it. Avata
 - **An interaction must be answered within 3 s, and the Pi's database can outrun that.** A handler
   that reads or writes the database before it can show anything defers first (`DeferAsync`, then
   follow-ups / `ModifyOriginalResponseAsync`). Otherwise the work is saved while the click looks
-  dead — « Accueillir » on a visit did exactly that.
+  dead — the old « Accueillir » on a visit did exactly that.
 - **An in-memory claim taken before a save is released if the save throws**, or the person is
   refused for something that never happened.
 - **An exception escaping a hosted loop stops the whole bot** (default `StopHost`). Every sweep

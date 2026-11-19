@@ -44,18 +44,39 @@ public partial class PlynlingService
         return (plynling, wallet.Balance, badges, find);
     }
 
-    // A /plynling visit accepted: the scene plays out on their relationship — affinity, bond, a
-    // confession perhaps — and both are cheered (or not) by what they are to each other, all in
-    // one save. Null when either can no longer take part. A good scene may also turn up an item
-    // for each owner, drawn from `findRng` — kept apart from the scene's own draws.
-    public Task<VisitOutcome?> VisitAsync(int visitorId, int hostId, DateTimeOffset now, Random? rng = null, Random? findRng = null) =>
-        UnitAsync(() => VisitOnceAsync(visitorId, hostId, now, rng ?? Random.Shared, findRng ?? Random.Shared));
+    // A /plynling visit accepted: the scene plays out on their relationship — affinity, bond, the
+    // confession if the visitor came to confess — and both are cheered (or not) by what they are to
+    // each other, all in one save. `play` is what the two owners chose (VisitPlay). Null when either
+    // can no longer take part; TooLate (nothing saved) when the visitor came to confess and the pair
+    // no longer may. A good scene may also turn up an item for each owner, drawn from `findRng` —
+    // kept apart from the scene's own draws.
+    public Task<VisitOutcome?> VisitAsync(int visitorId, int hostId, DateTimeOffset now, VisitPlay play, Random? rng = null, Random? findRng = null) =>
+        UnitAsync(() => VisitOnceAsync(visitorId, hostId, now, play, rng ?? Random.Shared, findRng ?? Random.Shared));
+
+    // Whether the visit the visitor is starting offers « 💌 »: the pair may confess (MayConfessAsync)
+    // and today is one of its offer days (PlynlingBonds.ConfessionOffered). The visit's own save checks
+    // again whether the pair may confess, but not the offer day: a knock answered after midnight keeps
+    // the confession its visitor chose.
+    public async Task<bool> ConfessionOpenAsync(Plynling visitor, Plynling host, DateTimeOffset now) =>
+        PlynlingBonds.ConfessionOffered(visitor.Id, host.Id, AppTime.DayKey(now))
+        && await FindRelationAsync(visitor.Id, host.Id) is { } relation && await MayConfessAsync(relation, visitor, host, now);
+
+    private async Task<bool> MayConfessAsync(PlynlingRelation relation, Plynling visitor, Plynling host, DateTimeOffset now) =>
+        !PlynlingBonds.ConfessionCoolingDown(relation.LastRefusalAt, now)
+        && PlynlingBonds.CanConfess(relation.Bond, relation.Affinity, visitor, host,
+            await InCoupleAsync(visitor.Id, host.Id) || await InCoupleAsync(host.Id, visitor.Id));
+
+    // What the two are to each other before a visit: their stored bond, or acquaintances if they never met.
+    public async Task<PlynlingBond> BondAsync(int a, int b) => (await FindRelationAsync(a, b))?.Bond ?? PlynlingBond.Acquaintances;
+
+    // A Plynling's personality axes, as a visit's choices are judged by them (VisitOdds.Shift).
+    public async Task<IReadOnlyDictionary<AiAxis, int>> AxesAsync(Plynling p) => PlynlingPersonality.Axes(await GetTraitsAsync(p));
 
     // Whether the pair already met today (Paris day), as stored — the claim a restart cannot reopen.
     public async Task<bool> VisitedTodayAsync(int a, int b, DateTimeOffset now) =>
         (await FindRelationAsync(a, b))?.LastVisitDay == AppTime.DayKey(now);
 
-    private async Task<VisitOutcome?> VisitOnceAsync(int visitorId, int hostId, DateTimeOffset now, Random rng, Random findRng)
+    private async Task<VisitOutcome?> VisitOnceAsync(int visitorId, int hostId, DateTimeOffset now, VisitPlay play, Random rng, Random findRng)
     {
         var visitor = await GetByIdAsync(visitorId, now);
         var host = await GetByIdAsync(hostId, now);
@@ -65,25 +86,38 @@ public partial class PlynlingService
         if (PlynlingLife.IsSick(visitor) || PlynlingLife.IsSick(host)) return null;      // the callers say why
 
         var (lo, hi) = Pair(visitor.Id, host.Id);
-        var relation = await RelationForAsync(visitor.Id, host.Id, now);
         // The callers check VisitedTodayAsync first; this is the backstop for two visits racing past
         // it (the relation's token makes the slower one re-read and stop here).
         var day = AppTime.DayKey(now);
-        if (relation.LastVisitDay == day) return null;
+        var stored = await FindRelationAsync(visitor.Id, host.Id);
+        if (stored?.LastVisitDay == day) return null;
+        // Offered when the visitor started; someone may have formed a couple, or a refusal the other
+        // way started the wait, since. Checked before any change, so nothing is saved.
+        if (play.Confess && (stored is null || !await MayConfessAsync(stored, visitor, host, now)))
+        {
+            var bond = stored?.Bond ?? PlynlingBond.Acquaintances;
+            return new VisitOutcome(visitor, host, NoBadges, NoBadges, false, bond, bond, Confession.None, 0, TooLate: true);
+        }
+
+        var relation = await RelationForAsync(visitor.Id, host.Id, now);
         relation.LastVisitDay = day;
 
         var before = relation.Bond;
         var compatibility = PlynlingBonds.Compatibility(lo, hi);
-        var (good, delta) = PlynlingBonds.RollScene(compatibility, before, relation.Affinity, rng);
+        // A confession visit is a good scene, then the answer; otherwise the scene is rolled with both
+        // choices' shift. Never a confession the visitor did not choose.
+        var good = play.Confess || rng.NextDouble() < VisitOdds.GoodChance(compatibility, before, relation.Affinity, play.Shift);
+        var delta = good ? rng.Next(12, 18) : -rng.Next(12, 19);
         relation.Affinity = Math.Clamp(relation.Affinity + delta, -100, 100);
         relation.Meetings++;
 
-        var confession = Confession.None;
-        if (good && PlynlingBonds.CanConfess(PlynlingBonds.BondFor(relation.Affinity, before), relation.Affinity, visitor, host,
-                await InCoupleAsync(visitor.Id, host.Id) || await InCoupleAsync(host.Id, visitor.Id)))
-            confession = PlynlingBonds.RollConfession(compatibility, rng);
+        var confession = !play.Confess ? Confession.None
+            : rng.NextDouble() < VisitOdds.AcceptChance(compatibility, play.Shift) ? Confession.Accepted : Confession.Refused;
         if (confession == Confession.Refused)
+        {
             relation.Affinity = Math.Clamp(relation.Affinity - PlynlingBonds.HeartbreakLoss, -100, 100);
+            relation.LastRefusalAt = now;
+        }
 
         var after = confession == Confession.Accepted ? PlynlingBond.Lovers : PlynlingBonds.BondFor(relation.Affinity, before);
         if (after != before)

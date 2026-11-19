@@ -301,3 +301,50 @@ result; a memory only when a later event will plausibly read it. Built on a vill
 | Wave 1, bébé and ado (30 arcs) | `Stories/Village/*.story` | short drawn events; shortlist in `docs/superpowers/content/2026-11-19-village-events-wave-1-shortlist.md`; bébé and ado retired their old pulses in 7.74.2 (`plynling-events.md`); dev-guild playthrough not done |
 | Wave 2, adulte and ancien (54 arcs) | `Stories/Village/*.story` | short drawn events: 30 `stage: adult, elder` (an ancien also draws the adulte events, owner's rule), 10 adulte only, 10 ancien only, 4 seasonal (`requires: [season …]`); shortlist in `docs/superpowers/content/2026-11-19-village-events-wave-2-shortlist.md`; old adulte/ancien pulses still drawn; dev-guild playthrough not done |
 | The old C# events (50 keys, 28 arcs) | `Stories/{Friendship,Love,Rivalry,Milestone,Personal,Hardship}/*.story` | moved in 8.0.0, same texts, options and effects, each scene with its `was:`: the asks and their handover answers (campfire, secret, befriend, pact, declare, letters, rival, mend), the moments (teen, adult, forgot, sick, recovered, bereaved), the bébé dream and the ado apprenticeship (echoes in adulte), and the 12 breaks (`Hardship/break_*`); dev-guild playthrough not done |
+
+## Visit files
+
+The played visits (`plynling.md`, *Visits*) reuse this format's reader, tags and vocabulary, not the
+engine: **one scene per file**, `ProjectSYNCS/Stories/Visits/<key>.visit`, shipped with the rest of
+`Stories/`. `StoryLibrary` skips `.visit` files; `VisitLibrary` loads the folder with `VisitParser` and
+`VisitValidator` (code in `Helpers/Plynling/Visits/`). Fixtures: `tests/ProjectSYNCS.Checks/Visits/` —
+every word of the format appears in one.
+
+```
+# visit: ricochets            (or '# confession: confess': exactly one in the folder)
+title: Les ricochets
+place: 🌊 Au bord de la Sommeille      ← the card's heading
+bonds: acquaintances friends bestfriends rivals   (one or more; none in the confession)
+hours: 7-21                   (optional, Paris; From inclusive, To exclusive; 20-1 runs across midnight)
+stages: teen adult elder      (optional, all four by default)
+
+The intro: paragraphs, no tags, no fields.
+
+* far | Viser le record  [lean boldness +1] [lean energy +1]   ← the visitor's option, 2–4
+  ? good                      ('? yes' / '? no' in the confession)
+  The visitor's half when the scene goes well…
+  ? bad
+  …and when it goes badly.
+> cheer | Applaudir chaque essai  [lean sociability +1]       ← the host's reaction, 2–4
+  ? good
+  …
+```
+
+- **Leans**: 1–2 per choice, `[lean <axis> ±n]` with the `AiAxis` names, n within ±3 and not 0. An option is
+  judged by the host's axes, a reaction by the visitor's (`VisitOdds`). Nothing else may be tagged; a face tag
+  (`[sad]`, `[A:… B:…]`) may open a half.
+- **Text**: `{A}` the visitor, `{B}` the host, `{ils}` / `{Ils}`, `{a:m|f}` / `{b:m|f}` / `{p:m|f}`; no `{T}`, no
+  other token. A host's half must read right after **any** of the visitor's options.
+- **Caps** (worst case, 32-character names, each agreement at its longer form): labels 80 (a button), the place 100;
+  scene keys 20 and choice keys 12, so the custom-ids stay under Discord's 100.
+- **Coverage**: every bond × stage pair needs a scene open at every hour (`VisitValidator.Coverage`; one error per
+  pair, naming the missing hours).
+- **A load error stops the bot**, as for stories: `Program.cs` touches `VisitCatalog.Scenes` and
+  `VisitCatalog.Confession` in the same `try` as `StoryCatalog.Compiled`, and a `StoryLoadException` lists every
+  error. `VisitCatalog` is lazy and process-wide; the checks point `VisitCatalog.Folder` at the repo's folder.
+- **Keys**: a scene or choice key rides in the custom-ids of open visit messages (two hours) and in
+  `ResponsePicker`'s history, and is stored nowhere. Renaming one closes the visits open on it as expired, so treat
+  keys as forever anyway.
+- **Writing**: Claude writes a sheet in French (`docs/plynling-visit-scenes-sheet.md` for the launch's 20 + 1), the
+  owner reviews it, and the files are copied from the approved sheet word for word; any wording change goes back to
+  the owner.

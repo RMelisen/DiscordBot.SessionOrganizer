@@ -454,7 +454,7 @@ Each one is a boy or a girl, and the bot's French follows suit: *un* or *une Ply
 
 The bot has one of her own: **Ping-Qilin**, a girl Amanite whose passion is naps. Anyone can see
 her with `/plynling view user:@SYNCS`, pet and feed her from her card, and take their own Plynling
-to visit with `/plynling visit user:@SYNCS` — she opens the door herself. She never dies: SYNCS
+to visit with `/plynling visit user:@SYNCS` — she answers the door herself, and picks her Plynling's reaction. She never dies: SYNCS
 looks after her.
 
 - **Hunger** empties in 3 days and **happiness** in 36 hours. At 0% hunger it **dies** — really.
@@ -481,30 +481,30 @@ looks after her.
   cache-cache (find it behind one of three rocks, two tries), pierre-papier-ciseaux (first to
   two) or plus ou moins (a number from 1 to 100 in seven guesses, with every earlier guess listed). Once an hour; it always
   cheers it up (+15 % happiness), and a win adds +10 % and a few cailloux.
-- **Visits:** `/plynling visit user:` sends your Plynling knocking at someone's door. If they
-  press *Accueillir* within two hours, the knock closes and the visit is told below it, as a new
-  message, in six or seven steps you page through with ◀ ▶: arriving somewhere (the park, the
-  pond, the bakery, the host's home, or at night the rooftop under the stars…); one of them
-  bringing up a passion, and a real little conversation about it — both of them talking on each
-  step, each line answering the last; the talk turning into doing something; the activity;
-  then parting with what the visit changed. The two Plynlings stand side by side, and their faces
-  follow the conversation — happy, content, sad, or angry (a face only visits use). What they do
-  and say follows their passions and their relationship: polite interest between acquaintances, a
-  club of two when a passion is shared, one-upmanship between rivals, tenderness in a couple,
-  sulking after a squabble. Both get +20 % happiness. Once a day per pair, and no cailloux.
+- **Visits:** `/plynling visit user:` sends your Plynling to someone's. One message holds the whole
+  visit: a little scene somewhere in the village (skimming stones on the river, the queue at the
+  oven, sheltering from the rain…) chosen for their relationship, the hour and their ages, and what your
+  Plynling does there — you pick from two to four options. The message then knocks at the other
+  owner's door with their Plynling's reactions to that choice; picking one within two hours is
+  accepting the visit. How it goes depends on luck and on their characters: each choice is judged by
+  the other Plynling's personality. The message ends with both Plynlings side by
+  side — happy, content, sad, or angry (a face only visits use) — what each of them did, and what
+  the visit changed. Both get +20 % happiness. Once a day per pair, and no cailloux. A boy and a
+  girl who are very close sometimes get one more option, « 💌 Lui avouer ses sentiments »: a
+  confession scene, and the other's answer.
 - **Passions:** every Plynling is born with one of twelve passions (cooking, music, video
   games, stars, gardening, pebbles, stories, dance, painting, sport, insects, naps), shown on
   its card. `/plynling passion` lets its owner teach it a second one in their own words
   (« la pêche », « les trains ») — once a day, cleared by leaving it empty, and cleared by
   staff with `/admin plynling passion-reset` if it is inappropriate. A typed passion that names
-  one of the twelve gets that passion's own scenes.
+  one of the twelve becomes that passion.
 - **Badges and the journal:** each Plynling earns its own badges — 16 of them, for living a
   week, a month, six months and a year, for games played and won, visits, meals and pets, for
   being fed by a friend or saved from starving at the last moment, and for coming back from the
   dead. Each pays its owner a few cailloux, once. `/plynling journal [user]` shows its stats,
   its badges and its dated moments (adopted, grew up, first win, visits, badges…), for the
   living and the dead alike.
-- **Relationships:** every accepted visit plays a little scene — usually a good moment,
+- **Relationships:** every accepted visit plays out well or badly — usually well,
   sometimes a squabble — and each pair has a hidden compatibility, so some click and some never
   will. They become *amis*, *meilleurs amis*, or *rivaux* and *ennemis*; a boy and a girl who
   are very close may confess their love and become a couple (or suffer a heartbreak), and a

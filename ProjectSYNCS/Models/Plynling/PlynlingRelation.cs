@@ -24,6 +24,10 @@ public class PlynlingRelation
     // stored so a restart does not reopen it (PlynlingCooldowns only answers a double click faster).
     public int LastVisitDay { get; set; }
 
+    // When a confession between the two was last refused, either way, or null: no confession for
+    // PlynlingBonds.RefusalCooldown after it. Stored, so a restart does not lift the wait.
+    public DateTimeOffset? LastRefusalAt { get; set; }
+
     // Concurrency token, bumped on every save of the row (AppDbContext): a visit and an event moving
     // the same pair at once must not overwrite each other's affinity.
     public int Version { get; set; }

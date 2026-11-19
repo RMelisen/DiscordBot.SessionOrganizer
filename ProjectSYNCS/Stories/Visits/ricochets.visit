@@ -1,0 +1,43 @@
+# visit: ricochets
+title: Les ricochets
+place: 🌊 Au bord de la Sommeille
+bonds: acquaintances friends bestfriends rivals
+hours: 7-21
+
+Le passeur de la Sommeille a aligné des galets plats sur la rive, rangés par taille. Il dit que le record du gué est de sept rebonds, et que personne ne se souvient de qui le tient. Lui s'en souvient, mais il ne le dira pas.
+
+* far | Viser le record  [lean boldness +1] [lean energy +1]
+  ? good
+  Le galet de {A} rebondit six fois, sept, huit, et va se poser sur l'autre rive. Le passeur hoche la tête, très lentement, comme on salue.
+  ? bad
+  Le galet de {A} fait un seul rebond, énorme, et retombe dans la barque du passeur. Il le rend sans un mot.
+
+* pick | Offrir le plus beau galet  [lean compassion +1] [lean sociability +1]
+  ? good
+  {A} fouille la rive et tend à {B} un galet si plat qu'on pourrait écrire dessus. Il rebondit presque tout seul.
+  ? bad
+  {A} cherche si longtemps le galet parfait qu'il n'en reste plus un seul de plat sur la rive : le passeur les a tous lancés en attendant.
+
+* count | Compter les rebonds  [lean rationality +2]
+  ? good
+  {A} compte à voix haute, sans tricher, et annonce les chiffres comme le ferait l'Intendant. Personne n'a jamais été aussi bien compté.
+  ? bad
+  {A} compte trop vite, recompte, et finit par donner sept à tout le monde, par prudence. Le passeur fronce un sourcil.
+
+> cheer | Applaudir chaque essai  [lean sociability +1] [lean compassion +1]
+  ? good
+  {B} applaudit chaque rebond, même ceux qui n'en sont pas. À la fin, le passeur s'y met aussi.
+  ? bad
+  {B} applaudit si fort qu'un canard s'envole, vexé, et renverse la pile de galets en partant.
+
+> beat | Essayer de faire mieux  [lean greed +1] [lean energy +1]
+  ? good
+  {B} lance à son tour, pour faire mieux, et fait exactement aussi bien. {Ils} décident que c'est un record partagé.
+  ? bad
+  {B} lance à son tour, pour faire mieux, glisse sur la rive et finit les pieds dans la Sommeille. L'eau est froide. Le galet, lui, a fait trois rebonds.
+
+> watch | Regarder l'eau, simplement  [lean energy -1] [lean rationality +1]
+  ? good
+  {B} s'assoit et regarde les ronds s'élargir jusqu'à disparaître. Au bout d'un moment, plus personne ne lance rien, et c'est très bien comme ça.
+  ? bad
+  {B} s'assoit pour regarder l'eau et s'endort contre un rocher. Le passeur pose un galet plat sur la tête de {B}, pour voir. Il y tient.

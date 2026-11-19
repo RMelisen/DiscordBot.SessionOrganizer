@@ -1,9 +1,10 @@
 # Plynling writing style
 
-How Plynling lines are written — the visit conversations in `Helpers/Plynling/PlynlingScripts/` first, and
-the same voice for the other Plynling pools (arrivals, activities, closers, `BotResponses`). Taken
-from the approved rewrite of `Cooking/Friendly/false`; the engine rules themselves are in
-`docs/agents/plynling.md` ("Conversations — `Helpers/Plynling/PlynlingScripts`").
+How Plynling lines are written: the visit scenes (`ProjectSYNCS/Stories/Visits/`), the storylines, and
+SYNCS's own lines on the card (`BotResponses`). It was first taken from the approved rewrite of the old
+visit conversations (`Cooking/Friendly/false`, removed with them in 8.2.0); their examples stay below
+because the voice is the same. The file formats are in `docs/agents/plynling-storylines.md`, the village
+in `docs/village-lore.md`.
 
 ## The voice
 
@@ -43,86 +44,56 @@ The pattern the old scripts fell into, in any of its parts:
 Show, don't state: an object, a texture, a smell, a sound. The narration line sets the scene in
 one gesture (« {S} pose une tartelette devant {L} et la fixe sans cligner des yeux. »).
 
-## Length
-
-Mix within each key: about a third **2 lines** (the opener and one answer that lands on its own —
-a punchline or a quiet beat), half **4 lines**, the rest **6 or 8**. A long script earns its length
-with a build-up (the stone soup), never with padding. Keep every line short: one or two sentences,
-narration under ~20 words.
-
-## The two axes of a key
-
-**Flavour.** `Friendly` covers every bond from acquaintances to lovers, so nothing may assume a
-shared past or intimacy. `Tense` covers rivals *and* enemies: real friction — one-upmanship,
-bruised pride, passive-aggressive politeness, grudging respect, a well-aimed comeback — petty and
-funny, never cruel.
-
-**Shared.** When B shares the passion: insider knowledge, techniques, arguments only fans would
-have, traditions they both know. When B does not: curiosity, culture clash, charming
-misreadings — and B's own world poking through.
-
 ## Their world
 
-A village of small creatures, told through what they touch. Recurring figures are welcome and
-make the world feel lived-in: the old tortoise who serves at the café, the owl librarian who says
-« chut » with one eye, the heron on the old bridge who pretends to see nothing, the hedgehog
-station master, the old bear at the ice-cream stand, the sparrow who judges contests, the snail
-who is the only customer. Money is **cailloux**; food is berries, nuts, acorns, honey, bread, jam.
+A village of small creatures, told through what they touch: Humeval, in **`docs/village-lore.md`**.
+Its named villagers (`Stories/village.cast`) and places are welcome and make the world feel
+lived-in. Money is **cailloux**; food is berries, nuts, acorns, honey, bread, jam.
 
 Plynlings are all mushrooms, so a cap, a stem or gills may be named. Nothing about a Plynling's
 family: they are written family-neutral.
 
-These figures are the **old layer**, kept in visit conversations only (every event is set in the village since
-7.74.2). The storylines' village is **`docs/village-lore.md`** (Humeval): a storyline follows it
-and never mentions the old figures.
+The old visit conversations had figures of their own (the tortoise at the café, the owl librarian,
+the heron on the old bridge…). They were retired with them in 8.2.0: never mention them.
 
-## Mechanics (enforced by the harness)
+## Visit scenes
 
-- Line 0 is A's: narration, `\n`, then A's words. Line 1 is B's. Every other line is one spoken line.
-- An **even** count: 2, 4, 6 or 8. A generic closer follows the last line, said by whoever did not
-  say it, so the last line may land as a punchline — the closer turns it into doing something.
-- Two lines in a row from the same speaker share one bubble — use that for a beat (the soufflé's
-  « Je respirerai à peine. Je ne voudrais pas t'inquiéter, mais j'ai très envie d'éternuer. »).
-- `{S}` is A and `{L}` is B, in every line of the script. Any word agreeing with one of them goes
-  through `{s:m|f}` / `{l:m|f}`, and every line must read right for all four gender pairs. A word
-  agreeing with *both* (« l'un de l'autre », « tous les deux ») takes `{p:m|f}`, feminine only for
-  two girls — or is reworded away (« toi et moi », « ensemble »).
-- `{P}` only in the custom scripts. It renders as the typed text in guillemets — « les trains »,
-  « la pâtisserie japonaise » — of unknown gender and number, starting lowercase. So: never after
-  « de », « à », « du » or « au » (after a colon, « sur », « pour », « avec », « dans » is fine); no
-  pronoun that refers back to it (« ça » and « c'est » are safe); and never at the start of a
-  sentence, where its lowercase shows — « ma passion : {P}. », not « ma passion. {P}. ». With no
-  subject to be funny about, a custom script lives entirely on the two characters.
-- Openers are unique within a key.
-- Face tags: `[happy]`, `[content]`, `[sad]`, `[angry]` — on a spoken line, the speaker's face; on
-  narration, both. Use them where the emotion visibly turns, not everywhere.
+A scene (`docs/agents/plynling-storylines.md`, *Visit files*) is an intro, the visitor's options and the
+host's reactions, each with a good and a bad half. The ending prints the chosen option's half, then the
+chosen reaction's, then what the visit changed.
 
-## The narration around the conversation (`PlynlingVisitStory`)
+- **The intro sets one concrete situation** with a hook a choice can act on: two or three sentences, a
+  villager or a place from the lore, nothing that assumes how the two feel about each other beyond the
+  scene's bonds.
+- **Every option is a different kind of act** (bold, kind, clever, lazy…), and its leans say which: the
+  host judges it by its own character. The same for the reactions, judged by the visitor's.
+- **A host's half reads right after any of the visitor's options**: it is about the host's attitude, never
+  the visitor's exact act. Read every option × reaction pair aloud.
+- **A bad half is a small mishap with a smile**, never cruelty, and it must fit every bond the scene
+  serves (between best friends as between rivals).
+- **Halves are one or two sentences**; the outcome line (bond change, badges, happiness) follows them, so
+  they don't conclude the relationship.
+- `{A}` is the visitor and `{B}` the host in every line. A word agreeing with one of them goes through
+  `{a:m|f}` / `{b:m|f}`; one agreeing with both takes `{p:m|f}` (feminine only for two girls), or is
+  reworded away (« toi et moi », « ensemble »). Every line must read right for all four gender pairs.
+- Face tags `[happy]`, `[content]`, `[sad]`, `[angry]` (that half's Plynling) or `[A:… B:…]` may open a
+  half, where the emotion visibly turns, not everywhere.
+- **The confession** (`confess.visit`): its options are ways of confessing, its halves `yes` / `no`. A
+  `no` is gentle and leaves the two friends.
 
-Place scenes, arrivals, activities, exchanges, closers and partings are drawn **independently** and
-recombined at random, so each line must stand on its own:
+## Typed passions
 
-- **No props tied to a place.** A door, a table or a chair can land « Sur la falaise, face au
-  vent ». Use what travels: hands, pockets, a scarf, the path, the grass. (« {A} s'en va en claquant
-  des talons, faute de porte à claquer. »)
-- **No time of day or weather**, except in a place scene, which is already filtered by the hour.
-- **Respect what the mood guarantees.** Arrivals follow the bond *before* the visit, everything else
-  the bond *after*. A Friends arrival may open two people's first visit as friends, so no « comme
-  d'habitude »; a Lovers parting may follow a brand-new confession. Partings stay warm but not
-  euphoric, since an outcome line (a badge, a new bond) follows them.
-- **Exchanges follow any activity**, so they never refer to what was just done.
-- **Closers follow any last line** and turn it into doing something, with a little character.
-- **Passion activities serve every mood but conflict — rivals included** — so they stay light and
-  neutral. Bond activities (`Activities[mood]`) are where the mood shows.
-- **Place scenes are plain text**, printed as they are: no `{A}`, `{B}` or tags.
-- **Typed-passion moments** (`Typed…` pools) are the owner's words turning up out of nowhere,
-  Tomodachi-style: `{S}` owns the passion. They follow the `{P}` rules above, and so do the card's
-  thought bubbles (`PlynlingThoughtTypedLines`, `PlynlingDreamTypedLines`, passion as `{1}`).
+A typed passion renders as the owner's text in guillemets — « les trains », « la pâtisserie japonaise »
+— of unknown gender and number, starting lowercase. So: never after « de », « à », « du » or « au »
+(after a colon, « sur », « pour », « avec », « dans » is fine); no pronoun that refers back to it (« ça »
+and « c'est » are safe); and never at the start of a sentence, where its lowercase shows. That holds for
+the card's typed twins and thought bubbles (`PlynlingPetTypedLines`, `PlynlingFeedTypedLines`,
+`PlynlingThoughtTypedLines`, `PlynlingDreamTypedLines`).
 
 ## SYNCS's own lines on the Plynling card (`BotResponses`)
 
 These are in *her* voice — bratty, kawaii, petty — and players see them after every pet, meal,
-game and knock, so structural sameness shows fast. A pool used to be one shape repeated: the
+game and visit, so structural sameness shows fast. A pool used to be one shape repeated: the
 Plynling does something cute, she turns it back onto herself, a kaomoji closes it. Keep each pool
 to roughly:
 
@@ -139,11 +110,11 @@ to roughly:
   es un très bon nourricier ». Only the Plynling's words agree, through the M/F halves.
 - **`{1}` in the feed pool carries its article** (« une truffe »): never start a line with it (it
   would start lowercase) and never put « de », « à » or « que » in front of it.
-
 ## Checklist before a batch ships
 
-1. Read each script aloud: does the last line land?
-2. Does B have a voice in every script?
-3. Is any trick used twice in the key?
-4. Does the key hit the length mix?
-5. Run the scratch harness over the key (every script built as a full story, all four gender pairs).
+1. Read each scene aloud, every option followed by every reaction: does each pair land?
+2. Does each option, and each reaction, bring a different kind of act?
+3. Is any trick used twice in the batch?
+4. Does every bad half still fit every bond the scene serves?
+5. Run the checks (`dotnet run --project tests/ProjectSYNCS.Checks`): templates for all four gender pairs,
+   Discord's caps, and the coverage of every bond, stage and hour.

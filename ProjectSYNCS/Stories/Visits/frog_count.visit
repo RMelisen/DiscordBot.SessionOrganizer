@@ -1,0 +1,42 @@
+# visit: frog_count
+title: Le compte des grenouilles
+place: 🐸 Au bord de l'étang des Mouilles
+bonds: acquaintances friends bestfriends rivals
+
+Le Fou est assis au bord de l'étang et compte les grenouilles à voix haute. « Trente et une, trente-deux… non. Trente et une. » Il se tourne vers {A} et {B}. « Elles bougent. Il me faudrait des yeux de plus. »
+
+* count | Compter avec lui, sérieusement  [lean rationality +1] [lean honor +1]
+  ? good
+  {A} compte la rive de gauche sans en sauter une, le Fou celle de droite. Ils tombent sur trente-sept, et le Fou dit que c'est le bon chiffre, parce qu'hier aussi, c'était trente-sept.
+  ? bad
+  {A} compte la rive de gauche, sérieusement, et trouve trente-sept. Le Fou trouve trente-sept aussi, sur la rive de droite. Il faut tout recommencer.
+
+* gather | Les rassembler pour les compter  [lean energy +2]
+  ? good
+  {A} entre dans l'eau et pousse doucement les grenouilles vers un seul nénuphar. Elles s'y serrent, vexées, et se laissent compter. Trente-quatre.
+  ? bad
+  {A} entre dans la boue des Mouilles pour les rassembler, et y reste planté{a:|e} jusqu'aux genoux. Les grenouilles viennent s'asseoir tout autour, pour regarder.
+
+* guess | Annoncer un chiffre avec aplomb  [lean boldness +1] [lean rationality -1]
+  ? good
+  {A} annonce « quarante-deux » avec un tel aplomb que le Fou l'écrit. Il dit que c'est le premier compte juste de la semaine. Peut-être.
+  ? bad
+  {A} annonce un chiffre avec aplomb. Le Fou le regarde longtemps, très sérieux, puis dit : « Non. Ça, c'est le nombre de pierres du pré. » Il a l'air d'avoir raison.
+
+> name | Leur donner des noms  [lean compassion +1] [lean sociability +1]
+  ? good
+  {B} donne un nom à chaque grenouille. Ça aide beaucoup : on ne compte pas deux fois Madeleine. Le Fou adopte la méthode.
+  ? bad
+  {B} donne un nom à chaque grenouille, puis n'arrive plus à les reconnaître. Il y a maintenant quatre Madeleine.
+
+> doubt | Douter du compte  [lean rationality +2]
+  ? good
+  {B} doute du compte, à voix haute, et le Fou est ravi : d'habitude, on se contente de lui sourire. On recompte ensemble, et c'est le meilleur moment de sa journée.
+  ? bad
+  {B} doute du compte, et le Fou doute avec, puis du nombre d'étangs, puis du nombre de jours dans la semaine. On en est à huit.
+
+> sing | Chanter pour les faire sortir  [lean boldness +1] [lean sociability +1]
+  ? good
+  {B} chante une chanson de la Maison commune, et les grenouilles répondent toutes ensemble. On les compte au bruit. Le Fou trouve ça très scientifique.
+  ? bad
+  {B} chante, et les grenouilles se taisent toutes, d'un coup. On n'en voit plus une seule. Le Fou note : « Zéro. Chanson. »

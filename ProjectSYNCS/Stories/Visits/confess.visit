@@ -1,0 +1,47 @@
+# confession: confess
+title: L'aveu
+place: 🌉 Sur le Pont-Vieux
+
+{A} n'est pas venu{a:|e} pour se promener. {A} est venu{a:|e} dire à {B} quelque chose qui ne tient plus en place, et ça se voit de loin. Au milieu du Pont-Vieux, {A} pose la main sur la pierre, comme on le fait en passant, et ne la retire plus.
+
+* straight | Le dire d'un seul trait  [lean boldness +2]
+  ? yes
+  {A} le dit d'un seul trait, sans respirer, et sans regarder ailleurs une seule fois.
+  ? no
+  {A} le dit d'un seul trait, sans respirer. Après, le silence est très long, et la Sommeille passe dessous sans se presser.
+
+* flower | Offrir d'abord une fleur de la Lisière  [lean compassion +1] [lean sociability +1]
+  ? yes
+  {A} tend une petite fleur cueillie à la Lisière, puis dit le reste. La fleur tremble un peu. {A} aussi.
+  ? no
+  {A} tend une petite fleur cueillie à la Lisière, puis dit le reste. La fleur tremble un peu, et finit par tomber dans la rivière.
+
+* pebble | L'écrire sur un galet  [lean rationality +1] [lean sociability -1]
+  ? yes
+  {A} tend un galet plat. Dessus, à la craie, il y a tous les mots, écrits tout petit pour qu'ils tiennent.
+  ? no
+  {A} tend un galet plat, avec les mots écrits dessus à la craie. La craie a un peu bavé. Ça se lit quand même.
+
+* bees | Le faire dire aux abeilles par le Tilleul  [lean sociability +2] [lean boldness -1]
+  ? yes
+  Ce matin, le Tilleul l'a crié à ses ruches de la part de {A}, et tout le chemin jusqu'au pont l'a entendu. {A} n'a plus qu'à hocher la tête. C'est le plus dur.
+  ? no
+  Ce matin, le Tilleul l'a crié à ses ruches de la part de {A}, un peu de travers. Il a fallu tout redire, sur le pont, en entier.
+
+> answer | Répondre tout de suite  [lean boldness +1] [lean honor +1]
+  ? yes
+  {B} répond tout de suite, avant même la fin : oui. Puis encore oui, au cas où. La pierre du pont est tiède sous leurs deux mains.
+  ? no
+  {B} répond tout de suite, doucement : non. Pas comme ça, pas tout à fait. {B} reste sur le pont jusqu'à ce que {A} soit prêt{a:|e} à rentrer.
+
+> blush | Rougir et regarder la rivière  [lean boldness -1] [lean compassion +1]
+  ? yes
+  {B} rougit et regarde la rivière très longtemps. Puis {B} pose la main à côté de celle de {A}, sur la pierre. Tout près. C'est un oui, et tout le Pont-Vieux le sait.
+  ? no
+  {B} rougit et regarde la rivière très longtemps. Puis {B} dit non, si doucement que c'est presque une excuse. La rivière, elle, continue de passer.
+
+> laugh | Rire, d'un rire tout neuf  [lean sociability +1] [lean energy +1]
+  ? yes
+  {B} rit, d'un rire que personne ne lui connaissait, et dit oui au milieu du rire. Sur la rive, le passeur fait semblant de regarder ailleurs.
+  ? no
+  {B} rit, gentiment, d'un rire un peu gêné, et dit que non, mais que c'est la plus belle chose qu'on lui ait dite. On rentre ensemble, en parlant d'autre chose.

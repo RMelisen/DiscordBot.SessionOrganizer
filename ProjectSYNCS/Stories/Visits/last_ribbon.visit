@@ -1,0 +1,43 @@
+# visit: last_ribbon
+title: Le dernier ruban
+place: 🎀 Au marché, sur la place du Puits
+bonds: acquaintances rivals enemies
+hours: 8-18
+
+La colporteuse est de passage, et il ne lui reste qu'un ruban : vert mousse, juste de la bonne longueur. {A} et {B} tendent la main en même temps. La colporteuse croise les bras et attend de voir ce que vont faire ces deux-là.
+
+* offer | Le laisser à l'autre  [lean compassion +2]
+  ? good
+  {A} retire la main. La colporteuse hoche la tête, coupe le ruban en deux, et ne fait payer que la moitié. Elle ne dit toujours pas son nom.
+  ? bad
+  {A} retire la main, avec un grand geste. Le geste est si grand qu'il renverse le panier de sel. La colporteuse compte les grains. Tous.
+
+* bid | Offrir un caillou de plus  [lean greed +1] [lean boldness +1]
+  ? good
+  {A} offre un caillou de plus. La colporteuse l'empoche, puis tire de son sac un deuxième ruban, qu'elle gardait « pour une bonne vente ».
+  ? bad
+  {A} offre un caillou de plus, puis deux, et la place entière s'arrête pour regarder. Le ruban finit autour du cou de la chèvre commune, qui passait par là. Personne ne sait comment.
+
+* turns | Proposer de le porter chacun son tour  [lean sociability +1] [lean rationality +1]
+  ? good
+  {A} propose de le porter chacun son tour, un jour sur deux. La colporteuse trouve l'idée si raisonnable qu'elle note la date sur un bout d'écorce.
+  ? bad
+  {A} propose de le porter à deux, en même temps, pour gagner du temps. On essaie. Le ruban est vraiment juste de la bonne longueur pour une seule personne.
+
+> grab | Le prendre quand même  [lean greed +2]
+  ? good
+  {B} prend le ruban, puis s'arrête, et le noue au poignet de {A}. Personne, sur la place, ne s'y attendait. Surtout pas {B}.
+  ? bad
+  {B} prend le ruban d'un coup, si vite que le nœud se défait et que le ruban s'envole jusqu'au toit de la Maison commune. Il y est encore.
+
+> laugh | En rire  [lean sociability +1] [lean vengefulness -1]
+  ? good
+  {B} éclate de rire, et la colporteuse aussi, et la tisserande au bord de la place. D'un coup, le ruban a l'air beaucoup moins important.
+  ? bad
+  {B} éclate de rire, un peu trop fort et un peu trop longtemps. La colporteuse range le ruban, ferme son sac et repart vers la Côte. Elle reviendra au printemps.
+
+> haggle | Négocier avec la colporteuse  [lean rationality +1] [lean greed +1]
+  ? good
+  {B} négocie si bien que la colporteuse lâche le ruban, un sachet de sel et la moitié d'une nouvelle d'ailleurs. Elle garde l'autre moitié pour la prochaine fois.
+  ? bad
+  {B} négocie, la colporteuse aussi, et au bout d'un quart d'heure le ruban coûte trois cailloux de plus qu'au début. Personne ne sait comment.

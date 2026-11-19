@@ -1,0 +1,43 @@
+# visit: lichen_tisane
+title: La tisane de la Mère Lichen
+place: 🪨 Chez la Mère Lichen
+bonds: acquaintances friends bestfriends
+stages: baby
+
+La Mère Lichen a posé deux bols fumants devant la porte de sa cabane. Personne n'a demandé de tisane. Elle a décidé que c'était ce qu'il fallait à ces deux-là, et elle s'est rassise sur sa pierre pour regarder.
+
+* drink | Boire d'un trait  [lean boldness +2]
+  ? good
+  {A} boit d'un trait, et c'est bon, étonnamment bon, comme l'herbe après la pluie. La Mère Lichen hoche la tête. Elle le savait.
+  ? bad
+  {A} boit d'un trait, et fait une grimace si longue que la Mère Lichen a le temps de finir son propre bol en regardant.
+
+* blow | Souffler dessus, longtemps  [lean rationality +1] [lean energy -1]
+  ? good
+  {A} souffle sur le bol, longtemps, en faisant des petites vagues. La tisane refroidit juste comme il faut. La Mère Lichen dit : « Patient. » C'est un compliment.
+  ? bad
+  {A} souffle si fort sur le bol qu'il en reste la moitié sur le seuil. La Mère Lichen en reverse sans un mot. Elle a toujours une marmite d'avance.
+
+* pebbles | Aller voir le tas de galets  [lean energy +2]
+  ? good
+  {A} trottine jusqu'au tas de galets devant la porte, un par pousse, et en trouve un tout neuf, tout en haut. La Mère Lichen ne dit pas lequel est à qui. Mais elle regarde {A}.
+  ? bad
+  {A} trottine jusqu'au tas de galets et en fait tomber trois. La Mère Lichen les remet un par un, chacun à sa place exacte, pendant que la tisane refroidit.
+
+> same | Faire pareil  [lean sociability +1] [lean honor +1]
+  ? good
+  {B} fait pareil, en surveillant {A} du coin de l'œil. {Ils} finissent en même temps, posent les bols en même temps, et se trouvent très grand{p:s|es}.
+  ? bad
+  {B} fait pareil, mais à l'envers, et tout le monde finit mouillé. La Mère Lichen dit que la tisane, c'est aussi pour l'extérieur.
+
+> hide | Se cacher derrière la Mère Lichen  [lean boldness -2]
+  ? good
+  {B} se cache derrière la Mère Lichen, passe la tête, puis tout le reste. Elle ne bouge pas d'un fil. On peut se cacher derrière elle aussi longtemps qu'on veut : c'est à ça qu'elle sert, dit-elle.
+  ? bad
+  {B} se cache derrière la Mère Lichen et s'endort contre la pierre tiède. La visite se finit sans réveil : la Mère Lichen dit qu'on ne réveille pas une pousse qui dort.
+
+> share | Partager son bol  [lean compassion +2]
+  ? good
+  {B} tend son bol, pour partager. La Mère Lichen sourit, c'est-à-dire qu'une ride bouge. Elle reverse de la tisane dans les deux bols, à ras bord.
+  ? bad
+  {B} tend son bol pour partager et en renverse la moitié dans l'herbe. La Mère Lichen dit « pardon » à l'herbe, à la place de {B}.

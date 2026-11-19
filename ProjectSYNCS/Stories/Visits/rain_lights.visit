@@ -1,0 +1,43 @@
+# visit: rain_lights
+title: Les lumières de la Lisière
+place: 🌧️ À la Lisière, une nuit de pluie
+bonds: friends bestfriends lovers
+hours: 20-1
+
+Il bruine. Le Fou est assis sous une grande fougère, à la Lisière, et guette le sol depuis le début de la soirée. « C'est une nuit à lumières, dit-il. Je le sens dans les genoux. » Il fait une place à côté de lui. Elle est mouillée.
+
+* watch | Guetter avec lui, sans bouger  [lean zeal +1] [lean energy -1]
+  ? good
+  {A} s'assoit et guette sans bouger. Vers minuit, sous la mousse, un fil pâle s'allume, puis un autre. Le Fou ne dit rien. Il serre juste très fort le bras de {A}.
+  ? bad
+  {A} guette sans bouger, si longtemps et si bien que le sommeil finit par gagner. Le Fou dira que les lumières sont venues juste à ce moment-là. Il a l'air sincère.
+
+* lantern | Apporter une lanterne  [lean rationality +2]
+  ? good
+  {A} apporte une lanterne, pour mieux voir. Le Fou la trouve très belle et demande qu'on l'éteigne : les lumières sont timides. Dans le noir, après, on voit mieux qu'avant.
+  ? bad
+  {A} apporte une lanterne, pour mieux voir, et ne voit plus que la lanterne. Le Fou soupire : les lumières n'aiment pas la concurrence.
+
+* story | Lui demander de raconter la nuit des lumières  [lean sociability +1] [lean compassion +1]
+  ? good
+  {A} demande au Fou de raconter la nuit des lumières, et il la raconte, avec trois détails nouveaux, dont un qui fait frissonner. La pluie s'arrête pour écouter.
+  ? bad
+  {A} demande au Fou de raconter la nuit des lumières, et il la raconte. Puis il la recommence, parce qu'il a oublié un détail au début. Le détail, c'était la pluie.
+
+> close | Se serrer pour avoir chaud  [lean sociability +1] [lean compassion +1]
+  ? good
+  {B} se serre contre {A} pour avoir chaud. Le Fou fait semblant de regarder le sol avec beaucoup d'attention. Il sourit au sol.
+  ? bad
+  {B} se serre contre {A} pour avoir chaud, et une grosse goutte tombe de la fougère, pile entre les deux. Puis une autre. La fougère vise.
+
+> doubt | Douter à voix haute  [lean rationality +1] [lean zeal -1]
+  ? good
+  {B} doute à voix haute, gentiment. Le Fou est ravi d'avoir un sceptique : il explique, il dessine dans la boue, il démontre. À la fin, {B} doute un peu moins, le Fou un peu plus, et c'est très bien.
+  ? bad
+  {B} doute à voix haute, et le Fou, vexé, se met à douter de tout le reste : de la pluie, de la nuit, de ses propres genoux. Il faut le consoler avec une noisette.
+
+> wish | Faire un vœu  [lean zeal +2]
+  ? good
+  {B} fait un vœu, tout bas, et ne le dit à personne. Le Fou affirme qu'un vœu fait une nuit à lumières compte double. Il en fait un aussi, pour {B}.
+  ? bad
+  {B} fait un vœu, tout haut, sans faire exprès. Le Fou dit que ça ne marche plus, maintenant, et qu'il faudra attendre la prochaine nuit de pluie. Il pleut toujours. Il réfléchit.

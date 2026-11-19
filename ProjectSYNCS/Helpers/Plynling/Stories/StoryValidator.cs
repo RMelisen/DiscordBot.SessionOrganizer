@@ -313,9 +313,8 @@ public static class StoryValidator
         // Texts: tokens and caps.
         foreach (var (text, pos, what) in Texts(arc))
         {
-            var left = Token.Replace(text, "");
-            foreach (Match bad in Regex.Matches(left, @"\{[^{}]*\}?|\}"))
-                error(pos, $"{what}: '{bad.Value}' is not a template token ({{A}}, {{B}}, {{T}}, {{a:…|…}}, {{b:…|…}}, {{p:…|…}})");
+            foreach (var bad in BadTokens(text))
+                error(pos, $"{what}: '{bad}' is not a template token ({{A}}, {{B}}, {{T}}, {{a:…|…}}, {{b:…|…}}, {{p:…|…}})");
             if (!hasOther && Token.Matches(text).Any(m => m.Value == "{B}" || m.Value.StartsWith("{b:") || m.Value.StartsWith("{p:")))
                 error(pos, $"{what}: {{B}}, {{b:…}} and {{p:…}} name the other Plynling, but the arc has no 'other'");
             var cap = what.EndsWith("title") ? TitleCap : int.MaxValue;
@@ -367,6 +366,13 @@ public static class StoryValidator
             _ => 20,
         });
     }
+
+    /// <summary>
+    /// What in a text looks like a template token but is none ({A}, {B}, {T}, {a:…|…}, {b:…|…}, {p:…|…}):
+    /// a stray brace, a misspelt or unclosed token. Shared by the visit validator.
+    /// </summary>
+    public static IEnumerable<string> BadTokens(string text) =>
+        Regex.Matches(Token.Replace(text, ""), @"\{[^{}]*\}?|\}").Select(m => m.Value);
 
     /// <summary>The text at its longest: names at <see cref="NameWorstCase"/>, each agreement at its longer form.</summary>
     public static string WorstCase(string text) =>

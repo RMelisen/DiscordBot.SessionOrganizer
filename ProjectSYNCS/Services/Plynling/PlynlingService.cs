@@ -34,7 +34,11 @@ public sealed record VisitOutcome(
     Plynling Visitor, Plynling Host,
     IReadOnlyList<BadgeInfo> VisitorBadges, IReadOnlyList<BadgeInfo> HostBadges,
     bool GoodScene, PlynlingBond Before, PlynlingBond After, Confession Confession, double Happiness,
-    ItemFind? VisitorFind = null, ItemFind? HostFind = null);
+    ItemFind? VisitorFind = null, ItemFind? HostFind = null, bool TooLate = false);
+
+// What the two owners chose, as the visit's save takes it: the shift both choices give the odds
+// (VisitOdds.Shift, summed), and whether the visitor came to confess.
+public sealed record VisitPlay(double Shift, bool Confess);
 
 // PantryUsed: how many of that food came out of the feeder's pantry instead of cailloux (0 when
 // they paid), and PantryLeft what remains of it.

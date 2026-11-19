@@ -1,0 +1,40 @@
+// Fixture: every word an ordinary visit scene can hold (docs/agents/plynling-storylines.md, Visit
+// files). Never shipped. The key is 20 characters and one choice key 12, the longest the validator
+// allows, so the card checks measure the worst custom-id.
+# visit: test_visit_scene_abc
+title: Le cerf-volant
+place: 🌳 Sous le grand chêne de {B}
+bonds: acquaintances friends bestfriends lovers rivals enemies
+hours: 8-20
+stages: baby, teen adult elder
+
+Le cerf-volant de {B} est coincé tout en haut du grand chêne.
+{A} lève la tête.
+
+Un deuxième paragraphe, où {Ils} se regardent.
+
+* twelve_chars | Grimper le chercher  [lean boldness +2] [lean energy +1]
+  ? good
+  {A} grimpe et décroche le cerf-volant
+  du premier coup.
+  ? bad
+  [sad] {A} reste coincé{a:|e} à mi-hauteur, juste à côté du cerf-volant.
+
+* wait | Attendre le vent
+  [lean rationality -1]
+  ? good
+  [A:happy B:content] Le vent tourne, et le cerf-volant redescend tout seul.
+  ? bad
+  Le vent ne tourne pas. {Ils} attendent, assis{p:|es} dans l'herbe.
+
+> hold | Tenir le tronc  [lean compassion +1]
+  ? good
+  {B} tient le tronc avec un sérieux absolu, comme si l'arbre allait partir.
+  ? bad
+  {B} tient le tronc, puis lâche pour se gratter le nez. Pile au mauvais moment.
+
+> laugh | Rire en bas  [lean sociability +3] [lean vengefulness -3]
+  ? good
+  {B} rit si fort, ravi{b:|e}, que le cerf-volant tombe de lui-même.
+  ? bad
+  [angry] {B} rit, et le cerf-volant reste où il est.

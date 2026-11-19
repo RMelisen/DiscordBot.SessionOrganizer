@@ -1,0 +1,44 @@
+# visit: lookout
+title: Le guet du gué
+place: 🌾 Près du gué, à la tombée du jour
+bonds: friends bestfriends lovers
+hours: 17-22
+stages: teen adult elder
+
+Ce soir, Aude et Mathurin se voient au gué, et c'est au tour de {A} et {B} de faire le guet, comme tout le village le fait, chacun son tour. Le chemin est vide. Pour l'instant. Au loin, on entend la voix du Noyer.
+
+* distract | Aller distraire le Noyer  [lean sociability +1] [lean boldness +1]
+  ? good
+  {A} va au-devant du Noyer et lui demande comment va sa grosse citrouille. Le Noyer parle de la citrouille pendant une heure, et ne regarde pas une seule fois vers le gué.
+  ? bad
+  {A} va distraire le Noyer et lui demande où il va. « Au gué, prendre le frais. » {A} invente un raccourci. Le raccourci passe par le gué.
+
+* signal | Faire le signal convenu  [lean rationality +1] [lean honor +1]
+  ? good
+  {A} fait le signal convenu : deux cris de grenouille. Au gué, deux silhouettes se séparent sans bruit. Le Noyer passe, salue, et ne voit que des grenouilles. Ce sont de très bonnes grenouilles.
+  ? bad
+  {A} fait le signal convenu : deux cris de grenouille. Toutes les grenouilles de la Sommeille répondent. Plus personne ne sait qui a crié quoi, au gué non plus.
+
+* hedge | Rester caché derrière la haie  [lean boldness -1] [lean energy -1]
+  ? good
+  {A} reste derrière la haie, sans un bruit. Le Noyer passe sans rien voir. Au gué, deux voix rient tout bas. On a bien guetté.
+  ? bad
+  {A} se cache derrière la haie, si bien caché{a:|e} que le Noyer s'y assoit pour renouer sa chaussure. Il y reste un moment. Il chantonne.
+
+> giggle | Pouffer de rire  [lean sociability +1] [lean honor -1]
+  ? good
+  {B} pouffe de rire, tout bas, et le rire se transmet jusqu'au gué, où quelqu'un pouffe aussi. Le Noyer croit que c'est la rivière.
+  ? bad
+  {B} pouffe de rire, pas tout bas du tout. Le Noyer s'arrête, tend l'oreille, puis repart. Il a entendu. Il fera semblant que non, et c'est presque pire.
+
+> serious | Prendre le guet très au sérieux  [lean honor +1] [lean zeal +1]
+  ? good
+  {B} prend le guet très au sérieux, l'œil sur le chemin, l'oreille sur la rivière. Rien ne passe. Le lendemain, un petit sac de farine fine attend devant la porte de {B}.
+  ? bad
+  {B} prend le guet très au sérieux et crie « Qui va là ? » à un canard. Le canard s'arrête. Le Noyer, au loin, demande qui est là.
+
+> dream | Regarder le gué, rêveusement  [lean compassion +1] [lean rationality -1]
+  ? good
+  {B} regarde le gué, rêveusement, sans plus surveiller grand-chose. Ça ne fait rien : le chemin reste vide, la soirée est douce, et {A} est à côté.
+  ? bad
+  {B} regarde le gué si rêveusement qu'il faut un coup de coude pour revenir, et le coup de coude est un peu fort. Au gué, on a entendu « aïe ».

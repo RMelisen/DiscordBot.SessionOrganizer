@@ -3,6 +3,14 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.2.0 — 2026-11-19
+
+- Plynling visits are played instead of told: a scene set in the village (20 of them), where the visitor's owner picks what their Plynling does and the host's owner picks how theirs reacts — that pick is accepting the visit. The whole visit is one message, from the first choice to the ending.
+- How a visit goes now depends on the choices too: each one suits some characters better than others, and the other Plynling's character judges it. Luck still plays its part, and nothing on the buttons gives the odds away.
+- Confessions are no longer automatic: a boy and a girl who are very close are sometimes offered « 💌 Lui avouer ses sentiments », a confession scene of its own, and the other's answer. After a refusal, the pair cannot confess again for three days.
+- Visiting SYNCS's Plynling: you pick, and she chooses its reaction from its character.
+- The visit conversations and their ◀ ▶ story pages are gone for new visits; stories already posted keep paging, and a knock left open from before this version closes as expired.
+
 ## 8.1.0 — 2026-11-19
 
 - A session asked for in chat now reads its places (« à 5 joueurs »), its length (« pendant 3h », « de 21h à 23h »), « every week » (« tous les samedis ») and its kind (film, outing), and her offer says what she read.

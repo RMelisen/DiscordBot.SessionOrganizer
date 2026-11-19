@@ -248,6 +248,10 @@ var host = Host.CreateDefaultBuilder(args)
     try
     {
         _ = StoryCatalog.Compiled;
+        // The visit scenes too (Stories/Visits/*.visit): a bad file, or a bond and hour left with no
+        // scene to draw, stops the bot here rather than on someone's /plynling visit.
+        _ = VisitCatalog.Scenes;
+        _ = VisitCatalog.Confession;
     }
     catch (StoryLoadException ex)
     {

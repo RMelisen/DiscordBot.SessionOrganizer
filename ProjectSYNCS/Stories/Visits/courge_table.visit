@@ -1,0 +1,43 @@
+# visit: courge_table
+title: La table de la Courge
+place: 🍲 À l'auberge, à la table de la Courge
+bonds: acquaintances friends lovers enemies
+hours: 11-22
+
+La Courge les installe à la même table, la seule libre, et pose deux bols de soupe devant eux sans rien demander. « Alors, mes choux, comment vous vous êtes connus ? Non, attendez, laissez-moi deviner. » Elle ne devine pas. Elle pose une autre question.
+
+* tell | Raconter leur histoire, toute simple  [lean honor +1] [lean sociability +1]
+  ? good
+  {A} raconte leur histoire, toute simple, en trois phrases. La Courge écoute jusqu'au bout, ce qui n'arrive jamais. Puis elle la raconte à la table voisine, embellie, et c'est encore mieux.
+  ? bad
+  {A} commence à raconter leur histoire. La Courge finit la phrase, puis l'histoire, puis en raconte une autre, qui n'est pas du tout la leur.
+
+* invent | Inventer une rencontre fabuleuse  [lean honor -1] [lean boldness +1]
+  ? good
+  {A} invente une rencontre fabuleuse : une tempête, un pont qui tangue, une chèvre héroïque. La Courge applaudit. Demain, tout le hameau connaîtra la chèvre.
+  ? bad
+  {A} invente une rencontre fabuleuse, et la Courge y croit, entièrement. Elle va la répéter partout. Il va falloir s'en souvenir, maintenant, et dans le même ordre.
+
+* eat | Manger la soupe sans rien dire  [lean sociability -1] [lean greed +1]
+  ? good
+  {A} mange la soupe sans un mot, et en redemande. La Courge, ravie, oublie sa question : elle juge un Plynling à son appétit, et {A} vient d'être très bien jugé{a:|e}.
+  ? bad
+  {A} mange la soupe sans rien dire. La Courge y voit un secret, et un secret, à l'auberge, ne dure pas jusqu'au soir. Elle en invente un.
+
+> deny | Tout démentir, point par point  [lean honor +1] [lean sociability -1]
+  ? good
+  {B} dément tout, poliment, point par point. La Courge adore : un démenti, c'est encore une histoire. Elle sert une deuxième part de tarte pour entendre la suite.
+  ? bad
+  {B} dément tout, et la Courge hoche la tête avec un clin d'œil énorme, de ceux qu'on voit depuis la porte. Personne ne croira le démenti.
+
+> join | En rajouter  [lean sociability +2]
+  ? good
+  {B} en rajoute, de bon cœur, et l'histoire grandit entre {A}, {B} et la Courge jusqu'à prendre toute la soirée. La table voisine tire sa chaise pour écouter.
+  ? bad
+  {B} en rajoute, la Courge aussi, et bientôt l'histoire a un sanglier grand comme la Maison commune. Il n'y en a pas, à Humeval. Il y en a un, maintenant, dans l'histoire.
+
+> change | Changer de sujet  [lean rationality +1] [lean boldness -1]
+  ? good
+  {B} change de sujet et demande à la Courge comment va son secret, le seul qu'elle garde. Elle rougit, toutes vrilles dehors, et pour une fois ne pose plus de question. Elle sert la tarte.
+  ? bad
+  {B} change de sujet, et la Courge suit avec bonheur : elle a une question sur chaque sujet. On parle de la pluie, du four, de la chèvre, et on revient à la première question.

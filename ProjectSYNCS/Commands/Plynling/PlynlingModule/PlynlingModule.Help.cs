@@ -90,15 +90,15 @@ public abstract partial class PlynlingModule : InteractionModuleBase<SocketInter
             .AddField("Jouer & rendre visite",
                 "**`/plynling play`** — Un mini-jeu au hasard avec ton Plynling : cache-cache, pierre-papier-ciseaux " +
                 "ou plus ou moins. Une fois par heure : +15 % de bonheur, +25 % et quelques cailloux si tu gagnes.\n" +
-                "**`/plynling visit user:`** — Ton Plynling toque chez quelqu'un. S'il l'accueille dans les 2 h, une petite " +
-                "histoire se joue, selon leur relation, et les deux gagnent du bonheur. Une visite par jour entre deux personnes.\n" +
+                "**`/plynling visit user:`** — Ton Plynling rend visite à quelqu'un : tu choisis ce qu'il fait, l'autre choisit " +
+                "dans les 2 h comment le sien réagit. Selon leur caractère, ça se passe bien ou mal. Une visite par jour entre deux personnes.\n" +
                 "À force de se voir, ils deviennent **amis**, **meilleurs amis**… ou **rivaux** et **ennemis**. " +
-                "Un garçon et une fille très proches peuvent tomber **amoureux**. Plus ils s'aiment, plus leurs visites " +
+                "Un garçon et une fille très proches peuvent se déclarer (💌) et tomber **amoureux**. Plus ils s'aiment, plus leurs visites " +
                 "les rendent heureux ; entre ennemis, elles les attristent.\n" +
                 "**`/plynling relations [user]`** — Ses amis, ses amours et ses ennemis.")
             .AddField("Passions",
                 "Chaque Plynling naît avec une **passion** : la cuisine, la musique, les étoiles, les siestes… " +
-                "Pendant les visites, il en parle, et selon l'autre, ça passionne, ça ennuie ou ça tourne à la compétition.\n" +
+                "Elle se voit sur sa carte, et il y pense souvent.\n" +
                 "**`/plynling passion`** — Apprends-lui une seconde passion, en toutes lettres (« la pêche », « les trains »). " +
                 "Une fois par jour ; laisse vide pour l'effacer.")
             .AddField("Gagner des cailloux",

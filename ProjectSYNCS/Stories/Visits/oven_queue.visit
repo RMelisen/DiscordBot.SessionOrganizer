@@ -1,0 +1,43 @@
+# visit: oven_queue
+title: La file du four
+place: 🥖 Devant le four du village
+bonds: acquaintances friends
+hours: 5-12
+
+C'est jour de cuisson, et la file devant le four suit le règlement de Maître Frêne, affiché sur la porte : article un, on ne double pas. Pain-Blond sort la tête du fournil, tout rouge, un petit pain à la main qu'il n'a montré à personne. « Quelqu'un veut goûter ? » demande-t-il, tout bas.
+
+* taste | Goûter le petit pain  [lean boldness +1] [lean sociability +1]
+  ? good
+  {A} goûte. C'est aux orties, avec une pointe de miel, et c'est délicieux. Pain-Blond devient plus rouge que son four.
+  ? bad
+  {A} goûte. C'est aux orties, sans le miel. {A} dit « intéressant » avec beaucoup de conviction, et Pain-Blond range la réponse dans un coin de sa tête.
+
+* place | Garder la place dans la file  [lean honor +2]
+  ? good
+  {A} garde la place, droit{a:|e} comme un article du règlement. Quand vient leur tour, Pain-Blond glisse deux petits pains de plus dans le panier, pour la patience.
+  ? bad
+  {A} garde la place, mais la Courge passe devant en disant « je ne fais que passer, mon chou ». Elle passe avec trois paniers.
+
+* help | Aider à porter les fournées  [lean energy +1] [lean compassion +1]
+  ? good
+  {A} porte les planches de pain jusqu'à la place, deux à la fois. Pain-Blond paie en pain chaud, comme toujours.
+  ? bad
+  {A} porte une planche de trop, et un pain roule jusque sous le banc de la tisserande. Elle regarde le pain, puis {A}, et ne dit rien. Longtemps.
+
+> share | Goûter aussi  [lean greed +1] [lean boldness +1]
+  ? good
+  {B} goûte aussi, et redemande. Pain-Blond reste sur le seuil, sans savoir quoi faire de ses mains. C'est la première fois qu'on redemande.
+  ? bad
+  {B} goûte aussi, mâche longtemps, et demande poliment s'il y a des noix dedans. Il n'y en a pas. Pain-Blond rentre réfléchir.
+
+> chat | Faire la conversation à la file  [lean sociability +2]
+  ? good
+  {B} fait la conversation à toute la file et récolte trois nouvelles et une recette. Le temps passe sans que personne le remarque.
+  ? bad
+  {B} fait la conversation à toute la file et rate son tour. Il faut tout recommencer derrière le Noyer, qui en profite pour raconter sa citrouille.
+
+> wait | Attendre en silence  [lean sociability -1] [lean rationality +1]
+  ? good
+  {B} attend sans un mot, les yeux mi-clos, à respirer l'odeur du pain. Bertille, qui passe, renifle et dit : « Toi, tu sens le pain de seigle. » C'est un compliment, chez elle.
+  ? bad
+  {B} attend en silence, si bien que la file finit par oublier qu'il y a quelqu'un à cette place, et passe devant, une personne après l'autre.
