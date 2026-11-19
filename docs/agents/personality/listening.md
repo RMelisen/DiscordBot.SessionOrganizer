@@ -215,6 +215,16 @@ A `Request` for a session, a `/tonight` call, a vote, a reminder or teams (`pers
   reads as a day (« jeu », « sam », « mer »…) isn't one. The title is what's left once the request's
   own words are stripped from both ends, rebuilt from the original spans. Never a date parser of its
   own: a misread is fixed in `FrenchDate`, with its check.
+- **A vote reads a question before options** (`ChatRequest.ReadQuestion`): « pour savoir qui
+  voudrait participer au défi créatif » is the title « Qui voudrait participer au défi créatif ? »
+  with Participe / Ne participe pas, from the verb (`WhoAnswers`: participer, venir, jouer, dispo,
+  chaud, partant, présent, inscrit); a wish with none of those (« qui veut une pizza ») is Moi / Pas
+  moi; any other « qui » question gets no options (« qui est le meilleur ? » needs names). « si … »
+  turns direct with Oui / Non (« On joue samedi ? »), with no options when an « ou » makes it a
+  choice; « quel / quand / où / comment… » and « ce que » (→ « Qu'est-ce que ») give the title
+  only. Without a colon the question needs an asking word before it (« savoir », « demander »,
+  « sur »…): straight after the vote word « qui » is a relative (« un sondage qui dure 2 jours »).
+  Her offer then names it (« le vote **…** »).
 - **Stripping never eats what was asked.** An article with a capital mid-sentence starts a name and
   stays (« Les Sims », « A Way Out »). A reminder's head ends at the link after its verb (« de »,
   « d' », « à », « que »): what follows is theirs even when it reuses the asking's words (« de pas

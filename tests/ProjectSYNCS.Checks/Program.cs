@@ -5229,6 +5229,23 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         ("tu peux faire un sondage entre Among Us et Gartic stp ?", "Among Us ou Gartic ?", ["Among Us", "Gartic"]),
         ("lance un sondage", "", []),
         ("lance un vote pizza", "", []),
+        // A question: its title as asked, its options from what it asks.
+        ("Syncs, crée un sondage pour savoir qui voudrait participer au défi créatif",
+            "Qui voudrait participer au défi créatif ?", ["Participe", "Ne participe pas"]),
+        ("fais un sondage pour savoir qui vient samedi stp", "Qui vient samedi ?", ["Vient", "Ne vient pas"]),
+        ("lance un sondage : qui est chaud pour un valo ce soir ?", "Qui est chaud pour un valo ce soir ?", ["Chaud", "Pas chaud"]),
+        ("fais un sondage pour demander qui veut une pizza", "Qui veut une pizza ?", ["Moi", "Pas moi"]),
+        ("fais un sondage pour savoir qui est le meilleur joueur", "Qui est le meilleur joueur ?", []),
+        ("lance un sondage pour savoir si on joue samedi", "On joue samedi ?", ["Oui", "Non"]),
+        ("fais un sondage pour savoir s'il faut changer de jeu", "Il faut changer de jeu ?", ["Oui", "Non"]),
+        ("fais un sondage pour savoir si on joue à Valo ou LoL", "On joue à Valo ou LoL ?", []),
+        ("fais un sondage pour savoir quel jeu on fait vendredi", "Quel jeu on fait vendredi ?", []),
+        ("fais un sondage pour savoir où on mange", "Où on mange ?", []),
+        ("fais un sondage pour savoir ce qu'on mange ce soir", "Qu'est-ce qu'on mange ce soir ?", []),
+        ("fais un sondage sur qui participe au tournoi", "Qui participe au tournoi ?", ["Participe", "Ne participe pas"]),
+        // Straight after the vote word, « qui » is a relative and « ou » joins options.
+        ("lance un sondage qui dure deux jours", "", []),
+        ("lance un vote pizza ou sushi stp", "pizza ou sushi ?", ["pizza", "sushi"]),
     })
     {
         var got = ChatRequest.ReadVote(text);
@@ -5253,6 +5270,7 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         ("fais-moi penser à appeler maman", "Request"), ("ça vous dit un Gartic dimanche 18h ?", "Request"),
         ("on fait une session samedi ?", "NextSession"), ("organise un jeu", "None"),
         ("syncs organise un valo samedi 21h", "Request"), ("syncs lance un sondage pizza ou sushi", "Request"),
+        ("Syncs, crée un sondage pour savoir qui voudrait participer au défi créatif", "Request"),
     })
     {
         var got = readIntent.Invoke(null, new object[] { text })!.ToString();
@@ -5266,6 +5284,7 @@ foreach (var f in new[] { "McCalledLines", "McCalledLinesOwner", "McCalledLinesT
         ("tu peux organiser un truc ?", "Other"), ("syncs, organise un valo samedi 21h", "Session"),
         ("syncs organise les sessions le samedi", null), ("syncs organise un valo samedi 21h", "Session"),
         ("syncs lance un sondage pizza ou sushi", "Poll"),
+        ("Syncs, crée un sondage pour savoir qui voudrait participer au défi créatif", "Poll"),
         ("syncs, fais 3 équipes", "Teams"), ("rappelle-moi demain 9h de manger syncs", "Reminder"),
     })
     {

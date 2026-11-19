@@ -3,6 +3,10 @@
 Every version that reached the add-on, newest first. Entries up to 6.5.0 were reconstructed from
 the git history; versions that were skipped or only existed on a side branch are absent.
 
+## 8.0.1 — 2026-11-19
+
+- Asking her in chat for a poll « pour savoir qui… / si… » now fills in the question as its title and, when the question says how to answer, its options (« Participe » / « Ne participe pas », « Oui » / « Non »…).
+
 ## 8.0.0 — 2026-11-19
 
 - The last hand-written Plynling events (asks, moments, growing up, mental breaks) now live in story files; nothing changes in play.

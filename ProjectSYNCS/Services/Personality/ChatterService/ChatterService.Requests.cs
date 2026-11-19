@@ -92,9 +92,11 @@ internal sealed partial class ChatterService
     {
         var ask = ChatRequest.ReadVote(message.Content ?? string.Empty);
         var shown = ask.Options.Select(o => $"**{Discord.Format.Sanitize(o)}**").ToList();
-        var summary = shown.Count == 0
-            ? "un vote"
-            : "un vote entre " + string.Join(", ", shown.Take(shown.Count - 1)) + " et " + shown[^1];
+        var summary = ask.Asked
+            ? $"le vote **{Discord.Format.Sanitize(ask.Title)}**"
+            : shown.Count == 0
+                ? "un vote"
+                : "un vote entre " + string.Join(", ", shown.Take(shown.Count - 1)) + " et " + shown[^1];
         var id = _offers.Add(new ChatOffer(message.Author.Id, ask.Title, null, ask.Options));
         return await OfferAsync(message, path, RequestTopic.Poll, name, weekday, summary,
             new ButtonBuilder("Préparer le vote", $"chatreq:vote:{id}", ButtonStyle.Primary));

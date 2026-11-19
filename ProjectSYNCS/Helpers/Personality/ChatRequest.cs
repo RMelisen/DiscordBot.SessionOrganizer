@@ -11,8 +11,11 @@ public sealed record TonightAsk(string Game, DateTimeOffset? At);
 /// <summary>A reminder asked for in chat: what to remind, as written, and when.</summary>
 public sealed record ReminderAsk(string Text, DateTimeOffset? Due);
 
-/// <summary>A vote asked for in chat: its title and its options (two to ten, or none).</summary>
-public sealed record VoteAsk(string Title, IReadOnlyList<string> Options);
+/// <summary>
+/// A vote asked for in chat: its title and its options (two to ten, or none). Asked: the title is a
+/// question she read (« pour savoir qui vient » → « Qui vient ? »), not one built from the options.
+/// </summary>
+public sealed record VoteAsk(string Title, IReadOnlyList<string> Options, bool Asked = false);
 
 /// <summary>Teams asked for in chat: how many, and whether balanced by level.</summary>
 public sealed record TeamsAsk(int Count, bool Balanced);
@@ -163,9 +166,15 @@ public static partial class ChatRequest
         var after = text[words[topic].End..];
         var title = string.Empty;
         var colon = after.IndexOf(':');
-        // « un sondage pour ce soir : valo, lol »: the title before the colon, the options after.
         // A colon inside a time (« 21:30 ») has no space after it, and is not this one.
-        if (colon >= 0 && (colon + 1 == after.Length || !char.IsDigit(after[colon + 1])))
+        var hasColon = colon >= 0 && (colon + 1 == after.Length || !char.IsDigit(after[colon + 1]));
+
+        // « un sondage pour savoir qui vient samedi », « un sondage : qui est chaud ? »: a question,
+        // read before the options, since « si on joue à valo ou lol » would split into two.
+        if (ReadQuestion(hasColon ? after[(colon + 1)..] : after, needsLead: !hasColon) is { } question) return question;
+
+        // « un sondage pour ce soir : valo, lol »: the title before the colon, the options after.
+        if (hasColon)
         {
             var (titleText, titleWords) = Words(after[..colon]);
             title = Rest(titleText, titleWords, null, VoteLeadStrip, InputCaps.Title);
@@ -189,6 +198,127 @@ public static partial class ChatRequest
         }
         return new VoteAsk(title, options);
     }
+
+    // The question a vote is for, from the words after the vote word (or after its colon):
+    // - « qui … » keeps its words: « Qui voudrait participer au défi créatif ? ». Its options come from
+    //   the verb (« participer » → Participe / Ne participe pas), « Moi » / « Pas moi » for a wish
+    //   (« qui veut une pizza »), none otherwise (« qui est le meilleur ? » needs names).
+    // - « si … » turns direct, Oui / Non: « si on joue samedi » → « On joue samedi ? ». With an « ou »
+    //   inside it's a choice, so it keeps the title and leaves the options to them.
+    // - « quel / quand / où / comment… » and « ce que » (→ « Qu'est-ce que ») give the title only.
+    // Straight after the vote word, « qui » is a relative (« un sondage qui dure 2 jours »): without a
+    // colon, the question needs an asking word before it (« pour savoir », « demander », « sur »).
+    private static VoteAsk? ReadQuestion(string source, bool needsLead)
+    {
+        var (text, words) = Words(source);
+        var i = 0;
+        var askedFor = false;
+        while (i < words.Count && QuestionLead.Contains(words[i].Norm))
+        {
+            if (AskingLead.Contains(words[i].Norm)) askedFor = true;
+            i++;
+        }
+        if (i >= words.Count - 1 || needsLead && !askedFor) return null;
+
+        var head = words[i];
+        var body = i + 1;
+        string? title;
+        IReadOnlyList<string> options = Array.Empty<string>();
+        switch (head.Norm)
+        {
+            case "qui":
+                title = Question(text, words, i);
+                options = WhoOptions(words, body);
+                break;
+            case "si" or "s":
+                // « s'il », « s'ils »: the pronoun opens the direct question.
+                if (head.Norm == "s" && words[body].Norm is not ("il" or "ils")) return null;
+                title = Question(text, words, body);
+                if (title is not null && !words.Skip(body).Any(w => w.Norm is "ou" or "or")) options = ["Oui", "Non"];
+                break;
+            case "ce" when words[body].Norm is "que" or "qu":
+                title = Question(text, words, body) is { } rest ? "Qu'est-ce " + char.ToLowerInvariant(rest[0]) + rest[1..] : null;
+                break;
+            default:
+                // « où » is « ou » once cleaned, which is also the options' « ou »: the accent decides.
+                var where = head.Norm == "ou" && text[head.Start..head.End].Contains('ù');
+                if (!where && !QuestionWords.Contains(head.Norm)) return null;
+                title = Question(text, words, i);
+                break;
+        }
+        return title is null || title.Length > InputCaps.Title ? null : new VoteAsk(title, options, Asked: true);
+    }
+
+    // The words from `from` to the end, as written, capitalised, closed on « ? »: trailing politeness,
+    // her name and punctuation dropped (TrimTail).
+    private static string? Question(string text, List<Word> words, int from)
+    {
+        if (from >= words.Count) return null;
+        var rest = TrimTail(text[words[from].Start..].Trim().TrimEnd('?', '!', '.', ' ', '…'));
+        if (rest.Length == 0) return null;
+        return char.ToUpperInvariant(rest[0]) + rest[1..] + " ?";
+    }
+
+    // « qui … »: the first verb or state in the next few words that says how to answer; a wish only
+    // when none does (« qui voudrait participer » is Participe, not Moi).
+    private static IReadOnlyList<string> WhoOptions(List<Word> words, int from)
+    {
+        var window = words.Skip(from).Take(6).ToList();
+        foreach (var w in window)
+            if (WhoAnswers.TryGetValue(w.Norm, out var pair)) return [pair.Yes, pair.No];
+        return window.Any(w => Wishes.Contains(w.Norm)) ? ["Moi", "Pas moi"] : Array.Empty<string>();
+    }
+
+    // What may sit between the vote word and its question: « pour savoir », « afin de demander »,
+    // « rapide sur », « à propos de ».
+    private static readonly HashSet<string> QuestionLead = new()
+    {
+        "pour", "afin", "histoire", "de", "d", "sur", "savoir", "demander", "voir", "connaitre", "rapide", "petit",
+        "vite", "fait", "a", "propos", "au", "sujet", "du", "qu", "on", "sache", "saches", "sachiez", "sachions",
+    };
+
+    // The ones that make it a question rather than a relative clause.
+    private static readonly HashSet<string> AskingLead = new()
+    {
+        "savoir", "demander", "voir", "connaitre", "sur", "propos", "sujet", "sache", "saches", "sachiez", "sachions",
+    };
+
+    private static readonly HashSet<string> QuestionWords = new()
+    {
+        "quel", "quelle", "quels", "quelles", "quand", "comment", "combien", "lequel", "laquelle", "lesquels",
+        "lesquelles", "pourquoi",
+    };
+
+    // A « qui » question's answers, by the verb or state it asks about: the third person, as the
+    // question asks it (« Qui participe ? » — « Participe »).
+    private static readonly Dictionary<string, (string Yes, string No)> WhoAnswers = BuildWhoAnswers();
+
+    private static Dictionary<string, (string Yes, string No)> BuildWhoAnswers()
+    {
+        var map = new Dictionary<string, (string, string)>();
+        void Add((string, string) pair, params string[] forms)
+        {
+            foreach (var f in forms) map[f] = pair;
+        }
+        Add(("Participe", "Ne participe pas"), "participer", "participe", "participent", "participera", "participeront",
+            "participerait", "participeraient", "participes");
+        Add(("Vient", "Ne vient pas"), "venir", "vient", "viennent", "viendra", "viendront", "viendrait", "viendraient");
+        Add(("Joue", "Ne joue pas"), "jouer", "joue", "jouent", "jouera", "joueront", "jouerait", "joueraient");
+        Add(("Dispo", "Pas dispo"), "dispo", "dispos", "disponible", "disponibles");
+        Add(("Chaud", "Pas chaud"), "chaud", "chauds", "chaude", "chaudes", "chaud");
+        Add(("Partant", "Pas partant"), "partant", "partants", "partante", "partantes");
+        Add(("Présent", "Absent"), "present", "presents", "presente", "presentes");
+        Add(("Inscrit", "Pas inscrit"), "inscrire", "inscrit", "inscrits", "inscrira", "inscrirait");
+        return map;
+    }
+
+    // A wish with no verb above (« qui veut une pizza ? », « qui serait motivé ? »): answered by who.
+    private static readonly HashSet<string> Wishes = new()
+    {
+        "veut", "veulent", "voudrait", "voudraient", "aimerait", "aimeraient", "envie", "motive", "motives", "motivee",
+        "motivees", "interesse", "interesses", "interessee", "interessees", "tente", "tentes", "tentee", "tentees", "souhaite",
+        "souhaitent", "souhaiterait",
+    };
 
     public static TeamsAsk ReadTeams(string content)
     {
